@@ -71,6 +71,6 @@ struct ch_vm {
   int sp;
 };
 
-int vm_main(int argc, char** argv);
+int ch_vm_main(int argc, char** argv);
 
 #endif

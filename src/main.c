@@ -27,5 +27,5 @@
 #include "vm.h"
 
 int main(int argc, char** argv) {
-  return vm_main(argc, argv);
+  return ch_vm_main(argc, argv);
 }

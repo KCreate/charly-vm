@@ -26,6 +26,7 @@
 
 #include "vm.h"
 
-int vm_main(int argc, char** argv) {
+int ch_vm_main(int argc, char** argv) {
+  printf("running the vm\n");
   return 0;
 }

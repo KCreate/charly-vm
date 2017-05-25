@@ -140,11 +140,11 @@ bool ch_buffer_double(ch_buffer* buffer) {
  * @param ch_buffer* buffer - The buffer
  * */
 void ch_buffer_reverse_bytes(ch_buffer* buffer) {
-  u32 right = buffer->size - 1;
-  u32 left = 0;
+  int right = buffer->size - 1;
+  int left = 0;
 
   while (left < right) {
-    u8 byte = buffer->buffer[right];
+    char byte = buffer->buffer[right];
     buffer->buffer[right] = buffer->buffer[left];
     buffer->buffer[left] = byte;
     ++left;
@@ -158,15 +158,15 @@ void ch_buffer_reverse_bytes(ch_buffer* buffer) {
  * @param ch_buffer* buffer - The buffer
  * */
 void ch_buffer_reverse_segments(ch_buffer* buffer) {
-  u32 right = buffer->size - buffer->segment_size;
-  u32 left = 0;
+  int right = buffer->size - buffer->segment_size;
+  int left = 0;
 
   while (left < right) {
-    u32 bleft = left;
-    u32 bright = right;
+    int bleft = left;
+    int bright = right;
 
     while (bleft < bright) {
-      u8 byte = buffer->buffer[bright];
+      char byte = buffer->buffer[bright];
       buffer->buffer[bright] = buffer->buffer[bleft];
       buffer->buffer[bleft] = byte;
       ++bleft;
