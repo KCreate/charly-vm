@@ -33,21 +33,10 @@
 #include <float.h>
 #include <string.h>
 
-// Short-hand type names
-typedef unsigned char           u8;
-typedef unsigned short          u16;
-typedef unsigned int            u32;
-typedef unsigned long long int  u64;
-typedef char                    i8;
-typedef short                   i16;
-typedef int                     i32;
-typedef long long int           i64;
-typedef double                  f64;
-
 // VM types
 typedef struct ch_buffer ch_buffer;
-typedef struct ch_hash_entry ch_hash_entry;
-typedef struct ch_hash ch_hash;
-typedef struct ch_value_t ch_value_t;
+typedef struct ch_buffer ch_buffer;
+typedef struct ch_vm ch_vm;
+typedef struct ch_frame ch_frame;
 
 #endif

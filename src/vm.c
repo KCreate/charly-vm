@@ -26,25 +26,6 @@
 
 #include "vm.h"
 
-int vm_main() {
-
-  // Allocate a new buffer for 255 i64 numbers
-  ch_buffer* buffer = ch_buffer_create(sizeof(i64), 255);
-
-  // Initialize each field
-  for (int i = 0; i < 255; i++) {
-    i64* value = (i64 *)(ch_buffer_index_ptr(buffer, i));
-    *value = i;
-  }
-
-  // Print each number
-  for (int i = 0; i < 255; i++) {
-    i64 value = *(i64 *)(ch_buffer_index_ptr(buffer, i));
-    printf("%03d: %lld\n", i, value);
-  }
-
-  // Free the buffer
-  ch_buffer_free(buffer);
-
+int vm_main(int argc, char** argv) {
   return 0;
 }

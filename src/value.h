@@ -29,7 +29,7 @@
 
 #include "constants.h"
 #include "buffer.h"
-#include "hash.h"
+#include "environment.h"
 
 /*
  * Types which are known to the machine
@@ -38,7 +38,6 @@ enum ch_type {
   ch_type_numeric,
   ch_type_string,
   ch_type_buffer,
-  ch_type_hash,
   ch_type_function,
   ch_type_pointer,
   ch_type_voidptr,
@@ -46,16 +45,21 @@ enum ch_type {
 };
 
 // Main value type
-struct ch_value_t {
+struct ch_value {
   ch_type type;
-  unsigned int ref_count;
   union {
     double numval; // numerics
     ch_buffer buffval; // strings, buffers
-    ch_hash hashval; // hash-tables
-    ch_value_t* ptrval; // functions, pointers
+    ch_value* ptrval; // functions, pointers
     void* voidptr; // pointer to internal stuff
   };
 };
+
+ch_value ch_value_create(ch_type type);
+ch_value ch_value_create_numeric(double number);
+ch_value ch_value_create_string(char* value);
+ch_value ch_value_create_buffer(ch_buffer* buffer);
+ch_value ch_value_create_pointer(ch_value* pointer);
+ch_value ch_value_create_voidpointer(void* pointer);
 
 #endif

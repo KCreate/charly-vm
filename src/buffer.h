@@ -33,7 +33,7 @@
  * Multi-purpose fixed-size buffer type
  * */
 struct ch_buffer {
-  u8* buffer;
+  char* buffer;
   size_t size; // size of the buffer field, has to be a multiple of segment_size
   size_t segment_size; // size of a single segment
 };

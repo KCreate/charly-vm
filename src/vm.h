@@ -30,6 +30,47 @@
 #include "constants.h"
 #include "buffer.h"
 
+enum ch_frame_type {
+  ch_frame_type_call,
+  ch_frame_type_exhandler,
+  ch_frame_type_environment,
+  ch_frame_type_redirect
+};
+
+struct ch_frame {
+  ch_frame_type type;
+  ch_frame* prev;
+  unsigned int ref_count;
+
+  union {
+
+    // Redirection frames
+    struct {
+      ch_frame* redirect;
+    }
+
+    // Environment frames
+    struct {
+      ch_buffer* environment;
+    }
+
+    // Call stack frames
+    struct {
+      int return_address;
+    } call;
+
+    // Exception handler frames
+    struct {
+      int handler_address;
+    } exhandler;
+  };
+};
+
+struct ch_vm {
+  int pc;
+  int sp;
+};
+
 int vm_main(int argc, char** argv);
 
 #endif
