@@ -2,7 +2,7 @@ CC=clang
 OPT=-O0
 TEST=false
 CFLAGS=-g -fdata-sections -ffunction-sections $(OPT)
-OBJS=build/test.o build/main.o build/vm.o build/buffer.o
+OBJS=build/test.o build/main.o build/vm.o build/buffer.o build/frame.o
 
 all: $(OBJS)
 ifeq ($(TEST), true)
