@@ -45,7 +45,12 @@ ch_buffer* ch_buffer_create(size_t element_size, size_t element_count) {
   if (!struct_buffer) return NULL;
 
   // Initialize the struct
-  return ch_buffer_init(struct_buffer, element_size, element_count);
+  if (!ch_buffer_init(struct_buffer, element_size, element_count)) {
+    free(struct_buffer);
+    return NULL;
+  }
+
+  return struct_buffer;
 }
 
 /*
