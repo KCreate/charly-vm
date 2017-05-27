@@ -40,6 +40,7 @@ struct ch_buffer {
 
 ch_buffer* ch_buffer_create(size_t element_size, size_t element_count);
 ch_buffer* ch_buffer_copy(ch_buffer* old_buffer);
+ch_buffer* ch_buffer_init(ch_buffer* buffer, size_t element_size, size_t element_count);
 void ch_buffer_free(ch_buffer* buffer);
 void ch_buffer_clear(ch_buffer* buffer, char value);
 bool ch_buffer_resize(ch_buffer* buffer, size_t element_count);

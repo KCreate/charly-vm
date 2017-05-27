@@ -44,16 +44,8 @@ ch_buffer* ch_buffer_create(size_t element_size, size_t element_count) {
   ch_buffer* struct_buffer = malloc(sizeof(struct_buffer));
   if (!struct_buffer) return NULL;
 
-  // Allocate memory for the ch_buffers internal buffer
-  void* internal_buffer = malloc(element_size * element_count);
-  if (!internal_buffer) return NULL;
-
-  // Initialize the ch_buffer struct
-  struct_buffer->buffer = internal_buffer;
-  struct_buffer->size = element_size * element_count;
-  struct_buffer->segment_size = element_size;
-
-  return struct_buffer;
+  // Initialize the struct
+  return ch_buffer_init(struct_buffer, element_size, element_count);
 }
 
 /*
@@ -73,6 +65,23 @@ ch_buffer* ch_buffer_copy(ch_buffer* old_buffer) {
   memcpy(new_buffer->buffer, old_buffer->buffer, old_buffer->size);
 
   return new_buffer;
+}
+
+/*
+ * Initialize a buffer
+ * */
+ch_buffer* ch_buffer_init(ch_buffer* buffer, size_t element_size, size_t element_count) {
+
+  // Allocate memory for the ch_buffers internal buffer
+  void* internal_buffer = malloc(element_size * element_count);
+  if (!internal_buffer) return NULL;
+
+  // Initialize the ch_buffer struct
+  buffer->buffer = internal_buffer;
+  buffer->size = element_size * element_count;
+  buffer->segment_size = element_size;
+
+  return buffer;
 }
 
 /*
