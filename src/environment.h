@@ -24,22 +24,20 @@
  * SOFTWARE.
  */
 
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
+#ifndef ENVIRONMENT_H
+#define ENVIORNMENT_H
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <float.h>
-#include <string.h>
+#include "constants.h"
 
-// VM types
-typedef struct ch_buffer ch_buffer;
-typedef struct ch_vm ch_vm;
-typedef struct ch_value ch_value;
-typedef struct ch_frame ch_frame;
-typedef struct ch_environment ch_environment;
-typedef enum ch_type ch_type;
-typedef enum ch_frame_type ch_frame_type;
+/*
+ * Environment
+ * */
+struct ch_environment {
+  ch_value* values;
+  size_t size;
+};
+
+ch_environment* ch_environment_create(size_t size);
+ch_environment* ch_environment_init(ch_environment* environment, size_t size);
 
 #endif
