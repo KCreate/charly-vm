@@ -24,35 +24,19 @@
  * SOFTWARE.
  */
 
-#ifndef BUFFER_H
-#define BUFFER_H
+#ifndef OPS_H
+#define OPS_H
 
-#include "constants.h"
-
-/*
- * Multi-purpose fixed-size buffer type
- * */
-struct ch_buffer {
-  char* buffer;
-  size_t size; // size of the buffer field, has to be a multiple of segment_size
-  size_t segment_size; // size of a single segment
+enum ch_op {
+  ch_op_create_environment,
+  ch_op_create_value,
+  ch_op_write_to_environment,
+  ch_op_print_environment
 };
 
-ch_buffer* ch_buffer_create(size_t element_size, size_t element_count);
-ch_buffer* ch_buffer_copy(ch_buffer* old_buffer);
-ch_buffer* ch_buffer_init(ch_buffer* buffer, size_t element_size, size_t element_count);
-void ch_buffer_free(ch_buffer* buffer);
-void ch_buffer_clear(ch_buffer* buffer, char value);
-bool ch_buffer_move(ch_buffer* target, ch_buffer* source);
-bool ch_buffer_copy_from(ch_buffer* target, char* source, size_t source_size);
-bool ch_buffer_resize(ch_buffer* buffer, size_t element_count);
-bool ch_buffer_double(ch_buffer* buffer);
-void ch_buffer_reverse_bytes(ch_buffer* buffer);
-void ch_buffer_reverse_segments(ch_buffer* buffer);
-bool ch_buffer_index_out_of_bounds(ch_buffer* buffer, size_t index);
-bool ch_buffer_change_segment_size(ch_buffer* buffer, size_t size);
-size_t ch_buffer_segment_count(ch_buffer* buffer);
-void* ch_buffer_index_ptr(ch_buffer* buffer, size_t index);
-void* ch_buffer_index_last(ch_buffer* buffer);
+#define CREATE_ENVIRONMENT ch_op_create_environment
+#define CREATE_VALUE ch_op_create_value
+#define WRITE_TO_ENVIRONMENT ch_op_write_to_environment
+#define PRINT_ENVIRONMENT ch_op_print_environment
 
 #endif

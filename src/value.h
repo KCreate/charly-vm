@@ -38,10 +38,10 @@ enum ch_type {
   ch_type_numeric,
   ch_type_string,
   ch_type_buffer,
+  ch_type_environment,
   ch_type_function,
   ch_type_pointer,
-  ch_type_voidptr,
-  ch_num_types
+  ch_type_voidptr
 };
 
 // Main value type
@@ -51,6 +51,7 @@ struct ch_value {
     double numval; // numerics
     ch_buffer buffval; // strings, buffers
     ch_value* ptrval; // functions, pointers
+    ch_environment* envval; // environment
     void* voidptr; // pointer to internal stuff
   };
 };
@@ -60,6 +61,7 @@ ch_value ch_value_create_numeric(double number);
 ch_value ch_value_create_string(char* value);
 ch_value ch_value_create_buffer(ch_buffer* buffer);
 ch_value ch_value_create_pointer(ch_value* pointer);
+ch_value ch_value_create_environment(ch_environment* environment);
 ch_value ch_value_create_voidpointer(void* pointer);
 
 #endif

@@ -88,6 +88,18 @@ ch_value ch_value_create_pointer(ch_value* pointer) {
 }
 
 /*
+ * Creates a new environment value
+ *
+ * @param ch_environment* environment - The environment to point to
+ * @return ch_value - The new value
+ * */
+ch_value ch_value_create_environment(ch_environment* environment) {
+  ch_value value = ch_value_create(ch_type_environment);
+  value.envval = environment;
+  return value;
+}
+
+/*
  * Creates a new void pointer value
  *
  * @param void* value - The void pointer

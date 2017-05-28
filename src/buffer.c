@@ -41,7 +41,7 @@ ch_buffer* ch_buffer_create(size_t element_size, size_t element_count) {
   if (element_size == 0 || element_count == 0) return NULL;
 
   // Allocate memory for the ch_buffer structure
-  ch_buffer* struct_buffer = malloc(sizeof(struct_buffer));
+  ch_buffer* struct_buffer = malloc(sizeof(ch_buffer));
   if (!struct_buffer) return NULL;
 
   // Initialize the struct
@@ -96,7 +96,6 @@ ch_buffer* ch_buffer_init(ch_buffer* buffer, size_t element_size, size_t element
  * */
 void ch_buffer_free(ch_buffer* buffer) {
   free(buffer->buffer);
-  free(buffer);
 }
 
 /*
@@ -107,6 +106,38 @@ void ch_buffer_free(ch_buffer* buffer) {
  * */
 void ch_buffer_clear(ch_buffer* buffer, char value) {
   memset(buffer->buffer, value, buffer->size);
+}
+
+/*
+ * Copy the contents of a buffer into another one
+ * Ignores segment size
+ *
+ * @param ch_buffer* target
+ * @param ch_buffer* source
+ * @return bool - Wether memory was copied or not
+ * */
+bool ch_buffer_move(ch_buffer* target, ch_buffer* source) {
+  if (target->size > source->size) return false;
+
+  memmove(target->buffer, source->buffer, source->size);
+
+  return true;
+}
+
+/*
+ * Copy memory from an outside unmanaged buffer
+ *
+ * @param ch_buffer* target
+ * @param char* source
+ * @param size_t source_size
+ * @return bool - Wether the memory was copied or not
+ * */
+bool ch_buffer_copy_from(ch_buffer* target, char* source, size_t source_size) {
+  if (target->size > source_size) return false;
+
+  memmove(target->buffer, source, source_size);
+
+  return true;
 }
 
 /*

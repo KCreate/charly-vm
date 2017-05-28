@@ -25,7 +25,7 @@
  */
 
 #ifndef ENVIRONMENT_H
-#define ENVIORNMENT_H
+#define ENVIRONMENT_H
 
 #include "constants.h"
 

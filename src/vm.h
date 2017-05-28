@@ -30,17 +30,23 @@
 #include "constants.h"
 #include "buffer.h"
 #include "frame.h"
+#include "ops.h"
+#include "value.h"
+
+#define VM_MEMORY_SIZE 256
 
 struct ch_vm {
   int pc;
   int sp;
-  int fp;
 
   ch_frame* current_frame;
-  ch_buffer instructions;
-  ch_buffer stack;
+  ch_buffer memory;
 };
 
 int ch_vm_main(int argc, char** argv);
+
+ch_vm* ch_vm_create();
+ch_vm* ch_vm_init(ch_vm* vm);
+void ch_vm_free(ch_vm* vm);
 
 #endif

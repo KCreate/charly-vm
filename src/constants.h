@@ -41,5 +41,6 @@ typedef struct ch_frame ch_frame;
 typedef struct ch_environment ch_environment;
 typedef enum ch_type ch_type;
 typedef enum ch_frame_type ch_frame_type;
+typedef enum ch_ops ch_ops;
 
 #endif
