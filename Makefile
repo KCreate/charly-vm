@@ -1,18 +1,22 @@
 CC=clang
 OPT=-O0
 TEST=false
-CFLAGS=-g -fdata-sections -ffunction-sections $(OPT)
-OBJS=build/test.o build/main.o build/vm.o build/buffer.o build/frame.o
+OBJS=build/test.ll build/main.ll build/vm.ll build/buffer.ll build/frame.ll build/environment.ll
 
-all: $(OBJS)
+all: objects
 ifeq ($(TEST), true)
-	$(CC) $(CFLAGS) $(filter-out build/main.o, $(OBJS)) -dead_strip -o bin/vm
+	clang $(OPT) $(filter-out build/main.ll, $(OBJS)) -o bin/vm
 else
-	$(CC) $(CFLAGS) $(filter-out build/test.o, $(OBJS)) -dead_strip -o bin/vm
+	clang $(OPT) $(filter-out build/test.ll, $(OBJS)) -o bin/vm
 endif
 
-build/%.o: src/%.c
-	$(CC) $(CFLAGS) -o $@ -c $<
+objects: $(OBJS)
+
+rebuild: clean all
+
+build/%.ll: src/%.c
+	$(CC) $(OPT) -S -emit-llvm $< -o $@
+	opt $@ -O3 -S -o $@
 
 clean:
 	rm -rf bin/*
