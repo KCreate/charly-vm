@@ -28,7 +28,7 @@
 #define FRAME_H
 
 #include "constants.h"
-#include "buffer.h"
+#include "environment.h"
 
 enum ch_frame_type {
   ch_frame_type_call,
@@ -51,7 +51,7 @@ struct ch_frame {
   union {
     int return_address;
     int handler_address;
-    ch_buffer* environment;
+    ch_environment* environment;
     ch_frame* redirect;
   };
 };
@@ -59,7 +59,7 @@ struct ch_frame {
 ch_frame ch_frame_create(ch_frame_type type, ch_frame* prev);
 ch_frame ch_frame_create_call(int return_address, ch_frame* prev);
 ch_frame ch_frame_create_exhandler(int handler_address, ch_frame* prev);
-ch_frame ch_frame_create_environment(ch_buffer* environment, ch_frame* prev);
+ch_frame ch_frame_create_environment(ch_environment* environment, ch_frame* prev);
 ch_frame ch_frame_create_redirect(ch_frame* frame, ch_frame* prev);
 
 #endif

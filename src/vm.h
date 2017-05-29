@@ -32,6 +32,7 @@
 #include "frame.h"
 #include "ops.h"
 #include "value.h"
+#include "environment.h"
 
 #define VM_MEMORY_SIZE 256
 

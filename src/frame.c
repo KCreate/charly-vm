@@ -75,10 +75,10 @@ ch_frame ch_frame_create_exhandler(int handler_address, ch_frame* prev) {
 /*
  * Creates a new environment frame
  *
- * @param ch_buffer* environment
+ * @param ch_environment* environment
  * @return ch_frame
  * */
-ch_frame ch_frame_create_environment(ch_buffer* environment, ch_frame* prev) {
+ch_frame ch_frame_create_environment(ch_environment* environment, ch_frame* prev) {
   ch_frame frame = ch_frame_create(ch_frame_type_environment, prev);
   frame.environment = environment;
   return frame;
