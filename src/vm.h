@@ -34,11 +34,23 @@
 #include "value.h"
 #include "environment.h"
 
-#define VM_MEMORY_SIZE 256
+// Size constants
+#define CH_VM_MEMORY_SIZE 256
+
+// Error codes
+#define CH_VM_ERR_SUCCESS 0
+#define CH_VM_ERR_OUT_OF_BOUNDS 1
+#define CH_VM_ERR_ILLEGAL_OP 2
+#define CH_VM_ERR_ALLOCATION_FAILURE 3
 
 struct ch_vm {
-  int pc;
-  int sp;
+  unsigned int pc;
+  unsigned int sp;
+
+  bool running;
+  bool halted;
+
+  unsigned int errno;
 
   ch_frame* current_frame;
   ch_buffer memory;
@@ -48,6 +60,12 @@ int ch_vm_main(int argc, char** argv);
 
 ch_vm* ch_vm_create();
 ch_vm* ch_vm_init(ch_vm* vm);
+void ch_vm_cycle(ch_vm* vm);
+size_t ch_vm_decode_instruction_length(ch_vm* vm, char opcode);
+bool ch_vm_check_out_of_bounds(ch_vm* vm, unsigned int address, size_t size);
+char* ch_vm_error_string(unsigned int errno);
 void ch_vm_free(ch_vm* vm);
+
+size_t ch_vm_length_lookup_table[CH_VM_NUM_OPS];
 
 #endif
