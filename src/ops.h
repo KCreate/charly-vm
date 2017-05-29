@@ -31,12 +31,18 @@ enum ch_op {
   ch_op_create_environment,
   ch_op_create_value,
   ch_op_write_to_environment,
-  ch_op_print_environment
+  ch_op_print_environment,
+  ch_op_halt,
+  ch_op_debug_print,
+  ch_op_num_ops
 };
 
 #define CREATE_ENVIRONMENT ch_op_create_environment
 #define CREATE_VALUE ch_op_create_value
 #define WRITE_TO_ENVIRONMENT ch_op_write_to_environment
 #define PRINT_ENVIRONMENT ch_op_print_environment
+#define HALT ch_op_halt
+#define DEBUG_PRINT ch_op_debug_print
+#define CH_VM_NUM_OPS ch_op_num_ops
 
 #endif
