@@ -117,7 +117,7 @@ void ch_buffer_clear(ch_buffer* buffer, char value) {
  * @return bool - Wether memory was copied or not
  * */
 bool ch_buffer_move(ch_buffer* target, ch_buffer* source) {
-  if (target->size > source->size) return false;
+  if (target->size < source->size) return false;
 
   memmove(target->buffer, source->buffer, source->size);
 
