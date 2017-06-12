@@ -24,20 +24,15 @@
  * SOFTWARE.
  */
 
-#ifndef ENVIRONMENT_H
-#define ENVIRONMENT_H
+#include <string>
+#include <cstdint>
+#include <iostream>
 
-#include "constants.h"
+#pragma once
 
-/*
- * Environment
- * */
-struct ch_environment {
-  ch_value* values;
-  size_t size;
-};
+namespace Charly {
 
-ch_environment* ch_environment_create(size_t size);
-ch_environment* ch_environment_init(ch_environment* environment, size_t size);
+  typedef uintptr_t VALUE;
+  typedef uint8_t TYPE;
 
-#endif
+}

@@ -24,42 +24,10 @@
  * SOFTWARE.
  */
 
-#ifndef FRAME_H
-#define FRAME_H
+#include "value.h"
 
-#include "constants.h"
-#include "environment.h"
+namespace Charly {
+  namespace Value {
 
-enum ch_frame_type {
-  ch_frame_type_call,
-  ch_frame_type_exhandler,
-  ch_frame_type_environment,
-  ch_frame_type_redirect
-};
-
-struct ch_frame {
-  ch_frame_type type;
-
-  ch_frame* prev;
-  ch_frame* prev_call;
-  ch_frame* prev_exhandler;
-  ch_frame* prev_environment;
-  ch_frame* prev_redirect;
-
-  unsigned int ref_count;
-
-  union {
-    int return_address;
-    int handler_address;
-    ch_environment* environment;
-    ch_frame* redirect;
-  };
-};
-
-ch_frame ch_frame_create(ch_frame_type type, ch_frame* prev);
-ch_frame ch_frame_create_call(int return_address, ch_frame* prev);
-ch_frame ch_frame_create_exhandler(int handler_address, ch_frame* prev);
-ch_frame ch_frame_create_environment(ch_environment* environment, ch_frame* prev);
-ch_frame ch_frame_create_redirect(ch_frame* frame, ch_frame* prev);
-
-#endif
+  }
+}

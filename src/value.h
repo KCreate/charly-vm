@@ -24,44 +24,48 @@
  * SOFTWARE.
  */
 
-#ifndef VALUE_H
-#define VALUE_H
+#include "charly.h"
 
-#include "constants.h"
-#include "buffer.h"
-#include "environment.h"
+#pragma once
 
-/*
- * Types which are known to the machine
- * */
-enum ch_type {
-  ch_type_numeric,
-  ch_type_string,
-  ch_type_buffer,
-  ch_type_environment,
-  ch_type_function,
-  ch_type_pointer,
-  ch_type_voidptr
-};
+namespace Charly {
 
-// Main value type
-struct ch_value {
-  ch_type type;
-  union {
-    double numval; // numerics
-    ch_buffer buffval; // strings, buffers
-    ch_value* ptrval; // functions, pointers
-    ch_environment* envval; // environment
-    void* voidptr; // pointer to internal stuff
-  };
-};
+  namespace Value {
 
-ch_value ch_value_create(ch_type type);
-ch_value ch_value_create_numeric(double number);
-ch_value ch_value_create_string(char* value);
-ch_value ch_value_create_buffer(ch_buffer* buffer);
-ch_value ch_value_create_pointer(ch_value* pointer);
-ch_value ch_value_create_environment(ch_environment* environment);
-ch_value ch_value_create_voidpointer(void* pointer);
+    namespace Type {
+      enum : TYPE {
+        Numeric = 0x00,
+        Mask = 0x1f
+      };
+    }
 
-#endif
+    /*
+     * Basic fields every data type in Charly has
+     * This is inspired by the way Ruby stores it's values
+     * */
+    struct Basic {
+      VALUE flags;
+      VALUE klass;
+
+      /* Returns the type field in the flags value */
+      TYPE type() {
+        return this->flags & Type::Mask;
+      }
+    };
+
+    /*
+     * Represents numeric values as a double-precision floating-point number
+     * */
+    struct Numeric : public Basic {
+      double value;
+      Numeric(double arg) : value(arg) {}
+
+      /* Returns value casted to an integer */
+      int64_t intval() {
+        return (int64_t)value;
+      }
+    };
+
+  }
+
+}
