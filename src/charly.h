@@ -27,6 +27,9 @@
 #include <string>
 #include <cstdint>
 #include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <optional>
 
 #pragma once
 

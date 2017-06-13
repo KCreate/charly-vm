@@ -24,48 +24,40 @@
  * SOFTWARE.
  */
 
-#include "charly.h"
-
-#pragma once
+#include "scope.h"
 
 namespace Charly {
 
-  namespace Value {
+  namespace Scope {
 
-    /* Different data types */
-    namespace Type {
-      enum Type : TYPE {
-        Numeric = 0x00,
-        Mask = 0x1f
-      };
-    };
+    Container::Container(uint32_t initial_capacity, Container* parent) {
+      this->parent = parent;
+      this->entries = std::vector<Entry>();
+      this->offset_table = std::unordered_map<std::string, uint32_t>();
+      this->ref_count = 0;
 
-    /*
-     * Basic fields every data type in Charly has
-     * This is inspired by the way Ruby stores it's values
-     * */
-    struct Basic {
-      VALUE flags;
-      VALUE klass;
+      // Reserve initial_capacity elements in the entries vector
+      this->entries.reserve(initial_capacity);
 
-      /* Returns the type field in the flags value */
-      TYPE type() {
-        return this->flags & Type::Mask;
-      }
-    };
+      // Update the ref_count of the parent container
+      if (parent) parent->ref_count++;
+    }
 
-    /*
-     * Represents numeric values as a double-precision floating-point number
-     * */
-    struct Numeric : public Basic {
-      double value;
-      Numeric(double arg) : value(arg) {}
+    Entry Container::insert(VALUE value, bool is_constant) {
+      Entry entry = Entry(value, is_constant);
+      this->entries.push_back(entry);
+      return entry;
+    }
 
-      /* Returns value casted to an integer */
-      int64_t intval() {
-        return (int64_t)value;
-      }
-    };
+    bool Container::contains(std::string key) {
+      return this->offset_table.count(key) == 1;
+    }
+
+    bool Container::defined(std::string key) {
+      if (this->contains(key)) return true;
+      if (this->parent == NULL) return false;
+      return this->parent->defined(key);
+    }
 
   }
 

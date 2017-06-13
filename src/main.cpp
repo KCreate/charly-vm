@@ -25,22 +25,34 @@
  */
 
 #include "value.h"
+#include "scope.h"
 
 using namespace std;
+using namespace Charly;
 using namespace Charly::Value;
+using namespace Charly::Scope;
+
+Numeric create_numeric(double value) {
+  return Numeric(value);
+}
 
 int main() {
 
-  Numeric foo = 25;
-  Numeric bar = 25;
-  Numeric baz = foo.value + bar.value;
+  Numeric foo = create_numeric(25);
+  Numeric bar = create_numeric(30);
 
-  if (baz.type() == Type::Numeric) {
-    cout << baz.value << " - " << "Numeric" << endl;
-  } else {
-    cout << baz.value << " - " << "Not Numeric" << endl;
-  }
+  Container frame = Container(2, NULL);
+  frame.insert((VALUE)&foo);
+  frame.insert((VALUE)&bar);
 
+  Numeric* foo_read = ((Numeric *)frame.entries[0].value);
+  Numeric* bar_read = ((Numeric *)frame.entries[1].value);
+
+  foo.value = 100;
+  bar.value = 100;
+
+  cout << foo_read->value << endl;
+  cout << bar_read->value << endl;
 
   return 0;
 }
