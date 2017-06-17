@@ -30,33 +30,20 @@ namespace Charly {
 
   namespace Scope {
 
-    Container::Container(uint32_t initial_capacity, Container* parent) {
-      this->parent = parent;
+    Container::Container(uint32_t initial_capacity) {
       this->entries = std::vector<Entry>();
       this->offset_table = std::unordered_map<std::string, uint32_t>();
-      this->ref_count = 0;
-
-      // Reserve initial_capacity elements in the entries vector
       this->entries.reserve(initial_capacity);
-
-      // Update the ref_count of the parent container
-      if (parent) parent->ref_count++;
     }
 
-    Entry Container::insert(VALUE value, bool is_constant) {
+    Entry& Container::insert(VALUE value, bool is_constant) {
       Entry entry = Entry(value, is_constant);
       this->entries.push_back(entry);
-      return entry;
+      return this->entries.back();
     }
 
     bool Container::contains(std::string key) {
       return this->offset_table.count(key) == 1;
-    }
-
-    bool Container::defined(std::string key) {
-      if (this->contains(key)) return true;
-      if (this->parent == NULL) return false;
-      return this->parent->defined(key);
     }
 
   }

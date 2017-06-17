@@ -24,49 +24,72 @@
  * SOFTWARE.
  */
 
-#include "charly.h"
+#include <cstdint>
+
+#include "util.h"
 
 #pragma once
 
 namespace Charly {
 
-  namespace Value {
+  namespace Primitive {
 
-    /* Different data types */
+    // Basic datatype in the whole VM
+    typedef uintptr_t VALUE;
+    typedef intptr_t SIGNED_VALUE;
+
+    // Data types for the Basic struct
     namespace Type {
-      enum Type : TYPE {
-        Numeric = 0x00,
-        Mask = 0x1f
-      };
+      const VALUE Undefined   = 0b00000000;
+      const VALUE Integer     = 0b00000001;
     };
 
     /*
      * Basic fields every data type in Charly has
      * This is inspired by the way Ruby stores it's values
      * */
-    struct Basic {
-      VALUE flags;
-      VALUE klass;
+    class Basic {
+      public:
+        static const VALUE TypeMask     = 0x05; // bits 0 -> 4
+        static const VALUE RefCountMask = 0x1FFFFFFFE0; // bits 5 -> 36
 
-      /* Returns the type field in the flags value */
-      TYPE type() {
-        return this->flags & Type::Mask;
-      }
+      public:
+        VALUE flags;
+        VALUE klass;
+
+        Basic(VALUE type, VALUE kl) : flags((VALUE)type), klass(kl) {};
+
+        /* Returns the type field in the flags value */
+        VALUE type() {
+          return this->flags & TypeMask;
+        }
+
+        VALUE ref_count() {
+          return this->flags & RefCountMask;
+        }
     };
 
-    /*
-     * Represents numeric values as a double-precision floating-point number
-     * */
-    struct Numeric : public Basic {
-      double value;
-      Numeric(double arg) : value(arg) {}
+    /* Helper methods to operator on the VALUE type */
+    namespace Value {
+      const uint64_t SpecialPointerFlag = 0x00;
+      const uint64_t SpecialIntegerFlag = 0x01;
+      const uint64_t SpecialMask        = 0x7;
 
-      /* Returns value casted to an integer */
-      int64_t intval() {
-        return (int64_t)value;
-      }
-    };
+      /* Maximum integer that can be stored inside a VALUE */
+      const uint64_t MaxInt  = ~(0xE000000000000000);
 
+      /* Read several flag fields */
+      inline uint64_t specials(VALUE value) { return value & SpecialMask; }
+      inline uint64_t is_pointer(VALUE value) { return specials(value) == SpecialPointerFlag; }
+      inline uint64_t is_integer(VALUE value) { return specials(value) == SpecialIntegerFlag; }
+
+      /* Returns this value as a pointer to a Basic structure */
+      inline Basic* basics(VALUE value) { return (Basic *)value; }
+
+      /* Conversion methods between integers and VALUE */
+      const constexpr inline VALUE int_to_value(int64_t val) { return ((VALUE) val << 1) | SpecialPointerFlag; }
+      const constexpr inline int64_t value_to_int(VALUE val) { return ((SIGNED_VALUE)val) >> 1; }
+    }
   }
 
 }

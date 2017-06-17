@@ -24,18 +24,11 @@
  * SOFTWARE.
  */
 
-#include <string>
-#include <cstdint>
-#include <iostream>
-#include <vector>
-#include <unordered_map>
-#include <optional>
+#include "value.h"
+#include "scope.h"
 
 #pragma once
 
 namespace Charly {
-
-  typedef uintptr_t VALUE;
-  typedef uint8_t TYPE;
 
 }

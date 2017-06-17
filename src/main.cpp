@@ -24,35 +24,25 @@
  * SOFTWARE.
  */
 
-#include "value.h"
-#include "scope.h"
+#include <iostream>
+
+#include "charly.h"
 
 using namespace std;
 using namespace Charly;
-using namespace Charly::Value;
+using namespace Charly::Primitive;
 using namespace Charly::Scope;
 
-Numeric create_numeric(double value) {
-  return Numeric(value);
-}
-
 int main() {
+  int64_t foo = 0x7FFFFFFFFFFFFFFF;
 
-  Numeric foo = create_numeric(25);
-  Numeric bar = create_numeric(30);
+  VALUE val = Integer::create(foo);
 
-  Container frame = Container(2, NULL);
-  frame.insert((VALUE)&foo);
-  frame.insert((VALUE)&bar);
+  int64_t restored = Value::value_to_int(val);
 
-  Numeric* foo_read = ((Numeric *)frame.entries[0].value);
-  Numeric* bar_read = ((Numeric *)frame.entries[1].value);
-
-  foo.value = 100;
-  bar.value = 100;
-
-  cout << foo_read->value << endl;
-  cout << bar_read->value << endl;
+  printf("%llx\n", foo);
+  printf("%lx\n", val);
+  printf("%llx\n", restored);
 
   return 0;
 }

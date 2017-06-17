@@ -27,7 +27,11 @@
 #include "value.h"
 
 namespace Charly {
-  namespace Value {
+  namespace Primitive {
+
+    const VALUE Integer::create(int64_t val) {
+      return Value::int_to_value(val);
+    };
 
   }
 }

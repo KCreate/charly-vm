@@ -24,13 +24,19 @@
  * SOFTWARE.
  */
 
-#include "charly.h"
+#include <string>
+#include <cstdint>
+#include <vector>
+#include <unordered_map>
+
+#include "value.h"
 
 #pragma once
 
 namespace Charly {
 
   namespace Scope {
+    using namespace Primitive;
 
     /* Single entry of a container */
     class Entry {
@@ -47,20 +53,14 @@ namespace Charly {
     class Container {
       public:
 
-        /* Pointer to the parent container */
-        Container* parent;
-
         /* Vector of entries in this scope */
         std::vector<Entry> entries;
 
         /* Map from string to offsets into the entries vector */
         std::unordered_map<std::string, uint32_t> offset_table;
 
-        /* Amount of other containers that have this container as a parent */
-        uint32_t ref_count;
-
       public:
-        enum Status : short {
+        enum Status {
           write_success,
 
           write_failed_variable_is_constant,
@@ -71,36 +71,27 @@ namespace Charly {
         };
 
       public:
-        Container(uint32_t initial_capacity = 4, Container* parent = NULL);
+        Container(uint32_t initial_capacity = 4);
 
         /* Tries to read an entry from this container or a parent container */
-        VALUE read(uint32_t level, uint32_t index);
         VALUE read(uint32_t index);
-        VALUE read(std::string key, bool check_parents = true);
-        VALUE& operator[] (uint32_t index);
+        VALUE read(std::string key);
 
         /* Creates new entries to the offset table */
         Status register_offset(std::string, uint32_t index);
 
         /* Insert a new entry into this container */
-        Entry insert(VALUE value, bool is_constant = false);
+        Entry& insert(VALUE value, bool is_constant = false);
 
         /* Writes to an already existing entry */
-        Status write(uint32_t level, uint32_t index, VALUE value);
         Status write(uint32_t index, VALUE value);
-        Status write(std::string key);
+        Status write(std::string key, VALUE value);
 
         /*
          * This method checks wether this container contains a specific key
          * It only checks this container and doesn't search parent containers
          * */
         bool contains(std::string key);
-
-        /*
-         * This methods performs a recursive search on this container
-         * and all of its parent containers.
-         * */
-        bool defined(std::string key);
     };
 
   }
