@@ -28,8 +28,6 @@
 
 #include "gc.h"
 
-using namespace std;
-
 namespace Charly {
   namespace GC {
 
@@ -62,6 +60,12 @@ namespace Charly {
       Cell* cell = this->free_cell;
       if (cell) this->free_cell = this->free_cell->as.free.next;
       return cell;
+    }
+
+    void Collector::free(Cell* cell) {
+      memset(cell, 0, sizeof(Cell));
+      cell->as.free.next = this->free_cell;
+      this->free_cell = cell;
     }
   }
 }

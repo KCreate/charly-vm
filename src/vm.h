@@ -24,9 +24,38 @@
  * SOFTWARE.
  */
 
-#include "value.h"
-#include "scope.h"
+#include "defines.h"
 #include "gc.h"
-#include "vm.h"
+#include "value.h"
 
 #pragma once
+
+namespace Charly {
+  namespace Machine {
+
+    class VM {
+      private:
+        GC::Collector gc;
+
+      // Methods to create new data types
+      public:
+        const VALUE create_object(uint32_t initial_capacity, VALUE klass);
+        const VALUE create_integer(int64_t value);
+        const VALUE create_float(double value);
+
+      // Methods that operate on the VALUE type
+      public:
+        const int64_t integer_value(VALUE value);
+        const double float_value(VALUE value);
+        const bool boolean_value(VALUE value);
+        const VALUE type(VALUE value);
+
+      private:
+        void pretty_print(VALUE value);
+
+      public:
+        VM() : gc(GC::Collector(InitialHeapCount, HeapCellCount)) {}
+        void run();
+    };
+  }
+}

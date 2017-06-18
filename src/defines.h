@@ -25,6 +25,8 @@
  */
 
 #include <cstdint>
+#include <cstdlib>
+#include <string>
 
 #pragma once
 
@@ -43,9 +45,17 @@ namespace Charly {
       const STATUS Success                       = 0x00;
       const STATUS WriteFailedVariableIsConstant = 0x01;
       const STATUS WriteFailedVariableUndefined  = 0x02;
-      const STATUS WriteFailedAlreadyDefined     = 0x03;
-      const STATUS WriteFailedOutOfBounds        = 0x04;
-      const STATUS RegisterFailedAlreadyDefined  = 0x05;
+      const STATUS WriteFailedOutOfBounds        = 0x03;
+      const STATUS RegisterFailedAlreadyDefined  = 0x04;
+
+      /* Human-readable error messages */
+      const std::string str[] = {
+        "Success",
+        "Write failed: Field is a constant",
+        "Write failed: Field doesn't exist",
+        "Write failed: Index out of bounds",
+        "Register failed: Key already defined"
+      };
     }
   }
 
@@ -62,6 +72,15 @@ namespace Charly {
       const VALUE Boolean     = 0x03;
       const VALUE Null        = 0x04;
       const VALUE Object      = 0x05;
+
+      const std::string str[] = {
+        "Undefined",
+        "Integer",
+        "Float",
+        "Boolean",
+        "Null",
+        "Object"
+      };
     }
 
     // Different masks for the flags field in the Basic struct
@@ -98,17 +117,11 @@ namespace Charly {
 
       /* Returns this value as a pointer to a Basic structure */
       inline Basic* basics(VALUE value) { return (Basic *)value; }
-
-      /* Returns the type of this value */
-      const VALUE type(VALUE value);
-
-      /* Constructors for all types */
-      const VALUE Object(uint32_t initial_capacity, VALUE klass);
-      const VALUE Integer(int64_t val);
-      const VALUE Float(double val);
-
-      const int64_t IntegerValue(VALUE val);
-      const double FloatValue(VALUE val);
     }
+  }
+
+  namespace Machine {
+    const size_t InitialHeapCount = 8;
+    const size_t HeapCellCount = 512;
   }
 }

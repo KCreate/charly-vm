@@ -1,6 +1,6 @@
 CC=clang
 OPT=-O0
-OBJS=build/main.o build/value.o build/scope.o build/gc.o
+OBJS=build/main.o build/scope.o build/gc.o build/vm.o
 
 all: objects
 	$(CC) $(OPT) $(OBJS) -std=c++14 -lstdc++ -o bin/vm

@@ -37,8 +37,7 @@ namespace Charly {
      * Basic fields every data type in Charly has
      * This is inspired by the way Ruby stores it's values
      * */
-    class Basic {
-      public:
+    struct Basic {
         VALUE flags;
         VALUE klass;
 
@@ -53,22 +52,14 @@ namespace Charly {
         inline void set_mark(bool val) { this->flags ^= (-val ^ this->flags) & Flag::Mark; }
     };
 
-    class Object {
-      public:
+    struct Object {
         Basic basic;
         Scope::Container* container;
-
-        Object(uint32_t initial_capacity, VALUE klass)
-          : basic(Basic(Type::Object, klass)),
-          container(new Scope::Container(initial_capacity)) {}
     };
 
-    class Float {
-      public:
+    struct Float {
         Basic basic;
         double float_value;
-
-        Float(double val) : basic(Basic(Type::Float, 0)), float_value(val) {}
     };
 
     /* Rotate a given value to the left n times */

@@ -30,12 +30,14 @@
 
 using namespace std;
 using namespace Charly;
+using namespace Charly::Machine;
 using namespace Charly::Primitive;
 
 int main() {
+  VM* vm = new VM();
+  vm->run();
 
-  GC::Collector* gc = new GC::Collector(16, 1024);
+  delete vm;
 
-  delete gc;
   return 0;
 }

@@ -62,6 +62,8 @@ namespace Charly {
       public:
         Collector(size_t heap_initial_count, size_t heap_cell_count);
         Cell* allocate();
+        void free(Cell* cell);
+        void inline free(VALUE value) { this->free((Cell*) value); }
 
         // TODO: Add garbage collection logic
     };
