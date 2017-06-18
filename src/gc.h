@@ -62,6 +62,8 @@ namespace Charly {
       public:
         Collector(size_t heap_initial_count, size_t heap_cell_count);
         Cell* allocate();
+
+        // TODO: Add garbage collection logic
     };
   }
 }

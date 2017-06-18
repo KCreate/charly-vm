@@ -57,6 +57,7 @@ namespace Charly {
       this->free_cell = last_cell;
     }
 
+    // TODO: Garbage collect when there is no more memory left
     Cell* Collector::allocate() {
       Cell* cell = this->free_cell;
       if (cell) this->free_cell = this->free_cell->as.free.next;
