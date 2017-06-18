@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+#include <cstdint>
+
 #pragma once
 
 namespace Charly {

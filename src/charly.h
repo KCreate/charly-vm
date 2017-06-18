@@ -26,6 +26,7 @@
 
 #include "value.h"
 #include "scope.h"
+#include "gc.h"
 
 #pragma once
 

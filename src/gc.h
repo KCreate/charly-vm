@@ -24,60 +24,44 @@
  * SOFTWARE.
  */
 
-#include <string>
 #include <vector>
-#include <unordered_map>
+#include <array>
 
 #include "defines.h"
+#include "value.h"
 
 #pragma once
 
 namespace Charly {
-
-  namespace Scope {
-
-    /* Single entry of a container */
-    class Entry {
-      public:
-        Entry(VALUE arg, bool is_constant) : value(arg), constant(is_constant) {};
-        VALUE value;
-        bool constant;
-    };
+  namespace GC {
 
     /*
-    * Main hash-like data structure supporting fast access to known indices
-    * and slightly-slower access when using hash-values
-    * */
-    class Container {
-      public:
+     * A single cell managed by the GC
+     * */
+    struct Cell {
+      union U {
+        struct {
+          VALUE flags;
+          Cell* next;
+        } free;
+        Primitive::Basic basic;
+        Primitive::Object object;
+        Primitive::Float flonum;
 
-        /* Vector of entries in this scope */
-        std::vector<Entry> entries;
-
-        /* Map from string to offsets into the entries vector */
-        std::unordered_map<std::string, uint32_t> offset_table;
-
-      public:
-        Container(uint32_t initial_capacity = 4);
-        ~Container();
-
-        /* Tries to read an entry from this container or a parent container */
-        VALUE read(uint32_t index);
-        VALUE read(std::string key);
-
-        /* Creates new entries to the offset table */
-        STATUS register_offset(std::string key, uint32_t index);
-
-        /* Insert a new entry into this container */
-        Entry& insert(VALUE value, bool is_constant = false);
-
-        /* Writes to an already existing entry */
-        STATUS write(uint32_t index, VALUE value);
-        STATUS write(std::string key, VALUE value);
-
-        bool contains(std::string key);
+        U() { memset(this, 0, sizeof(U)); }
+      } as;
     };
 
-  }
+    class Collector {
+      private:
+        Cell* free_cell;
+        std::vector<std::vector<Cell>> heaps;
+        std::vector<Cell*> root_nodes;
+        std::vector<Cell*> mark_todo_list;
 
+      public:
+        Collector(size_t heap_initial_count, size_t heap_cell_count);
+        Cell* allocate();
+    };
+  }
 }

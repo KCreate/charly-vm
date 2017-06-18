@@ -26,16 +26,41 @@
 
 #include <iostream>
 
-#include "charly.h"
+#include "gc.h"
 
 using namespace std;
-using namespace Charly;
-using namespace Charly::Primitive;
 
-int main() {
+namespace Charly {
+  namespace GC {
 
-  GC::Collector* gc = new GC::Collector(16, 1024);
+    Collector::Collector(size_t heap_initial_count, size_t heap_cell_count) {
 
-  delete gc;
-  return 0;
+      // Initialize all the heaps
+      this->heaps.reserve(heap_initial_count);
+      while (heap_initial_count--) this->heaps.emplace_back();
+
+      // Fill in the cells for the heaps
+      for (auto &heap : this->heaps) {
+        size_t i = heap_cell_count;
+        while (i--) heap.emplace_back();
+      }
+
+      // Initialize all the cells
+      Cell* last_cell = NULL;
+      for (auto &heap : this->heaps) {
+        for (auto &cell : heap) {
+          cell.as.free.next = last_cell;
+          last_cell = &cell;
+        }
+      }
+
+      this->free_cell = last_cell;
+    }
+
+    Cell* Collector::allocate() {
+      Cell* cell = this->free_cell;
+      if (cell) this->free_cell = this->free_cell->as.free.next;
+      return cell;
+    }
+  }
 }

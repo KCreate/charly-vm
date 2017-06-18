@@ -24,8 +24,6 @@
  * SOFTWARE.
  */
 
-#include <cstdint>
-
 #include "defines.h"
 #include "scope.h"
 
