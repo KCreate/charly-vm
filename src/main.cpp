@@ -31,23 +31,16 @@
 using namespace std;
 using namespace Charly;
 using namespace Charly::Primitive;
-using namespace Charly::Scope;
 
 int main() {
-  VALUE object    = Value::Object(4, 0);
-  VALUE integer   = Value::Integer(25);
-  VALUE floatval  = Value::Float(43.778);
-  VALUE bfalse    = Value::False;
-  VALUE btrue     = Value::True;
-  VALUE null      = Value::Null;
 
   VALUE fields[] = {
-    object,
-    integer,
-    floatval,
-    bfalse,
-    btrue,
-    null
+    Value::Object(4, 0),
+    Value::Integer(25),
+    Value::Float(43.778),
+    Value::False,
+    Value::True,
+    Value::Null
   };
 
   for (int i = 0; i < sizeof(fields) / sizeof(VALUE); i++) {
