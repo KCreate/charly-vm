@@ -53,9 +53,12 @@ namespace Charly {
 
     // Data types for the Basic struct
     namespace Type {
-      const VALUE Undefined   = 0b00000; // 0x0
-      const VALUE Integer     = 0b00001; // 0x1
-      const VALUE Object      = 0b00010; // 0x2
+      const VALUE Undefined   = 0x00;
+      const VALUE Integer     = 0x01;
+      const VALUE Float       = 0x02;
+      const VALUE Boolean     = 0x03;
+      const VALUE Null        = 0x04;
+      const VALUE Object      = 0x05;
     }
 
     // Different masks for the flags field in the Basic struct
@@ -66,25 +69,38 @@ namespace Charly {
 
     /* Helper methods to operator on the VALUE type */
     namespace Value {
-      /* Masks for the special bits */
-      const uint64_t SpecialPointerFlag = 0b000;
-      const uint64_t SpecialIntegerFlag = 0b001;
-      const uint64_t SpecialNullFlag    = 0b010;
-      const uint64_t SpecialMask        = 0b111;
 
-      /* Pre-defined constants for a VALUE */
-      const VALUE Null = SpecialNullFlag;
+      /*
+       * Memory that is allocated via the GC will be aligned to 8 bytes
+       * This means that if VALUE is a pointer, the last 3 bits will be set to 0.
+       * We can use this to our advantage to store some additional information
+       * in there.
+       * */
 
-      /* Read several flag fields */
-      inline uint64_t specials(VALUE value) { return value & SpecialMask; }
-      inline uint64_t is_pointer(VALUE value) { return specials(value) == SpecialPointerFlag; }
-      inline uint64_t is_integer(VALUE value) { return specials(value) == SpecialIntegerFlag; }
+      const VALUE SpecialMask   = 0b00111;
+      const VALUE IPointerFlag  = 0b00000;
+      const VALUE IIntegerFlag  = 0b00001;
+      const VALUE IFloatMask    = 0b00011;
+      const VALUE IFloatFlag    = 0b00010;
+      const VALUE False         = 0b00000;
+      const VALUE True          = 0b10100;
+      const VALUE Null          = 0b01000;
+
+      const inline bool is_special(VALUE value) { return (value == False) || (value == Null) || (value & SpecialMask) != IPointerFlag; }
+      const inline bool is_integer(VALUE value) { return (value & IIntegerFlag) == IIntegerFlag; }
+      const inline bool is_float(VALUE value)   { return (value & IFloatMask) == IFloatFlag; }
+      const inline bool is_false(VALUE value)   { return value == False; }
+      const inline bool is_true(VALUE value)    { return value == True; }
+      const inline bool is_null(VALUE value)    { return value == Null; }
 
       /* Returns this value as a pointer to a Basic structure */
       inline Basic* basics(VALUE value) { return (Basic *)value; }
 
+      /* Returns the type of this value */
+      const inline VALUE type(VALUE value);
+
       /* Conversion methods between integers and VALUE */
-      const constexpr inline VALUE int_to_value(int64_t val) { return ((VALUE) val << 1) | SpecialIntegerFlag; }
+      const constexpr inline VALUE int_to_value(int64_t val) { return ((VALUE) val << 1) | IIntegerFlag; }
       const constexpr inline int64_t value_to_int(VALUE val) { return ((SIGNED_VALUE)val) >> 1; }
     }
   }

@@ -47,8 +47,8 @@ namespace Charly {
         Basic(VALUE type, VALUE kl) : flags((VALUE)type), klass(kl) {};
 
         /* Getters for different flag fields */
-        inline VALUE type() { return this->flags & Flag::Type; }
-        inline VALUE mark() { return this->flags & Flag::Mark; }
+        const inline VALUE type() { return this->flags & Flag::Type; }
+        const inline VALUE mark() { return this->flags & Flag::Mark; }
 
         /* Setters for different flag fields */
         inline void set_type(VALUE val) { this->flags &= (~Flag::Type & val); }
@@ -67,8 +67,23 @@ namespace Charly {
           : basic(Basic(Type::Object, klass)),
           container(new Scope::Container(initial_capacity)) {};
 
-        static const VALUE create(uint32_t initial_capacity, VALUE klass);
+        static VALUE create(uint32_t initial_capacity, VALUE klass);
     };
+
+    namespace Value {
+      const inline VALUE type(VALUE value) {
+
+        /* Constants */
+        if (is_false(value) || is_true(value)) return Type::Boolean;
+        if (is_null(value)) return Type::Null;
+
+        /* More logic required */
+        if (!is_special(value)) return basics(value)->type();
+        if (is_integer(value)) return Type::Integer;
+        if (is_float(value)) return Type::Float;
+        return Type::Undefined;
+      }
+    }
   }
 
 }

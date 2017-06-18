@@ -30,7 +30,7 @@ namespace Charly {
   namespace Primitive {
 
     /* Initialize a new object with a given capacity and class */
-    const VALUE Object::create(uint32_t initial_capacity, VALUE klass) {
+    VALUE Object::create(uint32_t initial_capacity, VALUE klass) {
       VALUE obj = (VALUE)(new Object(initial_capacity, klass));
       return obj;
     }

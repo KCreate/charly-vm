@@ -34,28 +34,30 @@ using namespace Charly::Primitive;
 using namespace Charly::Scope;
 
 int main() {
+  VALUE object    = Object::create(4, 0);
+  VALUE integer   = Value::int_to_value(25);
+  VALUE bfalse    = Value::False;
+  VALUE btrue     = Value::True;
+  VALUE null      = Value::Null;
 
-  Object* obj = (Object *)Object::create(4, 0);
+  VALUE fields[] = {
+    object,
+    integer,
+    bfalse,
+    btrue,
+    null
+  };
 
-  VALUE num = Value::int_to_value(5);
-  VALUE new_num = Value::int_to_value(10);
-
-  obj->container->insert(num, false);
-  obj->container->insert(num, false);
-
-  obj->container->register_offset("foo", 0);
-  obj->container->register_offset("bar", 1);
-
-  cout << obj->container->read("foo") << endl;
-  cout << obj->container->read("bar") << endl;
-
-  obj->container->write("lol", new_num);
-  obj->container->write("bar", new_num);
-
-  cout << obj->container->read("foo") << endl;
-  cout << obj->container->read("bar") << endl;
-
-  delete obj;
+  for (int i = 0; i < 5; i++) {
+    printf("is_special(0x%lx) = %s\n", fields[i], Value::is_special(fields[i]) ? "true" : "false");
+    printf("is_integer(0x%lx) = %s\n", fields[i], Value::is_integer(fields[i]) ? "true" : "false");
+    printf("is_float(0x%lx) = %s\n",   fields[i], Value::is_float(fields[i]) ? "true" : "false");
+    printf("is_false(0x%lx) = %s\n",   fields[i], Value::is_false(fields[i]) ? "true" : "false");
+    printf("is_true(0x%lx) = %s\n",    fields[i], Value::is_true(fields[i]) ? "true" : "false");
+    printf("is_null(0x%lx) = %s\n",    fields[i], Value::is_null(fields[i]) ? "true" : "false");
+    printf("type(0x%lx) = 0x%lx\n",    fields[i], Value::type(fields[i]));
+    printf("\n");
+  }
 
   return 0;
 }
