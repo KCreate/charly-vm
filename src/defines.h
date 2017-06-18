@@ -50,6 +50,7 @@ namespace Charly {
   namespace Primitive {
     class Basic;
     class Object;
+    class Float;
 
     // Data types for the Basic struct
     namespace Type {
@@ -88,7 +89,7 @@ namespace Charly {
 
       const inline bool is_special(VALUE value) { return (value == False) || (value == Null) || (value & SpecialMask) != IPointerFlag; }
       const inline bool is_integer(VALUE value) { return (value & IIntegerFlag) == IIntegerFlag; }
-      const inline bool is_float(VALUE value)   { return (value & IFloatMask) == IFloatFlag; }
+      const inline bool is_ifloat(VALUE value)  { return (value & IFloatMask) == IFloatFlag; }
       const inline bool is_false(VALUE value)   { return value == False; }
       const inline bool is_true(VALUE value)    { return value == True; }
       const inline bool is_null(VALUE value)    { return value == Null; }
@@ -97,12 +98,15 @@ namespace Charly {
       inline Basic* basics(VALUE value) { return (Basic *)value; }
 
       /* Returns the type of this value */
-      const inline VALUE type(VALUE value);
+      const VALUE type(VALUE value);
 
-      /* Conversion methods between integers and VALUE */
-      const constexpr inline VALUE int_to_value(int64_t val) { return ((VALUE) val << 1) | IIntegerFlag; }
-      const constexpr inline int64_t value_to_int(VALUE val) { return ((SIGNED_VALUE)val) >> 1; }
+      /* Constructors for all types */
+      const VALUE Object(uint32_t initial_capacity, VALUE klass);
+      const VALUE Integer(int64_t val);
+      const VALUE Float(double val);
+
+      const int64_t IntegerValue(VALUE val);
+      const double FloatValue(VALUE val);
     }
   }
-
 }

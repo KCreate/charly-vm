@@ -44,7 +44,7 @@ namespace Charly {
         VALUE flags;
         VALUE klass;
 
-        Basic(VALUE type, VALUE kl) : flags((VALUE)type), klass(kl) {};
+        Basic(VALUE type, VALUE kl) : flags((VALUE)type), klass(kl) {}
 
         /* Getters for different flag fields */
         const inline VALUE type() { return this->flags & Flag::Type; }
@@ -55,9 +55,6 @@ namespace Charly {
         inline void set_mark(bool val) { this->flags ^= (-val ^ this->flags) & Flag::Mark; }
     };
 
-    /*
-     * Basic object type
-     * */
     class Object {
       public:
         Basic basic;
@@ -65,24 +62,25 @@ namespace Charly {
 
         Object(uint32_t initial_capacity, VALUE klass)
           : basic(Basic(Type::Object, klass)),
-          container(new Scope::Container(initial_capacity)) {};
-
-        static VALUE create(uint32_t initial_capacity, VALUE klass);
+          container(new Scope::Container(initial_capacity)) {}
     };
 
-    namespace Value {
-      const inline VALUE type(VALUE value) {
+    class Float {
+      public:
+        Basic basic;
+        double float_value;
 
-        /* Constants */
-        if (is_false(value) || is_true(value)) return Type::Boolean;
-        if (is_null(value)) return Type::Null;
+        Float(double val) : basic(Basic(Type::Float, 0)), float_value(val) {}
+    };
 
-        /* More logic required */
-        if (!is_special(value)) return basics(value)->type();
-        if (is_integer(value)) return Type::Integer;
-        if (is_float(value)) return Type::Float;
-        return Type::Undefined;
-      }
+    /* Rotate a given value to the left n times */
+    const constexpr VALUE BIT_ROTL(VALUE v, VALUE n) {
+      return (((v) << (n)) | ((v) >> ((sizeof(v) * 8) - n)));
+    }
+
+    /* Rotate a given value to the right n times */
+    const constexpr VALUE BIT_ROTR(VALUE v, VALUE n) {
+      return (((v) >> (n)) | ((v) << ((sizeof(v) * 8) - n)));
     }
   }
 
