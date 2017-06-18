@@ -26,7 +26,8 @@
 
 #include <cstdint>
 
-#include "util.h"
+#include "defines.h"
+#include "scope.h"
 
 #pragma once
 
@@ -34,62 +35,40 @@ namespace Charly {
 
   namespace Primitive {
 
-    // Basic datatype in the whole VM
-    typedef uintptr_t VALUE;
-    typedef intptr_t SIGNED_VALUE;
-
-    // Data types for the Basic struct
-    namespace Type {
-      const VALUE Undefined   = 0b00000000;
-      const VALUE Integer     = 0b00000001;
-    };
-
     /*
      * Basic fields every data type in Charly has
      * This is inspired by the way Ruby stores it's values
      * */
     class Basic {
       public:
-        static const VALUE TypeMask     = 0x05; // bits 0 -> 4
-        static const VALUE RefCountMask = 0x1FFFFFFFE0; // bits 5 -> 36
-
-      public:
         VALUE flags;
         VALUE klass;
 
         Basic(VALUE type, VALUE kl) : flags((VALUE)type), klass(kl) {};
 
-        /* Returns the type field in the flags value */
-        VALUE type() {
-          return this->flags & TypeMask;
-        }
+        /* Getters for different flag fields */
+        inline VALUE type() { return this->flags & Flag::Type; }
+        inline VALUE mark() { return this->flags & Flag::Mark; }
 
-        VALUE ref_count() {
-          return this->flags & RefCountMask;
-        }
+        /* Setters for different flag fields */
+        inline void set_type(VALUE val) { this->flags &= (~Flag::Type & val); }
+        inline void set_mark(bool val) { this->flags ^= (-val ^ this->flags) & Flag::Mark; }
     };
 
-    /* Helper methods to operator on the VALUE type */
-    namespace Value {
-      const uint64_t SpecialPointerFlag = 0x00;
-      const uint64_t SpecialIntegerFlag = 0x01;
-      const uint64_t SpecialMask        = 0x7;
+    /*
+     * Basic object type
+     * */
+    class Object {
+      public:
+        Basic basic;
+        Scope::Container* container;
 
-      /* Maximum integer that can be stored inside a VALUE */
-      const uint64_t MaxInt  = ~(0xE000000000000000);
+        Object(uint32_t initial_capacity, VALUE klass)
+          : basic(Basic(Type::Object, klass)),
+          container(new Scope::Container(initial_capacity)) {};
 
-      /* Read several flag fields */
-      inline uint64_t specials(VALUE value) { return value & SpecialMask; }
-      inline uint64_t is_pointer(VALUE value) { return specials(value) == SpecialPointerFlag; }
-      inline uint64_t is_integer(VALUE value) { return specials(value) == SpecialIntegerFlag; }
-
-      /* Returns this value as a pointer to a Basic structure */
-      inline Basic* basics(VALUE value) { return (Basic *)value; }
-
-      /* Conversion methods between integers and VALUE */
-      const constexpr inline VALUE int_to_value(int64_t val) { return ((VALUE) val << 1) | SpecialPointerFlag; }
-      const constexpr inline int64_t value_to_int(VALUE val) { return ((SIGNED_VALUE)val) >> 1; }
-    }
+        static const VALUE create(uint32_t initial_capacity, VALUE klass);
+    };
   }
 
 }

@@ -29,14 +29,13 @@
 #include <vector>
 #include <unordered_map>
 
-#include "value.h"
+#include "defines.h"
 
 #pragma once
 
 namespace Charly {
 
   namespace Scope {
-    using namespace Primitive;
 
     /* Single entry of a container */
     class Entry {
@@ -60,37 +59,23 @@ namespace Charly {
         std::unordered_map<std::string, uint32_t> offset_table;
 
       public:
-        enum Status {
-          write_success,
-
-          write_failed_variable_is_constant,
-          write_failed_variable_undefined,
-          write_failed_already_defined,
-
-          register_failed_already_defined
-        };
-
-      public:
         Container(uint32_t initial_capacity = 4);
+        ~Container();
 
         /* Tries to read an entry from this container or a parent container */
         VALUE read(uint32_t index);
         VALUE read(std::string key);
 
         /* Creates new entries to the offset table */
-        Status register_offset(std::string, uint32_t index);
+        STATUS register_offset(std::string key, uint32_t index);
 
         /* Insert a new entry into this container */
         Entry& insert(VALUE value, bool is_constant = false);
 
         /* Writes to an already existing entry */
-        Status write(uint32_t index, VALUE value);
-        Status write(std::string key, VALUE value);
+        STATUS write(uint32_t index, VALUE value);
+        STATUS write(std::string key, VALUE value);
 
-        /*
-         * This method checks wether this container contains a specific key
-         * It only checks this container and doesn't search parent containers
-         * */
         bool contains(std::string key);
     };
 

@@ -29,6 +29,7 @@
 namespace Charly {
 
   namespace Scope {
+    using namespace Primitive;
 
     Container::Container(uint32_t initial_capacity) {
       this->entries = std::vector<Entry>();
@@ -36,10 +37,45 @@ namespace Charly {
       this->entries.reserve(initial_capacity);
     }
 
-    Entry& Container::insert(VALUE value, bool is_constant) {
-      Entry entry = Entry(value, is_constant);
+    VALUE Container::read(uint32_t index) {
+      if (index >= this->entries.size()) return Value::Null;
+      return this->entries[index].value;
+    }
+
+    VALUE Container::read(std::string key) {
+      if (!this->contains(key)) return Value::Null;
+      uint32_t index = this->offset_table[key];
+      return this->read(index);
+    }
+
+    STATUS Container::register_offset(std::string key, uint32_t index) {
+      if (this->contains(key)) return Status::RegisterFailedAlreadyDefined;
+      this->offset_table[key] = index;
+      return Status::Success;
+    }
+
+    Entry& Container::insert(VALUE value, bool constant) {
+      Entry entry = Entry(value, constant);
       this->entries.push_back(entry);
       return this->entries.back();
+    }
+
+    STATUS Container::write(uint32_t index, VALUE value) {
+      if (index >= this->entries.size()) return Status::WriteFailedOutOfBounds;
+      Entry& entry = this->entries[index];
+      if (entry.constant) return Status::WriteFailedVariableIsConstant;
+      entry.value = value;
+      return Status::Success;
+    }
+
+    STATUS Container::write(std::string key, VALUE value) {
+      if (!this->contains(key)) {
+        this->insert(value, false);
+        this->register_offset(key, this->entries.size() - 1);
+        return Status::Success;
+      }
+
+      return this->write(this->offset_table[key], value);
     }
 
     bool Container::contains(std::string key) {

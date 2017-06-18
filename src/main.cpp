@@ -34,15 +34,28 @@ using namespace Charly::Primitive;
 using namespace Charly::Scope;
 
 int main() {
-  int64_t foo = 0x7FFFFFFFFFFFFFFF;
 
-  VALUE val = Integer::create(foo);
+  Object* obj = (Object *)Object::create(4, 0);
 
-  int64_t restored = Value::value_to_int(val);
+  VALUE num = Value::int_to_value(5);
+  VALUE new_num = Value::int_to_value(10);
 
-  printf("%llx\n", foo);
-  printf("%lx\n", val);
-  printf("%llx\n", restored);
+  obj->container->insert(num, false);
+  obj->container->insert(num, false);
+
+  obj->container->register_offset("foo", 0);
+  obj->container->register_offset("bar", 1);
+
+  cout << obj->container->read("foo") << endl;
+  cout << obj->container->read("bar") << endl;
+
+  obj->container->write("lol", new_num);
+  obj->container->write("bar", new_num);
+
+  cout << obj->container->read("foo") << endl;
+  cout << obj->container->read("bar") << endl;
+
+  delete obj;
 
   return 0;
 }
