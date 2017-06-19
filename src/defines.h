@@ -78,13 +78,13 @@ namespace Charly {
 
     // Data types for the Basic struct
     namespace Type {
-      const VALUE Undefined   = 0x00;
-      const VALUE Integer     = 0x01;
-      const VALUE Float       = 0x02;
-      const VALUE Boolean     = 0x03;
-      const VALUE Null        = 0x04;
-      const VALUE Object      = 0x05;
-      const VALUE Frame       = 0x06;
+      const VALUE Undefined = 0x00;
+      const VALUE Integer   = 0x01;
+      const VALUE Float     = 0x02;
+      const VALUE Boolean   = 0x03;
+      const VALUE Null      = 0x04;
+      const VALUE Object    = 0x05;
+      const VALUE Frame     = 0x06;
 
       const std::string str[] = {
         "Undefined",

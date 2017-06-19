@@ -37,14 +37,17 @@ namespace Charly {
 
     Frame* VM::pop_frame() {
       Frame* frame = this->frames;
-      if (frame) this->frames = this->frames->parent;
+
+      if (frame) {
+          this->frames = this->frames->parent;
+      }
+
       return frame;
     }
 
-    Frame* VM::push_frame(VALUE self) {
+    Frame* VM::push_frame(VALUE self, Frame* parent_environment_frame) {
       GC::Cell* cell = this->gc->allocate();
-      cell->as.basic.flags = Type::Frame;
-      cell->as.frame.init(this->frames, self);
+      cell->as.frame.init(this->frames, parent_environment_frame, self);
       this->frames = (Frame *)cell;
       return (Frame *)cell;
     }
@@ -56,7 +59,7 @@ namespace Charly {
       while (frame) {
         STATUS read_stat = frame->environment->read(key, result);
         if (read_stat == Status::Success) return Status::Success;
-        frame = frame->parent;
+        frame = frame->parent_environment_frame;
       }
 
       return Status::ReadFailedVariableUndefined;
@@ -68,7 +71,7 @@ namespace Charly {
       // Move to the correct frame
       while (level--) {
         if (!frame) return Status::ReadFailedTooDeep;
-        frame = frame->parent;
+        frame = frame->parent_environment_frame;
       }
 
       if (!frame) return Status::ReadFailedTooDeep;
@@ -82,7 +85,7 @@ namespace Charly {
       while (frame) {
         STATUS write_stat = frame->environment->write(key, value, false);
         if (write_stat == Status::Success) return Status::Success;
-        frame = frame->parent;
+        frame = frame->parent_environment_frame;
       }
 
       return Status::WriteFailedVariableUndefined;
@@ -94,7 +97,7 @@ namespace Charly {
       // Move to the correct frame
       while (level--) {
         if (!frame) return Status::WriteFailedTooDeep;
-        frame = frame->parent;
+        frame = frame->parent_environment_frame;
       }
 
       if (!frame) return Status::ReadFailedTooDeep;

@@ -38,24 +38,27 @@ int main() {
 
   VM* vm = new VM();
 
-  vm->push_stack(100);
-  vm->push_stack(200);
-  vm->push_stack(300);
-  vm->push_stack(400);
+  // Create frame structure
+  Frame* top_frame = vm->push_frame(0x00, NULL);
+  Frame* clos_frame = vm->push_frame(0x00, top_frame);
 
-  VALUE res1 = 0x00;
-  VALUE res2 = 0x00;
-  VALUE res3 = 0x00;
-  VALUE res4 = 0x00;
-  VALUE res5 = 0x00;
-  VALUE res6 = 0x00;
+  // Insert dummy values
+  clos_frame->environment->insert(0xff);
+  clos_frame->environment->register_offset("foo", 0);
 
-  printf("Status: 0x%016lx, Value: 0x%016lx\n", vm->pop_stack(&res1), res1 );
-  printf("Status: 0x%016lx, Value: 0x%016lx\n", vm->pop_stack(&res2), res2 );
-  printf("Status: 0x%016lx, Value: 0x%016lx\n", vm->pop_stack(&res3), res3 );
-  printf("Status: 0x%016lx, Value: 0x%016lx\n", vm->pop_stack(&res4), res4 );
-  printf("Status: 0x%016lx, Value: 0x%016lx\n", vm->pop_stack(&res5), res5 );
-  printf("Status: 0x%016lx, Value: 0x%016lx\n", vm->pop_stack(&res6), res6 );
+  vm->pop_frame();
+
+  vm->push_frame(0x00, clos_frame);
+
+  // Try to read these values from the function frame
+  VALUE foo;
+  vm->read(&foo, "foo");
+
+  cout << foo << endl;
+
+  vm->pop_frame();
+
+  cout << "Correct frame restored: " << (vm->frames == top_frame ? "true" : "false") << endl;
 
   delete vm;
   return 0;

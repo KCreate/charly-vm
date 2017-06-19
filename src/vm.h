@@ -39,14 +39,14 @@ namespace Charly {
     class VM {
       private:
         GC::Collector* gc;
-        Frame* frames;
         std::stack<VALUE> stack;
 
       public:
+        Frame* frames;
 
         // Methods that operate on the VM's frames
         Frame* pop_frame();
-        Frame* push_frame(VALUE self);
+        Frame* push_frame(VALUE self, Frame* parent_environment_frame);
 
         // Read and write from/to the frame hierarchy
         const STATUS read(VALUE* result, std::string key);

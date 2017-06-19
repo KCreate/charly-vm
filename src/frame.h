@@ -38,16 +38,14 @@ namespace Charly {
     struct Frame {
       VALUE flags;
       Frame* parent;
+      Frame* parent_environment_frame;
       Scope::Container* environment;
       VALUE self;
 
-      Frame(Frame* parent, VALUE self) : parent(parent), self(self) {
-        this->environment = new Scope::Container();
-      };
-
-      void init(Frame* parent, VALUE self) {
-        this->flags = Primitive::Type::Frame;
+      void init(Frame* parent, Frame* parent_environment_frame, VALUE self) {
+        this->flags = Primitive::Type::ControlFrame;
         this->parent = parent;
+        this->parent_environment_frame = parent_environment_frame;
         this->self = self;
         if (this->environment) delete this->environment;
         this->environment = new Scope::Container();
