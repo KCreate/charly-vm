@@ -72,7 +72,7 @@ namespace Charly {
 
         /* Writes to an already existing entry */
         STATUS write(uint32_t index, VALUE value);
-        STATUS write(std::string key, VALUE value);
+        STATUS write(std::string key, VALUE value, bool init_on_undefined = false);
 
         bool contains(std::string key);
     };

@@ -35,27 +35,56 @@ using namespace Charly::Primitive;
 using namespace Charly::Scope;
 
 int main() {
-  Container map;
 
-  map.insert(100);
-  map.insert(200);
-  map.insert(300);
+  VM* vm = new VM();
+  Frame* fr0 = vm->push_frame(0x00);
+  Frame* fr1 = vm->push_frame(0x00);
 
-  map.register_offset("foo", 0);
-  map.register_offset("bar", 1);
-  map.register_offset("baz", 2);
+  fr0->environment.insert(0x200);
+  fr0->environment.insert(0x400);
+  fr0->environment.register_offset("foo", 0);
+  fr0->environment.register_offset("bar", 1);
 
-  VALUE res1 = 0x00;
-  VALUE res2 = 0x00;
-  VALUE res3 = 0x00;
+  fr1->environment.insert(0x600);
+  fr1->environment.insert(0x800);
+  fr1->environment.register_offset("baz", 0);
+  fr1->environment.register_offset("qux", 1);
 
-  STATUS stat1 = map.read("foo", &res1);
-  STATUS stat2 = map.read("bar", &res2);
-  STATUS stat3 = map.read("baz", &res3);
+  std::string keys[] = {"foo", "bar", "baz", "qux", "helloWorld", "boye"};
+  std::vector<std::pair<uint32_t, uint32_t>> num_keys = {
+    {0, 0},
+    {0, 1},
+    {1, 0},
+    {1, 1},
+    {2, 0},
+    {2, 1},
+    {1, 2},
+    {1, 3}
+  };
 
-  cout << "stat1: " << stat1 << ", value: " << res1 << endl;
-  cout << "stat2: " << stat2 << ", value: " << res2 << endl;
-  cout << "stat3: " << stat3 << ", value: " << res3 << endl;
+  for (int i = 0; i < num_keys.size(); i++) {
+    VALUE result = 0x00;
+    STATUS stat = vm->read(&result, num_keys[i].second, num_keys[i].first);
 
+    printf("Status: 0x%lx\n", stat);
+    printf("Value:  0x%lx\n", result);
+    printf("\n");
+  }
+
+  vm->write("foo", 0xffffff);
+  vm->write("bar", 0xffffff);
+  vm->write("baz", 0xffffff);
+  vm->write("qux", 0xffffff);
+
+  for (int i = 0; i < num_keys.size(); i++) {
+    VALUE result = 0x00;
+    STATUS stat = vm->read(&result, num_keys[i].second, num_keys[i].first);
+
+    printf("Status: 0x%lx\n", stat);
+    printf("Value:  0x%lx\n", result);
+    printf("\n");
+  }
+
+  delete vm;
   return 0;
 }

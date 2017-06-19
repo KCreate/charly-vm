@@ -33,6 +33,7 @@ using namespace std;
 namespace Charly {
   namespace Machine {
     using namespace Primitive;
+    using namespace Scope;
 
     Frame* VM::pop_frame() {
       Frame* frame = this->frames;
@@ -40,21 +41,69 @@ namespace Charly {
       return frame;
     }
 
-    Frame& VM::peek_frame() {
-      return *this->frames;
-    }
-
-    Frame& VM::push_frame(VALUE self) {
+    Frame* VM::push_frame(VALUE self) {
       Frame* frame = new Frame(this->frames, self);
       this->frames = frame;
-      return *frame;
+      return frame;
+    }
+
+    const STATUS VM::read(VALUE* result, std::string key) {
+      Frame* frame = this->frames;
+      if (!frame) return Status::ReadFailedVariableUndefined;
+
+      while (frame) {
+        STATUS read_stat = frame->environment.read(key, result);
+        if (read_stat == Status::Success) return Status::Success;
+        frame = frame->parent;
+      }
+
+      return Status::ReadFailedVariableUndefined;
+    }
+
+    const STATUS VM::read(VALUE* result, uint32_t index, uint32_t level) {
+      Frame* frame = this->frames;
+
+      // Move to the correct frame
+      while (level--) {
+        if (!frame) return Status::ReadFailedTooDeep;
+        frame = frame->parent;
+      }
+
+      if (!frame) return Status::ReadFailedTooDeep;
+      return frame->environment.read(index, result);
+    }
+
+    const STATUS VM::write(std::string key, VALUE value) {
+      Frame* frame = this->frames;
+      if (!frame) return Status::ReadFailedVariableUndefined;
+
+      while (frame) {
+        STATUS write_stat = frame->environment.write(key, value, false);
+        if (write_stat == Status::Success) return Status::Success;
+        frame = frame->parent;
+      }
+
+      return Status::WriteFailedVariableUndefined;
+    }
+
+    const STATUS VM::write(uint32_t index, uint32_t level, VALUE value) {
+      Frame* frame = this->frames;
+
+      // Move to the correct frame
+      while (level--) {
+        if (!frame) return Status::WriteFailedTooDeep;
+        frame = frame->parent;
+      }
+
+      if (!frame) return Status::ReadFailedTooDeep;
+      return frame->environment.write(index, value);
     }
 
     const VALUE VM::create_object(uint32_t initial_capacity, VALUE klass) {
       GC::Cell* cell = this->gc.allocate();
       cell->as.basic.flags = Type::Object;
       cell->as.basic.klass = klass;
-      cell->as.object.container = new Scope::Container(initial_capacity);
+      cell->as.object.container = new Container(initial_capacity);
       return (VALUE)cell;
     }
 

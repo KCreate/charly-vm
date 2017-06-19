@@ -55,8 +55,14 @@ namespace Charly {
       // Methods that operate on the VM's frames
       public:
         Frame* pop_frame();
-        Frame& peek_frame();
-        Frame& push_frame(VALUE self);
+        Frame* push_frame(VALUE self);
+
+      // Read and write from/to the frame hierarchy
+      public:
+        const STATUS read(VALUE* result, std::string key);
+        const STATUS read(VALUE* result, uint32_t index, uint32_t level);
+        const STATUS write(std::string key, VALUE value);
+        const STATUS write(uint32_t index, uint32_t level, VALUE value);
 
       // Methods to create new data types
       public:

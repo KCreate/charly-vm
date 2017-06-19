@@ -69,8 +69,10 @@ namespace Charly {
       return Status::Success;
     }
 
-    STATUS Container::write(std::string key, VALUE value) {
+    STATUS Container::write(std::string key, VALUE value, bool init_on_undefined) {
       if (!this->contains(key)) {
+        if (!init_on_undefined) return Status::WriteFailedVariableUndefined;
+
         this->insert(value, false);
         this->register_offset(key, this->entries.size() - 1);
         return Status::Success;
