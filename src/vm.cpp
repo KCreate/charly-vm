@@ -156,7 +156,7 @@ namespace Charly {
       // Allocate from the GC
       GC::Cell* cell = this->gc->allocate();
       cell->as.basic.flags = Type::Float;
-      cell->as.basic.klass = 0; // TODO: Replace with actual class
+      cell->as.basic.klass = Value::Null; // TODO: Replace with actual class
       cell->as.flonum.float_value = value;
       return (VALUE)cell;
     }
@@ -164,12 +164,12 @@ namespace Charly {
     const VALUE VM::create_function(std::string name, size_t required_arguments, Frame* context) {
       GC::Cell* cell = this->gc->allocate();
       cell->as.basic.flags = Type::Function;
-      cell->as.basic.klass = 0; // TODO: Replace with actual class
+      cell->as.basic.klass = Value::Null; // TODO: Replace with actual class
       cell->as.function.name = name;
       cell->as.function.required_arguments = required_arguments;
       cell->as.function.context = context;
       cell->as.function.bound_self_set = false;
-      cell->as.function.bound_self = 0;
+      cell->as.function.bound_self = Value::Null;
       return (VALUE)cell;
     }
 
