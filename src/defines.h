@@ -36,35 +36,39 @@ namespace Charly {
   typedef VALUE STATUS;
   typedef intptr_t SIGNED_VALUE;
 
+  /* Status codes returned by some Container methods */
+  namespace Status {
+    const STATUS Success                        = 0x00;
+    const STATUS WriteFailedVariableIsConstant  = 0x01;
+    const STATUS WriteFailedVariableUndefined   = 0x02;
+    const STATUS WriteFailedOutOfBounds         = 0x03;
+    const STATUS WriteFailedTooDeep             = 0x04;
+    const STATUS RegisterFailedAlreadyDefined   = 0x05;
+    const STATUS ReadFailedVariableUndefined    = 0x06;
+    const STATUS ReadFailedOutOfBounds          = 0x07;
+    const STATUS ReadFailedTooDeep              = 0x08;
+    const STATUS PopFailed                      = 0x09;
+    const STATUS PeekFailed                     = 0x0a;
+
+    /* Human-readable error messages */
+    const std::string str[] = {
+      "Success",
+      "Write failed: Field is a constant",
+      "Write failed: Field doesn't exist",
+      "Write failed: Index out of bounds",
+      "Write failed: Environment doesn't exist",
+      "Register failed: Key already defined",
+      "Read failed: Field doesn't exist",
+      "Read failed: Index out of bounds",
+      "Read failed: Environment doesn't exist",
+      "Stack Pop failed: Stack is empty",
+      "Stack Peek failed: Stack is empty"
+    };
+  }
+
   namespace Scope {
     class Entry;
     class Container;
-
-    /* Status codes returned by some Container methods */
-    namespace Status {
-      const STATUS Success                        = 0x00;
-      const STATUS WriteFailedVariableIsConstant  = 0x01;
-      const STATUS WriteFailedVariableUndefined   = 0x02;
-      const STATUS WriteFailedOutOfBounds         = 0x03;
-      const STATUS WriteFailedTooDeep             = 0x04;
-      const STATUS RegisterFailedAlreadyDefined   = 0x05;
-      const STATUS ReadFailedVariableUndefined    = 0x06;
-      const STATUS ReadFailedOutOfBounds          = 0x07;
-      const STATUS ReadFailedTooDeep              = 0x08;
-
-      /* Human-readable error messages */
-      const std::string str[] = {
-        "Success",
-        "Write failed: Field is a constant",
-        "Write failed: Field doesn't exist",
-        "Write failed: Index out of bounds",
-        "Write failed: Environment doesn't exist",
-        "Register failed: Key already defined",
-        "Read failed: Field doesn't exist",
-        "Read failed: Index out of bounds",
-        "Read failed: Environment doesn't exist"
-      };
-    }
   }
 
   namespace Primitive {

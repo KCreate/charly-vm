@@ -37,53 +37,25 @@ using namespace Charly::Scope;
 int main() {
 
   VM* vm = new VM();
-  Frame* fr0 = vm->push_frame(0x00);
-  Frame* fr1 = vm->push_frame(0x00);
 
-  fr0->environment->insert(0x200);
-  fr0->environment->insert(0x400);
-  fr0->environment->register_offset("foo", 0);
-  fr0->environment->register_offset("bar", 1);
+  vm->push_stack(100);
+  vm->push_stack(200);
+  vm->push_stack(300);
+  vm->push_stack(400);
 
-  fr1->environment->insert(0x600);
-  fr1->environment->insert(0x800);
-  fr1->environment->register_offset("baz", 0);
-  fr1->environment->register_offset("qux", 1);
+  VALUE res1 = 0x00;
+  VALUE res2 = 0x00;
+  VALUE res3 = 0x00;
+  VALUE res4 = 0x00;
+  VALUE res5 = 0x00;
+  VALUE res6 = 0x00;
 
-  std::string keys[] = {"foo", "bar", "baz", "qux", "helloWorld", "boye"};
-  std::vector<std::pair<uint32_t, uint32_t>> num_keys = {
-    {0, 0},
-    {0, 1},
-    {1, 0},
-    {1, 1},
-    {2, 0},
-    {2, 1},
-    {1, 2},
-    {1, 3}
-  };
-
-  for (int i = 0; i < num_keys.size(); i++) {
-    VALUE result = 0x00;
-    STATUS stat = vm->read(&result, num_keys[i].second, num_keys[i].first);
-
-    printf("Status: 0x%lx\n", stat);
-    printf("Value:  0x%lx\n", result);
-    printf("\n");
-  }
-
-  vm->write("foo", 0xffffff);
-  vm->write("bar", 0xffffff);
-  vm->write("baz", 0xffffff);
-  vm->write("qux", 0xffffff);
-
-  for (int i = 0; i < num_keys.size(); i++) {
-    VALUE result = 0x00;
-    STATUS stat = vm->read(&result, num_keys[i].second, num_keys[i].first);
-
-    printf("Status: 0x%lx\n", stat);
-    printf("Value:  0x%lx\n", result);
-    printf("\n");
-  }
+  printf("Status: 0x%016lx, Value: 0x%016lx\n", vm->pop_stack(&res1), res1 );
+  printf("Status: 0x%016lx, Value: 0x%016lx\n", vm->pop_stack(&res2), res2 );
+  printf("Status: 0x%016lx, Value: 0x%016lx\n", vm->pop_stack(&res3), res3 );
+  printf("Status: 0x%016lx, Value: 0x%016lx\n", vm->pop_stack(&res4), res4 );
+  printf("Status: 0x%016lx, Value: 0x%016lx\n", vm->pop_stack(&res5), res5 );
+  printf("Status: 0x%016lx, Value: 0x%016lx\n", vm->pop_stack(&res6), res6 );
 
   delete vm;
   return 0;

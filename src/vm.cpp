@@ -101,6 +101,24 @@ namespace Charly {
       return frame->environment->write(index, value);
     }
 
+    const STATUS VM::pop_stack(VALUE* result) {
+      if (this->stack.size() == 0) return Status::PopFailed;
+      VALUE& top = this->stack.top();
+      this->stack.pop();
+      *result = top;
+      return Status::Success;
+    }
+
+    const STATUS VM::peek_stack(VALUE* result) {
+      if (this->stack.size() == 0) return Status::PeekFailed;
+      *result = this->stack.top();
+      return Status::Success;
+    }
+
+    const void VM::push_stack(VALUE value) {
+      this->stack.push(value);
+    }
+
     const VALUE VM::create_object(uint32_t initial_capacity, VALUE klass) {
       GC::Cell* cell = this->gc->allocate();
       cell->as.basic.flags = Type::Object;

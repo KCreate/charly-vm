@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+#include <stack>
+
 #include "defines.h"
 #include "gc.h"
 #include "value.h"
@@ -38,27 +40,31 @@ namespace Charly {
       private:
         GC::Collector* gc;
         Frame* frames;
+        std::stack<VALUE> stack;
 
-      // Methods that operate on the VM's frames
       public:
+
+        // Methods that operate on the VM's frames
         Frame* pop_frame();
         Frame* push_frame(VALUE self);
 
-      // Read and write from/to the frame hierarchy
-      public:
+        // Read and write from/to the frame hierarchy
         const STATUS read(VALUE* result, std::string key);
         const STATUS read(VALUE* result, uint32_t index, uint32_t level);
         const STATUS write(std::string key, VALUE value);
         const STATUS write(uint32_t index, uint32_t level, VALUE value);
 
-      // Methods to create new data types
-      public:
+        // Stack manipulation
+        const STATUS pop_stack(VALUE* result);
+        const STATUS peek_stack(VALUE* result);
+        const void push_stack(VALUE value);
+
+        // Methods to create new data types
         const VALUE create_object(uint32_t initial_capacity, VALUE klass);
         const VALUE create_integer(int64_t value);
         const VALUE create_float(double value);
 
-      // Methods that operate on the VALUE type
-      public:
+        // Methods that operate on the VALUE type
         const int64_t integer_value(VALUE value);
         const double float_value(VALUE value);
         const bool boolean_value(VALUE value);
