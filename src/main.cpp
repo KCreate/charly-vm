@@ -37,6 +37,16 @@ int main() {
   VM* vm = new VM();
   vm->run();
 
+  vm->push_frame(25);
+  vm->push_frame(25);
+  vm->push_frame(25);
+
+  vm->peek_frame().self = 0;
+
+  cout << vm->pop_frame()->self << endl;
+  cout << vm->pop_frame()->self << endl;
+  cout << vm->pop_frame()->self << endl;
+
   delete vm;
 
   return 0;

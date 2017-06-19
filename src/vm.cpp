@@ -34,6 +34,22 @@ namespace Charly {
   namespace Machine {
     using namespace Primitive;
 
+    Frame* VM::pop_frame() {
+      Frame* frame = this->frames;
+      if (frame) this->frames = this->frames->parent;
+      return frame;
+    }
+
+    Frame& VM::peek_frame() {
+      return *this->frames;
+    }
+
+    Frame& VM::push_frame(VALUE self) {
+      Frame* frame = new Frame(this->frames, self);
+      this->frames = frame;
+      return *frame;
+    }
+
     const VALUE VM::create_object(uint32_t initial_capacity, VALUE klass) {
       GC::Cell* cell = this->gc.allocate();
       cell->as.basic.flags = Type::Object;
@@ -109,6 +125,10 @@ namespace Charly {
 
     void VM::pretty_print(VALUE value) {
       printf("0x%016lx = %s\n", value, Type::str[this->type(value)].c_str());
+    }
+
+    void VM::init() {
+      cout << "initalizing vm at " << this << endl;
     }
 
     void VM::run() {

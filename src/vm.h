@@ -27,15 +27,36 @@
 #include "defines.h"
 #include "gc.h"
 #include "value.h"
+#include "scope.h"
 
 #pragma once
 
 namespace Charly {
   namespace Machine {
 
+    /*
+     * Control frames introduce new environments and branch logic
+     * */
+    struct Frame {
+      Frame* parent;
+      Scope::Container environment;
+      VALUE self;
+
+      Frame(Frame* parent, VALUE self) : parent(parent), self(self) {};
+
+      // TODO: Add VM specific control values here
+    };
+
     class VM {
       private:
         GC::Collector gc;
+        Frame* frames;
+
+      // Methods that operate on the VM's frames
+      public:
+        Frame* pop_frame();
+        Frame& peek_frame();
+        Frame& push_frame(VALUE self);
 
       // Methods to create new data types
       public:
@@ -54,7 +75,10 @@ namespace Charly {
         void pretty_print(VALUE value);
 
       public:
-        VM() : gc(GC::Collector(InitialHeapCount, HeapCellCount)) {}
+        VM() : gc(GC::Collector(InitialHeapCount, HeapCellCount)) {
+          this->init();
+        }
+        void init();
         void run();
     };
   }
