@@ -84,7 +84,8 @@ namespace Charly {
       const VALUE Boolean   = 0x03;
       const VALUE Null      = 0x04;
       const VALUE Object    = 0x05;
-      const VALUE Frame     = 0x06;
+      const VALUE Function  = 0x06;
+      const VALUE Frame     = 0x07;
 
       const std::string str[] = {
         "Undefined",
@@ -93,6 +94,7 @@ namespace Charly {
         "Boolean",
         "Null",
         "Object",
+        "Function",
         "Frame"
       };
     }
@@ -101,6 +103,7 @@ namespace Charly {
     namespace Flag {
       const VALUE Type = 0x1f; // 0..4
       const VALUE Mark = 0x20; // 5
+      const VALUE Anon = 0x40; // 6
     }
 
     /* Helper methods to operator on the VALUE type */
@@ -135,6 +138,9 @@ namespace Charly {
   }
 
   namespace Machine {
+    struct Frame;
+    struct VM;
+
     const size_t InitialHeapCount = 8;
     const size_t HeapCellCount = 512;
   }

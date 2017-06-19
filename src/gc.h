@@ -48,10 +48,16 @@ namespace Charly {
         Primitive::Basic basic;
         Primitive::Object object;
         Primitive::Float flonum;
+        Primitive::Function function;
         Machine::Frame frame;
 
         U() { memset(this, 0, sizeof(U)); }
+        ~U() {}
       } as;
+
+      Cell() { memset(this, 0, sizeof(Cell)); }
+      Cell(const Cell& cell) {}
+      ~Cell() {}
     };
 
     class Collector {

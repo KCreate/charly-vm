@@ -161,6 +161,18 @@ namespace Charly {
       return (VALUE)cell;
     }
 
+    const VALUE VM::create_function(std::string name, size_t required_arguments, Frame* context) {
+      GC::Cell* cell = this->gc->allocate();
+      cell->as.basic.flags = Type::Function;
+      cell->as.basic.klass = 0; // TODO: Replace with actual class
+      cell->as.function.name = name;
+      cell->as.function.required_arguments = required_arguments;
+      cell->as.function.context = context;
+      cell->as.function.bound_self_set = false;
+      cell->as.function.bound_self = 0;
+      return (VALUE)cell;
+    }
+
     const int64_t VM::integer_value(VALUE value) {
       return ((SIGNED_VALUE)value) >> 1;
     }

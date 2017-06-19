@@ -46,19 +46,17 @@ int main() {
   clos_frame->environment->insert(0xff);
   clos_frame->environment->register_offset("foo", 0);
 
+  VALUE func = vm->create_function("myfunction", 0, vm->top_frame());
+  clos_frame->environment->insert(func);
+  clos_frame->environment->register_offset("myfunction", 0);
+
   vm->pop_frame();
+  vm->push_frame(0x00, ((Function *)(func))->context);
 
-  vm->push_frame(0x00, clos_frame);
-
-  // Try to read these values from the function frame
   VALUE foo;
   vm->read(&foo, "foo");
 
-  cout << foo << endl;
-
-  vm->pop_frame();
-
-  cout << "Correct frame restored: " << (vm->frames == top_frame ? "true" : "false") << endl;
+  cout << "foo = " << foo << endl;
 
   delete vm;
   return 0;

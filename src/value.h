@@ -41,15 +41,18 @@ namespace Charly {
         VALUE flags;
         VALUE klass;
 
+        Basic() : flags(0), klass(0) {}
         Basic(VALUE type, VALUE kl) : flags((VALUE)type), klass(kl) {}
 
         /* Getters for different flag fields */
         const inline VALUE type() { return this->flags & Flag::Type; }
         const inline VALUE mark() { return this->flags & Flag::Mark; }
+        const inline VALUE anon() { return this->flags & Flag::Anon; }
 
         /* Setters for different flag fields */
-        inline void set_type(VALUE val) { this->flags &= (~Flag::Type & val); }
+        inline void set_type(VALUE val) { this->flags &= (~(Flag::Type) & val); }
         inline void set_mark(bool val) { this->flags ^= (-val ^ this->flags) & Flag::Mark; }
+        inline void set_anon(bool val) { this->flags ^= (-val ^ this->flags) & Flag::Anon; }
     };
 
     struct Object {
@@ -60,6 +63,19 @@ namespace Charly {
     struct Float {
         Basic basic;
         double float_value;
+    };
+
+    struct Function {
+      Basic basic;
+      std::string name;
+      size_t required_arguments;
+      Machine::Frame* context;
+      bool bound_self_set;
+      VALUE bound_self;
+
+      inline Function(const Function& func) {}
+
+      // TODO: Add block, argumentlist and bound argumentlist
     };
 
     /* Rotate a given value to the left n times */
