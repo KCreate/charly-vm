@@ -36,6 +36,8 @@
 
 namespace Charly {
   namespace Machine {
+    using namespace Primitive;
+
     class VM {
       private:
         GC::Collector* gc;
@@ -47,7 +49,7 @@ namespace Charly {
         // Methods that operate on the VM's frames
         Frame* pop_frame();
         inline Frame* top_frame() { return this->frames; }
-        Frame* push_frame(VALUE self, Frame* parent_environment_frame);
+        Frame* push_frame(VALUE self, Frame* parent_environment_frame, Function* calling_function);
 
         // Read and write from/to the frame hierarchy
         const STATUS read(VALUE* result, std::string key);

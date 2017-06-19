@@ -41,11 +41,12 @@ namespace Charly {
       return frame;
     }
 
-    Frame* VM::push_frame(VALUE self, Frame* parent_environment_frame) {
+    Frame* VM::push_frame(VALUE self, Frame* parent_environment_frame, Function* calling_function) {
       GC::Cell* cell = this->gc->allocate();
       cell->as.frame.flags = Type::Frame;
       cell->as.frame.parent = this->frames;
       cell->as.frame.parent_environment_frame = parent_environment_frame;
+      cell->as.frame.calling_function = calling_function;
       cell->as.frame.environment = new Container(4);
       cell->as.frame.self = self;
       this->frames = (Frame *)cell;
@@ -207,28 +208,11 @@ namespace Charly {
       return Type::Undefined;
     }
 
-    void VM::pretty_print(VALUE value) {
-      printf("0x%016lx = %s\n", value, Type::str[this->type(value)].c_str());
-    }
-
     void VM::init() {
-      cout << "initalizing vm at " << this << endl;
+      cout << "Initalizing vm at " << this << endl;
     }
 
     void VM::run() {
-      VALUE vals[] = {
-        this->create_integer(25),
-        this->create_integer(25),
-        this->create_float(6.5),
-        this->create_float(34.7888),
-        this->create_object(4, 0),
-        this->create_object(4, 0)
-      };
-
-      for (int i = 0; i < sizeof(vals) / sizeof(VALUE); i++) {
-        this->pretty_print(vals[i]);
-        if (!Value::is_special(vals[i])) this->gc->free(vals[i]);
-      }
     }
 
   }

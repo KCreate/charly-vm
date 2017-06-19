@@ -32,6 +32,8 @@
 
 namespace Charly {
   namespace Machine {
+    using namespace Primitive;
+
     /*
      * Frames introduce new environments and branch logic
      * */
@@ -39,6 +41,7 @@ namespace Charly {
       VALUE flags;
       Frame* parent;
       Frame* parent_environment_frame;
+      Function* calling_function;
       Scope::Container* environment;
       VALUE self;
 

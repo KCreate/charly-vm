@@ -37,26 +37,7 @@ using namespace Charly::Scope;
 int main() {
 
   VM* vm = new VM();
-
-  // Create frame structure
-  Frame* top_frame = vm->push_frame(0x00, NULL);
-  Frame* clos_frame = vm->push_frame(0x00, top_frame);
-
-  // Insert dummy values
-  clos_frame->environment->insert(0xff);
-  clos_frame->environment->register_offset("foo", 0);
-
-  VALUE func = vm->create_function("myfunction", 0, vm->top_frame());
-  clos_frame->environment->insert(func);
-  clos_frame->environment->register_offset("myfunction", 0);
-
-  vm->pop_frame();
-  vm->push_frame(0x00, ((Function *)(func))->context);
-
-  VALUE foo;
-  vm->read(&foo, "foo");
-
-  cout << "foo = " << foo << endl;
+  vm->run();
 
   delete vm;
   return 0;

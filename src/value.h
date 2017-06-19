@@ -73,8 +73,6 @@ namespace Charly {
       bool bound_self_set;
       VALUE bound_self;
 
-      inline Function(const Function& func) {}
-
       // TODO: Add block, argumentlist and bound argumentlist
     };
 
