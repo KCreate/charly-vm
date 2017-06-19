@@ -37,17 +37,17 @@ namespace Charly {
 
     Frame* VM::pop_frame() {
       Frame* frame = this->frames;
-
-      if (frame) {
-          this->frames = this->frames->parent;
-      }
-
+      if (frame) this->frames = this->frames->parent;
       return frame;
     }
 
     Frame* VM::push_frame(VALUE self, Frame* parent_environment_frame) {
       GC::Cell* cell = this->gc->allocate();
-      cell->as.frame.init(this->frames, parent_environment_frame, self);
+      cell->as.frame.flags = Type::Frame;
+      cell->as.frame.parent = this->frames;
+      cell->as.frame.parent_environment_frame = parent_environment_frame;
+      cell->as.frame.environment = new Container(4);
+      cell->as.frame.self = self;
       this->frames = (Frame *)cell;
       return (Frame *)cell;
     }

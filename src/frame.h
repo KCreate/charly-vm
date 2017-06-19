@@ -42,15 +42,6 @@ namespace Charly {
       Scope::Container* environment;
       VALUE self;
 
-      void init(Frame* parent, Frame* parent_environment_frame, VALUE self) {
-        this->flags = Primitive::Type::Frame;
-        this->parent = parent;
-        this->parent_environment_frame = parent_environment_frame;
-        if (this->environment) delete this->environment;
-        this->environment = new Scope::Container();
-        this->self = self;
-      }
-
       // TODO: Add VM specific control values here
     };
   }
