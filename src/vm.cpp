@@ -42,9 +42,11 @@ namespace Charly {
     }
 
     Frame* VM::push_frame(VALUE self) {
-      Frame* frame = new Frame(this->frames, self);
-      this->frames = frame;
-      return frame;
+      GC::Cell* cell = this->gc->allocate();
+      cell->as.basic.flags = Type::Frame;
+      cell->as.frame.init(this->frames, self);
+      this->frames = (Frame *)cell;
+      return (Frame *)cell;
     }
 
     const STATUS VM::read(VALUE* result, std::string key) {
@@ -52,7 +54,7 @@ namespace Charly {
       if (!frame) return Status::ReadFailedVariableUndefined;
 
       while (frame) {
-        STATUS read_stat = frame->environment.read(key, result);
+        STATUS read_stat = frame->environment->read(key, result);
         if (read_stat == Status::Success) return Status::Success;
         frame = frame->parent;
       }
@@ -70,7 +72,7 @@ namespace Charly {
       }
 
       if (!frame) return Status::ReadFailedTooDeep;
-      return frame->environment.read(index, result);
+      return frame->environment->read(index, result);
     }
 
     const STATUS VM::write(std::string key, VALUE value) {
@@ -78,7 +80,7 @@ namespace Charly {
       if (!frame) return Status::ReadFailedVariableUndefined;
 
       while (frame) {
-        STATUS write_stat = frame->environment.write(key, value, false);
+        STATUS write_stat = frame->environment->write(key, value, false);
         if (write_stat == Status::Success) return Status::Success;
         frame = frame->parent;
       }
@@ -96,11 +98,11 @@ namespace Charly {
       }
 
       if (!frame) return Status::ReadFailedTooDeep;
-      return frame->environment.write(index, value);
+      return frame->environment->write(index, value);
     }
 
     const VALUE VM::create_object(uint32_t initial_capacity, VALUE klass) {
-      GC::Cell* cell = this->gc.allocate();
+      GC::Cell* cell = this->gc->allocate();
       cell->as.basic.flags = Type::Object;
       cell->as.basic.klass = klass;
       cell->as.object.container = new Container(initial_capacity);
@@ -131,7 +133,7 @@ namespace Charly {
       }
 
       // Allocate from the GC
-      GC::Cell* cell = this->gc.allocate();
+      GC::Cell* cell = this->gc->allocate();
       cell->as.basic.flags = Type::Float;
       cell->as.basic.klass = 0; // TODO: Replace with actual class
       cell->as.flonum.float_value = value;
@@ -192,7 +194,7 @@ namespace Charly {
 
       for (int i = 0; i < sizeof(vals) / sizeof(VALUE); i++) {
         this->pretty_print(vals[i]);
-        if (!Value::is_special(vals[i])) this->gc.free(vals[i]);
+        if (!Value::is_special(vals[i])) this->gc->free(vals[i]);
       }
     }
 

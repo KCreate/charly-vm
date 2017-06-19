@@ -40,15 +40,15 @@ int main() {
   Frame* fr0 = vm->push_frame(0x00);
   Frame* fr1 = vm->push_frame(0x00);
 
-  fr0->environment.insert(0x200);
-  fr0->environment.insert(0x400);
-  fr0->environment.register_offset("foo", 0);
-  fr0->environment.register_offset("bar", 1);
+  fr0->environment->insert(0x200);
+  fr0->environment->insert(0x400);
+  fr0->environment->register_offset("foo", 0);
+  fr0->environment->register_offset("bar", 1);
 
-  fr1->environment.insert(0x600);
-  fr1->environment.insert(0x800);
-  fr1->environment.register_offset("baz", 0);
-  fr1->environment.register_offset("qux", 1);
+  fr1->environment->insert(0x600);
+  fr1->environment->insert(0x800);
+  fr1->environment->register_offset("baz", 0);
+  fr1->environment->register_offset("qux", 1);
 
   std::string keys[] = {"foo", "bar", "baz", "qux", "helloWorld", "boye"};
   std::vector<std::pair<uint32_t, uint32_t>> num_keys = {

@@ -80,6 +80,7 @@ namespace Charly {
       const VALUE Boolean     = 0x03;
       const VALUE Null        = 0x04;
       const VALUE Object      = 0x05;
+      const VALUE Frame       = 0x06;
 
       const std::string str[] = {
         "Undefined",
@@ -87,7 +88,8 @@ namespace Charly {
         "Float",
         "Boolean",
         "Null",
-        "Object"
+        "Object",
+        "Frame"
       };
     }
 

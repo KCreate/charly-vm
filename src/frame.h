@@ -24,50 +24,37 @@
  * SOFTWARE.
  */
 
-#include <vector>
-#include <array>
-
 #include "defines.h"
 #include "value.h"
-#include "frame.h"
+#include "scope.h"
 
 #pragma once
 
 namespace Charly {
-  namespace GC {
-
+  namespace Machine {
     /*
-     * A single cell managed by the GC
+     * Control frames introduce new environments and branch logic
      * */
-    struct Cell {
-      union U {
-        struct {
-          VALUE flags;
-          Cell* next;
-        } free;
-        Primitive::Basic basic;
-        Primitive::Object object;
-        Primitive::Float flonum;
-        Machine::Frame frame;
+    struct Frame {
+      VALUE flags;
+      Frame* parent;
+      Scope::Container* environment;
+      VALUE self;
 
-        U() { memset(this, 0, sizeof(U)); }
-      } as;
-    };
+      Frame(Frame* parent, VALUE self) : parent(parent), self(self) {
+        this->environment = new Scope::Container();
+      };
 
-    class Collector {
-      private:
-        Cell* free_cell;
-        std::vector<std::vector<Cell>> heaps;
-        std::vector<Cell*> root_nodes;
-        std::vector<Cell*> mark_todo_list;
+      void init(Frame* parent, VALUE self) {
+        this->flags = Primitive::Type::Frame;
+        this->parent = parent;
+        this->self = self;
+        if (this->environment) delete this->environment;
+        this->environment = new Scope::Container();
+      }
 
-      public:
-        Collector(size_t heap_initial_count, size_t heap_cell_count);
-        Cell* allocate();
-        void free(Cell* cell);
-        void inline free(VALUE value) { this->free((Cell*) value); }
-
-        // TODO: Add garbage collection logic
+      // TODO: Add VM specific control values here
     };
   }
 }
+
