@@ -76,7 +76,7 @@ namespace Charly {
         void pretty_print(VALUE value);
 
       public:
-        VM() : gc(new GC::Collector(InitialHeapCount, HeapCellCount)) {
+        VM() : gc(new GC::Collector(InitialHeapCount, HeapCellCount)), frames(NULL) {
           this->init();
         }
         void init();
