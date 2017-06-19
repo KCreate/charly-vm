@@ -32,22 +32,30 @@ using namespace std;
 using namespace Charly;
 using namespace Charly::Machine;
 using namespace Charly::Primitive;
+using namespace Charly::Scope;
 
 int main() {
-  VM* vm = new VM();
-  vm->run();
+  Container map;
 
-  vm->push_frame(25);
-  vm->push_frame(25);
-  vm->push_frame(25);
+  map.insert(100);
+  map.insert(200);
+  map.insert(300);
 
-  vm->peek_frame().self = 0;
+  map.register_offset("foo", 0);
+  map.register_offset("bar", 1);
+  map.register_offset("baz", 2);
 
-  cout << vm->pop_frame()->self << endl;
-  cout << vm->pop_frame()->self << endl;
-  cout << vm->pop_frame()->self << endl;
+  VALUE res1 = 0x00;
+  VALUE res2 = 0x00;
+  VALUE res3 = 0x00;
 
-  delete vm;
+  STATUS stat1 = map.read("foo", &res1);
+  STATUS stat2 = map.read("bar", &res2);
+  STATUS stat3 = map.read("baz", &res3);
+
+  cout << "stat1: " << stat1 << ", value: " << res1 << endl;
+  cout << "stat2: " << stat2 << ", value: " << res2 << endl;
+  cout << "stat3: " << stat3 << ", value: " << res3 << endl;
 
   return 0;
 }

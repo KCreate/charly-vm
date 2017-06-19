@@ -59,11 +59,10 @@ namespace Charly {
 
       public:
         Container(uint32_t initial_capacity = 4);
-        ~Container();
 
         /* Tries to read an entry from this container or a parent container */
-        VALUE read(uint32_t index);
-        VALUE read(std::string key);
+        STATUS read(uint32_t index, VALUE* result);
+        STATUS read(std::string key, VALUE* result);
 
         /* Creates new entries to the offset table */
         STATUS register_offset(std::string key, uint32_t index);

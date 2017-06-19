@@ -42,11 +42,14 @@ namespace Charly {
 
     /* Status codes returned by some Container methods */
     namespace Status {
-      const STATUS Success                       = 0x00;
-      const STATUS WriteFailedVariableIsConstant = 0x01;
-      const STATUS WriteFailedVariableUndefined  = 0x02;
-      const STATUS WriteFailedOutOfBounds        = 0x03;
-      const STATUS RegisterFailedAlreadyDefined  = 0x04;
+      const STATUS Success                        = 0x00;
+      const STATUS WriteFailedVariableIsConstant  = 0x01;
+      const STATUS WriteFailedVariableUndefined   = 0x02;
+      const STATUS WriteFailedOutOfBounds         = 0x03;
+      const STATUS RegisterFailedAlreadyDefined   = 0x04;
+      const STATUS ReadFailedVariableUndefined    = 0x05;
+      const STATUS ReadFailedOutOfBounds          = 0x06;
+      const STATUS ReadFailedTooDeep              = 0x07;
 
       /* Human-readable error messages */
       const std::string str[] = {
@@ -54,7 +57,10 @@ namespace Charly {
         "Write failed: Field is a constant",
         "Write failed: Field doesn't exist",
         "Write failed: Index out of bounds",
-        "Register failed: Key already defined"
+        "Register failed: Key already defined",
+        "Read failed: Field doesn't exist",
+        "Read failed: Index out of bounds",
+        "Read failed: Environment doesn't exist"
       };
     }
   }

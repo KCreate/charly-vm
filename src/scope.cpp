@@ -37,15 +37,16 @@ namespace Charly {
       this->entries.reserve(initial_capacity);
     }
 
-    VALUE Container::read(uint32_t index) {
-      if (index >= this->entries.size()) return Value::Null;
-      return this->entries[index].value;
+    STATUS Container::read(uint32_t index, VALUE* result) {
+      if (index >= this->entries.size()) return Status::ReadFailedOutOfBounds;
+      *result = this->entries[index].value;
+      return Status::Success;
     }
 
-    VALUE Container::read(std::string key) {
-      if (!this->contains(key)) return Value::Null;
+    STATUS Container::read(std::string key, VALUE* result) {
+      if (!this->contains(key)) return Status::ReadFailedVariableUndefined;
       uint32_t index = this->offset_table[key];
-      return this->read(index);
+      return this->read(index, result);
     }
 
     STATUS Container::register_offset(std::string key, uint32_t index) {
