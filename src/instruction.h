@@ -27,7 +27,6 @@
 #include <vector>
 
 #include "defines.h"
-
 #include "opcode.h"
 
 #pragma once
@@ -38,124 +37,14 @@ namespace Charly {
     // Forward declaration, original is inside block.h
     struct InstructionBlock;
 
-    enum class ThrowType {
-      Return,
-      Throw,
-      Break,
-      Continue,
-      Finish
-    };
-
-    struct Instruction {
-      uint8_t opcode;
-
-      union {
-        struct ReadSymbol {
-          ID symbol;
-        };
-
-        struct ReadMemberSymbol {
-          ID symbol;
-        };
-
-        struct SetSymbol {
-          ID symbol;
-        };
-
-        struct SetMemberSymbol {
-          ID symbol;
-        };
-
-        struct PutValue {
-          ID value;
-        };
-
-        struct PutString {
-          char* data;
-          uint32_t size;
-          uint32_t capacity;
-        };
-
-        struct PutFloat {
-          double value;
-        };
-
-        struct PutFunction {
-          ID id;
-          InstructionBlock* block;
-          bool anonymous;
-          uint32_t argc;
-          std::vector<ID> argumentlist;
-        };
-
-        struct PutCFunction {
-          ID id;
-          VALUE (* fpointer)();
-          uint32_t argc;
-        };
-
-        struct PutArray {
-          uint32_t size;
-        };
-
-        struct PutHash {
-          uint32_t size;
-        };
-
-        struct PutClass {
-          ID id;
-          uint32_t parent_class_count;
-        };
-
-        struct RegisterLocal {
-          ID id;
-          uint32_t offset;
-        };
-
-        struct MakeConstant {
-          uint32_t offset;
-        };
-
-        struct Pop {
-          uint32_t count;
-        };
-
-        struct Topn {
-          uint32_t offset;
-        };
-
-        struct Setn {
-          uint32_t offset;
-        };
-
-        struct AdjustStack {
-          uint32_t count;
-        };
-
-        struct Call {
-          uint32_t argc;
-        };
-
-        struct CallMember {
-          uint32_t argc;
-        };
-
-        struct Throw {
-          ThrowType type;
-        };
-
-        struct Branch {
-          uint32_t offset;
-        };
-
-        struct BranchIf {
-          uint32_t offset;
-        };
-
-        struct BranchUnless {
-          uint32_t offset;
-        };
-      } as;
+    namespace ThrowType {
+      enum : uint8_t {
+        Return,
+        Throw,
+        Break,
+        Continue,
+        Finish
+      };
     };
   };
 };

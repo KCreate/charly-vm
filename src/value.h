@@ -26,6 +26,7 @@
 
 #include "defines.h"
 #include "scope.h"
+#include "block.h"
 
 #pragma once
 
@@ -70,6 +71,7 @@ namespace Charly {
       std::string name;
       uint32_t required_arguments;
       Machine::Frame* context;
+      Machine::InstructionBlock* block;
       bool bound_self_set;
       VALUE bound_self;
 

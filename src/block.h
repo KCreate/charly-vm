@@ -37,7 +37,8 @@ namespace Charly {
     struct InstructionBlock {
       ID id;
       uint32_t lvarcount;
-      std::vector<Instruction> seq;
+      uint8_t* data;
+      uint32_t data_size;
     };
 
   };

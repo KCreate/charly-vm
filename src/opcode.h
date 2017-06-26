@@ -31,7 +31,7 @@
 namespace Charly {
   namespace Machine {
 
-    enum class Opcode {
+    enum Opcode : uint8_t {
 
       // Do nothing
       Nop = 0x00,

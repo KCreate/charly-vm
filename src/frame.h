@@ -27,6 +27,7 @@
 #include "defines.h"
 #include "value.h"
 #include "scope.h"
+#include "block.h"
 
 #pragma once
 
@@ -41,9 +42,11 @@ namespace Charly {
       VALUE flags;
       Frame* parent;
       Frame* parent_environment_frame;
-      Function* calling_function;
+      Function* function;
+      InstructionBlock* last_block;
       Scope::Container* environment;
       VALUE self;
+      uint8_t* return_address;
 
       // TODO: Add VM specific control values here
     };

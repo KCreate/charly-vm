@@ -41,14 +41,19 @@ namespace Charly {
       return frame;
     }
 
-    Frame* VM::push_frame(VALUE self, Frame* parent_environment_frame, Function* calling_function) {
+    Frame* VM::push_frame(VALUE self,
+                          Function* function,
+                          uint8_t* return_address) {
+
       GC::Cell* cell = this->gc->allocate();
       cell->as.frame.flags = Type::Frame;
       cell->as.frame.parent = this->frames;
-      cell->as.frame.parent_environment_frame = parent_environment_frame;
-      cell->as.frame.calling_function = calling_function;
+      cell->as.frame.parent_environment_frame = function->context;
+      cell->as.frame.function = function;
+      cell->as.frame.last_block = this->frames ? this->frames->function->block : NULL;
       cell->as.frame.environment = new Container(4);
       cell->as.frame.self = self;
+      cell->as.frame.return_address = return_address;
       this->frames = (Frame *)cell;
       return (Frame *)cell;
     }
@@ -162,13 +167,18 @@ namespace Charly {
       return (VALUE)cell;
     }
 
-    VALUE VM::create_function(std::string name, uint32_t required_arguments, Frame* context) {
+    VALUE VM::create_function(std::string name,
+                              uint32_t required_arguments,
+                              Frame* context,
+                              InstructionBlock* block) {
+
       GC::Cell* cell = this->gc->allocate();
       cell->as.basic.flags = Type::Function;
       cell->as.basic.klass = Value::Null; // TODO: Replace with actual class
       cell->as.function.name = name;
       cell->as.function.required_arguments = required_arguments;
       cell->as.function.context = context;
+      cell->as.function.block = block;
       cell->as.function.bound_self_set = false;
       cell->as.function.bound_self = Value::Null;
       return (VALUE)cell;
@@ -209,11 +219,64 @@ namespace Charly {
       return Type::Undefined;
     }
 
+    Opcode VM::fetch_instruction() {
+      if (this->ip == NULL) return Opcode::Nop;
+      return *(Opcode *)this->ip;
+    }
+
+    uint32_t VM::decode_instruction_length() {
+      return 1;
+    }
+
+    void VM::call(uint32_t argc) {
+      if (this->stack.size() < 1) panic("Not enough items on the stack for call");
+
+      Function* function; this->pop_stack((VALUE *)&function);
+
+      // TODO: Handle as runtime error
+      if (this->type((VALUE)function) != Type::Function) panic("Popped value isn't a function");
+
+      // Push a control frame for the function
+      // TODO: Correct self value
+      this->push_frame(Value::Null, function, this->ip + 1);
+      this->ip = function->block->data;
+    }
+
+    void VM::stacktrace() {
+      Frame* frame = this->frames;
+
+      int i = 0;
+      cout << i++ << " : (" << (void*)this->ip << ")" << endl;
+      while (frame) {
+        Function* func = frame->function;
+
+        cout << i++ << " : (";
+        cout << frame->function->name << " : ";
+        cout << (void*)frame->function->block->data << "[" << frame->function->block->data_size << "] : ";
+        cout << (void*)frame->return_address;
+        cout << ")" << endl;
+        frame = frame->parent;
+      }
+    }
+
     void VM::init() {
-      cout << "Initalizing vm at " << this << endl;
+      this->frames = NULL; // Initialize top-level here
+      this->ip = NULL;
+
+      InstructionBlock* main_block = new InstructionBlock{ 0x00, 0, (new uint8_t[32] { 0 }), 32 };
+      VALUE main_function = this->create_function("__charly_init", 0, NULL, main_block);
+
+      InstructionBlock* foo_block = new InstructionBlock{ 0x00, 0, (new uint8_t[32] { 0 }), 32 };
+      VALUE foo_function = this->create_function("foo", 0, NULL, foo_block);
+
+      this->push_stack(foo_function);
+      this->push_stack(main_function);
     }
 
     void VM::run() {
+      this->call(0); // Call the main function that was pushed in the init method
+      this->call(0);
+      this->stacktrace();
     }
 
   }

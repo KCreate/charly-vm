@@ -46,13 +46,16 @@ namespace Charly {
         GC::Collector* gc;
         std::stack<VALUE> stack;
         Frame* frames;
+        uint8_t* ip;
 
       public:
 
         // Methods that operate on the VM's frames
         Frame* pop_frame();
         inline Frame* top_frame() { return this->frames; }
-        Frame* push_frame(VALUE self, Frame* parent_environment_frame, Function* calling_function);
+        Frame* push_frame(VALUE self,
+                          Function* calling_function,
+                          uint8_t* return_address);
 
         // Read and write from/to the frame hierarchy
         STATUS read(VALUE* result, std::string key);
@@ -69,7 +72,10 @@ namespace Charly {
         VALUE create_object(uint32_t initial_capacity, VALUE klass);
         VALUE create_integer(int64_t value);
         VALUE create_float(double value);
-        VALUE create_function(std::string name, uint32_t required_arguments, Frame* context);
+        VALUE create_function(std::string name,
+                              uint32_t required_arguments,
+                              Frame* context,
+                              InstructionBlock* block);
 
         // Methods that operate on the VALUE type
         int64_t integer_value(VALUE value);
@@ -77,11 +83,18 @@ namespace Charly {
         bool boolean_value(VALUE value);
         VALUE type(VALUE value);
 
+        // Execution
+        Opcode fetch_instruction();
+        uint32_t decode_instruction_length();
+        void call(uint32_t argc);
+
       private:
         void pretty_print(VALUE value);
+        void inline panic(std::string message) { std::cout << "Panic: " << message << std::endl; exit(1); }
+        void stacktrace();
 
       public:
-        VM() : gc(new GC::Collector(InitialHeapCount, HeapCellCount)), frames(NULL) {
+        VM() : gc(new GC::Collector(InitialHeapCount, HeapCellCount)) {
           this->init();
         }
         void init();
