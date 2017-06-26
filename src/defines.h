@@ -142,7 +142,7 @@ namespace Charly {
     struct Frame;
     struct VM;
 
-    const size_t InitialHeapCount = 8;
-    const size_t HeapCellCount = 512;
+    const uint32_t InitialHeapCount = 8;
+    const uint32_t HeapCellCount = 512;
   }
 }

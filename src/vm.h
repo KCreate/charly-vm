@@ -67,7 +67,7 @@ namespace Charly {
         const VALUE create_object(uint32_t initial_capacity, VALUE klass);
         const VALUE create_integer(int64_t value);
         const VALUE create_float(double value);
-        const VALUE create_function(std::string name, size_t required_arguments, Frame* context);
+        const VALUE create_function(std::string name, uint32_t required_arguments, Frame* context);
 
         // Methods that operate on the VALUE type
         const int64_t integer_value(VALUE value);

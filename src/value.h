@@ -68,7 +68,7 @@ namespace Charly {
     struct Function {
       Basic basic;
       std::string name;
-      size_t required_arguments;
+      uint32_t required_arguments;
       Machine::Frame* context;
       bool bound_self_set;
       VALUE bound_self;

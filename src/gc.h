@@ -68,7 +68,7 @@ namespace Charly {
         std::vector<Cell*> mark_todo_list;
 
       public:
-        Collector(size_t heap_initial_count, size_t heap_cell_count);
+        Collector(uint32_t heap_initial_count, uint32_t heap_cell_count);
         Cell* allocate();
         void free(Cell* cell);
         void inline free(VALUE value) { this->free((Cell*) value); }

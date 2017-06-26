@@ -162,7 +162,7 @@ namespace Charly {
       return (VALUE)cell;
     }
 
-    const VALUE VM::create_function(std::string name, size_t required_arguments, Frame* context) {
+    const VALUE VM::create_function(std::string name, uint32_t required_arguments, Frame* context) {
       GC::Cell* cell = this->gc->allocate();
       cell->as.basic.flags = Type::Function;
       cell->as.basic.klass = Value::Null; // TODO: Replace with actual class

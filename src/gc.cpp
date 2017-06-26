@@ -31,7 +31,7 @@
 namespace Charly {
   namespace GC {
 
-    Collector::Collector(size_t heap_initial_count, size_t heap_cell_count) {
+    Collector::Collector(uint32_t heap_initial_count, uint32_t heap_cell_count) {
 
       // Initialize all the heaps
       this->heaps.reserve(heap_initial_count);
@@ -39,7 +39,7 @@ namespace Charly {
 
       // Fill in the cells for the heaps
       for (auto &heap : this->heaps) {
-        size_t i = heap_cell_count;
+        uint32_t i = heap_cell_count;
         while (i--) heap.emplace_back();
       }
 
