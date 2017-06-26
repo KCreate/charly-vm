@@ -42,7 +42,8 @@ namespace Charly {
       Return,
       Throw,
       Break,
-      Continue
+      Continue,
+      Finish
     };
 
     struct Instruction {
