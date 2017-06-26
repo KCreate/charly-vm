@@ -33,8 +33,9 @@
 namespace Charly {
 
   typedef uintptr_t VALUE;
-  typedef VALUE STATUS;
   typedef intptr_t SIGNED_VALUE;
+  typedef VALUE STATUS;
+  typedef VALUE ID;
 
   /* Status codes returned by some Container methods */
   namespace Status {

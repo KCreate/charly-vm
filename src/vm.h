@@ -31,7 +31,7 @@
 #include "value.h"
 #include "scope.h"
 #include "frame.h"
-#include "opcode.h"
+#include "instruction.h"
 
 #pragma once
 
