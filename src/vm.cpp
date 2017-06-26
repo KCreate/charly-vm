@@ -53,7 +53,7 @@ namespace Charly {
       return (Frame *)cell;
     }
 
-    const STATUS VM::read(VALUE* result, std::string key) {
+    STATUS VM::read(VALUE* result, std::string key) {
       Frame* frame = this->frames;
       if (!frame) return Status::ReadFailedVariableUndefined;
 
@@ -66,7 +66,7 @@ namespace Charly {
       return Status::ReadFailedVariableUndefined;
     }
 
-    const STATUS VM::read(VALUE* result, uint32_t index, uint32_t level) {
+    STATUS VM::read(VALUE* result, uint32_t index, uint32_t level) {
       Frame* frame = this->frames;
 
       // Move to the correct frame
@@ -79,7 +79,7 @@ namespace Charly {
       return frame->environment->read(index, result);
     }
 
-    const STATUS VM::write(std::string key, VALUE value) {
+    STATUS VM::write(std::string key, VALUE value) {
       Frame* frame = this->frames;
       if (!frame) return Status::ReadFailedVariableUndefined;
 
@@ -92,7 +92,7 @@ namespace Charly {
       return Status::WriteFailedVariableUndefined;
     }
 
-    const STATUS VM::write(uint32_t index, uint32_t level, VALUE value) {
+    STATUS VM::write(uint32_t index, uint32_t level, VALUE value) {
       Frame* frame = this->frames;
 
       // Move to the correct frame
@@ -105,7 +105,7 @@ namespace Charly {
       return frame->environment->write(index, value);
     }
 
-    const STATUS VM::pop_stack(VALUE* result) {
+    STATUS VM::pop_stack(VALUE* result) {
       if (this->stack.size() == 0) return Status::PopFailed;
       VALUE& top = this->stack.top();
       this->stack.pop();
@@ -113,17 +113,17 @@ namespace Charly {
       return Status::Success;
     }
 
-    const STATUS VM::peek_stack(VALUE* result) {
+    STATUS VM::peek_stack(VALUE* result) {
       if (this->stack.size() == 0) return Status::PeekFailed;
       *result = this->stack.top();
       return Status::Success;
     }
 
-    const void VM::push_stack(VALUE value) {
+    void VM::push_stack(VALUE value) {
       this->stack.push(value);
     }
 
-    const VALUE VM::create_object(uint32_t initial_capacity, VALUE klass) {
+    VALUE VM::create_object(uint32_t initial_capacity, VALUE klass) {
       GC::Cell* cell = this->gc->allocate();
       cell->as.basic.flags = Type::Object;
       cell->as.basic.klass = klass;
@@ -131,11 +131,11 @@ namespace Charly {
       return (VALUE)cell;
     }
 
-    const VALUE VM::create_integer(int64_t value) {
+    VALUE VM::create_integer(int64_t value) {
       return ((VALUE) value << 1) | Value::IIntegerFlag;
     }
 
-    const VALUE VM::create_float(double value) {
+    VALUE VM::create_float(double value) {
       union {
         double d;
         VALUE v;
@@ -162,7 +162,7 @@ namespace Charly {
       return (VALUE)cell;
     }
 
-    const VALUE VM::create_function(std::string name, uint32_t required_arguments, Frame* context) {
+    VALUE VM::create_function(std::string name, uint32_t required_arguments, Frame* context) {
       GC::Cell* cell = this->gc->allocate();
       cell->as.basic.flags = Type::Function;
       cell->as.basic.klass = Value::Null; // TODO: Replace with actual class
@@ -174,11 +174,11 @@ namespace Charly {
       return (VALUE)cell;
     }
 
-    const int64_t VM::integer_value(VALUE value) {
+    int64_t VM::integer_value(VALUE value) {
       return ((SIGNED_VALUE)value) >> 1;
     }
 
-    const double VM::float_value(VALUE value) {
+    double VM::float_value(VALUE value) {
       if (!Value::is_special(value)) return ((Float *)value)->float_value;
 
       union {
@@ -191,11 +191,12 @@ namespace Charly {
       return t.d;
     }
 
-    const bool VM::boolean_value(VALUE value) {
-      return value == Value::True;
+    bool VM::boolean_value(VALUE value) {
+      if (value == Value::False || value == Value::Null) return false;
+      return true;
     }
 
-    const VALUE VM::type(VALUE value) {
+    VALUE VM::type(VALUE value) {
 
       /* Constants */
       if (Value::is_false(value) || Value::is_true(value)) return Type::Boolean;

@@ -55,27 +55,27 @@ namespace Charly {
         Frame* push_frame(VALUE self, Frame* parent_environment_frame, Function* calling_function);
 
         // Read and write from/to the frame hierarchy
-        const STATUS read(VALUE* result, std::string key);
-        const STATUS read(VALUE* result, uint32_t index, uint32_t level);
-        const STATUS write(std::string key, VALUE value);
-        const STATUS write(uint32_t index, uint32_t level, VALUE value);
+        STATUS read(VALUE* result, std::string key);
+        STATUS read(VALUE* result, uint32_t index, uint32_t level);
+        STATUS write(std::string key, VALUE value);
+        STATUS write(uint32_t index, uint32_t level, VALUE value);
 
         // Stack manipulation
-        const STATUS pop_stack(VALUE* result);
-        const STATUS peek_stack(VALUE* result);
-        const void push_stack(VALUE value);
+        STATUS pop_stack(VALUE* result);
+        STATUS peek_stack(VALUE* result);
+        void push_stack(VALUE value);
 
         // Methods to create new data types
-        const VALUE create_object(uint32_t initial_capacity, VALUE klass);
-        const VALUE create_integer(int64_t value);
-        const VALUE create_float(double value);
-        const VALUE create_function(std::string name, uint32_t required_arguments, Frame* context);
+        VALUE create_object(uint32_t initial_capacity, VALUE klass);
+        VALUE create_integer(int64_t value);
+        VALUE create_float(double value);
+        VALUE create_function(std::string name, uint32_t required_arguments, Frame* context);
 
         // Methods that operate on the VALUE type
-        const int64_t integer_value(VALUE value);
-        const double float_value(VALUE value);
-        const bool boolean_value(VALUE value);
-        const VALUE type(VALUE value);
+        int64_t integer_value(VALUE value);
+        double float_value(VALUE value);
+        bool boolean_value(VALUE value);
+        VALUE type(VALUE value);
 
       private:
         void pretty_print(VALUE value);
