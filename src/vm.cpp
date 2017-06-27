@@ -295,8 +295,9 @@ namespace Charly {
       if (this->type((VALUE)function) != Type::Function) panic("Popped value isn't a function");
 
       // Push a control frame for the function
-      // TODO: Correct self value
-      Frame* frame = this->push_frame(Value::Null, function, this->ip);
+      VALUE self = function->context ? function->context->self : Value::Null;
+      uint8_t* return_address = this->ip + this->decode_instruction_length(Opcode::Call);
+      Frame* frame = this->push_frame(self, function, return_address);
 
       // Copy the arguments from the temporary arguments buffer into
       // the frames environment
@@ -339,6 +340,9 @@ namespace Charly {
 
       this->push_stack(main_function);
       this->op_call(0);
+
+      // Set the self value
+      this->frames->self = this->create_integer(25);
     }
 
     void VM::run() {
