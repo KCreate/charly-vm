@@ -271,7 +271,6 @@ namespace Charly {
     }
 
     void VM::op_call(uint32_t argc) {
-      cout << "calling function with " << argc << " arguments" << endl;
 
       // Check if there are enough items on the stack
       //
@@ -281,19 +280,17 @@ namespace Charly {
       // |   |  stack which are arguments
       // v   v
       // 1 + argc
-      if (this->stack.size() < (1 + argc)) panic("Not enough items on the stack for call");
+      if (this->stack.size() < (1 + argc)) this->panic("Not enough items on the stack for call");
 
       // Allocate enough space to copy the arguments into a temporary buffer
       // We need to keep them around until we have access to the new frames environment
       VALUE* arguments = NULL;
       if (argc > 0) {
         arguments = (VALUE*)alloca(argc * sizeof(VALUE));
-        cout << "allocated " << (argc * sizeof(VALUE)) << " bytes for arguments at " << arguments << endl;
       }
 
       uint32_t argc_backup = argc;
       while (argc--) {
-        cout << "popping stack into " << (arguments + argc) << endl;
         this->pop_stack(arguments + (argc));
       }
 
@@ -301,7 +298,7 @@ namespace Charly {
       Function* function; this->pop_stack((VALUE *)&function);
 
       // TODO: Handle as runtime error
-      if (this->type((VALUE)function) != Type::Function) panic("Popped value isn't a function");
+      if (this->type((VALUE)function) != Type::Function) this->panic("Popped value isn't a function");
 
       // Push a control frame for the function
       VALUE self = function->context ? function->context->self : Value::Null;
