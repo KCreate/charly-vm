@@ -224,39 +224,37 @@ namespace Charly {
       return *(Opcode *)this->ip;
     }
 
-    uint32_t VM::decode_instruction_length() {
-      switch (this->fetch_instruction()) {
-          case Opcode::Nop:              return 1;
-          case Opcode::ReadSymbol:       return 1 + sizeof(ID);
-          case Opcode::ReadMemberSymbol: return 1 + sizeof(ID);
-          case Opcode::ReadMemberValue:  return 1;
-          case Opcode::SetSymbol:        return 1 + sizeof(ID);
-          case Opcode::SetMemberSymbol:  return 1 + sizeof(ID);
-          case Opcode::SetMemberValue:   return 1;
-          case Opcode::PutSelf:          return 1;
-          case Opcode::PutString:        return 1 + sizeof(char*) + (sizeof(uint32_t) * 2);
-          case Opcode::PutFloat:         return 1 + sizeof(double);
-          case Opcode::PutFunction:      return 1 + sizeof(ID) + sizeof(void*) + sizeof(bool) sizeof(uint32_t);
-          case Opcode::PutCFunction:     return 1 + sizeof(ID) + sizeof(void *) + sizeof(uint32_t);
-          case Opcode::PutArray:         return 1 + sizeof(uint32_t);
-          case Opcode::PutHash:          return 1 + sizeof(uint32_t);
-          case Opcode::PutClass:         return 1 + sizeof(ID) + sizeof(uint32_t);
-          case Opcode::RegisterLocal:    return 1 + sizeof(ID) + sizeof(uint32_t);
-          case Opcode::MakeConstant:     return 1 + sizeof(uint32_t);
-          case Opcode::Pop:              return 1 + sizeof(uint32_t);
-          case Opcode::Dup:              return 1;
-          case Opcode::Swap:             return 1;
-          case Opcode::Topn:             return 1 + sizeof(uint32_t);
-          case Opcode::Setn:             return 1 + sizeof(uint32_t);
-          case Opcode::Call:             return 1 + sizeof(uint32_t);
-          case Opcode::CallMember:       return 1 + sizeof(uint32_t);
-          case Opcode::Throw:            return 1 + sizeof(uint8_t);
-          case Opcode::Branch:           return 1 + sizeof(uint32_t);
-          case Opcode::BranchIf:         return 1 + sizeof(uint32_t);
-          case Opcode::BranchUnless:     return 1 + sizeof(uint32_t);
-
-          // Catch all for binary and unary operators
-          default:                       return 1;
+    uint32_t VM::decode_instruction_length(Opcode opcode) {
+      switch (opcode) {
+        case Opcode::Nop:              return 1;
+        case Opcode::ReadSymbol:       return 1 + sizeof(ID);
+        case Opcode::ReadMemberSymbol: return 1 + sizeof(ID);
+        case Opcode::ReadMemberValue:  return 1;
+        case Opcode::SetSymbol:        return 1 + sizeof(ID);
+        case Opcode::SetMemberSymbol:  return 1 + sizeof(ID);
+        case Opcode::SetMemberValue:   return 1;
+        case Opcode::PutSelf:          return 1;
+        case Opcode::PutString:        return 1 + sizeof(char*) + (sizeof(uint32_t) * 2);
+        case Opcode::PutFloat:         return 1 + sizeof(double);
+        case Opcode::PutFunction:      return 1 + sizeof(ID) + sizeof(void*) + sizeof(bool) + sizeof(uint32_t);
+        case Opcode::PutCFunction:     return 1 + sizeof(ID) + sizeof(void *) + sizeof(uint32_t);
+        case Opcode::PutArray:         return 1 + sizeof(uint32_t);
+        case Opcode::PutHash:          return 1 + sizeof(uint32_t);
+        case Opcode::PutClass:         return 1 + sizeof(ID) + sizeof(uint32_t);
+        case Opcode::RegisterLocal:    return 1 + sizeof(ID) + sizeof(uint32_t);
+        case Opcode::MakeConstant:     return 1 + sizeof(uint32_t);
+        case Opcode::Pop:              return 1 + sizeof(uint32_t);
+        case Opcode::Dup:              return 1;
+        case Opcode::Swap:             return 1;
+        case Opcode::Topn:             return 1 + sizeof(uint32_t);
+        case Opcode::Setn:             return 1 + sizeof(uint32_t);
+        case Opcode::Call:             return 1 + sizeof(uint32_t);
+        case Opcode::CallMember:       return 1 + sizeof(uint32_t);
+        case Opcode::Throw:            return 1 + sizeof(uint8_t);
+        case Opcode::Branch:           return 1 + sizeof(uint32_t);
+        case Opcode::BranchIf:         return 1 + sizeof(uint32_t);
+        case Opcode::BranchUnless:     return 1 + sizeof(uint32_t);
+        default:                       return 1;
       }
     }
 

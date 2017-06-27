@@ -82,7 +82,7 @@ namespace Charly {
 
         // Execution
         Opcode fetch_instruction();
-        uint32_t decode_instruction_length();
+        uint32_t decode_instruction_length(Opcode opcode);
         void op_putvalue(VALUE value);
         void op_call(uint32_t argc);
 
