@@ -257,6 +257,15 @@ namespace Charly {
       }
     }
 
+    void VM::op_putself() {
+      if (this->frames == NULL) {
+        this->push_stack(Value::Null);
+        return;
+      }
+
+      this->push_stack(this->frames->self);
+    }
+
     void VM::op_putvalue(VALUE value) {
       this->push_stack(value);
     }
@@ -314,6 +323,28 @@ namespace Charly {
       this->ip = function->block->data;
     }
 
+    void VM::op_throw(ThrowType type) {
+
+      switch (type) {
+        case ThrowType::Return: {
+
+          // Unlink the current frame
+          Frame* frame = this->frames;
+          if (frame == NULL) this->panic("Can't return from top-level");
+          this->frames = frame->parent;
+
+          // Restore the return address
+          this->ip = frame->return_address;
+
+          break;
+        }
+
+        default: {
+          this->panic("Unknown throw type");
+        }
+      }
+    }
+
     void VM::stacktrace() {
       Frame* frame = this->frames;
 
@@ -328,6 +359,14 @@ namespace Charly {
         cout << (void*)frame->return_address;
         cout << ")" << endl;
         frame = frame->parent;
+      }
+    }
+
+    void VM::stackdump() {
+      for (int i = 0; i < this->stack.size(); i++) {
+        VALUE entry = this->stack[i];
+
+        cout << "<" << Type::str[this->type(entry)] << "@" << (void*)entry << ">" << endl;
       }
     }
 
@@ -357,9 +396,20 @@ namespace Charly {
       this->op_putvalue(this->create_integer(75));
       this->op_putvalue(this->create_integer(75));
       this->op_putvalue(this->create_integer(75));
+
       this->op_call(4);
 
+      this->op_putself();
+
       this->stacktrace();
+
+      this->op_throw(ThrowType::Return);
+
+      this->op_putself();
+
+      this->stacktrace();
+
+      this->stackdump();
     }
 
   }

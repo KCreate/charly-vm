@@ -82,13 +82,16 @@ namespace Charly {
         // Execution
         Opcode fetch_instruction();
         uint32_t decode_instruction_length(Opcode opcode);
+        void op_putself();
         void op_putvalue(VALUE value);
         void op_call(uint32_t argc);
+        void op_throw(ThrowType type);
 
       private:
         void pretty_print(VALUE value);
         void inline panic(std::string message) { std::cout << "Panic: " << message << std::endl; exit(1); }
         void stacktrace();
+        void stackdump();
 
       public:
         VM() : gc(new GC::Collector(InitialHeapCount, HeapCellCount)) {
