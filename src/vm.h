@@ -43,7 +43,7 @@ namespace Charly {
     class VM {
       private:
         GC::Collector* gc;
-        std::stack<VALUE> stack;
+        std::vector<VALUE> stack;
         Frame* frames;
         uint8_t* ip;
 

@@ -112,20 +112,20 @@ namespace Charly {
 
     STATUS VM::pop_stack(VALUE* result) {
       if (this->stack.size() == 0) return Status::PopFailed;
-      VALUE& top = this->stack.top();
-      this->stack.pop();
+      VALUE& top = this->stack.back();
+      this->stack.pop_back();
       *result = top;
       return Status::Success;
     }
 
     STATUS VM::peek_stack(VALUE* result) {
       if (this->stack.size() == 0) return Status::PeekFailed;
-      *result = this->stack.top();
+      *result = this->stack.back();
       return Status::Success;
     }
 
     void VM::push_stack(VALUE value) {
-      this->stack.push(value);
+      this->stack.push_back(value);
     }
 
     VALUE VM::create_object(uint32_t initial_capacity, VALUE klass) {
