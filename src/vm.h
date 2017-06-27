@@ -53,9 +53,7 @@ namespace Charly {
         // Methods that operate on the VM's frames
         Frame* pop_frame();
         inline Frame* top_frame() { return this->frames; }
-        Frame* push_frame(VALUE self,
-                          Function* calling_function,
-                          uint8_t* return_address);
+        Frame* push_frame(VALUE self, Function* calling_function, uint8_t* return_address);
 
         // Read and write from/to the frame hierarchy
         STATUS read(VALUE* result, std::string key);
@@ -86,7 +84,8 @@ namespace Charly {
         // Execution
         Opcode fetch_instruction();
         uint32_t decode_instruction_length();
-        void call(uint32_t argc);
+        void op_putvalue(VALUE value);
+        void op_call(uint32_t argc);
 
       private:
         void pretty_print(VALUE value);

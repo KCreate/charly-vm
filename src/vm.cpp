@@ -41,17 +41,17 @@ namespace Charly {
       return frame;
     }
 
-    Frame* VM::push_frame(VALUE self,
-                          Function* function,
-                          uint8_t* return_address) {
-
+    Frame* VM::push_frame(VALUE self, Function* function, uint8_t* return_address) {
       GC::Cell* cell = this->gc->allocate();
       cell->as.frame.flags = Type::Frame;
       cell->as.frame.parent = this->frames;
       cell->as.frame.parent_environment_frame = function->context;
       cell->as.frame.function = function;
       cell->as.frame.last_block = this->frames ? this->frames->function->block : NULL;
-      cell->as.frame.environment = new Container(4);
+
+      uint32_t lvar_count = function->required_arguments + function->block->lvarcount;
+      cell->as.frame.environment = new Container(lvar_count);
+
       cell->as.frame.self = self;
       cell->as.frame.return_address = return_address;
       this->frames = (Frame *)cell;
@@ -260,9 +260,38 @@ namespace Charly {
       }
     }
 
-    void VM::call(uint32_t argc) {
-      if (this->stack.size() < 1) panic("Not enough items on the stack for call");
+    void VM::op_putvalue(VALUE value) {
+      this->push_stack(value);
+    }
 
+    void VM::op_call(uint32_t argc) {
+      cout << "calling function with " << argc << " arguments" << endl;
+
+      // Check if there are enough items on the stack
+      //
+      // +- VALUE of the function
+      // |
+      // |   +- Amount of VALUEs that are on the
+      // |   |  stack which are arguments
+      // v   v
+      // 1 + argc
+      if (this->stack.size() < (1 + argc)) panic("Not enough items on the stack for call");
+
+      // Allocate enough space to copy the arguments into a temporary buffer
+      // We need to keep them around until we have access to the new frames environment
+      VALUE* arguments = NULL;
+      if (argc > 0) {
+        arguments = (VALUE*)alloca(argc * sizeof(VALUE));
+        cout << "allocated " << (argc * sizeof(VALUE)) << " bytes for arguments at " << arguments << endl;
+      }
+
+      uint32_t argc_backup = argc;
+      while (argc--) {
+        cout << "popping stack into " << (arguments + argc) << endl;
+        this->pop_stack(arguments + (argc));
+      }
+
+      // Pop the function from the stack
       Function* function; this->pop_stack((VALUE *)&function);
 
       // TODO: Handle as runtime error
@@ -270,7 +299,20 @@ namespace Charly {
 
       // Push a control frame for the function
       // TODO: Correct self value
-      this->push_frame(Value::Null, function, this->ip + 1);
+      Frame* frame = this->push_frame(Value::Null, function, this->ip);
+
+      // Copy the arguments from the temporary arguments buffer into
+      // the frames environment
+      //
+      // The environment will contain enough space for argcount + function.lvar_count
+      // values so there's no need to allocate new space in it
+      //
+      // TODO: Copy the _arguments_ field into the function
+      uint32_t arg_copy_count = function->required_arguments;
+      while (arg_copy_count--) {
+        frame->environment->write(arg_copy_count, arguments[arg_copy_count]);
+      }
+
       this->ip = function->block->data;
     }
 
@@ -298,16 +340,24 @@ namespace Charly {
       InstructionBlock* main_block = new InstructionBlock{ 0x00, 0, (new uint8_t[32] { 0 }), 32 };
       VALUE main_function = this->create_function("__charly_init", 0, NULL, main_block);
 
-      InstructionBlock* foo_block = new InstructionBlock{ 0x00, 0, (new uint8_t[32] { 0 }), 32 };
-      VALUE foo_function = this->create_function("foo", 0, NULL, foo_block);
-
-      this->push_stack(foo_function);
       this->push_stack(main_function);
+      this->op_call(0);
     }
 
     void VM::run() {
-      this->call(0); // Call the main function that was pushed in the init method
-      this->call(0);
+
+      // Create the foo function on the stack
+      InstructionBlock* foo_block = new InstructionBlock{ 0x00, 4, (new uint8_t[32] { 0 }), 32 };
+      VALUE foo_function = this->create_function("foo", 4, NULL, foo_block);
+      this->push_stack(foo_function);
+
+      // Call the foo function
+      this->op_putvalue(this->create_integer(25));
+      this->op_putvalue(this->create_integer(75));
+      this->op_putvalue(this->create_integer(75));
+      this->op_putvalue(this->create_integer(75));
+      this->op_call(4);
+
       this->stacktrace();
     }
 
