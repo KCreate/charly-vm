@@ -169,7 +169,6 @@ namespace Charly {
 
     VALUE VM::create_function(std::string name,
                               uint32_t required_arguments,
-                              Frame* context,
                               InstructionBlock* block) {
 
       GC::Cell* cell = this->gc->allocate();
@@ -177,7 +176,7 @@ namespace Charly {
       cell->as.basic.klass = Value::Null; // TODO: Replace with actual class
       cell->as.function.name = name;
       cell->as.function.required_arguments = required_arguments;
-      cell->as.function.context = context;
+      cell->as.function.context = this->frames;
       cell->as.function.block = block;
       cell->as.function.bound_self_set = false;
       cell->as.function.bound_self = Value::Null;
@@ -336,7 +335,7 @@ namespace Charly {
       this->ip = NULL;
 
       InstructionBlock* main_block = new InstructionBlock{ 0x00, 0, (new uint8_t[32] { 0 }), 32 };
-      VALUE main_function = this->create_function("__charly_init", 0, NULL, main_block);
+      VALUE main_function = this->create_function("__charly_init", 0, main_block);
 
       this->push_stack(main_function);
       this->op_call(0);
@@ -346,7 +345,7 @@ namespace Charly {
 
       // Create the foo function on the stack
       InstructionBlock* foo_block = new InstructionBlock{ 0x00, 4, (new uint8_t[32] { 0 }), 32 };
-      VALUE foo_function = this->create_function("foo", 4, NULL, foo_block);
+      VALUE foo_function = this->create_function("foo", 4, foo_block);
       this->push_stack(foo_function);
 
       // Call the foo function

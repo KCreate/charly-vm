@@ -71,7 +71,6 @@ namespace Charly {
         VALUE create_float(double value);
         VALUE create_function(std::string name,
                               uint32_t required_arguments,
-                              Frame* context,
                               InstructionBlock* block);
 
         // Methods that operate on the VALUE type
