@@ -97,7 +97,7 @@ namespace Charly {
       // Put string onto the stack
       //
       // args:
-      // - string
+      // - string (char* data, uint32_t length, uint32_t capacity)
       PutString = 0x09,
 
       // Put floatval onto the stack
@@ -180,12 +180,6 @@ namespace Charly {
       // - offset
       Setn = 0x16,
 
-      // Pop count values off the stack
-      //
-      // args:
-      // - count
-      AdjustStack = 0x17,
-
       // Call a function with argc arguments
       //
       // args:
@@ -194,7 +188,7 @@ namespace Charly {
       // stack:
       // - function
       // - arguments
-      Call = 0x18,
+      Call = 0x17,
 
       // Call a function with argc arguments and a target
       //
@@ -205,7 +199,7 @@ namespace Charly {
       // - context
       // - function
       // - arguments
-      CallMember = 0x19,
+      CallMember = 0x18,
 
       // Throw a value
       //
@@ -214,13 +208,13 @@ namespace Charly {
       //
       // stack:
       // - value
-      Throw = 0x1a,
+      Throw = 0x19,
 
       // Apply a given offset to the instruction pointer
       //
       // args:
       // - offset
-      Branch = 0x1b,
+      Branch = 0x1a,
 
       // Pop test and apply a given offset to the instruction pointer
       // if test is truthy
@@ -230,7 +224,7 @@ namespace Charly {
       //
       // stack:
       // - test
-      BranchIf = 0x1c,
+      BranchIf = 0x1b,
 
       // Pop test and apply a given offset to the instruction pointer
       // if test is falsey
@@ -240,39 +234,39 @@ namespace Charly {
       //
       // stack:
       // - test
-      BranchUnless = 0x1d,
+      BranchUnless = 0x1c,
 
       // Binary operators
       //
       // stack:
       // - left
       // - right
-      Add = 0x1e,
-      Sub = 0x1f,
-      Mul = 0x20,
-      Div = 0x21,
-      Mod = 0x22,
-      Pow = 0x23,
-      Eq  = 0x24,
-      Neq = 0x25,
-      Lt  = 0x26,
-      Gt  = 0x27,
-      Le  = 0x28,
-      Ge  = 0x29,
-      Shr = 0x2a,
-      Shl = 0x2b,
-      And = 0x2c,
-      Or  = 0x2d,
-      Xor = 0x2e,
+      Add = 0x1d,
+      Sub = 0x1e,
+      Mul = 0x2f,
+      Div = 0x20,
+      Mod = 0x21,
+      Pow = 0x22,
+      Eq  = 0x23,
+      Neq = 0x24,
+      Lt  = 0x25,
+      Gt  = 0x26,
+      Le  = 0x27,
+      Ge  = 0x28,
+      Shr = 0x29,
+      Shl = 0x2a,
+      And = 0x2b,
+      Or  = 0x2c,
+      Xor = 0x2d,
 
       // Unary operators
       //
       // stack:
       // - value
-      UAdd  = 0x2f,
-      USub  = 0x30,
-      UNot  = 0x31,
-      UBNot = 0x32
+      UAdd  = 0x2e,
+      USub  = 0x3f,
+      UNot  = 0x30,
+      UBNot = 0x31
     };
   }
 }
