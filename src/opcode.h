@@ -31,6 +31,14 @@
 namespace Charly {
   namespace Machine {
 
+    enum ThrowType : uint8_t {
+      Return,
+      Exception,
+      Break,
+      Continue,
+      Finish
+    };
+
     enum Opcode : uint8_t {
 
       // Do nothing
