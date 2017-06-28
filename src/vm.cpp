@@ -438,6 +438,13 @@ namespace Charly {
 
       // Create the foo function on the stack
       InstructionBlock* foo_block = this->request_instruction_block(0x00, 4);
+
+      foo_block->write_byte(1);
+      foo_block->write_short(2);
+      foo_block->write_int(3);
+      foo_block->write_long(4);
+      foo_block->write_double(5);
+
       VALUE foo_function = this->create_function("foo", 4, foo_block);
       this->push_stack(foo_function);
 
