@@ -257,6 +257,29 @@ namespace Charly {
       }
     }
 
+    void VM::op_readlocal(uint32_t index) {
+
+      // Check if the index points to a valid entry
+      if (index >= this->frames->environment->entries.size()) {
+        this->push_stack(Value::Null);
+        return;
+      }
+
+      this->push_stack(this->frames->environment->entries[index]);
+    }
+
+    void VM::op_setlocal(uint32_t index) {
+      VALUE value = Value::Null;
+
+      if (this->stack.size() > 0) {
+        this->pop_stack(&value);
+      }
+
+      if (index < this->frames->environment->entries.size()) {
+        this->frames->environment->entries[index] = value;
+      }
+    }
+
     void VM::op_putself() {
       if (this->frames == NULL) {
         this->push_stack(Value::Null);

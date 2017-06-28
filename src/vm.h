@@ -82,6 +82,8 @@ namespace Charly {
         // Execution
         Opcode fetch_instruction();
         uint32_t decode_instruction_length(Opcode opcode);
+        void op_readlocal(uint32_t index);
+        void op_setlocal(uint32_t index);
         void op_putself();
         void op_putvalue(VALUE value);
         void op_call(uint32_t argc);
