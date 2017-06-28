@@ -96,12 +96,11 @@ namespace Charly {
         void op_throw(ThrowType type);
 
       private:
-        void pretty_print(VALUE value);
         void inline panic(std::string message) {
           std::cout << "Panic: " << message << std::endl; exit(1);
         }
-        void stacktrace();
-        void stackdump();
+        void stacktrace(std::ostream& io);
+        void stackdump(std::ostream& io);
 
       public:
         VM() : gc(new GC::Collector(InitialHeapCount, HeapCellCount)) {

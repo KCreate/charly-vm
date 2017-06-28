@@ -28,8 +28,6 @@
 
 #include "vm.h"
 
-using namespace std;
-
 namespace Charly {
   namespace Machine {
     using namespace Primitive;
@@ -397,28 +395,28 @@ namespace Charly {
       }
     }
 
-    void VM::stacktrace() {
+    void VM::stacktrace(std::ostream& io) {
       Frame* frame = this->frames;
 
       int i = 0;
-      cout << i++ << " : (" << (void*)this->ip << ")" << endl;
+      io << i++ << " : (" << (void*)this->ip << ")" << std::endl;
       while (frame) {
         Function* func = frame->function;
 
-        cout << i++ << " : (";
-        cout << frame->function->name << " : ";
-        cout << (void*)frame->function->block->data << "[" << frame->function->block->data_size << "] : ";
-        cout << (void*)frame->return_address;
-        cout << ")" << endl;
+        io << i++ << " : (";
+        io << frame->function->name << " : ";
+        io << (void*)frame->function->block->data << "[" << frame->function->block->data_size << "] : ";
+        io << (void*)frame->return_address;
+        io << ")" << std::endl;
         frame = frame->parent;
       }
     }
 
-    void VM::stackdump() {
+    void VM::stackdump(std::ostream& io) {
       for (int i = 0; i < this->stack.size(); i++) {
         VALUE entry = this->stack[i];
 
-        cout << "<" << Type::str[this->type(entry)] << "@" << (void*)entry << ">" << endl;
+        io << "<" << Type::str[this->type(entry)] << "@" << (void*)entry << ">" << std::endl;
       }
     }
 
@@ -453,15 +451,15 @@ namespace Charly {
 
       this->op_putself();
 
-      this->stacktrace();
+      this->stacktrace(std::cout);
 
       this->op_throw(ThrowType::Return);
 
       this->op_putself();
 
-      this->stacktrace();
+      this->stacktrace(std::cout);
 
-      this->stackdump();
+      this->stackdump(std::cout);
     }
 
   }

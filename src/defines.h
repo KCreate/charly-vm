@@ -24,6 +24,7 @@
  * SOFTWARE.
  */
 
+#include <iostream>
 #include <cstdint>
 #include <cstdlib>
 #include <string>
