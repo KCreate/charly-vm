@@ -43,6 +43,7 @@ namespace Charly {
     class VM {
       private:
         GC::Collector* gc;
+        std::vector<InstructionBlock*> unassigned_blocks;
         std::vector<VALUE> stack;
         Frame* frames;
         uint8_t* ip;
@@ -59,6 +60,11 @@ namespace Charly {
         STATUS read(VALUE* result, uint32_t index, uint32_t level);
         STATUS write(std::string key, VALUE value);
         STATUS write(uint32_t index, uint32_t level, VALUE value);
+
+        // Instruction Blocks
+        InstructionBlock* request_instruction_block(ID id, uint32_t lvarcount);
+        void register_instruction_block(InstructionBlock* block);
+        void claim_instruction_block(InstructionBlock* block);
 
         // Stack manipulation
         STATUS pop_stack(VALUE* result);

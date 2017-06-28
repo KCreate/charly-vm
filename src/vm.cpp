@@ -110,6 +110,27 @@ namespace Charly {
       return frame->environment->write(index, value);
     }
 
+    InstructionBlock* VM::request_instruction_block(ID id, uint32_t lvarcount) {
+      InstructionBlock* block = new InstructionBlock(id, lvarcount);
+      this->register_instruction_block(block);
+      return block;
+    }
+
+    void VM::register_instruction_block(InstructionBlock* block) {
+      this->unassigned_blocks.push_back(block);
+    }
+
+    void VM::claim_instruction_block(InstructionBlock* block) {
+      size_t index = this->unassigned_blocks.size();
+
+      while (index--) {
+        if (this->unassigned_blocks[index] == block) {
+          this->unassigned_blocks.erase(this->unassigned_blocks.begin() + index);
+          return;
+        }
+      }
+    }
+
     STATUS VM::pop_stack(VALUE* result) {
       if (this->stack.size() == 0) return Status::PopFailed;
       VALUE& top = this->stack.back();
@@ -180,6 +201,9 @@ namespace Charly {
       cell->as.function.block = block;
       cell->as.function.bound_self_set = false;
       cell->as.function.bound_self = Value::Null;
+
+      this->claim_instruction_block(block);
+
       return (VALUE)cell;
     }
 
@@ -402,7 +426,7 @@ namespace Charly {
       this->frames = NULL; // Initialize top-level here
       this->ip = NULL;
 
-      InstructionBlock* main_block = new InstructionBlock{ 0x00, 0, (new uint8_t[32] { 0 }), 32 };
+      InstructionBlock* main_block = this->request_instruction_block(0x00, 0);
       VALUE main_function = this->create_function("__charly_init", 0, main_block);
 
       this->push_stack(main_function);
@@ -415,7 +439,7 @@ namespace Charly {
     void VM::run() {
 
       // Create the foo function on the stack
-      InstructionBlock* foo_block = new InstructionBlock{ 0x00, 4, (new uint8_t[32] { 0 }), 32 };
+      InstructionBlock* foo_block = this->request_instruction_block(0x00, 4);
       VALUE foo_function = this->create_function("foo", 4, foo_block);
       this->push_stack(foo_function);
 

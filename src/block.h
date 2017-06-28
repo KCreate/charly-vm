@@ -34,10 +34,21 @@ namespace Charly {
   namespace Machine {
 
     struct InstructionBlock {
+      const uint32_t INITIAL_BLOCK_SIZE = 256; // TODO: Find a better value for this
+
       ID id;
       uint32_t lvarcount;
       uint8_t* data;
       uint32_t data_size;
+
+      InstructionBlock(ID id, uint32_t lvarcount) : id(id), lvarcount(lvarcount) {
+        this->data = (uint8_t *)malloc(INITIAL_BLOCK_SIZE * sizeof(uint8_t));
+        this->data_size = INITIAL_BLOCK_SIZE * sizeof(uint8_t);
+      }
+
+      ~InstructionBlock() {
+        free(this->data);
+      }
     };
 
   };
