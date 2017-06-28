@@ -265,7 +265,9 @@ namespace Charly {
         return;
       }
 
-      this->push_stack(this->frames->environment->entries[index]);
+      VALUE value = Value::Null;
+      this->frames->environment->read(index, &value);
+      this->push_stack(value);
     }
 
     void VM::op_setlocal(uint32_t index) {
@@ -276,7 +278,13 @@ namespace Charly {
       }
 
       if (index < this->frames->environment->entries.size()) {
-        this->frames->environment->entries[index] = value;
+        STATUS write_status = this->frames->environment->write(index, value);
+
+        if (write_status != Status::Success) {
+
+          // TODO: Handle this in a better way
+          this->panic("Write failed");
+        }
       }
     }
 
