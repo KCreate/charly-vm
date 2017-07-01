@@ -35,7 +35,11 @@ namespace Charly {
   namespace Machine {
 
     struct InstructionBlock {
-      const uint32_t INITIAL_BLOCK_SIZE = 256; // TODO: Find a better value for this
+
+      // TODO: Tune these values a bit
+      const uint32_t BLOCK_INITIAL_WRITE_OFFSET = 0;
+      const uint32_t INITIAL_BLOCK_SIZE = 256;
+      const uint32_t BLOCK_SIZE_GROWTH_FACTOR = 2;
 
       ID id;
       uint32_t lvarcount;
@@ -46,7 +50,7 @@ namespace Charly {
       InstructionBlock(ID id, uint32_t lvarcount) : id(id), lvarcount(lvarcount) {
         this->data = (uint8_t *)malloc(INITIAL_BLOCK_SIZE * sizeof(uint8_t));
         this->data_size = INITIAL_BLOCK_SIZE * sizeof(uint8_t);
-        this->write_offset = 0;
+        this->write_offset = BLOCK_INITIAL_WRITE_OFFSET;
       }
 
       ~InstructionBlock() {
@@ -58,8 +62,8 @@ namespace Charly {
       }
 
       void inline grow() {
-        this->data = (uint8_t *)realloc(this->data, this->data_size * 2);
-        this->data_size *= 2;
+        this->data = (uint8_t *)realloc(this->data, this->data_size * BLOCK_SIZE_GROWTH_FACTOR);
+        this->data_size *= BLOCK_SIZE_GROWTH_FACTOR;
       }
 
       void inline write_byte(uint8_t val) {
