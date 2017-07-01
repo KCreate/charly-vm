@@ -49,8 +49,6 @@ namespace Charly {
     const STATUS ReadFailedVariableUndefined    = 0x06;
     const STATUS ReadFailedOutOfBounds          = 0x07;
     const STATUS ReadFailedTooDeep              = 0x08;
-    const STATUS PopFailed                      = 0x09;
-    const STATUS PeekFailed                     = 0x0a;
 
     /* Human-readable error messages */
     const std::string str[] = {
@@ -62,9 +60,7 @@ namespace Charly {
       "Register failed: Key already defined",
       "Read failed: Field doesn't exist",
       "Read failed: Index out of bounds",
-      "Read failed: Environment doesn't exist",
-      "Stack Pop failed: Stack is empty",
-      "Stack Peek failed: Stack is empty"
+      "Read failed: Environment doesn't exist"
     };
   }
 

@@ -129,18 +129,16 @@ namespace Charly {
       }
     }
 
-    STATUS VM::pop_stack(VALUE* result) {
-      if (this->stack.size() == 0) return Status::PopFailed;
-      VALUE& top = this->stack.back();
+    VALUE VM::pop_stack() {
+      if (this->stack.size() == 0) return Value::Null;
+      VALUE val = this->stack.back();
       this->stack.pop_back();
-      *result = top;
-      return Status::Success;
+      return val;
     }
 
-    STATUS VM::peek_stack(VALUE* result) {
-      if (this->stack.size() == 0) return Status::PeekFailed;
-      *result = this->stack.back();
-      return Status::Success;
+    VALUE VM::peek_stack() {
+      if (this->stack.size() == 0) return Value::Null;
+      return this->stack.back();
     }
 
     void VM::push_stack(VALUE value) {
@@ -293,11 +291,7 @@ namespace Charly {
     }
 
     void VM::op_setlocal(uint32_t index) {
-      VALUE value = Value::Null;
-
-      if (this->stack.size() > 0) {
-        this->pop_stack(&value);
-      }
+      VALUE value = this->pop_stack();
 
       if (index < this->frames->environment->entries.size()) {
         STATUS write_status = this->frames->environment->write(index, value);
@@ -344,11 +338,11 @@ namespace Charly {
 
       uint32_t argc_backup = argc;
       while (argc--) {
-        this->pop_stack(arguments + (argc));
+        *(arguments + argc) = this->pop_stack();
       }
 
       // Pop the function from the stack
-      Function* function; this->pop_stack((VALUE *)&function);
+      Function* function = (Function *)this->pop_stack();
 
       // TODO: Handle as runtime error
       if (this->type((VALUE)function) != Type::Function) this->panic("Popped value isn't a function");

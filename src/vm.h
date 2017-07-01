@@ -67,8 +67,8 @@ namespace Charly {
         void claim_instruction_block(InstructionBlock* block);
 
         // Stack manipulation
-        STATUS pop_stack(VALUE* result);
-        STATUS peek_stack(VALUE* result);
+        VALUE pop_stack();
+        VALUE peek_stack();
         void push_stack(VALUE value);
 
         // Methods to create new data types
