@@ -101,7 +101,6 @@ namespace Charly {
     namespace Flag {
       const VALUE Type = 0x1f; // 0..4
       const VALUE Mark = 0x20; // 5
-      const VALUE Anon = 0x40; // 6
     }
 
     /* Helper methods to operator on the VALUE type */
