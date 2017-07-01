@@ -41,7 +41,7 @@ namespace Charly {
 
     Frame* VM::push_frame(VALUE self, Function* function, uint8_t* return_address) {
       GC::Cell* cell = this->gc->allocate();
-      cell->as.frame.flags = Type::Frame;
+      cell->as.frame.basic.set_type(Type::Frame);
       cell->as.frame.parent = this->frames;
       cell->as.frame.parent_environment_frame = function->context;
       cell->as.frame.function = function;
@@ -147,7 +147,7 @@ namespace Charly {
 
     VALUE VM::create_object(uint32_t initial_capacity, VALUE klass) {
       GC::Cell* cell = this->gc->allocate();
-      cell->as.basic.flags = Type::Object;
+      cell->as.basic.set_type(Type::Object);
       cell->as.basic.klass = klass;
       cell->as.object.container = new Container(initial_capacity);
       return (VALUE)cell;
@@ -178,7 +178,7 @@ namespace Charly {
 
       // Allocate from the GC
       GC::Cell* cell = this->gc->allocate();
-      cell->as.basic.flags = Type::Float;
+      cell->as.basic.set_type(Type::Float);
       cell->as.basic.klass = Value::Null; // TODO: Replace with actual class
       cell->as.flonum.float_value = value;
       return (VALUE)cell;
@@ -189,7 +189,7 @@ namespace Charly {
                               InstructionBlock* block) {
 
       GC::Cell* cell = this->gc->allocate();
-      cell->as.basic.flags = Type::Function;
+      cell->as.basic.set_type(Type::Function);
       cell->as.basic.klass = Value::Null; // TODO: Replace with actual class
       cell->as.function.name = name;
       cell->as.function.required_arguments = required_arguments;
