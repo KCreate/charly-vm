@@ -48,7 +48,7 @@ namespace Charly {
       uint32_t write_offset;
 
       InstructionBlock(ID id, uint32_t lvarcount) : id(id), lvarcount(lvarcount) {
-        this->data = (uint8_t *)malloc(INITIAL_BLOCK_SIZE * sizeof(uint8_t));
+        this->data = (uint8_t *)calloc(INITIAL_BLOCK_SIZE, sizeof(uint8_t));
         this->data_size = INITIAL_BLOCK_SIZE * sizeof(uint8_t);
         this->write_offset = BLOCK_INITIAL_WRITE_OFFSET;
       }
