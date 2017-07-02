@@ -41,7 +41,7 @@ namespace Charly {
 
     Frame* VM::push_frame(VALUE self, Function* function, uint8_t* return_address) {
       GC::Cell* cell = this->gc->allocate();
-      cell->as.frame.basic.set_type(Type::Frame);
+      cell->as.basic.set_type(Type::Frame);
       cell->as.frame.parent = this->frames;
       cell->as.frame.parent_environment_frame = function->context;
       cell->as.frame.function = function;
@@ -183,9 +183,7 @@ namespace Charly {
       return (VALUE)cell;
     }
 
-    VALUE VM::create_function(std::string name,
-                              uint32_t required_arguments,
-                              InstructionBlock* block) {
+    VALUE VM::create_function(std::string name, uint32_t required_arguments, InstructionBlock* block) {
 
       GC::Cell* cell = this->gc->allocate();
       cell->as.basic.set_type(Type::Function);

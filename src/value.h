@@ -47,11 +47,16 @@ namespace Charly {
 
         /* Getters for different flag fields */
         const inline VALUE type() { return this->flags & Flag::Type; }
-        const inline VALUE mark() { return this->flags & Flag::Mark; }
+        const inline VALUE mark() { return (this->flags & Flag::Mark) != 0; }
 
         /* Setters for different flag fields */
-        inline void set_type(VALUE val) { this->flags &= (~(Flag::Type) & val); }
-        inline void set_mark(bool val) { this->flags ^= (-val ^ this->flags) & Flag::Mark; }
+        inline void set_type(VALUE val) {
+          this->flags = ( (this->flags & ~Flag::Type) | (Flag::Type & val));
+        }
+
+        inline void set_mark(bool val) {
+          this->flags ^= (-val ^ this->flags) & Flag::Mark;
+        }
     };
 
     struct Object {
