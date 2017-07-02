@@ -164,7 +164,7 @@ namespace Charly {
 
       t.d = value;
 
-      int bits = (int)((VALUE)(t.v >> 60) & Value::SpecialMask);
+      int bits = (int)((VALUE)(t.v >> 60) & Value::IPointerMask);
 
       /* I have no idea what's going on here, this was taken from ruby source code */
       if (t.v != 0x3000000000000000 && !((bits - 3) & ~0x01)) {

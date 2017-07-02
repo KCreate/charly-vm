@@ -113,8 +113,9 @@ namespace Charly {
        * in there.
        * */
 
-      const VALUE SpecialMask   = 0b00111;
+      const VALUE IPointerMask  = 0b00111;
       const VALUE IPointerFlag  = 0b00000;
+      const VALUE IIntegerMask  = 0b00001;
       const VALUE IIntegerFlag  = 0b00001;
       const VALUE IFloatMask    = 0b00011;
       const VALUE IFloatFlag    = 0b00010;
@@ -122,12 +123,15 @@ namespace Charly {
       const VALUE True          = 0b10100;
       const VALUE Null          = 0b01000;
 
-      const inline bool is_special(VALUE value) { return (value == False) || (value == Null) || (value & SpecialMask) != IPointerFlag; }
-      const inline bool is_integer(VALUE value) { return (value & IIntegerFlag) == IIntegerFlag; }
+      const inline bool is_boolean(VALUE value) { return value == False || value == True; }
+      const inline bool is_integer(VALUE value) { return (value & IIntegerMask) == IIntegerFlag; }
       const inline bool is_ifloat(VALUE value)  { return (value & IFloatMask) == IFloatFlag; }
       const inline bool is_false(VALUE value)   { return value == False; }
       const inline bool is_true(VALUE value)    { return value == True; }
       const inline bool is_null(VALUE value)    { return value == Null; }
+      const inline bool is_special(VALUE value) {
+        return is_boolean(value) || is_null(value) || (value & IPointerMask) != IPointerFlag;
+      }
 
       /* Returns this value as a pointer to a Basic structure */
       inline Basic* basics(VALUE value) { return (Basic *)value; }
