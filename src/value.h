@@ -71,7 +71,7 @@ namespace Charly {
 
     struct Function {
       Basic basic;
-      std::string name;
+      VALUE name;
       uint32_t required_arguments;
       Machine::Frame* context;
       Machine::InstructionBlock* block;

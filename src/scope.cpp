@@ -33,7 +33,7 @@ namespace Charly {
 
     Container::Container(uint32_t initial_capacity) {
       this->entries = std::vector<Entry>();
-      this->offset_table = std::unordered_map<std::string, uint32_t>();
+      this->offset_table = std::unordered_map<VALUE, uint32_t>();
       this->entries.reserve(initial_capacity);
     }
 
@@ -43,13 +43,13 @@ namespace Charly {
       return Status::Success;
     }
 
-    STATUS Container::read(std::string key, VALUE* result) {
+    STATUS Container::read(VALUE key, VALUE* result) {
       if (!this->contains(key)) return Status::ReadFailedVariableUndefined;
       uint32_t index = this->offset_table[key];
       return this->read(index, result);
     }
 
-    STATUS Container::register_offset(std::string key, uint32_t index) {
+    STATUS Container::register_offset(VALUE key, uint32_t index) {
       if (this->contains(key)) return Status::RegisterFailedAlreadyDefined;
       this->offset_table[key] = index;
       return Status::Success;
@@ -69,7 +69,7 @@ namespace Charly {
       return Status::Success;
     }
 
-    STATUS Container::write(std::string key, VALUE value, bool init_on_undefined) {
+    STATUS Container::write(VALUE key, VALUE value, bool init_on_undefined) {
       if (!this->contains(key)) {
         if (!init_on_undefined) return Status::WriteFailedVariableUndefined;
 
@@ -81,7 +81,7 @@ namespace Charly {
       return this->write(this->offset_table[key], value);
     }
 
-    bool Container::contains(std::string key) {
+    bool Container::contains(VALUE key) {
       return this->offset_table.count(key) == 1;
     }
 

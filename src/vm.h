@@ -57,10 +57,8 @@ namespace Charly {
         Frame* push_frame(VALUE self, Function* calling_function, uint8_t* return_address);
 
         // Read and write from/to the frame hierarchy
-        STATUS read(VALUE* result, std::string key);
-        STATUS read(VALUE* result, uint32_t index, uint32_t level);
-        STATUS write(std::string key, VALUE value);
-        STATUS write(uint32_t index, uint32_t level, VALUE value);
+        STATUS read(VALUE key, VALUE* result);
+        STATUS write(VALUE key, VALUE value);
 
         // Instruction Blocks
         InstructionBlock* request_instruction_block(VALUE id, uint32_t lvarcount);
@@ -92,7 +90,9 @@ namespace Charly {
         Opcode fetch_instruction();
         uint32_t decode_instruction_length(Opcode opcode);
         void op_readlocal(uint32_t index);
+        void op_readsymbol(VALUE symbol);
         void op_setlocal(uint32_t index);
+        void op_setsymbol(VALUE symbol);
         void op_putself();
         void op_putvalue(VALUE value);
         void op_call(uint32_t argc);

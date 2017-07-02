@@ -47,8 +47,13 @@ namespace Charly {
       cell->as.frame.parent_environment_frame = function->context;
       cell->as.frame.function = function;
 
+      // Setup and pre-fill environment with null's
       uint32_t lvar_count = function->required_arguments + function->block->lvarcount;
       cell->as.frame.environment = new Container(lvar_count);
+
+      while (lvar_count--) {
+        cell->as.frame.environment->insert(Value::Null, false);
+      }
 
       cell->as.frame.self = self;
       cell->as.frame.return_address = return_address;
@@ -56,7 +61,7 @@ namespace Charly {
       return (Frame *)cell;
     }
 
-    STATUS VM::read(VALUE* result, std::string key) {
+    STATUS VM::read(VALUE key, VALUE* result) {
       Frame* frame = this->frames;
       if (!frame) return Status::ReadFailedVariableUndefined;
 
@@ -69,43 +74,20 @@ namespace Charly {
       return Status::ReadFailedVariableUndefined;
     }
 
-    STATUS VM::read(VALUE* result, uint32_t index, uint32_t level) {
-      Frame* frame = this->frames;
-
-      // Move to the correct frame
-      while (level--) {
-        if (!frame) return Status::ReadFailedTooDeep;
-        frame = frame->parent_environment_frame;
-      }
-
-      if (!frame) return Status::ReadFailedTooDeep;
-      return frame->environment->read(index, result);
-    }
-
-    STATUS VM::write(std::string key, VALUE value) {
+    STATUS VM::write(VALUE key, VALUE value) {
       Frame* frame = this->frames;
       if (!frame) return Status::ReadFailedVariableUndefined;
 
       while (frame) {
-        STATUS write_stat = frame->environment->write(key, value, false);
-        if (write_stat == Status::Success) return Status::Success;
+        if (frame->environment->contains(key)) {
+          STATUS write_stat = frame->environment->write(key, value, false);
+          return write_stat;
+        }
+
         frame = frame->parent_environment_frame;
       }
 
       return Status::WriteFailedVariableUndefined;
-    }
-
-    STATUS VM::write(uint32_t index, uint32_t level, VALUE value) {
-      Frame* frame = this->frames;
-
-      // Move to the correct frame
-      while (level--) {
-        if (!frame) return Status::WriteFailedTooDeep;
-        frame = frame->parent_environment_frame;
-      }
-
-      if (!frame) return Status::ReadFailedTooDeep;
-      return frame->environment->write(index, value);
     }
 
     InstructionBlock* VM::request_instruction_block(VALUE id, uint32_t lvarcount) {
@@ -207,7 +189,7 @@ namespace Charly {
       return (VALUE)cell;
     }
 
-    VALUE VM::create_function(std::string name, uint32_t required_arguments, InstructionBlock* block) {
+    VALUE VM::create_function(VALUE name, uint32_t required_arguments, InstructionBlock* block) {
 
       GC::Cell* cell = this->gc->allocate();
       cell->as.basic.set_type(Type::Function);
@@ -313,6 +295,17 @@ namespace Charly {
       this->push_stack(value);
     }
 
+    void VM::op_readsymbol(VALUE symbol) {
+      VALUE value;
+      STATUS read_stat = this->read(symbol, &value);
+
+      if (read_stat != Status::Success) {
+        this->panic(read_stat); // TODO: Handle as runtime error
+      }
+
+      this->push_stack(value);
+    }
+
     void VM::op_setlocal(uint32_t index) {
       VALUE value = this->pop_stack();
 
@@ -327,6 +320,15 @@ namespace Charly {
           // this should be handled as a runtime exception
           this->panic(write_status);
         }
+      }
+    }
+
+    void VM::op_setsymbol(VALUE symbol) {
+      VALUE value = this->pop_stack();
+      STATUS write_stat = this->write(symbol, value);
+
+      if (write_stat != Status::Success) {
+        this->panic(write_stat); // TODO: Handle as runtime error
       }
     }
 
@@ -458,9 +460,11 @@ namespace Charly {
       while (frame) {
         Function* func = frame->function;
 
+        std::string name; this->lookup_symbol(func->name, &name); // TODO: handle unknown symbols
+
         io << i++ << " : (";
-        io << frame->function->name << " : ";
-        io << (void*)frame->function->block->data << "[" << frame->function->block->write_offset << "] : ";
+        io << name << " : ";
+        io << (void*)func->block->data << "[" << func->block->write_offset << "] : ";
         io << (void*)frame->return_address;
         io << ")" << std::endl;
         frame = frame->parent;
@@ -480,12 +484,25 @@ namespace Charly {
       this->ip = NULL;
 
       // Setup top-level-block
-      VALUE __charly_init_block_id = this->create_symbol("__charly_init_block");
-      auto __charly_init_block = this->request_instruction_block(__charly_init_block_id, 0);
-      VALUE __charly_init = this->create_function("__charly_init", 0, __charly_init_block);
+      auto __charly_init_block_id = this->create_symbol("__charly_init");
+      auto __charly_init_id = this->create_symbol("__charly_init");
+
+      auto __charly_init_block = this->request_instruction_block(__charly_init_block_id, 1);
+      VALUE __charly_init = this->create_function(__charly_init_id, 0, __charly_init_block);
+
+      __charly_init_block->write_putvalue(this->create_integer(25));
+      __charly_init_block->write_putvalue(this->create_integer(25));
+      __charly_init_block->write_putvalue(this->create_integer(25));
+      __charly_init_block->write_operator(Opcode::Add);
+      __charly_init_block->write_operator(Opcode::Add);
+      __charly_init_block->write_setsymbol(this->create_symbol("foo"));
+      __charly_init_block->write_readsymbol(this->create_symbol("foo"));
+      __charly_init_block->write_byte(0xff);
 
       this->push_stack(__charly_init);
       this->op_call(0);
+
+      this->frames->environment->register_offset(this->create_symbol("foo"), 0);
 
       // Set the self value
       this->frames->self = this->create_integer(25);
@@ -534,9 +551,21 @@ namespace Charly {
             break;
           }
 
+          case Opcode::ReadSymbol: {
+            VALUE symbol = *(VALUE *)(this->ip + sizeof(Opcode));
+            this->op_readsymbol(symbol);
+            break;
+          }
+
           case Opcode::SetLocal: {
             uint32_t index = *(uint32_t *)(this->ip + sizeof(Opcode));
             this->op_setlocal(index);
+            break;
+          }
+
+          case Opcode::SetSymbol: {
+            VALUE symbol = *(VALUE *)(this->ip + sizeof(Opcode));
+            this->op_setsymbol(symbol);
             break;
           }
 
@@ -583,6 +612,9 @@ namespace Charly {
           this->ip += instruction_length;
         }
       }
+
+      this->stacktrace(std::cout);
+      this->stackdump(std::cout);
     }
 
   }
