@@ -242,35 +242,38 @@ namespace Charly {
 
     uint32_t VM::decode_instruction_length(Opcode opcode) {
       switch (opcode) {
-        case Opcode::Nop:              return 1;
-        case Opcode::ReadSymbol:       return 1 + sizeof(ID);
-        case Opcode::ReadMemberSymbol: return 1 + sizeof(ID);
-        case Opcode::ReadMemberValue:  return 1;
-        case Opcode::SetSymbol:        return 1 + sizeof(ID);
-        case Opcode::SetMemberSymbol:  return 1 + sizeof(ID);
-        case Opcode::SetMemberValue:   return 1;
-        case Opcode::PutSelf:          return 1;
-        case Opcode::PutString:        return 1 + sizeof(char*) + (sizeof(uint32_t) * 2);
-        case Opcode::PutFloat:         return 1 + sizeof(double);
-        case Opcode::PutFunction:      return 1 + sizeof(ID) + sizeof(void*) + sizeof(bool) + sizeof(uint32_t);
-        case Opcode::PutCFunction:     return 1 + sizeof(ID) + sizeof(void *) + sizeof(uint32_t);
-        case Opcode::PutArray:         return 1 + sizeof(uint32_t);
-        case Opcode::PutHash:          return 1 + sizeof(uint32_t);
-        case Opcode::PutClass:         return 1 + sizeof(ID) + sizeof(uint32_t);
-        case Opcode::RegisterLocal:    return 1 + sizeof(ID) + sizeof(uint32_t);
-        case Opcode::MakeConstant:     return 1 + sizeof(uint32_t);
-        case Opcode::Pop:              return 1 + sizeof(uint32_t);
-        case Opcode::Dup:              return 1;
-        case Opcode::Swap:             return 1;
-        case Opcode::Topn:             return 1 + sizeof(uint32_t);
-        case Opcode::Setn:             return 1 + sizeof(uint32_t);
-        case Opcode::Call:             return 1 + sizeof(uint32_t);
-        case Opcode::CallMember:       return 1 + sizeof(uint32_t);
-        case Opcode::Throw:            return 1 + sizeof(uint8_t);
-        case Opcode::Branch:           return 1 + sizeof(uint32_t);
-        case Opcode::BranchIf:         return 1 + sizeof(uint32_t);
-        case Opcode::BranchUnless:     return 1 + sizeof(uint32_t);
-        default:                       return 1;
+        case Opcode::Nop:               return 1;
+        case Opcode::ReadLocal:         return 1 + sizeof(uint32_t);
+        case Opcode::ReadSymbol:        return 1 + sizeof(ID);
+        case Opcode::ReadMemberSymbol:  return 1 + sizeof(ID);
+        case Opcode::ReadMemberValue:   return 1;
+        case Opcode::SetLocal:          return 1 + sizeof(uint32_t);
+        case Opcode::SetSymbol:         return 1 + sizeof(ID);
+        case Opcode::SetMemberSymbol:   return 1 + sizeof(ID);
+        case Opcode::SetMemberValue:    return 1;
+        case Opcode::PutSelf:           return 1;
+        case Opcode::PutValue:          return 1 + sizeof(VALUE);
+        case Opcode::PutString:         return 1 + sizeof(char*) + (sizeof(uint32_t) * 2);
+        case Opcode::PutFloat:          return 1 + sizeof(double);
+        case Opcode::PutFunction:       return 1 + sizeof(ID) + sizeof(void*) + sizeof(bool) + sizeof(uint32_t);
+        case Opcode::PutCFunction:      return 1 + sizeof(ID) + sizeof(void *) + sizeof(uint32_t);
+        case Opcode::PutArray:          return 1 + sizeof(uint32_t);
+        case Opcode::PutHash:           return 1 + sizeof(uint32_t);
+        case Opcode::PutClass:          return 1 + sizeof(ID) + sizeof(uint32_t);
+        case Opcode::RegisterLocal:     return 1 + sizeof(ID) + sizeof(uint32_t);
+        case Opcode::MakeConstant:      return 1 + sizeof(uint32_t);
+        case Opcode::Pop:               return 1 + sizeof(uint32_t);
+        case Opcode::Dup:               return 1;
+        case Opcode::Swap:              return 1;
+        case Opcode::Topn:              return 1 + sizeof(uint32_t);
+        case Opcode::Setn:              return 1 + sizeof(uint32_t);
+        case Opcode::Call:              return 1 + sizeof(uint32_t);
+        case Opcode::CallMember:        return 1 + sizeof(uint32_t);
+        case Opcode::Throw:             return 1 + sizeof(uint8_t);
+        case Opcode::Branch:            return 1 + sizeof(uint32_t);
+        case Opcode::BranchIf:          return 1 + sizeof(uint32_t);
+        case Opcode::BranchUnless:      return 1 + sizeof(uint32_t);
+        default:                        return 1;
       }
     }
 
@@ -386,6 +389,41 @@ namespace Charly {
       }
     }
 
+    void VM::op_add() {
+      VALUE right = this->pop_stack();
+      VALUE left = this->pop_stack();
+
+      if (this->type(left) == Type::Integer && this->type(right) == Type::Integer) {
+        int64_t i_left = this->integer_value(left);
+        int64_t i_right = this->integer_value(right);
+        this->push_stack(this->create_integer(i_left + i_right));
+        return;
+      }
+
+      if (this->type(left) == Type::Float && this->type(right) == Type::Float) {
+        double f_left = this->float_value(left);
+        double f_right = this->float_value(right);
+        this->push_stack(this->create_float(f_left + f_right));
+        return;
+      }
+
+      if (this->type(left) == Type::Integer && this->type(right) == Type::Float) {
+        double f_left = (double)this->integer_value(left);
+        double f_right = this->float_value(right);
+        this->push_stack(this->create_float(f_left + f_right));
+        return;
+      }
+
+      if (this->type(left) == Type::Float && this->type(right) == Type::Integer) {
+        double f_left = this->float_value(left);
+        double f_right = (double)this->integer_value(right);
+        this->push_stack(this->create_float(f_left + f_right));
+        return;
+      }
+
+      this->panic("Unknown types in ADD operation");
+    }
+
     void VM::stacktrace(std::ostream& io) {
       Frame* frame = this->frames;
 
@@ -428,36 +466,107 @@ namespace Charly {
     void VM::run() {
 
       // Create the foo function on the stack
-      InstructionBlock* foo_block = this->request_instruction_block(0x00, 4);
+      InstructionBlock* foo_block = this->request_instruction_block(0x00, 4); {
+        foo_block->write_putvalue(this->create_integer(25));
+        foo_block->write_putvalue(this->create_integer(25));
+        foo_block->write_operator(Opcode::Add);
+        foo_block->write_putvalue(this->create_integer(50));
+        foo_block->write_operator(Opcode::Add);
+        foo_block->write_byte(0xff);
+      }
 
-      foo_block->write_byte(1);
-      foo_block->write_short(2);
-      foo_block->write_int(3);
-      foo_block->write_long(4);
-      foo_block->write_double(5);
+      this->push_stack(this->create_function("foo", 0, foo_block));
 
-      VALUE foo_function = this->create_function("foo", 4, foo_block);
-      this->push_stack(foo_function);
+      // Execute instructions as long as we have a valid ip
+      // and the machine wasn't halted
+      bool machine_halted = false;
+      while (this->ip && !machine_halted) {
 
-      // Call the foo function
-      this->op_putvalue(this->create_integer(25));
-      this->op_putvalue(this->create_integer(75));
-      this->op_putvalue(this->create_integer(75));
-      this->op_putvalue(this->create_integer(75));
+        // Backup the current ip
+        // After the instruction was executed we check if
+        // ip stayed the same. If it's still the same value
+        // we increment it to the next instruction (via decode_instruction_length)
+        uint8_t* old_ip = this->ip;
 
-      this->op_call(4);
+        // Check if we're out-of-bounds relative to the current block
+        uint8_t* block_data = this->frames->function->block->data;
+        uint32_t block_data_size = this->frames->function->block->data_size;
+        if (this->ip + (sizeof(Opcode) - 1) >= (block_data + block_data_size) || this->ip < block_data) {
+          this->panic("IP is out of bounds!");
+        }
 
-      this->op_putself();
+        // Retrieve the current opcode
+        Opcode opcode = *(Opcode *)this->ip;
 
-      this->stacktrace(std::cout);
+        // Check if there is enough space for instruction arguments
+        uint32_t instruction_length = this->decode_instruction_length(opcode);
+        if (this->ip + instruction_length >= (block_data + block_data_size + sizeof(Opcode))) {
+          this->panic("Not enough space for instruction arguments");
+        }
 
-      this->op_throw(ThrowType::Return);
+        // Redirect to specific instruction handler
+        switch (opcode) {
+          case Opcode::ReadLocal: {
+            uint32_t index = *(uint32_t *)(this->ip + sizeof(Opcode));
+            this->op_readlocal(index);
+            break;
+          }
 
-      this->op_putself();
+          case Opcode::SetLocal: {
+            uint32_t index = *(uint32_t *)(this->ip + sizeof(Opcode));
+            this->op_setlocal(index);
+            break;
+          }
 
-      this->stacktrace(std::cout);
+          case Opcode::PutSelf: {
+            this->op_putself();
+          }
 
-      this->stackdump(std::cout);
+          case Opcode::PutValue: {
+            VALUE value = *(VALUE *)(this->ip + sizeof(Opcode));
+            this->op_putvalue(value);
+            break;
+          }
+
+          case Opcode::Call: {
+            uint32_t argc = *(VALUE *)(this->ip + sizeof(Opcode));
+            this->op_call(argc);
+            break;
+          }
+
+          case Opcode::Throw: {
+            ThrowType throw_type = *(ThrowType *)(this->ip + sizeof(Opcode));
+            this->op_throw(throw_type);
+            break;
+          }
+
+          case Opcode::Add: {
+            this->op_add();
+            break;
+          }
+
+          case 0xff: {
+            machine_halted = true;
+            break;
+          }
+
+          default: {
+            std::cout << "Opcode: " << (void *)opcode << std::endl;
+            this->panic("Unrecognized opcode");
+          }
+        }
+
+        // Increment ip if the instruction didn't change it
+        if (this->ip == old_ip) {
+          this->ip += instruction_length;
+        }
+
+        std::cout << std::endl;
+        std::cout << "Opcode: " << (void *)opcode << std::endl;
+        this->stacktrace(std::cout);
+        this->stackdump(std::cout);
+
+      }
     }
 
   }

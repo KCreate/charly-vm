@@ -93,6 +93,9 @@ namespace Charly {
         void op_call(uint32_t argc);
         void op_throw(ThrowType type);
 
+        // TODO: Handle other types in these methods as well
+        void op_add();
+
       private:
         void inline panic(std::string message) {
           std::cout << "Panic: " << message << std::endl; exit(1);
