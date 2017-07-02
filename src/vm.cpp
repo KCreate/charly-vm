@@ -130,14 +130,14 @@ namespace Charly {
     }
 
     VALUE VM::pop_stack() {
-      if (this->stack.size() == 0) return Value::Null;
+      if (this->stack.size() == 0) this->panic(Status::PopFailedStackEmpty);
       VALUE val = this->stack.back();
       this->stack.pop_back();
       return val;
     }
 
     VALUE VM::peek_stack() {
-      if (this->stack.size() == 0) return Value::Null;
+      if (this->stack.size() == 0) this->panic(Status::PopFailedStackEmpty);
       return this->stack.back();
     }
 
@@ -305,8 +305,7 @@ namespace Charly {
 
       // Check if the index points to a valid entry
       if (index >= this->frames->environment->entries.size()) {
-        this->push_stack(Value::Null);
-        return;
+        this->panic(Status::ReadFailedOutOfBounds);
       }
 
       VALUE value = Value::Null;
@@ -323,7 +322,10 @@ namespace Charly {
         if (write_status != Status::Success) {
 
           // TODO: Handle this in a better way
-          this->panic("Write failed");
+          // write_status could also be an error indicating
+          // that a write to a constant was attempted
+          // this should be handled as a runtime exception
+          this->panic(write_status);
         }
       }
     }
@@ -351,7 +353,7 @@ namespace Charly {
       // |   |  stack which are arguments
       // v   v
       // 1 + argc
-      if (this->stack.size() < (1 + argc)) this->panic("Not enough items on the stack for call");
+      if (this->stack.size() < (1 + argc)) this->panic(Status::PopFailedStackEmpty);
 
       // Allocate enough space to copy the arguments into a temporary buffer
       // We need to keep them around until we have access to the new frames environment
@@ -369,7 +371,7 @@ namespace Charly {
       Function* function = (Function *)this->pop_stack();
 
       // TODO: Handle as runtime error
-      if (this->type((VALUE)function) != Type::Function) this->panic("Popped value isn't a function");
+      if (this->type((VALUE)function) != Type::Function) this->panic(Status::UnspecifiedError);
 
       // Push a control frame for the function
       VALUE self = function->context ? function->context->self : Value::Null;
@@ -398,7 +400,7 @@ namespace Charly {
 
           // Unlink the current frame
           Frame* frame = this->frames;
-          if (frame == NULL) this->panic("Can't return from top-level");
+          if (frame == NULL) this->panic(Status::CantReturnFromTopLevel);
           this->frames = frame->parent;
 
           // Restore the return address
@@ -408,7 +410,7 @@ namespace Charly {
         }
 
         default: {
-          this->panic("Unknown throw type");
+          this->panic(Status::UnknownThrowType);
         }
       }
     }
@@ -445,7 +447,7 @@ namespace Charly {
         return;
       }
 
-      this->panic("Unknown types in ADD operation");
+      this->panic(Status::UnspecifiedError);
     }
 
     void VM::stacktrace(std::ostream& io) {
@@ -508,7 +510,7 @@ namespace Charly {
 
 
         if (this->ip + sizeof(Opcode) - 1 >= block_data + block_write_offset) {
-          this->panic("IP is out of bounds!");
+          this->panic(Status::IpOutOfBounds);
         }
 
         // Retrieve the current opcode
@@ -517,7 +519,7 @@ namespace Charly {
         // Check if there is enough space for instruction arguments
         uint32_t instruction_length = this->decode_instruction_length(opcode);
         if (this->ip + instruction_length >= (block_data + block_write_offset + sizeof(Opcode))) {
-          this->panic("Not enough space for instruction arguments");
+          this->panic(Status::NotEnoughSpaceForInstructionArguments);
         }
 
         // Redirect to specific instruction handler
@@ -572,7 +574,7 @@ namespace Charly {
 
           default: {
             std::cout << "Opcode: " << (void *)opcode << std::endl;
-            this->panic("Unrecognized opcode");
+            this->panic(Status::UnknownOpcode);
           }
         }
 

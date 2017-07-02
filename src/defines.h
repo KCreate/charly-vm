@@ -39,16 +39,23 @@ namespace Charly {
 
   /* Status codes returned by some Container methods */
   namespace Status {
-    const STATUS Success                        = 0x00;
-    const STATUS WriteFailedVariableIsConstant  = 0x01;
-    const STATUS WriteFailedVariableUndefined   = 0x02;
-    const STATUS WriteFailedOutOfBounds         = 0x03;
-    const STATUS WriteFailedTooDeep             = 0x04;
-    const STATUS RegisterFailedAlreadyDefined   = 0x05;
-    const STATUS ReadFailedVariableUndefined    = 0x06;
-    const STATUS ReadFailedOutOfBounds          = 0x07;
-    const STATUS ReadFailedTooDeep              = 0x08;
-    const STATUS UnknownSymbol                  = 0x09;
+    const STATUS Success                                = 0x00;
+    const STATUS WriteFailedVariableIsConstant          = 0x01;
+    const STATUS WriteFailedVariableUndefined           = 0x02;
+    const STATUS WriteFailedOutOfBounds                 = 0x03;
+    const STATUS WriteFailedTooDeep                     = 0x04;
+    const STATUS RegisterFailedAlreadyDefined           = 0x05;
+    const STATUS ReadFailedVariableUndefined            = 0x06;
+    const STATUS ReadFailedOutOfBounds                  = 0x07;
+    const STATUS ReadFailedTooDeep                      = 0x08;
+    const STATUS UnknownSymbol                          = 0x09;
+    const STATUS PopFailedStackEmpty                    = 0x0a;
+    const STATUS UnspecifiedError                       = 0x0b;
+    const STATUS CantReturnFromTopLevel                 = 0x0c;
+    const STATUS UnknownThrowType                       = 0x0d;
+    const STATUS IpOutOfBounds                          = 0x0e;
+    const STATUS NotEnoughSpaceForInstructionArguments  = 0x0f;
+    const STATUS UnknownOpcode                          = 0x10;
 
     /* Human-readable error messages */
     const std::string str[] = {
@@ -61,7 +68,14 @@ namespace Charly {
       "Read failed: Field doesn't exist",
       "Read failed: Index out of bounds",
       "Read failed: Environment doesn't exist",
-      "Unknown symbol"
+      "Unknown symbol",
+      "Pop failed: Stack empty",
+      "Unspecified error",
+      "Cannot return from top-level",
+      "Unknown throw type",
+      "Instruction pointer is out-of-bounds",
+      "Not enough space for instruction arguments",
+      "Unknown opcode"
     };
   }
 

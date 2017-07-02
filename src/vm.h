@@ -102,8 +102,9 @@ namespace Charly {
         void op_add();
 
       private:
-        void inline panic(std::string message) {
-          std::cout << "Panic: " << message << std::endl; exit(1);
+        void inline panic(STATUS reason) {
+          std::cout << "Panic: " << Status::str[reason] << std::endl;
+          exit(1);
         }
         void stacktrace(std::ostream& io);
         void stackdump(std::ostream& io);
