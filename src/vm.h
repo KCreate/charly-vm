@@ -45,7 +45,7 @@ namespace Charly {
         GC::Collector* gc;
         std::vector<InstructionBlock*> unassigned_blocks;
         std::vector<VALUE> stack;
-        std::unordered_map<ID, std::string> id_table;
+        std::unordered_map<VALUE, std::string> id_table;
         Frame* frames;
         uint8_t* ip;
 
@@ -63,7 +63,7 @@ namespace Charly {
         STATUS write(uint32_t index, uint32_t level, VALUE value);
 
         // Instruction Blocks
-        InstructionBlock* request_instruction_block(ID id, uint32_t lvarcount);
+        InstructionBlock* request_instruction_block(VALUE id, uint32_t lvarcount);
         void register_instruction_block(InstructionBlock* block);
         void claim_instruction_block(InstructionBlock* block);
 
@@ -80,7 +80,7 @@ namespace Charly {
         VALUE create_object(uint32_t initial_capacity, VALUE klass);
         VALUE create_integer(int64_t value);
         VALUE create_float(double value);
-        VALUE create_function(std::string name, uint32_t required_arguments, InstructionBlock* block);
+        VALUE create_function(VALUE name, uint32_t required_arguments, InstructionBlock* block);
 
         // Methods that operate on the VALUE type
         int64_t integer_value(VALUE value);

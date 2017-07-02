@@ -108,7 +108,7 @@ namespace Charly {
       return frame->environment->write(index, value);
     }
 
-    InstructionBlock* VM::request_instruction_block(ID id, uint32_t lvarcount) {
+    InstructionBlock* VM::request_instruction_block(VALUE id, uint32_t lvarcount) {
       InstructionBlock* block = new InstructionBlock(id, lvarcount);
       this->register_instruction_block(block);
       return block;
@@ -268,23 +268,23 @@ namespace Charly {
       switch (opcode) {
         case Opcode::Nop:               return 1;
         case Opcode::ReadLocal:         return 1 + sizeof(uint32_t);
-        case Opcode::ReadSymbol:        return 1 + sizeof(ID);
-        case Opcode::ReadMemberSymbol:  return 1 + sizeof(ID);
+        case Opcode::ReadSymbol:        return 1 + sizeof(VALUE);
+        case Opcode::ReadMemberSymbol:  return 1 + sizeof(VALUE);
         case Opcode::ReadMemberValue:   return 1;
         case Opcode::SetLocal:          return 1 + sizeof(uint32_t);
-        case Opcode::SetSymbol:         return 1 + sizeof(ID);
-        case Opcode::SetMemberSymbol:   return 1 + sizeof(ID);
+        case Opcode::SetSymbol:         return 1 + sizeof(VALUE);
+        case Opcode::SetMemberSymbol:   return 1 + sizeof(VALUE);
         case Opcode::SetMemberValue:    return 1;
         case Opcode::PutSelf:           return 1;
         case Opcode::PutValue:          return 1 + sizeof(VALUE);
         case Opcode::PutString:         return 1 + sizeof(char*) + (sizeof(uint32_t) * 2);
         case Opcode::PutFloat:          return 1 + sizeof(double);
-        case Opcode::PutFunction:       return 1 + sizeof(ID) + sizeof(void*) + sizeof(bool) + sizeof(uint32_t);
-        case Opcode::PutCFunction:      return 1 + sizeof(ID) + sizeof(void *) + sizeof(uint32_t);
+        case Opcode::PutFunction:       return 1 + sizeof(VALUE) + sizeof(void*) + sizeof(bool) + sizeof(uint32_t);
+        case Opcode::PutCFunction:      return 1 + sizeof(VALUE) + sizeof(void *) + sizeof(uint32_t);
         case Opcode::PutArray:          return 1 + sizeof(uint32_t);
         case Opcode::PutHash:           return 1 + sizeof(uint32_t);
-        case Opcode::PutClass:          return 1 + sizeof(ID) + sizeof(uint32_t);
-        case Opcode::RegisterLocal:     return 1 + sizeof(ID) + sizeof(uint32_t);
+        case Opcode::PutClass:          return 1 + sizeof(VALUE) + sizeof(uint32_t);
+        case Opcode::RegisterLocal:     return 1 + sizeof(VALUE) + sizeof(uint32_t);
         case Opcode::MakeConstant:      return 1 + sizeof(uint32_t);
         case Opcode::Pop:               return 1 + sizeof(uint32_t);
         case Opcode::Dup:               return 1;
