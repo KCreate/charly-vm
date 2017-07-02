@@ -434,7 +434,7 @@ namespace Charly {
 
         io << i++ << " : (";
         io << frame->function->name << " : ";
-        io << (void*)frame->function->block->data << "[" << frame->function->block->data_size << "] : ";
+        io << (void*)frame->function->block->data << "[" << frame->function->block->write_offset << "] : ";
         io << (void*)frame->return_address;
         io << ")" << std::endl;
         frame = frame->parent;
@@ -490,8 +490,10 @@ namespace Charly {
 
         // Check if we're out-of-bounds relative to the current block
         uint8_t* block_data = this->frames->function->block->data;
-        uint32_t block_data_size = this->frames->function->block->data_size;
-        if (this->ip + (sizeof(Opcode) - 1) >= (block_data + block_data_size) || this->ip < block_data) {
+        uint32_t block_write_offset = this->frames->function->block->write_offset;
+
+
+        if (this->ip + sizeof(Opcode) - 1 >= block_data + block_write_offset) {
           this->panic("IP is out of bounds!");
         }
 
@@ -500,7 +502,7 @@ namespace Charly {
 
         // Check if there is enough space for instruction arguments
         uint32_t instruction_length = this->decode_instruction_length(opcode);
-        if (this->ip + instruction_length >= (block_data + block_data_size + sizeof(Opcode))) {
+        if (this->ip + instruction_length >= (block_data + block_write_offset + sizeof(Opcode))) {
           this->panic("Not enough space for instruction arguments");
         }
 
