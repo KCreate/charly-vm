@@ -135,7 +135,7 @@ namespace Charly {
       // Put a function onto the stack
       //
       // args:
-      // - id
+      // - symbol
       // - block
       // - anonymous
       // - argc
@@ -144,7 +144,7 @@ namespace Charly {
       // Put a function pointer onto the stack
       //
       // args:
-      // - id
+      // - symbol
       // - pointer
       // - argc
       PutCFunction = 0x0e,
@@ -165,14 +165,14 @@ namespace Charly {
       // Pop parent classes of the stack
       //
       // args:
-      // - id
+      // - symbol
       // - parentclasscount
       PutClass = 0x11,
 
       // Create a new entry in the offset-table of the current environment
       //
       // args:
-      // - id
+      // - symbol
       // - offset
       RegisterLocal = 0x12,
 

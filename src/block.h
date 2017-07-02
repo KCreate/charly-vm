@@ -41,13 +41,13 @@ namespace Charly {
       const uint32_t INITIAL_BLOCK_SIZE = 256;
       const uint32_t BLOCK_SIZE_GROWTH_FACTOR = 2;
 
-      VALUE id;
+      VALUE symbol;
       uint32_t lvarcount;
       uint8_t* data;
       uint32_t data_size;
       uint32_t write_offset;
 
-      InstructionBlock(VALUE id, uint32_t lvarcount) : id(id), lvarcount(lvarcount) {
+      InstructionBlock(VALUE symbol, uint32_t lvarcount) : symbol(symbol), lvarcount(lvarcount) {
         this->data = (uint8_t *)calloc(INITIAL_BLOCK_SIZE, sizeof(uint8_t));
         this->data_size = INITIAL_BLOCK_SIZE * sizeof(uint8_t);
         this->write_offset = BLOCK_INITIAL_WRITE_OFFSET;
@@ -161,17 +161,17 @@ namespace Charly {
         this->write_double(value);
       }
 
-      void inline write_putfunction(VALUE id, InstructionBlock* block, bool anonymous, uint32_t argc) {
+      void inline write_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc) {
         this->write_byte(Opcode::PutFunction);
-        this->write_long(id);
+        this->write_long(symbol);
         this->write_pointer(block);
         this->write_byte(anonymous);
         this->write_int(argc);
       }
 
-      void inline write_putcfunction(VALUE id, void* funcptr, uint32_t argc) {
+      void inline write_putcfunction(VALUE symbol, void* funcptr, uint32_t argc) {
         this->write_byte(Opcode::PutFunction);
-        this->write_long(id);
+        this->write_long(symbol);
         this->write_pointer(funcptr);
         this->write_int(argc);
       }
@@ -186,15 +186,15 @@ namespace Charly {
         this->write_int(size);
       }
 
-      void inline write_putclass(VALUE id, uint32_t parentclasscount) {
+      void inline write_putclass(VALUE symbol, uint32_t parentclasscount) {
         this->write_byte(Opcode::PutClass);
-        this->write_long(id);
+        this->write_long(symbol);
         this->write_int(parentclasscount);
       }
 
-      void inline write_registerlocal(VALUE id, uint32_t index) {
+      void inline write_registerlocal(VALUE symbol, uint32_t index) {
         this->write_byte(Opcode::RegisterLocal);
-        this->write_long(id);
+        this->write_long(symbol);
         this->write_int(index);
       }
 

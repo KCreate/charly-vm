@@ -45,7 +45,7 @@ namespace Charly {
         GC::Collector* gc;
         std::vector<InstructionBlock*> unassigned_blocks;
         std::vector<VALUE> stack;
-        std::unordered_map<VALUE, std::string> id_table;
+        std::unordered_map<VALUE, std::string> symbol_table;
         Frame* frames;
         uint8_t* ip;
 
@@ -61,7 +61,7 @@ namespace Charly {
         STATUS write(VALUE key, VALUE value);
 
         // Instruction Blocks
-        InstructionBlock* request_instruction_block(VALUE id, uint32_t lvarcount);
+        InstructionBlock* request_instruction_block(VALUE symbol, uint32_t lvarcount);
         void register_instruction_block(InstructionBlock* block);
         void claim_instruction_block(InstructionBlock* block);
 
@@ -70,7 +70,7 @@ namespace Charly {
         VALUE peek_stack();
         void push_stack(VALUE value);
 
-        // Id table
+        // Symbol table
         STATUS lookup_symbol(VALUE symbol, std::string* result);
 
         // Methods to create new data types
@@ -95,6 +95,7 @@ namespace Charly {
         void op_setsymbol(VALUE symbol);
         void op_putself();
         void op_putvalue(VALUE value);
+        void op_registerlocal(VALUE symbol, uint32_t offset);
         void op_call(uint32_t argc);
         void op_throw(ThrowType type);
 

@@ -90,8 +90,8 @@ namespace Charly {
       return Status::WriteFailedVariableUndefined;
     }
 
-    InstructionBlock* VM::request_instruction_block(VALUE id, uint32_t lvarcount) {
-      InstructionBlock* block = new InstructionBlock(id, lvarcount);
+    InstructionBlock* VM::request_instruction_block(VALUE symbol, uint32_t lvarcount) {
+      InstructionBlock* block = new InstructionBlock(symbol, lvarcount);
       this->register_instruction_block(block);
       return block;
     }
@@ -128,9 +128,9 @@ namespace Charly {
     }
 
     STATUS VM::lookup_symbol(VALUE symbol, std::string* result) {
-      auto found_string = this->id_table.find(symbol);
+      auto found_string = this->symbol_table.find(symbol);
 
-      if (found_string == this->id_table.end()) {
+      if (found_string == this->symbol_table.end()) {
         return Status::UnknownSymbol;
       }
 
@@ -142,9 +142,9 @@ namespace Charly {
       size_t hashvalue = std::hash<std::string>{}(value);
       VALUE symbol = (VALUE)((hashvalue & ~Value::ISymbolMask) | Value::ISymbolFlag);
 
-      // Add this hash to the id_table if it doesn't exist
-      if (this->id_table.find(symbol) == this->id_table.end()) {
-        this->id_table.insert({symbol, value});
+      // Add this hash to the symbol_table if it doesn't exist
+      if (this->symbol_table.find(symbol) == this->symbol_table.end()) {
+        this->symbol_table.insert({symbol, value});
       }
 
       return symbol;
@@ -484,11 +484,11 @@ namespace Charly {
       this->ip = NULL;
 
       // Setup top-level-block
-      auto __charly_init_block_id = this->create_symbol("__charly_init");
-      auto __charly_init_id = this->create_symbol("__charly_init");
+      auto __charly_init_block_symbol = this->create_symbol("__charly_init");
+      auto __charly_init_symbol = this->create_symbol("__charly_init");
 
-      auto __charly_init_block = this->request_instruction_block(__charly_init_block_id, 1);
-      VALUE __charly_init = this->create_function(__charly_init_id, 0, __charly_init_block);
+      auto __charly_init_block = this->request_instruction_block(__charly_init_block_symbol, 1);
+      VALUE __charly_init = this->create_function(__charly_init_symbol, 0, __charly_init_block);
 
       __charly_init_block->write_putvalue(this->create_integer(25));
       __charly_init_block->write_putvalue(this->create_integer(25));
