@@ -25,6 +25,7 @@
  */
 
 #include <iostream>
+#include <functional>
 
 #include "vm.h"
 
@@ -142,6 +143,29 @@ namespace Charly {
 
     void VM::push_stack(VALUE value) {
       this->stack.push_back(value);
+    }
+
+    STATUS VM::lookup_symbol(VALUE symbol, std::string* result) {
+      auto found_string = this->id_table.find(symbol);
+
+      if (found_string == this->id_table.end()) {
+        return Status::UnknownSymbol;
+      }
+
+      *result = found_string->second; // second refers to the value
+      return Status::Success;
+    }
+
+    VALUE VM::create_symbol(std::string value) {
+      size_t hashvalue = std::hash<std::string>{}(value);
+      VALUE symbol = (VALUE)((hashvalue & ~Value::ISymbolMask) | Value::ISymbolFlag);
+
+      // Add this hash to the id_table if it doesn't exist
+      if (this->id_table.find(symbol) == this->id_table.end()) {
+        this->id_table.insert({symbol, value});
+      }
+
+      return symbol;
     }
 
     VALUE VM::create_object(uint32_t initial_capacity, VALUE klass) {
@@ -453,10 +477,12 @@ namespace Charly {
       this->frames = NULL; // Initialize top-level here
       this->ip = NULL;
 
-      InstructionBlock* main_block = this->request_instruction_block(0x00, 0);
-      VALUE main_function = this->create_function("__charly_init", 0, main_block);
+      // Setup top-level-block
+      VALUE __charly_init_block_id = this->create_symbol("__charly_init_block");
+      auto __charly_init_block = this->request_instruction_block(__charly_init_block_id, 0);
+      VALUE __charly_init = this->create_function("__charly_init", 0, __charly_init_block);
 
-      this->push_stack(main_function);
+      this->push_stack(__charly_init);
       this->op_call(0);
 
       // Set the self value
@@ -464,18 +490,6 @@ namespace Charly {
     }
 
     void VM::run() {
-
-      // Create the foo function on the stack
-      InstructionBlock* foo_block = this->request_instruction_block(0x00, 4); {
-        foo_block->write_putvalue(this->create_integer(25));
-        foo_block->write_putvalue(this->create_integer(25));
-        foo_block->write_operator(Opcode::Add);
-        foo_block->write_putvalue(this->create_integer(50));
-        foo_block->write_operator(Opcode::Add);
-        foo_block->write_byte(0xff);
-      }
-
-      this->push_stack(this->create_function("foo", 0, foo_block));
 
       // Execute instructions as long as we have a valid ip
       // and the machine wasn't halted
@@ -566,12 +580,6 @@ namespace Charly {
         if (this->ip == old_ip) {
           this->ip += instruction_length;
         }
-
-        std::cout << std::endl;
-        std::cout << "Opcode: " << (void *)opcode << std::endl;
-        this->stacktrace(std::cout);
-        this->stackdump(std::cout);
-
       }
     }
 

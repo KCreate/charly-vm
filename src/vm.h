@@ -45,6 +45,7 @@ namespace Charly {
         GC::Collector* gc;
         std::vector<InstructionBlock*> unassigned_blocks;
         std::vector<VALUE> stack;
+        std::unordered_map<ID, std::string> id_table;
         Frame* frames;
         uint8_t* ip;
 
@@ -71,7 +72,11 @@ namespace Charly {
         VALUE peek_stack();
         void push_stack(VALUE value);
 
+        // Id table
+        STATUS lookup_symbol(VALUE symbol, std::string* result);
+
         // Methods to create new data types
+        VALUE create_symbol(std::string value);
         VALUE create_object(uint32_t initial_capacity, VALUE klass);
         VALUE create_integer(int64_t value);
         VALUE create_float(double value);

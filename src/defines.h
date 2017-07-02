@@ -49,6 +49,7 @@ namespace Charly {
     const STATUS ReadFailedVariableUndefined    = 0x06;
     const STATUS ReadFailedOutOfBounds          = 0x07;
     const STATUS ReadFailedTooDeep              = 0x08;
+    const STATUS UnknownSymbol                  = 0x09;
 
     /* Human-readable error messages */
     const std::string str[] = {
@@ -60,7 +61,8 @@ namespace Charly {
       "Register failed: Key already defined",
       "Read failed: Field doesn't exist",
       "Read failed: Index out of bounds",
-      "Read failed: Environment doesn't exist"
+      "Read failed: Environment doesn't exist",
+      "Unknown symbol"
     };
   }
 
@@ -84,6 +86,7 @@ namespace Charly {
       const VALUE Object    = 0x05;
       const VALUE Function  = 0x06;
       const VALUE Frame     = 0x07;
+      const VALUE Symbol    = 0x08;
 
       const std::string str[] = {
         "Undefined",
@@ -93,7 +96,8 @@ namespace Charly {
         "Null",
         "Object",
         "Function",
-        "Frame"
+        "Frame",
+        "Symbol"
       };
     }
 
@@ -119,6 +123,8 @@ namespace Charly {
       const VALUE IIntegerFlag  = 0b00001;
       const VALUE IFloatMask    = 0b00011;
       const VALUE IFloatFlag    = 0b00010;
+      const VALUE ISymbolMask   = 0b01111;
+      const VALUE ISymbolFlag   = 0b01100;
       const VALUE False         = 0b00000;
       const VALUE True          = 0b10100;
       const VALUE Null          = 0b01000;
@@ -126,6 +132,7 @@ namespace Charly {
       const inline bool is_boolean(VALUE value) { return value == False || value == True; }
       const inline bool is_integer(VALUE value) { return (value & IIntegerMask) == IIntegerFlag; }
       const inline bool is_ifloat(VALUE value)  { return (value & IFloatMask) == IFloatFlag; }
+      const inline bool is_symbol(VALUE value)  { return (value & ISymbolMask) == ISymbolFlag; }
       const inline bool is_false(VALUE value)   { return value == False; }
       const inline bool is_true(VALUE value)    { return value == True; }
       const inline bool is_null(VALUE value)    { return value == Null; }
