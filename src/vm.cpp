@@ -45,7 +45,6 @@ namespace Charly {
       cell->as.frame.parent = this->frames;
       cell->as.frame.parent_environment_frame = function->context;
       cell->as.frame.function = function;
-      cell->as.frame.last_block = this->frames ? this->frames->function->block : NULL;
 
       uint32_t lvar_count = function->required_arguments + function->block->lvarcount;
       cell->as.frame.environment = new Container(lvar_count);

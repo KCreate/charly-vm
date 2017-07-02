@@ -43,7 +43,6 @@ namespace Charly {
       Frame* parent;
       Frame* parent_environment_frame;
       Function* function;
-      InstructionBlock* last_block;
       Scope::Container* environment;
       VALUE self;
       uint8_t* return_address;
