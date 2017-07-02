@@ -345,6 +345,10 @@ namespace Charly {
       this->push_stack(value);
     }
 
+    void VM::op_registerlocal(VALUE symbol, uint32_t offset) {
+      this->frames->environment->register_offset(symbol, offset);
+    }
+
     void VM::op_call(uint32_t argc) {
 
       // Check if there are enough items on the stack
@@ -490,6 +494,7 @@ namespace Charly {
       auto __charly_init_block = this->request_instruction_block(__charly_init_block_symbol, 1);
       VALUE __charly_init = this->create_function(__charly_init_symbol, 0, __charly_init_block);
 
+      __charly_init_block->write_registerlocal(this->create_symbol("foo"), 0);
       __charly_init_block->write_putvalue(this->create_integer(25));
       __charly_init_block->write_putvalue(this->create_integer(25));
       __charly_init_block->write_putvalue(this->create_integer(25));
@@ -501,8 +506,6 @@ namespace Charly {
 
       this->push_stack(__charly_init);
       this->op_call(0);
-
-      this->frames->environment->register_offset(this->create_symbol("foo"), 0);
 
       // Set the self value
       this->frames->self = this->create_integer(25);
@@ -576,6 +579,13 @@ namespace Charly {
           case Opcode::PutValue: {
             VALUE value = *(VALUE *)(this->ip + sizeof(Opcode));
             this->op_putvalue(value);
+            break;
+          }
+
+          case Opcode::RegisterLocal: {
+            VALUE symbol = *(VALUE *)(this->ip + sizeof(Opcode));
+            uint32_t offset = *(uint32_t *)(this->ip + sizeof(Opcode) + sizeof(VALUE));
+            this->op_registerlocal(symbol, offset);
             break;
           }
 
