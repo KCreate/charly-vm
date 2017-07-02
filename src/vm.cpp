@@ -508,6 +508,10 @@ namespace Charly {
 
         // Redirect to specific instruction handler
         switch (opcode) {
+          case Opcode::Nop: {
+            break;
+          }
+
           case Opcode::ReadLocal: {
             uint32_t index = *(uint32_t *)(this->ip + sizeof(Opcode));
             this->op_readlocal(index);
