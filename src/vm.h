@@ -61,7 +61,7 @@ namespace Charly {
         STATUS write(VALUE key, VALUE value);
 
         // Instruction Blocks
-        InstructionBlock* request_instruction_block(VALUE symbol, uint32_t lvarcount);
+        InstructionBlock* request_instruction_block(uint32_t lvarcount);
         void register_instruction_block(InstructionBlock* block);
         void claim_instruction_block(InstructionBlock* block);
 

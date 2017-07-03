@@ -90,8 +90,8 @@ namespace Charly {
       return Status::WriteFailedVariableUndefined;
     }
 
-    InstructionBlock* VM::request_instruction_block(VALUE symbol, uint32_t lvarcount) {
-      InstructionBlock* block = new InstructionBlock(symbol, lvarcount);
+    InstructionBlock* VM::request_instruction_block(uint32_t lvarcount) {
+      InstructionBlock* block = new InstructionBlock(lvarcount);
       this->register_instruction_block(block);
       return block;
     }
@@ -190,7 +190,6 @@ namespace Charly {
     }
 
     VALUE VM::create_function(VALUE name, uint32_t required_arguments, InstructionBlock* block) {
-
       GC::Cell* cell = this->gc->allocate();
       cell->as.basic.set_type(Type::Function);
       cell->as.basic.klass = Value::Null; // TODO: Replace with actual class

@@ -41,13 +41,12 @@ namespace Charly {
       const uint32_t INITIAL_BLOCK_SIZE = 256;
       const uint32_t BLOCK_SIZE_GROWTH_FACTOR = 2;
 
-      VALUE symbol;
       uint32_t lvarcount;
       uint8_t* data;
       uint32_t data_size;
       uint32_t write_offset;
 
-      InstructionBlock(VALUE symbol, uint32_t lvarcount) : symbol(symbol), lvarcount(lvarcount) {
+      InstructionBlock(uint32_t lvarcount) : lvarcount(lvarcount) {
         this->data = (uint8_t *)calloc(INITIAL_BLOCK_SIZE, sizeof(uint8_t));
         this->data_size = INITIAL_BLOCK_SIZE * sizeof(uint8_t);
         this->write_offset = BLOCK_INITIAL_WRITE_OFFSET;
