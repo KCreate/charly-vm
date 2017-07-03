@@ -349,6 +349,12 @@ namespace Charly {
       this->frames->environment->register_offset(symbol, offset);
     }
 
+    void VM::op_makeconstant(uint32_t offset) {
+      if (offset < this->frames->environment->entries.size()) {
+        this->frames->environment->entries[offset].constant = true;
+      }
+    }
+
     void VM::op_call(uint32_t argc) {
 
       // Check if there are enough items on the stack
@@ -501,6 +507,7 @@ namespace Charly {
       __charly_init_block->write_operator(Opcode::Add);
       __charly_init_block->write_operator(Opcode::Add);
       __charly_init_block->write_setsymbol(this->create_symbol("foo"));
+      __charly_init_block->write_makeconstant(0);
       __charly_init_block->write_readsymbol(this->create_symbol("foo"));
       __charly_init_block->write_byte(0xff);
 
@@ -527,8 +534,6 @@ namespace Charly {
         // Check if we're out-of-bounds relative to the current block
         uint8_t* block_data = this->frames->function->block->data;
         uint32_t block_write_offset = this->frames->function->block->write_offset;
-
-
         if (this->ip + sizeof(Opcode) - 1 >= block_data + block_write_offset) {
           this->panic(Status::IpOutOfBounds);
         }
@@ -586,6 +591,12 @@ namespace Charly {
             VALUE symbol = *(VALUE *)(this->ip + sizeof(Opcode));
             uint32_t offset = *(uint32_t *)(this->ip + sizeof(Opcode) + sizeof(VALUE));
             this->op_registerlocal(symbol, offset);
+            break;
+          }
+
+          case Opcode::MakeConstant: {
+            uint32_t offset = *(uint32_t *)(this->ip + sizeof(Opcode));
+            this->op_makeconstant(offset);
             break;
           }
 

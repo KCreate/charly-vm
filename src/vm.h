@@ -96,6 +96,7 @@ namespace Charly {
         void op_putself();
         void op_putvalue(VALUE value);
         void op_registerlocal(VALUE symbol, uint32_t offset);
+        void op_makeconstant(uint32_t offset);
         void op_call(uint32_t argc);
         void op_throw(ThrowType type);
 
