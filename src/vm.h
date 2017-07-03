@@ -79,6 +79,7 @@ namespace Charly {
         VALUE create_integer(int64_t value);
         VALUE create_float(double value);
         VALUE create_function(VALUE name, uint32_t required_arguments, InstructionBlock* block);
+        VALUE create_cfunction(VALUE name, uint32_t required_arguments, void* pointer);
 
         // Methods that operate on the VALUE type
         int64_t integer_value(VALUE value);
@@ -95,9 +96,13 @@ namespace Charly {
         void op_setsymbol(VALUE symbol);
         void op_putself();
         void op_putvalue(VALUE value);
+        void op_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc);
+        void op_putcfunction(VALUE symbol, void* pointer, uint32_t argc);
         void op_registerlocal(VALUE symbol, uint32_t offset);
         void op_makeconstant(uint32_t offset);
         void op_call(uint32_t argc);
+        void call_function(Function* function, uint32_t argc, VALUE* argv);
+        void call_cfunction(CFunction* function, uint32_t argc, VALUE* argv);
         void op_throw(ThrowType type);
 
         // TODO: Handle other types in these methods as well

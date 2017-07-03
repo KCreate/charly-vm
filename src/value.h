@@ -78,7 +78,18 @@ namespace Charly {
       bool bound_self_set;
       VALUE bound_self;
 
-      // TODO: Add block, argumentlist and bound argumentlist
+      // TODO: Argumentlist and bound argumentlist
+    };
+
+    struct CFunction {
+      Basic basic;
+      VALUE name;
+      void* pointer;
+      uint32_t required_arguments;
+      bool bound_self_set;
+      VALUE bound_self;
+
+      // TODO: Argumentlist and bound argumentlist
     };
 
     /* Rotate a given value to the left n times */

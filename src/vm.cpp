@@ -205,6 +205,19 @@ namespace Charly {
       return (VALUE)cell;
     }
 
+    VALUE VM::create_cfunction(VALUE name, uint32_t required_arguments, void* pointer) {
+      GC::Cell* cell = this->gc->allocate();
+      cell->as.basic.set_type(Type::CFunction);
+      cell->as.basic.klass = Value::Null; // TODO: Replace with actual class
+      cell->as.cfunction.name = name;
+      cell->as.cfunction.pointer = pointer;
+      cell->as.cfunction.required_arguments = required_arguments;
+      cell->as.cfunction.bound_self_set = false;
+      cell->as.cfunction.bound_self = Value::Null;
+
+      return (VALUE)cell;
+    }
+
     int64_t VM::integer_value(VALUE value) {
       return ((SIGNED_VALUE)value) >> 1;
     }
@@ -344,6 +357,16 @@ namespace Charly {
       this->push_stack(value);
     }
 
+    void VM::op_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc) {
+      VALUE function = this->create_function(symbol, argc, block);
+      this->push_stack(function);
+    }
+
+    void VM::op_putcfunction(VALUE symbol, void* pointer, uint32_t argc) {
+      VALUE function = this->create_cfunction(symbol, argc, pointer);
+      this->push_stack(function);
+    }
+
     void VM::op_registerlocal(VALUE symbol, uint32_t offset) {
       this->frames->environment->register_offset(symbol, offset);
     }
@@ -377,14 +400,29 @@ namespace Charly {
       while (argc--) {
         *(arguments + argc) = this->pop_stack();
       }
+      argc = argc_backup;
 
-      // Pop the function from the stack
-      Function* function = (Function *)this->pop_stack();
+      // Pop the target of the function off of the stack
+      VALUE target = this->pop_stack();
 
-      // TODO: Handle as runtime error
-      if (this->type((VALUE)function) != Type::Function) this->panic(Status::UnspecifiedError);
+      // Redirect to the correct handler
+      switch (this->type(target)) {
+        case Type::Function: return this->call_function((Function *)target, argc, arguments);
+        case Type::CFunction: return this->call_cfunction((CFunction *)target, argc, arguments);
+
+        default: {
+
+          // TODO: Handle as runtime error
+          this->panic(Status::UnspecifiedError);
+        }
+      }
+    }
+
+    void VM::call_function(Function* function, uint32_t argc, VALUE* argv) {
 
       // Push a control frame for the function
+      //
+      // TODO: Check if we can't generalise this for member function calls
       VALUE self = function->context ? function->context->self : Value::Null;
       uint8_t* return_address = this->ip + this->decode_instruction_length(Opcode::Call);
       Frame* frame = this->push_frame(self, function, return_address);
@@ -395,13 +433,33 @@ namespace Charly {
       // The environment will contain enough space for argcount + function.lvar_count
       // values so there's no need to allocate new space in it
       //
-      // TODO: Copy the _arguments_ field into the function
+      // TODO: Copy the *arguments* field into the function (this is an array containing all arguments)
       uint32_t arg_copy_count = function->required_arguments;
       while (arg_copy_count--) {
-        frame->environment->write(arg_copy_count, arguments[arg_copy_count]);
+        frame->environment->write(arg_copy_count, argv[arg_copy_count]);
       }
 
       this->ip = function->block->data;
+    }
+
+    void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
+
+      // Push a control frame for the function
+      uint8_t* return_address = this->ip + this->decode_instruction_length(Opcode::Call);
+
+      switch (argc) {
+
+        // TODO: Also pass the *arguments* field (this is an array containing all arguments)
+        case 0: return ((void (*)(VM*))function->pointer)(this);
+        case 1: return ((void (*)(VM*, VALUE))function->pointer)(this, argv[0]);
+        case 2: return ((void (*)(VM*, VALUE, VALUE))function->pointer)(this, argv[0], argv[1]);
+        case 3: return ((void (*)(VM*, VALUE, VALUE, VALUE))function->pointer)(this, argv[0], argv[1], argv[2]);
+
+        // TODO: Expand to 15??
+        default: {
+          this->panic(Status::TooManyArgumentsForCFunction);
+        }
+      }
     }
 
     void VM::op_throw(ThrowType type) {
@@ -488,17 +546,27 @@ namespace Charly {
       }
     }
 
+    void cfunction_handler(VM* vm) {
+      std::cout << "Handler function called" << std::endl;
+    }
+
     void VM::init() {
       this->frames = NULL; // Initialize top-level here
       this->ip = NULL;
 
-      // Setup top-level-block
-      auto __charly_init_block_symbol = this->create_symbol("__charly_init");
-      auto __charly_init_symbol = this->create_symbol("__charly_init");
+      // Reserve top-level block
+      VALUE symbol = this->create_symbol("__charly_init");
+      auto __charly_init_block = this->request_instruction_block(1);
 
-      auto __charly_init_block = this->request_instruction_block(__charly_init_block_symbol, 1);
-      VALUE __charly_init = this->create_function(__charly_init_symbol, 0, __charly_init_block);
+      // Inject into program and call
+      this->op_putfunction(
+        symbol,
+        __charly_init_block,
+        false,
+        0
+      );
 
+      // Generate entry code
       __charly_init_block->write_registerlocal(this->create_symbol("foo"), 0);
       __charly_init_block->write_putvalue(this->create_integer(25));
       __charly_init_block->write_putvalue(this->create_integer(25));
@@ -508,9 +576,14 @@ namespace Charly {
       __charly_init_block->write_setsymbol(this->create_symbol("foo"));
       __charly_init_block->write_makeconstant(0);
       __charly_init_block->write_readsymbol(this->create_symbol("foo"));
+
+      // Test cfunction calling
+      __charly_init_block->write_putcfunction(this->create_symbol("cfunction"), (void *)&cfunction_handler, 0);
+      __charly_init_block->write_call(0);
+
       __charly_init_block->write_byte(0xff);
 
-      this->push_stack(__charly_init);
+      // Call the top-level
       this->op_call(0);
 
       // Set the self value
@@ -583,6 +656,23 @@ namespace Charly {
           case Opcode::PutValue: {
             VALUE value = *(VALUE *)(this->ip + sizeof(Opcode));
             this->op_putvalue(value);
+            break;
+          }
+
+          case Opcode::PutFunction: {
+            auto symbol = *(VALUE *)(this->ip + sizeof(Opcode));
+            auto block = *(InstructionBlock **)(this->ip + sizeof(Opcode) + sizeof(VALUE));
+            auto anonymous = *(bool *)(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(VALUE));
+            auto argc = *(uint32_t *)(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(VALUE) + sizeof(bool));
+            this->op_putfunction(symbol, block, anonymous, argc);
+            break;
+          }
+
+          case Opcode::PutCFunction: {
+            auto symbol = *(VALUE *)(this->ip + sizeof(Opcode));
+            auto pointer = *(void **)(this->ip + sizeof(Opcode) + sizeof(VALUE));
+            auto argc = *(uint32_t *)(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(void *));
+            this->op_putcfunction(symbol, pointer, argc);
             break;
           }
 

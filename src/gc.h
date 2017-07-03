@@ -49,6 +49,7 @@ namespace Charly {
         Primitive::Object object;
         Primitive::Float flonum;
         Primitive::Function function;
+        Primitive::CFunction cfunction;
         Machine::Frame frame;
 
         U() { memset(this, 0, sizeof(U)); }

@@ -71,6 +71,12 @@ namespace Charly {
         this->write_offset += sizeof(uint8_t);
       }
 
+      void inline write_bool(bool val) {
+        this->check_needs_resize();
+        *(bool *)(this->data + this->write_offset) = val;
+        this->write_offset += sizeof(bool);
+      }
+
       void inline write_short(uint16_t val) {
         this->check_needs_resize();
         *(uint16_t *)(this->data + this->write_offset) = val;
@@ -169,7 +175,7 @@ namespace Charly {
       }
 
       void inline write_putcfunction(VALUE symbol, void* funcptr, uint32_t argc) {
-        this->write_byte(Opcode::PutFunction);
+        this->write_byte(Opcode::PutCFunction);
         this->write_long(symbol);
         this->write_pointer(funcptr);
         this->write_int(argc);
