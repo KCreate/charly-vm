@@ -72,7 +72,7 @@ namespace Charly {
         void push_stack(VALUE value);
 
         // Symbol table
-        STATUS lookup_symbol(VALUE symbol, std::string* result);
+        std::string lookup_symbol(VALUE symbol);
 
         // Methods to create new data types
         VALUE create_symbol(std::string value);

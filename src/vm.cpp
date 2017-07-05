@@ -127,15 +127,14 @@ namespace Charly {
       this->stack.push_back(value);
     }
 
-    STATUS VM::lookup_symbol(VALUE symbol, std::string* result) {
+    std::string VM::lookup_symbol(VALUE symbol) {
       auto found_string = this->symbol_table.find(symbol);
 
       if (found_string == this->symbol_table.end()) {
-        return Status::UnknownSymbol;
+        return this->lookup_symbol(this->create_symbol("null"));
       }
 
-      *result = found_string->second; // second refers to the value
-      return Status::Success;
+      return found_string->second; // second refers to the value
     }
 
     VALUE VM::create_symbol(std::string value) {
@@ -523,7 +522,7 @@ namespace Charly {
       while (frame) {
         Function* func = frame->function;
 
-        std::string name; this->lookup_symbol(func->name, &name); // TODO: handle unknown symbols
+        std::string name = this->lookup_symbol(func->name);
 
         io << i++ << " : (";
         io << name << " : ";
@@ -549,8 +548,12 @@ namespace Charly {
     }
 
     void VM::init() {
-      this->frames = NULL; // Initialize top-level here
+      this->frames = NULL;
       this->ip = NULL;
+      this->halted = false;
+
+      // Add some symbols
+      this->create_symbol("null");
 
       // Reserve top-level block
       VALUE symbol = this->create_symbol("__charly_init");
