@@ -48,6 +48,7 @@ namespace Charly {
         std::unordered_map<VALUE, std::string> symbol_table;
         Frame* frames;
         uint8_t* ip;
+        bool halted;
 
       public:
 

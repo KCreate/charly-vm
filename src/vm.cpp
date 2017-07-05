@@ -443,10 +443,6 @@ namespace Charly {
     }
 
     void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
-
-      // Push a control frame for the function
-      uint8_t* return_address = this->ip + this->decode_instruction_length(Opcode::Call);
-
       switch (argc) {
 
         // TODO: Also pass the *arguments* field (this is an array containing all arguments)
@@ -542,12 +538,14 @@ namespace Charly {
       for (int i = 0; i < this->stack.size(); i++) {
         VALUE entry = this->stack[i];
 
-        io << "<" << Type::str[this->type(entry)] << "@" << (void*)entry << ">" << std::endl;
-      }
-    }
+        // TODO: Type specific printing
+        switch (this->type(entry)) {
+          default: {
+            io << "<" << Type::str[this->type(entry)] << "@" << (void*)entry << ">" << std::endl;
+          }
+        }
 
-    void cfunction_handler(VM* vm) {
-      std::cout << "Handler function called" << std::endl;
+      }
     }
 
     void VM::init() {
@@ -581,8 +579,6 @@ namespace Charly {
       __charly_init_block->write_putcfunction(this->create_symbol("cfunction"), (void *)&cfunction_handler, 0);
       __charly_init_block->write_call(0);
 
-      __charly_init_block->write_byte(0xff);
-
       // Call the top-level
       this->op_call(0);
 
@@ -594,8 +590,7 @@ namespace Charly {
 
       // Execute instructions as long as we have a valid ip
       // and the machine wasn't halted
-      bool machine_halted = false;
-      while (this->ip && !machine_halted) {
+      while (this->ip && !this->halted) {
 
         // Backup the current ip
         // After the instruction was executed we check if
@@ -703,11 +698,6 @@ namespace Charly {
 
           case Opcode::Add: {
             this->op_add();
-            break;
-          }
-
-          case 0xff: {
-            machine_halted = true;
             break;
           }
 
