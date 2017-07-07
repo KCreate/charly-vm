@@ -343,6 +343,55 @@ namespace Charly {
       }
     }
 
+    void VM::op_readmembersymbol(VALUE symbol) {
+      VALUE target = this->pop_stack();
+
+      // Handle datatypes that have their own data members
+      switch (this->type(target)) {
+        case Type::Object: {
+          Object* obj = (Object *)target;
+
+          // Check if the object contains the key
+          if (obj->container->contains(symbol)) {
+            VALUE value = Value::Null;
+            obj->container->read(symbol, &value);
+            this->push_stack(value);
+            return;
+          }
+
+          break;
+        }
+      }
+
+      // Travel up the class chain and search for the right field
+      // TODO: Implement this lol
+
+      this->push_stack(Value::Null);
+    }
+
+    void VM::op_setmembersymbol(VALUE symbol) {
+      VALUE value = this->pop_stack();
+      VALUE target = this->pop_stack();
+
+      // Check if we can write to the value
+      switch (this->type(target)) {
+        case Type::Object: {
+          Object* target_obj = (Object *)target;
+          STATUS write_status = target_obj->container->write(symbol, value, true);
+
+          if (write_status != Status::Success) {
+            this->panic(write_status); // TODO: Handle as runtime error
+          }
+
+          break;
+        }
+
+        default: {
+          this->panic(Status::UnspecifiedError);
+        }
+      }
+    }
+
     void VM::op_putself() {
       if (this->frames == NULL) {
         this->push_stack(Value::Null);
@@ -576,7 +625,7 @@ namespace Charly {
 
       // Reserve top-level block
       VALUE symbol = this->create_symbol("__charly_init");
-      auto __charly_init_block = this->request_instruction_block(1);
+      auto __charly_init_block = this->request_instruction_block(3);
 
       // Inject into program and call
       this->op_putfunction(
@@ -586,20 +635,41 @@ namespace Charly {
         0
       );
 
-      // Generate entry code
-      __charly_init_block->write_registerlocal(this->create_symbol("foo"), 0);
-      __charly_init_block->write_putvalue(this->create_integer(25));
-      __charly_init_block->write_putvalue(this->create_integer(25));
-      __charly_init_block->write_putvalue(this->create_integer(25));
-      __charly_init_block->write_operator(Opcode::Add);
-      __charly_init_block->write_operator(Opcode::Add);
-      __charly_init_block->write_setsymbol(this->create_symbol("foo"));
-      __charly_init_block->write_makeconstant(0);
-      __charly_init_block->write_readsymbol(this->create_symbol("foo"));
+      // let a = 4;
+      __charly_init_block->write_registerlocal(this->create_symbol("a"), 0);
+      __charly_init_block->write_putvalue(this->create_integer(1));
+      __charly_init_block->write_setsymbol(this->create_symbol("a"));
 
-      // Test cfunction calling
-      __charly_init_block->write_putcfunction(this->create_symbol("cfunction"), (void *)&cfunction_handler, 0);
-      __charly_init_block->write_call(0);
+      // let b = 5;
+      __charly_init_block->write_registerlocal(this->create_symbol("b"), 1);
+      __charly_init_block->write_putvalue(this->create_integer(2));
+      __charly_init_block->write_setsymbol(this->create_symbol("b"));
+
+      // const container = {};
+      __charly_init_block->write_registerlocal(this->create_symbol("container"), 2);
+      __charly_init_block->write_puthash(0);
+      __charly_init_block->write_setsymbol(this->create_symbol("container"));
+
+      // container.bar = foo;
+      // container.baz = foo;
+      __charly_init_block->write_readsymbol(this->create_symbol("container"));
+      __charly_init_block->write_readsymbol(this->create_symbol("a"));
+      __charly_init_block->write_setmembersymbol(this->create_symbol("bar"));
+      __charly_init_block->write_readsymbol(this->create_symbol("container"));
+      __charly_init_block->write_readsymbol(this->create_symbol("b"));
+      __charly_init_block->write_setmembersymbol(this->create_symbol("baz"));
+
+      // put container on the stack again
+      __charly_init_block->write_readsymbol(this->create_symbol("container"));
+
+      // put the containers member field onto the stack
+      __charly_init_block->write_readsymbol(this->create_symbol("container"));
+      __charly_init_block->write_readmembersymbol(this->create_symbol("bar"));
+      __charly_init_block->write_readsymbol(this->create_symbol("container"));
+      __charly_init_block->write_readmembersymbol(this->create_symbol("baz"));
+
+      // halt
+      __charly_init_block->write_byte(0xff);
 
       // Call the top-level
       this->op_call(0);
@@ -654,6 +724,12 @@ namespace Charly {
             break;
           }
 
+          case Opcode::ReadMemberSymbol: {
+            VALUE symbol = *(VALUE *)(this->ip + sizeof(Opcode));
+            this->op_readmembersymbol(symbol);
+            break;
+          }
+
           case Opcode::SetLocal: {
             uint32_t index = *(uint32_t *)(this->ip + sizeof(Opcode));
             this->op_setlocal(index);
@@ -663,6 +739,12 @@ namespace Charly {
           case Opcode::SetSymbol: {
             VALUE symbol = *(VALUE *)(this->ip + sizeof(Opcode));
             this->op_setsymbol(symbol);
+            break;
+          }
+
+          case Opcode::SetMemberSymbol: {
+            VALUE symbol = *(VALUE *)(this->ip + sizeof(Opcode));
+            this->op_setmembersymbol(symbol);
             break;
           }
 

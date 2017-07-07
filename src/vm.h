@@ -93,18 +93,20 @@ namespace Charly {
         uint32_t decode_instruction_length(Opcode opcode);
         void op_readlocal(uint32_t index);
         void op_readsymbol(VALUE symbol);
+        void op_readmembersymbol(VALUE symbol);
         void op_setlocal(uint32_t index);
         void op_setsymbol(VALUE symbol);
+        void op_setmembersymbol(VALUE symbol);
         void op_putself();
         void op_putvalue(VALUE value);
         void op_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc);
         void op_putcfunction(VALUE symbol, void* pointer, uint32_t argc);
+        void call_function(Function* function, uint32_t argc, VALUE* argv);
+        void call_cfunction(CFunction* function, uint32_t argc, VALUE* argv);
         void op_puthash(uint32_t size);
         void op_registerlocal(VALUE symbol, uint32_t offset);
         void op_makeconstant(uint32_t offset);
         void op_call(uint32_t argc);
-        void call_function(Function* function, uint32_t argc, VALUE* argv);
-        void call_cfunction(CFunction* function, uint32_t argc, VALUE* argv);
         void op_throw(ThrowType type);
 
         // TODO: Handle other types in these methods as well
