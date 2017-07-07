@@ -544,6 +544,20 @@ namespace Charly {
 
         // TODO: Type specific printing
         switch (this->type(entry)) {
+
+          case Type::Object: {
+            io << "<" << Type::str[this->type(entry)] << "@" << (void*)entry << " ";
+
+            Object* obj = (Object *)entry;
+            for (auto& pair : obj->container->offset_table) {
+              std::string str_key = this->lookup_symbol(pair.first);
+              io << str_key << ", ";
+            }
+
+            io << ">" << std::endl;
+            break;
+          }
+
           default: {
             io << "<" << Type::str[this->type(entry)] << "@" << (void*)entry << ">" << std::endl;
           }
