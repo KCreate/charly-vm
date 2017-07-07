@@ -366,6 +366,11 @@ namespace Charly {
       this->push_stack(function);
     }
 
+    void VM::op_puthash(uint32_t size) {
+      VALUE object = this->create_object(size, Value::Null); // TODO: Replace with actual class
+      this->push_stack(object);
+    }
+
     void VM::op_registerlocal(VALUE symbol, uint32_t offset) {
       this->frames->environment->register_offset(symbol, offset);
     }
@@ -671,6 +676,12 @@ namespace Charly {
             auto pointer = *(void **)(this->ip + sizeof(Opcode) + sizeof(VALUE));
             auto argc = *(uint32_t *)(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(void *));
             this->op_putcfunction(symbol, pointer, argc);
+            break;
+          }
+
+          case Opcode::PutHash: {
+            uint32_t size = *(uint32_t *)(this->ip + sizeof(Opcode));
+            this->op_puthash(size);
             break;
           }
 
