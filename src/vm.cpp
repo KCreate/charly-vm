@@ -729,6 +729,11 @@ namespace Charly {
             break;
           }
 
+          case 0xff: {
+            this->halted = true;
+            break;
+          }
+
           default: {
             std::cout << "Opcode: " << (void *)opcode << std::endl;
             this->panic(Status::UnknownOpcode);
