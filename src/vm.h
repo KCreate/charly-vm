@@ -121,10 +121,15 @@ namespace Charly {
         void stackdump(std::ostream& io);
 
       public:
-        VM() : gc(new GC::Collector(InitialHeapCount, HeapCellCount)) {
-          this->init();
+        VM() {
+          this->gc = new GC::Collector();
+          this->frames = NULL;
+          this->ip = NULL;
+          this->halted = false;
+
+          this->init_frames();
         }
-        void init();
+        void init_frames();
         void run();
     };
   }

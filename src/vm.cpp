@@ -626,67 +626,30 @@ namespace Charly {
       }
     }
 
-    void VM::init() {
-      this->frames = NULL;
-      this->ip = NULL;
-      this->halted = false;
+    void VM::init_frames() {
 
-      // Add some symbols
-      this->create_symbol("null");
+      // On startup, we create a stack frame that serves as our global scope
+      // This is the scope in which global values such as `Charly` live.
+      //
+      // When a file is being included, either as requested by the machine,
+      // or via the user, a new stack frame is created for it, effectively
+      // separating it from the global scope
+      //
+      // This way it can still access the global scope, but not register any
+      // new variables or constants into it.
+      uint32_t global_var_count = 1;
+      auto block = this->request_instruction_block(global_var_count);
 
-      // Reserve top-level block
-      VALUE symbol = this->create_symbol("__charly_init");
-      auto __charly_init_block = this->request_instruction_block(3);
-
-      // Inject into program and call
-      this->op_putfunction(
-        symbol,
-        __charly_init_block,
-        false,
-        0
-      );
-
-      // let a = 4;
-      __charly_init_block->write_registerlocal(this->create_symbol("a"), 0);
-      __charly_init_block->write_putvalue(this->create_integer(1));
-      __charly_init_block->write_setsymbol(this->create_symbol("a"));
-
-      // let b = 5;
-      __charly_init_block->write_registerlocal(this->create_symbol("b"), 1);
-      __charly_init_block->write_putvalue(this->create_integer(2));
-      __charly_init_block->write_setsymbol(this->create_symbol("b"));
-
-      // const container = {};
-      __charly_init_block->write_registerlocal(this->create_symbol("container"), 2);
-      __charly_init_block->write_puthash(0);
-      __charly_init_block->write_setsymbol(this->create_symbol("container"));
-
-      // container.bar = foo;
-      // container.baz = foo;
-      __charly_init_block->write_readsymbol(this->create_symbol("container"));
-      __charly_init_block->write_readsymbol(this->create_symbol("a"));
-      __charly_init_block->write_setmembersymbol(this->create_symbol("bar"));
-      __charly_init_block->write_readsymbol(this->create_symbol("container"));
-      __charly_init_block->write_readsymbol(this->create_symbol("b"));
-      __charly_init_block->write_setmembersymbol(this->create_symbol("baz"));
-
-      // put container on the stack again
-      __charly_init_block->write_readsymbol(this->create_symbol("container"));
-
-      // put the containers member field onto the stack
-      __charly_init_block->write_readsymbol(this->create_symbol("container"));
-      __charly_init_block->write_readmembersymbol(this->create_symbol("bar"));
-      __charly_init_block->write_readsymbol(this->create_symbol("container"));
-      __charly_init_block->write_readmembersymbol(this->create_symbol("baz"));
-
-      // halt
-      __charly_init_block->write_byte(0xff);
-
-      // Call the top-level
+      // Push a function onto the stack containing this block and call it
+      this->op_putfunction(this->create_symbol("__charly_boot"), block, false, 1);
       this->op_call(0);
+      this->frames->self = Value::Null; // TODO: Replace with actual global self value
 
-      // Set the self value
-      this->frames->self = this->create_integer(25);
+      // Codegen the methods body that bootstraps the global scope
+      block->write_registerlocal(this->create_symbol("Charly"), 0);
+      block->write_puthash(this->create_object(0, Value::Null)); // TODO: Replace with real class
+      block->write_setsymbol(this->create_symbol("Charly"));
+      block->write_byte(0xff);
     }
 
     void VM::run() {

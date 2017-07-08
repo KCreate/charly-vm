@@ -167,7 +167,9 @@ namespace Charly {
   namespace Machine {
     struct Frame;
     struct VM;
+  }
 
+  namespace GC {
     const uint32_t InitialHeapCount = 8;
     const uint32_t HeapCellCount = 512;
   }
