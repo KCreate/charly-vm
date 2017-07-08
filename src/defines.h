@@ -56,7 +56,8 @@ namespace Charly {
     const STATUS IpOutOfBounds                          = 0x0e;
     const STATUS NotEnoughSpaceForInstructionArguments  = 0x0f;
     const STATUS UnknownOpcode                          = 0x10;
-    const STATUS TooManyArgumentsForCFunction           = 0x1a;
+    const STATUS TooManyArgumentsForCFunction           = 0x11;
+    const STATUS NotEnoughArguments                     = 0x12;
 
     /* Human-readable error messages */
     const std::string str[] = {
@@ -77,7 +78,8 @@ namespace Charly {
       "Instruction pointer is out-of-bounds",
       "Not enough space for instruction arguments",
       "Unknown opcode",
-      "Too many arguments for CFunction"
+      "Too many arguments for CFunction",
+      "Not enough arguments"
     };
   }
 

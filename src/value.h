@@ -72,7 +72,7 @@ namespace Charly {
     struct Function {
       Basic basic;
       VALUE name;
-      uint32_t required_arguments;
+      uint32_t argc;
       Machine::Frame* context;
       Machine::InstructionBlock* block;
       bool bound_self_set;
@@ -85,7 +85,7 @@ namespace Charly {
       Basic basic;
       VALUE name;
       void* pointer;
-      uint32_t required_arguments;
+      uint32_t argc;
       bool bound_self_set;
       VALUE bound_self;
 

@@ -48,7 +48,7 @@ namespace Charly {
       cell->as.frame.function = function;
 
       // Setup and pre-fill environment with null's
-      uint32_t lvar_count = function->required_arguments + function->block->lvarcount;
+      uint32_t lvar_count = function->argc + function->block->lvarcount;
       cell->as.frame.environment = new Container(lvar_count);
 
       while (lvar_count--) {
@@ -188,12 +188,12 @@ namespace Charly {
       return (VALUE)cell;
     }
 
-    VALUE VM::create_function(VALUE name, uint32_t required_arguments, InstructionBlock* block) {
+    VALUE VM::create_function(VALUE name, uint32_t argc, InstructionBlock* block) {
       GC::Cell* cell = this->gc->allocate();
       cell->as.basic.set_type(Type::Function);
       cell->as.basic.klass = Value::Null; // TODO: Replace with actual class
       cell->as.function.name = name;
-      cell->as.function.required_arguments = required_arguments;
+      cell->as.function.argc = argc;
       cell->as.function.context = this->frames;
       cell->as.function.block = block;
       cell->as.function.bound_self_set = false;
@@ -204,13 +204,13 @@ namespace Charly {
       return (VALUE)cell;
     }
 
-    VALUE VM::create_cfunction(VALUE name, uint32_t required_arguments, void* pointer) {
+    VALUE VM::create_cfunction(VALUE name, uint32_t argc, void* pointer) {
       GC::Cell* cell = this->gc->allocate();
       cell->as.basic.set_type(Type::CFunction);
       cell->as.basic.klass = Value::Null; // TODO: Replace with actual class
       cell->as.cfunction.name = name;
       cell->as.cfunction.pointer = pointer;
-      cell->as.cfunction.required_arguments = required_arguments;
+      cell->as.cfunction.argc = argc;
       cell->as.cfunction.bound_self_set = false;
       cell->as.cfunction.bound_self = Value::Null;
 
@@ -473,6 +473,11 @@ namespace Charly {
 
     void VM::call_function(Function* function, uint32_t argc, VALUE* argv) {
 
+      // Check if the function was called with enough arguments
+      if (argc < function->argc) {
+        this->panic(Status::NotEnoughArguments);
+      }
+
       // Push a control frame for the function
       //
       // TODO: Check if we can't generalise this for member function calls
@@ -487,7 +492,7 @@ namespace Charly {
       // values so there's no need to allocate new space in it
       //
       // TODO: Copy the *arguments* field into the function (this is an array containing all arguments)
-      uint32_t arg_copy_count = function->required_arguments;
+      uint32_t arg_copy_count = function->argc;
       while (arg_copy_count--) {
         frame->environment->write(arg_copy_count, argv[arg_copy_count]);
       }
@@ -496,6 +501,12 @@ namespace Charly {
     }
 
     void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
+
+      // Check if enough arguments have been passed
+      if (argc < function->argc) {
+        this->panic(Status::NotEnoughArguments);
+      }
+
       switch (argc) {
 
         // TODO: Also pass the *arguments* field (this is an array containing all arguments)
