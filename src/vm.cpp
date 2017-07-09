@@ -641,14 +641,27 @@ namespace Charly {
       auto block = this->request_instruction_block(global_var_count);
 
       // Push a function onto the stack containing this block and call it
-      this->op_putfunction(this->create_symbol("__charly_boot"), block, false, 1);
+      this->op_putfunction(this->create_symbol("__charly_init"), block, false, 0);
       this->op_call(0);
       this->frames->self = Value::Null; // TODO: Replace with actual global self value
 
       // Codegen the methods body that bootstraps the global scope
       block->write_registerlocal(this->create_symbol("Charly"), 0);
-      block->write_puthash(this->create_object(0, Value::Null)); // TODO: Replace with real class
+      block->write_puthash(this->create_object(1, Value::Null)); // TODO: Replace with real class
       block->write_setsymbol(this->create_symbol("Charly"));
+
+      // Insert the internals object into the Charly object
+      block->write_readsymbol(this->create_symbol("Charly"));
+      block->write_puthash(this->create_object(1, Value::Null));
+      block->write_setmembersymbol(this->create_symbol("internals"));
+
+      // Insert the get_method method into the internals object
+      block->write_readsymbol(this->create_symbol("Charly"));
+      block->write_readmembersymbol(this->create_symbol("internals"));
+      block->write_putcfunction(this->create_symbol("get_method"), (void *)Internals::get_method, 1);
+      block->write_setmembersymbol(this->create_symbol("get_method"));
+
+      // Add the internal get_method method to the internals object
       block->write_byte(0xff);
     }
 

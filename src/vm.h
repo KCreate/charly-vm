@@ -30,6 +30,7 @@
 #include "frame.h"
 #include "opcode.h"
 #include "block.h"
+#include "internals.h"
 
 #pragma once
 
