@@ -31,8 +31,9 @@
 #pragma once
 
 namespace Charly {
-
   namespace Primitive {
+    using namespace Scope;
+    using namespace Machine;
 
     /*
      * Basic fields every data type in Charly has
@@ -61,7 +62,7 @@ namespace Charly {
 
     struct Object {
         Basic basic;
-        Scope::Container* container;
+        Container* container;
     };
 
     struct Float {
@@ -73,8 +74,8 @@ namespace Charly {
       Basic basic;
       VALUE name;
       uint32_t argc;
-      Machine::Frame* context;
-      Machine::InstructionBlock* block;
+      Frame* context;
+      InstructionBlock* block;
       bool bound_self_set;
       VALUE bound_self;
 
@@ -101,6 +102,6 @@ namespace Charly {
     const constexpr VALUE BIT_ROTR(VALUE v, VALUE n) {
       return (((v) >> (n)) | ((v) << ((sizeof(v) * 8) - n)));
     }
-  }
 
+  }
 }

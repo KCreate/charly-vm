@@ -25,7 +25,6 @@
  */
 
 #include <vector>
-#include <array>
 
 #include "defines.h"
 #include "value.h"

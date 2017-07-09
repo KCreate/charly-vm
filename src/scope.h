@@ -24,7 +24,6 @@
  * SOFTWARE.
  */
 
-#include <string>
 #include <vector>
 #include <unordered_map>
 
@@ -54,7 +53,7 @@ namespace Charly {
         /* Vector of entries in this scope */
         std::vector<Entry> entries;
 
-        /* Map from string to offsets into the entries vector */
+        /* Map from values to offsets into the entries vector */
         std::unordered_map<VALUE, uint32_t> offset_table;
 
       public:

@@ -24,9 +24,14 @@
  * SOFTWARE.
  */
 
-#include "value.h"
-#include "scope.h"
+#include "block.h"
+#include "defines.h"
+#include "frame.h"
 #include "gc.h"
+#include "internals.h"
+#include "opcode.h"
+#include "scope.h"
+#include "value.h"
 #include "vm.h"
 
 #pragma once

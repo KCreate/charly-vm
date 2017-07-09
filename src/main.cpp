@@ -24,15 +24,10 @@
  * SOFTWARE.
  */
 
-#include <iostream>
-
 #include "charly.h"
 
 using namespace std;
-using namespace Charly;
 using namespace Charly::Machine;
-using namespace Charly::Primitive;
-using namespace Charly::Scope;
 
 int main() {
 

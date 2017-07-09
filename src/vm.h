@@ -24,12 +24,9 @@
  * SOFTWARE.
  */
 
-#include <stack>
-
 #include "defines.h"
 #include "gc.h"
 #include "value.h"
-#include "scope.h"
 #include "frame.h"
 #include "opcode.h"
 #include "block.h"
