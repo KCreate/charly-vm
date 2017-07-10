@@ -27,6 +27,7 @@
 #include <iostream>
 #include <functional>
 #include <algorithm>
+#include <cmath>
 
 #include "vm.h"
 
@@ -163,6 +164,10 @@ namespace Charly {
     }
 
     VALUE VM::create_float(double value) {
+
+      // Check if this float would fit into an immediate encoded integer
+      if (ceilf(value) == value) return this->create_integer(value);
+
       union {
         double d;
         VALUE v;
@@ -235,22 +240,39 @@ namespace Charly {
       return t.d;
     }
 
+    double VM::numeric_value(VALUE value) {
+      if (this->real_type(value) == Type::Float) {
+        return this->float_value(value);
+      } else {
+        return (double)this->integer_value(value);
+      }
+    }
+
     bool VM::boolean_value(VALUE value) {
       if (value == Value::False || value == Value::Null) return false;
       return true;
     }
 
-    VALUE VM::type(VALUE value) {
+    VALUE VM::real_type(VALUE value) {
 
       /* Constants */
-      if (Value::is_false(value) || Value::is_true(value)) return Type::Boolean;
+      if (Value::is_boolean(value)) return Type::Boolean;
       if (Value::is_null(value)) return Type::Null;
 
       /* More logic required */
       if (!Value::is_special(value)) return Value::basics(value)->type();
       if (Value::is_integer(value)) return Type::Integer;
       if (Value::is_ifloat(value)) return Type::Float;
+      if (Value::is_symbol(value)) return Type::Symbol;
       return Type::Undefined;
+    }
+
+    VALUE VM::type(VALUE value) {
+      VALUE type = this->real_type(value);
+
+      if (type == Type::Float) return Type::Numeric;
+      if (type == Type::Integer) return Type::Numeric;
+      return type;
     }
 
     Opcode VM::fetch_instruction() {
@@ -549,35 +571,14 @@ namespace Charly {
       VALUE right = this->pop_stack();
       VALUE left = this->pop_stack();
 
-      if (this->type(left) == Type::Integer && this->type(right) == Type::Integer) {
-        int64_t i_left = this->integer_value(left);
-        int64_t i_right = this->integer_value(right);
-        this->push_stack(this->create_integer(i_left + i_right));
+      if (this->type(left) == Type::Numeric && this->type(right) == Type::Numeric) {
+        double nleft = this->numeric_value(left);
+        double nright = this->numeric_value(right);
+        this->push_stack(this->create_float(nleft + nright));
         return;
       }
 
-      if (this->type(left) == Type::Float && this->type(right) == Type::Float) {
-        double f_left = this->float_value(left);
-        double f_right = this->float_value(right);
-        this->push_stack(this->create_float(f_left + f_right));
-        return;
-      }
-
-      if (this->type(left) == Type::Integer && this->type(right) == Type::Float) {
-        double f_left = (double)this->integer_value(left);
-        double f_right = this->float_value(right);
-        this->push_stack(this->create_float(f_left + f_right));
-        return;
-      }
-
-      if (this->type(left) == Type::Float && this->type(right) == Type::Integer) {
-        double f_left = this->float_value(left);
-        double f_right = (double)this->integer_value(right);
-        this->push_stack(this->create_float(f_left + f_right));
-        return;
-      }
-
-      this->panic(Status::UnspecifiedError);
+      this->push_stack(this->create_float(NAN));
     }
 
     void VM::stacktrace(std::ostream& io) {
@@ -616,7 +617,7 @@ namespace Charly {
 
       this->pretty_print_stack.push_back(value);
 
-      switch (this->type(value)) {
+      switch (this->real_type(value)) {
 
         case Type::Undefined: {
           io << "undefined";
@@ -672,11 +673,11 @@ namespace Charly {
         case Type::Function: {
           Function* func = (Function *)value;
           io << "<Function@" << func << " ";
-          io << "name=" << this->lookup_symbol(func->name) << " ";
+          io << "name="; this->pretty_print(io, func->name); io << " ";
           io << "argc=" << func->argc; io << " ";
           io << "context="; this->pretty_print(io, func->context); io << " ";
           io << "bound_self_set=" << (func->bound_self_set ? "true" : "false") << " ";
-          io << "bound_self=" << func->bound_self;
+          io << "bound_self="; this->pretty_print(io, func->bound_self);
           io << ">";
           break;
         }
@@ -684,11 +685,11 @@ namespace Charly {
         case Type::CFunction: {
           CFunction* func = (CFunction *)value;
           io << "<CFunction@" << func << " ";
-          io << "name=" << this->lookup_symbol(func->name) << " ";
+          io << "name="; this->pretty_print(io, func->name); io << " ";
           io << "argc=" << func->argc; io << " ";
           io << "pointer=" << func->pointer << " ";
           io << "bound_self_set=" << (func->bound_self_set ? "true" : "false") << " ";
-          io << "bound_self=" << func->bound_self;
+          io << "bound_self="; this->pretty_print(io, func->bound_self);
           io << ">";
           break;
         }
@@ -699,7 +700,7 @@ namespace Charly {
           io << "parent="; this->pretty_print(io, frame->parent); io << " ";
           io << "parent_environment_frame="; this->pretty_print(io, frame->parent_environment_frame); io << " ";
           io << "function="; this->pretty_print(io, frame->function); io << " ";
-          io << "self=" << frame->self << " ";
+          io << "self="; this->pretty_print(io, frame->self); io << " ";
           io << "return_address=" << frame->return_address;
           io << ">";
           break;
@@ -750,9 +751,15 @@ namespace Charly {
       block->write_putcfunction(this->create_symbol("get_method"), (void *)Internals::get_method, 1);
       block->write_setmembersymbol(this->create_symbol("get_method"));
       block->write_readsymbol(this->create_symbol("Charly"));
-      block->write_readsymbol(this->create_symbol("Charly"));
-      block->write_setmembersymbol(this->create_symbol("Charly"));
-      block->write_readsymbol(this->create_symbol("Charly"));
+
+      // Check arithmetic
+      block->write_putvalue(this->create_float(5.5));
+      block->write_putvalue(this->create_integer(5));
+      block->write_putvalue(this->create_float(-6.2));
+      block->write_putvalue(this->create_integer(-9));
+      block->write_operator(Opcode::Add);
+      block->write_operator(Opcode::Add);
+      block->write_operator(Opcode::Add);
 
       // Add the internal get_method method to the internals object
       block->write_byte(0xff);

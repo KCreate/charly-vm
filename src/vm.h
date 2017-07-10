@@ -84,8 +84,10 @@ namespace Charly {
         // Methods that operate on the VALUE type
         int64_t integer_value(VALUE value);
         double float_value(VALUE value);
+        double numeric_value(VALUE value);
         bool boolean_value(VALUE value);
         VALUE type(VALUE value);
+        VALUE real_type(VALUE value);
 
         // Execution
         Opcode fetch_instruction();
