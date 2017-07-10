@@ -1,7 +1,7 @@
 CC=clang
 CCFLAGS=-std=c++14 -g
 OPT=-O0
-OBJS=build/main.o build/scope.o build/gc.o build/vm.o build/internals.o
+OBJS=build/main.o build/scope.o build/gc.o build/vm.o build/internals.o build/operators.o
 
 all: objects
 	$(CC) $(OPT) $(OBJS) $(CCFLAGS) -lstdc++ -o bin/vm

@@ -30,6 +30,7 @@
 #include <cmath>
 
 #include "vm.h"
+#include "operators.h"
 
 namespace Charly {
   namespace Machine {
@@ -567,20 +568,6 @@ namespace Charly {
       }
     }
 
-    void VM::op_add() {
-      VALUE right = this->pop_stack();
-      VALUE left = this->pop_stack();
-
-      if (this->type(left) == Type::Numeric && this->type(right) == Type::Numeric) {
-        double nleft = this->numeric_value(left);
-        double nright = this->numeric_value(right);
-        this->push_stack(this->create_float(nleft + nright));
-        return;
-      }
-
-      this->push_stack(this->create_float(NAN));
-    }
-
     void VM::stacktrace(std::ostream& io) {
       Frame* frame = this->frames;
 
@@ -894,7 +881,9 @@ namespace Charly {
           }
 
           case Opcode::Add: {
-            this->op_add();
+            VALUE right = this->pop_stack();
+            VALUE left = this->pop_stack();
+            this->push_stack(Operators::add(this, left, right));
             break;
           }
 

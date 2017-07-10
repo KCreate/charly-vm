@@ -24,17 +24,23 @@
  * SOFTWARE.
  */
 
-#include "defines.h"
+#include <cmath>
 
-#pragma once
+#include "operators.h"
 
 namespace Charly {
   namespace Machine {
-    namespace Internals {
+    namespace Operators {
 
-      // get_internal method used to obtain other internal methods
-      // provided by the virtual machine
-      void get_method(VM* vm, VALUE method_name);
+      VALUE add(VM* vm, VALUE left, VALUE right) {
+        if (vm->type(left) == Type::Numeric && vm->type(right) == Type::Numeric) {
+          double nleft = vm->numeric_value(left);
+          double nright = vm->numeric_value(right);
+          return vm->create_float(nleft + nright);
+        }
+
+        return vm->create_float(NAN);
+      }
 
     }
   }
