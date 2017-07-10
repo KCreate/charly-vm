@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+#include <iostream>
+
 #include "gc.h"
 
 namespace Charly {

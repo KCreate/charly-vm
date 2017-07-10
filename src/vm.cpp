@@ -26,6 +26,7 @@
 
 #include <iostream>
 #include <functional>
+#include <algorithm>
 
 #include "vm.h"
 
@@ -607,6 +608,14 @@ namespace Charly {
     }
 
     void VM::pretty_print(std::ostream& io, VALUE value) {
+
+      // Check if this value was already printed before
+      auto begin = this->pretty_print_stack.begin();
+      auto end = this->pretty_print_stack.end();
+      bool printed_before = std::find(begin, end, value) != end;
+
+      this->pretty_print_stack.push_back(value);
+
       switch (this->type(value)) {
 
         case Type::Undefined: {
@@ -635,8 +644,15 @@ namespace Charly {
         }
 
         case Type::Object: {
+
           Object* obj = (Object *)value;
           io << "<Object@" << obj;
+
+          // If this object was already printed, we avoid printing it again
+          if (printed_before) {
+            io << ">";
+            break;
+          }
 
           for (auto& offset_entry : obj->container->offset_table) {
             io << " ";
@@ -695,6 +711,8 @@ namespace Charly {
         }
 
       }
+
+      this->pretty_print_stack.pop_back();
     }
 
     void VM::init_frames() {
@@ -731,6 +749,9 @@ namespace Charly {
       block->write_readmembersymbol(this->create_symbol("internals"));
       block->write_putcfunction(this->create_symbol("get_method"), (void *)Internals::get_method, 1);
       block->write_setmembersymbol(this->create_symbol("get_method"));
+      block->write_readsymbol(this->create_symbol("Charly"));
+      block->write_readsymbol(this->create_symbol("Charly"));
+      block->write_setmembersymbol(this->create_symbol("Charly"));
       block->write_readsymbol(this->create_symbol("Charly"));
 
       // Add the internal get_method method to the internals object

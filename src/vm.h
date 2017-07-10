@@ -44,6 +44,7 @@ namespace Charly {
         std::vector<InstructionBlock*> unassigned_blocks;
         std::vector<VALUE> stack;
         std::unordered_map<VALUE, std::string> symbol_table;
+        std::vector<VALUE> pretty_print_stack;
         Frame* frames;
         uint8_t* ip;
         bool halted;
