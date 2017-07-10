@@ -117,6 +117,10 @@ namespace Charly {
         }
         void stacktrace(std::ostream& io);
         void stackdump(std::ostream& io);
+        void inline pretty_print(std::ostream& io, void* value) {
+          this->pretty_print(io, (VALUE)value);
+        }
+        void pretty_print(std::ostream& io, VALUE value);
 
       public:
         VM() {

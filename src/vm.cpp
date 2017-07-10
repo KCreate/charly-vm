@@ -601,26 +601,97 @@ namespace Charly {
     void VM::stackdump(std::ostream& io) {
       for (int i = 0; i < this->stack.size(); i++) {
         VALUE entry = this->stack[i];
+        this->pretty_print(io, entry);
+        io << std::endl;
+      }
+    }
 
-        // TODO: Type specific printing
-        switch (this->type(entry)) {
+    void VM::pretty_print(std::ostream& io, VALUE value) {
+      switch (this->type(value)) {
 
-          case Type::Object: {
-            io << "<" << Type::str[this->type(entry)] << "@" << (void*)entry << " ";
+        case Type::Undefined: {
+          io << "undefined";
+          break;
+        }
 
-            Object* obj = (Object *)entry;
-            for (auto& pair : obj->container->offset_table) {
-              std::string str_key = this->lookup_symbol(pair.first);
-              io << str_key << ", ";
-            }
+        case Type::Integer: {
+          io << this->integer_value(value);
+          break;
+        }
 
-            io << ">" << std::endl;
-            break;
+        case Type::Float: {
+          io << this->float_value(value);
+          break;
+        }
+
+        case Type::Boolean: {
+          io << (value == Value::True ? "true" : "false");
+          break;
+        }
+
+        case Type::Null: {
+          io << "null";
+          break;
+        }
+
+        case Type::Object: {
+          Object* obj = (Object *)value;
+          io << "<Object@" << obj;
+
+          for (auto& offset_entry : obj->container->offset_table) {
+            io << " ";
+
+            std::string key = this->lookup_symbol(offset_entry.first);
+            uint32_t offset = offset_entry.second;
+            VALUE value = obj->container->entries[offset].value;
+
+            io << key << "="; this->pretty_print(io, value);
           }
 
-          default: {
-            io << "<" << Type::str[this->type(entry)] << "@" << (void*)entry << ">" << std::endl;
-          }
+          io << ">";
+
+          break;
+        }
+
+        case Type::Function: {
+          Function* func = (Function *)value;
+          io << "<Function@" << func << " ";
+          io << "name=" << this->lookup_symbol(func->name) << " ";
+          io << "argc=" << func->argc; io << " ";
+          io << "context="; this->pretty_print(io, func->context); io << " ";
+          io << "bound_self_set=" << (func->bound_self_set ? "true" : "false") << " ";
+          io << "bound_self=" << func->bound_self;
+          io << ">";
+          break;
+        }
+
+        case Type::CFunction: {
+          CFunction* func = (CFunction *)value;
+          io << "<CFunction@" << func << " ";
+          io << "name=" << this->lookup_symbol(func->name) << " ";
+          io << "argc=" << func->argc; io << " ";
+          io << "pointer=" << func->pointer << " ";
+          io << "bound_self_set=" << (func->bound_self_set ? "true" : "false") << " ";
+          io << "bound_self=" << func->bound_self;
+          io << ">";
+          break;
+        }
+
+        case Type::Frame: {
+          Frame* frame = (Frame *)value;
+          io << "<Frame@" << frame << " ";
+          io << "parent="; this->pretty_print(io, frame->parent); io << " ";
+          io << "parent_environment_frame="; this->pretty_print(io, frame->parent_environment_frame); io << " ";
+          io << "function="; this->pretty_print(io, frame->function); io << " ";
+          io << "self=" << frame->self << " ";
+          io << "return_address=" << frame->return_address;
+          io << ">";
+          break;
+        }
+
+        case Type::Symbol: {
+          io << this->lookup_symbol(value);
+          break;
         }
 
       }
@@ -660,6 +731,7 @@ namespace Charly {
       block->write_readmembersymbol(this->create_symbol("internals"));
       block->write_putcfunction(this->create_symbol("get_method"), (void *)Internals::get_method, 1);
       block->write_setmembersymbol(this->create_symbol("get_method"));
+      block->write_readsymbol(this->create_symbol("Charly"));
 
       // Add the internal get_method method to the internals object
       block->write_byte(0xff);
