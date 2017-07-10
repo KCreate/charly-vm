@@ -292,7 +292,11 @@ namespace Charly {
       UAdd  = 0x30,
       USub  = 0x31,
       UNot  = 0x32,
-      UBNot = 0x33
+      UBNot = 0x33,
+
+      // Machine internals, meant to be used directly by the machine itself
+      // not some compiler compiling to be vm
+      Halt = 0xff
     };
   }
 }

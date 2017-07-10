@@ -749,7 +749,7 @@ namespace Charly {
       block->write_operator(Opcode::Add);
 
       // Add the internal get_method method to the internals object
-      block->write_byte(0xff);
+      block->write_byte(Opcode::Halt);
     }
 
     void VM::run() {
@@ -887,7 +887,7 @@ namespace Charly {
             break;
           }
 
-          case 0xff: {
+          case Opcode::Halt: {
             this->halted = true;
             break;
           }
