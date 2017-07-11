@@ -48,7 +48,7 @@ namespace Charly {
     const STATUS TooManyArgumentsForCFunction           = 0x11;
     const STATUS NotEnoughArguments                     = 0x12;
 
-    /* Human-readable error messages */
+    // Human-readable error messages
     const std::string str[] = {
       "Success",
       "Write failed: Field is a constant",

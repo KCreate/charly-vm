@@ -37,9 +37,7 @@ namespace Charly {
     const uint32_t InitialHeapCount = 2;
     const uint32_t HeapCellCount = 32;
 
-    /*
-     * A single cell managed by the GC
-     * */
+    // A single cell managed by the GC
     struct Cell {
       union U {
         struct {

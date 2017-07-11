@@ -62,6 +62,7 @@ namespace Charly {
       return cell;
     }
 
+    // TODO: Call destructors of classes that define it
     void Collector::free(Cell* cell) {
       memset(cell, 0, sizeof(Cell));
       cell->as.free.next = this->free_cell;

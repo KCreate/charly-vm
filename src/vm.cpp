@@ -178,12 +178,12 @@ namespace Charly {
 
       int bits = (int)((VALUE)(t.v >> 60) & Value::IPointerMask);
 
-      /* I have no idea what's going on here, this was taken from ruby source code */
+      // I have no idee what's going on here, this was taken from ruby source code
       if (t.v != 0x3000000000000000 && !((bits - 3) & ~0x01)) {
         return (BIT_ROTL(t.v, 3) & ~(VALUE)0x01) | Value::IFloatFlag;
       } else if (t.v == 0) {
 
-        /* +0.0 */
+        // +0.0
         return 0x8000000000000002;
       }
 
@@ -255,12 +255,8 @@ namespace Charly {
     }
 
     VALUE VM::real_type(VALUE value) {
-
-      /* Constants */
       if (Value::is_boolean(value)) return Type::Boolean;
       if (Value::is_null(value)) return Type::Null;
-
-      /* More logic required */
       if (!Value::is_special(value)) return Value::basics(value)->type();
       if (Value::is_integer(value)) return Type::Integer;
       if (Value::is_ifloat(value)) return Type::Float;

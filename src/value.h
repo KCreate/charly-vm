@@ -31,8 +31,6 @@
 #pragma once
 
 namespace Charly {
-
-  /* Helper methods to operator on the VALUE type */
   namespace Value {
     using namespace Scope;
     using namespace Machine;
@@ -70,10 +68,8 @@ namespace Charly {
       };
     }
 
-    /*
-     * Basic fields every data type in Charly has
-     * This is inspired by the way Ruby stores it's values
-     * */
+    // Basic fields every data type in Charly has
+    // This is inspired by the way Ruby stores it's values
     struct Basic {
         VALUE flags;
         VALUE klass;
@@ -81,13 +77,13 @@ namespace Charly {
         Basic() : flags(0), klass(0) {}
         Basic(VALUE type, VALUE kl) : flags((VALUE)type), klass(kl) {}
 
-        /* Getters for different flag fields */
+        // Getters for different flag fields
         const inline VALUE type() { return this->flags & fType; }
         const inline VALUE mark() { return (this->flags & fMark) != 0; }
 
-        /* Setters for different flag fields */
+        // Setters for different flag fields
         inline void set_type(VALUE val) {
-          this->flags = ( (this->flags & ~fType) | (fType & val));
+          this->flags = ((this->flags & ~fType) | (fType & val));
         }
 
         inline void set_mark(bool val) {
@@ -95,12 +91,10 @@ namespace Charly {
         }
     };
 
-    /*
-     * Memory that is allocated via the GC will be aligned to 8 bytes
-     * This means that if VALUE is a pointer, the last 3 bits will be set to 0.
-     * We can use this to our advantage to store some additional information
-     * in there.
-     * */
+    // Memory that is allocated via the GC will be aligned to 8 bytes
+    // This means that if VALUE is a pointer, the last 3 bits will be set to 0.
+    // We can use this to our advantage to store some additional information
+    // in there.
     const VALUE IPointerMask  = 0b00111;
     const VALUE IPointerFlag  = 0b00000;
     const VALUE IIntegerMask  = 0b00001;
@@ -128,7 +122,7 @@ namespace Charly {
           (value & IPointerMask) != IPointerFlag);
     }
 
-    /* Returns this value as a pointer to a Basic structure */
+    // Returns this value as a pointer to a Basic structure
     inline Basic* basics(VALUE value) { return (Basic *)value; }
 
     // Describes an object type
@@ -175,12 +169,12 @@ namespace Charly {
       // TODO: Argumentlist and bound argumentlist
     };
 
-    /* Rotate a given value to the left n times */
+    // Rotate a given value to the left n times
     const constexpr VALUE BIT_ROTL(VALUE v, VALUE n) {
       return (((v) << (n)) | ((v) >> ((sizeof(v) * 8) - n)));
     }
 
-    /* Rotate a given value to the right n times */
+    // Rotate a given value to the right n times
     const constexpr VALUE BIT_ROTR(VALUE v, VALUE n) {
       return (((v) >> (n)) | ((v) << ((sizeof(v) * 8) - n)));
     }

@@ -36,42 +36,40 @@ namespace Charly {
 
   namespace Scope {
 
-    /* Single entry of a container */
+    // Single entry of a container
     struct Entry {
-        Entry(VALUE arg, bool is_constant) : value(arg), constant(is_constant) {};
-        VALUE value;
-        bool constant;
+      Entry(VALUE arg, bool is_constant) : value(arg), constant(is_constant) {};
+      VALUE value;
+      bool constant;
     };
 
-    /*
-    * Main hash-like data structure supporting fast access to known indices
-    * and slightly-slower access when using hash-values
-    * */
+    // Main hash-like data structure supporting fast access to known indices
+    // and slightly slower access when using hash-values
     struct Container {
 
-        /* Vector of entries in this scope */
-        std::vector<Entry> entries;
+      // Vector of entries in this scope
+      std::vector<Entry> entries;
 
-        /* Map from values to offsets into the entries vector */
-        std::unordered_map<VALUE, uint32_t> offset_table;
+      // Map from values to offsets into the entries vector
+      std::unordered_map<VALUE, uint32_t> offset_table;
 
-        Container(uint32_t initial_capacity = 4);
+      Container(uint32_t initial_capacity = 4);
 
-        /* Tries to read an entry from this container or a parent container */
-        STATUS read(uint32_t index, VALUE* result);
-        STATUS read(VALUE key, VALUE* result);
+      // Tries to read an entry from this container or a parent container
+      STATUS read(uint32_t index, VALUE* result);
+      STATUS read(VALUE key, VALUE* result);
 
-        /* Creates new entries to the offset table */
-        STATUS register_offset(VALUE key, uint32_t index);
+      // Creates new entries to the offset table
+      STATUS register_offset(VALUE key, uint32_t index);
 
-        /* Insert a new entry into this container */
-        Entry& insert(VALUE value, bool is_constant = false);
+      // Insert a new entry into this container
+      Entry& insert(VALUE value, bool is_constant = false);
 
-        /* Writes to an already existing entry */
-        STATUS write(uint32_t index, VALUE value);
-        STATUS write(VALUE key, VALUE value, bool init_on_undefined = false);
+      // Writes to an already existing entry
+      STATUS write(uint32_t index, VALUE value);
+      STATUS write(VALUE key, VALUE value, bool init_on_undefined = false);
 
-        bool contains(VALUE key);
+      bool contains(VALUE key);
     };
 
   }

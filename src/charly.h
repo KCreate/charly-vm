@@ -33,6 +33,7 @@
 #include "frame.h"
 #include "gc.h"
 #include "internals.h"
+#include "operators.h"
 #include "vm.h"
 
 #pragma once
