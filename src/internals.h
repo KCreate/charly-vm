@@ -31,11 +31,7 @@
 namespace Charly {
   namespace Machine {
     namespace Internals {
-
-      // get_internal method used to obtain other internal methods
-      // provided by the virtual machine
       void get_method(VM* vm, VALUE method_name);
-
     }
   }
 }

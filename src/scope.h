@@ -28,6 +28,7 @@
 #include <unordered_map>
 
 #include "defines.h"
+#include "status.h"
 
 #pragma once
 
@@ -36,8 +37,7 @@ namespace Charly {
   namespace Scope {
 
     /* Single entry of a container */
-    class Entry {
-      public:
+    struct Entry {
         Entry(VALUE arg, bool is_constant) : value(arg), constant(is_constant) {};
         VALUE value;
         bool constant;
@@ -47,8 +47,7 @@ namespace Charly {
     * Main hash-like data structure supporting fast access to known indices
     * and slightly-slower access when using hash-values
     * */
-    class Container {
-      public:
+    struct Container {
 
         /* Vector of entries in this scope */
         std::vector<Entry> entries;
@@ -56,7 +55,6 @@ namespace Charly {
         /* Map from values to offsets into the entries vector */
         std::unordered_map<VALUE, uint32_t> offset_table;
 
-      public:
         Container(uint32_t initial_capacity = 4);
 
         /* Tries to read an entry from this container or a parent container */

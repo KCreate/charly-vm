@@ -31,9 +31,44 @@
 #pragma once
 
 namespace Charly {
-  namespace Primitive {
+
+  /* Helper methods to operator on the VALUE type */
+  namespace Value {
     using namespace Scope;
     using namespace Machine;
+
+    // Different masks for the flags field in the Basic struct
+    const VALUE fType = 0x1f;
+    const VALUE fMark = 0x20;
+
+    // Values used to represent some types
+    namespace Type {
+      const VALUE Undefined = 0x00;
+      const VALUE Integer   = 0x01;
+      const VALUE Float     = 0x02;
+      const VALUE Numeric   = 0x03;
+      const VALUE Boolean   = 0x04;
+      const VALUE Null      = 0x05;
+      const VALUE Object    = 0x06;
+      const VALUE Function  = 0x07;
+      const VALUE CFunction = 0x08;
+      const VALUE Frame     = 0x09;
+      const VALUE Symbol    = 0x0a;
+
+      const std::string str[] = {
+        "Undefined",
+        "Integer",
+        "Float",
+        "Numeric",
+        "Boolean",
+        "Null",
+        "Object",
+        "Function",
+        "CFunction",
+        "Frame",
+        "Symbol"
+      };
+    }
 
     /*
      * Basic fields every data type in Charly has
@@ -47,29 +82,74 @@ namespace Charly {
         Basic(VALUE type, VALUE kl) : flags((VALUE)type), klass(kl) {}
 
         /* Getters for different flag fields */
-        const inline VALUE type() { return this->flags & Flag::Type; }
-        const inline VALUE mark() { return (this->flags & Flag::Mark) != 0; }
+        const inline VALUE type() { return this->flags & fType; }
+        const inline VALUE mark() { return (this->flags & fMark) != 0; }
 
         /* Setters for different flag fields */
         inline void set_type(VALUE val) {
-          this->flags = ( (this->flags & ~Flag::Type) | (Flag::Type & val));
+          this->flags = ( (this->flags & ~fType) | (fType & val));
         }
 
         inline void set_mark(bool val) {
-          this->flags ^= (-val ^ this->flags) & Flag::Mark;
+          this->flags ^= (-val ^ this->flags) & fMark;
         }
     };
 
+    /*
+     * Memory that is allocated via the GC will be aligned to 8 bytes
+     * This means that if VALUE is a pointer, the last 3 bits will be set to 0.
+     * We can use this to our advantage to store some additional information
+     * in there.
+     * */
+    const VALUE IPointerMask  = 0b00111;
+    const VALUE IPointerFlag  = 0b00000;
+    const VALUE IIntegerMask  = 0b00001;
+    const VALUE IIntegerFlag  = 0b00001;
+    const VALUE IFloatMask    = 0b00011;
+    const VALUE IFloatFlag    = 0b00010;
+    const VALUE ISymbolMask   = 0b01111;
+    const VALUE ISymbolFlag   = 0b01100;
+    const VALUE False         = 0b00000;
+    const VALUE True          = 0b10100;
+    const VALUE Null          = 0b01000;
+
+    const inline bool is_boolean(VALUE value) { return value == False || value == True; }
+    const inline bool is_integer(VALUE value) { return (value & IIntegerMask) == IIntegerFlag; }
+    const inline bool is_ifloat(VALUE value)  { return (value & IFloatMask) == IFloatFlag; }
+    const inline bool is_symbol(VALUE value)  { return (value & ISymbolMask) == ISymbolFlag; }
+    const inline bool is_false(VALUE value)   { return value == False; }
+    const inline bool is_true(VALUE value)    { return value == True; }
+    const inline bool is_null(VALUE value)    { return value == Null; }
+    const inline bool is_special(VALUE value) {
+      return (
+          is_boolean(value) ||
+          is_null(value) ||
+          is_symbol(value) ||
+          (value & IPointerMask) != IPointerFlag);
+    }
+
+    /* Returns this value as a pointer to a Basic structure */
+    inline Basic* basics(VALUE value) { return (Basic *)value; }
+
+    // Describes an object type
+    //
+    // The basic field contains a pointer to the parent class that was
+    // used to construct this object. Empty objects will have the Object class as their parent
+    // Objects have their own data container in which they can store arbitary values
     struct Object {
         Basic basic;
         Container* container;
     };
 
+    // Heap-allocated float type
+    //
+    // Used when a floating-point value won't fit into the immediate-encoded format
     struct Float {
         Basic basic;
         double float_value;
     };
 
+    // Normal functions defined inside the virtual machine.
     struct Function {
       Basic basic;
       VALUE name;
@@ -82,6 +162,8 @@ namespace Charly {
       // TODO: Argumentlist and bound argumentlist
     };
 
+    // Function type used for including external functions from C-Land into the virtual machine
+    // These are basically just a function pointer with some metadata associated to them
     struct CFunction {
       Basic basic;
       VALUE name;
@@ -102,6 +184,5 @@ namespace Charly {
     const constexpr VALUE BIT_ROTR(VALUE v, VALUE n) {
       return (((v) >> (n)) | ((v) << ((sizeof(v) * 8) - n)));
     }
-
   }
 }

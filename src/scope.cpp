@@ -29,8 +29,6 @@
 namespace Charly {
 
   namespace Scope {
-    using namespace Primitive;
-
     Container::Container(uint32_t initial_capacity) {
       this->entries = std::vector<Entry>();
       this->offset_table = std::unordered_map<VALUE, uint32_t>();

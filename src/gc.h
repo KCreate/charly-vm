@@ -34,6 +34,8 @@
 
 namespace Charly {
   namespace GC {
+    const uint32_t InitialHeapCount = 2;
+    const uint32_t HeapCellCount = 32;
 
     /*
      * A single cell managed by the GC
@@ -44,11 +46,11 @@ namespace Charly {
           VALUE flags;
           Cell* next;
         } free;
-        Primitive::Basic basic;
-        Primitive::Object object;
-        Primitive::Float flonum;
-        Primitive::Function function;
-        Primitive::CFunction cfunction;
+        Value::Basic basic;
+        Value::Object object;
+        Value::Float flonum;
+        Value::Function function;
+        Value::CFunction cfunction;
         Machine::Frame frame;
 
         U() { memset(this, 0, sizeof(U)); }
@@ -60,7 +62,7 @@ namespace Charly {
       ~Cell() {}
     };
 
-    class Collector {
+    struct Collector {
       private:
         Cell* free_cell;
         std::vector<std::vector<Cell>> heaps;

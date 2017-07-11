@@ -33,7 +33,7 @@ namespace Charly {
     namespace Operators {
 
       VALUE add(VM* vm, VALUE left, VALUE right) {
-        if (vm->type(left) == Type::Numeric && vm->type(right) == Type::Numeric) {
+        if (vm->type(left) == Value::Type::Numeric && vm->type(right) == Value::Type::Numeric) {
           double nleft = vm->numeric_value(left);
           double nright = vm->numeric_value(right);
           return vm->create_float(nleft + nright);

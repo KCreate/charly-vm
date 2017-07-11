@@ -34,7 +34,7 @@
 
 namespace Charly {
   namespace Machine {
-    using namespace Primitive;
+    using namespace Value;
     using namespace Scope;
 
     Frame* VM::pop_frame() {

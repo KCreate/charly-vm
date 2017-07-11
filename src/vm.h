@@ -36,9 +36,7 @@
 
 namespace Charly {
   namespace Machine {
-    using namespace Primitive;
-
-    class VM {
+    struct VM {
       private:
         GC::Collector* gc;
         std::vector<InstructionBlock*> unassigned_blocks;
@@ -54,7 +52,7 @@ namespace Charly {
         // Methods that operate on the VM's frames
         Frame* pop_frame();
         inline Frame* top_frame() { return this->frames; }
-        Frame* push_frame(VALUE self, Function* calling_function, uint8_t* return_address);
+        Frame* push_frame(VALUE self, Value::Function* calling_function, uint8_t* return_address);
 
         // Read and write from/to the frame hierarchy
         STATUS read(VALUE key, VALUE* result);
@@ -102,8 +100,8 @@ namespace Charly {
         void op_putvalue(VALUE value);
         void op_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc);
         void op_putcfunction(VALUE symbol, void* pointer, uint32_t argc);
-        void call_function(Function* function, uint32_t argc, VALUE* argv);
-        void call_cfunction(CFunction* function, uint32_t argc, VALUE* argv);
+        void call_function(Value::Function* function, uint32_t argc, VALUE* argv);
+        void call_cfunction(Value::CFunction* function, uint32_t argc, VALUE* argv);
         void op_puthash(uint32_t size);
         void op_registerlocal(VALUE symbol, uint32_t offset);
         void op_makeconstant(uint32_t offset);

@@ -33,16 +33,13 @@
 
 namespace Charly {
   namespace Machine {
-    using namespace Primitive;
 
-    /*
-     * Frames introduce new environments and branch logic
-     * */
+    // Frames introduce new environments
     struct Frame {
       VALUE flags;
       Frame* parent;
       Frame* parent_environment_frame;
-      Function* function;
+      Value::Function* function;
       Scope::Container* environment;
       VALUE self;
       uint8_t* return_address;

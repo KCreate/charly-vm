@@ -32,14 +32,11 @@
 using namespace std;
 
 namespace Charly {
-  using namespace Primitive;
-  using namespace Scope;
-
   namespace Machine {
     namespace Internals {
 
       void get_method(VM* vm, VALUE method_name) {
-        cout << "called get_method with " << Type::str[vm->type(method_name)] << endl;;
+        cout << "called get_method with " << Value::Type::str[vm->type(method_name)] << endl;;
       }
 
     }
