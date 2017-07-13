@@ -1,6 +1,6 @@
 # Todos
 
-# Internal methods system
+# Internal methods system
 - Put them into a separate file
 - Load methods on demand
   - Maybe use _dlopen_ for this?
@@ -60,7 +60,7 @@
 - UNot
 - UBNot
 
-# Exception system
+# Exception system
 - Every type is throwable (the payload is a VALUE type)
 - The top-level wraps the entire program in a try catch clause
   - Machine has some logic that handles global uncaught exceptions
