@@ -35,8 +35,7 @@ namespace Charly {
       Return,
       Exception,
       Break,
-      Continue,
-      Finish
+      Continue
     };
 
     enum Opcode : uint8_t {
