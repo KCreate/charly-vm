@@ -4,7 +4,7 @@ OPT=-O0
 OBJS=build/main.o build/scope.o build/gc.o build/vm.o build/internals.o build/operators.o
 
 all: objects
-	$(CC) $(OPT) $(OBJS) $(CCFLAGS) -lstdc++ -o bin/vm
+	$(CC) $(OPT) $(OBJS) $(CCFLAGS) -lstdc++ -lm -o bin/vm
 
 objects: $(OBJS)
 

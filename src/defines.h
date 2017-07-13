@@ -27,7 +27,7 @@
 #include <iostream>
 #include <cstdint>
 #include <cstdlib>
-#include <string>
+#include <cstring>
 
 #pragma once
 
