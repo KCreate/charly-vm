@@ -206,8 +206,9 @@ namespace Charly {
         this->write_int(index);
       }
 
-      void inline write_pop() {
+      void inline write_pop(uint32_t count) {
         this->write_byte(Opcode::Pop);
+        this->write_int(count);
       }
 
       void inline write_dup() {

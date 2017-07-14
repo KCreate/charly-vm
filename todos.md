@@ -28,9 +28,6 @@
 - PutString
 - PutArray
 - PutClass
-- Pop
-- Dup
-- Swap
 - Topn
 - Setn
 - CallMember
@@ -111,29 +108,3 @@
     wrapped pointers, optionally defining a function pointer for a destructor function.
     We can keep the correct context object by using the `->*` and `.*` operators.
     See: https://isocpp.org/wiki/faq/pointers-to-members#dotstar-vs-arrowstar
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-------

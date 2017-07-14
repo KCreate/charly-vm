@@ -450,6 +450,25 @@ namespace Charly {
       }
     }
 
+    void VM::op_pop(uint32_t count) {
+      while (count--) {
+        this->pop_stack();
+      }
+    }
+
+    void VM::op_dup() {
+      VALUE value = this->pop_stack();
+      this->push_stack(value);
+      this->push_stack(value);
+    }
+
+    void VM::op_swap() {
+      VALUE value1 = this->pop_stack();
+      VALUE value2 = this->pop_stack();
+      this->push_stack(value1);
+      this->push_stack(value2);
+    }
+
     void VM::op_call(uint32_t argc) {
 
       // Check if there are enough items on the stack
@@ -744,6 +763,17 @@ namespace Charly {
       block->write_operator(Opcode::Add);
       block->write_operator(Opcode::Add);
 
+      // Stack methods
+      block->write_dup();
+      block->write_dup();
+      block->write_dup();
+      block->write_dup();
+
+      block->write_putvalue(this->create_integer(25));
+      block->write_swap();
+      block->write_dup();
+      block->write_pop(2);
+
       // Add the internal get_method method to the internals object
       block->write_byte(Opcode::Halt);
     }
@@ -861,6 +891,21 @@ namespace Charly {
           case Opcode::MakeConstant: {
             uint32_t offset = *(uint32_t *)(this->ip + sizeof(Opcode));
             this->op_makeconstant(offset);
+            break;
+          }
+
+          case Opcode::Pop: {
+            uint32_t count = *(uint32_t *)(this->ip + sizeof(Opcode));
+            this->op_pop(count);
+            break;
+          }
+
+          case Opcode::Dup: {
+            this->op_dup();
+          }
+
+          case Opcode::Swap: {
+            this->op_swap();
             break;
           }
 
