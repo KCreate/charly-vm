@@ -583,6 +583,20 @@ namespace Charly {
       }
     }
 
+    void VM::op_branch(int32_t offset) {
+      this->ip += offset;
+    }
+
+    void VM::op_branchif(int32_t offset) {
+      VALUE test = this->pop_stack();
+      if (Operators::truthyness(test)) this->ip += offset;
+    }
+
+    void VM::op_branchunless(int32_t offset) {
+      VALUE test = this->pop_stack();
+      if (!Operators::truthyness(test)) this->ip += offset;
+    }
+
     void VM::stacktrace(std::ostream& io) {
       Frame* frame = this->frames;
 
@@ -763,16 +777,9 @@ namespace Charly {
       block->write_operator(Opcode::Add);
       block->write_operator(Opcode::Add);
 
-      // Stack methods
-      block->write_dup();
-      block->write_dup();
-      block->write_dup();
-      block->write_dup();
-
-      block->write_putvalue(this->create_integer(25));
-      block->write_swap();
-      block->write_dup();
-      block->write_pop(2);
+      // Check branch instructions
+      block->write_branch(1 + 8);
+      block->write_putvalue(this->create_integer(1000));
 
       // Add the internal get_method method to the internals object
       block->write_byte(Opcode::Halt);
@@ -918,6 +925,24 @@ namespace Charly {
           case Opcode::Throw: {
             ThrowType throw_type = *(ThrowType *)(this->ip + sizeof(Opcode));
             this->op_throw(throw_type);
+            break;
+          }
+
+          case Opcode::Branch: {
+            int32_t offset = *(int32_t *)(this->ip + sizeof(Opcode));
+            this->op_branch(offset);
+            break;
+          }
+
+          case Opcode::BranchIf: {
+            int32_t offset = *(int32_t *)(this->ip + sizeof(Opcode));
+            this->op_branchif(offset);
+            break;
+          }
+
+          case Opcode::BranchUnless: {
+            int32_t offset = *(int32_t *)(this->ip + sizeof(Opcode));
+            this->op_branchunless(offset);
             break;
           }
 

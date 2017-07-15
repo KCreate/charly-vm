@@ -110,6 +110,9 @@ namespace Charly {
         void op_swap();
         void op_call(uint32_t argc);
         void op_throw(ThrowType type);
+        void op_branch(int32_t offset);
+        void op_branchif(int32_t offset);
+        void op_branchunless(int32_t offset);
 
       private:
         void inline panic(STATUS reason) {

@@ -42,6 +42,12 @@ namespace Charly {
         return vm->create_float(NAN);
       }
 
+      bool truthyness(VALUE value) {
+        if (Value::is_null(value)) return false;
+        if (Value::is_false(value)) return false;
+        return true;
+      }
+
     }
   }
 }

@@ -236,6 +236,7 @@ namespace Charly {
       Throw = 0x1b,
 
       // Apply a given offset to the instruction pointer
+      // WARNING: Offset is in bytes, no instruction length decoding is done
       //
       // args:
       // - offset
@@ -243,6 +244,7 @@ namespace Charly {
 
       // Pop test and apply a given offset to the instruction pointer
       // if test is truthy
+      // WARNING: Offset is in bytes, no instruction length decoding is done
       //
       // args:
       // - offset
@@ -253,6 +255,7 @@ namespace Charly {
 
       // Pop test and apply a given offset to the instruction pointer
       // if test is falsey
+      // WARNING: Offset is in bytes, no instruction length decoding is done
       //
       // args:
       // - offset

@@ -60,6 +60,8 @@ namespace Charly {
       VALUE bor(VM* vm, VALUE left, VALUE right);
       VALUE bxor(VM* vm, VALUE left, VALUE right);
       VALUE ubnot(VM* vm, VALUE value);
+
+      bool truthyness(VALUE value);
     }
   }
 }

@@ -244,17 +244,17 @@ namespace Charly {
         this->write_byte(type);
       }
 
-      void inline write_branch(uint32_t offset) {
+      void inline write_branch(int32_t offset) {
         this->write_byte(Opcode::Branch);
         this->write_int(offset);
       }
 
-      void inline write_branchif(uint32_t offset) {
+      void inline write_branchif(int32_t offset) {
         this->write_byte(Opcode::BranchIf);
         this->write_int(offset);
       }
 
-      void inline write_branchunless(uint32_t offset) {
+      void inline write_branchunless(int32_t offset) {
         this->write_byte(Opcode::BranchUnless);
         this->write_int(offset);
       }
