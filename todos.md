@@ -18,6 +18,65 @@
 - Inject basic classes at machine startup
   - Keep a reference to these classes somewhere?
 
+# Type data structure
+- Remove the klass field as for most types it wont change
+- Make sure this doesn't fuck up alignment issues inside the GC
+- Types which do need the class field (Object) will store it inside an unnamed field inside
+  their own data containers
+
+# Class Construction
+- Class is called
+- Insert special fields into object
+  - 0x00: calling class
+- Insert all the classes fields and methods into the object
+  - Skip the constructor method
+- Check if there is a constructor inside the class
+  - Check if there are enough arguments for the constructor
+  - Setup an exception handler which deallocates anything if the constructor throws an exception
+  - Call the constructor, setting the self value to the newly created object
+- If the constructor succeeded, push the newly created object onto the stack
+
+# Garbage Collection
+- Mark and Sweep
+- GC if there are no free cells available anymore
+- The GC needs a pointer to the VM
+- The VM has to keep a list of root nodes
+  - Stack, Frames, Toplevel
+- GC iterates over each root node, recursively marking all nodes
+  - If a node has already been visited, return
+- Iterate over all heaps and their cells
+  - If a cell is not marked, free it, goto next cell
+  - If a cell is marked, unmark it, goto next cell
+- Return the last newly created free cell to the allocate call
+
+# Memory ownership
+- Structs generally own the memory they point to
+- This means the compiler can't assume that memory will stick around after it's been created
+- Strings
+  - The memory created by compiling a string, is owned by the VM, even if the VM doesn't know about the string
+  - If the instruction which tell the vm to create a new string is never executed, the string will stick
+    around until the end of the machine
+    - Solution would be to have a string pool per function, with a refcount to each string
+    - Once a function is being deallocated, all strings contained inside that function are removed too
+      - TODO: Make sure there are no edge cases for this
+  - The compiler rounds up string memory allocation to 128 bytes
+- InstructionBlocks
+  - IB's are owned by the function they are placed into
+  - Once the function is being deallocated, their instructionblock is deallocated as well
+- Bound Functions
+  - When binding a new self value to a function, the instruction block is copied
+  - This is to keep the possibility to optimize the function once the self value is known
+
+# VM deallocation
+  - Deallocating the VM should destroy all the memory it can find,
+  - Any outside-user is responsible himself to correctly copy everything needed for further program execution
+  - VM deallocation order
+    - Flush the stack (not via the GC)
+    - Flush the top-level
+    - Tell the GC to destroy everything it can find (overwrite with 0)
+    - Deallocate member objects of the VM
+    - Deallocate vm itself
+
 # Operators
 - Maybe use templates for this?
   - Copy the operator matrix from the Crystal Charly source. Don't reinvent the wheel.
@@ -30,11 +89,7 @@
 - PutClass
 - Topn
 - Setn
-- CallMember
 - Throw (only Return is implemented so far)
-- Branch
-- BranchIf
-- BranchUnless
 - Add
 - Sub
 - Mul
