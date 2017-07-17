@@ -100,8 +100,6 @@ namespace Charly {
         void op_putvalue(VALUE value);
         void op_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc);
         void op_putcfunction(VALUE symbol, void* pointer, uint32_t argc);
-        void call_function(Value::Function* function, uint32_t argc, VALUE* argv);
-        void call_cfunction(Value::CFunction* function, uint32_t argc, VALUE* argv);
         void op_puthash(uint32_t size);
         void op_registerlocal(VALUE symbol, uint32_t offset);
         void op_makeconstant(uint32_t offset);
@@ -109,6 +107,10 @@ namespace Charly {
         void op_dup();
         void op_swap();
         void op_call(uint32_t argc);
+        void op_callmember(uint32_t argc);
+        void call(uint32_t argc, bool with_target);
+        void call_function(Value::Function* function, uint32_t argc, VALUE* argv, VALUE self);
+        void call_cfunction(Value::CFunction* function, uint32_t argc, VALUE* argv);
         void op_throw(ThrowType type);
         void op_branch(int32_t offset);
         void op_branchif(int32_t offset);

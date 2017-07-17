@@ -221,7 +221,7 @@ namespace Charly {
       // - argc
       //
       // stack:
-      // - context
+      // - target
       // - function
       // - arguments
       CallMember = 0x1a,

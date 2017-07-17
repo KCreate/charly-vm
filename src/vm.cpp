@@ -425,6 +425,7 @@ namespace Charly {
       this->push_stack(value);
     }
 
+    // TODO: set the anonymous flag inside the function
     void VM::op_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc) {
       VALUE function = this->create_function(symbol, argc, block);
       this->push_stack(function);
@@ -470,6 +471,14 @@ namespace Charly {
     }
 
     void VM::op_call(uint32_t argc) {
+      this->call(argc, false);
+    }
+
+    void VM::op_callmember(uint32_t argc) {
+      this->call(argc, true);
+    }
+
+    void VM::call(uint32_t argc, bool with_target) {
 
       // Check if there are enough items on the stack
       //
@@ -494,13 +503,33 @@ namespace Charly {
       }
       argc = argc_backup;
 
-      // Pop the target of the function off of the stack
-      VALUE target = this->pop_stack();
+      // Pop the function off of the stack
+      VALUE function = this->pop_stack();
+
+      // The target of the function is either supplied explicitly via the call_member instruction
+      // or implicitly via the functions frame
+      // If it's supplied via the frame hierarchy, we need to resolve it here
+      // If not we simply pop it off the stack
+      VALUE target = Value::Null;
+      if (with_target) target = this->pop_stack();
 
       // Redirect to the correct handler
-      switch (this->type(target)) {
-        case Type::Function: return this->call_function((Function *)target, argc, arguments);
-        case Type::CFunction: return this->call_cfunction((CFunction *)target, argc, arguments);
+      switch (this->type(function)) {
+        case Type::Function: {
+
+          // If the target wasn't supplied explicitly, we need to read it from the frame hierarchy
+          // A target might already be bound inside a function, in this case we don't have to read
+          // from the frame
+          Function* target_function = (Function *)function;
+          if (target_function->bound_self_set) {
+            target = target_function->bound_self;
+          } else if (!with_target && target_function->context) {
+            target = target_function->context->self;
+          }
+
+          return this->call_function(target_function, argc, arguments, target);
+        }
+        case Type::CFunction: return this->call_cfunction((CFunction *)function, argc, arguments);
 
         default: {
 
@@ -510,17 +539,14 @@ namespace Charly {
       }
     }
 
-    void VM::call_function(Function* function, uint32_t argc, VALUE* argv) {
+    void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self) {
 
       // Check if the function was called with enough arguments
       if (argc < function->argc) {
         this->panic(Status::NotEnoughArguments);
       }
 
-      // Push a control frame for the function
-      //
-      // TODO: Check if we can't generalise this for member function calls
-      VALUE self = function->context ? function->context->self : Value::Null;
+      // The return address is simply the instruction after the one we've been called from
       uint8_t* return_address = this->ip + this->decode_instruction_length(Opcode::Call);
       Frame* frame = this->push_frame(self, function, return_address);
 
@@ -749,7 +775,7 @@ namespace Charly {
       // Push a function onto the stack containing this block and call it
       this->op_putfunction(this->create_symbol("__charly_init"), block, false, 0);
       this->op_call(0);
-      this->frames->self = Value::Null; // TODO: Replace with actual global self value
+      this->frames->self = this->create_integer(1000); // TODO: Replace with actual global self value
 
       // Codegen the methods body that bootstraps the global scope
       block->write_registerlocal(this->create_symbol("Charly"), 0);
@@ -768,20 +794,15 @@ namespace Charly {
       block->write_setmembersymbol(this->create_symbol("get_method"));
       block->write_readsymbol(this->create_symbol("Charly"));
 
-      // Check arithmetic
-      block->write_putvalue(this->create_float(5.5));
-      block->write_putvalue(this->create_integer(5));
-      block->write_putvalue(this->create_float(-6.2));
-      block->write_putvalue(this->create_integer(-9));
-      block->write_operator(Opcode::Add);
-      block->write_operator(Opcode::Add);
-      block->write_operator(Opcode::Add);
+      auto fnblock = this->request_instruction_block(0); {
+        fnblock->write_putself();
+        fnblock->write_throw(ThrowType::Return);
+      }
 
-      // Check branch instructions
-      block->write_branch(1 + 8);
-      block->write_putvalue(this->create_integer(1000));
+      block->write_putvalue(this->create_integer(25));
+      block->write_putfunction(this->create_symbol("fn"), fnblock, false, 0);
+      block->write_call(0);
 
-      // Add the internal get_method method to the internals object
       block->write_byte(Opcode::Halt);
     }
 
@@ -857,6 +878,7 @@ namespace Charly {
 
           case Opcode::PutSelf: {
             this->op_putself();
+            break;
           }
 
           case Opcode::PutValue: {
@@ -919,6 +941,12 @@ namespace Charly {
           case Opcode::Call: {
             uint32_t argc = *(VALUE *)(this->ip + sizeof(Opcode));
             this->op_call(argc);
+            break;
+          }
+
+          case Opcode::CallMember: {
+            uint32_t argc = *(uint32_t *)(this->ip + sizeof(Opcode));
+            this->op_callmember(argc);
             break;
           }
 
