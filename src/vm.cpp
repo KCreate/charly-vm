@@ -784,6 +784,7 @@ namespace Charly {
           io << "name="; this->pretty_print(io, func->name); io << " ";
           io << "argc=" << func->argc; io << " ";
           io << "context="; this->pretty_print(io, func->context); io << " ";
+          io << "block="; this->pretty_print(io, func->block); io << " ";
           io << "bound_self_set=" << (func->bound_self_set ? "true" : "false") << " ";
           io << "bound_self="; this->pretty_print(io, func->bound_self);
           io << ">";
@@ -827,6 +828,17 @@ namespace Charly {
           io << "stacksize=" << table->stacksize << " ";
           io << "frame="; this->pretty_print(io, table->frame); io << " ";
           io << "parent="; this->pretty_print(io, table->parent); io << " ";
+          io << ">";
+          break;
+        }
+
+        case Type::InstructionBlock: {
+          InstructionBlock* block = (InstructionBlock *)value;
+          io << "<InstructionBlock@" << block << " ";
+          io << "lvarcount=" << block->lvarcount << " ";
+          io << "data=" << (void *)block->data << " ";
+          io << "data_size=" << block->data_size << " ";
+          io << "write_offset=" << block->write_offset;
           io << ">";
           break;
         }
