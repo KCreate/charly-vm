@@ -117,6 +117,9 @@
 - UNot
 - UBNot
 
+# Remove useless opcode
+- PutFloat doesn't make sense, since this can also be done via PutValue
+
 # Mapping between JITed code and source file locations
 - Figure out how JavaScript source maps work and copy the shit out of it
 - Mapping between a range of instructions to a range of row/col pairs on compilation?
