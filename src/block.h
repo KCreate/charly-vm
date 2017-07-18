@@ -239,9 +239,23 @@ namespace Charly {
         this->write_int(argc);
       }
 
+      void inline write_return() {
+        this->write_byte(Opcode::Return);
+      }
+
       void inline write_throw(ThrowType type) {
         this->write_byte(Opcode::Throw);
         this->write_byte(type);
+      }
+
+      void inline write_registercatchtable(ThrowType type, int32_t offset) {
+        this->write_byte(Opcode::RegisterCatchTable);
+        this->write_byte(type);
+        this->write_int(offset);
+      }
+
+      void inline write_popcatchtable() {
+        this->write_byte(Opcode::PopCatchTable);
       }
 
       void inline write_branch(int32_t offset) {

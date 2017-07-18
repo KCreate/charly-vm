@@ -24,44 +24,24 @@
  * SOFTWARE.
  */
 
-#include <iostream>
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
+#include "defines.h"
+#include "value.h"
+#include "frame.h"
+#include "opcode.h"
 
 #pragma once
 
 namespace Charly {
-  typedef uintptr_t VALUE;
-  typedef intptr_t SIGNED_VALUE;
-  typedef uint16_t STATUS;
-
   namespace Machine {
-    struct VM;
-    struct Frame;
-    struct CatchTable;
 
-    enum ThrowType : uint8_t;
-    enum Opcode : uint8_t;
-
-    struct InstructionBlock;
-  }
-
-  namespace Scope {
-    struct Entry;
-    struct Container;
-  }
-
-  namespace GC {
-    struct Cell;
-    struct Collector;
-  }
-
-  namespace Value {
-    struct Basic;
-    struct Object;
-    struct Float;
-    struct Function;
-    struct CFunction;
+    // A CatchTable holds enough information to be able to
+    // roll back to an older state withing the machine
+    struct CatchTable {
+      ThrowType type;
+      uint8_t* address;
+      size_t stacksize;
+      Frame* frame;
+      CatchTable* parent;
+    };
   }
 }

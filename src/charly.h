@@ -34,6 +34,7 @@
 #include "gc.h"
 #include "internals.h"
 #include "operators.h"
+#include "exception.h"
 #include "vm.h"
 
 #pragma once

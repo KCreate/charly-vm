@@ -29,6 +29,7 @@
 #include "defines.h"
 #include "value.h"
 #include "frame.h"
+#include "exception.h"
 
 #pragma once
 
@@ -50,6 +51,7 @@ namespace Charly {
         Value::Function function;
         Value::CFunction cfunction;
         Machine::Frame frame;
+        Machine::CatchTable catchtable;
 
         U() { memset(this, 0, sizeof(U)); }
         ~U() {}

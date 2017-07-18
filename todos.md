@@ -1,5 +1,13 @@
 # Todos
 
+# Testing
+- Unit-test single methods in the VM
+- Find a good unit-testing framework
+- TravisCI Support?
+- Good diagnostics output in CLI
+- Automated, no user intervention
+- Multiple tests per file?
+
 # Internal methods system
 - Put them into a separate file
 - Load methods on demand
@@ -18,7 +26,7 @@
 - Inject basic classes at machine startup
   - Keep a reference to these classes somewhere?
 
-# Type data structure
+# Type data structure
 - Remove the klass field as for most types it wont change
 - Make sure this doesn't fuck up alignment issues inside the GC
 - Types which do need the class field (Object) will store it inside an unnamed field inside
@@ -40,7 +48,7 @@
 - Mark and Sweep
 - GC if there are no free cells available anymore
 - The GC needs a pointer to the VM
-- The VM has to keep a list of root nodes
+- The VM has to keep a list of root nodes
   - Stack, Frames, Toplevel
 - GC iterates over each root node, recursively marking all nodes
   - If a node has already been visited, return
@@ -67,7 +75,7 @@
   - When binding a new self value to a function, the instruction block is copied
   - This is to keep the possibility to optimize the function once the self value is known
 
-# VM deallocation
+# VM deallocation
   - Deallocating the VM should destroy all the memory it can find,
   - Any outside-user is responsible himself to correctly copy everything needed for further program execution
   - VM deallocation order
@@ -89,7 +97,6 @@
 - PutClass
 - Topn
 - Setn
-- Throw (only Return is implemented so far)
 - Add
 - Sub
 - Mul
@@ -112,44 +119,21 @@
 - UNot
 - UBNot
 
+# Mapping between JITed code and source file locations
+- Figure out how JavaScript source maps work and copy the shit out of it
+- Mapping between a range of instructions to a range of row/col pairs on compilation?
+
 # Exception system
-- Every type is throwable (the payload is a VALUE type)
 - The top-level wraps the entire program in a try catch clause
-  - Machine has some logic that handles global uncaught exceptions
-    - User-defined?
-    - Written in Charly or as an external method?
+  - The Machine contains some general global uncaught exception handling
+    - The user can provide a hook (a function) that will run when an exception was not caught
+    - The program terminates once that hook returns
 - Machine has a CatchStack
-  - Try-Catch, Switch, While, Until and Loop statements push new entries to the catch table
-    - The frame contains a pointer to the currently active catch table
-  - The CatchStack is a linked-list of CatchTables
-  - CatchTables are allocated by the GC, just like Frames
-  - Each CatchTable contains multiple pointers into InstructionBlocks for specific exception types
-    - Exception, Break, Continue
-    - Return isn't handled by the CatchTable, as it's handled separately via the whole Frame system
-    - If a field is a null pointer, travel to the next CatchTable
+  - Each CatchTable contains a type and a pointer into an instruction block
     - If an exception reaches the top-level
       - Exception: Call uncaught exception method
       - Break and Continue:
         - Create an exception detailing what happened and rethrow it from the original throw location
-  - CatchTable contains a pointer to the Frame that was active when the try-catch statements started
-  - Struct for a catch table:
-    ```cpp
-    struct CatchTable {
-      ThrowType type;
-      uint8_t* exception_handler;
-      uint8_t* break_handler;
-      uint8_t* continue_handler;
-      Frame* frame;
-      CatchTable* parent;
-    };
-    ```
-  - Struct for an exception:
-    ```cpp
-    struct Exception {
-      ThrowType type;
-      VALUE payload;
-    };
-    ```
 
 # Define deconstructors for some objects
 - Should normal destructors be used?

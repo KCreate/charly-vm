@@ -31,13 +31,15 @@
 namespace Charly {
   namespace Machine {
 
+    // These are the throw types which are used by the throw instruction
     enum ThrowType : uint8_t {
-      Return,
       Exception,
       Break,
       Continue
     };
 
+    // An opcode identifies a single instruction the machine can perform
+    // Opcodes can have arguments
     enum Opcode : uint8_t {
 
       // Do nothing
@@ -226,6 +228,9 @@ namespace Charly {
       // - arguments
       CallMember = 0x1a,
 
+      // Return from the current frame
+      Return = 0x1b,
+
       // Throw a value
       //
       // args:
@@ -233,14 +238,25 @@ namespace Charly {
       //
       // stack:
       // - value
-      Throw = 0x1b,
+      Throw = 0x1c,
+
+      // Push a new catch table onto the machine
+      // WARNING: Offset is in bytes, no instruction length decoding is done
+      //
+      // args:
+      // - type
+      // - offset
+      RegisterCatchTable = 0x1d,
+
+      // Pop the current catch table off the catchstack
+      PopCatchTable = 0x1e,
 
       // Apply a given offset to the instruction pointer
       // WARNING: Offset is in bytes, no instruction length decoding is done
       //
       // args:
       // - offset
-      Branch = 0x1c,
+      Branch = 0x1f,
 
       // Pop test and apply a given offset to the instruction pointer
       // if test is truthy
@@ -251,7 +267,7 @@ namespace Charly {
       //
       // stack:
       // - test
-      BranchIf = 0x1d,
+      BranchIf = 0x20,
 
       // Pop test and apply a given offset to the instruction pointer
       // if test is falsey
@@ -262,39 +278,39 @@ namespace Charly {
       //
       // stack:
       // - test
-      BranchUnless = 0x1e,
+      BranchUnless = 0x21,
 
       // Binary operators
       //
       // stack:
       // - left
       // - right
-      Add = 0x1f,
-      Sub = 0x20,
-      Mul = 0x21,
-      Div = 0x22,
-      Mod = 0x23,
-      Pow = 0x24,
-      Eq  = 0x25,
-      Neq = 0x26,
-      Lt  = 0x27,
-      Gt  = 0x28,
-      Le  = 0x29,
-      Ge  = 0x2a,
-      Shr = 0x2b,
-      Shl = 0x2c,
-      And = 0x2d,
-      Or  = 0x2e,
-      Xor = 0x2f,
+      Add = 0x22,
+      Sub = 0x23,
+      Mul = 0x24,
+      Div = 0x25,
+      Mod = 0x26,
+      Pow = 0x27,
+      Eq  = 0x28,
+      Neq = 0x29,
+      Lt  = 0x2a,
+      Gt  = 0x2b,
+      Le  = 0x2c,
+      Ge  = 0x2d,
+      Shr = 0x2e,
+      Shl = 0x2f,
+      And = 0x30,
+      Or  = 0x31,
+      Xor = 0x32,
 
       // Unary operators
       //
       // stack:
       // - value
-      UAdd  = 0x30,
-      USub  = 0x31,
-      UNot  = 0x32,
-      UBNot = 0x33,
+      UAdd  = 0x33,
+      USub  = 0x34,
+      UNot  = 0x35,
+      UBNot = 0x36,
 
       // Machine internals, meant to be used directly by the machine itself
       // not some compiler compiling to be vm

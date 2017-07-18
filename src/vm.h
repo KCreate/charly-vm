@@ -31,6 +31,7 @@
 #include "opcode.h"
 #include "block.h"
 #include "internals.h"
+#include "exception.h"
 
 #pragma once
 
@@ -44,6 +45,7 @@ namespace Charly {
         std::unordered_map<VALUE, std::string> symbol_table;
         std::vector<VALUE> pretty_print_stack;
         Frame* frames;
+        CatchTable* catchstack;
         uint8_t* ip;
         bool halted;
 
@@ -67,6 +69,12 @@ namespace Charly {
         VALUE pop_stack();
         VALUE peek_stack();
         void push_stack(VALUE value);
+
+        // CatchStack manipulation
+        CatchTable* push_catchtable(ThrowType type, uint8_t* address);
+        CatchTable* pop_catchtable();
+        CatchTable* find_catchtable(ThrowType type);
+        void restore_catchtable(CatchTable* table);
 
         // Symbol table
         std::string lookup_symbol(VALUE symbol);
@@ -111,7 +119,11 @@ namespace Charly {
         void call(uint32_t argc, bool with_target);
         void call_function(Value::Function* function, uint32_t argc, VALUE* argv, VALUE self);
         void call_cfunction(Value::CFunction* function, uint32_t argc, VALUE* argv);
+        void op_return();
         void op_throw(ThrowType type);
+        void throw_exception(VALUE payload);
+        void op_registercatchtable(ThrowType type, int32_t offset);
+        void op_popcatchtable();
         void op_branch(int32_t offset);
         void op_branchif(int32_t offset);
         void op_branchunless(int32_t offset);
@@ -119,9 +131,13 @@ namespace Charly {
       private:
         void inline panic(STATUS reason) {
           std::cout << "Panic: " << Status::str[reason] << std::endl;
+          this->stacktrace(std::cout);
+          this->catchstacktrace(std::cout);
+          this->stackdump(std::cout);
           exit(1);
         }
         void stacktrace(std::ostream& io);
+        void catchstacktrace(std::ostream& io);
         void stackdump(std::ostream& io);
         void inline pretty_print(std::ostream& io, void* value) {
           this->pretty_print(io, (VALUE)value);
@@ -132,6 +148,7 @@ namespace Charly {
         VM() {
           this->gc = new GC::Collector();
           this->frames = NULL;
+          this->catchstack = NULL;
           this->ip = NULL;
           this->halted = false;
 

@@ -130,6 +130,65 @@ namespace Charly {
       this->stack.push_back(value);
     }
 
+    CatchTable* VM::push_catchtable(ThrowType type, uint8_t* address) {
+      GC::Cell* cell = this->gc->allocate();
+      cell->as.basic.set_type(Type::CatchTable);
+      cell->as.catchtable.stacksize = this->stack.size();
+      cell->as.catchtable.frame = this->frames;
+      cell->as.catchtable.parent = this->catchstack;
+      cell->as.catchtable.type = type;
+      cell->as.catchtable.address = address;
+      this->catchstack = (CatchTable *)cell;
+      return (CatchTable *)cell;
+    }
+
+    CatchTable* VM::pop_catchtable() {
+      if (!this->catchstack) this->panic(Status::CatchStackEmpty);
+      CatchTable* parent = this->catchstack->parent;
+      this->gc->free((VALUE)this->catchstack);
+      this->catchstack = parent;
+      return parent;
+    }
+
+    CatchTable* VM::find_catchtable(ThrowType type) {
+      CatchTable* table = this->catchstack;
+
+      while (table) {
+        if (table->type == type) {
+          break;
+        }
+
+        table = table->parent;
+      }
+
+      return table;
+    }
+
+    void VM::restore_catchtable(CatchTable* table) {
+
+      // Unwind and immediately free all catchtables which were pushed
+      // after the one we're restoring.
+      while (table != this->catchstack) {
+        this->pop_catchtable();
+      }
+
+      this->catchstack = table->parent;
+      this->frames = table->frame;
+      this->ip = table->address;
+
+      // Unwind the stack to be the size it was when this catchtable
+      // was pushed. Because the stack could be smaller, we need to
+      // calculate the amount of values we can pop
+      if (this->stack.size() <= table->stacksize) {
+        return;
+      }
+
+      size_t popcount = this->stack.size() - table->stacksize;
+      while (popcount--) {
+        this->stack.pop_back();
+      }
+    }
+
     std::string VM::lookup_symbol(VALUE symbol) {
       auto found_string = this->symbol_table.find(symbol);
 
@@ -279,38 +338,41 @@ namespace Charly {
 
     uint32_t VM::decode_instruction_length(Opcode opcode) {
       switch (opcode) {
-        case Opcode::Nop:               return 1;
-        case Opcode::ReadLocal:         return 1 + sizeof(uint32_t);
-        case Opcode::ReadSymbol:        return 1 + sizeof(VALUE);
-        case Opcode::ReadMemberSymbol:  return 1 + sizeof(VALUE);
-        case Opcode::ReadMemberValue:   return 1;
-        case Opcode::SetLocal:          return 1 + sizeof(uint32_t);
-        case Opcode::SetSymbol:         return 1 + sizeof(VALUE);
-        case Opcode::SetMemberSymbol:   return 1 + sizeof(VALUE);
-        case Opcode::SetMemberValue:    return 1;
-        case Opcode::PutSelf:           return 1;
-        case Opcode::PutValue:          return 1 + sizeof(VALUE);
-        case Opcode::PutString:         return 1 + sizeof(char*) + (sizeof(uint32_t) * 2);
-        case Opcode::PutFloat:          return 1 + sizeof(double);
-        case Opcode::PutFunction:       return 1 + sizeof(VALUE) + sizeof(void*) + sizeof(bool) + sizeof(uint32_t);
-        case Opcode::PutCFunction:      return 1 + sizeof(VALUE) + sizeof(void *) + sizeof(uint32_t);
-        case Opcode::PutArray:          return 1 + sizeof(uint32_t);
-        case Opcode::PutHash:           return 1 + sizeof(uint32_t);
-        case Opcode::PutClass:          return 1 + sizeof(VALUE) + sizeof(uint32_t);
-        case Opcode::RegisterLocal:     return 1 + sizeof(VALUE) + sizeof(uint32_t);
-        case Opcode::MakeConstant:      return 1 + sizeof(uint32_t);
-        case Opcode::Pop:               return 1 + sizeof(uint32_t);
-        case Opcode::Dup:               return 1;
-        case Opcode::Swap:              return 1;
-        case Opcode::Topn:              return 1 + sizeof(uint32_t);
-        case Opcode::Setn:              return 1 + sizeof(uint32_t);
-        case Opcode::Call:              return 1 + sizeof(uint32_t);
-        case Opcode::CallMember:        return 1 + sizeof(uint32_t);
-        case Opcode::Throw:             return 1 + sizeof(uint8_t);
-        case Opcode::Branch:            return 1 + sizeof(uint32_t);
-        case Opcode::BranchIf:          return 1 + sizeof(uint32_t);
-        case Opcode::BranchUnless:      return 1 + sizeof(uint32_t);
-        default:                        return 1;
+        case Opcode::Nop:                 return 1;
+        case Opcode::ReadLocal:           return 1 + sizeof(uint32_t);
+        case Opcode::ReadSymbol:          return 1 + sizeof(VALUE);
+        case Opcode::ReadMemberSymbol:    return 1 + sizeof(VALUE);
+        case Opcode::ReadMemberValue:     return 1;
+        case Opcode::SetLocal:            return 1 + sizeof(uint32_t);
+        case Opcode::SetSymbol:           return 1 + sizeof(VALUE);
+        case Opcode::SetMemberSymbol:     return 1 + sizeof(VALUE);
+        case Opcode::SetMemberValue:      return 1;
+        case Opcode::PutSelf:             return 1;
+        case Opcode::PutValue:            return 1 + sizeof(VALUE);
+        case Opcode::PutString:           return 1 + sizeof(char*) + (sizeof(uint32_t) * 2);
+        case Opcode::PutFloat:            return 1 + sizeof(double);
+        case Opcode::PutFunction:         return 1 + sizeof(VALUE) + sizeof(void*) + sizeof(bool) + sizeof(uint32_t);
+        case Opcode::PutCFunction:        return 1 + sizeof(VALUE) + sizeof(void *) + sizeof(uint32_t);
+        case Opcode::PutArray:            return 1 + sizeof(uint32_t);
+        case Opcode::PutHash:             return 1 + sizeof(uint32_t);
+        case Opcode::PutClass:            return 1 + sizeof(VALUE) + sizeof(uint32_t);
+        case Opcode::RegisterLocal:       return 1 + sizeof(VALUE) + sizeof(uint32_t);
+        case Opcode::MakeConstant:        return 1 + sizeof(uint32_t);
+        case Opcode::Pop:                 return 1 + sizeof(uint32_t);
+        case Opcode::Dup:                 return 1;
+        case Opcode::Swap:                return 1;
+        case Opcode::Topn:                return 1 + sizeof(uint32_t);
+        case Opcode::Setn:                return 1 + sizeof(uint32_t);
+        case Opcode::Call:                return 1 + sizeof(uint32_t);
+        case Opcode::CallMember:          return 1 + sizeof(uint32_t);
+        case Opcode::Return:              return 1;
+        case Opcode::Throw:               return 1 + sizeof(ThrowType);
+        case Opcode::RegisterCatchTable:  return 1 + sizeof(ThrowType) + sizeof(int32_t);
+        case Opcode::PopCatchTable:       return 1;
+        case Opcode::Branch:              return 1 + sizeof(uint32_t);
+        case Opcode::BranchIf:            return 1 + sizeof(uint32_t);
+        case Opcode::BranchUnless:        return 1 + sizeof(uint32_t);
+        default:                          return 1;
       }
     }
 
@@ -425,7 +487,7 @@ namespace Charly {
       this->push_stack(value);
     }
 
-    // TODO: set the anonymous flag inside the function
+    // TODO: set the anonymous flag inside the function
     void VM::op_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc) {
       VALUE function = this->create_function(symbol, argc, block);
       this->push_stack(function);
@@ -546,8 +608,11 @@ namespace Charly {
         this->panic(Status::NotEnoughArguments);
       }
 
-      // The return address is simply the instruction after the one we've been called from
-      uint8_t* return_address = this->ip + this->decode_instruction_length(Opcode::Call);
+      // The return address is simply the instruction after the one we've been called from
+      // If the ip is NULL (non-existent instructions that are run at the beginning of the VM) we don't
+      // compute a return address
+      uint8_t* return_address = NULL;
+      if (this->ip != NULL) return_address = this->ip + this->decode_instruction_length(Opcode::Call);
       Frame* frame = this->push_frame(self, function, return_address);
 
       // Copy the arguments from the temporary arguments buffer into
@@ -587,26 +652,41 @@ namespace Charly {
       }
     }
 
+    void VM::op_return() {
+      Frame* frame = this->frames;
+      if (!frame) this->panic(Status::CantReturnFromTopLevel);
+      this->frames = frame->parent;
+      this->ip = frame->return_address;
+    }
+
     void VM::op_throw(ThrowType type) {
-
-      switch (type) {
-        case ThrowType::Return: {
-
-          // Unlink the current frame
-          Frame* frame = this->frames;
-          if (frame == NULL) this->panic(Status::CantReturnFromTopLevel);
-          this->frames = frame->parent;
-
-          // Restore the return address
-          this->ip = frame->return_address;
-
-          break;
-        }
-
-        default: {
-          this->panic(Status::UnknownThrowType);
-        }
+      if (type == ThrowType::Exception) {
+        return this->throw_exception(this->pop_stack());
       }
+
+      CatchTable* table = this->find_catchtable(type);
+      if (!table) {
+        this->panic(Status::NoSuitableCatchTableFound);
+      }
+
+      this->restore_catchtable(table);
+    }
+
+    void VM::throw_exception(VALUE payload) {
+      CatchTable* table = this->find_catchtable(ThrowType::Exception);
+      if (!table) {
+        this->panic(Status::NoSuitableCatchTableFound);
+      }
+      this->restore_catchtable(table);
+      this->push_stack(payload);
+    }
+
+    void VM::op_registercatchtable(ThrowType type, int32_t offset) {
+      this->push_catchtable(type, this->ip + offset);
+    }
+
+    void VM::op_popcatchtable() {
+      this->pop_catchtable();
     }
 
     void VM::op_branch(int32_t offset) {
@@ -627,18 +707,24 @@ namespace Charly {
       Frame* frame = this->frames;
 
       int i = 0;
-      io << i++ << " : (" << (void*)this->ip << ")" << std::endl;
+      io << "IP: " << (void*)this->ip << std::endl;
       while (frame) {
-        Function* func = frame->function;
-
-        std::string name = this->lookup_symbol(func->name);
-
-        io << i++ << " : (";
-        io << name << " : ";
-        io << (void*)func->block->data << "[" << func->block->write_offset << "] : ";
-        io << (void*)frame->return_address;
-        io << ")" << std::endl;
+        io << i++ << "# ";
+        this->pretty_print(io, frame);
+        io << std::endl;
         frame = frame->parent;
+      }
+    }
+
+    void VM::catchstacktrace(std::ostream& io) {
+      CatchTable* table = this->catchstack;
+
+      int i = 0;
+      while (table) {
+        io << i++ << "# ";
+        this->pretty_print(io, table);
+        io << std::endl;
+        table = table->parent;
       }
     }
 
@@ -736,6 +822,11 @@ namespace Charly {
           break;
         }
 
+        case Type::Symbol: {
+          io << this->lookup_symbol(value);
+          break;
+        }
+
         case Type::Frame: {
           Frame* frame = (Frame *)value;
           io << "<Frame@" << frame << " ";
@@ -743,13 +834,20 @@ namespace Charly {
           io << "parent_environment_frame="; this->pretty_print(io, frame->parent_environment_frame); io << " ";
           io << "function="; this->pretty_print(io, frame->function); io << " ";
           io << "self="; this->pretty_print(io, frame->self); io << " ";
-          io << "return_address=" << frame->return_address;
+          io << "return_address=" << (void *)frame->return_address;
           io << ">";
           break;
         }
 
-        case Type::Symbol: {
-          io << this->lookup_symbol(value);
+        case Type::CatchTable: {
+          CatchTable* table = (CatchTable *)value;
+          io << "<CatchTable@" << table << " ";
+          io << "type=" << table->type << " ";
+          io << "address=" << (void *)table->address << " ";
+          io << "stacksize=" << table->stacksize << " ";
+          io << "frame="; this->pretty_print(io, table->frame); io << " ";
+          io << "parent="; this->pretty_print(io, table->parent); io << " ";
+          io << ">";
           break;
         }
 
@@ -794,14 +892,21 @@ namespace Charly {
       block->write_setmembersymbol(this->create_symbol("get_method"));
       block->write_readsymbol(this->create_symbol("Charly"));
 
-      auto fnblock = this->request_instruction_block(0); {
-        fnblock->write_putself();
-        fnblock->write_throw(ThrowType::Return);
+      auto fnblock = this->request_instruction_block(0); {
+        fnblock->write_putvalue(this->create_integer(666666));
+        fnblock->write_throw(ThrowType::Exception);
+        fnblock->write_return();
       }
 
       block->write_putvalue(this->create_integer(25));
       block->write_putfunction(this->create_symbol("fn"), fnblock, false, 0);
-      block->write_call(0);
+
+      // Put a try/catch around the call
+      block->write_registercatchtable(ThrowType::Exception, 0x0d);  // 0x00
+      block->write_call(0);                                         // 0x06
+      block->write_popcatchtable();                                 // 0x0b
+      block->write_byte(Opcode::Halt);                              // 0x0c
+      block->write_putvalue(this->create_integer(1337420));         // 0x0d
 
       block->write_byte(Opcode::Halt);
     }
@@ -950,9 +1055,26 @@ namespace Charly {
             break;
           }
 
+          case Opcode::Return: {
+            this->op_return();
+            break;
+          }
+
           case Opcode::Throw: {
             ThrowType throw_type = *(ThrowType *)(this->ip + sizeof(Opcode));
             this->op_throw(throw_type);
+            break;
+          }
+
+          case Opcode::RegisterCatchTable: {
+            ThrowType throw_type = *(ThrowType *)(this->ip + sizeof(Opcode));
+            int32_t offset = *(int32_t *)(this->ip + sizeof(Opcode) + sizeof(ThrowType));
+            this->op_registercatchtable(throw_type, offset);
+            break;
+          }
+
+          case Opcode::PopCatchTable: {
+            this->op_popcatchtable();
             break;
           }
 
@@ -998,7 +1120,13 @@ namespace Charly {
         }
       }
 
+      std::cout << "Stacktrace:" << std::endl;
       this->stacktrace(std::cout);
+
+      std::cout << "CatchStacktrace:" << std::endl;
+      this->catchstacktrace(std::cout);
+
+      std::cout << "Stackdump:" << std::endl;
       this->stackdump(std::cout);
     }
 

@@ -47,6 +47,8 @@ namespace Charly {
     const STATUS UnknownOpcode                          = 0x10;
     const STATUS TooManyArgumentsForCFunction           = 0x11;
     const STATUS NotEnoughArguments                     = 0x12;
+    const STATUS CatchStackEmpty                        = 0x13;
+    const STATUS NoSuitableCatchTableFound              = 0x14;
 
     // Human-readable error messages
     const std::string str[] = {
@@ -68,7 +70,9 @@ namespace Charly {
       "Not enough space for instruction arguments",
       "Unknown opcode",
       "Too many arguments for CFunction",
-      "Not enough arguments"
+      "Not enough arguments",
+      "Pop failed: Catchstack empty",
+      "No suitable catch table found"
     };
   }
 }
