@@ -38,6 +38,10 @@
   - Call the constructor, setting the self value to the newly created object
 - If the constructor succeeded, push the newly created object onto the stack
 
+# Objects
+- Hashes are just objects with their klass field to the Object class
+- Objects contain their klass field in the first slot of their container
+
 # Garbage Collection
 - Mark and Sweep
 - GC if there are no free cells available anymore
