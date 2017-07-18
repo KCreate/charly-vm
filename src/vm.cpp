@@ -94,24 +94,10 @@ namespace Charly {
     }
 
     InstructionBlock* VM::request_instruction_block(uint32_t lvarcount) {
-      InstructionBlock* block = new InstructionBlock(lvarcount);
-      this->register_instruction_block(block);
-      return block;
-    }
-
-    void VM::register_instruction_block(InstructionBlock* block) {
-      this->unassigned_blocks.push_back(block);
-    }
-
-    void VM::claim_instruction_block(InstructionBlock* block) {
-      size_t index = this->unassigned_blocks.size();
-
-      while (index--) {
-        if (this->unassigned_blocks[index] == block) {
-          this->unassigned_blocks.erase(this->unassigned_blocks.begin() + index);
-          return;
-        }
-      }
+      GC::Cell* cell = this->gc->allocate();
+      new (&cell->as.instructionblock) InstructionBlock(lvarcount);
+      cell->as.basic.set_type(Type::InstructionBlock);
+      return (InstructionBlock *)cell;
     }
 
     VALUE VM::pop_stack() {
@@ -264,9 +250,6 @@ namespace Charly {
       cell->as.function.block = block;
       cell->as.function.bound_self_set = false;
       cell->as.function.bound_self = Value::Null;
-
-      this->claim_instruction_block(block);
-
       return (VALUE)cell;
     }
 

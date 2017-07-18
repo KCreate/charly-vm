@@ -40,7 +40,6 @@ namespace Charly {
     struct VM {
       private:
         GC::Collector* gc;
-        std::vector<InstructionBlock*> unassigned_blocks;
         std::vector<VALUE> stack;
         std::unordered_map<VALUE, std::string> symbol_table;
         std::vector<VALUE> pretty_print_stack;
@@ -62,8 +61,6 @@ namespace Charly {
 
         // Instruction Blocks
         InstructionBlock* request_instruction_block(uint32_t lvarcount);
-        void register_instruction_block(InstructionBlock* block);
-        void claim_instruction_block(InstructionBlock* block);
 
         // Stack manipulation
         VALUE pop_stack();

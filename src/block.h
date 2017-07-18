@@ -33,6 +33,7 @@ namespace Charly {
   namespace Machine {
 
     struct InstructionBlock {
+      VALUE flags; // Needed by GC
 
       // TODO: Tune these values a bit
       const uint32_t BLOCK_INITIAL_WRITE_OFFSET = 0;

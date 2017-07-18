@@ -41,18 +41,19 @@ namespace Charly {
 
     // Values used to represent some types
     namespace Type {
-      const VALUE Undefined  = 0x00;
-      const VALUE Integer    = 0x01;
-      const VALUE Float      = 0x02;
-      const VALUE Numeric    = 0x03;
-      const VALUE Boolean    = 0x04;
-      const VALUE Null       = 0x05;
-      const VALUE Object     = 0x06;
-      const VALUE Function   = 0x07;
-      const VALUE CFunction  = 0x08;
-      const VALUE Symbol     = 0x09;
-      const VALUE Frame      = 0x0a;
-      const VALUE CatchTable = 0x0b;
+      const VALUE Undefined        = 0x00;
+      const VALUE Integer          = 0x01;
+      const VALUE Float            = 0x02;
+      const VALUE Numeric          = 0x03;
+      const VALUE Boolean          = 0x04;
+      const VALUE Null             = 0x05;
+      const VALUE Object           = 0x06;
+      const VALUE Function         = 0x07;
+      const VALUE CFunction        = 0x08;
+      const VALUE Symbol           = 0x09;
+      const VALUE Frame            = 0x0a;
+      const VALUE CatchTable       = 0x0b;
+      const VALUE InstructionBlock = 0x0c;
 
       const std::string str[] = {
         "Undefined",
@@ -66,7 +67,8 @@ namespace Charly {
         "CFunction",
         "Symbol",
         "Frame",
-        "CatchTable"
+        "CatchTable",
+        "InstructionBlock"
       };
     }
 
