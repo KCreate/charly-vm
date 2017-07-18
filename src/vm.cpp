@@ -328,6 +328,7 @@ namespace Charly {
 
       if (type == Type::Float) return Type::Numeric;
       if (type == Type::Integer) return Type::Numeric;
+      if (type == Type::CFunction) return Type::Function;
       return type;
     }
 
@@ -576,7 +577,7 @@ namespace Charly {
       if (with_target) target = this->pop_stack();
 
       // Redirect to the correct handler
-      switch (this->type(function)) {
+      switch (this->real_type(function)) {
         case Type::Function: {
 
           // If the target wasn't supplied explicitly, we need to read it from the frame hierarchy
