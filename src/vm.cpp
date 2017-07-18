@@ -690,7 +690,10 @@ namespace Charly {
       io << "IP: " << (void*)this->ip << std::endl;
       while (frame) {
         io << i++ << "# ";
-        this->pretty_print(io, frame);
+        io << "<Frame@" << frame << " ";
+        io << "name="; this->pretty_print(io, frame->function->name); io << " ";
+        io << "return_address=" << (void *)frame->return_address;
+        io << ">";
         io << std::endl;
         frame = frame->parent;
       }
