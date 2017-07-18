@@ -8,8 +8,6 @@ all: objects
 
 objects: $(OBJS)
 
-rebuild: clean all
-
 build/%.o: src/%.cpp
 	$(CC) $(OPT) $(CCFLAGS) -c $< -o $@
 
