@@ -78,7 +78,7 @@ namespace Charly {
 
         // Methods to create new data types
         VALUE create_symbol(std::string value);
-        VALUE create_object(uint32_t initial_capacity, VALUE klass);
+        VALUE create_object(uint32_t initial_capacity);
         VALUE create_integer(int64_t value);
         VALUE create_float(double value);
         VALUE create_function(VALUE name, uint32_t argc, InstructionBlock* block);

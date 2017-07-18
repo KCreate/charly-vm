@@ -76,10 +76,8 @@ namespace Charly {
     // This is inspired by the way Ruby stores it's values
     struct Basic {
         VALUE flags;
-        VALUE klass;
 
-        Basic() : flags(0), klass(0) {}
-        Basic(VALUE type, VALUE kl) : flags((VALUE)type), klass(kl) {}
+        Basic(VALUE type = 0) : flags(type) {}
 
         // Getters for different flag fields
         const inline VALUE type() { return this->flags & fType; }

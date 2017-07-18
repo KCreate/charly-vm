@@ -197,10 +197,9 @@ namespace Charly {
       return symbol;
     }
 
-    VALUE VM::create_object(uint32_t initial_capacity, VALUE klass) {
+    VALUE VM::create_object(uint32_t initial_capacity) {
       GC::Cell* cell = this->gc->allocate();
       cell->as.basic.set_type(Type::Object);
-      cell->as.basic.klass = klass;
       cell->as.object.container = new Container(initial_capacity);
       return (VALUE)cell;
     }
@@ -235,7 +234,6 @@ namespace Charly {
       // Allocate from the GC
       GC::Cell* cell = this->gc->allocate();
       cell->as.basic.set_type(Type::Float);
-      cell->as.basic.klass = Value::Null; // TODO: Replace with actual class
       cell->as.flonum.float_value = value;
       return (VALUE)cell;
     }
@@ -243,7 +241,6 @@ namespace Charly {
     VALUE VM::create_function(VALUE name, uint32_t argc, InstructionBlock* block) {
       GC::Cell* cell = this->gc->allocate();
       cell->as.basic.set_type(Type::Function);
-      cell->as.basic.klass = Value::Null; // TODO: Replace with actual class
       cell->as.function.name = name;
       cell->as.function.argc = argc;
       cell->as.function.context = this->frames;
@@ -256,7 +253,6 @@ namespace Charly {
     VALUE VM::create_cfunction(VALUE name, uint32_t argc, void* pointer) {
       GC::Cell* cell = this->gc->allocate();
       cell->as.basic.set_type(Type::CFunction);
-      cell->as.basic.klass = Value::Null; // TODO: Replace with actual class
       cell->as.cfunction.name = name;
       cell->as.cfunction.pointer = pointer;
       cell->as.cfunction.argc = argc;
@@ -483,7 +479,7 @@ namespace Charly {
     }
 
     void VM::op_puthash(uint32_t size) {
-      VALUE object = this->create_object(size, Value::Null); // TODO: Replace with actual class
+      VALUE object = this->create_object(size);
       this->push_stack(object);
     }
 
@@ -861,12 +857,12 @@ namespace Charly {
 
       // Codegen the methods body that bootstraps the global scope
       block->write_registerlocal(this->create_symbol("Charly"), 0);
-      block->write_puthash(this->create_object(1, Value::Null)); // TODO: Replace with real class
+      block->write_puthash(this->create_object(1));
       block->write_setsymbol(this->create_symbol("Charly"));
 
       // Insert the internals object into the Charly object
       block->write_readsymbol(this->create_symbol("Charly"));
-      block->write_puthash(this->create_object(1, Value::Null));
+      block->write_puthash(this->create_object(1));
       block->write_setmembersymbol(this->create_symbol("internals"));
 
       // Insert the get_method method into the internals object

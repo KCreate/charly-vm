@@ -26,12 +26,6 @@
 - Inject basic classes at machine startup
   - Keep a reference to these classes somewhere?
 
-# Type data structure
-- Remove the klass field as for most types it wont change
-- Make sure this doesn't fuck up alignment issues inside the GC
-- Types which do need the class field (Object) will store it inside an unnamed field inside
-  their own data containers
-
 # Class Construction
 - Class is called
 - Insert special fields into object
