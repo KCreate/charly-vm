@@ -5,6 +5,33 @@
 - Allow ReadLocal and WriteLocal to get receive a level
   - Lexical scope makes it possible to calculate all these offsets at compile-time
 
+# Calling and object storage convention
+- Come up with a calling convention
+  - Define where arguments end up inside an environment
+  - _arguments_ field?
+  - self value is being passed via the frames
+    - You can't modify the self value, only read from it
+  - Offsets:
+    - 0x00    : *arguments* field
+    - 0x01    : arg1
+    - 0x0n    : argn
+    - 0x0n+1  : lvar 1
+    - 0x0n+2  : lvar 2
+    - 0x0n+n  : lvar n
+      - $0 - $n are rewritten to arguments[0] - arguments[n] at compile-time
+- Come up with an object storage convention
+  - The object's klass is stored in the first slot of its container
+
+# Remove unneeded opcodes
+- Are ReadSymbol and WriteSymbol really needed? All variable locations should
+  be known at compile-time, removing the need to resolve variables my their
+  symbol names completly.
+  - Functions can't change their context
+  - Variables can't be "unregistered"
+  - You can't access a frames environment directly at runtime (this is important)
+    - Only possible via C extensions, no support for it however
+    - That would be dynamic scope, which is not what the language should be like
+
 # Testing
 - Unit-test single methods in the VM
 - Find a good unit-testing framework
