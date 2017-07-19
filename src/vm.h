@@ -81,7 +81,7 @@ namespace Charly {
         VALUE create_object(uint32_t initial_capacity);
         VALUE create_integer(int64_t value);
         VALUE create_float(double value);
-        VALUE create_function(VALUE name, uint32_t argc, InstructionBlock* block);
+        VALUE create_function(VALUE name, uint32_t argc, bool anonymous, InstructionBlock* block);
         VALUE create_cfunction(VALUE name, uint32_t argc, void* pointer);
 
         // Methods that operate on the VALUE type

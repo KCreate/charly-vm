@@ -152,6 +152,7 @@ namespace Charly {
       uint32_t argc;
       Frame* context;
       InstructionBlock* block;
+      bool anonymous;
       bool bound_self_set;
       VALUE bound_self;
 

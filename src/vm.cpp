@@ -238,13 +238,14 @@ namespace Charly {
       return (VALUE)cell;
     }
 
-    VALUE VM::create_function(VALUE name, uint32_t argc, InstructionBlock* block) {
+    VALUE VM::create_function(VALUE name, uint32_t argc, bool anonymous, InstructionBlock* block) {
       GC::Cell* cell = this->gc->allocate();
       cell->as.basic.set_type(Type::Function);
       cell->as.function.name = name;
       cell->as.function.argc = argc;
       cell->as.function.context = this->frames;
       cell->as.function.block = block;
+      cell->as.function.anonymous = anonymous;
       cell->as.function.bound_self_set = false;
       cell->as.function.bound_self = Value::Null;
       return (VALUE)cell;
@@ -469,7 +470,7 @@ namespace Charly {
 
     // TODO: set the anonymous flag inside the function
     void VM::op_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc) {
-      VALUE function = this->create_function(symbol, argc, block);
+      VALUE function = this->create_function(symbol, argc, anonymous, block);
       this->push_stack(function);
     }
 
@@ -557,21 +558,53 @@ namespace Charly {
 
       // Redirect to the correct handler
       switch (this->real_type(function)) {
-        case Type::Function: {
 
-          // If the target wasn't supplied explicitly, we need to read it from the frame hierarchy
-          // A target might already be bound inside a function, in this case we don't have to read
-          // from the frame
-          Function* target_function = (Function *)function;
-          if (target_function->bound_self_set) {
-            target = target_function->bound_self;
-          } else if (!with_target && target_function->context) {
-            target = target_function->context->self;
+        // Normal functions as defined via the user
+        case Type::Function: {
+          Function* tfunc = (Function *)function;
+
+          // Where to source the self value from
+          //
+          // bound_self_set   anonymous   with_target  has_context   self
+          // |                |           |            |             |
+          // true             -           -            -             bound_self
+          //
+          // false            true        -            true          from context
+          // false            true        -            false         Null
+          //
+          // false            false       true         -             target
+          // false            -           false        true          from context
+          // false            false       false        false         Null
+          if (tfunc->bound_self_set) {
+            target = tfunc->bound_self;
+          } else {
+            if (tfunc->anonymous) {
+              if (tfunc->context) {
+                target = tfunc->context->self;
+              } else {
+                target = Value::Null;
+              }
+            } else {
+              if (with_target) {
+                // do nothing as target already contains the one supplied
+                // via the stack
+              } else {
+                if (tfunc->context) {
+                  target = tfunc->context->self;
+                } else {
+                  target = Value::Null;
+                }
+              }
+            }
           }
 
-          return this->call_function(target_function, argc, arguments, target);
+          return this->call_function(tfunc, argc, arguments, target);
         }
-        case Type::CFunction: return this->call_cfunction((CFunction *)function, argc, arguments);
+
+        // Functions which wrap around a C function pointer
+        case Type::CFunction: {
+          return this->call_cfunction((CFunction *)function, argc, arguments);
+        }
 
         default: {
 
