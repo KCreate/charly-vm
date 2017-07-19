@@ -60,7 +60,6 @@ namespace Charly {
       } as;
 
       Cell() { memset(this, 0, sizeof(Cell)); }
-      Cell(const Cell& cell) {}
       ~Cell() {}
     };
 

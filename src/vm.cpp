@@ -712,7 +712,7 @@ namespace Charly {
     }
 
     void VM::stackdump(std::ostream& io) {
-      for (int i = 0; i < this->stack.size(); i++) {
+      for (size_t i = 0; i < this->stack.size(); i++) {
         VALUE entry = this->stack[i];
         this->pretty_print(io, entry);
         io << std::endl;

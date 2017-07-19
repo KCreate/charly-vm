@@ -80,8 +80,8 @@ namespace Charly {
         Basic(VALUE type = 0) : flags(type) {}
 
         // Getters for different flag fields
-        const inline VALUE type() { return this->flags & fType; }
-        const inline VALUE mark() { return (this->flags & fMark) != 0; }
+        inline VALUE type() { return this->flags & fType; }
+        inline VALUE mark() { return (this->flags & fMark) != 0; }
 
         // Setters for different flag fields
         inline void set_type(VALUE val) {
@@ -109,14 +109,14 @@ namespace Charly {
     const VALUE True          = 0b10100;
     const VALUE Null          = 0b01000;
 
-    const inline bool is_boolean(VALUE value) { return value == False || value == True; }
-    const inline bool is_integer(VALUE value) { return (value & IIntegerMask) == IIntegerFlag; }
-    const inline bool is_ifloat(VALUE value)  { return (value & IFloatMask) == IFloatFlag; }
-    const inline bool is_symbol(VALUE value)  { return (value & ISymbolMask) == ISymbolFlag; }
-    const inline bool is_false(VALUE value)   { return value == False; }
-    const inline bool is_true(VALUE value)    { return value == True; }
-    const inline bool is_null(VALUE value)    { return value == Null; }
-    const inline bool is_special(VALUE value) {
+    inline bool is_boolean(VALUE value) { return value == False || value == True; }
+    inline bool is_integer(VALUE value) { return (value & IIntegerMask) == IIntegerFlag; }
+    inline bool is_ifloat(VALUE value)  { return (value & IFloatMask) == IFloatFlag; }
+    inline bool is_symbol(VALUE value)  { return (value & ISymbolMask) == ISymbolFlag; }
+    inline bool is_false(VALUE value)   { return value == False; }
+    inline bool is_true(VALUE value)    { return value == True; }
+    inline bool is_null(VALUE value)    { return value == Null; }
+    inline bool is_special(VALUE value) {
       return (
           is_boolean(value) ||
           is_null(value) ||
@@ -172,12 +172,12 @@ namespace Charly {
     };
 
     // Rotate a given value to the left n times
-    const constexpr VALUE BIT_ROTL(VALUE v, VALUE n) {
+    constexpr VALUE BIT_ROTL(VALUE v, VALUE n) {
       return (((v) << (n)) | ((v) >> ((sizeof(v) * 8) - n)));
     }
 
     // Rotate a given value to the right n times
-    const constexpr VALUE BIT_ROTR(VALUE v, VALUE n) {
+    constexpr VALUE BIT_ROTR(VALUE v, VALUE n) {
       return (((v) >> (n)) | ((v) << ((sizeof(v) * 8) - n)));
     }
   }
