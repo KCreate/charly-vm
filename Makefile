@@ -20,7 +20,7 @@ build/%.o: src/%.cpp
 
 rebuild:
 	make clean
-	make
+	make -j
 
 clean:
 	rm -rf bin/*
