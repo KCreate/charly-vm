@@ -160,11 +160,6 @@ namespace Charly {
         this->write_int(capacity);
       }
 
-      void inline write_putfloat(double value) {
-        this->write_byte(Opcode::PutFloat);
-        this->write_double(value);
-      }
-
       void inline write_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc) {
         this->write_byte(Opcode::PutFunction);
         this->write_long(symbol);

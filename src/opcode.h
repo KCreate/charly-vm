@@ -127,12 +127,6 @@ namespace Charly {
       // - string (char* data, uint32_t length, uint32_t capacity)
       PutString = 0x0b,
 
-      // Put floatval onto the stack
-      //
-      // args:
-      // - floatval
-      PutFloat = 0x0c,
-
       // Put a function onto the stack
       //
       // args:
@@ -140,7 +134,7 @@ namespace Charly {
       // - block
       // - anonymous
       // - argc
-      PutFunction = 0x0d,
+      PutFunction = 0x0c,
 
       // Put a function pointer onto the stack
       //
@@ -148,19 +142,19 @@ namespace Charly {
       // - symbol
       // - pointer
       // - argc
-      PutCFunction = 0x0e,
+      PutCFunction = 0x0d,
 
       // Put an array onto the stack, reserve a given size
       //
       // args:
       // - size
-      PutArray = 0x0f,
+      PutArray = 0x0e,
 
       // Put a hash onto the stack, reserve a given size
       //
       // args:
       // - size
-      PutHash = 0x10,
+      PutHash = 0x0f,
 
       // Put a new class onto the stack
       // Pop parent classes of the stack
@@ -168,44 +162,44 @@ namespace Charly {
       // args:
       // - symbol
       // - parentclasscount
-      PutClass = 0x11,
+      PutClass = 0x10,
 
       // Create a new entry in the offset-table of the current environment
       //
       // args:
       // - symbol
       // - offset
-      RegisterLocal = 0x12,
+      RegisterLocal = 0x11,
 
       // Make a given offset in the current environment a constant
       //
       // args:
       // - offset
-      MakeConstant = 0x13,
+      MakeConstant = 0x12,
 
       // Pop count values off the stack
       //
       // args:
       // - count
-      Pop = 0x14,
+      Pop = 0x13,
 
       // Duplicate the top value of the stack
-      Dup = 0x15,
+      Dup = 0x14,
 
       // Swap the top two values of the stack
-      Swap = 0x16,
+      Swap = 0x15,
 
       // Push the nth value of the stack
       //
       // args:
       // - offset
-      Topn = 0x17,
+      Topn = 0x16,
 
       // Peek value from stack and store it at nth
       //
       // args:
       // - offset
-      Setn = 0x18,
+      Setn = 0x17,
 
       // Call a function with argc arguments
       //
@@ -215,7 +209,7 @@ namespace Charly {
       // stack:
       // - function
       // - arguments
-      Call = 0x19,
+      Call = 0x18,
 
       // Call a function with argc arguments and a target
       //
@@ -226,10 +220,10 @@ namespace Charly {
       // - target
       // - function
       // - arguments
-      CallMember = 0x1a,
+      CallMember = 0x19,
 
       // Return from the current frame
-      Return = 0x1b,
+      Return = 0x1a,
 
       // Throw a value
       //
@@ -238,7 +232,7 @@ namespace Charly {
       //
       // stack:
       // - value
-      Throw = 0x1c,
+      Throw = 0x1b,
 
       // Push a new catch table onto the machine
       // WARNING: Offset is in bytes, no instruction length decoding is done
@@ -246,17 +240,17 @@ namespace Charly {
       // args:
       // - type
       // - offset
-      RegisterCatchTable = 0x1d,
+      RegisterCatchTable = 0x1c,
 
       // Pop the current catch table off the catchstack
-      PopCatchTable = 0x1e,
+      PopCatchTable = 0x1d,
 
       // Apply a given offset to the instruction pointer
       // WARNING: Offset is in bytes, no instruction length decoding is done
       //
       // args:
       // - offset
-      Branch = 0x1f,
+      Branch = 0x1e,
 
       // Pop test and apply a given offset to the instruction pointer
       // if test is truthy
@@ -267,7 +261,7 @@ namespace Charly {
       //
       // stack:
       // - test
-      BranchIf = 0x20,
+      BranchIf = 0x1f,
 
       // Pop test and apply a given offset to the instruction pointer
       // if test is falsey
@@ -278,39 +272,39 @@ namespace Charly {
       //
       // stack:
       // - test
-      BranchUnless = 0x21,
+      BranchUnless = 0x20,
 
       // Binary operators
       //
       // stack:
       // - left
       // - right
-      Add = 0x22,
-      Sub = 0x23,
-      Mul = 0x24,
-      Div = 0x25,
-      Mod = 0x26,
-      Pow = 0x27,
-      Eq  = 0x28,
-      Neq = 0x29,
-      Lt  = 0x2a,
-      Gt  = 0x2b,
-      Le  = 0x2c,
-      Ge  = 0x2d,
-      Shr = 0x2e,
-      Shl = 0x2f,
-      And = 0x30,
-      Or  = 0x31,
-      Xor = 0x32,
+      Add = 0x21,
+      Sub = 0x22,
+      Mul = 0x23,
+      Div = 0x24,
+      Mod = 0x25,
+      Pow = 0x26,
+      Eq  = 0x27,
+      Neq = 0x28,
+      Lt  = 0x29,
+      Gt  = 0x2a,
+      Le  = 0x2b,
+      Ge  = 0x2c,
+      Shr = 0x2d,
+      Shl = 0x2e,
+      And = 0x2f,
+      Or  = 0x30,
+      Xor = 0x31,
 
       // Unary operators
       //
       // stack:
       // - value
-      UAdd  = 0x33,
-      USub  = 0x34,
-      UNot  = 0x35,
-      UBNot = 0x36,
+      UAdd  = 0x32,
+      USub  = 0x33,
+      UNot  = 0x34,
+      UBNot = 0x35,
 
       // Machine internals, meant to be used directly by the machine itself
       // not some compiler compiling to be vm

@@ -331,7 +331,6 @@ namespace Charly {
         case Opcode::PutSelf:             return 1;
         case Opcode::PutValue:            return 1 + sizeof(VALUE);
         case Opcode::PutString:           return 1 + sizeof(char*) + (sizeof(uint32_t) * 2);
-        case Opcode::PutFloat:            return 1 + sizeof(double);
         case Opcode::PutFunction:         return 1 + sizeof(VALUE) + sizeof(void*) + sizeof(bool) + sizeof(uint32_t);
         case Opcode::PutCFunction:        return 1 + sizeof(VALUE) + sizeof(void *) + sizeof(uint32_t);
         case Opcode::PutArray:            return 1 + sizeof(uint32_t);
