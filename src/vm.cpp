@@ -69,7 +69,7 @@ namespace Charly {
       if (!frame) return Status::ReadFailedVariableUndefined;
 
       while (frame) {
-        STATUS read_stat = frame->environment->read(key, result);
+        STATUS read_stat = frame->environment->read_key(key, result);
         if (read_stat == Status::Success) return Status::Success;
         frame = frame->parent_environment_frame;
       }
@@ -82,8 +82,8 @@ namespace Charly {
       if (!frame) return Status::ReadFailedVariableUndefined;
 
       while (frame) {
-        if (frame->environment->contains(key)) {
-          STATUS write_stat = frame->environment->write(key, value, false);
+        if (frame->environment->contains_key(key)) {
+          STATUS write_stat = frame->environment->write_key(key, value, false);
           return write_stat;
         }
 
@@ -365,7 +365,7 @@ namespace Charly {
       }
 
       VALUE value = Value::Null;
-      this->frames->environment->read(index, &value);
+      this->frames->environment->read_index(index, &value);
       this->push_stack(value);
     }
 
@@ -384,7 +384,7 @@ namespace Charly {
       VALUE value = this->pop_stack();
 
       if (index < this->frames->environment->entries.size()) {
-        STATUS write_status = this->frames->environment->write(index, value);
+        STATUS write_status = this->frames->environment->write_index(index, value);
 
         if (write_status != Status::Success) {
 
@@ -415,9 +415,9 @@ namespace Charly {
           Object* obj = (Object *)target;
 
           // Check if the object contains the key
-          if (obj->container->contains(symbol)) {
+          if (obj->container->contains_key(symbol)) {
             VALUE value = Value::Null;
-            obj->container->read(symbol, &value);
+            obj->container->read_key(symbol, &value);
             this->push_stack(value);
             return;
           }
@@ -440,7 +440,7 @@ namespace Charly {
       switch (this->type(target)) {
         case Type::Object: {
           Object* target_obj = (Object *)target;
-          STATUS write_status = target_obj->container->write(symbol, value, true);
+          STATUS write_status = target_obj->container->write_key(symbol, value, true);
 
           if (write_status != Status::Success) {
             this->panic(write_status); // TODO: Handle as runtime error
@@ -468,7 +468,6 @@ namespace Charly {
       this->push_stack(value);
     }
 
-    // TODO: set the anonymous flag inside the function
     void VM::op_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc) {
       VALUE function = this->create_function(symbol, argc, anonymous, block);
       this->push_stack(function);
@@ -637,7 +636,7 @@ namespace Charly {
       // TODO: Copy the *arguments* field into the function (this is an array containing all arguments)
       uint32_t arg_copy_count = function->argc;
       while (arg_copy_count--) {
-        frame->environment->write(arg_copy_count, argv[arg_copy_count]);
+        frame->environment->write_index(arg_copy_count, argv[arg_copy_count]);
       }
 
       this->ip = function->block->data;
@@ -804,7 +803,8 @@ namespace Charly {
 
             std::string key = this->lookup_symbol(offset_entry.first);
             uint32_t offset = offset_entry.second;
-            VALUE value = obj->container->entries[offset].value;
+            VALUE value;
+            obj->container->read_index(offset, &value);
 
             io << key << "="; this->pretty_print(io, value);
           }

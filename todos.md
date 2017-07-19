@@ -1,5 +1,10 @@
 # Todos
 
+# Remove some vm methods
+- VM::read and VM::write are only needed inside opcodes readsymbol and writesymbol
+- Allow ReadLocal and WriteLocal to get receive a level
+  - Lexical scope makes it possible to calculate all these offsets at compile-time
+
 # Testing
 - Unit-test single methods in the VM
 - Find a good unit-testing framework

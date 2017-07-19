@@ -46,30 +46,30 @@ namespace Charly {
     // Main hash-like data structure supporting fast access to known indices
     // and slightly slower access when using hash-values
     struct Container {
+      Container(uint32_t initial_capacity = 4);
+
+      // Tries to read an entry from this container
+      STATUS read_index(uint32_t index, VALUE* result);
+      STATUS read_key(VALUE key, VALUE* result);
+
+      // Creates new entries to the offset table
+      STATUS register_offset(VALUE key, uint32_t index);
+
+      // Writes to an already existing entry
+      STATUS write_index(uint32_t index, VALUE value);
+      STATUS write_key(VALUE key, VALUE value, bool init_on_undefined = false);
+
+      bool contains_index(uint32_t index);
+      bool contains_key(VALUE key);
+
+      // Insert a new entry into this container
+      Entry& insert(VALUE value, bool is_constant = false);
 
       // Vector of entries in this scope
       std::vector<Entry> entries;
 
       // Map from values to offsets into the entries vector
       std::unordered_map<VALUE, uint32_t> offset_table;
-
-      Container(uint32_t initial_capacity = 4);
-
-      // Tries to read an entry from this container or a parent container
-      STATUS read(uint32_t index, VALUE* result);
-      STATUS read(VALUE key, VALUE* result);
-
-      // Creates new entries to the offset table
-      STATUS register_offset(VALUE key, uint32_t index);
-
-      // Insert a new entry into this container
-      Entry& insert(VALUE value, bool is_constant = false);
-
-      // Writes to an already existing entry
-      STATUS write(uint32_t index, VALUE value);
-      STATUS write(VALUE key, VALUE value, bool init_on_undefined = false);
-
-      bool contains(VALUE key);
     };
 
   }
