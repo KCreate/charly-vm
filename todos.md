@@ -1,5 +1,7 @@
 # Todos
 
+# Fix some recursions inside the pretty_printer
+
 # Remove some vm methods
 - VM::read and VM::write are only needed inside opcodes readsymbol and writesymbol
 - Allow ReadLocal and WriteLocal to get receive a level
@@ -8,9 +10,14 @@
 # Calling and object storage convention
 - Come up with a calling convention
   - Define where arguments end up inside an environment
-  - _arguments_ field?
+  - *arguments* field?
+    - Copy of the arguments which are inserted into the stack
+    - Updating an argument in the environment won't update the value inside the *arguments* array.
   - self value is being passed via the frames
     - You can't modify the self value, only read from it
+  - Passing 3 arguments to a method which only takes 2 arguments, shouldn't put the last argument
+    into the container. Only *argc* arguments should be inside the environment.
+    - The rest of the arguments should still be accessible inside the *arguments* array
   - Offsets:
     - 0x00    : *arguments* field
     - 0x01    : arg1
@@ -18,7 +25,9 @@
     - 0x0n+1  : lvar 1
     - 0x0n+2  : lvar 2
     - 0x0n+n  : lvar n
-      - $0 - $n are rewritten to arguments[0] - arguments[n] at compile-time
+      - $0 is rewritten to whatever the first argument is
+      - $1 is rewritten to whatever the second argument is
+      - in $n, if n is bigger than the method argc, it gets rewritten to *arguments[n]*
 - Come up with an object storage convention
   - The object's klass is stored in the first slot of its container
 

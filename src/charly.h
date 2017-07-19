@@ -27,7 +27,6 @@
 #include "defines.h"
 #include "value.h"
 #include "status.h"
-#include "scope.h"
 #include "opcode.h"
 #include "block.h"
 #include "frame.h"

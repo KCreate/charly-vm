@@ -106,14 +106,10 @@ namespace Charly {
         this->write_offset += sizeof(double);
       }
 
-      void inline write_readlocal(uint32_t index) {
+      void inline write_readlocal(uint32_t index, uint32_t level) {
         this->write_byte(Opcode::ReadLocal);
         this->write_int(index);
-      }
-
-      void inline write_readsymbol(VALUE symbol) {
-        this->write_byte(Opcode::ReadSymbol);
-        this->write_long(symbol);
+        this->write_int(level);
       }
 
       void inline write_readmembersymbol(VALUE symbol) {
@@ -125,14 +121,10 @@ namespace Charly {
         this->write_byte(Opcode::ReadMemberValue);
       }
 
-      void inline write_setlocal(uint32_t index) {
+      void inline write_setlocal(uint32_t index, uint32_t level) {
         this->write_byte(Opcode::SetLocal);
         this->write_int(index);
-      }
-
-      void inline write_setsymbol(VALUE symbol) {
-        this->write_byte(Opcode::SetSymbol);
-        this->write_long(symbol);
+        this->write_int(level);
       }
 
       void inline write_setmembersymbol(VALUE symbol) {
@@ -175,26 +167,30 @@ namespace Charly {
         this->write_int(argc);
       }
 
-      void inline write_putarray(uint32_t size) {
+      void inline write_putarray(uint32_t count) {
         this->write_byte(Opcode::PutArray);
-        this->write_int(size);
+        this->write_int(count);
       }
 
-      void inline write_puthash(uint32_t size) {
+      void inline write_puthash(uint32_t count) {
         this->write_byte(Opcode::PutHash);
-        this->write_int(size);
+        this->write_int(count);
       }
 
-      void inline write_putclass(VALUE symbol, uint32_t parentclasscount) {
+      void inline write_putclass(
+          VALUE symbol,
+          uint32_t propertycount,
+          uint32_t staticpropertycount,
+          uint32_t methodcount,
+          uint32_t staticmethodcount,
+          uint32_t parentclasscount) {
         this->write_byte(Opcode::PutClass);
         this->write_long(symbol);
+        this->write_int(propertycount);
+        this->write_int(staticpropertycount);
+        this->write_int(methodcount);
+        this->write_int(staticmethodcount);
         this->write_int(parentclasscount);
-      }
-
-      void inline write_registerlocal(VALUE symbol, uint32_t index) {
-        this->write_byte(Opcode::RegisterLocal);
-        this->write_long(symbol);
-        this->write_int(index);
       }
 
       void inline write_makeconstant(uint32_t index) {

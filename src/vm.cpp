@@ -30,12 +30,12 @@
 #include <cmath>
 
 #include "vm.h"
+#include "status.h"
 #include "operators.h"
 
 namespace Charly {
   namespace Machine {
     using namespace Value;
-    using namespace Scope;
 
     Frame* VM::pop_frame() {
       Frame* frame = this->frames;
@@ -49,48 +49,20 @@ namespace Charly {
       cell->as.frame.parent = this->frames;
       cell->as.frame.parent_environment_frame = function->context;
       cell->as.frame.function = function;
-
-      // Setup and pre-fill environment with null's
-      uint32_t lvar_count = function->argc + function->block->lvarcount;
-      cell->as.frame.environment = new Container(lvar_count);
-
-      while (lvar_count--) {
-        cell->as.frame.environment->insert(Value::Null, false);
-      }
-
       cell->as.frame.self = self;
       cell->as.frame.return_address = return_address;
+
+      // Calculate the number of local variables this frame has to support
+      uint32_t lvar_count = function->argc + function->block->lvarcount;
+
+      // Allocate and prefill local variable space
+      new (&cell->as.frame.environment)std::vector<FrameEnvironmentEntry>;
+      cell->as.frame.environment.reserve(lvar_count);
+      while (lvar_count--) cell->as.frame.environment.push_back({false, Value::Null});
+
+      // Append the frame
       this->frames = (Frame *)cell;
       return (Frame *)cell;
-    }
-
-    STATUS VM::read(VALUE key, VALUE* result) {
-      Frame* frame = this->frames;
-      if (!frame) return Status::ReadFailedVariableUndefined;
-
-      while (frame) {
-        STATUS read_stat = frame->environment->read_key(key, result);
-        if (read_stat == Status::Success) return Status::Success;
-        frame = frame->parent_environment_frame;
-      }
-
-      return Status::ReadFailedVariableUndefined;
-    }
-
-    STATUS VM::write(VALUE key, VALUE value) {
-      Frame* frame = this->frames;
-      if (!frame) return Status::ReadFailedVariableUndefined;
-
-      while (frame) {
-        if (frame->environment->contains_key(key)) {
-          STATUS write_stat = frame->environment->write_key(key, value, false);
-          return write_stat;
-        }
-
-        frame = frame->parent_environment_frame;
-      }
-
-      return Status::WriteFailedVariableUndefined;
     }
 
     InstructionBlock* VM::request_instruction_block(uint32_t lvarcount) {
@@ -105,11 +77,6 @@ namespace Charly {
       VALUE val = this->stack.back();
       this->stack.pop_back();
       return val;
-    }
-
-    VALUE VM::peek_stack() {
-      if (this->stack.size() == 0) this->panic(Status::PopFailedStackEmpty);
-      return this->stack.back();
     }
 
     void VM::push_stack(VALUE value) {
@@ -200,7 +167,8 @@ namespace Charly {
     VALUE VM::create_object(uint32_t initial_capacity) {
       GC::Cell* cell = this->gc->allocate();
       cell->as.basic.set_type(Type::Object);
-      cell->as.object.container = new Container(initial_capacity);
+      new (&cell->as.object.container)std::unordered_map<VALUE, VALUE>();
+      cell->as.object.container.reserve(initial_capacity);
       return (VALUE)cell;
     }
 
@@ -321,22 +289,19 @@ namespace Charly {
       switch (opcode) {
         case Opcode::Nop:                 return 1;
         case Opcode::ReadLocal:           return 1 + sizeof(uint32_t);
-        case Opcode::ReadSymbol:          return 1 + sizeof(VALUE);
         case Opcode::ReadMemberSymbol:    return 1 + sizeof(VALUE);
         case Opcode::ReadMemberValue:     return 1;
         case Opcode::SetLocal:            return 1 + sizeof(uint32_t);
-        case Opcode::SetSymbol:           return 1 + sizeof(VALUE);
         case Opcode::SetMemberSymbol:     return 1 + sizeof(VALUE);
         case Opcode::SetMemberValue:      return 1;
         case Opcode::PutSelf:             return 1;
         case Opcode::PutValue:            return 1 + sizeof(VALUE);
-        case Opcode::PutString:           return 1 + sizeof(char*) + (sizeof(uint32_t) * 2);
+        case Opcode::PutString:           return 1 + sizeof(char*) + sizeof(uint32_t) * 2;
         case Opcode::PutFunction:         return 1 + sizeof(VALUE) + sizeof(void*) + sizeof(bool) + sizeof(uint32_t);
         case Opcode::PutCFunction:        return 1 + sizeof(VALUE) + sizeof(void *) + sizeof(uint32_t);
         case Opcode::PutArray:            return 1 + sizeof(uint32_t);
         case Opcode::PutHash:             return 1 + sizeof(uint32_t);
-        case Opcode::PutClass:            return 1 + sizeof(VALUE) + sizeof(uint32_t);
-        case Opcode::RegisterLocal:       return 1 + sizeof(VALUE) + sizeof(uint32_t);
+        case Opcode::PutClass:            return 1 + sizeof(VALUE) + sizeof(uint32_t) * 5;
         case Opcode::MakeConstant:        return 1 + sizeof(uint32_t);
         case Opcode::Pop:                 return 1 + sizeof(uint32_t);
         case Opcode::Dup:                 return 1;
@@ -356,53 +321,24 @@ namespace Charly {
       }
     }
 
-    void VM::op_readlocal(uint32_t index) {
+    void VM::op_readlocal(uint32_t index, uint32_t level) {
 
-      // Check if the index points to a valid entry
-      if (index >= this->frames->environment->entries.size()) {
-        this->panic(Status::ReadFailedOutOfBounds);
-      }
-
-      VALUE value = Value::Null;
-      this->frames->environment->read_index(index, &value);
-      this->push_stack(value);
-    }
-
-    void VM::op_readsymbol(VALUE symbol) {
-      VALUE value;
-      STATUS read_stat = this->read(symbol, &value);
-
-      if (read_stat != Status::Success) {
-        this->panic(read_stat); // TODO: Handle as runtime error
-      }
-
-      this->push_stack(value);
-    }
-
-    void VM::op_setlocal(uint32_t index) {
-      VALUE value = this->pop_stack();
-
-      if (index < this->frames->environment->entries.size()) {
-        STATUS write_status = this->frames->environment->write_index(index, value);
-
-        if (write_status != Status::Success) {
-
-          // TODO: Handle this in a better way
-          // write_status could also be an error indicating
-          // that a write to a constant was attempted
-          // this should be handled as a runtime exception
-          this->panic(write_status);
+      // Travel to the correct frame
+      Frame* frame = this->frames;
+      while (level--) {
+        if (!frame->parent) {
+          return this->panic(Status::ReadFailedTooDeep);
         }
-      }
-    }
 
-    void VM::op_setsymbol(VALUE symbol) {
-      VALUE value = this->pop_stack();
-      STATUS write_stat = this->write(symbol, value);
-
-      if (write_stat != Status::Success) {
-        this->panic(write_stat); // TODO: Handle as runtime error
+        frame = frame->parent;
       }
+
+      // Check if the index isn't out-of-bounds
+      if (index >= frame->environment.size()) {
+        return this->panic(Status::ReadFailedOutOfBounds);
+      }
+
+      this->push_stack(frame->environment[index].value);
     }
 
     void VM::op_readmembersymbol(VALUE symbol) {
@@ -413,11 +349,8 @@ namespace Charly {
         case Type::Object: {
           Object* obj = (Object *)target;
 
-          // Check if the object contains the key
-          if (obj->container->contains_key(symbol)) {
-            VALUE value = Value::Null;
-            obj->container->read_key(symbol, &value);
-            this->push_stack(value);
+          if (obj->container.count(symbol) == 1) {
+            this->push_stack(obj->container[symbol]);
             return;
           }
 
@@ -431,6 +364,30 @@ namespace Charly {
       this->push_stack(Value::Null);
     }
 
+    void VM::op_setlocal(uint32_t index, uint32_t level) {
+      VALUE value = this->pop_stack();
+
+      // Travel to the correct frame
+      Frame* frame = this->frames;
+      while (level--) {
+        if (!frame->parent) {
+          return this->panic(Status::ReadFailedTooDeep);
+        }
+
+        frame = frame->parent;
+      }
+
+      // Check if the index isn't out-of-bounds
+      if (index < frame->environment.size()) {
+        FrameEnvironmentEntry& entry = frame->environment[index];
+        if (entry.is_constant) {
+          this->panic(Status::WriteFailedVariableIsConstant);
+        } else {
+          entry.value = value;
+        }
+      }
+    }
+
     void VM::op_setmembersymbol(VALUE symbol) {
       VALUE value = this->pop_stack();
       VALUE target = this->pop_stack();
@@ -438,13 +395,8 @@ namespace Charly {
       // Check if we can write to the value
       switch (this->type(target)) {
         case Type::Object: {
-          Object* target_obj = (Object *)target;
-          STATUS write_status = target_obj->container->write_key(symbol, value, true);
-
-          if (write_status != Status::Success) {
-            this->panic(write_status); // TODO: Handle as runtime error
-          }
-
+          Object* obj = (Object *)target;
+          obj->container[symbol] = value;
           break;
         }
 
@@ -477,18 +429,23 @@ namespace Charly {
       this->push_stack(function);
     }
 
-    void VM::op_puthash(uint32_t size) {
-      VALUE object = this->create_object(size);
-      this->push_stack(object);
-    }
+    void VM::op_puthash(uint32_t count) {
+      Object* object = (Object *)this->create_object(count);
 
-    void VM::op_registerlocal(VALUE symbol, uint32_t offset) {
-      this->frames->environment->register_offset(symbol, offset);
+      VALUE key;
+      VALUE value;
+      while (count--) {
+        key = this->pop_stack();
+        value = this->pop_stack();
+        object->container[key] = value;
+      }
+
+      this->push_stack((VALUE)object);
     }
 
     void VM::op_makeconstant(uint32_t offset) {
-      if (offset < this->frames->environment->entries.size()) {
-        this->frames->environment->entries[offset].constant = true;
+      if (offset < this->frames->environment.size()) {
+        this->frames->environment[offset].is_constant = true;
       }
     }
 
@@ -635,7 +592,7 @@ namespace Charly {
       // TODO: Copy the *arguments* field into the function (this is an array containing all arguments)
       uint32_t arg_copy_count = function->argc;
       while (arg_copy_count--) {
-        frame->environment->write_index(arg_copy_count, argv[arg_copy_count]);
+        frame->environment[arg_copy_count].value = argv[arg_copy_count];
       }
 
       this->ip = function->block->data;
@@ -797,15 +754,10 @@ namespace Charly {
             break;
           }
 
-          for (auto& offset_entry : obj->container->offset_table) {
+          for (auto entry : obj->container) {
             io << " ";
-
-            std::string key = this->lookup_symbol(offset_entry.first);
-            uint32_t offset = offset_entry.second;
-            VALUE value;
-            obj->container->read_index(offset, &value);
-
-            io << key << "="; this->pretty_print(io, value);
+            std::string key = this->lookup_symbol(entry.first);
+            io << key << "="; this->pretty_print(io, entry.second);
           }
 
           io << ">";
@@ -846,8 +798,8 @@ namespace Charly {
         case Type::Frame: {
           Frame* frame = (Frame *)value;
           io << "<Frame@" << frame << " ";
-          io << "parent="; this->pretty_print(io, frame->parent); io << " ";
-          io << "parent_environment_frame="; this->pretty_print(io, frame->parent_environment_frame); io << " ";
+          io << "parent=" << frame->parent << " ";
+          io << "parent_environment_frame=" << frame->parent_environment_frame << " ";
           io << "function="; this->pretty_print(io, frame->function); io << " ";
           io << "self="; this->pretty_print(io, frame->self); io << " ";
           io << "return_address=" << (void *)frame->return_address;
@@ -862,7 +814,7 @@ namespace Charly {
           io << "address=" << (void *)table->address << " ";
           io << "stacksize=" << table->stacksize << " ";
           io << "frame="; this->pretty_print(io, table->frame); io << " ";
-          io << "parent="; this->pretty_print(io, table->parent); io << " ";
+          io << "parent=" << table->parent << " ";
           io << ">";
           break;
         }
@@ -902,39 +854,22 @@ namespace Charly {
       this->op_call(0);
       this->frames->self = this->create_integer(1000); // TODO: Replace with actual global self value
 
-      // Codegen the methods body that bootstraps the global scope
-      block->write_registerlocal(this->create_symbol("Charly"), 0);
-      block->write_puthash(this->create_object(1));
-      block->write_setsymbol(this->create_symbol("Charly"));
-
-      // Insert the internals object into the Charly object
-      block->write_readsymbol(this->create_symbol("Charly"));
-      block->write_puthash(this->create_object(1));
-      block->write_setmembersymbol(this->create_symbol("internals"));
-
-      // Insert the get_method method into the internals object
-      block->write_readsymbol(this->create_symbol("Charly"));
-      block->write_readmembersymbol(this->create_symbol("internals"));
+      // The methods below codegen the following code:
+      //
+      // let Charly = {
+      //   internals = {
+      //     get_method = (CFunction *)Internals::get_method
+      //   }
+      // };
       block->write_putcfunction(this->create_symbol("get_method"), (void *)Internals::get_method, 1);
-      block->write_setmembersymbol(this->create_symbol("get_method"));
-      block->write_readsymbol(this->create_symbol("Charly"));
+      block->write_putvalue(this->create_symbol("get_method"));
+      block->write_puthash(1);
+      block->write_putvalue(this->create_symbol("internals"));
+      block->write_puthash(1);
+      block->write_setlocal(0, 0);
+      block->write_readlocal(0, 0);
 
-      auto fnblock = this->request_instruction_block(0); {
-        fnblock->write_putvalue(this->create_integer(666666));
-        fnblock->write_throw(ThrowType::Exception);
-        fnblock->write_return();
-      }
-
-      block->write_putvalue(this->create_integer(25));
-      block->write_putfunction(this->create_symbol("fn"), fnblock, false, 0);
-
-      // Put a try/catch around the call
-      block->write_registercatchtable(ThrowType::Exception, 0x0d);  // 0x00
-      block->write_call(0);                                         // 0x06
-      block->write_popcatchtable();                                 // 0x0b
-      block->write_byte(Opcode::Halt);                              // 0x0c
-      block->write_putvalue(this->create_integer(1337420));         // 0x0d
-
+      // Halt the machine for now
       block->write_byte(Opcode::Halt);
     }
 
@@ -974,13 +909,8 @@ namespace Charly {
 
           case Opcode::ReadLocal: {
             uint32_t index = *(uint32_t *)(this->ip + sizeof(Opcode));
-            this->op_readlocal(index);
-            break;
-          }
-
-          case Opcode::ReadSymbol: {
-            VALUE symbol = *(VALUE *)(this->ip + sizeof(Opcode));
-            this->op_readsymbol(symbol);
+            uint32_t level = *(uint32_t *)(this->ip + sizeof(Opcode) + sizeof(uint32_t));
+            this->op_readlocal(index, level);
             break;
           }
 
@@ -992,13 +922,8 @@ namespace Charly {
 
           case Opcode::SetLocal: {
             uint32_t index = *(uint32_t *)(this->ip + sizeof(Opcode));
-            this->op_setlocal(index);
-            break;
-          }
-
-          case Opcode::SetSymbol: {
-            VALUE symbol = *(VALUE *)(this->ip + sizeof(Opcode));
-            this->op_setsymbol(symbol);
+            uint32_t level = *(uint32_t *)(this->ip + sizeof(Opcode) + sizeof(uint32_t));
+            this->op_setlocal(index, level);
             break;
           }
 
@@ -1039,13 +964,6 @@ namespace Charly {
           case Opcode::PutHash: {
             uint32_t size = *(uint32_t *)(this->ip + sizeof(Opcode));
             this->op_puthash(size);
-            break;
-          }
-
-          case Opcode::RegisterLocal: {
-            VALUE symbol = *(VALUE *)(this->ip + sizeof(Opcode));
-            uint32_t offset = *(uint32_t *)(this->ip + sizeof(Opcode) + sizeof(VALUE));
-            this->op_registerlocal(symbol, offset);
             break;
           }
 

@@ -24,16 +24,15 @@
  * SOFTWARE.
  */
 
+#include <unordered_map>
+
 #include "defines.h"
-#include "scope.h"
 #include "block.h"
 
 #pragma once
 
 namespace Charly {
   namespace Value {
-    using namespace Scope;
-    using namespace Machine;
 
     // Different masks for the flags field in the Basic struct
     const VALUE fType = 0x1f;
@@ -129,20 +128,20 @@ namespace Charly {
 
     // Describes an object type
     //
-    // The basic field contains a pointer to the parent class that was
-    // used to construct this object. Empty objects will have the Object class as their parent
-    // Objects have their own data container in which they can store arbitary values
+    // It contains an unordered map which holds the objects values
+    // The klass field is a VALUE containing the class the object was constructed from
     struct Object {
-        Basic basic;
-        Container* container;
+      Basic basic;
+      VALUE klass;
+      std::unordered_map<VALUE, VALUE> container;
     };
 
     // Heap-allocated float type
     //
     // Used when a floating-point value won't fit into the immediate-encoded format
     struct Float {
-        Basic basic;
-        double float_value;
+      Basic basic;
+      double float_value;
     };
 
     // Normal functions defined inside the virtual machine.
@@ -150,8 +149,8 @@ namespace Charly {
       Basic basic;
       VALUE name;
       uint32_t argc;
-      Frame* context;
-      InstructionBlock* block;
+      Machine::Frame* context;
+      Machine::InstructionBlock* block;
       bool anonymous;
       bool bound_self_set;
       VALUE bound_self;

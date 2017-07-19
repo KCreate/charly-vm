@@ -56,11 +56,13 @@ namespace Charly {
         Machine::InstructionBlock instructionblock;
 
         U() { memset(this, 0, sizeof(U)); }
-        ~U() {}
+        U& operator=(const U& other) { memmove(this, &other, sizeof(U)); return *this; }
+        ~U() {};
       } as;
 
-      Cell() { memset(this, 0, sizeof(Cell)); }
-      ~Cell() {}
+      inline Cell() { memset(this, 0, sizeof(Cell)); }
+      inline Cell(const Cell& cell) { *this = cell; }
+      ~Cell() {};
     };
 
     struct Collector {

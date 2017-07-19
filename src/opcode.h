@@ -45,18 +45,13 @@ namespace Charly {
       // Do nothing
       Nop = 0x00,
 
-      // Read a value at a given index in the current environment
-      // Pushes Null if accessed with an out-of-bounds index
+      // Read a value at a given offset from a given frame
+      // Pushes null if accessed with an out-of-bounds index
       //
       // args:
       // - index
+      // - level
       ReadLocal = 0x01,
-
-      // Resolve symbol
-      //
-      // args:
-      // - symbol
-      ReadSymbol = 0x02,
 
       // Resolve symbol inside identifier
       //
@@ -74,25 +69,17 @@ namespace Charly {
       // - value
       ReadMemberValue = 0x04,
 
-      // Set a value at a given index in the current environment
-      // Will write Null if the stack is empty
+      // Set a value at a given offset inside a given frame
+      // Will write null if the stack is empty
       // Will pop, but not write, if the index is out-of-bounds
       //
       // args:
       // - index
+      // - level
       //
       // stack:
       // - value
       SetLocal = 0x05,
-
-      // Pop value and write to symbol
-      //
-      // args:
-      // - symbol
-      //
-      // stack:
-      // - value
-      SetSymbol = 0x06,
 
       // Pop value and write to symbol of identifier
       //
@@ -144,32 +131,32 @@ namespace Charly {
       // - argc
       PutCFunction = 0x0d,
 
-      // Put an array onto the stack, reserve a given size
+      // Put an array onto the stack, popping a given amount of values from the stack
+      // and inserting them into the array
       //
       // args:
-      // - size
+      // - count
       PutArray = 0x0e,
 
-      // Put a hash onto the stack, reserve a given size
+      // Put a hash onto the stack, popping a given amount of key / value pairs from the stack
+      // and inserting them into the array
       //
       // args:
-      // - size
+      // - count
       PutHash = 0x0f,
 
       // Put a new class onto the stack
-      // Pop parent classes of the stack
+      // Properties, methods, static properties, static methods and parent classes are popped
+      // off of the stack
       //
       // args:
       // - symbol
+      // - propertycount
+      // - staticpropertycount
+      // - methodcount
+      // - staticmethodcount
       // - parentclasscount
       PutClass = 0x10,
-
-      // Create a new entry in the offset-table of the current environment
-      //
-      // args:
-      // - symbol
-      // - offset
-      RegisterLocal = 0x11,
 
       // Make a given offset in the current environment a constant
       //

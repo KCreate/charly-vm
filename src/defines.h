@@ -39,17 +39,13 @@ namespace Charly {
   namespace Machine {
     struct VM;
     struct Frame;
+    struct FrameEnvironmentEntry;
     struct CatchTable;
 
     enum ThrowType : uint8_t;
     enum Opcode : uint8_t;
 
     struct InstructionBlock;
-  }
-
-  namespace Scope {
-    struct Entry;
-    struct Container;
   }
 
   namespace GC {

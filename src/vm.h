@@ -32,6 +32,7 @@
 #include "block.h"
 #include "internals.h"
 #include "exception.h"
+#include "status.h"
 
 #pragma once
 
@@ -52,19 +53,13 @@ namespace Charly {
 
         // Methods that operate on the VM's frames
         Frame* pop_frame();
-        inline Frame* top_frame() { return this->frames; }
         Frame* push_frame(VALUE self, Value::Function* calling_function, uint8_t* return_address);
-
-        // Read and write from/to the frame hierarchy
-        STATUS read(VALUE key, VALUE* result);
-        STATUS write(VALUE key, VALUE value);
 
         // Instruction Blocks
         InstructionBlock* request_instruction_block(uint32_t lvarcount);
 
         // Stack manipulation
         VALUE pop_stack();
-        VALUE peek_stack();
         void push_stack(VALUE value);
 
         // CatchStack manipulation
@@ -95,18 +90,15 @@ namespace Charly {
         // Execution
         Opcode fetch_instruction();
         uint32_t decode_instruction_length(Opcode opcode);
-        void op_readlocal(uint32_t index);
-        void op_readsymbol(VALUE symbol);
+        void op_readlocal(uint32_t index, uint32_t level);
         void op_readmembersymbol(VALUE symbol);
-        void op_setlocal(uint32_t index);
-        void op_setsymbol(VALUE symbol);
+        void op_setlocal(uint32_t index, uint32_t level);
         void op_setmembersymbol(VALUE symbol);
         void op_putself();
         void op_putvalue(VALUE value);
         void op_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc);
         void op_putcfunction(VALUE symbol, void* pointer, uint32_t argc);
-        void op_puthash(uint32_t size);
-        void op_registerlocal(VALUE symbol, uint32_t offset);
+        void op_puthash(uint32_t count);
         void op_makeconstant(uint32_t offset);
         void op_pop(uint32_t count);
         void op_dup();
