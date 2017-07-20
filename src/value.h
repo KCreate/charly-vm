@@ -40,7 +40,7 @@ namespace Charly {
 
     // Values used to represent some types
     namespace Type {
-      const VALUE Undefined        = 0x00;
+      const VALUE DeadCell         = 0x00;
       const VALUE Integer          = 0x01;
       const VALUE Float            = 0x02;
       const VALUE Numeric          = 0x03;
@@ -55,7 +55,7 @@ namespace Charly {
       const VALUE InstructionBlock = 0x0c;
 
       const std::string str[] = {
-        "Undefined",
+        "DeadCell",
         "Integer",
         "Float",
         "Numeric",
@@ -76,11 +76,11 @@ namespace Charly {
     struct Basic {
         VALUE flags;
 
-        Basic(VALUE type = 0) : flags(type) {}
+        Basic() : flags(0) {}
 
         // Getters for different flag fields
         inline VALUE type() { return this->flags & fType; }
-        inline VALUE mark() { return (this->flags & fMark) != 0; }
+        inline bool mark() { return (this->flags & fMark) != 0; }
 
         // Setters for different flag fields
         inline void set_type(VALUE val) {
@@ -115,13 +115,13 @@ namespace Charly {
     inline bool is_false(VALUE value)   { return value == False; }
     inline bool is_true(VALUE value)    { return value == True; }
     inline bool is_null(VALUE value)    { return value == Null; }
-    inline bool is_special(VALUE value) {
+    inline bool is_pointer(VALUE value) {
       return (
-          is_boolean(value) ||
-          is_null(value) ||
-          is_symbol(value) ||
-          (value & IPointerMask) != IPointerFlag);
+          !is_null(value) &&
+          !is_false(value) &&
+          ((value & IPointerMask) == IPointerFlag));
     }
+    inline bool is_special(VALUE value) { return !is_pointer(value); }
 
     // Returns this value as a pointer to a Basic structure
     inline Basic* basics(VALUE value) { return (Basic *)value; }
@@ -133,7 +133,7 @@ namespace Charly {
     struct Object {
       Basic basic;
       VALUE klass;
-      std::unordered_map<VALUE, VALUE> container;
+      std::unordered_map<VALUE, VALUE>* container;
     };
 
     // Heap-allocated float type

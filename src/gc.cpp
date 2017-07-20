@@ -27,43 +27,180 @@
 #include <iostream>
 
 #include "gc.h"
+#include "vm.h"
 
 namespace Charly {
   namespace GC {
 
-    Collector::Collector(uint32_t heap_initial_count, uint32_t heap_cell_count) {
-
-      // Initialize all the heaps
+    Collector::Collector() {
+      size_t heap_initial_count = GC::InitialHeapCount;
       this->heaps.reserve(heap_initial_count);
-      while (heap_initial_count--) this->heaps.emplace_back();
+      while (heap_initial_count--) this->add_heap();
+    }
 
-      // Fill in the cells for the heaps
-      for (auto &heap : this->heaps) {
-        uint32_t i = heap_cell_count;
-        while (i--) heap.emplace_back();
-      }
+    void Collector::add_heap() {
+      this->heaps.emplace_back();
+      std::vector<Cell>& heap = this->heaps.back();
 
-      // Initialize all the cells
-      Cell* last_cell = NULL;
-      for (auto &heap : this->heaps) {
-        for (auto &cell : heap) {
-          cell.as.free.next = last_cell;
-          last_cell = &cell;
-        }
+      // Add the cells for the heaps
+      size_t cell_count = GC::HeapCellCount;
+      while (cell_count--) heap.emplace_back();
+
+      // Initialize the cells and append to the free list
+      Cell* last_cell = this->free_cell;
+      for (auto& cell : heap) {
+        cell.as.free.next = last_cell;
+        last_cell = &cell;
       }
 
       this->free_cell = last_cell;
     }
 
-    // TODO: Garbage collect when there is no more memory left
-    Cell* Collector::allocate() {
+    void Collector::grow_heap() {
+      size_t heap_count = this->heaps.size();
+      size_t heaps_to_add = (heap_count * GC::HeapCountGrowthFactor) - heap_count;
+      while (heaps_to_add--) this->add_heap();
+    }
+
+    void Collector::mark(VALUE value) {
+      if (!Value::is_pointer(value)) return;
+      if (Value::basics(value)->mark()) return;
+
+      std::cout << "Marking " << Value::Type::str[Value::basics(value)->type()] << " at " << (void *)value << std::endl;
+
+      Value::basics(value)->set_mark(true);
+      switch (Value::basics(value)->type()) {
+        case Value::Type::Object: {
+          auto obj = (Value::Object *)value;
+          this->mark(obj->klass);
+          for (auto& obj_entry : *obj->container) this->mark(obj_entry.second);
+          break;
+        }
+
+        case Value::Type::Function: {
+          auto func = (Value::Function *)value;
+          this->mark((VALUE)func->context);
+          this->mark((VALUE)func->block);
+          if (func->bound_self_set) this->mark(func->bound_self);
+          break;
+        }
+
+        case Value::Type::CFunction: {
+          auto cfunc = (Value::CFunction *)value;
+          if (cfunc->bound_self_set) this->mark(cfunc->bound_self);
+          break;
+        }
+
+        case Value::Type::Frame: {
+          auto frame = (Machine::Frame *)value;
+          this->mark((VALUE)frame->parent);
+          this->mark((VALUE)frame->parent_environment_frame);
+          this->mark((VALUE)frame->function);
+          this->mark(frame->self);
+          for (auto& lvar : *frame->environment) this->mark(lvar.value);
+          break;
+        }
+
+        case Value::Type::CatchTable: {
+          auto table = (Machine::CatchTable *)value;
+          this->mark((VALUE)table->frame);
+          this->mark((VALUE)table->parent);
+          break;
+        }
+
+        case Value::Type::InstructionBlock: {
+          auto block = (Machine::InstructionBlock *)value;
+          for (auto& child_block : *block->child_blocks) {
+            this->mark((VALUE)child_block);
+          }
+          break;
+        }
+      }
+    }
+
+    void Collector::collect(Machine::VM* vm) {
+
+      // Mark Phase
+      std::cout << std::endl << "#-- marking stack" << std::endl;
+      for (auto& stack_item : vm->stack) this->mark(stack_item);
+      std::cout << std::endl << "#-- marking frames" << std::endl;
+      this->mark((VALUE)vm->frames);
+      std::cout << std::endl << "#-- marking catchstack" << std::endl;
+      this->mark((VALUE)vm->catchstack);
+
+      // Sweep Phase
+      std::cout << std::endl << "#-- Sweep phase" << std::endl;
+      for (auto& heap : this->heaps) {
+        for (auto& cell : heap) {
+          if (Value::basics((VALUE)&cell)->mark()) {
+            Value::basics((VALUE)&cell)->set_mark(false);
+          } else {
+            // This cell might already be on the free list
+            // Make sure we don't double free cells
+            if (Value::basics((VALUE)&cell)->type() != Value::Type::DeadCell) {
+              std::cout << "Freeing cell at " << &cell << std::endl;
+              this->free(&cell);
+            }
+          }
+        }
+      }
+    }
+
+    Cell* Collector::allocate(Machine::VM* vm) {
       Cell* cell = this->free_cell;
-      if (cell) this->free_cell = this->free_cell->as.free.next;
+
+      if (cell) {
+        this->free_cell = this->free_cell->as.free.next;
+
+        // If we've just allocated the last available cell,
+        // we do a collect in order to make sure we never get a failing
+        // allocation in the future
+        if (!this->free_cell) {
+          this->collect(vm);
+
+          // If a collection didn't yield new available space,
+          // allocate more heaps
+          if (!this->free_cell) {
+            this->grow_heap();
+          }
+        }
+      } else {
+        // This really can't happen
+        // but if it does fail and painfully
+        std::cout << "Failed to allocate cell" << std::endl;
+        exit(1);
+      }
+
+      std::cout << "Allocated cell at " << cell << std::endl;
+
       return cell;
     }
 
-    // TODO: Call destructors of classes that define it
     void Collector::free(Cell* cell) {
+
+      // We don't actually free the cells that were allocated, we just
+      // deallocat the properties inside these cells and memset(0)'em
+      switch (Value::basics((VALUE)cell)->type()) {
+        case Value::Type::Object: {
+          delete cell->as.object.container;
+          break;
+        }
+
+        case Value::Type::Frame: {
+          delete cell->as.frame.environment;
+          break;
+        }
+
+        case Value::Type::InstructionBlock: {
+          delete cell->as.instructionblock.child_blocks;
+          break;
+        }
+
+        default: {
+          break;
+        }
+      }
+
       memset(cell, 0, sizeof(Cell));
       cell->as.free.next = this->free_cell;
       this->free_cell = cell;

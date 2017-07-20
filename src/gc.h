@@ -36,8 +36,9 @@
 
 namespace Charly {
   namespace GC {
-    const uint32_t InitialHeapCount = 2;
-    const uint32_t HeapCellCount = 32;
+    const size_t InitialHeapCount = 1;
+    const size_t HeapCellCount = 16;
+    const float HeapCountGrowthFactor = 2;
 
     // A single cell managed by the GC
     struct Cell {
@@ -69,15 +70,15 @@ namespace Charly {
       private:
         Cell* free_cell;
         std::vector<std::vector<Cell>> heaps;
-        std::vector<Cell*> root_nodes;
-        std::vector<Cell*> mark_todo_list;
+
+        void mark(VALUE cell);
+        void add_heap();
+        void grow_heap();
 
       public:
-        Collector(
-          uint32_t heap_initial_count = InitialHeapCount,
-          uint32_t heap_cell_count = HeapCellCount
-        );
-        Cell* allocate();
+        Collector();
+        Cell* allocate(Machine::VM* vm);
+        void collect(Machine::VM* vm);
         void free(Cell* cell);
         void inline free(VALUE value) { this->free((Cell*) value); }
 

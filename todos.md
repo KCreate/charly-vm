@@ -60,19 +60,6 @@
 - Hashes are just objects with their klass field to the Object class
 - Objects contain their klass field in the first slot of their container
 
-# Garbage Collection
-- Mark and Sweep
-- GC if there are no free cells available anymore
-- The GC needs a pointer to the VM
-- The VM has to keep a list of root nodes
-  - Stack, Frames, Toplevel
-- GC iterates over each root node, recursively marking all nodes
-  - If a node has already been visited, return
-- Iterate over all heaps and their cells
-  - If a cell is not marked, free it, goto next cell
-  - If a cell is marked, unmark it, goto next cell
-- Return the last newly created free cell to the allocate call
-
 # Memory ownership
 - Structs generally own the memory they point to
 - This means the compiler can't assume that memory will stick around after it's been created

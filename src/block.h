@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+#include <vector>
+
 #include "defines.h"
 #include "opcode.h"
 
@@ -44,11 +46,13 @@ namespace Charly {
       uint8_t* data;
       uint32_t data_size;
       uint32_t write_offset;
+      std::vector<InstructionBlock*>* child_blocks;
 
       InstructionBlock(uint32_t lvarcount) : lvarcount(lvarcount) {
         this->data = (uint8_t *)calloc(INITIAL_BLOCK_SIZE, sizeof(uint8_t));
         this->data_size = INITIAL_BLOCK_SIZE * sizeof(uint8_t);
         this->write_offset = BLOCK_INITIAL_WRITE_OFFSET;
+        this->child_blocks = new std::vector<InstructionBlock*>();
       }
 
       ~InstructionBlock() {
@@ -156,6 +160,7 @@ namespace Charly {
         this->write_byte(Opcode::PutFunction);
         this->write_long(symbol);
         this->write_pointer(block);
+        this->child_blocks->push_back(block);
         this->write_byte(anonymous);
         this->write_int(argc);
       }

@@ -47,7 +47,7 @@ namespace Charly {
       Frame* parent;
       Frame* parent_environment_frame;
       Value::Function* function;
-      std::vector<FrameEnvironmentEntry> environment;
+      std::vector<FrameEnvironmentEntry>* environment;
       VALUE self;
       uint8_t* return_address;
     };

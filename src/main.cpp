@@ -27,11 +27,13 @@
 #include "charly.h"
 
 using namespace std;
+using namespace Charly;
 using namespace Charly::Machine;
 
 int main() {
 
-  VM* vm = new VM();
+  GC::Collector gc;
+  VM* vm = new VM(&gc);
   vm->run();
 
   delete vm;

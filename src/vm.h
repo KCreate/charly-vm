@@ -25,7 +25,6 @@
  */
 
 #include "defines.h"
-#include "gc.h"
 #include "value.h"
 #include "frame.h"
 #include "opcode.h"
@@ -39,6 +38,7 @@
 namespace Charly {
   namespace Machine {
     struct VM {
+      friend GC::Collector;
       private:
         GC::Collector* gc;
         std::vector<VALUE> stack;
@@ -134,8 +134,7 @@ namespace Charly {
         void pretty_print(std::ostream& io, VALUE value);
 
       public:
-        VM() {
-          this->gc = new GC::Collector();
+        VM(GC::Collector* collector) : gc(collector) {
           this->frames = NULL;
           this->catchstack = NULL;
           this->ip = NULL;

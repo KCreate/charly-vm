@@ -30,6 +30,7 @@
 #include <cmath>
 
 #include "vm.h"
+#include "gc.h"
 #include "status.h"
 #include "operators.h"
 
@@ -44,7 +45,7 @@ namespace Charly {
     }
 
     Frame* VM::push_frame(VALUE self, Function* function, uint8_t* return_address) {
-      GC::Cell* cell = this->gc->allocate();
+      GC::Cell* cell = this->gc->allocate(this);
       cell->as.basic.set_type(Type::Frame);
       cell->as.frame.parent = this->frames;
       cell->as.frame.parent_environment_frame = function->context;
@@ -56,9 +57,9 @@ namespace Charly {
       uint32_t lvar_count = function->argc + function->block->lvarcount;
 
       // Allocate and prefill local variable space
-      new (&cell->as.frame.environment)std::vector<FrameEnvironmentEntry>;
-      cell->as.frame.environment.reserve(lvar_count);
-      while (lvar_count--) cell->as.frame.environment.push_back({false, Value::Null});
+      cell->as.frame.environment = new std::vector<FrameEnvironmentEntry>;
+      cell->as.frame.environment->reserve(lvar_count);
+      while (lvar_count--) cell->as.frame.environment->push_back({false, Value::Null});
 
       // Append the frame
       this->frames = (Frame *)cell;
@@ -66,7 +67,7 @@ namespace Charly {
     }
 
     InstructionBlock* VM::request_instruction_block(uint32_t lvarcount) {
-      GC::Cell* cell = this->gc->allocate();
+      GC::Cell* cell = this->gc->allocate(this);
       new (&cell->as.instructionblock) InstructionBlock(lvarcount);
       cell->as.basic.set_type(Type::InstructionBlock);
       return (InstructionBlock *)cell;
@@ -84,7 +85,7 @@ namespace Charly {
     }
 
     CatchTable* VM::push_catchtable(ThrowType type, uint8_t* address) {
-      GC::Cell* cell = this->gc->allocate();
+      GC::Cell* cell = this->gc->allocate(this);
       cell->as.basic.set_type(Type::CatchTable);
       cell->as.catchtable.stacksize = this->stack.size();
       cell->as.catchtable.frame = this->frames;
@@ -165,10 +166,10 @@ namespace Charly {
     }
 
     VALUE VM::create_object(uint32_t initial_capacity) {
-      GC::Cell* cell = this->gc->allocate();
+      GC::Cell* cell = this->gc->allocate(this);
       cell->as.basic.set_type(Type::Object);
-      new (&cell->as.object.container)std::unordered_map<VALUE, VALUE>();
-      cell->as.object.container.reserve(initial_capacity);
+      cell->as.object.container = new std::unordered_map<VALUE, VALUE>();
+      cell->as.object.container->reserve(initial_capacity);
       return (VALUE)cell;
     }
 
@@ -200,14 +201,14 @@ namespace Charly {
       }
 
       // Allocate from the GC
-      GC::Cell* cell = this->gc->allocate();
+      GC::Cell* cell = this->gc->allocate(this);
       cell->as.basic.set_type(Type::Float);
       cell->as.flonum.float_value = value;
       return (VALUE)cell;
     }
 
     VALUE VM::create_function(VALUE name, uint32_t argc, bool anonymous, InstructionBlock* block) {
-      GC::Cell* cell = this->gc->allocate();
+      GC::Cell* cell = this->gc->allocate(this);
       cell->as.basic.set_type(Type::Function);
       cell->as.function.name = name;
       cell->as.function.argc = argc;
@@ -220,7 +221,7 @@ namespace Charly {
     }
 
     VALUE VM::create_cfunction(VALUE name, uint32_t argc, void* pointer) {
-      GC::Cell* cell = this->gc->allocate();
+      GC::Cell* cell = this->gc->allocate(this);
       cell->as.basic.set_type(Type::CFunction);
       cell->as.cfunction.name = name;
       cell->as.cfunction.pointer = pointer;
@@ -268,7 +269,7 @@ namespace Charly {
       if (Value::is_integer(value)) return Type::Integer;
       if (Value::is_ifloat(value)) return Type::Float;
       if (Value::is_symbol(value)) return Type::Symbol;
-      return Type::Undefined;
+      return Type::DeadCell;
     }
 
     VALUE VM::type(VALUE value) {
@@ -334,11 +335,11 @@ namespace Charly {
       }
 
       // Check if the index isn't out-of-bounds
-      if (index >= frame->environment.size()) {
+      if (index >= frame->environment->size()) {
         return this->panic(Status::ReadFailedOutOfBounds);
       }
 
-      this->push_stack(frame->environment[index].value);
+      this->push_stack((* frame->environment)[index].value);
     }
 
     void VM::op_readmembersymbol(VALUE symbol) {
@@ -349,8 +350,8 @@ namespace Charly {
         case Type::Object: {
           Object* obj = (Object *)target;
 
-          if (obj->container.count(symbol) == 1) {
-            this->push_stack(obj->container[symbol]);
+          if (obj->container->count(symbol) == 1) {
+            this->push_stack((*obj->container)[symbol]);
             return;
           }
 
@@ -378,8 +379,8 @@ namespace Charly {
       }
 
       // Check if the index isn't out-of-bounds
-      if (index < frame->environment.size()) {
-        FrameEnvironmentEntry& entry = frame->environment[index];
+      if (index < frame->environment->size()) {
+        FrameEnvironmentEntry& entry = (* frame->environment)[index];
         if (entry.is_constant) {
           this->panic(Status::WriteFailedVariableIsConstant);
         } else {
@@ -396,7 +397,7 @@ namespace Charly {
       switch (this->type(target)) {
         case Type::Object: {
           Object* obj = (Object *)target;
-          obj->container[symbol] = value;
+          (* obj->container)[symbol] = value;
           break;
         }
 
@@ -437,15 +438,15 @@ namespace Charly {
       while (count--) {
         key = this->pop_stack();
         value = this->pop_stack();
-        object->container[key] = value;
+        (* object->container)[key] = value;
       }
 
       this->push_stack((VALUE)object);
     }
 
     void VM::op_makeconstant(uint32_t offset) {
-      if (offset < this->frames->environment.size()) {
-        this->frames->environment[offset].is_constant = true;
+      if (offset < this->frames->environment->size()) {
+        (* this->frames->environment)[offset].is_constant = true;
       }
     }
 
@@ -592,7 +593,7 @@ namespace Charly {
       // TODO: Copy the *arguments* field into the function (this is an array containing all arguments)
       uint32_t arg_copy_count = function->argc;
       while (arg_copy_count--) {
-        frame->environment[arg_copy_count].value = argv[arg_copy_count];
+        (* frame->environment)[arg_copy_count].value = argv[arg_copy_count];
       }
 
       this->ip = function->block->data;
@@ -718,8 +719,8 @@ namespace Charly {
 
       switch (this->real_type(value)) {
 
-        case Type::Undefined: {
-          io << "undefined";
+        case Type::DeadCell: {
+          io << "<!!DEAD_CELL!!@ " << (void *)value << ">";
           break;
         }
 
@@ -754,7 +755,7 @@ namespace Charly {
             break;
           }
 
-          for (auto entry : obj->container) {
+          for (auto& entry : *obj->container) {
             io << " ";
             std::string key = this->lookup_symbol(entry.first);
             io << key << "="; this->pretty_print(io, entry.second);
@@ -861,13 +862,18 @@ namespace Charly {
       //     get_method = (CFunction *)Internals::get_method
       //   }
       // };
-      block->write_putcfunction(this->create_symbol("get_method"), (void *)Internals::get_method, 1);
-      block->write_putvalue(this->create_symbol("get_method"));
-      block->write_puthash(1);
-      block->write_putvalue(this->create_symbol("internals"));
-      block->write_puthash(1);
-      block->write_setlocal(0, 0);
-      block->write_readlocal(0, 0);
+      // block->write_putcfunction(this->create_symbol("get_method"), (void *)Internals::get_method, 1);
+      // block->write_putvalue(this->create_symbol("get_method"));
+      // block->write_puthash(1);
+      // block->write_putvalue(this->create_symbol("internals"));
+      // block->write_puthash(1);
+      // block->write_setlocal(0, 0);
+
+      block->write_puthash(0);
+      block->write_puthash(0);
+      block->write_puthash(0);
+      block->write_puthash(0);
+      block->write_pop(4);
 
       // Halt the machine for now
       block->write_byte(Opcode::Halt);
@@ -1073,6 +1079,9 @@ namespace Charly {
 
       std::cout << "Stackdump:" << std::endl;
       this->stackdump(std::cout);
+
+      std::cout << "Garbage collection:" << std::endl;
+      this->gc->collect(this);
     }
 
   }
