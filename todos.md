@@ -24,6 +24,22 @@
       - $1 is rewritten to whatever the second argument is
       - in $n, if n is bigger than the method argc, it gets rewritten to *arguments[n]*
 
+# Garbage Collection for intermediate stack values
+- Kartik suggested having some kind of temporary buffer to store pointers in which weren't pushed to the VM already
+  - Dynamic size, managed via the GC
+
+# Make sure the JIT compiler doesn't need to allocate anything via the VM
+- How are instructionblocks allocated?
+  - Remove the handling from the VM into a separate thing
+- Float values, if they don't fit into the imm-encoding, will be allocated on the heap
+  - If there's a GC before the float was registered somewhere, it will be lost
+
+# Change the immediate value encoding
+- Take a look at NAN-boxing
+  - See: https://en.wikipedia.org/wiki/IEEE_754-1985#NaN
+  - See: https://wingolog.org/archives/2011/05/18/value-representation-in-javascript-implementations
+  - See: https://leonardschuetz.ch/resources/documents/typeinfo.pdf
+
 # Testing
 - Unit-test single methods in the VM
 - Find a good unit-testing framework
