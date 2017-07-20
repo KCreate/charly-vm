@@ -49,6 +49,7 @@ namespace Charly {
       // Initialize the cells and append to the free list
       Cell* last_cell = this->free_cell;
       for (auto& cell : heap) {
+        memset(&cell, 0, sizeof(Cell));
         cell.as.free.next = last_cell;
         last_cell = &cell;
       }
@@ -117,6 +118,7 @@ namespace Charly {
     }
 
     void Collector::collect(Machine::VM* vm) {
+      std::cout << "#-- GC: Pause --#" << std::endl;
 
       // Mark Phase
       for (auto& stack_item : vm->stack) this->mark(stack_item);
@@ -124,6 +126,7 @@ namespace Charly {
       this->mark((VALUE)vm->catchstack);
 
       // Sweep Phase
+      int freed_cells_count = 0;
       for (auto& heap : this->heaps) {
         for (auto& cell : heap) {
           if (Value::basics((VALUE)&cell)->mark()) {
@@ -132,11 +135,15 @@ namespace Charly {
             // This cell might already be on the free list
             // Make sure we don't double free cells
             if (Value::basics((VALUE)&cell)->type() != Value::Type::DeadCell) {
+              freed_cells_count++;
               this->free(&cell);
             }
           }
         }
       }
+
+      std::cout << "#-- GC: Freed a total of " << freed_cells_count << " cells --#" << std::endl;
+      std::cout << "#-- GC: Finished --#" << std::endl;
     }
 
     Cell* Collector::allocate(Machine::VM* vm) {

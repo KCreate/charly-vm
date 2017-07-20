@@ -1083,7 +1083,6 @@ namespace Charly {
       std::cout << "Stackdump:" << std::endl;
       this->stackdump(std::cout);
 
-      std::cout << "Garbage collection:" << std::endl;
       this->gc->collect(this);
     }
 
