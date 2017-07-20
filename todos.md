@@ -2,11 +2,6 @@
 
 # Fix some recursions inside the pretty_printer
 
-# Remove some vm methods
-- VM::read and VM::write are only needed inside opcodes readsymbol and writesymbol
-- Allow ReadLocal and WriteLocal to get receive a level
-  - Lexical scope makes it possible to calculate all these offsets at compile-time
-
 # Calling and object storage convention
 - Come up with a calling convention
   - Define where arguments end up inside an environment
@@ -28,18 +23,6 @@
       - $0 is rewritten to whatever the first argument is
       - $1 is rewritten to whatever the second argument is
       - in $n, if n is bigger than the method argc, it gets rewritten to *arguments[n]*
-- Come up with an object storage convention
-  - The object's klass is stored in the first slot of its container
-
-# Remove unneeded opcodes
-- Are ReadSymbol and WriteSymbol really needed? All variable locations should
-  be known at compile-time, removing the need to resolve variables my their
-  symbol names completly.
-  - Functions can't change their context
-  - Variables can't be "unregistered"
-  - You can't access a frames environment directly at runtime (this is important)
-    - Only possible via C extensions, no support for it however
-    - That would be dynamic scope, which is not what the language should be like
 
 # Testing
 - Unit-test single methods in the VM
@@ -59,18 +42,12 @@
   on machine startup.
 
 # Class System
-- Add instructions that add methods and properties (static variants also)
-  - ClassRegisterProperty
-  - ClassRegisterStaticProperty
-  - ClassRegisterMethod
-  - ClassRegisterStaticMethod
 - Inject basic classes at machine startup
   - Keep a reference to these classes somewhere?
 
 # Class Construction
 - Class is called
-- Insert special fields into object
-  - 0x00: calling class
+- Set the object's klass field to the class that's used to construct it
 - Insert all the classes fields and methods into the object
   - Skip the constructor method
 - Check if there is a constructor inside the class
@@ -127,6 +104,9 @@
 # Operators
 - Maybe use templates for this?
   - Copy the operator matrix from the Crystal Charly source. Don't reinvent the wheel.
+
+# Symbols
+- Add a method which allows to turn arbitary types of things into symbols
 
 # Implement all opcodes
 - PutString
