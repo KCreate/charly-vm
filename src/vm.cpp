@@ -168,6 +168,7 @@ namespace Charly {
     VALUE VM::create_object(uint32_t initial_capacity) {
       GC::Cell* cell = this->gc->allocate(this);
       cell->as.basic.set_type(Type::Object);
+      cell->as.object.klass = Value::Null;
       cell->as.object.container = new std::unordered_map<VALUE, VALUE>();
       cell->as.object.container->reserve(initial_capacity);
       return (VALUE)cell;
@@ -857,11 +858,11 @@ namespace Charly {
       //     get_method = (CFunction *)Internals::get_method
       //   }
       // };
-      // block->write_putcfunction(this->create_symbol("get_method"), (void *)Internals::get_method, 1);
-      // block->write_putvalue(this->create_symbol("get_method"));
-      // block->write_puthash(1);
-      // block->write_putvalue(this->create_symbol("internals"));
-      // block->write_puthash(1);
+      block->write_putcfunction(this->create_symbol("get_method"), (void *)Internals::get_method, 1);
+      block->write_putvalue(this->create_symbol("get_method"));
+      block->write_puthash(1);
+      block->write_putvalue(this->create_symbol("internals"));
+      block->write_puthash(1);
       // block->write_setlocal(0, 0);
 
       block->write_puthash(0);
@@ -872,8 +873,7 @@ namespace Charly {
       block->write_puthash(0);
       block->write_puthash(0);
       block->write_puthash(0);
-
-      // Halt the machine for now
+      block->write_pop(8);
       block->write_byte(Opcode::Halt);
 
       // Push a function onto the stack containing this block and call it
