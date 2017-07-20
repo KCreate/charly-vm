@@ -81,8 +81,6 @@ namespace Charly {
         void collect(Machine::VM* vm);
         void free(Cell* cell);
         void inline free(VALUE value) { this->free((Cell*) value); }
-
-        // TODO: Add garbage collection logic
     };
   }
 }

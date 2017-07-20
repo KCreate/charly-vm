@@ -66,8 +66,6 @@ namespace Charly {
       if (!Value::is_pointer(value)) return;
       if (Value::basics(value)->mark()) return;
 
-      std::cout << "Marking " << Value::Type::str[Value::basics(value)->type()] << " at " << (void *)value << std::endl;
-
       Value::basics(value)->set_mark(true);
       switch (Value::basics(value)->type()) {
         case Value::Type::Object: {
@@ -121,15 +119,11 @@ namespace Charly {
     void Collector::collect(Machine::VM* vm) {
 
       // Mark Phase
-      std::cout << std::endl << "#-- marking stack" << std::endl;
       for (auto& stack_item : vm->stack) this->mark(stack_item);
-      std::cout << std::endl << "#-- marking frames" << std::endl;
       this->mark((VALUE)vm->frames);
-      std::cout << std::endl << "#-- marking catchstack" << std::endl;
       this->mark((VALUE)vm->catchstack);
 
       // Sweep Phase
-      std::cout << std::endl << "#-- Sweep phase" << std::endl;
       for (auto& heap : this->heaps) {
         for (auto& cell : heap) {
           if (Value::basics((VALUE)&cell)->mark()) {
@@ -138,7 +132,6 @@ namespace Charly {
             // This cell might already be on the free list
             // Make sure we don't double free cells
             if (Value::basics((VALUE)&cell)->type() != Value::Type::DeadCell) {
-              std::cout << "Freeing cell at " << &cell << std::endl;
               this->free(&cell);
             }
           }
@@ -162,16 +155,13 @@ namespace Charly {
           // allocate more heaps
           if (!this->free_cell) {
             this->grow_heap();
+
+            if (!this->free_cell) {
+              std::cout << "Failed to expand heap, the next allocation will cause a segfault." << std::endl;
+            }
           }
         }
-      } else {
-        // This really can't happen
-        // but if it does fail and painfully
-        std::cout << "Failed to allocate cell" << std::endl;
-        exit(1);
       }
-
-      std::cout << "Allocated cell at " << cell << std::endl;
 
       return cell;
     }

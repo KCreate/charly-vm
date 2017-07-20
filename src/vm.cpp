@@ -850,11 +850,6 @@ namespace Charly {
       uint32_t global_var_count = 1;
       auto block = this->request_instruction_block(global_var_count);
 
-      // Push a function onto the stack containing this block and call it
-      this->op_putfunction(this->create_symbol("__charly_init"), block, false, 0);
-      this->op_call(0);
-      this->frames->self = this->create_integer(1000); // TODO: Replace with actual global self value
-
       // The methods below codegen the following code:
       //
       // let Charly = {
@@ -873,10 +868,18 @@ namespace Charly {
       block->write_puthash(0);
       block->write_puthash(0);
       block->write_puthash(0);
-      block->write_pop(4);
+      block->write_puthash(0);
+      block->write_puthash(0);
+      block->write_puthash(0);
+      block->write_puthash(0);
 
       // Halt the machine for now
       block->write_byte(Opcode::Halt);
+
+      // Push a function onto the stack containing this block and call it
+      this->op_putfunction(this->create_symbol("__charly_init"), block, false, 0);
+      this->op_call(0);
+      this->frames->self = this->create_integer(1000); // TODO: Replace with actual global self value
     }
 
     void VM::run() {
