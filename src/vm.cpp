@@ -649,11 +649,14 @@ namespace Charly {
 
     void VM::throw_exception(VALUE payload) {
       CatchTable* table = this->find_catchtable(ThrowType::Exception);
+
       if (!table) {
         this->panic(Status::NoSuitableCatchTableFound);
       }
+
       this->restore_catchtable(table);
       this->push_stack(payload);
+      this->gc->collect(this);
     }
 
     void VM::op_registercatchtable(ThrowType type, int32_t offset) {
