@@ -298,6 +298,7 @@ namespace Charly {
         case Opcode::SetMemberValue:      return 1;
         case Opcode::PutSelf:             return 1;
         case Opcode::PutValue:            return 1 + sizeof(VALUE);
+        case Opcode::PutFloat:            return 1 + sizeof(double);
         case Opcode::PutString:           return 1 + sizeof(char*) + sizeof(uint32_t) * 2;
         case Opcode::PutFunction:         return 1 + sizeof(VALUE) + sizeof(void*) + sizeof(bool) + sizeof(uint32_t);
         case Opcode::PutCFunction:        return 1 + sizeof(VALUE) + sizeof(void *) + sizeof(uint32_t);
@@ -419,6 +420,10 @@ namespace Charly {
 
     void VM::op_putvalue(VALUE value) {
       this->push_stack(value);
+    }
+
+    void VM::op_putfloat(double value) {
+      this->push_stack(this->create_float(value));
     }
 
     void VM::op_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc) {
@@ -874,6 +879,15 @@ namespace Charly {
       block->write_puthash(0);
       block->write_puthash(0);
       block->write_pop(8);
+
+      block->write_putfloat(25);
+      block->write_putfloat(25);
+      block->write_putfloat(25);
+      block->write_putfloat(25);
+      block->write_operator(Opcode::Add);
+      block->write_operator(Opcode::Add);
+      block->write_operator(Opcode::Add);
+
       block->write_byte(Opcode::Halt);
 
       // Push a function onto the stack containing this block and call it
@@ -950,6 +964,12 @@ namespace Charly {
           case Opcode::PutValue: {
             VALUE value = *(VALUE *)(this->ip + sizeof(Opcode));
             this->op_putvalue(value);
+            break;
+          }
+
+          case Opcode::PutFloat: {
+            double value = *(double *)(this->ip + sizeof(Opcode));
+            this->op_putfloat(value);
             break;
           }
 

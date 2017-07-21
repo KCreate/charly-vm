@@ -96,6 +96,7 @@ namespace Charly {
         void op_setmembersymbol(VALUE symbol);
         void op_putself();
         void op_putvalue(VALUE value);
+        void op_putfloat(double value);
         void op_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc);
         void op_putcfunction(VALUE symbol, void* pointer, uint32_t argc);
         void op_puthash(uint32_t count);

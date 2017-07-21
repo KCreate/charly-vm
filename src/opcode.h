@@ -108,11 +108,17 @@ namespace Charly {
       // - value
       PutValue = 0x0a,
 
+      // Put a double onto the stack
+      //
+      // args:
+      // - value
+      PutFloat = 0x0b,
+
       // Put string onto the stack
       //
       // args:
       // - string (char* data, uint32_t length, uint32_t capacity)
-      PutString = 0x0b,
+      PutString = 0x0c,
 
       // Put a function onto the stack
       //
@@ -121,7 +127,7 @@ namespace Charly {
       // - block
       // - anonymous
       // - argc
-      PutFunction = 0x0c,
+      PutFunction = 0x0d,
 
       // Put a function pointer onto the stack
       //
@@ -129,21 +135,21 @@ namespace Charly {
       // - symbol
       // - pointer
       // - argc
-      PutCFunction = 0x0d,
+      PutCFunction = 0x0e,
 
       // Put an array onto the stack, popping a given amount of values from the stack
       // and inserting them into the array
       //
       // args:
       // - count
-      PutArray = 0x0e,
+      PutArray = 0x0f,
 
       // Put a hash onto the stack, popping a given amount of key / value pairs from the stack
       // and inserting them into the array
       //
       // args:
       // - count
-      PutHash = 0x0f,
+      PutHash = 0x10,
 
       // Put a new class onto the stack
       // Properties, methods, static properties, static methods and parent classes are popped
@@ -156,7 +162,7 @@ namespace Charly {
       // - methodcount
       // - staticmethodcount
       // - parentclasscount
-      PutClass = 0x10,
+      PutClass = 0x11,
 
       // Make a given offset in the current environment a constant
       //

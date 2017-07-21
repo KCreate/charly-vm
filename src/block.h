@@ -149,6 +149,11 @@ namespace Charly {
         this->write_long(value);
       }
 
+      void inline write_putfloat(double value) {
+        this->write_byte(Opcode::PutFloat);
+        this->write_double(value);
+      }
+
       void inline write_putstring(char* data, uint32_t length, uint32_t capacity) {
         this->write_byte(Opcode::PutString);
         this->write_pointer(data);
