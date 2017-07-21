@@ -570,6 +570,8 @@ namespace Charly {
 
         default: {
 
+          std::cout << Value::Type::str[this->real_type(function)] << " is not a function" << std::endl;
+
           // TODO: Handle as runtime error
           this->panic(Status::UnspecifiedError);
         }
@@ -612,19 +614,23 @@ namespace Charly {
         this->panic(Status::NotEnoughArguments);
       }
 
+      VALUE rv = Value::Null;
+
       switch (argc) {
 
         // TODO: Also pass the *arguments* field (this is an array containing all arguments)
-        case 0: return ((void (*)(VM*))function->pointer)(this);
-        case 1: return ((void (*)(VM*, VALUE))function->pointer)(this, argv[0]);
-        case 2: return ((void (*)(VM*, VALUE, VALUE))function->pointer)(this, argv[0], argv[1]);
-        case 3: return ((void (*)(VM*, VALUE, VALUE, VALUE))function->pointer)(this, argv[0], argv[1], argv[2]);
+        case 0: rv = ((VALUE (*)(VM*))function->pointer)(this); break;
+        case 1: rv = ((VALUE (*)(VM*, VALUE))function->pointer)(this, argv[0]); break;
+        case 2: rv = ((VALUE (*)(VM*, VALUE, VALUE))function->pointer)(this, argv[0], argv[1]); break;
+        case 3: rv = ((VALUE (*)(VM*, VALUE, VALUE, VALUE))function->pointer)(this, argv[0], argv[1], argv[2]); break;
 
         // TODO: Expand to 15??
         default: {
           this->panic(Status::TooManyArgumentsForCFunction);
         }
       }
+
+      this->push_stack(rv);
     }
 
     void VM::op_return() {
@@ -871,7 +877,7 @@ namespace Charly {
       block->write_puthash(1);
       block->write_putvalue(this->create_symbol("internals"));
       block->write_puthash(1);
-      // block->write_setlocal(0, 0);
+      block->write_setlocal(0, 0);
 
       block->write_puthash(0);
       block->write_puthash(0);
@@ -890,6 +896,12 @@ namespace Charly {
       block->write_operator(Opcode::Add);
       block->write_operator(Opcode::Add);
       block->write_operator(Opcode::Add);
+
+      block->write_readlocal(0, 0);
+      block->write_readmembersymbol(this->create_symbol("internals"));
+      block->write_readmembersymbol(this->create_symbol("get_method"));
+      block->write_putvalue(this->create_symbol("hello world"));
+      block->write_call(1);
 
       block->write_byte(Opcode::Halt);
 
@@ -1021,7 +1033,7 @@ namespace Charly {
           }
 
           case Opcode::Call: {
-            uint32_t argc = *(VALUE *)(this->ip + sizeof(Opcode));
+            uint32_t argc = *(uint32_t *)(this->ip + sizeof(Opcode));
             this->op_call(argc);
             break;
           }

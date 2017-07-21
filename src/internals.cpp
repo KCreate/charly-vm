@@ -35,8 +35,9 @@ namespace Charly {
   namespace Machine {
     namespace Internals {
 
-      void get_method(VM* vm, VALUE method_name) {
-        cout << "called get_method with " << Value::Type::str[vm->type(method_name)] << endl;;
+      VALUE get_method(VM* vm, VALUE method_name) {
+        cout << "called get_method with "; vm->pretty_print(cout, method_name); cout << endl;;
+        return vm->create_integer(25);
       }
 
     }

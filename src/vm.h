@@ -118,7 +118,6 @@ namespace Charly {
         void op_branchif(int32_t offset);
         void op_branchunless(int32_t offset);
 
-      private:
         void inline panic(STATUS reason) {
           std::cout << "Panic: " << Status::str[reason] << std::endl;
           this->stacktrace(std::cout);
@@ -129,9 +128,7 @@ namespace Charly {
         void stacktrace(std::ostream& io);
         void catchstacktrace(std::ostream& io);
         void stackdump(std::ostream& io);
-        void inline pretty_print(std::ostream& io, void* value) {
-          this->pretty_print(io, (VALUE)value);
-        }
+        void inline pretty_print(std::ostream& io, void* value) { this->pretty_print(io, (VALUE)value); }
         void pretty_print(std::ostream& io, VALUE value);
 
       public:

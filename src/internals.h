@@ -31,7 +31,7 @@
 namespace Charly {
   namespace Machine {
     namespace Internals {
-      void get_method(VM* vm, VALUE method_name);
+      VALUE get_method(VM* vm, VALUE method_name);
     }
   }
 }
