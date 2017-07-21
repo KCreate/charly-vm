@@ -777,7 +777,7 @@ namespace Charly {
           io << "<Function@" << func << " ";
           io << "name="; this->pretty_print(io, func->name); io << " ";
           io << "argc=" << func->argc; io << " ";
-          io << "context="; this->pretty_print(io, func->context); io << " ";
+          io << "context=" << func->context << " ";
           io << "block="; this->pretty_print(io, func->block); io << " ";
           io << "bound_self_set=" << (func->bound_self_set ? "true" : "false") << " ";
           io << "bound_self="; this->pretty_print(io, func->bound_self);
@@ -820,7 +820,7 @@ namespace Charly {
           io << "type=" << table->type << " ";
           io << "address=" << (void *)table->address << " ";
           io << "stacksize=" << table->stacksize << " ";
-          io << "frame="; this->pretty_print(io, table->frame); io << " ";
+          io << "frame=" << table->frame << " ";
           io << "parent=" << table->parent << " ";
           io << ">";
           break;
