@@ -56,6 +56,7 @@ namespace Charly {
   namespace Value {
     struct Basic;
     struct Object;
+    struct Array;
     struct Float;
     struct Function;
     struct CFunction;

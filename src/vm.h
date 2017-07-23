@@ -74,6 +74,7 @@ namespace Charly {
         // Methods to create new data types
         VALUE create_symbol(std::string value);
         VALUE create_object(uint32_t initial_capacity);
+        VALUE create_array(uint32_t initial_capacity);
         VALUE create_integer(int64_t value);
         VALUE create_float(double value);
         VALUE create_function(VALUE name, uint32_t argc, bool anonymous, InstructionBlock* block);
@@ -99,6 +100,7 @@ namespace Charly {
         void op_putfloat(double value);
         void op_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc);
         void op_putcfunction(VALUE symbol, void* pointer, uint32_t argc);
+        void op_putarray(uint32_t count);
         void op_puthash(uint32_t count);
         void op_makeconstant(uint32_t offset);
         void op_pop(uint32_t count);

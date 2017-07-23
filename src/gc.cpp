@@ -76,6 +76,12 @@ namespace Charly {
           break;
         }
 
+        case Value::Type::Array: {
+          auto arr = (Value::Array *)value;
+          for (auto& arr_entry : *arr->data) this->mark(arr_entry);
+          break;
+        }
+
         case Value::Type::Function: {
           auto func = (Value::Function *)value;
           this->mark((VALUE)func->context);
@@ -180,6 +186,11 @@ namespace Charly {
       switch (Value::basics((VALUE)cell)->type()) {
         case Value::Type::Object: {
           delete cell->as.object.container;
+          break;
+        }
+
+        case Value::Type::Array: {
+          delete cell->as.array.data;
           break;
         }
 

@@ -49,6 +49,7 @@ namespace Charly {
         } free;
         Value::Basic basic;
         Value::Object object;
+        Value::Array array;
         Value::Float flonum;
         Value::Function function;
         Value::CFunction cfunction;

@@ -47,12 +47,13 @@ namespace Charly {
       const VALUE Boolean          = 0x04;
       const VALUE Null             = 0x05;
       const VALUE Object           = 0x06;
-      const VALUE Function         = 0x07;
-      const VALUE CFunction        = 0x08;
-      const VALUE Symbol           = 0x09;
-      const VALUE Frame            = 0x0a;
-      const VALUE CatchTable       = 0x0b;
-      const VALUE InstructionBlock = 0x0c;
+      const VALUE Array            = 0x07;
+      const VALUE Function         = 0x08;
+      const VALUE CFunction        = 0x09;
+      const VALUE Symbol           = 0x0a;
+      const VALUE Frame            = 0x0b;
+      const VALUE CatchTable       = 0x0c;
+      const VALUE InstructionBlock = 0x0d;
 
       const std::string str[] = {
         "DeadCell",
@@ -62,6 +63,7 @@ namespace Charly {
         "Boolean",
         "Null",
         "Object",
+        "Array",
         "Function",
         "CFunction",
         "Symbol",
@@ -134,6 +136,12 @@ namespace Charly {
       Basic basic;
       VALUE klass;
       std::unordered_map<VALUE, VALUE>* container;
+    };
+
+    // Array type
+    struct Array {
+      Basic basic;
+      std::vector<VALUE>* data;
     };
 
     // Heap-allocated float type

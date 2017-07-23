@@ -174,6 +174,14 @@ namespace Charly {
       return (VALUE)cell;
     }
 
+    VALUE VM::create_array(uint32_t initial_capacity) {
+      GC::Cell* cell = this->gc->allocate(this);
+      cell->as.basic.set_type(Type::Array);
+      cell->as.array.data = new std::vector<VALUE>();
+      cell->as.array.data->reserve(initial_capacity);
+      return (VALUE)cell;
+    }
+
     VALUE VM::create_integer(int64_t value) {
       return ((VALUE) value << 1) | Value::IIntegerFlag;
     }
@@ -436,6 +444,16 @@ namespace Charly {
       this->push_stack(function);
     }
 
+    void VM::op_putarray(uint32_t count) {
+      Array* array = (Array *)this->create_array(count);
+
+      while (count--) {
+        array->data->insert(array->data->begin(), this->pop_stack());
+      }
+
+      this->push_stack((VALUE)array);
+    }
+
     void VM::op_puthash(uint32_t count) {
       Object* object = (Object *)this->create_object(count);
 
@@ -694,7 +712,7 @@ namespace Charly {
       io << "IP: " << (void*)this->ip << std::endl;
       while (frame) {
         io << i++ << "# ";
-        io << "<Frame@" << frame << " ";
+        io << "<Frame:" << frame << " ";
         io << "name="; this->pretty_print(io, frame->function->name); io << " ";
         io << "return_address=" << (void *)frame->return_address;
         io << ">";
@@ -735,7 +753,7 @@ namespace Charly {
       switch (this->real_type(value)) {
 
         case Type::DeadCell: {
-          io << "<!!DEAD_CELL!!@ " << (void *)value << ">";
+          io << "<!!DEAD_CELL!!: " << (void *)value << ">";
           break;
         }
 
@@ -760,30 +778,50 @@ namespace Charly {
         }
 
         case Type::Object: {
-
-          Object* obj = (Object *)value;
-          io << "<Object@" << obj;
+          Object* object = (Object *)value;
+          io << "<Object:" << object;
 
           // If this object was already printed, we avoid printing it again
           if (printed_before) {
-            io << ">";
+            io << " ...>";
             break;
           }
 
-          for (auto& entry : *obj->container) {
+          for (auto& entry : *object->container) {
             io << " ";
             std::string key = this->lookup_symbol(entry.first);
             io << key << "="; this->pretty_print(io, entry.second);
           }
 
           io << ">";
+          break;
+        }
 
+        case Type::Array: {
+          Array* array = (Array *)value;
+
+          // If this array was already printed, we avoid printing it again
+          if (printed_before) {
+            io << "[...]>";
+            break;
+          }
+
+          io << "[";
+
+          bool first = true;
+          for (auto& entry : *array->data) {
+            if (!first) io << ", ";
+            if (first) first = false;
+            this->pretty_print(io, entry);
+          }
+
+          io << "]";
           break;
         }
 
         case Type::Function: {
           Function* func = (Function *)value;
-          io << "<Function@" << func << " ";
+          io << "<Function:" << func << " ";
           io << "name="; this->pretty_print(io, func->name); io << " ";
           io << "argc=" << func->argc; io << " ";
           io << "context=" << func->context << " ";
@@ -796,7 +834,7 @@ namespace Charly {
 
         case Type::CFunction: {
           CFunction* func = (CFunction *)value;
-          io << "<CFunction@" << func << " ";
+          io << "<CFunction:" << func << " ";
           io << "name="; this->pretty_print(io, func->name); io << " ";
           io << "argc=" << func->argc; io << " ";
           io << "pointer=" << func->pointer << " ";
@@ -813,7 +851,7 @@ namespace Charly {
 
         case Type::Frame: {
           Frame* frame = (Frame *)value;
-          io << "<Frame@" << frame << " ";
+          io << "<Frame:" << frame << " ";
           io << "parent=" << frame->parent << " ";
           io << "parent_environment_frame=" << frame->parent_environment_frame << " ";
           io << "function="; this->pretty_print(io, frame->function); io << " ";
@@ -825,7 +863,7 @@ namespace Charly {
 
         case Type::CatchTable: {
           CatchTable* table = (CatchTable *)value;
-          io << "<CatchTable@" << table << " ";
+          io << "<CatchTable:" << table << " ";
           io << "type=" << table->type << " ";
           io << "address=" << (void *)table->address << " ";
           io << "stacksize=" << table->stacksize << " ";
@@ -837,7 +875,7 @@ namespace Charly {
 
         case Type::InstructionBlock: {
           InstructionBlock* block = (InstructionBlock *)value;
-          io << "<InstructionBlock@" << block << " ";
+          io << "<InstructionBlock:" << block << " ";
           io << "lvarcount=" << block->lvarcount << " ";
           io << "data=" << (void *)block->data << " ";
           io << "data_size=" << block->data_size << " ";
@@ -881,21 +919,16 @@ namespace Charly {
 
       block->write_puthash(0);
       block->write_puthash(0);
-      block->write_puthash(0);
-      block->write_puthash(0);
-      block->write_puthash(0);
-      block->write_puthash(0);
-      block->write_puthash(0);
-      block->write_puthash(0);
-      block->write_pop(8);
+      block->write_dup();
+      block->write_putvalue(this->create_integer(250));
+      block->write_setmembersymbol(this->create_symbol("boye"));
+      block->write_putarray(2);
 
       block->write_putfloat(25);
       block->write_putfloat(25);
       block->write_putfloat(25);
       block->write_putfloat(25);
-      block->write_operator(Opcode::Add);
-      block->write_operator(Opcode::Add);
-      block->write_operator(Opcode::Add);
+      block->write_putarray(5);
 
       block->write_readlocal(0, 0);
       block->write_readmembersymbol(this->create_symbol("internals"));
@@ -1002,6 +1035,12 @@ namespace Charly {
             auto pointer = *(void **)(this->ip + sizeof(Opcode) + sizeof(VALUE));
             auto argc = *(uint32_t *)(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(void *));
             this->op_putcfunction(symbol, pointer, argc);
+            break;
+          }
+
+          case Opcode::PutArray: {
+            uint32_t count = *(uint32_t *)(this->ip + sizeof(Opcode));
+            this->op_putarray(count);
             break;
           }
 
