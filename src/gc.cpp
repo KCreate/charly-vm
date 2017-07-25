@@ -64,6 +64,17 @@ namespace Charly {
       while (heaps_to_add--) this->add_heap();
     }
 
+    void Collector::register_temporary(VALUE value) {
+      this->temporaries.insert(value);
+    }
+
+    void Collector::unregister_temporary(VALUE value) {
+      auto tmp = this->temporaries.find(value);
+      if (tmp != this->temporaries.end()) {
+        this->temporaries.erase(tmp);
+      }
+    }
+
     void Collector::mark(VALUE value) {
       if (!Value::is_pointer(value)) return;
       if (Value::basics(value)->mark()) return;
@@ -129,6 +140,7 @@ namespace Charly {
 
       // Mark Phase
       for (auto& stack_item : vm->stack) this->mark(stack_item);
+      for (auto& temp_item : this->temporaries) this->mark(temp_item);
       this->mark((VALUE)vm->frames);
       this->mark((VALUE)vm->catchstack);
 
@@ -181,6 +193,10 @@ namespace Charly {
     }
 
     void Collector::free(Cell* cell) {
+
+      // This cell might be inside the temporaries list,
+      // check if it's inside and remove it if it is
+      this->unregister_temporary((VALUE)cell);
 
       // We don't actually free the cells that were allocated, we just
       // deallocat the properties inside these cells and memset(0)'em

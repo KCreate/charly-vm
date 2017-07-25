@@ -39,8 +39,11 @@ namespace Charly {
   namespace Machine {
     struct VM {
       friend GC::Collector;
-      private:
+
+      public:
         GC::Collector* gc;
+
+      private:
         std::vector<VALUE> stack;
         std::unordered_map<VALUE, std::string> symbol_table;
         std::vector<VALUE> pretty_print_stack;

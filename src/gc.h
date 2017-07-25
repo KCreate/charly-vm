@@ -25,6 +25,7 @@
  */
 
 #include <vector>
+#include <unordered_set>
 
 #include "defines.h"
 #include "value.h"
@@ -71,6 +72,7 @@ namespace Charly {
       private:
         Cell* free_cell;
         std::vector<std::vector<Cell>> heaps;
+        std::unordered_set<VALUE> temporaries;
 
         void mark(VALUE cell);
         void add_heap();
@@ -82,6 +84,8 @@ namespace Charly {
         void collect(Machine::VM* vm);
         void free(Cell* cell);
         void inline free(VALUE value) { this->free((Cell*) value); }
+        void register_temporary(VALUE value);
+        void unregister_temporary(VALUE value);
     };
   }
 }
