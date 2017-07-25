@@ -33,6 +33,7 @@ namespace Charly {
   namespace GC {
 
     Collector::Collector() {
+      this->free_cell = NULL;
       size_t heap_initial_count = GC::InitialHeapCount;
       this->heaps.reserve(heap_initial_count);
       while (heap_initial_count--) this->add_heap();
