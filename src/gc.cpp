@@ -25,6 +25,7 @@
  */
 
 #include <iostream>
+#include <cassert>
 
 #include "gc.h"
 #include "vm.h"
@@ -70,6 +71,7 @@ namespace Charly {
 
     void Collector::unregister_temporary(VALUE value) {
       auto tmp = this->temporaries.find(value);
+      assert(tmp != this->temporaries.end());
       if (tmp != this->temporaries.end()) {
         this->temporaries.erase(tmp);
       }
