@@ -407,7 +407,7 @@ namespace Charly {
       switch (this->type(target)) {
         case Type::Object: {
           Object* obj = (Object *)target;
-          (* obj->container)[symbol] = value;
+          (*obj->container)[symbol] = value;
           break;
         }
 
@@ -462,7 +462,7 @@ namespace Charly {
       while (count--) {
         key = this->pop_stack();
         value = this->pop_stack();
-        (* object->container)[key] = value;
+        (*object->container)[key] = value;
       }
 
       this->push_stack((VALUE)object);
