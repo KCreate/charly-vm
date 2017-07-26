@@ -198,7 +198,9 @@ namespace Charly {
 
       // This cell might be inside the temporaries list,
       // check if it's inside and remove it if it is
-      this->unregister_temporary((VALUE)cell);
+      if (this->temporaries.count((VALUE)cell) == 1) {
+        this->unregister_temporary((VALUE)cell);
+      }
 
       // We don't actually free the cells that were allocated, we just
       // deallocat the properties inside these cells and memset(0)'em

@@ -55,7 +55,6 @@ namespace Charly {
         vm->gc->unregister_temporary(obj2);
         vm->gc->unregister_temporary(obj3);
         vm->gc->unregister_temporary(obj4);
-        vm->gc->unregister_temporary(obj4);
 
         return vm->create_integer(25);
       }
