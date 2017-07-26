@@ -36,6 +36,15 @@
 - See: https://leonardschuetz.ch/resources/documents/typeinfo.pdf
 - Floats can be encoded at compile-time not at runtime
 
+# Rethink symbols
+- Symbols should be a direct omni-directional mapping between an immediate-encoded `VALUE` and a string
+- We should be able to create new symbols without an instance of the machine
+  - Have constant symbols available for some commonly used strings
+  - The vm needs to be initialized with a set of symbols
+  - If a symbol wasn't found the string "null" is returned
+- Symbols aren't available in the Charly programming language. The are merely an implementation detail
+- How does the VM know about the string representation of symbols?
+
 # Testing
 - Unit-test single methods in the VM
 - Find a good unit-testing framework
@@ -70,7 +79,11 @@
 
 # Objects
 - Hashes are just objects with their klass field to the Object class
-- Objects contain their klass field in the first slot of their container
+- Property lookups
+  - Logic should be moved into the Object class
+  - The object doesn't need anything from the VM to be able to lookup a symbol (duh, thanks max)
+  - If the object itself doesn't contain the property the objects parent class is checked
+  - If the whole hierarchy doesn't contain the symbol, null is returned
 
 # Memory ownership
 - Structs generally own the memory they point to
@@ -82,7 +95,7 @@
     - Solution would be to have a string pool per function, with a refcount to each string
     - Once a function is being deallocated, all strings contained inside that function are removed too
       - TODO: Make sure there are no edge cases for this
-  - The compiler rounds up string memory allocation to 128 bytes
+  - The compiler rounds up string memory allocation to the next higher power of two
 - InstructionBlocks
   - IB's are owned by the function they are placed into
   - Once the function is being deallocated, their instructionblock is deallocated as well
@@ -99,6 +112,42 @@
     - Tell the GC to destroy everything it can find (overwrite with 0)
     - Deallocate member objects of the VM
     - Deallocate vm itself
+
+# Mapping between JITed code and source file locations
+- Figure out how JavaScript source maps work and copy the shit out of it
+- Mapping between a range of instructions to a range of row/col pairs on compilation?
+
+# Exception system
+- The top-level wraps the entire program in a try catch clause
+  - The Machine contains some general global uncaught exception handling
+    - The user can provide a hook (a function) that will run when an exception was not caught
+    - The program terminates once that hook returns
+- Machine has a CatchStack
+  - Each CatchTable contains a type and a pointer into an instruction block
+    - If an exception reaches the top-level
+      - Exception: Call uncaught exception method
+      - Break and Continue:
+        - Create an exception detailing what happened and rethrow it from the original throw location
+- Standard exception class
+  - message
+    - Simple string describing what the exception is about
+  - trace
+    - Array of strings being a dump of the frame hierarchy at the point where
+      the exception was thrown.
+  - Ability to rethrow exceptions
+
+# Define deconstructors for some objects
+- Should normal destructors be used?
+  - We are already allocating and "constructor" in a funny way, so why use destructors here?
+- If we manage all resources in pre-defined types, we won't need a "finalize" function
+  - CFunctions might allocate stuff and the deallocation logic might be written inside Charly
+  - Maybe provide enough data structures inside the vm, so that deallocation logic inside
+    Charly can be mitigated, thus leaving all dealloc logic to the GC.
+
+    This could be achieved by wrapping pointers (maybe?). Thus, C-Bindings would return
+    wrapped pointers, optionally defining a function pointer for a destructor function.
+    We can keep the correct context object by using the `->*` and `.*` operators.
+    See: https://isocpp.org/wiki/faq/pointers-to-members#dotstar-vs-arrowstar
 
 # Operators
 - Maybe use templates for this?
@@ -136,32 +185,3 @@
 - USub
 - UNot
 - UBNot
-
-# Mapping between JITed code and source file locations
-- Figure out how JavaScript source maps work and copy the shit out of it
-- Mapping between a range of instructions to a range of row/col pairs on compilation?
-
-# Exception system
-- The top-level wraps the entire program in a try catch clause
-  - The Machine contains some general global uncaught exception handling
-    - The user can provide a hook (a function) that will run when an exception was not caught
-    - The program terminates once that hook returns
-- Machine has a CatchStack
-  - Each CatchTable contains a type and a pointer into an instruction block
-    - If an exception reaches the top-level
-      - Exception: Call uncaught exception method
-      - Break and Continue:
-        - Create an exception detailing what happened and rethrow it from the original throw location
-
-# Define deconstructors for some objects
-- Should normal destructors be used?
-  - We are already allocating and "constructor" in a funny way, so why use destructors here?
-- If we manage all resources in pre-defined types, we won't need a "finalize" function
-  - CFunctions might allocate stuff and the deallocation logic might be written inside Charly
-  - Maybe provide enough data structures inside the vm, so that deallocation logic inside
-    Charly can be mitigated, thus leaving all dealloc logic to the GC.
-
-    This could be achieved by wrapping pointers (maybe?). Thus, C-Bindings would return
-    wrapped pointers, optionally defining a function pointer for a destructor function.
-    We can keep the correct context object by using the `->*` and `.*` operators.
-    See: https://isocpp.org/wiki/faq/pointers-to-members#dotstar-vs-arrowstar
