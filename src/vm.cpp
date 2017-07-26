@@ -903,8 +903,6 @@ namespace Charly {
       uint32_t global_var_count = 1;
       auto block = this->request_instruction_block(global_var_count);
 
-      // The methods below codegen the following code:
-      //
       // let Charly = {
       //   internals = {
       //     get_method = (CFunction *)Internals::get_method
@@ -917,19 +915,20 @@ namespace Charly {
       block->write_puthash(1);
       block->write_setlocal(0, 0);
 
+      // [[{}, { boye = 250 }], 25, 25, 25, 25]
       block->write_puthash(0);
       block->write_puthash(0);
       block->write_dup();
       block->write_putvalue(this->create_integer(250));
       block->write_setmembersymbol(this->create_symbol("boye"));
       block->write_putarray(2);
-
       block->write_putfloat(25);
       block->write_putfloat(25);
       block->write_putfloat(25);
       block->write_putfloat(25);
       block->write_putarray(5);
 
+      // Charly.internals.get_method(:"hello_world")
       block->write_readlocal(0, 0);
       block->write_readmembersymbol(this->create_symbol("internals"));
       block->write_readmembersymbol(this->create_symbol("get_method"));
