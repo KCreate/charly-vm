@@ -28,6 +28,10 @@
 - How are instructionblocks allocated?
   - Remove the handling from the VM into a separate thing
 
+# Instruction to add a local variable slot to the current frame's environment
+- Needed to support a REPL
+- Might be useful for other things?
+
 # Think about the pros/cons of switching to NAN-boxing
 - See: https://en.wikipedia.org/wiki/IEEE_754-1985#NaN
 - See: https://wingolog.org/archives/2011/05/18/value-representation-in-javascript-implementations
