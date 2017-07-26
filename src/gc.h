@@ -37,9 +37,9 @@
 
 namespace Charly {
   namespace GC {
-    const size_t InitialHeapCount = 2;
-    const size_t HeapCellCount = 256;
-    const float HeapCountGrowthFactor = 2;
+    static const size_t InitialHeapCount = 2;
+    static const size_t HeapCellCount = 256;
+    static const float HeapCountGrowthFactor = 2;
 
     // A single cell managed by the GC
     struct Cell {

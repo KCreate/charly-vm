@@ -38,9 +38,9 @@ namespace Charly {
       VALUE flags; // Needed by GC
 
       // TODO: Tune these values a bit
-      const uint32_t BLOCK_INITIAL_WRITE_OFFSET = 0;
-      const uint32_t INITIAL_BLOCK_SIZE = 256;
-      const uint32_t BLOCK_SIZE_GROWTH_FACTOR = 2;
+      static const uint32_t BLOCK_INITIAL_WRITE_OFFSET = 0;
+      static const uint32_t INITIAL_BLOCK_SIZE = 256;
+      static const uint32_t BLOCK_SIZE_GROWTH_FACTOR = 2;
 
       uint32_t lvarcount;
       uint8_t* data;

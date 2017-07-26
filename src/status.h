@@ -28,30 +28,30 @@
 
 namespace Charly {
   namespace Status {
-    const STATUS Success                                = 0x00;
-    const STATUS WriteFailedVariableIsConstant          = 0x01;
-    const STATUS WriteFailedVariableUndefined           = 0x02;
-    const STATUS WriteFailedOutOfBounds                 = 0x03;
-    const STATUS WriteFailedTooDeep                     = 0x04;
-    const STATUS RegisterFailedAlreadyDefined           = 0x05;
-    const STATUS ReadFailedVariableUndefined            = 0x06;
-    const STATUS ReadFailedOutOfBounds                  = 0x07;
-    const STATUS ReadFailedTooDeep                      = 0x08;
-    const STATUS UnknownSymbol                          = 0x09;
-    const STATUS PopFailedStackEmpty                    = 0x0a;
-    const STATUS UnspecifiedError                       = 0x0b;
-    const STATUS CantReturnFromTopLevel                 = 0x0c;
-    const STATUS UnknownThrowType                       = 0x0d;
-    const STATUS IpOutOfBounds                          = 0x0e;
-    const STATUS NotEnoughSpaceForInstructionArguments  = 0x0f;
-    const STATUS UnknownOpcode                          = 0x10;
-    const STATUS TooManyArgumentsForCFunction           = 0x11;
-    const STATUS NotEnoughArguments                     = 0x12;
-    const STATUS CatchStackEmpty                        = 0x13;
-    const STATUS NoSuitableCatchTableFound              = 0x14;
+    static const STATUS Success                                = 0x00;
+    static const STATUS WriteFailedVariableIsConstant          = 0x01;
+    static const STATUS WriteFailedVariableUndefined           = 0x02;
+    static const STATUS WriteFailedOutOfBounds                 = 0x03;
+    static const STATUS WriteFailedTooDeep                     = 0x04;
+    static const STATUS RegisterFailedAlreadyDefined           = 0x05;
+    static const STATUS ReadFailedVariableUndefined            = 0x06;
+    static const STATUS ReadFailedOutOfBounds                  = 0x07;
+    static const STATUS ReadFailedTooDeep                      = 0x08;
+    static const STATUS UnknownSymbol                          = 0x09;
+    static const STATUS PopFailedStackEmpty                    = 0x0a;
+    static const STATUS UnspecifiedError                       = 0x0b;
+    static const STATUS CantReturnFromTopLevel                 = 0x0c;
+    static const STATUS UnknownThrowType                       = 0x0d;
+    static const STATUS IpOutOfBounds                          = 0x0e;
+    static const STATUS NotEnoughSpaceForInstructionArguments  = 0x0f;
+    static const STATUS UnknownOpcode                          = 0x10;
+    static const STATUS TooManyArgumentsForCFunction           = 0x11;
+    static const STATUS NotEnoughArguments                     = 0x12;
+    static const STATUS CatchStackEmpty                        = 0x13;
+    static const STATUS NoSuitableCatchTableFound              = 0x14;
 
     // Human-readable error messages
-    const std::string str[] = {
+    static const std::string str[] = {
       "Success",
       "Write failed: Field is a constant",
       "Write failed: Field doesn't exist",

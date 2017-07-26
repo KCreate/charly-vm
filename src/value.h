@@ -35,27 +35,27 @@ namespace Charly {
   namespace Value {
 
     // Different masks for the flags field in the Basic struct
-    const VALUE fType = 0x1f;
-    const VALUE fMark = 0x20;
+    static const VALUE fType = 0x1f;
+    static const VALUE fMark = 0x20;
 
     // Values used to represent some types
     namespace Type {
-      const VALUE DeadCell         = 0x00;
-      const VALUE Integer          = 0x01;
-      const VALUE Float            = 0x02;
-      const VALUE Numeric          = 0x03;
-      const VALUE Boolean          = 0x04;
-      const VALUE Null             = 0x05;
-      const VALUE Object           = 0x06;
-      const VALUE Array            = 0x07;
-      const VALUE Function         = 0x08;
-      const VALUE CFunction        = 0x09;
-      const VALUE Symbol           = 0x0a;
-      const VALUE Frame            = 0x0b;
-      const VALUE CatchTable       = 0x0c;
-      const VALUE InstructionBlock = 0x0d;
+      static const VALUE DeadCell         = 0x00;
+      static const VALUE Integer          = 0x01;
+      static const VALUE Float            = 0x02;
+      static const VALUE Numeric          = 0x03;
+      static const VALUE Boolean          = 0x04;
+      static const VALUE Null             = 0x05;
+      static const VALUE Object           = 0x06;
+      static const VALUE Array            = 0x07;
+      static const VALUE Function         = 0x08;
+      static const VALUE CFunction        = 0x09;
+      static const VALUE Symbol           = 0x0a;
+      static const VALUE Frame            = 0x0b;
+      static const VALUE CatchTable       = 0x0c;
+      static const VALUE InstructionBlock = 0x0d;
 
-      const std::string str[] = {
+      static const std::string str[] = {
         "DeadCell",
         "Integer",
         "Float",
@@ -98,17 +98,17 @@ namespace Charly {
     // This means that if VALUE is a pointer, the last 3 bits will be set to 0.
     // We can use this to our advantage to store some additional information
     // in there.
-    const VALUE IPointerMask  = 0b00111;
-    const VALUE IPointerFlag  = 0b00000;
-    const VALUE IIntegerMask  = 0b00001;
-    const VALUE IIntegerFlag  = 0b00001;
-    const VALUE IFloatMask    = 0b00011;
-    const VALUE IFloatFlag    = 0b00010;
-    const VALUE ISymbolMask   = 0b01111;
-    const VALUE ISymbolFlag   = 0b01100;
-    const VALUE False         = 0b00000;
-    const VALUE True          = 0b10100;
-    const VALUE Null          = 0b01000;
+    static const VALUE IPointerMask  = 0b00111;
+    static const VALUE IPointerFlag  = 0b00000;
+    static const VALUE IIntegerMask  = 0b00001;
+    static const VALUE IIntegerFlag  = 0b00001;
+    static const VALUE IFloatMask    = 0b00011;
+    static const VALUE IFloatFlag    = 0b00010;
+    static const VALUE ISymbolMask   = 0b01111;
+    static const VALUE ISymbolFlag   = 0b01100;
+    static const VALUE False         = 0b00000;
+    static const VALUE True          = 0b10100;
+    static const VALUE Null          = 0b01000;
 
     inline bool is_boolean(VALUE value) { return value == False || value == True; }
     inline bool is_integer(VALUE value) { return (value & IIntegerMask) == IIntegerFlag; }
