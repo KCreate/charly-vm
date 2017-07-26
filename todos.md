@@ -1,7 +1,5 @@
 # Todos
 
-# Fix some recursions inside the pretty_printer
-
 # Calling and object storage convention
 - Come up with a calling convention
   - Define where arguments end up inside an environment

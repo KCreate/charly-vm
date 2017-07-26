@@ -821,6 +821,12 @@ namespace Charly {
 
         case Type::Function: {
           Function* func = (Function *)value;
+
+          if (printed_before) {
+            io << "<Function:" << func << " ...>";
+            break;
+          }
+
           io << "<Function:" << func << " ";
           io << "name="; this->pretty_print(io, func->name); io << " ";
           io << "argc=" << func->argc; io << " ";
@@ -834,6 +840,12 @@ namespace Charly {
 
         case Type::CFunction: {
           CFunction* func = (CFunction *)value;
+
+          if (printed_before) {
+            io << "<Function:" << func << " ...>";
+            break;
+          }
+
           io << "<CFunction:" << func << " ";
           io << "name="; this->pretty_print(io, func->name); io << " ";
           io << "argc=" << func->argc; io << " ";
@@ -851,6 +863,12 @@ namespace Charly {
 
         case Type::Frame: {
           Frame* frame = (Frame *)value;
+
+          if (printed_before) {
+            io << "<Frame:" << frame << " ...>";
+            break;
+          }
+
           io << "<Frame:" << frame << " ";
           io << "parent=" << frame->parent << " ";
           io << "parent_environment_frame=" << frame->parent_environment_frame << " ";
