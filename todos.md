@@ -1,5 +1,44 @@
 # Todos
 
+# Refactoring and code structure
+- Remove nested namespaces, have only one namespace called Charly
+- Users should be able to use only parts of the VM (without the instruction decoder for example)
+- Memory Allocation
+  - The Garbage Collector can give you memory in two different ways
+    - Direct Reference to Cell
+    - Boxed reference, freed when box is deallocated
+      - Box can be invalidated and the cell can be unboxed
+- Classes
+  - Constants
+    - Contains all constants the vm exports
+    - Format: k + _ClassName_ + _ConstantName_
+      - e.g:
+        - kStringMaxSize
+        - kMemoryInitialStringHeapCount
+        - kMemoryInitialObjectHeapCount
+  - Machine
+    - Memory
+      - SymbolTable (mapping between integers and strings)
+      - CellPool (managed memory cells of variable size)
+      - StringCell, ObjectCell, ArrayCell, etc...
+    - CPU
+      - Object, Array etc.
+      - ControlFrame
+      - CatchTable
+    - CompilationContext
+      - Location
+      - Lexer
+        - Token
+      - Parser
+        - ASTNode (unchanged, sugared syntax tree)
+      - SemanticTransformer
+        - SemanticNode (desugared syntax tree with semantic information and compile-time transformations)
+        - Also does optimizations
+      - IRGenerator (transforms SemanticNodes into IRNodes)
+        - FunctionBuffer
+          - InstructionBuffer
+          - ChildBuffers (list of child function buffers)
+
 # Calling and object storage convention
 - Come up with a calling convention
   - Define where arguments end up inside an environment
@@ -84,6 +123,18 @@
   - The object doesn't need anything from the VM to be able to lookup a symbol (duh, thanks max)
   - If the object itself doesn't contain the property the objects parent class is checked
   - If the whole hierarchy doesn't contain the symbol, null is returned
+
+# Strings
+- Compilation
+  - Strings get encoded directly into the instruction stream
+    - They get copied into a string object by the vm
+    - Pro:
+      - Easier to compile
+      - Easier to garbage-collect
+      - Easier to execute
+    - Sub:
+      - Big strings = Big instructionblocks
+      - Hard to share strings
 
 # Memory ownership
 - Structs generally own the memory they point to
