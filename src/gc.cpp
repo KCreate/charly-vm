@@ -35,7 +35,7 @@ namespace Charly {
 
     Collector::Collector() {
       this->free_cell = NULL;
-      size_t heap_initial_count = GC::InitialHeapCount;
+      size_t heap_initial_count = kGCInitialHeapCount;
       this->heaps.reserve(heap_initial_count);
       while (heap_initial_count--) this->add_heap();
     }
@@ -45,7 +45,7 @@ namespace Charly {
       std::vector<Cell>& heap = this->heaps.back();
 
       // Add the cells for the heaps
-      size_t cell_count = GC::HeapCellCount;
+      size_t cell_count = kGCHeapCellCount;
       while (cell_count--) heap.emplace_back();
 
       // Initialize the cells and append to the free list
@@ -61,7 +61,7 @@ namespace Charly {
 
     void Collector::grow_heap() {
       size_t heap_count = this->heaps.size();
-      size_t heaps_to_add = (heap_count * GC::HeapCountGrowthFactor) - heap_count;
+      size_t heaps_to_add = (heap_count * kGCHeapCountGrowthFactor) - heap_count;
       while (heaps_to_add--) this->add_heap();
     }
 
@@ -78,39 +78,39 @@ namespace Charly {
     }
 
     void Collector::mark(VALUE value) {
-      if (!Value::is_pointer(value)) return;
-      if (Value::basics(value)->mark()) return;
+      if (!is_pointer(value)) return;
+      if (basics(value)->mark()) return;
 
-      Value::basics(value)->set_mark(true);
-      switch (Value::basics(value)->type()) {
-        case Value::Type::Object: {
-          auto obj = (Value::Object *)value;
+      basics(value)->set_mark(true);
+      switch (basics(value)->type()) {
+        case kTypeObject: {
+          auto obj = (Object *)value;
           this->mark(obj->klass);
           for (auto& obj_entry : *obj->container) this->mark(obj_entry.second);
           break;
         }
 
-        case Value::Type::Array: {
-          auto arr = (Value::Array *)value;
+        case kTypeArray: {
+          auto arr = (Array *)value;
           for (auto& arr_entry : *arr->data) this->mark(arr_entry);
           break;
         }
 
-        case Value::Type::Function: {
-          auto func = (Value::Function *)value;
+        case kTypeFunction: {
+          auto func = (Function *)value;
           this->mark((VALUE)func->context);
           this->mark((VALUE)func->block);
           if (func->bound_self_set) this->mark(func->bound_self);
           break;
         }
 
-        case Value::Type::CFunction: {
-          auto cfunc = (Value::CFunction *)value;
+        case kTypeCFunction: {
+          auto cfunc = (CFunction *)value;
           if (cfunc->bound_self_set) this->mark(cfunc->bound_self);
           break;
         }
 
-        case Value::Type::Frame: {
+        case kTypeFrame: {
           auto frame = (Machine::Frame *)value;
           this->mark((VALUE)frame->parent);
           this->mark((VALUE)frame->parent_environment_frame);
@@ -120,14 +120,14 @@ namespace Charly {
           break;
         }
 
-        case Value::Type::CatchTable: {
+        case kTypeCatchTable: {
           auto table = (Machine::CatchTable *)value;
           this->mark((VALUE)table->frame);
           this->mark((VALUE)table->parent);
           break;
         }
 
-        case Value::Type::InstructionBlock: {
+        case kTypeInstructionBlock: {
           auto block = (Machine::InstructionBlock *)value;
           for (auto& child_block : *block->child_blocks) {
             this->mark((VALUE)child_block);
@@ -150,12 +150,12 @@ namespace Charly {
       int freed_cells_count = 0;
       for (auto& heap : this->heaps) {
         for (auto& cell : heap) {
-          if (Value::basics((VALUE)&cell)->mark()) {
-            Value::basics((VALUE)&cell)->set_mark(false);
+          if (basics((VALUE)&cell)->mark()) {
+            basics((VALUE)&cell)->set_mark(false);
           } else {
             // This cell might already be on the free list
             // Make sure we don't double free cells
-            if (Value::basics((VALUE)&cell)->type() != Value::Type::DeadCell) {
+            if (basics((VALUE)&cell)->type() != kTypeDead) {
               freed_cells_count++;
               this->free(&cell);
             }
@@ -204,23 +204,23 @@ namespace Charly {
 
       // We don't actually free the cells that were allocated, we just
       // deallocat the properties inside these cells and memset(0)'em
-      switch (Value::basics((VALUE)cell)->type()) {
-        case Value::Type::Object: {
+      switch (basics((VALUE)cell)->type()) {
+        case kTypeObject: {
           delete cell->as.object.container;
           break;
         }
 
-        case Value::Type::Array: {
+        case kTypeArray: {
           delete cell->as.array.data;
           break;
         }
 
-        case Value::Type::Frame: {
+        case kTypeFrame: {
           delete cell->as.frame.environment;
           break;
         }
 
-        case Value::Type::InstructionBlock: {
+        case kTypeInstructionBlock: {
           delete cell->as.instructionblock.child_blocks;
           break;
         }

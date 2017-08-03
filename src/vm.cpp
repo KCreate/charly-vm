@@ -36,7 +36,6 @@
 
 namespace Charly {
   namespace Machine {
-    using namespace Value;
 
     Frame* VM::pop_frame() {
       Frame* frame = this->frames;
@@ -46,7 +45,7 @@ namespace Charly {
 
     Frame* VM::push_frame(VALUE self, Function* function, uint8_t* return_address) {
       GC::Cell* cell = this->gc->allocate(this);
-      cell->as.basic.set_type(Type::Frame);
+      cell->as.basic.set_type(kTypeFrame);
       cell->as.frame.parent = this->frames;
       cell->as.frame.parent_environment_frame = function->context;
       cell->as.frame.function = function;
@@ -59,7 +58,7 @@ namespace Charly {
       // Allocate and prefill local variable space
       cell->as.frame.environment = new std::vector<FrameEnvironmentEntry>;
       cell->as.frame.environment->reserve(lvar_count);
-      while (lvar_count--) cell->as.frame.environment->push_back({false, Value::Null});
+      while (lvar_count--) cell->as.frame.environment->push_back({false, kNull});
 
       // Append the frame
       this->frames = (Frame *)cell;
@@ -69,15 +68,18 @@ namespace Charly {
     InstructionBlock* VM::request_instruction_block(uint32_t lvarcount) {
       GC::Cell* cell = this->gc->allocate(this);
       new (&cell->as.instructionblock) InstructionBlock(lvarcount);
-      cell->as.basic.set_type(Type::InstructionBlock);
+      cell->as.basic.set_type(kTypeInstructionBlock);
       return (InstructionBlock *)cell;
     }
 
     VALUE VM::pop_stack() {
-      if (this->stack.size() == 0) this->panic(Status::PopFailedStackEmpty);
-      VALUE val = this->stack.back();
-      this->stack.pop_back();
-      return val;
+      VALUE value = kNull;
+      if (this->stack.size() > 0) {
+        value = this->stack.back();
+        this->stack.pop_back();
+      }
+
+      return value;
     }
 
     void VM::push_stack(VALUE value) {
@@ -86,7 +88,7 @@ namespace Charly {
 
     CatchTable* VM::push_catchtable(ThrowType type, uint8_t* address) {
       GC::Cell* cell = this->gc->allocate(this);
-      cell->as.basic.set_type(Type::CatchTable);
+      cell->as.basic.set_type(kTypeCatchTable);
       cell->as.catchtable.stacksize = this->stack.size();
       cell->as.catchtable.frame = this->frames;
       cell->as.catchtable.parent = this->catchstack;
@@ -97,7 +99,7 @@ namespace Charly {
     }
 
     CatchTable* VM::pop_catchtable() {
-      if (!this->catchstack) this->panic(Status::CatchStackEmpty);
+      if (!this->catchstack) this->panic(kStatusCatchStackEmpty);
       CatchTable* parent = this->catchstack->parent;
       this->gc->free((VALUE)this->catchstack);
       this->catchstack = parent;
@@ -155,7 +157,7 @@ namespace Charly {
 
     VALUE VM::create_symbol(std::string value) {
       size_t hashvalue = std::hash<std::string>{}(value);
-      VALUE symbol = (VALUE)((hashvalue & ~Value::ISymbolMask) | Value::ISymbolFlag);
+      VALUE symbol = (VALUE)((hashvalue & ~kSymbolMask) | kSymbolFlag);
 
       // Add this hash to the symbol_table if it doesn't exist
       if (this->symbol_table.find(symbol) == this->symbol_table.end()) {
@@ -167,8 +169,8 @@ namespace Charly {
 
     VALUE VM::create_object(uint32_t initial_capacity) {
       GC::Cell* cell = this->gc->allocate(this);
-      cell->as.basic.set_type(Type::Object);
-      cell->as.object.klass = Value::Null;
+      cell->as.basic.set_type(kTypeObject);
+      cell->as.object.klass = kNull;
       cell->as.object.container = new std::unordered_map<VALUE, VALUE>();
       cell->as.object.container->reserve(initial_capacity);
       return (VALUE)cell;
@@ -176,14 +178,14 @@ namespace Charly {
 
     VALUE VM::create_array(uint32_t initial_capacity) {
       GC::Cell* cell = this->gc->allocate(this);
-      cell->as.basic.set_type(Type::Array);
+      cell->as.basic.set_type(kTypeArray);
       cell->as.array.data = new std::vector<VALUE>();
       cell->as.array.data->reserve(initial_capacity);
       return (VALUE)cell;
     }
 
     VALUE VM::create_integer(int64_t value) {
-      return ((VALUE) value << 1) | Value::IIntegerFlag;
+      return ((VALUE) value << 1) | kIntegerFlag;
     }
 
     VALUE VM::create_float(double value) {
@@ -198,11 +200,11 @@ namespace Charly {
 
       t.d = value;
 
-      int bits = (int)((VALUE)(t.v >> 60) & Value::IPointerMask);
+      int bits = (int)((VALUE)(t.v >> 60) & kPointerMask);
 
       // I have no idee what's going on here, this was taken from ruby source code
       if (t.v != 0x3000000000000000 && !((bits - 3) & ~0x01)) {
-        return (BIT_ROTL(t.v, 3) & ~(VALUE)0x01) | Value::IFloatFlag;
+        return (BIT_ROTL(t.v, 3) & ~(VALUE)0x01) | kFloatFlag;
       } else if (t.v == 0) {
 
         // +0.0
@@ -211,33 +213,32 @@ namespace Charly {
 
       // Allocate from the GC
       GC::Cell* cell = this->gc->allocate(this);
-      cell->as.basic.set_type(Type::Float);
+      cell->as.basic.set_type(kTypeFloat);
       cell->as.flonum.float_value = value;
       return (VALUE)cell;
     }
 
     VALUE VM::create_function(VALUE name, uint32_t argc, bool anonymous, InstructionBlock* block) {
       GC::Cell* cell = this->gc->allocate(this);
-      cell->as.basic.set_type(Type::Function);
+      cell->as.basic.set_type(kTypeFunction);
       cell->as.function.name = name;
       cell->as.function.argc = argc;
       cell->as.function.context = this->frames;
       cell->as.function.block = block;
       cell->as.function.anonymous = anonymous;
       cell->as.function.bound_self_set = false;
-      cell->as.function.bound_self = Value::Null;
+      cell->as.function.bound_self = kNull;
       return (VALUE)cell;
     }
 
     VALUE VM::create_cfunction(VALUE name, uint32_t argc, void* pointer) {
       GC::Cell* cell = this->gc->allocate(this);
-      cell->as.basic.set_type(Type::CFunction);
+      cell->as.basic.set_type(kTypeCFunction);
       cell->as.cfunction.name = name;
       cell->as.cfunction.pointer = pointer;
       cell->as.cfunction.argc = argc;
       cell->as.cfunction.bound_self_set = false;
-      cell->as.cfunction.bound_self = Value::Null;
-
+      cell->as.cfunction.bound_self = kNull;
       return (VALUE)cell;
     }
 
@@ -246,7 +247,7 @@ namespace Charly {
     }
 
     double VM::float_value(VALUE value) {
-      if (!Value::is_special(value)) return ((Float *)value)->float_value;
+      if (!is_special(value)) return ((Float *)value)->float_value;
 
       union {
         double d;
@@ -254,12 +255,12 @@ namespace Charly {
       } t;
 
       VALUE b63 = (value >> 63);
-      t.v = BIT_ROTR((Value::IFloatFlag - b63) | (value & ~(VALUE)Value::IFloatMask), 3);
+      t.v = BIT_ROTR((kFloatFlag - b63) | (value & ~(VALUE)kFloatMask), 3);
       return t.d;
     }
 
     double VM::numeric_value(VALUE value) {
-      if (this->real_type(value) == Type::Float) {
+      if (this->real_type(value) == kTypeFloat) {
         return this->float_value(value);
       } else {
         return (double)this->integer_value(value);
@@ -267,26 +268,26 @@ namespace Charly {
     }
 
     bool VM::boolean_value(VALUE value) {
-      if (value == Value::False || value == Value::Null) return false;
+      if (value == kFalse || value == kNull) return false;
       return true;
     }
 
     VALUE VM::real_type(VALUE value) {
-      if (Value::is_boolean(value)) return Type::Boolean;
-      if (Value::is_null(value)) return Type::Null;
-      if (!Value::is_special(value)) return Value::basics(value)->type();
-      if (Value::is_integer(value)) return Type::Integer;
-      if (Value::is_ifloat(value)) return Type::Float;
-      if (Value::is_symbol(value)) return Type::Symbol;
-      return Type::DeadCell;
+      if (is_boolean(value)) return kTypeBoolean;
+      if (is_null(value)) return kNull;
+      if (!is_special(value)) return basics(value)->type();
+      if (is_integer(value)) return kTypeInteger;
+      if (is_ifloat(value)) return kTypeFloat;
+      if (is_symbol(value)) return kTypeSymbol;
+      return kTypeDead;
     }
 
     VALUE VM::type(VALUE value) {
       VALUE type = this->real_type(value);
 
-      if (type == Type::Float) return Type::Numeric;
-      if (type == Type::Integer) return Type::Numeric;
-      if (type == Type::CFunction) return Type::Function;
+      if (type == kTypeFloat) return kTypeNumeric;
+      if (type == kTypeInteger) return kTypeNumeric;
+      if (type == kTypeCFunction) return kTypeFunction;
       return type;
     }
 
@@ -338,7 +339,7 @@ namespace Charly {
       Frame* frame = this->frames;
       while (level--) {
         if (!frame->parent) {
-          return this->panic(Status::ReadFailedTooDeep);
+          return this->panic(kStatusReadFailedTooDeep);
         }
 
         frame = frame->parent;
@@ -346,7 +347,7 @@ namespace Charly {
 
       // Check if the index isn't out-of-bounds
       if (index >= frame->environment->size()) {
-        return this->panic(Status::ReadFailedOutOfBounds);
+        return this->panic(kStatusReadFailedOutOfBounds);
       }
 
       this->push_stack((* frame->environment)[index].value);
@@ -357,7 +358,7 @@ namespace Charly {
 
       // Handle datatypes that have their own data members
       switch (this->type(target)) {
-        case Type::Object: {
+        case kTypeObject: {
           Object* obj = (Object *)target;
 
           if (obj->container->count(symbol) == 1) {
@@ -372,7 +373,7 @@ namespace Charly {
       // Travel up the class chain and search for the right field
       // TODO: Implement this lol
 
-      this->push_stack(Value::Null);
+      this->push_stack(kNull);
     }
 
     void VM::op_setlocal(uint32_t index, uint32_t level) {
@@ -382,7 +383,7 @@ namespace Charly {
       Frame* frame = this->frames;
       while (level--) {
         if (!frame->parent) {
-          return this->panic(Status::ReadFailedTooDeep);
+          return this->panic(kStatusWriteFailedTooDeep);
         }
 
         frame = frame->parent;
@@ -392,10 +393,12 @@ namespace Charly {
       if (index < frame->environment->size()) {
         FrameEnvironmentEntry& entry = (* frame->environment)[index];
         if (entry.is_constant) {
-          this->panic(Status::WriteFailedVariableIsConstant);
+          this->panic(kStatusFieldIsConstant);
         } else {
           entry.value = value;
         }
+      } else {
+        this->panic(kStatusWriteFailedOutOfBounds);
       }
     }
 
@@ -405,21 +408,21 @@ namespace Charly {
 
       // Check if we can write to the value
       switch (this->type(target)) {
-        case Type::Object: {
+        case kTypeObject: {
           Object* obj = (Object *)target;
           (*obj->container)[symbol] = value;
           break;
         }
 
         default: {
-          this->panic(Status::UnspecifiedError);
+          this->panic(kStatusUnspecifiedError);
         }
       }
     }
 
     void VM::op_putself() {
       if (this->frames == NULL) {
-        this->push_stack(Value::Null);
+        this->push_stack(kNull);
         return;
       }
 
@@ -511,7 +514,7 @@ namespace Charly {
       // |   |  stack which are arguments
       // v   v
       // 1 + argc
-      if (this->stack.size() < (1 + argc)) this->panic(Status::PopFailedStackEmpty);
+      if (this->stack.size() < (1 + argc)) this->panic(kStatusStackEmpty);
 
       // Allocate enough space to copy the arguments into a temporary buffer
       // We need to keep them around until we have access to the new frames environment
@@ -533,14 +536,14 @@ namespace Charly {
       // or implicitly via the functions frame
       // If it's supplied via the frame hierarchy, we need to resolve it here
       // If not we simply pop it off the stack
-      VALUE target = Value::Null;
+      VALUE target = kNull;
       if (with_target) target = this->pop_stack();
 
       // Redirect to the correct handler
       switch (this->real_type(function)) {
 
         // Normal functions as defined via the user
-        case Type::Function: {
+        case kTypeFunction: {
           Function* tfunc = (Function *)function;
 
           // Where to source the self value from
@@ -562,7 +565,7 @@ namespace Charly {
               if (tfunc->context) {
                 target = tfunc->context->self;
               } else {
-                target = Value::Null;
+                target = kNull;
               }
             } else {
               if (with_target) {
@@ -572,7 +575,7 @@ namespace Charly {
                 if (tfunc->context) {
                   target = tfunc->context->self;
                 } else {
-                  target = Value::Null;
+                  target = kNull;
                 }
               }
             }
@@ -582,16 +585,13 @@ namespace Charly {
         }
 
         // Functions which wrap around a C function pointer
-        case Type::CFunction: {
+        case kTypeCFunction: {
           return this->call_cfunction((CFunction *)function, argc, arguments);
         }
 
         default: {
-
-          std::cout << Value::Type::str[this->real_type(function)] << " is not a function" << std::endl;
-
           // TODO: Handle as runtime error
-          this->panic(Status::UnspecifiedError);
+          this->panic(kStatusUnspecifiedError);
         }
       }
     }
@@ -600,7 +600,7 @@ namespace Charly {
 
       // Check if the function was called with enough arguments
       if (argc < function->argc) {
-        this->panic(Status::NotEnoughArguments);
+        this->panic(kStatusNotEnoughArguments);
       }
 
       // The return address is simply the instruction after the one we've been called from
@@ -629,10 +629,10 @@ namespace Charly {
 
       // Check if enough arguments have been passed
       if (argc < function->argc) {
-        this->panic(Status::NotEnoughArguments);
+        this->panic(kStatusNotEnoughArguments);
       }
 
-      VALUE rv = Value::Null;
+      VALUE rv = kNull;
 
       switch (argc) {
 
@@ -644,7 +644,7 @@ namespace Charly {
 
         // TODO: Expand to 15??
         default: {
-          this->panic(Status::TooManyArgumentsForCFunction);
+          this->panic(kStatusTooManyArgumentsForCFunction);
         }
       }
 
@@ -653,7 +653,7 @@ namespace Charly {
 
     void VM::op_return() {
       Frame* frame = this->frames;
-      if (!frame) this->panic(Status::CantReturnFromTopLevel);
+      if (!frame) this->panic(kStatusCantReturnFromTopLevel);
       this->frames = frame->parent;
       this->ip = frame->return_address;
     }
@@ -665,7 +665,7 @@ namespace Charly {
 
       CatchTable* table = this->find_catchtable(type);
       if (!table) {
-        this->panic(Status::NoSuitableCatchTableFound);
+        this->panic(kStatusNoSuitableCatchTableFound);
       }
 
       this->restore_catchtable(table);
@@ -675,7 +675,7 @@ namespace Charly {
       CatchTable* table = this->find_catchtable(ThrowType::Exception);
 
       if (!table) {
-        this->panic(Status::NoSuitableCatchTableFound);
+        this->panic(kStatusNoSuitableCatchTableFound);
       }
 
       this->restore_catchtable(table);
@@ -752,32 +752,32 @@ namespace Charly {
 
       switch (this->real_type(value)) {
 
-        case Type::DeadCell: {
+        case kTypeDead: {
           io << "<!!DEAD_CELL!!: " << (void *)value << ">";
           break;
         }
 
-        case Type::Integer: {
+        case kTypeInteger: {
           io << this->integer_value(value);
           break;
         }
 
-        case Type::Float: {
+        case kTypeFloat: {
           io << this->float_value(value);
           break;
         }
 
-        case Type::Boolean: {
-          io << (value == Value::True ? "true" : "false");
+        case kTypeBoolean: {
+          io << (value == kTrue ? "true" : "false");
           break;
         }
 
-        case Type::Null: {
+        case kTypeNull: {
           io << "null";
           break;
         }
 
-        case Type::Object: {
+        case kTypeObject: {
           Object* object = (Object *)value;
           io << "<Object:" << object;
 
@@ -797,8 +797,9 @@ namespace Charly {
           break;
         }
 
-        case Type::Array: {
+        case kTypeArray: {
           Array* array = (Array *)value;
+          io << "<Array:" << array << " ";
 
           // If this array was already printed, we avoid printing it again
           if (printed_before) {
@@ -815,11 +816,11 @@ namespace Charly {
             this->pretty_print(io, entry);
           }
 
-          io << "]";
+          io << "]>";
           break;
         }
 
-        case Type::Function: {
+        case kTypeFunction: {
           Function* func = (Function *)value;
 
           if (printed_before) {
@@ -838,11 +839,11 @@ namespace Charly {
           break;
         }
 
-        case Type::CFunction: {
+        case kTypeCFunction: {
           CFunction* func = (CFunction *)value;
 
           if (printed_before) {
-            io << "<Function:" << func << " ...>";
+            io << "<CFunction:" << func << " ...>";
             break;
           }
 
@@ -856,12 +857,12 @@ namespace Charly {
           break;
         }
 
-        case Type::Symbol: {
+        case kTypeSymbol: {
           io << this->lookup_symbol(value);
           break;
         }
 
-        case Type::Frame: {
+        case kTypeFrame: {
           Frame* frame = (Frame *)value;
 
           if (printed_before) {
@@ -879,7 +880,7 @@ namespace Charly {
           break;
         }
 
-        case Type::CatchTable: {
+        case kTypeCatchTable: {
           CatchTable* table = (CatchTable *)value;
           io << "<CatchTable:" << table << " ";
           io << "type=" << table->type << " ";
@@ -891,7 +892,7 @@ namespace Charly {
           break;
         }
 
-        case Type::InstructionBlock: {
+        case kTypeInstructionBlock: {
           InstructionBlock* block = (InstructionBlock *)value;
           io << "<InstructionBlock:" << block << " ";
           io << "lvarcount=" << block->lvarcount << " ";
@@ -977,7 +978,7 @@ namespace Charly {
         uint8_t* block_data = this->frames->function->block->data;
         uint32_t block_write_offset = this->frames->function->block->write_offset;
         if (this->ip + sizeof(Opcode) - 1 >= block_data + block_write_offset) {
-          this->panic(Status::IpOutOfBounds);
+          this->panic(kStatusIpOutOfBounds);
         }
 
         // Retrieve the current opcode
@@ -986,7 +987,7 @@ namespace Charly {
         // Check if there is enough space for instruction arguments
         uint32_t instruction_length = this->decode_instruction_length(opcode);
         if (this->ip + instruction_length >= (block_data + block_write_offset + sizeof(Opcode))) {
-          this->panic(Status::NotEnoughSpaceForInstructionArguments);
+          this->panic(kStatusNotEnoughSpaceForInstructionArguments);
         }
 
         // Redirect to specific instruction handler
@@ -1155,7 +1156,7 @@ namespace Charly {
 
           default: {
             std::cout << "Opcode: " << (void *)opcode << std::endl;
-            this->panic(Status::UnknownOpcode);
+            this->panic(kStatusUnknownOpcode);
           }
         }
 

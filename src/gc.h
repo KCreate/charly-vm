@@ -37,9 +37,9 @@
 
 namespace Charly {
   namespace GC {
-    static const size_t InitialHeapCount = 2;
-    static const size_t HeapCellCount = 256;
-    static const float HeapCountGrowthFactor = 2;
+    static const size_t kGCInitialHeapCount = 2;
+    static const size_t kGCHeapCellCount = 256;
+    static const float kGCHeapCountGrowthFactor = 2;
 
     // A single cell managed by the GC
     struct Cell {
@@ -48,12 +48,12 @@ namespace Charly {
           VALUE flags;
           Cell* next;
         } free;
-        Value::Basic basic;
-        Value::Object object;
-        Value::Array array;
-        Value::Float flonum;
-        Value::Function function;
-        Value::CFunction cfunction;
+        Basic basic;
+        Object object;
+        Array array;
+        Float flonum;
+        Function function;
+        CFunction cfunction;
         Machine::Frame frame;
         Machine::CatchTable catchtable;
         Machine::InstructionBlock instructionblock;

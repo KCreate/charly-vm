@@ -53,12 +53,10 @@ namespace Charly {
     struct Collector;
   }
 
-  namespace Value {
-    struct Basic;
-    struct Object;
-    struct Array;
-    struct Float;
-    struct Function;
-    struct CFunction;
-  }
+  struct Basic;
+  struct Object;
+  struct Array;
+  struct Float;
+  struct Function;
+  struct CFunction;
 }

@@ -33,7 +33,7 @@ namespace Charly {
     namespace Operators {
 
       VALUE add(VM* vm, VALUE left, VALUE right) {
-        if (vm->type(left) == Value::Type::Numeric && vm->type(right) == Value::Type::Numeric) {
+        if (vm->type(left) == kTypeNumeric && vm->type(right) == kTypeNumeric) {
           double nleft = vm->numeric_value(left);
           double nright = vm->numeric_value(right);
           return vm->create_float(nleft + nright);
@@ -43,8 +43,8 @@ namespace Charly {
       }
 
       bool truthyness(VALUE value) {
-        if (Value::is_null(value)) return false;
-        if (Value::is_false(value)) return false;
+        if (is_null(value)) return false;
+        if (is_false(value)) return false;
         return true;
       }
 

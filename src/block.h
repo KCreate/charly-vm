@@ -38,9 +38,9 @@ namespace Charly {
       VALUE flags; // Needed by GC
 
       // TODO: Tune these values a bit
-      static const uint32_t BLOCK_INITIAL_WRITE_OFFSET = 0;
-      static const uint32_t INITIAL_BLOCK_SIZE = 256;
-      static const uint32_t BLOCK_SIZE_GROWTH_FACTOR = 2;
+      static const uint32_t kBlockInitialWriteOffset = 0;
+      static const uint32_t kBlockInitialBlockSize = 256;
+      static const uint32_t kBlockSizeGrowthFactor = 2;
 
       uint32_t lvarcount;
       uint8_t* data;
@@ -49,9 +49,9 @@ namespace Charly {
       std::vector<InstructionBlock*>* child_blocks;
 
       InstructionBlock(uint32_t lvarcount) : lvarcount(lvarcount) {
-        this->data = (uint8_t *)calloc(INITIAL_BLOCK_SIZE, sizeof(uint8_t));
-        this->data_size = INITIAL_BLOCK_SIZE * sizeof(uint8_t);
-        this->write_offset = BLOCK_INITIAL_WRITE_OFFSET;
+        this->data = (uint8_t *)calloc(kBlockInitialBlockSize, sizeof(uint8_t));
+        this->data_size = kBlockInitialBlockSize * sizeof(uint8_t);
+        this->write_offset = kBlockInitialWriteOffset;
         this->child_blocks = new std::vector<InstructionBlock*>();
       }
 
@@ -64,8 +64,8 @@ namespace Charly {
       }
 
       void inline grow() {
-        this->data = (uint8_t *)realloc(this->data, this->data_size * BLOCK_SIZE_GROWTH_FACTOR);
-        this->data_size *= BLOCK_SIZE_GROWTH_FACTOR;
+        this->data = (uint8_t *)realloc(this->data, this->data_size * kBlockSizeGrowthFactor);
+        this->data_size *= kBlockSizeGrowthFactor;
       }
 
       void inline write_byte(uint8_t val) {

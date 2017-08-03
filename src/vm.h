@@ -56,7 +56,7 @@ namespace Charly {
 
         // Methods that operate on the VM's frames
         Frame* pop_frame();
-        Frame* push_frame(VALUE self, Value::Function* calling_function, uint8_t* return_address);
+        Frame* push_frame(VALUE self, Function* calling_function, uint8_t* return_address);
 
         // Instruction Blocks
         InstructionBlock* request_instruction_block(uint32_t lvarcount);
@@ -112,8 +112,8 @@ namespace Charly {
         void op_call(uint32_t argc);
         void op_callmember(uint32_t argc);
         void call(uint32_t argc, bool with_target);
-        void call_function(Value::Function* function, uint32_t argc, VALUE* argv, VALUE self);
-        void call_cfunction(Value::CFunction* function, uint32_t argc, VALUE* argv);
+        void call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self);
+        void call_cfunction(CFunction* function, uint32_t argc, VALUE* argv);
         void op_return();
         void op_throw(ThrowType type);
         void throw_exception(VALUE payload);
@@ -124,7 +124,7 @@ namespace Charly {
         void op_branchunless(int32_t offset);
 
         void inline panic(STATUS reason) {
-          std::cout << "Panic: " << Status::str[reason] << std::endl;
+          std::cout << "Panic: " << kStatusHumanReadable[reason] << std::endl;
           this->stacktrace(std::cout);
           this->catchstacktrace(std::cout);
           this->stackdump(std::cout);
