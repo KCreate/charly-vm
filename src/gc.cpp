@@ -31,208 +31,210 @@
 #include "vm.h"
 
 namespace Charly {
-  namespace GC {
+  MemoryManager::MemoryManager() {
+    this->free_cell = NULL;
+    size_t heap_initial_count = kGCInitialHeapCount;
+    this->heaps.reserve(heap_initial_count);
+    while (heap_initial_count--) this->add_heap();
+  }
 
-    Collector::Collector() {
-      this->free_cell = NULL;
-      size_t heap_initial_count = kGCInitialHeapCount;
-      this->heaps.reserve(heap_initial_count);
-      while (heap_initial_count--) this->add_heap();
-    }
-
-    void Collector::add_heap() {
-      this->heaps.emplace_back();
-      std::vector<Cell>& heap = this->heaps.back();
-
-      // Add the cells for the heaps
-      size_t cell_count = kGCHeapCellCount;
-      while (cell_count--) heap.emplace_back();
-
-      // Initialize the cells and append to the free list
-      Cell* last_cell = this->free_cell;
-      for (auto& cell : heap) {
-        memset(&cell, 0, sizeof(Cell));
-        cell.as.free.next = last_cell;
-        last_cell = &cell;
-      }
-
-      this->free_cell = last_cell;
-    }
-
-    void Collector::grow_heap() {
-      size_t heap_count = this->heaps.size();
-      size_t heaps_to_add = (heap_count * kGCHeapCountGrowthFactor) - heap_count;
-      while (heaps_to_add--) this->add_heap();
-    }
-
-    void Collector::register_temporary(VALUE value) {
-      this->temporaries.insert(value);
-    }
-
-    void Collector::unregister_temporary(VALUE value) {
-      auto tmp = this->temporaries.find(value);
-      assert(tmp != this->temporaries.end());
-      if (tmp != this->temporaries.end()) {
-        this->temporaries.erase(tmp);
+  MemoryManager::~MemoryManager() {
+    for (MemoryCell* heap : this->heaps) {
+      for (size_t i = 0; i < kGCHeapCellCount; i++) {
+        free(heap + i);
       }
     }
+  }
 
-    void Collector::mark(VALUE value) {
-      if (!is_pointer(value)) return;
-      if (basics(value)->mark()) return;
+  void MemoryManager::add_heap() {
+    MemoryCell* heap = (MemoryCell*)calloc(kGCHeapCellCount, sizeof(MemoryCell));
+    this->heaps.push_back(heap);
 
-      basics(value)->set_mark(true);
-      switch (basics(value)->type()) {
-        case kTypeObject: {
-          auto obj = (Object *)value;
-          this->mark(obj->klass);
-          for (auto& obj_entry : *obj->container) this->mark(obj_entry.second);
-          break;
+    // Add the newly allocated cells to the free list
+    MemoryCell* last_cell = this->free_cell;
+    for (size_t i = 0; i < kGCHeapCellCount; i++) {
+      heap[i].as.free.next = last_cell;
+      last_cell = heap + i;
+    }
+
+    this->free_cell = last_cell;
+  }
+
+  void MemoryManager::grow_heap() {
+    size_t heap_count = this->heaps.size();
+    size_t heaps_to_add = (heap_count * kGCHeapCountGrowthFactor) - heap_count;
+    while (heaps_to_add--) this->add_heap();
+  }
+
+  void MemoryManager::register_temporary(VALUE value) {
+    this->temporaries.insert(value);
+  }
+
+  void MemoryManager::unregister_temporary(VALUE value) {
+    auto tmp = this->temporaries.find(value);
+    assert(tmp != this->temporaries.end());
+    if (tmp != this->temporaries.end()) {
+      this->temporaries.erase(tmp);
+    }
+  }
+
+  void MemoryManager::mark(VALUE value) {
+    if (!is_pointer(value)) return;
+    if (basics(value)->mark()) return;
+
+    basics(value)->set_mark(true);
+    switch (basics(value)->type()) {
+      case kTypeObject: {
+        auto obj = (Object *)value;
+        this->mark(obj->klass);
+        for (auto& obj_entry : *obj->container) this->mark(obj_entry.second);
+        break;
+      }
+
+      case kTypeArray: {
+        auto arr = (Array *)value;
+        for (auto& arr_entry : *arr->data) this->mark(arr_entry);
+        break;
+      }
+
+      case kTypeFunction: {
+        auto func = (Function *)value;
+        this->mark((VALUE)func->context);
+        this->mark((VALUE)func->block);
+        if (func->bound_self_set) this->mark(func->bound_self);
+        break;
+      }
+
+      case kTypeCFunction: {
+        auto cfunc = (CFunction *)value;
+        if (cfunc->bound_self_set) this->mark(cfunc->bound_self);
+        break;
+      }
+
+      case kTypeFrame: {
+        auto frame = (Machine::Frame *)value;
+        this->mark((VALUE)frame->parent);
+        this->mark((VALUE)frame->parent_environment_frame);
+        this->mark((VALUE)frame->function);
+        this->mark(frame->self);
+        for (auto& lvar : *frame->environment) this->mark(lvar.value);
+        break;
+      }
+
+      case kTypeCatchTable: {
+        auto table = (Machine::CatchTable *)value;
+        this->mark((VALUE)table->frame);
+        this->mark((VALUE)table->parent);
+        break;
+      }
+
+      case kTypeInstructionBlock: {
+        auto block = (Machine::InstructionBlock *)value;
+        for (auto& child_block : *block->child_blocks) {
+          this->mark((VALUE)child_block);
         }
+        break;
+      }
+    }
+  }
 
-        case kTypeArray: {
-          auto arr = (Array *)value;
-          for (auto& arr_entry : *arr->data) this->mark(arr_entry);
-          break;
-        }
+  void MemoryManager::collect(Machine::VM* vm) {
+    std::cout << "#-- GC: Pause --#" << std::endl;
 
-        case kTypeFunction: {
-          auto func = (Function *)value;
-          this->mark((VALUE)func->context);
-          this->mark((VALUE)func->block);
-          if (func->bound_self_set) this->mark(func->bound_self);
-          break;
-        }
+    // Mark Phase
+    for (auto& stack_item : vm->stack) this->mark(stack_item);
+    for (auto& temp_item : this->temporaries) this->mark(temp_item);
+    this->mark((VALUE)vm->frames);
+    this->mark((VALUE)vm->catchstack);
 
-        case kTypeCFunction: {
-          auto cfunc = (CFunction *)value;
-          if (cfunc->bound_self_set) this->mark(cfunc->bound_self);
-          break;
-        }
+    // Sweep Phase
+    int freed_cells_count = 0;
+    for (MemoryCell* heap : this->heaps) {
+      for (size_t i = 0; i < kGCHeapCellCount; i++) {
+        MemoryCell* cell = heap + i;
+        if (basics((VALUE)cell)->mark()) {
+          basics((VALUE)cell)->set_mark(false);
+        } else {
 
-        case kTypeFrame: {
-          auto frame = (Machine::Frame *)value;
-          this->mark((VALUE)frame->parent);
-          this->mark((VALUE)frame->parent_environment_frame);
-          this->mark((VALUE)frame->function);
-          this->mark(frame->self);
-          for (auto& lvar : *frame->environment) this->mark(lvar.value);
-          break;
-        }
-
-        case kTypeCatchTable: {
-          auto table = (Machine::CatchTable *)value;
-          this->mark((VALUE)table->frame);
-          this->mark((VALUE)table->parent);
-          break;
-        }
-
-        case kTypeInstructionBlock: {
-          auto block = (Machine::InstructionBlock *)value;
-          for (auto& child_block : *block->child_blocks) {
-            this->mark((VALUE)child_block);
+          // This cell might already be on the free list
+          // Make sure we don't double free cells
+          if (basics((VALUE)cell)->type() != kTypeDead) {
+            freed_cells_count++;
+            this->free(cell);
           }
-          break;
         }
       }
     }
 
-    void Collector::collect(Machine::VM* vm) {
-      std::cout << "#-- GC: Pause --#" << std::endl;
+    std::cout << "#-- GC: Freed a total of " << freed_cells_count << " cells --#" << std::endl;
+    std::cout << "#-- GC: Finished --#" << std::endl;
+  }
 
-      // Mark Phase
-      for (auto& stack_item : vm->stack) this->mark(stack_item);
-      for (auto& temp_item : this->temporaries) this->mark(temp_item);
-      this->mark((VALUE)vm->frames);
-      this->mark((VALUE)vm->catchstack);
+  MemoryCell* MemoryManager::allocate(Machine::VM* vm) {
+    MemoryCell* cell = this->free_cell;
 
-      // Sweep Phase
-      int freed_cells_count = 0;
-      for (auto& heap : this->heaps) {
-        for (auto& cell : heap) {
-          if (basics((VALUE)&cell)->mark()) {
-            basics((VALUE)&cell)->set_mark(false);
-          } else {
-            // This cell might already be on the free list
-            // Make sure we don't double free cells
-            if (basics((VALUE)&cell)->type() != kTypeDead) {
-              freed_cells_count++;
-              this->free(&cell);
-            }
-          }
-        }
-      }
+    if (cell) {
+      this->free_cell = this->free_cell->as.free.next;
 
-      std::cout << "#-- GC: Freed a total of " << freed_cells_count << " cells --#" << std::endl;
-      std::cout << "#-- GC: Finished --#" << std::endl;
-    }
+      // If we've just allocated the last available cell,
+      // we do a collect in order to make sure we never get a failing
+      // allocation in the future
+      if (!this->free_cell) {
+        this->collect(vm);
 
-    Cell* Collector::allocate(Machine::VM* vm) {
-      Cell* cell = this->free_cell;
-
-      if (cell) {
-        this->free_cell = this->free_cell->as.free.next;
-
-        // If we've just allocated the last available cell,
-        // we do a collect in order to make sure we never get a failing
-        // allocation in the future
+        // If a collection didn't yield new available space,
+        // allocate more heaps
         if (!this->free_cell) {
-          this->collect(vm);
+          this->grow_heap();
 
-          // If a collection didn't yield new available space,
-          // allocate more heaps
           if (!this->free_cell) {
-            this->grow_heap();
-
-            if (!this->free_cell) {
-              std::cout << "Failed to expand heap, the next allocation will cause a segfault." << std::endl;
-            }
+            std::cout << "Failed to expand heap, the next allocation will cause a segfault." << std::endl;
           }
         }
       }
-
-      return cell;
     }
 
-    void Collector::free(Cell* cell) {
+    return cell;
+  }
 
-      // This cell might be inside the temporaries list,
-      // check if it's inside and remove it if it is
-      if (this->temporaries.count((VALUE)cell) == 1) {
-        this->unregister_temporary((VALUE)cell);
-      }
+  void MemoryManager::free(MemoryCell* cell) {
 
-      // We don't actually free the cells that were allocated, we just
-      // deallocat the properties inside these cells and memset(0)'em
-      switch (basics((VALUE)cell)->type()) {
-        case kTypeObject: {
-          delete cell->as.object.container;
-          break;
-        }
-
-        case kTypeArray: {
-          delete cell->as.array.data;
-          break;
-        }
-
-        case kTypeFrame: {
-          delete cell->as.frame.environment;
-          break;
-        }
-
-        case kTypeInstructionBlock: {
-          delete cell->as.instructionblock.child_blocks;
-          break;
-        }
-
-        default: {
-          break;
-        }
-      }
-
-      memset(cell, 0, sizeof(Cell));
-      cell->as.free.next = this->free_cell;
-      this->free_cell = cell;
+    // This cell might be inside the temporaries list,
+    // check if it's inside and remove it if it is
+    if (this->temporaries.count((VALUE)cell) == 1) {
+      this->unregister_temporary((VALUE)cell);
     }
+
+    // We don't actually free the cells that were allocated, we just
+    // deallocat the properties inside these cells and memset(0)'em
+    switch (basics((VALUE)cell)->type()) {
+      case kTypeObject: {
+        delete cell->as.object.container;
+        break;
+      }
+
+      case kTypeArray: {
+        delete cell->as.array.data;
+        break;
+      }
+
+      case kTypeFrame: {
+        delete cell->as.frame.environment;
+        break;
+      }
+
+      case kTypeInstructionBlock: {
+        delete cell->as.instructionblock.child_blocks;
+        break;
+      }
+
+      default: {
+        break;
+      }
+    }
+
+    memset(cell, 0, sizeof(MemoryCell));
+    cell->as.free.next = this->free_cell;
+    this->free_cell = cell;
   }
 }

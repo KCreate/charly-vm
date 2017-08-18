@@ -48,10 +48,8 @@ namespace Charly {
     struct InstructionBlock;
   }
 
-  namespace GC {
-    struct Cell;
-    struct Collector;
-  }
+  struct MemoryCell;
+  class MemoryManager;
 
   struct Basic;
   struct Object;

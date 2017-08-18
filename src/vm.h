@@ -38,10 +38,10 @@
 namespace Charly {
   namespace Machine {
     struct VM {
-      friend GC::Collector;
+      friend MemoryManager;
 
       public:
-        GC::Collector* gc;
+        MemoryManager* gc;
 
       private:
         std::vector<VALUE> stack;
@@ -137,7 +137,7 @@ namespace Charly {
         void pretty_print(std::ostream& io, VALUE value);
 
       public:
-        VM(GC::Collector* collector) : gc(collector) {
+        VM(MemoryManager* collector) : gc(collector) {
           this->frames = NULL;
           this->catchstack = NULL;
           this->ip = NULL;

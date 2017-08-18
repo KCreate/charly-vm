@@ -44,7 +44,7 @@ namespace Charly {
     }
 
     Frame* VM::push_frame(VALUE self, Function* function, uint8_t* return_address) {
-      GC::Cell* cell = this->gc->allocate(this);
+      MemoryCell* cell = this->gc->allocate(this);
       cell->as.basic.set_type(kTypeFrame);
       cell->as.frame.parent = this->frames;
       cell->as.frame.parent_environment_frame = function->context;
@@ -66,7 +66,7 @@ namespace Charly {
     }
 
     InstructionBlock* VM::request_instruction_block(uint32_t lvarcount) {
-      GC::Cell* cell = this->gc->allocate(this);
+      MemoryCell* cell = this->gc->allocate(this);
       new (&cell->as.instructionblock) InstructionBlock(lvarcount);
       cell->as.basic.set_type(kTypeInstructionBlock);
       return (InstructionBlock *)cell;
@@ -87,7 +87,7 @@ namespace Charly {
     }
 
     CatchTable* VM::push_catchtable(ThrowType type, uint8_t* address) {
-      GC::Cell* cell = this->gc->allocate(this);
+      MemoryCell* cell = this->gc->allocate(this);
       cell->as.basic.set_type(kTypeCatchTable);
       cell->as.catchtable.stacksize = this->stack.size();
       cell->as.catchtable.frame = this->frames;
@@ -168,7 +168,7 @@ namespace Charly {
     }
 
     VALUE VM::create_object(uint32_t initial_capacity) {
-      GC::Cell* cell = this->gc->allocate(this);
+      MemoryCell* cell = this->gc->allocate(this);
       cell->as.basic.set_type(kTypeObject);
       cell->as.object.klass = kNull;
       cell->as.object.container = new std::unordered_map<VALUE, VALUE>();
@@ -177,7 +177,7 @@ namespace Charly {
     }
 
     VALUE VM::create_array(uint32_t initial_capacity) {
-      GC::Cell* cell = this->gc->allocate(this);
+      MemoryCell* cell = this->gc->allocate(this);
       cell->as.basic.set_type(kTypeArray);
       cell->as.array.data = new std::vector<VALUE>();
       cell->as.array.data->reserve(initial_capacity);
@@ -212,14 +212,14 @@ namespace Charly {
       }
 
       // Allocate from the GC
-      GC::Cell* cell = this->gc->allocate(this);
+      MemoryCell* cell = this->gc->allocate(this);
       cell->as.basic.set_type(kTypeFloat);
       cell->as.flonum.float_value = value;
       return (VALUE)cell;
     }
 
     VALUE VM::create_function(VALUE name, uint32_t argc, bool anonymous, InstructionBlock* block) {
-      GC::Cell* cell = this->gc->allocate(this);
+      MemoryCell* cell = this->gc->allocate(this);
       cell->as.basic.set_type(kTypeFunction);
       cell->as.function.name = name;
       cell->as.function.argc = argc;
@@ -232,7 +232,7 @@ namespace Charly {
     }
 
     VALUE VM::create_cfunction(VALUE name, uint32_t argc, void* pointer) {
-      GC::Cell* cell = this->gc->allocate(this);
+      MemoryCell* cell = this->gc->allocate(this);
       cell->as.basic.set_type(kTypeCFunction);
       cell->as.cfunction.name = name;
       cell->as.cfunction.pointer = pointer;

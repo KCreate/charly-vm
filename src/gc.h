@@ -36,56 +36,47 @@
 #pragma once
 
 namespace Charly {
-  namespace GC {
-    static const size_t kGCInitialHeapCount = 2;
-    static const size_t kGCHeapCellCount = 256;
-    static const float kGCHeapCountGrowthFactor = 2;
+  static const size_t kGCInitialHeapCount = 2;
+  static const size_t kGCHeapCellCount = 256;
+  static const float kGCHeapCountGrowthFactor = 2;
 
-    // A single cell managed by the GC
-    struct Cell {
-      union U {
-        struct {
-          VALUE flags;
-          Cell* next;
-        } free;
-        Basic basic;
-        Object object;
-        Array array;
-        Float flonum;
-        Function function;
-        CFunction cfunction;
-        Machine::Frame frame;
-        Machine::CatchTable catchtable;
-        Machine::InstructionBlock instructionblock;
+  // This is the internal layout of a cell as managed by the MemoryHeap.
+  struct MemoryCell {
+    union {
+      struct {
+        VALUE flags;
+        MemoryCell* next;
+      } free;
+      Basic basic;
+      Object object;
+      Array array;
+      Float flonum;
+      Function function;
+      CFunction cfunction;
+      Machine::Frame frame;
+      Machine::CatchTable catchtable;
+      Machine::InstructionBlock instructionblock;
+    } as;
+  };
 
-        U() { memset(this, 0, sizeof(U)); }
-        U& operator=(const U& other) { memmove(this, &other, sizeof(U)); return *this; }
-        ~U() {};
-      } as;
+  class MemoryManager {
+    private:
+      MemoryCell* free_cell;
+      std::vector<MemoryCell*> heaps;
+      std::unordered_set<VALUE> temporaries;
 
-      inline Cell() { memset(this, 0, sizeof(Cell)); }
-      inline Cell(const Cell& cell) { *this = cell; }
-      ~Cell() {};
-    };
+      void mark(VALUE cell);
+      void add_heap();
+      void grow_heap();
 
-    struct Collector {
-      private:
-        Cell* free_cell;
-        std::vector<std::vector<Cell>> heaps;
-        std::unordered_set<VALUE> temporaries;
-
-        void mark(VALUE cell);
-        void add_heap();
-        void grow_heap();
-
-      public:
-        Collector();
-        Cell* allocate(Machine::VM* vm);
-        void collect(Machine::VM* vm);
-        void free(Cell* cell);
-        void inline free(VALUE value) { this->free((Cell*) value); }
-        void register_temporary(VALUE value);
-        void unregister_temporary(VALUE value);
-    };
-  }
+    public:
+      MemoryManager();
+      ~MemoryManager();
+      MemoryCell* allocate(Machine::VM* vm);
+      void collect(Machine::VM* vm);
+      void free(MemoryCell* cell);
+      void inline free(VALUE value) { this->free((MemoryCell*) value); }
+      void register_temporary(VALUE value);
+      void unregister_temporary(VALUE value);
+  };
 }

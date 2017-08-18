@@ -32,7 +32,7 @@ using namespace Charly::Machine;
 
 int main() {
 
-  GC::Collector gc;
+  MemoryManager gc;
   VM* vm = new VM(&gc);
   vm->run();
 
