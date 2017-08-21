@@ -37,7 +37,7 @@ namespace Charly {
   typedef uint16_t STATUS;
 
   namespace Machine {
-    struct VM;
+    class VM;
     struct Frame;
     struct FrameEnvironmentEntry;
     struct CatchTable;
@@ -45,7 +45,7 @@ namespace Charly {
     enum ThrowType : uint8_t;
     enum Opcode : uint8_t;
 
-    struct InstructionBlock;
+    class InstructionBlock;
   }
 
   struct MemoryCell;

@@ -37,7 +37,7 @@
 
 namespace Charly {
   namespace Machine {
-    struct VM {
+    class VM {
       friend MemoryManager;
 
       public:
