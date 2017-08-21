@@ -29,25 +29,21 @@
 #include "operators.h"
 
 namespace Charly {
-  namespace Machine {
-    namespace Operators {
-
-      VALUE add(VM* vm, VALUE left, VALUE right) {
-        if (vm->type(left) == kTypeNumeric && vm->type(right) == kTypeNumeric) {
-          double nleft = vm->numeric_value(left);
-          double nright = vm->numeric_value(right);
-          return vm->create_float(nleft + nright);
-        }
-
-        return vm->create_float(NAN);
+  namespace Operators {
+    VALUE add(VM* vm, VALUE left, VALUE right) {
+      if (vm->type(left) == kTypeNumeric && vm->type(right) == kTypeNumeric) {
+        double nleft = vm->numeric_value(left);
+        double nright = vm->numeric_value(right);
+        return vm->create_float(nleft + nright);
       }
 
-      bool truthyness(VALUE value) {
-        if (is_null(value)) return false;
-        if (is_false(value)) return false;
-        return true;
-      }
+      return vm->create_float(NAN);
+    }
 
+    bool truthyness(VALUE value) {
+      if (is_null(value)) return false;
+      if (is_false(value)) return false;
+      return true;
     }
   }
 }

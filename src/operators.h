@@ -31,38 +31,36 @@
 #pragma once
 
 namespace Charly {
-  namespace Machine {
-    namespace Operators {
+  namespace Operators {
 
-      // Arithmetics
-      VALUE add(VM* vm, VALUE left, VALUE right);
-      VALUE sub(VM* vm, VALUE left, VALUE right);
-      VALUE mul(VM* vm, VALUE left, VALUE right);
-      VALUE div(VM* vm, VALUE left, VALUE right);
-      VALUE mod(VM* vm, VALUE left, VALUE right);
-      VALUE pow(VM* vm, VALUE left, VALUE right);
-      VALUE uadd(VM* vm, VALUE value);
-      VALUE usub(VM* vm, VALUE value);
+    // Arithmetics
+    VALUE add(VM* vm, VALUE left, VALUE right);
+    VALUE sub(VM* vm, VALUE left, VALUE right);
+    VALUE mul(VM* vm, VALUE left, VALUE right);
+    VALUE div(VM* vm, VALUE left, VALUE right);
+    VALUE mod(VM* vm, VALUE left, VALUE right);
+    VALUE pow(VM* vm, VALUE left, VALUE right);
+    VALUE uadd(VM* vm, VALUE value);
+    VALUE usub(VM* vm, VALUE value);
 
-      // Comparison operators
-      VALUE eq(VM* vm, VALUE left, VALUE right);
-      VALUE neq(VM* vm, VALUE left, VALUE right);
-      VALUE lt(VM* vm, VALUE left, VALUE right);
-      VALUE gt(VM* vm, VALUE left, VALUE right);
-      VALUE le(VM* vm, VALUE left, VALUE right);
-      VALUE ge(VM* vm, VALUE left, VALUE right);
-      VALUE unot(VM* vm, VALUE value);
+    // Comparison operators
+    VALUE eq(VM* vm, VALUE left, VALUE right);
+    VALUE neq(VM* vm, VALUE left, VALUE right);
+    VALUE lt(VM* vm, VALUE left, VALUE right);
+    VALUE gt(VM* vm, VALUE left, VALUE right);
+    VALUE le(VM* vm, VALUE left, VALUE right);
+    VALUE ge(VM* vm, VALUE left, VALUE right);
+    VALUE unot(VM* vm, VALUE value);
 
-      // Bitwise operators
-      VALUE shr(VM* vm, VALUE left, VALUE right);
-      VALUE shr(VM* vm, VALUE left, VALUE right);
-      VALUE band(VM* vm, VALUE left, VALUE right);
-      VALUE bor(VM* vm, VALUE left, VALUE right);
-      VALUE bxor(VM* vm, VALUE left, VALUE right);
-      VALUE ubnot(VM* vm, VALUE value);
+    // Bitwise operators
+    VALUE shr(VM* vm, VALUE left, VALUE right);
+    VALUE shr(VM* vm, VALUE left, VALUE right);
+    VALUE band(VM* vm, VALUE left, VALUE right);
+    VALUE bor(VM* vm, VALUE left, VALUE right);
+    VALUE bxor(VM* vm, VALUE left, VALUE right);
+    VALUE ubnot(VM* vm, VALUE value);
 
-      bool truthyness(VALUE value);
-    }
+    bool truthyness(VALUE value);
   }
 }
 

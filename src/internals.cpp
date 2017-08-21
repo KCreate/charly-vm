@@ -33,32 +33,28 @@
 using namespace std;
 
 namespace Charly {
-  namespace Machine {
-    namespace Internals {
+  namespace Internals {
+    VALUE get_method(VM* vm, VALUE method_name) {
+      cout << "called get_method with "; vm->pretty_print(cout, method_name); cout << endl;
 
-      VALUE get_method(VM* vm, VALUE method_name) {
-        cout << "called get_method with "; vm->pretty_print(cout, method_name); cout << endl;
+      VALUE obj1 = vm->create_object(0);
+      vm->gc->register_temporary(obj1);
 
-        VALUE obj1 = vm->create_object(0);
-        vm->gc->register_temporary(obj1);
+      VALUE obj2 = vm->create_object(0);
+      vm->gc->register_temporary(obj2);
 
-        VALUE obj2 = vm->create_object(0);
-        vm->gc->register_temporary(obj2);
+      VALUE obj3 = vm->create_object(0);
+      vm->gc->register_temporary(obj3);
 
-        VALUE obj3 = vm->create_object(0);
-        vm->gc->register_temporary(obj3);
+      VALUE obj4 = vm->create_object(0);
+      vm->gc->register_temporary(obj4);
 
-        VALUE obj4 = vm->create_object(0);
-        vm->gc->register_temporary(obj4);
+      vm->gc->unregister_temporary(obj1);
+      vm->gc->unregister_temporary(obj2);
+      vm->gc->unregister_temporary(obj3);
+      vm->gc->unregister_temporary(obj4);
 
-        vm->gc->unregister_temporary(obj1);
-        vm->gc->unregister_temporary(obj2);
-        vm->gc->unregister_temporary(obj3);
-        vm->gc->unregister_temporary(obj4);
-
-        return vm->create_integer(25);
-      }
-
+      return vm->create_integer(25);
     }
   }
 }

@@ -53,9 +53,9 @@ namespace Charly {
       Float flonum;
       Function function;
       CFunction cfunction;
-      Machine::Frame frame;
-      Machine::CatchTable catchtable;
-      Machine::InstructionBlock instructionblock;
+      Frame frame;
+      CatchTable catchtable;
+      InstructionBlock instructionblock;
     } as;
   };
 
@@ -72,8 +72,8 @@ namespace Charly {
     public:
       MemoryManager();
       ~MemoryManager();
-      MemoryCell* allocate(Machine::VM* vm);
-      void collect(Machine::VM* vm);
+      MemoryCell* allocate(VM* vm);
+      void collect(VM* vm);
       void free(MemoryCell* cell);
       void inline free(VALUE value) { this->free((MemoryCell*) value); }
       void register_temporary(VALUE value);

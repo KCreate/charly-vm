@@ -112,7 +112,7 @@ namespace Charly {
       }
 
       case kTypeFrame: {
-        auto frame = (Machine::Frame *)value;
+        auto frame = (Frame *)value;
         this->mark((VALUE)frame->parent);
         this->mark((VALUE)frame->parent_environment_frame);
         this->mark((VALUE)frame->function);
@@ -122,14 +122,14 @@ namespace Charly {
       }
 
       case kTypeCatchTable: {
-        auto table = (Machine::CatchTable *)value;
+        auto table = (CatchTable *)value;
         this->mark((VALUE)table->frame);
         this->mark((VALUE)table->parent);
         break;
       }
 
       case kTypeInstructionBlock: {
-        auto block = (Machine::InstructionBlock *)value;
+        auto block = (InstructionBlock *)value;
         for (auto& child_block : *block->child_blocks) {
           this->mark((VALUE)child_block);
         }
@@ -138,7 +138,7 @@ namespace Charly {
     }
   }
 
-  void MemoryManager::collect(Machine::VM* vm) {
+  void MemoryManager::collect(VM* vm) {
     std::cout << "#-- GC: Pause --#" << std::endl;
 
     // Mark Phase
@@ -170,7 +170,7 @@ namespace Charly {
     std::cout << "#-- GC: Finished --#" << std::endl;
   }
 
-  MemoryCell* MemoryManager::allocate(Machine::VM* vm) {
+  MemoryCell* MemoryManager::allocate(VM* vm) {
     MemoryCell* cell = this->free_cell;
 
     if (cell) {

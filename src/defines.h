@@ -36,17 +36,14 @@ namespace Charly {
   typedef intptr_t SIGNED_VALUE;
   typedef uint16_t STATUS;
 
-  namespace Machine {
-    class VM;
-    struct Frame;
-    struct FrameEnvironmentEntry;
-    struct CatchTable;
+  class VM;
+  struct Frame;
+  struct FrameEnvironmentEntry;
+  struct CatchTable;
+  class InstructionBlock;
 
-    enum ThrowType : uint8_t;
-    enum Opcode : uint8_t;
-
-    class InstructionBlock;
-  }
+  enum ThrowType : uint8_t;
+  enum Opcode : uint8_t;
 
   struct MemoryCell;
   class MemoryManager;

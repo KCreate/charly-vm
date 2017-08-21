@@ -139,8 +139,8 @@ namespace Charly {
     Basic basic;
     VALUE name;
     uint32_t argc;
-    Machine::Frame* context;
-    Machine::InstructionBlock* block;
+    Frame* context;
+    InstructionBlock* block;
     bool anonymous;
     bool bound_self_set;
     VALUE bound_self;

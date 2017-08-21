@@ -28,7 +28,6 @@
 
 using namespace std;
 using namespace Charly;
-using namespace Charly::Machine;
 
 int main() {
 
