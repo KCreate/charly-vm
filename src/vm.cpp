@@ -959,7 +959,7 @@ namespace Charly {
       // Push a function onto the stack containing this block and call it
       this->op_putfunction(this->create_symbol("__charly_init"), block, false, 0);
       this->op_call(0);
-      this->frames->self = this->create_integer(1000); // TODO: Replace with actual global self value
+      this->frames->self = kNull;
     }
 
     void VM::run() {
