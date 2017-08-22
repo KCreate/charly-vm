@@ -35,6 +35,14 @@
 #include "operators.h"
 
 namespace Charly {
+
+  VM::~VM() {
+    this->frames = NULL;
+    this->catchstack = NULL;
+    this->stack.clear();
+    this->gc->collect(this);
+  }
+
   Frame* VM::pop_frame() {
     Frame* frame = this->frames;
     if (frame) this->frames = this->frames->parent;

@@ -1,7 +1,6 @@
 # Todos
 
 # Refactoring and code structure
-- Remove nested namespaces, have only one namespace called Charly
 - Users should be able to use only parts of the VM (without the instruction decoder for example)
 - Memory Allocation
   - The Garbage Collector can give you memory in two different ways
@@ -9,13 +8,6 @@
     - Boxed reference, freed when box is deallocated
       - Box can be invalidated and the cell can be unboxed
 - Classes
-  - Constants
-    - Contains all constants the vm exports
-    - Format: k + _ClassName_ + _ConstantName_
-      - e.g:
-        - kStringMaxSize
-        - kMemoryInitialStringHeapCount
-        - kMemoryInitialObjectHeapCount
   - Machine
     - Memory
       - SymbolTable (mapping between integers and strings)
@@ -153,16 +145,6 @@
 - Bound Functions
   - When binding a new self value to a function, the instruction block is copied
   - This is to keep the possibility to optimize the function once the self value is known
-
-# VM deallocation
-  - Deallocating the VM should destroy all the memory it can find,
-  - Any outside-user is responsible himself to correctly copy everything needed for further program execution
-  - VM deallocation order
-    - Flush the stack (not via the GC)
-    - Flush the top-level
-    - Tell the GC to destroy everything it can find (overwrite with 0)
-    - Deallocate member objects of the VM
-    - Deallocate vm itself
 
 # Mapping between JITed code and source file locations
 - Figure out how JavaScript source maps work and copy the shit out of it

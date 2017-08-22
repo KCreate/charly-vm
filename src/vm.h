@@ -144,6 +144,7 @@ namespace Charly {
 
         this->init_frames();
       }
+      ~VM();
       void init_frames();
       void run();
   };
