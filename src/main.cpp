@@ -31,27 +31,8 @@ using namespace Charly;
 
 int main() {
 
-  // Utf8 Buffer testing
-  Buffer test_buffer;
-
-  std::string message = "öäü";
-  test_buffer.write(message);
-
-  uint8_t data[] = { 0x48, 0x61, 0x6C, 0x6C, 0x6F, 0x20, 0x57, 0x65, 0x6C, 0x74 };
-  test_buffer.write(data, sizeof(data));
-
-  test_buffer.read(test_buffer);
-
-  size_t buffersize = test_buffer.size();
-
-  std::string buffer_content(test_buffer.buffer, test_buffer.used_bytesize);
-
-  std::cout << "Buffer content: " << buffer_content << std::endl;
-  std::cout << "Buffersize: " << buffersize << std::endl;
-
   // Initialize the VM
-  MemoryManager gc;
-  VM* vm = new VM(&gc);
+  VM* vm = new VM();
   vm->run();
 
   delete vm;

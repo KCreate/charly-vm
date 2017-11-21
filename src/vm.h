@@ -32,6 +32,7 @@
 #include "internals.h"
 #include "exception.h"
 #include "status.h"
+#include "gc.h"
 
 #pragma once
 
@@ -40,7 +41,7 @@ namespace Charly {
     friend MemoryManager;
 
     public:
-      MemoryManager* gc;
+      MemoryManager gc;
 
     private:
       std::vector<VALUE> stack;
@@ -136,7 +137,7 @@ namespace Charly {
       void pretty_print(std::ostream& io, VALUE value);
 
     public:
-      VM(MemoryManager* collector) : gc(collector) {
+      VM() {
         this->frames = NULL;
         this->catchstack = NULL;
         this->ip = NULL;
