@@ -6,9 +6,10 @@ CCFLAGS=-std=c++14 -g \
 				-Wno-long-long \
 				-Wno-variadic-macros \
 				-fexceptions \
-				-ferror-limit=10000
+				-ferror-limit=10000 \
+				-Ilibs
 OPT=-O0
-OBJS=build/main.o build/gc.o build/vm.o build/internals.o build/operators.o
+OBJS=build/main.o build/gc.o build/vm.o build/internals.o build/operators.o build/buffer.o
 
 all: objects
 	$(CC) $(OPT) $(OBJS) $(CCFLAGS) -lstdc++ -lm -o bin/vm

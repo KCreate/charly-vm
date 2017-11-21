@@ -378,7 +378,6 @@ namespace Charly {
 
     // Travel up the class chain and search for the right field
     // TODO: Implement this lol
-
     this->push_stack(kNull);
   }
 

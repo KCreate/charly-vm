@@ -24,6 +24,7 @@
  * SOFTWARE.
  */
 
+#include "buffer.h"
 #include "defines.h"
 #include "value.h"
 #include "status.h"
