@@ -25,11 +25,34 @@
  */
 
 #include "charly.h"
+#include "runflags.h"
 
 using namespace std;
 using namespace Charly;
 
-int main() {
+extern char** environ;
+
+int main(int argc, char** argv) {
+
+  // Handle all arguments
+  RunFlags flags(argc, argv, environ);
+
+  cout << "show_help = " << flags.show_help << endl;
+  cout << "show_version = " << flags.show_version << endl;
+  cout << "show_license = " << flags.show_license << endl;
+  cout << "dump_tokens = " << flags.dump_tokens << endl;
+  cout << "dump_ast = " << flags.dump_ast << endl;
+  cout << "skip_execution = " << flags.skip_execution << endl;
+
+  cout << "Arguments:" << endl;
+  for (auto const& arg: flags.arguments) {
+    cout << arg << endl;
+  }
+
+  cout << "Flags:" << endl;
+  for (auto const& flag: flags.flags) {
+    cout << flag << endl;
+  }
 
   // Initialize the VM
   VM* vm = new VM();
