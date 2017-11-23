@@ -75,7 +75,7 @@ namespace Charly {
       std::string lookup_symbol(VALUE symbol);
 
       // Methods to create new data types
-      VALUE create_symbol(std::string value);
+      VALUE create_symbol(const std::string& value);
       VALUE create_object(uint32_t initial_capacity);
       VALUE create_array(uint32_t initial_capacity);
       VALUE create_integer(int64_t value);

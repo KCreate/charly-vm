@@ -52,9 +52,10 @@ namespace Charly {
       // Parse environment variables
       for (char** current = envp; *current; current++) {
         std::string envstring(*current);
+        size_t string_delimiter_post = envstring.find(kEnvironmentStringDelimiter);
 
-        std::string key = envstring.substr(0, envstring.find(kEnvironmentStringDelimiter));
-        std::string value = envstring.substr(envstring.find(kEnvironmentStringDelimiter) + 1, envstring.size());
+        std::string key(envstring, 0, string_delimiter_post);
+        std::string value(envstring, string_delimiter_post, std::string::npos);
 
         this->environment[key] = value;
       }
@@ -144,7 +145,7 @@ namespace Charly {
     }
 
     // Append a flag to the internal flags array and set all corresponding flags
-    inline void appendFlag(std::string flag) {
+    inline void appendFlag(const std::string& flag) {
       if (!flag.compare("ast")) this->dump_ast = true;
       if (!flag.compare("tokens")) this->dump_tokens = true;
       if (!flag.compare("skipexec")) this->skip_execution = true;

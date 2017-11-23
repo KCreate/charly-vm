@@ -161,7 +161,7 @@ namespace Charly {
     return found_string->second; // second refers to the value
   }
 
-  VALUE VM::create_symbol(std::string value) {
+  VALUE VM::create_symbol(const std::string& value) {
     size_t hashvalue = std::hash<std::string>{}(value);
     VALUE symbol = (VALUE)((hashvalue & ~kSymbolMask) | kSymbolFlag);
 
