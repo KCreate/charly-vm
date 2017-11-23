@@ -43,9 +43,9 @@ namespace Charly {
 
   static const std::string kLicense =
     "MIT License \n"
-
+    "\n"
     "Copyright (c) 2017 Leonard Schütz \n"
-
+    "\n"
     "Permission is hereby granted, free of charge, to any person obtaining a copy \n"
     "of this software and associated documentation files (the \"Software\"), to deal \n"
     "in the Software without restriction, including without limitation the rights \n"
