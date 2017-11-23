@@ -9,7 +9,13 @@ CCFLAGS=-std=c++14 -g \
 				-ferror-limit=10000 \
 				-Ilibs
 OPT=-O0
-OBJS=build/main.o build/gc.o build/vm.o build/internals.o build/operators.o build/buffer.o
+OBJS=build/main.o \
+		 build/gc.o \
+		 build/vm.o \
+		 build/internals.o \
+		 build/operators.o \
+		 build/buffer.o \
+		 build/cli.o
 
 all: objects
 	$(CC) $(OPT) $(OBJS) $(CCFLAGS) -lstdc++ -lm -o bin/vm

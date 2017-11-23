@@ -25,6 +25,9 @@
  */
 
 #include <vector>
+#include <unordered_map>
+
+#pragma once
 
 namespace Charly {
   const std::string kEnvironmentStringDelimiter = "=";

@@ -24,13 +24,30 @@
  * SOFTWARE.
  */
 
+#include <iostream>
+#include "charly.h"
 #include "cli.h"
 
-using namespace Charly;
+namespace Charly {
+  int CLI::run() {
+    if (this->flags.show_help) {
+      std::cout << kHelpMessage << std::endl;
+      return 0;
+    }
 
-extern char** environ;
+    if (this->flags.show_license) {
+      std::cout << kLicense << std::endl;
+      return 0;
+    }
 
-int main(int argc, char** argv) {
-  CLI cli(argc, argv, environ);
-  return cli.run();
+    if (this->flags.show_version) {
+      std::cout << kVersion << std::endl;
+      return 0;
+    }
+
+    VM vm;
+    vm.run();
+
+    return 0;
+  }
 }
