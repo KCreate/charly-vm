@@ -41,7 +41,7 @@ namespace Charly {
     friend MemoryManager;
 
     public:
-      MemoryManager gc;
+      MemoryManager& gc;
 
     private:
       std::vector<VALUE> stack;
@@ -137,7 +137,7 @@ namespace Charly {
       void pretty_print(std::ostream& io, VALUE value);
 
     public:
-      VM() {
+      VM(MemoryManager& collector) : gc(collector) {
         this->frames = nullptr;
         this->catchstack = nullptr;
         this->ip = nullptr;

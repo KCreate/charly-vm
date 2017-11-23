@@ -45,7 +45,8 @@ namespace Charly {
       return 0;
     }
 
-    VM vm;
+    MemoryManager gc;
+    VM vm(gc);
 
     if (!this->flags.skip_execution) {
       vm.run();
