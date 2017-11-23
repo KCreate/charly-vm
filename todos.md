@@ -1,7 +1,48 @@
 # Todos
 
+# Execution pipeline
+- Managed by a single `Context` class.
+- Contains a `SymbolTable`, `StringPool` and `MemoryManager`
+- The whole program should be split into three important classes
+  - `Compiler`
+    - Takes source code as input and outputs data for the assembler
+      - Produces bytecode in an intermediate format
+        - Offsets for functions etc are not computed by the compiler
+      - Produces a symbol table with all the symbols created during compilation
+      - Produces a string pool containing all strings of the source code
+      - Produces a source map mapping different instructions to offsets in the source file
+    - Tries to optimize the code
+      - Optimized code isn't a goal but simple peep-hole optimisations can still be done
+  - `Assembler`
+    - Translates the intermediate charly bytecode into the binary form used in an InstructionBlock
+    - Calculates all offsets of blocks and strings
+  - `VM`
+    - Executes the resulting bytecode
+- Data should be creatable without the need of a VM object
+- The VM should be purely used for execution, not data creation
+- The VM's opcodes need to be changed to allow this
+  - PutFunction
+  - PutString
+  - PutCFunction (?)
+
+# Rethink symbols
+- Symbols should be a direct omni-directional mapping between an immediate-encoded `VALUE` and a string
+- We should be able to create new symbols without an instance of the machine
+  - Have constant symbols available for some commonly used strings
+  - The vm needs to be initialized with a set of symbols
+  - If a symbol wasn't found the string "null" is returned
+- Symbols aren't available in the Charly programming language. The are merely an implementation detail
+- How does the VM know about the string representation of symbols?
+
+# Instruction to add a local variable slot to the current frame's environment
+- Needed to support a REPL
+- Might be useful for other things?
+
+# Make sure the JIT compiler doesn't need to allocate anything via the VM
+- How are instructionblocks allocated?
+  - Remove the handling from the VM into a separate thing
+
 # Refactoring and code structure
-- Users should be able to use only parts of the VM (without the instruction decoder for example)
 - Memory Allocation
   - The Garbage Collector can give you memory in two different ways
     - Direct Reference to Cell
@@ -31,19 +72,36 @@
           - InstructionBuffer
           - ChildBuffers (list of child function buffers)
 
+# Reserved identifiers
+- Everywhere
+  - `self`
+- Only top-level context
+  - `ARGV`
+  - `IFLAGS`
+  - `ENV`
+  - `Charly`
+- Inside functions
+  - `__CHARLY_FUNCTION_ARGUMENTS`
+
 # Calling and object storage convention
 - Come up with a calling convention
   - Define where arguments end up inside an environment
-  - *arguments* field?
+  - `arguments` field?
     - Copy of the arguments which are inserted into the stack
     - Updating an argument in the environment won't update the value inside the *arguments* array.
+    - `__CHARLY_FUNCTION_ARGUMENTS` should be a reserved identifier
+    - `__CHARLY_FUNCTION_ARGUMENTS` will be rewritten to `ReadLocal 0, 0`
+    - `arguments` will also be rewritten to `ReadLocal 0, 0`
+      - If the user redeclares his own `arguments` lvar, it will be treated as a new lvar
+      - The user can't access `arguments` via the implicitly-inserted lvar anymore,
+        he/she has to use `__CHARLY_FUNCTION_ARGUMENTS` to access all function arguments
   - self value is being passed via the frames
     - You can't modify the self value, only read from it
   - Passing 3 arguments to a method which only takes 2 arguments, shouldn't put the last argument
     into the container. Only *argc* arguments should be inside the environment.
     - The rest of the arguments should still be accessible inside the *arguments* array
   - Offsets:
-    - 0x00    : *arguments* field
+    - 0x00    : `__CHARLY_FUNCTION_ARGUMENTS` field
     - 0x01    : arg1
     - 0x0n    : argn
     - 0x0n+1  : lvar 1
@@ -51,30 +109,13 @@
     - 0x0n+n  : lvar n
       - $0 is rewritten to whatever the first argument is
       - $1 is rewritten to whatever the second argument is
-      - in $n, if n is bigger than the method argc, it gets rewritten to *arguments[n]*
-
-# Make sure the JIT compiler doesn't need to allocate anything via the VM
-- How are instructionblocks allocated?
-  - Remove the handling from the VM into a separate thing
-
-# Instruction to add a local variable slot to the current frame's environment
-- Needed to support a REPL
-- Might be useful for other things?
+      - if $n is bigger than the method argc, it gets rewritten to an array index lookup on 0, 1
 
 # Think about the pros/cons of switching to NAN-boxing
 - See: https://en.wikipedia.org/wiki/IEEE_754-1985#NaN
 - See: https://wingolog.org/archives/2011/05/18/value-representation-in-javascript-implementations
 - See: https://leonardschuetz.ch/resources/documents/typeinfo.pdf
 - Floats can be encoded at compile-time not at runtime
-
-# Rethink symbols
-- Symbols should be a direct omni-directional mapping between an immediate-encoded `VALUE` and a string
-- We should be able to create new symbols without an instance of the machine
-  - Have constant symbols available for some commonly used strings
-  - The vm needs to be initialized with a set of symbols
-  - If a symbol wasn't found the string "null" is returned
-- Symbols aren't available in the Charly programming language. The are merely an implementation detail
-- How does the VM know about the string representation of symbols?
 
 # Testing
 - Unit-test single methods in the VM
@@ -161,13 +202,13 @@
       - Exception: Call uncaught exception method
       - Break and Continue:
         - Create an exception detailing what happened and rethrow it from the original throw location
+        - This should never happen and can be catched at an early level during parsing and semantic validation
 - Standard exception class
   - message
     - Simple string describing what the exception is about
   - trace
     - Array of strings being a dump of the frame hierarchy at the point where
       the exception was thrown.
-  - Ability to rethrow exceptions
 
 # Define deconstructors for some objects
 - Should normal destructors be used?
