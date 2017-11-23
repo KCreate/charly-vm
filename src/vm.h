@@ -138,9 +138,9 @@ namespace Charly {
 
     public:
       VM() {
-        this->frames = NULL;
-        this->catchstack = NULL;
-        this->ip = NULL;
+        this->frames = nullptr;
+        this->catchstack = nullptr;
+        this->ip = nullptr;
         this->halted = false;
 
         this->init_frames();

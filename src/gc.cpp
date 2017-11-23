@@ -32,7 +32,7 @@
 
 namespace Charly {
   MemoryManager::MemoryManager() {
-    this->free_cell = NULL;
+    this->free_cell = nullptr;
     size_t heap_initial_count = kGCInitialHeapCount;
     this->heaps.reserve(heap_initial_count);
     while (heap_initial_count--) this->add_heap();

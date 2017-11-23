@@ -37,8 +37,8 @@
 namespace Charly {
 
   VM::~VM() {
-    this->frames = NULL;
-    this->catchstack = NULL;
+    this->frames = nullptr;
+    this->catchstack = nullptr;
     this->stack.clear();
     this->gc.collect(this);
   }
@@ -298,7 +298,7 @@ namespace Charly {
   }
 
   Opcode VM::fetch_instruction() {
-    if (this->ip == NULL) return Opcode::Nop;
+    if (this->ip == nullptr) return Opcode::Nop;
     return *(Opcode *)this->ip;
   }
 
@@ -426,7 +426,7 @@ namespace Charly {
   }
 
   void VM::op_putself() {
-    if (this->frames == NULL) {
+    if (this->frames == nullptr) {
       this->push_stack(kNull);
       return;
     }
@@ -523,7 +523,7 @@ namespace Charly {
 
     // Allocate enough space to copy the arguments into a temporary buffer
     // We need to keep them around until we have access to the new frames environment
-    VALUE* arguments = NULL;
+    VALUE* arguments = nullptr;
     if (argc > 0) {
       arguments = (VALUE*)alloca(argc * sizeof(VALUE));
     }
@@ -609,10 +609,10 @@ namespace Charly {
     }
 
     // The return address is simply the instruction after the one we've been called from
-    // If the ip is NULL (non-existent instructions that are run at the beginning of the VM) we don't
+    // If the ip is nullptr (non-existent instructions that are run at the beginning of the VM) we don't
     // compute a return address
-    uint8_t* return_address = NULL;
-    if (this->ip != NULL) return_address = this->ip + this->decode_instruction_length(Opcode::Call);
+    uint8_t* return_address = nullptr;
+    if (this->ip != nullptr) return_address = this->ip + this->decode_instruction_length(Opcode::Call);
     Frame* frame = this->push_frame(self, function, return_address);
 
     // Copy the arguments from the temporary arguments buffer into

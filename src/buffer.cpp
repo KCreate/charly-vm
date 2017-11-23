@@ -105,7 +105,7 @@ namespace Charly {
 
   // Return the next utf8 codepoint
   uint32_t Buffer::next_utf8() {
-    if (this->read_pointer >= this->write_pointer || this->read_pointer == NULL) {
+    if (this->read_pointer >= this->write_pointer || this->read_pointer == nullptr) {
       return EOF;
     }
 
@@ -114,7 +114,7 @@ namespace Charly {
 
   // Peek the next utf8 codepoint
   uint32_t Buffer::peek_next_utf8() {
-    if (this->read_pointer >= this->write_pointer || this->read_pointer == NULL) {
+    if (this->read_pointer >= this->write_pointer || this->read_pointer == nullptr) {
       return EOF;
     }
 
@@ -123,7 +123,7 @@ namespace Charly {
 
   // Return the previous utf8 codepoint
   uint32_t Buffer::prior_utf8() {
-    if (this->read_pointer == NULL || this->read_pointer < this->buffer) {
+    if (this->read_pointer == nullptr || this->read_pointer < this->buffer) {
       return EOF;
     }
 
@@ -140,7 +140,7 @@ namespace Charly {
       return EOF;
     }
 
-    if (this->read_pointer == NULL) {
+    if (this->read_pointer == nullptr) {
       return EOF;
     }
 

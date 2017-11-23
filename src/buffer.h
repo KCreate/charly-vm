@@ -48,18 +48,18 @@ namespace Charly {
     public:
       Buffer() {
         this->buffer = new char[kInitialBufferSize];
-        this->read_pointer = NULL;
+        this->read_pointer = nullptr;
         this->write_pointer = this->buffer;
         this->bytesize = kInitialBufferSize;
         this->used_bytesize = 0;
       };
 
       ~Buffer() {
-        if (this->buffer != NULL) delete[] this->buffer;
+        if (this->buffer != nullptr) delete[] this->buffer;
       }
 
       Buffer(const Buffer& other) {
-        if (this->buffer != NULL) delete this->buffer;
+        if (this->buffer != nullptr) delete this->buffer;
         this->buffer = new char[other.bytesize];
         this->read_pointer = this->buffer + (other.read_pointer - other.buffer);
         this->write_pointer = this->buffer + (other.write_pointer - other.buffer);
