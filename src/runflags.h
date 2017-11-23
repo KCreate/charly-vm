@@ -40,23 +40,28 @@ namespace Charly {
     std::unordered_map<std::string, std::string> environment;
 
     // Parsed flags
-    bool show_help;
-    bool show_version;
-    bool show_license;
-    bool dump_tokens;
-    bool dump_ast;
-    bool skip_execution;
+    bool show_help = false;
+    bool show_version = false;
+    bool show_license = false;
+    bool dump_tokens = false;
+    bool dump_ast = false;
+    bool skip_execution = false;
 
     RunFlags(int argc, char** argv, char** envp) {
-      if (argc == 1) return;
 
-      // Default initialize all flags
-      this->show_help = false;
-      this->show_version = false;
-      this->show_license = false;
-      this->dump_tokens = false;
-      this->dump_ast = false;
-      this->skip_execution = false;
+      // Parse environment variables
+      for (char** current = envp; *current; current++) {
+        std::string envstring(*current);
+
+        std::string key = envstring.substr(0, envstring.find(kEnvironmentStringDelimiter));
+        std::string value = envstring.substr(envstring.find(kEnvironmentStringDelimiter) + 1, envstring.size());
+
+        this->environment[key] = value;
+      }
+
+      // If no arguments were passed we can safely skip the rest of this code
+      // It only parses arguments and flags
+      if (argc == 1) return;
 
       bool append_to_flags = false;
 
@@ -135,16 +140,6 @@ namespace Charly {
         }
 
         this->arguments.push_back(arg);
-      }
-
-      // Parse environment variables
-      for (char** current = envp; *current; current++) {
-        std::string envstring(*current);
-
-        std::string key = envstring.substr(0, envstring.find(kEnvironmentStringDelimiter));
-        std::string value = envstring.substr(envstring.find(kEnvironmentStringDelimiter) + 1, envstring.size());
-
-        this->environment[key] = value;
       }
     }
 
