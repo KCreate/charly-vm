@@ -48,6 +48,7 @@ namespace Charly {
     bool skip_execution;
 
     RunFlags(int argc, char** argv, char** envp) {
+      if (argc == 1) return;
 
       // Default initialize all flags
       this->show_help = false;
@@ -71,7 +72,7 @@ namespace Charly {
         // This would be parsed in two steps
         // -f example
         if (append_to_flags) {
-          this->flags.push_back(arg);
+          this->appendFlag(arg);
           append_to_flags = false;
           continue;
         }
@@ -128,7 +129,7 @@ namespace Charly {
           }
 
           if (arg[0] == '-' && arg[1] == 'f') {
-            this->flags.push_back(arg.substr(1, arg.size()));
+            this->appendFlag(arg.substr(2, arg.size()));
             continue;
           }
         }
@@ -145,7 +146,14 @@ namespace Charly {
 
         this->environment[key] = value;
       }
+    }
 
+    // Append a flag to the internal flags array and set all corresponding flags
+    inline void appendFlag(std::string flag) {
+      if (!flag.compare("ast")) this->dump_ast = true;
+      if (!flag.compare("tokens")) this->dump_tokens = true;
+      if (!flag.compare("skipexec")) this->skip_execution = true;
+      this->flags.push_back(flag);
     }
   };
 }

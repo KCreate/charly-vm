@@ -46,7 +46,10 @@ namespace Charly {
     }
 
     VM vm;
-    vm.run();
+
+    if (!this->flags.skip_execution) {
+      vm.run();
+    }
 
     return 0;
   }
