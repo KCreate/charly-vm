@@ -26,33 +26,21 @@
 
 #include <iostream>
 
-#include "cli.h"
-#include "charly.h"
-#include "context.h"
+#include "gc.h"
+#include "vm.h"
+
+#pragma once
 
 namespace Charly {
-  int CLI::run() {
-    if (this->flags.show_help) {
-      std::cout << kHelpMessage << std::endl;
-      return 0;
-    }
+  class Context {
+      MemoryManager gc;
+      VM vm;
 
-    if (this->flags.show_license) {
-      std::cout << kLicense << std::endl;
-      return 0;
-    }
+    public:
+      int status;
 
-    if (this->flags.show_version) {
-      std::cout << kVersion << std::endl;
-      return 0;
-    }
-
-    // The context holds the main memory manager, symboltable and stringpool.
-    Context context;
-    if (!this->flags.skip_execution) {
-      context.run();
-    }
-
-    return context.status;
-  }
+    public:
+      Context() : vm(gc) {}
+      void run();
+  };
 }

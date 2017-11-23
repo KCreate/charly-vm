@@ -15,7 +15,8 @@ OBJS=build/main.o \
 		 build/internals.o \
 		 build/operators.o \
 		 build/buffer.o \
-		 build/cli.o
+		 build/cli.o \
+		 build/context.o
 
 all: objects
 	$(CC) $(OPT) $(OBJS) $(CCFLAGS) -lstdc++ -lm -o bin/vm

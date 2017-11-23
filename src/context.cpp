@@ -24,35 +24,11 @@
  * SOFTWARE.
  */
 
-#include <iostream>
-
-#include "cli.h"
-#include "charly.h"
 #include "context.h"
 
 namespace Charly {
-  int CLI::run() {
-    if (this->flags.show_help) {
-      std::cout << kHelpMessage << std::endl;
-      return 0;
-    }
-
-    if (this->flags.show_license) {
-      std::cout << kLicense << std::endl;
-      return 0;
-    }
-
-    if (this->flags.show_version) {
-      std::cout << kVersion << std::endl;
-      return 0;
-    }
-
-    // The context holds the main memory manager, symboltable and stringpool.
-    Context context;
-    if (!this->flags.skip_execution) {
-      context.run();
-    }
-
-    return context.status;
+  void Context::run() {
+    this->vm.run();
+    this->status = 0;
   }
 }
