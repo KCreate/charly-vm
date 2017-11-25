@@ -59,7 +59,7 @@ namespace Charly {
       Frame* push_frame(VALUE self, Function* calling_function, uint8_t* return_address);
 
       // Instruction Blocks
-      InstructionBlock* request_instruction_block(uint32_t lvarcount);
+      InstructionBlock& request_instruction_block(uint32_t lvarcount);
 
       // Stack manipulation
       VALUE pop_stack();

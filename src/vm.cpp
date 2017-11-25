@@ -71,11 +71,11 @@ namespace Charly {
     return (Frame *)cell;
   }
 
-  InstructionBlock* VM::request_instruction_block(uint32_t lvarcount) {
+  InstructionBlock& VM::request_instruction_block(uint32_t lvarcount) {
     MemoryCell* cell = this->gc.allocate(this);
     new (&cell->as.instructionblock) InstructionBlock(lvarcount);
     cell->as.basic.set_type(kTypeInstructionBlock);
-    return (InstructionBlock *)cell;
+    return *(InstructionBlock *)cell;
   }
 
   VALUE VM::pop_stack() {
@@ -925,44 +925,44 @@ namespace Charly {
     // This way it can still access the global scope, but not register any
     // new variables or constants into it.
     uint32_t global_var_count = 1;
-    auto block = this->request_instruction_block(global_var_count);
+    InstructionBlock& block = this->request_instruction_block(global_var_count);
 
     // let Charly = {
     //   internals = {
     //     get_method = (CFunction *)Internals::get_method
     //   }
     // };
-    block->write_putcfunction(this->create_symbol("get_method"), (void *)Internals::get_method, 1);
-    block->write_putvalue(this->create_symbol("get_method"));
-    block->write_puthash(1);
-    block->write_putvalue(this->create_symbol("internals"));
-    block->write_puthash(1);
-    block->write_setlocal(0, 0);
+    block.write_putcfunction(this->create_symbol("get_method"), (void *)Internals::get_method, 1);
+    block.write_putvalue(this->create_symbol("get_method"));
+    block.write_puthash(1);
+    block.write_putvalue(this->create_symbol("internals"));
+    block.write_puthash(1);
+    block.write_setlocal(0, 0);
 
     // [[{}, { boye = 250 }], 25, 25, 25, 25]
-    block->write_puthash(0);
-    block->write_puthash(0);
-    block->write_dup();
-    block->write_putvalue(this->create_integer(250));
-    block->write_setmembersymbol(this->create_symbol("boye"));
-    block->write_putarray(2);
-    block->write_putfloat(25);
-    block->write_putfloat(25);
-    block->write_putfloat(25);
-    block->write_putfloat(25);
-    block->write_putarray(5);
+    block.write_puthash(0);
+    block.write_puthash(0);
+    block.write_dup();
+    block.write_putvalue(this->create_integer(250));
+    block.write_setmembersymbol(this->create_symbol("boye"));
+    block.write_putarray(2);
+    block.write_putfloat(25);
+    block.write_putfloat(25);
+    block.write_putfloat(25);
+    block.write_putfloat(25);
+    block.write_putarray(5);
 
     // Charly.internals.get_method(:"hello_world")
-    block->write_readlocal(0, 0);
-    block->write_readmembersymbol(this->create_symbol("internals"));
-    block->write_readmembersymbol(this->create_symbol("get_method"));
-    block->write_putvalue(this->create_symbol("hello world"));
-    block->write_call(1);
+    block.write_readlocal(0, 0);
+    block.write_readmembersymbol(this->create_symbol("internals"));
+    block.write_readmembersymbol(this->create_symbol("get_method"));
+    block.write_putvalue(this->create_symbol("hello world"));
+    block.write_call(1);
 
-    block->write_byte(Opcode::Halt);
+    block.write_byte(Opcode::Halt);
 
     // Push a function onto the stack containing this block and call it
-    this->op_putfunction(this->create_symbol("__charly_init"), block, false, 0);
+    this->op_putfunction(this->create_symbol("__charly_init"), &block, false, 0);
     this->op_call(0);
     this->frames->self = kNull;
   }

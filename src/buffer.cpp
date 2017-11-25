@@ -30,63 +30,36 @@
 namespace Charly {
 
   // Append a memory buffer
-  char* Buffer::write(uint8_t* data, size_t length) {
+  Buffer& Buffer::read(char* data, size_t length) {
     this->check_enough_size(length);
 
     std::strncpy(this->write_pointer, (char*)data, length);
     this->write_pointer += length;
     this->used_bytesize += length;
 
-    return this->write_pointer;
+    return *this;
   }
 
   // Append a string
-  char* Buffer::write(std::string& data) {
+  Buffer& Buffer::read(std::string& data) {
     this->check_enough_size(data.size());
 
     std::strncpy(this->write_pointer, data.c_str(), data.size());
     this->write_pointer += data.size();
     this->used_bytesize += data.size();
 
-    return this->write_pointer;
-  }
-
-  // Read a line from an input stream
-  char* Buffer::readline(std::ifstream& data) {
-    std::string line;
-    if (data.is_open()) {
-      std::getline(data, line);
-
-      char* first = &(line.front());
-      char* last = &(line.back());
-
-      // Ensure that there are no invalid utf8 sequences
-      // left in the line
-      if (!this->is_valid_utf8(first, last)) {
-        std::string tmp;
-        utf8::replace_invalid(first, last, std::back_inserter(tmp));
-        line = tmp;
-      }
-
-      this->check_enough_size(line.size());
-
-      std::strncpy(this->write_pointer, line.c_str(), line.size());
-      this->write_pointer += line.size();
-      this->used_bytesize += line.size();
-    }
-
-    return this->write_pointer;
+    return *this;
   }
 
   // Append the contents of another buffer
-  char* Buffer::read(const Buffer& data) {
+  Buffer& Buffer::read(const Buffer& data) {
     this->check_enough_size(data.used_bytesize);
 
     std::strncpy(this->write_pointer, data.buffer, data.used_bytesize);
     this->write_pointer += data.used_bytesize;
     this->used_bytesize += data.used_bytesize;
 
-    return this->write_pointer;
+    return *this;
   }
 
   // Append a utf8 codepoint
@@ -155,7 +128,7 @@ namespace Charly {
   }
 
   // Return the amount of codepoints inside the buffer
-  size_t Buffer::size() {
+  size_t Buffer::charcount() {
     char* used_buffer_end = this->buffer + this->used_bytesize;
     return utf8::distance(this->buffer, used_buffer_end);
   }
@@ -175,27 +148,35 @@ namespace Charly {
   }
 
   // Check if there is enough size and if not allocate more memory
-  bool Buffer::check_enough_size(size_t size) {
+  void Buffer::check_enough_size(size_t size) {
     if (this->used_bytesize + size >= this->bytesize) {
-      this->grow_buffer_size();
+      this->grow_buffer_size(this->used_bytesize + size);
     }
-
-    return true;
   }
 
   // Allocate more memory
-  void Buffer::grow_buffer_size() {
+  void Buffer::grow_buffer_size(size_t minimum_size) {
 
     // Allocate the new buffer
     size_t old_size = this->bytesize;
-    size_t new_size = old_size * kBufferGrowthBytes;
-    char* buffer = new char[new_size];
-    std::strncpy(buffer, this->buffer, this->used_bytesize);
+    size_t new_size = old_size * kBufferGrowthFactor;
 
-    // Update
-    this->read_pointer = buffer + (this->read_pointer - this->buffer);
-    this->buffer = buffer;
+    // Double the buffers size until we have at least *minimum_bytes* reserved
+    while (new_size < minimum_size) {
+      new_size *= kBufferGrowthFactor;
+    }
+
+    char* new_buffer = (char *)malloc(sizeof(char) * new_size);
+    std::strncpy(new_buffer, this->buffer, this->used_bytesize);
+
+    // Update offset pointers
+    this->read_pointer = new_buffer + (this->read_pointer - this->buffer);
+    this->write_pointer = new_buffer + (this->write_pointer - this->buffer);
     this->bytesize = new_size;
+
+    // Deallocate the old buffer
+    free(this->buffer);
+    this->buffer = new_buffer;
   }
 
 }

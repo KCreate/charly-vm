@@ -25,16 +25,13 @@
  */
 
 #include <cstring>
-#include <iostream>
-#include <fstream>
 #include <utf8/utf8.h>
 
 #pragma once
 
 namespace Charly {
   const size_t kInitialBufferSize = 128;
-  const double kBufferGrowthBytes = 2.0;
-  const uint8_t kByteOrderMark[] = {0xef, 0xbb, 0xbf};
+  const size_t kBufferGrowthFactor = 2;
 
   // Handles UTF8 encoded text
   class Buffer {
@@ -47,20 +44,20 @@ namespace Charly {
 
     public:
       Buffer() {
-        this->buffer = new char[kInitialBufferSize];
-        this->read_pointer = nullptr;
+        this->buffer = (char *)malloc(sizeof(char) * kInitialBufferSize);
+        this->read_pointer = this->buffer;
         this->write_pointer = this->buffer;
         this->bytesize = kInitialBufferSize;
         this->used_bytesize = 0;
       };
 
       ~Buffer() {
-        if (this->buffer != nullptr) delete[] this->buffer;
+        if (this->buffer != nullptr) free(this->buffer);
       }
 
       Buffer(const Buffer& other) {
-        if (this->buffer != nullptr) delete this->buffer;
-        this->buffer = new char[other.bytesize];
+        if (this->buffer != nullptr) free(this->buffer);
+        this->buffer = (char *)malloc(sizeof(char) * other.bytesize);
         this->read_pointer = this->buffer + (other.read_pointer - other.buffer);
         this->write_pointer = this->buffer + (other.write_pointer - other.buffer);
         this->bytesize = other.bytesize;
@@ -70,8 +67,8 @@ namespace Charly {
 
       Buffer& operator=(const Buffer& other) {
         if (this != &other) {
-          delete[] this->buffer;
-          this->buffer = new char[other.bytesize];
+          free(this->buffer);
+          this->buffer = (char *)malloc(sizeof(char) * other.bytesize);
           this->read_pointer = this->buffer + (other.read_pointer - other.buffer);
           this->write_pointer = this->buffer + (other.write_pointer - other.buffer);
           this->bytesize = other.bytesize;
@@ -83,10 +80,9 @@ namespace Charly {
       }
 
       // Load raw data into the buffer
-      char* write(uint8_t* data, size_t length);
-      char* write(std::string& data);
-      char* readline(std::ifstream& data);
-      char* read(const Buffer& data);
+      Buffer& read(char* data, size_t length);
+      Buffer& read(std::string& data);
+      Buffer& read(const Buffer& data);
 
       // UTF8 methods
       uint32_t append_utf8(uint32_t cp);
@@ -96,9 +92,8 @@ namespace Charly {
       uint32_t advance_utf8(uint32_t amount);
       bool is_valid_utf8(char* start, char* end);
 
-      // Size of the buffer in utf8 codepoints
-      size_t size();
-      inline size_t length() { return this->size(); };
+      // Size of the used buffer in utf8 codepoints
+      size_t charcount();
 
       // UTF8 Range methods
       size_t utf8_byteoffset(uint32_t start);
@@ -106,8 +101,8 @@ namespace Charly {
     private:
 
       // Memory handling
-      bool check_enough_size(size_t size);
-      void grow_buffer_size();
+      void check_enough_size(size_t size);
+      void grow_buffer_size(size_t minimum_size);
   };
 }
 
