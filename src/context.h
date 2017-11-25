@@ -26,21 +26,16 @@
 
 #include <iostream>
 
+#include "value.h"
 #include "gc.h"
+#include "symboltable.h"
 #include "vm.h"
 
 #pragma once
 
 namespace Charly {
-  class Context {
+  struct Context {
       MemoryManager gc;
-      VM vm;
-
-    public:
-      int status;
-
-    public:
-      Context() : vm(gc) {}
-      void run();
+      SymbolTable symbol_table;
   };
 }

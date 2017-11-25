@@ -33,6 +33,7 @@
 #include "exception.h"
 #include "status.h"
 #include "gc.h"
+#include "symboltable.h"
 
 #pragma once
 
@@ -45,8 +46,8 @@ namespace Charly {
 
     private:
       std::vector<VALUE> stack;
-      std::unordered_map<VALUE, std::string> symbol_table;
       std::vector<VALUE> pretty_print_stack;
+      SymbolTable& symbol_table;
       Frame* frames;
       CatchTable* catchstack;
       uint8_t* ip;
@@ -71,11 +72,7 @@ namespace Charly {
       CatchTable* find_catchtable(ThrowType type);
       void restore_catchtable(CatchTable* table);
 
-      // Symbol table
-      std::string lookup_symbol(VALUE symbol);
-
       // Methods to create new data types
-      VALUE create_symbol(const std::string& value);
       VALUE create_object(uint32_t initial_capacity);
       VALUE create_array(uint32_t initial_capacity);
       VALUE create_integer(int64_t value);
@@ -137,7 +134,7 @@ namespace Charly {
       void pretty_print(std::ostream& io, VALUE value);
 
     public:
-      VM(MemoryManager& collector) : gc(collector) {
+      VM(MemoryManager& collector, SymbolTable& symtable) : gc(collector), symbol_table(symtable) {
         this->frames = nullptr;
         this->catchstack = nullptr;
         this->ip = nullptr;

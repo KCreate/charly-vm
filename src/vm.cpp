@@ -151,28 +151,6 @@ namespace Charly {
     }
   }
 
-  std::string VM::lookup_symbol(VALUE symbol) {
-    auto found_string = this->symbol_table.find(symbol);
-
-    if (found_string == this->symbol_table.end()) {
-      return this->lookup_symbol(this->create_symbol("null"));
-    }
-
-    return found_string->second; // second refers to the value
-  }
-
-  VALUE VM::create_symbol(const std::string& value) {
-    size_t hashvalue = std::hash<std::string>{}(value);
-    VALUE symbol = (VALUE)((hashvalue & ~kSymbolMask) | kSymbolFlag);
-
-    // Add this hash to the symbol_table if it doesn't exist
-    if (this->symbol_table.find(symbol) == this->symbol_table.end()) {
-      this->symbol_table.insert({symbol, value});
-    }
-
-    return symbol;
-  }
-
   VALUE VM::create_object(uint32_t initial_capacity) {
     MemoryCell* cell = this->gc.allocate(this);
     cell->as.basic.set_type(kTypeObject);
@@ -794,7 +772,7 @@ namespace Charly {
 
         for (auto& entry : *object->container) {
           io << " ";
-          std::string key = this->lookup_symbol(entry.first);
+          std::string key = this->symbol_table(entry.first);
           io << key << "="; this->pretty_print(io, entry.second);
         }
 
@@ -863,7 +841,7 @@ namespace Charly {
       }
 
       case kTypeSymbol: {
-        io << this->lookup_symbol(value);
+        io << this->symbol_table(value);
         break;
       }
 
@@ -932,10 +910,10 @@ namespace Charly {
     //     get_method = (CFunction *)Internals::get_method
     //   }
     // };
-    block.write_putcfunction(this->create_symbol("get_method"), (void *)Internals::get_method, 1);
-    block.write_putvalue(this->create_symbol("get_method"));
+    block.write_putcfunction(this->symbol_table("get_method"), (void *)Internals::get_method, 1);
+    block.write_putvalue(this->symbol_table("get_method"));
     block.write_puthash(1);
-    block.write_putvalue(this->create_symbol("internals"));
+    block.write_putvalue(this->symbol_table("internals"));
     block.write_puthash(1);
     block.write_setlocal(0, 0);
 
@@ -944,7 +922,7 @@ namespace Charly {
     block.write_puthash(0);
     block.write_dup();
     block.write_putvalue(this->create_integer(250));
-    block.write_setmembersymbol(this->create_symbol("boye"));
+    block.write_setmembersymbol(this->symbol_table("boye"));
     block.write_putarray(2);
     block.write_putfloat(25);
     block.write_putfloat(25);
@@ -954,15 +932,15 @@ namespace Charly {
 
     // Charly.internals.get_method(:"hello_world")
     block.write_readlocal(0, 0);
-    block.write_readmembersymbol(this->create_symbol("internals"));
-    block.write_readmembersymbol(this->create_symbol("get_method"));
-    block.write_putvalue(this->create_symbol("hello world"));
+    block.write_readmembersymbol(this->symbol_table("internals"));
+    block.write_readmembersymbol(this->symbol_table("get_method"));
+    block.write_putvalue(this->symbol_table("hello world"));
     block.write_call(1);
 
     block.write_byte(Opcode::Halt);
 
     // Push a function onto the stack containing this block and call it
-    this->op_putfunction(this->create_symbol("__charly_init"), &block, false, 0);
+    this->op_putfunction(this->symbol_table("__charly_init"), &block, false, 0);
     this->op_call(0);
     this->frames->self = kNull;
   }

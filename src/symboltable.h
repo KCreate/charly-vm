@@ -24,54 +24,39 @@
  * SOFTWARE.
  */
 
-#include <iostream>
+#include "value.h"
 
-#include "cli.h"
-#include "charly.h"
-#include "context.h"
-#include "sourcefile.h"
+#pragma once
 
 namespace Charly {
-  int CLI::run() {
-    if (this->flags.show_help) {
-      std::cout << kHelpMessage << std::endl;
-      return 0;
-    }
+  static const std::string kUnknownSymbol = "null";
 
-    if (this->flags.show_license) {
-      std::cout << kLicense << std::endl;
-      return 0;
-    }
+  class SymbolTable {
+    private:
+      std::unordered_map<VALUE, std::string> table;
 
-    if (this->flags.show_version) {
-      std::cout << kVersion << std::endl;
-      return 0;
-    }
+    public:
+      SymbolTable() = default;
+      SymbolTable(const SymbolTable& other) : table(other.table) {}
 
-    // Check if a filename was given
-    if (this->flags.arguments.size() == 0) {
-      std::cout << "No filename given!" << std::endl;
-      return 1;
-    }
+      SymbolTable& operator=(const SymbolTable& other) {
+        this->table = other.table;
+        return *this;
+      }
 
-    std::ifstream inputfile(this->flags.arguments[0]);
+      VALUE encode_string(const std::string& input);
+      std::string decode_symbol(VALUE symbol);
 
-    if (!inputfile.is_open()) {
-      std::cout << "Could not open file" << std::endl;
-      return 1;
-    }
+      VALUE operator () (const std::string& input) {
+        return this->encode_string(input);
+      }
+      std::string operator () (VALUE symbol) {
+        return this->decode_symbol(symbol);
+      }
 
-    std::string source_string((std::istreambuf_iterator<char>(inputfile)),
-                               std::istreambuf_iterator<char>());
-
-    SourceFile userfile(this->flags.arguments[0], source_string);
-
-    Context context;
-    VM vm(context.gc, context.symbol_table);
-    if (!this->flags.skip_execution) {
-      vm.run();
-    }
-
-    return 0;
-  }
+      void copy_symbols_to_table(SymbolTable& other);
+      inline void copy_symbols_from_table(SymbolTable& other) {
+        other.copy_symbols_to_table(*this);
+      }
+  };
 }

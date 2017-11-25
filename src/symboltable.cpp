@@ -24,11 +24,31 @@
  * SOFTWARE.
  */
 
-#include "context.h"
+#include "symboltable.h"
 
 namespace Charly {
-  void Context::run() {
-    this->vm.run();
-    this->status = 0;
+  VALUE SymbolTable::encode_string(const std::string& input) {
+    size_t hashvalue = std::hash<std::string>{}(input);
+    VALUE symbol = (VALUE)((hashvalue & ~kSymbolMask) | kSymbolFlag);
+
+    if (this->table.find(symbol) == this->table.end()) {
+      this->table.insert({ symbol, input });
+    }
+
+    return symbol;
+  }
+
+  std::string SymbolTable::decode_symbol(VALUE symbol) {
+    auto found_string = this->table.find(symbol);
+
+    if (found_string == this->table.end()) {
+      return kUnknownSymbol;
+    }
+
+    return found_string->second;
+  }
+
+  void SymbolTable::copy_symbols_to_table(SymbolTable& other) {
+    other.table.insert(this->table.begin(), this->table.end());
   }
 }
