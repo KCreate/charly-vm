@@ -24,54 +24,33 @@
  * SOFTWARE.
  */
 
-#include <iostream>
+#include <iterator>
 
-#include "cli.h"
-#include "charly.h"
-#include "context.h"
 #include "sourcefile.h"
 
 namespace Charly {
-  int CLI::run() {
-    if (this->flags.show_help) {
-      std::cout << kHelpMessage << std::endl;
-      return 0;
+  uint32_t SourceFile::read_char() {
+    uint32_t cp = this->buffer.next_utf8();
+
+    if (cp == (unsigned int)EOF) {
+      return cp;
     }
 
-    if (this->flags.show_license) {
-      std::cout << kLicense << std::endl;
-      return 0;
-    }
+    std::string utf8bytes;
+    utf8::append(cp, std::back_inserter(utf8bytes));
+    this->frame << utf8bytes;
 
-    if (this->flags.show_version) {
-      std::cout << kVersion << std::endl;
-      return 0;
-    }
+    this->pos += 1;
+    this->current_char = cp;
 
-    // Check if a filename was given
-    if (this->flags.arguments.size() == 0) {
-      std::cout << "No filename given!" << std::endl;
-      return 1;
-    }
+    return cp;
+  }
 
-    std::ifstream inputfile(this->flags.arguments[0]);
+  uint32_t SourceFile::peek_char() {
+    return this->buffer.peek_next_utf8();
+  }
 
-    if (!inputfile.is_open()) {
-      std::cout << "Could not open file" << std::endl;
-      return 1;
-    }
-
-    std::string source_string((std::istreambuf_iterator<char>(inputfile)),
-                               std::istreambuf_iterator<char>());
-
-    SourceFile userfile(this->flags.arguments[0], source_string);
-
-    // The context holds the main memory manager, symboltable and stringpool.
-    Context context;
-    if (!this->flags.skip_execution) {
-      context.run();
-    }
-
-    return context.status;
+  SourceFile& SourceFile::close() {
+    return *this;
   }
 }
