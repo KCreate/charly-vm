@@ -257,6 +257,10 @@ namespace Charly {
   }
 
   VALUE VM::real_type(VALUE value) {
+
+    // Because a False value or null can't be distinguished
+    // from a pointer value, we check for them before we check
+    // for a pointer value
     if (is_boolean(value)) return kTypeBoolean;
     if (is_null(value)) return kNull;
     if (!is_special(value)) return basics(value)->type();
@@ -283,10 +287,10 @@ namespace Charly {
   uint32_t VM::decode_instruction_length(Opcode opcode) {
     switch (opcode) {
       case Opcode::Nop:                 return 1;
-      case Opcode::ReadLocal:           return 1 + sizeof(uint32_t);
+      case Opcode::ReadLocal:           return 1 + sizeof(uint32_t) + sizeof(uint32_t);
       case Opcode::ReadMemberSymbol:    return 1 + sizeof(VALUE);
       case Opcode::ReadMemberValue:     return 1;
-      case Opcode::SetLocal:            return 1 + sizeof(uint32_t);
+      case Opcode::SetLocal:            return 1 + sizeof(uint32_t) + sizeof(uint32_t);
       case Opcode::SetMemberSymbol:     return 1 + sizeof(VALUE);
       case Opcode::SetMemberValue:      return 1;
       case Opcode::PutSelf:             return 1;
@@ -294,7 +298,7 @@ namespace Charly {
       case Opcode::PutFloat:            return 1 + sizeof(double);
       case Opcode::PutString:           return 1 + sizeof(char*) + sizeof(uint32_t) * 2;
       case Opcode::PutFunction:         return 1 + sizeof(VALUE) + sizeof(void*) + sizeof(bool) + sizeof(uint32_t);
-      case Opcode::PutCFunction:        return 1 + sizeof(VALUE) + sizeof(void *) + sizeof(uint32_t);
+      case Opcode::PutCFunction:        return 1 + sizeof(VALUE) + sizeof(void*) + sizeof(uint32_t);
       case Opcode::PutArray:            return 1 + sizeof(uint32_t);
       case Opcode::PutHash:             return 1 + sizeof(uint32_t);
       case Opcode::PutClass:            return 1 + sizeof(VALUE) + sizeof(uint32_t) * 5;

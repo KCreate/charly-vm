@@ -60,7 +60,7 @@ namespace Charly {
     // - identifier
     ReadMemberSymbol,
 
-    // Resole value inside identifier
+    // Resolve value inside identifier
     //
     // stack:
     // - identifier

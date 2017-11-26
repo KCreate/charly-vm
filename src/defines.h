@@ -42,6 +42,13 @@ namespace Charly {
   struct CatchTable;
   class InstructionBlock;
 
+  class CLI;
+  struct RunFlags;
+  struct Context;
+  class SourceFile;
+  class Buffer;
+  class SymbolTable;
+
   enum ThrowType : uint8_t;
   enum Opcode : uint8_t;
 

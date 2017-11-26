@@ -25,15 +25,6 @@
   - PutString
   - PutCFunction (?)
 
-# Rethink symbols
-- Symbols should be a direct omni-directional mapping between an immediate-encoded `VALUE` and a string
-- We should be able to create new symbols without an instance of the machine
-  - Have constant symbols available for some commonly used strings
-  - The vm needs to be initialized with a set of symbols
-  - If a symbol wasn't found the string "null" is returned
-- Symbols aren't available in the Charly programming language. The are merely an implementation detail
-- How does the VM know about the string representation of symbols?
-
 # Instruction to add a local variable slot to the current frame's environment
 - Needed to support a REPL
 - Might be useful for other things?
@@ -168,6 +159,13 @@
     - Sub:
       - Big strings = Big instructionblocks
       - Hard to share strings
+  - Strings get added to a string pool
+    - Instructions get an index into the string pool
+    - The string pool is the only place where strings are stored in memory
+      - String type stores an index into the string pool
+      - Garbage Collection
+        - Collecting a string type should also delete the string from the string pool
+        - Reference count each entry in the string pool
 
 # Memory ownership
 - Structs generally own the memory they point to
@@ -232,7 +230,6 @@
 
 # Implement all opcodes
 - PutString
-- PutArray
 - PutClass
 - ReadMemberValue
 - SetMemberValue
