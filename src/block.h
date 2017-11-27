@@ -63,6 +63,30 @@ namespace Charly {
         this->textdata_writeoffset = 0;
       }
 
+      InstructionBlock(const InstructionBlock& other) {
+
+        // Copy the data and text buffers of the other block
+        uint8_t* data_copy = (uint8_t *)malloc(other.data_size);
+        char* textdata_copy = (char *)malloc(other.textdata_size);
+        strncpy((char *)data_copy, (char *)other.data, other.data_size);
+        strncpy(textdata_copy, other.textdata, other.textdata_size);
+        this->data = data_copy;
+        this->textdata = textdata_copy;
+
+        // Copy trivial variables
+        this->lvarcount = other.lvarcount;
+        this->data_size = other.data_size;
+        this->writeoffset = other.writeoffset;
+        this->textdata_size = other.textdata_size;
+        this->textdata_writeoffset = other.textdata_writeoffset;
+
+        // Recursively copy all child blocks
+        for (const auto& block : other.child_blocks) {
+          InstructionBlock* block_copy = new InstructionBlock(*block);
+          this->child_blocks.push_back(block_copy);
+        }
+      }
+
       ~InstructionBlock() {
         this->clean();
       }
