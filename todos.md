@@ -2,7 +2,7 @@
 
 # Execution pipeline
 - Managed by a single `Context` class.
-- Contains a `SymbolTable`, `StringPool` and `MemoryManager`
+- Contains a `SymbolTable` and `MemoryManager`
 - The whole program should be split into three important classes
   - `Compiler`
     - Takes source code as input and outputs data for the assembler
