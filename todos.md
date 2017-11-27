@@ -1,5 +1,33 @@
 # Todos
 
+# Calling and object storage convention
+- Come up with a calling convention
+  - Define where arguments end up inside an environment
+  - `arguments` field?
+    - Copy of the arguments which are inserted into the stack
+    - Updating an argument in the environment won't update the value inside the *arguments* array.
+    - `__CHARLY_FUNCTION_ARGUMENTS` should be a reserved identifier
+    - `__CHARLY_FUNCTION_ARGUMENTS` will be rewritten to `ReadLocal 0, 0`
+    - `arguments` will also be rewritten to `ReadLocal 0, 0`
+      - If the user redeclares his own `arguments` lvar, it will be treated as a new lvar
+      - The user can't access `arguments` via the implicitly-inserted lvar anymore,
+        he/she has to use `__CHARLY_FUNCTION_ARGUMENTS` to access all function arguments
+  - self value is being passed via the frames
+    - You can't modify the self value, only read from it
+  - Passing 3 arguments to a method which only takes 2 arguments, shouldn't put the last argument
+    into the container. Only *argc* arguments should be inside the environment.
+    - The rest of the arguments should still be accessible inside the *arguments* array
+  - Offsets:
+    - 0x00    : `__CHARLY_FUNCTION_ARGUMENTS` field
+    - 0x01    : arg1
+    - 0x0n    : argn
+    - 0x0n+1  : lvar 1
+    - 0x0n+2  : lvar 2
+    - 0x0n+n  : lvar n
+      - $0 is rewritten to whatever the first argument is
+      - $1 is rewritten to whatever the second argument is
+      - if $n is bigger than the method argc, it gets rewritten to an array index lookup on 0, 1
+
 # Execution pipeline
 - Managed by a single `Context` class.
 - Contains a `SymbolTable` and `MemoryManager`
@@ -72,34 +100,6 @@
   - `Charly`
 - Inside functions
   - `__CHARLY_FUNCTION_ARGUMENTS`
-
-# Calling and object storage convention
-- Come up with a calling convention
-  - Define where arguments end up inside an environment
-  - `arguments` field?
-    - Copy of the arguments which are inserted into the stack
-    - Updating an argument in the environment won't update the value inside the *arguments* array.
-    - `__CHARLY_FUNCTION_ARGUMENTS` should be a reserved identifier
-    - `__CHARLY_FUNCTION_ARGUMENTS` will be rewritten to `ReadLocal 0, 0`
-    - `arguments` will also be rewritten to `ReadLocal 0, 0`
-      - If the user redeclares his own `arguments` lvar, it will be treated as a new lvar
-      - The user can't access `arguments` via the implicitly-inserted lvar anymore,
-        he/she has to use `__CHARLY_FUNCTION_ARGUMENTS` to access all function arguments
-  - self value is being passed via the frames
-    - You can't modify the self value, only read from it
-  - Passing 3 arguments to a method which only takes 2 arguments, shouldn't put the last argument
-    into the container. Only *argc* arguments should be inside the environment.
-    - The rest of the arguments should still be accessible inside the *arguments* array
-  - Offsets:
-    - 0x00    : `__CHARLY_FUNCTION_ARGUMENTS` field
-    - 0x01    : arg1
-    - 0x0n    : argn
-    - 0x0n+1  : lvar 1
-    - 0x0n+2  : lvar 2
-    - 0x0n+n  : lvar n
-      - $0 is rewritten to whatever the first argument is
-      - $1 is rewritten to whatever the second argument is
-      - if $n is bigger than the method argc, it gets rewritten to an array index lookup on 0, 1
 
 # Think about the pros/cons of switching to NAN-boxing
 - See: https://en.wikipedia.org/wiki/IEEE_754-1985#NaN
