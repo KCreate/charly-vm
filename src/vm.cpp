@@ -202,6 +202,25 @@ namespace Charly {
     return (VALUE)cell;
   }
 
+  VALUE VM::create_string(char* data, uint32_t length) {
+
+    // Calculate the initial capacity of the string
+    size_t string_capacity = kStringInitialCapacity;
+    while (string_capacity <= length) string_capacity *= kStringCapacityGrowthFactor;
+
+    // Create a copy of the data
+    char* copied_string = (char *)malloc(string_capacity);
+    strncpy(copied_string, data, length);
+
+    // Allocate the memory cell and initialize the values
+    MemoryCell* cell = this->gc.allocate(this);
+    cell->as.basic.set_type(kTypeString);
+    cell->as.string.data = copied_string;
+    cell->as.string.length = length;
+    cell->as.string.capacity = string_capacity;
+    return (VALUE)cell;
+  }
+
   VALUE VM::create_function(VALUE name, uint32_t argc, bool anonymous, InstructionBlock* block) {
     MemoryCell* cell = this->gc.allocate(this);
     cell->as.basic.set_type(kTypeFunction);
@@ -286,38 +305,38 @@ namespace Charly {
 
   uint32_t VM::decode_instruction_length(Opcode opcode) {
     switch (opcode) {
-      case Opcode::Nop:                 return 1;
-      case Opcode::ReadLocal:           return 1 + sizeof(uint32_t) + sizeof(uint32_t);
-      case Opcode::ReadMemberSymbol:    return 1 + sizeof(VALUE);
-      case Opcode::ReadMemberValue:     return 1;
-      case Opcode::SetLocal:            return 1 + sizeof(uint32_t) + sizeof(uint32_t);
-      case Opcode::SetMemberSymbol:     return 1 + sizeof(VALUE);
-      case Opcode::SetMemberValue:      return 1;
-      case Opcode::PutSelf:             return 1;
-      case Opcode::PutValue:            return 1 + sizeof(VALUE);
-      case Opcode::PutFloat:            return 1 + sizeof(double);
-      case Opcode::PutString:           return 1 + sizeof(char*) + sizeof(uint32_t) * 2;
-      case Opcode::PutFunction:         return 1 + sizeof(VALUE) + sizeof(void*) + sizeof(bool) + sizeof(uint32_t);
-      case Opcode::PutCFunction:        return 1 + sizeof(VALUE) + sizeof(void*) + sizeof(uint32_t);
-      case Opcode::PutArray:            return 1 + sizeof(uint32_t);
-      case Opcode::PutHash:             return 1 + sizeof(uint32_t);
-      case Opcode::PutClass:            return 1 + sizeof(VALUE) + sizeof(uint32_t) * 5;
-      case Opcode::MakeConstant:        return 1 + sizeof(uint32_t);
-      case Opcode::Pop:                 return 1 + sizeof(uint32_t);
-      case Opcode::Dup:                 return 1;
-      case Opcode::Swap:                return 1;
-      case Opcode::Topn:                return 1 + sizeof(uint32_t);
-      case Opcode::Setn:                return 1 + sizeof(uint32_t);
-      case Opcode::Call:                return 1 + sizeof(uint32_t);
-      case Opcode::CallMember:          return 1 + sizeof(uint32_t);
-      case Opcode::Return:              return 1;
-      case Opcode::Throw:               return 1 + sizeof(ThrowType);
-      case Opcode::RegisterCatchTable:  return 1 + sizeof(ThrowType) + sizeof(int32_t);
-      case Opcode::PopCatchTable:       return 1;
-      case Opcode::Branch:              return 1 + sizeof(uint32_t);
-      case Opcode::BranchIf:            return 1 + sizeof(uint32_t);
-      case Opcode::BranchUnless:        return 1 + sizeof(uint32_t);
-      default:                          return 1;
+      case Opcode::Nop:                return 1;
+      case Opcode::ReadLocal:          return 1 + sizeof(uint32_t) + sizeof(uint32_t);
+      case Opcode::ReadMemberSymbol:   return 1 + sizeof(VALUE);
+      case Opcode::ReadMemberValue:    return 1;
+      case Opcode::SetLocal:           return 1 + sizeof(uint32_t) + sizeof(uint32_t);
+      case Opcode::SetMemberSymbol:    return 1 + sizeof(VALUE);
+      case Opcode::SetMemberValue:     return 1;
+      case Opcode::PutSelf:            return 1;
+      case Opcode::PutValue:           return 1 + sizeof(VALUE);
+      case Opcode::PutFloat:           return 1 + sizeof(double);
+      case Opcode::PutString:          return 1 + sizeof(uint32_t) + sizeof(uint32_t);
+      case Opcode::PutFunction:        return 1 + sizeof(VALUE) + sizeof(void*) + sizeof(bool) + sizeof(uint32_t);
+      case Opcode::PutCFunction:       return 1 + sizeof(VALUE) + sizeof(void*) + sizeof(uint32_t);
+      case Opcode::PutArray:           return 1 + sizeof(uint32_t);
+      case Opcode::PutHash:            return 1 + sizeof(uint32_t);
+      case Opcode::PutClass:           return 1 + sizeof(VALUE) + sizeof(uint32_t) * 5;
+      case Opcode::MakeConstant:       return 1 + sizeof(uint32_t);
+      case Opcode::Pop:                return 1 + sizeof(uint32_t);
+      case Opcode::Dup:                return 1;
+      case Opcode::Swap:               return 1;
+      case Opcode::Topn:               return 1 + sizeof(uint32_t);
+      case Opcode::Setn:               return 1 + sizeof(uint32_t);
+      case Opcode::Call:               return 1 + sizeof(uint32_t);
+      case Opcode::CallMember:         return 1 + sizeof(uint32_t);
+      case Opcode::Return:             return 1;
+      case Opcode::Throw:              return 1 + sizeof(ThrowType);
+      case Opcode::RegisterCatchTable: return 1 + sizeof(ThrowType) + sizeof(int32_t);
+      case Opcode::PopCatchTable:      return 1;
+      case Opcode::Branch:             return 1 + sizeof(uint32_t);
+      case Opcode::BranchIf:           return 1 + sizeof(uint32_t);
+      case Opcode::BranchUnless:       return 1 + sizeof(uint32_t);
+      default:                         return 1;
     }
   }
 
@@ -422,6 +441,10 @@ namespace Charly {
 
   void VM::op_putfloat(double value) {
     this->push_stack(this->create_float(value));
+  }
+
+  void VM::op_putstring(char* data, uint32_t length) {
+    this->push_stack(this->create_string(data, length));
   }
 
   void VM::op_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc) {
@@ -764,6 +787,14 @@ namespace Charly {
         break;
       }
 
+      case kTypeString: {
+        String* string = (String *)value;
+        io << "<String:" << string << " ";
+        io << "\"" << std::string_view(string->data, string->length) << "\"";
+        io << ">";
+        break;
+      }
+
       case kTypeObject: {
         Object* object = (Object *)value;
         io << "<Object:" << object;
@@ -885,7 +916,7 @@ namespace Charly {
         io << "lvarcount=" << block->lvarcount << " ";
         io << "data=" << (void *)block->data << " ";
         io << "data_size=" << block->data_size << " ";
-        io << "write_offset=" << block->write_offset;
+        io << "write_offset=" << block->writeoffset;
         io << ">";
         break;
       }
@@ -941,6 +972,13 @@ namespace Charly {
     block.write_putvalue(this->symbol_table("hello world"));
     block.write_call(1);
 
+    // Charly.internals.get_method("This is a string test")
+    block.write_readlocal(0, 0);
+    block.write_readmembersymbol(this->symbol_table("internals"));
+    block.write_readmembersymbol(this->symbol_table("get_method"));
+    block.write_putstring("This is a string test");
+    block.write_call(1);
+
     block.write_byte(Opcode::Halt);
 
     // Push a function onto the stack containing this block and call it
@@ -963,7 +1001,7 @@ namespace Charly {
 
       // Check if we're out-of-bounds relative to the current block
       uint8_t* block_data = this->frames->function->block->data;
-      uint32_t block_write_offset = this->frames->function->block->write_offset;
+      uint32_t block_write_offset = this->frames->function->block->writeoffset;
       if (this->ip + sizeof(Opcode) - 1 >= block_data + block_write_offset) {
         this->panic(kStatusIpOutOfBounds);
       }
@@ -1023,6 +1061,27 @@ namespace Charly {
         case Opcode::PutFloat: {
           double value = *(double *)(this->ip + sizeof(Opcode));
           this->op_putfloat(value);
+          break;
+        }
+
+        case Opcode::PutString: {
+          uint32_t offset = *(uint32_t *)(this->ip + sizeof(Opcode));
+          uint32_t length = *(uint32_t *)(this->ip + sizeof(Opcode) + sizeof(uint32_t));
+
+          // Calculate the pointer into the TEXT segment of the instructionblock
+          // The current frame holds the function that was used to construct it
+          // This function contains the current instruction block
+          //
+          // We assume the compiler generated valid offsets and lengths, so we don't do
+          // any out-of-bounds checking here
+          //
+          // TODO: Should we do out-of-bounds checking here?
+          InstructionBlock* current_block = this->frames->function->block;
+
+          char* TEXT_segment = current_block->textdata;
+          char* string_data = TEXT_segment + offset;
+
+          this->op_putstring(string_data, length);
           break;
         }
 

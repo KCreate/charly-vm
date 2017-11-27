@@ -114,8 +114,11 @@ namespace Charly {
 
     // Put string onto the stack
     //
+    // The actual string data lives in the TEXT segment of the compiled instructionblock
+    //
     // args:
-    // - string (char* data, uint32_t length, uint32_t capacity)
+    // - offset
+    // - length
     PutString,
 
     // Put a function onto the stack

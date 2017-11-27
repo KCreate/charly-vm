@@ -36,30 +36,56 @@ namespace Charly {
     public:
       VALUE flags; // Needed by GC
 
-      // TODO: Tune these values a bit
       static const uint32_t kBlockInitialWriteOffset = 0;
       static const uint32_t kBlockInitialBlockSize = 256;
       static const uint32_t kBlockSizeGrowthFactor = 2;
+      static const uint32_t kBlockInitialTextSize = 32;
+      static const uint32_t kBlockTextDataGrowthFactor = 2;
 
       uint32_t lvarcount;
       uint8_t* data;
       uint32_t data_size;
-      uint32_t write_offset;
-      std::vector<InstructionBlock*>* child_blocks;
+      uint32_t writeoffset;
+      std::vector<InstructionBlock*> child_blocks;
+
+      // Keeps track of TEXT data
+      char* textdata;
+      uint32_t textdata_size;
+      uint32_t textdata_writeoffset;
 
       InstructionBlock(uint32_t lvarcount) : lvarcount(lvarcount) {
         this->data = (uint8_t *)calloc(kBlockInitialBlockSize, sizeof(uint8_t));
         this->data_size = kBlockInitialBlockSize * sizeof(uint8_t);
-        this->write_offset = kBlockInitialWriteOffset;
-        this->child_blocks = new std::vector<InstructionBlock*>();
+        this->writeoffset = kBlockInitialWriteOffset;
+
+        this->textdata = new char[kBlockInitialTextSize];
+        this->textdata_size = kBlockInitialTextSize;
+        this->textdata_writeoffset = 0;
       }
 
       ~InstructionBlock() {
+        this->clean();
+      }
+
+      void inline clean() {
         free(this->data);
+        free(this->textdata);
       }
 
       void inline check_needs_resize() {
-        if (this->write_offset >= this->data_size - sizeof(uint64_t)) this->grow();
+        if (this->writeoffset >= this->data_size - sizeof(uint64_t)) {
+          this->grow();
+        }
+      }
+
+      void inline check_text_needs_resize(size_t size) {
+        if (this->textdata_writeoffset >= this->textdata_size - size) {
+          size_t newsize = this->textdata_size * kBlockTextDataGrowthFactor;
+          while (newsize < this->textdata_size + size) newsize *= kBlockTextDataGrowthFactor;
+
+          this->textdata = (char *)realloc(this->textdata, newsize);
+          this->textdata_size = newsize;
+        }
       }
 
       void inline grow() {
@@ -69,44 +95,53 @@ namespace Charly {
 
       void inline write_byte(uint8_t val) {
         this->check_needs_resize();
-        *(uint8_t *)(this->data + this->write_offset) = val;
-        this->write_offset += sizeof(uint8_t);
+        *(uint8_t *)(this->data + this->writeoffset) = val;
+        this->writeoffset += sizeof(uint8_t);
       }
 
       void inline write_bool(bool val) {
         this->check_needs_resize();
-        *(bool *)(this->data + this->write_offset) = val;
-        this->write_offset += sizeof(bool);
+        *(bool *)(this->data + this->writeoffset) = val;
+        this->writeoffset += sizeof(bool);
       }
 
       void inline write_short(uint16_t val) {
         this->check_needs_resize();
-        *(uint16_t *)(this->data + this->write_offset) = val;
-        this->write_offset += sizeof(uint16_t);
+        *(uint16_t *)(this->data + this->writeoffset) = val;
+        this->writeoffset += sizeof(uint16_t);
       }
 
       void inline write_int(uint32_t val) {
         this->check_needs_resize();
-        *(uint32_t *)(this->data + this->write_offset) = val;
-        this->write_offset += sizeof(uint32_t);
+        *(uint32_t *)(this->data + this->writeoffset) = val;
+        this->writeoffset += sizeof(uint32_t);
       }
 
       void inline write_long(uint64_t val) {
         this->check_needs_resize();
-        *(uint64_t *)(this->data + this->write_offset) = val;
-        this->write_offset += sizeof(uint64_t);
+        *(uint64_t *)(this->data + this->writeoffset) = val;
+        this->writeoffset += sizeof(uint64_t);
       }
 
       void inline write_pointer(void* val) {
         this->check_needs_resize();
-        *(uint8_t **)(this->data + this->write_offset) = (uint8_t *)val;
-        this->write_offset += sizeof(void*);
+        *(uint8_t **)(this->data + this->writeoffset) = (uint8_t *)val;
+        this->writeoffset += sizeof(void*);
       }
 
       void inline write_double(double val) {
         this->check_needs_resize();
-        *(double *)(this->data + this->write_offset) = val;
-        this->write_offset += sizeof(double);
+        *(double *)(this->data + this->writeoffset) = val;
+        this->writeoffset += sizeof(double);
+      }
+
+      uint32_t inline write_string(const std::string& data) {
+        this->check_text_needs_resize(data.size());
+        strncpy((char *)(this->textdata + this->textdata_writeoffset), data.c_str(), data.size());
+
+        uint32_t old_offset = this->textdata_writeoffset;
+        this->textdata_writeoffset += data.size();
+        return old_offset;
       }
 
       void inline write_readlocal(uint32_t index, uint32_t level) {
@@ -153,18 +188,18 @@ namespace Charly {
         this->write_double(value);
       }
 
-      void inline write_putstring(char* data, uint32_t length, uint32_t capacity) {
+      void inline write_putstring(const std::string& data) {
         this->write_byte(Opcode::PutString);
-        this->write_pointer(data);
-        this->write_int(length);
-        this->write_int(capacity);
+        uint32_t offset = this->write_string(data);
+        this->write_int(offset);
+        this->write_int(data.size());
       }
 
       void inline write_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc) {
         this->write_byte(Opcode::PutFunction);
         this->write_long(symbol);
         this->write_pointer(block);
-        this->child_blocks->push_back(block);
+        this->child_blocks.push_back(block);
         this->write_byte(anonymous);
         this->write_int(argc);
       }

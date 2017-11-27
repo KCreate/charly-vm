@@ -50,6 +50,7 @@ namespace Charly {
       Basic basic;
       Object object;
       Array array;
+      String string;
       Float flonum;
       Function function;
       CFunction cfunction;

@@ -77,6 +77,7 @@ namespace Charly {
       VALUE create_array(uint32_t initial_capacity);
       VALUE create_integer(int64_t value);
       VALUE create_float(double value);
+      VALUE create_string(char* data, uint32_t length);
       VALUE create_function(VALUE name, uint32_t argc, bool anonymous, InstructionBlock* block);
       VALUE create_cfunction(VALUE name, uint32_t argc, void* pointer);
 
@@ -98,6 +99,7 @@ namespace Charly {
       void op_putself();
       void op_putvalue(VALUE value);
       void op_putfloat(double value);
+      void op_putstring(char* data, uint32_t length);
       void op_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc);
       void op_putcfunction(VALUE symbol, void* pointer, uint32_t argc);
       void op_putarray(uint32_t count);

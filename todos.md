@@ -22,7 +22,6 @@
 - The VM should be purely used for execution, not data creation
 - The VM's opcodes need to be changed to allow this
   - PutFunction
-  - PutString
   - PutCFunction (?)
 
 # Instruction to add a local variable slot to the current frame's environment
@@ -148,36 +147,9 @@
   - If the object itself doesn't contain the property the objects parent class is checked
   - If the whole hierarchy doesn't contain the symbol, null is returned
 
-# Strings
-- Compilation
-  - Strings get encoded directly into the instruction stream
-    - They get copied into a string object by the vm
-    - Pro:
-      - Easier to compile
-      - Easier to garbage-collect
-      - Easier to execute
-    - Sub:
-      - Big strings = Big instructionblocks
-      - Hard to share strings
-  - Strings get added to a string pool
-    - Instructions get an index into the string pool
-    - The string pool is the only place where strings are stored in memory
-      - String type stores an index into the string pool
-      - Garbage Collection
-        - Collecting a string type should also delete the string from the string pool
-        - Reference count each entry in the string pool
-
 # Memory ownership
 - Structs generally own the memory they point to
 - This means the compiler can't assume that memory will stick around after it's been created
-- Strings
-  - The memory created by compiling a string, is owned by the VM, even if the VM doesn't know about the string
-  - If the instruction which tell the vm to create a new string is never executed, the string will stick
-    around until the end of the machine
-    - Solution would be to have a string pool per function, with a refcount to each string
-    - Once a function is being deallocated, all strings contained inside that function are removed too
-      - TODO: Make sure there are no edge cases for this
-  - The compiler rounds up string memory allocation to the next higher power of two
 - InstructionBlocks
   - IB's are owned by the function they are placed into
   - Once the function is being deallocated, their instructionblock is deallocated as well
@@ -229,7 +201,6 @@
 - Add a method which allows to turn arbitary types of things into symbols
 
 # Implement all opcodes
-- PutString
 - PutClass
 - ReadMemberValue
 - SetMemberValue

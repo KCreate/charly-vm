@@ -48,6 +48,10 @@ namespace Charly {
     std::vector<FrameEnvironmentEntry>* environment;
     VALUE self;
     uint8_t* return_address;
+
+    void inline clean() {
+      delete this->environment;
+    }
   };
 }
 

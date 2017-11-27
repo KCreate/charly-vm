@@ -33,6 +33,10 @@
 
 namespace Charly {
 
+  // Different constants for string handling
+  static const size_t kStringInitialCapacity = 32;
+  static const float kStringCapacityGrowthFactor = 1.5;
+
   // Different masks for the flags field in the Basic struct
   static const VALUE kFlagType = 0b00011111;
   static const VALUE kFlagMark = 0b00100000;
@@ -41,14 +45,15 @@ namespace Charly {
   static const uint8_t kTypeDead            = 0x00;
   static const uint8_t kTypeInteger         = 0x01;
   static const uint8_t kTypeFloat           = 0x02;
-  static const uint8_t kTypeNumeric         = 0x03;
-  static const uint8_t kTypeBoolean         = 0x04;
-  static const uint8_t kTypeNull            = 0x05;
-  static const uint8_t kTypeObject          = 0x06;
-  static const uint8_t kTypeArray           = 0x07;
-  static const uint8_t kTypeFunction        = 0x08;
-  static const uint8_t kTypeCFunction       = 0x09;
-  static const uint8_t kTypeSymbol          = 0x0a;
+  static const uint8_t kTypeString          = 0x03;
+  static const uint8_t kTypeNumeric         = 0x04;
+  static const uint8_t kTypeBoolean         = 0x05;
+  static const uint8_t kTypeNull            = 0x06;
+  static const uint8_t kTypeObject          = 0x07;
+  static const uint8_t kTypeArray           = 0x08;
+  static const uint8_t kTypeFunction        = 0x09;
+  static const uint8_t kTypeCFunction       = 0x0a;
+  static const uint8_t kTypeSymbol          = 0x0b;
 
   // Machine internal types
   static const uint8_t kTypeFrame             = 0x0c;
@@ -118,12 +123,32 @@ namespace Charly {
     Basic basic;
     VALUE klass;
     std::unordered_map<VALUE, VALUE>* container;
+
+    void inline clean() {
+      delete this->container;
+    }
   };
 
   // Array type
   struct Array {
     Basic basic;
     std::vector<VALUE>* data;
+
+    void inline clean() {
+      delete this->data;
+    }
+  };
+
+  // String type
+  struct String {
+    Basic basic;
+    char* data;
+    uint32_t length;
+    uint32_t capacity;
+
+    void inline clean() {
+      free(this->data);
+    }
   };
 
   // Heap-allocated float type

@@ -130,7 +130,7 @@ namespace Charly {
 
       case kTypeInstructionBlock: {
         auto block = (InstructionBlock *)value;
-        for (auto& child_block : *block->child_blocks) {
+        for (auto& child_block : block->child_blocks) {
           this->mark((VALUE)child_block);
         }
         break;
@@ -209,22 +209,27 @@ namespace Charly {
     // deallocat the properties inside these cells and memset(0)'em
     switch (basics((VALUE)cell)->type()) {
       case kTypeObject: {
-        delete cell->as.object.container;
+        cell->as.object.clean();
         break;
       }
 
       case kTypeArray: {
-        delete cell->as.array.data;
+        cell->as.array.clean();
+        break;
+      }
+
+      case kTypeString: {
+        cell->as.string.clean();
         break;
       }
 
       case kTypeFrame: {
-        delete cell->as.frame.environment;
+        cell->as.frame.clean();
         break;
       }
 
       case kTypeInstructionBlock: {
-        delete cell->as.instructionblock.child_blocks;
+        cell->as.instructionblock.clean();
         break;
       }
 
