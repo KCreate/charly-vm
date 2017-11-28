@@ -37,3 +37,6 @@ rebuild:
 clean:
 	rm -rf bin/*
 	rm -rf build/*
+
+format:
+	clang-format -i src/*.cpp src/headers/*.h -style=file
