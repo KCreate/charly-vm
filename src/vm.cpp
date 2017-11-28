@@ -211,7 +211,7 @@ namespace Charly {
 
     // Create a copy of the data
     char* copied_string = (char *)malloc(string_capacity);
-    strncpy(copied_string, data, length);
+    memcpy(copied_string, data, length);
 
     // Allocate the memory cell and initialize the values
     MemoryCell* cell = this->gc.allocate(this);

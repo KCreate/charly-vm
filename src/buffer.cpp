@@ -33,7 +33,7 @@ namespace Charly {
   Buffer& Buffer::read(char* data, size_t length) {
     this->check_enough_size(length);
 
-    std::strncpy(this->write_pointer, (char*)data, length);
+    memcpy(this->write_pointer, (char*)data, length);
     this->write_pointer += length;
     this->used_bytesize += length;
 
@@ -44,7 +44,7 @@ namespace Charly {
   Buffer& Buffer::read(std::string& data) {
     this->check_enough_size(data.size());
 
-    std::strncpy(this->write_pointer, data.c_str(), data.size());
+    memcpy(this->write_pointer, data.c_str(), data.size());
     this->write_pointer += data.size();
     this->used_bytesize += data.size();
 
@@ -55,7 +55,7 @@ namespace Charly {
   Buffer& Buffer::read(const Buffer& data) {
     this->check_enough_size(data.used_bytesize);
 
-    std::strncpy(this->write_pointer, data.buffer, data.used_bytesize);
+    memcpy(this->write_pointer, data.buffer, data.used_bytesize);
     this->write_pointer += data.used_bytesize;
     this->used_bytesize += data.used_bytesize;
 
@@ -167,7 +167,7 @@ namespace Charly {
     }
 
     char* new_buffer = (char *)malloc(sizeof(char) * new_size);
-    std::strncpy(new_buffer, this->buffer, this->used_bytesize);
+    memcpy(new_buffer, this->buffer, this->used_bytesize);
 
     // Update offset pointers
     this->read_pointer = new_buffer + (this->read_pointer - this->buffer);

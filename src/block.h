@@ -68,8 +68,8 @@ namespace Charly {
         // Copy the data and text buffers of the other block
         uint8_t* data_copy = (uint8_t *)malloc(other.data_size);
         char* textdata_copy = (char *)malloc(other.textdata_size);
-        strncpy((char *)data_copy, (char *)other.data, other.data_size);
-        strncpy(textdata_copy, other.textdata, other.textdata_size);
+        memcpy((char *)data_copy, (char *)other.data, other.data_size);
+        memcpy(textdata_copy, other.textdata, other.textdata_size);
         this->data = data_copy;
         this->textdata = textdata_copy;
 
@@ -161,7 +161,7 @@ namespace Charly {
 
       uint32_t inline write_string(const std::string& data) {
         this->check_text_needs_resize(data.size());
-        strncpy((char *)(this->textdata + this->textdata_writeoffset), data.c_str(), data.size());
+        memcpy((char *)(this->textdata + this->textdata_writeoffset), data.c_str(), data.size());
 
         uint32_t old_offset = this->textdata_writeoffset;
         this->textdata_writeoffset += data.size();

@@ -62,7 +62,7 @@ namespace Charly {
         this->write_pointer = this->buffer + (other.write_pointer - other.buffer);
         this->bytesize = other.bytesize;
         this->used_bytesize = other.used_bytesize;
-        std::strncpy(this->buffer, other.buffer, other.used_bytesize);
+        memcpy(this->buffer, other.buffer, other.used_bytesize);
       }
 
       Buffer& operator=(const Buffer& other) {
@@ -73,7 +73,7 @@ namespace Charly {
           this->write_pointer = this->buffer + (other.write_pointer - other.buffer);
           this->bytesize = other.bytesize;
           this->used_bytesize = other.used_bytesize;
-          std::strncpy(this->buffer, other.buffer, other.bytesize);
+          memcpy(this->buffer, other.buffer, other.bytesize);
         }
 
         return *this;
