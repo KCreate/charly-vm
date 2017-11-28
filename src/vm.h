@@ -126,14 +126,7 @@ namespace Charly {
       void op_branch(int32_t offset);
       void op_branchif(int32_t offset);
       void op_branchunless(int32_t offset);
-
-      void inline panic(STATUS reason) {
-        std::cout << "Panic: " << kStatusHumanReadable[reason] << std::endl;
-        this->stacktrace(std::cout);
-        this->catchstacktrace(std::cout);
-        this->stackdump(std::cout);
-        exit(1);
-      }
+      void panic(STATUS reason);
       void stacktrace(std::ostream& io);
       void catchstacktrace(std::ostream& io);
       void stackdump(std::ostream& io);

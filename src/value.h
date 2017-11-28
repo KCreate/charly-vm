@@ -175,7 +175,7 @@ namespace Charly {
       delete this->container;
     }
 
-    // TODO: Argumentlist and bound argumentlist
+    // TODO: Bound argumentlist
   };
 
   // Function type used for including external functions from C-Land into the virtual machine
@@ -193,7 +193,7 @@ namespace Charly {
       delete this->container;
     }
 
-    // TODO: Argumentlist and bound argumentlist
+    // TODO: Bound argumentlist
   };
 
   // Rotate a given value to the left n times

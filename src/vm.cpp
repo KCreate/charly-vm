@@ -59,12 +59,13 @@ namespace Charly {
     cell->as.frame.return_address = return_address;
 
     // Calculate the number of local variables this frame has to support
-    uint32_t lvar_count = function->argc + function->block->lvarcount;
+    // Add 1 at the beginning to reserve space for the arguments magic variable
+    uint32_t lvar_count = 1 + function->argc + function->block->lvarcount;
 
     // Allocate and prefill local variable space
     cell->as.frame.environment = new std::vector<FrameEnvironmentEntry>;
     cell->as.frame.environment->reserve(lvar_count);
-    while (lvar_count--) cell->as.frame.environment->push_back({false, kNull});
+    while (lvar_count--) cell->as.frame.environment->push_back({ false, kNull });
 
     // Append the frame
     this->frames = (Frame *)cell;
@@ -591,8 +592,13 @@ namespace Charly {
 
     // Stack allocate enough space to copy all arguments into
     VALUE arguments[argc];
-    for (uint32_t argc_copy = 0; argc_copy < argc; argc_copy++) {
-      arguments[argc_copy] = this->pop_stack();
+
+    // Basically what this loop does is it counts argc_copy down to 0
+    // We do this because arguments are constructed on the stack
+    // in the reverse order than we are popping them off
+    for (int argc_copy = argc - 1; argc_copy >= 0; argc_copy--) {
+      VALUE value = this->pop_stack();
+      arguments[argc_copy] = value;
     }
 
     // Pop the function off of the stack
@@ -647,15 +653,19 @@ namespace Charly {
           }
         }
 
-        return this->call_function(tfunc, argc, arguments, target);
+        this->call_function(tfunc, argc + 1, arguments, target);
+        return;
       }
 
       // Functions which wrap around a C function pointer
       case kTypeCFunction: {
-        return this->call_cfunction((CFunction *)function, argc, arguments);
+        this->call_cfunction((CFunction *)function, argc + 1, arguments);
+        return;
       }
 
       default: {
+        std::cout << "cant call a " << this->real_type(function) << std::endl;
+
         // TODO: Handle as runtime error
         this->panic(kStatusUnspecifiedError);
       }
@@ -665,6 +675,7 @@ namespace Charly {
   void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self) {
 
     // Check if the function was called with enough arguments
+    // We subtract 1 to not include the arguments field
     if (argc < function->argc) {
       this->panic(kStatusNotEnoughArguments);
     }
@@ -676,17 +687,21 @@ namespace Charly {
     if (this->ip != nullptr) return_address = this->ip + this->decode_instruction_length(Opcode::Call);
     Frame* frame = this->push_frame(self, function, return_address);
 
+    Array* arguments_array = (Array *)this->create_array(argc);
+
     // Copy the arguments from the temporary arguments buffer into
     // the frames environment
     //
-    // The environment will contain enough space for argcount + function.lvar_count
-    // values so there's no need to allocate new space in it
-    //
-    // TODO: Copy the *arguments* field into the function (this is an array containing all arguments)
-    uint32_t arg_copy_count = function->argc;
-    while (arg_copy_count--) {
-      (* frame->environment)[arg_copy_count].value = argv[arg_copy_count];
+    // We add 1 to the index as that's the index of the arguments array
+    for (int i = 0; i < (int)function->argc; i++) {
+      (* frame->environment)[i + 1].value = argv[i];
+      arguments_array->data->push_back(argv[i]);
     }
+
+    // Insert the argument value and make it a constant
+    // This is so that we can be sure that noone is going to overwrite it afterwards
+    (* frame->environment)[0].value = (VALUE)arguments_array;
+    (* frame->environment)[0].is_constant = true;
 
     this->ip = function->block->data;
   }
@@ -701,14 +716,12 @@ namespace Charly {
     VALUE rv = kNull;
 
     switch (argc) {
-
-      // TODO: Also pass the *arguments* field (this is an array containing all arguments)
       case 0: rv = ((VALUE (*)(VM*))function->pointer)(this); break;
       case 1: rv = ((VALUE (*)(VM*, VALUE))function->pointer)(this, argv[0]); break;
       case 2: rv = ((VALUE (*)(VM*, VALUE, VALUE))function->pointer)(this, argv[0], argv[1]); break;
       case 3: rv = ((VALUE (*)(VM*, VALUE, VALUE, VALUE))function->pointer)(this, argv[0], argv[1], argv[2]); break;
-
       // TODO: Expand to 15??
+
       default: {
         this->panic(kStatusTooManyArgumentsForCFunction);
       }
@@ -800,9 +813,8 @@ namespace Charly {
   }
 
   void VM::stackdump(std::ostream& io) {
-    for (size_t i = 0; i < this->stack.size(); i++) {
-      VALUE entry = this->stack[i];
-      this->pretty_print(io, entry);
+    for (const VALUE& stackitem : this->stack) {
+      this->pretty_print(io, stackitem);
       io << std::endl;
     }
   }
@@ -1019,10 +1031,10 @@ namespace Charly {
     block.write_puthash(1);
     block.write_putvalue(this->symbol_table("internals"));
     block.write_puthash(1);
-    block.write_setlocal(0, 0);
+    block.write_setlocal(4, 0);
 
     // Charly.internals.get_method.foo = 25
-    block.write_readlocal(0, 0);
+    block.write_readlocal(4, 0);
     block.write_readmembersymbol(this->symbol_table("internals"));
     block.write_readmembersymbol(this->symbol_table("get_method"));
     block.write_putvalue(this->create_integer(25));
@@ -1044,28 +1056,47 @@ namespace Charly {
     block.write_putarray(5);
 
     // Charly.internals.get_method(:"hello_world")
-    block.write_readlocal(0, 0);
+    block.write_readlocal(4, 0);
     block.write_readmembersymbol(this->symbol_table("internals"));
     block.write_readmembersymbol(this->symbol_table("get_method"));
     block.write_putvalue(this->symbol_table("hello world"));
     block.write_call(1);
+    block.write_pop(1);
 
     // Charly.internals.get_method("This is a string test")
-    block.write_readlocal(0, 0);
+    block.write_readlocal(4, 0);
     block.write_readmembersymbol(this->symbol_table("internals"));
     block.write_readmembersymbol(this->symbol_table("get_method"));
     block.write_putstring("This is a string test");
     block.write_call(1);
+    block.write_pop(1);
 
     // Put Charly onto the stack
+    block.write_readlocal(4, 0);
+
+    // Put arguments onto the stack
     block.write_readlocal(0, 0);
 
     block.write_byte(Opcode::Halt);
 
     // Push a function onto the stack containing this block and call it
-    this->op_putfunction(this->symbol_table("__charly_init"), &block, false, 0);
-    this->op_call(0);
+    this->op_putfunction(this->symbol_table("__charly_init"), &block, false, 3);
+    this->push_stack(this->create_integer(50));
+    this->push_stack(this->create_integer(60));
+    this->push_stack(this->create_integer(70));
+    this->op_call(3);
     this->frames->self = kNull;
+  }
+
+  void VM::panic(STATUS reason) {
+    std::cout << "Panic: " << kStatusHumanReadable[reason] << std::endl;
+    this->stacktrace(std::cout);
+    this->catchstacktrace(std::cout);
+    this->stackdump(std::cout);
+
+    *(volatile uint32_t *)(0) = 25;
+
+    exit(1);
   }
 
   void VM::run() {
