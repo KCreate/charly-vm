@@ -26,32 +26,34 @@
 
 #include <iostream>
 
-#include "internals.h"
 #include "gc.h"
-#include "vm.h"
+#include "internals.h"
 #include "managedcontext.h"
+#include "vm.h"
 
 using namespace std;
 
 namespace Charly {
-  namespace Internals {
-    VALUE get_method(VM* vm, VALUE method_name) {
-      ManagedContext ctx(*vm);
+namespace Internals {
+VALUE get_method(VM* vm, VALUE method_name) {
+  ManagedContext ctx(*vm);
 
-      cout << "called get_method with "; vm->pretty_print(cout, method_name); cout << endl;
+  cout << "called get_method with ";
+  vm->pretty_print(cout, method_name);
+  cout << endl;
 
-      VALUE obj1 = ctx.create_object(0);
-      VALUE obj2 = ctx.create_object(0);
-      VALUE obj3 = ctx.create_object(0);
-      VALUE obj4 = ctx.create_object(0);
+  VALUE obj1 = ctx.create_object(0);
+  VALUE obj2 = ctx.create_object(0);
+  VALUE obj3 = ctx.create_object(0);
+  VALUE obj4 = ctx.create_object(0);
 
-      Array* arr = (Array *)ctx.create_array(4);
-      arr->data->push_back(obj1);
-      arr->data->push_back(obj2);
-      arr->data->push_back(obj3);
-      arr->data->push_back(obj4);
+  Array* arr = (Array*)ctx.create_array(4);
+  arr->data->push_back(obj1);
+  arr->data->push_back(obj2);
+  arr->data->push_back(obj3);
+  arr->data->push_back(obj4);
 
-      return (VALUE)arr;
-    }
-  }
+  return (VALUE)arr;
 }
+}  // namespace Internals
+}  // namespace Charly

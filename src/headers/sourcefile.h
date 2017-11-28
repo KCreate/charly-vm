@@ -24,85 +24,85 @@
  * SOFTWARE.
  */
 
-#include "buffer.h"
-#include <fstream>
-#include <string>
 #include <cstdio>
+#include <fstream>
 #include <sstream>
+#include <string>
+#include "buffer.h"
 
 #pragma once
 
 namespace Charly {
 
-  static const uint32_t kEOFChar = EOF;
-  class SourceFile {
-    public:
-      SourceFile(std::string& filename, std::string& source) {
-        this->filename = filename;
-        this->buffer.read(source);
-        this->read_char();
-      }
+static const uint32_t kEOFChar = EOF;
+class SourceFile {
+public:
+  SourceFile(std::string& filename, std::string& source) {
+    this->filename = filename;
+    this->buffer.read(source);
+    this->read_char();
+  }
 
-      SourceFile(std::string& source) {
-        this->filename = filename;
-        this->buffer.read(source);
-        this->read_char();
-      }
+  SourceFile(std::string& source) {
+    this->filename = filename;
+    this->buffer.read(source);
+    this->read_char();
+  }
 
-      // Sets the filename of this sourcefile
-      inline SourceFile& set_filename(std::string& newname) {
-        this->filename = newname;
-        return *this;
-      }
+  // Sets the filename of this sourcefile
+  inline SourceFile& set_filename(std::string& newname) {
+    this->filename = newname;
+    return *this;
+  }
 
-      // Returns the filename of this sourcefile
-      inline std::string get_filename() {
-        return this->filename;
-      }
+  // Returns the filename of this sourcefile
+  inline std::string get_filename() {
+    return this->filename;
+  }
 
-      // Returns the contents of the current frame as a string
-      inline std::string get_current_frame() {
-        return this->frame.str();
-      }
+  // Returns the contents of the current frame as a string
+  inline std::string get_current_frame() {
+    return this->frame.str();
+  }
 
-      // Reset the current frame
-      inline SourceFile& reset_frame() {
-        this->frame.str(""); // Reset the buffer
-        this->frame.clear(); // Clear any error flags as we don't care about them
-        return *this;
-      }
+  // Reset the current frame
+  inline SourceFile& reset_frame() {
+    this->frame.str("");  // Reset the buffer
+    this->frame.clear();  // Clear any error flags as we don't care about them
+    return *this;
+  }
 
-      // Returns the current position of the reader in the source
-      inline size_t get_pos() {
-        return this->pos;
-      }
+  // Returns the current position of the reader in the source
+  inline size_t get_pos() {
+    return this->pos;
+  }
 
-      // Returns the position the frame begins at
-      inline size_t get_frame_pos() {
-        return this->frame_pos;
-      }
+  // Returns the position the frame begins at
+  inline size_t get_frame_pos() {
+    return this->frame_pos;
+  }
 
-      // Returns the last read char
-      inline uint32_t get_current_char() {
-        return this->current_char;
-      }
+  // Returns the last read char
+  inline uint32_t get_current_char() {
+    return this->current_char;
+  }
 
-      // Read char, append it to the current frame and advance one position
-      virtual uint32_t read_char();
+  // Read char, append it to the current frame and advance one position
+  virtual uint32_t read_char();
 
-      // Read a char without appendin to the frame or advancing the position
-      virtual uint32_t peek_char();
+  // Read a char without appendin to the frame or advancing the position
+  virtual uint32_t peek_char();
 
-      // Close the source
-      // Note: This is only useful if the source is a file or an IO of some sorts
-      virtual SourceFile& close();
+  // Close the source
+  // Note: This is only useful if the source is a file or an IO of some sorts
+  virtual SourceFile& close();
 
-    private:
-      std::string filename = "unnamed-source";
-      size_t frame_pos = 0;
-      size_t pos = 0;
-      std::ostringstream frame;
-      Buffer buffer;
-      uint32_t current_char = kEOFChar;
-  };
-}
+private:
+  std::string filename = "unnamed-source";
+  size_t frame_pos = 0;
+  size_t pos = 0;
+  std::ostringstream frame;
+  Buffer buffer;
+  uint32_t current_char = kEOFChar;
+};
+}  // namespace Charly

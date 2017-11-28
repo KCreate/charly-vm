@@ -24,17 +24,17 @@
  * SOFTWARE.
  */
 
+#include "block.h"
 #include "buffer.h"
 #include "defines.h"
-#include "value.h"
-#include "status.h"
-#include "opcode.h"
-#include "block.h"
+#include "exception.h"
 #include "frame.h"
 #include "gc.h"
 #include "internals.h"
+#include "opcode.h"
 #include "operators.h"
-#include "exception.h"
+#include "status.h"
+#include "value.h"
 #include "vm.h"
 
 #pragma once

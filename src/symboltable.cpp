@@ -27,28 +27,28 @@
 #include "symboltable.h"
 
 namespace Charly {
-  VALUE SymbolTable::encode_string(const std::string& input) {
-    size_t hashvalue = std::hash<std::string>{}(input);
-    VALUE symbol = (VALUE)((hashvalue & ~kSymbolMask) | kSymbolFlag);
+VALUE SymbolTable::encode_string(const std::string& input) {
+  size_t hashvalue = std::hash<std::string>{}(input);
+  VALUE symbol = (VALUE)((hashvalue & ~kSymbolMask) | kSymbolFlag);
 
-    if (this->table.find(symbol) == this->table.end()) {
-      this->table.insert({ symbol, input });
-    }
-
-    return symbol;
+  if (this->table.find(symbol) == this->table.end()) {
+    this->table.insert({symbol, input});
   }
 
-  std::string SymbolTable::decode_symbol(VALUE symbol) {
-    auto found_string = this->table.find(symbol);
-
-    if (found_string == this->table.end()) {
-      return kUnknownSymbol;
-    }
-
-    return found_string->second;
-  }
-
-  void SymbolTable::copy_symbols_to_table(SymbolTable& other) {
-    other.table.insert(this->table.begin(), this->table.end());
-  }
+  return symbol;
 }
+
+std::string SymbolTable::decode_symbol(VALUE symbol) {
+  auto found_string = this->table.find(symbol);
+
+  if (found_string == this->table.end()) {
+    return kUnknownSymbol;
+  }
+
+  return found_string->second;
+}
+
+void SymbolTable::copy_symbols_to_table(SymbolTable& other) {
+  other.table.insert(this->table.begin(), this->table.end());
+}
+}  // namespace Charly

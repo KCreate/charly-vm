@@ -28,60 +28,41 @@
 
 namespace Charly {
 
-  // Status codes used throughout the machine
-  static const STATUS kStatusSuccess                                = 0x00;
-  static const STATUS kStatusFieldIsConstant                        = 0x01;
-  static const STATUS kStatusUnspecifiedError                       = 0x02;
-  static const STATUS kStatusCantReturnFromTopLevel                 = 0x03;
-  static const STATUS kStatusUnknownThrowType                       = 0x04;
-  static const STATUS kStatusIpOutOfBounds                          = 0x05;
-  static const STATUS kStatusNotEnoughSpaceForInstructionArguments  = 0x06;
-  static const STATUS kStatusUnknownOpcode                          = 0x07;
-  static const STATUS kStatusTooManyArgumentsForCFunction           = 0x08;
-  static const STATUS kStatusNotEnoughArguments                     = 0x09;
-  static const STATUS kStatusCatchStackEmpty                        = 0x0a;
-  static const STATUS kStatusNoSuitableCatchTableFound              = 0x0b;
-  static const STATUS kStatusReadFailedOutOfBounds                  = 0x0c;
-  static const STATUS kStatusReadFailedTooDeep                      = 0x0d;
-  static const STATUS kStatusWriteFailedOutOfBounds                 = 0x0e;
-  static const STATUS kStatusWriteFailedTooDeep                     = 0x0f;
-  static const STATUS kStatusStackEmpty                             = 0x10;
+// Status codes used throughout the machine
+static const STATUS kStatusSuccess = 0x00;
+static const STATUS kStatusFieldIsConstant = 0x01;
+static const STATUS kStatusUnspecifiedError = 0x02;
+static const STATUS kStatusCantReturnFromTopLevel = 0x03;
+static const STATUS kStatusUnknownThrowType = 0x04;
+static const STATUS kStatusIpOutOfBounds = 0x05;
+static const STATUS kStatusNotEnoughSpaceForInstructionArguments = 0x06;
+static const STATUS kStatusUnknownOpcode = 0x07;
+static const STATUS kStatusTooManyArgumentsForCFunction = 0x08;
+static const STATUS kStatusNotEnoughArguments = 0x09;
+static const STATUS kStatusCatchStackEmpty = 0x0a;
+static const STATUS kStatusNoSuitableCatchTableFound = 0x0b;
+static const STATUS kStatusReadFailedOutOfBounds = 0x0c;
+static const STATUS kStatusReadFailedTooDeep = 0x0d;
+static const STATUS kStatusWriteFailedOutOfBounds = 0x0e;
+static const STATUS kStatusWriteFailedTooDeep = 0x0f;
+static const STATUS kStatusStackEmpty = 0x10;
 
-  // Human-readable status messages
-  static const std::string kStatusHumanReadable[] = {
-    "Success",
-    "Field is constant",
-    "Unspecified error",
-    "Can't return from the top-level",
-    "Unknown throw type",
-    "Instruction pointer is out of bounds",
-    "Not enough space for instruction arguments",
-    "Unknown opcode",
-    "Too many arguments for CFunction",
-    "Not enough arguments",
-    "Catch stack is empty",
-    "No suitable catch table found",
-    "Reading local field failed, out of bounds",
-    "Reading local field failed, too deep",
-    "Writing local field failed, out of bounds",
-    "Writing local field failed, too deep",
-    "Stack is empty"
-  };
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// Human-readable status messages
+static const std::string kStatusHumanReadable[] = {"Success",
+                                                   "Field is constant",
+                                                   "Unspecified error",
+                                                   "Can't return from the top-level",
+                                                   "Unknown throw type",
+                                                   "Instruction pointer is out of bounds",
+                                                   "Not enough space for instruction arguments",
+                                                   "Unknown opcode",
+                                                   "Too many arguments for CFunction",
+                                                   "Not enough arguments",
+                                                   "Catch stack is empty",
+                                                   "No suitable catch table found",
+                                                   "Reading local field failed, out of bounds",
+                                                   "Reading local field failed, too deep",
+                                                   "Writing local field failed, out of bounds",
+                                                   "Writing local field failed, too deep",
+                                                   "Stack is empty"};
+}  // namespace Charly

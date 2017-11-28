@@ -24,60 +24,62 @@
  * SOFTWARE.
  */
 
-#include <vector>
 #include <unordered_set>
+#include <vector>
 
-#include "defines.h"
-#include "value.h"
-#include "frame.h"
-#include "exception.h"
 #include "block.h"
+#include "defines.h"
+#include "exception.h"
+#include "frame.h"
+#include "value.h"
 
 #pragma once
 
 namespace Charly {
-  static const size_t kGCInitialHeapCount = 2;
-  static const size_t kGCHeapCellCount = 256;
-  static const float kGCHeapCountGrowthFactor = 2;
+static const size_t kGCInitialHeapCount = 2;
+static const size_t kGCHeapCellCount = 256;
+static const float kGCHeapCountGrowthFactor = 2;
 
-  // This is the internal layout of a cell as managed by the MemoryHeap.
-  struct MemoryCell {
-    union {
-      struct {
-        VALUE flags;
-        MemoryCell* next;
-      } free;
-      Basic basic;
-      Object object;
-      Array array;
-      String string;
-      Float flonum;
-      Function function;
-      CFunction cfunction;
-      Frame frame;
-      CatchTable catchtable;
-      InstructionBlock instructionblock;
-    } as;
-  };
+// This is the internal layout of a cell as managed by the MemoryHeap.
+struct MemoryCell {
+  union {
+    struct {
+      VALUE flags;
+      MemoryCell* next;
+    } free;
+    Basic basic;
+    Object object;
+    Array array;
+    String string;
+    Float flonum;
+    Function function;
+    CFunction cfunction;
+    Frame frame;
+    CatchTable catchtable;
+    InstructionBlock instructionblock;
+  } as;
+};
 
-  class MemoryManager {
-    private:
-      MemoryCell* free_cell;
-      std::vector<MemoryCell*> heaps;
-      std::unordered_set<VALUE> temporaries;
+class MemoryManager {
+private:
+  MemoryCell* free_cell;
+  std::vector<MemoryCell*> heaps;
+  std::unordered_set<VALUE> temporaries;
 
-      void mark(VALUE cell);
-      void add_heap();
-      void grow_heap();
+  void mark(VALUE cell);
+  void add_heap();
+  void grow_heap();
 
-    public:
-      MemoryManager();
-      ~MemoryManager();
-      MemoryCell* allocate(VM* vm);
-      void collect(VM* vm);
-      void free(MemoryCell* cell);
-      void inline free(VALUE value) { this->free((MemoryCell*) value); }
-      void register_temporary(VALUE value);
-      void unregister_temporary(VALUE value);
-  };
-}
+public:
+  MemoryManager();
+  ~MemoryManager();
+  MemoryCell* allocate(VM* vm);
+  void collect(VM* vm);
+  void free(MemoryCell* cell);
+  void inline free(VALUE value) {
+    this->free((MemoryCell*)value);
+  }
+  void register_temporary(VALUE value);
+  void unregister_temporary(VALUE value);
+};
+}  // namespace Charly

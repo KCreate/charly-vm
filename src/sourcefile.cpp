@@ -29,28 +29,28 @@
 #include "sourcefile.h"
 
 namespace Charly {
-  uint32_t SourceFile::read_char() {
-    uint32_t cp = this->buffer.next_utf8();
+uint32_t SourceFile::read_char() {
+  uint32_t cp = this->buffer.next_utf8();
 
-    if (cp == (unsigned int)EOF) {
-      return cp;
-    }
-
-    std::string utf8bytes;
-    utf8::append(cp, std::back_inserter(utf8bytes));
-    this->frame << utf8bytes;
-
-    this->pos += 1;
-    this->current_char = cp;
-
+  if (cp == (unsigned int)EOF) {
     return cp;
   }
 
-  uint32_t SourceFile::peek_char() {
-    return this->buffer.peek_next_utf8();
-  }
+  std::string utf8bytes;
+  utf8::append(cp, std::back_inserter(utf8bytes));
+  this->frame << utf8bytes;
 
-  SourceFile& SourceFile::close() {
-    return *this;
-  }
+  this->pos += 1;
+  this->current_char = cp;
+
+  return cp;
 }
+
+uint32_t SourceFile::peek_char() {
+  return this->buffer.peek_next_utf8();
+}
+
+SourceFile& SourceFile::close() {
+  return *this;
+}
+}  // namespace Charly

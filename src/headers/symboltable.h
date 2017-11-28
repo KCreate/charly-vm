@@ -29,34 +29,35 @@
 #pragma once
 
 namespace Charly {
-  static const std::string kUnknownSymbol = "null";
+static const std::string kUnknownSymbol = "null";
 
-  class SymbolTable {
-    private:
-      std::unordered_map<VALUE, std::string> table;
+class SymbolTable {
+private:
+  std::unordered_map<VALUE, std::string> table;
 
-    public:
-      SymbolTable() = default;
-      SymbolTable(const SymbolTable& other) : table(other.table) {}
+public:
+  SymbolTable() = default;
+  SymbolTable(const SymbolTable& other) : table(other.table) {
+  }
 
-      SymbolTable& operator=(const SymbolTable& other) {
-        this->table = other.table;
-        return *this;
-      }
+  SymbolTable& operator=(const SymbolTable& other) {
+    this->table = other.table;
+    return *this;
+  }
 
-      VALUE encode_string(const std::string& input);
-      std::string decode_symbol(VALUE symbol);
+  VALUE encode_string(const std::string& input);
+  std::string decode_symbol(VALUE symbol);
 
-      VALUE operator () (const std::string& input) {
-        return this->encode_string(input);
-      }
-      std::string operator () (VALUE symbol) {
-        return this->decode_symbol(symbol);
-      }
+  VALUE operator()(const std::string& input) {
+    return this->encode_string(input);
+  }
+  std::string operator()(VALUE symbol) {
+    return this->decode_symbol(symbol);
+  }
 
-      void copy_symbols_to_table(SymbolTable& other);
-      inline void copy_symbols_from_table(SymbolTable& other) {
-        other.copy_symbols_to_table(*this);
-      }
-  };
-}
+  void copy_symbols_to_table(SymbolTable& other);
+  inline void copy_symbols_from_table(SymbolTable& other) {
+    other.copy_symbols_to_table(*this);
+  }
+};
+}  // namespace Charly

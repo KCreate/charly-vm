@@ -29,7 +29,7 @@
 #pragma once
 
 namespace Charly {
-  static const std::string kHelpMessage =
+static const std::string kHelpMessage =
     "Usage: charly [filename] [flags] [arguments] \n"
     "    -f FLAG, --flag FLAG             Set a flag \n"
     "    -h, --help                       Print this help message \n"
@@ -41,7 +41,7 @@ namespace Charly {
     "    tokens                           Display tokens of the input file \n"
     "    skipexec                         Don't execute after parsing";
 
-  static const std::string kLicense =
+static const std::string kLicense =
     "MIT License \n"
     "\n"
     "Copyright (c) 2017 Leonard Schütz \n"
@@ -62,13 +62,13 @@ namespace Charly {
     "OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE \n"
     "SOFTWARE.";
 
-  static const std::string kVersion = "pre-alpha development release";
+static const std::string kVersion = "pre-alpha development release";
 
-  class CLI {
-    RunFlags flags;
+class CLI {
+  RunFlags flags;
 
-    public:
-      CLI(int argc, char** argv, char** environment) : flags(argc, argv, environment) {};
-      int run();
-  };
-}
+public:
+  CLI(int argc, char** argv, char** environment) : flags(argc, argv, environment){};
+  int run();
+};
+}  // namespace Charly

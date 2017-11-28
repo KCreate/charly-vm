@@ -24,42 +24,42 @@
  * SOFTWARE.
  */
 
-#include <iostream>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 
 #pragma once
 
 namespace Charly {
-  typedef uintptr_t VALUE;
-  typedef intptr_t SIGNED_VALUE;
-  typedef uint16_t STATUS;
+typedef uintptr_t VALUE;
+typedef intptr_t SIGNED_VALUE;
+typedef uint16_t STATUS;
 
-  class VM;
-  struct Frame;
-  struct FrameEnvironmentEntry;
-  struct CatchTable;
-  class InstructionBlock;
+class VM;
+struct Frame;
+struct FrameEnvironmentEntry;
+struct CatchTable;
+class InstructionBlock;
 
-  class CLI;
-  struct RunFlags;
-  struct Context;
-  class SourceFile;
-  class Buffer;
-  class SymbolTable;
+class CLI;
+struct RunFlags;
+struct Context;
+class SourceFile;
+class Buffer;
+class SymbolTable;
 
-  enum ThrowType : uint8_t;
-  enum Opcode : uint8_t;
+enum ThrowType : uint8_t;
+enum Opcode : uint8_t;
 
-  struct MemoryCell;
-  class MemoryManager;
+struct MemoryCell;
+class MemoryManager;
 
-  struct Basic;
-  struct Object;
-  struct Array;
-  struct String;
-  struct Float;
-  struct Function;
-  struct CFunction;
-}
+struct Basic;
+struct Object;
+struct Array;
+struct String;
+struct Float;
+struct Function;
+struct CFunction;
+}  // namespace Charly

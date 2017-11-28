@@ -26,16 +26,16 @@
 
 #include <iostream>
 
-#include "value.h"
 #include "gc.h"
 #include "symboltable.h"
+#include "value.h"
 #include "vm.h"
 
 #pragma once
 
 namespace Charly {
-  struct Context {
-      MemoryManager gc;
-      SymbolTable symbol_table;
-  };
-}
+struct Context {
+  MemoryManager gc;
+  SymbolTable symbol_table;
+};
+}  // namespace Charly

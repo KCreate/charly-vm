@@ -26,32 +26,31 @@
 
 #include <vector>
 
+#include "block.h"
 #include "defines.h"
 #include "value.h"
-#include "block.h"
 
 #pragma once
 
 namespace Charly {
-  // Contains a value together with it's metadata
-  struct FrameEnvironmentEntry {
-    bool is_constant;
-    VALUE value;
-  };
+// Contains a value together with it's metadata
+struct FrameEnvironmentEntry {
+  bool is_constant;
+  VALUE value;
+};
 
-  // Frames introduce new environments
-  struct Frame {
-    VALUE flags;
-    Frame* parent;
-    Frame* parent_environment_frame;
-    Function* function;
-    std::vector<FrameEnvironmentEntry>* environment;
-    VALUE self;
-    uint8_t* return_address;
+// Frames introduce new environments
+struct Frame {
+  VALUE flags;
+  Frame* parent;
+  Frame* parent_environment_frame;
+  Function* function;
+  std::vector<FrameEnvironmentEntry>* environment;
+  VALUE self;
+  uint8_t* return_address;
 
-    void inline clean() {
-      delete this->environment;
-    }
-  };
-}
-
+  void inline clean() {
+    delete this->environment;
+  }
+};
+}  // namespace Charly

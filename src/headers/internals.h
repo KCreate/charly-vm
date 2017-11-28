@@ -29,7 +29,7 @@
 #pragma once
 
 namespace Charly {
-  namespace Internals {
-    VALUE get_method(VM* vm, VALUE method_name);
-  }
+namespace Internals {
+VALUE get_method(VM* vm, VALUE method_name);
 }
+}  // namespace Charly
