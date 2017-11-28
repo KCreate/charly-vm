@@ -245,6 +245,35 @@ namespace Charly {
     return (VALUE)cell;
   }
 
+  double VM::cast_to_integer_float(VALUE value) {
+    VALUE type = this->real_type(value);
+
+    switch (type) {
+      case kTypeInteger: return (double)this->integer_value(value);
+      case kTypeFloat: return (this->float_value(value));
+      case kString: {
+        String* string = (String *)string;
+        char* end_it = string->data + string->capacity;
+        double interpreted = strtod(string->data, &end_it);
+
+        // HUGE_VAL gets returned when the converted value
+        // doesn't fit inside a double value
+        // In this case we just return NAN
+        if (interpreted == HUGE_VAL) return NAN;
+
+        // If strtod could not perform a conversion it returns 0
+        // and sets *str_end to str
+        if (end_it == string->data) return NAN;
+
+        // The value could be converted
+        return interpreted;
+      }
+      default: {
+        return NAN;
+      }
+    }
+  }
+
   int64_t VM::integer_value(VALUE value) {
     return ((SIGNED_VALUE)value) >> 1;
   }

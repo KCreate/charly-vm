@@ -60,11 +60,11 @@ namespace Charly {
     // - identifier
     ReadMemberSymbol,
 
-    // Resolve value inside identifier
+    // Resolve member inside identifier
     //
     // stack:
     // - identifier
-    // - value
+    // - member
     ReadMemberValue,
 
     // Set a value at a given offset inside a given frame
