@@ -908,6 +908,13 @@ namespace Charly {
         io << "block="; this->pretty_print(io, func->block); io << " ";
         io << "bound_self_set=" << (func->bound_self_set ? "true" : "false") << " ";
         io << "bound_self="; this->pretty_print(io, func->bound_self);
+
+        for (auto& entry : *func->container) {
+          io << " ";
+          std::string key = this->symbol_table(entry.first);
+          io << key << "="; this->pretty_print(io, entry.second);
+        }
+
         io << ">";
         break;
       }
@@ -926,6 +933,13 @@ namespace Charly {
         io << "pointer=" << func->pointer << " ";
         io << "bound_self_set=" << (func->bound_self_set ? "true" : "false") << " ";
         io << "bound_self="; this->pretty_print(io, func->bound_self);
+
+        for (auto& entry : *func->container) {
+          io << " ";
+          std::string key = this->symbol_table(entry.first);
+          io << key << "="; this->pretty_print(io, entry.second);
+        }
+
         io << ">";
         break;
       }
