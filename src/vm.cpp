@@ -247,7 +247,7 @@ namespace Charly {
     return (VALUE)cell;
   }
 
-  double VM::cast_to_integer_float(VALUE value) {
+  double VM::cast_to_double(VALUE value) {
     VALUE type = this->real_type(value);
 
     switch (type) {

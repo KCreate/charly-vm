@@ -81,8 +81,12 @@ namespace Charly {
       VALUE create_function(VALUE name, uint32_t argc, bool anonymous, InstructionBlock* block);
       VALUE create_cfunction(VALUE name, uint32_t argc, void* pointer);
 
+      // Casting to different types
+      VALUE cast_to_numeric(VALUE value);
+      int64_t cast_to_integer(VALUE value);
+      double cast_to_double(VALUE value);
+
       // Methods that operate on the VALUE type
-      double cast_to_int(VALUE value);
       int64_t integer_value(VALUE value);
       double float_value(VALUE value);
       double numeric_value(VALUE value);
