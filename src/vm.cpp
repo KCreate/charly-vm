@@ -589,18 +589,11 @@ namespace Charly {
     // 1 + argc
     if (this->stack.size() < (1 + argc)) this->panic(kStatusStackEmpty);
 
-    // Allocate enough space to copy the arguments into a temporary buffer
-    // We need to keep them around until we have access to the new frames environment
-    VALUE* arguments = nullptr;
-    if (argc > 0) {
-      arguments = (VALUE*)alloca(argc * sizeof(VALUE));
+    // Stack allocate enough space to copy all arguments into
+    VALUE arguments[argc];
+    for (uint32_t argc_copy = 0; argc_copy < argc; argc_copy++) {
+      arguments[argc_copy] = this->pop_stack();
     }
-
-    uint32_t argc_backup = argc;
-    while (argc--) {
-      *(arguments + argc) = this->pop_stack();
-    }
-    argc = argc_backup;
 
     // Pop the function off of the stack
     VALUE function = this->pop_stack();
