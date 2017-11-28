@@ -8,7 +8,8 @@ CCFLAGS=-std=c++14 \
 				-Wno-variadic-macros \
 				-fexceptions \
 				-ferror-limit=10000 \
-				-Ilibs
+				-Ilibs \
+				-Isrc/headers
 OPT=-O0
 OBJS=build/main.o \
 		 build/gc.o \
