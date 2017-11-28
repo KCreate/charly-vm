@@ -675,7 +675,6 @@ namespace Charly {
   void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self) {
 
     // Check if the function was called with enough arguments
-    // We subtract 1 to not include the arguments field
     if (argc < function->argc) {
       this->panic(kStatusNotEnoughArguments);
     }
