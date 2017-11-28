@@ -1,32 +1,21 @@
 # Todos
 
+# Instruction to add a local variable slot to the current frame's environment
+- Needed to support a REPL
+- Might be useful for other things?
+
 # Calling and object storage convention
-- Come up with a calling convention
-  - Define where arguments end up inside an environment
-  - `arguments` field?
-    - Copy of the arguments which are inserted into the stack
-    - Updating an argument in the environment won't update the value inside the *arguments* array.
-    - `__CHARLY_FUNCTION_ARGUMENTS` should be a reserved identifier
-    - `__CHARLY_FUNCTION_ARGUMENTS` will be rewritten to `ReadLocal 0, 0`
-    - `arguments` will also be rewritten to `ReadLocal 0, 0`
-      - If the user redeclares his own `arguments` lvar, it will be treated as a new lvar
-      - The user can't access `arguments` via the implicitly-inserted lvar anymore,
-        he/she has to use `__CHARLY_FUNCTION_ARGUMENTS` to access all function arguments
-  - self value is being passed via the frames
-    - You can't modify the self value, only read from it
-  - Passing 3 arguments to a method which only takes 2 arguments, shouldn't put the last argument
-    into the container. Only *argc* arguments should be inside the environment.
-    - The rest of the arguments should still be accessible inside the *arguments* array
-  - Offsets:
-    - 0x00    : `__CHARLY_FUNCTION_ARGUMENTS` field
-    - 0x01    : arg1
-    - 0x0n    : argn
-    - 0x0n+1  : lvar 1
-    - 0x0n+2  : lvar 2
-    - 0x0n+n  : lvar n
-      - $0 is rewritten to whatever the first argument is
-      - $1 is rewritten to whatever the second argument is
-      - if $n is bigger than the method argc, it gets rewritten to an array index lookup on 0, 1
+- `arguments`
+  - `__CHARLY_FUNCTION_ARGUMENTS` should be a reserved identifier
+  - `__CHARLY_FUNCTION_ARGUMENTS` will be rewritten to `ReadLocal 0, 0`
+  - `arguments` will also be rewritten to `ReadLocal 0, 0`
+    - If the user redeclares his own `arguments` lvar, it will be treated as a new lvar
+- $0, $1, $2, $n get rewritten to
+  ```
+  ReadLocal 0, 0
+  PutValue $n
+  ReadMemberValue
+  ```
 
 # Execution pipeline
 - Managed by a single `Context` class.
@@ -51,10 +40,6 @@
 - The VM's opcodes need to be changed to allow this
   - PutFunction
   - PutCFunction (?)
-
-# Instruction to add a local variable slot to the current frame's environment
-- Needed to support a REPL
-- Might be useful for other things?
 
 # Make sure the JIT compiler doesn't need to allocate anything via the VM
 - How are instructionblocks allocated?
@@ -149,13 +134,9 @@
 
 # Memory ownership
 - Structs generally own the memory they point to
-- This means the compiler can't assume that memory will stick around after it's been created
 - InstructionBlocks
   - IB's are owned by the function they are placed into
   - Once the function is being deallocated, their instructionblock is deallocated as well
-- Bound Functions
-  - When binding a new self value to a function, the instruction block is copied
-  - This is to keep the possibility to optimize the function once the self value is known
 
 # Mapping between JITed code and source file locations
 - Figure out how JavaScript source maps work and copy the shit out of it

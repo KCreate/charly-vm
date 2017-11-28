@@ -49,7 +49,7 @@ namespace Charly {
     return frame;
   }
 
-  Frame* VM::push_frame(VALUE self, Function* function, uint8_t* return_address) {
+  Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address) {
     MemoryCell* cell = this->gc.allocate(this);
     cell->as.basic.set_type(kTypeFrame);
     cell->as.frame.parent = this->frames;
@@ -72,11 +72,11 @@ namespace Charly {
     return (Frame *)cell;
   }
 
-  InstructionBlock& VM::request_instruction_block(uint32_t lvarcount) {
+  InstructionBlock* VM::create_instructionblock(uint32_t lvarcount) {
     MemoryCell* cell = this->gc.allocate(this);
     new (&cell->as.instructionblock) InstructionBlock(lvarcount);
     cell->as.basic.set_type(kTypeInstructionBlock);
-    return *(InstructionBlock *)cell;
+    return (InstructionBlock *)cell;
   }
 
   VALUE VM::pop_stack() {
@@ -93,7 +93,7 @@ namespace Charly {
     this->stack.push_back(value);
   }
 
-  CatchTable* VM::push_catchtable(ThrowType type, uint8_t* address) {
+  CatchTable* VM::create_catchtable(ThrowType type, uint8_t* address) {
     MemoryCell* cell = this->gc.allocate(this);
     cell->as.basic.set_type(kTypeCatchTable);
     cell->as.catchtable.stacksize = this->stack.size();
@@ -685,7 +685,7 @@ namespace Charly {
     // compute a return address
     uint8_t* return_address = nullptr;
     if (this->ip != nullptr) return_address = this->ip + this->decode_instruction_length(Opcode::Call);
-    Frame* frame = this->push_frame(self, function, return_address);
+    Frame* frame = this->create_frame(self, function, return_address);
 
     Array* arguments_array = (Array *)this->create_array(argc);
 
@@ -763,7 +763,7 @@ namespace Charly {
   }
 
   void VM::op_registercatchtable(ThrowType type, int32_t offset) {
-    this->push_catchtable(type, this->ip + offset);
+    this->create_catchtable(type, this->ip + offset);
   }
 
   void VM::op_popcatchtable() {
@@ -1019,68 +1019,66 @@ namespace Charly {
     // This way it can still access the global scope, but not register any
     // new variables or constants into it.
     uint32_t global_var_count = 1;
-    InstructionBlock& block = this->request_instruction_block(global_var_count);
+    InstructionBlock* block = this->create_instructionblock(global_var_count);
 
     // let Charly = {
     //   internals = {
     //     get_method = (CFunction *)Internals::get_method
     //   }
     // };
-    block.write_putcfunction(this->symbol_table("get_method"), (void *)Internals::get_method, 1);
-    block.write_putvalue(this->symbol_table("get_method"));
-    block.write_puthash(1);
-    block.write_putvalue(this->symbol_table("internals"));
-    block.write_puthash(1);
-    block.write_setlocal(4, 0);
+    block->write_putcfunction(this->symbol_table("get_method"), (void *)Internals::get_method, 1);
+    block->write_putvalue(this->symbol_table("get_method"));
+    block->write_puthash(1);
+    block->write_putvalue(this->symbol_table("internals"));
+    block->write_puthash(1);
+    block->write_setlocal(4, 0);
 
     // Charly.internals.get_method.foo = 25
-    block.write_readlocal(4, 0);
-    block.write_readmembersymbol(this->symbol_table("internals"));
-    block.write_readmembersymbol(this->symbol_table("get_method"));
-    block.write_putvalue(this->create_integer(25));
-    block.write_setmembersymbol(this->symbol_table("foo"));
-    block.write_pop(1);
+    block->write_readlocal(4, 0);
+    block->write_readmembersymbol(this->symbol_table("internals"));
+    block->write_readmembersymbol(this->symbol_table("get_method"));
+    block->write_putvalue(this->create_integer(25));
+    block->write_setmembersymbol(this->symbol_table("foo"));
+    block->write_pop(1);
 
     // [[{}, { boye = 250 }], 25, 25, 25, 25]
-    block.write_puthash(0);
-    block.write_puthash(0);
-    block.write_dup();
-    block.write_putvalue(this->create_integer(250));
-    block.write_setmembersymbol(this->symbol_table("boye"));
-    block.write_pop(1);
-    block.write_putarray(2);
-    block.write_putfloat(25);
-    block.write_putfloat(25);
-    block.write_putfloat(25);
-    block.write_putfloat(25);
-    block.write_putarray(5);
+    block->write_puthash(0);
+    block->write_puthash(0);
+    block->write_dup();
+    block->write_putvalue(this->create_integer(250));
+    block->write_setmembersymbol(this->symbol_table("boye"));
+    block->write_pop(1);
+    block->write_putarray(2);
+    block->write_putfloat(25);
+    block->write_putfloat(25);
+    block->write_putfloat(25);
+    block->write_putfloat(25);
+    block->write_putarray(5);
 
     // Charly.internals.get_method(:"hello_world")
-    block.write_readlocal(4, 0);
-    block.write_readmembersymbol(this->symbol_table("internals"));
-    block.write_readmembersymbol(this->symbol_table("get_method"));
-    block.write_putvalue(this->symbol_table("hello world"));
-    block.write_call(1);
-    block.write_pop(1);
+    block->write_readlocal(4, 0);
+    block->write_readmembersymbol(this->symbol_table("internals"));
+    block->write_readmembersymbol(this->symbol_table("get_method"));
+    block->write_putvalue(this->symbol_table("hello world"));
+    block->write_call(1);
 
     // Charly.internals.get_method("This is a string test")
-    block.write_readlocal(4, 0);
-    block.write_readmembersymbol(this->symbol_table("internals"));
-    block.write_readmembersymbol(this->symbol_table("get_method"));
-    block.write_putstring("This is a string test");
-    block.write_call(1);
-    block.write_pop(1);
+    block->write_readlocal(4, 0);
+    block->write_readmembersymbol(this->symbol_table("internals"));
+    block->write_readmembersymbol(this->symbol_table("get_method"));
+    block->write_putstring("This is a string test");
+    block->write_call(1);
 
     // Put Charly onto the stack
-    block.write_readlocal(4, 0);
+    block->write_readlocal(4, 0);
 
     // Put arguments onto the stack
-    block.write_readlocal(0, 0);
+    block->write_readlocal(0, 0);
 
-    block.write_byte(Opcode::Halt);
+    block->write_byte(Opcode::Halt);
 
     // Push a function onto the stack containing this block and call it
-    this->op_putfunction(this->symbol_table("__charly_init"), &block, false, 3);
+    this->op_putfunction(this->symbol_table("__charly_init"), block, false, 3);
     this->push_stack(this->create_integer(50));
     this->push_stack(this->create_integer(60));
     this->push_stack(this->create_integer(70));

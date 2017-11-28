@@ -57,17 +57,17 @@ namespace Charly {
 
       // Methods that operate on the VM's frames
       Frame* pop_frame();
-      Frame* push_frame(VALUE self, Function* calling_function, uint8_t* return_address);
+      Frame* create_frame(VALUE self, Function* calling_function, uint8_t* return_address);
 
       // Instruction Blocks
-      InstructionBlock& request_instruction_block(uint32_t lvarcount);
+      InstructionBlock* create_instructionblock(uint32_t lvarcount);
 
       // Stack manipulation
       VALUE pop_stack();
       void push_stack(VALUE value);
 
       // CatchStack manipulation
-      CatchTable* push_catchtable(ThrowType type, uint8_t* address);
+      CatchTable* create_catchtable(ThrowType type, uint8_t* address);
       CatchTable* pop_catchtable();
       CatchTable* find_catchtable(ThrowType type);
       void restore_catchtable(CatchTable* table);
