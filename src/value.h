@@ -169,6 +169,11 @@ namespace Charly {
     bool anonymous;
     bool bound_self_set;
     VALUE bound_self;
+    std::unordered_map<VALUE, VALUE>* container;
+
+    void inline clean() {
+      delete this->container;
+    }
 
     // TODO: Argumentlist and bound argumentlist
   };
@@ -182,6 +187,11 @@ namespace Charly {
     uint32_t argc;
     bool bound_self_set;
     VALUE bound_self;
+    std::unordered_map<VALUE, VALUE>* container;
+
+    void inline clean() {
+      delete this->container;
+    }
 
     // TODO: Argumentlist and bound argumentlist
   };

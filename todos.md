@@ -200,6 +200,11 @@
 # Symbols
 - Add a method which allows to turn arbitary types of things into symbols
 
+# Implement conversion methods
+- `cast_to_numeric` Convert value type to numeric or NAN if not possible
+- `cast_to_integer` Convert value type to integer or NAN if not possible
+- `cast_to_double` Convert value type to double or NAN if not possible
+
 # Implement all opcodes
 - PutClass
 - ReadMemberValue

@@ -231,6 +231,7 @@ namespace Charly {
     cell->as.function.anonymous = anonymous;
     cell->as.function.bound_self_set = false;
     cell->as.function.bound_self = kNull;
+    cell->as.function.container = new std::unordered_map<VALUE, VALUE>();
     return (VALUE)cell;
   }
 
@@ -242,6 +243,7 @@ namespace Charly {
     cell->as.cfunction.argc = argc;
     cell->as.cfunction.bound_self_set = false;
     cell->as.cfunction.bound_self = kNull;
+    cell->as.cfunction.container = new std::unordered_map<VALUE, VALUE>();
     return (VALUE)cell;
   }
 
@@ -251,8 +253,8 @@ namespace Charly {
     switch (type) {
       case kTypeInteger: return (double)this->integer_value(value);
       case kTypeFloat: return (this->float_value(value));
-      case kString: {
-        String* string = (String *)string;
+      case kTypeString: {
+        String* string = (String *)value;
         char* end_it = string->data + string->capacity;
         double interpreted = strtod(string->data, &end_it);
 
@@ -310,7 +312,7 @@ namespace Charly {
     // from a pointer value, we check for them before we check
     // for a pointer value
     if (is_boolean(value)) return kTypeBoolean;
-    if (is_null(value)) return kNull;
+    if (is_null(value)) return kTypeNull;
     if (!is_special(value)) return basics(value)->type();
     if (is_integer(value)) return kTypeInteger;
     if (is_ifloat(value)) return kTypeFloat;
@@ -404,6 +406,28 @@ namespace Charly {
 
         break;
       }
+
+      case kTypeFunction: {
+        Function* func = (Function *)target;
+
+        if (func->container->count(symbol) == 1) {
+          this->push_stack((*func->container)[symbol]);
+          return;
+        }
+
+        break;
+      }
+
+      case kTypeCFunction: {
+        CFunction* cfunc = (CFunction *)target;
+
+        if (cfunc->container->count(symbol) == 1) {
+          this->push_stack((*cfunc->container)[symbol]);
+          return;
+        }
+
+        break;
+      }
     }
 
     // Travel up the class chain and search for the right field
@@ -442,17 +466,27 @@ namespace Charly {
     VALUE target = this->pop_stack();
 
     // Check if we can write to the value
-    switch (this->type(target)) {
+    switch (this->real_type(target)) {
       case kTypeObject: {
         Object* obj = (Object *)target;
         (*obj->container)[symbol] = value;
         break;
       }
 
-      default: {
-        this->panic(kStatusUnspecifiedError);
+      case kTypeFunction: {
+        Function* func = (Function *)target;
+        (*func->container)[symbol] = value;
+        break;
+      }
+
+      case kTypeCFunction: {
+        CFunction* cfunc = (CFunction *)target;
+        (*cfunc->container)[symbol] = value;
+        break;
       }
     }
+
+    this->push_stack(value);
   }
 
   void VM::op_putself() {
@@ -790,7 +824,6 @@ namespace Charly {
     this->pretty_print_stack.push_back(value);
 
     switch (this->real_type(value)) {
-
       case kTypeDead: {
         io << "<!!DEAD_CELL!!: " << (void *)value << ">";
         break;
@@ -981,12 +1014,21 @@ namespace Charly {
     block.write_puthash(1);
     block.write_setlocal(0, 0);
 
+    // Charly.internals.get_method.foo = 25
+    block.write_readlocal(0, 0);
+    block.write_readmembersymbol(this->symbol_table("internals"));
+    block.write_readmembersymbol(this->symbol_table("get_method"));
+    block.write_putvalue(this->create_integer(25));
+    block.write_setmembersymbol(this->symbol_table("foo"));
+    block.write_pop(1);
+
     // [[{}, { boye = 250 }], 25, 25, 25, 25]
     block.write_puthash(0);
     block.write_puthash(0);
     block.write_dup();
     block.write_putvalue(this->create_integer(250));
     block.write_setmembersymbol(this->symbol_table("boye"));
+    block.write_pop(1);
     block.write_putarray(2);
     block.write_putfloat(25);
     block.write_putfloat(25);
@@ -1007,6 +1049,9 @@ namespace Charly {
     block.write_readmembersymbol(this->symbol_table("get_method"));
     block.write_putstring("This is a string test");
     block.write_call(1);
+
+    // Put Charly onto the stack
+    block.write_readlocal(0, 0);
 
     block.write_byte(Opcode::Halt);
 
@@ -1116,7 +1161,7 @@ namespace Charly {
 
         case Opcode::PutFunction: {
           auto symbol = *(VALUE *)(this->ip + sizeof(Opcode));
-          auto block = *(InstructionBlock **)(this->ip + sizeof(Opcode) + sizeof(VALUE));
+          auto block = *(InstructionBlock* *)(this->ip + sizeof(Opcode) + sizeof(VALUE));
           auto anonymous = *(bool *)(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(VALUE));
           auto argc = *(uint32_t *)(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(VALUE) + sizeof(bool));
           this->op_putfunction(symbol, block, anonymous, argc);

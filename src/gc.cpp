@@ -87,7 +87,7 @@ namespace Charly {
       case kTypeObject: {
         auto obj = (Object *)value;
         this->mark(obj->klass);
-        for (auto& obj_entry : *obj->container) this->mark(obj_entry.second);
+        for (auto& entry : *obj->container) this->mark(entry.second);
         break;
       }
 
@@ -102,12 +102,14 @@ namespace Charly {
         this->mark((VALUE)func->context);
         this->mark((VALUE)func->block);
         if (func->bound_self_set) this->mark(func->bound_self);
+        for (auto& entry : *func->container) this->mark(entry.second);
         break;
       }
 
       case kTypeCFunction: {
         auto cfunc = (CFunction *)value;
         if (cfunc->bound_self_set) this->mark(cfunc->bound_self);
+        for (auto& entry : *cfunc->container) this->mark(entry.second);
         break;
       }
 
@@ -220,6 +222,16 @@ namespace Charly {
 
       case kTypeString: {
         cell->as.string.clean();
+        break;
+      }
+
+      case kTypeFunction: {
+        cell->as.function.clean();
+        break;
+      }
+
+      case kTypeCFunction: {
+        cell->as.cfunction.clean();
         break;
       }
 
