@@ -870,7 +870,9 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     case kTypeString: {
       String* string = (String*)value;
       io << "<String:" << string << " ";
-      io << "\"" << std::string_view(string->data, string->length) << "\"";
+      io << "\"";
+      io.write(string->data, string->length);
+      io << "\"";
       io << ">";
       break;
     }
