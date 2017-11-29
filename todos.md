@@ -1,5 +1,20 @@
 # Todos
 
+# Switch to using references where possible
+- Pointers are dangerous
+  - Should only be used when absolutly neccessary
+- Using references makes code look nicer as there are no arrows all over the place
+- Only use references for things which can't be a nullptr
+  - The frames and catchtables inside the VM for example have to be pointers because they can be null
+  - Return values and functions which require the VM or GC can use references as they can't be null
+
+# Make use of const more often
+
+# Move language logic which doesn't depend on the VM into it's own class
+- Maybe called `VMUtils` or `CharlyUtils`?
+- One doesn't need the VM to pretty_print objects
+- The VM should only contain logic that is stricly specific to executing code
+
 # Instruction to add a local variable slot to the current frame's environment
 - Needed to support a REPL
 - Might be useful for other things?
