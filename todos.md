@@ -14,6 +14,22 @@
 - Maybe called `VMUtils` or `CharlyUtils`?
 - One doesn't need the VM to pretty_print objects
 - The VM should only contain logic that is stricly specific to executing code
+- Candidate methods
+  - `create_instructionblock`
+  - `create_object`
+  - `create_array`
+  - `create_integer`
+  - `create_float`
+  - `create_string`
+  - `create_cfunction`
+  - `cast_to_double`
+  - `integer_value`
+  - `float_value`
+  - `numeric_value`
+  - `boolean_value`
+  - `real_type`
+  - `type`
+  - `pretty_print` (Requires access to the symbol_table and pretty_print_stack and VM data structures)
 
 # Instruction to add a local variable slot to the current frame's environment
 - Needed to support a REPL
