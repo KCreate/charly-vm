@@ -1,5 +1,12 @@
 # Todos
 
+# Figure out how the VM starts execution of a block
+- Exactly the starting and end point is interesting
+- Maybe pass a pointer to an InstructionBlock?
+- What happens when the VM halts? (via the Halt instruction)
+- How does the VM give back control to the calling function
+- How is VM exit being done
+
 # Switch to using references where possible
 - Pointers are dangerous
   - Should only be used when absolutly neccessary
@@ -7,8 +14,6 @@
 - Only use references for things which can't be a nullptr
   - The frames and catchtables inside the VM for example have to be pointers because they can be null
   - Return values and functions which require the VM or GC can use references as they can't be null
-
-# Make use of const more often
 
 # Move language logic which doesn't depend on the VM into it's own class
 - Maybe called `VMUtils` or `CharlyUtils`?
