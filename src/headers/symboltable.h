@@ -40,8 +40,15 @@ public:
   SymbolTable(const SymbolTable& other) : table(other.table) {
   }
 
-  SymbolTable& operator=(const SymbolTable& other) {
-    this->table = other.table;
+  SymbolTable& operator=(SymbolTable& other) {
+    if (this == &other)
+      return *this;
+    this->table.swap(other.table);
+    return *this;
+  }
+
+  SymbolTable& operator=(SymbolTable&& other) {
+    std::swap(this->table, other.table);
     return *this;
   }
 

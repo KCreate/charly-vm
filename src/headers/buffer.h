@@ -67,16 +67,25 @@ public:
     memcpy(this->buffer, other.buffer, other.used_bytesize);
   }
 
-  Buffer& operator=(const Buffer& other) {
-    if (this != &other) {
-      free(this->buffer);
-      this->buffer = (char*)malloc(sizeof(char) * other.bytesize);
-      this->read_pointer = this->buffer + (other.read_pointer - other.buffer);
-      this->write_pointer = this->buffer + (other.write_pointer - other.buffer);
-      this->bytesize = other.bytesize;
-      this->used_bytesize = other.used_bytesize;
-      memcpy(this->buffer, other.buffer, other.bytesize);
-    }
+  Buffer& operator=(Buffer& other) {
+    if (this == &other)
+      return *this;
+
+    std::swap(this->buffer, other.buffer);
+    this->read_pointer = this->buffer + (other.read_pointer - other.buffer);
+    this->write_pointer = this->buffer + (other.write_pointer - other.buffer);
+    this->bytesize = other.bytesize;
+    this->used_bytesize = other.used_bytesize;
+
+    return *this;
+  }
+
+  Buffer& operator=(Buffer&& other) {
+    std::swap(this->buffer, other.buffer);
+    this->read_pointer = this->buffer + (other.read_pointer - other.buffer);
+    this->write_pointer = this->buffer + (other.write_pointer - other.buffer);
+    this->bytesize = other.bytesize;
+    this->used_bytesize = other.used_bytesize;
 
     return *this;
   }
