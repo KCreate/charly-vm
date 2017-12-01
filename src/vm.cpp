@@ -664,13 +664,13 @@ void VM::call(uint32_t argc, bool with_target) {
         }
       }
 
-      this->call_function(tfunc, argc + 1, arguments, target);
+      this->call_function(tfunc, argc, arguments, target);
       return;
     }
 
     // Functions which wrap around a C function pointer
     case kTypeCFunction: {
-      this->call_cfunction((CFunction*)function, argc + 1, arguments);
+      this->call_cfunction((CFunction*)function, argc, arguments);
       return;
     }
 

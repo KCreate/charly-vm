@@ -63,6 +63,8 @@ int CLI::run() {
 
   std::string source_string((std::istreambuf_iterator<char>(inputfile)), std::istreambuf_iterator<char>());
 
+  inputfile.close();
+
   SourceFile userfile(this->flags.arguments[0], source_string);
 
   Context context;
