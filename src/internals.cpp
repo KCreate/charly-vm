@@ -35,11 +35,11 @@ using namespace std;
 
 namespace Charly {
 namespace Internals {
-VALUE get_method(VM* vm, VALUE method_name) {
-  ManagedContext ctx(*vm);
+VALUE get_method(VM& vm, VALUE method_name) {
+  ManagedContext ctx(vm);
 
   cout << "called get_method with ";
-  vm->pretty_print(cout, method_name);
+  vm.pretty_print(cout, method_name);
   cout << endl;
 
   VALUE obj1 = ctx.create_object(0);

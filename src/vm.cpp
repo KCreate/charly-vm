@@ -725,11 +725,11 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
   VALUE rv = kNull;
 
   switch (argc) {
-    case 0: rv = ((VALUE(*)(VM*))function->pointer)(this); break;
-    case 1: rv = ((VALUE(*)(VM*, VALUE))function->pointer)(this, argv[0]); break;
-    case 2: rv = ((VALUE(*)(VM*, VALUE, VALUE))function->pointer)(this, argv[0], argv[1]); break;
+    case 0: rv = ((VALUE(*)(VM&))function->pointer)(*this); break;
+    case 1: rv = ((VALUE(*)(VM&, VALUE))function->pointer)(*this, argv[0]); break;
+    case 2: rv = ((VALUE(*)(VM&, VALUE, VALUE))function->pointer)(*this, argv[0], argv[1]); break;
     case 3:
-      rv = ((VALUE(*)(VM*, VALUE, VALUE, VALUE))function->pointer)(this, argv[0], argv[1], argv[2]);
+      rv = ((VALUE(*)(VM&, VALUE, VALUE, VALUE))function->pointer)(*this, argv[0], argv[1], argv[2]);
       break;
       // TODO: Expand to 15??
 
@@ -1331,7 +1331,7 @@ void VM::run() {
       case Opcode::Add: {
         VALUE right = this->pop_stack();
         VALUE left = this->pop_stack();
-        this->push_stack(Operators::add(this, left, right));
+        this->push_stack(Operators::add(*this, left, right));
         break;
       }
 

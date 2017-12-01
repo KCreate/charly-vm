@@ -30,14 +30,14 @@
 
 namespace Charly {
 namespace Operators {
-VALUE add(VM* vm, VALUE left, VALUE right) {
-  if (vm->type(left) == kTypeNumeric && vm->type(right) == kTypeNumeric) {
-    double nleft = vm->numeric_value(left);
-    double nright = vm->numeric_value(right);
-    return vm->create_float(nleft + nright);
+VALUE add(VM& vm, VALUE left, VALUE right) {
+  if (vm.type(left) == kTypeNumeric && vm.type(right) == kTypeNumeric) {
+    double nleft = vm.numeric_value(left);
+    double nright = vm.numeric_value(right);
+    return vm.create_float(nleft + nright);
   }
 
-  return vm->create_float(NAN);
+  return vm.create_float(NAN);
 }
 
 bool truthyness(VALUE value) {

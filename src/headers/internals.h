@@ -30,6 +30,6 @@
 
 namespace Charly {
 namespace Internals {
-VALUE get_method(VM* vm, VALUE method_name);
+VALUE get_method(VM& vm, VALUE method_name);
 }
 }  // namespace Charly
