@@ -32,7 +32,7 @@ namespace Charly {
 uint32_t SourceFile::read_char() {
   uint32_t cp = this->buffer.next_utf8();
 
-  if (cp == (unsigned int)EOF) {
+  if (cp == static_cast<unsigned int>(EOF)) {
     return cp;
   }
 

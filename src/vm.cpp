@@ -57,6 +57,7 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address)
   cell->as.frame.parent_environment_frame = function->context;
   cell->as.frame.function = function;
   cell->as.frame.self = self;
+
   cell->as.frame.return_address = return_address;
 
   // Calculate the number of local variables this frame has to support
@@ -70,15 +71,15 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address)
     cell->as.frame.environment->push_back({false, kNull});
 
   // Append the frame
-  this->frames = (Frame*)cell;
-  return (Frame*)cell;
+  this->frames = reinterpret_cast<Frame*>(cell);
+  return reinterpret_cast<Frame*>(cell);
 }
 
 InstructionBlock* VM::create_instructionblock(uint32_t lvarcount) {
   MemoryCell* cell = this->gc.allocate(this);
   new (&cell->as.instructionblock) InstructionBlock(lvarcount);
   cell->as.basic.set_type(kTypeInstructionBlock);
-  return (InstructionBlock*)cell;
+  return reinterpret_cast<InstructionBlock*>(cell);
 }
 
 VALUE VM::pop_stack() {
@@ -103,15 +104,15 @@ CatchTable* VM::create_catchtable(ThrowType type, uint8_t* address) {
   cell->as.catchtable.parent = this->catchstack;
   cell->as.catchtable.type = type;
   cell->as.catchtable.address = address;
-  this->catchstack = (CatchTable*)cell;
-  return (CatchTable*)cell;
+  this->catchstack = reinterpret_cast<CatchTable*>(cell);
+  return reinterpret_cast<CatchTable*>(cell);
 }
 
 CatchTable* VM::pop_catchtable() {
   if (!this->catchstack)
     this->panic(kStatusCatchStackEmpty);
   CatchTable* parent = this->catchstack->parent;
-  this->gc.free((VALUE)this->catchstack);
+  this->gc.free(reinterpret_cast<VALUE>(this->catchstack));
   this->catchstack = parent;
   return parent;
 }
@@ -160,7 +161,7 @@ VALUE VM::create_object(uint32_t initial_capacity) {
   cell->as.object.klass = kNull;
   cell->as.object.container = new std::unordered_map<VALUE, VALUE>();
   cell->as.object.container->reserve(initial_capacity);
-  return (VALUE)cell;
+  return reinterpret_cast<VALUE>(cell);
 }
 
 VALUE VM::create_array(uint32_t initial_capacity) {
@@ -168,11 +169,11 @@ VALUE VM::create_array(uint32_t initial_capacity) {
   cell->as.basic.set_type(kTypeArray);
   cell->as.array.data = new std::vector<VALUE>();
   cell->as.array.data->reserve(initial_capacity);
-  return (VALUE)cell;
+  return reinterpret_cast<VALUE>(cell);
 }
 
 VALUE VM::create_integer(int64_t value) {
-  return ((VALUE)value << 1) | kIntegerFlag;
+  return (static_cast<VALUE>(value) << 1) | kIntegerFlag;
 }
 
 VALUE VM::create_float(double value) {
@@ -187,11 +188,11 @@ VALUE VM::create_float(double value) {
 
   t.d = value;
 
-  int bits = (int)((VALUE)(t.v >> 60) & kPointerMask);
+  int bits = static_cast<int>(static_cast<VALUE>(t.v >> 60) & kPointerMask);
 
   // I have no idee what's going on here, this was taken from ruby source code
   if (t.v != 0x3000000000000000 && !((bits - 3) & ~0x01)) {
-    return (BIT_ROTL(t.v, 3) & ~(VALUE)0x01) | kFloatFlag;
+    return (BIT_ROTL(t.v, 3) & ~static_cast<VALUE>(0x01)) | kFloatFlag;
   } else if (t.v == 0) {
     // +0.0
     return 0x8000000000000002;
@@ -201,7 +202,7 @@ VALUE VM::create_float(double value) {
   MemoryCell* cell = this->gc.allocate(this);
   cell->as.basic.set_type(kTypeFloat);
   cell->as.flonum.float_value = value;
-  return (VALUE)cell;
+  return reinterpret_cast<VALUE>(cell);
 }
 
 VALUE VM::create_string(char* data, uint32_t length) {
@@ -211,7 +212,7 @@ VALUE VM::create_string(char* data, uint32_t length) {
     string_capacity *= kStringCapacityGrowthFactor;
 
   // Create a copy of the data
-  char* copied_string = (char*)malloc(string_capacity);
+  char* copied_string = static_cast<char*>(malloc(string_capacity));
   memcpy(copied_string, data, length);
 
   // Allocate the memory cell and initialize the values
@@ -220,7 +221,7 @@ VALUE VM::create_string(char* data, uint32_t length) {
   cell->as.string.data = copied_string;
   cell->as.string.length = length;
   cell->as.string.capacity = string_capacity;
-  return (VALUE)cell;
+  return reinterpret_cast<VALUE>(cell);
 }
 
 VALUE VM::create_function(VALUE name, uint32_t argc, bool anonymous, InstructionBlock* block) {
@@ -234,10 +235,10 @@ VALUE VM::create_function(VALUE name, uint32_t argc, bool anonymous, Instruction
   cell->as.function.bound_self_set = false;
   cell->as.function.bound_self = kNull;
   cell->as.function.container = new std::unordered_map<VALUE, VALUE>();
-  return (VALUE)cell;
+  return reinterpret_cast<VALUE>(cell);
 }
 
-VALUE VM::create_cfunction(VALUE name, uint32_t argc, void* pointer) {
+VALUE VM::create_cfunction(VALUE name, uint32_t argc, FPOINTER pointer) {
   MemoryCell* cell = this->gc.allocate(this);
   cell->as.basic.set_type(kTypeCFunction);
   cell->as.cfunction.name = name;
@@ -246,15 +247,15 @@ VALUE VM::create_cfunction(VALUE name, uint32_t argc, void* pointer) {
   cell->as.cfunction.bound_self_set = false;
   cell->as.cfunction.bound_self = kNull;
   cell->as.cfunction.container = new std::unordered_map<VALUE, VALUE>();
-  return (VALUE)cell;
+  return reinterpret_cast<VALUE>(cell);
 }
 
 double VM::cast_to_double(VALUE value) {
   VALUE type = this->real_type(value);
 
   switch (type) {
-    case kTypeInteger: return (double)this->integer_value(value);
-    case kTypeFloat: return (this->float_value(value));
+    case kTypeInteger: return static_cast<double>(this->integer_value(value));
+    case kTypeFloat: return this->float_value(value);
     case kTypeString: {
       String* string = (String*)value;
       char* end_it = string->data + string->capacity;
@@ -264,27 +265,27 @@ double VM::cast_to_double(VALUE value) {
       // doesn't fit inside a double value
       // In this case we just return NAN
       if (interpreted == HUGE_VAL)
-        return NAN;
+        return this->create_float(NAN);
 
       // If strtod could not perform a conversion it returns 0
       // and sets *str_end to str
       if (end_it == string->data)
-        return NAN;
+        return this->create_float(NAN);
 
       // The value could be converted
       return interpreted;
     }
-    default: { return NAN; }
+    default: return this->create_float(NAN);
   }
 }
 
 int64_t VM::integer_value(VALUE value) {
-  return ((SIGNED_VALUE)value) >> 1;
+  return static_cast<SIGNED_VALUE>(value) >> 1;
 }
 
 double VM::float_value(VALUE value) {
   if (!is_special(value))
-    return ((Float*)value)->float_value;
+    return reinterpret_cast<Float*>(value)->float_value;
 
   union {
     double d;
@@ -292,7 +293,7 @@ double VM::float_value(VALUE value) {
   } t;
 
   VALUE b63 = (value >> 63);
-  t.v = BIT_ROTR((kFloatFlag - b63) | (value & ~(VALUE)kFloatMask), 3);
+  t.v = BIT_ROTR((kFloatFlag - b63) | (value & ~static_cast<VALUE>(kFloatMask)), 3);
   return t.d;
 }
 
@@ -300,7 +301,7 @@ double VM::numeric_value(VALUE value) {
   if (this->real_type(value) == kTypeFloat) {
     return this->float_value(value);
   } else {
-    return (double)this->integer_value(value);
+    return static_cast<double>(this->integer_value(value));
   }
 }
 
@@ -344,7 +345,7 @@ VALUE VM::type(VALUE value) {
 Opcode VM::fetch_instruction() {
   if (this->ip == nullptr)
     return Opcode::Nop;
-  return *(Opcode*)this->ip;
+  return *reinterpret_cast<Opcode*>(this->ip);
 }
 
 uint32_t VM::decode_instruction_length(Opcode opcode) {
@@ -360,8 +361,8 @@ uint32_t VM::decode_instruction_length(Opcode opcode) {
     case Opcode::PutValue: return 1 + sizeof(VALUE);
     case Opcode::PutFloat: return 1 + sizeof(double);
     case Opcode::PutString: return 1 + sizeof(uint32_t) + sizeof(uint32_t);
-    case Opcode::PutFunction: return 1 + sizeof(VALUE) + sizeof(void*) + sizeof(bool) + sizeof(uint32_t);
-    case Opcode::PutCFunction: return 1 + sizeof(VALUE) + sizeof(void*) + sizeof(uint32_t);
+    case Opcode::PutFunction: return 1 + sizeof(VALUE) + sizeof(FPOINTER) + sizeof(bool) + sizeof(uint32_t);
+    case Opcode::PutCFunction: return 1 + sizeof(VALUE) + sizeof(FPOINTER) + sizeof(uint32_t);
     case Opcode::PutArray: return 1 + sizeof(uint32_t);
     case Opcode::PutHash: return 1 + sizeof(uint32_t);
     case Opcode::PutClass: return 1 + sizeof(VALUE) + sizeof(uint32_t) * 5;
@@ -409,7 +410,7 @@ void VM::op_readmembersymbol(VALUE symbol) {
   // Handle datatypes that have their own data members
   switch (this->type(target)) {
     case kTypeObject: {
-      Object* obj = (Object*)target;
+      Object* obj = reinterpret_cast<Object*>(target);
 
       if (obj->container->count(symbol) == 1) {
         this->push_stack((*obj->container)[symbol]);
@@ -420,7 +421,7 @@ void VM::op_readmembersymbol(VALUE symbol) {
     }
 
     case kTypeFunction: {
-      Function* func = (Function*)target;
+      Function* func = reinterpret_cast<Function*>(target);
 
       if (func->container->count(symbol) == 1) {
         this->push_stack((*func->container)[symbol]);
@@ -431,7 +432,7 @@ void VM::op_readmembersymbol(VALUE symbol) {
     }
 
     case kTypeCFunction: {
-      CFunction* cfunc = (CFunction*)target;
+      CFunction* cfunc = reinterpret_cast<CFunction*>(target);
 
       if (cfunc->container->count(symbol) == 1) {
         this->push_stack((*cfunc->container)[symbol]);
@@ -480,19 +481,19 @@ void VM::op_setmembersymbol(VALUE symbol) {
   // Check if we can write to the value
   switch (this->real_type(target)) {
     case kTypeObject: {
-      Object* obj = (Object*)target;
+      Object* obj = reinterpret_cast<Object*>(target);
       (*obj->container)[symbol] = value;
       break;
     }
 
     case kTypeFunction: {
-      Function* func = (Function*)target;
+      Function* func = reinterpret_cast<Function*>(target);
       (*func->container)[symbol] = value;
       break;
     }
 
     case kTypeCFunction: {
-      CFunction* cfunc = (CFunction*)target;
+      CFunction* cfunc = reinterpret_cast<CFunction*>(target);
       (*cfunc->container)[symbol] = value;
       break;
     }
@@ -527,23 +528,23 @@ void VM::op_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, u
   this->push_stack(function);
 }
 
-void VM::op_putcfunction(VALUE symbol, void* pointer, uint32_t argc) {
+void VM::op_putcfunction(VALUE symbol, FPOINTER pointer, uint32_t argc) {
   VALUE function = this->create_cfunction(symbol, argc, pointer);
   this->push_stack(function);
 }
 
 void VM::op_putarray(uint32_t count) {
-  Array* array = (Array*)this->create_array(count);
+  Array* array = reinterpret_cast<Array*>(this->create_array(count));
 
   while (count--) {
     array->data->insert(array->data->begin(), this->pop_stack());
   }
 
-  this->push_stack((VALUE)array);
+  this->push_stack(reinterpret_cast<VALUE>(array));
 }
 
 void VM::op_puthash(uint32_t count) {
-  Object* object = (Object*)this->create_object(count);
+  Object* object = reinterpret_cast<Object*>(this->create_object(count));
 
   VALUE key;
   VALUE value;
@@ -553,7 +554,7 @@ void VM::op_puthash(uint32_t count) {
     (*object->container)[key] = value;
   }
 
-  this->push_stack((VALUE)object);
+  this->push_stack(reinterpret_cast<VALUE>(object));
 }
 
 void VM::op_makeconstant(uint32_t offset) {
@@ -627,7 +628,7 @@ void VM::call(uint32_t argc, bool with_target) {
   switch (this->real_type(function)) {
     // Normal functions as defined via the user
     case kTypeFunction: {
-      Function* tfunc = (Function*)function;
+      Function* tfunc = reinterpret_cast<Function*>(function);
 
       // Where to source the self value from
       //
@@ -670,7 +671,7 @@ void VM::call(uint32_t argc, bool with_target) {
 
     // Functions which wrap around a C function pointer
     case kTypeCFunction: {
-      this->call_cfunction((CFunction*)function, argc, arguments);
+      this->call_cfunction(reinterpret_cast<CFunction*>(function), argc, arguments);
       return;
     }
 
@@ -697,23 +698,23 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
     return_address = this->ip + this->decode_instruction_length(Opcode::Call);
   Frame* frame = this->create_frame(self, function, return_address);
 
-  Array* arguments_array = (Array*)this->create_array(argc);
+  Array* arguments_array = reinterpret_cast<Array*>(this->create_array(argc));
 
   // Copy the arguments from the temporary arguments buffer into
   // the frames environment
   //
   // We add 1 to the index as that's the index of the arguments array
-  for (int i = 0; i < (int)function->argc; i++) {
+  for (int i = 0; i < static_cast<int>(function->argc); i++) {
     (*frame->environment)[i + 1].value = argv[i];
     arguments_array->data->push_back(argv[i]);
   }
 
   // Insert the argument value and make it a constant
   // This is so that we can be sure that noone is going to overwrite it afterwards
-  (*frame->environment)[0].value = (VALUE)arguments_array;
+  (*frame->environment)[0].value = reinterpret_cast<VALUE>(arguments_array);
   (*frame->environment)[0].is_constant = true;
 
-  this->ip = function->block->data;
+  this->ip = reinterpret_cast<uint8_t*>(function->block->data);
 }
 
 void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
@@ -724,15 +725,14 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
 
   VALUE rv = kNull;
 
+  // TODO: Expand this to 15 arguments
   switch (argc) {
-    case 0: rv = ((VALUE(*)(VM&))function->pointer)(*this); break;
-    case 1: rv = ((VALUE(*)(VM&, VALUE))function->pointer)(*this, argv[0]); break;
-    case 2: rv = ((VALUE(*)(VM&, VALUE, VALUE))function->pointer)(*this, argv[0], argv[1]); break;
+    case 0: rv = reinterpret_cast<VALUE (*)(VM&)>(function->pointer)(*this); break;
+    case 1: rv = reinterpret_cast<VALUE (*)(VM&, VALUE)>(function->pointer)(*this, argv[0]); break;
+    case 2: rv = reinterpret_cast<VALUE (*)(VM&, VALUE, VALUE)>(function->pointer)(*this, argv[0], argv[1]); break;
     case 3:
-      rv = ((VALUE(*)(VM&, VALUE, VALUE, VALUE))function->pointer)(*this, argv[0], argv[1], argv[2]);
+      rv = reinterpret_cast<VALUE (*)(VM&, VALUE, VALUE, VALUE)>(function->pointer)(*this, argv[0], argv[1], argv[2]);
       break;
-      // TODO: Expand to 15??
-
     default: { this->panic(kStatusTooManyArgumentsForCFunction); }
   }
 
@@ -800,14 +800,14 @@ void VM::stacktrace(std::ostream& io) {
   Frame* frame = this->frames;
 
   int i = 0;
-  io << "IP: " << (void*)this->ip << std::endl;
+  io << "IP: " << static_cast<void*>(this->ip) << std::endl;
   while (frame) {
     io << i++ << "# ";
     io << "<Frame:" << frame << " ";
     io << "name=";
     this->pretty_print(io, frame->function->name);
     io << " ";
-    io << "return_address=" << (void*)frame->return_address;
+    io << "return_address=" << static_cast<void*>(frame->return_address) << std::dec;
     io << ">";
     io << std::endl;
     frame = frame->parent;
@@ -843,7 +843,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
   switch (this->real_type(value)) {
     case kTypeDead: {
-      io << "<!!DEAD_CELL!!: " << (void*)value << ">";
+      io << "<!!DEAD_CELL!!: " << reinterpret_cast<void*>(value) << ">";
       break;
     }
 
@@ -858,7 +858,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeBoolean: {
-      io << (value == kTrue ? "true" : "false");
+      io << std::boolalpha << (value == kTrue) << std::noboolalpha;
       break;
     }
 
@@ -868,7 +868,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeString: {
-      String* string = (String*)value;
+      String* string = reinterpret_cast<String*>(value);
       io << "<String:" << string << " ";
       io << "\"";
       io.write(string->data, string->length);
@@ -878,7 +878,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeObject: {
-      Object* object = (Object*)value;
+      Object* object = reinterpret_cast<Object*>(value);
       io << "<Object:" << object;
 
       // If this object was already printed, we avoid printing it again
@@ -899,7 +899,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeArray: {
-      Array* array = (Array*)value;
+      Array* array = reinterpret_cast<Array*>(value);
       io << "<Array:" << array << " ";
 
       // If this array was already printed, we avoid printing it again
@@ -910,12 +910,14 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       io << "[";
 
-      bool first = true;
-      for (auto& entry : *array->data) {
-        if (!first)
+      bool first = false;
+      for (VALUE& entry : *array->data) {
+        if (first) {
           io << ", ";
-        if (first)
+        } else {
           first = false;
+        }
+
         this->pretty_print(io, entry);
       }
 
@@ -924,7 +926,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeFunction: {
-      Function* func = (Function*)value;
+      Function* func = reinterpret_cast<Function*>(value);
 
       if (printed_before) {
         io << "<Function:" << func << " ...>";
@@ -957,7 +959,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeCFunction: {
-      CFunction* func = (CFunction*)value;
+      CFunction* func = reinterpret_cast<CFunction*>(value);
 
       if (printed_before) {
         io << "<CFunction:" << func << " ...>";
@@ -992,7 +994,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeFrame: {
-      Frame* frame = (Frame*)value;
+      Frame* frame = reinterpret_cast<Frame*>(value);
 
       if (printed_before) {
         io << "<Frame:" << frame << " ...>";
@@ -1008,16 +1010,16 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << "self=";
       this->pretty_print(io, frame->self);
       io << " ";
-      io << "return_address=" << (void*)frame->return_address;
+      io << "return_address=" << std::hex << frame->return_address << std::dec;
       io << ">";
       break;
     }
 
     case kTypeCatchTable: {
-      CatchTable* table = (CatchTable*)value;
+      CatchTable* table = reinterpret_cast<CatchTable*>(value);
       io << "<CatchTable:" << table << " ";
       io << "type=" << table->type << " ";
-      io << "address=" << (void*)table->address << " ";
+      io << "address=" << std::hex << table->address << std::dec << " ";
       io << "stacksize=" << table->stacksize << " ";
       io << "frame=" << table->frame << " ";
       io << "parent=" << table->parent << " ";
@@ -1026,10 +1028,10 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeInstructionBlock: {
-      InstructionBlock* block = (InstructionBlock*)value;
+      InstructionBlock* block = reinterpret_cast<InstructionBlock*>(value);
       io << "<InstructionBlock:" << block << " ";
       io << "lvarcount=" << block->lvarcount << " ";
-      io << "data=" << (void*)block->data << " ";
+      io << "data=" << std::hex << block->data << std::dec << " ";
       io << "data_size=" << block->data_size << " ";
       io << "write_offset=" << block->writeoffset;
       io << ">";
@@ -1058,7 +1060,7 @@ void VM::init_frames() {
   //     get_method = (CFunction *)Internals::get_method
   //   }
   // };
-  block->write_putcfunction(this->symbol_table("get_method"), (void*)Internals::get_method, 1);
+  block->write_putcfunction(this->symbol_table("get_method"), reinterpret_cast<FPOINTER>(Internals::get_method), 1);
   block->write_putvalue(this->symbol_table("get_method"));
   block->write_puthash(1);
   block->write_putvalue(this->symbol_table("internals"));
@@ -1124,8 +1126,6 @@ void VM::panic(STATUS reason) {
   this->catchstacktrace(std::cout);
   this->stackdump(std::cout);
 
-  *(volatile uint32_t*)(0) = 25;
-
   exit(1);
 }
 
@@ -1140,14 +1140,14 @@ void VM::run() {
     uint8_t* old_ip = this->ip;
 
     // Check if we're out-of-bounds relative to the current block
-    uint8_t* block_data = this->frames->function->block->data;
+    uint8_t* block_data = reinterpret_cast<uint8_t*>(this->frames->function->block->data);
     uint32_t block_write_offset = this->frames->function->block->writeoffset;
     if (this->ip + sizeof(Opcode) - 1 >= block_data + block_write_offset) {
       this->panic(kStatusIpOutOfBounds);
     }
 
     // Retrieve the current opcode
-    Opcode opcode = *(Opcode*)this->ip;
+    Opcode opcode = this->fetch_instruction();
 
     // Check if there is enough space for instruction arguments
     uint32_t instruction_length = this->decode_instruction_length(opcode);
@@ -1162,27 +1162,27 @@ void VM::run() {
       }
 
       case Opcode::ReadLocal: {
-        uint32_t index = *(uint32_t*)(this->ip + sizeof(Opcode));
-        uint32_t level = *(uint32_t*)(this->ip + sizeof(Opcode) + sizeof(uint32_t));
+        uint32_t index = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+        uint32_t level = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(uint32_t));
         this->op_readlocal(index, level);
         break;
       }
 
       case Opcode::ReadMemberSymbol: {
-        VALUE symbol = *(VALUE*)(this->ip + sizeof(Opcode));
+        VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
         this->op_readmembersymbol(symbol);
         break;
       }
 
       case Opcode::SetLocal: {
-        uint32_t index = *(uint32_t*)(this->ip + sizeof(Opcode));
-        uint32_t level = *(uint32_t*)(this->ip + sizeof(Opcode) + sizeof(uint32_t));
+        uint32_t index = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+        uint32_t level = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(uint32_t));
         this->op_setlocal(index, level);
         break;
       }
 
       case Opcode::SetMemberSymbol: {
-        VALUE symbol = *(VALUE*)(this->ip + sizeof(Opcode));
+        VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
         this->op_setmembersymbol(symbol);
         break;
       }
@@ -1193,20 +1193,20 @@ void VM::run() {
       }
 
       case Opcode::PutValue: {
-        VALUE value = *(VALUE*)(this->ip + sizeof(Opcode));
+        VALUE value = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
         this->op_putvalue(value);
         break;
       }
 
       case Opcode::PutFloat: {
-        double value = *(double*)(this->ip + sizeof(Opcode));
+        double value = *reinterpret_cast<double*>(this->ip + sizeof(Opcode));
         this->op_putfloat(value);
         break;
       }
 
       case Opcode::PutString: {
-        uint32_t offset = *(uint32_t*)(this->ip + sizeof(Opcode));
-        uint32_t length = *(uint32_t*)(this->ip + sizeof(Opcode) + sizeof(uint32_t));
+        uint32_t offset = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+        uint32_t length = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(uint32_t));
 
         // Calculate the pointer into the TEXT segment of the instructionblock
         // The current frame holds the function that was used to construct it
@@ -1218,50 +1218,51 @@ void VM::run() {
         // TODO: Should we do out-of-bounds checking here?
         InstructionBlock* current_block = this->frames->function->block;
 
-        char* TEXT_segment = current_block->textdata;
-        char* string_data = TEXT_segment + offset;
+        char* staticdata = current_block->staticdata;
+        char* string_pointer = staticdata + offset;
 
-        this->op_putstring(string_data, length);
+        this->op_putstring(string_pointer, length);
         break;
       }
 
       case Opcode::PutFunction: {
-        auto symbol = *(VALUE*)(this->ip + sizeof(Opcode));
-        auto block = *(InstructionBlock**)(this->ip + sizeof(Opcode) + sizeof(VALUE));
-        auto anonymous = *(bool*)(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(VALUE));
-        auto argc = *(uint32_t*)(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(VALUE) + sizeof(bool));
+        VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
+        InstructionBlock* block = *reinterpret_cast<InstructionBlock**>(this->ip + sizeof(Opcode) + sizeof(VALUE));
+        bool anonymous = *reinterpret_cast<bool*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(VALUE));
+        uint32_t argc =
+            *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(VALUE) + sizeof(bool));
         this->op_putfunction(symbol, block, anonymous, argc);
         break;
       }
 
       case Opcode::PutCFunction: {
-        auto symbol = *(VALUE*)(this->ip + sizeof(Opcode));
-        auto pointer = *(void**)(this->ip + sizeof(Opcode) + sizeof(VALUE));
-        auto argc = *(uint32_t*)(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(void*));
+        VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
+        FPOINTER pointer = *reinterpret_cast<FPOINTER*>(this->ip + sizeof(Opcode) + sizeof(VALUE));
+        uint32_t argc = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(void*));
         this->op_putcfunction(symbol, pointer, argc);
         break;
       }
 
       case Opcode::PutArray: {
-        uint32_t count = *(uint32_t*)(this->ip + sizeof(Opcode));
+        uint32_t count = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
         this->op_putarray(count);
         break;
       }
 
       case Opcode::PutHash: {
-        uint32_t size = *(uint32_t*)(this->ip + sizeof(Opcode));
+        uint32_t size = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
         this->op_puthash(size);
         break;
       }
 
       case Opcode::MakeConstant: {
-        uint32_t offset = *(uint32_t*)(this->ip + sizeof(Opcode));
+        uint32_t offset = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
         this->op_makeconstant(offset);
         break;
       }
 
       case Opcode::Pop: {
-        uint32_t count = *(uint32_t*)(this->ip + sizeof(Opcode));
+        uint32_t count = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
         this->op_pop(count);
         break;
       }
@@ -1276,13 +1277,13 @@ void VM::run() {
       }
 
       case Opcode::Call: {
-        uint32_t argc = *(uint32_t*)(this->ip + sizeof(Opcode));
+        uint32_t argc = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
         this->op_call(argc);
         break;
       }
 
       case Opcode::CallMember: {
-        uint32_t argc = *(uint32_t*)(this->ip + sizeof(Opcode));
+        uint32_t argc = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
         this->op_callmember(argc);
         break;
       }
@@ -1293,14 +1294,14 @@ void VM::run() {
       }
 
       case Opcode::Throw: {
-        ThrowType throw_type = *(ThrowType*)(this->ip + sizeof(Opcode));
+        ThrowType throw_type = *reinterpret_cast<ThrowType*>(this->ip + sizeof(Opcode));
         this->op_throw(throw_type);
         break;
       }
 
       case Opcode::RegisterCatchTable: {
-        ThrowType throw_type = *(ThrowType*)(this->ip + sizeof(Opcode));
-        int32_t offset = *(int32_t*)(this->ip + sizeof(Opcode) + sizeof(ThrowType));
+        ThrowType throw_type = *reinterpret_cast<ThrowType*>(this->ip + sizeof(Opcode));
+        int32_t offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode) + sizeof(ThrowType));
         this->op_registercatchtable(throw_type, offset);
         break;
       }
@@ -1311,19 +1312,19 @@ void VM::run() {
       }
 
       case Opcode::Branch: {
-        int32_t offset = *(int32_t*)(this->ip + sizeof(Opcode));
+        int32_t offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode));
         this->op_branch(offset);
         break;
       }
 
       case Opcode::BranchIf: {
-        int32_t offset = *(int32_t*)(this->ip + sizeof(Opcode));
+        int32_t offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode));
         this->op_branchif(offset);
         break;
       }
 
       case Opcode::BranchUnless: {
-        int32_t offset = *(int32_t*)(this->ip + sizeof(Opcode));
+        int32_t offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode));
         this->op_branchunless(offset);
         break;
       }
@@ -1341,7 +1342,7 @@ void VM::run() {
       }
 
       default: {
-        std::cout << "Opcode: " << (void*)opcode << std::endl;
+        std::cout << "Opcode: " << std::hex << opcode << std::dec << std::endl;
         this->panic(kStatusUnknownOpcode);
       }
     }

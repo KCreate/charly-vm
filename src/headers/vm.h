@@ -78,7 +78,7 @@ public:
   VALUE create_float(double value);
   VALUE create_string(char* data, uint32_t length);
   VALUE create_function(VALUE name, uint32_t argc, bool anonymous, InstructionBlock* block);
-  VALUE create_cfunction(VALUE name, uint32_t argc, void* pointer);
+  VALUE create_cfunction(VALUE name, uint32_t argc, FPOINTER pointer);
 
   // Casting to different types
   VALUE cast_to_numeric(VALUE value);
@@ -105,7 +105,7 @@ public:
   void op_putfloat(double value);
   void op_putstring(char* data, uint32_t length);
   void op_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc);
-  void op_putcfunction(VALUE symbol, void* pointer, uint32_t argc);
+  void op_putcfunction(VALUE symbol, FPOINTER pointer, uint32_t argc);
   void op_putarray(uint32_t count);
   void op_puthash(uint32_t count);
   void op_makeconstant(uint32_t offset);

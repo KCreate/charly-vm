@@ -43,41 +43,40 @@ public:
   static const uint32_t kBlockTextDataGrowthFactor = 2;
 
   uint32_t lvarcount;
-  uint8_t* data;
+  char* data;
   uint32_t data_size;
   uint32_t writeoffset;
   std::vector<InstructionBlock*> child_blocks;
 
-  // Keeps track of TEXT data
-  char* textdata;
-  uint32_t textdata_size;
-  uint32_t textdata_writeoffset;
+  // Keeps track of static data
+  char* staticdata;
+  uint32_t staticdata_size;
+  uint32_t staticdata_writeoffset;
 
   InstructionBlock(uint32_t lvarcount) : lvarcount(lvarcount) {
-    this->data = (uint8_t*)calloc(kBlockInitialBlockSize, sizeof(uint8_t));
+    this->data = static_cast<char*>(calloc(kBlockInitialBlockSize, sizeof(uint8_t)));
     this->data_size = kBlockInitialBlockSize * sizeof(uint8_t);
     this->writeoffset = kBlockInitialWriteOffset;
-
-    this->textdata = new char[kBlockInitialTextSize];
-    this->textdata_size = kBlockInitialTextSize;
-    this->textdata_writeoffset = 0;
+    this->staticdata = static_cast<char*>(malloc(sizeof(char) * kBlockInitialTextSize));
+    this->staticdata_size = kBlockInitialTextSize;
+    this->staticdata_writeoffset = 0;
   }
 
   InstructionBlock(const InstructionBlock& other) {
     // Copy the data and text buffers of the other block
-    uint8_t* data_copy = (uint8_t*)malloc(other.data_size);
-    char* textdata_copy = (char*)malloc(other.textdata_size);
-    memcpy((char*)data_copy, (char*)other.data, other.data_size);
-    memcpy(textdata_copy, other.textdata, other.textdata_size);
+    char* data_copy = static_cast<char*>(malloc(other.data_size));
+    char* staticdata_copy = static_cast<char*>(malloc(other.staticdata_size));
+    memcpy(data_copy, other.data, other.data_size);
+    memcpy(staticdata_copy, other.staticdata, other.staticdata_size);
     this->data = data_copy;
-    this->textdata = textdata_copy;
+    this->staticdata = staticdata_copy;
 
     // Copy trivial variables
     this->lvarcount = other.lvarcount;
     this->data_size = other.data_size;
     this->writeoffset = other.writeoffset;
-    this->textdata_size = other.textdata_size;
-    this->textdata_writeoffset = other.textdata_writeoffset;
+    this->staticdata_size = other.staticdata_size;
+    this->staticdata_writeoffset = other.staticdata_writeoffset;
 
     // Recursively copy all child blocks
     for (const auto& block : other.child_blocks) {
@@ -92,7 +91,7 @@ public:
 
   void inline clean() {
     free(this->data);
-    free(this->textdata);
+    free(this->staticdata);
   }
 
   void inline check_needs_resize() {
@@ -102,69 +101,69 @@ public:
   }
 
   void inline check_text_needs_resize(size_t size) {
-    if (this->textdata_writeoffset >= this->textdata_size - size) {
-      size_t newsize = this->textdata_size * kBlockTextDataGrowthFactor;
-      while (newsize < this->textdata_size + size)
+    if (this->staticdata_writeoffset >= this->staticdata_size - size) {
+      size_t newsize = this->staticdata_size * kBlockTextDataGrowthFactor;
+      while (newsize < this->staticdata_size + size)
         newsize *= kBlockTextDataGrowthFactor;
 
-      this->textdata = (char*)realloc(this->textdata, newsize);
-      this->textdata_size = newsize;
+      this->staticdata = static_cast<char*>(realloc(this->staticdata, newsize));
+      this->staticdata_size = newsize;
     }
   }
 
   void inline grow() {
-    this->data = (uint8_t*)realloc(this->data, this->data_size * kBlockSizeGrowthFactor);
+    this->data = static_cast<char*>(realloc(this->data, this->data_size * kBlockSizeGrowthFactor));
     this->data_size *= kBlockSizeGrowthFactor;
   }
 
-  void inline write_byte(uint8_t val) {
+  void inline write_byte(char val) {
     this->check_needs_resize();
-    *(uint8_t*)(this->data + this->writeoffset) = val;
-    this->writeoffset += sizeof(uint8_t);
+    *reinterpret_cast<char*>(this->data + this->writeoffset) = val;
+    this->writeoffset += sizeof(char);
   }
 
   void inline write_bool(bool val) {
     this->check_needs_resize();
-    *(bool*)(this->data + this->writeoffset) = val;
+    *reinterpret_cast<bool*>(this->data + this->writeoffset) = val;
     this->writeoffset += sizeof(bool);
   }
 
   void inline write_short(uint16_t val) {
     this->check_needs_resize();
-    *(uint16_t*)(this->data + this->writeoffset) = val;
+    *reinterpret_cast<uint16_t*>(this->data + this->writeoffset) = val;
     this->writeoffset += sizeof(uint16_t);
   }
 
   void inline write_int(uint32_t val) {
     this->check_needs_resize();
-    *(uint32_t*)(this->data + this->writeoffset) = val;
+    *reinterpret_cast<uint32_t*>(this->data + this->writeoffset) = val;
     this->writeoffset += sizeof(uint32_t);
   }
 
   void inline write_long(uint64_t val) {
     this->check_needs_resize();
-    *(uint64_t*)(this->data + this->writeoffset) = val;
+    *reinterpret_cast<uint64_t*>(this->data + this->writeoffset) = val;
     this->writeoffset += sizeof(uint64_t);
   }
 
   void inline write_pointer(void* val) {
     this->check_needs_resize();
-    *(uint8_t**)(this->data + this->writeoffset) = (uint8_t*)val;
+    *reinterpret_cast<void**>(this->data + this->writeoffset) = val;
     this->writeoffset += sizeof(void*);
   }
 
   void inline write_double(double val) {
     this->check_needs_resize();
-    *(double*)(this->data + this->writeoffset) = val;
+    *reinterpret_cast<double*>(this->data + this->writeoffset) = val;
     this->writeoffset += sizeof(double);
   }
 
   uint32_t inline write_string(const std::string& data) {
     this->check_text_needs_resize(data.size());
-    memcpy((char*)(this->textdata + this->textdata_writeoffset), data.c_str(), data.size());
+    memcpy(this->staticdata + this->staticdata_writeoffset, data.c_str(), data.size());
 
-    uint32_t old_offset = this->textdata_writeoffset;
-    this->textdata_writeoffset += data.size();
+    uint32_t old_offset = this->staticdata_writeoffset;
+    this->staticdata_writeoffset += data.size();
     return old_offset;
   }
 
@@ -228,7 +227,7 @@ public:
     this->write_int(argc);
   }
 
-  void inline write_putcfunction(VALUE symbol, void* funcptr, uint32_t argc) {
+  void inline write_putcfunction(VALUE symbol, FPOINTER funcptr, uint32_t argc) {
     this->write_byte(Opcode::PutCFunction);
     this->write_long(symbol);
     this->write_pointer(funcptr);

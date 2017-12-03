@@ -33,7 +33,7 @@ namespace Charly {
 Buffer& Buffer::read(char* data, size_t length) {
   this->check_enough_size(length);
 
-  memcpy(this->write_pointer, (char*)data, length);
+  memcpy(this->write_pointer, static_cast<char*>(data), length);
   this->write_pointer += length;
   this->used_bytesize += length;
 
@@ -164,7 +164,7 @@ void Buffer::grow_buffer_size(size_t minimum_size) {
     new_size *= kBufferGrowthFactor;
   }
 
-  char* new_buffer = (char*)malloc(sizeof(char) * new_size);
+  char* new_buffer = static_cast<char*>(malloc(sizeof(char) * new_size));
   memcpy(new_buffer, this->buffer, this->used_bytesize);
 
   // Update offset pointers

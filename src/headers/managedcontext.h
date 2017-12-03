@@ -58,6 +58,6 @@ public:
   VALUE create_float(double value);
   VALUE create_string(char* data, uint32_t length);
   VALUE create_function(VALUE name, uint32_t argc, bool anonymous, InstructionBlock* block);
-  VALUE create_cfunction(VALUE name, uint32_t argc, void* pointer);
+  VALUE create_cfunction(VALUE name, uint32_t argc, FPOINTER pointer);
 };
 }  // namespace Charly

@@ -202,7 +202,7 @@ struct Function {
 struct CFunction {
   Basic basic;
   VALUE name;
-  void* pointer;
+  FPOINTER pointer;
   uint32_t argc;
   bool bound_self_set;
   VALUE bound_self;

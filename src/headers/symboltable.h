@@ -37,13 +37,17 @@ private:
 
 public:
   SymbolTable() = default;
+  SymbolTable(SymbolTable&& other) : table(std::move(other.table)) {
+  }
   SymbolTable(const SymbolTable& other) : table(other.table) {
   }
 
-  SymbolTable& operator=(SymbolTable& other) {
+  SymbolTable& operator=(const SymbolTable& other) {
     if (this == &other)
       return *this;
-    this->table.swap(other.table);
+
+    this->table = other.table;
+
     return *this;
   }
 

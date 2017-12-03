@@ -48,7 +48,7 @@ MemoryManager::~MemoryManager() {
 }
 
 void MemoryManager::add_heap() {
-  MemoryCell* heap = (MemoryCell*)calloc(kGCHeapCellCount, sizeof(MemoryCell));
+  MemoryCell* heap = static_cast<MemoryCell*>(calloc(kGCHeapCellCount, sizeof(MemoryCell)));
   this->heaps.push_back(heap);
 
   // Add the newly allocated cells to the free list
@@ -89,7 +89,7 @@ void MemoryManager::mark(VALUE value) {
   basics(value)->set_mark(true);
   switch (basics(value)->type()) {
     case kTypeObject: {
-      auto obj = (Object*)value;
+      Object* obj = reinterpret_cast<Object*>(value);
       this->mark(obj->klass);
       for (auto& entry : *obj->container)
         this->mark(entry.second);
@@ -97,16 +97,17 @@ void MemoryManager::mark(VALUE value) {
     }
 
     case kTypeArray: {
-      auto arr = (Array*)value;
+      Array* arr = reinterpret_cast<Array*>(value);
       for (auto& arr_entry : *arr->data)
         this->mark(arr_entry);
       break;
     }
 
     case kTypeFunction: {
-      auto func = (Function*)value;
-      this->mark((VALUE)func->context);
-      this->mark((VALUE)func->block);
+      Function* func = reinterpret_cast<Function*>(value);
+      this->mark(reinterpret_cast<VALUE>(func->context));
+      this->mark(reinterpret_cast<VALUE>(func->block));
+
       if (func->bound_self_set)
         this->mark(func->bound_self);
       for (auto& entry : *func->container)
@@ -115,7 +116,7 @@ void MemoryManager::mark(VALUE value) {
     }
 
     case kTypeCFunction: {
-      auto cfunc = (CFunction*)value;
+      CFunction* cfunc = reinterpret_cast<CFunction*>(value);
       if (cfunc->bound_self_set)
         this->mark(cfunc->bound_self);
       for (auto& entry : *cfunc->container)
@@ -124,10 +125,10 @@ void MemoryManager::mark(VALUE value) {
     }
 
     case kTypeFrame: {
-      auto frame = (Frame*)value;
-      this->mark((VALUE)frame->parent);
-      this->mark((VALUE)frame->parent_environment_frame);
-      this->mark((VALUE)frame->function);
+      Frame* frame = (Frame*)value;
+      this->mark(reinterpret_cast<VALUE>(frame->parent));
+      this->mark(reinterpret_cast<VALUE>(frame->parent_environment_frame));
+      this->mark(reinterpret_cast<VALUE>(frame->function));
       this->mark(frame->self);
       for (auto& lvar : *frame->environment)
         this->mark(lvar.value);
@@ -135,16 +136,16 @@ void MemoryManager::mark(VALUE value) {
     }
 
     case kTypeCatchTable: {
-      auto table = (CatchTable*)value;
-      this->mark((VALUE)table->frame);
-      this->mark((VALUE)table->parent);
+      CatchTable* table = reinterpret_cast<CatchTable*>(value);
+      this->mark(reinterpret_cast<VALUE>(table->frame));
+      this->mark(reinterpret_cast<VALUE>(table->parent));
       break;
     }
 
     case kTypeInstructionBlock: {
-      auto block = (InstructionBlock*)value;
+      InstructionBlock* block = reinterpret_cast<InstructionBlock*>(value);
       for (auto& child_block : block->child_blocks) {
-        this->mark((VALUE)child_block);
+        this->mark(reinterpret_cast<VALUE>(child_block));
       }
       break;
     }
@@ -159,20 +160,20 @@ void MemoryManager::collect(VM* vm) {
     this->mark(stack_item);
   for (auto& temp_item : this->temporaries)
     this->mark(temp_item);
-  this->mark((VALUE)vm->frames);
-  this->mark((VALUE)vm->catchstack);
+  this->mark(reinterpret_cast<VALUE>(vm->frames));
+  this->mark(reinterpret_cast<VALUE>(vm->catchstack));
 
   // Sweep Phase
   int freed_cells_count = 0;
   for (MemoryCell* heap : this->heaps) {
     for (size_t i = 0; i < kGCHeapCellCount; i++) {
       MemoryCell* cell = heap + i;
-      if (basics((VALUE)cell)->mark()) {
-        basics((VALUE)cell)->set_mark(false);
+      if (basics(reinterpret_cast<VALUE>(cell))->mark()) {
+        basics(reinterpret_cast<VALUE>(cell))->set_mark(false);
       } else {
         // This cell might already be on the free list
         // Make sure we don't double free cells
-        if (basics((VALUE)cell)->type() != kTypeDead) {
+        if (basics(reinterpret_cast<VALUE>(cell))->type() != kTypeDead) {
           freed_cells_count++;
           this->free(cell);
         }
@@ -214,13 +215,13 @@ MemoryCell* MemoryManager::allocate(VM* vm) {
 void MemoryManager::free(MemoryCell* cell) {
   // This cell might be inside the temporaries list,
   // check if it's inside and remove it if it is
-  if (this->temporaries.count((VALUE)cell) == 1) {
-    this->unregister_temporary((VALUE)cell);
+  if (this->temporaries.count(reinterpret_cast<VALUE>(cell)) == 1) {
+    this->unregister_temporary(reinterpret_cast<VALUE>(cell));
   }
 
   // We don't actually free the cells that were allocated, we just
   // deallocat the properties inside these cells and memset(0)'em
-  switch (basics((VALUE)cell)->type()) {
+  switch (basics(reinterpret_cast<VALUE>(cell))->type()) {
     case kTypeObject: {
       cell->as.object.clean();
       break;

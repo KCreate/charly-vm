@@ -77,7 +77,7 @@ public:
   void collect(VM* vm);
   void free(MemoryCell* cell);
   void inline free(VALUE value) {
-    this->free((MemoryCell*)value);
+    this->free(reinterpret_cast<MemoryCell*>(value));
   }
   void register_temporary(VALUE value);
   void unregister_temporary(VALUE value);

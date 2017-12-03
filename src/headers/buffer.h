@@ -44,7 +44,7 @@ public:
 
 public:
   Buffer() {
-    this->buffer = (char*)malloc(sizeof(char) * kInitialBufferSize);
+    this->buffer = static_cast<char*>(malloc(sizeof(char) * kInitialBufferSize));
     this->read_pointer = this->buffer;
     this->write_pointer = this->buffer;
     this->bytesize = kInitialBufferSize;
@@ -59,7 +59,7 @@ public:
   Buffer(const Buffer& other) {
     if (this->buffer != nullptr)
       free(this->buffer);
-    this->buffer = (char*)malloc(sizeof(char) * other.bytesize);
+    this->buffer = static_cast<char*>(malloc(sizeof(char) * other.bytesize));
     this->read_pointer = this->buffer + (other.read_pointer - other.buffer);
     this->write_pointer = this->buffer + (other.write_pointer - other.buffer);
     this->bytesize = other.bytesize;
@@ -67,15 +67,25 @@ public:
     memcpy(this->buffer, other.buffer, other.used_bytesize);
   }
 
-  Buffer& operator=(Buffer& other) {
+  Buffer(Buffer&& other)
+      : buffer(std::move(other.buffer)), used_bytesize(other.used_bytesize), bytesize(other.used_bytesize) {
+    this->read_pointer = this->buffer + (other.read_pointer - other.buffer);
+    this->write_pointer = this->buffer + (other.write_pointer - other.buffer);
+  }
+
+  Buffer& operator=(const Buffer& other) {
     if (this == &other)
       return *this;
 
-    std::swap(this->buffer, other.buffer);
+    if (this->buffer != nullptr)
+      free(this->buffer);
+
+    this->buffer = static_cast<char*>(malloc(sizeof(char) * other.bytesize));
     this->read_pointer = this->buffer + (other.read_pointer - other.buffer);
     this->write_pointer = this->buffer + (other.write_pointer - other.buffer);
     this->bytesize = other.bytesize;
     this->used_bytesize = other.used_bytesize;
+    memcpy(this->buffer, other.buffer, other.used_bytesize);
 
     return *this;
   }

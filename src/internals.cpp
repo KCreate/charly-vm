@@ -47,13 +47,13 @@ VALUE get_method(VM& vm, VALUE method_name) {
   VALUE obj3 = ctx.create_object(0);
   VALUE obj4 = ctx.create_object(0);
 
-  Array* arr = (Array*)ctx.create_array(4);
+  Array* arr = reinterpret_cast<Array*>(ctx.create_array(4));
   arr->data->push_back(obj1);
   arr->data->push_back(obj2);
   arr->data->push_back(obj3);
   arr->data->push_back(obj4);
 
-  return (VALUE)arr;
+  return reinterpret_cast<VALUE>(arr);
 }
 }  // namespace Internals
 }  // namespace Charly

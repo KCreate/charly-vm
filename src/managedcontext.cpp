@@ -29,22 +29,22 @@
 namespace Charly {
 Frame* ManagedContext::create_frame(VALUE self, Function* calling_function, uint8_t* return_address) {
   Frame* frame = this->vm.create_frame(self, calling_function, return_address);
-  this->vm.gc.register_temporary((VALUE)frame);
-  this->temporaries.push_back((VALUE)frame);
+  this->vm.gc.register_temporary(reinterpret_cast<VALUE>(frame));
+  this->temporaries.push_back(reinterpret_cast<VALUE>(frame));
   return frame;
 }
 
 InstructionBlock* ManagedContext::create_instructionblock(uint32_t lvarcount) {
   InstructionBlock* block = this->vm.create_instructionblock(lvarcount);
-  this->vm.gc.register_temporary((VALUE)block);
-  this->temporaries.push_back((VALUE)block);
+  this->vm.gc.register_temporary(reinterpret_cast<VALUE>(block));
+  this->temporaries.push_back(reinterpret_cast<VALUE>(block));
   return block;
 }
 
 CatchTable* ManagedContext::create_catchtable(ThrowType type, uint8_t* address) {
   CatchTable* table = this->vm.create_catchtable(type, address);
-  this->vm.gc.register_temporary((VALUE)table);
-  this->temporaries.push_back((VALUE)table);
+  this->vm.gc.register_temporary(reinterpret_cast<VALUE>(table));
+  this->temporaries.push_back(reinterpret_cast<VALUE>(table));
   return table;
 }
 
@@ -90,7 +90,7 @@ VALUE ManagedContext::create_function(VALUE name, uint32_t argc, bool anonymous,
   return func;
 }
 
-VALUE ManagedContext::create_cfunction(VALUE name, uint32_t argc, void* pointer) {
+VALUE ManagedContext::create_cfunction(VALUE name, uint32_t argc, FPOINTER pointer) {
   VALUE func = this->vm.create_cfunction(name, argc, pointer);
   this->vm.gc.register_temporary(func);
   this->temporaries.push_back(func);

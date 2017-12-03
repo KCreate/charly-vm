@@ -35,6 +35,7 @@ namespace Charly {
 typedef uintptr_t VALUE;
 typedef intptr_t SIGNED_VALUE;
 typedef uint16_t STATUS;
+typedef void* FPOINTER;
 
 class VM;
 struct Frame;
