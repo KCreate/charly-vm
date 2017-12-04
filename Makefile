@@ -1,5 +1,5 @@
 CC=clang
-CCFLAGS=-std=c++14 \
+CCFLAGS=-std=c++17 \
 				-g \
 				-Wall \
 				-Wextra \
