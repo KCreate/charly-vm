@@ -32,6 +32,7 @@
 - Needed to support a REPL
 - Might be useful for other things?
 - Does this require a modification of the InstructionBlock structure?
+- The compiler needs to keep around semantic information for the whole program
 
 # Calling and object storage convention
 - `arguments`

@@ -89,250 +89,57 @@ public:
     this->clean();
   }
 
-  void inline clean() {
-    free(this->data);
-    free(this->staticdata);
-  }
+  void clean();
+  void check_needs_resize();
+  void check_text_needs_resize(size_t size);
+  void grow();
 
-  void inline check_needs_resize() {
-    if (this->writeoffset >= this->data_size - sizeof(uint64_t)) {
-      this->grow();
-    }
-  }
+  // Methods which write directly into the instruction or staticdata buffer
+  void write_byte(char val);
+  void write_bool(bool val);
+  void write_short(uint16_t val);
+  void write_int(uint32_t val);
+  void write_long(uint64_t val);
+  void write_pointer(void* val);
+  void write_double(double val);
+  uint32_t write_string(const std::string& data);
 
-  void inline check_text_needs_resize(size_t size) {
-    if (this->staticdata_writeoffset >= this->staticdata_size - size) {
-      size_t newsize = this->staticdata_size * kBlockTextDataGrowthFactor;
-      while (newsize < this->staticdata_size + size)
-        newsize *= kBlockTextDataGrowthFactor;
-
-      this->staticdata = static_cast<char*>(realloc(this->staticdata, newsize));
-      this->staticdata_size = newsize;
-    }
-  }
-
-  void inline grow() {
-    this->data = static_cast<char*>(realloc(this->data, this->data_size * kBlockSizeGrowthFactor));
-    this->data_size *= kBlockSizeGrowthFactor;
-  }
-
-  void inline write_byte(char val) {
-    this->check_needs_resize();
-    *reinterpret_cast<char*>(this->data + this->writeoffset) = val;
-    this->writeoffset += sizeof(char);
-  }
-
-  void inline write_bool(bool val) {
-    this->check_needs_resize();
-    *reinterpret_cast<bool*>(this->data + this->writeoffset) = val;
-    this->writeoffset += sizeof(bool);
-  }
-
-  void inline write_short(uint16_t val) {
-    this->check_needs_resize();
-    *reinterpret_cast<uint16_t*>(this->data + this->writeoffset) = val;
-    this->writeoffset += sizeof(uint16_t);
-  }
-
-  void inline write_int(uint32_t val) {
-    this->check_needs_resize();
-    *reinterpret_cast<uint32_t*>(this->data + this->writeoffset) = val;
-    this->writeoffset += sizeof(uint32_t);
-  }
-
-  void inline write_long(uint64_t val) {
-    this->check_needs_resize();
-    *reinterpret_cast<uint64_t*>(this->data + this->writeoffset) = val;
-    this->writeoffset += sizeof(uint64_t);
-  }
-
-  void inline write_pointer(void* val) {
-    this->check_needs_resize();
-    *reinterpret_cast<void**>(this->data + this->writeoffset) = val;
-    this->writeoffset += sizeof(void*);
-  }
-
-  void inline write_double(double val) {
-    this->check_needs_resize();
-    *reinterpret_cast<double*>(this->data + this->writeoffset) = val;
-    this->writeoffset += sizeof(double);
-  }
-
-  uint32_t inline write_string(const std::string& data) {
-    this->check_text_needs_resize(data.size());
-    memcpy(this->staticdata + this->staticdata_writeoffset, data.c_str(), data.size());
-
-    uint32_t old_offset = this->staticdata_writeoffset;
-    this->staticdata_writeoffset += data.size();
-    return old_offset;
-  }
-
-  void inline write_readlocal(uint32_t index, uint32_t level) {
-    this->write_byte(Opcode::ReadLocal);
-    this->write_int(index);
-    this->write_int(level);
-  }
-
-  void inline write_readmembersymbol(VALUE symbol) {
-    this->write_byte(Opcode::ReadMemberSymbol);
-    this->write_long(symbol);
-  }
-
-  void inline write_readmembervalue() {
-    this->write_byte(Opcode::ReadMemberValue);
-  }
-
-  void inline write_setlocal(uint32_t index, uint32_t level) {
-    this->write_byte(Opcode::SetLocal);
-    this->write_int(index);
-    this->write_int(level);
-  }
-
-  void inline write_setmembersymbol(VALUE symbol) {
-    this->write_byte(Opcode::SetMemberSymbol);
-    this->write_long(symbol);
-  }
-
-  void inline write_setmembervalue() {
-    this->write_byte(Opcode::SetMemberValue);
-  }
-
-  void inline write_putself() {
-    this->write_byte(Opcode::PutSelf);
-  }
-
-  void inline write_putvalue(VALUE value) {
-    this->write_byte(Opcode::PutValue);
-    this->write_long(value);
-  }
-
-  void inline write_putfloat(double value) {
-    this->write_byte(Opcode::PutFloat);
-    this->write_double(value);
-  }
-
-  void inline write_putstring(const std::string& data) {
-    this->write_byte(Opcode::PutString);
-    uint32_t offset = this->write_string(data);
-    this->write_int(offset);
-    this->write_int(data.size());
-  }
-
-  void inline write_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc) {
-    this->write_byte(Opcode::PutFunction);
-    this->write_long(symbol);
-    this->write_pointer(block);
-    this->child_blocks.push_back(block);
-    this->write_byte(anonymous);
-    this->write_int(argc);
-  }
-
-  void inline write_putcfunction(VALUE symbol, FPOINTER funcptr, uint32_t argc) {
-    this->write_byte(Opcode::PutCFunction);
-    this->write_long(symbol);
-    this->write_pointer(funcptr);
-    this->write_int(argc);
-  }
-
-  void inline write_putarray(uint32_t count) {
-    this->write_byte(Opcode::PutArray);
-    this->write_int(count);
-  }
-
-  void inline write_puthash(uint32_t count) {
-    this->write_byte(Opcode::PutHash);
-    this->write_int(count);
-  }
-
-  void inline write_putclass(VALUE symbol,
-                             uint32_t propertycount,
-                             uint32_t staticpropertycount,
-                             uint32_t methodcount,
-                             uint32_t staticmethodcount,
-                             uint32_t parentclasscount) {
-    this->write_byte(Opcode::PutClass);
-    this->write_long(symbol);
-    this->write_int(propertycount);
-    this->write_int(staticpropertycount);
-    this->write_int(methodcount);
-    this->write_int(staticmethodcount);
-    this->write_int(parentclasscount);
-  }
-
-  void inline write_makeconstant(uint32_t index) {
-    this->write_byte(Opcode::MakeConstant);
-    this->write_int(index);
-  }
-
-  void inline write_pop(uint32_t count) {
-    this->write_byte(Opcode::Pop);
-    this->write_int(count);
-  }
-
-  void inline write_dup() {
-    this->write_byte(Opcode::Dup);
-  }
-
-  void inline write_swap() {
-    this->write_byte(Opcode::Swap);
-  }
-
-  void inline write_topn(uint32_t index) {
-    this->write_byte(Opcode::Topn);
-    this->write_int(index);
-  }
-
-  void inline write_setn(uint32_t index) {
-    this->write_byte(Opcode::Setn);
-    this->write_int(index);
-  }
-
-  void inline write_call(uint32_t argc) {
-    this->write_byte(Opcode::Call);
-    this->write_int(argc);
-  }
-
-  void inline write_callmember(uint32_t argc) {
-    this->write_byte(Opcode::CallMember);
-    this->write_int(argc);
-  }
-
-  void inline write_return() {
-    this->write_byte(Opcode::Return);
-  }
-
-  void inline write_throw(ThrowType type) {
-    this->write_byte(Opcode::Throw);
-    this->write_byte(type);
-  }
-
-  void inline write_registercatchtable(ThrowType type, int32_t offset) {
-    this->write_byte(Opcode::RegisterCatchTable);
-    this->write_byte(type);
-    this->write_int(offset);
-  }
-
-  void inline write_popcatchtable() {
-    this->write_byte(Opcode::PopCatchTable);
-  }
-
-  void inline write_branch(int32_t offset) {
-    this->write_byte(Opcode::Branch);
-    this->write_int(offset);
-  }
-
-  void inline write_branchif(int32_t offset) {
-    this->write_byte(Opcode::BranchIf);
-    this->write_int(offset);
-  }
-
-  void inline write_branchunless(int32_t offset) {
-    this->write_byte(Opcode::BranchUnless);
-    this->write_int(offset);
-  }
-
-  void inline write_operator(Opcode opcode) {
-    this->write_byte(opcode);
-  }
+  // Wrappers around the write functions which can encode instructions
+  void write_readlocal(uint32_t index, uint32_t level);
+  void write_readmembersymbol(VALUE symbol);
+  void write_readmembervalue();
+  void write_setlocal(uint32_t index, uint32_t level);
+  void write_setmembersymbol(VALUE symbol);
+  void write_setmembervalue();
+  void write_putself();
+  void write_putvalue(VALUE value);
+  void write_putfloat(double value);
+  void write_putstring(const std::string& data);
+  IBlockPointerLabel write_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc);
+  PointerLabel write_putcfunction(VALUE symbol, FPOINTER funcptr, uint32_t argc);
+  void write_putarray(uint32_t count);
+  void write_puthash(uint32_t count);
+  void write_putclass(VALUE symbol,
+                      uint32_t propertycount,
+                      uint32_t staticpropertycount,
+                      uint32_t methodcount,
+                      uint32_t staticmethodcount,
+                      uint32_t parentclasscount);
+  void write_makeconstant(uint32_t index);
+  void write_pop(uint32_t count);
+  void write_dup();
+  void write_swap();
+  void write_topn(uint32_t index);
+  void write_setn(uint32_t index);
+  void write_call(uint32_t argc);
+  void write_callmember(uint32_t argc);
+  void write_return();
+  void write_throw(ThrowType type);
+  Int32Label write_registercatchtable(ThrowType type, int32_t offset);
+  void write_popcatchtable();
+  Int32Label write_branch(int32_t offset);
+  Int32Label write_branchif(int32_t offset);
+  Int32Label write_branchunless(int32_t offset);
+  void write_operator(Opcode opcode);
 };
-};  // namespace Charly
+}  // namespace Charly

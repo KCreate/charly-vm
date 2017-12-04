@@ -24,60 +24,40 @@
  * SOFTWARE.
  */
 
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
-#include <iostream>
+#include "block.h"
 
 #pragma once
 
 namespace Charly {
-typedef uintptr_t VALUE;
-typedef intptr_t SIGNED_VALUE;
-typedef uint16_t STATUS;
-typedef void* FPOINTER;
 
-class VM;
-struct Frame;
-struct FrameEnvironmentEntry;
-struct CatchTable;
-class InstructionBlock;
+/*
+ * Stores an offset and length into the generated instruction stream of a block
+ * Can be used to compute offsets for the several branching instructions
+ * */
 template <class T>
-class BlockLabel;
+class BlockLabel {
+private:
+  InstructionBlock& block;
 
-// Often used blocklabel types
-typedef BlockLabel<bool> BoolLabel;
-typedef BlockLabel<uint8_t> UInt8Label;
-typedef BlockLabel<uint16_t> UInt16Label;
-typedef BlockLabel<uint32_t> UInt32Label;
-typedef BlockLabel<uint64_t> UInt64Label;
-typedef BlockLabel<int8_t> Int8Label;
-typedef BlockLabel<int16_t> Int16Label;
-typedef BlockLabel<int32_t> Int32Label;
-typedef BlockLabel<int32_t> OffsetLabel;
-typedef BlockLabel<int64_t> Int64Label;
-typedef BlockLabel<double> DoubleLabel;
-typedef BlockLabel<void*> PointerLabel;
-typedef BlockLabel<InstructionBlock*> IBlockPointerLabel;
+public:
+  uint32_t offset;
 
-class CLI;
-struct RunFlags;
-struct Context;
-class SourceFile;
-class Buffer;
-class SymbolTable;
+  BlockLabel(InstructionBlock& t_block) : block(t_block), offset(t_block.writeoffset) {
+  }
+  BlockLabel(InstructionBlock& t_block, uint32_t offset) : block(t_block), offset(offset) {
+  }
+  BlockLabel(const BlockLabel& other) : block(other.block), offset(other.offset) {
+  }
 
-enum ThrowType : uint8_t;
-enum Opcode : uint8_t;
+  inline BlockLabel& write(T& arg) {
+    *static_cast<T*>(this->block.data + this->offset) = arg;
+    return *this;
+  }
 
-struct MemoryCell;
-class MemoryManager;
+  inline BlockLabel& write_current_block_offset() {
+    *reinterpret_cast<T*>(this->block.data + this->offset) = static_cast<T>(this->block.writeoffset - this->offset);
+    return *this;
+  }
+};
 
-struct Basic;
-struct Object;
-struct Array;
-struct String;
-struct Float;
-struct Function;
-struct CFunction;
-}  // namespace Charly
+}

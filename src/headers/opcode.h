@@ -296,8 +296,7 @@ enum Opcode : uint8_t {
   UNot,
   UBNot,
 
-  // Machine internals, meant to be used directly by the machine itself
-  // not some compiler compiling to be vm
+  // Halt execution of the machine and return to the caller
   Halt
 };
 }  // namespace Charly

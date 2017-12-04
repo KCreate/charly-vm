@@ -30,6 +30,7 @@
 #include <iostream>
 
 #include "gc.h"
+#include "label.h"
 #include "operators.h"
 #include "status.h"
 #include "vm.h"
@@ -915,7 +916,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
         if (first) {
           io << ", ";
         } else {
-          first = false;
+          first = true;
         }
 
         this->pretty_print(io, entry);
@@ -1052,8 +1053,7 @@ void VM::init_frames() {
   //
   // This way it can still access the global scope, but not register any
   // new variables or constants into it.
-  uint32_t global_var_count = 1;
-  InstructionBlock* block = this->create_instructionblock(global_var_count);
+  InstructionBlock* block = this->create_instructionblock(5);
 
   // let Charly = {
   //   internals = {
@@ -1103,8 +1103,23 @@ void VM::init_frames() {
   block->write_putstring("This is a string test");
   block->write_call(1);
 
-  // Put Charly onto the stack
+  // try {
+  //   throw "This is being thrown";
+  // } catch(e) {
+  //   Charly.internals.get_method(e)
+  // }
+  OffsetLabel exhandler = block->write_registercatchtable(ThrowType::Exception, 0);
+  block->write_putstring("This is being thrown");
+  block->write_throw(ThrowType::Exception);
+  OffsetLabel jumpover = block->write_branch(0);
+  exhandler.write_current_block_offset();
+  block->write_setlocal(5, 0);
   block->write_readlocal(4, 0);
+  block->write_readmembersymbol(this->symbol_table("internals"));
+  block->write_readmembersymbol(this->symbol_table("get_method"));
+  block->write_readlocal(5, 0);
+  block->write_call(1);
+  jumpover.write_current_block_offset();
 
   // Put arguments onto the stack
   block->write_readlocal(0, 0);
