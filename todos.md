@@ -76,34 +76,19 @@
   - Remove the handling from the VM into a separate thing
 
 # Refactoring and code structure
-- Memory Allocation
-  - The Garbage Collector can give you memory in two different ways
-    - Direct Reference to Cell
-    - Boxed reference, freed when box is deallocated
-      - Box can be invalidated and the cell can be unboxed
-- Classes
-  - Machine
-    - Memory
-      - SymbolTable (mapping between integers and strings)
-      - CellPool (managed memory cells of variable size)
-      - StringCell, ObjectCell, ArrayCell, etc...
-    - CPU
-      - Object, Array etc.
-      - ControlFrame
-      - CatchTable
-    - CompilationContext
-      - Location
-      - Lexer
-        - Token
-      - Parser
-        - ASTNode (unchanged, sugared syntax tree)
-      - SemanticTransformer
-        - SemanticNode (desugared syntax tree with semantic information and compile-time transformations)
-        - Also does optimizations
-      - IRGenerator (transforms SemanticNodes into IRNodes)
-        - FunctionBuffer
-          - InstructionBuffer
-          - ChildBuffers (list of child function buffers)
+- CompilationContext
+  - Location
+  - Lexer
+    - Token
+  - Parser
+    - ASTNode (unchanged, sugared syntax tree)
+  - SemanticTransformer
+    - SemanticNode (desugared syntax tree with semantic information and compile-time transformations)
+    - Also does optimizations
+  - IRGenerator (transforms SemanticNodes into IRNodes)
+    - FunctionBuffer
+      - InstructionBuffer
+      - ChildBuffers (list of child function buffers)
 
 # Reserved identifiers
 - Everywhere

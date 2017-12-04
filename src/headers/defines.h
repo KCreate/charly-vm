@@ -42,10 +42,11 @@ struct Frame;
 struct FrameEnvironmentEntry;
 struct CatchTable;
 class InstructionBlock;
+
+typedef std::function<void(InstructionBlock& block)> IBlockGenFunc;
+
 template <class T>
 class BlockLabel;
-
-// Often used blocklabel types
 typedef BlockLabel<bool> BoolLabel;
 typedef BlockLabel<uint8_t> UInt8Label;
 typedef BlockLabel<uint16_t> UInt16Label;

@@ -28,10 +28,10 @@
 #include "label.h"
 
 namespace Charly {
-  void InstructionBlock::clean() {
-    free(this->data);
-    free(this->staticdata);
-  }
+void InstructionBlock::clean() {
+  free(this->data);
+  free(this->staticdata);
+}
 
 void InstructionBlock::check_needs_resize() {
   if (this->writeoffset >= this->data_size - sizeof(uint64_t)) {
@@ -161,10 +161,13 @@ IBlockPointerLabel InstructionBlock::write_putfunction(VALUE symbol,
                                                        InstructionBlock* block,
                                                        bool anonymous,
                                                        uint32_t argc) {
+  IBlockPointerLabel label(*this);
+  label.set_instruction_base();
+
   this->write_byte(Opcode::PutFunction);
   this->write_long(symbol);
 
-  IBlockPointerLabel label(*this);
+  label.set_target_offset();
 
   this->write_pointer(block);
   this->child_blocks.push_back(block);
@@ -175,10 +178,13 @@ IBlockPointerLabel InstructionBlock::write_putfunction(VALUE symbol,
 }
 
 PointerLabel InstructionBlock::write_putcfunction(VALUE symbol, FPOINTER funcptr, uint32_t argc) {
+  PointerLabel label(*this);
+  label.set_instruction_base();
+
   this->write_byte(Opcode::PutCFunction);
   this->write_long(symbol);
 
-  PointerLabel label(*this);
+  label.set_target_offset();
 
   this->write_pointer(funcptr);
   this->write_int(argc);
@@ -197,11 +203,11 @@ void InstructionBlock::write_puthash(uint32_t count) {
 }
 
 void InstructionBlock::write_putclass(VALUE symbol,
-                           uint32_t propertycount,
-                           uint32_t staticpropertycount,
-                           uint32_t methodcount,
-                           uint32_t staticmethodcount,
-                           uint32_t parentclasscount) {
+                                      uint32_t propertycount,
+                                      uint32_t staticpropertycount,
+                                      uint32_t methodcount,
+                                      uint32_t staticmethodcount,
+                                      uint32_t parentclasscount) {
   this->write_byte(Opcode::PutClass);
   this->write_long(symbol);
   this->write_int(propertycount);
@@ -259,10 +265,13 @@ void InstructionBlock::write_throw(ThrowType type) {
 }
 
 OffsetLabel InstructionBlock::write_registercatchtable(ThrowType type, int32_t offset) {
+  OffsetLabel label(*this);
+  label.set_instruction_base();
+
   this->write_byte(Opcode::RegisterCatchTable);
   this->write_byte(type);
 
-  Int32Label label(*this);
+  label.set_target_offset();
 
   this->write_int(offset);
 
@@ -274,25 +283,28 @@ void InstructionBlock::write_popcatchtable() {
 }
 
 OffsetLabel InstructionBlock::write_branch(int32_t offset) {
-  this->write_byte(Opcode::Branch);
-
   OffsetLabel label(*this);
+  label.set_instruction_base();
+  this->write_byte(Opcode::Branch);
+  label.set_target_offset();
   this->write_int(offset);
   return label;
 }
 
 OffsetLabel InstructionBlock::write_branchif(int32_t offset) {
-  this->write_byte(Opcode::BranchIf);
-
   OffsetLabel label(*this);
+  label.set_instruction_base();
+  this->write_byte(Opcode::BranchIf);
+  label.set_target_offset();
   this->write_int(offset);
   return label;
 }
 
 OffsetLabel InstructionBlock::write_branchunless(int32_t offset) {
-  this->write_byte(Opcode::BranchUnless);
-
   OffsetLabel label(*this);
+  label.set_instruction_base();
+  this->write_byte(Opcode::BranchUnless);
+  label.set_target_offset();
   this->write_int(offset);
   return label;
 }
@@ -300,4 +312,86 @@ OffsetLabel InstructionBlock::write_branchunless(int32_t offset) {
 void InstructionBlock::write_operator(Opcode opcode) {
   this->write_byte(opcode);
 }
+
+void InstructionBlock::write_if_statement(IBlockGenFunc condition, IBlockGenFunc then_block) {
+  condition(*this);
+  OffsetLabel skiplabel = this->write_branchunless(0);
+  then_block(*this);
+  skiplabel.write_current_block_offset();
+}
+
+void InstructionBlock::write_ifelse_statement(IBlockGenFunc condition,
+                                              IBlockGenFunc then_block,
+                                              IBlockGenFunc else_block) {
+  condition(*this);
+  OffsetLabel skiplabel = this->write_branchunless(0);
+  then_block(*this);
+  OffsetLabel endlabel = this->write_branch(0);
+  skiplabel.write_current_block_offset();
+  else_block(*this);
+  endlabel.write_current_block_offset();
+}
+
+void InstructionBlock::write_unless_statement(IBlockGenFunc condition, IBlockGenFunc then_block) {
+  condition(*this);
+  OffsetLabel skiplabel = this->write_branchif(0);
+  then_block(*this);
+  skiplabel.write_current_block_offset();
+}
+
+void InstructionBlock::write_unlesselse_statement(IBlockGenFunc condition,
+                                                  IBlockGenFunc then_block,
+                                                  IBlockGenFunc else_block) {
+  condition(*this);
+  OffsetLabel skiplabel = this->write_branchif(0);
+  then_block(*this);
+  OffsetLabel endlabel = this->write_branch(0);
+  skiplabel.write_current_block_offset();
+  else_block(*this);
+  endlabel.write_current_block_offset();
+}
+
+void InstructionBlock::write_try_statement(IBlockGenFunc block, IBlockGenFunc handler) {
+  OffsetLabel handlerlabel = this->write_registercatchtable(ThrowType::Exception, 0);
+  block(*this);
+  this->write_popcatchtable();
+  OffsetLabel skiphandlerlabel = this->write_branch(0);
+  handlerlabel.write_current_block_offset();
+  this->write_popcatchtable();
+  handler(*this);
+  skiphandlerlabel.write_current_block_offset();
+}
+
+void InstructionBlock::write_while_statement(IBlockGenFunc condition, IBlockGenFunc then_block) {
+  OffsetLabel end_target_1 = this->write_registercatchtable(ThrowType::Break, 0);
+  this->write_registercatchtable(ThrowType::Continue, InstructionLength[Opcode::RegisterCatchTable]);
+
+  OffsetLabel lcondition(*this);
+  condition(*this);
+  OffsetLabel end_target_2 = this->write_branchunless(0);
+  then_block(*this);
+  this->write_branch(lcondition.relative_offset());
+
+  end_target_1.write_current_block_offset();
+  end_target_2.write_current_block_offset();
+  this->write_popcatchtable();
+  this->write_popcatchtable();
+}
+
+void InstructionBlock::write_until_statement(IBlockGenFunc condition, IBlockGenFunc then_block) {
+  OffsetLabel end_target_1 = this->write_registercatchtable(ThrowType::Break, 0);
+  this->write_registercatchtable(ThrowType::Continue, InstructionLength[Opcode::RegisterCatchTable]);
+
+  OffsetLabel lcondition(*this);
+  condition(*this);
+  OffsetLabel end_target_2 = this->write_branchif(0);
+  then_block(*this);
+  this->write_branch(lcondition.relative_offset());
+
+  end_target_1.write_current_block_offset();
+  end_target_2.write_current_block_offset();
+  this->write_popcatchtable();
+  this->write_popcatchtable();
+}
+
 }  // namespace Charly

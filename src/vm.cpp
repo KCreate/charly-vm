@@ -139,7 +139,6 @@ void VM::restore_catchtable(CatchTable* table) {
     this->pop_catchtable();
   }
 
-  this->catchstack = table->parent;
   this->frames = table->frame;
   this->ip = table->address;
 
@@ -347,43 +346,6 @@ Opcode VM::fetch_instruction() {
   if (this->ip == nullptr)
     return Opcode::Nop;
   return *reinterpret_cast<Opcode*>(this->ip);
-}
-
-uint32_t VM::decode_instruction_length(Opcode opcode) {
-  switch (opcode) {
-    case Opcode::Nop: return 1;
-    case Opcode::ReadLocal: return 1 + sizeof(uint32_t) + sizeof(uint32_t);
-    case Opcode::ReadMemberSymbol: return 1 + sizeof(VALUE);
-    case Opcode::ReadMemberValue: return 1;
-    case Opcode::SetLocal: return 1 + sizeof(uint32_t) + sizeof(uint32_t);
-    case Opcode::SetMemberSymbol: return 1 + sizeof(VALUE);
-    case Opcode::SetMemberValue: return 1;
-    case Opcode::PutSelf: return 1;
-    case Opcode::PutValue: return 1 + sizeof(VALUE);
-    case Opcode::PutFloat: return 1 + sizeof(double);
-    case Opcode::PutString: return 1 + sizeof(uint32_t) + sizeof(uint32_t);
-    case Opcode::PutFunction: return 1 + sizeof(VALUE) + sizeof(FPOINTER) + sizeof(bool) + sizeof(uint32_t);
-    case Opcode::PutCFunction: return 1 + sizeof(VALUE) + sizeof(FPOINTER) + sizeof(uint32_t);
-    case Opcode::PutArray: return 1 + sizeof(uint32_t);
-    case Opcode::PutHash: return 1 + sizeof(uint32_t);
-    case Opcode::PutClass: return 1 + sizeof(VALUE) + sizeof(uint32_t) * 5;
-    case Opcode::MakeConstant: return 1 + sizeof(uint32_t);
-    case Opcode::Pop: return 1 + sizeof(uint32_t);
-    case Opcode::Dup: return 1;
-    case Opcode::Swap: return 1;
-    case Opcode::Topn: return 1 + sizeof(uint32_t);
-    case Opcode::Setn: return 1 + sizeof(uint32_t);
-    case Opcode::Call: return 1 + sizeof(uint32_t);
-    case Opcode::CallMember: return 1 + sizeof(uint32_t);
-    case Opcode::Return: return 1;
-    case Opcode::Throw: return 1 + sizeof(ThrowType);
-    case Opcode::RegisterCatchTable: return 1 + sizeof(ThrowType) + sizeof(int32_t);
-    case Opcode::PopCatchTable: return 1;
-    case Opcode::Branch: return 1 + sizeof(uint32_t);
-    case Opcode::BranchIf: return 1 + sizeof(uint32_t);
-    case Opcode::BranchUnless: return 1 + sizeof(uint32_t);
-    default: return 1;
-  }
 }
 
 void VM::op_readlocal(uint32_t index, uint32_t level) {
@@ -696,7 +658,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   // compute a return address
   uint8_t* return_address = nullptr;
   if (this->ip != nullptr)
-    return_address = this->ip + this->decode_instruction_length(Opcode::Call);
+    return_address = this->ip + InstructionLength[Opcode::Call];
   Frame* frame = this->create_frame(self, function, return_address);
 
   Array* arguments_array = reinterpret_cast<Array*>(this->create_array(argc));
@@ -1121,6 +1083,24 @@ void VM::init_frames() {
   block->write_call(1);
   jumpover.write_current_block_offset();
 
+  // if (25) {
+  //   Charly.internals.get_method("true")
+  // }
+  block->write_if_statement([](InstructionBlock& block) { block.write_putvalue(kTrue); },
+                            [this](InstructionBlock& block) {
+                              block.write_readlocal(4, 0);
+                              block.write_readmembersymbol(this->symbol_table("internals"));
+                              block.write_readmembersymbol(this->symbol_table("get_method"));
+                              block.write_putstring("true");
+                              block.write_call(1);
+                            });
+
+  // while (true) {
+  //   Charly.internals.get_method("true")
+  // }
+  block->write_while_statement([](InstructionBlock& block) { block.write_putvalue(kTrue); },
+                               [](InstructionBlock& block) { block.write_throw(ThrowType::Continue); });
+
   // Put arguments onto the stack
   block->write_readlocal(0, 0);
 
@@ -1151,7 +1131,7 @@ void VM::run() {
     // Backup the current ip
     // After the instruction was executed we check if
     // ip stayed the same. If it's still the same value
-    // we increment it to the next instruction (via decode_instruction_length)
+    // we increment it to the next instruction
     uint8_t* old_ip = this->ip;
 
     // Check if we're out-of-bounds relative to the current block
@@ -1165,7 +1145,7 @@ void VM::run() {
     Opcode opcode = this->fetch_instruction();
 
     // Check if there is enough space for instruction arguments
-    uint32_t instruction_length = this->decode_instruction_length(opcode);
+    uint32_t instruction_length = InstructionLength[opcode];
     if (this->ip + instruction_length >= (block_data + block_write_offset + sizeof(Opcode))) {
       this->panic(kStatusNotEnoughSpaceForInstructionArguments);
     }

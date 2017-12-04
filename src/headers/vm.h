@@ -95,7 +95,6 @@ public:
 
   // Execution
   Opcode fetch_instruction();
-  uint32_t decode_instruction_length(Opcode opcode);
   void op_readlocal(uint32_t index, uint32_t level);
   void op_readmembersymbol(VALUE symbol);
   void op_setlocal(uint32_t index, uint32_t level);

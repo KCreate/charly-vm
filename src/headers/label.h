@@ -40,13 +40,27 @@ private:
   InstructionBlock& block;
 
 public:
-  uint32_t offset;
+  int32_t offset;
+  int32_t instruction_base_offset;
 
-  BlockLabel(InstructionBlock& t_block) : block(t_block), offset(t_block.writeoffset) {
+  BlockLabel(InstructionBlock& t_block)
+      : block(t_block), offset(t_block.writeoffset), instruction_base_offset(t_block.writeoffset) {
   }
-  BlockLabel(InstructionBlock& t_block, uint32_t offset) : block(t_block), offset(offset) {
+  BlockLabel(InstructionBlock& t_block, int32_t offset, int32_t instruction_base_offset)
+      : block(t_block), offset(offset), instruction_base_offset(instruction_base_offset) {
   }
-  BlockLabel(const BlockLabel& other) : block(other.block), offset(other.offset) {
+  BlockLabel(const BlockLabel& other)
+      : block(other.block), offset(other.offset), instruction_base_offset(other.instruction_base_offset) {
+  }
+
+  inline BlockLabel& set_target_offset() {
+    this->offset = this->block.writeoffset;
+    return *this;
+  }
+
+  inline BlockLabel& set_instruction_base() {
+    this->instruction_base_offset = this->block.writeoffset;
+    return *this;
   }
 
   inline BlockLabel& write(T& arg) {
@@ -55,9 +69,14 @@ public:
   }
 
   inline BlockLabel& write_current_block_offset() {
-    *reinterpret_cast<T*>(this->block.data + this->offset) = static_cast<T>(this->block.writeoffset - this->offset);
+    *reinterpret_cast<T*>(this->block.data + this->offset) =
+        static_cast<T>(this->block.writeoffset - this->instruction_base_offset);
     return *this;
+  }
+
+  inline int32_t relative_offset() {
+    return this->instruction_base_offset - this->block.writeoffset;
   }
 };
 
-}
+}  // namespace Charly

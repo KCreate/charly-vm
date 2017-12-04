@@ -141,5 +141,14 @@ public:
   Int32Label write_branchif(int32_t offset);
   Int32Label write_branchunless(int32_t offset);
   void write_operator(Opcode opcode);
+
+  // Wrappers for more high-level language structures
+  void write_if_statement(IBlockFunc condition, IBlockFunc then_block);
+  void write_ifelse_statement(IBlockFunc condition, IBlockFunc then_block, IBlockFunc else_block);
+  void write_unless_statement(IBlockFunc condition, IBlockFunc then_block);
+  void write_unlesselse_statement(IBlockFunc condition, IBlockFunc then_block, IBlockFunc else_block);
+  void write_try_statement(IBlockFunc block, IBlockFunc handler);
+  void write_while_statement(IBlockFunc condition, IBlockFunc then_block);
+  void write_until_statement(IBlockFunc condition, IBlockFunc then_block);
 };
 }  // namespace Charly
