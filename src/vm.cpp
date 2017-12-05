@@ -981,7 +981,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << "self=";
       this->pretty_print(io, frame->self);
       io << " ";
-      io << "return_address=" << std::hex << frame->return_address << std::dec;
+      io << "return_address=" << reinterpret_cast<void*>(frame->return_address);
       io << ">";
       break;
     }
@@ -990,10 +990,10 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       CatchTable* table = reinterpret_cast<CatchTable*>(value);
       io << "<CatchTable:" << table << " ";
       io << "type=" << table->type << " ";
-      io << "address=" << std::hex << table->address << std::dec << " ";
+      io << "address=" << reinterpret_cast<void*>(table->address) << " ";
       io << "stacksize=" << table->stacksize << " ";
       io << "frame=" << table->frame << " ";
-      io << "parent=" << table->parent << " ";
+      io << "parent=" << table->parent;
       io << ">";
       break;
     }
@@ -1002,7 +1002,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       InstructionBlock* block = reinterpret_cast<InstructionBlock*>(value);
       io << "<InstructionBlock:" << block << " ";
       io << "lvarcount=" << block->lvarcount << " ";
-      io << "data=" << std::hex << block->data << std::dec << " ";
+      io << "data=" << reinterpret_cast<void*>(block->data) << " ";
       io << "data_size=" << block->data_size << " ";
       io << "write_offset=" << block->writeoffset;
       io << ">";
