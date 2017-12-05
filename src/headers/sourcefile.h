@@ -88,14 +88,33 @@ public:
   }
 
   // Read char, append it to the current frame and advance one position
-  virtual uint32_t read_char();
+  uint32_t read_char() {
+    uint32_t cp = this->buffer.next_utf8();
+
+    if (cp == static_cast<uint32_t>(EOF)) {
+      return cp;
+    }
+
+    std::string utf8bytes;
+    utf8::append(cp, std::back_inserter(utf8bytes));
+    this->frame << utf8bytes;
+
+    this->pos += 1;
+    this->current_char = cp;
+
+    return cp;
+  }
 
   // Read a char without appendin to the frame or advancing the position
-  virtual uint32_t peek_char();
+  uint32_t peek_char() {
+    return this->buffer.peek_next_utf8();
+  }
 
   // Close the source
   // Note: This is only useful if the source is a file or an IO of some sorts
-  virtual SourceFile& close();
+  SourceFile& close() {
+    return *this;
+  }
 
 private:
   std::string filename = "unnamed-source";

@@ -18,7 +18,6 @@ OBJS=build/main.o \
 		 build/operators.o \
 		 build/buffer.o \
 		 build/cli.o \
-		 build/sourcefile.o \
 		 build/symboltable.o \
 		 build/managedcontext.o \
 		 build/block.o

@@ -39,14 +39,16 @@ VALUE SymbolTable::encode_string(const std::string& input) {
   return symbol;
 }
 
-std::string SymbolTable::decode_symbol(VALUE symbol) {
+std::optional<std::string> SymbolTable::decode_symbol(VALUE symbol) {
+  std::optional<std::string> decoded_string;
+
   auto found_string = this->table.find(symbol);
 
-  if (found_string == this->table.end()) {
-    return kUnknownSymbol;
+  if (found_string != this->table.end()) {
+    decoded_string = found_string->second;
   }
 
-  return found_string->second;
+  return decoded_string;
 }
 
 void SymbolTable::copy_symbols_to_table(SymbolTable& other) {

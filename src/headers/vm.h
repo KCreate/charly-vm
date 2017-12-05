@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+#include <optional>
+
 #include "block.h"
 #include "defines.h"
 #include "exception.h"
@@ -62,7 +64,7 @@ public:
   InstructionBlock* create_instructionblock(uint32_t lvarcount);
 
   // Stack manipulation
-  VALUE pop_stack();
+  std::optional<VALUE> pop_stack();
   void push_stack(VALUE value);
 
   // CatchStack manipulation

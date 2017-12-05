@@ -83,8 +83,8 @@ InstructionBlock* VM::create_instructionblock(uint32_t lvarcount) {
   return reinterpret_cast<InstructionBlock*>(cell);
 }
 
-VALUE VM::pop_stack() {
-  VALUE value = kNull;
+std::optional<VALUE> VM::pop_stack() {
+  std::optional<VALUE> value;
   if (this->stack.size() > 0) {
     value = this->stack.back();
     this->stack.pop_back();
@@ -368,7 +368,7 @@ void VM::op_readlocal(uint32_t index, uint32_t level) {
 }
 
 void VM::op_readmembersymbol(VALUE symbol) {
-  VALUE target = this->pop_stack();
+  VALUE target = this->pop_stack().value_or(kNull);
 
   // Handle datatypes that have their own data members
   switch (this->type(target)) {
@@ -412,7 +412,7 @@ void VM::op_readmembersymbol(VALUE symbol) {
 }
 
 void VM::op_setlocal(uint32_t index, uint32_t level) {
-  VALUE value = this->pop_stack();
+  VALUE value = this->pop_stack().value_or(kNull);
 
   // Travel to the correct frame
   Frame* frame = this->frames;
@@ -438,8 +438,8 @@ void VM::op_setlocal(uint32_t index, uint32_t level) {
 }
 
 void VM::op_setmembersymbol(VALUE symbol) {
-  VALUE value = this->pop_stack();
-  VALUE target = this->pop_stack();
+  VALUE value = this->pop_stack().value_or(kNull);
+  VALUE target = this->pop_stack().value_or(kNull);
 
   // Check if we can write to the value
   switch (this->real_type(target)) {
@@ -500,7 +500,7 @@ void VM::op_putarray(uint32_t count) {
   Array* array = reinterpret_cast<Array*>(this->create_array(count));
 
   while (count--) {
-    array->data->insert(array->data->begin(), this->pop_stack());
+    array->data->insert(array->data->begin(), this->pop_stack().value_or(kNull));
   }
 
   this->push_stack(reinterpret_cast<VALUE>(array));
@@ -512,8 +512,8 @@ void VM::op_puthash(uint32_t count) {
   VALUE key;
   VALUE value;
   while (count--) {
-    key = this->pop_stack();
-    value = this->pop_stack();
+    key = this->pop_stack().value_or(kNull);
+    value = this->pop_stack().value_or(kNull);
     (*object->container)[key] = value;
   }
 
@@ -528,19 +528,19 @@ void VM::op_makeconstant(uint32_t offset) {
 
 void VM::op_pop(uint32_t count) {
   while (count--) {
-    this->pop_stack();
+    this->pop_stack().value_or(kNull);
   }
 }
 
 void VM::op_dup() {
-  VALUE value = this->pop_stack();
+  VALUE value = this->pop_stack().value_or(kNull);
   this->push_stack(value);
   this->push_stack(value);
 }
 
 void VM::op_swap() {
-  VALUE value1 = this->pop_stack();
-  VALUE value2 = this->pop_stack();
+  VALUE value1 = this->pop_stack().value_or(kNull);
+  VALUE value2 = this->pop_stack().value_or(kNull);
   this->push_stack(value1);
   this->push_stack(value2);
 }
@@ -572,12 +572,12 @@ void VM::call(uint32_t argc, bool with_target) {
   // We do this because arguments are constructed on the stack
   // in the reverse order than we are popping them off
   for (int argc_copy = argc - 1; argc_copy >= 0; argc_copy--) {
-    VALUE value = this->pop_stack();
+    VALUE value = this->pop_stack().value_or(kNull);
     arguments[argc_copy] = value;
   }
 
   // Pop the function off of the stack
-  VALUE function = this->pop_stack();
+  VALUE function = this->pop_stack().value_or(kNull);
 
   // The target of the function is either supplied explicitly via the call_member instruction
   // or implicitly via the functions frame
@@ -585,7 +585,7 @@ void VM::call(uint32_t argc, bool with_target) {
   // If not we simply pop it off the stack
   VALUE target = kNull;
   if (with_target)
-    target = this->pop_stack();
+    target = this->pop_stack().value_or(kNull);
 
   // Redirect to the correct handler
   switch (this->real_type(function)) {
@@ -712,7 +712,7 @@ void VM::op_return() {
 
 void VM::op_throw(ThrowType type) {
   if (type == ThrowType::Exception) {
-    return this->throw_exception(this->pop_stack());
+    return this->throw_exception(this->pop_stack().value_or(kNull));
   }
 
   CatchTable* table = this->find_catchtable(type);
@@ -748,13 +748,13 @@ void VM::op_branch(int32_t offset) {
 }
 
 void VM::op_branchif(int32_t offset) {
-  VALUE test = this->pop_stack();
+  VALUE test = this->pop_stack().value_or(kNull);
   if (Operators::truthyness(test))
     this->ip += offset;
 }
 
 void VM::op_branchunless(int32_t offset) {
-  VALUE test = this->pop_stack();
+  VALUE test = this->pop_stack().value_or(kNull);
   if (!Operators::truthyness(test))
     this->ip += offset;
 }
@@ -852,7 +852,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       for (auto& entry : *object->container) {
         io << " ";
-        std::string key = this->symbol_table(entry.first);
+        std::string key = this->symbol_table(entry.first).value_or(kUndefinedSymbolString);
         io << key << "=";
         this->pretty_print(io, entry.second);
       }
@@ -912,7 +912,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       for (auto& entry : *func->container) {
         io << " ";
-        std::string key = this->symbol_table(entry.first);
+        std::string key = this->symbol_table(entry.first).value_or(kUndefinedSymbolString);
         io << key << "=";
         this->pretty_print(io, entry.second);
       }
@@ -942,7 +942,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       for (auto& entry : *func->container) {
         io << " ";
-        std::string key = this->symbol_table(entry.first);
+        std::string key = this->symbol_table(entry.first).value_or(kUndefinedSymbolString);
         io << key << "=";
         this->pretty_print(io, entry.second);
       }
@@ -952,7 +952,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeSymbol: {
-      io << this->symbol_table(value);
+      io << this->symbol_table(value).value_or(kUndefinedSymbolString);
       break;
     }
 
@@ -1339,8 +1339,8 @@ void VM::run() {
       }
 
       case Opcode::Add: {
-        VALUE right = this->pop_stack();
-        VALUE left = this->pop_stack();
+        VALUE right = this->pop_stack().value_or(kNull);
+        VALUE left = this->pop_stack().value_or(kNull);
         this->push_stack(Operators::add(*this, left, right));
         break;
       }

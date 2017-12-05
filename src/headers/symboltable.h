@@ -24,13 +24,13 @@
  * SOFTWARE.
  */
 
+#include <optional>
+
 #include "value.h"
 
 #pragma once
 
 namespace Charly {
-static const std::string kUnknownSymbol = "null";
-
 class SymbolTable {
 private:
   std::unordered_map<VALUE, std::string> table;
@@ -57,12 +57,12 @@ public:
   }
 
   VALUE encode_string(const std::string& input);
-  std::string decode_symbol(VALUE symbol);
+  std::optional<std::string> decode_symbol(VALUE symbol);
 
   VALUE operator()(const std::string& input) {
     return this->encode_string(input);
   }
-  std::string operator()(VALUE symbol) {
+  std::optional<std::string> operator()(VALUE symbol) {
     return this->decode_symbol(symbol);
   }
 

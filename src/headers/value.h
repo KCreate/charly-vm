@@ -36,6 +36,7 @@ namespace Charly {
 // Different constants for string handling
 static const size_t kStringInitialCapacity = 32;
 static const float kStringCapacityGrowthFactor = 1.5;
+static const std::string kUndefinedSymbolString = "<undefined symbol>";
 
 // Different masks for the flags field in the Basic struct
 static const VALUE kFlagType = 0b00011111;
