@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "block.h"
+#include "context.h"
 #include "defines.h"
 #include "exception.h"
 #include "frame.h"
@@ -62,6 +63,7 @@ struct MemoryCell {
 
 class MemoryManager {
 private:
+  Context& context;
   MemoryCell* free_cell;
   std::vector<MemoryCell*> heaps;
   std::unordered_set<VALUE> temporaries;
@@ -71,10 +73,10 @@ private:
   void grow_heap();
 
 public:
-  MemoryManager();
+  MemoryManager(Context& context);
   ~MemoryManager();
-  MemoryCell* allocate(VM* vm);
-  void collect(VM* vm);
+  MemoryCell* allocate();
+  void collect();
   void free(MemoryCell* cell);
   void inline free(VALUE value) {
     this->free(reinterpret_cast<MemoryCell*>(value));

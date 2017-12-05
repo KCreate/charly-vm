@@ -42,9 +42,7 @@
 namespace Charly {
 class VM {
   friend MemoryManager;
-
-public:
-  MemoryManager& gc;
+  friend ManagedContext;
 
 private:
   std::vector<VALUE> stack;
@@ -136,7 +134,8 @@ public:
   void pretty_print(std::ostream& io, VALUE value);
 
 public:
-  VM(MemoryManager& collector, Context& t_context) : gc(collector), context(t_context) {
+  VM(Context& t_context) : context(t_context) {
+    context.vm = this;
     this->frames = nullptr;
     this->catchstack = nullptr;
     this->ip = nullptr;

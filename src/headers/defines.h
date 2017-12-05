@@ -73,6 +73,7 @@ enum Opcode : uint8_t;
 
 struct MemoryCell;
 class MemoryManager;
+class ManagedContext;
 
 struct Basic;
 struct Object;

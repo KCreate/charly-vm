@@ -31,7 +31,8 @@
 #include "vm.h"
 
 namespace Charly {
-MemoryManager::MemoryManager() {
+MemoryManager::MemoryManager(Context& t_context) : context(t_context) {
+  context.gc = this;
   this->free_cell = nullptr;
   size_t heap_initial_count = kGCInitialHeapCount;
   this->heaps.reserve(heap_initial_count);
@@ -153,16 +154,18 @@ void MemoryManager::mark(VALUE value) {
   }
 }
 
-void MemoryManager::collect(VM* vm) {
-  std::cout << "#-- GC: Pause --#" << std::endl;
+void MemoryManager::collect() {
+  if (this->context.flags.trace_gc) {
+    std::cout << "#-- GC: Pause --#" << std::endl;
+  }
 
   // Mark Phase
-  for (auto& stack_item : vm->stack)
+  for (auto& stack_item : this->context.vm->stack)
     this->mark(stack_item);
   for (auto& temp_item : this->temporaries)
     this->mark(temp_item);
-  this->mark(reinterpret_cast<VALUE>(vm->frames));
-  this->mark(reinterpret_cast<VALUE>(vm->catchstack));
+  this->mark(reinterpret_cast<VALUE>(this->context.vm->frames));
+  this->mark(reinterpret_cast<VALUE>(this->context.vm->catchstack));
 
   // Sweep Phase
   int freed_cells_count = 0;
@@ -182,11 +185,13 @@ void MemoryManager::collect(VM* vm) {
     }
   }
 
-  std::cout << "#-- GC: Freed a total of " << freed_cells_count << " cells --#" << std::endl;
-  std::cout << "#-- GC: Finished --#" << std::endl;
+  if (this->context.flags.trace_gc) {
+    std::cout << "#-- GC: Freed a total of " << freed_cells_count << " cells --#" << std::endl;
+    std::cout << "#-- GC: Finished --#" << std::endl;
+  }
 }
 
-MemoryCell* MemoryManager::allocate(VM* vm) {
+MemoryCell* MemoryManager::allocate() {
   MemoryCell* cell = this->free_cell;
 
   if (cell) {
@@ -196,7 +201,7 @@ MemoryCell* MemoryManager::allocate(VM* vm) {
     // we do a collect in order to make sure we never get a failing
     // allocation in the future
     if (!this->free_cell) {
-      this->collect(vm);
+      this->collect();
 
       // If a collection didn't yield new available space,
       // allocate more heaps

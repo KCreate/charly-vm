@@ -29,35 +29,35 @@
 namespace Charly {
 Frame* ManagedContext::create_frame(VALUE self, Function* calling_function, uint8_t* return_address) {
   Frame* frame = this->vm.create_frame(self, calling_function, return_address);
-  this->vm.gc.register_temporary(reinterpret_cast<VALUE>(frame));
+  this->vm.context.gc->register_temporary(reinterpret_cast<VALUE>(frame));
   this->temporaries.push_back(reinterpret_cast<VALUE>(frame));
   return frame;
 }
 
 InstructionBlock* ManagedContext::create_instructionblock(uint32_t lvarcount) {
   InstructionBlock* block = this->vm.create_instructionblock(lvarcount);
-  this->vm.gc.register_temporary(reinterpret_cast<VALUE>(block));
+  this->vm.context.gc->register_temporary(reinterpret_cast<VALUE>(block));
   this->temporaries.push_back(reinterpret_cast<VALUE>(block));
   return block;
 }
 
 CatchTable* ManagedContext::create_catchtable(ThrowType type, uint8_t* address) {
   CatchTable* table = this->vm.create_catchtable(type, address);
-  this->vm.gc.register_temporary(reinterpret_cast<VALUE>(table));
+  this->vm.context.gc->register_temporary(reinterpret_cast<VALUE>(table));
   this->temporaries.push_back(reinterpret_cast<VALUE>(table));
   return table;
 }
 
 VALUE ManagedContext::create_object(uint32_t initial_capacity) {
   VALUE object = this->vm.create_object(initial_capacity);
-  this->vm.gc.register_temporary(object);
+  this->vm.context.gc->register_temporary(object);
   this->temporaries.push_back(object);
   return object;
 }
 
 VALUE ManagedContext::create_array(uint32_t initial_capacity) {
   VALUE array = this->vm.create_array(initial_capacity);
-  this->vm.gc.register_temporary(array);
+  this->vm.context.gc->register_temporary(array);
   this->temporaries.push_back(array);
   return array;
 }
@@ -70,7 +70,7 @@ VALUE ManagedContext::create_integer(int64_t value) {
 VALUE ManagedContext::create_float(double value) {
   VALUE floatval = this->vm.create_float(value);
   if (is_special(floatval)) {
-    this->vm.gc.register_temporary(floatval);
+    this->vm.context.gc->register_temporary(floatval);
     this->temporaries.push_back(floatval);
   }
   return floatval;
@@ -78,21 +78,21 @@ VALUE ManagedContext::create_float(double value) {
 
 VALUE ManagedContext::create_string(char* data, uint32_t length) {
   VALUE string = this->vm.create_string(data, length);
-  this->vm.gc.register_temporary(string);
+  this->vm.context.gc->register_temporary(string);
   this->temporaries.push_back(string);
   return string;
 }
 
 VALUE ManagedContext::create_function(VALUE name, uint32_t argc, bool anonymous, InstructionBlock* block) {
   VALUE func = this->vm.create_function(name, argc, anonymous, block);
-  this->vm.gc.register_temporary(func);
+  this->vm.context.gc->register_temporary(func);
   this->temporaries.push_back(func);
   return func;
 }
 
 VALUE ManagedContext::create_cfunction(VALUE name, uint32_t argc, FPOINTER pointer) {
   VALUE func = this->vm.create_cfunction(name, argc, pointer);
-  this->vm.gc.register_temporary(func);
+  this->vm.context.gc->register_temporary(func);
   this->temporaries.push_back(func);
   return func;
 }

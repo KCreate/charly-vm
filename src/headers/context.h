@@ -26,14 +26,20 @@
 
 #include <iostream>
 
-#include "gc.h"
+#include "defines.h"
+#include "runflags.h"
 #include "symboltable.h"
 
 #pragma once
 
 namespace Charly {
 struct Context {
-  MemoryManager gc;
+  MemoryManager* gc;
+  VM* vm;
   SymbolTable symbol_table;
+  RunFlags& flags;
+
+  Context(RunFlags& runflags) : flags(runflags) {
+  }
 };
 }  // namespace Charly

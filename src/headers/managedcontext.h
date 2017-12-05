@@ -42,7 +42,7 @@ public:
   }
   ~ManagedContext() {
     for (auto& temp : this->temporaries) {
-      this->vm.gc.unregister_temporary(temp);
+      this->vm.context.gc->unregister_temporary(temp);
     }
   }
 

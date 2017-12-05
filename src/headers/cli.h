@@ -39,7 +39,12 @@ static const std::string kHelpMessage =
     "Flags: \n"
     "    ast                              Display the AST of the input file \n"
     "    tokens                           Display tokens of the input file \n"
-    "    skipexec                         Don't execute after parsing";
+    "    skipexec                         Don't execute after parsing\n"
+    "    trace_opcodes                    Display opcodes as they are being executed\n"
+    "    trace_catchtables                Display catchtables as they are being created or left\n"
+    "    trace_frames                     Display frames as they are being entered and left\n"
+    "    trace_gc                         Display statistics about the gc at runtime\n"
+    "    exit_statistics                  Display debug information on VM exit";
 
 static const std::string kLicense =
     "MIT License \n"

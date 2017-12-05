@@ -41,7 +41,7 @@ VM::~VM() {
   this->frames = nullptr;
   this->catchstack = nullptr;
   this->stack.clear();
-  this->gc.collect(this);
+  this->context.gc->collect();
 }
 
 Frame* VM::pop_frame() {
@@ -52,7 +52,7 @@ Frame* VM::pop_frame() {
 }
 
 Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address) {
-  MemoryCell* cell = this->gc.allocate(this);
+  MemoryCell* cell = this->context.gc->allocate();
   cell->as.basic.set_type(kTypeFrame);
   cell->as.frame.parent = this->frames;
   cell->as.frame.parent_environment_frame = function->context;
@@ -74,11 +74,19 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address)
 
   // Append the frame
   this->frames = reinterpret_cast<Frame*>(cell);
+
+  // Print the frame if the corresponding flag was set
+  if (this->context.flags.trace_frames) {
+    std::cout << "Entering frame: ";
+    this->pretty_print(std::cout, reinterpret_cast<VALUE>(cell));
+    std::cout << std::endl;;
+  }
+
   return reinterpret_cast<Frame*>(cell);
 }
 
 InstructionBlock* VM::create_instructionblock(uint32_t lvarcount) {
-  MemoryCell* cell = this->gc.allocate(this);
+  MemoryCell* cell = this->context.gc->allocate();
   new (&cell->as.instructionblock) InstructionBlock(lvarcount);
   cell->as.basic.set_type(kTypeInstructionBlock);
   return reinterpret_cast<InstructionBlock*>(cell);
@@ -99,7 +107,7 @@ void VM::push_stack(VALUE value) {
 }
 
 CatchTable* VM::create_catchtable(ThrowType type, uint8_t* address) {
-  MemoryCell* cell = this->gc.allocate(this);
+  MemoryCell* cell = this->context.gc->allocate();
   cell->as.basic.set_type(kTypeCatchTable);
   cell->as.catchtable.stacksize = this->stack.size();
   cell->as.catchtable.frame = this->frames;
@@ -107,6 +115,14 @@ CatchTable* VM::create_catchtable(ThrowType type, uint8_t* address) {
   cell->as.catchtable.type = type;
   cell->as.catchtable.address = address;
   this->catchstack = reinterpret_cast<CatchTable*>(cell);
+
+  // Print the catchtable if the corresponding flag was set
+  if (this->context.flags.trace_catchtables) {
+    std::cout << "Entering catchtable: ";
+    this->pretty_print(std::cout, reinterpret_cast<VALUE>(cell));
+    std::cout << std::endl;;
+  }
+
   return reinterpret_cast<CatchTable*>(cell);
 }
 
@@ -114,7 +130,7 @@ CatchTable* VM::pop_catchtable() {
   if (!this->catchstack)
     this->panic(kStatusCatchStackEmpty);
   CatchTable* parent = this->catchstack->parent;
-  this->gc.free(reinterpret_cast<VALUE>(this->catchstack));
+  this->context.gc->free(reinterpret_cast<VALUE>(this->catchstack));
   this->catchstack = parent;
   return parent;
 }
@@ -143,6 +159,15 @@ void VM::restore_catchtable(CatchTable* table) {
   this->frames = table->frame;
   this->ip = table->address;
 
+  // Show the catchtable we just restored if the corresponding flag was set
+  if (this->context.flags.trace_catchtables) {
+
+    // Show the table we've restored
+    std::cout << "Restored CatchTable: ";
+    this->pretty_print(std::cout, table);
+    std::cout << std::endl;
+  }
+
   // Unwind the stack to be the size it was when this catchtable
   // was pushed. Because the stack could be smaller, we need to
   // calculate the amount of values we can pop
@@ -157,7 +182,7 @@ void VM::restore_catchtable(CatchTable* table) {
 }
 
 VALUE VM::create_object(uint32_t initial_capacity) {
-  MemoryCell* cell = this->gc.allocate(this);
+  MemoryCell* cell = this->context.gc->allocate();
   cell->as.basic.set_type(kTypeObject);
   cell->as.object.klass = kNull;
   cell->as.object.container = new std::unordered_map<VALUE, VALUE>();
@@ -166,7 +191,7 @@ VALUE VM::create_object(uint32_t initial_capacity) {
 }
 
 VALUE VM::create_array(uint32_t initial_capacity) {
-  MemoryCell* cell = this->gc.allocate(this);
+  MemoryCell* cell = this->context.gc->allocate();
   cell->as.basic.set_type(kTypeArray);
   cell->as.array.data = new std::vector<VALUE>();
   cell->as.array.data->reserve(initial_capacity);
@@ -200,7 +225,7 @@ VALUE VM::create_float(double value) {
   }
 
   // Allocate from the GC
-  MemoryCell* cell = this->gc.allocate(this);
+  MemoryCell* cell = this->context.gc->allocate();
   cell->as.basic.set_type(kTypeFloat);
   cell->as.flonum.float_value = value;
   return reinterpret_cast<VALUE>(cell);
@@ -217,7 +242,7 @@ VALUE VM::create_string(char* data, uint32_t length) {
   memcpy(copied_string, data, length);
 
   // Allocate the memory cell and initialize the values
-  MemoryCell* cell = this->gc.allocate(this);
+  MemoryCell* cell = this->context.gc->allocate();
   cell->as.basic.set_type(kTypeString);
   cell->as.string.data = copied_string;
   cell->as.string.length = length;
@@ -226,7 +251,7 @@ VALUE VM::create_string(char* data, uint32_t length) {
 }
 
 VALUE VM::create_function(VALUE name, uint32_t argc, bool anonymous, InstructionBlock* block) {
-  MemoryCell* cell = this->gc.allocate(this);
+  MemoryCell* cell = this->context.gc->allocate();
   cell->as.basic.set_type(kTypeFunction);
   cell->as.function.name = name;
   cell->as.function.argc = argc;
@@ -240,7 +265,7 @@ VALUE VM::create_function(VALUE name, uint32_t argc, bool anonymous, Instruction
 }
 
 VALUE VM::create_cfunction(VALUE name, uint32_t argc, FPOINTER pointer) {
-  MemoryCell* cell = this->gc.allocate(this);
+  MemoryCell* cell = this->context.gc->allocate();
   cell->as.basic.set_type(kTypeCFunction);
   cell->as.cfunction.name = name;
   cell->as.cfunction.pointer = pointer;
@@ -716,6 +741,13 @@ void VM::op_return() {
 
   this->frames = frame->parent;
   this->ip = frame->return_address;
+
+  // Print the frame if the correponding flag was set
+  if (this->context.flags.trace_frames) {
+    std::cout << "Left frame: ";
+    this->pretty_print(std::cout, reinterpret_cast<VALUE>(frame));
+    std::cout << std::endl;
+  }
 }
 
 void VM::op_throw(ThrowType type) {
@@ -740,7 +772,7 @@ void VM::throw_exception(VALUE payload) {
 
   this->restore_catchtable(table);
   this->push_stack(payload);
-  this->gc.collect(this);
+  this->context.gc->collect();
 }
 
 void VM::op_registercatchtable(ThrowType type, int32_t offset) {
@@ -749,6 +781,19 @@ void VM::op_registercatchtable(ThrowType type, int32_t offset) {
 
 void VM::op_popcatchtable() {
   this->pop_catchtable();
+
+  // Show the catchtable we just restored if the corresponding flag was set
+  if (this->context.flags.trace_catchtables) {
+    CatchTable* table = this->catchstack;
+
+    if (table != nullptr) {
+
+      // Show the table we've restored
+      std::cout << "Restored CatchTable: ";
+      this->pretty_print(std::cout, reinterpret_cast<VALUE>(table));
+      std::cout << std::endl;
+    }
+  }
 }
 
 void VM::op_branch(int32_t offset) {
@@ -1175,6 +1220,11 @@ void VM::run() {
     // Retrieve the current opcode
     Opcode opcode = this->fetch_instruction();
 
+    // Show opcodes as they are executed if the corresponding flag was set
+    if (this->context.flags.trace_opcodes) {
+      std::cout << reinterpret_cast<void*>(this->ip) << ": " << OpcodeStrings[opcode] << std::endl;
+    }
+
     // Check if there is enough space for instruction arguments
     uint32_t instruction_length = InstructionLength[opcode];
     if (this->ip + instruction_length >= (block_data + block_write_offset + sizeof(Opcode))) {
@@ -1385,15 +1435,19 @@ void VM::run() {
     }
   }
 
-  std::cout << "Stacktrace:" << std::endl;
-  this->stacktrace(std::cout);
+  // Print some debug info about the VM on exit if the corresponding flag was set
+  if (this->context.flags.exit_statistics) {
+    std::cout << "Stacktrace:" << std::endl;
+    this->stacktrace(std::cout);
 
-  std::cout << "CatchStacktrace:" << std::endl;
-  this->catchstacktrace(std::cout);
+    std::cout << "CatchStacktrace:" << std::endl;
+    this->catchstacktrace(std::cout);
 
-  std::cout << "Stackdump:" << std::endl;
-  this->stackdump(std::cout);
+    std::cout << "Stackdump:" << std::endl;
+    this->stackdump(std::cout);
+  }
 
-  this->gc.collect(this);
+
+  this->context.gc->collect();
 }
 }  // namespace Charly
