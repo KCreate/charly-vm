@@ -67,8 +67,8 @@ int CLI::run() {
 
   SourceFile userfile(this->flags.arguments[0], source_string);
 
-  Context context;
-  VM vm(context.gc, context.symbol_table);
+  Context context(this->flags);
+  VM vm(context.gc, context);
   if (!this->flags.skip_execution) {
     vm.run();
   }

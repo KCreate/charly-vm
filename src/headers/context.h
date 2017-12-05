@@ -28,8 +28,6 @@
 
 #include "gc.h"
 #include "symboltable.h"
-#include "value.h"
-#include "vm.h"
 
 #pragma once
 

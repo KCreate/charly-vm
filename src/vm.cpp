@@ -860,7 +860,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       for (auto& entry : *object->container) {
         io << " ";
-        std::string key = this->symbol_table(entry.first).value_or(kUndefinedSymbolString);
+        std::string key = this->context.symbol_table(entry.first).value_or(kUndefinedSymbolString);
         io << key << "=";
         this->pretty_print(io, entry.second);
       }
@@ -920,7 +920,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       for (auto& entry : *func->container) {
         io << " ";
-        std::string key = this->symbol_table(entry.first).value_or(kUndefinedSymbolString);
+        std::string key = this->context.symbol_table(entry.first).value_or(kUndefinedSymbolString);
         io << key << "=";
         this->pretty_print(io, entry.second);
       }
@@ -950,7 +950,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       for (auto& entry : *func->container) {
         io << " ";
-        std::string key = this->symbol_table(entry.first).value_or(kUndefinedSymbolString);
+        std::string key = this->context.symbol_table(entry.first).value_or(kUndefinedSymbolString);
         io << key << "=";
         this->pretty_print(io, entry.second);
       }
@@ -960,7 +960,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeSymbol: {
-      io << this->symbol_table(value).value_or(kUndefinedSymbolString);
+      io << this->context.symbol_table(value).value_or(kUndefinedSymbolString);
       break;
     }
 
@@ -1030,19 +1030,20 @@ void VM::init_frames() {
   //     get_method = (CFunction *)Internals::get_method
   //   }
   // };
-  block->write_putcfunction(this->symbol_table("get_method"), reinterpret_cast<FPOINTER>(Internals::get_method), 1);
-  block->write_putvalue(this->symbol_table("get_method"));
+  block->write_putcfunction(this->context.symbol_table("get_method"), reinterpret_cast<FPOINTER>(Internals::get_method),
+                            1);
+  block->write_putvalue(this->context.symbol_table("get_method"));
   block->write_puthash(1);
-  block->write_putvalue(this->symbol_table("internals"));
+  block->write_putvalue(this->context.symbol_table("internals"));
   block->write_puthash(1);
   block->write_setlocal(4, 0);
 
   // Charly.internals.get_method.foo = 25
   block->write_readlocal(4, 0);
-  block->write_readmembersymbol(this->symbol_table("internals"));
-  block->write_readmembersymbol(this->symbol_table("get_method"));
+  block->write_readmembersymbol(this->context.symbol_table("internals"));
+  block->write_readmembersymbol(this->context.symbol_table("get_method"));
   block->write_putvalue(this->create_integer(25));
-  block->write_setmembersymbol(this->symbol_table("foo"));
+  block->write_setmembersymbol(this->context.symbol_table("foo"));
   block->write_pop(1);
 
   // [[{}, { boye = 250 }], 25, 25, 25, 25]
@@ -1050,7 +1051,7 @@ void VM::init_frames() {
   block->write_puthash(0);
   block->write_dup();
   block->write_putvalue(this->create_integer(250));
-  block->write_setmembersymbol(this->symbol_table("boye"));
+  block->write_setmembersymbol(this->context.symbol_table("boye"));
   block->write_pop(1);
   block->write_putarray(2);
   block->write_putfloat(25);
@@ -1061,15 +1062,15 @@ void VM::init_frames() {
 
   // Charly.internals.get_method(:"hello_world")
   block->write_readlocal(4, 0);
-  block->write_readmembersymbol(this->symbol_table("internals"));
-  block->write_readmembersymbol(this->symbol_table("get_method"));
-  block->write_putvalue(this->symbol_table("hello world"));
+  block->write_readmembersymbol(this->context.symbol_table("internals"));
+  block->write_readmembersymbol(this->context.symbol_table("get_method"));
+  block->write_putvalue(this->context.symbol_table("hello world"));
   block->write_call(1);
 
   // Charly.internals.get_method("This is a string test")
   block->write_readlocal(4, 0);
-  block->write_readmembersymbol(this->symbol_table("internals"));
-  block->write_readmembersymbol(this->symbol_table("get_method"));
+  block->write_readmembersymbol(this->context.symbol_table("internals"));
+  block->write_readmembersymbol(this->context.symbol_table("get_method"));
   block->write_putstring("This is a string test");
   block->write_call(1);
 
@@ -1086,8 +1087,8 @@ void VM::init_frames() {
       [this](InstructionBlock& block) {
         block.write_setlocal(5, 0);
         block.write_readlocal(4, 0);
-        block.write_readmembersymbol(this->symbol_table("internals"));
-        block.write_readmembersymbol(this->symbol_table("get_method"));
+        block.write_readmembersymbol(this->context.symbol_table("internals"));
+        block.write_readmembersymbol(this->context.symbol_table("get_method"));
         block.write_readlocal(5, 0);
         block.write_call(1);
       });
@@ -1098,25 +1099,24 @@ void VM::init_frames() {
   block->write_if_statement([](InstructionBlock& block) { block.write_putvalue(kTrue); },
                             [this](InstructionBlock& block) {
                               block.write_readlocal(4, 0);
-                              block.write_readmembersymbol(this->symbol_table("internals"));
-                              block.write_readmembersymbol(this->symbol_table("get_method"));
+                              block.write_readmembersymbol(this->context.symbol_table("internals"));
+                              block.write_readmembersymbol(this->context.symbol_table("get_method"));
                               block.write_putstring("true");
                               block.write_call(1);
                             });
 
   // while (true) {
-  //   Charly.internals.get_method("true")
+  //   Charly.internals.get_method("Inside a while statement")
   //   break
   // }
   block->write_while_statement([](InstructionBlock& block) { block.write_putvalue(kTrue); },
                                [this](InstructionBlock& block) {
                                  block.write_readlocal(4, 0);
-                                 block.write_readmembersymbol(this->symbol_table("internals"));
-                                 block.write_readmembersymbol(this->symbol_table("get_method"));
+                                 block.write_readmembersymbol(this->context.symbol_table("internals"));
+                                 block.write_readmembersymbol(this->context.symbol_table("get_method"));
                                  block.write_putstring("Inside a while statement");
                                  block.write_call(1);
-
-                                 block.write_return();
+                                 block.write_throw(ThrowType::Break);
                                });
 
   // Put arguments onto the stack
@@ -1125,7 +1125,7 @@ void VM::init_frames() {
   block->write_byte(Opcode::Halt);
 
   // Push a function onto the stack containing this block and call it
-  this->op_putfunction(this->symbol_table("__charly_init"), block, false, 3);
+  this->op_putfunction(this->context.symbol_table("__charly_init"), block, false, 3);
   this->push_stack(this->create_integer(50));
   this->push_stack(this->create_integer(60));
   this->push_stack(this->create_integer(70));
@@ -1135,9 +1135,8 @@ void VM::init_frames() {
 
 void VM::panic(STATUS reason) {
   std::cout << "Panic: " << kStatusHumanReadable[reason] << std::endl;
+  std::cout << "Stacktrace:" << std::endl;
   this->stacktrace(std::cout);
-  this->catchstacktrace(std::cout);
-  this->stackdump(std::cout);
 
   exit(1);
 }

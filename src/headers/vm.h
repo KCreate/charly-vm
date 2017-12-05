@@ -27,6 +27,7 @@
 #include <optional>
 
 #include "block.h"
+#include "context.h"
 #include "defines.h"
 #include "exception.h"
 #include "frame.h"
@@ -34,7 +35,6 @@
 #include "internals.h"
 #include "opcode.h"
 #include "status.h"
-#include "symboltable.h"
 #include "value.h"
 
 #pragma once
@@ -49,7 +49,7 @@ public:
 private:
   std::vector<VALUE> stack;
   std::vector<VALUE> pretty_print_stack;
-  SymbolTable& symbol_table;
+  Context& context;
   Frame* frames;
   CatchTable* catchstack;
   uint8_t* ip;
@@ -136,7 +136,7 @@ public:
   void pretty_print(std::ostream& io, VALUE value);
 
 public:
-  VM(MemoryManager& collector, SymbolTable& symtable) : gc(collector), symbol_table(symtable) {
+  VM(MemoryManager& collector, Context& t_context) : gc(collector), context(t_context) {
     this->frames = nullptr;
     this->catchstack = nullptr;
     this->ip = nullptr;
