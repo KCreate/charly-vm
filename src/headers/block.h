@@ -150,5 +150,6 @@ public:
   void write_try_statement(IBlockGenFunc block, IBlockGenFunc handler);
   void write_while_statement(IBlockGenFunc condition, IBlockGenFunc then_block);
   void write_until_statement(IBlockGenFunc condition, IBlockGenFunc then_block);
+  void write_loop_statement(IBlockGenFunc then_block);
 };
 }  // namespace Charly

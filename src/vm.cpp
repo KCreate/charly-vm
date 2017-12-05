@@ -1119,10 +1119,24 @@ void VM::init_frames() {
                                  block.write_throw(ThrowType::Break);
                                });
 
+  // loop {
+  //   Charly.internals.get_method("Inside a loop statement")
+  //   break
+  // }
+  block->write_loop_statement([this](InstructionBlock& block) {
+    block.write_readlocal(4, 0);
+    block.write_readmembersymbol(this->context.symbol_table("internals"));
+    block.write_readmembersymbol(this->context.symbol_table("get_method"));
+    block.write_putstring("Inside a loop statement");
+    block.write_call(1);
+    block.write_throw(ThrowType::Break);
+  });
+
   // Put arguments onto the stack
   block->write_readlocal(0, 0);
 
-  block->write_byte(Opcode::Halt);
+  // Return
+  block->write_return();
 
   // Push a function onto the stack containing this block and call it
   this->op_putfunction(this->context.symbol_table("__charly_init"), block, false, 3);

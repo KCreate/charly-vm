@@ -391,6 +391,17 @@ void InstructionBlock::write_until_statement(IBlockGenFunc condition, IBlockGenF
   end_target_1.write_current_block_offset();
   end_target_2.write_current_block_offset();
   this->write_popcatchtable();
+}
+
+void InstructionBlock::write_loop_statement(IBlockGenFunc then_block) {
+  OffsetLabel end_target_1 = this->write_registercatchtable(ThrowType::Break, 0);
+  this->write_registercatchtable(ThrowType::Continue, InstructionLength[Opcode::RegisterCatchTable]);
+
+  OffsetLabel loopstart(*this);
+  then_block(*this);
+  this->write_branch(loopstart.relative_offset());
+
+  end_target_1.write_current_block_offset();
   this->write_popcatchtable();
 }
 
