@@ -1155,6 +1155,12 @@ void VM::run() {
     // Check if there is enough space for instruction arguments
     uint32_t instruction_length = InstructionLength[opcode];
     if (this->ip + instruction_length >= (block_data + block_write_offset + sizeof(Opcode))) {
+      std::cout << "ip                    = " << reinterpret_cast<void*>(this->ip) << std::endl;
+      std::cout << "instruction length    = " << instruction_length << std::endl;
+      std::cout << "block_data            = " << reinterpret_cast<void*>(block_data) << std::endl;
+      std::cout << "block_write_offset    = " << block_write_offset << std::endl;
+      std::cout << "sizeof(Opcode)        = " << sizeof(Opcode) << std::endl;
+      std::cout << "OpcodeStrings[Opcode] = " << OpcodeStrings[opcode] << std::endl;
       this->panic(kStatusNotEnoughSpaceForInstructionArguments);
     }
 
