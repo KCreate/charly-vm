@@ -375,7 +375,6 @@ void InstructionBlock::write_while_statement(IBlockGenFunc condition, IBlockGenF
   end_target_1.write_current_block_offset();
   end_target_2.write_current_block_offset();
   this->write_popcatchtable();
-  this->write_popcatchtable();
 }
 
 void InstructionBlock::write_until_statement(IBlockGenFunc condition, IBlockGenFunc then_block) {
