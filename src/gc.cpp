@@ -128,6 +128,7 @@ void MemoryManager::mark(VALUE value) {
       Frame* frame = (Frame*)value;
       this->mark(reinterpret_cast<VALUE>(frame->parent));
       this->mark(reinterpret_cast<VALUE>(frame->parent_environment_frame));
+      this->mark(reinterpret_cast<VALUE>(frame->last_active_catchtable));
       this->mark(reinterpret_cast<VALUE>(frame->function));
       this->mark(frame->self);
       for (auto& lvar : *frame->environment)

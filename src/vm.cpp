@@ -56,6 +56,7 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address)
   cell->as.basic.set_type(kTypeFrame);
   cell->as.frame.parent = this->frames;
   cell->as.frame.parent_environment_frame = function->context;
+  cell->as.frame.last_active_catchtable = this->catchstack;
   cell->as.frame.function = function;
   cell->as.frame.self = self;
 
@@ -706,6 +707,13 @@ void VM::op_return() {
   Frame* frame = this->frames;
   if (!frame)
     this->panic(kStatusCantReturnFromTopLevel);
+
+  // Unwind and immediately free all catchtables which were pushed
+  // after the one we're restoring.
+  while (frame->last_active_catchtable != this->catchstack) {
+    this->pop_catchtable();
+  }
+
   this->frames = frame->parent;
   this->ip = frame->return_address;
 }
@@ -1070,18 +1078,19 @@ void VM::init_frames() {
   // } catch(e) {
   //   Charly.internals.get_method(e)
   // }
-  OffsetLabel exhandler = block->write_registercatchtable(ThrowType::Exception, 0);
-  block->write_putstring("This is being thrown");
-  block->write_throw(ThrowType::Exception);
-  OffsetLabel jumpover = block->write_branch(0);
-  exhandler.write_current_block_offset();
-  block->write_setlocal(5, 0);
-  block->write_readlocal(4, 0);
-  block->write_readmembersymbol(this->symbol_table("internals"));
-  block->write_readmembersymbol(this->symbol_table("get_method"));
-  block->write_readlocal(5, 0);
-  block->write_call(1);
-  jumpover.write_current_block_offset();
+  block->write_try_statement(
+      [](InstructionBlock& block) {
+        block.write_putstring("This is being thrown");
+        block.write_throw(ThrowType::Exception);
+      },
+      [this](InstructionBlock& block) {
+        block.write_setlocal(5, 0);
+        block.write_readlocal(4, 0);
+        block.write_readmembersymbol(this->symbol_table("internals"));
+        block.write_readmembersymbol(this->symbol_table("get_method"));
+        block.write_readlocal(5, 0);
+        block.write_call(1);
+      });
 
   // if (25) {
   //   Charly.internals.get_method("true")
@@ -1106,7 +1115,8 @@ void VM::init_frames() {
                                  block.write_readmembersymbol(this->symbol_table("get_method"));
                                  block.write_putstring("Inside a while statement");
                                  block.write_call(1);
-                                 block.write_throw(ThrowType::Break);
+
+                                 block.write_return();
                                });
 
   // Put arguments onto the stack

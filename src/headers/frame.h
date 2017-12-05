@@ -44,6 +44,7 @@ struct Frame {
   VALUE flags;
   Frame* parent;
   Frame* parent_environment_frame;
+  CatchTable* last_active_catchtable;
   Function* function;
   std::vector<FrameEnvironmentEntry>* environment;
   VALUE self;
