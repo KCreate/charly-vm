@@ -297,7 +297,8 @@ enum Opcode : uint8_t {
   UBNot,
 
   // Halt execution of the machine and return to the caller
-  Halt
+  Halt,
+  GCCollect
 };
 
 // clang-format off
@@ -355,7 +356,8 @@ static constexpr uint32_t InstructionLength[]{
   /* USub */               1,
   /* UNot */               1,
   /* UBNot */              1,
-  /* Halt */               1
+  /* Halt */               1,
+  /* GCCollect */          1
 };
 
 // String representations of instruction opcodes
@@ -412,7 +414,8 @@ static std::string OpcodeStrings[]{
   "usub",
   "unot",
   "ubnot",
-  "halt"
+  "halt",
+  "gccollect"
 };
 // clang-format on
 

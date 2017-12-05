@@ -186,7 +186,7 @@ void MemoryManager::collect() {
   }
 
   if (this->context.flags.trace_gc) {
-    std::cout << "#-- GC: Freed a total of " << freed_cells_count << " cells --#" << std::endl;
+    std::cout << "#-- GC: Freed " << (freed_cells_count * sizeof(MemoryCell)) << " bytes --#" << std::endl;
     std::cout << "#-- GC: Finished --#" << std::endl;
   }
 }
@@ -200,12 +200,12 @@ MemoryCell* MemoryManager::allocate() {
     // If we've just allocated the last available cell,
     // we do a collect in order to make sure we never get a failing
     // allocation in the future
-    if (!this->free_cell) {
+    if (this->free_cell == nullptr) {
       this->collect();
 
       // If a collection didn't yield new available space,
       // allocate more heaps
-      if (!this->free_cell) {
+      if (this->free_cell == nullptr) {
         this->grow_heap();
 
         if (!this->free_cell) {

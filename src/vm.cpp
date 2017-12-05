@@ -79,7 +79,7 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address)
   if (this->context.flags.trace_frames) {
     std::cout << "Entering frame: ";
     this->pretty_print(std::cout, reinterpret_cast<VALUE>(cell));
-    std::cout << std::endl;;
+    std::cout << std::endl;
   }
 
   return reinterpret_cast<Frame*>(cell);
@@ -120,7 +120,7 @@ CatchTable* VM::create_catchtable(ThrowType type, uint8_t* address) {
   if (this->context.flags.trace_catchtables) {
     std::cout << "Entering catchtable: ";
     this->pretty_print(std::cout, reinterpret_cast<VALUE>(cell));
-    std::cout << std::endl;;
+    std::cout << std::endl;
   }
 
   return reinterpret_cast<CatchTable*>(cell);
@@ -130,7 +130,6 @@ CatchTable* VM::pop_catchtable() {
   if (!this->catchstack)
     this->panic(kStatusCatchStackEmpty);
   CatchTable* parent = this->catchstack->parent;
-  this->context.gc->free(reinterpret_cast<VALUE>(this->catchstack));
   this->catchstack = parent;
   return parent;
 }
@@ -161,7 +160,6 @@ void VM::restore_catchtable(CatchTable* table) {
 
   // Show the catchtable we just restored if the corresponding flag was set
   if (this->context.flags.trace_catchtables) {
-
     // Show the table we've restored
     std::cout << "Restored CatchTable: ";
     this->pretty_print(std::cout, table);
@@ -772,7 +770,6 @@ void VM::throw_exception(VALUE payload) {
 
   this->restore_catchtable(table);
   this->push_stack(payload);
-  this->context.gc->collect();
 }
 
 void VM::op_registercatchtable(ThrowType type, int32_t offset) {
@@ -787,7 +784,6 @@ void VM::op_popcatchtable() {
     CatchTable* table = this->catchstack;
 
     if (table != nullptr) {
-
       // Show the table we've restored
       std::cout << "Restored CatchTable: ";
       this->pretty_print(std::cout, reinterpret_cast<VALUE>(table));
@@ -1104,6 +1100,7 @@ void VM::init_frames() {
   block->write_putfloat(25);
   block->write_putfloat(25);
   block->write_putarray(5);
+  block->write_pop(1);
 
   // Charly.internals.get_method(:"hello_world")
   block->write_readlocal(4, 0);
@@ -1111,6 +1108,7 @@ void VM::init_frames() {
   block->write_readmembersymbol(this->context.symbol_table("get_method"));
   block->write_putvalue(this->context.symbol_table("hello world"));
   block->write_call(1);
+  block->write_pop(1);
 
   // Charly.internals.get_method("This is a string test")
   block->write_readlocal(4, 0);
@@ -1118,6 +1116,7 @@ void VM::init_frames() {
   block->write_readmembersymbol(this->context.symbol_table("get_method"));
   block->write_putstring("This is a string test");
   block->write_call(1);
+  block->write_pop(1);
 
   // try {
   //   throw "This is being thrown";
@@ -1136,6 +1135,7 @@ void VM::init_frames() {
         block.write_readmembersymbol(this->context.symbol_table("get_method"));
         block.write_readlocal(5, 0);
         block.write_call(1);
+        block.write_pop(1);
       });
 
   // if (25) {
@@ -1148,6 +1148,7 @@ void VM::init_frames() {
                               block.write_readmembersymbol(this->context.symbol_table("get_method"));
                               block.write_putstring("true");
                               block.write_call(1);
+                              block.write_pop(1);
                             });
 
   // while (true) {
@@ -1161,6 +1162,7 @@ void VM::init_frames() {
                                  block.write_readmembersymbol(this->context.symbol_table("get_method"));
                                  block.write_putstring("Inside a while statement");
                                  block.write_call(1);
+                                 block.write_pop(1);
                                  block.write_throw(ThrowType::Break);
                                });
 
@@ -1174,11 +1176,16 @@ void VM::init_frames() {
     block.write_readmembersymbol(this->context.symbol_table("get_method"));
     block.write_putstring("Inside a loop statement");
     block.write_call(1);
+    block.write_pop(1);
     block.write_throw(ThrowType::Break);
   });
 
   // Put arguments onto the stack
   block->write_readlocal(0, 0);
+
+  block->write_gccollect();
+  block->write_gccollect();
+  block->write_gccollect();
 
   // Return
   block->write_return();
@@ -1423,6 +1430,11 @@ void VM::run() {
         break;
       }
 
+      case Opcode::GCCollect: {
+        this->context.gc->collect();
+        break;
+      }
+
       default: {
         std::cout << "Opcode: " << std::hex << opcode << std::dec << std::endl;
         this->panic(kStatusUnknownOpcode);
@@ -1446,7 +1458,6 @@ void VM::run() {
     std::cout << "Stackdump:" << std::endl;
     this->stackdump(std::cout);
   }
-
 
   this->context.gc->collect();
 }

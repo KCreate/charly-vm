@@ -141,6 +141,8 @@ public:
   Int32Label write_branchif(int32_t offset);
   Int32Label write_branchunless(int32_t offset);
   void write_operator(Opcode opcode);
+  void write_halt();
+  void write_gccollect();
 
   // Wrappers for more high-level language structures
   void write_if_statement(IBlockGenFunc condition, IBlockGenFunc then_block);
