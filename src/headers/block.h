@@ -143,12 +143,12 @@ public:
   void write_operator(Opcode opcode);
 
   // Wrappers for more high-level language structures
-  void write_if_statement(IBlockFunc condition, IBlockFunc then_block);
-  void write_ifelse_statement(IBlockFunc condition, IBlockFunc then_block, IBlockFunc else_block);
-  void write_unless_statement(IBlockFunc condition, IBlockFunc then_block);
-  void write_unlesselse_statement(IBlockFunc condition, IBlockFunc then_block, IBlockFunc else_block);
-  void write_try_statement(IBlockFunc block, IBlockFunc handler);
-  void write_while_statement(IBlockFunc condition, IBlockFunc then_block);
-  void write_until_statement(IBlockFunc condition, IBlockFunc then_block);
+  void write_if_statement(IBlockGenFunc condition, IBlockGenFunc then_block);
+  void write_ifelse_statement(IBlockGenFunc condition, IBlockGenFunc then_block, IBlockGenFunc else_block);
+  void write_unless_statement(IBlockGenFunc condition, IBlockGenFunc then_block);
+  void write_unlesselse_statement(IBlockGenFunc condition, IBlockGenFunc then_block, IBlockGenFunc else_block);
+  void write_try_statement(IBlockGenFunc block, IBlockGenFunc handler);
+  void write_while_statement(IBlockGenFunc condition, IBlockGenFunc then_block);
+  void write_until_statement(IBlockGenFunc condition, IBlockGenFunc then_block);
 };
 }  // namespace Charly

@@ -1097,9 +1097,17 @@ void VM::init_frames() {
 
   // while (true) {
   //   Charly.internals.get_method("true")
+  //   break
   // }
   block->write_while_statement([](InstructionBlock& block) { block.write_putvalue(kTrue); },
-                               [](InstructionBlock& block) { block.write_throw(ThrowType::Continue); });
+                               [this](InstructionBlock& block) {
+                                 block.write_readlocal(4, 0);
+                                 block.write_readmembersymbol(this->symbol_table("internals"));
+                                 block.write_readmembersymbol(this->symbol_table("get_method"));
+                                 block.write_putstring("Inside a while statement");
+                                 block.write_call(1);
+                                 block.write_throw(ThrowType::Break);
+                               });
 
   // Put arguments onto the stack
   block->write_readlocal(0, 0);
