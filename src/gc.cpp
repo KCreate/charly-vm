@@ -41,11 +41,12 @@ MemoryManager::MemoryManager(Context& t_context) : context(t_context) {
 }
 
 MemoryManager::~MemoryManager() {
-  for (MemoryCell* heap : this->heaps) {
-    for (size_t i = 0; i < kGCHeapCellCount; i++) {
-      free(heap + i);
-    }
+  for (const auto heap : this->heaps) {
+    free(heap);
   }
+
+  this->heaps.clear();
+  this->temporaries.clear();
 }
 
 void MemoryManager::add_heap() {

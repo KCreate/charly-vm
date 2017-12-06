@@ -38,5 +38,8 @@ clean:
 	rm -rf bin/*
 	rm -rf build/*
 
-format:
+format: all
 	clang-format -i src/*.cpp src/headers/*.h -style=file
+
+valgrind: all
+	valgrind --leak-check=full --show-leak-kinds=all --show-reachable=no bin/vm todos.md

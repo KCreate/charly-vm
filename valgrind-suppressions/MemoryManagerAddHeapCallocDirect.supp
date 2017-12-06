@@ -1,0 +1,10 @@
+{
+   MemoryManagerAddHeapCallocDirect
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:calloc
+   fun:_ZN6Charly13MemoryManager8add_heapEv
+   fun:_ZN6Charly13MemoryManagerC1ERNS_7ContextE
+   fun:_ZN6Charly3CLI3runEv
+   fun:main
+}
