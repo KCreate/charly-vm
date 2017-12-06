@@ -26,6 +26,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <chrono>
 
 #include "gc.h"
 #include "vm.h"
@@ -156,6 +157,7 @@ void MemoryManager::mark(VALUE value) {
 }
 
 void MemoryManager::collect() {
+  auto gc_start_time = std::chrono::high_resolution_clock::now();
   if (this->context.flags.trace_gc) {
     std::cout << "#-- GC: Pause --#" << std::endl;
   }
@@ -187,8 +189,9 @@ void MemoryManager::collect() {
   }
 
   if (this->context.flags.trace_gc) {
+    std::chrono::duration<double> gc_collect_duration = std::chrono::high_resolution_clock::now() - gc_start_time;
     std::cout << "#-- GC: Freed " << (freed_cells_count * sizeof(MemoryCell)) << " bytes --#" << std::endl;
-    std::cout << "#-- GC: Finished --#" << std::endl;
+    std::cout << "#-- GC: Finished in " << gc_collect_duration.count() << " seconds --#" << std::endl;
   }
 }
 
