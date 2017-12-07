@@ -38,4 +38,4 @@ struct Location {
   uint32_t length;
   std::string filename = kUnknownLocation;
 };
-}
+}  // namespace Charly::Compiler

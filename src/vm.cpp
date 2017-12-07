@@ -25,10 +25,10 @@
  */
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <functional>
 #include <iostream>
-#include <chrono>
 
 #include "gc.h"
 #include "label.h"

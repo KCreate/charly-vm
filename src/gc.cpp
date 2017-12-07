@@ -25,8 +25,8 @@
  */
 
 #include <cassert>
-#include <iostream>
 #include <chrono>
+#include <iostream>
 
 #include "gc.h"
 #include "vm.h"

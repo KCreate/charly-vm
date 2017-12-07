@@ -24,8 +24,8 @@
  * SOFTWARE.
  */
 
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
 #include "ast.h"
 #include "charly.h"
@@ -37,7 +37,6 @@ namespace Charly {
 using namespace Compiler;
 
 int CLI::run() {
-
   // Configure std::cout
   std::cout << std::fixed;
   std::cout << std::setprecision(4);
@@ -72,9 +71,6 @@ int CLI::run() {
   std::string source_string((std::istreambuf_iterator<char>(inputfile)), std::istreambuf_iterator<char>());
   inputfile.close();
   SourceFile userfile(this->flags.arguments[0], source_string);
-
-  AST::NodeList* block = new AST::NodeList();
-  std::cout << block->type().name() << std::endl;
 
   Context context(this->flags);
   MemoryManager gc(context);

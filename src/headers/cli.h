@@ -73,7 +73,8 @@ class CLI {
   RunFlags flags;
 
 public:
-  CLI(int argc, char** argv, char** environment) : flags(argc, argv, environment) {}
+  CLI(int argc, char** argv, char** environment) : flags(argc, argv, environment) {
+  }
   int run();
 };
 }  // namespace Charly

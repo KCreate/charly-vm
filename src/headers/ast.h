@@ -24,18 +24,17 @@
  * SOFTWARE.
  */
 
-#include <optional>
-#include <iostream>
 #include <cstdint>
+#include <iostream>
+#include <optional>
 #include <vector>
 
-#include "token.h"
 #include "location.h"
+#include "token.h"
 
 #pragma once
 
 namespace Charly::Compiler::AST {
-
 static const std::string kPaddingCharacters = "  ";
 
 // Abstract base class of all ASTNodes
@@ -46,7 +45,7 @@ public:
   std::optional<Location> location_start;
   std::optional<Location> location_end;
 
-  virtual ~AbstractNode();
+  virtual ~AbstractNode() = default;
 
   inline AbstractNode& at(const Location& end) {
     this->location_end = end;
@@ -71,23 +70,24 @@ public:
     return *this;
   }
 
-  virtual inline std::type_info type() {
-    return typeid(*this);
+  inline size_t type() {
+    return typeid(*this).hash_code();
   }
 };
 
-struct NodeList: public AbstractNode {
+struct NodeList : public AbstractNode {
   // TODO: Figure out a good name for this
   // Other alternatives are: nodes, items
   std::vector<AbstractNode*> children;
 
   inline ~NodeList() {
-    for (auto& node : this->children) delete node;
+    for (auto& node : this->children)
+      delete node;
   }
 };
 
 // if <condition> {
-//
+//   <then_block>
 // }
 //
 // if <condition> {
@@ -95,7 +95,7 @@ struct NodeList: public AbstractNode {
 // } else {
 //   <else_block>
 // }
-struct If: public AbstractNode {
+struct If : public AbstractNode {
   AbstractNode* condition;
   NodeList* then_block;
   NodeList* else_block;
@@ -108,7 +108,7 @@ struct If: public AbstractNode {
 };
 
 // unless <condition> {
-//
+//   <then_block>
 // }
 //
 // unless <condition> {
@@ -116,7 +116,7 @@ struct If: public AbstractNode {
 // } else {
 //   <else_block>
 // }
-struct Unless: public AbstractNode {
+struct Unless : public AbstractNode {
   AbstractNode* condition;
   NodeList* then_block;
   NodeList* else_block;
@@ -131,7 +131,7 @@ struct Unless: public AbstractNode {
 // guard <condition> {
 //   <block>
 // }
-struct Guard: public AbstractNode {
+struct Guard : public AbstractNode {
   AbstractNode* condition;
   NodeList* block;
 
@@ -144,7 +144,7 @@ struct Guard: public AbstractNode {
 // while <condition> {
 //   <block>
 // }
-struct While: public AbstractNode {
+struct While : public AbstractNode {
   AbstractNode* condition;
   NodeList* block;
 
@@ -157,7 +157,7 @@ struct While: public AbstractNode {
 // until <condition> {
 //   <block>
 // }
-struct Until: public AbstractNode {
+struct Until : public AbstractNode {
   AbstractNode* condition;
   NodeList* block;
 
@@ -170,7 +170,7 @@ struct Until: public AbstractNode {
 // loop {
 //   <block>
 // }
-struct Loop: public AbstractNode {
+struct Loop : public AbstractNode {
   NodeList* block;
 
   inline ~Loop() {
@@ -179,7 +179,7 @@ struct Loop: public AbstractNode {
 };
 
 // <operator_type> <expression>
-struct Unary: public AbstractNode {
+struct Unary : public AbstractNode {
   TokenType operator_type;
   AbstractNode* expression;
 
@@ -189,7 +189,7 @@ struct Unary: public AbstractNode {
 };
 
 // <left> <operator_type> <right>
-struct Binary: public AbstractNode {
+struct Binary : public AbstractNode {
   TokenType operator_type;
   AbstractNode* left;
   AbstractNode* right;
@@ -203,7 +203,7 @@ struct Binary: public AbstractNode {
 // case <conditions> {
 //   <block>
 // }
-struct SwitchNode: public AbstractNode {
+struct SwitchNode : public AbstractNode {
   NodeList* conditions;
   NodeList* block;
 
@@ -217,20 +217,21 @@ struct SwitchNode: public AbstractNode {
 //   <cases>
 //   default <default_block>
 // }
-struct Switch: public AbstractNode {
+struct Switch : public AbstractNode {
   AbstractNode* condition;
   std::vector<SwitchNode*> cases;
   NodeList* default_block;
 
   inline ~Switch() {
     delete condition;
-    for (auto& node : this->cases) delete node;
+    for (auto& node : this->cases)
+      delete node;
     delete default_block;
   }
 };
 
 // <left> && <right>
-struct And: public AbstractNode {
+struct And : public AbstractNode {
   AbstractNode* left;
   AbstractNode* right;
 
@@ -241,7 +242,7 @@ struct And: public AbstractNode {
 };
 
 // <left> || <right>
-struct Or: public AbstractNode {
+struct Or : public AbstractNode {
   AbstractNode* left;
   AbstractNode* right;
 
@@ -252,7 +253,7 @@ struct Or: public AbstractNode {
 };
 
 // typeof <expression>
-struct Typeof: public AbstractNode {
+struct Typeof : public AbstractNode {
   AbstractNode* expression;
 
   inline ~Typeof() {
@@ -261,7 +262,7 @@ struct Typeof: public AbstractNode {
 };
 
 // <target> = <expression>
-struct Assignment: public AbstractNode {
+struct Assignment : public AbstractNode {
   AbstractNode* target;
   AbstractNode* expression;
 
@@ -272,7 +273,7 @@ struct Assignment: public AbstractNode {
 };
 
 // <target>(<arguments>)
-struct Call: public AbstractNode {
+struct Call : public AbstractNode {
   AbstractNode* target;
   NodeList* arguments;
 
@@ -283,12 +284,12 @@ struct Call: public AbstractNode {
 };
 
 // <identifier>
-struct Identifier: public AbstractNode {
+struct Identifier : public AbstractNode {
   std::string name;
 };
 
 // <target>.<identifier>
-struct Member: public AbstractNode {
+struct Member : public AbstractNode {
   AbstractNode* target;
   Identifier* identifier;
 
@@ -299,7 +300,7 @@ struct Member: public AbstractNode {
 };
 
 // <target>[<argument>]
-struct Index: public AbstractNode {
+struct Index : public AbstractNode {
   AbstractNode* target;
   AbstractNode* argument;
 
@@ -310,42 +311,42 @@ struct Index: public AbstractNode {
 };
 
 // null
-struct Null: public AbstractNode {};
+struct Null : public AbstractNode {};
 
 // NAN
-struct NAN: public AbstractNode {};
+struct Nan : public AbstractNode {};
 
 // "<value>"
 //
 // value is optional because we don't want to allocate any memory for an empty string
-struct String: public AbstractNode {
+struct String : public AbstractNode {
   std::optional<std::string> value;
 };
 
 // <value>
-struct Integer: public AbstractNode {
+struct Integer : public AbstractNode {
   int64_t value;
 };
 
 // <value>
-struct Float: public AbstractNode {
+struct Float : public AbstractNode {
   double value;
 };
 
 // <value>
-struct Boolean: public AbstractNode {
+struct Boolean : public AbstractNode {
   bool value;
 };
 
 // [<expressions>]
-struct Array: public AbstractNode {
+struct Array : public AbstractNode {
   NodeList* expressions;
 };
 
 // {
 //   <pairs>
 // }
-struct Hash: public AbstractNode {
+struct Hash : public AbstractNode {
   std::vector<std::pair<AbstractNode*, AbstractNode*>> pairs;
 
   inline ~Hash() {
@@ -377,7 +378,7 @@ struct Hash: public AbstractNode {
 // }
 //
 // -><body>
-struct Function: public AbstractNode {
+struct Function : public AbstractNode {
   Identifier* name;
   NodeList* parameters;
   NodeList* body;
@@ -391,7 +392,7 @@ struct Function: public AbstractNode {
 };
 
 // property <identifier>;
-struct PropertyDeclaration: public AbstractNode {
+struct PropertyDeclaration : public AbstractNode {
   Identifier* identifier;
 
   inline ~PropertyDeclaration() {
@@ -400,7 +401,7 @@ struct PropertyDeclaration: public AbstractNode {
 };
 
 // static <declaration>
-struct StaticDeclaration: public AbstractNode {
+struct StaticDeclaration : public AbstractNode {
   AbstractNode* declaration;
 
   inline ~StaticDeclaration() {
@@ -419,7 +420,7 @@ struct StaticDeclaration: public AbstractNode {
 // class <name> extends <parents> {
 //   <body>
 // }
-struct Class: public AbstractNode {
+struct Class : public AbstractNode {
   Identifier* name;
   NodeList* body;
   NodeList* parents;
@@ -436,7 +437,7 @@ struct Class: public AbstractNode {
 // let <name> = <expression>
 //
 // const <name> = <expression>
-struct LocalInitialisation: public AbstractNode {
+struct LocalInitialisation : public AbstractNode {
   Identifier* name;
   AbstractNode* expression;
   bool constant;
@@ -450,7 +451,7 @@ struct LocalInitialisation: public AbstractNode {
 // return
 //
 // return <expression>
-struct Return: public AbstractNode {
+struct Return : public AbstractNode {
   AbstractNode* expression;
 
   inline ~Return() {
@@ -459,7 +460,7 @@ struct Return: public AbstractNode {
 };
 
 // throw <expression>
-struct Throw: public AbstractNode {
+struct Throw : public AbstractNode {
   AbstractNode* expression;
 
   inline ~Throw() {
@@ -468,17 +469,17 @@ struct Throw: public AbstractNode {
 };
 
 // break
-struct Break: public AbstractNode {};
+struct Break : public AbstractNode {};
 
 // continue
-struct Continue: public AbstractNode {};
+struct Continue : public AbstractNode {};
 
 // try {
 //   <block>
 // } catch (<exception_name>) {
 //   <handler_block>
 // }
-struct TryCatch: public AbstractNode {
+struct TryCatch : public AbstractNode {
   NodeList* block;
   Identifier* exception_name;
   NodeList* handler_block;
@@ -489,4 +490,43 @@ struct TryCatch: public AbstractNode {
     delete handler_block;
   }
 };
-}
+
+// Precomputed typeid hashes for all AST nodes
+static const size_t kTypeNodeList = typeid(NodeList).hash_code();
+static const size_t kTypeIf = typeid(If).hash_code();
+static const size_t kTypeUnless = typeid(Unless).hash_code();
+static const size_t kTypeGuard = typeid(Guard).hash_code();
+static const size_t kTypeWhile = typeid(While).hash_code();
+static const size_t kTypeUntil = typeid(Until).hash_code();
+static const size_t kTypeLoop = typeid(Loop).hash_code();
+static const size_t kTypeUnary = typeid(Unary).hash_code();
+static const size_t kTypeBinary = typeid(Binary).hash_code();
+static const size_t kTypeSwitchNode = typeid(SwitchNode).hash_code();
+static const size_t kTypeSwitch = typeid(Switch).hash_code();
+static const size_t kTypeAnd = typeid(And).hash_code();
+static const size_t kTypeOr = typeid(Or).hash_code();
+static const size_t kTypeTypeof = typeid(Typeof).hash_code();
+static const size_t kTypeAssignment = typeid(Assignment).hash_code();
+static const size_t kTypeCall = typeid(Call).hash_code();
+static const size_t kTypeIdentifier = typeid(Identifier).hash_code();
+static const size_t kTypeMember = typeid(Member).hash_code();
+static const size_t kTypeIndex = typeid(Index).hash_code();
+static const size_t kTypeNull = typeid(Null).hash_code();
+static const size_t kTypeNan = typeid(Nan).hash_code();
+static const size_t kTypeString = typeid(String).hash_code();
+static const size_t kTypeInteger = typeid(Integer).hash_code();
+static const size_t kTypeFloat = typeid(Float).hash_code();
+static const size_t kTypeBoolean = typeid(Boolean).hash_code();
+static const size_t kTypeArray = typeid(Array).hash_code();
+static const size_t kTypeHash = typeid(Hash).hash_code();
+static const size_t kTypeFunction = typeid(Function).hash_code();
+static const size_t kTypePropertyDeclaration = typeid(PropertyDeclaration).hash_code();
+static const size_t kTypeStaticDeclaration = typeid(StaticDeclaration).hash_code();
+static const size_t kTypeClass = typeid(Class).hash_code();
+static const size_t kTypeLocalInitialisation = typeid(LocalInitialisation).hash_code();
+static const size_t kTypeReturn = typeid(Return).hash_code();
+static const size_t kTypeThrow = typeid(Throw).hash_code();
+static const size_t kTypeBreak = typeid(Break).hash_code();
+static const size_t kTypeContinue = typeid(Continue).hash_code();
+static const size_t kTypeTryCatch = typeid(TryCatch).hash_code();
+}  // namespace Charly::Compiler::AST

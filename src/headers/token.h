@@ -79,9 +79,12 @@ enum TokenType : uint8_t {
   OR,
 
   // Structure
-  LeftParen, RightParen,
-  LeftCurly, RightCurly,
-  LeftBracket, RightBracket,
+  LeftParen,
+  RightParen,
+  LeftCurly,
+  RightCurly,
+  LeftBracket,
+  RightBracket,
   Semicolon,
   Comma,
   Point,
@@ -107,16 +110,11 @@ struct Token {
   Location location;
 
   inline bool is_and_operator() {
-    return (
-      this->type == TokenType::PlusAssignment ||
-      this->type == TokenType::MinusAssignment ||
-      this->type == TokenType::MulAssignment ||
-      this->type == TokenType::DivAssignment ||
-      this->type == TokenType::ModAssignment ||
-      this->type == TokenType::PowAssignment
-    );
+    return (this->type == TokenType::PlusAssignment || this->type == TokenType::MinusAssignment ||
+            this->type == TokenType::MulAssignment || this->type == TokenType::DivAssignment ||
+            this->type == TokenType::ModAssignment || this->type == TokenType::PowAssignment);
   }
 
   // TODO: Add location information
 };
-}
+}  // namespace Charly::Compiler

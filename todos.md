@@ -79,6 +79,16 @@
   - PutFunction
   - PutCFunction (?)
 
+# AST Implementation
+- I want to avoid the use of dynamic_cast as much as possible
+  - This is not a performance concern, but ease-of-use
+  - dynamic_cast is super long to write and looks rather ugly
+- typeid can be used.
+  - This works, constants have been defined inside ast.h
+- Function overloading based on argument type doesn't work
+  - Needs a dispatch function which performs a typecheck
+    - Maybe C++ offers a way this can be implemented natively
+
 # Make sure the JIT compiler doesn't need to allocate anything via the VM
 - How are instructionblocks allocated?
   - Remove the handling from the VM into a separate thing
