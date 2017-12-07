@@ -191,7 +191,7 @@ void MemoryManager::collect() {
   if (this->context.flags.trace_gc) {
     std::chrono::duration<double> gc_collect_duration = std::chrono::high_resolution_clock::now() - gc_start_time;
     std::cout << "#-- GC: Freed " << (freed_cells_count * sizeof(MemoryCell)) << " bytes --#" << std::endl;
-    std::cout << "#-- GC: Finished in " << gc_collect_duration.count() << " seconds --#" << std::endl;
+    std::cout << "#-- GC: Finished in " << gc_collect_duration.count() * 1000000000 << " nanoseconds --#" << std::endl;
   }
 }
 

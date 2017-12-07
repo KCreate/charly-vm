@@ -25,6 +25,7 @@
  */
 
 #include <iostream>
+#include <iomanip>
 
 #include "charly.h"
 #include "cli.h"
@@ -33,6 +34,11 @@
 
 namespace Charly {
 int CLI::run() {
+
+  // Configure std::cout
+  std::cout << std::fixed;
+  std::cout << std::setprecision(4);
+
   if (this->flags.show_help) {
     std::cout << kHelpMessage << std::endl;
     return 0;

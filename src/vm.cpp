@@ -28,6 +28,7 @@
 #include <cmath>
 #include <functional>
 #include <iostream>
+#include <chrono>
 
 #include "gc.h"
 #include "label.h"
@@ -1211,6 +1212,8 @@ void VM::run() {
   // Execute instructions as long as we have a valid ip
   // and the machine wasn't halted
   while (this->ip && !this->halted) {
+    auto exec_start = std::chrono::high_resolution_clock::now();
+
     // Backup the current ip
     // After the instruction was executed we check if
     // ip stayed the same. If it's still the same value
@@ -1226,11 +1229,6 @@ void VM::run() {
 
     // Retrieve the current opcode
     Opcode opcode = this->fetch_instruction();
-
-    // Show opcodes as they are executed if the corresponding flag was set
-    if (this->context.flags.trace_opcodes) {
-      std::cout << reinterpret_cast<void*>(this->ip) << ": " << OpcodeStrings[opcode] << std::endl;
-    }
 
     // Check if there is enough space for instruction arguments
     uint32_t instruction_length = InstructionLength[opcode];
@@ -1444,6 +1442,13 @@ void VM::run() {
     // Increment ip if the instruction didn't change it
     if (this->ip == old_ip) {
       this->ip += instruction_length;
+    }
+
+    // Show opcodes as they are executed if the corresponding flag was set
+    if (this->context.flags.trace_opcodes) {
+      std::chrono::duration<double> exec_duration = std::chrono::high_resolution_clock::now() - exec_start;
+      std::cout << reinterpret_cast<void*>(old_ip) << ": " << OpcodeStrings[opcode] << " ";
+      std::cout << " ( " << exec_duration.count() * 1000000000 << " nanoseconds)" << std::endl;
     }
   }
 
