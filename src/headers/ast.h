@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "token.h"
+#include "location.h"
 
 #pragma once
 
@@ -42,11 +43,40 @@ static const std::string kPaddingCharacters = "  ";
 // TODO: Location information
 struct AbstractNode {
 public:
-  AbstractNode() = delete;
-  AbstractNode(const AbstractNode& other) = delete;
+  std::optional<Location> location_start;
+  std::optional<Location> location_end;
+
+  virtual ~AbstractNode();
+
+  inline AbstractNode& at(const Location& end) {
+    this->location_end = end;
+    return *this;
+  }
+
+  inline AbstractNode& at(const Location& start, const Location& end) {
+    this->location_start = start;
+    this->location_end = end;
+    return *this;
+  }
+
+  inline AbstractNode& at(const AbstractNode& node) {
+    this->location_start = node.location_start;
+    this->location_end = node.location_end;
+    return *this;
+  }
+
+  inline AbstractNode& at(const AbstractNode& start, const AbstractNode& end) {
+    this->location_start = start.location_start;
+    this->location_end = end.location_end;
+    return *this;
+  }
+
+  virtual inline std::type_info type() {
+    return typeid(*this);
+  }
 };
 
-struct NodeList {
+struct NodeList: public AbstractNode {
   // TODO: Figure out a good name for this
   // Other alternatives are: nodes, items
   std::vector<AbstractNode*> children;
@@ -67,11 +97,13 @@ struct NodeList {
 // }
 struct If: public AbstractNode {
   AbstractNode* condition;
-  NodeList then_block;
-  NodeList else_block;
+  NodeList* then_block;
+  NodeList* else_block;
 
   inline ~If() {
     delete condition;
+    delete then_block;
+    delete else_block;
   }
 };
 
@@ -86,11 +118,13 @@ struct If: public AbstractNode {
 // }
 struct Unless: public AbstractNode {
   AbstractNode* condition;
-  NodeList then_block;
-  NodeList else_block;
+  NodeList* then_block;
+  NodeList* else_block;
 
   inline ~Unless() {
     delete condition;
+    delete then_block;
+    delete else_block;
   }
 };
 
@@ -99,10 +133,11 @@ struct Unless: public AbstractNode {
 // }
 struct Guard: public AbstractNode {
   AbstractNode* condition;
-  NodeList block;
+  NodeList* block;
 
   inline ~Guard() {
     delete condition;
+    delete block;
   }
 };
 
@@ -111,10 +146,11 @@ struct Guard: public AbstractNode {
 // }
 struct While: public AbstractNode {
   AbstractNode* condition;
-  NodeList block;
+  NodeList* block;
 
   inline ~While() {
     delete condition;
+    delete block;
   }
 };
 
@@ -123,10 +159,11 @@ struct While: public AbstractNode {
 // }
 struct Until: public AbstractNode {
   AbstractNode* condition;
-  NodeList block;
+  NodeList* block;
 
   inline ~Until() {
     delete condition;
+    delete block;
   }
 };
 
@@ -134,7 +171,11 @@ struct Until: public AbstractNode {
 //   <block>
 // }
 struct Loop: public AbstractNode {
-  NodeList block;
+  NodeList* block;
+
+  inline ~Loop() {
+    delete block;
+  }
 };
 
 // <operator_type> <expression>
@@ -163,8 +204,13 @@ struct Binary: public AbstractNode {
 //   <block>
 // }
 struct SwitchNode: public AbstractNode {
-  NodeList conditions;
-  NodeList block;
+  NodeList* conditions;
+  NodeList* block;
+
+  inline ~SwitchNode() {
+    delete conditions;
+    delete block;
+  }
 };
 
 // switch <condition> {
@@ -174,11 +220,12 @@ struct SwitchNode: public AbstractNode {
 struct Switch: public AbstractNode {
   AbstractNode* condition;
   std::vector<SwitchNode*> cases;
-  NodeList default_block;
+  NodeList* default_block;
 
   inline ~Switch() {
     delete condition;
     for (auto& node : this->cases) delete node;
+    delete default_block;
   }
 };
 
@@ -227,10 +274,11 @@ struct Assignment: public AbstractNode {
 // <target>(<arguments>)
 struct Call: public AbstractNode {
   AbstractNode* target;
-  NodeList arguments;
+  NodeList* arguments;
 
   inline ~Call() {
     delete target;
+    delete arguments;
   }
 };
 
@@ -291,7 +339,7 @@ struct Boolean: public AbstractNode {
 
 // [<expressions>]
 struct Array: public AbstractNode {
-  NodeList expressions;
+  NodeList* expressions;
 };
 
 // {
@@ -331,12 +379,14 @@ struct Hash: public AbstractNode {
 // -><body>
 struct Function: public AbstractNode {
   Identifier* name;
-  NodeList parameters;
-  NodeList body;
+  NodeList* parameters;
+  NodeList* body;
   bool anonymous;
 
   inline ~Function() {
     delete name;
+    delete parameters;
+    delete body;
   }
 };
 
@@ -371,11 +421,13 @@ struct StaticDeclaration: public AbstractNode {
 // }
 struct Class: public AbstractNode {
   Identifier* name;
-  NodeList body;
-  NodeList parents;
+  NodeList* body;
+  NodeList* parents;
 
   inline ~Class() {
     delete name;
+    delete body;
+    delete parents;
   }
 };
 
@@ -427,12 +479,14 @@ struct Continue: public AbstractNode {};
 //   <handler_block>
 // }
 struct TryCatch: public AbstractNode {
-  NodeList block;
+  NodeList* block;
   Identifier* exception_name;
-  NodeList handler_block;
+  NodeList* handler_block;
 
   inline ~TryCatch() {
+    delete block;
     delete exception_name;
+    delete handler_block;
   }
 };
 }

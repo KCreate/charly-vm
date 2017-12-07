@@ -26,97 +26,16 @@
 
 #include <string>
 
-#include "location.h"
-
 #pragma once
 
 namespace Charly::Compiler {
-enum TokenType : uint8_t {
+static const std::string kUnknownLocation = "<unknown>";
 
-  // Literals
-  Integer,
-  Float,
-  Identifier,
-  String,
-  Boolean,
-  Null,
-  NAN,
-  Keyword,
-
-  // Operators
-  Plus,
-  Minus,
-  Mul,
-  Div,
-  Mod,
-  Pow,
-  Assignment,
-
-  // Bitwise operators
-  BitOR,
-  BitXOR,
-  BitNOT,
-  BitAND,
-  LeftShift,
-  RightShift,
-
-  // AND assignments
-  PlusAssignment,
-  MinusAssignment,
-  MulAssignment,
-  DivAssignment,
-  ModAssignment,
-  PowAssignment,
-
-  // Comparison
-  Equal,
-  Not,
-  Less,
-  Greater,
-  LessEqual,
-  GreaterEqual,
-  AND,
-  OR,
-
-  // Structure
-  LeftParen, RightParen,
-  LeftCurly, RightCurly,
-  LeftBracket, RightBracket,
-  Semicolon,
-  Comma,
-  Point,
-  Comment,
-  AtSign,
-  RightArrow,
-  LeftArrow,
-  QuestionMark,
-  Colon,
-
-  // Whitespace
-  Whitespace,
-  Newline,
-
-  // Misc
-  Eof,
-  Unknown
-};
-
-struct Token {
-  TokenType type;
-  std::string value;
-  Location location;
-
-  inline bool is_and_operator() {
-    return (
-      this->type == TokenType::PlusAssignment ||
-      this->type == TokenType::MinusAssignment ||
-      this->type == TokenType::MulAssignment ||
-      this->type == TokenType::DivAssignment ||
-      this->type == TokenType::ModAssignment ||
-      this->type == TokenType::PowAssignment
-    );
-  }
-
-  // TODO: Add location information
+struct Location {
+  uint32_t pos;
+  uint32_t row;
+  uint32_t column;
+  uint32_t length;
+  std::string filename = kUnknownLocation;
 };
 }

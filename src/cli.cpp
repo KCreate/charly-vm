@@ -34,6 +34,8 @@
 #include "sourcefile.h"
 
 namespace Charly {
+using namespace Compiler;
+
 int CLI::run() {
 
   // Configure std::cout
@@ -61,18 +63,18 @@ int CLI::run() {
     return 1;
   }
 
+  // Read the userfile
   std::ifstream inputfile(this->flags.arguments[0]);
-
   if (!inputfile.is_open()) {
     std::cout << "Could not open file" << std::endl;
     return 1;
   }
-
   std::string source_string((std::istreambuf_iterator<char>(inputfile)), std::istreambuf_iterator<char>());
-
   inputfile.close();
-
   SourceFile userfile(this->flags.arguments[0], source_string);
+
+  AST::NodeList* block = new AST::NodeList();
+  std::cout << block->type().name() << std::endl;
 
   Context context(this->flags);
   MemoryManager gc(context);
