@@ -46,6 +46,14 @@
   PutValue $n
   ReadMemberValue
   ```
+- Where does the return value end up?
+  - Callee side:
+    - The return value of the call is the top value on the stack
+  - Caller side:
+    - Pushing it onto the stack could work
+      - Compiler would have to make sure there is nothing else on the stack
+    - Dedicated return_value field inside current frame
+      - Pushed onto the stack on frame pop
 
 # Execution pipeline
 - Managed by a single `Context` class.

@@ -24,63 +24,85 @@
  * SOFTWARE.
  */
 
-#include <iostream>
-#include <iomanip>
+#include <string>
 
-#include "ast.h"
-#include "charly.h"
-#include "cli.h"
-#include "context.h"
-#include "sourcefile.h"
+#pragma once
 
-namespace Charly {
-int CLI::run() {
+namespace Charly::Compiler {
+enum TokenType : uint8_t {
 
-  // Configure std::cout
-  std::cout << std::fixed;
-  std::cout << std::setprecision(4);
+  // Literals
+  Integer,
+  Float,
+  Identifier,
+  String,
+  Boolean,
+  Null,
+  NAN,
+  Keyword,
 
-  if (this->flags.show_help) {
-    std::cout << kHelpMessage << std::endl;
-    return 0;
-  }
+  // Operators
+  Plus,
+  Minus,
+  Multiply,
+  Divide,
+  Modulus,
+  Exponent,
+  Assignment,
 
-  if (this->flags.show_license) {
-    std::cout << kLicense << std::endl;
-    return 0;
-  }
+  // Bitwise operators
+  BitOR,
+  BitXOR,
+  BitNOT,
+  BitAND,
+  LeftShift,
+  RightShift,
 
-  if (this->flags.show_version) {
-    std::cout << kVersion << std::endl;
-    return 0;
-  }
+  // AND assignments
+  AddAssignment,
+  MinusAssignment,
+  MultAssignment,
+  DivdAssignment,
+  ModAssignment,
+  PowAssignment,
 
-  // Check if a filename was given
-  if (this->flags.arguments.size() == 0) {
-    std::cout << "No filename given!" << std::endl;
-    return 1;
-  }
+  // Comparison
+  Equal,
+  Not,
+  Less,
+  Greater,
+  LessEqual,
+  GreaterEqual,
+  AND,
+  OR,
 
-  std::ifstream inputfile(this->flags.arguments[0]);
+  // Structure
+  LeftParen, RightParen,
+  LeftCurly, RightCurly,
+  LeftBracket, RightBracket,
+  Semicolon,
+  Comma,
+  Point,
+  Comment,
+  AtSign,
+  RightArrow,
+  LeftArrow,
+  QuestionMark,
+  Colon,
 
-  if (!inputfile.is_open()) {
-    std::cout << "Could not open file" << std::endl;
-    return 1;
-  }
+  // Whitespace
+  Whitespace,
+  Newline,
 
-  std::string source_string((std::istreambuf_iterator<char>(inputfile)), std::istreambuf_iterator<char>());
+  // Misc
+  Eof,
+  Unknown
+};
 
-  inputfile.close();
+struct Token {
+  TokenType type;
+  std::string value;
 
-  SourceFile userfile(this->flags.arguments[0], source_string);
-
-  Context context(this->flags);
-  MemoryManager gc(context);
-  VM vm(context);
-  if (!this->flags.skip_execution) {
-    vm.run();
-  }
-
-  return 0;
+  // TODO: Add location information
+};
 }
-}  // namespace Charly
