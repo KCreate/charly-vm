@@ -121,7 +121,7 @@ enum Opcode : uint8_t {
   //
   // args:
   // - symbol
-  // - block
+  // - block_offset
   // - anonymous
   // - argc
   PutFunction,
@@ -308,7 +308,7 @@ enum Opcode : uint8_t {
 
 // clang-format off
 // Constant lengths of all instructions
-static constexpr uint32_t InstructionLength[]{
+static constexpr uint32_t kInstructionLengths[]{
   /* Nop */                1,
   /* ReadLocal */          1 + sizeof(uint32_t) + sizeof(uint32_t),
   /* ReadMemberSymbol */   1 + sizeof(VALUE),
@@ -320,7 +320,7 @@ static constexpr uint32_t InstructionLength[]{
   /* PutValue */           1 + sizeof(VALUE),
   /* PutFloat */           1 + sizeof(double),
   /* PutString */          1 + sizeof(uint32_t) + sizeof(uint32_t),
-  /* PutFunction */        1 + sizeof(VALUE) + sizeof(FPOINTER) + sizeof(bool) + sizeof(uint32_t),
+  /* PutFunction */        1 + sizeof(VALUE) + sizeof(int32_t) + sizeof(bool) + sizeof(uint32_t),
   /* PutCFunction */       1 + sizeof(VALUE) + sizeof(FPOINTER) + sizeof(uint32_t),
   /* PutArray */           1 + sizeof(uint32_t),
   /* PutHash */            1 + sizeof(uint32_t),
@@ -367,7 +367,7 @@ static constexpr uint32_t InstructionLength[]{
 };
 
 // String representations of instruction opcodes
-static std::string OpcodeStrings[]{
+static std::string kOpcodeMnemonics[]{
   "nop",
   "readlocal",
   "readmembersymbol",

@@ -208,6 +208,7 @@ struct Function {
   VALUE name;
   uint32_t argc;
   Frame* context;
+  uint8_t* body_address;
   InstructionBlock* block;
   bool anonymous;
   bool bound_self_set;

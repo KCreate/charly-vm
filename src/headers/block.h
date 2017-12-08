@@ -115,7 +115,7 @@ public:
   void write_putvalue(VALUE value);
   void write_putfloat(double value);
   void write_putstring(const std::string& data);
-  IBlockPointerLabel write_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc);
+  OffsetLabel write_putfunction(VALUE symbol, int32_t body_offset, bool anonymous, uint32_t argc);
   PointerLabel write_putcfunction(VALUE symbol, FPOINTER funcptr, uint32_t argc);
   void write_putarray(uint32_t count);
   void write_puthash(uint32_t count);
@@ -135,11 +135,11 @@ public:
   void write_callmember(uint32_t argc);
   void write_return();
   void write_throw(ThrowType type);
-  Int32Label write_registercatchtable(ThrowType type, int32_t offset);
+  OffsetLabel write_registercatchtable(ThrowType type, int32_t offset);
   void write_popcatchtable();
-  Int32Label write_branch(int32_t offset);
-  Int32Label write_branchif(int32_t offset);
-  Int32Label write_branchunless(int32_t offset);
+  OffsetLabel write_branch(int32_t offset);
+  OffsetLabel write_branchif(int32_t offset);
+  OffsetLabel write_branchunless(int32_t offset);
   void write_operator(Opcode opcode);
   void write_halt();
   void write_gccollect();
@@ -154,5 +154,6 @@ public:
   void write_while_statement(IBlockGenFunc condition, IBlockGenFunc then_block);
   void write_until_statement(IBlockGenFunc condition, IBlockGenFunc then_block);
   void write_loop_statement(IBlockGenFunc then_block);
+  void write_function_literal(VALUE symbol, bool anonymous, uint32_t argc, IBlockGenFunc body);
 };
 }  // namespace Charly

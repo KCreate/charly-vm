@@ -249,12 +249,13 @@ VALUE VM::create_string(const char* data, uint32_t length) {
   return reinterpret_cast<VALUE>(cell);
 }
 
-VALUE VM::create_function(VALUE name, uint32_t argc, bool anonymous, InstructionBlock* block) {
+VALUE VM::create_function(VALUE name, uint8_t* body_address, uint32_t argc, bool anonymous, InstructionBlock* block) {
   MemoryCell* cell = this->context.gc->allocate();
   cell->as.basic.set_type(kTypeFunction);
   cell->as.function.name = name;
   cell->as.function.argc = argc;
   cell->as.function.context = this->frames;
+  cell->as.function.body_address = body_address;
   cell->as.function.block = block;
   cell->as.function.anonymous = anonymous;
   cell->as.function.bound_self_set = false;
@@ -511,8 +512,8 @@ void VM::op_putstring(char* data, uint32_t length) {
   this->push_stack(this->create_string(data, length));
 }
 
-void VM::op_putfunction(VALUE symbol, InstructionBlock* block, bool anonymous, uint32_t argc) {
-  VALUE function = this->create_function(symbol, argc, anonymous, block);
+void VM::op_putfunction(VALUE symbol, uint8_t* body_address, InstructionBlock* block, bool anonymous, uint32_t argc) {
+  VALUE function = this->create_function(symbol, body_address, argc, anonymous, block);
   this->push_stack(function);
 }
 
@@ -664,7 +665,7 @@ void VM::call(uint32_t argc, bool with_target) {
     }
 
     default: {
-      std::cout << "cant call a " << this->real_type(function) << std::endl;
+      std::cout << "cant call a " << kValueTypeString[this->real_type(function)] << std::endl;
 
       // TODO: Handle as runtime error
       this->panic(kStatusUnspecifiedError);
@@ -683,7 +684,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   // compute a return address
   uint8_t* return_address = nullptr;
   if (this->ip != nullptr)
-    return_address = this->ip + InstructionLength[Opcode::Call];
+    return_address = this->ip + kInstructionLengths[Opcode::Call];
   Frame* frame = this->create_frame(self, function, return_address);
 
   Array* arguments_array = reinterpret_cast<Array*>(this->create_array(argc));
@@ -702,7 +703,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   (*frame->environment)[0].value = reinterpret_cast<VALUE>(arguments_array);
   (*frame->environment)[0].is_constant = true;
 
-  this->ip = reinterpret_cast<uint8_t*>(function->block->data);
+  this->ip = reinterpret_cast<uint8_t*>(function->body_address);
 }
 
 void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
@@ -959,6 +960,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << "argc=" << func->argc;
       io << " ";
       io << "context=" << func->context << " ";
+      io << "body_address=" << reinterpret_cast<void*>(func->body_address) << " ";
       io << "block=";
       this->pretty_print(io, func->block);
       io << " ";
@@ -1094,6 +1096,17 @@ void VM::init_frames() {
   block->write_setmembersymbol(this->context.symbol_table("foo"));
   block->write_pop(1);
 
+  // Charly.internals.gccollect = ->{ gccollect }
+  block->write_readlocal(4, 0);
+  block->write_readmembersymbol(this->context.symbol_table("internals"));
+  block->write_function_literal(this->context.symbol_table("gccollect"), true, 0, [](InstructionBlock& block) {
+    block.write_gccollect();
+    block.write_putvalue(kNull);
+    block.write_return();
+  });
+  block->write_setmembersymbol(this->context.symbol_table("gccollect"));
+  block->write_pop(1);
+
   // [[{}, { boye = 250 }], 25, 25, 25, 25]
   block->write_puthash(0);
   block->write_puthash(0);
@@ -1201,15 +1214,18 @@ void VM::init_frames() {
   block->write_readmembersymbol(this->context.symbol_table("get_method"));
   block->write_typeof();
 
-  block->write_gccollect();
-  block->write_gccollect();
-  block->write_gccollect();
+  block->write_readlocal(4, 0);
+  block->write_readmembersymbol(this->context.symbol_table("internals"));
+  block->write_readmembersymbol(this->context.symbol_table("gccollect"));
+  block->write_call(0);
+  block->write_pop(1);
 
   // Return
   block->write_return();
 
   // Push a function onto the stack containing this block and call it
-  this->op_putfunction(this->context.symbol_table("__charly_init"), block, false, 3);
+  uint8_t* body_address = reinterpret_cast<uint8_t*>(block->data);
+  this->op_putfunction(this->context.symbol_table("__charly_init"), body_address, block, false, 3);
   this->push_stack(this->create_integer(50));
   this->push_stack(this->create_integer(60));
   this->push_stack(this->create_integer(70));
@@ -1248,14 +1264,14 @@ void VM::run() {
     Opcode opcode = this->fetch_instruction();
 
     // Check if there is enough space for instruction arguments
-    uint32_t instruction_length = InstructionLength[opcode];
+    uint32_t instruction_length = kInstructionLengths[opcode];
     if (this->ip + instruction_length >= (block_data + block_write_offset + sizeof(Opcode))) {
       std::cout << "ip                    = " << reinterpret_cast<void*>(this->ip) << std::endl;
       std::cout << "instruction length    = " << instruction_length << std::endl;
       std::cout << "block_data            = " << reinterpret_cast<void*>(block_data) << std::endl;
       std::cout << "block_write_offset    = " << block_write_offset << std::endl;
       std::cout << "sizeof(Opcode)        = " << sizeof(Opcode) << std::endl;
-      std::cout << "OpcodeStrings[Opcode] = " << OpcodeStrings[opcode] << std::endl;
+      std::cout << "kOpcodeMnemonics[opcode] = " << kOpcodeMnemonics[opcode] << std::endl;
       this->panic(kStatusNotEnoughSpaceForInstructionArguments);
     }
 
@@ -1312,7 +1328,7 @@ void VM::run() {
         uint32_t offset = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
         uint32_t length = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(uint32_t));
 
-        // Calculate the pointer into the TEXT segment of the instructionblock
+        // Calculate the pointer into the static data segment of the instructionblock
         // The current frame holds the function that was used to construct it
         // This function contains the current instruction block
         //
@@ -1331,11 +1347,14 @@ void VM::run() {
 
       case Opcode::PutFunction: {
         VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
-        InstructionBlock* block = *reinterpret_cast<InstructionBlock**>(this->ip + sizeof(Opcode) + sizeof(VALUE));
-        bool anonymous = *reinterpret_cast<bool*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(VALUE));
+        int32_t body_offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE));
+        bool anonymous = *reinterpret_cast<bool*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t));
         uint32_t argc =
-            *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(VALUE) + sizeof(bool));
-        this->op_putfunction(symbol, block, anonymous, argc);
+            *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t) + sizeof(bool));
+
+        // TODO: Is this correct?
+        InstructionBlock* current_block = this->frames->function->block;
+        this->op_putfunction(symbol, this->ip + body_offset, current_block, anonymous, argc);
         break;
       }
 
@@ -1469,7 +1488,7 @@ void VM::run() {
     // Show opcodes as they are executed if the corresponding flag was set
     if (this->context.flags.trace_opcodes) {
       std::chrono::duration<double> exec_duration = std::chrono::high_resolution_clock::now() - exec_start;
-      std::cout << reinterpret_cast<void*>(old_ip) << ": " << OpcodeStrings[opcode] << " ";
+      std::cout << reinterpret_cast<void*>(old_ip) << ": " << kOpcodeMnemonics[opcode] << " ";
       std::cout << " ( " << exec_duration.count() * 1000000000 << " nanoseconds)" << std::endl;
     }
   }

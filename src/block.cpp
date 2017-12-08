@@ -157,20 +157,16 @@ void InstructionBlock::write_putstring(const std::string& data) {
   this->write_int(data.size());
 }
 
-IBlockPointerLabel InstructionBlock::write_putfunction(VALUE symbol,
-                                                       InstructionBlock* block,
-                                                       bool anonymous,
-                                                       uint32_t argc) {
-  IBlockPointerLabel label(*this);
+OffsetLabel InstructionBlock::write_putfunction(VALUE symbol, int32_t body_offset, bool anonymous, uint32_t argc) {
+  OffsetLabel label(*this);
   label.set_instruction_base();
 
   this->write_byte(Opcode::PutFunction);
   this->write_long(symbol);
 
   label.set_target_offset();
+  this->write_int(body_offset);
 
-  this->write_pointer(block);
-  this->child_blocks.push_back(block);
   this->write_byte(anonymous);
   this->write_int(argc);
 
@@ -376,7 +372,7 @@ void InstructionBlock::write_try_statement(IBlockGenFunc block, IBlockGenFunc ha
 
 void InstructionBlock::write_while_statement(IBlockGenFunc condition, IBlockGenFunc then_block) {
   OffsetLabel end_target_1 = this->write_registercatchtable(ThrowType::Break, 0);
-  this->write_registercatchtable(ThrowType::Continue, InstructionLength[Opcode::RegisterCatchTable]);
+  this->write_registercatchtable(ThrowType::Continue, kInstructionLengths[Opcode::RegisterCatchTable]);
 
   OffsetLabel lcondition(*this);
   condition(*this);
@@ -391,7 +387,7 @@ void InstructionBlock::write_while_statement(IBlockGenFunc condition, IBlockGenF
 
 void InstructionBlock::write_until_statement(IBlockGenFunc condition, IBlockGenFunc then_block) {
   OffsetLabel end_target_1 = this->write_registercatchtable(ThrowType::Break, 0);
-  this->write_registercatchtable(ThrowType::Continue, InstructionLength[Opcode::RegisterCatchTable]);
+  this->write_registercatchtable(ThrowType::Continue, kInstructionLengths[Opcode::RegisterCatchTable]);
 
   OffsetLabel lcondition(*this);
   condition(*this);
@@ -406,7 +402,7 @@ void InstructionBlock::write_until_statement(IBlockGenFunc condition, IBlockGenF
 
 void InstructionBlock::write_loop_statement(IBlockGenFunc then_block) {
   OffsetLabel end_target_1 = this->write_registercatchtable(ThrowType::Break, 0);
-  this->write_registercatchtable(ThrowType::Continue, InstructionLength[Opcode::RegisterCatchTable]);
+  this->write_registercatchtable(ThrowType::Continue, kInstructionLengths[Opcode::RegisterCatchTable]);
 
   OffsetLabel loopstart(*this);
   then_block(*this);
@@ -414,6 +410,14 @@ void InstructionBlock::write_loop_statement(IBlockGenFunc then_block) {
 
   end_target_1.write_current_block_offset();
   this->write_popcatchtable();
+}
+
+void InstructionBlock::write_function_literal(VALUE symbol, bool anonymous, uint32_t argc, IBlockGenFunc body) {
+  int32_t jump_length = kInstructionLengths[Opcode::PutFunction] + kInstructionLengths[Opcode::Branch];
+  this->write_putfunction(symbol, jump_length, anonymous, argc);
+  OffsetLabel end_body_target = this->write_branch(0);
+  body(*this);
+  end_body_target.write_current_block_offset();
 }
 
 }  // namespace Charly
