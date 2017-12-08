@@ -86,6 +86,12 @@
   - Needs a dispatch function which performs a typecheck and redirects to correct method
     - Maybe C++ offers a way this can be implemented natively
 
+# Compiler
+- _LVarRewriter_: Semantic (undefined and duplicate lvars) and lvar offset calculation in one step
+  - Buffers 5 errors
+    - Throws if more than 5 errors were generated
+  - Calculates how many local variable slots a function frame will need
+
 # Make sure the JIT compiler doesn't need to allocate anything via the VM
 - How are instructionblocks allocated?
   - Remove the handling from the VM into a separate thing
