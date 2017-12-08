@@ -9,6 +9,7 @@
 
 # Move language logic which doesn't depend on the VM into it's own class
 - Maybe called `VMUtils` or `CharlyUtils`?
+  - Needs access to the context
 - One doesn't need the VM to pretty_print objects
 - The VM should only contain logic that is stricly specific to executing code
 - Candidate methods
@@ -58,33 +59,16 @@
 # Execution pipeline
 - Managed by a single `Context` class.
 - Contains a `SymbolTable` and `MemoryManager`
-- The whole program should be split into three important classes
-  - `Compiler`
-    - Takes source code as input and outputs data for the assembler
-      - Produces bytecode in an intermediate format
-      - Produces a symbol table with all the symbols created during compilation
-      - Produces a string pool containing all strings of the source code
-      - Produces a source map mapping different instructions to offsets in the source file
-
-    - Should not create multiple instruction blocks
-      - The result of a compilation should be a single instruction block
-      - Multiple functions can be defined inside a single instruction block
-      - `putfunction` type has an offset into the current InstructionBlock
-      - `Function` runtime type holds the absolute address of its body
-      - `Function` has a pointer to the instructionblock its body lives in
-        - GC needs this information so it doesn't deallocate the IB too early
-    - Tries to optimize the code
-      - Optimized code isn't a goal but simple peep-hole optimisations can still be done
-  - `Assembler`
-    - Translates the intermediate charly bytecode into the binary form used in an InstructionBlock
-    - Calculates all offsets of blocks and strings
-  - `VM`
-    - Executes the resulting bytecode
+- `Compiler`
+  - Takes source code as input and outputs charly bytecodes inside an InstructionBlock
+    - Produces a symbol table with all the symbols created during compilation
+    - Produces a string pool containing all strings of the source code
+    - Produces a source map mapping different instructions to offsets in the source file
+  - Tries to optimize the code
+    - Optimized code isn't a goal but simple peep-hole optimisations can still be done
 - Data should be creatable without the need of a VM object
+  - Some data types are inherently dependent on the VM, such as the `Function` type
 - The VM should be purely used for execution, not data creation
-- The VM's opcodes need to be changed to allow this
-  - PutFunction
-  - PutCFunction (?)
 
 # GC Optimizations
 - GC should try to reorder the singly-linked list of free cells so that cells which
