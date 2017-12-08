@@ -80,6 +80,9 @@ struct NodeList : public AbstractNode {
   // Other alternatives are: nodes, items
   std::vector<AbstractNode*> children;
 
+  NodeList() {}
+  NodeList(std::initializer_list<AbstractNode*> list) : children(list) {}
+
   inline ~NodeList() {
     for (auto& node : this->children)
       delete node;
@@ -99,6 +102,8 @@ struct If : public AbstractNode {
   AbstractNode* condition;
   NodeList* then_block;
   NodeList* else_block;
+
+  If(AbstractNode* c, NodeList* t, NodeList* e) : condition(c), then_block(t), else_block(e) {}
 
   inline ~If() {
     delete condition;
@@ -121,6 +126,8 @@ struct Unless : public AbstractNode {
   NodeList* then_block;
   NodeList* else_block;
 
+  Unless(AbstractNode* c, NodeList* t, NodeList* e) : condition(c), then_block(t), else_block(e) {}
+
   inline ~Unless() {
     delete condition;
     delete then_block;
@@ -135,6 +142,8 @@ struct Guard : public AbstractNode {
   AbstractNode* condition;
   NodeList* block;
 
+  Guard(AbstractNode* c, NodeList* b) : condition(c), block(b) {}
+
   inline ~Guard() {
     delete condition;
     delete block;
@@ -147,6 +156,8 @@ struct Guard : public AbstractNode {
 struct While : public AbstractNode {
   AbstractNode* condition;
   NodeList* block;
+
+  While(AbstractNode* c, NodeList* b) : condition(c), block(b) {}
 
   inline ~While() {
     delete condition;
@@ -161,6 +172,8 @@ struct Until : public AbstractNode {
   AbstractNode* condition;
   NodeList* block;
 
+  Until(AbstractNode* c, NodeList* b) : condition(c), block(b) {}
+
   inline ~Until() {
     delete condition;
     delete block;
@@ -173,6 +186,8 @@ struct Until : public AbstractNode {
 struct Loop : public AbstractNode {
   NodeList* block;
 
+  Loop(NodeList* b) : block(b) {}
+
   inline ~Loop() {
     delete block;
   }
@@ -182,6 +197,8 @@ struct Loop : public AbstractNode {
 struct Unary : public AbstractNode {
   TokenType operator_type;
   AbstractNode* expression;
+
+  Unary(TokenType op, AbstractNode* e) : operator_type(op), expression(e) {}
 
   inline ~Unary() {
     delete expression;
@@ -193,6 +210,8 @@ struct Binary : public AbstractNode {
   TokenType operator_type;
   AbstractNode* left;
   AbstractNode* right;
+
+  Binary(TokenType op, AbstractNode* l, AbstractNode* r) : operator_type(op), left(l), right(r) {}
 
   inline ~Binary() {
     delete left;
@@ -206,6 +225,8 @@ struct Binary : public AbstractNode {
 struct SwitchNode : public AbstractNode {
   NodeList* conditions;
   NodeList* block;
+
+  SwitchNode(NodeList* c, NodeList* b) : conditions(c), block(b) {}
 
   inline ~SwitchNode() {
     delete conditions;
@@ -222,6 +243,11 @@ struct Switch : public AbstractNode {
   std::vector<SwitchNode*> cases;
   NodeList* default_block;
 
+  Switch(AbstractNode* co, const std::vector<SwitchNode*>& vec, NodeList* d)
+    : condition(co), cases(vec), default_block(d) {}
+  Switch(AbstractNode* co, std::initializer_list<SwitchNode*> c, NodeList* d)
+    : condition(co), cases(c), default_block(d) {}
+
   inline ~Switch() {
     delete condition;
     for (auto& node : this->cases)
@@ -235,6 +261,8 @@ struct And : public AbstractNode {
   AbstractNode* left;
   AbstractNode* right;
 
+  And(AbstractNode* l, AbstractNode* r) : left(l), right(r) {}
+
   inline ~And() {
     delete left;
     delete right;
@@ -246,6 +274,8 @@ struct Or : public AbstractNode {
   AbstractNode* left;
   AbstractNode* right;
 
+  Or(AbstractNode* l, AbstractNode* r) : left(l), right(r) {}
+
   inline ~Or() {
     delete left;
     delete right;
@@ -256,6 +286,8 @@ struct Or : public AbstractNode {
 struct Typeof : public AbstractNode {
   AbstractNode* expression;
 
+  Typeof(AbstractNode* e) : expression(e) {}
+
   inline ~Typeof() {
     delete expression;
   }
@@ -265,6 +297,8 @@ struct Typeof : public AbstractNode {
 struct Assignment : public AbstractNode {
   AbstractNode* target;
   AbstractNode* expression;
+
+  Assignment(AbstractNode* t, AbstractNode* e) : target(t), expression(e) {}
 
   inline ~Assignment() {
     delete target;
@@ -277,6 +311,8 @@ struct Call : public AbstractNode {
   AbstractNode* target;
   NodeList* arguments;
 
+  Call(AbstractNode* t, NodeList* a) : target(t), arguments(a) {}
+
   inline ~Call() {
     delete target;
     delete arguments;
@@ -286,12 +322,16 @@ struct Call : public AbstractNode {
 // <identifier>
 struct Identifier : public AbstractNode {
   std::string name;
+
+  Identifier(const std::string& str) : name(str) {}
 };
 
 // <target>.<identifier>
 struct Member : public AbstractNode {
   AbstractNode* target;
   Identifier* identifier;
+
+  Member(AbstractNode* t, Identifier* i) : target(t), identifier(i) {}
 
   inline ~Member() {
     delete target;
@@ -303,6 +343,8 @@ struct Member : public AbstractNode {
 struct Index : public AbstractNode {
   AbstractNode* target;
   AbstractNode* argument;
+
+  Index(AbstractNode* t, AbstractNode* a) : target(t), argument(a) {}
 
   inline ~Index() {
     delete target;
@@ -321,26 +363,38 @@ struct Nan : public AbstractNode {};
 // value is optional because we don't want to allocate any memory for an empty string
 struct String : public AbstractNode {
   std::optional<std::string> value;
+
+  String(const std::string& str) : value(str) {}
 };
 
 // <value>
 struct Integer : public AbstractNode {
   int64_t value;
+
+  Integer(int64_t v) : value(v) {}
 };
 
 // <value>
 struct Float : public AbstractNode {
   double value;
+
+  Float(double v) : value(v) {}
 };
 
 // <value>
 struct Boolean : public AbstractNode {
   bool value;
+
+  Boolean(bool v) : value(v) {}
 };
 
 // [<expressions>]
 struct Array : public AbstractNode {
   NodeList* expressions;
+
+  Array(std::initializer_list<AbstractNode*> e)
+    : expressions(new NodeList(std::forward<std::initializer_list<AbstractNode*>>(e))) {}
+  Array(NodeList* e) : expressions(e) {}
 };
 
 // {
@@ -348,6 +402,9 @@ struct Array : public AbstractNode {
 // }
 struct Hash : public AbstractNode {
   std::vector<std::pair<AbstractNode*, AbstractNode*>> pairs;
+
+  Hash(std::initializer_list<std::pair<AbstractNode*, AbstractNode*>> p)
+    : pairs(p) {}
 
   inline ~Hash() {
     for (auto& pair : this->pairs) {
@@ -384,6 +441,8 @@ struct Function : public AbstractNode {
   NodeList* body;
   bool anonymous;
 
+  Function(Identifier* n, NodeList* p, NodeList* b, bool a) : name(n), parameters(p), body(b), anonymous(a) {}
+
   inline ~Function() {
     delete name;
     delete parameters;
@@ -395,6 +454,8 @@ struct Function : public AbstractNode {
 struct PropertyDeclaration : public AbstractNode {
   Identifier* identifier;
 
+  PropertyDeclaration(Identifier* i) : identifier(i) {}
+
   inline ~PropertyDeclaration() {
     delete identifier;
   }
@@ -403,6 +464,8 @@ struct PropertyDeclaration : public AbstractNode {
 // static <declaration>
 struct StaticDeclaration : public AbstractNode {
   AbstractNode* declaration;
+
+  StaticDeclaration(AbstractNode* d) : declaration(d) {}
 
   inline ~StaticDeclaration() {
     delete declaration;
@@ -425,6 +488,8 @@ struct Class : public AbstractNode {
   NodeList* body;
   NodeList* parents;
 
+  Class(Identifier* n, NodeList* b, NodeList* p) : name(n), body(b), parents(p) {}
+
   inline ~Class() {
     delete name;
     delete body;
@@ -442,6 +507,8 @@ struct LocalInitialisation : public AbstractNode {
   AbstractNode* expression;
   bool constant;
 
+  LocalInitialisation(Identifier* n, AbstractNode* e, bool c) : name(n), expression(e), constant(c) {}
+
   inline ~LocalInitialisation() {
     delete name;
     delete expression;
@@ -454,6 +521,8 @@ struct LocalInitialisation : public AbstractNode {
 struct Return : public AbstractNode {
   AbstractNode* expression;
 
+  Return(AbstractNode* e) : expression(e) {}
+
   inline ~Return() {
     delete expression;
   }
@@ -462,6 +531,8 @@ struct Return : public AbstractNode {
 // throw <expression>
 struct Throw : public AbstractNode {
   AbstractNode* expression;
+
+  Throw(AbstractNode* e) : expression(e) {}
 
   inline ~Throw() {
     delete expression;
@@ -483,6 +554,8 @@ struct TryCatch : public AbstractNode {
   NodeList* block;
   Identifier* exception_name;
   NodeList* handler_block;
+
+  TryCatch(NodeList* b, Identifier* e, NodeList* h) : block(b), exception_name(e), handler_block(h) {}
 
   inline ~TryCatch() {
     delete block;

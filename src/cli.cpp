@@ -72,6 +72,18 @@ int CLI::run() {
   inputfile.close();
   SourceFile userfile(this->flags.arguments[0], source_string);
 
+  AST::AbstractNode* node = new AST::If(
+    new AST::Integer(25),
+    new AST::NodeList({
+      new AST::Integer(1)
+    }),
+    new AST::NodeList({
+      new AST::Integer(0)
+    })
+  );
+
+  std::cout << node << std::endl;
+
   Context context(this->flags);
   MemoryManager gc(context);
   VM vm(context);
