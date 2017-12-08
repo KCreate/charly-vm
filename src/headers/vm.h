@@ -76,7 +76,7 @@ public:
   VALUE create_array(uint32_t initial_capacity);
   VALUE create_integer(int64_t value);
   VALUE create_float(double value);
-  VALUE create_string(char* data, uint32_t length);
+  VALUE create_string(const char* data, uint32_t length);
   VALUE create_function(VALUE name, uint32_t argc, bool anonymous, InstructionBlock* block);
   VALUE create_cfunction(VALUE name, uint32_t argc, FPOINTER pointer);
 
@@ -124,6 +124,7 @@ public:
   void op_branch(int32_t offset);
   void op_branchif(int32_t offset);
   void op_branchunless(int32_t offset);
+  void op_typeof();
   void panic(STATUS reason);
   void stacktrace(std::ostream& io);
   void catchstacktrace(std::ostream& io);

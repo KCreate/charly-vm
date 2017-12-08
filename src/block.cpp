@@ -321,6 +321,10 @@ void InstructionBlock::write_gccollect() {
   this->write_byte(Opcode::GCCollect);
 }
 
+void InstructionBlock::write_typeof() {
+  this->write_byte(Opcode::Typeof);
+}
+
 void InstructionBlock::write_if_statement(IBlockGenFunc condition, IBlockGenFunc then_block) {
   condition(*this);
   OffsetLabel skiplabel = this->write_branchunless(0);

@@ -42,24 +42,47 @@ static const std::string kUndefinedSymbolString = "<undefined symbol>";
 static const VALUE kFlagType = 0b00011111;
 static const VALUE kFlagMark = 0b00100000;
 
-// Type identifiers
-static const uint8_t kTypeDead = 0x00;
-static const uint8_t kTypeInteger = 0x01;
-static const uint8_t kTypeFloat = 0x02;
-static const uint8_t kTypeString = 0x03;
-static const uint8_t kTypeNumeric = 0x04;
-static const uint8_t kTypeBoolean = 0x05;
-static const uint8_t kTypeNull = 0x06;
-static const uint8_t kTypeObject = 0x07;
-static const uint8_t kTypeArray = 0x08;
-static const uint8_t kTypeFunction = 0x09;
-static const uint8_t kTypeCFunction = 0x0a;
-static const uint8_t kTypeSymbol = 0x0b;
+// Type constants
+enum kValueTypes : uint8_t {
 
-// Machine internal types
-static const uint8_t kTypeFrame = 0x0c;
-static const uint8_t kTypeCatchTable = 0x0d;
-static const uint8_t kTypeInstructionBlock = 0x0e;
+  // Type identifiers
+  kTypeDead,
+  kTypeInteger,
+  kTypeFloat,
+  kTypeString,
+  kTypeNumeric,
+  kTypeBoolean,
+  kTypeNull,
+  kTypeObject,
+  kTypeArray,
+  kTypeFunction,
+  kTypeCFunction,
+  kTypeSymbol,
+
+  // Machine internal types
+  kTypeFrame,
+  kTypeCatchTable,
+  kTypeInstructionBlock
+};
+
+// String representation of types
+static const std::string kValueTypeString[] = {
+  "dead",
+  "integer",
+  "float",
+  "string",
+  "numeric",
+  "boolean",
+  "null",
+  "object",
+  "array",
+  "function",
+  "cfunction",
+  "symbol",
+  "frame",
+  "catchtable",
+  "instructionblock"
+};
 
 // Basic fields every data type in Charly has
 // This is inspired by the way Ruby stores it's values

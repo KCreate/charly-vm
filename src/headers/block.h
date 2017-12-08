@@ -143,6 +143,7 @@ public:
   void write_operator(Opcode opcode);
   void write_halt();
   void write_gccollect();
+  void write_typeof();
 
   // Wrappers for more high-level language structures
   void write_if_statement(IBlockGenFunc condition, IBlockGenFunc then_block);

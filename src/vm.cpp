@@ -230,7 +230,7 @@ VALUE VM::create_float(double value) {
   return reinterpret_cast<VALUE>(cell);
 }
 
-VALUE VM::create_string(char* data, uint32_t length) {
+VALUE VM::create_string(const char* data, uint32_t length) {
   // Calculate the initial capacity of the string
   size_t string_capacity = kStringInitialCapacity;
   while (string_capacity <= length)
@@ -809,6 +809,12 @@ void VM::op_branchunless(int32_t offset) {
     this->ip += offset;
 }
 
+void VM::op_typeof() {
+  VALUE value = this->pop_stack().value_or(kNull);
+  const std::string& stringrep = kValueTypeString[this->real_type(value)];
+  this->push_stack(this->create_string(stringrep.c_str(), stringrep.size()));
+}
+
 void VM::stacktrace(std::ostream& io) {
   Frame* frame = this->frames;
 
@@ -1181,8 +1187,19 @@ void VM::init_frames() {
     block.write_throw(ThrowType::Break);
   });
 
-  // Put arguments onto the stack
+  // typeof(arguments)
   block->write_readlocal(0, 0);
+  block->write_typeof();
+
+  // typeof(Charly)
+  block->write_readlocal(4, 0);
+  block->write_typeof();
+
+  // typeof(Charly.internals.get_method)
+  block->write_readlocal(4, 0);
+  block->write_readmembersymbol(this->context.symbol_table("internals"));
+  block->write_readmembersymbol(this->context.symbol_table("get_method"));
+  block->write_typeof();
 
   block->write_gccollect();
   block->write_gccollect();
@@ -1430,6 +1447,11 @@ void VM::run() {
 
       case Opcode::GCCollect: {
         this->context.gc->collect();
+        break;
+      }
+
+      case Opcode::Typeof: {
+        this->op_typeof();
         break;
       }
 

@@ -298,7 +298,12 @@ enum Opcode : uint8_t {
 
   // Halt execution of the machine and return to the caller
   Halt,
-  GCCollect
+
+  // Manually instruct the VM to perform a garbage collection right now
+  GCCollect,
+
+  // Push the type of the uppermost value on the stack as a string
+  Typeof
 };
 
 // clang-format off
@@ -357,7 +362,8 @@ static constexpr uint32_t InstructionLength[]{
   /* UNot */               1,
   /* UBNot */              1,
   /* Halt */               1,
-  /* GCCollect */          1
+  /* GCCollect */          1,
+  /* Typeof */             1
 };
 
 // String representations of instruction opcodes
@@ -415,7 +421,8 @@ static std::string OpcodeStrings[]{
   "unot",
   "ubnot",
   "halt",
-  "gccollect"
+  "gccollect",
+  "typeof"
 };
 // clang-format on
 
