@@ -62,10 +62,17 @@
   - `Compiler`
     - Takes source code as input and outputs data for the assembler
       - Produces bytecode in an intermediate format
-        - Offsets for functions etc are not computed by the compiler
       - Produces a symbol table with all the symbols created during compilation
       - Produces a string pool containing all strings of the source code
       - Produces a source map mapping different instructions to offsets in the source file
+
+    - Should not create multiple instruction blocks
+      - The result of a compilation should be a single instruction block
+      - Multiple functions can be defined inside a single instruction block
+      - `putfunction` type has an offset into the current InstructionBlock
+      - `Function` runtime type holds the absolute address of its body
+      - `Function` has a pointer to the instructionblock its body lives in
+        - GC needs this information so it doesn't deallocate the IB too early
     - Tries to optimize the code
       - Optimized code isn't a goal but simple peep-hole optimisations can still be done
   - `Assembler`
@@ -79,6 +86,12 @@
   - PutFunction
   - PutCFunction (?)
 
+# GC Optimizations
+- GC should try to reorder the singly-linked list of free cells so that cells which
+  are located beneath each other inside memory should also be linked directly
+  - This allows for optimized arrays as we would not need a vector anymore,
+    just two pointers. Push and pop might also benefit from this.
+
 # AST Implementation
 - I want to avoid the use of dynamic_cast as much as possible
   - This is not a performance concern, but ease-of-use
@@ -86,7 +99,7 @@
 - typeid can be used.
   - This works, constants have been defined inside ast.h
 - Function overloading based on argument type doesn't work
-  - Needs a dispatch function which performs a typecheck
+  - Needs a dispatch function which performs a typecheck and redirects to correct method
     - Maybe C++ offers a way this can be implemented natively
 
 # Make sure the JIT compiler doesn't need to allocate anything via the VM
@@ -195,8 +208,6 @@
       the exception was thrown.
 
 # Define deconstructors for some objects
-- Should normal destructors be used?
-  - We are already allocating and "constructor" in a funny way, so why use destructors here?
 - If we manage all resources in pre-defined types, we won't need a "finalize" function
   - CFunctions might allocate stuff and the deallocation logic might be written inside Charly
   - Maybe provide enough data structures inside the vm, so that deallocation logic inside
