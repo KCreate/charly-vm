@@ -92,8 +92,11 @@
     - Throws if more than 5 errors were generated
   - Calculates how many local variable slots a function frame will need
 
-# RemoveConstant instruction
-- Needed to implemented proper lifetime of const local variables inside child blocks
+# Remove constants from runtime
+- Checking wether code writes to a constant can be done at compile-time, rather than at
+  runtime.
+- Remove MakeConstant instruction
+- Remove FrameEnvironmentEntry datastructure
 
 # Make sure the JIT compiler doesn't need to allocate anything via the VM
 - How are instructionblocks allocated?
