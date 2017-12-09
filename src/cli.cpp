@@ -42,30 +42,30 @@ int CLI::run() {
   std::cout << std::setprecision(4);
 
   if (this->flags.show_help) {
-    std::cout << kHelpMessage << std::endl;
+    std::cout << kHelpMessage << '\n';
     return 0;
   }
 
   if (this->flags.show_license) {
-    std::cout << kLicense << std::endl;
+    std::cout << kLicense << '\n';
     return 0;
   }
 
   if (this->flags.show_version) {
-    std::cout << kVersion << std::endl;
+    std::cout << kVersion << '\n';
     return 0;
   }
 
   // Check if a filename was given
   if (this->flags.arguments.size() == 0) {
-    std::cout << "No filename given!" << std::endl;
+    std::cout << "No filename given!" << '\n';
     return 1;
   }
 
   // Read the userfile
   std::ifstream inputfile(this->flags.arguments[0]);
   if (!inputfile.is_open()) {
-    std::cout << "Could not open file" << std::endl;
+    std::cout << "Could not open file" << '\n';
     return 1;
   }
   std::string source_string((std::istreambuf_iterator<char>(inputfile)), std::istreambuf_iterator<char>());

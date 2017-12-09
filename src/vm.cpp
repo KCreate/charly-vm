@@ -79,7 +79,7 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address)
   if (this->context.flags.trace_frames) {
     std::cout << "Entering frame: ";
     this->pretty_print(std::cout, reinterpret_cast<VALUE>(cell));
-    std::cout << std::endl;
+    std::cout << '\n';
   }
 
   return reinterpret_cast<Frame*>(cell);
@@ -120,7 +120,7 @@ CatchTable* VM::create_catchtable(ThrowType type, uint8_t* address) {
   if (this->context.flags.trace_catchtables) {
     std::cout << "Entering catchtable: ";
     this->pretty_print(std::cout, reinterpret_cast<VALUE>(cell));
-    std::cout << std::endl;
+    std::cout << '\n';
   }
 
   return reinterpret_cast<CatchTable*>(cell);
@@ -163,7 +163,7 @@ void VM::restore_catchtable(CatchTable* table) {
     // Show the table we've restored
     std::cout << "Restored CatchTable: ";
     this->pretty_print(std::cout, table);
-    std::cout << std::endl;
+    std::cout << '\n';
   }
 
   // Unwind the stack to be the size it was when this catchtable
@@ -653,7 +653,7 @@ void VM::call(uint32_t argc, bool with_target) {
     }
 
     default: {
-      std::cout << "cant call a " << kValueTypeString[this->real_type(function)] << std::endl;
+      std::cout << "cant call a " << kValueTypeString[this->real_type(function)] << '\n';
 
       // TODO: Handle as runtime error
       this->panic(kStatusUnspecifiedError);
@@ -733,7 +733,7 @@ void VM::op_return() {
   if (this->context.flags.trace_frames) {
     std::cout << "Left frame: ";
     this->pretty_print(std::cout, reinterpret_cast<VALUE>(frame));
-    std::cout << std::endl;
+    std::cout << '\n';
   }
 }
 
@@ -776,7 +776,7 @@ void VM::op_popcatchtable() {
       // Show the table we've restored
       std::cout << "Restored CatchTable: ";
       this->pretty_print(std::cout, reinterpret_cast<VALUE>(table));
-      std::cout << std::endl;
+      std::cout << '\n';
     }
   }
 }
@@ -807,7 +807,7 @@ void VM::stacktrace(std::ostream& io) {
   Frame* frame = this->frames;
 
   int i = 0;
-  io << "IP: " << static_cast<void*>(this->ip) << std::endl;
+  io << "IP: " << static_cast<void*>(this->ip) << '\n';
   while (frame) {
     io << i++ << "# ";
     io << "<Frame:" << frame << " ";
@@ -816,7 +816,7 @@ void VM::stacktrace(std::ostream& io) {
     io << " ";
     io << "return_address=" << static_cast<void*>(frame->return_address) << std::dec;
     io << ">";
-    io << std::endl;
+    io << '\n';
     frame = frame->parent;
   }
 }
@@ -828,7 +828,7 @@ void VM::catchstacktrace(std::ostream& io) {
   while (table) {
     io << i++ << "# ";
     this->pretty_print(io, table);
-    io << std::endl;
+    io << '\n';
     table = table->parent;
   }
 }
@@ -836,7 +836,7 @@ void VM::catchstacktrace(std::ostream& io) {
 void VM::stackdump(std::ostream& io) {
   for (const VALUE& stackitem : this->stack) {
     this->pretty_print(io, stackitem);
-    io << std::endl;
+    io << '\n';
   }
 }
 
@@ -1221,8 +1221,8 @@ void VM::init_frames() {
 }
 
 void VM::panic(STATUS reason) {
-  std::cout << "Panic: " << kStatusHumanReadable[reason] << std::endl;
-  std::cout << "Stacktrace:" << std::endl;
+  std::cout << "Panic: " << kStatusHumanReadable[reason] << '\n';
+  std::cout << "Stacktrace:" << '\n';
   this->stacktrace(std::cout);
 
   exit(1);
@@ -1253,12 +1253,12 @@ void VM::run() {
     // Check if there is enough space for instruction arguments
     uint32_t instruction_length = kInstructionLengths[opcode];
     if (this->ip + instruction_length >= (block_data + block_write_offset + sizeof(Opcode))) {
-      std::cout << "ip                    = " << reinterpret_cast<void*>(this->ip) << std::endl;
-      std::cout << "instruction length    = " << instruction_length << std::endl;
-      std::cout << "block_data            = " << reinterpret_cast<void*>(block_data) << std::endl;
-      std::cout << "block_write_offset    = " << block_write_offset << std::endl;
-      std::cout << "sizeof(Opcode)        = " << sizeof(Opcode) << std::endl;
-      std::cout << "kOpcodeMnemonics[opcode] = " << kOpcodeMnemonics[opcode] << std::endl;
+      std::cout << "ip                    = " << reinterpret_cast<void*>(this->ip) << '\n';
+      std::cout << "instruction length    = " << instruction_length << '\n';
+      std::cout << "block_data            = " << reinterpret_cast<void*>(block_data) << '\n';
+      std::cout << "block_write_offset    = " << block_write_offset << '\n';
+      std::cout << "sizeof(Opcode)        = " << sizeof(Opcode) << '\n';
+      std::cout << "kOpcodeMnemonics[opcode] = " << kOpcodeMnemonics[opcode] << '\n';
       this->panic(kStatusNotEnoughSpaceForInstructionArguments);
     }
 
@@ -1456,7 +1456,7 @@ void VM::run() {
       }
 
       default: {
-        std::cout << "Opcode: " << std::hex << opcode << std::dec << std::endl;
+        std::cout << "Opcode: " << std::hex << opcode << std::dec << '\n';
         this->panic(kStatusUnknownOpcode);
       }
     }
@@ -1470,19 +1470,19 @@ void VM::run() {
     if (this->context.flags.trace_opcodes) {
       std::chrono::duration<double> exec_duration = std::chrono::high_resolution_clock::now() - exec_start;
       std::cout << reinterpret_cast<void*>(old_ip) << ": " << kOpcodeMnemonics[opcode] << " ";
-      std::cout << " ( " << exec_duration.count() * 1000000000 << " nanoseconds)" << std::endl;
+      std::cout << " ( " << exec_duration.count() * 1000000000 << " nanoseconds)" << '\n';
     }
   }
 
   // Print some debug info about the VM on exit if the corresponding flag was set
   if (this->context.flags.exit_statistics) {
-    std::cout << "Stacktrace:" << std::endl;
+    std::cout << "Stacktrace:" << '\n';
     this->stacktrace(std::cout);
 
-    std::cout << "CatchStacktrace:" << std::endl;
+    std::cout << "CatchStacktrace:" << '\n';
     this->catchstacktrace(std::cout);
 
-    std::cout << "Stackdump:" << std::endl;
+    std::cout << "Stackdump:" << '\n';
     this->stackdump(std::cout);
   }
 

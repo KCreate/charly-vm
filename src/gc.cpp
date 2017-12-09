@@ -159,7 +159,7 @@ void MemoryManager::mark(VALUE value) {
 void MemoryManager::collect() {
   auto gc_start_time = std::chrono::high_resolution_clock::now();
   if (this->context.flags.trace_gc) {
-    std::cout << "#-- GC: Pause --#" << std::endl;
+    std::cout << "#-- GC: Pause --#" << '\n';
   }
 
   // Mark Phase
@@ -190,8 +190,8 @@ void MemoryManager::collect() {
 
   if (this->context.flags.trace_gc) {
     std::chrono::duration<double> gc_collect_duration = std::chrono::high_resolution_clock::now() - gc_start_time;
-    std::cout << "#-- GC: Freed " << (freed_cells_count * sizeof(MemoryCell)) << " bytes --#" << std::endl;
-    std::cout << "#-- GC: Finished in " << gc_collect_duration.count() * 1000000000 << " nanoseconds --#" << std::endl;
+    std::cout << "#-- GC: Freed " << (freed_cells_count * sizeof(MemoryCell)) << " bytes --#" << '\n';
+    std::cout << "#-- GC: Finished in " << gc_collect_duration.count() * 1000000000 << " nanoseconds --#" << '\n';
   }
 }
 
@@ -213,7 +213,7 @@ MemoryCell* MemoryManager::allocate() {
         this->grow_heap();
 
         if (!this->free_cell) {
-          std::cout << "Failed to expand heap, the next allocation will cause a segfault." << std::endl;
+          std::cout << "Failed to expand heap, the next allocation will cause a segfault." << '\n';
         }
       }
     }
