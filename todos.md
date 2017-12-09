@@ -91,6 +91,10 @@
   - Buffers 5 errors
     - Throws if more than 5 errors were generated
   - Calculates how many local variable slots a function frame will need
+- Break and Continue don't need to be implemented via a catchtable
+  - Offsets can be calculated at compile-time for each individual instruction site
+  - RegisterCatchTable doesn't need a throwtype anymore
+  - find_catchtable doesn't need to search as much as it does right now
 
 # Remove constants from runtime
 - Checking wether code writes to a constant can be done at compile-time, rather than at

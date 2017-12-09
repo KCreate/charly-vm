@@ -29,13 +29,28 @@
 #pragma once
 
 namespace Charly::Compiler {
-static const std::string kUnknownLocation = "<unknown>";
-
 struct Location {
-  uint32_t pos;
-  uint32_t row;
-  uint32_t column;
-  uint32_t length;
-  std::string filename = kUnknownLocation;
+  uint32_t pos = 0;
+  uint32_t row = 0;
+  uint32_t column = 0;
+  uint32_t length = 0;
+
+  Location() {
+  }
+  Location(uint32_t p, uint32_t r, uint32_t c, uint32_t l) : pos(p), row(r), column(c), length(l) {
+  }
+  Location(const Location& o) : pos(o.pos), row(o.row), column(o.column), length(o.length) {
+  }
+  Location(Location&& o) : pos(o.pos), row(o.row), column(o.column), length(o.length) {
+  }
+
+  Location& operator=(const Location& o) {
+    this->pos = o.pos;
+    this->row = o.row;
+    this->column = o.column;
+    this->length = o.length;
+
+    return *this;
+  }
 };
 }  // namespace Charly::Compiler

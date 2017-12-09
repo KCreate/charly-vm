@@ -24,6 +24,7 @@
  * SOFTWARE.
  */
 
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 
@@ -31,6 +32,7 @@
 #include "charly.h"
 #include "cli.h"
 #include "context.h"
+#include "lexer.h"
 #include "sourcefile.h"
 
 namespace Charly {
@@ -71,6 +73,12 @@ int CLI::run() {
   std::string source_string((std::istreambuf_iterator<char>(inputfile)), std::istreambuf_iterator<char>());
   inputfile.close();
   SourceFile userfile(this->flags.arguments[0], source_string);
+  Compiler::Lexer lexer(userfile);
+  lexer.tokenize();
+
+  for (const auto& token : lexer.tokens) {
+    std::cout << kTokenTypeStrings[token.type] << '\n';
+  }
 
   Context context(this->flags);
   MemoryManager gc(context);

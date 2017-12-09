@@ -25,8 +25,6 @@
  */
 
 #include <cstdio>
-#include <fstream>
-#include <sstream>
 #include <string>
 #include "buffer.h"
 
@@ -34,78 +32,63 @@
 
 namespace Charly {
 
-static const uint32_t kEOFChar = EOF;
 class SourceFile {
 public:
-  SourceFile(std::string& filename, std::string& source) {
+  std::string filename = "<unknown>";
+  size_t frame_pos = 0;
+  size_t pos = 0;
+  size_t row = 1;
+  size_t column = 1;
+  uint32_t current_char = L'\0';
+  std::string frame;
+
+  SourceFile(const std::string& filename, const std::string& source) {
     this->filename = filename;
     this->buffer.read(source);
     this->read_char();
   }
 
-  SourceFile(std::string& source) {
-    this->filename = filename;
+  SourceFile(const std::string& source) {
+    this->filename = "";
     this->buffer.read(source);
     this->read_char();
-  }
-
-  // Sets the filename of this sourcefile
-  inline SourceFile& set_filename(std::string& newname) {
-    this->filename = newname;
-    return *this;
-  }
-
-  // Returns the filename of this sourcefile
-  inline std::string get_filename() {
-    return this->filename;
   }
 
   // Returns the contents of the current frame as a string
   inline std::string get_current_frame() {
-    return this->frame.str();
+    return std::string(this->frame, 0, this->frame.size() - 2);
   }
 
   // Reset the current frame
   inline SourceFile& reset_frame() {
-    this->frame.str("");  // Reset the buffer
-    this->frame.clear();  // Clear any error flags as we don't care about them
+    this->frame.clear();
     return *this;
-  }
-
-  // Returns the current position of the reader in the source
-  inline size_t get_pos() {
-    return this->pos;
-  }
-
-  // Returns the position the frame begins at
-  inline size_t get_frame_pos() {
-    return this->frame_pos;
-  }
-
-  // Returns the last read char
-  inline uint32_t get_current_char() {
-    return this->current_char;
   }
 
   // Read char, append it to the current frame and advance one position
   uint32_t read_char() {
     uint32_t cp = this->buffer.next_utf8();
 
-    if (cp == static_cast<uint32_t>(EOF)) {
+    this->pos += 1;
+    this->current_char = cp;
+
+    if (cp == L'\0') {
       return cp;
     }
 
-    std::string utf8bytes;
-    utf8::append(cp, std::back_inserter(utf8bytes));
-    this->frame << utf8bytes;
+    utf8::append(cp, std::back_inserter(this->frame));
 
-    this->pos += 1;
-    this->current_char = cp;
+    if (cp == '\n') {
+      this->row++;
+      this->column = 0;
+    } else {
+      this->column++;
+    }
 
     return cp;
   }
 
-  // Read a char without appendin to the frame or advancing the position
+  // Read a char without appending to the frame or advancing the position
   uint32_t peek_char() {
     return this->buffer.peek_next_utf8();
   }
@@ -117,11 +100,6 @@ public:
   }
 
 private:
-  std::string filename = "unnamed-source";
-  size_t frame_pos = 0;
-  size_t pos = 0;
-  std::ostringstream frame;
   Buffer buffer;
-  uint32_t current_char = kEOFChar;
 };
 }  // namespace Charly

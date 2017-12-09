@@ -26,6 +26,7 @@
 
 #include "buffer.h"
 #include <string>
+#include <string_view>
 
 namespace Charly {
 
@@ -41,7 +42,7 @@ Buffer& Buffer::read(char* data, size_t length) {
 }
 
 // Append a string
-Buffer& Buffer::read(std::string& data) {
+Buffer& Buffer::read(const std::string& data) {
   this->check_enough_size(data.size());
 
   memcpy(this->write_pointer, data.c_str(), data.size());
@@ -68,18 +69,15 @@ uint32_t Buffer::append_utf8(uint32_t cp) {
 
   char* initial_write_pointer = this->write_pointer;
   utf8::append(cp, this->write_pointer);
-  uint32_t inserted_cp = utf8::prior(this->write_pointer, initial_write_pointer);
-  utf8::advance(this->write_pointer, 1, this->buffer + this->used_bytesize);
-
   this->used_bytesize += this->write_pointer - initial_write_pointer;
 
-  return inserted_cp;
+  return cp;
 }
 
 // Return the next utf8 codepoint
 uint32_t Buffer::next_utf8() {
   if (this->read_pointer >= this->write_pointer || this->read_pointer == nullptr) {
-    return EOF;
+    return L'\0';
   }
 
   return utf8::next(this->read_pointer, this->buffer + this->used_bytesize);
@@ -88,7 +86,7 @@ uint32_t Buffer::next_utf8() {
 // Peek the next utf8 codepoint
 uint32_t Buffer::peek_next_utf8() {
   if (this->read_pointer >= this->write_pointer || this->read_pointer == nullptr) {
-    return EOF;
+    return L'\0';
   }
 
   return utf8::peek_next(this->read_pointer, this->buffer + this->used_bytesize);
@@ -97,7 +95,7 @@ uint32_t Buffer::peek_next_utf8() {
 // Return the previous utf8 codepoint
 uint32_t Buffer::prior_utf8() {
   if (this->read_pointer == nullptr || this->read_pointer < this->buffer) {
-    return EOF;
+    return L'\0';
   }
 
   return utf8::prior(this->read_pointer, this->read_pointer);
@@ -109,11 +107,11 @@ uint32_t Buffer::advance_utf8(uint32_t amount) {
   // buffer
   uint32_t read_pointer_offset = this->read_pointer - this->buffer;
   if (read_pointer_offset >= this->used_bytesize) {
-    return EOF;
+    return L'\0';
   }
 
   if (this->read_pointer == nullptr) {
-    return EOF;
+    return L'\0';
   }
 
   utf8::advance(this->read_pointer, amount, this->buffer + this->used_bytesize);
@@ -144,6 +142,15 @@ size_t Buffer::utf8_byteoffset(uint32_t start) {
   }
 
   return start_iterator - this->buffer;
+}
+
+// Write a codepoint to a stream
+template <class T>
+void Buffer::write_cp_to_stream(uint32_t cp, T& stream) {
+  char buffer[] = {0, 0, 0, 0};
+  char* buffer_start = buffer;
+  utf8::append(cp, buffer_start);
+  stream << std::string_view(buffer, buffer_start - buffer);
 }
 
 // Check if there is enough size and if not allocate more memory

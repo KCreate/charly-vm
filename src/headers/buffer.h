@@ -25,7 +25,7 @@
  */
 
 #include <utf8/utf8.h>
-#include <cstring>
+#include <string>
 
 #pragma once
 
@@ -102,7 +102,7 @@ public:
 
   // Load raw data into the buffer
   Buffer& read(char* data, size_t length);
-  Buffer& read(std::string& data);
+  Buffer& read(const std::string& data);
   Buffer& read(const Buffer& data);
 
   // UTF8 methods
@@ -118,6 +118,10 @@ public:
 
   // UTF8 Range methods
   size_t utf8_byteoffset(uint32_t start);
+
+  // Helper methods
+  template <class T>
+  static void write_cp_to_stream(uint32_t cp, T& stream);
 
 private:
   // Memory handling

@@ -31,6 +31,7 @@
 #pragma once
 
 namespace Charly::Compiler {
+
 enum TokenType : uint8_t {
 
   // Literals
@@ -40,8 +41,35 @@ enum TokenType : uint8_t {
   String,
   Boolean,
   Null,
-  NAN,
+  Nan,
+
+  // Keywords
   Keyword,
+  Break,
+  Case,
+  Catch,
+  Class,
+  Const,
+  Continue,
+  Default,
+  Else,
+  Extends,
+  Func,
+  Guard,
+  If,
+  Let,
+  Loop,
+  Primitive,
+  Property,
+  Return,
+  Static,
+  Switch,
+  Throw,
+  Try,
+  Typeof,
+  Unless,
+  Until,
+  While,
 
   // Operators
   Plus,
@@ -104,10 +132,104 @@ enum TokenType : uint8_t {
   Unknown
 };
 
+// String representation of token types
+// clang-format off
+static const std::string kTokenTypeStrings[] = {
+  "Integer",
+  "Float",
+  "Identifier",
+  "String",
+  "Boolean",
+  "Null",
+  "Nan",
+  "Keyword",
+  "Break",
+  "Case",
+  "Catch",
+  "Class",
+  "Const",
+  "Continue",
+  "Default",
+  "Else",
+  "Extends",
+  "Func",
+  "Guard",
+  "If",
+  "Let",
+  "Loop",
+  "Primitive",
+  "Property",
+  "Return",
+  "Static",
+  "Switch",
+  "Throw",
+  "Try",
+  "Typeof",
+  "Unless",
+  "Until",
+  "While",
+  "Plus",
+  "Minus",
+  "Mul",
+  "Div",
+  "Mod",
+  "Pow",
+  "Assignment",
+  "BitOR",
+  "BitXOR",
+  "BitNOT",
+  "BitAND",
+  "LeftShift",
+  "RightShift",
+  "PlusAssignment",
+  "MinusAssignment",
+  "MulAssignment",
+  "DivAssignment",
+  "ModAssignment",
+  "PowAssignment",
+  "Equal",
+  "Not",
+  "Less",
+  "Greater",
+  "LessEqual",
+  "GreaterEqual",
+  "AND",
+  "OR",
+  "LeftParen",
+  "RightParen",
+  "LeftCurly",
+  "RightCurly",
+  "LeftBracket",
+  "RightBracket",
+  "Semicolon",
+  "Comma",
+  "Point",
+  "Comment",
+  "AtSign",
+  "RightArrow",
+  "LeftArrow",
+  "QuestionMark",
+  "Colon",
+  "Whitespace",
+  "Newline",
+  "Eof",
+  "Unknown"
+};
+// clang-format on
+
 struct Token {
   TokenType type;
   std::string value;
   Location location;
+
+  Token() {
+  }
+  Token(TokenType t) : type(t) {
+  }
+  Token(TokenType t, const std::string& v) : type(t), value(v) {
+  }
+  Token(TokenType t, const std::string& v, const Location& l) : type(t), value(v), location(l) {
+  }
 
   inline bool is_and_operator() {
     return (this->type == TokenType::PlusAssignment || this->type == TokenType::MinusAssignment ||
@@ -115,6 +237,14 @@ struct Token {
             this->type == TokenType::ModAssignment || this->type == TokenType::PowAssignment);
   }
 
-  // TODO: Add location information
+  inline bool is_keyword() {
+    return (Break == this->type || Case == this->type || Catch == this->type || Class == this->type ||
+            Const == this->type || Continue == this->type || Default == this->type || Else == this->type ||
+            Extends == this->type || Func == this->type || Guard == this->type || If == this->type ||
+            Let == this->type || Loop == this->type || Primitive == this->type || Property == this->type ||
+            Return == this->type || Static == this->type || Switch == this->type || Throw == this->type ||
+            Try == this->type || Typeof == this->type || Unless == this->type || Until == this->type ||
+            While == this->type);
+  }
 };
 }  // namespace Charly::Compiler
