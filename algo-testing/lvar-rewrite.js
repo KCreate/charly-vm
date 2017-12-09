@@ -56,11 +56,12 @@ function(export) {
   }
 
   function(a, b) {
-    let foo;
+    const foo;
     arguments;  // { 0, 0 }
     a;          // { 0, 1 }
     b;          // { 0, 2 }
     foo;        // { 0, 3 }
+    foo = bar;  // { 0, 3 } = { 1, 3 }
     bar;        // { 1, 3 }
   }
 
@@ -140,6 +141,14 @@ const parse_tree = {
             {
               type: "identifier",
               value: "foo"
+            },
+            {
+              type: "assignment",
+              target: "foo",
+              expression: {
+                type: "identifier",
+                value: "bar"
+              }
             },
             {
               type: "identifier",
@@ -238,7 +247,7 @@ class LVarRewritter {
           return;
         }
 
-        node.compiler_info = this.declare(node.name);
+        node.compiler_info = this.declare(node.name, node.is_constant);
 
         break;
       }
@@ -254,14 +263,33 @@ class LVarRewritter {
 
         break;
       }
+
+      case "assignment": {
+        const target = this.resolve_symbol(node.target);
+        if (!target) {
+          this.push_error([node, "Undefined symbol: " + node.target]);
+          return;
+        }
+
+        if (target.is_constant) {
+          this.push_error([node, "Variable is constant: " + node.target])
+          return;
+        }
+
+        node.compiler_info = target;
+
+        this.visit(node.expression);
+        break;
+      }
     }
   }
 
-  declare(symbol) {
+  declare(symbol, is_constant = false) {
     const compiler_info = {
       depth: this.depth,
       blockid: this.blockid,
-      frame_index: this.lvar_scope.next_frame_index++
+      frame_index: this.lvar_scope.next_frame_index++,
+      is_constant: is_constant
     };
     if (!this.lvar_scope.table[symbol]) this.lvar_scope.table[symbol] = [];
     this.lvar_scope.table[symbol].push(compiler_info);
@@ -301,7 +329,8 @@ class LVarRewritter {
         // Return the matching record if one was found
         if (matching_record) return {
           level_distance: this.depth - matching_record.depth,
-          index: matching_record.frame_index
+          index: matching_record.frame_index,
+          is_constant: matching_record.is_constant
         }
       }
 
