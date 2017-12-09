@@ -75,6 +75,8 @@ public:
   }
 };
 
+// A list of AST nodes with no preconceived notion of what context
+// they are used in
 struct NodeList : public AbstractNode {
   // TODO: Figure out a good name for this
   // Other alternatives are: nodes, items
@@ -89,6 +91,24 @@ struct NodeList : public AbstractNode {
   }
 };
 
+// A list of AST nodes meant to represent a scoped block
+//
+// {
+//   <statements>
+// }
+struct Block : public AbstractNode {
+  std::vector<AbstractNode*> statements;
+
+  Block() {}
+  Block(std::initializer_list<AbstractNode*> list) : statements(list) {}
+
+  inline ~Block() {
+    for (auto& node : this->statements) {
+      delete node;
+    }
+  }
+};
+
 // if <condition> {
 //   <then_block>
 // }
@@ -100,10 +120,10 @@ struct NodeList : public AbstractNode {
 // }
 struct If : public AbstractNode {
   AbstractNode* condition;
-  NodeList* then_block;
-  NodeList* else_block;
+  Block* then_block;
+  Block* else_block;
 
-  If(AbstractNode* c, NodeList* t, NodeList* e) : condition(c), then_block(t), else_block(e) {}
+  If(AbstractNode* c, Block* t, Block* e) : condition(c), then_block(t), else_block(e) {}
 
   inline ~If() {
     delete condition;
@@ -123,10 +143,10 @@ struct If : public AbstractNode {
 // }
 struct Unless : public AbstractNode {
   AbstractNode* condition;
-  NodeList* then_block;
-  NodeList* else_block;
+  Block* then_block;
+  Block* else_block;
 
-  Unless(AbstractNode* c, NodeList* t, NodeList* e) : condition(c), then_block(t), else_block(e) {}
+  Unless(AbstractNode* c, Block* t, Block* e) : condition(c), then_block(t), else_block(e) {}
 
   inline ~Unless() {
     delete condition;
@@ -140,9 +160,9 @@ struct Unless : public AbstractNode {
 // }
 struct Guard : public AbstractNode {
   AbstractNode* condition;
-  NodeList* block;
+  Block* block;
 
-  Guard(AbstractNode* c, NodeList* b) : condition(c), block(b) {}
+  Guard(AbstractNode* c, Block* b) : condition(c), block(b) {}
 
   inline ~Guard() {
     delete condition;
@@ -155,9 +175,9 @@ struct Guard : public AbstractNode {
 // }
 struct While : public AbstractNode {
   AbstractNode* condition;
-  NodeList* block;
+  Block* block;
 
-  While(AbstractNode* c, NodeList* b) : condition(c), block(b) {}
+  While(AbstractNode* c, Block* b) : condition(c), block(b) {}
 
   inline ~While() {
     delete condition;
@@ -170,9 +190,9 @@ struct While : public AbstractNode {
 // }
 struct Until : public AbstractNode {
   AbstractNode* condition;
-  NodeList* block;
+  Block* block;
 
-  Until(AbstractNode* c, NodeList* b) : condition(c), block(b) {}
+  Until(AbstractNode* c, Block* b) : condition(c), block(b) {}
 
   inline ~Until() {
     delete condition;
@@ -184,9 +204,9 @@ struct Until : public AbstractNode {
 //   <block>
 // }
 struct Loop : public AbstractNode {
-  NodeList* block;
+  Block* block;
 
-  Loop(NodeList* b) : block(b) {}
+  Loop(Block* b) : block(b) {}
 
   inline ~Loop() {
     delete block;
@@ -224,9 +244,9 @@ struct Binary : public AbstractNode {
 // }
 struct SwitchNode : public AbstractNode {
   NodeList* conditions;
-  NodeList* block;
+  Block* block;
 
-  SwitchNode(NodeList* c, NodeList* b) : conditions(c), block(b) {}
+  SwitchNode(NodeList* c, Block* b) : conditions(c), block(b) {}
 
   inline ~SwitchNode() {
     delete conditions;
@@ -241,11 +261,11 @@ struct SwitchNode : public AbstractNode {
 struct Switch : public AbstractNode {
   AbstractNode* condition;
   std::vector<SwitchNode*> cases;
-  NodeList* default_block;
+  Block* default_block;
 
-  Switch(AbstractNode* co, const std::vector<SwitchNode*>& vec, NodeList* d)
+  Switch(AbstractNode* co, const std::vector<SwitchNode*>& vec, Block* d)
     : condition(co), cases(vec), default_block(d) {}
-  Switch(AbstractNode* co, std::initializer_list<SwitchNode*> c, NodeList* d)
+  Switch(AbstractNode* co, std::initializer_list<SwitchNode*> c, Block* d)
     : condition(co), cases(c), default_block(d) {}
 
   inline ~Switch() {
@@ -319,23 +339,30 @@ struct Call : public AbstractNode {
   }
 };
 
-// <identifier>
+// <name>
 struct Identifier : public AbstractNode {
   std::string name;
 
   Identifier(const std::string& str) : name(str) {}
 };
 
+// <name>
+struct Symbol : public AbstractNode {
+  std::string name;
+
+  Symbol(const std::string& str) : name(str) {}
+};
+
 // <target>.<identifier>
 struct Member : public AbstractNode {
   AbstractNode* target;
-  Identifier* identifier;
+  Symbol* symbol;
 
-  Member(AbstractNode* t, Identifier* i) : target(t), identifier(i) {}
+  Member(AbstractNode* t, Symbol* s) : target(t), symbol(s) {}
 
   inline ~Member() {
     delete target;
-    delete identifier;
+    delete symbol;
   }
 };
 
@@ -436,12 +463,12 @@ struct Hash : public AbstractNode {
 //
 // -><body>
 struct Function : public AbstractNode {
-  Identifier* name;
+  Symbol* name;
   NodeList* parameters;
-  NodeList* body;
+  Block* body;
   bool anonymous;
 
-  Function(Identifier* n, NodeList* p, NodeList* b, bool a) : name(n), parameters(p), body(b), anonymous(a) {}
+  Function(Symbol* n, NodeList* p, Block* b, bool a) : name(n), parameters(p), body(b), anonymous(a) {}
 
   inline ~Function() {
     delete name;
@@ -452,12 +479,12 @@ struct Function : public AbstractNode {
 
 // property <identifier>;
 struct PropertyDeclaration : public AbstractNode {
-  Identifier* identifier;
+  Symbol* symbol;
 
-  PropertyDeclaration(Identifier* i) : identifier(i) {}
+  PropertyDeclaration(Symbol* s) : symbol(s) {}
 
   inline ~PropertyDeclaration() {
-    delete identifier;
+    delete symbol;
   }
 };
 
@@ -484,11 +511,11 @@ struct StaticDeclaration : public AbstractNode {
 //   <body>
 // }
 struct Class : public AbstractNode {
-  Identifier* name;
+  Symbol* name;
   NodeList* body;
   NodeList* parents;
 
-  Class(Identifier* n, NodeList* b, NodeList* p) : name(n), body(b), parents(p) {}
+  Class(Symbol* n, NodeList* b, NodeList* p) : name(n), body(b), parents(p) {}
 
   inline ~Class() {
     delete name;
@@ -503,11 +530,11 @@ struct Class : public AbstractNode {
 //
 // const <name> = <expression>
 struct LocalInitialisation : public AbstractNode {
-  Identifier* name;
+  Symbol* name;
   AbstractNode* expression;
   bool constant;
 
-  LocalInitialisation(Identifier* n, AbstractNode* e, bool c) : name(n), expression(e), constant(c) {}
+  LocalInitialisation(Symbol* n, AbstractNode* e, bool c) : name(n), expression(e), constant(c) {}
 
   inline ~LocalInitialisation() {
     delete name;
@@ -551,11 +578,11 @@ struct Continue : public AbstractNode {};
 //   <handler_block>
 // }
 struct TryCatch : public AbstractNode {
-  NodeList* block;
-  Identifier* exception_name;
-  NodeList* handler_block;
+  Block* block;
+  Symbol* exception_name;
+  Block* handler_block;
 
-  TryCatch(NodeList* b, Identifier* e, NodeList* h) : block(b), exception_name(e), handler_block(h) {}
+  TryCatch(Block* b, Symbol* e, Block* h) : block(b), exception_name(e), handler_block(h) {}
 
   inline ~TryCatch() {
     delete block;
@@ -566,6 +593,7 @@ struct TryCatch : public AbstractNode {
 
 // Precomputed typeid hashes for all AST nodes
 static const size_t kTypeNodeList = typeid(NodeList).hash_code();
+static const size_t kTypeBlock = typeid(Block).hash_code();
 static const size_t kTypeIf = typeid(If).hash_code();
 static const size_t kTypeUnless = typeid(Unless).hash_code();
 static const size_t kTypeGuard = typeid(Guard).hash_code();
@@ -582,6 +610,7 @@ static const size_t kTypeTypeof = typeid(Typeof).hash_code();
 static const size_t kTypeAssignment = typeid(Assignment).hash_code();
 static const size_t kTypeCall = typeid(Call).hash_code();
 static const size_t kTypeIdentifier = typeid(Identifier).hash_code();
+static const size_t kTypeSymbol = typeid(Symbol).hash_code();
 static const size_t kTypeMember = typeid(Member).hash_code();
 static const size_t kTypeIndex = typeid(Index).hash_code();
 static const size_t kTypeNull = typeid(Null).hash_code();

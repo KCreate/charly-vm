@@ -72,17 +72,13 @@ int CLI::run() {
   inputfile.close();
   SourceFile userfile(this->flags.arguments[0], source_string);
 
-  AST::AbstractNode* node = new AST::If(
-    new AST::Integer(25),
-    new AST::NodeList({
-      new AST::Integer(1)
-    }),
-    new AST::NodeList({
-      new AST::Integer(0)
-    })
-  );
+  AST::Block* b1 = new AST::Block();
+  AST::Block* b2 = new AST::Block();
+  AST::Block* b3 = new AST::Block();
 
-  std::cout << node << std::endl;
+  std::cout << b1 << std::endl;
+  std::cout << b2 << std::endl;
+  std::cout << b3 << std::endl;
 
   Context context(this->flags);
   MemoryManager gc(context);
