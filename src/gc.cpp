@@ -134,8 +134,8 @@ void MemoryManager::mark(VALUE value) {
       this->mark(reinterpret_cast<VALUE>(frame->last_active_catchtable));
       this->mark(reinterpret_cast<VALUE>(frame->function));
       this->mark(frame->self);
-      for (auto& lvar : *frame->environment)
-        this->mark(lvar.value);
+      for (auto& lvar : frame->environment)
+        this->mark(lvar);
       break;
     }
 
@@ -254,11 +254,6 @@ void MemoryManager::free(MemoryCell* cell) {
 
     case kTypeCFunction: {
       cell->as.cfunction.clean();
-      break;
-    }
-
-    case kTypeFrame: {
-      cell->as.frame.clean();
       break;
     }
 

@@ -125,7 +125,6 @@ public:
                       uint32_t methodcount,
                       uint32_t staticmethodcount,
                       uint32_t parentclasscount);
-  void write_makeconstant(uint32_t index);
   void write_pop(uint32_t count);
   void write_dup();
   void write_swap();

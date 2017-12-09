@@ -107,7 +107,6 @@ public:
   void op_putcfunction(VALUE symbol, FPOINTER pointer, uint32_t argc);
   void op_putarray(uint32_t count);
   void op_puthash(uint32_t count);
-  void op_makeconstant(uint32_t offset);
   void op_pop(uint32_t count);
   void op_dup();
   void op_swap();

@@ -161,12 +161,6 @@ enum Opcode : uint8_t {
   // - parentclasscount
   PutClass,
 
-  // Make a given offset in the current environment a constant
-  //
-  // args:
-  // - offset
-  MakeConstant,
-
   // Pop count values off the stack
   //
   // args:
@@ -325,7 +319,6 @@ static constexpr uint32_t kInstructionLengths[]{
   /* PutArray */           1 + sizeof(uint32_t),
   /* PutHash */            1 + sizeof(uint32_t),
   /* PutClass */           1 + sizeof(VALUE) + sizeof(uint32_t) * 5,
-  /* MakeConstant */       1 + sizeof(uint32_t),
   /* Pop */                1 + sizeof(uint32_t),
   /* Dup */                1,
   /* Swap */               1,
@@ -384,7 +377,6 @@ static std::string kOpcodeMnemonics[]{
   "putarray",
   "puthash",
   "putclass",
-  "makeconstant",
   "pop",
   "dup",
   "swap",

@@ -213,11 +213,6 @@ void InstructionBlock::write_putclass(VALUE symbol,
   this->write_int(parentclasscount);
 }
 
-void InstructionBlock::write_makeconstant(uint32_t index) {
-  this->write_byte(Opcode::MakeConstant);
-  this->write_int(index);
-}
-
 void InstructionBlock::write_pop(uint32_t count) {
   this->write_byte(Opcode::Pop);
   this->write_int(count);

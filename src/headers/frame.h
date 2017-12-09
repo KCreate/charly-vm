@@ -33,12 +33,6 @@
 #pragma once
 
 namespace Charly {
-// Contains a value together with it's metadata
-struct FrameEnvironmentEntry {
-  bool is_constant;
-  VALUE value;
-};
-
 // Frames introduce new environments
 struct Frame {
   VALUE flags;
@@ -46,12 +40,8 @@ struct Frame {
   Frame* parent_environment_frame;
   CatchTable* last_active_catchtable;
   Function* function;
-  std::vector<FrameEnvironmentEntry>* environment;
+  std::vector<VALUE> environment;
   VALUE self;
   uint8_t* return_address;
-
-  void inline clean() {
-    delete this->environment;
-  }
 };
 }  // namespace Charly

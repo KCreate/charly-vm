@@ -40,7 +40,6 @@ typedef void* FPOINTER;
 
 class VM;
 struct Frame;
-struct FrameEnvironmentEntry;
 struct CatchTable;
 class InstructionBlock;
 

@@ -68,10 +68,9 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address)
   uint32_t lvar_count = 1 + function->argc + function->block->lvarcount;
 
   // Allocate and prefill local variable space
-  cell->as.frame.environment = new std::vector<FrameEnvironmentEntry>;
-  cell->as.frame.environment->reserve(lvar_count);
+  cell->as.frame.environment.reserve(lvar_count);
   while (lvar_count--)
-    cell->as.frame.environment->push_back({false, kNull});
+    cell->as.frame.environment.push_back(kNull);
 
   // Append the frame
   this->frames = reinterpret_cast<Frame*>(cell);
@@ -386,11 +385,11 @@ void VM::op_readlocal(uint32_t index, uint32_t level) {
   }
 
   // Check if the index isn't out-of-bounds
-  if (index >= frame->environment->size()) {
+  if (index >= frame->environment.size()) {
     return this->panic(kStatusReadFailedOutOfBounds);
   }
 
-  this->push_stack((*frame->environment)[index].value);
+  this->push_stack(frame->environment[index]);
 }
 
 void VM::op_readmembersymbol(VALUE symbol) {
@@ -451,13 +450,8 @@ void VM::op_setlocal(uint32_t index, uint32_t level) {
   }
 
   // Check if the index isn't out-of-bounds
-  if (index < frame->environment->size()) {
-    FrameEnvironmentEntry& entry = (*frame->environment)[index];
-    if (entry.is_constant) {
-      this->panic(kStatusFieldIsConstant);
-    } else {
-      entry.value = value;
-    }
+  if (index < frame->environment.size()) {
+    frame->environment[index] = value;
   } else {
     this->panic(kStatusWriteFailedOutOfBounds);
   }
@@ -544,12 +538,6 @@ void VM::op_puthash(uint32_t count) {
   }
 
   this->push_stack(reinterpret_cast<VALUE>(object));
-}
-
-void VM::op_makeconstant(uint32_t offset) {
-  if (offset < this->frames->environment->size()) {
-    (*this->frames->environment)[offset].is_constant = true;
-  }
 }
 
 void VM::op_pop(uint32_t count) {
@@ -694,14 +682,13 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   //
   // We add 1 to the index as that's the index of the arguments array
   for (int i = 0; i < static_cast<int>(function->argc); i++) {
-    (*frame->environment)[i + 1].value = argv[i];
+    frame->environment[i + 1] = argv[i];
     arguments_array->data->push_back(argv[i]);
   }
 
   // Insert the argument value and make it a constant
   // This is so that we can be sure that noone is going to overwrite it afterwards
-  (*frame->environment)[0].value = reinterpret_cast<VALUE>(arguments_array);
-  (*frame->environment)[0].is_constant = true;
+  frame->environment[0] = reinterpret_cast<VALUE>(arguments_array);
 
   this->ip = reinterpret_cast<uint8_t*>(function->body_address);
 }
@@ -1375,12 +1362,6 @@ void VM::run() {
       case Opcode::PutHash: {
         uint32_t size = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
         this->op_puthash(size);
-        break;
-      }
-
-      case Opcode::MakeConstant: {
-        uint32_t offset = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
-        this->op_makeconstant(offset);
         break;
       }
 
