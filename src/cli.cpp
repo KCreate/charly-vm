@@ -72,14 +72,6 @@ int CLI::run() {
   inputfile.close();
   SourceFile userfile(this->flags.arguments[0], source_string);
 
-  AST::Block* b1 = new AST::Block();
-  AST::Block* b2 = new AST::Block();
-  AST::Block* b3 = new AST::Block();
-
-  std::cout << b1 << std::endl;
-  std::cout << b2 << std::endl;
-  std::cout << b3 << std::endl;
-
   Context context(this->flags);
   MemoryManager gc(context);
   VM vm(context);

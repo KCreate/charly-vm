@@ -24,44 +24,20 @@
  * SOFTWARE.
  */
 
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
-#include <functional>
-#include <iostream>
-
 #pragma once
 
-namespace Charly {
-typedef uintptr_t VALUE;
-typedef intptr_t SIGNED_VALUE;
-typedef uint16_t STATUS;
-typedef void* FPOINTER;
+namespace Charly::Compiler {
 
-class VM;
-struct Frame;
-struct CatchTable;
-class InstructionBlock;
+// Contains the amount of environments which need to be dereferenced
+// and the index of a local variable to read
+struct IRVarOffsetInfo {
+  uint32_t level;
+  uint32_t index;
+};
 
-class CLI;
-struct RunFlags;
-struct Context;
-class SourceFile;
-class Buffer;
-class SymbolTable;
+// Contains information about the local variables of a function
+struct IRLVarInfo {
+  uint32_t lvarcount;
+};
 
-enum ThrowType : uint8_t;
-enum Opcode : uint8_t;
-
-struct MemoryCell;
-class MemoryManager;
-class ManagedContext;
-
-struct Basic;
-struct Object;
-struct Array;
-struct String;
-struct Float;
-struct Function;
-struct CFunction;
-}  // namespace Charly
+}

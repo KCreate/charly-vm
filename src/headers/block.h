@@ -32,6 +32,24 @@
 #pragma once
 
 namespace Charly {
+typedef std::function<void(InstructionBlock& block)> IBlockGenFunc;
+
+template <class T>
+class BlockLabel;
+typedef BlockLabel<bool> BoolLabel;
+typedef BlockLabel<uint8_t> UInt8Label;
+typedef BlockLabel<uint16_t> UInt16Label;
+typedef BlockLabel<uint32_t> UInt32Label;
+typedef BlockLabel<uint64_t> UInt64Label;
+typedef BlockLabel<int8_t> Int8Label;
+typedef BlockLabel<int16_t> Int16Label;
+typedef BlockLabel<int32_t> Int32Label;
+typedef BlockLabel<int32_t> OffsetLabel;
+typedef BlockLabel<int64_t> Int64Label;
+typedef BlockLabel<double> DoubleLabel;
+typedef BlockLabel<void*> PointerLabel;
+typedef BlockLabel<InstructionBlock*> IBlockPointerLabel;
+
 class InstructionBlock {
 public:
   VALUE flags;  // Needed by GC

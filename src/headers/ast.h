@@ -29,6 +29,7 @@
 #include <optional>
 #include <vector>
 
+#include "irinfo.h"
 #include "location.h"
 #include "token.h"
 
@@ -342,6 +343,7 @@ struct Call : public AbstractNode {
 // <name>
 struct Identifier : public AbstractNode {
   std::string name;
+  IRVarOffsetInfo* offset_info;
 
   Identifier(const std::string& str) : name(str) {}
 };
@@ -467,6 +469,8 @@ struct Function : public AbstractNode {
   NodeList* parameters;
   Block* body;
   bool anonymous;
+
+  IRLVarInfo* lvar_info;
 
   Function(Symbol* n, NodeList* p, Block* b, bool a) : name(n), parameters(p), body(b), anonymous(a) {}
 
