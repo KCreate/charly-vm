@@ -66,6 +66,7 @@ enum kValueTypes : uint8_t {
 };
 
 // String representation of types
+// clang-format off
 static const std::string kValueTypeString[] = {
   "dead",
   "integer",
@@ -83,6 +84,7 @@ static const std::string kValueTypeString[] = {
   "catchtable",
   "instructionblock"
 };
+// clang-format on
 
 // Basic fields every data type in Charly has
 // This is inspired by the way Ruby stores it's values

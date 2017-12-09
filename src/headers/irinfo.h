@@ -40,4 +40,4 @@ struct IRLVarInfo {
   uint32_t lvarcount;
 };
 
-}
+}  // namespace Charly::Compiler

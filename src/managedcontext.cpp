@@ -83,7 +83,11 @@ VALUE ManagedContext::create_string(char* data, uint32_t length) {
   return string;
 }
 
-VALUE ManagedContext::create_function(VALUE name, uint8_t* body_address, uint32_t argc, bool anonymous, InstructionBlock* block) {
+VALUE ManagedContext::create_function(VALUE name,
+                                      uint8_t* body_address,
+                                      uint32_t argc,
+                                      bool anonymous,
+                                      InstructionBlock* block) {
   VALUE func = this->vm.create_function(name, body_address, argc, anonymous, block);
   this->vm.context.gc->register_temporary(func);
   this->temporaries.push_back(func);
