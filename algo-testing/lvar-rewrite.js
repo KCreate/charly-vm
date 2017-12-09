@@ -1,3 +1,12 @@
+// How to implement this in C++
+//
+// AST::Block:
+// - uint32_t blockid; // Global unique identifier for a block
+//
+// AST::Identifier
+// - int32_t depth; // How many environment frames to climb
+// - int32_t index; // At which offset the variable is stored
+
 const util = require('util')
 
 // Potential problems:
@@ -39,6 +48,7 @@ const parse_tree = {
     },
     {
       type: "function",
+      parameters: ["a", "b"],
       block: {
         type: "block",
         blockid: 2,
@@ -49,32 +59,23 @@ const parse_tree = {
           },
           {
             type: "identifier",
+            value: "arguments"
+          },
+          {
+            type: "identifier",
+            value: "a"
+          },
+          {
+            type: "identifier",
+            value: "b"
+          },
+          {
+            type: "identifier",
             value: "foo"
           },
           {
             type: "identifier",
             value: "bar"
-          },
-          {
-            type: "function",
-            block: {
-              type: "block",
-              blockid: 2,
-              children: [
-                {
-                  type: "lvar_decl",
-                  name: "foo"
-                },
-                {
-                  type: "identifier",
-                  value: "foo"
-                },
-                {
-                  type: "identifier",
-                  value: "bar"
-                }
-              ]
-            }
           }
         ]
       }
@@ -123,7 +124,21 @@ class LVarRewritter {
       case "function": {
         this.depth += 1;
         this.lvar_scope = new LVarScope(this.lvar_scope);
-        this.visit(node.block);
+
+        let blockid_backup = this.blockid;
+        this.blockid = node.blockid;
+
+        // Declare all arguments
+        this.declare("arguments");
+        node.parameters.map((param) => {
+          this.declare(param);
+        })
+
+        node.block.children.map((statement) => {
+          this.visit(statement);
+        });
+        this.blockid = blockid_backup;
+
         this.lvar_scope = this.lvar_scope.parent;
         this.depth -= 1;
 
