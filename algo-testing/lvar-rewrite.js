@@ -9,49 +9,100 @@
 
 const util = require('util')
 
-// Potential problems:
-// - Function hoisting
-// - Symbol resolution from multiple sub-scopes with common symbols
+/*
+
+function(export) {
+  let foo;
+  let bar;
+
+  myglobal1;
+  myglobal2;
+
+  {
+    let foo;
+    foo;
+  }
+
+  function(a, b) {
+    let foo;
+    arguments;
+    a;
+    b;
+    foo;
+    bar;
+  }
+
+  {
+    let foo;
+    foo;
+  }
+
+  foo;
+}
+
+When run through the rewriter, it would be annoted like this
+
+function(export) {
+  let foo;
+  let bar;
+
+  export;       // { 0, 1 }
+  myglobal1;    // { 1, 0 }
+  myglobal2;    // { 1, 1 }
+
+  {
+    let foo;
+    foo;        // { 0, 4 }
+  }
+
+  function(a, b) {
+    let foo;
+    arguments;  // { 0, 0 }
+    a;          // { 0, 1 }
+    b;          // { 0, 2 }
+    foo;        // { 0, 3 }
+    bar;        // { 1, 3 }
+  }
+
+  {
+    let foo;
+    foo;        // { 0, 5 }
+  }
+
+  foo;          // { 0, 2 }
+}
+
+*/
 const parse_tree = {
-  type: "block",
-  blockid: 0,
-  children: [
-    {
-      type: "lvar_decl",
-      name: "foo"
-    },
-    {
-      type: "lvar_decl",
-      name: "bar"
-    },
-    {
-      type: "identifier",
-      value: "myglobal1"
-    },
-    {
-      type: "identifier",
-      value: "myglobal2"
-    },
-    {
-      type: "block",
-      blockid: 1,
-      children: [
-        {
-          type: "lvar_decl",
-          name: "foo"
-        },
-        {
-          type: "identifier",
-          value: "foo"
-        }
-      ]
-    },
-    {
-      type: "function",
-      parameters: ["a", "b"],
-      block: {
+  type: "function",
+  parameters: ["export"],
+  block: {
+    type: "block",
+    blockid: 0,
+    children: [
+      {
+        type: "lvar_decl",
+        name: "foo"
+      },
+      {
+        type: "lvar_decl",
+        name: "bar"
+      },
+      {
+        type: "identifier",
+        value: "export"
+      },
+      {
+        type: "identifier",
+        value: "myglobal1"
+      },
+      {
+        type: "identifier",
+        value: "myglobal2"
+      },
+      {
         type: "block",
-        blockid: 2,
+        blockid: 1,
         children: [
           {
             type: "lvar_decl",
@@ -59,46 +110,64 @@ const parse_tree = {
           },
           {
             type: "identifier",
-            value: "arguments"
-          },
+            value: "foo"
+          }
+        ]
+      },
+      {
+        type: "function",
+        parameters: ["a", "b"],
+        block: {
+          type: "block",
+          blockid: 2,
+          children: [
+            {
+              type: "lvar_decl",
+              name: "foo"
+            },
+            {
+              type: "identifier",
+              value: "arguments"
+            },
+            {
+              type: "identifier",
+              value: "a"
+            },
+            {
+              type: "identifier",
+              value: "b"
+            },
+            {
+              type: "identifier",
+              value: "foo"
+            },
+            {
+              type: "identifier",
+              value: "bar"
+            }
+          ]
+        }
+      },
+      {
+        type: "block",
+        blockid: 3,
+        children: [
           {
-            type: "identifier",
-            value: "a"
-          },
-          {
-            type: "identifier",
-            value: "b"
+            type: "lvar_decl",
+            name: "foo"
           },
           {
             type: "identifier",
             value: "foo"
-          },
-          {
-            type: "identifier",
-            value: "bar"
           }
         ]
+      },
+      {
+        type: "identifier",
+        value: "foo"
       }
-    },
-    {
-      type: "block",
-      blockid: 3,
-      children: [
-        {
-          type: "lvar_decl",
-          name: "foo"
-        },
-        {
-          type: "identifier",
-          value: "foo"
-        }
-      ]
-    },
-    {
-      type: "identifier",
-      value: "foo"
-    }
-  ]
+    ]
+  }
 }
 
 class LVarScope {
@@ -132,12 +201,16 @@ class LVarRewritter {
         this.declare("arguments");
         node.parameters.map((param) => {
           this.declare(param);
-        })
+        });
 
         node.block.children.map((statement) => {
           this.visit(statement);
         });
         this.blockid = blockid_backup;
+
+        node.compiler_info = {
+          lvar_count: Object.keys(this.lvar_scope.table).length
+        };
 
         this.lvar_scope = this.lvar_scope.parent;
         this.depth -= 1;
