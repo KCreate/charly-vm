@@ -346,6 +346,10 @@ struct Identifier : public AbstractNode {
   IRVarOffsetInfo* offset_info;
 
   Identifier(const std::string& str) : name(str) {}
+
+  inline ~Identifier() {
+    if (offset_info != nullptr) delete offset_info;
+  }
 };
 
 // <name>
@@ -478,6 +482,7 @@ struct Function : public AbstractNode {
     delete name;
     delete parameters;
     delete body;
+    if (lvar_info != nullptr) delete lvar_info;
   }
 };
 
@@ -538,11 +543,14 @@ struct LocalInitialisation : public AbstractNode {
   AbstractNode* expression;
   bool constant;
 
+  IRVarOffsetInfo* offset_info;
+
   LocalInitialisation(Symbol* n, AbstractNode* e, bool c) : name(n), expression(e), constant(c) {}
 
   inline ~LocalInitialisation() {
     delete name;
     delete expression;
+    if (offset_info != nullptr) delete offset_info;
   }
 };
 
