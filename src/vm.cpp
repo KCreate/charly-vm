@@ -128,7 +128,7 @@ CatchTable* VM::create_catchtable(ThrowType type, uint8_t* address) {
 
 CatchTable* VM::pop_catchtable() {
   if (!this->catchstack)
-    this->panic(kStatusCatchStackEmpty);
+    this->panic(Status::CatchStackEmpty);
   CatchTable* parent = this->catchstack->parent;
   this->catchstack = parent;
   return parent;
@@ -378,7 +378,7 @@ void VM::op_readlocal(uint32_t index, uint32_t level) {
   Frame* frame = this->frames;
   while (level--) {
     if (!frame->parent) {
-      return this->panic(kStatusReadFailedTooDeep);
+      return this->panic(Status::ReadFailedTooDeep);
     }
 
     frame = frame->parent;
@@ -386,7 +386,7 @@ void VM::op_readlocal(uint32_t index, uint32_t level) {
 
   // Check if the index isn't out-of-bounds
   if (index >= frame->environment.size()) {
-    return this->panic(kStatusReadFailedOutOfBounds);
+    return this->panic(Status::ReadFailedOutOfBounds);
   }
 
   this->push_stack(frame->environment[index]);
@@ -462,7 +462,7 @@ void VM::op_setlocal(uint32_t index, uint32_t level) {
   Frame* frame = this->frames;
   while (level--) {
     if (!frame->parent) {
-      return this->panic(kStatusWriteFailedTooDeep);
+      return this->panic(Status::WriteFailedTooDeep);
     }
 
     frame = frame->parent;
@@ -472,7 +472,7 @@ void VM::op_setlocal(uint32_t index, uint32_t level) {
   if (index < frame->environment.size()) {
     frame->environment[index] = value;
   } else {
-    this->panic(kStatusWriteFailedOutOfBounds);
+    this->panic(Status::WriteFailedOutOfBounds);
   }
 }
 
@@ -618,7 +618,7 @@ void VM::call(uint32_t argc, bool with_target) {
   // v   v
   // 1 + argc
   if (this->stack.size() < (1 + argc))
-    this->panic(kStatusStackEmpty);
+    this->panic(Status::StackEmpty);
 
   // Stack allocate enough space to copy all arguments into
   VALUE arguments[argc];
@@ -697,7 +697,7 @@ void VM::call(uint32_t argc, bool with_target) {
       std::cout << "cant call a " << kValueTypeString[this->real_type(function)] << '\n';
 
       // TODO: Handle as runtime error
-      this->panic(kStatusUnspecifiedError);
+      this->panic(Status::UnspecifiedError);
     }
   }
 }
@@ -705,7 +705,7 @@ void VM::call(uint32_t argc, bool with_target) {
 void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self) {
   // Check if the function was called with enough arguments
   if (argc < function->argc) {
-    this->panic(kStatusNotEnoughArguments);
+    this->panic(Status::NotEnoughArguments);
   }
 
   // The return address is simply the instruction after the one we've been called from
@@ -737,7 +737,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
 void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
   // Check if enough arguments have been passed
   if (argc < function->argc) {
-    this->panic(kStatusNotEnoughArguments);
+    this->panic(Status::NotEnoughArguments);
   }
 
   VALUE rv = kNull;
@@ -750,7 +750,7 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
     case 3:
       rv = reinterpret_cast<VALUE (*)(VM&, VALUE, VALUE, VALUE)>(function->pointer)(*this, argv[0], argv[1], argv[2]);
       break;
-    default: { this->panic(kStatusTooManyArgumentsForCFunction); }
+    default: { this->panic(Status::TooManyArgumentsForCFunction); }
   }
 
   this->push_stack(rv);
@@ -759,7 +759,7 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
 void VM::op_return() {
   Frame* frame = this->frames;
   if (!frame)
-    this->panic(kStatusCantReturnFromTopLevel);
+    this->panic(Status::CantReturnFromTopLevel);
 
   // Unwind and immediately free all catchtables which were pushed
   // after the one we're restoring.
@@ -785,7 +785,7 @@ void VM::op_throw(ThrowType type) {
 
   CatchTable* table = this->find_catchtable(type);
   if (!table) {
-    this->panic(kStatusNoSuitableCatchTableFound);
+    this->panic(Status::NoSuitableCatchTableFound);
   }
 
   this->restore_catchtable(table);
@@ -795,7 +795,7 @@ void VM::throw_exception(VALUE payload) {
   CatchTable* table = this->find_catchtable(ThrowType::Exception);
 
   if (!table) {
-    this->panic(kStatusNoSuitableCatchTableFound);
+    this->panic(Status::NoSuitableCatchTableFound);
   }
 
   this->restore_catchtable(table);
@@ -1295,7 +1295,7 @@ void VM::run() {
     uint8_t* block_data = reinterpret_cast<uint8_t*>(this->frames->function->block->data);
     uint32_t block_write_offset = this->frames->function->block->writeoffset;
     if (this->ip + sizeof(Opcode) - 1 >= block_data + block_write_offset) {
-      this->panic(kStatusIpOutOfBounds);
+      this->panic(Status::IpOutOfBounds);
     }
 
     // Retrieve the current opcode
@@ -1310,7 +1310,7 @@ void VM::run() {
       std::cout << "block_write_offset    = " << block_write_offset << '\n';
       std::cout << "sizeof(Opcode)        = " << sizeof(Opcode) << '\n';
       std::cout << "kOpcodeMnemonics[opcode] = " << kOpcodeMnemonics[opcode] << '\n';
-      this->panic(kStatusNotEnoughSpaceForInstructionArguments);
+      this->panic(Status::NotEnoughSpaceForInstructionArguments);
     }
 
     // Redirect to specific instruction handler
@@ -1521,7 +1521,7 @@ void VM::run() {
       default: {
         std::cout << "Unknown opcode: " << kOpcodeMnemonics[opcode] << " at " << reinterpret_cast<void*>(this->ip)
                   << '\n';
-        this->panic(kStatusUnknownOpcode);
+        this->panic(Status::UnknownOpcode);
       }
     }
 
