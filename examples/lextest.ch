@@ -1,7 +1,4 @@
-obj.prop + Identifier - Foo;
-func (a, b) {
-  // this is my function
-}
 let a = 25;
-->(param) { print($0); }
-print("hello \n world \r\n")
+let b = 25.5;
+let c = 25.;
+let d = 25.5.5;

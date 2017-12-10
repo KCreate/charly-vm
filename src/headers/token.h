@@ -140,7 +140,8 @@ static const std::string kTokenTypeStrings[] = {
   "Float",
   "Identifier",
   "String",
-  "Boolean",
+  "BooleanFalse",
+  "BooleanTrue",
   "Null",
   "Nan",
   "Keyword",
@@ -221,6 +222,12 @@ static const std::string kTokenTypeStrings[] = {
 struct Token {
   TokenType type;
   std::string value;
+
+  union {
+    double dbl_value;
+    int64_t i64_value;
+  } numeric_value;
+
   Location location;
 
   Token() {
