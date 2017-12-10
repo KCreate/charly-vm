@@ -57,7 +57,6 @@ public:
   void consume_ident();
   static bool is_ident_start(uint32_t cp);
   static bool is_ident_part(uint32_t cp);
-  void consume_ident_or_keyword(TokenType type);
   void unexpected_char();
   void throw_error(Location loc, const std::string& message);
 };

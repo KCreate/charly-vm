@@ -25,6 +25,7 @@
  */
 
 #include <sstream>
+#include <iostream>
 
 #include "lexer.h"
 
@@ -111,6 +112,155 @@ void Lexer::read_token() {
         }
       }
 
+      break;
+    }
+    case L'%': {
+      this->consume_operator_or_assignment(TokenType::Mod);
+      break;
+    }
+    case L'=': {
+      switch (this->source.read_char()) {
+        case L'=': {
+          this->source.read_char();
+          this->token.type = TokenType::Equal;
+          break;
+        }
+        default: {
+          this->token.type = TokenType::Assignment;
+          break;
+        }
+      }
+      break;
+    }
+    case L'&': {
+      switch (this->source.read_char()) {
+        case L'&': {
+          this->source.read_char();
+          this->token.type = TokenType::AND;
+          break;
+        }
+        default: {
+          this->token.type = TokenType::BitAND;
+          break;
+        }
+      }
+      break;
+    }
+    case L'|': {
+      switch (this->source.read_char()) {
+        case L'|': {
+          this->source.read_char();
+          this->token.type = TokenType::OR;
+          break;
+        }
+        default: {
+          this->token.type = TokenType::BitOR;
+          break;
+        }
+      }
+      break;
+    }
+    case L'^': {
+      this->token.type = TokenType::BitXOR;
+      this->source.read_char();
+      break;
+    }
+    case L'~': {
+      this->token.type = TokenType::BitNOT;
+      this->source.read_char();
+      break;
+    }
+    case L'!': {
+      this->token.type = TokenType::Not;
+      this->source.read_char();
+      break;
+    }
+    case L'<': {
+      switch (this->source.read_char()) {
+        case L'=': {
+          this->source.read_char();
+          this->token.type = TokenType::LessEqual;
+          break;
+        }
+        case L'-': {
+          this->source.read_char();
+          this->token.type = TokenType::LeftArrow;
+          break;
+        }
+        case L'<': {
+          this->source.read_char();
+          this->token.type = TokenType::LeftShift;
+          break;
+        }
+        default: {
+          this->token.type = TokenType::Less;
+          break;
+        }
+      }
+      break;
+    }
+    case L'>': {
+      switch (this->source.read_char()) {
+        case L'=': {
+          this->source.read_char();
+          this->token.type = TokenType::GreaterEqual;
+          break;
+        }
+        case L'>': {
+          this->source.read_char();
+          this->token.type = TokenType::RightShift;
+          break;
+        }
+        default: {
+          this->token.type = TokenType::Greater;
+          break;
+        }
+      }
+      break;
+    }
+    case L'(': {
+      this->source.read_char();
+      this->token.type = TokenType::LeftParen;
+      break;
+    }
+    case L')': {
+      this->source.read_char();
+      this->token.type = TokenType::RightParen;
+      break;
+    }
+    case L'{': {
+      this->source.read_char();
+      this->token.type = TokenType::LeftCurly;
+      break;
+    }
+    case L'}': {
+      this->source.read_char();
+      this->token.type = TokenType::RightCurly;
+      break;
+    }
+    case L'[': {
+      this->source.read_char();
+      this->token.type = TokenType::LeftBracket;
+      break;
+    }
+    case L']': {
+      this->source.read_char();
+      this->token.type = TokenType::RightBracket;
+      break;
+    }
+    case L'@': {
+      this->source.read_char();
+      this->token.type = TokenType::AtSign;
+      break;
+    }
+    case L'?': {
+      this->source.read_char();
+      this->token.type = TokenType::QuestionMark;
+      break;
+    }
+    case L':': {
+      this->source.read_char();
+      this->token.type = TokenType::Colon;
       break;
     }
     default: {
@@ -266,17 +416,6 @@ bool Lexer::is_ident_start(uint32_t cp) {
 
 bool Lexer::is_ident_part(uint32_t cp) {
   return Lexer::is_ident_start(cp) || (cp >= 0x30 && cp <= 0x39);
-}
-
-void Lexer::consume_ident_or_keyword(TokenType type) {
-  uint32_t cp = this->source.read_char();
-
-  if (Lexer::is_ident_part(cp)) {
-    this->consume_ident();
-  } else {
-    this->token.type = type;
-    this->token.value = this->source.get_current_frame();
-  }
 }
 
 void Lexer::unexpected_char() {

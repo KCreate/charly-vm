@@ -39,7 +39,8 @@ enum TokenType : uint8_t {
   Float,
   Identifier,
   String,
-  Boolean,
+  BooleanFalse,
+  BooleanTrue,
   Null,
   Nan,
 

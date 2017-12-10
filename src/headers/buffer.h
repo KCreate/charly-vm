@@ -125,7 +125,7 @@ public:
   static inline void write_cp_to_stream(uint32_t cp, T&& stream) {
     char buffer[] = {0, 0, 0, 0};
     char* buffer_start = buffer;
-    utf8::append(cp, buffer_start);
+    buffer_start = utf8::append(cp, buffer_start);
     stream << std::string_view(buffer, buffer_start - buffer);
   }
 
