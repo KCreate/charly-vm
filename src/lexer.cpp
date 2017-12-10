@@ -93,6 +93,21 @@ void Lexer::read_token() {
       }
       break;
     }
+    case L'/': {
+      switch (this->source.peek_char()) {
+        case L'/': {
+          this->source.read_char();
+          this->consume_comment();
+          break;
+        }
+        default: {
+          this->consume_operator_or_assignment(TokenType::Div);
+          break;
+        }
+      }
+
+      break;
+    }
     default: {
       if (Lexer::is_ident_start(this->source.current_char)) {
         this->consume_ident();
@@ -106,7 +121,12 @@ void Lexer::read_token() {
   this->token.location.length = this->source.frame.size() - 1;
   this->source.reset_frame();
   Buffer::write_cp_to_string(this->source.current_char, this->source.frame);
-  this->tokens.push_back(this->token);
+
+  // Ignore tokens which are not relevant for parsing
+  if (this->token.type != TokenType::Comment && this->token.type != TokenType::Newline &&
+      this->token.type != TokenType::Whitespace) {
+    this->tokens.push_back(this->token);
+  }
 }
 
 void Lexer::consume_operator_or_assignment(TokenType type) {
@@ -185,6 +205,22 @@ void Lexer::consume_newline() {
       break;
     }
   }
+}
+
+void Lexer::consume_comment() {
+  this->token.type = TokenType::Comment;
+
+  while (true) {
+    uint32_t cp = this->source.read_char();
+
+    if (cp == L'\n' || cp == L'\r') {
+      break;
+    } else {
+      // Keep parsing the comment
+    }
+  }
+
+  this->token.value = this->source.get_current_frame();
 }
 
 void Lexer::consume_ident() {
