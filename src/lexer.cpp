@@ -65,6 +65,10 @@ void Lexer::read_token() {
       this->consume_numeric();
       break;
     }
+    case L'"': {
+      this->consume_string();
+      break;
+    }
     case L' ':
     case L'\t': {
       this->consume_whitespace();
@@ -507,6 +511,84 @@ void Lexer::consume_octal() {
   std::cout << decoder.str() << '\n';
 
   this->token.numeric_value.i64_value = num;
+}
+
+void Lexer::consume_string() {
+  this->token.type = TokenType::String;
+  std::stringstream strbuff;
+
+  bool keep_parsing = true;
+  while (keep_parsing) {
+    switch (this->source.read_char()) {
+      case L'\\': {
+        switch (this->source.read_char()) {
+          case L'a': {
+            strbuff << '\a';
+            break;
+          }
+          case L'b': {
+            strbuff << '\b';
+            break;
+          }
+          case L'n': {
+            strbuff << '\n';
+            break;
+          }
+          case L'r': {
+            strbuff << '\r';
+            break;
+          }
+          case L't': {
+            strbuff << '\t';
+            break;
+          }
+          case L'v': {
+            strbuff << '\v';
+            break;
+          }
+          case L'f': {
+            strbuff << '\f';
+            break;
+          }
+          case L'e': {
+            strbuff << '\e';
+            break;
+          }
+          case L'"': {
+            strbuff << '"';
+            break;
+          }
+          case L'\\': {
+            strbuff << '\\';
+            break;
+          }
+          case L'\0': {
+            Location loc(this->token.location);
+            loc.length = this->source.pos - loc.pos;
+            this->throw_error(loc, "Unclosed string");
+            break;
+          }
+        }
+        break;
+      }
+      case L'"': {
+        keep_parsing = false;
+        break;
+      }
+      case L'\0': {
+        Location loc(this->token.location);
+        loc.length = this->source.pos - loc.pos;
+        this->throw_error(loc, "Unclosed string");
+      }
+      default: {
+        Buffer::write_cp_to_stream(this->source.current_char, strbuff);
+        break;
+      }
+    }
+  }
+
+  this->token.value = strbuff.str();
+  this->source.read_char();
 }
 
 void Lexer::consume_comment() {

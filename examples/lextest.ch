@@ -1,4 +1,1 @@
-2500
-2500.0
-0xff
-020
+print("this is my string\nnewline");
