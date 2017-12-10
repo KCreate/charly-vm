@@ -26,6 +26,7 @@
 
 #include <utf8/utf8.h>
 #include <string>
+#include <string_view>
 
 #pragma once
 
@@ -121,7 +122,19 @@ public:
 
   // Helper methods
   template <class T>
-  static void write_cp_to_stream(uint32_t cp, T& stream);
+  static inline void write_cp_to_stream(uint32_t cp, T&& stream) {
+    char buffer[] = {0, 0, 0, 0};
+    char* buffer_start = buffer;
+    utf8::append(cp, buffer_start);
+    stream << std::string_view(buffer, buffer_start - buffer);
+  }
+
+  static inline void write_cp_to_string(uint32_t cp, std::string& str) {
+    char buffer[] = {0, 0, 0, 0};
+    char* buffer_start = buffer;
+    buffer_start = utf8::append(cp, buffer_start);
+    str.append(std::string_view(buffer, buffer_start - buffer));
+  }
 
 private:
   // Memory handling

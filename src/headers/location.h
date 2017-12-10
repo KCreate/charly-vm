@@ -34,14 +34,16 @@ struct Location {
   uint32_t row = 0;
   uint32_t column = 0;
   uint32_t length = 0;
+  std::string filename;
 
   Location() {
   }
-  Location(uint32_t p, uint32_t r, uint32_t c, uint32_t l) : pos(p), row(r), column(c), length(l) {
+  Location(uint32_t p, uint32_t r, uint32_t c, uint32_t l, const std::string& s)
+      : pos(p), row(r), column(c), length(l), filename(s) {
   }
-  Location(const Location& o) : pos(o.pos), row(o.row), column(o.column), length(o.length) {
+  Location(const Location& o) : pos(o.pos), row(o.row), column(o.column), length(o.length), filename(o.filename) {
   }
-  Location(Location&& o) : pos(o.pos), row(o.row), column(o.column), length(o.length) {
+  Location(Location&& o) : pos(o.pos), row(o.row), column(o.column), length(o.length), filename(std::move(o.filename)) {
   }
 
   Location& operator=(const Location& o) {
@@ -49,8 +51,24 @@ struct Location {
     this->row = o.row;
     this->column = o.column;
     this->length = o.length;
+    this->filename = o.filename;
 
     return *this;
+  }
+
+  Location& operator=(Location&& o) {
+    this->pos = o.pos;
+    this->row = o.row;
+    this->column = o.column;
+    this->length = o.length;
+    std::swap(this->filename, o.filename);
+
+    return *this;
+  }
+
+  template <class T>
+  inline void write_to_stream(T&& stream) const {
+    stream << "at " << this->filename << ":" << this->row << ":" << this->column;
   }
 };
 }  // namespace Charly::Compiler

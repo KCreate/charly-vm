@@ -56,7 +56,7 @@ public:
 
   // Returns the contents of the current frame as a string
   inline std::string get_current_frame() {
-    return std::string(this->frame, 0, this->frame.size() - 2);
+    return std::string(this->frame, 0, this->frame.size() - 1);
   }
 
   // Reset the current frame

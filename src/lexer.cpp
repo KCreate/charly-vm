@@ -38,7 +38,7 @@ void Lexer::tokenize() {
 void Lexer::reset_token() {
   this->token.type = TokenType::Unknown;
   this->token.value = "";
-  this->token.location = Location(this->source.pos - 1, this->source.row, this->source.column, 0);
+  this->token.location = Location(this->source.pos - 1, this->source.row, this->source.column, 0, this->source.filename);
 }
 
 void Lexer::read_token() {
@@ -59,6 +59,40 @@ void Lexer::read_token() {
       this->consume_newline();
       break;
     }
+    case L';': {
+      this->token.type = TokenType::Semicolon;
+      this->source.read_char();
+      break;
+    }
+    case L',': {
+      this->token.type = TokenType::Comma;
+      this->source.read_char();
+      break;
+    }
+    case L'.': {
+      this->token.type = TokenType::Point;
+      this->source.read_char();
+      break;
+    }
+    case L'+': {
+      this->consume_operator_or_assignment(TokenType::Plus);
+      break;
+    }
+    case L'-': {
+      switch (this->source.peek_char()) {
+        case L'>': {
+          this->source.read_char();
+          this->source.read_char();
+          this->token.type = TokenType::RightArrow;
+          break;
+        }
+        default: {
+          this->consume_operator_or_assignment(TokenType::Minus);
+          break;
+        }
+      }
+      break;
+    }
     default: {
       if (Lexer::is_ident_start(this->source.current_char)) {
         this->consume_ident();
@@ -71,6 +105,7 @@ void Lexer::read_token() {
 
   this->token.location.length = this->source.frame.size() - 1;
   this->source.reset_frame();
+  Buffer::write_cp_to_string(this->source.current_char, this->source.frame);
   this->tokens.push_back(this->token);
 }
 
@@ -181,7 +216,7 @@ void Lexer::consume_ident_or_keyword(TokenType type) {
 }
 
 void Lexer::unexpected_char() {
-  Location loc(this->source.pos - 1, this->source.row, this->source.column, 1);
+  Location loc(this->source.pos - 1, this->source.row, this->source.column, 1, this->source.filename);
   throw UnexpectedCharError(loc, this->source.current_char);
 }
 

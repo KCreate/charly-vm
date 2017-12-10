@@ -26,7 +26,6 @@
 
 #include "buffer.h"
 #include <string>
-#include <string_view>
 
 namespace Charly {
 
@@ -142,15 +141,6 @@ size_t Buffer::utf8_byteoffset(uint32_t start) {
   }
 
   return start_iterator - this->buffer;
-}
-
-// Write a codepoint to a stream
-template <class T>
-void Buffer::write_cp_to_stream(uint32_t cp, T& stream) {
-  char buffer[] = {0, 0, 0, 0};
-  char* buffer_start = buffer;
-  utf8::append(cp, buffer_start);
-  stream << std::string_view(buffer, buffer_start - buffer);
 }
 
 // Check if there is enough size and if not allocate more memory

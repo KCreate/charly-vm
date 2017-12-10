@@ -163,9 +163,9 @@ struct RunFlags {
 
   // Append a flag to the internal flags array and set all corresponding flags
   inline void appendFlag(const std::string& flag) {
-    if (!flag.compare("ast"))
+    if (!flag.compare("dump_ast"))
       this->dump_ast = true;
-    if (!flag.compare("tokens"))
+    if (!flag.compare("dump_tokens"))
       this->dump_tokens = true;
     if (!flag.compare("skipexec"))
       this->skip_execution = true;

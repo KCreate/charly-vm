@@ -71,21 +71,39 @@ int CLI::run() {
     return 1;
   }
   std::string source_string((std::istreambuf_iterator<char>(inputfile)), std::istreambuf_iterator<char>());
-  inputfile.close();
   SourceFile userfile(this->flags.arguments[0], source_string);
   Compiler::Lexer lexer(userfile);
-  lexer.tokenize();
 
-  for (const auto& token : lexer.tokens) {
-    std::cout << kTokenTypeStrings[token.type] << '\n';
+  try {
+    lexer.tokenize();
+  } catch(Compiler::UnexpectedCharError& ex) {
+    std::cout << "Encountered an unexpected char '";
+    Buffer::write_cp_to_stream(ex.cp, std::cout);
+    std::cout << "' ";
+    ex.location.write_to_stream(std::cout);
+    std::cout << '\n';
+
+    return 1;
+  } catch(Compiler::SyntaxError& ex) {
+
+    return 1;
+  }
+
+  if (this->flags.dump_tokens) {
+    for (const auto& token : lexer.tokens) {
+      token.write_to_stream(std::cout);
+      std::cout << '\n';
+    }
+  }
+
+  if (this->flags.skip_execution) {
+    return 0;
   }
 
   Context context(this->flags);
   MemoryManager gc(context);
   VM vm(context);
-  if (!this->flags.skip_execution) {
-    vm.run();
-  }
+  vm.run();
 
   return 0;
 }

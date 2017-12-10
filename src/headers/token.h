@@ -246,5 +246,11 @@ struct Token {
             Try == this->type || Typeof == this->type || Unless == this->type || Until == this->type ||
             While == this->type);
   }
+
+  template <class T>
+  inline void write_to_stream(T&& stream) const {
+    stream << kTokenTypeStrings[this->type] << " : " << this->value << " ";
+    this->location.write_to_stream(stream);
+  }
 };
 }  // namespace Charly::Compiler
