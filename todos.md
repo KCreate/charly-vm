@@ -42,11 +42,17 @@
   - `arguments` will also be rewritten to `ReadLocal 0, 0`
     - If the user redeclares his own `arguments` lvar, it will be treated as a new lvar
 - $0, $1, $2, $n get rewritten to
-  ```
-  ReadLocal 0, 0
-  PutValue $n
-  ReadMemberValue
-  ```
+  - In case there are less than $n known function parameters it will be rewritten to:
+    ```
+    ReadLocal 0, 0
+    PutValue $n
+    ReadMemberValue
+    ```
+  - In case $n maps to a known function parameter it will be rewritten to:
+    ```
+    ReadLocal 0, $n + 1
+    ```
+
 - Where does the return value end up?
   - Callee side:
     - The return value of the call is the top value on the stack
