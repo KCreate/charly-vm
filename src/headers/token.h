@@ -25,6 +25,7 @@
  */
 
 #include <string>
+#include <unordered_map>
 
 #include "location.h"
 
@@ -45,7 +46,6 @@ enum TokenType : uint8_t {
   Nan,
 
   // Keywords
-  Keyword,
   Break,
   Case,
   Catch,
@@ -144,7 +144,6 @@ static const std::string kTokenTypeStrings[] = {
   "BooleanTrue",
   "Null",
   "Nan",
-  "Keyword",
   "Break",
   "Case",
   "Catch",
@@ -216,6 +215,37 @@ static const std::string kTokenTypeStrings[] = {
   "Newline",
   "Eof",
   "Unknown"
+};
+static const std::unordered_map<std::string, TokenType> kTokenKeywordsAndLiterals = {
+  {"false", TokenType::BooleanFalse},
+  {"true", TokenType::BooleanTrue},
+  {"null", TokenType::Null},
+  {"NaN", TokenType::Nan},
+  {"break", TokenType::Break},
+  {"case", TokenType::Case},
+  {"catch", TokenType::Catch},
+  {"class", TokenType::Class},
+  {"const", TokenType::Const},
+  {"continue", TokenType::Continue},
+  {"default", TokenType::Default},
+  {"else", TokenType::Else},
+  {"extends", TokenType::Extends},
+  {"func", TokenType::Func},
+  {"guard", TokenType::Guard},
+  {"if", TokenType::If},
+  {"let", TokenType::Let},
+  {"loop", TokenType::Loop},
+  {"primitive", TokenType::Primitive},
+  {"property", TokenType::Property},
+  {"return", TokenType::Return},
+  {"static", TokenType::Static},
+  {"switch", TokenType::Switch},
+  {"throw", TokenType::Throw},
+  {"try", TokenType::Try},
+  {"typeof", TokenType::Typeof},
+  {"unless", TokenType::Unless},
+  {"until", TokenType::Until},
+  {"while", TokenType::While},
 };
 // clang-format on
 

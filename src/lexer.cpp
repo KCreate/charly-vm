@@ -296,6 +296,16 @@ void Lexer::read_token() {
   this->source.reset_frame();
   Buffer::write_cp_to_string(this->source.current_char, this->source.frame);
 
+  // Change the type of keyword tokens
+  if (this->token.type == TokenType::Identifier) {
+    auto search = kTokenKeywordsAndLiterals.find(this->token.value);
+
+    if (search != kTokenKeywordsAndLiterals.end()) {
+      this->token.type = search->second;
+      this->token.value = "";
+    }
+  }
+
   // Ignore tokens which are not relevant for parsing
   if (this->token.type != TokenType::Comment && this->token.type != TokenType::Newline &&
       this->token.type != TokenType::Whitespace) {
