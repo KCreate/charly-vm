@@ -121,6 +121,11 @@ void InstructionBlock::write_readmembervalue() {
   this->write_byte(Opcode::ReadMemberValue);
 }
 
+void InstructionBlock::write_readarrayindex(uint32_t index) {
+  this->write_byte(Opcode::ReadArrayIndex);
+  this->write_int(index);
+}
+
 void InstructionBlock::write_setlocal(uint32_t index, uint32_t level) {
   this->write_byte(Opcode::SetLocal);
   this->write_int(index);
@@ -134,6 +139,11 @@ void InstructionBlock::write_setmembersymbol(VALUE symbol) {
 
 void InstructionBlock::write_setmembervalue() {
   this->write_byte(Opcode::SetMemberValue);
+}
+
+void InstructionBlock::write_setarrayindex(uint32_t index) {
+  this->write_byte(Opcode::SetArrayIndex);
+  this->write_int(index);
 }
 
 void InstructionBlock::write_putself() {

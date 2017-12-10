@@ -436,6 +436,25 @@ void VM::op_readmembersymbol(VALUE symbol) {
   this->push_stack(kNull);
 }
 
+void VM::op_readarrayindex(uint32_t index) {
+  VALUE stackval = this->pop_stack().value_or(kNull);
+
+  // Check if we popped an array, if not push it back onto the stack
+  if (this->real_type(stackval) != kTypeArray) {
+    this->push_stack(stackval);
+    return;
+  }
+
+  Array* arr = reinterpret_cast<Array*>(stackval);
+
+  // Out-of-bounds checking
+  if (index >= arr->data->size()) {
+    this->push_stack(kNull);
+  }
+
+  this->push_stack((*arr->data)[index]);
+}
+
 void VM::op_setlocal(uint32_t index, uint32_t level) {
   VALUE value = this->pop_stack().value_or(kNull);
 
@@ -483,6 +502,28 @@ void VM::op_setmembersymbol(VALUE symbol) {
   }
 
   this->push_stack(value);
+}
+
+void VM::op_setarrayindex(uint32_t index) {
+  VALUE expression = this->pop_stack().value_or(kNull);
+  VALUE stackval = this->pop_stack().value_or(kNull);
+
+  // Check if we popped an array, if not push it back onto the stack
+  if (this->real_type(stackval) != kTypeArray) {
+    this->push_stack(stackval);
+    return;
+  }
+
+  Array* arr = reinterpret_cast<Array*>(stackval);
+
+  // Out-of-bounds checking
+  if (index >= arr->data->size()) {
+    this->push_stack(kNull);
+  }
+
+  (*arr->data)[index] = expression;
+
+  this->push_stack(stackval);
 }
 
 void VM::op_putself() {
@@ -1201,11 +1242,21 @@ void VM::init_frames() {
   block->write_readmembersymbol(this->context.symbol_table("get_method"));
   block->write_typeof();
 
+  // Charly.internals.gccollect();
   block->write_readlocal(4, 0);
   block->write_readmembersymbol(this->context.symbol_table("internals"));
   block->write_readmembersymbol(this->context.symbol_table("gccollect"));
   block->write_call(0);
   block->write_pop(1);
+
+  // arguments[0] = 25;
+  block->write_readlocal(0, 0);
+  block->write_putvalue(this->create_integer(25));
+  block->write_setarrayindex(0);
+
+  // arguments[0];
+  block->write_readlocal(0, 0);
+  block->write_readarrayindex(0);
 
   // Return
   block->write_return();
@@ -1281,6 +1332,12 @@ void VM::run() {
         break;
       }
 
+      case Opcode::ReadArrayIndex: {
+        uint32_t index = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+        this->op_readarrayindex(index);
+        break;
+      }
+
       case Opcode::SetLocal: {
         uint32_t index = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
         uint32_t level = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(uint32_t));
@@ -1291,6 +1348,12 @@ void VM::run() {
       case Opcode::SetMemberSymbol: {
         VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
         this->op_setmembersymbol(symbol);
+        break;
+      }
+
+      case Opcode::SetArrayIndex: {
+        uint32_t index = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+        this->op_setarrayindex(index);
         break;
       }
 
@@ -1456,7 +1519,8 @@ void VM::run() {
       }
 
       default: {
-        std::cout << "Opcode: " << std::hex << opcode << std::dec << '\n';
+        std::cout << "Unknown opcode: " << kOpcodeMnemonics[opcode] << " at " << reinterpret_cast<void*>(this->ip)
+                  << '\n';
         this->panic(kStatusUnknownOpcode);
       }
     }

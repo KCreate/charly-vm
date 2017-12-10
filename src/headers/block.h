@@ -126,9 +126,11 @@ public:
   void write_readlocal(uint32_t index, uint32_t level);
   void write_readmembersymbol(VALUE symbol);
   void write_readmembervalue();
+  void write_readarrayindex(uint32_t index);
   void write_setlocal(uint32_t index, uint32_t level);
   void write_setmembersymbol(VALUE symbol);
   void write_setmembervalue();
+  void write_setarrayindex(uint32_t index);
   void write_putself();
   void write_putvalue(VALUE value);
   void write_putfloat(double value);

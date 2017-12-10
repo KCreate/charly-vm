@@ -63,6 +63,17 @@ enum Opcode : uint8_t {
   // - member
   ReadMemberValue,
 
+  // Reads a value at a given index inside an array
+  // The value popped from the stack needs to be an array, else this instruction does nothing
+  // and the first stack argument will be pushed back onto the stack
+  //
+  // args:
+  // - index
+  //
+  // stack:
+  // - array
+  ReadArrayIndex,
+
   // Set a value at a given offset inside a given frame
   // Will write null if the stack is empty
   // Will pop, but not write, if the index is out-of-bounds
@@ -92,6 +103,19 @@ enum Opcode : uint8_t {
   // - member
   // - value
   SetMemberValue,
+
+  // Sets the value at a given index inside an array
+  // The value popped from the stack needs to be an array, else this instruction does nothing
+  //
+  // The array is pushed back onto the stack in any case
+  //
+  // args:
+  // - index
+  //
+  // stack:
+  // - array
+  // - value
+  SetArrayIndex,
 
   // Put the self value from the current frame onto the stack
   PutSelf,
@@ -307,9 +331,11 @@ static constexpr uint32_t kInstructionLengths[]{
   /* ReadLocal */          1 + sizeof(uint32_t) + sizeof(uint32_t),
   /* ReadMemberSymbol */   1 + sizeof(VALUE),
   /* ReadMemberValue */    1,
+  /* ReadArrayIndex */     1 + sizeof(uint32_t),
   /* SetLocal */           1 + sizeof(uint32_t) + sizeof(uint32_t),
   /* SetMemberSymbol */    1 + sizeof(VALUE),
   /* SetMemberValue */     1,
+  /* SetArrayIndex */      1 + sizeof(uint32_t),
   /* PutSelf */            1,
   /* PutValue */           1 + sizeof(VALUE),
   /* PutFloat */           1 + sizeof(double),
@@ -365,9 +391,11 @@ static std::string kOpcodeMnemonics[]{
   "readlocal",
   "readmembersymbol",
   "readmembervalue",
+  "readarrayindex",
   "setlocal",
   "setmembersymbol",
   "setmembervalue",
+  "setarrayindex",
   "putself",
   "putvalue",
   "putfloat",
