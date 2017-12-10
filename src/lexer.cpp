@@ -380,22 +380,18 @@ void Lexer::consume_newline() {
 void Lexer::consume_numeric() {
 
   // Check the number prefix
-  //if (this->source.current_char == L'0') {
-    //uint32_t cp = this->source.read_char();
+  if (this->source.current_char == L'0') {
+    uint32_t cp = this->source.read_char();
 
-    //if (cp == L'x') {
-      //this->source.read_char();
-      //this->consume_hex();
-    //} else if (cp == L'b') {
-      //this->source.read_char();
-      //this->consume_binary();
-    //} else {
-      //this->source.read_char();
-      //this->consume_octal();
-    //}
+    if (cp == L'x') {
+      this->source.read_char();
+      this->consume_hex();
+    } else {
+      this->consume_octal();
+    }
 
-    //return;
-  //}
+    return;
+  }
 
   this->consume_decimal();
 }
@@ -404,7 +400,8 @@ void Lexer::consume_decimal() {
   bool point_passed = false;
 
   std::stringstream decoder;
-  decoder << this->source.get_current_frame();
+  decoder << std::dec;
+  decoder << static_cast<char>(this->source.current_char);
 
   while (true) {
     uint32_t cp = this->source.read_char();
@@ -430,9 +427,6 @@ void Lexer::consume_decimal() {
     }
 
     if (Lexer::is_numeric(cp)) {
-
-      // Because cp is a numeric character, we can just cast the codepoint to a char
-      // The upper 3 most significant bytes don't contain any information anyway
       char numchar = static_cast<char>(cp);
       decoder << numchar;
     } else {
@@ -456,15 +450,63 @@ void Lexer::consume_decimal() {
 }
 
 void Lexer::consume_hex() {
+  this->token.type = TokenType::Integer;
 
-}
+  std::stringstream decoder;
+  decoder << std::hex;
 
-void Lexer::consume_binary() {
+  // There has to be at least one hex character
+  if (!Lexer::is_hex(this->source.current_char)) {
+    this->unexpected_char();
+  }
 
+  while (true) {
+    uint32_t cp = this->source.current_char;
+
+    if (Lexer::is_hex(cp)) {
+      char numchar = static_cast<char>(cp);
+      decoder << numchar;
+      this->source.read_char();
+    } else {
+      break;
+    }
+  }
+
+  int64_t num = 0;
+  decoder >> num;
+
+  this->token.numeric_value.i64_value = num;
 }
 
 void Lexer::consume_octal() {
+  this->token.type = TokenType::Integer;
 
+  std::stringstream decoder;
+  decoder << std::oct;
+
+  // There has to be at least one hex character
+  if (!Lexer::is_octal(this->source.current_char)) {
+    this->unexpected_char();
+  }
+
+  while (true) {
+    uint32_t cp = this->source.current_char;
+
+    if (Lexer::is_octal(cp)) {
+      char numchar = static_cast<char>(cp);
+      decoder << numchar;
+      this->source.read_char();
+    } else {
+      break;
+    }
+  }
+
+  int64_t num = 0;
+  decoder >> num;
+
+  std::cout << decoder.str() << '\n';
+
+  this->token.numeric_value.i64_value = num;
 }
 
 void Lexer::consume_comment() {
@@ -537,6 +579,14 @@ bool Lexer::is_alpha_uppercase(uint32_t cp) {
 
 bool Lexer::is_numeric(uint32_t cp) {
   return (cp >= 0x30 && cp <= 0x39);
+}
+
+bool Lexer::is_hex(uint32_t cp) {
+  return Lexer::is_numeric(cp) || (cp >= 0x41 && cp <= 0x46) || (cp >= 0x61 && cp <= 0x66);
+}
+
+bool Lexer::is_octal(uint32_t cp) {
+  return (cp >= 0x30 && cp <= 0x37);
 }
 
 void Lexer::unexpected_char() {

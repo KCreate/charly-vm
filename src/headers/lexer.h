@@ -53,7 +53,6 @@ public:
   void consume_numeric();
   void consume_decimal();
   void consume_hex();
-  void consume_binary();
   void consume_octal();
   void consume_string();
   void consume_comment();
@@ -65,6 +64,8 @@ public:
   static bool is_alpha_lowercase(uint32_t cp);
   static bool is_alpha_uppercase(uint32_t cp);
   static bool is_numeric(uint32_t cp);
+  static bool is_hex(uint32_t cp);
+  static bool is_octal(uint32_t cp);
   void unexpected_char();
   void throw_error(Location loc, const std::string& message);
 };

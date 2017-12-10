@@ -257,7 +257,17 @@ struct Token {
 
   template <class T>
   inline void write_to_stream(T&& stream) const {
-    stream << kTokenTypeStrings[this->type] << " : " << this->value << " ";
+    stream << kTokenTypeStrings[this->type] << " : ";
+
+    if (this->type == TokenType::Integer) {
+      stream << this->numeric_value.i64_value;
+    } else if (this->type == TokenType::Float) {
+      stream << this->numeric_value.dbl_value;
+    } else {
+      stream << this->value;
+    }
+
+    stream << ' ';
     this->location.write_to_stream(stream);
   }
 };
