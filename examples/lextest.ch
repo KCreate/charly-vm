@@ -1,7 +1,4 @@
-ident
-_myident
-$myident
-@"this is my symbol
-func foo(a, b) {
-  a + b
-}
+let foo = bar;
+let foo = bar
+let foo;
+let foo

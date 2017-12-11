@@ -39,10 +39,16 @@ namespace Charly::Compiler {
     std::vector<Token> tokens;
     AST::AbstractNode* parse_tree;
 
+    ~ParseResult() {
+      delete parse_tree;
+    }
+
     ParseResult(const std::string& f, const std::vector<Token> t, AST::AbstractNode* tree)
         : filename(f), tokens(t), parse_tree(tree) {
     }
   };
+
+  typedef std::function<void()> ParseFunc;
 
   class Parser : public Lexer {
   public:
@@ -56,22 +62,18 @@ namespace Charly::Compiler {
     // Utility methods
     Token& advance();
     void advance_to_token(TokenType type);
-    void unexpected_token(TokenType expected, std::string&& expected_value);
+    void unexpected_token();
+    void unexpected_token(TokenType expected);
+    void unexpected_token(std::string&& expected_value);
     void illegal_token();
-    void assert_token(TokenType type);
     void expect_token(TokenType type);
+    void expect_token(TokenType type, ParseFunc func);
     void skip_token(TokenType type);
-    template <typename F>
-    void if_token(TokenType type, F func);
+    void if_token(TokenType type, ParseFunc func);
 
     // Parse methods
     AST::AbstractNode* parse_program();
     AST::Block* parse_block();
-    AST::NodeList* parse_block_body();
-    AST::NodeList* parse_class_block();
-    AST::NodeList* parse_class_body();
-    AST::NodeList* parse_switch_block();
-    AST::NodeList* parse_switch_body();
     AST::AbstractNode* parse_statement();
     AST::AbstractNode* parse_class_statement();
     AST::If* parse_if_statement();
@@ -115,7 +117,9 @@ namespace Charly::Compiler {
     Location location;
     std::string message;
 
-    SyntaxError(Location l, std::string&& str) : location(l), message(str) {
+    SyntaxError(Location l, const std::string& str) : location(l), message(str) {
+    }
+    SyntaxError(Location l, std::string&& str) : location(l), message(std::move(str)) {
     }
   };
 };

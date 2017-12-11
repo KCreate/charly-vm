@@ -310,6 +310,8 @@ void Lexer::read_token() {
   if (this->token.type != TokenType::Comment && this->token.type != TokenType::Newline &&
       this->token.type != TokenType::Whitespace) {
     this->tokens.push_back(this->token);
+  } else {
+    this->read_token();
   }
 }
 

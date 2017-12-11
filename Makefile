@@ -6,6 +6,7 @@ CCFLAGS=-std=c++17 \
 				-Werror \
 				-Wno-long-long \
 				-Wno-variadic-macros \
+				-Wno-switch \
 				-ferror-limit=10000 \
 				-Ilibs \
 				-Isrc/headers
