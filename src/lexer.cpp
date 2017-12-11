@@ -573,9 +573,7 @@ void Lexer::consume_string() {
             break;
           }
           case L'\0': {
-            Location loc(this->token.location);
-            loc.length = this->source.pos - loc.pos;
-            this->throw_error(loc, "Unclosed string");
+            this->unexpected_char();
             break;
           }
         }
@@ -586,9 +584,7 @@ void Lexer::consume_string() {
         break;
       }
       case L'\0': {
-        Location loc(this->token.location);
-        loc.length = this->source.pos - loc.pos;
-        this->throw_error(loc, "Unclosed string");
+        this->unexpected_char();
       }
       default: {
         Buffer::write_cp_to_stream(this->source.current_char, strbuff);
@@ -684,9 +680,5 @@ bool Lexer::is_octal(uint32_t cp) {
 void Lexer::unexpected_char() {
   Location loc(this->source.pos - 1, this->source.row, this->source.column, 1, this->source.filename);
   throw UnexpectedCharError(loc, this->source.current_char);
-}
-
-void Lexer::throw_error(Location loc, const std::string& message) {
-  throw SyntaxError(loc, message);
 }
 }  // namespace Charly::Compiler

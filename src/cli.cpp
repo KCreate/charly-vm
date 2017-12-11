@@ -84,9 +84,6 @@ int CLI::run() {
     std::cout << '\n';
 
     return 1;
-  } catch(Compiler::SyntaxError& ex) {
-
-    return 1;
   }
 
   if (this->flags.dump_tokens) {

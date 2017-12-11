@@ -67,7 +67,6 @@ public:
   static bool is_hex(uint32_t cp);
   static bool is_octal(uint32_t cp);
   void unexpected_char();
-  void throw_error(Location loc, const std::string& message);
 };
 
 // An unexpected char was found during lexing of the source code
@@ -76,17 +75,6 @@ struct UnexpectedCharError {
   uint32_t cp;
 
   UnexpectedCharError(Location l, uint32_t cp) : location(l), cp(cp) {
-  }
-};
-
-// A more general exception for any syntax error which might come up
-struct SyntaxError {
-  Location location;
-  std::string message;
-
-  SyntaxError(Location l, const std::string& m) : location(l), message(m) {
-  }
-  SyntaxError(Location l, std::string&& m) : location(l), message(std::move(m)) {
   }
 };
 };  // namespace Charly::Compiler
