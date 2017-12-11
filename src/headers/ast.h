@@ -71,8 +71,17 @@ public:
     return *this;
   }
 
-  inline size_t type() {
+  virtual inline size_t type() {
     return typeid(*this).hash_code();
+  }
+
+  virtual void dump(std::ostream& stream, size_t depth = 0) = 0;
+};
+
+// A node represting the absence of another node
+struct Empty : public AbstractNode {
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Empty: " << this << '\n';
   }
 };
 
@@ -91,6 +100,12 @@ struct NodeList : public AbstractNode {
   inline ~NodeList() {
     for (auto& node : this->children)
       delete node;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- NodeList: " << this << '\n';
+    for (auto& node : this->children)
+      node->dump(stream, depth + 1);
   }
 };
 
@@ -112,6 +127,12 @@ struct Block : public AbstractNode {
       delete node;
     }
   }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Block: " << this << '\n';
+    for (auto& node : this->statements)
+      node->dump(stream, depth + 1);
+  }
 };
 
 // if <condition> {
@@ -125,16 +146,23 @@ struct Block : public AbstractNode {
 // }
 struct If : public AbstractNode {
   AbstractNode* condition;
-  Block* then_block;
-  Block* else_block;
+  AbstractNode* then_block;
+  AbstractNode* else_block;
 
-  If(AbstractNode* c, Block* t, Block* e) : condition(c), then_block(t), else_block(e) {
+  If(AbstractNode* c, AbstractNode* t, AbstractNode* e) : condition(c), then_block(t), else_block(e) {
   }
 
   inline ~If() {
     delete condition;
     delete then_block;
     delete else_block;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- If: " << this << '\n';
+    this->condition->dump(stream, depth + 1);
+    this->then_block->dump(stream, depth + 1);
+    this->else_block->dump(stream, depth + 1);
   }
 };
 
@@ -149,16 +177,23 @@ struct If : public AbstractNode {
 // }
 struct Unless : public AbstractNode {
   AbstractNode* condition;
-  Block* then_block;
-  Block* else_block;
+  AbstractNode* then_block;
+  AbstractNode* else_block;
 
-  Unless(AbstractNode* c, Block* t, Block* e) : condition(c), then_block(t), else_block(e) {
+  Unless(AbstractNode* c, AbstractNode* t, AbstractNode* e) : condition(c), then_block(t), else_block(e) {
   }
 
   inline ~Unless() {
     delete condition;
     delete then_block;
     delete else_block;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Unless: " << this << '\n';
+    this->condition->dump(stream, depth + 1);
+    this->then_block->dump(stream, depth + 1);
+    this->else_block->dump(stream, depth + 1);
   }
 };
 
@@ -167,14 +202,20 @@ struct Unless : public AbstractNode {
 // }
 struct Guard : public AbstractNode {
   AbstractNode* condition;
-  Block* block;
+  AbstractNode* block;
 
-  Guard(AbstractNode* c, Block* b) : condition(c), block(b) {
+  Guard(AbstractNode* c, AbstractNode* b) : condition(c), block(b) {
   }
 
   inline ~Guard() {
     delete condition;
     delete block;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Guard: " << this << '\n';
+    this->condition->dump(stream, depth + 1);
+    this->block->dump(stream, depth + 1);
   }
 };
 
@@ -183,14 +224,20 @@ struct Guard : public AbstractNode {
 // }
 struct While : public AbstractNode {
   AbstractNode* condition;
-  Block* block;
+  AbstractNode* block;
 
-  While(AbstractNode* c, Block* b) : condition(c), block(b) {
+  While(AbstractNode* c, AbstractNode* b) : condition(c), block(b) {
   }
 
   inline ~While() {
     delete condition;
     delete block;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- While: " << this << '\n';
+    this->condition->dump(stream, depth + 1);
+    this->block->dump(stream, depth + 1);
   }
 };
 
@@ -199,14 +246,20 @@ struct While : public AbstractNode {
 // }
 struct Until : public AbstractNode {
   AbstractNode* condition;
-  Block* block;
+  AbstractNode* block;
 
-  Until(AbstractNode* c, Block* b) : condition(c), block(b) {
+  Until(AbstractNode* c, AbstractNode* b) : condition(c), block(b) {
   }
 
   inline ~Until() {
     delete condition;
     delete block;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Until: " << this << '\n';
+    this->condition->dump(stream, depth + 1);
+    this->block->dump(stream, depth + 1);
   }
 };
 
@@ -214,13 +267,18 @@ struct Until : public AbstractNode {
 //   <block>
 // }
 struct Loop : public AbstractNode {
-  Block* block;
+  AbstractNode* block;
 
-  Loop(Block* b) : block(b) {
+  Loop(AbstractNode* b) : block(b) {
   }
 
   inline ~Loop() {
     delete block;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Loop: " << this << '\n';
+    this->block->dump(stream, depth + 1);
   }
 };
 
@@ -234,6 +292,11 @@ struct Unary : public AbstractNode {
 
   inline ~Unary() {
     delete expression;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Unary: " << '\n';
+    this->expression->dump(stream, depth + 1);
   }
 };
 
@@ -250,6 +313,12 @@ struct Binary : public AbstractNode {
     delete left;
     delete right;
   }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Binary: " << '\n';
+    this->left->dump(stream, depth + 1);
+    this->right->dump(stream, depth + 1);
+  }
 };
 
 // case <conditions> {
@@ -257,14 +326,20 @@ struct Binary : public AbstractNode {
 // }
 struct SwitchNode : public AbstractNode {
   NodeList* conditions;
-  Block* block;
+  AbstractNode* block;
 
-  SwitchNode(NodeList* c, Block* b) : conditions(c), block(b) {
+  SwitchNode(NodeList* c, AbstractNode* b) : conditions(c), block(b) {
   }
 
   inline ~SwitchNode() {
     delete conditions;
     delete block;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- SwitchNode: " << '\n';
+    this->conditions->dump(stream, depth + 1);
+    this->block->dump(stream, depth + 1);
   }
 };
 
@@ -274,20 +349,23 @@ struct SwitchNode : public AbstractNode {
 // }
 struct Switch : public AbstractNode {
   AbstractNode* condition;
-  std::vector<SwitchNode*> cases;
-  Block* default_block;
+  NodeList* cases;
+  AbstractNode* default_block;
 
-  Switch(AbstractNode* co, const std::vector<SwitchNode*>& vec, Block* d)
-      : condition(co), cases(vec), default_block(d) {
-  }
-  Switch(AbstractNode* co, std::initializer_list<SwitchNode*> c, Block* d) : condition(co), cases(c), default_block(d) {
+  Switch(AbstractNode* co, NodeList* c, AbstractNode* d) : condition(co), cases(c), default_block(d) {
   }
 
   inline ~Switch() {
     delete condition;
-    for (auto& node : this->cases)
-      delete node;
+    delete cases;
     delete default_block;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Switch: " << '\n';
+    this->condition->dump(stream, depth + 1);
+    this->cases->dump(stream, depth + 1);
+    this->default_block->dump(stream, depth + 1);
   }
 };
 
@@ -303,6 +381,12 @@ struct And : public AbstractNode {
     delete left;
     delete right;
   }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- And: " << '\n';
+    this->left->dump(stream, depth + 1);
+    this->right->dump(stream, depth + 1);
+  }
 };
 
 // <left> || <right>
@@ -317,6 +401,12 @@ struct Or : public AbstractNode {
     delete left;
     delete right;
   }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Or: " << '\n';
+    this->left->dump(stream, depth + 1);
+    this->right->dump(stream, depth + 1);
+  }
 };
 
 // typeof <expression>
@@ -328,6 +418,11 @@ struct Typeof : public AbstractNode {
 
   inline ~Typeof() {
     delete expression;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Typeof: " << this << '\n';
+    this->expression->dump(stream, depth + 1);
   }
 };
 
@@ -343,6 +438,12 @@ struct Assignment : public AbstractNode {
     delete target;
     delete expression;
   }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Assignment: " << '\n';
+    this->target->dump(stream, depth + 1);
+    this->expression->dump(stream, depth + 1);
+  }
 };
 
 // <target>(<arguments>)
@@ -356,6 +457,12 @@ struct Call : public AbstractNode {
   inline ~Call() {
     delete target;
     delete arguments;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Call: " << this << '\n';
+    this->target->dump(stream, depth + 1);
+    this->arguments->dump(stream, depth + 1);
   }
 };
 
@@ -371,6 +478,11 @@ struct Identifier : public AbstractNode {
     if (offset_info != nullptr)
       delete offset_info;
   }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Identifier: " << this;
+    stream << ' ' << this->name << '\n';
+  }
 };
 
 // <name>
@@ -379,19 +491,30 @@ struct Symbol : public AbstractNode {
 
   Symbol(const std::string& str) : name(str) {
   }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Symbol: " << this;
+    stream << ' ' << this->name << '\n';
+  }
 };
 
 // <target>.<identifier>
 struct Member : public AbstractNode {
   AbstractNode* target;
-  Symbol* symbol;
+  AbstractNode* symbol;
 
-  Member(AbstractNode* t, Symbol* s) : target(t), symbol(s) {
+  Member(AbstractNode* t, AbstractNode* s) : target(t), symbol(s) {
   }
 
   inline ~Member() {
     delete target;
     delete symbol;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Member: " << this << '\n';
+    this->target->dump(stream, depth + 1);
+    this->symbol->dump(stream, depth + 1);
   }
 };
 
@@ -406,6 +529,12 @@ struct Index : public AbstractNode {
   inline ~Index() {
     delete target;
     delete argument;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Index: " << this << '\n';
+    this->target->dump(stream, depth + 1);
+    this->argument->dump(stream, depth + 1);
   }
 };
 
@@ -423,6 +552,11 @@ struct String : public AbstractNode {
 
   String(const std::string& str) : value(str) {
   }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- String: " << this;
+    stream << ' ' << this->value.value_or("") << '\n';
+  }
 };
 
 // <value>
@@ -430,6 +564,11 @@ struct Integer : public AbstractNode {
   int64_t value;
 
   Integer(int64_t v) : value(v) {
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Integer: " << this;
+    stream << ' ' << this->value << '\n';
   }
 };
 
@@ -439,6 +578,11 @@ struct Float : public AbstractNode {
 
   Float(double v) : value(v) {
   }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Float: " << this;
+    stream << ' ' << this->value << '\n';
+  }
 };
 
 // <value>
@@ -446,6 +590,11 @@ struct Boolean : public AbstractNode {
   bool value;
 
   Boolean(bool v) : value(v) {
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Boolean: " << this;
+    stream << ' ' << (this->value ? "true" : "false") << '\n';
   }
 };
 
@@ -457,6 +606,11 @@ struct Array : public AbstractNode {
       : expressions(new NodeList(std::forward<std::initializer_list<AbstractNode*>>(e))) {
   }
   Array(NodeList* e) : expressions(e) {
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Array: " << this;
+    this->expressions->dump(stream, depth + 1);
   }
 };
 
@@ -473,6 +627,14 @@ struct Hash : public AbstractNode {
     for (auto& pair : this->pairs) {
       delete pair.first;
       delete pair.second;
+    }
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Hash: " << this;
+    for (auto& note : this->pairs) {
+      note.first->dump(stream, depth + 1);
+      note.second->dump(stream, depth + 1);
     }
   }
 };
@@ -499,14 +661,14 @@ struct Hash : public AbstractNode {
 //
 // -><body>
 struct Function : public AbstractNode {
-  Symbol* name;
+  AbstractNode* name;
   NodeList* parameters;
-  Block* body;
+  AbstractNode* body;
   bool anonymous;
 
   IRLVarInfo* lvar_info;
 
-  Function(Symbol* n, NodeList* p, Block* b, bool a) : name(n), parameters(p), body(b), anonymous(a) {
+  Function(AbstractNode* n, NodeList* p, AbstractNode* b, bool a) : name(n), parameters(p), body(b), anonymous(a) {
   }
 
   inline ~Function() {
@@ -516,17 +678,30 @@ struct Function : public AbstractNode {
     if (lvar_info != nullptr)
       delete lvar_info;
   }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Function:" << this;
+    stream << ' ' << (this->anonymous ? "anonymous" : "") << '\n';
+    this->name->dump(stream, depth + 1);
+    this->parameters->dump(stream, depth + 1);
+    this->body->dump(stream, depth + 1);
+  }
 };
 
 // property <identifier>;
 struct PropertyDeclaration : public AbstractNode {
-  Symbol* symbol;
+  AbstractNode* symbol;
 
-  PropertyDeclaration(Symbol* s) : symbol(s) {
+  PropertyDeclaration(AbstractNode* s) : symbol(s) {
   }
 
   inline ~PropertyDeclaration() {
     delete symbol;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- PropertyDeclaration:" << this << '\n';
+    this->symbol->dump(stream, depth + 1);
   }
 };
 
@@ -539,6 +714,11 @@ struct StaticDeclaration : public AbstractNode {
 
   inline ~StaticDeclaration() {
     delete declaration;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- StaticDeclaration:" << this << '\n';
+    this->declaration->dump(stream, depth + 1);
   }
 };
 
@@ -554,17 +734,24 @@ struct StaticDeclaration : public AbstractNode {
 //   <body>
 // }
 struct Class : public AbstractNode {
-  Symbol* name;
+  AbstractNode* name;
   NodeList* body;
   NodeList* parents;
 
-  Class(Symbol* n, NodeList* b, NodeList* p) : name(n), body(b), parents(p) {
+  Class(AbstractNode* n, NodeList* b, NodeList* p) : name(n), body(b), parents(p) {
   }
 
   inline ~Class() {
     delete name;
     delete body;
     delete parents;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Class:" << this << '\n';
+    this->name->dump(stream, depth + 1);
+    this->body->dump(stream, depth + 1);
+    this->parents->dump(stream, depth + 1);
   }
 };
 
@@ -574,13 +761,13 @@ struct Class : public AbstractNode {
 //
 // const <name> = <expression>
 struct LocalInitialisation : public AbstractNode {
-  Symbol* name;
+  AbstractNode* name;
   AbstractNode* expression;
   bool constant;
 
   IRVarOffsetInfo* offset_info;
 
-  LocalInitialisation(Symbol* n, AbstractNode* e, bool c) : name(n), expression(e), constant(c) {
+  LocalInitialisation(AbstractNode* n, AbstractNode* e, bool c) : name(n), expression(e), constant(c) {
   }
 
   inline ~LocalInitialisation() {
@@ -588,6 +775,13 @@ struct LocalInitialisation : public AbstractNode {
     delete expression;
     if (offset_info != nullptr)
       delete offset_info;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- LocalInitialisation:" << this << ' ';
+    stream << (this->constant ? "constant" : "") << '\n';
+    this->name->dump(stream, depth + 1);
+    this->expression->dump(stream, depth + 1);
   }
 };
 
@@ -603,6 +797,11 @@ struct Return : public AbstractNode {
   inline ~Return() {
     delete expression;
   }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Return:" << this << '\n';
+    this->expression->dump(stream, depth + 1);
+  }
 };
 
 // throw <expression>
@@ -614,6 +813,11 @@ struct Throw : public AbstractNode {
 
   inline ~Throw() {
     delete expression;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Throw:" << this << '\n';
+    this->expression->dump(stream, depth + 1);
   }
 };
 
@@ -629,11 +833,11 @@ struct Continue : public AbstractNode {};
 //   <handler_block>
 // }
 struct TryCatch : public AbstractNode {
-  Block* block;
-  Symbol* exception_name;
-  Block* handler_block;
+  AbstractNode* block;
+  AbstractNode* exception_name;
+  AbstractNode* handler_block;
 
-  TryCatch(Block* b, Symbol* e, Block* h) : block(b), exception_name(e), handler_block(h) {
+  TryCatch(AbstractNode* b, AbstractNode* e, AbstractNode* h) : block(b), exception_name(e), handler_block(h) {
   }
 
   inline ~TryCatch() {
@@ -641,9 +845,17 @@ struct TryCatch : public AbstractNode {
     delete exception_name;
     delete handler_block;
   }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- TryCatch:" << this << '\n';
+    this->block->dump(stream, depth + 1);
+    this->exception_name->dump(stream, depth + 1);
+    this->handler_block->dump(stream, depth + 1);
+  }
 };
 
 // Precomputed typeid hashes for all AST nodes
+static const size_t kTypeEmpty = typeid(Empty).hash_code();
 static const size_t kTypeNodeList = typeid(NodeList).hash_code();
 static const size_t kTypeBlock = typeid(Block).hash_code();
 static const size_t kTypeIf = typeid(If).hash_code();

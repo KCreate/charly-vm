@@ -20,7 +20,8 @@ OBJS=build/main.o \
 		 build/symboltable.o \
 		 build/managedcontext.o \
 		 build/block.o \
-		 build/lexer.o
+		 build/lexer.o \
+		 build/parser.o
 
 all: objects
 	$(CC) $(OPT) $(OBJS) $(CCFLAGS) -lstdc++ -lm -o bin/vm

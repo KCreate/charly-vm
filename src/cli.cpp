@@ -32,7 +32,7 @@
 #include "charly.h"
 #include "cli.h"
 #include "context.h"
-#include "lexer.h"
+#include "parser.h"
 #include "sourcefile.h"
 
 namespace Charly {
@@ -72,25 +72,37 @@ int CLI::run() {
   }
   std::string source_string((std::istreambuf_iterator<char>(inputfile)), std::istreambuf_iterator<char>());
   SourceFile userfile(this->flags.arguments[0], source_string);
-  Compiler::Lexer lexer(userfile);
+  Compiler::Parser parser(userfile);
 
   try {
-    lexer.tokenize();
+    parser.advance();
+
+    ParseResult* result = parser.parse();
+
+    if (this->flags.dump_tokens) {
+      for (const auto& token : result->tokens) {
+        token.write_to_stream(std::cout);
+        std::cout << '\n';
+      }
+    }
+
+    if (this->flags.dump_ast) {
+      if (result->parse_tree != nullptr) {
+        result->parse_tree->dump(std::cout);
+      }
+    }
   } catch(Compiler::UnexpectedCharError& ex) {
     std::cout << "Encountered an unexpected char '";
     Buffer::write_cp_to_stream(ex.cp, std::cout);
     std::cout << "' ";
     ex.location.write_to_stream(std::cout);
     std::cout << '\n';
+  } catch(Compiler::SyntaxError& ex) {
+    std::cout << "SyntaxError: " << ex.message << " ";
+    ex.location.write_to_stream(std::cout);
+    std::cout << '\n';
 
     return 1;
-  }
-
-  if (this->flags.dump_tokens) {
-    for (const auto& token : lexer.tokens) {
-      token.write_to_stream(std::cout);
-      std::cout << '\n';
-    }
   }
 
   if (this->flags.skip_execution) {
