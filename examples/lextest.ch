@@ -1,19 +1,5 @@
-try {
-  foo
-} catch(myexception) {
-  foo
-}
+until (foo) {}
+until (foo) foo;
 
-try {
-  foo
-} finally {
-  foo
-}
-
-try {
-  foo
-} catch(myexception) {
-  foo
-} finally {
-  foo
-}
+loop {}
+loop foo;

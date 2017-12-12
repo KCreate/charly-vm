@@ -274,6 +274,12 @@ namespace Charly::Compiler {
       case TokenType::While: {
         return this->parse_while_statement();
       }
+      case TokenType::Until: {
+        return this->parse_until_statement();
+      }
+      case TokenType::Loop: {
+        return this->parse_loop_statement();
+      }
       case TokenType::Try: {
         return this->parse_try_statement();
       }
@@ -358,6 +364,56 @@ namespace Charly::Compiler {
 
     this->keyword_context = context_backup;
     return (new AST::While(test, then_block))->at(start_location, then_block->location_end);
+  }
+
+  AST::AbstractNode* Parser::parse_until_statement() {
+    Location start_location = this->token.location;
+    this->expect_token(TokenType::Until);
+
+    AST::AbstractNode* test;
+
+    if (this->token.type == TokenType::LeftParen) {
+      this->advance();
+      test = this->parse_expression();
+      this->expect_token(TokenType::RightParen);
+    } else {
+      test = this->parse_expression();
+    }
+
+    auto context_backup = this->keyword_context;
+    this->keyword_context.break_allowed = true;
+    this->keyword_context.continue_allowed = true;
+
+    AST::AbstractNode* then_block;
+
+    if (this->token.type == TokenType::LeftCurly) {
+      then_block = this->parse_block();
+    } else {
+      then_block = this->parse_statement();
+    }
+
+    this->keyword_context = context_backup;
+    return (new AST::Until(test, then_block))->at(start_location, then_block->location_end);
+  }
+
+  AST::AbstractNode* Parser::parse_loop_statement() {
+    Location start_location = this->token.location;
+    this->expect_token(TokenType::Loop);
+
+    auto context_backup = this->keyword_context;
+    this->keyword_context.break_allowed = true;
+    this->keyword_context.continue_allowed = true;
+
+    AST::AbstractNode* block;
+
+    if (this->token.type == TokenType::LeftCurly) {
+      block = this->parse_block();
+    } else {
+      block = this->parse_statement();
+    }
+
+    this->keyword_context = context_backup;
+    return (new AST::Loop(block))->at(start_location, block->location_end);
   }
 
   AST::AbstractNode* Parser::parse_try_statement() {
