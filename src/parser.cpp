@@ -177,7 +177,7 @@ namespace Charly::Compiler {
     return block;
   }
 
-  AST::Block* Parser::parse_block() {
+  AST::AbstractNode* Parser::parse_block() {
     AST::Block* block = new AST::Block();
 
     std::optional<Location> start_location;
@@ -195,7 +195,7 @@ namespace Charly::Compiler {
       end_location = this->token.location;
     });
 
-    return static_cast<AST::Block*>(block->at(start_location, end_location));
+    return block->at(start_location, end_location);
   }
 
   AST::AbstractNode* Parser::parse_statement() {
@@ -268,10 +268,60 @@ namespace Charly::Compiler {
         this->skip_token(TokenType::Semicolon);
         return (new AST::LocalInitialisation(identifier, exp, true))->at(start_location, end_location);
       }
+      case TokenType::If: {
+        return this->parse_if_statement();
+      }
+      default: {
+        AST::AbstractNode* exp = this->parse_expression();
+        this->skip_token(TokenType::Semicolon);
+        return exp;
+      }
     }
 
     this->unexpected_token();
     return nullptr;
+  }
+
+  AST::AbstractNode* Parser::parse_if_statement() {
+    Location start_location = this->token.location;
+    this->expect_token(TokenType::If);
+
+    AST::AbstractNode* test;
+
+    // The parens around the test are optional
+    if (this->token.type == TokenType::LeftParen) {
+      this->advance();
+      test = this->parse_expression();
+      this->expect_token(TokenType::RightParen);
+    } else {
+      test = this->parse_expression();
+    }
+
+    AST::AbstractNode* then_node;
+    AST::AbstractNode* else_node;
+
+    if (this->token.type == TokenType::LeftCurly) {
+      then_node = this->parse_block();
+    } else {
+      then_node = this->parse_statement();
+      else_node = new AST::Empty();
+      return (new AST::If(test, then_node, else_node))->at(start_location, then_node->location_end);
+    }
+
+    if (this->token.type == TokenType::Else) {
+      this->advance();
+
+      if (this->token.type == TokenType::If) {
+        else_node = this->parse_if_statement();
+      } else {
+        else_node = this->parse_block();
+      }
+
+      return (new AST::If(test, then_node, else_node))->at(start_location, else_node->location_end);
+    } else {
+      else_node = new AST::Empty();
+      return (new AST::If(test, then_node, else_node))->at(start_location, then_node->location_end);
+    }
   }
 
   AST::AbstractNode* Parser::parse_expression() {

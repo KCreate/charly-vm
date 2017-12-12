@@ -74,17 +74,17 @@ namespace Charly::Compiler {
 
     // Parse methods
     AST::AbstractNode* parse_program();
-    AST::Block* parse_block();
+    AST::AbstractNode* parse_block();
     AST::AbstractNode* parse_statement();
     AST::AbstractNode* parse_class_statement();
-    AST::If* parse_if_statement();
-    AST::Switch* parse_switch_statement();
-    AST::Guard* parse_guard_statement();
-    AST::Unless* parse_unless_statement();
-    AST::While* parse_while_statement();
-    AST::Until* parse_until_statement();
-    AST::Loop* parse_loop_statement();
-    AST::TryCatch* parse_try_statement();
+    AST::AbstractNode* parse_if_statement();
+    AST::AbstractNode* parse_switch_statement();
+    AST::AbstractNode* parse_guard_statement();
+    AST::AbstractNode* parse_unless_statement();
+    AST::AbstractNode* parse_while_statement();
+    AST::AbstractNode* parse_until_statement();
+    AST::AbstractNode* parse_loop_statement();
+    AST::AbstractNode* parse_try_statement();
     AST::AbstractNode* parse_expression();
     AST::AbstractNode* parse_assignment();
     AST::AbstractNode* parse_ternary_if();
@@ -104,13 +104,13 @@ namespace Charly::Compiler {
     AST::AbstractNode* parse_typeof();
     AST::AbstractNode* parse_member_call();
     AST::AbstractNode* parse_literal();
-    AST::NodeList* parse_expressionlist(TokenType end_token);
-    AST::NodeList* parse_identifierlist(TokenType end_token);
-    AST::Array* parse_array_literal();
-    AST::Hash* parse_hash_literal();
-    AST::Function* parse_func_literal();
-    AST::Function* parse_arrowfunc_literal();
-    AST::Class* parse_class_literal();
+    AST::AbstractNode* parse_expressionlist(TokenType end_token);
+    AST::AbstractNode* parse_identifierlist(TokenType end_token);
+    AST::AbstractNode* parse_array_literal();
+    AST::AbstractNode* parse_hash_literal();
+    AST::AbstractNode* parse_func_literal();
+    AST::AbstractNode* parse_arrowfunc_literal();
+    AST::AbstractNode* parse_class_literal();
   };
 
   // Thrown on unexpected tokens
