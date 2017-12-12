@@ -864,24 +864,30 @@ struct Continue : public AbstractNode {
 //   <block>
 // } catch (<exception_name>) {
 //   <handler_block>
+// } finally {
+//   <finally_block>
 // }
 struct TryCatch : public AbstractNode {
   AbstractNode* block;
   std::string exception_name;
   AbstractNode* handler_block;
+  AbstractNode* finally_block;
 
-  TryCatch(AbstractNode* b, const std::string& e, AbstractNode* h) : block(b), exception_name(e), handler_block(h) {
+  TryCatch(AbstractNode* b, const std::string& e, AbstractNode* h, AbstractNode* f)
+      : block(b), exception_name(e), handler_block(h), finally_block(f) {
   }
 
   inline ~TryCatch() {
     delete block;
     delete handler_block;
+    delete finally_block;
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- TryCatch:" << this << ' ' << this->exception_name << '\n';
     this->block->dump(stream, depth + 1);
     this->handler_block->dump(stream, depth + 1);
+    this->finally_block->dump(stream, depth + 1);
   }
 };
 

@@ -1,6 +1,19 @@
-while foo {}
-while (foo) {}
-while foo foo;
-while (foo) foo;
-while foo foo
-while (foo) foo
+try {
+  foo
+} catch(myexception) {
+  foo
+}
+
+try {
+  foo
+} finally {
+  foo
+}
+
+try {
+  foo
+} catch(myexception) {
+  foo
+} finally {
+  foo
+}

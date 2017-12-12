@@ -274,6 +274,9 @@ namespace Charly::Compiler {
       case TokenType::While: {
         return this->parse_while_statement();
       }
+      case TokenType::Try: {
+        return this->parse_try_statement();
+      }
       default: {
         AST::AbstractNode* exp = this->parse_expression();
         this->skip_token(TokenType::Semicolon);
@@ -357,6 +360,50 @@ namespace Charly::Compiler {
     return (new AST::While(test, then_block))->at(start_location, then_block->location_end);
   }
 
+  AST::AbstractNode* Parser::parse_try_statement() {
+    Location start_location = this->token.location;
+    this->expect_token(TokenType::Try);
+
+    AST::AbstractNode* try_block;
+    std::string exception_name;
+    AST::AbstractNode* catch_block;
+    AST::AbstractNode* finally_block;
+
+    try_block = this->parse_block();
+
+    if (this->token.type == TokenType::Catch) {
+      this->advance();
+      this->expect_token(TokenType::LeftParen);
+      this->expect_token(TokenType::Identifier, [&](){
+        exception_name = this->token.value;
+      });
+      this->expect_token(TokenType::RightParen);
+
+      catch_block = this->parse_block();
+
+      if (this->token.type == TokenType::Finally) {
+        this->advance();
+        finally_block = this->parse_block();
+      } else {
+        finally_block = new AST::Empty();
+      }
+    } else {
+      this->expect_token(TokenType::Finally);
+      finally_block = this->parse_block();
+      catch_block = new AST::Empty();
+    }
+
+    std::optional<Location> end_location;
+
+    if (finally_block) {
+      end_location = finally_block->location_end;
+    } else {
+      end_location = catch_block->location_end;
+    }
+
+    return (new AST::TryCatch(try_block, exception_name, catch_block, finally_block))->at(start_location, end_location);
+  }
+
   AST::AbstractNode* Parser::parse_expression() {
     return parse_literal();
   }
@@ -368,12 +415,6 @@ namespace Charly::Compiler {
         id->at(this->token.location);
         this->advance();
         return id;
-      }
-      case TokenType::If: {
-        return this->parse_if_statement();
-      }
-      case TokenType::While: {
-        return this->parse_while_statement();
       }
     }
 
