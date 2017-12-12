@@ -377,8 +377,9 @@ namespace Charly::Compiler {
     if (this->token.type == TokenType::LeftCurly) {
       then_node = this->parse_block();
     } else {
-      then_node = this->parse_statement();
+      then_node = this->parse_expression();
       else_node = new AST::Empty();
+      this->skip_token(TokenType::Semicolon);
       return (new AST::If(test, then_node, else_node))->at(start_location, then_node->location_end);
     }
 
@@ -388,7 +389,12 @@ namespace Charly::Compiler {
       if (this->token.type == TokenType::If) {
         else_node = this->parse_if_statement();
       } else {
-        else_node = this->parse_block();
+        if (this->token.type == TokenType::LeftCurly) {
+          else_node = this->parse_block();
+        } else {
+          else_node = this->parse_expression();
+          this->skip_token(TokenType::Semicolon);
+        }
       }
 
       return (new AST::If(test, then_node, else_node))->at(start_location, else_node->location_end);
@@ -419,8 +425,9 @@ namespace Charly::Compiler {
     if (this->token.type == TokenType::LeftCurly) {
       then_node = this->parse_block();
     } else {
-      then_node = this->parse_statement();
+      then_node = this->parse_expression();
       else_node = new AST::Empty();
+      this->skip_token(TokenType::Semicolon);
       return (new AST::Unless(test, then_node, else_node))->at(start_location, then_node->location_end);
     }
 
@@ -432,7 +439,8 @@ namespace Charly::Compiler {
       if (this->token.type == TokenType::LeftCurly) {
         else_node = this->parse_block();
       } else {
-        else_node = this->parse_statement();
+        else_node = this->parse_expression();
+        this->skip_token(TokenType::Semicolon);
       }
     } else {
       else_node = new AST::Empty();
@@ -461,7 +469,8 @@ namespace Charly::Compiler {
     if (this->token.type == TokenType::LeftCurly) {
       block = this->parse_block();
     } else {
-      block = this->parse_statement();
+      block = this->parse_expression();
+      this->skip_token(TokenType::Semicolon);
     }
 
     return (new AST::Guard(test, block))->at(start_location, block->location_end);
@@ -490,7 +499,8 @@ namespace Charly::Compiler {
     if (this->token.type == TokenType::LeftCurly) {
       then_block = this->parse_block();
     } else {
-      then_block = this->parse_statement();
+      then_block = this->parse_expression();
+      this->skip_token(TokenType::Semicolon);
     }
 
     this->keyword_context = context_backup;
@@ -520,7 +530,8 @@ namespace Charly::Compiler {
     if (this->token.type == TokenType::LeftCurly) {
       then_block = this->parse_block();
     } else {
-      then_block = this->parse_statement();
+      then_block = this->parse_expression();
+      this->skip_token(TokenType::Semicolon);
     }
 
     this->keyword_context = context_backup;
@@ -540,7 +551,8 @@ namespace Charly::Compiler {
     if (this->token.type == TokenType::LeftCurly) {
       block = this->parse_block();
     } else {
-      block = this->parse_statement();
+      block = this->parse_expression();
+      this->skip_token(TokenType::Semicolon);
     }
 
     this->keyword_context = context_backup;
