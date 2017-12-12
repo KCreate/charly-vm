@@ -89,10 +89,10 @@ namespace Charly::Compiler {
     std::string error_message;
 
     if (this->token.type == TokenType::Eof) {
+      error_message = "Unexpected end of file";
+    } else {
       error_message = "Unexpected ";
       error_message.append(kTokenTypeStrings[this->token.type]);
-    } else {
-      error_message = "Unexpected end of file";
     }
 
     throw SyntaxError(this->token.location, error_message);
@@ -102,13 +102,13 @@ namespace Charly::Compiler {
     std::string error_message;
 
     if (this->token.type == TokenType::Eof) {
+      error_message = "Unexpected end of file, expected ";
+      error_message.append(kTokenTypeStrings[expected]);
+    } else {
       error_message = "Expected ";
       error_message.append(kTokenTypeStrings[expected]);
       error_message.append(", got ");
       error_message.append(kTokenTypeStrings[this->token.type]);
-    } else {
-      error_message = "Unexpected end of file, expected ";
-      error_message.append(kTokenTypeStrings[expected]);
     }
 
     throw SyntaxError(this->token.location, error_message);
@@ -118,13 +118,13 @@ namespace Charly::Compiler {
     std::string error_message;
 
     if (this->token.type == TokenType::Eof) {
+      error_message = "Unexpected end of file, expected ";
+      error_message.append(expected_value);
+    } else {
       error_message = "Expected ";
       error_message.append(expected_value);
       error_message.append(", got ");
       error_message.append(kTokenTypeStrings[this->token.type]);
-    } else {
-      error_message = "Unexpected end of file, expected ";
-      error_message.append(expected_value);
     }
 
     throw SyntaxError(this->token.location, error_message);
@@ -132,6 +132,12 @@ namespace Charly::Compiler {
 
   void Parser::illegal_token() {
     throw SyntaxError(this->token.location, "This token is not allowed at this location");
+  }
+
+  void Parser::assert_token(TokenType type) {
+    if (this->token.type != type) {
+      this->unexpected_token(type);
+    }
   }
 
   void Parser::expect_token(TokenType type) {
@@ -152,11 +158,13 @@ namespace Charly::Compiler {
   }
 
   void Parser::skip_token(TokenType type) {
-    if (this->token.type == type) this->advance();
+    if (this->token.type == type)
+      this->advance();
   }
 
   void Parser::if_token(TokenType type, ParseFunc func) {
-    if (this->token.type == type) func();
+    if (this->token.type == type)
+      func();
   }
 
   AST::AbstractNode* Parser::parse_program() {
@@ -245,6 +253,21 @@ namespace Charly::Compiler {
         }
         break;
       }
+      case TokenType::Const: {
+        this->advance();
+        this->assert_token(TokenType::Identifier);
+
+        std::string identifier = this->token.value;
+
+        this->advance();
+        this->expect_token(TokenType::Assignment);
+
+        AST::AbstractNode* exp = this->parse_expression();
+
+        std::optional<Location> end_location = exp->location_end;
+        this->skip_token(TokenType::Semicolon);
+        return (new AST::LocalInitialisation(identifier, exp, true))->at(start_location, end_location);
+      }
     }
 
     this->unexpected_token();
@@ -262,18 +285,3 @@ namespace Charly::Compiler {
     return id;
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

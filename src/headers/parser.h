@@ -66,6 +66,7 @@ namespace Charly::Compiler {
     void unexpected_token(TokenType expected);
     void unexpected_token(std::string&& expected_value);
     void illegal_token();
+    void assert_token(TokenType type);
     void expect_token(TokenType type);
     void expect_token(TokenType type, ParseFunc func);
     void skip_token(TokenType type);
