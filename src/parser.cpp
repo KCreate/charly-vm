@@ -289,6 +289,55 @@ namespace Charly::Compiler {
       case TokenType::Try: {
         return this->parse_try_statement();
       }
+      case TokenType::Return: {
+        Location location_start = this->token.location;
+
+        // Check if return is allowed at this position
+        if (!this->keyword_context.return_allowed) {
+          this->illegal_token();
+        }
+
+        this->advance();
+
+        AST::AbstractNode* exp;
+        std::optional<Location> location_end;
+
+        if ((this->token.type != TokenType::Semicolon) && (this->token.type != TokenType::RightCurly) &&
+            (this->token.type != TokenType::Eof)) {
+          exp = this->parse_expression();
+          location_end = exp->location_end;
+        } else {
+          exp = new AST::Empty();
+          location_end = location_start;
+        }
+
+        this->skip_token(TokenType::Semicolon);
+        return (new AST::Return(exp))->at(location_start, location_end);
+      }
+      case TokenType::Break: {
+        Location location_start = this->token.location;
+
+        // Check if break is allowed at this position
+        if (!this->keyword_context.break_allowed) {
+          this->illegal_token();
+        }
+
+        this->advance();
+        this->skip_token(TokenType::Semicolon);
+        return (new AST::Break())->at(location_start);
+      }
+      case TokenType::Continue: {
+        Location location_start = this->token.location;
+
+        // Check if continue is allowed at this position
+        if (!this->keyword_context.continue_allowed) {
+          this->illegal_token();
+        }
+
+        this->advance();
+        this->skip_token(TokenType::Semicolon);
+        return (new AST::Continue())->at(location_start);
+      }
       default: {
         AST::AbstractNode* exp = this->parse_expression();
         this->skip_token(TokenType::Semicolon);
