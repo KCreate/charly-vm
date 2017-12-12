@@ -722,7 +722,7 @@ namespace Charly::Compiler {
   }
 
   AST::AbstractNode* Parser::parse_assignment() {
-    AST::AbstractNode* left = this->parse_literal();
+    AST::AbstractNode* left = this->parse_ternary_if();
 
     while (true) {
       if (this->token.is_and_assignment()) {
@@ -740,6 +740,22 @@ namespace Charly::Compiler {
       } else {
         return left;
       }
+    }
+  }
+
+  AST::AbstractNode* Parser::parse_ternary_if() {
+    AST::AbstractNode* test = this->parse_literal();
+
+    if (this->token.type == TokenType::QuestionMark) {
+      this->advance();
+
+      AST::AbstractNode* left = this->parse_ternary_if();
+      this->expect_token(TokenType::Colon);
+      AST::AbstractNode* right = this->parse_ternary_if();
+
+      return (new AST::If(test, left, right))->at(test, right);
+    } else {
+      return test;
     }
   }
 

@@ -99,7 +99,7 @@ namespace Charly::Compiler {
     AST::AbstractNode* parse_try_statement();
     AST::AbstractNode* parse_expression();
     AST::AbstractNode* parse_assignment();
-      AST::AbstractNode* parse_ternary_if();
+    AST::AbstractNode* parse_ternary_if();
       AST::AbstractNode* parse_or();
       AST::AbstractNode* parse_and();
       AST::AbstractNode* parse_bitwise_or();
