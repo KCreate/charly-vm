@@ -50,9 +50,15 @@ namespace Charly::Compiler {
 
   typedef std::function<void()> ParseFunc;
 
+  struct KeywordContext {
+    bool break_allowed = false;
+    bool continue_allowed = false;
+    bool return_allowed= false;
+  };
+
   class Parser : public Lexer {
   public:
-    std::tuple<bool, bool, bool> keyword_context = { false, false, false };
+    KeywordContext keyword_context;
     ParseResult* parse();
 
     Parser(SourceFile& file) : Lexer(file) {}

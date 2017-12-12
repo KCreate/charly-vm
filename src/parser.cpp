@@ -271,6 +271,9 @@ namespace Charly::Compiler {
       case TokenType::If: {
         return this->parse_if_statement();
       }
+      case TokenType::While: {
+        return this->parse_while_statement();
+      }
       default: {
         AST::AbstractNode* exp = this->parse_expression();
         this->skip_token(TokenType::Semicolon);
@@ -324,14 +327,57 @@ namespace Charly::Compiler {
     }
   }
 
+  AST::AbstractNode* Parser::parse_while_statement() {
+    Location start_location = this->token.location;
+    this->expect_token(TokenType::While);
+
+    AST::AbstractNode* test;
+
+    if (this->token.type == TokenType::LeftParen) {
+      this->advance();
+      test = this->parse_expression();
+      this->expect_token(TokenType::RightParen);
+    } else {
+      test = this->parse_expression();
+    }
+
+    auto context_backup = this->keyword_context;
+    this->keyword_context.break_allowed = true;
+    this->keyword_context.continue_allowed = true;
+
+    AST::AbstractNode* then_block;
+
+    if (this->token.type == TokenType::LeftCurly) {
+      then_block = this->parse_block();
+    } else {
+      then_block = this->parse_statement();
+    }
+
+    this->keyword_context = context_backup;
+    return (new AST::While(test, then_block))->at(start_location, then_block->location_end);
+  }
+
   AST::AbstractNode* Parser::parse_expression() {
-    AST::Identifier* id;
+    return parse_literal();
+  }
 
-    this->expect_token(TokenType::Identifier, [&](){
-      id = new AST::Identifier(this->token.value);
-      id->at(this->token.location);
-    });
+  AST::AbstractNode* Parser::parse_literal() {
+    switch (this->token.type) {
+      case TokenType::Identifier: {
+        AST::Identifier* id = new AST::Identifier(this->token.value);
+        id->at(this->token.location);
+        this->advance();
+        return id;
+      }
+      case TokenType::If: {
+        return this->parse_if_statement();
+      }
+      case TokenType::While: {
+        return this->parse_while_statement();
+      }
+    }
 
-    return id;
+    this->unexpected_token("expression");
+    return nullptr;
   }
 }
