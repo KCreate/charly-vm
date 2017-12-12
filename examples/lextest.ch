@@ -1,5 +1,3 @@
-return foo;
-break;
-continue;
-break
-continue
+throw foo;
+throw foo
+throw fooberz

@@ -338,6 +338,13 @@ namespace Charly::Compiler {
         this->skip_token(TokenType::Semicolon);
         return (new AST::Continue())->at(location_start);
       }
+      case TokenType::Throw: {
+        Location location_start = this->token.location;
+        this->advance();
+        AST::AbstractNode* exp = this->parse_expression();
+        this->skip_token(TokenType::Semicolon);
+        return (new AST::Throw(exp))->at(location_start, exp->location_end);
+      }
       default: {
         AST::AbstractNode* exp = this->parse_expression();
         this->skip_token(TokenType::Semicolon);
