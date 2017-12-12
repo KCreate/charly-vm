@@ -271,6 +271,12 @@ namespace Charly::Compiler {
       case TokenType::If: {
         return this->parse_if_statement();
       }
+      case TokenType::Unless: {
+        return this->parse_unless_statement();
+      }
+      case TokenType::Guard: {
+        return this->parse_guard_statement();
+      }
       case TokenType::While: {
         return this->parse_while_statement();
       }
@@ -334,6 +340,75 @@ namespace Charly::Compiler {
       else_node = new AST::Empty();
       return (new AST::If(test, then_node, else_node))->at(start_location, then_node->location_end);
     }
+  }
+
+  AST::AbstractNode* Parser::parse_unless_statement() {
+    Location start_location = this->token.location;
+    this->expect_token(TokenType::Unless);
+
+    AST::AbstractNode* test;
+
+    // The parens around the test are optional
+    if (this->token.type == TokenType::LeftParen) {
+      this->advance();
+      test = this->parse_expression();
+      this->expect_token(TokenType::RightParen);
+    } else {
+      test = this->parse_expression();
+    }
+
+    AST::AbstractNode* then_node;
+    AST::AbstractNode* else_node;
+
+    if (this->token.type == TokenType::LeftCurly) {
+      then_node = this->parse_block();
+    } else {
+      then_node = this->parse_statement();
+      else_node = new AST::Empty();
+      return (new AST::Unless(test, then_node, else_node))->at(start_location, then_node->location_end);
+    }
+
+    // Unless nodes are not allowed to have else if alternative blocks
+    // as that would be a way to create really messy code
+    if (this->token.type == TokenType::Else) {
+      this->advance();
+
+      if (this->token.type == TokenType::LeftCurly) {
+        else_node = this->parse_block();
+      } else {
+        else_node = this->parse_statement();
+      }
+    } else {
+      else_node = new AST::Empty();
+    }
+
+    return (new AST::Unless(test, then_node, else_node))->at(start_location, then_node->location_end);
+  }
+
+  AST::AbstractNode* Parser::parse_guard_statement() {
+    Location start_location = this->token.location;
+    this->expect_token(TokenType::Guard);
+
+    AST::AbstractNode* test;
+
+    // The parens around the test are optional
+    if (this->token.type == TokenType::LeftParen) {
+      this->advance();
+      test = this->parse_expression();
+      this->expect_token(TokenType::RightParen);
+    } else {
+      test = this->parse_expression();
+    }
+
+    AST::AbstractNode* block;
+
+    if (this->token.type == TokenType::LeftCurly) {
+      block = this->parse_block();
+    } else {
+      block = this->parse_statement();
+    }
+
+    return (new AST::Guard(test, block))->at(start_location, block->location_end);
   }
 
   AST::AbstractNode* Parser::parse_while_statement() {

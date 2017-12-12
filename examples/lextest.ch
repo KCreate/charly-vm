@@ -1,5 +1,6 @@
-until (foo) {}
-until (foo) foo;
-
-loop {}
-loop foo;
+unless foo {}
+unless foo foo;
+unless foo {} else {}
+unless foo {} else foo;
+guard foo {}
+guard foo foo;
