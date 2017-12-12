@@ -96,6 +96,12 @@
   - Needs a dispatch function which performs a typecheck and redirects to correct method
     - Maybe C++ offers a way this can be implemented natively
 
+# Exception safety in compiler
+- Allocated AST nodes need to be deallocated when an exception is thrown
+- unique_ptr might do what I want
+- auto_ptr was deprecated in C++11
+  - I could write my own reimplementation of this as it was exactly what I needed
+
 # Compiler
 - _LVarRewriter_: Semantic (undefined and duplicate lvars) and lvar offset calculation in one step
   - Buffers 5 errors

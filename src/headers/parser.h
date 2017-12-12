@@ -70,8 +70,9 @@ namespace Charly::Compiler {
     void advance_to_token(TokenType type);
     void unexpected_token();
     void unexpected_token(TokenType expected);
-    void unexpected_token(std::string&& expected_value);
+    void unexpected_token(const std::string& expected_value);
     void illegal_token();
+    void illegal_node(AST::AbstractNode* node, const std::string& message);
     void assert_token(TokenType type);
     void expect_token(TokenType type);
     void expect_token(TokenType type, ParseFunc func);
@@ -84,9 +85,10 @@ namespace Charly::Compiler {
     AST::AbstractNode* parse_statement();
     AST::AbstractNode* parse_class_statement();
     AST::AbstractNode* parse_if_statement();
-    AST::AbstractNode* parse_switch_statement();
-    AST::AbstractNode* parse_guard_statement();
     AST::AbstractNode* parse_unless_statement();
+    AST::AbstractNode* parse_guard_statement();
+    AST::AbstractNode* parse_switch_statement();
+    AST::AbstractNode* parse_switch_node();
     AST::AbstractNode* parse_while_statement();
     AST::AbstractNode* parse_until_statement();
     AST::AbstractNode* parse_loop_statement();

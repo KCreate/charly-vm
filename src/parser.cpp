@@ -114,7 +114,7 @@ namespace Charly::Compiler {
     throw SyntaxError(this->token.location, error_message);
   }
 
-  void Parser::unexpected_token(std::string&& expected_value) {
+  void Parser::unexpected_token(const std::string& expected_value) {
     std::string error_message;
 
     if (this->token.type == TokenType::Eof) {
@@ -132,6 +132,10 @@ namespace Charly::Compiler {
 
   void Parser::illegal_token() {
     throw SyntaxError(this->token.location, "This token is not allowed at this location");
+  }
+
+  void Parser::illegal_node(AST::AbstractNode* node, const std::string& message) {
+    throw SyntaxError(node->location_start.value_or(Location(0, 0, 0, 0, "<unknown>")), message);
   }
 
   void Parser::assert_token(TokenType type) {
@@ -345,6 +349,9 @@ namespace Charly::Compiler {
         this->skip_token(TokenType::Semicolon);
         return (new AST::Throw(exp))->at(location_start, exp->location_end);
       }
+      case TokenType::Switch: {
+        return this->parse_switch_statement();
+      }
       default: {
         AST::AbstractNode* exp = this->parse_expression();
         this->skip_token(TokenType::Semicolon);
@@ -474,6 +481,113 @@ namespace Charly::Compiler {
     }
 
     return (new AST::Guard(test, block))->at(start_location, block->location_end);
+  }
+
+  AST::AbstractNode* Parser::parse_switch_statement() {
+    Location location_start = this->token.location;
+    this->expect_token(TokenType::Switch);
+
+    AST::AbstractNode* condition = nullptr;
+    AST::NodeList* cases = new AST::NodeList();
+    AST::AbstractNode* default_block = nullptr;
+
+    if (this->token.type == TokenType::LeftParen) {
+      this->advance();
+      condition = this->parse_expression();
+      this->expect_token(TokenType::RightParen);
+    } else {
+      condition = this->parse_expression();
+    }
+
+    std::optional<Location> location_end;
+    auto backup_context = this->keyword_context;
+    this->keyword_context.break_allowed = true;
+
+    this->expect_token(TokenType::LeftCurly);
+    while (this->token.type != TokenType::RightCurly) {
+      AST::AbstractNode* node = this->parse_switch_node();
+
+      if (node->type() == AST::kTypeSwitchNode) {
+        cases->append_node(node);
+      } else {
+
+        // Check if we already got a default block
+        if (default_block) {
+          this->illegal_node(node, "Duplicate default block");
+        }
+
+        default_block = node;
+      }
+    }
+    this->expect_token(TokenType::RightCurly);
+
+    this->keyword_context = backup_context;
+
+    return (new AST::Switch(condition, cases, default_block))->at(location_start, location_end);
+  }
+
+  AST::AbstractNode* Parser::parse_switch_node() {
+    Location location_start = this->token.location;
+
+    switch (this->token.type) {
+      case TokenType::Case: {
+        this->advance();
+
+        AST::NodeList* cases = new AST::NodeList();
+        AST::AbstractNode* block;
+
+        if (this->token.type == TokenType::LeftParen) {
+          this->advance();
+
+          // There has to be at least one expression
+          cases->append_node(this->parse_expression());
+
+          // Parse more expressions if there are any
+          while (this->token.type == TokenType::Comma) {
+            this->advance();
+            cases->append_node(this->parse_expression());
+          }
+
+          this->expect_token(TokenType::RightParen);
+        } else {
+          // There has to be at least one expression
+          cases->append_node(this->parse_expression());
+
+          // Parse more expressions if there are any
+          while (this->token.type == TokenType::Comma) {
+            this->advance();
+            cases->append_node(this->parse_expression());
+          }
+        }
+
+        if (this->token.type == TokenType::LeftCurly) {
+          block = this->parse_block();
+        } else {
+          block = this->parse_expression();
+          this->skip_token(TokenType::Semicolon);
+        }
+
+        return (new AST::SwitchNode(cases, block))->at(location_start, block->location_end);
+      }
+      case TokenType::Default: {
+        this->advance();
+
+        AST::AbstractNode* block;
+
+        if (this->token.type == TokenType::LeftCurly) {
+          block = this->parse_block();
+        } else {
+          block = this->parse_expression();
+          this->skip_token(TokenType::Semicolon);
+        }
+
+        return block;
+      }
+      default: {
+        this->unexpected_token("case or default");
+        return nullptr;
+      }
+    }
   }
 
   AST::AbstractNode* Parser::parse_while_statement() {
