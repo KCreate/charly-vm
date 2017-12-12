@@ -101,6 +101,10 @@
 - unique_ptr might do what I want
 - auto_ptr was deprecated in C++11
   - I could write my own reimplementation of this as it was exactly what I needed
+- An exception means a syntax error
+  - If a syntax error occurs, the whole program should crash.
+  - This means it's not as bad if we loose memory if we're going to crash anyway
+  - Not an excuse, but reduces it's priority to be fixed
 
 # Compiler
 - _LVarRewriter_: Semantic (undefined and duplicate lvars) and lvar offset calculation in one step

@@ -136,7 +136,7 @@ enum TokenType : uint8_t {
 
 // String representation of token types
 // clang-format off
-static const std::string kTokenTypeStrings[] = {
+static std::string kTokenTypeStrings[] = {
   "Integer",
   "Float",
   "Identifier",
@@ -250,6 +250,14 @@ static const std::unordered_map<std::string, TokenType> kTokenKeywordsAndLiteral
   {"until", TokenType::Until},
   {"while", TokenType::While},
 };
+static std::unordered_map<TokenType, TokenType> kTokenAndAssignmentOperators = {
+  {TokenType::PlusAssignment, TokenType::Plus},
+  {TokenType::MinusAssignment, TokenType::Minus},
+  {TokenType::MulAssignment, TokenType::Mul},
+  {TokenType::DivAssignment, TokenType::Div},
+  {TokenType::ModAssignment, TokenType::Mod},
+  {TokenType::PowAssignment, TokenType::Pow}
+};
 // clang-format on
 
 struct Token {
@@ -272,20 +280,10 @@ struct Token {
   Token(TokenType t, const std::string& v, const Location& l) : type(t), value(v), location(l) {
   }
 
-  inline bool is_and_operator() {
+  inline bool is_and_assignment() {
     return (this->type == TokenType::PlusAssignment || this->type == TokenType::MinusAssignment ||
             this->type == TokenType::MulAssignment || this->type == TokenType::DivAssignment ||
             this->type == TokenType::ModAssignment || this->type == TokenType::PowAssignment);
-  }
-
-  inline bool is_keyword() {
-    return (Break == this->type || Case == this->type || Catch == this->type || Class == this->type ||
-            Const == this->type || Continue == this->type || Default == this->type || Else == this->type ||
-            Extends == this->type || Func == this->type || Guard == this->type || If == this->type ||
-            Let == this->type || Loop == this->type || Primitive == this->type || Property == this->type ||
-            Return == this->type || Static == this->type || Switch == this->type || Throw == this->type ||
-            Try == this->type || Typeof == this->type || Unless == this->type || Until == this->type ||
-            While == this->type);
   }
 
   template <class T>

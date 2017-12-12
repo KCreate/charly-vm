@@ -25,7 +25,6 @@
  */
 
 #include <sstream>
-#include <iostream>
 #include <algorithm>
 #include <iterator>
 
@@ -111,6 +110,21 @@ void Lexer::read_token() {
           break;
         }
       }
+      break;
+    }
+    case L'*': {
+      switch (this->source.peek_char()) {
+        case L'*': {
+          this->source.read_char();
+          this->consume_operator_or_assignment(TokenType::Pow);
+          break;
+        }
+        default: {
+          this->consume_operator_or_assignment(TokenType::Mul);
+          break;
+        }
+      }
+
       break;
     }
     case L'/': {
@@ -519,8 +533,6 @@ void Lexer::consume_octal() {
 
   int64_t num = 0;
   decoder >> num;
-
-  std::cout << decoder.str() << '\n';
 
   this->token.numeric_value.i64_value = num;
 }

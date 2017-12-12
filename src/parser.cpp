@@ -718,7 +718,29 @@ namespace Charly::Compiler {
   }
 
   AST::AbstractNode* Parser::parse_expression() {
-    return parse_literal();
+    return parse_assignment();
+  }
+
+  AST::AbstractNode* Parser::parse_assignment() {
+    AST::AbstractNode* left = this->parse_literal();
+
+    while (true) {
+      if (this->token.is_and_assignment()) {
+        TokenType op = kTokenAndAssignmentOperators[this->token.type];
+        this->advance();
+        AST::AbstractNode* right = this->parse_assignment();
+        return (new AST::Assignment(
+          left,
+          (new AST::Binary(op, left, right))->at(left, right)
+        ))->at(left, right);
+      } else if (this->token.type == TokenType::Assignment) {
+        this->advance();
+        AST::AbstractNode* right = this->parse_assignment();
+        return (new AST::Assignment(left, right))->at(left, right);
+      } else {
+        return left;
+      }
+    }
   }
 
   AST::AbstractNode* Parser::parse_literal() {

@@ -76,9 +76,21 @@ public:
     return this;
   }
 
+  inline AbstractNode* at(AbstractNode* node) {
+    this->location_start = node->location_start;
+    this->location_end = node->location_end;
+    return this;
+  }
+
   inline AbstractNode* at(const AbstractNode& start, const AbstractNode& end) {
     this->location_start = start.location_start;
     this->location_end = end.location_end;
+    return this;
+  }
+
+  inline AbstractNode* at(AbstractNode* start, AbstractNode* end) {
+    this->location_start = start->location_start;
+    this->location_end = end->location_end;
     return this;
   }
 
@@ -316,7 +328,7 @@ struct Unary : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Unary: " << '\n';
+    stream << std::string(depth, ' ') << "- Unary: " << kTokenTypeStrings[this->operator_type] << '\n';
     this->expression->dump(stream, depth + 1);
   }
 };
@@ -336,7 +348,7 @@ struct Binary : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Binary: " << '\n';
+    stream << std::string(depth, ' ') << "- Binary: " << kTokenTypeStrings[this->operator_type] << '\n';
     this->left->dump(stream, depth + 1);
     this->right->dump(stream, depth + 1);
   }
