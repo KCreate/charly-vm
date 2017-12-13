@@ -1052,6 +1052,49 @@ namespace Charly::Compiler {
         this->advance();
         return id;
       }
+      case TokenType::LeftParen: {
+        this->advance();
+        AST::AbstractNode* exp = this->parse_expression();
+        this->expect_token(TokenType::RightParen);
+        return exp;
+      }
+      case TokenType::Integer: {
+        AST::AbstractNode* val = new AST::Integer(this->token.numeric_value.i64_value);
+        val->at(this->token.location);
+        this->advance();
+        return val;
+      }
+      case TokenType::Float: {
+        AST::AbstractNode* val = new AST::Float(this->token.numeric_value.dbl_value);
+        val->at(this->token.location);
+        this->advance();
+        return val;
+      }
+      case TokenType::String: {
+        AST::AbstractNode* val = new AST::String(this->token.value);
+        val->at(this->token.location);
+        this->advance();
+        return val;
+      }
+      case TokenType::BooleanTrue:
+      case TokenType::BooleanFalse: {
+        AST::AbstractNode* val = new AST::Boolean(this->token.type == TokenType::BooleanTrue);
+        val->at(this->token.location);
+        this->advance();
+        return val;
+      }
+      case TokenType::Null: {
+        AST::AbstractNode* val = new AST::Null();
+        val->at(this->token.location);
+        this->advance();
+        return val;
+      }
+      case TokenType::Nan: {
+        AST::AbstractNode* val = new AST::Nan();
+        val->at(this->token.location);
+        this->advance();
+        return val;
+      }
     }
 
     this->unexpected_token("expression");
