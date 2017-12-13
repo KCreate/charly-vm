@@ -96,6 +96,13 @@
   - Needs a dispatch function which performs a typecheck and redirects to correct method
     - Maybe C++ offers a way this can be implemented natively
 
+# Parser notes
+- Operator associativity
+  - Left associative operators parse their child structures inside a loop
+  - Right associative operators parse their child as left and themselves recursively, without a loop
+  - See: https://en.wikipedia.org/wiki/Operator_associativity
+  - Assignment, Exponentiation
+
 # Exception safety in compiler
 - Allocated AST nodes need to be deallocated when an exception is thrown
 - unique_ptr might do what I want

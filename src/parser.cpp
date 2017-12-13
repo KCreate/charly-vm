@@ -724,27 +724,25 @@ namespace Charly::Compiler {
   AST::AbstractNode* Parser::parse_assignment() {
     AST::AbstractNode* left = this->parse_ternary_if();
 
-    while (true) {
-      if (this->token.is_and_assignment()) {
-        TokenType op = kTokenAndAssignmentOperators[this->token.type];
-        this->advance();
-        AST::AbstractNode* right = this->parse_assignment();
-        return (new AST::Assignment(
-          left,
-          (new AST::Binary(op, left, right))->at(left, right)
-        ))->at(left, right);
-      } else if (this->token.type == TokenType::Assignment) {
-        this->advance();
-        AST::AbstractNode* right = this->parse_assignment();
-        return (new AST::Assignment(left, right))->at(left, right);
-      } else {
-        return left;
-      }
+    if (this->token.is_and_assignment()) {
+      TokenType op = kTokenAndAssignmentOperators[this->token.type];
+      this->advance();
+      AST::AbstractNode* right = this->parse_assignment();
+      return (new AST::Assignment(
+        left,
+        (new AST::Binary(op, left, right))->at(left, right)
+      ))->at(left, right);
+    } else if (this->token.type == TokenType::Assignment) {
+      this->advance();
+      AST::AbstractNode* right = this->parse_assignment();
+      return (new AST::Assignment(left, right))->at(left, right);
+    } else {
+      return left;
     }
   }
 
   AST::AbstractNode* Parser::parse_ternary_if() {
-    AST::AbstractNode* test = this->parse_literal();
+    AST::AbstractNode* test = this->parse_or();
 
     if (this->token.type == TokenType::QuestionMark) {
       this->advance();
@@ -757,6 +755,167 @@ namespace Charly::Compiler {
     } else {
       return test;
     }
+  }
+
+  AST::AbstractNode* Parser::parse_or() {
+    AST::AbstractNode* left = this->parse_and();
+
+    while (this->token.type == TokenType::OR) {
+      this->advance();
+      AST::AbstractNode* right = this->parse_and();
+      left = (new AST::Or(left, right))->at(left, right);
+    }
+
+    return left;
+  }
+
+  AST::AbstractNode* Parser::parse_and() {
+    AST::AbstractNode* left = this->parse_bitwise_or();
+
+    while (this->token.type == TokenType::AND) {
+      this->advance();
+      AST::AbstractNode* right = this->parse_bitwise_or();
+      left = (new AST::And(left, right))->at(left, right);
+    }
+
+    return left;
+  }
+
+  AST::AbstractNode* Parser::parse_bitwise_or() {
+    AST::AbstractNode* left = this->parse_bitwise_xor();
+
+    while (this->token.type == TokenType::BitOR) {
+      TokenType op = this->token.type;
+      this->advance();
+      AST::AbstractNode* right = this->parse_bitwise_xor();
+      left = (new AST::Binary(op, left, right))->at(left, right);
+    }
+
+    return left;
+  }
+
+  AST::AbstractNode* Parser::parse_bitwise_xor() {
+    AST::AbstractNode* left = this->parse_bitwise_and();
+
+    while (this->token.type == TokenType::BitXOR) {
+      TokenType op = this->token.type;
+      this->advance();
+      AST::AbstractNode* right = this->parse_bitwise_and();
+      left = (new AST::Binary(op, left, right))->at(left, right);
+    }
+
+    return left;
+  }
+
+  AST::AbstractNode* Parser::parse_bitwise_and() {
+    AST::AbstractNode* left = this->parse_equal_not();
+
+    while (this->token.type == TokenType::BitAND) {
+      TokenType op = this->token.type;
+      this->advance();
+      AST::AbstractNode* right = this->parse_equal_not();
+      left = (new AST::Binary(op, left, right))->at(left, right);
+    }
+
+    return left;
+  }
+
+  AST::AbstractNode* Parser::parse_equal_not() {
+    AST::AbstractNode* left = this->parse_less_greater();
+
+    while (true) {
+      if (this->token.type == TokenType::Equal || this->token.type == TokenType::Not) {
+        TokenType op = this->token.type;
+        this->advance();
+        AST::AbstractNode* right = this->parse_less_greater();
+        left = (new AST::Binary(op, left, right))->at(left, right);
+      } else {
+        break;
+      }
+    }
+
+    return left;
+  }
+
+  AST::AbstractNode* Parser::parse_less_greater() {
+    AST::AbstractNode* left = this->parse_bitwise_shift();
+
+    while (true) {
+      if (this->token.type == TokenType::Less || this->token.type == TokenType::Greater) {
+        TokenType op = this->token.type;
+        this->advance();
+        AST::AbstractNode* right = this->parse_bitwise_shift();
+        left = (new AST::Binary(op, left, right))->at(left, right);
+      } else {
+        break;
+      }
+    }
+
+    return left;
+  }
+
+  AST::AbstractNode* Parser::parse_bitwise_shift() {
+    AST::AbstractNode* left = this->parse_add_sub();
+
+    while (true) {
+      if (this->token.type == TokenType::LeftShift || this->token.type == TokenType::RightShift) {
+        TokenType op = this->token.type;
+        this->advance();
+        AST::AbstractNode* right = this->parse_add_sub();
+        left = (new AST::Binary(op, left, right))->at(left, right);
+      } else {
+        break;
+      }
+    }
+
+    return left;
+  }
+
+  AST::AbstractNode* Parser::parse_add_sub() {
+    AST::AbstractNode* left = this->parse_mul_div();
+
+    while (true) {
+      if (this->token.type == TokenType::Plus || this->token.type == TokenType::Minus) {
+        TokenType op = this->token.type;
+        this->advance();
+        AST::AbstractNode* right = this->parse_mul_div();
+        left = (new AST::Binary(op, left, right))->at(left, right);
+      } else {
+        break;
+      }
+    }
+
+    return left;
+  }
+
+  AST::AbstractNode* Parser::parse_mul_div() {
+    AST::AbstractNode* left = this->parse_mod();
+
+    while (true) {
+      if (this->token.type == TokenType::Mul || this->token.type == TokenType::Div) {
+        TokenType op = this->token.type;
+        this->advance();
+        AST::AbstractNode* right = this->parse_mod();
+        left = (new AST::Binary(op, left, right))->at(left, right);
+      } else {
+        break;
+      }
+    }
+
+    return left;
+  }
+
+  AST::AbstractNode* Parser::parse_mod() {
+    AST::AbstractNode* left = this->parse_literal();
+
+    while (this->token.type == TokenType::Mod) {
+      TokenType op = this->token.type;
+      this->advance();
+      AST::AbstractNode* right = this->parse_literal();
+      left = (new AST::Binary(op, left, right))->at(left, right);
+    }
+
+    return left;
   }
 
   AST::AbstractNode* Parser::parse_literal() {

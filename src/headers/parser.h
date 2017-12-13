@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+#include <functional>
+
 #include "ast.h"
 #include "lexer.h"
 #include "location.h"
@@ -100,17 +102,17 @@ namespace Charly::Compiler {
     AST::AbstractNode* parse_expression();
     AST::AbstractNode* parse_assignment();
     AST::AbstractNode* parse_ternary_if();
-      AST::AbstractNode* parse_or();
-      AST::AbstractNode* parse_and();
-      AST::AbstractNode* parse_bitwise_or();
-      AST::AbstractNode* parse_bitwise_xor();
-      AST::AbstractNode* parse_bitwise_and();
-      AST::AbstractNode* parse_equal_not();
-      AST::AbstractNode* parse_less_greater();
-      AST::AbstractNode* parse_bitwise_shift();
-      AST::AbstractNode* parse_add_sub();
-      AST::AbstractNode* parse_mul_div();
-      AST::AbstractNode* parse_mod();
+    AST::AbstractNode* parse_or();
+    AST::AbstractNode* parse_and();
+    AST::AbstractNode* parse_bitwise_or();
+    AST::AbstractNode* parse_bitwise_xor();
+    AST::AbstractNode* parse_bitwise_and();
+    AST::AbstractNode* parse_equal_not();
+    AST::AbstractNode* parse_less_greater();
+    AST::AbstractNode* parse_bitwise_shift();
+    AST::AbstractNode* parse_add_sub();
+    AST::AbstractNode* parse_mul_div();
+    AST::AbstractNode* parse_mod();
       AST::AbstractNode* parse_unary();
       AST::AbstractNode* parse_pow();
       AST::AbstractNode* parse_typeof();

@@ -25,6 +25,7 @@
  */
 
 #include <utf8/utf8.h>
+#include <cstring>
 #include <string>
 #include <string_view>
 
