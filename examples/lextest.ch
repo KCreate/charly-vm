@@ -1,8 +1,5 @@
-!foo;
-!!foo;
--foo;
---foo;
-+foo;
-++foo;
-~foo;
-~~foo;
+if (foo < bar) {
+  foo / foo;
+  return;
+  -foo;
+}

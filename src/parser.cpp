@@ -191,8 +191,15 @@ namespace Charly::Compiler {
       start_location = this->token.location;
     });
 
+    bool add_to_block = true;
     while (this->token.type != TokenType::RightCurly) {
-      block->append_node(this->parse_statement());
+      AST::AbstractNode* node = this->parse_statement();
+
+      if (add_to_block) block->append_node(node);
+
+      if (node->type() == AST::kTypeReturn || node->type() == AST::kTypeBreak || node->type() == AST::kTypeContinue) {
+        add_to_block = false;
+      }
     }
 
     this->expect_token(TokenType::RightCurly, [&]() {
