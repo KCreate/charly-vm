@@ -939,9 +939,33 @@ namespace Charly::Compiler {
         return (new AST::Unary(op, value))->at(location_start, value->location_end);
       }
       default: {
-        return this->parse_literal();
+        return this->parse_pow();
       }
     }
+  }
+
+  AST::AbstractNode* Parser::parse_pow() {
+    AST::AbstractNode* left = this->parse_typeof();
+
+    if (this->token.type == TokenType::Pow) {
+      this->advance();
+      AST::AbstractNode* right = this->parse_pow();
+      left = (new AST::Binary(TokenType::Pow, left, right))->at(left, right);
+    }
+
+    return left;
+  }
+
+  AST::AbstractNode* Parser::parse_typeof() {
+    Location location_start;
+
+    if (this->token.type == TokenType::Typeof) {
+      this->advance();
+      AST::AbstractNode* exp = this->parse_typeof();
+      return (new AST::Typeof(exp))->at(location_start, exp->location_end);
+    }
+
+    return this->parse_literal();
   }
 
   AST::AbstractNode* Parser::parse_literal() {
