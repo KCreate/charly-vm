@@ -906,16 +906,35 @@ namespace Charly::Compiler {
   }
 
   AST::AbstractNode* Parser::parse_mod() {
-    AST::AbstractNode* left = this->parse_literal();
+    AST::AbstractNode* left = this->parse_unary();
 
     while (this->token.type == TokenType::Mod) {
       TokenType op = this->token.type;
       this->advance();
-      AST::AbstractNode* right = this->parse_literal();
+      AST::AbstractNode* right = this->parse_unary();
       left = (new AST::Binary(op, left, right))->at(left, right);
     }
 
     return left;
+  }
+
+  AST::AbstractNode* Parser::parse_unary() {
+    Location location_start = this->token.location;
+
+    switch(this->token.type) {
+      case TokenType::Plus:
+      case TokenType::Minus:
+      case TokenType::Not:
+      case TokenType::BitNOT: {
+        TokenType op = this->token.type;
+        this->advance();
+        AST::AbstractNode* value = this->parse_unary();
+        return (new AST::Unary(op, value))->at(location_start, value->location_end);
+      }
+      default: {
+        return this->parse_literal();
+      }
+    }
   }
 
   AST::AbstractNode* Parser::parse_literal() {

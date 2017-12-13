@@ -1,1 +1,8 @@
-foo - bar + baz * qux
+!foo;
+!!foo;
+-foo;
+--foo;
++foo;
+++foo;
+~foo;
+~~foo;

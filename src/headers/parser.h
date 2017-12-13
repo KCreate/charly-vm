@@ -113,7 +113,7 @@ namespace Charly::Compiler {
     AST::AbstractNode* parse_add_sub();
     AST::AbstractNode* parse_mul_div();
     AST::AbstractNode* parse_mod();
-      AST::AbstractNode* parse_unary();
+    AST::AbstractNode* parse_unary();
       AST::AbstractNode* parse_pow();
       AST::AbstractNode* parse_typeof();
       AST::AbstractNode* parse_member_call();
