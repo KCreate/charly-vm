@@ -117,12 +117,12 @@ public:
   AST::AbstractNode* parse_pow();
   AST::AbstractNode* parse_typeof();
   AST::AbstractNode* parse_member_call();
-  AST::AbstractNode* parse_literal();
-  AST::AbstractNode* parse_array_literal();
-  AST::AbstractNode* parse_hash_literal();
-  AST::AbstractNode* parse_func_literal();
-  AST::AbstractNode* parse_arrowfunc_literal();
-  AST::AbstractNode* parse_class_literal();
+    AST::AbstractNode* parse_literal();
+    AST::AbstractNode* parse_array();
+    AST::AbstractNode* parse_hash();
+    AST::AbstractNode* parse_func();
+    AST::AbstractNode* parse_arrowfunc();
+    AST::AbstractNode* parse_class();
 };
 
 // Thrown on unexpected tokens

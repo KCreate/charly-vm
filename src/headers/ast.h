@@ -519,20 +519,7 @@ struct Identifier : public AbstractNode {
   }
 };
 
-// <name>
-struct Symbol : public AbstractNode {
-  std::string name;
-
-  Symbol(const std::string& str) : name(str) {
-  }
-
-  inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Symbol:" << this;
-    stream << ' ' << this->name << '\n';
-  }
-};
-
-// <target>.<identifier>
+// <target>.<symbol>
 struct Member : public AbstractNode {
   AbstractNode* target;
   std::string symbol;
@@ -649,7 +636,7 @@ struct Array : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Array:" << this;
+    stream << std::string(depth, ' ') << "- Array:" << this << '\n';
     this->expressions->dump(stream, depth + 1);
   }
 };
@@ -727,20 +714,18 @@ struct Function : public AbstractNode {
   }
 };
 
-// property <identifier>;
+// property <symbol>;
 struct PropertyDeclaration : public AbstractNode {
-  AbstractNode* symbol;
+  std::string symbol;
 
-  PropertyDeclaration(AbstractNode* s) : symbol(s) {
+  PropertyDeclaration(const std::string& s) : symbol(s) {
   }
 
   inline ~PropertyDeclaration() {
-    delete symbol;
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- PropertyDeclaration:" << this << '\n';
-    this->symbol->dump(stream, depth + 1);
+    stream << std::string(depth, ' ') << "- PropertyDeclaration:" << this << ' ' << this->symbol << '\n';
   }
 };
 
@@ -922,7 +907,6 @@ static const size_t kTypeTypeof = typeid(Typeof).hash_code();
 static const size_t kTypeAssignment = typeid(Assignment).hash_code();
 static const size_t kTypeCall = typeid(Call).hash_code();
 static const size_t kTypeIdentifier = typeid(Identifier).hash_code();
-static const size_t kTypeSymbol = typeid(Symbol).hash_code();
 static const size_t kTypeMember = typeid(Member).hash_code();
 static const size_t kTypeIndex = typeid(Index).hash_code();
 static const size_t kTypeNull = typeid(Null).hash_code();

@@ -268,9 +268,23 @@ AST::AbstractNode* Parser::parse_statement() {
 
       AST::AbstractNode* exp = this->parse_expression();
 
-      std::optional<Location> end_location = exp->location_end;
+      // We copy the name of the identifier into an unnamed function for better
+      // stack traces
+      //
+      // let foo = func() {}
+      //
+      // Would become:
+      //
+      // let foo = func foo() {}
+      if (exp->type() == AST::kTypeFunction) {
+        AST::Function* func = reinterpret_cast<AST::Function*>(exp);
+        if (func->name.size() == 0) {
+          func->name = identifier;
+        }
+      }
+
       this->skip_token(TokenType::Semicolon);
-      return (new AST::LocalInitialisation(identifier, exp, true))->at(start_location, end_location);
+      return (new AST::LocalInitialisation(identifier, exp, true))->at(start_location, exp->location_end);
     }
     case TokenType::If: {
       return this->parse_if_statement();
@@ -1077,9 +1091,36 @@ AST::AbstractNode* Parser::parse_literal() {
       this->advance();
       return val;
     }
+    case TokenType::LeftBracket: {
+      return this->parse_array();
+    }
   }
 
   this->unexpected_token("expression");
   return nullptr;
 }
+
+AST::AbstractNode* Parser::parse_array() {
+  Location location_start = this->token.location;
+
+  this->expect_token(TokenType::LeftBracket);
+
+  AST::NodeList* items = new AST::NodeList();
+
+  // Check if there are any items
+  if (this->token.type != TokenType::RightBracket) {
+    items->append_node(this->parse_expression());
+
+    while (this->token.type == TokenType::Comma) {
+      this->advance();
+      items->append_node(this->parse_expression());
+    }
+  }
+
+  Location location_end = this->token.location;
+  this->expect_token(TokenType::RightBracket);
+
+  return (new AST::Array(items))->at(location_start, location_end);
+}
+
 }  // namespace Charly::Compiler
