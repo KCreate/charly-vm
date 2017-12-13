@@ -24,9 +24,9 @@
  * SOFTWARE.
  */
 
-#include <sstream>
 #include <algorithm>
 #include <iterator>
+#include <sstream>
 
 #include "lexer.h"
 
@@ -40,7 +40,8 @@ void Lexer::tokenize() {
 void Lexer::reset_token() {
   this->token.type = TokenType::Unknown;
   this->token.value = "";
-  this->token.location = Location(this->source.pos - 1, this->source.row, this->source.column, 0, this->source.filename);
+  this->token.location =
+      Location(this->source.pos - 1, this->source.row, this->source.column, 0, this->source.filename);
 }
 
 void Lexer::read_token() {
@@ -282,7 +283,6 @@ void Lexer::read_token() {
       break;
     }
     case L'@': {
-
       if (this->source.peek_char() == L'"') {
         this->source.read_char();
         this->consume_string();
@@ -416,7 +416,6 @@ void Lexer::consume_newline() {
 }
 
 void Lexer::consume_numeric() {
-
   // Check the number prefix
   if (this->source.current_char == L'0') {
     uint32_t cp = this->source.read_char();

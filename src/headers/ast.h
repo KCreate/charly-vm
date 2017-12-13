@@ -121,7 +121,8 @@ struct NodeList : public AbstractNode {
   }
 
   inline void append_node(AbstractNode* node) {
-    if (this->children.size() == 0) this->at(*node);
+    if (this->children.size() == 0)
+      this->at(*node);
     this->children.push_back(node);
     this->location_end = node->location_end;
   }

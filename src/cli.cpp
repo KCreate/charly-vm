@@ -91,13 +91,13 @@ int CLI::run() {
         result->parse_tree->dump(std::cout);
       }
     }
-  } catch(Compiler::UnexpectedCharError& ex) {
+  } catch (Compiler::UnexpectedCharError& ex) {
     std::cout << "Encountered an unexpected char '";
     Buffer::write_cp_to_stream(ex.cp, std::cout);
     std::cout << "' ";
     ex.location.write_to_stream(std::cout);
     std::cout << '\n';
-  } catch(Compiler::SyntaxError& ex) {
+  } catch (Compiler::SyntaxError& ex) {
     std::cout << "SyntaxError: " << ex.message << " ";
     ex.location.write_to_stream(std::cout);
     std::cout << '\n';
