@@ -282,8 +282,16 @@ void Lexer::read_token() {
       break;
     }
     case L'@': {
-      this->source.read_char();
-      this->token.type = TokenType::AtSign;
+
+      if (this->source.peek_char() == L'"') {
+        this->source.read_char();
+        this->consume_string();
+        this->token.type = TokenType::Identifier;
+      } else {
+        this->source.read_char();
+        this->token.type = TokenType::AtSign;
+      }
+
       break;
     }
     case L'?': {

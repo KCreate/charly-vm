@@ -1030,8 +1030,24 @@ namespace Charly::Compiler {
 
   AST::AbstractNode* Parser::parse_literal() {
     switch (this->token.type) {
+      case TokenType::AtSign: {
+        Location location_start = this->token.location;
+        this->advance();
+
+        if (this->token.type == TokenType::Identifier) {
+          AST::AbstractNode* exp = (new AST::Member(
+            (new AST::Identifier("self"))->at(location_start), this->token.value
+          ))->at(location_start, this->token.location);
+          this->advance();
+          return exp;
+        } else {
+          this->unexpected_token("identifier");
+          return nullptr;
+        }
+        break;
+      }
       case TokenType::Identifier: {
-        AST::Identifier* id = new AST::Identifier(this->token.value);
+        AST::AbstractNode* id = new AST::Identifier(this->token.value);
         id->at(this->token.location);
         this->advance();
         return id;
