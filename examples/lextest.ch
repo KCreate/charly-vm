@@ -1,5 +1,7 @@
-foo ** bar ** baz;
-typeof foo;
-typeof typeof foo;
-typeof foo + foo;
-typeof foo ** foo;
+foo()
+foo()()
+foo[foo]
+foo[foo][foo]
+foo.foo
+foo.foo.foo
+foo(foo, bar, baz + qux)[foo].foo

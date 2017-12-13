@@ -534,20 +534,18 @@ struct Symbol : public AbstractNode {
 // <target>.<identifier>
 struct Member : public AbstractNode {
   AbstractNode* target;
-  AbstractNode* symbol;
+  std::string symbol;
 
-  Member(AbstractNode* t, AbstractNode* s) : target(t), symbol(s) {
+  Member(AbstractNode* t, const std::string& s) : target(t), symbol(s) {
   }
 
   inline ~Member() {
     delete target;
-    delete symbol;
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Member:" << this << '\n';
+    stream << std::string(depth, ' ') << "- Member:" << this << ' ' << this->symbol << '\n';
     this->target->dump(stream, depth + 1);
-    this->symbol->dump(stream, depth + 1);
   }
 };
 

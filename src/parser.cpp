@@ -965,7 +965,67 @@ namespace Charly::Compiler {
       return (new AST::Typeof(exp))->at(location_start, exp->location_end);
     }
 
-    return this->parse_literal();
+    return this->parse_member_call();
+  }
+
+  AST::AbstractNode* Parser::parse_member_call() {
+    AST::AbstractNode* target = this->parse_literal();
+
+    while (true) {
+      switch (this->token.type) {
+        case TokenType::LeftParen: {
+          this->advance();
+
+          AST::NodeList* args = new AST::NodeList();
+
+          // Parse arguments to call
+          if (this->token.type != TokenType::RightParen) {
+            args->append_node(this->parse_expression());
+
+            // Parse all remaining arguments
+            while (this->token.type == TokenType::Comma) {
+              this->advance();
+              args->append_node(this->parse_expression());
+            }
+
+            this->expect_token(TokenType::RightParen);
+          } else {
+            this->advance();
+          }
+
+          target = (new AST::Call(target, args))->at(target->location_start, args->location_end);
+          break;
+        }
+        case TokenType::LeftBracket: {
+          this->advance();
+
+          AST::AbstractNode* exp = this->parse_expression();
+          Location location_end = this->token.location;
+          this->expect_token(TokenType::RightBracket);
+
+          target = (new AST::Index(target, exp))->at(target->location_start, location_end);
+          break;
+        }
+        case TokenType::Point: {
+          this->advance();
+
+          std::string symbol;
+
+          Location location_end;
+
+          this->expect_token(TokenType::Identifier, [&](){
+            symbol = this->token.value;
+            location_end = this->token.location;
+          });
+
+          target = (new AST::Member(target, symbol))->at(target->location_end, location_end);
+          break;
+        }
+        default: {
+          return target;
+        }
+      }
+    }
   }
 
   AST::AbstractNode* Parser::parse_literal() {
