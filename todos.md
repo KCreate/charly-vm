@@ -104,6 +104,11 @@
 - AND assignments need to be parsed as separate nodes
   - If a subnode of the assignment target contains a call expression, it could be executed twice
 
+# Base class of a tree walker
+- Yields each node, bottom to top
+- Replaces each node with the value returned from the callback
+- `NodeList` and `Block` nodes should remove nodes when a `nullptr` is being returned
+
 # Parser notes
 - Operator associativity
   - Left associative operators parse their child structures inside a loop
