@@ -372,35 +372,3 @@ rewriter.errors.map((error) => {
 console.log("");
 console.log("Parse Tree:");
 console.log(util.inspect(parse_tree, false, null))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
