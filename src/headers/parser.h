@@ -83,10 +83,6 @@ public:
   void if_token(TokenType type, ParseFunc func);
 
   // Parse methods
-  //
-  // TODO: Unindent methods as they are being implemented
-  //       This is just so I can remember which methods still need to be
-  //       implemented
   AST::AbstractNode* parse_program();
   AST::AbstractNode* parse_block();
   AST::AbstractNode* parse_statement();
@@ -118,12 +114,12 @@ public:
   AST::AbstractNode* parse_pow();
   AST::AbstractNode* parse_typeof();
   AST::AbstractNode* parse_member_call();
-    AST::AbstractNode* parse_literal();
+  AST::AbstractNode* parse_literal();
   AST::AbstractNode* parse_array();
   AST::AbstractNode* parse_hash();
   std::pair<std::string, AST::AbstractNode*> parse_hash_entry();
   AST::AbstractNode* parse_func();
-    AST::AbstractNode* parse_arrowfunc();
+  AST::AbstractNode* parse_arrowfunc();
   AST::AbstractNode* parse_class();
 
   // Helper methods
