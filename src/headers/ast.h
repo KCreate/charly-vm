@@ -725,22 +725,31 @@ struct Array : public AbstractNode {
 //   <pairs>
 // }
 struct Hash : public AbstractNode {
-  std::vector<std::pair<AbstractNode*, AbstractNode*>> pairs;
+  std::vector<std::pair<std::string, AbstractNode*>> pairs;
 
-  Hash(std::initializer_list<std::pair<AbstractNode*, AbstractNode*>> p) : pairs(p) {
+  Hash() {
+  }
+  Hash(std::initializer_list<std::pair<std::string, AbstractNode*>> p) : pairs(p) {
+  }
+
+  inline void append_pair(const std::pair<std::string, AbstractNode*>& p) {
+    this->pairs.push_back(p);
+  }
+
+  inline void append_pair(const std::string& k, AbstractNode* v) {
+    this->pairs.push_back({ k, v });
   }
 
   inline ~Hash() {
     for (auto& pair : this->pairs) {
-      delete pair.first;
       delete pair.second;
     }
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Hash:" << this;
+    stream << std::string(depth, ' ') << "- Hash:" << this << '\n';
     for (auto& note : this->pairs) {
-      note.first->dump(stream, depth + 1);
+      stream << std::string(depth + 1, ' ') << "- " << note.first << ':' << '\n';
       note.second->dump(stream, depth + 1);
     }
   }

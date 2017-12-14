@@ -1127,6 +1127,9 @@ AST::AbstractNode* Parser::parse_literal() {
     case TokenType::LeftBracket: {
       return this->parse_array();
     }
+    case TokenType::LeftCurly: {
+      return this->parse_hash();
+    }
   }
 
   this->unexpected_token("expression");
@@ -1154,6 +1157,48 @@ AST::AbstractNode* Parser::parse_array() {
   this->expect_token(TokenType::RightBracket);
 
   return (new AST::Array(items))->at(location_start, location_end);
+}
+
+AST::AbstractNode* Parser::parse_hash() {
+  Location location_start = this->token.location;
+  this->expect_token(TokenType::LeftCurly);
+
+  AST::Hash* hash = new AST::Hash();
+
+  // Check if there are any entries
+  if (this->token.type != TokenType::RightCurly) {
+    hash->append_pair(this->parse_hash_entry());
+
+    while (this->token.type == TokenType::Comma) {
+      this->advance();
+      hash->append_pair(this->parse_hash_entry());
+    }
+  }
+
+  Location location_end = this->token.location;
+  this->expect_token(TokenType::RightCurly);
+
+  return hash->at(location_start, location_end);
+}
+
+std::pair<std::string, AST::AbstractNode*> Parser::parse_hash_entry() {
+  std::string key;
+  Location key_location;
+  AST::AbstractNode* value;
+
+  this->expect_token(TokenType::Identifier, [&](){
+    key = this->token.value;
+    key_location = this->token.location;
+  });
+
+  if (this->token.type == TokenType::Colon) {
+    this->advance();
+    value = this->parse_expression();
+  } else {
+    value = (new AST::Identifier(key))->at(key_location);
+  }
+
+  return {key, value};
 }
 
 }  // namespace Charly::Compiler
