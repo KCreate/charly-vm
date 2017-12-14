@@ -501,11 +501,15 @@ struct Assignment : public AbstractNode {
   std::string target;
   AbstractNode* expression;
 
+  IRVarOffsetInfo* offset_info;
+
   Assignment(const std::string& t, AbstractNode* e) : target(t), expression(e) {
   }
 
   inline ~Assignment() {
     delete expression;
+    if (offset_info != nullptr)
+      delete offset_info;
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
