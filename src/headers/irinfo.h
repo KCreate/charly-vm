@@ -35,9 +35,4 @@ struct IRVarOffsetInfo {
   uint32_t index;
 };
 
-// Contains information about the local variables of a function
-struct IRLVarInfo {
-  uint32_t lvarcount;
-};
-
 }  // namespace Charly::Compiler

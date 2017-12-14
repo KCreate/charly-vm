@@ -829,7 +829,7 @@ struct Function : public AbstractNode {
   AbstractNode* body;
   bool anonymous;
 
-  IRLVarInfo* lvar_info;
+  uint32_t lvar_info;
 
   Function(const std::string& n, const std::vector<std::string>& p, AbstractNode* b, bool a)
       : name(n), parameters(p), body(b), anonymous(a) {
@@ -837,8 +837,6 @@ struct Function : public AbstractNode {
 
   inline ~Function() {
     delete body;
-    if (lvar_info != nullptr)
-      delete lvar_info;
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
