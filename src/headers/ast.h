@@ -767,6 +767,8 @@ struct Hash : public AbstractNode {
 //   <body>
 // }
 //
+// func (a, b) = a + b
+//
 // ->(<parameters>) {
 //   <body>
 // }
@@ -778,17 +780,17 @@ struct Hash : public AbstractNode {
 // -><body>
 struct Function : public AbstractNode {
   std::string name;
-  NodeList* parameters;
+  std::vector<std::string> parameters;
   AbstractNode* body;
   bool anonymous;
 
   IRLVarInfo* lvar_info;
 
-  Function(const std::string& n, NodeList* p, AbstractNode* b, bool a) : name(n), parameters(p), body(b), anonymous(a) {
+  Function(const std::string& n, const std::vector<std::string>& p, AbstractNode* b, bool a)
+    : name(n), parameters(p), body(b), anonymous(a) {
   }
 
   inline ~Function() {
-    delete parameters;
     delete body;
     if (lvar_info != nullptr)
       delete lvar_info;
@@ -796,9 +798,21 @@ struct Function : public AbstractNode {
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- Function:" << this;
-    stream << ' ' << this->name;
-    stream << ' ' << (this->anonymous ? "anonymous" : "") << '\n';
-    this->parameters->dump(stream, depth + 1);
+    if (this->name.size() > 0) {
+      stream << ' ' << this->name;
+    }
+    stream << (this->anonymous ? " anonymous" : "");
+
+    stream << ' ' << '(';
+    for (auto& param : this->parameters) {
+      stream << param;
+
+      if (this->parameters.back() != param) {
+        stream << ", ";
+      }
+    }
+    stream << ')' << '\n';
+
     this->body->dump(stream, depth + 1);
   }
 };

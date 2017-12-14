@@ -1130,6 +1130,9 @@ AST::AbstractNode* Parser::parse_literal() {
     case TokenType::LeftCurly: {
       return this->parse_hash();
     }
+    case TokenType::Func: {
+      return this->parse_func();
+    }
   }
 
   this->unexpected_token("expression");
@@ -1199,6 +1202,60 @@ std::pair<std::string, AST::AbstractNode*> Parser::parse_hash_entry() {
   }
 
   return {key, value};
+}
+
+AST::AbstractNode* Parser::parse_func() {
+  Location location_start = this->token.location;
+  this->expect_token(TokenType::Func);
+
+  std::string name;
+  bool has_symbol = false;
+
+  if (this->token.type == TokenType::Identifier) {
+    name = this->token.value;
+    has_symbol = true;
+    this->advance();
+  }
+
+  std::vector<std::string> params;
+  if (this->token.type == TokenType::LeftParen) {
+    this->advance();
+
+    if (this->token.type != TokenType::RightParen) {
+      this->expect_token(TokenType::Identifier, [&](){
+        params.push_back(this->token.value);
+      });
+
+      while (this->token.type == TokenType::Comma) {
+        this->advance();
+        this->expect_token(TokenType::Identifier, [&](){
+          params.push_back(this->token.value);
+        });
+      }
+    }
+
+    this->expect_token(TokenType::RightParen);
+  }
+
+  // Parse any of the two block body syntaxes
+  //
+  // func foo(a, b) { a * b }
+  // func foo(a, b) = a * b
+  AST::AbstractNode* body = nullptr;
+  if (this->token.type == TokenType::LeftCurly) {
+    body = this->parse_block();
+  } else if (has_symbol && this->token.type == TokenType::Assignment) {
+    this->advance();
+    AST::AbstractNode* expr = this->parse_expression();
+    AST::Block* wrapper_body = reinterpret_cast<AST::Block*>((new AST::Block())->at(expr));
+    wrapper_body->append_node(expr);
+    body = wrapper_body;
+  } else {
+    this->unexpected_token("block");
+    return nullptr;
+  }
+
+  return (new AST::Function(name, params, body, false))->at(location_start, body->location_end);
 }
 
 }  // namespace Charly::Compiler
