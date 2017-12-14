@@ -845,14 +845,17 @@ struct PropertyDeclaration : public AbstractNode {
 // }
 struct Class : public AbstractNode {
   std::string name;
+  Function* constructor;
   NodeList* members;
   NodeList* statics;
   NodeList* parents;
 
-  Class(const std::string& n, NodeList* m, NodeList* s, NodeList* p) : name(n), members(m), statics(s), parents(p) {
+  Class(const std::string& n, Function* c, NodeList* m, NodeList* s, NodeList* p)
+    : name(n), constructor(c), members(m), statics(s), parents(p) {
   }
 
   inline ~Class() {
+    delete constructor;
     delete members;
     delete statics;
     delete parents;
@@ -860,6 +863,7 @@ struct Class : public AbstractNode {
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- Class:" << this << ' ' << this->name << '\n';
+    this->constructor->dump(stream, depth + 1);
     this->members->dump(stream, depth + 1);
     this->statics->dump(stream, depth + 1);
     this->parents->dump(stream, depth + 1);

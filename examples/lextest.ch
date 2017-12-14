@@ -1,6 +1,6 @@
-let foo = class extends arg {
-  property foo;
-  static property bar;
-  func foo() {}
-  static func foo() {}
+class Component extends Foo.Component {
+  property counter;
+
+  func constructor {}
+  func render {}
 }

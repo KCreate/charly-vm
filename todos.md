@@ -80,6 +80,12 @@
   - Some data types are inherently dependent on the VM, such as the `Function` type
 - The VM should be purely used for execution, not data creation
 
+# Extending primitive types
+- How do you extend primitive types?
+- How does the VM lookup these symbols?
+  - Table with references to classes defined in a prelude?
+  - Fixed offsets inside top frame?
+
 # GC Optimizations
 - GC should try to reorder the singly-linked list of free cells so that cells which
   are located beneath each other inside memory should also be linked directly
@@ -158,6 +164,18 @@
   - `Charly`
 - Inside functions
   - `__CHARLY_FUNCTION_ARGUMENTS`
+- Inside class constructor
+  - `super`
+
+# `super` inside class instance methods
+- Checks the self value
+- If self is an object, check the klass value
+- Check each parent if they have an instance method with the same name as the original function
+  - The first result will be returned
+- Needs new instructions
+  - `CallSuper`
+- Class should have a separate field for the constructor function
+  - Update opcodes to accept an optional constructor
 
 # Think about the pros/cons of switching to NAN-boxing
 - See: https://en.wikipedia.org/wiki/IEEE_754-1985#NaN
