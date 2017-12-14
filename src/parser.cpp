@@ -368,6 +368,21 @@ AST::AbstractNode* Parser::parse_statement() {
     }
     default: {
       AST::AbstractNode* exp = this->parse_expression();
+
+      // Generate local initialisations for function and class nodes
+      if (exp->type() == AST::kTypeFunction || exp->type() == AST::kTypeClass) {
+
+        // Read the name of the node
+        std::string name;
+        if (exp->type() == AST::kTypeFunction) name = reinterpret_cast<AST::Function*>(exp)->name;
+        if (exp->type() == AST::kTypeClass) name = reinterpret_cast<AST::Class*>(exp)->name;
+
+        // Wrap the node in a local initialisation if it has a name
+        if (name.size() > 0) {
+          exp = (new AST::LocalInitialisation(name, exp, true))->at(exp);
+        }
+      }
+
       this->skip_token(TokenType::Semicolon);
       return exp;
     }
