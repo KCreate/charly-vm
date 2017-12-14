@@ -973,7 +973,9 @@ AST::AbstractNode* Parser::parse_member_call() {
   while (true) {
     switch (this->token.type) {
       case TokenType::LeftParen: {
+        Location location_start = this->token.location;
         this->advance();
+        Location location_end = this->token.location;
 
         AST::NodeList* args = new AST::NodeList();
 
@@ -987,12 +989,44 @@ AST::AbstractNode* Parser::parse_member_call() {
             args->append_node(this->parse_expression());
           }
 
+          location_end = this->token.location;
           this->expect_token(TokenType::RightParen);
         } else {
           this->advance();
         }
 
-        target = (new AST::Call(target, args))->at(target->location_start, args->location_end);
+        // Specialize the call node in case we are calling a member access node
+        // or an index access
+        if (target->type() == AST::kTypeMember) {
+
+          // Rip out the stuff we need from the member node
+          AST::Member* member = reinterpret_cast<AST::Member*>(target);
+          AST::AbstractNode* context = member->target;
+          member->target = nullptr;
+
+          // Create the new call node
+          target = (new AST::CallMember(context, member->symbol, args))->at(target->location_start, location_end);
+
+          // Dispose of the old node
+          delete member;
+        } else if (target->type() == AST::kTypeIndex) {
+
+          // Rip out the stuff we need from the index node
+          AST::Index* index_exp = reinterpret_cast<AST::Index*>(target);
+          AST::AbstractNode* context = index_exp->target;
+          AST::AbstractNode* index_argument = index_exp->argument;
+          index_exp->target = nullptr;
+          index_exp->argument = nullptr;
+
+          // Create the new call node
+          target = (new AST::CallIndex(context, index_argument, args))->at(target->location_start, location_end);
+
+          // Dispose of the old node
+          delete index_exp;
+        } else {
+          target = (new AST::Call(target, args))->at(target->location_start, location_end);
+        }
+
         break;
       }
       case TokenType::LeftBracket: {

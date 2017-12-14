@@ -418,13 +418,16 @@ void Lexer::consume_newline() {
 void Lexer::consume_numeric() {
   // Check the number prefix
   if (this->source.current_char == L'0') {
-    uint32_t cp = this->source.read_char();
+    uint32_t cp = this->source.peek_char();
 
     if (cp == L'x') {
       this->source.read_char();
+      this->source.read_char();
       this->consume_hex();
-    } else {
+    } else if (Lexer::is_numeric(cp)) {
       this->consume_octal();
+    } else {
+      this->consume_decimal();
     }
 
     return;
