@@ -30,6 +30,7 @@
 
 namespace Charly::Compiler {
 ParseResult* Parser::parse() {
+  this->advance();
   AST::AbstractNode* tree = this->parse_program();
   ParseResult* program = new ParseResult(this->source.filename, this->tokens, tree);
   return program;

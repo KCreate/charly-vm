@@ -73,36 +73,42 @@ int CLI::run() {
   std::string source_string((std::istreambuf_iterator<char>(inputfile)), std::istreambuf_iterator<char>());
   SourceFile userfile(this->flags.arguments[0], source_string);
   Compiler::Parser parser(userfile);
+  ParseResult* parse_result = nullptr;
 
   try {
-    parser.advance();
-
-    ParseResult* result = parser.parse();
-
-    if (this->flags.dump_tokens) {
-      for (const auto& token : result->tokens) {
-        token.write_to_stream(std::cout);
-        std::cout << '\n';
-      }
-    }
-
-    if (this->flags.dump_ast) {
-      if (result->parse_tree != nullptr) {
-        result->parse_tree->dump(std::cout);
-      }
-    }
+    parse_result = parser.parse();
   } catch (Compiler::UnexpectedCharError& ex) {
     std::cout << "Encountered an unexpected char '";
     Buffer::write_cp_to_stream(ex.cp, std::cout);
     std::cout << "' ";
     ex.location.write_to_stream(std::cout);
     std::cout << '\n';
+
+    return 1;
   } catch (Compiler::SyntaxError& ex) {
     std::cout << "SyntaxError: " << ex.message << " ";
     ex.location.write_to_stream(std::cout);
     std::cout << '\n';
 
     return 1;
+  }
+
+  if (parse_result == nullptr) {
+    std::cout << "Could not parse input file" << '\n';
+    return 1;
+  }
+
+  if (this->flags.dump_tokens) {
+    for (const auto& token : parse_result->tokens) {
+      token.write_to_stream(std::cout);
+      std::cout << '\n';
+    }
+  }
+
+  if (this->flags.dump_ast) {
+    if (parse_result->parse_tree != nullptr) {
+      parse_result->parse_tree->dump(std::cout);
+    }
   }
 
   if (this->flags.skip_execution) {
