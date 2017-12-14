@@ -131,6 +131,10 @@ void Parser::illegal_token() {
   throw SyntaxError(this->token.location, "This token is not allowed at this location");
 }
 
+void Parser::illegal_token(const std::string& message) {
+  throw SyntaxError(this->token.location, message);
+}
+
 void Parser::illegal_node(AST::AbstractNode* node, const std::string& message) {
   throw SyntaxError(node->location_start.value_or(Location(0, 0, 0, 0, "<unknown>")), message);
 }
@@ -1244,7 +1248,14 @@ AST::AbstractNode* Parser::parse_func() {
       while (this->token.type == TokenType::Comma) {
         this->advance();
         this->expect_token(TokenType::Identifier, [&](){
-          params.push_back(this->token.value);
+
+          // Check if this argument already exists
+          auto search = std::find(params.begin(), params.end(), this->token.value);
+          if (search == params.end()) {
+            params.push_back(this->token.value);
+          } else {
+            this->illegal_token("Duplicate function parameter");
+          }
         });
       }
     }

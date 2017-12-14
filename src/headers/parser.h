@@ -74,6 +74,7 @@ public:
   void unexpected_token(TokenType expected);
   void unexpected_token(const std::string& expected_value);
   void illegal_token();
+  void illegal_token(const std::string& message);
   void illegal_node(AST::AbstractNode* node, const std::string& message);
   void assert_token(TokenType type);
   void expect_token(TokenType type);
