@@ -348,11 +348,12 @@ AST::AbstractNode* Parser::parse_statement() {
 
       // Generate local initialisations for function and class nodes
       if (exp->type() == AST::kTypeFunction || exp->type() == AST::kTypeClass) {
-
         // Read the name of the node
         std::string name;
-        if (exp->type() == AST::kTypeFunction) name = reinterpret_cast<AST::Function*>(exp)->name;
-        if (exp->type() == AST::kTypeClass) name = reinterpret_cast<AST::Class*>(exp)->name;
+        if (exp->type() == AST::kTypeFunction)
+          name = reinterpret_cast<AST::Function*>(exp)->name;
+        if (exp->type() == AST::kTypeClass)
+          name = reinterpret_cast<AST::Class*>(exp)->name;
 
         // Wrap the node in a local initialisation if it has a name
         if (name.size() > 0) {
@@ -823,8 +824,7 @@ AST::AbstractNode* Parser::parse_equal_not() {
   AST::AbstractNode* left = this->parse_less_greater();
 
   while (true) {
-    if (
-        this->token.type == TokenType::Equal || this->token.type == TokenType::Not) {
+    if (this->token.type == TokenType::Equal || this->token.type == TokenType::Not) {
       TokenType op = this->token.type;
       this->advance();
       AST::AbstractNode* right = this->parse_less_greater();
@@ -841,8 +841,7 @@ AST::AbstractNode* Parser::parse_less_greater() {
   AST::AbstractNode* left = this->parse_bitwise_shift();
 
   while (true) {
-    if (
-        this->token.type == TokenType::Less || this->token.type == TokenType::Greater ||
+    if (this->token.type == TokenType::Less || this->token.type == TokenType::Greater ||
         this->token.type == TokenType::LessEqual || this->token.type == TokenType::GreaterEqual) {
       TokenType op = this->token.type;
       this->advance();
@@ -992,7 +991,6 @@ AST::AbstractNode* Parser::parse_member_call() {
         // Specialize the call node in case we are calling a member access node
         // or an index access
         if (target->type() == AST::kTypeMember) {
-
           // Rip out the stuff we need from the member node
           AST::Member* member = reinterpret_cast<AST::Member*>(target);
           AST::AbstractNode* context = member->target;
@@ -1004,7 +1002,6 @@ AST::AbstractNode* Parser::parse_member_call() {
           // Dispose of the old node
           delete member;
         } else if (target->type() == AST::kTypeIndex) {
-
           // Rip out the stuff we need from the index node
           AST::Index* index_exp = reinterpret_cast<AST::Index*>(target);
           AST::AbstractNode* context = index_exp->target;
@@ -1190,7 +1187,7 @@ std::pair<std::string, AST::AbstractNode*> Parser::parse_hash_entry() {
   Location key_location;
   AST::AbstractNode* value;
 
-  this->expect_token(TokenType::Identifier, [&](){
+  this->expect_token(TokenType::Identifier, [&]() {
     key = this->token.value;
     key_location = this->token.location;
   });
@@ -1223,13 +1220,11 @@ AST::AbstractNode* Parser::parse_func() {
     this->advance();
 
     if (this->token.type != TokenType::RightParen) {
-      this->expect_token(TokenType::Identifier, [&](){
-        params.push_back(this->token.value);
-      });
+      this->expect_token(TokenType::Identifier, [&]() { params.push_back(this->token.value); });
 
       while (this->token.type == TokenType::Comma) {
         this->advance();
-        this->expect_token(TokenType::Identifier, [&](){
+        this->expect_token(TokenType::Identifier, [&]() {
 
           // Check if this argument already exists
           auto search = std::find(params.begin(), params.end(), this->token.value);
@@ -1251,7 +1246,6 @@ AST::AbstractNode* Parser::parse_func() {
   // func foo(a, b) = a * b
   AST::AbstractNode* body = nullptr;
   if (this->token.type == TokenType::LeftCurly) {
-
     auto backup_context = this->keyword_context;
     this->keyword_context.return_allowed = true;
     this->keyword_context.break_allowed = false;
@@ -1282,13 +1276,11 @@ AST::AbstractNode* Parser::parse_arrowfunc() {
     this->advance();
 
     if (this->token.type != TokenType::RightParen) {
-      this->expect_token(TokenType::Identifier, [&](){
-        params.push_back(this->token.value);
-      });
+      this->expect_token(TokenType::Identifier, [&]() { params.push_back(this->token.value); });
 
       while (this->token.type == TokenType::Comma) {
         this->advance();
-        this->expect_token(TokenType::Identifier, [&](){
+        this->expect_token(TokenType::Identifier, [&]() {
 
           // Check if this argument already exists
           auto search = std::find(params.begin(), params.end(), this->token.value);
@@ -1351,7 +1343,6 @@ AST::AbstractNode* Parser::parse_class() {
 
   this->expect_token(TokenType::LeftCurly);
   if (this->token.type != TokenType::RightCurly) {
-
     // Parse all class statements
     while (true) {
       Location statement_location_start = this->token.location;
@@ -1378,7 +1369,7 @@ AST::AbstractNode* Parser::parse_class() {
         }
       } else if (this->token.type == TokenType::Property) {
         this->advance();
-        this->expect_token(TokenType::Identifier, [&](){
+        this->expect_token(TokenType::Identifier, [&]() {
           std::string symbol = this->token.value;
 
           AST::AbstractNode* decl = new AST::PropertyDeclaration(symbol);
@@ -1395,7 +1386,8 @@ AST::AbstractNode* Parser::parse_class() {
         this->unexpected_token("func or property");
       }
 
-      if (this->token.type == TokenType::RightCurly) break;
+      if (this->token.type == TokenType::RightCurly)
+        break;
     }
   }
   Location location_end = this->token.location;

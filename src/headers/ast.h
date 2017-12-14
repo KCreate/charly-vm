@@ -737,7 +737,7 @@ struct Hash : public AbstractNode {
   }
 
   inline void append_pair(const std::string& k, AbstractNode* v) {
-    this->pairs.push_back({ k, v });
+    this->pairs.push_back({k, v});
   }
 
   inline ~Hash() {
@@ -787,7 +787,7 @@ struct Function : public AbstractNode {
   IRLVarInfo* lvar_info;
 
   Function(const std::string& n, const std::vector<std::string>& p, AbstractNode* b, bool a)
-    : name(n), parameters(p), body(b), anonymous(a) {
+      : name(n), parameters(p), body(b), anonymous(a) {
   }
 
   inline ~Function() {
@@ -851,7 +851,7 @@ struct Class : public AbstractNode {
   NodeList* parents;
 
   Class(const std::string& n, Function* c, NodeList* m, NodeList* s, NodeList* p)
-    : name(n), constructor(c), members(m), statics(s), parents(p) {
+      : name(n), constructor(c), members(m), statics(s), parents(p) {
   }
 
   inline ~Class() {
