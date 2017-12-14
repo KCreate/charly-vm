@@ -393,16 +393,16 @@ AST::AbstractNode* Parser::parse_if_statement() {
   }
 
   AST::AbstractNode* then_node;
-  AST::AbstractNode* else_node;
 
   if (this->token.type == TokenType::LeftCurly) {
     then_node = this->parse_block();
   } else {
     then_node = this->parse_expression();
-    else_node = new AST::Empty();
     this->skip_token(TokenType::Semicolon);
-    return (new AST::If(test, then_node, else_node))->at(start_location, then_node->location_end);
+    return (new AST::If(test, then_node))->at(start_location, then_node->location_end);
   }
+
+  AST::AbstractNode* else_node;
 
   if (this->token.type == TokenType::Else) {
     this->advance();
@@ -418,10 +418,9 @@ AST::AbstractNode* Parser::parse_if_statement() {
       }
     }
 
-    return (new AST::If(test, then_node, else_node))->at(start_location, else_node->location_end);
+    return (new AST::IfElse(test, then_node, else_node))->at(start_location, else_node->location_end);
   } else {
-    else_node = new AST::Empty();
-    return (new AST::If(test, then_node, else_node))->at(start_location, then_node->location_end);
+    return (new AST::If(test, then_node))->at(start_location, then_node->location_end);
   }
 }
 
@@ -759,7 +758,7 @@ AST::AbstractNode* Parser::parse_ternary_if() {
     this->expect_token(TokenType::Colon);
     AST::AbstractNode* right = this->parse_ternary_if();
 
-    return (new AST::If(test, left, right))->at(test, right);
+    return (new AST::IfElse(test, left, right))->at(test, right);
   } else {
     return test;
   }
