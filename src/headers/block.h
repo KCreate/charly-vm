@@ -26,7 +26,6 @@
 
 #include <vector>
 
-#include "defines.h"
 #include "opcode.h"
 
 #pragma once

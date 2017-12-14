@@ -407,7 +407,7 @@ struct SwitchNode : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- SwitchNode: " << '\n';
+    stream << std::string(depth, ' ') << "- SwitchNode: " << this << '\n';
     this->conditions->dump(stream, depth + 1);
     this->block->dump(stream, depth + 1);
   }
@@ -432,7 +432,7 @@ struct Switch : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Switch: " << '\n';
+    stream << std::string(depth, ' ') << "- Switch: " << this << '\n';
     this->condition->dump(stream, depth + 1);
     this->cases->dump(stream, depth + 1);
     this->default_block->dump(stream, depth + 1);
@@ -453,7 +453,7 @@ struct And : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- And: " << '\n';
+    stream << std::string(depth, ' ') << "- And: " << this << '\n';
     this->left->dump(stream, depth + 1);
     this->right->dump(stream, depth + 1);
   }
@@ -473,7 +473,7 @@ struct Or : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Or: " << '\n';
+    stream << std::string(depth, ' ') << "- Or: " << this << '\n';
     this->left->dump(stream, depth + 1);
     this->right->dump(stream, depth + 1);
   }
@@ -498,20 +498,61 @@ struct Typeof : public AbstractNode {
 
 // <target> = <expression>
 struct Assignment : public AbstractNode {
-  AbstractNode* target;
+  std::string target;
   AbstractNode* expression;
 
-  Assignment(AbstractNode* t, AbstractNode* e) : target(t), expression(e) {
+  Assignment(const std::string& t, AbstractNode* e) : target(t), expression(e) {
   }
 
   inline ~Assignment() {
+    delete expression;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Assignment: " << this << ' ' << this->target << '\n';
+    this->expression->dump(stream, depth + 1);
+  }
+};
+
+// <target>.<member> = <expression>
+struct MemberAssignment : public AbstractNode {
+  AbstractNode* target;
+  std::string member;
+  AbstractNode* expression;
+
+  MemberAssignment(AbstractNode* t, const std::string& m, AbstractNode* e) : target(t), member(m), expression(e) {
+  }
+
+  inline ~MemberAssignment() {
     delete target;
     delete expression;
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Assignment: " << '\n';
+    stream << std::string(depth, ' ') << "- MemberAssignment: " << this << ' ' << this->member << '\n';
     this->target->dump(stream, depth + 1);
+    this->expression->dump(stream, depth + 1);
+  }
+};
+
+// <target>[<index>] = <expression>
+struct IndexAssignment : public AbstractNode {
+  AbstractNode* target;
+  AbstractNode* index;
+  AbstractNode* expression;
+
+  IndexAssignment(AbstractNode* t, AbstractNode* i, AbstractNode* e) : target(t), index(i), expression(e) {
+  }
+
+  inline ~IndexAssignment() {
+    delete target;
+    delete expression;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- IndexAssignment: " << this << '\n';
+    this->target->dump(stream, depth + 1);
+    this->index->dump(stream, depth + 1);
     this->expression->dump(stream, depth + 1);
   }
 };
@@ -1000,6 +1041,8 @@ static const size_t kTypeAnd = typeid(And).hash_code();
 static const size_t kTypeOr = typeid(Or).hash_code();
 static const size_t kTypeTypeof = typeid(Typeof).hash_code();
 static const size_t kTypeAssignment = typeid(Assignment).hash_code();
+static const size_t kTypeMemberAssignment = typeid(MemberAssignment).hash_code();
+static const size_t kTypeIndexAssignment = typeid(IndexAssignment).hash_code();
 static const size_t kTypeCall = typeid(Call).hash_code();
 static const size_t kTypeCallMember = typeid(CallMember).hash_code();
 static const size_t kTypeCallIndex = typeid(CallIndex).hash_code();

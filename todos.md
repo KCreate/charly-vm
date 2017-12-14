@@ -101,6 +101,8 @@
 - Function overloading based on argument type doesn't work
   - Needs a dispatch function which performs a typecheck and redirects to correct method
     - Maybe C++ offers a way this can be implemented natively
+- AND assignments need to be parsed as separate nodes
+  - If a subnode of the assignment target contains a call expression, it could be executed twice
 
 # Parser notes
 - Operator associativity
