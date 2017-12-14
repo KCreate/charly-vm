@@ -53,9 +53,9 @@ struct ParseResult {
 typedef std::function<void()> ParseFunc;
 
 struct KeywordContext {
-  bool break_allowed = true;
-  bool continue_allowed = true;
-  bool return_allowed = true;
+  bool break_allowed = false;
+  bool continue_allowed = false;
+  bool return_allowed = false;
 };
 
 class Parser : public Lexer {
