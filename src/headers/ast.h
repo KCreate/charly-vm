@@ -221,28 +221,46 @@ struct IfElse : public AbstractNode {
 // unless <condition> {
 //   <then_block>
 // }
-//
+struct Unless : public AbstractNode {
+  AbstractNode* condition;
+  AbstractNode* then_block;
+
+  Unless(AbstractNode* c, AbstractNode* t) : condition(c), then_block(t) {
+  }
+
+  inline ~Unless() {
+    delete condition;
+    delete then_block;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Unless:" << this << '\n';
+    this->condition->dump(stream, depth + 1);
+    this->then_block->dump(stream, depth + 1);
+  }
+};
+
 // unless <condition> {
 //   <then_block>
 // } else {
 //   <else_block>
 // }
-struct Unless : public AbstractNode {
+struct UnlessElse : public AbstractNode {
   AbstractNode* condition;
   AbstractNode* then_block;
   AbstractNode* else_block;
 
-  Unless(AbstractNode* c, AbstractNode* t, AbstractNode* e) : condition(c), then_block(t), else_block(e) {
+  UnlessElse(AbstractNode* c, AbstractNode* t, AbstractNode* e) : condition(c), then_block(t), else_block(e) {
   }
 
-  inline ~Unless() {
+  inline ~UnlessElse() {
     delete condition;
     delete then_block;
     delete else_block;
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Unless:" << this << '\n';
+    stream << std::string(depth, ' ') << "- UnlessElse:" << this << '\n';
     this->condition->dump(stream, depth + 1);
     this->then_block->dump(stream, depth + 1);
     this->else_block->dump(stream, depth + 1);
@@ -956,6 +974,7 @@ static const size_t kTypeBlock = typeid(Block).hash_code();
 static const size_t kTypeIf = typeid(If).hash_code();
 static const size_t kTypeIfElse = typeid(IfElse).hash_code();
 static const size_t kTypeUnless = typeid(Unless).hash_code();
+static const size_t kTypeUnlessElse = typeid(UnlessElse).hash_code();
 static const size_t kTypeGuard = typeid(Guard).hash_code();
 static const size_t kTypeWhile = typeid(While).hash_code();
 static const size_t kTypeUntil = typeid(Until).hash_code();

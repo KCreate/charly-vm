@@ -440,16 +440,16 @@ AST::AbstractNode* Parser::parse_unless_statement() {
   }
 
   AST::AbstractNode* then_node;
-  AST::AbstractNode* else_node;
 
   if (this->token.type == TokenType::LeftCurly) {
     then_node = this->parse_block();
   } else {
     then_node = this->parse_expression();
-    else_node = new AST::Empty();
     this->skip_token(TokenType::Semicolon);
-    return (new AST::Unless(test, then_node, else_node))->at(start_location, then_node->location_end);
+    return (new AST::Unless(test, then_node))->at(start_location, then_node->location_end);
   }
+
+  AST::AbstractNode* else_node;
 
   // Unless nodes are not allowed to have else if alternative blocks
   // as that would be a way to create really messy code
@@ -462,11 +462,11 @@ AST::AbstractNode* Parser::parse_unless_statement() {
       else_node = this->parse_expression();
       this->skip_token(TokenType::Semicolon);
     }
-  } else {
-    else_node = new AST::Empty();
-  }
 
-  return (new AST::Unless(test, then_node, else_node))->at(start_location, then_node->location_end);
+    return (new AST::UnlessElse(test, then_node, else_node))->at(start_location, else_node->location_end);
+  } else {
+    return (new AST::Unless(test, then_node))->at(start_location, then_node->location_end);
+  }
 }
 
 AST::AbstractNode* Parser::parse_guard_statement() {
