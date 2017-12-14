@@ -122,9 +122,12 @@ public:
   AST::AbstractNode* parse_array();
   AST::AbstractNode* parse_hash();
   std::pair<std::string, AST::AbstractNode*> parse_hash_entry();
-    AST::AbstractNode* parse_func();
+  AST::AbstractNode* parse_func();
     AST::AbstractNode* parse_arrowfunc();
-    AST::AbstractNode* parse_class();
+  AST::AbstractNode* parse_class();
+
+  // Helper methods
+  void assign_default_name(AST::AbstractNode* node, const std::string& name);
 };
 
 // Thrown on unexpected tokens

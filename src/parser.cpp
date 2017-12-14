@@ -231,21 +231,7 @@ AST::AbstractNode* Parser::parse_statement() {
             case TokenType::Assignment: {
               this->advance();
               AST::AbstractNode* exp = this->parse_expression();
-
-              // We copy the name of the identifier into an unnamed function for better
-              // stack traces
-              //
-              // let foo = func() {}
-              //
-              // Would become:
-              //
-              // let foo = func foo() {}
-              if (exp->type() == AST::kTypeFunction) {
-                AST::Function* func = reinterpret_cast<AST::Function*>(exp);
-                if (func->name.size() == 0) {
-                  func->name = name;
-                }
-              }
+              this->assign_default_name(exp, name);
 
               this->skip_token(TokenType::Semicolon);
               return (new AST::LocalInitialisation(name, exp, false))->at(start_location, exp->location_end);
@@ -271,21 +257,7 @@ AST::AbstractNode* Parser::parse_statement() {
       this->expect_token(TokenType::Assignment);
 
       AST::AbstractNode* exp = this->parse_expression();
-
-      // We copy the name of the identifier into an unnamed function for better
-      // stack traces
-      //
-      // let foo = func() {}
-      //
-      // Would become:
-      //
-      // let foo = func foo() {}
-      if (exp->type() == AST::kTypeFunction) {
-        AST::Function* func = reinterpret_cast<AST::Function*>(exp);
-        if (func->name.size() == 0) {
-          func->name = identifier;
-        }
-      }
+      this->assign_default_name(exp, identifier);
 
       this->skip_token(TokenType::Semicolon);
       return (new AST::LocalInitialisation(identifier, exp, true))->at(start_location, exp->location_end);
@@ -1152,6 +1124,9 @@ AST::AbstractNode* Parser::parse_literal() {
     case TokenType::Func: {
       return this->parse_func();
     }
+    case TokenType::Class: {
+      return this->parse_class();
+    }
   }
 
   this->unexpected_token("expression");
@@ -1269,7 +1244,14 @@ AST::AbstractNode* Parser::parse_func() {
   // func foo(a, b) = a * b
   AST::AbstractNode* body = nullptr;
   if (this->token.type == TokenType::LeftCurly) {
+
+    auto backup_context = this->keyword_context;
+    this->keyword_context.return_allowed = true;
+    this->keyword_context.break_allowed = false;
+    this->keyword_context.continue_allowed = false;
     body = this->parse_block();
+    this->keyword_context = backup_context;
+
   } else if (has_symbol && this->token.type == TokenType::Assignment) {
     this->advance();
     AST::AbstractNode* expr = this->parse_expression();
@@ -1282,6 +1264,93 @@ AST::AbstractNode* Parser::parse_func() {
   }
 
   return (new AST::Function(name, params, body, false))->at(location_start, body->location_end);
+}
+
+AST::AbstractNode* Parser::parse_class() {
+  Location location_start = this->token.location;
+  this->expect_token(TokenType::Class);
+
+  std::string name;
+  if (this->token.type == TokenType::Identifier) {
+    name = this->token.value;
+    this->advance();
+  }
+
+  AST::NodeList* parents = new AST::NodeList();
+  if (this->token.type == TokenType::Extends) {
+    this->advance();
+
+    parents->append_node(this->parse_expression());
+    while (this->token.type == TokenType::Comma) {
+      this->advance();
+      parents->append_node(this->parse_expression());
+    }
+  }
+
+  AST::NodeList* members = new AST::NodeList();
+  AST::NodeList* statics = new AST::NodeList();
+
+  this->expect_token(TokenType::LeftCurly);
+  if (this->token.type != TokenType::RightCurly) {
+
+    // Parse all class statements
+    while (true) {
+      Location statement_location_start = this->token.location;
+
+      bool static_declaration = false;
+
+      // Check if this is a static declaration
+      if (this->token.type == TokenType::Static) {
+        static_declaration = true;
+        this->advance();
+      }
+
+      if (this->token.type == TokenType::Func) {
+        if (static_declaration) {
+          statics->append_node(this->parse_func());
+        } else {
+          members->append_node(this->parse_func());
+        }
+      } else if (this->token.type == TokenType::Property) {
+        this->advance();
+        this->expect_token(TokenType::Identifier, [&](){
+          std::string symbol = this->token.value;
+
+          AST::AbstractNode* decl = new AST::PropertyDeclaration(symbol);
+          decl->at(statement_location_start, this->token.location);
+
+          if (static_declaration) {
+            statics->append_node(decl);
+          } else {
+            members->append_node(decl);
+          }
+        });
+        this->skip_token(TokenType::Semicolon);
+      } else {
+        this->unexpected_token("func or property");
+      }
+
+      if (this->token.type == TokenType::RightCurly) break;
+    }
+  }
+  Location location_end = this->token.location;
+  this->expect_token(TokenType::RightCurly);
+
+  return (new AST::Class(name, members, statics, parents))->at(location_start, location_end);
+}
+
+void Parser::assign_default_name(AST::AbstractNode* node, const std::string& name) {
+  if (node->type() == AST::kTypeFunction) {
+    AST::Function* func = reinterpret_cast<AST::Function*>(node);
+    if (func->name.size() == 0) {
+      func->name = name;
+    }
+  } else if (node->type() == AST::kTypeClass) {
+    AST::Class* klass = reinterpret_cast<AST::Class*>(node);
+    if (klass->name.size() == 0) {
+      klass->name = name;
+    }
+  }
 }
 
 }  // namespace Charly::Compiler

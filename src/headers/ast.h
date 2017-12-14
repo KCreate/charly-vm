@@ -832,23 +832,6 @@ struct PropertyDeclaration : public AbstractNode {
   }
 };
 
-// static <declaration>
-struct StaticDeclaration : public AbstractNode {
-  AbstractNode* declaration;
-
-  StaticDeclaration(AbstractNode* d) : declaration(d) {
-  }
-
-  inline ~StaticDeclaration() {
-    delete declaration;
-  }
-
-  inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- StaticDeclaration:" << this << '\n';
-    this->declaration->dump(stream, depth + 1);
-  }
-};
-
 // class {
 //   <body>
 // }
@@ -862,20 +845,23 @@ struct StaticDeclaration : public AbstractNode {
 // }
 struct Class : public AbstractNode {
   std::string name;
-  NodeList* body;
+  NodeList* members;
+  NodeList* statics;
   NodeList* parents;
 
-  Class(const std::string& n, NodeList* b, NodeList* p) : name(n), body(b), parents(p) {
+  Class(const std::string& n, NodeList* m, NodeList* s, NodeList* p) : name(n), members(m), statics(s), parents(p) {
   }
 
   inline ~Class() {
-    delete body;
+    delete members;
+    delete statics;
     delete parents;
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- Class:" << this << ' ' << this->name << '\n';
-    this->body->dump(stream, depth + 1);
+    this->members->dump(stream, depth + 1);
+    this->statics->dump(stream, depth + 1);
     this->parents->dump(stream, depth + 1);
   }
 };
@@ -1026,7 +1012,6 @@ static const size_t kTypeArray = typeid(Array).hash_code();
 static const size_t kTypeHash = typeid(Hash).hash_code();
 static const size_t kTypeFunction = typeid(Function).hash_code();
 static const size_t kTypePropertyDeclaration = typeid(PropertyDeclaration).hash_code();
-static const size_t kTypeStaticDeclaration = typeid(StaticDeclaration).hash_code();
 static const size_t kTypeClass = typeid(Class).hash_code();
 static const size_t kTypeLocalInitialisation = typeid(LocalInitialisation).hash_code();
 static const size_t kTypeReturn = typeid(Return).hash_code();
