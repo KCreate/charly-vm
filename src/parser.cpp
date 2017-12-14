@@ -822,7 +822,8 @@ AST::AbstractNode* Parser::parse_equal_not() {
   AST::AbstractNode* left = this->parse_less_greater();
 
   while (true) {
-    if (this->token.type == TokenType::Equal || this->token.type == TokenType::Not) {
+    if (
+        this->token.type == TokenType::Equal || this->token.type == TokenType::Not) {
       TokenType op = this->token.type;
       this->advance();
       AST::AbstractNode* right = this->parse_less_greater();
@@ -839,7 +840,9 @@ AST::AbstractNode* Parser::parse_less_greater() {
   AST::AbstractNode* left = this->parse_bitwise_shift();
 
   while (true) {
-    if (this->token.type == TokenType::Less || this->token.type == TokenType::Greater) {
+    if (
+        this->token.type == TokenType::Less || this->token.type == TokenType::Greater ||
+        this->token.type == TokenType::LessEqual || this->token.type == TokenType::GreaterEqual) {
       TokenType op = this->token.type;
       this->advance();
       AST::AbstractNode* right = this->parse_bitwise_shift();
