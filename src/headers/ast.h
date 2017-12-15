@@ -28,6 +28,7 @@
 #include <iostream>
 #include <optional>
 #include <vector>
+#include <functional>
 
 #include "irinfo.h"
 #include "location.h"
@@ -37,6 +38,9 @@
 
 namespace Charly::Compiler::AST {
 static const std::string kPaddingCharacters = "  ";
+
+struct AbstractNode;
+typedef std::function<AbstractNode*(AbstractNode*)> VisitFunc;
 
 // Abstract base class of all ASTNodes
 //
@@ -99,6 +103,10 @@ public:
   }
 
   virtual void dump(std::ostream& stream, size_t depth = 0) = 0;
+
+  virtual void visit(VisitFunc func) {
+    (void)func;
+  };
 };
 
 // A node represting the absence of another node
@@ -137,6 +145,12 @@ struct NodeList : public AbstractNode {
     for (auto& node : this->children)
       node->dump(stream, depth + 1);
   }
+
+  void visit(VisitFunc func) {
+    for (auto& node : this->children) {
+      node = func(node);
+    }
+  }
 };
 
 // A list of AST nodes meant to represent a scoped block
@@ -167,6 +181,12 @@ struct Block : public AbstractNode {
     for (auto& node : this->statements)
       node->dump(stream, depth + 1);
   }
+
+  void visit(VisitFunc func) {
+    for (auto& node : this->statements) {
+      node = func(node);
+    }
+  }
 };
 
 // if <condition> {
@@ -188,6 +208,11 @@ struct If : public AbstractNode {
     stream << std::string(depth, ' ') << "- If:" << this << '\n';
     this->condition->dump(stream, depth + 1);
     this->then_block->dump(stream, depth + 1);
+  }
+
+  void visit(VisitFunc func) {
+    this->condition = func(this->condition);
+    this->then_block = func(this->then_block);
   }
 };
 
@@ -216,6 +241,12 @@ struct IfElse : public AbstractNode {
     this->then_block->dump(stream, depth + 1);
     this->else_block->dump(stream, depth + 1);
   }
+
+  void visit(VisitFunc func) {
+    this->condition = func(this->condition);
+    this->then_block = func(this->then_block);
+    this->else_block = func(this->else_block);
+  }
 };
 
 // unless <condition> {
@@ -237,6 +268,11 @@ struct Unless : public AbstractNode {
     stream << std::string(depth, ' ') << "- Unless:" << this << '\n';
     this->condition->dump(stream, depth + 1);
     this->then_block->dump(stream, depth + 1);
+  }
+
+  void visit(VisitFunc func) {
+    this->condition = func(this->condition);
+    this->then_block = func(this->then_block);
   }
 };
 
@@ -265,6 +301,12 @@ struct UnlessElse : public AbstractNode {
     this->then_block->dump(stream, depth + 1);
     this->else_block->dump(stream, depth + 1);
   }
+
+  void visit(VisitFunc func) {
+    this->condition = func(this->condition);
+    this->then_block = func(this->then_block);
+    this->else_block = func(this->else_block);
+  }
 };
 
 // guard <condition> {
@@ -286,6 +328,11 @@ struct Guard : public AbstractNode {
     stream << std::string(depth, ' ') << "- Guard:" << this << '\n';
     this->condition->dump(stream, depth + 1);
     this->block->dump(stream, depth + 1);
+  }
+
+  void visit(VisitFunc func) {
+    this->condition = func(this->condition);
+    this->block = func(this->block);
   }
 };
 
@@ -309,6 +356,11 @@ struct While : public AbstractNode {
     this->condition->dump(stream, depth + 1);
     this->block->dump(stream, depth + 1);
   }
+
+  void visit(VisitFunc func) {
+    this->condition = func(this->condition);
+    this->block = func(this->block);
+  }
 };
 
 // until <condition> {
@@ -331,6 +383,11 @@ struct Until : public AbstractNode {
     this->condition->dump(stream, depth + 1);
     this->block->dump(stream, depth + 1);
   }
+
+  void visit(VisitFunc func) {
+    this->condition = func(this->condition);
+    this->block = func(this->block);
+  }
 };
 
 // loop {
@@ -350,6 +407,10 @@ struct Loop : public AbstractNode {
     stream << std::string(depth, ' ') << "- Loop:" << this << '\n';
     this->block->dump(stream, depth + 1);
   }
+
+  void visit(VisitFunc func) {
+    this->block = func(this->block);
+  }
 };
 
 // <operator_type> <expression>
@@ -367,6 +428,10 @@ struct Unary : public AbstractNode {
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- Unary: " << kTokenTypeStrings[this->operator_type] << '\n';
     this->expression->dump(stream, depth + 1);
+  }
+
+  void visit(VisitFunc func) {
+    this->expression = func(this->expression);
   }
 };
 
@@ -389,6 +454,11 @@ struct Binary : public AbstractNode {
     this->left->dump(stream, depth + 1);
     this->right->dump(stream, depth + 1);
   }
+
+  void visit(VisitFunc func) {
+    this->left = func(this->left);
+    this->right = func(this->right);
+  }
 };
 
 // case <conditions> {
@@ -410,6 +480,11 @@ struct SwitchNode : public AbstractNode {
     stream << std::string(depth, ' ') << "- SwitchNode: " << this << '\n';
     this->conditions->dump(stream, depth + 1);
     this->block->dump(stream, depth + 1);
+  }
+
+  void visit(VisitFunc func) {
+    this->conditions = reinterpret_cast<NodeList*>(func(this->conditions));
+    this->block = func(this->block);
   }
 };
 
@@ -437,6 +512,12 @@ struct Switch : public AbstractNode {
     this->cases->dump(stream, depth + 1);
     this->default_block->dump(stream, depth + 1);
   }
+
+  void visit(VisitFunc func) {
+    this->condition = func(this->condition);
+    this->cases = reinterpret_cast<NodeList*>(func(this->cases));
+    this->default_block = func(this->default_block);
+  }
 };
 
 // <left> && <right>
@@ -456,6 +537,11 @@ struct And : public AbstractNode {
     stream << std::string(depth, ' ') << "- And: " << this << '\n';
     this->left->dump(stream, depth + 1);
     this->right->dump(stream, depth + 1);
+  }
+
+  void visit(VisitFunc func) {
+    this->left = func(this->left);
+    this->right = func(this->right);
   }
 };
 
@@ -477,6 +563,11 @@ struct Or : public AbstractNode {
     this->left->dump(stream, depth + 1);
     this->right->dump(stream, depth + 1);
   }
+
+  void visit(VisitFunc func) {
+    this->left = func(this->left);
+    this->right = func(this->right);
+  }
 };
 
 // typeof <expression>
@@ -493,6 +584,10 @@ struct Typeof : public AbstractNode {
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- Typeof:" << this << '\n';
     this->expression->dump(stream, depth + 1);
+  }
+
+  void visit(VisitFunc func) {
+    this->expression = func(this->expression);
   }
 };
 
@@ -516,6 +611,10 @@ struct Assignment : public AbstractNode {
     stream << std::string(depth, ' ') << "- Assignment: " << this << ' ' << this->target << '\n';
     this->expression->dump(stream, depth + 1);
   }
+
+  void visit(VisitFunc func) {
+    this->expression = func(this->expression);
+  }
 };
 
 // <target>.<member> = <expression>
@@ -536,6 +635,11 @@ struct MemberAssignment : public AbstractNode {
     stream << std::string(depth, ' ') << "- MemberAssignment: " << this << ' ' << this->member << '\n';
     this->target->dump(stream, depth + 1);
     this->expression->dump(stream, depth + 1);
+  }
+
+  void visit(VisitFunc func) {
+    this->target = func(this->target);
+    this->expression = func(this->expression);
   }
 };
 
@@ -559,6 +663,12 @@ struct IndexAssignment : public AbstractNode {
     this->index->dump(stream, depth + 1);
     this->expression->dump(stream, depth + 1);
   }
+
+  void visit(VisitFunc func) {
+    this->target = func(this->target);
+    this->index = func(this->index);
+    this->expression = func(this->expression);
+  }
 };
 
 // <target>(<arguments>)
@@ -578,6 +688,11 @@ struct Call : public AbstractNode {
     stream << std::string(depth, ' ') << "- Call:" << this << '\n';
     this->target->dump(stream, depth + 1);
     this->arguments->dump(stream, depth + 1);
+  }
+
+  void visit(VisitFunc func) {
+    this->target = func(this->target);
+    this->arguments = reinterpret_cast<NodeList*>(func(this->arguments));
   }
 };
 
@@ -599,6 +714,11 @@ struct CallMember : public AbstractNode {
     stream << std::string(depth, ' ') << "- CallMember:" << this << ' ' << this->symbol << '\n';
     this->context->dump(stream, depth + 1);
     this->arguments->dump(stream, depth + 1);
+  }
+
+  void visit(VisitFunc func) {
+    this->context = func(this->context);
+    this->arguments = reinterpret_cast<NodeList*>(func(this->arguments));
   }
 };
 
@@ -622,6 +742,12 @@ struct CallIndex : public AbstractNode {
     this->context->dump(stream, depth + 1);
     this->index->dump(stream, depth + 1);
     this->arguments->dump(stream, depth + 1);
+  }
+
+  void visit(VisitFunc func) {
+    this->context = func(this->context);
+    this->index = func(this->index);
+    this->arguments = reinterpret_cast<NodeList*>(func(this->arguments));
   }
 };
 
@@ -660,6 +786,10 @@ struct Member : public AbstractNode {
     stream << std::string(depth, ' ') << "- Member:" << this << ' ' << this->symbol << '\n';
     this->target->dump(stream, depth + 1);
   }
+
+  void visit(VisitFunc func) {
+    this->target = func(this->target);
+  }
 };
 
 // <target>[<argument>]
@@ -679,6 +809,11 @@ struct Index : public AbstractNode {
     stream << std::string(depth, ' ') << "- Index:" << this << '\n';
     this->target->dump(stream, depth + 1);
     this->argument->dump(stream, depth + 1);
+  }
+
+  void visit(VisitFunc func) {
+    this->target = func(this->target);
+    this->argument = func(this->argument);
   }
 };
 
@@ -764,6 +899,10 @@ struct Array : public AbstractNode {
     stream << std::string(depth, ' ') << "- Array:" << this << '\n';
     this->expressions->dump(stream, depth + 1);
   }
+
+  void visit(VisitFunc func) {
+    this->expressions = reinterpret_cast<NodeList*>(func(this->expressions));
+  }
 };
 
 // {
@@ -796,6 +935,12 @@ struct Hash : public AbstractNode {
     for (auto& note : this->pairs) {
       stream << std::string(depth + 1, ' ') << "- " << note.first << ':' << '\n';
       note.second->dump(stream, depth + 1);
+    }
+  }
+
+  void visit(VisitFunc func) {
+    for (auto& pair : this->pairs) {
+      pair.second = func(pair.second);
     }
   }
 };
@@ -858,6 +1003,10 @@ struct Function : public AbstractNode {
 
     this->body->dump(stream, depth + 1);
   }
+
+  void visit(VisitFunc func) {
+    this->body = func(this->body);
+  }
 };
 
 // property <symbol>;
@@ -888,12 +1037,12 @@ struct PropertyDeclaration : public AbstractNode {
 // }
 struct Class : public AbstractNode {
   std::string name;
-  Function* constructor;
+  AbstractNode* constructor;
   NodeList* members;
   NodeList* statics;
   NodeList* parents;
 
-  Class(const std::string& n, Function* c, NodeList* m, NodeList* s, NodeList* p)
+  Class(const std::string& n, AbstractNode* c, NodeList* m, NodeList* s, NodeList* p)
       : name(n), constructor(c), members(m), statics(s), parents(p) {
   }
 
@@ -910,6 +1059,13 @@ struct Class : public AbstractNode {
     this->members->dump(stream, depth + 1);
     this->statics->dump(stream, depth + 1);
     this->parents->dump(stream, depth + 1);
+  }
+
+  void visit(VisitFunc func) {
+    this->constructor = func(this->constructor);
+    this->members = reinterpret_cast<NodeList*>(func(this->members));
+    this->statics = reinterpret_cast<NodeList*>(func(this->statics));
+    this->parents = reinterpret_cast<NodeList*>(func(this->parents));
   }
 };
 
@@ -940,6 +1096,10 @@ struct LocalInitialisation : public AbstractNode {
     stream << ' ' << (this->constant ? "constant" : "") << '\n';
     this->expression->dump(stream, depth + 1);
   }
+
+  void visit(VisitFunc func) {
+    this->expression = func(this->expression);
+  }
 };
 
 // return
@@ -959,6 +1119,10 @@ struct Return : public AbstractNode {
     stream << std::string(depth, ' ') << "- Return:" << this << '\n';
     this->expression->dump(stream, depth + 1);
   }
+
+  void visit(VisitFunc func) {
+    this->expression = func(this->expression);
+  }
 };
 
 // throw <expression>
@@ -975,6 +1139,10 @@ struct Throw : public AbstractNode {
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- Throw:" << this << '\n';
     this->expression->dump(stream, depth + 1);
+  }
+
+  void visit(VisitFunc func) {
+    this->expression = func(this->expression);
   }
 };
 
@@ -1020,6 +1188,12 @@ struct TryCatch : public AbstractNode {
     this->block->dump(stream, depth + 1);
     this->handler_block->dump(stream, depth + 1);
     this->finally_block->dump(stream, depth + 1);
+  }
+
+  void visit(VisitFunc func) {
+    this->block = func(this->block);
+    this->handler_block = func(this->handler_block);
+    this->finally_block = func(this->finally_block);
   }
 };
 

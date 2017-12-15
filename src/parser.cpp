@@ -1361,7 +1361,7 @@ AST::AbstractNode* Parser::parse_class() {
     }
   }
 
-  AST::Function* constructor = nullptr;
+  AST::AbstractNode* constructor = nullptr;
   AST::NodeList* members = new AST::NodeList();
   AST::NodeList* statics = new AST::NodeList();
 
@@ -1416,6 +1416,10 @@ AST::AbstractNode* Parser::parse_class() {
   }
   Location location_end = this->token.location;
   this->expect_token(TokenType::RightCurly);
+
+  if (constructor == nullptr) {
+    constructor = new AST::Empty();
+  }
 
   return (new AST::Class(name, constructor, members, statics, parents))->at(location_start, location_end);
 }

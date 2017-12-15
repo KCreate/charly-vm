@@ -1,3 +1,5 @@
-foo = bar
-foo.bar = baz
-foo[bar] = baz
+let a = 25;
+
+if (a > 30) {
+  print("Hello World");
+}

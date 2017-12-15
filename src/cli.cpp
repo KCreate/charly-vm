@@ -34,6 +34,7 @@
 #include "context.h"
 #include "parser.h"
 #include "sourcefile.h"
+#include "codegenerator.h"
 
 namespace Charly {
 using namespace Compiler;
@@ -110,6 +111,9 @@ int CLI::run() {
       parse_result->parse_tree->dump(std::cout);
     }
   }
+
+  CodeGenerator codegenerator;
+  codegenerator.visit_node(parse_result->parse_tree);
 
   if (this->flags.skip_execution) {
     return 0;

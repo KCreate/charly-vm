@@ -31,6 +31,7 @@
 #include "block.h"
 #include "opcode.h"
 #include "ast.h"
+#include "tree-walker.h"
 
 #pragma once
 
@@ -117,6 +118,10 @@ struct LVarScope {
 //};
 
 // Responsible for generating Charly bytecodes
-class CodeGenerator {
+class CodeGenerator : public TreeWalker {
+  inline AST::AbstractNode* visit_if(AST::If* node) {
+    node->dump(std::cout, 0);
+    return node;
+  }
 };
 }
