@@ -1,48 +1,52 @@
-CC=clang
-CCFLAGS=-std=c++17 \
-				-g \
-				-Wall \
-				-Wextra \
-				-Werror \
-				-Wno-long-long \
-				-Wno-variadic-macros \
-				-Wno-switch \
-				-ferror-limit=10000 \
-				-Ilibs \
-				-Isrc/headers
-OPT=-O0
-OBJS=build/main.o \
-		 build/gc.o \
-		 build/vm.o \
-		 build/internals.o \
-		 build/operators.o \
-		 build/buffer.o \
-		 build/cli.o \
-		 build/symboltable.o \
-		 build/managedcontext.o \
-		 build/block.o \
-		 build/lexer.o \
-		 build/parser.o \
- 		 build/codegenerator.o
+# Adapted for the Charly VM
+# Original: https://hiltmon.com/blog/2013/07/03/a-simple-c-plus-plus-project-structure/
 
-all: objects
-	$(CC) $(OPT) $(OBJS) $(CCFLAGS) -lstdc++ -lm -o bin/vm
+CC := clang
+OPT := -O0
+SRCDIR := src
+BUILDDIR := build
+INCLUDEDIR := include
+TARGET := bin/vm
+SRCEXT := cpp
+HEADEREXT := h
+HEADERS := $(shell find $(INCLUDEDIR) -type f -name *.$(HEADEREXT))
+SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
+OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/$(basename $(notdir %)),$(SOURCES:.$(SRCEXT)=.o))
+CPPSTD := c++17
+CFLAGS := -std=$(CPPSTD) -g -Wall -Wextra -Werror -Wno-switch -ferror-limit=10 $(OPT)
+LFLAGS := -lm
+INC := -I libs -I $(INCLUDEDIR)
+LIB := -lstdc++
 
-objects: $(OBJS)
+$(TARGET): $(OBJECTS)
+	$(call colorecho, " Linking...", 2)
+	@$(CC) $(OBJECTS) $(CFLAGS) $(LIB) $(LFLAGS) -o $(TARGET)
+	$(call colorecho, " Built executable $(TARGET)", 2)
 
-build/%.o: src/%.cpp
-	$(CC) $(OPT) $(CCFLAGS) -c $< -o $@
-
-rebuild:
-	make clean
-	make -j
+$(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
+	@mkdir -p $(dir $@)
+	$(call colorecho, " Building $@", 2)
+	@$(CC) $(CFLAGS) $(INC) -c -o $@ $<
 
 clean:
-	rm -rf bin/*
-	rm -rf build/*
+	$(call colorecho, " Cleaning...", 2)
+	@rm -rf $(BUILDDIR) $(TARGET)
 
-format: all
-	clang-format -i src/*.cpp src/headers/*.h -style=file
+rebuild:
+	@make clean
+	@make -j
 
-valgrind: all
+format:
+	clang-format -i $(SOURCES) $(HEADERS) -style=file
+
+valgrind: $(TARGET)
 	valgrind --leak-check=full --show-leak-kinds=all --show-reachable=no bin/vm todos.md
+
+.PHONY: clean rebuild format valgrind
+
+# Create colored output
+define colorecho
+      @tput setaf $2
+      @echo $1
+      @tput sgr0
+endef
