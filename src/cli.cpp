@@ -31,13 +31,13 @@
 #include "ast.h"
 #include "charly.h"
 #include "cli.h"
+#include "compiler.h"
 #include "context.h"
 #include "parser.h"
 #include "sourcefile.h"
-#include "codegenerator.h"
 
 namespace Charly {
-using namespace Compiler;
+using namespace Compilation;
 
 int CLI::run() {
   // Configure std::cout
@@ -73,12 +73,12 @@ int CLI::run() {
   }
   std::string source_string((std::istreambuf_iterator<char>(inputfile)), std::istreambuf_iterator<char>());
   SourceFile userfile(this->flags.arguments[0], source_string);
-  Compiler::Parser parser(userfile);
+  Parser parser(userfile);
   ParseResult* parse_result = nullptr;
 
   try {
     parse_result = parser.parse();
-  } catch (Compiler::UnexpectedCharError& ex) {
+  } catch (UnexpectedCharError& ex) {
     std::cout << "Encountered an unexpected char '";
     Buffer::write_cp_to_stream(ex.cp, std::cout);
     std::cout << "' ";
@@ -86,7 +86,7 @@ int CLI::run() {
     std::cout << '\n';
 
     return 1;
-  } catch (Compiler::SyntaxError& ex) {
+  } catch (SyntaxError& ex) {
     std::cout << "SyntaxError: " << ex.message << " ";
     ex.location.write_to_stream(std::cout);
     std::cout << '\n';
@@ -106,14 +106,14 @@ int CLI::run() {
     }
   }
 
+  class Compiler compiler;
+  compiler.compile(*parse_result);
+
   if (this->flags.dump_ast) {
     if (parse_result->parse_tree != nullptr) {
       parse_result->parse_tree->dump(std::cout);
     }
   }
-
-  CodeGenerator codegenerator;
-  codegenerator.visit_node(parse_result->parse_tree);
 
   if (this->flags.skip_execution) {
     return 0;

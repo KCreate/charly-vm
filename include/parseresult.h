@@ -25,50 +25,24 @@
  */
 
 #include <string>
+#include <vector>
+#include "ast.h"
+#include "token.h"
 
 #pragma once
 
 namespace Charly::Compilation {
-struct Location {
-  uint32_t pos = 0;
-  uint32_t row = 0;
-  uint32_t column = 0;
-  uint32_t length = 0;
+struct ParseResult {
   std::string filename;
+  std::vector<Token> tokens;
+  AST::AbstractNode* parse_tree;
 
-  Location() {
-  }
-  Location(uint32_t p, uint32_t r, uint32_t c, uint32_t l, const std::string& s)
-      : pos(p), row(r), column(c), length(l), filename(s) {
-  }
-  Location(const Location& o) : pos(o.pos), row(o.row), column(o.column), length(o.length), filename(o.filename) {
-  }
-  Location(Location&& o) : pos(o.pos), row(o.row), column(o.column), length(o.length), filename(std::move(o.filename)) {
+  ~ParseResult() {
+    delete parse_tree;
   }
 
-  Location& operator=(const Location& o) {
-    this->pos = o.pos;
-    this->row = o.row;
-    this->column = o.column;
-    this->length = o.length;
-    this->filename = o.filename;
-
-    return *this;
-  }
-
-  Location& operator=(Location&& o) {
-    this->pos = o.pos;
-    this->row = o.row;
-    this->column = o.column;
-    this->length = o.length;
-    std::swap(this->filename, o.filename);
-
-    return *this;
-  }
-
-  template <class T>
-  inline void write_to_stream(T&& stream) const {
-    stream << "at " << this->filename << ":" << this->row << ":" << this->column;
+  ParseResult(const std::string& f, const std::vector<Token> t, AST::AbstractNode* tree)
+      : filename(f), tokens(t), parse_tree(tree) {
   }
 };
 }  // namespace Charly::Compilation

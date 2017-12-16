@@ -30,7 +30,7 @@
 
 #include "lexer.h"
 
-namespace Charly::Compiler {
+namespace Charly::Compilation {
 void Lexer::tokenize() {
   while (this->token.type != TokenType::Eof) {
     this->read_token();
@@ -705,4 +705,4 @@ void Lexer::unexpected_char() {
   Location loc(this->source.pos - 1, this->source.row, this->source.column, 1, this->source.filename);
   throw UnexpectedCharError(loc, this->source.current_char);
 }
-}  // namespace Charly::Compiler
+}  // namespace Charly::Compilation

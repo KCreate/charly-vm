@@ -26,7 +26,7 @@
 
 #pragma once
 
-namespace Charly::Compiler {
+namespace Charly::Compilation {
 
 // Contains the amount of environments which need to be dereferenced
 // and the index of a local variable to read
@@ -35,4 +35,4 @@ struct IRVarOffsetInfo {
   uint32_t index;
 };
 
-}  // namespace Charly::Compiler
+}  // namespace Charly::Compilation

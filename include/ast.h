@@ -25,10 +25,11 @@
  */
 
 #include <cstdint>
+#include <functional>
 #include <iostream>
 #include <optional>
 #include <vector>
-#include <functional>
+#include <list>
 
 #include "irinfo.h"
 #include "location.h"
@@ -36,7 +37,7 @@
 
 #pragma once
 
-namespace Charly::Compiler::AST {
+namespace Charly::Compilation::AST {
 static const std::string kPaddingCharacters = "  ";
 
 struct AbstractNode;
@@ -52,8 +53,9 @@ public:
 
   virtual ~AbstractNode() = default;
 
-  inline AbstractNode* at(const Location& end) {
-    this->location_end = end;
+  inline AbstractNode* at(const Location& loc) {
+    this->location_start = loc;
+    this->location_end = loc;
     return this;
   }
 
@@ -63,8 +65,9 @@ public:
     return this;
   }
 
-  inline AbstractNode* at(const std::optional<Location>& end) {
-    this->location_end = end;
+  inline AbstractNode* at(const std::optional<Location>& loc) {
+    this->location_start = loc;
+    this->location_end = loc;
     return this;
   }
 
@@ -121,7 +124,7 @@ struct Empty : public AbstractNode {
 struct NodeList : public AbstractNode {
   // TODO: Figure out a good name for this
   // Other alternatives are: nodes, items
-  std::vector<AbstractNode*> children;
+  std::list<AbstractNode*> children;
 
   NodeList() {
   }
@@ -133,6 +136,13 @@ struct NodeList : public AbstractNode {
       this->at(*node);
     this->children.push_back(node);
     this->location_end = node->location_end;
+  }
+
+  inline void prepend_node(AbstractNode* node) {
+    if (this->children.size() == 0)
+      this->at(*node);
+    this->children.push_front(node);
+    this->location_start = node->location_start;
   }
 
   inline ~NodeList() {
@@ -147,9 +157,17 @@ struct NodeList : public AbstractNode {
   }
 
   void visit(VisitFunc func) {
+    std::list<AbstractNode*> new_children;
+
     for (auto& node : this->children) {
-      node = func(node);
+      AST::AbstractNode* result = func(node);
+
+      if (result != nullptr) {
+        new_children.push_back(result);
+      }
     }
+
+    this->children = std::move(new_children);
   }
 };
 
@@ -159,7 +177,7 @@ struct NodeList : public AbstractNode {
 //   <statements>
 // }
 struct Block : public AbstractNode {
-  std::vector<AbstractNode*> statements;
+  std::list<AbstractNode*> statements;
 
   Block() {
   }
@@ -176,6 +194,10 @@ struct Block : public AbstractNode {
     this->statements.push_back(node);
   }
 
+  inline void prepend_node(AbstractNode* node) {
+    this->statements.push_front(node);
+  }
+
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- Block:" << this << '\n';
     for (auto& node : this->statements)
@@ -183,9 +205,17 @@ struct Block : public AbstractNode {
   }
 
   void visit(VisitFunc func) {
+    std::list<AbstractNode*> new_statements;
+
     for (auto& node : this->statements) {
-      node = func(node);
+      AST::AbstractNode* result = func(node);
+
+      if (result != nullptr) {
+        new_statements.push_back(result);
+      }
     }
+
+    this->statements = std::move(new_statements);
   }
 };
 
@@ -596,7 +626,7 @@ struct Assignment : public AbstractNode {
   std::string target;
   AbstractNode* expression;
 
-  IRVarOffsetInfo* offset_info;
+  IRVarOffsetInfo* offset_info = nullptr;
 
   Assignment(const std::string& t, AbstractNode* e) : target(t), expression(e) {
   }
@@ -608,7 +638,12 @@ struct Assignment : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Assignment: " << this << ' ' << this->target << '\n';
+    stream << std::string(depth, ' ') << "- Assignment: " << this << ' ' << this->target;
+    if (this->offset_info != nullptr) {
+      stream << ' ' << '[' << this->offset_info->level << ", " << this->offset_info->index << ']';
+    }
+    stream << '\n';
+
     this->expression->dump(stream, depth + 1);
   }
 
@@ -754,7 +789,7 @@ struct CallIndex : public AbstractNode {
 // <name>
 struct Identifier : public AbstractNode {
   std::string name;
-  IRVarOffsetInfo* offset_info;
+  IRVarOffsetInfo* offset_info = nullptr;
 
   Identifier(const std::string& str) : name(str) {
   }
@@ -765,8 +800,11 @@ struct Identifier : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Identifier:" << this;
-    stream << ' ' << this->name << '\n';
+    stream << std::string(depth, ' ') << "- Identifier:" << this << ' ' << this->name;
+    if (this->offset_info != nullptr) {
+      stream << ' ' << '[' << this->offset_info->level << ", " << this->offset_info->index << ']';
+    }
+    stream << '\n';
   }
 };
 
@@ -974,7 +1012,7 @@ struct Function : public AbstractNode {
   AbstractNode* body;
   bool anonymous;
 
-  uint32_t lvar_info;
+  uint32_t lvar_count = 0;
 
   Function(const std::string& n, const std::vector<std::string>& p, AbstractNode* b, bool a)
       : name(n), parameters(p), body(b), anonymous(a) {
@@ -999,7 +1037,7 @@ struct Function : public AbstractNode {
         stream << ", ";
       }
     }
-    stream << ')' << '\n';
+    stream << ')' << " lvar_count=" << this->lvar_count << '\n';
 
     this->body->dump(stream, depth + 1);
   }
@@ -1079,7 +1117,7 @@ struct LocalInitialisation : public AbstractNode {
   AbstractNode* expression;
   bool constant;
 
-  IRVarOffsetInfo* offset_info;
+  IRVarOffsetInfo* offset_info = nullptr;
 
   LocalInitialisation(const std::string& n, AbstractNode* e, bool c) : name(n), expression(e), constant(c) {
   }
@@ -1093,7 +1131,11 @@ struct LocalInitialisation : public AbstractNode {
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- LocalInitialisation:" << this;
     stream << ' ' << this->name;
-    stream << ' ' << (this->constant ? "constant" : "") << '\n';
+    stream << ' ' << (this->constant ? "constant" : "");
+    if (this->offset_info != nullptr) {
+      stream << '[' << this->offset_info->level << ", " << this->offset_info->index << ']';
+    }
+    stream << '\n';
     this->expression->dump(stream, depth + 1);
   }
 
@@ -1242,4 +1284,4 @@ static const size_t kTypeThrow = typeid(Throw).hash_code();
 static const size_t kTypeBreak = typeid(Break).hash_code();
 static const size_t kTypeContinue = typeid(Continue).hash_code();
 static const size_t kTypeTryCatch = typeid(TryCatch).hash_code();
-}  // namespace Charly::Compiler::AST
+}  // namespace Charly::Compilation::AST

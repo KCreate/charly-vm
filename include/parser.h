@@ -29,26 +29,12 @@
 #include "ast.h"
 #include "lexer.h"
 #include "location.h"
+#include "parseresult.h"
 #include "token.h"
 
 #pragma once
 
-namespace Charly::Compiler {
-
-// Contains the result of the parsing step
-struct ParseResult {
-  std::string filename;
-  std::vector<Token> tokens;
-  AST::AbstractNode* parse_tree;
-
-  ~ParseResult() {
-    delete parse_tree;
-  }
-
-  ParseResult(const std::string& f, const std::vector<Token> t, AST::AbstractNode* tree)
-      : filename(f), tokens(t), parse_tree(tree) {
-  }
-};
+namespace Charly::Compilation {
 
 typedef std::function<void()> ParseFunc;
 
@@ -136,4 +122,4 @@ struct SyntaxError {
   SyntaxError(Location l, std::string&& str) : location(l), message(std::move(str)) {
   }
 };
-};  // namespace Charly::Compiler
+};  // namespace Charly::Compilation

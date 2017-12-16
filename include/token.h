@@ -31,7 +31,7 @@
 
 #pragma once
 
-namespace Charly::Compiler {
+namespace Charly::Compilation {
 
 enum TokenType : uint8_t {
 
@@ -302,4 +302,4 @@ struct Token {
     this->location.write_to_stream(stream);
   }
 };
-}  // namespace Charly::Compiler
+}  // namespace Charly::Compilation

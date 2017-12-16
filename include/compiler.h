@@ -24,51 +24,46 @@
  * SOFTWARE.
  */
 
-#include <string>
-
-#pragma once
+#include "ast.h"
+#include "block.h"
+#include "codegenerator.h"
+#include "lvar-rewrite.h"
+#include "parseresult.h"
+#include "symboltable.h"
 
 namespace Charly::Compilation {
-struct Location {
-  uint32_t pos = 0;
-  uint32_t row = 0;
-  uint32_t column = 0;
-  uint32_t length = 0;
-  std::string filename;
+class Compiler {
+public:
+  inline InstructionBlock* compile(ParseResult& result) {
 
-  Location() {
-  }
-  Location(uint32_t p, uint32_t r, uint32_t c, uint32_t l, const std::string& s)
-      : pos(p), row(r), column(c), length(l), filename(s) {
-  }
-  Location(const Location& o) : pos(o.pos), row(o.row), column(o.column), length(o.length), filename(o.filename) {
-  }
-  Location(Location&& o) : pos(o.pos), row(o.row), column(o.column), length(o.length), filename(std::move(o.filename)) {
-  }
+    // Wrap the whole program in a function which handles the exporting interface
+    // to other programs
+    result.parse_tree = (new AST::Function("", {"export"}, result.parse_tree, true))->at(result.parse_tree);
 
-  Location& operator=(const Location& o) {
-    this->pos = o.pos;
-    this->row = o.row;
-    this->column = o.column;
-    this->length = o.length;
-    this->filename = o.filename;
+    // Calculate all offsets of all variables, assignments and declarations
+    LVarRewriter lvar_rewriter(this->symtable);
+    result.parse_tree = lvar_rewriter.visit_node(result.parse_tree);
+    if (lvar_rewriter.errors.size() > 0) {
+      for (auto& err : lvar_rewriter.errors) {
+        this->print_error(err);
+      }
+      return nullptr;
+    }
 
-    return *this;
+    return nullptr;
   }
 
-  Location& operator=(Location&& o) {
-    this->pos = o.pos;
-    this->row = o.row;
-    this->column = o.column;
-    this->length = o.length;
-    std::swap(this->filename, o.filename);
+  void inline print_error(std::pair<AST::AbstractNode*, std::string> error) {
+    std::cout << "Error";
+    if (error.first->location_start.has_value()) {
+      std::cout << ' ';
+      error.first->location_start->write_to_stream(std::cout);
+    }
 
-    return *this;
+    std::cout << ": " << error.second << '\n';
   }
 
-  template <class T>
-  inline void write_to_stream(T&& stream) const {
-    stream << "at " << this->filename << ":" << this->row << ":" << this->column;
-  }
+private:
+  SymbolTable symtable;
 };
 }  // namespace Charly::Compilation

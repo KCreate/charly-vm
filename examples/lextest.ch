@@ -1,5 +1,8 @@
-let a = 25;
+const create_counter = ->{
+  let i = 0;
 
-if (a > 30) {
-  print("Hello World");
+  return ->{
+    i = i + 1
+    return i
+  }
 }

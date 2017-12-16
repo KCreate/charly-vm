@@ -28,7 +28,7 @@
 
 #include "parser.h"
 
-namespace Charly::Compiler {
+namespace Charly::Compilation {
 ParseResult* Parser::parse() {
   this->advance();
   AST::AbstractNode* tree = this->parse_program();
@@ -1438,4 +1438,4 @@ void Parser::assign_default_name(AST::AbstractNode* node, const std::string& nam
   }
 }
 
-}  // namespace Charly::Compiler
+}  // namespace Charly::Compilation

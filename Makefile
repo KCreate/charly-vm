@@ -37,7 +37,8 @@ rebuild:
 	@make -j
 
 format:
-	clang-format -i $(SOURCES) $(HEADERS) -style=file
+	$(call colorecho, " Formatting...", 2)
+	@clang-format -i $(SOURCES) $(HEADERS) -style=file
 
 valgrind: $(TARGET)
 	valgrind --leak-check=full --show-leak-kinds=all --show-reachable=no bin/vm todos.md

@@ -26,6 +26,4 @@
 
 #include "codegenerator.h"
 
-namespace Charly::Compiler {
-
-}
+namespace Charly::Compilation {}

@@ -82,98 +82,30 @@ const parse_tree = {
     blockid: 0,
     children: [
       {
-        type: "lvar_decl",
-        name: "foo"
-      },
-      {
-        type: "lvar_decl",
-        name: "bar"
-      },
-      {
-        type: "identifier",
-        value: "export"
-      },
-      {
-        type: "identifier",
-        value: "myglobal1"
-      },
-      {
-        type: "identifier",
-        value: "myglobal2"
-      },
-      {
         type: "block",
         blockid: 1,
         children: [
           {
             type: "lvar_decl",
             name: "foo"
-          },
-          {
-            type: "identifier",
-            value: "foo"
           }
         ]
-      },
-      {
-        type: "function",
-        parameters: ["a", "b"],
-        block: {
-          type: "block",
-          blockid: 2,
-          children: [
-            {
-              type: "lvar_decl",
-              name: "foo"
-            },
-            {
-              type: "identifier",
-              value: "arguments"
-            },
-            {
-              type: "identifier",
-              value: "a"
-            },
-            {
-              type: "identifier",
-              value: "b"
-            },
-            {
-              type: "identifier",
-              value: "foo"
-            },
-            {
-              type: "assignment",
-              target: "foo",
-              expression: {
-                type: "identifier",
-                value: "bar"
-              }
-            },
-            {
-              type: "identifier",
-              value: "bar"
-            }
-          ]
-        }
       },
       {
         type: "block",
-        blockid: 3,
+        blockid: 2,
         children: [
           {
-            type: "lvar_decl",
-            name: "foo"
-          },
-          {
-            type: "identifier",
-            value: "foo"
+            type: "block",
+            blockid: 3,
+            children: [
+              {
+                type: "identifier",
+                value: "foo"
+              }
+            ]
           }
         ]
-      },
-      {
-        type: "identifier",
-        value: "foo"
       }
     ]
   }
@@ -321,7 +253,7 @@ class LVarRewritter {
           }
 
           // Check if this record is reachable
-          if (record.depth < search_depth && !noparentblocks) {
+          if (record.depth <= search_depth && !noparentblocks) {
             matching_record = record;
           }
         });

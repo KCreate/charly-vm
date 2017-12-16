@@ -33,7 +33,7 @@
 
 #pragma once
 
-namespace Charly::Compiler {
+namespace Charly::Compilation {
 class Lexer {
 public:
   SourceFile& source;
@@ -77,4 +77,4 @@ struct UnexpectedCharError {
   UnexpectedCharError(Location l, uint32_t cp) : location(l), cp(cp) {
   }
 };
-};  // namespace Charly::Compiler
+};  // namespace Charly::Compilation
