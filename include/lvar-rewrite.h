@@ -25,8 +25,8 @@
  */
 
 #include "ast.h"
-#include "tree-walker.h"
 #include "symboltable.h"
+#include "tree-walker.h"
 
 #pragma once
 

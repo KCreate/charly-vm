@@ -35,7 +35,6 @@ namespace Charly::Compilation {
 class Compiler {
 public:
   inline InstructionBlock* compile(ParseResult& result) {
-
     // Wrap the whole program in a function which handles the exporting interface
     // to other programs
     result.parse_tree = (new AST::Function("", {"export", "Charly"}, result.parse_tree, true))->at(result.parse_tree);

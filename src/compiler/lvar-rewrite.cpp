@@ -39,8 +39,10 @@ LVarRecord LVarScope::declare(size_t symbol, uint32_t depth, uint64_t blockid, b
 
 void LVarScope::pop_blockid(uint64_t blockid) {
   for (auto& recordlist : this->table) {
-    if (recordlist.second.size() == 0) continue;
-    if (recordlist.second.back().blockid == blockid) recordlist.second.pop_back();
+    if (recordlist.second.size() == 0)
+      continue;
+    if (recordlist.second.back().blockid == blockid)
+      recordlist.second.pop_back();
   }
 }
 
@@ -168,7 +170,7 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
   }
 
   // Assign the offset info to the node
-  node->offset_info = new IRVarOffsetInfo({ result->depth, result->frame_index });
+  node->offset_info = new IRVarOffsetInfo({result->depth, result->frame_index});
   return node;
 }
 
@@ -184,7 +186,7 @@ AST::AbstractNode* LVarRewriter::visit_assignment(AST::Assignment* node, VisitCo
     return node;
   }
 
-  node->offset_info = new IRVarOffsetInfo({ result->depth, result->frame_index });
+  node->offset_info = new IRVarOffsetInfo({result->depth, result->frame_index});
 
   cont();
 

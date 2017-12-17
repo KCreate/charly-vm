@@ -1,7 +1,22 @@
-const obj = {
-  foo: func {
-    self;
-  }
+let a;
+let b;
+let c;
+let d;
+let e;
+
+func {
+  a
+  b
+  c
+  d
 }
 
-obj.foo()
+func {
+  a
+  b
+  c
+  d
+  return e
+}
+
+->Charly

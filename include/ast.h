@@ -27,9 +27,9 @@
 #include <cstdint>
 #include <functional>
 #include <iostream>
+#include <list>
 #include <optional>
 #include <vector>
-#include <list>
 
 #include "irinfo.h"
 #include "location.h"
