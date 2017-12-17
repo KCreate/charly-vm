@@ -105,6 +105,7 @@
   - If a syntax error occurs, the whole program should crash.
   - This means it's not as bad if we loose memory if we're going to crash anyway
   - Not an excuse, but reduces it's priority to be fixed
+- Template schenanigans could register AST nodes in a pool which would be cleared if an exception occurs
 
 # Compiler
 - _LVarRewriter_: Semantic (undefined and duplicate lvars) and lvar offset calculation in one step
@@ -124,6 +125,16 @@
     - Logging
 - Only insert the `arguments` array into functions which need it. Can be a flag in the function node.
 - VM would only create the arguments array if the function requires it
+- Compiler stages
+  - [x] Tokenization
+  - [x] Parsing
+    - [ ] Syntax desugaring (`foo["bar"]` turns to `foo.bar`)
+    - [ ] Insert returns on last statement of block
+  - [ ] Constant folding
+  - [ ] Remove string duplicates (to keep the static data section small)
+  - [x] LVar offset calculation
+  - [ ] Code generation
+  - [ ] Label resolution (ifs, breaks, continues, etc.)
 
 # Make sure the JIT compiler doesn't need to allocate anything via the VM
 - How are instructionblocks allocated?
