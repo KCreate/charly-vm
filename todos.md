@@ -122,6 +122,8 @@
       - InstructionBlocks
       - Static data (strings)
     - Logging
+- Only insert the `arguments` array into functions which need it. Can be a flag in the function node.
+- VM would only create the arguments array if the function requires it
 
 # Make sure the JIT compiler doesn't need to allocate anything via the VM
 - How are instructionblocks allocated?

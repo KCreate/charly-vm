@@ -38,7 +38,7 @@ public:
 
     // Wrap the whole program in a function which handles the exporting interface
     // to other programs
-    result.parse_tree = (new AST::Function("", {"export"}, result.parse_tree, true))->at(result.parse_tree);
+    result.parse_tree = (new AST::Function("", {"export", "Charly"}, result.parse_tree, true))->at(result.parse_tree);
 
     // Calculate all offsets of all variables, assignments and declarations
     LVarRewriter lvar_rewriter(this->symtable);
