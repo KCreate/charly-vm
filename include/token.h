@@ -44,6 +44,7 @@ enum TokenType : uint8_t {
   BooleanTrue,
   Null,
   Nan,
+  Self,
 
   // Keywords
   Break,
@@ -145,6 +146,7 @@ static std::string kTokenTypeStrings[] = {
   "BooleanTrue",
   "Null",
   "Nan",
+  "Self",
   "Break",
   "Case",
   "Catch",
@@ -223,6 +225,7 @@ static const std::unordered_map<std::string, TokenType> kTokenKeywordsAndLiteral
   {"true", TokenType::BooleanTrue},
   {"null", TokenType::Null},
   {"NaN", TokenType::Nan},
+  {"self", TokenType::Self},
   {"break", TokenType::Break},
   {"case", TokenType::Case},
   {"catch", TokenType::Catch},

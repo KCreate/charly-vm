@@ -93,28 +93,8 @@
     just two pointers. Push and pop might also benefit from this.
 
 # AST Implementation
-- I want to avoid the use of dynamic_cast as much as possible
-  - This is not a performance concern, but ease-of-use
-  - dynamic_cast is super long to write and looks rather ugly
-- typeid can be used.
-  - This works, constants have been defined inside ast.h
-- Function overloading based on argument type doesn't work
-  - Needs a dispatch function which performs a typecheck and redirects to correct method
-    - Maybe C++ offers a way this can be implemented natively
 - AND assignments need to be parsed as separate nodes
   - If a subnode of the assignment target contains a call expression, it could be executed twice
-
-# Base class of a tree walker
-- Yields each node, bottom to top
-- Replaces each node with the value returned from the callback
-- `NodeList` and `Block` nodes should remove nodes when a `nullptr` is being returned
-
-# Parser notes
-- Operator associativity
-  - Left associative operators parse their child structures inside a loop
-  - Right associative operators parse their child as left and themselves recursively, without a loop
-  - See: https://en.wikipedia.org/wiki/Operator_associativity
-  - Assignment, Exponentiation
 
 # Exception safety in compiler
 - Allocated AST nodes need to be deallocated when an exception is thrown
@@ -128,38 +108,24 @@
 
 # Compiler
 - _LVarRewriter_: Semantic (undefined and duplicate lvars) and lvar offset calculation in one step
-  - Buffers 5 errors
-    - Throws if more than 5 errors were generated
   - Calculates how many local variable slots a function frame will need
 - Break and Continue don't need to be implemented via a catchtable
   - Offsets can be calculated at compile-time for each individual instruction site
   - RegisterCatchTable doesn't need a throwtype anymore
   - find_catchtable doesn't need to search as much as it does right now
-
-# Remove constants from runtime
-- Checking wether code writes to a constant can be done at compile-time, rather than at
-  runtime.
-- Remove MakeConstant instruction
-- Remove FrameEnvironmentEntry datastructure
+- Clean the code of the compiler
+  - Come up with a good way to structure all the things the compiler does and produces
+    - Errors
+    - Warnings
+    - Results
+      - Produced symbols
+      - InstructionBlocks
+      - Static data (strings)
+    - Logging
 
 # Make sure the JIT compiler doesn't need to allocate anything via the VM
 - How are instructionblocks allocated?
   - Remove the handling from the VM into a separate thing
-
-# Refactoring and code structure
-- CompilationContext
-  - Location
-  - Lexer
-    - Token
-  - Parser
-    - ASTNode (unchanged, sugared syntax tree)
-  - SemanticTransformer
-    - SemanticNode (desugared syntax tree with semantic information and compile-time transformations)
-    - Also does optimizations
-  - IRGenerator (transforms SemanticNodes into IRNodes)
-    - FunctionBuffer
-      - InstructionBuffer
-      - ChildBuffers (list of child function buffers)
 
 # Reserved identifiers
 - Everywhere

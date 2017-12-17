@@ -1081,8 +1081,8 @@ AST::AbstractNode* Parser::parse_literal() {
       this->advance();
 
       if (this->token.type == TokenType::Identifier) {
-        AST::AbstractNode* exp = (new AST::Member((new AST::Identifier("self"))->at(location_start), this->token.value))
-                                     ->at(location_start, this->token.location);
+        AST::AbstractNode* exp = new AST::Member((new AST::Self())->at(location_start), this->token.value);
+        exp->at(location_start, this->token.location);
         this->advance();
         return exp;
       } else {
@@ -1090,6 +1090,12 @@ AST::AbstractNode* Parser::parse_literal() {
         return nullptr;
       }
       break;
+    }
+    case TokenType::Self: {
+      AST::AbstractNode* node = new AST::Self();
+      node->at(this->token.location);
+      this->advance();
+      return node;
     }
     case TokenType::Identifier: {
       AST::AbstractNode* id = new AST::Identifier(this->token.value);

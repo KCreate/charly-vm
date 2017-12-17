@@ -808,6 +808,13 @@ struct Identifier : public AbstractNode {
   }
 };
 
+// self
+struct Self : public AbstractNode {
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Self: " << this << '\n';
+  }
+};
+
 // <target>.<symbol>
 struct Member : public AbstractNode {
   AbstractNode* target;
@@ -1265,6 +1272,7 @@ static const size_t kTypeCall = typeid(Call).hash_code();
 static const size_t kTypeCallMember = typeid(CallMember).hash_code();
 static const size_t kTypeCallIndex = typeid(CallIndex).hash_code();
 static const size_t kTypeIdentifier = typeid(Identifier).hash_code();
+static const size_t kTypeSelf = typeid(Self).hash_code();
 static const size_t kTypeMember = typeid(Member).hash_code();
 static const size_t kTypeIndex = typeid(Index).hash_code();
 static const size_t kTypeNull = typeid(Null).hash_code();
