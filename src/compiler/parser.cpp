@@ -1350,11 +1350,16 @@ AST::AbstractNode* Parser::parse_arrowfunc() {
     this->keyword_context.continue_allowed = false;
     block = this->parse_block();
     this->keyword_context = backup_context;
+
+    // Insert a return null statement into the block in case the last statement in the
+    // functions body is not already a return statement
+    if (AST::cast<AST::Block>(block)->statements.back()->type() != AST::kTypeReturn) {
+      AST::cast<AST::Block>(block)->append_node((new AST::Return(new AST::Empty()))->at(block));
+    }
   } else {
-    AST::Block* exp_wrapper = new AST::Block();
     AST::AbstractNode* exp = this->parse_expression();
-    exp_wrapper->append_node(exp);
-    exp_wrapper->at(exp);
+    AST::Block* exp_wrapper = AST::cast<AST::Block>((new AST::Block())->at(exp));
+    exp_wrapper->append_node((new AST::Return(exp))->at(exp));
     block = exp_wrapper;
   }
 
