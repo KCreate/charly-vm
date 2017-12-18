@@ -121,6 +121,23 @@ public:
   void write_double(double val);
   uint32_t write_string(const std::string& data);
 
+  // Interface to code and staticdata buffers
+  inline uint8_t& uint8_at(uint32_t offset) {
+    return *reinterpret_cast<uint8_t*>(this->data + offset);
+  }
+  inline uint16_t& uint16_at(uint32_t offset) {
+    return *reinterpret_cast<uint16_t*>(this->data + offset);
+  }
+  inline uint32_t& uint32_at(uint32_t offset) {
+    return *reinterpret_cast<uint32_t*>(this->data + offset);
+  }
+  inline uint64_t& uint64_at(uint32_t offset) {
+    return *reinterpret_cast<uint64_t*>(this->data + offset);
+  }
+  inline void*& voidptr_at(uint32_t offset) {
+    return *reinterpret_cast<void**>(this->data + offset);
+  }
+
   // Wrappers around the write functions which can encode instructions
   void write_readlocal(uint32_t index, uint32_t level);
   void write_readmembersymbol(VALUE symbol);
