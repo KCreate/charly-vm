@@ -123,8 +123,28 @@
       - InstructionBlocks
       - Static data (strings)
     - Logging
-- Only insert the `arguments` array into functions which need it. Can be a flag in the function node.
-- VM would only create the arguments array if the function requires it
+- Only insert the `arguments` array into functions which need it.
+  - Special syntax for functions that receive a variable amount of arguments
+    - `func foo(a, b)[args] { ... }`
+      - Pros:
+        - Easy parsing
+      - Cons:
+        - Looks ugly
+        - Easily confused with other syntaxes
+        - Too much syntax for little functionality
+    - `func foo(a, b, args...) { ... }`, `func  foo(args..., a, b) { ... }`, `func foo(a, args..., b) { ... }`
+      - Pros:
+        - Looks good
+        - Easy understood as it looks the same in other languages
+      - Cons:
+        - If the variadic entry is in the middle, the offsets to the latter arguments are not known at compile-time
+          - Generate `ReadArrayIndex` instructions for dynamic arg identifiers
+          - Generate `SetArrayIndex` for assignments to dynamic arg identifiers
+        - More complicated parsing and semantic validation
+  - The regular arglist gives names to the first couple arguments
+    - Determines the methods required argument count
+  - If a function doesn't have the variadic notation, it is marked as non-variadic
+    - If a function is not variadic, the VM doesn't have to create the arguments array
 - Compiler stages
   - [x] Tokenization
   - [x] Parsing
