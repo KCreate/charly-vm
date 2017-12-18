@@ -43,6 +43,11 @@ static const std::string kPaddingCharacters = "  ";
 struct AbstractNode;
 typedef std::function<AbstractNode*(AbstractNode*)> VisitFunc;
 
+template <class T>
+static inline T* cast(AbstractNode* node) {
+  return reinterpret_cast<T*>(node);
+}
+
 // Abstract base class of all ASTNodes
 //
 // TODO: Location information
@@ -877,17 +882,15 @@ struct Nan : public AbstractNode {
 };
 
 // "<value>"
-//
-// value is optional because we don't want to allocate any memory for an empty string
 struct String : public AbstractNode {
-  std::optional<std::string> value;
+  std::string value;
 
   String(const std::string& str) : value(str) {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- String:" << this;
-    stream << ' ' << this->value.value_or("") << '\n';
+    stream << ' ' << this->value << '\n';
   }
 };
 

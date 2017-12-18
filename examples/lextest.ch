@@ -1,22 +1,7 @@
-let a;
-let b;
-let c;
-let d;
-let e;
+let foo;
+let bar;
 
-func {
-  a
-  b
-  c
-  d
-}
-
-func {
-  a
-  b
-  c
-  d
-  return e
-}
-
-->Charly
+foo.foo
+foo[bar]
+foo["hello"]
+foo["hello world"]

@@ -1051,7 +1051,15 @@ AST::AbstractNode* Parser::parse_member_call() {
         Location location_end = this->token.location;
         this->expect_token(TokenType::RightBracket);
 
-        target = (new AST::Index(target, exp))->at(target->location_start, location_end);
+        // Rewrite to target.exp in case exp if a string literal
+        if (exp->type() == AST::kTypeString) {
+          AST::String* str = AST::cast<AST::String>(exp);
+          target = (new AST::Member(target, str->value))->at(target->location_start, location_end);
+          delete str;
+        } else {
+          target = (new AST::Index(target, exp))->at(target->location_start, location_end);
+        }
+
         break;
       }
       case TokenType::Point: {
