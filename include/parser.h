@@ -72,6 +72,7 @@ public:
   AST::AbstractNode* parse_program();
   AST::AbstractNode* parse_block();
   AST::AbstractNode* parse_statement();
+  AST::AbstractNode* parse_control_statement();
   AST::AbstractNode* parse_class_statement();
   AST::AbstractNode* parse_if_statement();
   AST::AbstractNode* parse_unless_statement();

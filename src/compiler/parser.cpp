@@ -284,6 +284,22 @@ AST::AbstractNode* Parser::parse_statement() {
     case TokenType::Try: {
       return this->parse_try_statement();
     }
+    case TokenType::Switch: {
+      return this->parse_switch_statement();
+    }
+    default: {
+      return this->parse_control_statement();
+    }
+  }
+
+  this->unexpected_token();
+  return nullptr;
+}
+
+AST::AbstractNode* Parser::parse_control_statement() {
+  Location location_start = this->token.location;
+
+  switch (this->token.type) {
     case TokenType::Return: {
       Location location_start = this->token.location;
 
@@ -340,9 +356,6 @@ AST::AbstractNode* Parser::parse_statement() {
       this->skip_token(TokenType::Semicolon);
       return (new AST::Throw(exp))->at(location_start, exp->location_end);
     }
-    case TokenType::Switch: {
-      return this->parse_switch_statement();
-    }
     default: {
       AST::AbstractNode* exp = this->parse_expression();
 
@@ -367,9 +380,6 @@ AST::AbstractNode* Parser::parse_statement() {
       return exp;
     }
   }
-
-  this->unexpected_token();
-  return nullptr;
 }
 
 AST::AbstractNode* Parser::parse_if_statement() {
@@ -392,7 +402,7 @@ AST::AbstractNode* Parser::parse_if_statement() {
   if (this->token.type == TokenType::LeftCurly) {
     then_node = this->parse_block();
   } else {
-    then_node = this->parse_expression();
+    then_node = this->parse_control_statement();
     this->skip_token(TokenType::Semicolon);
     return (new AST::If(test, then_node))->at(location_start, then_node->location_end);
   }
@@ -408,7 +418,7 @@ AST::AbstractNode* Parser::parse_if_statement() {
       if (this->token.type == TokenType::LeftCurly) {
         else_node = this->parse_block();
       } else {
-        else_node = this->parse_expression();
+        else_node = this->parse_control_statement();
         this->skip_token(TokenType::Semicolon);
       }
     }
@@ -439,7 +449,7 @@ AST::AbstractNode* Parser::parse_unless_statement() {
   if (this->token.type == TokenType::LeftCurly) {
     then_node = this->parse_block();
   } else {
-    then_node = this->parse_expression();
+    then_node = this->parse_control_statement();
     this->skip_token(TokenType::Semicolon);
     return (new AST::Unless(test, then_node))->at(location_start, then_node->location_end);
   }
@@ -454,7 +464,7 @@ AST::AbstractNode* Parser::parse_unless_statement() {
     if (this->token.type == TokenType::LeftCurly) {
       else_node = this->parse_block();
     } else {
-      else_node = this->parse_expression();
+      else_node = this->parse_control_statement();
       this->skip_token(TokenType::Semicolon);
     }
 
@@ -484,7 +494,7 @@ AST::AbstractNode* Parser::parse_guard_statement() {
   if (this->token.type == TokenType::LeftCurly) {
     block = this->parse_block();
   } else {
-    block = this->parse_expression();
+    block = this->parse_control_statement();
     this->skip_token(TokenType::Semicolon);
   }
 
@@ -530,6 +540,10 @@ AST::AbstractNode* Parser::parse_switch_statement() {
 
   this->keyword_context = backup_context;
 
+  if (default_block == nullptr) {
+    default_block = new AST::Empty();
+  }
+
   return (new AST::Switch(condition, cases, default_block))->at(location_start, location_end);
 }
 
@@ -570,7 +584,7 @@ AST::AbstractNode* Parser::parse_switch_node() {
       if (this->token.type == TokenType::LeftCurly) {
         block = this->parse_block();
       } else {
-        block = this->parse_expression();
+        block = this->parse_control_statement();
         this->skip_token(TokenType::Semicolon);
       }
 
@@ -584,7 +598,7 @@ AST::AbstractNode* Parser::parse_switch_node() {
       if (this->token.type == TokenType::LeftCurly) {
         block = this->parse_block();
       } else {
-        block = this->parse_expression();
+        block = this->parse_control_statement();
         this->skip_token(TokenType::Semicolon);
       }
 
@@ -620,7 +634,7 @@ AST::AbstractNode* Parser::parse_while_statement() {
   if (this->token.type == TokenType::LeftCurly) {
     then_block = this->parse_block();
   } else {
-    then_block = this->parse_expression();
+    then_block = this->parse_control_statement();
     this->skip_token(TokenType::Semicolon);
   }
 
@@ -651,7 +665,7 @@ AST::AbstractNode* Parser::parse_until_statement() {
   if (this->token.type == TokenType::LeftCurly) {
     then_block = this->parse_block();
   } else {
-    then_block = this->parse_expression();
+    then_block = this->parse_control_statement();
     this->skip_token(TokenType::Semicolon);
   }
 
@@ -672,7 +686,7 @@ AST::AbstractNode* Parser::parse_loop_statement() {
   if (this->token.type == TokenType::LeftCurly) {
     block = this->parse_block();
   } else {
-    block = this->parse_expression();
+    block = this->parse_control_statement();
     this->skip_token(TokenType::Semicolon);
   }
 
@@ -1300,7 +1314,7 @@ AST::AbstractNode* Parser::parse_func() {
     }
   } else if (has_symbol && this->token.type == TokenType::Assignment) {
     this->advance();
-    AST::AbstractNode* expr = this->parse_expression();
+    AST::AbstractNode* expr = this->parse_control_statement();
     AST::Block* wrapper_body = AST::cast<AST::Block>((new AST::Block())->at(expr));
     wrapper_body->append_node((new AST::Return(expr))->at(expr));
     body = wrapper_body;
@@ -1357,7 +1371,7 @@ AST::AbstractNode* Parser::parse_arrowfunc() {
       AST::cast<AST::Block>(block)->append_node((new AST::Return(new AST::Empty()))->at(block));
     }
   } else {
-    AST::AbstractNode* exp = this->parse_expression();
+    AST::AbstractNode* exp = this->parse_control_statement();
     AST::Block* exp_wrapper = AST::cast<AST::Block>((new AST::Block())->at(exp));
     exp_wrapper->append_node((new AST::Return(exp))->at(exp));
     block = exp_wrapper;

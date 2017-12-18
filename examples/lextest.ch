@@ -1,3 +1,5 @@
-->25
-->{ 25 }
-->{ return 25 }
+func (foo) {
+  switch (foo) {
+      case (25, 25) return true;
+  }
+}
