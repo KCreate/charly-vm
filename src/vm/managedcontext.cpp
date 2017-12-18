@@ -41,8 +41,8 @@ InstructionBlock* ManagedContext::create_instructionblock(uint32_t lvarcount) {
   return block;
 }
 
-CatchTable* ManagedContext::create_catchtable(ThrowType type, uint8_t* address) {
-  CatchTable* table = this->vm.create_catchtable(type, address);
+CatchTable* ManagedContext::create_catchtable(uint8_t* address) {
+  CatchTable* table = this->vm.create_catchtable(address);
   this->vm.context.gc->register_temporary(reinterpret_cast<VALUE>(table));
   this->temporaries.push_back(reinterpret_cast<VALUE>(table));
   return table;

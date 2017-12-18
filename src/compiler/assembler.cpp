@@ -24,43 +24,21 @@
  * SOFTWARE.
  */
 
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
-#include <functional>
-#include <iostream>
+#include "assembler.h"
 
-#pragma once
+namespace Charly::Compilation {
+  Label Assembler::reserve_label() {
+    return this->next_label_id++;
+  }
 
-namespace Charly {
-typedef uintptr_t VALUE;
-typedef intptr_t SIGNED_VALUE;
-typedef uint16_t STATUS;
-typedef void* FPOINTER;
+  Label Assembler::place_label() {
+    Label label = this->reserve_label();
+    this->labels[label] = this->block->writeoffset;
+    return label;
+  }
 
-class VM;
-struct Frame;
-struct CatchTable;
-class InstructionBlock;
-
-class CLI;
-struct RunFlags;
-struct Context;
-class SourceFile;
-class Buffer;
-class SymbolTable;
-
-enum Opcode : uint8_t;
-
-struct MemoryCell;
-class MemoryManager;
-class ManagedContext;
-
-struct Basic;
-struct Object;
-struct Array;
-struct String;
-struct Float;
-struct Function;
-struct CFunction;
-}  // namespace Charly
+  Label Assembler::place_label(Label label) {
+    this->labels[label] = this->block->writeoffset;
+    return label;
+  }
+}

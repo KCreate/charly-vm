@@ -106,13 +106,12 @@ void VM::push_stack(VALUE value) {
   this->stack.push_back(value);
 }
 
-CatchTable* VM::create_catchtable(ThrowType type, uint8_t* address) {
+CatchTable* VM::create_catchtable(uint8_t* address) {
   MemoryCell* cell = this->context.gc->allocate();
   cell->as.basic.set_type(kTypeCatchTable);
   cell->as.catchtable.stacksize = this->stack.size();
   cell->as.catchtable.frame = this->frames;
   cell->as.catchtable.parent = this->catchstack;
-  cell->as.catchtable.type = type;
   cell->as.catchtable.address = address;
   this->catchstack = reinterpret_cast<CatchTable*>(cell);
 
@@ -132,20 +131,6 @@ CatchTable* VM::pop_catchtable() {
   CatchTable* parent = this->catchstack->parent;
   this->catchstack = parent;
   return parent;
-}
-
-CatchTable* VM::find_catchtable(ThrowType type) {
-  CatchTable* table = this->catchstack;
-
-  while (table) {
-    if (table->type == type) {
-      break;
-    }
-
-    table = table->parent;
-  }
-
-  return table;
 }
 
 void VM::restore_catchtable(CatchTable* table) {
@@ -778,32 +763,23 @@ void VM::op_return() {
   }
 }
 
-void VM::op_throw(ThrowType type) {
-  if (type == ThrowType::Exception) {
-    return this->throw_exception(this->pop_stack().value_or(kNull));
-  }
-
-  CatchTable* table = this->find_catchtable(type);
-  if (!table) {
-    this->panic(Status::NoSuitableCatchTableFound);
-  }
-
-  this->restore_catchtable(table);
+void VM::op_throw() {
+  return this->throw_exception(this->pop_stack().value_or(kNull));
 }
 
 void VM::throw_exception(VALUE payload) {
-  CatchTable* table = this->find_catchtable(ThrowType::Exception);
+  CatchTable* table = this->catchstack;
 
   if (!table) {
-    this->panic(Status::NoSuitableCatchTableFound);
+    this->panic(Status::CatchStackEmpty);
   }
 
   this->restore_catchtable(table);
   this->push_stack(payload);
 }
 
-void VM::op_registercatchtable(ThrowType type, int32_t offset) {
-  this->create_catchtable(type, this->ip + offset);
+void VM::op_registercatchtable(int32_t offset) {
+  this->create_catchtable(this->ip + offset);
 }
 
 void VM::op_popcatchtable() {
@@ -1067,7 +1043,6 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     case kTypeCatchTable: {
       CatchTable* table = reinterpret_cast<CatchTable*>(value);
       io << "<CatchTable:" << table << " ";
-      io << "type=" << table->type << " ";
       io << "address=" << reinterpret_cast<void*>(table->address) << " ";
       io << "stacksize=" << table->stacksize << " ";
       io << "frame=" << table->frame << " ";
@@ -1124,17 +1099,6 @@ void VM::init_frames() {
   block->write_setmembersymbol(this->context.symbol_table("foo"));
   block->write_pop(1);
 
-  // Charly.internals.gccollect = ->{ gccollect }
-  block->write_readlocal(4, 0);
-  block->write_readmembersymbol(this->context.symbol_table("internals"));
-  block->write_function_literal(this->context.symbol_table("gccollect"), true, 0, [](InstructionBlock& block) {
-    block.write_gccollect();
-    block.write_putvalue(kNull);
-    block.write_return();
-  });
-  block->write_setmembersymbol(this->context.symbol_table("gccollect"));
-  block->write_pop(1);
-
   // [[{}, { boye = 250 }], 25, 25, 25, 25]
   block->write_puthash(0);
   block->write_puthash(0);
@@ -1166,68 +1130,6 @@ void VM::init_frames() {
   block->write_call(1);
   block->write_pop(1);
 
-  // try {
-  //   throw "This is being thrown";
-  // } catch(e) {
-  //   Charly.internals.get_method(e)
-  // }
-  block->write_try_statement(
-      [](InstructionBlock& block) {
-        block.write_putstring("This is being thrown");
-        block.write_throw(ThrowType::Exception);
-      },
-      [this](InstructionBlock& block) {
-        block.write_setlocal(5, 0);
-        block.write_readlocal(4, 0);
-        block.write_readmembersymbol(this->context.symbol_table("internals"));
-        block.write_readmembersymbol(this->context.symbol_table("get_method"));
-        block.write_readlocal(5, 0);
-        block.write_call(1);
-        block.write_pop(1);
-      });
-
-  // if (25) {
-  //   Charly.internals.get_method("true")
-  // }
-  block->write_if_statement([](InstructionBlock& block) { block.write_putvalue(kTrue); },
-                            [this](InstructionBlock& block) {
-                              block.write_readlocal(4, 0);
-                              block.write_readmembersymbol(this->context.symbol_table("internals"));
-                              block.write_readmembersymbol(this->context.symbol_table("get_method"));
-                              block.write_putstring("true");
-                              block.write_call(1);
-                              block.write_pop(1);
-                            });
-
-  // while (true) {
-  //   Charly.internals.get_method("Inside a while statement")
-  //   break
-  // }
-  block->write_while_statement([](InstructionBlock& block) { block.write_putvalue(kTrue); },
-                               [this](InstructionBlock& block) {
-                                 block.write_readlocal(4, 0);
-                                 block.write_readmembersymbol(this->context.symbol_table("internals"));
-                                 block.write_readmembersymbol(this->context.symbol_table("get_method"));
-                                 block.write_putstring("Inside a while statement");
-                                 block.write_call(1);
-                                 block.write_pop(1);
-                                 block.write_throw(ThrowType::Break);
-                               });
-
-  // loop {
-  //   Charly.internals.get_method("Inside a loop statement")
-  //   break
-  // }
-  block->write_loop_statement([this](InstructionBlock& block) {
-    block.write_readlocal(4, 0);
-    block.write_readmembersymbol(this->context.symbol_table("internals"));
-    block.write_readmembersymbol(this->context.symbol_table("get_method"));
-    block.write_putstring("Inside a loop statement");
-    block.write_call(1);
-    block.write_pop(1);
-    block.write_throw(ThrowType::Break);
-  });
-
   // typeof(arguments)
   block->write_readlocal(0, 0);
   block->write_typeof();
@@ -1241,13 +1143,6 @@ void VM::init_frames() {
   block->write_readmembersymbol(this->context.symbol_table("internals"));
   block->write_readmembersymbol(this->context.symbol_table("get_method"));
   block->write_typeof();
-
-  // Charly.internals.gccollect();
-  block->write_readlocal(4, 0);
-  block->write_readmembersymbol(this->context.symbol_table("internals"));
-  block->write_readmembersymbol(this->context.symbol_table("gccollect"));
-  block->write_call(0);
-  block->write_pop(1);
 
   // arguments[0] = 25;
   block->write_readlocal(0, 0);
@@ -1461,15 +1356,13 @@ void VM::run() {
       }
 
       case Opcode::Throw: {
-        ThrowType throw_type = *reinterpret_cast<ThrowType*>(this->ip + sizeof(Opcode));
-        this->op_throw(throw_type);
+        this->op_throw();
         break;
       }
 
       case Opcode::RegisterCatchTable: {
-        ThrowType throw_type = *reinterpret_cast<ThrowType*>(this->ip + sizeof(Opcode));
-        int32_t offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode) + sizeof(ThrowType));
-        this->op_registercatchtable(throw_type, offset);
+        int32_t offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode));
+        this->op_registercatchtable(offset);
         break;
       }
 
@@ -1534,7 +1427,9 @@ void VM::run() {
     if (this->context.flags.trace_opcodes) {
       std::chrono::duration<double> exec_duration = std::chrono::high_resolution_clock::now() - exec_start;
       std::cout << reinterpret_cast<void*>(old_ip) << ": " << kOpcodeMnemonics[opcode] << " ";
-      std::cout << " ( " << exec_duration.count() * 1000000000 << " nanoseconds)" << '\n';
+      std::cout << " (";
+      std::cout << static_cast<uint32_t>(exec_duration.count() * 1000000000);
+      std::cout << " nanoseconds)" << '\n';
     }
   }
 

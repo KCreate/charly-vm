@@ -49,7 +49,7 @@ public:
   // Misc. VM data structures
   Frame* create_frame(VALUE self, Function* calling_function, uint8_t* return_address);
   InstructionBlock* create_instructionblock(uint32_t lvarcount);
-  CatchTable* create_catchtable(ThrowType type, uint8_t* address);
+  CatchTable* create_catchtable(uint8_t* address);
 
   // VALUE types
   VALUE create_object(uint32_t initial_capacity);

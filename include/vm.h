@@ -66,9 +66,8 @@ public:
   void push_stack(VALUE value);
 
   // CatchStack manipulation
-  CatchTable* create_catchtable(ThrowType type, uint8_t* address);
+  CatchTable* create_catchtable(uint8_t* address);
   CatchTable* pop_catchtable();
-  CatchTable* find_catchtable(ThrowType type);
   void restore_catchtable(CatchTable* table);
 
   // Methods to create new data types
@@ -118,9 +117,9 @@ public:
   void call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self);
   void call_cfunction(CFunction* function, uint32_t argc, VALUE* argv);
   void op_return();
-  void op_throw(ThrowType type);
+  void op_throw();
   void throw_exception(VALUE payload);
-  void op_registercatchtable(ThrowType type, int32_t offset);
+  void op_registercatchtable(int32_t offset);
   void op_popcatchtable();
   void op_branch(int32_t offset);
   void op_branchif(int32_t offset);

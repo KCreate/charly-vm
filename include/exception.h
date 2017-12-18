@@ -26,17 +26,13 @@
 
 #include "defines.h"
 #include "frame.h"
-#include "opcode.h"
 #include "value.h"
 
 #pragma once
 
 namespace Charly {
-// A CatchTable holds enough information to be able to
-// roll back to an older state withing the machine
 struct CatchTable {
   VALUE flags;  // Needed by the GC
-  ThrowType type;
   uint8_t* address;
   size_t stacksize;
   Frame* frame;

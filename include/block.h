@@ -31,24 +31,6 @@
 #pragma once
 
 namespace Charly {
-typedef std::function<void(InstructionBlock& block)> IBlockGenFunc;
-
-template <class T>
-class BlockLabel;
-typedef BlockLabel<bool> BoolLabel;
-typedef BlockLabel<uint8_t> UInt8Label;
-typedef BlockLabel<uint16_t> UInt16Label;
-typedef BlockLabel<uint32_t> UInt32Label;
-typedef BlockLabel<uint64_t> UInt64Label;
-typedef BlockLabel<int8_t> Int8Label;
-typedef BlockLabel<int16_t> Int16Label;
-typedef BlockLabel<int32_t> Int32Label;
-typedef BlockLabel<int32_t> OffsetLabel;
-typedef BlockLabel<int64_t> Int64Label;
-typedef BlockLabel<double> DoubleLabel;
-typedef BlockLabel<void*> PointerLabel;
-typedef BlockLabel<InstructionBlock*> IBlockPointerLabel;
-
 class InstructionBlock {
 public:
   VALUE flags;  // Needed by GC
@@ -63,7 +45,6 @@ public:
   char* data;
   uint32_t data_size;
   uint32_t writeoffset;
-  std::vector<InstructionBlock*> child_blocks;
 
   // Keeps track of static data
   char* staticdata;
@@ -94,12 +75,6 @@ public:
     this->writeoffset = other.writeoffset;
     this->staticdata_size = other.staticdata_size;
     this->staticdata_writeoffset = other.staticdata_writeoffset;
-
-    // Recursively copy all child blocks
-    for (const auto& block : other.child_blocks) {
-      InstructionBlock* block_copy = new InstructionBlock(*block);
-      this->child_blocks.push_back(block_copy);
-    }
   }
 
   ~InstructionBlock() {
@@ -151,8 +126,8 @@ public:
   void write_putvalue(VALUE value);
   void write_putfloat(double value);
   void write_putstring(const std::string& data);
-  OffsetLabel write_putfunction(VALUE symbol, int32_t body_offset, bool anonymous, uint32_t argc);
-  PointerLabel write_putcfunction(VALUE symbol, FPOINTER funcptr, uint32_t argc);
+  void write_putfunction(VALUE symbol, int32_t body_offset, bool anonymous, uint32_t argc);
+  void write_putcfunction(VALUE symbol, FPOINTER funcptr, uint32_t argc);
   void write_putarray(uint32_t count);
   void write_puthash(uint32_t count);
   void write_putclass(VALUE symbol,
@@ -169,26 +144,15 @@ public:
   void write_call(uint32_t argc);
   void write_callmember(uint32_t argc);
   void write_return();
-  void write_throw(ThrowType type);
-  OffsetLabel write_registercatchtable(ThrowType type, int32_t offset);
+  void write_throw();
+  void write_registercatchtable(int32_t offset);
   void write_popcatchtable();
-  OffsetLabel write_branch(int32_t offset);
-  OffsetLabel write_branchif(int32_t offset);
-  OffsetLabel write_branchunless(int32_t offset);
+  void write_branch(int32_t offset);
+  void write_branchif(int32_t offset);
+  void write_branchunless(int32_t offset);
   void write_operator(Opcode opcode);
   void write_halt();
   void write_gccollect();
   void write_typeof();
-
-  // Wrappers for more high-level language structures
-  void write_if_statement(IBlockGenFunc condition, IBlockGenFunc then_block);
-  void write_ifelse_statement(IBlockGenFunc condition, IBlockGenFunc then_block, IBlockGenFunc else_block);
-  void write_unless_statement(IBlockGenFunc condition, IBlockGenFunc then_block);
-  void write_unlesselse_statement(IBlockGenFunc condition, IBlockGenFunc then_block, IBlockGenFunc else_block);
-  void write_try_statement(IBlockGenFunc block, IBlockGenFunc handler);
-  void write_while_statement(IBlockGenFunc condition, IBlockGenFunc then_block);
-  void write_until_statement(IBlockGenFunc condition, IBlockGenFunc then_block);
-  void write_loop_statement(IBlockGenFunc then_block);
-  void write_function_literal(VALUE symbol, bool anonymous, uint32_t argc, IBlockGenFunc body);
 };
 }  // namespace Charly

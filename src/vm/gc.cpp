@@ -145,14 +145,6 @@ void MemoryManager::mark(VALUE value) {
       this->mark(reinterpret_cast<VALUE>(table->parent));
       break;
     }
-
-    case kTypeInstructionBlock: {
-      InstructionBlock* block = reinterpret_cast<InstructionBlock*>(value);
-      for (auto& child_block : block->child_blocks) {
-        this->mark(reinterpret_cast<VALUE>(child_block));
-      }
-      break;
-    }
   }
 }
 

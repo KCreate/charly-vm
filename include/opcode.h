@@ -29,9 +29,6 @@
 #pragma once
 
 namespace Charly {
-// These are the throw types which are used by the throw instruction
-enum ThrowType : uint8_t { Exception, Break, Continue };
-
 // An opcode identifies a single instruction the machine can perform
 // Opcodes can have arguments
 enum Opcode : uint8_t {
@@ -235,9 +232,6 @@ enum Opcode : uint8_t {
 
   // Throw a value
   //
-  // args:
-  // - type
-  //
   // stack:
   // - value
   Throw,
@@ -246,7 +240,6 @@ enum Opcode : uint8_t {
   // WARNING: Offset is in bytes, no instruction length decoding is done
   //
   // args:
-  // - type
   // - offset
   RegisterCatchTable,
 
@@ -353,8 +346,8 @@ static constexpr uint32_t kInstructionLengths[]{
   /* Call */               1 + sizeof(uint32_t),
   /* CallMember */         1 + sizeof(uint32_t),
   /* Return */             1,
-  /* Throw */              1 + sizeof(ThrowType),
-  /* RegisterCatchTable */ 1 + sizeof(ThrowType) + sizeof(int32_t),
+  /* Throw */              1,
+  /* RegisterCatchTable */ 1 + sizeof(int32_t),
   /* PopCatchTable */      1,
   /* Branch */             1 + sizeof(uint32_t),
   /* BranchIf */           1 + sizeof(uint32_t),

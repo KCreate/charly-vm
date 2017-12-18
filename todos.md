@@ -132,12 +132,13 @@
         - Looks ugly
         - Easily confused with other syntaxes
         - Too much syntax for little functionality
-    - `func foo(a, b, args...) { ... }`, `func  foo(args..., a, b) { ... }`, `func foo(a, args..., b) { ... }`
+    - `func foo(a, b, args...) { ... }`
       - Pros:
         - Looks good
         - Easy understood as it looks the same in other languages
       - Cons:
-        - If the variadic entry is in the middle, the offsets to the latter arguments are not known at compile-time
+        - If the variadic entry is in the middle
+          the offsets to the latter arguments are not known at compile-time
           - Generate `ReadArrayIndex` instructions for dynamic arg identifiers
           - Generate `SetArrayIndex` for assignments to dynamic arg identifiers
         - More complicated parsing and semantic validation
