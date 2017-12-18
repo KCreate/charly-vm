@@ -1293,11 +1293,16 @@ AST::AbstractNode* Parser::parse_func() {
     body = this->parse_block();
     this->keyword_context = backup_context;
 
+    // Insert a return null statement into the block in case the last statement in the
+    // functions body is not already a return statement
+    if (AST::cast<AST::Block>(body)->statements.back()->type() != AST::kTypeReturn) {
+      AST::cast<AST::Block>(body)->append_node((new AST::Return(new AST::Empty()))->at(body));
+    }
   } else if (has_symbol && this->token.type == TokenType::Assignment) {
     this->advance();
     AST::AbstractNode* expr = this->parse_expression();
     AST::Block* wrapper_body = AST::cast<AST::Block>((new AST::Block())->at(expr));
-    wrapper_body->append_node(expr);
+    wrapper_body->append_node((new AST::Return(expr))->at(expr));
     body = wrapper_body;
   } else {
     this->unexpected_token("block");

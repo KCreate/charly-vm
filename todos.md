@@ -128,11 +128,11 @@
 - Compiler stages
   - [x] Tokenization
   - [x] Parsing
-    - [ ] Syntax desugaring (`foo["bar"]` turns to `foo.bar`)
-    - [ ] Insert returns on last statement of block
+    - [x] Syntax desugaring (`foo["bar"]` turns to `foo.bar`)
   - [ ] Constant folding
   - [ ] Remove string duplicates (to keep the static data section small)
   - [x] LVar offset calculation
+  - [ ] Wrap nodes in stack operations (pop unused stack values)
   - [ ] Code generation
   - [ ] Label resolution (ifs, breaks, continues, etc.)
 

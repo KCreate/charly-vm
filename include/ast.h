@@ -49,8 +49,6 @@ static inline T* cast(AbstractNode* node) {
 }
 
 // Abstract base class of all ASTNodes
-//
-// TODO: Location information
 struct AbstractNode {
 public:
   std::optional<Location> location_start;
@@ -127,8 +125,6 @@ struct Empty : public AbstractNode {
 // A list of AST nodes with no preconceived notion of what context
 // they are used in
 struct NodeList : public AbstractNode {
-  // TODO: Figure out a good name for this
-  // Other alternatives are: nodes, items
   std::list<AbstractNode*> children;
 
   NodeList() {
