@@ -350,10 +350,12 @@ AST::AbstractNode* Parser::parse_statement() {
       if (exp->type() == AST::kTypeFunction || exp->type() == AST::kTypeClass) {
         // Read the name of the node
         std::string name;
-        if (exp->type() == AST::kTypeFunction)
-          name = reinterpret_cast<AST::Function*>(exp)->name;
-        if (exp->type() == AST::kTypeClass)
-          name = reinterpret_cast<AST::Class*>(exp)->name;
+        if (exp->type() == AST::kTypeFunction) {
+          name = AST::cast<AST::Function>(exp)->name;
+        }
+        if (exp->type() == AST::kTypeClass) {
+          name = AST::cast<AST::Class>(exp)->name;
+        }
 
         // Wrap the node in a local initialisation if it has a name
         if (name.size() > 0) {
@@ -740,19 +742,19 @@ AST::AbstractNode* Parser::parse_assignment() {
 
   // Generate different assignment nodes for different targets
   if (left->type() == AST::kTypeIdentifier) {
-    AST::Identifier* id = reinterpret_cast<AST::Identifier*>(left);
+    AST::Identifier* id = AST::cast<AST::Identifier>(left);
     AST::AbstractNode* node = (new AST::Assignment(id->name, expression))->at(left, expression);
     delete left;
     return node;
   } else if (left->type() == AST::kTypeMember) {
-    AST::Member* member = reinterpret_cast<AST::Member*>(left);
+    AST::Member* member = AST::cast<AST::Member>(left);
     AST::AbstractNode* node =
         (new AST::MemberAssignment(member->target, member->symbol, expression))->at(left, expression);
     member->target = nullptr;
     delete left;
     return node;
   } else if (left->type() == AST::kTypeIndex) {
-    AST::Index* index = reinterpret_cast<AST::Index*>(left);
+    AST::Index* index = AST::cast<AST::Index>(left);
     AST::AbstractNode* node =
         (new AST::IndexAssignment(index->target, index->argument, expression))->at(left, expression);
     index->target = nullptr;
@@ -1016,7 +1018,7 @@ AST::AbstractNode* Parser::parse_member_call() {
         // or an index access
         if (target->type() == AST::kTypeMember) {
           // Rip out the stuff we need from the member node
-          AST::Member* member = reinterpret_cast<AST::Member*>(target);
+          AST::Member* member = AST::cast<AST::Member>(target);
           AST::AbstractNode* context = member->target;
           member->target = nullptr;
 
@@ -1027,7 +1029,7 @@ AST::AbstractNode* Parser::parse_member_call() {
           delete member;
         } else if (target->type() == AST::kTypeIndex) {
           // Rip out the stuff we need from the index node
-          AST::Index* index_exp = reinterpret_cast<AST::Index*>(target);
+          AST::Index* index_exp = AST::cast<AST::Index>(target);
           AST::AbstractNode* context = index_exp->target;
           AST::AbstractNode* index_argument = index_exp->argument;
           index_exp->target = nullptr;
@@ -1294,7 +1296,7 @@ AST::AbstractNode* Parser::parse_func() {
   } else if (has_symbol && this->token.type == TokenType::Assignment) {
     this->advance();
     AST::AbstractNode* expr = this->parse_expression();
-    AST::Block* wrapper_body = reinterpret_cast<AST::Block*>((new AST::Block())->at(expr));
+    AST::Block* wrapper_body = AST::cast<AST::Block>((new AST::Block())->at(expr));
     wrapper_body->append_node(expr);
     body = wrapper_body;
   } else {
@@ -1397,7 +1399,7 @@ AST::AbstractNode* Parser::parse_class() {
         if (static_declaration) {
           statics->append_node(this->parse_func());
         } else {
-          AST::Function* func = reinterpret_cast<AST::Function*>(this->parse_func());
+          AST::Function* func = AST::cast<AST::Function>(this->parse_func());
 
           if (func->name == "constructor") {
             constructor = func;
@@ -1440,12 +1442,12 @@ AST::AbstractNode* Parser::parse_class() {
 
 void Parser::assign_default_name(AST::AbstractNode* node, const std::string& name) {
   if (node->type() == AST::kTypeFunction) {
-    AST::Function* func = reinterpret_cast<AST::Function*>(node);
+    AST::Function* func = AST::cast<AST::Function>(node);
     if (func->name.size() == 0) {
       func->name = name;
     }
   } else if (node->type() == AST::kTypeClass) {
-    AST::Class* klass = reinterpret_cast<AST::Class*>(node);
+    AST::Class* klass = AST::cast<AST::Class>(node);
     if (klass->name.size() == 0) {
       klass->name = name;
     }

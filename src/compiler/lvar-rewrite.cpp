@@ -95,7 +95,7 @@ AST::AbstractNode* LVarRewriter::visit_function(AST::Function* node, VisitContin
   this->scope = new LVarScope(this->scope, node);
 
   // Append declarations for the function arguments to the functions body
-  AST::Block* body = reinterpret_cast<AST::Block*>(node->body);
+  AST::Block* body = AST::cast<AST::Block>(node->body);
   for (auto rit = node->parameters.rbegin(); rit != node->parameters.rend(); rit++) {
     body->prepend_node(new AST::LocalInitialisation(*rit, new AST::Null(), false));
   }
