@@ -25,11 +25,14 @@
  */
 
 #include <vector>
+#include <unordered_map>
 
 #include "ast.h"
 #include "compiler-pass.h"
 #include "assembler.h"
 #include "symboltable.h"
+#include "token.h"
+#include "opcode.h"
 
 #pragma once
 
@@ -59,6 +62,8 @@ public:
   AST::AbstractNode* visit_while(AST::While* node, VisitContinue cont);
   AST::AbstractNode* visit_until(AST::Until* node, VisitContinue cont);
   AST::AbstractNode* visit_loop(AST::Loop* node, VisitContinue cont);
+  AST::AbstractNode* visit_unary(AST::Unary* node, VisitContinue cont);
+  AST::AbstractNode* visit_binary(AST::Binary* node, VisitContinue cont);
   AST::AbstractNode* visit_identifier(AST::Identifier* node, VisitContinue cont);
 
 private:
@@ -66,4 +71,30 @@ private:
   std::vector<Label> break_stack;
   std::vector<Label> continue_stack;
 };
+
+// clang-format off
+static std::unordered_map<TokenType, Opcode> kOperatorOpcodeMapping = {
+  {TokenType::Plus, Opcode::Add},
+  {TokenType::Minus, Opcode::Sub},
+  {TokenType::Mul, Opcode::Mul},
+  {TokenType::Div, Opcode::Div},
+  {TokenType::Mod, Opcode::Mod},
+  {TokenType::Pow, Opcode::Pow},
+  {TokenType::Equal, Opcode::Eq},
+  {TokenType::Not, Opcode::Neq},
+  {TokenType::Less, Opcode::Lt},
+  {TokenType::Greater, Opcode::Gt},
+  {TokenType::LessEqual, Opcode::Le},
+  {TokenType::GreaterEqual, Opcode::Ge},
+  {TokenType::BitOR, Opcode::Or},
+  {TokenType::BitXOR, Opcode::Xor},
+  {TokenType::BitNOT, Opcode::UBNot},
+  {TokenType::BitAND, Opcode::And},
+  {TokenType::LeftShift, Opcode::Shl},
+  {TokenType::RightShift, Opcode::Shr},
+  {TokenType::UPlus, Opcode::UAdd},
+  {TokenType::UMinus, Opcode::USub},
+  {TokenType::UNot, Opcode::UNot}
+};
+// clang-format on
 }  // namespace Charly::Compilation

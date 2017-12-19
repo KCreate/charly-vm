@@ -83,6 +83,11 @@ enum TokenType : uint8_t {
   Pow,
   Assignment,
 
+  // Special unary operator tokens
+  UPlus,
+  UMinus,
+  UNot,
+
   // Bitwise operators
   BitOR,
   BitXOR,

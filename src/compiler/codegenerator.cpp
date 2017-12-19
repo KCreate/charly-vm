@@ -197,6 +197,27 @@ AST::AbstractNode* CodeGenerator::visit_loop(AST::Loop* node, VisitContinue cont
   return node;
 }
 
+AST::AbstractNode* CodeGenerator::visit_unary(AST::Unary* node, VisitContinue cont) {
+  (void)cont;
+
+  // Codegen expression
+  this->visit_node(node->expression);
+  this->assembler->write_operator(kOperatorOpcodeMapping[node->operator_type]);
+
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_binary(AST::Binary* node, VisitContinue cont) {
+  (void)cont;
+
+  // Codegen expression
+  this->visit_node(node->left);
+  this->visit_node(node->right);
+  this->assembler->write_operator(kOperatorOpcodeMapping[node->operator_type]);
+
+  return node;
+}
+
 AST::AbstractNode* CodeGenerator::visit_identifier(AST::Identifier* node, VisitContinue cont) {
   (void)cont;
 

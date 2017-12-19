@@ -966,11 +966,26 @@ AST::AbstractNode* Parser::parse_unary() {
   Location location_start = this->token.location;
 
   switch (this->token.type) {
-    case TokenType::Plus:
-    case TokenType::Minus:
-    case TokenType::Not:
+    case TokenType::Plus: {
+      TokenType op = TokenType::UPlus;
+      this->advance();
+      AST::AbstractNode* value = this->parse_unary();
+      return (new AST::Unary(op, value))->at(location_start, value->location_end);
+    }
+    case TokenType::Minus: {
+      TokenType op = TokenType::UMinus;
+      this->advance();
+      AST::AbstractNode* value = this->parse_unary();
+      return (new AST::Unary(op, value))->at(location_start, value->location_end);
+    }
+    case TokenType::Not: {
+      TokenType op = TokenType::UNot;
+      this->advance();
+      AST::AbstractNode* value = this->parse_unary();
+      return (new AST::Unary(op, value))->at(location_start, value->location_end);
+    }
     case TokenType::BitNOT: {
-      TokenType op = this->token.type;
+      TokenType op = TokenType::BitNOT;
       this->advance();
       AST::AbstractNode* value = this->parse_unary();
       return (new AST::Unary(op, value))->at(location_start, value->location_end);

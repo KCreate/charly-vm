@@ -1,5 +1,7 @@
-let foo
+let foo;
+let bar;
 
-loop {
-  foo + 1
-}
+foo < bar;
+foo > bar;
+foo <= bar;
+foo >= bar;
