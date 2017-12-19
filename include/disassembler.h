@@ -88,7 +88,7 @@ public:
         case Opcode::PutFunction: {
           this->print_symbol(block->value_at(offset + 1), stream);
           stream << ", ";
-          this->print_offset(block->uint32_at(offset + 1 + sizeof(VALUE)), stream);
+          this->print_offset(block->int32_at(offset + 1 + sizeof(VALUE)), stream);
           stream << ", ";
           this->print_value(block->bool_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t)), stream);
           stream << ", ";
@@ -126,13 +126,15 @@ public:
         case Opcode::Topn:
         case Opcode::Setn:
         case Opcode::Call:
-        case Opcode::CallMember:
+        case Opcode::CallMember: {
+          this->print_value(block->uint32_at(offset + 1), stream);
+          break;
+        }
         case Opcode::RegisterCatchTable:
         case Opcode::Branch:
         case Opcode::BranchIf:
         case Opcode::BranchUnless: {
-          this->print_value(block->uint32_at(offset + 1), stream);
-          break;
+          this->print_value(block->int32_at(offset + 1), stream);
           break;
         }
       }

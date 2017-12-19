@@ -126,6 +126,77 @@ AST::AbstractNode* CodeGenerator::visit_guard(AST::Guard* node, VisitContinue co
   return node;
 }
 
+AST::AbstractNode* CodeGenerator::visit_while(AST::While* node, VisitContinue cont) {
+  (void)cont;
+
+  // Setup labels
+  Label condition_label = this->assembler->place_label();
+  Label break_label = this->assembler->reserve_label();
+  this->break_stack.push_back(break_label);
+  this->continue_stack.push_back(condition_label);
+
+  // Condition codegen
+  this->visit_node(node->condition);
+  this->assembler->write_branchunless_to_label(break_label);
+
+  // Block codegen
+  this->visit_node(node->block);
+  this->assembler->write_branch_to_label(condition_label);
+  this->assembler->place_label(break_label);
+
+  // Remove the break and continue labels from the stack again
+  this->break_stack.pop_back();
+  this->continue_stack.pop_back();
+
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_until(AST::Until* node, VisitContinue cont) {
+  (void)cont;
+
+  // Setup labels
+  Label condition_label = this->assembler->place_label();
+  Label break_label = this->assembler->reserve_label();
+  this->break_stack.push_back(break_label);
+  this->continue_stack.push_back(condition_label);
+
+  // Condition codegen
+  this->visit_node(node->condition);
+  this->assembler->write_branchif_to_label(break_label);
+
+  // Block codegen
+  this->visit_node(node->block);
+  this->assembler->write_branch_to_label(condition_label);
+  this->assembler->place_label(break_label);
+
+  // Remove the break and continue labels from the stack again
+  this->break_stack.pop_back();
+  this->continue_stack.pop_back();
+
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_loop(AST::Loop* node, VisitContinue cont) {
+  (void)cont;
+
+  // Setup labels
+  Label block_label = this->assembler->place_label();
+  Label break_label = this->assembler->reserve_label();
+  this->break_stack.push_back(break_label);
+  this->continue_stack.push_back(block_label);
+
+  // Block codegen
+  this->visit_node(node->block);
+  this->assembler->write_branch_to_label(block_label);
+  this->assembler->place_label(break_label);
+
+  // Remove the break and continue labels from the stack again
+  this->break_stack.pop_back();
+  this->continue_stack.pop_back();
+
+  return node;
+}
+
 AST::AbstractNode* CodeGenerator::visit_identifier(AST::Identifier* node, VisitContinue cont) {
   (void)cont;
 

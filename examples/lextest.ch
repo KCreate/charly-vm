@@ -1,11 +1,5 @@
-let foo;
-let bar;
-let baz;
+let foo
 
-if (bar) {
-  foo + 1;
-} else if (baz) {
-  foo + 1;
-} else {
-  foo + 1;
+loop {
+  foo + 1
 }
