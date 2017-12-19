@@ -65,7 +65,7 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address)
 
   // Calculate the number of local variables this frame has to support
   // Add 1 at the beginning to reserve space for the arguments magic variable
-  uint32_t lvar_count = 1 + function->argc + function->block->lvarcount;
+  uint32_t lvar_count = 1 + function->argc + function->lvarcount;
 
   // Allocate and prefill local variable space
   cell->as.frame.environment.reserve(lvar_count);
@@ -85,9 +85,9 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address)
   return reinterpret_cast<Frame*>(cell);
 }
 
-InstructionBlock* VM::create_instructionblock(uint32_t lvarcount) {
+InstructionBlock* VM::create_instructionblock() {
   MemoryCell* cell = this->context.gc->allocate();
-  new (&cell->as.instructionblock) InstructionBlock(lvarcount);
+  new (&cell->as.instructionblock) InstructionBlock();
   cell->as.basic.set_type(kTypeInstructionBlock);
   return reinterpret_cast<InstructionBlock*>(cell);
 }
@@ -233,11 +233,17 @@ VALUE VM::create_string(const char* data, uint32_t length) {
   return reinterpret_cast<VALUE>(cell);
 }
 
-VALUE VM::create_function(VALUE name, uint8_t* body_address, uint32_t argc, bool anonymous, InstructionBlock* block) {
+VALUE VM::create_function(VALUE name,
+                          uint8_t* body_address,
+                          uint32_t argc,
+                          uint32_t lvarcount,
+                          bool anonymous,
+                          InstructionBlock* block) {
   MemoryCell* cell = this->context.gc->allocate();
   cell->as.basic.set_type(kTypeFunction);
   cell->as.function.name = name;
   cell->as.function.argc = argc;
+  cell->as.function.lvarcount = lvarcount;
   cell->as.function.context = this->frames;
   cell->as.function.body_address = body_address;
   cell->as.function.block = block;
@@ -532,8 +538,8 @@ void VM::op_putstring(char* data, uint32_t length) {
   this->push_stack(this->create_string(data, length));
 }
 
-void VM::op_putfunction(VALUE symbol, uint8_t* body_address, InstructionBlock* block, bool anonymous, uint32_t argc) {
-  VALUE function = this->create_function(symbol, body_address, argc, anonymous, block);
+void VM::op_putfunction(VALUE symbol, uint8_t* body_address, InstructionBlock* block, bool anonymous, uint32_t argc, uint32_t lvarcount) {
+  VALUE function = this->create_function(symbol, body_address, argc, lvarcount, anonymous, block);
   this->push_stack(function);
 }
 
@@ -963,6 +969,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << " ";
       io << "argc=" << func->argc;
       io << " ";
+      io << "lvarcount=" << func->lvarcount;
+      io << " ";
       io << "context=" << func->context << " ";
       io << "body_address=" << reinterpret_cast<void*>(func->body_address) << " ";
       io << "block=";
@@ -1054,7 +1062,6 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     case kTypeInstructionBlock: {
       InstructionBlock* block = reinterpret_cast<InstructionBlock*>(value);
       io << "<InstructionBlock:" << block << " ";
-      io << "lvarcount=" << block->lvarcount << " ";
       io << "data=" << reinterpret_cast<void*>(block->data) << " ";
       io << "data_size=" << block->data_size << " ";
       io << "write_offset=" << block->writeoffset;
@@ -1076,7 +1083,7 @@ void VM::init_frames() {
   //
   // This way it can still access the global scope, but not register any
   // new variables or constants into it.
-  InstructionBlock* block = this->create_instructionblock(5);
+  InstructionBlock* block = this->create_instructionblock();
 
   // let Charly = {
   //   internals = {
@@ -1158,7 +1165,7 @@ void VM::init_frames() {
 
   // Push a function onto the stack containing this block and call it
   uint8_t* body_address = reinterpret_cast<uint8_t*>(block->data);
-  this->op_putfunction(this->context.symbol_table("__charly_init"), body_address, block, false, 3);
+  this->op_putfunction(this->context.symbol_table("__charly_init"), body_address, block, false, 3, 5);
   this->push_stack(this->create_integer(50));
   this->push_stack(this->create_integer(60));
   this->push_stack(this->create_integer(70));
@@ -1296,10 +1303,12 @@ void VM::run() {
         bool anonymous = *reinterpret_cast<bool*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t));
         uint32_t argc =
             *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t) + sizeof(bool));
+        uint32_t lvarcount = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t) +
+                                                          sizeof(bool) + sizeof(uint32_t));
 
         // TODO: Is this correct?
         InstructionBlock* current_block = this->frames->function->block;
-        this->op_putfunction(symbol, this->ip + body_offset, current_block, anonymous, argc);
+        this->op_putfunction(symbol, this->ip + body_offset, current_block, anonymous, argc, lvarcount);
         break;
       }
 

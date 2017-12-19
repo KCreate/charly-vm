@@ -25,6 +25,7 @@
  */
 
 #include <vector>
+#include <exception>
 
 #include "ast.h"
 #include "tree-walker.h"
@@ -35,6 +36,8 @@
 namespace Charly::Compilation {
 
 typedef std::pair<AST::AbstractNode*, std::string> CompilerError;
+
+class FatalError : public std::exception {};
 
 class CompilerPass : public TreeWalker {
 public:
@@ -47,6 +50,10 @@ public:
   }
   bool inline has_errors() {
     return this->errors.size() > 0;
+  }
+  void inline fatal_error(AST::AbstractNode* node, const std::string& error) {
+    this->errors.emplace_back(node, error);
+    throw FatalError();
   }
 
   template <class T>

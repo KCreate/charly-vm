@@ -209,6 +209,7 @@ struct Function {
   Basic basic;
   VALUE name;
   uint32_t argc;
+  uint32_t lvarcount;
   Frame* context;
   uint8_t* body_address;
   InstructionBlock* block;

@@ -44,9 +44,17 @@ public:
     // Calculate all offsets of all variables, assignments and declarations
     LVarRewriter lvar_rewriter(this->symtable);
     result.parse_tree = lvar_rewriter.visit_node(result.parse_tree);
-
     if (lvar_rewriter.has_errors()) {
       lvar_rewriter.dump_errors(std::cout);
+      return nullptr;
+    }
+
+    // Generate code for the created AST
+    CodeGenerator codegenerator(this->symtable);
+    InstructionBlock* compiled_block = codegenerator.compile(result.parse_tree);
+    (void)compiled_block;
+    if (codegenerator.has_errors()) {
+      codegenerator.dump_errors(std::cout);
       return nullptr;
     }
 

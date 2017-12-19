@@ -145,6 +145,7 @@ enum Opcode : uint8_t {
   // - block_offset
   // - anonymous
   // - argc
+  // - lvarcount
   PutFunction,
 
   // Put a function pointer onto the stack
@@ -333,7 +334,7 @@ static constexpr uint32_t kInstructionLengths[]{
   /* PutValue */           1 + sizeof(VALUE),
   /* PutFloat */           1 + sizeof(double),
   /* PutString */          1 + sizeof(uint32_t) + sizeof(uint32_t),
-  /* PutFunction */        1 + sizeof(VALUE) + sizeof(int32_t) + sizeof(bool) + sizeof(uint32_t),
+  /* PutFunction */        1 + sizeof(VALUE) + sizeof(int32_t) + sizeof(bool) + sizeof(uint32_t) + sizeof(uint32_t),
   /* PutCFunction */       1 + sizeof(VALUE) + sizeof(FPOINTER) + sizeof(uint32_t),
   /* PutArray */           1 + sizeof(uint32_t),
   /* PutHash */            1 + sizeof(uint32_t),

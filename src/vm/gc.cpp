@@ -257,7 +257,7 @@ void MemoryManager::free(MemoryCell* cell) {
     default: { break; }
   }
 
-  memset(cell, 0, sizeof(MemoryCell));
+  memset(reinterpret_cast<void*>(cell), 0, sizeof(MemoryCell));
   cell->as.free.next = this->free_cell;
   this->free_cell = cell;
 }

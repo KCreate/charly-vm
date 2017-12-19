@@ -24,6 +24,68 @@
  * SOFTWARE.
  */
 
+#include <iostream>
+
 #include "codegenerator.h"
 
-namespace Charly::Compilation {}
+namespace Charly::Compilation {
+
+InstructionBlock* CodeGenerator::compile(AST::AbstractNode* node) {
+  this->visit_node(node);
+  this->assembler->write_halt();
+  this->assembler->resolve_unresolved_label_references();
+  return new InstructionBlock(*static_cast<InstructionBlock*>(this->assembler));
+}
+
+void CodeGenerator::reset() {
+  this->assembler->reset();
+  this->break_stack.clear();
+  this->continue_stack.clear();
+}
+
+AST::AbstractNode* CodeGenerator::visit_if(AST::If* node, VisitContinue cont) {
+  (void)cont;
+
+  // Codegen the condition
+  this->visit_node(node->condition);
+
+  // Skip over the block if the condition was false
+  Label end_block_label = this->assembler->reserve_label();
+  this->assembler->write_branchunless_to_label(end_block_label);
+  this->visit_node(node->then_block);
+  this->assembler->place_label(end_block_label);
+
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_ifelse(AST::IfElse* node, VisitContinue cont) {
+  (void)cont;
+
+  // Codegen the condition
+  this->visit_node(node->condition);
+
+  // Skip over the block if the condition was false
+  Label end_block_label = this->assembler->reserve_label();
+  this->assembler->write_branchunless_to_label(end_block_label);
+  this->visit_node(node->then_block);
+  this->assembler->write_branch_to_label(end_block_label);
+  this->visit_node(node->else_block);
+  this->assembler->place_label(end_block_label);
+
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_identifier(AST::Identifier* node, VisitContinue cont) {
+  (void)cont;
+
+  // Check if we have the offset info for this identifier
+  if (node->offset_info == nullptr) {
+    this->fatal_error(node, "Missing offset info for codegen phase");
+  }
+
+  this->assembler->write_readlocal(node->offset_info->level, node->offset_info->index);
+
+  return node;
+}
+
+}

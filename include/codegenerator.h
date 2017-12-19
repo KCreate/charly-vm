@@ -24,18 +24,40 @@
  * SOFTWARE.
  */
 
-#include <functional>
-#include <optional>
-#include <unordered_map>
+#include <vector>
 
 #include "ast.h"
-#include "block.h"
-#include "opcode.h"
-#include "tree-walker.h"
+#include "compiler-pass.h"
+#include "assembler.h"
+#include "symboltable.h"
 
 #pragma once
 
 namespace Charly::Compilation {
 // Responsible for generating Charly bytecodes
-class CodeGenerator : public TreeWalker {};
+class CodeGenerator : public CompilerPass {
+  using CompilerPass::CompilerPass;
+
+public:
+  CodeGenerator(SymbolTable& s) : CompilerPass(s) {
+    this->assembler = new Assembler();
+  }
+  ~CodeGenerator() {
+    delete this->assembler;
+  }
+
+  // Main interface to the compiler
+  InstructionBlock* compile(AST::AbstractNode* node);
+  void reset();
+
+  // Codegen specific AST nodes
+  AST::AbstractNode* visit_if(AST::If* node, VisitContinue cont);
+  AST::AbstractNode* visit_ifelse(AST::IfElse* node, VisitContinue cont);
+  AST::AbstractNode* visit_identifier(AST::Identifier* node, VisitContinue cont);
+
+private:
+  Assembler* assembler;
+  std::vector<Label> break_stack;
+  std::vector<Label> continue_stack;
+};
 }  // namespace Charly::Compilation

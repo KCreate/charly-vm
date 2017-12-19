@@ -24,7 +24,7 @@
  * SOFTWARE.
  */
 
-#include <vector>
+#include <list>
 #include <unordered_map>
 
 #include "opcode.h"
@@ -40,12 +40,18 @@ typedef uint32_t Label;
 // The offset field of an instruction that needs to be resolved
 struct UnresolvedReference {
   Label id;
+  uint32_t target_offset;
   uint32_t instruction_base;
 };
 
 // Handles label resolution and compile-time offset calculations
-class Assembler : public Block {
+class Assembler : public InstructionBlock {
 public:
+  inline void reset() {
+    this->labels.clear();
+    this->unresolved_label_references.clear();
+    this->next_label_id = 0;
+  }
 
   // Label handling
   Label reserve_label();
@@ -53,11 +59,11 @@ public:
   Label place_label(Label label);
 
   // Wrappers for instructions which branch by some byte offset
-  UnresolvedReference write_branch_to_label(Label label);
-  UnresolvedReference write_branchif_to_label(Label label);
-  UnresolvedReference write_branchunless_to_label(Label label);
-  UnresolvedReference write_registercatchtable(Label label);
-  UnresolvedReference write_putfunction(Label label);
+  void write_branch_to_label(Label label);
+  void write_branchif_to_label(Label label);
+  void write_branchunless_to_label(Label label);
+  void write_registercatchtable_to_label(Label label);
+  void write_putfunction_to_label(VALUE symbol, Label label, bool anonymous, uint32_t argc);
 
   void resolve_unresolved_label_references();
   inline bool has_unresolved_label_references() {
@@ -68,7 +74,7 @@ private:
 
   // Mapping from label-id to an offset
   std::unordered_map<Label, uint32_t> labels;
-  std::vector<UnresolvedReference> unresolved_label_references;
+  std::list<UnresolvedReference> unresolved_label_references;
   uint32_t next_label_id = 0;
 };
 }

@@ -34,8 +34,8 @@ Frame* ManagedContext::create_frame(VALUE self, Function* calling_function, uint
   return frame;
 }
 
-InstructionBlock* ManagedContext::create_instructionblock(uint32_t lvarcount) {
-  InstructionBlock* block = this->vm.create_instructionblock(lvarcount);
+InstructionBlock* ManagedContext::create_instructionblock() {
+  InstructionBlock* block = this->vm.create_instructionblock();
   this->vm.context.gc->register_temporary(reinterpret_cast<VALUE>(block));
   this->temporaries.push_back(reinterpret_cast<VALUE>(block));
   return block;
@@ -86,9 +86,10 @@ VALUE ManagedContext::create_string(char* data, uint32_t length) {
 VALUE ManagedContext::create_function(VALUE name,
                                       uint8_t* body_address,
                                       uint32_t argc,
+                                      uint32_t lvarcount,
                                       bool anonymous,
                                       InstructionBlock* block) {
-  VALUE func = this->vm.create_function(name, body_address, argc, anonymous, block);
+  VALUE func = this->vm.create_function(name, body_address, argc, lvarcount, anonymous, block);
   this->vm.context.gc->register_temporary(func);
   this->temporaries.push_back(func);
   return func;

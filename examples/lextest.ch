@@ -1,3 +1,11 @@
 let a = 25;
-let b = foo;
-let a = 30;
+
+if (a) {
+  a;
+}
+
+if (a) {
+  a;
+} else {
+  a;
+}

@@ -25,6 +25,7 @@
  */
 
 #include <vector>
+#include <cstring>
 
 #include "opcode.h"
 
@@ -41,7 +42,6 @@ public:
   static const uint32_t kBlockInitialTextSize = 32;
   static const uint32_t kBlockTextDataGrowthFactor = 2;
 
-  uint32_t lvarcount;
   char* data;
   uint32_t data_size;
   uint32_t writeoffset;
@@ -51,7 +51,7 @@ public:
   uint32_t staticdata_size;
   uint32_t staticdata_writeoffset;
 
-  InstructionBlock(uint32_t lvarcount) : lvarcount(lvarcount) {
+  InstructionBlock() {
     this->data = static_cast<char*>(calloc(kBlockInitialBlockSize, sizeof(uint8_t)));
     this->data_size = kBlockInitialBlockSize * sizeof(uint8_t);
     this->writeoffset = kBlockInitialWriteOffset;
@@ -70,17 +70,22 @@ public:
     this->staticdata = staticdata_copy;
 
     // Copy trivial variables
-    this->lvarcount = other.lvarcount;
     this->data_size = other.data_size;
     this->writeoffset = other.writeoffset;
     this->staticdata_size = other.staticdata_size;
     this->staticdata_writeoffset = other.staticdata_writeoffset;
   }
 
-  ~InstructionBlock() {
+  virtual ~InstructionBlock() {
     this->clean();
   }
 
+  inline virtual void reset() {
+    std::memset(this->data, 0, this->data_size);
+    this->writeoffset = 0;
+    std::memset(this->staticdata, 0, this->staticdata_size);
+    this->staticdata_writeoffset = 0;
+  }
   void clean();
   void check_needs_resize();
   void check_text_needs_resize(size_t size);
@@ -108,6 +113,18 @@ public:
   }
   inline uint64_t& uint64_at(uint32_t offset) {
     return *reinterpret_cast<uint64_t*>(this->data + offset);
+  }
+  inline int8_t& int8_at(uint32_t offset) {
+    return *reinterpret_cast<int8_t*>(this->data + offset);
+  }
+  inline int16_t& int16_at(uint32_t offset) {
+    return *reinterpret_cast<int16_t*>(this->data + offset);
+  }
+  inline int32_t& int32_at(uint32_t offset) {
+    return *reinterpret_cast<int32_t*>(this->data + offset);
+  }
+  inline int64_t& int64_at(uint32_t offset) {
+    return *reinterpret_cast<int64_t*>(this->data + offset);
   }
   inline void*& voidptr_at(uint32_t offset) {
     return *reinterpret_cast<void**>(this->data + offset);
