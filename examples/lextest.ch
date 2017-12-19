@@ -1,11 +1,11 @@
-let a = 25;
+let foo;
+let bar;
+let baz;
 
-if (a) {
-  a;
-}
-
-if (a) {
-  a;
+if (bar) {
+  foo + 1;
+} else if (baz) {
+  foo + 1;
 } else {
-  a;
+  foo + 1;
 }

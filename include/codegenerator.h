@@ -53,6 +53,9 @@ public:
   // Codegen specific AST nodes
   AST::AbstractNode* visit_if(AST::If* node, VisitContinue cont);
   AST::AbstractNode* visit_ifelse(AST::IfElse* node, VisitContinue cont);
+  AST::AbstractNode* visit_unless(AST::Unless* node, VisitContinue cont);
+  AST::AbstractNode* visit_unlesselse(AST::UnlessElse* node, VisitContinue cont);
+  AST::AbstractNode* visit_guard(AST::Guard* node, VisitContinue cont);
   AST::AbstractNode* visit_identifier(AST::Identifier* node, VisitContinue cont);
 
 private:

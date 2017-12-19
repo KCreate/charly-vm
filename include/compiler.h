@@ -53,7 +53,6 @@ public:
     // Generate code for the created AST
     CodeGenerator codegenerator(this->symtable);
     InstructionBlock* compiled_block = codegenerator.compile(result.parse_tree);
-    (void)compiled_block;
     if (codegenerator.has_errors()) {
       codegenerator.dump_errors(std::cout);
       return nullptr;
@@ -62,7 +61,7 @@ public:
     Disassembler disassembler(this->symtable);
     disassembler.disassemble(compiled_block, std::cout);
 
-    return nullptr;
+    return compiled_block;
   }
 
 private:

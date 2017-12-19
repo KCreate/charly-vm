@@ -107,7 +107,8 @@ int CLI::run() {
   }
 
   Compiler compiler;
-  compiler.compile(*parse_result);
+  InstructionBlock* compiled_block = compiler.compile(*parse_result);
+  (void)compiled_block;
 
   if (this->flags.dump_ast) {
     if (parse_result->parse_tree != nullptr) {

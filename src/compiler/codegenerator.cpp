@@ -65,11 +65,62 @@ AST::AbstractNode* CodeGenerator::visit_ifelse(AST::IfElse* node, VisitContinue 
   this->visit_node(node->condition);
 
   // Skip over the block if the condition was false
+  Label else_block_label = this->assembler->reserve_label();
   Label end_block_label = this->assembler->reserve_label();
-  this->assembler->write_branchunless_to_label(end_block_label);
+  this->assembler->write_branchunless_to_label(else_block_label);
   this->visit_node(node->then_block);
   this->assembler->write_branch_to_label(end_block_label);
+  this->assembler->place_label(else_block_label);
   this->visit_node(node->else_block);
+  this->assembler->place_label(end_block_label);
+
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_unless(AST::Unless* node, VisitContinue cont) {
+  (void)cont;
+
+  // Codegen the condition
+  this->visit_node(node->condition);
+
+  // Skip over the block if the condition was false
+  Label end_block_label = this->assembler->reserve_label();
+  this->assembler->write_branchif_to_label(end_block_label);
+  this->visit_node(node->then_block);
+  this->assembler->place_label(end_block_label);
+
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_unlesselse(AST::UnlessElse* node, VisitContinue cont) {
+  (void)cont;
+
+  // Codegen the condition
+  this->visit_node(node->condition);
+
+  // Skip over the block if the condition was false
+  Label else_block_label = this->assembler->reserve_label();
+  Label end_block_label = this->assembler->reserve_label();
+  this->assembler->write_branchunless_to_label(else_block_label);
+  this->visit_node(node->then_block);
+  this->assembler->write_branch_to_label(end_block_label);
+  this->assembler->place_label(else_block_label);
+  this->visit_node(node->else_block);
+  this->assembler->place_label(end_block_label);
+
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_guard(AST::Guard* node, VisitContinue cont) {
+  (void)cont;
+
+  // Codegen the condition
+  this->visit_node(node->condition);
+
+  // Skip over the block if the condition was false
+  Label end_block_label = this->assembler->reserve_label();
+  this->assembler->write_branchif_to_label(end_block_label);
+  this->visit_node(node->block);
   this->assembler->place_label(end_block_label);
 
   return node;
