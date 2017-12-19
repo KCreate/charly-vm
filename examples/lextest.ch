@@ -1,6 +1,3 @@
-->(foo, bar, baz) {
-  foo
-  25
-  bar
-  baz
-}
+let a = 25;
+let b = foo;
+let a = 30;

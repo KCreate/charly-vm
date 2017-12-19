@@ -25,8 +25,7 @@
  */
 
 #include "ast.h"
-#include "symboltable.h"
-#include "tree-walker.h"
+#include "compiler-pass.h"
 
 #pragma once
 
@@ -56,11 +55,10 @@ struct LVarScope {
   std::optional<LVarRecord> resolve(size_t symbol, uint32_t depth, uint64_t blockid, bool noparentblocks);
 };
 
-class LVarRewriter : public TreeWalker {
-public:
-  LVarRewriter(SymbolTable& s) : symtable(s) {
-  }
+class LVarRewriter : public CompilerPass {
+  using CompilerPass::CompilerPass;
 
+public:
   AST::AbstractNode* visit_function(AST::Function* node, VisitContinue cont);
   AST::AbstractNode* visit_block(AST::Block* node, VisitContinue cont);
   AST::AbstractNode* visit_localinitialisation(AST::LocalInitialisation* node, VisitContinue cont);
@@ -68,17 +66,9 @@ public:
   AST::AbstractNode* visit_assignment(AST::Assignment* node, VisitContinue cont);
 
 private:
-  void inline push_error(AST::AbstractNode* node, const std::string& error) {
-    this->errors.push_back({node, error});
-  }
-
-  SymbolTable& symtable;
   uint32_t depth = 0;
   uint64_t blockid = 0;
   LVarScope* scope = nullptr;
-
-public:
-  std::vector<std::pair<AST::AbstractNode*, std::string>> errors;
 };
 
 }  // namespace Charly::Compilation

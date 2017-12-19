@@ -24,36 +24,47 @@
  * SOFTWARE.
  */
 
-#include <iostream>
+#include <vector>
 
 #include "ast.h"
-#include "block.h"
-#include "codegenerator.h"
-#include "lvar-rewrite.h"
-#include "parseresult.h"
+#include "tree-walker.h"
 #include "symboltable.h"
 
+#pragma once
+
 namespace Charly::Compilation {
-class Compiler {
+
+typedef std::pair<AST::AbstractNode*, std::string> CompilerError;
+
+class CompilerPass : public TreeWalker {
 public:
-  inline InstructionBlock* compile(ParseResult& result) {
-    // Wrap the whole program in a function which handles the exporting interface
-    // to other programs
-    result.parse_tree = (new AST::Function("", {"export", "Charly"}, result.parse_tree, true))->at(result.parse_tree);
-
-    // Calculate all offsets of all variables, assignments and declarations
-    LVarRewriter lvar_rewriter(this->symtable);
-    result.parse_tree = lvar_rewriter.visit_node(result.parse_tree);
-
-    if (lvar_rewriter.has_errors()) {
-      lvar_rewriter.dump_errors(std::cout);
-      return nullptr;
-    }
-
-    return nullptr;
+  CompilerPass(SymbolTable& s) : symtable(s) {
   }
 
-private:
-  SymbolTable symtable;
+  // Error handling
+  void inline push_error(AST::AbstractNode* node, const std::string& error) {
+    this->errors.emplace_back(node, error);
+  }
+  bool inline has_errors() {
+    return this->errors.size() > 0;
+  }
+
+  template <class T>
+  void inline dump_errors(T& stream) {
+    for (auto& err : this->errors) {
+      stream << "Error: ";
+      stream << err.second;
+      auto& location_start = err.first->location_start;
+      if (location_start.has_value()) {
+        stream << ' ';
+        location_start->write_to_stream(stream);
+      }
+      stream << '\n';
+    }
+  }
+
+protected:
+  SymbolTable& symtable;
+  std::vector<CompilerError> errors;
 };
-}  // namespace Charly::Compilation
+}

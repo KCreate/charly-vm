@@ -106,7 +106,7 @@ int CLI::run() {
     }
   }
 
-  class Compiler compiler;
+  Compiler compiler;
   compiler.compile(*parse_result);
 
   if (this->flags.dump_ast) {
