@@ -102,6 +102,12 @@ public:
   uint32_t write_string(const std::string& data);
 
   // Interface to code and staticdata buffers
+  inline bool& bool_at(uint32_t offset) {
+    return *reinterpret_cast<bool*>(this->data + offset);
+  }
+  inline double& double_at(uint32_t offset) {
+    return *reinterpret_cast<double*>(this->data + offset);
+  }
   inline uint8_t& uint8_at(uint32_t offset) {
     return *reinterpret_cast<uint8_t*>(this->data + offset);
   }
@@ -128,6 +134,9 @@ public:
   }
   inline void*& voidptr_at(uint32_t offset) {
     return *reinterpret_cast<void**>(this->data + offset);
+  }
+  inline VALUE& value_at(uint32_t offset) {
+    return *reinterpret_cast<VALUE*>(this->data + offset);
   }
 
   // Wrappers around the write functions which can encode instructions

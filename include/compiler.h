@@ -26,6 +26,7 @@
 
 #include <iostream>
 
+#include "disassembler.h"
 #include "ast.h"
 #include "block.h"
 #include "codegenerator.h"
@@ -57,6 +58,9 @@ public:
       codegenerator.dump_errors(std::cout);
       return nullptr;
     }
+
+    Disassembler disassembler(this->symtable);
+    disassembler.disassemble(compiled_block, std::cout);
 
     return nullptr;
   }
