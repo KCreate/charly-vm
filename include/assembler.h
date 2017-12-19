@@ -44,12 +44,8 @@ struct UnresolvedReference {
 };
 
 // Handles label resolution and compile-time offset calculations
-class Assembler {
+class Assembler : public Block {
 public:
-  InstructionBlock* block;
-
-  Assembler(InstructionBlock* b) : block(b) {
-  }
 
   // Label handling
   Label reserve_label();
