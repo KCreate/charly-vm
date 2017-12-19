@@ -150,6 +150,7 @@
   - [x] Tokenization
   - [x] Parsing
     - [x] Syntax desugaring (`foo["bar"]` turns to `foo.bar`)
+    - [x] Remove useless literals from blocks
   - [ ] Constant folding
   - [ ] Remove string duplicates (to keep the static data section small)
   - [x] LVar offset calculation

@@ -1,2 +1,6 @@
-let a = 25;
-a = 30;
+->(foo, bar, baz) {
+  foo
+  25
+  bar
+  baz
+}

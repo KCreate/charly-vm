@@ -195,8 +195,11 @@ AST::AbstractNode* Parser::parse_block() {
   while (this->token.type != TokenType::RightCurly) {
     AST::AbstractNode* node = this->parse_statement();
 
-    if (add_to_block)
+    if (add_to_block && !node->is_literal()) {
       block->append_node(node);
+    } else {
+      delete node;
+    }
 
     if (node->type() == AST::kTypeReturn || node->type() == AST::kTypeBreak || node->type() == AST::kTypeContinue) {
       add_to_block = false;
@@ -1309,8 +1312,10 @@ AST::AbstractNode* Parser::parse_func() {
 
     // Insert a return null statement into the block in case the last statement in the
     // functions body is not already a return statement
-    if (AST::cast<AST::Block>(body)->statements.back()->type() != AST::kTypeReturn) {
-      AST::cast<AST::Block>(body)->append_node((new AST::Return(new AST::Empty()))->at(body));
+    if (AST::cast<AST::Block>(body)->statements.size() > 0) {
+      if (AST::cast<AST::Block>(body)->statements.back()->type() != AST::kTypeReturn) {
+        AST::cast<AST::Block>(body)->append_node((new AST::Return(new AST::Empty()))->at(body));
+      }
     }
   } else if (has_symbol && this->token.type == TokenType::Assignment) {
     this->advance();
@@ -1367,8 +1372,10 @@ AST::AbstractNode* Parser::parse_arrowfunc() {
 
     // Insert a return null statement into the block in case the last statement in the
     // functions body is not already a return statement
-    if (AST::cast<AST::Block>(block)->statements.back()->type() != AST::kTypeReturn) {
-      AST::cast<AST::Block>(block)->append_node((new AST::Return(new AST::Empty()))->at(block));
+    if (AST::cast<AST::Block>(block)->statements.size() > 0) {
+      if (AST::cast<AST::Block>(block)->statements.back()->type() != AST::kTypeReturn) {
+        AST::cast<AST::Block>(block)->append_node((new AST::Return(new AST::Empty()))->at(block));
+      }
     }
   } else {
     AST::AbstractNode* exp = this->parse_control_statement();

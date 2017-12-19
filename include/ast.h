@@ -113,6 +113,10 @@ public:
   virtual void visit(VisitFunc func) {
     (void)func;
   };
+
+  virtual bool is_literal() {
+    return false;
+  }
 };
 
 // A node represting the absence of another node
@@ -807,12 +811,20 @@ struct Identifier : public AbstractNode {
     }
     stream << '\n';
   }
+
+  virtual bool is_literal() {
+    return true;
+  }
 };
 
 // self
 struct Self : public AbstractNode {
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- Self: " << this << '\n';
+  }
+
+  virtual bool is_literal() {
+    return true;
   }
 };
 
@@ -868,12 +880,20 @@ struct Null : public AbstractNode {
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- Null: " << this << '\n';
   }
+
+  virtual bool is_literal() {
+    return true;
+  }
 };
 
 // NAN
 struct Nan : public AbstractNode {
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- NAN: " << this << '\n';
+  }
+
+  virtual bool is_literal() {
+    return true;
   }
 };
 
@@ -888,6 +908,10 @@ struct String : public AbstractNode {
     stream << std::string(depth, ' ') << "- String:" << this;
     stream << ' ' << this->value << '\n';
   }
+
+  virtual bool is_literal() {
+    return true;
+  }
 };
 
 // <value>
@@ -900,6 +924,10 @@ struct Integer : public AbstractNode {
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- Integer:" << this;
     stream << ' ' << this->value << '\n';
+  }
+
+  virtual bool is_literal() {
+    return true;
   }
 };
 
@@ -914,6 +942,10 @@ struct Float : public AbstractNode {
     stream << std::string(depth, ' ') << "- Float:" << this;
     stream << ' ' << this->value << '\n';
   }
+
+  virtual bool is_literal() {
+    return true;
+  }
 };
 
 // <value>
@@ -926,6 +958,10 @@ struct Boolean : public AbstractNode {
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- Boolean:" << this;
     stream << ' ' << (this->value ? "true" : "false") << '\n';
+  }
+
+  virtual bool is_literal() {
+    return true;
   }
 };
 
