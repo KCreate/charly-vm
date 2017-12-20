@@ -478,6 +478,41 @@ AST::AbstractNode* CodeGenerator::visit_function(AST::Function* node, VisitConti
   return node;
 }
 
+AST::AbstractNode* CodeGenerator::visit_class(AST::Class* node, VisitContinue cont) {
+  (void)cont;
+
+  // Codegen all regular and static members
+  for (auto& n : node->member_properties) {
+    this->assembler->write_putvalue(this->symtable(n));
+  }
+  for (auto& n : node->static_properties) {
+    this->assembler->write_putvalue(this->symtable(n));
+  }
+  for (auto n : node->member_functions->children) {
+    this->visit_node(n);
+  }
+  for (auto n : node->static_functions->children) {
+    this->visit_node(n);
+  }
+  for (auto n : node->parents->children) {
+    this->visit_node(n);
+  }
+  if (node->constructor->type() != AST::kTypeEmpty) {
+    this->visit_node(node->constructor);
+  }
+
+  this->assembler->write_putclass(this->symtable(node->name),
+    node->member_properties.size(),
+    node->static_properties.size(),
+    node->member_functions->children.size(),
+    node->member_functions->children.size(),
+    node->parents->children.size(),
+    node->constructor->type() != AST::kTypeEmpty
+  );
+
+  return node;
+}
+
 AST::AbstractNode* CodeGenerator::visit_return(AST::Return* node, VisitContinue cont) {
   cont();
   this->assembler->write_return();

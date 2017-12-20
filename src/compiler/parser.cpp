@@ -197,12 +197,12 @@ AST::AbstractNode* Parser::parse_block() {
 
     if (add_to_block && !node->is_literal()) {
       block->append_node(node);
+
+      if (node->type() == AST::kTypeReturn || node->type() == AST::kTypeBreak || node->type() == AST::kTypeContinue) {
+        add_to_block = false;
+      }
     } else {
       delete node;
-    }
-
-    if (node->type() == AST::kTypeReturn || node->type() == AST::kTypeBreak || node->type() == AST::kTypeContinue) {
-      add_to_block = false;
     }
   }
 
@@ -1406,6 +1406,7 @@ AST::AbstractNode* Parser::parse_class() {
   Location location_start = this->token.location;
   this->expect_token(TokenType::Class);
 
+  // Parse an optional class name
   std::string name;
   if (this->token.type == TokenType::Identifier) {
     name = this->token.value;
@@ -1413,6 +1414,13 @@ AST::AbstractNode* Parser::parse_class() {
   }
 
   AST::NodeList* parents = new AST::NodeList();
+  AST::AbstractNode* constructor = nullptr;
+  std::vector<std::string> member_properties;
+  std::vector<std::string> static_properties;
+  AST::NodeList* member_functions = new AST::NodeList();
+  AST::NodeList* static_functions = new AST::NodeList();
+
+  // Parse parent classes
   if (this->token.type == TokenType::Extends) {
     this->advance();
 
@@ -1423,10 +1431,7 @@ AST::AbstractNode* Parser::parse_class() {
     }
   }
 
-  AST::AbstractNode* constructor = nullptr;
-  AST::NodeList* members = new AST::NodeList();
-  AST::NodeList* statics = new AST::NodeList();
-
+  // Parse the class body
   this->expect_token(TokenType::LeftCurly);
   if (this->token.type != TokenType::RightCurly) {
     // Parse all class statements
@@ -1443,28 +1448,23 @@ AST::AbstractNode* Parser::parse_class() {
 
       if (this->token.type == TokenType::Func) {
         if (static_declaration) {
-          statics->append_node(this->parse_func());
+          static_functions->append_node(this->parse_func());
         } else {
           AST::Function* func = AST::cast<AST::Function>(this->parse_func());
 
           if (func->name == "constructor") {
             constructor = func;
           } else {
-            members->append_node(func);
+            member_functions->append_node(func);
           }
         }
       } else if (this->token.type == TokenType::Property) {
         this->advance();
         this->expect_token(TokenType::Identifier, [&]() {
-          std::string symbol = this->token.value;
-
-          AST::AbstractNode* decl = new AST::PropertyDeclaration(symbol);
-          decl->at(statement_location_start, this->token.location);
-
           if (static_declaration) {
-            statics->append_node(decl);
+            static_properties.push_back(this->token.value);
           } else {
-            members->append_node(decl);
+            member_properties.emplace_back(this->token.value);
           }
         });
         this->skip_token(TokenType::Semicolon);
@@ -1483,7 +1483,13 @@ AST::AbstractNode* Parser::parse_class() {
     constructor = new AST::Empty();
   }
 
-  return (new AST::Class(name, constructor, members, statics, parents))->at(location_start, location_end);
+  return (new AST::Class(name,
+        constructor,
+        member_properties,
+        member_functions,
+        static_properties,
+        static_functions,
+        parents))->at(location_start, location_end);
 }
 
 void Parser::assign_default_name(AST::AbstractNode* node, const std::string& name) {

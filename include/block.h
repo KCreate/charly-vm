@@ -167,7 +167,8 @@ public:
                       uint32_t staticpropertycount,
                       uint32_t methodcount,
                       uint32_t staticmethodcount,
-                      uint32_t parentclasscount);
+                      uint32_t parentclasscount,
+                      bool has_constructor);
   void write_pop(uint32_t count);
   void write_dup();
   void write_swap();

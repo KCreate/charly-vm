@@ -204,7 +204,8 @@ void InstructionBlock::write_putclass(VALUE symbol,
                                       uint32_t staticpropertycount,
                                       uint32_t methodcount,
                                       uint32_t staticmethodcount,
-                                      uint32_t parentclasscount) {
+                                      uint32_t parentclasscount,
+                                      bool has_constructor) {
   this->write_byte(Opcode::PutClass);
   this->write_long(symbol);
   this->write_int(propertycount);
@@ -212,6 +213,7 @@ void InstructionBlock::write_putclass(VALUE symbol,
   this->write_int(methodcount);
   this->write_int(staticmethodcount);
   this->write_int(parentclasscount);
+  this->write_bool(has_constructor);
 }
 
 void InstructionBlock::write_pop(uint32_t count) {

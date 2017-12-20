@@ -64,6 +64,7 @@ public:
   AST::AbstractNode* visit_loop(AST::Loop* node, VisitContinue cont);
   AST::AbstractNode* visit_unary(AST::Unary* node, VisitContinue cont);
   AST::AbstractNode* visit_binary(AST::Binary* node, VisitContinue cont);
+  //AST::AbstractNode* visit_switch(AST::Binary* node, VisitContinue cont);
   AST::AbstractNode* visit_and(AST::And* node, VisitContinue cont);
   AST::AbstractNode* visit_or(AST::Or* node, VisitContinue cont);
   AST::AbstractNode* visit_typeof(AST::Typeof* node, VisitContinue cont);
@@ -86,6 +87,7 @@ public:
   AST::AbstractNode* visit_array(AST::Array* node, VisitContinue cont);
   AST::AbstractNode* visit_hash(AST::Hash* node, VisitContinue cont);
   AST::AbstractNode* visit_function(AST::Function* node, VisitContinue cont);
+  AST::AbstractNode* visit_class(AST::Class* node, VisitContinue cont);
   AST::AbstractNode* visit_return(AST::Return* node, VisitContinue cont);
   AST::AbstractNode* visit_throw(AST::Throw* node, VisitContinue cont);
   AST::AbstractNode* visit_break(AST::Break* node, VisitContinue cont);

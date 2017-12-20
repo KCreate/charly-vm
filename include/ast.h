@@ -1118,33 +1118,57 @@ struct PropertyDeclaration : public AbstractNode {
 struct Class : public AbstractNode {
   std::string name;
   AbstractNode* constructor;
-  NodeList* members;
-  NodeList* statics;
+  std::vector<std::string> member_properties;
+  std::vector<std::string> static_properties;
+  NodeList* member_functions;
+  NodeList* static_functions;
   NodeList* parents;
 
-  Class(const std::string& n, AbstractNode* c, NodeList* m, NodeList* s, NodeList* p)
-      : name(n), constructor(c), members(m), statics(s), parents(p) {
+  Class(const std::string& n,
+      AbstractNode* c, std::vector<std::string> mp, NodeList* mf, std::vector<std::string> sp, NodeList* sf, NodeList* p)
+      : name(n), constructor(c), member_properties(mp), static_properties(sp), member_functions(mf),
+      static_functions(sf), parents(p) {
   }
 
   inline ~Class() {
     delete constructor;
-    delete members;
-    delete statics;
+    delete member_functions;
+    delete static_functions;
     delete parents;
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Class:" << this << ' ' << this->name << '\n';
+    stream << std::string(depth, ' ') << "- Class:" << this << ' ' << this->name;
+
+    stream << ' ' << '(';
+    for (auto& param : this->member_properties) {
+      stream << param;
+
+      if (this->member_properties.back() != param) {
+        stream << ", ";
+      }
+    }
+    stream << ')';
+    stream << ' ' << '(';
+    for (auto& param : this->static_properties) {
+      stream << param;
+
+      if (this->static_properties.back() != param) {
+        stream << ", ";
+      }
+    }
+    stream << ')' << '\n';
+
     this->constructor->dump(stream, depth + 1);
-    this->members->dump(stream, depth + 1);
-    this->statics->dump(stream, depth + 1);
+    this->member_functions->dump(stream, depth + 1);
+    this->static_functions->dump(stream, depth + 1);
     this->parents->dump(stream, depth + 1);
   }
 
   void visit(VisitFunc func) {
     this->constructor = func(this->constructor);
-    this->members = reinterpret_cast<NodeList*>(func(this->members));
-    this->statics = reinterpret_cast<NodeList*>(func(this->statics));
+    this->member_functions = reinterpret_cast<NodeList*>(func(this->member_functions));
+    this->static_functions = reinterpret_cast<NodeList*>(func(this->static_functions));
     this->parents = reinterpret_cast<NodeList*>(func(this->parents));
   }
 };
