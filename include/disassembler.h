@@ -35,8 +35,6 @@
 namespace Charly::Compilation {
 class Disassembler {
 public:
-  Disassembler(SymbolTable& s) : symtable(s) {
-  }
 
   // Prints a disassembly of the passed block into stream
   //
@@ -63,7 +61,7 @@ public:
         }
         case Opcode::ReadMemberSymbol:
         case Opcode::SetMemberSymbol: {
-          this->print_symbol(block->value_at(offset + 1), stream);
+          this->print_hex(block->value_at(offset + 1), stream);
           break;
         }
         case Opcode::ReadArrayIndex:
@@ -86,7 +84,7 @@ public:
           break;
         }
         case Opcode::PutFunction: {
-          this->print_symbol(block->value_at(offset + 1), stream);
+          this->print_hex(block->value_at(offset + 1), stream);
           stream << ", ";
           this->print_offset(block->int32_at(offset + 1 + sizeof(VALUE)), stream);
           stream << ", ";
@@ -94,11 +92,12 @@ public:
           stream << ", ";
           this->print_value(block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool)), stream);
           stream << ", ";
-          this->print_value(block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(uint32_t)), stream);
+          this->print_value(block->uint32_at(
+                offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool) + sizeof(uint32_t)), stream);
           break;
         }
         case Opcode::PutCFunction: {
-          this->print_symbol(block->value_at(offset + 1), stream);
+          this->print_hex(block->value_at(offset + 1), stream);
           stream << ", ";
           this->print_hex(block->voidptr_at(offset + 1 + sizeof(VALUE)), stream);
           stream << ", ";
@@ -106,7 +105,7 @@ public:
           break;
         }
         case Opcode::PutClass: {
-          this->print_symbol(block->value_at(offset + 1), stream);
+          this->print_hex(block->value_at(offset + 1), stream);
           stream << ", ";
           this->print_value(block->uint32_at(offset + 1 + sizeof(VALUE)), stream);
           stream << ", ";
@@ -161,13 +160,5 @@ private:
   inline void print_value(V value, T&& stream) {
     stream << value;
   }
-
-  template <class T>
-  inline void print_symbol(VALUE offset, T&& stream) {
-    stream << this->symtable(offset).value_or(kUndefinedSymbolString);
-  }
-
-private:
-  SymbolTable& symtable;
 };
 }

@@ -45,6 +45,7 @@ struct RunFlags {
   bool show_license = false;
   bool dump_tokens = false;
   bool dump_ast = false;
+  bool dump_disassembly = false;
   bool skip_execution = false;
   bool trace_opcodes = false;
   bool trace_catchtables = false;
@@ -167,6 +168,8 @@ struct RunFlags {
       this->dump_ast = true;
     if (!flag.compare("dump_tokens"))
       this->dump_tokens = true;
+    if (!flag.compare("dump_disassembly"))
+      this->dump_disassembly = true;
     if (!flag.compare("skipexec"))
       this->skip_execution = true;
     if (!flag.compare("trace_opcodes"))

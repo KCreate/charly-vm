@@ -30,15 +30,16 @@
 
 namespace Charly {
 static const std::string kHelpMessage =
-    "Usage: charly [filename] [flags] [arguments] \n"
-    "    -f FLAG, --flag FLAG             Set a flag \n"
-    "    -h, --help                       Print this help message \n"
-    "    -v, --version                    Prints the version number \n"
-    "    -l, --license                    Prints the license \n"
+    "Usage: charly [filename] [flags] [arguments]\n"
+    "    -f FLAG, --flag FLAG             Set a flag\n"
+    "    -h, --help                       Print this help message\n"
+    "    -v, --version                    Prints the version number\n"
+    "    -l, --license                    Prints the license\n"
     "\n"
     "Flags: \n"
-    "    dump_ast                         Display the AST of the input file \n"
-    "    dump_tokens                      Display tokens of the input file \n"
+    "    dump_ast                         Display the AST of the input file\n"
+    "    dump_tokens                      Display tokens of the input file\n"
+    "    dump_disassembly                 Display a disassembly of the compiled block\n"
     "    skipexec                         Don't execute after parsing\n"
     "    trace_opcodes                    Display opcodes as they are being executed\n"
     "    trace_catchtables                Display catchtables as they are being created or left\n"

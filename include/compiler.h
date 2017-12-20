@@ -58,9 +58,6 @@ public:
       return nullptr;
     }
 
-    Disassembler disassembler(this->symtable);
-    disassembler.disassemble(compiled_block, std::cout);
-
     return compiled_block;
   }
 
