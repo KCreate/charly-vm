@@ -254,6 +254,12 @@ AST::AbstractNode* CodeGenerator::visit_or(AST::Or* node, VisitContinue cont) {
   return node;
 }
 
+AST::AbstractNode* CodeGenerator::visit_typeof(AST::Typeof* node, VisitContinue cont) {
+  cont();
+  this->assembler->write_typeof();
+  return node;
+}
+
 AST::AbstractNode* CodeGenerator::visit_identifier(AST::Identifier* node, VisitContinue cont) {
   (void)cont;
 
