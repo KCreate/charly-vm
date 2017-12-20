@@ -1,6 +1,3 @@
-let foo
-let bar
+let foo;
 
-if (foo) {
-  bar = foo;
-}
+foo.myvariable = foo;

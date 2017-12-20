@@ -274,6 +274,17 @@ AST::AbstractNode* CodeGenerator::visit_assignment(AST::Assignment* node, VisitC
   return node;
 }
 
+AST::AbstractNode* CodeGenerator::visit_memberassignment(AST::MemberAssignment* node, VisitContinue cont) {
+  (void)cont;
+
+  // Codegen assignment
+  this->visit_node(node->target);
+  this->visit_node(node->expression);
+  this->assembler->write_setmembersymbol(this->symtable(node->member));
+
+  return node;
+}
+
 AST::AbstractNode* CodeGenerator::visit_identifier(AST::Identifier* node, VisitContinue cont) {
   (void)cont;
 

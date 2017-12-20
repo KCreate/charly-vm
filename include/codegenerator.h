@@ -68,6 +68,7 @@ public:
   AST::AbstractNode* visit_or(AST::Or* node, VisitContinue cont);
   AST::AbstractNode* visit_typeof(AST::Typeof* node, VisitContinue cont);
   AST::AbstractNode* visit_assignment(AST::Assignment* node, VisitContinue cont);
+  AST::AbstractNode* visit_memberassignment(AST::MemberAssignment* node, VisitContinue cont);
   AST::AbstractNode* visit_identifier(AST::Identifier* node, VisitContinue cont);
 
 private:
