@@ -285,6 +285,18 @@ AST::AbstractNode* CodeGenerator::visit_memberassignment(AST::MemberAssignment* 
   return node;
 }
 
+AST::AbstractNode* CodeGenerator::visit_indexassignment(AST::IndexAssignment* node, VisitContinue cont) {
+  (void)cont;
+
+  // Codegen assignment
+  this->visit_node(node->target);
+  this->visit_node(node->index);
+  this->visit_node(node->expression);
+  this->assembler->write_setmembervalue();
+
+  return node;
+}
+
 AST::AbstractNode* CodeGenerator::visit_identifier(AST::Identifier* node, VisitContinue cont) {
   (void)cont;
 

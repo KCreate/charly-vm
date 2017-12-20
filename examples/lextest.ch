@@ -1,3 +1,3 @@
 let foo;
 
-foo.myvariable = foo;
+foo[foo] = foo;
