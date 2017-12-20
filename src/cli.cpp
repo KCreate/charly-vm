@@ -62,6 +62,7 @@ int CLI::run() {
   // Check if a filename was given
   if (this->flags.arguments.size() == 0) {
     std::cout << "No filename given!" << '\n';
+    std::cout << kHelpMessage << '\n';
     return 1;
   }
 
