@@ -11,6 +11,15 @@
 - How does the VM give back control to the calling function
 - How is VM exit being done
 
+# Movelocal instruction
+- Short opcode for
+  ```
+  readlocal 0, 4
+  setlocal 0, 3
+
+  movelocal 0, 3, 0, 4
+  ```
+
 # Move language logic which doesn't depend on the VM into it's own class
 - Maybe called `VMUtils` or `CharlyUtils`?
   - Needs access to the context
