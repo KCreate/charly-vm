@@ -432,6 +432,13 @@ AST::AbstractNode* CodeGenerator::visit_identifier(AST::Identifier* node, VisitC
   return node;
 }
 
+AST::AbstractNode* CodeGenerator::visit_indexintoarguments(AST::IndexIntoArguments* node, VisitContinue cont) {
+  (void)cont;
+  this->assembler->write_readlocal(0, 0);
+  this->assembler->write_readarrayindex(node->index);
+  return node;
+}
+
 AST::AbstractNode* CodeGenerator::visit_self(AST::Self* node, VisitContinue cont) {
   (void)cont;
   this->assembler->write_putself();

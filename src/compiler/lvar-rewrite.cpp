@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+#include <algorithm>
+
 #include "lvar-rewrite.h"
 
 namespace Charly::Compilation {
@@ -161,6 +163,27 @@ AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisat
 
 AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitContinue cont) {
   cont();
+
+  // Check if this is a special argument index
+  // e.g: $0, $1, ..., $
+  if (node->name[0] == '$') {
+
+    // Check if the remaining characters are only numbers
+    if (std::all_of(node->name.begin() + 1, node->name.end(), ::isdigit)) {
+      uint32_t index = std::atoi(node->name.substr(1, std::string::npos).c_str());
+
+      if (index >= this->scope->function_node->parameters.size()) {
+        AST::IndexIntoArguments* new_node = new AST::IndexIntoArguments(index);
+        new_node->at(node);
+        delete node;
+        return new_node;
+      } else {
+        node->offset_info = new IRVarOffsetInfo({0, index + 1});
+      }
+
+      return node;
+    }
+  }
 
   // Check if this symbol exists
   auto result = this->scope->resolve(this->symtable(node->name), this->depth, this->blockid, false);

@@ -75,6 +75,7 @@ public:
   AST::AbstractNode* visit_callmember(AST::CallMember* node, VisitContinue cont);
   AST::AbstractNode* visit_callindex(AST::CallIndex* node, VisitContinue cont);
   AST::AbstractNode* visit_identifier(AST::Identifier* node, VisitContinue cont);
+  AST::AbstractNode* visit_indexintoarguments(AST::IndexIntoArguments* node, VisitContinue cont);
   AST::AbstractNode* visit_self(AST::Self* node, VisitContinue cont);
   AST::AbstractNode* visit_member(AST::Member* node, VisitContinue cont);
   AST::AbstractNode* visit_index(AST::Index* node, VisitContinue cont);

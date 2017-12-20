@@ -39,9 +39,9 @@ public:
   // Prints a disassembly of the passed block into stream
   //
   // Example:
-  // 00000000: ReadLocal 0, 1
-  // 00000009: ReadLocal 0, 2
-  // 000000nn: Add
+  // 0x00000000: ReadLocal 0, 1
+  // 0x00000009: ReadLocal 0, 2
+  // 0x000000nn: Add
   // ...
   template <class T>
   inline void disassemble(InstructionBlock* block, T&& stream) {
@@ -50,7 +50,7 @@ public:
     while (offset < block->writeoffset) {
       Opcode opcode = static_cast<Opcode>(block->uint8_at(offset));
 
-      this->print_offset(offset, stream);
+      this->print_hex(offset, stream, 8);
       stream << ": " << kOpcodeMnemonics[opcode] << " ";
 
       switch (opcode) {
@@ -78,7 +78,7 @@ public:
           break;
         }
         case Opcode::PutString: {
-          this->print_value(block->uint32_at(offset + 1), stream);
+          this->print_hex(block->uint32_at(offset + 1), stream);
           stream << ", ";
           this->print_value(block->uint32_at(offset + 1 + sizeof(uint32_t)), stream);
           break;
@@ -86,7 +86,7 @@ public:
         case Opcode::PutFunction: {
           this->print_hex(block->value_at(offset + 1), stream);
           stream << ", ";
-          this->print_offset(block->int32_at(offset + 1 + sizeof(VALUE)), stream);
+          this->print_hex(block->int32_at(offset + 1 + sizeof(VALUE)), stream);
           stream << ", ";
           this->print_value(block->bool_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t)), stream);
           stream << ", ";
@@ -133,7 +133,7 @@ public:
         case Opcode::Branch:
         case Opcode::BranchIf:
         case Opcode::BranchUnless: {
-          this->print_value(block->int32_at(offset + 1), stream);
+          this->print_hex(offset + block->int32_at(offset + 1), stream, 8);
           break;
         }
       }
@@ -144,16 +144,10 @@ public:
   }
 
 private:
-  template <class T>
-  inline void print_offset(int32_t offset, T&& stream) {
-    stream.fill('0');
-    stream << std::setw(8) << offset;
-    stream << std::setw(1);
-  }
-
   template <class T, typename V>
-  inline void print_hex(V value, T&& stream) {
-    stream << "0x" << std::hex << value << std::dec;
+  inline void print_hex(V value, T&& stream, uint32_t width = 1) {
+    stream.fill('0');
+    stream << "0x" << std::hex << std::setw(width) << value << std::setw(1) << std::dec;
   }
 
   template <class T, typename V>

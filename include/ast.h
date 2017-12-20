@@ -817,6 +817,22 @@ struct Identifier : public AbstractNode {
   }
 };
 
+// $<index>
+struct IndexIntoArguments : public AbstractNode {
+  uint32_t index;
+
+  IndexIntoArguments(uint32_t i) : index(i) {
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- IndexIntoArguments:" << this << ' ' << this->index << '\n';
+  }
+
+  virtual bool is_literal() {
+    return true;
+  }
+};
+
 // self
 struct Self : public AbstractNode {
   inline void dump(std::ostream& stream, size_t depth = 0) {
@@ -1333,6 +1349,7 @@ static const size_t kTypeCall = typeid(Call).hash_code();
 static const size_t kTypeCallMember = typeid(CallMember).hash_code();
 static const size_t kTypeCallIndex = typeid(CallIndex).hash_code();
 static const size_t kTypeIdentifier = typeid(Identifier).hash_code();
+static const size_t kTypeIndexIntoArguments = typeid(IndexIntoArguments).hash_code();
 static const size_t kTypeSelf = typeid(Self).hash_code();
 static const size_t kTypeMember = typeid(Member).hash_code();
 static const size_t kTypeIndex = typeid(Index).hash_code();

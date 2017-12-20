@@ -1,7 +1,3 @@
-let foo
-
-switch 25 {
-  case 25 {
-    foo = 100
-  }
+func foo(a, b) {
+  [$0, $1, $2, $3]
 }
