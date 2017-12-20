@@ -409,7 +409,7 @@ AST::AbstractNode* CodeGenerator::visit_nan(AST::Nan* node, VisitContinue cont) 
 
 AST::AbstractNode* CodeGenerator::visit_string(AST::String* node, VisitContinue cont) {
   (void)cont;
-  // TODO: Implement this
+  this->assembler->write_putstring(node->value);
   return node;
 }
 

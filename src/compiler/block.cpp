@@ -167,6 +167,12 @@ void InstructionBlock::write_putstring(const std::string& data) {
   this->write_int(data.size());
 }
 
+void InstructionBlock::write_putstring(uint32_t offset, uint32_t length) {
+  this->write_byte(Opcode::PutString);
+  this->write_int(offset);
+  this->write_int(length);
+}
+
 void InstructionBlock::write_putfunction(VALUE symbol, int32_t body_offset, bool anonymous, uint32_t argc) {
   this->write_byte(Opcode::PutFunction);
   this->write_long(symbol);

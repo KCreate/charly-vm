@@ -1,9 +1,7 @@
-let a = 25;
-let b = 25;
-let c = a + b;
+let myname = "hello world"
+let myothername = "hello world"
 
-let print;
-
-if (c > 40) {
-  print(c)
-}
+"foo"
+"bar"
+"baz"
+"foo"

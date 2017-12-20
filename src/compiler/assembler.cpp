@@ -108,6 +108,30 @@ void Assembler::write_putfunction_to_label(VALUE symbol, Label label, bool anony
   }
 }
 
+StringOffsetInfo Assembler::write_putstring(const std::string& str) {
+
+  // Check if this is a known string
+  size_t strhash = this->hash_string(str);
+  if (this->string_is_duplicate(strhash)) {
+    StringOffsetInfo info = this->get_staticdata_info(strhash);
+    this->write_byte(Opcode::PutString);
+    this->write_int(info.offset);
+    this->write_int(info.length);
+    return info;
+  } else {
+    StringOffsetInfo info;
+    this->write_byte(Opcode::PutString);
+    uint32_t offset = this->write_string(str);
+    this->write_int(offset);
+    this->write_int(str.size());
+
+    info.offset = offset;
+    info.length = str.size();
+    this->known_strings[strhash] = info;
+    return info;
+  }
+}
+
 void Assembler::resolve_unresolved_label_references() {
   for (auto uref = this->unresolved_label_references.begin(); uref != this->unresolved_label_references.end();) {
     // Check if the label exists

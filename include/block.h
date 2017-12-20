@@ -152,6 +152,7 @@ public:
   void write_putvalue(VALUE value);
   void write_putfloat(double value);
   void write_putstring(const std::string& data);
+  void write_putstring(uint32_t offset, uint32_t length);
   void write_putfunction(VALUE symbol, int32_t body_offset, bool anonymous, uint32_t argc);
   void write_putcfunction(VALUE symbol, FPOINTER funcptr, uint32_t argc);
   void write_putarray(uint32_t count);
