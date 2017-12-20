@@ -517,30 +517,51 @@ AST::AbstractNode* CodeGenerator::visit_continue(AST::Continue* node, VisitConti
 AST::AbstractNode* CodeGenerator::visit_trycatch(AST::TryCatch* node, VisitContinue cont) {
   (void)cont;
 
-  // TODO: Implement finally logic in VM to compile this
-  if (node->finally_block->type() != AST::kTypeEmpty) {
-    this->fatal_error(node, "Try statements with finally blocks are not implemented yet");
-  }
+  // Implementation of this method was inspired by:
+  // http://lists.llvm.org/pipermail/llvm-dev/2008-April/013978.html
 
+  // Check if we have the offset_info for the exception name
   if (node->offset_info == nullptr) {
     this->fatal_error(node, "Missing offset info for exception identifier");
   }
 
   // Label setup
   Label end_statement_label = this->assembler->reserve_label();
-  Label exception_handler_label = this->assembler->reserve_label();
+  Label handler_label = this->assembler->reserve_label();
+  Label finally_label = this->assembler->reserve_label();
 
-  // Codegen try statement
-  this->assembler->write_registercatchtable_to_label(exception_handler_label);
+  // Codegen try block
+  this->assembler->write_registercatchtable_to_label(handler_label);
   this->visit_node(node->block);
-  this->assembler->write_popcatchtable();
-  this->assembler->write_branch_to_label(end_statement_label);
-  this->assembler->place_label(exception_handler_label);
+  this->assembler->write_branch_to_label(finally_label);
 
-  // Put the exception from the stack into the allocated lvar slot
-  this->assembler->write_setlocal(node->offset_info->level, node->offset_info->index);
+  // Codegen handler block
+  // If we don't have a handler block, we treat this try catch statement
+  // as a cleanup landing pad and rethrow the exception after executing the finally block
+  this->assembler->place_label(handler_label);
+  if (node->handler_block->type() != AST::kTypeEmpty) {
+    this->visit_node(node->handler_block);
 
-  this->visit_node(node->handler_block);
+    // We don't emit a branch here because the end statement and finally block labels
+    // would we generated after this node anyway.
+  } else {
+
+    if (node->finally_block->type() == AST::kTypeEmpty) {
+      this->fatal_error(node, "Can't codegen try/catch statement with neither a handler nor finally block");
+    }
+
+    // Store the exception
+    this->assembler->write_setlocal(node->offset_info->level, node->offset_info->index);
+    this->visit_node(node->finally_block);
+    this->assembler->write_readlocal(node->offset_info->level, node->offset_info->index);
+    this->assembler->write_throw();
+  }
+
+  // Codegen finally block
+  this->assembler->place_label(finally_label);
+  if (node->finally_block->type() != AST::kTypeEmpty) {
+    this->visit_node(node->finally_block);
+  }
   this->assembler->place_label(end_statement_label);
 
   return node;

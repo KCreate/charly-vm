@@ -702,7 +702,7 @@ AST::AbstractNode* Parser::parse_try_statement() {
   this->expect_token(TokenType::Try);
 
   AST::AbstractNode* try_block;
-  std::string exception_name;
+  std::string exception_name = "__CHARLY_INTERNAL_EXCEPTION_NAME";
   AST::AbstractNode* catch_block;
   AST::AbstractNode* finally_block;
 

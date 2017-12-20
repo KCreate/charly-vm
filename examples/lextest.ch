@@ -1,10 +1,5 @@
-let print
-
-
-func (val) {
-  try {
-    throw null
-  } catch(ex) {
-    return val;
-  }
+try {
+  throw "exception"
+} finally {
+  2 + 2
 }

@@ -195,19 +195,28 @@ AST::AbstractNode* LVarRewriter::visit_assignment(AST::Assignment* node, VisitCo
 
 AST::AbstractNode* LVarRewriter::visit_trycatch(AST::TryCatch* node, VisitContinue cont) {
   (void)cont;
-  // TODO: Implement the finally handler
 
+  // This block should always exist
   this->visit_node(node->block);
 
   // Register the exception name in the scope of the handler block
   this->scope->declare(this->symtable(node->exception_name),
       this->depth + 1, reinterpret_cast<uint64_t>(node->handler_block), false);
 
+  // Create the offset info for the exception name
   auto result = this->scope->resolve(this->symtable(node->exception_name),
       this->depth + 1, reinterpret_cast<uint64_t>(node->handler_block), false);
   node->offset_info = new IRVarOffsetInfo({result->depth, result->frame_index});
 
-  this->visit_node(node->handler_block);
+  // Check if we have a handler block
+  if (node->handler_block->type() != AST::kTypeEmpty) {
+    this->visit_node(node->handler_block);
+  }
+
+  // Check if we have a finally block
+  if (node->finally_block->type() != AST::kTypeEmpty) {
+    this->visit_node(node->finally_block);
+  }
 
   return node;
 }
