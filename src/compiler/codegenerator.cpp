@@ -367,4 +367,31 @@ AST::AbstractNode* CodeGenerator::visit_identifier(AST::Identifier* node, VisitC
   return node;
 }
 
+AST::AbstractNode* CodeGenerator::visit_self(AST::Self* node, VisitContinue cont) {
+  (void)cont;
+  this->assembler->write_putself();
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_member(AST::Member* node, VisitContinue cont) {
+  (void)cont;
+
+  // Codegen target
+  this->visit_node(node->target);
+  this->assembler->write_readmembersymbol(this->symtable(node->symbol));
+
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_index(AST::Index* node, VisitContinue cont) {
+  (void)cont;
+
+  // Codegen target
+  this->visit_node(node->target);
+  this->visit_node(node->argument);
+  this->assembler->write_readmembervalue();
+
+  return node;
+}
+
 }
