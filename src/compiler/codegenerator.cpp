@@ -260,12 +260,26 @@ AST::AbstractNode* CodeGenerator::visit_typeof(AST::Typeof* node, VisitContinue 
   return node;
 }
 
+AST::AbstractNode* CodeGenerator::visit_assignment(AST::Assignment* node, VisitContinue cont) {
+
+  // Check if we have the offset info for this identifier
+  if (node->offset_info == nullptr) {
+    this->fatal_error(node, "Missing offset info for assignment codegen");
+  }
+
+  // Codegen assignment
+  cont();
+  this->assembler->write_setlocal(node->offset_info->level, node->offset_info->index);
+
+  return node;
+}
+
 AST::AbstractNode* CodeGenerator::visit_identifier(AST::Identifier* node, VisitContinue cont) {
   (void)cont;
 
   // Check if we have the offset info for this identifier
   if (node->offset_info == nullptr) {
-    this->fatal_error(node, "Missing offset info for codegen phase");
+    this->fatal_error(node, "Missing offset info for identifier codegen");
   }
 
   this->assembler->write_readlocal(node->offset_info->level, node->offset_info->index);
