@@ -1,7 +1,9 @@
-let foo;
+let a = 25;
+let b = 25;
+let c = a + b;
 
-self
+let print;
 
-self.foo
-
-self[foo]
+if (c > 40) {
+  print(c)
+}

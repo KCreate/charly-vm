@@ -62,11 +62,6 @@ VALUE ManagedContext::create_array(uint32_t initial_capacity) {
   return array;
 }
 
-VALUE ManagedContext::create_integer(int64_t value) {
-  // Integers are never allocated in the GC so we just return whatever we got from the VM
-  return this->vm.create_integer(value);
-}
-
 VALUE ManagedContext::create_float(double value) {
   VALUE floatval = this->vm.create_float(value);
   if (is_special(floatval)) {

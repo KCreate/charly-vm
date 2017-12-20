@@ -77,6 +77,12 @@ public:
   AST::AbstractNode* visit_self(AST::Self* node, VisitContinue cont);
   AST::AbstractNode* visit_member(AST::Member* node, VisitContinue cont);
   AST::AbstractNode* visit_index(AST::Index* node, VisitContinue cont);
+  AST::AbstractNode* visit_null(AST::Null* node, VisitContinue cont);
+  AST::AbstractNode* visit_nan(AST::Nan* node, VisitContinue cont);
+  AST::AbstractNode* visit_string(AST::String* node, VisitContinue cont);
+  AST::AbstractNode* visit_integer(AST::Integer* node, VisitContinue cont);
+  AST::AbstractNode* visit_float(AST::Float* node, VisitContinue cont);
+  AST::AbstractNode* visit_boolean(AST::Boolean* node, VisitContinue cont);
 
 private:
   Assembler* assembler;

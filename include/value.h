@@ -252,4 +252,14 @@ constexpr VALUE BIT_ROTL(VALUE v, VALUE n) {
 constexpr VALUE BIT_ROTR(VALUE v, VALUE n) {
   return (((v) >> (n)) | ((v) << ((sizeof(v) * 8) - n)));
 }
+
+// Encode an integer as a Charly integer value
+constexpr VALUE VALUE_ENCODE_INTEGER(int64_t value) {
+  return (static_cast<VALUE>(value) << 1) | kIntegerFlag;
+}
+
+// Decode a Charly integer value into an integer
+constexpr VALUE VALUE_DECODE_INTEGER(int64_t value) {
+  return static_cast<SIGNED_VALUE>(value) >> 1;
+}
 }  // namespace Charly

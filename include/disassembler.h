@@ -154,7 +154,7 @@ private:
 
   template <class T, typename V>
   inline void print_hex(V value, T&& stream) {
-    stream << std::hex << value << std::dec;
+    stream << "0x" << std::hex << value << std::dec;
   }
 
   template <class T, typename V>

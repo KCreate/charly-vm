@@ -73,7 +73,6 @@ public:
   // Methods to create new data types
   VALUE create_object(uint32_t initial_capacity);
   VALUE create_array(uint32_t initial_capacity);
-  VALUE create_integer(int64_t value);
   VALUE create_float(double value);
   VALUE create_string(const char* data, uint32_t length);
   VALUE create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint32_t lvarcount, bool anonymous, InstructionBlock* block);
@@ -85,7 +84,6 @@ public:
   double cast_to_double(VALUE value);
 
   // Methods that operate on the VALUE type
-  int64_t integer_value(VALUE value);
   double float_value(VALUE value);
   double numeric_value(VALUE value);
   bool boolean_value(VALUE value);

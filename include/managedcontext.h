@@ -54,7 +54,6 @@ public:
   // VALUE types
   VALUE create_object(uint32_t initial_capacity);
   VALUE create_array(uint32_t initial_capacity);
-  VALUE create_integer(int64_t value);
   VALUE create_float(double value);
   VALUE create_string(char* data, uint32_t length);
   VALUE create_function(VALUE name,

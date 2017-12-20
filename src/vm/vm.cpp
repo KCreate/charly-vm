@@ -181,14 +181,10 @@ VALUE VM::create_array(uint32_t initial_capacity) {
   return reinterpret_cast<VALUE>(cell);
 }
 
-VALUE VM::create_integer(int64_t value) {
-  return (static_cast<VALUE>(value) << 1) | kIntegerFlag;
-}
-
 VALUE VM::create_float(double value) {
   // Check if this float would fit into an immediate encoded integer
   if (ceilf(value) == value)
-    return this->create_integer(value);
+    return VALUE_ENCODE_INTEGER(value);
 
   union {
     double d;
@@ -270,7 +266,7 @@ double VM::cast_to_double(VALUE value) {
   VALUE type = this->real_type(value);
 
   switch (type) {
-    case kTypeInteger: return static_cast<double>(this->integer_value(value));
+    case kTypeInteger: return static_cast<double>(VALUE_DECODE_INTEGER(value));
     case kTypeFloat: return this->float_value(value);
     case kTypeString: {
       String* string = (String*)value;
@@ -295,10 +291,6 @@ double VM::cast_to_double(VALUE value) {
   }
 }
 
-int64_t VM::integer_value(VALUE value) {
-  return static_cast<SIGNED_VALUE>(value) >> 1;
-}
-
 double VM::float_value(VALUE value) {
   if (!is_special(value))
     return reinterpret_cast<Float*>(value)->float_value;
@@ -317,7 +309,7 @@ double VM::numeric_value(VALUE value) {
   if (this->real_type(value) == kTypeFloat) {
     return this->float_value(value);
   } else {
-    return static_cast<double>(this->integer_value(value));
+    return static_cast<double>(VALUE_DECODE_INTEGER(value));
   }
 }
 
@@ -878,7 +870,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeInteger: {
-      io << this->integer_value(value);
+      io << VALUE_DECODE_INTEGER(value);
       break;
     }
 
@@ -1102,7 +1094,7 @@ void VM::init_frames() {
   block->write_readlocal(4, 0);
   block->write_readmembersymbol(this->context.symbol_table("internals"));
   block->write_readmembersymbol(this->context.symbol_table("get_method"));
-  block->write_putvalue(this->create_integer(25));
+  block->write_putvalue(VALUE_ENCODE_INTEGER(25));
   block->write_setmembersymbol(this->context.symbol_table("foo"));
   block->write_pop(1);
 
@@ -1110,7 +1102,7 @@ void VM::init_frames() {
   block->write_puthash(0);
   block->write_puthash(0);
   block->write_dup();
-  block->write_putvalue(this->create_integer(250));
+  block->write_putvalue(VALUE_ENCODE_INTEGER(250));
   block->write_setmembersymbol(this->context.symbol_table("boye"));
   block->write_pop(1);
   block->write_putarray(2);
@@ -1153,7 +1145,7 @@ void VM::init_frames() {
 
   // arguments[0] = 25;
   block->write_readlocal(0, 0);
-  block->write_putvalue(this->create_integer(25));
+  block->write_putvalue(VALUE_ENCODE_INTEGER(25));
   block->write_setarrayindex(0);
 
   // arguments[0];
@@ -1166,9 +1158,9 @@ void VM::init_frames() {
   // Push a function onto the stack containing this block and call it
   uint8_t* body_address = reinterpret_cast<uint8_t*>(block->data);
   this->op_putfunction(this->context.symbol_table("__charly_init"), body_address, block, false, 3, 5);
-  this->push_stack(this->create_integer(50));
-  this->push_stack(this->create_integer(60));
-  this->push_stack(this->create_integer(70));
+  this->push_stack(VALUE_ENCODE_INTEGER(50));
+  this->push_stack(VALUE_ENCODE_INTEGER(60));
+  this->push_stack(VALUE_ENCODE_INTEGER(70));
   this->op_call(3);
   this->frames->self = kNull;
 }

@@ -25,6 +25,7 @@
  */
 
 #include <iostream>
+#include <cmath>
 
 #include "codegenerator.h"
 
@@ -391,6 +392,42 @@ AST::AbstractNode* CodeGenerator::visit_index(AST::Index* node, VisitContinue co
   this->visit_node(node->argument);
   this->assembler->write_readmembervalue();
 
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_null(AST::Null* node, VisitContinue cont) {
+  (void)cont;
+  this->assembler->write_putvalue(kNull);
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_nan(AST::Nan* node, VisitContinue cont) {
+  (void)cont;
+  this->assembler->write_putfloat(NAN);
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_string(AST::String* node, VisitContinue cont) {
+  (void)cont;
+  // TODO: Implement this
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_integer(AST::Integer* node, VisitContinue cont) {
+  (void)cont;
+  this->assembler->write_putvalue(VALUE_ENCODE_INTEGER(node->value));
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_float(AST::Float* node, VisitContinue cont) {
+  (void)cont;
+  this->assembler->write_putfloat(node->value);
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_boolean(AST::Boolean* node, VisitContinue cont) {
+  (void)cont;
+  this->assembler->write_putvalue(node->value ? kTrue : kFalse);
   return node;
 }
 
