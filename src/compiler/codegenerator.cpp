@@ -219,6 +219,70 @@ AST::AbstractNode* CodeGenerator::visit_binary(AST::Binary* node, VisitContinue 
   return node;
 }
 
+AST::AbstractNode* CodeGenerator::visit_switch(AST::Switch* node, VisitContinue cont) {
+  (void)cont;
+
+  // Setup labels
+  Label end_label = this->assembler->reserve_label();
+  Label default_block = this->assembler->reserve_label();
+  this->break_stack.push_back(end_label);
+
+  // Codegen switch condition
+  this->visit_node(node->condition);
+
+  // Codegen each switch node
+  for (auto n : node->cases->children) {
+
+    // Check if this is a switchnode (it should be)
+    if (n->type() != AST::kTypeSwitchNode) {
+      this->fatal_error(n, "Expected node to be a SwitchNode");
+    }
+
+    AST::SwitchNode* snode = AST::cast<AST::SwitchNode>(n);
+
+    // Label to go check for the next condition
+    Label next_condition_label = this->assembler->reserve_label();
+
+    // Label of the block which runs if this node is selected
+    Label node_block = this->assembler->reserve_label();
+
+    // Codegen each condition
+    for (auto c : snode->conditions->children) {
+      this->assembler->write_dup();
+      this->visit_node(c);
+      this->assembler->write_operator(Opcode::Eq);
+      this->assembler->write_branchif_to_label(node_block);
+    }
+
+    // Jump to the next node
+    this->assembler->write_branch_to_label(next_condition_label);
+
+    // Codegen this node's block
+    this->assembler->place_label(node_block);
+
+    // Pop the condition off the stack
+    this->assembler->write_pop(1);
+    this->visit_node(snode->block);
+    this->assembler->write_branch_to_label(end_label);
+
+    // Beginning of the next condition, the default block of the end of the statement
+    this->assembler->place_label(next_condition_label);
+  }
+
+  // Codegen default block if there is one
+  this->assembler->place_label(default_block);
+  if (node->default_block->type() != AST::kTypeEmpty) {
+    this->visit_node(node->default_block);
+  } else {
+    this->assembler->write_pop(1);
+  }
+  this->assembler->place_label(end_label);
+
+  this->break_stack.pop_back();
+
+  return node;
+}
+
 AST::AbstractNode* CodeGenerator::visit_and(AST::And* node, VisitContinue cont) {
   (void)cont;
 

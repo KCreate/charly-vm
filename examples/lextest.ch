@@ -1,17 +1,7 @@
-let bar;
-let baz;
+let foo
 
-class foo extends bar, baz {
-  property a;
-  static property b;
-  func mmethod {
-    return null;
-  }
-  static func smethod {
-    return null;
-  }
-
-  func constructor {
-    return null;
+switch 25 {
+  case 25 {
+    foo = 100
   }
 }
