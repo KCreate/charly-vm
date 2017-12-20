@@ -431,4 +431,27 @@ AST::AbstractNode* CodeGenerator::visit_boolean(AST::Boolean* node, VisitContinu
   return node;
 }
 
+AST::AbstractNode* CodeGenerator::visit_array(AST::Array* node, VisitContinue cont) {
+  (void)cont;
+
+  // Codegen array expressions
+  for (auto child : node->expressions->children) {
+    this->visit_node(child);
+  }
+  this->assembler->write_putarray(node->expressions->children.size());
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_hash(AST::Hash* node, VisitContinue cont) {
+  (void)cont;
+
+  // Codegen hash key and values expressions
+  for (auto& pair : node->pairs) {
+    this->assembler->write_putvalue(this->symtable(pair.first));
+    this->visit_node(pair.second);
+  }
+  this->assembler->write_puthash(node->pairs.size());
+  return node;
+}
+
 }

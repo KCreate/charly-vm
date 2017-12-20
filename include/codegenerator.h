@@ -83,6 +83,8 @@ public:
   AST::AbstractNode* visit_integer(AST::Integer* node, VisitContinue cont);
   AST::AbstractNode* visit_float(AST::Float* node, VisitContinue cont);
   AST::AbstractNode* visit_boolean(AST::Boolean* node, VisitContinue cont);
+  AST::AbstractNode* visit_array(AST::Array* node, VisitContinue cont);
+  AST::AbstractNode* visit_hash(AST::Hash* node, VisitContinue cont);
 
 private:
   Assembler* assembler;
