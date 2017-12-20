@@ -70,7 +70,7 @@ public:
   void write_branchif_to_label(Label label);
   void write_branchunless_to_label(Label label);
   void write_registercatchtable_to_label(Label label);
-  void write_putfunction_to_label(VALUE symbol, Label label, bool anonymous, uint32_t argc);
+  void write_putfunction_to_label(VALUE symbol, Label label, bool anonymous, uint32_t argc, uint32_t lvarcount);
 
   // Known string handling
   StringOffsetInfo write_putstring(const std::string& str);

@@ -454,4 +454,28 @@ AST::AbstractNode* CodeGenerator::visit_hash(AST::Hash* node, VisitContinue cont
   return node;
 }
 
+AST::AbstractNode* CodeGenerator::visit_function(AST::Function* node, VisitContinue cont) {
+  (void)cont;
+
+  // Label setup
+  Label function_block_label = this->assembler->reserve_label();
+  Label function_block_end_label = this->assembler->reserve_label();
+
+  this->assembler->write_putfunction_to_label(
+      this->symtable(node->name),
+      function_block_label,
+      node->anonymous,
+      node->parameters.size(),
+      node->lvar_count
+  );
+  this->assembler->write_branch_to_label(function_block_end_label);
+
+  // Codegen the block
+  this->assembler->place_label(function_block_label);
+  this->visit_node(node->body);
+  this->assembler->place_label(function_block_end_label);
+
+  return node;
+}
+
 }

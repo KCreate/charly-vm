@@ -85,6 +85,7 @@ public:
   AST::AbstractNode* visit_boolean(AST::Boolean* node, VisitContinue cont);
   AST::AbstractNode* visit_array(AST::Array* node, VisitContinue cont);
   AST::AbstractNode* visit_hash(AST::Hash* node, VisitContinue cont);
+  AST::AbstractNode* visit_function(AST::Function* node, VisitContinue cont);
 
 private:
   Assembler* assembler;

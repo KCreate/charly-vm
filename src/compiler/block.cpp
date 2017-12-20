@@ -173,12 +173,13 @@ void InstructionBlock::write_putstring(uint32_t offset, uint32_t length) {
   this->write_int(length);
 }
 
-void InstructionBlock::write_putfunction(VALUE symbol, int32_t body_offset, bool anonymous, uint32_t argc) {
+void InstructionBlock::write_putfunction(VALUE symbol, int32_t body_offset, bool anonymous, uint32_t argc, uint32_t lvarcount) {
   this->write_byte(Opcode::PutFunction);
   this->write_long(symbol);
   this->write_int(body_offset);
   this->write_byte(anonymous);
   this->write_int(argc);
+  this->write_int(lvarcount);
 }
 
 void InstructionBlock::write_putcfunction(VALUE symbol, FPOINTER funcptr, uint32_t argc) {

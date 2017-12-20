@@ -90,13 +90,14 @@ void Assembler::write_registercatchtable_to_label(Label label) {
   }
 }
 
-void Assembler::write_putfunction_to_label(VALUE symbol, Label label, bool anonymous, uint32_t argc) {
+void Assembler::write_putfunction_to_label(VALUE symbol, Label label, bool anonymous, uint32_t argc, uint32_t lvarcount) {
   if (this->labels.count(label) > 0) {
     this->write_byte(Opcode::PutFunction);
     this->write_long(symbol);
     this->write_int(this->labels[label] - this->writeoffset + 1);
     this->write_byte(anonymous);
     this->write_int(argc);
+    this->write_int(lvarcount);
   } else {
     uint32_t instruction_base = this->writeoffset;
     this->write_byte(Opcode::PutFunction);
@@ -105,6 +106,7 @@ void Assembler::write_putfunction_to_label(VALUE symbol, Label label, bool anony
     this->write_int(0);
     this->write_byte(anonymous);
     this->write_int(argc);
+    this->write_int(lvarcount);
   }
 }
 
