@@ -112,14 +112,14 @@ void Assembler::resolve_unresolved_label_references() {
   for (auto uref = this->unresolved_label_references.begin(); uref != this->unresolved_label_references.end();) {
     // Check if the label exists
     if (this->labels.count(uref->id) == 0) {
+      uref++;
       continue;
     }
 
     uint32_t label_offset = this->labels[uref->id];
     int32_t relative_offset = label_offset - uref->instruction_base;
     this->int32_at(uref->target_offset) = relative_offset;
-    this->unresolved_label_references.erase(uref);
-    uref++;
+    uref = this->unresolved_label_references.erase(uref);
   }
 }
 }  // namespace Charly::Compilation

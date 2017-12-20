@@ -218,6 +218,42 @@ AST::AbstractNode* CodeGenerator::visit_binary(AST::Binary* node, VisitContinue 
   return node;
 }
 
+AST::AbstractNode* CodeGenerator::visit_and(AST::And* node, VisitContinue cont) {
+  (void)cont;
+
+  // Label setup
+  Label end_and_label = this->assembler->reserve_label();
+
+  // Codegen expressions
+  this->visit_node(node->left);
+  this->assembler->write_dup();
+  this->assembler->write_branchunless_to_label(end_and_label);
+  this->assembler->write_pop(1);
+  this->visit_node(node->right);
+
+  this->assembler->place_label(end_and_label);
+
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_or(AST::Or* node, VisitContinue cont) {
+  (void)cont;
+
+  // Label setup
+  Label end_or_label = this->assembler->reserve_label();
+
+  // Codegen expressions
+  this->visit_node(node->left);
+  this->assembler->write_dup();
+  this->assembler->write_branchif_to_label(end_or_label);
+  this->assembler->write_pop(1);
+  this->visit_node(node->right);
+
+  this->assembler->place_label(end_or_label);
+
+  return node;
+}
+
 AST::AbstractNode* CodeGenerator::visit_identifier(AST::Identifier* node, VisitContinue cont) {
   (void)cont;
 

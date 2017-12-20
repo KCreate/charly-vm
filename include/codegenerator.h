@@ -64,6 +64,8 @@ public:
   AST::AbstractNode* visit_loop(AST::Loop* node, VisitContinue cont);
   AST::AbstractNode* visit_unary(AST::Unary* node, VisitContinue cont);
   AST::AbstractNode* visit_binary(AST::Binary* node, VisitContinue cont);
+  AST::AbstractNode* visit_and(AST::And* node, VisitContinue cont);
+  AST::AbstractNode* visit_or(AST::Or* node, VisitContinue cont);
   AST::AbstractNode* visit_identifier(AST::Identifier* node, VisitContinue cont);
 
 private:

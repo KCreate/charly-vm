@@ -1,7 +1,13 @@
-let foo;
-let bar;
+let foo
+let bar
 
-foo < bar;
-foo > bar;
-foo <= bar;
-foo >= bar;
+if (foo && bar) {
+  foo + bar
+
+  if (foo < bar) {
+    foo + bar
+  }
+
+} else {
+  bar + bar
+}
