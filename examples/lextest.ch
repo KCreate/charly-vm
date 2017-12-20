@@ -1,7 +1,6 @@
-let a = ->(arg) arg + 1
+let counter = 0;
 
-let b = ->(arg){
-  ->(arg2) {
-
-  }
+while true {
+  counter = counter + 1
+  if (counter % 2 == 0) continue;
 }

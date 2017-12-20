@@ -478,4 +478,40 @@ AST::AbstractNode* CodeGenerator::visit_function(AST::Function* node, VisitConti
   return node;
 }
 
+AST::AbstractNode* CodeGenerator::visit_return(AST::Return* node, VisitContinue cont) {
+  cont();
+  this->assembler->write_return();
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_throw(AST::Throw* node, VisitContinue cont) {
+  cont();
+  this->assembler->write_throw();
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_break(AST::Break* node, VisitContinue cont) {
+  (void)cont;
+
+  // Check if there is a label for the break instruction
+  if (this->break_stack.size() == 0) {
+    this->fatal_error(node, "Break has no jump target.");
+  }
+
+  this->assembler->write_branch_to_label(this->break_stack.back());
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_continue(AST::Continue* node, VisitContinue cont) {
+  (void)cont;
+
+  // Check if there is a label for the continue instruction
+  if (this->continue_stack.size() == 0) {
+    this->fatal_error(node, "Continue has no jump target.");
+  }
+
+  this->assembler->write_branch_to_label(this->continue_stack.back());
+  return node;
+}
+
 }
