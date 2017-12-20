@@ -1329,7 +1329,7 @@ AST::AbstractNode* Parser::parse_func() {
     // functions body is not already a return statement
     if (AST::cast<AST::Block>(body)->statements.size() > 0) {
       if (AST::cast<AST::Block>(body)->statements.back()->type() != AST::kTypeReturn) {
-        AST::cast<AST::Block>(body)->append_node((new AST::Return(new AST::Empty()))->at(body));
+        AST::cast<AST::Block>(body)->append_node((new AST::Return(new AST::Null()))->at(body));
       }
     }
   } else if (has_symbol && this->token.type == TokenType::Assignment) {
@@ -1389,7 +1389,7 @@ AST::AbstractNode* Parser::parse_arrowfunc() {
     // functions body is not already a return statement
     if (AST::cast<AST::Block>(block)->statements.size() > 0) {
       if (AST::cast<AST::Block>(block)->statements.back()->type() != AST::kTypeReturn) {
-        AST::cast<AST::Block>(block)->append_node((new AST::Return(new AST::Empty()))->at(block));
+        AST::cast<AST::Block>(block)->append_node((new AST::Return(new AST::Null()))->at(block));
       }
     }
   } else {

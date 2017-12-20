@@ -70,6 +70,7 @@ public:
   AST::AbstractNode* visit_assignment(AST::Assignment* node, VisitContinue cont);
   AST::AbstractNode* visit_memberassignment(AST::MemberAssignment* node, VisitContinue cont);
   AST::AbstractNode* visit_indexassignment(AST::IndexAssignment* node, VisitContinue cont);
+  AST::AbstractNode* visit_call(AST::Call* node, VisitContinue cont);
   AST::AbstractNode* visit_identifier(AST::Identifier* node, VisitContinue cont);
 
 private:

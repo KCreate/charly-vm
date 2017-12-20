@@ -297,6 +297,22 @@ AST::AbstractNode* CodeGenerator::visit_indexassignment(AST::IndexAssignment* no
   return node;
 }
 
+AST::AbstractNode* CodeGenerator::visit_call(AST::Call* node, VisitContinue cont) {
+  (void)cont;
+
+  // Codegen target
+  this->visit_node(node->target);
+
+  // Codegen arguments
+  for (auto arg : node->arguments->children) {
+    this->visit_node(arg);
+  }
+
+  this->assembler->write_call(node->arguments->children.size());
+
+  return node;
+}
+
 AST::AbstractNode* CodeGenerator::visit_identifier(AST::Identifier* node, VisitContinue cont) {
   (void)cont;
 
