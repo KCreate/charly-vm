@@ -40,9 +40,9 @@ void InstructionBlock::check_needs_resize() {
 }
 
 void InstructionBlock::check_text_needs_resize(size_t size) {
-  if (this->staticdata_writeoffset >= this->staticdata_size - size) {
+  if (this->staticdata_writeoffset + size >= this->staticdata_size) {
     size_t newsize = this->staticdata_size * kBlockTextDataGrowthFactor;
-    while (newsize < this->staticdata_size + size)
+    while (newsize < this->staticdata_writeoffset + size)
       newsize *= kBlockTextDataGrowthFactor;
 
     this->staticdata = static_cast<char*>(realloc(this->staticdata, newsize));
@@ -98,11 +98,11 @@ void InstructionBlock::write_double(double val) {
 }
 
 uint32_t InstructionBlock::write_string(const std::string& data) {
-  this->check_text_needs_resize(data.size());
-  memcpy(this->staticdata + this->staticdata_writeoffset, data.c_str(), data.size());
+  this->check_text_needs_resize(data.size() + 1);
+  memcpy(this->staticdata + this->staticdata_writeoffset, data.c_str(), data.size() + 1);
 
   uint32_t old_offset = this->staticdata_writeoffset;
-  this->staticdata_writeoffset += data.size();
+  this->staticdata_writeoffset += data.size() + 1;
   return old_offset;
 }
 
