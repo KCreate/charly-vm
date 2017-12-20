@@ -28,6 +28,10 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
 	$(call colorecho, " Building $@", 2)
 	@$(CC) $(CFLAGS) $(INC) -c -o $@ $<
 
+production:
+	$(call colorecho, " Building production binary $(TARGET)", 2)
+	@$(CC) $(SOURCES) $(CFLAGS) $(INC) $(LIB) $(LFLAGS) -O3 -o $(TARGET)
+
 clean:
 	$(call colorecho, " Cleaning...", 2)
 	@rm -rf $(BUILDDIR) $(TARGET)
@@ -43,7 +47,7 @@ format:
 valgrind: $(TARGET)
 	valgrind --leak-check=full --show-leak-kinds=all --show-reachable=no bin/vm todos.md
 
-.PHONY: clean rebuild format valgrind
+.PHONY: whole clean rebuild format valgrind
 
 # Create colored output
 define colorecho
