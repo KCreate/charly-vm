@@ -313,6 +313,26 @@ AST::AbstractNode* CodeGenerator::visit_call(AST::Call* node, VisitContinue cont
   return node;
 }
 
+AST::AbstractNode* CodeGenerator::visit_callmember(AST::CallMember* node, VisitContinue cont) {
+  (void)cont;
+
+  // Codegen target
+  this->visit_node(node->context);
+
+  // Codegen function
+  this->assembler->write_dup();
+  this->assembler->write_readmembersymbol(this->symtable(node->symbol));
+
+  // Codegen arguments
+  for (auto arg : node->arguments->children) {
+    this->visit_node(arg);
+  }
+
+  this->assembler->write_callmember(node->arguments->children.size());
+
+  return node;
+}
+
 AST::AbstractNode* CodeGenerator::visit_identifier(AST::Identifier* node, VisitContinue cont) {
   (void)cont;
 
