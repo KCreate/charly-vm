@@ -35,7 +35,6 @@
 namespace Charly::Compilation {
 class Disassembler {
 public:
-
   // Prints a disassembly of the passed block into stream
   //
   // Example:
@@ -92,8 +91,9 @@ public:
           stream << ", ";
           this->print_value(block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool)), stream);
           stream << ", ";
-          this->print_value(block->uint32_at(
-                offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool) + sizeof(uint32_t)), stream);
+          this->print_value(
+              block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool) + sizeof(uint32_t)),
+              stream);
           break;
         }
         case Opcode::PutCFunction: {
@@ -155,4 +155,4 @@ private:
     stream << value;
   }
 };
-}
+}  // namespace Charly::Compilation

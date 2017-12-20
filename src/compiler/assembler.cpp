@@ -90,7 +90,11 @@ void Assembler::write_registercatchtable_to_label(Label label) {
   }
 }
 
-void Assembler::write_putfunction_to_label(VALUE symbol, Label label, bool anonymous, uint32_t argc, uint32_t lvarcount) {
+void Assembler::write_putfunction_to_label(VALUE symbol,
+                                           Label label,
+                                           bool anonymous,
+                                           uint32_t argc,
+                                           uint32_t lvarcount) {
   if (this->labels.count(label) > 0) {
     this->write_byte(Opcode::PutFunction);
     this->write_long(symbol);
@@ -111,7 +115,6 @@ void Assembler::write_putfunction_to_label(VALUE symbol, Label label, bool anony
 }
 
 StringOffsetInfo Assembler::write_putstring(const std::string& str) {
-
   // Check if this is a known string
   size_t strhash = this->hash_string(str);
   if (this->string_is_duplicate(strhash)) {

@@ -24,15 +24,15 @@
  * SOFTWARE.
  */
 
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
+#include "assembler.h"
 #include "ast.h"
 #include "compiler-pass.h"
-#include "assembler.h"
+#include "opcode.h"
 #include "symboltable.h"
 #include "token.h"
-#include "opcode.h"
 
 #pragma once
 

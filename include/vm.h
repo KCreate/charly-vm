@@ -75,7 +75,12 @@ public:
   VALUE create_array(uint32_t initial_capacity);
   VALUE create_float(double value);
   VALUE create_string(const char* data, uint32_t length);
-  VALUE create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint32_t lvarcount, bool anonymous, InstructionBlock* block);
+  VALUE create_function(VALUE name,
+                        uint8_t* body_address,
+                        uint32_t argc,
+                        uint32_t lvarcount,
+                        bool anonymous,
+                        InstructionBlock* block);
   VALUE create_cfunction(VALUE name, uint32_t argc, FPOINTER pointer);
 
   // Casting to different types

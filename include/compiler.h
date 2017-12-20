@@ -26,10 +26,10 @@
 
 #include <iostream>
 
-#include "disassembler.h"
 #include "ast.h"
 #include "block.h"
 #include "codegenerator.h"
+#include "disassembler.h"
 #include "lvar-rewrite.h"
 #include "parseresult.h"
 #include "symboltable.h"

@@ -24,12 +24,12 @@
  * SOFTWARE.
  */
 
+#include <functional>
 #include <list>
 #include <unordered_map>
-#include <functional>
 
-#include "opcode.h"
 #include "block.h"
+#include "opcode.h"
 
 #pragma once
 
@@ -82,7 +82,6 @@ public:
   }
 
 private:
-
   // Static data handling
   inline size_t hash_string(const std::string& str) {
     return std::hash<std::string>{}(str);
@@ -100,4 +99,4 @@ private:
   std::unordered_map<size_t, StringOffsetInfo> known_strings;
   uint32_t next_label_id = 0;
 };
-}
+}  // namespace Charly::Compilation

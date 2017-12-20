@@ -167,7 +167,6 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
   // Check if this is a special argument index
   // e.g: $0, $1, ..., $
   if (node->name[0] == '$') {
-
     // Check if the remaining characters are only numbers
     if (std::all_of(node->name.begin() + 1, node->name.end(), ::isdigit)) {
       uint32_t index = std::atoi(node->name.substr(1, std::string::npos).c_str());
@@ -223,12 +222,12 @@ AST::AbstractNode* LVarRewriter::visit_trycatch(AST::TryCatch* node, VisitContin
   this->visit_node(node->block);
 
   // Register the exception name in the scope of the handler block
-  this->scope->declare(this->symtable(node->exception_name),
-      this->depth + 1, reinterpret_cast<uint64_t>(node->handler_block), false);
+  this->scope->declare(this->symtable(node->exception_name), this->depth + 1,
+                       reinterpret_cast<uint64_t>(node->handler_block), false);
 
   // Create the offset info for the exception name
-  auto result = this->scope->resolve(this->symtable(node->exception_name),
-      this->depth + 1, reinterpret_cast<uint64_t>(node->handler_block), false);
+  auto result = this->scope->resolve(this->symtable(node->exception_name), this->depth + 1,
+                                     reinterpret_cast<uint64_t>(node->handler_block), false);
   node->offset_info = new IRVarOffsetInfo({result->depth, result->frame_index});
 
   // Check if we have a handler block

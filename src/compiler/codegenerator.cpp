@@ -24,8 +24,8 @@
  * SOFTWARE.
  */
 
-#include <iostream>
 #include <cmath>
+#include <iostream>
 
 #include "codegenerator.h"
 
@@ -232,7 +232,6 @@ AST::AbstractNode* CodeGenerator::visit_switch(AST::Switch* node, VisitContinue 
 
   // Codegen each switch node
   for (auto n : node->cases->children) {
-
     // Check if this is a switchnode (it should be)
     if (n->type() != AST::kTypeSwitchNode) {
       this->fatal_error(n, "Expected node to be a SwitchNode");
@@ -326,7 +325,6 @@ AST::AbstractNode* CodeGenerator::visit_typeof(AST::Typeof* node, VisitContinue 
 }
 
 AST::AbstractNode* CodeGenerator::visit_assignment(AST::Assignment* node, VisitContinue cont) {
-
   // Check if we have the offset info for this identifier
   if (node->offset_info == nullptr) {
     this->fatal_error(node, "Missing offset info for assignment codegen");
@@ -532,13 +530,8 @@ AST::AbstractNode* CodeGenerator::visit_function(AST::Function* node, VisitConti
   Label function_block_label = this->assembler->reserve_label();
   Label function_block_end_label = this->assembler->reserve_label();
 
-  this->assembler->write_putfunction_to_label(
-      this->symtable(node->name),
-      function_block_label,
-      node->anonymous,
-      node->parameters.size(),
-      node->lvar_count
-  );
+  this->assembler->write_putfunction_to_label(this->symtable(node->name), function_block_label, node->anonymous,
+                                              node->parameters.size(), node->lvar_count);
   this->assembler->write_branch_to_label(function_block_end_label);
 
   // Codegen the block
@@ -572,14 +565,10 @@ AST::AbstractNode* CodeGenerator::visit_class(AST::Class* node, VisitContinue co
     this->visit_node(node->constructor);
   }
 
-  this->assembler->write_putclass(this->symtable(node->name),
-    node->member_properties.size(),
-    node->static_properties.size(),
-    node->member_functions->children.size(),
-    node->member_functions->children.size(),
-    node->parents->children.size(),
-    node->constructor->type() != AST::kTypeEmpty
-  );
+  this->assembler->write_putclass(this->symtable(node->name), node->member_properties.size(),
+                                  node->static_properties.size(), node->member_functions->children.size(),
+                                  node->member_functions->children.size(), node->parents->children.size(),
+                                  node->constructor->type() != AST::kTypeEmpty);
 
   return node;
 }
@@ -651,7 +640,6 @@ AST::AbstractNode* CodeGenerator::visit_trycatch(AST::TryCatch* node, VisitConti
     // We don't emit a branch here because the end statement and finally block labels
     // would we generated after this node anyway.
   } else {
-
     if (node->finally_block->type() == AST::kTypeEmpty) {
       this->fatal_error(node, "Can't codegen try/catch statement with neither a handler nor finally block");
     }
@@ -673,4 +661,4 @@ AST::AbstractNode* CodeGenerator::visit_trycatch(AST::TryCatch* node, VisitConti
   return node;
 }
 
-}
+}  // namespace Charly::Compilation

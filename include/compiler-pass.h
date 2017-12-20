@@ -24,12 +24,12 @@
  * SOFTWARE.
  */
 
-#include <vector>
 #include <exception>
+#include <vector>
 
 #include "ast.h"
-#include "tree-walker.h"
 #include "symboltable.h"
+#include "tree-walker.h"
 
 #pragma once
 
@@ -74,4 +74,4 @@ protected:
   SymbolTable& symtable;
   std::vector<CompilerError> errors;
 };
-}
+}  // namespace Charly::Compilation

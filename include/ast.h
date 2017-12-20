@@ -1141,9 +1141,19 @@ struct Class : public AbstractNode {
   NodeList* parents;
 
   Class(const std::string& n,
-      AbstractNode* c, std::vector<std::string> mp, NodeList* mf, std::vector<std::string> sp, NodeList* sf, NodeList* p)
-      : name(n), constructor(c), member_properties(mp), static_properties(sp), member_functions(mf),
-      static_functions(sf), parents(p) {
+        AbstractNode* c,
+        std::vector<std::string> mp,
+        NodeList* mf,
+        std::vector<std::string> sp,
+        NodeList* sf,
+        NodeList* p)
+      : name(n),
+        constructor(c),
+        member_properties(mp),
+        static_properties(sp),
+        member_functions(mf),
+        static_functions(sf),
+        parents(p) {
   }
 
   inline ~Class() {

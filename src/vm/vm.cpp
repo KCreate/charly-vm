@@ -530,7 +530,12 @@ void VM::op_putstring(char* data, uint32_t length) {
   this->push_stack(this->create_string(data, length));
 }
 
-void VM::op_putfunction(VALUE symbol, uint8_t* body_address, InstructionBlock* block, bool anonymous, uint32_t argc, uint32_t lvarcount) {
+void VM::op_putfunction(VALUE symbol,
+                        uint8_t* body_address,
+                        InstructionBlock* block,
+                        bool anonymous,
+                        uint32_t argc,
+                        uint32_t lvarcount) {
   VALUE function = this->create_function(symbol, body_address, argc, lvarcount, anonymous, block);
   this->push_stack(function);
 }

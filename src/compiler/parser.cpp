@@ -290,9 +290,7 @@ AST::AbstractNode* Parser::parse_statement() {
     case TokenType::Switch: {
       return this->parse_switch_statement();
     }
-    default: {
-      return this->parse_control_statement();
-    }
+    default: { return this->parse_control_statement(); }
   }
 
   this->unexpected_token();
@@ -1483,13 +1481,9 @@ AST::AbstractNode* Parser::parse_class() {
     constructor = new AST::Empty();
   }
 
-  return (new AST::Class(name,
-        constructor,
-        member_properties,
-        member_functions,
-        static_properties,
-        static_functions,
-        parents))->at(location_start, location_end);
+  return (new AST::Class(name, constructor, member_properties, member_functions, static_properties, static_functions,
+                         parents))
+      ->at(location_start, location_end);
 }
 
 void Parser::assign_default_name(AST::AbstractNode* node, const std::string& name) {
