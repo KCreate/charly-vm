@@ -1,6 +1,10 @@
-let counter = 0;
+let print
 
-while true {
-  counter = counter + 1
-  if (counter % 2 == 0) continue;
+
+func (val) {
+  try {
+    throw null
+  } catch(ex) {
+    return val;
+  }
 }

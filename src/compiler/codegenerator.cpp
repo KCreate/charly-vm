@@ -514,4 +514,36 @@ AST::AbstractNode* CodeGenerator::visit_continue(AST::Continue* node, VisitConti
   return node;
 }
 
+AST::AbstractNode* CodeGenerator::visit_trycatch(AST::TryCatch* node, VisitContinue cont) {
+  (void)cont;
+
+  // TODO: Implement finally logic in VM to compile this
+  if (node->finally_block->type() != AST::kTypeEmpty) {
+    this->fatal_error(node, "Try statements with finally blocks are not implemented yet");
+  }
+
+  if (node->offset_info == nullptr) {
+    this->fatal_error(node, "Missing offset info for exception identifier");
+  }
+
+  // Label setup
+  Label end_statement_label = this->assembler->reserve_label();
+  Label exception_handler_label = this->assembler->reserve_label();
+
+  // Codegen try statement
+  this->assembler->write_registercatchtable_to_label(exception_handler_label);
+  this->visit_node(node->block);
+  this->assembler->write_popcatchtable();
+  this->assembler->write_branch_to_label(end_statement_label);
+  this->assembler->place_label(exception_handler_label);
+
+  // Put the exception from the stack into the allocated lvar slot
+  this->assembler->write_setlocal(node->offset_info->level, node->offset_info->index);
+
+  this->visit_node(node->handler_block);
+  this->assembler->place_label(end_statement_label);
+
+  return node;
+}
+
 }

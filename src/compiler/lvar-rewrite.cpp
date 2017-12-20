@@ -193,4 +193,23 @@ AST::AbstractNode* LVarRewriter::visit_assignment(AST::Assignment* node, VisitCo
   return node;
 }
 
+AST::AbstractNode* LVarRewriter::visit_trycatch(AST::TryCatch* node, VisitContinue cont) {
+  (void)cont;
+  // TODO: Implement the finally handler
+
+  this->visit_node(node->block);
+
+  // Register the exception name in the scope of the handler block
+  this->scope->declare(this->symtable(node->exception_name),
+      this->depth + 1, reinterpret_cast<uint64_t>(node->handler_block), false);
+
+  auto result = this->scope->resolve(this->symtable(node->exception_name),
+      this->depth + 1, reinterpret_cast<uint64_t>(node->handler_block), false);
+  node->offset_info = new IRVarOffsetInfo({result->depth, result->frame_index});
+
+  this->visit_node(node->handler_block);
+
+  return node;
+}
+
 }  // namespace Charly::Compilation

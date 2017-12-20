@@ -1257,6 +1257,8 @@ struct TryCatch : public AbstractNode {
   AbstractNode* handler_block;
   AbstractNode* finally_block;
 
+  IRVarOffsetInfo* offset_info = nullptr;
+
   TryCatch(AbstractNode* b, const std::string& e, AbstractNode* h, AbstractNode* f)
       : block(b), exception_name(e), handler_block(h), finally_block(f) {
   }

@@ -118,8 +118,10 @@ int CLI::run() {
   }
 
   if (this->flags.dump_disassembly) {
-    Disassembler disassembler;
-    disassembler.disassemble(compiled_block, std::cout);
+    if (compiled_block != nullptr) {
+      Disassembler disassembler;
+      disassembler.disassemble(compiled_block, std::cout);
+    }
   }
 
   if (this->flags.skip_execution) {

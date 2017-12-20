@@ -90,6 +90,7 @@ public:
   AST::AbstractNode* visit_throw(AST::Throw* node, VisitContinue cont);
   AST::AbstractNode* visit_break(AST::Break* node, VisitContinue cont);
   AST::AbstractNode* visit_continue(AST::Continue* node, VisitContinue cont);
+  AST::AbstractNode* visit_trycatch(AST::TryCatch* node, VisitContinue cont);
 
 private:
   Assembler* assembler;

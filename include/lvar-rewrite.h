@@ -64,6 +64,7 @@ public:
   AST::AbstractNode* visit_localinitialisation(AST::LocalInitialisation* node, VisitContinue cont);
   AST::AbstractNode* visit_identifier(AST::Identifier* node, VisitContinue cont);
   AST::AbstractNode* visit_assignment(AST::Assignment* node, VisitContinue cont);
+  AST::AbstractNode* visit_trycatch(AST::TryCatch* node, VisitContinue cont);
 
 private:
   uint32_t depth = 0;
