@@ -126,6 +126,10 @@
   - [x] Wrap nodes in stack operations (pop unused stack values)
   - [x] Code generation
   - [x] Label resolution (ifs, breaks, continues, etc.)
+- Don't distinguish between floats and integers in the lexer / parser
+  - Rewrites or semantic checks don't care what type the number is
+  - Always store as float
+  - Cast to integer in the codegenerator
 
 # Reserved identifiers
 - Everywhere
