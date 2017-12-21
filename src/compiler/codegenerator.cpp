@@ -54,6 +54,21 @@ void CodeGenerator::reset() {
   this->continue_stack.clear();
 }
 
+AST::AbstractNode* CodeGenerator::visit_block(AST::Block* node, VisitContinue cont) {
+  (void)cont;
+
+  for (auto& node : node->statements) {
+    this->visit_node(node);
+
+    // If the statement produces an expression, pop it off the stack now
+    if (node->yields_value()) {
+      this->assembler->write_pop(1);
+    }
+  }
+
+  return node;
+}
+
 AST::AbstractNode* CodeGenerator::visit_if(AST::If* node, VisitContinue cont) {
   (void)cont;
 

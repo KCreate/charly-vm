@@ -457,6 +457,8 @@ void VM::op_setlocal(uint32_t index, uint32_t level) {
   } else {
     this->panic(Status::WriteFailedOutOfBounds);
   }
+
+  this->push_stack(value);
 }
 
 void VM::op_setmembersymbol(VALUE symbol) {

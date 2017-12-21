@@ -117,6 +117,10 @@ public:
   virtual bool is_literal() {
     return false;
   }
+
+  virtual bool yields_value() {
+    return false;
+  }
 };
 
 // A node represting the absence of another node
@@ -468,6 +472,10 @@ struct Unary : public AbstractNode {
   void visit(VisitFunc func) {
     this->expression = func(this->expression);
   }
+
+  bool yields_value() {
+    return true;
+  }
 };
 
 // <left> <operator_type> <right>
@@ -493,6 +501,10 @@ struct Binary : public AbstractNode {
   void visit(VisitFunc func) {
     this->left = func(this->left);
     this->right = func(this->right);
+  }
+
+  bool yields_value() {
+    return true;
   }
 };
 
@@ -578,6 +590,10 @@ struct And : public AbstractNode {
     this->left = func(this->left);
     this->right = func(this->right);
   }
+
+  bool yields_value() {
+    return true;
+  }
 };
 
 // <left> || <right>
@@ -603,6 +619,10 @@ struct Or : public AbstractNode {
     this->left = func(this->left);
     this->right = func(this->right);
   }
+
+  bool yields_value() {
+    return true;
+  }
 };
 
 // typeof <expression>
@@ -623,6 +643,10 @@ struct Typeof : public AbstractNode {
 
   void visit(VisitFunc func) {
     this->expression = func(this->expression);
+  }
+
+  bool yields_value() {
+    return true;
   }
 };
 
@@ -655,6 +679,10 @@ struct Assignment : public AbstractNode {
   void visit(VisitFunc func) {
     this->expression = func(this->expression);
   }
+
+  bool yields_value() {
+    return true;
+  }
 };
 
 // <target>.<member> = <expression>
@@ -680,6 +708,10 @@ struct MemberAssignment : public AbstractNode {
   void visit(VisitFunc func) {
     this->target = func(this->target);
     this->expression = func(this->expression);
+  }
+
+  bool yields_value() {
+    return true;
   }
 };
 
@@ -709,6 +741,10 @@ struct IndexAssignment : public AbstractNode {
     this->index = func(this->index);
     this->expression = func(this->expression);
   }
+
+  bool yields_value() {
+    return true;
+  }
 };
 
 // <target>(<arguments>)
@@ -733,6 +769,10 @@ struct Call : public AbstractNode {
   void visit(VisitFunc func) {
     this->target = func(this->target);
     this->arguments = reinterpret_cast<NodeList*>(func(this->arguments));
+  }
+
+  bool yields_value() {
+    return true;
   }
 };
 
@@ -759,6 +799,10 @@ struct CallMember : public AbstractNode {
   void visit(VisitFunc func) {
     this->context = func(this->context);
     this->arguments = reinterpret_cast<NodeList*>(func(this->arguments));
+  }
+
+  bool yields_value() {
+    return true;
   }
 };
 
@@ -789,6 +833,10 @@ struct CallIndex : public AbstractNode {
     this->index = func(this->index);
     this->arguments = reinterpret_cast<NodeList*>(func(this->arguments));
   }
+
+  bool yields_value() {
+    return true;
+  }
 };
 
 // <name>
@@ -815,6 +863,10 @@ struct Identifier : public AbstractNode {
   virtual bool is_literal() {
     return true;
   }
+
+  bool yields_value() {
+    return true;
+  }
 };
 
 // $<index>
@@ -831,6 +883,10 @@ struct IndexIntoArguments : public AbstractNode {
   virtual bool is_literal() {
     return true;
   }
+
+  bool yields_value() {
+    return true;
+  }
 };
 
 // self
@@ -840,6 +896,10 @@ struct Self : public AbstractNode {
   }
 
   virtual bool is_literal() {
+    return true;
+  }
+
+  bool yields_value() {
     return true;
   }
 };
@@ -863,6 +923,10 @@ struct Member : public AbstractNode {
 
   void visit(VisitFunc func) {
     this->target = func(this->target);
+  }
+
+  bool yields_value() {
+    return true;
   }
 };
 
@@ -889,6 +953,10 @@ struct Index : public AbstractNode {
     this->target = func(this->target);
     this->argument = func(this->argument);
   }
+
+  bool yields_value() {
+    return true;
+  }
 };
 
 // null
@@ -900,6 +968,10 @@ struct Null : public AbstractNode {
   virtual bool is_literal() {
     return true;
   }
+
+  bool yields_value() {
+    return true;
+  }
 };
 
 // NAN
@@ -909,6 +981,10 @@ struct Nan : public AbstractNode {
   }
 
   virtual bool is_literal() {
+    return true;
+  }
+
+  bool yields_value() {
     return true;
   }
 };
@@ -928,6 +1004,10 @@ struct String : public AbstractNode {
   virtual bool is_literal() {
     return true;
   }
+
+  bool yields_value() {
+    return true;
+  }
 };
 
 // <value>
@@ -943,6 +1023,10 @@ struct Integer : public AbstractNode {
   }
 
   virtual bool is_literal() {
+    return true;
+  }
+
+  bool yields_value() {
     return true;
   }
 };
@@ -962,6 +1046,10 @@ struct Float : public AbstractNode {
   virtual bool is_literal() {
     return true;
   }
+
+  bool yields_value() {
+    return true;
+  }
 };
 
 // <value>
@@ -977,6 +1065,10 @@ struct Boolean : public AbstractNode {
   }
 
   virtual bool is_literal() {
+    return true;
+  }
+
+  bool yields_value() {
     return true;
   }
 };
@@ -998,6 +1090,10 @@ struct Array : public AbstractNode {
 
   void visit(VisitFunc func) {
     this->expressions = reinterpret_cast<NodeList*>(func(this->expressions));
+  }
+
+  bool yields_value() {
+    return true;
   }
 };
 
@@ -1038,6 +1134,10 @@ struct Hash : public AbstractNode {
     for (auto& pair : this->pairs) {
       pair.second = func(pair.second);
     }
+  }
+
+  bool yields_value() {
+    return true;
   }
 };
 
@@ -1102,6 +1202,10 @@ struct Function : public AbstractNode {
 
   void visit(VisitFunc func) {
     this->body = func(this->body);
+  }
+
+  bool yields_value() {
+    return true;
   }
 };
 
@@ -1196,6 +1300,10 @@ struct Class : public AbstractNode {
     this->member_functions = reinterpret_cast<NodeList*>(func(this->member_functions));
     this->static_functions = reinterpret_cast<NodeList*>(func(this->static_functions));
     this->parents = reinterpret_cast<NodeList*>(func(this->parents));
+  }
+
+  bool yields_value() {
+    return true;
   }
 };
 
