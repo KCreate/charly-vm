@@ -597,17 +597,6 @@ void VM::op_callmember(uint32_t argc) {
 }
 
 void VM::call(uint32_t argc, bool with_target) {
-  // Check if there are enough items on the stack
-  //
-  // +- VALUE of the function
-  // |
-  // |   +- Amount of VALUEs that are on the
-  // |   |  stack which are arguments
-  // v   v
-  // 1 + argc
-  if (this->stack.size() < (1 + argc))
-    this->panic(Status::StackEmpty);
-
   // Stack allocate enough space to copy all arguments into
   VALUE arguments[argc];
 
