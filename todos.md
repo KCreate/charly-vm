@@ -130,6 +130,7 @@
   - Rewrites or semantic checks don't care what type the number is
   - Always store as float
   - Cast to integer in the codegenerator
+- Reset code for queued blocks in codegenerator
 
 # Reserved identifiers
 - Everywhere
