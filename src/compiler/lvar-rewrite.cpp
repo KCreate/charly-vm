@@ -136,7 +136,12 @@ AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisat
   // Check if this is a duplicate declaration
   auto result = this->scope->resolve(this->symtable(node->name), this->depth, this->blockid, true);
   if (result.has_value()) {
-    this->push_error(node, "Duplicate declaration of " + node->name);
+    if (node->name == "arguments") {
+      this->push_error(node, "Duplicate declaration of " + node->name + ". 'arguments' is a reserved identifier automatically inserted into every function.");
+    } else {
+      this->push_error(node, "Duplicate declaration of " + node->name);
+    }
+
     return node;
   }
 

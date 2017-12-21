@@ -59,14 +59,16 @@ public:
   template <class T>
   void inline dump_errors(T& stream) {
     for (auto& err : this->errors) {
-      stream << "Error: ";
-      stream << err.second;
+      stream << "Error";
       auto& location_start = err.first->location_start;
       if (location_start.has_value()) {
         stream << ' ';
         location_start->write_to_stream(stream);
+        stream << ": ";
+      } else {
+        stream << ": ";
       }
-      stream << '\n';
+      stream << err.second << '\n';
     }
   }
 

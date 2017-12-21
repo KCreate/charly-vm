@@ -1,4 +1,9 @@
-let foo;
-let bar;
+let bar
 
-foo()[bar()] += foo()[bar()] += 1
+func foo(a, b) {
+  let temp = a + b
+  temp += bar()
+  return temp * 2
+}
+
+let result = foo()
