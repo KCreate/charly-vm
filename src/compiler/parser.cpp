@@ -195,7 +195,7 @@ AST::AbstractNode* Parser::parse_block() {
   while (this->token.type != TokenType::RightCurly) {
     AST::AbstractNode* node = this->parse_statement();
 
-    if (add_to_block && !node->is_literal()) {
+    if (add_to_block) {
       block->append_node(node);
 
       if (node->type() == AST::kTypeReturn || node->type() == AST::kTypeBreak || node->type() == AST::kTypeContinue) {
