@@ -715,6 +715,38 @@ struct MemberAssignment : public AbstractNode {
   }
 };
 
+// <target>.<member> <operator>= <expression>
+struct ANDMemberAssignment : public AbstractNode {
+  AbstractNode* target;
+  std::string member;
+  TokenType operator_type;
+  AbstractNode* expression;
+
+  ANDMemberAssignment(AbstractNode* t, const std::string& m, TokenType o, AbstractNode* e) : target(t), member(m), operator_type(o), expression(e) {
+  }
+
+  inline ~ANDMemberAssignment() {
+    delete target;
+    delete expression;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- ANDMemberAssignment: " << this << ' ' << this->member;
+    stream << ' ' << kTokenTypeStrings[this->operator_type] << '\n';
+    this->target->dump(stream, depth + 1);
+    this->expression->dump(stream, depth + 1);
+  }
+
+  void visit(VisitFunc func) {
+    this->target = func(this->target);
+    this->expression = func(this->expression);
+  }
+
+  bool yields_value() {
+    return true;
+  }
+};
+
 // <target>[<index>] = <expression>
 struct IndexAssignment : public AbstractNode {
   AbstractNode* target;
@@ -731,6 +763,40 @@ struct IndexAssignment : public AbstractNode {
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- IndexAssignment: " << this << '\n';
+    this->target->dump(stream, depth + 1);
+    this->index->dump(stream, depth + 1);
+    this->expression->dump(stream, depth + 1);
+  }
+
+  void visit(VisitFunc func) {
+    this->target = func(this->target);
+    this->index = func(this->index);
+    this->expression = func(this->expression);
+  }
+
+  bool yields_value() {
+    return true;
+  }
+};
+
+// <target>[<index>] <operator>= <expression>
+struct ANDIndexAssignment : public AbstractNode {
+  AbstractNode* target;
+  AbstractNode* index;
+  TokenType operator_type;
+  AbstractNode* expression;
+
+  ANDIndexAssignment(AbstractNode* t, AbstractNode* i, TokenType o, AbstractNode* e) : target(t), index(i), operator_type(o), expression(e) {
+  }
+
+  inline ~ANDIndexAssignment() {
+    delete target;
+    delete expression;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- ANDIndexAssignment: " << this;
+    stream << ' ' << kTokenTypeStrings[this->operator_type] << '\n';
     this->target->dump(stream, depth + 1);
     this->index->dump(stream, depth + 1);
     this->expression->dump(stream, depth + 1);
@@ -1473,7 +1539,9 @@ static const size_t kTypeOr = typeid(Or).hash_code();
 static const size_t kTypeTypeof = typeid(Typeof).hash_code();
 static const size_t kTypeAssignment = typeid(Assignment).hash_code();
 static const size_t kTypeMemberAssignment = typeid(MemberAssignment).hash_code();
+static const size_t kTypeANDMemberAssignment = typeid(ANDMemberAssignment).hash_code();
 static const size_t kTypeIndexAssignment = typeid(IndexAssignment).hash_code();
+static const size_t kTypeANDIndexAssignment = typeid(ANDIndexAssignment).hash_code();
 static const size_t kTypeCall = typeid(Call).hash_code();
 static const size_t kTypeCallMember = typeid(CallMember).hash_code();
 static const size_t kTypeCallIndex = typeid(CallIndex).hash_code();

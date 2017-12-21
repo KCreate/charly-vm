@@ -373,6 +373,20 @@ AST::AbstractNode* CodeGenerator::visit_memberassignment(AST::MemberAssignment* 
   return node;
 }
 
+AST::AbstractNode* CodeGenerator::visit_andmemberassignment(AST::ANDMemberAssignment* node, VisitContinue cont) {
+  (void)cont;
+
+  // Codegen assignment
+  this->visit_node(node->target);
+  this->assembler->write_dup();
+  this->assembler->write_readmembersymbol(this->symtable(node->member));
+  this->visit_node(node->expression);
+  this->assembler->write_operator(kOperatorOpcodeMapping[node->operator_type]);
+  this->assembler->write_setmembersymbol(this->symtable(node->member));
+
+  return node;
+}
+
 AST::AbstractNode* CodeGenerator::visit_indexassignment(AST::IndexAssignment* node, VisitContinue cont) {
   (void)cont;
 
@@ -380,6 +394,20 @@ AST::AbstractNode* CodeGenerator::visit_indexassignment(AST::IndexAssignment* no
   this->visit_node(node->target);
   this->visit_node(node->index);
   this->visit_node(node->expression);
+  this->assembler->write_setmembervalue();
+
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_andindexassignment(AST::ANDIndexAssignment* node, VisitContinue cont) {
+  (void)cont;
+
+  this->visit_node(node->target);
+  this->visit_node(node->index);
+  this->assembler->write_topn(1);
+  this->assembler->write_topn(1);
+  this->visit_node(node->expression);
+  this->assembler->write_operator(kOperatorOpcodeMapping[node->operator_type]);
   this->assembler->write_setmembervalue();
 
   return node;

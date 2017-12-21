@@ -73,10 +73,6 @@
   - This allows for optimized arrays as we would not need a vector anymore,
     just two pointers. Push and pop might also benefit from this.
 
-# AST Implementation
-- AND assignments need to be parsed as separate nodes
-  - If a subnode of the assignment target contains a call expression, it could be executed twice
-
 # Exception safety in compiler
 - Allocated AST nodes need to be deallocated when an exception is thrown
 - unique_ptr might do what I want

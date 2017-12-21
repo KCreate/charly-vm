@@ -1,2 +1,4 @@
-func foo() = $0 + $1
-foo.set_argc(2)
+let foo;
+let bar;
+
+foo()[bar()] += foo()[bar()] += 1

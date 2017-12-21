@@ -744,38 +744,74 @@ AST::AbstractNode* Parser::parse_expression() {
 AST::AbstractNode* Parser::parse_assignment() {
   AST::AbstractNode* left = this->parse_ternary_if();
 
+  // We generate specific node for the AND assignment to make sure
+  // we don't generate duplicate code in case there is a call expression
+  // inside the target node somewhere
+  bool generate_and_assignment = false;
+  TokenType and_operator = TokenType::Unknown;
+
   // Check if this is an AND assignment
-  AST::AbstractNode* expression = nullptr;
+  AST::AbstractNode* right = nullptr;
   if (this->token.is_and_assignment()) {
-    this->illegal_token("AND assignments are not implemented yet");
+    and_operator = kTokenAndAssignmentOperators[this->token.type];
+    this->advance();
+    right = this->parse_assignment();
+    generate_and_assignment = true;
   } else if (this->token.type == TokenType::Assignment) {
     this->advance();
-    expression = this->parse_assignment();
+    right = this->parse_assignment();
   } else {
     return left;
   }
 
   // Generate different assignment nodes for different targets
   if (left->type() == AST::kTypeIdentifier) {
-    AST::Identifier* id = AST::cast<AST::Identifier>(left);
-    AST::AbstractNode* node = (new AST::Assignment(id->name, expression))->at(left, expression);
-    delete left;
-    return node;
+    if (generate_and_assignment) {
+      AST::Identifier* id = AST::cast<AST::Identifier>(left);
+      right = (new AST::Binary(and_operator, (new AST::Identifier(id->name))->at(id), right))->at(left, right);
+      AST::AbstractNode* node = (new AST::Assignment(id->name, right))->at(left, right);
+      delete left;
+      return node;
+    } else {
+      AST::Identifier* id = AST::cast<AST::Identifier>(left);
+      AST::AbstractNode* node = (new AST::Assignment(id->name, right))->at(left, right);
+      delete left;
+      return node;
+    }
   } else if (left->type() == AST::kTypeMember) {
-    AST::Member* member = AST::cast<AST::Member>(left);
-    AST::AbstractNode* node =
-        (new AST::MemberAssignment(member->target, member->symbol, expression))->at(left, expression);
-    member->target = nullptr;
-    delete left;
-    return node;
+    if (generate_and_assignment) {
+      AST::Member* member = AST::cast<AST::Member>(left);
+      AST::AbstractNode* node =
+          (new AST::ANDMemberAssignment(member->target, member->symbol, and_operator, right))->at(left, right);
+      member->target = nullptr;
+      delete left;
+      return node;
+    } else {
+      AST::Member* member = AST::cast<AST::Member>(left);
+      AST::AbstractNode* node =
+          (new AST::MemberAssignment(member->target, member->symbol, right))->at(left, right);
+      member->target = nullptr;
+      delete left;
+      return node;
+    }
   } else if (left->type() == AST::kTypeIndex) {
-    AST::Index* index = AST::cast<AST::Index>(left);
-    AST::AbstractNode* node =
-        (new AST::IndexAssignment(index->target, index->argument, expression))->at(left, expression);
-    index->target = nullptr;
-    index->argument = nullptr;
-    delete left;
-    return node;
+    if (generate_and_assignment) {
+      AST::Index* index = AST::cast<AST::Index>(left);
+      AST::AbstractNode* node =
+          (new AST::ANDIndexAssignment(index->target, index->argument, and_operator, right))->at(left, right);
+      index->target = nullptr;
+      index->argument = nullptr;
+      delete left;
+      return node;
+    } else {
+      AST::Index* index = AST::cast<AST::Index>(left);
+      AST::AbstractNode* node =
+          (new AST::IndexAssignment(index->target, index->argument, right))->at(left, right);
+      index->target = nullptr;
+      index->argument = nullptr;
+      delete left;
+      return node;
+    }
   } else {
     this->illegal_node(left, "Invalid left-hand side of assignment.");
     return nullptr;

@@ -126,7 +126,15 @@ public:
     cont();
     return node;
   }
+  virtual inline AST::AbstractNode* visit_andmemberassignment(AST::ANDMemberAssignment* node, VisitContinue cont) {
+    cont();
+    return node;
+  }
   virtual inline AST::AbstractNode* visit_indexassignment(AST::IndexAssignment* node, VisitContinue cont) {
+    cont();
+    return node;
+  }
+  virtual inline AST::AbstractNode* visit_andindexassignment(AST::ANDIndexAssignment* node, VisitContinue cont) {
     cont();
     return node;
   }
@@ -275,8 +283,12 @@ public:
       return walker->visit_assignment(AST::cast<AST::Assignment>(node), cont);
     if (node->type() == AST::kTypeMemberAssignment)
       return walker->visit_memberassignment(AST::cast<AST::MemberAssignment>(node), cont);
+    if (node->type() == AST::kTypeANDMemberAssignment)
+      return walker->visit_andmemberassignment(AST::cast<AST::ANDMemberAssignment>(node), cont);
     if (node->type() == AST::kTypeIndexAssignment)
       return walker->visit_indexassignment(AST::cast<AST::IndexAssignment>(node), cont);
+    if (node->type() == AST::kTypeANDIndexAssignment)
+      return walker->visit_andindexassignment(AST::cast<AST::ANDIndexAssignment>(node), cont);
     if (node->type() == AST::kTypeCall)
       return walker->visit_call(AST::cast<AST::Call>(node), cont);
     if (node->type() == AST::kTypeCallMember)
