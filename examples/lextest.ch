@@ -1,9 +1,15 @@
+let foo
 let bar
+let baz
 
-func foo(a, b) {
-  let temp = a + b
-  temp += bar()
-  return temp * 2
+loop {}
+
+loop {
+  continue
 }
 
-let result = foo()
+while true {
+  continue
+}
+
+Charly.internals.push_stack(foo)
