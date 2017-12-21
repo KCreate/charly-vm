@@ -121,7 +121,6 @@ public:
         }
         case Opcode::PutArray:
         case Opcode::PutHash:
-        case Opcode::Pop:
         case Opcode::Topn:
         case Opcode::Setn:
         case Opcode::Call:

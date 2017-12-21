@@ -571,10 +571,8 @@ void VM::op_puthash(uint32_t count) {
   this->push_stack(reinterpret_cast<VALUE>(object));
 }
 
-void VM::op_pop(uint32_t count) {
-  while (count--) {
-    this->pop_stack().value_or(kNull);
-  }
+void VM::op_pop() {
+  this->pop_stack();
 }
 
 void VM::op_dup() {
@@ -1103,7 +1101,7 @@ void VM::init_frames() {
   block->write_readmembersymbol(this->context.symbol_table("get_method"));
   block->write_putvalue(VALUE_ENCODE_INTEGER(25));
   block->write_setmembersymbol(this->context.symbol_table("foo"));
-  block->write_pop(1);
+  block->write_pop();
 
   // [[{}, { boye = 250 }], 25, 25, 25, 25]
   block->write_puthash(0);
@@ -1111,14 +1109,14 @@ void VM::init_frames() {
   block->write_dup();
   block->write_putvalue(VALUE_ENCODE_INTEGER(250));
   block->write_setmembersymbol(this->context.symbol_table("boye"));
-  block->write_pop(1);
+  block->write_pop();
   block->write_putarray(2);
   block->write_putfloat(25);
   block->write_putfloat(25);
   block->write_putfloat(25);
   block->write_putfloat(25);
   block->write_putarray(5);
-  block->write_pop(1);
+  block->write_pop();
 
   // Charly.internals.get_method(:"hello_world")
   block->write_readlocal(4, 0);
@@ -1126,7 +1124,7 @@ void VM::init_frames() {
   block->write_readmembersymbol(this->context.symbol_table("get_method"));
   block->write_putvalue(this->context.symbol_table("hello world"));
   block->write_call(1);
-  block->write_pop(1);
+  block->write_pop();
 
   // Charly.internals.get_method("This is a string test")
   block->write_readlocal(4, 0);
@@ -1134,7 +1132,7 @@ void VM::init_frames() {
   block->write_readmembersymbol(this->context.symbol_table("get_method"));
   block->write_putstring("This is a string test");
   block->write_call(1);
-  block->write_pop(1);
+  block->write_pop();
 
   // typeof(arguments)
   block->write_readlocal(0, 0);
@@ -1332,8 +1330,7 @@ void VM::run() {
       }
 
       case Opcode::Pop: {
-        uint32_t count = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
-        this->op_pop(count);
+        this->op_pop();
         break;
       }
 

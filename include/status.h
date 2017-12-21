@@ -43,7 +43,6 @@ enum Status : STATUS {
   ReadFailedTooDeep,
   WriteFailedOutOfBounds,
   WriteFailedTooDeep,
-  StackEmpty
 };
 
 // Human-readable status messages
@@ -61,8 +60,7 @@ static const std::string kStatusHumanReadable[] = {
   "Reading local field failed, out of bounds",
   "Reading local field failed, too deep",
   "Writing local field failed, out of bounds",
-  "Writing local field failed, too deep",
-  "Stack is empty"
+  "Writing local field failed, too deep"
 };
 // clang-format on
 }  // namespace Charly

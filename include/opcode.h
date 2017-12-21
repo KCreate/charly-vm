@@ -192,10 +192,7 @@ enum Opcode : uint8_t {
   // - constructor?
   PutClass,
 
-  // Pop count values off the stack
-  //
-  // args:
-  // - count
+  // Pop a value off the stack
   Pop,
 
   // Duplicate the top value of the stack
@@ -348,7 +345,7 @@ static constexpr uint32_t kInstructionLengths[]{
   /* PutArray */           1 + sizeof(uint32_t),
   /* PutHash */            1 + sizeof(uint32_t),
   /* PutClass */           1 + sizeof(VALUE) + sizeof(uint32_t) * 5 + sizeof(bool),
-  /* Pop */                1 + sizeof(uint32_t),
+  /* Pop */                1,
   /* Dup */                1,
   /* Swap */               1,
   /* Topn */               1 + sizeof(uint32_t),

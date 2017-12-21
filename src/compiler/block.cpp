@@ -220,9 +220,8 @@ void InstructionBlock::write_putclass(VALUE symbol,
   this->write_bool(has_constructor);
 }
 
-void InstructionBlock::write_pop(uint32_t count) {
+void InstructionBlock::write_pop() {
   this->write_byte(Opcode::Pop);
-  this->write_int(count);
 }
 
 void InstructionBlock::write_dup() {

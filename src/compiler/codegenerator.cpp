@@ -62,7 +62,7 @@ AST::AbstractNode* CodeGenerator::visit_block(AST::Block* node, VisitContinue co
 
     // If the statement produces an expression, pop it off the stack now
     if (node->yields_value()) {
-      this->assembler->write_pop(1);
+      this->assembler->write_pop();
     }
   }
 
@@ -285,7 +285,7 @@ AST::AbstractNode* CodeGenerator::visit_switch(AST::Switch* node, VisitContinue 
     this->assembler->place_label(node_block);
 
     // Pop the condition off the stack
-    this->assembler->write_pop(1);
+    this->assembler->write_pop();
     this->visit_node(snode->block);
     this->assembler->write_branch_to_label(end_label);
 
@@ -298,7 +298,7 @@ AST::AbstractNode* CodeGenerator::visit_switch(AST::Switch* node, VisitContinue 
   if (node->default_block->type() != AST::kTypeEmpty) {
     this->visit_node(node->default_block);
   } else {
-    this->assembler->write_pop(1);
+    this->assembler->write_pop();
   }
   this->assembler->place_label(end_label);
 
@@ -317,7 +317,7 @@ AST::AbstractNode* CodeGenerator::visit_and(AST::And* node, VisitContinue cont) 
   this->visit_node(node->left);
   this->assembler->write_dup();
   this->assembler->write_branchunless_to_label(end_and_label);
-  this->assembler->write_pop(1);
+  this->assembler->write_pop();
   this->visit_node(node->right);
 
   this->assembler->place_label(end_and_label);
@@ -335,7 +335,7 @@ AST::AbstractNode* CodeGenerator::visit_or(AST::Or* node, VisitContinue cont) {
   this->visit_node(node->left);
   this->assembler->write_dup();
   this->assembler->write_branchif_to_label(end_or_label);
-  this->assembler->write_pop(1);
+  this->assembler->write_pop();
   this->visit_node(node->right);
 
   this->assembler->place_label(end_or_label);
