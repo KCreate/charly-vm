@@ -26,6 +26,7 @@
 
 #include <unordered_map>
 #include <vector>
+#include <list>
 
 #include "assembler.h"
 #include "ast.h"
@@ -37,6 +38,12 @@
 #pragma once
 
 namespace Charly::Compilation {
+
+struct QueuedBlock {
+  Label label;
+  AST::AbstractNode* block;
+};
+
 // Responsible for generating Charly bytecodes
 class CodeGenerator : public CompilerPass {
   using CompilerPass::CompilerPass;
@@ -52,6 +59,8 @@ public:
   // Main interface to the compiler
   InstructionBlock* compile(AST::AbstractNode* node);
   void reset();
+
+private:
 
   // Codegen specific AST nodes
   AST::AbstractNode* visit_if(AST::If* node, VisitContinue cont);
@@ -95,10 +104,10 @@ public:
   AST::AbstractNode* visit_continue(AST::Continue* node, VisitContinue cont);
   AST::AbstractNode* visit_trycatch(AST::TryCatch* node, VisitContinue cont);
 
-private:
   Assembler* assembler;
   std::vector<Label> break_stack;
   std::vector<Label> continue_stack;
+  std::list<QueuedBlock> queued_blocks;
 };
 
 // clang-format off

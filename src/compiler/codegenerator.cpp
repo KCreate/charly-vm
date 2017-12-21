@@ -34,6 +34,16 @@ namespace Charly::Compilation {
 InstructionBlock* CodeGenerator::compile(AST::AbstractNode* node) {
   this->visit_node(node);
   this->assembler->write_halt();
+
+  // Codegen all blocks
+  while (this->queued_blocks.size() > 0) {
+    QueuedBlock& queued_block = this->queued_blocks.front();
+
+    this->assembler->place_label(queued_block.label);
+    this->visit_node(queued_block.block);
+
+    this->queued_blocks.pop_front();
+  }
   this->assembler->resolve_unresolved_label_references();
   return new InstructionBlock(*static_cast<InstructionBlock*>(this->assembler));
 }
@@ -528,16 +538,12 @@ AST::AbstractNode* CodeGenerator::visit_function(AST::Function* node, VisitConti
 
   // Label setup
   Label function_block_label = this->assembler->reserve_label();
-  Label function_block_end_label = this->assembler->reserve_label();
 
   this->assembler->write_putfunction_to_label(this->symtable(node->name), function_block_label, node->anonymous,
                                               node->parameters.size(), node->lvar_count);
-  this->assembler->write_branch_to_label(function_block_end_label);
 
   // Codegen the block
-  this->assembler->place_label(function_block_label);
-  this->visit_node(node->body);
-  this->assembler->place_label(function_block_end_label);
+  this->queued_blocks.push_back(QueuedBlock({function_block_label, node->body}));
 
   return node;
 }

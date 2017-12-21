@@ -85,7 +85,7 @@ public:
         case Opcode::PutFunction: {
           this->print_hex(block->value_at(offset + 1), stream);
           stream << ", ";
-          this->print_hex(block->int32_at(offset + 1 + sizeof(VALUE)), stream);
+          this->print_hex(offset + block->int32_at(offset + 1 + sizeof(VALUE)), stream);
           stream << ", ";
           this->print_value(block->bool_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t)), stream);
           stream << ", ";
