@@ -38,6 +38,11 @@ namespace Charly::Compilation {
 class Compiler {
 public:
   inline InstructionBlock* compile(ParseResult& result) {
+
+    // Append a return export node to the end of the parsed block
+    AST::Block* block = AST::cast<AST::Block>(result.parse_tree);
+    block->statements.push_back(new AST::Return(new AST::Identifier("export")));
+
     // Wrap the whole program in a function which handles the exporting interface
     // to other programs
     result.parse_tree = (new AST::Function("", {"export", "Charly"}, result.parse_tree, true))->at(result.parse_tree);
