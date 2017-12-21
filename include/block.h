@@ -140,6 +140,7 @@ public:
   }
 
   // Wrappers around the write functions which can encode instructions
+  void write_nop();
   void write_readlocal(uint32_t index, uint32_t level);
   void write_readmembersymbol(VALUE symbol);
   void write_readmembervalue();

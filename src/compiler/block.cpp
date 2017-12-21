@@ -106,6 +106,10 @@ uint32_t InstructionBlock::write_string(const std::string& data) {
   return old_offset;
 }
 
+void InstructionBlock::write_nop() {
+  this->write_byte(Opcode::Nop);
+}
+
 void InstructionBlock::write_readlocal(uint32_t index, uint32_t level) {
   this->write_byte(Opcode::ReadLocal);
   this->write_int(index);
