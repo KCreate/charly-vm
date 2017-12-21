@@ -127,7 +127,7 @@
   - [ ] Constant folding
   - [x] Remove string duplicates (to keep the static data section small)
   - [x] LVar offset calculation
-  - [ ] Wrap nodes in stack operations (pop unused stack values)
+  - [x] Wrap nodes in stack operations (pop unused stack values)
   - [x] Code generation
   - [x] Label resolution (ifs, breaks, continues, etc.)
 
@@ -216,6 +216,11 @@
     wrapped pointers, optionally defining a function pointer for a destructor function.
     We can keep the correct context object by using the `->*` and `.*` operators.
     See: https://isocpp.org/wiki/faq/pointers-to-members#dotstar-vs-arrowstar
+
+# Debugging info
+- Use `#ifdef` preprocessor commands to create debug and profiling fields inside some structures
+  of the VM.
+  - Function could contain the plaintext names of the arguments and local variables
 
 # Operators
 - Copy the operator matrix from the Crystal Charly source. Don't reinvent the wheel.
