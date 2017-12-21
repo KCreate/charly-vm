@@ -839,6 +839,17 @@ struct CallIndex : public AbstractNode {
   }
 };
 
+// reads a value from the stack
+struct StackValue : public AbstractNode {
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- StackValue:" << this << '\n';
+  }
+
+  bool yields_value() {
+    return true;
+  }
+};
+
 // <name>
 struct Identifier : public AbstractNode {
   std::string name;
@@ -1466,6 +1477,7 @@ static const size_t kTypeIndexAssignment = typeid(IndexAssignment).hash_code();
 static const size_t kTypeCall = typeid(Call).hash_code();
 static const size_t kTypeCallMember = typeid(CallMember).hash_code();
 static const size_t kTypeCallIndex = typeid(CallIndex).hash_code();
+static const size_t kTypeStackValue = typeid(StackValue).hash_code();
 static const size_t kTypeIdentifier = typeid(Identifier).hash_code();
 static const size_t kTypeIndexIntoArguments = typeid(IndexIntoArguments).hash_code();
 static const size_t kTypeSelf = typeid(Self).hash_code();

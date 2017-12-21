@@ -162,7 +162,12 @@ AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisat
 }
 
 AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitContinue cont) {
-  cont();
+  (void)cont;
+
+  // Skip this node if it already has an offset_info field
+  if (node->offset_info != nullptr) {
+    return node;
+  }
 
   // Check if this is a special argument index
   // e.g: $0, $1, ..., $

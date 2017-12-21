@@ -47,6 +47,13 @@ public:
     // to other programs
     result.parse_tree = (new AST::Function("", {"export", "Charly"}, result.parse_tree, true))->at(result.parse_tree);
 
+    // Wrap the global function in a call
+    // This is VM specific, as we expect the VM to push some values onto the stack
+    // before it calls our code
+    result.parse_tree = (new AST::Call(result.parse_tree, new AST::NodeList({
+      new AST::StackValue(), new AST::StackValue()
+    })))->at(result.parse_tree);
+
     // Calculate all offsets of all variables, assignments and declarations
     LVarRewriter lvar_rewriter(this->symtable);
     result.parse_tree = lvar_rewriter.visit_node(result.parse_tree);
