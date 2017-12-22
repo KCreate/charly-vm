@@ -5,11 +5,31 @@
 - Requiring users to add a PPA isn't cool either
 
 # Figure out how the VM starts execution of a block
-- Exactly the starting and end point is interesting
-- Maybe pass a pointer to an InstructionBlock?
-- What happens when the VM halts? (via the Halt instruction)
-- How does the VM give back control to the calling function
-- How is VM exit being done
+- How does the VM start execution of a new instruction block
+  - Call `VALUE VM::run_block` to execute a block
+  - The VM treats the instructionblock as the body of a function
+    - VM pushes Charly and an empty export object and calls the new instructionblock
+    - Once the VM halts, it knows that it reached the end of this instructionblock and returns from run_block
+- How does the VM know in which instruction block it currently is in
+  - Current approach
+    - Each function has a `block` property, pointing to the instructionblock it was defined in
+    - Each frame has a `function` property, pointing to the function which was used to create it
+    - Current block can be determined with `this->frames->function->block`
+  - New design
+    - Each function has a `block` property, pointing to the instructionblock it was defined in
+    - Create a new function type which doesn't point to an instruction block and is only used
+    - Each frame holds a pointer to the instructionblock it is active in
+      - Frames don't need the function argument, it is optional
+        - It is only used for stacktraces, pretty-printing
+        - Stacktrace entries without functions contain the address
+    - Determining the current block is now just a read to the current frame
+    - Running a new instruction block requires creating a frame for it and setting the function property to `nullptr`
+- Who knows about and keeps track of InstructionBlocks
+  - An external class should do this
+    - We don't want to recompile a file every single time it is run
+      - Store a hash of a file and the compiled result
+      - If the hashes match, return the compiled result
+      - If the hashes don't match, recompile the program and add new entry
 
 # Movelocal instruction
 - Short opcode for
