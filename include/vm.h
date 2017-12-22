@@ -119,6 +119,8 @@ public:
   void op_pop();
   void op_dup();
   void op_swap();
+  void op_topn(uint32_t offset);
+  void op_setn(uint32_t offset);
   void op_call(uint32_t argc);
   void op_callmember(uint32_t argc);
   void call(uint32_t argc, bool with_target);

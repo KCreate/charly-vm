@@ -225,8 +225,6 @@
 - PutClass
 - ReadMemberValue
 - SetMemberValue
-- Topn
-- Setn
 - Add
 - Sub
 - Mul

@@ -588,6 +588,28 @@ void VM::op_swap() {
   this->push_stack(value2);
 }
 
+void VM::op_topn(uint32_t offset) {
+
+  // Check if there are enough items on the stack
+  if (this->stack.size() <= offset) {
+    this->push_stack(kNull);
+  } else {
+    VALUE value = *(this->stack.end() - (offset + 1));
+    this->push_stack(value);
+  }
+}
+
+void VM::op_setn(uint32_t offset) {
+
+  // Check if there are enough items on the stack
+  if (this->stack.size() <= offset) {
+    this->pop_stack();
+  } else {
+    VALUE& ref = *(this->stack.end() - (offset + 1));
+    ref = this->stack.back();
+  }
+}
+
 void VM::op_call(uint32_t argc) {
   this->call(argc, false);
 }
@@ -1329,6 +1351,18 @@ void VM::run() {
 
       case Opcode::Swap: {
         this->op_swap();
+        break;
+      }
+
+      case Opcode::Topn: {
+        uint32_t offset = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+        this->op_topn(offset);
+        break;
+      }
+
+      case Opcode::Setn: {
+        uint32_t offset = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+        this->op_setn(offset);
         break;
       }
 
