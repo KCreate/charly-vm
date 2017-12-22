@@ -198,7 +198,7 @@ AST::AbstractNode* Parser::parse_block() {
     if (add_to_block) {
       block->append_node(node);
 
-      if (node->type() == AST::kTypeReturn || node->type() == AST::kTypeBreak || node->type() == AST::kTypeContinue) {
+      if (node->type() == AST::kTypeReturn || node->type() == AST::kTypeBreak || node->type() == AST::kTypeContinue || node->type() == AST::kTypeThrow) {
         add_to_block = false;
       }
     } else {
@@ -722,7 +722,14 @@ AST::AbstractNode* Parser::parse_try_statement() {
     }
   } else {
     this->expect_token(TokenType::Finally);
+
+    auto backup_context = this->keyword_context;
+    this->keyword_context.break_allowed = false;
+    this->keyword_context.continue_allowed = false;
+    this->keyword_context.return_allowed = false;
     finally_block = this->parse_block();
+    this->keyword_context = backup_context;
+
     catch_block = new AST::Empty();
   }
 
@@ -1362,7 +1369,8 @@ AST::AbstractNode* Parser::parse_func() {
     // Insert a return null statement into the block in case the last statement in the
     // functions body is not already a return statement
     if (AST::cast<AST::Block>(body)->statements.size() > 0) {
-      if (AST::cast<AST::Block>(body)->statements.back()->type() != AST::kTypeReturn) {
+      auto last_node_type = AST::cast<AST::Block>(body)->statements.back()->type();
+      if (last_node_type != AST::kTypeReturn && last_node_type != AST::kTypeThrow) {
         AST::cast<AST::Block>(body)->append_node((new AST::Return(new AST::Null()))->at(body));
       }
     }
@@ -1422,7 +1430,8 @@ AST::AbstractNode* Parser::parse_arrowfunc() {
     // Insert a return null statement into the block in case the last statement in the
     // functions body is not already a return statement
     if (AST::cast<AST::Block>(block)->statements.size() > 0) {
-      if (AST::cast<AST::Block>(block)->statements.back()->type() != AST::kTypeReturn) {
+      auto last_node_type = AST::cast<AST::Block>(block)->statements.back()->type();
+      if (last_node_type != AST::kTypeReturn && last_node_type != AST::kTypeThrow) {
         AST::cast<AST::Block>(block)->append_node((new AST::Return(new AST::Null()))->at(block));
       }
     }

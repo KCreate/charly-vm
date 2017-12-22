@@ -130,12 +130,6 @@
   - Rewrites or semantic checks don't care what type the number is
   - Always store as float
   - Cast to integer in the codegenerator
-- Reset code for queued blocks in codegenerator
-- Branches (`return`, `break` and `continue`) don't take into consideration the finally block
-  of a surrounding `try/finally` statement.
-  - How do other languages solve this?
-    - Code duplication could work for `break` and `continue` statements, but not for return
-  - How should return behave when inside a `try/finally` statement?
 
 # Reserved identifiers
 - Everywhere

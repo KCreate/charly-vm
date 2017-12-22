@@ -52,6 +52,7 @@ void CodeGenerator::reset() {
   this->assembler->reset();
   this->break_stack.clear();
   this->continue_stack.clear();
+  this->queued_blocks.clear();
 }
 
 AST::AbstractNode* CodeGenerator::visit_block(AST::Block* node, VisitContinue cont) {
