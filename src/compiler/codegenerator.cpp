@@ -361,7 +361,7 @@ AST::AbstractNode* CodeGenerator::visit_assignment(AST::Assignment* node, VisitC
 
   // Codegen assignment
   cont();
-  this->assembler->write_setlocal(node->offset_info->level, node->offset_info->index);
+  this->assembler->write_setlocal(node->offset_info->index, node->offset_info->level);
 
   return node;
 }
@@ -482,7 +482,7 @@ AST::AbstractNode* CodeGenerator::visit_identifier(AST::Identifier* node, VisitC
     this->fatal_error(node, "Missing offset info for identifier codegen");
   }
 
-  this->assembler->write_readlocal(node->offset_info->level, node->offset_info->index);
+  this->assembler->write_readlocal(node->offset_info->index, node->offset_info->level);
 
   return node;
 }
@@ -698,9 +698,9 @@ AST::AbstractNode* CodeGenerator::visit_trycatch(AST::TryCatch* node, VisitConti
     }
 
     // Store the exception
-    this->assembler->write_setlocal(node->offset_info->level, node->offset_info->index);
+    this->assembler->write_setlocal(node->offset_info->index, node->offset_info->level);
     this->visit_node(node->finally_block);
-    this->assembler->write_readlocal(node->offset_info->level, node->offset_info->index);
+    this->assembler->write_readlocal(node->offset_info->index, node->offset_info->level);
     this->assembler->write_throw();
   }
 
