@@ -101,7 +101,7 @@ AST::AbstractNode* LVarRewriter::visit_function(AST::Function* node, VisitContin
   for (auto rit = node->parameters.rbegin(); rit != node->parameters.rend(); rit++) {
     body->prepend_node(new AST::LocalInitialisation(*rit, new AST::Null(), false));
   }
-  body->prepend_node(new AST::LocalInitialisation("arguments", new AST::Null(), false));
+  body->prepend_node(new AST::LocalInitialisation("__CHARLY_FUNCTION_ARGUMENTS", new AST::Null(), false));
 
   // Visit all child nodes of this function
   uint64_t backup_blockid = this->blockid;
@@ -197,6 +197,13 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
   // Check if this symbol exists
   auto result = this->scope->resolve(this->symtable(node->name), this->depth, this->blockid, false);
   if (!result.has_value()) {
+
+    // If we reference `arguments`, we redirect to __CHARLY_FUNCTION_ARGUMENTS
+    if (node->name == "arguments") {
+      node->offset_info = new IRVarOffsetInfo({0, 0});
+      return node;
+    }
+
     this->push_error(node, "Could not resolve symbol: " + node->name);
     return node;
   }
@@ -209,6 +216,13 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
 AST::AbstractNode* LVarRewriter::visit_assignment(AST::Assignment* node, VisitContinue cont) {
   auto result = this->scope->resolve(this->symtable(node->target), this->depth, this->blockid, false);
   if (!result.has_value()) {
+
+    // If we reference `arguments`, we redirect to __CHARLY_FUNCTION_ARGUMENTS
+    if (node->target == "arguments") {
+      this->push_error(node, "Can't assign to funtion arguments. Redeclare to avoid conflicts.");
+      return node;
+    }
+
     this->push_error(node, "Could not resolve symbol: " + node->target);
     return node;
   }

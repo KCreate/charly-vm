@@ -47,11 +47,6 @@
 - The compiler needs to keep around semantic information for the whole program
 
 # Calling and object storage convention
-- `arguments`
-  - `__CHARLY_FUNCTION_ARGUMENTS` should be a reserved identifier
-  - `__CHARLY_FUNCTION_ARGUMENTS` will be rewritten to `ReadLocal 0, 0`
-  - `arguments` will also be rewritten to `ReadLocal 0, 0`
-    - If the user redeclares his own `arguments` lvar, it will be treated as a new lvar
 - Where does the return value end up?
   - Callee side:
     - The return value of the call is the top value on the stack
@@ -130,12 +125,6 @@
   - Rewrites or semantic checks don't care what type the number is
   - Always store as float
   - Cast to integer in the codegenerator
-
-# Reserved identifiers
-- Everywhere
-  - `self`
-- Inside functions
-  - `__CHARLY_FUNCTION_ARGUMENTS`
 
 # `super` inside class instance methods
 - Checks the self value
