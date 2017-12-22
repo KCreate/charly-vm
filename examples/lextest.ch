@@ -1,15 +1,11 @@
-let foo
-let bar
-let baz
-
-loop {}
-
 loop {
-  continue
-}
 
-while true {
-  continue
-}
+  try {
 
-Charly.internals.push_stack(foo)
+    break
+
+  } finally {
+    1 + 1
+  }
+
+}
