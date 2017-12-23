@@ -24,134 +24,35 @@
  * SOFTWARE.
  */
 
-#include <iomanip>
+#include <iostream>
 
 #include "block.h"
-#include "opcode.h"
-#include "symboltable.h"
 
 #pragma once
 
 namespace Charly::Compilation {
 class Disassembler {
 public:
-  // Prints a disassembly of the passed block into stream
-  //
-  // Example:
-  // 0x00000000: ReadLocal 0, 1
-  // 0x00000009: ReadLocal 0, 2
-  // 0x000000nn: Add
-  // ...
-  template <class T>
-  inline void disassemble(InstructionBlock* block, T&& stream) {
-    uint32_t offset = 0;
-
-    while (offset < block->writeoffset) {
-      Opcode opcode = static_cast<Opcode>(block->uint8_at(offset));
-
-      this->print_hex(offset, stream, 8);
-      stream << ": " << kOpcodeMnemonics[opcode] << " ";
-
-      switch (opcode) {
-        case Opcode::ReadLocal:
-        case Opcode::SetLocal: {
-          stream << block->uint32_at(offset + 1) << ", " << block->uint32_at(offset + 1 + sizeof(uint32_t));
-          break;
-        }
-        case Opcode::ReadMemberSymbol:
-        case Opcode::SetMemberSymbol: {
-          this->print_hex(block->value_at(offset + 1), stream);
-          break;
-        }
-        case Opcode::ReadArrayIndex:
-        case Opcode::SetArrayIndex: {
-          stream << block->uint32_at(offset + 1);
-          break;
-        }
-        case Opcode::PutValue: {
-          this->print_hex(block->value_at(offset + 1), stream);
-          break;
-        }
-        case Opcode::PutFloat: {
-          this->print_value(block->double_at(offset + 1), stream);
-          break;
-        }
-        case Opcode::PutString: {
-          this->print_hex(block->uint32_at(offset + 1), stream);
-          stream << ", ";
-          this->print_value(block->uint32_at(offset + 1 + sizeof(uint32_t)), stream);
-          break;
-        }
-        case Opcode::PutFunction: {
-          this->print_hex(block->value_at(offset + 1), stream);
-          stream << ", ";
-          this->print_hex(offset + block->int32_at(offset + 1 + sizeof(VALUE)), stream);
-          stream << ", ";
-          this->print_value(block->bool_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t)), stream);
-          stream << ", ";
-          this->print_value(block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool)), stream);
-          stream << ", ";
-          this->print_value(
-              block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool) + sizeof(uint32_t)),
-              stream);
-          break;
-        }
-        case Opcode::PutCFunction: {
-          this->print_hex(block->value_at(offset + 1), stream);
-          stream << ", ";
-          this->print_hex(block->voidptr_at(offset + 1 + sizeof(VALUE)), stream);
-          stream << ", ";
-          this->print_value(block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(void*)), stream);
-          break;
-        }
-        case Opcode::PutClass: {
-          this->print_hex(block->value_at(offset + 1), stream);
-          stream << ", ";
-          this->print_value(block->uint32_at(offset + 1 + sizeof(VALUE)), stream);
-          stream << ", ";
-          this->print_value(block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 1), stream);
-          stream << ", ";
-          this->print_value(block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 2), stream);
-          stream << ", ";
-          this->print_value(block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 3), stream);
-          stream << ", ";
-          this->print_value(block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 4), stream);
-          stream << ", ";
-          break;
-        }
-        case Opcode::PutArray:
-        case Opcode::PutHash:
-        case Opcode::Topn:
-        case Opcode::Setn:
-        case Opcode::Call:
-        case Opcode::CallMember: {
-          this->print_value(block->uint32_at(offset + 1), stream);
-          break;
-        }
-        case Opcode::RegisterCatchTable:
-        case Opcode::Branch:
-        case Opcode::BranchIf:
-        case Opcode::BranchUnless: {
-          this->print_hex(offset + block->int32_at(offset + 1), stream, 8);
-          break;
-        }
-      }
-
-      stream << '\n';
-      offset += kInstructionLengths[opcode];
-    }
-  }
+  void disassemble(InstructionBlock* block, std::ostream& stream);
 
 private:
-  template <class T, typename V>
-  inline void print_hex(V value, T&& stream, uint32_t width = 1) {
+  template <typename V>
+  void print_hex(V value, std::ostream& stream, uint32_t width = 1) {
     stream.fill('0');
     stream << "0x" << std::hex << std::setw(width) << value << std::setw(1) << std::dec;
   }
 
-  template <class T, typename V>
-  inline void print_value(V value, T&& stream) {
+  template <typename V>
+  inline void print_value(V value, std::ostream& stream) {
     stream << value;
   }
+
+private:
+
 };
+
+template <>
+inline void Disassembler::print_value(bool value, std::ostream& stream) {
+  stream << std::boolalpha << value << std::noboolalpha;
+}
 }  // namespace Charly::Compilation
