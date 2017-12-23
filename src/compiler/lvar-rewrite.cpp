@@ -131,7 +131,12 @@ AST::AbstractNode* LVarRewriter::visit_block(AST::Block* node, VisitContinue des
 }
 
 AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisation* node, VisitContinue descend) {
-  descend();
+
+  // Only descend if this is not a function or class initialisation
+  auto exp_type = node->expression->type();
+  if (exp_type != AST::kTypeFunction && exp_type != AST::kTypeClass) {
+    descend();
+  }
 
   // Check if this is a duplicate declaration
   auto result = this->scope->resolve(this->symtable(node->name), this->depth, this->blockid, true);
@@ -147,6 +152,12 @@ AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisat
 
   // Register this variable in the current scope
   LVarRecord record = this->scope->declare(this->symtable(node->name), this->depth, this->blockid, node->constant);
+
+  // If the expression is a function or class, descend into it now
+  // This allows a function or class to reference itself inside its body
+  if (exp_type == AST::kTypeFunction || exp_type == AST::kTypeClass) {
+    descend();
+  }
 
   // If we have no expression to assign (empty declaration) remove this node from the AST
   if (node->expression->type() == AST::kTypeNull) {
