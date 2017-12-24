@@ -151,10 +151,6 @@ void Disassembler::detect_branches() {
     Opcode opcode = static_cast<Opcode>(this->block->uint8_at(offset));
 
     switch (opcode) {
-      case Opcode::PutFunction: {
-        this->branches.emplace_back(offset, offset + this->block->int32_at(offset + 1 + sizeof(VALUE)));
-        break;
-      }
       case Opcode::RegisterCatchTable:
       case Opcode::Branch:
       case Opcode::BranchIf:
