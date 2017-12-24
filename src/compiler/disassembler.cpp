@@ -176,6 +176,7 @@ void Disassembler::detect_branches() {
   for (auto& br1 : this->branches) {
     uint32_t max_active = 1;
     uint32_t branchline = 0;
+    uint32_t last_allocated_branchline = 1;
 
     // If we already have a branchline, we use that
     if (br1.has_allocated_branchline) {
@@ -190,7 +191,7 @@ void Disassembler::detect_branches() {
         // If the other branch doesn't have a branchline allocated
         // to it yet, do that now
         if (!br2.has_allocated_branchline) {
-          br2.branchline = branchline + 1;
+          br2.branchline = last_allocated_branchline++;
         } else {
 
           // Check if our branchline collides with this branch
@@ -231,9 +232,13 @@ void Disassembler::draw_branchlines_for_offset(uint32_t offset, std::ostream& st
 
         // Draw a line to the right
         while (start_offset < branchlanewidth) {
-          branchlane[start_offset] = '-';
-          branchlane[start_offset + 1] = '-';
-          branchlane[start_offset + 2] = '-';
+
+          // Do not draw this line if there is either a star or an arrow already placed here
+          if (branchlane[start_offset + 2] != '>') {
+            branchlane[start_offset] = '-';
+            branchlane[start_offset + 1] = '-';
+            branchlane[start_offset + 2] = '-';
+          }
           start_offset += 3;
         }
 

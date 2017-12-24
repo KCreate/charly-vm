@@ -1,6 +1,10 @@
-func (a) {
-  switch (a) {
-    case true a = 1
-    default a = 2
+let a
+
+loop {
+  if true {
+    a = 1
+  } else {
+    a = 2
   }
+  break
 }
