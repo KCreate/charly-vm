@@ -99,6 +99,12 @@ AST::AbstractNode* LVarRewriter::visit_function(AST::Function* node, VisitContin
   // Visit all child nodes of this function
   uint64_t backup_blockid = this->blockid;
   this->blockid = reinterpret_cast<uint64_t>(node->body);
+
+  // Register the function's parameters
+  this->scope->declare(this->symtable("__CHARLY_FUNCTION_ARGUMENTS"), this->depth + 1, this->blockid, true);
+  for (const std::string& param : node->parameters) {
+    this->scope->declare(this->symtable(param), this->depth + 1, this->blockid, false);
+  }
   descend();
   this->blockid = backup_blockid;
 

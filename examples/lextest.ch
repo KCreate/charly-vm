@@ -1,10 +1,5 @@
-let a
-
-loop {
-  if true {
-    a = 1
-  } else {
-    a = 2
-  }
-  break
+func foo(a, b) {
+  return arguments + 1 + b + __CHARLY_FUNCTION_ARGUMENTS
 }
+
+foo(1, 2)

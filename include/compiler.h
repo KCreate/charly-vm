@@ -42,18 +42,11 @@ public:
 
     // Append a return export node to the end of the parsed block
     AST::Block* block = AST::cast<AST::Block>(result.parse_tree);
-    block->statements.push_back(new AST::Return(new AST::Identifier("export")));
+    block->statements.push_back((new AST::Return((new AST::Identifier("export"))->at(block)))->at(block));
 
     // Wrap the whole program in a function which handles the exporting interface
     // to other programs
     result.parse_tree = (new AST::Function("", {"export", "Charly"}, block, true))->at(result.parse_tree);
-
-    // Wrap the global function in a call
-    // This is VM specific, as we expect the VM to push some values onto the stack
-    // before it calls our code
-    result.parse_tree = (new AST::Call(result.parse_tree, new AST::NodeList({
-      new AST::StackValue(), new AST::StackValue()
-    })))->at(result.parse_tree);
 
     // Clean up the code a little bit and add or remove some nodes
     Normalizer normalizer(this->symtable);

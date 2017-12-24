@@ -166,14 +166,6 @@ AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue
     }
   }
 
-  // Insert argument initialisations into the body
-  // Also insert the __CHARLY_FUNCTION_ARGUMENTS which holds all
-  // arguments the function is given
-  for (const auto& param : node->parameters) {
-    body->prepend_node((new AST::LocalInitialisation(param, new AST::Empty(), false))->at(node));
-  }
-  body->prepend_node((new AST::LocalInitialisation("__CHARLY_FUNCTION_ARGUMENTS", new AST::Empty(), false))->at(node));
-
   return node;
 }
 
