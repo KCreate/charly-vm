@@ -58,6 +58,7 @@ void CodeGenerator::reset() {
 AST::AbstractNode* CodeGenerator::visit_block(AST::Block* node, VisitContinue cont) {
   (void)cont;
 
+  this->assembler->write_nop();
   for (auto& node : node->statements) {
     this->visit_node(node);
 
@@ -167,7 +168,6 @@ AST::AbstractNode* CodeGenerator::visit_while(AST::While* node, VisitContinue co
   this->assembler->write_branchunless_to_label(break_label);
 
   // Block codegen
-  this->assembler->write_nop();
   this->visit_node(node->block);
   this->assembler->write_branch_to_label(condition_label);
   this->assembler->place_label(break_label);
@@ -193,7 +193,6 @@ AST::AbstractNode* CodeGenerator::visit_until(AST::Until* node, VisitContinue co
   this->assembler->write_branchif_to_label(break_label);
 
   // Block codegen
-  this->assembler->write_nop();
   this->visit_node(node->block);
   this->assembler->write_branch_to_label(condition_label);
   this->assembler->place_label(break_label);
@@ -215,7 +214,6 @@ AST::AbstractNode* CodeGenerator::visit_loop(AST::Loop* node, VisitContinue cont
   this->continue_stack.push_back(block_label);
 
   // Block codegen
-  this->assembler->write_nop();
   this->visit_node(node->block);
   this->assembler->write_branch_to_label(block_label);
   this->assembler->place_label(break_label);

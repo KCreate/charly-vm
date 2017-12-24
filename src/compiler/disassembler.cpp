@@ -25,83 +25,96 @@
  */
 
 #include <iomanip>
+#include <algorithm>
+#include <string_view>
 
 #include "disassembler.h"
 
 namespace Charly::Compilation {
-void Disassembler::disassemble(InstructionBlock* block, std::ostream& stream) {
-  uint32_t offset = 0;
+void Disassembler::dump(std::ostream& stream) {
+  uint32_t offset = this->flags.start_offset;
 
-  while (offset < block->writeoffset) {
-    Opcode opcode = static_cast<Opcode>(block->uint8_at(offset));
+  while (offset < this->block->writeoffset && offset < this->flags.end_offset) {
+    Opcode opcode = static_cast<Opcode>(this->block->uint8_at(offset));
 
-    this->print_hex(offset, stream, 5);
-    stream << ": " << kOpcodeMnemonics[opcode] << " ";
+    // Print the branch arrows
+    if (this->flags.show_branch_arrows && this->highest_branch_density > 0) {
+      this->draw_branchlines_for_offset(offset, stream);
+    }
+
+    // Print the offset
+    if (this->flags.show_offsets) {
+      this->print_hex(offset, stream, 6);
+      stream << ": ";
+    }
+
+    // Print the mnemonic and its arguments
+    stream << kOpcodeMnemonics[opcode] << " ";
 
     switch (opcode) {
       case Opcode::ReadLocal:
       case Opcode::SetLocal: {
-        stream << block->uint32_at(offset + 1) << ", " << block->uint32_at(offset + 1 + sizeof(uint32_t));
+        stream << this->block->uint32_at(offset + 1) << ", " << this->block->uint32_at(offset + 1 + sizeof(uint32_t));
         break;
       }
       case Opcode::ReadMemberSymbol:
       case Opcode::SetMemberSymbol: {
-        this->print_hex(block->value_at(offset + 1), stream);
+        this->print_hex(this->block->value_at(offset + 1), stream);
         break;
       }
       case Opcode::ReadArrayIndex:
       case Opcode::SetArrayIndex: {
-        stream << block->uint32_at(offset + 1);
+        stream << this->block->uint32_at(offset + 1);
         break;
       }
       case Opcode::PutValue: {
-        this->print_hex(block->value_at(offset + 1), stream);
+        this->print_hex(this->block->value_at(offset + 1), stream);
         break;
       }
       case Opcode::PutFloat: {
-        this->print_value(block->double_at(offset + 1), stream);
+        this->print_value(this->block->double_at(offset + 1), stream);
         break;
       }
       case Opcode::PutString: {
-        this->print_hex(block->uint32_at(offset + 1), stream);
+        this->print_hex(this->block->uint32_at(offset + 1), stream);
         stream << ", ";
-        this->print_value(block->uint32_at(offset + 1 + sizeof(uint32_t)), stream);
+        this->print_value(this->block->uint32_at(offset + 1 + sizeof(uint32_t)), stream);
         break;
       }
       case Opcode::PutFunction: {
-        this->print_hex(block->value_at(offset + 1), stream);
+        this->print_hex(this->block->value_at(offset + 1), stream);
         stream << ", ";
-        this->print_hex(offset + block->int32_at(offset + 1 + sizeof(VALUE)), stream);
+        this->print_hex(offset + this->block->int32_at(offset + 1 + sizeof(VALUE)), stream);
         stream << ", ";
-        this->print_value(block->bool_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t)), stream);
+        this->print_value(this->block->bool_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t)), stream);
         stream << ", ";
-        this->print_value(block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool)), stream);
+        this->print_value(this->block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool)), stream);
         stream << ", ";
         this->print_value(
-            block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool) + sizeof(uint32_t)),
+            this->block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool) + sizeof(uint32_t)),
             stream);
         break;
       }
       case Opcode::PutCFunction: {
-        this->print_hex(block->value_at(offset + 1), stream);
+        this->print_hex(this->block->value_at(offset + 1), stream);
         stream << ", ";
-        this->print_hex(block->voidptr_at(offset + 1 + sizeof(VALUE)), stream);
+        this->print_hex(this->block->voidptr_at(offset + 1 + sizeof(VALUE)), stream);
         stream << ", ";
-        this->print_value(block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(void*)), stream);
+        this->print_value(this->block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(void*)), stream);
         break;
       }
       case Opcode::PutClass: {
-        this->print_hex(block->value_at(offset + 1), stream);
+        this->print_hex(this->block->value_at(offset + 1), stream);
         stream << ", ";
-        this->print_value(block->uint32_at(offset + 1 + sizeof(VALUE)), stream);
+        this->print_value(this->block->uint32_at(offset + 1 + sizeof(VALUE)), stream);
         stream << ", ";
-        this->print_value(block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 1), stream);
+        this->print_value(this->block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 1), stream);
         stream << ", ";
-        this->print_value(block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 2), stream);
+        this->print_value(this->block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 2), stream);
         stream << ", ";
-        this->print_value(block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 3), stream);
+        this->print_value(this->block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 3), stream);
         stream << ", ";
-        this->print_value(block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 4), stream);
+        this->print_value(this->block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 4), stream);
         stream << ", ";
         break;
       }
@@ -111,14 +124,14 @@ void Disassembler::disassemble(InstructionBlock* block, std::ostream& stream) {
       case Opcode::Setn:
       case Opcode::Call:
       case Opcode::CallMember: {
-        this->print_value(block->uint32_at(offset + 1), stream);
+        this->print_value(this->block->uint32_at(offset + 1), stream);
         break;
       }
       case Opcode::RegisterCatchTable:
       case Opcode::Branch:
       case Opcode::BranchIf:
       case Opcode::BranchUnless: {
-        this->print_hex(offset + block->int32_at(offset + 1), stream, 8);
+        this->print_hex(offset + this->block->int32_at(offset + 1), stream, 8);
         break;
       }
     }
@@ -126,5 +139,116 @@ void Disassembler::disassemble(InstructionBlock* block, std::ostream& stream) {
     stream << '\n';
     offset += kInstructionLengths[opcode];
   }
+}
+
+void Disassembler::detect_branches() {
+  uint32_t start_offset = this->flags.start_offset;
+  uint32_t end_offset = this->flags.end_offset;
+  uint32_t offset = start_offset;
+
+  // Walk the block and detect all branches
+  while (offset < this->block->writeoffset && offset < end_offset) {
+    Opcode opcode = static_cast<Opcode>(this->block->uint8_at(offset));
+
+    switch (opcode) {
+      case Opcode::PutFunction: {
+        this->branches.emplace_back(offset, offset + this->block->int32_at(offset + 1 + sizeof(VALUE)));
+        break;
+      }
+      case Opcode::RegisterCatchTable:
+      case Opcode::Branch:
+      case Opcode::BranchIf:
+      case Opcode::BranchUnless: {
+        this->branches.emplace_back(offset, offset + this->block->int32_at(offset + 1));
+        break;
+      }
+    }
+
+    offset += kInstructionLengths[opcode];
+  }
+
+  // Calculate the maximum amount of active branches at any given point
+  // in the program
+  //
+  // Also allocates a branchline to all detected branches, used for drawing
+  // them later
+  uint32_t highest_active_branches = this->branches.size() > 0 ? 1 : 0;
+  for (auto& br1 : this->branches) {
+    uint32_t max_active = 1;
+    uint32_t branchline = 0;
+
+    // If we already have a branchline, we use that
+    if (br1.has_allocated_branchline) {
+      branchline = br1.branchline;
+    }
+
+    // Check how many other branches overlap with this branch
+    for (auto& br2 : this->branches) {
+      if (&br1 != &br2 && br1.overlaps_with_branch(br2)) {
+        max_active++;
+
+        // If the other branch doesn't have a branchline allocated
+        // to it yet, do that now
+        if (!br2.has_allocated_branchline) {
+          br2.branchline = branchline + 1;
+        } else {
+
+          // Check if our branchline collides with this branch
+          if (branchline == br2.branchline) {
+            branchline++;
+          }
+        }
+      }
+    }
+
+    br1.branchline = branchline;
+
+    // Update the highest branch count
+    if (max_active > highest_active_branches) {
+      highest_active_branches = max_active;
+    }
+  }
+  this->highest_branch_density = highest_active_branches;
+}
+
+void Disassembler::draw_branchlines_for_offset(uint32_t offset, std::ostream& stream) {
+
+  // Initialize the branchlanes row
+  uint32_t branchlanewidth = this->highest_branch_density * 3;
+  char branchlane[branchlanewidth];
+  std::memset(branchlane, ' ', branchlanewidth);
+
+  for (auto& branch : this->branches) {
+    if (branch.in_range(offset)) {
+      uint32_t start_offset = (branchlanewidth - 3) - branch.branchline * 3;
+
+      branchlane[start_offset] = '|';
+
+      // Draw a complete line to the right if this is either the start
+      // or the end of a branch
+      if (branch.is_start(offset) || branch.is_end(offset)) {
+        uint32_t leftmost_offset = start_offset;
+
+        // Draw a line to the right
+        while (start_offset < branchlanewidth) {
+          branchlane[start_offset] = '-';
+          branchlane[start_offset + 1] = '-';
+          branchlane[start_offset + 2] = '-';
+          start_offset += 3;
+        }
+
+        // Draw a little arrow if this is the end of a branch
+        if (branch.is_end(offset)) {
+          branchlane[branchlanewidth - 3] = '-';
+          branchlane[branchlanewidth - 2] = '-';
+          branchlane[branchlanewidth - 1] = '>';
+        }
+
+        branchlane[leftmost_offset] = '*';
+      }
+    }
+  }
+
+  stream << std::string(branchlane, branchlanewidth) << ' ';
 }
 }

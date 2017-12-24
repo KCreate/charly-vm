@@ -25,6 +25,7 @@
  */
 
 #include <iostream>
+#include <vector>
 
 #include "block.h"
 
@@ -33,7 +34,58 @@
 namespace Charly::Compilation {
 class Disassembler {
 public:
-  void disassemble(InstructionBlock* block, std::ostream& stream);
+  // Represents a branch from one point in the program to another
+  struct Branch {
+    uint32_t start_offset;
+    uint32_t end_offset;
+
+    bool has_allocated_branchline = false;
+    uint64_t branchline = 0;
+
+    Branch(uint32_t s, uint32_t e) : start_offset(s), end_offset(e) {
+    }
+
+    inline bool is_backwards_jump() {
+      return end_offset <= start_offset;
+    }
+
+    inline bool in_range(uint32_t addr) {
+      if (this->is_backwards_jump()) {
+        return addr >= end_offset && addr <= start_offset;
+      } else {
+        return addr >= start_offset && addr <= end_offset;
+      }
+    }
+
+    inline bool overlaps_with_branch(const Branch& other) {
+      return this->in_range(other.start_offset) || this->in_range(other.end_offset);
+    }
+
+    inline bool is_start(uint32_t addr) {
+      return addr == this->start_offset;
+    }
+
+    inline bool is_end(uint32_t addr) {
+      return addr == this->end_offset;
+    }
+  };
+
+  // Some flags for the disassembler
+  struct Flags {
+    bool show_branch_arrows = false;
+    bool show_offsets = true;
+    uint32_t start_offset = 0;
+    uint32_t end_offset = UINT32_MAX;
+  };
+
+public:
+  Disassembler(InstructionBlock* b, Flags f) : block(b), flags(f) {
+    if (f.show_branch_arrows) {
+      this->detect_branches();
+    }
+  }
+
+  void dump(std::ostream& stream);
 
 private:
   template <typename V>
@@ -47,8 +99,14 @@ private:
     stream << value;
   }
 
-private:
+  void detect_branches();
+  void draw_branchlines_for_offset(uint32_t offset, std::ostream& stream);
 
+private:
+  InstructionBlock* block;
+  std::vector<Branch> branches;
+  uint32_t highest_branch_density = 0;
+  Flags flags;
 };
 
 template <>

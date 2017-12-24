@@ -40,6 +40,8 @@ static const std::string kHelpMessage =
     "    dump_ast                         Display the AST of the input file\n"
     "    dump_tokens                      Display tokens of the input file\n"
     "    dump_disassembly                 Display a disassembly of the compiled block\n"
+    "    disassembly_offsets              Display offsets in the disassembly\n"
+    "    disassembly_branches             Display branches as arrows in the disassembly\n"
     "    skipexec                         Don't execute after parsing\n"
     "    trace_opcodes                    Display opcodes as they are being executed\n"
     "    trace_catchtables                Display catchtables as they are being created or left\n"

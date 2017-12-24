@@ -119,8 +119,12 @@ int CLI::run() {
 
   if (this->flags.dump_disassembly) {
     if (compiled_block != nullptr) {
-      Disassembler disassembler;
-      disassembler.disassemble(compiled_block, std::cout);
+      Disassembler::Flags disassembler_flags = Disassembler::Flags({
+        this->flags.disassembly_branches,
+        this->flags.disassembly_offsets
+      });
+      Disassembler disassembler(compiled_block, disassembler_flags);
+      disassembler.dump(std::cout);
     }
   }
 

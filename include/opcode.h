@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+#include <cstdint>
+
 #include "defines.h"
 
 #pragma once
