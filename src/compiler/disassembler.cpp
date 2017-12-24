@@ -230,7 +230,7 @@ void Disassembler::draw_branchlines_for_offset(uint32_t offset, std::ostream& st
         while (start_offset < branchlanewidth) {
 
           // Do not draw this line if there is either a star or an arrow already placed here
-          if (branchlane[start_offset + 2] != '>') {
+          if (branchlane[start_offset + 2] != '>' && branchlane[start_offset] != '*') {
             branchlane[start_offset] = '-';
             branchlane[start_offset + 1] = '-';
             branchlane[start_offset + 2] = '-';
