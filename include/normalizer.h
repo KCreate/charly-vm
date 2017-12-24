@@ -35,7 +35,19 @@ class Normalizer : public CompilerPass {
 
 public:
   AST::AbstractNode* visit_block(AST::Block* node, VisitContinue cont);
+  AST::AbstractNode* visit_if(AST::If* node, VisitContinue cont);
+  AST::AbstractNode* visit_ifelse(AST::IfElse* node, VisitContinue cont);
+  AST::AbstractNode* visit_unless(AST::Unless* node, VisitContinue cont);
+  AST::AbstractNode* visit_unlesselse(AST::UnlessElse* node, VisitContinue cont);
+  AST::AbstractNode* visit_guard(AST::Guard* node, VisitContinue cont);
+  AST::AbstractNode* visit_while(AST::While* node, VisitContinue cont);
+  AST::AbstractNode* visit_until(AST::Until* node, VisitContinue cont);
+  AST::AbstractNode* visit_loop(AST::Loop* node, VisitContinue cont);
+  AST::AbstractNode* visit_switch(AST::Switch* node, VisitContinue cont);
   AST::AbstractNode* visit_function(AST::Function* node, VisitContinue cont);
   AST::AbstractNode* visit_localinitialisation(AST::LocalInitialisation* node, VisitContinue cont);
+
+private:
+  AST::AbstractNode* wrap_in_block(AST::AbstractNode* node, VisitContinue cont);
 };
 }

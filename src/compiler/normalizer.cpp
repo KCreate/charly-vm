@@ -81,13 +81,74 @@ AST::AbstractNode* Normalizer::visit_block(AST::Block* node, VisitContinue cont)
   return node;
 }
 
-AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue cont) {
+AST::AbstractNode* Normalizer::visit_if(AST::If* node, VisitContinue cont) {
+  cont();
+  node->then_block = this->wrap_in_block(node->then_block, cont);
+  return node;
+}
+
+AST::AbstractNode* Normalizer::visit_ifelse(AST::IfElse* node, VisitContinue cont) {
+  cont();
+  node->then_block = this->wrap_in_block(node->then_block, cont);
+  node->else_block = this->wrap_in_block(node->else_block, cont);
+  return node;
+}
+
+AST::AbstractNode* Normalizer::visit_unless(AST::Unless* node, VisitContinue cont) {
+  cont();
+  node->then_block = this->wrap_in_block(node->then_block, cont);
+  return node;
+}
+
+AST::AbstractNode* Normalizer::visit_unlesselse(AST::UnlessElse* node, VisitContinue cont) {
+  cont();
+  node->then_block = this->wrap_in_block(node->then_block, cont);
+  node->else_block = this->wrap_in_block(node->else_block, cont);
+  return node;
+}
+
+AST::AbstractNode* Normalizer::visit_guard(AST::Guard* node, VisitContinue cont) {
+  cont();
+  node->block = this->wrap_in_block(node->block, cont);
+  return node;
+}
+
+AST::AbstractNode* Normalizer::visit_while(AST::While* node, VisitContinue cont) {
+  cont();
+  node->block = this->wrap_in_block(node->block, cont);
+  return node;
+}
+
+AST::AbstractNode* Normalizer::visit_until(AST::Until* node, VisitContinue cont) {
+  cont();
+  node->block = this->wrap_in_block(node->block, cont);
+  return node;
+}
+
+AST::AbstractNode* Normalizer::visit_loop(AST::Loop* node, VisitContinue cont) {
+  cont();
+  node->block = this->wrap_in_block(node->block, cont);
+  return node;
+}
+
+AST::AbstractNode* Normalizer::visit_switch(AST::Switch* node, VisitContinue cont) {
   cont();
 
-  // If the body isn't a block, wrap it in one
-  if (node->body->type() != AST::kTypeBlock) {
-    node->body = (new AST::Block({node->body}))->at(node->body);
+  if (node->default_block->type() != AST::kTypeEmpty) {
+    node->default_block = this->wrap_in_block(node->default_block, cont);
   }
+
+  for (auto& _child : node->cases->children) {
+    AST::SwitchNode* switch_node = AST::cast<AST::SwitchNode>(_child);
+    switch_node->block = this->wrap_in_block(switch_node->block, cont);
+  }
+
+  return node;
+}
+
+AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue cont) {
+  cont();
+  node->body = this->wrap_in_block(node->body, cont);
 
   AST::Block* body = AST::cast<AST::Block>(node->body);
 
@@ -131,6 +192,15 @@ AST::AbstractNode* Normalizer::visit_localinitialisation(AST::LocalInitialisatio
     if (klass->name.size() == 0) {
       klass->name = node->name;
     }
+  }
+
+  return node;
+}
+
+AST::AbstractNode* Normalizer::wrap_in_block(AST::AbstractNode* node, VisitContinue cont) {
+  if (node->type() != AST::kTypeBlock) {
+    node = (new AST::Block({node}))->at(node);
+    node = this->visit_block(AST::cast<AST::Block>(node), cont);
   }
 
   return node;

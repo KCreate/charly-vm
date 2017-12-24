@@ -38,7 +38,6 @@ InstructionBlock* CodeGenerator::compile(AST::AbstractNode* node) {
   // Codegen all blocks
   while (this->queued_blocks.size() > 0) {
     QueuedBlock& queued_block = this->queued_blocks.front();
-
     this->assembler->place_label(queued_block.label);
     this->visit_node(queued_block.block);
 

@@ -1,5 +1,6 @@
-func f(a, b) {
-  const funcargs = arguments
-  const arguments = null
-  return funcargs;
+func (a) {
+  switch (a) {
+    case true a = 1
+    default a = 2
+  }
 }
