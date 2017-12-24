@@ -248,6 +248,29 @@ AST::AbstractNode* CodeGenerator::visit_binary(AST::Binary* node, VisitContinue 
 AST::AbstractNode* CodeGenerator::visit_switch(AST::Switch* node, VisitContinue cont) {
   (void)cont;
 
+  // TODO: Lay this out more efficiently
+  // Currently a switch is codegened like this
+  //
+  // # condition 1
+  // # branchunless to condition 2
+  // # condition 1 block
+  // # branch to end
+  // # condition 2
+  // # branchunless to condition 3
+  // # condition 2 block
+  // # branch to end
+  //
+  // We would like the code to be layed out like this
+  // # condition 1
+  // # branch to block 1
+  // # condition 2
+  // # branch to block 2
+  // # branch to end
+  // # block 1
+  // # branch to end
+  // # block 2
+  // # branch to end
+
   // Setup labels
   Label end_label = this->assembler->reserve_label();
   Label default_block = this->assembler->reserve_label();
@@ -296,10 +319,9 @@ AST::AbstractNode* CodeGenerator::visit_switch(AST::Switch* node, VisitContinue 
 
   // Codegen default block if there is one
   this->assembler->place_label(default_block);
+  this->assembler->write_pop();
   if (node->default_block->type() != AST::kTypeEmpty) {
     this->visit_node(node->default_block);
-  } else {
-    this->assembler->write_pop();
   }
   this->assembler->place_label(end_label);
 
