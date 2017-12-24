@@ -31,7 +31,6 @@
 #include <iostream>
 
 #include "gc.h"
-#include "label.h"
 #include "operators.h"
 #include "status.h"
 #include "vm.h"

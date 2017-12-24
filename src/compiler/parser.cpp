@@ -191,19 +191,8 @@ AST::AbstractNode* Parser::parse_block() {
 
   this->expect_token(TokenType::LeftCurly, [&]() { location_start = this->token.location; });
 
-  bool add_to_block = true;
   while (this->token.type != TokenType::RightCurly) {
-    AST::AbstractNode* node = this->parse_statement();
-
-    if (add_to_block) {
-      block->append_node(node);
-
-      if (node->type() == AST::kTypeReturn || node->type() == AST::kTypeBreak || node->type() == AST::kTypeContinue || node->type() == AST::kTypeThrow) {
-        add_to_block = false;
-      }
-    } else {
-      delete node;
-    }
+    block->append_node(this->parse_statement());
   }
 
   this->expect_token(TokenType::RightCurly, [&]() { end_location = this->token.location; });
@@ -225,11 +214,8 @@ AST::AbstractNode* Parser::parse_statement() {
           this->advance();
           switch (this->token.type) {
             case TokenType::Semicolon: {
-              AST::Null* exp = new AST::Null();
-              exp->at(location_start, ident_location);
-
               this->advance();
-              return (new AST::LocalInitialisation(name, exp, false))->at(location_start, ident_location);
+              return (new AST::LocalInitialisation(name, new AST::Empty(), false))->at(location_start, ident_location);
               break;
             }
             case TokenType::Assignment: {
@@ -242,8 +228,7 @@ AST::AbstractNode* Parser::parse_statement() {
               break;
             }
             default: {
-              AST::Null* exp = new AST::Null();
-              return (new AST::LocalInitialisation(name, exp, false))->at(location_start, ident_location);
+              return (new AST::LocalInitialisation(name, new AST::Empty(), false))->at(location_start, ident_location);
             }
           }
           break;
@@ -319,7 +304,7 @@ AST::AbstractNode* Parser::parse_control_statement() {
         exp = this->parse_expression();
         location_end = exp->location_end;
       } else {
-        exp = (new AST::Null())->at(location_start);
+        exp = new AST::Empty();
         location_end = location_start;
       }
 
@@ -359,24 +344,6 @@ AST::AbstractNode* Parser::parse_control_statement() {
     }
     default: {
       AST::AbstractNode* exp = this->parse_expression();
-
-      // Generate local initialisations for function and class nodes
-      if (exp->type() == AST::kTypeFunction || exp->type() == AST::kTypeClass) {
-        // Read the name of the node
-        std::string name;
-        if (exp->type() == AST::kTypeFunction) {
-          name = AST::cast<AST::Function>(exp)->name;
-        }
-        if (exp->type() == AST::kTypeClass) {
-          name = AST::cast<AST::Class>(exp)->name;
-        }
-
-        // Wrap the node in a local initialisation if it has a name
-        if (name.size() > 0) {
-          exp = (new AST::LocalInitialisation(name, exp, true))->at(exp);
-        }
-      }
-
       this->skip_token(TokenType::Semicolon);
       return exp;
     }
@@ -1338,14 +1305,7 @@ AST::AbstractNode* Parser::parse_func() {
       while (this->token.type == TokenType::Comma) {
         this->advance();
         this->expect_token(TokenType::Identifier, [&]() {
-
-          // Check if this argument already exists
-          auto search = std::find(params.begin(), params.end(), this->token.value);
-          if (search == params.end()) {
-            params.push_back(this->token.value);
-          } else {
-            this->illegal_token("Duplicate function parameter");
-          }
+          params.push_back(this->token.value);
         });
       }
     }
@@ -1365,21 +1325,9 @@ AST::AbstractNode* Parser::parse_func() {
     this->keyword_context.continue_allowed = false;
     body = this->parse_block();
     this->keyword_context = backup_context;
-
-    // Insert a return null statement into the block in case the last statement in the
-    // functions body is not already a return statement
-    if (AST::cast<AST::Block>(body)->statements.size() > 0) {
-      auto last_node_type = AST::cast<AST::Block>(body)->statements.back()->type();
-      if (last_node_type != AST::kTypeReturn && last_node_type != AST::kTypeThrow) {
-        AST::cast<AST::Block>(body)->append_node((new AST::Return(new AST::Null()))->at(body));
-      }
-    }
   } else if (has_symbol && this->token.type == TokenType::Assignment) {
     this->advance();
-    AST::AbstractNode* expr = this->parse_control_statement();
-    AST::Block* wrapper_body = AST::cast<AST::Block>((new AST::Block())->at(expr));
-    wrapper_body->append_node((new AST::Return(expr))->at(expr));
-    body = wrapper_body;
+    body = this->parse_control_statement();
   } else {
     this->unexpected_token("block");
     return nullptr;
@@ -1417,32 +1365,19 @@ AST::AbstractNode* Parser::parse_arrowfunc() {
     this->expect_token(TokenType::RightParen);
   }
 
-  AST::AbstractNode* block;
-
+  AST::AbstractNode* body;
   if (this->token.type == TokenType::LeftCurly) {
     auto backup_context = this->keyword_context;
     this->keyword_context.return_allowed = true;
     this->keyword_context.break_allowed = false;
     this->keyword_context.continue_allowed = false;
-    block = this->parse_block();
+    body = this->parse_block();
     this->keyword_context = backup_context;
-
-    // Insert a return null statement into the block in case the last statement in the
-    // functions body is not already a return statement
-    if (AST::cast<AST::Block>(block)->statements.size() > 0) {
-      auto last_node_type = AST::cast<AST::Block>(block)->statements.back()->type();
-      if (last_node_type != AST::kTypeReturn && last_node_type != AST::kTypeThrow) {
-        AST::cast<AST::Block>(block)->append_node((new AST::Return(new AST::Null()))->at(block));
-      }
-    }
   } else {
-    AST::AbstractNode* exp = this->parse_control_statement();
-    AST::Block* exp_wrapper = AST::cast<AST::Block>((new AST::Block())->at(exp));
-    exp_wrapper->append_node((new AST::Return(exp))->at(exp));
-    block = exp_wrapper;
+    body = this->parse_control_statement();
   }
 
-  return (new AST::Function("", params, block, true))->at(location_start, block->location_end);
+  return (new AST::Function("", params, body, true))->at(location_start, body->location_end);
 }
 
 AST::AbstractNode* Parser::parse_class() {

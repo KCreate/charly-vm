@@ -25,8 +25,8 @@
  */
 
 #include <unordered_map>
+#include <vector>
 
-#include "block.h"
 #include "defines.h"
 
 #pragma once

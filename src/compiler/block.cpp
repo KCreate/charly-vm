@@ -25,7 +25,6 @@
  */
 
 #include "block.h"
-#include "label.h"
 
 namespace Charly {
 void InstructionBlock::clean() {

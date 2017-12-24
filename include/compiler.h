@@ -31,6 +31,7 @@
 #include "codegenerator.h"
 #include "disassembler.h"
 #include "lvar-rewrite.h"
+#include "normalizer.h"
 #include "parseresult.h"
 #include "symboltable.h"
 
@@ -45,7 +46,7 @@ public:
 
     // Wrap the whole program in a function which handles the exporting interface
     // to other programs
-    result.parse_tree = (new AST::Function("", {"export", "Charly"}, result.parse_tree, true))->at(result.parse_tree);
+    result.parse_tree = (new AST::Function("", {"export", "Charly"}, block, true))->at(result.parse_tree);
 
     // Wrap the global function in a call
     // This is VM specific, as we expect the VM to push some values onto the stack
@@ -53,6 +54,10 @@ public:
     result.parse_tree = (new AST::Call(result.parse_tree, new AST::NodeList({
       new AST::StackValue(), new AST::StackValue()
     })))->at(result.parse_tree);
+
+    // Clean up the code a little bit and add or remove some nodes
+    Normalizer normalizer(this->symtable);
+    result.parse_tree = normalizer.visit_node(result.parse_tree);
 
     // Calculate all offsets of all variables, assignments and declarations
     LVarRewriter lvar_rewriter(this->symtable);

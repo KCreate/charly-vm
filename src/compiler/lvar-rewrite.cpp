@@ -96,13 +96,6 @@ std::optional<LVarRecord> LVarScope::resolve(size_t symbol, uint32_t depth, uint
 AST::AbstractNode* LVarRewriter::visit_function(AST::Function* node, VisitContinue descend) {
   this->scope = new LVarScope(this->scope, node);
 
-  // Append declarations for the function arguments to the functions body
-  AST::Block* body = AST::cast<AST::Block>(node->body);
-  for (auto rit = node->parameters.rbegin(); rit != node->parameters.rend(); rit++) {
-    body->prepend_node(new AST::LocalInitialisation(*rit, new AST::Null(), false));
-  }
-  body->prepend_node(new AST::LocalInitialisation("__CHARLY_FUNCTION_ARGUMENTS", new AST::Null(), false));
-
   // Visit all child nodes of this function
   uint64_t backup_blockid = this->blockid;
   this->blockid = reinterpret_cast<uint64_t>(node->body);
@@ -160,7 +153,7 @@ AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisat
   }
 
   // If we have no expression to assign (empty declaration) remove this node from the AST
-  if (node->expression->type() == AST::kTypeNull) {
+  if (node->expression->type() == AST::kTypeEmpty) {
     delete node;
     return nullptr;
   }
@@ -277,5 +270,4 @@ AST::AbstractNode* LVarRewriter::visit_trycatch(AST::TryCatch* node, VisitContin
 
   return node;
 }
-
 }  // namespace Charly::Compilation

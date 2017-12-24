@@ -524,7 +524,7 @@ struct SwitchNode : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- SwitchNode: " << this << '\n';
+    stream << std::string(depth, ' ') << "- SwitchNode: " << '\n';
     this->conditions->dump(stream, depth + 1);
     this->block->dump(stream, depth + 1);
   }
@@ -554,7 +554,7 @@ struct Switch : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Switch: " << this << '\n';
+    stream << std::string(depth, ' ') << "- Switch: " << '\n';
     this->condition->dump(stream, depth + 1);
     this->cases->dump(stream, depth + 1);
     this->default_block->dump(stream, depth + 1);
@@ -581,7 +581,7 @@ struct And : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- And: " << this << '\n';
+    stream << std::string(depth, ' ') << "- And: " << '\n';
     this->left->dump(stream, depth + 1);
     this->right->dump(stream, depth + 1);
   }
@@ -610,7 +610,7 @@ struct Or : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Or: " << this << '\n';
+    stream << std::string(depth, ' ') << "- Or: " << '\n';
     this->left->dump(stream, depth + 1);
     this->right->dump(stream, depth + 1);
   }
@@ -667,7 +667,7 @@ struct Assignment : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Assignment: " << this << ' ' << this->target;
+    stream << std::string(depth, ' ') << "- Assignment: " << this->target;
     if (this->offset_info != nullptr) {
       stream << ' ' << '[' << this->offset_info->level << ", " << this->offset_info->index << ']';
     }
@@ -700,7 +700,7 @@ struct MemberAssignment : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- MemberAssignment: " << this << ' ' << this->member << '\n';
+    stream << std::string(depth, ' ') << "- MemberAssignment: " << this->member << '\n';
     this->target->dump(stream, depth + 1);
     this->expression->dump(stream, depth + 1);
   }
@@ -732,7 +732,7 @@ struct ANDMemberAssignment : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- ANDMemberAssignment: " << this << ' ' << this->member;
+    stream << std::string(depth, ' ') << "- ANDMemberAssignment: " << this->member;
     stream << ' ' << kTokenTypeStrings[this->operator_type] << '\n';
     this->target->dump(stream, depth + 1);
     this->expression->dump(stream, depth + 1);
@@ -763,7 +763,7 @@ struct IndexAssignment : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- IndexAssignment: " << this << '\n';
+    stream << std::string(depth, ' ') << "- IndexAssignment: " << '\n';
     this->target->dump(stream, depth + 1);
     this->index->dump(stream, depth + 1);
     this->expression->dump(stream, depth + 1);
@@ -859,7 +859,7 @@ struct CallMember : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- CallMember:" << ' ' << this->symbol << '\n';
+    stream << std::string(depth, ' ') << "- CallMember: " << this->symbol << '\n';
     this->context->dump(stream, depth + 1);
     this->arguments->dump(stream, depth + 1);
   }
@@ -932,7 +932,7 @@ struct Identifier : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Identifier:" << ' ' << this->name;
+    stream << std::string(depth, ' ') << "- Identifier: " << this->name;
     if (this->offset_info != nullptr) {
       stream << ' ' << '[' << this->offset_info->level << ", " << this->offset_info->index << ']';
     }
@@ -956,7 +956,7 @@ struct IndexIntoArguments : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- IndexIntoArguments:" << ' ' << this->index << '\n';
+    stream << std::string(depth, ' ') << "- IndexIntoArguments: " << this->index << '\n';
   }
 
   virtual bool is_literal() {
@@ -971,7 +971,7 @@ struct IndexIntoArguments : public AbstractNode {
 // self
 struct Self : public AbstractNode {
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Self: " << this << '\n';
+    stream << std::string(depth, ' ') << "- Self: " << '\n';
   }
 
   virtual bool is_literal() {
@@ -996,7 +996,7 @@ struct Member : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Member:" << ' ' << this->symbol << '\n';
+    stream << std::string(depth, ' ') << "- Member: " << this->symbol << '\n';
     this->target->dump(stream, depth + 1);
   }
 
@@ -1041,7 +1041,7 @@ struct Index : public AbstractNode {
 // null
 struct Null : public AbstractNode {
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Null: " << this << '\n';
+    stream << std::string(depth, ' ') << "- Null: " << '\n';
   }
 
   virtual bool is_literal() {
@@ -1056,7 +1056,7 @@ struct Null : public AbstractNode {
 // NAN
 struct Nan : public AbstractNode {
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- NAN: " << this << '\n';
+    stream << std::string(depth, ' ') << "- NAN: " << '\n';
   }
 
   virtual bool is_literal() {
@@ -1299,7 +1299,7 @@ struct PropertyDeclaration : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- PropertyDeclaration:" << ' ' << this->symbol << '\n';
+    stream << std::string(depth, ' ') << "- PropertyDeclaration: " << this->symbol << '\n';
   }
 };
 
@@ -1347,7 +1347,7 @@ struct Class : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Class:" << ' ' << this->name;
+    stream << std::string(depth, ' ') << "- Class: " << this->name;
 
     stream << ' ' << '(';
     for (auto& param : this->member_properties) {
@@ -1470,14 +1470,14 @@ struct Throw : public AbstractNode {
 // break
 struct Break : public AbstractNode {
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Break: " << this << '\n';
+    stream << std::string(depth, ' ') << "- Break: " << '\n';
   }
 };
 
 // continue
 struct Continue : public AbstractNode {
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Continue: " << this << '\n';
+    stream << std::string(depth, ' ') << "- Continue: " << '\n';
   }
 };
 
@@ -1507,7 +1507,7 @@ struct TryCatch : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- TryCatch:" << ' ' << this->exception_name << '\n';
+    stream << std::string(depth, ' ') << "- TryCatch: " << this->exception_name << '\n';
     this->block->dump(stream, depth + 1);
     this->handler_block->dump(stream, depth + 1);
     this->finally_block->dump(stream, depth + 1);
