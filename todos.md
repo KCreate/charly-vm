@@ -188,9 +188,6 @@
   - Rewrites or semantic checks don't care what type the number is
   - Always store as float
   - Cast to integer in the codegenerator
-- What should happen with undefined symbols
-  - A `Function` node can have a list of symbol names which are known at compile-time
-    to exist inside the `self` value passed to it
 - Compiler should be able to take some flags
   - Should the program be wrapped in a module inclusion function?
     ```javascript
