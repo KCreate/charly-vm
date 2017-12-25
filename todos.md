@@ -4,7 +4,7 @@
 - Requiring users to build one themselves isn't cool
 - Requiring users to add a PPA isn't cool either
 
-# Figure out how the VM starts execution of a block
+# VM instruction block handling
 - How does the VM start execution of a new instruction block
   - Call `VALUE VM::run_block` to execute a block
   - The VM treats the instructionblock as the body of a function
@@ -24,21 +24,64 @@
         - Stacktrace entries without functions contain the address
     - Determining the current block is now just a read to the current frame
     - Running a new instruction block requires creating a frame for it and setting the function property to `nullptr`
+
+# VM bootstrapping
+- On startup, the VM runs a prelude file
+  - Loads some libraries
+  - Loads some internal methods
+  - Creates some shorthand bindings to commonly used methods such as
+  - Registers some file descriptors such as `io.stdout`, and `io.stdin`
+  - `require` can be implemented like this:
+    ```javascript
+    const Charly = {}; // global Charly objects
+    const require = func require(name) {
+
+      // Global variables accessible to every module
+      const module_context = {
+        require_no_exec,
+        require,
+        stdin: io.stdin,
+        stdout: io.stdout,
+        stderr: io.stderr,
+        print: io.print.stdout,
+        write: io.write.stdout,
+        gets: io.gets,
+        getc: io.getc,
+        exit: io.exit,
+        sleep: io.sleep
+      };
+
+      // Load the module without executing it
+      return module_context.require_no_exec(name)(Charly, {});
+    }
+    ```
+  - VM has a method `__require_no_exec` which allows to include a file
+    - It compiles and returns the included file as a function that can be called
+    - It injects as arguments the following values from the prelude scope:
+      - Charly
+      - export
+      - require
+      - stdin
+      - stdout
+      - stderr
+      - print
+      - puts
+      - write
+      - gets
+      - getc
+      - exit
+      - sleep
+      - Exception
+
+# VM require
+- How does the VM include a file?
+- Reuse the same parser instance or createa a new one?
 - Who knows about and keeps track of InstructionBlocks
   - An external class should do this
     - We don't want to recompile a file every single time it is run
       - Store a hash of a file and the compiled result
       - If the hashes match, return the compiled result
       - If the hashes don't match, recompile the program and add new entry
-
-# Movelocal instruction
-- Short opcode for
-  ```
-  readlocal 0, 4
-  setlocal 0, 3
-
-  movelocal 0, 3, 0, 4
-  ```
 
 # Move language logic which doesn't depend on the VM into it's own class
 - Maybe called `VMUtils` or `CharlyUtils`?
@@ -145,6 +188,25 @@
   - Rewrites or semantic checks don't care what type the number is
   - Always store as float
   - Cast to integer in the codegenerator
+- What should happen with undefined symbols
+  - A `Function` node can have a list of symbol names which are known at compile-time
+    to exist inside the `self` value passed to it
+- Compiler should be able to take some flags
+  - Should the program be wrapped in a module inclusion function?
+    ```javascript
+    func () {
+      let module = self;
+      let Charly = module.Charly;
+      let exports = module.exports;
+      <program>
+      return exports;
+    }
+    ```
+- Disassembler should receive a symboltable which it will use to show text symbols
+
+# Remove PutCFunction instruction
+- Runtime shouldn't be able to create functions to arbitrary addresses (security risk)
+- Only the VM should be able to create CFunctions
 
 # `super` inside class instance methods
 - Checks the self value
@@ -203,9 +265,14 @@
   - If the whole hierarchy doesn't contain the symbol, null is returned
 
 # Mapping between JITed code and source file locations
-- Figure out how JavaScript source maps work
 - Mapping between a range of instructions to a range of row/col pairs on compilation?
   - Runtime exceptions can use this information to show a pretty error screen on crash
+- `InstructionBlock` should have a filename property
+  - Blocks created at runtime or during compilation which do not directly map to a file
+    should be called `VM:n` where n is a globally increasing integer starting at 0
+- InstructionBlock has an optional property of debug information
+  - Take inspiration from real debug information formats
+  - Mapping betweens offset ranges and row/column pairs
 
 # Exception system
 - Standard exception class
