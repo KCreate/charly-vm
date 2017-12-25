@@ -24,52 +24,14 @@
  * SOFTWARE.
  */
 
-#include <iostream>
-
-#include "ast.h"
 #include "block.h"
-#include "codegenerator.h"
-#include "disassembler.h"
-#include "lvar-rewrite.h"
-#include "normalizer.h"
 #include "parseresult.h"
 #include "symboltable.h"
 
 namespace Charly::Compilation {
 class Compiler {
 public:
-  inline InstructionBlock* compile(ParseResult& result) {
-
-    // Append a return export node to the end of the parsed block
-    AST::Block* block = AST::cast<AST::Block>(result.parse_tree);
-    block->statements.push_back((new AST::Return((new AST::Identifier("export"))->at(block)))->at(block));
-
-    // Wrap the whole program in a function which handles the exporting interface
-    // to other programs
-    result.parse_tree = (new AST::Function("", {"export", "Charly"}, block, true))->at(result.parse_tree);
-
-    // Clean up the code a little bit and add or remove some nodes
-    Normalizer normalizer(this->symtable);
-    result.parse_tree = normalizer.visit_node(result.parse_tree);
-
-    // Calculate all offsets of all variables, assignments and declarations
-    LVarRewriter lvar_rewriter(this->symtable);
-    result.parse_tree = lvar_rewriter.visit_node(result.parse_tree);
-    if (lvar_rewriter.has_errors()) {
-      lvar_rewriter.dump_errors(std::cout);
-      return nullptr;
-    }
-
-    // Generate code for the created AST
-    CodeGenerator codegenerator(this->symtable);
-    InstructionBlock* compiled_block = codegenerator.compile(result.parse_tree);
-    if (codegenerator.has_errors()) {
-      codegenerator.dump_errors(std::cout);
-      return nullptr;
-    }
-
-    return compiled_block;
-  }
+  InstructionBlock* compile(ParseResult& result);
 
 private:
   SymbolTable symtable;

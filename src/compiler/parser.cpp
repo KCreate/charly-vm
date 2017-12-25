@@ -667,7 +667,7 @@ AST::AbstractNode* Parser::parse_try_statement() {
   this->expect_token(TokenType::Try);
 
   AST::AbstractNode* try_block;
-  std::string exception_name = "__CHARLY_INTERNAL_EXCEPTION_NAME";
+  AST::Identifier* exception_name = new AST::Identifier("__CHARLY_INTERNAL_EXCEPTION_NAME");
   AST::AbstractNode* catch_block;
   AST::AbstractNode* finally_block;
 
@@ -676,7 +676,10 @@ AST::AbstractNode* Parser::parse_try_statement() {
   if (this->token.type == TokenType::Catch) {
     this->advance();
     this->expect_token(TokenType::LeftParen);
-    this->expect_token(TokenType::Identifier, [&]() { exception_name = this->token.value; });
+    this->expect_token(TokenType::Identifier, [&]() {
+      exception_name = new AST::Identifier(this->token.value);
+      exception_name->at(token);
+    });
     this->expect_token(TokenType::RightParen);
 
     catch_block = this->parse_block();
@@ -741,36 +744,35 @@ AST::AbstractNode* Parser::parse_assignment() {
   // Generate different assignment nodes for different targets
   if (left->type() == AST::kTypeIdentifier) {
     if (generate_and_assignment) {
-      AST::Identifier* id = AST::cast<AST::Identifier>(left);
+      AST::Identifier* id = left->as<AST::Identifier>();
       right = (new AST::Binary(and_operator, (new AST::Identifier(id->name))->at(id), right))->at(left, right);
       AST::AbstractNode* node = (new AST::Assignment(id->name, right))->at(left, right);
       delete left;
       return node;
     } else {
-      AST::Identifier* id = AST::cast<AST::Identifier>(left);
+      AST::Identifier* id = left->as<AST::Identifier>();
       AST::AbstractNode* node = (new AST::Assignment(id->name, right))->at(left, right);
       delete left;
       return node;
     }
   } else if (left->type() == AST::kTypeMember) {
     if (generate_and_assignment) {
-      AST::Member* member = AST::cast<AST::Member>(left);
+      AST::Member* member = left->as<AST::Member>();
       AST::AbstractNode* node =
           (new AST::ANDMemberAssignment(member->target, member->symbol, and_operator, right))->at(left, right);
       member->target = nullptr;
       delete left;
       return node;
     } else {
-      AST::Member* member = AST::cast<AST::Member>(left);
-      AST::AbstractNode* node =
-          (new AST::MemberAssignment(member->target, member->symbol, right))->at(left, right);
+      AST::Member* member = left->as<AST::Member>();
+      AST::AbstractNode* node = (new AST::MemberAssignment(member->target, member->symbol, right))->at(left, right);
       member->target = nullptr;
       delete left;
       return node;
     }
   } else if (left->type() == AST::kTypeIndex) {
     if (generate_and_assignment) {
-      AST::Index* index = AST::cast<AST::Index>(left);
+      AST::Index* index = left->as<AST::Index>();
       AST::AbstractNode* node =
           (new AST::ANDIndexAssignment(index->target, index->argument, and_operator, right))->at(left, right);
       index->target = nullptr;
@@ -778,9 +780,8 @@ AST::AbstractNode* Parser::parse_assignment() {
       delete left;
       return node;
     } else {
-      AST::Index* index = AST::cast<AST::Index>(left);
-      AST::AbstractNode* node =
-          (new AST::IndexAssignment(index->target, index->argument, right))->at(left, right);
+      AST::Index* index = left->as<AST::Index>();
+      AST::AbstractNode* node = (new AST::IndexAssignment(index->target, index->argument, right))->at(left, right);
       index->target = nullptr;
       index->argument = nullptr;
       delete left;
@@ -1058,7 +1059,7 @@ AST::AbstractNode* Parser::parse_member_call() {
         // or an index access
         if (target->type() == AST::kTypeMember) {
           // Rip out the stuff we need from the member node
-          AST::Member* member = AST::cast<AST::Member>(target);
+          AST::Member* member = target->as<AST::Member>();
           AST::AbstractNode* context = member->target;
           member->target = nullptr;
 
@@ -1069,7 +1070,7 @@ AST::AbstractNode* Parser::parse_member_call() {
           delete member;
         } else if (target->type() == AST::kTypeIndex) {
           // Rip out the stuff we need from the index node
-          AST::Index* index_exp = AST::cast<AST::Index>(target);
+          AST::Index* index_exp = target->as<AST::Index>();
           AST::AbstractNode* context = index_exp->target;
           AST::AbstractNode* index_argument = index_exp->argument;
           index_exp->target = nullptr;
@@ -1095,7 +1096,7 @@ AST::AbstractNode* Parser::parse_member_call() {
 
         // Rewrite to target.exp in case exp if a string literal
         if (exp->type() == AST::kTypeString) {
-          AST::String* str = AST::cast<AST::String>(exp);
+          AST::String* str = exp->as<AST::String>();
           target = (new AST::Member(target, str->value))->at(target->location_start, location_end);
           delete str;
         } else {
@@ -1304,9 +1305,7 @@ AST::AbstractNode* Parser::parse_func() {
 
       while (this->token.type == TokenType::Comma) {
         this->advance();
-        this->expect_token(TokenType::Identifier, [&]() {
-          params.push_back(this->token.value);
-        });
+        this->expect_token(TokenType::Identifier, [&]() { params.push_back(this->token.value); });
       }
     }
 
@@ -1428,7 +1427,7 @@ AST::AbstractNode* Parser::parse_class() {
         if (static_declaration) {
           static_functions->append_node(this->parse_func());
         } else {
-          AST::Function* func = AST::cast<AST::Function>(this->parse_func());
+          AST::Function* func = this->parse_func()->as<AST::Function>();
 
           if (func->name == "constructor") {
             constructor = func;
@@ -1468,12 +1467,12 @@ AST::AbstractNode* Parser::parse_class() {
 
 void Parser::assign_default_name(AST::AbstractNode* node, const std::string& name) {
   if (node->type() == AST::kTypeFunction) {
-    AST::Function* func = AST::cast<AST::Function>(node);
+    AST::Function* func = node->as<AST::Function>();
     if (func->name.size() == 0) {
       func->name = name;
     }
   } else if (node->type() == AST::kTypeClass) {
-    AST::Class* klass = AST::cast<AST::Class>(node);
+    AST::Class* klass = node->as<AST::Class>();
     if (klass->name.size() == 0) {
       klass->name = name;
     }

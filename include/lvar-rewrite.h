@@ -26,35 +26,11 @@
 
 #include "ast.h"
 #include "compiler-pass.h"
+#include "irinfo.h"
 
 #pragma once
 
 namespace Charly::Compilation {
-
-// Represents a single record in an LVarScope
-struct LVarRecord {
-  uint32_t depth = 0;
-  uint64_t blockid = 0;
-  uint32_t frame_index = 0;
-  bool is_constant = false;
-};
-
-// Represents a new level of scope as introduced by a function
-struct LVarScope {
-  LVarScope* parent = nullptr;
-  AST::Function* function_node;
-  std::unordered_map<size_t, std::vector<LVarRecord>> table;
-  uint32_t next_frame_index = 0;
-
-  LVarScope(LVarScope* p, AST::Function* f) : parent(p), function_node(f) {
-  }
-
-  // Declare a new symbol inside this scope
-  LVarRecord declare(size_t symbol, uint32_t depth, uint64_t blockid, bool is_constant = false);
-  void pop_blockid(uint64_t blockid);
-  std::optional<LVarRecord> resolve(size_t symbol, uint32_t depth, uint64_t blockid, bool noparentblocks);
-};
-
 class LVarRewriter : public CompilerPass {
   using CompilerPass::CompilerPass;
 
@@ -69,7 +45,6 @@ public:
 private:
   uint32_t depth = 0;
   uint64_t blockid = 0;
-  LVarScope* scope = nullptr;
+  IRScope* scope = nullptr;
 };
-
 }  // namespace Charly::Compilation

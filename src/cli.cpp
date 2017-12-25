@@ -33,6 +33,7 @@
 #include "cli.h"
 #include "compiler.h"
 #include "context.h"
+#include "disassembler.h"
 #include "parser.h"
 #include "sourcefile.h"
 
@@ -119,10 +120,8 @@ int CLI::run() {
 
   if (this->flags.dump_disassembly) {
     if (compiled_block != nullptr) {
-      Disassembler::Flags disassembler_flags = Disassembler::Flags({
-        this->flags.disassembly_branches,
-        this->flags.disassembly_offsets
-      });
+      Disassembler::Flags disassembler_flags =
+          Disassembler::Flags({this->flags.disassembly_branches, this->flags.disassembly_offsets});
       Disassembler disassembler(compiled_block, disassembler_flags);
       disassembler.dump(std::cout);
     }

@@ -286,7 +286,7 @@ AST::AbstractNode* CodeGenerator::visit_switch(AST::Switch* node, VisitContinue 
       this->fatal_error(n, "Expected node to be a SwitchNode");
     }
 
-    AST::SwitchNode* snode = AST::cast<AST::SwitchNode>(n);
+    AST::SwitchNode* snode = n->as<AST::SwitchNode>();
 
     // Label to go check for the next condition
     Label next_condition_label = this->assembler->reserve_label();
@@ -688,7 +688,7 @@ AST::AbstractNode* CodeGenerator::visit_trycatch(AST::TryCatch* node, VisitConti
   // http://lists.llvm.org/pipermail/llvm-dev/2008-April/013978.html
 
   // Check if we have the offset_info for the exception name
-  if (node->offset_info == nullptr) {
+  if (node->exception_name->offset_info == nullptr) {
     this->fatal_error(node, "Missing offset info for exception identifier");
   }
 
@@ -717,9 +717,10 @@ AST::AbstractNode* CodeGenerator::visit_trycatch(AST::TryCatch* node, VisitConti
     }
 
     // Store the exception
-    this->assembler->write_setlocal(node->offset_info->index, node->offset_info->level);
+    this->assembler->write_setlocal(node->exception_name->offset_info->index, node->exception_name->offset_info->level);
     this->visit_node(node->finally_block);
-    this->assembler->write_readlocal(node->offset_info->index, node->offset_info->level);
+    this->assembler->write_readlocal(node->exception_name->offset_info->index,
+                                     node->exception_name->offset_info->level);
     this->assembler->write_throw();
   }
 

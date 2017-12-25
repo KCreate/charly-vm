@@ -56,6 +56,14 @@ public:
 
   virtual ~AbstractNode() = default;
 
+  inline AbstractNode* at(const Token& loc) {
+    return this->at(loc.location);
+  }
+
+  inline AbstractNode* at(const Token& start, const Token& end) {
+    return this->at(start.location, end.location);
+  }
+
   inline AbstractNode* at(const Location& loc) {
     this->location_start = loc;
     this->location_end = loc;
@@ -120,6 +128,11 @@ public:
 
   virtual bool yields_value() {
     return false;
+  }
+
+  template <typename T>
+  T* as() {
+    return reinterpret_cast<T*>(this);
   }
 };
 
@@ -1250,6 +1263,7 @@ struct Function : public AbstractNode {
   bool anonymous;
 
   uint32_t lvar_count = 0;
+  IRKnownSelfVars* known_self_vars = nullptr;
 
   Function(const std::string& n, const std::vector<std::string>& p, AbstractNode* b, bool a)
       : name(n), parameters(p), body(b), anonymous(a) {
@@ -1257,6 +1271,9 @@ struct Function : public AbstractNode {
 
   inline ~Function() {
     delete body;
+    if (known_self_vars != nullptr) {
+      delete known_self_vars;
+    }
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
@@ -1267,14 +1284,38 @@ struct Function : public AbstractNode {
     stream << (this->anonymous ? " anonymous" : "");
 
     stream << ' ' << '(';
+
+    int param_count = this->parameters.size();
+    int i = 0;
     for (auto& param : this->parameters) {
       stream << param;
 
-      if (this->parameters.back() != param) {
+      if (i != param_count - 1) {
         stream << ", ";
       }
+
+      i++;
     }
-    stream << ')' << " lvar_count=" << this->lvar_count << '\n';
+    stream << ')' << " lvar_count=" << this->lvar_count;
+
+    if (this->known_self_vars != nullptr) {
+      stream << " known_self_vars=(";
+
+      int known_vars_count = this->known_self_vars->names.size();
+      int i = 0;
+      for (auto& known_var : this->known_self_vars->names) {
+        stream << known_var;
+
+        if (i != known_vars_count - 1) {
+          stream << ", ";
+        }
+
+        i++;
+      }
+      stream << ')';
+    }
+
+    stream << '\n';
 
     this->body->dump(stream, depth + 1);
   }
@@ -1490,24 +1531,24 @@ struct Continue : public AbstractNode {
 // }
 struct TryCatch : public AbstractNode {
   AbstractNode* block;
-  std::string exception_name;
+  Identifier* exception_name;
   AbstractNode* handler_block;
   AbstractNode* finally_block;
 
-  IRVarOffsetInfo* offset_info = nullptr;
-
-  TryCatch(AbstractNode* b, const std::string& e, AbstractNode* h, AbstractNode* f)
+  TryCatch(AbstractNode* b, Identifier* e, AbstractNode* h, AbstractNode* f)
       : block(b), exception_name(e), handler_block(h), finally_block(f) {
   }
 
   inline ~TryCatch() {
     delete block;
+    delete exception_name;
     delete handler_block;
     delete finally_block;
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- TryCatch: " << this->exception_name << '\n';
+    stream << std::string(depth, ' ') << "- TryCatch: " << '\n';
+    this->exception_name->dump(stream, depth + 1);
     this->block->dump(stream, depth + 1);
     this->handler_block->dump(stream, depth + 1);
     this->finally_block->dump(stream, depth + 1);
@@ -1515,6 +1556,7 @@ struct TryCatch : public AbstractNode {
 
   void visit(VisitFunc func) {
     this->block = func(this->block);
+    this->exception_name = func(this->exception_name)->as<Identifier>();
     this->handler_block = func(this->handler_block);
     this->finally_block = func(this->finally_block);
   }

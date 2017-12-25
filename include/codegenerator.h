@@ -24,9 +24,9 @@
  * SOFTWARE.
  */
 
+#include <list>
 #include <unordered_map>
 #include <vector>
-#include <list>
 
 #include "assembler.h"
 #include "ast.h"
@@ -61,7 +61,6 @@ public:
   void reset();
 
 private:
-
   // Codegen specific AST nodes
   AST::AbstractNode* visit_block(AST::Block* node, VisitContinue cont);
   AST::AbstractNode* visit_if(AST::If* node, VisitContinue cont);

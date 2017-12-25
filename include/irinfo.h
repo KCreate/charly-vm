@@ -24,15 +24,67 @@
  * SOFTWARE.
  */
 
+#include <optional>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
 #pragma once
 
 namespace Charly::Compilation {
+
+// Forward declaration
+namespace AST {
+struct Function;
+};
+
+// Represents a single record in an IRScope
+struct IRVarRecord {
+  uint32_t depth = 0;
+  uint64_t blockid = 0;
+  uint32_t frame_index = 0;
+  bool is_constant = false;
+};
+
+// Represents a level of scope introduced by a function
+struct IRScope {
+  IRScope* parent = nullptr;
+  AST::Function* function_node;
+  std::unordered_map<size_t, std::vector<IRVarRecord>> table;
+  uint32_t next_frame_index = 0;
+
+  IRScope(IRScope* p, AST::Function* f) : parent(p), function_node(f) {
+  }
+
+  // Declare a new symbol inside this scope
+  IRVarRecord declare(size_t symbol, uint32_t depth, uint64_t blockid, bool is_constant = false);
+  void pop_blockid(uint64_t blockid);
+  std::optional<IRVarRecord> resolve(size_t symbol, uint32_t depth, uint64_t blockid, bool noparentblocks);
+};
 
 // Contains the amount of environments which need to be dereferenced
 // and the index of a local variable to read
 struct IRVarOffsetInfo {
   uint32_t level;
   uint32_t index;
+};
+
+// Contains a list of variables which, unless defined explicitly,
+// should be rewritten to @<name> inside a particular function
+struct IRKnownSelfVars {
+  std::unordered_set<std::string> names;
+
+  IRKnownSelfVars(const std::unordered_set<std::string>& n) : names(n) {
+  }
+  IRKnownSelfVars(std::unordered_set<std::string>&& n) : names(std::move(n)) {
+  }
+
+  IRKnownSelfVars(const std::vector<std::string>& n) {
+    for (auto& name : n) {
+      this->names.insert(name);
+    }
+  }
 };
 
 }  // namespace Charly::Compilation

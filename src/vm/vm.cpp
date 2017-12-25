@@ -588,7 +588,6 @@ void VM::op_swap() {
 }
 
 void VM::op_topn(uint32_t offset) {
-
   // Check if there are enough items on the stack
   if (this->stack.size() <= offset) {
     this->push_stack(kNull);
@@ -599,7 +598,6 @@ void VM::op_topn(uint32_t offset) {
 }
 
 void VM::op_setn(uint32_t offset) {
-
   // Check if there are enough items on the stack
   if (this->stack.size() <= offset) {
     this->pop_stack();
@@ -707,8 +705,8 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   }
 
   // The return address is simply the instruction after the one we've been called from
-  // If the ip is nullptr (non-existent instructions that are run at the beginning of the VM) we don't
-  // compute a return address
+  // If the ip is nullptr (non-existent instructions that are run at the beginning of the VM) we
+  // don't compute a return address
   uint8_t* return_address = nullptr;
   if (this->ip != nullptr)
     return_address = this->ip + kInstructionLengths[Opcode::Call];

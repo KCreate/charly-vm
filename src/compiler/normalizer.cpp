@@ -64,10 +64,10 @@ AST::AbstractNode* Normalizer::visit_block(AST::Block* node, VisitContinue cont)
       // Read the name of the node
       std::string name;
       if (statement->type() == AST::kTypeFunction) {
-        name = AST::cast<AST::Function>(statement)->name;
+        name = statement->as<AST::Function>()->name;
       }
       if (statement->type() == AST::kTypeClass) {
-        name = AST::cast<AST::Class>(statement)->name;
+        name = statement->as<AST::Class>()->name;
       }
 
       // Wrap the node in a local initialisation if it has a name
@@ -139,7 +139,7 @@ AST::AbstractNode* Normalizer::visit_switch(AST::Switch* node, VisitContinue con
   }
 
   for (auto& _child : node->cases->children) {
-    AST::SwitchNode* switch_node = AST::cast<AST::SwitchNode>(_child);
+    AST::SwitchNode* switch_node = _child->as<AST::SwitchNode>();
     switch_node->block = this->wrap_in_block(switch_node->block, cont);
   }
 
@@ -150,13 +150,12 @@ AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue
   cont();
   node->body = this->wrap_in_block(node->body, cont);
 
-  AST::Block* body = AST::cast<AST::Block>(node->body);
+  AST::Block* body = node->body->as<AST::Block>();
 
   // Check if there are any statements inside the functions body
   if (body->statements.size() == 0) {
     body->append_node((new AST::Return(new AST::Null()))->at(body));
   } else {
-
     // Check that the last statement in the block would exit it,
     // either via a return, break, continue or throw
     // If not, insert a return null
@@ -169,18 +168,39 @@ AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue
   return node;
 }
 
+AST::AbstractNode* Normalizer::visit_class(AST::Class* node, VisitContinue cont) {
+  cont();
+
+  IRKnownSelfVars* known_member_vars = new IRKnownSelfVars(node->member_properties);
+  IRKnownSelfVars* known_static_vars = new IRKnownSelfVars(node->static_properties);
+
+  for (auto& member_func : node->member_functions->children) {
+    member_func->as<AST::Function>()->known_self_vars = known_member_vars;
+  }
+
+  for (auto& static_func : node->static_functions->children) {
+    static_func->as<AST::Function>()->known_self_vars = known_static_vars;
+  }
+
+  if (node->constructor != nullptr) {
+    node->constructor->as<AST::Function>()->known_self_vars = known_member_vars;
+  }
+
+  return node;
+}
+
 AST::AbstractNode* Normalizer::visit_localinitialisation(AST::LocalInitialisation* node, VisitContinue cont) {
   cont();
 
   // Copy the name of the variable a function or class is assigned to
   // into it's name field, unless it already has a name
   if (node->expression->type() == AST::kTypeFunction) {
-    AST::Function* func = AST::cast<AST::Function>(node->expression);
+    AST::Function* func = node->expression->as<AST::Function>();
     if (func->name.size() == 0) {
       func->name = node->name;
     }
   } else if (node->expression->type() == AST::kTypeClass) {
-    AST::Class* klass = AST::cast<AST::Class>(node->expression);
+    AST::Class* klass = node->expression->as<AST::Class>();
     if (klass->name.size() == 0) {
       klass->name = node->name;
     }
@@ -192,9 +212,9 @@ AST::AbstractNode* Normalizer::visit_localinitialisation(AST::LocalInitialisatio
 AST::AbstractNode* Normalizer::wrap_in_block(AST::AbstractNode* node, VisitContinue cont) {
   if (node->type() != AST::kTypeBlock) {
     node = (new AST::Block({node}))->at(node);
-    node = this->visit_block(AST::cast<AST::Block>(node), cont);
+    node = this->visit_block(node->as<AST::Block>(), cont);
   }
 
   return node;
 }
-}
+}  // namespace Charly::Compilation

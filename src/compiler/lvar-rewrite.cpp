@@ -29,72 +29,8 @@
 #include "lvar-rewrite.h"
 
 namespace Charly::Compilation {
-LVarRecord LVarScope::declare(size_t symbol, uint32_t depth, uint64_t blockid, bool is_constant) {
-  this->table.try_emplace(symbol);
-
-  LVarRecord record({depth, blockid, this->next_frame_index++, is_constant});
-  std::vector<LVarRecord>& records = this->table[symbol];
-  records.push_back(record);
-
-  return record;
-}
-
-void LVarScope::pop_blockid(uint64_t blockid) {
-  for (auto& recordlist : this->table) {
-    if (recordlist.second.size() == 0)
-      continue;
-    if (recordlist.second.back().blockid == blockid)
-      recordlist.second.pop_back();
-  }
-}
-
-std::optional<LVarRecord> LVarScope::resolve(size_t symbol, uint32_t depth, uint64_t blockid, bool noparentblocks) {
-  std::optional<LVarRecord> result;
-  LVarScope* search_table = this;
-  uint32_t dereferenced_tables = 0;
-
-  // Iterate over this and all parent tables
-  while (search_table) {
-    // Check if this table contains this symbol
-    if (search_table->table.count(symbol) > 0) {
-      auto& recordlist = search_table->table[symbol];
-
-      // Reverse search for a match
-      for (auto rit = recordlist.rbegin(); rit != recordlist.rend(); rit++) {
-        LVarRecord& record = *rit;
-
-        // Check if both the depth and the blockid match
-        if (record.depth == depth && record.blockid == blockid) {
-          result = record;
-          break;
-        }
-
-        // Check if this record would be reachable
-        if (record.depth < depth && !noparentblocks) {
-          result = record;
-          break;
-        }
-      }
-    }
-
-    if (result.has_value())
-      break;
-    if (noparentblocks)
-      break;
-    search_table = search_table->parent;
-    dereferenced_tables++;
-  }
-
-  // How many frames need to be dereference to reach this record
-  if (result.has_value()) {
-    result->depth = dereferenced_tables;
-  }
-
-  return result;
-}
-
 AST::AbstractNode* LVarRewriter::visit_function(AST::Function* node, VisitContinue descend) {
-  this->scope = new LVarScope(this->scope, node);
+  this->scope = new IRScope(this->scope, node);
 
   // Visit all child nodes of this function
   uint64_t backup_blockid = this->blockid;
@@ -111,7 +47,7 @@ AST::AbstractNode* LVarRewriter::visit_function(AST::Function* node, VisitContin
   node->lvar_count = this->scope->next_frame_index;
 
   // Restore the old scope
-  LVarScope* current_scope = this->scope;
+  IRScope* current_scope = this->scope;
   this->scope = this->scope->parent;
   delete current_scope;
 
@@ -130,7 +66,6 @@ AST::AbstractNode* LVarRewriter::visit_block(AST::Block* node, VisitContinue des
 }
 
 AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisation* node, VisitContinue descend) {
-
   // Only descend if this is not a function or class initialisation
   auto exp_type = node->expression->type();
   if (exp_type != AST::kTypeFunction && exp_type != AST::kTypeClass) {
@@ -141,7 +76,8 @@ AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisat
   auto result = this->scope->resolve(this->symtable(node->name), this->depth, this->blockid, true);
   if (result.has_value()) {
     if (node->name == "arguments") {
-      this->push_error(node, "Duplicate declaration of " + node->name + ". 'arguments' is a reserved identifier automatically inserted into every function.");
+      this->push_error(node, "Duplicate declaration of " + node->name +
+                                 ". 'arguments' is a reserved identifier automatically inserted into every function.");
     } else {
       this->push_error(node, "Duplicate declaration of " + node->name);
     }
@@ -150,7 +86,7 @@ AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisat
   }
 
   // Register this variable in the current scope
-  LVarRecord record = this->scope->declare(this->symtable(node->name), this->depth, this->blockid, node->constant);
+  IRVarRecord record = this->scope->declare(this->symtable(node->name), this->depth, this->blockid, node->constant);
 
   // If the expression is a function or class, descend into it now
   // This allows a function or class to reference itself inside its body
@@ -207,11 +143,20 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
   // Check if this symbol exists
   auto result = this->scope->resolve(this->symtable(node->name), this->depth, this->blockid, false);
   if (!result.has_value()) {
-
     // If we reference `arguments`, we redirect to __CHARLY_FUNCTION_ARGUMENTS
     if (node->name == "arguments") {
       node->offset_info = new IRVarOffsetInfo({0, 0});
       return node;
+    }
+
+    // Check if this is variable is known to exist inside the self pointer
+    if (this->scope->function_node->known_self_vars != nullptr) {
+      if (this->scope->function_node->known_self_vars->names.count(node->name) != 0) {
+        AST::AbstractNode* var = new AST::Member((new AST::Self())->at(node), node->name);
+        var->at(node);
+        delete node;
+        return var;
+      }
     }
 
     this->push_error(node, "Could not resolve symbol: " + node->name);
@@ -226,7 +171,6 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
 AST::AbstractNode* LVarRewriter::visit_assignment(AST::Assignment* node, VisitContinue cont) {
   auto result = this->scope->resolve(this->symtable(node->target), this->depth, this->blockid, false);
   if (!result.has_value()) {
-
     // If we reference `arguments`, we redirect to __CHARLY_FUNCTION_ARGUMENTS
     if (node->target == "arguments") {
       this->push_error(node, "Can't assign to funtion arguments. Redeclare to avoid conflicts.");
@@ -256,13 +200,13 @@ AST::AbstractNode* LVarRewriter::visit_trycatch(AST::TryCatch* node, VisitContin
   this->visit_node(node->block);
 
   // Register the exception name in the scope of the handler block
-  this->scope->declare(this->symtable(node->exception_name), this->depth + 1,
+  this->scope->declare(this->symtable(node->exception_name->name), this->depth + 1,
                        reinterpret_cast<uint64_t>(node->handler_block), false);
 
   // Create the offset info for the exception name
-  auto result = this->scope->resolve(this->symtable(node->exception_name), this->depth + 1,
+  auto result = this->scope->resolve(this->symtable(node->exception_name->name), this->depth + 1,
                                      reinterpret_cast<uint64_t>(node->handler_block), false);
-  node->offset_info = new IRVarOffsetInfo({result->depth, result->frame_index});
+  node->exception_name->offset_info = new IRVarOffsetInfo({result->depth, result->frame_index});
 
   // Check if we have a handler block
   if (node->handler_block->type() != AST::kTypeEmpty) {

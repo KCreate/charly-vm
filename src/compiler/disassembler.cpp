@@ -24,8 +24,8 @@
  * SOFTWARE.
  */
 
-#include <iomanip>
 #include <algorithm>
+#include <iomanip>
 #include <string_view>
 
 #include "disassembler.h"
@@ -189,7 +189,6 @@ void Disassembler::detect_branches() {
         if (!br2.has_allocated_branchline) {
           br2.branchline = last_allocated_branchline++;
         } else {
-
           // Check if our branchline collides with this branch
           if (branchline == br2.branchline) {
             branchline++;
@@ -209,7 +208,6 @@ void Disassembler::detect_branches() {
 }
 
 void Disassembler::draw_branchlines_for_offset(uint32_t offset, std::ostream& stream) {
-
   // Initialize the branchlanes row
   uint32_t branchlanewidth = this->highest_branch_density * 3;
   char branchlane[branchlanewidth];
@@ -228,7 +226,6 @@ void Disassembler::draw_branchlines_for_offset(uint32_t offset, std::ostream& st
 
         // Draw a line to the right
         while (start_offset < branchlanewidth) {
-
           // Do not draw this line if there is either a star or an arrow already placed here
           if (branchlane[start_offset + 2] != '>' && branchlane[start_offset] != '*') {
             branchlane[start_offset] = '-';
@@ -252,4 +249,4 @@ void Disassembler::draw_branchlines_for_offset(uint32_t offset, std::ostream& st
 
   stream << std::string(branchlane, branchlanewidth) << ' ';
 }
-}
+}  // namespace Charly::Compilation

@@ -24,6 +24,7 @@
  * SOFTWARE.
  */
 
+#include <iomanip>
 #include <iostream>
 #include <vector>
 
