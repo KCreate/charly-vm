@@ -163,6 +163,10 @@ void Disassembler::detect_branches() {
     offset += kInstructionLengths[opcode];
   }
 
+  std::sort(this->branches.begin(), this->branches.end(), [](Branch &l, Branch& r) {
+    return l.lower_address() > r.lower_address();
+  });
+
   // Calculate the maximum amount of active branches at any given point
   // in the program
   //
@@ -172,32 +176,26 @@ void Disassembler::detect_branches() {
   for (auto& br1 : this->branches) {
     uint32_t max_active = 1;
     uint32_t branchline = 0;
-    uint32_t last_allocated_branchline = 1;
 
-    // If we already have a branchline, we use that
-    if (br1.has_allocated_branchline) {
-      branchline = br1.branchline;
-    }
-
-    // Check how many other branches overlap with this branch
-    for (auto& br2 : this->branches) {
-      if (&br1 != &br2 && br1.overlaps_with_branch(br2)) {
-        max_active++;
-
-        // If the other branch doesn't have a branchline allocated
-        // to it yet, do that now
-        if (!br2.has_allocated_branchline) {
-          br2.branchline = last_allocated_branchline++;
-        } else {
-          // Check if our branchline collides with this branch
-          if (branchline == br2.branchline) {
-            branchline++;
-          }
+    // Move this branchline to the left while it overlaps with the branchline
+    // of another branch
+    auto overlaps_with_other_branchline = [&](uint32_t branchline) {
+      return std::count_if(this->branches.begin(), this->branches.end(), [&](Branch& b) {
+        if (b.has_allocated_branchline && br1.overlaps_with_branch(b)) {
+          return branchline == b.branchline;
         }
-      }
+
+        return false;
+      }) > 0;
+    };
+
+    while (overlaps_with_other_branchline(branchline)) {
+      max_active++;
+      branchline++;
     }
 
     br1.branchline = branchline;
+    br1.has_allocated_branchline = true;
 
     // Update the highest branch count
     if (max_active > highest_active_branches) {
@@ -217,7 +215,11 @@ void Disassembler::draw_branchlines_for_offset(uint32_t offset, std::ostream& st
     if (branch.in_range(offset)) {
       uint32_t start_offset = (branchlanewidth - 3) - branch.branchline * 3;
 
-      branchlane[start_offset] = '|';
+      if (branchlane[start_offset] == '-' || branchlane[start_offset] == '+') {
+        branchlane[start_offset] = '+';
+      } else {
+        branchlane[start_offset] = '|';
+      }
 
       // Draw a complete line to the right if this is either the start
       // or the end of a branch
@@ -228,7 +230,13 @@ void Disassembler::draw_branchlines_for_offset(uint32_t offset, std::ostream& st
         while (start_offset < branchlanewidth) {
           // Do not draw this line if there is either a star or an arrow already placed here
           if (branchlane[start_offset + 2] != '>' && branchlane[start_offset] != '*') {
-            branchlane[start_offset] = '-';
+
+            if (branchlane[start_offset] == '|' || branchlane[start_offset] == '+') {
+              branchlane[start_offset] = '+';
+            } else {
+              branchlane[start_offset] = '-';
+            }
+
             branchlane[start_offset + 1] = '-';
             branchlane[start_offset + 2] = '-';
           }
@@ -237,7 +245,11 @@ void Disassembler::draw_branchlines_for_offset(uint32_t offset, std::ostream& st
 
         // Draw a little arrow if this is the end of a branch
         if (branch.is_end(offset)) {
-          branchlane[branchlanewidth - 3] = '-';
+          if (branchlane[branchlanewidth - 3] == '|' || branchlane[branchlanewidth - 3] == '+') {
+            branchlane[branchlanewidth - 3] = '+';
+          } else {
+            branchlane[branchlanewidth - 3] = '-';
+          }
           branchlane[branchlanewidth - 2] = '-';
           branchlane[branchlanewidth - 1] = '>';
         }

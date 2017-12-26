@@ -69,6 +69,14 @@ public:
     inline bool is_end(uint32_t addr) {
       return addr == this->end_offset;
     }
+
+    inline uint32_t lower_address() {
+      return this->is_backwards_jump() ? this->end_offset : this->start_offset;
+    }
+
+    inline uint32_t upper_address() {
+      return this->is_backwards_jump() ? this->start_offset : this->end_offset;
+    }
   };
 
   // Some flags for the disassembler
