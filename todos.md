@@ -1,5 +1,12 @@
 # Todos
 
+# Class parsing
+- Check for duplicate member and static property declarations
+- Check for duplicate member and static functions
+
+# Add CallIsolated instruction
+- Calls a function with setting the parent_environment_frame field
+
 # Switch to C++14 as most distributions don't have a C++17 compiler installed
 - Requiring users to build one themselves isn't cool
 - Requiring users to add a PPA isn't cool either
@@ -244,6 +251,7 @@
 - `Charly.Numeric`, `Charly.String`, etc.
 
 # Class Construction
+- Parent class list is uniqified in the PutClass instruction
 - Class is called
 - Set the object's klass field to the class that's used to construct it
 - Insert all the classes fields and methods into the object

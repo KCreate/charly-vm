@@ -1317,13 +1317,12 @@ AST::AbstractNode* Parser::parse_func() {
   // func foo(a, b) { a * b }
   // func foo(a, b) = a * b
   AST::AbstractNode* body = nullptr;
+  auto backup_context = this->keyword_context;
+  this->keyword_context.return_allowed = true;
+  this->keyword_context.break_allowed = false;
+  this->keyword_context.continue_allowed = false;
   if (this->token.type == TokenType::LeftCurly) {
-    auto backup_context = this->keyword_context;
-    this->keyword_context.return_allowed = true;
-    this->keyword_context.break_allowed = false;
-    this->keyword_context.continue_allowed = false;
     body = this->parse_block();
-    this->keyword_context = backup_context;
   } else if (has_symbol && this->token.type == TokenType::Assignment) {
     this->advance();
     body = this->parse_control_statement();
@@ -1331,6 +1330,7 @@ AST::AbstractNode* Parser::parse_func() {
     this->unexpected_token("block");
     return nullptr;
   }
+  this->keyword_context = backup_context;
 
   return (new AST::Function(name, params, body, false))->at(location_start, body->location_end);
 }
