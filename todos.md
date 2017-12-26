@@ -207,6 +207,7 @@
     }
     ```
 - Disassembler should receive a symboltable which it will use to show text symbols
+- Move illegal keyword checking from the parser to the normalizer
 
 # Remove PutCFunction instruction
 - Runtime shouldn't be able to create functions to arbitrary addresses (security risk)
