@@ -248,7 +248,9 @@ void Disassembler::draw_branchlines_for_offset(uint32_t offset, std::ostream& st
           if (branchlane[branchlanewidth - 3] == '|' || branchlane[branchlanewidth - 3] == '+') {
             branchlane[branchlanewidth - 3] = '+';
           } else {
-            branchlane[branchlanewidth - 3] = '-';
+            if (branchlane[branchlanewidth - 3] != '*') {
+              branchlane[branchlanewidth - 3] = '-';
+            }
           }
           branchlane[branchlanewidth - 2] = '-';
           branchlane[branchlanewidth - 1] = '>';
