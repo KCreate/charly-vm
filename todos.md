@@ -201,16 +201,12 @@
   - [x] Parsing
     - [x] Syntax desugaring (`foo["bar"]` turns to `foo.bar`)
     - [x] Remove useless literals from blocks
-  - [ ] Constant folding
+  - [x] Constant folding
   - [x] Remove string duplicates (to keep the static data section small)
   - [x] LVar offset calculation
   - [x] Wrap nodes in stack operations (pop unused stack values)
   - [x] Code generation
   - [x] Label resolution (ifs, breaks, continues, etc.)
-- Don't distinguish between floats and integers in the lexer / parser
-  - Rewrites or semantic checks don't care what type the number is
-  - Always store as float
-  - Cast to integer in the codegenerator
 - Compiler should be able to take some flags
   - Should the program be wrapped in a module inclusion function?
     ```javascript
