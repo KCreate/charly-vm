@@ -116,7 +116,10 @@ enum Opcode : uint8_t {
   // - value
   SetArrayIndex,
 
-  // Put the self value from the current frame onto the stack
+  // Put the self value of a specified frame onto the stack
+  //
+  // args:
+  // - level
   PutSelf,
 
   // Put value onto the stack
@@ -338,7 +341,7 @@ static constexpr uint32_t kInstructionLengths[]{
   /* SetMemberSymbol */    1 + sizeof(VALUE),
   /* SetMemberValue */     1,
   /* SetArrayIndex */      1 + sizeof(uint32_t),
-  /* PutSelf */            1,
+  /* PutSelf */            1 + sizeof(uint32_t),
   /* PutValue */           1 + sizeof(VALUE),
   /* PutFloat */           1 + sizeof(double),
   /* PutString */          1 + sizeof(uint32_t) + sizeof(uint32_t),

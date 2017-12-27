@@ -148,7 +148,7 @@ public:
   void write_setmembersymbol(VALUE symbol);
   void write_setmembervalue();
   void write_setarrayindex(uint32_t index);
-  void write_putself();
+  void write_putself(uint32_t level);
   void write_putvalue(VALUE value);
   void write_putfloat(double value);
   void write_putstring(const std::string& data);

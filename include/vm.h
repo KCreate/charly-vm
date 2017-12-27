@@ -103,7 +103,7 @@ public:
   void op_setlocal(uint32_t index, uint32_t level);
   void op_setmembersymbol(VALUE symbol);
   void op_setarrayindex(uint32_t index);
-  void op_putself();
+  void op_putself(uint32_t level);
   void op_putvalue(VALUE value);
   void op_putfloat(double value);
   void op_putstring(char* data, uint32_t length);

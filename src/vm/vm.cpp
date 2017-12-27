@@ -510,13 +510,24 @@ void VM::op_setarrayindex(uint32_t index) {
   this->push_stack(stackval);
 }
 
-void VM::op_putself() {
+void VM::op_putself(uint32_t level) {
   if (this->frames == nullptr) {
     this->push_stack(kNull);
     return;
   }
 
-  this->push_stack(this->frames->self);
+  VALUE self_val = kNull;
+
+  Frame* frm = this->frames;
+  while (frm && level--) {
+    frm = frm->parent_environment_frame;
+  }
+
+  if (frm) {
+    self_val = frm->self;
+  }
+
+  this->push_stack(self_val);
 }
 
 void VM::op_putvalue(VALUE value) {
@@ -1265,7 +1276,8 @@ void VM::run() {
       }
 
       case Opcode::PutSelf: {
-        this->op_putself();
+        uint32_t level = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+        this->op_putself(level);
         break;
       }
 

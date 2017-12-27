@@ -149,8 +149,9 @@ void InstructionBlock::write_setarrayindex(uint32_t index) {
   this->write_int(index);
 }
 
-void InstructionBlock::write_putself() {
+void InstructionBlock::write_putself(uint32_t level) {
   this->write_byte(Opcode::PutSelf);
+  this->write_int(level);
 }
 
 void InstructionBlock::write_putvalue(VALUE value) {

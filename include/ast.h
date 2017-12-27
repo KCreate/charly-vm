@@ -983,8 +983,10 @@ struct IndexIntoArguments : public AbstractNode {
 
 // self
 struct Self : public AbstractNode {
+  uint32_t ir_frame_level = 0;
+
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Self: " << '\n';
+    stream << std::string(depth, ' ') << "- Self: ir_frame_level=" << this->ir_frame_level << '\n';
   }
 
   virtual bool is_literal() {

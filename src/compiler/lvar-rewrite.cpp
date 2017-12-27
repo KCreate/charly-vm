@@ -149,14 +149,27 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
       return node;
     }
 
-    // Check if this is variable is known to exist inside the self pointer
-    if (this->scope->function_node->known_self_vars != nullptr) {
-      if (this->scope->function_node->known_self_vars->names.count(node->name) != 0) {
-        AST::AbstractNode* var = new AST::Member((new AST::Self())->at(node), node->name);
-        var->at(node);
-        delete node;
-        return var;
+    // Search each function in the current scope stack if it has it as a known self var
+    IRScope* search_scope = this->scope;
+    uint32_t ir_frame_level = 0;
+    while (search_scope) {
+      if (search_scope->function_node->known_self_vars != nullptr) {
+        if (search_scope->function_node->known_self_vars->names.count(node->name) != 0) {
+          AST::Self* self_val = new AST::Self();
+          self_val->at(node);
+          self_val->ir_frame_level = ir_frame_level;
+          AST::AbstractNode* var = new AST::Member(self_val, node->name);
+          var->at(node);
+          delete node;
+          return var;
+        }
       }
+
+      if (!search_scope->function_node->anonymous) {
+        ir_frame_level++;
+      }
+
+      search_scope = search_scope->parent;
     }
 
     this->push_error(node, "Could not resolve symbol: " + node->name);

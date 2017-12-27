@@ -67,6 +67,10 @@ void Disassembler::dump(std::ostream& stream) {
         stream << this->block->uint32_at(offset + 1);
         break;
       }
+      case Opcode::PutSelf: {
+        stream << this->block->uint32_at(offset + 1);
+        break;
+      }
       case Opcode::PutValue: {
         this->print_hex(this->block->value_at(offset + 1), stream);
         break;

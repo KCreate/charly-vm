@@ -515,7 +515,7 @@ AST::AbstractNode* CodeGenerator::visit_indexintoarguments(AST::IndexIntoArgumen
 
 AST::AbstractNode* CodeGenerator::visit_self(AST::Self* node, VisitContinue cont) {
   (void)cont;
-  this->assembler->write_putself();
+  this->assembler->write_putself(node->ir_frame_level);
   return node;
 }
 
