@@ -36,8 +36,7 @@ namespace Charly::Compilation {
 enum TokenType : uint8_t {
 
   // Literals
-  Integer,
-  Float,
+  Number,
   Identifier,
   String,
   BooleanFalse,
@@ -143,8 +142,7 @@ enum TokenType : uint8_t {
 // String representation of token types
 // clang-format off
 static std::string kTokenTypeStrings[] = {
-  "Integer",
-  "Float",
+  "Number",
   "Identifier",
   "String",
   "BooleanFalse",
@@ -274,11 +272,7 @@ static std::unordered_map<TokenType, TokenType> kTokenAndAssignmentOperators = {
 struct Token {
   TokenType type;
   std::string value;
-
-  union {
-    double dbl_value;
-    int64_t i64_value;
-  } numeric_value;
+  double numeric_value;
 
   Location location;
 
@@ -301,10 +295,8 @@ struct Token {
   inline void write_to_stream(T&& stream) const {
     stream << kTokenTypeStrings[this->type] << " : ";
 
-    if (this->type == TokenType::Integer) {
-      stream << this->numeric_value.i64_value;
-    } else if (this->type == TokenType::Float) {
-      stream << this->numeric_value.dbl_value;
+    if (this->type == TokenType::Number) {
+      stream << this->numeric_value;
     } else {
       stream << this->value;
     }

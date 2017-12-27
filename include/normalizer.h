@@ -43,6 +43,8 @@ public:
   AST::AbstractNode* visit_while(AST::While* node, VisitContinue cont);
   AST::AbstractNode* visit_until(AST::Until* node, VisitContinue cont);
   AST::AbstractNode* visit_loop(AST::Loop* node, VisitContinue cont);
+  AST::AbstractNode* visit_binary(AST::Binary* node, VisitContinue cont);
+  AST::AbstractNode* visit_unary(AST::Unary* node, VisitContinue cont);
   AST::AbstractNode* visit_switch(AST::Switch* node, VisitContinue cont);
   AST::AbstractNode* visit_function(AST::Function* node, VisitContinue cont);
   AST::AbstractNode* visit_class(AST::Class* node, VisitContinue cont);

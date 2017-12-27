@@ -558,15 +558,15 @@ AST::AbstractNode* CodeGenerator::visit_string(AST::String* node, VisitContinue 
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_integer(AST::Integer* node, VisitContinue cont) {
+AST::AbstractNode* CodeGenerator::visit_number(AST::Number* node, VisitContinue cont) {
   (void)cont;
-  this->assembler->write_putvalue(VALUE_ENCODE_INTEGER(node->value));
-  return node;
-}
 
-AST::AbstractNode* CodeGenerator::visit_float(AST::Float* node, VisitContinue cont) {
-  (void)cont;
-  this->assembler->write_putfloat(node->value);
+  if (ceilf(node->value) == node->value) {
+    this->assembler->write_putvalue(VALUE_ENCODE_INTEGER(node->value));
+  } else {
+    this->assembler->write_putfloat(node->value);
+  }
+
   return node;
 }
 

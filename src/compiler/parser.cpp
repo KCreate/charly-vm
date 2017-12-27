@@ -1160,14 +1160,8 @@ AST::AbstractNode* Parser::parse_literal() {
       this->expect_token(TokenType::RightParen);
       return exp;
     }
-    case TokenType::Integer: {
-      AST::AbstractNode* val = new AST::Integer(this->token.numeric_value.i64_value);
-      val->at(this->token.location);
-      this->advance();
-      return val;
-    }
-    case TokenType::Float: {
-      AST::AbstractNode* val = new AST::Float(this->token.numeric_value.dbl_value);
+    case TokenType::Number: {
+      AST::AbstractNode* val = new AST::Number(this->token.numeric_value);
       val->at(this->token.location);
       this->advance();
       return val;

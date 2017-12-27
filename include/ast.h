@@ -1103,35 +1103,14 @@ struct String : public AbstractNode {
 };
 
 // <value>
-struct Integer : public AbstractNode {
-  int64_t value;
-
-  Integer(int64_t v) : value(v) {
-  }
-
-  inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Integer:";
-    stream << ' ' << this->value << '\n';
-  }
-
-  virtual bool is_literal() {
-    return true;
-  }
-
-  bool yields_value() {
-    return true;
-  }
-};
-
-// <value>
-struct Float : public AbstractNode {
+struct Number : public AbstractNode {
   double value;
 
-  Float(double v) : value(v) {
+  Number(double v) : value(v) {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Float:";
+    stream << std::string(depth, ' ') << "- Number:";
     stream << ' ' << this->value << '\n';
   }
 
@@ -1598,8 +1577,7 @@ static const size_t kTypeIndex = typeid(Index).hash_code();
 static const size_t kTypeNull = typeid(Null).hash_code();
 static const size_t kTypeNan = typeid(Nan).hash_code();
 static const size_t kTypeString = typeid(String).hash_code();
-static const size_t kTypeInteger = typeid(Integer).hash_code();
-static const size_t kTypeFloat = typeid(Float).hash_code();
+static const size_t kTypeNumber = typeid(Number).hash_code();
 static const size_t kTypeBoolean = typeid(Boolean).hash_code();
 static const size_t kTypeArray = typeid(Array).hash_code();
 static const size_t kTypeHash = typeid(Hash).hash_code();

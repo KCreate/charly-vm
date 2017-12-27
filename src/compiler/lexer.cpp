@@ -474,23 +474,15 @@ void Lexer::consume_decimal() {
     }
   }
 
-  if (point_passed) {
-    double num = 0;
-    decoder >> num;
+  double num = 0;
+  decoder >> num;
 
-    this->token.type = TokenType::Float;
-    this->token.numeric_value.dbl_value = num;
-  } else {
-    int64_t num = 0;
-    decoder >> num;
-
-    this->token.type = TokenType::Integer;
-    this->token.numeric_value.i64_value = num;
-  }
+  this->token.type = TokenType::Number;
+  this->token.numeric_value = num;
 }
 
 void Lexer::consume_hex() {
-  this->token.type = TokenType::Integer;
+  this->token.type = TokenType::Number;
 
   std::stringstream decoder;
   decoder << std::hex;
@@ -512,14 +504,14 @@ void Lexer::consume_hex() {
     }
   }
 
-  int64_t num = 0;
+  double num = 0;
   decoder >> num;
 
-  this->token.numeric_value.i64_value = num;
+  this->token.numeric_value = num;
 }
 
 void Lexer::consume_octal() {
-  this->token.type = TokenType::Integer;
+  this->token.type = TokenType::Number;
 
   std::stringstream decoder;
   decoder << std::oct;
@@ -541,10 +533,10 @@ void Lexer::consume_octal() {
     }
   }
 
-  int64_t num = 0;
+  double num = 0;
   decoder >> num;
 
-  this->token.numeric_value.i64_value = num;
+  this->token.numeric_value = num;
 }
 
 void Lexer::consume_string() {

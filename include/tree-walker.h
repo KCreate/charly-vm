@@ -182,11 +182,7 @@ public:
     cont();
     return node;
   }
-  virtual inline AST::AbstractNode* visit_integer(AST::Integer* node, VisitContinue cont) {
-    cont();
-    return node;
-  }
-  virtual inline AST::AbstractNode* visit_float(AST::Float* node, VisitContinue cont) {
+  virtual inline AST::AbstractNode* visit_number(AST::Number* node, VisitContinue cont) {
     cont();
     return node;
   }
@@ -311,10 +307,8 @@ public:
       return walker->visit_nan(node->as<AST::Nan>(), cont);
     if (node->type() == AST::kTypeString)
       return walker->visit_string(node->as<AST::String>(), cont);
-    if (node->type() == AST::kTypeInteger)
-      return walker->visit_integer(node->as<AST::Integer>(), cont);
-    if (node->type() == AST::kTypeFloat)
-      return walker->visit_float(node->as<AST::Float>(), cont);
+    if (node->type() == AST::kTypeNumber)
+      return walker->visit_number(node->as<AST::Number>(), cont);
     if (node->type() == AST::kTypeBoolean)
       return walker->visit_boolean(node->as<AST::Boolean>(), cont);
     if (node->type() == AST::kTypeArray)
