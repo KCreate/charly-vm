@@ -1178,8 +1178,6 @@ struct Hash : public AbstractNode {
 
   Hash() {
   }
-  Hash(std::initializer_list<std::pair<std::string, AbstractNode*>> p) : pairs(p) {
-  }
 
   inline void append_pair(const std::pair<std::string, AbstractNode*>& p) {
     this->pairs.push_back(p);
@@ -1248,6 +1246,9 @@ struct Function : public AbstractNode {
 
   Function(const std::string& n, const std::vector<std::string>& p, AbstractNode* b, bool a)
       : name(n), parameters(p), body(b), anonymous(a) {
+  }
+  Function(const std::string& n, std::vector<std::string>&& p, AbstractNode* b, bool a)
+      : name(n), parameters(std::move(p)), body(b), anonymous(a) {
   }
 
   inline ~Function() {
@@ -1347,15 +1348,31 @@ struct Class : public AbstractNode {
 
   Class(const std::string& n,
         AbstractNode* c,
-        std::vector<std::string> mp,
+        const std::vector<std::string>& mp,
         NodeList* mf,
-        std::vector<std::string> sp,
+        const std::vector<std::string>& sp,
         NodeList* sf,
         NodeList* p)
       : name(n),
         constructor(c),
         member_properties(mp),
         static_properties(sp),
+        member_functions(mf),
+        static_functions(sf),
+        parents(p) {
+  }
+
+  Class(const std::string& n,
+        AbstractNode* c,
+        std::vector<std::string>&& mp,
+        NodeList* mf,
+        std::vector<std::string>&& sp,
+        NodeList* sf,
+        NodeList* p)
+      : name(n),
+        constructor(c),
+        member_properties(std::move(mp)),
+        static_properties(std::move(sp)),
         member_functions(mf),
         static_functions(sf),
         parents(p) {
