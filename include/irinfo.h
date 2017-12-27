@@ -75,14 +75,15 @@ struct IRVarOffsetInfo {
 struct IRKnownSelfVars {
   std::unordered_set<std::string> names;
 
-  IRKnownSelfVars(const std::unordered_set<std::string>& n) : names(n) {
-  }
-  IRKnownSelfVars(std::unordered_set<std::string>&& n) : names(std::move(n)) {
-  }
-
   IRKnownSelfVars(const std::vector<std::string>& n) {
     for (auto& name : n) {
       this->names.insert(name);
+    }
+  }
+
+  IRKnownSelfVars(std::vector<std::string>&& n) {
+    for (auto& name : n) {
+      this->names.insert(std::move(name));
     }
   }
 };

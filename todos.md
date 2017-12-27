@@ -47,6 +47,14 @@
       const module_context = {
         require_no_exec,
         require,
+        Object,
+        Class,
+        Array,
+        String,
+        Number,
+        Function,
+        Boolean,
+        Null,
         stdin: io.stdin,
         stdout: io.stdout,
         stderr: io.stderr,
@@ -68,6 +76,14 @@
       - Charly
       - export
       - require
+      - Object
+      - Class
+      - Array
+      - String
+      - Number
+      - Function
+      - Boolean
+      - Null
       - stdin
       - stdout
       - stderr

@@ -1,0 +1,21 @@
+[
+  require_no_exec,
+  require,
+  Object,
+  Class,
+  Array,
+  String,
+  Number,
+  Function,
+  Boolean,
+  Null,
+  stdin,
+  stdout,
+  stderr,
+  print,
+  write,
+  gets,
+  getc,
+  exit,
+  sleep
+]
