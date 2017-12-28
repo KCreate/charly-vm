@@ -279,7 +279,10 @@ AST::AbstractNode* CodeGenerator::visit_switch(AST::Switch* node, VisitContinue 
   // Codegen switch condition
   this->visit_node(node->condition);
 
-  // Codegen each switch node
+  std::vector<Label> block_labels;
+  block_labels.reserve(node->cases->children.size());
+
+  // Codegen the switch conditions
   for (auto n : node->cases->children) {
     // Check if this is a switchnode (it should be)
     if (n->type() != AST::kTypeSwitchNode) {
@@ -288,11 +291,9 @@ AST::AbstractNode* CodeGenerator::visit_switch(AST::Switch* node, VisitContinue 
 
     AST::SwitchNode* snode = n->as<AST::SwitchNode>();
 
-    // Label to go check for the next condition
-    Label next_condition_label = this->assembler->reserve_label();
-
     // Label of the block which runs if this node is selected
     Label node_block = this->assembler->reserve_label();
+    block_labels.push_back(node_block);
 
     // Codegen each condition
     for (auto c : snode->conditions->children) {
@@ -301,20 +302,27 @@ AST::AbstractNode* CodeGenerator::visit_switch(AST::Switch* node, VisitContinue 
       this->assembler->write_operator(Opcode::Eq);
       this->assembler->write_branchif_to_label(node_block);
     }
+  }
 
-    // Jump to the next node
-    this->assembler->write_branch_to_label(next_condition_label);
+  // Branch to the default block
+  if (node->cases->children.size() > 0) {
+    this->assembler->write_branch_to_label(default_block);
+  }
 
-    // Codegen this node's block
-    this->assembler->place_label(node_block);
+  // Codegen the switch blocks
+  int i = 0;
+  for (auto n : node->cases->children) {
+    AST::SwitchNode* snode = n->as<AST::SwitchNode>();
+
+    // Codegen the block
+    this->assembler->place_label(block_labels[i]);
 
     // Pop the condition off the stack
     this->assembler->write_pop();
     this->visit_node(snode->block);
     this->assembler->write_branch_to_label(end_label);
 
-    // Beginning of the next condition, the default block of the end of the statement
-    this->assembler->place_label(next_condition_label);
+    i++;
   }
 
   // Codegen default block if there is one
