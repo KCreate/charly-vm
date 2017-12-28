@@ -45,9 +45,9 @@ struct RunFlags {
   bool show_license = false;
   bool dump_tokens = false;
   bool dump_ast = false;
-  bool dump_disassembly = false;
-  bool disassembly_offsets = false;
-  bool disassembly_branches = false;
+  bool dump_asm = false;
+  bool asm_no_offsets = false;
+  bool asm_no_branches = false;
   bool skip_execution = false;
   bool trace_opcodes = false;
   bool trace_catchtables = false;
@@ -170,12 +170,12 @@ struct RunFlags {
       this->dump_ast = true;
     if (!flag.compare("dump_tokens"))
       this->dump_tokens = true;
-    if (!flag.compare("dump_disassembly"))
-      this->dump_disassembly = true;
-    if (!flag.compare("disassembly_offsets"))
-      this->disassembly_offsets = true;
-    if (!flag.compare("disassembly_branches"))
-      this->disassembly_branches = true;
+    if (!flag.compare("dump_asm"))
+      this->dump_asm = true;
+    if (!flag.compare("asm_no_offsets"))
+      this->asm_no_offsets = true;
+    if (!flag.compare("asm_no_branches"))
+      this->asm_no_branches = true;
     if (!flag.compare("skipexec"))
       this->skip_execution = true;
     if (!flag.compare("trace_opcodes"))

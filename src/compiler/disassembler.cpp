@@ -38,12 +38,12 @@ void Disassembler::dump(std::ostream& stream) {
     Opcode opcode = static_cast<Opcode>(this->block->uint8_at(offset));
 
     // Print the branch arrows
-    if (this->flags.show_branch_arrows && this->highest_branch_density > 0) {
+    if (!this->flags.no_branches && this->highest_branch_density > 0) {
       this->draw_branchlines_for_offset(offset, stream);
     }
 
     // Print the offset
-    if (this->flags.show_offsets) {
+    if (!this->flags.no_offsets) {
       this->print_hex(offset, stream, 6);
       stream << ": ";
     }

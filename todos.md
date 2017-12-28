@@ -32,6 +32,17 @@
     - Determining the current block is now just a read to the current frame
     - Running a new instruction block requires creating a frame for it and setting the function property to `nullptr`
 
+# Dynamic lookup of symbols?
+- Makes a REPL trivial
+- Easy to turn an object into a stackframes environment table, and back
+- Easy implementation of global symbols
+- What needs to be changed?
+  - Stack frames would need a mapping from symbols to offsets
+    - `std::map<Symbol, Offset>`
+  - New opcodes
+    - readdynamic symbol
+    - setdynamic symbol
+
 # VM bootstrapping
 - On startup, the VM runs a prelude file
   - Loads some libraries

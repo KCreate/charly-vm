@@ -81,15 +81,15 @@ public:
 
   // Some flags for the disassembler
   struct Flags {
-    bool show_branch_arrows = false;
-    bool show_offsets = true;
+    bool no_branches = false;
+    bool no_offsets = false;
     uint32_t start_offset = 0;
     uint32_t end_offset = UINT32_MAX;
   };
 
 public:
   Disassembler(InstructionBlock* b, Flags f) : block(b), flags(f) {
-    if (f.show_branch_arrows) {
+    if (!f.no_branches) {
       this->detect_branches();
     }
   }
