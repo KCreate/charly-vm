@@ -26,7 +26,7 @@
 
 #include <algorithm>
 #include <iomanip>
-#include <string_view>
+#include <cmath>
 
 #include "disassembler.h"
 
@@ -44,7 +44,8 @@ void Disassembler::dump(std::ostream& stream) {
 
     // Print the offset
     if (!this->flags.no_offsets) {
-      this->print_hex(offset, stream, 6);
+      int minimum_hex_digits = std::ceil(std::log(this->block->writeoffset) / std::log(16));
+      this->print_hex(offset, stream, minimum_hex_digits + 1);
       stream << ": ";
     }
 
