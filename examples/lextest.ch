@@ -1,1 +1,1 @@
-self = 25
+print(false ? "hello world" : "hello universe")

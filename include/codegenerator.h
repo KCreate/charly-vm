@@ -63,6 +63,7 @@ public:
 private:
   // Codegen specific AST nodes
   AST::AbstractNode* visit_block(AST::Block* node, VisitContinue cont);
+  AST::AbstractNode* visit_ternaryif(AST::TernaryIf* node, VisitContinue cont);
   AST::AbstractNode* visit_if(AST::If* node, VisitContinue cont);
   AST::AbstractNode* visit_ifelse(AST::IfElse* node, VisitContinue cont);
   AST::AbstractNode* visit_unless(AST::Unless* node, VisitContinue cont);

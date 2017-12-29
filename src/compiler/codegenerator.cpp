@@ -70,6 +70,25 @@ AST::AbstractNode* CodeGenerator::visit_block(AST::Block* node, VisitContinue co
   return node;
 }
 
+AST::AbstractNode* CodeGenerator::visit_ternaryif(AST::TernaryIf* node, VisitContinue cont) {
+  (void)cont;
+
+  // Codegen the condition
+  this->visit_node(node->condition);
+
+  // Skip over the then expression if the condition was false
+  Label else_exp_label = this->assembler->reserve_label();
+  Label end_exp_label = this->assembler->reserve_label();
+  this->assembler->write_branchunless_to_label(else_exp_label);
+  this->visit_node(node->then_expression);
+  this->assembler->write_branch_to_label(end_exp_label);
+  this->assembler->place_label(else_exp_label);
+  this->visit_node(node->else_expression);
+  this->assembler->place_label(end_exp_label);
+
+  return node;
+}
+
 AST::AbstractNode* CodeGenerator::visit_if(AST::If* node, VisitContinue cont) {
   (void)cont;
 

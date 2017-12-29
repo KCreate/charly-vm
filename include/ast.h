@@ -241,6 +241,35 @@ struct Block : public AbstractNode {
   }
 };
 
+// <condition> ? <then_expression> : <else_expression>
+struct TernaryIf : public AbstractNode {
+  AbstractNode* condition;
+  AbstractNode* then_expression;
+  AbstractNode* else_expression;
+
+  TernaryIf(AbstractNode* c, AbstractNode* t, AbstractNode* e) : condition(c), then_expression(t), else_expression(e) {
+  }
+
+  inline ~TernaryIf() {
+    delete condition;
+    delete then_expression;
+    delete else_expression;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- TernaryIf:" << '\n';
+    this->condition->dump(stream, depth + 1);
+    this->then_expression->dump(stream, depth + 1);
+    this->else_expression->dump(stream, depth + 1);
+  }
+
+  void visit(VisitFunc func) {
+    this->condition = func(this->condition);
+    this->then_expression = func(this->then_expression);
+    this->else_expression = func(this->else_expression);
+  }
+};
+
 // if <condition> {
 //   <then_block>
 // }
@@ -1564,6 +1593,7 @@ struct TryCatch : public AbstractNode {
 static const size_t kTypeEmpty = typeid(Empty).hash_code();
 static const size_t kTypeNodeList = typeid(NodeList).hash_code();
 static const size_t kTypeBlock = typeid(Block).hash_code();
+static const size_t kTypeTernaryIf = typeid(TernaryIf).hash_code();
 static const size_t kTypeIf = typeid(If).hash_code();
 static const size_t kTypeIfElse = typeid(IfElse).hash_code();
 static const size_t kTypeUnless = typeid(Unless).hash_code();

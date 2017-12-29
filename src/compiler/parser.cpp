@@ -803,7 +803,7 @@ AST::AbstractNode* Parser::parse_ternary_if() {
     this->expect_token(TokenType::Colon);
     AST::AbstractNode* right = this->parse_ternary_if();
 
-    return (new AST::IfElse(test, left, right))->at(test, right);
+    return (new AST::TernaryIf(test, left, right))->at(test, right);
   } else {
     return test;
   }
