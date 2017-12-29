@@ -174,16 +174,7 @@
   - Not an excuse, but reduces it's priority to be fixed
 - Template schenanigans could register AST nodes in a pool which would be cleared if an exception occurs
 
-# Compiler
-- Clean the code of the compiler
-  - Come up with a good way to structure all the things the compiler does and produces
-    - Errors
-    - Warnings
-    - Results
-      - Produced symbols
-      - InstructionBlocks
-      - Static data (strings)
-    - Logging
+# Extra syntax for variadic functions
 - Only insert the `arguments` array into functions which need it.
   - Special syntax for functions that receive a variable amount of arguments
     - `func foo(a, b)[args] { ... }`
@@ -207,17 +198,17 @@
     - Determines the methods required argument count
   - If a function doesn't have the variadic notation, it is marked as non-variadic
     - If a function is not variadic, the VM doesn't have to create the arguments array
-- Compiler stages
-  - [x] Tokenization
-  - [x] Parsing
-    - [x] Syntax desugaring (`foo["bar"]` turns to `foo.bar`)
-    - [x] Remove useless literals from blocks
-  - [x] Constant folding
-  - [x] Remove string duplicates (to keep the static data section small)
-  - [x] LVar offset calculation
-  - [x] Wrap nodes in stack operations (pop unused stack values)
-  - [x] Code generation
-  - [x] Label resolution (ifs, breaks, continues, etc.)
+
+# Compiler
+- Clean the code of the compiler
+  - Come up with a good way to structure all the things the compiler does and produces
+    - Errors
+    - Warnings
+    - Results
+      - Produced symbols
+      - InstructionBlocks
+      - Static data (strings)
+    - Logging
 - Compiler should be able to take some flags
   - Should the program be wrapped in a module inclusion function?
     ```javascript

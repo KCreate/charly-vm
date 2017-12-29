@@ -788,7 +788,7 @@ AST::AbstractNode* Parser::parse_assignment() {
       return node;
     }
   } else {
-    this->illegal_node(left, "Invalid left-hand side of assignment.");
+    this->illegal_node(left, "Invalid left-hand side of assignment");
     return nullptr;
   }
 }

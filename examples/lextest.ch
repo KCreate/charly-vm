@@ -1,1 +1,1 @@
-print("hello world")
+self = 25
