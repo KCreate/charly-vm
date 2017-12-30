@@ -62,7 +62,7 @@ AST::AbstractNode* CodeGenerator::visit_block(AST::Block* node, VisitContinue co
     this->visit_node(node);
 
     // If the statement produces an expression, pop it off the stack now
-    if (node->yields_value()) {
+    if (AST::yields_value(node)) {
       this->assembler->write_pop();
     }
   }

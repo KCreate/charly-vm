@@ -39,41 +39,36 @@ AST::AbstractNode* Normalizer::visit_block(AST::Block* node, VisitContinue cont)
   for (auto statement : node->statements) {
     AST::AbstractNode* normalized_node = this->visit_node(statement);
 
-    if (normalized_node != nullptr) {
-      if (append_to_block) {
-        if (!normalized_node->is_literal()) {
-          remaining_statements.push_back(normalized_node);
+    if (append_to_block) {
 
-          if (normalized_node->type() == AST::kTypeReturn || normalized_node->type() == AST::kTypeBreak ||
-              normalized_node->type() == AST::kTypeContinue || normalized_node->type() == AST::kTypeThrow) {
-            append_to_block = false;
-          }
-        } else {
-          delete normalized_node;
+      // Generate local initialisations for function and class nodes
+      if (normalized_node->type() == AST::kTypeFunction || normalized_node->type() == AST::kTypeClass) {
+        // Read the name of the node
+        std::string name;
+        if (normalized_node->type() == AST::kTypeFunction) {
+          name = normalized_node->as<AST::Function>()->name;
+        }
+        if (normalized_node->type() == AST::kTypeClass) {
+          name = normalized_node->as<AST::Class>()->name;
+        }
+
+        // Wrap the node in a local initialisation if it has a name
+        if (name.size() > 0) {
+          normalized_node = (new AST::LocalInitialisation(name, normalized_node, true))->at(normalized_node);
+        }
+      }
+
+      if (!AST::is_literal(normalized_node)) {
+        remaining_statements.push_back(normalized_node);
+
+        if (AST::is_control_statement(normalized_node)) {
+          append_to_block = false;
         }
       } else {
         delete normalized_node;
       }
-    }
-  }
-
-  // Wrap functions and classes in local initialisation nodes
-  for (auto& statement : remaining_statements) {
-    // Generate local initialisations for function and class nodes
-    if (statement->type() == AST::kTypeFunction || statement->type() == AST::kTypeClass) {
-      // Read the name of the node
-      std::string name;
-      if (statement->type() == AST::kTypeFunction) {
-        name = statement->as<AST::Function>()->name;
-      }
-      if (statement->type() == AST::kTypeClass) {
-        name = statement->as<AST::Class>()->name;
-      }
-
-      // Wrap the node in a local initialisation if it has a name
-      if (name.size() > 0) {
-        statement = (new AST::LocalInitialisation(name, statement, true))->at(statement);
-      }
+    } else {
+      delete normalized_node;
     }
   }
 
@@ -315,8 +310,7 @@ AST::AbstractNode* Normalizer::visit_switch(AST::Switch* node, VisitContinue con
 }
 
 AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue cont) {
-  cont();
-  node->body = this->wrap_in_block(node->body, cont);
+  node->body = this->wrap_in_block(node->body);
 
   AST::Block* body = node->body->as<AST::Block>();
 
@@ -326,13 +320,21 @@ AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue
   } else {
     // Check that the last statement in the block would exit it,
     // either via a return, break, continue or throw
-    // If not, insert a return null
-    auto last_node_type = body->statements.back()->type();
-    if (last_node_type != AST::kTypeReturn && last_node_type != AST::kTypeThrow) {
-      body->append_node((new AST::Return(new AST::Null()))->at(body));
+    //
+    // If the last node yields a value, it is implicitly returned
+    // If not, null is returned
+    AST::AbstractNode* last_node = body->statements.back();
+    if (AST::yields_value(last_node)) {
+      body->statements.pop_back();
+      body->append_node((new AST::Return(last_node))->at(last_node));
+    } else {
+      if (last_node->type() != AST::kTypeReturn && last_node->type() != AST::kTypeThrow) {
+        body->append_node((new AST::Return(new AST::Null()))->at(body));
+      }
     }
   }
 
+  cont();
   return node;
 }
 
@@ -350,7 +352,7 @@ AST::AbstractNode* Normalizer::visit_class(AST::Class* node, VisitContinue cont)
     static_func->as<AST::Function>()->known_self_vars = known_static_vars;
   }
 
-  if (node->constructor != nullptr) {
+  if (node->constructor->type() == AST::kTypeEmpty) {
     node->constructor->as<AST::Function>()->known_self_vars = known_member_vars;
   }
 
@@ -372,6 +374,14 @@ AST::AbstractNode* Normalizer::visit_localinitialisation(AST::LocalInitialisatio
     if (klass->name.size() == 0) {
       klass->name = node->name;
     }
+  }
+
+  return node;
+}
+
+AST::AbstractNode* Normalizer::wrap_in_block(AST::AbstractNode* node) {
+  if (node->type() != AST::kTypeBlock) {
+    node = (new AST::Block({node}))->at(node);
   }
 
   return node;

@@ -51,6 +51,8 @@ public:
   AST::AbstractNode* visit_localinitialisation(AST::LocalInitialisation* node, VisitContinue cont);
 
 private:
+  AST::AbstractNode* wrap_in_block(AST::AbstractNode* node);
   AST::AbstractNode* wrap_in_block(AST::AbstractNode* node, VisitContinue cont);
+  AST::AbstractNode* wrap_in_return(AST::AbstractNode* node, VisitContinue cont);
 };
 }  // namespace Charly::Compilation

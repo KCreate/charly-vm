@@ -43,11 +43,6 @@ static const std::string kPaddingCharacters = "  ";
 struct AbstractNode;
 typedef std::function<AbstractNode*(AbstractNode*)> VisitFunc;
 
-template <class T>
-static inline T* cast(AbstractNode* node) {
-  return reinterpret_cast<T*>(node);
-}
-
 // Abstract base class of all ASTNodes
 struct AbstractNode {
 public:
@@ -121,14 +116,6 @@ public:
   virtual void visit(VisitFunc func) {
     (void)func;
   };
-
-  virtual bool is_literal() {
-    return false;
-  }
-
-  virtual bool yields_value() {
-    return false;
-  }
 
   template <typename T>
   T* as() {
@@ -514,10 +501,6 @@ struct Unary : public AbstractNode {
   void visit(VisitFunc func) {
     this->expression = func(this->expression);
   }
-
-  bool yields_value() {
-    return true;
-  }
 };
 
 // <left> <operator_type> <right>
@@ -543,10 +526,6 @@ struct Binary : public AbstractNode {
   void visit(VisitFunc func) {
     this->left = func(this->left);
     this->right = func(this->right);
-  }
-
-  bool yields_value() {
-    return true;
   }
 };
 
@@ -632,10 +611,6 @@ struct And : public AbstractNode {
     this->left = func(this->left);
     this->right = func(this->right);
   }
-
-  bool yields_value() {
-    return true;
-  }
 };
 
 // <left> || <right>
@@ -661,10 +636,6 @@ struct Or : public AbstractNode {
     this->left = func(this->left);
     this->right = func(this->right);
   }
-
-  bool yields_value() {
-    return true;
-  }
 };
 
 // typeof <expression>
@@ -685,10 +656,6 @@ struct Typeof : public AbstractNode {
 
   void visit(VisitFunc func) {
     this->expression = func(this->expression);
-  }
-
-  bool yields_value() {
-    return true;
   }
 };
 
@@ -721,10 +688,6 @@ struct Assignment : public AbstractNode {
   void visit(VisitFunc func) {
     this->expression = func(this->expression);
   }
-
-  bool yields_value() {
-    return true;
-  }
 };
 
 // <target>.<member> = <expression>
@@ -750,10 +713,6 @@ struct MemberAssignment : public AbstractNode {
   void visit(VisitFunc func) {
     this->target = func(this->target);
     this->expression = func(this->expression);
-  }
-
-  bool yields_value() {
-    return true;
   }
 };
 
@@ -784,10 +743,6 @@ struct ANDMemberAssignment : public AbstractNode {
     this->target = func(this->target);
     this->expression = func(this->expression);
   }
-
-  bool yields_value() {
-    return true;
-  }
 };
 
 // <target>[<index>] = <expression>
@@ -815,10 +770,6 @@ struct IndexAssignment : public AbstractNode {
     this->target = func(this->target);
     this->index = func(this->index);
     this->expression = func(this->expression);
-  }
-
-  bool yields_value() {
-    return true;
   }
 };
 
@@ -851,10 +802,6 @@ struct ANDIndexAssignment : public AbstractNode {
     this->index = func(this->index);
     this->expression = func(this->expression);
   }
-
-  bool yields_value() {
-    return true;
-  }
 };
 
 // <target>(<arguments>)
@@ -879,10 +826,6 @@ struct Call : public AbstractNode {
   void visit(VisitFunc func) {
     this->target = func(this->target);
     this->arguments = reinterpret_cast<NodeList*>(func(this->arguments));
-  }
-
-  bool yields_value() {
-    return true;
   }
 };
 
@@ -909,10 +852,6 @@ struct CallMember : public AbstractNode {
   void visit(VisitFunc func) {
     this->context = func(this->context);
     this->arguments = reinterpret_cast<NodeList*>(func(this->arguments));
-  }
-
-  bool yields_value() {
-    return true;
   }
 };
 
@@ -943,20 +882,12 @@ struct CallIndex : public AbstractNode {
     this->index = func(this->index);
     this->arguments = reinterpret_cast<NodeList*>(func(this->arguments));
   }
-
-  bool yields_value() {
-    return true;
-  }
 };
 
 // reads a value from the stack
 struct StackValue : public AbstractNode {
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- StackValue:" << '\n';
-  }
-
-  bool yields_value() {
-    return true;
   }
 };
 
@@ -980,14 +911,6 @@ struct Identifier : public AbstractNode {
     }
     stream << '\n';
   }
-
-  virtual bool is_literal() {
-    return true;
-  }
-
-  bool yields_value() {
-    return true;
-  }
 };
 
 // $<index>
@@ -1000,14 +923,6 @@ struct IndexIntoArguments : public AbstractNode {
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- IndexIntoArguments: " << this->index << '\n';
   }
-
-  virtual bool is_literal() {
-    return true;
-  }
-
-  bool yields_value() {
-    return true;
-  }
 };
 
 // self
@@ -1016,14 +931,6 @@ struct Self : public AbstractNode {
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- Self: ir_frame_level=" << this->ir_frame_level << '\n';
-  }
-
-  virtual bool is_literal() {
-    return true;
-  }
-
-  bool yields_value() {
-    return true;
   }
 };
 
@@ -1046,10 +953,6 @@ struct Member : public AbstractNode {
 
   void visit(VisitFunc func) {
     this->target = func(this->target);
-  }
-
-  bool yields_value() {
-    return true;
   }
 };
 
@@ -1076,10 +979,6 @@ struct Index : public AbstractNode {
     this->target = func(this->target);
     this->argument = func(this->argument);
   }
-
-  bool yields_value() {
-    return true;
-  }
 };
 
 // null
@@ -1087,28 +986,12 @@ struct Null : public AbstractNode {
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- Null: " << '\n';
   }
-
-  virtual bool is_literal() {
-    return true;
-  }
-
-  bool yields_value() {
-    return true;
-  }
 };
 
 // NAN
 struct Nan : public AbstractNode {
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- NAN: " << '\n';
-  }
-
-  virtual bool is_literal() {
-    return true;
-  }
-
-  bool yields_value() {
-    return true;
   }
 };
 
@@ -1123,14 +1006,6 @@ struct String : public AbstractNode {
     stream << std::string(depth, ' ') << "- String:";
     stream << ' ' << this->value << '\n';
   }
-
-  virtual bool is_literal() {
-    return true;
-  }
-
-  bool yields_value() {
-    return true;
-  }
 };
 
 // <value>
@@ -1144,14 +1019,6 @@ struct Number : public AbstractNode {
     stream << std::string(depth, ' ') << "- Number:";
     stream << ' ' << this->value << '\n';
   }
-
-  virtual bool is_literal() {
-    return true;
-  }
-
-  bool yields_value() {
-    return true;
-  }
 };
 
 // <value>
@@ -1164,14 +1031,6 @@ struct Boolean : public AbstractNode {
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- Boolean:";
     stream << ' ' << (this->value ? "true" : "false") << '\n';
-  }
-
-  virtual bool is_literal() {
-    return true;
-  }
-
-  bool yields_value() {
-    return true;
   }
 };
 
@@ -1192,10 +1051,6 @@ struct Array : public AbstractNode {
 
   void visit(VisitFunc func) {
     this->expressions = reinterpret_cast<NodeList*>(func(this->expressions));
-  }
-
-  bool yields_value() {
-    return true;
   }
 };
 
@@ -1234,10 +1089,6 @@ struct Hash : public AbstractNode {
     for (auto& pair : this->pairs) {
       pair.second = func(pair.second);
     }
-  }
-
-  bool yields_value() {
-    return true;
   }
 };
 
@@ -1333,10 +1184,6 @@ struct Function : public AbstractNode {
 
   void visit(VisitFunc func) {
     this->body = func(this->body);
-  }
-
-  bool yields_value() {
-    return true;
   }
 };
 
@@ -1449,9 +1296,6 @@ struct Class : public AbstractNode {
     this->parents = reinterpret_cast<NodeList*>(func(this->parents));
   }
 
-  bool yields_value() {
-    return true;
-  }
 };
 
 // let <name>
@@ -1639,4 +1483,37 @@ static const size_t kTypeThrow = typeid(Throw).hash_code();
 static const size_t kTypeBreak = typeid(Break).hash_code();
 static const size_t kTypeContinue = typeid(Continue).hash_code();
 static const size_t kTypeTryCatch = typeid(TryCatch).hash_code();
+
+// Casts node to a given type without checking for errors
+template <class T>
+static inline T* cast(AbstractNode* node) {
+  return reinterpret_cast<T*>(node);
+}
+
+// Checks wether a given node is a control statement
+static inline bool is_control_statement(AbstractNode* node) {
+  return (node->type() == kTypeReturn || node->type() == kTypeBreak || node->type() == kTypeContinue ||
+          node->type() == kTypeThrow);
+}
+
+// Checks wether a given node is a literal that can be safely removed from a block
+static inline bool is_literal(AbstractNode* node) {
+  return (node->type() == kTypeIdentifier || node->type() == kTypeIndexIntoArguments || node->type() == kTypeSelf ||
+          node->type() == kTypeNull || node->type() == kTypeNan || node->type() == kTypeString ||
+          node->type() == kTypeNumber || node->type() == kTypeBoolean || node->type() == kTypeFunction);
+}
+
+static inline bool yields_value(AbstractNode* node) {
+  return (node->type() == kTypeTernaryIf || node->type() == kTypeUnary || node->type() == kTypeBinary ||
+          node->type() == kTypeAnd || node->type() == kTypeOr || node->type() == kTypeTypeof ||
+          node->type() == kTypeAssignment || node->type() == kTypeMemberAssignment ||
+          node->type() == kTypeANDMemberAssignment || node->type() == kTypeIndexAssignment ||
+          node->type() == kTypeANDIndexAssignment || node->type() == kTypeCall || node->type() == kTypeCallMember ||
+          node->type() == kTypeCallIndex || node->type() == kTypeStackValue || node->type() == kTypeIdentifier ||
+          node->type() == kTypeIndexIntoArguments || node->type() == kTypeSelf || node->type() == kTypeMember ||
+          node->type() == kTypeIndex || node->type() == kTypeNull || node->type() == kTypeNan ||
+          node->type() == kTypeString || node->type() == kTypeNumber || node->type() == kTypeBoolean ||
+          node->type() == kTypeArray || node->type() == kTypeHash || node->type() == kTypeFunction ||
+          node->type() == kTypeClass);
+}
 }  // namespace Charly::Compilation::AST
