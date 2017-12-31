@@ -137,6 +137,9 @@ struct NodeList : public AbstractNode {
 
   NodeList() {
   }
+  template <typename... Args>
+  NodeList(Args&... params) : children({params...}) {
+  }
   NodeList(std::initializer_list<AbstractNode*> list) : children(list) {
   }
 
@@ -189,6 +192,9 @@ struct Block : public AbstractNode {
   std::list<AbstractNode*> statements;
 
   Block() {
+  }
+  template <typename... Args>
+  Block(Args&... params) : statements({params...}) {
   }
   Block(std::initializer_list<AbstractNode*> list) : statements(list) {
   }
@@ -1503,6 +1509,7 @@ static inline bool is_literal(AbstractNode* node) {
           node->type() == kTypeNumber || node->type() == kTypeBoolean || node->type() == kTypeFunction);
 }
 
+// Checks wether a given node yields a value
 static inline bool yields_value(AbstractNode* node) {
   return (node->type() == kTypeTernaryIf || node->type() == kTypeUnary || node->type() == kTypeBinary ||
           node->type() == kTypeAnd || node->type() == kTypeOr || node->type() == kTypeTypeof ||
