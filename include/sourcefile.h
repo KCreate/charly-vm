@@ -26,13 +26,12 @@
 
 #include <cstdio>
 #include <string>
-#include "buffer.h"
+#include "utf8buffer.h"
 
 #pragma once
 
 namespace Charly {
-
-class SourceFile {
+class SourceFile : public UTF8Buffer {
 public:
   std::string filename = "<unknown>";
   size_t frame_pos = 0;
@@ -42,15 +41,13 @@ public:
   uint32_t current_char = L'\0';
   std::string frame;
 
-  SourceFile(const std::string& filename, const std::string& source) {
-    this->filename = filename;
-    this->buffer.read(source);
+  SourceFile(const std::string& f, const std::string& source) : UTF8Buffer(), filename(f) {
+    this->write_string(source);
     this->read_char();
   }
 
-  SourceFile(const std::string& source) {
-    this->filename = "";
-    this->buffer.read(source);
+  SourceFile(const std::string& source) : UTF8Buffer(), filename("") {
+    this->write_string(source);
     this->read_char();
   }
 
@@ -66,8 +63,8 @@ public:
   }
 
   // Read char, append it to the current frame and advance one position
-  uint32_t read_char() {
-    uint32_t cp = this->buffer.next_utf8();
+  inline uint32_t read_char() {
+    uint32_t cp = this->next_utf8();
 
     this->pos += 1;
     this->current_char = cp;
@@ -89,17 +86,8 @@ public:
   }
 
   // Read a char without appending to the frame or advancing the position
-  uint32_t peek_char() {
-    return this->buffer.peek_next_utf8();
+  inline uint32_t peek_char() {
+    return this->peek_next_utf8();
   }
-
-  // Close the source
-  // Note: This is only useful if the source is a file or an IO of some sorts
-  SourceFile& close() {
-    return *this;
-  }
-
-private:
-  Buffer buffer;
 };
 }  // namespace Charly

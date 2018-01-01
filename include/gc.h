@@ -27,7 +27,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "block.h"
+#include "instructionblock.h"
 #include "context.h"
 #include "defines.h"
 #include "exception.h"

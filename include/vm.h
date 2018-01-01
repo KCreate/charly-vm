@@ -26,7 +26,7 @@
 
 #include <optional>
 
-#include "block.h"
+#include "instructionblock.h"
 #include "context.h"
 #include "defines.h"
 #include "exception.h"

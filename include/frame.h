@@ -26,7 +26,7 @@
 
 #include <vector>
 
-#include "block.h"
+#include "instructionblock.h"
 #include "defines.h"
 #include "value.h"
 

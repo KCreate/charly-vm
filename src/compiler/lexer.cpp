@@ -316,7 +316,7 @@ void Lexer::read_token() {
 
   this->token.location.length = this->source.frame.size() - 1;
   this->source.reset_frame();
-  Buffer::write_cp_to_string(this->source.current_char, this->source.frame);
+  UTF8Buffer::write_cp_to_string(this->source.current_char, this->source.frame);
 
   // Change the type of keyword tokens
   if (this->token.type == TokenType::Identifier) {
@@ -603,7 +603,7 @@ void Lexer::consume_string() {
         this->unexpected_char();
       }
       default: {
-        Buffer::write_cp_to_stream(this->source.current_char, strbuff);
+        UTF8Buffer::write_cp_to_stream(this->source.current_char, strbuff);
         break;
       }
     }

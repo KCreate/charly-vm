@@ -24,7 +24,7 @@
  * SOFTWARE.
  */
 
-#include "block.h"
+#include "instructionblock.h"
 
 #pragma once
 

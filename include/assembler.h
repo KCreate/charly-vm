@@ -28,7 +28,7 @@
 #include <list>
 #include <unordered_map>
 
-#include "block.h"
+#include "instructionblock.h"
 #include "opcode.h"
 
 #pragma once

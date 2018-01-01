@@ -24,7 +24,7 @@
  * SOFTWARE.
  */
 
-#include "block.h"
+#include "instructionblock.h"
 #include "parseresult.h"
 #include "symboltable.h"
 

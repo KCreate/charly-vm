@@ -24,8 +24,9 @@
  * SOFTWARE.
  */
 
-#include "block.h"
-#include "buffer.h"
+#include "instructionblock.h"
+#include "memoryblock.h"
+#include "utf8buffer.h"
 #include "context.h"
 #include "defines.h"
 #include "exception.h"

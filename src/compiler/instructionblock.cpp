@@ -24,7 +24,7 @@
  * SOFTWARE.
  */
 
-#include "block.h"
+#include "instructionblock.h"
 
 namespace Charly {
 void InstructionBlock::clean() {

@@ -29,6 +29,7 @@
 #include <iostream>
 
 #include "ast.h"
+#include "utf8buffer.h"
 #include "charly.h"
 #include "cli.h"
 #include "compiler.h"
@@ -82,7 +83,7 @@ int CLI::run() {
     parse_result = parser.parse();
   } catch (UnexpectedCharError& ex) {
     std::cout << "Encountered an unexpected char '";
-    Buffer::write_cp_to_stream(ex.cp, std::cout);
+    UTF8Buffer::write_cp_to_stream(ex.cp, std::cout);
     std::cout << "' ";
     ex.location.write_to_stream(std::cout);
     std::cout << '\n';

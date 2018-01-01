@@ -47,7 +47,7 @@ class CLI;
 struct RunFlags;
 struct Context;
 class SourceFile;
-class Buffer;
+class UTF8Buffer;
 class SymbolTable;
 
 enum Opcode : uint8_t;
