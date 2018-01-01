@@ -26,12 +26,12 @@
 
 #include <optional>
 
-#include "instructionblock.h"
 #include "context.h"
 #include "defines.h"
 #include "exception.h"
 #include "frame.h"
 #include "gc.h"
+#include "instructionblock.h"
 #include "internals.h"
 #include "opcode.h"
 #include "status.h"

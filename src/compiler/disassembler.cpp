@@ -25,8 +25,8 @@
  */
 
 #include <algorithm>
-#include <iomanip>
 #include <cmath>
+#include <iomanip>
 
 #include "disassembler.h"
 
@@ -172,9 +172,8 @@ void Disassembler::detect_branches() {
     offset += kInstructionLengths[opcode];
   }
 
-  std::sort(this->branches.begin(), this->branches.end(), [](Branch &l, Branch& r) {
-    return l.lower_address() > r.lower_address();
-  });
+  std::sort(this->branches.begin(), this->branches.end(),
+            [](Branch& l, Branch& r) { return l.lower_address() > r.lower_address(); });
 
   // Calculate the maximum amount of active branches at any given point
   // in the program
@@ -190,12 +189,12 @@ void Disassembler::detect_branches() {
     // of another branch
     auto overlaps_with_other_branchline = [&](uint32_t branchline) {
       return std::count_if(this->branches.begin(), this->branches.end(), [&](Branch& b) {
-        if (b.has_allocated_branchline && br1.overlaps_with_branch(b)) {
-          return branchline == b.branchline;
-        }
+               if (b.has_allocated_branchline && br1.overlaps_with_branch(b)) {
+                 return branchline == b.branchline;
+               }
 
-        return false;
-      }) > 0;
+               return false;
+             }) > 0;
     };
 
     while (overlaps_with_other_branchline(branchline)) {
@@ -239,7 +238,6 @@ void Disassembler::draw_branchlines_for_offset(uint32_t offset, std::ostream& st
         while (start_offset < branchlanewidth) {
           // Do not draw this line if there is either a star or an arrow already placed here
           if (branchlane[start_offset + 2] != '>' && branchlane[start_offset] != '*') {
-
             if (branchlane[start_offset] == '|' || branchlane[start_offset] == '+') {
               branchlane[start_offset] = '+';
             } else {

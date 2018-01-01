@@ -45,27 +45,9 @@ InstructionBlock* Compiler::compile(ParseResult& result) {
   result.parse_tree->at(block);
 
   // Add the known vars which are known to be inserted via the require call
-  IRKnownSelfVars* known_self_vars = new IRKnownSelfVars({
-    "require_no_exec",
-    "require",
-    "Object",
-    "Class",
-    "Array",
-    "String",
-    "Number",
-    "Function",
-    "Boolean",
-    "Null",
-    "stdin",
-    "stdout",
-    "stderr",
-    "print",
-    "write",
-    "gets",
-    "getc",
-    "exit",
-    "sleep"
-  });
+  IRKnownSelfVars* known_self_vars = new IRKnownSelfVars(
+      {"require_no_exec", "require", "Object", "Class", "Array", "String", "Number", "Function", "Boolean", "Null",
+       "stdin", "stdout", "stderr", "print", "write", "gets", "getc", "exit", "sleep"});
   result.parse_tree->as<AST::Function>()->known_self_vars = known_self_vars;
 
   // Clean up the code a little bit and add or remove some nodes

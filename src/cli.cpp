@@ -29,7 +29,6 @@
 #include <iostream>
 
 #include "ast.h"
-#include "utf8buffer.h"
 #include "charly.h"
 #include "cli.h"
 #include "compiler.h"
@@ -37,6 +36,7 @@
 #include "disassembler.h"
 #include "parser.h"
 #include "sourcefile.h"
+#include "utf8buffer.h"
 
 namespace Charly {
 using namespace Compilation;

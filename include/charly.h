@@ -24,22 +24,22 @@
  * SOFTWARE.
  */
 
-#include "instructionblock.h"
-#include "memoryblock.h"
-#include "utf8buffer.h"
 #include "context.h"
 #include "defines.h"
 #include "exception.h"
 #include "frame.h"
 #include "gc.h"
+#include "instructionblock.h"
 #include "internals.h"
 #include "managedcontext.h"
+#include "memoryblock.h"
 #include "opcode.h"
 #include "operators.h"
 #include "runflags.h"
 #include "sourcefile.h"
 #include "status.h"
 #include "symboltable.h"
+#include "utf8buffer.h"
 #include "value.h"
 #include "vm.h"
 

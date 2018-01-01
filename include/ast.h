@@ -1301,7 +1301,6 @@ struct Class : public AbstractNode {
     this->static_functions = reinterpret_cast<NodeList*>(func(this->static_functions));
     this->parents = reinterpret_cast<NodeList*>(func(this->parents));
   }
-
 };
 
 // let <name>

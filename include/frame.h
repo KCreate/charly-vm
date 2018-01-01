@@ -26,8 +26,8 @@
 
 #include <vector>
 
-#include "instructionblock.h"
 #include "defines.h"
+#include "instructionblock.h"
 #include "value.h"
 
 #pragma once

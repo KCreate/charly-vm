@@ -43,7 +43,8 @@ public:
     this->writeoffset = 0;
   }
   ~MemoryBlock() {
-    if (this->data) std::free(this->data);
+    if (this->data)
+      std::free(this->data);
   }
   MemoryBlock(const MemoryBlock& other) : data(nullptr) {
     this->data = reinterpret_cast<uint8_t*>(std::malloc(other.capacity));
@@ -61,7 +62,8 @@ public:
   }
   MemoryBlock& operator=(const MemoryBlock& other) {
     if (this != &other) {
-      if (this->data) std::free(this->data);
+      if (this->data)
+        std::free(this->data);
       this->data = reinterpret_cast<uint8_t*>(std::malloc(other.capacity));
       std::memcpy(this->data, other.data, other.capacity);
       this->capacity = other.capacity;
@@ -72,7 +74,8 @@ public:
   }
   MemoryBlock& operator=(MemoryBlock&& other) {
     if (this != &other) {
-      if (this->data) std::free(this->data);
+      if (this->data)
+        std::free(this->data);
     }
 
     return *this;
@@ -81,7 +84,6 @@ public:
   // Grows the internal buffer to hold an amount of data
   inline void grow_to_fit(size_t size) {
     if (this->capacity < size) {
-
       // Calculate the new size
       size_t new_size = this->capacity;
       while (new_size < size) {
@@ -120,7 +122,6 @@ public:
 
   // Write a string into the internal buffer
   inline void write_string(const std::string& data) {
-
     // 1 is subtracted from the size of the string as we don't want to
     // copy the null terminator at the end of the string
     this->grow_to_fit(this->writeoffset + data.size() - 1);
@@ -139,4 +140,4 @@ protected:
   size_t capacity = kInitialCapacity;
   size_t writeoffset = 0;
 };
-}
+}  // namespace Charly

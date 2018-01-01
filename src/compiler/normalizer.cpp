@@ -40,7 +40,6 @@ AST::AbstractNode* Normalizer::visit_block(AST::Block* node, VisitContinue cont)
     AST::AbstractNode* normalized_node = this->visit_node(statement);
 
     if (append_to_block) {
-
       // Generate local initialisations for function and class nodes
       if (normalized_node->type() == AST::kTypeFunction || normalized_node->type() == AST::kTypeClass) {
         // Read the name of the node
@@ -131,7 +130,6 @@ AST::AbstractNode* Normalizer::visit_binary(AST::Binary* node, VisitContinue con
 
   switch (node->operator_type) {
     case TokenType::Plus: {
-
       // Concatenate arrays
       if (node->left->type() == AST::kTypeArray && node->right->type() == AST::kTypeArray) {
         AST::Array* cat_array = node->left->as<AST::Array>();
@@ -193,7 +191,6 @@ AST::AbstractNode* Normalizer::visit_binary(AST::Binary* node, VisitContinue con
 
       if ((node->left->type() == AST::kTypeString && node->right->type() == AST::kTypeNumber) ||
           (node->left->type() == AST::kTypeNumber && node->right->type() == AST::kTypeString)) {
-
         AST::String* new_string;
         std::string source_string;
         int64_t num;

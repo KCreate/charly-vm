@@ -27,11 +27,11 @@
 #include <unordered_set>
 #include <vector>
 
-#include "instructionblock.h"
 #include "context.h"
 #include "defines.h"
 #include "exception.h"
 #include "frame.h"
+#include "instructionblock.h"
 #include "value.h"
 
 #pragma once
