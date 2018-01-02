@@ -45,12 +45,6 @@ struct UnresolvedReference {
   uint32_t instruction_base;
 };
 
-// Holds offset and length of a string in an instructionblock's static data section
-struct StringOffsetInfo {
-  uint32_t offset;
-  uint32_t length;
-};
-
 // Handles label resolution and compile-time offset calculations
 class Assembler : public InstructionBlock {
 public:
@@ -72,9 +66,6 @@ public:
   void write_registercatchtable_to_label(Label label);
   void write_putfunction_to_label(VALUE symbol, Label label, bool anonymous, uint32_t argc, uint32_t lvarcount);
 
-  // Known string handling
-  StringOffsetInfo write_putstring(const std::string& str);
-
   // Unresolved reference handling
   void resolve_unresolved_label_references();
   inline bool has_unresolved_label_references() {
@@ -82,21 +73,8 @@ public:
   }
 
 private:
-  // Static data handling
-  inline size_t hash_string(const std::string& str) {
-    return std::hash<std::string>{}(str);
-  }
-  inline bool string_is_duplicate(size_t strhash) {
-    return this->known_strings.count(strhash) > 0;
-  }
-  inline StringOffsetInfo get_staticdata_info(size_t strhash) {
-    return this->known_strings[strhash];
-  }
-
-  // Mapping from label-id to an offset
   std::unordered_map<Label, uint32_t> labels;
   std::list<UnresolvedReference> unresolved_label_references;
-  std::unordered_map<size_t, StringOffsetInfo> known_strings;
   uint32_t next_label_id = 0;
 };
 }  // namespace Charly::Compilation

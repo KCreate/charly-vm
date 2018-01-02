@@ -29,7 +29,6 @@
 #include "ast.h"
 #include "lexer.h"
 #include "location.h"
-#include "parseresult.h"
 #include "token.h"
 
 #pragma once
@@ -47,7 +46,7 @@ struct KeywordContext {
 class Parser : public Lexer {
 public:
   KeywordContext keyword_context;
-  ParseResult* parse();
+  AST::AbstractNode* parse();
 
   Parser(SourceFile& file) : Lexer(file) {
   }

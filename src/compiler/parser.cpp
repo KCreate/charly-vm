@@ -29,11 +29,9 @@
 #include "parser.h"
 
 namespace Charly::Compilation {
-ParseResult* Parser::parse() {
+AST::AbstractNode* Parser::parse() {
   this->advance();
-  AST::AbstractNode* tree = this->parse_program();
-  ParseResult* program = new ParseResult(this->source.filename, this->tokens, tree);
-  return program;
+  return this->parse_program();
 }
 
 Token& Parser::advance() {

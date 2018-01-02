@@ -36,7 +36,6 @@ namespace Charly {
 typedef uintptr_t VALUE;
 typedef intptr_t SIGNED_VALUE;
 typedef uint16_t STATUS;
-typedef void* FPOINTER;
 
 class VM;
 struct Frame;
@@ -47,8 +46,10 @@ class CLI;
 struct RunFlags;
 struct Context;
 class SourceFile;
+class MemoryBlock;
 class UTF8Buffer;
 class SymbolTable;
+class StringPool;
 
 enum Opcode : uint8_t;
 

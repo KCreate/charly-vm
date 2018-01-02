@@ -27,6 +27,7 @@
 #include <vector>
 
 #include <cstdint>
+#include <string>
 
 #pragma once
 
@@ -99,45 +100,80 @@ public:
   // Append data to the end of the internal buffer
   // Automatically grows the buffer to fit
   template <typename T>
-  inline void write(const T& value) {
+  inline uint32_t write(const T& value) {
     this->grow_to_fit(this->writeoffset);
     *reinterpret_cast<T*>(this->data + this->writeoffset) = value;
     this->writeoffset += sizeof(T);
+    return sizeof(T);
+  }
+
+  // Shorthand methods for some commonly used types
+  inline uint32_t write_u8(uint8_t val) {
+    return this->write(val);
+  }
+  inline uint32_t write_u16(uint16_t val) {
+    return this->write(val);
+  }
+  inline uint32_t write_u32(uint32_t val) {
+    return this->write(val);
+  }
+  inline uint32_t write_u64(uint64_t val) {
+    return this->write(val);
+  }
+  inline uint32_t write_double(float val) {
+    return this->write(val);
+  }
+  inline uint32_t write_double(double val) {
+    return this->write(val);
+  }
+  inline uint32_t write_ptr(uintptr_t val) {
+    return this->write(val);
   }
 
   // Write data to a given offset of the internal buffer
   // Automatically grows the buffer to fit
   template <typename T>
-  inline void write(const T& value, size_t offset) {
+  inline uint32_t write(const T& value, uint32_t offset) {
     this->grow_to_fit(offset + sizeof(T));
     *reinterpret_cast<T*>(this->data + offset) = value;
+    return sizeof(T);
   }
 
   // Write a block of memory into the internal buffer
-  inline void write_block(uint8_t* data, size_t size) {
+  inline uint32_t write_block(uint8_t* data, size_t size) {
     this->grow_to_fit(this->writeoffset + size);
     memcpy(this->data + this->writeoffset, data, size);
     this->writeoffset += size;
+    return size;
   }
 
   // Write a string into the internal buffer
-  inline void write_string(const std::string& data) {
-    // 1 is subtracted from the size of the string as we don't want to
-    // copy the null terminator at the end of the string
-    this->grow_to_fit(this->writeoffset + data.size() - 1);
-    memcpy(this->data + this->writeoffset, data.data(), data.size() - 1);
-    this->writeoffset += data.size() - 1;
+  inline uint32_t write_string(const std::string& data) {
+    this->grow_to_fit(this->writeoffset + data.size());
+    memcpy(this->data + this->writeoffset, data.data(), data.size());
+    this->writeoffset += data.size();
+    return data.size();
   }
 
   // Read data from a given offset
   template <typename T>
-  inline T& read(size_t offset) {
+  inline T& read(uint32_t offset) {
     return *reinterpret_cast<T*>(this->data + offset);
+  }
+
+  // Returns a pointer to the first byte of the internal buffer
+  inline uint8_t* getData() {
+    return this->data;
+  }
+
+  // Returns the current writeoffset into the internal buffer
+  inline size_t getWriteoffset() {
+    return this->writeoffset;
   }
 
 protected:
   uint8_t* data;
   size_t capacity = kInitialCapacity;
-  size_t writeoffset = 0;
+  uint32_t writeoffset = 0;
 };
 }  // namespace Charly

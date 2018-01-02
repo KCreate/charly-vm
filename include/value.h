@@ -61,13 +61,12 @@ enum kValueTypes : uint8_t {
 
   // Machine internal types
   kTypeFrame,
-  kTypeCatchTable,
-  kTypeInstructionBlock
+  kTypeCatchTable
 };
 
 // String representation of types
 // clang-format off
-static const std::string kValueTypeString[] = {
+static std::string kValueTypeString[] = {
   "dead",
   "integer",
   "float",
@@ -81,8 +80,7 @@ static const std::string kValueTypeString[] = {
   "cfunction",
   "symbol",
   "frame",
-  "catchtable",
-  "instructionblock"
+  "catchtable"
 };
 // clang-format on
 
@@ -204,6 +202,27 @@ struct Float {
   double float_value;
 };
 
+// Frames introduce new environments
+struct Frame {
+  VALUE flags;
+  Frame* parent;
+  Frame* parent_environment_frame;
+  CatchTable* last_active_catchtable;
+  Function* function;
+  std::vector<VALUE> environment;
+  VALUE self;
+  uint8_t* return_address;
+};
+
+// Catchtable used for exception handling
+struct CatchTable {
+  Basic basic;
+  uint8_t* address;
+  size_t stacksize;
+  Frame* frame;
+  CatchTable* parent;
+};
+
 // Normal functions defined inside the virtual machine.
 struct Function {
   Basic basic;
@@ -212,7 +231,6 @@ struct Function {
   uint32_t lvarcount;
   Frame* context;
   uint8_t* body_address;
-  InstructionBlock* block;
   bool anonymous;
   bool bound_self_set;
   VALUE bound_self;
@@ -230,7 +248,7 @@ struct Function {
 struct CFunction {
   Basic basic;
   VALUE name;
-  FPOINTER pointer;
+  uintptr_t pointer;
   uint32_t argc;
   bool bound_self_set;
   VALUE bound_self;

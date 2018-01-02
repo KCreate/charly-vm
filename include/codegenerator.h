@@ -49,16 +49,9 @@ class CodeGenerator : public CompilerPass {
   using CompilerPass::CompilerPass;
 
 public:
-  CodeGenerator(SymbolTable& s) : CompilerPass(s) {
-    this->assembler = new Assembler();
-  }
-  ~CodeGenerator() {
-    delete this->assembler;
-  }
 
   // Main interface to the compiler
   InstructionBlock* compile(AST::AbstractNode* node);
-  void reset();
 
 private:
   // Codegen specific AST nodes
@@ -106,7 +99,7 @@ private:
   AST::AbstractNode* visit_continue(AST::Continue* node, VisitContinue cont);
   AST::AbstractNode* visit_trycatch(AST::TryCatch* node, VisitContinue cont);
 
-  Assembler* assembler;
+  Assembler assembler;
   std::vector<Label> break_stack;
   std::vector<Label> continue_stack;
   std::list<QueuedBlock> queued_blocks;

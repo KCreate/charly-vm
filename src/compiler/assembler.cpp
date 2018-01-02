@@ -44,49 +44,49 @@ Label Assembler::place_label(Label label) {
 
 void Assembler::write_branch_to_label(Label label) {
   if (this->labels.count(label) > 0) {
-    this->write_byte(Opcode::Branch);
-    this->write_int(this->labels[label] - this->writeoffset + 1);
+    this->write_u8(Opcode::Branch);
+    this->write_u32(this->labels[label] - this->writeoffset + 1);
   } else {
     uint32_t instruction_base = this->writeoffset;
-    this->write_byte(Opcode::Branch);
+    this->write_u8(Opcode::Branch);
     this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
-    this->write_int(0);
+    this->write_u32(0);
   }
 }
 
 void Assembler::write_branchif_to_label(Label label) {
   if (this->labels.count(label) > 0) {
-    this->write_byte(Opcode::BranchIf);
-    this->write_int(this->labels[label] - this->writeoffset + 1);
+    this->write_u8(Opcode::BranchIf);
+    this->write_u32(this->labels[label] - this->writeoffset + 1);
   } else {
     uint32_t instruction_base = this->writeoffset;
-    this->write_byte(Opcode::BranchIf);
+    this->write_u8(Opcode::BranchIf);
     this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
-    this->write_int(0);
+    this->write_u32(0);
   }
 }
 
 void Assembler::write_branchunless_to_label(Label label) {
   if (this->labels.count(label) > 0) {
-    this->write_byte(Opcode::BranchUnless);
-    this->write_int(this->labels[label] - this->writeoffset + 1);
+    this->write_u8(Opcode::BranchUnless);
+    this->write_u32(this->labels[label] - this->writeoffset + 1);
   } else {
     uint32_t instruction_base = this->writeoffset;
-    this->write_byte(Opcode::BranchUnless);
+    this->write_u8(Opcode::BranchUnless);
     this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
-    this->write_int(0);
+    this->write_u32(0);
   }
 }
 
 void Assembler::write_registercatchtable_to_label(Label label) {
   if (this->labels.count(label) > 0) {
-    this->write_byte(Opcode::RegisterCatchTable);
-    this->write_int(this->labels[label] - this->writeoffset + 1);
+    this->write_u8(Opcode::RegisterCatchTable);
+    this->write_u32(this->labels[label] - this->writeoffset + 1);
   } else {
     uint32_t instruction_base = this->writeoffset;
-    this->write_byte(Opcode::RegisterCatchTable);
+    this->write_u8(Opcode::RegisterCatchTable);
     this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
-    this->write_int(0);
+    this->write_u32(0);
   }
 }
 
@@ -96,44 +96,21 @@ void Assembler::write_putfunction_to_label(VALUE symbol,
                                            uint32_t argc,
                                            uint32_t lvarcount) {
   if (this->labels.count(label) > 0) {
-    this->write_byte(Opcode::PutFunction);
-    this->write_long(symbol);
-    this->write_int(this->labels[label] - this->writeoffset + 1);
-    this->write_byte(anonymous);
-    this->write_int(argc);
-    this->write_int(lvarcount);
+    this->write_u8(Opcode::PutFunction);
+    this->write_u64(symbol);
+    this->write_u32(this->labels[label] - this->writeoffset + 1);
+    this->write_u8(anonymous);
+    this->write_u32(argc);
+    this->write_u32(lvarcount);
   } else {
     uint32_t instruction_base = this->writeoffset;
-    this->write_byte(Opcode::PutFunction);
-    this->write_long(symbol);
+    this->write_u8(Opcode::PutFunction);
+    this->write_u64(symbol);
     this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
-    this->write_int(0);
-    this->write_byte(anonymous);
-    this->write_int(argc);
-    this->write_int(lvarcount);
-  }
-}
-
-StringOffsetInfo Assembler::write_putstring(const std::string& str) {
-  // Check if this is a known string
-  size_t strhash = this->hash_string(str);
-  if (this->string_is_duplicate(strhash)) {
-    StringOffsetInfo info = this->get_staticdata_info(strhash);
-    this->write_byte(Opcode::PutString);
-    this->write_int(info.offset);
-    this->write_int(info.length);
-    return info;
-  } else {
-    StringOffsetInfo info;
-    this->write_byte(Opcode::PutString);
-    uint32_t offset = this->write_string(str);
-    this->write_int(offset);
-    this->write_int(str.size());
-
-    info.offset = offset;
-    info.length = str.size();
-    this->known_strings[strhash] = info;
-    return info;
+    this->write_u32(0);
+    this->write_u8(anonymous);
+    this->write_u32(argc);
+    this->write_u32(lvarcount);
   }
 }
 
@@ -147,7 +124,7 @@ void Assembler::resolve_unresolved_label_references() {
 
     uint32_t label_offset = this->labels[uref->id];
     int32_t relative_offset = label_offset - uref->instruction_base;
-    this->int32_at(uref->target_offset) = relative_offset;
+    this->read<int32_t>(uref->target_offset) = relative_offset;
     uref = this->unresolved_label_references.erase(uref);
   }
 }

@@ -32,50 +32,36 @@
 #include "vm.h"
 
 namespace Charly {
-MemoryManager::MemoryManager(Context& t_context) : context(t_context) {
-  context.gc = this;
-  this->free_cell = nullptr;
-  size_t heap_initial_count = kGCInitialHeapCount;
-  this->heaps.reserve(heap_initial_count);
-  while (heap_initial_count--)
-    this->add_heap();
-}
-
-MemoryManager::~MemoryManager() {
-  for (const auto heap : this->heaps) {
-    free(heap);
-  }
-
-  this->heaps.clear();
-  this->temporaries.clear();
-}
-
-void MemoryManager::add_heap() {
-  MemoryCell* heap = static_cast<MemoryCell*>(calloc(kGCHeapCellCount, sizeof(MemoryCell)));
+void GarbageCollector::add_heap() {
+  MemoryCell* heap = static_cast<MemoryCell*>(std::calloc(this->config.initial_heap_count, sizeof(MemoryCell)));
   this->heaps.push_back(heap);
 
   // Add the newly allocated cells to the free list
   MemoryCell* last_cell = this->free_cell;
-  for (size_t i = 0; i < kGCHeapCellCount; i++) {
-    heap[i].as.free.next = last_cell;
+  for (size_t i = 0; i < this->config.initial_heap_count; i++) {
+    heap[i].next = last_cell;
     last_cell = heap + i;
   }
 
   this->free_cell = last_cell;
 }
 
-void MemoryManager::grow_heap() {
+void GarbageCollector::free_heap(MemoryCell* heap) {
+  free(heap);
+}
+
+void GarbageCollector::grow_heap() {
   size_t heap_count = this->heaps.size();
-  size_t heaps_to_add = (heap_count * kGCHeapCountGrowthFactor) - heap_count;
+  size_t heaps_to_add = (heap_count * this->config.heap_growth_factor) - heap_count;
   while (heaps_to_add--)
     this->add_heap();
 }
 
-void MemoryManager::register_temporary(VALUE value) {
+void GarbageCollector::mark_persistent(VALUE value) {
   this->temporaries.insert(value);
 }
 
-void MemoryManager::unregister_temporary(VALUE value) {
+void GarbageCollector::unmark_persistent(VALUE value) {
   auto tmp = this->temporaries.find(value);
   assert(tmp != this->temporaries.end());
   if (tmp != this->temporaries.end()) {
@@ -83,7 +69,7 @@ void MemoryManager::unregister_temporary(VALUE value) {
   }
 }
 
-void MemoryManager::mark(VALUE value) {
+void GarbageCollector::mark(VALUE value) {
   if (!is_pointer(value))
     return;
   if (basics(value)->mark())
@@ -109,7 +95,6 @@ void MemoryManager::mark(VALUE value) {
     case kTypeFunction: {
       Function* func = reinterpret_cast<Function*>(value);
       this->mark(reinterpret_cast<VALUE>(func->context));
-      this->mark(reinterpret_cast<VALUE>(func->block));
 
       if (func->bound_self_set)
         this->mark(func->bound_self);
@@ -148,24 +133,27 @@ void MemoryManager::mark(VALUE value) {
   }
 }
 
-void MemoryManager::collect() {
+void GarbageCollector::mark(const std::vector<VALUE>& list) {
+  for (VALUE val : list) {
+    this->mark(val);
+  }
+}
+
+void GarbageCollector::collect() {
   auto gc_start_time = std::chrono::high_resolution_clock::now();
-  if (this->context.flags.trace_gc) {
-    std::cout << "#-- GC: Pause --#" << '\n';
+  if (this->config.trace) {
+    this->config.log_stream << "#-- GC: Pause --#" << '\n';
   }
 
-  // Mark Phase
-  for (auto& stack_item : this->context.vm->stack)
-    this->mark(stack_item);
-  for (auto& temp_item : this->temporaries)
+  // Mark all temporaries
+  for (auto& temp_item : this->temporaries) {
     this->mark(temp_item);
-  this->mark(reinterpret_cast<VALUE>(this->context.vm->frames));
-  this->mark(reinterpret_cast<VALUE>(this->context.vm->catchstack));
+  }
 
   // Sweep Phase
   int freed_cells_count = 0;
   for (MemoryCell* heap : this->heaps) {
-    for (size_t i = 0; i < kGCHeapCellCount; i++) {
+    for (size_t i = 0; i < this->config.initial_heap_count; i++) {
       MemoryCell* cell = heap + i;
       if (basics(reinterpret_cast<VALUE>(cell))->mark()) {
         basics(reinterpret_cast<VALUE>(cell))->set_mark(false);
@@ -174,39 +162,36 @@ void MemoryManager::collect() {
         // Make sure we don't double free cells
         if (basics(reinterpret_cast<VALUE>(cell))->type() != kTypeDead) {
           freed_cells_count++;
-          this->free(cell);
+          this->deallocate(cell);
         }
       }
     }
   }
 
-  if (this->context.flags.trace_gc) {
+  if (this->config.trace) {
     std::chrono::duration<double> gc_collect_duration = std::chrono::high_resolution_clock::now() - gc_start_time;
-    std::cout << "#-- GC: Freed " << (freed_cells_count * sizeof(MemoryCell)) << " bytes --#" << '\n';
-    std::cout << "#-- GC: Finished in " << gc_collect_duration.count() * 1000000000 << " nanoseconds --#" << '\n';
+    this->config.log_stream << "#-- GC: Freed " << (freed_cells_count * sizeof(MemoryCell)) << " bytes --#" << '\n';
+    this->config.log_stream << "#-- GC: Finished in " << gc_collect_duration.count() * 1000000000 << " nanoseconds --#" << '\n';
   }
 }
 
-MemoryCell* MemoryManager::allocate() {
+MemoryCell* GarbageCollector::allocate() {
   MemoryCell* cell = this->free_cell;
+  this->free_cell = this->free_cell->next;
 
-  if (cell) {
-    this->free_cell = this->free_cell->as.free.next;
+  // If we've just allocated the last available cell,
+  // we do a collect in order to make sure we never get a failing
+  // allocation in the future
+  if (this->free_cell == nullptr) {
+    this->collect();
 
-    // If we've just allocated the last available cell,
-    // we do a collect in order to make sure we never get a failing
-    // allocation in the future
+    // If a collection didn't yield new available space,
+    // allocate more heaps
     if (this->free_cell == nullptr) {
-      this->collect();
+      this->grow_heap();
 
-      // If a collection didn't yield new available space,
-      // allocate more heaps
-      if (this->free_cell == nullptr) {
-        this->grow_heap();
-
-        if (!this->free_cell) {
-          std::cout << "Failed to expand heap, the next allocation will cause a segfault." << '\n';
-        }
+      if (!this->free_cell) {
+        this->config.err_stream << "Failed to expand heap, the next allocation will cause a segfault." << '\n';
       }
     }
   }
@@ -214,43 +199,38 @@ MemoryCell* MemoryManager::allocate() {
   return cell;
 }
 
-void MemoryManager::free(MemoryCell* cell) {
+void GarbageCollector::deallocate(MemoryCell* cell) {
   // This cell might be inside the temporaries list,
   // check if it's inside and remove it if it is
   if (this->temporaries.count(reinterpret_cast<VALUE>(cell)) == 1) {
-    this->unregister_temporary(reinterpret_cast<VALUE>(cell));
+    this->unmark_persistent(reinterpret_cast<VALUE>(cell));
   }
 
   // We don't actually free the cells that were allocated, we just
   // deallocat the properties inside these cells and memset(0)'em
   switch (basics(reinterpret_cast<VALUE>(cell))->type()) {
     case kTypeObject: {
-      cell->as.object.clean();
+      cell->object.clean();
       break;
     }
 
     case kTypeArray: {
-      cell->as.array.clean();
+      cell->array.clean();
       break;
     }
 
     case kTypeString: {
-      cell->as.string.clean();
+      cell->string.clean();
       break;
     }
 
     case kTypeFunction: {
-      cell->as.function.clean();
+      cell->function.clean();
       break;
     }
 
     case kTypeCFunction: {
-      cell->as.cfunction.clean();
-      break;
-    }
-
-    case kTypeInstructionBlock: {
-      cell->as.instructionblock.clean();
+      cell->cfunction.clean();
       break;
     }
 
@@ -258,7 +238,7 @@ void MemoryManager::free(MemoryCell* cell) {
   }
 
   memset(reinterpret_cast<void*>(cell), 0, sizeof(MemoryCell));
-  cell->as.free.next = this->free_cell;
+  cell->next = this->free_cell;
   this->free_cell = cell;
 }
 }  // namespace Charly

@@ -37,13 +37,6 @@
 
 namespace Charly {
 
-VM::~VM() {
-  this->frames = nullptr;
-  this->catchstack = nullptr;
-  this->stack.clear();
-  this->context.gc->collect();
-}
-
 Frame* VM::pop_frame() {
   Frame* frame = this->frames;
   if (frame)
@@ -52,43 +45,36 @@ Frame* VM::pop_frame() {
 }
 
 Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address) {
-  MemoryCell* cell = this->context.gc->allocate();
-  cell->as.basic.set_type(kTypeFrame);
-  cell->as.frame.parent = this->frames;
-  cell->as.frame.parent_environment_frame = function->context;
-  cell->as.frame.last_active_catchtable = this->catchstack;
-  cell->as.frame.function = function;
-  cell->as.frame.self = self;
+  MemoryCell* cell = this->context.gc.allocate();
+  cell->basic.set_type(kTypeFrame);
+  cell->frame.parent = this->frames;
+  cell->frame.parent_environment_frame = function->context;
+  cell->frame.last_active_catchtable = this->catchstack;
+  cell->frame.function = function;
+  cell->frame.self = self;
 
-  cell->as.frame.return_address = return_address;
+  cell->frame.return_address = return_address;
 
   // Calculate the number of local variables this frame has to support
   // Add 1 at the beginning to reserve space for the arguments magic variable
   uint32_t lvar_count = 1 + function->argc + function->lvarcount;
 
   // Allocate and prefill local variable space
-  cell->as.frame.environment.reserve(lvar_count);
+  cell->frame.environment.reserve(lvar_count);
   while (lvar_count--)
-    cell->as.frame.environment.push_back(kNull);
+    cell->frame.environment.push_back(kNull);
 
   // Append the frame
-  this->frames = reinterpret_cast<Frame*>(cell);
+  this->frames = cell->as<Frame>();
 
   // Print the frame if the corresponding flag was set
-  if (this->context.flags.trace_frames) {
-    std::cout << "Entering frame: ";
-    this->pretty_print(std::cout, reinterpret_cast<VALUE>(cell));
-    std::cout << '\n';
+  if (this->context.trace_frames) {
+    this->context.out_stream << "Entering frame: ";
+    this->pretty_print(this->context.out_stream, cell->value);
+    this->context.out_stream << '\n';
   }
 
-  return reinterpret_cast<Frame*>(cell);
-}
-
-InstructionBlock* VM::create_instructionblock() {
-  MemoryCell* cell = this->context.gc->allocate();
-  new (&cell->as.instructionblock) InstructionBlock();
-  cell->as.basic.set_type(kTypeInstructionBlock);
-  return reinterpret_cast<InstructionBlock*>(cell);
+  return cell->as<Frame>();
 }
 
 std::optional<VALUE> VM::pop_stack() {
@@ -106,22 +92,22 @@ void VM::push_stack(VALUE value) {
 }
 
 CatchTable* VM::create_catchtable(uint8_t* address) {
-  MemoryCell* cell = this->context.gc->allocate();
-  cell->as.basic.set_type(kTypeCatchTable);
-  cell->as.catchtable.stacksize = this->stack.size();
-  cell->as.catchtable.frame = this->frames;
-  cell->as.catchtable.parent = this->catchstack;
-  cell->as.catchtable.address = address;
-  this->catchstack = reinterpret_cast<CatchTable*>(cell);
+  MemoryCell* cell = this->context.gc.allocate();
+  cell->basic.set_type(kTypeCatchTable);
+  cell->catchtable.stacksize = this->stack.size();
+  cell->catchtable.frame = this->frames;
+  cell->catchtable.parent = this->catchstack;
+  cell->catchtable.address = address;
+  this->catchstack = cell->as<CatchTable>();
 
   // Print the catchtable if the corresponding flag was set
-  if (this->context.flags.trace_catchtables) {
-    std::cout << "Entering catchtable: ";
-    this->pretty_print(std::cout, reinterpret_cast<VALUE>(cell));
-    std::cout << '\n';
+  if (this->context.trace_catchtables) {
+    this->context.out_stream << "Entering catchtable: ";
+    this->pretty_print(this->context.out_stream, cell->value);
+    this->context.out_stream << '\n';
   }
 
-  return reinterpret_cast<CatchTable*>(cell);
+  return cell->as<CatchTable>();
 }
 
 CatchTable* VM::pop_catchtable() {
@@ -143,11 +129,11 @@ void VM::restore_catchtable(CatchTable* table) {
   this->ip = table->address;
 
   // Show the catchtable we just restored if the corresponding flag was set
-  if (this->context.flags.trace_catchtables) {
+  if (this->context.trace_catchtables) {
     // Show the table we've restored
-    std::cout << "Restored CatchTable: ";
-    this->pretty_print(std::cout, table);
-    std::cout << '\n';
+    this->context.out_stream << "Restored CatchTable: ";
+    this->pretty_print(this->context.out_stream, table);
+    this->context.out_stream << '\n';
   }
 
   // Unwind the stack to be the size it was when this catchtable
@@ -164,20 +150,20 @@ void VM::restore_catchtable(CatchTable* table) {
 }
 
 VALUE VM::create_object(uint32_t initial_capacity) {
-  MemoryCell* cell = this->context.gc->allocate();
-  cell->as.basic.set_type(kTypeObject);
-  cell->as.object.klass = kNull;
-  cell->as.object.container = new std::unordered_map<VALUE, VALUE>();
-  cell->as.object.container->reserve(initial_capacity);
-  return reinterpret_cast<VALUE>(cell);
+  MemoryCell* cell = this->context.gc.allocate();
+  cell->basic.set_type(kTypeObject);
+  cell->object.klass = kNull;
+  cell->object.container = new std::unordered_map<VALUE, VALUE>();
+  cell->object.container->reserve(initial_capacity);
+  return cell->value;
 }
 
 VALUE VM::create_array(uint32_t initial_capacity) {
-  MemoryCell* cell = this->context.gc->allocate();
-  cell->as.basic.set_type(kTypeArray);
-  cell->as.array.data = new std::vector<VALUE>();
-  cell->as.array.data->reserve(initial_capacity);
-  return reinterpret_cast<VALUE>(cell);
+  MemoryCell* cell = this->context.gc.allocate();
+  cell->basic.set_type(kTypeArray);
+  cell->array.data = new std::vector<VALUE>();
+  cell->array.data->reserve(initial_capacity);
+  return cell->value;
 }
 
 VALUE VM::create_float(double value) {
@@ -203,10 +189,10 @@ VALUE VM::create_float(double value) {
   }
 
   // Allocate from the GC
-  MemoryCell* cell = this->context.gc->allocate();
-  cell->as.basic.set_type(kTypeFloat);
-  cell->as.flonum.float_value = value;
-  return reinterpret_cast<VALUE>(cell);
+  MemoryCell* cell = this->context.gc.allocate();
+  cell->basic.set_type(kTypeFloat);
+  cell->flonum.float_value = value;
+  return cell->value;
 }
 
 VALUE VM::create_string(const char* data, uint32_t length) {
@@ -220,45 +206,39 @@ VALUE VM::create_string(const char* data, uint32_t length) {
   memcpy(copied_string, data, length);
 
   // Allocate the memory cell and initialize the values
-  MemoryCell* cell = this->context.gc->allocate();
-  cell->as.basic.set_type(kTypeString);
-  cell->as.string.data = copied_string;
-  cell->as.string.length = length;
-  cell->as.string.capacity = string_capacity;
-  return reinterpret_cast<VALUE>(cell);
+  MemoryCell* cell = this->context.gc.allocate();
+  cell->basic.set_type(kTypeString);
+  cell->string.data = copied_string;
+  cell->string.length = length;
+  cell->string.capacity = string_capacity;
+  return cell->value;
 }
 
-VALUE VM::create_function(VALUE name,
-                          uint8_t* body_address,
-                          uint32_t argc,
-                          uint32_t lvarcount,
-                          bool anonymous,
-                          InstructionBlock* block) {
-  MemoryCell* cell = this->context.gc->allocate();
-  cell->as.basic.set_type(kTypeFunction);
-  cell->as.function.name = name;
-  cell->as.function.argc = argc;
-  cell->as.function.lvarcount = lvarcount;
-  cell->as.function.context = this->frames;
-  cell->as.function.body_address = body_address;
-  cell->as.function.block = block;
-  cell->as.function.anonymous = anonymous;
-  cell->as.function.bound_self_set = false;
-  cell->as.function.bound_self = kNull;
-  cell->as.function.container = new std::unordered_map<VALUE, VALUE>();
-  return reinterpret_cast<VALUE>(cell);
+VALUE VM::create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint32_t lvarcount, bool anonymous) {
+  MemoryCell* cell = this->context.gc.allocate();
+  cell->basic.set_type(kTypeFunction);
+  cell->function.name = name;
+  cell->function.argc = argc;
+  cell->function.lvarcount = lvarcount;
+  cell->function.context = this->frames;
+  cell->function.body_address = body_address;
+  cell->function.anonymous = anonymous;
+  cell->function.bound_self_set = false;
+  cell->function.bound_self = kNull;
+  cell->function.container = new std::unordered_map<VALUE, VALUE>();
+  return cell->value;
 }
 
-VALUE VM::create_cfunction(VALUE name, uint32_t argc, FPOINTER pointer) {
-  MemoryCell* cell = this->context.gc->allocate();
-  cell->as.basic.set_type(kTypeCFunction);
-  cell->as.cfunction.name = name;
-  cell->as.cfunction.pointer = pointer;
-  cell->as.cfunction.argc = argc;
-  cell->as.cfunction.bound_self_set = false;
-  cell->as.cfunction.bound_self = kNull;
-  cell->as.cfunction.container = new std::unordered_map<VALUE, VALUE>();
-  return reinterpret_cast<VALUE>(cell);
+VALUE VM::create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer) {
+  MemoryCell* cell = this->context.gc.allocate();
+  cell->basic.set_type(kTypeCFunction);
+  cell->cfunction.name = name;
+  cell->cfunction.pointer = pointer;
+  cell->cfunction.argc = argc;
+  cell->cfunction.bound_self_set = false;
+  cell->cfunction.bound_self = kNull;
+  cell->cfunction.container = new std::unordered_map<VALUE, VALUE>();
+  return cell->value;
 }
 
 double VM::cast_to_double(VALUE value) {
@@ -542,17 +522,12 @@ void VM::op_putstring(char* data, uint32_t length) {
   this->push_stack(this->create_string(data, length));
 }
 
-void VM::op_putfunction(VALUE symbol,
-                        uint8_t* body_address,
-                        InstructionBlock* block,
-                        bool anonymous,
-                        uint32_t argc,
-                        uint32_t lvarcount) {
-  VALUE function = this->create_function(symbol, body_address, argc, lvarcount, anonymous, block);
+void VM::op_putfunction(VALUE symbol, uint8_t* body_address, bool anonymous, uint32_t argc, uint32_t lvarcount) {
+  VALUE function = this->create_function(symbol, body_address, argc, lvarcount, anonymous);
   this->push_stack(function);
 }
 
-void VM::op_putcfunction(VALUE symbol, FPOINTER pointer, uint32_t argc) {
+void VM::op_putcfunction(VALUE symbol, uintptr_t pointer, uint32_t argc) {
   VALUE function = this->create_cfunction(symbol, argc, pointer);
   this->push_stack(function);
 }
@@ -701,7 +676,7 @@ void VM::call(uint32_t argc, bool with_target) {
     }
 
     default: {
-      std::cout << "cant call a " << kValueTypeString[this->real_type(function)] << '\n';
+      this->context.out_stream << "cant call a " << kValueTypeString[this->real_type(function)] << '\n';
 
       // TODO: Handle as runtime error
       this->panic(Status::UnspecifiedError);
@@ -738,7 +713,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   // This is so that we can be sure that noone is going to overwrite it afterwards
   frame->environment[0] = reinterpret_cast<VALUE>(arguments_array);
 
-  this->ip = reinterpret_cast<uint8_t*>(function->body_address);
+  this->ip = function->body_address;
 }
 
 void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
@@ -778,10 +753,10 @@ void VM::op_return() {
   this->ip = frame->return_address;
 
   // Print the frame if the correponding flag was set
-  if (this->context.flags.trace_frames) {
-    std::cout << "Left frame: ";
-    this->pretty_print(std::cout, reinterpret_cast<VALUE>(frame));
-    std::cout << '\n';
+  if (this->context.trace_frames) {
+    this->context.out_stream << "Left frame: ";
+    this->pretty_print(this->context.out_stream, reinterpret_cast<VALUE>(frame));
+    this->context.out_stream << '\n';
   }
 }
 
@@ -808,14 +783,14 @@ void VM::op_popcatchtable() {
   this->pop_catchtable();
 
   // Show the catchtable we just restored if the corresponding flag was set
-  if (this->context.flags.trace_catchtables) {
+  if (this->context.trace_catchtables) {
     CatchTable* table = this->catchstack;
 
     if (table != nullptr) {
       // Show the table we've restored
-      std::cout << "Restored CatchTable: ";
-      this->pretty_print(std::cout, reinterpret_cast<VALUE>(table));
-      std::cout << '\n';
+      this->context.out_stream << "Restored CatchTable: ";
+      this->pretty_print(this->context.out_stream, reinterpret_cast<VALUE>(table));
+      this->context.out_stream << '\n';
     }
   }
 }
@@ -838,7 +813,7 @@ void VM::op_branchunless(int32_t offset) {
 
 void VM::op_typeof() {
   VALUE value = this->pop_stack().value_or(kNull);
-  const std::string& stringrep = kValueTypeString[this->real_type(value)];
+  std::string& stringrep = kValueTypeString[this->real_type(value)];
   this->push_stack(this->create_string(stringrep.c_str(), stringrep.size()));
 }
 
@@ -873,7 +848,7 @@ void VM::catchstacktrace(std::ostream& io) {
 }
 
 void VM::stackdump(std::ostream& io) {
-  for (const VALUE& stackitem : this->stack) {
+  for (VALUE& stackitem : this->stack) {
     this->pretty_print(io, stackitem);
     io << '\n';
   }
@@ -935,7 +910,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       for (auto& entry : *object->container) {
         io << " ";
-        std::string key = this->context.symbol_table(entry.first).value_or(kUndefinedSymbolString);
+        std::string key = this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
         io << key << "=";
         this->pretty_print(io, entry.second);
       }
@@ -989,16 +964,13 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << " ";
       io << "context=" << func->context << " ";
       io << "body_address=" << reinterpret_cast<void*>(func->body_address) << " ";
-      io << "block=";
-      this->pretty_print(io, func->block);
-      io << " ";
       io << "bound_self_set=" << (func->bound_self_set ? "true" : "false") << " ";
       io << "bound_self=";
       this->pretty_print(io, func->bound_self);
 
       for (auto& entry : *func->container) {
         io << " ";
-        std::string key = this->context.symbol_table(entry.first).value_or(kUndefinedSymbolString);
+        std::string key = this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
         io << key << "=";
         this->pretty_print(io, entry.second);
       }
@@ -1028,7 +1000,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       for (auto& entry : *func->container) {
         io << " ";
-        std::string key = this->context.symbol_table(entry.first).value_or(kUndefinedSymbolString);
+        std::string key = this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
         io << key << "=";
         this->pretty_print(io, entry.second);
       }
@@ -1038,7 +1010,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeSymbol: {
-      io << this->context.symbol_table(value).value_or(kUndefinedSymbolString);
+      io << this->context.symtable(value).value_or(kUndefinedSymbolString);
       break;
     }
 
@@ -1074,125 +1046,15 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << ">";
       break;
     }
-
-    case kTypeInstructionBlock: {
-      InstructionBlock* block = reinterpret_cast<InstructionBlock*>(value);
-      io << "<InstructionBlock:" << block << " ";
-      io << "data=" << reinterpret_cast<void*>(block->data) << " ";
-      io << "data_size=" << block->data_size << " ";
-      io << "write_offset=" << block->writeoffset;
-      io << ">";
-      break;
-    }
   }
 
   this->pretty_print_stack.pop_back();
 }
 
-void VM::init_frames() {
-  // On startup, we create a stack frame that serves as our global scope
-  // This is the scope in which global values such as `Charly` live.
-  //
-  // When a file is being included, either as requested by the machine,
-  // or via the user, a new stack frame is created for it, effectively
-  // separating it from the global scope
-  //
-  // This way it can still access the global scope, but not register any
-  // new variables or constants into it.
-  InstructionBlock* block = this->create_instructionblock();
-
-  // let Charly = {
-  //   internals = {
-  //     get_method = (CFunction *)Internals::get_method
-  //   }
-  // };
-  block->write_putcfunction(this->context.symbol_table("get_method"), reinterpret_cast<FPOINTER>(Internals::get_method),
-                            1);
-  block->write_putvalue(this->context.symbol_table("get_method"));
-  block->write_puthash(1);
-  block->write_putvalue(this->context.symbol_table("internals"));
-  block->write_puthash(1);
-  block->write_setlocal(4, 0);
-
-  // Charly.internals.get_method.foo = 25
-  block->write_readlocal(4, 0);
-  block->write_readmembersymbol(this->context.symbol_table("internals"));
-  block->write_readmembersymbol(this->context.symbol_table("get_method"));
-  block->write_putvalue(VALUE_ENCODE_INTEGER(25));
-  block->write_setmembersymbol(this->context.symbol_table("foo"));
-  block->write_pop();
-
-  // [[{}, { boye = 250 }], 25, 25, 25, 25]
-  block->write_puthash(0);
-  block->write_puthash(0);
-  block->write_dup();
-  block->write_putvalue(VALUE_ENCODE_INTEGER(250));
-  block->write_setmembersymbol(this->context.symbol_table("boye"));
-  block->write_pop();
-  block->write_putarray(2);
-  block->write_putfloat(25);
-  block->write_putfloat(25);
-  block->write_putfloat(25);
-  block->write_putfloat(25);
-  block->write_putarray(5);
-  block->write_pop();
-
-  // Charly.internals.get_method(:"hello_world")
-  block->write_readlocal(4, 0);
-  block->write_readmembersymbol(this->context.symbol_table("internals"));
-  block->write_readmembersymbol(this->context.symbol_table("get_method"));
-  block->write_putvalue(this->context.symbol_table("hello world"));
-  block->write_call(1);
-  block->write_pop();
-
-  // Charly.internals.get_method("This is a string test")
-  block->write_readlocal(4, 0);
-  block->write_readmembersymbol(this->context.symbol_table("internals"));
-  block->write_readmembersymbol(this->context.symbol_table("get_method"));
-  block->write_putstring("This is a string test");
-  block->write_call(1);
-  block->write_pop();
-
-  // typeof(arguments)
-  block->write_readlocal(0, 0);
-  block->write_typeof();
-
-  // typeof(Charly)
-  block->write_readlocal(4, 0);
-  block->write_typeof();
-
-  // typeof(Charly.internals.get_method)
-  block->write_readlocal(4, 0);
-  block->write_readmembersymbol(this->context.symbol_table("internals"));
-  block->write_readmembersymbol(this->context.symbol_table("get_method"));
-  block->write_typeof();
-
-  // arguments[0] = 25;
-  block->write_readlocal(0, 0);
-  block->write_putvalue(VALUE_ENCODE_INTEGER(25));
-  block->write_setarrayindex(0);
-
-  // arguments[0];
-  block->write_readlocal(0, 0);
-  block->write_readarrayindex(0);
-
-  // Return
-  block->write_return();
-
-  // Push a function onto the stack containing this block and call it
-  uint8_t* body_address = reinterpret_cast<uint8_t*>(block->data);
-  this->op_putfunction(this->context.symbol_table("__charly_init"), body_address, block, false, 3, 5);
-  this->push_stack(VALUE_ENCODE_INTEGER(50));
-  this->push_stack(VALUE_ENCODE_INTEGER(60));
-  this->push_stack(VALUE_ENCODE_INTEGER(70));
-  this->op_call(3);
-  this->frames->self = kNull;
-}
-
 void VM::panic(STATUS reason) {
-  std::cout << "Panic: " << kStatusHumanReadable[reason] << '\n';
-  std::cout << "Stacktrace:" << '\n';
-  this->stacktrace(std::cout);
+  this->context.out_stream << "Panic: " << kStatusHumanReadable[reason] << '\n';
+  this->context.out_stream << "Stacktrace:" << '\n';
+  this->stacktrace(this->context.out_stream);
 
   exit(1);
 }
@@ -1209,27 +1071,9 @@ void VM::run() {
     // we increment it to the next instruction
     uint8_t* old_ip = this->ip;
 
-    // Check if we're out-of-bounds relative to the current block
-    uint8_t* block_data = reinterpret_cast<uint8_t*>(this->frames->function->block->data);
-    uint32_t block_write_offset = this->frames->function->block->writeoffset;
-    if (this->ip + sizeof(Opcode) - 1 >= block_data + block_write_offset) {
-      this->panic(Status::IpOutOfBounds);
-    }
-
-    // Retrieve the current opcode
+    // Fetch the current opcode
     Opcode opcode = this->fetch_instruction();
-
-    // Check if there is enough space for instruction arguments
     uint32_t instruction_length = kInstructionLengths[opcode];
-    if (this->ip + instruction_length >= (block_data + block_write_offset + sizeof(Opcode))) {
-      std::cout << "ip                    = " << reinterpret_cast<void*>(this->ip) << '\n';
-      std::cout << "instruction length    = " << instruction_length << '\n';
-      std::cout << "block_data            = " << reinterpret_cast<void*>(block_data) << '\n';
-      std::cout << "block_write_offset    = " << block_write_offset << '\n';
-      std::cout << "sizeof(Opcode)        = " << sizeof(Opcode) << '\n';
-      std::cout << "kOpcodeMnemonics[opcode] = " << kOpcodeMnemonics[opcode] << '\n';
-      this->panic(Status::NotEnoughSpaceForInstructionArguments);
-    }
 
     // Redirect to specific instruction handler
     switch (opcode) {
@@ -1297,20 +1141,12 @@ void VM::run() {
         uint32_t offset = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
         uint32_t length = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(uint32_t));
 
-        // Calculate the pointer into the static data segment of the instructionblock
-        // The current frame holds the function that was used to construct it
-        // This function contains the current instruction block
-        //
         // We assume the compiler generated valid offsets and lengths, so we don't do
         // any out-of-bounds checking here
-        //
         // TODO: Should we do out-of-bounds checking here?
-        InstructionBlock* current_block = this->frames->function->block;
+        char* str_start = reinterpret_cast<char*>(this->context.stringpool.getData() + offset);
+        this->op_putstring(str_start, length);
 
-        char* staticdata = current_block->staticdata;
-        char* string_pointer = staticdata + offset;
-
-        this->op_putstring(string_pointer, length);
         break;
       }
 
@@ -1323,15 +1159,13 @@ void VM::run() {
         uint32_t lvarcount = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t) +
                                                           sizeof(bool) + sizeof(uint32_t));
 
-        // TODO: Is this correct?
-        InstructionBlock* current_block = this->frames->function->block;
-        this->op_putfunction(symbol, this->ip + body_offset, current_block, anonymous, argc, lvarcount);
+        this->op_putfunction(symbol, this->ip + body_offset, anonymous, argc, lvarcount);
         break;
       }
 
       case Opcode::PutCFunction: {
         VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
-        FPOINTER pointer = *reinterpret_cast<FPOINTER*>(this->ip + sizeof(Opcode) + sizeof(VALUE));
+        uintptr_t pointer = *reinterpret_cast<uintptr_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE));
         uint32_t argc = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(void*));
         this->op_putcfunction(symbol, pointer, argc);
         break;
@@ -1439,7 +1273,10 @@ void VM::run() {
       }
 
       case Opcode::GCCollect: {
-        this->context.gc->collect();
+        this->context.gc.mark(this->stack);
+        this->context.gc.mark(this->frames);
+        this->context.gc.mark(this->catchstack);
+        this->context.gc.collect();
         break;
       }
 
@@ -1449,8 +1286,8 @@ void VM::run() {
       }
 
       default: {
-        std::cout << "Unknown opcode: " << kOpcodeMnemonics[opcode] << " at " << reinterpret_cast<void*>(this->ip)
-                  << '\n';
+        this->context.out_stream << "Unknown opcode: " << kOpcodeMnemonics[opcode] << " at "
+                                << reinterpret_cast<void*>(this->ip) << '\n';
         this->panic(Status::UnknownOpcode);
       }
     }
@@ -1461,27 +1298,18 @@ void VM::run() {
     }
 
     // Show opcodes as they are executed if the corresponding flag was set
-    if (this->context.flags.trace_opcodes) {
+    if (this->context.trace_opcodes) {
       std::chrono::duration<double> exec_duration = std::chrono::high_resolution_clock::now() - exec_start;
-      std::cout << reinterpret_cast<void*>(old_ip) << ": " << kOpcodeMnemonics[opcode] << " ";
-      std::cout << " (";
-      std::cout << static_cast<uint32_t>(exec_duration.count() * 1000000000);
-      std::cout << " nanoseconds)" << '\n';
+      this->context.out_stream << reinterpret_cast<void*>(old_ip) << ": " << kOpcodeMnemonics[opcode] << " ";
+      this->context.out_stream << " (";
+      this->context.out_stream << static_cast<uint32_t>(exec_duration.count() * 1000000000);
+      this->context.out_stream << " nanoseconds)" << '\n';
     }
   }
 
-  // Print some debug info about the VM on exit if the corresponding flag was set
-  if (this->context.flags.exit_statistics) {
-    std::cout << "Stacktrace:" << '\n';
-    this->stacktrace(std::cout);
-
-    std::cout << "CatchStacktrace:" << '\n';
-    this->catchstacktrace(std::cout);
-
-    std::cout << "Stackdump:" << '\n';
-    this->stackdump(std::cout);
-  }
-
-  this->context.gc->collect();
+  this->context.gc.mark(this->stack);
+  this->context.gc.mark(this->frames);
+  this->context.gc.mark(this->catchstack);
+  this->context.gc.collect();
 }
 }  // namespace Charly

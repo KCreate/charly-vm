@@ -42,13 +42,12 @@ public:
   }
   ~ManagedContext() {
     for (auto& temp : this->temporaries) {
-      this->vm.context.gc->unregister_temporary(temp);
+      this->vm.context.gc.unmark_persistent(temp);
     }
   }
 
   // Misc. VM data structures
   Frame* create_frame(VALUE self, Function* calling_function, uint8_t* return_address);
-  InstructionBlock* create_instructionblock();
   CatchTable* create_catchtable(uint8_t* address);
 
   // VALUE types
@@ -56,12 +55,7 @@ public:
   VALUE create_array(uint32_t initial_capacity);
   VALUE create_float(double value);
   VALUE create_string(char* data, uint32_t length);
-  VALUE create_function(VALUE name,
-                        uint8_t* body_address,
-                        uint32_t argc,
-                        uint32_t lvarcount,
-                        bool anonymous,
-                        InstructionBlock* block);
-  VALUE create_cfunction(VALUE name, uint32_t argc, FPOINTER pointer);
+  VALUE create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint32_t lvarcount, bool anonymous);
+  VALUE create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer);
 };
 }  // namespace Charly

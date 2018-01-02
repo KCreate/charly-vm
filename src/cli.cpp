@@ -25,27 +25,18 @@
  */
 
 #include <fstream>
-#include <iomanip>
 #include <iostream>
 
-#include "ast.h"
 #include "charly.h"
 #include "cli.h"
 #include "compiler.h"
-#include "context.h"
 #include "disassembler.h"
-#include "parser.h"
 #include "sourcefile.h"
-#include "utf8buffer.h"
 
 namespace Charly {
 using namespace Compilation;
 
 int CLI::run() {
-  // Configure std::cout
-  std::cout << std::fixed;
-  std::cout << std::setprecision(4);
-
   if (this->flags.show_help) {
     std::cout << kHelpMessage << '\n';
     return 0;
@@ -63,7 +54,7 @@ int CLI::run() {
 
   // Check if a filename was given
   if (this->flags.arguments.size() == 0) {
-    std::cout << "No filename given!" << '\n';
+    std::cerr << "No filename given!" << '\n';
     std::cout << kHelpMessage << '\n';
     return 1;
   }
@@ -71,59 +62,29 @@ int CLI::run() {
   // Read the userfile
   std::ifstream inputfile(this->flags.arguments[0]);
   if (!inputfile.is_open()) {
-    std::cout << "Could not open file" << '\n';
+    std::cerr << "Could not open file" << '\n';
     return 1;
   }
   std::string source_string((std::istreambuf_iterator<char>(inputfile)), std::istreambuf_iterator<char>());
   SourceFile userfile(this->flags.arguments[0], source_string);
-  Parser parser(userfile);
-  ParseResult* parse_result = nullptr;
 
-  try {
-    parse_result = parser.parse();
-  } catch (UnexpectedCharError& ex) {
-    std::cout << "Encountered an unexpected char '";
-    UTF8Buffer::write_cp_to_stream(ex.cp, std::cout);
-    std::cout << "' ";
-    ex.location.write_to_stream(std::cout);
-    std::cout << '\n';
+  // Create the compiler
+  CompilationConfig cconfig = {
+      .known_top_level_vars = {"require_no_exec", "require", "Object", "Class", "Array", "String", "Number", "Function",
+                               "Boolean", "Null", "stdin", "stdout", "stderr", "print", "write", "gets", "getc", "exit",
+                               "sleep"},
+      .flags = this->flags};
+  CompilerContext compiler_context;
+  Compiler compiler(compiler_context);
 
-    return 1;
-  } catch (SyntaxError& ex) {
-    std::cout << "SyntaxError: " << ex.message << " ";
-    ex.location.write_to_stream(std::cout);
-    std::cout << '\n';
-
-    return 1;
-  }
-
-  if (parse_result == nullptr) {
-    std::cout << "Could not parse input file" << '\n';
-    return 1;
-  }
-
-  if (this->flags.dump_tokens) {
-    for (const auto& token : parse_result->tokens) {
-      token.write_to_stream(std::cout);
-      std::cout << '\n';
-    }
-  }
-
-  Compiler compiler;
-  InstructionBlock* compiled_block = compiler.compile(*parse_result);
-  (void)compiled_block;
-
-  if (this->flags.dump_ast) {
-    if (parse_result->parse_tree != nullptr) {
-      parse_result->parse_tree->dump(std::cout);
-    }
-  }
+  // Compile the sourcefile
+  InstructionBlock* compiled_block = compiler.compile(userfile, cconfig);
 
   if (this->flags.dump_asm) {
     if (compiled_block != nullptr) {
       Disassembler::Flags disassembler_flags =
           Disassembler::Flags({this->flags.asm_no_branches, this->flags.asm_no_offsets});
-      Disassembler disassembler(compiled_block, disassembler_flags);
+      Disassembler disassembler(compiled_block, disassembler_flags, &compiler_context);
       disassembler.dump(std::cout);
     }
   }
@@ -132,10 +93,21 @@ int CLI::run() {
     return 0;
   }
 
-  Context context(this->flags);
-  MemoryManager gc(context);
+  GarbageCollector gc({.initial_heap_count = 1, .heap_cell_count = 64, .heap_growth_factor = 1.5});
+  SymbolTable symtable;
+  StringPool stringpool;
+  VMContext context({.symtable = symtable,
+                     .stringpool = stringpool,
+                     .gc = gc,
+                     .trace_opcodes = this->flags.trace_opcodes,
+                     .trace_catchtables = this->flags.trace_catchtables,
+                     .trace_frames = this->flags.trace_frames,
+                     .out_stream = std::cout,
+                     .err_stream = std::cerr});
   VM vm(context);
-  vm.run();
+
+  // VM vm(context);
+  // vm.run();
 
   return 0;
 }

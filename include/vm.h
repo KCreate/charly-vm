@@ -25,41 +25,54 @@
  */
 
 #include <optional>
+#include <iostream>
 
-#include "context.h"
 #include "defines.h"
-#include "exception.h"
-#include "frame.h"
 #include "gc.h"
 #include "instructionblock.h"
 #include "internals.h"
 #include "opcode.h"
 #include "status.h"
+#include "stringpool.h"
+#include "symboltable.h"
 #include "value.h"
 
 #pragma once
 
 namespace Charly {
+
+struct VMContext {
+  SymbolTable symtable;
+  StringPool stringpool;
+  GarbageCollector gc;
+
+  bool trace_opcodes = false;
+  bool trace_catchtables = false;
+  bool trace_frames = false;
+
+  std::ostream& out_stream;
+  std::ostream& err_stream;
+};
+
 class VM {
-  friend MemoryManager;
+  friend GarbageCollector;
   friend ManagedContext;
 
-private:
-  std::vector<VALUE> stack;
-  std::vector<VALUE> pretty_print_stack;
-  Context& context;
-  Frame* frames;
-  CatchTable* catchstack;
-  uint8_t* ip;
-  bool halted;
-
 public:
+  VM(VMContext& ctx) : context(ctx), frames(nullptr), catchstack(nullptr), ip(nullptr), halted(false) {
+  }
+  VM(const VM& other) = delete;
+  VM(VM&& other) = delete;
+  ~VM() {
+    this->frames = nullptr;
+    this->catchstack = nullptr;
+    this->stack.clear();
+    this->context.gc.collect();
+  }
+
   // Methods that operate on the VM's frames
   Frame* pop_frame();
   Frame* create_frame(VALUE self, Function* calling_function, uint8_t* return_address);
-
-  // Instruction Blocks
-  InstructionBlock* create_instructionblock();
 
   // Stack manipulation
   std::optional<VALUE> pop_stack();
@@ -75,13 +88,8 @@ public:
   VALUE create_array(uint32_t initial_capacity);
   VALUE create_float(double value);
   VALUE create_string(const char* data, uint32_t length);
-  VALUE create_function(VALUE name,
-                        uint8_t* body_address,
-                        uint32_t argc,
-                        uint32_t lvarcount,
-                        bool anonymous,
-                        InstructionBlock* block);
-  VALUE create_cfunction(VALUE name, uint32_t argc, FPOINTER pointer);
+  VALUE create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint32_t lvarcount, bool anonymous);
+  VALUE create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer);
 
   // Casting to different types
   VALUE cast_to_numeric(VALUE value);
@@ -107,13 +115,8 @@ public:
   void op_putvalue(VALUE value);
   void op_putfloat(double value);
   void op_putstring(char* data, uint32_t length);
-  void op_putfunction(VALUE symbol,
-                      uint8_t* body_address,
-                      InstructionBlock* block,
-                      bool anonymous,
-                      uint32_t argc,
-                      uint32_t lvarcount);
-  void op_putcfunction(VALUE symbol, FPOINTER pointer, uint32_t argc);
+  void op_putfunction(VALUE symbol, uint8_t* body_address, bool anonymous, uint32_t argc, uint32_t lvarcount);
+  void op_putcfunction(VALUE symbol, uintptr_t pointer, uint32_t argc);
   void op_putarray(uint32_t count);
   void op_puthash(uint32_t count);
   void op_pop();
@@ -143,19 +146,15 @@ public:
     this->pretty_print(io, (VALUE)value);
   }
   void pretty_print(std::ostream& io, VALUE value);
-
-public:
-  VM(Context& t_context) : context(t_context) {
-    context.vm = this;
-    this->frames = nullptr;
-    this->catchstack = nullptr;
-    this->ip = nullptr;
-    this->halted = false;
-
-    this->init_frames();
-  }
-  ~VM();
-  void init_frames();
   void run();
+
+private:
+  std::vector<VALUE> pretty_print_stack;
+  VMContext context;
+  std::vector<VALUE> stack;
+  Frame* frames;
+  CatchTable* catchstack;
+  uint8_t* ip;
+  bool halted;
 };
 }  // namespace Charly

@@ -34,8 +34,8 @@ namespace Charly::Compilation {
 void Disassembler::dump(std::ostream& stream) {
   uint32_t offset = this->flags.start_offset;
 
-  while (offset < this->block->writeoffset && offset < this->flags.end_offset) {
-    Opcode opcode = static_cast<Opcode>(this->block->uint8_at(offset));
+  while (offset < this->block->getWriteoffset() && offset < this->flags.end_offset) {
+    Opcode opcode = static_cast<Opcode>(this->block->read<uint8_t>(offset));
 
     // Print the branch arrows
     if (!this->flags.no_branches && this->highest_branch_density > 0) {
@@ -44,7 +44,7 @@ void Disassembler::dump(std::ostream& stream) {
 
     // Print the offset
     if (!this->flags.no_offsets) {
-      int minimum_hex_digits = std::ceil(std::log(this->block->writeoffset) / std::log(16));
+      int minimum_hex_digits = std::ceil(std::log(this->block->getWriteoffset()) / std::log(16));
       this->print_hex(offset, stream, minimum_hex_digits + 1);
       stream << ": ";
     }
@@ -55,71 +55,81 @@ void Disassembler::dump(std::ostream& stream) {
     switch (opcode) {
       case Opcode::ReadLocal:
       case Opcode::SetLocal: {
-        stream << this->block->uint32_at(offset + 1) << ", " << this->block->uint32_at(offset + 1 + sizeof(uint32_t));
+        stream << this->block->read<uint32_t>(offset + 1) << ", " << this->block->read<uint32_t>(offset + 1 + sizeof(uint32_t));
         break;
       }
       case Opcode::ReadMemberSymbol:
       case Opcode::SetMemberSymbol: {
-        this->print_hex(this->block->value_at(offset + 1), stream);
+        this->print_hex(this->block->read<VALUE>(offset + 1), stream);
         break;
       }
       case Opcode::ReadArrayIndex:
       case Opcode::SetArrayIndex: {
-        stream << this->block->uint32_at(offset + 1);
+        stream << this->block->read<uint32_t>(offset + 1);
         break;
       }
       case Opcode::PutSelf: {
-        stream << this->block->uint32_at(offset + 1);
+        stream << this->block->read<uint32_t>(offset + 1);
         break;
       }
       case Opcode::PutValue: {
-        this->print_hex(this->block->value_at(offset + 1), stream);
+        this->print_hex(this->block->read<VALUE>(offset + 1), stream);
         break;
       }
       case Opcode::PutFloat: {
-        this->print_value(this->block->double_at(offset + 1), stream);
+        this->print_value(this->block->read<double>(offset + 1), stream);
         break;
       }
       case Opcode::PutString: {
-        this->print_hex(this->block->uint32_at(offset + 1), stream);
-        stream << ", ";
-        this->print_value(this->block->uint32_at(offset + 1 + sizeof(uint32_t)), stream);
+
+        // Print the string literal if we have a compiler context object
+        if (this->compiler_context != nullptr) {
+          uint32_t str_offset = this->block->read<uint32_t>(offset + 1);
+          uint32_t str_size = this->block->read<uint32_t>(offset + 1 + sizeof(uint32_t));
+          char* blk_ptr = reinterpret_cast<char*>(this->compiler_context->stringpool.getData() + str_offset);
+          stream.write(blk_ptr, str_size);
+        } else {
+          this->print_hex(this->block->read<uint32_t>(offset + 1), stream);
+          stream << ", ";
+          this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(uint32_t)), stream);
+        }
+
         break;
       }
       case Opcode::PutFunction: {
-        this->print_hex(this->block->value_at(offset + 1), stream);
+        this->print_hex(this->block->read<VALUE>(offset + 1), stream);
         stream << ", ";
-        this->print_hex(offset + this->block->int32_at(offset + 1 + sizeof(VALUE)), stream);
+        this->print_hex(offset + this->block->read<int32_t>(offset + 1 + sizeof(VALUE)), stream);
         stream << ", ";
-        this->print_value(this->block->bool_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t)), stream);
+        this->print_value(this->block->read<bool>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t)), stream);
         stream << ", ";
-        this->print_value(this->block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool)), stream);
+        this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool)), stream);
         stream << ", ";
         this->print_value(
-            this->block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool) + sizeof(uint32_t)),
+            this->block->read<uint32_t>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool) + sizeof(uint32_t)),
             stream);
         break;
       }
       case Opcode::PutCFunction: {
-        this->print_hex(this->block->value_at(offset + 1), stream);
+        this->print_hex(this->block->read<VALUE>(offset + 1), stream);
         stream << ", ";
-        this->print_hex(this->block->voidptr_at(offset + 1 + sizeof(VALUE)), stream);
+        this->print_hex(this->block->read<void*>(offset + 1 + sizeof(VALUE)), stream);
         stream << ", ";
-        this->print_value(this->block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(void*)), stream);
+        this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(VALUE) + sizeof(void*)), stream);
         break;
       }
       case Opcode::PutClass: {
-        this->print_hex(this->block->value_at(offset + 1), stream);
+        this->print_hex(this->block->read<VALUE>(offset + 1), stream);
         stream << ", ";
-        this->print_value(this->block->uint32_at(offset + 1 + sizeof(VALUE)), stream);
+        this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(VALUE)), stream);
         stream << ", ";
-        this->print_value(this->block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 1), stream);
+        this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 1), stream);
         stream << ", ";
-        this->print_value(this->block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 2), stream);
+        this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 2), stream);
         stream << ", ";
-        this->print_value(this->block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 3), stream);
+        this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 3), stream);
         stream << ", ";
-        this->print_value(this->block->uint32_at(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 4), stream);
+        this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 4), stream);
         stream << ", ";
         break;
       }
@@ -129,14 +139,14 @@ void Disassembler::dump(std::ostream& stream) {
       case Opcode::Setn:
       case Opcode::Call:
       case Opcode::CallMember: {
-        this->print_value(this->block->uint32_at(offset + 1), stream);
+        this->print_value(this->block->read<uint32_t>(offset + 1), stream);
         break;
       }
       case Opcode::RegisterCatchTable:
       case Opcode::Branch:
       case Opcode::BranchIf:
       case Opcode::BranchUnless: {
-        this->print_hex(offset + this->block->int32_at(offset + 1), stream, 8);
+        this->print_hex(offset + this->block->read<int32_t>(offset + 1), stream, 8);
         break;
       }
     }
@@ -152,19 +162,19 @@ void Disassembler::detect_branches() {
   uint32_t offset = start_offset;
 
   // Walk the block and detect all branches
-  while (offset < this->block->writeoffset && offset < end_offset) {
-    Opcode opcode = static_cast<Opcode>(this->block->uint8_at(offset));
+  while (offset < this->block->getWriteoffset() && offset < end_offset) {
+    Opcode opcode = static_cast<Opcode>(this->block->read<uint8_t>(offset));
 
     switch (opcode) {
       case Opcode::PutFunction: {
-        this->branches.emplace_back(offset, offset + this->block->int32_at(offset + 1 + sizeof(VALUE)));
+        this->branches.emplace_back(offset, offset + this->block->read<int32_t>(offset + 1 + sizeof(VALUE)));
         break;
       }
       case Opcode::RegisterCatchTable:
       case Opcode::Branch:
       case Opcode::BranchIf:
       case Opcode::BranchUnless: {
-        this->branches.emplace_back(offset, offset + this->block->int32_at(offset + 1));
+        this->branches.emplace_back(offset, offset + this->block->read<int32_t>(offset + 1));
         break;
       }
     }

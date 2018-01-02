@@ -37,9 +37,9 @@ AST::AbstractNode* LVarRewriter::visit_function(AST::Function* node, VisitContin
   this->blockid = reinterpret_cast<uint64_t>(node->body);
 
   // Register the function's parameters
-  this->scope->declare(this->symtable("__CHARLY_FUNCTION_ARGUMENTS"), this->depth + 1, this->blockid, true);
+  this->scope->declare(this->context.symtable("__CHARLY_FUNCTION_ARGUMENTS"), this->depth + 1, this->blockid, true);
   for (const std::string& param : node->parameters) {
-    this->scope->declare(this->symtable(param), this->depth + 1, this->blockid, false);
+    this->scope->declare(this->context.symtable(param), this->depth + 1, this->blockid, false);
   }
   descend();
   this->blockid = backup_blockid;
@@ -73,7 +73,7 @@ AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisat
   }
 
   // Check if this is a duplicate declaration
-  auto result = this->scope->resolve(this->symtable(node->name), this->depth, this->blockid, true);
+  auto result = this->scope->resolve(this->context.symtable(node->name), this->depth, this->blockid, true);
   if (result.has_value()) {
     if (node->name == "arguments") {
       this->push_error(node, "Duplicate declaration of " + node->name +
@@ -86,7 +86,7 @@ AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisat
   }
 
   // Register this variable in the current scope
-  IRVarRecord record = this->scope->declare(this->symtable(node->name), this->depth, this->blockid, node->constant);
+  IRVarRecord record = this->scope->declare(this->context.symtable(node->name), this->depth, this->blockid, node->constant);
 
   // If the expression is a function or class, descend into it now
   // This allows a function or class to reference itself inside its body
@@ -141,7 +141,7 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
   }
 
   // Check if this symbol exists
-  auto result = this->scope->resolve(this->symtable(node->name), this->depth, this->blockid, false);
+  auto result = this->scope->resolve(this->context.symtable(node->name), this->depth, this->blockid, false);
   if (!result.has_value()) {
     // If we reference `arguments`, we redirect to __CHARLY_FUNCTION_ARGUMENTS
     if (node->name == "arguments") {
@@ -182,7 +182,7 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
 }
 
 AST::AbstractNode* LVarRewriter::visit_assignment(AST::Assignment* node, VisitContinue cont) {
-  auto result = this->scope->resolve(this->symtable(node->target), this->depth, this->blockid, false);
+  auto result = this->scope->resolve(this->context.symtable(node->target), this->depth, this->blockid, false);
   if (!result.has_value()) {
     // If we reference `arguments`, we redirect to __CHARLY_FUNCTION_ARGUMENTS
     if (node->target == "arguments") {
@@ -213,11 +213,11 @@ AST::AbstractNode* LVarRewriter::visit_trycatch(AST::TryCatch* node, VisitContin
   this->visit_node(node->block);
 
   // Register the exception name in the scope of the handler block
-  this->scope->declare(this->symtable(node->exception_name->name), this->depth + 1,
+  this->scope->declare(this->context.symtable(node->exception_name->name), this->depth + 1,
                        reinterpret_cast<uint64_t>(node->handler_block), false);
 
   // Create the offset info for the exception name
-  auto result = this->scope->resolve(this->symtable(node->exception_name->name), this->depth + 1,
+  auto result = this->scope->resolve(this->context.symtable(node->exception_name->name), this->depth + 1,
                                      reinterpret_cast<uint64_t>(node->handler_block), false);
   node->exception_name->offset_info = new IRVarOffsetInfo({result->depth, result->frame_index});
 

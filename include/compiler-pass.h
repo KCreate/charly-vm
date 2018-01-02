@@ -26,8 +26,10 @@
 
 #include <exception>
 #include <vector>
+#include <iostream>
 
 #include "ast.h"
+#include "compiler.h"
 #include "symboltable.h"
 #include "tree-walker.h"
 
@@ -41,10 +43,9 @@ class FatalError : public std::exception {};
 
 class CompilerPass : public TreeWalker {
 public:
-  CompilerPass(SymbolTable& s) : symtable(s) {
+  CompilerPass(CompilerContext& s) : context(s) {
   }
 
-  // Error handling
   void inline push_error(AST::AbstractNode* node, const std::string& error) {
     this->errors.emplace_back(node, error);
   }
@@ -56,11 +57,10 @@ public:
     throw FatalError();
   }
 
-  template <class T>
-  void inline dump_errors(T& stream) {
-    for (auto& err : this->errors) {
+  void inline dump_errors(std::ostream& stream) {
+    for (auto [node, message] : this->errors) {
       stream << "Error";
-      auto& location_start = err.first->location_start;
+      auto& location_start = node->location_start;
       if (location_start.has_value()) {
         stream << ' ';
         location_start->write_to_stream(stream);
@@ -68,12 +68,12 @@ public:
       } else {
         stream << ": ";
       }
-      stream << err.second << '\n';
+      stream << message << '\n';
     }
   }
 
 protected:
-  SymbolTable& symtable;
+  CompilerContext& context;
   std::vector<CompilerError> errors;
 };
 }  // namespace Charly::Compilation

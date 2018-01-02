@@ -33,15 +33,4 @@
 #pragma once
 
 namespace Charly {
-// Frames introduce new environments
-struct Frame {
-  VALUE flags;
-  Frame* parent;
-  Frame* parent_environment_frame;
-  CatchTable* last_active_catchtable;
-  Function* function;
-  std::vector<VALUE> environment;
-  VALUE self;
-  uint8_t* return_address;
-};
 }  // namespace Charly

@@ -26,28 +26,20 @@
 
 #include <unordered_set>
 #include <vector>
+#include <iostream>
 
-#include "context.h"
-#include "defines.h"
-#include "exception.h"
-#include "frame.h"
-#include "instructionblock.h"
 #include "value.h"
 
 #pragma once
 
 namespace Charly {
-static const size_t kGCInitialHeapCount = 2;
-static const size_t kGCHeapCellCount = 256;
-static const float kGCHeapCountGrowthFactor = 2;
 
-// This is the internal layout of a cell as managed by the MemoryHeap.
+// Item inside the MemoryCell
 struct MemoryCell {
   union {
-    struct {
-      VALUE flags;
-      MemoryCell* next;
-    } free;
+    MemoryCell* next;
+    VALUE value;
+    VALUE flags;
     Basic basic;
     Object object;
     Array array;
@@ -57,31 +49,66 @@ struct MemoryCell {
     CFunction cfunction;
     Frame frame;
     CatchTable catchtable;
-    InstructionBlock instructionblock;
-  } as;
+  };
+
+  template <typename T>
+  inline T* as() {
+    return reinterpret_cast<T*>(this);
+  }
 };
 
-class MemoryManager {
-private:
-  Context& context;
+// Flagas for the memory manager
+struct GarbageCollectorConfig {
+  size_t initial_heap_count = 2;
+  size_t heap_cell_count = 256;
+  float heap_growth_factor = 2;
+
+  bool trace = false;
+  std::ostream& err_stream = std::cout;
+  std::ostream& log_stream = std::cerr;
+};
+
+class GarbageCollector {
+  GarbageCollectorConfig config;
   MemoryCell* free_cell;
   std::vector<MemoryCell*> heaps;
   std::unordered_set<VALUE> temporaries;
 
-  void mark(VALUE cell);
   void add_heap();
+  void free_heap(MemoryCell* heap);
   void grow_heap();
 
 public:
-  MemoryManager(Context& context);
-  ~MemoryManager();
-  MemoryCell* allocate();
-  void collect();
-  void free(MemoryCell* cell);
-  void inline free(VALUE value) {
-    this->free(reinterpret_cast<MemoryCell*>(value));
+  GarbageCollector(GarbageCollectorConfig cfg) : config(cfg) {
+    this->free_cell = nullptr;
+
+    // Allocate the initial heaps
+    size_t heapc = cfg.initial_heap_count;
+    this->heaps.reserve(heapc);
+    while (heapc--) {
+      this->add_heap();
+    }
   }
-  void register_temporary(VALUE value);
-  void unregister_temporary(VALUE value);
+  ~GarbageCollector() {
+    for (const auto heap : this->heaps) {
+      free_heap(heap);
+    }
+  }
+  MemoryCell* allocate();
+  void deallocate(MemoryCell* value);
+
+  template <typename T>
+  inline void deallocate(T value) {
+    this->deallocate(reinterpret_cast<MemoryCell*>(value));
+  }
+  void mark(VALUE cell);
+  template <typename T>
+  inline void mark(T cell) {
+    this->mark(reinterpret_cast<VALUE>(cell));
+  }
+  void mark(const std::vector<VALUE>& list);
+  void collect();
+  void mark_persistent(VALUE value);
+  void unmark_persistent(VALUE value);
 };
 }  // namespace Charly

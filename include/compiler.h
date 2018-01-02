@@ -24,16 +24,62 @@
  * SOFTWARE.
  */
 
+#include <iostream>
+#include <optional>
+
 #include "instructionblock.h"
-#include "parseresult.h"
+#include "sourcefile.h"
+#include "ast.h"
 #include "symboltable.h"
+#include "stringpool.h"
+#include "runflags.h"
+
+#pragma once
 
 namespace Charly::Compilation {
+
+// Context for multiple compilations
+struct CompilerContext {
+  SymbolTable symtable;
+  StringPool stringpool;
+};
+
+// Configuration passed to the compiler
+struct CompilationConfig {
+  // Known variables in the toplevel
+  //
+  // If a module inclusion function is generated, these are the known variables
+  // inside the scope the function is created in
+  //
+  // If no module inclusion function is generated, these are ignored
+  std::vector<std::string> known_top_level_vars;
+
+  // Module inclusion function
+  bool wrap_inclusion_function = true;
+  std::string inclusion_function_name = "__CHARLY_MODULE_FUNC";
+  std::vector<std::string> inclusion_function_arguments = {"export", "Charly"};
+  std::string inclusion_function_return_identifier = "export";
+
+  // Wether to run the codegen phase at all
+  bool codegen = true;
+
+  // Errors are written to this stream
+  std::ostream& err_stream = std::cout;
+  std::ostream& log_stream = std::cerr;
+
+  // Various other flags
+  RunFlags& flags;
+};
+
 class Compiler {
 public:
-  InstructionBlock* compile(ParseResult& result);
+  Compiler(CompilerContext& ctx) : context(ctx) {
+  }
+
+  InstructionBlock* compile(SourceFile& source, const CompilationConfig& config);
+  InstructionBlock* compile(AST::AbstractNode* tree, const CompilationConfig& config);
 
 private:
-  SymbolTable symtable;
+  CompilerContext& context;
 };
 }  // namespace Charly::Compilation

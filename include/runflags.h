@@ -53,7 +53,6 @@ struct RunFlags {
   bool trace_catchtables = false;
   bool trace_frames = false;
   bool trace_gc = false;
-  bool exit_statistics = false;
 
   RunFlags(int argc, char** argv, char** envp) {
     // Parse environment variables
@@ -184,8 +183,6 @@ struct RunFlags {
       this->trace_catchtables = true;
     if (!flag.compare("trace_frames"))
       this->trace_frames = true;
-    if (!flag.compare("exit_statistics"))
-      this->exit_statistics = true;
     if (!flag.compare("trace_gc"))
       this->trace_gc = true;
     this->flags.push_back(flag);

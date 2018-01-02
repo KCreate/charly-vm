@@ -24,25 +24,48 @@
  * SOFTWARE.
  */
 
+#include <cstdint>
+#include <functional>
 #include <string>
-#include <vector>
-#include "ast.h"
-#include "token.h"
+#include <unordered_map>
+
+#include "memoryblock.h"
 
 #pragma once
 
-namespace Charly::Compilation {
-struct ParseResult {
-  std::string filename;
-  std::vector<Token> tokens;
-  AST::AbstractNode* parse_tree;
+namespace Charly {
 
-  ~ParseResult() {
-    delete parse_tree;
+// Holds offset and length of a string in the string pool
+struct StringOffsetInfo {
+  uint32_t offset;
+  uint32_t length;
+};
+
+class StringPool : public MemoryBlock {
+  std::unordered_map<size_t, StringOffsetInfo> known_strings;
+
+  inline size_t hash_string(const std::string& str) {
+    return std::hash<std::string>{}(str);
   }
 
-  ParseResult(const std::string& f, const std::vector<Token> t, AST::AbstractNode* tree)
-      : filename(f), tokens(t), parse_tree(tree) {
+public:
+  inline bool is_known(size_t strhash) {
+    return this->known_strings.count(strhash) > 0;
+  }
+  inline StringOffsetInfo get_offsetinfo(size_t strhash) {
+    return this->known_strings[strhash];
+  }
+  inline StringOffsetInfo get_offsetinfo(const std::string& str) {
+    size_t str_hash = this->hash_string(str);
+    if (this->is_known(str_hash)) {
+      return this->get_offsetinfo(str_hash);
+    } else {
+      uint32_t start_offset = this->writeoffset;
+      this->write_string(str);
+      StringOffsetInfo info = {start_offset, static_cast<uint32_t>(str.size())};
+      this->known_strings.emplace(str_hash, info);
+      return info;
+    }
   }
 };
-}  // namespace Charly::Compilation
+}  // namespace Charly

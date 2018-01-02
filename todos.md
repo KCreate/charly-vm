@@ -117,6 +117,15 @@
       - If the hashes match, return the compiled result
       - If the hashes don't match, recompile the program and add new entry
 
+# VM context data
+- VM needs context data
+  - Symbol table
+  - String pool
+  - Garbage Collector
+    - Garbage collector could keep track of multiple `std::vector`'s
+    - Before each collection, it marks all values inside all stacks
+    - How does it mark frames and catchtables?
+
 # Move language logic which doesn't depend on the VM into it's own class
 - Maybe called `VMUtils` or `CharlyUtils`?
   - Needs access to the context

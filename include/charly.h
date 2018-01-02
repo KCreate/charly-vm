@@ -24,10 +24,7 @@
  * SOFTWARE.
  */
 
-#include "context.h"
 #include "defines.h"
-#include "exception.h"
-#include "frame.h"
 #include "gc.h"
 #include "instructionblock.h"
 #include "internals.h"

@@ -29,35 +29,28 @@
 namespace Charly {
 Frame* ManagedContext::create_frame(VALUE self, Function* calling_function, uint8_t* return_address) {
   Frame* frame = this->vm.create_frame(self, calling_function, return_address);
-  this->vm.context.gc->register_temporary(reinterpret_cast<VALUE>(frame));
+  this->vm.context.gc.mark_persistent(reinterpret_cast<VALUE>(frame));
   this->temporaries.push_back(reinterpret_cast<VALUE>(frame));
   return frame;
 }
 
-InstructionBlock* ManagedContext::create_instructionblock() {
-  InstructionBlock* block = this->vm.create_instructionblock();
-  this->vm.context.gc->register_temporary(reinterpret_cast<VALUE>(block));
-  this->temporaries.push_back(reinterpret_cast<VALUE>(block));
-  return block;
-}
-
 CatchTable* ManagedContext::create_catchtable(uint8_t* address) {
   CatchTable* table = this->vm.create_catchtable(address);
-  this->vm.context.gc->register_temporary(reinterpret_cast<VALUE>(table));
+  this->vm.context.gc.mark_persistent(reinterpret_cast<VALUE>(table));
   this->temporaries.push_back(reinterpret_cast<VALUE>(table));
   return table;
 }
 
 VALUE ManagedContext::create_object(uint32_t initial_capacity) {
   VALUE object = this->vm.create_object(initial_capacity);
-  this->vm.context.gc->register_temporary(object);
+  this->vm.context.gc.mark_persistent(object);
   this->temporaries.push_back(object);
   return object;
 }
 
 VALUE ManagedContext::create_array(uint32_t initial_capacity) {
   VALUE array = this->vm.create_array(initial_capacity);
-  this->vm.context.gc->register_temporary(array);
+  this->vm.context.gc.mark_persistent(array);
   this->temporaries.push_back(array);
   return array;
 }
@@ -65,7 +58,7 @@ VALUE ManagedContext::create_array(uint32_t initial_capacity) {
 VALUE ManagedContext::create_float(double value) {
   VALUE floatval = this->vm.create_float(value);
   if (is_special(floatval)) {
-    this->vm.context.gc->register_temporary(floatval);
+    this->vm.context.gc.mark_persistent(floatval);
     this->temporaries.push_back(floatval);
   }
   return floatval;
@@ -73,7 +66,7 @@ VALUE ManagedContext::create_float(double value) {
 
 VALUE ManagedContext::create_string(char* data, uint32_t length) {
   VALUE string = this->vm.create_string(data, length);
-  this->vm.context.gc->register_temporary(string);
+  this->vm.context.gc.mark_persistent(string);
   this->temporaries.push_back(string);
   return string;
 }
@@ -82,17 +75,16 @@ VALUE ManagedContext::create_function(VALUE name,
                                       uint8_t* body_address,
                                       uint32_t argc,
                                       uint32_t lvarcount,
-                                      bool anonymous,
-                                      InstructionBlock* block) {
-  VALUE func = this->vm.create_function(name, body_address, argc, lvarcount, anonymous, block);
-  this->vm.context.gc->register_temporary(func);
+                                      bool anonymous) {
+  VALUE func = this->vm.create_function(name, body_address, argc, lvarcount, anonymous);
+  this->vm.context.gc.mark_persistent(func);
   this->temporaries.push_back(func);
   return func;
 }
 
-VALUE ManagedContext::create_cfunction(VALUE name, uint32_t argc, FPOINTER pointer) {
+VALUE ManagedContext::create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer) {
   VALUE func = this->vm.create_cfunction(name, argc, pointer);
-  this->vm.context.gc->register_temporary(func);
+  this->vm.context.gc.mark_persistent(func);
   this->temporaries.push_back(func);
   return func;
 }

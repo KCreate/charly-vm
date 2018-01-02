@@ -346,7 +346,7 @@ static constexpr uint32_t kInstructionLengths[]{
   /* PutFloat */           1 + sizeof(double),
   /* PutString */          1 + sizeof(uint32_t) + sizeof(uint32_t),
   /* PutFunction */        1 + sizeof(VALUE) + sizeof(int32_t) + sizeof(bool) + sizeof(uint32_t) + sizeof(uint32_t),
-  /* PutCFunction */       1 + sizeof(VALUE) + sizeof(FPOINTER) + sizeof(uint32_t),
+  /* PutCFunction */       1 + sizeof(VALUE) + sizeof(uintptr_t) + sizeof(uint32_t),
   /* PutArray */           1 + sizeof(uint32_t),
   /* PutHash */            1 + sizeof(uint32_t),
   /* PutClass */           1 + sizeof(VALUE) + sizeof(uint32_t) * 5 + sizeof(bool),
