@@ -204,7 +204,7 @@ struct Float {
 
 // Frames introduce new environments
 struct Frame {
-  VALUE flags;
+  Basic basic;
   Frame* parent;
   Frame* parent_environment_frame;
   CatchTable* last_active_catchtable;

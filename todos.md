@@ -117,15 +117,6 @@
       - If the hashes match, return the compiled result
       - If the hashes don't match, recompile the program and add new entry
 
-# VM context data
-- VM needs context data
-  - Symbol table
-  - String pool
-  - Garbage Collector
-    - Garbage collector could keep track of multiple `std::vector`'s
-    - Before each collection, it marks all values inside all stacks
-    - How does it mark frames and catchtables?
-
 # Move language logic which doesn't depend on the VM into it's own class
 - Maybe called `VMUtils` or `CharlyUtils`?
   - Needs access to the context
@@ -151,16 +142,6 @@
 - Might be useful for other things?
 - Does this require a modification of the InstructionBlock structure?
 - The compiler needs to keep around semantic information for the whole program
-
-# Calling and object storage convention
-- Where does the return value end up?
-  - Callee side:
-    - The return value of the call is the top value on the stack
-  - Caller side:
-    - Pushing it onto the stack could work
-      - Compiler would have to make sure there is nothing else on the stack
-    - Dedicated return_value field inside current frame
-      - Pushed onto the stack on frame pop
 
 # Extending primitive types
 - How do you extend primitive types?
@@ -218,18 +199,6 @@
       - InstructionBlocks
       - Static data (strings)
     - Logging
-- Compiler should be able to take some flags
-  - Should the program be wrapped in a module inclusion function?
-    ```javascript
-    func () {
-      let module = self;
-      let Charly = module.Charly;
-      let exports = module.exports;
-      <program>
-      return exports;
-    }
-    ```
-- Disassembler should receive a symboltable which it will use to show text symbols
 - Move illegal keyword checking from the parser to the normalizer
 
 # Remove PutCFunction instruction
