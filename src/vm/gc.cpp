@@ -167,7 +167,8 @@ void GarbageCollector::collect() {
   if (this->config.trace) {
     std::chrono::duration<double> gc_collect_duration = std::chrono::high_resolution_clock::now() - gc_start_time;
     this->config.log_stream << "#-- GC: Freed " << (freed_cells_count * sizeof(MemoryCell)) << " bytes --#" << '\n';
-    this->config.log_stream << "#-- GC: Finished in " << gc_collect_duration.count() * 1000000000 << " nanoseconds --#" << '\n';
+    this->config.log_stream << "#-- GC: Finished in " << gc_collect_duration.count() * 1000000000 << " nanoseconds --#"
+                            << '\n';
   }
 }
 

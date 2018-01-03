@@ -24,9 +24,9 @@
  * SOFTWARE.
  */
 
+#include <iostream>
 #include <unordered_set>
 #include <vector>
-#include <iostream>
 
 #include "value.h"
 

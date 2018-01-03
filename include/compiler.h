@@ -27,12 +27,12 @@
 #include <iostream>
 #include <optional>
 
-#include "instructionblock.h"
-#include "sourcefile.h"
 #include "ast.h"
-#include "symboltable.h"
-#include "stringpool.h"
+#include "instructionblock.h"
 #include "runflags.h"
+#include "sourcefile.h"
+#include "stringpool.h"
+#include "symboltable.h"
 
 #pragma once
 

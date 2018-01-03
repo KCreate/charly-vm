@@ -49,7 +49,6 @@ class CodeGenerator : public CompilerPass {
   using CompilerPass::CompilerPass;
 
 public:
-
   // Main interface to the compiler
   InstructionBlock* compile(AST::AbstractNode* node);
 

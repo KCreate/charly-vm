@@ -99,11 +99,7 @@ public:
     this->write(length);
   }
 
-  inline void write_putfunction(VALUE symbol,
-                                          int32_t body_offset,
-                                          bool anonymous,
-                                          uint32_t argc,
-                                          uint32_t lvarcount) {
+  inline void write_putfunction(VALUE symbol, int32_t body_offset, bool anonymous, uint32_t argc, uint32_t lvarcount) {
     this->write(Opcode::PutFunction);
     this->write(symbol);
     this->write(body_offset);
@@ -130,12 +126,12 @@ public:
   }
 
   inline void write_putclass(VALUE symbol,
-                                        uint32_t propertycount,
-                                        uint32_t staticpropertycount,
-                                        uint32_t methodcount,
-                                        uint32_t staticmethodcount,
-                                        uint32_t parentclasscount,
-                                        bool has_constructor) {
+                             uint32_t propertycount,
+                             uint32_t staticpropertycount,
+                             uint32_t methodcount,
+                             uint32_t staticmethodcount,
+                             uint32_t parentclasscount,
+                             bool has_constructor) {
     this->write(Opcode::PutClass);
     this->write(symbol);
     this->write(propertycount);

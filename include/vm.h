@@ -24,8 +24,8 @@
  * SOFTWARE.
  */
 
-#include <optional>
 #include <iostream>
+#include <optional>
 
 #include "defines.h"
 #include "gc.h"

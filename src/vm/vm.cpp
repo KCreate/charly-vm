@@ -1287,7 +1287,7 @@ void VM::run() {
 
       default: {
         this->context.out_stream << "Unknown opcode: " << kOpcodeMnemonics[opcode] << " at "
-                                << reinterpret_cast<void*>(this->ip) << '\n';
+                                 << reinterpret_cast<void*>(this->ip) << '\n';
         this->panic(Status::UnknownOpcode);
       }
     }

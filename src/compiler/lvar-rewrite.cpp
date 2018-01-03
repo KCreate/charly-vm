@@ -86,7 +86,8 @@ AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisat
   }
 
   // Register this variable in the current scope
-  IRVarRecord record = this->scope->declare(this->context.symtable(node->name), this->depth, this->blockid, node->constant);
+  IRVarRecord record =
+      this->scope->declare(this->context.symtable(node->name), this->depth, this->blockid, node->constant);
 
   // If the expression is a function or class, descend into it now
   // This allows a function or class to reference itself inside its body

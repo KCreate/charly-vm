@@ -26,8 +26,8 @@
 
 #include <cmath>
 
-#include "stringpool.h"
 #include "codegenerator.h"
+#include "stringpool.h"
 
 namespace Charly::Compilation {
 
@@ -629,7 +629,7 @@ AST::AbstractNode* CodeGenerator::visit_function(AST::Function* node, VisitConti
   Label function_block_label = this->assembler.reserve_label();
 
   this->assembler.write_putfunction_to_label(this->context.symtable(node->name), function_block_label, node->anonymous,
-                                              node->parameters.size(), node->lvar_count);
+                                             node->parameters.size(), node->lvar_count);
 
   // Codegen the block
   this->queued_blocks.push_back(QueuedBlock({function_block_label, node->body}));
@@ -661,9 +661,9 @@ AST::AbstractNode* CodeGenerator::visit_class(AST::Class* node, VisitContinue co
   }
 
   this->assembler.write_putclass(this->context.symtable(node->name), node->member_properties.size(),
-                                  node->static_properties.size(), node->member_functions->children.size(),
-                                  node->member_functions->children.size(), node->parents->children.size(),
-                                  node->constructor->type() != AST::kTypeEmpty);
+                                 node->static_properties.size(), node->member_functions->children.size(),
+                                 node->member_functions->children.size(), node->parents->children.size(),
+                                 node->constructor->type() != AST::kTypeEmpty);
 
   return node;
 }
@@ -742,8 +742,7 @@ AST::AbstractNode* CodeGenerator::visit_trycatch(AST::TryCatch* node, VisitConti
     // Store the exception
     this->assembler.write_setlocal(node->exception_name->offset_info->index, node->exception_name->offset_info->level);
     this->visit_node(node->finally_block);
-    this->assembler.write_readlocal(node->exception_name->offset_info->index,
-                                     node->exception_name->offset_info->level);
+    this->assembler.write_readlocal(node->exception_name->offset_info->index, node->exception_name->offset_info->level);
     this->assembler.write_throw();
   }
 

@@ -32,5 +32,4 @@
 
 #pragma once
 
-namespace Charly {
-}  // namespace Charly
+namespace Charly {}  // namespace Charly

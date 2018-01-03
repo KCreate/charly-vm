@@ -25,8 +25,8 @@
  */
 
 #include <exception>
-#include <vector>
 #include <iostream>
+#include <vector>
 
 #include "ast.h"
 #include "compiler.h"
@@ -58,7 +58,7 @@ public:
   }
 
   void inline dump_errors(std::ostream& stream) {
-    for (auto [node, message] : this->errors) {
+    for (auto[node, message] : this->errors) {
       stream << "Error";
       auto& location_start = node->location_start;
       if (location_start.has_value()) {
