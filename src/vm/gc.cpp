@@ -46,10 +46,6 @@ void GarbageCollector::add_heap() {
   this->free_cell = last_cell;
 }
 
-void GarbageCollector::free_heap(MemoryCell* heap) {
-  free(heap);
-}
-
 void GarbageCollector::grow_heap() {
   size_t heap_count = this->heaps.size();
   size_t heaps_to_add = (heap_count * this->config.heap_growth_factor) - heap_count;

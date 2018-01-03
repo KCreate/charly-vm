@@ -75,7 +75,6 @@ class GarbageCollector {
   std::unordered_set<VALUE> temporaries;
 
   void add_heap();
-  void free_heap(MemoryCell* heap);
   void grow_heap();
 
 public:
@@ -90,8 +89,8 @@ public:
     }
   }
   ~GarbageCollector() {
-    for (const auto heap : this->heaps) {
-      free_heap(heap);
+    for (MemoryCell* heap : this->heaps) {
+      std::free(heap);
     }
   }
   MemoryCell* allocate();

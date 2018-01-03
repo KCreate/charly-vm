@@ -190,7 +190,7 @@ struct String {
   uint32_t capacity;
 
   void inline clean() {
-    free(this->data);
+    std::free(this->data);
   }
 };
 

@@ -44,8 +44,9 @@ public:
     this->writeoffset = 0;
   }
   ~MemoryBlock() {
-    if (this->data)
+    if (this->data) {
       std::free(this->data);
+    }
   }
   MemoryBlock(const MemoryBlock& other) : data(nullptr) {
     this->data = reinterpret_cast<uint8_t*>(std::malloc(other.capacity));
@@ -63,8 +64,9 @@ public:
   }
   MemoryBlock& operator=(const MemoryBlock& other) {
     if (this != &other) {
-      if (this->data)
+      if (this->data) {
         std::free(this->data);
+      }
       this->data = reinterpret_cast<uint8_t*>(std::malloc(other.capacity));
       std::memcpy(this->data, other.data, other.capacity);
       this->capacity = other.capacity;
@@ -75,8 +77,17 @@ public:
   }
   MemoryBlock& operator=(MemoryBlock&& other) {
     if (this != &other) {
-      if (this->data)
+      if (this->data) {
         std::free(this->data);
+      }
+
+      this->data = other.data;
+      this->capacity = other.capacity;
+      this->writeoffset = other.writeoffset;
+
+      other.data = nullptr;
+      other.capacity = 0;
+      other.writeoffset = 0;
     }
 
     return *this;
@@ -101,7 +112,7 @@ public:
   // Automatically grows the buffer to fit
   template <typename T>
   inline uint32_t write(const T& value) {
-    this->grow_to_fit(this->writeoffset);
+    this->grow_to_fit(this->writeoffset + sizeof(T));
     *reinterpret_cast<T*>(this->data + this->writeoffset) = value;
     this->writeoffset += sizeof(T);
     return sizeof(T);
