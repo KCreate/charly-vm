@@ -83,7 +83,9 @@ int CLI::run() {
   if (this->flags.dump_asm) {
     if (compiled_block != nullptr) {
       Disassembler::Flags disassembler_flags =
-          Disassembler::Flags({this->flags.asm_no_branches, this->flags.asm_no_offsets});
+          Disassembler::Flags({.no_branches = this->flags.asm_no_branches,
+                               .no_func_branches = this->flags.asm_no_func_branches,
+                               .no_offsets = this->flags.asm_no_offsets});
       Disassembler disassembler(compiled_block, disassembler_flags, &compiler_context);
       disassembler.dump(std::cout);
     }

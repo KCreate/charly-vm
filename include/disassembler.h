@@ -84,6 +84,7 @@ public:
   struct Flags {
     bool no_branches = false;
     bool no_offsets = false;
+    bool no_func_branches = false;
     uint32_t start_offset = 0;
     uint32_t end_offset = UINT32_MAX;
   };
@@ -104,11 +105,11 @@ private:
     stream << "0x" << std::hex << std::setw(width) << value << std::setw(1) << std::dec;
   }
 
-  inline void print_symbol(uint32_t value, std::ostream& stream) {
+  inline void print_symbol(uint64_t value, std::ostream& stream) {
     if (this->compiler_context != nullptr) {
       std::optional<std::string> decoded_str = this->compiler_context->symtable(value);
       if (decoded_str.has_value()) {
-        stream << decoded_str.value();
+        stream << "@\"" << decoded_str.value() << "\"";
         return;
       }
     }

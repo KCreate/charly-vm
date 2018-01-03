@@ -48,6 +48,7 @@ struct RunFlags {
   bool dump_asm = false;
   bool asm_no_offsets = false;
   bool asm_no_branches = false;
+  bool asm_no_func_branches = false;
   bool skip_execution = false;
   bool trace_opcodes = false;
   bool trace_catchtables = false;
@@ -175,6 +176,8 @@ struct RunFlags {
       this->asm_no_offsets = true;
     if (!flag.compare("asm_no_branches"))
       this->asm_no_branches = true;
+    if (!flag.compare("asm_no_func_branches"))
+      this->asm_no_func_branches = true;
     if (!flag.compare("skipexec"))
       this->skip_execution = true;
     if (!flag.compare("trace_opcodes"))

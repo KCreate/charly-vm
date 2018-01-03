@@ -42,11 +42,12 @@ static const std::string kHelpMessage =
     "    dump_asm                         Display a disassembly of the input file\n"
     "    asm_no_offsets                   Don't display offsets in the disassembly\n"
     "    asm_no_branches                  Don't display branches as arrows in the disassembly\n"
+    "    asm_no_func_branches             Don't display branches for PutFunction instructions\n"
     "    skipexec                         Don't execute after parsing\n"
     "    trace_opcodes                    Display opcodes as they are being executed\n"
     "    trace_catchtables                Display catchtables as they are being created or left\n"
     "    trace_frames                     Display frames as they are being entered and left\n"
-    "    trace_gc                         Display statistics about the gc at runtime";
+    "    trace_gc                         Display statistics about the gc at runtime\n";
 
 static const std::string kLicense =
     "MIT License \n"
