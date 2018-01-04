@@ -44,7 +44,7 @@ AST::AbstractNode* LVarRewriter::visit_function(AST::Function* node, VisitContin
   descend();
   this->blockid = backup_blockid;
 
-  node->lvar_count = this->scope->next_frame_index;
+  node->lvarcount = this->scope->next_frame_index;
 
   // Restore the old scope
   IRScope* current_scope = this->scope;

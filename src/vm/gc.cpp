@@ -33,12 +33,12 @@
 
 namespace Charly {
 void GarbageCollector::add_heap() {
-  MemoryCell* heap = static_cast<MemoryCell*>(std::calloc(this->config.initial_heap_count, sizeof(MemoryCell)));
+  MemoryCell* heap = static_cast<MemoryCell*>(std::calloc(this->config.heap_cell_count, sizeof(MemoryCell)));
   this->heaps.push_back(heap);
 
   // Add the newly allocated cells to the free list
   MemoryCell* last_cell = this->free_cell;
-  for (size_t i = 0; i < this->config.initial_heap_count; i++) {
+  for (size_t i = 0; i < this->config.heap_cell_count; i++) {
     heap[i].next = last_cell;
     last_cell = heap + i;
   }
@@ -113,7 +113,9 @@ void GarbageCollector::mark(VALUE value) {
       this->mark(reinterpret_cast<VALUE>(frame->parent));
       this->mark(reinterpret_cast<VALUE>(frame->parent_environment_frame));
       this->mark(reinterpret_cast<VALUE>(frame->last_active_catchtable));
-      this->mark(reinterpret_cast<VALUE>(frame->function));
+      if (frame->function != nullptr) {
+        this->mark(reinterpret_cast<VALUE>(frame->function));
+      }
       this->mark(frame->self);
       for (auto& lvar : frame->environment)
         this->mark(lvar);
@@ -149,7 +151,7 @@ void GarbageCollector::collect() {
   // Sweep Phase
   int freed_cells_count = 0;
   for (MemoryCell* heap : this->heaps) {
-    for (size_t i = 0; i < this->config.initial_heap_count; i++) {
+    for (size_t i = 0; i < this->config.heap_cell_count; i++) {
       MemoryCell* cell = heap + i;
       if (basics(reinterpret_cast<VALUE>(cell))->mark()) {
         basics(reinterpret_cast<VALUE>(cell))->set_mark(false);
@@ -175,6 +177,8 @@ void GarbageCollector::collect() {
 MemoryCell* GarbageCollector::allocate() {
   MemoryCell* cell = this->free_cell;
   this->free_cell = this->free_cell->next;
+
+  this->config.log_stream << "Allocated cell: " << static_cast<void*>(cell) << '\n';
 
   // If we've just allocated the last available cell,
   // we do a collect in order to make sure we never get a failing

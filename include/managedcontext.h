@@ -25,7 +25,6 @@
  */
 
 #include "defines.h"
-#include "gc.h"
 #include "value.h"
 #include "vm.h"
 
@@ -46,16 +45,54 @@ public:
     }
   }
 
-  // Misc. VM data structures
-  Frame* create_frame(VALUE self, Function* calling_function, uint8_t* return_address);
-  CatchTable* create_catchtable(uint8_t* address);
+  template <class T>
+  inline T mark_in_gc(T&& value) {
+    this->vm.context.gc.mark_persistent(reinterpret_cast<VALUE>(value));
+    this->temporaries.push_back(reinterpret_cast<VALUE>(value));
+    return value;
+  }
 
-  // VALUE types
-  VALUE create_object(uint32_t initial_capacity);
-  VALUE create_array(uint32_t initial_capacity);
-  VALUE create_float(double value);
-  VALUE create_string(char* data, uint32_t length);
-  VALUE create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint32_t lvarcount, bool anonymous);
-  VALUE create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer);
+  template <typename... Args>
+  inline Frame* create_frame(Args&&... params) {
+    return mark_in_gc(this->vm.create_frame(std::forward<Args>(params)...));
+  }
+
+  template <typename... Args>
+  inline CatchTable* create_catchtable(Args&&... params) {
+    return mark_in_gc(this->vm.create_catchtable(std::forward<Args>(params)...));
+  }
+
+  template <typename... Args>
+  inline VALUE create_object(Args&&... params) {
+    return mark_in_gc(this->vm.create_object(std::forward<Args>(params)...));
+  }
+
+  template <typename... Args>
+  inline VALUE create_array(Args&&... params) {
+    return mark_in_gc(this->vm.create_array(std::forward<Args>(params)...));
+  }
+
+  template <typename... Args>
+  inline VALUE create_string(Args&&... params) {
+    return mark_in_gc(this->vm.create_string(std::forward<Args>(params)...));
+  }
+
+  template <typename... Args>
+  inline VALUE create_function(Args&&... params) {
+    return mark_in_gc(this->vm.create_function(std::forward<Args>(params)...));
+  }
+
+  template <typename... Args>
+  inline VALUE create_cfunction(Args&&... params) {
+    return mark_in_gc(this->vm.create_cfunction(std::forward<Args>(params)...));
+  }
+
+  inline VALUE create_float(double value) {
+    VALUE floatval = this->vm.create_float(value);
+    if (is_special(floatval)) {
+      return mark_in_gc(floatval);
+    }
+    return floatval;
+  }
 };
 }  // namespace Charly

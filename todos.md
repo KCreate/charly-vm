@@ -18,18 +18,10 @@
     - VM pushes Charly and an empty export object and calls the new instructionblock
     - Once the VM halts, it knows that it reached the end of this instructionblock and returns from run_block
 - How does the VM know in which instruction block it currently is in
-  - Current approach
-    - Each function has a `block` property, pointing to the instructionblock it was defined in
-    - Each frame has a `function` property, pointing to the function which was used to create it
-    - Current block can be determined with `this->frames->function->block`
   - New design
-    - Each function has a `block` property, pointing to the instructionblock it was defined in
-    - Create a new function type which doesn't point to an instruction block and is only used
-    - Each frame holds a pointer to the instructionblock it is active in
-      - Frames don't need the function argument, it is optional
-        - It is only used for stacktraces, pretty-printing
-        - Stacktrace entries without functions contain the address
-    - Determining the current block is now just a read to the current frame
+    - Frames don't need the function argument, it is optional
+      - It is only used for stacktraces, pretty-printing
+      - Stacktrace entries without functions contain the address
     - Running a new instruction block requires creating a frame for it and setting the function property to `nullptr`
 
 # Dynamic lookup of symbols?

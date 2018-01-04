@@ -107,9 +107,10 @@ int CLI::run() {
                      .out_stream = std::cout,
                      .err_stream = std::cerr});
   VM vm(context);
-
-  // VM vm(context);
-  // vm.run();
+  vm.create_frame(kNull, vm.get_current_frame(), 5, nullptr);
+  vm.create_frame(VALUE_ENCODE_INTEGER(1024), vm.get_current_frame(), 100, nullptr);
+  vm.create_frame(VALUE_ENCODE_INTEGER(2048), vm.get_current_frame(), 5, nullptr);
+  vm.stacktrace(std::cout);
 
   return 0;
 }

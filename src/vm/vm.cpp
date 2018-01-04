@@ -52,16 +52,41 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address)
   cell->frame.last_active_catchtable = this->catchstack;
   cell->frame.function = function;
   cell->frame.self = self;
-
   cell->frame.return_address = return_address;
 
   // Calculate the number of local variables this frame has to support
   // Add 1 at the beginning to reserve space for the arguments magic variable
-  uint32_t lvar_count = 1 + function->argc + function->lvarcount;
+  uint32_t lvarcount = 1 + function->argc + function->lvarcount;
 
   // Allocate and prefill local variable space
-  cell->frame.environment.reserve(lvar_count);
-  while (lvar_count--)
+  cell->frame.environment.reserve(lvarcount);
+  while (lvarcount--)
+    cell->frame.environment.push_back(kNull);
+
+  // Append the frame
+  this->frames = cell->as<Frame>();
+
+  // Print the frame if the corresponding flag was set
+  if (this->context.trace_frames) {
+    this->context.out_stream << "Entering frame: ";
+    this->pretty_print(this->context.out_stream, cell->value);
+    this->context.out_stream << '\n';
+  }
+
+  return cell->as<Frame>();
+}
+
+Frame* VM::create_frame(VALUE self, Frame* parent_environment_frame, uint32_t lvarcount, uint8_t* return_address) {
+  MemoryCell* cell = this->context.gc.allocate();
+  cell->basic.set_type(kTypeFrame);
+  cell->frame.parent = this->frames;
+  cell->frame.parent_environment_frame = parent_environment_frame;
+  cell->frame.last_active_catchtable = this->catchstack;
+  cell->frame.function = nullptr;
+  cell->frame.self = self;
+  cell->frame.return_address = return_address;
+  cell->frame.environment.reserve(lvarcount);
+  while (lvarcount--)
     cell->frame.environment.push_back(kNull);
 
   // Append the frame
@@ -825,9 +850,15 @@ void VM::stacktrace(std::ostream& io) {
   while (frame) {
     io << i++ << "# ";
     io << "<Frame:" << frame << " ";
-    io << "name=";
-    this->pretty_print(io, frame->function->name);
-    io << " ";
+
+    if (frame->function != nullptr) {
+      io << "name=";
+      this->pretty_print(io, frame->function->name);
+      io << " ";
+    } else {
+      io << "<no address info> ";
+    }
+
     io << "return_address=" << static_cast<void*>(frame->return_address) << std::dec;
     io << ">";
     io << '\n';
@@ -1025,8 +1056,14 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << "<Frame:" << frame << " ";
       io << "parent=" << frame->parent << " ";
       io << "parent_environment_frame=" << frame->parent_environment_frame << " ";
-      io << "function=";
-      this->pretty_print(io, frame->function);
+
+      if (frame->function != nullptr) {
+        io << "function=";
+        this->pretty_print(io, frame->function);
+      } else {
+        io << "<no address info>";
+      }
+
       io << " ";
       io << "self=";
       this->pretty_print(io, frame->self);

@@ -42,9 +42,9 @@
 namespace Charly {
 
 struct VMContext {
-  SymbolTable symtable;
-  StringPool stringpool;
-  GarbageCollector gc;
+  SymbolTable& symtable;
+  StringPool& stringpool;
+  GarbageCollector& gc;
 
   bool trace_opcodes = false;
   bool trace_catchtables = false;
@@ -64,15 +64,13 @@ public:
   VM(const VM& other) = delete;
   VM(VM&& other) = delete;
   ~VM() {
-    this->frames = nullptr;
-    this->catchstack = nullptr;
-    this->stack.clear();
     this->context.gc.collect();
   }
 
   // Methods that operate on the VM's frames
   Frame* pop_frame();
   Frame* create_frame(VALUE self, Function* calling_function, uint8_t* return_address);
+  Frame* create_frame(VALUE self, Frame* parent_environment_frame, uint32_t lvarcount, uint8_t* return_address);
 
   // Stack manipulation
   std::optional<VALUE> pop_stack();
@@ -147,6 +145,11 @@ public:
   }
   void pretty_print(std::ostream& io, VALUE value);
   void run();
+
+  // Private member access
+  inline Frame* get_current_frame() {
+    return this->frames;
+  }
 
 private:
   std::vector<VALUE> pretty_print_stack;

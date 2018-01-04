@@ -1127,7 +1127,7 @@ struct Function : public AbstractNode {
   AbstractNode* body;
   bool anonymous;
 
-  uint32_t lvar_count = 0;
+  uint32_t lvarcount = 0;
   IRKnownSelfVars* known_self_vars = nullptr;
 
   Function(const std::string& n, const std::vector<std::string>& p, AbstractNode* b, bool a)
@@ -1164,7 +1164,7 @@ struct Function : public AbstractNode {
 
       i++;
     }
-    stream << ')' << " lvar_count=" << this->lvar_count;
+    stream << ')' << " lvarcount=" << this->lvarcount;
 
     if (this->known_self_vars != nullptr) {
       stream << " known_self_vars=(";

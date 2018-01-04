@@ -78,12 +78,11 @@ class GarbageCollector {
   void grow_heap();
 
 public:
-  GarbageCollector(GarbageCollectorConfig cfg) : config(cfg) {
+  GarbageCollector(GarbageCollectorConfig cfg) : config(cfg), free_cell(nullptr) {
     this->free_cell = nullptr;
 
     // Allocate the initial heaps
     size_t heapc = cfg.initial_heap_count;
-    this->heaps.reserve(heapc);
     while (heapc--) {
       this->add_heap();
     }
