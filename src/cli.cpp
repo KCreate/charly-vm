@@ -30,6 +30,7 @@
 #include "charly.h"
 #include "cli.h"
 #include "compiler.h"
+#include "parser.h"
 #include "disassembler.h"
 #include "sourcefile.h"
 
@@ -68,6 +69,32 @@ int CLI::run() {
   std::string source_string((std::istreambuf_iterator<char>(inputfile)), std::istreambuf_iterator<char>());
   SourceFile userfile(this->flags.arguments[0], source_string);
 
+  // Parse the userfile
+  Parser parser(userfile);
+  ParserResult parse_result = parser.parse();
+
+  // Check for syntax errors
+  if (parse_result.syntax_error.has_value()) {
+    std::cerr << parse_result.syntax_error->message << " ";
+    parse_result.syntax_error->location.write_to_stream(std::cerr);
+    std::cerr << '\n';
+    return 1;
+  }
+
+  // Dump tokens if the flag was set
+  if (this->flags.dump_tokens) {
+    auto& tokens = parse_result.tokens.value();
+    for (const auto& token : tokens) {
+      token.write_to_stream(std::cout);
+      std::cout << '\n';
+    }
+  }
+
+  // Dump the ast if the flag was set
+  if (this->flags.dump_ast) {
+    parse_result.abstract_syntax_tree.value()->dump(std::cout);
+  }
+
   // Create the compiler
   CompilationConfig cconfig = {
       .known_top_level_vars = {"require_no_exec", "require", "Object", "Class", "Array", "String", "Number", "Function",
@@ -77,18 +104,54 @@ int CLI::run() {
   CompilerContext compiler_context;
   Compiler compiler(compiler_context);
 
-  // Compile the sourcefile
-  InstructionBlock* compiled_block = compiler.compile(userfile, cconfig);
+  // Compile the userfile
+  CompilerResult compiler_result = compiler.compile(parse_result.abstract_syntax_tree.value(), cconfig);
 
-  if (this->flags.dump_asm) {
-    if (compiled_block != nullptr) {
-      Disassembler::Flags disassembler_flags =
-          Disassembler::Flags({.no_branches = this->flags.asm_no_branches,
-                               .no_func_branches = this->flags.asm_no_func_branches,
-                               .no_offsets = this->flags.asm_no_offsets});
-      Disassembler disassembler(compiled_block, disassembler_flags, &compiler_context);
-      disassembler.dump(std::cout);
+  // Show any infos, warnings or errors
+  if (compiler_result.messages.size() > 0) {
+    for (const auto& message : compiler_result.messages) {
+      std::string severity;
+
+      switch (message.severity) {
+        case CompilerMessage::Severity::Info: {
+          severity = "info";
+          break;
+        }
+        case CompilerMessage::Severity::Warning: {
+          severity = "warning";
+          break;
+        }
+        case CompilerMessage::Severity::Error: {
+          severity = "error";
+          break;
+        }
+      }
+
+      if (message.node.has_value()) {
+        AST::AbstractNode* msg_node = message.node.value();
+
+        if (msg_node->location_start.has_value()) {
+          msg_node->location_start.value().write_to_stream(std::cerr);
+          std::cerr << ": ";
+        }
+      }
+
+      std::cerr << severity << ": " << message.message << '\n';
     }
+
+    if (compiler_result.has_errors) {
+      return 1;
+    }
+  }
+
+  // Dump a disassembly of the compiled block
+  if (this->flags.dump_asm) {
+    Disassembler::Flags disassembler_flags =
+        Disassembler::Flags({.no_branches = this->flags.asm_no_branches,
+                              .no_func_branches = this->flags.asm_no_func_branches,
+                              .no_offsets = this->flags.asm_no_offsets});
+    Disassembler disassembler(compiler_result.instructionblock.value(), disassembler_flags, &compiler_context);
+    disassembler.dump(std::cout);
   }
 
   if (this->flags.skip_execution) {

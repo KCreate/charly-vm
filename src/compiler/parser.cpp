@@ -29,9 +29,21 @@
 #include "parser.h"
 
 namespace Charly::Compilation {
-AST::AbstractNode* Parser::parse() {
+ParserResult Parser::parse() {
   this->advance();
-  return this->parse_program();
+
+  ParserResult result;
+
+  try {
+    result.abstract_syntax_tree = this->parse_program();
+  } catch (UnexpectedCharError ex) {
+    result.syntax_error = SyntaxError{ex.location, "Unexpected char"};
+  } catch (SyntaxError ex) {
+    result.syntax_error = SyntaxError{ex.location, ex.message};
+  }
+
+  result.tokens = this->tokens;
+  return result;
 }
 
 Token& Parser::advance() {
@@ -91,7 +103,7 @@ void Parser::unexpected_token() {
     error_message.append(kTokenTypeStrings[this->token.type]);
   }
 
-  throw SyntaxError(this->token.location, error_message);
+  throw SyntaxError{this->token.location, error_message};
 }
 
 void Parser::unexpected_token(TokenType expected) {
@@ -107,7 +119,7 @@ void Parser::unexpected_token(TokenType expected) {
     error_message.append(kTokenTypeStrings[expected]);
   }
 
-  throw SyntaxError(this->token.location, error_message);
+  throw SyntaxError{this->token.location, error_message};
 }
 
 void Parser::unexpected_token(const std::string& expected_value) {
@@ -123,19 +135,19 @@ void Parser::unexpected_token(const std::string& expected_value) {
     error_message.append(kTokenTypeStrings[this->token.type]);
   }
 
-  throw SyntaxError(this->token.location, error_message);
+  throw SyntaxError{this->token.location, error_message};
 }
 
 void Parser::illegal_token() {
-  throw SyntaxError(this->token.location, "This token is not allowed at this location");
+  throw SyntaxError{this->token.location, "This token is not allowed at this location"};
 }
 
 void Parser::illegal_token(const std::string& message) {
-  throw SyntaxError(this->token.location, message);
+  throw SyntaxError{this->token.location, message};
 }
 
 void Parser::illegal_node(AST::AbstractNode* node, const std::string& message) {
-  throw SyntaxError(node->location_start.value_or(Location(0, 0, 0, 0, "<unknown>")), message);
+  throw SyntaxError{node->location_start.value_or(Location(0, 0, 0, 0, "<unknown>")), message};
 }
 
 void Parser::assert_token(TokenType type) {

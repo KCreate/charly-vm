@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+#include <sstream>
+
 #include "compiler.h"
 #include "codegenerator.h"
 #include "irinfo.h"
@@ -33,36 +35,9 @@
 
 namespace Charly::Compilation {
 
-InstructionBlock* Compiler::compile(SourceFile& source, const CompilationConfig& config) {
-  // Parse the source
-  Parser parser(source);
-  AST::AbstractNode* parsed_tree = nullptr;
+CompilerResult Compiler::compile(AST::AbstractNode* tree, const CompilationConfig& config) {
+  CompilerResult result;
 
-  try {
-    parsed_tree = parser.parse();
-  } catch (UnexpectedCharError& ex) {
-    std::cout << "Encountered an unexpected char '";
-    UTF8Buffer::write_cp_to_stream(ex.cp, config.err_stream);
-    config.err_stream << "' ";
-    ex.location.write_to_stream(config.err_stream);
-    config.err_stream << '\n';
-    return nullptr;
-  } catch (SyntaxError& ex) {
-    config.err_stream << "SyntaxError: " << ex.message << " ";
-    ex.location.write_to_stream(config.err_stream);
-    config.err_stream << '\n';
-    return nullptr;
-  }
-
-  if (parsed_tree == nullptr) {
-    std::cout << "Could not parse input file" << '\n';
-    return nullptr;
-  }
-
-  return this->compile(parsed_tree, config);
-}
-
-InstructionBlock* Compiler::compile(AST::AbstractNode* tree, const CompilationConfig& config) {
   // Generate a module inclusion function if one is requested
   // The module inclusion function wraps a program into a single function that can be
   // called by the runtime
@@ -83,31 +58,33 @@ InstructionBlock* Compiler::compile(AST::AbstractNode* tree, const CompilationCo
     tree->as<AST::Function>()->known_self_vars = known_self_vars;
   }
 
-  // Clean up the code a little bit and add or remove some nodes
-  Normalizer normalizer(this->context);
-  tree = normalizer.visit_node(tree);
+  try {
+    // Clean up the code a little bit and add or remove some nodes
+    Normalizer normalizer(this->context, result);
+    tree = normalizer.visit_node(tree);
 
-  // Calculate all offsets of all variables, assignments and declarations
-  LVarRewriter lvar_rewriter(this->context);
-  tree = lvar_rewriter.visit_node(tree);
-  if (lvar_rewriter.has_errors()) {
-    lvar_rewriter.dump_errors(config.err_stream);
-    return nullptr;
-  }
-
-  // Optionally skip code generation
-  if (config.codegen) {
-    // Generate code for the created AST
-    CodeGenerator codegenerator(this->context);
-    InstructionBlock* compiled_block = codegenerator.compile(tree);
-    if (codegenerator.has_errors()) {
-      codegenerator.dump_errors(config.err_stream);
-      return nullptr;
+    if (result.has_errors) {
+      return result;
     }
 
-    return compiled_block;
+    // Calculate all offsets of all variables, assignments and declarations
+    LVarRewriter lvar_rewriter(this->context, result);
+    tree = lvar_rewriter.visit_node(tree);
+
+    if (result.has_errors) {
+      return result;
+    }
+
+    // Optionally skip code generation
+    if (config.codegen) {
+      CodeGenerator codegenerator(this->context, result);
+      InstructionBlock* compiled_block = codegenerator.compile(tree);
+      result.instructionblock = compiled_block;
+    }
+  } catch (CompilerMessage msg) {
+    result.has_errors = true;
   }
 
-  return nullptr;
+  return result;
 }
 }  // namespace Charly::Compilation

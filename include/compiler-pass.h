@@ -36,44 +36,32 @@
 #pragma once
 
 namespace Charly::Compilation {
-
-typedef std::pair<AST::AbstractNode*, std::string> CompilerError;
-
-class FatalError : public std::exception {};
-
 class CompilerPass : public TreeWalker {
-public:
-  CompilerPass(CompilerContext& s) : context(s) {
-  }
-
-  void inline push_error(AST::AbstractNode* node, const std::string& error) {
-    this->errors.emplace_back(node, error);
-  }
-  bool inline has_errors() {
-    return this->errors.size() > 0;
-  }
-  void inline fatal_error(AST::AbstractNode* node, const std::string& error) {
-    this->errors.emplace_back(node, error);
-    throw FatalError();
-  }
-
-  void inline dump_errors(std::ostream& stream) {
-    for (auto[node, message] : this->errors) {
-      stream << "Error";
-      auto& location_start = node->location_start;
-      if (location_start.has_value()) {
-        stream << ' ';
-        location_start->write_to_stream(stream);
-        stream << ": ";
-      } else {
-        stream << ": ";
-      }
-      stream << message << '\n';
-    }
-  }
-
 protected:
   CompilerContext& context;
-  std::vector<CompilerError> errors;
+  CompilerResult& result;
+
+  inline void push_info(AST::AbstractNode* node, const std::string& message) {
+    this->result.messages.emplace_back(CompilerMessage::Severity::Info, node, message);
+  }
+
+  inline void push_warning(AST::AbstractNode* node, const std::string& message) {
+    this->result.messages.emplace_back(CompilerMessage::Severity::Warning, node, message);
+  }
+
+  inline void push_error(AST::AbstractNode* node, const std::string& message) {
+    this->result.messages.emplace_back(CompilerMessage::Severity::Error, node, message);
+    this->result.has_errors = true;
+  }
+
+  inline void push_fatal_error(AST::AbstractNode* node, const std::string& message) {
+    this->result.messages.emplace_back(CompilerMessage::Severity::Error, node, message);
+    this->result.has_errors = true;
+    throw this->result.messages.back();
+  }
+
+public:
+  CompilerPass(CompilerContext& c, CompilerResult& r) : TreeWalker(), context(c), result(r) {
+  }
 };
 }  // namespace Charly::Compilation

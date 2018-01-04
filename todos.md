@@ -182,15 +182,6 @@
     - If a function is not variadic, the VM doesn't have to create the arguments array
 
 # Compiler
-- Clean the code of the compiler
-  - Come up with a good way to structure all the things the compiler does and produces
-    - Errors
-    - Warnings
-    - Results
-      - Produced symbols
-      - InstructionBlocks
-      - Static data (strings)
-    - Logging
 - Move illegal keyword checking from the parser to the normalizer
 
 # Remove PutCFunction instruction

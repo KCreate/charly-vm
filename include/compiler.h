@@ -38,6 +38,34 @@
 
 namespace Charly::Compilation {
 
+// Holds a single compiler error
+struct CompilerMessage {
+
+  // The severity of the message
+  enum class Severity : uint8_t {
+    Info,
+    Warning,
+    Error
+  };
+
+  Severity severity = Severity::Info;
+  std::optional<AST::AbstractNode*> node;
+  std::string message;
+
+  CompilerMessage(Severity s, AST::AbstractNode* n, const std::string& m) : severity(s), message(m) {
+    if (n != nullptr) {
+      node = n;
+    }
+  }
+};
+
+// Holds the result of a compilation
+struct CompilerResult {
+  std::optional<InstructionBlock*> instructionblock;
+  std::vector<CompilerMessage> messages;
+  bool has_errors = false;
+};
+
 // Context for multiple compilations
 struct CompilerContext {
   SymbolTable symtable;
@@ -76,8 +104,7 @@ public:
   Compiler(CompilerContext& ctx) : context(ctx) {
   }
 
-  InstructionBlock* compile(SourceFile& source, const CompilationConfig& config);
-  InstructionBlock* compile(AST::AbstractNode* tree, const CompilationConfig& config);
+  CompilerResult compile(AST::AbstractNode* tree, const CompilationConfig& config);
 
 private:
   CompilerContext& context;

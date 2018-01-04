@@ -37,6 +37,20 @@ namespace Charly::Compilation {
 
 typedef std::function<void()> ParseFunc;
 
+// Holds a syntax error
+struct SyntaxError {
+  Location location;
+  std::string message;
+};
+
+// Holds the result of the parsing step
+struct ParserResult {
+  std::optional<AST::AbstractNode*> abstract_syntax_tree;
+  std::optional<std::vector<Token>> tokens;
+  std::optional<SyntaxError> syntax_error;
+};
+
+// Context data for where keywords are allowed to appear
 struct KeywordContext {
   bool break_allowed = false;
   bool continue_allowed = false;
@@ -46,7 +60,7 @@ struct KeywordContext {
 class Parser : public Lexer {
 public:
   KeywordContext keyword_context;
-  AST::AbstractNode* parse();
+  ParserResult parse();
 
   Parser(SourceFile& file) : Lexer(file) {
   }
@@ -110,16 +124,5 @@ public:
 
   // Helper methods
   void assign_default_name(AST::AbstractNode* node, const std::string& name);
-};
-
-// Thrown on unexpected tokens
-struct SyntaxError {
-  Location location;
-  std::string message;
-
-  SyntaxError(Location l, const std::string& str) : location(l), message(str) {
-  }
-  SyntaxError(Location l, std::string&& str) : location(l), message(std::move(str)) {
-  }
 };
 };  // namespace Charly::Compilation

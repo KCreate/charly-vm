@@ -298,7 +298,7 @@ AST::AbstractNode* CodeGenerator::visit_switch(AST::Switch* node, VisitContinue 
   for (auto n : node->cases->children) {
     // Check if this is a switchnode (it should be)
     if (n->type() != AST::kTypeSwitchNode) {
-      this->fatal_error(n, "Expected node to be a SwitchNode");
+      this->push_fatal_error(n, "Expected node to be a SwitchNode");
     }
 
     AST::SwitchNode* snode = n->as<AST::SwitchNode>();
@@ -395,7 +395,7 @@ AST::AbstractNode* CodeGenerator::visit_typeof(AST::Typeof* node, VisitContinue 
 AST::AbstractNode* CodeGenerator::visit_assignment(AST::Assignment* node, VisitContinue cont) {
   // Check if we have the offset info for this identifier
   if (node->offset_info == nullptr) {
-    this->fatal_error(node, "Missing offset info for assignment codegen");
+    this->push_fatal_error(node, "Missing offset info for assignment codegen");
   }
 
   // Codegen assignment
@@ -518,7 +518,7 @@ AST::AbstractNode* CodeGenerator::visit_identifier(AST::Identifier* node, VisitC
 
   // Check if we have the offset info for this identifier
   if (node->offset_info == nullptr) {
-    this->fatal_error(node, "Missing offset info for identifier codegen");
+    this->push_fatal_error(node, "Missing offset info for identifier codegen");
   }
 
   this->assembler.write_readlocal(node->offset_info->index, node->offset_info->level);
@@ -685,7 +685,7 @@ AST::AbstractNode* CodeGenerator::visit_break(AST::Break* node, VisitContinue co
 
   // Check if there is a label for the break instruction
   if (this->break_stack.size() == 0) {
-    this->fatal_error(node, "Break has no jump target.");
+    this->push_fatal_error(node, "Break has no jump target.");
   }
 
   this->assembler.write_branch_to_label(this->break_stack.back());
@@ -697,7 +697,7 @@ AST::AbstractNode* CodeGenerator::visit_continue(AST::Continue* node, VisitConti
 
   // Check if there is a label for the continue instruction
   if (this->continue_stack.size() == 0) {
-    this->fatal_error(node, "Continue has no jump target.");
+    this->push_fatal_error(node, "Continue has no jump target.");
   }
 
   this->assembler.write_branch_to_label(this->continue_stack.back());
@@ -712,7 +712,7 @@ AST::AbstractNode* CodeGenerator::visit_trycatch(AST::TryCatch* node, VisitConti
 
   // Check if we have the offset_info for the exception name
   if (node->exception_name->offset_info == nullptr) {
-    this->fatal_error(node, "Missing offset info for exception identifier");
+    this->push_fatal_error(node, "Missing offset info for exception identifier");
   }
 
   // Label setup
@@ -736,7 +736,7 @@ AST::AbstractNode* CodeGenerator::visit_trycatch(AST::TryCatch* node, VisitConti
     // would we generated after this node anyway.
   } else {
     if (node->finally_block->type() == AST::kTypeEmpty) {
-      this->fatal_error(node, "Can't codegen try/catch statement with neither a handler nor finally block");
+      this->push_fatal_error(node, "Can't codegen try/catch statement with neither a handler nor finally block");
     }
 
     // Store the exception

@@ -25,6 +25,7 @@
  */
 
 #include <string>
+#include <iostream>
 
 #pragma once
 
@@ -66,9 +67,8 @@ struct Location {
     return *this;
   }
 
-  template <class T>
-  inline void write_to_stream(T&& stream) const {
-    stream << "at " << this->filename << ":" << this->row << ":" << this->column;
+  inline void write_to_stream(std::ostream& stream) const {
+    stream << this->filename << ":" << this->row << ":" << this->column;
   }
 };
 }  // namespace Charly::Compilation
