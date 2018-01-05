@@ -1,6 +1,5 @@
-const myobj = {
-  name: "Leonard Schütz",
-  age: 17
-}
+print("hello world")
 
-print(myobj)
+func add_two_numbers(a, b) = a + b
+
+print("2 + 2 = " + add_two_numbers(2, 2))

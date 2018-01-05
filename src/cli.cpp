@@ -30,8 +30,8 @@
 #include "charly.h"
 #include "cli.h"
 #include "compiler.h"
-#include "parser.h"
 #include "disassembler.h"
+#include "parser.h"
 #include "sourcefile.h"
 
 namespace Charly {
@@ -90,22 +90,24 @@ int CLI::run() {
     }
   }
 
-  // Dump the ast if the flag was set
-  if (this->flags.dump_ast) {
-    parse_result.abstract_syntax_tree.value()->dump(std::cout);
-  }
-
   // Create the compiler
   CompilationConfig cconfig = {
-      .known_top_level_vars = {"require_no_exec", "require", "Object", "Class", "Array", "String", "Number", "Function",
-                               "Boolean", "Null", "stdin", "stdout", "stderr", "print", "write", "gets", "getc", "exit",
-                               "sleep"},
+      .known_top_level_constants = {"require_no_exec", "require", "Object", "Class", "Array", "String", "Number",
+                                    "Function", "Boolean", "Null", "stdin", "stdout", "stderr", "print", "write",
+                                    "gets", "getc", "exit", "sleep", "Charly"},
+      .known_self_vars = {"export"},
+      .wrap_inclusion_function = true,
       .flags = this->flags};
   CompilerContext compiler_context;
   Compiler compiler(compiler_context);
 
   // Compile the userfile
   CompilerResult compiler_result = compiler.compile(parse_result.abstract_syntax_tree.value(), cconfig);
+
+  // Dump the ast if the flag was set
+  if (this->flags.dump_ast) {
+    compiler_result.abstract_syntax_tree->dump(std::cout);
+  }
 
   // Show any infos, warnings or errors
   if (compiler_result.messages.size() > 0) {
@@ -146,10 +148,9 @@ int CLI::run() {
 
   // Dump a disassembly of the compiled block
   if (this->flags.dump_asm) {
-    Disassembler::Flags disassembler_flags =
-        Disassembler::Flags({.no_branches = this->flags.asm_no_branches,
-                              .no_func_branches = this->flags.asm_no_func_branches,
-                              .no_offsets = this->flags.asm_no_offsets});
+    Disassembler::Flags disassembler_flags = Disassembler::Flags({.no_branches = this->flags.asm_no_branches,
+                                                                  .no_func_branches = this->flags.asm_no_func_branches,
+                                                                  .no_offsets = this->flags.asm_no_offsets});
     Disassembler disassembler(compiler_result.instructionblock.value(), disassembler_flags, &compiler_context);
     disassembler.dump(std::cout);
   }

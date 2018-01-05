@@ -62,6 +62,7 @@ struct CompilerMessage {
 // Holds the result of a compilation
 struct CompilerResult {
   std::optional<InstructionBlock*> instructionblock;
+  AST::AbstractNode* abstract_syntax_tree;
   std::vector<CompilerMessage> messages;
   bool has_errors = false;
 };
@@ -74,18 +75,18 @@ struct CompilerContext {
 
 // Configuration passed to the compiler
 struct CompilationConfig {
-  // Known variables in the toplevel
-  //
-  // If a module inclusion function is generated, these are the known variables
-  // inside the scope the function is created in
+  // Known constants in the toplevel
+  std::vector<std::string> known_top_level_constants;
+
+  // Known fields in the self object passed to the module inclusion function
   //
   // If no module inclusion function is generated, these are ignored
-  std::vector<std::string> known_top_level_vars;
+  std::vector<std::string> known_self_vars;
 
   // Module inclusion function
   bool wrap_inclusion_function = true;
   std::string inclusion_function_name = "__CHARLY_MODULE_FUNC";
-  std::vector<std::string> inclusion_function_arguments = {"export", "Charly"};
+  std::vector<std::string> inclusion_function_arguments = {"export"};
   std::string inclusion_function_return_identifier = "export";
 
   // Wether to run the codegen phase at all

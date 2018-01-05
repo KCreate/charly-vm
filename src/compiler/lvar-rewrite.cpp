@@ -128,11 +128,13 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
     if (std::all_of(node->name.begin() + 1, node->name.end(), ::isdigit)) {
       uint32_t index = std::atoi(node->name.substr(1, std::string::npos).c_str());
 
-      if (index >= this->scope->function_node->parameters.size()) {
-        AST::IndexIntoArguments* new_node = new AST::IndexIntoArguments(index);
-        new_node->at(node);
-        delete node;
-        return new_node;
+      if (this->scope->function_node != nullptr) {
+        if (index >= this->scope->function_node->parameters.size()) {
+          AST::IndexIntoArguments* new_node = new AST::IndexIntoArguments(index);
+          new_node->at(node);
+          delete node;
+          return new_node;
+        }
       } else {
         node->offset_info = new IRVarOffsetInfo({0, index + 1});
       }
@@ -154,20 +156,23 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
     IRScope* search_scope = this->scope;
     uint32_t ir_frame_level = 0;
     while (search_scope) {
-      if (search_scope->function_node->known_self_vars != nullptr) {
-        if (search_scope->function_node->known_self_vars->names.count(node->name) != 0) {
-          AST::Self* self_val = new AST::Self();
-          self_val->at(node);
-          self_val->ir_frame_level = ir_frame_level;
-          AST::AbstractNode* var = new AST::Member(self_val, node->name);
-          var->at(node);
-          delete node;
-          return var;
-        }
-      }
 
-      if (!search_scope->function_node->anonymous) {
-        ir_frame_level++;
+      if (search_scope->function_node != nullptr) {
+        if (search_scope->function_node->known_self_vars != nullptr) {
+          if (search_scope->function_node->known_self_vars->names.count(node->name) != 0) {
+            AST::Self* self_val = new AST::Self();
+            self_val->at(node);
+            self_val->ir_frame_level = ir_frame_level;
+            AST::AbstractNode* var = new AST::Member(self_val, node->name);
+            var->at(node);
+            delete node;
+            return var;
+          }
+        }
+
+        if (!search_scope->function_node->anonymous) {
+          ir_frame_level++;
+        }
       }
 
       search_scope = search_scope->parent;

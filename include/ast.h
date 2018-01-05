@@ -140,8 +140,6 @@ struct NodeList : public AbstractNode {
   template <typename... Args>
   NodeList(Args&... params) : children({params...}) {
   }
-  NodeList(std::initializer_list<AbstractNode*> list) : children(list) {
-  }
 
   inline void append_node(AbstractNode* node) {
     if (this->children.size() == 0)
@@ -195,8 +193,6 @@ struct Block : public AbstractNode {
   }
   template <typename... Args>
   Block(Args&... params) : statements({params...}) {
-  }
-  Block(std::initializer_list<AbstractNode*> list) : statements(list) {
   }
 
   inline ~Block() {
@@ -1044,8 +1040,8 @@ struct Boolean : public AbstractNode {
 struct Array : public AbstractNode {
   NodeList* expressions;
 
-  Array(std::initializer_list<AbstractNode*> e)
-      : expressions(new NodeList(std::forward<std::initializer_list<AbstractNode*>>(e))) {
+  template <typename... Args>
+  Array(Args&... params) : expressions(params...) {
   }
   Array(NodeList* e) : expressions(e) {
   }
