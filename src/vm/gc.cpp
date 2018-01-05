@@ -178,8 +178,6 @@ MemoryCell* GarbageCollector::allocate() {
   MemoryCell* cell = this->free_cell;
   this->free_cell = this->free_cell->next;
 
-  this->config.log_stream << "Allocated cell: " << static_cast<void*>(cell) << '\n';
-
   // If we've just allocated the last available cell,
   // we do a collect in order to make sure we never get a failing
   // allocation in the future

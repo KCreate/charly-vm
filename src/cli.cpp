@@ -92,10 +92,9 @@ int CLI::run() {
 
   // Create the compiler
   CompilationConfig cconfig = {
-      .known_top_level_constants = {"require_no_exec", "require", "Object", "Class", "Array", "String", "Number",
-                                    "Function", "Boolean", "Null", "stdin", "stdout", "stderr", "print", "write",
-                                    "gets", "getc", "exit", "sleep", "Charly"},
-      .known_self_vars = {"export"},
+      .known_top_level_constants = {"require_no_exec", "require", "Object", "Class", "Array",  "String", "Number",
+                                    "Function",        "Boolean", "Null",   "stdin", "stdout", "stderr", "print",
+                                    "write",           "gets",    "getc",   "exit",  "sleep",  "Charly"},
       .wrap_inclusion_function = true,
       .flags = this->flags};
   CompilerContext compiler_context;
@@ -159,11 +158,10 @@ int CLI::run() {
     return 0;
   }
 
-  GarbageCollector gc({.initial_heap_count = 1, .heap_cell_count = 64, .heap_growth_factor = 1.5});
-  SymbolTable symtable;
-  StringPool stringpool;
-  VMContext context({.symtable = symtable,
-                     .stringpool = stringpool,
+  GarbageCollector gc(
+      {.initial_heap_count = 1, .heap_cell_count = 64, .heap_growth_factor = 1.5, .trace = this->flags.trace_gc});
+  VMContext context({.symtable = compiler_context.symtable,
+                     .stringpool = compiler_context.stringpool,
                      .gc = gc,
                      .trace_opcodes = this->flags.trace_opcodes,
                      .trace_catchtables = this->flags.trace_catchtables,
@@ -171,10 +169,7 @@ int CLI::run() {
                      .out_stream = std::cout,
                      .err_stream = std::cerr});
   VM vm(context);
-  vm.create_frame(kNull, vm.get_current_frame(), 5, nullptr);
-  vm.create_frame(VALUE_ENCODE_INTEGER(1024), vm.get_current_frame(), 100, nullptr);
-  vm.create_frame(VALUE_ENCODE_INTEGER(2048), vm.get_current_frame(), 5, nullptr);
-  vm.stacktrace(std::cout);
+  vm.exec_module(compiler_result.instructionblock.value());
 
   return 0;
 }

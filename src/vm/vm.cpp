@@ -31,6 +31,7 @@
 #include <iostream>
 
 #include "gc.h"
+#include "managedcontext.h"
 #include "operators.h"
 #include "status.h"
 #include "vm.h"
@@ -69,7 +70,7 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address)
   // Print the frame if the corresponding flag was set
   if (this->context.trace_frames) {
     this->context.out_stream << "Entering frame: ";
-    this->pretty_print(this->context.out_stream, cell->value);
+    this->pretty_print(this->context.out_stream, cell->as_value());
     this->context.out_stream << '\n';
   }
 
@@ -95,7 +96,7 @@ Frame* VM::create_frame(VALUE self, Frame* parent_environment_frame, uint32_t lv
   // Print the frame if the corresponding flag was set
   if (this->context.trace_frames) {
     this->context.out_stream << "Entering frame: ";
-    this->pretty_print(this->context.out_stream, cell->value);
+    this->pretty_print(this->context.out_stream, cell->as_value());
     this->context.out_stream << '\n';
   }
 
@@ -128,7 +129,7 @@ CatchTable* VM::create_catchtable(uint8_t* address) {
   // Print the catchtable if the corresponding flag was set
   if (this->context.trace_catchtables) {
     this->context.out_stream << "Entering catchtable: ";
-    this->pretty_print(this->context.out_stream, cell->value);
+    this->pretty_print(this->context.out_stream, cell->as_value());
     this->context.out_stream << '\n';
   }
 
@@ -180,7 +181,7 @@ VALUE VM::create_object(uint32_t initial_capacity) {
   cell->object.klass = kNull;
   cell->object.container = new std::unordered_map<VALUE, VALUE>();
   cell->object.container->reserve(initial_capacity);
-  return cell->value;
+  return cell->as_value();
 }
 
 VALUE VM::create_array(uint32_t initial_capacity) {
@@ -188,7 +189,7 @@ VALUE VM::create_array(uint32_t initial_capacity) {
   cell->basic.set_type(kTypeArray);
   cell->array.data = new std::vector<VALUE>();
   cell->array.data->reserve(initial_capacity);
-  return cell->value;
+  return cell->as_value();
 }
 
 VALUE VM::create_float(double value) {
@@ -217,7 +218,7 @@ VALUE VM::create_float(double value) {
   MemoryCell* cell = this->context.gc.allocate();
   cell->basic.set_type(kTypeFloat);
   cell->flonum.float_value = value;
-  return cell->value;
+  return cell->as_value();
 }
 
 VALUE VM::create_string(const char* data, uint32_t length) {
@@ -236,7 +237,7 @@ VALUE VM::create_string(const char* data, uint32_t length) {
   cell->string.data = copied_string;
   cell->string.length = length;
   cell->string.capacity = string_capacity;
-  return cell->value;
+  return cell->as_value();
 }
 
 VALUE VM::create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint32_t lvarcount, bool anonymous) {
@@ -251,7 +252,7 @@ VALUE VM::create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint
   cell->function.bound_self_set = false;
   cell->function.bound_self = kNull;
   cell->function.container = new std::unordered_map<VALUE, VALUE>();
-  return cell->value;
+  return cell->as_value();
 }
 
 VALUE VM::create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer) {
@@ -263,7 +264,7 @@ VALUE VM::create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer) {
   cell->cfunction.bound_self_set = false;
   cell->cfunction.bound_self = kNull;
   cell->cfunction.container = new std::unordered_map<VALUE, VALUE>();
-  return cell->value;
+  return cell->as_value();
 }
 
 double VM::cast_to_double(VALUE value) {
@@ -1097,6 +1098,8 @@ void VM::panic(STATUS reason) {
 }
 
 void VM::run() {
+  this->halted = false;
+
   // Execute instructions as long as we have a valid ip
   // and the machine wasn't halted
   while (this->ip && !this->halted) {
@@ -1181,7 +1184,7 @@ void VM::run() {
         // We assume the compiler generated valid offsets and lengths, so we don't do
         // any out-of-bounds checking here
         // TODO: Should we do out-of-bounds checking here?
-        char* str_start = reinterpret_cast<char*>(this->context.stringpool.getData() + offset);
+        char* str_start = reinterpret_cast<char*>(this->context.stringpool.get_data() + offset);
         this->op_putstring(str_start, length);
 
         break;
@@ -1343,10 +1346,41 @@ void VM::run() {
       this->context.out_stream << " nanoseconds)" << '\n';
     }
   }
+}
 
-  this->context.gc.mark(this->stack);
-  this->context.gc.mark(this->frames);
-  this->context.gc.mark(this->catchstack);
-  this->context.gc.collect();
+void VM::exec_prelude() {
+  this->create_frame(kNull, this->frames, 20, nullptr);
+  this->op_putcfunction(this->context.symtable("get_method"), reinterpret_cast<uintptr_t>(Internals::get_method), 1);
+  this->op_putvalue(this->context.symtable("get_method"));
+  this->op_puthash(1);
+  this->op_putvalue(this->context.symtable("internals"));
+  this->op_puthash(1);
+  this->op_setlocal(19, 0);
+  this->op_pop();
+}
+
+void VM::exec_block(InstructionBlock* block) {
+  // Calculate the return address
+  uint8_t* return_address = nullptr;
+  if (this->ip != nullptr) {
+    Opcode opcode = this->fetch_instruction();
+    uint32_t instruction_length = kInstructionLengths[opcode];
+    return_address = this->ip + instruction_length;
+  }
+
+  // Execute the block and reset the instruction pointer afterwards
+  this->ip = block->get_data();
+  this->run();
+  this->ip = return_address;
+}
+
+void VM::exec_module(InstructionBlock* block) {
+  ManagedContext lalloc(*this);
+
+  // Execute the module inclusion function
+  this->exec_block(block);
+  this->push_stack(lalloc.create_object(0));
+  this->op_call(1);
+  this->run();
 }
 }  // namespace Charly

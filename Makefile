@@ -2,7 +2,7 @@
 # Original: https://hiltmon.com/blog/2013/07/03/a-simple-c-plus-plus-project-structure/
 
 CC := clang
-OPT := -O2
+OPT := -O0
 SRCDIR := src
 BUILDDIR := build
 INCLUDEDIR := include

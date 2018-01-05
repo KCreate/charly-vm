@@ -38,7 +38,6 @@ namespace Charly {
 struct MemoryCell {
   union {
     MemoryCell* next;
-    VALUE value;
     VALUE flags;
     Basic basic;
     Object object;
@@ -54,6 +53,10 @@ struct MemoryCell {
   template <typename T>
   inline T* as() {
     return reinterpret_cast<T*>(this);
+  }
+
+  inline VALUE as_value() {
+    return reinterpret_cast<VALUE>(this);
   }
 };
 

@@ -60,6 +60,7 @@ class VM {
 
 public:
   VM(VMContext& ctx) : context(ctx), frames(nullptr), catchstack(nullptr), ip(nullptr), halted(false) {
+    this->exec_prelude();
   }
   VM(const VM& other) = delete;
   VM(VM&& other) = delete;
@@ -145,6 +146,9 @@ public:
   }
   void pretty_print(std::ostream& io, VALUE value);
   void run();
+  void exec_prelude();
+  void exec_block(InstructionBlock* block);
+  void exec_module(InstructionBlock* block);
 
   // Private member access
   inline Frame* get_current_frame() {

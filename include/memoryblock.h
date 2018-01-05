@@ -173,12 +173,12 @@ public:
   }
 
   // Returns a pointer to the first byte of the internal buffer
-  inline uint8_t* getData() {
+  inline uint8_t* get_data() {
     return this->data;
   }
 
   // Returns the current writeoffset into the internal buffer
-  inline size_t getWriteoffset() {
+  inline size_t get_writeoffset() {
     return this->writeoffset;
   }
 

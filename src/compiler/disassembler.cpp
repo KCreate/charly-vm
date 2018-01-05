@@ -34,7 +34,7 @@ namespace Charly::Compilation {
 void Disassembler::dump(std::ostream& stream) {
   uint32_t offset = this->flags.start_offset;
 
-  while (offset < this->block->getWriteoffset() && offset < this->flags.end_offset) {
+  while (offset < this->block->get_writeoffset() && offset < this->flags.end_offset) {
     Opcode opcode = static_cast<Opcode>(this->block->read<uint8_t>(offset));
 
     // Print the branch arrows
@@ -44,7 +44,7 @@ void Disassembler::dump(std::ostream& stream) {
 
     // Print the offset
     if (!this->flags.no_offsets) {
-      int minimum_hex_digits = std::ceil(std::log(this->block->getWriteoffset()) / std::log(16));
+      int minimum_hex_digits = std::ceil(std::log(this->block->get_writeoffset()) / std::log(16));
       this->print_hex(offset, stream, minimum_hex_digits + 1);
       stream << ": ";
     }
@@ -86,7 +86,7 @@ void Disassembler::dump(std::ostream& stream) {
         if (this->compiler_context != nullptr) {
           uint32_t str_offset = this->block->read<uint32_t>(offset + 1);
           uint32_t str_size = this->block->read<uint32_t>(offset + 1 + sizeof(uint32_t));
-          char* blk_ptr = reinterpret_cast<char*>(this->compiler_context->stringpool.getData() + str_offset);
+          char* blk_ptr = reinterpret_cast<char*>(this->compiler_context->stringpool.get_data() + str_offset);
 
           stream << '"';
           stream.write(blk_ptr, str_size);
@@ -166,7 +166,7 @@ void Disassembler::detect_branches() {
   uint32_t offset = start_offset;
 
   // Walk the block and detect all branches
-  while (offset < this->block->getWriteoffset() && offset < end_offset) {
+  while (offset < this->block->get_writeoffset() && offset < end_offset) {
     Opcode opcode = static_cast<Opcode>(this->block->read<uint8_t>(offset));
 
     switch (opcode) {
