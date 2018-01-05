@@ -50,6 +50,7 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree, const CompilationConfi
     result.abstract_syntax_tree =
         new AST::Function(config.inclusion_function_name, config.inclusion_function_arguments, block, true);
     result.abstract_syntax_tree->at(block);
+    result.abstract_syntax_tree = new AST::PushStack(result.abstract_syntax_tree);
     result.abstract_syntax_tree = new AST::Block(result.abstract_syntax_tree);
 
     // Add the known vars which are known to be inserted via the require call

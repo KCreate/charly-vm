@@ -58,6 +58,10 @@ public:
     cont();
     return node;
   }
+  virtual inline AST::AbstractNode* visit_pushstack(AST::PushStack* node, VisitContinue cont) {
+    cont();
+    return node;
+  }
   virtual inline AST::AbstractNode* visit_ternaryif(AST::TernaryIf* node, VisitContinue cont) {
     cont();
     return node;
@@ -249,6 +253,8 @@ public:
       return walker->visit_nodelist(node->as<AST::NodeList>(), cont);
     if (node->type() == AST::kTypeBlock)
       return walker->visit_block(node->as<AST::Block>(), cont);
+    if (node->type() == AST::kTypePushStack)
+      return walker->visit_pushstack(node->as<AST::PushStack>(), cont);
     if (node->type() == AST::kTypeTernaryIf)
       return walker->visit_ternaryif(node->as<AST::TernaryIf>(), cont);
     if (node->type() == AST::kTypeIf)

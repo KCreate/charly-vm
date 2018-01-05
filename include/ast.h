@@ -230,6 +230,29 @@ struct Block : public AbstractNode {
   }
 };
 
+// Push an expression onto the stack without popping it off
+//
+// This is mostly used for interaction with machine internals
+struct PushStack : public AbstractNode {
+  AbstractNode* expression;
+
+  PushStack(AbstractNode* e) : expression(e) {
+  }
+
+  inline ~PushStack() {
+    delete expression;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- PushStack:" << '\n';
+    this->expression->dump(stream, depth + 1);
+  }
+
+  void visit(VisitFunc func) {
+    this->expression = func(this->expression);
+  }
+};
+
 // <condition> ? <then_expression> : <else_expression>
 struct TernaryIf : public AbstractNode {
   AbstractNode* condition;
@@ -1438,6 +1461,7 @@ struct TryCatch : public AbstractNode {
 static const size_t kTypeEmpty = typeid(Empty).hash_code();
 static const size_t kTypeNodeList = typeid(NodeList).hash_code();
 static const size_t kTypeBlock = typeid(Block).hash_code();
+static const size_t kTypePushStack = typeid(PushStack).hash_code();
 static const size_t kTypeTernaryIf = typeid(TernaryIf).hash_code();
 static const size_t kTypeIf = typeid(If).hash_code();
 static const size_t kTypeIfElse = typeid(IfElse).hash_code();
