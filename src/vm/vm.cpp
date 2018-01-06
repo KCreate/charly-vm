@@ -365,11 +365,11 @@ void VM::op_readlocal(uint32_t index, uint32_t level) {
   // Travel to the correct frame
   Frame* frame = this->frames;
   while (level--) {
-    if (!frame->parent) {
+    if (!frame->parent_environment_frame) {
       return this->panic(Status::ReadFailedTooDeep);
     }
 
-    frame = frame->parent;
+    frame = frame->parent_environment_frame;
   }
 
   // Check if the index isn't out-of-bounds
@@ -449,11 +449,11 @@ void VM::op_setlocal(uint32_t index, uint32_t level) {
   // Travel to the correct frame
   Frame* frame = this->frames;
   while (level--) {
-    if (!frame->parent) {
+    if (!frame->parent_environment_frame) {
       return this->panic(Status::WriteFailedTooDeep);
     }
 
-    frame = frame->parent;
+    frame = frame->parent_environment_frame;
   }
 
   // Check if the index isn't out-of-bounds
