@@ -92,15 +92,15 @@ public:
 
   // Casting to different types
   VALUE cast_to_numeric(VALUE value);
-  int64_t cast_to_integer(VALUE value);
+  static int64_t cast_to_integer(VALUE value);
   double cast_to_double(VALUE value);
 
   // Methods that operate on the VALUE type
-  double float_value(VALUE value);
-  double numeric_value(VALUE value);
-  bool boolean_value(VALUE value);
-  VALUE type(VALUE value);
-  VALUE real_type(VALUE value);
+  static double float_value(VALUE value);
+  static double numeric_value(VALUE value);
+  static bool boolean_value(VALUE value);
+  static VALUE type(VALUE value);
+  static VALUE real_type(VALUE value);
 
   // Execution
   Opcode fetch_instruction();
@@ -155,9 +155,9 @@ public:
     return this->frames;
   }
 
+  VMContext context;
 private:
   std::vector<VALUE> pretty_print_stack;
-  VMContext context;
   std::vector<VALUE> stack;
   Frame* frames;
   CatchTable* catchstack;

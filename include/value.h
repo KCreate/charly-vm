@@ -152,10 +152,11 @@ inline bool is_pointer(VALUE value) {
 inline bool is_special(VALUE value) {
   return !is_pointer(value);
 }
-
-// Returns this value as a pointer to a Basic structure
 inline Basic* basics(VALUE value) {
   return (Basic*)value;
+}
+inline bool is_numeric(VALUE value) {
+  return is_integer(value) || is_ifloat(value) || basics(value)->type() == kTypeFloat;
 }
 
 // Describes an object type
@@ -277,7 +278,7 @@ constexpr VALUE VALUE_ENCODE_INTEGER(int64_t value) {
 }
 
 // Decode a Charly integer value into an integer
-constexpr VALUE VALUE_DECODE_INTEGER(int64_t value) {
-  return static_cast<SIGNED_VALUE>(value) >> 1;
+constexpr int64_t VALUE_DECODE_INTEGER(VALUE value) {
+  return static_cast<int64_t>(value) >> 1;
 }
 }  // namespace Charly

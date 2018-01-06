@@ -36,24 +36,10 @@ using namespace std;
 namespace Charly {
 namespace Internals {
 VALUE get_method(VM& vm, VALUE method_name) {
-  ManagedContext ctx(vm);
-
-  cout << "called get_method with ";
-  vm.pretty_print(cout, method_name);
-  cout << endl;
-
-  VALUE obj1 = ctx.create_object(0);
-  VALUE obj2 = ctx.create_object(0);
-  VALUE obj3 = ctx.create_object(0);
-  VALUE obj4 = ctx.create_object(0);
-
-  Array* arr = reinterpret_cast<Array*>(ctx.create_array(4));
-  arr->data->push_back(obj1);
-  arr->data->push_back(obj2);
-  arr->data->push_back(obj3);
-  arr->data->push_back(obj4);
-
-  return reinterpret_cast<VALUE>(arr);
+  vm.context.out_stream << "called get_method with ";
+  vm.pretty_print(vm.context.out_stream, method_name);
+  vm.context.out_stream << '\n';
+  return kNull;
 }
 }  // namespace Internals
 }  // namespace Charly

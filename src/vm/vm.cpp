@@ -268,11 +268,11 @@ VALUE VM::create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer) {
 }
 
 double VM::cast_to_double(VALUE value) {
-  VALUE type = this->real_type(value);
+  VALUE type = VM::real_type(value);
 
   switch (type) {
     case kTypeInteger: return static_cast<double>(VALUE_DECODE_INTEGER(value));
-    case kTypeFloat: return this->float_value(value);
+    case kTypeFloat: return VM::float_value(value);
     case kTypeString: {
       String* string = (String*)value;
       char* end_it = string->data + string->capacity;
@@ -311,8 +311,8 @@ double VM::float_value(VALUE value) {
 }
 
 double VM::numeric_value(VALUE value) {
-  if (this->real_type(value) == kTypeFloat) {
-    return this->float_value(value);
+  if (VM::real_type(value) == kTypeFloat) {
+    return VM::float_value(value);
   } else {
     return static_cast<double>(VALUE_DECODE_INTEGER(value));
   }
@@ -344,7 +344,7 @@ VALUE VM::real_type(VALUE value) {
 }
 
 VALUE VM::type(VALUE value) {
-  VALUE type = this->real_type(value);
+  VALUE type = VM::real_type(value);
 
   if (type == kTypeFloat)
     return kTypeNumeric;
@@ -384,7 +384,7 @@ void VM::op_readmembersymbol(VALUE symbol) {
   VALUE target = this->pop_stack().value_or(kNull);
 
   // Handle datatypes that have their own data members
-  switch (this->type(target)) {
+  switch (VM::type(target)) {
     case kTypeObject: {
       Object* obj = reinterpret_cast<Object*>(target);
 
@@ -428,7 +428,7 @@ void VM::op_readarrayindex(uint32_t index) {
   VALUE stackval = this->pop_stack().value_or(kNull);
 
   // Check if we popped an array, if not push it back onto the stack
-  if (this->real_type(stackval) != kTypeArray) {
+  if (VM::real_type(stackval) != kTypeArray) {
     this->push_stack(stackval);
     return;
   }
@@ -471,7 +471,7 @@ void VM::op_setmembersymbol(VALUE symbol) {
   VALUE target = this->pop_stack().value_or(kNull);
 
   // Check if we can write to the value
-  switch (this->real_type(target)) {
+  switch (VM::real_type(target)) {
     case kTypeObject: {
       Object* obj = reinterpret_cast<Object*>(target);
       (*obj->container)[symbol] = value;
@@ -499,7 +499,7 @@ void VM::op_setarrayindex(uint32_t index) {
   VALUE stackval = this->pop_stack().value_or(kNull);
 
   // Check if we popped an array, if not push it back onto the stack
-  if (this->real_type(stackval) != kTypeArray) {
+  if (VM::real_type(stackval) != kTypeArray) {
     this->push_stack(stackval);
     return;
   }
@@ -651,7 +651,7 @@ void VM::call(uint32_t argc, bool with_target) {
     target = this->pop_stack().value_or(kNull);
 
   // Redirect to the correct handler
-  switch (this->real_type(function)) {
+  switch (VM::real_type(function)) {
     // Normal functions as defined via the user
     case kTypeFunction: {
       Function* tfunc = reinterpret_cast<Function*>(function);
@@ -702,7 +702,7 @@ void VM::call(uint32_t argc, bool with_target) {
     }
 
     default: {
-      this->context.out_stream << "cant call a " << kValueTypeString[this->real_type(function)] << '\n';
+      this->context.out_stream << "cant call a " << kValueTypeString[VM::real_type(function)] << '\n';
 
       // TODO: Handle as runtime error
       this->panic(Status::UnspecifiedError);
@@ -839,7 +839,7 @@ void VM::op_branchunless(int32_t offset) {
 
 void VM::op_typeof() {
   VALUE value = this->pop_stack().value_or(kNull);
-  std::string& stringrep = kValueTypeString[this->real_type(value)];
+  std::string& stringrep = kValueTypeString[VM::real_type(value)];
   this->push_stack(this->create_string(stringrep.c_str(), stringrep.size()));
 }
 
@@ -894,7 +894,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
   this->pretty_print_stack.push_back(value);
 
-  switch (this->real_type(value)) {
+  switch (VM::real_type(value)) {
     case kTypeDead: {
       io << "<!!DEAD_CELL!!: " << reinterpret_cast<void*>(value) << ">";
       break;
@@ -906,7 +906,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeFloat: {
-      io << this->float_value(value);
+      io << VM::float_value(value);
       break;
     }
 
