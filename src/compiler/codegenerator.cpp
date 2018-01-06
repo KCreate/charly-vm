@@ -615,8 +615,8 @@ AST::AbstractNode* CodeGenerator::visit_hash(AST::Hash* node, VisitContinue cont
 
   // Codegen hash key and values expressions
   for (auto& pair : node->pairs) {
-    this->assembler.write_putvalue(this->context.symtable(pair.first));
     this->visit_node(pair.second);
+    this->assembler.write_putvalue(this->context.symtable(pair.first));
   }
   this->assembler.write_puthash(node->pairs.size());
   return node;
