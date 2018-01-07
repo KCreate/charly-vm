@@ -1,7 +1,5 @@
 # Todos
 
-# Garbage Collector needs to know about the stack, frame, and catchtables of the VM
-
 # Class parsing
 - Check for duplicate member and static property declarations
 - Check for duplicate member and static functions
@@ -140,6 +138,7 @@
 - unique_ptr might do what I want
 - An exception means a syntax error
   - If a syntax error occurs, the whole program should crash.
+    - Maybe just throw an exception in this case?
   - This means it's not as bad if we loose memory if we're going to crash anyway
   - Not an excuse, but reduces it's priority to be fixed
 - Template schenanigans could register AST nodes in a pool which would be cleared if an exception occurs
