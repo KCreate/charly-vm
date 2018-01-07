@@ -1039,18 +1039,7 @@ void VM::stacktrace(std::ostream& io) {
   io << "IP: " << static_cast<void*>(this->ip) << '\n';
   while (frame) {
     io << i++ << "# ";
-    io << "<Frame:" << frame << " ";
-
-    if (frame->function != nullptr) {
-      io << "name=";
-      this->pretty_print(io, frame->function->name);
-      io << " ";
-    } else {
-      io << "<no address info> ";
-    }
-
-    io << "return_address=" << static_cast<void*>(frame->return_address) << std::dec;
-    io << ">";
+    this->pretty_print(io, reinterpret_cast<VALUE>(frame));
     io << '\n';
     frame = frame->parent;
   }
