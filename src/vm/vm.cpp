@@ -512,8 +512,8 @@ VALUE VM::add(VALUE left, VALUE right) {
   }
 
   if (VM::type(left) == kTypeArray) {
+    Array* new_array = reinterpret_cast<Array*>(this->copy_array(left));
     if (VM::type(right) == kTypeArray) {
-      Array* new_array = reinterpret_cast<Array*>(this->copy_array(left));
       Array* aright = reinterpret_cast<Array*>(right);
 
       for (auto& value : *aright->data) {
@@ -523,7 +523,6 @@ VALUE VM::add(VALUE left, VALUE right) {
       return reinterpret_cast<VALUE>(new_array);
     }
 
-    Array* new_array = reinterpret_cast<Array*>(this->copy_array(left));
     new_array->data->push_back(right);
     return reinterpret_cast<VALUE>(new_array);
   }
@@ -1070,7 +1069,7 @@ void VM::catchstacktrace(std::ostream& io) {
 }
 
 void VM::stackdump(std::ostream& io) {
-  for (VALUE& stackitem : this->stack) {
+  for (VALUE stackitem : this->stack) {
     this->pretty_print(io, stackitem);
     io << '\n';
   }

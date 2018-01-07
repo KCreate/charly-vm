@@ -37,8 +37,10 @@ namespace Charly {
 // Item inside the MemoryCell
 struct MemoryCell {
   union {
-    MemoryCell* next;
-    VALUE flags;
+    struct {
+      Basic basic;
+      MemoryCell* next;
+    } free;
     Basic basic;
     Object object;
     Array array;

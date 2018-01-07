@@ -50,12 +50,15 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree, const CompilationConfi
     result.abstract_syntax_tree =
         new AST::Function(config.inclusion_function_name, config.inclusion_function_arguments, block, true);
     result.abstract_syntax_tree->at(block);
-    result.abstract_syntax_tree = new AST::PushStack(result.abstract_syntax_tree);
-    result.abstract_syntax_tree = new AST::Block(result.abstract_syntax_tree);
 
     // Add the known vars which are known to be inserted via the require call
     IRKnownSelfVars* known_self_vars = new IRKnownSelfVars(config.known_self_vars);
     result.abstract_syntax_tree->as<AST::Function>()->known_self_vars = known_self_vars;
+
+    // Push the function onto the stack and wrap it in a block node
+    // The PushStack node prevents the optimizer from removing the function literal
+    result.abstract_syntax_tree = new AST::PushStack(result.abstract_syntax_tree);
+    result.abstract_syntax_tree = new AST::Block(result.abstract_syntax_tree);
   }
 
   try {

@@ -39,7 +39,7 @@ void GarbageCollector::add_heap() {
   // Add the newly allocated cells to the free list
   MemoryCell* last_cell = this->free_cell;
   for (size_t i = 0; i < this->config.heap_cell_count; i++) {
-    heap[i].next = last_cell;
+    heap[i].free.next = last_cell;
     last_cell = heap + i;
   }
 
@@ -176,7 +176,7 @@ void GarbageCollector::collect() {
 
 MemoryCell* GarbageCollector::allocate() {
   MemoryCell* cell = this->free_cell;
-  this->free_cell = this->free_cell->next;
+  this->free_cell = this->free_cell->free.next;
 
   // If we've just allocated the last available cell,
   // we do a collect in order to make sure we never get a failing
@@ -237,7 +237,8 @@ void GarbageCollector::deallocate(MemoryCell* cell) {
   }
 
   memset(reinterpret_cast<void*>(cell), 0, sizeof(MemoryCell));
-  cell->next = this->free_cell;
+  cell->free.basic.set_type(kTypeDead);
+  cell->free.next = this->free_cell;
   this->free_cell = cell;
 }
 }  // namespace Charly

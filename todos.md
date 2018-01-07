@@ -1,5 +1,7 @@
 # Todos
 
+# Garbage Collector needs to know about the stack, frame, and catchtables of the VM
+
 # Class parsing
 - Check for duplicate member and static property declarations
 - Check for duplicate member and static functions
