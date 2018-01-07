@@ -78,6 +78,8 @@ class GarbageCollector {
   MemoryCell* free_cell;
   std::vector<MemoryCell*> heaps;
   std::unordered_set<VALUE> temporaries;
+  std::unordered_set<VALUE**> temporary_ptrs;
+  std::unordered_set<std::vector<VALUE>*> temporary_vector_ptrs;
 
   void add_heap();
   void grow_heap();
@@ -113,5 +115,9 @@ public:
   void collect();
   void mark_persistent(VALUE value);
   void unmark_persistent(VALUE value);
+  void mark_ptr_persistent(VALUE** value);
+  void unmark_ptr_persistent(VALUE** value);
+  void mark_vector_ptr_persistent(std::vector<VALUE>* vec);
+  void unmark_vector_ptr_persistent(std::vector<VALUE>* vec);
 };
 }  // namespace Charly

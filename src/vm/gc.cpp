@@ -58,11 +58,23 @@ void GarbageCollector::mark_persistent(VALUE value) {
 }
 
 void GarbageCollector::unmark_persistent(VALUE value) {
-  auto tmp = this->temporaries.find(value);
-  assert(tmp != this->temporaries.end());
-  if (tmp != this->temporaries.end()) {
-    this->temporaries.erase(tmp);
-  }
+  this->temporaries.erase(value);
+}
+
+void GarbageCollector::mark_ptr_persistent(VALUE** value) {
+  this->temporary_ptrs.insert(value);
+}
+
+void GarbageCollector::unmark_ptr_persistent(VALUE** value) {
+  this->temporary_ptrs.erase(value);
+}
+
+void GarbageCollector::mark_vector_ptr_persistent(std::vector<VALUE>* vec) {
+  this->temporary_vector_ptrs.insert(vec);
+}
+
+void GarbageCollector::unmark_vector_ptr_persistent(std::vector<VALUE>* vec) {
+  this->temporary_vector_ptrs.erase(vec);
 }
 
 void GarbageCollector::mark(VALUE value) {
@@ -144,8 +156,16 @@ void GarbageCollector::collect() {
   }
 
   // Mark all temporaries
-  for (auto& temp_item : this->temporaries) {
+  for (auto temp_item : this->temporaries) {
     this->mark(temp_item);
+  }
+  for (auto temp_item : this->temporary_ptrs) {
+    this->mark(*temp_item);
+  }
+  for (auto temp_item : this->temporary_vector_ptrs) {
+    for (auto temp_item : *temp_item) {
+      this->mark(temp_item);
+    }
   }
 
   // Sweep Phase
@@ -199,14 +219,8 @@ MemoryCell* GarbageCollector::allocate() {
 }
 
 void GarbageCollector::deallocate(MemoryCell* cell) {
-  // This cell might be inside the temporaries list,
-  // check if it's inside and remove it if it is
-  if (this->temporaries.count(reinterpret_cast<VALUE>(cell)) == 1) {
-    this->unmark_persistent(reinterpret_cast<VALUE>(cell));
-  }
 
-  // We don't actually free the cells that were allocated, we just
-  // deallocat the properties inside these cells and memset(0)'em
+  // Run the type specific cleanup function
   switch (basics(reinterpret_cast<VALUE>(cell))->type()) {
     case kTypeObject: {
       cell->object.clean();
@@ -236,6 +250,7 @@ void GarbageCollector::deallocate(MemoryCell* cell) {
     default: { break; }
   }
 
+  // Clear the cell and link it into the freelist
   memset(reinterpret_cast<void*>(cell), 0, sizeof(MemoryCell));
   cell->free.basic.set_type(kTypeDead);
   cell->free.next = this->free_cell;

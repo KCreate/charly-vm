@@ -60,11 +60,17 @@ class VM {
 
 public:
   VM(VMContext& ctx) : context(ctx), frames(nullptr), catchstack(nullptr), ip(nullptr), halted(false) {
+    ctx.gc.mark_ptr_persistent(reinterpret_cast<VALUE**>(&this->frames));
+    ctx.gc.mark_ptr_persistent(reinterpret_cast<VALUE**>(&this->catchstack));
+    ctx.gc.mark_vector_ptr_persistent(&this->stack);
     this->exec_prelude();
   }
   VM(const VM& other) = delete;
   VM(VM&& other) = delete;
   ~VM() {
+    this->context.gc.unmark_ptr_persistent(reinterpret_cast<VALUE**>(&this->frames));
+    this->context.gc.unmark_ptr_persistent(reinterpret_cast<VALUE**>(&this->catchstack));
+    this->context.gc.unmark_vector_ptr_persistent(&this->stack);
     this->context.gc.collect();
   }
 
