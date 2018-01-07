@@ -1,8 +1,11 @@
-let i = 0
-let limit = 100
+const print = Charly.internals.get_method
 
-while (i < limit) {
-  Charly.internals.get_method(i)
+let a = 100
+let b = 100
+let c = 100 + 100
 
-  i += 1;
-}
+print(c)
+
+print([1, 2, 3] + [4, 5, 6])
+
+print([1, 2, 3] + 4)

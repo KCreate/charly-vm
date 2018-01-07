@@ -31,7 +31,6 @@
 #include "managedcontext.h"
 #include "memoryblock.h"
 #include "opcode.h"
-#include "operators.h"
 #include "runflags.h"
 #include "sourcefile.h"
 #include "status.h"

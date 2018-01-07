@@ -32,7 +32,6 @@
 
 #include "gc.h"
 #include "managedcontext.h"
-#include "operators.h"
 #include "status.h"
 #include "vm.h"
 
@@ -267,6 +266,150 @@ VALUE VM::create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer) {
   return cell->as_value();
 }
 
+VALUE VM::copy_value(VALUE value) {
+  switch (VM::real_type(value)) {
+    case kTypeFloat: {
+      if (is_special(value)) {
+        return this->create_float(this->float_value(value));
+      }
+      break;
+    }
+    case kTypeString: return this->copy_string(value);
+    case kTypeObject: return this->copy_object(value);
+    case kTypeArray: return this->copy_array(value);
+    case kTypeFunction: return this->copy_function(value);
+    case kTypeCFunction: return this->copy_cfunction(value);
+  }
+
+  return value;
+}
+
+VALUE VM::deep_copy_value(VALUE value) {
+  switch (VM::real_type(value)) {
+    case kTypeFloat: {
+      if (is_special(value)) {
+        return this->create_float(this->float_value(value));
+      }
+      break;
+    }
+    case kTypeString: return this->copy_string(value);
+    case kTypeObject: return this->deep_copy_object(value);
+    case kTypeArray: return this->deep_copy_array(value);
+    case kTypeFunction: return this->copy_function(value);
+    case kTypeCFunction: return this->copy_cfunction(value);
+  }
+
+  return value;
+}
+
+VALUE VM::copy_object(VALUE object) {
+  Object* source = reinterpret_cast<Object*>(object);
+  Object* target = reinterpret_cast<Object*>(this->create_object(source->container->size()));
+  target->container->insert(source->container->begin(), source->container->end());
+  return reinterpret_cast<VALUE>(target);
+}
+
+VALUE VM::deep_copy_object(VALUE object) {
+  ManagedContext lalloc(*this);
+
+  Object* source = reinterpret_cast<Object*>(object);
+  Object* target = reinterpret_cast<Object*>(lalloc.create_object(source->container->size()));
+
+  // Copy each member from the source object into the target
+  for (auto & [ key, value ] : *source->container) {
+    (*target->container)[key] = this->deep_copy_value(value);
+  }
+
+  return reinterpret_cast<VALUE>(target);
+}
+
+VALUE VM::copy_array(VALUE array) {
+  Array* source = reinterpret_cast<Array*>(array);
+  Array* target = reinterpret_cast<Array*>(this->create_array(source->data->size()));
+
+  for (auto value : *source->data) {
+    target->data->push_back(value);
+  }
+
+  return reinterpret_cast<VALUE>(target);
+}
+
+VALUE VM::deep_copy_array(VALUE array) {
+  ManagedContext lalloc(*this);
+
+  Array* source = reinterpret_cast<Array*>(array);
+  Array* target = reinterpret_cast<Array*>(lalloc.create_array(source->data->size()));
+
+  // Copy each member from the source object into the target
+  for (auto& value : *source->data) {
+    target->data->push_back(this->deep_copy_value(value));
+  }
+
+  return reinterpret_cast<VALUE>(target);
+}
+
+VALUE VM::copy_string(VALUE string) {
+  String* source = reinterpret_cast<String*>(string);
+  return this->create_string(source->data, source->length);
+}
+
+VALUE VM::copy_function(VALUE function) {
+  Function* source = reinterpret_cast<Function*>(function);
+  Function* target = reinterpret_cast<Function*>(
+      this->create_function(source->name, source->body_address, source->argc, source->lvarcount, source->anonymous));
+
+  target->context = source->context;
+  target->bound_self_set = source->bound_self_set;
+  target->bound_self = source->bound_self;
+  *(target->container) = *(source->container);
+
+  return reinterpret_cast<VALUE>(target);
+}
+
+VALUE VM::copy_cfunction(VALUE function) {
+  CFunction* source = reinterpret_cast<CFunction*>(function);
+  CFunction* target = reinterpret_cast<CFunction*>(this->create_cfunction(source->name, source->argc, source->pointer));
+
+  target->bound_self_set = source->bound_self_set;
+  target->bound_self = source->bound_self;
+  *(target->container) = *(source->container);
+
+  return reinterpret_cast<VALUE>(target);
+}
+
+VALUE VM::cast_to_numeric(VALUE value) {
+  return this->create_float(this->cast_to_double(value));
+}
+
+int64_t VM::cast_to_integer(VALUE value) {
+  VALUE type = VM::real_type(value);
+
+  switch (type) {
+    case kTypeInteger: return VALUE_DECODE_INTEGER(value);
+    case kTypeFloat: return VM::float_value(value);
+    case kTypeString: {
+      String* string = reinterpret_cast<String*>(value);
+      char* end_it = string->data + string->length;
+      int64_t interpreted = strtol(string->data, &end_it, 0);
+
+      // strol sets errno to ERANGE if the result value doesn't fit
+      // into the return type
+      if (errno == ERANGE) {
+        errno = 0;
+        return NAN;
+      }
+
+      if (end_it == string->data) {
+        return NAN;
+      }
+
+      // The value could be converted
+      return interpreted;
+    }
+    default: return NAN;
+  }
+}
+
 double VM::cast_to_double(VALUE value) {
   VALUE type = VM::real_type(value);
 
@@ -274,26 +417,34 @@ double VM::cast_to_double(VALUE value) {
     case kTypeInteger: return static_cast<double>(VALUE_DECODE_INTEGER(value));
     case kTypeFloat: return VM::float_value(value);
     case kTypeString: {
-      String* string = (String*)value;
-      char* end_it = string->data + string->capacity;
+      String* string = reinterpret_cast<String*>(value);
+      char* end_it = string->data + string->length;
       double interpreted = strtod(string->data, &end_it);
 
       // HUGE_VAL gets returned when the converted value
       // doesn't fit inside a double value
       // In this case we just return NAN
       if (interpreted == HUGE_VAL)
-        return this->create_float(NAN);
+        return NAN;
 
       // If strtod could not perform a conversion it returns 0
       // and sets *str_end to str
       if (end_it == string->data)
-        return this->create_float(NAN);
+        return NAN;
 
       // The value could be converted
       return interpreted;
     }
-    default: return this->create_float(NAN);
+    default: return NAN;
   }
+}
+
+VALUE VM::create_number(double value) {
+  return this->create_float(value);
+}
+
+VALUE VM::create_number(int64_t value) {
+  return VALUE_ENCODE_INTEGER(value);
 }
 
 double VM::float_value(VALUE value) {
@@ -318,12 +469,6 @@ double VM::numeric_value(VALUE value) {
   }
 }
 
-bool VM::boolean_value(VALUE value) {
-  if (value == kFalse || value == kNull)
-    return false;
-  return true;
-}
-
 VALUE VM::real_type(VALUE value) {
   // Because a False value or null can't be distinguished
   // from a pointer value, we check for them before we check
@@ -341,6 +486,51 @@ VALUE VM::real_type(VALUE value) {
   if (is_symbol(value))
     return kTypeSymbol;
   return kTypeDead;
+}
+
+bool VM::truthyness(VALUE value) {
+  if (is_numeric(value)) {
+    return VM::numeric_value(value) != 0;
+  }
+
+  if (is_null(value)) {
+    return false;
+  }
+
+  if (is_false(value)) {
+    return false;
+  }
+
+  return true;
+}
+
+VALUE VM::add(VALUE left, VALUE right) {
+  if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
+    double nleft = VM::numeric_value(left);
+    double nright = VM::numeric_value(right);
+    return this->create_number(nleft + nright);
+  }
+
+  if (VM::type(left) == kTypeArray) {
+    if (VM::type(right) == kTypeArray) {
+      Array* new_array = reinterpret_cast<Array*>(this->copy_array(left));
+      Array* aright = reinterpret_cast<Array*>(right);
+
+      for (auto& value : *aright->data) {
+        new_array->data->push_back(value);
+      }
+
+      return reinterpret_cast<VALUE>(new_array);
+    }
+
+    Array* new_array = reinterpret_cast<Array*>(this->copy_array(left));
+    new_array->data->push_back(right);
+    return reinterpret_cast<VALUE>(new_array);
+  }
+
+  // TODO: String concatenation
+
+  return this->create_float(NAN);
 }
 
 VALUE VM::type(VALUE value) {
@@ -827,13 +1017,13 @@ void VM::op_branch(int32_t offset) {
 
 void VM::op_branchif(int32_t offset) {
   VALUE test = this->pop_stack().value_or(kNull);
-  if (Operators::truthyness(test))
+  if (VM::truthyness(test))
     this->ip += offset;
 }
 
 void VM::op_branchunless(int32_t offset) {
   VALUE test = this->pop_stack().value_or(kNull);
-  if (!Operators::truthyness(test))
+  if (!VM::truthyness(test))
     this->ip += offset;
 }
 
@@ -1303,7 +1493,7 @@ void VM::run() {
       case Opcode::Add: {
         VALUE right = this->pop_stack().value_or(kNull);
         VALUE left = this->pop_stack().value_or(kNull);
-        this->push_stack(Operators::add(*this, left, right));
+        this->push_stack(VM::add(left, right));
         break;
       }
 

@@ -11,19 +11,6 @@
 - Requiring users to build one themselves isn't cool
 - Requiring users to add a PPA isn't cool either
 
-# VM instruction block handling
-- How does the VM start execution of a new instruction block
-  - Call `VALUE VM::run_block` to execute a block
-  - The VM treats the instructionblock as the body of a function
-    - VM pushes Charly and an empty export object and calls the new instructionblock
-    - Once the VM halts, it knows that it reached the end of this instructionblock and returns from run_block
-- How does the VM know in which instruction block it currently is in
-  - New design
-    - Frames don't need the function argument, it is optional
-      - It is only used for stacktraces, pretty-printing
-      - Stacktrace entries without functions contain the address
-    - Running a new instruction block requires creating a frame for it and setting the function property to `nullptr`
-
 # Dynamic lookup of symbols?
 - Makes a REPL trivial
 - Easy to turn an object into a stackframes environment table, and back
@@ -39,7 +26,6 @@
 - On startup, the VM runs a prelude file
   - Loads some libraries
   - Loads some internal methods
-  - Creates some shorthand bindings to commonly used methods such as
   - Registers some file descriptors such as `io.stdout`, and `io.stdin`
   - `require` can be implemented like this:
     ```javascript
