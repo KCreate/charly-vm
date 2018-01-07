@@ -1037,7 +1037,7 @@ void VM::stacktrace(std::ostream& io) {
 
   int i = 0;
   io << "IP: " << static_cast<void*>(this->ip) << '\n';
-  while (frame) {
+  while (frame && VM::type(reinterpret_cast<VALUE>(frame)) == kTypeFrame) {
     io << i++ << "# ";
     this->pretty_print(io, reinterpret_cast<VALUE>(frame));
     io << '\n';
