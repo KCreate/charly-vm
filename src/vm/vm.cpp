@@ -138,18 +138,13 @@ CatchTable* VM::create_catchtable(uint8_t* address) {
 CatchTable* VM::pop_catchtable() {
   if (!this->catchstack)
     this->panic(Status::CatchStackEmpty);
-  CatchTable* parent = this->catchstack->parent;
-  this->catchstack = parent;
-  return parent;
+  CatchTable* current = this->catchstack;
+  this->catchstack = current->parent;
+  return current;
 }
 
-void VM::restore_catchtable(CatchTable* table) {
-  // Unwind and immediately free all catchtables which were pushed
-  // after the one we're restoring.
-  while (table != this->catchstack) {
-    this->pop_catchtable();
-  }
-
+void VM::unwind_catchstack() {
+  CatchTable* table = this->pop_catchtable();
   this->frames = table->frame;
   this->ip = table->address;
 
@@ -980,13 +975,7 @@ void VM::op_throw() {
 }
 
 void VM::throw_exception(VALUE payload) {
-  CatchTable* table = this->catchstack;
-
-  if (!table) {
-    this->panic(Status::CatchStackEmpty);
-  }
-
-  this->restore_catchtable(table);
+  this->unwind_catchstack();
   this->push_stack(payload);
 }
 

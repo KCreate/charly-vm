@@ -1,13 +1,11 @@
 const print = Charly.internals.get_method
 
-const create_exception = ->(message) ({
-  type: "exception",
-  message
-})
-const throw_thing = ->(thing) throw create_exception(thing)
-
 try {
-  throw_thing(25)
+  try {
+    throw 25
+  } finally {
+    print("inside the finally block")
+  }
 } catch(e) {
   print(e)
 }

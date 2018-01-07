@@ -86,7 +86,7 @@ public:
   // CatchStack manipulation
   CatchTable* create_catchtable(uint8_t* address);
   CatchTable* pop_catchtable();
-  void restore_catchtable(CatchTable* table);
+  void unwind_catchstack();
 
   // Methods to create new data types
   VALUE create_object(uint32_t initial_capacity);
