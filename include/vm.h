@@ -95,6 +95,7 @@ public:
   VALUE create_string(const char* data, uint32_t length);
   VALUE create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint32_t lvarcount, bool anonymous);
   VALUE create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer);
+  VALUE create_class(VALUE name);
 
   // Methods to copy existing data types
   VALUE copy_value(VALUE value);
@@ -165,6 +166,13 @@ public:
   void op_putcfunction(VALUE symbol, uintptr_t pointer, uint32_t argc);
   void op_putarray(uint32_t count);
   void op_puthash(uint32_t count);
+  void op_putclass(VALUE name,
+                   uint32_t propertycount,
+                   uint32_t staticpropertycount,
+                   uint32_t methodcount,
+                   uint32_t staticmethodcount,
+                   uint32_t parentclasscount,
+                   uint32_t has_constructor);
   void op_pop();
   void op_dup();
   void op_swap();
@@ -203,6 +211,7 @@ public:
   }
 
   VMContext context;
+
 private:
   std::vector<VALUE> pretty_print_stack;
   std::vector<VALUE> stack;

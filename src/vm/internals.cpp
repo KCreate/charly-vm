@@ -42,6 +42,7 @@ VALUE get_method(VM& vm, VALUE method_name) {
     return kNull;
   }
 
+  vm.context.out_stream << kValueTypeString[VM::real_type(method_name)] << ": ";
   vm.pretty_print(vm.context.out_stream, method_name);
   return kNull;
 }

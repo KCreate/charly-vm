@@ -41,6 +41,8 @@ enum Status : STATUS {
   ReadFailedTooDeep,
   WriteFailedOutOfBounds,
   WriteFailedTooDeep,
+  ParentClassNotAClass,
+  InvalidArgumentType
 };
 
 // Human-readable status messages
@@ -56,7 +58,9 @@ static const std::string kStatusHumanReadable[] = {
   "Reading local field failed, out of bounds",
   "Reading local field failed, too deep",
   "Writing local field failed, out of bounds",
-  "Writing local field failed, too deep"
+  "Writing local field failed, too deep",
+  "Extended value is not a class",
+  "Argument for instruction has invalid  type"
 };
 // clang-format on
 }  // namespace Charly

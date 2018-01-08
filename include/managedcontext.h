@@ -87,6 +87,11 @@ public:
     return mark_in_gc(this->vm.create_cfunction(std::forward<Args>(params)...));
   }
 
+  template <typename... Args>
+  inline VALUE create_class(Args&&... params) {
+    return mark_in_gc(this->vm.create_class(std::forward<Args>(params)...));
+  }
+
   inline VALUE create_float(double value) {
     VALUE floatval = this->vm.create_float(value);
     if (is_special(floatval)) {

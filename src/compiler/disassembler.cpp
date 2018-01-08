@@ -133,8 +133,7 @@ void Disassembler::dump(std::ostream& stream) {
         stream << ", ";
         this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 3), stream);
         stream << ", ";
-        this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 4), stream);
-        stream << ", ";
+        this->print_value(this->block->read<bool>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 4), stream);
         break;
       }
       case Opcode::PutArray:

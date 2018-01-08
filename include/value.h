@@ -57,6 +57,7 @@ enum kValueTypes : uint8_t {
   kTypeArray,
   kTypeFunction,
   kTypeCFunction,
+  kTypeClass,
   kTypeSymbol,
 
   // Machine internal types
@@ -78,6 +79,7 @@ static std::string kValueTypeString[] = {
   "array",
   "function",
   "cfunction",
+  "class",
   "symbol",
   "frame",
   "catchtable"
@@ -266,6 +268,24 @@ struct CFunction {
   }
 
   // TODO: Bound argumentlist
+};
+
+// Classes defined inside the virtual machine
+struct Class {
+  Basic basic;
+  VALUE name;
+  VALUE constructor;
+  std::vector<VALUE>* member_properties;
+  std::unordered_map<VALUE, VALUE>* member_functions;
+  std::vector<VALUE>* parent_classes;
+  std::unordered_map<VALUE, VALUE>* container;
+
+  void inline clean() {
+    delete this->member_properties;
+    delete this->member_functions;
+    delete this->parent_classes;
+    delete this->container;
+  }
 };
 
 // Rotate a given value to the left n times

@@ -48,6 +48,7 @@ struct MemoryCell {
     Float flonum;
     Function function;
     CFunction cfunction;
+    Class klass;
     Frame frame;
     CatchTable catchtable;
   };

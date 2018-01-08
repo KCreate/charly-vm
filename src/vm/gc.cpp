@@ -88,14 +88,14 @@ void GarbageCollector::mark(VALUE value) {
     case kTypeObject: {
       Object* obj = reinterpret_cast<Object*>(value);
       this->mark(obj->klass);
-      for (auto& entry : *obj->container)
+      for (auto entry : *obj->container)
         this->mark(entry.second);
       break;
     }
 
     case kTypeArray: {
       Array* arr = reinterpret_cast<Array*>(value);
-      for (auto& arr_entry : *arr->data)
+      for (auto arr_entry : *arr->data)
         this->mark(arr_entry);
       break;
     }
@@ -106,7 +106,7 @@ void GarbageCollector::mark(VALUE value) {
 
       if (func->bound_self_set)
         this->mark(func->bound_self);
-      for (auto& entry : *func->container)
+      for (auto entry : *func->container)
         this->mark(entry.second);
       break;
     }
@@ -115,7 +115,18 @@ void GarbageCollector::mark(VALUE value) {
       CFunction* cfunc = reinterpret_cast<CFunction*>(value);
       if (cfunc->bound_self_set)
         this->mark(cfunc->bound_self);
-      for (auto& entry : *cfunc->container)
+      for (auto entry : *cfunc->container)
+        this->mark(entry.second);
+      break;
+    }
+
+    case kTypeClass: {
+      Class* klass = reinterpret_cast<Class*>(value);
+      for (auto member_func : *klass->member_functions)
+        this->mark(member_func.second);
+      for (auto parent_class : *klass->parent_classes)
+        this->mark(parent_class);
+      for (auto entry : *klass->container)
         this->mark(entry.second);
       break;
     }
@@ -129,7 +140,7 @@ void GarbageCollector::mark(VALUE value) {
         this->mark(reinterpret_cast<VALUE>(frame->function));
       }
       this->mark(frame->self);
-      for (auto& lvar : frame->environment)
+      for (auto lvar : frame->environment)
         this->mark(lvar);
       break;
     }
@@ -244,6 +255,11 @@ void GarbageCollector::deallocate(MemoryCell* cell) {
 
     case kTypeCFunction: {
       cell->cfunction.clean();
+      break;
+    }
+
+    case kTypeClass: {
+      cell->klass.clean();
       break;
     }
 

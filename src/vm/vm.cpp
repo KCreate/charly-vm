@@ -261,6 +261,18 @@ VALUE VM::create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer) {
   return cell->as_value();
 }
 
+VALUE VM::create_class(VALUE name) {
+  MemoryCell* cell = this->context.gc.allocate();
+  cell->basic.set_type(kTypeClass);
+  cell->klass.name = name;
+  cell->klass.constructor = kNull;
+  cell->klass.member_properties = new std::vector<VALUE>();
+  cell->klass.member_functions = new std::unordered_map<VALUE, VALUE>();
+  cell->klass.parent_classes = new std::vector<VALUE>();
+  cell->klass.container = new std::unordered_map<VALUE, VALUE>();
+  return cell->as_value();
+}
+
 VALUE VM::copy_value(VALUE value) {
   switch (VM::real_type(value)) {
     case kTypeFloat: {
@@ -1002,6 +1014,73 @@ void VM::op_puthash(uint32_t count) {
   this->push_stack(reinterpret_cast<VALUE>(object));
 }
 
+void VM::op_putclass(VALUE name,
+                  uint32_t propertycount,
+                  uint32_t staticpropertycount,
+                  uint32_t methodcount,
+                  uint32_t staticmethodcount,
+                  uint32_t parentclasscount,
+                  uint32_t has_constructor) {
+  Class* klass = reinterpret_cast<Class*>(this->create_class(name));
+  klass->member_properties->reserve(propertycount);
+  klass->member_functions->reserve(methodcount);
+  klass->parent_classes->reserve(parentclasscount);
+  klass->container->reserve(staticpropertycount + staticmethodcount);
+
+  if (has_constructor) {
+    klass->constructor = this->pop_stack().value_or(kNull);
+  }
+
+  while (parentclasscount--) {
+    VALUE pclass = this->pop_stack().value_or(kNull);
+    if (VM::real_type(pclass) != kTypeClass) {
+      // TODO: throw an exception here
+      this->panic(Status::ParentClassNotAClass);
+    }
+    klass->parent_classes->push_back(pclass);
+  }
+
+  while (staticmethodcount--) {
+    VALUE smethod = this->pop_stack().value_or(kNull);
+    if (VM::real_type(smethod) != kTypeFunction) {
+      // TODO: throw an exception here
+      this->panic(Status::InvalidArgumentType);
+    }
+    Function* func_smethod = reinterpret_cast<Function*>(smethod);
+    (*klass->container)[func_smethod->name] = smethod;
+  }
+
+  while (methodcount--) {
+    VALUE method = this->pop_stack().value_or(kNull);
+    if (VM::real_type(method) != kTypeFunction) {
+      // TODO: throw an exception here
+      this->panic(Status::InvalidArgumentType);
+    }
+    Function* func_method = reinterpret_cast<Function*>(method);
+    (*klass->member_functions)[func_method->name] = method;
+  }
+
+  while (staticpropertycount--) {
+    VALUE sprop = this->pop_stack().value_or(sprop);
+    if (VM::real_type(sprop) != kTypeSymbol) {
+      // TODO: throw an exception here
+      this->panic(Status::InvalidArgumentType);
+    }
+    (*klass->container)[sprop] = kNull;
+  }
+
+  while (propertycount--) {
+    VALUE prop = this->pop_stack().value_or(kNull);
+    if (VM::real_type(prop) != kTypeSymbol) {
+      // TODO: throw an exception here
+      this->panic(Status::InvalidArgumentType);
+    }
+    klass->member_properties->push_back(prop);
+  }
+
+  this->push_stack(reinterpret_cast<VALUE>(klass));
+}
+
 void VM::op_pop() {
   this->pop_stack();
 }
@@ -1444,6 +1523,52 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       break;
     }
 
+    case kTypeClass: {
+      Class* klass = reinterpret_cast<Class*>(value);
+
+      if (printed_before) {
+        io << "<Class:" << klass << " ...>";
+        break;
+      }
+
+      io << "<Class:" << klass << " ";
+      io << "name=";
+      this->pretty_print(io, klass->name);
+      io << " ";
+      io << "constructor=";
+      this->pretty_print(io, klass->constructor);
+      io << " ";
+
+      io << "member_properties=[";
+      for (auto& entry : *klass->member_properties) {
+        io << " " << this->context.symtable(entry).value_or(kUndefinedSymbolString);
+      }
+      io << "] ";
+
+      io << "member_functions=[";
+      for (auto& entry : *klass->member_functions) {
+        io << " " << this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
+        io << "=";
+        this->pretty_print(io, entry.second);
+      }
+      io << "] ";
+
+      io << "parent_classes=[";
+      for (auto& entry : *klass->parent_classes) {
+        io << " " << this->context.symtable(entry).value_or(kUndefinedSymbolString);
+      }
+      io << "]";
+
+      for (auto& entry : *klass->container) {
+        io << " " << this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
+        io << "=";
+        this->pretty_print(io, entry.second);
+      }
+
+      io << ">";
+      break;
+    }
+
     case kTypeSymbol: {
       io << this->context.symtable(value).value_or(kUndefinedSymbolString);
       break;
@@ -1627,6 +1752,24 @@ void VM::run() {
         uint32_t size = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
         this->op_puthash(size);
         break;
+      }
+
+      case Opcode::PutClass: {
+        VALUE name = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
+        uint32_t propertycount = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode) + sizeof(VALUE));
+        uint32_t staticpropertycount =
+            *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(uint32_t));
+        uint32_t methodcount = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) +
+                                                                    sizeof(uint32_t) + sizeof(uint32_t));
+        uint32_t staticmethodcount = *reinterpret_cast<uint32_t*>(
+            this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t));
+        uint32_t parentclasscount =
+            *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(uint32_t) +
+                                         sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t));
+        bool has_constructor =
+            *reinterpret_cast<bool*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(uint32_t) + sizeof(uint32_t) +
+                                     sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t));
+        this->op_putclass(name, propertycount, staticpropertycount, methodcount, staticmethodcount, parentclasscount, has_constructor);
       }
 
       case Opcode::Pop: {
