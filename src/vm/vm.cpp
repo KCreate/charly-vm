@@ -491,6 +491,18 @@ VALUE VM::real_type(VALUE value) {
   return kTypeDead;
 }
 
+VALUE VM::type(VALUE value) {
+  VALUE type = VM::real_type(value);
+
+  if (type == kTypeFloat)
+    return kTypeNumeric;
+  if (type == kTypeInteger)
+    return kTypeNumeric;
+  if (type == kTypeCFunction)
+    return kTypeFunction;
+  return type;
+}
+
 bool VM::truthyness(VALUE value) {
   if (is_numeric(value)) {
     return VM::double_value(value) != 0;
@@ -514,9 +526,9 @@ VALUE VM::add(VALUE left, VALUE right) {
     return this->create_number(nleft + nright);
   }
 
-  if (VM::type(left) == kTypeArray) {
+  if (VM::real_type(left) == kTypeArray) {
     Array* new_array = reinterpret_cast<Array*>(this->copy_array(left));
-    if (VM::type(right) == kTypeArray) {
+    if (VM::real_type(right) == kTypeArray) {
       Array* aright = reinterpret_cast<Array*>(right);
 
       for (auto& value : *aright->data) {
@@ -608,13 +620,7 @@ VALUE VM::eq(VALUE left, VALUE right) {
     return nleft == nright ? kTrue : kFalse;
   }
 
-  if (VM::type(left) == kTypeString && VM::type(right) == kTypeString) {
-    String* sleft = reinterpret_cast<String*>(left);
-    String* sright = reinterpret_cast<String*>(right);
-    return sleft->length == sright->length ? kTrue : kFalse;
-  }
-
-  if (VM::type(left) == kTypeString && VM::type(right) == kTypeString) {
+  if (VM::real_type(left) == kTypeString && VM::real_type(right) == kTypeString) {
     String* sleft = reinterpret_cast<String*>(left);
     String* sright = reinterpret_cast<String*>(right);
 
@@ -639,7 +645,7 @@ VALUE VM::lt(VALUE left, VALUE right) {
     return nleft < nright ? kTrue : kFalse;
   }
 
-  if (VM::type(left) == kTypeString && VM::type(right) == kTypeString) {
+  if (VM::real_type(left) == kTypeString && VM::real_type(right) == kTypeString) {
     String* sleft = reinterpret_cast<String*>(left);
     String* sright = reinterpret_cast<String*>(right);
     return sleft->length < sright->length ? kTrue : kFalse;
@@ -655,7 +661,7 @@ VALUE VM::gt(VALUE left, VALUE right) {
     return nleft > nright ? kTrue : kFalse;
   }
 
-  if (VM::type(left) == kTypeString && VM::type(right) == kTypeString) {
+  if (VM::real_type(left) == kTypeString && VM::real_type(right) == kTypeString) {
     String* sleft = reinterpret_cast<String*>(left);
     String* sright = reinterpret_cast<String*>(right);
     return sleft->length > sright->length ? kTrue : kFalse;
@@ -671,7 +677,7 @@ VALUE VM::le(VALUE left, VALUE right) {
     return nleft <= nright ? kTrue : kFalse;
   }
 
-  if (VM::type(left) == kTypeString && VM::type(right) == kTypeString) {
+  if (VM::real_type(left) == kTypeString && VM::real_type(right) == kTypeString) {
     String* sleft = reinterpret_cast<String*>(left);
     String* sright = reinterpret_cast<String*>(right);
     return sleft->length <= sright->length ? kTrue : kFalse;
@@ -687,7 +693,7 @@ VALUE VM::ge(VALUE left, VALUE right) {
     return nleft >= nright ? kTrue : kFalse;
   }
 
-  if (VM::type(left) == kTypeString && VM::type(right) == kTypeString) {
+  if (VM::real_type(left) == kTypeString && VM::real_type(right) == kTypeString) {
     String* sleft = reinterpret_cast<String*>(left);
     String* sright = reinterpret_cast<String*>(right);
     return sleft->length >= sright->length ? kTrue : kFalse;
@@ -702,7 +708,7 @@ VALUE VM::unot(VALUE value) {
 
 VALUE VM::shl(VALUE left, VALUE right) {
   if (VM::type(left) != kTypeNumeric) {
-    if (VM::type(left) == kTypeArray) {
+    if (VM::real_type(left) == kTypeArray) {
       Array* larr = reinterpret_cast<Array*>(left);
       (*larr->data).push_back(right);
       return left;
@@ -767,18 +773,6 @@ VALUE VM::ubnot(VALUE value) {
 
   int64_t ivalue = VM::int_value(value);
   return this->create_float(~ivalue);
-}
-
-VALUE VM::type(VALUE value) {
-  VALUE type = VM::real_type(value);
-
-  if (type == kTypeFloat)
-    return kTypeNumeric;
-  if (type == kTypeInteger)
-    return kTypeNumeric;
-  if (type == kTypeCFunction)
-    return kTypeFunction;
-  return type;
 }
 
 Opcode VM::fetch_instruction() {
@@ -1268,7 +1262,7 @@ void VM::stacktrace(std::ostream& io) {
 
   int i = 0;
   io << "IP: " << static_cast<void*>(this->ip) << '\n';
-  while (frame && VM::type(reinterpret_cast<VALUE>(frame)) == kTypeFrame) {
+  while (frame && VM::real_type(reinterpret_cast<VALUE>(frame)) == kTypeFrame) {
     io << i++ << "# ";
     this->pretty_print(io, reinterpret_cast<VALUE>(frame));
     io << '\n';
@@ -1512,7 +1506,10 @@ void VM::run() {
   // Execute instructions as long as we have a valid ip
   // and the machine wasn't halted
   while (this->ip && !this->halted) {
-    auto exec_start = std::chrono::high_resolution_clock::now();
+    std::chrono::time_point<std::chrono::high_resolution_clock> exec_start;
+    if (this->context.trace_opcodes) {
+      exec_start = std::chrono::high_resolution_clock::now();
+    }
 
     // Backup the current ip
     // After the instruction was executed we check if

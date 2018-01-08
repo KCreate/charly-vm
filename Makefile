@@ -30,7 +30,7 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
 
 production:
 	$(call colorecho, " Building production binary $(TARGET)", 2)
-	@$(CC) $(SOURCES) $(CFLAGS) $(INC) $(LIB) $(LFLAGS) -flto=thin -O3 -o $(TARGET)
+	@$(CC) $(SOURCES) $(CFLAGS) $(INC) $(LIB) $(LFLAGS) -flto -O3 -o $(TARGET)
 
 clean:
 	$(call colorecho, " Cleaning...", 2)
