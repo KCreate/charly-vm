@@ -456,11 +456,19 @@ double VM::float_value(VALUE value) {
   return t.d;
 }
 
-double VM::numeric_value(VALUE value) {
+double VM::double_value(VALUE value) {
   if (VM::real_type(value) == kTypeFloat) {
     return VM::float_value(value);
   } else {
     return static_cast<double>(VALUE_DECODE_INTEGER(value));
+  }
+}
+
+int64_t VM::int_value(VALUE value) {
+  if (VM::real_type(value) == kTypeFloat) {
+    return static_cast<int64_t>(VM::float_value(value));
+  } else {
+    return VALUE_DECODE_INTEGER(value);
   }
 }
 
@@ -485,7 +493,7 @@ VALUE VM::real_type(VALUE value) {
 
 bool VM::truthyness(VALUE value) {
   if (is_numeric(value)) {
-    return VM::numeric_value(value) != 0;
+    return VM::double_value(value) != 0;
   }
 
   if (is_null(value)) {
@@ -501,8 +509,8 @@ bool VM::truthyness(VALUE value) {
 
 VALUE VM::add(VALUE left, VALUE right) {
   if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
-    double nleft = VM::numeric_value(left);
-    double nright = VM::numeric_value(right);
+    double nleft = VM::double_value(left);
+    double nright = VM::double_value(right);
     return this->create_number(nleft + nright);
   }
 
@@ -525,6 +533,240 @@ VALUE VM::add(VALUE left, VALUE right) {
   // TODO: String concatenation
 
   return this->create_float(NAN);
+}
+
+VALUE VM::sub(VALUE left, VALUE right) {
+  if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
+    double nleft = VM::double_value(left);
+    double nright = VM::double_value(right);
+    return this->create_number(nleft - nright);
+  }
+
+  return this->create_float(NAN);
+}
+
+VALUE VM::mul(VALUE left, VALUE right) {
+  if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
+    double nleft = VM::double_value(left);
+    double nright = VM::double_value(right);
+    return this->create_number(nleft * nright);
+  }
+
+  // TODO: String multiplication
+
+  return this->create_float(NAN);
+}
+
+VALUE VM::div(VALUE left, VALUE right) {
+  if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
+    double nleft = VM::double_value(left);
+    double nright = VM::double_value(right);
+    return this->create_number(nleft / nright);
+  }
+
+  return this->create_float(NAN);
+}
+
+VALUE VM::mod(VALUE left, VALUE right) {
+  if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
+    int64_t nleft = VM::int_value(left);
+    int64_t nright = VM::int_value(right);
+    return this->create_number(nleft % nright);
+  }
+
+  return this->create_float(NAN);
+}
+
+VALUE VM::pow(VALUE left, VALUE right) {
+  if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
+    double nleft = VM::double_value(left);
+    double nright = VM::double_value(right);
+    double result = std::pow(nleft, nright);
+    return this->create_number(result);
+  }
+
+  return this->create_float(NAN);
+}
+
+VALUE VM::uadd(VALUE value) {
+  return value;
+}
+
+VALUE VM::usub(VALUE value) {
+  if (VM::type(value) == kTypeNumeric) {
+    double num = VM::double_value(value);
+    return this->create_number(-num);
+  }
+
+  return this->create_float(NAN);
+}
+
+VALUE VM::eq(VALUE left, VALUE right) {
+  if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
+    double nleft = VM::double_value(left);
+    double nright = VM::double_value(right);
+    return nleft == nright ? kTrue : kFalse;
+  }
+
+  if (VM::type(left) == kTypeString && VM::type(right) == kTypeString) {
+    String* sleft = reinterpret_cast<String*>(left);
+    String* sright = reinterpret_cast<String*>(right);
+    return sleft->length == sright->length ? kTrue : kFalse;
+  }
+
+  if (VM::type(left) == kTypeString && VM::type(right) == kTypeString) {
+    String* sleft = reinterpret_cast<String*>(left);
+    String* sright = reinterpret_cast<String*>(right);
+
+    if (sleft->length != sright->length) {
+      return kFalse;
+    }
+
+    return strcmp(sleft->data, sright->data) ? kTrue : kFalse;
+  }
+
+  return left == right ? kTrue : kFalse;
+}
+
+VALUE VM::neq(VALUE left, VALUE right) {
+  return !this->eq(left, right);
+}
+
+VALUE VM::lt(VALUE left, VALUE right) {
+  if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
+    double nleft = VM::double_value(left);
+    double nright = VM::double_value(right);
+    return nleft < nright ? kTrue : kFalse;
+  }
+
+  if (VM::type(left) == kTypeString && VM::type(right) == kTypeString) {
+    String* sleft = reinterpret_cast<String*>(left);
+    String* sright = reinterpret_cast<String*>(right);
+    return sleft->length < sright->length ? kTrue : kFalse;
+  }
+
+  return kFalse;
+}
+
+VALUE VM::gt(VALUE left, VALUE right) {
+  if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
+    double nleft = VM::double_value(left);
+    double nright = VM::double_value(right);
+    return nleft > nright ? kTrue : kFalse;
+  }
+
+  if (VM::type(left) == kTypeString && VM::type(right) == kTypeString) {
+    String* sleft = reinterpret_cast<String*>(left);
+    String* sright = reinterpret_cast<String*>(right);
+    return sleft->length > sright->length ? kTrue : kFalse;
+  }
+
+  return kFalse;
+}
+
+VALUE VM::le(VALUE left, VALUE right) {
+  if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
+    double nleft = VM::double_value(left);
+    double nright = VM::double_value(right);
+    return nleft <= nright ? kTrue : kFalse;
+  }
+
+  if (VM::type(left) == kTypeString && VM::type(right) == kTypeString) {
+    String* sleft = reinterpret_cast<String*>(left);
+    String* sright = reinterpret_cast<String*>(right);
+    return sleft->length <= sright->length ? kTrue : kFalse;
+  }
+
+  return kFalse;
+}
+
+VALUE VM::ge(VALUE left, VALUE right) {
+  if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
+    double nleft = VM::double_value(left);
+    double nright = VM::double_value(right);
+    return nleft >= nright ? kTrue : kFalse;
+  }
+
+  if (VM::type(left) == kTypeString && VM::type(right) == kTypeString) {
+    String* sleft = reinterpret_cast<String*>(left);
+    String* sright = reinterpret_cast<String*>(right);
+    return sleft->length >= sright->length ? kTrue : kFalse;
+  }
+
+  return kFalse;
+}
+
+VALUE VM::unot(VALUE value) {
+  return !VM::truthyness(value);
+}
+
+VALUE VM::shl(VALUE left, VALUE right) {
+  if (VM::type(left) != kTypeNumeric) {
+    if (VM::type(left) == kTypeArray) {
+      Array* larr = reinterpret_cast<Array*>(left);
+      (*larr->data).push_back(right);
+      return left;
+    }
+
+    return this->create_float(NAN);
+  }
+
+  if (VM::type(right) != kTypeNumeric) {
+    return this->create_float(NAN);
+  }
+
+  int64_t ileft = VM::int_value(left);
+  int64_t iright = VM::int_value(right);
+  return this->create_float(ileft << iright);
+}
+
+VALUE VM::shr(VALUE left, VALUE right) {
+  if (VM::type(left) != kTypeNumeric || VM::type(right) != kTypeNumeric) {
+    return this->create_float(NAN);
+  }
+
+  int64_t ileft = VM::int_value(left);
+  int64_t iright = VM::int_value(right);
+  return this->create_float(ileft << iright);
+}
+
+VALUE VM::band(VALUE left, VALUE right) {
+  if (VM::type(left) != kTypeNumeric || VM::type(right) != kTypeNumeric) {
+    return this->create_float(NAN);
+  }
+
+  int64_t ileft = VM::int_value(left);
+  int64_t iright = VM::int_value(right);
+  return this->create_float(ileft & iright);
+}
+
+VALUE VM::bor(VALUE left, VALUE right) {
+  if (VM::type(left) != kTypeNumeric || VM::type(right) != kTypeNumeric) {
+    return this->create_float(NAN);
+  }
+
+  int64_t ileft = VM::int_value(left);
+  int64_t iright = VM::int_value(right);
+  return this->create_float(ileft | iright);
+}
+
+VALUE VM::bxor(VALUE left, VALUE right) {
+  if (VM::type(left) != kTypeNumeric || VM::type(right) != kTypeNumeric) {
+    return this->create_float(NAN);
+  }
+
+  int64_t ileft = VM::int_value(left);
+  int64_t iright = VM::int_value(right);
+  return this->create_float(ileft ^ iright);
+}
+
+VALUE VM::ubnot(VALUE value) {
+  if (VM::type(value) != kTypeNumeric) {
+    return this->create_float(NAN);
+  }
+
+  int64_t ivalue = VM::int_value(value);
+  return this->create_float(~ivalue);
 }
 
 VALUE VM::type(VALUE value) {
@@ -1470,7 +1712,143 @@ void VM::run() {
       case Opcode::Add: {
         VALUE right = this->pop_stack().value_or(kNull);
         VALUE left = this->pop_stack().value_or(kNull);
-        this->push_stack(VM::add(left, right));
+        this->push_stack(this->add(left, right));
+        break;
+      }
+
+      case Opcode::Sub: {
+        VALUE right = this->pop_stack().value_or(kNull);
+        VALUE left = this->pop_stack().value_or(kNull);
+        this->push_stack(this->sub(left, right));
+        break;
+      }
+
+      case Opcode::Mul: {
+        VALUE right = this->pop_stack().value_or(kNull);
+        VALUE left = this->pop_stack().value_or(kNull);
+        this->push_stack(this->mul(left, right));
+        break;
+      }
+
+      case Opcode::Div: {
+        VALUE right = this->pop_stack().value_or(kNull);
+        VALUE left = this->pop_stack().value_or(kNull);
+        this->push_stack(this->div(left, right));
+        break;
+      }
+
+      case Opcode::Mod: {
+        VALUE right = this->pop_stack().value_or(kNull);
+        VALUE left = this->pop_stack().value_or(kNull);
+        this->push_stack(this->mod(left, right));
+        break;
+      }
+
+      case Opcode::Pow: {
+        VALUE right = this->pop_stack().value_or(kNull);
+        VALUE left = this->pop_stack().value_or(kNull);
+        this->push_stack(this->pow(left, right));
+        break;
+      }
+
+      case Opcode::UAdd: {
+        VALUE value = this->pop_stack().value_or(kNull);
+        this->push_stack(this->uadd(value));
+        break;
+      }
+
+      case Opcode::USub: {
+        VALUE value = this->pop_stack().value_or(kNull);
+        this->push_stack(this->usub(value));
+        break;
+      }
+
+      case Opcode::Eq: {
+        VALUE right = this->pop_stack().value_or(kNull);
+        VALUE left = this->pop_stack().value_or(kNull);
+        this->push_stack(this->eq(left, right));
+        break;
+      }
+
+      case Opcode::Neq: {
+        VALUE right = this->pop_stack().value_or(kNull);
+        VALUE left = this->pop_stack().value_or(kNull);
+        this->push_stack(this->neq(left, right));
+        break;
+      }
+
+      case Opcode::Lt: {
+        VALUE right = this->pop_stack().value_or(kNull);
+        VALUE left = this->pop_stack().value_or(kNull);
+        this->push_stack(this->lt(left, right));
+        break;
+      }
+
+      case Opcode::Gt: {
+        VALUE right = this->pop_stack().value_or(kNull);
+        VALUE left = this->pop_stack().value_or(kNull);
+        this->push_stack(this->gt(left, right));
+        break;
+      }
+
+      case Opcode::Le: {
+        VALUE right = this->pop_stack().value_or(kNull);
+        VALUE left = this->pop_stack().value_or(kNull);
+        this->push_stack(this->le(left, right));
+        break;
+      }
+
+      case Opcode::Ge: {
+        VALUE right = this->pop_stack().value_or(kNull);
+        VALUE left = this->pop_stack().value_or(kNull);
+        this->push_stack(this->ge(left, right));
+        break;
+      }
+
+      case Opcode::UNot: {
+        VALUE value = this->pop_stack().value_or(kNull);
+        this->push_stack(this->unot(value));
+        break;
+      }
+
+      case Opcode::Shr: {
+        VALUE right = this->pop_stack().value_or(kNull);
+        VALUE left = this->pop_stack().value_or(kNull);
+        this->push_stack(this->shr(left, right));
+        break;
+      }
+
+      case Opcode::Shl: {
+        VALUE right = this->pop_stack().value_or(kNull);
+        VALUE left = this->pop_stack().value_or(kNull);
+        this->push_stack(this->shl(left, right));
+        break;
+      }
+
+      case Opcode::And: {
+        VALUE right = this->pop_stack().value_or(kNull);
+        VALUE left = this->pop_stack().value_or(kNull);
+        this->push_stack(this->band(left, right));
+        break;
+      }
+
+      case Opcode::Or: {
+        VALUE right = this->pop_stack().value_or(kNull);
+        VALUE left = this->pop_stack().value_or(kNull);
+        this->push_stack(this->bor(left, right));
+        break;
+      }
+
+      case Opcode::Xor: {
+        VALUE right = this->pop_stack().value_or(kNull);
+        VALUE left = this->pop_stack().value_or(kNull);
+        this->push_stack(this->bxor(left, right));
+        break;
+      }
+
+      case Opcode::UBNot: {
+        VALUE value = this->pop_stack().value_or(kNull);
+        this->push_stack(this->ubnot(value));
         break;
       }
 

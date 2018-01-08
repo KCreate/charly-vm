@@ -116,7 +116,8 @@ public:
   VALUE create_number(double value);
   VALUE create_number(int64_t value);
   static double float_value(VALUE value);
-  static double numeric_value(VALUE value);
+  static double double_value(VALUE value);
+  static int64_t int_value(VALUE value);
   static VALUE type(VALUE value);
   static VALUE real_type(VALUE value);
   static bool truthyness(VALUE value);
