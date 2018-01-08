@@ -156,7 +156,13 @@ inline Basic* basics(VALUE value) {
   return (Basic*)value;
 }
 inline bool is_numeric(VALUE value) {
-  return is_integer(value) || is_ifloat(value) || basics(value)->type() == kTypeFloat;
+  if (is_integer(value)) return true;
+  if (is_ifloat(value)) return true;
+  if (!is_special(value)) {
+    if (basics(value)->type() == kTypeFloat) return true;
+  }
+
+  return false;
 }
 
 // Describes an object type

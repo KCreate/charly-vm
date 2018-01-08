@@ -697,7 +697,7 @@ VALUE VM::ge(VALUE left, VALUE right) {
 }
 
 VALUE VM::unot(VALUE value) {
-  return !VM::truthyness(value);
+  return !VM::truthyness(value) ? kTrue : kFalse;
 }
 
 VALUE VM::shl(VALUE left, VALUE right) {

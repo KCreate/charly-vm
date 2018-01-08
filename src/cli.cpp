@@ -159,7 +159,7 @@ int CLI::run() {
   }
 
   GarbageCollector gc(
-      {.initial_heap_count = 1, .heap_cell_count = 64, .heap_growth_factor = 1.5, .trace = this->flags.trace_gc});
+      {.initial_heap_count = 8, .heap_cell_count = 512, .heap_growth_factor = 1.5, .trace = this->flags.trace_gc});
   VMContext context({.symtable = compiler_context.symtable,
                      .stringpool = compiler_context.stringpool,
                      .gc = gc,
