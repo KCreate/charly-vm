@@ -1438,7 +1438,11 @@ AST::AbstractNode* Parser::parse_class() {
           AST::Function* func = this->parse_func()->as<AST::Function>();
 
           if (func->name == "constructor") {
-            constructor = func;
+            if (constructor != nullptr) {
+              this->illegal_node(func, "Duplicate constructor");
+            } else {
+              constructor = func;
+            }
           } else {
             member_functions->append_node(func);
           }
