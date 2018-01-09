@@ -36,14 +36,8 @@ using namespace std;
 namespace Charly {
 namespace Internals {
 VALUE get_method(VM& vm, VALUE method_name) {
-  if (VM::real_type(method_name) == kTypeString) {
-    String* str = reinterpret_cast<String*>(method_name);
-    vm.context.out_stream.write(str->data, str->length);
-    return kNull;
-  }
-
-  vm.context.out_stream << kValueTypeString[VM::real_type(method_name)] << ": ";
   vm.pretty_print(vm.context.out_stream, method_name);
+  vm.context.out_stream << '\n';
   return kNull;
 }
 }  // namespace Internals

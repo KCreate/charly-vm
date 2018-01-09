@@ -1015,12 +1015,12 @@ void VM::op_puthash(uint32_t count) {
 }
 
 void VM::op_putclass(VALUE name,
-                  uint32_t propertycount,
-                  uint32_t staticpropertycount,
-                  uint32_t methodcount,
-                  uint32_t staticmethodcount,
-                  uint32_t parentclasscount,
-                  uint32_t has_constructor) {
+                     uint32_t propertycount,
+                     uint32_t staticpropertycount,
+                     uint32_t methodcount,
+                     uint32_t staticmethodcount,
+                     uint32_t parentclasscount,
+                     bool has_constructor) {
   Class* klass = reinterpret_cast<Class*>(this->create_class(name));
   klass->member_properties->reserve(propertycount);
   klass->member_functions->reserve(methodcount);
@@ -1760,7 +1760,7 @@ void VM::run() {
         uint32_t staticpropertycount =
             *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(uint32_t));
         uint32_t methodcount = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) +
-                                                                    sizeof(uint32_t) + sizeof(uint32_t));
+                                                            sizeof(uint32_t) + sizeof(uint32_t));
         uint32_t staticmethodcount = *reinterpret_cast<uint32_t*>(
             this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t));
         uint32_t parentclasscount =
@@ -1769,7 +1769,9 @@ void VM::run() {
         bool has_constructor =
             *reinterpret_cast<bool*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(uint32_t) + sizeof(uint32_t) +
                                      sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t));
-        this->op_putclass(name, propertycount, staticpropertycount, methodcount, staticmethodcount, parentclasscount, has_constructor);
+        this->op_putclass(name, propertycount, staticpropertycount, methodcount, staticmethodcount, parentclasscount,
+                          has_constructor);
+        break;
       }
 
       case Opcode::Pop: {

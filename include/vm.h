@@ -172,7 +172,7 @@ public:
                    uint32_t methodcount,
                    uint32_t staticmethodcount,
                    uint32_t parentclasscount,
-                   uint32_t has_constructor);
+                   bool has_constructor);
   void op_pop();
   void op_dup();
   void op_swap();

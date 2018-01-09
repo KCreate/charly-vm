@@ -1,20 +1,16 @@
-const write = Charly.internals.get_method
-func print(val) {
-  write(val)
-  write("\n")
+const print = Charly.internals.get_method
+
+class Test {
+  property foo
+  property bar
+
+  static property foo
+  static property bar
+
+  func constructor() {}
+  func member() {}
+
+  static func staticfunc() {}
 }
 
-//const Test = class {
-  //property foo
-  //property bar
-
-  //static property foo
-  //static property bar
-
-  //func constructor() {}
-  //func member() {}
-
-  //static func staticfunc() {}
-//}
-
-print(class {})
+print(Test)
