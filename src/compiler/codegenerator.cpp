@@ -641,11 +641,15 @@ AST::AbstractNode* CodeGenerator::visit_class(AST::Class* node, VisitContinue co
   (void)cont;
 
   // Codegen all regular and static members
-  for (auto& n : node->member_properties) {
-    this->assembler.write_putvalue(this->context.symtable(n));
+  for (auto n : node->member_properties->children) {
+    if (n->type() != AST::kTypeIdentifier)
+      this->push_fatal_error(n, "Expected node to be an identifier");
+    this->assembler.write_putvalue(this->context.symtable(n->as<AST::Identifier>()->name));
   }
-  for (auto& n : node->static_properties) {
-    this->assembler.write_putvalue(this->context.symtable(n));
+  for (auto n : node->static_properties->children) {
+    if (n->type() != AST::kTypeIdentifier)
+      this->push_fatal_error(n, "Expected node to be an identifier");
+    this->assembler.write_putvalue(this->context.symtable(n->as<AST::Identifier>()->name));
   }
   for (auto n : node->member_functions->children) {
     this->visit_node(n);
@@ -660,8 +664,8 @@ AST::AbstractNode* CodeGenerator::visit_class(AST::Class* node, VisitContinue co
     this->visit_node(node->constructor);
   }
 
-  this->assembler.write_putclass(this->context.symtable(node->name), node->member_properties.size(),
-                                 node->static_properties.size(), node->member_functions->children.size(),
+  this->assembler.write_putclass(this->context.symtable(node->name), node->member_properties->children.size(),
+                                 node->static_properties->children.size(), node->member_functions->children.size(),
                                  node->member_functions->children.size(), node->parents->children.size(),
                                  node->constructor->type() != AST::kTypeEmpty);
 

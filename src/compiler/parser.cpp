@@ -1398,12 +1398,12 @@ AST::AbstractNode* Parser::parse_class() {
     this->advance();
   }
 
-  AST::NodeList* parents = new AST::NodeList();
   AST::AbstractNode* constructor = nullptr;
-  std::vector<std::string> member_properties;
-  std::vector<std::string> static_properties;
+  AST::NodeList* member_properties = new AST::NodeList();
   AST::NodeList* member_functions = new AST::NodeList();
+  AST::NodeList* static_properties = new AST::NodeList();
   AST::NodeList* static_functions = new AST::NodeList();
+  AST::NodeList* parents = new AST::NodeList();
 
   // Parse parent classes
   if (this->token.type == TokenType::Extends) {
@@ -1451,9 +1451,9 @@ AST::AbstractNode* Parser::parse_class() {
         this->advance();
         this->expect_token(TokenType::Identifier, [&]() {
           if (static_declaration) {
-            static_properties.push_back(this->token.value);
+            static_properties->append_node((new AST::Identifier(this->token.value))->at(this->token.location));
           } else {
-            member_properties.emplace_back(this->token.value);
+            member_properties->append_node((new AST::Identifier(this->token.value))->at(this->token.location));
           }
         });
         this->skip_token(TokenType::Semicolon);

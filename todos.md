@@ -1,9 +1,5 @@
 # Todos
 
-# Class parsing
-- Check for duplicate member and static property declarations
-- Check for duplicate member and static functions
-
 # Add CallIsolated instruction
 - Calls a function with setting the parent_environment_frame field
 
