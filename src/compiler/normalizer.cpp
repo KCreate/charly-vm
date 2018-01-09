@@ -261,6 +261,9 @@ AST::AbstractNode* Normalizer::visit_binary(AST::Binary* node, VisitContinue con
 
       break;
     }
+    default: {
+      // Do nothing
+    }
   }
 
   return node;
@@ -284,6 +287,9 @@ AST::AbstractNode* Normalizer::visit_unary(AST::Unary* node, VisitContinue cont)
         num_node->at(node);
         delete node;
         return num_node;
+      }
+      default: {
+        return node;
       }
     }
   }

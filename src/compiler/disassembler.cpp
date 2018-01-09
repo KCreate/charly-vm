@@ -152,6 +152,9 @@ void Disassembler::dump(std::ostream& stream) {
         this->print_hex(offset + this->block->read<int32_t>(offset + 1), stream, 8);
         break;
       }
+      default: {
+        // Do nothing
+      }
     }
 
     stream << '\n';
@@ -182,6 +185,9 @@ void Disassembler::detect_branches() {
       case Opcode::BranchUnless: {
         this->branches.emplace_back(offset, offset + this->block->read<int32_t>(offset + 1));
         break;
+      }
+      default: {
+        // Do nothing
       }
     }
 

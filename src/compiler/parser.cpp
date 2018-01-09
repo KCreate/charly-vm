@@ -243,6 +243,9 @@ AST::AbstractNode* Parser::parse_statement() {
           }
           break;
         }
+        default: {
+          // Do nothing
+        }
       }
       break;
     }
@@ -1216,10 +1219,11 @@ AST::AbstractNode* Parser::parse_literal() {
     case TokenType::Class: {
       return this->parse_class();
     }
+    default: {
+      this->unexpected_token("expression");
+      return nullptr;
+    }
   }
-
-  this->unexpected_token("expression");
-  return nullptr;
 }
 
 AST::AbstractNode* Parser::parse_array() {
