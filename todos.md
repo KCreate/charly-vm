@@ -1,5 +1,7 @@
 # Todos
 
+# Implement class construction
+
 # Add CallIsolated instruction
 - Calls a function with setting the parent_environment_frame field
 
@@ -213,7 +215,7 @@
 - Parent class list is uniqified in the PutClass instruction
 - Class is called
 - Set the object's klass field to the class that's used to construct it
-- Insert all the classes fields and methods into the object
+- Insert all the classes fields into the object
 - Check if there is a constructor inside the class
   - Check if there are enough arguments for the constructor
   - Setup an exception handler which deallocates anything if the constructor throws an exception
@@ -273,6 +275,5 @@
 - `cast_to_integer` Convert value type to integer or NAN if not possible
 
 # Implement all opcodes
-- PutClass
 - ReadMemberValue
 - SetMemberValue
