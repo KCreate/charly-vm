@@ -156,7 +156,6 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
     IRScope* search_scope = this->scope;
     uint32_t ir_frame_level = 0;
     while (search_scope) {
-
       if (search_scope->function_node != nullptr) {
         if (search_scope->function_node->known_self_vars != nullptr) {
           if (search_scope->function_node->known_self_vars->names.count(node->name) != 0) {

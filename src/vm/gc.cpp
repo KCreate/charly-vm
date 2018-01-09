@@ -230,7 +230,6 @@ MemoryCell* GarbageCollector::allocate() {
 }
 
 void GarbageCollector::deallocate(MemoryCell* cell) {
-
   // Run the type specific cleanup function
   switch (basics(reinterpret_cast<VALUE>(cell))->type()) {
     case kTypeObject: {

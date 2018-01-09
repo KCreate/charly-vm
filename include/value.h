@@ -158,10 +158,13 @@ inline Basic* basics(VALUE value) {
   return (Basic*)value;
 }
 inline bool is_numeric(VALUE value) {
-  if (is_integer(value)) return true;
-  if (is_ifloat(value)) return true;
+  if (is_integer(value))
+    return true;
+  if (is_ifloat(value))
+    return true;
   if (!is_special(value)) {
-    if (basics(value)->type() == kTypeFloat) return true;
+    if (basics(value)->type() == kTypeFloat)
+      return true;
   }
 
   return false;

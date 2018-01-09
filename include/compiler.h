@@ -40,13 +40,8 @@ namespace Charly::Compilation {
 
 // Holds a single compiler error
 struct CompilerMessage {
-
   // The severity of the message
-  enum class Severity : uint8_t {
-    Info,
-    Warning,
-    Error
-  };
+  enum class Severity : uint8_t { Info, Warning, Error };
 
   Severity severity = Severity::Info;
   std::optional<AST::AbstractNode*> node;

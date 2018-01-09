@@ -288,9 +288,7 @@ AST::AbstractNode* Normalizer::visit_unary(AST::Unary* node, VisitContinue cont)
         delete node;
         return num_node;
       }
-      default: {
-        return node;
-      }
+      default: { return node; }
     }
   }
 
