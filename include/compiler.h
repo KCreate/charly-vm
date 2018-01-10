@@ -69,7 +69,7 @@ struct CompilerContext {
 };
 
 // Configuration passed to the compiler
-struct CompilationConfig {
+struct CompilerConfig {
   // Known constants in the toplevel
   std::vector<std::string> known_top_level_constants;
 
@@ -97,12 +97,13 @@ struct CompilationConfig {
 
 class Compiler {
 public:
-  Compiler(CompilerContext& ctx) : context(ctx) {
+  Compiler(CompilerContext& ctx, CompilerConfig& cfg) : context(ctx), config(cfg) {
   }
 
-  CompilerResult compile(AST::AbstractNode* tree, const CompilationConfig& config);
+  CompilerResult compile(AST::AbstractNode* tree);
 
 private:
   CompilerContext& context;
+  CompilerConfig& config;
 };
 }  // namespace Charly::Compilation

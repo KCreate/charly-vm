@@ -1,23 +1,25 @@
-const write = Charly.internals.get_method
-const print = ->(arg) {
-  write(arg)
-  write("\n")
-}
+class Person {
+  property name
+  property age
 
-export.foo = "this is the export obj"
+  func constructor(name, age) {
+    @name = name
+    @age = age
+  }
 
-const might_throw = ->throw "this is an exception"
-
-class A {
-  property obj_of_A
-
-  func constructor {
-    might_throw()
+  static func new(name, age) {
+    self(name, age)
   }
 }
 
-try {
-  A()
-} catch(e) {
-  print(e)
+const leonard = Person("leonard", 17)
+const peter = Person.new("peter", 100)
+
+print(leonard)
+print(peter)
+
+if (leonard.name == "leonard") {
+  print("leonard.name is set to leonard")
+} else {
+  print("leonard.name is not set to leonard")
 }

@@ -627,12 +627,20 @@ AST::AbstractNode* CodeGenerator::visit_function(AST::Function* node, VisitConti
 
   // Label setup
   Label function_block_label = this->assembler.reserve_label();
+  Label function_block_end_label = this->assembler.reserve_label();
 
   this->assembler.write_putfunction_to_label(this->context.symtable(node->name), function_block_label, node->anonymous,
                                              node->parameters.size(), node->lvarcount);
 
   // Codegen the block
-  this->queued_blocks.push_back(QueuedBlock({function_block_label, node->body}));
+  if (this->config.flags.codegen_queue_blocks) {
+    this->queued_blocks.push_back(QueuedBlock({function_block_label, node->body}));
+  } else {
+    this->assembler.place_label(function_block_label);
+    this->assembler.write_branch_to_label(function_block_end_label);
+    this->visit_node(node->body);
+    this->assembler.place_label(function_block_end_label);
+  }
 
   return node;
 }

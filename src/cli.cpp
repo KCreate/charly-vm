@@ -91,17 +91,17 @@ int CLI::run() {
   }
 
   // Create the compiler
-  CompilationConfig cconfig = {
+  CompilerConfig cconfig = {
       .known_top_level_constants = {"require_no_exec", "require", "Object", "Class", "Array",  "String", "Number",
                                     "Function",        "Boolean", "Null",   "stdin", "stdout", "stderr", "print",
                                     "write",           "gets",    "getc",   "exit",  "sleep",  "Charly"},
       .wrap_inclusion_function = true,
       .flags = this->flags};
   CompilerContext compiler_context;
-  Compiler compiler(compiler_context);
+  Compiler compiler(compiler_context, cconfig);
 
   // Compile the userfile
-  CompilerResult compiler_result = compiler.compile(parse_result.abstract_syntax_tree.value(), cconfig);
+  CompilerResult compiler_result = compiler.compile(parse_result.abstract_syntax_tree.value());
 
   // Dump the ast if the flag was set
   if (this->flags.dump_ast) {
@@ -148,7 +148,7 @@ int CLI::run() {
   // Dump a disassembly of the compiled block
   if (this->flags.dump_asm) {
     Disassembler::Flags disassembler_flags = Disassembler::Flags({.no_branches = this->flags.asm_no_branches,
-                                                                  .no_func_branches = this->flags.asm_no_func_branches,
+                                                                  .no_func_branches = this->flags.asm_no_func_branches || !this->flags.codegen_queue_blocks,
                                                                   .no_offsets = this->flags.asm_no_offsets});
     Disassembler disassembler(compiler_result.instructionblock.value(), disassembler_flags, &compiler_context);
     disassembler.dump(std::cout);

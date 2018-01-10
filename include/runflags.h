@@ -54,6 +54,7 @@ struct RunFlags {
   bool trace_catchtables = false;
   bool trace_frames = false;
   bool trace_gc = false;
+  bool codegen_queue_blocks = false;
 
   RunFlags(int argc, char** argv, char** envp) {
     // Parse environment variables
@@ -188,6 +189,8 @@ struct RunFlags {
       this->trace_frames = true;
     if (!flag.compare("trace_gc"))
       this->trace_gc = true;
+    if (!flag.compare("codegen_queue_blocks"))
+      this->codegen_queue_blocks = true;
     this->flags.push_back(flag);
   }
 };

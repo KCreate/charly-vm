@@ -32,27 +32,27 @@
 
 namespace Charly::Compilation {
 
-CompilerResult Compiler::compile(AST::AbstractNode* tree, const CompilationConfig& config) {
+CompilerResult Compiler::compile(AST::AbstractNode* tree) {
   CompilerResult result = {.abstract_syntax_tree = tree};
 
   // Generate a module inclusion function if one is requested
   // The module inclusion function wraps a program into a single function that can be
   // called by the runtime
-  if (config.wrap_inclusion_function) {
+  if (this->config.wrap_inclusion_function) {
     // Append a return export node to the end of the parsed block
     AST::Block* block = result.abstract_syntax_tree->as<AST::Block>();
-    AST::Identifier* ret_id = new AST::Identifier(config.inclusion_function_return_identifier);
+    AST::Identifier* ret_id = new AST::Identifier(this->config.inclusion_function_return_identifier);
     AST::Return* ret_stmt = new AST::Return(ret_id->at(block));
     block->statements.push_back(ret_stmt->at(block));
 
     // Wrap the whole program in a function which handles the exporting interface
     // to other programs
     result.abstract_syntax_tree =
-        new AST::Function(config.inclusion_function_name, config.inclusion_function_arguments, block, true);
+        new AST::Function(this->config.inclusion_function_name, this->config.inclusion_function_arguments, block, true);
     result.abstract_syntax_tree->at(block);
 
     // Add the known vars which are known to be inserted via the require call
-    IRKnownSelfVars* known_self_vars = new IRKnownSelfVars(config.known_self_vars);
+    IRKnownSelfVars* known_self_vars = new IRKnownSelfVars(this->config.known_self_vars);
     result.abstract_syntax_tree->as<AST::Function>()->known_self_vars = known_self_vars;
 
     // Push the function onto the stack and wrap it in a block node
@@ -63,7 +63,7 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree, const CompilationConfi
 
   try {
     // Clean up the code a little bit and add or remove some nodes
-    Normalizer normalizer(this->context, result);
+    Normalizer normalizer(this->context, this->config, result);
     result.abstract_syntax_tree = normalizer.visit_node(result.abstract_syntax_tree);
 
     if (result.has_errors) {
@@ -71,11 +71,11 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree, const CompilationConfi
     }
 
     // Calculate all offsets of all variables, assignments and declarations
-    LVarRewriter lvar_rewriter(this->context, result);
+    LVarRewriter lvar_rewriter(this->context, this->config, result);
     lvar_rewriter.push_scope();
 
     // Add declarations for the known local variables in the top level
-    for (const auto& varname : config.known_top_level_constants) {
+    for (const auto& varname : this->config.known_top_level_constants) {
       lvar_rewriter.get_current_scope()->declare(this->context.symtable(varname), 0, 0, true);
     }
 
@@ -86,8 +86,8 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree, const CompilationConfi
     }
 
     // Optionally skip code generation
-    if (config.codegen) {
-      CodeGenerator codegenerator(this->context, result);
+    if (this->config.codegen) {
+      CodeGenerator codegenerator(this->context, this->config, result);
       InstructionBlock* compiled_block = codegenerator.compile(result.abstract_syntax_tree);
       result.instructionblock = compiled_block;
     }
