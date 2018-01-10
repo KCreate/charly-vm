@@ -666,7 +666,7 @@ AST::AbstractNode* CodeGenerator::visit_class(AST::Class* node, VisitContinue co
 
   this->assembler.write_putclass(this->context.symtable(node->name), node->member_properties->children.size(),
                                  node->static_properties->children.size(), node->member_functions->children.size(),
-                                 node->member_functions->children.size(), node->parents->children.size(),
+                                 node->static_functions->children.size(), node->parents->children.size(),
                                  node->constructor->type() != AST::kTypeEmpty);
 
   return node;
