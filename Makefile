@@ -47,7 +47,10 @@ format:
 valgrind: $(TARGET)
 	valgrind --leak-check=full --show-leak-kinds=all --show-reachable=no bin/vm todos.md
 
-.PHONY: whole clean rebuild format valgrind
+test:
+	@find test -name "*.ch" | xargs -L 1 -r bin/vm
+
+.PHONY: whole clean rebuild format valgrind test
 
 # Create colored output
 define colorecho

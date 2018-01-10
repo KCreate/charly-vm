@@ -35,14 +35,20 @@ using namespace std;
 
 namespace Charly {
 namespace Internals {
-VALUE get_method(VM& vm, VALUE method_name) {
-  if (VM::real_type(method_name) == kTypeString) {
-    String* str = reinterpret_cast<String*>(method_name);
-    vm.context.out_stream.write(str->data, str->length);
-    return kNull;
-  }
+VALUE get_method(VM& vm, VALUE argument) {
+  vm.context.out_stream << "Called get_method with ";
+  vm.pretty_print(vm.context.out_stream, argument);
+  return kNull;
+}
 
-  vm.pretty_print(vm.context.out_stream, method_name);
+VALUE write(VM& vm, VALUE value) {
+  vm.pretty_print(vm.context.out_stream, value);
+  return kNull;
+}
+
+VALUE print(VM& vm, VALUE value) {
+  vm.pretty_print(vm.context.out_stream, value);
+  vm.context.out_stream << '\n';
   return kNull;
 }
 }  // namespace Internals

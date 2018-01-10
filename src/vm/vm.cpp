@@ -2120,6 +2120,12 @@ void VM::run() {
 }
 
 void VM::exec_prelude() {
+
+  // Charly = {
+  //   internals: {
+  //     get_method: <Internals::get_method>
+  //   }
+  // }
   this->create_frame(kNull, this->frames, 20, nullptr);
   this->op_putcfunction(this->context.symtable("get_method"), reinterpret_cast<uintptr_t>(Internals::get_method), 1);
   this->op_putvalue(this->context.symtable("get_method"));
@@ -2127,6 +2133,15 @@ void VM::exec_prelude() {
   this->op_putvalue(this->context.symtable("internals"));
   this->op_puthash(1);
   this->op_setlocal(19, 0);
+
+  // write = <Internals::write>
+  this->op_putcfunction(this->context.symtable("write"), reinterpret_cast<uintptr_t>(Internals::write), 1);
+  this->op_setlocal(14, 0);
+
+  // print = <Internals::print>
+  this->op_putcfunction(this->context.symtable("print"), reinterpret_cast<uintptr_t>(Internals::print), 1);
+  this->op_setlocal(13, 0);
+
   this->op_pop();
 }
 
