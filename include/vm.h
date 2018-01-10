@@ -76,8 +76,12 @@ public:
 
   // Methods that operate on the VM's frames
   Frame* pop_frame();
-  Frame* create_frame(VALUE self, Function* calling_function, uint8_t* return_address);
-  Frame* create_frame(VALUE self, Frame* parent_environment_frame, uint32_t lvarcount, uint8_t* return_address);
+  Frame* create_frame(VALUE self, Function* calling_function, uint8_t* return_address, bool halt_after_return = false);
+  Frame* create_frame(VALUE self,
+                      Frame* parent_environment_frame,
+                      uint32_t lvarcount,
+                      uint8_t* return_address,
+                      bool halt_after_return = false);
 
   // Stack manipulation
   std::optional<VALUE> pop_stack();
@@ -180,9 +184,10 @@ public:
   void op_setn(uint32_t offset);
   void op_call(uint32_t argc);
   void op_callmember(uint32_t argc);
-  void call(uint32_t argc, bool with_target);
-  void call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self);
+  void call(uint32_t argc, bool with_target, bool halt_after_return = false);
+  void call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self, bool halt_after_return = false);
   void call_cfunction(CFunction* function, uint32_t argc, VALUE* argv);
+  void call_class(Class* klass, uint32_t argc, VALUE* argv);
   void op_return();
   void op_throw();
   void throw_exception(VALUE payload);

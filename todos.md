@@ -1,6 +1,33 @@
 # Todos
 
-# Implement class construction
+# VM needs a way to call user functions
+- Each frame needs a property called halt_after_return which tells the VM
+  wether it should halt after the frame has been left
+
+# Class System
+- Inject basic classes at machine startup
+  - Keep a reference to these classes somewhere?
+- `Charly.Numeric`, `Charly.String`, etc.
+
+# Class Construction
+- Parent class list is uniqified in the PutClass instruction
+- Class is called
+- Set the object's klass field to the class that's used to construct it
+- Insert all the classes fields into the object
+- Check if there is a constructor inside the class
+  - Check if there are enough arguments for the constructor
+  - Setup an exception handler which deallocates anything if the constructor throws an exception
+  - Call the constructor, setting the self value to the newly created object
+- If the constructor succeeded, push the newly created object onto the stack
+
+# Class Construction Possible Implementation
+- User calls a Class value
+- Create an empty object
+- Set the objects klass field to the class
+- Add any member properties to the object, defaulting to kNull
+- Check if there is a constructor defined in the class
+- Call the constructor with the self field set to the object
+- Push the object onto the stack
 
 # Add CallIsolated instruction
 - Calls a function with setting the parent_environment_frame field
@@ -205,22 +232,6 @@
   - Should be rather trivial
 - Methods can be obtained in user-space via the get_method method that is injected
   on machine startup.
-
-# Class System
-- Inject basic classes at machine startup
-  - Keep a reference to these classes somewhere?
-- `Charly.Numeric`, `Charly.String`, etc.
-
-# Class Construction
-- Parent class list is uniqified in the PutClass instruction
-- Class is called
-- Set the object's klass field to the class that's used to construct it
-- Insert all the classes fields into the object
-- Check if there is a constructor inside the class
-  - Check if there are enough arguments for the constructor
-  - Setup an exception handler which deallocates anything if the constructor throws an exception
-  - Call the constructor, setting the self value to the newly created object
-- If the constructor succeeded, push the newly created object onto the stack
 
 # Objects
 - Hashes are just objects with their klass field to the Object class

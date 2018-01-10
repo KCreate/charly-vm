@@ -1,22 +1,16 @@
 const print = Charly.internals.get_method
 
-class Test {
+class Person {
+  property name
+  property age
+  property boye
 
-  // Duplicate declarations
-  property foo
-  property foo
-  static property bar
-  static property bar
-  func baz {}
-  func baz {}
-  static func qux {}
-  static func qux {}
-
-  // Shadowing other declaration types
-  func foo {}
-  property baz
-  static func bar {}
-  static property qux
+  func constructor(name, age) {
+    @name = name
+    @age = age
+  }
 }
 
-print(Test)
+const leonard = Person("leonard", 17)
+
+print(leonard)

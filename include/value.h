@@ -224,6 +224,7 @@ struct Frame {
   std::vector<VALUE> environment;
   VALUE self;
   uint8_t* return_address;
+  bool halt_after_return;
 };
 
 // Catchtable used for exception handling

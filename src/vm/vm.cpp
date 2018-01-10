@@ -44,7 +44,7 @@ Frame* VM::pop_frame() {
   return frame;
 }
 
-Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address) {
+Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address, bool halt_after_return) {
   MemoryCell* cell = this->context.gc.allocate();
   cell->basic.set_type(kTypeFrame);
   cell->frame.parent = this->frames;
@@ -53,6 +53,7 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address)
   cell->frame.function = function;
   cell->frame.self = self;
   cell->frame.return_address = return_address;
+  cell->frame.halt_after_return = halt_after_return;
 
   // Calculate the number of local variables this frame has to support
   // Add 1 at the beginning to reserve space for the arguments magic variable
@@ -76,7 +77,11 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address)
   return cell->as<Frame>();
 }
 
-Frame* VM::create_frame(VALUE self, Frame* parent_environment_frame, uint32_t lvarcount, uint8_t* return_address) {
+Frame* VM::create_frame(VALUE self,
+                        Frame* parent_environment_frame,
+                        uint32_t lvarcount,
+                        uint8_t* return_address,
+                        bool halt_after_return) {
   MemoryCell* cell = this->context.gc.allocate();
   cell->basic.set_type(kTypeFrame);
   cell->frame.parent = this->frames;
@@ -85,6 +90,7 @@ Frame* VM::create_frame(VALUE self, Frame* parent_environment_frame, uint32_t lv
   cell->frame.function = nullptr;
   cell->frame.self = self;
   cell->frame.return_address = return_address;
+  cell->frame.halt_after_return = halt_after_return;
   cell->frame.environment.reserve(lvarcount);
   while (lvarcount--)
     cell->frame.environment.push_back(kNull);
@@ -1126,7 +1132,7 @@ void VM::op_callmember(uint32_t argc) {
   this->call(argc, true);
 }
 
-void VM::call(uint32_t argc, bool with_target) {
+void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
   // Stack allocate enough space to copy all arguments into
   VALUE arguments[argc];
 
@@ -1190,13 +1196,25 @@ void VM::call(uint32_t argc, bool with_target) {
         }
       }
 
-      this->call_function(tfunc, argc, arguments, target);
+      this->call_function(tfunc, argc, arguments, target, halt_after_return);
       return;
     }
 
     // Functions which wrap around a C function pointer
     case kTypeCFunction: {
       this->call_cfunction(reinterpret_cast<CFunction*>(function), argc, arguments);
+      if (halt_after_return) {
+        this->halted = true;
+      }
+      return;
+    }
+
+    // Class construction
+    case kTypeClass: {
+      this->call_class(reinterpret_cast<Class*>(function), argc, arguments);
+      if (halt_after_return) {
+        this->halted = true;
+      }
       return;
     }
 
@@ -1209,7 +1227,7 @@ void VM::call(uint32_t argc, bool with_target) {
   }
 }
 
-void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self) {
+void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self, bool halt_after_return) {
   // Check if the function was called with enough arguments
   if (argc < function->argc) {
     this->panic(Status::NotEnoughArguments);
@@ -1221,7 +1239,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   uint8_t* return_address = nullptr;
   if (this->ip != nullptr)
     return_address = this->ip + kInstructionLengths[Opcode::Call];
-  Frame* frame = this->create_frame(self, function, return_address);
+  Frame* frame = this->create_frame(self, function, return_address, halt_after_return);
 
   Array* arguments_array = reinterpret_cast<Array*>(this->create_array(argc));
 
@@ -1263,6 +1281,26 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
   this->push_stack(rv);
 }
 
+void VM::call_class(Class* klass, uint32_t argc, VALUE* argv) {
+  ManagedContext lalloc(*this);
+  Object* object = reinterpret_cast<Object*>(lalloc.create_object(klass->member_properties->size()));
+
+  // Initialize object
+  object->klass = reinterpret_cast<VALUE>(klass);
+  for (auto field : *klass->member_properties) {
+    (* object->container)[field] = kNull;
+  }
+
+  // If we have a constructor, call it with the object
+  if (klass->constructor != kNull) {
+    this->call_function(reinterpret_cast<Function*>(klass->constructor), argc, argv, reinterpret_cast<VALUE>(object), true);
+    this->run();
+    this->halted = false;
+  }
+
+  this->push_stack(reinterpret_cast<VALUE>(object));
+}
+
 void VM::op_return() {
   Frame* frame = this->frames;
   if (!frame)
@@ -1276,6 +1314,10 @@ void VM::op_return() {
 
   this->frames = frame->parent;
   this->ip = frame->return_address;
+
+  if (frame->halt_after_return) {
+    this->halted = true;
+  }
 
   // Print the frame if the correponding flag was set
   if (this->context.trace_frames) {

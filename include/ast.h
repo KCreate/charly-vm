@@ -1284,9 +1284,7 @@ struct Class : public AbstractNode {
 
   void visit(VisitFunc func) {
     this->constructor = func(this->constructor);
-    this->member_properties = reinterpret_cast<NodeList*>(func(this->member_properties));
     this->member_functions = reinterpret_cast<NodeList*>(func(this->member_functions));
-    this->static_properties = reinterpret_cast<NodeList*>(func(this->static_properties));
     this->static_functions = reinterpret_cast<NodeList*>(func(this->static_functions));
     this->parents = reinterpret_cast<NodeList*>(func(this->parents));
   }
