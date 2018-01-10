@@ -146,12 +146,27 @@ CatchTable* VM::pop_catchtable() {
     this->panic(Status::CatchStackEmpty);
   CatchTable* current = this->catchstack;
   this->catchstack = current->parent;
+
   return current;
 }
 
 void VM::unwind_catchstack() {
   CatchTable* table = this->pop_catchtable();
-  this->frames = table->frame;
+
+  // Walk the frame tree until we reach the frame stored in the catchtable
+  while (this->frames) {
+    if (this->frames == table->frame) {
+      break;
+    } else {
+      if (this->frames->halt_after_return) {
+        this->halted = true;
+      }
+    }
+
+    this->frames = this->frames->parent;
+  }
+
+  // Jump to the handler block of the catchtable
   this->ip = table->address;
 
   // Show the catchtable we just restored if the corresponding flag was set
@@ -1301,6 +1316,11 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
 }
 
 void VM::call_class(Class* klass, uint32_t argc, VALUE* argv) {
+
+  // We keep a reference to the current catchtable around in case the constructor throws an exception
+  // After the constructor call we check if the table changed
+  CatchTable* original_catchtable = this->catchstack;
+
   ManagedContext lalloc(*this);
   Object* object = reinterpret_cast<Object*>(lalloc.create_object(klass->member_properties->size()));
 
@@ -1317,7 +1337,9 @@ void VM::call_class(Class* klass, uint32_t argc, VALUE* argv) {
     this->halted = false;
   }
 
-  this->push_stack(reinterpret_cast<VALUE>(object));
+  if (this->catchstack == original_catchtable) {
+    this->push_stack(reinterpret_cast<VALUE>(object));
+  }
 }
 
 void VM::op_return() {
