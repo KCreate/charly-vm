@@ -855,6 +855,16 @@ void VM::op_readmembersymbol(VALUE symbol) {
 
       break;
     }
+    case kTypeClass: {
+      Class* klass = reinterpret_cast<Class*>(target);
+
+      if (klass->container->count(symbol) == 1) {
+        this->push_stack((*klass->container)[symbol]);
+        return;
+      }
+
+      break;
+    }
   }
 
   // Travel up the class chain and search for the right field
@@ -925,6 +935,12 @@ void VM::op_setmembersymbol(VALUE symbol) {
     case kTypeCFunction: {
       CFunction* cfunc = reinterpret_cast<CFunction*>(target);
       (*cfunc->container)[symbol] = value;
+      break;
+    }
+
+    case kTypeClass: {
+      Class* klass = reinterpret_cast<Class*>(target);
+      (*klass->container)[symbol] = value;
       break;
     }
   }
