@@ -162,13 +162,16 @@ void VM::unwind_catchstack() {
     this->context.out_stream << '\n';
   }
 
+  // If there are less elements on the stack than there were when the table was pushed
+  // that means that the stack is not in a predictable state anymore
+  // There is nothing we can do, but crash
+  if (this->stack.size() < table->stacksize) {
+    this->panic(Status::CorruptedStack);
+  }
+
   // Unwind the stack to be the size it was when this catchtable
   // was pushed. Because the stack could be smaller, we need to
   // calculate the amount of values we can pop
-  if (this->stack.size() <= table->stacksize) {
-    return;
-  }
-
   size_t popcount = this->stack.size() - table->stacksize;
   while (popcount--) {
     this->stack.pop_back();
