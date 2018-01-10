@@ -32,6 +32,9 @@
 # Add CallIsolated instruction
 - Calls a function with setting the parent_environment_frame field
 
+# Add DeleteMemberSymbol instruction
+- Removes a member symbol from a container
+
 # Switch to C++14 as most distributions don't have a C++17 compiler installed
 - Requiring users to build one themselves isn't cool
 - Requiring users to add a PPA isn't cool either
