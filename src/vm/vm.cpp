@@ -1598,13 +1598,13 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << " ";
 
       io << "member_properties=[";
-      for (auto& entry : *klass->member_properties) {
+      for (auto entry : *klass->member_properties) {
         io << " " << this->context.symtable(entry).value_or(kUndefinedSymbolString);
       }
       io << "] ";
 
       io << "member_functions=[";
-      for (auto& entry : *klass->member_functions) {
+      for (auto entry : *klass->member_functions) {
         io << " " << this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
         io << "=";
         this->pretty_print(io, entry.second);
@@ -1612,12 +1612,13 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << "] ";
 
       io << "parent_classes=[";
-      for (auto& entry : *klass->parent_classes) {
-        io << " " << this->context.symtable(entry).value_or(kUndefinedSymbolString);
+      for (auto entry : *klass->parent_classes) {
+        io << " ";
+        this->pretty_print(io, entry);
       }
       io << "]";
 
-      for (auto& entry : *klass->container) {
+      for (auto entry : *klass->container) {
         io << " " << this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
         io << "=";
         this->pretty_print(io, entry.second);
