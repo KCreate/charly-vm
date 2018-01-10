@@ -27,6 +27,7 @@
 #include <list>
 #include <vector>
 #include <unordered_map>
+#include <cmath>
 
 #include "normalizer.h"
 
