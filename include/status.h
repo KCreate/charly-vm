@@ -60,7 +60,7 @@ static const std::string kStatusHumanReadable[] = {
   "Writing local field failed, out of bounds",
   "Writing local field failed, too deep",
   "Extended value is not a class",
-  "Argument for instruction has invalid  type"
+  "Argument for instruction has invalid type"
 };
 // clang-format on
 }  // namespace Charly
