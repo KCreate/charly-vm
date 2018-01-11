@@ -4,6 +4,7 @@
          │
          │
          │   ; .l0
+         │   ; func __CHARLY_MODULE_FUNC(export)
          └─> 0x018   nop
              0x019   putvalue          @"name"
              0x022   putvalue          @"age"
@@ -63,6 +64,7 @@
 │  │
 │  │
 │  │         ; l1
+│  │         ; class Person static func new(name, age)
 └──│───────> 0x16f   nop
    │         0x170   putself           0
    │         0x175   readlocal         1, 0 ; name
@@ -72,6 +74,7 @@
    │
    │
    │         ; l2
+   │         ; class Person func constructor(name, age)
    └───────> 0x18d   nop
              0x018e: putself           0
              0x0193: readlocal         1, 0

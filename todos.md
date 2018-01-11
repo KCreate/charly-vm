@@ -1,9 +1,5 @@
 # Todos
 
-# VM needs a way to call user functions
-- Each frame needs a property called halt_after_return which tells the VM
-  wether it should halt after the frame has been left
-
 # Class System
 - Inject basic classes at machine startup
   - Keep a reference to these classes somewhere?
