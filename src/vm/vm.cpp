@@ -1305,7 +1305,7 @@ void VM::op_putclass(VALUE name,
                      bool has_constructor) {
   ManagedContext lalloc(*this);
 
-  Class* klass = reinterpret_cast<Class*>(this->create_class(name));
+  Class* klass = reinterpret_cast<Class*>(lalloc.create_class(name));
   klass->member_properties->reserve(propertycount);
   klass->prototype = lalloc.create_object(methodcount);
   klass->parent_classes->reserve(parentclasscount);
