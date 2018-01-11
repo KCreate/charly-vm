@@ -1,5 +1,9 @@
-func foo(arg) {
-  return $0
-}
+let foo = func add (a, b) = a + b
 
-print(foo(25))
+try {
+  const result = foo(1, 2)
+  print(result)
+} catch(e) {
+  print(e.message)
+  print(e.stacktrace)
+}

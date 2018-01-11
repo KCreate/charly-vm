@@ -162,7 +162,9 @@ public:
   void call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self, bool halt_after_return = false);
   void call_cfunction(CFunction* function, uint32_t argc, VALUE* argv);
   void call_class(Class* klass, uint32_t argc, VALUE* argv);
+  void throw_exception(const std::string& message);
   void throw_exception(VALUE payload);
+  VALUE stacktrace_array();
   void panic(STATUS reason);
   void stacktrace(std::ostream& io);
   void catchstacktrace(std::ostream& io);

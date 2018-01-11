@@ -627,7 +627,6 @@ AST::AbstractNode* CodeGenerator::visit_function(AST::Function* node, VisitConti
 
   // Label setup
   Label function_block_label = this->assembler.reserve_label();
-  Label function_block_end_label = this->assembler.reserve_label();
 
   this->assembler.write_putfunction_to_label(this->context.symtable(node->name), function_block_label, node->anonymous,
                                              node->parameters.size(), node->lvarcount);

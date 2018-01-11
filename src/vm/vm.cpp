@@ -29,6 +29,7 @@
 #include <cmath>
 #include <functional>
 #include <iostream>
+#include <sstream>
 
 #include "gc.h"
 #include "managedcontext.h"
@@ -1036,10 +1037,7 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
     }
 
     default: {
-      this->context.out_stream << "cant call a " << kValueTypeString[VM::real_type(function)] << '\n';
-
-      // TODO: Handle as runtime error
-      this->panic(Status::UnspecifiedError);
+      this->throw_exception("Attempted to call a non-callable type: " + kValueTypeString[VM::real_type(function)]);
     }
   }
 }
@@ -1047,7 +1045,8 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
 void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self, bool halt_after_return) {
   // Check if the function was called with enough arguments
   if (argc < function->argc) {
-    this->panic(Status::NotEnoughArguments);
+    this->throw_exception("Not enough arguments for function call");
+    return;
   }
 
   // The return address is simply the instruction after the one we've been called from
@@ -1079,7 +1078,8 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
 void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
   // Check if enough arguments have been passed
   if (argc < function->argc) {
-    this->panic(Status::NotEnoughArguments);
+    this->throw_exception("Not enough arguments for CFunction call");
+    return;
   }
 
   VALUE rv = kNull;
@@ -1092,7 +1092,10 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
     case 3:
       rv = reinterpret_cast<VALUE (*)(VM&, VALUE, VALUE, VALUE)>(function->pointer)(*this, argv[0], argv[1], argv[2]);
       break;
-    default: { this->panic(Status::TooManyArgumentsForCFunction); }
+    default: {
+      this->throw_exception("Too many arguments for CFunction call");
+      return;
+    }
   }
 
   this->push_stack(rv);
@@ -1314,8 +1317,8 @@ void VM::op_putclass(VALUE name,
   while (parentclasscount--) {
     VALUE pclass = this->pop_stack().value_or(kNull);
     if (VM::real_type(pclass) != kTypeClass) {
-      // TODO: throw an exception here
-      this->panic(Status::ParentClassNotAClass);
+      this->throw_exception("Value to extend is not a class");
+      return;
     }
 
     // Check if this parent class was already added
@@ -1329,7 +1332,6 @@ void VM::op_putclass(VALUE name,
   while (staticmethodcount--) {
     VALUE smethod = this->pop_stack().value_or(kNull);
     if (VM::real_type(smethod) != kTypeFunction) {
-      // TODO: throw an exception here
       this->panic(Status::InvalidArgumentType);
     }
     Function* func_smethod = reinterpret_cast<Function*>(smethod);
@@ -1339,7 +1341,6 @@ void VM::op_putclass(VALUE name,
   while (methodcount--) {
     VALUE method = this->pop_stack().value_or(kNull);
     if (VM::real_type(method) != kTypeFunction) {
-      // TODO: throw an exception here
       this->panic(Status::InvalidArgumentType);
     }
     Function* func_method = reinterpret_cast<Function*>(method);
@@ -1350,7 +1351,6 @@ void VM::op_putclass(VALUE name,
   while (staticpropertycount--) {
     VALUE sprop = this->pop_stack().value_or(sprop);
     if (VM::real_type(sprop) != kTypeSymbol) {
-      // TODO: throw an exception here
       this->panic(Status::InvalidArgumentType);
     }
     (*klass->container)[sprop] = kNull;
@@ -1359,7 +1359,6 @@ void VM::op_putclass(VALUE name,
   while (propertycount--) {
     VALUE prop = this->pop_stack().value_or(kNull);
     if (VM::real_type(prop) != kTypeSymbol) {
-      // TODO: throw an exception here
       this->panic(Status::InvalidArgumentType);
     }
     klass->member_properties->push_back(prop);
@@ -1443,9 +1442,38 @@ void VM::op_throw() {
   return this->throw_exception(this->pop_stack().value_or(kNull));
 }
 
+void VM::throw_exception(const std::string& message) {
+  ManagedContext lalloc(*this);
+  Object* ex_obj = reinterpret_cast<Object*>(lalloc.create_object(2));
+  String* ex_msg = reinterpret_cast<String*>(lalloc.create_string(message.c_str(), message.size()));
+  (*ex_obj->container)[this->context.symtable("message")] = reinterpret_cast<VALUE>(ex_msg);
+  (*ex_obj->container)[this->context.symtable("stacktrace")] = this->stacktrace_array();
+  this->unwind_catchstack();
+  this->push_stack(reinterpret_cast<VALUE>(ex_obj));
+}
+
 void VM::throw_exception(VALUE payload) {
   this->unwind_catchstack();
   this->push_stack(payload);
+}
+
+VALUE VM::stacktrace_array() {
+  ManagedContext lalloc(*this);
+  Array* arr = reinterpret_cast<Array*>(lalloc.create_array(1));
+
+  std::stringstream io;
+
+  Frame* frame = this->frames;
+  while (frame && VM::real_type(reinterpret_cast<VALUE>(frame)) == kTypeFrame) {
+    this->pretty_print(io, reinterpret_cast<VALUE>(frame));
+    frame = frame->parent;
+
+    // Append the trace entry to the array and reset the stringstream
+    arr->data->push_back(lalloc.create_string(io.str().c_str(), io.str().size()));
+    io.str("");
+  }
+
+  return reinterpret_cast<VALUE>(arr);
 }
 
 void VM::op_registercatchtable(int32_t offset) {
@@ -2164,9 +2192,8 @@ void VM::run() {
       }
 
       default: {
-        this->context.out_stream << "Unknown opcode: " << kOpcodeMnemonics[opcode] << " at "
-                                 << reinterpret_cast<void*>(this->ip) << '\n';
-        this->panic(Status::UnknownOpcode);
+        this->throw_exception("Unknown opcode: " + kOpcodeMnemonics[opcode]);
+        break;
       }
     }
 
