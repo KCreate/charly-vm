@@ -47,8 +47,7 @@ static const std::string kHelpMessage =
     "    trace_opcodes                    Display opcodes as they are being executed\n"
     "    trace_catchtables                Display catchtables as they are being created or left\n"
     "    trace_frames                     Display frames as they are being entered and left\n"
-    "    trace_gc                         Display statistics about the gc at runtime\n"
-    "    codegen_queue_blocks             Wether to codegen function blocks sequentially or inline\n";
+    "    trace_gc                         Display statistics about the gc at runtime\n";
 
 static const std::string kLicense =
     "MIT License \n"

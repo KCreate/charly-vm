@@ -633,14 +633,7 @@ AST::AbstractNode* CodeGenerator::visit_function(AST::Function* node, VisitConti
                                              node->parameters.size(), node->lvarcount);
 
   // Codegen the block
-  if (this->config.flags.codegen_queue_blocks) {
-    this->queued_blocks.push_back(QueuedBlock({function_block_label, node->body}));
-  } else {
-    this->assembler.write_branch_to_label(function_block_end_label);
-    this->assembler.place_label(function_block_label);
-    this->visit_node(node->body);
-    this->assembler.place_label(function_block_end_label);
-  }
+  this->queued_blocks.push_back(QueuedBlock({function_block_label, node->body}));
 
   return node;
 }

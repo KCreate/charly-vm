@@ -148,7 +148,7 @@ int CLI::run() {
   // Dump a disassembly of the compiled block
   if (this->flags.dump_asm) {
     Disassembler::Flags disassembler_flags = Disassembler::Flags({.no_branches = this->flags.asm_no_branches,
-                                                                  .no_func_branches = this->flags.asm_no_func_branches || !this->flags.codegen_queue_blocks,
+                                                                  .no_func_branches = this->flags.asm_no_func_branches,
                                                                   .no_offsets = this->flags.asm_no_offsets});
     Disassembler disassembler(compiler_result.instructionblock.value(), disassembler_flags, &compiler_context);
     disassembler.dump(std::cout);
