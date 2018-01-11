@@ -180,7 +180,8 @@ int CLI::run() {
       std::cout << std::setw(26);
       std::cout << kOpcodeMnemonics[opcode] << ": ";
       std::cout << std::setw(1);
-      std::cout << vm.instruction_profile.entries[opcode].average_length << " nanoseconds" << '\n';
+      std::cout << vm.instruction_profile.entries[opcode].average_length << " nanoseconds ";
+      std::cout << "(" << vm.instruction_profile.entries[opcode].encountered << " samples)" << '\n';
       opcode++;
     }
   }
