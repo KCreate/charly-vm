@@ -291,7 +291,7 @@ VALUE VM::create_class(VALUE name) {
   cell->klass.name = name;
   cell->klass.constructor = kNull;
   cell->klass.member_properties = new std::vector<VALUE>();
-  cell->klass.member_functions = new std::unordered_map<VALUE, VALUE>();
+  cell->klass.prototype = kNull;
   cell->klass.parent_classes = new std::vector<VALUE>();
   cell->klass.container = new std::unordered_map<VALUE, VALUE>();
   return cell->as_value();
@@ -811,132 +811,81 @@ VALUE VM::ubnot(VALUE value) {
   return this->create_float(~ivalue);
 }
 
-Opcode VM::fetch_instruction() {
-  if (this->ip == nullptr)
-    return Opcode::Nop;
-  return *reinterpret_cast<Opcode*>(this->ip);
-}
-
-void VM::op_readlocal(uint32_t index, uint32_t level) {
-  // Travel to the correct frame
-  Frame* frame = this->frames;
-  while (level--) {
-    if (!frame->parent_environment_frame) {
-      return this->panic(Status::ReadFailedTooDeep);
-    }
-
-    frame = frame->parent_environment_frame;
-  }
-
-  // Check if the index isn't out-of-bounds
-  if (index >= frame->environment.size()) {
-    return this->panic(Status::ReadFailedOutOfBounds);
-  }
-
-  this->push_stack(frame->environment[index]);
-}
-
-void VM::op_readmembersymbol(VALUE symbol) {
-  VALUE target = this->pop_stack().value_or(kNull);
-
-  // Handle datatypes that have their own data members
-  switch (VM::type(target)) {
+VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
+  switch (VM::type(source)) {
     case kTypeObject: {
-      Object* obj = reinterpret_cast<Object*>(target);
+      Object* obj = reinterpret_cast<Object*>(source);
 
       if (obj->container->count(symbol) == 1) {
-        this->push_stack((*obj->container)[symbol]);
-        return;
+        return (*obj->container)[symbol];
       }
 
       break;
     }
 
     case kTypeFunction: {
-      Function* func = reinterpret_cast<Function*>(target);
+      Function* func = reinterpret_cast<Function*>(source);
 
       if (func->container->count(symbol) == 1) {
-        this->push_stack((*func->container)[symbol]);
-        return;
+        return (*func->container)[symbol];
       }
 
       break;
     }
 
     case kTypeCFunction: {
-      CFunction* cfunc = reinterpret_cast<CFunction*>(target);
+      CFunction* cfunc = reinterpret_cast<CFunction*>(source);
 
       if (cfunc->container->count(symbol) == 1) {
-        this->push_stack((*cfunc->container)[symbol]);
-        return;
+        return (*cfunc->container)[symbol];
       }
 
       break;
     }
     case kTypeClass: {
-      Class* klass = reinterpret_cast<Class*>(target);
+      Class* klass = reinterpret_cast<Class*>(source);
 
       if (klass->container->count(symbol) == 1) {
-        this->push_stack((*klass->container)[symbol]);
-        return;
+        return (*klass->container)[symbol];
+      }
+
+      if (symbol == this->context.symtable("prototype")) {
+        return klass->prototype;
       }
 
       break;
     }
   }
 
-  // Travel up the class chain and search for the right field
-  // TODO: Implement this lol
-  this->push_stack(kNull);
-}
+  // At this point, the symbol was not found in the container of the source
+  // or it didn't have a container
+  //
+  // If the value was an object, we walk the class hierarchy and search for a method
+  // If the value was any other object, we check it's primitive class
+  // If the primitive class didn't contain a method, the primitive class for Object
+  // is checked
+  //
+  // If no result was found, null is returned
+  if (VM::real_type(source) == kTypeObject) {
+    VALUE val_klass = reinterpret_cast<Object*>(source)->klass;
 
-void VM::op_readarrayindex(uint32_t index) {
-  VALUE stackval = this->pop_stack().value_or(kNull);
-
-  // Check if we popped an array, if not push it back onto the stack
-  if (VM::real_type(stackval) != kTypeArray) {
-    this->push_stack(stackval);
-    return;
-  }
-
-  Array* arr = reinterpret_cast<Array*>(stackval);
-
-  // Out-of-bounds checking
-  if (index >= arr->data->size()) {
-    this->push_stack(kNull);
-  }
-
-  this->push_stack((*arr->data)[index]);
-}
-
-void VM::op_setlocal(uint32_t index, uint32_t level) {
-  VALUE value = this->pop_stack().value_or(kNull);
-
-  // Travel to the correct frame
-  Frame* frame = this->frames;
-  while (level--) {
-    if (!frame->parent_environment_frame) {
-      return this->panic(Status::WriteFailedTooDeep);
+    // Make sure the klass field is a Class value
+    if (VM::real_type(val_klass) != kTypeClass) {
+      this->panic(Status::ObjectClassNotAClass);
     }
 
-    frame = frame->parent_environment_frame;
+    Class* klass = reinterpret_cast<Class*>(val_klass);
+    auto result = this->findprototypevalue(klass, symbol);
+
+    if (result.has_value()) {
+      return *result;
+    }
   }
 
-  // Check if the index isn't out-of-bounds
-  if (index < frame->environment.size()) {
-    frame->environment[index] = value;
-  } else {
-    this->panic(Status::WriteFailedOutOfBounds);
-  }
-
-  this->push_stack(value);
+  return kNull;
 }
 
-void VM::op_setmembersymbol(VALUE symbol) {
-  VALUE value = this->pop_stack().value_or(kNull);
-  VALUE target = this->pop_stack().value_or(kNull);
-
-  // Check if we can write to the value
+VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
   switch (VM::real_type(target)) {
     case kTypeObject: {
       Object* obj = reinterpret_cast<Object*>(target);
@@ -958,212 +907,46 @@ void VM::op_setmembersymbol(VALUE symbol) {
 
     case kTypeClass: {
       Class* klass = reinterpret_cast<Class*>(target);
+
+      if (symbol == this->context.symtable("prototype")) {
+        klass->prototype = value;
+        break;
+      }
+
       (*klass->container)[symbol] = value;
       break;
     }
   }
 
-  this->push_stack(value);
+  return value;
 }
 
-void VM::op_setarrayindex(uint32_t index) {
-  VALUE expression = this->pop_stack().value_or(kNull);
-  VALUE stackval = this->pop_stack().value_or(kNull);
+std::optional<VALUE> VM::findprototypevalue(Class* klass, VALUE symbol) {
+  std::optional<VALUE> result;
 
-  // Check if we popped an array, if not push it back onto the stack
-  if (VM::real_type(stackval) != kTypeArray) {
-    this->push_stack(stackval);
-    return;
-  }
+  if (VM::real_type(klass->prototype) == kTypeObject) {
+    Object* prototype = reinterpret_cast<Object*>(klass->prototype);
 
-  Array* arr = reinterpret_cast<Array*>(stackval);
-
-  // Out-of-bounds checking
-  if (index >= arr->data->size()) {
-    this->push_stack(kNull);
-  }
-
-  (*arr->data)[index] = expression;
-
-  this->push_stack(stackval);
-}
-
-void VM::op_putself(uint32_t level) {
-  if (this->frames == nullptr) {
-    this->push_stack(kNull);
-    return;
-  }
-
-  VALUE self_val = kNull;
-
-  Frame* frm = this->frames;
-  while (frm && level--) {
-    frm = frm->parent_environment_frame;
-  }
-
-  if (frm) {
-    self_val = frm->self;
-  }
-
-  this->push_stack(self_val);
-}
-
-void VM::op_putvalue(VALUE value) {
-  this->push_stack(value);
-}
-
-void VM::op_putfloat(double value) {
-  this->push_stack(this->create_float(value));
-}
-
-void VM::op_putstring(char* data, uint32_t length) {
-  this->push_stack(this->create_string(data, length));
-}
-
-void VM::op_putfunction(VALUE symbol, uint8_t* body_address, bool anonymous, uint32_t argc, uint32_t lvarcount) {
-  VALUE function = this->create_function(symbol, body_address, argc, lvarcount, anonymous);
-  this->push_stack(function);
-}
-
-void VM::op_putcfunction(VALUE symbol, uintptr_t pointer, uint32_t argc) {
-  VALUE function = this->create_cfunction(symbol, argc, pointer);
-  this->push_stack(function);
-}
-
-void VM::op_putarray(uint32_t count) {
-  Array* array = reinterpret_cast<Array*>(this->create_array(count));
-
-  while (count--) {
-    array->data->insert(array->data->begin(), this->pop_stack().value_or(kNull));
-  }
-
-  this->push_stack(reinterpret_cast<VALUE>(array));
-}
-
-void VM::op_puthash(uint32_t count) {
-  Object* object = reinterpret_cast<Object*>(this->create_object(count));
-
-  VALUE key;
-  VALUE value;
-  while (count--) {
-    key = this->pop_stack().value_or(kNull);
-    value = this->pop_stack().value_or(kNull);
-    (*object->container)[key] = value;
-  }
-
-  this->push_stack(reinterpret_cast<VALUE>(object));
-}
-
-void VM::op_putclass(VALUE name,
-                     uint32_t propertycount,
-                     uint32_t staticpropertycount,
-                     uint32_t methodcount,
-                     uint32_t staticmethodcount,
-                     uint32_t parentclasscount,
-                     bool has_constructor) {
-  Class* klass = reinterpret_cast<Class*>(this->create_class(name));
-  klass->member_properties->reserve(propertycount);
-  klass->member_functions->reserve(methodcount);
-  klass->parent_classes->reserve(parentclasscount);
-  klass->container->reserve(staticpropertycount + staticmethodcount);
-
-  if (has_constructor) {
-    klass->constructor = this->pop_stack().value_or(kNull);
-  }
-
-  while (parentclasscount--) {
-    VALUE pclass = this->pop_stack().value_or(kNull);
-    if (VM::real_type(pclass) != kTypeClass) {
-      // TODO: throw an exception here
-      this->panic(Status::ParentClassNotAClass);
+    // Check if this member function container contains the symbol
+    if (prototype->container->count(symbol) == 1) {
+      result = (*prototype->container)[symbol];
     }
-    klass->parent_classes->push_back(pclass);
-  }
 
-  while (staticmethodcount--) {
-    VALUE smethod = this->pop_stack().value_or(kNull);
-    if (VM::real_type(smethod) != kTypeFunction) {
-      // TODO: throw an exception here
-      this->panic(Status::InvalidArgumentType);
+    // Iterate over all parent classes to search for the symbol
+    // We don't have to check each parent class for it's type because
+    // that check is performed in the op_putclass method
+    for (auto parent_class : *klass->parent_classes) {
+      Class* pklass = reinterpret_cast<Class*>(parent_class);
+      auto presult = this->findprototypevalue(pklass, symbol);
+
+      if (presult.has_value()) {
+        result = presult;
+        break;
+      }
     }
-    Function* func_smethod = reinterpret_cast<Function*>(smethod);
-    (*klass->container)[func_smethod->name] = smethod;
   }
 
-  while (methodcount--) {
-    VALUE method = this->pop_stack().value_or(kNull);
-    if (VM::real_type(method) != kTypeFunction) {
-      // TODO: throw an exception here
-      this->panic(Status::InvalidArgumentType);
-    }
-    Function* func_method = reinterpret_cast<Function*>(method);
-    (*klass->member_functions)[func_method->name] = method;
-  }
-
-  while (staticpropertycount--) {
-    VALUE sprop = this->pop_stack().value_or(sprop);
-    if (VM::real_type(sprop) != kTypeSymbol) {
-      // TODO: throw an exception here
-      this->panic(Status::InvalidArgumentType);
-    }
-    (*klass->container)[sprop] = kNull;
-  }
-
-  while (propertycount--) {
-    VALUE prop = this->pop_stack().value_or(kNull);
-    if (VM::real_type(prop) != kTypeSymbol) {
-      // TODO: throw an exception here
-      this->panic(Status::InvalidArgumentType);
-    }
-    klass->member_properties->push_back(prop);
-  }
-
-  this->push_stack(reinterpret_cast<VALUE>(klass));
-}
-
-void VM::op_pop() {
-  this->pop_stack();
-}
-
-void VM::op_dup() {
-  VALUE value = this->pop_stack().value_or(kNull);
-  this->push_stack(value);
-  this->push_stack(value);
-}
-
-void VM::op_swap() {
-  VALUE value1 = this->pop_stack().value_or(kNull);
-  VALUE value2 = this->pop_stack().value_or(kNull);
-  this->push_stack(value1);
-  this->push_stack(value2);
-}
-
-void VM::op_topn(uint32_t offset) {
-  // Check if there are enough items on the stack
-  if (this->stack.size() <= offset) {
-    this->push_stack(kNull);
-  } else {
-    VALUE value = *(this->stack.end() - (offset + 1));
-    this->push_stack(value);
-  }
-}
-
-void VM::op_setn(uint32_t offset) {
-  // Check if there are enough items on the stack
-  if (this->stack.size() <= offset) {
-    this->pop_stack();
-  } else {
-    VALUE& ref = *(this->stack.end() - (offset + 1));
-    ref = this->stack.back();
-  }
-}
-
-void VM::op_call(uint32_t argc) {
-  this->call(argc, false);
-}
-
-void VM::op_callmember(uint32_t argc) {
-  this->call(argc, true);
+  return result;
 }
 
 void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
@@ -1340,6 +1123,293 @@ void VM::call_class(Class* klass, uint32_t argc, VALUE* argv) {
   if (this->catchstack == original_catchtable) {
     this->push_stack(reinterpret_cast<VALUE>(object));
   }
+}
+
+Opcode VM::fetch_instruction() {
+  if (this->ip == nullptr)
+    return Opcode::Nop;
+  return *reinterpret_cast<Opcode*>(this->ip);
+}
+
+void VM::op_readlocal(uint32_t index, uint32_t level) {
+  // Travel to the correct frame
+  Frame* frame = this->frames;
+  while (level--) {
+    if (!frame->parent_environment_frame) {
+      return this->panic(Status::ReadFailedTooDeep);
+    }
+
+    frame = frame->parent_environment_frame;
+  }
+
+  // Check if the index isn't out-of-bounds
+  if (index >= frame->environment.size()) {
+    return this->panic(Status::ReadFailedOutOfBounds);
+  }
+
+  this->push_stack(frame->environment[index]);
+}
+
+void VM::op_readmembersymbol(VALUE symbol) {
+  VALUE source = this->pop_stack().value_or(kNull);
+  this->push_stack(this->readmembersymbol(source, symbol));
+}
+
+void VM::op_readarrayindex(uint32_t index) {
+  VALUE stackval = this->pop_stack().value_or(kNull);
+
+  // Check if we popped an array, if not push it back onto the stack
+  if (VM::real_type(stackval) != kTypeArray) {
+    this->push_stack(stackval);
+    return;
+  }
+
+  Array* arr = reinterpret_cast<Array*>(stackval);
+
+  // Out-of-bounds checking
+  if (index >= arr->data->size()) {
+    this->push_stack(kNull);
+  }
+
+  this->push_stack((*arr->data)[index]);
+}
+
+void VM::op_setlocal(uint32_t index, uint32_t level) {
+  VALUE value = this->pop_stack().value_or(kNull);
+
+  // Travel to the correct frame
+  Frame* frame = this->frames;
+  while (level--) {
+    if (!frame->parent_environment_frame) {
+      return this->panic(Status::WriteFailedTooDeep);
+    }
+
+    frame = frame->parent_environment_frame;
+  }
+
+  // Check if the index isn't out-of-bounds
+  if (index < frame->environment.size()) {
+    frame->environment[index] = value;
+  } else {
+    this->panic(Status::WriteFailedOutOfBounds);
+  }
+
+  this->push_stack(value);
+}
+
+void VM::op_setmembersymbol(VALUE symbol) {
+  VALUE value = this->pop_stack().value_or(kNull);
+  VALUE target = this->pop_stack().value_or(kNull);
+  this->push_stack(this->setmembersymbol(target, symbol, value));
+}
+
+void VM::op_setarrayindex(uint32_t index) {
+  VALUE expression = this->pop_stack().value_or(kNull);
+  VALUE stackval = this->pop_stack().value_or(kNull);
+
+  // Check if we popped an array, if not push it back onto the stack
+  if (VM::real_type(stackval) != kTypeArray) {
+    this->push_stack(stackval);
+    return;
+  }
+
+  Array* arr = reinterpret_cast<Array*>(stackval);
+
+  // Out-of-bounds checking
+  if (index >= arr->data->size()) {
+    this->push_stack(kNull);
+  }
+
+  (*arr->data)[index] = expression;
+
+  this->push_stack(stackval);
+}
+
+void VM::op_putself(uint32_t level) {
+  if (this->frames == nullptr) {
+    this->push_stack(kNull);
+    return;
+  }
+
+  VALUE self_val = kNull;
+
+  Frame* frm = this->frames;
+  while (frm && level--) {
+    frm = frm->parent_environment_frame;
+  }
+
+  if (frm) {
+    self_val = frm->self;
+  }
+
+  this->push_stack(self_val);
+}
+
+void VM::op_putvalue(VALUE value) {
+  this->push_stack(value);
+}
+
+void VM::op_putfloat(double value) {
+  this->push_stack(this->create_float(value));
+}
+
+void VM::op_putstring(char* data, uint32_t length) {
+  this->push_stack(this->create_string(data, length));
+}
+
+void VM::op_putfunction(VALUE symbol, uint8_t* body_address, bool anonymous, uint32_t argc, uint32_t lvarcount) {
+  VALUE function = this->create_function(symbol, body_address, argc, lvarcount, anonymous);
+  this->push_stack(function);
+}
+
+void VM::op_putcfunction(VALUE symbol, uintptr_t pointer, uint32_t argc) {
+  VALUE function = this->create_cfunction(symbol, argc, pointer);
+  this->push_stack(function);
+}
+
+void VM::op_putarray(uint32_t count) {
+  Array* array = reinterpret_cast<Array*>(this->create_array(count));
+
+  while (count--) {
+    array->data->insert(array->data->begin(), this->pop_stack().value_or(kNull));
+  }
+
+  this->push_stack(reinterpret_cast<VALUE>(array));
+}
+
+void VM::op_puthash(uint32_t count) {
+  Object* object = reinterpret_cast<Object*>(this->create_object(count));
+
+  VALUE key;
+  VALUE value;
+  while (count--) {
+    key = this->pop_stack().value_or(kNull);
+    value = this->pop_stack().value_or(kNull);
+    (*object->container)[key] = value;
+  }
+
+  this->push_stack(reinterpret_cast<VALUE>(object));
+}
+
+void VM::op_putclass(VALUE name,
+                     uint32_t propertycount,
+                     uint32_t staticpropertycount,
+                     uint32_t methodcount,
+                     uint32_t staticmethodcount,
+                     uint32_t parentclasscount,
+                     bool has_constructor) {
+  ManagedContext lalloc(*this);
+
+  Class* klass = reinterpret_cast<Class*>(this->create_class(name));
+  klass->member_properties->reserve(propertycount);
+  klass->prototype = lalloc.create_object(methodcount);
+  klass->parent_classes->reserve(parentclasscount);
+  klass->container->reserve(staticpropertycount + staticmethodcount);
+
+  if (has_constructor) {
+    klass->constructor = this->pop_stack().value_or(kNull);
+  }
+
+  while (parentclasscount--) {
+    VALUE pclass = this->pop_stack().value_or(kNull);
+    if (VM::real_type(pclass) != kTypeClass) {
+      // TODO: throw an exception here
+      this->panic(Status::ParentClassNotAClass);
+    }
+
+    // Check if this parent class was already added
+    // We do this to prevent duplicate parent classes
+    auto result = std::find(klass->parent_classes->begin(), klass->parent_classes->end(), pclass);
+    if (result == klass->parent_classes->end()) {
+      klass->parent_classes->push_back(pclass);
+    }
+  }
+
+  while (staticmethodcount--) {
+    VALUE smethod = this->pop_stack().value_or(kNull);
+    if (VM::real_type(smethod) != kTypeFunction) {
+      // TODO: throw an exception here
+      this->panic(Status::InvalidArgumentType);
+    }
+    Function* func_smethod = reinterpret_cast<Function*>(smethod);
+    (*klass->container)[func_smethod->name] = smethod;
+  }
+
+  while (methodcount--) {
+    VALUE method = this->pop_stack().value_or(kNull);
+    if (VM::real_type(method) != kTypeFunction) {
+      // TODO: throw an exception here
+      this->panic(Status::InvalidArgumentType);
+    }
+    Function* func_method = reinterpret_cast<Function*>(method);
+    Object* obj_methods = reinterpret_cast<Object*>(klass->prototype);
+    (*obj_methods->container)[func_method->name] = method;
+  }
+
+  while (staticpropertycount--) {
+    VALUE sprop = this->pop_stack().value_or(sprop);
+    if (VM::real_type(sprop) != kTypeSymbol) {
+      // TODO: throw an exception here
+      this->panic(Status::InvalidArgumentType);
+    }
+    (*klass->container)[sprop] = kNull;
+  }
+
+  while (propertycount--) {
+    VALUE prop = this->pop_stack().value_or(kNull);
+    if (VM::real_type(prop) != kTypeSymbol) {
+      // TODO: throw an exception here
+      this->panic(Status::InvalidArgumentType);
+    }
+    klass->member_properties->push_back(prop);
+  }
+
+  this->push_stack(reinterpret_cast<VALUE>(klass));
+}
+
+void VM::op_pop() {
+  this->pop_stack();
+}
+
+void VM::op_dup() {
+  VALUE value = this->pop_stack().value_or(kNull);
+  this->push_stack(value);
+  this->push_stack(value);
+}
+
+void VM::op_swap() {
+  VALUE value1 = this->pop_stack().value_or(kNull);
+  VALUE value2 = this->pop_stack().value_or(kNull);
+  this->push_stack(value1);
+  this->push_stack(value2);
+}
+
+void VM::op_topn(uint32_t offset) {
+  // Check if there are enough items on the stack
+  if (this->stack.size() <= offset) {
+    this->push_stack(kNull);
+  } else {
+    VALUE value = *(this->stack.end() - (offset + 1));
+    this->push_stack(value);
+  }
+}
+
+void VM::op_setn(uint32_t offset) {
+  // Check if there are enough items on the stack
+  if (this->stack.size() <= offset) {
+    this->pop_stack();
+  } else {
+    VALUE& ref = *(this->stack.end() - (offset + 1));
+    ref = this->stack.back();
+  }
+}
+
+void VM::op_call(uint32_t argc) {
+  this->call(argc, false);
+}
+
+void VM::op_callmember(uint32_t argc) {
+  this->call(argc, true);
 }
 
 void VM::op_return() {
@@ -1628,13 +1698,9 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       }
       io << "] ";
 
-      io << "member_functions=[";
-      for (auto entry : *klass->member_functions) {
-        io << " " << this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
-        io << "=";
-        this->pretty_print(io, entry.second);
-      }
-      io << "] ";
+      io << "member_functions=";
+      this->pretty_print(io, klass->prototype);
+      io << " ";
 
       io << "parent_classes=[";
       for (auto entry : *klass->parent_classes) {

@@ -154,7 +154,34 @@ public:
   VALUE bxor(VALUE left, VALUE right);
   VALUE ubnot(VALUE value);
 
-  // Execution
+  // Machine functionality
+  VALUE readmembersymbol(VALUE source, VALUE symbol);
+  VALUE setmembersymbol(VALUE target, VALUE symbol, VALUE value);
+  std::optional<VALUE> findprototypevalue(Class* source, VALUE symbol);
+  void call(uint32_t argc, bool with_target, bool halt_after_return = false);
+  void call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self, bool halt_after_return = false);
+  void call_cfunction(CFunction* function, uint32_t argc, VALUE* argv);
+  void call_class(Class* klass, uint32_t argc, VALUE* argv);
+  void throw_exception(VALUE payload);
+  void panic(STATUS reason);
+  void stacktrace(std::ostream& io);
+  void catchstacktrace(std::ostream& io);
+  void stackdump(std::ostream& io);
+  void inline pretty_print(std::ostream& io, void* value) {
+    this->pretty_print(io, (VALUE)value);
+  }
+  void pretty_print(std::ostream& io, VALUE value);
+  void run();
+  void exec_prelude();
+  void exec_block(InstructionBlock* block);
+  void exec_module(InstructionBlock* block);
+
+  // Private member access
+  inline Frame* get_current_frame() {
+    return this->frames;
+  }
+
+  // Instructions
   Opcode fetch_instruction();
   void op_readlocal(uint32_t index, uint32_t level);
   void op_readmembersymbol(VALUE symbol);
@@ -184,42 +211,21 @@ public:
   void op_setn(uint32_t offset);
   void op_call(uint32_t argc);
   void op_callmember(uint32_t argc);
-  void call(uint32_t argc, bool with_target, bool halt_after_return = false);
-  void call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self, bool halt_after_return = false);
-  void call_cfunction(CFunction* function, uint32_t argc, VALUE* argv);
-  void call_class(Class* klass, uint32_t argc, VALUE* argv);
   void op_return();
   void op_throw();
-  void throw_exception(VALUE payload);
   void op_registercatchtable(int32_t offset);
   void op_popcatchtable();
   void op_branch(int32_t offset);
   void op_branchif(int32_t offset);
   void op_branchunless(int32_t offset);
   void op_typeof();
-  void panic(STATUS reason);
-  void stacktrace(std::ostream& io);
-  void catchstacktrace(std::ostream& io);
-  void stackdump(std::ostream& io);
-  void inline pretty_print(std::ostream& io, void* value) {
-    this->pretty_print(io, (VALUE)value);
-  }
-  void pretty_print(std::ostream& io, VALUE value);
-  void run();
-  void exec_prelude();
-  void exec_block(InstructionBlock* block);
-  void exec_module(InstructionBlock* block);
-
-  // Private member access
-  inline Frame* get_current_frame() {
-    return this->frames;
-  }
 
   VMContext context;
 
 private:
   std::vector<VALUE> pretty_print_stack;
   std::vector<VALUE> stack;
+  std::unordered_map<VALUE, VALUE> primitives_classes;
   Frame* frames;
   CatchTable* catchstack;
   uint8_t* ip;

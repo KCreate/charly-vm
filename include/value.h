@@ -280,13 +280,12 @@ struct Class {
   VALUE name;
   VALUE constructor;
   std::vector<VALUE>* member_properties;
-  std::unordered_map<VALUE, VALUE>* member_functions;
+  VALUE prototype;
   std::vector<VALUE>* parent_classes;
   std::unordered_map<VALUE, VALUE>* container;
 
   void inline clean() {
     delete this->member_properties;
-    delete this->member_functions;
     delete this->parent_classes;
     delete this->container;
   }

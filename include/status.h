@@ -43,7 +43,8 @@ enum Status : STATUS {
   WriteFailedTooDeep,
   ParentClassNotAClass,
   InvalidArgumentType,
-  CorruptedStack
+  CorruptedStack,
+  ObjectClassNotAClass
 };
 
 // Human-readable status messages
@@ -62,7 +63,8 @@ static const std::string kStatusHumanReadable[] = {
   "Writing local field failed, too deep",
   "Extended value is not a class",
   "Argument for instruction has invalid type",
-  "Corrupted Stack"
+  "Corrupted Stack",
+  "Object's klass field not set to an instance of a class"
 };
 // clang-format on
 }  // namespace Charly

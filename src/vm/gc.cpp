@@ -122,8 +122,7 @@ void GarbageCollector::mark(VALUE value) {
 
     case kTypeClass: {
       Class* klass = reinterpret_cast<Class*>(value);
-      for (auto member_func : *klass->member_functions)
-        this->mark(member_func.second);
+      this->mark(klass->prototype);
       for (auto parent_class : *klass->parent_classes)
         this->mark(parent_class);
       for (auto entry : *klass->container)
