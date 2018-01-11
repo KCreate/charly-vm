@@ -720,13 +720,13 @@ AST::AbstractNode* CodeGenerator::visit_trycatch(AST::TryCatch* node, VisitConti
   }
 
   // Label setup
-  Label end_statement_label = this->assembler.reserve_label();
   Label handler_label = this->assembler.reserve_label();
   Label finally_label = this->assembler.reserve_label();
 
   // Codegen try block
   this->assembler.write_registercatchtable_to_label(handler_label);
   this->visit_node(node->block);
+  this->assembler.write_popcatchtable();
   this->assembler.write_branch_to_label(finally_label);
 
   // Codegen handler block
@@ -758,7 +758,6 @@ AST::AbstractNode* CodeGenerator::visit_trycatch(AST::TryCatch* node, VisitConti
   if (node->finally_block->type() != AST::kTypeEmpty) {
     this->visit_node(node->finally_block);
   }
-  this->assembler.place_label(end_statement_label);
 
   return node;
 }
