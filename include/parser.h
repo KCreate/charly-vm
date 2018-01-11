@@ -68,7 +68,6 @@ public:
 public:
   // Utility methods
   Token& advance();
-  void advance_to_token(TokenType type);
   void unexpected_token();
   void unexpected_token(TokenType expected);
   void unexpected_token(const std::string& expected_value);

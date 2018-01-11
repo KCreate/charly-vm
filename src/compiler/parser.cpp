@@ -51,48 +51,6 @@ Token& Parser::advance() {
   return this->token;
 }
 
-void Parser::advance_to_token(TokenType type) {
-  std::stack<TokenType> token_stack;
-
-  while ((this->token.type == type && token_stack.size() == 0)) {
-    switch (this->token.type) {
-      case TokenType::LeftCurly:
-      case TokenType::LeftParen:
-      case TokenType::LeftBracket: {
-        token_stack.push(this->token.type);
-        break;
-      }
-      case TokenType::RightCurly: {
-        if (token_stack.size() > 0 && token_stack.top() == TokenType::LeftCurly) {
-          token_stack.pop();
-        } else {
-          this->unexpected_token(this->token.type);
-        }
-        break;
-      }
-      case TokenType::RightParen: {
-        if (token_stack.size() > 0 && token_stack.top() == TokenType::LeftParen) {
-          token_stack.pop();
-        } else {
-          this->unexpected_token(this->token.type);
-        }
-        break;
-      }
-      case TokenType::RightBracket: {
-        if (token_stack.size() > 0 && token_stack.top() == TokenType::LeftBracket) {
-          token_stack.pop();
-        } else {
-          this->unexpected_token(this->token.type);
-        }
-        break;
-      }
-      default: { break; }
-    }
-
-    this->advance();
-  }
-}
-
 void Parser::unexpected_token() {
   std::string error_message;
 
