@@ -1,4 +1,4 @@
-func foo {
+func foo(arg) {
   return $0
 }
 

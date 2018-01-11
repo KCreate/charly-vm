@@ -128,13 +128,11 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
     if (std::all_of(node->name.begin() + 1, node->name.end(), ::isdigit)) {
       uint32_t index = std::atoi(node->name.substr(1, std::string::npos).c_str());
 
-      if (this->scope->function_node != nullptr) {
-        if (index >= this->scope->function_node->parameters.size()) {
-          AST::IndexIntoArguments* new_node = new AST::IndexIntoArguments(index);
-          new_node->at(node);
-          delete node;
-          return new_node;
-        }
+      if (this->scope->function_node == nullptr || index >= this->scope->function_node->parameters.size()) {
+        AST::IndexIntoArguments* new_node = new AST::IndexIntoArguments(index);
+        new_node->at(node);
+        delete node;
+        return new_node;
       } else {
         node->offset_info = new IRVarOffsetInfo({0, index + 1});
       }
