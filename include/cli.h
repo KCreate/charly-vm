@@ -44,6 +44,7 @@ static const std::string kHelpMessage =
     "    asm_no_branches                  Don't display branches as arrows in the disassembly\n"
     "    asm_no_func_branches             Don't display branches for PutFunction instructions\n"
     "    skipexec                         Don't execute after parsing\n"
+    "    instruction_profile              Display a profile of all executed instructions\n"
     "    trace_opcodes                    Display opcodes as they are being executed\n"
     "    trace_catchtables                Display catchtables as they are being created or left\n"
     "    trace_frames                     Display frames as they are being entered and left\n"

@@ -1,9 +1,10 @@
-let foo = func add (a, b) = a + b
+let i = 0
+let lim = 100000
 
-try {
-  const result = foo(1, 2)
-  print(result)
-} catch(e) {
-  print(e.message)
-  print(e.stacktrace)
+func increase {
+  i += 1
+}
+
+while i < lim {
+  increase()
 }

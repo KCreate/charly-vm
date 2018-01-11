@@ -33,6 +33,7 @@
 namespace Charly {
 // An opcode identifies a single instruction the machine can perform
 // Opcodes can have arguments
+const uint32_t kOpcodeCount = 56;
 enum Opcode : uint8_t {
 
   // Do nothing

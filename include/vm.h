@@ -41,11 +41,37 @@
 
 namespace Charly {
 
+struct VMInstructionProfileEntry {
+  uint64_t encountered = 0;
+  uint64_t average_length = 0;
+};
+
+// Stores how often each type of instruction was encountered
+// and how it took on average
+class VMInstructionProfile {
+public:
+  VMInstructionProfile() : entries(nullptr) {
+    this->entries = new VMInstructionProfileEntry[kOpcodeCount];
+  }
+  ~VMInstructionProfile() {
+    delete[] this->entries;
+  }
+
+  void add_entry(Opcode opcode, uint64_t length) {
+    VMInstructionProfileEntry& entry = this->entries[opcode];
+    entry.average_length = (entry.average_length * entry.encountered + length) / (entry.encountered + 1);
+    entry.encountered += 1;
+  }
+
+  VMInstructionProfileEntry* entries;
+};
+
 struct VMContext {
   SymbolTable& symtable;
   StringPool& stringpool;
   GarbageCollector& gc;
 
+  bool instruction_profile = false;
   bool trace_opcodes = false;
   bool trace_catchtables = false;
   bool trace_frames = false;
@@ -84,7 +110,7 @@ public:
                       bool halt_after_return = false);
 
   // Stack manipulation
-  std::optional<VALUE> pop_stack();
+  VALUE pop_stack();
   void push_stack(VALUE value);
 
   // CatchStack manipulation
@@ -223,6 +249,7 @@ public:
   void op_typeof();
 
   VMContext context;
+  VMInstructionProfile instruction_profile;
 
 private:
   std::vector<VALUE> pretty_print_stack;

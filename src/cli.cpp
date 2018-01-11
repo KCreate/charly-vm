@@ -163,6 +163,7 @@ int CLI::run() {
   VMContext context({.symtable = compiler_context.symtable,
                      .stringpool = compiler_context.stringpool,
                      .gc = gc,
+                     .instruction_profile = this->flags.instruction_profile,
                      .trace_opcodes = this->flags.trace_opcodes,
                      .trace_catchtables = this->flags.trace_catchtables,
                      .trace_frames = this->flags.trace_frames,
@@ -170,6 +171,19 @@ int CLI::run() {
                      .err_stream = std::cerr});
   VM vm(context);
   vm.exec_module(compiler_result.instructionblock.value());
+
+  // Display the instruction profile if requested
+  if (this->flags.instruction_profile) {
+    uint8_t opcode = 0;
+    std::cout << "Instruction Profile:" << '\n';
+    while (opcode < kOpcodeCount) {
+      std::cout << std::setw(26);
+      std::cout << kOpcodeMnemonics[opcode] << ": ";
+      std::cout << std::setw(1);
+      std::cout << vm.instruction_profile.entries[opcode].average_length << " nanoseconds" << '\n';
+      opcode++;
+    }
+  }
 
   return 0;
 }

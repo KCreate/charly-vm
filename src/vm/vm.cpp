@@ -109,14 +109,15 @@ Frame* VM::create_frame(VALUE self,
   return cell->as<Frame>();
 }
 
-std::optional<VALUE> VM::pop_stack() {
-  std::optional<VALUE> value;
+VALUE VM::pop_stack() {
+  VALUE val = kNull;
+
   if (this->stack.size() > 0) {
-    value = this->stack.back();
+    val = this->stack.back();
     this->stack.pop_back();
   }
 
-  return value;
+  return val;
 }
 
 void VM::push_stack(VALUE value) {
@@ -958,12 +959,12 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
   // We do this because arguments are constructed on the stack
   // in the reverse order than we are popping them off
   for (int argc_copy = argc - 1; argc_copy >= 0; argc_copy--) {
-    VALUE value = this->pop_stack().value_or(kNull);
+    VALUE value = this->pop_stack();
     arguments[argc_copy] = value;
   }
 
   // Pop the function off of the stack
-  VALUE function = this->pop_stack().value_or(kNull);
+  VALUE function = this->pop_stack();
 
   // The target of the function is either supplied explicitly via the call_member instruction
   // or implicitly via the functions frame
@@ -971,7 +972,7 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
   // If not we simply pop it off the stack
   VALUE target = kNull;
   if (with_target)
-    target = this->pop_stack().value_or(kNull);
+    target = this->pop_stack();
 
   // Redirect to the correct handler
   switch (VM::real_type(function)) {
@@ -1154,12 +1155,12 @@ void VM::op_readlocal(uint32_t index, uint32_t level) {
 }
 
 void VM::op_readmembersymbol(VALUE symbol) {
-  VALUE source = this->pop_stack().value_or(kNull);
+  VALUE source = this->pop_stack();
   this->push_stack(this->readmembersymbol(source, symbol));
 }
 
 void VM::op_readarrayindex(uint32_t index) {
-  VALUE stackval = this->pop_stack().value_or(kNull);
+  VALUE stackval = this->pop_stack();
 
   // Check if we popped an array, if not push it back onto the stack
   if (VM::real_type(stackval) != kTypeArray) {
@@ -1179,7 +1180,7 @@ void VM::op_readarrayindex(uint32_t index) {
 }
 
 void VM::op_setlocal(uint32_t index, uint32_t level) {
-  VALUE value = this->pop_stack().value_or(kNull);
+  VALUE value = this->pop_stack();
 
   // Travel to the correct frame
   Frame* frame = this->frames;
@@ -1202,14 +1203,14 @@ void VM::op_setlocal(uint32_t index, uint32_t level) {
 }
 
 void VM::op_setmembersymbol(VALUE symbol) {
-  VALUE value = this->pop_stack().value_or(kNull);
-  VALUE target = this->pop_stack().value_or(kNull);
+  VALUE value = this->pop_stack();
+  VALUE target = this->pop_stack();
   this->push_stack(this->setmembersymbol(target, symbol, value));
 }
 
 void VM::op_setarrayindex(uint32_t index) {
-  VALUE expression = this->pop_stack().value_or(kNull);
-  VALUE stackval = this->pop_stack().value_or(kNull);
+  VALUE expression = this->pop_stack();
+  VALUE stackval = this->pop_stack();
 
   // Check if we popped an array, if not push it back onto the stack
   if (VM::real_type(stackval) != kTypeArray) {
@@ -1275,7 +1276,7 @@ void VM::op_putarray(uint32_t count) {
   Array* array = reinterpret_cast<Array*>(this->create_array(count));
 
   while (count--) {
-    array->data->insert(array->data->begin(), this->pop_stack().value_or(kNull));
+    array->data->insert(array->data->begin(), this->pop_stack());
   }
 
   this->push_stack(reinterpret_cast<VALUE>(array));
@@ -1287,8 +1288,8 @@ void VM::op_puthash(uint32_t count) {
   VALUE key;
   VALUE value;
   while (count--) {
-    key = this->pop_stack().value_or(kNull);
-    value = this->pop_stack().value_or(kNull);
+    key = this->pop_stack();
+    value = this->pop_stack();
     (*object->container)[key] = value;
   }
 
@@ -1311,11 +1312,11 @@ void VM::op_putclass(VALUE name,
   klass->container->reserve(staticpropertycount + staticmethodcount);
 
   if (has_constructor) {
-    klass->constructor = this->pop_stack().value_or(kNull);
+    klass->constructor = this->pop_stack();
   }
 
   while (parentclasscount--) {
-    VALUE pclass = this->pop_stack().value_or(kNull);
+    VALUE pclass = this->pop_stack();
     if (VM::real_type(pclass) != kTypeClass) {
       this->throw_exception("Value to extend is not a class");
       return;
@@ -1330,7 +1331,7 @@ void VM::op_putclass(VALUE name,
   }
 
   while (staticmethodcount--) {
-    VALUE smethod = this->pop_stack().value_or(kNull);
+    VALUE smethod = this->pop_stack();
     if (VM::real_type(smethod) != kTypeFunction) {
       this->panic(Status::InvalidArgumentType);
     }
@@ -1339,7 +1340,7 @@ void VM::op_putclass(VALUE name,
   }
 
   while (methodcount--) {
-    VALUE method = this->pop_stack().value_or(kNull);
+    VALUE method = this->pop_stack();
     if (VM::real_type(method) != kTypeFunction) {
       this->panic(Status::InvalidArgumentType);
     }
@@ -1349,7 +1350,7 @@ void VM::op_putclass(VALUE name,
   }
 
   while (staticpropertycount--) {
-    VALUE sprop = this->pop_stack().value_or(sprop);
+    VALUE sprop = this->pop_stack();
     if (VM::real_type(sprop) != kTypeSymbol) {
       this->panic(Status::InvalidArgumentType);
     }
@@ -1357,7 +1358,7 @@ void VM::op_putclass(VALUE name,
   }
 
   while (propertycount--) {
-    VALUE prop = this->pop_stack().value_or(kNull);
+    VALUE prop = this->pop_stack();
     if (VM::real_type(prop) != kTypeSymbol) {
       this->panic(Status::InvalidArgumentType);
     }
@@ -1372,14 +1373,12 @@ void VM::op_pop() {
 }
 
 void VM::op_dup() {
-  VALUE value = this->pop_stack().value_or(kNull);
-  this->push_stack(value);
-  this->push_stack(value);
+  this->push_stack(this->stack.back());
 }
 
 void VM::op_swap() {
-  VALUE value1 = this->pop_stack().value_or(kNull);
-  VALUE value2 = this->pop_stack().value_or(kNull);
+  VALUE value1 = this->pop_stack();
+  VALUE value2 = this->pop_stack();
   this->push_stack(value1);
   this->push_stack(value2);
 }
@@ -1439,7 +1438,7 @@ void VM::op_return() {
 }
 
 void VM::op_throw() {
-  return this->throw_exception(this->pop_stack().value_or(kNull));
+  return this->throw_exception(this->pop_stack());
 }
 
 void VM::throw_exception(const std::string& message) {
@@ -1501,19 +1500,19 @@ void VM::op_branch(int32_t offset) {
 }
 
 void VM::op_branchif(int32_t offset) {
-  VALUE test = this->pop_stack().value_or(kNull);
+  VALUE test = this->pop_stack();
   if (VM::truthyness(test))
     this->ip += offset;
 }
 
 void VM::op_branchunless(int32_t offset) {
-  VALUE test = this->pop_stack().value_or(kNull);
+  VALUE test = this->pop_stack();
   if (!VM::truthyness(test))
     this->ip += offset;
 }
 
 void VM::op_typeof() {
-  VALUE value = this->pop_stack().value_or(kNull);
+  VALUE value = this->pop_stack();
   std::string& stringrep = kValueTypeString[VM::real_type(value)];
   this->push_stack(this->create_string(stringrep.c_str(), stringrep.size()));
 }
@@ -1811,7 +1810,7 @@ void VM::run() {
   // and the machine wasn't halted
   while (this->ip && !this->halted) {
     std::chrono::time_point<std::chrono::high_resolution_clock> exec_start;
-    if (this->context.trace_opcodes) {
+    if (this->context.trace_opcodes || this->context.instruction_profile) {
       exec_start = std::chrono::high_resolution_clock::now();
     }
 
@@ -2031,144 +2030,144 @@ void VM::run() {
       }
 
       case Opcode::Add: {
-        VALUE right = this->pop_stack().value_or(kNull);
-        VALUE left = this->pop_stack().value_or(kNull);
+        VALUE right = this->pop_stack();
+        VALUE left = this->pop_stack();
         this->push_stack(this->add(left, right));
         break;
       }
 
       case Opcode::Sub: {
-        VALUE right = this->pop_stack().value_or(kNull);
-        VALUE left = this->pop_stack().value_or(kNull);
+        VALUE right = this->pop_stack();
+        VALUE left = this->pop_stack();
         this->push_stack(this->sub(left, right));
         break;
       }
 
       case Opcode::Mul: {
-        VALUE right = this->pop_stack().value_or(kNull);
-        VALUE left = this->pop_stack().value_or(kNull);
+        VALUE right = this->pop_stack();
+        VALUE left = this->pop_stack();
         this->push_stack(this->mul(left, right));
         break;
       }
 
       case Opcode::Div: {
-        VALUE right = this->pop_stack().value_or(kNull);
-        VALUE left = this->pop_stack().value_or(kNull);
+        VALUE right = this->pop_stack();
+        VALUE left = this->pop_stack();
         this->push_stack(this->div(left, right));
         break;
       }
 
       case Opcode::Mod: {
-        VALUE right = this->pop_stack().value_or(kNull);
-        VALUE left = this->pop_stack().value_or(kNull);
+        VALUE right = this->pop_stack();
+        VALUE left = this->pop_stack();
         this->push_stack(this->mod(left, right));
         break;
       }
 
       case Opcode::Pow: {
-        VALUE right = this->pop_stack().value_or(kNull);
-        VALUE left = this->pop_stack().value_or(kNull);
+        VALUE right = this->pop_stack();
+        VALUE left = this->pop_stack();
         this->push_stack(this->pow(left, right));
         break;
       }
 
       case Opcode::UAdd: {
-        VALUE value = this->pop_stack().value_or(kNull);
+        VALUE value = this->pop_stack();
         this->push_stack(this->uadd(value));
         break;
       }
 
       case Opcode::USub: {
-        VALUE value = this->pop_stack().value_or(kNull);
+        VALUE value = this->pop_stack();
         this->push_stack(this->usub(value));
         break;
       }
 
       case Opcode::Eq: {
-        VALUE right = this->pop_stack().value_or(kNull);
-        VALUE left = this->pop_stack().value_or(kNull);
+        VALUE right = this->pop_stack();
+        VALUE left = this->pop_stack();
         this->push_stack(this->eq(left, right));
         break;
       }
 
       case Opcode::Neq: {
-        VALUE right = this->pop_stack().value_or(kNull);
-        VALUE left = this->pop_stack().value_or(kNull);
+        VALUE right = this->pop_stack();
+        VALUE left = this->pop_stack();
         this->push_stack(this->neq(left, right));
         break;
       }
 
       case Opcode::Lt: {
-        VALUE right = this->pop_stack().value_or(kNull);
-        VALUE left = this->pop_stack().value_or(kNull);
+        VALUE right = this->pop_stack();
+        VALUE left = this->pop_stack();
         this->push_stack(this->lt(left, right));
         break;
       }
 
       case Opcode::Gt: {
-        VALUE right = this->pop_stack().value_or(kNull);
-        VALUE left = this->pop_stack().value_or(kNull);
+        VALUE right = this->pop_stack();
+        VALUE left = this->pop_stack();
         this->push_stack(this->gt(left, right));
         break;
       }
 
       case Opcode::Le: {
-        VALUE right = this->pop_stack().value_or(kNull);
-        VALUE left = this->pop_stack().value_or(kNull);
+        VALUE right = this->pop_stack();
+        VALUE left = this->pop_stack();
         this->push_stack(this->le(left, right));
         break;
       }
 
       case Opcode::Ge: {
-        VALUE right = this->pop_stack().value_or(kNull);
-        VALUE left = this->pop_stack().value_or(kNull);
+        VALUE right = this->pop_stack();
+        VALUE left = this->pop_stack();
         this->push_stack(this->ge(left, right));
         break;
       }
 
       case Opcode::UNot: {
-        VALUE value = this->pop_stack().value_or(kNull);
+        VALUE value = this->pop_stack();
         this->push_stack(this->unot(value));
         break;
       }
 
       case Opcode::Shr: {
-        VALUE right = this->pop_stack().value_or(kNull);
-        VALUE left = this->pop_stack().value_or(kNull);
+        VALUE right = this->pop_stack();
+        VALUE left = this->pop_stack();
         this->push_stack(this->shr(left, right));
         break;
       }
 
       case Opcode::Shl: {
-        VALUE right = this->pop_stack().value_or(kNull);
-        VALUE left = this->pop_stack().value_or(kNull);
+        VALUE right = this->pop_stack();
+        VALUE left = this->pop_stack();
         this->push_stack(this->shl(left, right));
         break;
       }
 
       case Opcode::And: {
-        VALUE right = this->pop_stack().value_or(kNull);
-        VALUE left = this->pop_stack().value_or(kNull);
+        VALUE right = this->pop_stack();
+        VALUE left = this->pop_stack();
         this->push_stack(this->band(left, right));
         break;
       }
 
       case Opcode::Or: {
-        VALUE right = this->pop_stack().value_or(kNull);
-        VALUE left = this->pop_stack().value_or(kNull);
+        VALUE right = this->pop_stack();
+        VALUE left = this->pop_stack();
         this->push_stack(this->bor(left, right));
         break;
       }
 
       case Opcode::Xor: {
-        VALUE right = this->pop_stack().value_or(kNull);
-        VALUE left = this->pop_stack().value_or(kNull);
+        VALUE right = this->pop_stack();
+        VALUE left = this->pop_stack();
         this->push_stack(this->bxor(left, right));
         break;
       }
 
       case Opcode::UBNot: {
-        VALUE value = this->pop_stack().value_or(kNull);
+        VALUE value = this->pop_stack();
         this->push_stack(this->ubnot(value));
         break;
       }
@@ -2203,12 +2202,19 @@ void VM::run() {
     }
 
     // Show opcodes as they are executed if the corresponding flag was set
-    if (this->context.trace_opcodes) {
+
+    if (this->context.trace_opcodes || this->context.instruction_profile) {
       std::chrono::duration<double> exec_duration = std::chrono::high_resolution_clock::now() - exec_start;
-      this->context.out_stream << reinterpret_cast<void*>(old_ip) << ": " << kOpcodeMnemonics[opcode] << " ";
-      this->context.out_stream << " (";
-      this->context.out_stream << static_cast<uint32_t>(exec_duration.count() * 1000000000);
-      this->context.out_stream << " nanoseconds)" << '\n';
+      uint64_t duration_in_nanoseconds = static_cast<uint32_t>(exec_duration.count() * 1000000000);
+      if (this->context.trace_opcodes) {
+        this->context.out_stream << reinterpret_cast<void*>(old_ip) << ": " << kOpcodeMnemonics[opcode] << " ";
+        this->context.out_stream << " (" << duration_in_nanoseconds << " nanoseconds)" << '\n';
+      }
+
+      // Add an entry to the instruction profile if the corresponding flag was set
+      if (this->context.instruction_profile) {
+        this->instruction_profile.add_entry(opcode, duration_in_nanoseconds);
+      }
     }
   }
 }

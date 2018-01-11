@@ -1,5 +1,3 @@
-const write = Charly.internals.get_method
-
 let a = 0
 let b = 0
 
@@ -16,17 +14,12 @@ while (a < 60) {
     }
 
     if i == 99 {
-      write("#")
     } else if i <= 10 {
-      write(" ")
     } else {
-      write(".")
     }
 
     b += 1
   }
-
-  write("\n")
 
   b = 0
   a += 1

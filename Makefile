@@ -27,6 +27,7 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
 	@mkdir -p $(dir $@)
 	$(call colorecho, " Building $@", 2)
 	@$(CC) $(CFLAGS) $(INC) -c -o $@ $<
+	$(call colorecho, " Finished $@", 2)
 
 production:
 	$(call colorecho, " Building production binary $(TARGET)", 2)

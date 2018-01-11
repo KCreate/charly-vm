@@ -50,6 +50,7 @@ struct RunFlags {
   bool asm_no_branches = false;
   bool asm_no_func_branches = false;
   bool skip_execution = false;
+  bool instruction_profile = false;
   bool trace_opcodes = false;
   bool trace_catchtables = false;
   bool trace_frames = false;
@@ -188,6 +189,8 @@ struct RunFlags {
       this->trace_frames = true;
     if (!flag.compare("trace_gc"))
       this->trace_gc = true;
+    if (!flag.compare("instruction_profile"))
+      this->instruction_profile = true;
     this->flags.push_back(flag);
   }
 };
