@@ -1,11 +1,5 @@
-let i = 0
-let lim = 100
-
-func increase {
-  i += 1
+try {} catch(e) {
+  print(e)
 }
 
-while i < lim {
-  print(i)
-  increase()
-}
+throw 25

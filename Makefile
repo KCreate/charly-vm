@@ -3,6 +3,7 @@
 
 CC := clang
 OPT := -O0
+OPTPROD := -O3 -Ofast
 SRCDIR := src
 BUILDDIR := build
 INCLUDEDIR := include
@@ -13,25 +14,38 @@ HEADERS := $(shell find $(INCLUDEDIR) -type f -name *.$(HEADEREXT))
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/$(basename $(notdir %)),$(SOURCES:.$(SRCEXT)=.o))
 CPPSTD := c++17
-CFLAGS := -std=$(CPPSTD) -g -Wall -Wextra -Werror -Wno-unused-private-field -ferror-limit=50 $(OPT)
+CFLAGS := -std=$(CPPSTD) -g -Wall -Wextra -Werror -Wno-unused-private-field -ferror-limit=50
+CFLAGSPROD := -std=$(CPPSTD) -Wall -Wextra -Werror -Wno-unused-private-field -ferror-limit=1 -flto
 LFLAGS := -lm
 INC := -I libs -I $(INCLUDEDIR)
 LIB := -lstdc++
 
 $(TARGET): $(OBJECTS)
 	$(call colorecho, " Linking...", 2)
-	@$(CC) $(OBJECTS) $(CFLAGS) $(LIB) $(LFLAGS) -o $(TARGET)
+	@$(CC) $(OBJECTS) $(CFLAGS) $(OPT) $(LIB) $(LFLAGS) -o $(TARGET)
 	$(call colorecho, " Built executable $(TARGET)", 2)
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
 	@mkdir -p $(dir $@)
 	$(call colorecho, " Building $@", 2)
-	@$(CC) $(CFLAGS) $(INC) -c -o $@ $<
+	@$(CC) $(CFLAGS) $(OPT) $(INC) -c -o $@ $<
 	$(call colorecho, " Finished $@", 2)
 
 production:
 	$(call colorecho, " Building production binary $(TARGET)", 2)
-	@$(CC) $(SOURCES) $(CFLAGS) $(INC) $(LIB) $(LFLAGS) -flto -O3 -o $(TARGET)
+	$(CC) $(SOURCES) $(CFLAGSPROD) $(OPTPROD) $(INC) $(LIB) $(LFLAGS) -o $(TARGET)
+
+profiledproduction:
+	$(call colorecho, " Building profiling production binary $(TARGET)", 2)
+	@$(CC) $(SOURCES) $(CFLAGSPROD) $(OPTPROD) $(INC) $(LIB) $(LFLAGS) -fprofile-instr-generate=default.profraw -o $(TARGET)
+	$(call colorecho, " Running runtime profiler", 2)
+	@$(TARGET) examples/runtime-profiler.ch
+	$(call colorecho, " Converting profile to clang format", 2)
+	@llvm-profdata merge -output=code.profdata default.profraw
+	$(call colorecho, " Building profile guided production binary", 2)
+	@$(CC) $(SOURCES) $(CFLAGSPROD) $(OPTPROD) $(INC) $(LIB) $(LFLAGS) -fprofile-instr-use=code.profdata -o $(TARGET)
+	@rm code.profdata default.profraw
+	$(call colorecho, " Finished profile guided production binary", 2)
 
 clean:
 	$(call colorecho, " Cleaning...", 2)
