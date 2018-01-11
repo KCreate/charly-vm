@@ -1064,7 +1064,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   // the frames environment
   //
   // We add 1 to the index as that's the index of the arguments array
-  for (int i = 0; i < static_cast<int>(function->argc); i++) {
+  for (int i = 0; i < static_cast<int>(argc); i++) {
     frame->environment[i + 1] = argv[i];
     arguments_array->data->push_back(argv[i]);
   }
@@ -1169,6 +1169,7 @@ void VM::op_readarrayindex(uint32_t index) {
   // Out-of-bounds checking
   if (index >= arr->data->size()) {
     this->push_stack(kNull);
+    return;
   }
 
   this->push_stack((*arr->data)[index]);
