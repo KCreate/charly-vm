@@ -1823,7 +1823,7 @@ void VM::run() {
   // and the machine wasn't halted
   while (this->ip && !this->halted) {
     std::chrono::time_point<std::chrono::high_resolution_clock> exec_start;
-    if (this->context.trace_opcodes || this->context.instruction_profile) {
+    if (this->context.instruction_profile) {
       exec_start = std::chrono::high_resolution_clock::now();
     }
 
@@ -1836,6 +1836,16 @@ void VM::run() {
     // Fetch the current opcode
     Opcode opcode = this->fetch_instruction();
     uint32_t instruction_length = kInstructionLengths[opcode];
+
+    // Show opcodes as they are executed if the corresponding flag was set
+    if (this->context.trace_opcodes) {
+      this->context.out_stream << std::setw(12);
+      this->context.out_stream.fill('0');
+      this->context.out_stream << reinterpret_cast<void*>(old_ip);
+      this->context.out_stream << std::setw(1);
+      this->context.out_stream.fill(' ');
+      this->context.out_stream << ": " << kOpcodeMnemonics[opcode] << '\n';
+    }
 
     // Redirect to specific instruction handler
     switch (opcode) {
@@ -2211,21 +2221,10 @@ void VM::run() {
       this->ip += instruction_length;
     }
 
-    // Show opcodes as they are executed if the corresponding flag was set
-    if (this->context.trace_opcodes || this->context.instruction_profile) {
+    // Add an entry to the instruction profile with the time it took to execute this instruction
+    if (this->context.instruction_profile) {
       std::chrono::duration<double> exec_duration = std::chrono::high_resolution_clock::now() - exec_start;
       uint64_t duration_in_nanoseconds = static_cast<uint32_t>(exec_duration.count() * 1000000000);
-      if (this->context.trace_opcodes) {
-        this->context.out_stream << std::setw(12);
-        this->context.out_stream.fill('0');
-        this->context.out_stream << reinterpret_cast<void*>(old_ip);
-        this->context.out_stream << std::setw(1);
-        this->context.out_stream.fill(' ');
-        this->context.out_stream << ": " << kOpcodeMnemonics[opcode] << " ";
-        this->context.out_stream << " (" << duration_in_nanoseconds << " nanoseconds)" << '\n';
-      }
-
-      // Add an entry to the instruction profile if the corresponding flag was set
       if (this->context.instruction_profile) {
         this->instruction_profile.add_entry(opcode, duration_in_nanoseconds);
       }
