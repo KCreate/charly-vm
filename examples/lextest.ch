@@ -1,5 +1,8 @@
-try {} catch(e) {
-  print(e)
-}
+const module = require("examples/test-require.ch")
 
-throw 25
+print(module.read())
+module.write("hello world")
+print(module.read())
+
+const leonard = module.someclass("leonard", 17)
+leonard.method()

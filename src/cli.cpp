@@ -92,12 +92,16 @@ int CLI::run() {
 
   // Create the compiler
   CompilerConfig cconfig = {
-      .known_top_level_constants = {"require_no_exec", "require", "Object", "Class", "Array",  "String", "Number",
+      .known_top_level_constants = {"require", "Object", "Class", "Array",  "String", "Number",
                                     "Function",        "Boolean", "Null",   "stdin", "stdout", "stderr", "print",
                                     "write",           "gets",    "getc",   "exit",  "sleep",  "Charly"},
       .wrap_inclusion_function = true,
       .flags = this->flags};
-  CompilerContext compiler_context;
+
+  SymbolTable symtable;
+  StringPool stringpool;
+
+  CompilerContext compiler_context(symtable, stringpool);
   Compiler compiler(compiler_context, cconfig);
 
   // Compile the userfile
@@ -162,6 +166,7 @@ int CLI::run() {
       {.initial_heap_count = 8, .heap_cell_count = 512, .heap_growth_factor = 1.5, .trace = this->flags.trace_gc});
   VMContext context({.symtable = compiler_context.symtable,
                      .stringpool = compiler_context.stringpool,
+                     .compiler_config = cconfig,
                      .gc = gc,
                      .instruction_profile = this->flags.instruction_profile,
                      .trace_opcodes = this->flags.trace_opcodes,

@@ -64,8 +64,11 @@ struct CompilerResult {
 
 // Context for multiple compilations
 struct CompilerContext {
-  SymbolTable symtable;
-  StringPool stringpool;
+  SymbolTable& symtable;
+  StringPool& stringpool;
+
+  CompilerContext(SymbolTable& st, StringPool& sp) : symtable(st), stringpool(sp) {
+  }
 };
 
 // Configuration passed to the compiler

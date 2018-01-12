@@ -44,8 +44,7 @@ void Disassembler::dump(std::ostream& stream) {
 
     // Print the offset
     if (!this->flags.no_offsets) {
-      int minimum_hex_digits = std::ceil(std::log(this->block->get_writeoffset()) / std::log(16));
-      this->print_hex(offset, stream, minimum_hex_digits + 1);
+      this->print_hex(reinterpret_cast<uint64_t>(this->block->get_data() + offset), stream, 12);
       stream << ": ";
     }
 

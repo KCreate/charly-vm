@@ -30,6 +30,7 @@
 #include <functional>
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 
 #include "gc.h"
 #include "managedcontext.h"
@@ -1055,7 +1056,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   // don't compute a return address
   uint8_t* return_address = nullptr;
   if (this->ip != nullptr)
-    return_address = this->ip + kInstructionLengths[Opcode::Call];
+    return_address = this->ip + kInstructionLengths[this->fetch_instruction()];
   Frame* frame = this->create_frame(self, function, return_address, halt_after_return);
 
   Array* arguments_array = reinterpret_cast<Array*>(this->create_array(argc));
@@ -1083,6 +1084,10 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
     return;
   }
 
+  // We keep a reference to the current catchtable around in case the constructor throws an exception
+  // After the constructor call we check if the table changed
+  CatchTable* original_catchtable = this->catchstack;
+
   VALUE rv = kNull;
 
   // TODO: Expand this to 15 arguments
@@ -1099,7 +1104,13 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
     }
   }
 
-  this->push_stack(rv);
+  // The cfunction call might have halted the machine by either executing a module
+  // or calling a user defined function
+  this->halted = false;
+
+  if (this->catchstack == original_catchtable) {
+    this->push_stack(rv);
+  }
 }
 
 void VM::call_class(Class* klass, uint32_t argc, VALUE* argv) {
@@ -1797,8 +1808,10 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
 void VM::panic(STATUS reason) {
   this->context.out_stream << "Panic: " << kStatusHumanReadable[reason] << '\n';
-  this->context.out_stream << "Stacktrace:" << '\n';
+  this->context.out_stream << '\n' << "Stacktrace:" << '\n';
   this->stacktrace(this->context.out_stream);
+  this->context.out_stream << '\n' << "Stackdump:" << '\n';
+  this->stackdump(this->context.out_stream);
 
   exit(1);
 }
@@ -2178,9 +2191,6 @@ void VM::run() {
       }
 
       case Opcode::GCCollect: {
-        this->context.gc.mark(this->stack);
-        this->context.gc.mark(this->frames);
-        this->context.gc.mark(this->catchstack);
         this->context.gc.collect();
         break;
       }
@@ -2202,12 +2212,16 @@ void VM::run() {
     }
 
     // Show opcodes as they are executed if the corresponding flag was set
-
     if (this->context.trace_opcodes || this->context.instruction_profile) {
       std::chrono::duration<double> exec_duration = std::chrono::high_resolution_clock::now() - exec_start;
       uint64_t duration_in_nanoseconds = static_cast<uint32_t>(exec_duration.count() * 1000000000);
       if (this->context.trace_opcodes) {
-        this->context.out_stream << reinterpret_cast<void*>(old_ip) << ": " << kOpcodeMnemonics[opcode] << " ";
+        this->context.out_stream << std::setw(12);
+        this->context.out_stream.fill('0');
+        this->context.out_stream << reinterpret_cast<void*>(old_ip);
+        this->context.out_stream << std::setw(1);
+        this->context.out_stream.fill(' ');
+        this->context.out_stream << ": " << kOpcodeMnemonics[opcode] << " ";
         this->context.out_stream << " (" << duration_in_nanoseconds << " nanoseconds)" << '\n';
       }
 
@@ -2226,47 +2240,47 @@ void VM::exec_prelude() {
   //     get_method: <Internals::get_method>
   //   }
   // }
-  this->create_frame(kNull, this->frames, 20, nullptr);
+  this->top_frame = this->create_frame(kNull, this->frames, 19, nullptr);
   this->op_putcfunction(this->context.symtable("get_method"), reinterpret_cast<uintptr_t>(Internals::get_method), 1);
   this->op_putvalue(this->context.symtable("get_method"));
   this->op_puthash(1);
   this->op_putvalue(this->context.symtable("internals"));
   this->op_puthash(1);
-  this->op_setlocal(19, 0);
+  this->op_setlocal(18, 0);
+  this->op_pop();
+
+  // require = <Internals::require>
+  this->op_putcfunction(this->context.symtable("require"), reinterpret_cast<uintptr_t>(Internals::require), 1);
+  this->op_setlocal(0, 0);
+  this->op_pop();
 
   // write = <Internals::write>
   this->op_putcfunction(this->context.symtable("write"), reinterpret_cast<uintptr_t>(Internals::write), 1);
-  this->op_setlocal(14, 0);
+  this->op_setlocal(13, 0);
+  this->op_pop();
 
   // print = <Internals::print>
   this->op_putcfunction(this->context.symtable("print"), reinterpret_cast<uintptr_t>(Internals::print), 1);
-  this->op_setlocal(13, 0);
-
+  this->op_setlocal(12, 0);
   this->op_pop();
 }
 
 void VM::exec_block(InstructionBlock* block) {
-  // Calculate the return address
-  uint8_t* return_address = nullptr;
-  if (this->ip != nullptr) {
-    Opcode opcode = this->fetch_instruction();
-    uint32_t instruction_length = kInstructionLengths[opcode];
-    return_address = this->ip + instruction_length;
-  }
-
-  // Execute the block and reset the instruction pointer afterwards
+  uint8_t* old_ip = this->ip;
   this->ip = block->get_data();
   this->run();
-  this->ip = return_address;
+  this->ip = old_ip;
 }
 
 void VM::exec_module(InstructionBlock* block) {
   ManagedContext lalloc(*this);
+  Object* export_obj = reinterpret_cast<Object*>(lalloc.create_object(0));
 
   // Execute the module inclusion function
   this->exec_block(block);
-  this->push_stack(lalloc.create_object(0));
+  this->push_stack(reinterpret_cast<VALUE>(export_obj));
   this->op_call(1);
+  this->frames->parent_environment_frame = this->top_frame;
   this->run();
 }
 }  // namespace Charly

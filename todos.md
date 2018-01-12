@@ -167,6 +167,14 @@
   - Not an excuse, but reduces it's priority to be fixed
 - Template schenanigans could register AST nodes in a pool which would be cleared if an exception occurs
 
+# Deallocation logic for results created by lexer, parser and compiler
+- Unified way to correctly deallocate all the stuff created by the lexer, parser and compiler classes
+- Error handling
+- Come up with a nice interface to the Compiler
+  - Users shouldn't have to read and open the file themselves, rather the interface should do that
+  - Parse automatically
+  - Write errors to a given stream
+
 # Extra syntax for variadic functions
 - Only insert the `arguments` array into functions which need it.
   - Special syntax for functions that receive a variable amount of arguments

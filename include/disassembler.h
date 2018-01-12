@@ -96,6 +96,9 @@ public:
     }
   }
 
+  ~Disassembler() {
+  }
+
   void dump(std::ostream& stream);
 
 private:

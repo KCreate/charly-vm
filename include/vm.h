@@ -37,6 +37,10 @@
 #include "symboltable.h"
 #include "value.h"
 
+#include "parser.h"
+#include "compiler.h"
+#include "sourcefile.h"
+
 #pragma once
 
 namespace Charly {
@@ -71,6 +75,8 @@ struct VMContext {
   StringPool& stringpool;
   GarbageCollector& gc;
 
+  Compilation::CompilerConfig& compiler_config;
+
   bool instruction_profile = false;
   bool trace_opcodes = false;
   bool trace_catchtables = false;
@@ -88,6 +94,7 @@ public:
   VM(VMContext& ctx) : context(ctx), frames(nullptr), catchstack(nullptr), ip(nullptr), halted(false) {
     ctx.gc.mark_ptr_persistent(reinterpret_cast<VALUE**>(&this->frames));
     ctx.gc.mark_ptr_persistent(reinterpret_cast<VALUE**>(&this->catchstack));
+    ctx.gc.mark_ptr_persistent(reinterpret_cast<VALUE**>(&this->top_frame));
     ctx.gc.mark_vector_ptr_persistent(&this->stack);
     this->exec_prelude();
   }
@@ -96,6 +103,7 @@ public:
   ~VM() {
     this->context.gc.unmark_ptr_persistent(reinterpret_cast<VALUE**>(&this->frames));
     this->context.gc.unmark_ptr_persistent(reinterpret_cast<VALUE**>(&this->catchstack));
+    this->context.gc.unmark_ptr_persistent(reinterpret_cast<VALUE**>(&this->top_frame));
     this->context.gc.unmark_vector_ptr_persistent(&this->stack);
     this->context.gc.collect();
   }
@@ -252,9 +260,19 @@ public:
   VMInstructionProfile instruction_profile;
 
 private:
+
+  // Used to avoid an overflow when printing cyclic data structures
   std::vector<VALUE> pretty_print_stack;
+
+  // Holds a pointer to the upper-most environment frame
+  // When executing new modules, their parent environment frame is set to
+  // this frame, so they are not able to interact with the calling module
+  //
+  // Both modules can still communicate with each other via the several global
+  // objects & methods.
+  Frame* top_frame;
+
   std::vector<VALUE> stack;
-  std::unordered_map<VALUE, VALUE> primitives_classes;
   Frame* frames;
   CatchTable* catchstack;
   uint8_t* ip;
