@@ -1,3 +1,10 @@
+// The purpose of this file is to touch every instruction supported by the machine at least once
+// It is used as the sample file when compiling the production binary using the
+// profile guided optimization flags for clang
+//
+// Usage:
+// make profiledproduction
+
 let i = 0
 let iterations = 100000
 

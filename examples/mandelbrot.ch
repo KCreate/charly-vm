@@ -1,3 +1,5 @@
+// Prints a 180x60 image of the mandelbrot set into the console
+
 let a = 0
 let b = 0
 
