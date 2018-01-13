@@ -62,14 +62,8 @@ protected:
   }
 
 public:
-  CompilerPass(CompilerContext& c,
-               CompilerConfig& cfg,
-               CompilerResult& r)
-             :
-               TreeWalker(),
-               context(c),
-               config(cfg),
-               result(r) {
+  CompilerPass(CompilerContext& c, CompilerConfig& cfg, CompilerResult& r)
+      : TreeWalker(), context(c), config(cfg), result(r) {
   }
 };
 }  // namespace Charly::Compilation

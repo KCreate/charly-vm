@@ -24,10 +24,10 @@
  * SOFTWARE.
  */
 
-#include <list>
-#include <vector>
-#include <unordered_map>
 #include <cmath>
+#include <list>
+#include <unordered_map>
+#include <vector>
 
 #include "normalizer.h"
 

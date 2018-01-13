@@ -37,7 +37,6 @@ using namespace std;
 namespace Charly {
 namespace Internals {
 VALUE require(VM& vm, VALUE vfilename) {
-
   // TODO: Deallocate stuff on error
 
   // Make sure we got a string as filename

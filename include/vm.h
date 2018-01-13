@@ -37,8 +37,8 @@
 #include "symboltable.h"
 #include "value.h"
 
-#include "parser.h"
 #include "compiler.h"
+#include "parser.h"
 #include "sourcefile.h"
 
 #pragma once
@@ -260,7 +260,6 @@ public:
   VMInstructionProfile instruction_profile;
 
 private:
-
   // Used to avoid an overflow when printing cyclic data structures
   std::vector<VALUE> pretty_print_stack;
 

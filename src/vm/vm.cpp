@@ -28,9 +28,9 @@
 #include <chrono>
 #include <cmath>
 #include <functional>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
-#include <iomanip>
 
 #include "gc.h"
 #include "managedcontext.h"
@@ -1114,7 +1114,6 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
 }
 
 void VM::call_class(Class* klass, uint32_t argc, VALUE* argv) {
-
   // We keep a reference to the current catchtable around in case the constructor throws an exception
   // After the constructor call we check if the table changed
   CatchTable* original_catchtable = this->catchstack;
@@ -1125,12 +1124,13 @@ void VM::call_class(Class* klass, uint32_t argc, VALUE* argv) {
   // Initialize object
   object->klass = reinterpret_cast<VALUE>(klass);
   for (auto field : *klass->member_properties) {
-    (* object->container)[field] = kNull;
+    (*object->container)[field] = kNull;
   }
 
   // If we have a constructor, call it with the object
   if (klass->constructor != kNull) {
-    this->call_function(reinterpret_cast<Function*>(klass->constructor), argc, argv, reinterpret_cast<VALUE>(object), true);
+    this->call_function(reinterpret_cast<Function*>(klass->constructor), argc, argv, reinterpret_cast<VALUE>(object),
+                        true);
     this->run();
     this->halted = false;
   }
@@ -2233,7 +2233,6 @@ void VM::run() {
 }
 
 void VM::exec_prelude() {
-
   // Charly = {
   //   internals: {
   //     get_method: <Internals::get_method>

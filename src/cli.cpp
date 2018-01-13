@@ -91,12 +91,11 @@ int CLI::run() {
   }
 
   // Create the compiler
-  CompilerConfig cconfig = {
-      .known_top_level_constants = {"require", "Object", "Class", "Array",  "String", "Number",
-                                    "Function",        "Boolean", "Null",   "stdin", "stdout", "stderr", "print",
-                                    "write",           "gets",    "getc",   "exit",  "sleep",  "Charly"},
-      .wrap_inclusion_function = true,
-      .flags = this->flags};
+  CompilerConfig cconfig = {.known_top_level_constants = {"require", "Object", "Class", "Array", "String", "Number",
+                                                          "Function", "Boolean", "Null", "stdin", "stdout", "stderr",
+                                                          "print", "write", "gets", "getc", "exit", "sleep", "Charly"},
+                            .wrap_inclusion_function = true,
+                            .flags = this->flags};
 
   SymbolTable symtable;
   StringPool stringpool;

@@ -1247,13 +1247,7 @@ struct Class : public AbstractNode {
   NodeList* static_functions;
   NodeList* parents;
 
-  Class(const std::string& n,
-        AbstractNode* c,
-        NodeList* mp,
-        NodeList* mf,
-        NodeList* sp,
-        NodeList* sf,
-        NodeList* p)
+  Class(const std::string& n, AbstractNode* c, NodeList* mp, NodeList* mf, NodeList* sp, NodeList* sf, NodeList* p)
       : name(n),
         constructor(c),
         member_properties(mp),
