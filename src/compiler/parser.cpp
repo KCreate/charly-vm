@@ -152,20 +152,33 @@ AST::AbstractNode* Parser::parse_program() {
 }
 
 AST::AbstractNode* Parser::parse_block() {
-  AST::Block* block = new AST::Block();
-
   std::optional<Location> location_start;
   std::optional<Location> end_location;
 
-  this->expect_token(TokenType::LeftCurly, [&]() { location_start = this->token.location; });
+  AST::Block* block = new AST::Block();
 
+  this->expect_token(TokenType::LeftCurly, [&]() { location_start = this->token.location; });
   while (this->token.type != TokenType::RightCurly) {
     block->append_node(this->parse_statement());
   }
-
   this->expect_token(TokenType::RightCurly, [&]() { end_location = this->token.location; });
 
   return block->at(location_start, end_location);
+}
+
+AST::AbstractNode* Parser::parse_ignore_const() {
+  std::optional<Location> location_start = this->token.location;
+
+  bool ignore_const = false;
+  if (this->token.type == TokenType::IgnoreConst) {
+    this->advance();
+    ignore_const = true;
+  }
+
+  AST::Block* block = this->parse_block()->as<AST::Block>();
+  block->ignore_const = ignore_const;
+  block->location_start = location_start;
+  return block->as<AST::AbstractNode>();
 }
 
 AST::AbstractNode* Parser::parse_statement() {
@@ -245,6 +258,9 @@ AST::AbstractNode* Parser::parse_statement() {
     }
     case TokenType::Switch: {
       return this->parse_switch_statement();
+    }
+    case TokenType::IgnoreConst: {
+      return this->parse_ignore_const();
     }
     default: { return this->parse_control_statement(); }
   }

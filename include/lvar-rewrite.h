@@ -58,5 +58,6 @@ private:
   uint32_t depth = 0;
   uint64_t blockid = 0;
   IRScope* scope = nullptr;
+  bool ignore_const_assignment = true;
 };
 }  // namespace Charly::Compilation

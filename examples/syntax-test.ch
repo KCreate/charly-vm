@@ -69,6 +69,12 @@ func _myfunc1(a) { a }
 func _myfunc2(a) = a
 func _myfunc3(a) = return a
 
+// Ignoring const assignment
+const _myconst = 25
+ignoreconst {
+  _myconst = 25
+}
+
 // Arrow functions
 ->a
 ->{ a }

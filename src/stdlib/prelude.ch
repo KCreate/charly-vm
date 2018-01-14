@@ -1,7 +1,9 @@
-print("inside the prelude")
+ignoreconst {
+  print("inside the prelude")
 
-Object = class {
-  func method {
-    print("calling method on an object")
+  Object = class {
+    func method {
+      print("calling method on an object")
+    }
   }
 }

@@ -188,6 +188,7 @@ struct NodeList : public AbstractNode {
 // }
 struct Block : public AbstractNode {
   std::list<AbstractNode*> statements;
+  bool ignore_const = false;
 
   Block() {
   }

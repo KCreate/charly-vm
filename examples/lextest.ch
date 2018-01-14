@@ -6,3 +6,5 @@ print(module.read())
 
 const leonard = module.someclass("leonard", 17)
 leonard.method()
+
+print(Object)

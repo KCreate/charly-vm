@@ -58,10 +58,13 @@ AST::AbstractNode* LVarRewriter::visit_block(AST::Block* node, VisitContinue des
   uint64_t backup_blockid = this->blockid;
   this->blockid = reinterpret_cast<uint64_t>(node);
   this->depth += 1;
+  bool backup_ignore_const_assignment = this->ignore_const_assignment;
+  this->ignore_const_assignment = this->ignore_const_assignment || node->ignore_const;
   descend();
   this->scope->pop_blockid(this->blockid);
   this->depth -= 1;
   this->blockid = backup_blockid;
+  this->ignore_const_assignment = backup_ignore_const_assignment;
   return node;
 }
 
@@ -197,7 +200,7 @@ AST::AbstractNode* LVarRewriter::visit_assignment(AST::Assignment* node, VisitCo
     return node;
   }
 
-  if (result->is_constant) {
+  if (result->is_constant && !this->ignore_const_assignment) {
     this->push_error(node, "Assignment to constant variable: " + node->target);
     return node;
   }

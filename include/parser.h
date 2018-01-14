@@ -83,6 +83,7 @@ public:
   // Parse methods
   AST::AbstractNode* parse_program();
   AST::AbstractNode* parse_block();
+  AST::AbstractNode* parse_ignore_const();
   AST::AbstractNode* parse_statement();
   AST::AbstractNode* parse_control_statement();
   AST::AbstractNode* parse_class_statement();
