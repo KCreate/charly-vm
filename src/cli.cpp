@@ -67,94 +67,27 @@ int CLI::run() {
     return 1;
   }
   std::string source_string((std::istreambuf_iterator<char>(inputfile)), std::istreambuf_iterator<char>());
-  SourceFile userfile(this->flags.arguments[0], source_string);
 
-  // Parse the userfile
-  Parser parser(userfile);
-  ParserResult parse_result = parser.parse();
+  // Read the prelude
+  char* stdlibpath = std::getenv("CHARLYVMDIR");
+  std::string preludepath = std::string(stdlibpath) + "/src/stdlib/prelude.ch";
+  std::ifstream preludefile(preludepath);
+  if (!preludefile.is_open()) {
+    std::cerr << "Could not open prelude" << '\n';
+    return 1;
+  }
+  std::string prelude_string((std::istreambuf_iterator<char>(preludefile)), std::istreambuf_iterator<char>());
 
-  // Check for syntax errors
-  if (parse_result.syntax_error.has_value()) {
-    std::cerr << parse_result.syntax_error->message << " ";
-    parse_result.syntax_error->location.write_to_stream(std::cerr);
-    std::cerr << '\n';
+  CompilerManager cmanager(this->flags);
+  auto cresult_userfile = cmanager.compile(this->flags.arguments[0], source_string);
+  auto cresult_prelude = cmanager.compile("prelude.ch", prelude_string);
+
+  if (!cresult_userfile.has_value()) {
     return 1;
   }
 
-  // Dump tokens if the flag was set
-  if (this->flags.dump_tokens) {
-    auto& tokens = parse_result.tokens.value();
-    for (const auto& token : tokens) {
-      token.write_to_stream(std::cout);
-      std::cout << '\n';
-    }
-  }
-
-  // Create the compiler
-  CompilerConfig cconfig = {.known_top_level_constants = {"require", "Object", "Class", "Array", "String", "Number",
-                                                          "Function", "Boolean", "Null", "stdin", "stdout", "stderr",
-                                                          "print", "write", "gets", "getc", "exit", "sleep", "Charly"},
-                            .wrap_inclusion_function = true,
-                            .flags = this->flags};
-
-  SymbolTable symtable;
-  StringPool stringpool;
-
-  CompilerContext compiler_context(symtable, stringpool);
-  Compiler compiler(compiler_context, cconfig);
-
-  // Compile the userfile
-  CompilerResult compiler_result = compiler.compile(parse_result.abstract_syntax_tree.value());
-
-  // Dump the ast if the flag was set
-  if (this->flags.dump_ast) {
-    compiler_result.abstract_syntax_tree->dump(std::cout);
-  }
-
-  // Show any infos, warnings or errors
-  if (compiler_result.messages.size() > 0) {
-    for (const auto& message : compiler_result.messages) {
-      std::string severity;
-
-      switch (message.severity) {
-        case CompilerMessage::Severity::Info: {
-          severity = "info";
-          break;
-        }
-        case CompilerMessage::Severity::Warning: {
-          severity = "warning";
-          break;
-        }
-        case CompilerMessage::Severity::Error: {
-          severity = "error";
-          break;
-        }
-      }
-
-      if (message.node.has_value()) {
-        AST::AbstractNode* msg_node = message.node.value();
-
-        if (msg_node->location_start.has_value()) {
-          msg_node->location_start.value().write_to_stream(std::cerr);
-          std::cerr << ": ";
-        }
-      }
-
-      std::cerr << severity << ": " << message.message << '\n';
-    }
-
-    if (compiler_result.has_errors) {
-      return 1;
-    }
-  }
-
-  // Dump a disassembly of the compiled block
-  if (this->flags.dump_asm) {
-    Disassembler::Flags disassembler_flags = Disassembler::Flags({.no_branches = this->flags.asm_no_branches,
-                                                                  .no_func_branches = this->flags.asm_no_func_branches,
-                                                                  .no_offsets = this->flags.asm_no_offsets});
-    Disassembler disassembler(compiler_result.instructionblock.value(), disassembler_flags, &compiler_context);
-    disassembler.dump(std::cout);
+  if (!cresult_prelude.has_value()) {
+    return 1;
   }
 
   if (this->flags.skip_execution) {
@@ -163,18 +96,17 @@ int CLI::run() {
 
   GarbageCollector gc(
       {.initial_heap_count = 8, .heap_cell_count = 512, .heap_growth_factor = 1.5, .trace = this->flags.trace_gc});
-  VMContext context({.symtable = compiler_context.symtable,
-                     .stringpool = compiler_context.stringpool,
-                     .compiler_config = cconfig,
+  VMContext context({.symtable = cmanager.symtable,
+                     .stringpool = cmanager.stringpool,
+                     .compiler_manager = cmanager,
                      .gc = gc,
                      .instruction_profile = this->flags.instruction_profile,
                      .trace_opcodes = this->flags.trace_opcodes,
                      .trace_catchtables = this->flags.trace_catchtables,
-                     .trace_frames = this->flags.trace_frames,
-                     .out_stream = std::cout,
-                     .err_stream = std::cerr});
+                     .trace_frames = this->flags.trace_frames});
   VM vm(context);
-  vm.exec_module(compiler_result.instructionblock.value());
+  vm.exec_module(cresult_prelude->instructionblock.value());
+  vm.exec_module(cresult_userfile->instructionblock.value());
 
   // Display the instruction profile if requested
   if (this->flags.instruction_profile) {

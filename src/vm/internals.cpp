@@ -54,25 +54,15 @@ VALUE require(VM& vm, VALUE vfilename) {
     return kNull;
   }
   std::string source_string((std::istreambuf_iterator<char>(inputfile)), std::istreambuf_iterator<char>());
-  SourceFile userfile(filename, source_string);
-  Compilation::Parser parser(userfile);
-  Compilation::ParserResult parse_result = parser.parse();
 
-  if (parse_result.syntax_error.has_value()) {
-    vm.throw_exception("require: syntax errors in " + filename);
+  auto cresult = vm.context.compiler_manager.compile(filename, source_string);
+
+  if (!cresult.has_value()) {
+    vm.throw_exception("require: could not compile " + filename);
     return kNull;
   }
 
-  Compilation::CompilerContext compiler_context(vm.context.symtable, vm.context.stringpool);
-  Compilation::Compiler compiler(compiler_context, vm.context.compiler_config);
-  Compilation::CompilerResult compiler_result = compiler.compile(parse_result.abstract_syntax_tree.value());
-
-  if (compiler_result.messages.size() > 0) {
-    vm.throw_exception("require: compilation errors in " + filename);
-    return kNull;
-  }
-
-  vm.exec_module(compiler_result.instructionblock.value());
+  vm.exec_module(cresult->instructionblock.value());
   return vm.pop_stack();
 }
 

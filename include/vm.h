@@ -37,6 +37,7 @@
 #include "symboltable.h"
 #include "value.h"
 
+#include "compiler-manager.h"
 #include "compiler.h"
 #include "parser.h"
 #include "sourcefile.h"
@@ -73,17 +74,16 @@ public:
 struct VMContext {
   SymbolTable& symtable;
   StringPool& stringpool;
+  Compilation::CompilerManager& compiler_manager;
   GarbageCollector& gc;
-
-  Compilation::CompilerConfig& compiler_config;
 
   bool instruction_profile = false;
   bool trace_opcodes = false;
   bool trace_catchtables = false;
   bool trace_frames = false;
 
-  std::ostream& out_stream;
-  std::ostream& err_stream;
+  std::ostream& out_stream = std::cout;
+  std::ostream& err_stream = std::cerr;
 };
 
 class VM {
