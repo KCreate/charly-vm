@@ -199,7 +199,7 @@ void VM::unwind_catchstack() {
 VALUE VM::create_object(uint32_t initial_capacity) {
   MemoryCell* cell = this->context.gc.allocate();
   cell->basic.set_type(kTypeObject);
-  cell->object.klass = kNull;
+  cell->object.klass = this->primitive_object;
   cell->object.container = new std::unordered_map<VALUE, VALUE>();
   cell->object.container->reserve(initial_capacity);
   return cell->as_value();
@@ -885,7 +885,12 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
     }
   }
 
-  return kNull;
+  auto primitive_lookup = this->findprimitivevalue(source, symbol);
+  if (primitive_lookup.has_value()) {
+    return primitive_lookup.value();
+  } else {
+    return kNull;
+  }
 }
 
 VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
@@ -943,6 +948,41 @@ std::optional<VALUE> VM::findprototypevalue(Class* klass, VALUE symbol) {
         }
       }
     }
+  }
+
+  return result;
+}
+
+std::optional<VALUE> VM::findprimitivevalue(VALUE value, VALUE symbol) {
+  std::optional<VALUE> result;
+
+  // Get the corresponding primitive class
+  VALUE found_primitive_class = kNull;
+  switch (VM::type(value)) {
+    case kTypeNumeric: found_primitive_class = this->primitive_number; break;
+    case kTypeString: found_primitive_class = this->primitive_string; break;
+    case kTypeBoolean: found_primitive_class = this->primitive_boolean; break;
+    case kTypeNull: found_primitive_class = this->primitive_null; break;
+    case kTypeArray: found_primitive_class = this->primitive_array; break;
+    case kTypeFunction: found_primitive_class = this->primitive_function; break;
+    case kTypeClass: found_primitive_class = this->primitive_class; break;
+  }
+
+  if (VM::type(found_primitive_class) != kTypeClass) {
+    return std::nullopt;
+  }
+
+  Class* pclass = reinterpret_cast<Class*>(found_primitive_class);
+  result = this->findprototypevalue(pclass, symbol);
+
+  if (!result.has_value() && VM::real_type(value) != kTypeObject) {
+    found_primitive_class = this->primitive_object;
+    if (VM::type(found_primitive_class) != kTypeClass) {
+      return std::nullopt;
+    }
+
+    pclass = reinterpret_cast<Class*>(found_primitive_class);
+    result = this->findprototypevalue(pclass, symbol);
   }
 
   return result;

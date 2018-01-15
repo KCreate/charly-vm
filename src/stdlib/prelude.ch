@@ -11,4 +11,25 @@ ignoreconst {
   Charly.internals.set_primitive_function = Charly.internals.get_method("set_primitive_function")
   Charly.internals.set_primitive_boolean = Charly.internals.get_method("set_primitive_boolean")
   Charly.internals.set_primitive_null = Charly.internals.get_method("set_primitive_null")
+
+  Object = class Object {
+    func tap(cb) {
+      cb(self)
+    }
+  }
+  Charly.internals.set_primitive_object(Object);
+
+  Number = class Number {
+    func times(cb) {
+      let i = 0
+
+      while i < self {
+        cb(i)
+        i += 1
+      }
+
+      null
+    }
+  }
+  Charly.internals.set_primitive_number(Number);
 }

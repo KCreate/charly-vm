@@ -192,6 +192,7 @@ public:
   VALUE readmembersymbol(VALUE source, VALUE symbol);
   VALUE setmembersymbol(VALUE target, VALUE symbol, VALUE value);
   std::optional<VALUE> findprototypevalue(Class* source, VALUE symbol);
+  std::optional<VALUE> findprimitivevalue(VALUE value, VALUE symbol);
   void call(uint32_t argc, bool with_target, bool halt_after_return = false);
   void call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self, bool halt_after_return = false);
   void call_cfunction(CFunction* function, uint32_t argc, VALUE* argv);

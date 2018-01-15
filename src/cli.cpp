@@ -60,6 +60,8 @@ int CLI::run() {
     return 1;
   }
 
+  this->flags.dump_files_include.push_back(this->flags.arguments[0]);
+
   // Read the userfile
   std::ifstream inputfile(this->flags.arguments[0]);
   if (!inputfile.is_open()) {

@@ -1,29 +1,15 @@
-class A {
-  property name
+const obj = { name: "leonard" }
 
-  func constructor(name) {
-    print("A constructor")
-    @name = name
-  }
+obj.tap(->(arg) {
+  print(arg)
+})
+
+Number.prototype.foo = ->{
+  print("calling foo")
 }
 
-class B extends A {
-  property age
+10.times(->(i) {
+  print(i)
+})
 
-  func constructor(name, age) {
-    print("B constructor")
-    @age = age
-  }
-}
-
-class C extends B {
-  property height
-
-  func constructor(name, age, height) {
-    print("C constructor")
-    @height = height
-  }
-}
-
-const obj = C("leonard", 17, 186)
-print(obj)
+255.foo()
