@@ -110,42 +110,42 @@ VALUE print(VM& vm, VALUE value) {
 
 VALUE set_primitive_object(VM& vm, VALUE value) {
   vm.set_primitive_object(value);
-  return kNull;
+  return value;
 }
 
 VALUE set_primitive_class(VM& vm, VALUE value) {
   vm.set_primitive_class(value);
-  return kNull;
+  return value;
 }
 
 VALUE set_primitive_array(VM& vm, VALUE value) {
   vm.set_primitive_array(value);
-  return kNull;
+  return value;
 }
 
 VALUE set_primitive_string(VM& vm, VALUE value) {
   vm.set_primitive_string(value);
-  return kNull;
+  return value;
 }
 
 VALUE set_primitive_number(VM& vm, VALUE value) {
   vm.set_primitive_number(value);
-  return kNull;
+  return value;
 }
 
 VALUE set_primitive_function(VM& vm, VALUE value) {
   vm.set_primitive_function(value);
-  return kNull;
+  return value;
 }
 
 VALUE set_primitive_boolean(VM& vm, VALUE value) {
   vm.set_primitive_boolean(value);
-  return kNull;
+  return value;
 }
 
 VALUE set_primitive_null(VM& vm, VALUE value) {
   vm.set_primitive_null(value);
-  return kNull;
+  return value;
 }
 }  // namespace Internals
 }  // namespace Charly
