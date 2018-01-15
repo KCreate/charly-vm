@@ -34,6 +34,7 @@ namespace Charly::Compilation {
 void Disassembler::dump(std::ostream& stream) {
   uint32_t offset = this->flags.start_offset;
 
+  stream << "Disassembly of block at " << reinterpret_cast<void*>(this->block) << '\n';
   while (offset < this->block->get_writeoffset() && offset < this->flags.end_offset) {
     Opcode opcode = static_cast<Opcode>(this->block->read<uint8_t>(offset));
 

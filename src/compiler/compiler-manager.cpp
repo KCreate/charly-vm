@@ -43,10 +43,12 @@ std::optional<ParserResult> CompilerManager::parse(const std::string& filename, 
 
   // Dump tokens if the flag was set
   if (this->flags.dump_tokens) {
-    auto& tokens = parse_result.tokens.value();
-    for (const auto& token : tokens) {
-      token.write_to_stream(this->err_stream);
-      this->err_stream << '\n';
+    if (this->flags.dump_file_contains(filename)) {
+      auto& tokens = parse_result.tokens.value();
+      for (const auto& token : tokens) {
+        token.write_to_stream(this->err_stream);
+        this->err_stream << '\n';
+      }
     }
   }
 
@@ -64,6 +66,12 @@ std::optional<CompilerResult> CompilerManager::compile(const std::string& filena
   CompilerContext ccontext(this->symtable, this->stringpool);
   Compiler compiler(ccontext, cconfig);
   CompilerResult compiler_result = compiler.compile(parser_result->abstract_syntax_tree.value());
+
+  if (this->flags.dump_ast) {
+    if (this->flags.dump_file_contains(filename)) {
+      compiler_result.abstract_syntax_tree->dump(this->err_stream);
+    }
+  }
 
   // Print infos, warnings or errors to the console
   if (compiler_result.messages.size() > 0) {
@@ -104,11 +112,13 @@ std::optional<CompilerResult> CompilerManager::compile(const std::string& filena
 
   // Dump a disassembly of the compiled block
   if (this->flags.dump_asm) {
-    Disassembler::Flags disassembler_flags = Disassembler::Flags({.no_branches = this->flags.asm_no_branches,
-                                                                  .no_func_branches = this->flags.asm_no_func_branches,
-                                                                  .no_offsets = this->flags.asm_no_offsets});
-    Disassembler disassembler(compiler_result.instructionblock.value(), disassembler_flags, &ccontext);
-    disassembler.dump(this->err_stream);
+    if (this->flags.dump_file_contains(filename)) {
+      Disassembler::Flags disassembler_flags = Disassembler::Flags({.no_branches = this->flags.asm_no_branches,
+                                                                    .no_func_branches = this->flags.asm_no_func_branches,
+                                                                    .no_offsets = this->flags.asm_no_offsets});
+      Disassembler disassembler(compiler_result.instructionblock.value(), disassembler_flags, &ccontext);
+      disassembler.dump(this->err_stream);
+    }
   }
 
   return compiler_result;

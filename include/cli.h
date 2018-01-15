@@ -40,6 +40,7 @@ static const std::string kHelpMessage =
     "    dump_ast                         Display the AST of the input file\n"
     "    dump_tokens                      Display tokens of the input file\n"
     "    dump_asm                         Display a disassembly of the input file\n"
+    "    dump_file_include=files..        Add a file to the list of files to be dumped\n"
     "    asm_no_offsets                   Don't display offsets in the disassembly\n"
     "    asm_no_branches                  Don't display branches as arrows in the disassembly\n"
     "    asm_no_func_branches             Don't display branches for PutFunction instructions\n"

@@ -8,3 +8,6 @@ const leonard = module.someclass("leonard", 17)
 leonard.method()
 
 print(Object)
+
+
+print(200  + 200)

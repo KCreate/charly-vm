@@ -46,6 +46,7 @@ struct RunFlags {
   bool dump_tokens = false;
   bool dump_ast = false;
   bool dump_asm = false;
+  std::vector<std::string> dump_files_include;
   bool asm_no_offsets = false;
   bool asm_no_branches = false;
   bool asm_no_func_branches = false;
@@ -74,6 +75,37 @@ struct RunFlags {
       return;
 
     bool append_to_flags = false;
+    bool append_to_dump_files_include = false;
+
+    auto append_flag = [&](const std::string& flag) {
+      if (!flag.compare("dump_ast"))
+        this->dump_ast = true;
+      if (!flag.compare("dump_tokens"))
+        this->dump_tokens = true;
+      if (!flag.compare("dump_asm"))
+        this->dump_asm = true;
+      if (!flag.compare("asm_no_offsets"))
+        this->asm_no_offsets = true;
+      if (!flag.compare("asm_no_branches"))
+        this->asm_no_branches = true;
+      if (!flag.compare("asm_no_func_branches"))
+        this->asm_no_func_branches = true;
+      if (!flag.compare("skipexec"))
+        this->skip_execution = true;
+      if (!flag.compare("trace_opcodes"))
+        this->trace_opcodes = true;
+      if (!flag.compare("trace_catchtables"))
+        this->trace_catchtables = true;
+      if (!flag.compare("trace_frames"))
+        this->trace_frames = true;
+      if (!flag.compare("trace_gc"))
+        this->trace_gc = true;
+      if (!flag.compare("instruction_profile"))
+        this->instruction_profile = true;
+      if (!flag.compare("dump_file_include"))
+        append_to_dump_files_include = true;
+      this->flags.push_back(flag);
+    };
 
     // Extract all arguments
     for (int argi = 1; argi < argc; argi++) {
@@ -87,8 +119,17 @@ struct RunFlags {
       // This would be parsed in two steps
       // -f example
       if (append_to_flags) {
-        this->appendFlag(arg);
+        append_flag(arg);
         append_to_flags = false;
+        continue;
+      }
+
+      // Add a filename to the dump_file_include list
+      //
+      // -fdump_file_include file.ch
+      if (append_to_dump_files_include) {
+        this->dump_files_include.push_back(arg);
+        append_to_dump_files_include = false;
         continue;
       }
 
@@ -136,18 +177,22 @@ struct RunFlags {
         if (arg[0] == '-' && arg[1] == '-') {
           bool found_flag = false;
 
-          if (!arg.compare("--help"))
+          if (!arg.compare("--help")) {
             this->show_help = true;
-          found_flag = true;
-          if (!arg.compare("--version"))
+            found_flag = true;
+          }
+          if (!arg.compare("--version")) {
             this->show_version = true;
-          found_flag = true;
-          if (!arg.compare("--license"))
+            found_flag = true;
+          }
+          if (!arg.compare("--license")) {
             this->show_license = true;
-          found_flag = true;
-          if (!arg.compare("--flag"))
+            found_flag = true;
+          }
+          if (!arg.compare("--flag")) {
             append_to_flags = true;
-          found_flag = true;
+            found_flag = true;
+          }
 
           if (append_to_flags)
             continue;
@@ -156,7 +201,7 @@ struct RunFlags {
         }
 
         if (arg[0] == '-' && arg[1] == 'f') {
-          this->appendFlag(arg.substr(2, arg.size()));
+          append_flag(arg.substr(2, arg.size()));
           continue;
         }
       }
@@ -165,33 +210,10 @@ struct RunFlags {
     }
   }
 
-  // Append a flag to the internal flags array and set all corresponding flags
-  inline void appendFlag(const std::string& flag) {
-    if (!flag.compare("dump_ast"))
-      this->dump_ast = true;
-    if (!flag.compare("dump_tokens"))
-      this->dump_tokens = true;
-    if (!flag.compare("dump_asm"))
-      this->dump_asm = true;
-    if (!flag.compare("asm_no_offsets"))
-      this->asm_no_offsets = true;
-    if (!flag.compare("asm_no_branches"))
-      this->asm_no_branches = true;
-    if (!flag.compare("asm_no_func_branches"))
-      this->asm_no_func_branches = true;
-    if (!flag.compare("skipexec"))
-      this->skip_execution = true;
-    if (!flag.compare("trace_opcodes"))
-      this->trace_opcodes = true;
-    if (!flag.compare("trace_catchtables"))
-      this->trace_catchtables = true;
-    if (!flag.compare("trace_frames"))
-      this->trace_frames = true;
-    if (!flag.compare("trace_gc"))
-      this->trace_gc = true;
-    if (!flag.compare("instruction_profile"))
-      this->instruction_profile = true;
-    this->flags.push_back(flag);
+  inline bool dump_file_contains(const std::string& str) {
+    auto& dump_file_list = this->dump_files_include;
+    auto search_result = std::find(dump_file_list.begin(), dump_file_list.end(), str);
+    return search_result != dump_file_list.end();
   }
 };
 }  // namespace Charly
