@@ -26,6 +26,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <unordered_map>
 
 #include "gc.h"
 #include "internals.h"
@@ -67,8 +68,32 @@ VALUE require(VM& vm, VALUE vfilename) {
 }
 
 VALUE get_method(VM& vm, VALUE argument) {
-  vm.context.out_stream << "Called get_method with ";
-  vm.pretty_print(vm.context.out_stream, argument);
+  if (vm.real_type(argument) != kTypeString) {
+    vm.throw_exception("get_method: expected string");
+    return kNull;
+  }
+
+  String* arg_string = reinterpret_cast<String*>(argument);
+  std::string methodname(arg_string->data, arg_string->length);
+
+  static std::unordered_map<std::string, uintptr_t> method_mapping = {
+      {"require", reinterpret_cast<uintptr_t>(Internals::require)},
+      {"write", reinterpret_cast<uintptr_t>(Internals::write)},
+      {"print", reinterpret_cast<uintptr_t>(Internals::print)},
+      {"set_primitive_object", reinterpret_cast<uintptr_t>(Internals::set_primitive_object)},
+      {"set_primitive_class", reinterpret_cast<uintptr_t>(Internals::set_primitive_class)},
+      {"set_primitive_array", reinterpret_cast<uintptr_t>(Internals::set_primitive_array)},
+      {"set_primitive_string", reinterpret_cast<uintptr_t>(Internals::set_primitive_string)},
+      {"set_primitive_number", reinterpret_cast<uintptr_t>(Internals::set_primitive_number)},
+      {"set_primitive_function", reinterpret_cast<uintptr_t>(Internals::set_primitive_function)},
+      {"set_primitive_boolean", reinterpret_cast<uintptr_t>(Internals::set_primitive_boolean)},
+      {"set_primitive_null", reinterpret_cast<uintptr_t>(Internals::set_primitive_null)}};
+
+  if (method_mapping.count(methodname) > 0) {
+    auto& mapping = method_mapping[methodname];
+    return vm.create_cfunction(vm.context.symtable(methodname), 1, mapping);
+  }
+
   return kNull;
 }
 
@@ -80,6 +105,46 @@ VALUE write(VM& vm, VALUE value) {
 VALUE print(VM& vm, VALUE value) {
   vm.pretty_print(vm.context.out_stream, value);
   vm.context.out_stream << '\n';
+  return kNull;
+}
+
+VALUE set_primitive_object(VM& vm, VALUE value) {
+  vm.set_primitive_object(value);
+  return kNull;
+}
+
+VALUE set_primitive_class(VM& vm, VALUE value) {
+  vm.set_primitive_class(value);
+  return kNull;
+}
+
+VALUE set_primitive_array(VM& vm, VALUE value) {
+  vm.set_primitive_array(value);
+  return kNull;
+}
+
+VALUE set_primitive_string(VM& vm, VALUE value) {
+  vm.set_primitive_string(value);
+  return kNull;
+}
+
+VALUE set_primitive_number(VM& vm, VALUE value) {
+  vm.set_primitive_number(value);
+  return kNull;
+}
+
+VALUE set_primitive_function(VM& vm, VALUE value) {
+  vm.set_primitive_function(value);
+  return kNull;
+}
+
+VALUE set_primitive_boolean(VM& vm, VALUE value) {
+  vm.set_primitive_boolean(value);
+  return kNull;
+}
+
+VALUE set_primitive_null(VM& vm, VALUE value) {
+  vm.set_primitive_null(value);
   return kNull;
 }
 }  // namespace Internals

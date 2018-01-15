@@ -34,5 +34,14 @@ VALUE require(VM& vm, VALUE filename);
 VALUE get_method(VM& vm, VALUE argument);
 VALUE write(VM& vm, VALUE value);
 VALUE print(VM& vm, VALUE value);
+
+VALUE set_primitive_object(VM& vm, VALUE klass);
+VALUE set_primitive_class(VM& vm, VALUE klass);
+VALUE set_primitive_array(VM& vm, VALUE klass);
+VALUE set_primitive_string(VM& vm, VALUE klass);
+VALUE set_primitive_number(VM& vm, VALUE klass);
+VALUE set_primitive_function(VM& vm, VALUE klass);
+VALUE set_primitive_boolean(VM& vm, VALUE klass);
+VALUE set_primitive_null(VM& vm, VALUE klass);
 }  // namespace Internals
 }  // namespace Charly

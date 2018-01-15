@@ -2246,21 +2246,6 @@ void VM::exec_prelude() {
   this->op_puthash(1);
   this->op_setlocal(18, 0);
   this->op_pop();
-
-  // require = <Internals::require>
-  this->op_putcfunction(this->context.symtable("require"), reinterpret_cast<uintptr_t>(Internals::require), 1);
-  this->op_setlocal(0, 0);
-  this->op_pop();
-
-  // write = <Internals::write>
-  this->op_putcfunction(this->context.symtable("write"), reinterpret_cast<uintptr_t>(Internals::write), 1);
-  this->op_setlocal(13, 0);
-  this->op_pop();
-
-  // print = <Internals::print>
-  this->op_putcfunction(this->context.symtable("print"), reinterpret_cast<uintptr_t>(Internals::print), 1);
-  this->op_setlocal(12, 0);
-  this->op_pop();
 }
 
 void VM::exec_block(InstructionBlock* block) {

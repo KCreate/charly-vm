@@ -259,9 +259,44 @@ public:
   VMContext context;
   VMInstructionProfile instruction_profile;
 
+  inline void set_primitive_object(VALUE value) {
+    this->primitive_object = value;
+  }
+  inline void set_primitive_class(VALUE value) {
+    this->primitive_class = value;
+  }
+  inline void set_primitive_array(VALUE value) {
+    this->primitive_array = value;
+  }
+  inline void set_primitive_string(VALUE value) {
+    this->primitive_string = value;
+  }
+  inline void set_primitive_number(VALUE value) {
+    this->primitive_number = value;
+  }
+  inline void set_primitive_function(VALUE value) {
+    this->primitive_function = value;
+  }
+  inline void set_primitive_boolean(VALUE value) {
+    this->primitive_boolean = value;
+  }
+  inline void set_primitive_null(VALUE value) {
+    this->primitive_null = value;
+  }
+
 private:
   // Used to avoid an overflow when printing cyclic data structures
   std::vector<VALUE> pretty_print_stack;
+
+  // References to the primitive classes of the VM
+  VALUE primitive_object = kNull;
+  VALUE primitive_class = kNull;
+  VALUE primitive_array = kNull;
+  VALUE primitive_string = kNull;
+  VALUE primitive_number = kNull;
+  VALUE primitive_function = kNull;
+  VALUE primitive_boolean = kNull;
+  VALUE primitive_null = kNull;
 
   // Holds a pointer to the upper-most environment frame
   // When executing new modules, their parent environment frame is set to
