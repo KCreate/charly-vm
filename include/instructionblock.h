@@ -130,7 +130,7 @@ public:
                              uint32_t staticpropertycount,
                              uint32_t methodcount,
                              uint32_t staticmethodcount,
-                             uint32_t parentclasscount,
+                             bool has_parent_class,
                              bool has_constructor) {
     this->write(Opcode::PutClass);
     this->write(symbol);
@@ -138,7 +138,7 @@ public:
     this->write(staticpropertycount);
     this->write(methodcount);
     this->write(staticmethodcount);
-    this->write(parentclasscount);
+    this->write(has_parent_class);
     this->write(has_constructor);
   }
 

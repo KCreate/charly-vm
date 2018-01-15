@@ -161,10 +161,9 @@ NaN;
 class {}
 class _class1 {}
 class _class2 extends _class1 {}
-class _class3 extends _class1, _class2 {}
+class extends _class2 {}
 class _class4 extends 1 + 1 {}
-class _class5 extends a(), a() {}
-class _class6 extends a, a, a {}
+class _class5 extends a() {}
 class {
   property foo
   static property foo

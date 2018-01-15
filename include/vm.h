@@ -197,6 +197,7 @@ public:
   void call_cfunction(CFunction* function, uint32_t argc, VALUE* argv);
   void call_class(Class* klass, uint32_t argc, VALUE* argv);
   void initialize_member_properties(Class* klass, Object* object);
+  bool invoke_class_constructors(Class* klass, Object* object, uint32_t argc, VALUE* argv);
   void throw_exception(const std::string& message);
   void throw_exception(VALUE payload);
   VALUE stacktrace_array();
@@ -239,7 +240,7 @@ public:
                    uint32_t staticpropertycount,
                    uint32_t methodcount,
                    uint32_t staticmethodcount,
-                   uint32_t parentclasscount,
+                   bool has_parent_class,
                    bool has_constructor);
   void op_pop();
   void op_dup();

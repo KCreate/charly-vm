@@ -657,16 +657,17 @@ AST::AbstractNode* CodeGenerator::visit_class(AST::Class* node, VisitContinue co
   for (auto n : node->static_functions->children) {
     this->visit_node(n);
   }
-  for (auto n : node->parents->children) {
-    this->visit_node(n);
+  if (node->parent_class->type() != AST::kTypeEmpty) {
+    this->visit_node(node->parent_class);
   }
+
   if (node->constructor->type() != AST::kTypeEmpty) {
     this->visit_node(node->constructor);
   }
 
   this->assembler.write_putclass(this->context.symtable(node->name), node->member_properties->children.size(),
                                  node->static_properties->children.size(), node->member_functions->children.size(),
-                                 node->static_functions->children.size(), node->parents->children.size(),
+                                 node->static_functions->children.size(), node->parent_class->type() != AST::kTypeEmpty,
                                  node->constructor->type() != AST::kTypeEmpty);
 
   return node;

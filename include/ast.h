@@ -1246,16 +1246,16 @@ struct Class : public AbstractNode {
   NodeList* member_functions;
   NodeList* static_properties;
   NodeList* static_functions;
-  NodeList* parents;
+  AbstractNode* parent_class;
 
-  Class(const std::string& n, AbstractNode* c, NodeList* mp, NodeList* mf, NodeList* sp, NodeList* sf, NodeList* p)
+  Class(const std::string& n, AbstractNode* c, NodeList* mp, NodeList* mf, NodeList* sp, NodeList* sf, AbstractNode* p)
       : name(n),
         constructor(c),
         member_properties(mp),
         member_functions(mf),
         static_properties(sp),
         static_functions(sf),
-        parents(p) {
+        parent_class(p) {
   }
 
   inline ~Class() {
@@ -1264,7 +1264,7 @@ struct Class : public AbstractNode {
     delete member_functions;
     delete static_properties;
     delete static_functions;
-    delete parents;
+    delete parent_class;
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
@@ -1274,14 +1274,14 @@ struct Class : public AbstractNode {
     this->member_functions->dump(stream, depth + 1);
     this->static_properties->dump(stream, depth + 1);
     this->static_functions->dump(stream, depth + 1);
-    this->parents->dump(stream, depth + 1);
+    this->parent_class->dump(stream, depth + 1);
   }
 
   void visit(VisitFunc func) {
     this->constructor = func(this->constructor);
     this->member_functions = reinterpret_cast<NodeList*>(func(this->member_functions));
     this->static_functions = reinterpret_cast<NodeList*>(func(this->static_functions));
-    this->parents = reinterpret_cast<NodeList*>(func(this->parents));
+    this->parent_class = reinterpret_cast<AbstractNode*>(func(this->parent_class));
   }
 };
 

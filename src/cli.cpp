@@ -106,6 +106,7 @@ int CLI::run() {
                      .trace_frames = this->flags.trace_frames});
   VM vm(context);
   vm.exec_module(cresult_prelude->instructionblock.value());
+  vm.pop_stack();
   vm.exec_module(cresult_userfile->instructionblock.value());
 
   // Display the instruction profile if requested

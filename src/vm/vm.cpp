@@ -295,7 +295,7 @@ VALUE VM::create_class(VALUE name) {
   cell->klass.constructor = kNull;
   cell->klass.member_properties = new std::vector<VALUE>();
   cell->klass.prototype = kNull;
-  cell->klass.parent_classes = new std::vector<VALUE>();
+  cell->klass.parent_class = kNull;
   cell->klass.container = new std::unordered_map<VALUE, VALUE>();
   return cell->as_value();
 }
@@ -930,21 +930,17 @@ std::optional<VALUE> VM::findprototypevalue(Class* klass, VALUE symbol) {
   if (VM::real_type(klass->prototype) == kTypeObject) {
     Object* prototype = reinterpret_cast<Object*>(klass->prototype);
 
-    // Check if this member function container contains the symbol
+    // Check if this class container contains the symbol
     if (prototype->container->count(symbol) == 1) {
       result = (*prototype->container)[symbol];
-    }
+    } else {
+      if (VM::real_type(klass->parent_class) == kTypeClass) {
+        Class* pklass = reinterpret_cast<Class*>(klass->parent_class);
+        auto presult = this->findprototypevalue(pklass, symbol);
 
-    // Iterate over all parent classes to search for the symbol
-    // We don't have to check each parent class for it's type because
-    // that check is performed in the op_putclass method
-    for (auto parent_class : *klass->parent_classes) {
-      Class* pklass = reinterpret_cast<Class*>(parent_class);
-      auto presult = this->findprototypevalue(pklass, symbol);
-
-      if (presult.has_value()) {
-        result = presult;
-        break;
+        if (presult.has_value()) {
+          result = presult;
+        }
       }
     }
   }
@@ -1055,8 +1051,13 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   // If the ip is nullptr (non-existent instructions that are run at the beginning of the VM) we
   // don't compute a return address
   uint8_t* return_address = nullptr;
-  if (this->ip != nullptr)
-    return_address = this->ip + kInstructionLengths[this->fetch_instruction()];
+  if (this->ip != nullptr) {
+    if (halt_after_return) {
+      return_address = this->ip;
+    } else {
+      return_address = this->ip + kInstructionLengths[this->fetch_instruction()];
+    }
+  }
   Frame* frame = this->create_frame(self, function, return_address, halt_after_return);
 
   Array* arguments_array = reinterpret_cast<Array*>(this->create_array(argc));
@@ -1114,10 +1115,6 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
 }
 
 void VM::call_class(Class* klass, uint32_t argc, VALUE* argv) {
-  // We keep a reference to the current catchtable around in case the constructor throws an exception
-  // After the constructor call we check if the table changed
-  CatchTable* original_catchtable = this->catchstack;
-
   ManagedContext lalloc(*this);
   Object* object = reinterpret_cast<Object*>(lalloc.create_object(klass->member_properties->size()));
   object->klass = reinterpret_cast<VALUE>(klass);
@@ -1125,31 +1122,53 @@ void VM::call_class(Class* klass, uint32_t argc, VALUE* argv) {
   // Add the fields of parent classes
   this->initialize_member_properties(klass, object);
 
-  // If we have a constructor, call it with the object
-  if (klass->constructor != kNull) {
-    this->call_function(reinterpret_cast<Function*>(klass->constructor), argc, argv, reinterpret_cast<VALUE>(object),
-                        true);
-    this->run();
-    this->halted = false;
-  }
-
-  if (this->catchstack == original_catchtable) {
+  bool success = this->invoke_class_constructors(klass, object, argc, argv);
+  if (success) {
     this->push_stack(reinterpret_cast<VALUE>(object));
   }
+
+  this->stackdump(this->context.out_stream);
 }
 
 void VM::initialize_member_properties(Class* klass, Object* object) {
-  for (auto parent_class : *klass->parent_classes) {
-    if (this->real_type(parent_class) != kTypeClass) {
-      continue;
-    }
-
-    this->initialize_member_properties(reinterpret_cast<Class*>(parent_class), object);
+  if (VM::real_type(klass->parent_class) != kTypeClass) {
+    this->initialize_member_properties(reinterpret_cast<Class*>(klass->parent_class), object);
   }
 
   for (auto field : *klass->member_properties) {
     (*object->container)[field] = kNull;
   }
+}
+
+bool VM::invoke_class_constructors(Class* klass, Object* object, uint32_t argc, VALUE* argv) {
+  // We keep a reference to the current catchtable around in case the constructor throws an exception
+  // After the constructor call we check if the table changed
+  CatchTable* original_catchtable = this->catchstack;
+
+  if (VM::real_type(klass->parent_class) == kTypeClass) {
+    bool success = this->invoke_class_constructors(reinterpret_cast<Class*>(klass->parent_class), object, argc, argv);
+    if (!success)
+      return false;
+  }
+
+  if (VM::real_type(klass->constructor) == kTypeFunction) {
+    Function* constructor = reinterpret_cast<Function*>(klass->constructor);
+
+    if (constructor->argc > argc) {
+      this->throw_exception("Not enough arguments for class constructor");
+      return false;
+    }
+
+    this->call_function(constructor, constructor->argc, argv, reinterpret_cast<VALUE>(object), true);
+    this->run();
+    this->halted = false;
+
+    // Pop the return value generated by the class constructor off the stack
+    // We don't need it anymore
+    this->pop_stack();
+  }
+
+  return this->catchstack == original_catchtable;
 }
 
 Opcode VM::fetch_instruction() {
@@ -1324,33 +1343,21 @@ void VM::op_putclass(VALUE name,
                      uint32_t staticpropertycount,
                      uint32_t methodcount,
                      uint32_t staticmethodcount,
-                     uint32_t parentclasscount,
+                     bool has_parent_class,
                      bool has_constructor) {
   ManagedContext lalloc(*this);
 
   Class* klass = reinterpret_cast<Class*>(lalloc.create_class(name));
   klass->member_properties->reserve(propertycount);
   klass->prototype = lalloc.create_object(methodcount);
-  klass->parent_classes->reserve(parentclasscount);
   klass->container->reserve(staticpropertycount + staticmethodcount);
 
   if (has_constructor) {
     klass->constructor = this->pop_stack();
   }
 
-  while (parentclasscount--) {
-    VALUE pclass = this->pop_stack();
-    if (VM::real_type(pclass) != kTypeClass) {
-      this->throw_exception("Value to extend is not a class");
-      return;
-    }
-
-    // Check if this parent class was already added
-    // We do this to prevent duplicate parent classes
-    auto result = std::find(klass->parent_classes->begin(), klass->parent_classes->end(), pclass);
-    if (result == klass->parent_classes->end()) {
-      klass->parent_classes->push_back(pclass);
-    }
+  if (has_parent_class) {
+    klass->parent_class = this->pop_stack();
   }
 
   while (staticmethodcount--) {
@@ -1753,12 +1760,9 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       this->pretty_print(io, klass->prototype);
       io << " ";
 
-      io << "parent_classes=[";
-      for (auto entry : *klass->parent_classes) {
-        io << " ";
-        this->pretty_print(io, entry);
-      }
-      io << "]";
+      io << "parent_class=";
+      this->pretty_print(io, klass->parent_class);
+      io << " ";
 
       for (auto entry : *klass->container) {
         io << " " << this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
@@ -1976,13 +1980,12 @@ void VM::run() {
                                                             sizeof(uint32_t) + sizeof(uint32_t));
         uint32_t staticmethodcount = *reinterpret_cast<uint32_t*>(
             this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t));
-        uint32_t parentclasscount =
-            *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(uint32_t) +
-                                         sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t));
+        bool has_parent_class = *reinterpret_cast<bool*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(uint32_t) +
+                                                         sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t));
         bool has_constructor =
             *reinterpret_cast<bool*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(uint32_t) + sizeof(uint32_t) +
-                                     sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t));
-        this->op_putclass(name, propertycount, staticpropertycount, methodcount, staticmethodcount, parentclasscount,
+                                     sizeof(uint32_t) + sizeof(uint32_t) + sizeof(bool));
+        this->op_putclass(name, propertycount, staticpropertycount, methodcount, staticmethodcount, has_parent_class,
                           has_constructor);
         break;
       }

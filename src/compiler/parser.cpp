@@ -1377,17 +1377,12 @@ AST::AbstractNode* Parser::parse_class() {
   AST::NodeList* member_functions = new AST::NodeList();
   AST::NodeList* static_properties = new AST::NodeList();
   AST::NodeList* static_functions = new AST::NodeList();
-  AST::NodeList* parents = new AST::NodeList();
+  AST::AbstractNode* parent_class = nullptr;
 
   // Parse parent classes
   if (this->token.type == TokenType::Extends) {
     this->advance();
-
-    parents->append_node(this->parse_expression());
-    while (this->token.type == TokenType::Comma) {
-      this->advance();
-      parents->append_node(this->parse_expression());
-    }
+    parent_class = this->parse_expression();
   }
 
   // Parse the class body
@@ -1446,8 +1441,12 @@ AST::AbstractNode* Parser::parse_class() {
     constructor = new AST::Empty();
   }
 
+  if (parent_class == nullptr) {
+    parent_class = new AST::Empty();
+  }
+
   return (new AST::Class(name, constructor, member_properties, member_functions, static_properties, static_functions,
-                         parents))
+                         parent_class))
       ->at(location_start, location_end);
 }
 

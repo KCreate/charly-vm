@@ -1,15 +1,29 @@
 class A {
-  property foo
-  property asdasd
+  property name
+
+  func constructor(name) {
+    print("A constructor")
+    @name = name
+  }
 }
 
-class A2 {
-  property something_in_a2
+class B extends A {
+  property age
+
+  func constructor(name, age) {
+    print("B constructor")
+    @age = age
+  }
 }
 
-class B extends A, A2 {
-  property bar
+class C extends B {
+  property height
+
+  func constructor(name, age, height) {
+    print("C constructor")
+    @height = height
+  }
 }
 
-const obj = B()
+const obj = C("leonard", 17, 186)
 print(obj)

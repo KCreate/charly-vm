@@ -186,7 +186,7 @@ enum Opcode : uint8_t {
   // - staticpropertycount
   // - methodcount
   // - staticmethodcount
-  // - parentclasscount
+  // - has_parent_class
   // - has_constructor
   //
   // stack:
@@ -194,7 +194,7 @@ enum Opcode : uint8_t {
   // - static properties
   // - methods
   // - static methods
-  // - parent classes
+  // - parent_class?
   // - constructor?
   PutClass,
 
@@ -350,7 +350,7 @@ static constexpr uint32_t kInstructionLengths[]{
   /* PutCFunction */       1 + sizeof(VALUE) + sizeof(uintptr_t) + sizeof(uint32_t),
   /* PutArray */           1 + sizeof(uint32_t),
   /* PutHash */            1 + sizeof(uint32_t),
-  /* PutClass */           1 + sizeof(VALUE) + sizeof(uint32_t) * 5 + sizeof(bool),
+  /* PutClass */           1 + sizeof(VALUE) + sizeof(uint32_t) * 4 + sizeof(bool) + sizeof(bool),
   /* Pop */                1,
   /* Dup */                1,
   /* Swap */               1,
