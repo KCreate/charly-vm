@@ -1120,12 +1120,10 @@ void VM::call_class(Class* klass, uint32_t argc, VALUE* argv) {
 
   ManagedContext lalloc(*this);
   Object* object = reinterpret_cast<Object*>(lalloc.create_object(klass->member_properties->size()));
-
-  // Initialize object
   object->klass = reinterpret_cast<VALUE>(klass);
-  for (auto field : *klass->member_properties) {
-    (*object->container)[field] = kNull;
-  }
+
+  // Add the fields of parent classes
+  this->initialize_member_properties(klass, object);
 
   // If we have a constructor, call it with the object
   if (klass->constructor != kNull) {
@@ -1137,6 +1135,20 @@ void VM::call_class(Class* klass, uint32_t argc, VALUE* argv) {
 
   if (this->catchstack == original_catchtable) {
     this->push_stack(reinterpret_cast<VALUE>(object));
+  }
+}
+
+void VM::initialize_member_properties(Class* klass, Object* object) {
+  for (auto parent_class : *klass->parent_classes) {
+    if (this->real_type(parent_class) != kTypeClass) {
+      continue;
+    }
+
+    this->initialize_member_properties(reinterpret_cast<Class*>(parent_class), object);
+  }
+
+  for (auto field : *klass->member_properties) {
+    (*object->container)[field] = kNull;
   }
 }
 
