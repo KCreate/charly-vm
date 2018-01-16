@@ -833,6 +833,10 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
         return (*func->container)[symbol];
       }
 
+      if (symbol == this->context.symtable("name")) {
+        return func->name;
+      }
+
       break;
     }
 
@@ -841,6 +845,10 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
 
       if (cfunc->container->count(symbol) == 1) {
         return (*cfunc->container)[symbol];
+      }
+
+      if (symbol == this->context.symtable("name")) {
+        return cfunc->name;
       }
 
       break;
@@ -854,6 +862,19 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
 
       if (symbol == this->context.symtable("prototype")) {
         return klass->prototype;
+      }
+
+      if (symbol == this->context.symtable("name")) {
+        return klass->name;
+      }
+
+      break;
+    }
+    case kTypeArray: {
+      Array* arr = reinterpret_cast<Array*>(source);
+
+      if (symbol == this->context.symtable("length")) {
+        return VALUE_ENCODE_INTEGER(arr->data->size());
       }
 
       break;
