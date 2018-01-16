@@ -815,7 +815,7 @@ VALUE VM::ubnot(VALUE value) {
 }
 
 VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
-  switch (VM::type(source)) {
+  switch (VM::real_type(source)) {
     case kTypeObject: {
       Object* obj = reinterpret_cast<Object*>(source);
 
