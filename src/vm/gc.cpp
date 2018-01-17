@@ -122,6 +122,7 @@ void GarbageCollector::mark(VALUE value) {
 
     case kTypeClass: {
       Class* klass = reinterpret_cast<Class*>(value);
+      this->mark(klass->constructor);
       this->mark(klass->prototype);
       this->mark(klass->parent_class);
       for (auto entry : *klass->container)
@@ -134,9 +135,7 @@ void GarbageCollector::mark(VALUE value) {
       this->mark(reinterpret_cast<VALUE>(frame->parent));
       this->mark(reinterpret_cast<VALUE>(frame->parent_environment_frame));
       this->mark(reinterpret_cast<VALUE>(frame->last_active_catchtable));
-      if (frame->function != nullptr) {
-        this->mark(reinterpret_cast<VALUE>(frame->function));
-      }
+      this->mark(reinterpret_cast<VALUE>(frame->function));
       this->mark(frame->self);
       for (auto lvar : frame->environment)
         this->mark(lvar);
