@@ -156,6 +156,7 @@ public:
   static double float_value(VALUE value);
   static double double_value(VALUE value);
   static int64_t int_value(VALUE value);
+  VALUE symbol_value(VALUE value);
   static VALUE type(VALUE value);
   static VALUE real_type(VALUE value);
   static bool truthyness(VALUE value);
@@ -190,6 +191,8 @@ public:
   // Machine functionality
   VALUE readmembersymbol(VALUE source, VALUE symbol);
   VALUE setmembersymbol(VALUE target, VALUE symbol, VALUE value);
+  VALUE readmembervalue(VALUE source, VALUE value);
+  VALUE setmembervalue(VALUE target, VALUE member_value, VALUE value);
   std::optional<VALUE> findprototypevalue(Class* source, VALUE symbol);
   std::optional<VALUE> findprimitivevalue(VALUE value, VALUE symbol);
   void call(uint32_t argc, bool with_target, bool halt_after_return = false);
@@ -223,9 +226,11 @@ public:
   Opcode fetch_instruction();
   void op_readlocal(uint32_t index, uint32_t level);
   void op_readmembersymbol(VALUE symbol);
+  void op_readmembervalue();
   void op_readarrayindex(uint32_t index);
   void op_setlocal(uint32_t index, uint32_t level);
   void op_setmembersymbol(VALUE symbol);
+  void op_setmembervalue();
   void op_setarrayindex(uint32_t index);
   void op_putself(uint32_t level);
   void op_putvalue(VALUE value);

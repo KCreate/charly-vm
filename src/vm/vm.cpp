@@ -32,6 +32,8 @@
 #include <iostream>
 #include <sstream>
 
+#include <utf8/utf8.h>
+
 #include "gc.h"
 #include "managedcontext.h"
 #include "status.h"
@@ -506,8 +508,37 @@ double VM::double_value(VALUE value) {
 int64_t VM::int_value(VALUE value) {
   if (VM::real_type(value) == kTypeFloat) {
     return static_cast<int64_t>(VM::float_value(value));
-  } else {
+  } else if (VM::real_type(value) == kTypeInteger) {
     return VALUE_DECODE_INTEGER(value);
+  } else {
+    return 0;
+  }
+}
+
+VALUE VM::symbol_value(VALUE value) {
+  VALUE type = VM::real_type(value);
+
+  switch (type) {
+    case kTypeString: {
+      String* str = reinterpret_cast<String*>(value);
+      // TODO: Don't allocate a string here every time this is called
+      return this->context.symtable(std::string(str->data, str->length));
+    }
+    case kTypeFloat: {
+      double val = VM::double_value(value);
+      std::stringstream io;
+      io << val;
+      return this->context.symtable(io.str());
+    }
+    case kTypeInteger: {
+      int64_t val = VM::int_value(value);
+      std::stringstream io;
+      io << val;
+      return this->context.symtable(io.str());
+    }
+    default: {
+      return this->context.symtable(kValueTypeString[type]);
+    }
   }
 }
 
@@ -914,6 +945,70 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
   }
 }
 
+VALUE VM::readmembervalue(VALUE source, VALUE value) {
+  switch (VM::real_type(source)) {
+    case kTypeArray: {
+      Array* arr = reinterpret_cast<Array*>(source);
+
+      if (VM::type(value) == kTypeNumeric) {
+        int64_t index = VM::int_value(value);
+
+        // Negative indices read from the end of the array
+        if (index < 0) {
+          index += arr->data->size();
+        }
+
+        // Out of bounds check
+        if (index < 0 || index >= static_cast<int>(arr->data->size())) {
+          return kNull;
+        }
+
+        return (*arr->data)[index];
+      } else {
+        return this->readmembersymbol(source, this->symbol_value(value));
+      }
+    }
+    case kTypeString: {
+      String* str = reinterpret_cast<String*>(source);
+
+      if (VM::type(value) == kTypeNumeric) {
+        int64_t index = VM::int_value(value);
+
+        // Negative indices read from the end of the string
+        if (index < 0) {
+          index += str->length;
+        }
+
+        // Altough strings are utf8 encoded and byte_index != cp_index
+        // we can still check if the index is bigger than the source length
+        // because a utf8 codepoint is at least 1 byte
+        //
+        // We perform a check for codepoint index later on
+        if (index < 0 || index >= str->length) {
+          return kNull;
+        }
+
+        // Calculate the index of the codepoint
+        char* start_iterator = str->data;
+        while (index--) {
+          if (start_iterator >= str->data + str->length) {
+            return kNull;
+          }
+
+          utf8::advance(start_iterator, 1, str->data + str->length);
+        }
+
+        return this->create_string(start_iterator, 1);
+      } else {
+        return this->readmembersymbol(source, this->symbol_value(value));
+      }
+    }
+    default: {
+      return this->readmembersymbol(source, this->symbol_value(value));
+    }
+  }
+}
+
 VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
   switch (VM::real_type(target)) {
     case kTypeObject: {
@@ -948,6 +1043,37 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
   }
 
   return value;
+}
+
+VALUE VM::setmembervalue(VALUE target, VALUE member_value, VALUE value) {
+  switch (VM::real_type(target)) {
+    case kTypeArray: {
+      Array* arr = reinterpret_cast<Array*>(target);
+
+      if (VM::type(member_value) == kTypeNumeric) {
+        int64_t index = VM::int_value(member_value);
+
+        // Negative indices read from the end of the array
+        if (index < 0) {
+          index += arr->data->size();
+        }
+
+        // Out of bounds check
+        if (index < 0 || index >= static_cast<int>(arr->data->size())) {
+          return kNull;
+        }
+
+        // Update the value
+        (*arr->data)[index] = value;
+        return value;
+      } else {
+        return this->setmembersymbol(target, this->symbol_value(member_value), value);
+      }
+    }
+    default: {
+      return this->setmembersymbol(target, this->symbol_value(member_value), value);
+    }
+  }
 }
 
 std::optional<VALUE> VM::findprototypevalue(Class* klass, VALUE symbol) {
@@ -1262,6 +1388,12 @@ void VM::op_readmembersymbol(VALUE symbol) {
   this->push_stack(this->readmembersymbol(source, symbol));
 }
 
+void VM::op_readmembervalue() {
+  VALUE value = this->pop_stack();
+  VALUE source = this->pop_stack();
+  this->push_stack(this->readmembervalue(source, value));
+}
+
 void VM::op_readarrayindex(uint32_t index) {
   VALUE stackval = this->pop_stack();
 
@@ -1309,6 +1441,13 @@ void VM::op_setmembersymbol(VALUE symbol) {
   VALUE value = this->pop_stack();
   VALUE target = this->pop_stack();
   this->push_stack(this->setmembersymbol(target, symbol, value));
+}
+
+void VM::op_setmembervalue() {
+  VALUE value = this->pop_stack();
+  VALUE member_value = this->pop_stack();
+  VALUE target = this->pop_stack();
+  this->push_stack(this->setmembervalue(target, member_value, value));
 }
 
 void VM::op_setarrayindex(uint32_t index) {
@@ -1943,6 +2082,11 @@ void VM::run() {
         break;
       }
 
+      case Opcode::ReadMemberValue: {
+        this->op_readmembervalue();
+        break;
+      }
+
       case Opcode::ReadArrayIndex: {
         uint32_t index = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
         this->op_readarrayindex(index);
@@ -1959,6 +2103,11 @@ void VM::run() {
       case Opcode::SetMemberSymbol: {
         VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
         this->op_setmembersymbol(symbol);
+        break;
+      }
+
+      case Opcode::SetMemberValue: {
+        this->op_setmembervalue();
         break;
       }
 
