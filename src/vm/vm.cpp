@@ -1253,8 +1253,16 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   // the frames environment
   //
   // We add 1 to the index as that's the index of the arguments array
-  for (int i = 0; i < static_cast<int>(argc); i++) {
-    frame->environment[i + 1] = argv[i];
+  for (size_t i = 0; i < argc; i++) {
+
+    // The function only knows about function->argc arguments,
+    // the rest is supplied via the first slot in the frames environment
+    //
+    // We can't inject more argument than the function expects because the
+    // readlocal and setlocal instructions contain fixed offsets
+    if (i < function->argc) {
+      frame->environment[i + 1] = argv[i];
+    }
     arguments_array->data->push_back(argv[i]);
   }
 
