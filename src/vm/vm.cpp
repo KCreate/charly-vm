@@ -47,7 +47,7 @@ Frame* VM::pop_frame() {
 }
 
 Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address, bool halt_after_return) {
-  MemoryCell* cell = this->context.gc.allocate();
+  MemoryCell* cell = this->gc.allocate();
   cell->basic.set_type(kTypeFrame);
   cell->frame.parent = this->frames;
   cell->frame.parent_environment_frame = function->context;
@@ -84,7 +84,7 @@ Frame* VM::create_frame(VALUE self,
                         uint32_t lvarcount,
                         uint8_t* return_address,
                         bool halt_after_return) {
-  MemoryCell* cell = this->context.gc.allocate();
+  MemoryCell* cell = this->gc.allocate();
   cell->basic.set_type(kTypeFrame);
   cell->frame.parent = this->frames;
   cell->frame.parent_environment_frame = parent_environment_frame;
@@ -126,7 +126,7 @@ void VM::push_stack(VALUE value) {
 }
 
 CatchTable* VM::create_catchtable(uint8_t* address) {
-  MemoryCell* cell = this->context.gc.allocate();
+  MemoryCell* cell = this->gc.allocate();
   cell->basic.set_type(kTypeCatchTable);
   cell->catchtable.stacksize = this->stack.size();
   cell->catchtable.frame = this->frames;
@@ -197,7 +197,7 @@ void VM::unwind_catchstack() {
 }
 
 VALUE VM::create_object(uint32_t initial_capacity) {
-  MemoryCell* cell = this->context.gc.allocate();
+  MemoryCell* cell = this->gc.allocate();
   cell->basic.set_type(kTypeObject);
   cell->object.klass = this->primitive_object;
   cell->object.container = new std::unordered_map<VALUE, VALUE>();
@@ -206,7 +206,7 @@ VALUE VM::create_object(uint32_t initial_capacity) {
 }
 
 VALUE VM::create_array(uint32_t initial_capacity) {
-  MemoryCell* cell = this->context.gc.allocate();
+  MemoryCell* cell = this->gc.allocate();
   cell->basic.set_type(kTypeArray);
   cell->array.data = new std::vector<VALUE>();
   cell->array.data->reserve(initial_capacity);
@@ -236,7 +236,7 @@ VALUE VM::create_float(double value) {
   }
 
   // Allocate from the GC
-  MemoryCell* cell = this->context.gc.allocate();
+  MemoryCell* cell = this->gc.allocate();
   cell->basic.set_type(kTypeFloat);
   cell->flonum.float_value = value;
   return cell->as_value();
@@ -249,11 +249,11 @@ VALUE VM::create_string(const char* data, uint32_t length) {
     string_capacity *= kStringCapacityGrowthFactor;
 
   // Create a copy of the data
-  char* copied_string = static_cast<char*>(malloc(string_capacity));
+  char* copied_string = static_cast<char*>(calloc(sizeof(char), string_capacity));
   memcpy(copied_string, data, length);
 
   // Allocate the memory cell and initialize the values
-  MemoryCell* cell = this->context.gc.allocate();
+  MemoryCell* cell = this->gc.allocate();
   cell->basic.set_type(kTypeString);
   cell->string.data = copied_string;
   cell->string.length = length;
@@ -262,7 +262,7 @@ VALUE VM::create_string(const char* data, uint32_t length) {
 }
 
 VALUE VM::create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint32_t lvarcount, bool anonymous) {
-  MemoryCell* cell = this->context.gc.allocate();
+  MemoryCell* cell = this->gc.allocate();
   cell->basic.set_type(kTypeFunction);
   cell->function.name = name;
   cell->function.argc = argc;
@@ -277,7 +277,7 @@ VALUE VM::create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint
 }
 
 VALUE VM::create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer) {
-  MemoryCell* cell = this->context.gc.allocate();
+  MemoryCell* cell = this->gc.allocate();
   cell->basic.set_type(kTypeCFunction);
   cell->cfunction.name = name;
   cell->cfunction.pointer = pointer;
@@ -289,7 +289,7 @@ VALUE VM::create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer) {
 }
 
 VALUE VM::create_class(VALUE name) {
-  MemoryCell* cell = this->context.gc.allocate();
+  MemoryCell* cell = this->gc.allocate();
   cell->basic.set_type(kTypeClass);
   cell->klass.name = name;
   cell->klass.constructor = kNull;
@@ -2277,7 +2277,7 @@ void VM::run() {
       }
 
       case Opcode::GCCollect: {
-        this->context.gc.collect();
+        this->gc.collect();
         break;
       }
 

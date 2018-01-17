@@ -65,13 +65,13 @@ struct MemoryCell {
 
 // Flagas for the memory manager
 struct GarbageCollectorConfig {
-  size_t initial_heap_count = 2;
-  size_t heap_cell_count = 256;
+  size_t initial_heap_count = 8;
+  size_t heap_cell_count = 512;
   float heap_growth_factor = 2;
 
   bool trace = false;
+  std::ostream& out_stream = std::cerr;
   std::ostream& err_stream = std::cout;
-  std::ostream& log_stream = std::cerr;
 };
 
 class GarbageCollector {
@@ -95,6 +95,8 @@ public:
       this->add_heap();
     }
   }
+  GarbageCollector(const GarbageCollector&) = delete;
+  GarbageCollector(GarbageCollector&&) = delete;
   ~GarbageCollector() {
     for (MemoryCell* heap : this->heaps) {
       std::free(heap);

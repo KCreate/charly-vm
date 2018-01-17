@@ -41,13 +41,13 @@ public:
   }
   ~ManagedContext() {
     for (auto& temp : this->temporaries) {
-      this->vm.context.gc.unmark_persistent(temp);
+      this->vm.gc.unmark_persistent(temp);
     }
   }
 
   template <class T>
   inline T mark_in_gc(T&& value) {
-    this->vm.context.gc.mark_persistent(reinterpret_cast<VALUE>(value));
+    this->vm.gc.mark_persistent(reinterpret_cast<VALUE>(value));
     this->temporaries.push_back(reinterpret_cast<VALUE>(value));
     return value;
   }

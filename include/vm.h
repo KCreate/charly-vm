@@ -75,7 +75,6 @@ struct VMContext {
   SymbolTable& symtable;
   StringPool& stringpool;
   Compilation::CompilerManager& compiler_manager;
-  GarbageCollector& gc;
 
   bool instruction_profile = false;
   bool trace_opcodes = false;
@@ -91,21 +90,21 @@ class VM {
   friend ManagedContext;
 
 public:
-  VM(VMContext& ctx) : context(ctx), frames(nullptr), catchstack(nullptr), ip(nullptr), halted(false) {
-    ctx.gc.mark_ptr_persistent(reinterpret_cast<VALUE**>(&this->frames));
-    ctx.gc.mark_ptr_persistent(reinterpret_cast<VALUE**>(&this->catchstack));
-    ctx.gc.mark_ptr_persistent(reinterpret_cast<VALUE**>(&this->top_frame));
-    ctx.gc.mark_vector_ptr_persistent(&this->stack);
+  VM(VMContext& ctx) : context(ctx), gc(GarbageCollectorConfig{ .out_stream = ctx.out_stream, .err_stream = ctx.err_stream }), frames(nullptr), catchstack(nullptr), ip(nullptr), halted(false) {
+    this->gc.mark_ptr_persistent(reinterpret_cast<VALUE**>(&this->frames));
+    this->gc.mark_ptr_persistent(reinterpret_cast<VALUE**>(&this->catchstack));
+    this->gc.mark_ptr_persistent(reinterpret_cast<VALUE**>(&this->top_frame));
+    this->gc.mark_vector_ptr_persistent(&this->stack);
     this->exec_prelude();
   }
   VM(const VM& other) = delete;
   VM(VM&& other) = delete;
   ~VM() {
-    this->context.gc.unmark_ptr_persistent(reinterpret_cast<VALUE**>(&this->frames));
-    this->context.gc.unmark_ptr_persistent(reinterpret_cast<VALUE**>(&this->catchstack));
-    this->context.gc.unmark_ptr_persistent(reinterpret_cast<VALUE**>(&this->top_frame));
-    this->context.gc.unmark_vector_ptr_persistent(&this->stack);
-    this->context.gc.collect();
+    this->gc.unmark_ptr_persistent(reinterpret_cast<VALUE**>(&this->frames));
+    this->gc.unmark_ptr_persistent(reinterpret_cast<VALUE**>(&this->catchstack));
+    this->gc.unmark_ptr_persistent(reinterpret_cast<VALUE**>(&this->top_frame));
+    this->gc.unmark_vector_ptr_persistent(&this->stack);
+    this->gc.collect();
   }
 
   // Methods that operate on the VM's frames
@@ -259,9 +258,6 @@ public:
   void op_branchunless(int32_t offset);
   void op_typeof();
 
-  VMContext context;
-  VMInstructionProfile instruction_profile;
-
   inline void set_primitive_object(VALUE value) {
     this->primitive_object = value;
   }
@@ -287,7 +283,12 @@ public:
     this->primitive_null = value;
   }
 
+  VMContext context;
+  VMInstructionProfile instruction_profile;
+
 private:
+  GarbageCollector gc;
+
   // Used to avoid an overflow when printing cyclic data structures
   std::vector<VALUE> pretty_print_stack;
 

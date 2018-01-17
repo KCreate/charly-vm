@@ -161,7 +161,7 @@ void GarbageCollector::mark(const std::vector<VALUE>& list) {
 void GarbageCollector::collect() {
   auto gc_start_time = std::chrono::high_resolution_clock::now();
   if (this->config.trace) {
-    this->config.log_stream << "#-- GC: Pause --#" << '\n';
+    this->config.out_stream << "#-- GC: Pause --#" << '\n';
   }
 
   // Mark all temporaries
@@ -197,8 +197,8 @@ void GarbageCollector::collect() {
 
   if (this->config.trace) {
     std::chrono::duration<double> gc_collect_duration = std::chrono::high_resolution_clock::now() - gc_start_time;
-    this->config.log_stream << "#-- GC: Freed " << (freed_cells_count * sizeof(MemoryCell)) << " bytes --#" << '\n';
-    this->config.log_stream << "#-- GC: Finished in " << gc_collect_duration.count() * 1000000000 << " nanoseconds --#"
+    this->config.out_stream << "#-- GC: Freed " << (freed_cells_count * sizeof(MemoryCell)) << " bytes --#" << '\n';
+    this->config.out_stream << "#-- GC: Finished in " << gc_collect_duration.count() * 1000000000 << " nanoseconds --#"
                             << '\n';
   }
 }

@@ -72,6 +72,12 @@ int CLI::run() {
 
   // Read the prelude
   char* stdlibpath = std::getenv("CHARLYVMDIR");
+
+  if (stdlibpath == nullptr) {
+    std::cerr << "Could not locate stdlib folder. Set the CHARLYVMDIR environment variable" << '\n';
+    return 1;
+  }
+
   std::string preludepath = std::string(stdlibpath) + "/src/stdlib/prelude.ch";
   std::ifstream preludefile(preludepath);
   if (!preludefile.is_open()) {
@@ -96,12 +102,9 @@ int CLI::run() {
     return 0;
   }
 
-  GarbageCollector gc(
-      {.initial_heap_count = 8, .heap_cell_count = 512, .heap_growth_factor = 1.5, .trace = this->flags.trace_gc});
   VMContext context({.symtable = cmanager.symtable,
                      .stringpool = cmanager.stringpool,
                      .compiler_manager = cmanager,
-                     .gc = gc,
                      .instruction_profile = this->flags.instruction_profile,
                      .trace_opcodes = this->flags.trace_opcodes,
                      .trace_catchtables = this->flags.trace_catchtables,
