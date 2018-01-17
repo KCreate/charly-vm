@@ -1321,12 +1321,10 @@ void VM::call_class(Class* klass, uint32_t argc, VALUE* argv) {
   if (success) {
     this->push_stack(reinterpret_cast<VALUE>(object));
   }
-
-  this->stackdump(this->context.out_stream);
 }
 
 void VM::initialize_member_properties(Class* klass, Object* object) {
-  if (VM::real_type(klass->parent_class) != kTypeClass) {
+  if (VM::real_type(klass->parent_class) == kTypeClass) {
     this->initialize_member_properties(reinterpret_cast<Class*>(klass->parent_class), object);
   }
 
