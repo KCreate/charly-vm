@@ -442,13 +442,11 @@ AST::AbstractNode* CodeGenerator::visit_indexassignment(AST::IndexAssignment* no
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_andindexassignment(AST::ANDIndexAssignment* node, VisitContinue cont) {
-  (void)cont;
-
+AST::AbstractNode* CodeGenerator::visit_andindexassignment(AST::ANDIndexAssignment* node, VisitContinue) {
   this->visit_node(node->target);
   this->visit_node(node->index);
-  this->assembler.write_topn(1);
-  this->assembler.write_topn(1);
+  this->assembler.write_dupn(2);
+  this->assembler.write_readmembervalue();
   this->visit_node(node->expression);
   this->assembler.write_operator(kOperatorOpcodeMapping[node->operator_type]);
   this->assembler.write_setmembervalue();

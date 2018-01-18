@@ -204,20 +204,14 @@ enum Opcode : uint8_t {
   // Duplicate the top value of the stack
   Dup,
 
+  // Duplicate the top count values of the stack
+  //
+  // args:
+  // - count
+  Dupn,
+
   // Swap the top two values of the stack
   Swap,
-
-  // Push the nth value of the stack
-  //
-  // args:
-  // - offset
-  Topn,
-
-  // Peek value from stack and store it at nth
-  //
-  // args:
-  // - offset
-  Setn,
 
   // Call a function with argc arguments
   //
@@ -353,9 +347,8 @@ static constexpr uint32_t kInstructionLengths[]{
   /* PutClass */           1 + sizeof(VALUE) + sizeof(uint32_t) * 4 + sizeof(bool) + sizeof(bool),
   /* Pop */                1,
   /* Dup */                1,
+  /* Dupn */               1 + sizeof(uint32_t),
   /* Swap */               1,
-  /* Topn */               1 + sizeof(uint32_t),
-  /* Setn */               1 + sizeof(uint32_t),
   /* Call */               1 + sizeof(uint32_t),
   /* CallMember */         1 + sizeof(uint32_t),
   /* Return */             1,
@@ -413,9 +406,8 @@ static std::string kOpcodeMnemonics[]{
   "putclass",
   "pop",
   "dup",
+  "dupn",
   "swap",
-  "topn",
-  "setn",
   "call",
   "callmember",
   "return",

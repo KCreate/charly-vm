@@ -1612,31 +1612,31 @@ void VM::op_dup() {
   this->push_stack(this->stack.back());
 }
 
+void VM::op_dupn(uint32_t count) {
+  VALUE buffer[count];
+  size_t off = 0;
+
+  // Pop count elements off the stack into our local buffer
+  while (count--) {
+    buffer[off++] = this->pop_stack();
+  }
+
+  // Push them back onto the stack twice
+  size_t backup_off = off;
+  while (off--) {
+    this->push_stack(buffer[off]);
+  }
+  off = backup_off;
+  while (off--) {
+    this->push_stack(buffer[off]);
+  }
+}
+
 void VM::op_swap() {
   VALUE value1 = this->pop_stack();
   VALUE value2 = this->pop_stack();
   this->push_stack(value1);
   this->push_stack(value2);
-}
-
-void VM::op_topn(uint32_t offset) {
-  // Check if there are enough items on the stack
-  if (this->stack.size() <= offset) {
-    this->push_stack(kNull);
-  } else {
-    VALUE value = *(this->stack.end() - (offset + 1));
-    this->push_stack(value);
-  }
-}
-
-void VM::op_setn(uint32_t offset) {
-  // Check if there are enough items on the stack
-  if (this->stack.size() <= offset) {
-    this->pop_stack();
-  } else {
-    VALUE& ref = *(this->stack.end() - (offset + 1));
-    ref = this->stack.back();
-  }
 }
 
 void VM::op_call(uint32_t argc) {
@@ -2213,22 +2213,17 @@ void VM::run() {
 
       case Opcode::Dup: {
         this->op_dup();
+        break;
+      }
+
+      case Opcode::Dupn: {
+        uint32_t count = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+        this->op_dupn(count);
+        break;
       }
 
       case Opcode::Swap: {
         this->op_swap();
-        break;
-      }
-
-      case Opcode::Topn: {
-        uint32_t offset = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
-        this->op_topn(offset);
-        break;
-      }
-
-      case Opcode::Setn: {
-        uint32_t offset = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
-        this->op_setn(offset);
         break;
       }
 

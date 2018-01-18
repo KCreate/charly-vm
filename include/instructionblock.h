@@ -150,18 +150,13 @@ public:
     this->write(Opcode::Dup);
   }
 
+  inline void write_dupn(uint32_t count) {
+    this->write(Opcode::Dupn);
+    this->write(count);
+  }
+
   inline void write_swap() {
     this->write(Opcode::Swap);
-  }
-
-  inline void write_topn(uint32_t index) {
-    this->write(Opcode::Topn);
-    this->write(index);
-  }
-
-  inline void write_setn(uint32_t index) {
-    this->write(Opcode::Setn);
-    this->write(index);
   }
 
   inline void write_call(uint32_t argc) {

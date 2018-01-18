@@ -1,12 +1,7 @@
-const obj = {
-  name: "leonard",
-  age: 17
-}
+const arr = [1, 2, 3]
+func get = arr
+func bar = 2
 
-const k1 = "name"
-const k2 = "age"
-const k3 = "klass"
+get()[bar()] += 100
 
-print(obj[k1])
-print(obj[k2])
-print(obj[k3])
+print(arr)

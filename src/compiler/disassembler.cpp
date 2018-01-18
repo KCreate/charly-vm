@@ -141,8 +141,7 @@ void Disassembler::dump(std::ostream& stream) {
       }
       case Opcode::PutArray:
       case Opcode::PutHash:
-      case Opcode::Topn:
-      case Opcode::Setn:
+      case Opcode::Dupn:
       case Opcode::Call:
       case Opcode::CallMember: {
         this->print_value(this->block->read<uint32_t>(offset + 1), stream);
