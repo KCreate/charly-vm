@@ -47,9 +47,7 @@ InstructionBlock* CodeGenerator::compile(AST::AbstractNode* node) {
   return new InstructionBlock(this->assembler);
 }
 
-AST::AbstractNode* CodeGenerator::visit_block(AST::Block* node, VisitContinue cont) {
-  (void)cont;
-
+AST::AbstractNode* CodeGenerator::visit_block(AST::Block* node, VisitContinue) {
   this->assembler.write_nop();
   for (auto& node : node->statements) {
     this->visit_node(node);
@@ -63,8 +61,7 @@ AST::AbstractNode* CodeGenerator::visit_block(AST::Block* node, VisitContinue co
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_ternaryif(AST::TernaryIf* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_ternaryif(AST::TernaryIf* node, VisitContinue) {
 
   // Codegen the condition
   this->visit_node(node->condition);
@@ -82,8 +79,7 @@ AST::AbstractNode* CodeGenerator::visit_ternaryif(AST::TernaryIf* node, VisitCon
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_if(AST::If* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_if(AST::If* node, VisitContinue) {
 
   // Codegen the condition
   this->visit_node(node->condition);
@@ -97,8 +93,7 @@ AST::AbstractNode* CodeGenerator::visit_if(AST::If* node, VisitContinue cont) {
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_ifelse(AST::IfElse* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_ifelse(AST::IfElse* node, VisitContinue) {
 
   // Codegen the condition
   this->visit_node(node->condition);
@@ -116,8 +111,7 @@ AST::AbstractNode* CodeGenerator::visit_ifelse(AST::IfElse* node, VisitContinue 
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_unless(AST::Unless* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_unless(AST::Unless* node, VisitContinue) {
 
   // Codegen the condition
   this->visit_node(node->condition);
@@ -131,8 +125,7 @@ AST::AbstractNode* CodeGenerator::visit_unless(AST::Unless* node, VisitContinue 
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_unlesselse(AST::UnlessElse* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_unlesselse(AST::UnlessElse* node, VisitContinue) {
 
   // Codegen the condition
   this->visit_node(node->condition);
@@ -150,8 +143,7 @@ AST::AbstractNode* CodeGenerator::visit_unlesselse(AST::UnlessElse* node, VisitC
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_guard(AST::Guard* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_guard(AST::Guard* node, VisitContinue) {
 
   // Codegen the condition
   this->visit_node(node->condition);
@@ -165,8 +157,7 @@ AST::AbstractNode* CodeGenerator::visit_guard(AST::Guard* node, VisitContinue co
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_while(AST::While* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_while(AST::While* node, VisitContinue) {
 
   // Setup labels
   Label condition_label = this->assembler.place_label();
@@ -190,8 +181,7 @@ AST::AbstractNode* CodeGenerator::visit_while(AST::While* node, VisitContinue co
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_until(AST::Until* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_until(AST::Until* node, VisitContinue) {
 
   // Setup labels
   Label condition_label = this->assembler.place_label();
@@ -215,8 +205,7 @@ AST::AbstractNode* CodeGenerator::visit_until(AST::Until* node, VisitContinue co
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_loop(AST::Loop* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_loop(AST::Loop* node, VisitContinue) {
 
   // Setup labels
   Label block_label = this->assembler.place_label();
@@ -236,8 +225,7 @@ AST::AbstractNode* CodeGenerator::visit_loop(AST::Loop* node, VisitContinue cont
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_unary(AST::Unary* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_unary(AST::Unary* node, VisitContinue) {
 
   // Codegen expression
   this->visit_node(node->expression);
@@ -246,8 +234,7 @@ AST::AbstractNode* CodeGenerator::visit_unary(AST::Unary* node, VisitContinue co
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_binary(AST::Binary* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_binary(AST::Binary* node, VisitContinue) {
 
   // Codegen expression
   this->visit_node(node->left);
@@ -257,8 +244,7 @@ AST::AbstractNode* CodeGenerator::visit_binary(AST::Binary* node, VisitContinue 
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_switch(AST::Switch* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_switch(AST::Switch* node, VisitContinue) {
 
   // TODO: Lay this out more efficiently
   // Currently a switch is codegened like this
@@ -350,8 +336,7 @@ AST::AbstractNode* CodeGenerator::visit_switch(AST::Switch* node, VisitContinue 
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_and(AST::And* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_and(AST::And* node, VisitContinue) {
 
   // Label setup
   Label end_and_label = this->assembler.reserve_label();
@@ -368,8 +353,7 @@ AST::AbstractNode* CodeGenerator::visit_and(AST::And* node, VisitContinue cont) 
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_or(AST::Or* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_or(AST::Or* node, VisitContinue) {
 
   // Label setup
   Label end_or_label = this->assembler.reserve_label();
@@ -405,8 +389,7 @@ AST::AbstractNode* CodeGenerator::visit_assignment(AST::Assignment* node, VisitC
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_memberassignment(AST::MemberAssignment* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_memberassignment(AST::MemberAssignment* node, VisitContinue) {
 
   // Codegen assignment
   this->visit_node(node->target);
@@ -416,8 +399,7 @@ AST::AbstractNode* CodeGenerator::visit_memberassignment(AST::MemberAssignment* 
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_andmemberassignment(AST::ANDMemberAssignment* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_andmemberassignment(AST::ANDMemberAssignment* node, VisitContinue) {
 
   // Codegen assignment
   this->visit_node(node->target);
@@ -430,8 +412,7 @@ AST::AbstractNode* CodeGenerator::visit_andmemberassignment(AST::ANDMemberAssign
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_indexassignment(AST::IndexAssignment* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_indexassignment(AST::IndexAssignment* node, VisitContinue) {
 
   // Codegen assignment
   this->visit_node(node->target);
@@ -454,8 +435,7 @@ AST::AbstractNode* CodeGenerator::visit_andindexassignment(AST::ANDIndexAssignme
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_call(AST::Call* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_call(AST::Call* node, VisitContinue) {
 
   // Codegen target
   this->visit_node(node->target);
@@ -470,8 +450,7 @@ AST::AbstractNode* CodeGenerator::visit_call(AST::Call* node, VisitContinue cont
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_callmember(AST::CallMember* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_callmember(AST::CallMember* node, VisitContinue) {
 
   // Codegen target
   this->visit_node(node->context);
@@ -490,8 +469,7 @@ AST::AbstractNode* CodeGenerator::visit_callmember(AST::CallMember* node, VisitC
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_callindex(AST::CallIndex* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_callindex(AST::CallIndex* node, VisitContinue) {
 
   // Codegen target
   this->visit_node(node->context);
@@ -511,8 +489,7 @@ AST::AbstractNode* CodeGenerator::visit_callindex(AST::CallIndex* node, VisitCon
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_identifier(AST::Identifier* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_identifier(AST::Identifier* node, VisitContinue) {
 
   // Check if we have the offset info for this identifier
   if (node->offset_info == nullptr) {
@@ -524,21 +501,18 @@ AST::AbstractNode* CodeGenerator::visit_identifier(AST::Identifier* node, VisitC
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_indexintoarguments(AST::IndexIntoArguments* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_indexintoarguments(AST::IndexIntoArguments* node, VisitContinue) {
   this->assembler.write_readlocal(0, 0);
   this->assembler.write_readarrayindex(node->index);
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_self(AST::Self* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_self(AST::Self* node, VisitContinue) {
   this->assembler.write_putself(node->ir_frame_level);
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_member(AST::Member* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_member(AST::Member* node, VisitContinue) {
 
   // Codegen target
   this->visit_node(node->target);
@@ -547,8 +521,7 @@ AST::AbstractNode* CodeGenerator::visit_member(AST::Member* node, VisitContinue 
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_index(AST::Index* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_index(AST::Index* node, VisitContinue) {
 
   // Codegen target
   this->visit_node(node->target);
@@ -558,20 +531,17 @@ AST::AbstractNode* CodeGenerator::visit_index(AST::Index* node, VisitContinue co
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_null(AST::Null* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_null(AST::Null* node, VisitContinue) {
   this->assembler.write_putvalue(kNull);
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_nan(AST::Nan* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_nan(AST::Nan* node, VisitContinue) {
   this->assembler.write_putfloat(NAN);
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_string(AST::String* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_string(AST::String* node, VisitContinue) {
 
   StringOffsetInfo info = this->context.stringpool.get_offsetinfo(node->value);
   this->assembler.write_putstring(info.offset, info.length);
@@ -579,8 +549,7 @@ AST::AbstractNode* CodeGenerator::visit_string(AST::String* node, VisitContinue 
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_number(AST::Number* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_number(AST::Number* node, VisitContinue) {
 
   if (ceilf(node->value) == node->value) {
     this->assembler.write_putvalue(VALUE_ENCODE_INTEGER(node->value));
@@ -591,14 +560,12 @@ AST::AbstractNode* CodeGenerator::visit_number(AST::Number* node, VisitContinue 
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_boolean(AST::Boolean* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_boolean(AST::Boolean* node, VisitContinue) {
   this->assembler.write_putvalue(node->value ? kTrue : kFalse);
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_array(AST::Array* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_array(AST::Array* node, VisitContinue) {
 
   // Codegen array expressions
   for (auto child : node->expressions->children) {
@@ -608,8 +575,7 @@ AST::AbstractNode* CodeGenerator::visit_array(AST::Array* node, VisitContinue co
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_hash(AST::Hash* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_hash(AST::Hash* node, VisitContinue) {
 
   // Codegen hash key and values expressions
   for (auto& pair : node->pairs) {
@@ -620,8 +586,7 @@ AST::AbstractNode* CodeGenerator::visit_hash(AST::Hash* node, VisitContinue cont
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_function(AST::Function* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_function(AST::Function* node, VisitContinue) {
 
   // Label setup
   Label function_block_label = this->assembler.reserve_label();
@@ -635,8 +600,7 @@ AST::AbstractNode* CodeGenerator::visit_function(AST::Function* node, VisitConti
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_class(AST::Class* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_class(AST::Class* node, VisitContinue) {
 
   // Codegen all regular and static members
   for (auto n : node->member_properties->children) {
@@ -683,8 +647,7 @@ AST::AbstractNode* CodeGenerator::visit_throw(AST::Throw* node, VisitContinue co
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_break(AST::Break* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_break(AST::Break* node, VisitContinue) {
 
   // Check if there is a label for the break instruction
   if (this->break_stack.size() == 0) {
@@ -695,8 +658,7 @@ AST::AbstractNode* CodeGenerator::visit_break(AST::Break* node, VisitContinue co
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_continue(AST::Continue* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_continue(AST::Continue* node, VisitContinue) {
 
   // Check if there is a label for the continue instruction
   if (this->continue_stack.size() == 0) {
@@ -707,8 +669,7 @@ AST::AbstractNode* CodeGenerator::visit_continue(AST::Continue* node, VisitConti
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_trycatch(AST::TryCatch* node, VisitContinue cont) {
-  (void)cont;
+AST::AbstractNode* CodeGenerator::visit_trycatch(AST::TryCatch* node, VisitContinue) {
 
   // Implementation of this method was inspired by:
   // http://lists.llvm.org/pipermail/llvm-dev/2008-April/013978.html

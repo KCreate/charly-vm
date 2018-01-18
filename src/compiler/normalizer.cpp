@@ -32,9 +32,7 @@
 #include "normalizer.h"
 
 namespace Charly::Compilation {
-AST::AbstractNode* Normalizer::visit_block(AST::Block* node, VisitContinue cont) {
-  (void)cont;
-
+AST::AbstractNode* Normalizer::visit_block(AST::Block* node, VisitContinue) {
   std::list<AST::AbstractNode*> remaining_statements;
 
   // Remove all unneeded nodes
