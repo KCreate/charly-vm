@@ -32,15 +32,10 @@
 #pragma once
 
 namespace Charly {
-
-// Different constants for string handling
-static const size_t kStringInitialCapacity = 32;
-static const float kStringCapacityGrowthFactor = 1.5;
-static const std::string kUndefinedSymbolString = "<undefined symbol>";
-
 // Different masks for the flags field in the Basic struct
-static const VALUE kFlagType = 0b00011111;
-static const VALUE kFlagMark = 0b00100000;
+static const VALUE kFlagType        = 0b00011111;
+static const VALUE kFlagMark        = 0b00100000;
+static const VALUE kFlagShortString = 0b01000000;
 
 // Type constants
 enum kValueTypes : uint8_t {
@@ -89,7 +84,7 @@ static std::string kValueTypeString[] = {
 // Basic fields every data type in Charly has
 // This is inspired by the way Ruby stores it's values
 struct Basic {
-  VALUE flags;
+  uint8_t flags;
   Basic() : flags(kTypeDead) {
   }
 
@@ -100,14 +95,19 @@ struct Basic {
   inline bool mark() {
     return (this->flags & kFlagMark) != 0;
   }
+  inline bool short_string() {
+    return (this->flags & kFlagShortString) != 0;
+  }
 
   // Setters for different flag fields
   inline void set_type(uint8_t val) {
     this->flags = ((this->flags & ~kFlagType) | (kFlagType & val));
   }
-
   inline void set_mark(bool val) {
     this->flags ^= (-val ^ this->flags) & kFlagMark;
+  }
+  inline void set_short_string(bool val) {
+    this->flags ^= (-val ^ this->flags) & kFlagShortString;
   }
 };
 
@@ -195,14 +195,42 @@ struct Array {
 };
 
 // String type
+//
+// A field inside the Basic structure tells the VM which representation is currently active
+// +- Basic field
+// |
+// v
+// 0x00 0x00 0x00 0x00 0x00
+//      ^                 ^
+//      |                 |
+//      +-----------------+- Long string length
+//      |
+//      +- Short string length
+static const uint32_t kShortStringMaxSize = 62;
 struct String {
   Basic basic;
-  char* data;
-  uint32_t length;
-  uint32_t capacity;
 
-  void inline clean() {
-    std::free(this->data);
+  union {
+    struct {
+      uint32_t length;
+      char* data;
+    } lbuf;
+    struct {
+      uint8_t length;
+      char data[kShortStringMaxSize];
+    } sbuf;
+  };
+
+  inline char* data() {
+    return basic.short_string() ? sbuf.data : lbuf.data;
+  }
+  inline uint32_t length() {
+    return basic.short_string() ? sbuf.length : lbuf.length;
+  }
+  inline void clean() {
+    if (!basic.short_string()) {
+      std::free(lbuf.data);
+    }
   }
 };
 
@@ -221,7 +249,7 @@ struct Frame {
   Frame* parent_environment_frame;
   CatchTable* last_active_catchtable;
   Function* function;
-  std::vector<VALUE> environment;
+  std::vector<VALUE>* environment;
   VALUE self;
   uint8_t* return_address;
   bool halt_after_return;

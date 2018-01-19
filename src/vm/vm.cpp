@@ -64,9 +64,10 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address,
   uint32_t lvarcount = 1 + function->argc + function->lvarcount;
 
   // Allocate and prefill local variable space
-  cell->frame.environment.reserve(lvarcount);
+  cell->frame.environment = new std::vector<VALUE>();
+  cell->frame.environment->reserve(lvarcount);
   while (lvarcount--)
-    cell->frame.environment.push_back(kNull);
+    cell->frame.environment->push_back(kNull);
 
   // Append the frame
   this->frames = cell->as<Frame>();
@@ -95,9 +96,10 @@ Frame* VM::create_frame(VALUE self,
   cell->frame.self = self;
   cell->frame.return_address = return_address;
   cell->frame.halt_after_return = halt_after_return;
-  cell->frame.environment.reserve(lvarcount);
+  cell->frame.environment = new std::vector<VALUE>();
+  cell->frame.environment->reserve(lvarcount);
   while (lvarcount--)
-    cell->frame.environment.push_back(kNull);
+    cell->frame.environment->push_back(kNull);
 
   // Append the frame
   this->frames = cell->as<Frame>();
@@ -245,21 +247,28 @@ VALUE VM::create_float(double value) {
 }
 
 VALUE VM::create_string(const char* data, uint32_t length) {
-  // Calculate the initial capacity of the string
-  size_t string_capacity = kStringInitialCapacity;
-  while (string_capacity <= length)
-    string_capacity *= kStringCapacityGrowthFactor;
-
-  // Create a copy of the data
-  char* copied_string = static_cast<char*>(calloc(sizeof(char), string_capacity));
-  memcpy(copied_string, data, length);
-
-  // Allocate the memory cell and initialize the values
+  // Check if we can create a short string
   MemoryCell* cell = this->gc.allocate();
   cell->basic.set_type(kTypeString);
-  cell->string.data = copied_string;
-  cell->string.length = length;
-  cell->string.capacity = string_capacity;
+
+  if (length <= kShortStringMaxSize) {
+
+    // Copy the string into the cell itself
+    cell->basic.set_short_string(true);
+    std::memcpy(cell->string.sbuf.data, data, length);
+    cell->string.sbuf.length = length;
+  } else {
+
+    // Copy the string onto the heap
+    char* copied_string = static_cast<char*>(calloc(sizeof(char), length));
+    std::memcpy(copied_string, data, length);
+
+    // Setup long string
+    cell->basic.set_short_string(false);
+    cell->string.lbuf.data = copied_string;
+    cell->string.lbuf.length = length;
+  }
+
   return cell->as_value();
 }
 
@@ -386,7 +395,7 @@ VALUE VM::deep_copy_array(VALUE array) {
 
 VALUE VM::copy_string(VALUE string) {
   String* source = reinterpret_cast<String*>(string);
-  return this->create_string(source->data, source->length);
+  return this->create_string(source->data(), source->length());
 }
 
 VALUE VM::copy_function(VALUE function) {
@@ -425,8 +434,8 @@ int64_t VM::cast_to_integer(VALUE value) {
     case kTypeFloat: return VM::float_value(value);
     case kTypeString: {
       String* string = reinterpret_cast<String*>(value);
-      char* end_it = string->data + string->length;
-      int64_t interpreted = strtol(string->data, &end_it, 0);
+      char* end_it = string->data() + string->length();
+      int64_t interpreted = strtol(string->data(), &end_it, 0);
 
       // strol sets errno to ERANGE if the result value doesn't fit
       // into the return type
@@ -435,7 +444,7 @@ int64_t VM::cast_to_integer(VALUE value) {
         return NAN;
       }
 
-      if (end_it == string->data) {
+      if (end_it == string->data()) {
         return NAN;
       }
 
@@ -454,8 +463,8 @@ double VM::cast_to_double(VALUE value) {
     case kTypeFloat: return VM::float_value(value);
     case kTypeString: {
       String* string = reinterpret_cast<String*>(value);
-      char* end_it = string->data + string->length;
-      double interpreted = strtod(string->data, &end_it);
+      char* end_it = string->data() + string->length();
+      double interpreted = strtod(string->data(), &end_it);
 
       // HUGE_VAL gets returned when the converted value
       // doesn't fit inside a double value
@@ -465,7 +474,7 @@ double VM::cast_to_double(VALUE value) {
 
       // If strtod could not perform a conversion it returns 0
       // and sets *str_end to str
-      if (end_it == string->data)
+      if (end_it == string->data())
         return NAN;
 
       // The value could be converted
@@ -522,7 +531,7 @@ VALUE VM::symbol_value(VALUE value) {
     case kTypeString: {
       String* str = reinterpret_cast<String*>(value);
       // TODO: Don't allocate a string here every time this is called
-      return this->context.symtable(std::string(str->data, str->length));
+      return this->context.symtable(std::string(str->data(), str->length()));
     }
     case kTypeFloat: {
       double val = VM::double_value(value);
@@ -694,11 +703,11 @@ VALUE VM::eq(VALUE left, VALUE right) {
     String* sleft = reinterpret_cast<String*>(left);
     String* sright = reinterpret_cast<String*>(right);
 
-    if (sleft->length != sright->length) {
+    if (sleft->length() != sright->length()) {
       return kFalse;
     }
 
-    return strcmp(sleft->data, sright->data) ? kTrue : kFalse;
+    return std::strncmp(sleft->data(), sright->data(), sleft->length()) ? kTrue : kFalse;
   }
 
   return left == right ? kTrue : kFalse;
@@ -718,7 +727,7 @@ VALUE VM::lt(VALUE left, VALUE right) {
   if (VM::real_type(left) == kTypeString && VM::real_type(right) == kTypeString) {
     String* sleft = reinterpret_cast<String*>(left);
     String* sright = reinterpret_cast<String*>(right);
-    return sleft->length < sright->length ? kTrue : kFalse;
+    return sleft->length() < sright->length() ? kTrue : kFalse;
   }
 
   return kFalse;
@@ -734,7 +743,7 @@ VALUE VM::gt(VALUE left, VALUE right) {
   if (VM::real_type(left) == kTypeString && VM::real_type(right) == kTypeString) {
     String* sleft = reinterpret_cast<String*>(left);
     String* sright = reinterpret_cast<String*>(right);
-    return sleft->length > sright->length ? kTrue : kFalse;
+    return sleft->length() > sright->length() ? kTrue : kFalse;
   }
 
   return kFalse;
@@ -750,7 +759,7 @@ VALUE VM::le(VALUE left, VALUE right) {
   if (VM::real_type(left) == kTypeString && VM::real_type(right) == kTypeString) {
     String* sleft = reinterpret_cast<String*>(left);
     String* sright = reinterpret_cast<String*>(right);
-    return sleft->length <= sright->length ? kTrue : kFalse;
+    return sleft->length() <= sright->length() ? kTrue : kFalse;
   }
 
   return kFalse;
@@ -766,7 +775,7 @@ VALUE VM::ge(VALUE left, VALUE right) {
   if (VM::real_type(left) == kTypeString && VM::real_type(right) == kTypeString) {
     String* sleft = reinterpret_cast<String*>(left);
     String* sright = reinterpret_cast<String*>(right);
-    return sleft->length >= sright->length ? kTrue : kFalse;
+    return sleft->length() >= sright->length() ? kTrue : kFalse;
   }
 
   return kFalse;
@@ -976,7 +985,7 @@ VALUE VM::readmembervalue(VALUE source, VALUE value) {
 
         // Negative indices read from the end of the string
         if (index < 0) {
-          index += str->length;
+          index += str->length();
         }
 
         // Altough strings are utf8 encoded and byte_index != cp_index
@@ -984,18 +993,18 @@ VALUE VM::readmembervalue(VALUE source, VALUE value) {
         // because a utf8 codepoint is at least 1 byte
         //
         // We perform a check for codepoint index later on
-        if (index < 0 || index >= str->length) {
+        if (index < 0 || index >= str->length()) {
           return kNull;
         }
 
         // Calculate the index of the codepoint
-        char* start_iterator = str->data;
+        char* start_iterator = str->data();
         while (index--) {
-          if (start_iterator >= str->data + str->length) {
+          if (start_iterator >= str->data() + str->length()) {
             return kNull;
           }
 
-          utf8::advance(start_iterator, 1, str->data + str->length);
+          utf8::advance(start_iterator, 1, str->data() + str->length());
         }
 
         return this->create_string(start_iterator, 1);
@@ -1261,14 +1270,14 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
     // We can't inject more argument than the function expects because the
     // readlocal and setlocal instructions contain fixed offsets
     if (i < function->argc) {
-      frame->environment[i + 1] = argv[i];
+      (*frame->environment)[i + 1] = argv[i];
     }
     arguments_array->data->push_back(argv[i]);
   }
 
   // Insert the argument value and make it a constant
   // This is so that we can be sure that noone is going to overwrite it afterwards
-  frame->environment[0] = reinterpret_cast<VALUE>(arguments_array);
+  (*frame->environment)[0] = reinterpret_cast<VALUE>(arguments_array);
 
   this->ip = function->body_address;
 }
@@ -1382,11 +1391,11 @@ void VM::op_readlocal(uint32_t index, uint32_t level) {
   }
 
   // Check if the index isn't out-of-bounds
-  if (index >= frame->environment.size()) {
+  if (index >= frame->environment->size()) {
     return this->panic(Status::ReadFailedOutOfBounds);
   }
 
-  this->push_stack(frame->environment[index]);
+  this->push_stack((*frame->environment)[index]);
 }
 
 void VM::op_readmembersymbol(VALUE symbol) {
@@ -1434,8 +1443,8 @@ void VM::op_setlocal(uint32_t index, uint32_t level) {
   }
 
   // Check if the index isn't out-of-bounds
-  if (index < frame->environment.size()) {
-    frame->environment[index] = value;
+  if (index < frame->environment->size()) {
+    (*frame->environment)[index] = value;
   } else {
     this->panic(Status::WriteFailedOutOfBounds);
   }
@@ -1823,8 +1832,11 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       String* string = reinterpret_cast<String*>(value);
       io << "<String:" << string << " ";
       io << "\"";
-      io.write(string->data, string->length);
+      io.write(string->data(), string->length());
       io << "\"";
+      if (string->basic.short_string()) {
+        io << " +";
+      }
       io << ">";
       break;
     }

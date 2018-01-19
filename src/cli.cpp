@@ -35,8 +35,6 @@
 #include "sourcefile.h"
 
 namespace Charly {
-using namespace Compilation;
-
 int CLI::run() {
   if (this->flags.show_help) {
     std::cout << kHelpMessage << '\n';
@@ -86,7 +84,7 @@ int CLI::run() {
   }
   std::string prelude_string((std::istreambuf_iterator<char>(preludefile)), std::istreambuf_iterator<char>());
 
-  CompilerManager cmanager(this->flags);
+  Compilation::CompilerManager cmanager(this->flags);
   auto cresult_userfile = cmanager.compile(this->flags.arguments[0], source_string);
   auto cresult_prelude = cmanager.compile("prelude.ch", prelude_string);
 

@@ -47,7 +47,7 @@ VALUE require(VM& vm, VALUE vfilename) {
   }
 
   String* sfilename = reinterpret_cast<String*>(vfilename);
-  std::string filename = std::string(sfilename->data, sfilename->length);
+  std::string filename = std::string(sfilename->data(), sfilename->length());
 
   std::ifstream inputfile(filename);
   if (!inputfile.is_open()) {
@@ -74,7 +74,7 @@ VALUE get_method(VM& vm, VALUE argument) {
   }
 
   String* arg_string = reinterpret_cast<String*>(argument);
-  std::string methodname(arg_string->data, arg_string->length);
+  std::string methodname(arg_string->data(), arg_string->length());
 
   static std::unordered_map<std::string, uintptr_t> method_mapping = {
       {"require", reinterpret_cast<uintptr_t>(Internals::require)},

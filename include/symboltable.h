@@ -31,6 +31,7 @@
 #pragma once
 
 namespace Charly {
+static const std::string kUndefinedSymbolString = "<undefined symbol>";
 class SymbolTable {
 private:
   std::unordered_map<VALUE, std::string> table;

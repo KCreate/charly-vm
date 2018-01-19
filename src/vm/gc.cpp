@@ -137,7 +137,7 @@ void GarbageCollector::mark(VALUE value) {
       this->mark(reinterpret_cast<VALUE>(frame->last_active_catchtable));
       this->mark(reinterpret_cast<VALUE>(frame->function));
       this->mark(frame->self);
-      for (auto lvar : frame->environment)
+      for (auto lvar : *frame->environment)
         this->mark(lvar);
       break;
     }

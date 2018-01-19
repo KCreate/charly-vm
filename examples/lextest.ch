@@ -1,7 +1,12 @@
-const arr = [1, 2, 3]
-func get = arr
-func bar = 2
+const foo = "leonard"
+const bar = "fabrice"
+const baz = "igor"
+const qux = "fabian"
 
-get()[bar()] += 100
+const long_string = "hello world this is a very long string what is going on here wooohoohohoohohoohohoo"
 
-print(arr)
+print(foo)
+print(bar)
+print(baz)
+print(qux)
+print(long_string)

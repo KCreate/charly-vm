@@ -134,5 +134,15 @@ while (i < iterations) {
     const nums = [$0, $1, $2, $3, $4, $5]
   }
 
+  // Check long and short string optimizations
+  const strings = [
+    "abc",
+    "abcdef",
+    "abcdefabcdef",
+    "abcdefabcdefabcdefabcdef",
+    "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef",
+    "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef"
+  ]
+
   i += 1
 }
