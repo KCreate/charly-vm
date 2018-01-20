@@ -419,7 +419,56 @@ inline double charly_double_to_double(VALUE value)   { return *reinterpret_cast<
 //
 // Note: Methods which return an integer, return 0 if the value is not a number
 // Note: Methods which return a float, return NaN if the value is not a number
-// TODO: implement this
+inline int64_t charly_number_to_int64(VALUE value)   {
+  if (charly_is_float(value)) return charly_double_to_int64(value);
+  if (charly_is_int(value)) return charly_int_to_int64(value);
+  return 0;
+}
+inline uint64_t charly_number_to_uint64(VALUE value) {
+  if (charly_is_float(value)) return charly_double_to_uint64(value);
+  if (charly_is_int(value)) return charly_int_to_uint64(value);
+  return 0;
+}
+inline int32_t charly_number_to_int32(VALUE value)   {
+  if (charly_is_float(value)) return charly_double_to_int32(value);
+  if (charly_is_int(value)) return charly_int_to_int32(value);
+  return 0;
+}
+inline uint32_t charly_number_to_uint32(VALUE value) {
+  if (charly_is_float(value)) return charly_double_to_uint32(value);
+  if (charly_is_int(value)) return charly_int_to_uint32(value);
+  return 0;
+}
+inline int16_t charly_number_to_int16(VALUE value)   {
+  if (charly_is_float(value)) return charly_double_to_int16(value);
+  if (charly_is_int(value)) return charly_int_to_int16(value);
+  return 0;
+}
+inline uint16_t charly_number_to_uint16(VALUE value) {
+  if (charly_is_float(value)) return charly_double_to_uint16(value);
+  if (charly_is_int(value)) return charly_int_to_uint16(value);
+  return 0;
+}
+inline int8_t charly_number_to_int8(VALUE value)     {
+  if (charly_is_float(value)) return charly_double_to_int8(value);
+  if (charly_is_int(value)) return charly_int_to_int8(value);
+  return 0;
+}
+inline uint8_t charly_number_to_uint8(VALUE value)   {
+  if (charly_is_float(value)) return charly_double_to_uint8(value);
+  if (charly_is_int(value)) return charly_int_to_uint8(value);
+  return 0;
+}
+inline float charly_number_to_float(VALUE value)     {
+  if (charly_is_float(value)) return charly_double_to_float(value);
+  if (charly_is_int(value)) return charly_int_to_float(value);
+  return kNaN;
+}
+inline double charly_number_to_double(VALUE value)   {
+  if (charly_is_float(value)) return charly_double_to_double(value);
+  if (charly_is_int(value)) return charly_int_to_double(value);
+  return kNaN;
+}
 
 // Get a pointer to the data of a string
 // Returns a nullptr if value is not a string
@@ -475,7 +524,7 @@ inline uint32_t charly_string_length(VALUE value) {
 // Warning: Doesn't perform any overflow checks. If the integer doesn't fit into 48 bits
 // the value is going to be truncated.
 template <typename T>
-inline VALUE charly_create_integer(T value) {
+VALUE charly_create_integer(T value) {
   return kSignatureInteger | (value & kMaskInteger);
 }
 
@@ -507,7 +556,7 @@ inline VALUE charly_create_number(float value)    { return charly_create_double(
 
 // Convert types into symbols
 template <typename T>
-inline constexpr VALUE charly_create_symbol(T& input) {
+constexpr VALUE charly_create_symbol(T& input) {
   size_t val = std::hash<std::decay_t<T>>{}(input);
   return kSignatureSymbol | (val & ~kMaskSymbol);
 }
@@ -517,7 +566,7 @@ inline constexpr VALUE charly_create_symbol(T& input) {
 // Note: Because char* should always contain a null terminator at the end, we check for 7 bytes
 // instead of 6.
 template <size_t N>
-inline VALUE charly_create_pstring(char const (& input)[N]) {
+VALUE charly_create_pstring(char const (& input)[N]) {
   static_assert(N == 7, "charly_create_pstring can only create strings of length 6 (excluding null-terminator)");
 
   VALUE val = kSignaturePString;
@@ -548,7 +597,7 @@ inline VALUE charly_create_pstring(char const (& input)[N]) {
 // Note: Because char* should always contain a null terminator at the end, we check for <= 6 bytes
 // instead of <= 5.
 template <size_t N>
-inline VALUE charly_create_istring(char const (& input)[N]) {
+VALUE charly_create_istring(char const (& input)[N]) {
   static_assert(N <= 6, "charly_create_istring can only create strings of length <= 5 (excluding null-terminator)");
 
   VALUE val = kSignatureIString;
