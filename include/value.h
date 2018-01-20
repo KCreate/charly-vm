@@ -26,64 +26,65 @@
 
 #include <unordered_map>
 #include <vector>
+#include <type_traits>
 
 #include "defines.h"
+#include "common.h"
 
 #pragma once
 
 namespace Charly {
 
-// Identifies which type a VALUE points to
-// Types which are not allocated on the heap are also included here
-// as these values are also used in type comparison functions
-//
-// Some machine internal types such as the call frame structure are
-// also allocated on the heap, which means they also get a type id
-enum {
+// Human readable types of heap-allocated data structures
+const std::string kHumanReadableHeapTypes[] = {
+  "dead",
+  "class",
+  "object",
+  "array",
+  "string",
+  "function",
+  "cfunction",
+  "frame",
+  "catchtable"
+};
+const std::string kHumanReadableImmediateTypes[] = {
+  "float",
+  "integer",
+  "null",
+  "string",
+  "boolean",
+  "symbol",
+  "unknown"
+};
 
-  // Types which are stored explicitly on the heap
+// Identifies which type a VALUE points to
+enum {
   kTypeDead,
   kTypeClass,
   kTypeObject,
   kTypeArray,
   kTypeString,
-  kTypeShortString,
   kTypeFunction,
   kTypeCFunction,
   kTypeFrame,
-  kTypeCatchTable,
-
-  // Types which are represented implicitly (e.g. through NaN boxing)
-  kTypeInteger,
-  kTypeFloat,
-  kTypeBoolean,
-  kTypeNull,
-  kTypeSymbol,
-  kTypeImmediateString,
-
-  // Types which represent a set of other types
-  // These exist to make type comparisons less tedious to write
-  kTypeNumeric,
+  kTypeCatchTable
 };
-
-// String representations of the value types
-// These are used in dumps and debugging output
-const std::string kValueTypeString[] = {"dead",      "string",  "object", "array",      "function",
-                                        "cfunction", "class",   "frame",  "catchtable", "integer",
-                                        "float",     "boolean", "null",   "symbol",     "numeric"};
 
 // Every heap allocated structure in Charly contains this structure at
 // the beginning. It allows us to determine it's type and other information
 // about it.
 struct Basic {
   // If the type of this object is String, this determines wether it's a short string
-  uint8_t shortstring_set : 1 = 0;
+  bool shortstring_set = false;
 
   // Used by the Garbage Collector during the Mark & Sweep Cycle
-  uint8_t mark_set : 1 = 0;
+  bool mark_set = 0;
 
   // Holds the type of the heap allocated struct
-  uint8_t type : 5 = kTypeDead;
+  uint8_t type : 5;
+
+  Basic() : type(kTypeDead) {
+  }
 };
 
 // Describes an object type
@@ -112,16 +113,11 @@ struct Array {
 
 // String type
 //
-// A field inside the Basic structure tells the VM which representation is currently active
-// +- Basic field
-// |
-// v
-// 0x00 0x00 0x00 0x00 0x00
-//      ^                 ^
-//      |                 |
-//      +-----------------+- Long string length
-//      |
-//      +- Short string length
+// Strings which are <= 62 bytes long, are stored inside the String structure itself. Most strings should fall
+// into this category.
+//
+// If a string exceeds this limit, the string is allocated separately on the heap. The String structure
+// now only stores a pointer and a length to the allocated memory
 static const uint32_t kShortStringMaxSize = 62;
 struct String {
   Basic basic;
@@ -138,13 +134,13 @@ struct String {
   };
 
   inline char* data() {
-    return basic.short_string() ? sbuf.data : lbuf.data;
+    return basic.shortstring_set ? sbuf.data : lbuf.data;
   }
   inline uint32_t length() {
-    return basic.short_string() ? sbuf.length : lbuf.length;
+    return basic.shortstring_set ? sbuf.length : lbuf.length;
   }
   inline void clean() {
-    if (!basic.short_string()) {
+    if (!basic.shortstring_set) {
       std::free(lbuf.data);
     }
   }
@@ -257,8 +253,7 @@ struct Class {
 // -[NaN        ]1---------------------------------------------------
 //
 // This gives us 52 bits to play with. Even 64-bit machines only use the
-// lower 48 bits for addresses, so we can store full pointer in there.
-// In the future this might change but that's a discussion for another time.
+// lower 48 bits for addresses, so we can store a full pointer in there.
 //
 // +- If set, denotes an encoded pointer
 // |              + Stores the type id of the encoded value
@@ -298,7 +293,7 @@ const uint64_t kITypePString      = 0x0006000000000000;
 const uint64_t kITypeIString      = 0x0007000000000000;
 
 // Shorthand values
-const uint64_t kNaN               = kMaskSignBit | kMaskExponentBits | kMaskQuietBit;
+const uint64_t kNaN               = kMaskExponentBits | kMaskQuietBit;
 const uint64_t kFalse             = kNaN | kITypeFalse;
 const uint64_t kTrue              = kNaN | kITypeTrue;
 const uint64_t kNull              = kNaN | kITypeNull;
@@ -319,12 +314,10 @@ const uint64_t kMaskPString       = 0x0000ffffffffffff;
 const uint64_t kMaskIString       = 0x000000ffffffffff;
 const uint64_t kMaskIStringLength = 0x0000ff0000000000;
 
-// Offsets to positions inside the payload section
-const size_t kOffsetPString       = 0x02;
-const size_t kOffsetIStringLength = 0x02;
-const size_t kOffsetIString       = 0x03;
-
 // Constants used when converting between different representations
+const int64_t kMaxInt             = (static_cast<int64_t>(1) << 47) - 1;
+const int64_t kMaxUInt            = (static_cast<int64_t>(1) << 48) - 1;
+const int64_t kMinInt             = -(static_cast<int64_t>(1) << 47);
 const uint64_t kSignBlock         = 0xFFFF000000000000;
 
 // Type casting functions
@@ -344,27 +337,44 @@ inline bool charly_is_false(VALUE value)     { return value == kFalse; }
 inline bool charly_is_true(VALUE value)      { return value == kTrue; }
 inline bool charly_is_boolean(VALUE value)   { return charly_is_false(value) || charly_is_true(value); }
 inline bool charly_is_null(VALUE value)      { return value == kNull; }
-inline bool charly_is_float(VALUE value)     { return (value & kMaskExponentBits) != kMaskExponentBits; }
+inline bool charly_is_float(VALUE value)     { return value == kNaN || (~value & kMaskExponentBits) != 0; }
 inline bool charly_is_int(VALUE value)       { return (value & kMaskSignature) == kSignatureInteger; }
 inline bool charly_is_numeric(VALUE value)   { return charly_is_int(value) || charly_is_float(value); }
 inline bool charly_is_symbol(VALUE value)    { return (value & kMaskSignature) == kSignatureSymbol; }
 inline bool charly_is_pstring(VALUE value)   { return (value & kMaskSignature) == kSignaturePString; }
-inline bool charly_is_istring(VALUE value)   { return (value & kMaskSignature) == kSignatureString; }
+inline bool charly_is_istring(VALUE value)   { return (value & kMaskSignature) == kSignatureIString; }
 inline bool charly_is_ptr(VALUE value)       { return (value & kMaskSignature) == kSignaturePointer; }
 
 // Heap allocated types
-inline bool charly_is_type(VALUE value, uint8_t type) { return charly_is_ptr(value) && as_basic(value)->type == type; }
-inline bool charly_is_class(VALUE value) { return charly_is_type(value, kTypeClass); }
-inline bool charly_is_object(VALUE value) { return charly_is_type(value, kTypeObject); }
-inline bool charly_is_array(VALUE value) { return charly_is_type(value, kTypeArray); }
-inline bool charly_is_hstring(VALUE value) { return charly_is_type(value, kTypeString); }
+inline bool charly_is_on_heap(VALUE value) { return charly_is_ptr(value); }
+inline bool charly_is_heap_type(VALUE value, uint8_t type) {
+  return charly_is_on_heap(value) && charly_as_basic(value)->type == type;
+}
+inline bool charly_is_class(VALUE value) { return charly_is_heap_type(value, kTypeClass); }
+inline bool charly_is_object(VALUE value) { return charly_is_heap_type(value, kTypeObject); }
+inline bool charly_is_array(VALUE value) { return charly_is_heap_type(value, kTypeArray); }
+inline bool charly_is_hstring(VALUE value) { return charly_is_heap_type(value, kTypeString); }
 inline bool charly_is_string(VALUE value) {
   return charly_is_pstring(value) || charly_is_istring(value) || charly_is_hstring(value);
 }
-inline bool charly_is_function(VALUE value) { return charly_is_type(value, kTypeFunction); }
-inline bool charly_is_cfunction(VALUE value) { return charly_is_type(value, kTypeCFunction); }
-inline bool charly_is_frame(VALUE value) { return charly_is_type(value, kTypeFrame); }
-inline bool charly_is_catchtable(VALUE value) { return charly_is_type(value, kTypeCatchTable); }
+inline bool charly_is_function(VALUE value) { return charly_is_heap_type(value, kTypeFunction); }
+inline bool charly_is_cfunction(VALUE value) { return charly_is_heap_type(value, kTypeCFunction); }
+inline bool charly_is_callable(VALUE value) {
+  return charly_is_function(value) || charly_is_cfunction(value) || charly_is_class(value);
+}
+inline bool charly_is_frame(VALUE value) { return charly_is_heap_type(value, kTypeFrame); }
+inline bool charly_is_catchtable(VALUE value) { return charly_is_heap_type(value, kTypeCatchTable); }
+
+inline const std::string& charly_get_typestring(VALUE value) {
+  if (charly_is_on_heap(value)) return kHumanReadableHeapTypes[charly_as_basic(value)->type];
+  if (charly_is_float(value)) return kHumanReadableImmediateTypes[0];
+  if (charly_is_int(value)) return kHumanReadableImmediateTypes[1];
+  if (charly_is_null(value)) return kHumanReadableImmediateTypes[2];
+  if (charly_is_pstring(value) || charly_is_istring(value)) return kHumanReadableImmediateTypes[3];
+  if (charly_is_boolean(value)) return kHumanReadableImmediateTypes[4];
+  if (charly_is_symbol(value)) return kHumanReadableImmediateTypes[5];
+  return kHumanReadableImmediateTypes[6];
+}
 
 // Convert an immediate integer to other integer or float types
 //
@@ -377,7 +387,6 @@ inline bool charly_is_catchtable(VALUE value) { return charly_is_type(value, kTy
 inline int64_t charly_int_to_int64(VALUE value) {
   return (value & kMaskInteger) | ((value & kMaskSignBit) ? kSignBlock : 0x00);
 }
-inline int64_t charly_int_to_int64(VALUE value)   { return charly_int_to_int64(value); }
 inline uint64_t charly_int_to_uint64(VALUE value) { return charly_int_to_int64(value); }
 inline int32_t charly_int_to_int32(VALUE value)   { return charly_int_to_int64(value); }
 inline uint32_t charly_int_to_uint32(VALUE value) { return charly_int_to_int64(value); }
@@ -392,16 +401,16 @@ inline double charly_int_to_double(VALUE value)   { return charly_int_to_int64(v
 //
 // Warning: These methods don't perform any type checks and assume
 // the caller made sure that the input value is an immediate double
-inline int64_t charly_double_to_int64(VALUE value)   { return value; }
-inline uint64_t charly_double_to_uint64(VALUE value) { return value; }
-inline int32_t charly_double_to_int32(VALUE value)   { return value; }
-inline uint32_t charly_double_to_uint32(VALUE value) { return value; }
-inline int16_t charly_double_to_int16(VALUE value)   { return value; }
-inline uint16_t charly_double_to_uint16(VALUE value) { return value; }
-inline int8_t charly_double_to_int8(VALUE value)     { return value; }
-inline uint8_t charly_double_to_uint8(VALUE value)   { return value; }
-inline float charly_double_to_float(VALUE value)     { return value; }
-inline double charly_double_to_double(VALUE value)   { return value; }
+inline int64_t charly_double_to_int64(VALUE value)   { return *reinterpret_cast<double*>(&value); }
+inline uint64_t charly_double_to_uint64(VALUE value) { return *reinterpret_cast<double*>(&value); }
+inline int32_t charly_double_to_int32(VALUE value)   { return *reinterpret_cast<double*>(&value); }
+inline uint32_t charly_double_to_uint32(VALUE value) { return *reinterpret_cast<double*>(&value); }
+inline int16_t charly_double_to_int16(VALUE value)   { return *reinterpret_cast<double*>(&value); }
+inline uint16_t charly_double_to_uint16(VALUE value) { return *reinterpret_cast<double*>(&value); }
+inline int8_t charly_double_to_int8(VALUE value)     { return *reinterpret_cast<double*>(&value); }
+inline uint8_t charly_double_to_uint8(VALUE value)   { return *reinterpret_cast<double*>(&value); }
+inline float charly_double_to_float(VALUE value)     { return *reinterpret_cast<double*>(&value); }
+inline double charly_double_to_double(VALUE value)   { return *reinterpret_cast<double*>(&value); }
 
 // Convert an immediate number to other integer or float types
 //
@@ -410,16 +419,26 @@ inline double charly_double_to_double(VALUE value)   { return value; }
 //
 // Note: Methods which return an integer, return 0 if the value is not a number
 // Note: Methods which return a float, return NaN if the value is not a number
+// TODO: implement this
 
 // Get a pointer to the data of a string
 // Returns a nullptr if value is not a string
-inline char* charly_string_data(VALUE value) {
-  if (charly_is_pstring(value)) {
-    return static_cast<char*>(charly_as_pointer(value) + kOffsetPString);
-  }
+//
+// Because charly_string_data has to return a pointer to a char buffer
+// We can't take the value argument by value, as that version of the value
+// is being destroyed once the function exits.
+inline char* charly_string_data(VALUE& value) {
 
-  if (charly_is_istring(value)) {
-    return static_cast<char*>(charly_as_pointer(value) + kOffsetIString);
+  // If this machine is little endian, the buffer is already conventiently layed out at the
+  // beginning of the value
+  if (!IS_BIG_ENDIAN()) {
+    return reinterpret_cast<char*>(&value) + 2;
+  } else {
+    if (charly_is_pstring(value)) {
+      return reinterpret_cast<char*>(reinterpret_cast<char*>(&value) + 2);
+    } else if (charly_is_istring(value)) {
+      return reinterpret_cast<char*>(reinterpret_cast<char*>(&value) + 3);
+    }
   }
 
   if (charly_is_hstring(value)) {
@@ -437,7 +456,11 @@ inline uint32_t charly_string_length(VALUE value) {
   }
 
   if (charly_is_istring(value)) {
-    return *reinterpret_cast<uint8_t*>(charly_as_pointer(value) + kOffsetIStringLength);
+    if (IS_BIG_ENDIAN()) {
+      return *(reinterpret_cast<uint8_t*>(&value) + 2);
+    } else {
+      return *(reinterpret_cast<uint8_t*>(&value) + 5);
+    }
   }
 
   if (charly_is_hstring(value)) {
@@ -453,13 +476,12 @@ inline uint32_t charly_string_length(VALUE value) {
 // the value is going to be truncated.
 template <typename T>
 inline VALUE charly_create_integer(T value) {
-  return kSignatureInteger | (static_cast<int64_t>(value) & ~kMaskInteger);
+  return kSignatureInteger | (value & kMaskInteger);
 }
 
 // Create an immediate double
-template <typename T>
-inline VALUE charly_create_double(T value) {
-  return static_cast<double>(value);
+inline VALUE charly_create_double(double value) {
+  return *reinterpret_cast<VALUE*>(&value);
 }
 
 // Convert a numeric type into an immediate charly value
@@ -467,11 +489,11 @@ inline VALUE charly_create_double(T value) {
 // This method assumes the caller doesn't care what format the resulting number has,
 // so it might return an immediate integer or double
 inline VALUE charly_create_number(int64_t value) {
-  if (reinterpret_cast<uint64_t>(value) >= kMaskInteger) return charly_create_double(value);
+  if (value >= kMaxInt || value <= kMinInt) return charly_create_double(value);
   return charly_create_integer(value);
 }
 inline VALUE charly_create_number(uint64_t value) {
-  if (reinterpret_cast<uint64_t>(value) >= kMaskInteger) return charly_create_double(value);
+  if (value >= kMaxUInt) return charly_create_double(value);
   return charly_create_integer(value);
 }
 inline VALUE charly_create_number(int8_t value)   { return charly_create_integer(value); }
@@ -486,8 +508,70 @@ inline VALUE charly_create_number(float value)    { return charly_create_double(
 // Convert types into symbols
 template <typename T>
 inline constexpr VALUE charly_create_symbol(T& input) {
-  size_t val = std::hash<T>{}(input);
+  size_t val = std::hash<std::decay_t<T>>{}(input);
   return kSignatureSymbol | (val & ~kMaskSymbol);
+}
+
+// Create packed strings
+//
+// Note: Because char* should always contain a null terminator at the end, we check for 7 bytes
+// instead of 6.
+template <size_t N>
+inline VALUE charly_create_pstring(char const (& input)[N]) {
+  static_assert(N == 7, "charly_create_pstring can only create strings of length 6 (excluding null-terminator)");
+
+  VALUE val = kSignaturePString;
+  char* buf = (char*)&val;
+
+  // Copy the string buffer
+  if (IS_BIG_ENDIAN()) {
+    buf[2] = input[0];
+    buf[3] = input[1];
+    buf[4] = input[2];
+    buf[5] = input[3];
+    buf[6] = input[4];
+    buf[7] = input[5];
+  } else {
+    buf[0] = input[5];
+    buf[1] = input[4];
+    buf[2] = input[3];
+    buf[3] = input[2];
+    buf[4] = input[1];
+    buf[5] = input[0];
+  }
+
+  return val;
+}
+
+// Create immediate encoded strings of size 0 - 5
+//
+// Note: Because char* should always contain a null terminator at the end, we check for <= 6 bytes
+// instead of <= 5.
+template <size_t N>
+inline VALUE charly_create_istring(char const (& input)[N]) {
+  static_assert(N <= 6, "charly_create_istring can only create strings of length <= 5 (excluding null-terminator)");
+
+  VALUE val = kSignatureIString;
+  char* buf = (char*)&val;
+
+  // Copy the string buffer
+  if (IS_BIG_ENDIAN()) {
+    if constexpr (N >= 1) buf[3] = input[0];
+    if constexpr (N >= 2) buf[4] = input[1];
+    if constexpr (N >= 3) buf[5] = input[2];
+    if constexpr (N >= 4) buf[6] = input[3];
+    if constexpr (N >= 5) buf[7] = input[4];
+    buf[2] = N - 1;
+  } else {
+    if constexpr (N >= 5) buf[0] = input[4];
+    if constexpr (N >= 4) buf[1] = input[3];
+    if constexpr (N >= 3) buf[2] = input[2];
+    if constexpr (N >= 2) buf[3] = input[1];
+    if constexpr (N >= 1) buf[4] = input[0];
+    buf[5] = N - 1;
+  }
+
+  return val;
 }
 
 // clang-format on
