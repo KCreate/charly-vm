@@ -5,6 +5,7 @@
 using namespace Charly;
 
 int main() {
+  std::cout << std::hex;
 
   // charly_create_number
   std::cout << "charly_create_number" << '\n';
@@ -15,9 +16,23 @@ int main() {
   std::cout << charly_get_typestring(charly_create_number(25.25)) << '\n';
   std::cout << charly_get_typestring(charly_create_number(-25.25)) << '\n';
   std::cout << charly_get_typestring(charly_create_number(1ULL << 30)) << '\n';
-  std::cout << charly_get_typestring(charly_create_number(1ULL << 40)) << '\n';
+  std::cout << charly_get_typestring(charly_create_number(1ULL << 31)) << '\n';
   std::cout << charly_get_typestring(charly_create_number(1ULL << 50)) << '\n';
   std::cout << charly_get_typestring(charly_create_number(1ULL << 60)) << '\n';
+  std::cout << '\n';
+
+  // charly_number_to_int64
+  std::cout << "charly_number_to_int64" << '\n';
+  std::cout << charly_number_to_int64(charly_create_number(1)) << '\n';
+  std::cout << charly_number_to_int64(charly_create_number(-1)) << '\n';
+  std::cout << charly_number_to_int64(charly_create_number(255)) << '\n';
+  std::cout << charly_number_to_int64(charly_create_number(-255)) << '\n';
+  std::cout << charly_number_to_double(charly_create_number(25.25)) << '\n';
+  std::cout << charly_number_to_double(charly_create_number(-25.25)) << '\n';
+  std::cout << charly_number_to_int64(charly_create_number(1ULL << 30)) << '\n';
+  std::cout << charly_number_to_int64(charly_create_number(1ULL << 31)) << '\n';
+  std::cout << charly_number_to_double(charly_create_number(1ULL << 50)) << '\n';
+  std::cout << charly_number_to_double(charly_create_number(1ULL << 60)) << '\n';
   std::cout << '\n';
 
   // charly_create_integer
@@ -29,6 +44,15 @@ int main() {
   std::cout << charly_get_typestring(charly_create_integer(250000)) << '\n';
   std::cout << '\n';
 
+  // charly_int_to_int64
+  std::cout << "charly_int_to_int64" << '\n';
+  std::cout << charly_int_to_int64(charly_create_integer(1)) << '\n';
+  std::cout << charly_int_to_int64(charly_create_integer(-1)) << '\n';
+  std::cout << charly_int_to_int64(charly_create_integer(255)) << '\n';
+  std::cout << charly_int_to_int64(charly_create_integer(-255)) << '\n';
+  std::cout << charly_int_to_int64(charly_create_integer(250000)) << '\n';
+  std::cout << '\n';
+
   // charly_create_double
   std::cout << "charly_create_double" << '\n';
   std::cout << charly_get_typestring(charly_create_double(1)) << '\n';
@@ -36,6 +60,15 @@ int main() {
   std::cout << charly_get_typestring(charly_create_double(255)) << '\n';
   std::cout << charly_get_typestring(charly_create_double(-255)) << '\n';
   std::cout << charly_get_typestring(charly_create_double(250000)) << '\n';
+  std::cout << '\n';
+
+  // charly_double_to_int64
+  std::cout << "charly_double_to_int64" << '\n';
+  std::cout << charly_double_to_int64(charly_create_double(1)) << '\n';
+  std::cout << charly_double_to_int64(charly_create_double(-1)) << '\n';
+  std::cout << charly_double_to_int64(charly_create_double(255)) << '\n';
+  std::cout << charly_double_to_int64(charly_create_double(-255)) << '\n';
+  std::cout << charly_double_to_int64(charly_create_double(250000)) << '\n';
   std::cout << '\n';
 
   // charly_create_pstring
@@ -94,6 +127,20 @@ int main() {
   std::cout << charly_get_typestring(kTrue) << '\n';
   std::cout << charly_get_typestring(kNull) << '\n';
   std::cout << charly_get_typestring(kNaN) << '\n';
+  std::cout << '\n';
+
+  // pointers
+  int a = 25;
+  char* out_of_bounds = reinterpret_cast<char*>(static_cast<int64_t>(1) << 50);
+  std::cout << "pointers" << '\n';
+  std::cout << charly_get_typestring(charly_create_pointer(nullptr)) << '\n';
+  std::cout << charly_get_typestring(charly_create_pointer(&a)) << '\n';
+  std::cout << charly_get_typestring(charly_create_pointer(out_of_bounds)) << '\n';
+  std::cout << '\n';
+
+  // pointers decode
+  std::cout << "pointers decode" << '\n';
+  std::cout << charly_get_pointer<int>(charly_create_pointer(&a)) << '\n';
   std::cout << '\n';
 
   return 0;

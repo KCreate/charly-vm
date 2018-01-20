@@ -318,6 +318,7 @@ const uint64_t kMaskIStringLength = 0x0000ff0000000000;
 const int64_t kMaxInt             = (static_cast<int64_t>(1) << 47) - 1;
 const int64_t kMaxUInt            = (static_cast<int64_t>(1) << 48) - 1;
 const int64_t kMinInt             = -(static_cast<int64_t>(1) << 47);
+const void* kMaxPointer           = reinterpret_cast<void*>((static_cast<int64_t>(1) << 48) - 1);
 const uint64_t kSignBlock         = 0xFFFF000000000000;
 
 // Type casting functions
@@ -468,6 +469,11 @@ inline double charly_number_to_double(VALUE value)   {
   if (charly_is_float(value)) return charly_double_to_double(value);
   if (charly_is_int(value)) return charly_int_to_double(value);
   return kNaN;
+}
+
+template <typename T>
+inline T* charly_get_pointer(VALUE value) {
+  return reinterpret_cast<T*>(value & kMaskPointer);
 }
 
 // Get a pointer to the data of a string
@@ -621,6 +627,12 @@ VALUE charly_create_istring(char const (& input)[N]) {
   }
 
   return val;
+}
+
+// Create a VALUE from a ptr
+inline VALUE charly_create_pointer(void* ptr) {
+  if (ptr > kMaxPointer) return kSignaturePointer; // null pointer
+  return kSignaturePointer | (~kSignaturePointer & reinterpret_cast<int64_t>(ptr));
 }
 
 // clang-format on
