@@ -28,43 +28,8 @@
 
 namespace Charly {
 
-// Status codes used throughout the machine
-enum Status : STATUS {
-  Success,
-  UnspecifiedError,
-  CantReturnFromTopLevel,
-  UnknownOpcode,
-  TooManyArgumentsForCFunction,
-  NotEnoughArguments,
-  CatchStackEmpty,
-  ReadFailedOutOfBounds,
-  ReadFailedTooDeep,
-  WriteFailedOutOfBounds,
-  WriteFailedTooDeep,
-  ParentClassNotAClass,
-  InvalidArgumentType,
-  CorruptedStack,
-  ObjectClassNotAClass
-};
-
-// Human-readable status messages
-// clang-format off
-static const std::string kStatusHumanReadable[] = {
-  "Success",
-  "Unspecified error",
-  "Can't return from the top-level",
-  "Unknown opcode",
-  "Too many arguments for CFunction",
-  "Not enough arguments",
-  "Catch stack is empty",
-  "Reading local field failed, out of bounds",
-  "Reading local field failed, too deep",
-  "Writing local field failed, out of bounds",
-  "Writing local field failed, too deep",
-  "Extended value is not a class",
-  "Argument for instruction has invalid type",
-  "Corrupted Stack",
-  "Object's klass field not set to an instance of a class"
-};
-// clang-format on
-}  // namespace Charly
+// Returns true if the target is big endian
+inline bool IS_BIG_ENDIAN() {
+  return (*(uint16_t *)"\0\xff" < 0x100);
+}
+}
