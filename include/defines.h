@@ -33,8 +33,7 @@
 #pragma once
 
 namespace Charly {
-typedef uintptr_t VALUE;
-typedef intptr_t SIGNED_VALUE;
+typedef uint64_t VALUE;
 typedef uint16_t STATUS;
 
 class VM;
