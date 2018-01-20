@@ -68,21 +68,19 @@ enum {
 
 // String representations of the value types
 // These are used in dumps and debugging output
-const std::string kValueTypeString[] = {
-  "dead", "string", "object", "array", "function", "cfunction", "class", "frame",
-  "catchtable", "integer", "float", "boolean", "null", "symbol", "numeric"
-};
+const std::string kValueTypeString[] = {"dead",      "string",  "object", "array",      "function",
+                                        "cfunction", "class",   "frame",  "catchtable", "integer",
+                                        "float",     "boolean", "null",   "symbol",     "numeric"};
 
 // Every heap allocated structure in Charly contains this structure at
 // the beginning. It allows us to determine it's type and other information
 // about it.
 struct Basic {
-
   // If the type of this object is String, this determines wether it's a short string
   uint8_t shortstring_set : 1 = 0;
 
   // Used by the Garbage Collector during the Mark & Sweep Cycle
-  uint8_t mark_set : 1 = =;
+  uint8_t mark_set : 1 = 0;
 
   // Holds the type of the heap allocated struct
   uint8_t type : 5 = kTypeDead;
