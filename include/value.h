@@ -27,6 +27,7 @@
 #include <unordered_map>
 #include <vector>
 #include <type_traits>
+#include <cmath>
 
 #include "defines.h"
 #include "common.h"
@@ -567,6 +568,122 @@ inline VALUE charly_create_number(int32_t value)  { return charly_create_integer
 inline VALUE charly_create_number(uint32_t value) { return charly_create_integer(value); }
 inline VALUE charly_create_number(double value)   { return charly_create_double(value); }
 inline VALUE charly_create_number(float value)    { return charly_create_double(value); }
+
+// Binary arithmetic methods
+inline VALUE charly_add_numeric(VALUE left, VALUE right) {
+  if (charly_is_int(left) && charly_is_int(right)) {
+    return charly_create_number(charly_int_to_int64(left) + charly_int_to_int64(right));
+  }
+  return charly_create_number(charly_number_to_double(left) + charly_number_to_double(right));
+}
+inline VALUE charly_sub_numeric(VALUE left, VALUE right) {
+  if (charly_is_int(left) && charly_is_int(right)) {
+    return charly_create_number(charly_int_to_int64(left) - charly_int_to_int64(right));
+  }
+  return charly_create_number(charly_number_to_double(left) - charly_number_to_double(right));
+}
+inline VALUE charly_mul_numeric(VALUE left, VALUE right) {
+  if (charly_is_int(left) && charly_is_int(right)) {
+    return charly_create_number(charly_int_to_int64(left) * charly_int_to_int64(right));
+  }
+  return charly_create_number(charly_number_to_double(left) * charly_number_to_double(right));
+}
+inline VALUE charly_div_numeric(VALUE left, VALUE right) {
+  if (charly_is_int(left) && charly_is_int(right)) {
+    return charly_create_number(charly_int_to_int64(left) / charly_int_to_int64(right));
+  }
+  return charly_create_number(charly_number_to_double(left) / charly_number_to_double(right));
+}
+inline VALUE charly_mod_numeric(VALUE left, VALUE right) {
+  if (charly_is_int(left) && charly_is_int(right)) {
+    return charly_create_number(charly_int_to_int64(left) % charly_int_to_int64(right));
+  }
+  return charly_create_number(std::fmod(charly_number_to_double(left), charly_number_to_double(right)));
+}
+inline VALUE charly_pow_numeric(VALUE left, VALUE right) {
+  if (charly_is_int(left) && charly_is_int(right)) {
+    return charly_create_number(std::pow(charly_int_to_int64(left), charly_int_to_int64(right)));
+  }
+  return charly_create_number(std::pow(charly_number_to_double(left), charly_number_to_double(right)));
+}
+inline VALUE charly_lt_numeric(VALUE left, VALUE right) {
+  if (charly_is_int(left) && charly_is_int(right)) {
+    return charly_create_number(charly_int_to_int64(left) < charly_int_to_int64(right));
+  }
+  return charly_create_number(std::isless(charly_number_to_double(left), charly_number_to_double(right)));
+}
+inline VALUE charly_gt_numeric(VALUE left, VALUE right) {
+  if (charly_is_int(left) && charly_is_int(right)) {
+    return charly_create_number(charly_int_to_int64(left) > charly_int_to_int64(right));
+  }
+  return charly_create_number(std::isgreater(charly_number_to_double(left), charly_number_to_double(right)));
+}
+inline VALUE charly_le_numeric(VALUE left, VALUE right) {
+  if (charly_is_int(left) && charly_is_int(right)) {
+    return charly_create_number(charly_int_to_int64(left) <= charly_int_to_int64(right));
+  }
+  return charly_create_number(std::islessequal(charly_number_to_double(left), charly_number_to_double(right)));
+}
+inline VALUE charly_ge_numeric(VALUE left, VALUE right) {
+  if (charly_is_int(left) && charly_is_int(right)) {
+    return charly_create_number(charly_int_to_int64(left) >= charly_int_to_int64(right));
+  }
+  return charly_create_number(std::isgreaterequal(charly_number_to_double(left), charly_number_to_double(right)));
+}
+inline VALUE charly_eq_numeric(VALUE left, VALUE right) {
+  if (charly_is_int(left) && charly_is_int(right)) {
+    return charly_create_number(charly_int_to_int64(left) == charly_int_to_int64(right));
+  }
+  return charly_create_number(FP_ARE_EQUAL(charly_number_to_double(left), charly_number_to_double(right)));
+}
+inline VALUE charly_neq_numeric(VALUE left, VALUE right) {
+  if (charly_is_int(left) && charly_is_int(right)) {
+    return charly_create_number(charly_int_to_int64(left) != charly_int_to_int64(right));
+  }
+  return charly_create_number(!FP_ARE_EQUAL(charly_number_to_double(left), charly_number_to_double(right)));
+}
+inline VALUE charly_shl_numeric(VALUE left, VALUE right) {
+  int32_t num = charly_number_to_int32(left);
+  int32_t amount = charly_number_to_int32(right);
+  return charly_create_number(num << amount);
+}
+inline VALUE charly_shr_numeric(VALUE left, VALUE right) {
+  int32_t num = charly_number_to_int32(left);
+  int32_t amount = charly_number_to_int32(right);
+  return charly_create_number(num >> amount);
+}
+inline VALUE charly_and_numeric(VALUE left, VALUE right) {
+  int32_t num = charly_number_to_int32(left);
+  int32_t amount = charly_number_to_int32(right);
+  return charly_create_number(num & amount);
+}
+inline VALUE charly_or_numeric(VALUE left, VALUE right) {
+  int32_t num = charly_number_to_int32(left);
+  int32_t amount = charly_number_to_int32(right);
+  return charly_create_number(num | amount);
+}
+inline VALUE charly_xor_numeric(VALUE left, VALUE right) {
+  int32_t num = charly_number_to_int32(left);
+  int32_t amount = charly_number_to_int32(right);
+  return charly_create_number(num ^ amount);
+}
+
+// Unary arithmetic methods
+inline VALUE charly_uadd_numeric(VALUE value) {
+  return value;
+}
+inline VALUE charly_usub_numeric(VALUE value) {
+  if (charly_is_int(value)) return charly_create_number(-charly_int_to_int64(value));
+  return charly_create_double(-charly_double_to_double(value));
+}
+inline VALUE charly_unot_numeric(VALUE value) {
+  if (charly_is_int(value)) return charly_int_to_int8(value) == 0 ? kTrue : kFalse;
+  return charly_double_to_double(value) == 0.0 ? kTrue : kFalse;
+}
+inline VALUE charly_ubnot_numeric(VALUE value) {
+  if (charly_is_int(value)) return charly_create_number(~charly_int_to_int32(value));
+  return charly_create_integer(~charly_double_to_int32(value));
+}
 
 // Convert types into symbols
 template <typename T>
