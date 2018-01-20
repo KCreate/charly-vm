@@ -293,17 +293,18 @@ const uint64_t kITypePString      = 0x0006000000000000;
 const uint64_t kITypeIString      = 0x0007000000000000;
 
 // Shorthand values
-const uint64_t kNaN               = kMaskExponentBits | kMaskQuietBit;
-const uint64_t kFalse             = kNaN | kITypeFalse;
-const uint64_t kTrue              = kNaN | kITypeTrue;
-const uint64_t kNull              = kNaN | kITypeNull;
+const uint64_t kBitsNaN           = kMaskExponentBits | kMaskQuietBit;
+const double kNaN                 = *reinterpret_cast<double*>(const_cast<uint64_t*>(&kBitsNaN));
+const uint64_t kFalse             = kBitsNaN | kITypeFalse;
+const uint64_t kTrue              = kBitsNaN | kITypeTrue;
+const uint64_t kNull              = kBitsNaN | kITypeNull;
 
 // Signatures of complex encoded types
-const uint64_t kSignaturePointer  = kMaskSignBit | kNaN;
-const uint64_t kSignatureInteger  = kNaN | kITypeInteger;
-const uint64_t kSignatureSymbol   = kNaN | kITypeSymbol;
-const uint64_t kSignaturePString  = kNaN | kITypePString;
-const uint64_t kSignatureIString  = kNaN | kITypeIString;
+const uint64_t kSignaturePointer  = kMaskSignBit | kBitsNaN;
+const uint64_t kSignatureInteger  = kBitsNaN | kITypeInteger;
+const uint64_t kSignatureSymbol   = kBitsNaN | kITypeSymbol;
+const uint64_t kSignaturePString  = kBitsNaN | kITypePString;
+const uint64_t kSignatureIString  = kBitsNaN | kITypeIString;
 
 // Masks for the immediate encoded types
 const uint64_t kMaskPointer       = 0x0000ffffffffffff;
@@ -338,7 +339,7 @@ inline bool charly_is_false(VALUE value)     { return value == kFalse; }
 inline bool charly_is_true(VALUE value)      { return value == kTrue; }
 inline bool charly_is_boolean(VALUE value)   { return charly_is_false(value) || charly_is_true(value); }
 inline bool charly_is_null(VALUE value)      { return value == kNull; }
-inline bool charly_is_float(VALUE value)     { return value == kNaN || (~value & kMaskExponentBits) != 0; }
+inline bool charly_is_float(VALUE value)     { return value == kBitsNaN || (~value & kMaskExponentBits) != 0; }
 inline bool charly_is_int(VALUE value)       { return (value & kMaskSignature) == kSignatureInteger; }
 inline bool charly_is_numeric(VALUE value)   { return charly_is_int(value) || charly_is_float(value); }
 inline bool charly_is_symbol(VALUE value)    { return (value & kMaskSignature) == kSignatureSymbol; }
@@ -463,12 +464,12 @@ inline uint8_t charly_number_to_uint8(VALUE value)   {
 inline float charly_number_to_float(VALUE value)     {
   if (charly_is_float(value)) return charly_double_to_float(value);
   if (charly_is_int(value)) return charly_int_to_float(value);
-  return kNaN;
+  return kBitsNaN;
 }
 inline double charly_number_to_double(VALUE value)   {
   if (charly_is_float(value)) return charly_double_to_double(value);
   if (charly_is_int(value)) return charly_int_to_double(value);
-  return kNaN;
+  return kBitsNaN;
 }
 
 template <typename T>
@@ -536,6 +537,13 @@ VALUE charly_create_integer(T value) {
 
 // Create an immediate double
 inline VALUE charly_create_double(double value) {
+  int64_t bits = *reinterpret_cast<int64_t*>(&value);
+
+  // Strip sign bit and payload bits if value is NaN
+  if ((bits & kMaskExponentBits) == kMaskExponentBits) {
+    return *reinterpret_cast<VALUE*>((const_cast<uint64_t*>(&kBitsNaN)));
+  }
+
   return *reinterpret_cast<VALUE*>(&value);
 }
 

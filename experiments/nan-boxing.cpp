@@ -143,5 +143,12 @@ int main() {
   std::cout << charly_get_pointer<int>(charly_create_pointer(&a)) << '\n';
   std::cout << '\n';
 
+  // misc. cases
+  std::cout << "misc. cases" << '\n';
+  // For some reason, 0.0 / 0.0 generates a signed NaN value
+  std::cout << charly_get_typestring(charly_create_double(0.0 / 0.0)) << '\n';
+  std::cout << charly_get_typestring(charly_create_double(kNaN)) << '\n';
+  std::cout << '\n';
+
   return 0;
 }
