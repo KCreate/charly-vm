@@ -32,4 +32,9 @@ namespace Charly {
 inline bool IS_BIG_ENDIAN() {
   return (*(uint16_t *)"\0\xff" < 0x100);
 }
+
+template <typename T>
+bool FP_ARE_EQUAL(T f1, T f2) {
+  return (std::fabs(f - f2) <= std::numeric_limits<T>::epsilon() + std::fmax(fabs(f1), fabs(2)));
+}
 }
