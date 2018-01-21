@@ -489,7 +489,7 @@ inline char* charly_string_data(VALUE& value) {
   // If this machine is little endian, the buffer is already conventiently layed out at the
   // beginning of the value
   if (!IS_BIG_ENDIAN()) {
-    return reinterpret_cast<char*>(&value) + 2;
+    return reinterpret_cast<char*>(&value);
   } else {
     if (charly_is_pstring(value)) {
       return reinterpret_cast<char*>(reinterpret_cast<char*>(&value) + 2);
@@ -712,12 +712,12 @@ VALUE charly_create_pstring(char const (& input)[N]) {
     buf[6] = input[4];
     buf[7] = input[5];
   } else {
-    buf[0] = input[5];
-    buf[1] = input[4];
-    buf[2] = input[3];
-    buf[3] = input[2];
-    buf[4] = input[1];
-    buf[5] = input[0];
+    buf[0] = input[0];
+    buf[1] = input[1];
+    buf[2] = input[2];
+    buf[3] = input[3];
+    buf[4] = input[4];
+    buf[5] = input[5];
   }
 
   return val;
@@ -743,11 +743,11 @@ VALUE charly_create_istring(char const (& input)[N]) {
     if constexpr (N >= 5) buf[7] = input[4];
     buf[2] = N - 1;
   } else {
-    if constexpr (N >= 5) buf[0] = input[4];
-    if constexpr (N >= 4) buf[1] = input[3];
+    if constexpr (N >= 1) buf[0] = input[0];
+    if constexpr (N >= 2) buf[1] = input[1];
     if constexpr (N >= 3) buf[2] = input[2];
-    if constexpr (N >= 2) buf[3] = input[1];
-    if constexpr (N >= 1) buf[4] = input[0];
+    if constexpr (N >= 4) buf[3] = input[3];
+    if constexpr (N >= 5) buf[4] = input[4];
     buf[5] = N - 1;
   }
 

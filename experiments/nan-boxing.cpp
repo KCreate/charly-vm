@@ -90,6 +90,12 @@ int main() {
   std::cout << charly_string_length(ps2) << '\n';
   std::cout << '\n';
 
+  // dumping pstring
+  std::cout << "dumping istring" << '\n';
+  std::cout.write(charly_string_data(ps1), charly_string_length(ps1)) << '\n';
+  std::cout.write(charly_string_data(ps2), charly_string_length(ps2)) << '\n';
+  std::cout << '\n';
+
   // charly_create_istring
   VALUE s1, s2, s3, s4, s5, s6;
   std::cout << "charly_create_istring" << '\n';
@@ -103,12 +109,12 @@ int main() {
 
   // charly_string_data(charly_create_istring)
   std::cout << "charly_string_data(charly_create_istring)" << '\n';
-  std::cout << (void*)charly_string_data(s1) << '\n';
-  std::cout << (void*)charly_string_data(s2) << '\n';
-  std::cout << (void*)charly_string_data(s3) << '\n';
-  std::cout << (void*)charly_string_data(s4) << '\n';
-  std::cout << (void*)charly_string_data(s5) << '\n';
-  std::cout << (void*)charly_string_data(s6) << '\n';
+  std::cout << s1 << ": " << (void*)charly_string_data(s1) << '\n';
+  std::cout << s2 << ": " << (void*)charly_string_data(s2) << '\n';
+  std::cout << s3 << ": " << (void*)charly_string_data(s3) << '\n';
+  std::cout << s4 << ": " << (void*)charly_string_data(s4) << '\n';
+  std::cout << s5 << ": " << (void*)charly_string_data(s5) << '\n';
+  std::cout << s6 << ": " << (void*)charly_string_data(s6) << '\n';
   std::cout << '\n';
 
   // charly_string_length(charly_create_istring)
@@ -120,6 +126,15 @@ int main() {
   std::cout << charly_string_length(s5) << '\n';
   std::cout << charly_string_length(s6) << '\n';
   std::cout << '\n';
+
+  // dumping istring
+  std::cout << "dumping istring" << '\n';
+  std::cout.write(charly_string_data(s1), charly_string_length(s1)) << '\n';
+  std::cout.write(charly_string_data(s2), charly_string_length(s2)) << '\n';
+  std::cout.write(charly_string_data(s3), charly_string_length(s3)) << '\n';
+  std::cout.write(charly_string_data(s4), charly_string_length(s4)) << '\n';
+  std::cout.write(charly_string_data(s5), charly_string_length(s5)) << '\n';
+  std::cout.write(charly_string_data(s6), charly_string_length(s6)) << '\n';
 
   // singletons
   std::cout << "singletons" << '\n';
@@ -133,14 +148,9 @@ int main() {
   int a = 25;
   char* out_of_bounds = reinterpret_cast<char*>(static_cast<int64_t>(1) << 50);
   std::cout << "pointers" << '\n';
-  std::cout << charly_get_typestring(charly_create_pointer(nullptr)) << '\n';
-  std::cout << charly_get_typestring(charly_create_pointer(&a)) << '\n';
-  std::cout << charly_get_typestring(charly_create_pointer(out_of_bounds)) << '\n';
-  std::cout << '\n';
-
-  // pointers decode
-  std::cout << "pointers decode" << '\n';
-  std::cout << charly_get_pointer<int>(charly_create_pointer(&a)) << '\n';
+  std::cout << charly_get_pointer<int64_t>(charly_create_pointer(nullptr)) << '\n';
+  std::cout << charly_get_pointer<int64_t>(charly_create_pointer(&a)) << '\n';
+  std::cout << charly_get_pointer<int64_t>(charly_create_pointer(out_of_bounds)) << '\n';
   std::cout << '\n';
 
   // misc. cases
