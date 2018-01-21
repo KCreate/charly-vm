@@ -71,21 +71,21 @@ int main() {
   std::cout << charly_double_to_int64(charly_create_double(250000)) << '\n';
   std::cout << '\n';
 
-  // charly_create_pstring
+  // charly_create_istring
   VALUE ps1, ps2;
-  std::cout << "charly_create_pstring" << '\n';
-  std::cout << charly_get_typestring(ps1 = charly_create_pstring("abcdef")) << '\n';
-  std::cout << charly_get_typestring(ps2 = charly_create_pstring("fedcba")) << '\n';
+  std::cout << "charly_create_istring" << '\n';
+  std::cout << charly_get_typestring(ps1 = charly_create_istring("abcdef")) << '\n';
+  std::cout << charly_get_typestring(ps2 = charly_create_istring("fedcba")) << '\n';
   std::cout << '\n';
 
-  // charly_string_data(charly_create_pstring)
-  std::cout << "charly_string_data(charly_create_pstring)" << '\n';
+  // charly_string_data(charly_create_istring)
+  std::cout << "charly_string_data(charly_create_istring)" << '\n';
   std::cout << (void*)charly_string_data(ps1) << '\n';
   std::cout << (void*)charly_string_data(ps2) << '\n';
   std::cout << '\n';
 
-  // charly_string_length(charly_create_pstring)
-  std::cout << "charly_string_length(charly_create_pstring)" << '\n';
+  // charly_string_length(charly_create_istring)
+  std::cout << "charly_string_length(charly_create_istring)" << '\n';
   std::cout << charly_string_length(ps1) << '\n';
   std::cout << charly_string_length(ps2) << '\n';
   std::cout << '\n';

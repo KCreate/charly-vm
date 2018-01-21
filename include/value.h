@@ -681,44 +681,13 @@ constexpr VALUE charly_create_symbol(T& input) {
   return kSignatureSymbol | (val & ~kMaskSymbol);
 }
 
-// Create packed strings
-//
-// Note: Because char* should always contain a null terminator at the end, we check for 7 bytes
-// instead of 6.
-template <size_t N>
-VALUE charly_create_pstring(char const (& input)[N]) {
-  static_assert(N == 7, "charly_create_pstring can only create strings of length 6 (excluding null-terminator)");
-
-  VALUE val = kSignaturePString;
-  char* buf = (char*)&val;
-
-  // Copy the string buffer
-  if (IS_BIG_ENDIAN()) {
-    buf[2] = input[0];
-    buf[3] = input[1];
-    buf[4] = input[2];
-    buf[5] = input[3];
-    buf[6] = input[4];
-    buf[7] = input[5];
-  } else {
-    buf[0] = input[0];
-    buf[1] = input[1];
-    buf[2] = input[2];
-    buf[3] = input[3];
-    buf[4] = input[4];
-    buf[5] = input[5];
-  }
-
-  return val;
-}
-
 // Create immediate encoded strings of size 0 - 5
 //
 // Note: Because char* should always contain a null terminator at the end, we check for <= 6 bytes
 // instead of <= 5.
 template <size_t N>
 VALUE charly_create_istring(char const (& input)[N]) {
-  static_assert(N <= 6, "charly_create_istring can only create strings of length <= 5 (excluding null-terminator)");
+  static_assert(N <= 6, "charly_create_istring can only create strings of length <= 6 (excluding null-terminator)");
 
   VALUE val = kSignatureIString;
   char* buf = (char*)&val;
@@ -738,6 +707,31 @@ VALUE charly_create_istring(char const (& input)[N]) {
     if constexpr (N >= 4) buf[3] = input[3];
     if constexpr (N >= 5) buf[4] = input[4];
     buf[5] = N - 1;
+  }
+
+  return val;
+}
+
+template <>
+VALUE charly_create_istring(char const (& input)[7]) {
+  VALUE val = kSignaturePString;
+  char* buf = (char*)&val;
+
+  // Copy the string buffer
+  if (IS_BIG_ENDIAN()) {
+    buf[2] = input[0];
+    buf[3] = input[1];
+    buf[4] = input[2];
+    buf[5] = input[3];
+    buf[6] = input[4];
+    buf[7] = input[5];
+  } else {
+    buf[0] = input[0];
+    buf[1] = input[1];
+    buf[2] = input[2];
+    buf[3] = input[3];
+    buf[4] = input[4];
+    buf[5] = input[5];
   }
 
   return val;
