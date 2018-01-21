@@ -324,16 +324,19 @@ const void* kMaxPointer           = reinterpret_cast<void*>((static_cast<int64_t
 const uint64_t kSignBlock         = 0xFFFF000000000000;
 
 // Type casting functions
-inline void* charly_as_pointer(VALUE value)           { return reinterpret_cast<void*>(value & kMaskPointer); }
-inline Basic* charly_as_basic(VALUE value)            { return reinterpret_cast<Basic*>(value & kMaskPointer); }
-inline Class* charly_as_class(VALUE value)            { return reinterpret_cast<Class*>(value & kMaskPointer); }
-inline Object* charly_as_object(VALUE value)          { return reinterpret_cast<Object*>(value & kMaskPointer); }
-inline Array* charly_as_array(VALUE value)            { return reinterpret_cast<Array*>(value & kMaskPointer); }
-inline String* charly_as_hstring(VALUE value)         { return reinterpret_cast<String*>(value & kMaskPointer); }
-inline Function* charly_as_function(VALUE value)      { return reinterpret_cast<Function*>(value & kMaskPointer); }
-inline CFunction* charly_as_cfunction(VALUE value)    { return reinterpret_cast<CFunction*>(value & kMaskPointer); }
-inline Frame* charly_as_frame(VALUE value)            { return reinterpret_cast<Frame*>(value & kMaskPointer); }
-inline CatchTable* charly_as_catchtable(VALUE value)  { return reinterpret_cast<CatchTable*>(value & kMaskPointer); }
+
+template <typename T>
+T* charly_as_pointer_to(VALUE value)                  { return reinterpret_cast<T*>(value & kMaskPointer); }
+inline void* charly_as_pointer(VALUE value)           { return charly_as_pointer_to<void>(value); }
+inline Basic* charly_as_basic(VALUE value)            { return charly_as_pointer_to<Basic>(value); }
+inline Class* charly_as_class(VALUE value)            { return charly_as_pointer_to<Class>(value); }
+inline Object* charly_as_object(VALUE value)          { return charly_as_pointer_to<Object>(value); }
+inline Array* charly_as_array(VALUE value)            { return charly_as_pointer_to<Array>(value); }
+inline String* charly_as_hstring(VALUE value)         { return charly_as_pointer_to<String>(value); }
+inline Function* charly_as_function(VALUE value)      { return charly_as_pointer_to<Function>(value); }
+inline CFunction* charly_as_cfunction(VALUE value)    { return charly_as_pointer_to<CFunction>(value); }
+inline Frame* charly_as_frame(VALUE value)            { return charly_as_pointer_to<Frame>(value); }
+inline CatchTable* charly_as_catchtable(VALUE value)  { return charly_as_pointer_to<CatchTable>(value); }
 
 // Type checking functions
 inline bool charly_is_false(VALUE value)     { return value == kFalse; }
@@ -419,58 +422,45 @@ inline double charly_double_to_double(VALUE value)   { return *reinterpret_cast<
 //
 // Note: Assumes the caller doesn't know what exact numeric type the value has,
 // only that it is a number.
-//
-// Note: Methods which return an integer, return 0 if the value is not a number
-// Note: Methods which return a float, return NaN if the value is not a number
 inline int64_t charly_number_to_int64(VALUE value)   {
   if (charly_is_float(value)) return charly_double_to_int64(value);
-  if (charly_is_int(value)) return charly_int_to_int64(value);
-  return 0;
+  return charly_int_to_int64(value);
 }
 inline uint64_t charly_number_to_uint64(VALUE value) {
   if (charly_is_float(value)) return charly_double_to_uint64(value);
-  if (charly_is_int(value)) return charly_int_to_uint64(value);
-  return 0;
+  return charly_int_to_uint64(value);
 }
 inline int32_t charly_number_to_int32(VALUE value)   {
   if (charly_is_float(value)) return charly_double_to_int32(value);
-  if (charly_is_int(value)) return charly_int_to_int32(value);
-  return 0;
+  return charly_int_to_int32(value);
 }
 inline uint32_t charly_number_to_uint32(VALUE value) {
   if (charly_is_float(value)) return charly_double_to_uint32(value);
-  if (charly_is_int(value)) return charly_int_to_uint32(value);
-  return 0;
+  return charly_int_to_uint32(value);
 }
 inline int16_t charly_number_to_int16(VALUE value)   {
   if (charly_is_float(value)) return charly_double_to_int16(value);
-  if (charly_is_int(value)) return charly_int_to_int16(value);
-  return 0;
+  return charly_int_to_int16(value);
 }
 inline uint16_t charly_number_to_uint16(VALUE value) {
   if (charly_is_float(value)) return charly_double_to_uint16(value);
-  if (charly_is_int(value)) return charly_int_to_uint16(value);
-  return 0;
+  return charly_int_to_uint16(value);
 }
 inline int8_t charly_number_to_int8(VALUE value)     {
   if (charly_is_float(value)) return charly_double_to_int8(value);
-  if (charly_is_int(value)) return charly_int_to_int8(value);
-  return 0;
+  return charly_int_to_int8(value);
 }
 inline uint8_t charly_number_to_uint8(VALUE value)   {
   if (charly_is_float(value)) return charly_double_to_uint8(value);
-  if (charly_is_int(value)) return charly_int_to_uint8(value);
-  return 0;
+  return charly_int_to_uint8(value);
 }
 inline float charly_number_to_float(VALUE value)     {
   if (charly_is_float(value)) return charly_double_to_float(value);
-  if (charly_is_int(value)) return charly_int_to_float(value);
-  return kBitsNaN;
+  return charly_int_to_float(value);
 }
 inline double charly_number_to_double(VALUE value)   {
   if (charly_is_float(value)) return charly_double_to_double(value);
-  if (charly_is_int(value)) return charly_int_to_double(value);
-  return kBitsNaN;
+  return charly_int_to_double(value);
 }
 
 template <typename T>
