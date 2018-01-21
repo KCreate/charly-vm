@@ -49,8 +49,7 @@ const std::string kHumanReadableHeapTypes[] = {
   "catchtable"
 };
 const std::string kHumanReadableImmediateTypes[] = {
-  "float",
-  "integer",
+  "number",
   "null",
   "string",
   "boolean",
@@ -374,12 +373,12 @@ inline bool charly_is_catchtable(VALUE value) { return charly_is_heap_type(value
 inline const std::string& charly_get_typestring(VALUE value) {
   if (charly_is_on_heap(value)) return kHumanReadableHeapTypes[charly_as_basic(value)->type];
   if (charly_is_float(value)) return kHumanReadableImmediateTypes[0];
-  if (charly_is_int(value)) return kHumanReadableImmediateTypes[1];
-  if (charly_is_null(value)) return kHumanReadableImmediateTypes[2];
-  if (charly_is_pstring(value) || charly_is_istring(value)) return kHumanReadableImmediateTypes[3];
-  if (charly_is_boolean(value)) return kHumanReadableImmediateTypes[4];
-  if (charly_is_symbol(value)) return kHumanReadableImmediateTypes[5];
-  return kHumanReadableImmediateTypes[6];
+  if (charly_is_int(value)) return kHumanReadableImmediateTypes[0];
+  if (charly_is_null(value)) return kHumanReadableImmediateTypes[1];
+  if (charly_is_pstring(value) || charly_is_istring(value)) return kHumanReadableImmediateTypes[2];
+  if (charly_is_boolean(value)) return kHumanReadableImmediateTypes[3];
+  if (charly_is_symbol(value)) return kHumanReadableImmediateTypes[4];
+  return kHumanReadableImmediateTypes[5];
 }
 
 // Convert an immediate integer to other integer or float types
