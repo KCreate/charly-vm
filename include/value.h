@@ -26,7 +26,6 @@
 
 #include <unordered_map>
 #include <vector>
-#include <type_traits>
 #include <cmath>
 
 #include "defines.h"
@@ -36,8 +35,8 @@
 
 namespace Charly {
 
-// Human readable types of heap-allocated data structures
-const std::string kHumanReadableHeapTypes[] = {
+// Human readable types of all data types
+const std::string kHumanReadableTypes[] = {
   "dead",
   "class",
   "object",
@@ -46,19 +45,18 @@ const std::string kHumanReadableHeapTypes[] = {
   "function",
   "cfunction",
   "frame",
-  "catchtable"
-};
-const std::string kHumanReadableImmediateTypes[] = {
+  "catchtable",
   "number",
-  "null",
-  "string",
   "boolean",
+  "null",
   "symbol",
   "unknown"
 };
 
 // Identifies which type a VALUE points to
-enum {
+enum ValueType : uint8_t {
+
+  // Types which are allocated on the heap
   kTypeDead,
   kTypeClass,
   kTypeObject,
@@ -67,7 +65,16 @@ enum {
   kTypeFunction,
   kTypeCFunction,
   kTypeFrame,
-  kTypeCatchTable
+  kTypeCatchTable,
+
+  // Types which are immediate encoded using nan-boxing
+  kTypeNumber,
+  kTypeBoolean,
+  kTypeNull,
+  kTypeSymbol,
+
+  // This should never appear anywhere
+  kTypeUnknown
 };
 
 // Every heap allocated structure in Charly contains this structure at
@@ -342,9 +349,10 @@ inline bool charly_is_false(VALUE value)     { return value == kFalse; }
 inline bool charly_is_true(VALUE value)      { return value == kTrue; }
 inline bool charly_is_boolean(VALUE value)   { return charly_is_false(value) || charly_is_true(value); }
 inline bool charly_is_null(VALUE value)      { return value == kNull; }
-inline bool charly_is_float(VALUE value)     { return value == kBitsNaN || (~value & kMaskExponentBits) != 0; }
+inline bool charly_is_nan(VALUE value)       { return value == kBitsNaN; }
+inline bool charly_is_float(VALUE value)     { return charly_is_nan(value) || ((~value & kMaskExponentBits) != 0); }
 inline bool charly_is_int(VALUE value)       { return (value & kMaskSignature) == kSignatureInteger; }
-inline bool charly_is_numeric(VALUE value)   { return charly_is_int(value) || charly_is_float(value); }
+inline bool charly_is_number(VALUE value)    { return charly_is_int(value) || charly_is_float(value); }
 inline bool charly_is_symbol(VALUE value)    { return (value & kMaskSignature) == kSignatureSymbol; }
 inline bool charly_is_pstring(VALUE value)   { return (value & kMaskSignature) == kSignaturePString; }
 inline bool charly_is_istring(VALUE value)   { return (value & kMaskSignature) == kSignatureIString; }
@@ -370,15 +378,21 @@ inline bool charly_is_callable(VALUE value) {
 inline bool charly_is_frame(VALUE value) { return charly_is_heap_type(value, kTypeFrame); }
 inline bool charly_is_catchtable(VALUE value) { return charly_is_heap_type(value, kTypeCatchTable); }
 
+// Return the ValueType representation of the type of the value
+inline uint8_t charly_get_type(VALUE value) {
+  if (charly_is_on_heap(value)) return charly_as_basic(value)->type;
+  if (charly_is_float(value)) return kTypeNumber;
+  if (charly_is_int(value)) return kTypeNumber;
+  if (charly_is_null(value)) return kTypeNull;
+  if (charly_is_pstring(value) || charly_is_istring(value)) return kTypeString;
+  if (charly_is_boolean(value)) return kTypeBoolean;
+  if (charly_is_symbol(value)) return kTypeSymbol;
+  return kTypeUnknown;
+}
+
+// Return a human readable string of the type of value
 inline const std::string& charly_get_typestring(VALUE value) {
-  if (charly_is_on_heap(value)) return kHumanReadableHeapTypes[charly_as_basic(value)->type];
-  if (charly_is_float(value)) return kHumanReadableImmediateTypes[0];
-  if (charly_is_int(value)) return kHumanReadableImmediateTypes[0];
-  if (charly_is_null(value)) return kHumanReadableImmediateTypes[1];
-  if (charly_is_pstring(value) || charly_is_istring(value)) return kHumanReadableImmediateTypes[2];
-  if (charly_is_boolean(value)) return kHumanReadableImmediateTypes[3];
-  if (charly_is_symbol(value)) return kHumanReadableImmediateTypes[4];
-  return kHumanReadableImmediateTypes[5];
+  return kHumanReadableTypes[charly_get_type(value)];
 }
 
 // Convert an immediate integer to other integer or float types
@@ -390,7 +404,7 @@ inline const std::string& charly_get_typestring(VALUE value) {
 // When converting, we need to sign extend the value to retain correctness
 
 inline int64_t charly_int_to_int64(VALUE value) {
-  return (value & kMaskInteger) | ((value & kMaskSignBit) ? kSignBlock : 0x00);
+  return (value & kMaskInteger) | ((value & kMaskIntegerSign) ? kSignBlock : 0x00);
 }
 inline uint64_t charly_int_to_uint64(VALUE value) { return charly_int_to_int64(value); }
 inline int32_t charly_int_to_int32(VALUE value)   { return charly_int_to_int64(value); }
@@ -406,20 +420,25 @@ inline double charly_int_to_double(VALUE value)   { return charly_int_to_int64(v
 //
 // Warning: These methods don't perform any type checks and assume
 // the caller made sure that the input value is an immediate double
-inline int64_t charly_double_to_int64(VALUE value)   { return *reinterpret_cast<double*>(&value); }
-inline uint64_t charly_double_to_uint64(VALUE value) { return *reinterpret_cast<double*>(&value); }
-inline int32_t charly_double_to_int32(VALUE value)   { return *reinterpret_cast<double*>(&value); }
-inline uint32_t charly_double_to_uint32(VALUE value) { return *reinterpret_cast<double*>(&value); }
-inline int16_t charly_double_to_int16(VALUE value)   { return *reinterpret_cast<double*>(&value); }
-inline uint16_t charly_double_to_uint16(VALUE value) { return *reinterpret_cast<double*>(&value); }
-inline int8_t charly_double_to_int8(VALUE value)     { return *reinterpret_cast<double*>(&value); }
-inline uint8_t charly_double_to_uint8(VALUE value)   { return *reinterpret_cast<double*>(&value); }
-inline float charly_double_to_float(VALUE value)     { return *reinterpret_cast<double*>(&value); }
-inline double charly_double_to_double(VALUE value)   { return *reinterpret_cast<double*>(&value); }
+
+// The purpose of this method is to replace INFINITY, -INFINITY, NAN with 0
+// Conversion from these values to int is undefined behaviour and will result
+// in random gibberish being returned
+inline double charly_double_to_safe_double(VALUE value) { return FP_STRIP_INF(FP_STRIP_NAN(BITCAST_TO_DOUBLE(value))); }
+inline int64_t charly_double_to_int64(VALUE value)      { return charly_double_to_safe_double(value); }
+inline uint64_t charly_double_to_uint64(VALUE value)    { return charly_double_to_safe_double(value); }
+inline int32_t charly_double_to_int32(VALUE value)      { return charly_double_to_safe_double(value); }
+inline uint32_t charly_double_to_uint32(VALUE value)    { return charly_double_to_safe_double(value); }
+inline int16_t charly_double_to_int16(VALUE value)      { return charly_double_to_safe_double(value); }
+inline uint16_t charly_double_to_uint16(VALUE value)    { return charly_double_to_safe_double(value); }
+inline int8_t charly_double_to_int8(VALUE value)        { return charly_double_to_safe_double(value); }
+inline uint8_t charly_double_to_uint8(VALUE value)      { return charly_double_to_safe_double(value); }
+inline float charly_double_to_float(VALUE value)        { return *reinterpret_cast<double*>(&value); }
+inline double charly_double_to_double(VALUE value)      { return *reinterpret_cast<double*>(&value); }
 
 // Convert an immediate number to other integer or float types
 //
-// Note: Assumes the caller doesn't know what exact numeric type the value has,
+// Note: Assumes the caller doesn't know what exact number type the value has,
 // only that it is a number.
 inline int64_t charly_number_to_int64(VALUE value)   {
   if (charly_is_float(value)) return charly_double_to_int64(value);
@@ -460,11 +479,6 @@ inline float charly_number_to_float(VALUE value)     {
 inline double charly_number_to_double(VALUE value)   {
   if (charly_is_float(value)) return charly_double_to_double(value);
   return charly_int_to_double(value);
-}
-
-template <typename T>
-inline T* charly_get_pointer(VALUE value) {
-  return reinterpret_cast<T*>(value & kMaskPointer);
 }
 
 // Get a pointer to the data of a string
@@ -516,6 +530,53 @@ inline uint32_t charly_string_length(VALUE value) {
   return 0xFFFFFFFF;
 }
 
+// Convert a string to a int64
+inline int64_t charly_string_to_int64(VALUE value) {
+  size_t length = charly_string_length(value);
+  char* buffer = charly_string_data(value);
+  char* buffer_end = buffer + length;
+
+  int64_t interpreted = strtol(buffer, &buffer_end, 0);
+
+  // strtol sets errno to ERANGE if the result value doesn't fit
+  // into the return type
+  if (errno == ERANGE) {
+    errno = 0;
+    return 0;
+  }
+
+  if (buffer_end == buffer) {
+    return 0;
+  }
+
+  return interpreted;
+}
+
+// Convert a string to a double
+inline double charly_string_to_double(VALUE value) {
+  size_t length = charly_string_length(value);
+  char* buffer = charly_string_data(value);
+  char* buffer_end = buffer + length;
+
+  double interpreted = strtod(buffer, &buffer_end);
+
+  // HUGE_VAL gets returned when the converted value
+  // doesn't fit inside a double value
+  // In this case we just return NAN
+  if (interpreted == HUGE_VAL) {
+    return kNaN;
+  }
+
+  // If strtod could not perform a conversion it returns 0
+  // and sets str_end to str
+  // We just return NAN in this case
+  if (buffer_end == buffer) {
+    return kNaN;
+  }
+
+  return interpreted;
+}
+
 // Create an immediate integer
 //
 // Warning: Doesn't perform any overflow checks. If the integer doesn't fit into 48 bits
@@ -530,14 +591,49 @@ inline VALUE charly_create_double(double value) {
   int64_t bits = *reinterpret_cast<int64_t*>(&value);
 
   // Strip sign bit and payload bits if value is NaN
-  if ((bits & kMaskExponentBits) == kMaskExponentBits) {
-    return *reinterpret_cast<VALUE*>((const_cast<uint64_t*>(&kBitsNaN)));
-  }
-
+  if ((bits & kMaskExponentBits) == kMaskExponentBits) return kBitsNaN;
   return *reinterpret_cast<VALUE*>(&value);
 }
 
-// Convert a numeric type into an immediate charly value
+// Convert any type of value to a number type
+// Floats stay floats
+// Integers stay integers
+// Any other type is converter to an integer
+inline VALUE charly_value_to_number(VALUE value) {
+  if (charly_is_float(value)) return value;
+  if (charly_is_int(value)) return value;
+  if (charly_is_boolean(value)) return value == kTrue ? charly_create_integer(1) : charly_create_integer(0);
+  if (charly_is_null(value)) return charly_create_integer(0);
+  if (charly_is_symbol(value)) return charly_create_integer(0);
+  if (charly_is_string(value)) return charly_string_to_double(value);
+  return charly_create_double(kNaN);
+}
+inline int64_t charly_value_to_int64(VALUE value) {
+  if (charly_is_number(value)) return charly_number_to_int64(value);
+  if (charly_is_boolean(value)) return value == kTrue ? 1 : 0;
+  if (charly_is_null(value)) return 0;
+  if (charly_is_symbol(value)) return 0;
+  if (charly_is_string(value)) return charly_string_to_int64(value);
+  return 0;
+}
+inline double charly_value_to_double(VALUE value) {
+  if (charly_is_number(value)) return charly_number_to_double(value);
+  if (charly_is_boolean(value)) return value == kTrue ? 1 : 0;
+  if (charly_is_null(value)) return 0;
+  if (charly_is_symbol(value)) return 0;
+  if (charly_is_string(value)) return charly_string_to_double(value);
+  return 0;
+}
+inline uint64_t charly_value_to_uint64(VALUE value) { return charly_value_to_int64(value); }
+inline int32_t charly_value_to_int32(VALUE value)   { return charly_value_to_int64(value); }
+inline uint32_t charly_value_to_uint32(VALUE value) { return charly_value_to_int64(value); }
+inline int16_t charly_value_to_int16(VALUE value)   { return charly_value_to_int64(value); }
+inline uint16_t charly_value_to_uint16(VALUE value) { return charly_value_to_int64(value); }
+inline int8_t charly_value_to_int8(VALUE value)     { return charly_value_to_int64(value); }
+inline uint8_t charly_value_to_uint8(VALUE value)   { return charly_value_to_int64(value); }
+inline float charly_value_to_float(VALUE value)     { return charly_value_to_double(value); }
+
+// Convert a number type into an immediate charly value
 //
 // This method assumes the caller doesn't care what format the resulting number has,
 // so it might return an immediate integer or double
@@ -559,126 +655,125 @@ inline VALUE charly_create_number(double value)   { return charly_create_double(
 inline VALUE charly_create_number(float value)    { return charly_create_double(value); }
 
 // Binary arithmetic methods
-inline VALUE charly_add_numeric(VALUE left, VALUE right) {
+inline VALUE charly_add_number(VALUE left, VALUE right) {
   if (charly_is_int(left) && charly_is_int(right)) {
     return charly_create_number(charly_int_to_int64(left) + charly_int_to_int64(right));
   }
   return charly_create_number(charly_number_to_double(left) + charly_number_to_double(right));
 }
-inline VALUE charly_sub_numeric(VALUE left, VALUE right) {
+inline VALUE charly_sub_number(VALUE left, VALUE right) {
   if (charly_is_int(left) && charly_is_int(right)) {
     return charly_create_number(charly_int_to_int64(left) - charly_int_to_int64(right));
   }
   return charly_create_number(charly_number_to_double(left) - charly_number_to_double(right));
 }
-inline VALUE charly_mul_numeric(VALUE left, VALUE right) {
+inline VALUE charly_mul_number(VALUE left, VALUE right) {
   if (charly_is_int(left) && charly_is_int(right)) {
     return charly_create_number(charly_int_to_int64(left) * charly_int_to_int64(right));
   }
   return charly_create_number(charly_number_to_double(left) * charly_number_to_double(right));
 }
-inline VALUE charly_div_numeric(VALUE left, VALUE right) {
+inline VALUE charly_div_number(VALUE left, VALUE right) {
   if (charly_is_int(left) && charly_is_int(right)) {
     return charly_create_number(charly_int_to_int64(left) / charly_int_to_int64(right));
   }
   return charly_create_number(charly_number_to_double(left) / charly_number_to_double(right));
 }
-inline VALUE charly_mod_numeric(VALUE left, VALUE right) {
+inline VALUE charly_mod_number(VALUE left, VALUE right) {
   if (charly_is_int(left) && charly_is_int(right)) {
     return charly_create_number(charly_int_to_int64(left) % charly_int_to_int64(right));
   }
   return charly_create_number(std::fmod(charly_number_to_double(left), charly_number_to_double(right)));
 }
-inline VALUE charly_pow_numeric(VALUE left, VALUE right) {
+inline VALUE charly_pow_number(VALUE left, VALUE right) {
   if (charly_is_int(left) && charly_is_int(right)) {
     return charly_create_number(std::pow(charly_int_to_int64(left), charly_int_to_int64(right)));
   }
   return charly_create_number(std::pow(charly_number_to_double(left), charly_number_to_double(right)));
 }
-inline VALUE charly_lt_numeric(VALUE left, VALUE right) {
+inline VALUE charly_lt_number(VALUE left, VALUE right) {
   if (charly_is_int(left) && charly_is_int(right)) {
     return charly_create_number(charly_int_to_int64(left) < charly_int_to_int64(right));
   }
   return charly_create_number(std::isless(charly_number_to_double(left), charly_number_to_double(right)));
 }
-inline VALUE charly_gt_numeric(VALUE left, VALUE right) {
+inline VALUE charly_gt_number(VALUE left, VALUE right) {
   if (charly_is_int(left) && charly_is_int(right)) {
     return charly_create_number(charly_int_to_int64(left) > charly_int_to_int64(right));
   }
   return charly_create_number(std::isgreater(charly_number_to_double(left), charly_number_to_double(right)));
 }
-inline VALUE charly_le_numeric(VALUE left, VALUE right) {
+inline VALUE charly_le_number(VALUE left, VALUE right) {
   if (charly_is_int(left) && charly_is_int(right)) {
     return charly_create_number(charly_int_to_int64(left) <= charly_int_to_int64(right));
   }
   return charly_create_number(std::islessequal(charly_number_to_double(left), charly_number_to_double(right)));
 }
-inline VALUE charly_ge_numeric(VALUE left, VALUE right) {
+inline VALUE charly_ge_number(VALUE left, VALUE right) {
   if (charly_is_int(left) && charly_is_int(right)) {
     return charly_create_number(charly_int_to_int64(left) >= charly_int_to_int64(right));
   }
   return charly_create_number(std::isgreaterequal(charly_number_to_double(left), charly_number_to_double(right)));
 }
-inline VALUE charly_eq_numeric(VALUE left, VALUE right) {
+inline VALUE charly_eq_number(VALUE left, VALUE right) {
   if (charly_is_int(left) && charly_is_int(right)) {
     return charly_create_number(charly_int_to_int64(left) == charly_int_to_int64(right));
   }
   return charly_create_number(FP_ARE_EQUAL(charly_number_to_double(left), charly_number_to_double(right)));
 }
-inline VALUE charly_neq_numeric(VALUE left, VALUE right) {
+inline VALUE charly_neq_number(VALUE left, VALUE right) {
   if (charly_is_int(left) && charly_is_int(right)) {
     return charly_create_number(charly_int_to_int64(left) != charly_int_to_int64(right));
   }
   return charly_create_number(!FP_ARE_EQUAL(charly_number_to_double(left), charly_number_to_double(right)));
 }
-inline VALUE charly_shl_numeric(VALUE left, VALUE right) {
+inline VALUE charly_shl_number(VALUE left, VALUE right) {
   int32_t num = charly_number_to_int32(left);
   int32_t amount = charly_number_to_int32(right);
   return charly_create_number(num << amount);
 }
-inline VALUE charly_shr_numeric(VALUE left, VALUE right) {
+inline VALUE charly_shr_number(VALUE left, VALUE right) {
   int32_t num = charly_number_to_int32(left);
   int32_t amount = charly_number_to_int32(right);
   return charly_create_number(num >> amount);
 }
-inline VALUE charly_and_numeric(VALUE left, VALUE right) {
+inline VALUE charly_and_number(VALUE left, VALUE right) {
   int32_t num = charly_number_to_int32(left);
   int32_t amount = charly_number_to_int32(right);
   return charly_create_number(num & amount);
 }
-inline VALUE charly_or_numeric(VALUE left, VALUE right) {
+inline VALUE charly_or_number(VALUE left, VALUE right) {
   int32_t num = charly_number_to_int32(left);
   int32_t amount = charly_number_to_int32(right);
   return charly_create_number(num | amount);
 }
-inline VALUE charly_xor_numeric(VALUE left, VALUE right) {
+inline VALUE charly_xor_number(VALUE left, VALUE right) {
   int32_t num = charly_number_to_int32(left);
   int32_t amount = charly_number_to_int32(right);
   return charly_create_number(num ^ amount);
 }
 
 // Unary arithmetic methods
-inline VALUE charly_uadd_numeric(VALUE value) {
+inline VALUE charly_uadd_number(VALUE value) {
   return value;
 }
-inline VALUE charly_usub_numeric(VALUE value) {
+inline VALUE charly_usub_number(VALUE value) {
   if (charly_is_int(value)) return charly_create_number(-charly_int_to_int64(value));
   return charly_create_double(-charly_double_to_double(value));
 }
-inline VALUE charly_unot_numeric(VALUE value) {
+inline VALUE charly_unot_number(VALUE value) {
   if (charly_is_int(value)) return charly_int_to_int8(value) == 0 ? kTrue : kFalse;
   return charly_double_to_double(value) == 0.0 ? kTrue : kFalse;
 }
-inline VALUE charly_ubnot_numeric(VALUE value) {
+inline VALUE charly_ubnot_number(VALUE value) {
   if (charly_is_int(value)) return charly_create_number(~charly_int_to_int32(value));
   return charly_create_integer(~charly_double_to_int32(value));
 }
 
 // Convert types into symbols
-template <typename T>
-constexpr VALUE charly_create_symbol(T& input) {
-  size_t val = std::hash<std::decay_t<T>>{}(input);
-  return kSignatureSymbol | (val & ~kMaskSymbol);
+inline VALUE charly_create_symbol(const std::string& input) {
+  size_t val = std::hash<std::string>{}(input);
+  return kSignatureSymbol | (val & kMaskSymbol);
 }
 
 // Create immediate encoded strings of size 0 - 5
