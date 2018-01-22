@@ -50,7 +50,7 @@ inline double FP_STRIP_INF(double value) {
   return std::isinf(value) ? 0.0 : value;
 }
 
-inline double BITCAST_TO_DOUBLE(int64_t value) {
+inline double BITCAST_DOUBLE(int64_t value) {
   return *reinterpret_cast<double*>(&value);
 }
 }

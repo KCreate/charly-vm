@@ -301,7 +301,7 @@ const uint64_t kITypeIString      = 0x0007000000000000;
 
 // Shorthand values
 const uint64_t kBitsNaN           = kMaskExponentBits | kMaskQuietBit;
-const double kNaN                 = *reinterpret_cast<double*>(const_cast<uint64_t*>(&kBitsNaN));
+const double kNaN                 = *reinterpret_cast<double*>(kMaskExponentBits | kMaskQuietBit);
 const uint64_t kFalse             = kBitsNaN | kITypeFalse;
 const uint64_t kTrue              = kBitsNaN | kITypeTrue;
 const uint64_t kNull              = kBitsNaN | kITypeNull;
@@ -424,7 +424,7 @@ inline double charly_int_to_double(VALUE value)   { return charly_int_to_int64(v
 // The purpose of this method is to replace INFINITY, -INFINITY, NAN with 0
 // Conversion from these values to int is undefined behaviour and will result
 // in random gibberish being returned
-inline double charly_double_to_safe_double(VALUE value) { return FP_STRIP_INF(FP_STRIP_NAN(BITCAST_TO_DOUBLE(value))); }
+inline double charly_double_to_safe_double(VALUE value) { return FP_STRIP_INF(FP_STRIP_NAN(BITCAST_DOUBLE(value))); }
 inline int64_t charly_double_to_int64(VALUE value)      { return charly_double_to_safe_double(value); }
 inline uint64_t charly_double_to_uint64(VALUE value)    { return charly_double_to_safe_double(value); }
 inline int32_t charly_double_to_int32(VALUE value)      { return charly_double_to_safe_double(value); }
@@ -495,9 +495,9 @@ inline char* charly_string_data(VALUE& value) {
     return reinterpret_cast<char*>(&value);
   } else {
     if (charly_is_pstring(value)) {
-      return reinterpret_cast<char*>(reinterpret_cast<char*>(&value) + 2);
+      return reinterpret_cast<char*>(&value) + 2;
     } else if (charly_is_istring(value)) {
-      return reinterpret_cast<char*>(reinterpret_cast<char*>(&value) + 3);
+      return reinterpret_cast<char*>(&value) + 3;
     }
   }
 
