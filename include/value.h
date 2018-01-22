@@ -301,7 +301,7 @@ const uint64_t kITypeIString      = 0x0007000000000000;
 
 // Shorthand values
 const uint64_t kBitsNaN           = kMaskExponentBits | kMaskQuietBit;
-const double kNaN                 = *reinterpret_cast<double*>(kMaskExponentBits | kMaskQuietBit);
+const double kNaN                 = BITCAST_DOUBLE(kMaskExponentBits | kMaskQuietBit);
 const uint64_t kFalse             = kBitsNaN | kITypeFalse;
 const uint64_t kTrue              = kBitsNaN | kITypeTrue;
 const uint64_t kNull              = kBitsNaN | kITypeNull;
@@ -433,8 +433,8 @@ inline int16_t charly_double_to_int16(VALUE value)      { return charly_double_t
 inline uint16_t charly_double_to_uint16(VALUE value)    { return charly_double_to_safe_double(value); }
 inline int8_t charly_double_to_int8(VALUE value)        { return charly_double_to_safe_double(value); }
 inline uint8_t charly_double_to_uint8(VALUE value)      { return charly_double_to_safe_double(value); }
-inline float charly_double_to_float(VALUE value)        { return *reinterpret_cast<double*>(&value); }
-inline double charly_double_to_double(VALUE value)      { return *reinterpret_cast<double*>(&value); }
+inline float charly_double_to_float(VALUE value)        { return BITCAST_DOUBLE(value); }
+inline double charly_double_to_double(VALUE value)      { return BITCAST_DOUBLE(value); }
 
 // Convert an immediate number to other integer or float types
 //
