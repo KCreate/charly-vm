@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+#include <cmath>
+
 #pragma once
 
 namespace Charly {
@@ -36,5 +38,19 @@ inline bool IS_BIG_ENDIAN() {
 template <typename T>
 bool FP_ARE_EQUAL(T f1, T f2) {
   return (std::fabs(f1 - f2) <= std::numeric_limits<T>::epsilon() + std::fmax(fabs(f1), fabs(f2)));
+}
+
+// Branchlessly replaces NAN with 0.0
+inline double FP_STRIP_NAN(double value) {
+  return std::isnan(value) ? 0.0 : value;
+}
+
+// Branchlessly replaces NAN with 0.0
+inline double FP_STRIP_INF(double value) {
+  return std::isinf(value) ? 0.0 : value;
+}
+
+inline double BITCAST_TO_DOUBLE(int64_t value) {
+  return *reinterpret_cast<double*>(&value);
 }
 }
