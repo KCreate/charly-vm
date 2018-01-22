@@ -645,14 +645,7 @@ inline VALUE charly_create_number(uint64_t value) {
   if (value >= kMaxUInt) return charly_create_double(value);
   return charly_create_integer(value);
 }
-inline VALUE charly_create_number(int8_t value)   { return charly_create_integer(value); }
-inline VALUE charly_create_number(uint8_t value)  { return charly_create_integer(value); }
-inline VALUE charly_create_number(int16_t value)  { return charly_create_integer(value); }
-inline VALUE charly_create_number(uint16_t value) { return charly_create_integer(value); }
-inline VALUE charly_create_number(int32_t value)  { return charly_create_integer(value); }
-inline VALUE charly_create_number(uint32_t value) { return charly_create_integer(value); }
-inline VALUE charly_create_number(double value)   { return charly_create_double(value); }
-inline VALUE charly_create_number(float value)    { return charly_create_double(value); }
+inline VALUE charly_create_number(double value) { return charly_create_double(value); }
 
 // Binary arithmetic methods
 inline VALUE charly_add_number(VALUE left, VALUE right) {
@@ -782,7 +775,7 @@ inline VALUE charly_create_symbol(const std::string& input) {
 // instead of <= 5.
 template <size_t N>
 VALUE charly_create_istring(char const (& input)[N]) {
-  static_assert(N <= 6, "charly_create_istring can only create strings of length <= 6 (excluding null-terminator)");
+  static_assert(N <= 6, "charly_create_istring can only create strings of length <= 5 (excluding null-terminator)");
 
   VALUE val = kSignatureIString;
   char* buf = (char*)&val;
