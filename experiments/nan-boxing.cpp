@@ -7,6 +7,19 @@ using namespace Charly;
 int main() {
   std::cout << std::hex;
 
+  // sizeof stuff
+  std::cout << "sizeof" << '\n';
+  std::cout << "sizeof(VALUE) = " << sizeof(VALUE) << '\n';
+  std::cout << "sizeof(Basic) = " << sizeof(Basic) << '\n';
+  std::cout << "sizeof(Class) = " << sizeof(Class) << '\n';
+  std::cout << "sizeof(Object) = " << sizeof(Object) << '\n';
+  std::cout << "sizeof(Array) = " << sizeof(Array) << '\n';
+  std::cout << "sizeof(String) = " << sizeof(String) << '\n';
+  std::cout << "sizeof(Function) = " << sizeof(Function) << '\n';
+  std::cout << "sizeof(CFunction) = " << sizeof(CFunction) << '\n';
+  std::cout << "sizeof(Frame) = " << sizeof(Frame) << '\n';
+  std::cout << "sizeof(CatchTable) = " << sizeof(CatchTable) << '\n';
+
   // charly_create_number
   std::cout << "charly_create_number" << '\n';
   std::cout << charly_create_number(1) << '\n';
