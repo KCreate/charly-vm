@@ -537,26 +537,23 @@ AST::AbstractNode* CodeGenerator::visit_null(AST::Null* node, VisitContinue) {
 }
 
 AST::AbstractNode* CodeGenerator::visit_nan(AST::Nan* node, VisitContinue) {
-  this->assembler.write_putfloat(NAN);
+  this->assembler.write_putvalue(kBitsNaN);
   return node;
 }
 
 AST::AbstractNode* CodeGenerator::visit_string(AST::String* node, VisitContinue) {
-
-  StringOffsetInfo info = this->context.stringpool.get_offsetinfo(node->value);
-  this->assembler.write_putstring(info.offset, info.length);
+  if (node->value.size() <= 6) {
+    this->assembler.write_putvalue(charly_create_istring(node->value));
+  } else {
+    StringOffsetInfo info = this->context.stringpool.get_offsetinfo(node->value);
+    this->assembler.write_putstring(info.offset, info.length);
+  }
 
   return node;
 }
 
 AST::AbstractNode* CodeGenerator::visit_number(AST::Number* node, VisitContinue) {
-
-  if (ceilf(node->value) == node->value) {
-    this->assembler.write_putvalue(VALUE_ENCODE_INTEGER(node->value));
-  } else {
-    this->assembler.write_putfloat(node->value);
-  }
-
+  this->assembler.write_putvalue(charly_create_number(node->value));
   return node;
 }
 

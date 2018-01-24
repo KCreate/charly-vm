@@ -1035,6 +1035,9 @@ struct String : public AbstractNode {
 };
 
 // <value>
+//
+// TODO: Have two separate nodes for double and integer numbers as doubles can't store integers precisely
+// which are bigger than 2^24
 struct Number : public AbstractNode {
   double value;
 

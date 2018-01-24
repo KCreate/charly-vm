@@ -41,13 +41,14 @@ VALUE require(VM& vm, VALUE vfilename) {
   // TODO: Deallocate stuff on error
 
   // Make sure we got a string as filename
-  if (vm.real_type(vfilename) != kTypeString) {
+  if (!charly_is_string(vfilename)) {
     vm.throw_exception("require: expected argument 1 to be a string");
     return kNull;
   }
 
-  String* sfilename = reinterpret_cast<String*>(vfilename);
-  std::string filename = std::string(sfilename->data(), sfilename->length());
+  char* str_data = charly_string_data(vfilename);
+  uint32_t str_length = charly_string_length(vfilename);
+  std::string filename = std::string(str_data, str_length);
 
   std::ifstream inputfile(filename);
   if (!inputfile.is_open()) {
@@ -68,13 +69,14 @@ VALUE require(VM& vm, VALUE vfilename) {
 }
 
 VALUE get_method(VM& vm, VALUE argument) {
-  if (vm.real_type(argument) != kTypeString) {
+  if (!charly_is_string(argument)) {
     vm.throw_exception("get_method: expected string");
     return kNull;
   }
 
-  String* arg_string = reinterpret_cast<String*>(argument);
-  std::string methodname(arg_string->data(), arg_string->length());
+  char* str_data = charly_string_data(argument);
+  uint32_t str_length = charly_string_length(argument);
+  std::string methodname(str_data, str_length);
 
   static std::unordered_map<std::string, uintptr_t> method_mapping = {
       {"require", reinterpret_cast<uintptr_t>(Internals::require)},

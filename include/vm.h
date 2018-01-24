@@ -128,7 +128,6 @@ public:
   // Methods to create new data types
   VALUE create_object(uint32_t initial_capacity);
   VALUE create_array(uint32_t initial_capacity);
-  VALUE create_float(double value);
   VALUE create_string(const char* data, uint32_t length);
   VALUE create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint32_t lvarcount, bool anonymous);
   VALUE create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer);
@@ -144,22 +143,6 @@ public:
   VALUE copy_string(VALUE string);
   VALUE copy_function(VALUE function);
   VALUE copy_cfunction(VALUE cfunction);
-
-  // Casting to different types
-  VALUE cast_to_numeric(VALUE value);
-  static int64_t cast_to_integer(VALUE value);
-  double cast_to_double(VALUE value);
-
-  // Methods that operate on the VALUE type
-  VALUE create_number(double value);
-  VALUE create_number(int64_t value);
-  static double float_value(VALUE value);
-  static double double_value(VALUE value);
-  static int64_t int_value(VALUE value);
-  VALUE symbol_value(VALUE value);
-  static VALUE type(VALUE value);
-  static VALUE real_type(VALUE value);
-  static bool truthyness(VALUE value);
 
   // Arithmetics
   VALUE add(VALUE left, VALUE right);
@@ -234,7 +217,6 @@ public:
   void op_setarrayindex(uint32_t index);
   void op_putself(uint32_t level);
   void op_putvalue(VALUE value);
-  void op_putfloat(double value);
   void op_putstring(char* data, uint32_t length);
   void op_putfunction(VALUE symbol, uint8_t* body_address, bool anonymous, uint32_t argc, uint32_t lvarcount);
   void op_putcfunction(VALUE symbol, uintptr_t pointer, uint32_t argc);

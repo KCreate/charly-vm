@@ -31,16 +31,16 @@
 #pragma once
 
 namespace Charly {
-static const std::string kUndefinedSymbolString = "<undefined symbol>";
+const std::string kUndefinedSymbolString = "<undefined symbol>";
 class SymbolTable {
 private:
   std::unordered_map<VALUE, std::string> table;
 
 public:
   SymbolTable() = default;
-  SymbolTable(SymbolTable&& other) : table(std::move(other.table)) {
-  }
   SymbolTable(const SymbolTable& other) : table(other.table) {
+  }
+  SymbolTable(SymbolTable&& other) : table(std::move(other.table)) {
   }
 
   SymbolTable& operator=(const SymbolTable& other) {

@@ -217,36 +217,9 @@ VALUE VM::create_array(uint32_t initial_capacity) {
   return cell->as_value();
 }
 
-VALUE VM::create_float(double value) {
-  // Check if this float would fit into an immediate encoded integer
-  if (ceilf(value) == value)
-    return VALUE_ENCODE_INTEGER(value);
-
-  union {
-    double d;
-    VALUE v;
-  } t;
-
-  t.d = value;
-
-  int bits = static_cast<int>(static_cast<VALUE>(t.v >> 60) & kPointerMask);
-
-  // I have no idee what's going on here, this was taken from ruby source code
-  if (t.v != 0x3000000000000000 && !((bits - 3) & ~0x01)) {
-    return (BIT_ROTL(t.v, 3) & ~static_cast<VALUE>(0x01)) | kFloatFlag;
-  } else if (t.v == 0) {
-    // +0.0
-    return 0x8000000000000002;
-  }
-
-  // Allocate from the GC
-  MemoryCell* cell = this->gc.allocate();
-  cell->basic.set_type(kTypeFloat);
-  cell->flonum.float_value = value;
-  return cell->as_value();
-}
-
 VALUE VM::create_string(const char* data, uint32_t length) {
+  if (length <= 6) return charly_create_istring(reinterpret_cast<char[length]>(data));
+
   // Check if we can create a short string
   MemoryCell* cell = this->gc.allocate();
   cell->basic.set_type(kTypeString);
@@ -312,13 +285,7 @@ VALUE VM::create_class(VALUE name) {
 }
 
 VALUE VM::copy_value(VALUE value) {
-  switch (VM::real_type(value)) {
-    case kTypeFloat: {
-      if (is_special(value)) {
-        return this->create_float(this->float_value(value));
-      }
-      break;
-    }
+  switch (charly_get_type(value)) {
     case kTypeString: return this->copy_string(value);
     case kTypeObject: return this->copy_object(value);
     case kTypeArray: return this->copy_array(value);
@@ -330,13 +297,7 @@ VALUE VM::copy_value(VALUE value) {
 }
 
 VALUE VM::deep_copy_value(VALUE value) {
-  switch (VM::real_type(value)) {
-    case kTypeFloat: {
-      if (is_special(value)) {
-        return this->create_float(this->float_value(value));
-      }
-      break;
-    }
+  switch (charly_get_type(value)) {
     case kTypeString: return this->copy_string(value);
     case kTypeObject: return this->deep_copy_object(value);
     case kTypeArray: return this->deep_copy_array(value);
@@ -348,49 +309,49 @@ VALUE VM::deep_copy_value(VALUE value) {
 }
 
 VALUE VM::copy_object(VALUE object) {
-  Object* source = reinterpret_cast<Object*>(object);
-  Object* target = reinterpret_cast<Object*>(this->create_object(source->container->size()));
+  Object* source = charly_as_object(object);
+  Object* target = charly_as_object(this->create_object(source->container->size()));
   target->container->insert(source->container->begin(), source->container->end());
-  return reinterpret_cast<VALUE>(target);
+  return charly_as_value(target);
 }
 
 VALUE VM::deep_copy_object(VALUE object) {
   ManagedContext lalloc(*this);
 
-  Object* source = reinterpret_cast<Object*>(object);
-  Object* target = reinterpret_cast<Object*>(lalloc.create_object(source->container->size()));
+  Object* source = charly_as_object(object);
+  Object* target = charly_as_object(lalloc.create_object(source->container->size()));
 
   // Copy each member from the source object into the target
   for (auto & [ key, value ] : *source->container) {
     (*target->container)[key] = this->deep_copy_value(value);
   }
 
-  return reinterpret_cast<VALUE>(target);
+  return charly_as_value(target);
 }
 
 VALUE VM::copy_array(VALUE array) {
-  Array* source = reinterpret_cast<Array*>(array);
-  Array* target = reinterpret_cast<Array*>(this->create_array(source->data->size()));
+  Array* source = charly_as_array(array);
+  Array* target = charly_as_array(this->create_array(source->data->size()));
 
   for (auto value : *source->data) {
     target->data->push_back(value);
   }
 
-  return reinterpret_cast<VALUE>(target);
+  return charly_as_value(target);
 }
 
 VALUE VM::deep_copy_array(VALUE array) {
   ManagedContext lalloc(*this);
 
-  Array* source = reinterpret_cast<Array*>(array);
-  Array* target = reinterpret_cast<Array*>(lalloc.create_array(source->data->size()));
+  Array* source = charly_as_array(array);
+  Array* target = charly_as_array(lalloc.create_array(source->data->size()));
 
   // Copy each member from the source object into the target
   for (auto& value : *source->data) {
     target->data->push_back(this->deep_copy_value(value));
   }
 
-  return reinterpret_cast<VALUE>(target);
+  return charly_as_value(target);
 }
 
 VALUE VM::copy_string(VALUE string) {
@@ -399,8 +360,8 @@ VALUE VM::copy_string(VALUE string) {
 }
 
 VALUE VM::copy_function(VALUE function) {
-  Function* source = reinterpret_cast<Function*>(function);
-  Function* target = reinterpret_cast<Function*>(
+  Function* source = charly_as_function(function);
+  Function* target = charly_as_function(
       this->create_function(source->name, source->body_address, source->argc, source->lvarcount, source->anonymous));
 
   target->context = source->context;
@@ -408,275 +369,86 @@ VALUE VM::copy_function(VALUE function) {
   target->bound_self = source->bound_self;
   *(target->container) = *(source->container);
 
-  return reinterpret_cast<VALUE>(target);
+  return charly_as_value(target);
 }
 
 VALUE VM::copy_cfunction(VALUE function) {
-  CFunction* source = reinterpret_cast<CFunction*>(function);
-  CFunction* target = reinterpret_cast<CFunction*>(this->create_cfunction(source->name, source->argc, source->pointer));
+  CFunction* source = charly_as_cfunction(function);
+  CFunction* target = charly_as_cfunction(this->create_cfunction(source->name, source->argc, source->pointer));
 
   target->bound_self_set = source->bound_self_set;
   target->bound_self = source->bound_self;
   *(target->container) = *(source->container);
 
-  return reinterpret_cast<VALUE>(target);
-}
-
-VALUE VM::cast_to_numeric(VALUE value) {
-  return this->create_float(this->cast_to_double(value));
-}
-
-int64_t VM::cast_to_integer(VALUE value) {
-  VALUE type = VM::real_type(value);
-
-  switch (type) {
-    case kTypeInteger: return VALUE_DECODE_INTEGER(value);
-    case kTypeFloat: return VM::float_value(value);
-    case kTypeString: {
-      String* string = reinterpret_cast<String*>(value);
-      char* end_it = string->data() + string->length();
-      int64_t interpreted = strtol(string->data(), &end_it, 0);
-
-      // strol sets errno to ERANGE if the result value doesn't fit
-      // into the return type
-      if (errno == ERANGE) {
-        errno = 0;
-        return NAN;
-      }
-
-      if (end_it == string->data()) {
-        return NAN;
-      }
-
-      // The value could be converted
-      return interpreted;
-    }
-    default: return NAN;
-  }
-}
-
-double VM::cast_to_double(VALUE value) {
-  VALUE type = VM::real_type(value);
-
-  switch (type) {
-    case kTypeInteger: return static_cast<double>(VALUE_DECODE_INTEGER(value));
-    case kTypeFloat: return VM::float_value(value);
-    case kTypeString: {
-      String* string = reinterpret_cast<String*>(value);
-      char* end_it = string->data() + string->length();
-      double interpreted = strtod(string->data(), &end_it);
-
-      // HUGE_VAL gets returned when the converted value
-      // doesn't fit inside a double value
-      // In this case we just return NAN
-      if (interpreted == HUGE_VAL)
-        return NAN;
-
-      // If strtod could not perform a conversion it returns 0
-      // and sets *str_end to str
-      if (end_it == string->data())
-        return NAN;
-
-      // The value could be converted
-      return interpreted;
-    }
-    default: return NAN;
-  }
-}
-
-VALUE VM::create_number(double value) {
-  return this->create_float(value);
-}
-
-VALUE VM::create_number(int64_t value) {
-  return VALUE_ENCODE_INTEGER(value);
-}
-
-double VM::float_value(VALUE value) {
-  if (!is_special(value))
-    return reinterpret_cast<Float*>(value)->float_value;
-
-  union {
-    double d;
-    VALUE v;
-  } t;
-
-  VALUE b63 = (value >> 63);
-  t.v = BIT_ROTR((kFloatFlag - b63) | (value & ~static_cast<VALUE>(kFloatMask)), 3);
-  return t.d;
-}
-
-double VM::double_value(VALUE value) {
-  if (VM::real_type(value) == kTypeFloat) {
-    return VM::float_value(value);
-  } else {
-    return static_cast<double>(VALUE_DECODE_INTEGER(value));
-  }
-}
-
-int64_t VM::int_value(VALUE value) {
-  if (VM::real_type(value) == kTypeFloat) {
-    return static_cast<int64_t>(VM::float_value(value));
-  } else if (VM::real_type(value) == kTypeInteger) {
-    return VALUE_DECODE_INTEGER(value);
-  } else {
-    return 0;
-  }
-}
-
-VALUE VM::symbol_value(VALUE value) {
-  VALUE type = VM::real_type(value);
-
-  switch (type) {
-    case kTypeString: {
-      String* str = reinterpret_cast<String*>(value);
-      // TODO: Don't allocate a string here every time this is called
-      return this->context.symtable(std::string(str->data(), str->length()));
-    }
-    case kTypeFloat: {
-      double val = VM::double_value(value);
-      std::stringstream io;
-      io << val;
-      return this->context.symtable(io.str());
-    }
-    case kTypeInteger: {
-      int64_t val = VM::int_value(value);
-      std::stringstream io;
-      io << val;
-      return this->context.symtable(io.str());
-    }
-    default: {
-      return this->context.symtable(kValueTypeString[type]);
-    }
-  }
-}
-
-VALUE VM::real_type(VALUE value) {
-  // Because a False value or null can't be distinguished
-  // from a pointer value, we check for them before we check
-  // for a pointer value
-  if (is_boolean(value))
-    return kTypeBoolean;
-  if (is_null(value))
-    return kTypeNull;
-  if (!is_special(value))
-    return basics(value)->type();
-  if (is_integer(value))
-    return kTypeInteger;
-  if (is_ifloat(value))
-    return kTypeFloat;
-  if (is_symbol(value))
-    return kTypeSymbol;
-  return kTypeDead;
-}
-
-VALUE VM::type(VALUE value) {
-  VALUE type = VM::real_type(value);
-
-  if (type == kTypeFloat)
-    return kTypeNumeric;
-  if (type == kTypeInteger)
-    return kTypeNumeric;
-  if (type == kTypeCFunction)
-    return kTypeFunction;
-  return type;
-}
-
-bool VM::truthyness(VALUE value) {
-  if (is_numeric(value)) {
-    return VM::double_value(value) != 0;
-  }
-
-  if (is_null(value)) {
-    return false;
-  }
-
-  if (is_false(value)) {
-    return false;
-  }
-
-  return true;
+  return charly_as_value(target);
 }
 
 VALUE VM::add(VALUE left, VALUE right) {
-  if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
-    double nleft = VM::double_value(left);
-    double nright = VM::double_value(right);
-    return this->create_number(nleft + nright);
+  if (VM::type(left) == kTypeNumber && VM::type(right) == kTypeNumber) {
+    return charly_add_number(nleft, nright);
   }
 
-  if (VM::real_type(left) == kTypeArray) {
-    Array* new_array = reinterpret_cast<Array*>(this->copy_array(left));
-    if (VM::real_type(right) == kTypeArray) {
-      Array* aright = reinterpret_cast<Array*>(right);
+  if (charly_get_type(left) == kTypeArray) {
+    Array* new_array = charly_as_array(this->copy_array(left));
+    if (charly_get_type(right) == kTypeArray) {
+      Array* aright = charly_as_array(right);
 
       for (auto& value : *aright->data) {
         new_array->data->push_back(value);
       }
 
-      return reinterpret_cast<VALUE>(new_array);
+      return charly_as_value(new_array);
     }
 
     new_array->data->push_back(right);
-    return reinterpret_cast<VALUE>(new_array);
+    return charly_as_value(new_array);
   }
 
   // TODO: String concatenation
 
-  return this->create_float(NAN);
+  return kBitsNaN;
 }
 
 VALUE VM::sub(VALUE left, VALUE right) {
-  if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
-    double nleft = VM::double_value(left);
-    double nright = VM::double_value(right);
-    return this->create_number(nleft - nright);
+  if (VM::type(left) == kTypeNumber && VM::type(right) == kTypeNumber) {
+    return charly_sub_number(nleft, nright);
   }
 
-  return this->create_float(NAN);
+  return kBitsNaN;
 }
 
 VALUE VM::mul(VALUE left, VALUE right) {
-  if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
-    double nleft = VM::double_value(left);
-    double nright = VM::double_value(right);
-    return this->create_number(nleft * nright);
+  if (VM::type(left) == kTypeNumber && VM::type(right) == kTypeNumber) {
+    return charly_mul_number(nleft, nright);
   }
 
   // TODO: String multiplication
 
-  return this->create_float(NAN);
+  return kBitsNaN;
 }
 
 VALUE VM::div(VALUE left, VALUE right) {
-  if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
-    double nleft = VM::double_value(left);
-    double nright = VM::double_value(right);
-    return this->create_number(nleft / nright);
+  if (VM::type(left) == kTypeNumber && VM::type(right) == kTypeNumber) {
+    return charly_div_number(nleft, nright);
   }
 
-  return this->create_float(NAN);
+  return kBitsNaN;
 }
 
 VALUE VM::mod(VALUE left, VALUE right) {
-  if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
-    int64_t nleft = VM::int_value(left);
-    int64_t nright = VM::int_value(right);
-    return this->create_number(nleft % nright);
+  if (VM::type(left) == kTypeNumber && VM::type(right) == kTypeNumber) {
+    return charly_mod_number(nleft, nright);
   }
 
-  return this->create_float(NAN);
+  return kBitsNaN;
 }
 
 VALUE VM::pow(VALUE left, VALUE right) {
-  if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
-    double nleft = VM::double_value(left);
-    double nright = VM::double_value(right);
-    double result = std::pow(nleft, nright);
-    return this->create_number(result);
+  if (VM::type(left) == kTypeNumber && VM::type(right) == kTypeNumber) {
+    return charly_pow_number(nleft, nright);
   }
 
-  return this->create_float(NAN);
+  return kBitsNaN;
 }
 
 VALUE VM::uadd(VALUE value) {
@@ -684,22 +456,19 @@ VALUE VM::uadd(VALUE value) {
 }
 
 VALUE VM::usub(VALUE value) {
-  if (VM::type(value) == kTypeNumeric) {
-    double num = VM::double_value(value);
-    return this->create_number(-num);
+  if (VM::type(value) == kTypeNumber) {
+    return charly_usub_number(num);
   }
 
-  return this->create_float(NAN);
+  return kBitsNaN;
 }
 
 VALUE VM::eq(VALUE left, VALUE right) {
-  if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
-    double nleft = VM::double_value(left);
-    double nright = VM::double_value(right);
-    return nleft == nright ? kTrue : kFalse;
+  if (VM::type(left) == kTypeNumber && VM::type(right) == kTypeNumber) {
+    return charly_eq_number(nleft, nright);
   }
 
-  if (VM::real_type(left) == kTypeString && VM::real_type(right) == kTypeString) {
+  if (charly_get_type(left) == kTypeString && charly_get_type(right) == kTypeString) {
     String* sleft = reinterpret_cast<String*>(left);
     String* sright = reinterpret_cast<String*>(right);
 
@@ -714,17 +483,15 @@ VALUE VM::eq(VALUE left, VALUE right) {
 }
 
 VALUE VM::neq(VALUE left, VALUE right) {
-  return !this->eq(left, right);
+  return this->eq(left, right) ? kFalse : kTrue;
 }
 
 VALUE VM::lt(VALUE left, VALUE right) {
-  if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
-    double nleft = VM::double_value(left);
-    double nright = VM::double_value(right);
-    return nleft < nright ? kTrue : kFalse;
+  if (VM::type(left) == kTypeNumber && VM::type(right) == kTypeNumber) {
+    return charly_lt_number(left, right);
   }
 
-  if (VM::real_type(left) == kTypeString && VM::real_type(right) == kTypeString) {
+  if (charly_get_type(left) == kTypeString && charly_get_type(right) == kTypeString) {
     String* sleft = reinterpret_cast<String*>(left);
     String* sright = reinterpret_cast<String*>(right);
     return sleft->length() < sright->length() ? kTrue : kFalse;
@@ -734,13 +501,11 @@ VALUE VM::lt(VALUE left, VALUE right) {
 }
 
 VALUE VM::gt(VALUE left, VALUE right) {
-  if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
-    double nleft = VM::double_value(left);
-    double nright = VM::double_value(right);
-    return nleft > nright ? kTrue : kFalse;
+  if (VM::type(left) == kTypeNumber && VM::type(right) == kTypeNumber) {
+    return charly_gt_number(left, right);
   }
 
-  if (VM::real_type(left) == kTypeString && VM::real_type(right) == kTypeString) {
+  if (charly_get_type(left) == kTypeString && charly_get_type(right) == kTypeString) {
     String* sleft = reinterpret_cast<String*>(left);
     String* sright = reinterpret_cast<String*>(right);
     return sleft->length() > sright->length() ? kTrue : kFalse;
@@ -750,13 +515,11 @@ VALUE VM::gt(VALUE left, VALUE right) {
 }
 
 VALUE VM::le(VALUE left, VALUE right) {
-  if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
-    double nleft = VM::double_value(left);
-    double nright = VM::double_value(right);
-    return nleft <= nright ? kTrue : kFalse;
+  if (VM::type(left) == kTypeNumber && VM::type(right) == kTypeNumber) {
+    return charly_le_number(left, right);
   }
 
-  if (VM::real_type(left) == kTypeString && VM::real_type(right) == kTypeString) {
+  if (charly_get_type(left) == kTypeString && charly_get_type(right) == kTypeString) {
     String* sleft = reinterpret_cast<String*>(left);
     String* sright = reinterpret_cast<String*>(right);
     return sleft->length() <= sright->length() ? kTrue : kFalse;
@@ -766,13 +529,11 @@ VALUE VM::le(VALUE left, VALUE right) {
 }
 
 VALUE VM::ge(VALUE left, VALUE right) {
-  if (VM::type(left) == kTypeNumeric && VM::type(right) == kTypeNumeric) {
-    double nleft = VM::double_value(left);
-    double nright = VM::double_value(right);
-    return nleft >= nright ? kTrue : kFalse;
+  if (VM::type(left) == kTypeNumber && VM::type(right) == kTypeNumber) {
+    return charly_ge_number(left, right);
   }
 
-  if (VM::real_type(left) == kTypeString && VM::real_type(right) == kTypeString) {
+  if (charly_get_type(left) == kTypeString && charly_get_type(right) == kTypeString) {
     String* sleft = reinterpret_cast<String*>(left);
     String* sright = reinterpret_cast<String*>(right);
     return sleft->length() >= sright->length() ? kTrue : kFalse;
@@ -782,82 +543,67 @@ VALUE VM::ge(VALUE left, VALUE right) {
 }
 
 VALUE VM::unot(VALUE value) {
-  return !VM::truthyness(value) ? kTrue : kFalse;
+  return charly_truthyness(value) ? kFalse : KTrue;
 }
 
 VALUE VM::shl(VALUE left, VALUE right) {
-  if (VM::type(left) != kTypeNumeric) {
-    if (VM::real_type(left) == kTypeArray) {
-      Array* larr = reinterpret_cast<Array*>(left);
-      (*larr->data).push_back(right);
-      return left;
-    }
-
-    return this->create_float(NAN);
+  if (charly_is_array(left)) {
+    Array* arr = charly_as_array(left);
+    (*arr->data).push_back(right);
+    return left;
   }
 
-  if (VM::type(right) != kTypeNumeric) {
-    return this->create_float(NAN);
+  if (charly_is_number(left) && charly_is_number(right)) {
+    return charly_shl_number(left, right);
   }
 
-  int64_t ileft = VM::int_value(left);
-  int64_t iright = VM::int_value(right);
-  return this->create_float(ileft << iright);
+  return kBitsNaN;
 }
 
 VALUE VM::shr(VALUE left, VALUE right) {
-  if (VM::type(left) != kTypeNumeric || VM::type(right) != kTypeNumeric) {
-    return this->create_float(NAN);
+  if (charly_is_number(left) && charly_is_number(right)) {
+    return charly_shr_number(left, right);
   }
 
-  int64_t ileft = VM::int_value(left);
-  int64_t iright = VM::int_value(right);
-  return this->create_float(ileft << iright);
+  return kBitsNaN;
 }
 
 VALUE VM::band(VALUE left, VALUE right) {
-  if (VM::type(left) != kTypeNumeric || VM::type(right) != kTypeNumeric) {
-    return this->create_float(NAN);
+  if (charly_is_number(left) && charly_is_number(right)) {
+    return charly_and_number(left, right);
   }
 
-  int64_t ileft = VM::int_value(left);
-  int64_t iright = VM::int_value(right);
-  return this->create_float(ileft & iright);
+  return kBitsNaN;
 }
 
 VALUE VM::bor(VALUE left, VALUE right) {
-  if (VM::type(left) != kTypeNumeric || VM::type(right) != kTypeNumeric) {
-    return this->create_float(NAN);
+  if (charly_is_number(left) && charly_is_number(right)) {
+    return charly_or_number(left, right);
   }
 
-  int64_t ileft = VM::int_value(left);
-  int64_t iright = VM::int_value(right);
-  return this->create_float(ileft | iright);
+  return kBitsNaN;
 }
 
 VALUE VM::bxor(VALUE left, VALUE right) {
-  if (VM::type(left) != kTypeNumeric || VM::type(right) != kTypeNumeric) {
-    return this->create_float(NAN);
+  if (charly_is_number(left) && charly_is_number(right)) {
+    return charly_xor_number(left, right);
   }
 
-  int64_t ileft = VM::int_value(left);
-  int64_t iright = VM::int_value(right);
-  return this->create_float(ileft ^ iright);
+  return kBitsNaN;
 }
 
 VALUE VM::ubnot(VALUE value) {
-  if (VM::type(value) != kTypeNumeric) {
-    return this->create_float(NAN);
+  if (charly_is_number(left)) {
+    return charly_ubnot_number(left);
   }
 
-  int64_t ivalue = VM::int_value(value);
-  return this->create_float(~ivalue);
+  return kBitsNaN;
 }
 
 VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
-  switch (VM::real_type(source)) {
+  switch (charly_get_type(source)) {
     case kTypeObject: {
-      Object* obj = reinterpret_cast<Object*>(source);
+      Object* obj = charly_as_object(source);
 
       if (obj->container->count(symbol) == 1) {
         return (*obj->container)[symbol];
@@ -867,13 +613,13 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
     }
 
     case kTypeFunction: {
-      Function* func = reinterpret_cast<Function*>(source);
+      Function* func = charly_as_function(source);
 
       if (func->container->count(symbol) == 1) {
         return (*func->container)[symbol];
       }
 
-      if (symbol == this->context.symtable("name")) {
+      if (symbol == charly_create_symbol("name")) {
         return func->name;
       }
 
@@ -881,40 +627,40 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
     }
 
     case kTypeCFunction: {
-      CFunction* cfunc = reinterpret_cast<CFunction*>(source);
+      CFunction* cfunc = charly_as_cfunction(source);
 
       if (cfunc->container->count(symbol) == 1) {
         return (*cfunc->container)[symbol];
       }
 
-      if (symbol == this->context.symtable("name")) {
+      if (symbol == charly_create_symbol("name")) {
         return cfunc->name;
       }
 
       break;
     }
     case kTypeClass: {
-      Class* klass = reinterpret_cast<Class*>(source);
+      Class* klass = charly_as_class(source);
 
       if (klass->container->count(symbol) == 1) {
         return (*klass->container)[symbol];
       }
 
-      if (symbol == this->context.symtable("prototype")) {
+      if (symbol == charly_create_symbol("prototype")) {
         return klass->prototype;
       }
 
-      if (symbol == this->context.symtable("name")) {
+      if (symbol == charly_create_symbol("name")) {
         return klass->name;
       }
 
       break;
     }
     case kTypeArray: {
-      Array* arr = reinterpret_cast<Array*>(source);
+      Array* arr = charly_as_array(source);
 
-      if (symbol == this->context.symtable("length")) {
-        return VALUE_ENCODE_INTEGER(arr->data->size());
+      if (symbol == charly_create_symbol("length")) {
+        return charly_create_integer(arr->data->size());
       }
 
       break;
@@ -930,15 +676,15 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
   // is checked
   //
   // If no result was found, null is returned
-  if (VM::real_type(source) == kTypeObject) {
-    VALUE val_klass = reinterpret_cast<Object*>(source)->klass;
+  if (charly_is_object(source)) {
+    VALUE val_klass = charly_as_object(source)->klass;
 
     // Make sure the klass field is a Class value
-    if (VM::real_type(val_klass) != kTypeClass) {
+    if (!charly_is_class(val_klass)) {
       this->panic(Status::ObjectClassNotAClass);
     }
 
-    Class* klass = reinterpret_cast<Class*>(val_klass);
+    Class* klass = charly_as_class(val_klass);
     auto result = this->findprototypevalue(klass, symbol);
 
     if (result.has_value()) {
@@ -955,12 +701,12 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
 }
 
 VALUE VM::readmembervalue(VALUE source, VALUE value) {
-  switch (VM::real_type(source)) {
+  switch (charly_get_type(source)) {
     case kTypeArray: {
-      Array* arr = reinterpret_cast<Array*>(source);
+      Array* arr = charly_as_array(source);
 
-      if (VM::type(value) == kTypeNumeric) {
-        int64_t index = VM::int_value(value);
+      if (charly_is_number(value)) {
+        int32_t index = charly_number_to_int32(value);
 
         // Negative indices read from the end of the array
         if (index < 0) {
@@ -974,14 +720,12 @@ VALUE VM::readmembervalue(VALUE source, VALUE value) {
 
         return (*arr->data)[index];
       } else {
-        return this->readmembersymbol(source, this->symbol_value(value));
+        return this->readmembersymbol(source, charly_create_symbol(value));
       }
     }
     case kTypeString: {
-      String* str = reinterpret_cast<String*>(source);
-
-      if (VM::type(value) == kTypeNumeric) {
-        int64_t index = VM::int_value(value);
+      if (charly_is_number(value)) {
+        int32_t index = charly_number_to_int32(value);
 
         // Negative indices read from the end of the string
         if (index < 0) {
@@ -998,50 +742,52 @@ VALUE VM::readmembervalue(VALUE source, VALUE value) {
         }
 
         // Calculate the index of the codepoint
-        char* start_iterator = str->data();
+        char* str_data = charly_string_data(source);
+        uint32_t str_length = charly_string_length(source);
+        char* start_iterator = str_data;
         while (index--) {
-          if (start_iterator >= str->data() + str->length()) {
+          if (start_iterator >= str_data + str_length) {
             return kNull;
           }
 
-          utf8::advance(start_iterator, 1, str->data() + str->length());
+          utf8::advance(start_iterator, 1, str_data + str_length);
         }
 
         return this->create_string(start_iterator, 1);
       } else {
-        return this->readmembersymbol(source, this->symbol_value(value));
+        return this->readmembersymbol(source, charly_create_symbol(value));
       }
     }
     default: {
-      return this->readmembersymbol(source, this->symbol_value(value));
+      return this->readmembersymbol(source, charly_create_symbol(value));
     }
   }
 }
 
 VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
-  switch (VM::real_type(target)) {
+  switch (charly_get_type(target)) {
     case kTypeObject: {
-      Object* obj = reinterpret_cast<Object*>(target);
+      Object* obj = charly_as_object(target);
       (*obj->container)[symbol] = value;
       break;
     }
 
     case kTypeFunction: {
-      Function* func = reinterpret_cast<Function*>(target);
+      Function* func = charly_as_function(target);
       (*func->container)[symbol] = value;
       break;
     }
 
     case kTypeCFunction: {
-      CFunction* cfunc = reinterpret_cast<CFunction*>(target);
+      CFunction* cfunc = charly_as_cfunction(target);
       (*cfunc->container)[symbol] = value;
       break;
     }
 
     case kTypeClass: {
-      Class* klass = reinterpret_cast<Class*>(target);
+      Class* klass = charly_as_class(target);
 
-      if (symbol == this->context.symtable("prototype")) {
+      if (symbol == charly_create_symbol("prototype")) {
         klass->prototype = value;
         break;
       }
@@ -1055,12 +801,12 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
 }
 
 VALUE VM::setmembervalue(VALUE target, VALUE member_value, VALUE value) {
-  switch (VM::real_type(target)) {
+  switch (charly_get_type(target)) {
     case kTypeArray: {
-      Array* arr = reinterpret_cast<Array*>(target);
+      Array* arr = charly_as_array(target);
 
-      if (VM::type(member_value) == kTypeNumeric) {
-        int64_t index = VM::int_value(member_value);
+      if (charly_is_number(member_value)) {
+        int32_t index = charly_number_to_int32(member_value);
 
         // Negative indices read from the end of the array
         if (index < 0) {
@@ -1076,27 +822,28 @@ VALUE VM::setmembervalue(VALUE target, VALUE member_value, VALUE value) {
         (*arr->data)[index] = value;
         return value;
       } else {
-        return this->setmembersymbol(target, this->symbol_value(member_value), value);
+        return this->setmembersymbol(target, charly_create_symbol(member_value), value);
       }
     }
     default: {
-      return this->setmembersymbol(target, this->symbol_value(member_value), value);
+      return this->setmembersymbol(target, charly_create_symbol(member_value), value);
     }
   }
 }
 
+// TODO: Move this method to value.h file
 std::optional<VALUE> VM::findprototypevalue(Class* klass, VALUE symbol) {
   std::optional<VALUE> result;
 
-  if (VM::real_type(klass->prototype) == kTypeObject) {
-    Object* prototype = reinterpret_cast<Object*>(klass->prototype);
+  if (charly_is_object(klass->prototype)) {
+    Object* prototype = charly_as_object(klass->prototype);
 
     // Check if this class container contains the symbol
     if (prototype->container->count(symbol) == 1) {
       result = (*prototype->container)[symbol];
     } else {
-      if (VM::real_type(klass->parent_class) == kTypeClass) {
-        Class* pklass = reinterpret_cast<Class*>(klass->parent_class);
+      if (charly_is_class(klass->parent_class)) {
+        Class* pklass = charly_as_class(klass->parent_class);
         auto presult = this->findprototypevalue(pklass, symbol);
 
         if (presult.has_value()) {
@@ -1114,8 +861,8 @@ std::optional<VALUE> VM::findprimitivevalue(VALUE value, VALUE symbol) {
 
   // Get the corresponding primitive class
   VALUE found_primitive_class = kNull;
-  switch (VM::type(value)) {
-    case kTypeNumeric: found_primitive_class = this->primitive_number; break;
+  switch (charly_get_type(value)) {
+    case kTypeNumber: found_primitive_class = this->primitive_number; break;
     case kTypeString: found_primitive_class = this->primitive_string; break;
     case kTypeBoolean: found_primitive_class = this->primitive_boolean; break;
     case kTypeNull: found_primitive_class = this->primitive_null; break;
@@ -1124,20 +871,20 @@ std::optional<VALUE> VM::findprimitivevalue(VALUE value, VALUE symbol) {
     case kTypeClass: found_primitive_class = this->primitive_class; break;
   }
 
-  if (VM::type(found_primitive_class) != kTypeClass) {
+  if (!charly_is_class(found_primitive_class)) {
     return std::nullopt;
   }
 
-  Class* pclass = reinterpret_cast<Class*>(found_primitive_class);
+  Class* pclass = charly_as_class(found_primitive_class);
   result = this->findprototypevalue(pclass, symbol);
 
-  if (!result.has_value() && VM::real_type(value) != kTypeObject) {
+  if (!result.has_value() && !charly_is_object(value)) {
     found_primitive_class = this->primitive_object;
-    if (VM::type(found_primitive_class) != kTypeClass) {
+    if (!charly_is_class(found_primitive_class)) {
       return std::nullopt;
     }
 
-    pclass = reinterpret_cast<Class*>(found_primitive_class);
+    pclass = charly_as_class(found_primitive_class);
     result = this->findprototypevalue(pclass, symbol);
   }
 
@@ -1168,10 +915,10 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
     target = this->pop_stack();
 
   // Redirect to the correct handler
-  switch (VM::real_type(function)) {
+  switch (charly_get_type(function)) {
     // Normal functions as defined via the user
     case kTypeFunction: {
-      Function* tfunc = reinterpret_cast<Function*>(function);
+      Function* tfunc = charly_as_function(function);
 
       // Where to source the self value from
       //
@@ -1214,7 +961,7 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
 
     // Functions which wrap around a C function pointer
     case kTypeCFunction: {
-      this->call_cfunction(reinterpret_cast<CFunction*>(function), argc, arguments);
+      this->call_cfunction(charly_as_cfunction(function), argc, arguments);
       if (halt_after_return) {
         this->halted = true;
       }
@@ -1223,7 +970,7 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
 
     // Class construction
     case kTypeClass: {
-      this->call_class(reinterpret_cast<Class*>(function), argc, arguments);
+      this->call_class(charly_as_class(function), argc, arguments);
       if (halt_after_return) {
         this->halted = true;
       }
@@ -1231,7 +978,7 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
     }
 
     default: {
-      this->throw_exception("Attempted to call a non-callable type: " + kValueTypeString[VM::real_type(function)]);
+      this->throw_exception("Attempted to call a non-callable type: " + charly_get_typestring(function));
     }
   }
 }
@@ -1256,7 +1003,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   }
   Frame* frame = this->create_frame(self, function, return_address, halt_after_return);
 
-  Array* arguments_array = reinterpret_cast<Array*>(this->create_array(argc));
+  Array* arguments_array = charly_as_array(this->create_array(argc));
 
   // Copy the arguments from the temporary arguments buffer into
   // the frames environment
@@ -1277,7 +1024,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
 
   // Insert the argument value and make it a constant
   // This is so that we can be sure that noone is going to overwrite it afterwards
-  (*frame->environment)[0] = reinterpret_cast<VALUE>(arguments_array);
+  (*frame->environment)[0] = charly_as_value(arguments_array);
 
   this->ip = function->body_address;
 }
@@ -1320,21 +1067,21 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
 
 void VM::call_class(Class* klass, uint32_t argc, VALUE* argv) {
   ManagedContext lalloc(*this);
-  Object* object = reinterpret_cast<Object*>(lalloc.create_object(klass->member_properties->size()));
-  object->klass = reinterpret_cast<VALUE>(klass);
+  Object* object = charly_as_object(lalloc.create_object(klass->member_properties->size()));
+  object->klass = charly_as_value(klass);
 
   // Add the fields of parent classes
   this->initialize_member_properties(klass, object);
 
   bool success = this->invoke_class_constructors(klass, object, argc, argv);
   if (success) {
-    this->push_stack(reinterpret_cast<VALUE>(object));
+    this->push_stack(charly_as_value(object));
   }
 }
 
 void VM::initialize_member_properties(Class* klass, Object* object) {
-  if (VM::real_type(klass->parent_class) == kTypeClass) {
-    this->initialize_member_properties(reinterpret_cast<Class*>(klass->parent_class), object);
+  if (charly_is_class(klass->parent_class)) {
+    this->initialize_member_properties(charly_as_class(klass->parent_class), object);
   }
 
   for (auto field : *klass->member_properties) {
@@ -1347,21 +1094,21 @@ bool VM::invoke_class_constructors(Class* klass, Object* object, uint32_t argc, 
   // After the constructor call we check if the table changed
   CatchTable* original_catchtable = this->catchstack;
 
-  if (VM::real_type(klass->parent_class) == kTypeClass) {
-    bool success = this->invoke_class_constructors(reinterpret_cast<Class*>(klass->parent_class), object, argc, argv);
+  if (charly_is_class(klass->parent_class)) {
+    bool success = this->invoke_class_constructors(charly_as_class(klass->parent_class), object, argc, argv);
     if (!success)
       return false;
   }
 
-  if (VM::real_type(klass->constructor) == kTypeFunction) {
-    Function* constructor = reinterpret_cast<Function*>(klass->constructor);
+  if (charly_is_function(klass->constructor)) {
+    Function* constructor = charly_as_function(klass->constructor);
 
     if (constructor->argc > argc) {
       this->throw_exception("Not enough arguments for class constructor");
       return false;
     }
 
-    this->call_function(constructor, constructor->argc, argv, reinterpret_cast<VALUE>(object), true);
+    this->call_function(constructor, constructor->argc, argv, charly_as_value(object), true);
     this->run();
     this->halted = false;
 
@@ -1413,12 +1160,12 @@ void VM::op_readarrayindex(uint32_t index) {
   VALUE stackval = this->pop_stack();
 
   // Check if we popped an array, if not push it back onto the stack
-  if (VM::real_type(stackval) != kTypeArray) {
+  if (!charly_is_array(stackval)) {
     this->push_stack(stackval);
     return;
   }
 
-  Array* arr = reinterpret_cast<Array*>(stackval);
+  Array* arr = charly_as_array(stackval);
 
   // Out-of-bounds checking
   if (index >= arr->data->size()) {
@@ -1470,12 +1217,12 @@ void VM::op_setarrayindex(uint32_t index) {
   VALUE stackval = this->pop_stack();
 
   // Check if we popped an array, if not push it back onto the stack
-  if (VM::real_type(stackval) != kTypeArray) {
+  if (!charly_is_array(stackval)) {
     this->push_stack(stackval);
     return;
   }
 
-  Array* arr = reinterpret_cast<Array*>(stackval);
+  Array* arr = charly_as_array(stackval);
 
   // Out-of-bounds checking
   if (index >= arr->data->size()) {
@@ -1511,10 +1258,6 @@ void VM::op_putvalue(VALUE value) {
   this->push_stack(value);
 }
 
-void VM::op_putfloat(double value) {
-  this->push_stack(this->create_float(value));
-}
-
 void VM::op_putstring(char* data, uint32_t length) {
   this->push_stack(this->create_string(data, length));
 }
@@ -1530,17 +1273,17 @@ void VM::op_putcfunction(VALUE symbol, uintptr_t pointer, uint32_t argc) {
 }
 
 void VM::op_putarray(uint32_t count) {
-  Array* array = reinterpret_cast<Array*>(this->create_array(count));
+  Array* array = charly_as_array(this->create_array(count));
 
   while (count--) {
     array->data->insert(array->data->begin(), this->pop_stack());
   }
 
-  this->push_stack(reinterpret_cast<VALUE>(array));
+  this->push_stack(charly_as_value(array));
 }
 
 void VM::op_puthash(uint32_t count) {
-  Object* object = reinterpret_cast<Object*>(this->create_object(count));
+  Object* object = charly_as_object(this->create_object(count));
 
   VALUE key;
   VALUE value;
@@ -1550,7 +1293,7 @@ void VM::op_puthash(uint32_t count) {
     (*object->container)[key] = value;
   }
 
-  this->push_stack(reinterpret_cast<VALUE>(object));
+  this->push_stack(charly_as_value(object));
 }
 
 void VM::op_putclass(VALUE name,
@@ -1562,7 +1305,7 @@ void VM::op_putclass(VALUE name,
                      bool has_constructor) {
   ManagedContext lalloc(*this);
 
-  Class* klass = reinterpret_cast<Class*>(lalloc.create_class(name));
+  Class* klass = charly_as_class(lalloc.create_class(name));
   klass->member_properties->reserve(propertycount);
   klass->prototype = lalloc.create_object(methodcount);
   klass->container->reserve(staticpropertycount + staticmethodcount);
@@ -1577,26 +1320,26 @@ void VM::op_putclass(VALUE name,
 
   while (staticmethodcount--) {
     VALUE smethod = this->pop_stack();
-    if (VM::real_type(smethod) != kTypeFunction) {
+    if (!charly_is_function(smethod)) {
       this->panic(Status::InvalidArgumentType);
     }
-    Function* func_smethod = reinterpret_cast<Function*>(smethod);
+    Function* func_smethod = charly_as_function(smethod);
     (*klass->container)[func_smethod->name] = smethod;
   }
 
   while (methodcount--) {
     VALUE method = this->pop_stack();
-    if (VM::real_type(method) != kTypeFunction) {
+    if (!charly_is_function(method)) {
       this->panic(Status::InvalidArgumentType);
     }
-    Function* func_method = reinterpret_cast<Function*>(method);
-    Object* obj_methods = reinterpret_cast<Object*>(klass->prototype);
+    Function* func_method = charly_as_function(method);
+    Object* obj_methods = charly_as_object(klass->prototype);
     (*obj_methods->container)[func_method->name] = method;
   }
 
   while (staticpropertycount--) {
     VALUE sprop = this->pop_stack();
-    if (VM::real_type(sprop) != kTypeSymbol) {
+    if (!charly_is_symbol(sprop)) {
       this->panic(Status::InvalidArgumentType);
     }
     (*klass->container)[sprop] = kNull;
@@ -1604,13 +1347,13 @@ void VM::op_putclass(VALUE name,
 
   while (propertycount--) {
     VALUE prop = this->pop_stack();
-    if (VM::real_type(prop) != kTypeSymbol) {
+    if (!charly_is_symbol(prop)) {
       this->panic(Status::InvalidArgumentType);
     }
     klass->member_properties->push_back(prop);
   }
 
-  this->push_stack(reinterpret_cast<VALUE>(klass));
+  this->push_stack(charly_as_value(klass));
 }
 
 void VM::op_pop() {
@@ -1677,7 +1420,7 @@ void VM::op_return() {
   // Print the frame if the correponding flag was set
   if (this->context.trace_frames) {
     this->context.out_stream << "Left frame: ";
-    this->pretty_print(this->context.out_stream, reinterpret_cast<VALUE>(frame));
+    this->pretty_print(this->context.out_stream, charly_as_value(frame));
     this->context.out_stream << '\n';
   }
 }
@@ -1688,12 +1431,16 @@ void VM::op_throw() {
 
 void VM::throw_exception(const std::string& message) {
   ManagedContext lalloc(*this);
-  Object* ex_obj = reinterpret_cast<Object*>(lalloc.create_object(2));
-  String* ex_msg = reinterpret_cast<String*>(lalloc.create_string(message.c_str(), message.size()));
-  (*ex_obj->container)[this->context.symtable("message")] = reinterpret_cast<VALUE>(ex_msg);
+
+  // Create exception object
+  Object* ex_obj = charly_as_object(lalloc.create_object(2));
+  VALUE ex_msg = lalloc.create_string(message.c_str(), message.size());
+  (*ex_obj->container)[this->context.symtable("message")] = ex_msg;
   (*ex_obj->container)[this->context.symtable("stacktrace")] = this->stacktrace_array();
+
+  // Unwind stack and push exception object
   this->unwind_catchstack();
-  this->push_stack(reinterpret_cast<VALUE>(ex_obj));
+  this->push_stack(charly_as_value(ex_obj));
 }
 
 void VM::throw_exception(VALUE payload) {
@@ -1703,21 +1450,22 @@ void VM::throw_exception(VALUE payload) {
 
 VALUE VM::stacktrace_array() {
   ManagedContext lalloc(*this);
-  Array* arr = reinterpret_cast<Array*>(lalloc.create_array(1));
+  Array* arr = charly_as_array(lalloc.create_array(1));
 
   std::stringstream io;
 
   Frame* frame = this->frames;
-  while (frame && VM::real_type(reinterpret_cast<VALUE>(frame)) == kTypeFrame) {
-    this->pretty_print(io, reinterpret_cast<VALUE>(frame));
+  while (frame && charly_is_frame(charly_as_value(frame))) {
+    this->pretty_print(io, charly_as_value(frame));
     frame = frame->parent;
 
     // Append the trace entry to the array and reset the stringstream
-    arr->data->push_back(lalloc.create_string(io.str().c_str(), io.str().size()));
+    std::string strcopy = io.str();
+    arr->data->push_back(lalloc.create_string(strcopy.data(), strcopy.size()));
     io.str("");
   }
 
-  return reinterpret_cast<VALUE>(arr);
+  return charly_as_value(arr);
 }
 
 void VM::op_registercatchtable(int32_t offset) {
@@ -1734,7 +1482,7 @@ void VM::op_popcatchtable() {
     if (table != nullptr) {
       // Show the table we've restored
       this->context.out_stream << "Restored CatchTable: ";
-      this->pretty_print(this->context.out_stream, reinterpret_cast<VALUE>(table));
+      this->pretty_print(this->context.out_stream, charly_as_value(table));
       this->context.out_stream << '\n';
     }
   }
@@ -1746,20 +1494,20 @@ void VM::op_branch(int32_t offset) {
 
 void VM::op_branchif(int32_t offset) {
   VALUE test = this->pop_stack();
-  if (VM::truthyness(test))
+  if (charly_truthyness(test))
     this->ip += offset;
 }
 
 void VM::op_branchunless(int32_t offset) {
   VALUE test = this->pop_stack();
-  if (!VM::truthyness(test))
+  if (!charly_truthyness(test))
     this->ip += offset;
 }
 
 void VM::op_typeof() {
   VALUE value = this->pop_stack();
-  std::string& stringrep = kValueTypeString[VM::real_type(value)];
-  this->push_stack(this->create_string(stringrep.c_str(), stringrep.size()));
+  std::string& stringrep = charly_get_typestring(value);
+  this->push_stack(this->create_string(stringrep.data(), stringrep.size()));
 }
 
 void VM::stacktrace(std::ostream& io) {
@@ -1767,9 +1515,9 @@ void VM::stacktrace(std::ostream& io) {
 
   int i = 0;
   io << "IP: " << static_cast<void*>(this->ip) << '\n';
-  while (frame && VM::real_type(reinterpret_cast<VALUE>(frame)) == kTypeFrame) {
+  while (frame && charly_is_frame(charly_as_value(frame))) {
     io << i++ << "# ";
-    this->pretty_print(io, reinterpret_cast<VALUE>(frame));
+    this->pretty_print(io, charly_as_value(frame));
     io << '\n';
     frame = frame->parent;
   }
@@ -1794,6 +1542,8 @@ void VM::stackdump(std::ostream& io) {
   }
 }
 
+// TODO: Move this message to value.h
+// TODO: It will still require access to the symbol table, figure out how to remove this dependency
 void VM::pretty_print(std::ostream& io, VALUE value) {
   // Check if this value was already printed before
   auto begin = this->pretty_print_stack.begin();
@@ -1802,19 +1552,19 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
   this->pretty_print_stack.push_back(value);
 
-  switch (VM::real_type(value)) {
+  switch (charly_get_type(value)) {
     case kTypeDead: {
       io << "<!!DEAD_CELL!!: " << reinterpret_cast<void*>(value) << ">";
       break;
     }
 
-    case kTypeInteger: {
-      io << VALUE_DECODE_INTEGER(value);
-      break;
-    }
+    case kTypeNumber: {
+      if (charly_is_int(value)) {
+        io << charly_int_to_int64(value);
+      } else {
+        io << charly_double_to_double(value);
+      }
 
-    case kTypeFloat: {
-      io << VM::float_value(value);
       break;
     }
 
@@ -1829,20 +1579,30 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeString: {
-      String* string = reinterpret_cast<String*>(value);
-      io << "<String:" << string << " ";
+      io << "<String:" << charly_as_pointer(value) << " ";
       io << "\"";
-      io.write(string->data(), string->length());
+      io.write(charly_string_data(value), charly_string_length(value));
       io << "\"";
-      if (string->basic.short_string()) {
-        io << " +";
+
+      if (charly_is_on_heap(value)) {
+        if (charly_as_basic(value)->short_string) {
+          io << " s";
+        } else {
+          io << " ";
+        }
+      } else {
+        if (charly_is_istring(value)) {
+          io << " i";
+        } else {
+          io << " p";
+        }
       }
       io << ">";
       break;
     }
 
     case kTypeObject: {
-      Object* object = reinterpret_cast<Object*>(value);
+      Object* object = charly_as_object(value);
       io << "<Object:" << object;
 
       // If this object was already printed, we avoid printing it again
@@ -1863,7 +1623,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeArray: {
-      Array* array = reinterpret_cast<Array*>(value);
+      Array* array = charly_as_array(value);
       io << "<Array:" << array << " ";
 
       // If this array was already printed, we avoid printing it again
@@ -1890,7 +1650,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeFunction: {
-      Function* func = reinterpret_cast<Function*>(value);
+      Function* func = charly_as_function(value);
 
       if (printed_before) {
         io << "<Function:" << func << " ...>";
@@ -1923,7 +1683,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeCFunction: {
-      CFunction* func = reinterpret_cast<CFunction*>(value);
+      CFunction* func = charly_as_cfunction(value);
 
       if (printed_before) {
         io << "<CFunction:" << func << " ...>";
@@ -1953,7 +1713,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeClass: {
-      Class* klass = reinterpret_cast<Class*>(value);
+      Class* klass = charly_as_class(value);
 
       if (printed_before) {
         io << "<Class:" << klass << " ...>";
@@ -1998,7 +1758,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeFrame: {
-      Frame* frame = reinterpret_cast<Frame*>(value);
+      Frame* frame = charly_as_frame(value);
 
       if (printed_before) {
         io << "<Frame:" << frame << " ...>";
@@ -2026,7 +1786,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeCatchTable: {
-      CatchTable* table = reinterpret_cast<CatchTable*>(value);
+      CatchTable* table = charly_as_catchtable(value);
       io << "<CatchTable:" << table << " ";
       io << "address=" << reinterpret_cast<void*>(table->address) << " ";
       io << "stacksize=" << table->stacksize << " ";
@@ -2144,12 +1904,6 @@ void VM::run() {
       case Opcode::PutValue: {
         VALUE value = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
         this->op_putvalue(value);
-        break;
-      }
-
-      case Opcode::PutFloat: {
-        double value = *reinterpret_cast<double*>(this->ip + sizeof(Opcode));
-        this->op_putfloat(value);
         break;
       }
 
@@ -2495,11 +2249,11 @@ void VM::exec_block(InstructionBlock* block) {
 
 void VM::exec_module(InstructionBlock* block) {
   ManagedContext lalloc(*this);
-  Object* export_obj = reinterpret_cast<Object*>(lalloc.create_object(0));
+  Object* export_obj = charly_as_object(lalloc.create_object(0));
 
   // Execute the module inclusion function
   this->exec_block(block);
-  this->push_stack(reinterpret_cast<VALUE>(export_obj));
+  this->push_stack(charly_as_value(export_obj));
   this->op_call(1);
   this->frames->parent_environment_frame = this->top_frame;
   this->run();
