@@ -39,13 +39,13 @@ struct MemoryCell {
   union {
     struct {
       Basic basic;
+      uint64_t __debug = 0x17;
       MemoryCell* next;
     } free;
     Basic basic;
     Object object;
     Array array;
     String string;
-    Float flonum;
     Function function;
     CFunction cfunction;
     Class klass;
@@ -59,7 +59,7 @@ struct MemoryCell {
   }
 
   inline VALUE as_value() {
-    return reinterpret_cast<VALUE>(this);
+    return charly_create_pointer(this);
   }
 };
 
@@ -79,7 +79,7 @@ class GarbageCollector {
   MemoryCell* free_cell;
   std::vector<MemoryCell*> heaps;
   std::unordered_set<VALUE> temporaries;
-  std::unordered_set<VALUE**> temporary_ptrs;
+  std::unordered_set<void**> temporary_ptrs; // Pointers to pointers
   std::unordered_set<std::vector<VALUE>*> temporary_vector_ptrs;
 
   void add_heap();
@@ -118,8 +118,8 @@ public:
   void collect();
   void mark_persistent(VALUE value);
   void unmark_persistent(VALUE value);
-  void mark_ptr_persistent(VALUE** value);
-  void unmark_ptr_persistent(VALUE** value);
+  void mark_ptr_persistent(void** value);
+  void unmark_ptr_persistent(void** value);
   void mark_vector_ptr_persistent(std::vector<VALUE>* vec);
   void unmark_vector_ptr_persistent(std::vector<VALUE>* vec);
 };

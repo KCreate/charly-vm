@@ -91,13 +91,5 @@ public:
   inline VALUE create_class(Args&&... params) {
     return mark_in_gc(this->vm.create_class(std::forward<Args>(params)...));
   }
-
-  inline VALUE create_float(double value) {
-    VALUE floatval = this->vm.create_float(value);
-    if (is_special(floatval)) {
-      return mark_in_gc(floatval);
-    }
-    return floatval;
-  }
 };
 }  // namespace Charly

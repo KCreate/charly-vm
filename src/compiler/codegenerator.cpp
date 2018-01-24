@@ -543,7 +543,7 @@ AST::AbstractNode* CodeGenerator::visit_nan(AST::Nan* node, VisitContinue) {
 
 AST::AbstractNode* CodeGenerator::visit_string(AST::String* node, VisitContinue) {
   if (node->value.size() <= 6) {
-    this->assembler.write_putvalue(charly_create_istring(node->value));
+    this->assembler.write_putvalue(charly_create_istring(node->value.data(), node->value.size()));
   } else {
     StringOffsetInfo info = this->context.stringpool.get_offsetinfo(node->value);
     this->assembler.write_putstring(info.offset, info.length);

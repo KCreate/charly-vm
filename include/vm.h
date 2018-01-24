@@ -91,18 +91,18 @@ class VM {
 
 public:
   VM(VMContext& ctx) : context(ctx), gc(GarbageCollectorConfig{ .out_stream = ctx.out_stream, .err_stream = ctx.err_stream }), frames(nullptr), catchstack(nullptr), ip(nullptr), halted(false) {
-    this->gc.mark_ptr_persistent(reinterpret_cast<VALUE**>(&this->frames));
-    this->gc.mark_ptr_persistent(reinterpret_cast<VALUE**>(&this->catchstack));
-    this->gc.mark_ptr_persistent(reinterpret_cast<VALUE**>(&this->top_frame));
+    this->gc.mark_ptr_persistent(reinterpret_cast<void**>(&this->frames));
+    this->gc.mark_ptr_persistent(reinterpret_cast<void**>(&this->catchstack));
+    this->gc.mark_ptr_persistent(reinterpret_cast<void**>(&this->top_frame));
     this->gc.mark_vector_ptr_persistent(&this->stack);
     this->exec_prelude();
   }
   VM(const VM& other) = delete;
   VM(VM&& other) = delete;
   ~VM() {
-    this->gc.unmark_ptr_persistent(reinterpret_cast<VALUE**>(&this->frames));
-    this->gc.unmark_ptr_persistent(reinterpret_cast<VALUE**>(&this->catchstack));
-    this->gc.unmark_ptr_persistent(reinterpret_cast<VALUE**>(&this->top_frame));
+    this->gc.unmark_ptr_persistent(reinterpret_cast<void**>(&this->frames));
+    this->gc.unmark_ptr_persistent(reinterpret_cast<void**>(&this->catchstack));
+    this->gc.unmark_ptr_persistent(reinterpret_cast<void**>(&this->top_frame));
     this->gc.unmark_vector_ptr_persistent(&this->stack);
     this->gc.collect();
   }

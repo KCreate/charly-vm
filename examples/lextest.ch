@@ -1,12 +1,7 @@
-const foo = "leonard"
-const bar = "fabrice"
-const baz = "igor"
-const qux = "fabian"
+print($0)
+print($1)
+print($2)
 
-const long_string = "hello world this is a very long string what is going on here wooohoohohoohohoohohoo"
+$0.foo = "hello world"
 
-print(foo)
-print(bar)
-print(baz)
-print(qux)
-print(long_string)
+print(export)

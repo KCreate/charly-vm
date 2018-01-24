@@ -14,8 +14,8 @@ HEADERS := $(shell find $(INCLUDEDIR) -type f -name *.$(HEADEREXT))
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/$(basename $(notdir %)),$(SOURCES:.$(SRCEXT)=.o))
 CPPSTD := c++17
-CFLAGS := -std=$(CPPSTD) -g -Wall -Wextra -Werror -Wno-unused-private-field -ferror-limit=50
-CFLAGSPROD := -std=$(CPPSTD) -Wall -Wextra -Werror -Wno-unused-private-field -ferror-limit=1 -flto
+CFLAGS := -std=$(CPPSTD) -g -Wall -Wextra -Werror -Wno-unused-private-field -ferror-limit=50 -ffast-math
+CFLAGSPROD := -std=$(CPPSTD) -Wall -Wextra -Werror -Wno-unused-private-field -ferror-limit=1 -flto -ffast-math
 LFLAGS := -lm
 INC := -I libs -I $(INCLUDEDIR)
 LIB := -lstdc++

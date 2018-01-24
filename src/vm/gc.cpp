@@ -61,11 +61,11 @@ void GarbageCollector::unmark_persistent(VALUE value) {
   this->temporaries.erase(value);
 }
 
-void GarbageCollector::mark_ptr_persistent(VALUE** value) {
+void GarbageCollector::mark_ptr_persistent(void** value) {
   this->temporary_ptrs.insert(value);
 }
 
-void GarbageCollector::unmark_ptr_persistent(VALUE** value) {
+void GarbageCollector::unmark_ptr_persistent(void** value) {
   this->temporary_ptrs.erase(value);
 }
 
@@ -81,6 +81,11 @@ void GarbageCollector::mark(VALUE value) {
   if (!charly_is_ptr(value)) {
     return;
   }
+
+  if (charly_as_pointer(value) == nullptr) {
+    return;
+  }
+
   if (charly_as_basic(value)->mark) {
     return;
   }
@@ -104,7 +109,7 @@ void GarbageCollector::mark(VALUE value) {
 
     case kTypeFunction: {
       Function* func = charly_as_function(value);
-      this->mark(charly_as_value(func->context));
+      this->mark(charly_create_pointer(func->context));
 
       if (func->bound_self_set)
         this->mark(func->bound_self);
@@ -133,11 +138,11 @@ void GarbageCollector::mark(VALUE value) {
     }
 
     case kTypeFrame: {
-      Frame* frame = (Frame*)value;
-      this->mark(charly_as_value(frame->parent));
-      this->mark(charly_as_value(frame->parent_environment_frame));
-      this->mark(charly_as_value(frame->last_active_catchtable));
-      this->mark(charly_as_value(frame->function));
+      Frame* frame = charly_as_frame(value);
+      this->mark(charly_create_pointer(frame->parent));
+      this->mark(charly_create_pointer(frame->parent_environment_frame));
+      this->mark(charly_create_pointer(frame->last_active_catchtable));
+      this->mark(charly_create_pointer(frame->function));
       this->mark(frame->self);
       for (auto lvar : *frame->environment)
         this->mark(lvar);
@@ -146,8 +151,8 @@ void GarbageCollector::mark(VALUE value) {
 
     case kTypeCatchTable: {
       CatchTable* table = charly_as_catchtable(value);
-      this->mark(charly_as_value(table->frame));
-      this->mark(charly_as_value(table->parent));
+      this->mark(charly_create_pointer(table->frame));
+      this->mark(charly_create_pointer(table->parent));
       break;
     }
   }
@@ -170,7 +175,7 @@ void GarbageCollector::collect() {
     this->mark(temp_item);
   }
   for (auto temp_item : this->temporary_ptrs) {
-    this->mark(*temp_item);
+    this->mark(charly_create_pointer(*temp_item));
   }
   for (auto temp_item : this->temporary_vector_ptrs) {
     for (auto temp_item : *temp_item) {
@@ -183,12 +188,12 @@ void GarbageCollector::collect() {
   for (MemoryCell* heap : this->heaps) {
     for (size_t i = 0; i < this->config.heap_cell_count; i++) {
       MemoryCell* cell = heap + i;
-      if (charly_as_basic(charly_as_value(cell))->mark) {
-        charly_as_basic(charly_as_value(cell))->mark = false;
+      if (charly_as_basic(charly_create_pointer(cell))->mark) {
+        charly_as_basic(charly_create_pointer(cell))->mark = false;
       } else {
         // This cell might already be on the free list
         // Make sure we don't double free cells
-        if (!charly_is_dead(charly_as_value(cell))) {
+        if (!charly_is_dead(charly_create_pointer(cell))) {
           freed_cells_count++;
           this->deallocate(cell);
         }
@@ -230,7 +235,7 @@ MemoryCell* GarbageCollector::allocate() {
 
 void GarbageCollector::deallocate(MemoryCell* cell) {
   // Run the type specific cleanup function
-  switch (charly_as_basic(charly_as_value(cell))->type) {
+  switch (charly_as_basic(charly_create_pointer(cell))->type) {
     case kTypeObject: {
       cell->object.clean();
       break;
