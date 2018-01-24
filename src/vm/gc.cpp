@@ -78,15 +78,17 @@ void GarbageCollector::unmark_vector_ptr_persistent(std::vector<VALUE>* vec) {
 }
 
 void GarbageCollector::mark(VALUE value) {
-  if (!is_pointer(value))
+  if (!charly_is_ptr(value)) {
     return;
-  if (basics(value)->mark())
+  }
+  if (charly_as_basic(value)->mark) {
     return;
+  }
 
-  basics(value)->set_mark(true);
-  switch (basics(value)->type()) {
+  charly_as_basic(value)->mark = true;
+  switch (charly_as_basic(value)->type) {
     case kTypeObject: {
-      Object* obj = reinterpret_cast<Object*>(value);
+      Object* obj = charly_as_object(value);
       this->mark(obj->klass);
       for (auto entry : *obj->container)
         this->mark(entry.second);
@@ -94,15 +96,15 @@ void GarbageCollector::mark(VALUE value) {
     }
 
     case kTypeArray: {
-      Array* arr = reinterpret_cast<Array*>(value);
+      Array* arr = charly_as_array(value);
       for (auto arr_entry : *arr->data)
         this->mark(arr_entry);
       break;
     }
 
     case kTypeFunction: {
-      Function* func = reinterpret_cast<Function*>(value);
-      this->mark(reinterpret_cast<VALUE>(func->context));
+      Function* func = charly_as_function(value);
+      this->mark(charly_as_value(func->context));
 
       if (func->bound_self_set)
         this->mark(func->bound_self);
@@ -112,7 +114,7 @@ void GarbageCollector::mark(VALUE value) {
     }
 
     case kTypeCFunction: {
-      CFunction* cfunc = reinterpret_cast<CFunction*>(value);
+      CFunction* cfunc = charly_as_cfunction(value);
       if (cfunc->bound_self_set)
         this->mark(cfunc->bound_self);
       for (auto entry : *cfunc->container)
@@ -121,7 +123,7 @@ void GarbageCollector::mark(VALUE value) {
     }
 
     case kTypeClass: {
-      Class* klass = reinterpret_cast<Class*>(value);
+      Class* klass = charly_as_class(value);
       this->mark(klass->constructor);
       this->mark(klass->prototype);
       this->mark(klass->parent_class);
@@ -132,10 +134,10 @@ void GarbageCollector::mark(VALUE value) {
 
     case kTypeFrame: {
       Frame* frame = (Frame*)value;
-      this->mark(reinterpret_cast<VALUE>(frame->parent));
-      this->mark(reinterpret_cast<VALUE>(frame->parent_environment_frame));
-      this->mark(reinterpret_cast<VALUE>(frame->last_active_catchtable));
-      this->mark(reinterpret_cast<VALUE>(frame->function));
+      this->mark(charly_as_value(frame->parent));
+      this->mark(charly_as_value(frame->parent_environment_frame));
+      this->mark(charly_as_value(frame->last_active_catchtable));
+      this->mark(charly_as_value(frame->function));
       this->mark(frame->self);
       for (auto lvar : *frame->environment)
         this->mark(lvar);
@@ -143,9 +145,9 @@ void GarbageCollector::mark(VALUE value) {
     }
 
     case kTypeCatchTable: {
-      CatchTable* table = reinterpret_cast<CatchTable*>(value);
-      this->mark(reinterpret_cast<VALUE>(table->frame));
-      this->mark(reinterpret_cast<VALUE>(table->parent));
+      CatchTable* table = charly_as_catchtable(value);
+      this->mark(charly_as_value(table->frame));
+      this->mark(charly_as_value(table->parent));
       break;
     }
   }
@@ -181,12 +183,12 @@ void GarbageCollector::collect() {
   for (MemoryCell* heap : this->heaps) {
     for (size_t i = 0; i < this->config.heap_cell_count; i++) {
       MemoryCell* cell = heap + i;
-      if (basics(reinterpret_cast<VALUE>(cell))->mark()) {
-        basics(reinterpret_cast<VALUE>(cell))->set_mark(false);
+      if (charly_as_basic(charly_as_value(cell))->mark) {
+        charly_as_basic(charly_as_value(cell))->mark = false;
       } else {
         // This cell might already be on the free list
         // Make sure we don't double free cells
-        if (basics(reinterpret_cast<VALUE>(cell))->type() != kTypeDead) {
+        if (!charly_is_dead(charly_as_value(cell))) {
           freed_cells_count++;
           this->deallocate(cell);
         }
@@ -228,7 +230,7 @@ MemoryCell* GarbageCollector::allocate() {
 
 void GarbageCollector::deallocate(MemoryCell* cell) {
   // Run the type specific cleanup function
-  switch (basics(reinterpret_cast<VALUE>(cell))->type()) {
+  switch (charly_as_basic(charly_as_value(cell))->type) {
     case kTypeObject: {
       cell->object.clean();
       break;
@@ -264,7 +266,7 @@ void GarbageCollector::deallocate(MemoryCell* cell) {
 
   // Clear the cell and link it into the freelist
   memset(reinterpret_cast<void*>(cell), 0, sizeof(MemoryCell));
-  cell->free.basic.set_type(kTypeDead);
+  cell->free.basic.type = kTypeDead;
   cell->free.next = this->free_cell;
   this->free_cell = cell;
 }

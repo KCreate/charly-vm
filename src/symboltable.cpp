@@ -28,9 +28,7 @@
 
 namespace Charly {
 VALUE SymbolTable::encode_string(const std::string& input) {
-  size_t hashvalue = std::hash<std::string>{}(input);
-
-  VALUE symbol = static_cast<VALUE>((hashvalue & ~kSymbolMask) | kSymbolFlag);
+  VALUE symbol = charly_create_symbol(input);
 
   if (this->table.find(symbol) == this->table.end()) {
     this->table.insert({symbol, input});

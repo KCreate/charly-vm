@@ -129,12 +129,6 @@ enum Opcode : uint8_t {
   // - value
   PutValue,
 
-  // Put a double onto the stack
-  //
-  // args:
-  // - value
-  PutFloat,
-
   // Put string onto the stack
   //
   // The actual string data lives in the TEXT segment of the compiled instructionblock
@@ -338,7 +332,6 @@ static constexpr uint32_t kInstructionLengths[]{
   /* SetArrayIndex */      1 + sizeof(uint32_t),
   /* PutSelf */            1 + sizeof(uint32_t),
   /* PutValue */           1 + sizeof(VALUE),
-  /* PutFloat */           1 + sizeof(double),
   /* PutString */          1 + sizeof(uint32_t) + sizeof(uint32_t),
   /* PutFunction */        1 + sizeof(VALUE) + sizeof(int32_t) + sizeof(bool) + sizeof(uint32_t) + sizeof(uint32_t),
   /* PutCFunction */       1 + sizeof(VALUE) + sizeof(uintptr_t) + sizeof(uint32_t),
@@ -397,7 +390,6 @@ static std::string kOpcodeMnemonics[]{
   "setarrayindex",
   "putself",
   "putvalue",
-  "putfloat",
   "putstring",
   "putfunction",
   "putcfunction",

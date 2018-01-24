@@ -88,11 +88,6 @@ public:
     this->write(value);
   }
 
-  inline void write_putfloat(double value) {
-    this->write(Opcode::PutFloat);
-    this->write(value);
-  }
-
   inline void write_putstring(uint32_t offset, uint32_t length) {
     this->write(Opcode::PutString);
     this->write(offset);

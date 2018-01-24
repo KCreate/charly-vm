@@ -333,6 +333,9 @@ const uint64_t kSignBlock         = 0xFFFF000000000000;
 
 template <typename T>
 __attribute__((always_inline))
+VALUE charly_as_value(T ptr)                          { return reinterpret_cast<VALUE>(ptr); }
+template <typename T>
+__attribute__((always_inline))
 T* charly_as_pointer_to(VALUE value)                  { return reinterpret_cast<T*>(value & kMaskPointer); }
 __attribute__((always_inline))
 inline void* charly_as_pointer(VALUE value)           { return charly_as_pointer_to<void>(value); }
@@ -388,6 +391,8 @@ __attribute__((always_inline))
 inline bool charly_is_heap_type(VALUE value, uint8_t type) {
   return charly_is_on_heap(value) && charly_as_basic(value)->type == type;
 }
+__attribute__((always_inline))
+inline bool charly_is_dead(VALUE value) { return charly_is_heap_type(value, kTypeDead); }
 __attribute__((always_inline))
 inline bool charly_is_class(VALUE value) { return charly_is_heap_type(value, kTypeClass); }
 __attribute__((always_inline))
@@ -887,12 +892,47 @@ inline VALUE charly_ubnot_number(VALUE value) {
   if (charly_is_int(value)) return charly_create_number(~charly_int_to_int32(value));
   return charly_create_integer(~charly_double_to_int32(value));
 }
+__attribute__((always_inline))
+inline bool charly_truthyness(VALUE value) {
+  if (value == kNaN) return false;
+  if (value == kNull) return false;
+  if (value == kFalse) return false;
+  if (charly_is_int(value)) return charly_int_to_int64(value) != 0;
+  if (charly_is_float(value)) return charly_double_to_double(value) != 0;
+  return true;
+}
 
 // Convert types into symbols
 __attribute__((always_inline))
 inline VALUE charly_create_symbol(const std::string& input) {
   size_t val = std::hash<std::string>{}(input);
   return kSignatureSymbol | (val & kMaskSymbol);
+}
+__attribute__((always_inline))
+inline VALUE charly_create_symbol(VALUE value) {
+  ValueType type = charly_get_type(value);
+  switch (type) {
+    case kTypeString: {
+      char* str_data = charly_string_data(value);
+      uint32_t str_length = charly_string_length(value);
+      return charly_create_symbol(std::string(str_data, str_length));
+    }
+    case kTypeFloat: {
+      double val = charly_double_to_double(value);
+      std::stringstream io;
+      io << val;
+      return charly_create_symbol(io.str());
+    }
+    case kTypeInteger: {
+      int64_t val = charly_int_to_int64(value);
+      std::stringstream io;
+      io << val;
+      return charly_create_symbol(io.str());
+    }
+    default: {
+      return charly_create_symbol(charly_get_typestring(type));
+    }
+  }
 }
 
 // Create immediate encoded strings of size 0 - 5
