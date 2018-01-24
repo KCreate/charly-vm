@@ -60,7 +60,6 @@ struct Basic;
 struct Object;
 struct Array;
 struct String;
-struct Float;
 struct Function;
 struct CFunction;
 }  // namespace Charly

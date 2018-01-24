@@ -50,7 +50,7 @@ Frame* VM::pop_frame() {
 
 Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address, bool halt_after_return) {
   MemoryCell* cell = this->gc.allocate();
-  cell->basic.set_type(kTypeFrame);
+  cell->basic.type = kTypeFrame;
   cell->frame.parent = this->frames;
   cell->frame.parent_environment_frame = function->context;
   cell->frame.last_active_catchtable = this->catchstack;
@@ -88,7 +88,7 @@ Frame* VM::create_frame(VALUE self,
                         uint8_t* return_address,
                         bool halt_after_return) {
   MemoryCell* cell = this->gc.allocate();
-  cell->basic.set_type(kTypeFrame);
+  cell->basic.type = kTypeFrame;
   cell->frame.parent = this->frames;
   cell->frame.parent_environment_frame = parent_environment_frame;
   cell->frame.last_active_catchtable = this->catchstack;
@@ -131,7 +131,7 @@ void VM::push_stack(VALUE value) {
 
 CatchTable* VM::create_catchtable(uint8_t* address) {
   MemoryCell* cell = this->gc.allocate();
-  cell->basic.set_type(kTypeCatchTable);
+  cell->basic.type = kTypeCatchTable;
   cell->catchtable.stacksize = this->stack.size();
   cell->catchtable.frame = this->frames;
   cell->catchtable.parent = this->catchstack;
@@ -180,7 +180,7 @@ void VM::unwind_catchstack() {
   if (this->context.trace_catchtables) {
     // Show the table we've restored
     this->context.out_stream << "Restored CatchTable: ";
-    this->pretty_print(this->context.out_stream, table);
+    this->pretty_print(this->context.out_stream, charly_create_pointer(table));
     this->context.out_stream << '\n';
   }
 
@@ -202,7 +202,7 @@ void VM::unwind_catchstack() {
 
 VALUE VM::create_object(uint32_t initial_capacity) {
   MemoryCell* cell = this->gc.allocate();
-  cell->basic.set_type(kTypeObject);
+  cell->basic.type = kTypeObject;
   cell->object.klass = this->primitive_object;
   cell->object.container = new std::unordered_map<VALUE, VALUE>();
   cell->object.container->reserve(initial_capacity);
@@ -211,23 +211,23 @@ VALUE VM::create_object(uint32_t initial_capacity) {
 
 VALUE VM::create_array(uint32_t initial_capacity) {
   MemoryCell* cell = this->gc.allocate();
-  cell->basic.set_type(kTypeArray);
+  cell->basic.type = kTypeArray;
   cell->array.data = new std::vector<VALUE>();
   cell->array.data->reserve(initial_capacity);
   return cell->as_value();
 }
 
 VALUE VM::create_string(const char* data, uint32_t length) {
-  if (length <= 6) return charly_create_istring(reinterpret_cast<char[length]>(data));
+  if (length <= 6) return charly_create_istring(data, length);
 
   // Check if we can create a short string
   MemoryCell* cell = this->gc.allocate();
-  cell->basic.set_type(kTypeString);
+  cell->basic.type = kTypeString;
 
   if (length <= kShortStringMaxSize) {
 
     // Copy the string into the cell itself
-    cell->basic.set_short_string(true);
+    cell->basic.shortstring = true;
     std::memcpy(cell->string.sbuf.data, data, length);
     cell->string.sbuf.length = length;
   } else {
@@ -237,7 +237,7 @@ VALUE VM::create_string(const char* data, uint32_t length) {
     std::memcpy(copied_string, data, length);
 
     // Setup long string
-    cell->basic.set_short_string(false);
+    cell->basic.shortstring = false;
     cell->string.lbuf.data = copied_string;
     cell->string.lbuf.length = length;
   }
@@ -247,7 +247,7 @@ VALUE VM::create_string(const char* data, uint32_t length) {
 
 VALUE VM::create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint32_t lvarcount, bool anonymous) {
   MemoryCell* cell = this->gc.allocate();
-  cell->basic.set_type(kTypeFunction);
+  cell->basic.type = kTypeFunction;
   cell->function.name = name;
   cell->function.argc = argc;
   cell->function.lvarcount = lvarcount;
@@ -262,7 +262,7 @@ VALUE VM::create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint
 
 VALUE VM::create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer) {
   MemoryCell* cell = this->gc.allocate();
-  cell->basic.set_type(kTypeCFunction);
+  cell->basic.type = kTypeCFunction;
   cell->cfunction.name = name;
   cell->cfunction.pointer = pointer;
   cell->cfunction.argc = argc;
@@ -274,7 +274,7 @@ VALUE VM::create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer) {
 
 VALUE VM::create_class(VALUE name) {
   MemoryCell* cell = this->gc.allocate();
-  cell->basic.set_type(kTypeClass);
+  cell->basic.type = kTypeClass;
   cell->klass.name = name;
   cell->klass.constructor = kNull;
   cell->klass.member_properties = new std::vector<VALUE>();
@@ -312,7 +312,7 @@ VALUE VM::copy_object(VALUE object) {
   Object* source = charly_as_object(object);
   Object* target = charly_as_object(this->create_object(source->container->size()));
   target->container->insert(source->container->begin(), source->container->end());
-  return charly_as_value(target);
+  return charly_create_pointer(target);
 }
 
 VALUE VM::deep_copy_object(VALUE object) {
@@ -326,7 +326,7 @@ VALUE VM::deep_copy_object(VALUE object) {
     (*target->container)[key] = this->deep_copy_value(value);
   }
 
-  return charly_as_value(target);
+  return charly_create_pointer(target);
 }
 
 VALUE VM::copy_array(VALUE array) {
@@ -337,7 +337,7 @@ VALUE VM::copy_array(VALUE array) {
     target->data->push_back(value);
   }
 
-  return charly_as_value(target);
+  return charly_create_pointer(target);
 }
 
 VALUE VM::deep_copy_array(VALUE array) {
@@ -351,12 +351,13 @@ VALUE VM::deep_copy_array(VALUE array) {
     target->data->push_back(this->deep_copy_value(value));
   }
 
-  return charly_as_value(target);
+  return charly_create_pointer(target);
 }
 
 VALUE VM::copy_string(VALUE string) {
-  String* source = reinterpret_cast<String*>(string);
-  return this->create_string(source->data(), source->length());
+  char* str_data = charly_string_data(string);
+  uint32_t str_length = charly_string_length(string);
+  return this->create_string(str_data, str_length);
 }
 
 VALUE VM::copy_function(VALUE function) {
@@ -369,7 +370,7 @@ VALUE VM::copy_function(VALUE function) {
   target->bound_self = source->bound_self;
   *(target->container) = *(source->container);
 
-  return charly_as_value(target);
+  return charly_create_pointer(target);
 }
 
 VALUE VM::copy_cfunction(VALUE function) {
@@ -380,28 +381,28 @@ VALUE VM::copy_cfunction(VALUE function) {
   target->bound_self = source->bound_self;
   *(target->container) = *(source->container);
 
-  return charly_as_value(target);
+  return charly_create_pointer(target);
 }
 
 VALUE VM::add(VALUE left, VALUE right) {
-  if (VM::type(left) == kTypeNumber && VM::type(right) == kTypeNumber) {
-    return charly_add_number(nleft, nright);
+  if (charly_is_number(left) && charly_is_number(right)) {
+    return charly_add_number(left, right);
   }
 
-  if (charly_get_type(left) == kTypeArray) {
+  if (charly_is_array(left)) {
     Array* new_array = charly_as_array(this->copy_array(left));
-    if (charly_get_type(right) == kTypeArray) {
+    if (charly_is_array(right)) {
       Array* aright = charly_as_array(right);
 
       for (auto& value : *aright->data) {
         new_array->data->push_back(value);
       }
 
-      return charly_as_value(new_array);
+      return charly_create_pointer(new_array);
     }
 
     new_array->data->push_back(right);
-    return charly_as_value(new_array);
+    return charly_create_pointer(new_array);
   }
 
   // TODO: String concatenation
@@ -410,16 +411,16 @@ VALUE VM::add(VALUE left, VALUE right) {
 }
 
 VALUE VM::sub(VALUE left, VALUE right) {
-  if (VM::type(left) == kTypeNumber && VM::type(right) == kTypeNumber) {
-    return charly_sub_number(nleft, nright);
+  if (charly_is_number(left) && charly_is_number(right)) {
+    return charly_sub_number(left, right);
   }
 
   return kBitsNaN;
 }
 
 VALUE VM::mul(VALUE left, VALUE right) {
-  if (VM::type(left) == kTypeNumber && VM::type(right) == kTypeNumber) {
-    return charly_mul_number(nleft, nright);
+  if (charly_is_number(left) && charly_is_number(right)) {
+    return charly_mul_number(left, right);
   }
 
   // TODO: String multiplication
@@ -428,24 +429,24 @@ VALUE VM::mul(VALUE left, VALUE right) {
 }
 
 VALUE VM::div(VALUE left, VALUE right) {
-  if (VM::type(left) == kTypeNumber && VM::type(right) == kTypeNumber) {
-    return charly_div_number(nleft, nright);
+  if (charly_is_number(left) && charly_is_number(right)) {
+    return charly_div_number(left, right);
   }
 
   return kBitsNaN;
 }
 
 VALUE VM::mod(VALUE left, VALUE right) {
-  if (VM::type(left) == kTypeNumber && VM::type(right) == kTypeNumber) {
-    return charly_mod_number(nleft, nright);
+  if (charly_is_number(left) && charly_is_number(right)) {
+    return charly_mod_number(left, right);
   }
 
   return kBitsNaN;
 }
 
 VALUE VM::pow(VALUE left, VALUE right) {
-  if (VM::type(left) == kTypeNumber && VM::type(right) == kTypeNumber) {
-    return charly_pow_number(nleft, nright);
+  if (charly_is_number(left) && charly_is_number(right)) {
+    return charly_pow_number(left, right);
   }
 
   return kBitsNaN;
@@ -456,27 +457,29 @@ VALUE VM::uadd(VALUE value) {
 }
 
 VALUE VM::usub(VALUE value) {
-  if (VM::type(value) == kTypeNumber) {
-    return charly_usub_number(num);
+  if (charly_is_number(value)) {
+    return charly_usub_number(value);
   }
 
   return kBitsNaN;
 }
 
 VALUE VM::eq(VALUE left, VALUE right) {
-  if (VM::type(left) == kTypeNumber && VM::type(right) == kTypeNumber) {
-    return charly_eq_number(nleft, nright);
+  if (charly_is_number(left) && charly_is_number(right)) {
+    return charly_eq_number(left, right);
   }
 
-  if (charly_get_type(left) == kTypeString && charly_get_type(right) == kTypeString) {
-    String* sleft = reinterpret_cast<String*>(left);
-    String* sright = reinterpret_cast<String*>(right);
+  if (charly_is_string(left) && charly_is_string(right)) {
+    char* str_left_data = charly_string_data(left);
+    uint32_t str_left_length = charly_string_length(left);
+    char* str_right_data = charly_string_data(right);
+    uint32_t str_right_length = charly_string_length(right);
 
-    if (sleft->length() != sright->length()) {
+    if (str_left_length != str_right_length) {
       return kFalse;
     }
 
-    return std::strncmp(sleft->data(), sright->data(), sleft->length()) ? kTrue : kFalse;
+    return std::strncmp(str_left_data, str_right_data, str_left_length) ? kTrue : kFalse;
   }
 
   return left == right ? kTrue : kFalse;
@@ -487,63 +490,55 @@ VALUE VM::neq(VALUE left, VALUE right) {
 }
 
 VALUE VM::lt(VALUE left, VALUE right) {
-  if (VM::type(left) == kTypeNumber && VM::type(right) == kTypeNumber) {
+  if (charly_is_number(left) && charly_is_number(right)) {
     return charly_lt_number(left, right);
   }
 
-  if (charly_get_type(left) == kTypeString && charly_get_type(right) == kTypeString) {
-    String* sleft = reinterpret_cast<String*>(left);
-    String* sright = reinterpret_cast<String*>(right);
-    return sleft->length() < sright->length() ? kTrue : kFalse;
+  if (charly_is_string(left) && charly_is_string(right)) {
+    return charly_string_length(left) < charly_string_length(right) ? kTrue : kFalse;
   }
 
   return kFalse;
 }
 
 VALUE VM::gt(VALUE left, VALUE right) {
-  if (VM::type(left) == kTypeNumber && VM::type(right) == kTypeNumber) {
+  if (charly_is_number(left) && charly_is_number(right)) {
     return charly_gt_number(left, right);
   }
 
-  if (charly_get_type(left) == kTypeString && charly_get_type(right) == kTypeString) {
-    String* sleft = reinterpret_cast<String*>(left);
-    String* sright = reinterpret_cast<String*>(right);
-    return sleft->length() > sright->length() ? kTrue : kFalse;
+  if (charly_is_string(left) && charly_is_string(right)) {
+    return charly_string_length(left) > charly_string_length(right) ? kTrue : kFalse;
   }
 
   return kFalse;
 }
 
 VALUE VM::le(VALUE left, VALUE right) {
-  if (VM::type(left) == kTypeNumber && VM::type(right) == kTypeNumber) {
+  if (charly_is_number(left) && charly_is_number(right)) {
     return charly_le_number(left, right);
   }
 
-  if (charly_get_type(left) == kTypeString && charly_get_type(right) == kTypeString) {
-    String* sleft = reinterpret_cast<String*>(left);
-    String* sright = reinterpret_cast<String*>(right);
-    return sleft->length() <= sright->length() ? kTrue : kFalse;
+  if (charly_is_string(left) && charly_is_string(right)) {
+    return charly_string_length(left) <= charly_string_length(right) ? kTrue : kFalse;
   }
 
   return kFalse;
 }
 
 VALUE VM::ge(VALUE left, VALUE right) {
-  if (VM::type(left) == kTypeNumber && VM::type(right) == kTypeNumber) {
+  if (charly_is_number(left) && charly_is_number(right)) {
     return charly_ge_number(left, right);
   }
 
-  if (charly_get_type(left) == kTypeString && charly_get_type(right) == kTypeString) {
-    String* sleft = reinterpret_cast<String*>(left);
-    String* sright = reinterpret_cast<String*>(right);
-    return sleft->length() >= sright->length() ? kTrue : kFalse;
+  if (charly_is_string(left) && charly_is_string(right)) {
+    return charly_string_length(left) >= charly_string_length(right) ? kTrue : kFalse;
   }
 
   return kFalse;
 }
 
 VALUE VM::unot(VALUE value) {
-  return charly_truthyness(value) ? kFalse : KTrue;
+  return charly_truthyness(value) ? kFalse : kTrue;
 }
 
 VALUE VM::shl(VALUE left, VALUE right) {
@@ -593,8 +588,8 @@ VALUE VM::bxor(VALUE left, VALUE right) {
 }
 
 VALUE VM::ubnot(VALUE value) {
-  if (charly_is_number(left)) {
-    return charly_ubnot_number(left);
+  if (charly_is_number(value)) {
+    return charly_ubnot_number(value);
   }
 
   return kBitsNaN;
@@ -726,10 +721,11 @@ VALUE VM::readmembervalue(VALUE source, VALUE value) {
     case kTypeString: {
       if (charly_is_number(value)) {
         int32_t index = charly_number_to_int32(value);
+        int32_t str_length = charly_string_length(source);
 
         // Negative indices read from the end of the string
         if (index < 0) {
-          index += str->length();
+          index += str_length;
         }
 
         // Altough strings are utf8 encoded and byte_index != cp_index
@@ -737,13 +733,12 @@ VALUE VM::readmembervalue(VALUE source, VALUE value) {
         // because a utf8 codepoint is at least 1 byte
         //
         // We perform a check for codepoint index later on
-        if (index < 0 || index >= str->length()) {
+        if (index < 0 || index >= str_length) {
           return kNull;
         }
 
         // Calculate the index of the codepoint
         char* str_data = charly_string_data(source);
-        uint32_t str_length = charly_string_length(source);
         char* start_iterator = str_data;
         while (index--) {
           if (start_iterator >= str_data + str_length) {
@@ -1024,7 +1019,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
 
   // Insert the argument value and make it a constant
   // This is so that we can be sure that noone is going to overwrite it afterwards
-  (*frame->environment)[0] = charly_as_value(arguments_array);
+  (*frame->environment)[0] = charly_create_pointer(arguments_array);
 
   this->ip = function->body_address;
 }
@@ -1068,14 +1063,14 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
 void VM::call_class(Class* klass, uint32_t argc, VALUE* argv) {
   ManagedContext lalloc(*this);
   Object* object = charly_as_object(lalloc.create_object(klass->member_properties->size()));
-  object->klass = charly_as_value(klass);
+  object->klass = charly_create_pointer(klass);
 
   // Add the fields of parent classes
   this->initialize_member_properties(klass, object);
 
   bool success = this->invoke_class_constructors(klass, object, argc, argv);
   if (success) {
-    this->push_stack(charly_as_value(object));
+    this->push_stack(charly_create_pointer(object));
   }
 }
 
@@ -1108,7 +1103,7 @@ bool VM::invoke_class_constructors(Class* klass, Object* object, uint32_t argc, 
       return false;
     }
 
-    this->call_function(constructor, constructor->argc, argv, charly_as_value(object), true);
+    this->call_function(constructor, constructor->argc, argv, charly_create_pointer(object), true);
     this->run();
     this->halted = false;
 
@@ -1279,7 +1274,7 @@ void VM::op_putarray(uint32_t count) {
     array->data->insert(array->data->begin(), this->pop_stack());
   }
 
-  this->push_stack(charly_as_value(array));
+  this->push_stack(charly_create_pointer(array));
 }
 
 void VM::op_puthash(uint32_t count) {
@@ -1293,7 +1288,7 @@ void VM::op_puthash(uint32_t count) {
     (*object->container)[key] = value;
   }
 
-  this->push_stack(charly_as_value(object));
+  this->push_stack(charly_create_pointer(object));
 }
 
 void VM::op_putclass(VALUE name,
@@ -1353,7 +1348,7 @@ void VM::op_putclass(VALUE name,
     klass->member_properties->push_back(prop);
   }
 
-  this->push_stack(charly_as_value(klass));
+  this->push_stack(charly_create_pointer(klass));
 }
 
 void VM::op_pop() {
@@ -1420,7 +1415,7 @@ void VM::op_return() {
   // Print the frame if the correponding flag was set
   if (this->context.trace_frames) {
     this->context.out_stream << "Left frame: ";
-    this->pretty_print(this->context.out_stream, charly_as_value(frame));
+    this->pretty_print(this->context.out_stream, charly_create_pointer(frame));
     this->context.out_stream << '\n';
   }
 }
@@ -1440,7 +1435,7 @@ void VM::throw_exception(const std::string& message) {
 
   // Unwind stack and push exception object
   this->unwind_catchstack();
-  this->push_stack(charly_as_value(ex_obj));
+  this->push_stack(charly_create_pointer(ex_obj));
 }
 
 void VM::throw_exception(VALUE payload) {
@@ -1455,8 +1450,8 @@ VALUE VM::stacktrace_array() {
   std::stringstream io;
 
   Frame* frame = this->frames;
-  while (frame && charly_is_frame(charly_as_value(frame))) {
-    this->pretty_print(io, charly_as_value(frame));
+  while (frame && charly_is_frame(charly_create_pointer(frame))) {
+    this->pretty_print(io, charly_create_pointer(frame));
     frame = frame->parent;
 
     // Append the trace entry to the array and reset the stringstream
@@ -1465,7 +1460,7 @@ VALUE VM::stacktrace_array() {
     io.str("");
   }
 
-  return charly_as_value(arr);
+  return charly_create_pointer(arr);
 }
 
 void VM::op_registercatchtable(int32_t offset) {
@@ -1482,7 +1477,7 @@ void VM::op_popcatchtable() {
     if (table != nullptr) {
       // Show the table we've restored
       this->context.out_stream << "Restored CatchTable: ";
-      this->pretty_print(this->context.out_stream, charly_as_value(table));
+      this->pretty_print(this->context.out_stream, charly_create_pointer(table));
       this->context.out_stream << '\n';
     }
   }
@@ -1506,7 +1501,7 @@ void VM::op_branchunless(int32_t offset) {
 
 void VM::op_typeof() {
   VALUE value = this->pop_stack();
-  std::string& stringrep = charly_get_typestring(value);
+  const std::string& stringrep = charly_get_typestring(value);
   this->push_stack(this->create_string(stringrep.data(), stringrep.size()));
 }
 
@@ -1515,9 +1510,9 @@ void VM::stacktrace(std::ostream& io) {
 
   int i = 0;
   io << "IP: " << static_cast<void*>(this->ip) << '\n';
-  while (frame && charly_is_frame(charly_as_value(frame))) {
+  while (frame && charly_is_frame(charly_create_pointer(frame))) {
     io << i++ << "# ";
-    this->pretty_print(io, charly_as_value(frame));
+    this->pretty_print(io, charly_create_pointer(frame));
     io << '\n';
     frame = frame->parent;
   }
@@ -1529,7 +1524,7 @@ void VM::catchstacktrace(std::ostream& io) {
   int i = 0;
   while (table) {
     io << i++ << "# ";
-    this->pretty_print(io, table);
+    this->pretty_print(io, charly_create_pointer(table));
     io << '\n';
     table = table->parent;
   }
@@ -1554,7 +1549,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
   switch (charly_get_type(value)) {
     case kTypeDead: {
-      io << "<!!DEAD_CELL!!: " << reinterpret_cast<void*>(value) << ">";
+      io << "<dead>";
       break;
     }
 
@@ -1579,16 +1574,16 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeString: {
-      io << "<String:" << charly_as_pointer(value) << " ";
+      io << "<String ";
       io << "\"";
       io.write(charly_string_data(value), charly_string_length(value));
       io << "\"";
 
       if (charly_is_on_heap(value)) {
-        if (charly_as_basic(value)->short_string) {
+        if (charly_as_basic(value)->shortstring) {
           io << " s";
         } else {
-          io << " ";
+          io << "";
         }
       } else {
         if (charly_is_istring(value)) {
@@ -1603,7 +1598,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
     case kTypeObject: {
       Object* object = charly_as_object(value);
-      io << "<Object:" << object;
+      io << "<Object";
 
       // If this object was already printed, we avoid printing it again
       if (printed_before) {
@@ -1624,7 +1619,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
     case kTypeArray: {
       Array* array = charly_as_array(value);
-      io << "<Array:" << array << " ";
+      io << "<Array ";
 
       // If this array was already printed, we avoid printing it again
       if (printed_before) {
@@ -1653,11 +1648,11 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       Function* func = charly_as_function(value);
 
       if (printed_before) {
-        io << "<Function:" << func << " ...>";
+        io << "<Function ...>";
         break;
       }
 
-      io << "<Function:" << func << " ";
+      io << "<Function ";
       io << "name=";
       this->pretty_print(io, func->name);
       io << " ";
@@ -1686,11 +1681,11 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       CFunction* func = charly_as_cfunction(value);
 
       if (printed_before) {
-        io << "<CFunction:" << func << " ...>";
+        io << "<CFunction ...>";
         break;
       }
 
-      io << "<CFunction:" << func << " ";
+      io << "<CFunction ";
       io << "name=";
       this->pretty_print(io, func->name);
       io << " ";
@@ -1716,11 +1711,11 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       Class* klass = charly_as_class(value);
 
       if (printed_before) {
-        io << "<Class:" << klass << " ...>";
+        io << "<Class ...>";
         break;
       }
 
-      io << "<Class:" << klass << " ";
+      io << "<Class ";
       io << "name=";
       this->pretty_print(io, klass->name);
       io << " ";
@@ -1761,17 +1756,17 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       Frame* frame = charly_as_frame(value);
 
       if (printed_before) {
-        io << "<Frame:" << frame << " ...>";
+        io << "<Frame ...>";
         break;
       }
 
-      io << "<Frame:" << frame << " ";
+      io << "<Frame ";
       io << "parent=" << frame->parent << " ";
       io << "parent_environment_frame=" << frame->parent_environment_frame << " ";
 
       if (frame->function != nullptr) {
         io << "function=";
-        this->pretty_print(io, frame->function);
+        this->pretty_print(io, charly_create_pointer(frame->function));
       } else {
         io << "<no address info>";
       }
@@ -1787,7 +1782,13 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
     case kTypeCatchTable: {
       CatchTable* table = charly_as_catchtable(value);
-      io << "<CatchTable:" << table << " ";
+
+      if (printed_before) {
+        io << "<CatchTable ...>";
+        break;
+      }
+
+      io << "<CatchTable ";
       io << "address=" << reinterpret_cast<void*>(table->address) << " ";
       io << "stacksize=" << table->stacksize << " ";
       io << "frame=" << table->frame << " ";
@@ -2253,7 +2254,7 @@ void VM::exec_module(InstructionBlock* block) {
 
   // Execute the module inclusion function
   this->exec_block(block);
-  this->push_stack(charly_as_value(export_obj));
+  this->push_stack(charly_create_pointer(export_obj));
   this->op_call(1);
   this->frames->parent_environment_frame = this->top_frame;
   this->run();

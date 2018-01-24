@@ -496,15 +496,14 @@ void Lexer::consume_hex() {
     uint32_t cp = this->source.current_char;
 
     if (Lexer::is_hex(cp)) {
-      char numchar = static_cast<char>(cp);
-      decoder << numchar;
+      decoder << static_cast<char>(cp);
       this->source.read_char();
     } else {
       break;
     }
   }
 
-  double num = 0;
+  uint64_t num = 0;
   decoder >> num;
 
   this->token.numeric_value = num;

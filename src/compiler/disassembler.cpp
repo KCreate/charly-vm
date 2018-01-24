@@ -31,6 +31,8 @@
 #include "disassembler.h"
 
 namespace Charly::Compilation {
+
+// TODO: Show literals of nan-boxed values
 void Disassembler::dump(std::ostream& stream) {
   uint32_t offset = this->flags.start_offset;
 
@@ -75,10 +77,6 @@ void Disassembler::dump(std::ostream& stream) {
       }
       case Opcode::PutValue: {
         this->print_symbol(this->block->read<VALUE>(offset + 1), stream);
-        break;
-      }
-      case Opcode::PutFloat: {
-        this->print_value(this->block->read<double>(offset + 1), stream);
         break;
       }
       case Opcode::PutString: {

@@ -27,6 +27,7 @@
 #include <unordered_map>
 #include <vector>
 #include <cmath>
+#include <sstream>
 
 #include "defines.h"
 #include "common.h"
@@ -301,7 +302,6 @@ const uint64_t kITypeIString      = 0x0007000000000000;
 
 // Shorthand values
 const uint64_t kBitsNaN           = kMaskExponentBits | kMaskQuietBit;
-const double kNaN                 = BITCAST_DOUBLE(kMaskExponentBits | kMaskQuietBit);
 const uint64_t kFalse             = kBitsNaN | kITypeFalse;
 const uint64_t kTrue              = kBitsNaN | kITypeTrue;
 const uint64_t kNull              = kBitsNaN | kITypeNull;
@@ -326,14 +326,10 @@ const uint64_t kMaskIStringLength = 0x0000ff0000000000;
 const int64_t kMaxInt             = (static_cast<int64_t>(1) << 47) - 1;
 const int64_t kMaxUInt            = (static_cast<int64_t>(1) << 48) - 1;
 const int64_t kMinInt             = -(static_cast<int64_t>(1) << 47);
-const void* kMaxPointer           = reinterpret_cast<void*>((static_cast<int64_t>(1) << 48) - 1);
+void* const kMaxPointer           = reinterpret_cast<void*>((static_cast<int64_t>(1) << 48) - 1);
 const uint64_t kSignBlock         = 0xFFFF000000000000;
 
 // Type casting functions
-
-template <typename T>
-__attribute__((always_inline))
-VALUE charly_as_value(T ptr)                          { return reinterpret_cast<VALUE>(ptr); }
 template <typename T>
 __attribute__((always_inline))
 T* charly_as_pointer_to(VALUE value)                  { return reinterpret_cast<T*>(value & kMaskPointer); }
@@ -562,6 +558,9 @@ inline double charly_number_to_double(VALUE value)   {
 // is being destroyed once the function exits.
 __attribute__((always_inline))
 inline char* charly_string_data(VALUE& value) {
+  if (charly_is_hstring(value)) {
+    return charly_as_hstring(value)->data();
+  }
 
   // If this machine is little endian, the buffer is already conventiently layed out at the
   // beginning of the value
@@ -573,10 +572,6 @@ inline char* charly_string_data(VALUE& value) {
     } else if (charly_is_istring(value)) {
       return reinterpret_cast<char*>(&value) + 3;
     }
-  }
-
-  if (charly_is_hstring(value)) {
-    return charly_as_hstring(value)->data();
   }
 
   return nullptr;
@@ -641,14 +636,14 @@ inline double charly_string_to_double(VALUE value) {
   // doesn't fit inside a double value
   // In this case we just return NAN
   if (interpreted == HUGE_VAL) {
-    return kNaN;
+    return NAN;
   }
 
   // If strtod could not perform a conversion it returns 0
   // and sets str_end to str
   // We just return NAN in this case
   if (buffer_end == buffer) {
-    return kNaN;
+    return NAN;
   }
 
   return interpreted;
@@ -686,7 +681,7 @@ inline VALUE charly_value_to_number(VALUE value) {
   if (charly_is_null(value)) return charly_create_integer(0);
   if (charly_is_symbol(value)) return charly_create_integer(0);
   if (charly_is_string(value)) return charly_string_to_double(value);
-  return charly_create_double(kNaN);
+  return charly_create_double(NAN);
 }
 __attribute__((always_inline))
 inline int64_t charly_value_to_int64(VALUE value) {
@@ -750,9 +745,15 @@ inline VALUE charly_create_number(int8_t value)   { return charly_create_integer
 __attribute__((always_inline))
 inline VALUE charly_create_number(uint8_t value)  { return charly_create_integer(value); }
 __attribute__((always_inline))
-inline VALUE charly_create_number(double value)   { return charly_create_double(value); }
+inline VALUE charly_create_number(double value)   {
+  double intpart;
+  if (modf(value, &intpart) == 0.0 && value <= kMaxInt && value >= kMinInt) {
+    return charly_create_integer((int64_t)value);
+  }
+  return charly_create_double(value);
+}
 __attribute__((always_inline))
-inline VALUE charly_create_number(float value)    { return charly_create_double(value); }
+inline VALUE charly_create_number(float value)    { return charly_create_number((double)value); }
 
 // Binary arithmetic methods
 //
@@ -894,7 +895,7 @@ inline VALUE charly_ubnot_number(VALUE value) {
 }
 __attribute__((always_inline))
 inline bool charly_truthyness(VALUE value) {
-  if (value == kNaN) return false;
+  if (value == kBitsNaN) return false;
   if (value == kNull) return false;
   if (value == kFalse) return false;
   if (charly_is_int(value)) return charly_int_to_int64(value) != 0;
@@ -910,24 +911,25 @@ inline VALUE charly_create_symbol(const std::string& input) {
 }
 __attribute__((always_inline))
 inline VALUE charly_create_symbol(VALUE value) {
-  ValueType type = charly_get_type(value);
+  uint8_t type = charly_get_type(value);
   switch (type) {
     case kTypeString: {
       char* str_data = charly_string_data(value);
       uint32_t str_length = charly_string_length(value);
       return charly_create_symbol(std::string(str_data, str_length));
     }
-    case kTypeFloat: {
-      double val = charly_double_to_double(value);
-      std::stringstream io;
-      io << val;
-      return charly_create_symbol(io.str());
-    }
-    case kTypeInteger: {
-      int64_t val = charly_int_to_int64(value);
-      std::stringstream io;
-      io << val;
-      return charly_create_symbol(io.str());
+    case kTypeNumber: {
+      if (charly_is_float(value)) {
+        double val = charly_double_to_double(value);
+        std::stringstream io;
+        io << val;
+        return charly_create_symbol(io.str());
+      } else {
+        int64_t val = charly_int_to_int64(value);
+        std::stringstream io;
+        io << val;
+        return charly_create_symbol(io.str());
+      }
     }
     default: {
       return charly_create_symbol(charly_get_typestring(type));
@@ -967,9 +969,8 @@ VALUE charly_create_istring(char const (& input)[N]) {
   return val;
 }
 
-template <>
 __attribute__((always_inline))
-VALUE charly_create_istring(char const (& input)[7]) {
+inline VALUE charly_create_istring(char const (& input)[7]) {
   VALUE val = kSignaturePString;
   char* buf = (char*)&val;
 
@@ -993,11 +994,66 @@ VALUE charly_create_istring(char const (& input)[7]) {
   return val;
 }
 
+// Create an istring from data pointed to by ptr
+//
+// Returns kNull if the string doesn't fit into the immediate encoded format
+inline VALUE charly_create_istring(const char* ptr, uint8_t length) {
+  if (length == 6) {
+    // Construct packed string if we have exactly 6 bytes of data
+    VALUE val = kSignaturePString;
+    char* buf = (char*)&val;
+
+    // Copy the string buffer
+    if (IS_BIG_ENDIAN()) {
+      buf[2] = ptr[0];
+      buf[3] = ptr[1];
+      buf[4] = ptr[2];
+      buf[5] = ptr[3];
+      buf[6] = ptr[4];
+      buf[7] = ptr[5];
+    } else {
+      buf[0] = ptr[0];
+      buf[1] = ptr[1];
+      buf[2] = ptr[2];
+      buf[3] = ptr[3];
+      buf[4] = ptr[4];
+      buf[5] = ptr[5];
+    }
+
+    return val;
+  } else if (length <= 5) {
+    // Construct string with length if we have 0-5 bytes of data
+    VALUE val = kSignatureIString;
+    char* buf = (char*)&val;
+
+    // Copy the string buffer
+    if (IS_BIG_ENDIAN()) {
+      if (length >= 1) buf[3] = ptr[0];
+      if (length >= 2) buf[4] = ptr[1];
+      if (length >= 3) buf[5] = ptr[2];
+      if (length >= 4) buf[6] = ptr[3];
+      if (length >= 5) buf[7] = ptr[4];
+      buf[2] = length;
+    } else {
+      if (length >= 1) buf[0] = ptr[0];
+      if (length >= 2) buf[1] = ptr[1];
+      if (length >= 3) buf[2] = ptr[2];
+      if (length >= 4) buf[3] = ptr[3];
+      if (length >= 5) buf[4] = ptr[4];
+      buf[5] = length;
+    }
+
+    return val;
+  } else {
+    return kNull;
+  }
+}
+
 // Create a VALUE from a ptr
 __attribute__((always_inline))
 inline VALUE charly_create_pointer(void* ptr) {
   if (ptr > kMaxPointer) return kSignaturePointer; // null pointer
-  return kSignaturePointer | (~kSignaturePointer & reinterpret_cast<int64_t>(ptr));
+  return kSignaturePointer | (kMaskPointer & reinterpret_cast<int64_t>(ptr));
 }
 
 // clang-format on

@@ -19,6 +19,20 @@ ignoreconst {
   }
   Charly.internals.set_primitive_object(Object);
 
+  Array = class Object {
+    func each(cb) {
+      let i = 0
+
+      while i < @length {
+        cb(self[i], i, self)
+        i += 1
+      }
+
+      self
+    }
+  }
+  Charly.internals.set_primitive_array(Array);
+
   Number = class Number {
     func times(cb) {
       let i = 0

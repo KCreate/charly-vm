@@ -35,9 +35,23 @@ while (i < iterations) {
     container.obj.method()
   }
 
-  unless (container.obj.num ! 3) {
+  const k1 = "obj"
+  const k2 = "num"
+  if (container[k1][k2] == 3) {
     container.obj.method()
   }
+
+  unless (container[k1][k2] == 3) {
+    container.obj.method()
+  }
+
+  const someobj = { num: 0 }
+  const k3 = "num"
+  someobj[k3] += 1
+  someobj[k3] += 1
+  someobj[k3] += 1
+
+  const arguments_copy = [$0, $1, $2, $3, $4, $5, $6]
 
   let someclass_repetitions = 0
   const someclass = class SomeClass extends class Base {
