@@ -211,6 +211,10 @@ public:
   void op_readmembersymbol(VALUE symbol);
   void op_readmembervalue();
   void op_readarrayindex(uint32_t index);
+  void op_setlocalpush(uint32_t index, uint32_t level);
+  void op_setmembersymbolpush(VALUE symbol);
+  void op_setmembervaluepush();
+  void op_setarrayindexpush(uint32_t index);
   void op_setlocal(uint32_t index, uint32_t level);
   void op_setmembersymbol(VALUE symbol);
   void op_setmembervalue();

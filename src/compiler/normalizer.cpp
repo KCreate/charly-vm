@@ -64,6 +64,13 @@ AST::AbstractNode* Normalizer::visit_block(AST::Block* node, VisitContinue) {
         if (AST::is_control_statement(normalized_node)) {
           append_to_block = false;
         }
+
+        if (AST::is_assignment(normalized_node)) {
+          if (normalized_node->assignment_info != nullptr) {
+            delete normalized_node->assignment_info;
+          }
+          normalized_node->assignment_info = new IRAssignmentInfo(false);
+        }
       } else {
         delete normalized_node;
       }
@@ -308,6 +315,36 @@ AST::AbstractNode* Normalizer::visit_switch(AST::Switch* node, VisitContinue con
     switch_node->block = this->wrap_in_block(switch_node->block, cont);
   }
 
+  return node;
+}
+
+AST::AbstractNode* Normalizer::visit_assignment(AST::Assignment* node, VisitContinue cont) {
+  cont();
+  node->assignment_info = new IRAssignmentInfo(true);
+  return node;
+}
+
+AST::AbstractNode* Normalizer::visit_memberassignment(AST::MemberAssignment* node, VisitContinue cont) {
+  cont();
+  node->assignment_info = new IRAssignmentInfo(true);
+  return node;
+}
+
+AST::AbstractNode* Normalizer::visit_indexassignment(AST::IndexAssignment* node, VisitContinue cont) {
+  cont();
+  node->assignment_info = new IRAssignmentInfo(true);
+  return node;
+}
+
+AST::AbstractNode* Normalizer::visit_andmemberassignment(AST::ANDMemberAssignment* node, VisitContinue cont) {
+  cont();
+  node->assignment_info = new IRAssignmentInfo(true);
+  return node;
+}
+
+AST::AbstractNode* Normalizer::visit_andindexassignment(AST::ANDIndexAssignment* node, VisitContinue cont) {
+  cont();
+  node->assignment_info = new IRAssignmentInfo(true);
   return node;
 }
 

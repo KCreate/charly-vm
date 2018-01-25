@@ -33,7 +33,7 @@
 namespace Charly {
 // An opcode identifies a single instruction the machine can perform
 // Opcodes can have arguments
-const uint32_t kOpcodeCount = 54;
+const uint32_t kOpcodeCount = 58;
 enum Opcode : uint8_t {
 
   // Do nothing
@@ -84,7 +84,7 @@ enum Opcode : uint8_t {
   //
   // stack:
   // - value
-  SetLocal,
+  SetLocalPush,
 
   // Pop value and write to symbol of identifier
   //
@@ -94,7 +94,7 @@ enum Opcode : uint8_t {
   // stack:
   // - identifier
   // - value
-  SetMemberSymbol,
+  SetMemberSymbolPush,
 
   // Pop value and write to member of identifier
   //
@@ -102,7 +102,7 @@ enum Opcode : uint8_t {
   // - identifier
   // - member
   // - value
-  SetMemberValue,
+  SetMemberValuePush,
 
   // Sets the value at a given index inside an array
   // The value popped from the stack needs to be an array, else this instruction does nothing
@@ -115,6 +115,37 @@ enum Opcode : uint8_t {
   // stack:
   // - array
   // - value
+  SetArrayIndexPush,
+
+  // Same as the SetLocalPush instruction, except it doesn't push the value onto the stack
+  //
+  // args:
+  // - index
+  // - level
+  //
+  // stack:
+  // - value
+  SetLocal,
+
+  // Same as the SetMemberSymbolPush instruction, except it doesn't push the value onto the stack
+  //
+  // args:
+  // - symbol
+  //
+  // stack:
+  // - identifier
+  // - value
+  SetMemberSymbol,
+
+  // Same as the SetMemberValuePush instruction, except it doesn't push the value onto the stack
+  //
+  // stack:
+  // - identifier
+  // - member
+  // - value
+  SetMemberValue,
+
+  // Same as the SetArrayIndexPush instruction, except it doesn't push the value onto the stack
   SetArrayIndex,
 
   // Put the self value of a specified frame onto the stack
@@ -321,60 +352,64 @@ enum Opcode : uint8_t {
 // clang-format off
 // Constant lengths of all instructions
 static constexpr uint32_t kInstructionLengths[]{
-  /* Nop */                1,
-  /* ReadLocal */          1 + sizeof(uint32_t) + sizeof(uint32_t),
-  /* ReadMemberSymbol */   1 + sizeof(VALUE),
-  /* ReadMemberValue */    1,
-  /* ReadArrayIndex */     1 + sizeof(uint32_t),
-  /* SetLocal */           1 + sizeof(uint32_t) + sizeof(uint32_t),
-  /* SetMemberSymbol */    1 + sizeof(VALUE),
-  /* SetMemberValue */     1,
-  /* SetArrayIndex */      1 + sizeof(uint32_t),
-  /* PutSelf */            1 + sizeof(uint32_t),
-  /* PutValue */           1 + sizeof(VALUE),
-  /* PutString */          1 + sizeof(uint32_t) + sizeof(uint32_t),
-  /* PutFunction */        1 + sizeof(VALUE) + sizeof(int32_t) + sizeof(bool) + sizeof(uint32_t) + sizeof(uint32_t),
-  /* PutCFunction */       1 + sizeof(VALUE) + sizeof(uintptr_t) + sizeof(uint32_t),
-  /* PutArray */           1 + sizeof(uint32_t),
-  /* PutHash */            1 + sizeof(uint32_t),
-  /* PutClass */           1 + sizeof(VALUE) + sizeof(uint32_t) * 4 + sizeof(bool) + sizeof(bool),
-  /* Pop */                1,
-  /* Dup */                1,
-  /* Dupn */               1 + sizeof(uint32_t),
-  /* Swap */               1,
-  /* Call */               1 + sizeof(uint32_t),
-  /* CallMember */         1 + sizeof(uint32_t),
-  /* Return */             1,
-  /* Throw */              1,
-  /* RegisterCatchTable */ 1 + sizeof(int32_t),
-  /* PopCatchTable */      1,
-  /* Branch */             1 + sizeof(uint32_t),
-  /* BranchIf */           1 + sizeof(uint32_t),
-  /* BranchUnless */       1 + sizeof(uint32_t),
-  /* Add, */               1,
-  /* Sub, */               1,
-  /* Mul, */               1,
-  /* Div, */               1,
-  /* Mod, */               1,
-  /* Pow, */               1,
-  /* Eq, */                1,
-  /* Neq, */               1,
-  /* Lt, */                1,
-  /* Gt, */                1,
-  /* Le, */                1,
-  /* Ge, */                1,
-  /* Shr, */               1,
-  /* Shl, */               1,
-  /* And, */               1,
-  /* Or, */                1,
-  /* Xor, */               1,
-  /* UAdd */               1,
-  /* USub */               1,
-  /* UNot */               1,
-  /* UBNot */              1,
-  /* Halt */               1,
-  /* GCCollect */          1,
-  /* Typeof */             1
+  /* Nop */                   1,
+  /* ReadLocal */             1 + sizeof(uint32_t) + sizeof(uint32_t),
+  /* ReadMemberSymbol */      1 + sizeof(VALUE),
+  /* ReadMemberValue */       1,
+  /* ReadArrayIndex */        1 + sizeof(uint32_t),
+  /* SetLocalPush */          1 + sizeof(uint32_t) + sizeof(uint32_t),
+  /* SetMemberSymbolPush */   1 + sizeof(VALUE),
+  /* SetMemberValuePush */    1,
+  /* SetArrayIndexPush */     1 + sizeof(uint32_t),
+  /* SetLocal */              1 + sizeof(uint32_t) + sizeof(uint32_t),
+  /* SetMemberSymbol */       1 + sizeof(VALUE),
+  /* SetMemberValue */        1,
+  /* SetArrayIndex */         1 + sizeof(uint32_t),
+  /* PutSelf */               1 + sizeof(uint32_t),
+  /* PutValue */              1 + sizeof(VALUE),
+  /* PutString */             1 + sizeof(uint32_t) + sizeof(uint32_t),
+  /* PutFunction */           1 + sizeof(VALUE) + sizeof(int32_t) + sizeof(bool) + sizeof(uint32_t) + sizeof(uint32_t),
+  /* PutCFunction */          1 + sizeof(VALUE) + sizeof(uintptr_t) + sizeof(uint32_t),
+  /* PutArray */              1 + sizeof(uint32_t),
+  /* PutHash */               1 + sizeof(uint32_t),
+  /* PutClass */              1 + sizeof(VALUE) + sizeof(uint32_t) * 4 + sizeof(bool) + sizeof(bool),
+  /* Pop */                   1,
+  /* Dup */                   1,
+  /* Dupn */                  1 + sizeof(uint32_t),
+  /* Swap */                  1,
+  /* Call */                  1 + sizeof(uint32_t),
+  /* CallMember */            1 + sizeof(uint32_t),
+  /* Return */                1,
+  /* Throw */                 1,
+  /* RegisterCatchTable */    1 + sizeof(int32_t),
+  /* PopCatchTable */         1,
+  /* Branch */                1 + sizeof(uint32_t),
+  /* BranchIf */              1 + sizeof(uint32_t),
+  /* BranchUnless */          1 + sizeof(uint32_t),
+  /* Add, */                  1,
+  /* Sub, */                  1,
+  /* Mul, */                  1,
+  /* Div, */                  1,
+  /* Mod, */                  1,
+  /* Pow, */                  1,
+  /* Eq, */                   1,
+  /* Neq, */                  1,
+  /* Lt, */                   1,
+  /* Gt, */                   1,
+  /* Le, */                   1,
+  /* Ge, */                   1,
+  /* Shr, */                  1,
+  /* Shl, */                  1,
+  /* And, */                  1,
+  /* Or, */                   1,
+  /* Xor, */                  1,
+  /* UAdd */                  1,
+  /* USub */                  1,
+  /* UNot */                  1,
+  /* UBNot */                 1,
+  /* Halt */                  1,
+  /* GCCollect */             1,
+  /* Typeof */                1
 };
 
 // String representations of instruction opcodes
@@ -384,6 +419,10 @@ static std::string kOpcodeMnemonics[]{
   "readmembersymbol",
   "readmembervalue",
   "readarrayindex",
+  "setlocalpush",
+  "setmembersymbolpush",
+  "setmembervaluepush",
+  "setarrayindexpush",
   "setlocal",
   "setmembersymbol",
   "setmembervalue",

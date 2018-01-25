@@ -103,6 +103,10 @@ std::optional<CompilerResult> CompilerManager::compile(const std::string& filena
       }
 
       this->err_stream << severity << ": " << message.message << '\n';
+
+      if (message.node.has_value()) {
+        message.node.value()->dump(this->err_stream);
+      }
     }
 
     if (compiler_result.has_errors) {

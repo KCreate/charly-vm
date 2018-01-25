@@ -54,7 +54,14 @@ AST::AbstractNode* CodeGenerator::visit_block(AST::Block* node, VisitContinue) {
 
     // If the statement produces an expression, pop it off the stack now
     if (AST::yields_value(node)) {
-      this->assembler.write_pop();
+      if (AST::is_assignment(node)) {
+        if (node->assignment_info == nullptr) {
+          this->push_fatal_error(node, "Missing assignment info for assignment codegen");
+        }
+        if (node->assignment_info->assignment_value_required) {
+          this->assembler.write_pop();
+        }
+      }
     }
   }
 
@@ -377,29 +384,47 @@ AST::AbstractNode* CodeGenerator::visit_typeof(AST::Typeof* node, VisitContinue 
 }
 
 AST::AbstractNode* CodeGenerator::visit_assignment(AST::Assignment* node, VisitContinue cont) {
-  // Check if we have the offset info for this identifier
   if (node->offset_info == nullptr) {
     this->push_fatal_error(node, "Missing offset info for assignment codegen");
+  }
+  if (node->assignment_info == nullptr) {
+    this->push_fatal_error(node, "Missing assignment info for assignment codegen");
   }
 
   // Codegen assignment
   cont();
-  this->assembler.write_setlocal(node->offset_info->index, node->offset_info->level);
+
+  if (node->assignment_info->assignment_value_required) {
+    this->assembler.write_setlocalpush(node->offset_info->index, node->offset_info->level);
+  } else {
+    this->assembler.write_setlocal(node->offset_info->index, node->offset_info->level);
+  }
 
   return node;
 }
 
 AST::AbstractNode* CodeGenerator::visit_memberassignment(AST::MemberAssignment* node, VisitContinue) {
+  if (node->assignment_info == nullptr) {
+    this->push_fatal_error(node, "Missing assignment info for assignment codegen");
+  }
 
   // Codegen assignment
   this->visit_node(node->target);
   this->visit_node(node->expression);
-  this->assembler.write_setmembersymbol(this->context.symtable(node->member));
+
+  if (node->assignment_info->assignment_value_required) {
+    this->assembler.write_setmembersymbolpush(this->context.symtable(node->member));
+  } else {
+    this->assembler.write_setmembersymbol(this->context.symtable(node->member));
+  }
 
   return node;
 }
 
 AST::AbstractNode* CodeGenerator::visit_andmemberassignment(AST::ANDMemberAssignment* node, VisitContinue) {
+  if (node->assignment_info == nullptr) {
+    this->push_fatal_error(node, "Missing assignment info for assignment codegen");
+  }
 
   // Codegen assignment
   this->visit_node(node->target);
@@ -407,23 +432,40 @@ AST::AbstractNode* CodeGenerator::visit_andmemberassignment(AST::ANDMemberAssign
   this->assembler.write_readmembersymbol(this->context.symtable(node->member));
   this->visit_node(node->expression);
   this->assembler.write_operator(kOperatorOpcodeMapping[node->operator_type]);
-  this->assembler.write_setmembersymbol(this->context.symtable(node->member));
+
+  if (node->assignment_info->assignment_value_required) {
+    this->assembler.write_setmembersymbolpush(this->context.symtable(node->member));
+  } else {
+    this->assembler.write_setmembersymbol(this->context.symtable(node->member));
+  }
 
   return node;
 }
 
 AST::AbstractNode* CodeGenerator::visit_indexassignment(AST::IndexAssignment* node, VisitContinue) {
+  if (node->assignment_info == nullptr) {
+    this->push_fatal_error(node, "Missing assignment info for assignment codegen");
+  }
 
   // Codegen assignment
   this->visit_node(node->target);
   this->visit_node(node->index);
   this->visit_node(node->expression);
-  this->assembler.write_setmembervalue();
+
+  if (node->assignment_info->assignment_value_required) {
+    this->assembler.write_setmembervaluepush();
+  } else {
+    this->assembler.write_setmembervalue();
+  }
 
   return node;
 }
 
 AST::AbstractNode* CodeGenerator::visit_andindexassignment(AST::ANDIndexAssignment* node, VisitContinue) {
+  if (node->assignment_info == nullptr) {
+    this->push_fatal_error(node, "Missing assignment info for assignment codegen");
+  }
+
   this->visit_node(node->target);
   this->visit_node(node->index);
   this->assembler.write_dupn(2);
@@ -431,6 +473,12 @@ AST::AbstractNode* CodeGenerator::visit_andindexassignment(AST::ANDIndexAssignme
   this->visit_node(node->expression);
   this->assembler.write_operator(kOperatorOpcodeMapping[node->operator_type]);
   this->assembler.write_setmembervalue();
+
+  if (node->assignment_info->assignment_value_required) {
+    this->assembler.write_setmembervaluepush();
+  } else {
+    this->assembler.write_setmembervalue();
+  }
 
   return node;
 }

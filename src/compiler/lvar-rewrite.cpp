@@ -108,6 +108,7 @@ AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisat
   AST::Assignment* initialisation = new AST::Assignment(node->name, node->expression);
   initialisation->at(node);
   initialisation->offset_info = new IRVarOffsetInfo({0, record.frame_index});
+  initialisation->assignment_info = new IRAssignmentInfo(false);
 
   // Deallocate the old localinitialisation node
   node->expression = nullptr;

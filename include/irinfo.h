@@ -88,4 +88,12 @@ struct IRKnownSelfVars {
   }
 };
 
+// Contains information about this value on the stack
+struct IRAssignmentInfo {
+  bool assignment_value_required = true;
+
+  IRAssignmentInfo(bool avr) : assignment_value_required(avr) {
+  }
+};
+
 }  // namespace Charly::Compilation

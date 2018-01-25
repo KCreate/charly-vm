@@ -46,6 +46,11 @@ public:
   AST::AbstractNode* visit_binary(AST::Binary* node, VisitContinue cont);
   AST::AbstractNode* visit_unary(AST::Unary* node, VisitContinue cont);
   AST::AbstractNode* visit_switch(AST::Switch* node, VisitContinue cont);
+  AST::AbstractNode* visit_assignment(AST::Assignment* node, VisitContinue cont);
+  AST::AbstractNode* visit_memberassignment(AST::MemberAssignment* node, VisitContinue cont);
+  AST::AbstractNode* visit_indexassignment(AST::IndexAssignment* node, VisitContinue cont);
+  AST::AbstractNode* visit_andmemberassignment(AST::ANDMemberAssignment* node, VisitContinue cont);
+  AST::AbstractNode* visit_andindexassignment(AST::ANDIndexAssignment* node, VisitContinue cont);
   AST::AbstractNode* visit_function(AST::Function* node, VisitContinue cont);
   AST::AbstractNode* visit_class(AST::Class* node, VisitContinue cont);
   AST::AbstractNode* visit_localinitialisation(AST::LocalInitialisation* node, VisitContinue cont);

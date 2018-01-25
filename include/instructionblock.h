@@ -78,6 +78,26 @@ public:
     this->write(index);
   }
 
+  inline void write_setlocalpush(uint32_t index, uint32_t level) {
+    this->write(Opcode::SetLocalPush);
+    this->write(index);
+    this->write(level);
+  }
+
+  inline void write_setmembersymbolpush(VALUE symbol) {
+    this->write(Opcode::SetMemberSymbolPush);
+    this->write(symbol);
+  }
+
+  inline void write_setmembervaluepush() {
+    this->write(Opcode::SetMemberValuePush);
+  }
+
+  inline void write_setarrayindexpush(uint32_t index) {
+    this->write(Opcode::SetArrayIndexPush);
+    this->write(index);
+  }
+
   inline void write_putself(uint32_t level) {
     this->write(Opcode::PutSelf);
     this->write(level);

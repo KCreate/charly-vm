@@ -1171,7 +1171,7 @@ void VM::op_readarrayindex(uint32_t index) {
   this->push_stack((*arr->data)[index]);
 }
 
-void VM::op_setlocal(uint32_t index, uint32_t level) {
+void VM::op_setlocalpush(uint32_t index, uint32_t level) {
   VALUE value = this->pop_stack();
 
   // Travel to the correct frame
@@ -1194,17 +1194,73 @@ void VM::op_setlocal(uint32_t index, uint32_t level) {
   this->push_stack(value);
 }
 
-void VM::op_setmembersymbol(VALUE symbol) {
+void VM::op_setmembersymbolpush(VALUE symbol) {
   VALUE value = this->pop_stack();
   VALUE target = this->pop_stack();
   this->push_stack(this->setmembersymbol(target, symbol, value));
+}
+
+void VM::op_setmembervaluepush() {
+  VALUE value = this->pop_stack();
+  VALUE member_value = this->pop_stack();
+  VALUE target = this->pop_stack();
+  this->push_stack(this->setmembervalue(target, member_value, value));
+}
+
+void VM::op_setarrayindexpush(uint32_t index) {
+  VALUE expression = this->pop_stack();
+  VALUE stackval = this->pop_stack();
+
+  // Check if we popped an array, if not push it back onto the stack
+  if (!charly_is_array(stackval)) {
+    this->push_stack(stackval);
+    return;
+  }
+
+  Array* arr = charly_as_array(stackval);
+
+  // Out-of-bounds checking
+  if (index >= arr->data->size()) {
+    this->push_stack(kNull);
+  }
+
+  (*arr->data)[index] = expression;
+
+  this->push_stack(stackval);
+}
+
+void VM::op_setlocal(uint32_t index, uint32_t level) {
+  VALUE value = this->pop_stack();
+
+  // Travel to the correct frame
+  Frame* frame = this->frames;
+  while (level--) {
+    if (!frame->parent_environment_frame) {
+      return this->panic(Status::WriteFailedTooDeep);
+    }
+
+    frame = frame->parent_environment_frame;
+  }
+
+  // Check if the index isn't out-of-bounds
+  if (index < frame->environment->size()) {
+    (*frame->environment)[index] = value;
+  } else {
+    this->panic(Status::WriteFailedOutOfBounds);
+  }
+}
+
+void VM::op_setmembersymbol(VALUE symbol) {
+  VALUE value = this->pop_stack();
+  VALUE target = this->pop_stack();
+  this->setmembersymbol(target, symbol, value);
 }
 
 void VM::op_setmembervalue() {
   VALUE value = this->pop_stack();
   VALUE member_value = this->pop_stack();
   VALUE target = this->pop_stack();
-  this->push_stack(this->setmembervalue(target, member_value, value));
+  this->setmembervalue(target, member_value, value);
 }
 
 void VM::op_setarrayindex(uint32_t index) {
@@ -1225,8 +1281,6 @@ void VM::op_setarrayindex(uint32_t index) {
   }
 
   (*arr->data)[index] = expression;
-
-  this->push_stack(stackval);
 }
 
 void VM::op_putself(uint32_t level) {
@@ -1869,6 +1923,30 @@ void VM::run() {
       case Opcode::ReadArrayIndex: {
         uint32_t index = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
         this->op_readarrayindex(index);
+        break;
+      }
+
+      case Opcode::SetLocalPush: {
+        uint32_t index = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+        uint32_t level = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(uint32_t));
+        this->op_setlocalpush(index, level);
+        break;
+      }
+
+      case Opcode::SetMemberSymbolPush: {
+        VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
+        this->op_setmembersymbolpush(symbol);
+        break;
+      }
+
+      case Opcode::SetMemberValuePush: {
+        this->op_setmembervaluepush();
+        break;
+      }
+
+      case Opcode::SetArrayIndexPush: {
+        uint32_t index = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+        this->op_setarrayindexpush(index);
         break;
       }
 

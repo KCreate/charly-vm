@@ -38,7 +38,7 @@
 #pragma once
 
 namespace Charly::Compilation::AST {
-static const std::string kPaddingCharacters = "  ";
+const std::string kPaddingCharacters = "  ";
 
 struct AbstractNode;
 typedef std::function<AbstractNode*(AbstractNode*)> VisitFunc;
@@ -48,6 +48,10 @@ struct AbstractNode {
 public:
   std::optional<Location> location_start;
   std::optional<Location> location_end;
+
+  IRVarOffsetInfo* offset_info = nullptr;
+  IRAssignmentInfo* assignment_info = nullptr;
+  IRKnownSelfVars* known_self_vars = nullptr;
 
   virtual ~AbstractNode() = default;
 
@@ -690,22 +694,15 @@ struct Assignment : public AbstractNode {
   std::string target;
   AbstractNode* expression;
 
-  IRVarOffsetInfo* offset_info = nullptr;
-
   Assignment(const std::string& t, AbstractNode* e) : target(t), expression(e) {
   }
 
   inline ~Assignment() {
     delete expression;
-    if (offset_info != nullptr)
-      delete offset_info;
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- Assignment: " << this->target;
-    if (this->offset_info != nullptr) {
-      stream << ' ' << '[' << this->offset_info->level << ", " << this->offset_info->index << ']';
-    }
     stream << '\n';
 
     this->expression->dump(stream, depth + 1);
@@ -920,21 +917,12 @@ struct StackValue : public AbstractNode {
 // <name>
 struct Identifier : public AbstractNode {
   std::string name;
-  IRVarOffsetInfo* offset_info = nullptr;
 
   Identifier(const std::string& str) : name(str) {
   }
 
-  inline ~Identifier() {
-    if (offset_info != nullptr)
-      delete offset_info;
-  }
-
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- Identifier: " << this->name;
-    if (this->offset_info != nullptr) {
-      stream << ' ' << '[' << this->offset_info->level << ", " << this->offset_info->index << ']';
-    }
     stream << '\n';
   }
 };
@@ -1151,7 +1139,6 @@ struct Function : public AbstractNode {
   bool anonymous;
 
   uint32_t lvarcount = 0;
-  IRKnownSelfVars* known_self_vars = nullptr;
 
   Function(const std::string& n, const std::vector<std::string>& p, AbstractNode* b, bool a)
       : name(n), parameters(p), body(b), anonymous(a) {
@@ -1162,9 +1149,6 @@ struct Function : public AbstractNode {
 
   inline ~Function() {
     delete body;
-    if (known_self_vars != nullptr) {
-      delete known_self_vars;
-    }
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
@@ -1188,24 +1172,6 @@ struct Function : public AbstractNode {
       i++;
     }
     stream << ')' << " lvarcount=" << this->lvarcount;
-
-    if (this->known_self_vars != nullptr) {
-      stream << " known_self_vars=(";
-
-      int known_vars_count = this->known_self_vars->names.size();
-      int i = 0;
-      for (auto& known_var : this->known_self_vars->names) {
-        stream << known_var;
-
-        if (i != known_vars_count - 1) {
-          stream << ", ";
-        }
-
-        i++;
-      }
-      stream << ')';
-    }
-
     stream << '\n';
 
     this->body->dump(stream, depth + 1);
@@ -1298,24 +1264,17 @@ struct LocalInitialisation : public AbstractNode {
   AbstractNode* expression;
   bool constant;
 
-  IRVarOffsetInfo* offset_info = nullptr;
-
   LocalInitialisation(const std::string& n, AbstractNode* e, bool c) : name(n), expression(e), constant(c) {
   }
 
   inline ~LocalInitialisation() {
     delete expression;
-    if (offset_info != nullptr)
-      delete offset_info;
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
     stream << std::string(depth, ' ') << "- LocalInitialisation:";
     stream << ' ' << this->name;
     stream << ' ' << (this->constant ? "constant" : "");
-    if (this->offset_info != nullptr) {
-      stream << '[' << this->offset_info->level << ", " << this->offset_info->index << ']';
-    }
     stream << '\n';
     this->expression->dump(stream, depth + 1);
   }
@@ -1424,78 +1383,78 @@ struct TryCatch : public AbstractNode {
 };
 
 // Precomputed typeid hashes for all AST nodes
-static const size_t kTypeEmpty = typeid(Empty).hash_code();
-static const size_t kTypeNodeList = typeid(NodeList).hash_code();
-static const size_t kTypeBlock = typeid(Block).hash_code();
-static const size_t kTypePushStack = typeid(PushStack).hash_code();
-static const size_t kTypeTernaryIf = typeid(TernaryIf).hash_code();
-static const size_t kTypeIf = typeid(If).hash_code();
-static const size_t kTypeIfElse = typeid(IfElse).hash_code();
-static const size_t kTypeUnless = typeid(Unless).hash_code();
-static const size_t kTypeUnlessElse = typeid(UnlessElse).hash_code();
-static const size_t kTypeGuard = typeid(Guard).hash_code();
-static const size_t kTypeWhile = typeid(While).hash_code();
-static const size_t kTypeUntil = typeid(Until).hash_code();
-static const size_t kTypeLoop = typeid(Loop).hash_code();
-static const size_t kTypeUnary = typeid(Unary).hash_code();
-static const size_t kTypeBinary = typeid(Binary).hash_code();
-static const size_t kTypeSwitchNode = typeid(SwitchNode).hash_code();
-static const size_t kTypeSwitch = typeid(Switch).hash_code();
-static const size_t kTypeAnd = typeid(And).hash_code();
-static const size_t kTypeOr = typeid(Or).hash_code();
-static const size_t kTypeTypeof = typeid(Typeof).hash_code();
-static const size_t kTypeAssignment = typeid(Assignment).hash_code();
-static const size_t kTypeMemberAssignment = typeid(MemberAssignment).hash_code();
-static const size_t kTypeANDMemberAssignment = typeid(ANDMemberAssignment).hash_code();
-static const size_t kTypeIndexAssignment = typeid(IndexAssignment).hash_code();
-static const size_t kTypeANDIndexAssignment = typeid(ANDIndexAssignment).hash_code();
-static const size_t kTypeCall = typeid(Call).hash_code();
-static const size_t kTypeCallMember = typeid(CallMember).hash_code();
-static const size_t kTypeCallIndex = typeid(CallIndex).hash_code();
-static const size_t kTypeStackValue = typeid(StackValue).hash_code();
-static const size_t kTypeIdentifier = typeid(Identifier).hash_code();
-static const size_t kTypeIndexIntoArguments = typeid(IndexIntoArguments).hash_code();
-static const size_t kTypeSelf = typeid(Self).hash_code();
-static const size_t kTypeMember = typeid(Member).hash_code();
-static const size_t kTypeIndex = typeid(Index).hash_code();
-static const size_t kTypeNull = typeid(Null).hash_code();
-static const size_t kTypeNan = typeid(Nan).hash_code();
-static const size_t kTypeString = typeid(String).hash_code();
-static const size_t kTypeNumber = typeid(Number).hash_code();
-static const size_t kTypeBoolean = typeid(Boolean).hash_code();
-static const size_t kTypeArray = typeid(Array).hash_code();
-static const size_t kTypeHash = typeid(Hash).hash_code();
-static const size_t kTypeFunction = typeid(Function).hash_code();
-static const size_t kTypePropertyDeclaration = typeid(PropertyDeclaration).hash_code();
-static const size_t kTypeClass = typeid(Class).hash_code();
-static const size_t kTypeLocalInitialisation = typeid(LocalInitialisation).hash_code();
-static const size_t kTypeReturn = typeid(Return).hash_code();
-static const size_t kTypeThrow = typeid(Throw).hash_code();
-static const size_t kTypeBreak = typeid(Break).hash_code();
-static const size_t kTypeContinue = typeid(Continue).hash_code();
-static const size_t kTypeTryCatch = typeid(TryCatch).hash_code();
+const size_t kTypeEmpty = typeid(Empty).hash_code();
+const size_t kTypeNodeList = typeid(NodeList).hash_code();
+const size_t kTypeBlock = typeid(Block).hash_code();
+const size_t kTypePushStack = typeid(PushStack).hash_code();
+const size_t kTypeTernaryIf = typeid(TernaryIf).hash_code();
+const size_t kTypeIf = typeid(If).hash_code();
+const size_t kTypeIfElse = typeid(IfElse).hash_code();
+const size_t kTypeUnless = typeid(Unless).hash_code();
+const size_t kTypeUnlessElse = typeid(UnlessElse).hash_code();
+const size_t kTypeGuard = typeid(Guard).hash_code();
+const size_t kTypeWhile = typeid(While).hash_code();
+const size_t kTypeUntil = typeid(Until).hash_code();
+const size_t kTypeLoop = typeid(Loop).hash_code();
+const size_t kTypeUnary = typeid(Unary).hash_code();
+const size_t kTypeBinary = typeid(Binary).hash_code();
+const size_t kTypeSwitchNode = typeid(SwitchNode).hash_code();
+const size_t kTypeSwitch = typeid(Switch).hash_code();
+const size_t kTypeAnd = typeid(And).hash_code();
+const size_t kTypeOr = typeid(Or).hash_code();
+const size_t kTypeTypeof = typeid(Typeof).hash_code();
+const size_t kTypeAssignment = typeid(Assignment).hash_code();
+const size_t kTypeMemberAssignment = typeid(MemberAssignment).hash_code();
+const size_t kTypeANDMemberAssignment = typeid(ANDMemberAssignment).hash_code();
+const size_t kTypeIndexAssignment = typeid(IndexAssignment).hash_code();
+const size_t kTypeANDIndexAssignment = typeid(ANDIndexAssignment).hash_code();
+const size_t kTypeCall = typeid(Call).hash_code();
+const size_t kTypeCallMember = typeid(CallMember).hash_code();
+const size_t kTypeCallIndex = typeid(CallIndex).hash_code();
+const size_t kTypeStackValue = typeid(StackValue).hash_code();
+const size_t kTypeIdentifier = typeid(Identifier).hash_code();
+const size_t kTypeIndexIntoArguments = typeid(IndexIntoArguments).hash_code();
+const size_t kTypeSelf = typeid(Self).hash_code();
+const size_t kTypeMember = typeid(Member).hash_code();
+const size_t kTypeIndex = typeid(Index).hash_code();
+const size_t kTypeNull = typeid(Null).hash_code();
+const size_t kTypeNan = typeid(Nan).hash_code();
+const size_t kTypeString = typeid(String).hash_code();
+const size_t kTypeNumber = typeid(Number).hash_code();
+const size_t kTypeBoolean = typeid(Boolean).hash_code();
+const size_t kTypeArray = typeid(Array).hash_code();
+const size_t kTypeHash = typeid(Hash).hash_code();
+const size_t kTypeFunction = typeid(Function).hash_code();
+const size_t kTypePropertyDeclaration = typeid(PropertyDeclaration).hash_code();
+const size_t kTypeClass = typeid(Class).hash_code();
+const size_t kTypeLocalInitialisation = typeid(LocalInitialisation).hash_code();
+const size_t kTypeReturn = typeid(Return).hash_code();
+const size_t kTypeThrow = typeid(Throw).hash_code();
+const size_t kTypeBreak = typeid(Break).hash_code();
+const size_t kTypeContinue = typeid(Continue).hash_code();
+const size_t kTypeTryCatch = typeid(TryCatch).hash_code();
 
 // Casts node to a given type without checking for errors
 template <class T>
-static inline T* cast(AbstractNode* node) {
+T* cast(AbstractNode* node) {
   return reinterpret_cast<T*>(node);
 }
 
 // Checks wether a given node is a control statement
-static inline bool is_control_statement(AbstractNode* node) {
+inline bool is_control_statement(AbstractNode* node) {
   return (node->type() == kTypeReturn || node->type() == kTypeBreak || node->type() == kTypeContinue ||
           node->type() == kTypeThrow);
 }
 
 // Checks wether a given node is a literal that can be safely removed from a block
-static inline bool is_literal(AbstractNode* node) {
+inline bool is_literal(AbstractNode* node) {
   return (node->type() == kTypeIdentifier || node->type() == kTypeIndexIntoArguments || node->type() == kTypeSelf ||
           node->type() == kTypeNull || node->type() == kTypeNan || node->type() == kTypeString ||
           node->type() == kTypeNumber || node->type() == kTypeBoolean || node->type() == kTypeFunction);
 }
 
 // Checks wether a given node yields a value
-static inline bool yields_value(AbstractNode* node) {
+inline bool yields_value(AbstractNode* node) {
   return (node->type() == kTypeTernaryIf || node->type() == kTypeUnary || node->type() == kTypeBinary ||
           node->type() == kTypeAnd || node->type() == kTypeOr || node->type() == kTypeTypeof ||
           node->type() == kTypeAssignment || node->type() == kTypeMemberAssignment ||
@@ -1507,5 +1466,12 @@ static inline bool yields_value(AbstractNode* node) {
           node->type() == kTypeString || node->type() == kTypeNumber || node->type() == kTypeBoolean ||
           node->type() == kTypeArray || node->type() == kTypeHash || node->type() == kTypeFunction ||
           node->type() == kTypeClass);
+}
+
+// Checks wether a given node is an assignment
+inline bool is_assignment(AbstractNode* node) {
+  return (node->type() == kTypeAssignment || node->type() == kTypeMemberAssignment ||
+          node->type() == kTypeANDMemberAssignment || node->type() == kTypeIndexAssignment ||
+          node->type() == kTypeANDIndexAssignment);
 }
 }  // namespace Charly::Compilation::AST

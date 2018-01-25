@@ -1,7 +1,7 @@
-print($0)
-print($1)
-print($2)
+let a = 25
+let b = 25
+let c = a + b
 
-$0.foo = "hello world"
-
-print(export)
+if c < 100 {
+  print("c is smaller than 100")
+}

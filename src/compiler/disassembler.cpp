@@ -56,17 +56,20 @@ void Disassembler::dump(std::ostream& stream) {
 
     switch (opcode) {
       case Opcode::ReadLocal:
+      case Opcode::SetLocalPush:
       case Opcode::SetLocal: {
         stream << this->block->read<uint32_t>(offset + 1) << ", "
                << this->block->read<uint32_t>(offset + 1 + sizeof(uint32_t));
         break;
       }
       case Opcode::ReadMemberSymbol:
+      case Opcode::SetMemberSymbolPush:
       case Opcode::SetMemberSymbol: {
         this->print_symbol(this->block->read<VALUE>(offset + 1), stream);
         break;
       }
       case Opcode::ReadArrayIndex:
+      case Opcode::SetArrayIndexPush:
       case Opcode::SetArrayIndex: {
         stream << this->block->read<uint32_t>(offset + 1);
         break;
