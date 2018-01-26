@@ -660,6 +660,13 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
 
       break;
     }
+    case kTypeString: {
+      if (symbol == charly_create_symbol("length")) {
+        return charly_create_integer(charly_string_utf8_length(source));
+      }
+
+      break;
+    }
   }
 
   // At this point, the symbol was not found in the container of the source
@@ -721,34 +728,7 @@ VALUE VM::readmembervalue(VALUE source, VALUE value) {
     case kTypeString: {
       if (charly_is_number(value)) {
         int32_t index = charly_number_to_int32(value);
-        int32_t str_length = charly_string_length(source);
-
-        // Negative indices read from the end of the string
-        if (index < 0) {
-          index += str_length;
-        }
-
-        // Altough strings are utf8 encoded and byte_index != cp_index
-        // we can still check if the index is bigger than the source length
-        // because a utf8 codepoint is at least 1 byte
-        //
-        // We perform a check for codepoint index later on
-        if (index < 0 || index >= str_length) {
-          return kNull;
-        }
-
-        // Calculate the index of the codepoint
-        char* str_data = charly_string_data(source);
-        char* start_iterator = str_data;
-        while (index--) {
-          if (start_iterator >= str_data + str_length) {
-            return kNull;
-          }
-
-          utf8::advance(start_iterator, 1, str_data + str_length);
-        }
-
-        return this->create_string(start_iterator, 1);
+        return charly_string_cp_at_index(source, index);
       } else {
         return this->readmembersymbol(source, charly_create_symbol(value));
       }
@@ -1632,6 +1612,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << "\"";
       io.write(charly_string_data(value), charly_string_length(value));
       io << "\"";
+      io << " ";
+      io << charly_string_length(value);
 
       if (charly_is_on_heap(value)) {
         if (charly_as_basic(value)->shortstring) {

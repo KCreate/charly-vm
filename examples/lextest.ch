@@ -1,7 +1,8 @@
-let a = 25
-let b = 25
-let c = a + b
+const message = "hello öäü ∫Σ"
 
-if c < 100 {
-  print("c is smaller than 100")
+let i = 0
+
+while i < message.length {
+  print(message[i])
+  i += 1
 }

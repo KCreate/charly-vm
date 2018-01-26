@@ -29,6 +29,8 @@
 #include <cmath>
 #include <sstream>
 
+#include <utf8/utf8.h>
+
 #include "defines.h"
 #include "common.h"
 
@@ -600,6 +602,157 @@ inline uint32_t charly_string_length(VALUE value) {
   return 0xFFFFFFFF;
 }
 
+// Create immediate encoded strings of size 0 - 5
+//
+// Note: Because char* should always contain a null terminator at the end, we check for <= 6 bytes
+// instead of <= 5.
+template <size_t N>
+__attribute__((always_inline))
+VALUE charly_create_istring(char const (& input)[N]) {
+  static_assert(N <= 6, "charly_create_istring can only create strings of length <= 5 (excluding null-terminator)");
+
+  VALUE val = kSignatureIString;
+  char* buf = (char*)&val;
+
+  // Copy the string buffer
+  if (IS_BIG_ENDIAN()) {
+    if constexpr (N >= 1) buf[3] = input[0];
+    if constexpr (N >= 2) buf[4] = input[1];
+    if constexpr (N >= 3) buf[5] = input[2];
+    if constexpr (N >= 4) buf[6] = input[3];
+    if constexpr (N >= 5) buf[7] = input[4];
+    buf[2] = N - 1;
+  } else {
+    if constexpr (N >= 1) buf[0] = input[0];
+    if constexpr (N >= 2) buf[1] = input[1];
+    if constexpr (N >= 3) buf[2] = input[2];
+    if constexpr (N >= 4) buf[3] = input[3];
+    if constexpr (N >= 5) buf[4] = input[4];
+    buf[5] = N - 1;
+  }
+
+  return val;
+}
+
+__attribute__((always_inline))
+inline VALUE charly_create_istring(char const (& input)[7]) {
+  VALUE val = kSignaturePString;
+  char* buf = (char*)&val;
+
+  // Copy the string buffer
+  if (IS_BIG_ENDIAN()) {
+    buf[2] = input[0];
+    buf[3] = input[1];
+    buf[4] = input[2];
+    buf[5] = input[3];
+    buf[6] = input[4];
+    buf[7] = input[5];
+  } else {
+    buf[0] = input[0];
+    buf[1] = input[1];
+    buf[2] = input[2];
+    buf[3] = input[3];
+    buf[4] = input[4];
+    buf[5] = input[5];
+  }
+
+  return val;
+}
+
+// Create an istring from data pointed to by ptr
+//
+// Returns kNull if the string doesn't fit into the immediate encoded format
+inline VALUE charly_create_istring(const char* ptr, uint8_t length) {
+  if (length == 6) {
+    // Construct packed string if we have exactly 6 bytes of data
+    VALUE val = kSignaturePString;
+    char* buf = (char*)&val;
+
+    // Copy the string buffer
+    if (IS_BIG_ENDIAN()) {
+      buf[2] = ptr[0];
+      buf[3] = ptr[1];
+      buf[4] = ptr[2];
+      buf[5] = ptr[3];
+      buf[6] = ptr[4];
+      buf[7] = ptr[5];
+    } else {
+      buf[0] = ptr[0];
+      buf[1] = ptr[1];
+      buf[2] = ptr[2];
+      buf[3] = ptr[3];
+      buf[4] = ptr[4];
+      buf[5] = ptr[5];
+    }
+
+    return val;
+  } else if (length <= 5) {
+    // Construct string with length if we have 0-5 bytes of data
+    VALUE val = kSignatureIString;
+    char* buf = (char*)&val;
+
+    // Copy the string buffer
+    if (IS_BIG_ENDIAN()) {
+      if (length >= 1) buf[3] = ptr[0];
+      if (length >= 2) buf[4] = ptr[1];
+      if (length >= 3) buf[5] = ptr[2];
+      if (length >= 4) buf[6] = ptr[3];
+      if (length >= 5) buf[7] = ptr[4];
+      buf[2] = length;
+    } else {
+      if (length >= 1) buf[0] = ptr[0];
+      if (length >= 2) buf[1] = ptr[1];
+      if (length >= 3) buf[2] = ptr[2];
+      if (length >= 4) buf[3] = ptr[3];
+      if (length >= 5) buf[4] = ptr[4];
+      buf[5] = length;
+    }
+
+    return val;
+  } else {
+    return kNull;
+  }
+}
+
+// Get the amount of utf8 codepoints inside a string
+__attribute__((always_inline))
+inline uint32_t charly_string_utf8_length(VALUE value) {
+  uint32_t length = charly_string_length(value);
+  char* start = charly_string_data(value);
+  char* end = start + length;
+  return utf8::distance(start, end);
+}
+
+// Get the utf8 codepoint at a given index into the string
+// The index indexes over utf8 codepoints, not bytes
+//
+// Return value will be an immediate string
+// If the index is out-of-bounds, kNull will be returned
+inline VALUE charly_string_cp_at_index(VALUE value, int32_t index) {
+  uint32_t length = charly_string_length(value);
+  uint32_t utf8length = charly_string_utf8_length(value);
+  char* start = charly_string_data(value);
+  char* start_it = start;
+  char* end = start + length;
+
+  // Wrap negative index and do bounds check
+  if (index < 0) index += utf8length;
+  if (index < 0 || index >= static_cast<int32_t>(utf8length)) return kNull;
+
+  // Advance to our index
+  while (index--) {
+    if (start_it >= end) return kNull;
+    utf8::advance(start_it, 1, end);
+  }
+
+  // Calculate the length of current codepoint
+  char* cp_begin = start_it;
+  utf8::advance(start_it, 1, end);
+  uint32_t cp_length = start_it - cp_begin;
+
+  return charly_create_istring(cp_begin, cp_length);
+}
+
 // Convert a string to a int64
 __attribute__((always_inline))
 inline int64_t charly_string_to_int64(VALUE value) {
@@ -934,118 +1087,6 @@ inline VALUE charly_create_symbol(VALUE value) {
     default: {
       return charly_create_symbol(charly_get_typestring(type));
     }
-  }
-}
-
-// Create immediate encoded strings of size 0 - 5
-//
-// Note: Because char* should always contain a null terminator at the end, we check for <= 6 bytes
-// instead of <= 5.
-template <size_t N>
-__attribute__((always_inline))
-VALUE charly_create_istring(char const (& input)[N]) {
-  static_assert(N <= 6, "charly_create_istring can only create strings of length <= 5 (excluding null-terminator)");
-
-  VALUE val = kSignatureIString;
-  char* buf = (char*)&val;
-
-  // Copy the string buffer
-  if (IS_BIG_ENDIAN()) {
-    if constexpr (N >= 1) buf[3] = input[0];
-    if constexpr (N >= 2) buf[4] = input[1];
-    if constexpr (N >= 3) buf[5] = input[2];
-    if constexpr (N >= 4) buf[6] = input[3];
-    if constexpr (N >= 5) buf[7] = input[4];
-    buf[2] = N - 1;
-  } else {
-    if constexpr (N >= 1) buf[0] = input[0];
-    if constexpr (N >= 2) buf[1] = input[1];
-    if constexpr (N >= 3) buf[2] = input[2];
-    if constexpr (N >= 4) buf[3] = input[3];
-    if constexpr (N >= 5) buf[4] = input[4];
-    buf[5] = N - 1;
-  }
-
-  return val;
-}
-
-__attribute__((always_inline))
-inline VALUE charly_create_istring(char const (& input)[7]) {
-  VALUE val = kSignaturePString;
-  char* buf = (char*)&val;
-
-  // Copy the string buffer
-  if (IS_BIG_ENDIAN()) {
-    buf[2] = input[0];
-    buf[3] = input[1];
-    buf[4] = input[2];
-    buf[5] = input[3];
-    buf[6] = input[4];
-    buf[7] = input[5];
-  } else {
-    buf[0] = input[0];
-    buf[1] = input[1];
-    buf[2] = input[2];
-    buf[3] = input[3];
-    buf[4] = input[4];
-    buf[5] = input[5];
-  }
-
-  return val;
-}
-
-// Create an istring from data pointed to by ptr
-//
-// Returns kNull if the string doesn't fit into the immediate encoded format
-inline VALUE charly_create_istring(const char* ptr, uint8_t length) {
-  if (length == 6) {
-    // Construct packed string if we have exactly 6 bytes of data
-    VALUE val = kSignaturePString;
-    char* buf = (char*)&val;
-
-    // Copy the string buffer
-    if (IS_BIG_ENDIAN()) {
-      buf[2] = ptr[0];
-      buf[3] = ptr[1];
-      buf[4] = ptr[2];
-      buf[5] = ptr[3];
-      buf[6] = ptr[4];
-      buf[7] = ptr[5];
-    } else {
-      buf[0] = ptr[0];
-      buf[1] = ptr[1];
-      buf[2] = ptr[2];
-      buf[3] = ptr[3];
-      buf[4] = ptr[4];
-      buf[5] = ptr[5];
-    }
-
-    return val;
-  } else if (length <= 5) {
-    // Construct string with length if we have 0-5 bytes of data
-    VALUE val = kSignatureIString;
-    char* buf = (char*)&val;
-
-    // Copy the string buffer
-    if (IS_BIG_ENDIAN()) {
-      if (length >= 1) buf[3] = ptr[0];
-      if (length >= 2) buf[4] = ptr[1];
-      if (length >= 3) buf[5] = ptr[2];
-      if (length >= 4) buf[6] = ptr[3];
-      if (length >= 5) buf[7] = ptr[4];
-      buf[2] = length;
-    } else {
-      if (length >= 1) buf[0] = ptr[0];
-      if (length >= 2) buf[1] = ptr[1];
-      if (length >= 3) buf[2] = ptr[2];
-      if (length >= 4) buf[3] = ptr[3];
-      if (length >= 5) buf[4] = ptr[4];
-      buf[5] = length;
-    }
-
-    return val;
-  } else {
-    return kNull;
   }
 }
 
