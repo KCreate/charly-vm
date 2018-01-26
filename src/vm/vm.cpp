@@ -471,15 +471,21 @@ VALUE VM::eq(VALUE left, VALUE right) {
 
   if (charly_is_string(left) && charly_is_string(right)) {
     char* str_left_data = charly_string_data(left);
-    uint32_t str_left_length = charly_string_length(left);
     char* str_right_data = charly_string_data(right);
+
+    if (str_left_data == str_right_data) {
+      return kTrue;
+    }
+
+    uint32_t str_left_length = charly_string_length(left);
     uint32_t str_right_length = charly_string_length(right);
 
     if (str_left_length != str_right_length) {
       return kFalse;
     }
 
-    return std::strncmp(str_left_data, str_right_data, str_left_length) ? kTrue : kFalse;
+    // std::strncmp returns 0 if the two strings are equal
+    return std::strncmp(str_left_data, str_right_data, str_left_length) ? kFalse : kTrue;
   }
 
   return left == right ? kTrue : kFalse;
