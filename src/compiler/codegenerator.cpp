@@ -61,6 +61,8 @@ AST::AbstractNode* CodeGenerator::visit_block(AST::Block* node, VisitContinue) {
         if (node->assignment_info->assignment_value_required) {
           this->assembler.write_pop();
         }
+      } else {
+        this->assembler.write_pop();
       }
     }
   }
