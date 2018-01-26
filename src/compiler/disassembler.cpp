@@ -47,7 +47,7 @@ void Disassembler::dump(std::ostream& stream) {
 
     // Print the offset
     if (!this->flags.no_offsets) {
-      this->print_hex(reinterpret_cast<uint64_t>(this->block->get_data() + offset), stream, 12);
+      this->print_hex(offset, stream, 6);
       stream << ": ";
     }
 
@@ -152,7 +152,7 @@ void Disassembler::dump(std::ostream& stream) {
       case Opcode::Branch:
       case Opcode::BranchIf:
       case Opcode::BranchUnless: {
-        this->print_hex(offset + this->block->read<int32_t>(offset + 1), stream, 8);
+        this->print_hex(offset + this->block->read<int32_t>(offset + 1), stream, 6);
         break;
       }
       default: {
