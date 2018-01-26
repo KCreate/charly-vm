@@ -740,7 +740,6 @@ AST::AbstractNode* CodeGenerator::visit_trycatch(AST::TryCatch* node, VisitConti
   this->assembler.place_label(handler_label);
   if (node->handler_block->type() != AST::kTypeEmpty) {
     this->assembler.write_setlocal(node->exception_name->offset_info->index, node->exception_name->offset_info->level);
-    this->assembler.write_pop();
     this->visit_node(node->handler_block);
 
     // We don't emit a branch here because the end statement and finally block labels
@@ -752,7 +751,6 @@ AST::AbstractNode* CodeGenerator::visit_trycatch(AST::TryCatch* node, VisitConti
 
     // Store the exception
     this->assembler.write_setlocal(node->exception_name->offset_info->index, node->exception_name->offset_info->level);
-    this->assembler.write_pop();
     this->visit_node(node->finally_block);
     this->assembler.write_readlocal(node->exception_name->offset_info->index, node->exception_name->offset_info->level);
     this->assembler.write_throw();
