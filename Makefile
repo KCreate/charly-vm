@@ -14,8 +14,22 @@ HEADERS := $(shell find $(INCLUDEDIR) -type f -name *.$(HEADEREXT))
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/$(basename $(notdir %)),$(SOURCES:.$(SRCEXT)=.o))
 CPPSTD := c++17
-CFLAGS := -std=$(CPPSTD) -g -Wall -Wextra -Werror -Wno-unused-private-field -ferror-limit=50 -ffast-math
-CFLAGSPROD := -std=$(CPPSTD) -Wall -Wextra -Werror -Wno-unused-private-field -ferror-limit=1 -flto -ffast-math
+CFLAGS := -std=$(CPPSTD) \
+					-g \
+					-Wall \
+					-Wextra \
+					-Werror \
+					-Wno-unused-private-field \
+					-ferror-limit=50 \
+					-ffast-math
+CFLAGSPROD := -std=$(CPPSTD) \
+							-Wall \
+							-Wextra \
+							-Werror \
+							-Wno-unused-private-field \
+							-ferror-limit=1 \
+							-flto \
+							-ffast-math
 LFLAGS := -lm
 INC := -I libs -I $(INCLUDEDIR)
 LIB := -lstdc++
@@ -32,7 +46,7 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
 
 production:
 	$(call colorecho, " Building production binary $(TARGET)", 2)
-	$(CC) $(SOURCES) $(CFLAGSPROD) $(OPTPROD) $(INC) $(LIB) $(LFLAGS) -o $(TARGET)
+	@$(CC) $(SOURCES) $(CFLAGSPROD) $(OPTPROD) $(INC) $(LIB) $(LFLAGS) -o $(TARGET)
 
 profiledproduction:
 	$(call colorecho, " Building profiling production binary $(TARGET)", 2)

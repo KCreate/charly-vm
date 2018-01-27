@@ -218,20 +218,19 @@ VALUE VM::create_array(uint32_t initial_capacity) {
 }
 
 VALUE VM::create_string(const char* data, uint32_t length) {
-  if (length <= 6) return charly_create_istring(data, length);
+  if (length <= 6)
+    return charly_create_istring(data, length);
 
   // Check if we can create a short string
   MemoryCell* cell = this->gc.allocate();
   cell->basic.type = kTypeString;
 
   if (length <= kShortStringMaxSize) {
-
     // Copy the string into the cell itself
     cell->basic.shortstring = true;
     std::memcpy(cell->string.sbuf.data, data, length);
     cell->string.sbuf.length = length;
   } else {
-
     // Copy the string onto the heap
     char* copied_string = static_cast<char*>(calloc(sizeof(char), length));
     std::memcpy(copied_string, data, length);
@@ -739,9 +738,7 @@ VALUE VM::readmembervalue(VALUE source, VALUE value) {
         return this->readmembersymbol(source, charly_create_symbol(value));
       }
     }
-    default: {
-      return this->readmembersymbol(source, charly_create_symbol(value));
-    }
+    default: { return this->readmembersymbol(source, charly_create_symbol(value)); }
   }
 }
 
@@ -806,9 +803,7 @@ VALUE VM::setmembervalue(VALUE target, VALUE member_value, VALUE value) {
         return this->setmembersymbol(target, charly_create_symbol(member_value), value);
       }
     }
-    default: {
-      return this->setmembersymbol(target, charly_create_symbol(member_value), value);
-    }
+    default: { return this->setmembersymbol(target, charly_create_symbol(member_value), value); }
   }
 }
 
@@ -958,9 +953,7 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
       return;
     }
 
-    default: {
-      this->throw_exception("Attempted to call a non-callable type: " + charly_get_typestring(function));
-    }
+    default: { this->throw_exception("Attempted to call a non-callable type: " + charly_get_typestring(function)); }
   }
 }
 
@@ -991,7 +984,6 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   //
   // We add 1 to the index as that's the index of the arguments array
   for (size_t i = 0; i < argc; i++) {
-
     // The function only knows about function->argc arguments,
     // the rest is supplied via the first slot in the frames environment
     //
@@ -1859,10 +1851,12 @@ void VM::run() {
   // Execute instructions as long as we have a valid ip
   // and the machine wasn't halted
   while (this->ip && !this->halted) {
+#ifdef CHARLY_INSTRUCTION_PROFILE
     std::chrono::time_point<std::chrono::high_resolution_clock> exec_start;
     if (this->context.instruction_profile) {
       exec_start = std::chrono::high_resolution_clock::now();
     }
+#endif
 
     // Backup the current ip
     // After the instruction was executed we check if
@@ -1874,6 +1868,7 @@ void VM::run() {
     Opcode opcode = this->fetch_instruction();
     uint32_t instruction_length = kInstructionLengths[opcode];
 
+#ifdef CHARLY_TRACE_OPCODES
     // Show opcodes as they are executed if the corresponding flag was set
     if (this->context.trace_opcodes) {
       this->context.out_stream << std::setw(12);
@@ -1883,403 +1878,459 @@ void VM::run() {
       this->context.out_stream.fill(' ');
       this->context.out_stream << ": " << kOpcodeMnemonics[opcode] << '\n';
     }
+#endif
+
+    // Dispatch table used for the computed goto main interpreter switch
+    static void* OPCODE_DISPATCH_TABLE[] = {&&charly_main_switch_epilogue,
+                                            &&charly_main_switch_readlocal,
+                                            &&charly_main_switch_readmembersymbol,
+                                            &&charly_main_switch_readmembervalue,
+                                            &&charly_main_switch_readarrayindex,
+                                            &&charly_main_switch_setlocalpush,
+                                            &&charly_main_switch_setmembersymbolpush,
+                                            &&charly_main_switch_setmembervaluepush,
+                                            &&charly_main_switch_setarrayindexpush,
+                                            &&charly_main_switch_setlocal,
+                                            &&charly_main_switch_setmembersymbol,
+                                            &&charly_main_switch_setmembervalue,
+                                            &&charly_main_switch_setarrayindex,
+                                            &&charly_main_switch_putself,
+                                            &&charly_main_switch_putvalue,
+                                            &&charly_main_switch_putstring,
+                                            &&charly_main_switch_putfunction,
+                                            &&charly_main_switch_putcfunction,
+                                            &&charly_main_switch_putarray,
+                                            &&charly_main_switch_puthash,
+                                            &&charly_main_switch_putclass,
+                                            &&charly_main_switch_pop,
+                                            &&charly_main_switch_dup,
+                                            &&charly_main_switch_dupn,
+                                            &&charly_main_switch_swap,
+                                            &&charly_main_switch_call,
+                                            &&charly_main_switch_callmember,
+                                            &&charly_main_switch_return,
+                                            &&charly_main_switch_throw,
+                                            &&charly_main_switch_registercatchtable,
+                                            &&charly_main_switch_popcatchtable,
+                                            &&charly_main_switch_branch,
+                                            &&charly_main_switch_branchif,
+                                            &&charly_main_switch_branchunless,
+                                            &&charly_main_switch_add,
+                                            &&charly_main_switch_sub,
+                                            &&charly_main_switch_mul,
+                                            &&charly_main_switch_div,
+                                            &&charly_main_switch_mod,
+                                            &&charly_main_switch_pow,
+                                            &&charly_main_switch_eq,
+                                            &&charly_main_switch_neq,
+                                            &&charly_main_switch_lt,
+                                            &&charly_main_switch_gt,
+                                            &&charly_main_switch_le,
+                                            &&charly_main_switch_ge,
+                                            &&charly_main_switch_shr,
+                                            &&charly_main_switch_shl,
+                                            &&charly_main_switch_band,
+                                            &&charly_main_switch_bor,
+                                            &&charly_main_switch_bxor,
+                                            &&charly_main_switch_uadd,
+                                            &&charly_main_switch_usub,
+                                            &&charly_main_switch_unot,
+                                            &&charly_main_switch_ubnot,
+                                            &&charly_main_switch_halt,
+                                            &&charly_main_switch_gccollect,
+                                            &&charly_main_switch_typeof};
 
     // Redirect to specific instruction handler
-    switch (opcode) {
-      case Opcode::Nop: {
-        break;
-      }
-
-      case Opcode::ReadLocal: {
-        uint32_t index = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
-        uint32_t level = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(uint32_t));
-        this->op_readlocal(index, level);
-        break;
-      }
-
-      case Opcode::ReadMemberSymbol: {
-        VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
-        this->op_readmembersymbol(symbol);
-        break;
-      }
-
-      case Opcode::ReadMemberValue: {
-        this->op_readmembervalue();
-        break;
-      }
-
-      case Opcode::ReadArrayIndex: {
-        uint32_t index = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
-        this->op_readarrayindex(index);
-        break;
-      }
-
-      case Opcode::SetLocalPush: {
-        uint32_t index = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
-        uint32_t level = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(uint32_t));
-        this->op_setlocalpush(index, level);
-        break;
-      }
-
-      case Opcode::SetMemberSymbolPush: {
-        VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
-        this->op_setmembersymbolpush(symbol);
-        break;
-      }
-
-      case Opcode::SetMemberValuePush: {
-        this->op_setmembervaluepush();
-        break;
-      }
-
-      case Opcode::SetArrayIndexPush: {
-        uint32_t index = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
-        this->op_setarrayindexpush(index);
-        break;
-      }
-
-      case Opcode::SetLocal: {
-        uint32_t index = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
-        uint32_t level = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(uint32_t));
-        this->op_setlocal(index, level);
-        break;
-      }
-
-      case Opcode::SetMemberSymbol: {
-        VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
-        this->op_setmembersymbol(symbol);
-        break;
-      }
-
-      case Opcode::SetMemberValue: {
-        this->op_setmembervalue();
-        break;
-      }
-
-      case Opcode::SetArrayIndex: {
-        uint32_t index = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
-        this->op_setarrayindex(index);
-        break;
-      }
-
-      case Opcode::PutSelf: {
-        uint32_t level = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
-        this->op_putself(level);
-        break;
-      }
-
-      case Opcode::PutValue: {
-        VALUE value = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
-        this->op_putvalue(value);
-        break;
-      }
-
-      case Opcode::PutString: {
-        uint32_t offset = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
-        uint32_t length = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(uint32_t));
-
-        // We assume the compiler generated valid offsets and lengths, so we don't do
-        // any out-of-bounds checking here
-        // TODO: Should we do out-of-bounds checking here?
-        char* str_start = reinterpret_cast<char*>(this->context.stringpool.get_data() + offset);
-        this->op_putstring(str_start, length);
-
-        break;
-      }
-
-      case Opcode::PutFunction: {
-        VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
-        int32_t body_offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE));
-        bool anonymous = *reinterpret_cast<bool*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t));
-        uint32_t argc =
-            *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t) + sizeof(bool));
-        uint32_t lvarcount = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t) +
-                                                          sizeof(bool) + sizeof(uint32_t));
-
-        this->op_putfunction(symbol, this->ip + body_offset, anonymous, argc, lvarcount);
-        break;
-      }
-
-      case Opcode::PutCFunction: {
-        VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
-        uintptr_t pointer = *reinterpret_cast<uintptr_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE));
-        uint32_t argc = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(void*));
-        this->op_putcfunction(symbol, pointer, argc);
-        break;
-      }
-
-      case Opcode::PutArray: {
-        uint32_t count = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
-        this->op_putarray(count);
-        break;
-      }
-
-      case Opcode::PutHash: {
-        uint32_t size = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
-        this->op_puthash(size);
-        break;
-      }
-
-      case Opcode::PutClass: {
-        VALUE name = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
-        uint32_t propertycount = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode) + sizeof(VALUE));
-        uint32_t staticpropertycount =
-            *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(uint32_t));
-        uint32_t methodcount = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) +
-                                                            sizeof(uint32_t) + sizeof(uint32_t));
-        uint32_t staticmethodcount = *reinterpret_cast<uint32_t*>(
-            this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t));
-        bool has_parent_class = *reinterpret_cast<bool*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(uint32_t) +
-                                                         sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t));
-        bool has_constructor =
-            *reinterpret_cast<bool*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(uint32_t) + sizeof(uint32_t) +
-                                     sizeof(uint32_t) + sizeof(uint32_t) + sizeof(bool));
-        this->op_putclass(name, propertycount, staticpropertycount, methodcount, staticmethodcount, has_parent_class,
-                          has_constructor);
-        break;
-      }
-
-      case Opcode::Pop: {
-        this->op_pop();
-        break;
-      }
-
-      case Opcode::Dup: {
-        this->op_dup();
-        break;
-      }
-
-      case Opcode::Dupn: {
-        uint32_t count = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
-        this->op_dupn(count);
-        break;
-      }
-
-      case Opcode::Swap: {
-        this->op_swap();
-        break;
-      }
-
-      case Opcode::Call: {
-        uint32_t argc = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
-        this->op_call(argc);
-        break;
-      }
-
-      case Opcode::CallMember: {
-        uint32_t argc = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
-        this->op_callmember(argc);
-        break;
-      }
-
-      case Opcode::Return: {
-        this->op_return();
-        break;
-      }
-
-      case Opcode::Throw: {
-        this->op_throw();
-        break;
-      }
-
-      case Opcode::RegisterCatchTable: {
-        int32_t offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode));
-        this->op_registercatchtable(offset);
-        break;
-      }
-
-      case Opcode::PopCatchTable: {
-        this->op_popcatchtable();
-        break;
-      }
-
-      case Opcode::Branch: {
-        int32_t offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode));
-        this->op_branch(offset);
-        break;
-      }
-
-      case Opcode::BranchIf: {
-        int32_t offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode));
-        this->op_branchif(offset);
-        break;
-      }
-
-      case Opcode::BranchUnless: {
-        int32_t offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode));
-        this->op_branchunless(offset);
-        break;
-      }
-
-      case Opcode::Add: {
-        VALUE right = this->pop_stack();
-        VALUE left = this->pop_stack();
-        this->push_stack(this->add(left, right));
-        break;
-      }
-
-      case Opcode::Sub: {
-        VALUE right = this->pop_stack();
-        VALUE left = this->pop_stack();
-        this->push_stack(this->sub(left, right));
-        break;
-      }
-
-      case Opcode::Mul: {
-        VALUE right = this->pop_stack();
-        VALUE left = this->pop_stack();
-        this->push_stack(this->mul(left, right));
-        break;
-      }
-
-      case Opcode::Div: {
-        VALUE right = this->pop_stack();
-        VALUE left = this->pop_stack();
-        this->push_stack(this->div(left, right));
-        break;
-      }
-
-      case Opcode::Mod: {
-        VALUE right = this->pop_stack();
-        VALUE left = this->pop_stack();
-        this->push_stack(this->mod(left, right));
-        break;
-      }
-
-      case Opcode::Pow: {
-        VALUE right = this->pop_stack();
-        VALUE left = this->pop_stack();
-        this->push_stack(this->pow(left, right));
-        break;
-      }
-
-      case Opcode::UAdd: {
-        VALUE value = this->pop_stack();
-        this->push_stack(this->uadd(value));
-        break;
-      }
-
-      case Opcode::USub: {
-        VALUE value = this->pop_stack();
-        this->push_stack(this->usub(value));
-        break;
-      }
-
-      case Opcode::Eq: {
-        VALUE right = this->pop_stack();
-        VALUE left = this->pop_stack();
-        this->push_stack(this->eq(left, right));
-        break;
-      }
-
-      case Opcode::Neq: {
-        VALUE right = this->pop_stack();
-        VALUE left = this->pop_stack();
-        this->push_stack(this->neq(left, right));
-        break;
-      }
-
-      case Opcode::Lt: {
-        VALUE right = this->pop_stack();
-        VALUE left = this->pop_stack();
-        this->push_stack(this->lt(left, right));
-        break;
-      }
-
-      case Opcode::Gt: {
-        VALUE right = this->pop_stack();
-        VALUE left = this->pop_stack();
-        this->push_stack(this->gt(left, right));
-        break;
-      }
-
-      case Opcode::Le: {
-        VALUE right = this->pop_stack();
-        VALUE left = this->pop_stack();
-        this->push_stack(this->le(left, right));
-        break;
-      }
-
-      case Opcode::Ge: {
-        VALUE right = this->pop_stack();
-        VALUE left = this->pop_stack();
-        this->push_stack(this->ge(left, right));
-        break;
-      }
-
-      case Opcode::UNot: {
-        VALUE value = this->pop_stack();
-        this->push_stack(this->unot(value));
-        break;
-      }
-
-      case Opcode::Shr: {
-        VALUE right = this->pop_stack();
-        VALUE left = this->pop_stack();
-        this->push_stack(this->shr(left, right));
-        break;
-      }
-
-      case Opcode::Shl: {
-        VALUE right = this->pop_stack();
-        VALUE left = this->pop_stack();
-        this->push_stack(this->shl(left, right));
-        break;
-      }
-
-      case Opcode::And: {
-        VALUE right = this->pop_stack();
-        VALUE left = this->pop_stack();
-        this->push_stack(this->band(left, right));
-        break;
-      }
-
-      case Opcode::Or: {
-        VALUE right = this->pop_stack();
-        VALUE left = this->pop_stack();
-        this->push_stack(this->bor(left, right));
-        break;
-      }
-
-      case Opcode::Xor: {
-        VALUE right = this->pop_stack();
-        VALUE left = this->pop_stack();
-        this->push_stack(this->bxor(left, right));
-        break;
-      }
-
-      case Opcode::UBNot: {
-        VALUE value = this->pop_stack();
-        this->push_stack(this->ubnot(value));
-        break;
-      }
-
-      case Opcode::Halt: {
-        this->halted = true;
-        break;
-      }
-
-      case Opcode::GCCollect: {
-        this->gc.collect();
-        break;
-      }
-
-      case Opcode::Typeof: {
-        this->op_typeof();
-        break;
-      }
-
-      default: {
-        this->throw_exception("Unknown opcode: " + kOpcodeMnemonics[opcode]);
-        break;
-      }
+    goto* OPCODE_DISPATCH_TABLE[opcode];
+    {
+    charly_main_switch_readlocal : {
+      uint32_t index = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+      uint32_t level = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(uint32_t));
+      this->op_readlocal(index, level);
+      goto charly_main_switch_epilogue;
     }
+
+    charly_main_switch_readmembersymbol : {
+      VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
+      this->op_readmembersymbol(symbol);
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_readmembervalue : {
+      this->op_readmembervalue();
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_readarrayindex : {
+      uint32_t index = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+      this->op_readarrayindex(index);
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_setlocalpush : {
+      uint32_t index = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+      uint32_t level = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(uint32_t));
+      this->op_setlocalpush(index, level);
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_setmembersymbolpush : {
+      VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
+      this->op_setmembersymbolpush(symbol);
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_setmembervaluepush : {
+      this->op_setmembervaluepush();
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_setarrayindexpush : {
+      uint32_t index = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+      this->op_setarrayindexpush(index);
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_setlocal : {
+      uint32_t index = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+      uint32_t level = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(uint32_t));
+      this->op_setlocal(index, level);
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_setmembersymbol : {
+      VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
+      this->op_setmembersymbol(symbol);
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_setmembervalue : {
+      this->op_setmembervalue();
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_setarrayindex : {
+      uint32_t index = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+      this->op_setarrayindex(index);
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_putself : {
+      uint32_t level = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+      this->op_putself(level);
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_putvalue : {
+      VALUE value = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
+      this->op_putvalue(value);
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_putstring : {
+      uint32_t offset = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+      uint32_t length = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(uint32_t));
+
+      // We assume the compiler generated valid offsets and lengths, so we don't do
+      // any out-of-bounds checking here
+      // TODO: Should we do out-of-bounds checking here?
+      char* str_start = reinterpret_cast<char*>(this->context.stringpool.get_data() + offset);
+      this->op_putstring(str_start, length);
+
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_putfunction : {
+      VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
+      int32_t body_offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE));
+      bool anonymous = *reinterpret_cast<bool*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t));
+      uint32_t argc =
+          *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t) + sizeof(bool));
+      uint32_t lvarcount = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t) +
+                                                        sizeof(bool) + sizeof(uint32_t));
+
+      this->op_putfunction(symbol, this->ip + body_offset, anonymous, argc, lvarcount);
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_putcfunction : {
+      VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
+      uintptr_t pointer = *reinterpret_cast<uintptr_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE));
+      uint32_t argc = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(void*));
+      this->op_putcfunction(symbol, pointer, argc);
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_putarray : {
+      uint32_t count = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+      this->op_putarray(count);
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_puthash : {
+      uint32_t size = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+      this->op_puthash(size);
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_putclass : {
+      VALUE name = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
+      uint32_t propertycount = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode) + sizeof(VALUE));
+      uint32_t staticpropertycount =
+          *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(uint32_t));
+      uint32_t methodcount =
+          *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(uint32_t) + sizeof(uint32_t));
+      uint32_t staticmethodcount = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) +
+                                                                sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t));
+      bool has_parent_class = *reinterpret_cast<bool*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(uint32_t) +
+                                                       sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t));
+      bool has_constructor =
+          *reinterpret_cast<bool*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(uint32_t) + sizeof(uint32_t) +
+                                   sizeof(uint32_t) + sizeof(uint32_t) + sizeof(bool));
+      this->op_putclass(name, propertycount, staticpropertycount, methodcount, staticmethodcount, has_parent_class,
+                        has_constructor);
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_pop : {
+      this->op_pop();
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_dup : {
+      this->op_dup();
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_dupn : {
+      uint32_t count = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+      this->op_dupn(count);
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_swap : {
+      this->op_swap();
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_call : {
+      uint32_t argc = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+      this->op_call(argc);
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_callmember : {
+      uint32_t argc = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
+      this->op_callmember(argc);
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_return : {
+      this->op_return();
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_throw : {
+      this->op_throw();
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_registercatchtable : {
+      int32_t offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode));
+      this->op_registercatchtable(offset);
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_popcatchtable : {
+      this->op_popcatchtable();
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_branch : {
+      int32_t offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode));
+      this->op_branch(offset);
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_branchif : {
+      int32_t offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode));
+      this->op_branchif(offset);
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_branchunless : {
+      int32_t offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode));
+      this->op_branchunless(offset);
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_add : {
+      VALUE right = this->pop_stack();
+      VALUE left = this->pop_stack();
+      this->push_stack(this->add(left, right));
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_sub : {
+      VALUE right = this->pop_stack();
+      VALUE left = this->pop_stack();
+      this->push_stack(this->sub(left, right));
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_mul : {
+      VALUE right = this->pop_stack();
+      VALUE left = this->pop_stack();
+      this->push_stack(this->mul(left, right));
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_div : {
+      VALUE right = this->pop_stack();
+      VALUE left = this->pop_stack();
+      this->push_stack(this->div(left, right));
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_mod : {
+      VALUE right = this->pop_stack();
+      VALUE left = this->pop_stack();
+      this->push_stack(this->mod(left, right));
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_pow : {
+      VALUE right = this->pop_stack();
+      VALUE left = this->pop_stack();
+      this->push_stack(this->pow(left, right));
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_uadd : {
+      VALUE value = this->pop_stack();
+      this->push_stack(this->uadd(value));
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_usub : {
+      VALUE value = this->pop_stack();
+      this->push_stack(this->usub(value));
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_eq : {
+      VALUE right = this->pop_stack();
+      VALUE left = this->pop_stack();
+      this->push_stack(this->eq(left, right));
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_neq : {
+      VALUE right = this->pop_stack();
+      VALUE left = this->pop_stack();
+      this->push_stack(this->neq(left, right));
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_lt : {
+      VALUE right = this->pop_stack();
+      VALUE left = this->pop_stack();
+      this->push_stack(this->lt(left, right));
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_gt : {
+      VALUE right = this->pop_stack();
+      VALUE left = this->pop_stack();
+      this->push_stack(this->gt(left, right));
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_le : {
+      VALUE right = this->pop_stack();
+      VALUE left = this->pop_stack();
+      this->push_stack(this->le(left, right));
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_ge : {
+      VALUE right = this->pop_stack();
+      VALUE left = this->pop_stack();
+      this->push_stack(this->ge(left, right));
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_unot : {
+      VALUE value = this->pop_stack();
+      this->push_stack(this->unot(value));
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_shr : {
+      VALUE right = this->pop_stack();
+      VALUE left = this->pop_stack();
+      this->push_stack(this->shr(left, right));
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_shl : {
+      VALUE right = this->pop_stack();
+      VALUE left = this->pop_stack();
+      this->push_stack(this->shl(left, right));
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_band : {
+      VALUE right = this->pop_stack();
+      VALUE left = this->pop_stack();
+      this->push_stack(this->band(left, right));
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_bor : {
+      VALUE right = this->pop_stack();
+      VALUE left = this->pop_stack();
+      this->push_stack(this->bor(left, right));
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_bxor : {
+      VALUE right = this->pop_stack();
+      VALUE left = this->pop_stack();
+      this->push_stack(this->bxor(left, right));
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_ubnot : {
+      VALUE value = this->pop_stack();
+      this->push_stack(this->ubnot(value));
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_halt : {
+      this->halted = true;
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_gccollect : {
+      this->gc.collect();
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_typeof : {
+      this->op_typeof();
+      goto charly_main_switch_epilogue;
+    }
+    }
+
+  charly_main_switch_epilogue:
 
     // Increment ip if the instruction didn't change it
     if (this->ip == old_ip) {
       this->ip += instruction_length;
     }
 
+#ifdef CHARLY_INSTRUCTION_PROFILE
     // Add an entry to the instruction profile with the time it took to execute this instruction
     if (this->context.instruction_profile) {
       std::chrono::duration<double> exec_duration = std::chrono::high_resolution_clock::now() - exec_start;
@@ -2288,6 +2339,7 @@ void VM::run() {
         this->instruction_profile.add_entry(opcode, duration_in_nanoseconds);
       }
     }
+#endif
   }
 }
 
