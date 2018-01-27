@@ -266,6 +266,11 @@ void GarbageCollector::deallocate(MemoryCell* cell) {
       break;
     }
 
+    case kTypeFrame: {
+      cell->frame.clean();
+      break;
+    }
+
     default: { break; }
   }
 

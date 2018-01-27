@@ -167,6 +167,10 @@ struct Frame {
   VALUE self;
   uint8_t* return_address;
   bool halt_after_return;
+
+  void inline clean() {
+    delete this->environment;
+  }
 };
 
 // Catchtable used for exception handling
