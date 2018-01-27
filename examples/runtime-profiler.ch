@@ -47,6 +47,8 @@ while (i < iterations) {
 
   const someobj = { num: 0 }
   const k3 = "num"
+  ->{}(someobj[k3] = 100) // causes a setmembervaluepush instruction
+  someobj[k3] = 100 // causes a setmembervalue instruction
   someobj[k3] += 1
   someobj[k3] += 1
   someobj[k3] += 1
@@ -147,6 +149,7 @@ while (i < iterations) {
   func readarrayindex {
     const nums = [$0, $1, $2, $3, $4, $5]
   }
+  readarrayindex()
 
   // Check long and short string optimizations
   const strings = [
