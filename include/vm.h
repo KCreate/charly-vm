@@ -80,6 +80,7 @@ struct VMContext {
   bool trace_opcodes = false;
   bool trace_catchtables = false;
   bool trace_frames = false;
+  bool trace_gc = false;
 
   std::ostream& out_stream = std::cout;
   std::ostream& err_stream = std::cerr;
@@ -90,7 +91,15 @@ class VM {
   friend ManagedContext;
 
 public:
-  VM(VMContext& ctx) : context(ctx), gc(GarbageCollectorConfig{ .out_stream = ctx.out_stream, .err_stream = ctx.err_stream }), frames(nullptr), catchstack(nullptr), ip(nullptr), halted(false) {
+  VM(VMContext& ctx)
+      : context(ctx),
+        gc(GarbageCollectorConfig{.out_stream = ctx.out_stream,
+                                  .err_stream = ctx.err_stream,
+                                  .trace = ctx.trace_gc}),
+        frames(nullptr),
+        catchstack(nullptr),
+        ip(nullptr),
+        halted(false) {
     this->gc.mark_ptr_persistent(reinterpret_cast<void**>(&this->frames));
     this->gc.mark_ptr_persistent(reinterpret_cast<void**>(&this->catchstack));
     this->gc.mark_ptr_persistent(reinterpret_cast<void**>(&this->top_frame));

@@ -106,7 +106,8 @@ int CLI::run() {
                      .instruction_profile = this->flags.instruction_profile,
                      .trace_opcodes = this->flags.trace_opcodes,
                      .trace_catchtables = this->flags.trace_catchtables,
-                     .trace_frames = this->flags.trace_frames});
+                     .trace_frames = this->flags.trace_frames,
+                     .trace_gc = this->flags.trace_gc});
   VM vm(context);
   vm.exec_module(cresult_prelude->instructionblock.value());
   vm.pop_stack();
