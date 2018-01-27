@@ -48,7 +48,7 @@ void GarbageCollector::add_heap() {
 
 void GarbageCollector::grow_heap() {
   size_t heap_count = this->heaps.size();
-  size_t heaps_to_add = (heap_count * this->config.heap_growth_factor) - heap_count;
+  size_t heaps_to_add = (heap_count * this->config.heap_growth_factor + 1) - heap_count;
   while (heaps_to_add--)
     this->add_heap();
 }
@@ -203,9 +203,12 @@ void GarbageCollector::collect() {
 
   if (this->config.trace) {
     std::chrono::duration<double> gc_collect_duration = std::chrono::high_resolution_clock::now() - gc_start_time;
+    this->config.out_stream << std::fixed;
+    this->config.out_stream << std::setprecision(0);
     this->config.out_stream << "#-- GC: Freed " << (freed_cells_count * sizeof(MemoryCell)) << " bytes --#" << '\n';
     this->config.out_stream << "#-- GC: Finished in " << gc_collect_duration.count() * 1000000000 << " nanoseconds --#"
                             << '\n';
+    this->config.out_stream << std::setprecision(6);
   }
 }
 

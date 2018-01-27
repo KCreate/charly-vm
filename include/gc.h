@@ -65,8 +65,8 @@ struct MemoryCell {
 
 // Flagas for the memory manager
 struct GarbageCollectorConfig {
-  size_t initial_heap_count = 8;
-  size_t heap_cell_count = 512;
+  size_t initial_heap_count = 4;
+  size_t heap_cell_count = 1 << 16;
   float heap_growth_factor = 2;
 
   bool trace = false;
