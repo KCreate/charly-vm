@@ -30,6 +30,32 @@ ignoreconst {
 
       self
     }
+
+    func map(cb) {
+      let i = 0
+      const new_array = []
+
+      while i < @length {
+        new_array << cb(self[i], i, self)
+        i += 1
+      }
+
+      new_array
+    }
+
+    func filter(cb) {
+      let i = 0
+      const new_array = []
+
+      while i < @length {
+        const value = self[i]
+        const include = cb(value, i, self)
+        if include new_array << value
+        i += 1
+      }
+
+      new_array
+    }
   }
   Charly.internals.set_primitive_array(Array);
 

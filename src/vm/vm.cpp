@@ -1586,11 +1586,13 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeNumber: {
+      io << std::fixed;
       if (charly_is_int(value)) {
         io << charly_int_to_int64(value);
       } else {
         io << charly_double_to_double(value);
       }
+      io << std::scientific;
 
       break;
     }
