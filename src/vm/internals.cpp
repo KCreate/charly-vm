@@ -100,13 +100,26 @@ VALUE get_method(VM& vm, VALUE argument) {
 }
 
 VALUE write(VM& vm, VALUE value) {
+  if (charly_is_string(value)) {
+    vm.context.out_stream.write(charly_string_data(value), charly_string_length(value));
+    return kNull;
+  }
+
   vm.pretty_print(vm.context.out_stream, value);
+
   return kNull;
 }
 
 VALUE print(VM& vm, VALUE value) {
+  if (charly_is_string(value)) {
+    vm.context.out_stream.write(charly_string_data(value), charly_string_length(value));
+    vm.context.out_stream << '\n';
+    return kNull;
+  }
+
   vm.pretty_print(vm.context.out_stream, value);
   vm.context.out_stream << '\n';
+
   return kNull;
 }
 
