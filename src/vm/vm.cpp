@@ -1851,12 +1851,10 @@ void VM::run() {
   // Execute instructions as long as we have a valid ip
   // and the machine wasn't halted
   while (this->ip && !this->halted) {
-#ifdef CHARLY_INSTRUCTION_PROFILE
     std::chrono::time_point<std::chrono::high_resolution_clock> exec_start;
     if (this->context.instruction_profile) {
       exec_start = std::chrono::high_resolution_clock::now();
     }
-#endif
 
     // Backup the current ip
     // After the instruction was executed we check if
@@ -1868,7 +1866,6 @@ void VM::run() {
     Opcode opcode = this->fetch_instruction();
     uint32_t instruction_length = kInstructionLengths[opcode];
 
-#ifdef CHARLY_TRACE_OPCODES
     // Show opcodes as they are executed if the corresponding flag was set
     if (this->context.trace_opcodes) {
       this->context.out_stream << std::setw(12);
@@ -1878,7 +1875,6 @@ void VM::run() {
       this->context.out_stream.fill(' ');
       this->context.out_stream << ": " << kOpcodeMnemonics[opcode] << '\n';
     }
-#endif
 
     // Dispatch table used for the computed goto main interpreter switch
     static void* OPCODE_DISPATCH_TABLE[] = {&&charly_main_switch_epilogue,
@@ -2330,7 +2326,6 @@ void VM::run() {
       this->ip += instruction_length;
     }
 
-#ifdef CHARLY_INSTRUCTION_PROFILE
     // Add an entry to the instruction profile with the time it took to execute this instruction
     if (this->context.instruction_profile) {
       std::chrono::duration<double> exec_duration = std::chrono::high_resolution_clock::now() - exec_start;
@@ -2339,7 +2334,6 @@ void VM::run() {
         this->instruction_profile.add_entry(opcode, duration_in_nanoseconds);
       }
     }
-#endif
   }
 }
 
