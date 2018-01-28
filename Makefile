@@ -33,6 +33,7 @@ CFLAGSPROD := -std=$(CPPSTD) \
 LFLAGS := -lm
 INC := -I libs -I $(INCLUDEDIR)
 LIB := -lstdc++
+RUNTIME_PROFILER := examples/runtime-profiler.ch
 
 $(TARGET): $(OBJECTS)
 	$(call colorecho, " Linking...", 2)
@@ -52,7 +53,7 @@ profiledproduction:
 	$(call colorecho, " Building profiling production binary $(TARGET)", 2)
 	@$(CC) $(SOURCES) $(CFLAGSPROD) $(OPTPROD) $(INC) $(LIB) $(LFLAGS) -fprofile-instr-generate=default.profraw -o $(TARGET)
 	$(call colorecho, " Running runtime profiler", 2)
-	@$(TARGET) examples/runtime-profiler.ch
+	@$(TARGET) $(RUNTIME_PROFILER)
 	$(call colorecho, " Converting profile to clang format", 2)
 	@llvm-profdata merge -output=code.profdata default.profraw
 	$(call colorecho, " Building profile guided production binary", 2)
