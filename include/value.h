@@ -938,9 +938,6 @@ inline VALUE charly_mul_number(VALUE left, VALUE right) {
 }
 __attribute__((always_inline))
 inline VALUE charly_div_number(VALUE left, VALUE right) {
-  if (charly_is_int(left) && charly_is_int(right)) {
-    return charly_create_number(charly_int_to_int64(left) / charly_int_to_int64(right));
-  }
   return charly_create_number(charly_number_to_double(left) / charly_number_to_double(right));
 }
 __attribute__((always_inline))

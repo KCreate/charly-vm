@@ -1,19 +1,4 @@
-func foo {
-  const strings = []
+let a = 10
+let b = 3
 
-  1000000.times(->{
-    strings << "lorem ipsum dolor sit amet"
-  })
-
-  print("finished iteration")
-}
-
-foo()
-foo()
-foo()
-foo()
-foo()
-foo()
-foo()
-foo()
-foo()
+print(a / b)
