@@ -56,6 +56,18 @@ ignoreconst {
 
       new_array
     }
+
+    func reverse() {
+      let i = @length - 1
+      const new_array = []
+
+      while i >= 0 {
+        new_array << self[i]
+        i -= 1
+      }
+
+      new_array
+    }
   }
   Charly.internals.set_primitive_array(Array);
 

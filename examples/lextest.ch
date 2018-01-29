@@ -1,4 +1,5 @@
-let a = 10
-let b = 3
+const nums = [1, 2, 3, 4, 5, 6]
+const reverted_nums = nums.reverse()
 
-print(a / b)
+print(nums)
+print(reverted_nums)
