@@ -82,6 +82,7 @@ struct VMContext {
   bool trace_frames = false;
   bool trace_gc = false;
 
+  std::istream& in_stream = std::cin;
   std::ostream& out_stream = std::cout;
   std::ostream& err_stream = std::cerr;
 };

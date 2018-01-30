@@ -30,11 +30,18 @@
 
 namespace Charly {
 namespace Internals {
+
+// The signature of an internal method
+struct InternalMethodSignature {
+  std::string name;
+  size_t argc;
+  uintptr_t func_pointer;
+};
+
 VALUE require(VM& vm, VALUE filename);
 VALUE get_method(VM& vm, VALUE argument);
 VALUE write(VM& vm, VALUE value);
-VALUE print(VM& vm, VALUE value);
-
+VALUE getn(VM& vm);
 VALUE set_primitive_object(VM& vm, VALUE klass);
 VALUE set_primitive_class(VM& vm, VALUE klass);
 VALUE set_primitive_array(VM& vm, VALUE klass);

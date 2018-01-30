@@ -37,6 +37,27 @@ using namespace std;
 
 namespace Charly {
 namespace Internals {
+#define ID_TO_STRING(I) #I
+#define DEFINE_INTERNAL_METHOD(N, C)                                  \
+  {                                                                   \
+    ID_TO_STRING(N), {                                                \
+      ID_TO_STRING(N), C, reinterpret_cast<uintptr_t>(Internals::N)   \
+    }                                                                 \
+  }
+static std::unordered_map<std::string, InternalMethodSignature> kMethodSignatures = {
+  DEFINE_INTERNAL_METHOD(require, 1),
+  DEFINE_INTERNAL_METHOD(write, 1),
+  DEFINE_INTERNAL_METHOD(getn, 0),
+  DEFINE_INTERNAL_METHOD(set_primitive_object, 1),
+  DEFINE_INTERNAL_METHOD(set_primitive_class, 1),
+  DEFINE_INTERNAL_METHOD(set_primitive_array, 1),
+  DEFINE_INTERNAL_METHOD(set_primitive_string, 1),
+  DEFINE_INTERNAL_METHOD(set_primitive_number, 1),
+  DEFINE_INTERNAL_METHOD(set_primitive_function, 1),
+  DEFINE_INTERNAL_METHOD(set_primitive_boolean, 1),
+  DEFINE_INTERNAL_METHOD(set_primitive_null, 1)
+};
+
 VALUE require(VM& vm, VALUE vfilename) {
   // TODO: Deallocate stuff on error
 
@@ -78,22 +99,9 @@ VALUE get_method(VM& vm, VALUE argument) {
   uint32_t str_length = charly_string_length(argument);
   std::string methodname(str_data, str_length);
 
-  static std::unordered_map<std::string, uintptr_t> method_mapping = {
-      {"require", reinterpret_cast<uintptr_t>(Internals::require)},
-      {"write", reinterpret_cast<uintptr_t>(Internals::write)},
-      {"print", reinterpret_cast<uintptr_t>(Internals::print)},
-      {"set_primitive_object", reinterpret_cast<uintptr_t>(Internals::set_primitive_object)},
-      {"set_primitive_class", reinterpret_cast<uintptr_t>(Internals::set_primitive_class)},
-      {"set_primitive_array", reinterpret_cast<uintptr_t>(Internals::set_primitive_array)},
-      {"set_primitive_string", reinterpret_cast<uintptr_t>(Internals::set_primitive_string)},
-      {"set_primitive_number", reinterpret_cast<uintptr_t>(Internals::set_primitive_number)},
-      {"set_primitive_function", reinterpret_cast<uintptr_t>(Internals::set_primitive_function)},
-      {"set_primitive_boolean", reinterpret_cast<uintptr_t>(Internals::set_primitive_boolean)},
-      {"set_primitive_null", reinterpret_cast<uintptr_t>(Internals::set_primitive_null)}};
-
-  if (method_mapping.count(methodname) > 0) {
-    auto& mapping = method_mapping[methodname];
-    return vm.create_cfunction(vm.context.symtable(methodname), 1, mapping);
+  if (kMethodSignatures.count(methodname) > 0) {
+    auto& sig = kMethodSignatures[methodname];
+    return vm.create_cfunction(vm.context.symtable(sig.name), sig.argc, sig.func_pointer);
   }
 
   return kNull;
@@ -110,17 +118,10 @@ VALUE write(VM& vm, VALUE value) {
   return kNull;
 }
 
-VALUE print(VM& vm, VALUE value) {
-  if (charly_is_string(value)) {
-    vm.context.out_stream.write(charly_string_data(value), charly_string_length(value));
-    vm.context.out_stream << '\n';
-    return kNull;
-  }
-
-  vm.pretty_print(vm.context.out_stream, value);
-  vm.context.out_stream << '\n';
-
-  return kNull;
+VALUE getn(VM& vm) {
+  double num;
+  vm.context.in_stream >> num;
+  return charly_create_number(num);
 }
 
 VALUE set_primitive_object(VM& vm, VALUE value) {

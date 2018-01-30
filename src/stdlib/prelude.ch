@@ -1,23 +1,55 @@
 ignoreconst {
-  require = Charly.internals.get_method("require")
-  print = Charly.internals.get_method("print")
-  write = Charly.internals.get_method("write")
 
-  Charly.internals.set_primitive_object = Charly.internals.get_method("set_primitive_object")
-  Charly.internals.set_primitive_class = Charly.internals.get_method("set_primitive_class")
-  Charly.internals.set_primitive_array = Charly.internals.get_method("set_primitive_array")
-  Charly.internals.set_primitive_string = Charly.internals.get_method("set_primitive_string")
-  Charly.internals.set_primitive_number = Charly.internals.get_method("set_primitive_number")
-  Charly.internals.set_primitive_function = Charly.internals.get_method("set_primitive_function")
-  Charly.internals.set_primitive_boolean = Charly.internals.get_method("set_primitive_boolean")
-  Charly.internals.set_primitive_null = Charly.internals.get_method("set_primitive_null")
+  // Cache some internal methods
+  const __internal_get_method = Charly.internals.get_method
+  const __internal_write = __internal_get_method("write")
+  const __internal_getn = __internal_get_method("getn")
+
+  // Require a module
+  require = __internal_get_method("require")
+
+  // Write a value to stdout, without a trailing newline
+  write = ->{
+    arguments.each(__internal_write)
+    null
+  }
+
+  // Write a value to stdout, with a trailing newline
+  print = ->{
+    arguments.each(->(v) {
+      __internal_write(v)
+      __internal_write("\n")
+    })
+
+    null
+  }
+
+  // Setup io container of Charly object
+  Charly.io = {
+    write,
+    print,
+    getn: ->(msg) {
+      write(msg)
+      return __internal_getn()
+    }
+  }
+
+  // Method to modify the primitive objects
+  const set_primitive_object = Charly.internals.get_method("set_primitive_object")
+  const set_primitive_class = Charly.internals.get_method("set_primitive_class")
+  const set_primitive_array = Charly.internals.get_method("set_primitive_array")
+  const set_primitive_string = Charly.internals.get_method("set_primitive_string")
+  const set_primitive_number = Charly.internals.get_method("set_primitive_number")
+  const set_primitive_function = Charly.internals.get_method("set_primitive_function")
+  const set_primitive_boolean = Charly.internals.get_method("set_primitive_boolean")
+  const set_primitive_null = Charly.internals.get_method("set_primitive_null")
 
   Object = class Object {
     func tap(cb) {
       cb(self)
     }
   }
-  Charly.internals.set_primitive_object(Object);
+  set_primitive_object(Object);
 
   Array = class Object {
     func each(cb) {
@@ -69,7 +101,7 @@ ignoreconst {
       new_array
     }
   }
-  Charly.internals.set_primitive_array(Array);
+  set_primitive_array(Array);
 
   Number = class Number {
     func times(cb) {
@@ -83,5 +115,5 @@ ignoreconst {
       null
     }
   }
-  Charly.internals.set_primitive_number(Number);
+  set_primitive_number(Number);
 }
