@@ -65,6 +65,7 @@ switch a { default { a } }
 // Functions
 func { a }
 func (a) { a }
+func (a) = a
 func _myfunc1(a) { a }
 func _myfunc2(a) = a
 func _myfunc3(a) = return a

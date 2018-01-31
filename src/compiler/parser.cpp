@@ -1314,7 +1314,7 @@ AST::AbstractNode* Parser::parse_func() {
   this->keyword_context.continue_allowed = false;
   if (this->token.type == TokenType::LeftCurly) {
     body = this->parse_block();
-  } else if (has_symbol && this->token.type == TokenType::Assignment) {
+  } else if (this->token.type == TokenType::Assignment) {
     this->advance();
     body = this->parse_control_statement();
   } else {

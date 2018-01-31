@@ -1,8 +1,10 @@
-class Person {
-  property name
-  property age
-
-  func constructor(@name, @age) = null
+const Person = func (name, age) = {
+  name,
+  age,
+  talk: ->{
+    print("hello world")
+  }
 }
 
-print(Person("Leonard Schütz", 17))
+const leonard = Person("leonard", 17)
+leonard.talk()
