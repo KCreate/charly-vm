@@ -852,19 +852,7 @@ std::optional<VALUE> VM::findprimitivevalue(VALUE value, VALUE symbol) {
   }
 
   Class* pclass = charly_as_class(found_primitive_class);
-  result = this->findprototypevalue(pclass, symbol);
-
-  if (!result.has_value() && !charly_is_object(value)) {
-    found_primitive_class = this->primitive_object;
-    if (!charly_is_class(found_primitive_class)) {
-      return std::nullopt;
-    }
-
-    pclass = charly_as_class(found_primitive_class);
-    result = this->findprototypevalue(pclass, symbol);
-  }
-
-  return result;
+  return this->findprototypevalue(pclass, symbol);
 }
 
 void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {

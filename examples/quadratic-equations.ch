@@ -6,17 +6,13 @@ func count_solutions(a, b, c) {
   if tmp > 0 return 2
 }
 
-try {
-  loop {
-    const a = Charly.io.getn("a: ")
-    const b = Charly.io.getn("b: ")
-    const c = Charly.io.getn("c: ")
+loop {
+  const a = Charly.io.getn("a: ")
+  const b = Charly.io.getn("b: ")
+  const c = Charly.io.getn("c: ")
 
-    print(a, b, c)
+  print(a, b, c)
 
-    const solutions = count_solutions(a, b, c)
-    write("There are ", solutions, " solutions!", "\n")
-  }
-} catch(e) {
-  print(e)
+  const solutions = count_solutions(a, b, c)
+  write("There are ", solutions, " solutions!", "\n")
 }

@@ -44,14 +44,20 @@ ignoreconst {
   const set_primitive_boolean = Charly.internals.get_method("set_primitive_boolean")
   const set_primitive_null = Charly.internals.get_method("set_primitive_null")
 
-  Object = class Object {
+  class Value {
     func tap(cb) {
       cb(self)
     }
   }
-  set_primitive_object(Object);
 
-  Array = class Object {
+  Object = set_primitive_object(class Object extends Value {});
+  Class = set_primitive_class(class Class extends Value {});
+  String = set_primitive_string(class String extends Value {});
+  Function = set_primitive_function(class Function extends Value {});
+  Boolean = set_primitive_boolean(class Boolean extends Value {});
+  Null = set_primitive_null(class Null extends Value {});
+
+  Array = class Object extends Value {
     func each(cb) {
       let i = 0
 
@@ -103,7 +109,7 @@ ignoreconst {
   }
   set_primitive_array(Array);
 
-  Number = class Number {
+  Number = class Number extends Value {
     func times(cb) {
       let i = 0
 
