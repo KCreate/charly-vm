@@ -373,6 +373,11 @@ AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue
     }
   }
 
+  // Initialize member properties
+  for (auto& member_init : node->self_initialisations) {
+    body->prepend_node(new AST::MemberAssignment(new AST::Self(), member_init, new AST::Identifier(member_init)));
+  }
+
   cont();
   return node;
 }

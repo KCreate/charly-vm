@@ -164,6 +164,12 @@ class _class2 extends _class1 {}
 class extends _class2 {}
 class _class4 extends 1 + 1 {}
 class _class5 extends a() {}
+class _member_init {
+  property a
+  property b
+
+  func constructor(@a, @b) = null
+}
 class {
   property foo
   static property foo

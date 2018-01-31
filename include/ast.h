@@ -1135,16 +1135,17 @@ struct Hash : public AbstractNode {
 struct Function : public AbstractNode {
   std::string name;
   std::vector<std::string> parameters;
+  std::vector<std::string> self_initialisations;
   AbstractNode* body;
   bool anonymous;
 
   uint32_t lvarcount = 0;
 
-  Function(const std::string& n, const std::vector<std::string>& p, AbstractNode* b, bool a)
-      : name(n), parameters(p), body(b), anonymous(a) {
+  Function(const std::string& n, const std::vector<std::string>& p, const std::vector<std::string>& s, AbstractNode* b, bool a)
+      : name(n), parameters(p), self_initialisations(s), body(b), anonymous(a) {
   }
-  Function(const std::string& n, std::vector<std::string>&& p, AbstractNode* b, bool a)
-      : name(n), parameters(std::move(p)), body(b), anonymous(a) {
+  Function(const std::string& n, std::vector<std::string>&& p, const std::vector<std::string>& s, AbstractNode* b, bool a)
+      : name(n), parameters(std::move(p)), self_initialisations(std::move(s)), body(b), anonymous(a) {
   }
 
   inline ~Function() {
@@ -1237,7 +1238,7 @@ struct Class : public AbstractNode {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Class: " << this->name;
+    stream << std::string(depth, ' ') << "- Class: " << this->name << '\n';
     this->constructor->dump(stream, depth + 1);
     this->member_properties->dump(stream, depth + 1);
     this->member_functions->dump(stream, depth + 1);

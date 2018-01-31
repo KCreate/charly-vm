@@ -1279,16 +1279,25 @@ AST::AbstractNode* Parser::parse_func() {
   }
 
   std::vector<std::string> params;
+  std::vector<std::string> self_initialisations;
   if (this->token.type == TokenType::LeftParen) {
     this->advance();
 
-    if (this->token.type != TokenType::RightParen) {
-      this->expect_token(TokenType::Identifier, [&]() { params.push_back(this->token.value); });
+    while (this->token.type != TokenType::RightParen) {
+      bool self_initializer = false;
 
-      while (this->token.type == TokenType::Comma) {
+      // Check if we got a self initializer
+      if (this->token.type == TokenType::AtSign) {
+        self_initializer = true;
         this->advance();
-        this->expect_token(TokenType::Identifier, [&]() { params.push_back(this->token.value); });
       }
+
+      this->expect_token(TokenType::Identifier, [&]() {
+          params.push_back(this->token.value);
+          if (self_initializer) self_initialisations.push_back(this->token.value);
+      });
+
+      this->skip_token(TokenType::Comma);
     }
 
     this->expect_token(TokenType::RightParen);
@@ -1314,7 +1323,7 @@ AST::AbstractNode* Parser::parse_func() {
   }
   this->keyword_context = backup_context;
 
-  return (new AST::Function(name, params, body, false))->at(location_start, body->location_end);
+  return (new AST::Function(name, params, self_initialisations, body, false))->at(location_start, body->location_end);
 }
 
 AST::AbstractNode* Parser::parse_arrowfunc() {
@@ -1358,7 +1367,7 @@ AST::AbstractNode* Parser::parse_arrowfunc() {
     body = this->parse_control_statement();
   }
 
-  return (new AST::Function("", params, body, true))->at(location_start, body->location_end);
+  return (new AST::Function("", params, {}, body, true))->at(location_start, body->location_end);
 }
 
 AST::AbstractNode* Parser::parse_class() {
