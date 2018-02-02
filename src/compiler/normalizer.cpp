@@ -493,6 +493,12 @@ AST::AbstractNode* Normalizer::visit_localinitialisation(AST::LocalInitialisatio
 
 AST::AbstractNode* Normalizer::visit_yield(AST::Yield* node, VisitContinue cont) {
   cont();
+
+  if (node->expression->type() == AST::kTypeEmpty) {
+    delete node->expression;
+    node->expression = new AST::Null();
+  }
+
   this->mark_func_as_generator = true;
   return node;
 }

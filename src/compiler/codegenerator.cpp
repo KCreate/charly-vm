@@ -36,12 +36,23 @@ InstructionBlock* CodeGenerator::compile(AST::AbstractNode* node) {
   this->assembler.write_halt();
 
   // Codegen all blocks
-  while (this->queued_blocks.size() > 0) {
-    QueuedBlock& queued_block = this->queued_blocks.front();
+  while (this->queued_functions.size() > 0) {
+    QueuedFunction& queued_block = this->queued_functions.front();
     this->assembler.place_label(queued_block.label);
-    this->visit_node(queued_block.block);
 
-    this->queued_blocks.pop_front();
+    // Generate a putgenerator instruction if this is a generator function
+    if (queued_block.function->generator) {
+      Label generator_label = this->assembler.reserve_label();
+      this->assembler.write_nop();
+      this->assembler.write_putgenerator_to_label(this->context.symtable(queued_block.function->name), generator_label);
+      this->assembler.write_return();
+      this->assembler.place_label(generator_label);
+      this->visit_node(queued_block.function->body);
+    } else  {
+      this->visit_node(queued_block.function->body);
+    }
+
+    this->queued_functions.pop_front();
   }
   this->assembler.resolve_unresolved_label_references();
   return new InstructionBlock(this->assembler);
@@ -642,7 +653,7 @@ AST::AbstractNode* CodeGenerator::visit_function(AST::Function* node, VisitConti
                                              node->parameters.size(), node->lvarcount);
 
   // Codegen the block
-  this->queued_blocks.push_back(QueuedBlock({function_block_label, node->body}));
+  this->queued_functions.push_back(QueuedFunction({function_block_label, node}));
 
   return node;
 }
@@ -685,6 +696,12 @@ AST::AbstractNode* CodeGenerator::visit_class(AST::Class* node, VisitContinue) {
 AST::AbstractNode* CodeGenerator::visit_return(AST::Return* node, VisitContinue cont) {
   cont();
   this->assembler.write_return();
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_yield(AST::Yield* node, VisitContinue cont) {
+  cont();
+  this->assembler.write_yield();
   return node;
 }
 

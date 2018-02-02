@@ -39,9 +39,9 @@
 
 namespace Charly::Compilation {
 
-struct QueuedBlock {
+struct QueuedFunction {
   Label label;
-  AST::AbstractNode* block;
+  AST::Function* function;
 };
 
 // Responsible for generating Charly bytecodes
@@ -93,6 +93,7 @@ private:
   AST::AbstractNode* visit_function(AST::Function* node, VisitContinue cont);
   AST::AbstractNode* visit_class(AST::Class* node, VisitContinue cont);
   AST::AbstractNode* visit_return(AST::Return* node, VisitContinue cont);
+  AST::AbstractNode* visit_yield(AST::Yield* node, VisitContinue cont);
   AST::AbstractNode* visit_throw(AST::Throw* node, VisitContinue cont);
   AST::AbstractNode* visit_break(AST::Break* node, VisitContinue cont);
   AST::AbstractNode* visit_continue(AST::Continue* node, VisitContinue cont);
@@ -101,7 +102,7 @@ private:
   Assembler assembler;
   std::vector<Label> break_stack;
   std::vector<Label> continue_stack;
-  std::list<QueuedBlock> queued_blocks;
+  std::list<QueuedFunction> queued_functions;
 };
 
 // clang-format off

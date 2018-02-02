@@ -123,6 +123,12 @@ void Disassembler::dump(std::ostream& stream) {
         this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(VALUE) + sizeof(void*)), stream);
         break;
       }
+      case Opcode::PutGenerator: {
+        this->print_symbol(this->block->read<VALUE>(offset + 1), stream);
+        stream << ", ";
+        this->print_symbol(offset + this->block->read<int32_t>(offset + 1 + sizeof(VALUE)), stream);
+        break;
+      }
       case Opcode::PutClass: {
         this->print_symbol(this->block->read<VALUE>(offset + 1), stream);
         stream << ", ";
@@ -176,6 +182,13 @@ void Disassembler::detect_branches() {
 
     switch (opcode) {
       case Opcode::PutFunction: {
+        if (!this->flags.no_func_branches) {
+          this->branches.emplace_back(offset, offset + this->block->read<int32_t>(offset + 1 + sizeof(VALUE)));
+        }
+
+        break;
+      }
+      case Opcode::PutGenerator: {
         if (!this->flags.no_func_branches) {
           this->branches.emplace_back(offset, offset + this->block->read<int32_t>(offset + 1 + sizeof(VALUE)));
         }

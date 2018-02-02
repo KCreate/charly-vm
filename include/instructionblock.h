@@ -130,6 +130,12 @@ public:
     this->write(argc);
   }
 
+  inline void write_putgenerator(VALUE symbol, int32_t body_offset) {
+    this->write(Opcode::PutGenerator);
+    this->write(symbol);
+    this->write(body_offset);
+  }
+
   inline void write_putarray(uint32_t count) {
     this->write(Opcode::PutArray);
     this->write(count);
@@ -186,6 +192,10 @@ public:
 
   inline void write_return() {
     this->write(Opcode::Return);
+  }
+
+  inline void write_yield() {
+    this->write(Opcode::Yield);
   }
 
   inline void write_throw() {

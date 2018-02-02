@@ -165,6 +165,7 @@ struct Frame {
   Frame* parent_environment_frame;
   CatchTable* last_active_catchtable;
   Function* function;
+  uint32_t stacksize_at_entry;
   std::vector<VALUE>* environment;
   VALUE self;
   uint8_t* return_address;
@@ -223,20 +224,37 @@ struct CFunction {
 };
 
 // Generators allow pausing and resuming execution of their block
+//
+// A generator allows you to pause execution of a function at an arbitrary location
+// and resume it at a later time
+//
+// The generator saves enough state to be able to resume from the last position
+//
+// Relevant fields which differ from the Function struct
+//
+// context_frame: Stores the frame which was created for the generator
+// context_stack: Stores all values on the stack which belong to the generator
+// resume_address: Stores the address at which execution should continue the next time it is called
+// finished: Wether the generator has finished, if true, calling it will throw an exception
+//
+// The context_frame field contains the frame which was created for the function.
+// Nested functions also have a reference to that same frame, but we can freely modify it because
+// child functions only require the environment for variable lookups
+// This means we can freely modify the parent_frame pointer to correctly handle generator returns
 struct Generator {
   Basic basic;
   VALUE name;
-  uint32_t argc;
-  uint32_t lvarcount;
-  Frame* context;
-  uint8_t* body_address;
-  bool anonymous;
+  Frame* context_frame;
+  std::vector<VALUE>* context_stack;
+  uint8_t* resume_address;
+  bool finished;
   bool bound_self_set;
   VALUE bound_self;
   std::unordered_map<VALUE, VALUE>* container;
 
   inline void clean() {
     delete this->container;
+    delete this->context_stack;
   }
 
   // TODO: Bound argumentlist

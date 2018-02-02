@@ -114,6 +114,21 @@ void Assembler::write_putfunction_to_label(VALUE symbol,
   }
 }
 
+void Assembler::write_putgenerator_to_label(VALUE symbol,
+                                           Label label) {
+  if (this->labels.count(label) > 0) {
+    this->write_u8(Opcode::PutGenerator);
+    this->write_u64(symbol);
+    this->write_u32(this->labels[label] - this->writeoffset + 1);
+  } else {
+    uint32_t instruction_base = this->writeoffset;
+    this->write_u8(Opcode::PutGenerator);
+    this->write_u64(symbol);
+    this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
+    this->write_u32(0);
+  }
+}
+
 void Assembler::resolve_unresolved_label_references() {
   for (auto uref = this->unresolved_label_references.begin(); uref != this->unresolved_label_references.end();) {
     // Check if the label exists

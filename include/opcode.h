@@ -33,7 +33,7 @@
 namespace Charly {
 // An opcode identifies a single instruction the machine can perform
 // Opcodes can have arguments
-const uint32_t kOpcodeCount = 58;
+const uint32_t kOpcodeCount = 60;
 enum Opcode : uint8_t {
 
   // Do nothing
@@ -187,6 +187,13 @@ enum Opcode : uint8_t {
   // - argc
   PutCFunction,
 
+  // Put a generator onto the stack
+  //
+  // args:
+  // - symbol
+  // - block_offset
+  PutGenerator,
+
   // Put an array onto the stack, popping a given amount of values from the stack
   // and inserting them into the array
   //
@@ -261,6 +268,12 @@ enum Opcode : uint8_t {
 
   // Return from the current frame
   Return,
+
+  // Yield a value from the current generator
+  //
+  // stack:
+  // - expression
+  Yield,
 
   // Throw a value
   //
@@ -370,6 +383,7 @@ static constexpr uint32_t kInstructionLengths[]{
   /* PutString */             1 + sizeof(uint32_t) + sizeof(uint32_t),
   /* PutFunction */           1 + sizeof(VALUE) + sizeof(int32_t) + sizeof(bool) + sizeof(uint32_t) + sizeof(uint32_t),
   /* PutCFunction */          1 + sizeof(VALUE) + sizeof(uintptr_t) + sizeof(uint32_t),
+  /* PutGenerator */          1 + sizeof(VALUE) + sizeof(int32_t),
   /* PutArray */              1 + sizeof(uint32_t),
   /* PutHash */               1 + sizeof(uint32_t),
   /* PutClass */              1 + sizeof(VALUE) + sizeof(uint32_t) * 4 + sizeof(bool) + sizeof(bool),
@@ -380,6 +394,7 @@ static constexpr uint32_t kInstructionLengths[]{
   /* Call */                  1 + sizeof(uint32_t),
   /* CallMember */            1 + sizeof(uint32_t),
   /* Return */                1,
+  /* Yield */                 1,
   /* Throw */                 1,
   /* RegisterCatchTable */    1 + sizeof(int32_t),
   /* PopCatchTable */         1,
@@ -432,6 +447,7 @@ static std::string kOpcodeMnemonics[]{
   "putstring",
   "putfunction",
   "putcfunction",
+  "putgenerator",
   "putarray",
   "puthash",
   "putclass",
@@ -442,6 +458,7 @@ static std::string kOpcodeMnemonics[]{
   "call",
   "callmember",
   "return",
+  "yield",
   "throw",
   "registercatchtable",
   "popcatchtable",

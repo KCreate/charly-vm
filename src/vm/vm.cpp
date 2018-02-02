@@ -55,6 +55,7 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address,
   cell->frame.parent_environment_frame = function->context;
   cell->frame.last_active_catchtable = this->catchstack;
   cell->frame.function = function;
+  cell->frame.stacksize_at_entry = this->stack.size();
   cell->frame.self = self;
   cell->frame.return_address = return_address;
   cell->frame.halt_after_return = halt_after_return;
@@ -93,6 +94,7 @@ Frame* VM::create_frame(VALUE self,
   cell->frame.parent_environment_frame = parent_environment_frame;
   cell->frame.last_active_catchtable = this->catchstack;
   cell->frame.function = nullptr;
+  cell->frame.stacksize_at_entry = this->stack.size();
   cell->frame.self = self;
   cell->frame.return_address = return_address;
   cell->frame.halt_after_return = halt_after_return;

@@ -65,6 +65,7 @@ public:
   void write_branchunless_to_label(Label label);
   void write_registercatchtable_to_label(Label label);
   void write_putfunction_to_label(VALUE symbol, Label label, bool anonymous, uint32_t argc, uint32_t lvarcount);
+  void write_putgenerator_to_label(VALUE symbol, Label label);
 
   // Unresolved reference handling
   void resolve_unresolved_label_references();
