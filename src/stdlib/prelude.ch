@@ -9,13 +9,13 @@ ignoreconst {
   require = __internal_get_method("require")
 
   // Write a value to stdout, without a trailing newline
-  write = ->{
+  write = func write {
     arguments.each(__internal_write)
     null
   }
 
   // Write a value to stdout, with a trailing newline
-  print = ->{
+  print = func print {
     arguments.each(->(v) {
       __internal_write(v)
       __internal_write("\n")

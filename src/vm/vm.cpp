@@ -55,7 +55,7 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address,
   cell->frame.parent_environment_frame = function->context;
   cell->frame.last_active_catchtable = this->catchstack;
   cell->frame.caller_value = charly_create_pointer(function);
-  cell->frame.stacksize_at_entry = this->stack.size();
+  cell->frame.stacksize_at_entry = 0; // set by call_generator
   cell->frame.self = self;
   cell->frame.return_address = return_address;
   cell->frame.halt_after_return = halt_after_return;
@@ -94,7 +94,7 @@ Frame* VM::create_frame(VALUE self,
   cell->frame.parent_environment_frame = parent_environment_frame;
   cell->frame.last_active_catchtable = this->catchstack;
   cell->frame.caller_value = kNull;
-  cell->frame.stacksize_at_entry = this->stack.size();
+  cell->frame.stacksize_at_entry = 0; // set by call_generator
   cell->frame.self = self;
   cell->frame.return_address = return_address;
   cell->frame.halt_after_return = halt_after_return;
@@ -290,6 +290,7 @@ VALUE VM::create_generator(VALUE name, uint8_t* resume_address) {
   cell->generator.context_stack = new std::vector<VALUE>();
   cell->generator.resume_address = resume_address;
   cell->generator.finished = false;
+  cell->generator.started = false;
   cell->generator.bound_self_set = false;
   cell->generator.bound_self = kNull;
   cell->generator.container = new std::unordered_map<VALUE, VALUE>();
@@ -1131,10 +1132,14 @@ void VM::call_generator(Generator* generator, uint32_t argc, VALUE* argv) {
   }
 
   // Push the argument onto the stack
-  if (argc == 0) {
-    this->push_stack(kNull);
+  if (generator->started) {
+    if (argc == 0) {
+      this->push_stack(kNull);
+    } else {
+      this->push_stack(argv[0]);
+    }
   } else {
-    this->push_stack(argv[0]);
+    generator->started = true;
   }
 }
 

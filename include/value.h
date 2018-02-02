@@ -250,6 +250,7 @@ struct Generator {
   std::vector<VALUE>* context_stack;
   uint8_t* resume_address;
   bool finished;
+  bool started;
   bool bound_self_set;
   VALUE bound_self;
   std::unordered_map<VALUE, VALUE>* container;
@@ -1100,6 +1101,7 @@ inline bool charly_truthyness(VALUE value) {
   if (value == kFalse) return false;
   if (charly_is_int(value)) return charly_int_to_int64(value) != 0;
   if (charly_is_float(value)) return charly_double_to_double(value) != 0;
+  if (charly_is_generator(value)) return !charly_as_generator(value)->finished;
   return true;
 }
 

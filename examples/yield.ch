@@ -1,28 +1,9 @@
-func foo {
-  return ->{
-    yield 25
-
-    try {
-      throw "hello world"
-    } catch(e) {
-      print("caught error inside foo")
-      throw "hello world"
-    }
-  }
+func foo(a) {
+  yield a
 }
 
-func bar {
-  try {
-    return foo()()
-  } catch(e) {
-    print("caught error inside bar")
-  }
-}
-
-try {
-  const gen = bar()
-  print(gen())
-  gen()
-} catch(e) {
-  print("caught error in toplevel")
-}
+const gen = foo("argument to generator")
+print(gen("arg gen1"))
+print(gen("arg gen2"))
+print(gen("arg gen3"))
+print(gen("arg gen4"))
