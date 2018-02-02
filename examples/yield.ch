@@ -1,5 +1,3 @@
 func foo {
-  return ->{
-    if true yield 25
-  }
+  return yield
 }

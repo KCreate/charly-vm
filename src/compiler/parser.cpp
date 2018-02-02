@@ -298,31 +298,6 @@ AST::AbstractNode* Parser::parse_control_statement() {
       this->skip_token(TokenType::Semicolon);
       return (new AST::Return(exp))->at(location_start, location_end);
     }
-    case TokenType::Yield: {
-      Location location_start = this->token.location;
-
-      // Check if yield is allowed at this position
-      if (!this->keyword_context.yield_allowed) {
-        this->illegal_token();
-      }
-
-      this->advance();
-
-      AST::AbstractNode* exp;
-      std::optional<Location> location_end;
-
-      if ((this->token.type != TokenType::Semicolon) && (this->token.type != TokenType::RightCurly) &&
-          (this->token.type != TokenType::Eof)) {
-        exp = this->parse_expression();
-        location_end = exp->location_end;
-      } else {
-        exp = new AST::Empty();
-        location_end = location_start;
-      }
-
-      this->skip_token(TokenType::Semicolon);
-      return (new AST::Yield(exp))->at(location_start, location_end);
-    }
     case TokenType::Break: {
       Location location_start = this->token.location;
 
@@ -728,6 +703,23 @@ AST::AbstractNode* Parser::parse_try_statement() {
 }
 
 AST::AbstractNode* Parser::parse_expression() {
+  return parse_yield();
+}
+
+AST::AbstractNode* Parser::parse_yield() {
+  if (this->token.type == TokenType::Yield) {
+    Location start_location = this->token.location;
+    AST::AbstractNode* exp;
+
+    this->advance();
+    if (this->token.could_start_expression()) {
+      exp = this->parse_expression();
+      return (new AST::Yield(exp))->at(start_location, exp->location_end);
+    }
+
+    return (new AST::Yield(new AST::Empty()))->at(start_location);
+  }
+
   return parse_assignment();
 }
 

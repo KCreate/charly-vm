@@ -47,6 +47,7 @@ const std::string kHumanReadableTypes[] = {
   "string",
   "function",
   "cfunction",
+  "generator",
   "frame",
   "catchtable",
   "number",
@@ -67,6 +68,7 @@ enum ValueType : uint8_t {
   kTypeString,
   kTypeFunction,
   kTypeCFunction,
+  kTypeGenerator,
   kTypeFrame,
   kTypeCatchTable,
 
@@ -209,6 +211,26 @@ struct CFunction {
   VALUE name;
   uintptr_t pointer;
   uint32_t argc;
+  bool bound_self_set;
+  VALUE bound_self;
+  std::unordered_map<VALUE, VALUE>* container;
+
+  inline void clean() {
+    delete this->container;
+  }
+
+  // TODO: Bound argumentlist
+};
+
+// Generators allow pausing and resuming execution of their block
+struct Generator {
+  Basic basic;
+  VALUE name;
+  uint32_t argc;
+  uint32_t lvarcount;
+  Frame* context;
+  uint8_t* body_address;
+  bool anonymous;
   bool bound_self_set;
   VALUE bound_self;
   std::unordered_map<VALUE, VALUE>* container;

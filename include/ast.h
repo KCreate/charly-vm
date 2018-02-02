@@ -1495,7 +1495,7 @@ inline bool yields_value(AbstractNode* node) {
           node->type() == kTypeIndex || node->type() == kTypeNull || node->type() == kTypeNan ||
           node->type() == kTypeString || node->type() == kTypeNumber || node->type() == kTypeBoolean ||
           node->type() == kTypeArray || node->type() == kTypeHash || node->type() == kTypeFunction ||
-          node->type() == kTypeClass);
+          node->type() == kTypeClass || node->type() == kTypeYield);
 }
 
 // Checks wether a given node is an assignment

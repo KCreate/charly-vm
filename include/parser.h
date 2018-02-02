@@ -98,6 +98,7 @@ public:
   AST::AbstractNode* parse_loop_statement();
   AST::AbstractNode* parse_try_statement();
   AST::AbstractNode* parse_expression();
+  AST::AbstractNode* parse_yield();
   AST::AbstractNode* parse_assignment();
   AST::AbstractNode* parse_ternary_if();
   AST::AbstractNode* parse_or();
