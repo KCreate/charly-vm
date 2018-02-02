@@ -1887,6 +1887,7 @@ void VM::run() {
                                             &&charly_main_switch_putstring,
                                             &&charly_main_switch_putfunction,
                                             &&charly_main_switch_putcfunction,
+                                            &&charly_main_switch_putgenerator,
                                             &&charly_main_switch_putarray,
                                             &&charly_main_switch_puthash,
                                             &&charly_main_switch_putclass,
@@ -1897,6 +1898,7 @@ void VM::run() {
                                             &&charly_main_switch_call,
                                             &&charly_main_switch_callmember,
                                             &&charly_main_switch_return,
+                                            &&charly_main_switch_yield,
                                             &&charly_main_switch_throw,
                                             &&charly_main_switch_registercatchtable,
                                             &&charly_main_switch_popcatchtable,
@@ -2049,6 +2051,10 @@ void VM::run() {
       goto charly_main_switch_epilogue;
     }
 
+    charly_main_switch_putgenerator : {
+      goto charly_main_switch_epilogue;
+    }
+
     charly_main_switch_putarray : {
       uint32_t count = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
       this->op_putarray(count);
@@ -2115,6 +2121,10 @@ void VM::run() {
 
     charly_main_switch_return : {
       this->op_return();
+      goto charly_main_switch_epilogue;
+    }
+
+    charly_main_switch_yield : {
       goto charly_main_switch_epilogue;
     }
 
