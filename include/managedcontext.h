@@ -88,6 +88,11 @@ public:
   }
 
   template <typename... Args>
+  inline VALUE create_generator(Args&&... params) {
+    return mark_in_gc(this->vm.create_generator(std::forward<Args>(params)...));
+  }
+
+  template <typename... Args>
   inline VALUE create_class(Args&&... params) {
     return mark_in_gc(this->vm.create_class(std::forward<Args>(params)...));
   }

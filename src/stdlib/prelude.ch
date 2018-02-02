@@ -41,6 +41,7 @@ ignoreconst {
   const set_primitive_string = Charly.internals.get_method("set_primitive_string")
   const set_primitive_number = Charly.internals.get_method("set_primitive_number")
   const set_primitive_function = Charly.internals.get_method("set_primitive_function")
+  const set_primitive_generator = Charly.internals.get_method("set_primitive_generator")
   const set_primitive_boolean = Charly.internals.get_method("set_primitive_boolean")
   const set_primitive_null = Charly.internals.get_method("set_primitive_null")
 
@@ -54,6 +55,7 @@ ignoreconst {
   Class = set_primitive_class(class Class extends Value {});
   String = set_primitive_string(class String extends Value {});
   Function = set_primitive_function(class Function extends Value {});
+  Generator = set_primitive_generator(class Generator extends Value {});
   Boolean = set_primitive_boolean(class Boolean extends Value {});
   Null = set_primitive_null(class Null extends Value {});
 

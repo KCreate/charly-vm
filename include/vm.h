@@ -141,6 +141,7 @@ public:
   VALUE create_string(const char* data, uint32_t length);
   VALUE create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint32_t lvarcount, bool anonymous);
   VALUE create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer);
+  VALUE create_generator(VALUE name, uint8_t* resume_address);
   VALUE create_class(VALUE name);
 
   // Methods to copy existing data types
@@ -153,6 +154,7 @@ public:
   VALUE copy_string(VALUE string);
   VALUE copy_function(VALUE function);
   VALUE copy_cfunction(VALUE cfunction);
+  VALUE copy_generator(VALUE generator);
 
   // Arithmetics
   VALUE add(VALUE left, VALUE right);
@@ -192,6 +194,7 @@ public:
   void call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self, bool halt_after_return = false);
   void call_cfunction(CFunction* function, uint32_t argc, VALUE* argv);
   void call_class(Class* klass, uint32_t argc, VALUE* argv);
+  void call_generator(Generator* klass, uint32_t argc, VALUE* argv);
   void initialize_member_properties(Class* klass, Object* object);
   bool invoke_class_constructors(Class* klass, Object* object, uint32_t argc, VALUE* argv);
   void throw_exception(const std::string& message);
@@ -234,6 +237,7 @@ public:
   void op_putstring(char* data, uint32_t length);
   void op_putfunction(VALUE symbol, uint8_t* body_address, bool anonymous, uint32_t argc, uint32_t lvarcount);
   void op_putcfunction(VALUE symbol, uintptr_t pointer, uint32_t argc);
+  void op_putgenerator(VALUE symbol, uint8_t* resume_address);
   void op_putarray(uint32_t count);
   void op_puthash(uint32_t count);
   void op_putclass(VALUE name,
@@ -250,6 +254,7 @@ public:
   void op_call(uint32_t argc);
   void op_callmember(uint32_t argc);
   void op_return();
+  void op_yield();
   void op_throw();
   void op_registercatchtable(int32_t offset);
   void op_popcatchtable();
@@ -276,6 +281,9 @@ public:
   inline void set_primitive_function(VALUE value) {
     this->primitive_function = value;
   }
+  inline void set_primitive_generator(VALUE value) {
+    this->primitive_generator = value;
+  }
   inline void set_primitive_boolean(VALUE value) {
     this->primitive_boolean = value;
   }
@@ -299,6 +307,7 @@ private:
   VALUE primitive_string = kNull;
   VALUE primitive_number = kNull;
   VALUE primitive_function = kNull;
+  VALUE primitive_generator = kNull;
   VALUE primitive_boolean = kNull;
   VALUE primitive_null = kNull;
 

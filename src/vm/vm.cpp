@@ -54,7 +54,7 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address,
   cell->frame.parent = this->frames;
   cell->frame.parent_environment_frame = function->context;
   cell->frame.last_active_catchtable = this->catchstack;
-  cell->frame.function = function;
+  cell->frame.caller_value = charly_create_pointer(function);
   cell->frame.stacksize_at_entry = this->stack.size();
   cell->frame.self = self;
   cell->frame.return_address = return_address;
@@ -75,9 +75,9 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address,
 
   // Print the frame if the corresponding flag was set
   if (this->context.trace_frames) {
-    this->context.out_stream << "Entering frame: ";
-    this->pretty_print(this->context.out_stream, cell->as_value());
-    this->context.out_stream << '\n';
+    this->context.err_stream << "Entering frame: ";
+    this->pretty_print(this->context.err_stream, cell->as_value());
+    this->context.err_stream << '\n';
   }
 
   return cell->as<Frame>();
@@ -93,7 +93,7 @@ Frame* VM::create_frame(VALUE self,
   cell->frame.parent = this->frames;
   cell->frame.parent_environment_frame = parent_environment_frame;
   cell->frame.last_active_catchtable = this->catchstack;
-  cell->frame.function = nullptr;
+  cell->frame.caller_value = kNull;
   cell->frame.stacksize_at_entry = this->stack.size();
   cell->frame.self = self;
   cell->frame.return_address = return_address;
@@ -108,9 +108,9 @@ Frame* VM::create_frame(VALUE self,
 
   // Print the frame if the corresponding flag was set
   if (this->context.trace_frames) {
-    this->context.out_stream << "Entering frame: ";
-    this->pretty_print(this->context.out_stream, cell->as_value());
-    this->context.out_stream << '\n';
+    this->context.err_stream << "Entering frame: ";
+    this->pretty_print(this->context.err_stream, cell->as_value());
+    this->context.err_stream << '\n';
   }
 
   return cell->as<Frame>();
@@ -142,9 +142,9 @@ CatchTable* VM::create_catchtable(uint8_t* address) {
 
   // Print the catchtable if the corresponding flag was set
   if (this->context.trace_catchtables) {
-    this->context.out_stream << "Entering catchtable: ";
-    this->pretty_print(this->context.out_stream, cell->as_value());
-    this->context.out_stream << '\n';
+    this->context.err_stream << "Entering catchtable: ";
+    this->pretty_print(this->context.err_stream, cell->as_value());
+    this->context.err_stream << '\n';
   }
 
   return cell->as<CatchTable>();
@@ -170,6 +170,14 @@ void VM::unwind_catchstack() {
       if (this->frames->halt_after_return) {
         this->halted = true;
       }
+
+      // If this frame was created by a generator, we need to switch the catchtable to the one
+      // stored inside the frame. The catchtables stored inside the generator are only valid inside the
+      // generator itself
+      if (charly_is_generator(this->frames->caller_value)) {
+        Generator* generator = charly_as_generator(this->frames->caller_value);
+        table = generator->context_frame->last_active_catchtable;
+      }
     }
 
     this->frames = this->frames->parent;
@@ -181,9 +189,9 @@ void VM::unwind_catchstack() {
   // Show the catchtable we just restored if the corresponding flag was set
   if (this->context.trace_catchtables) {
     // Show the table we've restored
-    this->context.out_stream << "Restored CatchTable: ";
-    this->pretty_print(this->context.out_stream, charly_create_pointer(table));
-    this->context.out_stream << '\n';
+    this->context.err_stream << "Restored CatchTable: ";
+    this->pretty_print(this->context.err_stream, charly_create_pointer(table));
+    this->context.err_stream << '\n';
   }
 
   // If there are less elements on the stack than there were when the table was pushed
@@ -273,6 +281,21 @@ VALUE VM::create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer) {
   return cell->as_value();
 }
 
+VALUE VM::create_generator(VALUE name, uint8_t* resume_address) {
+  MemoryCell* cell = this->gc.allocate();
+  cell->basic.type = kTypeGenerator;
+  cell->generator.name = name;
+  cell->generator.context_frame = this->frames;
+  cell->generator.context_catchtable = this->catchstack;
+  cell->generator.context_stack = new std::vector<VALUE>();
+  cell->generator.resume_address = resume_address;
+  cell->generator.finished = false;
+  cell->generator.bound_self_set = false;
+  cell->generator.bound_self = kNull;
+  cell->generator.container = new std::unordered_map<VALUE, VALUE>();
+  return cell->as_value();
+}
+
 VALUE VM::create_class(VALUE name) {
   MemoryCell* cell = this->gc.allocate();
   cell->basic.type = kTypeClass;
@@ -292,6 +315,7 @@ VALUE VM::copy_value(VALUE value) {
     case kTypeArray: return this->copy_array(value);
     case kTypeFunction: return this->copy_function(value);
     case kTypeCFunction: return this->copy_cfunction(value);
+    case kTypeGenerator: return this->copy_generator(value);
   }
 
   return value;
@@ -304,6 +328,7 @@ VALUE VM::deep_copy_value(VALUE value) {
     case kTypeArray: return this->deep_copy_array(value);
     case kTypeFunction: return this->copy_function(value);
     case kTypeCFunction: return this->copy_cfunction(value);
+    case kTypeGenerator: return this->copy_generator(value);
   }
 
   return value;
@@ -381,6 +406,20 @@ VALUE VM::copy_cfunction(VALUE function) {
   target->bound_self_set = source->bound_self_set;
   target->bound_self = source->bound_self;
   *(target->container) = *(source->container);
+
+  return charly_create_pointer(target);
+}
+
+VALUE VM::copy_generator(VALUE generator) {
+  Generator* source = charly_as_generator(generator);
+  Generator* target = charly_as_generator(this->create_generator(source->name, source->resume_address));
+
+  target->bound_self_set = source->bound_self_set;
+  target->bound_self = source->bound_self;
+  target->finished = source->finished;
+  *(target->container) = *(source->container);
+  *(target->context_stack) = *(source->context_stack);
+  *(target->context_frame) = *(source->context_frame);
 
   return charly_create_pointer(target);
 }
@@ -934,6 +973,15 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
       return;
     }
 
+    // Generators
+    case kTypeGenerator: {
+      this->call_generator(charly_as_generator(function), argc, arguments);
+      if (halt_after_return) {
+        this->halted = true;
+      }
+      return;
+    }
+
     // Class construction
     case kTypeClass: {
       this->call_class(charly_as_class(function), argc, arguments);
@@ -1039,6 +1087,54 @@ void VM::call_class(Class* klass, uint32_t argc, VALUE* argv) {
   bool success = this->invoke_class_constructors(klass, object, argc, argv);
   if (success) {
     this->push_stack(charly_create_pointer(object));
+  }
+}
+
+void VM::call_generator(Generator* generator, uint32_t argc, VALUE* argv) {
+
+  // You can only call a generator with a single argument
+  if (argc > 1) {
+    this->throw_exception("Can't call generator with more than 1 argument");
+    return;
+  }
+
+  // If the generator is already finished, we return null
+  if (generator->finished) {
+    this->push_stack(kNull);
+    return;
+  }
+
+  // Calculate the return address
+  uint8_t* return_address = nullptr;
+  if (this->ip != nullptr) {
+    return_address = this->ip + kInstructionLengths[this->fetch_instruction()];
+  }
+
+  // Restore the frame that was active when the generator was created
+  // We patch some fields of the frame, so a return or yield call can return to the
+  // correct position
+  Frame* frame = generator->context_frame;
+  frame->parent = this->frames;
+  frame->last_active_catchtable = this->catchstack;
+  frame->caller_value = charly_create_pointer(generator);
+  frame->stacksize_at_entry = this->stack.size();
+  frame->return_address = return_address;
+
+  this->frames = frame;
+  this->catchstack = generator->context_catchtable;
+  this->ip = generator->resume_address;
+
+  // Restore the values on the stack which ere active when the generator was paused
+  while (generator->context_stack->size()) {
+    this->push_stack(generator->context_stack->back());
+    generator->context_stack->pop_back();
+  }
+
+  // Push the argument onto the stack
+  if (argc == 0) {
+    this->push_stack(kNull);
+  } else {
+    this->push_stack(argv[0]);
   }
 }
 
@@ -1289,6 +1385,11 @@ void VM::op_putcfunction(VALUE symbol, uintptr_t pointer, uint32_t argc) {
   this->push_stack(function);
 }
 
+void VM::op_putgenerator(VALUE symbol, uint8_t* resume_address) {
+  VALUE generator = this->create_generator(symbol, resume_address);
+  this->push_stack(generator);
+}
+
 void VM::op_putarray(uint32_t count) {
   Array* array = charly_as_array(this->create_array(count));
 
@@ -1421,12 +1522,14 @@ void VM::op_return() {
   if (!frame)
     this->panic(Status::CantReturnFromTopLevel);
 
-  // Unwind and immediately free all catchtables which were pushed
-  // after the one we're restoring.
-  while (frame->last_active_catchtable != this->catchstack) {
-    this->pop_catchtable();
+  // Returning from a generator causes the generator to terminate
+  // Mark it as done and delete some items which are no longer needed
+  if (charly_is_generator(frame->caller_value)) {
+    Generator* generator = charly_as_generator(frame->caller_value);
+    generator->finished = true;
   }
 
+  this->catchstack = frame->last_active_catchtable;
   this->frames = frame->parent;
   this->ip = frame->return_address;
 
@@ -1436,9 +1539,44 @@ void VM::op_return() {
 
   // Print the frame if the correponding flag was set
   if (this->context.trace_frames) {
-    this->context.out_stream << "Left frame: ";
-    this->pretty_print(this->context.out_stream, charly_create_pointer(frame));
-    this->context.out_stream << '\n';
+    this->context.err_stream << "Left frame: ";
+    this->pretty_print(this->context.err_stream, charly_create_pointer(frame));
+    this->context.err_stream << '\n';
+  }
+}
+
+void VM::op_yield() {
+  Frame* frame = this->frames;
+  if (!frame)
+    this->panic(Status::CantReturnFromTopLevel);
+
+  // Check if we are exiting from a generator
+  if (!charly_is_generator(frame->caller_value)) {
+    this->panic(Status::CantYieldFromNonGenerator);
+  }
+
+  // Store the yielded value
+  VALUE yield_value = this->pop_stack();
+
+  // Store context info inside the generator
+  Generator* generator = charly_as_generator(frame->caller_value);
+  generator->context_catchtable = this->catchstack;
+  generator->resume_address = this->ip + kInstructionLengths[Opcode::Yield];
+  size_t stack_value_pop_count = this->stack.size() - frame->stacksize_at_entry;
+  while (stack_value_pop_count--) {
+    generator->context_stack->push_back(this->pop_stack());
+  }
+
+  this->push_stack(yield_value);
+
+  // We can't restore catchtables by popping them, since the list of tables
+  // in the generator might be different than of the outside world
+  this->catchstack = frame->last_active_catchtable;
+  this->frames = frame->parent;
+  this->ip = frame->return_address;
+
+  if (frame->halt_after_return) {
+    this->halted = true;
   }
 }
 
@@ -1498,9 +1636,9 @@ void VM::op_popcatchtable() {
 
     if (table != nullptr) {
       // Show the table we've restored
-      this->context.out_stream << "Restored CatchTable: ";
-      this->pretty_print(this->context.out_stream, charly_create_pointer(table));
-      this->context.out_stream << '\n';
+      this->context.err_stream << "Restored CatchTable: ";
+      this->pretty_print(this->context.err_stream, charly_create_pointer(table));
+      this->context.err_stream << '\n';
     }
   }
 }
@@ -1733,6 +1871,37 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       break;
     }
 
+    case kTypeGenerator: {
+      Generator* generator = charly_as_generator(value);
+
+      if (printed_before) {
+        io << "<Generator ...>";
+        break;
+      }
+
+      io << "<Generator ";
+      io << "name=";
+      this->pretty_print(io, generator->name);
+      io << " ";
+      io << "resume_address=" << reinterpret_cast<void*>(generator->resume_address) << " ";
+      io << "finished=" << (generator->finished ? "true" : "false") << " ";
+      io << "context_frame=" << reinterpret_cast<void*>(generator->context_frame) << " ";
+      io << "context_catchtable=" << reinterpret_cast<void*>(generator->context_catchtable) << " ";
+      io << "bound_self_set=" << (generator->bound_self_set ? "true" : "false") << " ";
+      io << "bound_self=";
+      this->pretty_print(io, generator->bound_self);
+
+      for (auto& entry : *generator->container) {
+        io << " ";
+        std::string key = this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
+        io << key << "=";
+        this->pretty_print(io, entry.second);
+      }
+
+      io << ">";
+      break;
+    }
+
     case kTypeClass: {
       Class* klass = charly_as_class(value);
 
@@ -1789,14 +1958,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << "<Frame ";
       io << "parent=" << frame->parent << " ";
       io << "parent_environment_frame=" << frame->parent_environment_frame << " ";
-
-      if (frame->function != nullptr) {
-        io << "function=";
-        this->pretty_print(io, charly_create_pointer(frame->function));
-      } else {
-        io << "<no address info>";
-      }
-
+      io << "caller_value=";
+      this->pretty_print(io, frame->caller_value);
       io << " ";
       io << "self=";
       this->pretty_print(io, frame->self);
@@ -1828,11 +1991,11 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 }
 
 void VM::panic(STATUS reason) {
-  this->context.out_stream << "Panic: " << kStatusHumanReadable[reason] << '\n';
-  this->context.out_stream << '\n' << "Stacktrace:" << '\n';
-  this->stacktrace(this->context.out_stream);
-  this->context.out_stream << '\n' << "Stackdump:" << '\n';
-  this->stackdump(this->context.out_stream);
+  this->context.err_stream << "Panic: " << kStatusHumanReadable[reason] << '\n';
+  this->context.err_stream << '\n' << "Stacktrace:" << '\n';
+  this->stacktrace(this->context.err_stream);
+  this->context.err_stream << '\n' << "Stackdump:" << '\n';
+  this->stackdump(this->context.err_stream);
 
   exit(1);
 }
@@ -1860,12 +2023,12 @@ void VM::run() {
 
     // Show opcodes as they are executed if the corresponding flag was set
     if (this->context.trace_opcodes) {
-      this->context.out_stream << std::setw(12);
-      this->context.out_stream.fill('0');
-      this->context.out_stream << reinterpret_cast<void*>(old_ip);
-      this->context.out_stream << std::setw(1);
-      this->context.out_stream.fill(' ');
-      this->context.out_stream << ": " << kOpcodeMnemonics[opcode] << '\n';
+      this->context.err_stream.fill('0');
+      this->context.err_stream << "0x" << std::hex;
+      this->context.err_stream << std::setw(12) << reinterpret_cast<uint64_t>(old_ip) << std::setw(1);
+      this->context.err_stream << std::dec;
+      this->context.err_stream.fill(' ');
+      this->context.err_stream << ": " << kOpcodeMnemonics[opcode] << '\n';
     }
 
     // Dispatch table used for the computed goto main interpreter switch
@@ -2052,6 +2215,10 @@ void VM::run() {
     }
 
     charly_main_switch_putgenerator : {
+      VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
+      int32_t body_offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE));
+
+      this->op_putgenerator(symbol, this->ip + body_offset);
       goto charly_main_switch_epilogue;
     }
 
@@ -2125,6 +2292,7 @@ void VM::run() {
     }
 
     charly_main_switch_yield : {
+      this->op_yield();
       goto charly_main_switch_epilogue;
     }
 
@@ -2345,13 +2513,13 @@ void VM::exec_prelude() {
   //     get_method: <Internals::get_method>
   //   }
   // }
-  this->top_frame = this->create_frame(kNull, this->frames, 19, nullptr);
+  this->top_frame = this->create_frame(kNull, this->frames, 20, nullptr);
   this->op_putcfunction(this->context.symtable("get_method"), reinterpret_cast<uintptr_t>(Internals::get_method), 1);
   this->op_putvalue(this->context.symtable("get_method"));
   this->op_puthash(1);
   this->op_putvalue(this->context.symtable("internals"));
   this->op_puthash(1);
-  this->op_setlocal(18, 0);
+  this->op_setlocal(19, 0);
   this->op_pop();
 }
 

@@ -48,6 +48,7 @@ VALUE set_primitive_array(VM& vm, VALUE klass);
 VALUE set_primitive_string(VM& vm, VALUE klass);
 VALUE set_primitive_number(VM& vm, VALUE klass);
 VALUE set_primitive_function(VM& vm, VALUE klass);
+VALUE set_primitive_generator(VM& vm, VALUE klass);
 VALUE set_primitive_boolean(VM& vm, VALUE klass);
 VALUE set_primitive_null(VM& vm, VALUE klass);
 }  // namespace Internals

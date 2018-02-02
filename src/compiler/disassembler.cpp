@@ -47,7 +47,7 @@ void Disassembler::dump(std::ostream& stream) {
 
     // Print the offset
     if (!this->flags.no_offsets) {
-      this->print_hex(offset, stream, 6);
+      this->print_hex(reinterpret_cast<uint64_t>(this->block->get_data() + offset), stream, 12);
       stream << ": ";
     }
 

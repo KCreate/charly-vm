@@ -164,7 +164,7 @@ struct Frame {
   Frame* parent;
   Frame* parent_environment_frame;
   CatchTable* last_active_catchtable;
-  Function* function;
+  VALUE caller_value;
   uint32_t stacksize_at_entry;
   std::vector<VALUE>* environment;
   VALUE self;
@@ -232,7 +232,8 @@ struct CFunction {
 //
 // Relevant fields which differ from the Function struct
 //
-// context_frame: Stores the frame which was created for the generator
+// context_frame: Stores the frame that is active in the generator
+// context_catchtable: Stores the catchtable that is active in the generator
 // context_stack: Stores all values on the stack which belong to the generator
 // resume_address: Stores the address at which execution should continue the next time it is called
 // finished: Wether the generator has finished, if true, calling it will throw an exception
@@ -245,6 +246,7 @@ struct Generator {
   Basic basic;
   VALUE name;
   Frame* context_frame;
+  CatchTable* context_catchtable;
   std::vector<VALUE>* context_stack;
   uint8_t* resume_address;
   bool finished;
@@ -396,6 +398,8 @@ inline Function* charly_as_function(VALUE value)      { return charly_as_pointer
 __attribute__((always_inline))
 inline CFunction* charly_as_cfunction(VALUE value)    { return charly_as_pointer_to<CFunction>(value); }
 __attribute__((always_inline))
+inline Generator* charly_as_generator(VALUE value)    { return charly_as_pointer_to<Generator>(value); }
+__attribute__((always_inline))
 inline Frame* charly_as_frame(VALUE value)            { return charly_as_pointer_to<Frame>(value); }
 __attribute__((always_inline))
 inline CatchTable* charly_as_catchtable(VALUE value)  { return charly_as_pointer_to<CatchTable>(value); }
@@ -451,6 +455,8 @@ __attribute__((always_inline))
 inline bool charly_is_function(VALUE value) { return charly_is_heap_type(value, kTypeFunction); }
 __attribute__((always_inline))
 inline bool charly_is_cfunction(VALUE value) { return charly_is_heap_type(value, kTypeCFunction); }
+__attribute__((always_inline))
+inline bool charly_is_generator(VALUE value) { return charly_is_heap_type(value, kTypeGenerator); }
 __attribute__((always_inline))
 inline bool charly_is_callable(VALUE value) {
   return charly_is_function(value) || charly_is_cfunction(value) || charly_is_class(value);

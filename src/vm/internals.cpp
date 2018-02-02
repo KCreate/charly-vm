@@ -54,6 +54,7 @@ static std::unordered_map<std::string, InternalMethodSignature> kMethodSignature
   DEFINE_INTERNAL_METHOD(set_primitive_string, 1),
   DEFINE_INTERNAL_METHOD(set_primitive_number, 1),
   DEFINE_INTERNAL_METHOD(set_primitive_function, 1),
+  DEFINE_INTERNAL_METHOD(set_primitive_generator, 1),
   DEFINE_INTERNAL_METHOD(set_primitive_boolean, 1),
   DEFINE_INTERNAL_METHOD(set_primitive_null, 1)
 };
@@ -151,6 +152,11 @@ VALUE set_primitive_number(VM& vm, VALUE value) {
 
 VALUE set_primitive_function(VM& vm, VALUE value) {
   vm.set_primitive_function(value);
+  return value;
+}
+
+VALUE set_primitive_generator(VM& vm, VALUE value) {
+  vm.set_primitive_generator(value);
   return value;
 }
 
