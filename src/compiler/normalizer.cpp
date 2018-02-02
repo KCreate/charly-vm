@@ -61,7 +61,7 @@ AST::AbstractNode* Normalizer::visit_block(AST::Block* node, VisitContinue) {
       if (!AST::is_literal(normalized_node)) {
         remaining_statements.push_back(normalized_node);
 
-        if (AST::is_control_statement(normalized_node)) {
+        if (AST::terminates_block(normalized_node)) {
           append_to_block = false;
         }
 
@@ -379,6 +379,12 @@ AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue
   }
 
   cont();
+
+  if (this->mark_func_as_generator) {
+    node->generator = true;
+    this->mark_func_as_generator = false;
+  }
+
   return node;
 }
 
@@ -482,6 +488,12 @@ AST::AbstractNode* Normalizer::visit_localinitialisation(AST::LocalInitialisatio
     }
   }
 
+  return node;
+}
+
+AST::AbstractNode* Normalizer::visit_yield(AST::Yield* node, VisitContinue cont) {
+  cont();
+  this->mark_func_as_generator = true;
   return node;
 }
 

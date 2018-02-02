@@ -226,6 +226,10 @@ public:
     cont();
     return node;
   }
+  virtual inline AST::AbstractNode* visit_yield(AST::Yield* node, VisitContinue cont) {
+    cont();
+    return node;
+  }
   virtual inline AST::AbstractNode* visit_throw(AST::Throw* node, VisitContinue cont) {
     cont();
     return node;
@@ -337,6 +341,8 @@ public:
       return walker->visit_localinitialisation(node->as<AST::LocalInitialisation>(), cont);
     if (node->type() == AST::kTypeReturn)
       return walker->visit_return(node->as<AST::Return>(), cont);
+    if (node->type() == AST::kTypeYield)
+      return walker->visit_yield(node->as<AST::Yield>(), cont);
     if (node->type() == AST::kTypeThrow)
       return walker->visit_throw(node->as<AST::Throw>(), cont);
     if (node->type() == AST::kTypeBreak)

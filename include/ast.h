@@ -1138,6 +1138,7 @@ struct Function : public AbstractNode {
   std::vector<std::string> self_initialisations;
   AbstractNode* body;
   bool anonymous;
+  bool generator = false;
 
   uint32_t lvarcount = 0;
 
@@ -1158,6 +1159,7 @@ struct Function : public AbstractNode {
       stream << ' ' << this->name;
     }
     stream << (this->anonymous ? " anonymous" : "");
+    stream << (this->generator ? " generator" : "");
 
     stream << ' ' << '(';
 
@@ -1308,6 +1310,27 @@ struct Return : public AbstractNode {
   }
 };
 
+// yield <expression>
+struct Yield : public AbstractNode {
+  AbstractNode* expression;
+
+  Yield(AbstractNode* e) : expression(e) {
+  }
+
+  inline ~Yield() {
+    delete expression;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Yield:" << '\n';
+    this->expression->dump(stream, depth + 1);
+  }
+
+  void visit(VisitFunc func) {
+    this->expression = func(this->expression);
+  }
+};
+
 // throw <expression>
 struct Throw : public AbstractNode {
   AbstractNode* expression;
@@ -1430,6 +1453,7 @@ const size_t kTypePropertyDeclaration = typeid(PropertyDeclaration).hash_code();
 const size_t kTypeClass = typeid(Class).hash_code();
 const size_t kTypeLocalInitialisation = typeid(LocalInitialisation).hash_code();
 const size_t kTypeReturn = typeid(Return).hash_code();
+const size_t kTypeYield = typeid(Yield).hash_code();
 const size_t kTypeThrow = typeid(Throw).hash_code();
 const size_t kTypeBreak = typeid(Break).hash_code();
 const size_t kTypeContinue = typeid(Continue).hash_code();
@@ -1443,6 +1467,11 @@ T* cast(AbstractNode* node) {
 
 // Checks wether a given node is a control statement
 inline bool is_control_statement(AbstractNode* node) {
+  return (node->type() == kTypeReturn || node->type() == kTypeBreak || node->type() == kTypeContinue ||
+          node->type() == kTypeThrow || node->type() == kTypeYield);
+}
+
+inline bool terminates_block(AbstractNode* node) {
   return (node->type() == kTypeReturn || node->type() == kTypeBreak || node->type() == kTypeContinue ||
           node->type() == kTypeThrow);
 }

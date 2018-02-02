@@ -73,6 +73,7 @@ enum TokenType : uint8_t {
   Unless,
   Until,
   While,
+  Yield,
 
   // Operators
   Plus,
@@ -178,6 +179,7 @@ static std::string kTokenTypeStrings[] = {
   "Unless",
   "Until",
   "While",
+  "Yield",
   "Plus",
   "Minus",
   "Mul",
@@ -260,7 +262,8 @@ static const std::unordered_map<std::string, TokenType> kTokenKeywordsAndLiteral
   {"typeof", TokenType::Typeof},
   {"unless", TokenType::Unless},
   {"until", TokenType::Until},
-  {"while", TokenType::While}
+  {"while", TokenType::While},
+  {"yield", TokenType::Yield}
 };
 static std::unordered_map<TokenType, TokenType> kTokenAndAssignmentOperators = {
   {TokenType::PlusAssignment, TokenType::Plus},

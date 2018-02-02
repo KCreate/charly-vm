@@ -55,6 +55,7 @@ struct KeywordContext {
   bool break_allowed = false;
   bool continue_allowed = false;
   bool return_allowed = false;
+  bool yield_allowed = false;
 };
 
 class Parser : public Lexer {

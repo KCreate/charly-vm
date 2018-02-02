@@ -298,6 +298,31 @@ AST::AbstractNode* Parser::parse_control_statement() {
       this->skip_token(TokenType::Semicolon);
       return (new AST::Return(exp))->at(location_start, location_end);
     }
+    case TokenType::Yield: {
+      Location location_start = this->token.location;
+
+      // Check if yield is allowed at this position
+      if (!this->keyword_context.yield_allowed) {
+        this->illegal_token();
+      }
+
+      this->advance();
+
+      AST::AbstractNode* exp;
+      std::optional<Location> location_end;
+
+      if ((this->token.type != TokenType::Semicolon) && (this->token.type != TokenType::RightCurly) &&
+          (this->token.type != TokenType::Eof)) {
+        exp = this->parse_expression();
+        location_end = exp->location_end;
+      } else {
+        exp = new AST::Empty();
+        location_end = location_start;
+      }
+
+      this->skip_token(TokenType::Semicolon);
+      return (new AST::Yield(exp))->at(location_start, location_end);
+    }
     case TokenType::Break: {
       Location location_start = this->token.location;
 
@@ -684,6 +709,7 @@ AST::AbstractNode* Parser::parse_try_statement() {
     this->keyword_context.break_allowed = false;
     this->keyword_context.continue_allowed = false;
     this->keyword_context.return_allowed = false;
+    this->keyword_context.yield_allowed = false;
     finally_block = this->parse_block();
     this->keyword_context = backup_context;
 
@@ -1312,6 +1338,7 @@ AST::AbstractNode* Parser::parse_func() {
   this->keyword_context.return_allowed = true;
   this->keyword_context.break_allowed = false;
   this->keyword_context.continue_allowed = false;
+  this->keyword_context.yield_allowed = true;
   if (this->token.type == TokenType::LeftCurly) {
     body = this->parse_block();
   } else if (this->token.type == TokenType::Assignment) {
@@ -1361,6 +1388,7 @@ AST::AbstractNode* Parser::parse_arrowfunc() {
     this->keyword_context.return_allowed = true;
     this->keyword_context.break_allowed = false;
     this->keyword_context.continue_allowed = false;
+    this->keyword_context.yield_allowed = true;
     body = this->parse_block();
     this->keyword_context = backup_context;
   } else {
