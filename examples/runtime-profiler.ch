@@ -161,5 +161,20 @@ while (i < iterations) {
     "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef"
   ]
 
+  func generatorcounter(a) {
+    let i = 0
+    while i < a - 1 {
+      yield i
+      i += 1
+    }
+    a
+  }
+
+  const counter = generatorcounter(10)
+  let sum = 0
+  while counter {
+    sum += counter()
+  }
+
   i += 1
 }
