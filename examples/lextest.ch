@@ -1,1 +1,1 @@
-print(false.tap)
+print("hello world")

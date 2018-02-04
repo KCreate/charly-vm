@@ -351,9 +351,9 @@ const uint64_t kITypeIString      = 0x0007000000000000;
 
 // Shorthand values
 const uint64_t kBitsNaN           = kMaskExponentBits | kMaskQuietBit;
-const uint64_t kFalse             = kBitsNaN | kITypeFalse;
-const uint64_t kTrue              = kBitsNaN | kITypeTrue;
-const uint64_t kNull              = kBitsNaN | kITypeNull;
+const uint64_t kFalse             = kBitsNaN | kITypeFalse; // 0x7ff9000000000000
+const uint64_t kTrue              = kBitsNaN | kITypeTrue;  // 0x7ffa000000000000
+const uint64_t kNull              = kBitsNaN | kITypeNull;  // 0x7ffb000000000000
 
 // Signatures of complex encoded types
 const uint64_t kSignaturePointer  = kMaskSignBit | kBitsNaN;
