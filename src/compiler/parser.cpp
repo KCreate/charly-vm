@@ -737,11 +737,11 @@ AST::AbstractNode* Parser::parse_assignment() {
   if (this->token.is_and_assignment()) {
     and_operator = kTokenAndAssignmentOperators[this->token.type];
     this->advance();
-    right = this->parse_assignment();
+    right = this->parse_expression();
     generate_and_assignment = true;
   } else if (this->token.type == TokenType::Assignment) {
     this->advance();
-    right = this->parse_assignment();
+    right = this->parse_expression();
   } else {
     return left;
   }
