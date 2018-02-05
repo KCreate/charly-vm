@@ -364,8 +364,15 @@ AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue
     // If not, null is returned
     AST::AbstractNode* last_node = body->statements.back();
     if (AST::yields_value(last_node)) {
-      body->statements.pop_back();
-      body->append_node((new AST::Return(last_node))->at(last_node));
+
+      // If the last statement in a function is a yield statement, it is not returned implicitly
+      // We rather insert a return null after it
+      if (last_node->type() == AST::kTypeYield) {
+        body->append_node((new AST::Return(new AST::Null()))->at(last_node));
+      } else {
+        body->statements.pop_back();
+        body->append_node((new AST::Return(last_node))->at(last_node));
+      }
     } else {
       if (last_node->type() != AST::kTypeReturn && last_node->type() != AST::kTypeThrow) {
         body->append_node((new AST::Return(new AST::Null()))->at(body));
