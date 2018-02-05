@@ -652,6 +652,11 @@ AST::AbstractNode* CodeGenerator::visit_function(AST::Function* node, VisitConti
   this->assembler.write_putfunction_to_label(this->context.symtable(node->name), function_block_label, node->anonymous,
                                              node->parameters.size(), node->lvarcount);
 
+  // Anonymous generators are invoked immediately
+  if (node->generator && node->anonymous) {
+    this->assembler.write_call(0);
+  }
+
   // Codegen the block
   this->queued_functions.push_back(QueuedFunction({function_block_label, node}));
 
