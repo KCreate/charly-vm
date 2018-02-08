@@ -1301,21 +1301,27 @@ AST::AbstractNode* Parser::parse_func() {
   if (this->token.type == TokenType::LeftParen) {
     this->advance();
 
-    while (this->token.type != TokenType::RightParen) {
-      bool self_initializer = false;
+    if (this->token.type != TokenType::RightParen) {
+      while (true) {
+        bool self_initializer = false;
 
-      // Check if we got a self initializer
-      if (this->token.type == TokenType::AtSign) {
-        self_initializer = true;
-        this->advance();
+        // Check if we got a self initializer
+        if (this->token.type == TokenType::AtSign) {
+          self_initializer = true;
+          this->advance();
+        }
+
+        this->expect_token(TokenType::Identifier, [&]() {
+            params.push_back(this->token.value);
+            if (self_initializer) self_initialisations.push_back(this->token.value);
+        });
+
+        if (this->token.type != TokenType::Comma) {
+          break;
+        } else {
+          this->advance();
+        }
       }
-
-      this->expect_token(TokenType::Identifier, [&]() {
-          params.push_back(this->token.value);
-          if (self_initializer) self_initialisations.push_back(this->token.value);
-      });
-
-      this->skip_token(TokenType::Comma);
     }
 
     this->expect_token(TokenType::RightParen);
@@ -1354,10 +1360,7 @@ AST::AbstractNode* Parser::parse_arrowfunc() {
     this->advance();
 
     if (this->token.type != TokenType::RightParen) {
-      this->expect_token(TokenType::Identifier, [&]() { params.push_back(this->token.value); });
-
-      while (this->token.type == TokenType::Comma) {
-        this->advance();
+      while (true) {
         this->expect_token(TokenType::Identifier, [&]() {
 
           // Check if this argument already exists
@@ -1368,6 +1371,12 @@ AST::AbstractNode* Parser::parse_arrowfunc() {
             this->illegal_token("Duplicate function parameter");
           }
         });
+
+        if (this->token.type != TokenType::Comma) {
+          break;
+        } else {
+          this->advance();
+        }
       }
     }
 

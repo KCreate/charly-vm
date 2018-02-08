@@ -1,1 +1,1 @@
-print("hello world")
+func foo(@a,) {}
