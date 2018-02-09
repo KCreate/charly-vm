@@ -254,6 +254,16 @@ VALUE VM::create_string(const char* data, uint32_t length) {
   return cell->as_value();
 }
 
+VALUE VM::create_weak_string(const char* data, uint32_t length) {
+  MemoryCell* cell = this->gc.allocate();
+  cell->basic.type = kTypeString;
+  cell->basic.shortstring = false;
+  cell->basic.weak_string = true;
+  cell->string.lbuf.data = const_cast<char*>(data);
+  cell->string.lbuf.length = length;
+  return cell->as_value();
+}
+
 VALUE VM::create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint32_t lvarcount, bool anonymous) {
   MemoryCell* cell = this->gc.allocate();
   cell->basic.type = kTypeFunction;
@@ -1376,7 +1386,7 @@ void VM::op_putvalue(VALUE value) {
 }
 
 void VM::op_putstring(char* data, uint32_t length) {
-  this->push_stack(this->create_string(data, length));
+  this->push_stack(this->create_weak_string(data, length));
 }
 
 void VM::op_putfunction(VALUE symbol, uint8_t* body_address, bool anonymous, uint32_t argc, uint32_t lvarcount) {

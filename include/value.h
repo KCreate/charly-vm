@@ -89,13 +89,16 @@ struct Basic {
   // If the type of this object is String, this determines wether it's a short string
   bool shortstring : 1;
 
+  // If the type of this object is String, this determines wether it's a weak string
+  bool weak_string : 1;
+
   // Used by the Garbage Collector during the Mark & Sweep Cycle
   bool mark : 1;
 
   // Holds the type of the heap allocated struct
   uint8_t type : 5;
 
-  Basic() : shortstring(false), mark(false), type(kTypeDead) {
+  Basic() : shortstring(false), weak_string(false), mark(false), type(kTypeDead) {
   }
 };
 
@@ -152,7 +155,7 @@ struct String {
     return basic.shortstring ? sbuf.length : lbuf.length;
   }
   inline void clean() {
-    if (!basic.shortstring) {
+    if (!basic.shortstring && !basic.weak_string) {
       std::free(lbuf.data);
     }
   }
