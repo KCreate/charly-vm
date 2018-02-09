@@ -27,6 +27,7 @@
 #include <iomanip>
 #include <iostream>
 #include <vector>
+#include <type_traits>
 
 #include "compiler.h"
 #include "instructionblock.h"
@@ -105,7 +106,13 @@ private:
   template <typename V>
   inline void print_hex(V value, std::ostream& stream, uint32_t width = 1) {
     stream.fill('0');
-    stream << "0x" << std::hex << std::setw(width) << value << std::setw(1) << std::dec;
+
+    if (std::is_pointer<V>::value) {
+      stream << "0x" << std::hex << std::setw(width);
+      stream << reinterpret_cast<void*>(value) << std::setw(1) << std::dec;
+    } else {
+      stream << "0x" << std::hex << std::setw(width) << value << std::setw(1) << std::dec;
+    }
   }
 
   inline void print_symbol(uint64_t value, std::ostream& stream) {

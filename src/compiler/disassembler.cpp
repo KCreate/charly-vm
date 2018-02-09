@@ -93,7 +93,7 @@ void Disassembler::dump(std::ostream& stream) {
           stream.write(blk_ptr, str_size);
           stream << '"';
         } else {
-          this->print_hex(this->block->read<uint32_t>(offset + 1), stream);
+          this->print_hex(this->block->read<uint32_t>(offset + 1), stream, 12);
           stream << ", ";
           this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(uint32_t)), stream);
         }
@@ -103,7 +103,7 @@ void Disassembler::dump(std::ostream& stream) {
       case Opcode::PutFunction: {
         this->print_symbol(this->block->read<VALUE>(offset + 1), stream);
         stream << ", ";
-        this->print_symbol(offset + this->block->read<int32_t>(offset + 1 + sizeof(VALUE)), stream);
+        this->print_hex(offset + this->block->read<int32_t>(offset + 1 + sizeof(VALUE)), stream, 12);
         stream << ", ";
         this->print_value(this->block->read<bool>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t)), stream);
         stream << ", ";
@@ -118,7 +118,7 @@ void Disassembler::dump(std::ostream& stream) {
       case Opcode::PutCFunction: {
         this->print_symbol(this->block->read<VALUE>(offset + 1), stream);
         stream << ", ";
-        this->print_hex(this->block->read<void*>(offset + 1 + sizeof(VALUE)), stream);
+        this->print_hex(this->block->read<void*>(offset + 1 + sizeof(VALUE)), stream, 12);
         stream << ", ";
         this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(VALUE) + sizeof(void*)), stream);
         break;
@@ -126,7 +126,7 @@ void Disassembler::dump(std::ostream& stream) {
       case Opcode::PutGenerator: {
         this->print_symbol(this->block->read<VALUE>(offset + 1), stream);
         stream << ", ";
-        this->print_symbol(offset + this->block->read<int32_t>(offset + 1 + sizeof(VALUE)), stream);
+        this->print_hex(this->block->get_data() + offset + this->block->read<int32_t>(offset + 1 + sizeof(VALUE)), stream, 12);
         break;
       }
       case Opcode::PutClass: {
@@ -158,7 +158,7 @@ void Disassembler::dump(std::ostream& stream) {
       case Opcode::Branch:
       case Opcode::BranchIf:
       case Opcode::BranchUnless: {
-        this->print_hex(offset + this->block->read<int32_t>(offset + 1), stream, 6);
+        this->print_hex(this->block->get_data() + offset + this->block->read<int32_t>(offset + 1), stream, 12);
         break;
       }
       default: {
