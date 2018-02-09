@@ -139,7 +139,6 @@ public:
   VALUE create_object(uint32_t initial_capacity);
   VALUE create_array(uint32_t initial_capacity);
   VALUE create_string(const char* data, uint32_t length);
-  VALUE create_weak_string(const char* data, uint32_t length);
   VALUE create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint32_t lvarcount, bool anonymous);
   VALUE create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer);
   VALUE create_generator(VALUE name, uint8_t* resume_address);
