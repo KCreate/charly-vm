@@ -167,36 +167,37 @@ void Lexer::read_token() {
       break;
     }
     case L'&': {
-      switch (this->source.read_char()) {
+      switch (this->source.peek_char()) {
         case L'&': {
+          this->source.read_char();
           this->source.read_char();
           this->token.type = TokenType::AND;
           break;
         }
         default: {
-          this->token.type = TokenType::BitAND;
+          this->consume_operator_or_assignment(TokenType::BitAND);
           break;
         }
       }
       break;
     }
     case L'|': {
-      switch (this->source.read_char()) {
+      switch (this->source.peek_char()) {
         case L'|': {
+          this->source.read_char();
           this->source.read_char();
           this->token.type = TokenType::OR;
           break;
         }
         default: {
-          this->token.type = TokenType::BitOR;
+          this->consume_operator_or_assignment(TokenType::BitOR);
           break;
         }
       }
       break;
     }
     case L'^': {
-      this->token.type = TokenType::BitXOR;
-      this->source.read_char();
+      this->consume_operator_or_assignment(TokenType::BitXOR);
       break;
     }
     case L'~': {
@@ -222,8 +223,7 @@ void Lexer::read_token() {
           break;
         }
         case L'<': {
-          this->source.read_char();
-          this->token.type = TokenType::LeftShift;
+          this->consume_operator_or_assignment(TokenType::LeftShift);
           break;
         }
         default: {
@@ -241,8 +241,7 @@ void Lexer::read_token() {
           break;
         }
         case L'>': {
-          this->source.read_char();
-          this->token.type = TokenType::RightShift;
+          this->consume_operator_or_assignment(TokenType::RightShift);
           break;
         }
         default: {
@@ -367,6 +366,31 @@ void Lexer::consume_operator_or_assignment(TokenType type) {
       }
       case TokenType::Pow: {
         this->token.type = TokenType::PowAssignment;
+        this->source.read_char();
+        break;
+      }
+      case TokenType::BitAND: {
+        this->token.type = TokenType::BitANDAssignment;
+        this->source.read_char();
+        break;
+      }
+      case TokenType::BitOR: {
+        this->token.type = TokenType::BitORAssignment;
+        this->source.read_char();
+        break;
+      }
+      case TokenType::BitXOR: {
+        this->token.type = TokenType::BitXORAssignment;
+        this->source.read_char();
+        break;
+      }
+      case TokenType::LeftShift: {
+        this->token.type = TokenType::LeftShiftAssignment;
+        this->source.read_char();
+        break;
+      }
+      case TokenType::RightShift: {
+        this->token.type = TokenType::RightShiftAssignment;
         this->source.read_char();
         break;
       }

@@ -104,6 +104,11 @@ enum TokenType : uint8_t {
   DivAssignment,
   ModAssignment,
   PowAssignment,
+  BitANDAssignment,
+  BitORAssignment,
+  BitXORAssignment,
+  LeftShiftAssignment,
+  RightShiftAssignment,
 
   // Comparison
   Equal,
@@ -202,6 +207,11 @@ static std::string kTokenTypeStrings[] = {
   "DivAssignment",
   "ModAssignment",
   "PowAssignment",
+  "BitANDAssignment",
+  "BitORAssignment",
+  "BitXORAssignment",
+  "LeftShiftAssignment",
+  "RightShiftAssignment",
   "Equal",
   "Not",
   "Less",
@@ -266,12 +276,21 @@ static const std::unordered_map<std::string, TokenType> kTokenKeywordsAndLiteral
   {"yield", TokenType::Yield}
 };
 static std::unordered_map<TokenType, TokenType> kTokenAndAssignmentOperators = {
+
+  // Regular arithmetic operators
   {TokenType::PlusAssignment, TokenType::Plus},
   {TokenType::MinusAssignment, TokenType::Minus},
   {TokenType::MulAssignment, TokenType::Mul},
   {TokenType::DivAssignment, TokenType::Div},
   {TokenType::ModAssignment, TokenType::Mod},
-  {TokenType::PowAssignment, TokenType::Pow}
+  {TokenType::PowAssignment, TokenType::Pow},
+
+  // Binary operators
+  {TokenType::BitANDAssignment, TokenType::BitAND},
+  {TokenType::BitORAssignment, TokenType::BitOR},
+  {TokenType::BitXORAssignment, TokenType::BitXOR},
+  {TokenType::LeftShiftAssignment, TokenType::LeftShift},
+  {TokenType::RightShiftAssignment, TokenType::RightShift}
 };
 // clang-format on
 
@@ -294,7 +313,10 @@ struct Token {
   inline bool is_and_assignment() {
     return (this->type == TokenType::PlusAssignment || this->type == TokenType::MinusAssignment ||
             this->type == TokenType::MulAssignment || this->type == TokenType::DivAssignment ||
-            this->type == TokenType::ModAssignment || this->type == TokenType::PowAssignment);
+            this->type == TokenType::ModAssignment || this->type == TokenType::PowAssignment ||
+            this->type == TokenType::BitANDAssignment || this->type == TokenType::BitORAssignment ||
+            this->type == TokenType::BitXORAssignment || this->type == TokenType::LeftShiftAssignment ||
+            this->type == TokenType::RightShiftAssignment);
   }
 
   inline bool could_start_expression() {
