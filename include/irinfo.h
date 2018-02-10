@@ -34,35 +34,6 @@
 
 namespace Charly::Compilation {
 
-// Forward declaration
-namespace AST {
-struct Function;
-};
-
-// Represents a single record in an IRScope
-struct IRVarRecord {
-  uint32_t depth = 0;
-  uint64_t blockid = 0;
-  uint32_t frame_index = 0;
-  bool is_constant = false;
-};
-
-// Represents a level of scope introduced by a function
-struct IRScope {
-  IRScope* parent = nullptr;
-  AST::Function* function_node;
-  std::unordered_map<size_t, std::vector<IRVarRecord>> table;
-  uint32_t next_frame_index = 0;
-
-  IRScope(IRScope* p, AST::Function* f) : parent(p), function_node(f) {
-  }
-
-  // Declare a new symbol inside this scope
-  IRVarRecord declare(size_t symbol, uint32_t depth, uint64_t blockid, bool is_constant = false);
-  void pop_blockid(uint64_t blockid);
-  std::optional<IRVarRecord> resolve(size_t symbol, uint32_t depth, uint64_t blockid, bool noparentblocks);
-};
-
 // Contains the amount of environments which need to be dereferenced
 // and the index of a local variable to read
 struct IRVarOffsetInfo {
@@ -95,5 +66,4 @@ struct IRAssignmentInfo {
   IRAssignmentInfo(bool avr) : assignment_value_required(avr) {
   }
 };
-
 }  // namespace Charly::Compilation
