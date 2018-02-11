@@ -1,17 +1,9 @@
-func foo(a) {
-  let cond = true
+func foo(arg) {
+  let arg // error
 
-  while cond {
-    let a = 25
+  arguments // [arg]
 
-    yield ->{
-      return a
-    }
+  let arguments // works!
 
-    cond = false
-  }
-
-  if cond {
-    let a = 30
-  }
+  arguments // null
 }

@@ -30,6 +30,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include "irinfo.h"
+
 #pragma once
 
 /*
@@ -42,65 +44,149 @@ namespace Charly::Compilation {
 
 // Forward declare the Function AST node for use inside the FunctionScope struct
 namespace AST {
-  class Function;
+class Function;
 };
 
-// Holds information about a given slot
-//
-// The level and offset fields are relative to the LocalScope object which emitted this object
-struct LocalSlotInfo {
-  uint32_t level = 0xffffffff;
-  uint32_t offset = 0xffffffff;
+// Holds information about a given slot in a functions local variables table
+struct SlotInfo {
+  bool active = true;
   bool leaked = false;
-  bool valid = true;
+  bool constant = false;
 };
 
 struct FunctionScope {
-  std::vector<bool> active_slots;
+  std::vector<SlotInfo> active_slots;
   AST::Function* function_node = nullptr;
 
-  // Allocate a slot
-  //
-  // Reuses an un-active slot if one is found or adds another one to the list
-  inline uint32_t alloc_slot() {
+  FunctionScope(AST::Function* fn) : function_node(fn) {
+  }
 
+  ~FunctionScope() {
+    if (this->function_node) {
+      this->function_node->lvarcount = this->active_slots.size();
+    }
+  }
+
+  // Allocate a slot
+  inline uint32_t alloc_slot(bool constant) {
+    if (this->active_slots.size() == 0) {
+      this->active_slots.push_back({ .active = true, .constant = constant });
+      return 0;
+    }
+
+    // Check if we have an unactive slot
+    uint32_t allocated_slot = this->active_slots.size() - 1;
+    for (auto& slot = this->active_slots.rbegin(); it != this->active_slots.rend(); it++) {
+
+      // If the slot is inactive, mark it as active and return the index
+      if (!slot.active) {
+        slot.active = true;
+        return allocated_slot;
+      }
+
+      allocated_slot--;
+    }
+
+    this->active_slots.push_back({ .active = true, .constant = constant });
+    return this->active_slots.size() - 1;
   }
 
   // Mark a specific index in the active slots as free
   inline void mark_as_free(uint32_t index) {
+    if (index < this->active_slots.size()) {
 
+      // We can't reuse this local index if the slot was leaked
+      if (!this->active_slots[index].leaked) {
+        this->active_slots[index].active = false;
+        this->active_slots[index].leaked = false;
+        this->active_slots[index].constant = false;
+      }
+    }
+  }
+
+  inline void mark_as_leaked(uint32_t index) {
+    if (index < this->active_slots.size()) {
+      this->active_slots[index].leaked = true;
+    }
+  }
+};
+
+// Information used by the code generator to read/write from/to local variables
+struct LocalOffsetInfo {
+  uint32_t level = 0xffffffff;
+  uint32_t offset = 0xffffffff;
+  bool valid = true;
+  bool constant = false;
+
+  inline IRVarOffsetInfo to_offset_info() {
+    return { .level = this->level, .index = this->offset };
   }
 };
 
 struct LocalScope {
   FunctionScope* contained_function = nullptr;
   LocalScope* parent_scope = nullptr;
-  std::unordered_map<size_t, LocalSlotInfo> local_indices;
+  std::unordered_map<size_t, LocalOffsetInfo> local_indices;
 
   LocalScope(FunctionScope* cf, LocalScope* ps) : contained_function(cf), parent_scope(ps) {
   }
 
   ~LocalScope() {
-    for (auto& slot_info : this->local_indices) {
-      if (!slot_info.leaked) {
-        this->contained_function->mark_as_free(slot.offset);
-      }
+    for (auto& offset_info : this->local_indices) {
+      this->contained_function->mark_as_free(offset_info.offset);
     }
   }
 
   // Allocate a slot in this scope
-  inline LocalSlotInfo alloc_slot() {
-    uint32_t allocated_index = this->contained_function->alloc_slot();
-    return { .level = 0, .offset = allocated_index };
+  inline LocalOffsetInfo alloc_slot(size_t symbol, bool constant = false) {
+    uint32_t allocated_index = this->contained_function->alloc_slot(constant);
+    LocalOffsetInfo offset_info = { .level = 0, .offset = allocated_index, .constant = constant };
+    this->local_indices[symbol] = offset_info;
+    return offset_info;
   }
 
-  // Return the offset of a symbol
-  inline LocalSlotInfo resolve_slot(size_t symbol) {
-    if (this->local_indices.count(symbol) != 0) {
-      return this->local_indices[symbol];
+  // Checks if this scope contains a symbol
+  inline bool scope_contains_symbol(size_t symbol) {
+    return this->local_indices.count(symbol) != 0;
+  }
+
+  // Return the offset info for a given symbol
+  inline LocalOffsetInfo resolve_symbol(size_t symbol) {
+    LocalScope* search_scope = this;
+    FunctionScope* search_function_scope = this->contained_function;
+
+    uint32_t dereferenced_functions = 0;
+    bool mark_vars_as_leaked = false;
+
+    // Search for this symbol
+    while (search_scope) {
+
+      // Check if this scope contains the symbol
+      if (this->scope_contains_symbol(symbol)) {
+        LocalOffsetInfo found_offset_info = search_scope->local_indices[symbol];
+
+        // Mark the slot as leaked if we passed a function boundary
+        // If we don't mark it as leaked, the slot might be allocated to another
+        // variable
+        if (dereferenced_functions && mark_vars_as_leaked) {
+          search_function_scope->mark_as_leaked(found_offset_info.offset);
+        }
+
+        // The level is always relative to the function we come from
+        found_offset_info.level = dereferenced_functions;
+        return found_offset_info;
+      }
+
+      // Update the searching environment
+      search_scope = search_scope->parent_scope;
+      if (search_scope->contained_function != search_function_scope) {
+        dereferenced_functions++;
+        mark_vars_as_leaked = true;
+        search_function_scope = search_scope->contained_function;
+      }
     }
 
-    return { .valid = false }
+    return { .valid = false };
   }
 };
 }  // namespace Charly::Compilation

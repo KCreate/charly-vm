@@ -30,41 +30,32 @@
 
 namespace Charly::Compilation {
 AST::AbstractNode* LVarRewriter::visit_function(AST::Function* node, VisitContinue descend) {
-  this->scope = new IRScope(this->scope, node);
+  FunctionScope* func_scope = new FunctionScope(node);
+  LocalScope* local_scope = new LocalScope(func_scope, this->scope);
+  this->scope = local_scope;
 
-  // Visit all child nodes of this function
-  uint64_t backup_blockid = this->blockid;
-  this->blockid = reinterpret_cast<uint64_t>(node->body);
-
-  // Register the function's parameters
-  this->scope->declare(this->context.symtable("__CHARLY_FUNCTION_ARGUMENTS"), this->depth + 1, this->blockid, true);
+  // Register the function arguments
+  this->scope->alloc_slot(this->context.symtable("__CHARLY_FUNCTION_ARGUMENTS"), true);
   for (const std::string& param : node->parameters) {
-    this->scope->declare(this->context.symtable(param), this->depth + 1, this->blockid, false);
+    this->scope->alloc_slot(this->context.symtable(param), false);
   }
+
   descend();
-  this->blockid = backup_blockid;
 
-  node->lvarcount = this->scope->next_frame_index;
-
-  // Restore the old scope
-  IRScope* current_scope = this->scope;
-  this->scope = this->scope->parent;
-  delete current_scope;
+  // Reset the old scope
+  this->scope = local_scope->parent_scope;
+  delete local_scope;
+  delete func_scope;
 
   return node;
 }
 
 AST::AbstractNode* LVarRewriter::visit_block(AST::Block* node, VisitContinue descend) {
-  uint64_t backup_blockid = this->blockid;
-  this->blockid = reinterpret_cast<uint64_t>(node);
-  this->depth += 1;
-  bool backup_ignore_const_assignment = this->ignore_const_assignment;
-  this->ignore_const_assignment = this->ignore_const_assignment || node->ignore_const;
+  this->scope = new LocalScope(this->scope->contained_function, this->scope);
+  bool backup_allow_const_assignment = this->allow_const_assignment;
+  this->allow_const_assignment = this->allow_const_assignment || node->ignore_const;
   descend();
-  this->scope->pop_blockid(this->blockid);
-  this->depth -= 1;
-  this->blockid = backup_blockid;
-  this->ignore_const_assignment = backup_ignore_const_assignment;
+  this->allow_const_assignment = backup_allow_const_assignment;
   return node;
 }
 
@@ -75,22 +66,15 @@ AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisat
     descend();
   }
 
-  // Check if this is a duplicate declaration
-  auto result = this->scope->resolve(this->context.symtable(node->name), this->depth, this->blockid, true);
-  if (result.has_value()) {
-    if (node->name == "arguments") {
-      this->push_error(node, "Duplicate declaration of " + node->name +
-                                 ". 'arguments' is a reserved identifier automatically inserted into every function.");
-    } else {
-      this->push_error(node, "Duplicate declaration of " + node->name);
-    }
+  VALUE name_symbol = this->context.symtable(node->name);
 
+  // Check if this is a duplicate declaration
+  if (this->scope->scope_contains_symbol(name_symbol)) {
+    this->push_error(node, "Duplicate declaration of " + node->name);
     return node;
   }
 
-  // Register this variable in the current scope
-  IRVarRecord record =
-      this->scope->declare(this->context.symtable(node->name), this->depth, this->blockid, node->constant);
+  LocalOffsetInfo offset_info = this->scope->alloc_slot(name_symbol, node->constant);
 
   // If the expression is a function or class, descend into it now
   // This allows a function or class to reference itself inside its body
@@ -107,7 +91,7 @@ AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisat
   // Create the initialisation node for this declaration
   AST::Assignment* initialisation = new AST::Assignment(node->name, node->expression);
   initialisation->at(node);
-  initialisation->offset_info = new IRVarOffsetInfo({0, record.frame_index});
+  initialisation->offset_info = offset_info.to_offset_info();
   initialisation->assignment_info = new IRAssignmentInfo(false);
 
   // Deallocate the old localinitialisation node
@@ -200,7 +184,7 @@ AST::AbstractNode* LVarRewriter::visit_assignment(AST::Assignment* node, VisitCo
     return node;
   }
 
-  if (result->is_constant && !this->ignore_const_assignment) {
+  if (result->is_constant && !this->allow_const_assignment) {
     this->push_error(node, "Assignment to constant variable: " + node->target);
     return node;
   }

@@ -26,7 +26,7 @@
 
 #include "ast.h"
 #include "compiler-pass.h"
-#include "irinfo.h"
+#include "irscope.h"
 
 #pragma once
 
@@ -42,22 +42,8 @@ public:
   AST::AbstractNode* visit_assignment(AST::Assignment* node, VisitContinue cont);
   AST::AbstractNode* visit_trycatch(AST::TryCatch* node, VisitContinue cont);
 
-  inline IRScope* get_current_scope() {
-    return this->scope;
-  }
-  inline void push_scope() {
-    this->scope = new IRScope(this->scope, nullptr);
-  }
-  inline void pop_scope() {
-    IRScope* current_scope = this->scope;
-    this->scope = this->scope->parent;
-    delete current_scope;
-  }
-
 private:
-  uint32_t depth = 0;
-  uint64_t blockid = 0;
-  IRScope* scope = nullptr;
-  bool ignore_const_assignment = false;
+  LocalScope* scope = nullptr;
+  bool allow_const_assignment = false;
 };
 }  // namespace Charly::Compilation
