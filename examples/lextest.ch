@@ -1,6 +1,5 @@
-if true {
-  let a = "leaky scope :D"
-}
+const cond = false
 
-let myvariable
-print(myvariable)
+unless cond {
+  print("fail")
+}

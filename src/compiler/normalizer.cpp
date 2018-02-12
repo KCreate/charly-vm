@@ -86,6 +86,27 @@ AST::AbstractNode* Normalizer::visit_block(AST::Block* node, VisitContinue) {
 AST::AbstractNode* Normalizer::visit_if(AST::If* node, VisitContinue cont) {
   cont();
   node->then_block = this->wrap_in_block(node->then_block, cont);
+
+  // If the condition is a unary not expression, we can change the type of
+  // this node to Unless as it has the same effect, but without the additional
+  // unot operation
+  if (node->condition->type() == AST::kTypeUnary) {
+    AST::Unary* cond = node->condition->as<AST::Unary>();
+    if (cond->operator_type == TokenType::UNot) {
+      AST::AbstractNode* expr = cond->expression;
+
+      // Create the replacement node
+      AST::Unless* unless = new AST::Unless(expr, node->then_block);
+      unless->at(node);
+
+      // Delete the old node
+      node->then_block = nullptr;
+      cond->expression = nullptr;
+      delete node;
+      return unless;
+    }
+  }
+
   return node;
 }
 
@@ -93,12 +114,55 @@ AST::AbstractNode* Normalizer::visit_ifelse(AST::IfElse* node, VisitContinue con
   cont();
   node->then_block = this->wrap_in_block(node->then_block, cont);
   node->else_block = this->wrap_in_block(node->else_block, cont);
+
+  // If the condition is a unary not expression, we can change the type of
+  // this node to Unless as it has the same effect, but without the additional
+  // unot operation
+  if (node->condition->type() == AST::kTypeUnary) {
+    AST::Unary* cond = node->condition->as<AST::Unary>();
+    if (cond->operator_type == TokenType::UNot) {
+      AST::AbstractNode* expr = cond->expression;
+
+      // Create the new node
+      AST::UnlessElse* unless = new AST::UnlessElse(expr, node->then_block, node->else_block);
+      unless->at(node);
+
+      // Cleanup
+      node->then_block = nullptr;
+      node->else_block = nullptr;
+      cond->expression = nullptr;
+      delete node;
+      return unless;
+    }
+  }
+
   return node;
 }
 
 AST::AbstractNode* Normalizer::visit_unless(AST::Unless* node, VisitContinue cont) {
   cont();
   node->then_block = this->wrap_in_block(node->then_block, cont);
+
+  // If the condition is a unary not expression, we can change the type of
+  // this node to Unless as it has the same effect, but without the additional
+  // unot operation
+  if (node->condition->type() == AST::kTypeUnary) {
+    AST::Unary* cond = node->condition->as<AST::Unary>();
+    if (cond->operator_type == TokenType::UNot) {
+      AST::AbstractNode* expr = cond->expression;
+
+      // Create the replacement node
+      AST::If* ifnode = new AST::If(expr, node->then_block);
+      ifnode->at(node);
+
+      // Delete the old node
+      node->then_block = nullptr;
+      cond->expression = nullptr;
+      delete node;
+      return ifnode;
+    }
+  }
+
   return node;
 }
 
@@ -106,12 +170,28 @@ AST::AbstractNode* Normalizer::visit_unlesselse(AST::UnlessElse* node, VisitCont
   cont();
   node->then_block = this->wrap_in_block(node->then_block, cont);
   node->else_block = this->wrap_in_block(node->else_block, cont);
-  return node;
-}
 
-AST::AbstractNode* Normalizer::visit_guard(AST::Guard* node, VisitContinue cont) {
-  cont();
-  node->block = this->wrap_in_block(node->block, cont);
+  // If the condition is a unary not expression, we can change the type of
+  // this node to Unless as it has the same effect, but without the additional
+  // unot operation
+  if (node->condition->type() == AST::kTypeUnary) {
+    AST::Unary* cond = node->condition->as<AST::Unary>();
+    if (cond->operator_type == TokenType::UNot) {
+      AST::AbstractNode* expr = cond->expression;
+
+      // Create the new node
+      AST::IfElse* ifnode = new AST::IfElse(expr, node->then_block, node->else_block);
+      ifnode->at(node);
+
+      // Cleanup
+      node->then_block = nullptr;
+      node->else_block = nullptr;
+      cond->expression = nullptr;
+      delete node;
+      return ifnode;
+    }
+  }
+
   return node;
 }
 
