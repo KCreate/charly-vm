@@ -89,8 +89,8 @@ AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisat
 
   // If we have no expression to assign (empty declaration) remove this node from the AST
   if (node->expression->type() == AST::kTypeEmpty) {
-    delete node;
-    return nullptr;
+    delete node->expression;
+    node->expression = new AST::Null();
   }
 
   // Create the initialisation node for this declaration

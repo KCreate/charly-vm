@@ -1,11 +1,6 @@
-let a = 1
-
 if true {
-  let a = 2
-  ->{ print(a) }()
+  let a = "leaky scope :D"
 }
 
-let b = 3
-
-print(a)
-print(b)
+let myvariable
+print(myvariable)
