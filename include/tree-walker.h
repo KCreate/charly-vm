@@ -82,10 +82,6 @@ public:
     cont();
     return node;
   }
-  virtual inline AST::AbstractNode* visit_guard(AST::Guard* node, VisitContinue cont) {
-    cont();
-    return node;
-  }
   virtual inline AST::AbstractNode* visit_while(AST::While* node, VisitContinue cont) {
     cont();
     return node;
@@ -269,8 +265,6 @@ public:
       return walker->visit_unless(node->as<AST::Unless>(), cont);
     if (node->type() == AST::kTypeUnlessElse)
       return walker->visit_unlesselse(node->as<AST::UnlessElse>(), cont);
-    if (node->type() == AST::kTypeGuard)
-      return walker->visit_guard(node->as<AST::Guard>(), cont);
     if (node->type() == AST::kTypeWhile)
       return walker->visit_while(node->as<AST::While>(), cont);
     if (node->type() == AST::kTypeUntil)

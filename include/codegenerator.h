@@ -60,7 +60,6 @@ private:
   AST::AbstractNode* visit_ifelse(AST::IfElse* node, VisitContinue cont);
   AST::AbstractNode* visit_unless(AST::Unless* node, VisitContinue cont);
   AST::AbstractNode* visit_unlesselse(AST::UnlessElse* node, VisitContinue cont);
-  AST::AbstractNode* visit_guard(AST::Guard* node, VisitContinue cont);
   AST::AbstractNode* visit_while(AST::While* node, VisitContinue cont);
   AST::AbstractNode* visit_until(AST::Until* node, VisitContinue cont);
   AST::AbstractNode* visit_loop(AST::Loop* node, VisitContinue cont);

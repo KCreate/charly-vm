@@ -453,7 +453,7 @@ AST::AbstractNode* Parser::parse_guard_statement() {
     this->skip_token(TokenType::Semicolon);
   }
 
-  return (new AST::Guard(test, block))->at(location_start, block->location_end);
+  return (new AST::Unless(test, block))->at(location_start, block->location_end);
 }
 
 AST::AbstractNode* Parser::parse_switch_statement() {

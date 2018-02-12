@@ -163,20 +163,6 @@ AST::AbstractNode* CodeGenerator::visit_unlesselse(AST::UnlessElse* node, VisitC
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_guard(AST::Guard* node, VisitContinue) {
-
-  // Codegen the condition
-  this->visit_node(node->condition);
-
-  // Skip over the block if the condition was false
-  Label end_block_label = this->assembler.reserve_label();
-  this->assembler.write_branchif_to_label(end_block_label);
-  this->visit_node(node->block);
-  this->assembler.place_label(end_block_label);
-
-  return node;
-}
-
 AST::AbstractNode* CodeGenerator::visit_while(AST::While* node, VisitContinue) {
 
   // Setup labels

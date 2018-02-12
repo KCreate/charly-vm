@@ -407,33 +407,6 @@ struct UnlessElse : public AbstractNode {
   }
 };
 
-// guard <condition> {
-//   <block>
-// }
-struct Guard : public AbstractNode {
-  AbstractNode* condition;
-  AbstractNode* block;
-
-  Guard(AbstractNode* c, AbstractNode* b) : condition(c), block(b) {
-  }
-
-  inline ~Guard() {
-    delete condition;
-    delete block;
-  }
-
-  inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Guard:" << '\n';
-    this->condition->dump(stream, depth + 1);
-    this->block->dump(stream, depth + 1);
-  }
-
-  void visit(VisitFunc func) {
-    this->condition = func(this->condition);
-    this->block = func(this->block);
-  }
-};
-
 // while <condition> {
 //   <block>
 // }
@@ -1416,7 +1389,6 @@ const size_t kTypeIf = typeid(If).hash_code();
 const size_t kTypeIfElse = typeid(IfElse).hash_code();
 const size_t kTypeUnless = typeid(Unless).hash_code();
 const size_t kTypeUnlessElse = typeid(UnlessElse).hash_code();
-const size_t kTypeGuard = typeid(Guard).hash_code();
 const size_t kTypeWhile = typeid(While).hash_code();
 const size_t kTypeUntil = typeid(Until).hash_code();
 const size_t kTypeLoop = typeid(Loop).hash_code();
