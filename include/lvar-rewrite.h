@@ -42,7 +42,29 @@ public:
   AST::AbstractNode* visit_assignment(AST::Assignment* node, VisitContinue cont);
   AST::AbstractNode* visit_trycatch(AST::TryCatch* node, VisitContinue cont);
 
-private:
+  void push_local_scope() {
+    LocalScope* current_scope = this->scope;
+    FunctionScope* parent_func_scope = current_scope ? current_scope->contained_function : nullptr;
+    this->scope = new LocalScope(parent_func_scope, current_scope);
+  }
+
+  void push_func_scope(AST::Function* node) {
+    FunctionScope* func_scope = new FunctionScope(node, this->scope->contained_function);
+    LocalScope* local_scope = new LocalScope(func_scope, this->scope);
+    this->scope = local_scope;
+  }
+
+  void pop_scope() {
+    LocalScope* scope = this->scope;
+    this->scope = scope->parent_scope;
+
+    if (scope->contained_function != this->scope->contained_function) {
+      delete scope->contained_function;
+    }
+
+    delete scope;
+  }
+
   LocalScope* scope = nullptr;
   bool allow_const_assignment = false;
 };

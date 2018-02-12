@@ -30,7 +30,7 @@
 
 namespace Charly::Compilation {
 AST::AbstractNode* LVarRewriter::visit_function(AST::Function* node, VisitContinue descend) {
-  FunctionScope* func_scope = new FunctionScope(node);
+  FunctionScope* func_scope = new FunctionScope(node, this->scope->contained_function);
   LocalScope* local_scope = new LocalScope(func_scope, this->scope);
   this->scope = local_scope;
 
@@ -51,11 +51,16 @@ AST::AbstractNode* LVarRewriter::visit_function(AST::Function* node, VisitContin
 }
 
 AST::AbstractNode* LVarRewriter::visit_block(AST::Block* node, VisitContinue descend) {
-  this->scope = new LocalScope(this->scope->contained_function, this->scope);
+  this->push_local_scope();
+
   bool backup_allow_const_assignment = this->allow_const_assignment;
   this->allow_const_assignment = this->allow_const_assignment || node->ignore_const;
+
   descend();
+
   this->allow_const_assignment = backup_allow_const_assignment;
+
+  this->pop_scope();
   return node;
 }
 
@@ -91,7 +96,7 @@ AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisat
   // Create the initialisation node for this declaration
   AST::Assignment* initialisation = new AST::Assignment(node->name, node->expression);
   initialisation->at(node);
-  initialisation->offset_info = offset_info.to_offset_info();
+  initialisation->offset_info = new IRVarOffsetInfo(offset_info.to_offset_info());
   initialisation->assignment_info = new IRAssignmentInfo(false);
 
   // Deallocate the old localinitialisation node
@@ -115,7 +120,9 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
     if (std::all_of(node->name.begin() + 1, node->name.end(), ::isdigit)) {
       uint32_t index = std::atoi(node->name.substr(1, std::string::npos).c_str());
 
-      if (this->scope->function_node == nullptr || index >= this->scope->function_node->parameters.size()) {
+      AST::Function* function_node = this->scope->contained_function->function_node;
+
+      if (function_node == nullptr || index >= function_node->parameters.size()) {
         AST::IndexIntoArguments* new_node = new AST::IndexIntoArguments(index);
         new_node->at(node);
         delete node;
@@ -129,8 +136,8 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
   }
 
   // Check if this symbol exists
-  auto result = this->scope->resolve(this->context.symtable(node->name), this->depth, this->blockid, false);
-  if (!result.has_value()) {
+  LocalOffsetInfo result = this->scope->resolve_symbol(this->context.symtable(node->name));
+  if (!result.valid) {
     // If we reference `arguments`, we redirect to __CHARLY_FUNCTION_ARGUMENTS
     if (node->name == "arguments") {
       node->offset_info = new IRVarOffsetInfo({0, 0});
@@ -138,7 +145,7 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
     }
 
     // Search each function in the current scope stack if it has it as a known self var
-    IRScope* search_scope = this->scope;
+    FunctionScope* search_scope = this->scope->contained_function;
     uint32_t ir_frame_level = 0;
     while (search_scope) {
       if (search_scope->function_node != nullptr) {
@@ -159,7 +166,7 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
         }
       }
 
-      search_scope = search_scope->parent;
+      search_scope = search_scope->parent_scope;
     }
 
     this->push_error(node, "Could not resolve symbol: " + node->name);
@@ -167,16 +174,15 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
   }
 
   // Assign the offset info to the node
-  node->offset_info = new IRVarOffsetInfo({result->depth, result->frame_index});
+  node->offset_info = new IRVarOffsetInfo({result.level, result.offset});
   return node;
 }
 
 AST::AbstractNode* LVarRewriter::visit_assignment(AST::Assignment* node, VisitContinue cont) {
-  auto result = this->scope->resolve(this->context.symtable(node->target), this->depth, this->blockid, false);
-  if (!result.has_value()) {
-    // If we reference `arguments`, we redirect to __CHARLY_FUNCTION_ARGUMENTS
+  LocalOffsetInfo result = this->scope->resolve_symbol(this->context.symtable(node->target));
+  if (!result.valid) {
     if (node->target == "arguments") {
-      this->push_error(node, "Can't assign to funtion arguments. Redeclare to avoid conflicts.");
+      this->push_error(node, "Can't assign to function arguments. Redeclare to avoid conflicts.");
       return node;
     }
 
@@ -184,12 +190,12 @@ AST::AbstractNode* LVarRewriter::visit_assignment(AST::Assignment* node, VisitCo
     return node;
   }
 
-  if (result->is_constant && !this->allow_const_assignment) {
+  if (result.constant && !this->allow_const_assignment) {
     this->push_error(node, "Assignment to constant variable: " + node->target);
     return node;
   }
 
-  node->offset_info = new IRVarOffsetInfo({result->depth, result->frame_index});
+  node->offset_info = new IRVarOffsetInfo({result.level, result.offset});
 
   cont();
 
@@ -202,13 +208,8 @@ AST::AbstractNode* LVarRewriter::visit_trycatch(AST::TryCatch* node, VisitContin
   this->visit_node(node->block);
 
   // Register the exception name in the scope of the handler block
-  this->scope->declare(this->context.symtable(node->exception_name->name), this->depth + 1,
-                       reinterpret_cast<uint64_t>(node->handler_block), false);
-
-  // Create the offset info for the exception name
-  auto result = this->scope->resolve(this->context.symtable(node->exception_name->name), this->depth + 1,
-                                     reinterpret_cast<uint64_t>(node->handler_block), false);
-  node->exception_name->offset_info = new IRVarOffsetInfo({result->depth, result->frame_index});
+  LocalOffsetInfo result = this->scope->alloc_slot(this->context.symtable(node->exception_name->name));
+  node->exception_name->offset_info = new IRVarOffsetInfo(result.to_offset_info());
 
   // Check if we have a handler block
   if (node->handler_block->type() != AST::kTypeEmpty) {

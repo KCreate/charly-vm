@@ -42,11 +42,6 @@
 
 namespace Charly::Compilation {
 
-// Forward declare the Function AST node for use inside the FunctionScope struct
-namespace AST {
-class Function;
-};
-
 // Holds information about a given slot in a functions local variables table
 struct SlotInfo {
   bool active = true;
@@ -57,8 +52,9 @@ struct SlotInfo {
 struct FunctionScope {
   std::vector<SlotInfo> active_slots;
   AST::Function* function_node = nullptr;
+  FunctionScope* parent_scope = nullptr;
 
-  FunctionScope(AST::Function* fn) : function_node(fn) {
+  FunctionScope(AST::Function* fn, FunctionScope* ps) : function_node(fn), parent_scope(ps) {
   }
 
   ~FunctionScope() {
@@ -76,11 +72,11 @@ struct FunctionScope {
 
     // Check if we have an unactive slot
     uint32_t allocated_slot = this->active_slots.size() - 1;
-    for (auto& slot = this->active_slots.rbegin(); it != this->active_slots.rend(); it++) {
+    for (auto slot = this->active_slots.rbegin(); slot != this->active_slots.rend(); slot++) {
 
       // If the slot is inactive, mark it as active and return the index
-      if (!slot.active) {
-        slot.active = true;
+      if (!slot->active) {
+        slot->active = true;
         return allocated_slot;
       }
 
@@ -133,7 +129,7 @@ struct LocalScope {
 
   ~LocalScope() {
     for (auto& offset_info : this->local_indices) {
-      this->contained_function->mark_as_free(offset_info.offset);
+      this->contained_function->mark_as_free(offset_info.second.offset);
     }
   }
 
@@ -145,13 +141,20 @@ struct LocalScope {
     return offset_info;
   }
 
+  inline LocalOffsetInfo declare_slot(size_t symbol, bool constant = false) {
+    uint32_t allocated_index = this->local_indices.size();
+    LocalOffsetInfo offset_info = { .level = 0, .offset = allocated_index, .constant = constant };
+    this->local_indices[symbol] = offset_info;
+    return offset_info;
+  }
+
   // Checks if this scope contains a symbol
   inline bool scope_contains_symbol(size_t symbol) {
     return this->local_indices.count(symbol) != 0;
   }
 
   // Return the offset info for a given symbol
-  inline LocalOffsetInfo resolve_symbol(size_t symbol) {
+  inline LocalOffsetInfo resolve_symbol(size_t symbol, bool ignore_parents = false) {
     LocalScope* search_scope = this;
     FunctionScope* search_function_scope = this->contained_function;
 
@@ -162,13 +165,13 @@ struct LocalScope {
     while (search_scope) {
 
       // Check if this scope contains the symbol
-      if (this->scope_contains_symbol(symbol)) {
+      if (search_scope->scope_contains_symbol(symbol)) {
         LocalOffsetInfo found_offset_info = search_scope->local_indices[symbol];
 
         // Mark the slot as leaked if we passed a function boundary
         // If we don't mark it as leaked, the slot might be allocated to another
         // variable
-        if (dereferenced_functions && mark_vars_as_leaked) {
+        if (dereferenced_functions && mark_vars_as_leaked && search_function_scope) {
           search_function_scope->mark_as_leaked(found_offset_info.offset);
         }
 
@@ -177,9 +180,11 @@ struct LocalScope {
         return found_offset_info;
       }
 
+      if (ignore_parents) break;
+
       // Update the searching environment
       search_scope = search_scope->parent_scope;
-      if (search_scope->contained_function != search_function_scope) {
+      if (search_scope && search_scope->contained_function != search_function_scope) {
         dereferenced_functions++;
         mark_vars_as_leaked = true;
         search_function_scope = search_scope->contained_function;

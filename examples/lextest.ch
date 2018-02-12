@@ -1,9 +1,11 @@
-func foo(arg) {
-  let arg // error
+let a = 1
 
-  arguments // [arg]
-
-  let arguments // works!
-
-  arguments // null
+if true {
+  let a = 2
+  ->{ print(a) }()
 }
+
+let b = 3
+
+print(a)
+print(b)
