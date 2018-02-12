@@ -153,7 +153,7 @@ AST::AbstractNode* CodeGenerator::visit_unlesselse(AST::UnlessElse* node, VisitC
   // Skip over the block if the condition was false
   Label else_block_label = this->assembler.reserve_label();
   Label end_block_label = this->assembler.reserve_label();
-  this->assembler.write_branchunless_to_label(else_block_label);
+  this->assembler.write_branchif_to_label(else_block_label);
   this->visit_node(node->then_block);
   this->assembler.write_branch_to_label(end_block_label);
   this->assembler.place_label(else_block_label);
