@@ -1,5 +1,7 @@
-const cond = false
+let s1 = "hello"
+let s2 = " "
+let s3 = "world"
 
-unless cond {
-  print("fail")
-}
+let result = s1 + s2 + s3
+
+print(result)

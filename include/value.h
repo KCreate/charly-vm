@@ -378,6 +378,10 @@ const int64_t kMinInt             = -(static_cast<int64_t>(1) << 47);
 void* const kMaxPointer           = reinterpret_cast<void*>((static_cast<int64_t>(1) << 48) - 1);
 const uint64_t kSignBlock         = 0xFFFF000000000000;
 
+// Misc. constants
+const uint32_t kMaxIStringLength  = 5;
+const uint32_t kMaxPStringLength  = 6;
+
 // Type casting functions
 template <typename T>
 __attribute__((always_inline))
@@ -428,6 +432,8 @@ __attribute__((always_inline))
 inline bool charly_is_pstring(VALUE value)   { return (value & kMaskSignature) == kSignaturePString; }
 __attribute__((always_inline))
 inline bool charly_is_istring(VALUE value)   { return (value & kMaskSignature) == kSignatureIString; }
+__attribute__((always_inline))
+inline bool charly_is_immediate_string(VALUE value) { return charly_is_istring(value) || charly_is_pstring(value); }
 __attribute__((always_inline))
 inline bool charly_is_ptr(VALUE value)       { return (value & kMaskSignature) == kSignaturePointer; }
 
@@ -708,6 +714,11 @@ inline VALUE charly_create_istring(char const (& input)[7]) {
   }
 
   return val;
+}
+
+__attribute__((always_inline))
+inline VALUE charly_create_empty_string() {
+  return kSignatureIString;
 }
 
 // Create an istring from data pointed to by ptr
@@ -1103,6 +1114,35 @@ inline bool charly_truthyness(VALUE value) {
   if (charly_is_float(value)) return charly_double_to_double(value) != 0;
   if (charly_is_generator(value)) return !charly_as_generator(value)->finished;
   return true;
+}
+
+__attribute__((always_inline))
+inline VALUE charly_string_concat_immediate(VALUE left, VALUE right) {
+  char* lbuf = (char*)left;
+  char* rbuf = (char*)right;
+
+  // Check if the strings would fit into an istring
+  if (charly_string_length(left) + charly_string_length(right) <= kMaxIStringLength) {
+
+  }
+
+  // Both strings together are exactly 6 bytes long
+  VALUE nbuf = kSignaturePString;
+  if (IS_BIG_ENDIAN()) {
+    buf[2] = input[0];
+    buf[3] = input[1];
+    buf[4] = input[2];
+    buf[5] = input[3];
+    buf[6] = input[4];
+    buf[7] = input[5];
+  } else {
+    buf[0] = input[0];
+    buf[1] = input[1];
+    buf[2] = input[2];
+    buf[3] = input[3];
+    buf[4] = input[4];
+    buf[5] = input[5];
+  }
 }
 
 // Convert types into symbols

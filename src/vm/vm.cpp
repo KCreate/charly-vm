@@ -254,6 +254,15 @@ VALUE VM::create_string(const char* data, uint32_t length) {
   return cell->as_value();
 }
 
+VALUE VM::create_weak_string(const char* data, uint32_t length) {
+  MemoryCell* cell = this->gc.allocate();
+  cell->basic.type = kTypeString;
+  cell->basic.shortstring = false;
+  cell->string.lbuf.data = data;
+  cell->string.lbuf.length = length;
+  return cell->as_value();
+}
+
 VALUE VM::create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint32_t lvarcount, bool anonymous) {
   MemoryCell* cell = this->gc.allocate();
   cell->basic.type = kTypeFunction;
@@ -446,7 +455,33 @@ VALUE VM::add(VALUE left, VALUE right) {
     return charly_create_pointer(new_array);
   }
 
-  // TODO: String concatenation
+  if (charly_is_string(left) && charly_is_string(right)) {
+    uint32_t left_length = charly_string_length(left);
+    uint32_t right_length = charly_string_length(right);
+
+    // Check if we have to do any work at all
+    if (left_length == 0 && right_length == 0) {
+      return charly_create_empty_string();
+    }
+
+    // If one of the strings is empty, we can return the other one
+    if (left_length == 0) return right;
+    if (right_length == 0) return left;
+
+    // If both strings are immediate encoded (nan-boxed inside the VALUE type)
+    // we call a more optimized version of string concatenation
+    //
+    // This allows us to not allocate an additional buffer for this
+    if (left_length + right_length <= kMaxPStringLength) {
+      return charly_string_concat_immediate(left, right);
+    }
+
+    char* left_data = charly_string_data(left);
+    char* right_data = charly_string_data(right);
+  }
+
+  // TODO: String concatenation for different types
+  // Will require a charly_value_to_string method
 
   return kBitsNaN;
 }
