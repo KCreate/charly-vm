@@ -478,13 +478,15 @@ VALUE VM::add(VALUE left, VALUE right) {
     if (left_length == 0) return right;
     if (right_length == 0) return left;
 
-    // If both strings are immediate encoded (nan-boxed inside the VALUE type)
+    // If both strings fit into the immediate encoded format (nan-boxed inside the VALUE type)
     // we call a more optimized version of string concatenation
-    //
     // This allows us to not allocate an additional buffer for this
-    //if (new_length <= kMaxPStringLength) {
-      //return kNull;
-    //}
+    if (new_length == kMaxPStringLength) {
+      return charly_string_concat_into_packed(left, right);
+    }
+    if (new_length <= kMaxIStringLength) {
+      return charly_string_concat_into_immediate(left, right);
+    }
 
     char* left_data = charly_string_data(left);
     char* right_data = charly_string_data(right);

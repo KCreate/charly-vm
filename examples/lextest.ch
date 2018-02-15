@@ -1,7 +1,9 @@
-let s1 = "hello"
-let s2 = " "
-let s3 = "world"
+let target = ""
+let data = "a"
+let count = 1000
 
-let result = s1 + s2 + s3
+count.times(->{
+  target += data
+})
 
-print(result)
+print(target.length)

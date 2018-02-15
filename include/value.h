@@ -659,6 +659,17 @@ inline uint32_t charly_string_length(VALUE value) {
   return 0xFFFFFFFF;
 }
 
+// Returns a pointer to the length field of an immediate string
+// Returns a null pointer if the value is not a istring
+inline uint8_t* charly_istring_length_field(VALUE* value) {
+  if (IS_BIG_ENDIAN()) {
+    return (reinterpret_cast<uint8_t*>(value) + 2);
+  } else {
+    return (reinterpret_cast<uint8_t*>(value) + 5);
+  }
+  return nullptr;
+}
+
 // Create immediate encoded strings of size 0 - 5
 //
 // Note: Because char* should always contain a null terminator at the end, we check for <= 6 bytes
@@ -1116,11 +1127,33 @@ inline bool charly_truthyness(VALUE value) {
   return true;
 }
 
+// Concatenate two strings into a packed encoded string
+//
+// Assumes the caller made sure both strings fit into exactly 6 bytes
+__attribute__((always_inline))
+inline VALUE charly_string_concat_into_packed(VALUE left, VALUE right) {
+  VALUE result = kSignaturePString;
+  char* buf = charly_string_data(result);
+  uint32_t left_length = charly_string_length(left);
+  std::memcpy(buf, charly_string_data(left), left_length);
+  std::memcpy(buf + left_length, charly_string_data(right), 6 - left_length);
+  return result;
+}
 
-
-
-
-
+// Concatenate two strings into an immediate encoded string
+//
+// Assumes the caller made sure the string fits exactly into 5 or less bytes
+__attribute__((always_inline))
+inline VALUE charly_string_concat_into_immediate(VALUE left, VALUE right) {
+  VALUE result = kSignatureIString;
+  char* buf = charly_string_data(result);
+  uint32_t left_length = charly_string_length(left);
+  uint32_t right_length = charly_string_length(right);
+  std::memcpy(buf, charly_string_data(left), left_length);
+  std::memcpy(buf + left_length, charly_string_data(right), right_length);
+  *charly_istring_length_field(&result) = left_length + right_length;
+  return result;
+}
 
 // Convert types into symbols
 __attribute__((always_inline))
