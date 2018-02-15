@@ -456,7 +456,7 @@ __attribute__((always_inline))
 inline bool charly_is_hstring(VALUE value) { return charly_is_heap_type(value, kTypeString); }
 __attribute__((always_inline))
 inline bool charly_is_string(VALUE value) {
-  return charly_is_pstring(value) || charly_is_istring(value) || charly_is_hstring(value);
+  return charly_is_istring(value) || charly_is_pstring(value) || charly_is_hstring(value);
 }
 __attribute__((always_inline))
 inline bool charly_is_function(VALUE value) { return charly_is_heap_type(value, kTypeFunction); }
@@ -1116,34 +1116,11 @@ inline bool charly_truthyness(VALUE value) {
   return true;
 }
 
-__attribute__((always_inline))
-inline VALUE charly_string_concat_immediate(VALUE left, VALUE right) {
-  char* lbuf = (char*)left;
-  char* rbuf = (char*)right;
 
-  // Check if the strings would fit into an istring
-  if (charly_string_length(left) + charly_string_length(right) <= kMaxIStringLength) {
 
-  }
 
-  // Both strings together are exactly 6 bytes long
-  VALUE nbuf = kSignaturePString;
-  if (IS_BIG_ENDIAN()) {
-    buf[2] = input[0];
-    buf[3] = input[1];
-    buf[4] = input[2];
-    buf[5] = input[3];
-    buf[6] = input[4];
-    buf[7] = input[5];
-  } else {
-    buf[0] = input[0];
-    buf[1] = input[1];
-    buf[2] = input[2];
-    buf[3] = input[3];
-    buf[4] = input[4];
-    buf[5] = input[5];
-  }
-}
+
+
 
 // Convert types into symbols
 __attribute__((always_inline))

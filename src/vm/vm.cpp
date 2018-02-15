@@ -254,12 +254,21 @@ VALUE VM::create_string(const char* data, uint32_t length) {
   return cell->as_value();
 }
 
-VALUE VM::create_weak_string(const char* data, uint32_t length) {
+VALUE VM::create_weak_string(char* data, uint32_t length) {
   MemoryCell* cell = this->gc.allocate();
   cell->basic.type = kTypeString;
   cell->basic.shortstring = false;
   cell->string.lbuf.data = data;
   cell->string.lbuf.length = length;
+  return cell->as_value();
+}
+
+VALUE VM::create_empty_short_string() {
+  MemoryCell* cell = this->gc.allocate();
+  cell->basic.type = kTypeString;
+  cell->basic.shortstring = true;
+  std::memset(cell->string.sbuf.data, 0, kShortStringMaxSize);
+  cell->string.sbuf.length = 0;
   return cell->as_value();
 }
 
@@ -458,6 +467,7 @@ VALUE VM::add(VALUE left, VALUE right) {
   if (charly_is_string(left) && charly_is_string(right)) {
     uint32_t left_length = charly_string_length(left);
     uint32_t right_length = charly_string_length(right);
+    uint32_t new_length = left_length + right_length;
 
     // Check if we have to do any work at all
     if (left_length == 0 && right_length == 0) {
@@ -472,12 +482,27 @@ VALUE VM::add(VALUE left, VALUE right) {
     // we call a more optimized version of string concatenation
     //
     // This allows us to not allocate an additional buffer for this
-    if (left_length + right_length <= kMaxPStringLength) {
-      return charly_string_concat_immediate(left, right);
-    }
+    //if (new_length <= kMaxPStringLength) {
+      //return kNull;
+    //}
 
     char* left_data = charly_string_data(left);
     char* right_data = charly_string_data(right);
+
+    // Check if both strings would fit into the short encoding
+    if (new_length <= kShortStringMaxSize) {
+      String* new_string = charly_as_hstring(this->create_empty_short_string());
+      std::memcpy(new_string->sbuf.data, left_data, left_length);
+      std::memcpy(new_string->sbuf.data + left_length, right_data, right_length);
+      new_string->sbuf.length = new_length;
+      return charly_create_pointer(new_string);
+    }
+
+    // Allocate the buffer for the string
+    char* new_data = reinterpret_cast<char*>(std::malloc(new_length));
+    std::memcpy(new_data, left_data, left_length);
+    std::memcpy(new_data + left_length, right_data, right_length);
+    return this->create_weak_string(new_data, new_length);
   }
 
   // TODO: String concatenation for different types
