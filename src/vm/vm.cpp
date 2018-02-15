@@ -526,7 +526,53 @@ VALUE VM::mul(VALUE left, VALUE right) {
     return charly_mul_number(left, right);
   }
 
-  // TODO: String multiplication
+  // String multiplication should work bidirectionally
+  if (charly_is_number(left) && charly_is_string(right)) std::swap(left, right);
+  if (charly_is_string(left) && charly_is_number(right)) {
+    char* str_data = charly_string_data(left);
+    uint32_t str_length = charly_string_length(left);
+    int64_t amount = charly_number_to_int64(right);
+    uint32_t new_length = str_length * amount;
+
+    // Check if we have to do any work at all
+    if (amount <= 0) return charly_create_empty_string();
+    if (amount == 1) return left;
+    if (amount >= kMaxStringLength) return kNull;
+
+    // If the result fits into the immediate encoded format (nan-boxed inside the VALUE type)
+    // we call a more optimized version of string multiplication
+    // This allows us to not allocate an additional buffer for this
+    if (new_length == kMaxPStringLength) {
+      return charly_string_mul_into_packed(left, amount);
+    }
+    if (new_length <= kMaxIStringLength) {
+      return charly_string_mul_into_immediate(left, amount);
+    }
+
+    // Check if the result would fit into the short encoding
+    if (new_length <= kShortStringMaxSize) {
+      String* new_string = charly_as_hstring(this->create_empty_short_string());
+
+      // Copy the string amount times
+      uint32_t offset = 0;
+      while (amount--) {
+        std::memcpy(new_string->sbuf.data + offset, str_data, str_length);
+        offset += str_length;
+      }
+
+      new_string->sbuf.length = new_length;
+      return charly_create_pointer(new_string);
+    }
+
+    // Allocate the buffer for the string
+    char* new_data = reinterpret_cast<char*>(std::malloc(new_length));
+    uint32_t offset = 0;
+    while (amount--) {
+      std::memcpy(new_data + offset, str_data, str_length);
+      offset += str_length;
+    }
+    return this->create_weak_string(new_data, new_length);
+  }
 
   return kBitsNaN;
 }

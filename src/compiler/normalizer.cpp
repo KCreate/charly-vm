@@ -301,6 +301,7 @@ AST::AbstractNode* Normalizer::visit_binary(AST::Binary* node, VisitContinue con
           return new_string;
         }
 
+        num--; // subtract one from num because we already have a copy inside new_string
         while (num--) {
           new_string->value.append(source_string);
         }

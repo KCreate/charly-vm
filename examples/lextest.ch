@@ -1,9 +1,8 @@
-let target = ""
-let data = "a"
-let count = 1000
+let count = 2
+let str = "a"
 
-count.times(->{
-  target += data
+8.times(->{
+  str *= count
+  print(str)
 })
 
-print(target.length)

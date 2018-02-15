@@ -381,6 +381,7 @@ const uint64_t kSignBlock         = 0xFFFF000000000000;
 // Misc. constants
 const uint32_t kMaxIStringLength  = 5;
 const uint32_t kMaxPStringLength  = 6;
+const int64_t kMaxStringLength    = 0xffffffff;
 
 // Type casting functions
 template <typename T>
@@ -663,9 +664,9 @@ inline uint32_t charly_string_length(VALUE value) {
 // Returns a null pointer if the value is not a istring
 inline uint8_t* charly_istring_length_field(VALUE* value) {
   if (IS_BIG_ENDIAN()) {
-    return (reinterpret_cast<uint8_t*>(value) + 2);
+    return reinterpret_cast<uint8_t*>(value) + 2;
   } else {
-    return (reinterpret_cast<uint8_t*>(value) + 5);
+    return reinterpret_cast<uint8_t*>(value) + 5;
   }
   return nullptr;
 }
@@ -1155,12 +1156,59 @@ inline VALUE charly_string_concat_into_immediate(VALUE left, VALUE right) {
   return result;
 }
 
+// Multiply a string by an integer
+//
+// Assumes the caller made sure that left is a string and right a number
+// Assumes the caller made sure the result fits into exactly 6 bytes
+__attribute__((always_inline))
+inline VALUE charly_string_mul_into_packed(VALUE left, int64_t amount) {
+  VALUE result = kSignaturePString;
+  char* buf = charly_string_data(result);
+
+  char* str_data = charly_string_data(left);
+  uint32_t str_length = charly_string_length(left);
+
+  uint32_t offset = 0;
+  while (amount--) {
+    std::memcpy(buf + offset, str_data, str_length);
+    offset += str_length;
+  }
+
+  return result;
+}
+
+// Multiply a string by an integer
+//
+// Assumes the caller made sure that left is a string and right a number
+// Assumes the caller made sure the result fits into exactly 5 or less bytes
+__attribute__((always_inline))
+inline VALUE charly_string_mul_into_immediate(VALUE left, int64_t amount) {
+  VALUE result = kSignatureIString;
+  char* buf = charly_string_data(result);
+
+  char* str_data = charly_string_data(left);
+  uint32_t str_length = charly_string_length(left);
+
+  uint32_t offset = 0;
+  while (amount--) {
+    std::memcpy(buf + offset, str_data, str_length);
+    offset += str_length;
+  }
+
+  *charly_istring_length_field(&result) = offset;
+
+  return result;
+}
+
 // Convert types into symbols
 __attribute__((always_inline))
 inline VALUE charly_create_symbol(const std::string& input) {
   size_t val = std::hash<std::string>{}(input);
   return kSignatureSymbol | (val & kMaskSymbol);
 }
+
+// TODO: Refactor this...
+// It creates too many copies of data and std::stringstream is not acceptable
 __attribute__((always_inline))
 inline VALUE charly_create_symbol(VALUE value) {
   uint8_t type = charly_get_type(value);
