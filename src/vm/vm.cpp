@@ -532,7 +532,7 @@ VALUE VM::mul(VALUE left, VALUE right) {
     char* str_data = charly_string_data(left);
     uint32_t str_length = charly_string_length(left);
     int64_t amount = charly_number_to_int64(right);
-    uint32_t new_length = str_length * amount;
+    uint64_t new_length = str_length * amount;
 
     // Check if we have to do any work at all
     if (amount <= 0) return charly_create_empty_string();
