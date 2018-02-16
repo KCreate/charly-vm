@@ -175,6 +175,7 @@ enum Opcode : uint8_t {
   // - symbol
   // - block_offset
   // - anonymous
+  // - needs_arguments
   // - argc
   // - lvarcount
   PutFunction,
@@ -381,7 +382,7 @@ static constexpr uint32_t kInstructionLengths[]{
   /* PutSelf */               1 + sizeof(uint32_t),
   /* PutValue */              1 + sizeof(VALUE),
   /* PutString */             1 + sizeof(uint32_t) + sizeof(uint32_t),
-  /* PutFunction */           1 + sizeof(VALUE) + sizeof(int32_t) + sizeof(bool) + sizeof(uint32_t) + sizeof(uint32_t),
+  /* PutFunction */           1 + sizeof(VALUE) + sizeof(int32_t) + sizeof(bool) * 2 + sizeof(uint32_t) + sizeof(uint32_t),
   /* PutCFunction */          1 + sizeof(VALUE) + sizeof(uintptr_t) + sizeof(uint32_t),
   /* PutGenerator */          1 + sizeof(VALUE) + sizeof(int32_t),
   /* PutArray */              1 + sizeof(uint32_t),

@@ -93,6 +93,7 @@ void Assembler::write_registercatchtable_to_label(Label label) {
 void Assembler::write_putfunction_to_label(VALUE symbol,
                                            Label label,
                                            bool anonymous,
+                                           bool needs_arguments,
                                            uint32_t argc,
                                            uint32_t lvarcount) {
   if (this->labels.count(label) > 0) {
@@ -100,6 +101,7 @@ void Assembler::write_putfunction_to_label(VALUE symbol,
     this->write_u64(symbol);
     this->write_u32(this->labels[label] - this->writeoffset + 1);
     this->write_u8(anonymous);
+    this->write_u8(needs_arguments);
     this->write_u32(argc);
     this->write_u32(lvarcount);
   } else {
@@ -109,6 +111,7 @@ void Assembler::write_putfunction_to_label(VALUE symbol,
     this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
     this->write_u32(0);
     this->write_u8(anonymous);
+    this->write_u8(needs_arguments);
     this->write_u32(argc);
     this->write_u32(lvarcount);
   }

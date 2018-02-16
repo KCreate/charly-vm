@@ -430,6 +430,9 @@ AST::AbstractNode* Normalizer::visit_andindexassignment(AST::ANDIndexAssignment*
 }
 
 AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue cont) {
+  AST::Function* current_backup = this->current_function_node;
+  this->current_function_node = node;
+
   node->body = this->wrap_in_block(node->body);
 
   AST::Block* body = node->body->as<AST::Block>();
@@ -466,12 +469,22 @@ AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue
     body->prepend_node(new AST::MemberAssignment(new AST::Self(), member_init, new AST::Identifier(member_init)));
   }
 
+  bool mark_func_as_generator_backup = this->mark_func_as_generator;
+  bool mark_func_needs_arguments = this->mark_func_needs_arguments;
+
   cont();
 
   if (this->mark_func_as_generator) {
     node->generator = true;
-    this->mark_func_as_generator = false;
+    this->mark_func_as_generator = mark_func_as_generator_backup;
   }
+
+  if (this->mark_func_needs_arguments) {
+    node->needs_arguments = true;
+    this->mark_func_needs_arguments = mark_func_needs_arguments;
+  }
+
+  this->current_function_node = current_backup;
 
   return node;
 }
@@ -588,6 +601,25 @@ AST::AbstractNode* Normalizer::visit_yield(AST::Yield* node, VisitContinue cont)
   }
 
   this->mark_func_as_generator = true;
+  return node;
+}
+
+AST::AbstractNode* Normalizer::visit_identifier(AST::Identifier* node, VisitContinue) {
+  if (node->name == "arguments") {
+    this->mark_func_needs_arguments = true;
+  }
+
+  if (node->name[0] == '$') {
+    // Check if the remaining characters are only numbers
+    if (std::all_of(node->name.begin() + 1, node->name.end(), ::isdigit)) {
+      uint32_t index = std::atoi(node->name.substr(1, std::string::npos).c_str());
+      AST::Function* function_node = this->current_function_node;
+      if (function_node == nullptr || index >= function_node->parameters.size()) {
+        this->mark_func_needs_arguments = true;
+      }
+    }
+  }
+
   return node;
 }
 

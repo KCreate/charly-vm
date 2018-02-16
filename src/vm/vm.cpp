@@ -62,7 +62,7 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address,
 
   // Calculate the number of local variables this frame has to support
   // Add 1 at the beginning to reserve space for the arguments magic variable
-  uint32_t lvarcount = 1 + function->argc + function->lvarcount;
+  uint32_t lvarcount = function->lvarcount;
 
   // Allocate and prefill local variable space
   cell->frame.environment = new std::vector<VALUE>();
@@ -272,7 +272,8 @@ VALUE VM::create_empty_short_string() {
   return cell->as_value();
 }
 
-VALUE VM::create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint32_t lvarcount, bool anonymous) {
+VALUE VM::create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint32_t lvarcount, bool anonymous,
+                          bool needs_arguments) {
   MemoryCell* cell = this->gc.allocate();
   cell->basic.type = kTypeFunction;
   cell->function.name = name;
@@ -281,6 +282,7 @@ VALUE VM::create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint
   cell->function.context = this->frames;
   cell->function.body_address = body_address;
   cell->function.anonymous = anonymous;
+  cell->function.needs_arguments = needs_arguments;
   cell->function.bound_self_set = false;
   cell->function.bound_self = kNull;
   cell->function.container = new std::unordered_map<VALUE, VALUE>();
@@ -407,8 +409,8 @@ VALUE VM::copy_string(VALUE string) {
 
 VALUE VM::copy_function(VALUE function) {
   Function* source = charly_as_function(function);
-  Function* target = charly_as_function(
-      this->create_function(source->name, source->body_address, source->argc, source->lvarcount, source->anonymous));
+  Function* target = charly_as_function(this->create_function(source->name, source->body_address, source->argc,
+                                        source->lvarcount, source->anonymous, source->needs_arguments));
 
   target->context = source->context;
   target->bound_self_set = source->bound_self_set;
@@ -467,7 +469,7 @@ VALUE VM::add(VALUE left, VALUE right) {
   if (charly_is_string(left) && charly_is_string(right)) {
     uint32_t left_length = charly_string_length(left);
     uint32_t right_length = charly_string_length(right);
-    uint32_t new_length = left_length + right_length;
+    uint64_t new_length = left_length + right_length;
 
     // Check if we have to do any work at all
     if (left_length == 0 && right_length == 0) {
@@ -477,6 +479,7 @@ VALUE VM::add(VALUE left, VALUE right) {
     // If one of the strings is empty, we can return the other one
     if (left_length == 0) return right;
     if (right_length == 0) return left;
+    if (new_length >= kMaxStringLength) return kNull;
 
     // If both strings fit into the immediate encoded format (nan-boxed inside the VALUE type)
     // we call a more optimized version of string concatenation
@@ -1122,29 +1125,28 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
       return_address = this->ip + kInstructionLengths[this->fetch_instruction()];
     }
   }
-  Frame* frame = this->create_frame(self, function, return_address, halt_after_return);
 
-  Array* arguments_array = charly_as_array(this->create_array(argc));
+  ManagedContext ctx(*this);
+  ctx.mark_in_gc(function);
 
-  // Copy the arguments from the temporary arguments buffer into
-  // the frames environment
+  Frame* frame = ctx.create_frame(self, function, return_address, halt_after_return);
+
+  // Copy the arguments into the function frame
   //
-  // We add 1 to the index as that's the index of the arguments array
-  for (size_t i = 0; i < argc; i++) {
-    // The function only knows about function->argc arguments,
-    // the rest is supplied via the first slot in the frames environment
-    //
-    // We can't inject more argument than the function expects because the
-    // readlocal and setlocal instructions contain fixed offsets
-    if (i < function->argc) {
-      (*frame->environment)[i + 1] = argv[i];
+  // If the function requires an arguments array, we create one and push it onto
+  // offset 0 of the frame
+  if (function->needs_arguments) {
+    Array* arguments_array = charly_as_array(ctx.create_array(argc));
+    (*frame->environment)[0] = charly_create_pointer(arguments_array);
+    for (size_t i = 0; i < argc; i++) {
+      if (i < function->argc) {
+        (*frame->environment)[i + 1] = argv[i];
+      }
+      arguments_array->data->push_back(argv[i]);
     }
-    arguments_array->data->push_back(argv[i]);
+  } else {
+    for (size_t i = 0; i < function->argc; i++) (*frame->environment)[i] = argv[i];
   }
-
-  // Insert the argument value and make it a constant
-  // This is so that we can be sure that noone is going to overwrite it afterwards
-  (*frame->environment)[0] = charly_create_pointer(arguments_array);
 
   this->ip = function->body_address;
 }
@@ -1163,6 +1165,8 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
   VALUE rv = kNull;
 
   // TODO: Expand this to 15 arguments
+  //
+  // FIXME: Invalid cast if argc doesn't exactly match the function's signature
   switch (argc) {
     case 0: rv = reinterpret_cast<VALUE (*)(VM&)>(function->pointer)(*this); break;
     case 1: rv = reinterpret_cast<VALUE (*)(VM&, VALUE)>(function->pointer)(*this, argv[0]); break;
@@ -1487,8 +1491,9 @@ void VM::op_putstring(char* data, uint32_t length) {
   this->push_stack(this->create_string(data, length));
 }
 
-void VM::op_putfunction(VALUE symbol, uint8_t* body_address, bool anonymous, uint32_t argc, uint32_t lvarcount) {
-  VALUE function = this->create_function(symbol, body_address, argc, lvarcount, anonymous);
+void VM::op_putfunction(VALUE symbol, uint8_t* body_address, bool anonymous, bool needs_arguments,
+                        uint32_t argc, uint32_t lvarcount) {
+  VALUE function = this->create_function(symbol, body_address, argc, lvarcount, anonymous, needs_arguments);
   this->push_stack(function);
 }
 
@@ -2369,12 +2374,15 @@ charly_main_switch_putfunction : {
   VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
   int32_t body_offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE));
   bool anonymous = *reinterpret_cast<bool*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t));
+  bool needs_arguments = *reinterpret_cast<bool*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t)
+      + sizeof(bool));
   uint32_t argc =
-      *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t) + sizeof(bool));
+      *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t) + sizeof(bool)
+      +sizeof(bool));
   uint32_t lvarcount = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t) +
-                                                    sizeof(bool) + sizeof(uint32_t));
+                                                    sizeof(bool) + sizeof(bool) + sizeof(uint32_t));
 
-  this->op_putfunction(symbol, this->ip + body_offset, anonymous, argc, lvarcount);
+  this->op_putfunction(symbol, this->ip + body_offset, anonymous, needs_arguments, argc, lvarcount);
   OPCODE_EPILOGUE();
   NEXTOP();
 }

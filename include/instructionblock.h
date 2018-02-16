@@ -114,11 +114,13 @@ public:
     this->write(length);
   }
 
-  inline void write_putfunction(VALUE symbol, int32_t body_offset, bool anonymous, uint32_t argc, uint32_t lvarcount) {
+  inline void write_putfunction(VALUE symbol, int32_t body_offset, bool anonymous, bool needs_arguments,
+                                uint32_t argc, uint32_t lvarcount) {
     this->write(Opcode::PutFunction);
     this->write(symbol);
     this->write(body_offset);
     this->write(anonymous);
+    this->write(needs_arguments);
     this->write(argc);
     this->write(lvarcount);
   }

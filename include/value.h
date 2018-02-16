@@ -194,6 +194,7 @@ struct Function {
   Frame* context;
   uint8_t* body_address;
   bool anonymous;
+  bool needs_arguments;
   bool bound_self_set;
   VALUE bound_self;
   std::unordered_map<VALUE, VALUE>* container;

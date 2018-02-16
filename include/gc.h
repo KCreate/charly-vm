@@ -39,7 +39,6 @@ struct MemoryCell {
   union {
     struct {
       Basic basic;
-      uint64_t __debug = 0x17;
       MemoryCell* next;
     } free;
     Basic basic;

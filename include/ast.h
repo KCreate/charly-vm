@@ -1112,6 +1112,7 @@ struct Function : public AbstractNode {
   AbstractNode* body;
   bool anonymous;
   bool generator = false;
+  bool needs_arguments = false;
 
   uint32_t lvarcount = 0;
 
@@ -1133,6 +1134,7 @@ struct Function : public AbstractNode {
     }
     stream << (this->anonymous ? " anonymous" : "");
     stream << (this->generator ? " generator" : "");
+    stream << (this->needs_arguments ? " needs_arguments" : "");
 
     stream << ' ' << '(';
 

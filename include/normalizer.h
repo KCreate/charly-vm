@@ -54,12 +54,16 @@ public:
   AST::AbstractNode* visit_class(AST::Class* node, VisitContinue cont);
   AST::AbstractNode* visit_localinitialisation(AST::LocalInitialisation* node, VisitContinue cont);
   AST::AbstractNode* visit_yield(AST::Yield* node, VisitContinue cont);
+  AST::AbstractNode* visit_identifier(AST::Identifier* node, VisitContinue cont);
 
 private:
   AST::AbstractNode* wrap_in_block(AST::AbstractNode* node);
   AST::AbstractNode* wrap_in_block(AST::AbstractNode* node, VisitContinue cont);
   AST::AbstractNode* wrap_in_return(AST::AbstractNode* node, VisitContinue cont);
 
+  AST::Function* current_function_node = nullptr;
+
   bool mark_func_as_generator = false;
+  bool mark_func_needs_arguments = false;
 };
 }  // namespace Charly::Compilation

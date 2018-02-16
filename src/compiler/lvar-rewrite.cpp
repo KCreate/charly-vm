@@ -35,7 +35,10 @@ AST::AbstractNode* LVarRewriter::visit_function(AST::Function* node, VisitContin
   this->scope = local_scope;
 
   // Register the function arguments
-  this->scope->alloc_slot(this->context.symtable("__CHARLY_FUNCTION_ARGUMENTS"), true);
+  if (node->needs_arguments) {
+    this->scope->alloc_slot(this->context.symtable("__CHARLY_FUNCTION_ARGUMENTS"), true);
+  }
+
   for (const std::string& param : node->parameters) {
     this->scope->alloc_slot(this->context.symtable(param), false);
   }
@@ -128,7 +131,16 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
         delete node;
         return new_node;
       } else {
-        node->offset_info = new IRVarOffsetInfo({0, index + 1});
+        if (function_node == nullptr) {
+          node->offset_info = new IRVarOffsetInfo({0, index});
+        } else {
+          if (function_node->needs_arguments) {
+            node->offset_info = new IRVarOffsetInfo({0, index + 1});
+          } else {
+            node->offset_info = new IRVarOffsetInfo({0, index});
+          }
+        }
+
       }
 
       return node;
@@ -140,8 +152,12 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
   if (!result.valid) {
     // If we reference `arguments`, we redirect to __CHARLY_FUNCTION_ARGUMENTS
     if (node->name == "arguments") {
-      node->offset_info = new IRVarOffsetInfo({0, 0});
-      return node;
+      AST::Function* function_node = this->scope->contained_function->function_node;
+
+      if (function_node == nullptr || function_node->needs_arguments) {
+        node->offset_info = new IRVarOffsetInfo({0, 0});
+        return node;
+      }
     }
 
     // Search each function in the current scope stack if it has it as a known self var
