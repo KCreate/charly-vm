@@ -131,7 +131,13 @@ while (i < iterations) {
     s1 > s1,
     s1 <= s2,
     s1 >= s2,
-    s1 ! s2
+    s1 ! s2,
+
+    s1 + s2,
+    s1 * 0,
+    s1 * 1,
+    s1 * 2,
+    s1 * 10
   ]
 
   const floatnums = [
