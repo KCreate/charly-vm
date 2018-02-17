@@ -1,15 +1,15 @@
-func foo {
-  print(arguments)
-
-  return func bar {
-    print("hello world")
-
-    return func baz {
-      print(arguments)
-    }
+func counter {
+  let i = 0
+  return ->{
+    i += 1
   }
 }
 
-const r1 = foo(1, 2, 3)
-const r2 = r1(4, 5, 6)
-const r3 = r2(7, 8, 9)
+const c = counter()
+
+print(c())
+print(c())
+print(c())
+print(c())
+print(c())
+print(c())

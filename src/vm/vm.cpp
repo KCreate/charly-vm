@@ -65,10 +65,12 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address,
   uint32_t lvarcount = function->lvarcount;
 
   // Allocate and prefill local variable space
-  cell->frame.environment = new std::vector<VALUE>();
-  cell->frame.environment->reserve(lvarcount);
-  while (lvarcount--)
-    cell->frame.environment->push_back(kNull);
+  if (lvarcount) {
+    cell->frame.environment = new std::vector<VALUE>();
+    cell->frame.environment->reserve(lvarcount);
+    while (lvarcount--)
+      cell->frame.environment->push_back(kNull);
+  }
 
   // Append the frame
   this->frames = cell->as<Frame>();
@@ -98,10 +100,12 @@ Frame* VM::create_frame(VALUE self,
   cell->frame.self = self;
   cell->frame.return_address = return_address;
   cell->frame.halt_after_return = halt_after_return;
-  cell->frame.environment = new std::vector<VALUE>();
-  cell->frame.environment->reserve(lvarcount);
-  while (lvarcount--)
-    cell->frame.environment->push_back(kNull);
+  if (lvarcount) {
+    cell->frame.environment = new std::vector<VALUE>();
+    cell->frame.environment->reserve(lvarcount);
+    while (lvarcount--)
+      cell->frame.environment->push_back(kNull);
+  }
 
   // Append the frame
   this->frames = cell->as<Frame>();
