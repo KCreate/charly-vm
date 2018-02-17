@@ -68,6 +68,7 @@ struct GarbageCollectorConfig {
   size_t initial_heap_count = 4;
   size_t heap_cell_count = 1 << 16;
   float heap_growth_factor = 2;
+  size_t min_free_cells = 32;
 
   bool trace = false;
   std::ostream& out_stream = std::cerr;
@@ -77,6 +78,7 @@ struct GarbageCollectorConfig {
 class GarbageCollector {
   GarbageCollectorConfig config;
   MemoryCell* free_cell;
+  size_t remaining_free_cells = 0;
   std::vector<MemoryCell*> heaps;
   std::unordered_set<VALUE> temporaries;
   std::unordered_set<void**> temporary_ptrs; // Pointers to pointers

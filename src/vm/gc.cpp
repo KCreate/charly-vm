@@ -35,6 +35,7 @@ namespace Charly {
 void GarbageCollector::add_heap() {
   MemoryCell* heap = static_cast<MemoryCell*>(std::calloc(this->config.heap_cell_count, sizeof(MemoryCell)));
   this->heaps.push_back(heap);
+  this->remaining_free_cells += this->config.heap_cell_count;
 
   // Add the newly allocated cells to the free list
   MemoryCell* last_cell = this->free_cell;
@@ -234,7 +235,7 @@ MemoryCell* GarbageCollector::allocate() {
   // If we've just allocated the last available cell,
   // we do a collect in order to make sure we never get a failing
   // allocation in the future
-  if (this->free_cell == nullptr) {
+  if (this->free_cell == nullptr || this->remaining_free_cells <= this->config.min_free_cells) {
     this->collect();
 
     // If a collection didn't yield new available space,
@@ -248,6 +249,7 @@ MemoryCell* GarbageCollector::allocate() {
     }
   }
 
+  this->remaining_free_cells--;
   return cell;
 }
 
@@ -302,5 +304,6 @@ void GarbageCollector::deallocate(MemoryCell* cell) {
   cell->free.basic.type = kTypeDead;
   cell->free.next = this->free_cell;
   this->free_cell = cell;
+  this->remaining_free_cells++;
 }
 }  // namespace Charly

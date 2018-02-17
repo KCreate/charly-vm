@@ -267,7 +267,6 @@ VALUE VM::create_empty_short_string() {
   MemoryCell* cell = this->gc.allocate();
   cell->basic.type = kTypeString;
   cell->basic.shortstring = true;
-  std::memset(cell->string.sbuf.data, 0, kShortStringMaxSize);
   cell->string.sbuf.length = 0;
   return cell->as_value();
 }
