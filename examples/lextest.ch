@@ -1,10 +1,15 @@
-let template = "hello world my name is leonard"
-let str = template
+func foo {
+  print(arguments)
 
-100000.times(->{
-  str = template
+  return func bar {
+    print("hello world")
 
-  9.times(->{
-    str *= 2
-  })
-})
+    return func baz {
+      print(arguments)
+    }
+  }
+}
+
+const r1 = foo(1, 2, 3)
+const r2 = r1(4, 5, 6)
+const r3 = r2(7, 8, 9)

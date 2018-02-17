@@ -470,21 +470,17 @@ AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue
   }
 
   bool mark_func_as_generator_backup = this->mark_func_as_generator;
-  bool mark_func_needs_arguments = this->mark_func_needs_arguments;
+  bool mark_func_needs_arguments_backup = this->mark_func_needs_arguments;
+  this->mark_func_needs_arguments = false;
 
   cont();
 
-  if (this->mark_func_as_generator) {
-    node->generator = true;
-    this->mark_func_as_generator = mark_func_as_generator_backup;
-  }
-
-  if (this->mark_func_needs_arguments) {
-    node->needs_arguments = true;
-    this->mark_func_needs_arguments = mark_func_needs_arguments;
-  }
+  if (this->mark_func_as_generator) node->generator = true;
+  if (this->mark_func_needs_arguments) node->needs_arguments = true;
 
   this->current_function_node = current_backup;
+  this->mark_func_needs_arguments = mark_func_needs_arguments_backup;
+  this->mark_func_as_generator = mark_func_as_generator_backup;
 
   return node;
 }
