@@ -66,14 +66,13 @@ struct FunctionScope {
   // Allocate a slot
   inline uint32_t alloc_slot(bool constant) {
     if (this->active_slots.size() == 0) {
-      this->active_slots.push_back({ .active = true, .constant = constant });
+      this->active_slots.push_back({.active = true, .constant = constant});
       return 0;
     }
 
     // Check if we have an unactive slot
     uint32_t allocated_slot = this->active_slots.size() - 1;
     for (auto slot = this->active_slots.rbegin(); slot != this->active_slots.rend(); slot++) {
-
       // If the slot is inactive, mark it as active and return the index
       if (!slot->active) {
         slot->active = true;
@@ -83,14 +82,13 @@ struct FunctionScope {
       allocated_slot--;
     }
 
-    this->active_slots.push_back({ .active = true, .constant = constant });
+    this->active_slots.push_back({.active = true, .constant = constant});
     return this->active_slots.size() - 1;
   }
 
   // Mark a specific index in the active slots as free
   inline void mark_as_free(uint32_t index) {
     if (index < this->active_slots.size()) {
-
       // We can't reuse this local index if the slot was leaked
       if (!this->active_slots[index].leaked) {
         this->active_slots[index].active = false;
@@ -115,7 +113,7 @@ struct LocalOffsetInfo {
   bool constant = false;
 
   inline IRVarOffsetInfo to_offset_info() {
-    return { .level = this->level, .index = this->offset };
+    return {.level = this->level, .index = this->offset};
   }
 };
 
@@ -136,14 +134,14 @@ struct LocalScope {
   // Allocate a slot in this scope
   inline LocalOffsetInfo alloc_slot(size_t symbol, bool constant = false) {
     uint32_t allocated_index = this->contained_function->alloc_slot(constant);
-    LocalOffsetInfo offset_info = { .level = 0, .offset = allocated_index, .constant = constant };
+    LocalOffsetInfo offset_info = {.level = 0, .offset = allocated_index, .constant = constant};
     this->local_indices[symbol] = offset_info;
     return offset_info;
   }
 
   inline LocalOffsetInfo declare_slot(size_t symbol, bool constant = false) {
     uint32_t allocated_index = this->local_indices.size();
-    LocalOffsetInfo offset_info = { .level = 0, .offset = allocated_index, .constant = constant };
+    LocalOffsetInfo offset_info = {.level = 0, .offset = allocated_index, .constant = constant};
     this->local_indices[symbol] = offset_info;
     return offset_info;
   }
@@ -163,7 +161,6 @@ struct LocalScope {
 
     // Search for this symbol
     while (search_scope) {
-
       // Check if this scope contains the symbol
       if (search_scope->scope_contains_symbol(symbol)) {
         LocalOffsetInfo found_offset_info = search_scope->local_indices[symbol];
@@ -180,7 +177,8 @@ struct LocalScope {
         return found_offset_info;
       }
 
-      if (ignore_parents) break;
+      if (ignore_parents)
+        break;
 
       // Update the searching environment
       search_scope = search_scope->parent_scope;
@@ -191,7 +189,7 @@ struct LocalScope {
       }
     }
 
-    return { .valid = false };
+    return {.valid = false};
   }
 };
 }  // namespace Charly::Compilation

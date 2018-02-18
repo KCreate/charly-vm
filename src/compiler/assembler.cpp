@@ -117,8 +117,7 @@ void Assembler::write_putfunction_to_label(VALUE symbol,
   }
 }
 
-void Assembler::write_putgenerator_to_label(VALUE symbol,
-                                           Label label) {
+void Assembler::write_putgenerator_to_label(VALUE symbol, Label label) {
   if (this->labels.count(label) > 0) {
     this->write_u8(Opcode::PutGenerator);
     this->write_u64(symbol);

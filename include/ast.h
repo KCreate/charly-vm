@@ -1116,10 +1116,18 @@ struct Function : public AbstractNode {
 
   uint32_t lvarcount = 0;
 
-  Function(const std::string& n, const std::vector<std::string>& p, const std::vector<std::string>& s, AbstractNode* b, bool a)
+  Function(const std::string& n,
+           const std::vector<std::string>& p,
+           const std::vector<std::string>& s,
+           AbstractNode* b,
+           bool a)
       : name(n), parameters(p), self_initialisations(s), body(b), anonymous(a) {
   }
-  Function(const std::string& n, std::vector<std::string>&& p, const std::vector<std::string>& s, AbstractNode* b, bool a)
+  Function(const std::string& n,
+           std::vector<std::string>&& p,
+           const std::vector<std::string>& s,
+           AbstractNode* b,
+           bool a)
       : name(n), parameters(std::move(p)), self_initialisations(std::move(s)), body(b), anonymous(a) {
   }
 

@@ -32,7 +32,7 @@ namespace Charly {
 
 // Returns true if the target is big endian
 inline bool IS_BIG_ENDIAN() {
-  return (*(uint16_t *)"\0\xff" < 0x100);
+  return (*(uint16_t*)"\0\xff" < 0x100);
 }
 
 template <typename T>
@@ -53,4 +53,4 @@ inline double FP_STRIP_INF(double value) {
 inline double BITCAST_DOUBLE(int64_t value) {
   return *reinterpret_cast<double*>(&value);
 }
-}
+}  // namespace Charly

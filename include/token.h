@@ -320,16 +320,14 @@ struct Token {
   }
 
   inline bool could_start_expression() {
-    return (this->type == TokenType::Number || this->type == TokenType::Identifier ||
-            this->type == TokenType::String || this->type == TokenType::BooleanFalse ||
-            this->type == TokenType::BooleanTrue || this->type == TokenType::Null ||
-            this->type == TokenType::Nan || this->type == TokenType::Self ||
-            this->type == TokenType::Func || this->type == TokenType::Typeof ||
-            this->type == TokenType::Yield || this->type == TokenType::Plus ||
-            this->type == TokenType::Minus || this->type == TokenType::BitNOT ||
-            this->type == TokenType::Not || this->type == TokenType::LeftParen ||
-            this->type == TokenType::LeftCurly || this->type == TokenType::LeftBracket ||
-            this->type == TokenType::AtSign || this->type == TokenType::RightArrow);
+    return (this->type == TokenType::Number || this->type == TokenType::Identifier || this->type == TokenType::String ||
+            this->type == TokenType::BooleanFalse || this->type == TokenType::BooleanTrue ||
+            this->type == TokenType::Null || this->type == TokenType::Nan || this->type == TokenType::Self ||
+            this->type == TokenType::Func || this->type == TokenType::Typeof || this->type == TokenType::Yield ||
+            this->type == TokenType::Plus || this->type == TokenType::Minus || this->type == TokenType::BitNOT ||
+            this->type == TokenType::Not || this->type == TokenType::LeftParen || this->type == TokenType::LeftCurly ||
+            this->type == TokenType::LeftBracket || this->type == TokenType::AtSign ||
+            this->type == TokenType::RightArrow);
   }
 
   template <class T>

@@ -25,9 +25,9 @@
  */
 
 #include <iostream>
+#include <optional>
 #include <unordered_map>
 #include <vector>
-#include <optional>
 
 #include "ast.h"
 #include "compiler.h"

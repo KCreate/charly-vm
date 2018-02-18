@@ -38,26 +38,25 @@ using namespace std;
 namespace Charly {
 namespace Internals {
 #define ID_TO_STRING(I) #I
-#define DEFINE_INTERNAL_METHOD(N, C)                                  \
-  {                                                                   \
-    ID_TO_STRING(N), {                                                \
-      ID_TO_STRING(N), C, reinterpret_cast<uintptr_t>(Internals::N)   \
-    }                                                                 \
+#define DEFINE_INTERNAL_METHOD(N, C)                                \
+  {                                                                 \
+    ID_TO_STRING(N), {                                              \
+      ID_TO_STRING(N), C, reinterpret_cast<uintptr_t>(Internals::N) \
+    }                                                               \
   }
 static std::unordered_map<std::string, InternalMethodSignature> kMethodSignatures = {
-  DEFINE_INTERNAL_METHOD(require, 1),
-  DEFINE_INTERNAL_METHOD(write, 1),
-  DEFINE_INTERNAL_METHOD(getn, 0),
-  DEFINE_INTERNAL_METHOD(set_primitive_object, 1),
-  DEFINE_INTERNAL_METHOD(set_primitive_class, 1),
-  DEFINE_INTERNAL_METHOD(set_primitive_array, 1),
-  DEFINE_INTERNAL_METHOD(set_primitive_string, 1),
-  DEFINE_INTERNAL_METHOD(set_primitive_number, 1),
-  DEFINE_INTERNAL_METHOD(set_primitive_function, 1),
-  DEFINE_INTERNAL_METHOD(set_primitive_generator, 1),
-  DEFINE_INTERNAL_METHOD(set_primitive_boolean, 1),
-  DEFINE_INTERNAL_METHOD(set_primitive_null, 1)
-};
+    DEFINE_INTERNAL_METHOD(require, 1),
+    DEFINE_INTERNAL_METHOD(write, 1),
+    DEFINE_INTERNAL_METHOD(getn, 0),
+    DEFINE_INTERNAL_METHOD(set_primitive_object, 1),
+    DEFINE_INTERNAL_METHOD(set_primitive_class, 1),
+    DEFINE_INTERNAL_METHOD(set_primitive_array, 1),
+    DEFINE_INTERNAL_METHOD(set_primitive_string, 1),
+    DEFINE_INTERNAL_METHOD(set_primitive_number, 1),
+    DEFINE_INTERNAL_METHOD(set_primitive_function, 1),
+    DEFINE_INTERNAL_METHOD(set_primitive_generator, 1),
+    DEFINE_INTERNAL_METHOD(set_primitive_boolean, 1),
+    DEFINE_INTERNAL_METHOD(set_primitive_null, 1)};
 
 VALUE require(VM& vm, VALUE vfilename) {
   // TODO: Deallocate stuff on error

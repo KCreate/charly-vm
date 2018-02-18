@@ -75,8 +75,8 @@ struct CompilerContext {
 struct CompilerConfig {
   // Known constants in the toplevel
   std::vector<std::string> known_top_level_constants = {
-      "require", "Object", "Class", "Array", "String", "Number", "Function", "Generator", "Boolean", "Null",  "stdin",
-      "stdout",  "stderr", "print", "write", "gets",   "getc",   "exit",     "sleep",   "Charly"};
+      "require", "Object", "Class",  "Array", "String", "Number", "Function", "Generator", "Boolean", "Null",
+      "stdin",   "stdout", "stderr", "print", "write",  "gets",   "getc",     "exit",      "sleep",   "Charly"};
 
   // Known fields in the self object passed to the module inclusion function
   //

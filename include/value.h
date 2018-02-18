@@ -24,38 +24,24 @@
  * SOFTWARE.
  */
 
-#include <unordered_map>
-#include <vector>
 #include <cmath>
 #include <sstream>
+#include <unordered_map>
+#include <vector>
 
 #include <utf8/utf8.h>
 
-#include "defines.h"
 #include "common.h"
+#include "defines.h"
 
 #pragma once
 
 namespace Charly {
 
 // Human readable types of all data types
-const std::string kHumanReadableTypes[] = {
-  "dead",
-  "class",
-  "object",
-  "array",
-  "string",
-  "function",
-  "cfunction",
-  "generator",
-  "frame",
-  "catchtable",
-  "number",
-  "boolean",
-  "null",
-  "symbol",
-  "unknown"
-};
+const std::string kHumanReadableTypes[] = {"dead",     "class",     "object",    "array",  "string",
+                                           "function", "cfunction", "generator", "frame",  "catchtable",
+                                           "number",   "boolean",   "null",      "symbol", "unknown"};
 
 // Identifies which type a VALUE points to
 enum ValueType : uint8_t {

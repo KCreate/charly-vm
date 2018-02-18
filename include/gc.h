@@ -81,7 +81,7 @@ class GarbageCollector {
   size_t remaining_free_cells = 0;
   std::vector<MemoryCell*> heaps;
   std::unordered_set<VALUE> temporaries;
-  std::unordered_set<void**> temporary_ptrs; // Pointers to pointers
+  std::unordered_set<void**> temporary_ptrs;  // Pointers to pointers
   std::unordered_set<std::vector<VALUE>*> temporary_vector_ptrs;
 
   void add_heap();

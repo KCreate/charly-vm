@@ -275,7 +275,11 @@ VALUE VM::create_empty_short_string() {
   return cell->as_value();
 }
 
-VALUE VM::create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint32_t lvarcount, bool anonymous,
+VALUE VM::create_function(VALUE name,
+                          uint8_t* body_address,
+                          uint32_t argc,
+                          uint32_t lvarcount,
+                          bool anonymous,
                           bool needs_arguments) {
   MemoryCell* cell = this->gc.allocate();
   cell->basic.type = kTypeFunction;
@@ -412,8 +416,8 @@ VALUE VM::copy_string(VALUE string) {
 
 VALUE VM::copy_function(VALUE function) {
   Function* source = charly_as_function(function);
-  Function* target = charly_as_function(this->create_function(source->name, source->body_address, source->argc,
-                                        source->lvarcount, source->anonymous, source->needs_arguments));
+  Function* target = charly_as_function(this->create_function(
+      source->name, source->body_address, source->argc, source->lvarcount, source->anonymous, source->needs_arguments));
 
   target->context = source->context;
   target->bound_self_set = source->bound_self_set;
@@ -480,9 +484,12 @@ VALUE VM::add(VALUE left, VALUE right) {
     }
 
     // If one of the strings is empty, we can return the other one
-    if (left_length == 0) return right;
-    if (right_length == 0) return left;
-    if (new_length >= kMaxStringLength) return kNull;
+    if (left_length == 0)
+      return right;
+    if (right_length == 0)
+      return left;
+    if (new_length >= kMaxStringLength)
+      return kNull;
 
     // If both strings fit into the immediate encoded format (nan-boxed inside the VALUE type)
     // we call a more optimized version of string concatenation
@@ -533,7 +540,8 @@ VALUE VM::mul(VALUE left, VALUE right) {
   }
 
   // String multiplication should work bidirectionally
-  if (charly_is_number(left) && charly_is_string(right)) std::swap(left, right);
+  if (charly_is_number(left) && charly_is_string(right))
+    std::swap(left, right);
   if (charly_is_string(left) && charly_is_number(right)) {
     char* str_data = charly_string_data(left);
     uint32_t str_length = charly_string_length(left);
@@ -541,9 +549,12 @@ VALUE VM::mul(VALUE left, VALUE right) {
     uint64_t new_length = str_length * amount;
 
     // Check if we have to do any work at all
-    if (amount <= 0) return charly_create_empty_string();
-    if (amount == 1) return left;
-    if (amount >= kMaxStringLength) return kNull;
+    if (amount <= 0)
+      return charly_create_empty_string();
+    if (amount == 1)
+      return left;
+    if (amount >= kMaxStringLength)
+      return kNull;
 
     // If the result fits into the immediate encoded format (nan-boxed inside the VALUE type)
     // we call a more optimized version of string multiplication
@@ -1148,7 +1159,8 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
       arguments_array->data->push_back(argv[i]);
     }
   } else {
-    for (size_t i = 0; i < function->argc; i++) (*frame->environment)[i] = argv[i];
+    for (size_t i = 0; i < function->argc; i++)
+      (*frame->environment)[i] = argv[i];
   }
 
   this->ip = function->body_address;
@@ -1494,8 +1506,12 @@ void VM::op_putstring(char* data, uint32_t length) {
   this->push_stack(this->create_string(data, length));
 }
 
-void VM::op_putfunction(VALUE symbol, uint8_t* body_address, bool anonymous, bool needs_arguments,
-                        uint32_t argc, uint32_t lvarcount) {
+void VM::op_putfunction(VALUE symbol,
+                        uint8_t* body_address,
+                        bool anonymous,
+                        bool needs_arguments,
+                        uint32_t argc,
+                        uint32_t lvarcount) {
   VALUE function = this->create_function(symbol, body_address, argc, lvarcount, anonymous, needs_arguments);
   this->push_stack(function);
 }
@@ -2377,11 +2393,10 @@ charly_main_switch_putfunction : {
   VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
   int32_t body_offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE));
   bool anonymous = *reinterpret_cast<bool*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t));
-  bool needs_arguments = *reinterpret_cast<bool*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t)
-      + sizeof(bool));
-  uint32_t argc =
-      *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t) + sizeof(bool)
-      +sizeof(bool));
+  bool needs_arguments =
+      *reinterpret_cast<bool*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t) + sizeof(bool));
+  uint32_t argc = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t) +
+                                               sizeof(bool) + sizeof(bool));
   uint32_t lvarcount = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t) +
                                                     sizeof(bool) + sizeof(bool) + sizeof(uint32_t));
 

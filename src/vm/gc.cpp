@@ -160,8 +160,12 @@ void GarbageCollector::mark(VALUE value) {
       this->mark(charly_create_pointer(frame->last_active_catchtable));
       this->mark(frame->caller_value);
       this->mark(frame->self);
-      for (auto lvar : *frame->environment)
-        this->mark(lvar);
+
+      if (frame->environment) {
+        for (auto lvar : *frame->environment)
+          this->mark(lvar);
+      }
+
       break;
     }
 

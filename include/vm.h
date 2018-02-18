@@ -94,9 +94,7 @@ class VM {
 public:
   VM(VMContext& ctx)
       : context(ctx),
-        gc(GarbageCollectorConfig{.out_stream = ctx.out_stream,
-                                  .err_stream = ctx.err_stream,
-                                  .trace = ctx.trace_gc}),
+        gc(GarbageCollectorConfig{.out_stream = ctx.out_stream, .err_stream = ctx.err_stream, .trace = ctx.trace_gc}),
         frames(nullptr),
         catchstack(nullptr),
         ip(nullptr),
@@ -141,7 +139,11 @@ public:
   VALUE create_string(const char* data, uint32_t length);
   VALUE create_weak_string(char* data, uint32_t length);
   VALUE create_empty_short_string();
-  VALUE create_function(VALUE name, uint8_t* body_address, uint32_t argc, uint32_t lvarcount, bool anonymous,
+  VALUE create_function(VALUE name,
+                        uint8_t* body_address,
+                        uint32_t argc,
+                        uint32_t lvarcount,
+                        bool anonymous,
                         bool needs_arguments);
   VALUE create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer);
   VALUE create_generator(VALUE name, uint8_t* resume_address);
@@ -238,8 +240,12 @@ public:
   void op_putself(uint32_t level);
   void op_putvalue(VALUE value);
   void op_putstring(char* data, uint32_t length);
-  void op_putfunction(VALUE symbol, uint8_t* body_address, bool anonymous, bool needs_arguments,
-                      uint32_t argc, uint32_t lvarcount);
+  void op_putfunction(VALUE symbol,
+                      uint8_t* body_address,
+                      bool anonymous,
+                      bool needs_arguments,
+                      uint32_t argc,
+                      uint32_t lvarcount);
   void op_putcfunction(VALUE symbol, uintptr_t pointer, uint32_t argc);
   void op_putgenerator(VALUE symbol, uint8_t* resume_address);
   void op_putarray(uint32_t count);

@@ -103,18 +103,21 @@ void Disassembler::dump(std::ostream& stream) {
       case Opcode::PutFunction: {
         this->print_symbol(this->block->read<VALUE>(offset + 1), stream);
         stream << ", ";
-        this->print_hex(this->block->get_data() + offset + this->block->read<int32_t>(offset + 1 + sizeof(VALUE)), stream, 12);
+        this->print_hex(this->block->get_data() + offset + this->block->read<int32_t>(offset + 1 + sizeof(VALUE)),
+                        stream, 12);
         stream << ", ";
         this->print_value(this->block->read<bool>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t)), stream);
         stream << ", ";
         this->print_value(this->block->read<bool>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool)),
                           stream);
         stream << ", ";
-        this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool)
-                          + sizeof(bool)), stream);
+        this->print_value(
+            this->block->read<uint32_t>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool) + sizeof(bool)),
+            stream);
         stream << ", ";
-        this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool)
-                          + sizeof(bool) + sizeof(uint32_t)), stream);
+        this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool) +
+                                                      sizeof(bool) + sizeof(uint32_t)),
+                          stream);
         break;
       }
       case Opcode::PutCFunction: {
@@ -128,7 +131,8 @@ void Disassembler::dump(std::ostream& stream) {
       case Opcode::PutGenerator: {
         this->print_symbol(this->block->read<VALUE>(offset + 1), stream);
         stream << ", ";
-        this->print_hex(this->block->get_data() + offset + this->block->read<int32_t>(offset + 1 + sizeof(VALUE)), stream, 12);
+        this->print_hex(this->block->get_data() + offset + this->block->read<int32_t>(offset + 1 + sizeof(VALUE)),
+                        stream, 12);
         break;
       }
       case Opcode::PutClass: {

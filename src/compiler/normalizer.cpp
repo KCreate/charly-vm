@@ -301,7 +301,7 @@ AST::AbstractNode* Normalizer::visit_binary(AST::Binary* node, VisitContinue con
           return new_string;
         }
 
-        num--; // subtract one from num because we already have a copy inside new_string
+        num--;  // subtract one from num because we already have a copy inside new_string
         while (num--) {
           new_string->value.append(source_string);
         }
@@ -448,7 +448,6 @@ AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue
     // If not, null is returned
     AST::AbstractNode* last_node = body->statements.back();
     if (AST::yields_value(last_node)) {
-
       // If the last statement in a function is a yield statement, it is not returned implicitly
       // We rather insert a return null after it
       if (last_node->type() == AST::kTypeYield) {
@@ -475,8 +474,10 @@ AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue
 
   cont();
 
-  if (this->mark_func_as_generator) node->generator = true;
-  if (this->mark_func_needs_arguments) node->needs_arguments = true;
+  if (this->mark_func_as_generator)
+    node->generator = true;
+  if (this->mark_func_needs_arguments)
+    node->needs_arguments = true;
 
   this->current_function_node = current_backup;
   this->mark_func_needs_arguments = mark_func_needs_arguments_backup;

@@ -47,8 +47,8 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree) {
 
     // Wrap the whole program in a function which handles the exporting interface
     // to other programs
-    result.abstract_syntax_tree =
-        new AST::Function(this->config.inclusion_function_name, this->config.inclusion_function_arguments, {}, block, true);
+    result.abstract_syntax_tree = new AST::Function(this->config.inclusion_function_name,
+                                                    this->config.inclusion_function_arguments, {}, block, true);
     result.abstract_syntax_tree->at(block);
 
     // Add the known vars which are known to be inserted via the require call

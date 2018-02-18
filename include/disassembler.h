@@ -26,8 +26,8 @@
 
 #include <iomanip>
 #include <iostream>
-#include <vector>
 #include <type_traits>
+#include <vector>
 
 #include "compiler.h"
 #include "instructionblock.h"

@@ -48,7 +48,7 @@ InstructionBlock* CodeGenerator::compile(AST::AbstractNode* node) {
       this->assembler.write_return();
       this->assembler.place_label(generator_label);
       this->visit_node(queued_block.function->body);
-    } else  {
+    } else {
       this->visit_node(queued_block.function->body);
     }
 
@@ -82,7 +82,6 @@ AST::AbstractNode* CodeGenerator::visit_block(AST::Block* node, VisitContinue) {
 }
 
 AST::AbstractNode* CodeGenerator::visit_ternaryif(AST::TernaryIf* node, VisitContinue) {
-
   // Codegen the condition
   this->visit_node(node->condition);
 
@@ -100,7 +99,6 @@ AST::AbstractNode* CodeGenerator::visit_ternaryif(AST::TernaryIf* node, VisitCon
 }
 
 AST::AbstractNode* CodeGenerator::visit_if(AST::If* node, VisitContinue) {
-
   // Codegen the condition
   this->visit_node(node->condition);
 
@@ -114,7 +112,6 @@ AST::AbstractNode* CodeGenerator::visit_if(AST::If* node, VisitContinue) {
 }
 
 AST::AbstractNode* CodeGenerator::visit_ifelse(AST::IfElse* node, VisitContinue) {
-
   // Codegen the condition
   this->visit_node(node->condition);
 
@@ -132,7 +129,6 @@ AST::AbstractNode* CodeGenerator::visit_ifelse(AST::IfElse* node, VisitContinue)
 }
 
 AST::AbstractNode* CodeGenerator::visit_unless(AST::Unless* node, VisitContinue) {
-
   // Codegen the condition
   this->visit_node(node->condition);
 
@@ -146,7 +142,6 @@ AST::AbstractNode* CodeGenerator::visit_unless(AST::Unless* node, VisitContinue)
 }
 
 AST::AbstractNode* CodeGenerator::visit_unlesselse(AST::UnlessElse* node, VisitContinue) {
-
   // Codegen the condition
   this->visit_node(node->condition);
 
@@ -164,7 +159,6 @@ AST::AbstractNode* CodeGenerator::visit_unlesselse(AST::UnlessElse* node, VisitC
 }
 
 AST::AbstractNode* CodeGenerator::visit_while(AST::While* node, VisitContinue) {
-
   // Setup labels
   Label condition_label = this->assembler.place_label();
   Label break_label = this->assembler.reserve_label();
@@ -188,7 +182,6 @@ AST::AbstractNode* CodeGenerator::visit_while(AST::While* node, VisitContinue) {
 }
 
 AST::AbstractNode* CodeGenerator::visit_until(AST::Until* node, VisitContinue) {
-
   // Setup labels
   Label condition_label = this->assembler.place_label();
   Label break_label = this->assembler.reserve_label();
@@ -212,7 +205,6 @@ AST::AbstractNode* CodeGenerator::visit_until(AST::Until* node, VisitContinue) {
 }
 
 AST::AbstractNode* CodeGenerator::visit_loop(AST::Loop* node, VisitContinue) {
-
   // Setup labels
   Label block_label = this->assembler.place_label();
   Label break_label = this->assembler.reserve_label();
@@ -232,7 +224,6 @@ AST::AbstractNode* CodeGenerator::visit_loop(AST::Loop* node, VisitContinue) {
 }
 
 AST::AbstractNode* CodeGenerator::visit_unary(AST::Unary* node, VisitContinue) {
-
   // Codegen expression
   this->visit_node(node->expression);
   this->assembler.write_operator(kOperatorOpcodeMapping[node->operator_type]);
@@ -241,7 +232,6 @@ AST::AbstractNode* CodeGenerator::visit_unary(AST::Unary* node, VisitContinue) {
 }
 
 AST::AbstractNode* CodeGenerator::visit_binary(AST::Binary* node, VisitContinue) {
-
   // Codegen expression
   this->visit_node(node->left);
   this->visit_node(node->right);
@@ -251,7 +241,6 @@ AST::AbstractNode* CodeGenerator::visit_binary(AST::Binary* node, VisitContinue)
 }
 
 AST::AbstractNode* CodeGenerator::visit_switch(AST::Switch* node, VisitContinue) {
-
   // TODO: Lay this out more efficiently
   // Currently a switch is codegened like this
   //
@@ -343,7 +332,6 @@ AST::AbstractNode* CodeGenerator::visit_switch(AST::Switch* node, VisitContinue)
 }
 
 AST::AbstractNode* CodeGenerator::visit_and(AST::And* node, VisitContinue) {
-
   // Label setup
   Label end_and_label = this->assembler.reserve_label();
 
@@ -360,7 +348,6 @@ AST::AbstractNode* CodeGenerator::visit_and(AST::And* node, VisitContinue) {
 }
 
 AST::AbstractNode* CodeGenerator::visit_or(AST::Or* node, VisitContinue) {
-
   // Label setup
   Label end_or_label = this->assembler.reserve_label();
 
@@ -483,7 +470,6 @@ AST::AbstractNode* CodeGenerator::visit_andindexassignment(AST::ANDIndexAssignme
 }
 
 AST::AbstractNode* CodeGenerator::visit_call(AST::Call* node, VisitContinue) {
-
   // Codegen target
   this->visit_node(node->target);
 
@@ -498,7 +484,6 @@ AST::AbstractNode* CodeGenerator::visit_call(AST::Call* node, VisitContinue) {
 }
 
 AST::AbstractNode* CodeGenerator::visit_callmember(AST::CallMember* node, VisitContinue) {
-
   // Codegen target
   this->visit_node(node->context);
 
@@ -517,7 +502,6 @@ AST::AbstractNode* CodeGenerator::visit_callmember(AST::CallMember* node, VisitC
 }
 
 AST::AbstractNode* CodeGenerator::visit_callindex(AST::CallIndex* node, VisitContinue) {
-
   // Codegen target
   this->visit_node(node->context);
 
@@ -537,7 +521,6 @@ AST::AbstractNode* CodeGenerator::visit_callindex(AST::CallIndex* node, VisitCon
 }
 
 AST::AbstractNode* CodeGenerator::visit_identifier(AST::Identifier* node, VisitContinue) {
-
   // Check if we have the offset info for this identifier
   if (node->offset_info == nullptr) {
     this->push_fatal_error(node, "Missing offset info for identifier codegen");
@@ -560,7 +543,6 @@ AST::AbstractNode* CodeGenerator::visit_self(AST::Self* node, VisitContinue) {
 }
 
 AST::AbstractNode* CodeGenerator::visit_member(AST::Member* node, VisitContinue) {
-
   // Codegen target
   this->visit_node(node->target);
   this->assembler.write_readmembersymbol(this->context.symtable(node->symbol));
@@ -569,7 +551,6 @@ AST::AbstractNode* CodeGenerator::visit_member(AST::Member* node, VisitContinue)
 }
 
 AST::AbstractNode* CodeGenerator::visit_index(AST::Index* node, VisitContinue) {
-
   // Codegen target
   this->visit_node(node->target);
   this->visit_node(node->argument);
@@ -610,7 +591,6 @@ AST::AbstractNode* CodeGenerator::visit_boolean(AST::Boolean* node, VisitContinu
 }
 
 AST::AbstractNode* CodeGenerator::visit_array(AST::Array* node, VisitContinue) {
-
   // Codegen array expressions
   for (auto child : node->expressions->children) {
     this->visit_node(child);
@@ -620,7 +600,6 @@ AST::AbstractNode* CodeGenerator::visit_array(AST::Array* node, VisitContinue) {
 }
 
 AST::AbstractNode* CodeGenerator::visit_hash(AST::Hash* node, VisitContinue) {
-
   // Codegen hash key and values expressions
   for (auto& pair : node->pairs) {
     this->visit_node(pair.second);
@@ -631,7 +610,6 @@ AST::AbstractNode* CodeGenerator::visit_hash(AST::Hash* node, VisitContinue) {
 }
 
 AST::AbstractNode* CodeGenerator::visit_function(AST::Function* node, VisitContinue) {
-
   // Label setup
   Label function_block_label = this->assembler.reserve_label();
 
@@ -650,7 +628,6 @@ AST::AbstractNode* CodeGenerator::visit_function(AST::Function* node, VisitConti
 }
 
 AST::AbstractNode* CodeGenerator::visit_class(AST::Class* node, VisitContinue) {
-
   // Codegen all regular and static members
   for (auto n : node->member_properties->children) {
     if (n->type() != AST::kTypeIdentifier)
@@ -703,7 +680,6 @@ AST::AbstractNode* CodeGenerator::visit_throw(AST::Throw* node, VisitContinue co
 }
 
 AST::AbstractNode* CodeGenerator::visit_break(AST::Break* node, VisitContinue) {
-
   // Check if there is a label for the break instruction
   if (this->break_stack.size() == 0) {
     this->push_fatal_error(node, "Break has no jump target.");
@@ -714,7 +690,6 @@ AST::AbstractNode* CodeGenerator::visit_break(AST::Break* node, VisitContinue) {
 }
 
 AST::AbstractNode* CodeGenerator::visit_continue(AST::Continue* node, VisitContinue) {
-
   // Check if there is a label for the continue instruction
   if (this->continue_stack.size() == 0) {
     this->push_fatal_error(node, "Continue has no jump target.");
@@ -725,7 +700,6 @@ AST::AbstractNode* CodeGenerator::visit_continue(AST::Continue* node, VisitConti
 }
 
 AST::AbstractNode* CodeGenerator::visit_trycatch(AST::TryCatch* node, VisitContinue) {
-
   // Implementation of this method was inspired by:
   // http://lists.llvm.org/pipermail/llvm-dev/2008-April/013978.html
 

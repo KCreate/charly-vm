@@ -1312,8 +1312,9 @@ AST::AbstractNode* Parser::parse_func() {
         }
 
         this->expect_token(TokenType::Identifier, [&]() {
-            params.push_back(this->token.value);
-            if (self_initializer) self_initialisations.push_back(this->token.value);
+          params.push_back(this->token.value);
+          if (self_initializer)
+            self_initialisations.push_back(this->token.value);
         });
 
         if (this->token.type != TokenType::Comma) {

@@ -110,7 +110,6 @@ AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisat
 }
 
 AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitContinue) {
-
   // Skip this node if it already has an offset_info field
   if (node->offset_info != nullptr) {
     return node;
@@ -140,7 +139,6 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
             node->offset_info = new IRVarOffsetInfo({0, index});
           }
         }
-
       }
 
       return node;
@@ -219,7 +217,6 @@ AST::AbstractNode* LVarRewriter::visit_assignment(AST::Assignment* node, VisitCo
 }
 
 AST::AbstractNode* LVarRewriter::visit_trycatch(AST::TryCatch* node, VisitContinue) {
-
   // This block should always exist
   this->visit_node(node->block);
 
