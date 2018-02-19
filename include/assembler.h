@@ -63,6 +63,12 @@ public:
   void write_branch_to_label(Label label);
   void write_branchif_to_label(Label label);
   void write_branchunless_to_label(Label label);
+  void write_branchlt_to_label(Label label);
+  void write_branchgt_to_label(Label label);
+  void write_branchle_to_label(Label label);
+  void write_branchge_to_label(Label label);
+  void write_brancheq_to_label(Label label);
+  void write_branchneq_to_label(Label label);
   void write_registercatchtable_to_label(Label label);
   void write_putfunction_to_label(VALUE symbol,
                                   Label label,

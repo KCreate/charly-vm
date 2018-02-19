@@ -232,6 +232,36 @@ public:
     this->write(offset);
   }
 
+  inline void write_branchlt(int32_t offset) {
+    this->write(Opcode::BranchLt);
+    this->write(offset);
+  }
+
+  inline void write_branchgt(int32_t offset) {
+    this->write(Opcode::BranchGt);
+    this->write(offset);
+  }
+
+  inline void write_branchle(int32_t offset) {
+    this->write(Opcode::BranchLe);
+    this->write(offset);
+  }
+
+  inline void write_branchge(int32_t offset) {
+    this->write(Opcode::BranchGe);
+    this->write(offset);
+  }
+
+  inline void write_brancheq(int32_t offset) {
+    this->write(Opcode::BranchEq);
+    this->write(offset);
+  }
+
+  inline void write_branchneq(int32_t offset) {
+    this->write(Opcode::BranchNeq);
+    this->write(offset);
+  }
+
   inline void write_operator(uint8_t opcode) {
     this->write(opcode);
   }

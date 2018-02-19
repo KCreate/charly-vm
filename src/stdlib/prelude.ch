@@ -31,6 +31,13 @@ ignoreconst {
     getn: ->(msg) {
       write(msg)
       return __internal_getn()
+    },
+    internal: {
+      write: __internal_write,
+      print: ->(v) {
+        __internal_write(v)
+        __internal_write("\n")
+      }
     }
   }
 

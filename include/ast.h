@@ -1486,4 +1486,13 @@ inline bool is_assignment(AbstractNode* node) {
           node->type() == kTypeANDMemberAssignment || node->type() == kTypeIndexAssignment ||
           node->type() == kTypeANDIndexAssignment);
 }
+
+inline bool is_comparison(AbstractNode* node) {
+  if (node->type() != kTypeBinary) return false;
+  Binary* binexp = node->as<Binary>();
+
+  return (binexp->operator_type == TokenType::Equal || binexp->operator_type == TokenType::Not ||
+          binexp->operator_type == TokenType::Less || binexp->operator_type == TokenType::Greater ||
+          binexp->operator_type == TokenType::LessEqual || binexp->operator_type == TokenType::GreaterEqual);
+}
 }  // namespace Charly::Compilation::AST

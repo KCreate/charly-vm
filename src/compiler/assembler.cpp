@@ -66,6 +66,78 @@ void Assembler::write_branchif_to_label(Label label) {
   }
 }
 
+void Assembler::write_branchlt_to_label(Label label) {
+  if (this->labels.count(label) > 0) {
+    this->write_u8(Opcode::BranchLt);
+    this->write_u32(this->labels[label] - this->writeoffset + 1);
+  } else {
+    uint32_t instruction_base = this->writeoffset;
+    this->write_u8(Opcode::BranchLt);
+    this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
+    this->write_u32(0);
+  }
+}
+
+void Assembler::write_branchgt_to_label(Label label) {
+  if (this->labels.count(label) > 0) {
+    this->write_u8(Opcode::BranchGt);
+    this->write_u32(this->labels[label] - this->writeoffset + 1);
+  } else {
+    uint32_t instruction_base = this->writeoffset;
+    this->write_u8(Opcode::BranchGt);
+    this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
+    this->write_u32(0);
+  }
+}
+
+void Assembler::write_branchle_to_label(Label label) {
+  if (this->labels.count(label) > 0) {
+    this->write_u8(Opcode::BranchLe);
+    this->write_u32(this->labels[label] - this->writeoffset + 1);
+  } else {
+    uint32_t instruction_base = this->writeoffset;
+    this->write_u8(Opcode::BranchLe);
+    this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
+    this->write_u32(0);
+  }
+}
+
+void Assembler::write_branchge_to_label(Label label) {
+  if (this->labels.count(label) > 0) {
+    this->write_u8(Opcode::BranchGe);
+    this->write_u32(this->labels[label] - this->writeoffset + 1);
+  } else {
+    uint32_t instruction_base = this->writeoffset;
+    this->write_u8(Opcode::BranchGe);
+    this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
+    this->write_u32(0);
+  }
+}
+
+void Assembler::write_brancheq_to_label(Label label) {
+  if (this->labels.count(label) > 0) {
+    this->write_u8(Opcode::BranchEq);
+    this->write_u32(this->labels[label] - this->writeoffset + 1);
+  } else {
+    uint32_t instruction_base = this->writeoffset;
+    this->write_u8(Opcode::BranchEq);
+    this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
+    this->write_u32(0);
+  }
+}
+
+void Assembler::write_branchneq_to_label(Label label) {
+  if (this->labels.count(label) > 0) {
+    this->write_u8(Opcode::BranchNeq);
+    this->write_u32(this->labels[label] - this->writeoffset + 1);
+  } else {
+    uint32_t instruction_base = this->writeoffset;
+    this->write_u8(Opcode::BranchNeq);
+    this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
+    this->write_u32(0);
+  }
+}
+
 void Assembler::write_branchunless_to_label(Label label) {
   if (this->labels.count(label) > 0) {
     this->write_u8(Opcode::BranchUnless);

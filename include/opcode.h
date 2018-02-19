@@ -33,7 +33,7 @@
 namespace Charly {
 // An opcode identifies a single instruction the machine can perform
 // Opcodes can have arguments
-const uint32_t kOpcodeCount = 60;
+const uint32_t kOpcodeCount = 66;
 enum Opcode : uint8_t {
 
   // Do nothing
@@ -321,6 +321,84 @@ enum Opcode : uint8_t {
   // - test
   BranchUnless,
 
+  // Shorthand for
+  //
+  // lt
+  // branchunless
+  //
+  // args:
+  // - offset
+  //
+  // stack:
+  // - left
+  // - right
+  BranchLt,
+
+  // Shorthand for
+  //
+  // gt
+  // branchunless
+  //
+  // args:
+  // - offset
+  //
+  // stack:
+  // - left
+  // - right
+  BranchGt,
+
+  // Shorthand for
+  //
+  // le
+  // branchunless
+  //
+  // args:
+  // - offset
+  //
+  // stack:
+  // - left
+  // - right
+  BranchLe,
+
+  // Shorthand for
+  //
+  // ge
+  // branchunless
+  //
+  // args:
+  // - offset
+  //
+  // stack:
+  // - left
+  // - right
+  BranchGe,
+
+  // Shorthand for
+  //
+  // eq
+  // branchunless
+  //
+  // args:
+  // - offset
+  //
+  // stack:
+  // - left
+  // - right
+  BranchEq,
+
+  // Shorthand for
+  //
+  // neq
+  // branchunless
+  //
+  // args:
+  // - offset
+  //
+  // stack:
+  // - left
+  // - right
+  BranchNeq,
+
   // Binary operators
   //
   // stack:
@@ -402,6 +480,12 @@ static constexpr uint32_t kInstructionLengths[]{
   /* Branch */                1 + sizeof(uint32_t),
   /* BranchIf */              1 + sizeof(uint32_t),
   /* BranchUnless */          1 + sizeof(uint32_t),
+  /* BranchLt */              1 + sizeof(uint32_t),
+  /* BranchGt */              1 + sizeof(uint32_t),
+  /* BranchLe */              1 + sizeof(uint32_t),
+  /* BranchGe */              1 + sizeof(uint32_t),
+  /* BranchEq */              1 + sizeof(uint32_t),
+  /* BranchNeq */             1 + sizeof(uint32_t),
   /* Add, */                  1,
   /* Sub, */                  1,
   /* Mul, */                  1,
@@ -466,6 +550,12 @@ static std::string kOpcodeMnemonics[]{
   "branch",
   "branchif",
   "branchunless",
+  "branchlt",
+  "branchgt",
+  "branchle",
+  "branchge",
+  "brancheq",
+  "branchneq",
   "add",
   "sub",
   "mul",

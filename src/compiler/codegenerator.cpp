@@ -83,12 +83,22 @@ AST::AbstractNode* CodeGenerator::visit_block(AST::Block* node, VisitContinue) {
 
 AST::AbstractNode* CodeGenerator::visit_ternaryif(AST::TernaryIf* node, VisitContinue) {
   // Codegen the condition
-  this->visit_node(node->condition);
+  if (AST::is_comparison(node->condition)) {
+    this->codegen_cmp_arguments(node->condition);
+  } else {
+    this->visit_node(node->condition);
+  }
 
   // Skip over the then expression if the condition was false
   Label else_exp_label = this->assembler.reserve_label();
   Label end_exp_label = this->assembler.reserve_label();
-  this->assembler.write_branchunless_to_label(else_exp_label);
+
+  if (AST::is_comparison(node->condition)) {
+    this->codegen_cmp_branchunless(node->condition, else_exp_label);
+  } else {
+    this->assembler.write_branchunless_to_label(else_exp_label);
+  }
+
   this->visit_node(node->then_expression);
   this->assembler.write_branch_to_label(end_exp_label);
   this->assembler.place_label(else_exp_label);
@@ -100,11 +110,21 @@ AST::AbstractNode* CodeGenerator::visit_ternaryif(AST::TernaryIf* node, VisitCon
 
 AST::AbstractNode* CodeGenerator::visit_if(AST::If* node, VisitContinue) {
   // Codegen the condition
-  this->visit_node(node->condition);
+  if (AST::is_comparison(node->condition)) {
+    this->codegen_cmp_arguments(node->condition);
+  } else {
+    this->visit_node(node->condition);
+  }
 
   // Skip over the block if the condition was false
   Label end_block_label = this->assembler.reserve_label();
-  this->assembler.write_branchunless_to_label(end_block_label);
+
+  if (AST::is_comparison(node->condition)) {
+    this->codegen_cmp_branchunless(node->condition, end_block_label);
+  } else {
+    this->assembler.write_branchunless_to_label(end_block_label);
+  }
+
   this->visit_node(node->then_block);
   this->assembler.place_label(end_block_label);
 
@@ -113,12 +133,22 @@ AST::AbstractNode* CodeGenerator::visit_if(AST::If* node, VisitContinue) {
 
 AST::AbstractNode* CodeGenerator::visit_ifelse(AST::IfElse* node, VisitContinue) {
   // Codegen the condition
-  this->visit_node(node->condition);
+  if (AST::is_comparison(node->condition)) {
+    this->codegen_cmp_arguments(node->condition);
+  } else {
+    this->visit_node(node->condition);
+  }
 
   // Skip over the block if the condition was false
   Label else_block_label = this->assembler.reserve_label();
   Label end_block_label = this->assembler.reserve_label();
-  this->assembler.write_branchunless_to_label(else_block_label);
+
+  if (AST::is_comparison(node->condition)) {
+    this->codegen_cmp_branchunless(node->condition, else_block_label);
+  } else {
+    this->assembler.write_branchunless_to_label(else_block_label);
+  }
+
   this->visit_node(node->then_block);
   this->assembler.write_branch_to_label(end_block_label);
   this->assembler.place_label(else_block_label);
@@ -166,8 +196,13 @@ AST::AbstractNode* CodeGenerator::visit_while(AST::While* node, VisitContinue) {
   this->continue_stack.push_back(condition_label);
 
   // Condition codegen
-  this->visit_node(node->condition);
-  this->assembler.write_branchunless_to_label(break_label);
+  if (AST::is_comparison(node->condition)) {
+    this->codegen_cmp_arguments(node->condition);
+    this->codegen_cmp_branchunless(node->condition, break_label);
+  } else {
+    this->visit_node(node->condition);
+    this->assembler.write_branchunless_to_label(break_label);
+  }
 
   // Block codegen
   this->visit_node(node->block);
@@ -241,29 +276,6 @@ AST::AbstractNode* CodeGenerator::visit_binary(AST::Binary* node, VisitContinue)
 }
 
 AST::AbstractNode* CodeGenerator::visit_switch(AST::Switch* node, VisitContinue) {
-  // TODO: Lay this out more efficiently
-  // Currently a switch is codegened like this
-  //
-  // # condition 1
-  // # branchunless to condition 2
-  // # condition 1 block
-  // # branch to end
-  // # condition 2
-  // # branchunless to condition 3
-  // # condition 2 block
-  // # branch to end
-  //
-  // We would like the code to be layed out like this
-  // # condition 1
-  // # branch to block 1
-  // # condition 2
-  // # branch to block 2
-  // # branch to end
-  // # block 1
-  // # branch to end
-  // # block 2
-  // # branch to end
-
   // Setup labels
   Label end_label = this->assembler.reserve_label();
   Label default_block = this->assembler.reserve_label();
@@ -747,6 +759,44 @@ AST::AbstractNode* CodeGenerator::visit_trycatch(AST::TryCatch* node, VisitConti
   }
 
   return node;
+}
+
+void CodeGenerator::codegen_cmp_arguments(AST::AbstractNode* node) {
+  this->visit_node(node->as<AST::Binary>()->left);
+  this->visit_node(node->as<AST::Binary>()->right);
+}
+
+void CodeGenerator::codegen_cmp_branchunless(AST::AbstractNode* node, Label target_label) {
+  AST::Binary* binexp = node->as<AST::Binary>();
+  switch (binexp->operator_type) {
+    case TokenType::Less: {
+      this->assembler.write_branchge_to_label(target_label);
+      break;
+    }
+    case TokenType::Greater: {
+      this->assembler.write_branchle_to_label(target_label);
+      break;
+    }
+    case TokenType::LessEqual: {
+      this->assembler.write_branchgt_to_label(target_label);
+      break;
+    }
+    case TokenType::GreaterEqual: {
+      this->assembler.write_branchlt_to_label(target_label);
+      break;
+    }
+    case TokenType::Equal: {
+      this->assembler.write_branchneq_to_label(target_label);
+      break;
+    }
+    case TokenType::Not: {
+      this->assembler.write_brancheq_to_label(target_label);
+      break;
+    }
+    default: {
+      this->push_fatal_error(node, "Node doesn't have a comparison operator");
+    }
+  }
 }
 
 }  // namespace Charly::Compilation

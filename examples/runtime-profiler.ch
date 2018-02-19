@@ -183,4 +183,11 @@ while (i < iterations) {
   }
 
   i += 1
+
+  // branchlt, branchgt, branchle instructions
+  let check
+  if 100 >= 100 check = true
+  if 100 <= 100 check = true
+  if 100 > 100 check = true
+  if 100 ! 100 check = true
 }

@@ -271,6 +271,12 @@ public:
   void op_branch(int32_t offset);
   void op_branchif(int32_t offset);
   void op_branchunless(int32_t offset);
+  void op_branchlt(int32_t offset);
+  void op_branchgt(int32_t offset);
+  void op_branchle(int32_t offset);
+  void op_branchge(int32_t offset);
+  void op_brancheq(int32_t offset);
+  void op_branchneq(int32_t offset);
   void op_typeof();
 
   inline void set_primitive_object(VALUE value) {

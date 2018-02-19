@@ -98,6 +98,9 @@ private:
   AST::AbstractNode* visit_continue(AST::Continue* node, VisitContinue cont);
   AST::AbstractNode* visit_trycatch(AST::TryCatch* node, VisitContinue cont);
 
+  void codegen_cmp_arguments(AST::AbstractNode* node);
+  void codegen_cmp_branchunless(AST::AbstractNode* node, Label target_label);
+
   Assembler assembler;
   std::vector<Label> break_stack;
   std::vector<Label> continue_stack;

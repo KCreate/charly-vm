@@ -658,7 +658,7 @@ VALUE VM::eq(VALUE left, VALUE right) {
 }
 
 VALUE VM::neq(VALUE left, VALUE right) {
-  return this->eq(left, right) ? kFalse : kTrue;
+  return this->eq(left, right) == kTrue ? kFalse : kTrue;
 }
 
 VALUE VM::lt(VALUE left, VALUE right) {
@@ -1793,6 +1793,48 @@ void VM::op_branchunless(int32_t offset) {
     this->ip += offset;
 }
 
+void VM::op_branchlt(int32_t offset) {
+  VALUE right = this->pop_stack();
+  VALUE left = this->pop_stack();
+  if (this->lt(left, right) == kTrue)
+    this->ip += offset;
+}
+
+void VM::op_branchgt(int32_t offset) {
+  VALUE right = this->pop_stack();
+  VALUE left = this->pop_stack();
+  if (this->gt(left, right) == kTrue)
+    this->ip += offset;
+}
+
+void VM::op_branchle(int32_t offset) {
+  VALUE right = this->pop_stack();
+  VALUE left = this->pop_stack();
+  if (this->le(left, right) == kTrue)
+    this->ip += offset;
+}
+
+void VM::op_branchge(int32_t offset) {
+  VALUE right = this->pop_stack();
+  VALUE left = this->pop_stack();
+  if (this->ge(left, right) == kTrue)
+    this->ip += offset;
+}
+
+void VM::op_brancheq(int32_t offset) {
+  VALUE right = this->pop_stack();
+  VALUE left = this->pop_stack();
+  if (this->eq(left, right) == kTrue)
+    this->ip += offset;
+}
+
+void VM::op_branchneq(int32_t offset) {
+  VALUE right = this->pop_stack();
+  VALUE left = this->pop_stack();
+  if (this->neq(left, right) == kTrue)
+    this->ip += offset;
+}
+
 void VM::op_typeof() {
   VALUE value = this->pop_stack();
   const std::string& stringrep = charly_get_typestring(value);
@@ -2227,6 +2269,12 @@ void VM::run() {
                                           &&charly_main_switch_branch,
                                           &&charly_main_switch_branchif,
                                           &&charly_main_switch_branchunless,
+                                          &&charly_main_switch_branchlt,
+                                          &&charly_main_switch_branchgt,
+                                          &&charly_main_switch_branchle,
+                                          &&charly_main_switch_branchge,
+                                          &&charly_main_switch_brancheq,
+                                          &&charly_main_switch_branchneq,
                                           &&charly_main_switch_add,
                                           &&charly_main_switch_sub,
                                           &&charly_main_switch_mul,
@@ -2565,6 +2613,60 @@ charly_main_switch_branchunless : {
   OPCODE_PROLOGUE();
   int32_t offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode));
   this->op_branchunless(offset);
+  OPCODE_EPILOGUE();
+  CONDINCIP();
+  DISPATCH();
+}
+
+charly_main_switch_branchlt : {
+  OPCODE_PROLOGUE();
+  int32_t offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode));
+  this->op_branchlt(offset);
+  OPCODE_EPILOGUE();
+  CONDINCIP();
+  DISPATCH();
+}
+
+charly_main_switch_branchgt : {
+  OPCODE_PROLOGUE();
+  int32_t offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode));
+  this->op_branchgt(offset);
+  OPCODE_EPILOGUE();
+  CONDINCIP();
+  DISPATCH();
+}
+
+charly_main_switch_branchle : {
+  OPCODE_PROLOGUE();
+  int32_t offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode));
+  this->op_branchle(offset);
+  OPCODE_EPILOGUE();
+  CONDINCIP();
+  DISPATCH();
+}
+
+charly_main_switch_branchge : {
+  OPCODE_PROLOGUE();
+  int32_t offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode));
+  this->op_branchge(offset);
+  OPCODE_EPILOGUE();
+  CONDINCIP();
+  DISPATCH();
+}
+
+charly_main_switch_brancheq : {
+  OPCODE_PROLOGUE();
+  int32_t offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode));
+  this->op_brancheq(offset);
+  OPCODE_EPILOGUE();
+  CONDINCIP();
+  DISPATCH();
+}
+
+charly_main_switch_branchneq : {
+  OPCODE_PROLOGUE();
+  int32_t offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode));
+  this->op_branchneq(offset);
   OPCODE_EPILOGUE();
   CONDINCIP();
   DISPATCH();

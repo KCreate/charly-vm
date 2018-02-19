@@ -163,7 +163,13 @@ void Disassembler::dump(std::ostream& stream) {
       case Opcode::RegisterCatchTable:
       case Opcode::Branch:
       case Opcode::BranchIf:
-      case Opcode::BranchUnless: {
+      case Opcode::BranchUnless:
+      case Opcode::BranchLt:
+      case Opcode::BranchGt:
+      case Opcode::BranchLe:
+      case Opcode::BranchGe:
+      case Opcode::BranchEq:
+      case Opcode::BranchNeq: {
         this->print_hex(this->block->get_data() + offset + this->block->read<int32_t>(offset + 1), stream, 12);
         break;
       }
@@ -204,7 +210,13 @@ void Disassembler::detect_branches() {
       case Opcode::RegisterCatchTable:
       case Opcode::Branch:
       case Opcode::BranchIf:
-      case Opcode::BranchUnless: {
+      case Opcode::BranchUnless:
+      case Opcode::BranchLt:
+      case Opcode::BranchGt:
+      case Opcode::BranchLe:
+      case Opcode::BranchGe:
+      case Opcode::BranchEq:
+      case Opcode::BranchNeq: {
         this->branches.emplace_back(offset, offset + this->block->read<int32_t>(offset + 1));
         break;
       }
