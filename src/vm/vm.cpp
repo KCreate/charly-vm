@@ -1180,9 +1180,7 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
   VALUE rv = kNull;
 
   // TODO: Expand this to 15 arguments
-  //
-  // FIXME: Invalid cast if argc doesn't exactly match the function's signature
-  switch (argc) {
+  switch (function->argc) {
     case 0: rv = reinterpret_cast<VALUE (*)(VM&)>(function->pointer)(*this); break;
     case 1: rv = reinterpret_cast<VALUE (*)(VM&, VALUE)>(function->pointer)(*this, argv[0]); break;
     case 2: rv = reinterpret_cast<VALUE (*)(VM&, VALUE, VALUE)>(function->pointer)(*this, argv[0], argv[1]); break;
