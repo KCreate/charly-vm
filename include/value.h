@@ -75,13 +75,16 @@ struct Basic {
   // If the type of this object is String, this determines wether it's a short string
   bool shortstring : 1;
 
+  // If the type of this object is Frame, this determines wether it's a small frame
+  bool smallframe : 1;
+
   // Used by the Garbage Collector during the Mark & Sweep Cycle
   bool mark : 1;
 
   // Holds the type of the heap allocated struct
   uint8_t type : 5;
 
-  Basic() : shortstring(false), mark(false), type(kTypeDead) {
+  Basic() : shortstring(false), smallframe(false), mark(false), type(kTypeDead) {
   }
 };
 
@@ -116,7 +119,7 @@ struct Array {
 //
 // If a string exceeds this limit, the string is allocated separately on the heap. The String structure
 // now only stores a pointer and a length to the allocated memory
-static const uint32_t kShortStringMaxSize = 62;
+static const uint32_t kShortStringMaxSize = 118;
 struct String {
   Basic basic;
 
@@ -145,6 +148,7 @@ struct String {
 };
 
 // Frames introduce new environments
+static const uint32_t kSmallFrameLocalCount = 6;
 struct Frame {
   Basic basic;
   Frame* parent;
@@ -152,13 +156,53 @@ struct Frame {
   CatchTable* last_active_catchtable;
   VALUE caller_value;
   uint32_t stacksize_at_entry;
-  std::vector<VALUE>* environment;
+  union {
+    std::vector<VALUE>* lenv;
+    struct {
+      VALUE data[kSmallFrameLocalCount];
+      uint8_t lvarcount;
+    } senv;
+  };
   VALUE self;
   uint8_t* return_address;
   bool halt_after_return;
 
+  // Read the local variable at a given index
+  //
+  // This method performs no overflow checks
+  VALUE inline read_local(uint32_t index) {
+    if (this->basic.smallframe) {
+      return this->senv.data[index];
+    } else {
+      return (* this->lenv)[index];
+    }
+  }
+
+  // Set the local variable at a given index
+  //
+  // This method performs no overflow checks
+  void inline write_local(uint32_t index, VALUE value) {
+    if (this->basic.smallframe) {
+      this->senv.data[index] = value;
+    } else {
+      (* this->lenv)[index] = value;
+    }
+  }
+
+  // Returns the amount of local variables this frame currently holds
+  size_t inline lvarcount() {
+    if (this->basic.smallframe) {
+      return this->senv.lvarcount;
+    } else {
+      if (this->lenv) return this->lenv->size();
+      return 0;
+    }
+  }
+
   void inline clean() {
-    delete this->environment;
+    if (!this->basic.smallframe) {
+      delete this->lenv;
+    }
   }
 };
 

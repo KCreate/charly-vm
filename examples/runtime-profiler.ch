@@ -164,7 +164,7 @@ while (i < iterations) {
     "abcdefabcdef",
     "abcdefabcdefabcdefabcdef",
     "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef",
-    "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef"
+    "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef" * 10
   ]
 
   func generatorcounter(a) {

@@ -61,15 +61,17 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address,
   cell->frame.halt_after_return = halt_after_return;
 
   // Calculate the number of local variables this frame has to support
-  // Add 1 at the beginning to reserve space for the arguments magic variable
   uint32_t lvarcount = function->lvarcount;
 
   // Allocate and prefill local variable space
-  if (lvarcount) {
-    cell->frame.environment = new std::vector<VALUE>();
-    cell->frame.environment->reserve(lvarcount);
+  if (lvarcount <= kSmallFrameLocalCount) {
+    cell->frame.senv.lvarcount = lvarcount;
+    cell->basic.smallframe = true;
+
     while (lvarcount--)
-      cell->frame.environment->push_back(kNull);
+      cell->frame.senv.data[lvarcount] = kNull;
+  } else {
+    cell->frame.lenv = new std::vector<VALUE>(lvarcount, kNull);
   }
 
   // Append the frame
@@ -100,11 +102,15 @@ Frame* VM::create_frame(VALUE self,
   cell->frame.self = self;
   cell->frame.return_address = return_address;
   cell->frame.halt_after_return = halt_after_return;
-  if (lvarcount) {
-    cell->frame.environment = new std::vector<VALUE>();
-    cell->frame.environment->reserve(lvarcount);
+
+  if (lvarcount <= kSmallFrameLocalCount) {
+    cell->frame.senv.lvarcount = lvarcount;
+    cell->basic.smallframe = true;
+
     while (lvarcount--)
-      cell->frame.environment->push_back(kNull);
+      cell->frame.senv.data[lvarcount] = kNull;
+  } else {
+    cell->frame.lenv = new std::vector<VALUE>(lvarcount, kNull);
   }
 
   // Append the frame
@@ -1151,16 +1157,17 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   // offset 0 of the frame
   if (function->needs_arguments) {
     Array* arguments_array = charly_as_array(ctx.create_array(argc));
-    (*frame->environment)[0] = charly_create_pointer(arguments_array);
+    frame->write_local(0, charly_create_pointer(arguments_array));
+
     for (size_t i = 0; i < argc; i++) {
       if (i < function->argc) {
-        (*frame->environment)[i + 1] = argv[i];
+        frame->write_local(i + 1, argv[i]);
       }
       arguments_array->data->push_back(argv[i]);
     }
   } else {
     for (size_t i = 0; i < function->argc; i++)
-      (*frame->environment)[i] = argv[i];
+      frame->write_local(i, argv[i]);
   }
 
   this->ip = function->body_address;
@@ -1309,8 +1316,6 @@ bool VM::invoke_class_constructors(Class* klass, Object* object, uint32_t argc, 
 }
 
 Opcode VM::fetch_instruction() {
-  if (this->ip == nullptr)
-    return Opcode::Nop;
   return *reinterpret_cast<Opcode*>(this->ip);
 }
 
@@ -1326,11 +1331,11 @@ void VM::op_readlocal(uint32_t index, uint32_t level) {
   }
 
   // Check if the index isn't out-of-bounds
-  if (index >= frame->environment->size()) {
+  if (index >= frame->lvarcount()) {
     return this->panic(Status::ReadFailedOutOfBounds);
   }
 
-  this->push_stack((*frame->environment)[index]);
+  this->push_stack(frame->read_local(index));
 }
 
 void VM::op_readmembersymbol(VALUE symbol) {
@@ -1378,8 +1383,8 @@ void VM::op_setlocalpush(uint32_t index, uint32_t level) {
   }
 
   // Check if the index isn't out-of-bounds
-  if (index < frame->environment->size()) {
-    (*frame->environment)[index] = value;
+  if (index < frame->lvarcount()) {
+    frame->write_local(index, value);
   } else {
     this->panic(Status::WriteFailedOutOfBounds);
   }
@@ -1436,8 +1441,8 @@ void VM::op_setlocal(uint32_t index, uint32_t level) {
   }
 
   // Check if the index isn't out-of-bounds
-  if (index < frame->environment->size()) {
-    (*frame->environment)[index] = value;
+  if (index < frame->lvarcount()) {
+    frame->write_local(index, value);
   } else {
     this->panic(Status::WriteFailedOutOfBounds);
   }

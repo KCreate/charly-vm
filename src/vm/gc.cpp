@@ -161,9 +161,8 @@ void GarbageCollector::mark(VALUE value) {
       this->mark(frame->caller_value);
       this->mark(frame->self);
 
-      if (frame->environment) {
-        for (auto lvar : *frame->environment)
-          this->mark(lvar);
+      for (size_t i = 0; i < frame->lvarcount(); i++) {
+        this->mark(frame->read_local(i));
       }
 
       break;
