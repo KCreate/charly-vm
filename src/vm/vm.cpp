@@ -308,8 +308,6 @@ VALUE VM::create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer) {
   cell->cfunction.name = name;
   cell->cfunction.pointer = pointer;
   cell->cfunction.argc = argc;
-  cell->cfunction.bound_self_set = false;
-  cell->cfunction.bound_self = kNull;
   cell->cfunction.container = new std::unordered_map<VALUE, VALUE>();
   return cell->as_value();
 }
@@ -436,9 +434,6 @@ VALUE VM::copy_function(VALUE function) {
 VALUE VM::copy_cfunction(VALUE function) {
   CFunction* source = charly_as_cfunction(function);
   CFunction* target = charly_as_cfunction(this->create_cfunction(source->name, source->argc, source->pointer));
-
-  target->bound_self_set = source->bound_self_set;
-  target->bound_self = source->bound_self;
   *(target->container) = *(source->container);
 
   return charly_create_pointer(target);
@@ -2037,9 +2032,6 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << "argc=" << func->argc;
       io << " ";
       io << "pointer=" << func->pointer << " ";
-      io << "bound_self_set=" << (func->bound_self_set ? "true" : "false") << " ";
-      io << "bound_self=";
-      this->pretty_print(io, func->bound_self);
 
       for (auto& entry : *func->container) {
         io << " ";

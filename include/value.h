@@ -279,8 +279,6 @@ struct CFunction {
   VALUE name;
   uintptr_t pointer;
   uint32_t argc;
-  bool bound_self_set;
-  VALUE bound_self;
   std::unordered_map<VALUE, VALUE>* container;
 
   inline void clean() {

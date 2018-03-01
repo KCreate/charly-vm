@@ -121,8 +121,6 @@ void GarbageCollector::mark(VALUE value) {
 
     case kTypeCFunction: {
       CFunction* cfunc = charly_as_cfunction(value);
-      if (cfunc->bound_self_set)
-        this->mark(cfunc->bound_self);
       for (auto entry : *cfunc->container)
         this->mark(entry.second);
       break;
