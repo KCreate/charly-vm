@@ -294,8 +294,8 @@ VALUE VM::create_function(VALUE name,
   cell->function.lvarcount = lvarcount;
   cell->function.context = this->frames;
   cell->function.body_address = body_address;
-  cell->function.anonymous = anonymous;
-  cell->function.needs_arguments = needs_arguments;
+  cell->function.set_anonymous(anonymous);
+  cell->function.set_needs_arguments(needs_arguments);
   cell->function.bound_self_set = false;
   cell->function.bound_self = kNull;
   cell->function.container = new std::unordered_map<VALUE, VALUE>();
@@ -423,7 +423,7 @@ VALUE VM::copy_string(VALUE string) {
 VALUE VM::copy_function(VALUE function) {
   Function* source = charly_as_function(function);
   Function* target = charly_as_function(this->create_function(
-      source->name, source->body_address, source->argc, source->lvarcount, source->anonymous, source->needs_arguments));
+      source->name, source->body_address, source->argc, source->lvarcount, source->anonymous(), source->needs_arguments()));
 
   target->context = source->context;
   target->bound_self_set = source->bound_self_set;
@@ -1072,7 +1072,7 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
       if (tfunc->bound_self_set) {
         target = tfunc->bound_self;
       } else {
-        if (tfunc->anonymous) {
+        if (tfunc->anonymous()) {
           if (tfunc->context) {
             target = tfunc->context->self;
           } else {
@@ -1155,7 +1155,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   //
   // If the function requires an arguments array, we create one and push it onto
   // offset 0 of the frame
-  if (function->needs_arguments) {
+  if (function->needs_arguments()) {
     Array* arguments_array = charly_as_array(ctx.create_array(argc));
     frame->write_local(0, charly_create_pointer(arguments_array));
 

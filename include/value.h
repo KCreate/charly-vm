@@ -247,6 +247,8 @@ struct CatchTable {
 };
 
 // Normal functions defined inside the virtual machine.
+//
+// Stores anonymous and needs_arguments inside f1 and f2
 struct Function {
   Basic basic;
   VALUE name;
@@ -254,11 +256,14 @@ struct Function {
   uint32_t lvarcount;
   Frame* context;
   uint8_t* body_address;
-  bool anonymous;
-  bool needs_arguments;
   bool bound_self_set;
   VALUE bound_self;
   std::unordered_map<VALUE, VALUE>* container;
+
+  inline bool anonymous() { return this->basic.f1; }
+  inline bool needs_arguments() { return this->basic.f2; }
+  inline void set_anonymous(bool f) { this->basic.f1 = f; }
+  inline void set_needs_arguments(bool f) { this->basic.f2 = f; }
 
   inline void clean() {
     delete this->container;
