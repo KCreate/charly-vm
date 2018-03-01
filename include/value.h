@@ -72,11 +72,16 @@ enum ValueType : uint8_t {
 // the beginning. It allows us to determine it's type and other information
 // about it.
 struct Basic {
-  // If the type of this object is String, this determines wether it's a short string
-  bool shortstring : 1;
-
-  // If the type of this object is Frame, this determines wether it's a small frame
-  bool smallframe : 1;
+  // Unreserved flags which can be used by the datatypes for anything they want
+  // This is mostly an optimisation so that data types don't need to allocate
+  // a byte for their own flags
+  union {
+    struct {
+      bool f1 : 1;
+      bool f2 : 1;
+    };
+    uint8_t flags : 2;
+  };
 
   // Used by the Garbage Collector during the Mark & Sweep Cycle
   bool mark : 1;
@@ -84,7 +89,7 @@ struct Basic {
   // Holds the type of the heap allocated struct
   uint8_t type : 5;
 
-  Basic() : shortstring(false), smallframe(false), mark(false), type(kTypeDead) {
+  Basic() : f1(false), f2(false), mark(false), type(kTypeDead) {
   }
 };
 
@@ -97,7 +102,7 @@ struct Object {
   VALUE klass;
   std::unordered_map<VALUE, VALUE>* container;
 
-  void inline clean() {
+  inline void clean() {
     delete this->container;
   }
 };
@@ -107,7 +112,7 @@ struct Array {
   Basic basic;
   std::vector<VALUE>* data;
 
-  void inline clean() {
+  inline void clean() {
     delete this->data;
   }
 };
@@ -119,6 +124,8 @@ struct Array {
 //
 // If a string exceeds this limit, the string is allocated separately on the heap. The String structure
 // now only stores a pointer and a length to the allocated memory
+//
+// Uses the f1 flag of the basic structure to differentiate between short and heap strings
 static const uint32_t kShortStringMaxSize = 118;
 struct String {
   Basic basic;
@@ -135,19 +142,27 @@ struct String {
   };
 
   inline char* data() {
-    return basic.shortstring ? sbuf.data : lbuf.data;
+    return basic.f1 ? sbuf.data : lbuf.data;
   }
   inline uint32_t length() {
-    return basic.shortstring ? sbuf.length : lbuf.length;
+    return basic.f1 ? sbuf.length : lbuf.length;
+  }
+  inline void set_shortstring(bool f) {
+    this->basic.f1 = f;
+  }
+  inline bool is_shortstring() {
+    return basic.f1;
   }
   inline void clean() {
-    if (!basic.shortstring) {
+    if (!basic.f1) {
       std::free(lbuf.data);
     }
   }
 };
 
 // Frames introduce new environments
+//
+// Uses the f1 flag of the basic structure to differentiate between small and regular frames
 static const uint32_t kSmallFrameLocalCount = 6;
 struct Frame {
   Basic basic;
@@ -170,8 +185,8 @@ struct Frame {
   // Read the local variable at a given index
   //
   // This method performs no overflow checks
-  VALUE inline read_local(uint32_t index) {
-    if (this->basic.smallframe) {
+  inline VALUE read_local(uint32_t index) {
+    if (this->basic.f1) {
       return this->senv.data[index];
     } else {
       return (* this->lenv)[index];
@@ -181,8 +196,8 @@ struct Frame {
   // Set the local variable at a given index
   //
   // This method performs no overflow checks
-  void inline write_local(uint32_t index, VALUE value) {
-    if (this->basic.smallframe) {
+  inline void write_local(uint32_t index, VALUE value) {
+    if (this->basic.f1) {
       this->senv.data[index] = value;
     } else {
       (* this->lenv)[index] = value;
@@ -190,8 +205,8 @@ struct Frame {
   }
 
   // Returns the amount of local variables this frame currently holds
-  size_t inline lvarcount() {
-    if (this->basic.smallframe) {
+  inline size_t lvarcount() {
+    if (this->basic.f1) {
       return this->senv.lvarcount;
     } else {
       if (this->lenv) return this->lenv->size();
@@ -199,8 +214,16 @@ struct Frame {
     }
   }
 
-  void inline clean() {
-    if (!this->basic.smallframe) {
+  inline bool is_smallframe() {
+    return this->basic.f1;
+  }
+
+  inline void set_smallframe(bool f) {
+    this->basic.f1 = f;
+  }
+
+  inline void clean() {
+    if (!this->basic.f1) {
       delete this->lenv;
     }
   }

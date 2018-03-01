@@ -66,7 +66,7 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address,
   // Allocate and prefill local variable space
   if (lvarcount <= kSmallFrameLocalCount) {
     cell->frame.senv.lvarcount = lvarcount;
-    cell->basic.smallframe = true;
+    cell->frame.set_smallframe(true);
 
     while (lvarcount--)
       cell->frame.senv.data[lvarcount] = kNull;
@@ -105,7 +105,7 @@ Frame* VM::create_frame(VALUE self,
 
   if (lvarcount <= kSmallFrameLocalCount) {
     cell->frame.senv.lvarcount = lvarcount;
-    cell->basic.smallframe = true;
+    cell->frame.set_smallframe(true);
 
     while (lvarcount--)
       cell->frame.senv.data[lvarcount] = kNull;
@@ -247,7 +247,7 @@ VALUE VM::create_string(const char* data, uint32_t length) {
 
   if (length <= kShortStringMaxSize) {
     // Copy the string into the cell itself
-    cell->basic.shortstring = true;
+    cell->string.set_shortstring(true);
     std::memcpy(cell->string.sbuf.data, data, length);
     cell->string.sbuf.length = length;
   } else {
@@ -256,7 +256,7 @@ VALUE VM::create_string(const char* data, uint32_t length) {
     std::memcpy(copied_string, data, length);
 
     // Setup long string
-    cell->basic.shortstring = false;
+    cell->string.set_shortstring(false);
     cell->string.lbuf.data = copied_string;
     cell->string.lbuf.length = length;
   }
@@ -267,7 +267,7 @@ VALUE VM::create_string(const char* data, uint32_t length) {
 VALUE VM::create_weak_string(char* data, uint32_t length) {
   MemoryCell* cell = this->gc.allocate();
   cell->basic.type = kTypeString;
-  cell->basic.shortstring = false;
+  cell->string.set_shortstring(false);
   cell->string.lbuf.data = data;
   cell->string.lbuf.length = length;
   return cell->as_value();
@@ -276,7 +276,7 @@ VALUE VM::create_weak_string(char* data, uint32_t length) {
 VALUE VM::create_empty_short_string() {
   MemoryCell* cell = this->gc.allocate();
   cell->basic.type = kTypeString;
-  cell->basic.shortstring = true;
+  cell->string.set_shortstring(true);
   cell->string.sbuf.length = 0;
   return cell->as_value();
 }
@@ -1925,7 +1925,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << charly_string_length(value);
 
       if (charly_is_on_heap(value)) {
-        if (charly_as_basic(value)->shortstring) {
+        if (charly_as_hstring(value)->is_shortstring()) {
           io << " s";
         } else {
           io << "";
