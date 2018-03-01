@@ -58,7 +58,7 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address,
   cell->frame.stacksize_at_entry = 0;  // set by call_generator
   cell->frame.self = self;
   cell->frame.return_address = return_address;
-  cell->frame.halt_after_return = halt_after_return;
+  cell->frame.set_halt_after_return(halt_after_return);
 
   // Calculate the number of local variables this frame has to support
   uint32_t lvarcount = function->lvarcount;
@@ -101,7 +101,7 @@ Frame* VM::create_frame(VALUE self,
   cell->frame.stacksize_at_entry = 0;  // set by call_generator
   cell->frame.self = self;
   cell->frame.return_address = return_address;
-  cell->frame.halt_after_return = halt_after_return;
+  cell->frame.set_halt_after_return(halt_after_return);
 
   if (lvarcount <= kSmallFrameLocalCount) {
     cell->frame.senv.lvarcount = lvarcount;
@@ -177,7 +177,7 @@ void VM::unwind_catchstack() {
     if (this->frames == table->frame) {
       break;
     } else {
-      if (this->frames->halt_after_return) {
+      if (this->frames->halt_after_return()) {
         this->halted = true;
       }
 
@@ -1672,7 +1672,7 @@ void VM::op_return() {
   this->frames = frame->parent;
   this->ip = frame->return_address;
 
-  if (frame->halt_after_return) {
+  if (frame->halt_after_return()) {
     this->halted = true;
   }
 
@@ -1714,7 +1714,7 @@ void VM::op_yield() {
   this->frames = frame->parent;
   this->ip = frame->return_address;
 
-  if (frame->halt_after_return) {
+  if (frame->halt_after_return()) {
     this->halted = true;
   }
 }

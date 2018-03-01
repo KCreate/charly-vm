@@ -163,6 +163,7 @@ struct String {
 // Frames introduce new environments
 //
 // Uses the f1 flag of the basic structure to differentiate between small and regular frames
+// Uses the f2 flag of the basic structure to store the machine should halt after this frame
 static const uint32_t kSmallFrameLocalCount = 6;
 struct Frame {
   Basic basic;
@@ -180,7 +181,14 @@ struct Frame {
   };
   VALUE self;
   uint8_t* return_address;
-  bool halt_after_return;
+
+  inline bool halt_after_return() {
+    return this->basic.f2;
+  }
+
+  inline void set_halt_after_return(bool f) {
+    this->basic.f2 = f;
+  }
 
   // Read the local variable at a given index
   //
