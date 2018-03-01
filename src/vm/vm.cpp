@@ -322,8 +322,8 @@ VALUE VM::create_generator(VALUE name, uint8_t* resume_address) {
   cell->generator.context_catchtable = this->catchstack;
   cell->generator.context_stack = new std::vector<VALUE>();
   cell->generator.resume_address = resume_address;
-  cell->generator.finished = false;
-  cell->generator.started = false;
+  cell->generator.set_finished(false);
+  cell->generator.set_started(false);
   cell->generator.bound_self_set = false;
   cell->generator.bound_self = kNull;
   cell->generator.container = new std::unordered_map<VALUE, VALUE>();
@@ -450,7 +450,7 @@ VALUE VM::copy_generator(VALUE generator) {
 
   target->bound_self_set = source->bound_self_set;
   target->bound_self = source->bound_self;
-  target->finished = source->finished;
+  target->set_finished(source->finished());
   *(target->container) = *(source->container);
   *(target->context_stack) = *(source->context_stack);
   *(target->context_frame) = *(source->context_frame);
@@ -1231,7 +1231,7 @@ void VM::call_generator(Generator* generator, uint32_t argc, VALUE* argv) {
   }
 
   // If the generator is already finished, we return null
-  if (generator->finished) {
+  if (generator->finished()) {
     this->push_stack(kNull);
     return;
   }
@@ -1263,14 +1263,14 @@ void VM::call_generator(Generator* generator, uint32_t argc, VALUE* argv) {
   }
 
   // Push the argument onto the stack
-  if (generator->started) {
+  if (generator->started()) {
     if (argc == 0) {
       this->push_stack(kNull);
     } else {
       this->push_stack(argv[0]);
     }
   } else {
-    generator->started = true;
+    generator->set_started(true);
   }
 }
 
@@ -1665,7 +1665,7 @@ void VM::op_return() {
   // Mark it as done and delete some items which are no longer needed
   if (charly_is_generator(frame->caller_value)) {
     Generator* generator = charly_as_generator(frame->caller_value);
-    generator->finished = true;
+    generator->set_finished(true);
   }
 
   this->catchstack = frame->last_active_catchtable;
@@ -2065,7 +2065,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       this->pretty_print(io, generator->name);
       io << " ";
       io << "resume_address=" << reinterpret_cast<void*>(generator->resume_address) << " ";
-      io << "finished=" << (generator->finished ? "true" : "false") << " ";
+      io << "finished=" << (generator->finished() ? "true" : "false") << " ";
       io << "context_frame=" << reinterpret_cast<void*>(generator->context_frame) << " ";
       io << "context_catchtable=" << reinterpret_cast<void*>(generator->context_catchtable) << " ";
       io << "bound_self_set=" << (generator->bound_self_set ? "true" : "false") << " ";

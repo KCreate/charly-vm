@@ -304,6 +304,8 @@ struct CFunction {
 // Nested functions also have a reference to that same frame, but we can freely modify it because
 // child functions only require the environment for variable lookups
 // This means we can freely modify the parent_frame pointer to correctly handle generator returns
+//
+// Uses f1 and f2 to store finished and started flags
 struct Generator {
   Basic basic;
   VALUE name;
@@ -311,11 +313,14 @@ struct Generator {
   CatchTable* context_catchtable;
   std::vector<VALUE>* context_stack;
   uint8_t* resume_address;
-  bool finished;
-  bool started;
   bool bound_self_set;
   VALUE bound_self;
   std::unordered_map<VALUE, VALUE>* container;
+
+  inline bool finished() { return this->basic.f1; }
+  inline bool started() { return this->basic.f2; }
+  inline void set_finished(bool f) { this->basic.f1 = f; }
+  inline void set_started(bool f) { this->basic.f2 = f; }
 
   inline void clean() {
     delete this->container;
@@ -1186,7 +1191,7 @@ inline bool charly_truthyness(VALUE value) {
   if (value == kFalse) return false;
   if (charly_is_int(value)) return charly_int_to_int64(value) != 0;
   if (charly_is_float(value)) return charly_double_to_double(value) != 0;
-  if (charly_is_generator(value)) return !charly_as_generator(value)->finished;
+  if (charly_is_generator(value)) return !charly_as_generator(value)->finished();
   return true;
 }
 
