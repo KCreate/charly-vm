@@ -126,7 +126,7 @@ struct Array {
 // now only stores a pointer and a length to the allocated memory
 //
 // Uses the f1 flag of the basic structure to differentiate between short and heap strings
-static const uint32_t kShortStringMaxSize = 118;
+static constexpr uint32_t kShortStringMaxSize = 118;
 struct String {
   Basic basic;
 
@@ -164,7 +164,7 @@ struct String {
 //
 // Uses the f1 flag of the basic structure to differentiate between small and regular frames
 // Uses the f2 flag of the basic structure to store the machine should halt after this frame
-static const uint32_t kSmallFrameLocalCount = 6;
+static constexpr uint32_t kSmallFrameLocalCount = 6;
 struct Frame {
   Basic basic;
   Frame* parent;
@@ -402,56 +402,56 @@ struct Class {
 //       https://github.com/munificent/wren/blob/master/src/vm/wren_value.h
 
 // Masks for the VALUE type
-const uint64_t kMaskSignBit       = 0x8000000000000000; // Sign bit
-const uint64_t kMaskExponentBits  = 0x7ff0000000000000; // Exponent bits
-const uint64_t kMaskQuietBit      = 0x0008000000000000; // Quiet bit
-const uint64_t kMaskTypeBits      = 0x0007000000000000; // Type bits
-const uint64_t kMaskSignature     = 0xffff000000000000; // Signature bits
-const uint64_t kMaskPayloadBits   = 0x0000ffffffffffff; // Payload bits
+static constexpr uint64_t kMaskSignBit       = 0x8000000000000000; // Sign bit
+static constexpr uint64_t kMaskExponentBits  = 0x7ff0000000000000; // Exponent bits
+static constexpr uint64_t kMaskQuietBit      = 0x0008000000000000; // Quiet bit
+static constexpr uint64_t kMaskTypeBits      = 0x0007000000000000; // Type bits
+static constexpr uint64_t kMaskSignature     = 0xffff000000000000; // Signature bits
+static constexpr uint64_t kMaskPayloadBits   = 0x0000ffffffffffff; // Payload bits
 
 // Types that are encoded in the type field
-const uint64_t kITypeNaN          = 0x0000000000000000;
-const uint64_t kITypeFalse        = 0x0001000000000000;
-const uint64_t kITypeTrue         = 0x0002000000000000;
-const uint64_t kITypeNull         = 0x0003000000000000;
-const uint64_t kITypeInteger      = 0x0004000000000000;
-const uint64_t kITypeSymbol       = 0x0005000000000000;
-const uint64_t kITypePString      = 0x0006000000000000;
-const uint64_t kITypeIString      = 0x0007000000000000;
+static constexpr uint64_t kITypeNaN          = 0x0000000000000000;
+static constexpr uint64_t kITypeFalse        = 0x0001000000000000;
+static constexpr uint64_t kITypeTrue         = 0x0002000000000000;
+static constexpr uint64_t kITypeNull         = 0x0003000000000000;
+static constexpr uint64_t kITypeInteger      = 0x0004000000000000;
+static constexpr uint64_t kITypeSymbol       = 0x0005000000000000;
+static constexpr uint64_t kITypePString      = 0x0006000000000000;
+static constexpr uint64_t kITypeIString      = 0x0007000000000000;
 
 // Shorthand values
-const uint64_t kBitsNaN           = kMaskExponentBits | kMaskQuietBit;
-const uint64_t kFalse             = kBitsNaN | kITypeFalse; // 0x7ff9000000000000
-const uint64_t kTrue              = kBitsNaN | kITypeTrue;  // 0x7ffa000000000000
-const uint64_t kNull              = kBitsNaN | kITypeNull;  // 0x7ffb000000000000
+static constexpr uint64_t kBitsNaN           = kMaskExponentBits | kMaskQuietBit;
+static constexpr uint64_t kFalse             = kBitsNaN | kITypeFalse; // 0x7ff9000000000000
+static constexpr uint64_t kTrue              = kBitsNaN | kITypeTrue;  // 0x7ffa000000000000
+static constexpr uint64_t kNull              = kBitsNaN | kITypeNull;  // 0x7ffb000000000000
 
 // Signatures of complex encoded types
-const uint64_t kSignaturePointer  = kMaskSignBit | kBitsNaN;
-const uint64_t kSignatureInteger  = kBitsNaN | kITypeInteger;
-const uint64_t kSignatureSymbol   = kBitsNaN | kITypeSymbol;
-const uint64_t kSignaturePString  = kBitsNaN | kITypePString;
-const uint64_t kSignatureIString  = kBitsNaN | kITypeIString;
+static constexpr uint64_t kSignaturePointer  = kMaskSignBit | kBitsNaN;
+static constexpr uint64_t kSignatureInteger  = kBitsNaN | kITypeInteger;
+static constexpr uint64_t kSignatureSymbol   = kBitsNaN | kITypeSymbol;
+static constexpr uint64_t kSignaturePString  = kBitsNaN | kITypePString;
+static constexpr uint64_t kSignatureIString  = kBitsNaN | kITypeIString;
 
 // Masks for the immediate encoded types
-const uint64_t kMaskPointer       = 0x0000ffffffffffff;
-const uint64_t kMaskInteger       = 0x0000ffffffffffff;
-const uint64_t kMaskIntegerSign   = 0x0000800000000000;
-const uint64_t kMaskSymbol        = 0x0000ffffffffffff;
-const uint64_t kMaskPString       = 0x0000ffffffffffff;
-const uint64_t kMaskIString       = 0x000000ffffffffff;
-const uint64_t kMaskIStringLength = 0x0000ff0000000000;
+static constexpr uint64_t kMaskPointer       = 0x0000ffffffffffff;
+static constexpr uint64_t kMaskInteger       = 0x0000ffffffffffff;
+static constexpr uint64_t kMaskIntegerSign   = 0x0000800000000000;
+static constexpr uint64_t kMaskSymbol        = 0x0000ffffffffffff;
+static constexpr uint64_t kMaskPString       = 0x0000ffffffffffff;
+static constexpr uint64_t kMaskIString       = 0x000000ffffffffff;
+static constexpr uint64_t kMaskIStringLength = 0x0000ff0000000000;
 
 // Constants used when converting between different representations
-const int64_t kMaxInt             = (static_cast<int64_t>(1) << 47) - 1;
-const int64_t kMaxUInt            = (static_cast<int64_t>(1) << 48) - 1;
-const int64_t kMinInt             = -(static_cast<int64_t>(1) << 47);
-void* const kMaxPointer           = reinterpret_cast<void*>((static_cast<int64_t>(1) << 48) - 1);
-const uint64_t kSignBlock         = 0xFFFF000000000000;
+static constexpr int64_t kMaxInt             = (static_cast<int64_t>(1) << 47) - 1;
+static constexpr int64_t kMaxUInt            = (static_cast<int64_t>(1) << 48) - 1;
+static constexpr int64_t kMinInt             = -(static_cast<int64_t>(1) << 47);
+static const void* const kMaxPointer         = (void*)0x0000FFFFFFFFFFFF;
+static constexpr uint64_t kSignBlock         = 0xFFFF000000000000;
 
 // Misc. constants
-const uint32_t kMaxIStringLength  = 5;
-const uint32_t kMaxPStringLength  = 6;
-const int64_t kMaxStringLength    = 0xffffffff;
+static constexpr uint32_t kMaxIStringLength  = 5;
+static constexpr uint32_t kMaxPStringLength  = 6;
+static constexpr int64_t kMaxStringLength    = 0xffffffff;
 
 // Type casting functions
 template <typename T>
