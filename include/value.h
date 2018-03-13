@@ -316,6 +316,7 @@ struct Generator {
   CatchTable* context_catchtable;
   std::vector<VALUE>* context_stack;
   uint8_t* resume_address;
+  bool running;
   bool bound_self_set;
   VALUE bound_self;
   std::unordered_map<VALUE, VALUE>* container;

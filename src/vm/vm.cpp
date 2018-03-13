@@ -320,6 +320,7 @@ VALUE VM::create_generator(VALUE name, uint8_t* resume_address) {
   cell->generator.context_catchtable = this->catchstack;
   cell->generator.context_stack = new std::vector<VALUE>();
   cell->generator.resume_address = resume_address;
+  cell->generator.running = false;
   cell->generator.set_finished(false);
   cell->generator.set_started(false);
   cell->generator.bound_self_set = false;
@@ -1225,6 +1226,12 @@ void VM::call_generator(Generator* generator, uint32_t argc, VALUE* argv) {
     return;
   }
 
+  // If the generator is currently running, we throw an error
+  if (generator->running) {
+    this->throw_exception("Can't call already running generator");
+    return;
+  }
+
   // If the generator is already finished, we return null
   if (generator->finished()) {
     this->push_stack(kNull);
@@ -1267,6 +1274,8 @@ void VM::call_generator(Generator* generator, uint32_t argc, VALUE* argv) {
   } else {
     generator->set_started(true);
   }
+
+  generator->running = true;
 }
 
 void VM::initialize_member_properties(Class* klass, Object* object) {
@@ -1661,6 +1670,7 @@ void VM::op_return() {
   if (charly_is_generator(frame->caller_value)) {
     Generator* generator = charly_as_generator(frame->caller_value);
     generator->set_finished(true);
+    generator->running = false;
   }
 
   this->catchstack = frame->last_active_catchtable;
@@ -1696,6 +1706,7 @@ void VM::op_yield() {
   Generator* generator = charly_as_generator(frame->caller_value);
   generator->context_catchtable = this->catchstack;
   generator->resume_address = this->ip + kInstructionLengths[Opcode::Yield];
+  generator->running = false;
   size_t stack_value_pop_count = this->stack.size() - frame->stacksize_at_entry;
   while (stack_value_pop_count--) {
     generator->context_stack->push_back(this->pop_stack());
@@ -2058,6 +2069,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << " ";
       io << "resume_address=" << reinterpret_cast<void*>(generator->resume_address) << " ";
       io << "finished=" << (generator->finished() ? "true" : "false") << " ";
+      io << "started=" << (generator->started() ? "true" : "false") << " ";
+      io << "running=" << (generator->running ? "true" : "false") << " ";
       io << "context_frame=" << reinterpret_cast<void*>(generator->context_frame) << " ";
       io << "context_catchtable=" << reinterpret_cast<void*>(generator->context_catchtable) << " ";
       io << "bound_self_set=" << (generator->bound_self_set ? "true" : "false") << " ";
