@@ -320,6 +320,7 @@ VALUE VM::create_generator(VALUE name, uint8_t* resume_address) {
   cell->generator.context_catchtable = this->catchstack;
   cell->generator.context_stack = new std::vector<VALUE>();
   cell->generator.resume_address = resume_address;
+  cell->generator.owns_catchtable = false;
   cell->generator.running = false;
   cell->generator.set_finished(false);
   cell->generator.set_started(false);
@@ -421,8 +422,9 @@ VALUE VM::copy_string(VALUE string) {
 
 VALUE VM::copy_function(VALUE function) {
   Function* source = charly_as_function(function);
-  Function* target = charly_as_function(this->create_function(
-      source->name, source->body_address, source->argc, source->lvarcount, source->anonymous(), source->needs_arguments()));
+  Function* target =
+      charly_as_function(this->create_function(source->name, source->body_address, source->argc, source->lvarcount,
+                                               source->anonymous(), source->needs_arguments()));
 
   target->context = source->context;
   target->bound_self_set = source->bound_self_set;
@@ -1255,7 +1257,9 @@ void VM::call_generator(Generator* generator, uint32_t argc, VALUE* argv) {
   frame->return_address = return_address;
 
   this->frames = frame;
-  this->catchstack = generator->context_catchtable;
+  if (generator->owns_catchtable) {
+    this->catchstack = generator->context_catchtable;
+  }
   this->ip = generator->resume_address;
 
   // Restore the values on the stack which ere active when the generator was paused
@@ -1704,6 +1708,7 @@ void VM::op_yield() {
 
   // Store context info inside the generator
   Generator* generator = charly_as_generator(frame->caller_value);
+  generator->owns_catchtable = generator->context_catchtable != this->catchstack;
   generator->context_catchtable = this->catchstack;
   generator->resume_address = this->ip + kInstructionLengths[Opcode::Yield];
   generator->running = false;

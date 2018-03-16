@@ -1,20 +1,26 @@
-let gen
-
-func counter {
-  let i = 0
-
-  loop {
-    if i == 2 yield gen()
-    yield i
-    i += 1
+func gen {
+  try {
+    yield 1
+    throw 2
+  } catch(e) {
+    print("caught inside gen")
   }
+
+  yield 2
+  throw 2
+}
+
+const g = gen();
+
+try {
+  g()
+  g()
+} catch(e) {
+  print("caught in 2")
 }
 
 try {
-  gen = counter()
-  print(gen())
-  print(gen())
-  print(gen())
+  g()
 } catch(e) {
-  print(e.message)
+  print("caught in 3")
 }
