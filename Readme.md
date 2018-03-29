@@ -7,9 +7,7 @@ This repository contains the Charly Virtual Machine.
 the Charly Programming Language. Charly is a dynamic, weakly-typed multi-paradigm
 programming language.
 
-# How it works
-
-TODO: Write this
+### `TODO: Write a nice description of the project`
 
 # Installation
 
