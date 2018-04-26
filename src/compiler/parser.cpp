@@ -244,6 +244,9 @@ AST::AbstractNode* Parser::parse_statement() {
     case TokenType::Guard: {
       return this->parse_guard_statement();
     }
+    case TokenType::Do: {
+      return this->parse_do_statement();
+    }
     case TokenType::While: {
       return this->parse_while_statement();
     }
@@ -563,6 +566,52 @@ AST::AbstractNode* Parser::parse_switch_node() {
       this->unexpected_token("case or default");
       return nullptr;
     }
+  }
+}
+
+AST::AbstractNode* Parser::parse_do_statement() {
+  Location location_start = this->token.location;
+  this->expect_token(TokenType::Do);
+
+  auto context_backup = this->keyword_context;
+  this->keyword_context.break_allowed = true;
+  this->keyword_context.continue_allowed = true;
+
+  AST::AbstractNode* then_block;
+  if (this->token.type == TokenType::LeftCurly) {
+    then_block = this->parse_block();
+  } else {
+    then_block = this->parse_control_statement();
+    this->skip_token(TokenType::Semicolon);
+  }
+  this->keyword_context = context_backup;
+
+  // Check wether this is a do-while or a do-until statement
+  bool is_while = this->token.type == TokenType::While;
+  if (this->token.type != TokenType::While && this->token.type != TokenType::Until) {
+    this->illegal_token("Expected while or until");
+  }
+
+  if (this->token.type == TokenType::While) {
+    this->expect_token(TokenType::While);
+  } else if (this->token.type == TokenType::Until) {
+    this->expect_token(TokenType::Until);
+  }
+
+  AST::AbstractNode* test;
+
+  if (this->token.type == TokenType::LeftParen) {
+    this->advance();
+    test = this->parse_expression();
+    this->expect_token(TokenType::RightParen);
+  } else {
+    test = this->parse_expression();
+  }
+
+  if (is_while) {
+    return (new AST::DoWhile(test, then_block))->at(location_start, then_block->location_end);
+  } else {
+    return (new AST::DoUntil(test, then_block))->at(location_start, then_block->location_end);
   }
 }
 

@@ -188,6 +188,63 @@ AST::AbstractNode* CodeGenerator::visit_unlesselse(AST::UnlessElse* node, VisitC
   return node;
 }
 
+AST::AbstractNode* CodeGenerator::visit_do_while(AST::DoWhile* node, VisitContinue) {
+  // Setup labels
+  Label block_label = this->assembler.reserve_label();
+  Label condition_label = this->assembler.reserve_label();
+  Label break_label = this->assembler.reserve_label();
+  this->break_stack.push_back(break_label);
+  this->continue_stack.push_back(condition_label);
+
+  // Block codegen
+  this->assembler.place_label(block_label);
+  this->visit_node(node->block);
+
+  // Condition codegen
+  this->assembler.place_label(condition_label);
+  if (AST::is_comparison(node->condition)) {
+    this->codegen_cmp_arguments(node->condition);
+    this->codegen_cmp_branchunless(node->condition, break_label);
+  } else {
+    this->visit_node(node->condition);
+    this->assembler.write_branchunless_to_label(break_label);
+  }
+  this->assembler.write_branch_to_label(block_label);
+  this->assembler.place_label(break_label);
+
+  // Remove the break and continue labels from the stack again
+  this->break_stack.pop_back();
+  this->continue_stack.pop_back();
+
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_do_until(AST::DoUntil* node, VisitContinue) {
+  // Setup labels
+  Label block_label = this->assembler.reserve_label();
+  Label condition_label = this->assembler.reserve_label();
+  Label break_label = this->assembler.reserve_label();
+  this->break_stack.push_back(break_label);
+  this->continue_stack.push_back(condition_label);
+
+  // Block codegen
+  this->assembler.place_label(block_label);
+  this->visit_node(node->block);
+
+  // Condition codegen
+  this->assembler.place_label(condition_label);
+  this->visit_node(node->condition);
+  this->assembler.write_branchif_to_label(break_label);
+  this->assembler.write_branch_to_label(block_label);
+  this->assembler.place_label(break_label);
+
+  // Remove the break and continue labels from the stack again
+  this->break_stack.pop_back();
+  this->continue_stack.pop_back();
+
+  return node;
+}
+
 AST::AbstractNode* CodeGenerator::visit_while(AST::While* node, VisitContinue) {
   // Setup labels
   Label condition_label = this->assembler.place_label();

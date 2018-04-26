@@ -28,6 +28,16 @@ guard a a
 guard (a) a
 guard a { a }
 
+// Do-While statements
+do a while a
+do a; while a
+do { a } while (a)
+
+// Do-Until statements
+do a until a
+do a; until a
+do { a } until (a)
+
 // While statements
 while a a
 while (a) a

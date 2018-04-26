@@ -195,6 +195,18 @@ AST::AbstractNode* Normalizer::visit_unlesselse(AST::UnlessElse* node, VisitCont
   return node;
 }
 
+AST::AbstractNode* Normalizer::visit_do_while(AST::DoWhile* node, VisitContinue cont) {
+  cont();
+  node->block = this->wrap_in_block(node->block, cont);
+  return node;
+}
+
+AST::AbstractNode* Normalizer::visit_do_until(AST::DoUntil* node, VisitContinue cont) {
+  cont();
+  node->block = this->wrap_in_block(node->block, cont);
+  return node;
+}
+
 AST::AbstractNode* Normalizer::visit_while(AST::While* node, VisitContinue cont) {
   cont();
   node->block = this->wrap_in_block(node->block, cont);

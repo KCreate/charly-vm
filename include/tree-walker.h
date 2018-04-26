@@ -82,6 +82,14 @@ public:
     cont();
     return node;
   }
+  virtual inline AST::AbstractNode* visit_do_while(AST::DoWhile* node, VisitContinue cont) {
+    cont();
+    return node;
+  }
+  virtual inline AST::AbstractNode* visit_do_until(AST::DoUntil* node, VisitContinue cont) {
+    cont();
+    return node;
+  }
   virtual inline AST::AbstractNode* visit_while(AST::While* node, VisitContinue cont) {
     cont();
     return node;
@@ -265,6 +273,10 @@ public:
       return walker->visit_unless(node->as<AST::Unless>(), cont);
     if (node->type() == AST::kTypeUnlessElse)
       return walker->visit_unlesselse(node->as<AST::UnlessElse>(), cont);
+    if (node->type() == AST::kTypeDoWhile)
+      return walker->visit_do_while(node->as<AST::DoWhile>(), cont);
+    if (node->type() == AST::kTypeDoUntil)
+      return walker->visit_do_until(node->as<AST::DoUntil>(), cont);
     if (node->type() == AST::kTypeWhile)
       return walker->visit_while(node->as<AST::While>(), cont);
     if (node->type() == AST::kTypeUntil)

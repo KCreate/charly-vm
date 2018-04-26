@@ -1,26 +1,7 @@
-func gen {
-  try {
-    yield 1
-    throw 2
-  } catch(e) {
-    print("caught inside gen")
-  }
+let foo = 0
 
-  yield 2
-  throw 2
-}
+do print("hello world") while foo == 0
 
-const g = gen();
+foo = 1
 
-try {
-  g()
-  g()
-} catch(e) {
-  print("caught in 2")
-}
-
-try {
-  g()
-} catch(e) {
-  print("caught in 3")
-}
+do print("hello world") until foo == 0

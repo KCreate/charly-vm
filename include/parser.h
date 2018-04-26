@@ -93,6 +93,7 @@ public:
   AST::AbstractNode* parse_guard_statement();
   AST::AbstractNode* parse_switch_statement();
   AST::AbstractNode* parse_switch_node();
+  AST::AbstractNode* parse_do_statement();
   AST::AbstractNode* parse_while_statement();
   AST::AbstractNode* parse_until_statement();
   AST::AbstractNode* parse_loop_statement();
