@@ -19,17 +19,17 @@
 // .END
 // result = pop()
 const result = match (condition) {
-  false => "condition is false",
-  1 || 2 => "condition is 1 or 2",
-  { foo: "hello world" } => "condition has a foo property containing hello world",
-  { bar: { baz: 25 } } => "condition has a bar property containing an object with a baz property containing 25",
-  [1, 2] => "condition is an array of length 2, containing the numbers 1 and 2",
-  { foo: n } => "condition has a foo property containing n",
+  false => "condition is false"
+  1 || 2 => "condition is 1 or 2"
+  { foo: "hello world" } => "condition has a foo property containing hello world"
+  { bar: { baz: 25 } } => "condition has a bar property containing an object with a baz property containing 25"
+  [1, 2] => "condition is an array of length 2, containing the numbers 1 and 2"
+  { foo: n } => "condition has a foo property containing n"
   _ => "matches every single statement"
 }
 
 // Match statement where the condition can be used in the match conditions.
-// 
+//
 // Gets transpiled to:
 //   %tmp = condition
 //   {
@@ -41,9 +41,9 @@ const result = match (condition) {
 //   .END
 //   }
 const result = match (condition) -> n {
-  n < 0 => "condition is negative",
-  50 => "condition is 50",
-  n >= 100 => "condition is 100 or more",
+  n < 0 => "condition is negative"
+  50 => "condition is 50"
+  n >= 100 => "condition is 100 or more"
   _ => "condition is the range 0..100"
 }
 

@@ -1319,8 +1319,79 @@ struct LocalInitialisation : public AbstractNode {
     this->expression->dump(stream, depth + 1);
   }
 
-  void visit(VisitFunc func) {
+  inline void visit(VisitFunc func) {
     this->expression = func(this->expression);
+  }
+};
+
+// <condition> => <expression>
+struct MatchArm : public AbstractNode {
+  AbstractNode* condition;
+  AbstractNode* expression;
+
+  MatchArm(AbstractNode* c, AbstractNode* e) : condition(c), expression(e) {
+  }
+
+  inline ~MatchArm() {
+    delete condition;
+    delete expression;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- MatchArm: " << '\n';
+    this->condition->dump(stream, depth + 1);
+    this->expression->dump(stream, depth + 1);
+  }
+
+  inline void visit(VisitFunc func) {
+    this->condition = func(this->condition);
+    this->expression = func(this->expression);
+  }
+
+  inline bool yields_value() {
+    return this->expression->type() != typeid(Block).hash_code();
+  }
+};
+
+// match <condition> [-> <condition_ident>] {
+//   <arms>
+//   <default_arm>
+// }
+struct Match : public AbstractNode {
+  AbstractNode* condition;
+  std::optional<std::string> condition_ident;
+  NodeList* arms;
+  AbstractNode* default_arm;
+
+  Match(AbstractNode* c, const std::optional<std::string>& ci, NodeList* a, AbstractNode* d)
+      : condition(c), condition_ident(ci), arms(a), default_arm(d) {
+  }
+
+  inline ~Match() {
+    delete condition;
+    delete arms;
+    delete default_arm;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Match: " << this->condition_ident.value_or("<no condition name>") << '\n';
+    this->condition->dump(stream, depth + 1);
+    this->arms->dump(stream, depth + 1);
+    this->default_arm->dump(stream, depth + 1);
+  }
+
+  inline void visit(VisitFunc func) {
+    this->condition = func(this->condition);
+    this->arms = reinterpret_cast<NodeList*>(func(this->arms));
+    this->default_arm = func(this->default_arm);
+  }
+
+  inline bool yields_value() {
+    for (auto& node : this->arms->children) {
+      if (node->as<AST::MatchArm>()->yields_value())
+        return true;
+    }
+    return false;
   }
 };
 
@@ -1490,6 +1561,8 @@ const size_t kTypeFunction = typeid(Function).hash_code();
 const size_t kTypePropertyDeclaration = typeid(PropertyDeclaration).hash_code();
 const size_t kTypeClass = typeid(Class).hash_code();
 const size_t kTypeLocalInitialisation = typeid(LocalInitialisation).hash_code();
+const size_t kTypeMatch = typeid(Match).hash_code();
+const size_t kTypeMatchArm = typeid(MatchArm).hash_code();
 const size_t kTypeReturn = typeid(Return).hash_code();
 const size_t kTypeYield = typeid(Yield).hash_code();
 const size_t kTypeThrow = typeid(Throw).hash_code();
@@ -1523,6 +1596,8 @@ inline bool is_literal(AbstractNode* node) {
 
 // Checks wether a given node yields a value
 inline bool yields_value(AbstractNode* node) {
+  if (node->type() == kTypeMatch)
+    return node->as<AST::Match>()->yields_value();
   return (node->type() == kTypeTernaryIf || node->type() == kTypeUnary || node->type() == kTypeBinary ||
           node->type() == kTypeAnd || node->type() == kTypeOr || node->type() == kTypeTypeof ||
           node->type() == kTypeAssignment || node->type() == kTypeMemberAssignment ||
@@ -1544,7 +1619,8 @@ inline bool is_assignment(AbstractNode* node) {
 }
 
 inline bool is_comparison(AbstractNode* node) {
-  if (node->type() != kTypeBinary) return false;
+  if (node->type() != kTypeBinary)
+    return false;
   Binary* binexp = node->as<Binary>();
 
   return (binexp->operator_type == TokenType::Equal || binexp->operator_type == TokenType::Not ||

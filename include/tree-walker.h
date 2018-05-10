@@ -226,6 +226,10 @@ public:
     cont();
     return node;
   }
+  virtual inline AST::AbstractNode* visit_match(AST::Match* node, VisitContinue cont) {
+    cont();
+    return node;
+  }
   virtual inline AST::AbstractNode* visit_return(AST::Return* node, VisitContinue cont) {
     cont();
     return node;
@@ -345,6 +349,8 @@ public:
       return walker->visit_class(node->as<AST::Class>(), cont);
     if (node->type() == AST::kTypeLocalInitialisation)
       return walker->visit_localinitialisation(node->as<AST::LocalInitialisation>(), cont);
+    if (node->type() == AST::kTypeMatch)
+      return walker->visit_match(node->as<AST::Match>(), cont);
     if (node->type() == AST::kTypeReturn)
       return walker->visit_return(node->as<AST::Return>(), cont);
     if (node->type() == AST::kTypeYield)

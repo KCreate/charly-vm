@@ -159,6 +159,11 @@ void Lexer::read_token() {
           this->token.type = TokenType::Equal;
           break;
         }
+        case L'>': {
+          this->source.read_char();
+          this->token.type = TokenType::RightThickArrow;
+          break;
+        }
         default: {
           this->token.type = TokenType::Assignment;
           break;

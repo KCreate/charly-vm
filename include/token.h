@@ -63,6 +63,7 @@ enum TokenType : uint8_t {
   IgnoreConst,
   Let,
   Loop,
+  Match,
   Primitive,
   Property,
   Return,
@@ -135,6 +136,7 @@ enum TokenType : uint8_t {
   AtSign,
   RightArrow,
   LeftArrow,
+  RightThickArrow,
   QuestionMark,
   Colon,
 
@@ -175,6 +177,7 @@ static std::string kTokenTypeStrings[] = {
   "IgnoreConst",
   "Let",
   "Loop",
+  "Match",
   "Primitive",
   "Property",
   "Return",
@@ -235,6 +238,7 @@ static std::string kTokenTypeStrings[] = {
   "AtSign",
   "RightArrow",
   "LeftArrow",
+  "RightThickArrow",
   "QuestionMark",
   "Colon",
   "Whitespace",
@@ -262,6 +266,7 @@ static const std::unordered_map<std::string, TokenType> kTokenKeywordsAndLiteral
   {"ignoreconst", TokenType::IgnoreConst},
   {"let", TokenType::Let},
   {"loop", TokenType::Loop},
+  {"match", TokenType::Match},
   {"null", TokenType::Null},
   {"primitive", TokenType::Primitive},
   {"property", TokenType::Property},
@@ -330,7 +335,7 @@ struct Token {
             this->type == TokenType::Plus || this->type == TokenType::Minus || this->type == TokenType::BitNOT ||
             this->type == TokenType::Not || this->type == TokenType::LeftParen || this->type == TokenType::LeftCurly ||
             this->type == TokenType::LeftBracket || this->type == TokenType::AtSign ||
-            this->type == TokenType::RightArrow);
+            this->type == TokenType::RightArrow || this->type == TokenType::Match);
   }
 
   template <class T>

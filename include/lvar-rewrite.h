@@ -38,6 +38,7 @@ public:
   AST::AbstractNode* visit_function(AST::Function* node, VisitContinue cont);
   AST::AbstractNode* visit_block(AST::Block* node, VisitContinue cont);
   AST::AbstractNode* visit_localinitialisation(AST::LocalInitialisation* node, VisitContinue cont);
+  AST::AbstractNode* visit_match(AST::Match* node, VisitContinue cont);
   AST::AbstractNode* visit_identifier(AST::Identifier* node, VisitContinue cont);
   AST::AbstractNode* visit_assignment(AST::Assignment* node, VisitContinue cont);
   AST::AbstractNode* visit_trycatch(AST::TryCatch* node, VisitContinue cont);

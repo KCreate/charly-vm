@@ -1,7 +1,10 @@
-let foo = 0
+const response = {}
+const http = {}
 
-do print("hello world") while foo == 0
+func then = null
+func fail = null
 
-foo = 1
-
-do print("hello world") until foo == 0
+match (response.status) {
+  http.status(200)  => then(response)
+  _                 => fail(response)
+}

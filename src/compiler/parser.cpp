@@ -262,6 +262,9 @@ AST::AbstractNode* Parser::parse_statement() {
     case TokenType::Switch: {
       return this->parse_switch_statement();
     }
+    case TokenType::Match: {
+      return this->parse_match_statement();
+    }
     case TokenType::IgnoreConst: {
       return this->parse_ignore_const();
     }
@@ -567,6 +570,78 @@ AST::AbstractNode* Parser::parse_switch_node() {
       return nullptr;
     }
   }
+}
+
+AST::AbstractNode* Parser::parse_match_statement() {
+  Location location_start = this->token.location;
+  this->expect_token(TokenType::Match);
+
+  AST::AbstractNode* test;
+  if (this->token.type == TokenType::LeftParen) {
+    this->advance();
+    test = this->parse_expression();
+    this->expect_token(TokenType::RightParen);
+  } else {
+    test = this->parse_expression();
+  }
+
+  std::optional<std::string> condition_ident;
+  if (this->token.type == TokenType::RightArrow) {
+    this->advance();
+    this->assert_token(TokenType::Identifier);
+    condition_ident = this->token.value;
+    this->advance();
+  }
+
+  auto context_backup = this->keyword_context;
+  this->keyword_context.break_allowed = true;
+  this->expect_token(TokenType::LeftCurly);
+
+  AST::NodeList* match_arms = new AST::NodeList();
+  AST::AbstractNode* default_arm = nullptr;
+  while (this->token.type != TokenType::RightCurly) {
+    AST::MatchArm* arm = this->parse_match_arm()->as<AST::MatchArm>();
+
+    // Check if we got a default arm
+    if (arm->condition->type() == AST::kTypeIdentifier) {
+      AST::Identifier* id = arm->condition->as<AST::Identifier>();
+      if (id->name == "_") {
+        if (default_arm)
+          this->illegal_node(arm, "Duplicate default match handler");
+        default_arm = arm->as<AST::AbstractNode>();
+        continue;
+      }
+    }
+
+    match_arms->append_node(arm);
+  }
+
+  if (default_arm == nullptr) {
+    default_arm = new AST::Empty();
+  }
+
+  AST::AbstractNode* match_node =
+      (new AST::Match(test, condition_ident, match_arms, default_arm))
+          ->at(location_start, this->token.location);
+
+  this->expect_token(TokenType::RightCurly);
+  this->keyword_context = context_backup;
+
+  return match_node;
+}
+
+AST::AbstractNode* Parser::parse_match_arm() {
+  AST::AbstractNode* condition = this->parse_expression();
+  this->expect_token(TokenType::RightThickArrow);
+
+  AST::AbstractNode* expression;
+  if (this->token.type == TokenType::LeftCurly) {
+    expression = this->parse_block();
+  } else {
+    expression = this->parse_expression();
+  }
+
+  return (new AST::MatchArm(condition, expression))->at(condition, expression);
 }
 
 AST::AbstractNode* Parser::parse_do_statement() {
@@ -1259,6 +1334,15 @@ AST::AbstractNode* Parser::parse_literal() {
     }
     case TokenType::Class: {
       return this->parse_class();
+    }
+    case TokenType::Match: {
+      AST::AbstractNode* node = this->parse_match_statement();
+
+      if (!node->as<AST::Match>()->yields_value()) {
+        this->illegal_node(node, "Match statements with block arms can't be used in place of expressions");
+      }
+
+      return node;
     }
     default: {
       this->unexpected_token("expression");
