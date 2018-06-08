@@ -66,6 +66,10 @@ public:
     delete scope;
   }
 
+  LocalOffsetInfo resolve_symbol(const std::string& id) {
+
+  }
+
   LocalScope* scope = nullptr;
   bool allow_const_assignment = false;
 };
