@@ -109,6 +109,16 @@ AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisat
   return initialisation;
 }
 
+AST::AbstractNode* LVarRewriter::visit_match(AST::Match* node, VisitContinue) {
+  // TODO: Implement match visitor
+  //       This depends on the rewrite of the lvar allocator and
+  //       can't be finished without it.
+  //
+  //       This just stubs this method out, any missing fields are catched
+  //       in the code generator and thrown as fatal errors
+  return node;
+}
+
 AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitContinue) {
   // Skip this node if it already has an offset_info field
   if (node->offset_info != nullptr) {
