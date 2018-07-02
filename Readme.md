@@ -14,10 +14,10 @@ programming language.
 You're going to need a Compiler supporting C++17.
 I'm developing on `clang 5.0.0`.
 
-1. `git clone http://code.leonardschuetz.ch/r/charly-vm`
+1. `git clone http://github.com/KCreate/charly-vm`
 2. `make`
 3. `bin/vm yourfile.ch`
 
 # Credits
 
-- [Leonard Schütz](http://leonardschuetz.ch/) Lead Developer
+- [Leonard Schütz @KCreate](http://github.com/KCreate) Lead Developer

@@ -1,5 +1,5 @@
 /*
- * This file is part of the Charly Virtual Machine (https://code.leonardschuetz.ch/r/charly-vm)
+ * This file is part of the Charly Virtual Machine (https://github.com/KCreate/charly-vm)
  *
  * MIT License
  *
