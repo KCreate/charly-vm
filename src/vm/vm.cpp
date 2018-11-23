@@ -1004,7 +1004,6 @@ std::optional<VALUE> VM::findprototypevalue(Class* klass, VALUE symbol) {
 }
 
 std::optional<VALUE> VM::findprimitivevalue(VALUE value, VALUE symbol) {
-  std::optional<VALUE> result;
 
   // Get the corresponding primitive class
   VALUE found_primitive_class = kNull;
