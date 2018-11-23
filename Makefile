@@ -31,7 +31,7 @@ CFLAGSPROD := -std=$(CPPSTD) \
 							-flto \
 							-ffast-math
 LFLAGS := -lm
-INC := -I libs -I $(INCLUDEDIR)
+INC := -I libs -I $(INCLUDEDIR) -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1 -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/10.0.0/include -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk/usr/include
 LIB := -lstdc++
 RUNTIME_PROFILER := examples/runtime-profiler.ch
 
