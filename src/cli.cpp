@@ -116,13 +116,13 @@ int CLI::run() {
   // Display the instruction profile if requested
   if (this->flags.instruction_profile) {
     uint8_t opcode = 0;
-    std::cout << "Instruction Profile:" << '\n';
+    std::cerr << "Instruction Profile:" << '\n';
     while (opcode < kOpcodeCount) {
-      std::cout << std::setw(26);
-      std::cout << kOpcodeMnemonics[opcode] << ": ";
-      std::cout << std::setw(1);
-      std::cout << vm.instruction_profile.entries[opcode].average_length << " nanoseconds ";
-      std::cout << "(" << vm.instruction_profile.entries[opcode].encountered << " samples)" << '\n';
+      std::cerr << std::setw(26);
+      std::cerr << kOpcodeMnemonics[opcode] << ": ";
+      std::cerr << std::setw(1);
+      std::cerr << vm.instruction_profile.entries[opcode].average_length << " nanoseconds ";
+      std::cerr << "(" << vm.instruction_profile.entries[opcode].encountered << " samples)" << '\n';
       opcode++;
     }
   }

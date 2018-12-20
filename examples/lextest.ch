@@ -1,10 +1,9 @@
-const response = {}
-const http = {}
+let i = 0
+let limit = 100
 
-func then = null
-func fail = null
-
-match (response.status) {
-  http.status(200)  => then(response)
-  _                 => fail(response)
+while i < limit {
+  print("waddup")
+  i += 1
 }
+
+print("goodbye!")

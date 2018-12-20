@@ -94,7 +94,7 @@ class VM {
 public:
   VM(VMContext& ctx)
       : context(ctx),
-        gc(GarbageCollectorConfig{.out_stream = ctx.out_stream, .err_stream = ctx.err_stream, .trace = ctx.trace_gc}),
+        gc(GarbageCollectorConfig{.out_stream = ctx.err_stream, .err_stream = ctx.err_stream, .trace = ctx.trace_gc}),
         frames(nullptr),
         catchstack(nullptr),
         ip(nullptr),
