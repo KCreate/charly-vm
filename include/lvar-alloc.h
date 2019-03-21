@@ -33,13 +33,25 @@ namespace Charly {
   class FunctionScope {
   private:
     std::vector<SlotInfo> slots;
-    std::map<size_t, size_t> symbols;
     AST::Function* function_node = nullptr;
+    FunctionScope* parent_scope = nullptr;
+
+    FunctionScope(AST::Function* fn, FunctionScope* ps) : function_node(fn), parent_scope(ps) {
+    }
+
+    ~FunctionScope() {
+      if (this->function_node) {
+        this->function_node->lvarcount = this->active_slots.size();
+      }
+    }
+
+    uint32_t alloc_slot(bool constant);
+    void mark_as_free(uint32_t index);
+    inline void mark_as_leaked(uint32_t index);
   };
 
   struct LocalOffsetInfo {
-    uint32_t level = 0xFFFFFFFF;
-    uint32_t offset = 0xFFFFFFFF;
+    ValueLocation location = { .type = Location::Frame, .as_frame = { 0xFFFFFFFF, 0xFFFFFFFF } };
     bool valid = true;
     bool constant = false;
   };
@@ -49,6 +61,15 @@ namespace Charly {
     FunctionScope* parent_function;
     LocalScope* parent_scope;
     std::map<size_t, LocalOffsetInfo> locals;
+
+    LocalScope(FunctionScope* cf, LocalScope* ps) : contained_function(cf), parent_scope(ps) {
+    }
+
+    ~LocalScope() {
+      for (auto& offset_info : this->local_indices) {
+        this->contained_function->mark_as_free(offset_info.second.offset);
+      }
+    }
   };
 
   // Allocates variables and temporary values
