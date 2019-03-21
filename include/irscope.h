@@ -66,7 +66,7 @@ struct FunctionScope {
   // Allocate a slot
   inline uint32_t alloc_slot(bool constant) {
     if (this->active_slots.size() == 0) {
-      this->active_slots.push_back({.active = true, .constant = constant});
+      this->active_slots.push_back({.constant = constant});
       return 0;
     }
 
@@ -82,7 +82,7 @@ struct FunctionScope {
       allocated_slot--;
     }
 
-    this->active_slots.push_back({.active = true, .constant = constant});
+    this->active_slots.push_back({.constant = constant});
     return this->active_slots.size() - 1;
   }
 
