@@ -26,7 +26,7 @@
 
 #include "ast.h"
 #include "compiler-pass.h"
-#include "irscope.h"
+#include "lvar-alloc.h"
 
 #pragma once
 

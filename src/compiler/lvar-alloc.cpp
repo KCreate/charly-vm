@@ -50,4 +50,21 @@ uint32_t FunctionScope::alloc_slot(bool constant) {
   return this->active_slots.size() - 1;
 }
 
+void FunctionScope::mark_as_free(uint32_t index) {
+  if (index < this->active_slots.size()) {
+    // We can't reuse this local index if the slot was leaked
+    if (!this->active_slots[index].leaked) {
+      this->active_slots[index].active = false;
+      this->active_slots[index].leaked = false;
+      this->active_slots[index].constant = false;
+    }
+  }
+}
+
+void FunctionScope::mark_as_leaked(uint32_t index) {
+  if (index < this->active_slots.size()) {
+    this->active_slots[index].leaked = true;
+  }
+}
+
 }  // namespace Charly::Compilation

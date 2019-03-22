@@ -70,6 +70,12 @@ namespace Charly {
         this->contained_function->mark_as_free(offset_info.second.offset);
       }
     }
+
+    LocalOffsetInfo alloc_slot(size_t symbol, bool constant = false);
+    LocalOffsetInfo declare_slot(size_t symbol, bool constant = false);
+    bool scope_contains_symbol(size_t symbol);
+    LocalOffsetInfo register_symbol(size_t symbol, LocalOffsetInfo info);
+    LocalOffsetInfo resolve_symbol(size_t symbol, bool ignore_parents = false);
   };
 
   // Allocates variables and temporary values
