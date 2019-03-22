@@ -625,6 +625,11 @@ AST::AbstractNode* Normalizer::visit_identifier(AST::Identifier* node, VisitCont
       AST::Function* function_node = this->current_function_node;
       if (function_node == nullptr || index >= function_node->parameters.size()) {
         this->mark_func_needs_arguments = true;
+      } else {
+        AST::Identifier* new_node = new AST::Identifier(function_node->parameters[index]);
+        new_node->at(node);
+        delete node;
+        return new_node;
       }
     }
   }
