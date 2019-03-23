@@ -31,6 +31,7 @@
 #include <optional>
 #include <vector>
 
+#include "lvar-location.h"
 #include "irinfo.h"
 #include "location.h"
 #include "token.h"
@@ -49,9 +50,9 @@ public:
   std::optional<Location> location_start;
   std::optional<Location> location_end;
 
-  IRVarOffsetInfo* offset_info = nullptr;
-  IRAssignmentInfo* assignment_info = nullptr;
+  ValueLocation* offset_info = nullptr;
   IRKnownSelfVars* known_self_vars = nullptr;
+  bool yielded_value_needed = true;
 
   virtual ~AbstractNode() = default;
 

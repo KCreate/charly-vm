@@ -36,6 +36,7 @@ class LVarRewriter : public CompilerPass {
 
 public:
   AST::AbstractNode* visit_function(AST::Function* node, VisitContinue cont);
+  AST::AbstractNode* visit_class(AST::Class* node, VisitContinue cont);
   AST::AbstractNode* visit_block(AST::Block* node, VisitContinue cont);
   AST::AbstractNode* visit_localinitialisation(AST::LocalInitialisation* node, VisitContinue cont);
   AST::AbstractNode* visit_match(AST::Match* node, VisitContinue cont);
@@ -45,12 +46,12 @@ public:
 
   void push_local_scope() {
     LocalScope* current_scope = this->scope;
-    FunctionScope* parent_func_scope = current_scope ? current_scope->contained_function : nullptr;
+    FunctionScope* parent_func_scope = current_scope ? current_scope->parent_function : nullptr;
     this->scope = new LocalScope(parent_func_scope, current_scope);
   }
 
   void push_func_scope(AST::Function* node) {
-    FunctionScope* func_scope = new FunctionScope(node, this->scope->contained_function);
+    FunctionScope* func_scope = new FunctionScope(node, this->scope->parent_function);
     LocalScope* local_scope = new LocalScope(func_scope, this->scope);
     this->scope = local_scope;
   }
@@ -59,15 +60,11 @@ public:
     LocalScope* scope = this->scope;
     this->scope = scope->parent_scope;
 
-    if (scope->contained_function != this->scope->contained_function) {
-      delete scope->contained_function;
+    if (scope->parent_function != this->scope->parent_function) {
+      delete scope->parent_function;
     }
 
     delete scope;
-  }
-
-  LocalOffsetInfo resolve_symbol(const std::string& id) {
-
   }
 
   LocalScope* scope = nullptr;

@@ -34,13 +34,6 @@
 
 namespace Charly::Compilation {
 
-// Contains the amount of environments which need to be dereferenced
-// and the index of a local variable to read
-struct IRVarOffsetInfo {
-  uint32_t level;
-  uint32_t index;
-};
-
 // Contains a list of variables which, unless defined explicitly,
 // should be rewritten to @<name> inside a particular function
 struct IRKnownSelfVars {
