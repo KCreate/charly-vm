@@ -37,10 +37,19 @@ AST::AbstractNode* LVarRewriter::visit_function(AST::Function* node, VisitContin
   // Register the function arguments
   if (node->needs_arguments) {
     this->scope->alloc_slot(this->context.symtable("__CHARLY_FUNCTION_ARGUMENTS"), true);
+    this->scope->register_symbol(
+      this->context.symtable("__CHARLY_FUNCTION_ARGUMENTS"),
+      { .location = ValueLocation::frame(0, 0) }
+    );
+    this->scope->register_symbol(
+      this->context.symtable("arguments"),
+      { .location = ValueLocation::frame(0, 0) },
+      true
+    );
   }
 
   for (const std::string& param : node->parameters) {
-    this->scope->alloc_slot(this->context.symtable(param), false);
+    this->scope->alloc_slot(this->context.symtable(param));
   }
 
   descend();
@@ -50,6 +59,33 @@ AST::AbstractNode* LVarRewriter::visit_function(AST::Function* node, VisitContin
   delete local_scope;
   delete func_scope;
 
+  return node;
+}
+
+AST::AbstractNode* LVarRewriter::visit_class(AST::Class* node, VisitContinue descend) {
+  this->push_local_scope();
+
+  // Prepare the symbols for the member functions and constructor
+  for (auto& node : node->member_properties->children) {
+    if (node->type() == kTypeIdentifier) {
+      AST::Identifier* id = reinterpret_cast<AST::Identifier>(node);
+      this->scope->register_symbol(
+        this->context.symtable(id->name),
+        { .location = ValueLocation::self(0, charly_create_symbol(id->name)) }
+      );
+    }
+  }
+  for (auto& node : node->member_functions->children) {
+    if (node->type() == kTypeFunction) {
+      AST::Function* func = reinterpret_cast<AST::Function>(node);
+      this->scope->register_symbol(
+        this->context.symtable(func->name),
+        { .location = ValueLocation::self(0, charly_create_symbol(id->name)) }
+      );
+    }
+  }
+
+  this->pop_scope();
   return node;
 }
 
@@ -77,12 +113,12 @@ AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisat
   VALUE name_symbol = this->context.symtable(node->name);
 
   // Check if this is a duplicate declaration
-  if (this->scope->scope_contains_symbol(name_symbol)) {
-    this->push_error(node, "Duplicate declaration of " + node->name);
+  if (!this->scope->symbol_is_free(name_symbol)) {
+    this->push_error(node, "Symbol '" + node->name + "' is already in use!");
     return node;
   }
 
-  LocalOffsetInfo offset_info = this->scope->alloc_slot(name_symbol, node->constant);
+  LocalOffsetInfo result = this->scope->alloc_slot(name_symbol, node->constant);
 
   // If the expression is a function or class, descend into it now
   // This allows a function or class to reference itself inside its body
@@ -99,8 +135,8 @@ AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisat
   // Create the initialisation node for this declaration
   AST::Assignment* initialisation = new AST::Assignment(node->name, node->expression);
   initialisation->at(node);
-  initialisation->offset_info = new IRVarOffsetInfo(offset_info.to_offset_info());
-  initialisation->assignment_info = new IRAssignmentInfo(false);
+  initialisation->offset_info = result.location;
+  initialisation->yielded_value_needed = false;
 
   // Deallocate the old localinitialisation node
   node->expression = nullptr;
@@ -125,91 +161,20 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
     return node;
   }
 
-  // Check if this is a special argument index
-  // e.g: $0, $1, ..., $
-  if (node->name[0] == '$') {
-    // Check if the remaining characters are only numbers
-    if (std::all_of(node->name.begin() + 1, node->name.end(), ::isdigit)) {
-      uint32_t index = std::atoi(node->name.substr(1, std::string::npos).c_str());
-
-      AST::Function* function_node = this->scope->contained_function->function_node;
-
-      if (function_node == nullptr || index >= function_node->parameters.size()) {
-        AST::IndexIntoArguments* new_node = new AST::IndexIntoArguments(index);
-        new_node->at(node);
-        delete node;
-        return new_node;
-      } else {
-        if (function_node == nullptr) {
-          node->offset_info = new IRVarOffsetInfo({0, index});
-        } else {
-          if (function_node->needs_arguments) {
-            node->offset_info = new IRVarOffsetInfo({0, index + 1});
-          } else {
-            node->offset_info = new IRVarOffsetInfo({0, index});
-          }
-        }
-      }
-
-      return node;
-    }
-  }
-
   // Check if this symbol exists
-  LocalOffsetInfo result = this->scope->resolve_symbol(this->context.symtable(node->name));
+  LocalOffsetInfo result = this->scope->access_symbol(node->name);
   if (!result.valid) {
-    // If we reference `arguments`, we redirect to __CHARLY_FUNCTION_ARGUMENTS
-    if (node->name == "arguments") {
-      AST::Function* function_node = this->scope->contained_function->function_node;
-
-      if (function_node == nullptr || function_node->needs_arguments) {
-        node->offset_info = new IRVarOffsetInfo({0, 0});
-        return node;
-      }
-    }
-
-    // Search each function in the current scope stack if it has it as a known self var
-    FunctionScope* search_scope = this->scope->contained_function;
-    uint32_t ir_frame_level = 0;
-    while (search_scope) {
-      if (search_scope->function_node != nullptr) {
-        if (search_scope->function_node->known_self_vars != nullptr) {
-          if (search_scope->function_node->known_self_vars->names.count(node->name) != 0) {
-            AST::Self* self_val = new AST::Self();
-            self_val->at(node);
-            self_val->ir_frame_level = ir_frame_level;
-            AST::AbstractNode* var = new AST::Member(self_val, node->name);
-            var->at(node);
-            delete node;
-            return var;
-          }
-        }
-
-        if (!search_scope->function_node->anonymous) {
-          ir_frame_level++;
-        }
-      }
-
-      search_scope = search_scope->parent_scope;
-    }
-
     this->push_error(node, "Could not resolve symbol: " + node->name);
     return node;
   }
 
-  // Assign the offset info to the node
-  node->offset_info = new IRVarOffsetInfo({result.level, result.offset});
+  node->offset_info = result.location;
   return node;
 }
 
 AST::AbstractNode* LVarRewriter::visit_assignment(AST::Assignment* node, VisitContinue cont) {
-  LocalOffsetInfo result = this->scope->resolve_symbol(this->context.symtable(node->target));
+  LocalOffsetInfo result = this->scope->access(node->target);
   if (!result.valid) {
-    if (node->target == "arguments") {
-      this->push_error(node, "Can't assign to function arguments. Redeclare to avoid conflicts.");
-      return node;
-    }
-
     this->push_error(node, "Could not resolve symbol: " + node->target);
     return node;
   }
@@ -219,7 +184,7 @@ AST::AbstractNode* LVarRewriter::visit_assignment(AST::Assignment* node, VisitCo
     return node;
   }
 
-  node->offset_info = new IRVarOffsetInfo({result.level, result.offset});
+  node->offset_info = result.location;
 
   cont();
 
@@ -232,7 +197,7 @@ AST::AbstractNode* LVarRewriter::visit_trycatch(AST::TryCatch* node, VisitContin
 
   // Register the exception name in the scope of the handler block
   LocalOffsetInfo result = this->scope->alloc_slot(this->context.symtable(node->exception_name->name));
-  node->exception_name->offset_info = new IRVarOffsetInfo(result.to_offset_info());
+  node->exception_name->offset_info = result.location;
 
   // Check if we have a handler block
   if (node->handler_block->type() != AST::kTypeEmpty) {

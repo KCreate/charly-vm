@@ -74,9 +74,11 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree) {
     LVarRewriter lvar_rewriter(this->context, this->config, result);
     lvar_rewriter.push_local_scope();
 
-    // Add declarations for the known local variables in the top level
+    // Register the known local variables in the top level
+    int i = 0;
     for (const auto& varname : this->config.known_top_level_constants) {
-      lvar_rewriter.scope->declare_slot(this->context.symtable(varname), true);
+      lvar_rewriter.scope->register_symbol(this->context.symtable(varname), LocalOffsetInfo::frame(i, 0), true);
+      i++;
     }
 
     result.abstract_syntax_tree = lvar_rewriter.visit_node(result.abstract_syntax_tree);

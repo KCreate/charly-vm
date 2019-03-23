@@ -36,43 +36,35 @@ AST::AbstractNode* Normalizer::visit_block(AST::Block* node, VisitContinue) {
   std::list<AST::AbstractNode*> remaining_statements;
 
   // Remove all unneeded nodes
-  bool append_to_block = true;
   for (auto statement : node->statements) {
     AST::AbstractNode* normalized_node = this->visit_node(statement);
 
-    if (append_to_block) {
-      // Generate local initialisations for function and class nodes
-      if (normalized_node->type() == AST::kTypeFunction || normalized_node->type() == AST::kTypeClass) {
-        // Read the name of the node
-        std::string name;
-        if (normalized_node->type() == AST::kTypeFunction) {
-          name = normalized_node->as<AST::Function>()->name;
-        }
-        if (normalized_node->type() == AST::kTypeClass) {
-          name = normalized_node->as<AST::Class>()->name;
-        }
-
-        // Wrap the node in a local initialisation if it has a name
-        if (name.size() > 0) {
-          normalized_node = (new AST::LocalInitialisation(name, normalized_node, true))->at(normalized_node);
-        }
+    // Generate local initialisations for function and class nodes
+    if (normalized_node->type() == AST::kTypeFunction || normalized_node->type() == AST::kTypeClass) {
+      // Read the name of the node
+      std::string name;
+      if (normalized_node->type() == AST::kTypeFunction) {
+        name = normalized_node->as<AST::Function>()->name;
+      }
+      if (normalized_node->type() == AST::kTypeClass) {
+        name = normalized_node->as<AST::Class>()->name;
       }
 
-      if (!AST::is_literal(normalized_node)) {
-        remaining_statements.push_back(normalized_node);
+      // Wrap the node in a local initialisation if it has a name
+      if (name.size() > 0) {
+        normalized_node = (new AST::LocalInitialisation(name, normalized_node, true))->at(normalized_node);
+      }
+    }
 
-        if (AST::terminates_block(normalized_node)) {
-          append_to_block = false;
-        }
+    if (!AST::is_literal(normalized_node)) {
+      remaining_statements.push_back(normalized_node);
 
-        if (AST::is_assignment(normalized_node)) {
-          if (normalized_node->assignment_info != nullptr) {
-            delete normalized_node->assignment_info;
-          }
-          normalized_node->assignment_info = new IRAssignmentInfo(false);
-        }
-      } else {
-        delete normalized_node;
+      if (AST::terminates_block(normalized_node)) {
+        break;
+      }
+
+      if (AST::is_assignment(normalized_node)) {
+        normalized_node->yielded_value_needed = false;
       }
     } else {
       delete normalized_node;
