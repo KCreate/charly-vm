@@ -26,7 +26,6 @@
 
 #include "compiler.h"
 #include "codegenerator.h"
-#include "irinfo.h"
 #include "lvar-rewrite.h"
 #include "normalizer.h"
 
@@ -38,6 +37,7 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree) {
   // Generate a module inclusion function if one is requested
   // The module inclusion function wraps a program into a single function that can be
   // called by the runtime
+  AST::Function* inclusion_function = nullptr;
   if (this->config.wrap_inclusion_function) {
     // Append a return export node to the end of the parsed block
     AST::Block* block = result.abstract_syntax_tree->as<AST::Block>();
@@ -47,13 +47,11 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree) {
 
     // Wrap the whole program in a function which handles the exporting interface
     // to other programs
-    result.abstract_syntax_tree = new AST::Function(this->config.inclusion_function_name,
-                                                    this->config.inclusion_function_arguments, {}, block, true);
-    result.abstract_syntax_tree->at(block);
-
-    // Add the known vars which are known to be inserted via the require call
-    IRKnownSelfVars* known_self_vars = new IRKnownSelfVars(this->config.known_self_vars);
-    result.abstract_syntax_tree->as<AST::Function>()->known_self_vars = known_self_vars;
+    inclusion_function = new AST::Function(this->config.inclusion_function_name,
+                                                          this->config.inclusion_function_arguments, {}, block, true);
+    inclusion_function->at(block);
+    inclusion_function->lvarcount = this->config.known_top_level_constants.size();
+    result.abstract_syntax_tree = inclusion_function;
 
     // Push the function onto the stack and wrap it in a block node
     // The PushStack node prevents the optimizer from removing the function literal
@@ -75,9 +73,10 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree) {
     lvar_rewriter.push_local_scope();
 
     // Register the known local variables in the top level
-    int i = 0;
+    uint32_t i = 0;
     for (const auto& varname : this->config.known_top_level_constants) {
-      lvar_rewriter.scope->register_symbol(this->context.symtable(varname), LocalOffsetInfo::frame(i, 0), true);
+      lvar_rewriter.scope->register_symbol(this->context.symtable(varname),
+                                           LocalOffsetInfo(ValueLocation::frame(i, 0), true, true), true);
       i++;
     }
 

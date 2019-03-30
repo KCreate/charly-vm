@@ -166,10 +166,6 @@ public:
     cont();
     return node;
   }
-  virtual inline AST::AbstractNode* visit_indexintoarguments(AST::IndexIntoArguments* node, VisitContinue cont) {
-    cont();
-    return node;
-  }
   virtual inline AST::AbstractNode* visit_self(AST::Self* node, VisitContinue cont) {
     cont();
     return node;
@@ -319,8 +315,6 @@ public:
       return walker->visit_callindex(node->as<AST::CallIndex>(), cont);
     if (node->type() == AST::kTypeIdentifier)
       return walker->visit_identifier(node->as<AST::Identifier>(), cont);
-    if (node->type() == AST::kTypeIndexIntoArguments)
-      return walker->visit_indexintoarguments(node->as<AST::IndexIntoArguments>(), cont);
     if (node->type() == AST::kTypeSelf)
       return walker->visit_self(node->as<AST::Self>(), cont);
     if (node->type() == AST::kTypeMember)

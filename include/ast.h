@@ -32,7 +32,6 @@
 #include <vector>
 
 #include "lvar-location.h"
-#include "irinfo.h"
 #include "location.h"
 #include "token.h"
 
@@ -51,10 +50,12 @@ public:
   std::optional<Location> location_end;
 
   ValueLocation* offset_info = nullptr;
-  IRKnownSelfVars* known_self_vars = nullptr;
   bool yielded_value_needed = true;
 
-  virtual ~AbstractNode() = default;
+  virtual ~AbstractNode() {
+    if (this->offset_info)
+      delete this->offset_info;
+  }
 
   inline AbstractNode* at(const Token& loc) {
     return this->at(loc.location);
@@ -955,18 +956,6 @@ struct Identifier : public AbstractNode {
   }
 };
 
-// $<index>
-struct IndexIntoArguments : public AbstractNode {
-  uint32_t index;
-
-  IndexIntoArguments(uint32_t i) : index(i) {
-  }
-
-  inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- IndexIntoArguments: " << this->index << '\n';
-  }
-};
-
 // self
 struct Self : public AbstractNode {
   uint32_t ir_frame_level = 0;
@@ -1547,7 +1536,6 @@ const size_t kTypeCallMember = typeid(CallMember).hash_code();
 const size_t kTypeCallIndex = typeid(CallIndex).hash_code();
 const size_t kTypeStackValue = typeid(StackValue).hash_code();
 const size_t kTypeIdentifier = typeid(Identifier).hash_code();
-const size_t kTypeIndexIntoArguments = typeid(IndexIntoArguments).hash_code();
 const size_t kTypeSelf = typeid(Self).hash_code();
 const size_t kTypeMember = typeid(Member).hash_code();
 const size_t kTypeIndex = typeid(Index).hash_code();
@@ -1590,7 +1578,7 @@ inline bool terminates_block(AbstractNode* node) {
 
 // Checks wether a given node is a literal that can be safely removed from a block
 inline bool is_literal(AbstractNode* node) {
-  return (node->type() == kTypeIdentifier || node->type() == kTypeIndexIntoArguments || node->type() == kTypeSelf ||
+  return (node->type() == kTypeIdentifier || node->type() == kTypeSelf ||
           node->type() == kTypeNull || node->type() == kTypeNan || node->type() == kTypeString ||
           node->type() == kTypeNumber || node->type() == kTypeBoolean || node->type() == kTypeFunction);
 }
@@ -1605,11 +1593,11 @@ inline bool yields_value(AbstractNode* node) {
           node->type() == kTypeANDMemberAssignment || node->type() == kTypeIndexAssignment ||
           node->type() == kTypeANDIndexAssignment || node->type() == kTypeCall || node->type() == kTypeCallMember ||
           node->type() == kTypeCallIndex || node->type() == kTypeStackValue || node->type() == kTypeIdentifier ||
-          node->type() == kTypeIndexIntoArguments || node->type() == kTypeSelf || node->type() == kTypeMember ||
+          node->type() == kTypeSelf || node->type() == kTypeMember || node->type() == kTypeYield ||
           node->type() == kTypeIndex || node->type() == kTypeNull || node->type() == kTypeNan ||
           node->type() == kTypeString || node->type() == kTypeNumber || node->type() == kTypeBoolean ||
           node->type() == kTypeArray || node->type() == kTypeHash || node->type() == kTypeFunction ||
-          node->type() == kTypeClass || node->type() == kTypeYield);
+          node->type() == kTypeClass);
 }
 
 // Checks wether a given node is an assignment

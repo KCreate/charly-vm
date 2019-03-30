@@ -27,18 +27,20 @@
 #include <algorithm>
 
 #include "lvar-alloc.h"
+#include "value.h"
+#include "ast.h"
 
 namespace Charly::Compilation {
 
 uint32_t FunctionScope::alloc_slot(bool constant) {
-  if (this->active_slots.size() == 0) {
-    this->active_slots.push_back({.constant = constant});
+  if (this->slots.size() == 0) {
+    this->slots.push_back({.constant = constant});
     return 0;
   }
 
   // Check if we have an unactive slot
-  uint32_t allocated_slot = this->active_slots.size() - 1;
-  for (auto slot = this->active_slots.rbegin(); slot != this->active_slots.rend(); slot++) {
+  uint32_t allocated_slot = this->slots.size() - 1;
+  for (auto slot = this->slots.rbegin(); slot != this->slots.rend(); slot++) {
     // If the slot is inactive, mark it as active and return the index
     if (!slot->active) {
       slot->active = true;
@@ -48,39 +50,35 @@ uint32_t FunctionScope::alloc_slot(bool constant) {
     allocated_slot--;
   }
 
-  this->active_slots.push_back({.constant = constant});
-  return this->active_slots.size() - 1;
+  this->slots.push_back({.constant = constant});
+  return this->slots.size() - 1;
 }
 
 void FunctionScope::mark_as_free(uint32_t index) {
-  if (index < this->active_slots.size()) {
+  if (index < this->slots.size()) {
     // We can't reuse this local index if the slot was leaked
-    if (!this->active_slots[index].leaked) {
-      this->active_slots[index].active = false;
-      this->active_slots[index].leaked = false;
-      this->active_slots[index].constant = false;
+    if (!this->slots[index].leaked) {
+      this->slots[index].active = false;
+      this->slots[index].leaked = false;
+      this->slots[index].constant = false;
     }
   }
 }
 
 void FunctionScope::mark_as_leaked(uint32_t index) {
-  if (index < this->active_slots.size()) {
-    this->active_slots[index].leaked = true;
+  if (index < this->slots.size()) {
+    this->slots[index].leaked = true;
   }
 }
 
-LocalOffsetInfo LocalScope::alloc_slot(size_t symbol, bool constant, bool overwriteable) {
+LocalOffsetInfo LocalScope::alloc_slot(size_t symbol, bool constant) {
   // Check if this symbol is already registered but can be overwritten
-  if (this->scope_contains_symbol(symbol) && this->locals[symbol].overwriteable) {
-    return this->locals[symbol];
+  if (this->scope_contains_symbol(symbol)) {
+    return LocalOffsetInfo();
   }
 
-  uint32_t allocated_index = this->contained_function->alloc_slot(constant);
-  LocalOffsetInfo offset_info = {
-    .location = ValueLocation::frame(0, allocated_index),
-    .constant = constant,
-    .overwriteable = overwriteable
-  };
+  uint32_t allocated_index = this->parent_function->alloc_slot(constant);
+  LocalOffsetInfo offset_info(ValueLocation::frame(0, allocated_index), true, constant);
   this->locals[symbol] = offset_info;
   return offset_info;
 }
@@ -89,11 +87,8 @@ bool LocalScope::scope_contains_symbol(size_t symbol) {
   return this->locals.count(symbol) != 0;
 }
 
-bool LocalScope::symbol_is_free(size_t symbol) {
-  return !this->scope_contains_symbol() || this->locals[symbol].overwriteable;
-}
-
-LocalOffsetInfo LocalScope::register_symbol(size_t symbol, LocationOffsetInfo info) {
+LocalOffsetInfo LocalScope::register_symbol(size_t symbol, LocalOffsetInfo info, bool constant) {
+  info.constant = constant;
   this->locals[symbol] = info;
   return info;
 }
@@ -103,20 +98,20 @@ LocalOffsetInfo LocalScope::access_symbol(const std::string& symbol) {
   // Check if this symbol is a special argument index
   if (symbol[0] == '$') {
     // Make sure the remaining characters are all digits
-    if (std::all_of(node->name.begin() + 1, node->name.end(), ::isdigit)) {
-      uint32_t index = std::atoi(node->name.substr(1, std::string::npos).c_str());
-      AST::Function* function_node = this->scope->contained_function->function_node;
+    if (std::all_of(symbol.begin() + 1, symbol.end(), ::isdigit)) {
+      uint32_t index = std::atoi(symbol.substr(1, std::string::npos).c_str());
+      AST::Function* function_node = this->parent_function->function_node;
 
       if (function_node == nullptr || index >= function_node->parameters.size()) {
-        return ValueLocation::arguments(index);
+        return LocalOffsetInfo(ValueLocation::arguments(index));
       } else {
         if (function_node == nullptr) {
-          return ValueLocation::frame(0, index)
+          return LocalOffsetInfo(ValueLocation::frame(0, index));
         } else {
           if (function_node->needs_arguments) {
-            return ValueLocation::frame(0, index + 1)
+            return LocalOffsetInfo(ValueLocation::frame(0, index + 1));
           } else {
-            return ValueLocation::frame(0, index)
+            return LocalOffsetInfo(ValueLocation::frame(0, index));
           }
         }
       }
@@ -128,7 +123,7 @@ LocalOffsetInfo LocalScope::access_symbol(const std::string& symbol) {
 
 LocalOffsetInfo LocalScope::access_symbol(size_t symbol) {
   LocalScope* search_scope = this;
-  FunctionScope* search_function_scope = this->contained_function;
+  FunctionScope* search_function_scope = this->parent_function;
 
   uint32_t dereferenced_functions = 0;
   bool mark_vars_as_leaked = false;
@@ -139,40 +134,32 @@ LocalOffsetInfo LocalScope::access_symbol(size_t symbol) {
       LocalOffsetInfo found_offset_info = search_scope->locals[symbol];
 
       // Register this value in this scope to speed up lookup the next time
-      this->scope->locals[symbol] = found_offset_info;
+      this->locals[symbol] = found_offset_info;
 
       // Mark the slot as leaked if we passed a function boundary
       // If we don't mark it as leaked, the slot might be allocated to another
       // variable
-      if (dereferenced_functions && mark_vars_as_leaked && search_function_scope) {
-        search_function_scope->mark_as_leaked(found_offset_info.offset);
+      if (mark_vars_as_leaked && search_function_scope) {
+        if (found_offset_info.location.type == LocationType::LocFrame) {
+          search_function_scope->mark_as_leaked(found_offset_info.location.as_frame.index);
+        }
       }
 
-      return ValueLocation::patch_level(found_offset_info);
-    }
+      found_offset_info.location = ValueLocation::patch_level(found_offset_info.location, dereferenced_functions);
 
-    // Check wether this symbol is a known self var
-    if (search_function_scope->known_self_vars) {
-      auto begin_it = search_function_scope->known_self_vars->begin();
-      auto end_it = search_function_scope->known_self_vars->end();
-
-      if (std::count_if(begin_it, end_it, [symbol] (auto name) {
-        return symbol == charly_create_symbol(name);
-      })) {
-        return ValueLocation::self(symbol, dereferenced_functions);
-      }
+      return found_offset_info;
     }
 
     // Update the searching environment
     search_scope = search_scope->parent_scope;
-    if (search_scope && search_scope->contained_function != search_function_scope) {
+    if (search_scope && search_scope->parent_function != search_function_scope) {
       dereferenced_functions++;
       mark_vars_as_leaked = true;
-      search_function_scope = search_scope->contained_function;
+      search_function_scope = search_scope->parent_function;
     }
   }
 
-  return {.valid = false};
+  return LocalOffsetInfo();
 }
 
 }  // namespace Charly::Compilation

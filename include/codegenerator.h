@@ -80,7 +80,6 @@ private:
   AST::AbstractNode* visit_callmember(AST::CallMember* node, VisitContinue cont);
   AST::AbstractNode* visit_callindex(AST::CallIndex* node, VisitContinue cont);
   AST::AbstractNode* visit_identifier(AST::Identifier* node, VisitContinue cont);
-  AST::AbstractNode* visit_indexintoarguments(AST::IndexIntoArguments* node, VisitContinue cont);
   AST::AbstractNode* visit_self(AST::Self* node, VisitContinue cont);
   AST::AbstractNode* visit_member(AST::Member* node, VisitContinue cont);
   AST::AbstractNode* visit_index(AST::Index* node, VisitContinue cont);
@@ -99,6 +98,14 @@ private:
   AST::AbstractNode* visit_break(AST::Break* node, VisitContinue cont);
   AST::AbstractNode* visit_continue(AST::Continue* node, VisitContinue cont);
   AST::AbstractNode* visit_trycatch(AST::TryCatch* node, VisitContinue cont);
+
+  // Codegen a read from a given location
+  // Returns false if location is invalid, true if valid
+  bool codegen_read(ValueLocation& location);
+
+  // Codegen a write to a given location
+  // Returns false if location is invalid, true if valid
+  bool codegen_write(ValueLocation& location, bool keep_on_stack = false);
 
   void codegen_cmp_arguments(AST::AbstractNode* node);
   void codegen_cmp_branchunless(AST::AbstractNode* node, Label target_label);

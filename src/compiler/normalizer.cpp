@@ -403,36 +403,6 @@ AST::AbstractNode* Normalizer::visit_switch(AST::Switch* node, VisitContinue con
   return node;
 }
 
-AST::AbstractNode* Normalizer::visit_assignment(AST::Assignment* node, VisitContinue cont) {
-  cont();
-  node->assignment_info = new IRAssignmentInfo(true);
-  return node;
-}
-
-AST::AbstractNode* Normalizer::visit_memberassignment(AST::MemberAssignment* node, VisitContinue cont) {
-  cont();
-  node->assignment_info = new IRAssignmentInfo(true);
-  return node;
-}
-
-AST::AbstractNode* Normalizer::visit_indexassignment(AST::IndexAssignment* node, VisitContinue cont) {
-  cont();
-  node->assignment_info = new IRAssignmentInfo(true);
-  return node;
-}
-
-AST::AbstractNode* Normalizer::visit_andmemberassignment(AST::ANDMemberAssignment* node, VisitContinue cont) {
-  cont();
-  node->assignment_info = new IRAssignmentInfo(true);
-  return node;
-}
-
-AST::AbstractNode* Normalizer::visit_andindexassignment(AST::ANDIndexAssignment* node, VisitContinue cont) {
-  cont();
-  node->assignment_info = new IRAssignmentInfo(true);
-  return node;
-}
-
 AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue cont) {
   AST::Function* current_backup = this->current_function_node;
   this->current_function_node = node;
@@ -493,10 +463,8 @@ AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue
 AST::AbstractNode* Normalizer::visit_class(AST::Class* node, VisitContinue cont) {
   cont();
 
-  // Known symbols in the member and static scopes of the class
-  std::vector<std::string> member_symbol_strings;
+  // Collect all the member and static symbols
   std::unordered_map<VALUE, AST::AbstractNode*> member_symbols;
-  std::vector<std::string> static_symbol_strings;
   std::unordered_map<VALUE, AST::AbstractNode*> static_symbols;
 
   // Check for duplicate declarations or declarations that shadow other declarations
@@ -510,7 +478,6 @@ AST::AbstractNode* Normalizer::visit_class(AST::Class* node, VisitContinue cont)
       this->push_info(member_symbols[symbol], "First declaration appeared here");
     }
     member_symbols.emplace(symbol, member_func);
-    member_symbol_strings.push_back(as_func->name);
   }
 
   for (auto member_property : node->member_properties->children) {
@@ -528,7 +495,6 @@ AST::AbstractNode* Normalizer::visit_class(AST::Class* node, VisitContinue cont)
       }
     }
     member_symbols.emplace(symbol, member_property);
-    member_symbol_strings.push_back(as_ident->name);
   }
 
   for (auto static_func : node->static_functions->children) {
@@ -541,7 +507,6 @@ AST::AbstractNode* Normalizer::visit_class(AST::Class* node, VisitContinue cont)
       this->push_info(static_symbols[symbol], "First declaration appeared here");
     }
     static_symbols.emplace(symbol, static_func);
-    static_symbol_strings.push_back(as_func->name);
   }
 
   for (auto static_property : node->static_properties->children) {
@@ -554,21 +519,7 @@ AST::AbstractNode* Normalizer::visit_class(AST::Class* node, VisitContinue cont)
       this->push_info(static_symbols[symbol], "First declaration appeared here");
     }
     static_symbols.emplace(symbol, static_property);
-    static_symbol_strings.push_back(as_ident->name);
   }
-
-  // Register the known self vars in each member function
-  IRKnownSelfVars* known_member_vars = new IRKnownSelfVars(member_symbol_strings);
-  IRKnownSelfVars* known_static_vars = new IRKnownSelfVars(static_symbol_strings);
-  for (auto member_func : node->member_functions->children)
-    member_func->as<AST::Function>()->known_self_vars = known_member_vars;
-  for (auto static_func : node->static_functions->children) {
-    if (static_func->type() == AST::kTypeFunction) {
-      static_func->as<AST::Function>()->known_self_vars = known_static_vars;
-    }
-  }
-  if (node->constructor->type() != AST::kTypeEmpty)
-    node->constructor->as<AST::Function>()->known_self_vars = known_member_vars;
 
   return node;
 }

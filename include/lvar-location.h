@@ -33,13 +33,18 @@ namespace Charly::Compilation {
   // Values can either be stored inside a stack frame, on the stack or inside a frames arguments.
   enum LocationType : uint8_t {
     LocFrame,
-    LocStack,
     LocArguments,
-    LocSelf
+    LocSelf,
+    LocStack,
+    LocInvalid
   };
 
   // Stores the location of a value
   struct ValueLocation {
+    static ValueLocation invalid() {
+      return { .type = LocInvalid };
+    }
+
     static ValueLocation frame(uint32_t level, uint32_t index) {
       return { .type = LocationType::LocFrame, .as_frame = { level, index } };
     }
@@ -76,8 +81,6 @@ namespace Charly::Compilation {
       return location;
     }
 
-    LocationType type;
-
     union {
       struct {
         uint32_t level;
@@ -97,7 +100,14 @@ namespace Charly::Compilation {
         uint64_t symbol;
         uint32_t level;
       } as_self;
+
+      struct {
+        uint64_t __1;
+        uint32_t __2;
+      } as_invalid;
     };
+
+    LocationType type;
   };
 
   // This struct stores information about the relative location of a variable during the compilation process.
@@ -105,6 +115,12 @@ namespace Charly::Compilation {
     ValueLocation location;
     bool valid = true;
     bool constant = false;
-    bool overwriteable = false;
+
+    LocalOffsetInfo() : valid(false) {
+    }
+
+    LocalOffsetInfo(ValueLocation&& l, bool v = true, bool c = false)
+        : location(l), valid(v), constant(c) {
+    }
   };
 }

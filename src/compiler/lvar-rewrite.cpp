@@ -30,7 +30,7 @@
 
 namespace Charly::Compilation {
 AST::AbstractNode* LVarRewriter::visit_function(AST::Function* node, VisitContinue descend) {
-  FunctionScope* func_scope = new FunctionScope(node, this->scope->contained_function);
+  FunctionScope* func_scope = new FunctionScope(node, this->scope->parent_function);
   LocalScope* local_scope = new LocalScope(func_scope, this->scope);
   this->scope = local_scope;
 
@@ -39,12 +39,11 @@ AST::AbstractNode* LVarRewriter::visit_function(AST::Function* node, VisitContin
     this->scope->alloc_slot(this->context.symtable("__CHARLY_FUNCTION_ARGUMENTS"), true);
     this->scope->register_symbol(
       this->context.symtable("__CHARLY_FUNCTION_ARGUMENTS"),
-      { .location = ValueLocation::frame(0, 0) }
+      LocalOffsetInfo(ValueLocation::frame(0, 0))
     );
     this->scope->register_symbol(
       this->context.symtable("arguments"),
-      { .location = ValueLocation::frame(0, 0) },
-      true
+      LocalOffsetInfo(ValueLocation::frame(0, 0))
     );
   }
 
@@ -62,28 +61,55 @@ AST::AbstractNode* LVarRewriter::visit_function(AST::Function* node, VisitContin
   return node;
 }
 
-AST::AbstractNode* LVarRewriter::visit_class(AST::Class* node, VisitContinue descend) {
+AST::AbstractNode* LVarRewriter::visit_class(AST::Class* node, __attribute__((unused)) VisitContinue descend) {
+  node->parent_class = this->visit_node(node->parent_class);
   this->push_local_scope();
 
   // Prepare the symbols for the member functions and constructor
   for (auto& node : node->member_properties->children) {
-    if (node->type() == kTypeIdentifier) {
-      AST::Identifier* id = reinterpret_cast<AST::Identifier>(node);
+    if (node->type() == AST::kTypeIdentifier) {
+      AST::Identifier* id = reinterpret_cast<AST::Identifier*>(node);
       this->scope->register_symbol(
         this->context.symtable(id->name),
-        { .location = ValueLocation::self(0, charly_create_symbol(id->name)) }
+        LocalOffsetInfo(ValueLocation::self(0, charly_create_symbol(id->name)))
       );
     }
   }
   for (auto& node : node->member_functions->children) {
-    if (node->type() == kTypeFunction) {
-      AST::Function* func = reinterpret_cast<AST::Function>(node);
+    if (node->type() == AST::kTypeFunction) {
+      AST::Function* func = reinterpret_cast<AST::Function*>(node);
       this->scope->register_symbol(
         this->context.symtable(func->name),
-        { .location = ValueLocation::self(0, charly_create_symbol(id->name)) }
+        LocalOffsetInfo(ValueLocation::self(0, charly_create_symbol(func->name)))
       );
     }
   }
+  node->member_functions = reinterpret_cast<AST::NodeList*>(this->visit_node(node->member_functions));
+  node->constructor = this->visit_node(node->constructor);
+
+  this->pop_scope();
+  this->push_local_scope();
+
+  // Prepare the symbols for the member functions and constructor
+  for (auto& node : node->static_properties->children) {
+    if (node->type() == AST::kTypeIdentifier) {
+      AST::Identifier* id = reinterpret_cast<AST::Identifier*>(node);
+      this->scope->register_symbol(
+        this->context.symtable(id->name),
+        LocalOffsetInfo(ValueLocation::self(0, charly_create_symbol(id->name)))
+      );
+    }
+  }
+  for (auto& node : node->static_functions->children) {
+    if (node->type() == AST::kTypeFunction) {
+      AST::Function* func = reinterpret_cast<AST::Function*>(node);
+      this->scope->register_symbol(
+        this->context.symtable(func->name),
+        LocalOffsetInfo(ValueLocation::self(0, charly_create_symbol(func->name)))
+      );
+    }
+  }
+  node->static_functions = reinterpret_cast<AST::NodeList*>(this->visit_node(node->static_functions));
 
   this->pop_scope();
   return node;
@@ -113,8 +139,8 @@ AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisat
   VALUE name_symbol = this->context.symtable(node->name);
 
   // Check if this is a duplicate declaration
-  if (!this->scope->symbol_is_free(name_symbol)) {
-    this->push_error(node, "Symbol '" + node->name + "' is already in use!");
+  if (this->scope->scope_contains_symbol(name_symbol)) {
+    this->push_error(node, "Illegal redeclaration of '" + node->name + "'");
     return node;
   }
 
@@ -135,7 +161,7 @@ AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisat
   // Create the initialisation node for this declaration
   AST::Assignment* initialisation = new AST::Assignment(node->name, node->expression);
   initialisation->at(node);
-  initialisation->offset_info = result.location;
+  initialisation->offset_info = new ValueLocation(result.location);
   initialisation->yielded_value_needed = false;
 
   // Deallocate the old localinitialisation node
@@ -168,12 +194,12 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
     return node;
   }
 
-  node->offset_info = result.location;
+  node->offset_info = new ValueLocation(result.location);
   return node;
 }
 
 AST::AbstractNode* LVarRewriter::visit_assignment(AST::Assignment* node, VisitContinue cont) {
-  LocalOffsetInfo result = this->scope->access(node->target);
+  LocalOffsetInfo result = this->scope->access_symbol(node->target);
   if (!result.valid) {
     this->push_error(node, "Could not resolve symbol: " + node->target);
     return node;
@@ -184,7 +210,7 @@ AST::AbstractNode* LVarRewriter::visit_assignment(AST::Assignment* node, VisitCo
     return node;
   }
 
-  node->offset_info = result.location;
+  node->offset_info = new ValueLocation(result.location);
 
   cont();
 
@@ -195,19 +221,27 @@ AST::AbstractNode* LVarRewriter::visit_trycatch(AST::TryCatch* node, VisitContin
   // This block should always exist
   this->visit_node(node->block);
 
+  this->push_local_scope();
+
   // Register the exception name in the scope of the handler block
   LocalOffsetInfo result = this->scope->alloc_slot(this->context.symtable(node->exception_name->name));
-  node->exception_name->offset_info = result.location;
+  node->exception_name->offset_info = new ValueLocation(result.location);
 
   // Check if we have a handler block
   if (node->handler_block->type() != AST::kTypeEmpty) {
     this->visit_node(node->handler_block);
   }
 
+  // Let the finally block have its own scope
+  this->pop_scope();
+  this->push_local_scope();
+
   // Check if we have a finally block
   if (node->finally_block->type() != AST::kTypeEmpty) {
     this->visit_node(node->finally_block);
   }
+
+  this->pop_scope();
 
   return node;
 }
