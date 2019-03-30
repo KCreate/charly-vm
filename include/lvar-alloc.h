@@ -28,6 +28,7 @@
 #include <unordered_map>
 
 #include "lvar-location.h"
+#include "ast.h"
 
 #pragma once
 
@@ -87,9 +88,8 @@ namespace Charly::Compilation {
     }
 
     // Allocate a new variable slot for a given symbol
-    LocalOffsetInfo alloc_slot(size_t symbol, bool constant = false, bool overwriteable = false);
+    LocalOffsetInfo alloc_slot(size_t symbol, bool constant = false);
     bool scope_contains_symbol(size_t symbol);
-    bool symbol_is_free(size_t symbol);
     LocalOffsetInfo register_symbol(size_t symbol, LocalOffsetInfo info, bool constant = false);
     LocalOffsetInfo access_symbol(const std::string& symbol);
     LocalOffsetInfo access_symbol(size_t symbol);

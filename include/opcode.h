@@ -237,10 +237,10 @@ enum Opcode : uint8_t {
   // Duplicate the top value of the stack
   Dup,
 
-  // Duplicate the top count values of the stack
+  // Duplicate the top n values of the stack
   //
   // args:
-  // - count
+  // - n
   Dupn,
 
   // Swap the top two values of the stack

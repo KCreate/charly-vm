@@ -78,11 +78,6 @@ struct CompilerConfig {
       "require", "Object", "Class",  "Array", "String", "Number", "Function", "Generator", "Boolean", "Null",
       "stdin",   "stdout", "stderr", "print", "write",  "gets",   "getc",     "exit",      "sleep",   "Charly"};
 
-  // Known fields in the self object passed to the module inclusion function
-  //
-  // If no module inclusion function is generated, these are ignored
-  std::vector<std::string> known_self_vars;
-
   // Module inclusion function
   bool wrap_inclusion_function = true;
   std::string inclusion_function_name = "__CHARLY_MODULE_FUNC";

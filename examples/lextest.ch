@@ -1,9 +1,6 @@
-let i = 0
-let limit = 100
-
-while i < limit {
-  print("waddup")
-  i += 1
+func foo {
+  [print("hello world")];
+  return null;
 }
 
-print("goodbye!")
+foo();
