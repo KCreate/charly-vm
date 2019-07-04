@@ -1,6 +1,3 @@
-func foo {
-  [print("hello world")];
-  return null;
-}
-
-foo();
+let a = 2
+let b = 5
+print(a + b)

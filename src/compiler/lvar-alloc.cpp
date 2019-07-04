@@ -34,6 +34,7 @@ namespace Charly::Compilation {
 
 uint32_t FunctionScope::alloc_slot(bool constant) {
   if (this->slots.size() == 0) {
+    this->function_node->lvarcount++;
     this->slots.push_back({.constant = constant});
     return 0;
   }
@@ -50,6 +51,7 @@ uint32_t FunctionScope::alloc_slot(bool constant) {
     allocated_slot--;
   }
 
+  this->function_node->lvarcount++;
   this->slots.push_back({.constant = constant});
   return this->slots.size() - 1;
 }
@@ -78,7 +80,7 @@ LocalOffsetInfo LocalScope::alloc_slot(size_t symbol, bool constant) {
   }
 
   uint32_t allocated_index = this->parent_function->alloc_slot(constant);
-  LocalOffsetInfo offset_info(ValueLocation::frame(0, allocated_index), true, constant);
+  LocalOffsetInfo offset_info(ValueLocation::frame(allocated_index, 0), true, constant);
   this->locals[symbol] = offset_info;
   return offset_info;
 }
@@ -89,7 +91,7 @@ bool LocalScope::scope_contains_symbol(size_t symbol) {
 
 LocalOffsetInfo LocalScope::register_symbol(size_t symbol, LocalOffsetInfo info, bool constant) {
   info.constant = constant;
-  this->locals[symbol] = info;
+  this->locals.insert(std::pair<size_t, LocalOffsetInfo>(symbol, info));
   return info;
 }
 
@@ -106,12 +108,12 @@ LocalOffsetInfo LocalScope::access_symbol(const std::string& symbol) {
         return LocalOffsetInfo(ValueLocation::arguments(index));
       } else {
         if (function_node == nullptr) {
-          return LocalOffsetInfo(ValueLocation::frame(0, index));
+          return LocalOffsetInfo(ValueLocation::frame(index, 0));
         } else {
           if (function_node->needs_arguments) {
-            return LocalOffsetInfo(ValueLocation::frame(0, index + 1));
+            return LocalOffsetInfo(ValueLocation::frame(index + 1, 0));
           } else {
-            return LocalOffsetInfo(ValueLocation::frame(0, index));
+            return LocalOffsetInfo(ValueLocation::frame(index, 0));
           }
         }
       }

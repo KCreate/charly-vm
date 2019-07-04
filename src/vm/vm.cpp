@@ -1329,7 +1329,7 @@ Opcode VM::fetch_instruction() {
 void VM::op_readlocal(uint32_t index, uint32_t level) {
   // Travel to the correct frame
   Frame* frame = this->frames;
-  while (level--) {
+  while (level != 0 && level--) {
     if (!frame->parent_environment_frame) {
       return this->panic(Status::ReadFailedTooDeep);
     }

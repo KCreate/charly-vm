@@ -55,12 +55,6 @@ namespace Charly::Compilation {
     FunctionScope(AST::Function* fn, FunctionScope* ps) : function_node(fn), parent_scope(ps) {
     }
 
-    ~FunctionScope() {
-      if (this->function_node) {
-        this->function_node->lvarcount = this->slots.size();
-      }
-    }
-
     uint32_t alloc_slot(bool constant);
     void mark_as_free(uint32_t index);
     inline void mark_as_leaked(uint32_t index);
