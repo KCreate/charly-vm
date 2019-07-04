@@ -808,7 +808,7 @@ bool CodeGenerator::codegen_read(ValueLocation& location) {
     }
     case LocationType::LocArguments: {
       this->assembler.write_readlocal(0, location.as_arguments.level);
-      this->assembler.write_readarrayindex(location.as_arguments.offset);
+      this->assembler.write_readarrayindex(location.as_arguments.index);
       break;
     }
     case LocationType::LocSelf: {
@@ -849,9 +849,9 @@ bool CodeGenerator::codegen_write(ValueLocation& location, bool keep_on_stack) {
     case LocationType::LocArguments: {
       this->assembler.write_readlocal(0, location.as_arguments.level);
       if (keep_on_stack) {
-        this->assembler.write_setarrayindexpush(location.as_arguments.offset);
+        this->assembler.write_setarrayindexpush(location.as_arguments.index);
       } else {
-        this->assembler.write_setarrayindex(location.as_arguments.offset);
+        this->assembler.write_setarrayindex(location.as_arguments.index);
       }
       break;
     }

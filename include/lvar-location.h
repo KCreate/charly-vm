@@ -45,16 +45,16 @@ namespace Charly::Compilation {
       return { .type = LocInvalid };
     }
 
-    static ValueLocation frame(uint32_t level, uint32_t index) {
-      return { .type = LocationType::LocFrame, .as_frame = { level, index } };
+    static ValueLocation frame(uint32_t index, uint32_t level) {
+      return { .type = LocationType::LocFrame, .as_frame = { index, level } };
     }
 
     static ValueLocation stack(uint32_t offset) {
       return { .type = LocationType::LocStack, .as_stack = { offset } };
     }
 
-    static ValueLocation arguments(uint32_t offset, uint32_t level = 0) {
-      return { .type = LocationType::LocArguments, .as_arguments = { offset, level } };
+    static ValueLocation arguments(uint32_t index, uint32_t level = 0) {
+      return { .type = LocationType::LocArguments, .as_arguments = { index, level } };
     }
 
     static ValueLocation self(uint64_t symbol, uint32_t level = 0) {
@@ -83,8 +83,8 @@ namespace Charly::Compilation {
 
     union {
       struct {
-        uint32_t level;
         uint32_t index;
+        uint32_t level;
       } as_frame;
 
       struct {
@@ -92,7 +92,7 @@ namespace Charly::Compilation {
       } as_stack;
 
       struct {
-        uint32_t offset;
+        uint32_t index;
         uint32_t level;
       } as_arguments;
 

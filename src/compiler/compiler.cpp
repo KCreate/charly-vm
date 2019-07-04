@@ -48,7 +48,7 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree) {
     // Wrap the whole program in a function which handles the exporting interface
     // to other programs
     inclusion_function = new AST::Function(this->config.inclusion_function_name,
-                                                          this->config.inclusion_function_arguments, {}, block, true);
+                                           this->config.inclusion_function_arguments, {}, block, true);
     inclusion_function->at(block);
     inclusion_function->lvarcount = this->config.known_top_level_constants.size();
     result.abstract_syntax_tree = inclusion_function;
@@ -75,8 +75,8 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree) {
     // Register the known local variables in the top level
     uint32_t i = 0;
     for (const auto& varname : this->config.known_top_level_constants) {
-      lvar_rewriter.scope->register_symbol(this->context.symtable(varname),
-                                           LocalOffsetInfo(ValueLocation::frame(i, 0), true, true), true);
+      lvar_rewriter.scope->register_symbol(
+          this->context.symtable(varname), LocalOffsetInfo(ValueLocation::frame(i, 1), true, true), true);
       i++;
     }
 
