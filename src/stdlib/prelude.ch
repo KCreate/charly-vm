@@ -66,7 +66,7 @@ ignoreconst {
   Boolean = set_primitive_boolean(class Boolean extends Value {});
   Null = set_primitive_null(class Null extends Value {});
 
-  Array = class Object extends Value {
+  Array = class Array extends Value {
     func each(cb) {
       let i = 0
 

@@ -135,8 +135,11 @@ LocalOffsetInfo LocalScope::access_symbol(size_t symbol) {
     if (search_scope->scope_contains_symbol(symbol)) {
       LocalOffsetInfo found_offset_info = search_scope->locals[symbol];
 
+      // TODO: Implement this in a correct way
       // Register this value in this scope to speed up lookup the next time
-      this->locals[symbol] = found_offset_info;
+      //if (search_scope != this) {
+        //this->locals[symbol] = found_offset_info;
+      //}
 
       // Mark the slot as leaked if we passed a function boundary
       // If we don't mark it as leaked, the slot might be allocated to another

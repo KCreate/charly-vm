@@ -2046,7 +2046,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << " ";
       io << "argc=" << func->argc;
       io << " ";
-      io << "pointer=" << func->pointer << " ";
+      io << "pointer=" << reinterpret_cast<uint64_t*>(func->pointer) << "";
 
       for (auto& entry : *func->container) {
         io << " ";
