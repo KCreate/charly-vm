@@ -76,7 +76,7 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree) {
     uint32_t i = 0;
     for (const auto& varname : this->config.known_top_level_constants) {
       lvar_rewriter.scope->register_symbol(
-          this->context.symtable(varname), LocalOffsetInfo(ValueLocation::frame(i, 1), true, true), true);
+          this->context.symtable(varname), LocalOffsetInfo(ValueLocation::frame(i, 1), true, true, true), true, true);
       i++;
     }
 

@@ -1,3 +1,7 @@
-let a = 2
-let b = 5
-print(a + b)
+let require = "foo"
+
+func foo(require) {
+  print(require)
+}
+
+try {} catch(require) {}

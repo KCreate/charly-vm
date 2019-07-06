@@ -32,10 +32,10 @@
 
 namespace Charly::Compilation {
 
-uint32_t FunctionScope::alloc_slot(bool constant) {
+uint32_t FunctionScope::alloc_slot(bool constant, bool shadowing) {
   if (this->slots.size() == 0) {
     this->function_node->lvarcount++;
-    this->slots.push_back({.constant = constant});
+    this->slots.push_back({.constant = constant, .shadowing = shadowing});
     return 0;
   }
 
@@ -52,7 +52,7 @@ uint32_t FunctionScope::alloc_slot(bool constant) {
   }
 
   this->function_node->lvarcount++;
-  this->slots.push_back({.constant = constant});
+  this->slots.push_back({.constant = constant, .shadowing = shadowing});
   return this->slots.size() - 1;
 }
 
@@ -63,6 +63,7 @@ void FunctionScope::mark_as_free(uint32_t index) {
       this->slots[index].active = false;
       this->slots[index].leaked = false;
       this->slots[index].constant = false;
+      this->slots[index].shadowing = false;
     }
   }
 }
@@ -73,14 +74,14 @@ void FunctionScope::mark_as_leaked(uint32_t index) {
   }
 }
 
-LocalOffsetInfo LocalScope::alloc_slot(size_t symbol, bool constant) {
+LocalOffsetInfo LocalScope::alloc_slot(size_t symbol, bool constant, bool shadowing) {
   // Check if this symbol is already registered but can be overwritten
   if (this->scope_contains_symbol(symbol)) {
     return LocalOffsetInfo();
   }
 
-  uint32_t allocated_index = this->parent_function->alloc_slot(constant);
-  LocalOffsetInfo offset_info(ValueLocation::frame(allocated_index, 0), true, constant);
+  uint32_t allocated_index = this->parent_function->alloc_slot(constant, shadowing);
+  LocalOffsetInfo offset_info(ValueLocation::frame(allocated_index, 0), true, constant, shadowing);
   this->locals[symbol] = offset_info;
   return offset_info;
 }
@@ -89,8 +90,9 @@ bool LocalScope::scope_contains_symbol(size_t symbol) {
   return this->locals.count(symbol) != 0;
 }
 
-LocalOffsetInfo LocalScope::register_symbol(size_t symbol, LocalOffsetInfo info, bool constant) {
+LocalOffsetInfo LocalScope::register_symbol(size_t symbol, LocalOffsetInfo info, bool constant, bool shadowing) {
   info.constant = constant;
+  info.shadowing = shadowing;
   this->locals.insert(std::pair<size_t, LocalOffsetInfo>(symbol, info));
   return info;
 }

@@ -48,7 +48,18 @@ AST::AbstractNode* LVarRewriter::visit_function(AST::Function* node, VisitContin
   }
 
   for (const std::string& param : node->parameters) {
-    this->scope->alloc_slot(this->context.symtable(param));
+    VALUE symbol = this->context.symtable(param);
+
+    LocalOffsetInfo tmp = this->scope->access_symbol(symbol);
+    if (tmp.valid && tmp.shadowing) {
+      this->push_error(node, "Illegal redeclaration of '" + param + "'");
+      this->scope = local_scope->parent_scope;
+      delete local_scope;
+      delete func_scope;
+      return node;
+    }
+
+    this->scope->alloc_slot(symbol);
   }
 
   descend();
@@ -144,6 +155,12 @@ AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisat
     return node;
   }
 
+  LocalOffsetInfo tmp = this->scope->access_symbol(name_symbol);
+  if (tmp.valid && tmp.shadowing) {
+    this->push_error(node, "Illegal redeclaration of '" + node->name + "'");
+    return node;
+  }
+
   LocalOffsetInfo result = this->scope->alloc_slot(name_symbol, node->constant);
 
   // If the expression is a function or class, descend into it now
@@ -223,8 +240,16 @@ AST::AbstractNode* LVarRewriter::visit_trycatch(AST::TryCatch* node, VisitContin
 
   this->push_local_scope();
 
+  VALUE ex_name_symbol = this->context.symtable(node->exception_name->name);
+
+  LocalOffsetInfo tmp = this->scope->access_symbol(ex_name_symbol);
+  if (tmp.valid && tmp.shadowing) {
+    this->push_error(node, "Illegal redeclaration of '" + node->exception_name->name + "'");
+    return node;
+  }
+
   // Register the exception name in the scope of the handler block
-  LocalOffsetInfo result = this->scope->alloc_slot(this->context.symtable(node->exception_name->name));
+  LocalOffsetInfo result = this->scope->alloc_slot(ex_name_symbol);
   node->exception_name->offset_info = new ValueLocation(result.location);
 
   // Check if we have a handler block

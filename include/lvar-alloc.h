@@ -37,11 +37,13 @@ namespace Charly::Compilation {
   //
   // active     - Wether this slot is currently in use
   // leaked     - Wether this slot has ever been leaked to another context
-  // constant   - Wether this slot has been marked as constant
+  // constant   - Wether this slot is constant
+  // shadowing  - Wether this slot disallows any new declarations using its name
   struct SlotInfo {
     bool active = true;
     bool leaked = false;
     bool constant = false;
+    bool shadowing = false;
   };
 
   // These frames are introduced into the list every time a new function is being analyzed.
@@ -55,7 +57,7 @@ namespace Charly::Compilation {
     FunctionScope(AST::Function* fn, FunctionScope* ps) : function_node(fn), parent_scope(ps) {
     }
 
-    uint32_t alloc_slot(bool constant);
+    uint32_t alloc_slot(bool constant, bool shadowing);
     void mark_as_free(uint32_t index);
     inline void mark_as_leaked(uint32_t index);
   };
@@ -82,9 +84,9 @@ namespace Charly::Compilation {
     }
 
     // Allocate a new variable slot for a given symbol
-    LocalOffsetInfo alloc_slot(size_t symbol, bool constant = false);
+    LocalOffsetInfo alloc_slot(size_t symbol, bool constant = false, bool shadowing = false);
     bool scope_contains_symbol(size_t symbol);
-    LocalOffsetInfo register_symbol(size_t symbol, LocalOffsetInfo info, bool constant = false);
+    LocalOffsetInfo register_symbol(size_t symbol, LocalOffsetInfo info, bool constant = false, bool shadowing = false);
     LocalOffsetInfo access_symbol(const std::string& symbol);
     LocalOffsetInfo access_symbol(size_t symbol);
   };

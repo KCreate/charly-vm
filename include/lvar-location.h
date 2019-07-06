@@ -113,14 +113,22 @@ namespace Charly::Compilation {
   // This struct stores information about the relative location of a variable during the compilation process.
   struct LocalOffsetInfo {
     ValueLocation location;
-    bool valid = true;
-    bool constant = false;
 
-    LocalOffsetInfo() : valid(false) {
+    // Wether this struct contains valid info
+    bool valid;
+
+    // Wether the referred to offset is marked as constant
+    bool constant;
+
+    // Wether the declaration is marked as shadowing, meaning it will disallow any
+    // new declarations using its name
+    bool shadowing;
+
+    LocalOffsetInfo() : valid(false), constant(false), shadowing(false) {
     }
 
-    LocalOffsetInfo(ValueLocation&& l, bool v = true, bool c = false)
-        : location(l), valid(v), constant(c) {
+    LocalOffsetInfo(ValueLocation&& l, bool v = true, bool c = false, bool s = false)
+        : location(l), valid(v), constant(c), shadowing(s) {
     }
   };
 }
