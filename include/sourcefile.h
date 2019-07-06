@@ -37,7 +37,7 @@ public:
   size_t frame_pos = 0;
   size_t pos = 0;
   size_t row = 1;
-  size_t column = 1;
+  size_t column = 0;
   uint32_t current_char = L'\0';
   std::string frame;
 
