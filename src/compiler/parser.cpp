@@ -71,10 +71,12 @@ void Parser::unexpected_token(TokenType expected) {
     error_message = "Unexpected end of file, expected ";
     error_message.append(kTokenTypeStrings[expected]);
   } else {
-    error_message = "Unexpected ";
-    error_message.append(kTokenTypeStrings[this->token.type]);
-    error_message.append(", expected ");
+    error_message = "";
+    error_message.append("Expected a [");
     error_message.append(kTokenTypeStrings[expected]);
+    error_message.append("] token but got a [");
+    error_message.append(kTokenTypeStrings[this->token.type]);
+    error_message.append("]");
   }
 
   throw SyntaxError{this->token.location, error_message};
@@ -797,7 +799,7 @@ AST::AbstractNode* Parser::parse_try_statement() {
     this->expect_token(TokenType::LeftParen);
     this->expect_token(TokenType::Identifier, [&]() {
       exception_name = new AST::Identifier(this->token.value);
-      exception_name->at(token);
+      exception_name->at(this->token);
     });
     this->expect_token(TokenType::RightParen);
 
