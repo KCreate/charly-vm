@@ -1903,8 +1903,6 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
   auto end = this->pretty_print_stack.end();
   bool printed_before = std::find(begin, end, value) != end;
 
-  this->pretty_print_stack.push_back(value);
-
   switch (charly_get_type(value)) {
     case kTypeDead: {
       io << "<dead>";
@@ -1968,6 +1966,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
         break;
       }
 
+      this->pretty_print_stack.push_back(value);
+
       for (auto& entry : *object->container) {
         io << " ";
         std::string key = this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
@@ -1976,6 +1976,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       }
 
       io << ">";
+
+      this->pretty_print_stack.pop_back();
       break;
     }
 
@@ -1988,6 +1990,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
         io << "[...]>";
         break;
       }
+
+      this->pretty_print_stack.push_back(value);
 
       io << "[";
 
@@ -2003,6 +2007,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       }
 
       io << "]>";
+
+      this->pretty_print_stack.pop_back();
       break;
     }
 
@@ -2013,6 +2019,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
         io << "<Function ...>";
         break;
       }
+
+      this->pretty_print_stack.push_back(value);
 
       io << "<Function ";
       io << "name=";
@@ -2036,6 +2044,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       }
 
       io << ">";
+
+      this->pretty_print_stack.pop_back();
       break;
     }
 
@@ -2046,6 +2056,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
         io << "<CFunction ...>";
         break;
       }
+
+      this->pretty_print_stack.push_back(value);
 
       io << "<CFunction ";
       io << "name=";
@@ -2063,6 +2075,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       }
 
       io << ">";
+
+      this->pretty_print_stack.pop_back();
       break;
     }
 
@@ -2073,6 +2087,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
         io << "<Generator ...>";
         break;
       }
+
+      this->pretty_print_stack.push_back(value);
 
       io << "<Generator ";
       io << "name=";
@@ -2096,6 +2112,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       }
 
       io << ">";
+
+      this->pretty_print_stack.pop_back();
       break;
     }
 
@@ -2106,6 +2124,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
         io << "<Class ...>";
         break;
       }
+
+      this->pretty_print_stack.push_back(value);
 
       io << "<Class ";
       io << "name=";
@@ -2136,6 +2156,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       }
 
       io << ">";
+
+      this->pretty_print_stack.pop_back();
       break;
     }
 
@@ -2152,6 +2174,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
         break;
       }
 
+      this->pretty_print_stack.push_back(value);
+
       io << "<Frame ";
       io << "parent=" << frame->parent << " ";
       io << "parent_environment_frame=" << frame->parent_environment_frame << " ";
@@ -2163,6 +2187,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << " ";
       io << "return_address=" << reinterpret_cast<void*>(frame->return_address);
       io << ">";
+
+      this->pretty_print_stack.pop_back();
       break;
     }
 
@@ -2174,17 +2200,19 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
         break;
       }
 
+      this->pretty_print_stack.push_back(value);
+
       io << "<CatchTable ";
       io << "address=" << reinterpret_cast<void*>(table->address) << " ";
       io << "stacksize=" << table->stacksize << " ";
       io << "frame=" << table->frame << " ";
       io << "parent=" << table->parent;
       io << ">";
+
+      this->pretty_print_stack.pop_back();
       break;
     }
   }
-
-  this->pretty_print_stack.pop_back();
 }
 
 void VM::panic(STATUS reason) {
