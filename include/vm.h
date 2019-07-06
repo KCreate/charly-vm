@@ -335,6 +335,9 @@ private:
   // objects & methods.
   Frame* top_frame;
 
+  // Holds the last value that was thrown as an exception
+  VALUE last_exception_thrown;
+
   std::vector<VALUE> stack;
   Frame* frames;
   CatchTable* catchstack;

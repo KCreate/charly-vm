@@ -161,8 +161,12 @@ CatchTable* VM::create_catchtable(uint8_t* address) {
 }
 
 CatchTable* VM::pop_catchtable() {
-  if (!this->catchstack)
+  if (!this->catchstack) {
+    this->context.err_stream << "Last exception thrown: ";
+    this->pretty_print(this->context.err_stream, this->last_exception_thrown);
+    this->context.err_stream << '\n';
     this->panic(Status::CatchStackEmpty);
+  }
   CatchTable* current = this->catchstack;
   this->catchstack = current->parent;
 
@@ -1742,6 +1746,8 @@ void VM::throw_exception(const std::string& message) {
   (*ex_obj->container)[this->context.symtable("message")] = ex_msg;
   (*ex_obj->container)[this->context.symtable("stacktrace")] = this->stacktrace_array();
 
+  this->last_exception_thrown = charly_create_pointer(ex_obj);
+
   // Unwind stack and push exception object
   this->unwind_catchstack();
   this->push_stack(charly_create_pointer(ex_obj));
@@ -1749,6 +1755,7 @@ void VM::throw_exception(const std::string& message) {
 
 void VM::throw_exception(VALUE payload) {
   this->unwind_catchstack();
+  this->last_exception_thrown = payload;
   this->push_stack(payload);
 }
 
