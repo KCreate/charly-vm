@@ -1,7 +1,3 @@
-let require = "foo"
-
-func foo(require) {
-  print(require)
+func foo {
+  print(@break)
 }
-
-try {} catch(require) {}

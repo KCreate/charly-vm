@@ -328,7 +328,6 @@ void Lexer::read_token() {
 
     if (search != kTokenKeywordsAndLiterals.end()) {
       this->token.type = search->second;
-      this->token.value = "";
     }
   }
 

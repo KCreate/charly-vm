@@ -141,6 +141,14 @@ void Parser::if_token(TokenType type, ParseFunc func) {
     func();
 }
 
+void Parser::interpret_keyword_as_identifier() {
+  auto search = kTokenKeywordsAndLiterals.find(this->token.value);
+
+  if (search != kTokenKeywordsAndLiterals.end()) {
+    this->token.type = TokenType::Identifier;
+  }
+}
+
 AST::AbstractNode* Parser::parse_program() {
   AST::Block* block = new AST::Block();
 
@@ -1241,6 +1249,7 @@ AST::AbstractNode* Parser::parse_member_call() {
 
         Location location_end;
 
+        this->interpret_keyword_as_identifier();
         this->expect_token(TokenType::Identifier, [&]() {
           symbol = this->token.value;
           location_end = this->token.location;
@@ -1260,6 +1269,7 @@ AST::AbstractNode* Parser::parse_literal() {
       Location location_start = this->token.location;
       this->advance();
 
+      this->interpret_keyword_as_identifier();
       if (this->token.type == TokenType::Identifier) {
         AST::AbstractNode* exp = new AST::Member((new AST::Self())->at(location_start), this->token.value);
         exp->at(location_start, this->token.location);
@@ -1401,6 +1411,7 @@ std::pair<std::string, AST::AbstractNode*> Parser::parse_hash_entry() {
   Location key_location;
   AST::AbstractNode* value;
 
+  this->interpret_keyword_as_identifier();
   this->expect_token(TokenType::Identifier, [&]() {
     key = this->token.value;
     key_location = this->token.location;

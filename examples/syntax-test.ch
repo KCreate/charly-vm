@@ -173,6 +173,11 @@ NaN;
 [1, 2, 3];
 { a: 1, b: 2 };
 
+// Allow keywords as identifiers in some places
+{ continue: 25, while: 20, let: 45 };
+func ____test1() { return @break + @let + @property }
+func ____test2(a) { return a.return + a.throw + a.loop + a.try }
+
 // Classes
 class {}
 class _class1 {}

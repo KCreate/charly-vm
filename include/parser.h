@@ -80,6 +80,7 @@ public:
   void expect_token(TokenType type, ParseFunc func);
   void skip_token(TokenType type);
   void if_token(TokenType type, ParseFunc func);
+  void interpret_keyword_as_identifier();
 
   // Parse methods
   AST::AbstractNode* parse_program();
