@@ -346,6 +346,14 @@ VALUE VM::create_class(VALUE name) {
   return cell->as_value();
 }
 
+VALUE VM::create_cpointer(uintptr_t data, uintptr_t destructor) {
+  MemoryCell* cell = this->gc.allocate();
+  cell->basic.type = kTypeCPointer;
+  cell->cpointer.data = data;
+  cell->cpointer.destructor = destructor;
+  return cell->as_value();
+}
+
 VALUE VM::copy_value(VALUE value) {
   switch (charly_get_type(value)) {
     case kTypeString: return this->copy_string(value);
@@ -1019,6 +1027,7 @@ std::optional<VALUE> VM::findprimitivevalue(VALUE value, VALUE symbol) {
     case kTypeArray: found_primitive_class = this->primitive_array; break;
     case kTypeFunction: found_primitive_class = this->primitive_function; break;
     case kTypeClass: found_primitive_class = this->primitive_class; break;
+    case kTypeCPointer: found_primitive_class = this->primitive_number; break;
   }
 
   if (!charly_is_class(found_primitive_class)) {
@@ -2161,6 +2170,14 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << ">";
 
       this->pretty_print_stack.pop_back();
+      break;
+    }
+
+    case kTypeCPointer: {
+      CPointer* cpointer = charly_as_cpointer(value);
+      io << "<CPointer " << reinterpret_cast<void*>(cpointer->data);
+      io << ":" << reinterpret_cast<void*>(cpointer->destructor);
+      io << ">";
       break;
     }
 

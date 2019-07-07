@@ -148,6 +148,7 @@ public:
   VALUE create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer);
   VALUE create_generator(VALUE name, uint8_t* resume_address);
   VALUE create_class(VALUE name);
+  VALUE create_cpointer(uintptr_t data, uintptr_t destructor);
 
   // Methods to copy existing data types
   VALUE copy_value(VALUE value);

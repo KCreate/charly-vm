@@ -1,4 +1,3 @@
-const test = import "test-require.ch"
-const test2 = import "./../test.ch"
+let test = import "__charly_get_debug_cpointer"
 
-test2()
+print(test)

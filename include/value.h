@@ -39,9 +39,9 @@
 namespace Charly {
 
 // Human readable types of all data types
-const std::string kHumanReadableTypes[] = {"dead",     "class",     "object",    "array",  "string",
-                                           "function", "cfunction", "generator", "frame",  "catchtable",
-                                           "number",   "boolean",   "null",      "symbol", "unknown"};
+const std::string kHumanReadableTypes[] = {"dead",      "class",     "object", "array",      "string",   "function",
+                                           "cfunction", "generator", "frame",  "catchtable", "cpointer", "number",
+                                           "boolean",   "null",      "symbol", "unknown"};
 
 // Identifies which type a VALUE points to
 enum ValueType : uint8_t {
@@ -57,6 +57,7 @@ enum ValueType : uint8_t {
   kTypeGenerator,
   kTypeFrame,
   kTypeCatchTable,
+  kTypeCPointer,
 
   // Types which are immediate encoded using nan-boxing
   kTypeNumber,
@@ -244,6 +245,17 @@ struct CatchTable {
   size_t stacksize;
   Frame* frame;
   CatchTable* parent;
+};
+
+// Contains a data pointer and a destructor method to deallocate c library resources
+struct CPointer {
+  Basic basic;
+  uintptr_t data;
+  uintptr_t destructor;
+
+  inline void clean() {
+    reinterpret_cast<void (*)(uintptr_t)>(this->destructor)(this->data);
+  }
 };
 
 // Normal functions defined inside the virtual machine.
@@ -481,6 +493,8 @@ __attribute__((always_inline))
 inline Frame* charly_as_frame(VALUE value)            { return charly_as_pointer_to<Frame>(value); }
 __attribute__((always_inline))
 inline CatchTable* charly_as_catchtable(VALUE value)  { return charly_as_pointer_to<CatchTable>(value); }
+__attribute__((always_inline))
+inline CPointer* charly_as_cpointer(VALUE value)      { return charly_as_pointer_to<CPointer>(value); }
 
 // Type checking functions
 __attribute__((always_inline))
@@ -545,6 +559,8 @@ __attribute__((always_inline))
 inline bool charly_is_frame(VALUE value) { return charly_is_heap_type(value, kTypeFrame); }
 __attribute__((always_inline))
 inline bool charly_is_catchtable(VALUE value) { return charly_is_heap_type(value, kTypeCatchTable); }
+__attribute__((always_inline))
+inline bool charly_is_cpointer(VALUE value) { return charly_is_heap_type(value, kTypeCPointer); }
 
 // Return the ValueType representation of the type of the value
 __attribute__((always_inline))

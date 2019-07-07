@@ -51,6 +51,7 @@ struct MemoryCell {
     Class klass;
     Frame frame;
     CatchTable catchtable;
+    CPointer cpointer;
   };
 
   template <typename T>

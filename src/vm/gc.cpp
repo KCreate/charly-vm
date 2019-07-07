@@ -292,6 +292,11 @@ void GarbageCollector::deallocate(MemoryCell* cell) {
       break;
     }
 
+    case kTypeCPointer: {
+      cell->cpointer.clean();
+      break;
+    }
+
     case kTypeFrame: {
       cell->frame.clean();
       break;

@@ -96,5 +96,10 @@ public:
   inline VALUE create_class(Args&&... params) {
     return mark_in_gc(this->vm.create_class(std::forward<Args>(params)...));
   }
+
+  template <typename... Args>
+  inline VALUE create_cpointer(Args&&... params) {
+    return mark_in_gc(this->vm.create_cpointer(std::forward<Args>(params)...));
+  }
 };
 }  // namespace Charly
