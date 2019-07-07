@@ -198,10 +198,19 @@ AST::AbstractNode* Parser::parse_import() {
   std::string import_path;
   std::optional<Location> location_end;
 
-  this->expect_token(TokenType::String, [&]() {
-    import_path = this->token.value;
-    location_end = this->token.location;
-  });
+  switch (this->token.type) {
+    case TokenType::String:
+    case TokenType::Identifier: {
+      import_path = this->token.value;
+      location_end = this->token.location;
+      this->advance();
+      break;
+    }
+    default: {
+      this->unexpected_token();
+      return nullptr;
+    }
+  }
 
   return (new AST::Import(import_path))->at(location_start, location_end);
 }
@@ -259,6 +268,23 @@ AST::AbstractNode* Parser::parse_statement() {
 
       this->skip_token(TokenType::Semicolon);
       return (new AST::LocalInitialisation(identifier, exp, true))->at(location_start, exp->location_end);
+    }
+    case TokenType::Import: {
+      AST::Import* node = AST::cast<AST::Import>(this->parse_import());
+      AST::AbstractNode* new_node = (
+          new AST::LocalInitialisation(
+            node->name,
+            new AST::Call(
+              new AST::Identifier("__charly_internal_import"),
+              new AST::NodeList(
+                new AST::String(node->name)
+              )
+            ), true
+          )
+      )->at(node);
+
+      delete node;
+      return new_node;
     }
     case TokenType::If: {
       return this->parse_if_statement();

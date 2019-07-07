@@ -1,4 +1,4 @@
-const math = import "math"
+import math
 
 10.times(->{
   100.times(->{
