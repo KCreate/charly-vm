@@ -52,6 +52,7 @@ public:
   AST::AbstractNode* visit_localinitialisation(AST::LocalInitialisation* node, VisitContinue cont);
   AST::AbstractNode* visit_yield(AST::Yield* node, VisitContinue cont);
   AST::AbstractNode* visit_identifier(AST::Identifier* node, VisitContinue cont);
+  AST::AbstractNode* visit_import(AST::Import* node, VisitContinue cont);
 
 private:
   AST::AbstractNode* wrap_in_block(AST::AbstractNode* node);

@@ -4,9 +4,43 @@ ignoreconst {
   const __internal_get_method = Charly.internals.get_method
   const __internal_write = __internal_get_method("write")
   const __internal_getn = __internal_get_method("getn")
+  const __internal_import = __internal_get_method("import")
 
-  // Require a module
-  require = __internal_get_method("require")
+  let __internal_standard_libs_names
+  let __internal_standard_libs
+
+  // Import method for loading other files and libraries
+  __charly_internal_import = ->(path) {
+
+    // Search for the path in the list of standard libraries
+    let is_stdlib = false
+    let i = 0
+    while (i < __internal_standard_libs_names.length) {
+      const value = __internal_standard_libs_names[i]
+      if (value == path) {
+        is_stdlib = true
+        break
+      }
+
+      i += 1
+    }
+
+    if (is_stdlib) {
+      return __internal_standard_libs[path]
+    }
+
+    __internal_import(path)
+  }
+
+  // The names of all standard libraries that come with charly
+  __internal_standard_libs_names = [
+    "math"
+  ]
+
+  // All libraries that come with charly
+  __internal_standard_libs = {
+    math: import "_charly_math"
+  }
 
   // Write a value to stdout, without a trailing newline
   write = func write {
@@ -114,6 +148,18 @@ ignoreconst {
       }
 
       new_array
+    }
+
+    func contains(search) {
+      let i = 0
+
+      while i < @length {
+        const value = self[i]
+        if (value == search) return true;
+        i += 1;
+      }
+
+      false
     }
   }
   set_primitive_array(Array);

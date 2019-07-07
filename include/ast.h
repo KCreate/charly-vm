@@ -144,7 +144,7 @@ struct NodeList : public AbstractNode {
   NodeList() {
   }
   template <typename... Args>
-  NodeList(Args&... params) : children({params...}) {
+  NodeList(Args... params) : children({params...}) {
   }
 
   inline void append_node(AbstractNode* node) {
@@ -199,7 +199,7 @@ struct Block : public AbstractNode {
   Block() {
   }
   template <typename... Args>
-  Block(Args&... params) : statements({params...}) {
+  Block(Args... params) : statements({params...}) {
   }
 
   inline ~Block() {
@@ -1073,7 +1073,7 @@ struct Array : public AbstractNode {
   NodeList* expressions;
 
   template <typename... Args>
-  Array(Args&... params) : expressions(params...) {
+  Array(Args... params) : expressions(params...) {
   }
   Array(NodeList* e) : expressions(e) {
   }
@@ -1408,6 +1408,20 @@ struct Return : public AbstractNode {
   }
 };
 
+
+// import <name>
+struct Import : public AbstractNode {
+  std::string name;
+
+  Import(const std::string& n) : name(n) {
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Import: " << this->name;
+    stream << '\n';
+  }
+};
+
 // yield <expression>
 struct Yield : public AbstractNode {
   AbstractNode* expression;
@@ -1558,6 +1572,7 @@ const size_t kTypeThrow = typeid(Throw).hash_code();
 const size_t kTypeBreak = typeid(Break).hash_code();
 const size_t kTypeContinue = typeid(Continue).hash_code();
 const size_t kTypeTryCatch = typeid(TryCatch).hash_code();
+const size_t kTypeImport = typeid(Import).hash_code();
 
 // Casts node to a given type without checking for errors
 template <class T>
@@ -1597,7 +1612,7 @@ inline bool yields_value(AbstractNode* node) {
           node->type() == kTypeIndex || node->type() == kTypeNull || node->type() == kTypeNan ||
           node->type() == kTypeString || node->type() == kTypeNumber || node->type() == kTypeBoolean ||
           node->type() == kTypeArray || node->type() == kTypeHash || node->type() == kTypeFunction ||
-          node->type() == kTypeClass);
+          node->type() == kTypeClass || node->type() == kTypeImport);
 }
 
 // Checks wether a given node is an assignment

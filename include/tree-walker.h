@@ -150,6 +150,10 @@ public:
     cont();
     return node;
   }
+  virtual inline AST::AbstractNode* visit_import(AST::Import* node, VisitContinue cont) {
+    cont();
+    return node;
+  }
   virtual inline AST::AbstractNode* visit_call(AST::Call* node, VisitContinue cont) {
     cont();
     return node;
@@ -307,6 +311,8 @@ public:
       return walker->visit_indexassignment(node->as<AST::IndexAssignment>(), cont);
     if (node->type() == AST::kTypeANDIndexAssignment)
       return walker->visit_andindexassignment(node->as<AST::ANDIndexAssignment>(), cont);
+    if (node->type() == AST::kTypeImport)
+      return walker->visit_import(node->as<AST::Import>(), cont);
     if (node->type() == AST::kTypeCall)
       return walker->visit_call(node->as<AST::Call>(), cont);
     if (node->type() == AST::kTypeCallMember)

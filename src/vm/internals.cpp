@@ -33,6 +33,8 @@
 #include "managedcontext.h"
 #include "vm.h"
 
+#include "libs/math.h"
+
 using namespace std;
 
 namespace Charly {
@@ -45,7 +47,12 @@ namespace Internals {
     }                                                               \
   }
 static std::unordered_map<std::string, InternalMethodSignature> kMethodSignatures = {
-    DEFINE_INTERNAL_METHOD(require, 1),
+
+// Libs
+#import "libs/math.def"
+
+    // VM Barebones
+    DEFINE_INTERNAL_METHOD(import, 1),
     DEFINE_INTERNAL_METHOD(write, 1),
     DEFINE_INTERNAL_METHOD(getn, 0),
     DEFINE_INTERNAL_METHOD(set_primitive_object, 1),
@@ -56,14 +63,15 @@ static std::unordered_map<std::string, InternalMethodSignature> kMethodSignature
     DEFINE_INTERNAL_METHOD(set_primitive_function, 1),
     DEFINE_INTERNAL_METHOD(set_primitive_generator, 1),
     DEFINE_INTERNAL_METHOD(set_primitive_boolean, 1),
-    DEFINE_INTERNAL_METHOD(set_primitive_null, 1)};
+    DEFINE_INTERNAL_METHOD(set_primitive_null, 1),
+};
 
-VALUE require(VM& vm, VALUE vfilename) {
+VALUE import(VM& vm, VALUE vfilename) {
   // TODO: Deallocate stuff on error
 
   // Make sure we got a string as filename
   if (!charly_is_string(vfilename)) {
-    vm.throw_exception("require: expected argument 1 to be a string");
+    vm.throw_exception("import: expected argument 1 to be a string");
     return kNull;
   }
 
@@ -71,9 +79,15 @@ VALUE require(VM& vm, VALUE vfilename) {
   uint32_t str_length = charly_string_length(vfilename);
   std::string filename = std::string(str_data, str_length);
 
+  // TODO: Allow to import files from file urls relative to the executed file
+  // Check if we are importing a standard charly library
+  if (kStandardCharlyLibraries.find(filename) != kStandardCharlyLibraries.end()) {
+    filename = std::string(std::getenv("CHARLYVMDIR")) + "/" + kStandardCharlyLibraries.at(filename);
+  }
+
   std::ifstream inputfile(filename);
   if (!inputfile.is_open()) {
-    vm.throw_exception("require: could not open " + filename);
+    vm.throw_exception("import: could not open " + filename);
     return kNull;
   }
   std::string source_string((std::istreambuf_iterator<char>(inputfile)), std::istreambuf_iterator<char>());
@@ -81,7 +95,7 @@ VALUE require(VM& vm, VALUE vfilename) {
   auto cresult = vm.context.compiler_manager.compile(filename, source_string);
 
   if (!cresult.has_value()) {
-    vm.throw_exception("require: could not compile " + filename);
+    vm.throw_exception("import: could not compile " + filename);
     return kNull;
   }
 
@@ -168,5 +182,6 @@ VALUE set_primitive_null(VM& vm, VALUE value) {
   vm.set_primitive_null(value);
   return value;
 }
+
 }  // namespace Internals
 }  // namespace Charly

@@ -1910,6 +1910,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeNumber: {
+      const double d = io.precision();
+      io.precision(16);
       io << std::fixed;
       if (charly_is_int(value)) {
         io << charly_int_to_int64(value);
@@ -1917,6 +1919,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
         io << charly_double_to_double(value);
       }
       io << std::scientific;
+      io.precision(d);
 
       break;
     }
@@ -2956,10 +2959,12 @@ void VM::exec_module(InstructionBlock* block) {
   Object* export_obj = charly_as_object(lalloc.create_object(0));
 
   // Execute the module inclusion function
+  uint8_t* old_ip = this->ip;
   this->exec_block(block);
   this->push_stack(charly_create_pointer(export_obj));
   this->op_call(1);
   this->frames->parent_environment_frame = this->top_frame;
   this->run();
+  this->ip = old_ip;
 }
 }  // namespace Charly

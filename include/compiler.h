@@ -74,9 +74,26 @@ struct CompilerContext {
 // Configuration passed to the compiler
 struct CompilerConfig {
   // Known constants in the toplevel
-  std::vector<std::string> known_top_level_constants = {
-      "require", "Object", "Class",  "Array", "String", "Number", "Function", "Generator", "Boolean", "Null",
-      "stdin",   "stdout", "stderr", "print", "write",  "gets",   "getc",     "exit",      "sleep",   "Charly"};
+  std::vector<std::string> known_top_level_constants = {"__charly_internal_import",
+                                                        "Object",
+                                                        "Class",
+                                                        "Array",
+                                                        "String",
+                                                        "Number",
+                                                        "Function",
+                                                        "Generator",
+                                                        "Boolean",
+                                                        "Null",
+                                                        "stdin",
+                                                        "stdout",
+                                                        "stderr",
+                                                        "print",
+                                                        "write",
+                                                        "gets",
+                                                        "getc",
+                                                        "exit",
+                                                        "sleep",
+                                                        "Charly"};
 
   // Module inclusion function
   bool wrap_inclusion_function = true;

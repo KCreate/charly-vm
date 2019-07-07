@@ -213,8 +213,14 @@ struct RunFlags {
 
   inline bool dump_file_contains(const std::string& str) {
     auto& dump_file_list = this->dump_files_include;
-    auto search_result = std::find(dump_file_list.begin(), dump_file_list.end(), str);
-    return search_result != dump_file_list.end();
+
+    for (auto& name : dump_file_list) {
+      if (str.find(name) != std::string::npos) {
+        return true;
+      }
+    }
+
+    return false;
   }
 };
 }  // namespace Charly

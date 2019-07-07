@@ -191,6 +191,21 @@ AST::AbstractNode* Parser::parse_ignore_const() {
   return block->as<AST::AbstractNode>();
 }
 
+AST::AbstractNode* Parser::parse_import() {
+  Location location_start = this->token.location;
+  this->advance();
+
+  std::string import_path;
+  std::optional<Location> location_end;
+
+  this->expect_token(TokenType::String, [&]() {
+    import_path = this->token.value;
+    location_end = this->token.location;
+  });
+
+  return (new AST::Import(import_path))->at(location_start, location_end);
+}
+
 AST::AbstractNode* Parser::parse_statement() {
   Location location_start = this->token.location;
 
@@ -1355,6 +1370,9 @@ AST::AbstractNode* Parser::parse_literal() {
       }
 
       return node;
+    }
+    case TokenType::Import: {
+      return this->parse_import();
     }
     default: {
       this->unexpected_token("expression");

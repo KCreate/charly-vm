@@ -61,6 +61,7 @@ enum TokenType : uint8_t {
   Guard,
   If,
   IgnoreConst,
+  Import,
   Let,
   Loop,
   Match,
@@ -175,6 +176,7 @@ static std::string kTokenTypeStrings[] = {
   "Guard",
   "If",
   "IgnoreConst",
+  "Import",
   "Let",
   "Loop",
   "Match",
@@ -264,6 +266,7 @@ static const std::unordered_map<std::string, TokenType> kTokenKeywordsAndLiteral
   {"guard", TokenType::Guard},
   {"if", TokenType::If},
   {"ignoreconst", TokenType::IgnoreConst},
+  {"import", TokenType::Import},
   {"let", TokenType::Let},
   {"loop", TokenType::Loop},
   {"match", TokenType::Match},
@@ -335,7 +338,7 @@ struct Token {
             this->type == TokenType::Plus || this->type == TokenType::Minus || this->type == TokenType::BitNOT ||
             this->type == TokenType::Not || this->type == TokenType::LeftParen || this->type == TokenType::LeftCurly ||
             this->type == TokenType::LeftBracket || this->type == TokenType::AtSign ||
-            this->type == TokenType::RightArrow || this->type == TokenType::Match);
+            this->type == TokenType::RightArrow || this->type == TokenType::Match) || this->type == TokenType::Import;
   }
 
   template <class T>

@@ -24,12 +24,32 @@
  * SOFTWARE.
  */
 
+#include <unordered_map>
+
 #include "defines.h"
+#include "value.h"
 
 #pragma once
 
 namespace Charly {
 namespace Internals {
+
+// Standard charly libraries
+static const std::unordered_map<std::string, std::string> kStandardCharlyLibraries = {
+
+    // Internal primitives
+    {"_charly_object", "src/stdlib/primitives/object.ch"},
+    {"_charly_class", "src/stdlib/primitives/class.ch"},
+    {"_charly_array", "src/stdlib/primitives/array.ch"},
+    {"_charly_string", "src/stdlib/primitives/string.ch"},
+    {"_charly_number", "src/stdlib/primitives/number.ch"},
+    {"_charly_function", "src/stdlib/primitives/function.ch"},
+    {"_charly_generator", "src/stdlib/primitives/generator.ch"},
+
+    // Libraries
+    {"_charly_math", "src/stdlib/libs/math.ch"}
+
+};
 
 // The signature of an internal method
 struct InternalMethodSignature {
@@ -38,7 +58,15 @@ struct InternalMethodSignature {
   uintptr_t func_pointer;
 };
 
-VALUE require(VM& vm, VALUE filename);
+#define CHECK(T, V)                                             \
+  {                                                             \
+    if (!charly_is_##T(V)) {                                    \
+      vm.throw_exception("Expected argument " #V " to be " #T); \
+      return kNull;                                             \
+    }                                                           \
+  }
+
+VALUE import(VM& vm, VALUE filename);
 VALUE get_method(VM& vm, VALUE argument);
 VALUE write(VM& vm, VALUE value);
 VALUE getn(VM& vm);

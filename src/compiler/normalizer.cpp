@@ -580,6 +580,19 @@ AST::AbstractNode* Normalizer::visit_identifier(AST::Identifier* node, VisitCont
   return node;
 }
 
+AST::AbstractNode* Normalizer::visit_import(AST::Import* node, VisitContinue) {
+  AST::AbstractNode* new_node = new AST::Call(
+    new AST::Identifier("__charly_internal_import"),
+    new AST::NodeList(
+      new AST::String(node->name)
+    )
+  );
+
+  delete node;
+
+  return new_node;
+}
+
 AST::AbstractNode* Normalizer::wrap_in_block(AST::AbstractNode* node) {
   if (node->type() != AST::kTypeBlock) {
     node = (new AST::Block({node}))->at(node);
