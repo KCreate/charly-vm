@@ -274,16 +274,11 @@ AST::AbstractNode* Parser::parse_statement() {
       AST::AbstractNode* new_node = (
           new AST::LocalInitialisation(
             node->name,
-            new AST::Call(
-              new AST::Identifier("__charly_internal_import"),
-              new AST::NodeList(
-                new AST::String(node->name)
-              )
-            ), true
+            node,
+            true
           )
       )->at(node);
 
-      delete node;
       return new_node;
     }
     case TokenType::If: {

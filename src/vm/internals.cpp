@@ -52,7 +52,7 @@ static std::unordered_map<std::string, InternalMethodSignature> kMethodSignature
 #import "libs/math.def"
 
     // VM Barebones
-    DEFINE_INTERNAL_METHOD(import, 1),
+    DEFINE_INTERNAL_METHOD(import, 2),
     DEFINE_INTERNAL_METHOD(write, 1),
     DEFINE_INTERNAL_METHOD(getn, 0),
     DEFINE_INTERNAL_METHOD(set_primitive_object, 1),
@@ -66,36 +66,68 @@ static std::unordered_map<std::string, InternalMethodSignature> kMethodSignature
     DEFINE_INTERNAL_METHOD(set_primitive_null, 1),
 };
 
-VALUE import(VM& vm, VALUE vfilename) {
+VALUE import(VM& vm, VALUE include, VALUE source) {
   // TODO: Deallocate stuff on error
 
-  // Make sure we got a string as filename
-  if (!charly_is_string(vfilename)) {
-    vm.throw_exception("import: expected argument 1 to be a string");
-    return kNull;
-  }
+  CHECK(string, include);
+  CHECK(string, source);
 
-  char* str_data = charly_string_data(vfilename);
-  uint32_t str_length = charly_string_length(vfilename);
-  std::string filename = std::string(str_data, str_length);
+  std::string include_filename = charly_string_std(include);
+  std::string source_filename = charly_string_std(source);
 
-  // TODO: Allow to import files from file urls relative to the executed file
   // Check if we are importing a standard charly library
-  if (kStandardCharlyLibraries.find(filename) != kStandardCharlyLibraries.end()) {
-    filename = std::string(std::getenv("CHARLYVMDIR")) + "/" + kStandardCharlyLibraries.at(filename);
+  bool import_library = false;
+  if (kStandardCharlyLibraries.find(include_filename) != kStandardCharlyLibraries.end()) {
+    include_filename = std::string(std::getenv("CHARLYVMDIR")) + "/" + kStandardCharlyLibraries.at(include_filename);
+    import_library = true;
   }
 
-  std::ifstream inputfile(filename);
+  // Delete the filename of the source file
+  std::string source_folder(source_filename);
+  source_folder.erase(source_filename.rfind('/'));
+
+  // Resolve the input file path
+  if (!import_library) {
+
+    // Importing the same file
+    if (include_filename == ".") {
+      include_filename = source_filename;
+    } else {
+      // Other include strategies
+      switch (include_filename[0]) {
+
+        // Absolute paths
+        case '/': {
+          // Do nothing to the filepath
+          break;
+        }
+
+        // Relative paths
+        case '.':  {
+          include_filename = source_folder + "/" + include_filename;
+          break;
+        }
+
+        // Everything else
+        // FIXME: Make sure we catch all edge cases
+        default: {
+          include_filename = source_folder + "/" + include_filename;
+        }
+      }
+    }
+  }
+
+  std::ifstream inputfile(include_filename);
   if (!inputfile.is_open()) {
-    vm.throw_exception("import: could not open " + filename);
+    vm.throw_exception("import: could not open " + include_filename);
     return kNull;
   }
   std::string source_string((std::istreambuf_iterator<char>(inputfile)), std::istreambuf_iterator<char>());
 
-  auto cresult = vm.context.compiler_manager.compile(filename, source_string);
+  auto cresult = vm.context.compiler_manager.compile(include_filename, source_string);
 
   if (!cresult.has_value()) {
-    vm.throw_exception("import: could not compile " + filename);
+    vm.throw_exception("import: could not compile " + include_filename);
     return kNull;
   }
 

@@ -1,9 +1,4 @@
-import math
+const test = import "test-require.ch"
+const test2 = import "./../test.ch"
 
-10.times(->{
-  100.times(->{
-    write(["#", "*", ".", " "][math.rand(0, 4)])
-  })
-
-  write("\n")
-})
+test2()

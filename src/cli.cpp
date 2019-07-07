@@ -24,8 +24,8 @@
  * SOFTWARE.
  */
 
+#include <filesystem>
 #include <fstream>
-#include <iostream>
 
 #include "charly.h"
 #include "cli.h"
@@ -60,8 +60,10 @@ int CLI::run() {
 
   this->flags.dump_files_include.push_back(this->flags.arguments[0]);
 
+  std::string inputfile_path(std::string(std::getenv("PWD")) + "/" + this->flags.arguments[0]);
+
   // Read the userfile
-  std::ifstream inputfile(this->flags.arguments[0]);
+  std::ifstream inputfile(inputfile_path);
   if (!inputfile.is_open()) {
     std::cerr << "Could not open file" << '\n';
     return 1;
@@ -85,8 +87,8 @@ int CLI::run() {
   std::string prelude_string((std::istreambuf_iterator<char>(preludefile)), std::istreambuf_iterator<char>());
 
   Compilation::CompilerManager cmanager(this->flags);
-  auto cresult_userfile = cmanager.compile(this->flags.arguments[0], source_string);
-  auto cresult_prelude = cmanager.compile("prelude.ch", prelude_string);
+  auto cresult_userfile = cmanager.compile(inputfile_path, source_string);
+  auto cresult_prelude = cmanager.compile(preludepath, prelude_string);
 
   if (!cresult_userfile.has_value()) {
     return 1;

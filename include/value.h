@@ -732,6 +732,15 @@ inline uint32_t charly_string_length(VALUE value) {
   return 0xFFFFFFFF;
 }
 
+__attribute__((always_inline))
+inline std::string charly_string_std(VALUE value) {
+  char* data = charly_string_data(value);
+  uint32_t length = charly_string_length(value);
+
+  if (!data) return "not a string";
+  return std::string(data, length);
+}
+
 // Returns a pointer to the length field of an immediate string
 // Returns a null pointer if the value is not a istring
 inline uint8_t* charly_istring_length_field(VALUE* value) {

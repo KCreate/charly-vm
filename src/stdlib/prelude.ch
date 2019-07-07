@@ -10,7 +10,7 @@ ignoreconst {
   let __internal_standard_libs
 
   // Import method for loading other files and libraries
-  __charly_internal_import = ->(path) {
+  __charly_internal_import = ->(path, source) {
 
     // Search for the path in the list of standard libraries
     let is_stdlib = false
@@ -29,7 +29,7 @@ ignoreconst {
       return __internal_standard_libs[path]
     }
 
-    __internal_import(path)
+    __internal_import(path, source)
   }
 
   // The names of all standard libraries that come with charly

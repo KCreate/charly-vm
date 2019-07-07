@@ -581,10 +581,18 @@ AST::AbstractNode* Normalizer::visit_identifier(AST::Identifier* node, VisitCont
 }
 
 AST::AbstractNode* Normalizer::visit_import(AST::Import* node, VisitContinue) {
+
+  // Get the location of this call
+  std::optional<Location> loc = node->location_start;
+  std::string source_filename = "(in buffer)";
+
+  if (loc) source_filename = loc.value().filename;
+
   AST::AbstractNode* new_node = new AST::Call(
     new AST::Identifier("__charly_internal_import"),
     new AST::NodeList(
-      new AST::String(node->name)
+      new AST::String(node->name),
+      new AST::String(source_filename)
     )
   );
 

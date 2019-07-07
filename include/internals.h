@@ -66,7 +66,7 @@ struct InternalMethodSignature {
     }                                                           \
   }
 
-VALUE import(VM& vm, VALUE filename);
+VALUE import(VM& vm, VALUE filename, VALUE source);
 VALUE get_method(VM& vm, VALUE argument);
 VALUE write(VM& vm, VALUE value);
 VALUE getn(VM& vm);
