@@ -33,7 +33,7 @@
 #include "managedcontext.h"
 #include "vm.h"
 
-#include "libs/math.h"
+#include "libs/math/math.h"
 
 using namespace std;
 
@@ -49,7 +49,7 @@ namespace Internals {
 static std::unordered_map<std::string, InternalMethodSignature> kMethodSignatures = {
 
 // Libs
-#import "libs/math.def"
+#import "libs/math/math.def"
 
     // VM Barebones
     DEFINE_INTERNAL_METHOD(import, 2),

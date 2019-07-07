@@ -25,7 +25,7 @@
  */
 
 #include "defines.h"
-#include "../../../include/internals.h"
+#include "internals.h"
 
 #pragma once
 
