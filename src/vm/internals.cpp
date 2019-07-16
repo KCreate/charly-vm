@@ -66,10 +66,6 @@ static std::unordered_map<std::string, InternalMethodSignature> kMethodSignature
     DEFINE_INTERNAL_METHOD(set_primitive_null, 1),
 };
 
-static void test_destructor(uintptr_t data) {
-  std::cout << "destructor received: " << (void*)data << std::endl;
-}
-
 VALUE import(VM& vm, VALUE include, VALUE source) {
   // TODO: Deallocate stuff on error
 
@@ -78,10 +74,6 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
 
   std::string include_filename = charly_string_std(include);
   std::string source_filename = charly_string_std(source);
-
-  if (include_filename == "__charly_get_debug_cpointer")
-    return vm.create_cpointer(0xDEADBEEF69420187,
-                              reinterpret_cast<uint64_t>(&(Charly::Internals::test_destructor)));
 
   // Check if we are importing a standard charly library
   bool import_library = false;
@@ -99,7 +91,8 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
 
     // Importing the same file
     if (include_filename == ".") {
-      include_filename = source_filename;
+      vm.throw_exception("import: could not open '.'");
+      return kNull;
     } else {
       // Other include strategies
       switch (include_filename[0]) {
