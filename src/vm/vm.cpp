@@ -871,7 +871,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
 
     // Make sure the klass field is a Class value
     if (!charly_is_class(val_klass)) {
-      this->panic(Status::ObjectClassNotAClass);
+      val_klass = this->primitive_object;
     }
 
     Class* klass = charly_as_class(val_klass);
