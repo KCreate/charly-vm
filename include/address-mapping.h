@@ -24,43 +24,41 @@
  * SOFTWARE.
  */
 
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
-#include <functional>
-#include <iostream>
+#include <tuple>
+#include <vector>
+
+#include "defines.h"
+#include "instructionblock.h"
 
 #pragma once
 
 namespace Charly {
-typedef uint64_t VALUE;
-typedef uint16_t STATUS;
 
-class VM;
-struct Frame;
-struct CatchTable;
-class InstructionBlock;
+/*
+ * Keeps track of which addresses belong to which files
+ * */
+class AddressMapping {
+private:
+  std::vector<std::tuple<uint8_t*, uint8_t*, std::string>> mappings;
 
-class CLI;
-struct RunFlags;
-struct Context;
-class SourceFile;
-class MemoryBlock;
-class UTF8Buffer;
-class SymbolTable;
-class StringPool;
-class AddressMapping;
+public:
 
-enum Opcode : uint8_t;
+  // Register an instructionblocks address range under a specific filepath
+  inline void register_instructionblock(InstructionBlock* block, const std::string& path) {
+    uint8_t* begin = block->data;
+    uint8_t* end = begin + block->capacity;
+    this->mappings.push_back({begin, end, path});
+  }
 
-struct MemoryCell;
-class MemoryManager;
-class ManagedContext;
+  // Return the filepath an address belongs to
+  inline std::optional<std::string> resolve_address(uint8_t* address) {
+    for (const auto& a : this->mappings) {
+      if (address >= std::get<0>(a) && address < std::get<1>(a)) {
+        return std::get<2>(a);
+      }
+    }
 
-struct Basic;
-struct Object;
-struct Array;
-struct String;
-struct Function;
-struct CFunction;
+    return std::nullopt;
+  }
+};
 }  // namespace Charly

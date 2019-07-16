@@ -311,6 +311,10 @@ public:
   VMContext context;
   VMInstructionProfile instruction_profile;
 
+  inline uint8_t* get_ip() {
+    return this->ip;
+  }
+
 private:
   GarbageCollector gc;
 

@@ -29,6 +29,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "address-mapping.h"
 #include "ast.h"
 #include "compiler.h"
 #include "disassembler.h"
@@ -58,5 +59,6 @@ private:
 public:
   SymbolTable symtable;
   StringPool stringpool;
+  AddressMapping address_mapping;
 };
 }  // namespace Charly::Compilation

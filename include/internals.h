@@ -70,6 +70,7 @@ VALUE import(VM& vm, VALUE filename, VALUE source);
 VALUE get_method(VM& vm, VALUE argument);
 VALUE write(VM& vm, VALUE value);
 VALUE getn(VM& vm);
+VALUE dirname(VM& vm);
 VALUE set_primitive_object(VM& vm, VALUE klass);
 VALUE set_primitive_class(VM& vm, VALUE klass);
 VALUE set_primitive_array(VM& vm, VALUE klass);

@@ -55,6 +55,8 @@ static std::unordered_map<std::string, InternalMethodSignature> kMethodSignature
     DEFINE_INTERNAL_METHOD(import, 2),
     DEFINE_INTERNAL_METHOD(write, 1),
     DEFINE_INTERNAL_METHOD(getn, 0),
+    DEFINE_INTERNAL_METHOD(dirname, 0),
+
     DEFINE_INTERNAL_METHOD(set_primitive_object, 1),
     DEFINE_INTERNAL_METHOD(set_primitive_class, 1),
     DEFINE_INTERNAL_METHOD(set_primitive_array, 1),
@@ -167,6 +169,21 @@ VALUE getn(VM& vm) {
   double num;
   vm.context.in_stream >> num;
   return charly_create_number(num);
+}
+
+VALUE dirname(VM& vm) {
+  uint8_t* ip = vm.get_ip();
+  std::optional<std::string> lookup_result = vm.context.compiler_manager.address_mapping.resolve_address(ip);
+
+  if (!lookup_result) {
+    vm.throw_exception("dirname: this address does not belong to a file");
+    return kNull;
+  }
+
+  std::string filename = lookup_result.value();
+  filename.erase(filename.rfind('/'));
+
+  return vm.create_string(filename.c_str(), filename.size());
 }
 
 VALUE set_primitive_object(VM& vm, VALUE value) {

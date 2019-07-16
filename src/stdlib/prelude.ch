@@ -58,7 +58,7 @@ ignoreconst {
     null
   }
 
-  // Setup io container of Charly object
+  // Setup the charly object
   Charly.io = {
     write,
     print,
@@ -66,13 +66,7 @@ ignoreconst {
       write(msg)
       return __internal_getn()
     },
-    internal: {
-      write: __internal_write,
-      print: ->(v) {
-        __internal_write(v)
-        __internal_write("\n")
-      }
-    }
+    dirname: __internal_get_method("dirname")
   }
 
   // Method to modify the primitive objects

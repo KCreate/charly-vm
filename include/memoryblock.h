@@ -34,6 +34,8 @@
 namespace Charly {
 
 class MemoryBlock {
+friend class AddressMapping;
+
   static constexpr const size_t kInitialCapacity = 64;
   static constexpr const float kGrowthFactor = 2;
 

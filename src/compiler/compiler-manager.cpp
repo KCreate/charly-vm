@@ -122,6 +122,9 @@ std::optional<CompilerResult> CompilerManager::compile(const std::string& filena
     }
   }
 
+  // Register this blocks address range
+  this->address_mapping.register_instructionblock(compiler_result.instructionblock.value(), filename);
+
   return compiler_result;
 }
 
