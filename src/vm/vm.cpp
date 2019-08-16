@@ -878,7 +878,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
     auto result = this->findprototypevalue(klass, symbol);
 
     if (result.has_value()) {
-      return *result;
+      return result.value();
     }
   }
 
@@ -1006,7 +1006,7 @@ std::optional<VALUE> VM::findprototypevalue(Class* klass, VALUE symbol) {
         auto presult = this->findprototypevalue(pklass, symbol);
 
         if (presult.has_value()) {
-          result = presult;
+          return presult;
         }
       }
     }
