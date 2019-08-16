@@ -1,1 +1,1 @@
-print(Charly.io.dirname() + "/foo.txt")
+print("hello world")

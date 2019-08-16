@@ -86,89 +86,13 @@ ignoreconst {
     }
   }
 
-  Object = set_primitive_object(class Object extends Value {});
+  Object = set_primitive_object((import "primitives/object.ch")(Value));
+  Number = set_primitive_number((import "primitives/number.ch")(Value));
+  Array = set_primitive_array((import "primitives/array.ch")(Value));
   Class = set_primitive_class(class Class extends Value {});
   String = set_primitive_string(class String extends Value {});
   Function = set_primitive_function(class Function extends Value {});
   Generator = set_primitive_generator(class Generator extends Value {});
   Boolean = set_primitive_boolean(class Boolean extends Value {});
   Null = set_primitive_null(class Null extends Value {});
-
-  Array = class Array extends Value {
-    func each(cb) {
-      let i = 0
-
-      while i < @length {
-        cb(self[i], i, self)
-        i += 1
-      }
-
-      self
-    }
-
-    func map(cb) {
-      let i = 0
-      const new_array = []
-
-      while i < @length {
-        new_array << cb(self[i], i, self)
-        i += 1
-      }
-
-      new_array
-    }
-
-    func filter(cb) {
-      let i = 0
-      const new_array = []
-
-      while i < @length {
-        const value = self[i]
-        const include = cb(value, i, self)
-        if include new_array << value
-        i += 1
-      }
-
-      new_array
-    }
-
-    func reverse() {
-      let i = @length - 1
-      const new_array = []
-
-      while i >= 0 {
-        new_array << self[i]
-        i -= 1
-      }
-
-      new_array
-    }
-
-    func contains(search) {
-      let i = 0
-
-      while i < @length {
-        const value = self[i]
-        if (value == search) return true;
-        i += 1;
-      }
-
-      false
-    }
-  }
-  set_primitive_array(Array);
-
-  Number = class Number extends Value {
-    func times(cb) {
-      let i = 0
-
-      while i < self {
-        cb(i)
-        i += 1
-      }
-
-      null
-    }
-  }
-  set_primitive_number(Number);
 }
