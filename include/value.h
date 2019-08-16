@@ -254,7 +254,9 @@ struct CPointer {
   uintptr_t destructor;
 
   inline void clean() {
-    reinterpret_cast<void (*)(uintptr_t)>(this->destructor)(this->data);
+    if (this->destructor) {
+      reinterpret_cast<void (*)(uintptr_t)>(this->destructor)(this->data);
+    }
   }
 };
 
