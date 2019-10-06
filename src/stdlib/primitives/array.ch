@@ -129,15 +129,7 @@ export = ->(Base) {
     }
 
     func reverse {
-      let i = @length - 1
-      const new_array = []
-
-      while i >= 0 {
-        new_array << self[i]
-        i -= 1
-      }
-
-      new_array
+      _.reverse(self)
     }
 
     func contains(search) {

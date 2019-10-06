@@ -31,6 +31,7 @@
 #include <random>
 #include "math.h"
 #include "vm.h"
+#include "managedcontext.h"
 
 using namespace std;
 
@@ -96,7 +97,27 @@ VALUE remove(VM& vm, VALUE a, VALUE i) {
 
 VALUE reverse(VM& vm, VALUE a) {
   CHECK(array, a);
-  return kNull;
+
+  Array* array = charly_as_array(a);
+  if (array->data->size() == 0) {
+
+  }
+
+  Charly::ManagedContext lalloc(vm);
+  Array* new_array = charly_as_array(lalloc.create_array(array->data->size()));
+
+  // Check if we have any elements at all
+  if (array->data->size() == 0) {
+    return charly_create_pointer(new_array);
+  }
+
+  auto it = array->data->rbegin();
+  while (it != array->data->rend()) {
+    new_array->data->push_back(*it);
+    it++;
+  }
+
+  return charly_create_pointer(new_array);
 }
 
 VALUE flatten(VM& vm, VALUE a) {
