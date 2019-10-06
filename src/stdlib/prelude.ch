@@ -52,8 +52,8 @@ ignoreconst {
   print = func print {
     arguments.each(->(v) {
       __internal_write(v)
-      __internal_write("\n")
     })
+    __internal_write("\n")
 
     null
   }

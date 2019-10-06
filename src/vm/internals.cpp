@@ -34,6 +34,7 @@
 #include "vm.h"
 
 #include "libs/math/math.h"
+#include "libs/primitives/array.h"
 
 using namespace std;
 
@@ -49,6 +50,7 @@ namespace Internals {
 static std::unordered_map<std::string, InternalMethodSignature> kMethodSignatures = {
 
 // Libs
+#import "libs/primitives/array.def"
 #import "libs/math/math.def"
 
     // VM Barebones
