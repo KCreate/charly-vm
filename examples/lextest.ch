@@ -1,20 +1,32 @@
-const arr = [1, 2, 3]
+class Factor {
+  property value
+}
 
-arr.insert(3, 20)
-arr.insert(2, 100)
-arr.insert(0, 200)
+class Add {
+  property left
+  property right
+}
 
-let sum = 0
+class Multiply {
+  property left
+  property right
+}
 
-sum = arr.sum(0)
-print(arr)
-print(sum)
+const x = Factor(20)
+const l = Add(x, Factor(5))
+const r = Add(x, Factor(-5))
+const m = Multiply(l, r)
 
-arr.remove(4)
-arr.remove(0)
-arr.remove(1)
+func binomial(t) {
+  const ops = []
 
-sum = arr.sum(0)
+  ops << Factor(t.left.left.value * t.left.left.value)
+  ops << Factor(t.left.left.value * t.right.right.value)
+  ops << Factor(t.left.right.value * t.right.left.value)
+  ops << Factor(t.left.right.value * t.right.right.value)
 
-print(arr)
-print(sum)
+  ops
+}
+
+print(m)
+print(binomial(m))

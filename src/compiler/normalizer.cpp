@@ -439,7 +439,9 @@ AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue
 
   // Initialize member properties
   for (auto& member_init : node->self_initialisations) {
-    body->prepend_node(new AST::MemberAssignment(new AST::Self(), member_init, new AST::Identifier(member_init)));
+    AST::MemberAssignment* assignment = new AST::MemberAssignment(new AST::Self(), member_init, new AST::Identifier(member_init));
+    assignment->yielded_value_needed = false;
+    body->prepend_node(assignment);
   }
 
   bool mark_func_as_generator_backup = this->mark_func_as_generator;
@@ -519,6 +521,33 @@ AST::AbstractNode* Normalizer::visit_class(AST::Class* node, VisitContinue cont)
       this->push_info(static_symbols[symbol], "First declaration appeared here");
     }
     static_symbols.emplace(symbol, static_property);
+  }
+
+  // if there is no user defined constructor we inject a default constructor
+  // that initializes all the member variables
+  if (node->constructor->type() == AST::kTypeEmpty) {
+
+    std::vector<std::string> member_names;
+
+    for (auto member_property : node->member_properties->children) {
+      AST::Identifier* as_ident = member_property->as<AST::Identifier>();
+      member_names.push_back(as_ident->name);
+    }
+
+    AST::Function* constructor = new AST::Function(
+      "constructor",
+      member_names,
+      member_names,
+      new AST::Block({
+
+      }),
+      false
+    );
+
+    constructor = this->visit_function(constructor, cont)->as<AST::Function>();
+
+    delete node->constructor;
+    node->constructor = constructor;
   }
 
   return node;
