@@ -72,7 +72,26 @@ VALUE insert(VM& vm, VALUE a, VALUE i, VALUE v) {
 VALUE remove(VM& vm, VALUE a, VALUE i) {
   CHECK(array, a);
   CHECK(number, i);
-  return kNull;
+
+  Array* array = charly_as_array(a);
+  uint32_t index = charly_number_to_uint32(i);
+
+  // Wrap around negative indices
+  if (index < 0) {
+    index += array->data->size();
+  }
+
+  // Out-of-bounds check
+  if (index >= array->data->size() || index < 0) {
+    vm.throw_exception("Index out of bounds");
+    return kNull;
+  }
+
+  // Insert the element into the array
+  auto it = array->data->begin();
+  array->data->erase(it + index);
+
+  return charly_create_pointer(array);
 }
 
 VALUE reverse(VM& vm, VALUE a) {

@@ -98,6 +98,11 @@ export = ->(Base) {
       self
     }
 
+    func remove(index) {
+      _.remove(self, index)
+      self
+    }
+
     func iterate(callback) {
       let i = 0
 
