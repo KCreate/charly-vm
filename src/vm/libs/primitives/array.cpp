@@ -47,7 +47,7 @@ VALUE insert(VM& vm, VALUE a, VALUE i, VALUE v) {
   int32_t index = charly_number_to_int32(i);
 
   // Insert at end of array
-  if ((uint32_t)index == array->data->size()) {
+  if (static_cast<uint32_t>(index) == array->data->size()) {
     array->data->push_back(v);
     return charly_create_pointer(array);
   }
@@ -58,7 +58,7 @@ VALUE insert(VM& vm, VALUE a, VALUE i, VALUE v) {
   }
 
   // Out-of-bounds check
-  if ((uint32_t)index >= array->data->size() || index < 0) {
+  if (static_cast<uint32_t>(index) >= array->data->size() || index < 0) {
     vm.throw_exception("Index out of bounds");
     return kNull;
   }
@@ -83,7 +83,7 @@ VALUE remove(VM& vm, VALUE a, VALUE i) {
   }
 
   // Out-of-bounds check
-  if ((uint32_t)index >= array->data->size() || index < 0) {
+  if (static_cast<uint32_t>(index) >= array->data->size() || index < 0) {
     vm.throw_exception("Index out of bounds");
     return kNull;
   }
@@ -183,7 +183,7 @@ VALUE range(VM& vm, VALUE a, VALUE s, VALUE c) {
     }
 
     // No error on positive out-of-bounds read
-    if ((uint32_t)index >= array->data->size()) {
+    if (static_cast<uint32_t>(index) >= array->data->size()) {
       break;
     }
 
