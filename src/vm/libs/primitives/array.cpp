@@ -44,10 +44,10 @@ VALUE insert(VM& vm, VALUE a, VALUE i, VALUE v) {
   CHECK(number, i);
 
   Array* array = charly_as_array(a);
-  uint32_t index = charly_number_to_uint32(i);
+  int32_t index = charly_number_to_int32(i);
 
   // Insert at end of array
-  if (index == array->data->size()) {
+  if ((uint32_t)index == array->data->size()) {
     array->data->push_back(v);
     return charly_create_pointer(array);
   }
@@ -58,7 +58,7 @@ VALUE insert(VM& vm, VALUE a, VALUE i, VALUE v) {
   }
 
   // Out-of-bounds check
-  if (index >= array->data->size() || index < 0) {
+  if ((uint32_t)index >= array->data->size() || index < 0) {
     vm.throw_exception("Index out of bounds");
     return kNull;
   }
@@ -75,7 +75,7 @@ VALUE remove(VM& vm, VALUE a, VALUE i) {
   CHECK(number, i);
 
   Array* array = charly_as_array(a);
-  uint32_t index = charly_number_to_uint32(i);
+  int32_t index = charly_number_to_int32(i);
 
   // Wrap around negative indices
   if (index < 0) {
@@ -83,7 +83,7 @@ VALUE remove(VM& vm, VALUE a, VALUE i) {
   }
 
   // Out-of-bounds check
-  if (index >= array->data->size() || index < 0) {
+  if ((uint32_t)index >= array->data->size() || index < 0) {
     vm.throw_exception("Index out of bounds");
     return kNull;
   }
@@ -161,7 +161,37 @@ VALUE range(VM& vm, VALUE a, VALUE s, VALUE c) {
   CHECK(array, a);
   CHECK(number, s);
   CHECK(number, c);
-  return kNull;
+
+  Array* array = charly_as_array(a);
+  int32_t start = charly_number_to_uint32(s);
+  uint32_t count = charly_number_to_uint32(c);
+
+  Charly::ManagedContext lalloc(vm);
+  Array* new_array = charly_as_array(lalloc.create_array(count));
+
+  uint32_t offset = 0;
+  while (offset < count) {
+    int32_t index = start + offset;
+
+    // Wrap negative indices
+    if (index < 0) {
+      index += array->data->size();
+      if (index < 0) {
+        offset++;
+        continue;
+      }
+    }
+
+    // No error on positive out-of-bounds read
+    if ((uint32_t)index >= array->data->size()) {
+      break;
+    }
+
+    new_array->data->push_back(array->data->at(index));
+    offset++;
+  }
+
+  return charly_create_pointer(new_array);
 }
 
 }  // namespace Array

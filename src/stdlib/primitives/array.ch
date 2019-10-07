@@ -136,6 +136,18 @@ export = ->(Base) {
       _.flatten(self)
     }
 
+    func index(element, offset) {
+      _.index(self, element, offset)
+    }
+
+    func rindex(element, offset) {
+      _.rindex(self, element, offset)
+    }
+
+    func range(start, count) {
+      _.range(self, start, count)
+    }
+
     func contains(search) {
       let i = 0
 

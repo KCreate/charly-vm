@@ -1,3 +1,2 @@
-print([].flatten())
-print([[[[1, 2, 3]]]].flatten())
-print([[[1, 2, 3], [[[[[[[6, 7, 8]]]]]]]]].flatten())
+const arr = [1, 2, 3, 4, 5]
+print(arr.range(-555, 1000))
