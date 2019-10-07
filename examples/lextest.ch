@@ -1,1 +1,3 @@
-print([1, 2, 3, 4, 5, 6, 7].reverse())
+print([].flatten())
+print([[[[1, 2, 3]]]].flatten())
+print([[[1, 2, 3], [[[[[[[6, 7, 8]]]]]]]]].flatten())

@@ -122,7 +122,25 @@ VALUE reverse(VM& vm, VALUE a) {
 
 VALUE flatten(VM& vm, VALUE a) {
   CHECK(array, a);
-  return kNull;
+
+  Array* array = charly_as_array(a);
+
+  Charly::ManagedContext lalloc(vm);
+  Array* new_array = charly_as_array(lalloc.create_array(array->data->size()));
+
+  std::function<void(Array*)> visit = [&visit, new_array](const Array* source) {
+    for (VALUE item : *(source->data)) {
+      if (charly_is_array(item)) {
+        visit(charly_as_array(item));
+      } else {
+        new_array->data->push_back(item);
+      }
+    }
+  };
+
+  visit(array);
+
+  return charly_create_pointer(new_array);
 }
 
 VALUE index(VM& vm, VALUE a, VALUE i, VALUE o) {

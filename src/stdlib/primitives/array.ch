@@ -132,6 +132,10 @@ export = ->(Base) {
       _.reverse(self)
     }
 
+    func flatten {
+      _.flatten(self)
+    }
+
     func contains(search) {
       let i = 0
 
