@@ -147,7 +147,40 @@ VALUE index(VM& vm, VALUE a, VALUE i, VALUE o) {
   CHECK(array, a);
   CHECK(number, i);
   CHECK(number, o);
-  return kNull;
+
+  Array* array = charly_as_array(a);
+  VALUE item = i;
+  int32_t offset = charly_number_to_int32(o);
+
+  int32_t found_offset = -1;
+
+  // Wrap around negative indices
+  if (offset < 0) {
+    offset += array->data->size();
+    if (offset < 0) {
+      return charly_create_number(-1);
+    }
+  }
+
+  // Iterate through the array
+  while (static_cast<uint32_t>(offset) < array->data->size()) {
+    VALUE v = array->data->at(offset);
+
+    // Compare the object values
+    if (item == v) {
+      found_offset = offset;
+      break;
+    }
+
+    if (vm.eq(item, v)) {
+      found_offset = offset;
+      break;
+    }
+
+    offset++;
+  }
+
+  return charly_create_number(found_offset);
 }
 
 VALUE rindex(VM& vm, VALUE a, VALUE i, VALUE o) {
