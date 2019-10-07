@@ -1,5 +1,5 @@
-const arr = [1, 2, 3, 4, 5]
+const arr = [1, 1]
 
-const i = arr.index(5, -2)
+const i = arr.rindex(1)
 
 print(i)

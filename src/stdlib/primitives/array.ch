@@ -142,7 +142,7 @@ export = ->(Base) {
     }
 
     func rindex(element) {
-      const offset = $1 || 0
+      const offset = $1 || -1
       _.rindex(self, element, offset)
     }
 
