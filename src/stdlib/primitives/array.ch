@@ -136,11 +136,13 @@ export = ->(Base) {
       _.flatten(self)
     }
 
-    func index(element, offset) {
+    func index(element) {
+      const offset = $1 || 0
       _.index(self, element, offset)
     }
 
-    func rindex(element, offset) {
+    func rindex(element) {
+      const offset = $1 || 0
       _.rindex(self, element, offset)
     }
 

@@ -172,7 +172,7 @@ VALUE index(VM& vm, VALUE a, VALUE i, VALUE o) {
       break;
     }
 
-    if (vm.eq(item, v)) {
+    if (vm.eq(item, v) == kTrue) {
       found_offset = offset;
       break;
     }
