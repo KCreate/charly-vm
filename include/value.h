@@ -1343,6 +1343,12 @@ inline VALUE charly_create_pointer(void* ptr) {
   return kSignaturePointer | (kMaskPointer & reinterpret_cast<int64_t>(ptr));
 }
 
+// External libs interface
+struct CharlyLibFuncList {
+  std::vector<std::string> names;
+};
+
+
 // clang-format on
 
 }  // namespace Charly

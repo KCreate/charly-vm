@@ -137,6 +137,7 @@ public:
   VALUE create_object(uint32_t initial_capacity);
   VALUE create_array(uint32_t initial_capacity);
   VALUE create_string(const char* data, uint32_t length);
+  VALUE create_string(const std::string& str);
   VALUE create_weak_string(char* data, uint32_t length);
   VALUE create_empty_short_string();
   VALUE create_function(VALUE name,

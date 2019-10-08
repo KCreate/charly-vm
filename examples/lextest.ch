@@ -1,5 +1,7 @@
-const arr = [1, 1]
+const testlib = import "../libraries/testlib.lib"
 
-const i = arr.rindex(1)
+const add = testlib.add
+const sub = testlib.sub
 
-print(i)
+print(add(1, 2))
+print(sub(10, 5))

@@ -27,6 +27,7 @@
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
+#include "dlfcn.h"
 
 #include "gc.h"
 #include "internals.h"
@@ -117,6 +118,63 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
         // FIXME: Make sure we catch all edge cases
         default: { include_filename = source_folder + "/" + include_filename; }
       }
+    }
+  }
+
+  // Check if this is a compiled charly library
+  // In this case we return an object with all the methods
+  // registered in the library
+  if (include_filename.size() >= sizeof(".lib")) {
+
+    // Check if we got a *.lib file
+    if (!std::strcmp(include_filename.c_str() + include_filename.size() - 4, ".lib")) {
+      ManagedContext lalloc(vm);
+      Object* lib = charly_as_object(lalloc.create_object(8));
+
+      void* clib = dlopen(include_filename.c_str(), RTLD_LAZY);
+
+      if (clib == nullptr) {
+        vm.throw_exception("Could not open lib file " + include_filename);
+        return kNull;
+      }
+
+      // Load the function called __charly_func_list
+      // It returns a struct defined in the file value.h
+      // This struct contains the count and names of all methods
+      // defined in this library
+      void* __charly_func_list_ptr = dlsym(clib, "__charly_func_list");
+      CharlyLibFuncList* (*__charly_func_list)() = reinterpret_cast<CharlyLibFuncList* (*)()>(__charly_func_list_ptr);
+      if (__charly_func_list == nullptr) {
+        vm.throw_exception("Could not open lib manifest segment " + include_filename);
+        return kNull;
+      }
+
+      // Extract the method names from the library
+      CharlyLibFuncList* funclist = reinterpret_cast<CharlyLibFuncList*>(__charly_func_list());
+      Array* methodnames = charly_as_array(lalloc.create_array(funclist->names.size()));
+
+      uint32_t i = 0;
+      while (i < funclist->names.size()) {
+        std::string name = funclist->names[i];
+        methodnames->data->push_back(lalloc.create_string(name));
+
+        // While we are extracting the method names, we can create
+        // CFunction objects for the vm
+
+        CFunction* cfunc = charly_as_cfunction(lalloc.create_cfunction(
+          charly_create_symbol(name),
+          2,
+          reinterpret_cast<uintptr_t>(dlsym(clib, name.c_str()))
+        ));
+
+        lib->container->insert({vm.context.symtable(name), charly_create_pointer(cfunc)});
+
+        i++;
+      }
+
+      lib->container->insert({vm.context.symtable("method_names"), charly_create_pointer(methodnames)});
+
+      return charly_create_pointer(lib);
     }
   }
 
