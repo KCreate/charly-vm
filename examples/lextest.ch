@@ -1,3 +1,9 @@
-const lib = import "../libraries/testlib.lib"
+const l = import "../libraries/testlib.lib"
 
-print(lib.add_1(4))
+print(l.read())
+
+l.add(50)
+l.add(500)
+l.add(-350)
+
+print(l.read())

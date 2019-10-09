@@ -131,11 +131,28 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
       ManagedContext lalloc(vm);
       Object* lib = charly_as_object(lalloc.create_object(8));
 
+      // Check if there is already a resident copy of this library
+      //
+      // Opening with RTLD_NOLOAD doesn't load the library, it instead returns
+      // a library handle if it was already opened before and NULL
+      // if it was not
+      if (dlopen(include_filename.c_str(), RTLD_NOLOAD)) {
+        vm.throw_exception("Can't reopen lib file a second time " + include_filename);
+        return kNull;
+      }
+
       void* clib = dlopen(include_filename.c_str(), RTLD_LAZY);
 
       if (clib == nullptr) {
         vm.throw_exception("Could not open lib file " + include_filename);
         return kNull;
+      }
+
+      // Call the constructor of the library
+      void (*__charly_constructor)() = reinterpret_cast<void(*)()>(dlsym(clib, "__charly_constructor"));
+
+      if (__charly_constructor) {
+        __charly_constructor();
       }
 
       // Load the function called __charly_signatures
@@ -146,6 +163,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
       void* __charly_signatures_ptr = dlsym(clib, "__charly_signatures");
       CharlyLibSignatures* signatures = reinterpret_cast<CharlyLibSignatures*>(__charly_signatures_ptr);
       if (signatures == nullptr) {
+        dlclose(clib);
         vm.throw_exception("Could not open library signature section of " + include_filename);
         return kNull;
       }
@@ -172,7 +190,12 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
       // Add a CPointer object into the returned object to
       // make sure it gets closed once its not needed anymore
       void (*destructor)(void*) = [](void* clib) {
-        std::cout << "calling destructor of " << clib << std::endl;
+        void (*__charly_destructor)() = reinterpret_cast<void(*)()>(dlsym(clib, "__charly_destructor"));
+
+        if (__charly_destructor) {
+          __charly_destructor();
+        }
+
         dlclose(clib);
       };
       lib->container->insert({

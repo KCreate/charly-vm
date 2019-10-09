@@ -5,29 +5,38 @@
 
 using namespace Charly;
 
-/* ###--- Library Manifesto ---### */
+/* ###--- Manifest of userspace functions ---### */
 
 CHARLY_MANIFEST(
-  F(add_1, 1)
-  F(sub_1, 1)
-  F(mul_10, 1)
-  F(div_10, 1)
+  F(add, 1)
+  F(read, 0)
 )
 
-/* ###--- Library Methods ---### */
+/* ###--- Charly ---### */
 
-CHARLY_API(add_1, VALUE v, {
-  return charly_add_number(v, charly_create_number(1));
+int* counter;
+
+CHARLY_EXPOSE(__charly_constructor, () {
+  counter = (int*)malloc(sizeof(int));
+  std::cout << "allocated " << sizeof(int) << " bytes" << std::endl;
+  return kNull;
 })
 
-CHARLY_API(sub_1, VALUE v, {
-  return charly_sub_number(v, charly_create_number(1));
+CHARLY_EXPOSE(__charly_destructor, () {
+  free(counter);
+  std::cout << "freed " << sizeof(int) << " bytes" << std::endl;
+  return kNull;
 })
 
-CHARLY_API(mul_10, VALUE v, {
-  return charly_mul_number(v, charly_create_number(10));
+/* ###--- Userspace ---### */
+
+CHARLY_API_A(add, VALUE v, {
+  if (charly_is_number(v)) {
+    *counter += charly_int_to_int32(v);
+  }
+  return charly_create_number(*counter);
 })
 
-CHARLY_API(div_10, VALUE v, {
-  return charly_div_number(v, charly_create_number(10));
+CHARLY_API(read, {
+  return charly_create_number(*counter);
 })
