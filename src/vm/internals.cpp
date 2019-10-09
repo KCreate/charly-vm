@@ -160,7 +160,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
         // CFunction objects for the vm
         CFunction* cfunc = charly_as_cfunction(lalloc.create_cfunction(
           charly_create_symbol(name),
-          2,
+          1,
           dlsym(clib, name.c_str())
         ));
 
