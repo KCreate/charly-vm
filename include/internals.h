@@ -38,17 +38,19 @@ namespace Internals {
 static const std::unordered_map<std::string, std::string> kStandardCharlyLibraries = {
 
     // Internal primitives
-    {"_charly_object", "src/stdlib/primitives/object.ch"},
-    {"_charly_class", "src/stdlib/primitives/class.ch"},
     {"_charly_array", "src/stdlib/primitives/array.ch"},
-    {"_charly_string", "src/stdlib/primitives/string.ch"},
-    {"_charly_number", "src/stdlib/primitives/number.ch"},
+    {"_charly_value", "src/stdlib/primitives/value.ch"},
+    {"_charly_boolean", "src/stdlib/primitives/boolean.ch"},
+    {"_charly_class", "src/stdlib/primitives/class.ch"},
     {"_charly_function", "src/stdlib/primitives/function.ch"},
     {"_charly_generator", "src/stdlib/primitives/generator.ch"},
+    {"_charly_null", "src/stdlib/primitives/null.ch"},
+    {"_charly_number", "src/stdlib/primitives/number.ch"},
+    {"_charly_object", "src/stdlib/primitives/object.ch"},
+    {"_charly_string", "src/stdlib/primitives/string.ch"},
 
     // Libraries
     {"_charly_math", "src/stdlib/libs/math.ch"}
-
 };
 
 // The signature of an internal method
