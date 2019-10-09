@@ -146,10 +146,10 @@ public:
                         uint32_t lvarcount,
                         bool anonymous,
                         bool needs_arguments);
-  VALUE create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer);
+  VALUE create_cfunction(VALUE name, uint32_t argc, void* pointer);
   VALUE create_generator(VALUE name, uint8_t* resume_address);
   VALUE create_class(VALUE name);
-  VALUE create_cpointer(uintptr_t data, uintptr_t destructor);
+  VALUE create_cpointer(void* data, void* destructor);
 
   // Methods to copy existing data types
   VALUE copy_value(VALUE value);
@@ -248,7 +248,7 @@ public:
                       bool needs_arguments,
                       uint32_t argc,
                       uint32_t lvarcount);
-  void op_putcfunction(VALUE symbol, uintptr_t pointer, uint32_t argc);
+  void op_putcfunction(VALUE symbol, void* pointer, uint32_t argc);
   void op_putgenerator(VALUE symbol, uint8_t* resume_address);
   void op_putarray(uint32_t count);
   void op_puthash(uint32_t count);

@@ -45,7 +45,7 @@ namespace Internals {
 #define DEFINE_INTERNAL_METHOD(N, C)                                \
   {                                                                 \
     ID_TO_STRING(N), {                                              \
-      ID_TO_STRING(N), C, reinterpret_cast<uintptr_t>(Internals::N) \
+      ID_TO_STRING(N), C, reinterpret_cast<void*>(Internals::N) \
     }                                                               \
   }
 static std::unordered_map<std::string, InternalMethodSignature> kMethodSignatures = {
@@ -151,20 +151,17 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
 
       // Extract the method names from the library
       CharlyLibFuncList* funclist = reinterpret_cast<CharlyLibFuncList*>(__charly_func_list());
-      Array* methodnames = charly_as_array(lalloc.create_array(funclist->names.size()));
 
       uint32_t i = 0;
       while (i < funclist->names.size()) {
         std::string name = funclist->names[i];
-        methodnames->data->push_back(lalloc.create_string(name));
 
         // While we are extracting the method names, we can create
         // CFunction objects for the vm
-
         CFunction* cfunc = charly_as_cfunction(lalloc.create_cfunction(
           charly_create_symbol(name),
           2,
-          reinterpret_cast<uintptr_t>(dlsym(clib, name.c_str()))
+          dlsym(clib, name.c_str())
         ));
 
         lib->container->insert({vm.context.symtable(name), charly_create_pointer(cfunc)});
@@ -172,7 +169,22 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
         i++;
       }
 
-      lib->container->insert({vm.context.symtable("method_names"), charly_create_pointer(methodnames)});
+      // Add a CPointer object into the returned object to
+      // make sure it gets closed once its not needed anymore
+      void (*destructor)(void*) = [](void* clib) {
+        std::cout << "calling destructor of " << clib << std::endl;
+        dlclose(clib);
+      };
+      lib->container->insert({
+        vm.context.symtable("__libptr"),
+        lalloc.create_cpointer(clib, reinterpret_cast<void*>(destructor))
+      });
+
+      // Insert the path of the library into the object
+      lib->container->insert({
+        vm.context.symtable("__libpath"),
+        lalloc.create_string(include_filename)
+      });
 
       return charly_create_pointer(lib);
     }

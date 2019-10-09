@@ -250,12 +250,12 @@ struct CatchTable {
 // Contains a data pointer and a destructor method to deallocate c library resources
 struct CPointer {
   Basic basic;
-  uintptr_t data;
-  uintptr_t destructor;
+  void* data;
+  void* destructor;
 
   inline void clean() {
     if (this->destructor) {
-      reinterpret_cast<void (*)(uintptr_t)>(this->destructor)(this->data);
+      reinterpret_cast<void (*)(void*)>(this->destructor)(this->data);
     }
   }
 };
@@ -291,7 +291,7 @@ struct Function {
 struct CFunction {
   Basic basic;
   VALUE name;
-  uintptr_t pointer;
+  void* pointer;
   uint32_t argc;
   std::unordered_map<VALUE, VALUE>* container;
 

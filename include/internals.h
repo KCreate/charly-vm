@@ -57,7 +57,7 @@ static const std::unordered_map<std::string, std::string> kStandardCharlyLibrari
 struct InternalMethodSignature {
   std::string name;
   size_t argc;
-  uintptr_t func_pointer;
+  void* func_pointer;
 };
 
 #define CHECK(T, V)                                             \

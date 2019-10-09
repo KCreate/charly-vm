@@ -333,7 +333,7 @@ VALUE VM::create_function(VALUE name,
   return cell->as_value();
 }
 
-VALUE VM::create_cfunction(VALUE name, uint32_t argc, uintptr_t pointer) {
+VALUE VM::create_cfunction(VALUE name, uint32_t argc, void* pointer) {
   MemoryCell* cell = this->gc.allocate();
   cell->basic.type = kTypeCFunction;
   cell->cfunction.name = name;
@@ -373,7 +373,7 @@ VALUE VM::create_class(VALUE name) {
   return cell->as_value();
 }
 
-VALUE VM::create_cpointer(uintptr_t data, uintptr_t destructor) {
+VALUE VM::create_cpointer(void* data, void* destructor) {
   MemoryCell* cell = this->gc.allocate();
   cell->basic.type = kTypeCPointer;
   cell->cpointer.data = data;
@@ -1566,7 +1566,7 @@ void VM::op_putfunction(VALUE symbol,
   this->push_stack(function);
 }
 
-void VM::op_putcfunction(VALUE symbol, uintptr_t pointer, uint32_t argc) {
+void VM::op_putcfunction(VALUE symbol, void* pointer, uint32_t argc) {
   VALUE function = this->create_cfunction(symbol, argc, pointer);
   this->push_stack(function);
 }
@@ -2550,7 +2550,7 @@ charly_main_switch_putfunction : {
 charly_main_switch_putcfunction : {
   OPCODE_PROLOGUE();
   VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
-  uintptr_t pointer = *reinterpret_cast<uintptr_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE));
+  void* pointer = this->ip + sizeof(Opcode) + sizeof(VALUE);
   uint32_t argc = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(void*));
   this->op_putcfunction(symbol, pointer, argc);
   OPCODE_EPILOGUE();
@@ -2982,7 +2982,7 @@ void VM::exec_prelude() {
   //   }
   // }
   this->top_frame = this->create_frame(kNull, this->frames, 20, nullptr);
-  this->op_putcfunction(this->context.symtable("get_method"), reinterpret_cast<uintptr_t>(Internals::get_method), 1);
+  this->op_putcfunction(this->context.symtable("get_method"), reinterpret_cast<void*>(Internals::get_method), 1);
   this->op_putvalue(this->context.symtable("get_method"));
   this->op_puthash(1);
   this->op_putvalue(this->context.symtable("internals"));
