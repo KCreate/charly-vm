@@ -1344,9 +1344,22 @@ inline VALUE charly_create_pointer(void* ptr) {
 }
 
 // External libs interface
-struct CharlyLibFuncList {
-  std::vector<std::string> names;
+struct CharlyLibSignatures {
+  std::vector<std::tuple<std::string, uint32_t>> signatures;
 };
+
+// Shorthand for declaring charly api methods to export
+#define CHARLY_API(N, A, B) \
+  extern "C" VALUE N(VM& vm, A) B
+
+// Shorthands for defining the signatures
+#define F(N, A) {#N, A},
+#define CHARLY_MANIFEST(P) \
+  extern "C" { \
+    CharlyLibSignatures __charly_signatures = {{ \
+      P \
+    }}; \
+  }
 
 
 // clang-format on

@@ -138,29 +138,29 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
         return kNull;
       }
 
-      // Load the function called __charly_func_list
-      // It returns a struct defined in the file value.h
-      // This struct contains the count and names of all methods
-      // defined in this library
-      void* __charly_func_list_ptr = dlsym(clib, "__charly_func_list");
-      CharlyLibFuncList* (*__charly_func_list)() = reinterpret_cast<CharlyLibFuncList* (*)()>(__charly_func_list_ptr);
-      if (__charly_func_list == nullptr) {
-        vm.throw_exception("Could not open lib manifest segment " + include_filename);
+      // Load the function called __charly_signatures
+      // It returns a CharlyLibSignatures struct declared in value.h
+      //
+      // This struct contains the signatures of all the methods in this
+      // library
+      void* __charly_signatures_ptr = dlsym(clib, "__charly_signatures");
+      CharlyLibSignatures* signatures = reinterpret_cast<CharlyLibSignatures*>(__charly_signatures_ptr);
+      if (signatures == nullptr) {
+        vm.throw_exception("Could not open library signature section of " + include_filename);
         return kNull;
       }
 
-      // Extract the method names from the library
-      CharlyLibFuncList* funclist = reinterpret_cast<CharlyLibFuncList*>(__charly_func_list());
-
       uint32_t i = 0;
-      while (i < funclist->names.size()) {
-        std::string name = funclist->names[i];
+      while (i < signatures->signatures.size()) {
+        std::string name;
+        uint32_t argc;
+        std::tie(name, argc) = signatures->signatures[i];
 
         // While we are extracting the method names, we can create
         // CFunction objects for the vm
         CFunction* cfunc = charly_as_cfunction(lalloc.create_cfunction(
           charly_create_symbol(name),
-          1,
+          argc,
           dlsym(clib, name.c_str())
         ));
 

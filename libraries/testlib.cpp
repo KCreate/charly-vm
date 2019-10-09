@@ -5,29 +5,29 @@
 
 using namespace Charly;
 
-CharlyLibFuncList funclist = {{
-  "add_1",
-  "sub_1",
-  "mul_10",
-  "div_10"
-}};
+/* ###--- Library Manifesto ---### */
 
-extern "C" CharlyLibFuncList* __charly_func_list() {
-  return &funclist;
-};
+CHARLY_MANIFEST(
+  F(add_1, 1)
+  F(sub_1, 1)
+  F(mul_10, 1)
+  F(div_10, 1)
+)
 
-extern "C" VALUE add_1(VM& vm, VALUE v) {
+/* ###--- Library Methods ---### */
+
+CHARLY_API(add_1, VALUE v, {
   return charly_add_number(v, charly_create_number(1));
-}
+})
 
-extern "C" VALUE sub_1(VM& vm, VALUE v) {
+CHARLY_API(sub_1, VALUE v, {
   return charly_sub_number(v, charly_create_number(1));
-}
+})
 
-extern "C" VALUE mul_10(VM& vm, VALUE v) {
+CHARLY_API(mul_10, VALUE v, {
   return charly_mul_number(v, charly_create_number(10));
-}
+})
 
-extern "C" VALUE div_10(VM& vm, VALUE v) {
+CHARLY_API(div_10, VALUE v, {
   return charly_div_number(v, charly_create_number(10));
-}
+})
