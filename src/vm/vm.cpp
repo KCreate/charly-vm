@@ -1231,6 +1231,12 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
     case 3:
       rv = reinterpret_cast<VALUE (*)(VM&, VALUE, VALUE, VALUE)>(function->pointer)(*this, argv[0], argv[1], argv[2]);
       break;
+    case 4:
+      rv = reinterpret_cast<VALUE (*)(VM&, VALUE, VALUE, VALUE, VALUE)>(function->pointer)(*this, argv[0], argv[1], argv[2], argv[3]);
+      break;
+    case 5:
+      rv = reinterpret_cast<VALUE (*)(VM&, VALUE, VALUE, VALUE, VALUE, VALUE)>(function->pointer)(*this, argv[0], argv[1], argv[2], argv[3], argv[4]);
+      break;
     default: {
       this->throw_exception("Too many arguments for CFunction call");
       return;
