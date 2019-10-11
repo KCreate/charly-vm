@@ -145,7 +145,6 @@ VALUE flatten(VM& vm, VALUE a) {
 
 VALUE index(VM& vm, VALUE a, VALUE i, VALUE o) {
   CHECK(array, a);
-  CHECK(number, i);
   CHECK(number, o);
 
   Array* array = charly_as_array(a);
