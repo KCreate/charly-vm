@@ -2275,7 +2275,6 @@ void VM::panic(STATUS reason) {
   this->context.err_stream << '\n' << "Stackdump:" << '\n';
   this->stackdump(this->context.err_stream);
 
-  __asm__("int3");
   exit(1);
 }
 
