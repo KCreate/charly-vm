@@ -1349,12 +1349,8 @@ struct CharlyLibSignatures {
 };
 
 // Shorthand for declaring charly api methods to export
-#define CHARLY_API(N, B) \
-  extern "C" VALUE N(VM& vm) B
-#define CHARLY_API_A(N, A, B) \
-  extern "C" VALUE N(VM& vm, A) B
-#define CHARLY_EXPOSE(N, B) \
-  extern "C" VALUE N B
+#define CHARLY_API(N) \
+  extern "C" VALUE N
 
 // Shorthands for defining the signatures
 #define F(N, A) {#N, A},

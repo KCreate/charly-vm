@@ -16,13 +16,13 @@ CHARLY_MANIFEST(
 
 int* counter;
 
-CHARLY_EXPOSE(__charly_constructor, () {
+CHARLY_API(__charly_constructor, () {
   counter = (int*)malloc(sizeof(int));
   std::cout << "allocated " << sizeof(int) << " bytes" << std::endl;
   return kNull;
 })
 
-CHARLY_EXPOSE(__charly_destructor, () {
+CHARLY_API(__charly_destructor, () {
   free(counter);
   std::cout << "freed " << sizeof(int) << " bytes" << std::endl;
   return kNull;
@@ -30,13 +30,13 @@ CHARLY_EXPOSE(__charly_destructor, () {
 
 /* ###--- Userspace ---### */
 
-CHARLY_API_A(add, VALUE v, {
+CHARLY_API(add, (VM& vm, VALUE v) {
   if (charly_is_number(v)) {
     *counter += charly_int_to_int32(v);
   }
   return charly_create_number(*counter);
 })
 
-CHARLY_API(read, {
+CHARLY_API(read, () {
   return charly_create_number(*counter);
 })

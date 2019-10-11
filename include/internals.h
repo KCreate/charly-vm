@@ -68,6 +68,14 @@ struct InternalMethodSignature {
     }                                                           \
   }
 
+#define WARN_TYPE(T, V)                                             \
+  {                                                             \
+    if (!charly_is_##T(V)) {                                    \
+      vm.context.out_stream << "Expected argument " #V " to be " #T; \
+      return kNull;                                             \
+    }                                                           \
+  }
+
 VALUE import(VM& vm, VALUE filename, VALUE source);
 VALUE get_method(VM& vm, VALUE argument);
 VALUE write(VM& vm, VALUE value);
