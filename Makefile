@@ -77,7 +77,7 @@ valgrind: $(TARGET)
 	valgrind --leak-check=full --show-leak-kinds=all --show-reachable=no bin/vm todos.md
 
 test:
-	@find test -name "*.ch" | xargs -L 1 -r bin/vm
+	@find test -name "*.ch" | xargs bin/vm
 
 .PHONY: whole clean rebuild format valgrind test
 
