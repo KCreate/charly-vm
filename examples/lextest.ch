@@ -1,5 +1,10 @@
-defer(->{
-  print("hello world")
+let i = defer.interval(100, ->{
+  print("hello!")
 })
 
-print(exit)
+print(i)
+
+defer(->{
+  defer.clear_interval(i);
+}, 2000)
+

@@ -3245,13 +3245,22 @@ uint8_t VM::start_runtime() {
   while (this->running) {
     Timestamp now = std::chrono::steady_clock::now();
 
-    // Add all expired timers to the task_queue
+    // Add all expired timers and intervals to the task_queue
     if (this->timers.size()) {
       auto it = this->timers.begin();
       while (it != this->timers.end() && it->first <= now) {
         this->register_task(it->second);
         this->timers.erase(it);
         it = this->timers.begin();
+      }
+    }
+    if (this->intervals.size()) {
+      auto it = this->intervals.begin();
+      while (it != this->intervals.end() && it->first <= now) {
+        this->register_task(std::get<0>(it->second));
+        this->intervals.insert({now + std::chrono::milliseconds(std::get<1>(it->second)), it->second});
+        this->intervals.erase(it);
+        it = this->intervals.begin();
       }
     }
 
@@ -3275,15 +3284,19 @@ uint8_t VM::start_runtime() {
 
       // We currently have no tasks that we can run, so we can just
       // sleep until the next timer fires
-      if (this->timers.size() != 0) {
+      if (this->timers.size() != 0 && this->intervals.size() != 0) {
         auto next_timer = this->timers.begin();
-        Timestamp ts = next_timer->first;
-        std::this_thread::sleep_for(ts - now);
+        auto next_interval = this->intervals.begin();
+
+        Timestamp ts_timer = next_timer->first;
+        Timestamp ts_interval = next_interval->first;
+
+        std::this_thread::sleep_for((std::min(ts_timer, ts_interval)) - now);
       }
     }
 
-    // If we have no tasks and no timers left to run, we exit the runtime
-    if (this->task_queue.size() == 0 && this->timers.size() == 0) {
+    // If we have no tasks, timers and intervals left to run, we exit the runtime
+    if (this->task_queue.size() == 0 && this->timers.size() == 0 && this->intervals.size() == 0) {
       this->running = false;
     }
   }
@@ -3333,15 +3346,47 @@ VALUE VM::register_module(InstructionBlock* block) {
   return this->pop_stack();
 }
 
-void VM::register_task(const VMTask& task) {
+void VM::register_task(VMTask task) {
   this->gc.mark_persistent(task.fn);
   this->gc.mark_persistent(task.argument);
   this->task_queue.push(task);
 }
 
-void VM::register_timer(Timestamp ts, const VMTask& task) {
+uint64_t VM::register_timer(Timestamp ts, VMTask task) {
   this->gc.mark_persistent(task.fn);
   this->gc.mark_persistent(task.argument);
-  this->timers[ts] = task;
+  task.uid = this->next_task_uid++;
+  this->timers.insert({ts, task});
+  return task.uid;
 }
+
+uint64_t VM::register_interval(uint32_t period, VMTask task) {
+  this->gc.mark_persistent(task.fn);
+  this->gc.mark_persistent(task.argument);
+
+  Timestamp now = std::chrono::steady_clock::now();
+  Timestamp exec_at = now + std::chrono::milliseconds(period);
+
+  task.uid = this->next_task_uid++;
+  this->intervals.insert({exec_at, {task, period}});
+  return task.uid;
+}
+
+void VM::clear_timer(uint64_t uid) {
+  for (auto it : this->timers) {
+    if (it.second.uid == uid) {
+      this->timers.erase(it.first);
+    }
+  }
+}
+
+void VM::clear_interval(uint64_t uid) {
+  for (auto it : this->intervals) {
+    if (std::get<0>(it.second).uid == uid) {
+      this->intervals.erase(it.first);
+      break;
+    }
+  }
+}
+
 }  // namespace Charly

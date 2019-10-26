@@ -71,6 +71,9 @@ static std::unordered_map<std::string, InternalMethodSignature> kMethodSignature
     DEFINE_INTERNAL_METHOD(set_primitive_null, 1),
 
     DEFINE_INTERNAL_METHOD(defer, 2),
+    DEFINE_INTERNAL_METHOD(defer_interval, 2),
+    DEFINE_INTERNAL_METHOD(clear_timer, 1),
+    DEFINE_INTERNAL_METHOD(clear_interval, 1),
     DEFINE_INTERNAL_METHOD(exit, 1),
 };
 
@@ -338,8 +341,27 @@ VALUE defer(VM& vm, VALUE cb, VALUE dur) {
   Timestamp now = std::chrono::steady_clock::now();
   Timestamp exec_at = now + std::chrono::milliseconds(ms);
 
-  VMTask task = {cb, kNull};
-  vm.register_timer(exec_at, task);
+  return charly_create_integer(vm.register_timer(exec_at, VMTask(cb, kNull)));
+}
+
+VALUE defer_interval(VM& vm, VALUE period, VALUE cb) {
+  CHECK(number, period);
+  CHECK(function, cb);
+
+  uint32_t ms = charly_number_to_uint32(period);
+
+  return charly_create_integer(vm.register_interval(ms, VMTask(cb, kNull)));
+}
+
+VALUE clear_timer(VM&vm, VALUE uid) {
+  CHECK(number, uid);
+  vm.clear_timer(charly_number_to_uint64(uid));
+  return kNull;
+}
+
+VALUE clear_interval(VM&vm, VALUE uid) {
+  CHECK(number, uid);
+  vm.clear_interval(charly_number_to_uint64(uid));
   return kNull;
 }
 

@@ -92,6 +92,9 @@ VALUE set_primitive_boolean(VM& vm, VALUE klass);
 VALUE set_primitive_null(VM& vm, VALUE klass);
 
 VALUE defer(VM& vm, VALUE cb, VALUE dur);
+VALUE defer_interval(VM& vm, VALUE cb, VALUE period);
+VALUE clear_timer(VM& vm, VALUE uid);
+VALUE clear_interval(VM& vm, VALUE uid);
 VALUE exit(VM& vm, VALUE status_code);
 }  // namespace Internals
 }  // namespace Charly

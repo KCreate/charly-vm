@@ -93,8 +93,15 @@ struct VMContext {
  * Stores information about a callback the VM needs to execute
  * */
 struct VMTask {
+  uint64_t uid;
   VALUE fn;
   VALUE argument;
+
+  VMTask(uint64_t u, VALUE f, VALUE a) : uid(u), fn(f), argument(a) {
+  }
+
+  VMTask(VALUE f, VALUE a) : uid(0), fn(f), argument(a) {
+  }
 };
 
 class VM {
@@ -328,12 +335,16 @@ public:
   void exec_prelude();
   VALUE exec_module(Function* fn);
   VALUE exec_function(Function* fn, VALUE argument);
-  void start_runtime();
+  uint8_t start_runtime();
   void exit(uint8_t status_code);
 
   VALUE register_module(InstructionBlock* block);
-  void register_task(const VMTask& task);
-  void register_timer(Timestamp, const VMTask& task);
+  void register_task(VMTask task);
+  uint64_t register_timer(Timestamp, VMTask task);
+  uint64_t register_interval(uint32_t, VMTask task);
+
+  void clear_timer(uint64_t uid);
+  void clear_interval(uint64_t uid);
 
 private:
   uint8_t status_code = 0;
@@ -355,11 +366,13 @@ private:
   VALUE primitive_null = kNull;
 
   // Contains all tasks that still need to be run
+  uint64_t next_task_uid = 0;
   std::queue<VMTask> task_queue;
   bool running;
 
-  // Remaining timers
+  // Remaining timers & intervals
   std::map<Timestamp, VMTask> timers;
+  std::map<Timestamp, std::tuple<VMTask, uint32_t>> intervals;
 
   // Holds a pointer to the upper-most environment frame
   // When executing new modules, their parent environment frame is set to

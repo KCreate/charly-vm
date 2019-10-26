@@ -6,6 +6,9 @@ ignoreconst {
   const __internal_getn = __internal_get_method("getn")
   const __internal_import = __internal_get_method("import")
   const __internal_defer = __internal_get_method("defer")
+  const __internal_defer_interval = __internal_get_method("defer_interval")
+  const __internal_clear_timer = __internal_get_method("clear_timer")
+  const __internal_clear_interval = __internal_get_method("clear_interval")
   const __internal_exit = __internal_get_method("exit")
 
   let __internal_standard_libs_names
@@ -69,6 +72,11 @@ ignoreconst {
   defer = func defer(cb) {
     __internal_defer(cb, arguments.length > 1 ? $1 : 0);
   }
+  defer.interval = func interval(cb, period) {
+    __internal_defer_interval(cb, period)
+  }
+  defer.clear_timer = __internal_clear_timer
+  defer.clear_interval = __internal_clear_interval
 
   // Setup the charly object
   Charly.io = {
