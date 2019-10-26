@@ -117,7 +117,7 @@ int CLI::run() {
 
   vm.register_task({fn_prelude, kNull});
   vm.register_task({fn_user, kNull});
-  vm.start_runtime();
+  uint8_t status_code = vm.start_runtime();
 
   // Display the instruction profile if requested
   if (this->flags.instruction_profile) {
@@ -133,6 +133,6 @@ int CLI::run() {
     }
   }
 
-  return 0;
+  return status_code;
 }
 }  // namespace Charly

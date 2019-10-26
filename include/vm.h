@@ -336,6 +336,8 @@ public:
   void register_timer(Timestamp, const VMTask& task);
 
 private:
+  uint8_t status_code = 0;
+
   GarbageCollector gc;
 
   // Used to avoid an overflow when printing cyclic data structures

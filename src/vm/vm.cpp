@@ -3241,7 +3241,7 @@ void VM::exec_prelude() {
   this->op_pop();
 }
 
-void VM::start_runtime() {
+uint8_t VM::start_runtime() {
   while (this->running) {
     Timestamp now = std::chrono::steady_clock::now();
 
@@ -3287,6 +3287,8 @@ void VM::start_runtime() {
       this->running = false;
     }
   }
+
+  return this->status_code;
 }
 
 VALUE VM::exec_module(Function* fn) {
@@ -3319,6 +3321,8 @@ void VM::exit(uint8_t status_code) {
     this->task_queue.pop();
   }
   this->halted = true;
+  this->running = false;
+  this->status_code = status_code;
 }
 
 VALUE VM::register_module(InstructionBlock* block) {
