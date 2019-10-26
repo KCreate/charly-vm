@@ -1636,6 +1636,8 @@ void VM::op_putclass(VALUE name,
 
   if (has_parent_class) {
     klass->parent_class = this->pop_stack();
+  } else {
+    klass->parent_class = this->primitive_object;
   }
 
   while (staticmethodcount--) {
