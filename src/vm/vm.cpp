@@ -1063,8 +1063,9 @@ std::optional<VALUE> VM::findprimitivevalue(VALUE value, VALUE symbol) {
     case kTypeNull: found_primitive_class = this->primitive_null; break;
     case kTypeArray: found_primitive_class = this->primitive_array; break;
     case kTypeFunction: found_primitive_class = this->primitive_function; break;
+    case kTypeCFunction: found_primitive_class = this->primitive_function; break;
+    case kTypeGenerator: found_primitive_class = this->primitive_generator; break;
     case kTypeClass: found_primitive_class = this->primitive_class; break;
-    case kTypeCPointer: found_primitive_class = this->primitive_number; break;
   }
 
   if (!charly_is_class(found_primitive_class)) {
