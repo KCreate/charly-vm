@@ -45,7 +45,8 @@ enum Status : STATUS {
   ParentClassNotAClass,
   InvalidArgumentType,
   CorruptedStack,
-  ObjectClassNotAClass
+  ObjectClassNotAClass,
+  RuntimeTaskNotCallable
 };
 
 // Human-readable status messages
@@ -66,7 +67,8 @@ static const std::string kStatusHumanReadable[] = {
   "Extended value is not a class",
   "Argument for instruction has invalid type",
   "Corrupted Stack",
-  "Object's klass field not set to an instance of a class"
+  "Object's klass field not set to an instance of a class",
+  "Callback of runtime task is not a callable type"
 };
 // clang-format on
 }  // namespace Charly

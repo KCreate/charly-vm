@@ -69,6 +69,9 @@ static std::unordered_map<std::string, InternalMethodSignature> kMethodSignature
     DEFINE_INTERNAL_METHOD(set_primitive_generator, 1),
     DEFINE_INTERNAL_METHOD(set_primitive_boolean, 1),
     DEFINE_INTERNAL_METHOD(set_primitive_null, 1),
+
+    DEFINE_INTERNAL_METHOD(defer, 2),
+    DEFINE_INTERNAL_METHOD(exit, 1),
 };
 
 VALUE import(VM& vm, VALUE include, VALUE source) {
@@ -227,8 +230,8 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
     return kNull;
   }
 
-  vm.exec_module(cresult->instructionblock.value());
-  return vm.pop_stack();
+  Function* fn = charly_as_function(vm.register_module(cresult->instructionblock.value()));
+  return vm.exec_module(fn);
 }
 
 VALUE get_method(VM& vm, VALUE argument) {
@@ -324,6 +327,26 @@ VALUE set_primitive_boolean(VM& vm, VALUE value) {
 VALUE set_primitive_null(VM& vm, VALUE value) {
   vm.set_primitive_null(value);
   return value;
+}
+
+VALUE defer(VM& vm, VALUE cb, VALUE dur) {
+  CHECK(function, cb);
+  CHECK(number, dur);
+
+  uint32_t ms = charly_number_to_uint32(dur);
+
+  Timestamp now = std::chrono::steady_clock::now();
+  Timestamp exec_at = now + std::chrono::milliseconds(ms);
+
+  VMTask task = {cb, kNull};
+  vm.register_timer(exec_at, task);
+  return kNull;
+}
+
+VALUE exit(VM& vm, VALUE status_code) {
+  CHECK(number, status_code);
+  vm.exit(charly_number_to_uint8(status_code));
+  return kNull;
 }
 
 }  // namespace Internals

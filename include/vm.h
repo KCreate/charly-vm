@@ -26,6 +26,8 @@
 
 #include <iostream>
 #include <optional>
+#include <queue>
+#include <map>
 
 #include "defines.h"
 #include "gc.h"
@@ -87,6 +89,14 @@ struct VMContext {
   std::ostream& err_stream = std::cerr;
 };
 
+/*
+ * Stores information about a callback the VM needs to execute
+ * */
+struct VMTask {
+  VALUE fn;
+  VALUE argument;
+};
+
 class VM {
   friend GarbageCollector;
   friend ManagedContext;
@@ -95,6 +105,7 @@ public:
   VM(VMContext& ctx)
       : context(ctx),
         gc(GarbageCollectorConfig{.out_stream = ctx.err_stream, .err_stream = ctx.err_stream, .trace = ctx.trace_gc}),
+        running(true),
         frames(nullptr),
         catchstack(nullptr),
         ip(nullptr),
@@ -216,10 +227,6 @@ public:
   }
   void pretty_print(std::ostream& io, VALUE value);
   void to_s(std::ostream& io, VALUE value, uint32_t depth = 0);
-  void run();
-  void exec_prelude();
-  void exec_block(InstructionBlock* block);
-  void exec_module(InstructionBlock* block);
 
   // Private member access
   inline Frame* get_current_frame() {
@@ -317,6 +324,17 @@ public:
     return this->ip;
   }
 
+  void run();
+  void exec_prelude();
+  VALUE exec_module(Function* fn);
+  VALUE exec_function(Function* fn, VALUE argument);
+  void start_runtime();
+  void exit(uint8_t status_code);
+
+  VALUE register_module(InstructionBlock* block);
+  void register_task(const VMTask& task);
+  void register_timer(Timestamp, const VMTask& task);
+
 private:
   GarbageCollector gc;
 
@@ -333,6 +351,13 @@ private:
   VALUE primitive_generator = kNull;
   VALUE primitive_boolean = kNull;
   VALUE primitive_null = kNull;
+
+  // Contains all tasks that still need to be run
+  std::queue<VMTask> task_queue;
+  bool running;
+
+  // Remaining timers
+  std::map<Timestamp, VMTask> timers;
 
   // Holds a pointer to the upper-most environment frame
   // When executing new modules, their parent environment frame is set to

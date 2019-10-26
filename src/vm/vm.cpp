@@ -25,12 +25,12 @@
  */
 
 #include <algorithm>
-#include <chrono>
 #include <cmath>
 #include <functional>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <thread>
 
 #include <utf8/utf8.h>
 
@@ -2377,7 +2377,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
       io << "<Function ";
       io << "";
       this->to_s(io, func->name);
-      io << "#" << func->lvarcount;
+      io << "#" << func->argc;
 
       for (auto& entry : *func->container) {
         io << " ";
@@ -3241,23 +3241,103 @@ void VM::exec_prelude() {
   this->op_pop();
 }
 
-void VM::exec_block(InstructionBlock* block) {
+void VM::start_runtime() {
+  while (this->running) {
+    Timestamp now = std::chrono::steady_clock::now();
+
+    // Add all expired timers to the task_queue
+    if (this->timers.size()) {
+      auto it = this->timers.begin();
+      while (it != this->timers.end() && it->first <= now) {
+        this->register_task(it->second);
+        this->timers.erase(it);
+        it = this->timers.begin();
+      }
+    }
+
+    // Execute a task from the task queue
+    if (this->task_queue.size()) {
+      ManagedContext lalloc(*this);
+
+      VMTask task = this->task_queue.front();
+      this->task_queue.pop();
+
+      // Make sure we got a callable type as callback
+      if (!charly_is_function(task.fn)) {
+        this->panic(Status::RuntimeTaskNotCallable);
+      }
+
+      Function* fn = charly_as_function(task.fn);
+      this->call_function(fn, 1, &task.argument, kNull, true);
+
+      this->run();
+    } else {
+
+      // We currently have no tasks that we can run, so we can just
+      // sleep until the next timer fires
+      if (this->timers.size() != 0) {
+        auto next_timer = this->timers.begin();
+        Timestamp ts = next_timer->first;
+        std::this_thread::sleep_for(ts - now);
+      }
+    }
+
+    // If we have no tasks and no timers left to run, we exit the runtime
+    if (this->task_queue.size() == 0 && this->timers.size() == 0) {
+      this->running = false;
+    }
+  }
+}
+
+VALUE VM::exec_module(Function* fn) {
+  ManagedContext lalloc(*this);
+  VALUE export_obj = lalloc.create_object(0);
+
+  uint8_t* old_ip = this->ip;
+  this->call_function(fn, 1, &export_obj, kNull, true);
+  this->frames->parent_environment_frame = this->top_frame;
+  this->frames->set_halt_after_return(true);
+  this->run();
+  this->ip = old_ip;
+  return this->pop_stack();
+}
+
+VALUE VM::exec_function(Function* fn, VALUE argument) {
+  uint8_t* old_ip = this->ip;
+  this->call_function(fn, 1, &argument, kNull, true);
+  this->run();
+  this->ip = old_ip;
+  return this->pop_stack();
+}
+
+void VM::exit(uint8_t status_code) {
+
+  // Clear all timers and remaining tasks
+  // and interrupt currently running task
+  this->timers.clear();
+  while (this->task_queue.size()) {
+    this->task_queue.pop();
+  }
+  this->halted = true;
+}
+
+VALUE VM::register_module(InstructionBlock* block) {
   uint8_t* old_ip = this->ip;
   this->ip = block->get_data();
   this->run();
   this->ip = old_ip;
+  return this->pop_stack();
 }
 
-void VM::exec_module(InstructionBlock* block) {
-  ManagedContext lalloc(*this);
-  Object* export_obj = charly_as_object(lalloc.create_object(0));
+void VM::register_task(const VMTask& task) {
+  this->gc.mark_persistent(task.fn);
+  this->gc.mark_persistent(task.argument);
+  this->task_queue.push(task);
+}
 
-  // Execute the module inclusion function
-  this->exec_block(block);
-  this->push_stack(charly_create_pointer(export_obj));
-  this->op_call(1);
-  this->frames->parent_environment_frame = this->top_frame;
-  this->frames->set_halt_after_return(true);
-  this->run();
+void VM::register_timer(Timestamp ts, const VMTask& task) {
+  this->gc.mark_persistent(task.fn);
+  this->gc.mark_persistent(task.argument);
+  this->timers[ts] = task;
 }
 }  // namespace Charly

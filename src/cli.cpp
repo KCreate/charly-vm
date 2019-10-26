@@ -111,9 +111,13 @@ int CLI::run() {
                      .trace_frames = this->flags.trace_frames,
                      .trace_gc = this->flags.trace_gc});
   VM vm(context);
-  vm.exec_module(cresult_prelude->instructionblock.value());
-  vm.pop_stack();
-  vm.exec_module(cresult_userfile->instructionblock.value());
+
+  VALUE fn_prelude = vm.register_module(cresult_prelude->instructionblock.value());
+  VALUE fn_user = vm.register_module(cresult_userfile->instructionblock.value());
+
+  vm.register_task({fn_prelude, kNull});
+  vm.register_task({fn_user, kNull});
+  vm.start_runtime();
 
   // Display the instruction profile if requested
   if (this->flags.instruction_profile) {

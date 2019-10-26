@@ -92,7 +92,7 @@ struct CompilerConfig {
                                                         "gets",
                                                         "getc",
                                                         "exit",
-                                                        "sleep",
+                                                        "defer",
                                                         "Charly"};
 
   // Module inclusion function

@@ -28,6 +28,7 @@
 #include <sstream>
 #include <unordered_map>
 #include <vector>
+#include <chrono>
 
 #include <utf8/utf8.h>
 
@@ -37,6 +38,8 @@
 #pragma once
 
 namespace Charly {
+
+using Timestamp = std::chrono::time_point<std::chrono::steady_clock>;
 
 // Human readable types of all data types
 const std::string kHumanReadableTypes[] = {"dead",      "class",     "object", "array",      "string",   "function",

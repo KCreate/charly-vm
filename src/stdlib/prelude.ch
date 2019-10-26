@@ -5,6 +5,8 @@ ignoreconst {
   const __internal_write = __internal_get_method("write")
   const __internal_getn = __internal_get_method("getn")
   const __internal_import = __internal_get_method("import")
+  const __internal_defer = __internal_get_method("defer")
+  const __internal_exit = __internal_get_method("exit")
 
   let __internal_standard_libs_names
   let __internal_standard_libs
@@ -53,6 +55,19 @@ ignoreconst {
     arguments.each(->(v) __internal_write(v.to_s()))
     __internal_write("\n")
     null
+  }
+
+  // Exits the program with a given status code
+  exit = func exit {
+    __internal_exit(arguments.length ? $0 : 0)
+  }
+
+  // Defers the execution of a block
+  // Internally this adds a new task to the vms internal task queue
+  // Once all other remaining tasks have been executed this callback will
+  // be invoked
+  defer = func defer(cb) {
+    __internal_defer(cb, arguments.length > 1 ? $1 : 0);
   }
 
   // Setup the charly object

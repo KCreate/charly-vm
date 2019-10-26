@@ -90,5 +90,8 @@ VALUE set_primitive_function(VM& vm, VALUE klass);
 VALUE set_primitive_generator(VM& vm, VALUE klass);
 VALUE set_primitive_boolean(VM& vm, VALUE klass);
 VALUE set_primitive_null(VM& vm, VALUE klass);
+
+VALUE defer(VM& vm, VALUE cb, VALUE dur);
+VALUE exit(VM& vm, VALUE status_code);
 }  // namespace Internals
 }  // namespace Charly

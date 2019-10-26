@@ -25,7 +25,6 @@
  */
 
 #include <cassert>
-#include <chrono>
 #include <iostream>
 
 #include "gc.h"

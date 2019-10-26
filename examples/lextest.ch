@@ -1,13 +1,5 @@
-class Person {
-  property name
-  property age
+defer(->{
+  print("hello world")
+})
 
-  func constructor(@name, @age) = null
-
-  func to_s {
-    @name + ":" + @age
-  }
-}
-
-const L = Person("leonard", 19)
-print("a" + L)
+print(exit)
