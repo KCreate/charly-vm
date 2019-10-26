@@ -821,6 +821,10 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
     case kTypeObject: {
       Object* obj = charly_as_object(source);
 
+      if (symbol == charly_create_symbol("klass")) {
+        return obj->klass;
+      }
+
       if (obj->container->count(symbol) == 1) {
         return (*obj->container)[symbol];
       }
