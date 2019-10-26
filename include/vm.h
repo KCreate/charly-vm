@@ -215,6 +215,7 @@ public:
     this->pretty_print(io, (VALUE)value);
   }
   void pretty_print(std::ostream& io, VALUE value);
+  void to_s(std::ostream& io, VALUE value, uint32_t depth = 0);
   void run();
   void exec_prelude();
   void exec_block(InstructionBlock* block);

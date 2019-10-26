@@ -163,7 +163,7 @@ CatchTable* VM::create_catchtable(uint8_t* address) {
 CatchTable* VM::pop_catchtable() {
   if (!this->catchstack) {
     this->context.err_stream << "Last exception thrown: ";
-    this->pretty_print(this->context.err_stream, this->last_exception_thrown);
+    this->to_s(this->context.err_stream, this->last_exception_thrown);
     this->context.err_stream << '\n';
     this->panic(Status::CatchStackEmpty);
   }
@@ -565,6 +565,12 @@ VALUE VM::add(VALUE left, VALUE right) {
 
   // TODO: String concatenation for different types
   // Will require a charly_value_to_string method
+  if (charly_is_string(left) || charly_is_string(right)) {
+    std::stringstream buf;
+    this->to_s(buf, left);
+    this->to_s(buf, right);
+    return this->create_string(buf.str());
+  }
 
   return kBitsNaN;
 }
@@ -1809,7 +1815,7 @@ VALUE VM::stacktrace_array() {
 
   Frame* frame = this->frames;
   while (frame && charly_is_frame(charly_create_pointer(frame))) {
-    this->pretty_print(io, charly_create_pointer(frame));
+    this->to_s(io, charly_create_pointer(frame));
     frame = frame->parent;
 
     // Append the trace entry to the array and reset the stringstream
@@ -1977,27 +1983,9 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeString: {
-      io << "<String ";
       io << "\"";
       io.write(charly_string_data(value), charly_string_length(value));
       io << "\"";
-      io << " ";
-      io << charly_string_length(value);
-
-      if (charly_is_on_heap(value)) {
-        if (charly_as_hstring(value)->is_shortstring()) {
-          io << " s";
-        } else {
-          io << "";
-        }
-      } else {
-        if (charly_is_istring(value)) {
-          io << " i";
-        } else {
-          io << " p";
-        }
-      }
-      io << ">";
       break;
     }
 
@@ -2263,6 +2251,255 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << ">";
 
       this->pretty_print_stack.pop_back();
+      break;
+    }
+  }
+}
+
+void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
+  // Check if this value was already printed before
+  auto begin = this->pretty_print_stack.begin();
+  auto end = this->pretty_print_stack.end();
+  bool printed_before = std::find(begin, end, value) != end;
+
+  switch (charly_get_type(value)) {
+    case kTypeDead: {
+      io << "<dead>";
+      break;
+    }
+
+    case kTypeNumber: {
+      const double d = io.precision();
+      io.precision(16);
+      io << std::fixed;
+      if (charly_is_int(value)) {
+        io << charly_int_to_int64(value);
+      } else {
+        io << charly_double_to_double(value);
+      }
+      io << std::scientific;
+      io.precision(d);
+
+      break;
+    }
+
+    case kTypeBoolean: {
+      io << std::boolalpha << (value == kTrue) << std::noboolalpha;
+      break;
+    }
+
+    case kTypeNull: {
+      io << "null";
+      break;
+    }
+
+    case kTypeString: {
+      io.write(charly_string_data(value), charly_string_length(value));
+      break;
+    }
+
+    case kTypeObject: {
+      Object* object = charly_as_object(value);
+
+      // If this object was already printed, we avoid printing it again
+      if (printed_before) {
+        io << "{circular}";
+        break;
+      }
+
+      this->pretty_print_stack.push_back(value);
+
+      io << "{\n";
+
+      for (auto& entry : *object->container) {
+        io << std::string(depth + 2, ' ');
+        std::string key = this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
+        io << key << " = ";
+        this->to_s(io, entry.second, depth + 2);
+        io << '\n';
+      }
+
+      io << std::string(depth == 0 ? 0 : depth, ' ');
+      io << "}";
+
+      this->pretty_print_stack.pop_back();
+      break;
+    }
+
+    case kTypeArray: {
+      Array* array = charly_as_array(value);
+
+      // If this array was already printed, we avoid printing it again
+      if (printed_before) {
+        io << "[...]";
+        break;
+      }
+
+      this->pretty_print_stack.push_back(value);
+
+      io << "[";
+
+      bool first = false;
+      for (VALUE& entry : *array->data) {
+        if (first) {
+          io << ", ";
+        } else {
+          first = true;
+        }
+
+        this->to_s(io, entry, depth);
+      }
+
+      io << "]";
+
+      this->pretty_print_stack.pop_back();
+      break;
+    }
+
+    case kTypeFunction: {
+      Function* func = charly_as_function(value);
+
+      if (printed_before) {
+        io << "<Function ...>";
+        break;
+      }
+
+      this->pretty_print_stack.push_back(value);
+
+      io << "<Function ";
+      io << "";
+      this->to_s(io, func->name);
+      io << "#" << func->lvarcount;
+
+      for (auto& entry : *func->container) {
+        io << " ";
+        std::string key = this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
+        io << key << "=";
+        this->to_s(io, entry.second, depth);
+      }
+
+      io << ">";
+
+      this->pretty_print_stack.pop_back();
+      break;
+    }
+
+    case kTypeCFunction: {
+      CFunction* func = charly_as_cfunction(value);
+
+      if (printed_before) {
+        io << "<CFunction ...>";
+        break;
+      }
+
+      this->pretty_print_stack.push_back(value);
+
+      io << "<CFunction ";
+      this->to_s(io, func->name, depth);
+      io << "#" << func->argc;
+
+      for (auto& entry : *func->container) {
+        io << " ";
+        std::string key = this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
+        io << key << "=";
+        this->to_s(io, entry.second, depth);
+      }
+
+      io << ">";
+
+      this->pretty_print_stack.pop_back();
+      break;
+    }
+
+    case kTypeGenerator: {
+      Generator* generator = charly_as_generator(value);
+
+      if (printed_before) {
+        io << "<Generator ...>";
+        break;
+      }
+
+      this->pretty_print_stack.push_back(value);
+
+      io << "<Generator ";
+      this->to_s(io, generator->name, depth);
+      io << (generator->finished() ? " finished" : "");
+      io << (generator->started() ? " started" : "");
+      io << (generator->running ? " running" : "");
+
+      for (auto& entry : *generator->container) {
+        io << " ";
+        std::string key = this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
+        io << key << "=";
+        this->to_s(io, entry.second, depth);
+      }
+
+      io << ">";
+
+      this->pretty_print_stack.pop_back();
+      break;
+    }
+
+    case kTypeClass: {
+      Class* klass = charly_as_class(value);
+
+      if (printed_before) {
+        io << "<Class ...>";
+        break;
+      }
+
+      this->pretty_print_stack.push_back(value);
+
+      io << "<Class ";
+      this->to_s(io, klass->name, depth);
+
+      for (auto entry : *klass->container) {
+        io << " " << this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
+        io << "=";
+        this->to_s(io, entry.second, depth);
+      }
+
+      io << ">";
+
+      this->pretty_print_stack.pop_back();
+      break;
+    }
+
+    case kTypeCPointer: {
+      io << "<CPointer>";
+      break;
+    }
+
+    case kTypeSymbol: {
+      io << this->context.symtable(value).value_or(kUndefinedSymbolString);
+      break;
+    }
+
+    case kTypeFrame: {
+      Frame* frame = charly_as_frame(value);
+
+      if (printed_before) {
+        io << "<Frame ...>";
+        break;
+      }
+
+      this->pretty_print_stack.push_back(value);
+
+      io << "<Frame ";
+      io << "caller_value=";
+      this->pretty_print(io, frame->caller_value);
+      io << " ";
+      io << "self=";
+      this->pretty_print(io, frame->self);
+      io << " ";
+      io << ">";
+
+      this->pretty_print_stack.pop_back();
+      break;
+    }
+
+    default: {
+      io << "<?>";
       break;
     }
   }

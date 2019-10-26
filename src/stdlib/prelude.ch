@@ -44,17 +44,14 @@ ignoreconst {
 
   // Write a value to stdout, without a trailing newline
   write = func write {
-    arguments.each(__internal_write)
+    arguments.each(->(a) __internal_write(a.to_s()))
     null
   }
 
   // Write a value to stdout, with a trailing newline
   print = func print {
-    arguments.each(->(v) {
-      __internal_write(v)
-    })
+    arguments.each(->(v) __internal_write(v.to_s()))
     __internal_write("\n")
-
     null
   }
 

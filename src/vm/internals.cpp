@@ -255,7 +255,7 @@ VALUE write(VM& vm, VALUE value) {
     return kNull;
   }
 
-  vm.pretty_print(vm.context.out_stream, value);
+  vm.to_s(vm.context.out_stream, value);
 
   return kNull;
 }

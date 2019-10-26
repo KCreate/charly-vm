@@ -34,5 +34,14 @@ export = -> {
 
       result
     }
+
+    /*
+     * Turn this value into a string
+     *
+     * Meant to be overridden by other primitive classes
+     * */
+    func to_s {
+      self
+    }
   }
 }
