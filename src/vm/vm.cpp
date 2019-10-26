@@ -1731,6 +1731,7 @@ void VM::op_return() {
   if (charly_is_generator(frame->caller_value)) {
     Generator* generator = charly_as_generator(frame->caller_value);
     generator->set_finished(true);
+    generator->set_started(false);
     generator->running = false;
   }
 
