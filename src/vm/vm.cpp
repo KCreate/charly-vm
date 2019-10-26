@@ -3376,6 +3376,7 @@ void VM::clear_timer(uint64_t uid) {
   for (auto it : this->timers) {
     if (it.second.uid == uid) {
       this->timers.erase(it.first);
+      break;
     }
   }
 }
