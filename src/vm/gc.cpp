@@ -191,8 +191,28 @@ void GarbageCollector::collect() {
     this->mark(this->host_vm->frames);
     this->mark(this->host_vm->catchstack);
     this->mark(this->host_vm->top_frame);
+    this->mark(this->host_vm->last_exception_thrown);
+
     for (VALUE item : this->host_vm->stack) {
       this->mark(item);
+    }
+
+    auto task_queue_copy = this->host_vm->task_queue;
+    while (task_queue_copy.size()) {
+      VMTask task = task_queue_copy.front();
+      task_queue_copy.pop();
+      this->mark(task.fn);
+      this->mark(task.argument);
+    }
+
+    for (auto it : this->host_vm->timers) {
+      this->mark(it.second.fn);
+      this->mark(it.second.argument);
+    }
+
+    for (auto it : this->host_vm->intervals) {
+      this->mark(std::get<0>(it.second).fn);
+      this->mark(std::get<0>(it.second).argument);
     }
   }
 
