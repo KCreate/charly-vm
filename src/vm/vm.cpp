@@ -3280,8 +3280,8 @@ uint8_t VM::start_runtime() {
 
       Function* fn = charly_as_function(task.fn);
       this->call_function(fn, 1, &task.argument, kNull, true);
-
       this->run();
+      this->pop_stack();
     } else {
 
       // We currently have no tasks that we can run, so we can just
