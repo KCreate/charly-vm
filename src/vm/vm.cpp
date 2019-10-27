@@ -3249,6 +3249,7 @@ uint8_t VM::start_runtime() {
     if (this->timers.size()) {
       auto it = this->timers.begin();
       while (it != this->timers.end() && it->first <= now) {
+        now = std::chrono::steady_clock::now();
         this->register_task(it->second);
         this->timers.erase(it);
         it = this->timers.begin();
@@ -3257,6 +3258,7 @@ uint8_t VM::start_runtime() {
     if (this->intervals.size()) {
       auto it = this->intervals.begin();
       while (it != this->intervals.end() && it->first <= now) {
+        now = std::chrono::steady_clock::now();
         this->register_task(std::get<0>(it->second));
         this->intervals.insert({now + std::chrono::milliseconds(std::get<1>(it->second)), it->second});
         this->intervals.erase(it);
@@ -3291,6 +3293,7 @@ uint8_t VM::start_runtime() {
         Timestamp ts_timer = next_timer->first;
         Timestamp ts_interval = next_interval->first;
 
+        now = std::chrono::steady_clock::now();
         std::this_thread::sleep_for((std::min(ts_timer, ts_interval)) - now);
       }
     }
@@ -3355,7 +3358,7 @@ void VM::register_task(VMTask task) {
 uint64_t VM::register_timer(Timestamp ts, VMTask task) {
   this->gc.mark_persistent(task.fn);
   this->gc.mark_persistent(task.argument);
-  task.uid = this->next_task_uid++;
+  task.uid = this->get_next_timer_id();
   this->timers.insert({ts, task});
   return task.uid;
 }
@@ -3367,9 +3370,13 @@ uint64_t VM::register_interval(uint32_t period, VMTask task) {
   Timestamp now = std::chrono::steady_clock::now();
   Timestamp exec_at = now + std::chrono::milliseconds(period);
 
-  task.uid = this->next_task_uid++;
+  task.uid = this->get_next_timer_id();
   this->intervals.insert({exec_at, {task, period}});
   return task.uid;
+}
+
+uint64_t VM::get_next_timer_id() {
+  return this->next_timer_id++;
 }
 
 void VM::clear_timer(uint64_t uid) {

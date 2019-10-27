@@ -343,6 +343,8 @@ public:
   uint64_t register_timer(Timestamp, VMTask task);
   uint64_t register_interval(uint32_t, VMTask task);
 
+  uint64_t get_next_timer_id();
+
   void clear_timer(uint64_t uid);
   void clear_interval(uint64_t uid);
 
@@ -366,13 +368,14 @@ private:
   VALUE primitive_null = kNull;
 
   // Contains all tasks that still need to be run
-  uint64_t next_task_uid = 0;
   std::queue<VMTask> task_queue;
   bool running;
 
   // Remaining timers & intervals
   std::map<Timestamp, VMTask> timers;
   std::map<Timestamp, std::tuple<VMTask, uint32_t>> intervals;
+
+  uint64_t next_timer_id = 0;
 
   // Holds a pointer to the upper-most environment frame
   // When executing new modules, their parent environment frame is set to

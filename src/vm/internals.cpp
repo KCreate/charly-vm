@@ -344,9 +344,9 @@ VALUE defer(VM& vm, VALUE cb, VALUE dur) {
   return charly_create_integer(vm.register_timer(exec_at, VMTask(cb, kNull)));
 }
 
-VALUE defer_interval(VM& vm, VALUE period, VALUE cb) {
-  CHECK(number, period);
+VALUE defer_interval(VM& vm, VALUE cb, VALUE period) {
   CHECK(function, cb);
+  CHECK(number, period);
 
   uint32_t ms = charly_number_to_uint32(period);
 
