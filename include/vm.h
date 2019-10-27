@@ -111,7 +111,7 @@ class VM {
 public:
   VM(VMContext& ctx)
       : context(ctx),
-        gc(GarbageCollectorConfig{.out_stream = ctx.err_stream, .err_stream = ctx.err_stream, .trace = ctx.trace_gc}),
+        gc(GarbageCollectorConfig{.out_stream = ctx.err_stream, .err_stream = ctx.err_stream, .trace = ctx.trace_gc}, this),
         running(true),
         frames(nullptr),
         catchstack(nullptr),
@@ -126,11 +126,13 @@ public:
   VM(const VM& other) = delete;
   VM(VM&& other) = delete;
   ~VM() {
+
     this->gc.unmark_ptr_persistent(reinterpret_cast<void**>(&this->frames));
     this->gc.unmark_ptr_persistent(reinterpret_cast<void**>(&this->catchstack));
     this->gc.unmark_ptr_persistent(reinterpret_cast<void**>(&this->top_frame));
     this->gc.unmark_vector_ptr_persistent(&this->stack);
     this->gc.collect();
+    this->exit(0);
   }
 
   // Methods that operate on the VM's frames

@@ -186,17 +186,19 @@ void GarbageCollector::collect() {
     this->config.out_stream << "#-- GC: Pause --#" << '\n';
   }
 
+  // Mark all top level values from the vm
+  if (this->host_vm->running) {
+    this->mark(this->host_vm->frames);
+    this->mark(this->host_vm->catchstack);
+    this->mark(this->host_vm->top_frame);
+    for (VALUE item : this->host_vm->stack) {
+      this->mark(item);
+    }
+  }
+
   // Mark all temporaries
   for (auto temp_item : this->temporaries) {
     this->mark(temp_item);
-  }
-  for (auto temp_item : this->temporary_ptrs) {
-    this->mark(charly_create_pointer(*temp_item));
-  }
-  for (auto temp_item : this->temporary_vector_ptrs) {
-    for (auto temp_item : *temp_item) {
-      this->mark(temp_item);
-    }
   }
 
   // Sweep Phase

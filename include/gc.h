@@ -78,6 +78,7 @@ struct GarbageCollectorConfig {
 
 class GarbageCollector {
   GarbageCollectorConfig config;
+  VM* host_vm;
   MemoryCell* free_cell;
   size_t remaining_free_cells = 0;
   std::vector<MemoryCell*> heaps;
@@ -89,7 +90,7 @@ class GarbageCollector {
   void grow_heap();
 
 public:
-  GarbageCollector(GarbageCollectorConfig cfg) : config(cfg), free_cell(nullptr) {
+  GarbageCollector(GarbageCollectorConfig cfg, VM* host_vm) : config(cfg), host_vm(host_vm), free_cell(nullptr) {
     this->free_cell = nullptr;
 
     // Allocate the initial heaps
