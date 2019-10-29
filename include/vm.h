@@ -28,6 +28,7 @@
 #include <optional>
 #include <queue>
 #include <map>
+#include <atomic>
 
 #include "defines.h"
 #include "gc.h"
@@ -43,6 +44,8 @@
 #include "compiler.h"
 #include "parser.h"
 #include "sourcefile.h"
+
+#include "async_task.h"
 
 #pragma once
 
@@ -83,6 +86,7 @@ struct VMContext {
   bool trace_catchtables = false;
   bool trace_frames = false;
   bool trace_gc = false;
+  bool single_worker_thread = false;
 
   std::istream& in_stream = std::cin;
   std::ostream& out_stream = std::cout;
@@ -104,6 +108,23 @@ struct VMTask {
   }
 };
 
+/*
+ * Represents the state of a single worker thread
+ * */
+struct WorkerThread {
+  uint16_t tid;
+  bool currently_executing_task;
+  std::thread th;
+
+  WorkerThread(std::function<void(void*, uint16_t)> fn, void* vm_handle, uint16_t _tid)
+      : tid(_tid), currently_executing_task(false), th(fn, vm_handle, _tid) {
+  }
+
+  ~WorkerThread() {
+    if (this->th.joinable()) this->th.join();
+  }
+};
+
 class VM {
   friend GarbageCollector;
   friend ManagedContext;
@@ -117,6 +138,16 @@ public:
         catchstack(nullptr),
         ip(nullptr),
         halted(false) {
+
+    // Determine how many worker threads to spawn
+    uint16_t num_threads = std::max(std::thread::hardware_concurrency(), static_cast<uint32_t>(32));
+    if (ctx.single_worker_thread) num_threads = 1;
+
+    // Start all the worker threads
+    for (int i = 0; i < num_threads; i++) {
+      this->worker_threads.push_back(new WorkerThread(this->worker_thread_handler, this, i));
+    }
+
     this->exec_prelude();
   }
   VM(const VM& other) = delete;
@@ -124,6 +155,14 @@ public:
   ~VM() {
     this->exit(0);
     this->gc.do_collect();
+
+    // Deallocate worker threads
+    auto it = this->worker_threads.begin();
+    while (it != this->worker_threads.end()) {
+      WorkerThread* wt = *it;
+      delete wt;
+      this->worker_threads.erase(it);
+    }
   }
 
   // Methods that operate on the VM's frames
@@ -341,6 +380,10 @@ public:
   void clear_timer(uint64_t uid);
   void clear_interval(uint64_t uid);
 
+  static void worker_thread_handler(void* vm_handle, uint16_t tid);
+
+  void register_worker_task(AsyncTask task);
+
 private:
   uint8_t status_code = 0;
 
@@ -369,6 +412,20 @@ private:
   std::map<Timestamp, std::tuple<VMTask, uint32_t>> intervals;
 
   uint64_t next_timer_id = 0;
+
+  // Worker threads
+  bool worker_threads_active = true;
+  std::vector<WorkerThread*> worker_threads;
+
+  // Holds the remaining tasks
+  std::condition_variable worker_task_queue_cv;
+  std::mutex worker_task_queue_m;
+  std::queue<AsyncTask> worker_task_queue;
+
+  // Finished tasks which are ready to be handled by the vm
+  std::condition_variable worker_result_queue_cv;
+  std::mutex worker_result_queue_m;
+  std::queue<AsyncTaskResult> worker_result_queue;
 
   // Holds a pointer to the upper-most environment frame
   // When executing new modules, their parent environment frame is set to

@@ -57,6 +57,7 @@ struct RunFlags {
   bool trace_catchtables = false;
   bool trace_frames = false;
   bool trace_gc = false;
+  bool single_worker_thread = false;
 
   RunFlags(int argc, char** argv, char** envp) {
     // Parse environment variables
@@ -105,6 +106,8 @@ struct RunFlags {
         this->instruction_profile = true;
       if (!flag.compare("dump_file_include"))
         append_to_dump_files_include = true;
+      if (!flag.compare("single_worker_thread"))
+        this->single_worker_thread = true;
       this->flags.push_back(flag);
     };
 

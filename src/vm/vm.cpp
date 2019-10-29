@@ -31,6 +31,7 @@
 #include <iostream>
 #include <sstream>
 #include <thread>
+#include <random>
 
 #include <utf8/utf8.h>
 
@@ -1961,7 +1962,9 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
   switch (charly_get_type(value)) {
     case kTypeDead: {
-      io << "<dead>";
+      io << "<@";
+      io << reinterpret_cast<void*>(value);
+      io << " : Dead>";
       break;
     }
 
@@ -2225,7 +2228,9 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       this->pretty_print_stack.push_back(value);
 
-      io << "<Frame ";
+      io << "<@";
+      io << reinterpret_cast<void*>(frame);
+      io << "Frame ";
       io << "parent=" << frame->parent << " ";
       io << "parent_environment_frame=" << frame->parent_environment_frame << " ";
       io << "caller_value=";
@@ -3266,6 +3271,16 @@ uint8_t VM::start_runtime() {
       }
     }
 
+    // Add all worker thread results to the task queue
+    {
+      std::unique_lock<std::mutex> lk(this->worker_result_queue_m);
+      while (this->worker_result_queue.size()) {
+        AsyncTaskResult result = this->worker_result_queue.front();
+        this->worker_result_queue.pop();
+        this->register_task(VMTask(result.cb, result.result));
+      }
+    }
+
     // Execute a task from the task queue
     if (this->task_queue.size()) {
       ManagedContext lalloc(*this);
@@ -3284,23 +3299,41 @@ uint8_t VM::start_runtime() {
       this->pop_stack();
     } else {
 
-      // We currently have no tasks that we can run, so we can just
-      // sleep until the next timer fires
+      // If we have no tasks to run, we wait for the worker threads to produce
+      // new results
+      //
+      // We wait only so long until the next timer or interval would fire
+      // to make sure they are not stalled unneccesarily
       if (this->timers.size() != 0 && this->intervals.size() != 0) {
         auto next_timer = this->timers.begin();
         auto next_interval = this->intervals.begin();
 
+        now = std::chrono::steady_clock::now();
         Timestamp ts_timer = next_timer->first;
         Timestamp ts_interval = next_interval->first;
 
-        now = std::chrono::steady_clock::now();
-        std::this_thread::sleep_for((std::min(ts_timer, ts_interval)) - now);
+        auto sleep_duration = std::min(ts_timer, ts_interval) - now;
+
+        std::unique_lock<std::mutex> lk(this->worker_result_queue_m);
+        this->worker_result_queue_cv.wait_for(lk, sleep_duration);
+      } else {
+        std::unique_lock<std::mutex> lk(this->worker_result_queue_m);
+        this->worker_result_queue_cv.wait_for(lk, std::chrono::seconds(1000));
       }
     }
 
-    // If we have no tasks, timers and intervals left to run, we exit the runtime
-    if (this->task_queue.size() == 0 && this->timers.size() == 0 && this->intervals.size() == 0) {
-      this->running = false;
+    // Check if we can exit the runtime
+    if (this->task_queue.size() == 0 && this->timers.size() == 0 && this->intervals.size() == 0 &&
+        this->worker_task_queue.size() == 0 && this->worker_result_queue.size() == 0) {
+
+      // Check if there is at least one worker thread executing a task
+      auto it_begin = this->worker_threads.begin();
+      auto it_end = this->worker_threads.end();
+      if (std::find_if(it_begin, it_end, [](WorkerThread* wt) {
+        return wt->currently_executing_task;
+        }) == it_end) {
+        this->running = false;
+      }
     }
   }
 
@@ -3332,12 +3365,35 @@ void VM::exit(uint8_t status_code) {
 
   // Clear all timers and remaining tasks
   // and interrupt currently running task
+  // Stop all the currently running worker threads
   this->timers.clear();
   while (this->task_queue.size()) {
     this->task_queue.pop();
   }
+
+  {
+    std::unique_lock<std::mutex> lk(this->worker_task_queue_m);
+    while (this->worker_task_queue.size()) {
+      this->worker_task_queue.pop();
+    }
+  }
+
+  {
+    std::unique_lock<std::mutex> lk(this->worker_result_queue_m);
+    while (this->worker_result_queue.size()) {
+      this->worker_result_queue.pop();
+    }
+  }
+
   this->halted = true;
   this->running = false;
+
+  // Join all worker threads
+  this->worker_threads_active = false;
+  for (WorkerThread* t : this->worker_threads) {
+    if (t->th.joinable()) t->th.join();
+  }
+
   this->status_code = status_code;
 }
 
@@ -3395,6 +3451,68 @@ void VM::clear_interval(uint64_t uid) {
       break;
     }
   }
+}
+
+std::mutex db_mutex;
+
+void VM::worker_thread_handler(void* vm_handle, uint16_t tid) {
+  VM* vm = static_cast<VM*>(vm_handle);
+  WorkerThread* wt = vm->worker_threads[tid];
+
+  while (vm->worker_threads_active) {
+    AsyncTask task;
+
+    // If there are no tasks available right now, we wait
+    {
+      std::unique_lock<std::mutex> lk(vm->worker_task_queue_m);
+      while (vm->worker_task_queue.size() == 0) {
+        vm->worker_task_queue_cv.wait_for(lk, std::chrono::milliseconds(100));
+
+        if (!vm->worker_threads_active) {
+          return;
+        }
+      }
+
+      wt->currently_executing_task = true;
+      task = vm->worker_task_queue.front();
+
+      // Mark the task payload as persistent in the gc
+      vm->gc.mark_persistent(task.cb);
+      for (VALUE item : task.arguments) {
+        vm->gc.mark_persistent(item);
+      }
+      vm->worker_task_queue.pop();
+    }
+
+    // Perform the requested action
+    std::random_device rd;  // Will be used to obtain a seed for the random number engine
+    std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
+    std::uniform_int_distribution<> dis(1, 3);
+    Timestamp work_till = std::chrono::steady_clock::now() + std::chrono::milliseconds(100 * dis(gen));
+    while (std::chrono::steady_clock::now() < work_till) {
+      continue;
+    }
+
+    // Push the result onto the vms result queue
+    {
+      std::unique_lock<std::mutex> lk(vm->worker_result_queue_m);
+      vm->worker_result_queue.push({task.cb, task.arguments[0]});
+      vm->worker_result_queue_cv.notify_one();
+      wt->currently_executing_task = false;
+
+      // Unmark the task payload as persistent in the gc
+      vm->gc.unmark_persistent(task.cb);
+      for (VALUE item : task.arguments) {
+        vm->gc.unmark_persistent(item);
+      }
+    }
+  }
+}
+
+void VM::register_worker_task(AsyncTask task) {
+  std::unique_lock<std::mutex> lk(this->worker_task_queue_m);
+  this->worker_task_queue.push(task);
+  this->worker_task_queue_cv.notify_one();
 }
 
 }  // namespace Charly

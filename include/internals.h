@@ -96,5 +96,7 @@ VALUE defer_interval(VM& vm, VALUE cb, VALUE period);
 VALUE clear_timer(VM& vm, VALUE uid);
 VALUE clear_interval(VM& vm, VALUE uid);
 VALUE exit(VM& vm, VALUE status_code);
+
+VALUE register_worker_task(VM& vm, VALUE v, VALUE cb);
 }  // namespace Internals
 }  // namespace Charly

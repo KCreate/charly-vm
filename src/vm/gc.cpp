@@ -197,6 +197,30 @@ void GarbageCollector::collect() {
       this->mark(task.argument);
     }
 
+    {
+      std::unique_lock<std::mutex> lk(this->host_vm->worker_task_queue_m);
+      auto task_queue_copy = this->host_vm->worker_task_queue;
+      while (task_queue_copy.size()) {
+        AsyncTask task = task_queue_copy.front();
+        for (VALUE item : task.arguments) {
+          this->mark(item);
+        }
+        this->mark(task.cb);
+        task_queue_copy.pop();
+      }
+    }
+
+    {
+      std::unique_lock<std::mutex> lk(this->host_vm->worker_result_queue_m);
+      auto result_queue_copy = this->host_vm->worker_result_queue;
+      while (result_queue_copy.size()) {
+        AsyncTaskResult result = result_queue_copy.front();
+        result_queue_copy.pop();
+        this->mark(result.cb);
+        this->mark(result.result);
+      }
+    }
+
     for (auto it : this->host_vm->timers) {
       this->mark(it.second.fn);
       this->mark(it.second.argument);
@@ -209,8 +233,8 @@ void GarbageCollector::collect() {
   }
 
   // Mark all temporaries
-  for (auto temp_item : this->temporaries) {
-    this->mark(temp_item);
+  for (auto temp_item_iter : this->temporaries) {
+    this->mark(temp_item_iter);
   }
 
   // Sweep Phase

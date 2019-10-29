@@ -109,7 +109,8 @@ int CLI::run() {
                      .trace_opcodes = this->flags.trace_opcodes,
                      .trace_catchtables = this->flags.trace_catchtables,
                      .trace_frames = this->flags.trace_frames,
-                     .trace_gc = this->flags.trace_gc});
+                     .trace_gc = this->flags.trace_gc,
+                     .single_worker_thread = this->flags.single_worker_thread});
   VM vm(context);
 
   VALUE fn_prelude = vm.register_module(cresult_prelude->instructionblock.value());

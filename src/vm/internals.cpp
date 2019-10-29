@@ -75,6 +75,8 @@ static std::unordered_map<std::string, InternalMethodSignature> kMethodSignature
     DEFINE_INTERNAL_METHOD(clear_timer, 1),
     DEFINE_INTERNAL_METHOD(clear_interval, 1),
     DEFINE_INTERNAL_METHOD(exit, 1),
+
+    DEFINE_INTERNAL_METHOD(register_worker_task, 2),
 };
 
 VALUE import(VM& vm, VALUE include, VALUE source) {
@@ -368,6 +370,14 @@ VALUE clear_interval(VM&vm, VALUE uid) {
 VALUE exit(VM& vm, VALUE status_code) {
   CHECK(number, status_code);
   vm.exit(charly_number_to_uint8(status_code));
+  return kNull;
+}
+
+VALUE register_worker_task(VM& vm, VALUE v, VALUE cb) {
+  CHECK(function, cb);
+  AsyncTask task = {AsyncTaskType::fs_access, {}, cb};
+  task.arguments.push_back(v);
+  vm.register_worker_task(task);
   return kNull;
 }
 

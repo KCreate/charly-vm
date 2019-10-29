@@ -1,18 +1,15 @@
-const names = [
-  "pipolo",
-  "papilu",
-  "popila",
-  "pipalu"
-]
+import "math"
 
-const ivs = names.map(->(name, index) {
-  defer.interval(->{
-    print(name)
-  }, 1000)
+const register_worker_task = Charly.internals.get_method("register_worker_task");
+
+let l = 100
+let c = 0
+
+0.upto(l, ->(num) {
+  let cb = ->(result) {
+    print(math.floor(c / l * 100) + "% finished")
+    c += 1
+  }
+  register_worker_task(num, cb)
 })
 
-defer(->{
-  ivs.each(->(iv) {
-    defer.clear_interval(iv)
-  })
-}, 1000 * 5)

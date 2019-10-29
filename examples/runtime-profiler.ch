@@ -155,6 +155,7 @@ while (i < iterations) {
   func readarrayindex {
     const nums = [$0, $1, $2, $3, $4, $5]
   }
+
   readarrayindex()
 
   // Check long and short string optimizations
