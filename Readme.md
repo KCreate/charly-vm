@@ -1,4 +1,5 @@
-# Charly Virtual Machine
+![](docs/charly-vm.png)
+
 ###### Status: Pre-Alpha
 
 This repository contains the Charly Virtual Machine.
