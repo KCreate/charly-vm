@@ -2520,7 +2520,7 @@ void VM::panic(STATUS reason) {
   this->context.err_stream << '\n' << "Stackdump:" << '\n';
   this->stackdump(this->context.err_stream);
 
-  exit(1);
+  this->exit(1);
 }
 
 void VM::run() {
@@ -3212,7 +3212,7 @@ charly_main_switch_halt : {
 
 charly_main_switch_gccollect : {
   OPCODE_PROLOGUE();
-  this->gc.collect();
+  this->gc.do_collect();
   OPCODE_EPILOGUE();
   NEXTOP();
 }

@@ -117,22 +117,13 @@ public:
         catchstack(nullptr),
         ip(nullptr),
         halted(false) {
-    this->gc.mark_ptr_persistent(reinterpret_cast<void**>(&this->frames));
-    this->gc.mark_ptr_persistent(reinterpret_cast<void**>(&this->catchstack));
-    this->gc.mark_ptr_persistent(reinterpret_cast<void**>(&this->top_frame));
-    this->gc.mark_vector_ptr_persistent(&this->stack);
     this->exec_prelude();
   }
   VM(const VM& other) = delete;
   VM(VM&& other) = delete;
   ~VM() {
-
-    this->gc.unmark_ptr_persistent(reinterpret_cast<void**>(&this->frames));
-    this->gc.unmark_ptr_persistent(reinterpret_cast<void**>(&this->catchstack));
-    this->gc.unmark_ptr_persistent(reinterpret_cast<void**>(&this->top_frame));
-    this->gc.unmark_vector_ptr_persistent(&this->stack);
-    this->gc.collect();
     this->exit(0);
+    this->gc.do_collect();
   }
 
   // Methods that operate on the VM's frames

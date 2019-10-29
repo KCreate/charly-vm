@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+#include <mutex>
+
 #include "defines.h"
 #include "value.h"
 #include "vm.h"

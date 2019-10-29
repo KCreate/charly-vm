@@ -54,27 +54,20 @@ void GarbageCollector::grow_heap() {
 }
 
 void GarbageCollector::mark_persistent(VALUE value) {
+  std::unique_lock<std::mutex> g_lock(this->g_mutex);
   this->temporaries.insert(value);
 }
 
 void GarbageCollector::unmark_persistent(VALUE value) {
-  this->temporaries.erase(value);
-}
+  std::unique_lock<std::mutex> g_lock(this->g_mutex);
 
-void GarbageCollector::mark_ptr_persistent(void** value) {
-  this->temporary_ptrs.insert(value);
-}
-
-void GarbageCollector::unmark_ptr_persistent(void** value) {
-  this->temporary_ptrs.erase(value);
-}
-
-void GarbageCollector::mark_vector_ptr_persistent(std::vector<VALUE>* vec) {
-  this->temporary_vector_ptrs.insert(vec);
-}
-
-void GarbageCollector::unmark_vector_ptr_persistent(std::vector<VALUE>* vec) {
-  this->temporary_vector_ptrs.erase(vec);
+  // Check if this value is a registered temporary variable
+  if (this->temporaries.count(value)) {
+    auto it = this->temporaries.find(value);
+    if (it != this->temporaries.end()) {
+      this->temporaries.erase(it);
+    }
+  }
 }
 
 void GarbageCollector::mark(VALUE value) {
@@ -174,10 +167,9 @@ void GarbageCollector::mark(VALUE value) {
   }
 }
 
-void GarbageCollector::mark(const std::vector<VALUE>& list) {
-  for (VALUE val : list) {
-    this->mark(val);
-  }
+void GarbageCollector::do_collect() {
+  std::unique_lock<std::mutex> g_lock(this->g_mutex);
+  this->collect();
 }
 
 void GarbageCollector::collect() {
@@ -188,9 +180,9 @@ void GarbageCollector::collect() {
 
   // Mark all top level values from the vm
   if (this->host_vm->running) {
-    this->mark(this->host_vm->frames);
-    this->mark(this->host_vm->catchstack);
-    this->mark(this->host_vm->top_frame);
+    this->mark(charly_create_pointer(this->host_vm->frames));
+    this->mark(charly_create_pointer(this->host_vm->catchstack));
+    this->mark(charly_create_pointer(this->host_vm->top_frame));
     this->mark(this->host_vm->last_exception_thrown);
 
     for (VALUE item : this->host_vm->stack) {
@@ -251,6 +243,8 @@ void GarbageCollector::collect() {
 }
 
 MemoryCell* GarbageCollector::allocate() {
+  std::unique_lock<std::mutex> g_lock(this->g_mutex);
+
   MemoryCell* cell = this->free_cell;
   this->free_cell = this->free_cell->free.next;
 
@@ -333,4 +327,13 @@ void GarbageCollector::deallocate(MemoryCell* cell) {
   this->free_cell = cell;
   this->remaining_free_cells++;
 }
+
+void GarbageCollector::lock() {
+  this->g_mutex.lock();
+}
+
+void GarbageCollector::unlock() {
+  this->g_mutex.unlock();
+}
+
 }  // namespace Charly

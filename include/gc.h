@@ -27,6 +27,8 @@
 #include <iostream>
 #include <unordered_set>
 #include <vector>
+#include <mutex>
+#include <set>
 
 #include "value.h"
 
@@ -82,12 +84,18 @@ class GarbageCollector {
   MemoryCell* free_cell;
   size_t remaining_free_cells = 0;
   std::vector<MemoryCell*> heaps;
-  std::unordered_set<VALUE> temporaries;
-  std::unordered_set<void**> temporary_ptrs;  // Pointers to pointers
-  std::unordered_set<std::vector<VALUE>*> temporary_vector_ptrs;
+  std::multiset<VALUE> temporaries;
+  std::mutex g_mutex;
 
   void add_heap();
   void grow_heap();
+  void collect();
+
+  void deallocate(MemoryCell* value);
+  template <typename T>
+  inline void deallocate(T value) {
+    this->deallocate(reinterpret_cast<MemoryCell*>(value));
+  }
 
 public:
   GarbageCollector(GarbageCollectorConfig cfg, VM* host_vm) : config(cfg), host_vm(host_vm), free_cell(nullptr) {
@@ -107,24 +115,16 @@ public:
     }
   }
   MemoryCell* allocate();
-  void deallocate(MemoryCell* value);
-
-  template <typename T>
-  inline void deallocate(T value) {
-    this->deallocate(reinterpret_cast<MemoryCell*>(value));
-  }
   void mark(VALUE cell);
   template <typename T>
-  inline void mark(T cell) {
+  inline void mark(T* cell) {
     this->mark(reinterpret_cast<VALUE>(cell));
   }
-  void mark(const std::vector<VALUE>& list);
-  void collect();
+  void do_collect();
   void mark_persistent(VALUE value);
   void unmark_persistent(VALUE value);
-  void mark_ptr_persistent(void** value);
-  void unmark_ptr_persistent(void** value);
-  void mark_vector_ptr_persistent(std::vector<VALUE>* vec);
-  void unmark_vector_ptr_persistent(std::vector<VALUE>* vec);
+
+  void lock();
+  void unlock();
 };
 }  // namespace Charly
