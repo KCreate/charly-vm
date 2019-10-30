@@ -3299,27 +3299,23 @@ uint8_t VM::start_runtime() {
       this->pop_stack();
     } else {
 
-      // If we have no tasks to run, we wait for the worker threads to produce
-      // new results
+      // Wait for the next result from the worker result queue
       //
-      // We wait only so long until the next timer or interval would fire
-      // to make sure they are not stalled unneccesarily
-      if (this->timers.size() != 0 && this->intervals.size() != 0) {
-        auto next_timer = this->timers.begin();
-        auto next_interval = this->intervals.begin();
+      // We calculate the wait timeout based on the next timers and / or intervals
+      // This is so we don't stall the thread unneccesarily
+      now = std::chrono::steady_clock::now();
+      auto timer_wait = std::chrono::milliseconds(10 * 1000);
+      auto interval_wait = std::chrono::milliseconds(10 * 1000);
 
-        now = std::chrono::steady_clock::now();
-        Timestamp ts_timer = next_timer->first;
-        Timestamp ts_interval = next_interval->first;
+      // Check the next timers and intervals
+      if (this->timers.size())
+        timer_wait = std::chrono::duration_cast<std::chrono::milliseconds>(this->timers.begin()->first - now);
+      if (this->intervals.size())
+        interval_wait = std::chrono::duration_cast<std::chrono::milliseconds>(this->intervals.begin()->first - now);
 
-        auto sleep_duration = std::min(ts_timer, ts_interval) - now;
-
-        std::unique_lock<std::mutex> lk(this->worker_result_queue_m);
-        this->worker_result_queue_cv.wait_for(lk, sleep_duration);
-      } else {
-        std::unique_lock<std::mutex> lk(this->worker_result_queue_m);
-        this->worker_result_queue_cv.wait_for(lk, std::chrono::seconds(1000));
-      }
+      // Wait for the result queue
+      std::unique_lock<std::mutex> lk(this->worker_result_queue_m);
+      this->worker_result_queue_cv.wait_for(lk, std::min(timer_wait, interval_wait));
     }
 
     // Check if we can exit the runtime

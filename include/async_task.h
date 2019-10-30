@@ -91,7 +91,7 @@ enum AsyncTaskType : uint8_t {
   fd_onerror,
   fd_onreadable,
 
-  // Readline Events
+  // Readline events
   rl_onclose,
   rl_online,
   rl_onpause,
@@ -99,6 +99,8 @@ enum AsyncTaskType : uint8_t {
   rl_sigcont,
   rl_sigint,
   rl_sigstp,
+
+  // Readline operations
   rl_clearscreendown,
   rl_cursorto,
   rl_movecursor,
