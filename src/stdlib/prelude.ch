@@ -39,12 +39,14 @@ ignoreconst {
 
   // The names of all standard libraries that come with charly
   __internal_standard_libs_names = [
-    "math"
+    "math",
+    "time"
   ]
 
   // All libraries that come with charly
   __internal_standard_libs = {
-    math: import "_charly_math"
+    math: import "_charly_math",
+    time: import "_charly_time"
   }
 
   // Write a value to stdout, without a trailing newline
