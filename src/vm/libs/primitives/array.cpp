@@ -99,9 +99,6 @@ VALUE reverse(VM& vm, VALUE a) {
   CHECK(array, a);
 
   Array* array = charly_as_array(a);
-  if (array->data->size() == 0) {
-
-  }
 
   Charly::ManagedContext lalloc(vm);
   Array* new_array = charly_as_array(lalloc.create_array(array->data->size()));

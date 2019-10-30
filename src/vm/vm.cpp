@@ -3484,7 +3484,9 @@ void VM::worker_thread_handler(void* vm_handle, uint16_t tid) {
       vm->worker_task_queue.pop();
     }
 
-    // Perform the requested action
+    // Simulate some cpu action
+    //
+    // We can't just sleep because that would pause the thread
     std::random_device rd;  // Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
     std::uniform_int_distribution<> dis(1, 3);

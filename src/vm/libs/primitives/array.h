@@ -41,6 +41,6 @@ VALUE index(VM& vm, VALUE a, VALUE i, VALUE o);
 VALUE rindex(VM& vm, VALUE a, VALUE i, VALUE o);
 VALUE range(VM& vm, VALUE a, VALUE s, VALUE c);
 
-}  // namespace Math
+}  // namespace PrimitiveArray
 }  // namespace Internals
 }  // namespace Charly
