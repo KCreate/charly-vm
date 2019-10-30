@@ -73,7 +73,13 @@ ignoreconst {
     __internal_defer(cb, arguments.length > 1 ? $1 : 0);
   }
   defer.interval = func interval(cb, period) {
-    __internal_defer_interval(cb, period)
+
+    // Count how often the callback has been called
+    let c = 0
+    __internal_defer_interval(->{
+      cb(c)
+      c += 1
+    }, period)
   }
   defer.clear_timer = __internal_clear_timer
   defer.clear_interval = __internal_clear_interval
