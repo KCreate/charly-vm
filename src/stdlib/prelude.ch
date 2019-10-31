@@ -49,17 +49,43 @@ ignoreconst {
     time: import "_charly_time"
   }
 
+  // Value class
+  //
+  // All classes automatically depend on this class
+  const Value = (import "_charly_value")()
+
+  // Method to modify the primitive objects
+  const set_primitive_object = Charly.internals.get_method("set_primitive_object")
+  const set_primitive_class = Charly.internals.get_method("set_primitive_class")
+  const set_primitive_array = Charly.internals.get_method("set_primitive_array")
+  const set_primitive_string = Charly.internals.get_method("set_primitive_string")
+  const set_primitive_number = Charly.internals.get_method("set_primitive_number")
+  const set_primitive_function = Charly.internals.get_method("set_primitive_function")
+  const set_primitive_generator = Charly.internals.get_method("set_primitive_generator")
+  const set_primitive_boolean = Charly.internals.get_method("set_primitive_boolean")
+  const set_primitive_null = Charly.internals.get_method("set_primitive_null")
+
+  Object = set_primitive_object((import "_charly_object")(Value));
+  Number = set_primitive_number((import "_charly_number")(Value));
+  Array = set_primitive_array((import "_charly_array")(Value));
+  Class = set_primitive_class((import "_charly_class")(Value));
+  String = set_primitive_string((import "_charly_string")(Value));
+  Function = set_primitive_function((import "_charly_function")(Value));
+  Generator = set_primitive_generator((import "_charly_generator")(Value));
+  Boolean = set_primitive_boolean((import "_charly_boolean")(Value));
+  Null = set_primitive_null((import "_charly_null")(Value));
+
   // Write a value to stdout, without a trailing newline
   write = func write {
     arguments.each(->(a) __internal_write(a.to_s()))
-    null
+    write
   }
 
   // Write a value to stdout, with a trailing newline
   print = func print {
     arguments.each(->(v) __internal_write(v.to_s()))
     __internal_write("\n")
-    null
+    write
   }
 
   // Exits the program with a given status code
@@ -96,27 +122,4 @@ ignoreconst {
     },
     dirname: __internal_get_method("dirname")
   }
-
-  // Method to modify the primitive objects
-  const set_primitive_object = Charly.internals.get_method("set_primitive_object")
-  const set_primitive_class = Charly.internals.get_method("set_primitive_class")
-  const set_primitive_array = Charly.internals.get_method("set_primitive_array")
-  const set_primitive_string = Charly.internals.get_method("set_primitive_string")
-  const set_primitive_number = Charly.internals.get_method("set_primitive_number")
-  const set_primitive_function = Charly.internals.get_method("set_primitive_function")
-  const set_primitive_generator = Charly.internals.get_method("set_primitive_generator")
-  const set_primitive_boolean = Charly.internals.get_method("set_primitive_boolean")
-  const set_primitive_null = Charly.internals.get_method("set_primitive_null")
-
-  const Value = (import "_charly_value")()
-
-  Object = set_primitive_object((import "_charly_object")(Value));
-  Number = set_primitive_number((import "_charly_number")(Value));
-  Array = set_primitive_array((import "_charly_array")(Value));
-  Class = set_primitive_class((import "_charly_class")(Value));
-  String = set_primitive_string((import "_charly_string")(Value));
-  Function = set_primitive_function((import "_charly_function")(Value));
-  Generator = set_primitive_generator((import "_charly_generator")(Value));
-  Boolean = set_primitive_boolean((import "_charly_boolean")(Value));
-  Null = set_primitive_null((import "_charly_null")(Value));
 }

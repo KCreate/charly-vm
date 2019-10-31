@@ -1,5 +1,5 @@
 export = ->(Base) {
-  return class Object extends Base {
+  return class Number extends Base {
 
     /*
      * Calls the callback *self* times, passing the current iteration count
