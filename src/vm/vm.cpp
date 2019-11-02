@@ -2685,6 +2685,7 @@ void VM::panic(STATUS reason) {
   this->context.err_stream << '\n' << "Stackdump:" << '\n';
   this->stackdump(this->context.err_stream);
 
+  this->exit(1);
   std::exit(1);
 }
 
