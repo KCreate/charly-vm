@@ -80,12 +80,22 @@ ignoreconst {
     arguments.each(->(a) __internal_write(a.to_s()))
     write
   }
+  write.dir = func write_dir {
+    arguments.each(->(v) __internal_write(v))
+    __internal_write("\n")
+    write.dir
+  }
 
   // Write a value to stdout, with a trailing newline
   print = func print {
     arguments.each(->(v) __internal_write(v.to_s()))
     __internal_write("\n")
     write
+  }
+  print.dir = func print_dir {
+    arguments.each(->(v) __internal_write(v))
+    __internal_write("\n")
+    print.dir
   }
 
   // Exits the program with a given status code
