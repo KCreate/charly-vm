@@ -2686,7 +2686,8 @@ void VM::panic(STATUS reason) {
   this->stackdump(this->context.err_stream);
 
   this->exit(1);
-  std::exit(1);
+  this->context.err_stream << "Aborting the charly runtime!" << '\n';
+  std::abort();
 }
 
 void VM::run() {
