@@ -1,19 +1,4 @@
-class Vec2 {
-  property x
-  property y
+import "time"
 
-  func @"+"(o) {
-    Vec2(@x + o.x, @y + o.y)
-  }
-
-  func to_s {
-    "x: " + @x + " y: " + @y
-  }
-}
-
-let v = Vec2(5, 0)
-
-defer.interval(->{
-  v += Vec2(0, -1)
-  print(v)
-}, 1000)
+const t = time.parse("03.12.2019 11:30:32", "%d.%m.%Y %H:%M:%S")
+print(t.to_local())

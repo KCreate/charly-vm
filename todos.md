@@ -1,0 +1,4 @@
+- do panic if some vm methods are called not from the main thread
+- locale handling?
+  - localization framework
+  - time methods need localisation

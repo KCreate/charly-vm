@@ -132,4 +132,6 @@ ignoreconst {
     },
     dirname: __internal_get_method("dirname")
   }
+  Charly.math = import "math"
+  Charly.time = import "time"
 }
