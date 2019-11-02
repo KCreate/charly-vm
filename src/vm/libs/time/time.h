@@ -35,6 +35,7 @@ namespace Time {
 
 VALUE system_clock_now(VM& vm);
 VALUE steady_clock_now(VM& vm);
+VALUE highres_now(VM& vm);
 VALUE to_local(VM& vm, VALUE ts);
 VALUE to_utc(VM& vm, VALUE ts);
 VALUE fmt(VM& vm, VALUE ts, VALUE fmt);

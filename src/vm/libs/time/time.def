@@ -26,6 +26,7 @@
 
 DEFINE_INTERNAL_METHOD(Time::system_clock_now, 0),
 DEFINE_INTERNAL_METHOD(Time::steady_clock_now, 0),
+DEFINE_INTERNAL_METHOD(Time::highres_now, 0),
 DEFINE_INTERNAL_METHOD(Time::to_local, 1),
 DEFINE_INTERNAL_METHOD(Time::to_utc, 1),
 DEFINE_INTERNAL_METHOD(Time::fmt, 2),

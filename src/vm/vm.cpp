@@ -3391,6 +3391,8 @@ void VM::exec_prelude() {
 }
 
 uint8_t VM::start_runtime() {
+  this->starttime = std::chrono::high_resolution_clock::now();
+
   while (this->running) {
     Timestamp now = std::chrono::steady_clock::now();
 

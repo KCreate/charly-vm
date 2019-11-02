@@ -54,6 +54,13 @@ VALUE steady_clock_now(VM& vm) {
   return charly_create_double(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count());
 }
 
+VALUE highres_now(VM& vm) {
+  (void)vm;
+  std::chrono::time_point<std::chrono::high_resolution_clock> now = std::chrono::high_resolution_clock::now();
+  auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(now - vm.starttime);
+  return charly_create_double(ns.count());
+}
+
 VALUE to_local(VM& vm, VALUE ts) {
   CHECK(number, ts);
 

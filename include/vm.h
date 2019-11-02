@@ -29,6 +29,7 @@
 #include <queue>
 #include <map>
 #include <atomic>
+#include <chrono>
 
 #include "defines.h"
 #include "gc.h"
@@ -385,7 +386,9 @@ public:
 
   void register_worker_task(AsyncTask task);
 
+  std::chrono::time_point<std::chrono::high_resolution_clock> starttime;
 private:
+
   uint8_t status_code = 0;
 
   GarbageCollector gc;

@@ -1,5 +1,6 @@
 const __system_clock_now = Charly.internals.get_method("Time::system_clock_now")
 const __steady_clock_now = Charly.internals.get_method("Time::steady_clock_now")
+const __highres_now = Charly.internals.get_method("Time::highres_now")
 const __to_local = Charly.internals.get_method("Time::to_local")
 const __to_utc = Charly.internals.get_method("Time::to_utc")
 const __fmt = Charly.internals.get_method("Time::fmt")
@@ -69,6 +70,7 @@ class Duration extends Timestamp {};
 export = {
   now: ->Timestamp(__system_clock_now()),
   now_steady: ->Timestamp(__steady_clock_now()),
+  now_highres: ->__highres_now() / 1000000,
 
   parse: ->(string, fmt) {
     Timestamp(__parse(string, fmt))
