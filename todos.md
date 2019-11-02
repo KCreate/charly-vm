@@ -15,8 +15,6 @@
         as there is no exception handler there too and it always results
         in some ugly looking error messages
 
-- Timestamp - Timestamp should return a Duration
-
 - Improved Garbage Collector
   - Implement a fully fledged garbage collector that has the ability to crawl
     the call tree, inspect the machine stack and search for VALUE pointers (pointers
