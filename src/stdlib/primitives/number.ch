@@ -93,19 +93,23 @@ export = ->(Base) {
     }
 
     // Converters for different time scales
-    func millisecond  = Charly.time.Duration << self
-    func milliseconds = Charly.time.Duration << self
-    func second       = Charly.time.Duration << self * 1000
-    func seconds      = Charly.time.Duration << self * 1000
-    func minute       = Charly.time.Duration << self * 1000 * 60
-    func minutes      = Charly.time.Duration << self * 1000 * 60
-    func hour         = Charly.time.Duration << self * 1000 * 60 * 60
-    func hours        = Charly.time.Duration << self * 1000 * 60 * 60
-    func day          = Charly.time.Duration << self * 1000 * 60 * 60 * 24
-    func days         = Charly.time.Duration << self * 1000 * 60 * 60 * 24
-    func week         = Charly.time.Duration << self * 1000 * 60 * 60 * 24 * 7
-    func weeks        = Charly.time.Duration << self * 1000 * 60 * 60 * 24 * 7
-    func year         = Charly.time.Duration << self * 1000 * 60 * 60 * 24 * 365
-    func years        = Charly.time.Duration << self * 1000 * 60 * 60 * 24 * 365
+    func nanosecond   = Charly.time.Duration(self / 1000000)
+    func nanoseconds  = Charly.time.Duration(self / 1000000)
+    func microsecond  = Charly.time.Duration(self / 1000)
+    func microseconds = Charly.time.Duration(self / 1000)
+    func millisecond  = Charly.time.Duration(self)
+    func milliseconds = Charly.time.Duration(self)
+    func second       = Charly.time.Duration(self * 1000)
+    func seconds      = Charly.time.Duration(self * 1000)
+    func minute       = Charly.time.Duration(self * 1000 * 60)
+    func minutes      = Charly.time.Duration(self * 1000 * 60)
+    func hour         = Charly.time.Duration(self * 1000 * 60 * 60)
+    func hours        = Charly.time.Duration(self * 1000 * 60 * 60)
+    func day          = Charly.time.Duration(self * 1000 * 60 * 60 * 24)
+    func days         = Charly.time.Duration(self * 1000 * 60 * 60 * 24)
+    func week         = Charly.time.Duration(self * 1000 * 60 * 60 * 24 * 7)
+    func weeks        = Charly.time.Duration(self * 1000 * 60 * 60 * 24 * 7)
+    func year         = Charly.time.Duration(self * 1000 * 60 * 60 * 24 * 365)
+    func years        = Charly.time.Duration(self * 1000 * 60 * 60 * 24 * 365)
   }
 }
