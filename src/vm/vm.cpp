@@ -1341,6 +1341,10 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
 
   ManagedContext ctx(*this);
   ctx.mark_in_gc(function);
+  ctx.mark_in_gc(self);
+  for (uint32_t i = 0; i < argc; i++) {
+    ctx.mark_in_gc(argv[i]);
+  }
 
   Frame* frame = ctx.create_frame(self, function, return_address, halt_after_return);
 
@@ -1373,6 +1377,12 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
     return;
   }
 
+  // Mark the function and function arguments as temporaries
+  this->gc.mark_persistent(charly_create_pointer(function));
+  for (uint i = 0; i < argc; i++) {
+    this->gc.mark_persistent(argv[i]);
+  }
+
   // We keep a reference to the current catchtable around in case the constructor throws an exception
   // After the constructor call we check if the table changed
   CatchTable* original_catchtable = this->catchstack;
@@ -1397,6 +1407,11 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
       this->throw_exception("Too many arguments for CFunction call");
       return;
     }
+  }
+
+  this->gc.unmark_persistent(charly_create_pointer(function));
+  for (uint i = 0; i < argc; i++) {
+    this->gc.unmark_persistent(argv[i]);
   }
 
   // The cfunction call might have halted the machine by either executing a module
@@ -3439,10 +3454,16 @@ uint8_t VM::start_runtime() {
         this->panic(Status::RuntimeTaskNotCallable);
       }
 
+      this->gc.mark_persistent(task.fn);
+      this->gc.mark_persistent(task.argument);
+
       Function* fn = charly_as_function(task.fn);
       this->call_function(fn, 1, &task.argument, kNull, true);
       this->run();
       this->pop_stack();
+
+      this->gc.unmark_persistent(task.fn);
+      this->gc.unmark_persistent(task.argument);
     } else {
 
       // Wait for the next result from the worker result queue

@@ -79,13 +79,13 @@ struct GarbageCollectorConfig {
 };
 
 class GarbageCollector {
+  friend VM;
   GarbageCollectorConfig config;
   VM* host_vm;
   MemoryCell* free_cell;
   size_t remaining_free_cells = 0;
   std::vector<MemoryCell*> heaps;
   std::multiset<VALUE> temporaries;
-  std::mutex g_mutex;
 
   void add_heap();
   void grow_heap();
@@ -96,7 +96,7 @@ class GarbageCollector {
   inline void deallocate(T value) {
     this->deallocate(reinterpret_cast<MemoryCell*>(value));
   }
-
+  std::recursive_mutex g_mutex;
 public:
   GarbageCollector(GarbageCollectorConfig cfg, VM* host_vm) : config(cfg), host_vm(host_vm), free_cell(nullptr) {
     this->free_cell = nullptr;

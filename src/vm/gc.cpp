@@ -54,12 +54,12 @@ void GarbageCollector::grow_heap() {
 }
 
 void GarbageCollector::mark_persistent(VALUE value) {
-  std::unique_lock<std::mutex> g_lock(this->g_mutex);
+  std::unique_lock<std::recursive_mutex> g_lock(this->g_mutex);
   this->temporaries.insert(value);
 }
 
 void GarbageCollector::unmark_persistent(VALUE value) {
-  std::unique_lock<std::mutex> g_lock(this->g_mutex);
+  std::unique_lock<std::recursive_mutex> g_lock(this->g_mutex);
 
   // Check if this value is a registered temporary variable
   if (this->temporaries.count(value)) {
@@ -168,11 +168,13 @@ void GarbageCollector::mark(VALUE value) {
 }
 
 void GarbageCollector::do_collect() {
-  std::unique_lock<std::mutex> g_lock(this->g_mutex);
+  std::unique_lock<std::recursive_mutex> g_lock(this->g_mutex);
   this->collect();
 }
 
 void GarbageCollector::collect() {
+  std::unique_lock<std::recursive_mutex>(this->g_mutex);
+
   auto gc_start_time = std::chrono::high_resolution_clock::now();
   if (this->config.trace) {
     this->config.out_stream << "#-- GC: Pause --#" << '\n';
@@ -267,7 +269,7 @@ void GarbageCollector::collect() {
 }
 
 MemoryCell* GarbageCollector::allocate() {
-  std::unique_lock<std::mutex> g_lock(this->g_mutex);
+  std::unique_lock<std::recursive_mutex> g_lock(this->g_mutex);
 
   MemoryCell* cell = this->free_cell;
   this->free_cell = this->free_cell->free.next;
@@ -294,6 +296,8 @@ MemoryCell* GarbageCollector::allocate() {
 }
 
 void GarbageCollector::deallocate(MemoryCell* cell) {
+  std::unique_lock<std::recursive_mutex>(this->g_mutex);
+
   // Run the type specific cleanup function
   switch (charly_as_basic(charly_create_pointer(cell))->type) {
     case kTypeObject: {
