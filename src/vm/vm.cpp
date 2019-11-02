@@ -163,6 +163,7 @@ CatchTable* VM::create_catchtable(uint8_t* address) {
 
 CatchTable* VM::pop_catchtable() {
   if (!this->catchstack) {
+    this->context.err_stream << "No catchtable registered" << '\n';
     this->context.err_stream << "Last exception thrown: ";
     this->to_s(this->context.err_stream, this->last_exception_thrown);
     this->context.err_stream << '\n';
@@ -2684,7 +2685,7 @@ void VM::panic(STATUS reason) {
   this->context.err_stream << '\n' << "Stackdump:" << '\n';
   this->stackdump(this->context.err_stream);
 
-  this->exit(1);
+  std::exit(1);
 }
 
 void VM::run() {
@@ -3553,6 +3554,7 @@ void VM::exit(uint8_t status_code) {
 
   // Join all worker threads
   this->worker_threads_active = false;
+  this->worker_task_queue_cv.notify_all();
   for (WorkerThread* t : this->worker_threads) {
     if (t->th.joinable()) t->th.join();
   }
@@ -3629,7 +3631,7 @@ void VM::worker_thread_handler(void* vm_handle, uint16_t tid) {
     {
       std::unique_lock<std::mutex> lk(vm->worker_task_queue_m);
       while (vm->worker_task_queue.size() == 0) {
-        vm->worker_task_queue_cv.wait_for(lk, std::chrono::milliseconds(100));
+        vm->worker_task_queue_cv.wait(lk);
 
         if (!vm->worker_threads_active) {
           return;
