@@ -10,6 +10,19 @@ export = ->(Base) {
   }
 
   return class Array extends Base {
+    static func create(size, cb) {
+      const arr = []
+
+      let i = 0
+      while i < size {
+        const v = typeof cb == "function" ? cb(i) : cb
+        arr << v
+        i += 1
+      }
+
+      arr
+    }
+
     func copy {
       @map(->$0)
     }
