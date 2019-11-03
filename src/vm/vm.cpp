@@ -3479,8 +3479,9 @@ uint8_t VM::start_runtime() {
       this->gc.mark_persistent(task.fn);
       this->gc.mark_persistent(task.argument);
 
+      // 19 is the index of the Charly object in the top frame
       Function* fn = charly_as_function(task.fn);
-      this->call_function(fn, 1, &task.argument, kNull, true);
+      this->call_function(fn, 1, &task.argument, this->top_frame->read_local(19), true);
       this->run();
       this->pop_stack();
 
