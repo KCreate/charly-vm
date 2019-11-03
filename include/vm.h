@@ -87,6 +87,7 @@ struct VMContext {
   bool trace_catchtables = false;
   bool trace_frames = false;
   bool trace_gc = false;
+  bool verbose_addresses = false;
   bool single_worker_thread = false;
 
   std::istream& in_stream = std::cin;

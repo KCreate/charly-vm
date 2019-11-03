@@ -2437,6 +2437,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
 
   switch (charly_get_type(value)) {
     case kTypeDead: {
+      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
       io << "<dead>";
       break;
     }
@@ -2467,7 +2468,10 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
     }
 
     case kTypeString: {
+      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
+      io << "\"";
       io.write(charly_string_data(value), charly_string_length(value));
+      io << "\"";
       break;
     }
 
@@ -2482,6 +2486,12 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
 
       this->pretty_print_stack.push_back(value);
 
+      if (charly_is_class(object->klass)) {
+        Class* klass = charly_as_class(object->klass);
+        io << this->context.symtable(klass->name).value_or(kUndefinedSymbolString);
+      }
+
+      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
       io << "{\n";
 
       for (auto& entry : *object->container) {
@@ -2501,6 +2511,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
 
     case kTypeArray: {
       Array* array = charly_as_array(value);
+      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
 
       // If this array was already printed, we avoid printing it again
       if (printed_before) {
@@ -2531,6 +2542,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
 
     case kTypeFunction: {
       Function* func = charly_as_function(value);
+      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
 
       if (printed_before) {
         io << "<Function ...>";
@@ -2559,6 +2571,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
 
     case kTypeCFunction: {
       CFunction* func = charly_as_cfunction(value);
+      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
 
       if (printed_before) {
         io << "<CFunction ...>";
@@ -2586,6 +2599,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
 
     case kTypeGenerator: {
       Generator* generator = charly_as_generator(value);
+      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
 
       if (printed_before) {
         io << "<Generator ...>";
@@ -2615,6 +2629,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
 
     case kTypeClass: {
       Class* klass = charly_as_class(value);
+      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
 
       if (printed_before) {
         io << "<Class ...>";
@@ -2639,17 +2654,20 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
     }
 
     case kTypeCPointer: {
+      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
       io << "<CPointer>";
       break;
     }
 
     case kTypeSymbol: {
+      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
       io << this->context.symtable(value).value_or(kUndefinedSymbolString);
       break;
     }
 
     case kTypeFrame: {
       Frame* frame = charly_as_frame(value);
+      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
 
       if (printed_before) {
         io << "<Frame ...>";
@@ -2672,6 +2690,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
     }
 
     default: {
+      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
       io << "<?>";
       break;
     }
