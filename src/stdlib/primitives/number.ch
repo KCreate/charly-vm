@@ -92,6 +92,13 @@ export = ->(Base) {
       (self - expected).abs() <= delta
     }
 
+    /*
+     * Return the number itself
+     * */
+    func to_n {
+      self
+    }
+
     // Converters for different time scales
     func nanosecond   = Charly.time.Duration(self / 1000000)
     func nanoseconds  = Charly.time.Duration(self / 1000000)

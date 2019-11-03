@@ -37,6 +37,7 @@
 #include "libs/math/math.h"
 #include "libs/time/time.h"
 #include "libs/primitives/array.h"
+#include "libs/primitives/string.h"
 
 using namespace std;
 
@@ -53,6 +54,7 @@ static std::unordered_map<std::string, InternalMethodSignature> kMethodSignature
 
 // Libs
 #import "libs/primitives/array.def"
+#import "libs/primitives/string.def"
 #import "libs/math/math.def"
 #import "libs/time/time.def"
 

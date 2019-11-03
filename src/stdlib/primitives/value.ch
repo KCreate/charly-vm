@@ -43,5 +43,14 @@ export = -> {
     func to_s {
       self
     }
+
+    /*
+     * Turn this value into a number
+     *
+     * Meant to be overridden by other primitive classes
+     * */
+    func to_n {
+      NaN
+    }
   }
 }

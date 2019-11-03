@@ -21,12 +21,9 @@ class Lexer {
   func tokenize(source) {
     @setup(source)
 
-    while @pos < @source.length() {
-      @read_token().tap(->(token) {
-        if token {
-          @tokens.push(token)
-        }
-      })
+    while @pos < @source.length {
+      const token = @read_token()
+      if token @tokens.push(token)
     }
 
     @tokens
@@ -35,7 +32,7 @@ class Lexer {
   func read_token() {
     let char = @current_char()
 
-    guard typeof char == "String" {
+    guard typeof char == "string" {
       return false
     }
 
@@ -66,7 +63,7 @@ class Lexer {
       }
     }
 
-    if char.digit() {
+    if char.is_digit() {
       return @read_numeric()
     }
 
@@ -93,12 +90,12 @@ class Lexer {
     loop {
       const char = @current_char()
 
-      if typeof char ! "String" {
+      if typeof char ! "string" {
         @read_char()
         break
       }
 
-      if char.digit() {
+      if char.is_digit() {
         @buffer += char
         @read_char()
       } else {
@@ -129,7 +126,7 @@ class Parser {
   }
 
   func parse_error(expected, real) {
-    if typeof real == "Null" {
+    if typeof real == "null" {
       throw "Expected " + expected + " but reached end of input"
     }
 
@@ -264,14 +261,14 @@ class Visitor {
 const parser = Parser()
 const visitor = Visitor()
 
-loop {
-  try {
-    const input = "> ".prompt()
-    const tree = parser.parse(input)
-    const result = visitor.execute(tree)
-    print(Object.pretty_print(result))
-  } catch(e) {
-    print("Error:".colorize(31))
-    print(e.colorize(31))
-  }
+try {
+  const input = "(250 * 4) * (4 / 32) / 25 + 415"
+  print(input)
+  const tree = parser.parse(input)
+  print(tree)
+  const result = visitor.execute(tree)
+  print(result)
+} catch(e) {
+  print("Error:")
+  print(e)
 }
