@@ -1642,13 +1642,30 @@ AST::AbstractNode* Parser::parse_class() {
         }
       } else if (this->token.type == TokenType::Property) {
         this->advance();
+        Token name;
         this->expect_token(TokenType::Identifier, [&]() {
-          if (static_declaration) {
-            static_properties->append_node((new AST::Identifier(this->token.value))->at(this->token.location));
-          } else {
-            member_properties->append_node((new AST::Identifier(this->token.value))->at(this->token.location));
-          }
+          name = this->token;
         });
+
+        // Check if there is a default value being assigned
+        AST::AbstractNode* exp = nullptr;
+        if (static_declaration) {
+          this->expect_token(TokenType::Assignment);
+          exp = this->parse_expression();
+        }
+
+        if (static_declaration) {
+          if (exp) {
+            AST::Assignment* ass_node = new AST::Assignment(name.value, exp);
+            ass_node->at(name.location, exp->location_end);
+            ass_node->no_codegen = true;
+            static_properties->append_node(ass_node);
+          } else {
+            static_properties->append_node((new AST::Identifier(name.value))->at(name.location));
+          }
+        } else {
+          member_properties->append_node((new AST::Identifier(name.value))->at(name.location));
+        }
         this->skip_token(TokenType::Semicolon);
       } else {
         this->unexpected_token("func or property");

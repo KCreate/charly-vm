@@ -155,14 +155,35 @@ class Timestamp {
   }
 }
 
-export = {
-  now: ->Timestamp(__system_clock_now()),
-  now_steady: ->Timestamp(__steady_clock_now()),
-  now_highres: ->__highres_now() / 1000000,
+class Time {
+  func constructor {
+    throw "Cannot initialize an instance of the Time class"
+  }
 
-  parse: ->(string, fmt) {
+  static func now {
+    Timestamp(__system_clock_now())
+  }
+
+  static func now_steady {
+    Timestamp(__steady_clock_now())
+  }
+
+  static func now_highres {
+    Timestamp(__highres_now() / 1000000)
+  }
+
+  static func parse(string, fmt) {
     Timestamp(__parse(string, fmt))
-  },
+  }
 
-  Timestamp, Duration
+  static func measure(cb) {
+    const begin = Time.now_highres()
+    cb()
+    Time.now_highres() - begin
+  }
+
+  static property Timestamp = Timestamp
+  static property Duration = Duration
 }
+
+export = Time

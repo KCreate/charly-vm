@@ -722,6 +722,7 @@ struct Typeof : public AbstractNode {
 struct Assignment : public AbstractNode {
   std::string target;
   AbstractNode* expression;
+  bool no_codegen = false;
 
   Assignment(const std::string& t, AbstractNode* e) : target(t), expression(e) {
   }

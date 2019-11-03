@@ -177,18 +177,20 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
 }
 
 AST::AbstractNode* LVarRewriter::visit_assignment(AST::Assignment* node, VisitContinue cont) {
-  LocalOffsetInfo result = this->scope->access_symbol(node->target);
-  if (!result.valid) {
-    this->push_error(node, "Could not resolve symbol: " + node->target);
-    return node;
-  }
+  if (!node->no_codegen) {
+    LocalOffsetInfo result = this->scope->access_symbol(node->target);
+    if (!result.valid) {
+      this->push_error(node, "Could not resolve symbol: " + node->target);
+      return node;
+    }
 
-  if (result.constant && !this->allow_const_assignment) {
-    this->push_error(node, "Assignment to constant variable: " + node->target);
-    return node;
-  }
+    if (result.constant && !this->allow_const_assignment) {
+      this->push_error(node, "Assignment to constant variable: " + node->target);
+      return node;
+    }
 
-  node->offset_info = new ValueLocation(result.location);
+    node->offset_info = new ValueLocation(result.location);
+  }
 
   cont();
 

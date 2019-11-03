@@ -672,9 +672,17 @@ AST::AbstractNode* CodeGenerator::visit_class(AST::Class* node, VisitContinue) {
     this->assembler.write_putvalue(this->context.symtable(n->as<AST::Identifier>()->name));
   }
   for (auto n : node->static_properties->children) {
-    if (n->type() != AST::kTypeIdentifier)
-      this->push_fatal_error(n, "Expected node to be an identifier");
-    this->assembler.write_putvalue(this->context.symtable(n->as<AST::Identifier>()->name));
+    if (n->type() == AST::kTypeAssignment) {
+      this->assembler.write_putvalue(this->context.symtable(n->as<AST::Assignment>()->target));
+      continue;
+    }
+
+    if (n->type() == AST::kTypeIdentifier) {
+      this->assembler.write_putvalue(this->context.symtable(n->as<AST::Identifier>()->name));
+      continue;
+    }
+
+    this->push_fatal_error(n, "Expected node to be an identifier");
   }
   for (auto n : node->member_functions->children) {
     this->visit_node(n);
@@ -694,6 +702,15 @@ AST::AbstractNode* CodeGenerator::visit_class(AST::Class* node, VisitContinue) {
                                  node->static_properties->children.size(), node->member_functions->children.size(),
                                  node->static_functions->children.size(), node->parent_class->type() != AST::kTypeEmpty,
                                  node->constructor->type() != AST::kTypeEmpty);
+
+  for (auto n : node->static_properties->children) {
+    if (n->type() == AST::kTypeAssignment) {
+      VALUE target_symbol = this->context.symtable(n->as<AST::Assignment>()->target);
+      this->assembler.write_dup();
+      this->visit_node(n->as<AST::Assignment>()->expression);
+      this->assembler.write_setmembersymbol(target_symbol);
+    }
+  }
 
   return node;
 }
