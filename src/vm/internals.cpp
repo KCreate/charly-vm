@@ -36,6 +36,7 @@
 
 #include "libs/math/math.h"
 #include "libs/time/time.h"
+#include "libs/buffer/buffer.h"
 #include "libs/primitives/array.h"
 #include "libs/primitives/string.h"
 
@@ -57,6 +58,7 @@ static std::unordered_map<std::string, InternalMethodSignature> kMethodSignature
 #import "libs/primitives/string.def"
 #import "libs/math/math.def"
 #import "libs/time/time.def"
+#import "libs/buffer/buffer.def"
 
     // VM Barebones
     DEFINE_INTERNAL_METHOD(import, 2),
