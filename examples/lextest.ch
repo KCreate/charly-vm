@@ -10,13 +10,5 @@
   //print(e)
 //}
 
-class A {
-  property name
-
-  func foo {
-    print(@name)
-  }
-}
-
-const a = A("leonard")
-a.foo()
+let str = "hello world"
+print(str.substring(6))

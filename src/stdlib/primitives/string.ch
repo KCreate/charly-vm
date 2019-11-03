@@ -14,6 +14,28 @@ export = ->(Base) {
   return class String extends Base {
 
     /*
+     * Returns a new string which is a substring
+     * starting at *start* with a length of *offset*
+     *
+     * ```
+     * "hello world".substring(5, 5) // => "world"
+     * ```
+     * */
+    func substring(start) {
+      const offset = arguments[1] || @length
+      let index = start
+      const end = start + offset
+      let result = ""
+
+      while index < end {
+        if self[index] result += self[index]
+        index += 1
+      }
+
+      result
+    }
+
+    /*
      * Checks if this string is a digit
      *
      * ```
