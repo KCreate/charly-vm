@@ -19,3 +19,9 @@
   - Implement a fully fledged garbage collector that has the ability to crawl
     the call tree, inspect the machine stack and search for VALUE pointers (pointers
     pointing into the gc heap area)
+- Colorize methods to generate escape codes for terminals
+
+- An efficient way to create strings
+  - Create a C api that manages string buffers
+    - This would allow the rapid concatenation of many strings without
+      wasting too much memory in the process of doing so

@@ -76,51 +76,12 @@ AST::AbstractNode* LVarRewriter::visit_class(AST::Class* node, __attribute__((un
   node->parent_class = this->visit_node(node->parent_class);
   this->push_local_scope();
 
-  // Prepare the symbols for the member functions and constructor
-  for (auto& node : node->member_properties->children) {
-    if (node->type() == AST::kTypeIdentifier) {
-      AST::Identifier* id = reinterpret_cast<AST::Identifier*>(node);
-      this->scope->register_symbol(
-        this->context.symtable(id->name),
-        LocalOffsetInfo(ValueLocation::self(0, charly_create_symbol(id->name)))
-      );
-    }
-  }
-  for (auto& node : node->member_functions->children) {
-    if (node->type() == AST::kTypeFunction) {
-      AST::Function* func = reinterpret_cast<AST::Function*>(node);
-      this->scope->register_symbol(
-        this->context.symtable(func->name),
-        LocalOffsetInfo(ValueLocation::self(0, charly_create_symbol(func->name)))
-      );
-    }
-  }
   node->member_functions = reinterpret_cast<AST::NodeList*>(this->visit_node(node->member_functions));
   node->constructor = this->visit_node(node->constructor);
-
   this->pop_scope();
   this->push_local_scope();
-
-  // Prepare the symbols for the member functions and constructor
-  for (auto& node : node->static_properties->children) {
-    if (node->type() == AST::kTypeIdentifier) {
-      AST::Identifier* id = reinterpret_cast<AST::Identifier*>(node);
-      this->scope->register_symbol(
-        this->context.symtable(id->name),
-        LocalOffsetInfo(ValueLocation::self(0, charly_create_symbol(id->name)))
-      );
-    }
-  }
-  for (auto& node : node->static_functions->children) {
-    if (node->type() == AST::kTypeFunction) {
-      AST::Function* func = reinterpret_cast<AST::Function*>(node);
-      this->scope->register_symbol(
-        this->context.symtable(func->name),
-        LocalOffsetInfo(ValueLocation::self(0, charly_create_symbol(func->name)))
-      );
-    }
-  }
   node->static_functions = reinterpret_cast<AST::NodeList*>(this->visit_node(node->static_functions));
+  node->static_properties = reinterpret_cast<AST::NodeList*>(this->visit_node(node->static_properties));
 
   this->pop_scope();
   return node;
