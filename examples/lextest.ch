@@ -80,3 +80,6 @@ print(r10)
 
 const r11 = "goodbye world world".rindex("world", -2)
 print(r11)
+
+const r12 = "hello world how are you äöü Ç ±±#œ∑€®†Ω°ª@ƒ∂".split("")
+print(r12)
