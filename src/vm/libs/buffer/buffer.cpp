@@ -104,6 +104,49 @@ VALUE write(VM& vm, VALUE buf, VALUE src) {
   return charly_create_integer(buffer->get_writeoffset());
 }
 
+VALUE write_partial(VM& vm, VALUE buf, VALUE src, VALUE off, VALUE cnt) {
+  CHECK(cpointer, buf);
+  CHECK(string, src);
+  CHECK(number, off);
+  CHECK(number, cnt);
+
+  uint32_t _off = charly_number_to_uint32(off);
+  uint32_t _cnt = charly_number_to_uint32(cnt);
+
+  UTF8Buffer* buffer = buffer_list[reinterpret_cast<uint64_t>(charly_as_cpointer(buf)->data)];
+  if (!buffer) {
+    return kNull;
+  }
+
+  // Calculate the offset of the start pointer and the amount of bytes to copy
+  uint8_t* data_ptr = reinterpret_cast<uint8_t*>(charly_string_data(src));
+  uint32_t total_bytesize = charly_string_length(src);
+
+  // Calculcate utf8 offsets
+  uint8_t* utf8_data = data_ptr;
+  while (utf8_data < data_ptr + total_bytesize && _off > 0) {
+    utf8::next(utf8_data, data_ptr + total_bytesize);
+    _off--;
+  }
+
+  // Backup data ptr
+  uint8_t* data_begin = utf8_data;
+
+  // Check if we can still copy _cnt characters
+  uint32_t bytes_copyable = 0;
+  while (utf8_data < data_ptr + total_bytesize && _cnt > 0) {
+    uint8_t* _tmp = utf8_data;
+    utf8::next(utf8_data, data_ptr + total_bytesize);
+    if (utf8_data <= data_ptr + total_bytesize) {
+      bytes_copyable += utf8_data - _tmp;
+    }
+    _cnt--;
+  }
+
+  buffer->write_block(data_begin, bytes_copyable);
+  return charly_create_integer(buffer->get_writeoffset());
+}
+
 VALUE str(VM& vm, VALUE buf) {
   CHECK(cpointer, buf);
   UTF8Buffer* buffer = buffer_list[reinterpret_cast<uint64_t>(charly_as_cpointer(buf)->data)];

@@ -43,6 +43,7 @@ VALUE reserve(VM& vm, VALUE buf, VALUE size);
 VALUE get_size(VM& vm, VALUE buf);
 VALUE get_offset(VM& vm, VALUE buf);
 VALUE write(VM& vm, VALUE buf, VALUE src);
+VALUE write_partial(VM& vm, VALUE buf, VALUE src, VALUE off, VALUE cnt);
 VALUE str(VM& vm, VALUE buf);
 
 }  // namespace Buffer

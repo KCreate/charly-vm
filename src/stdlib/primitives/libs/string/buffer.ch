@@ -30,6 +30,7 @@ const __buffer_reserve       = Charly.internals.get_method("Buffer::reserve")
 const __buffer_get_size      = Charly.internals.get_method("Buffer::get_size")
 const __buffer_get_offset    = Charly.internals.get_method("Buffer::get_offset")
 const __buffer_write         = Charly.internals.get_method("Buffer::write")
+const __buffer_write_partial  = Charly.internals.get_method("Buffer::write_partial")
 const __buffer_str           = Charly.internals.get_method("Buffer::str")
 
 /*
@@ -71,6 +72,14 @@ class Buffer {
    * */
   func write(src) {
     @offset = __buffer_write(@cp, src)
+    @size = @get_size()
+  }
+
+  /*
+   * Append only parts of a string to the buffer
+   * */
+  func write_partial(src, off, cnt) {
+    @offset = __buffer_write_partial(@cp, src, off, cnt)
     @size = @get_size()
   }
 
