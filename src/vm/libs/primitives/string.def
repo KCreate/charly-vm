@@ -25,3 +25,5 @@
  */
 
 DEFINE_INTERNAL_METHOD(String::to_n, 1),
+DEFINE_INTERNAL_METHOD(String::ltrim, 1),
+DEFINE_INTERNAL_METHOD(String::rtrim, 1),

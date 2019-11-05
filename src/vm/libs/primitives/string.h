@@ -34,6 +34,8 @@ namespace Internals {
 namespace String {
 
 VALUE to_n(VM& vm, VALUE str);
+VALUE ltrim(VM& vm, VALUE str);
+VALUE rtrim(VM& vm, VALUE str);
 
 }  // namespace String
 }  // namespace Internals

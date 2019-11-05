@@ -28,6 +28,7 @@
 
 #include "string.h"
 #include "vm.h"
+#include "managedcontext.h"
 
 using namespace std;
 
@@ -49,6 +50,24 @@ VALUE to_n(VM& vm, VALUE str) {
 
   if (sstream.fail()) return kBitsNaN;
   return charly_create_double(number);
+}
+
+VALUE ltrim(VM& vm, VALUE src) {
+  CHECK(string, src);
+
+  std::string _str(charly_string_data(src), charly_string_length(src));
+  ManagedContext lalloc(vm);
+  _str.erase(0, _str.find_first_not_of(" \t\n\v\f\r"));
+  return lalloc.create_string(_str);
+}
+
+VALUE rtrim(VM& vm, VALUE src) {
+  CHECK(string, src);
+
+  std::string _str(charly_string_data(src), charly_string_length(src));
+  ManagedContext lalloc(vm);
+  _str.erase(_str.find_last_not_of(" \t\n\v\f\r") + 1);
+  return lalloc.create_string(_str);
 }
 
 }  // namespace String

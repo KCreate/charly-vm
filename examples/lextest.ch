@@ -36,12 +36,47 @@
   //print(e)
 //}
 
-const buf = String.Buffer(2)
-
-print(buf)
-
-500.times(->{
-  buf.write_partial("hello world", 6, 5)
+"hello world".each(->(c) {
+  print(c)
 })
 
-print(buf)
+const r0 = "hello world".map(->(c) {
+  "_" + c + "_"
+})
+print(r0)
+
+const r1 = "hello world".filter(->(c) {
+  if c == " " return false
+  true
+})
+print(r1)
+
+const r2 = "      hello".ltrim()
+print(r2)
+
+const r3 = "hello      ".rtrim()
+print(r3)
+
+const r4 = "   hello   ".trim()
+print(r4)
+
+const r5 = "abcdefg".reverse()
+print(r5)
+
+const r6 = "hello|world|whats|up|today!|ääööüü".split("|")
+print(r6)
+
+const r7 = "hello world".index("world")
+print(r7)
+
+const r8 = "goodbye world world".index("world", 2)
+print(r8)
+
+const r9 = "hello world".rindex("world")
+print(r7)
+
+const r10 = "goodbye world world".rindex("world")
+print(r10)
+
+const r11 = "goodbye world world".rindex("world", -2)
+print(r11)
