@@ -1,17 +1,12 @@
+const Buffer = import "libs/string/buffer.ch"
+
 // String Methods
 const __to_n                 = Charly.internals.get_method("String::to_n")
 
-// Buffer Methods
-const __buffer_create        = Charly.internals.get_method("Buffer::create")
-const __buffer_reserve       = Charly.internals.get_method("Buffer::reserve")
-const __buffer_seek          = Charly.internals.get_method("Buffer::seek")
-const __buffer_write         = Charly.internals.get_method("Buffer::write")
-const __buffer_set           = Charly.internals.get_method("Buffer::set")
-const __buffer_create_string = Charly.internals.get_method("Buffer::create_string")
-const __buffer_destroy       = Charly.internals.get_method("Buffer::destroy")
-
 export = ->(Base) {
   return class String extends Base {
+    static property Buffer = Buffer
+
     static property whitespace = [" ", "\b", "\f", "\n", "\r", "\v"]
 
     static property digits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]

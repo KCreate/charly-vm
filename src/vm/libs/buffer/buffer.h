@@ -26,6 +26,7 @@
 
 #include "defines.h"
 #include "internals.h"
+#include "utf8buffer.h"
 
 #pragma once
 
@@ -33,15 +34,16 @@ namespace Charly {
 namespace Internals {
 namespace Buffer {
 
+// Buffer id management
+static uint64_t next_buf_id = 0;
+static std::unordered_map<uint64_t, UTF8Buffer*> buffer_list;
+
 VALUE create(VM& vm, VALUE size);
 VALUE reserve(VM& vm, VALUE buf, VALUE size);
 VALUE get_size(VM& vm, VALUE buf);
 VALUE get_offset(VM& vm, VALUE buf);
-VALUE seek(VM& vm, VALUE buf, VALUE off);
-VALUE write(VM& vm, VALUE buf, VALUE src, VALUE off, VALUE cnt);
-VALUE set(VM& vm, VALUE buf, VALUE off, VALUE cnt, VALUE v);
-VALUE create_string(VM& vm, VALUE buf);
-VALUE destroy(VM& vm, VALUE buf);
+VALUE write(VM& vm, VALUE buf, VALUE src);
+VALUE str(VM& vm, VALUE buf);
 
 }  // namespace Buffer
 }  // namespace Internals

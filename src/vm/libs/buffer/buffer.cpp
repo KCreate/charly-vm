@@ -24,8 +24,11 @@
  * SOFTWARE.
  */
 
+#include <utf8/utf8.h>
+
 #include "buffer.h"
 #include "vm.h"
+#include "managedcontext.h"
 
 using namespace std;
 
@@ -33,66 +36,82 @@ namespace Charly {
 namespace Internals {
 namespace Buffer {
 
+static void destructor(void* data) {
+  uint64_t id = reinterpret_cast<uint64_t>(data);
+  UTF8Buffer* buf = buffer_list[id];
+  if (buf) {
+    delete buf;
+  };
+}
+
 VALUE create(VM& vm, VALUE size) {
   CHECK(number, size);
-  (void)vm;
-  return kNull;
+  uint64_t id = next_buf_id++;
+  UTF8Buffer* buf = new UTF8Buffer();
+  buf->grow_to_fit(charly_number_to_uint32(size));
+  buffer_list[id] = buf;
+
+  ManagedContext lalloc(vm);
+  return lalloc.create_cpointer(reinterpret_cast<void*>(id), reinterpret_cast<void*>(destructor));
 }
 
 VALUE reserve(VM& vm, VALUE buf, VALUE size) {
-  CHECK(number, buf);
+  CHECK(cpointer, buf);
   CHECK(number, size);
-  (void)vm;
+
+  UTF8Buffer* buffer = buffer_list[reinterpret_cast<uint64_t>(charly_as_cpointer(buf)->data)];
+  if (!buffer) {
+    return kNull;
+  }
+
+  buffer->grow_to_fit(charly_number_to_uint32(size));
+
   return kNull;
 }
 
 VALUE get_size(VM& vm, VALUE buf) {
-  CHECK(number, buf);
-  (void)vm;
-  return kNull;
+  CHECK(cpointer, buf);
+
+  UTF8Buffer* buffer = buffer_list[reinterpret_cast<uint64_t>(charly_as_cpointer(buf)->data)];
+  if (!buffer) {
+    return kNull;
+  }
+
+  return charly_create_number(buffer->get_capacity());
 }
 
 VALUE get_offset(VM& vm, VALUE buf) {
-  CHECK(number, buf);
-  (void)vm;
-  return kNull;
+  CHECK(cpointer, buf);
+
+  UTF8Buffer* buffer = buffer_list[reinterpret_cast<uint64_t>(charly_as_cpointer(buf)->data)];
+  if (!buffer) {
+    return kNull;
+  }
+
+  return charly_create_integer(buffer->get_writeoffset());
 }
 
-VALUE seek(VM& vm, VALUE buf, VALUE off) {
-  CHECK(number, buf);
-  CHECK(number, off);
-  (void)vm;
-  return kNull;
-}
-
-VALUE write(VM& vm, VALUE buf, VALUE src, VALUE off, VALUE cnt) {
-  CHECK(number, buf);
+VALUE write(VM& vm, VALUE buf, VALUE src) {
+  CHECK(cpointer, buf);
   CHECK(string, src);
-  CHECK(number, off);
-  CHECK(number, cnt);
-  (void)vm;
-  return kNull;
+
+  UTF8Buffer* buffer = buffer_list[reinterpret_cast<uint64_t>(charly_as_cpointer(buf)->data)];
+  if (!buffer) {
+    return kNull;
+  }
+
+  buffer->write_block(reinterpret_cast<uint8_t*>(charly_string_data(src)), charly_string_length(src));
+  return charly_create_integer(buffer->get_writeoffset());
 }
 
-VALUE set(VM& vm, VALUE buf, VALUE off, VALUE cnt, VALUE v) {
-  CHECK(number, buf);
-  CHECK(number, off);
-  CHECK(number, cnt);
-  CHECK(string, v);
-  (void)vm;
-  return kNull;
-}
-
-VALUE create_string(VM& vm, VALUE buf) {
-  CHECK(number, buf);
-  (void)vm;
-  return kNull;
-}
-
-VALUE destroy(VM& vm, VALUE buf) {
-  CHECK(number, buf);
-  (void)vm;
-  return kNull;
+VALUE str(VM& vm, VALUE buf) {
+  CHECK(cpointer, buf);
+  UTF8Buffer* buffer = buffer_list[reinterpret_cast<uint64_t>(charly_as_cpointer(buf)->data)];
+  if (!buffer) {
+    return kNull;
+  }
+  ManagedContext lalloc(vm);
+  return lalloc.create_string(buffer->get_const_data(), buffer->get_writeoffset());
 }
 
 

@@ -10,5 +10,37 @@
   //print(e)
 //}
 
-let str = "hello world"
-print(str.substring(6))
+const buf = String.Buffer(2)
+
+print(buf)
+buf.write("hello world")
+
+print(buf)
+buf.write("hello world")
+
+print(buf)
+buf.write("hello world")
+
+print(buf)
+buf.write("hello world")
+
+buf.reserve(256)
+
+print(buf)
+buf.write("hello world")
+
+buf.reserve(128)
+
+print(buf)
+buf.write("hello world")
+
+buf.reserve(4)
+
+print(buf)
+buf.write("hello world")
+
+print(buf)
+buf.write("hello world")
+
+const result = buf.str()
+print(result)

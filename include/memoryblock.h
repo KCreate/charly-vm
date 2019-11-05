@@ -179,6 +179,16 @@ public:
     return this->data;
   }
 
+  // Returns a pointer to the first byte of the internal buffer
+  inline const char* get_const_data() {
+    return reinterpret_cast<char*>(this->data);
+  }
+
+  // Returns the capacity of this memory block
+  inline uint32_t get_capacity() {
+    return this->capacity;
+  }
+
   // Returns the current writeoffset into the internal buffer
   inline size_t get_writeoffset() {
     return this->writeoffset;
