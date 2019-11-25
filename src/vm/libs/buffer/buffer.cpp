@@ -147,6 +147,24 @@ VALUE write_partial(VM& vm, VALUE buf, VALUE src, VALUE off, VALUE cnt) {
   return charly_create_integer(buffer->get_writeoffset());
 }
 
+VALUE write_bytes(VM&vm, VALUE buf, VALUE bytes) {
+  CHECK(cpointer, buf);
+  CHECK(array, bytes);
+  CHECK(array_of<kTypeNumber>, bytes);
+
+  UTF8Buffer* buffer = buffer_list[reinterpret_cast<uint64_t>(charly_as_cpointer(buf)->data)];
+  if (!buffer) {
+    return kNull;
+  }
+
+  Array* arr = charly_as_array(bytes);
+  for (VALUE v : *(arr->data)) {
+    buffer->write_u8(charly_number_to_uint8(v));
+  }
+
+  return charly_create_integer(buffer->get_writeoffset());
+}
+
 VALUE str(VM& vm, VALUE buf) {
   CHECK(cpointer, buf);
   UTF8Buffer* buffer = buffer_list[reinterpret_cast<uint64_t>(charly_as_cpointer(buf)->data)];
@@ -157,6 +175,27 @@ VALUE str(VM& vm, VALUE buf) {
   return lalloc.create_string(buffer->get_const_data(), buffer->get_writeoffset());
 }
 
+VALUE bytes(VM& vm, VALUE buf) {
+  CHECK(cpointer, buf);
+  UTF8Buffer* buffer = buffer_list[reinterpret_cast<uint64_t>(charly_as_cpointer(buf)->data)];
+  if (!buffer) {
+    return kNull;
+  }
+
+  uint8_t* data = buffer->get_data();
+  uint32_t offset = buffer->get_writeoffset();
+
+  // Allocate the array that will return the bytes
+  // offset is the amount of bytes we need to store
+  ManagedContext lalloc(vm);
+  Array* byte_array = charly_as_array(lalloc.create_array(offset));
+
+  for (uint32_t i = 0; i < offset; i++) {
+    byte_array->data->push_back(charly_create_integer(data[i]));
+  }
+
+  return charly_create_pointer(byte_array);
+}
 
 }  // namespace Buffer
 }  // namespace Internals

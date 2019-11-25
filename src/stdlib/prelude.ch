@@ -27,15 +27,15 @@
 ignoreconst {
 
   // Cache some internal methods
-  const __internal_get_method = Charly.internals.get_method
-  const __internal_write = __internal_get_method("write")
-  const __internal_getn = __internal_get_method("getn")
-  const __internal_import = __internal_get_method("import")
-  const __internal_defer = __internal_get_method("defer")
-  const __internal_defer_interval = __internal_get_method("defer_interval")
-  const __internal_clear_timer = __internal_get_method("clear_timer")
-  const __internal_clear_interval = __internal_get_method("clear_interval")
-  const __internal_exit = __internal_get_method("exit")
+  const __internal_get_method       = Charly.internals.get_method
+  const __internal_write            = __internal_get_method("write")
+  const __internal_getn             = __internal_get_method("getn")
+  const __internal_import           = __internal_get_method("import")
+  const __internal_defer            = __internal_get_method("defer")
+  const __internal_defer_interval   = __internal_get_method("defer_interval")
+  const __internal_clear_timer      = __internal_get_method("clear_timer")
+  const __internal_clear_interval   = __internal_get_method("clear_interval")
+  const __internal_exit             = __internal_get_method("exit")
 
   let __internal_standard_libs_names
   let __internal_standard_libs

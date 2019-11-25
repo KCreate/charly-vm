@@ -83,3 +83,29 @@ print(r11)
 
 const r12 = "hello world how are you äöü Ç ±±#œ∑€®†Ω°ª@ƒ∂".split("")
 print(r12)
+
+const r13 = ["hello", " ", "world", "!!!"].join("9")
+print(r13)
+
+const r14 = "HÄLLÖ WELT WIE GEHT ES IHNEN".lowercase()
+const r15 = "hällö welt wie geht es ihnen".uppercase()
+
+print(r14)
+print(r15)
+
+const r16 = "hello world my name is leonard"
+
+print(r16)
+print(r16.length)
+print(r16.split(""))
+
+const buf = String.Buffer(0)
+buf.write(r16)
+print(buf)
+
+const r17 = buf.bytes()
+print(r17)
+
+buf.write_bytes(r17)
+print(buf)
+print(buf.str())

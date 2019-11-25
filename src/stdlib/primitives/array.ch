@@ -108,6 +108,12 @@ export = ->(Base) {
       new_array
     }
 
+    func join(str) {
+      const buf = Buffer(@length * 3)
+      @each(->(v) buf.write(v.to_s()))
+      buf.str()
+    }
+
     func empty {
       !@length
     }

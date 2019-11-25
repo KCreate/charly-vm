@@ -111,7 +111,7 @@ export = ->(Base) {
     }
 
     /*
-     * Returns the reversed version of this string
+     * Returns a reversed copy of this string
      * */
     func reverse {
       const buf = Buffer(@length)

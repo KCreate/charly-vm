@@ -30,8 +30,10 @@ const __buffer_reserve       = Charly.internals.get_method("Buffer::reserve")
 const __buffer_get_size      = Charly.internals.get_method("Buffer::get_size")
 const __buffer_get_offset    = Charly.internals.get_method("Buffer::get_offset")
 const __buffer_write         = Charly.internals.get_method("Buffer::write")
-const __buffer_write_partial  = Charly.internals.get_method("Buffer::write_partial")
+const __buffer_write_partial = Charly.internals.get_method("Buffer::write_partial")
+const __buffer_write_bytes   = Charly.internals.get_method("Buffer::write_bytes")
 const __buffer_str           = Charly.internals.get_method("Buffer::str")
+const __buffer_bytes         = Charly.internals.get_method("Buffer::bytes")
 
 /*
  * Represents a buffer
@@ -84,10 +86,25 @@ class Buffer {
   }
 
   /*
+   * Append the entire content of the src string to the buffer's end
+   * */
+  func write_bytes(bytes) {
+    @offset = __buffer_write_bytes(@cp, bytes)
+    @size = @get_size()
+  }
+
+  /*
    * Return the string representation of the buffers contents
    * */
   func str {
     __buffer_str(@cp)
+  }
+
+  /*
+   * Returns the bytes of this string as an int array
+   * */
+  func bytes {
+    __buffer_bytes(@cp)
   }
 }
 

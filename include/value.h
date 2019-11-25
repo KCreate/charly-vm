@@ -586,6 +586,16 @@ inline const std::string& charly_get_typestring(VALUE value) {
   return kHumanReadableTypes[charly_get_type(value)];
 }
 
+// Return a human readable string of the type of value
+template <unsigned char T>
+__attribute__((always_inline))
+inline bool charly_is_array_of(VALUE v) {
+  for (VALUE v : *(charly_as_array(v)->data)) {
+    if (charly_get_type(v) != T) return false;
+  }
+  return true;
+}
+
 // Convert an immediate integer to other integer or float types
 //
 // Warning: These methods don't perform any type checks and assume
