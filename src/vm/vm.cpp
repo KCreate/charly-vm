@@ -1984,7 +1984,7 @@ VALUE VM::stacktrace_array() {
 
   Frame* frame = this->frames;
   while (frame && charly_is_frame(charly_create_pointer(frame))) {
-    this->to_s(io, charly_create_pointer(frame));
+    this->pretty_print(io, charly_create_pointer(frame));
     frame = frame->parent;
 
     // Append the trace entry to the array and reset the stringstream
@@ -2086,7 +2086,7 @@ void VM::stacktrace(std::ostream& io) {
   int i = 0;
   io << "IP: " << static_cast<void*>(this->ip) << '\n';
   while (frame && charly_is_frame(charly_create_pointer(frame))) {
-    io << i++ << "# ";
+    io << i++ << ": ";
     this->pretty_print(io, charly_create_pointer(frame));
     io << '\n';
     frame = frame->parent;
@@ -2381,28 +2381,17 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     case kTypeFrame: {
       Frame* frame = charly_as_frame(value);
 
-      if (printed_before) {
-        io << "<Frame ...>";
-        break;
+      // Get the name of the function or generator that this frame is created for
+      VALUE callee = frame->caller_value;
+      VALUE name = kNull;
+      switch (charly_get_type(callee)) {
+        case kTypeFunction: name = charly_as_function(callee)->name; break;
+        case kTypeGenerator: name = charly_as_generator(callee)->name; break;
+        default: name = charly_create_istring("??");
       }
 
-      this->pretty_print_stack.push_back(value);
+      io << this->context.symtable(name).value_or("??");
 
-      io << "<@";
-      io << reinterpret_cast<void*>(frame);
-      io << "Frame ";
-      io << "parent=" << frame->parent << " ";
-      io << "parent_environment_frame=" << frame->parent_environment_frame << " ";
-      io << "caller_value=";
-      this->pretty_print(io, frame->caller_value);
-      io << " ";
-      io << "self=";
-      this->pretty_print(io, frame->self);
-      io << " ";
-      io << "return_address=" << reinterpret_cast<void*>(frame->return_address);
-      io << ">";
-
-      this->pretty_print_stack.pop_back();
       break;
     }
 
@@ -2662,30 +2651,6 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
     case kTypeSymbol: {
       if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
       io << this->context.symtable(value).value_or(kUndefinedSymbolString);
-      break;
-    }
-
-    case kTypeFrame: {
-      Frame* frame = charly_as_frame(value);
-      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
-
-      if (printed_before) {
-        io << "<Frame ...>";
-        break;
-      }
-
-      this->pretty_print_stack.push_back(value);
-
-      io << "<Frame ";
-      io << "caller_value=";
-      this->pretty_print(io, frame->caller_value);
-      io << " ";
-      io << "self=";
-      this->pretty_print(io, frame->self);
-      io << " ";
-      io << ">";
-
-      this->pretty_print_stack.pop_back();
       break;
     }
 
