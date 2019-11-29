@@ -25,6 +25,7 @@
  */
 
 #include <sstream>
+#include <algorithm>
 
 #include "string.h"
 #include "vm.h"
@@ -67,6 +68,32 @@ VALUE rtrim(VM& vm, VALUE src) {
   std::string _str(charly_string_data(src), charly_string_length(src));
   ManagedContext lalloc(vm);
   _str.erase(_str.find_last_not_of(" \t\n\v\f\r") + 1);
+  return lalloc.create_string(_str);
+}
+
+// TODO: Implement utf8 conversions
+VALUE lowercase(VM& vm, VALUE src) {
+  CHECK(string, src);
+  std::string _str(charly_string_data(src), charly_string_length(src));
+
+  std::transform(_str.begin(), _str.end(), _str.begin(), [](char c) {
+    return std::tolower(c, std::locale());
+  });
+
+  ManagedContext lalloc(vm);
+  return lalloc.create_string(_str);
+}
+
+// TODO: Implement utf8 conversions
+VALUE uppercase(VM& vm, VALUE src) {
+  CHECK(string, src);
+  std::string _str(charly_string_data(src), charly_string_length(src));
+
+  std::transform(_str.begin(), _str.end(), _str.begin(), [](char c) {
+    return std::toupper(c, std::locale());
+  });
+
+  ManagedContext lalloc(vm);
   return lalloc.create_string(_str);
 }
 

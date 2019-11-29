@@ -31,6 +31,8 @@ const Buffer = import "libs/string/buffer.ch"
 const __to_n                 = Charly.internals.get_method("String::to_n")
 const __ltrim                = Charly.internals.get_method("String::ltrim")
 const __rtrim                = Charly.internals.get_method("String::rtrim")
+const __lowercase            = Charly.internals.get_method("String::lowercase")
+const __uppercase            = Charly.internals.get_method("String::uppercase")
 
 export = ->(Base) {
   return class String extends Base {
@@ -47,6 +49,20 @@ export = ->(Base) {
     static property uppercase = [ "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
                                   "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T",
                                   "U", "V", "W", "X", "Y", "Z"]
+
+    /*
+     * Returns an all lowercase copy of this string
+     * */
+    func lowercase {
+      __lowercase(self)
+    }
+
+    /*
+     * Returns an all uppercase copy of this string
+     * */
+    func uppercase {
+      __uppercase(self)
+    }
 
     /*
      * Trim whitespace off the left side of the string
