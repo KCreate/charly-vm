@@ -51,7 +51,8 @@ static const std::unordered_map<std::string, std::string> kStandardCharlyLibrari
 
     // Libraries
     {"_charly_math", "src/stdlib/libs/math.ch"},
-    {"_charly_time", "src/stdlib/libs/time.ch"}
+    {"_charly_time", "src/stdlib/libs/time.ch"},
+    {"_charly_unittest", "src/stdlib/libs/unittest.ch"}
 };
 
 // The signature of an internal method

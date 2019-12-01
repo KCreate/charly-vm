@@ -57,7 +57,7 @@ ignoreconst {
     }
 
     if (is_stdlib) {
-      return __internal_standard_libs[path]
+      path = __internal_standard_libs[path]
     }
 
     __internal_import(path, source)
@@ -66,13 +66,15 @@ ignoreconst {
   // The names of all standard libraries that come with charly
   __internal_standard_libs_names = [
     "math",
-    "time"
+    "time",
+    "unittest"
   ]
 
   // All libraries that come with charly
   __internal_standard_libs = {
-    math: import "_charly_math",
-    time: import "_charly_time"
+    math: "_charly_math",
+    time: "_charly_time",
+    unittest: "_charly_unittest"
   }
 
   // Value class
