@@ -1,3 +1,7 @@
+- Rename `lstrip` and `rstrip` methods to some other more correct name
+  - These methods should remove whitespace characters from the left or right side of a string
+  - Add a `strip` method, which is equivalent to calling `rstrip(lstrip(<string>))`
+
 - Instruction Pointer to filename & line number mapping for better stack traces
 
 - `super` syntax sugar to call the parent class version of a function
