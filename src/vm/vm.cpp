@@ -2458,9 +2458,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
 
     case kTypeString: {
       if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
-      io << "\"";
       io.write(charly_string_data(value), charly_string_length(value));
-      io << "\"";
       break;
     }
 
