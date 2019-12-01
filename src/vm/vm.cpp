@@ -2385,7 +2385,16 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       VALUE callee = frame->caller_value;
       VALUE name = kNull;
       switch (charly_get_type(callee)) {
-        case kTypeFunction: name = charly_as_function(callee)->name; break;
+        case kTypeFunction: {
+          Function* fn = charly_as_function(callee);
+          if (fn->anonymous()) {
+            name = this->context.symtable("<anonymous>");
+          } else {
+            name = charly_as_function(callee)->name; break;
+          }
+
+          break;
+        }
         case kTypeGenerator: name = charly_as_generator(callee)->name; break;
         default: name = charly_create_istring("??");
       }
