@@ -1,3 +1,7 @@
+- Instruction Pointer to filename & line number mapping for better stack traces
+
+- `super` syntax sugar to call the parent class version of a function
+
 - do panic if some vm methods are called not from the main thread
 
 - locale handling?

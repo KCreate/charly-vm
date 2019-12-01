@@ -74,9 +74,18 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree) {
 
     // Register the known local variables in the top level
     uint32_t i = 0;
-    for (const auto& varname : this->config.known_top_level_constants) {
+    for (const auto& tlc : this->config.known_top_level_constants) {
       lvar_rewriter.scope->register_symbol(
-          this->context.symtable(varname), LocalOffsetInfo(ValueLocation::frame(i, 1), true, true, true), true, true);
+        this->context.symtable(std::get<0>(tlc)),
+        LocalOffsetInfo(
+          ValueLocation::frame(i, 1),
+          true,
+          true,
+          std::get<1>(tlc)
+        ),
+        true,
+        std::get<1>(tlc)
+      );
       i++;
     }
 
