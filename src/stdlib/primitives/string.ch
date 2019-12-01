@@ -115,7 +115,7 @@ export = ->(Base) {
      * from the left side of the string
      * */
     func lstrip(n) {
-      @substring(n, @length() - n)
+      @substring(n, @length - n)
     }
 
     /*
@@ -123,7 +123,7 @@ export = ->(Base) {
      * from the right side of the string
      * */
     func rstrip(n) {
-      @substring(0, @length() - n)
+      @substring(0, @length - n)
     }
 
     /*
