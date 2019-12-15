@@ -619,11 +619,10 @@ AST::AbstractNode* Normalizer::visit_import(AST::Import* node, VisitContinue) {
 
   AST::AbstractNode* new_node = new AST::Call(
     new AST::Identifier("__charly_internal_import"),
-    new AST::NodeList(
-      new AST::String(node->name),
-      new AST::String(source_filename)
-    )
+    new AST::NodeList(node->source, new AST::String(source_filename))
   );
+
+  node->source = nullptr;
 
   delete node;
 

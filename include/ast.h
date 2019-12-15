@@ -1412,14 +1412,22 @@ struct Return : public AbstractNode {
 
 // import <name>
 struct Import : public AbstractNode {
-  std::string name;
+  AbstractNode* source;
 
-  Import(const std::string& n) : name(n) {
+  Import(AbstractNode* s) : source(s) {
+  }
+
+  inline ~Import() {
+    delete source;
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Import: " << this->name;
-    stream << '\n';
+    stream << std::string(depth, ' ') << "- Import: " << '\n';
+    this->source->dump(stream, depth + 1);
+  }
+
+  inline void visit(VisitFunc func) {
+    this->source = func(this->source);
   }
 };
 

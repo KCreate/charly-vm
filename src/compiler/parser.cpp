@@ -195,24 +195,8 @@ AST::AbstractNode* Parser::parse_import() {
   Location location_start = this->token.location;
   this->advance();
 
-  std::string import_path;
-  std::optional<Location> location_end;
-
-  switch (this->token.type) {
-    case TokenType::String:
-    case TokenType::Identifier: {
-      import_path = this->token.value;
-      location_end = this->token.location;
-      this->advance();
-      break;
-    }
-    default: {
-      this->unexpected_token();
-      return nullptr;
-    }
-  }
-
-  return (new AST::Import(import_path))->at(location_start, location_end);
+  AST::AbstractNode* source = this->parse_expression();
+  return (new AST::Import(source))->at(location_start, source->location_end);
 }
 
 AST::AbstractNode* Parser::parse_statement() {
@@ -271,15 +255,16 @@ AST::AbstractNode* Parser::parse_statement() {
     }
     case TokenType::Import: {
       AST::Import* node = AST::cast<AST::Import>(this->parse_import());
-      AST::AbstractNode* new_node = (
-          new AST::LocalInitialisation(
-            node->name,
-            node,
-            true
-          )
-      )->at(node);
 
-      return new_node;
+      // If the source node of this import is a string, we declare it as a variable
+      // in the current scope
+      if (node->source->type() == AST::kTypeString) {
+        AST::String* source = AST::cast<AST::String>(node->source);
+        AST::AbstractNode* new_node = (new AST::LocalInitialisation(source->value, node, true))->at(node);
+        return new_node;
+      }
+
+      return node;
     }
     case TokenType::If: {
       return this->parse_if_statement();
