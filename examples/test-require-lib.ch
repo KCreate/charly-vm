@@ -24,12 +24,17 @@
  * SOFTWARE.
  */
 
-const lib = import "test-require-lib.ch"
+let data = "initial value"
+export.read = ->{ return data }
+export.write = ->(value) { data = value }
 
-print(lib.read())
-lib.write("hello world")
-print(lib.read())
+export.someclass = class Person {
+  property name
+  property age
 
-const leonard = lib.someclass("leonard", 19)
-leonard.method()
-print(leonard.klass)
+  func constructor(@name, @age) {}
+
+  func method {
+    print(self)
+  }
+}
