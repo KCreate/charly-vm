@@ -93,15 +93,15 @@ ignoreconst {
   const set_primitive_boolean = Charly.internals.get_method("set_primitive_boolean")
   const set_primitive_null = Charly.internals.get_method("set_primitive_null")
 
-  Object = set_primitive_object((import "_charly_object")(Value));
-  Number = set_primitive_number((import "_charly_number")(Value));
-  Array = set_primitive_array((import "_charly_array")(Value));
-  Class = set_primitive_class((import "_charly_class")(Value));
-  String = set_primitive_string((import "_charly_string")(Value));
-  Function = set_primitive_function((import "_charly_function")(Value));
-  Generator = set_primitive_generator((import "_charly_generator")(Value));
-  Boolean = set_primitive_boolean((import "_charly_boolean")(Value));
-  Null = set_primitive_null((import "_charly_null")(Value));
+  Object = set_primitive_object((import "_charly_object")(Value))
+  Number = set_primitive_number((import "_charly_number")(Value))
+  Array = set_primitive_array((import "_charly_array")(Value))
+  Class = set_primitive_class((import "_charly_class")(Value))
+  String = set_primitive_string((import "_charly_string")(Value))
+  Function = set_primitive_function((import "_charly_function")(Value))
+  Generator = set_primitive_generator((import "_charly_generator")(Value))
+  Boolean = set_primitive_boolean((import "_charly_boolean")(Value))
+  Null = set_primitive_null((import "_charly_null")(Value))
 
   // Write a value to stdout, without a trailing newline
   write = func write {
@@ -136,7 +136,7 @@ ignoreconst {
   // Once all other remaining tasks have been executed this callback will
   // be invoked
   defer = func defer(cb) {
-    __internal_defer(cb, arguments.length > 1 ? $1 : 0);
+    __internal_defer(cb, arguments.length > 1 ? $1 : 0)
   }
   defer.interval = func interval(cb, period) {
 

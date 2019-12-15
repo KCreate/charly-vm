@@ -163,7 +163,7 @@ AST::AbstractNode* Parser::parse_program() {
 
 AST::AbstractNode* Parser::parse_block() {
   std::optional<Location> location_start;
-  std::optional<Location> end_location;
+  std::optional<Location> location_end;
 
   AST::Block* block = new AST::Block();
 
@@ -171,9 +171,9 @@ AST::AbstractNode* Parser::parse_block() {
   while (this->token.type != TokenType::RightCurly) {
     block->append_node(this->parse_statement());
   }
-  this->expect_token(TokenType::RightCurly, [&]() { end_location = this->token.location; });
+  this->expect_token(TokenType::RightCurly, [&]() { location_end = this->token.location; });
 
-  return block->at(location_start, end_location);
+  return block->at(location_start, location_end);
 }
 
 AST::AbstractNode* Parser::parse_ignore_const() {
@@ -846,15 +846,15 @@ AST::AbstractNode* Parser::parse_try_statement() {
     catch_block = new AST::Empty();
   }
 
-  std::optional<Location> end_location;
+  std::optional<Location> location_end;
 
   if (finally_block) {
-    end_location = finally_block->location_end;
+    location_end = finally_block->location_end;
   } else {
-    end_location = catch_block->location_end;
+    location_end = catch_block->location_end;
   }
 
-  return (new AST::TryCatch(try_block, exception_name, catch_block, finally_block))->at(location_start, end_location);
+  return (new AST::TryCatch(try_block, exception_name, catch_block, finally_block))->at(location_start, location_end);
 }
 
 AST::AbstractNode* Parser::parse_expression() {
@@ -863,16 +863,16 @@ AST::AbstractNode* Parser::parse_expression() {
 
 AST::AbstractNode* Parser::parse_yield() {
   if (this->token.type == TokenType::Yield) {
-    Location start_location = this->token.location;
+    Location location_start = this->token.location;
     AST::AbstractNode* exp;
 
     this->advance();
     if (this->token.could_start_expression()) {
       exp = this->parse_expression();
-      return (new AST::Yield(exp))->at(start_location, exp->location_end);
+      return (new AST::Yield(exp))->at(location_start, exp->location_end);
     }
 
-    return (new AST::Yield(new AST::Empty()))->at(start_location);
+    return (new AST::Yield(new AST::Empty()))->at(location_start);
   }
 
   return parse_assignment();
