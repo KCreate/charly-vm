@@ -579,7 +579,7 @@ VALUE VM::add(VALUE left, VALUE right) {
     return this->create_string(buf.str());
   }
 
-  return kBitsNaN;
+  return kNaN;
 }
 
 VALUE VM::sub(VALUE left, VALUE right) {
@@ -593,7 +593,7 @@ VALUE VM::sub(VALUE left, VALUE right) {
     return this->call_dynamic(v, {right}, left);
   }
 
-  return kBitsNaN;
+  return kNaN;
 }
 
 VALUE VM::mul(VALUE left, VALUE right) {
@@ -659,7 +659,7 @@ VALUE VM::mul(VALUE left, VALUE right) {
     return this->call_dynamic(v, {right}, left);
   }
 
-  return kBitsNaN;
+  return kNaN;
 }
 
 VALUE VM::div(VALUE left, VALUE right) {
@@ -673,7 +673,7 @@ VALUE VM::div(VALUE left, VALUE right) {
     return this->call_dynamic(v, {right}, left);
   }
 
-  return kBitsNaN;
+  return kNaN;
 }
 
 VALUE VM::mod(VALUE left, VALUE right) {
@@ -687,7 +687,7 @@ VALUE VM::mod(VALUE left, VALUE right) {
     return this->call_dynamic(v, {right}, left);
   }
 
-  return kBitsNaN;
+  return kNaN;
 }
 
 VALUE VM::pow(VALUE left, VALUE right) {
@@ -701,7 +701,7 @@ VALUE VM::pow(VALUE left, VALUE right) {
     return this->call_dynamic(v, {right}, left);
   }
 
-  return kBitsNaN;
+  return kNaN;
 }
 
 VALUE VM::uadd(VALUE value) {
@@ -726,7 +726,7 @@ VALUE VM::usub(VALUE value) {
     return this->call_dynamic(v, {}, value);
   }
 
-  return kBitsNaN;
+  return kNaN;
 }
 
 VALUE VM::eq(VALUE left, VALUE right) {
@@ -859,7 +859,7 @@ VALUE VM::shl(VALUE left, VALUE right) {
     return this->call_dynamic(v, {right}, left);
   }
 
-  return kBitsNaN;
+  return kNaN;
 }
 
 VALUE VM::shr(VALUE left, VALUE right) {
@@ -873,7 +873,7 @@ VALUE VM::shr(VALUE left, VALUE right) {
     return this->call_dynamic(v, {right}, left);
   }
 
-  return kBitsNaN;
+  return kNaN;
 }
 
 VALUE VM::band(VALUE left, VALUE right) {
@@ -887,7 +887,7 @@ VALUE VM::band(VALUE left, VALUE right) {
     return this->call_dynamic(v, {right}, left);
   }
 
-  return kBitsNaN;
+  return kNaN;
 }
 
 VALUE VM::bor(VALUE left, VALUE right) {
@@ -901,7 +901,7 @@ VALUE VM::bor(VALUE left, VALUE right) {
     return this->call_dynamic(v, {right}, left);
   }
 
-  return kBitsNaN;
+  return kNaN;
 }
 
 VALUE VM::bxor(VALUE left, VALUE right) {
@@ -915,7 +915,7 @@ VALUE VM::bxor(VALUE left, VALUE right) {
     return this->call_dynamic(v, {right}, left);
   }
 
-  return kBitsNaN;
+  return kNaN;
 }
 
 VALUE VM::ubnot(VALUE value) {
@@ -929,7 +929,7 @@ VALUE VM::ubnot(VALUE value) {
     return this->call_dynamic(v, {}, value);
   }
 
-  return kBitsNaN;
+  return kNaN;
 }
 
 VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {

@@ -49,7 +49,7 @@ VALUE to_n(VM& vm, VALUE str) {
   double number;
   sstream >> number;
 
-  if (sstream.fail()) return kBitsNaN;
+  if (sstream.fail()) return kNaN;
   return charly_create_double(number);
 }
 

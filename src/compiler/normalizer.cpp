@@ -334,6 +334,10 @@ AST::AbstractNode* Normalizer::visit_binary(AST::Binary* node, VisitContinue con
       if (node->left->type() == AST::kTypeNumber && node->right->type() == AST::kTypeNumber) {
         int64_t left = node->left->as<AST::Number>()->value;
         int64_t right = node->right->as<AST::Number>()->value;
+
+        // Division by 0 would cause a SIGFPE
+        if (right == 0) return node;
+
         AST::Number* result = new AST::Number(left % right);
         result->at(node);
         delete node;

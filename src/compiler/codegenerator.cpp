@@ -602,7 +602,7 @@ AST::AbstractNode* CodeGenerator::visit_null(AST::Null* node, VisitContinue) {
 }
 
 AST::AbstractNode* CodeGenerator::visit_nan(AST::Nan* node, VisitContinue) {
-  this->assembler.write_putvalue(kBitsNaN);
+  this->assembler.write_putvalue(kNaN);
   return node;
 }
 

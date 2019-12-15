@@ -440,6 +440,7 @@ static constexpr uint64_t kITypeIString      = 0x0007000000000000;
 
 // Shorthand values
 static constexpr uint64_t kBitsNaN           = kMaskExponentBits | kMaskQuietBit;
+static constexpr uint64_t kNaN               = kBitsNaN;
 static constexpr uint64_t kFalse             = kBitsNaN | kITypeFalse; // 0x7ff9000000000000
 static constexpr uint64_t kTrue              = kBitsNaN | kITypeTrue;  // 0x7ffa000000000000
 static constexpr uint64_t kNull              = kBitsNaN | kITypeNull;  // 0x7ffb000000000000
@@ -511,7 +512,7 @@ inline bool charly_is_boolean(VALUE value)   { return charly_is_false(value) || 
 __attribute__((always_inline))
 inline bool charly_is_null(VALUE value)      { return value == kNull; }
 __attribute__((always_inline))
-inline bool charly_is_nan(VALUE value)       { return value == kBitsNaN; }
+inline bool charly_is_nan(VALUE value)       { return value == kNaN; }
 __attribute__((always_inline))
 inline bool charly_is_float(VALUE value)     { return charly_is_nan(value) || ((~value & kMaskExponentBits) != 0); }
 __attribute__((always_inline))
@@ -1125,6 +1126,7 @@ inline VALUE charly_div_number(VALUE left, VALUE right) {
 __attribute__((always_inline))
 inline VALUE charly_mod_number(VALUE left, VALUE right) {
   if (charly_is_int(left) && charly_is_int(right)) {
+    if (charly_int_to_int64(right) == 0) return kNaN;
     return charly_create_number(charly_int_to_int64(left) % charly_int_to_int64(right));
   }
   return charly_create_number(std::fmod(charly_number_to_double(left), charly_number_to_double(right)));
@@ -1231,7 +1233,7 @@ inline VALUE charly_ubnot_number(VALUE value) {
 }
 __attribute__((always_inline))
 inline bool charly_truthyness(VALUE value) {
-  if (value == kBitsNaN) return false;
+  if (value == kNaN) return false;
   if (value == kNull) return false;
   if (value == kFalse) return false;
   if (charly_is_int(value)) return charly_int_to_int64(value) != 0;
