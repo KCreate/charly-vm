@@ -24,4 +24,27 @@
  * SOFTWARE.
  */
 
-print(NaN == NaN)
+import "unittest"
+
+const result = unittest(->(describe, it, assert, context) {
+
+  const testcases = [
+
+    // Interpreter specs
+    ["Arithmetic operations",       "./interpreter/arithmetic.ch"]
+  ]
+
+  // Loads and runs all the test cases sequentially
+  // TODO: schedule them asynchronously maybe???
+  testcases.each(->(test) {
+    const module = import test[1]
+    describe(test[1], ->{
+      module(describe, it, assert, context)
+    })
+  })
+
+})
+
+unittest.display_result(result, ->(code) {
+  exit(code)
+})
