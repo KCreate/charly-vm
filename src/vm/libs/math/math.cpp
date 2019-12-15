@@ -142,6 +142,18 @@ VALUE log(VM& vm, VALUE n) {
   return charly_create_number(std::log(charly_number_to_double(n)));
 }
 
+VALUE log2(VM& vm, VALUE n) {
+  (void)vm;
+  CHECK(number, n);
+  return charly_create_number(std::log2(charly_number_to_double(n)));
+}
+
+VALUE log10(VM& vm, VALUE n) {
+  (void)vm;
+  CHECK(number, n);
+  return charly_create_number(std::log10(charly_number_to_double(n)));
+}
+
 VALUE rand(VM& vm, VALUE min, VALUE max) {
   (void)vm;
   CHECK(number, min);

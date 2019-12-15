@@ -50,6 +50,8 @@ VALUE sqrt(VM& vm, VALUE n);
 VALUE ceil(VM& vm, VALUE n);
 VALUE floor(VM& vm, VALUE n);
 VALUE log(VM& vm, VALUE n);
+VALUE log2(VM& vm, VALUE n);
+VALUE log10(VM& vm, VALUE n);
 VALUE rand(VM& vm, VALUE min, VALUE max);
 
 }  // namespace Math

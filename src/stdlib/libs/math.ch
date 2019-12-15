@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+const __rand = Charly.internals.get_method("Math::rand")
+
 class Math {
   func constructor {
     throw "Cannot initialize an instance of the Math class"
@@ -57,8 +59,24 @@ class Math {
   static property floor = Charly.internals.get_method("Math::floor")
 
   static property log   = Charly.internals.get_method("Math::log")
+  static property log2  = Charly.internals.get_method("Math::log2")
+  static property log10 = Charly.internals.get_method("Math::log10")
 
-  static property rand  = Charly.internals.get_method("Math::rand")
+  static property rand  = func rand {
+    switch arguments.length {
+      case 1 {
+        return __rand(0, $0)
+      }
+
+      case 2 {
+        return __rand($0, $1)
+      }
+
+      default {
+        return __rand(0, 1)
+      }
+    }
+  }
 }
 
 export = Math

@@ -26,15 +26,9 @@
 
 import "math"
 
-const names = [
-  "test-require-lib.ch",
-  "test-require-lib.ch"
-]
+defer.interval(->{
+  print(math.rand())
+  print(math.rand(200))
+  print(math.rand(500, 600))
+}, 1000)
 
-const modules = names.map(->(name) {
-  import name
-})
-
-modules[0].test = "hello world"
-
-print(modules)
