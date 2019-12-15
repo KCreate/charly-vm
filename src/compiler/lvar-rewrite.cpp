@@ -74,16 +74,17 @@ AST::AbstractNode* LVarRewriter::visit_function(AST::Function* node, VisitContin
 
 AST::AbstractNode* LVarRewriter::visit_class(AST::Class* node, __attribute__((unused)) VisitContinue descend) {
   node->parent_class = this->visit_node(node->parent_class);
-  this->push_local_scope();
 
+  this->push_local_scope();
   node->member_functions = reinterpret_cast<AST::NodeList*>(this->visit_node(node->member_functions));
   node->constructor = this->visit_node(node->constructor);
   this->pop_scope();
+
   this->push_local_scope();
   node->static_functions = reinterpret_cast<AST::NodeList*>(this->visit_node(node->static_functions));
   node->static_properties = reinterpret_cast<AST::NodeList*>(this->visit_node(node->static_properties));
-
   this->pop_scope();
+
   return node;
 }
 

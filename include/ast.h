@@ -1278,9 +1278,20 @@ struct Class : public AbstractNode {
   }
 
   inline void visit(VisitFunc func) {
+
+    // Visit calls to member_properties and static_properties have been removed in a previous
+    // commit. I forgot why i did this but i assume i had a good reason at the time
+    //
+    // I added them again but if there is ever anything funny going on with this area
+    // of the code then this is probably the reason it broke
+    //
+    // See commit: cf75a8
+
     this->constructor = func(this->constructor);
     this->member_functions = reinterpret_cast<NodeList*>(func(this->member_functions));
+    this->member_properties = reinterpret_cast<NodeList*>(func(this->member_properties));
     this->static_functions = reinterpret_cast<NodeList*>(func(this->static_functions));
+    this->static_properties = reinterpret_cast<NodeList*>(func(this->static_properties));
     this->parent_class = reinterpret_cast<AbstractNode*>(func(this->parent_class));
   }
 };
