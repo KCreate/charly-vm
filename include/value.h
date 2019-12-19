@@ -1184,12 +1184,14 @@ __attribute__((always_inline))
 inline VALUE charly_shl_number(VALUE left, VALUE right) {
   int32_t num = charly_number_to_int32(left);
   int32_t amount = charly_number_to_int32(right);
+  if (amount < 0) amount = 0;
   return charly_create_number(num << amount);
 }
 __attribute__((always_inline))
 inline VALUE charly_shr_number(VALUE left, VALUE right) {
   int32_t num = charly_number_to_int32(left);
   int32_t amount = charly_number_to_int32(right);
+  if (amount < 0) amount = 0;
   return charly_create_number(num >> amount);
 }
 __attribute__((always_inline))
