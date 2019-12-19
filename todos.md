@@ -3,6 +3,9 @@
   - Add a `strip` method, which is equivalent to calling `rstrip(lstrip(<string>))`
 
 - Instruction Pointer to filename & line number mapping for better stack traces
+  - Create utility functions that return various location information of the call chain
+    This is needed to completet the import system as some helper functions inside the prelude
+    need to know from which file an import was requested.
 
 - `super` syntax sugar to call the parent class version of a function
 

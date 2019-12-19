@@ -753,6 +753,26 @@ VALUE VM::eq(VALUE left, VALUE right) {
     return std::strncmp(str_left_data, str_right_data, str_left_length) ? kFalse : kTrue;
   }
 
+  if (charly_is_array(left) && charly_is_array(right)) {
+    Array* a_left = charly_as_array(left);
+    Array* a_right = charly_as_array(right);
+
+    // Arrays of different sizes are not equal
+    if (a_left->data->size() != a_right->data->size()) return kFalse;
+
+    // Empty arrays are always equal
+    if (a_left->data->size() == 0 && a_right->data->size() == 0) return kTrue;
+
+    // Compare each item, return false if a value doesn't match
+    for (uint32_t i = 0; i < a_left->data->size(); i++) {
+      VALUE vl = a_left->data->at(i);
+      VALUE vr = a_right->data->at(i);
+      if (this->eq(vl, vr) == kFalse) return kFalse;
+    }
+
+    return kTrue;
+  }
+
   // Operator overloading
   VALUE v = this->readmembersymbol(left, charly_create_symbol("=="));
   if (charly_is_callable(v)) {
