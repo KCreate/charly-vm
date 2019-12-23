@@ -20,6 +20,7 @@ CFLAGS := -std=$(CPPSTD) \
 					-Wextra \
 					-Werror \
 					-Wno-unused-private-field \
+					-Wno-trigraphs \
 					-ferror-limit=50 \
 					-ffast-math
 CFLAGSPROD := -std=$(CPPSTD) \
@@ -27,11 +28,12 @@ CFLAGSPROD := -std=$(CPPSTD) \
 							-Wextra \
 							-Werror \
 							-Wno-unused-private-field \
+							-Wno-trigraphs \
 							-ferror-limit=1 \
 							-flto \
 							-ffast-math
 LFLAGS := -lm
-INC := -I libs -I $(INCLUDEDIR) -I/usr/local/opt/llvm/include/c++/v1
+INC := -I libs -I $(INCLUDEDIR) -I/usr/local/opt/llvm/include/c++/v1 -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
 LIB := -lstdc++
 RUNTIME_PROFILER := examples/runtime-profiler.ch
 
