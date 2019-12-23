@@ -2400,9 +2400,9 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
     case kTypeFrame: {
       Frame* frame = charly_as_frame(value);
-
-      // Get the name of the function or generator that this frame is created for
       VALUE callee = frame->caller_value;
+
+      // Get the name of the calling value
       VALUE name = kNull;
       switch (charly_get_type(callee)) {
         case kTypeFunction: {
@@ -2416,9 +2416,29 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
           break;
         }
         case kTypeGenerator: name = charly_as_generator(callee)->name; break;
+        case kTypeCFunction: name = charly_as_cfunction(callee)->name; break;
         default: name = charly_create_istring("??");
       }
 
+      // Get the body address of the calling value
+      void* body_address = nullptr;
+      switch (charly_get_type(callee)) {
+        case kTypeFunction:   body_address = charly_as_function(callee)->body_address; break;
+        case kTypeGenerator:  body_address = charly_as_generator(callee)->resume_address; break;
+        case kTypeCFunction:  body_address = charly_as_cfunction(callee)->pointer; break;
+        default:              body_address = nullptr;
+      }
+
+      io << "(";
+      io << std::setw(14);
+      io << body_address;
+      io << std::setw(1);
+      io << ") ";
+      io << "(";
+      io << std::setw(10);
+      io << charly_get_typestring(callee);
+      io << std::setw(1);
+      io << ") ";
       io << this->context.symtable(name).value_or("??");
 
       break;
