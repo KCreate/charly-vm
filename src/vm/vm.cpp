@@ -3429,13 +3429,16 @@ void VM::exec_prelude() {
   //     get_method: <Internals::get_method>
   //   }
   // }
-  this->top_frame = this->create_frame(kNull, this->frames, 20, nullptr);
+  this->top_frame =
+      this->create_frame(kNull, this->frames, Compilation::kKnownTopLevelConstants.size(), nullptr);
   this->op_putcfunction(this->context.symtable("get_method"), reinterpret_cast<void*>(Internals::get_method), 1);
   this->op_putvalue(this->context.symtable("get_method"));
   this->op_puthash(1);
   this->op_putvalue(this->context.symtable("internals"));
   this->op_puthash(1);
-  this->op_setlocal(19, 0);
+
+  // The Charly value is the first top level constant
+  this->op_setlocal(0, 0);
   this->op_pop();
 }
 
@@ -3491,9 +3494,9 @@ uint8_t VM::start_runtime() {
       this->gc.mark_persistent(task.fn);
       this->gc.mark_persistent(task.argument);
 
-      // 19 is the index of the Charly object in the top frame
+      // 0 is the index of the Charly object in the top frame
       Function* fn = charly_as_function(task.fn);
-      this->call_function(fn, 1, &task.argument, this->top_frame->read_local(19), true);
+      this->call_function(fn, 1, &task.argument, this->top_frame->read_local(0), true);
       this->run();
       this->pop_stack();
 

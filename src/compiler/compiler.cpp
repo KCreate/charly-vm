@@ -50,7 +50,7 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree) {
     inclusion_function = new AST::Function(this->config.inclusion_function_name,
                                            this->config.inclusion_function_arguments, {}, block, true);
     inclusion_function->at(block);
-    inclusion_function->lvarcount = this->config.known_top_level_constants.size();
+    inclusion_function->lvarcount = kKnownTopLevelConstants.size();
     result.abstract_syntax_tree = inclusion_function;
 
     // Push the function onto the stack and wrap it in a block node
@@ -74,7 +74,7 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree) {
 
     // Register the known local variables in the top level
     uint32_t i = 0;
-    for (const auto& tlc : this->config.known_top_level_constants) {
+    for (const auto& tlc : kKnownTopLevelConstants) {
       lvar_rewriter.scope->register_symbol(
         this->context.symtable(std::get<0>(tlc)),
         LocalOffsetInfo(

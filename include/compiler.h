@@ -71,33 +71,34 @@ struct CompilerContext {
   }
 };
 
+// Known constants in the toplevel
+typedef std::tuple<std::string, bool> TopLevelConstant;
+static const std::vector<TopLevelConstant> kKnownTopLevelConstants = {
+  {"Charly",                    false},   // 00
+  {"__charly_internal_import",  true},    // 01
+  {"Value",                     true},    // 02
+  {"Object",                    true},    // 03
+  {"Class",                     true},    // 04
+  {"Array",                     true},    // 05
+  {"String",                    true},    // 06
+  {"Number",                    true},    // 07
+  {"Function",                  true},    // 08
+  {"Generator",                 true},    // 09
+  {"Boolean",                   true},    // 10
+  {"Null",                      true},    // 11
+  {"stdin",                     false},   // 12
+  {"stdout",                    false},   // 13
+  {"stderr",                    false},   // 14
+  {"print",                     false},   // 15
+  {"write",                     false},   // 16
+  {"gets",                      false},   // 17
+  {"getc",                      false},   // 18
+  {"exit",                      false},   // 19
+  {"defer",                     false},   // 20
+};
+
 // Configuration passed to the compiler
 struct CompilerConfig {
-  typedef std::tuple<std::string, bool> TopLevelConstant;
-
-  // Known constants in the toplevel
-  std::vector<TopLevelConstant> known_top_level_constants = {
-    {"__charly_internal_import",  true},    // 00
-    {"Object",                    true},    // 01
-    {"Class",                     true},    // 02
-    {"Array",                     true},    // 03
-    {"String",                    true},    // 04
-    {"Number",                    true},    // 05
-    {"Function",                  true},    // 06
-    {"Generator",                 true},    // 07
-    {"Boolean",                   true},    // 08
-    {"Null",                      true},    // 09
-    {"stdin",                     false},   // 10
-    {"stdout",                    false},   // 11
-    {"stderr",                    false},   // 12
-    {"print",                     false},   // 13
-    {"write",                     false},   // 14
-    {"gets",                      false},   // 15
-    {"getc",                      false},   // 16
-    {"exit",                      false},   // 17
-    {"defer",                     false},   // 18
-    {"Charly",                    false}    // 19
-  };
 
   // Module inclusion function
   bool wrap_inclusion_function = true;
