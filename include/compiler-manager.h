@@ -44,7 +44,51 @@ namespace Charly::Compilation {
 // Interface to the parser and compiler
 class CompilerManager {
 public:
-  CompilerManager(const RunFlags& f) : flags(f){};
+  CompilerManager(const RunFlags& f) : flags(f) {
+
+    // Pre-register some symbols in the symtable
+    this->symtable("+");
+    this->symtable("-");
+    this->symtable("*");
+    this->symtable("/");
+    this->symtable("%");
+    this->symtable("**");
+    this->symtable("+@");
+    this->symtable("-@");
+    this->symtable("==");
+    this->symtable("<");
+    this->symtable(">");
+    this->symtable("<=");
+    this->symtable(">=");
+    this->symtable("<<");
+    this->symtable(">>");
+    this->symtable("&");
+    this->symtable("|");
+    this->symtable("^");
+    this->symtable("~@");
+    this->symtable("klass");
+    this->symtable("name");
+    this->symtable("prototype");
+    this->symtable("parent_class");
+    this->symtable("length");
+
+    this->symtable("<dead>");
+    this->symtable("<class>");
+    this->symtable("<object>");
+    this->symtable("<array>");
+    this->symtable("<string>");
+    this->symtable("<function>");
+    this->symtable("<cfunction>");
+    this->symtable("<generator>");
+    this->symtable("<frame>");
+    this->symtable("<catchtable>");
+    this->symtable("<cpointer>");
+    this->symtable("<number>");
+    this->symtable("<boolean>");
+    this->symtable("<null>");
+    this->symtable("<symbol>");
+    this->symtable("<unknown>");
+  };
   CompilerManager(const CompilerManager&) = delete;
   CompilerManager(CompilerManager&&) = delete;
 

@@ -32,12 +32,12 @@
     pointing into the gc heap area)
 - Colorize methods to generate escape codes for terminals
 
-- Rewrite the symbol system
-  - Implement a method that turns arbitrary types of values into symbols
-    and stores them in the global symboltable
-    - Use the to_s function to convert the value to a string and then turn that into a symbol
-
 - Rewrite the class system
   - `super` method needs to be supported
   - Multiple inheritance
   - Default values for member properties
+
+- Fix runtime crash when executing the runtime profiler
+  - A frame gets deallocated while the vm is still using it, resulting in the return instruction
+    jumping to a nullpointer. This bug has to be related to some place not having the right checks
+    in place.

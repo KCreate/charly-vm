@@ -202,6 +202,7 @@ public:
   VALUE create_generator(VALUE name, uint8_t* resume_address);
   VALUE create_class(VALUE name);
   VALUE create_cpointer(void* data, void* destructor);
+  VALUE create_symbol(VALUE value);
 
   // Methods to copy existing data types
   VALUE copy_value(VALUE value);

@@ -383,6 +383,24 @@ VALUE VM::create_cpointer(void* data, void* destructor) {
   return cell->as_value();
 }
 
+VALUE VM::create_symbol(VALUE value) {
+  switch (charly_get_type(value)) {
+    case kTypeClass:
+    case kTypeObject:
+    case kTypeArray:
+    case kTypeFunction:
+    case kTypeCFunction:
+    case kTypeGenerator:
+    case kTypeCPointer: {
+      return charly_create_symbol("<" + charly_get_typestring(value) + ">");
+    }
+  }
+
+  std::stringstream buffer;
+  this->to_s(buffer, value);
+  return this->context.symtable(buffer.str());
+}
+
 VALUE VM::copy_value(VALUE value) {
   switch (charly_get_type(value)) {
     case kTypeString: return this->copy_string(value);
@@ -1145,32 +1163,30 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
 }
 
 VALUE VM::setmembervalue(VALUE target, VALUE member_value, VALUE value) {
-  switch (charly_get_type(target)) {
-    case kTypeArray: {
-      Array* arr = charly_as_array(target);
+  if (charly_get_type(target) == kTypeArray) {
+    Array* arr = charly_as_array(target);
 
-      if (charly_is_number(member_value)) {
-        int32_t index = charly_number_to_int32(member_value);
+    if (charly_is_number(member_value)) {
+      int32_t index = charly_number_to_int32(member_value);
 
-        // Negative indices read from the end of the array
-        if (index < 0) {
-          index += arr->data->size();
-        }
-
-        // Out of bounds check
-        if (index < 0 || index >= static_cast<int>(arr->data->size())) {
-          return kNull;
-        }
-
-        // Update the value
-        (*arr->data)[index] = value;
-        return value;
-      } else {
-        return this->setmembersymbol(target, charly_create_symbol(member_value), value);
+      // Negative indices read from the end of the array
+      if (index < 0) {
+        index += arr->data->size();
       }
+
+      // Out of bounds check
+      if (index < 0 || index >= static_cast<int>(arr->data->size())) {
+        return kNull;
+      }
+
+      // Update the value
+      (*arr->data)[index] = value;
+      return value;
     }
-    default: { return this->setmembersymbol(target, charly_create_symbol(member_value), value); }
   }
+
+  // Turn member_value into a symbol
+  return this->setmembersymbol(target, this->create_symbol(member_value), value);
 }
 
 // TODO: Move this method to value.h file
@@ -2430,7 +2446,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       }
 
       io << "(";
-      io << std::setw(14);
+      io << std::setfill(' ') << std::setw(14);
       io << body_address;
       io << std::setw(1);
       io << ") ";
@@ -2516,7 +2532,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
 
       // If this object was already printed, we avoid printing it again
       if (printed_before) {
-        io << "{circular}";
+        io << "{...}";
         break;
       }
 
