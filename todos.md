@@ -31,3 +31,13 @@
     the call tree, inspect the machine stack and search for VALUE pointers (pointers
     pointing into the gc heap area)
 - Colorize methods to generate escape codes for terminals
+
+- Rewrite the symbol system
+  - Implement a method that turns arbitrary types of values into symbols
+    and stores them in the global symboltable
+    - Use the to_s function to convert the value to a string and then turn that into a symbol
+
+- Rewrite the class system
+  - `super` method needs to be supported
+  - Multiple inheritance
+  - Default values for member properties

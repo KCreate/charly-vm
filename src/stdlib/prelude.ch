@@ -77,12 +77,8 @@ ignoreconst {
     unittest: "_charly_unittest"
   }
 
-  // Value class
-  //
-  // All classes automatically depend on this class
-  const Value = (import "_charly_value")()
-
   // Method to modify the primitive objects
+  const set_primitive_value = Charly.internals.get_method("set_primitive_object")
   const set_primitive_object = Charly.internals.get_method("set_primitive_object")
   const set_primitive_class = Charly.internals.get_method("set_primitive_class")
   const set_primitive_array = Charly.internals.get_method("set_primitive_array")
@@ -93,6 +89,12 @@ ignoreconst {
   const set_primitive_boolean = Charly.internals.get_method("set_primitive_boolean")
   const set_primitive_null = Charly.internals.get_method("set_primitive_null")
 
+  // Value class
+  //
+  // All classes automatically depend on this class
+  Value = set_primitive_value((import "_charly_value")())
+
+  // The rest of the primitive classes
   Object = set_primitive_object((import "_charly_object")(Value))
   Number = set_primitive_number((import "_charly_number")(Value))
   Array = set_primitive_array((import "_charly_array")(Value))
@@ -110,7 +112,6 @@ ignoreconst {
   }
   write.dir = func write_dir {
     arguments.each(->(v) __internal_write(v))
-    __internal_write("\n")
     write.dir
   }
 

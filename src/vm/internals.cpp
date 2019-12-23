@@ -26,6 +26,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <unordered_map>
 #include "dlfcn.h"
 
@@ -66,6 +67,7 @@ static std::unordered_map<std::string, InternalMethodSignature> kMethodSignature
     DEFINE_INTERNAL_METHOD(getn, 0),
     DEFINE_INTERNAL_METHOD(dirname, 0),
 
+    DEFINE_INTERNAL_METHOD(set_primitive_value, 1),
     DEFINE_INTERNAL_METHOD(set_primitive_object, 1),
     DEFINE_INTERNAL_METHOD(set_primitive_class, 1),
     DEFINE_INTERNAL_METHOD(set_primitive_array, 1),
@@ -75,6 +77,7 @@ static std::unordered_map<std::string, InternalMethodSignature> kMethodSignature
     DEFINE_INTERNAL_METHOD(set_primitive_generator, 1),
     DEFINE_INTERNAL_METHOD(set_primitive_boolean, 1),
     DEFINE_INTERNAL_METHOD(set_primitive_null, 1),
+    DEFINE_INTERNAL_METHOD(to_s, 1),
 
     DEFINE_INTERNAL_METHOD(defer, 2),
     DEFINE_INTERNAL_METHOD(defer_interval, 2),
@@ -264,11 +267,6 @@ VALUE get_method(VM& vm, VALUE argument) {
 }
 
 VALUE write(VM& vm, VALUE value) {
-  if (charly_is_string(value)) {
-    vm.context.out_stream.write(charly_string_data(value), charly_string_length(value));
-    return kNull;
-  }
-
   vm.to_s(vm.context.out_stream, value);
 
   return kNull;
@@ -293,6 +291,11 @@ VALUE dirname(VM& vm) {
   filename.erase(filename.rfind('/'));
 
   return vm.create_string(filename.c_str(), filename.size());
+}
+
+VALUE set_primitive_value(VM& vm, VALUE value) {
+  vm.set_primitive_value(value);
+  return value;
 }
 
 VALUE set_primitive_object(VM& vm, VALUE value) {
@@ -377,6 +380,12 @@ VALUE exit(VM& vm, VALUE status_code) {
   CHECK(number, status_code);
   vm.exit(charly_number_to_uint8(status_code));
   return kNull;
+}
+
+VALUE to_s(VM& vm, VALUE value) {
+  std::stringstream buffer;
+  vm.to_s(buffer, value);
+  return vm.create_string(buffer.str());
 }
 
 VALUE register_worker_task(VM& vm, VALUE v, VALUE cb) {

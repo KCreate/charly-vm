@@ -331,6 +331,9 @@ public:
   void op_branchneq(int32_t offset);
   void op_typeof();
 
+  inline void set_primitive_value(VALUE value) {
+    this->primitive_value = value;
+  }
   inline void set_primitive_object(VALUE value) {
     this->primitive_object = value;
   }
@@ -398,6 +401,7 @@ private:
   std::vector<VALUE> pretty_print_stack;
 
   // References to the primitive classes of the VM
+  VALUE primitive_value = kNull;
   VALUE primitive_object = kNull;
   VALUE primitive_class = kNull;
   VALUE primitive_array = kNull;

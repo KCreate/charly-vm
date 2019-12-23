@@ -83,6 +83,7 @@ VALUE get_method(VM& vm, VALUE argument);
 VALUE write(VM& vm, VALUE value);
 VALUE getn(VM& vm);
 VALUE dirname(VM& vm);
+VALUE set_primitive_value(VM& vm, VALUE klass);
 VALUE set_primitive_object(VM& vm, VALUE klass);
 VALUE set_primitive_class(VM& vm, VALUE klass);
 VALUE set_primitive_array(VM& vm, VALUE klass);
@@ -92,6 +93,7 @@ VALUE set_primitive_function(VM& vm, VALUE klass);
 VALUE set_primitive_generator(VM& vm, VALUE klass);
 VALUE set_primitive_boolean(VM& vm, VALUE klass);
 VALUE set_primitive_null(VM& vm, VALUE klass);
+VALUE to_s(VM& vm, VALUE value);
 
 VALUE defer(VM& vm, VALUE cb, VALUE dur);
 VALUE defer_interval(VM& vm, VALUE cb, VALUE period);

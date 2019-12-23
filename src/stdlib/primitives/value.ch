@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+const __to_s = Charly.internals.get_method("to_s")
+
 export = -> {
   return class Value {
     func tap(cb) {
@@ -67,7 +69,7 @@ export = -> {
      * Meant to be overridden by other primitive classes
      * */
     func to_s {
-      self
+      __to_s(self)
     }
 
     /*
