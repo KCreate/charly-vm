@@ -2122,7 +2122,9 @@ void VM::stacktrace(std::ostream& io) {
   int i = 0;
   io << "IP: " << static_cast<void*>(this->ip) << '\n';
   while (frame && charly_is_frame(charly_create_pointer(frame))) {
+    io << std::setfill(' ') << std::setw(2);
     io << i++ << ": ";
+    io << std::setw(1);
     this->pretty_print(io, charly_create_pointer(frame));
     io << '\n';
     frame = frame->parent;

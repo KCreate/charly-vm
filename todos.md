@@ -41,3 +41,5 @@
   - A frame gets deallocated while the vm is still using it, resulting in the return instruction
     jumping to a nullpointer. This bug has to be related to some place not having the right checks
     in place.
+
+- Implement `bound_self` for functions
