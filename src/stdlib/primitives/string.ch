@@ -214,7 +214,7 @@ export = ->(Base) {
     func split(needle) {
 
       // If the needle is the empty string, we split after each utf8 codepoint
-      if needle = "" {
+      if needle == "" {
         const r = []
         self.each(->(c) r << c)
         return r
