@@ -16,7 +16,7 @@ Charly's implementation contains many interesting things, such as NAN-Boxing, a 
 
 ## Example code
 
-#### Closures
+### Closures
 ```javascript
 // This function returns another function which, when invoked,
 // will return the current value of the counter and add 1 to it
@@ -36,7 +36,7 @@ counter() // => 1
 counter() // => 2
 ```
 
-#### Exceptions
+### Exceptions
 ```javascript
 try {
   throw "Hello World"
@@ -53,7 +53,7 @@ try {
 }
 ```
 
-#### Generators
+### Generators
 ```javascript
 const summer = ->{
   let sum = 0
@@ -74,7 +74,7 @@ summer(100)
 read_state() // => 400
 ```
 
-#### Taskqueue interactions
+### Taskqueue interactions
 ```javascript
 const iv = defer.interval(->{
   print("Doing stuff...")
@@ -96,7 +96,7 @@ defer(->{
 */
 ```
 
-#### Extending primitive classes
+### Extending primitive classes
 
 [Mocking Spongebob Meme](https://knowyourmeme.com/memes/mocking-spongebob)
 
@@ -123,7 +123,7 @@ print("You should not use memes in example code".mockify())
 // => yOu ShOuLd NoT uSe MeMeS iN eXaMpLe CoDe
 ```
 
-#### Classes
+### Classes
 ```javascript
 class Greeter {
   property name
@@ -158,7 +158,7 @@ func greet(n) {
 greet("leonard")
 ```
 
-##### Tokens
+### Tokens
 `charly myfile.ch -fskipexec -fdump_tokens`
 
 ```
@@ -181,7 +181,7 @@ String : leonard /path/myfile.ch:5:7
 RightParen :  /path/myfile.ch:5:16
 ```
 
-##### Abstract Syntax Tree
+### Abstract Syntax Tree
 `charly myfile.ch -fskipexec -fdump_ast`
 
 ```
@@ -202,7 +202,7 @@ RightParen :  /path/myfile.ch:5:16
       - String: leonard
 ```
 
-##### Bytecode
+### Bytecode
 `charly myfile.ch -fskipexec -fdump_asm`
 
 ```
