@@ -24,33 +24,49 @@
  * SOFTWARE.
  */
 
-import "unittest"
+export = ->(describe, it, assert) {
 
-const result = unittest(->(describe, it, assert, context) {
-
-  const testcases = [
-
-    // Interpreter specs
-    ["Arithmetic operations",       "./interpreter/arithmetic.ch"],
-    ["Bitwise operations",          "./interpreter/bitwise.ch"],
-    ["Classes",                     "./interpreter/classes.ch"],
-    ["Comments",                    "./interpreter/comments.ch"],
-    ["Comparisons",                 "./interpreter/comparisons.ch"],
-    ["Exceptions",                  "./interpreter/exceptions.ch"],
-    ["External Files",              "./interpreter/external-files.ch"]
-  ]
-
-  // Loads and runs all the test cases sequentially
-  // TODO: schedule them asynchronously maybe???
-  testcases.each(->(test) {
-    const module = import test[1]
-    describe(test[1], ->{
-      module(describe, it, assert, context)
-    })
+  it("throws an exception", ->{
+    try {
+      throw "error"
+    } catch (e) {
+      assert(e, "error")
+    }
   })
 
-})
+  it("stops execution of the block", ->{
+    try {
+      throw 2
+      assert(true, false)
+    } catch (e) {
+      assert(e, 2)
+    }
+  })
 
-unittest.display_result(result, ->(code) {
-  exit(code)
-})
+  it("throws exceptions beyond functions", ->{
+    func foo() {
+      throw "error"
+    }
+
+    try {
+      foo()
+    } catch (e) {
+      assert(e, "error")
+    }
+  })
+
+  it("throws exceptions inside object constructors", ->{
+    class Foo {
+      func constructor() {
+        throw "hello world"
+      }
+    }
+
+    try {
+      let a = Foo()
+    } catch (e) {
+      assert(e, "hello world")
+    }
+  })
+
+}

@@ -24,33 +24,25 @@
  * SOFTWARE.
  */
 
-import "unittest"
+export = ->(describe, it, assert) {
 
-const result = unittest(->(describe, it, assert, context) {
+  it("lexes all comment styles", ->{
+    // Test
+    // Hello World
+    //
+    // What is going on
+    //
+    // This is a test
+    assert(true, true)
 
-  const testcases = [
-
-    // Interpreter specs
-    ["Arithmetic operations",       "./interpreter/arithmetic.ch"],
-    ["Bitwise operations",          "./interpreter/bitwise.ch"],
-    ["Classes",                     "./interpreter/classes.ch"],
-    ["Comments",                    "./interpreter/comments.ch"],
-    ["Comparisons",                 "./interpreter/comparisons.ch"],
-    ["Exceptions",                  "./interpreter/exceptions.ch"],
-    ["External Files",              "./interpreter/external-files.ch"]
-  ]
-
-  // Loads and runs all the test cases sequentially
-  // TODO: schedule them asynchronously maybe???
-  testcases.each(->(test) {
-    const module = import test[1]
-    describe(test[1], ->{
-      module(describe, it, assert, context)
-    })
+    /*
+     * This is a multiline comment
+     *
+     * This is a test
+     *
+     * Hello World
+     * */
+    assert(true, true)
   })
 
-})
-
-unittest.display_result(result, ->(code) {
-  exit(code)
-})
+}

@@ -24,16 +24,12 @@
  * SOFTWARE.
  */
 
-const obj = {}
-obj[25] = 1
-obj["25"] = 2
-obj[[1, 2, 3]] = 3
-obj[[1, { name: "test" }, 3]] = 4
-obj[{ name: "test" }] = 5
-obj[(func foo {}).tap(->(f) f.foo = { a: 250 })] = 6
-obj[null] = 7
-obj[NaN] = 8
-obj[false] = 9
-obj[true] = 10
-obj[Charly.internals.get_method("to_s")] = 11
-print(obj)
+class A {
+  static property foo = "hello"
+}
+
+print(A)
+
+A.foo = "world"
+
+print(A)

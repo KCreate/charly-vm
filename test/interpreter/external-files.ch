@@ -24,33 +24,57 @@
  * SOFTWARE.
  */
 
-import "unittest"
+export = ->(describe, it, assert) {
 
-const result = unittest(->(describe, it, assert, context) {
+  describe("require", ->{
 
-  const testcases = [
+    it("loads an internal module", ->{
+      const math = import "math"
 
-    // Interpreter specs
-    ["Arithmetic operations",       "./interpreter/arithmetic.ch"],
-    ["Bitwise operations",          "./interpreter/bitwise.ch"],
-    ["Classes",                     "./interpreter/classes.ch"],
-    ["Comments",                    "./interpreter/comments.ch"],
-    ["Comparisons",                 "./interpreter/comparisons.ch"],
-    ["Exceptions",                  "./interpreter/exceptions.ch"],
-    ["External Files",              "./interpreter/external-files.ch"]
-  ]
-
-  // Loads and runs all the test cases sequentially
-  // TODO: schedule them asynchronously maybe???
-  testcases.each(->(test) {
-    const module = import test[1]
-    describe(test[1], ->{
-      module(describe, it, assert, context)
+      assert(typeof math, "class")
+      assert(typeof math.rand, "function")
+      assert(typeof math.sin(25), "number")
     })
+
+    it("includes files", ->{
+      const module = import "include-test/module.ch"
+
+      assert(module.num, 25)
+      assert(typeof module.foo, "function")
+      assert(module.foo(), "I am foo")
+      assert(module.bar(1, 2), 3)
+
+      let Person = module.Person
+
+      assert(typeof Person, "class")
+
+      let leonard = Person("Leonard", 2000)
+      let bob = Person("Bob", 1990)
+
+      assert(typeof leonard, "object")
+      assert(typeof bob, "object")
+
+      assert(leonard.name, "Leonard")
+      assert(leonard.birthyear, 2000)
+
+      assert(leonard.greeting(), "Leonard was born in 2000.")
+    })
+
   })
 
-})
+  describe("stacktraces", ->{
 
-unittest.display_result(result, ->(code) {
-  exit(code)
-})
+    it("wip", ->{
+      const foo = import "include-test/foo.ch"
+
+      try {
+        foo.foo(->foo.bar())
+      } catch(e) {
+        assert(typeof e, "string")
+        assert(e, "exc from foo.ch")
+      }
+    })
+
+  })
+
+}
