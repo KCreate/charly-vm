@@ -46,7 +46,8 @@ enum Status : STATUS {
   InvalidArgumentType,
   CorruptedStack,
   ObjectClassNotAClass,
-  RuntimeTaskNotCallable
+  RuntimeTaskNotCallable,
+  InvalidInstructionPointer
 };
 
 // Human-readable status messages
@@ -68,7 +69,8 @@ static const std::string kStatusHumanReadable[] = {
   "Argument for instruction has invalid type",
   "Corrupted Stack",
   "Object's klass field not set to an instance of a class",
-  "Callback of runtime task is not a callable type"
+  "Callback of runtime task is not a callable type",
+  "Invalid instruction pointer"
 };
 // clang-format on
 }  // namespace Charly

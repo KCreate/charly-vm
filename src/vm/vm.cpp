@@ -2756,6 +2756,9 @@ void VM::run() {
   if (this->context.instruction_profile) {                                                             \
     exec_start = std::chrono::high_resolution_clock::now();                                            \
   }                                                                                                    \
+  if (this->ip == nullptr) {                                                                           \
+    this->panic(Status::InvalidInstructionPointer);                                                    \
+  }                                                                                                    \
   if (this->context.trace_opcodes) {                                                                   \
     this->context.err_stream.fill('0');                                                                \
     this->context.err_stream << "0x" << std::hex;                                                      \
@@ -3107,6 +3110,9 @@ charly_main_switch_call : {
   this->op_call(argc);
   OPCODE_EPILOGUE();
   CONDINCIP();
+  if (this->ip == nullptr) {
+    this->panic(Status::InvalidInstructionPointer);
+  }
   DISPATCH();
 }
 
