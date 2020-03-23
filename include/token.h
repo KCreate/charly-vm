@@ -350,9 +350,6 @@ struct Token {
     } else {
       stream << this->value;
     }
-
-    stream << ' ';
-    this->location.write_to_stream(stream);
   }
 };
 }  // namespace Charly::Compilation

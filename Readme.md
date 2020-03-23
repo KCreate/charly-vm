@@ -148,7 +148,7 @@ rude_greeter.greet() // => F**k you leonard
 
 ## Teaching Features
 
-Via the executable arguments, you can make the charly compiler print out various data structures that are being produced during the compilation phase.
+Via the executable arguments, you can make the charly compiler print out various data structures that are being produced during the compilation phase. Notice: the performance numbers in the screenshots are achieved by the development build.
 
 ```javascript
 func greet(n) {
@@ -159,69 +159,16 @@ greet("leonard")
 ```
 
 ### Tokens
-`charly myfile.ch -fskipexec -fdump_tokens`
 
-```
-Func : func /path/myfile.ch:1:1
-Identifier : greet /path/myfile.ch:1:6
-LeftParen :  /path/myfile.ch:1:11
-Identifier : n /path/myfile.ch:1:12
-RightParen :  /path/myfile.ch:1:13
-LeftCurly :  /path/myfile.ch:1:15
-Identifier : print /path/myfile.ch:2:3
-LeftParen :  /path/myfile.ch:2:8
-String : Hello  /path/myfile.ch:2:9
-Plus :  /path/myfile.ch:2:18
-Identifier : n /path/myfile.ch:2:20
-RightParen :  /path/myfile.ch:2:21
-RightCurly :  /path/myfile.ch:3:1
-Identifier : greet /path/myfile.ch:5:1
-LeftParen :  /path/myfile.ch:5:6
-String : leonard /path/myfile.ch:5:7
-RightParen :  /path/myfile.ch:5:16
-```
+![Token dumping](docs/dump_tokens.png)
 
 ### Abstract Syntax Tree
-`charly myfile.ch -fskipexec -fdump_ast`
 
-```
-- Block:
-  - Assignment: greet
-    - Function: greet (n) lvarcount=1
-      - Block:
-        - Return:
-          - Call:
-            - Identifier: print
-            - NodeList:
-              - Binary: Plus
-                - String: Hello
-                - Identifier: n
-  - Call:
-    - Identifier: greet
-    - NodeList:
-      - String: leonard
-```
+![AST dumping](docs/ast_dump.png)
 
 ### Bytecode
-`charly myfile.ch -fskipexec -fdump_asm`
 
-```
-*-- 0x7fd994e01eaa: putfunction @"greet", 0x0x7fd994e01eec, false, false, 1, 1
-|   0x7fd994e01ec1: setlocal 1, 0
-|   0x7fd994e01eca: readlocal 1, 0
-|   0x7fd994e01ed3: putstring "leonard"
-|   0x7fd994e01edc: call 1
-|   0x7fd994e01ee1: pop
-|   0x7fd994e01ee2: readlocal 0, 0
-|   0x7fd994e01eeb: return
-*-> 0x7fd994e01eec: nop
-    0x7fd994e01eed: readlocal 15, 2
-    0x7fd994e01ef6: putvalue 0x7ffe206f6c6c6548
-    0x7fd994e01eff: readlocal 0, 0
-    0x7fd994e01f08: add
-    0x7fd994e01f09: call 1
-    0x7fd994e01f0e: return
-```
+![ASM dumping](docs/asm_dump.png)
 
 ## Contributing
 
