@@ -24,10 +24,30 @@
  * SOFTWARE.
  */
 
-Number.prototype.cube = ->self ** 3
+export = ->(describe, it, assert) {
 
-print(5.cube)
-let r = 5.cube()
+  it("runs the consequent block", ->{
+    let test = false
+    let result = false
 
-print(r)
-print(5.cube)
+    unless test {
+      result = true
+    }
+
+    assert(result, true)
+  })
+
+  it("runs the alternate block", ->{
+    let test = true
+    let result = false
+
+    unless test {
+      result = 25
+    } else {
+      result = 30
+    }
+
+    assert(result, 30)
+  })
+
+}

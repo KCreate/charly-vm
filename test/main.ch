@@ -37,7 +37,15 @@ const result = unittest(->(describe, it, assert, context) {
     ["Comments",                    "./interpreter/comments.ch"],
     ["Comparisons",                 "./interpreter/comparisons.ch"],
     ["Exceptions",                  "./interpreter/exceptions.ch"],
-    ["External Files",              "./interpreter/external-files.ch"]
+    ["External Files",              "./interpreter/external-files.ch"],
+    ["Functions",                   "./interpreter/functions.ch"],
+    ["Guard",                       "./interpreter/guard.ch"],
+    ["Loops",                       "./interpreter/loops.ch"],
+    ["Objects",                     "./interpreter/objects.ch"],
+    ["Primitives",                  "./interpreter/primitives.ch"],
+    ["Switch",                      "./interpreter/switch.ch"],
+    ["Ternary",                     "./interpreter/ternary.ch"],
+    ["Unless",                      "./interpreter/unless.ch"]
   ]
 
   // Loads and runs all the test cases sequentially

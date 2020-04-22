@@ -24,10 +24,34 @@
  * SOFTWARE.
  */
 
-Number.prototype.cube = ->self ** 3
+export = ->(describe, it, assert) {
 
-print(5.cube)
-let r = 5.cube()
+  it("runs the alternate block", ->{
+    let value = 20
 
-print(r)
-print(5.cube)
+    guard value > 50 {
+      assert(true, true)
+      return
+    }
+
+    assert(false, true)
+  })
+
+  it("can check for value existance", ->{
+    let box = {}
+    box.name = "leonard"
+
+    guard box.name {
+      assert(false, true)
+    }
+
+    guard box.age {
+      assert(true, true)
+      return
+    }
+
+    // If this is reached, something went wrong
+    assert(false, true)
+  })
+
+}
