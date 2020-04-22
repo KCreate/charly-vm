@@ -24,10 +24,12 @@
  * SOFTWARE.
  */
 
-Number.prototype.cube = ->self ** 3
+const task = defer.interval(->(i) {
+  print("hello world")
+}, 50)
 
-print(5.cube)
-let r = 5.cube()
-
-print(r)
-print(5.cube)
+defer(->{
+  print(task)
+  print(task.iterations)
+  task.clear()
+}, 1000)

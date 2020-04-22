@@ -3,8 +3,8 @@ clang   -g \
         -Wall \
         -fPIC \
         -shared \
-        -o libraries/sdl2.lib \
-        libraries/sdl2.cpp \
+        -o libraries/sfml.lib \
+        libraries/sfml.cpp \
         -Iinclude \
         -Ilibs \
         -I/usr/local/opt/llvm/include/c++/v1 \

@@ -136,20 +136,29 @@ ignoreconst {
   // Internally this adds a new task to the vms internal task queue
   // Once all other remaining tasks have been executed this callback will
   // be invoked
+  class _TimerHandle {
+    property id
+    func constructor(@id) = null
+    func clear { __internal_clear_timer(@id) @id = null }
+  }
+  class _IntervalHandle extends _TimerHandle {
+    property iterations
+    func constructor(@id) { @iterations = 0 }
+    func clear { __internal_clear_interval(@id) @id = null }
+  }
+
   defer = func defer(cb) {
-    __internal_defer(cb, arguments.length > 1 ? $1 : 0)
+    _TimerHandle(__internal_defer(cb, arguments.length > 1 ? $1 : 0))
   }
   defer.interval = func interval(cb, period) {
 
     // Count how often the callback has been called
-    let c = 0
-    __internal_defer_interval(->{
-      cb(c)
-      c += 1
-    }, period)
+    let t = null
+    t = _IntervalHandle(__internal_defer_interval(->{
+      cb(t.iterations)
+      t.iterations += 1
+    }, period))
   }
-  defer.clear_timer = __internal_clear_timer
-  defer.clear_interval = __internal_clear_interval
 
   // Setup the charly object
   Charly.io = {
