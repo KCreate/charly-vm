@@ -23,3 +23,61 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
+class N {
+  property value
+  property left
+  property right
+
+  func constructor(@value) {
+    @left = arguments[1]
+    @right = arguments[2]
+  }
+}
+
+const root = N(
+  10,
+  N(7,
+    N(5),
+    N(9)
+  ),
+  N(35,
+    N(30,
+      N(20),
+      N(33)
+    ),
+    N(45)
+  )
+)
+
+//               10
+//             /    \
+//            7     35
+//           / \   /  \
+//          5  9  30  45
+//               /  \
+//             20   33
+
+func successor(root, target) {
+  let candidate = null
+  let base = root
+
+  loop {
+    if target < base.value {
+      candidate = base.value
+      if base.left == null break
+      base = base.left
+      continue
+    }
+    if target >= base.value {
+      if base.right == null break
+      base = base.right
+    }
+  }
+
+  candidate
+}
+
+0.upto(45, ->(i) {
+  print(i + ": " + successor(root, i))
+})

@@ -23,3 +23,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
+const numbers = [500, 9, 20, -1, -91, 3, -36, 6, 200, 25, -100, 100]
+
+func swap(a, i1, i2) {
+  const tmp = a[i1]
+  a[i1] = a[i2]
+  a[i2] = tmp
+  a
+}
+
+func sort(array) {
+  let i
+  let had_swaps
+
+  do {
+    i = 0
+    had_swaps = false
+
+    while i < array.length - 1 {
+      if array[i] > array[i + 1] {
+        swap(array, i, i + 1)
+        had_swaps = true;
+      }
+
+      yield array
+
+      i += 1
+    }
+  } while had_swaps
+
+  array
+}
+
+const sorter = sort(numbers)
+
+const t = defer.interval(->(i) {
+  print(sorter())
+}, 500)
