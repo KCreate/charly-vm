@@ -31,10 +31,6 @@ ignoreconst {
   const __internal_write            = __internal_get_method("write")
   const __internal_getn             = __internal_get_method("getn")
   const __internal_import           = __internal_get_method("import")
-  const __internal_defer            = __internal_get_method("defer")
-  const __internal_defer_interval   = __internal_get_method("defer_interval")
-  const __internal_clear_timer      = __internal_get_method("clear_timer")
-  const __internal_clear_interval   = __internal_get_method("clear_interval")
   const __internal_exit             = __internal_get_method("exit")
 
   let __internal_standard_libs_names
@@ -132,33 +128,7 @@ ignoreconst {
     __internal_exit(arguments.length ? $0 : 0)
   }
 
-  // Defers the execution of a block
-  // Internally this adds a new task to the vms internal task queue
-  // Once all other remaining tasks have been executed this callback will
-  // be invoked
-  class _TimerHandle {
-    property id
-    func constructor(@id) = null
-    func clear { __internal_clear_timer(@id) @id = null }
-  }
-  class _IntervalHandle extends _TimerHandle {
-    property iterations
-    func constructor(@id) { @iterations = 0 }
-    func clear { __internal_clear_interval(@id) @id = null }
-  }
-
-  defer = func defer(cb) {
-    _TimerHandle(__internal_defer(cb, arguments.length > 1 ? $1 : 0))
-  }
-  defer.interval = func interval(cb, period) {
-
-    // Count how often the callback has been called
-    let t = null
-    t = _IntervalHandle(__internal_defer_interval(->{
-      cb(t.iterations)
-      t.iterations += 1
-    }, period))
-  }
+  defer = import "_charly_defer"
 
   // Setup the charly object
   Charly.io = {

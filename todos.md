@@ -1,3 +1,13 @@
+- Ability to pause a thread of execution and resume it at a later time
+  - Usecase #1: Waiting for a Timer to finish
+  - `
+      const handle = defer(->{
+        print("waited for 1 second")
+      }, 1000)
+
+      handle.wait()
+
+      print("this runs after the timer")
 - Implement magic constants
   - __DIR__
   - __FILE__

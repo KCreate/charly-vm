@@ -49,6 +49,9 @@ static const std::unordered_map<std::string, std::string> kStandardCharlyLibrari
     {"_charly_object", "src/stdlib/primitives/object.ch"},
     {"_charly_string", "src/stdlib/primitives/string.ch"},
 
+    // Helper stuff
+    {"_charly_defer", "src/stdlib/libs/defer.ch"},
+
     // Libraries
     {"_charly_math", "src/stdlib/libs/math.ch"},
     {"_charly_time", "src/stdlib/libs/time.ch"},

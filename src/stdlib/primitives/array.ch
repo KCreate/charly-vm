@@ -156,6 +156,13 @@ export = ->(Base) {
       self
     }
 
+    func clear {
+      while @length {
+        _.remove(self, 0)
+      }
+      self
+    }
+
     func iterate(callback) {
       let i = 0
 

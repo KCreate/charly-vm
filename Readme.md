@@ -81,7 +81,7 @@ const iv = defer.interval(->{
 }, 1000)
 
 defer(->{
-  defer.clear_interval(iv)
+  iv.clear()
 
   print("Done!!")
 }, 5000)

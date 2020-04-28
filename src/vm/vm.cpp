@@ -1515,7 +1515,7 @@ void VM::call_generator(Generator* generator, uint32_t argc, VALUE* argv) {
   }
   this->ip = generator->resume_address;
 
-  // Restore the values on the stack which ere active when the generator was paused
+  // Restore the values on the stack which were active when the generator was paused
   while (generator->context_stack->size()) {
     this->push_stack(generator->context_stack->back());
     generator->context_stack->pop_back();
