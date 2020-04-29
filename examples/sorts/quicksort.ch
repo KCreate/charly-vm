@@ -24,19 +24,54 @@
  * SOFTWARE.
  */
 
-const nums = [
-  0.0,
-  0.1,
-  0.2,
-  0.3,
-  0.4,
-  0.5,
-  0.6,
-  0.7,
-  0.8,
-  0.9
-]
+import "math"
 
-nums.each(->(n) {
-  print(n.floor())
-})
+const numbers = Array.create(100, ->math.rand(0, 100).round())
+
+func swap(a, i1, i2) {
+  const tmp = a[i1]
+  a[i1] = a[i2]
+  a[i2] = tmp
+  a
+}
+
+func partition(array, pivot, left, right) {
+  let store_index = left
+  let pivot_value = array[pivot]
+
+  swap(array, pivot, right)
+
+  left.upto(right, ->(index) {
+    if (array[index] < pivot_value) {
+      swap(array, index, store_index)
+      store_index += 1
+    }
+  })
+
+  swap(array, right, store_index)
+
+  return store_index
+}
+
+func sort(array) {
+  let pivot
+  let left = arguments[1]
+  let right = arguments[2]
+
+  unless typeof left == "number" left = 0
+  unless typeof right == "number" right = array.length - 1
+
+  if left < right {
+    pivot = left + math.ceil((right - left) / 2)
+    pivot = partition(array, pivot, left, right)
+    sort(array, left, pivot - 1)
+    sort(array, pivot + 1, right)
+  }
+
+  return null
+}
+
+print(numbers)
+print("")
+sort(numbers)
+print(numbers)

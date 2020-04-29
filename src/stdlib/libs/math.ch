@@ -62,7 +62,14 @@ class Math {
   static property log2  = Charly.internals.get_method("Math::log2")
   static property log10 = Charly.internals.get_method("Math::log10")
 
-  static property rand  = func rand {
+  /*
+   * Returns a random value depending on the arguments passed
+   *
+   * 0 args: 0 - 1
+   * 1  arg: 0 - x
+   * 2 args: x - y
+   * */
+  static func rand {
     switch arguments.length {
       case 1 {
         return __rand(0, $0)

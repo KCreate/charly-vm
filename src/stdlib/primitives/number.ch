@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+import "math"
+
 export = ->(Base) {
   return class Number extends Base {
 
@@ -83,6 +85,29 @@ export = ->(Base) {
     func abs {
       if self < 0 return -self
       self
+    }
+
+    /*
+     * Returns the next highest integer
+     * */
+    func ceil {
+      math.ceil(self)
+    }
+
+    /*
+     * Returns the next lowest integer
+     * */
+    func floor {
+      math.floor(self)
+    }
+
+    /*
+     * Rounds this number to the nearest integer
+     * */
+    func round {
+      const r = self % 1
+      if r < 0.5 return math.floor(self)
+      math.ceil(self)
     }
 
     /*
