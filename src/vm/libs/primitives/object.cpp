@@ -3,7 +3,7 @@
  *
  * MIT License
  *
- * Copyright (c) 2017 - 2020 Leonard Schütz
+ * Copyright (c) 2017 - 2019 Leonard Schütz
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,28 +24,37 @@
  * SOFTWARE.
  */
 
-const input = "abcd"
+#include <sstream>
+#include <algorithm>
 
-const chars = input.split("")
+#include "object.h"
+#include "vm.h"
+#include "managedcontext.h"
 
-func build_tree(chars) {
-  const tree = {}
+using namespace std;
 
-  if chars.length == 0 return null
+namespace Charly {
+namespace Internals {
+namespace Object {
 
-  chars.each(->(c, i) {
-    tree[c] = build_tree(chars.filter(->(e, ri) { ri ! i }))
-  })
+VALUE keys(VM& vm, VALUE obj) {
+  ManagedContext lalloc(vm);
 
-  return tree
+  // Get the container of the value
+  std::unordered_map<VALUE, VALUE>* container = charly_get_container(obj);
+  if (container == nullptr) return lalloc.create_array(0);
+
+  // Create an array containing the keys of the container
+  Array* arr = charly_as_array(lalloc.create_array(container->size()));
+
+  for (auto& entry : *container) {
+    VALUE key = lalloc.create_string(vm.context.symtable(entry.first).value_or(kUndefinedSymbolString));
+    arr->data->push_back(key);
+  }
+
+  return charly_create_pointer(arr);
 }
 
-const tree = build_tree(chars)
-
-func anagrams(tree) {
-  const keys = Object.keys(tree)
-}
-
-const result = anagrams(tree)
-
-print(result)
+}  // namespace String
+}  // namespace Internals
+}  // namespace Charly

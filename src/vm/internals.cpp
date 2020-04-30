@@ -40,6 +40,7 @@
 #include "libs/buffer/buffer.h"
 #include "libs/primitives/array.h"
 #include "libs/primitives/string.h"
+#include "libs/primitives/object.h"
 
 using namespace std;
 
@@ -54,9 +55,12 @@ namespace Internals {
   }
 static std::unordered_map<std::string, InternalMethodSignature> kMethodSignatures = {
 
-// Libs
+    // Primitives
 #import "libs/primitives/array.def"
 #import "libs/primitives/string.def"
+#import "libs/primitives/object.def"
+
+    // Libraries
 #import "libs/math/math.def"
 #import "libs/time/time.def"
 #import "libs/buffer/buffer.def"
@@ -146,7 +150,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
     // Check if we got a *.lib file
     if (!std::strcmp(include_filename.c_str() + include_filename.size() - 4, ".lib")) {
       ManagedContext lalloc(vm);
-      Object* lib = charly_as_object(lalloc.create_object(8));
+      Charly::Object* lib = charly_as_object(lalloc.create_object(8));
 
       // Check if there is already a resident copy of this library
       //

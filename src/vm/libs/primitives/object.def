@@ -3,7 +3,7 @@
  *
  * MIT License
  *
- * Copyright (c) 2017 - 2020 Leonard Schütz
+ * Copyright (c) 2017 - 2019 Leonard Schütz
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,28 +24,4 @@
  * SOFTWARE.
  */
 
-const input = "abcd"
-
-const chars = input.split("")
-
-func build_tree(chars) {
-  const tree = {}
-
-  if chars.length == 0 return null
-
-  chars.each(->(c, i) {
-    tree[c] = build_tree(chars.filter(->(e, ri) { ri ! i }))
-  })
-
-  return tree
-}
-
-const tree = build_tree(chars)
-
-func anagrams(tree) {
-  const keys = Object.keys(tree)
-}
-
-const result = anagrams(tree)
-
-print(result)
+DEFINE_INTERNAL_METHOD(Object::keys, 1),

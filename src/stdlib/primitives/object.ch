@@ -24,8 +24,17 @@
  * SOFTWARE.
  */
 
+const __internal_keys = Charly.internals.get_method("Object::keys")
+
 export = ->(Base) {
   return class Object extends Base {
+
+    /*
+     * Returns an array containing the keys contained inside v
+     * */
+    static func keys(v) {
+      __internal_keys(v)
+    }
 
   }
 }

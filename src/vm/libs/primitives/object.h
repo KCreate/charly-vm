@@ -3,7 +3,7 @@
  *
  * MIT License
  *
- * Copyright (c) 2017 - 2020 Leonard Schütz
+ * Copyright (c) 2017 - 2019 Leonard Schütz
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,28 +24,17 @@
  * SOFTWARE.
  */
 
-const input = "abcd"
+#include "defines.h"
+#include "internals.h"
 
-const chars = input.split("")
+#pragma once
 
-func build_tree(chars) {
-  const tree = {}
+namespace Charly {
+namespace Internals {
+namespace Object {
 
-  if chars.length == 0 return null
+VALUE keys(VM& vm, VALUE obj);
 
-  chars.each(->(c, i) {
-    tree[c] = build_tree(chars.filter(->(e, ri) { ri ! i }))
-  })
-
-  return tree
-}
-
-const tree = build_tree(chars)
-
-func anagrams(tree) {
-  const keys = Object.keys(tree)
-}
-
-const result = anagrams(tree)
-
-print(result)
+}  // namespace String
+}  // namespace Internals
+}  // namespace Charly
