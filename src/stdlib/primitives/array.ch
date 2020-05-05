@@ -131,7 +131,7 @@ export = ->(Base) {
 
     func pop {
       const item = @last()
-      _.remove(@length - 1)
+      _.remove(self, @length - 1)
       item
     }
 
@@ -140,9 +140,9 @@ export = ->(Base) {
       self
     }
 
-    func shift(item) {
+    func shift {
       const item = @first()
-      _.remove(0)
+      _.remove(self, 0)
       item
     }
 
