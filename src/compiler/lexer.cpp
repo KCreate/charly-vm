@@ -659,6 +659,8 @@ void Lexer::consume_comment() {
 void Lexer::consume_multiline_comment() {
   this->token.type = TokenType::Comment;
 
+  uint32_t depth = 1;
+
   while (true) {
     uint32_t cp = this->source.current_char;
 
@@ -667,9 +669,15 @@ void Lexer::consume_multiline_comment() {
 
       if (cp == L'/') {
         this->source.read_char();
-        break;
-      } else {
-        // Do nothing and keep consuming comment
+        depth--;
+        if (depth == 0) break;
+      }
+    } else if (cp == L'/') {
+      cp = this->source.read_char();
+
+      if (cp == L'*') {
+        this->source.read_char();
+        depth++;
       }
     } else {
       this->source.read_char();

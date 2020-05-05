@@ -43,6 +43,15 @@ export = ->(describe, it, assert) {
      * Hello World
      * */
     assert(true, true)
+
+    /* comment */
+
+    /* /* nested comment */ */
+
+    /* /* /* nested comment */ */ */
+
+    /* /* /* /* nested comment */ */ */ */
+    assert(true, true)
   })
 
 }

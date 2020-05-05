@@ -24,28 +24,14 @@
  * SOFTWARE.
  */
 
-const input = "abcd"
+print("hello world before")
 
-const chars = input.split("")
+/* comment */
 
-func build_tree(chars) {
-  const tree = {}
+/* /* nested comment */ */
 
-  if chars.length == 0 return null
+/* /* /* nested comment */ */ */
 
-  chars.each(->(c, i) {
-    tree[c] = build_tree(chars.filter(->(e, ri) { ri ! i }))
-  })
+/* /* /* /* nested comment */ */ */ */
 
-  return tree
-}
-
-const tree = build_tree(chars)
-
-func anagrams(tree) {
-  const keys = Object.keys(tree)
-}
-
-const result = anagrams(tree)
-
-print(result)
+print("hello world after")
