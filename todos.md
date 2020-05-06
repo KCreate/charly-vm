@@ -1,3 +1,7 @@
+- Match statements
+  - The local variable allocator has been finished and this allows for the match
+    syntax to be implemented now (see feature-ideas/match-statement.ch for proposal)
+
 - Ability to pause a thread of execution and resume it at a later time
   - Usecase #1: Waiting for a Timer to finish
   - `

@@ -137,6 +137,7 @@ void Lexer::read_token() {
         }
         case L'*': {
           this->source.read_char();
+          this->source.read_char();
           this->consume_multiline_comment();
           break;
         }
@@ -679,6 +680,8 @@ void Lexer::consume_multiline_comment() {
         this->source.read_char();
         depth++;
       }
+    } else if (cp == L'\0') {
+      break;
     } else {
       this->source.read_char();
     }

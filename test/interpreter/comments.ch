@@ -44,14 +44,24 @@ export = ->(describe, it, assert) {
      * */
     assert(true, true)
 
-    /* comment */
+    /**/
+    /*/**/*/
+    /*/*/**/*/*/
+    /*/*/*/**/*/*/*/
+    /* /*/*/**/*/*/*/
+    /*/* /*/**/*/*/*/
+    /*/*/* /* */*/*/*/
+    /*
 
-    /* /* nested comment */ */
+    /*
+     *
+     *
+     *
+     * */
 
-    /* /* /* nested comment */ */ */
-
-    /* /* /* /* nested comment */ */ */ */
+    */
     assert(true, true)
+
   })
 
 }
