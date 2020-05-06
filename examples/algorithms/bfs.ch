@@ -64,19 +64,21 @@ tree.right.__correct = true
 
 let nodes_checked = 0
 
-func search_dfs(node, target) {
-  if node == null return null
+func search_bfs(node, target) {
+  const queue = [node]
 
-  nodes_checked += 1
+  while queue.length {
+    const item = queue.shift()
+    nodes_checked += 1
+    if item.data == target return item
+    queue << item.left
+    queue << item.right
+  }
 
-  if node.data == target return node
-
-  let result
-  if result = search_dfs(node.left, target) return result
-  search_dfs(node.right, target)
+  null
 }
 
-const result = search_dfs(tree, 8)
+const result = search_bfs(tree, 8)
 
 print(result.__correct ? "Correct node found" : "Incorrect node found")
 print("Checked " + nodes_checked + " nodes")
