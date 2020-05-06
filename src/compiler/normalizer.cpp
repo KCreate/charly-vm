@@ -538,15 +538,26 @@ AST::AbstractNode* Normalizer::visit_class(AST::Class* node, VisitContinue cont)
       member_names.push_back(as_ident->name);
     }
 
+    AST::Block* block = new AST::Block({});
+
+    // Generate member initialisations
+    uint32_t i = 0;
+    for (auto& member_name : member_names) {
+      AST::Identifier* source = new AST::Identifier("$" + std::to_string(i));
+      AST::MemberAssignment* assignment = new AST::MemberAssignment(new AST::Self(), member_name, source);
+      assignment->yielded_value_needed = false;
+      block->prepend_node(assignment);
+      i++;
+    }
+
     AST::Function* constructor = new AST::Function(
       "constructor",
-      member_names,
-      member_names,
-      new AST::Block({
-
-      }),
+      {},
+      {},
+      block,
       false
     );
+    constructor->needs_arguments = true;
 
     constructor = this->visit_function(constructor, cont)->as<AST::Function>();
 

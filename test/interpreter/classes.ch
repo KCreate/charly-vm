@@ -43,7 +43,25 @@ export = ->(describe, it, assert) {
     assert(p2.age, 28)
   })
 
-  it ("adds methods to classes", ->{
+  it("generates default constructors for classes", ->{
+    class Box {
+      property foo
+      property bar
+      property baz
+    }
+
+    const b1 = Box(1, 2, 3)
+    assert(b1.foo, 1)
+    assert(b1.bar, 2)
+    assert(b1.baz, 3)
+
+    const b2 = Box()
+    assert(b2.foo, null)
+    assert(b2.bar, null)
+    assert(b2.baz, null)
+  })
+
+  it("adds methods to classes", ->{
     class Box {
       property value
 
