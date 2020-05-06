@@ -3465,7 +3465,6 @@ void VM::exec_prelude() {
 
   // The Charly value is the first top level constant
   this->op_setlocal(0, 0);
-  this->op_pop();
 }
 
 uint8_t VM::start_runtime() {

@@ -1622,7 +1622,8 @@ inline bool is_literal(AbstractNode* node) {
 inline bool yields_value(AbstractNode* node) {
   if (node->type() == kTypeMatch)
     return node->as<AST::Match>()->yields_value();
-  return (node->type() == kTypeTernaryIf || node->type() == kTypeUnary || node->type() == kTypeBinary ||
+  return node->yielded_value_needed && (
+          node->type() == kTypeTernaryIf || node->type() == kTypeUnary || node->type() == kTypeBinary ||
           node->type() == kTypeAnd || node->type() == kTypeOr || node->type() == kTypeTypeof ||
           node->type() == kTypeAssignment || node->type() == kTypeMemberAssignment ||
           node->type() == kTypeANDMemberAssignment || node->type() == kTypeIndexAssignment ||
