@@ -24,14 +24,8 @@
  * SOFTWARE.
  */
 
-print("hello world before")
+func foo {
+  print($0)
+}
 
-/* comment */
-
-/* /* nested comment */ */
-
-/* /* /* nested comment */ */ */
-
-/* /* /* /* nested comment */ */ */ */
-
-print("hello world after")
+foo(2)
