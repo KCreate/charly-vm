@@ -499,7 +499,6 @@ AST::AbstractNode* CodeGenerator::visit_andindexassignment(AST::ANDIndexAssignme
   this->assembler.write_readmembervalue();
   this->visit_node(node->expression);
   this->assembler.write_operator(kOperatorOpcodeMapping[node->operator_type]);
-  this->assembler.write_setmembervalue();
 
   if (node->yielded_value_needed) {
     this->assembler.write_setmembervaluepush();

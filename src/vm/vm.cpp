@@ -130,10 +130,9 @@ Frame* VM::create_frame(VALUE self,
 VALUE VM::pop_stack() {
   VALUE val = kNull;
 
-  if (this->stack.size() > 0) {
-    val = this->stack.back();
-    this->stack.pop_back();
-  }
+  if (this->stack.size() == 0) this->panic(Status::CorruptedStack);
+  val = this->stack.back();
+  this->stack.pop_back();
 
   return val;
 }

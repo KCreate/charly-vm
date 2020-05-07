@@ -328,7 +328,7 @@ AST::AbstractNode* Parser::parse_control_statement() {
         exp = this->parse_expression();
         location_end = exp->location_end;
       } else {
-        exp = new AST::Empty();
+        exp = new AST::Null();
         location_end = location_start;
       }
 
