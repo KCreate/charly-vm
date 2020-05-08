@@ -37,6 +37,11 @@ export = ->(describe, it, assert) {
     assert(NaN == NaN, true)
     assert(NaN == 0, false)
     assert(0 == NaN, false)
+    assert(2 == 3, false)
+    assert(20 == 30, false)
+    assert(-200 == -300, false)
+    assert(2.2323 == 3.2323, false)
+    assert(9.666 == 9, false)
   })
 
   it("compares booleans", ->{
