@@ -50,15 +50,15 @@ export = ->(describe, it, assert) {
 
   it("calls functions", ->{
     func p(x) {
-      math.sqrt(x * x * 2)
+      math.sqrt(x)
     }
 
-    assert(p(5), 25)
-    assert(p(25), 625)
-    assert(p(10), 100)
-    assert(p(2), 4)
-    assert(p(4), 16)
-    assert(p(8), 64)
+    assert(p(25), 5)
+    assert(p(625), 25)
+    assert(p(100), 10)
+    assert(p(4), 2)
+    assert(p(16), 4)
+    assert(p(64), 8)
   })
 
   it("inserts the argument variable", ->{

@@ -26,22 +26,38 @@
 
 export = ->(describe, it, assert) {
 
-  it("compares numerics", ->{
-    assert(2 == 2, true)
-    assert(20 == 20, true)
+  it("compares integers", ->{
+    assert(1 == 1, true)
+    assert(1 ! -1, true)
+    assert(200 == 200, true)
     assert(-200 == -200, true)
-    assert(2.2323 == 2.2323, true)
-    assert(9.666 == 9.666, true)
-    assert(-0 == -0, true)
-    assert(-0 == 0, true)
+    assert(-500 ! 500, true)
+    assert(0 == 0, true)
+
+    assert(1 == 2, false)
+    assert(1 == -1, false)
+    assert(200 == 300, false)
+    assert(-200 == -201, false)
+    assert(-500 == 500, false)
+  })
+
+  it("compares floats", ->{
+    assert(3.5 == 3.5, true)
+    assert(3.1111 == 3.1111, true)
+    assert(-25.5 == -25.5, true)
+    assert(0.00 == 0.00, true)
+    assert(0.0000001 == 0.0000001, true)
+
+    assert(3.5 == 3.4, false)
+    assert(3.1111 == 3.1112, false)
+    assert(-25.5 == 25.5, false)
+    assert(0.00 == 0.01, false)
+    assert(0.0000001 == 0.0000002, false)
+    assert(9.666 == 9, false)
+
     assert(NaN == NaN, true)
     assert(NaN == 0, false)
     assert(0 == NaN, false)
-    assert(2 == 3, false)
-    assert(20 == 30, false)
-    assert(-200 == -300, false)
-    assert(2.2323 == 3.2323, false)
-    assert(9.666 == 9, false)
   })
 
   it("compares booleans", ->{

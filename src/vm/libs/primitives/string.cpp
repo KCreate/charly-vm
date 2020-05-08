@@ -50,7 +50,7 @@ VALUE to_n(VM& vm, VALUE str) {
   sstream >> number;
 
   if (sstream.fail()) return kNaN;
-  return charly_create_double(number);
+  return charly_create_number(number);
 }
 
 VALUE ltrim(VM& vm, VALUE src) {
