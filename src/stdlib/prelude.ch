@@ -134,8 +134,8 @@ ignoreconst {
   Charly.io = {
     write,
     print,
-    getn: ->(msg) {
-      write(msg)
+    getn: ->{
+      if arguments.length > 0 write($0)
       return __internal_getn()
     },
     dirname: __internal_get_method("dirname")

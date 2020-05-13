@@ -12,6 +12,8 @@
       handle.wait()
 
       print("this runs after the timer")
+    `
+
 - Implement magic constants
   - __DIR__
   - __FILE__
@@ -61,6 +63,3 @@
     in place.
 
 - Implement `bound_self` for functions
-
-- `defer` and `defer.interval` should return objects
-  - Those objects should contain the respective `clear` methods
