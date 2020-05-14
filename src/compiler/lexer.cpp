@@ -47,6 +47,17 @@ void Lexer::reset_token() {
 void Lexer::read_token() {
   this->reset_token();
 
+  // Keywords are being parsed as regular identifiers. Every time we successfully parse
+  // a single identifier, we check if it matches a keyword. If it does, the token type
+  // is changed to the relevant keyword.
+  //
+  // Sometimes we want to use keywords as identifiers however, either to interact with some
+  // external C code or just for fun.
+  //
+  // The @"xxx" syntax allows this. Whenever we encounter such an identifier, we tell the lexer
+  // to explicitly treat it as an identifier.
+  bool potential_keyword = true;
+
   switch (this->source.current_char) {
     case L'\0': {
       this->token.type = TokenType::Eof;
@@ -292,6 +303,7 @@ void Lexer::read_token() {
         this->source.read_char();
         this->consume_string();
         this->token.type = TokenType::Identifier;
+        potential_keyword = false;
       } else {
         this->source.read_char();
         this->token.type = TokenType::AtSign;
@@ -324,7 +336,7 @@ void Lexer::read_token() {
   UTF8Buffer::write_cp_to_string(this->source.current_char, this->source.frame);
 
   // Change the type of keyword tokens
-  if (this->token.type == TokenType::Identifier) {
+  if (this->token.type == TokenType::Identifier && potential_keyword) {
     auto search = kTokenKeywordsAndLiterals.find(this->token.value);
 
     if (search != kTokenKeywordsAndLiterals.end()) {
