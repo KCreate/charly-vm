@@ -3,7 +3,7 @@
  *
  * MIT License
  *
- * Copyright (c) 2017 - 2019 Leonard Schütz
+ * Copyright (c) 2017 - 2020 Leonard Schütz
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -67,7 +67,7 @@ static const std::string kHelpMessage =
 static const std::string kLicense =
     "MIT License \n"
     "\n"
-    "Copyright (c) 2017 - 2019 Leonard Schütz \n"
+    "Copyright (c) 2017 - 2020 Leonard Schütz \n"
     "\n"
     "Permission is hereby granted, free of charge, to any person obtaining a copy \n"
     "of this software and associated documentation files (the \"Software\"), to deal \n"
