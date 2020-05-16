@@ -48,8 +48,8 @@ export = ->(describe, it, assert) {
 
       assert(typeof Person, "class")
 
-      let leonard = Person("Leonard", 2000)
-      let bob = Person("Bob", 1990)
+      let leonard = new Person("Leonard", 2000)
+      let bob = new Person("Bob", 1990)
 
       assert(typeof leonard, "object")
       assert(typeof bob, "object")

@@ -96,6 +96,7 @@ VALUE set_primitive_function(VM& vm, VALUE klass);
 VALUE set_primitive_generator(VM& vm, VALUE klass);
 VALUE set_primitive_boolean(VM& vm, VALUE klass);
 VALUE set_primitive_null(VM& vm, VALUE klass);
+VALUE set_runtime_constructor(VM& vm, VALUE func);
 VALUE to_s(VM& vm, VALUE value);
 
 VALUE call_dynamic(VM& vm, VALUE func, VALUE ctx, VALUE args);

@@ -1,11 +1,11 @@
 const Context = import "./context.ch"
 const TestVisitor = import "./visitor.ch"
-const ResultVisitor = import "./results.ch"
+const ResultPrinter = import "./results.ch"
 
 // To start a new unit testing session
 export = ->(callback) {
-  const visitor = TestVisitor(write, print)
-  const context = Context(visitor)
+  const visitor = new TestVisitor(write, print)
+  const context = new Context(visitor)
 
   callback(
     ->(title, callback) context.suite(title, callback),
@@ -18,4 +18,7 @@ export = ->(callback) {
 }
 
 // Display the results of a unit testing session
-export.display_result = ResultVisitor
+export.display_result = ->(result) {
+  const p = new ResultPrinter();
+  p.display(result);
+}

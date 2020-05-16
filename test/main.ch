@@ -60,6 +60,4 @@ const result = unittest(->(describe, it, assert, context) {
 
 })
 
-unittest.display_result(result, ->(code) {
-  exit(code)
-})
+unittest.display_result(result)

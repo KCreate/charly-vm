@@ -48,24 +48,24 @@ class Duration {
   func in_years        = @ms / (1000 * 60 * 60 * 24 * 365)
 
   func add(o) {
-    Duration(@ms + o.ms)
+    new Duration(@ms + o.ms)
   }
 
   func sub(o) {
-    Duration(@ms - o.ms)
+    new Duration(@ms - o.ms)
   }
 
   func mul(o) {
-    Duration(@ms * o)
+    new Duration(@ms * o)
   }
 
   func div(o) {
-    if typeof o == "number" return Duration(@ms / o)
+    if typeof o == "number" return new Duration(@ms / o)
     @ms / o.ms
   }
 
   func mod(o) {
-    Duration(@ms % o.ms)
+    new Duration(@ms % o.ms)
   }
 
   func @"+"(o) = @add(o)
@@ -134,12 +134,12 @@ class Timestamp {
   }
 
   func add(o) {
-    Timestamp(@ms + o.ms)
+    new Timestamp(@ms + o.ms)
   }
 
   func sub(o) {
-    if o.klass == Duration return Timestamp(@ms - o.ms)
-    Duration(@ms - o.ms)
+    if o.klass == Duration return new Timestamp(@ms - o.ms)
+    new Duration(@ms - o.ms)
   }
 
   func @"+"(o) = @add(o)
@@ -152,12 +152,12 @@ class Timestamp {
 
   func floor(d) {
     const rem = @ms % d.ms
-    Timestamp(@ms - rem)
+    new Timestamp(@ms - rem)
   }
 
   func ceil(d) {
     const rem = @ms % d.ms
-    Timestamp(@ms + (d.ms - rem))
+    new Timestamp(@ms + (d.ms - rem))
   }
 
   func to_s {
@@ -187,19 +187,19 @@ class Time {
   }
 
   static func now {
-    Timestamp(__system_clock_now())
+    new Timestamp(__system_clock_now())
   }
 
   static func now_steady {
-    Timestamp(__steady_clock_now())
+    new Timestamp(__steady_clock_now())
   }
 
   static func now_highres {
-    Timestamp(__highres_now() / 1000000)
+    new Timestamp(__highres_now() / 1000000)
   }
 
   static func parse(string, fmt) {
-    Timestamp(__parse(string, fmt))
+    new Timestamp(__parse(string, fmt))
   }
 
   static func measure(cb) {

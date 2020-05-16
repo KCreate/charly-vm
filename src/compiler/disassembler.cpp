@@ -156,7 +156,8 @@ void Disassembler::dump(std::ostream& stream) {
       case Opcode::PutHash:
       case Opcode::Dupn:
       case Opcode::Call:
-      case Opcode::CallMember: {
+      case Opcode::CallMember:
+      case Opcode::New: {
         this->print_value(this->block->read<uint32_t>(offset + 1), stream);
         break;
       }

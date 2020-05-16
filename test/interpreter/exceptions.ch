@@ -63,7 +63,7 @@ export = ->(describe, it, assert) {
     }
 
     try {
-      let a = Foo()
+      let a = new Foo()
     } catch (e) {
       assert(e, "hello world")
     }

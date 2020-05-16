@@ -24,10 +24,20 @@
  * SOFTWARE.
  */
 
+const __internal_dynamic_call = Charly.internals.get_method("call_dynamic")
+__internal_dynamic_call.push_return_value = false
+
 export = ->(Base) {
   return class Generator extends Base {
     func @"<<"(o) {
       self(o)
+    }
+
+    // Calls *self* using ctx as the target object
+    // and the values inside args as the parameters
+    func call(ctx, args) {
+      /*print([self, args])*/
+      __internal_dynamic_call(self, ctx, args)
     }
   }
 }

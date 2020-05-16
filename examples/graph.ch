@@ -97,9 +97,9 @@ func g1(x, y) {
   r0.close_to(r1, 0.1)
 }
 
-const bounds = Bounds(170, 80)
-const view = View(Point(0, 0), Bounds(2, 2))
-const grapher = Grapher(bounds, view)
+const bounds = new Bounds(170, 80)
+const view = new View(new Point(0, 0), new Bounds(2, 2))
+const grapher = new Grapher(bounds, view)
 loop {
   const n = Charly.io.getn("")
 

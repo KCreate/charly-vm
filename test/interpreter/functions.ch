@@ -108,7 +108,7 @@ export = ->(describe, it, assert) {
       }
     }
 
-    const o = A(1)
+    const o = new A(1)
 
     o.c(20, ->$1($0))
     assert(o.a1, 20)

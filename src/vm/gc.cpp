@@ -186,6 +186,7 @@ void GarbageCollector::collect() {
     this->mark(charly_create_pointer(this->host_vm->catchstack));
     this->mark(charly_create_pointer(this->host_vm->top_frame));
     this->mark(this->host_vm->last_exception_thrown);
+    this->mark(this->host_vm->runtime_constructor);
 
     for (VALUE item : this->host_vm->stack) {
       this->mark(item);

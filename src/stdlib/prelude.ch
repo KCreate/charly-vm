@@ -35,9 +35,11 @@ ignoreconst {
 
   let __internal_standard_libs_names
   let __internal_standard_libs
+  let __internal_import_cache = {}
 
   // Import method for loading other files and libraries
   __charly_internal_import = ->(path, source) {
+    const ignore_cache = arguments[2] ? true : false
 
     // Search for the path in the list of standard libraries
     let is_stdlib = false
@@ -56,7 +58,14 @@ ignoreconst {
       path = __internal_standard_libs[path]
     }
 
-    __internal_import(path, source)
+    unless ignore_cache {
+      const cache_entry = __internal_import_cache[path]
+      if cache_entry return cache_entry.v
+    }
+
+    const v = __internal_import(path, source)
+    __internal_import_cache[path] = {v}
+    v
   }
 
   // The names of all standard libraries that come with charly
@@ -72,6 +81,27 @@ ignoreconst {
     time: "_charly_time",
     unittest: "_charly_unittest"
   }
+
+  // Class construction
+  const set_runtime_constructor = Charly.internals.get_method("set_runtime_constructor")
+  set_runtime_constructor(->(klass, args, obj) {
+
+    // Build queue of constructors to run
+    const constructor_queue = []
+    let tmp_klass = klass
+    while tmp_klass ! Value {
+      constructor_queue << tmp_klass.constructor
+      tmp_klass = tmp_klass.parent_class
+    }
+
+    // Run constructor, from top to bottom
+    while constructor_queue.length {
+      const constructor = constructor_queue.pop()
+      constructor.call(obj, args)
+    }
+
+    return obj
+  })
 
   // Method to modify the primitive objects
   const set_primitive_value = Charly.internals.get_method("set_primitive_object")

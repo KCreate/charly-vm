@@ -1164,7 +1164,7 @@ AST::AbstractNode* Parser::parse_unary() {
 }
 
 AST::AbstractNode* Parser::parse_pow() {
-  AST::AbstractNode* left = this->parse_typeof();
+  AST::AbstractNode* left = this->parse_typeof_new();
 
   if (this->token.type == TokenType::Pow) {
     this->advance();
@@ -1175,13 +1175,56 @@ AST::AbstractNode* Parser::parse_pow() {
   return left;
 }
 
-AST::AbstractNode* Parser::parse_typeof() {
+AST::AbstractNode* Parser::parse_typeof_new() {
   Location location_start;
 
   if (this->token.type == TokenType::Typeof) {
     this->advance();
-    AST::AbstractNode* exp = this->parse_typeof();
+    AST::AbstractNode* exp = this->parse_typeof_new();
     return (new AST::Typeof(exp))->at(location_start, exp->location_end);
+  } else if (this->token.type == TokenType::New) {
+    this->advance();
+    AST::AbstractNode* target_exp = this->parse_member_call();
+    AST::NodeList* arguments = nullptr;
+
+    auto location_end = target_exp->location_end;
+
+    // Unpack call nodes
+    //
+    // new foo()
+    // new foo.bar()
+    // new foo[0]()
+    if (target_exp->type() == AST::kTypeCall) {
+      AST::Call* call_exp = target_exp->as<AST::Call>();
+
+      target_exp = call_exp->target;
+      arguments = call_exp->arguments;
+
+      call_exp->target = nullptr;
+      call_exp->arguments = nullptr;
+      delete call_exp;
+    } else if (target_exp->type() == AST::kTypeCallMember) {
+      AST::CallMember* call_exp = target_exp->as<AST::CallMember>();
+      target_exp = (new AST::Member(call_exp->context, call_exp->symbol))->at(location_start, location_end);
+      arguments = call_exp->arguments;
+
+      call_exp->context = nullptr;
+      call_exp->arguments = nullptr;
+      delete call_exp;
+    } else if (target_exp->type() == AST::kTypeCallIndex) {
+      AST::CallIndex* call_exp = target_exp->as<AST::CallIndex>();
+      target_exp = (new AST::Index(call_exp->context, call_exp->index))->at(location_start, location_end);
+      arguments = call_exp->arguments;
+
+      call_exp->context = nullptr;
+      call_exp->index = nullptr;
+      call_exp->arguments = nullptr;
+      delete call_exp;
+    } else {
+      this->illegal_node(target_exp, "Missing argument list for class constructor");
+    }
+
+    return (new AST::New(target_exp, arguments))->at(location_start, location_end);
   }
 
   return this->parse_member_call();

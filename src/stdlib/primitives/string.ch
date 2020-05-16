@@ -96,7 +96,7 @@ export = ->(Base) {
     func substring(start) {
       const offset = arguments.length > 1 ? arguments[1] : @length
       if offset == 0 return ""
-      const buf = Buffer((offset == @length) ? (@length - start) : (offset))
+      const buf = new Buffer((offset == @length) ? (@length - start) : (offset))
 
       if (start < 0) {
         const new_start = start + @length
@@ -130,7 +130,7 @@ export = ->(Base) {
      * Returns a reversed copy of this string
      * */
     func reverse {
-      const buf = Buffer(@length)
+      const buf = new Buffer(@length)
       const end = @length - 1
       end.downto(0, ->(i) {
         buf.write(self[i])
@@ -170,7 +170,7 @@ export = ->(Base) {
      * */
     func map(cb) {
       let i = 0
-      let buf = Buffer(@length)
+      let buf = new Buffer(@length)
 
       while i < @length {
         buf.write(cb(self[i], i, self))
@@ -191,7 +191,7 @@ export = ->(Base) {
      * */
     func filter(cb) {
       let i = 0
-      let buf = Buffer(@length)
+      let buf = new Buffer(@length)
 
       while i < @length {
         const r = cb(self[i], i, self)

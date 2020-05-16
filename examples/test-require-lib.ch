@@ -32,8 +32,6 @@ export.someclass = class Person {
   property name
   property age
 
-  func constructor(@name, @age) {}
-
   func method {
     print(self)
   }

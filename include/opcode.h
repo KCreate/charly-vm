@@ -267,6 +267,16 @@ enum Opcode : uint8_t {
   // - arguments
   CallMember,
 
+  // Construct a new object
+  //
+  // args:
+  // - argc
+  //
+  // stack:
+  // - klass
+  // - arguments
+  New,
+
   // Return from the current frame
   Return,
 
@@ -472,6 +482,7 @@ static constexpr uint32_t kInstructionLengths[]{
   /* Swap */                  1,
   /* Call */                  1 + sizeof(uint32_t),
   /* CallMember */            1 + sizeof(uint32_t),
+  /* New */                   1 + sizeof(uint32_t),
   /* Return */                1,
   /* Yield */                 1,
   /* Throw */                 1,
@@ -542,6 +553,7 @@ static std::string kOpcodeMnemonics[]{
   "swap",
   "call",
   "callmember",
+  "new",
   "return",
   "yield",
   "throw",

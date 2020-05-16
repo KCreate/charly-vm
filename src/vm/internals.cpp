@@ -81,6 +81,7 @@ static std::unordered_map<std::string, InternalMethodSignature> kMethodSignature
     DEFINE_INTERNAL_METHOD(set_primitive_generator, 1),
     DEFINE_INTERNAL_METHOD(set_primitive_boolean, 1),
     DEFINE_INTERNAL_METHOD(set_primitive_null, 1),
+    DEFINE_INTERNAL_METHOD(set_runtime_constructor, 1),
     DEFINE_INTERNAL_METHOD(to_s, 1),
 
     DEFINE_INTERNAL_METHOD(call_dynamic, 3),
@@ -347,6 +348,12 @@ VALUE set_primitive_boolean(VM& vm, VALUE value) {
 VALUE set_primitive_null(VM& vm, VALUE value) {
   vm.set_primitive_null(value);
   return value;
+}
+
+VALUE set_runtime_constructor(VM& vm, VALUE func) {
+  CHECK(function, func);
+  vm.set_runtime_constructor(func);
+  return kNull;
 }
 
 VALUE call_dynamic(VM& vm, VALUE func, VALUE ctx, VALUE args) {

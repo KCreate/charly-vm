@@ -560,7 +560,7 @@ __attribute__((always_inline))
 inline bool charly_is_generator(VALUE value) { return charly_is_heap_type(value, kTypeGenerator); }
 __attribute__((always_inline))
 inline bool charly_is_callable(VALUE value) {
-  return charly_is_function(value) || charly_is_cfunction(value) || charly_is_class(value);
+  return charly_is_function(value) || charly_is_cfunction(value);
 }
 __attribute__((always_inline))
 inline bool charly_is_frame(VALUE value) { return charly_is_heap_type(value, kTypeFrame); }
@@ -1084,6 +1084,11 @@ inline VALUE charly_create_number(int64_t value) {
 }
 __attribute__((always_inline))
 inline VALUE charly_create_number(uint64_t value) {
+  if (value >= kMaxUInt) return charly_create_double(value);
+  return charly_create_integer(value);
+}
+__attribute__((always_inline))
+inline VALUE charly_create_number(size_t value) {
   if (value >= kMaxUInt) return charly_create_double(value);
   return charly_create_integer(value);
 }

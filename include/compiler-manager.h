@@ -71,6 +71,7 @@ public:
     this->symtable("prototype");
     this->symtable("parent_class");
     this->symtable("length");
+    this->symtable("constructor");
 
     this->symtable("<dead>");
     this->symtable("<class>");

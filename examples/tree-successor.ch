@@ -28,25 +28,20 @@ class N {
   property value
   property left
   property right
-
-  func constructor(@value) {
-    @left = arguments[1]
-    @right = arguments[2]
-  }
 }
 
-const root = N(
+const root = new N(
   10,
-  N(7,
-    N(5),
-    N(9)
+  new N(7,
+    new N(5),
+    new N(9)
   ),
-  N(35,
-    N(30,
-      N(20),
-      N(33)
+  new N(35,
+    new N(30,
+      new N(20),
+      new N(33)
     ),
-    N(45)
+    new N(45)
   )
 )
 

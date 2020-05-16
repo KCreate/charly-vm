@@ -718,6 +718,31 @@ struct Typeof : public AbstractNode {
   }
 };
 
+// new klass([arguments])
+struct New : public AbstractNode {
+  AbstractNode* klass;
+  NodeList* arguments;
+
+  New(AbstractNode* k, NodeList* a) : klass(k), arguments(a) {
+  }
+
+  inline ~New() {
+    delete klass;
+    delete arguments;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- New:" << '\n';
+    this->klass->dump(stream, depth + 1);
+    this->arguments->dump(stream, depth + 1);
+  }
+
+  inline void visit(VisitFunc func) {
+    this->klass = func(this->klass);
+    this->arguments = reinterpret_cast<NodeList*>(func(this->arguments));
+  }
+};
+
 // <target> = <expression>
 struct Assignment : public AbstractNode {
   std::string target;
@@ -1560,6 +1585,7 @@ const size_t kTypeSwitch = typeid(Switch).hash_code();
 const size_t kTypeAnd = typeid(And).hash_code();
 const size_t kTypeOr = typeid(Or).hash_code();
 const size_t kTypeTypeof = typeid(Typeof).hash_code();
+const size_t kTypeNew = typeid(New).hash_code();
 const size_t kTypeAssignment = typeid(Assignment).hash_code();
 const size_t kTypeMemberAssignment = typeid(MemberAssignment).hash_code();
 const size_t kTypeANDMemberAssignment = typeid(ANDMemberAssignment).hash_code();
@@ -1622,10 +1648,10 @@ inline bool is_literal(AbstractNode* node) {
 inline bool yields_value(AbstractNode* node) {
   if (node->type() == kTypeMatch)
     return node->as<AST::Match>()->yields_value();
-  return node->yielded_value_needed && (
-          node->type() == kTypeTernaryIf || node->type() == kTypeUnary || node->type() == kTypeBinary ||
+  return node->yielded_value_needed &&
+         (node->type() == kTypeTernaryIf || node->type() == kTypeUnary || node->type() == kTypeBinary ||
           node->type() == kTypeAnd || node->type() == kTypeOr || node->type() == kTypeTypeof ||
-          node->type() == kTypeAssignment || node->type() == kTypeMemberAssignment ||
+          node->type() == kTypeNew || node->type() == kTypeAssignment || node->type() == kTypeMemberAssignment ||
           node->type() == kTypeANDMemberAssignment || node->type() == kTypeIndexAssignment ||
           node->type() == kTypeANDIndexAssignment || node->type() == kTypeCall || node->type() == kTypeCallMember ||
           node->type() == kTypeCallIndex || node->type() == kTypeStackValue || node->type() == kTypeIdentifier ||

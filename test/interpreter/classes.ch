@@ -30,12 +30,10 @@ export = ->(describe, it, assert) {
     class Person {
       property name
       property age
-
-      func constructor(@name, @age) {}
     }
 
-    const p1 = Person("Felix", 21)
-    const p2 = Person("Marcus", 28)
+    const p1 = new Person("Felix", 21)
+    const p2 = new Person("Marcus", 28)
 
     assert(p1.name, "Felix")
     assert(p1.age, 21)
@@ -50,15 +48,20 @@ export = ->(describe, it, assert) {
       property baz
     }
 
-    const b1 = Box(1, 2, 3)
+    const b1 = new Box(1, 2, 3)
     assert(b1.foo, 1)
     assert(b1.bar, 2)
     assert(b1.baz, 3)
 
-    const b2 = Box()
-    assert(b2.foo, null)
-    assert(b2.bar, null)
-    assert(b2.baz, null)
+    try {
+      const b2 = new Box()
+      assert(b2.foo, null)
+      assert(b2.bar, null)
+      assert(b2.baz, null)
+    } catch(e) {
+      print(e)
+      print("got an error")
+    }
   })
 
   it("adds methods to classes", ->{
@@ -68,7 +71,7 @@ export = ->(describe, it, assert) {
       func set(@value) {}
     }
 
-    const myBox = Box(0)
+    const myBox = new Box(0)
     assert(myBox.value, 0)
     myBox.set("this works")
     assert(myBox.value, "this works")
@@ -83,7 +86,7 @@ export = ->(describe, it, assert) {
 
     class SpecialBox extends Box {}
 
-    const myBox = SpecialBox()
+    const myBox = new SpecialBox()
     assert(myBox.foo(), "it works")
   })
 
@@ -100,7 +103,7 @@ export = ->(describe, it, assert) {
       }
     }
 
-    const myBox = SpecialBox()
+    const myBox = new SpecialBox()
     assert(myBox.bar(), "it works")
   })
 
@@ -127,10 +130,10 @@ export = ->(describe, it, assert) {
       }
     }
 
-    Box()
-    Box()
-    Box()
-    Box()
+    new Box()
+    new Box()
+    new Box()
+    new Box()
 
     assert(Box.count, 4)
   })
@@ -146,7 +149,7 @@ export = ->(describe, it, assert) {
       }
     }
 
-    const myBox = Box()
+    const myBox = new Box()
     assert(myBox.do_something(), "instance do_something")
     assert(Box.do_something(), "static do_something")
   })
@@ -170,13 +173,13 @@ export = ->(describe, it, assert) {
       }
     }
 
-    let box = Box(1, 2, 3)
+    let box = new Box(1, 2, 3)
     assert(box.value, 6)
   })
 
   it("set the __class property", ->{
     class Box {}
-    const myBox = Box()
+    const myBox = new Box()
 
     assert(myBox.klass, Box)
   })
@@ -192,7 +195,7 @@ export = ->(describe, it, assert) {
 
     class Baz extends Bar {}
 
-    let mybaz = Baz()
+    let mybaz = new Baz()
     assert(mybaz.a(), "method a")
     assert(mybaz.b(), "method b")
   })
@@ -210,9 +213,47 @@ export = ->(describe, it, assert) {
       func constructor(v1, @v2) {}
     }
 
-    let a = B(10, 20)
+    let a = new B(10, 20)
     assert(a.v1, 10)
     assert(a.v2, 20)
+  })
+
+  it("handles exceptions inside constructors correctly", ->{
+    class A {
+      func constructor {
+        throw "test"
+      }
+    }
+
+    let caught_exception = null
+    try {
+      new A()
+    } catch(e) {
+      caught_exception = e
+    }
+
+    assert(typeof caught_exception, "string")
+    assert(caught_exception, "test")
+  })
+
+  describe("correctly unpacks call nodes", ->{
+
+    it("parses the member call syntax", ->{
+      const c = {
+        c: class Foo {}
+      }
+
+      const a = new c.c()
+      assert(a.klass.name, "Foo")
+    })
+
+    it("parses the index call syntax", ->{
+      const c = [class Foo {}]
+
+      const a = new c[0]()
+      assert(a.klass.name, "Foo")
+    })
+
   })
 
 }

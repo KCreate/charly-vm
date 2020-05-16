@@ -431,6 +431,20 @@ AST::AbstractNode* CodeGenerator::visit_typeof(AST::Typeof* node, VisitContinue 
   return node;
 }
 
+AST::AbstractNode* CodeGenerator::visit_new(AST::New* node, VisitContinue) {
+  // Codegen target
+  this->visit_node(node->klass);
+
+  // Codegen arguments
+  for (auto arg : node->arguments->children) {
+    this->visit_node(arg);
+  }
+
+  this->assembler.write_new(node->arguments->children.size());
+
+  return node;
+}
+
 AST::AbstractNode* CodeGenerator::visit_assignment(AST::Assignment* node, VisitContinue cont) {
   if (node->offset_info == nullptr) {
     this->push_fatal_error(node, "Missing offset info for assignment codegen");

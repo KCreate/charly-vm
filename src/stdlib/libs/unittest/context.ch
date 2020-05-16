@@ -1,6 +1,6 @@
 const node      = import "./node.ch"
 const Node      = node.Node
-const NodeType  = node.Type
+const NodeType  = node.NodeType
 const Assertion = node.Assertion
 
 class Context {
@@ -10,14 +10,15 @@ class Context {
   property visitor
 
   func constructor(@visitor) {
-    @tree = @current = Node("Charly Unit Testing Framework", NodeType.Root)
+    @tree = @current = new Node("Charly Unit Testing Framework", NodeType.Root)
     @visitor.on_root(@current)
+    @depth = 0
   }
 
   func add_node(type, title, callback) {
     @depth += 1
 
-    const new_node = Node(title, type)
+    const new_node = new Node(title, type)
     const backup = @current
     @current.push(new_node, @depth)
     @current = new_node
@@ -43,7 +44,7 @@ class Context {
   }
 
   func assert(real, expected) {
-    const assertion = Assertion(real, expected)
+    const assertion = new Assertion(real, expected)
 
     @current.push(
       assertion,

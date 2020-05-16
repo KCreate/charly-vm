@@ -260,13 +260,12 @@ export = ->(describe, it, assert) {
     class Box {
       property value
 
-      func constructor(@value) = null
       func @"=="(other) = @value == other.value
     }
 
-    const a = Box(100)
-    const b = Box(200)
-    const c = Box(300)
+    const a = new Box(100)
+    const b = new Box(200)
+    const c = new Box(300)
 
     assert(a == b, false)
     assert(b == c, false)

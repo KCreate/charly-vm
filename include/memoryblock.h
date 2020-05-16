@@ -153,7 +153,7 @@ public:
   }
 
   // Write a block of memory into the internal buffer
-  inline uint32_t write_block(uint8_t* data, size_t size) {
+  inline size_t write_block(uint8_t* data, size_t size) {
     this->grow_to_fit(this->writeoffset + size);
     memcpy(this->data + this->writeoffset, data, size);
     this->writeoffset += size;
@@ -161,7 +161,7 @@ public:
   }
 
   // Write a string into the internal buffer
-  inline uint32_t write_string(const std::string& data) {
+  inline size_t write_string(const std::string& data) {
     this->grow_to_fit(this->writeoffset + data.size());
     memcpy(this->data + this->writeoffset, data.data(), data.size());
     this->writeoffset += data.size();
@@ -170,7 +170,7 @@ public:
 
   // Read data from a given offset
   template <typename T>
-  inline T& read(uint32_t offset) {
+  inline T& read(size_t offset) {
     return *reinterpret_cast<T*>(this->data + offset);
   }
 
@@ -185,7 +185,7 @@ public:
   }
 
   // Returns the capacity of this memory block
-  inline uint32_t get_capacity() {
+  inline size_t get_capacity() {
     return this->capacity;
   }
 
@@ -197,6 +197,6 @@ public:
 protected:
   uint8_t* data;
   size_t capacity = kInitialCapacity;
-  uint32_t writeoffset = 0;
+  size_t writeoffset = 0;
 };
 }  // namespace Charly

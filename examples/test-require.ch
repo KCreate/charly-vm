@@ -30,6 +30,6 @@ print(lib.read())
 lib.write("hello world")
 print(lib.read())
 
-const leonard = lib.someclass("leonard", 19)
+const leonard = new lib.someclass("leonard", 19)
 leonard.method()
 print(leonard.klass)

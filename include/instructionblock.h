@@ -196,6 +196,11 @@ public:
     this->write(argc);
   }
 
+  inline void write_new(uint32_t argc) {
+    this->write(Opcode::New);
+    this->write(argc);
+  }
+
   inline void write_return() {
     this->write(Opcode::Return);
   }

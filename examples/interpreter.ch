@@ -146,7 +146,7 @@ class Parser {
   property pos
 
   func constructor() {
-    @lexer = Lexer()
+    @lexer = new Lexer()
     @tokens = []
     @pos = -1
   }
@@ -284,8 +284,8 @@ class Visitor {
   }
 }
 
-const parser = Parser()
-const visitor = Visitor()
+const parser = new Parser()
+const visitor = new Visitor()
 
 try {
   const input = "(250 * 4) * (4 / 32) / 25 + 415"

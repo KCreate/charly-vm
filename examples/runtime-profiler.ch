@@ -96,7 +96,7 @@ while (i < iterations) {
     }
   }
 
-  const myobj = someclass(25)
+  const myobj = new someclass(25)
   myobj.call()
   myobj.call()
   myobj.call()

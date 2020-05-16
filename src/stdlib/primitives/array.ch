@@ -110,7 +110,7 @@ export = ->(Base) {
 
     func join(str) {
       // TODO: Use some smarter heuristics for the final string length
-      const buf = Buffer(@length * 3)
+      const buf = new Buffer(@length * 3)
       @each(->(v, i) {
         buf.write(v.to_s())
         if i < @length - 1 {

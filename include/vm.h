@@ -257,7 +257,6 @@ public:
   void call_class(Class* klass, uint32_t argc, VALUE* argv);
   void call_generator(Generator* klass, uint32_t argc, VALUE* argv);
   void initialize_member_properties(Class* klass, Object* object);
-  bool invoke_class_constructors(Class* klass, Object* object, uint32_t argc, VALUE* argv);
   void throw_exception(const std::string& message);
   void throw_exception(VALUE payload);
   VALUE stacktrace_array();
@@ -316,6 +315,7 @@ public:
   void op_swap();
   void op_call(uint32_t argc);
   void op_callmember(uint32_t argc);
+  void op_new(uint32_t argc);
   void op_return();
   void op_yield();
   void op_throw();
@@ -361,6 +361,9 @@ public:
   }
   inline void set_primitive_null(VALUE value) {
     this->primitive_null = value;
+  }
+  inline void set_runtime_constructor(VALUE func) {
+    this->runtime_constructor = func;
   }
 
   VMContext context;
@@ -412,6 +415,9 @@ private:
   VALUE primitive_generator = kNull;
   VALUE primitive_boolean = kNull;
   VALUE primitive_null = kNull;
+
+  // Runtime constructor which handles all "new" calls
+  VALUE runtime_constructor = kNull;
 
   // Contains all tasks that still need to be run
   std::queue<VMTask> task_queue;

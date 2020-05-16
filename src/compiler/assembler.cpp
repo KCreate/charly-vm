@@ -49,7 +49,7 @@ void Assembler::write_branch_to_label(Label label) {
   } else {
     uint32_t instruction_base = this->writeoffset;
     this->write_u8(Opcode::Branch);
-    this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
+    this->unresolved_label_references.push_back(UnresolvedReference({label, static_cast<uint32_t>(this->writeoffset), instruction_base}));
     this->write_u32(0);
   }
 }
@@ -61,7 +61,7 @@ void Assembler::write_branchif_to_label(Label label) {
   } else {
     uint32_t instruction_base = this->writeoffset;
     this->write_u8(Opcode::BranchIf);
-    this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
+    this->unresolved_label_references.push_back(UnresolvedReference({label, static_cast<uint32_t>(this->writeoffset), instruction_base}));
     this->write_u32(0);
   }
 }
@@ -73,7 +73,7 @@ void Assembler::write_branchlt_to_label(Label label) {
   } else {
     uint32_t instruction_base = this->writeoffset;
     this->write_u8(Opcode::BranchLt);
-    this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
+    this->unresolved_label_references.push_back(UnresolvedReference({label, static_cast<uint32_t>(this->writeoffset), instruction_base}));
     this->write_u32(0);
   }
 }
@@ -85,7 +85,7 @@ void Assembler::write_branchgt_to_label(Label label) {
   } else {
     uint32_t instruction_base = this->writeoffset;
     this->write_u8(Opcode::BranchGt);
-    this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
+    this->unresolved_label_references.push_back(UnresolvedReference({label, static_cast<uint32_t>(this->writeoffset), instruction_base}));
     this->write_u32(0);
   }
 }
@@ -97,7 +97,7 @@ void Assembler::write_branchle_to_label(Label label) {
   } else {
     uint32_t instruction_base = this->writeoffset;
     this->write_u8(Opcode::BranchLe);
-    this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
+    this->unresolved_label_references.push_back(UnresolvedReference({label, static_cast<uint32_t>(this->writeoffset), instruction_base}));
     this->write_u32(0);
   }
 }
@@ -109,7 +109,7 @@ void Assembler::write_branchge_to_label(Label label) {
   } else {
     uint32_t instruction_base = this->writeoffset;
     this->write_u8(Opcode::BranchGe);
-    this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
+    this->unresolved_label_references.push_back(UnresolvedReference({label, static_cast<uint32_t>(this->writeoffset), instruction_base}));
     this->write_u32(0);
   }
 }
@@ -121,7 +121,7 @@ void Assembler::write_brancheq_to_label(Label label) {
   } else {
     uint32_t instruction_base = this->writeoffset;
     this->write_u8(Opcode::BranchEq);
-    this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
+    this->unresolved_label_references.push_back(UnresolvedReference({label, static_cast<uint32_t>(this->writeoffset), instruction_base}));
     this->write_u32(0);
   }
 }
@@ -133,7 +133,7 @@ void Assembler::write_branchneq_to_label(Label label) {
   } else {
     uint32_t instruction_base = this->writeoffset;
     this->write_u8(Opcode::BranchNeq);
-    this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
+    this->unresolved_label_references.push_back(UnresolvedReference({label, static_cast<uint32_t>(this->writeoffset), instruction_base}));
     this->write_u32(0);
   }
 }
@@ -145,7 +145,7 @@ void Assembler::write_branchunless_to_label(Label label) {
   } else {
     uint32_t instruction_base = this->writeoffset;
     this->write_u8(Opcode::BranchUnless);
-    this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
+    this->unresolved_label_references.push_back(UnresolvedReference({label, static_cast<uint32_t>(this->writeoffset), instruction_base}));
     this->write_u32(0);
   }
 }
@@ -157,7 +157,7 @@ void Assembler::write_registercatchtable_to_label(Label label) {
   } else {
     uint32_t instruction_base = this->writeoffset;
     this->write_u8(Opcode::RegisterCatchTable);
-    this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
+    this->unresolved_label_references.push_back(UnresolvedReference({label, static_cast<uint32_t>(this->writeoffset), instruction_base}));
     this->write_u32(0);
   }
 }
@@ -180,7 +180,7 @@ void Assembler::write_putfunction_to_label(VALUE symbol,
     uint32_t instruction_base = this->writeoffset;
     this->write_u8(Opcode::PutFunction);
     this->write_u64(symbol);
-    this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
+    this->unresolved_label_references.push_back(UnresolvedReference({label, static_cast<uint32_t>(this->writeoffset), instruction_base}));
     this->write_u32(0);
     this->write_u8(anonymous);
     this->write_u8(needs_arguments);
@@ -198,7 +198,7 @@ void Assembler::write_putgenerator_to_label(VALUE symbol, Label label) {
     uint32_t instruction_base = this->writeoffset;
     this->write_u8(Opcode::PutGenerator);
     this->write_u64(symbol);
-    this->unresolved_label_references.push_back(UnresolvedReference({label, this->writeoffset, instruction_base}));
+    this->unresolved_label_references.push_back(UnresolvedReference({label, static_cast<uint32_t>(this->writeoffset), instruction_base}));
     this->write_u32(0);
   }
 }

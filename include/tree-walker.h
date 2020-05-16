@@ -130,6 +130,10 @@ public:
     cont();
     return node;
   }
+  virtual inline AST::AbstractNode* visit_new(AST::New* node, VisitContinue cont) {
+    cont();
+    return node;
+  }
   virtual inline AST::AbstractNode* visit_assignment(AST::Assignment* node, VisitContinue cont) {
     cont();
     return node;
@@ -301,6 +305,8 @@ public:
       return walker->visit_or(node->as<AST::Or>(), cont);
     if (node->type() == AST::kTypeTypeof)
       return walker->visit_typeof(node->as<AST::Typeof>(), cont);
+    if (node->type() == AST::kTypeNew)
+      return walker->visit_new(node->as<AST::New>(), cont);
     if (node->type() == AST::kTypeAssignment)
       return walker->visit_assignment(node->as<AST::Assignment>(), cont);
     if (node->type() == AST::kTypeMemberAssignment)

@@ -30,7 +30,7 @@ export = ->(describe, it, assert) {
 
     it("adds properties to objects", ->{
       class Box {}
-      const myBox = Box()
+      const myBox = new Box()
       myBox.name = "charly"
       myBox.age = 16
 
@@ -40,7 +40,7 @@ export = ->(describe, it, assert) {
 
     it("adds functions to objects", ->{
       class Box {}
-      const myBox = Box()
+      const myBox = new Box()
       myBox.name = "charly"
       myBox.age = 16
       myBox.to_s = func() {
