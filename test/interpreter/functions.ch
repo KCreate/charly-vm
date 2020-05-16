@@ -132,4 +132,12 @@ export = ->(describe, it, assert) {
     assert(call_me()()(), 25)
   })
 
+  describe("dynamic calls", ->{
+    it("calls a function with a context and arguments", ->{
+      const ctx = { v: 20 }
+      func foo(a, b) = @v + a + b
+      assert(foo.call(ctx, [1, 2]), 23)
+    })
+  })
+
 }

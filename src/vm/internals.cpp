@@ -83,6 +83,8 @@ static std::unordered_map<std::string, InternalMethodSignature> kMethodSignature
     DEFINE_INTERNAL_METHOD(set_primitive_null, 1),
     DEFINE_INTERNAL_METHOD(to_s, 1),
 
+    DEFINE_INTERNAL_METHOD(call_dynamic, 3),
+
     DEFINE_INTERNAL_METHOD(defer, 2),
     DEFINE_INTERNAL_METHOD(defer_interval, 2),
     DEFINE_INTERNAL_METHOD(clear_timer, 1),
@@ -345,6 +347,22 @@ VALUE set_primitive_boolean(VM& vm, VALUE value) {
 VALUE set_primitive_null(VM& vm, VALUE value) {
   vm.set_primitive_null(value);
   return value;
+}
+
+VALUE call_dynamic(VM& vm, VALUE func, VALUE ctx, VALUE args) {
+  CHECK(callable, func);
+  CHECK(array, args);
+
+  vm.push_stack(ctx);
+  vm.push_stack(func);
+
+  for (VALUE a : *(charly_as_array(args)->data)) {
+    vm.push_stack(a);
+  }
+
+  vm.call(charly_as_array(args)->data->size(), true, false);
+
+  return kNull;
 }
 
 VALUE defer(VM& vm, VALUE cb, VALUE dur) {

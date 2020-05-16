@@ -98,6 +98,8 @@ VALUE set_primitive_boolean(VM& vm, VALUE klass);
 VALUE set_primitive_null(VM& vm, VALUE klass);
 VALUE to_s(VM& vm, VALUE value);
 
+VALUE call_dynamic(VM& vm, VALUE func, VALUE ctx, VALUE args);
+
 VALUE defer(VM& vm, VALUE cb, VALUE dur);
 VALUE defer_interval(VM& vm, VALUE cb, VALUE period);
 VALUE clear_timer(VM& vm, VALUE uid);

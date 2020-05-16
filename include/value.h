@@ -297,6 +297,7 @@ struct CFunction {
   void* pointer;
   uint32_t argc;
   std::unordered_map<VALUE, VALUE>* container;
+  bool push_return_value;
 
   inline void clean() {
     delete this->container;

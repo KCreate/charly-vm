@@ -1,3 +1,5 @@
+- Write generator tests
+
 - Match statements
   - The local variable allocator has been finished and this allows for the match
     syntax to be implemented now (see feature-ideas/match-statement.ch for proposal)

@@ -341,6 +341,7 @@ VALUE VM::create_cfunction(VALUE name, uint32_t argc, void* pointer) {
   cell->cfunction.pointer = pointer;
   cell->cfunction.argc = argc;
   cell->cfunction.container = new std::unordered_map<VALUE, VALUE>();
+  cell->cfunction.push_return_value = true;
   return cell->as_value();
 }
 
@@ -1002,6 +1003,10 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
     case kTypeCFunction: {
       CFunction* cfunc = charly_as_cfunction(source);
 
+      if (symbol == charly_create_symbol("push_return_value")) {
+        return cfunc->push_return_value ? kTrue : kFalse;
+      }
+
       if (cfunc->container->count(symbol) == 1) {
         return (*cfunc->container)[symbol];
       }
@@ -1141,6 +1146,12 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
 
     case kTypeCFunction: {
       CFunction* cfunc = charly_as_cfunction(target);
+
+      if (symbol == charly_create_symbol("push_return_value")) {
+        cfunc->push_return_value = charly_truthyness(value);
+        break;
+      }
+
       (*cfunc->container)[symbol] = value;
       break;
     }
@@ -1454,7 +1465,7 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
   // or calling a user defined function
   this->halted = false;
 
-  if (this->catchstack == original_catchtable) {
+  if (function->push_return_value && this->catchstack == original_catchtable) {
     this->push_stack(rv);
   }
 }
