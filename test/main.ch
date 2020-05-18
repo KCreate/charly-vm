@@ -46,7 +46,10 @@ const result = unittest(->(describe, it, assert, context) {
     ["Primitives",                  "./interpreter/primitives.ch"],
     ["Switch",                      "./interpreter/switch.ch"],
     ["Ternary",                     "./interpreter/ternary.ch"],
-    ["Unless",                      "./interpreter/unless.ch"]
+    ["Unless",                      "./interpreter/unless.ch"],
+
+    // Standard library specs
+    ["Heaps",                       "./stdlib/heaps.ch"]
   ]
 
   // Loads and runs all the test cases sequentially

@@ -163,6 +163,13 @@ export = ->(Base) {
       self
     }
 
+    func swap(l, r) {
+      const tmp = self[l]
+      self[l] = self[r]
+      self[r] = tmp
+      self
+    }
+
     func iterate(callback) {
       let i = 0
 

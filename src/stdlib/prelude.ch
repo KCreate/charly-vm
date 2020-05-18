@@ -72,6 +72,7 @@ ignoreconst {
   __internal_standard_libs_names = [
     "math",
     "time",
+    "heap",
     "unittest"
   ]
 
@@ -79,10 +80,14 @@ ignoreconst {
   __internal_standard_libs = {
     math: "_charly_math",
     time: "_charly_time",
+    heap: "_charly_heap",
     unittest: "_charly_unittest"
   }
 
-  // Class construction
+  // The runtime constructor is a special method the VM keeps track of.
+  // All object allocations inside charly run through this method
+  //
+  // It walks the class hierarchy and executed all the necessary constructors
   const set_runtime_constructor = Charly.internals.get_method("set_runtime_constructor")
   set_runtime_constructor(->(klass, args, obj) {
 
@@ -172,4 +177,5 @@ ignoreconst {
   }
   Charly.math = import "math"
   Charly.time = import "time"
+  Charly.heap = import "heap"
 }

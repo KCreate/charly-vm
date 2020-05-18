@@ -236,6 +236,20 @@ export = ->(describe, it, assert) {
     assert(caught_exception, "test")
   })
 
+  it("throws an exception when trying to call a class", ->{
+    class A {}
+
+    let caught_exception
+    try {
+      A()
+    } catch(e) {
+      caught_exception = e
+    }
+
+    assert(typeof caught_exception, "object")
+    assert(caught_exception.message, "Attempted to call a non-callable type: class")
+  })
+
   describe("correctly unpacks call nodes", ->{
 
     it("parses the member call syntax", ->{

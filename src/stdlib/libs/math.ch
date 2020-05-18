@@ -84,6 +84,14 @@ class Math {
       }
     }
   }
+
+  /*
+   * Returns the absolute value of a number
+   * */
+  static func abs(n) {
+    if n < 0 return -n
+    n
+  }
 }
 
 export = Math

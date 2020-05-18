@@ -1,3 +1,9 @@
+- Implement default arguments for functions
+
+- Implement globals
+  - Remove compiler warning on unknown symbols, look them up at runtime
+    in the globals table
+
 - Write generator tests
 
 - Match statements
