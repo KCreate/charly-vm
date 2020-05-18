@@ -1,5 +1,19 @@
 - Implement default arguments for functions
 
+- Implement object & array destructuring assignment
+  - `
+      const obj = { name: "leonard", age: 20 }
+      const { name, age } = obj
+      name // => "leonard"
+      age // => 20
+
+      const nums = [1, 2, 3]
+      const [a, b, c] = nums
+      a // => 1
+      b // => 2
+      c // => 3
+    `
+
 - Implement globals
   - Remove compiler warning on unknown symbols, look them up at runtime
     in the globals table
