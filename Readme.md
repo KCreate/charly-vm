@@ -10,9 +10,14 @@ Charly is a programming language with the following goals:
 - Async IO, multithreadable C code
 - Small and simple standard library
 
-Charly was not created with the intention of it being used as a production level language for anything important. It's main purpose is to teach other programmers how to write the basic components of a programming language. This includes the various stages of producing an Abstract Syntax Tree, how to perform manipulations on that tree and finally how to generate bytecodes that can then be executed in a custom virtual machine.
+Charly was not created with the intention of it being used as a production level language for anything important.
+It's main purpose is to teach other programmers how to write the basic components of a programming language.
+This includes the various stages of producing an Abstract Syntax Tree, how to perform manipulations on that tree
+and finally how to generate bytecodes that can then be executed in a custom virtual machine.
 
-Charly's implementation contains many interesting things, such as NAN-Boxing, a C-Module system using `dlopen`, a computed-goto main-switch, a mark-and-sweep garbage collector and a single-threaded task-queue backed by an asynchronous, multithreaded worker-queue.
+Charly's implementation contains many interesting things, such as NAN-Boxing, a C-Module system using `dlopen`,
+a computed-goto main-switch, a mark-and-sweep garbage collector and a single-threaded task-queue backed by an
+asynchronous, multithreaded worker-queue.
 
 ## Example code
 
@@ -148,7 +153,9 @@ rude_greeter.greet() // => F**k you leonard
 
 ## Teaching Features
 
-Via the executable arguments, you can make the charly compiler print out various data structures that are being produced during the compilation phase. Notice: the performance numbers in the screenshots are achieved by the development build.
+Via the executable arguments, you can make the charly compiler print out various data structures that are being
+produced during the compilation phase. Notice: the performance numbers in the screenshots
+are achieved by the development build.
 
 ```javascript
 func greet(n) {
@@ -199,13 +206,18 @@ I'm developing on `macOS Cataline 10.15.2` with `clang 5.0.0`.
 I would like to mention the following projects and people:
 
 - [Crystal Programming Language](https://github.com/crystal-lang/crystal)
-  This project got me into language development in the first place. By studying its source code, I taught myself how to write a parser for complex languages and how to model an AST. The [first version](https://github.com/charly-lang/charly) of the Charly language was also written in Crystal, before I moved on to C++.
+  This project got me into language development in the first place.
+  By studying its source code, I taught myself how to write a parser for complex languages and how to model an AST.
+  The [first version](https://github.com/charly-lang/charly) of the Charly language was also written in Crystal,
+  before I moved on to C++.
 
 - [The Wren Programming Language](https://github.com/wren-lang/wren)
   I learned a lot from this project, most notably how to implement NaN-Boxing.
 
 - [Eli Bendersky's Website](https://eli.thegreenplace.net/)
-  Eli's articles on language-dev related topics were of great use to me and I learned a lot from them. Most articles in the [#compilation](https://eli.thegreenplace.net/tag/compilation) section of his website contain very useful and interesting information.
+  Eli's articles on language-dev related topics were of great use to me and I learned a lot from them.
+  Most articles in the [#compilation](https://eli.thegreenplace.net/tag/compilation) section of his website
+  contain very useful and interesting information.
 
 - [Kartik Agaram](http://akkartik.name/) and [Max Bernstein](https://bernsteinbear.com/)
   They both helped me a lot during the learning process and I have always been able to bounce my ideas off of them, getting valuable feedback.

@@ -37,10 +37,13 @@ class __HeapEntry {
 const kDefaultCapacity = 16
 class __HeapBase {
   property capacity
+  property capacity_locked
   property size
   property data
 
   func constructor(@capacity) {
+    if capacity <= 0 throw "Heap capacity needs to be at least 1"
+    @capacity_locked = false
     @size = 0
     @data = Array.create(@capacity, null)
   }
@@ -71,6 +74,16 @@ class __HeapBase {
   // Checks if the heap is currently empty
   func is_empty = @size == 0
 
+  // Compare two elements using the heap specific comparison operator
+  func compare_entry(l, r) = @compare(l.weight, r.weight)
+
+  // Checks wether the heap is full
+  // This only makes sense when the heap's capacity has been locked
+  func is_full {
+    if !@capacity_locked return false
+    return @size == @capacity
+  }
+
   // Returns the first item on the heap or throws if the heap is empty
   func peek {
     if @is_empty() throw "Heap is empty"
@@ -100,10 +113,18 @@ class __HeapBase {
   func push(weight) {
     const data = arguments.length > 1 ? $1 : weight
 
-    @ensure_capacity()
-    @data[@size] = new __HeapEntry(weight, data)
-    @size += 1
-    @heapify_up()
+    // Special insertion when capacity is locked
+    if @capacity_locked && @is_full() {
+      if @compare(@data[0].weight, weight) {
+        @data[0] = new __HeapEntry(weight, data)
+        @heapify_down()
+      }
+    } else {
+      @ensure_capacity()
+      @data[@size] = new __HeapEntry(weight, data)
+      @size += 1
+      @heapify_up()
+    }
 
     self
   }
@@ -119,11 +140,11 @@ class __HeapBase {
       //
       // In a min-heap, this would get the smaller child, in a max-heap the bigger one
       let target_child_index = @get_left_child_index(index)
-      if @has_right_child(index) && @compare(@get_right_child(index), @get_left_child(index)) {
+      if @has_right_child(index) && @compare_entry(@get_right_child(index), @get_left_child(index)) {
         target_child_index = @get_right_child_index(index)
       }
 
-      if @compare(@data[index], @data[target_child_index]) {
+      if @compare_entry(@data[index], @data[target_child_index]) {
         break;
       } else {
         @data.swap(index, target_child_index)
@@ -140,7 +161,7 @@ class __HeapBase {
     let index = @size - 1
     const entry = @data[index]
 
-    while @has_parent(index) && @compare(entry, @get_parent(index)) {
+    while @has_parent(index) && @compare_entry(entry, @get_parent(index)) {
       const parent_index = @get_parent_index(index)
       @data.swap(index, parent_index)
       index = parent_index
@@ -151,11 +172,28 @@ class __HeapBase {
 }
 
 class MinHeap extends __HeapBase {
-  func compare(l, r) = l.weight < r.weight
+  func compare(l, r) = l < r
 }
 
 class MaxHeap extends __HeapBase {
-  func compare(l, r) = l.weight > r.weight
+  func compare(l, r) = l > r
 }
 
-export = {MinHeap, MaxHeap}
+export = {
+
+  // Regular heap types
+  MinHeap,
+  MaxHeap,
+
+  // Heaps of fixed size
+  FixedMinHeap: class FixedMinHeap extends MaxHeap {
+    func constructor {
+      @capacity_locked = true
+    }
+  },
+  FixedMaxHeap: class FixedMaxHeap extends MinHeap {
+    func constructor {
+      @capacity_locked = true
+    }
+  }
+}

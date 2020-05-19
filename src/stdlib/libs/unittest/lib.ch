@@ -7,10 +7,23 @@ export = ->(callback) {
   const visitor = new TestVisitor(write, print)
   const context = new Context(visitor)
 
+  const assert = ->(real, expected) context.assert(real, expected)
+  assert.exception = ->(cb1, cb2) {
+    let caught_exception = null
+
+    try {
+      cb1()
+    } catch(e) {
+      caught_exception = e
+    } finally {
+      cb2(caught_exception)
+    }
+  }
+
   callback(
     ->(title, callback) context.suite(title, callback),
     ->(title, callback) context.it(title, callback),
-    ->(real, expected) context.assert(real, expected),
+    assert,
     context
   )
 

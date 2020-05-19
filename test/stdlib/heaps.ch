@@ -118,6 +118,95 @@ export = ->(describe, it, assert) {
     assert(h.is_empty(), true)
   })
 
+  it("throws an exception on invalid capacity values", ->{
+    assert.exception(->{
+      const h = new heap.MaxHeap(0)
+    }, ->(e) {
+      assert(typeof e, "string")
+      assert(e, "Heap capacity needs to be at least 1")
+    })
+
+    assert.exception(->{
+      const h = new heap.MaxHeap(-20)
+    }, ->(e) {
+      assert(typeof e, "string")
+      assert(e, "Heap capacity needs to be at least 1")
+    })
+  })
+
+  describe("heaps of fixed size", ->{
+    it("min heap", ->{
+      const minh = new heap.FixedMinHeap(3)
+
+      assert(minh.is_full(), false)
+      assert(minh.size, 0)
+
+      minh.push(3)
+      minh.push(4)
+      minh.push(5)
+
+      assert(minh.is_full(), true)
+      assert(minh.size, 3)
+
+      minh.push(2)
+      minh.push(1)
+
+      assert(minh.is_full(), true)
+      assert(minh.size, 3)
+
+      minh.push(10)
+      minh.push(12)
+      minh.push(14)
+
+      assert(minh.is_full(), true)
+      assert(minh.size, 3)
+
+      // Because max-sized heaps are implemented using the opposite heap type
+      // the elements are popped off in reverse order (biggest to smallest)
+      assert(minh.poll(), 3)
+      assert(minh.poll(), 2)
+      assert(minh.poll(), 1)
+
+      assert(minh.is_full(), false)
+      assert(minh.size, 0)
+    })
+
+    it("max heap", ->{
+      const maxh = new heap.FixedMaxHeap(3)
+
+      assert(maxh.is_full(), false)
+      assert(maxh.size, 0)
+
+      maxh.push(10)
+      maxh.push(9)
+      maxh.push(8)
+
+      assert(maxh.is_full(), true)
+      assert(maxh.size, 3)
+
+      maxh.push(11)
+      maxh.push(12)
+
+      assert(maxh.is_full(), true)
+      assert(maxh.size, 3)
+
+      maxh.push(3)
+      maxh.push(2)
+      maxh.push(1)
+
+      assert(maxh.is_full(), true)
+      assert(maxh.size, 3)
+
+      // Because max-sized heaps are implemented using the opposite heap type
+      // the elements are popped off in reverse order (smallest to biggest)
+      assert(maxh.poll(), 10)
+      assert(maxh.poll(), 11)
+      assert(maxh.poll(), 12)
+
+      assert(maxh.is_full(), false)
+      assert(maxh.size, 0)
+    })
+  })
 
 
 }
