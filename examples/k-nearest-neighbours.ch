@@ -47,57 +47,34 @@ const points = [
 ]
 
 const target = new Point(5, -4)
-const k = 5
+const k = 3
 
-// 1. Compute all distances
-const points_with_d = points.map(->(p) [p, p.distance_to(target)])
+// 1. Compute all distances and store into a fixed size min heap
+const h = new heap.FixedMinHeap(k)
+points.map(->(p) {
 
-// 2. Store into min-heap
-const mh = new heap.MinHeap(points.length)
-points_with_d.each(->(p) {
-  mh.push(p[1], p)
+  // Arg #1 is the weight, #2 is the data
+  h.push(p.distance_to(target), p)
 })
 
-// 3. Return first k elements
-const results = []
-k.times(->{
-  results.push(mh.poll())
-})
-
+// 2. Get the smallest k points
 print("Nearest points:")
-results.each(->(p) print(p[0]))
-
-
-
-
-
-
-
-
-
-
+while !h.is_empty() {
+  print(h.poll())
+}
 
 // Time complexity analysis
 //
 //    Steps                       Time complexity
 //
 // 1. Compute Distances           O(N)
-// 2. Store each into heap        O(N log N)
-// 3. Pop K elements from heap    O(K log N)
-//
-// Result: O(N + (N+K) log N)
-//
-// Optimisations:
-//
-// Using a max heap of max-size K would reduce
-// the time complexity further down:
-//
-//    Steps                       Time complexity
-//
-// 1. Compute Distances           O(N)
 // 2. Store each into heap        O(N log K)
-// 3. Print heap                  O(K)
+// 3. Pop each element            O(K log K)
 //
-// Result: O(N + N log K)
+// Depending on wether you want to count the removal of each element for printing
+// as part of the algorithm the time complexity is either
 //
-// The term from step #3 has been dropped as it is as a constant
+// With:      O((N + K) log K)
+// Without:   O(N log K)
+//
+// The first O(N) term is dropped, as the second one dominates it
