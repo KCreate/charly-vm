@@ -39,6 +39,7 @@ const result = unittest(->(describe, it, assert, context) {
     ["Exceptions",                  "./interpreter/exceptions.ch"],
     ["External Files",              "./interpreter/external-files.ch"],
     ["Functions",                   "./interpreter/functions.ch"],
+    ["Generators",                  "./interpreter/generators.ch"],
     ["Guard",                       "./interpreter/guard.ch"],
     ["Identifiers",                 "./interpreter/identifiers.ch"],
     ["Loops",                       "./interpreter/loops.ch"],
@@ -55,8 +56,8 @@ const result = unittest(->(describe, it, assert, context) {
   // Loads and runs all the test cases sequentially
   // TODO: schedule them asynchronously maybe???
   testcases.each(->(test) {
-    const module = import test[1]
     describe(test[1], ->{
+      const module = import test[1]
       module(describe, it, assert, context)
     })
   })

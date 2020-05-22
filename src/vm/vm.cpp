@@ -989,12 +989,30 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
     case kTypeFunction: {
       Function* func = charly_as_function(source);
 
+      if (symbol == charly_create_symbol("name")) {
+        return this->create_string(this->context.symtable(func->name).value_or(kUndefinedSymbolString));
+      }
+
       if (func->container->count(symbol) == 1) {
         return (*func->container)[symbol];
       }
 
-      if (symbol == charly_create_symbol("name")) {
-        return this->create_string(this->context.symtable(func->name).value_or(kUndefinedSymbolString));
+      break;
+    }
+
+    case kTypeGenerator: {
+      Generator* func = charly_as_generator(source);
+
+      if (symbol == charly_create_symbol("finished")) {
+        return func->finished() ? kTrue : kFalse;
+      }
+
+      if (symbol == charly_create_symbol("started")) {
+        return func->started() ? kTrue : kFalse;
+      }
+
+      if (symbol == charly_create_symbol("running")) {
+        return func->running ? kTrue : kFalse;
       }
 
       break;
@@ -1007,22 +1025,18 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
         return cfunc->push_return_value ? kTrue : kFalse;
       }
 
-      if (cfunc->container->count(symbol) == 1) {
-        return (*cfunc->container)[symbol];
-      }
-
       if (symbol == charly_create_symbol("name")) {
         return this->create_string(this->context.symtable(cfunc->name).value_or(kUndefinedSymbolString));
+      }
+
+      if (cfunc->container->count(symbol) == 1) {
+        return (*cfunc->container)[symbol];
       }
 
       break;
     }
     case kTypeClass: {
       Class* klass = charly_as_class(source);
-
-      if (klass->container->count(symbol) == 1) {
-        return (*klass->container)[symbol];
-      }
 
       if (symbol == charly_create_symbol("prototype")) {
         return klass->prototype;
@@ -1038,6 +1052,10 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
 
       if (symbol == charly_create_symbol("parent_class")) {
         return klass->parent_class;
+      }
+
+      if (klass->container->count(symbol) == 1) {
+        return (*klass->container)[symbol];
       }
 
       break;
@@ -1940,7 +1958,6 @@ void VM::op_return() {
   if (charly_is_generator(frame->caller_value)) {
     Generator* generator = charly_as_generator(frame->caller_value);
     generator->set_finished(true);
-    generator->set_started(false);
     generator->running = false;
   }
 

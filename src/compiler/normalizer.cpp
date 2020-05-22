@@ -459,6 +459,11 @@ AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue
   if (this->mark_func_needs_arguments)
     node->needs_arguments = true;
 
+  // Anonymous generator functions are not allowed to have arguments
+  if (node->generator && node->anonymous && node->parameters.size()) {
+    this->push_error(node, "Anonymous generators can't have arguments");
+  }
+
   this->current_function_node = current_backup;
   this->mark_func_needs_arguments = mark_func_needs_arguments_backup;
   this->mark_func_as_generator = mark_func_as_generator_backup;

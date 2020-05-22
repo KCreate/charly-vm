@@ -1,3 +1,5 @@
+- Ignore assignments to reserved members of types
+
 - Implement default arguments for functions
 
 - Implement object & array destructuring assignment
@@ -17,8 +19,6 @@
 - Implement globals
   - Remove compiler warning on unknown symbols, look them up at runtime
     in the globals table
-
-- Write generator tests
 
 - Match statements
   - The local variable allocator has been finished and this allows for the match

@@ -24,8 +24,7 @@
  * SOFTWARE.
  */
 
-func foo {
-  print($0)
+const f = ->(a, b) {
+  yield a
+  yield b
 }
-
-foo(2)
