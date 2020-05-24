@@ -36,11 +36,7 @@ AST::AbstractNode* LVarRewriter::visit_function(AST::Function* node, VisitContin
 
   // Register the function arguments
   if (node->needs_arguments) {
-    this->scope->alloc_slot(this->context.symtable("__CHARLY_FUNCTION_ARGUMENTS"), true);
-    this->scope->register_symbol(
-      this->context.symtable("__CHARLY_FUNCTION_ARGUMENTS"),
-      LocalOffsetInfo(ValueLocation::frame(0, 0))
-    );
+    this->scope->alloc_slot(this->context.symtable("arguments"), true);
     this->scope->register_symbol(
       this->context.symtable("arguments"),
       LocalOffsetInfo(ValueLocation::frame(0, 0))

@@ -195,6 +195,7 @@ public:
   VALUE create_function(VALUE name,
                         uint8_t* body_address,
                         uint32_t argc,
+                        uint32_t minimum_argc,
                         uint32_t lvarcount,
                         bool anonymous,
                         bool needs_arguments);
@@ -297,6 +298,7 @@ public:
                       bool anonymous,
                       bool needs_arguments,
                       uint32_t argc,
+                      uint32_t minimum_argc,
                       uint32_t lvarcount);
   void op_putcfunction(VALUE symbol, void* pointer, uint32_t argc);
   void op_putgenerator(VALUE symbol, uint8_t* resume_address);

@@ -53,15 +53,15 @@ export = ->(describe, it, assert) {
     assert(b1.bar, 2)
     assert(b1.baz, 3)
 
-    try {
-      const b2 = new Box()
-      assert(b2.foo, null)
-      assert(b2.bar, null)
-      assert(b2.baz, null)
-    } catch(e) {
-      print(e)
-      print("got an error")
-    }
+    const b2 = new Box()
+    assert(b2.foo, null)
+    assert(b2.bar, null)
+    assert(b2.baz, null)
+
+    const b3 = new Box(1, 2)
+    assert(b3.foo, 1)
+    assert(b3.bar, 2)
+    assert(b3.baz, null)
   })
 
   it("adds methods to classes", ->{

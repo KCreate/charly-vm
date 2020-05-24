@@ -664,7 +664,8 @@ AST::AbstractNode* CodeGenerator::visit_function(AST::Function* node, VisitConti
   Label function_block_label = this->assembler.reserve_label();
 
   this->assembler.write_putfunction_to_label(this->context.symtable(node->name), function_block_label, node->anonymous,
-                                             node->needs_arguments, node->parameters.size(), node->lvarcount);
+                                             node->needs_arguments, node->parameters.size(), node->required_arguments,
+                                             node->lvarcount);
 
   // Anonymous generators are invoked immediately
   if (node->generator && node->anonymous) {

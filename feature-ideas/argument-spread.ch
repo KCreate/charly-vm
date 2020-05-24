@@ -24,6 +24,28 @@
  * SOFTWARE.
  */
 
-class A {}
+// Implementation:
+//
+// Note:  The '...' operator defined in this proposal is only
+//        applicable within function argument lists.
+//
+//        A separate proposal, found in the file spread-operator.ch
+//        contains information on how the spread operator could
+//        be implemented.
 
-print(new A())
+// The '...' spread operator can be used to access all remaining arguments
+// The 'arguments' identifier will still contain all the arguments
+func h(a, b, c...) = _
+
+// The argument followed by the spread operator has to be
+// the last argument of the function
+//
+//                 +- Can't have an argument after
+//                 |  a argument spread operator
+//                 |
+//                 v
+func j(a, b, c..., d) = _
+
+// The following function declaration effectively renames the
+// 'argument' identifier.
+func k(a...) = _

@@ -167,6 +167,7 @@ void Assembler::write_putfunction_to_label(VALUE symbol,
                                            bool anonymous,
                                            bool needs_arguments,
                                            uint32_t argc,
+                                           uint32_t minimum_argc,
                                            uint32_t lvarcount) {
   if (this->labels.count(label) > 0) {
     this->write_u8(Opcode::PutFunction);
@@ -175,6 +176,7 @@ void Assembler::write_putfunction_to_label(VALUE symbol,
     this->write_u8(anonymous);
     this->write_u8(needs_arguments);
     this->write_u32(argc);
+    this->write_u32(minimum_argc);
     this->write_u32(lvarcount);
   } else {
     uint32_t instruction_base = this->writeoffset;
@@ -185,6 +187,7 @@ void Assembler::write_putfunction_to_label(VALUE symbol,
     this->write_u8(anonymous);
     this->write_u8(needs_arguments);
     this->write_u32(argc);
+    this->write_u32(minimum_argc);
     this->write_u32(lvarcount);
   }
 }

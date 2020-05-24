@@ -1179,30 +1179,43 @@ struct Function : public AbstractNode {
   std::string name;
   std::vector<std::string> parameters;
   std::vector<std::string> self_initialisations;
+  std::unordered_map<std::string, AbstractNode*> default_values;
   AbstractNode* body;
   bool anonymous;
   bool generator = false;
   bool needs_arguments = false;
 
   uint32_t lvarcount = 0;
+  uint32_t required_arguments;
 
   Function(const std::string& n,
            const std::vector<std::string>& p,
            const std::vector<std::string>& s,
            AbstractNode* b,
            bool a)
-      : name(n), parameters(p), self_initialisations(s), body(b), anonymous(a) {
+      : name(n), parameters(p), self_initialisations(s), body(b), anonymous(a), required_arguments(p.size()) {
   }
   Function(const std::string& n,
            std::vector<std::string>&& p,
            const std::vector<std::string>& s,
            AbstractNode* b,
            bool a)
-      : name(n), parameters(std::move(p)), self_initialisations(std::move(s)), body(b), anonymous(a) {
+      : name(n),
+        parameters(std::move(p)),
+        self_initialisations(std::move(s)),
+        body(b),
+        anonymous(a),
+        required_arguments(p.size()) {
   }
 
   inline ~Function() {
     delete body;
+
+    for (auto& entry : this->default_values) {
+      delete entry.second;
+    }
+
+    this->default_values.clear();
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
@@ -1227,8 +1240,14 @@ struct Function : public AbstractNode {
 
       i++;
     }
-    stream << ')' << " lvarcount=" << this->lvarcount;
+    stream << ')' << " lvarcount=" << this->lvarcount << ' ';
+    stream << " minimum_argc=" << this->required_arguments;
     stream << '\n';
+
+    for (auto& entry : this->default_values) {
+      stream << std::string(depth + 1, ' ') << "- " << entry.first << ": ";
+      entry.second->dump(stream, depth + 2);
+    }
 
     this->body->dump(stream, depth + 1);
   }

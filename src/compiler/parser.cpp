@@ -129,8 +129,14 @@ void Parser::expect_token(TokenType type, ParseFunc func) {
     this->unexpected_token(type);
   }
 
+  size_t old_pos = this->source.pos;
   func();
-  this->advance();
+
+  // Only advance to the next token if the handler function didn't
+  // advance itself
+  if (this->source.pos == old_pos) {
+    this->advance();
+  }
 }
 
 void Parser::skip_token(TokenType type) {
@@ -1511,11 +1517,14 @@ AST::AbstractNode* Parser::parse_func() {
 
   std::vector<std::string> params;
   std::vector<std::string> self_initialisations;
+  std::unordered_map<std::string, AST::AbstractNode*> default_values;
+  bool default_argument_detected = false;
   if (this->token.type == TokenType::LeftParen) {
     this->advance();
 
     if (this->token.type != TokenType::RightParen) {
       while (true) {
+        std::string last_identifier;
         bool self_initializer = false;
 
         // Check if we got a self initializer
@@ -1525,10 +1534,31 @@ AST::AbstractNode* Parser::parse_func() {
         }
 
         this->expect_token(TokenType::Identifier, [&]() {
-          params.push_back(this->token.value);
+
+          // Check if this argument already exists
+          auto search = std::find(params.begin(), params.end(), this->token.value);
+          if (search == params.end()) {
+            params.push_back(this->token.value);
+          } else {
+            this->illegal_token("Duplicate function parameter");
+          }
+
+          last_identifier = this->token.value;
           if (self_initializer)
             self_initialisations.push_back(this->token.value);
         });
+
+        // Parse default arguments
+        if (this->token.type == TokenType::Assignment) {
+          this->advance();
+          default_argument_detected = true;
+          AST::AbstractNode* exp = this->parse_expression();
+          default_values[last_identifier] = exp;
+        } else {
+          if (default_argument_detected) {
+            this->illegal_token("Expected a default argument");
+          }
+        }
 
         if (this->token.type != TokenType::Comma) {
           break;
@@ -1545,6 +1575,7 @@ AST::AbstractNode* Parser::parse_func() {
   //
   // func foo(a, b) { a * b }
   // func foo(a, b) = a * b
+  // func foo(@a, @b);
   AST::AbstractNode* body = nullptr;
   auto backup_context = this->keyword_context;
   this->keyword_context.return_allowed = true;
@@ -1556,13 +1587,22 @@ AST::AbstractNode* Parser::parse_func() {
   } else if (this->token.type == TokenType::Assignment) {
     this->advance();
     body = this->parse_control_statement();
+  } else if (this->token.type == TokenType::Semicolon) {
+    this->advance();
+    body = new AST::Block();
   } else {
     this->unexpected_token("block");
     return nullptr;
   }
   this->keyword_context = backup_context;
 
-  return (new AST::Function(name, params, self_initialisations, body, false))->at(location_start, body->location_end);
+  AST::Function* fun = new AST::Function(name, params, self_initialisations, body, false);
+  fun->at(location_start, body->location_end);
+  if (default_values.size()) fun->needs_arguments = true;
+  fun->default_values = std::move(default_values);
+  fun->required_arguments = fun->parameters.size() - fun->default_values.size();
+
+  return fun;
 }
 
 AST::AbstractNode* Parser::parse_arrowfunc() {
@@ -1570,11 +1610,15 @@ AST::AbstractNode* Parser::parse_arrowfunc() {
   this->expect_token(TokenType::RightArrow);
 
   std::vector<std::string> params;
+  std::unordered_map<std::string, AST::AbstractNode*> default_values;
+  bool default_argument_detected = false;
   if (this->token.type == TokenType::LeftParen) {
     this->advance();
 
     if (this->token.type != TokenType::RightParen) {
       while (true) {
+        std::string last_identifier;
+
         this->expect_token(TokenType::Identifier, [&]() {
 
           // Check if this argument already exists
@@ -1584,7 +1628,21 @@ AST::AbstractNode* Parser::parse_arrowfunc() {
           } else {
             this->illegal_token("Duplicate function parameter");
           }
+
+          last_identifier = this->token.value;
         });
+
+        // Parse default arguments
+        if (this->token.type == TokenType::Assignment) {
+          this->advance();
+          default_argument_detected = true;
+          AST::AbstractNode* exp = this->parse_expression();
+          default_values[last_identifier] = exp;
+        } else {
+          if (default_argument_detected) {
+            this->illegal_token("Expected a default argument");
+          }
+        }
 
         if (this->token.type != TokenType::Comma) {
           break;
@@ -1597,6 +1655,8 @@ AST::AbstractNode* Parser::parse_arrowfunc() {
     this->expect_token(TokenType::RightParen);
   }
 
+  // ->{ <block> }
+  // ->stmt
   AST::AbstractNode* body;
   if (this->token.type == TokenType::LeftCurly) {
     auto backup_context = this->keyword_context;
@@ -1610,7 +1670,13 @@ AST::AbstractNode* Parser::parse_arrowfunc() {
     body = this->parse_control_statement();
   }
 
-  return (new AST::Function("", params, {}, body, true))->at(location_start, body->location_end);
+  AST::Function* fun = new AST::Function("", params, {}, body, true);
+  fun->at(location_start, body->location_end);
+  if (default_values.size()) fun->needs_arguments = true;
+  fun->default_values = std::move(default_values);
+  fun->required_arguments = fun->parameters.size() - fun->default_values.size();
+
+  return fun;
 }
 
 AST::AbstractNode* Parser::parse_class() {

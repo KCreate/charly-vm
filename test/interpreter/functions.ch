@@ -160,4 +160,95 @@ export = ->(describe, it, assert) {
     })
   })
 
+  describe("default arguments", ->{
+
+    it("applies default arguments", ->{
+      func f(v = 25) = v
+      assert(f(), 25)
+      assert(f(5), 5)
+    })
+
+    it("applies default arguments in the correct order", ->{
+
+      let i = 0
+      func n {
+        const v = i
+        i += 1
+        v
+      }
+
+      func f(a = n(), b = n(), c = n()) {
+        return [a, b, c]
+      }
+
+      assert(f(),         [0, 1, 2])
+      assert(f(1),        [1, 3, 4])
+      assert(f(1, 2),     [1, 2, 5])
+      assert(f(1, 2, 3),  [1, 2, 3])
+      assert(f(),         [6, 7, 8])
+    })
+
+    it("references other arguments", ->{
+      func f(a = 0, b = a + 1) = [a, b]
+      assert(f(), [0, 1])
+      assert(f(10), [10, 11])
+      assert(f(1, 5), [1, 5])
+    })
+
+    it("initializes member properties", ->{
+      class A {
+        property name
+
+        func set_name(@name = "default name");
+      }
+
+      const a = new A()
+      a.set_name()
+      assert(a.name, "default name")
+
+      a.set_name("leonard")
+      assert(a.name, "leonard")
+    })
+
+    it("throws an exception when passing insufficent arguments", ->{
+      func f(a, b, c = 25) = [a, b, c]
+
+      let caught_exception = null
+      try {
+        f(1)
+      } catch(e) {
+        caught_exception = e
+      }
+
+      assert(typeof caught_exception, "object")
+      assert(caught_exception.message, "Not enough arguments for function call")
+    })
+
+    it("arguments array does not contain default arguments", ->{
+      func f(a, b, c = 1, d = 2) = arguments
+
+      assert(f(1, 2),       [1, 2])
+      assert(f(1, 2, 3),    [1, 2, 3])
+      assert(f(1, 2, 3, 4), [1, 2, 3, 4])
+    })
+
+    it("correctly sets quick access identifiers", ->{
+      func f(a = 1, b = 2, c = 3) = [$0, $1, $2]
+
+      assert(f(),         [1, 2, 3])
+      assert(f(5),        [5, 2, 3])
+      assert(f(5, 5),     [5, 5, 3])
+      assert(f(5, 5, 5),  [5, 5, 5])
+    })
+
+    it("sets default arguments in anonymous functions", ->{
+      const f = ->(a = 1, b = 2) a + b
+
+      assert(f(), 3)
+      assert(f(5), 7)
+      assert(f(5, 5), 10)
+    })
+
+  })
+
 }

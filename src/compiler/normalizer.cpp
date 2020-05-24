@@ -441,11 +441,39 @@ AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue
     }
   }
 
+  // Check for illegal argument names
+  for (auto& param : node->parameters) {
+    if (param == "arguments") this->push_error(node, "Illegal argument name " + param);
+  }
+
   // Initialize member properties
   for (auto& member_init : node->self_initialisations) {
     AST::MemberAssignment* assignment = new AST::MemberAssignment(new AST::Self(), member_init, new AST::Identifier(member_init));
     assignment->yielded_value_needed = false;
     body->prepend_node(assignment);
+  }
+
+  // Initialize default arguments
+  if (node->parameters.size() > 0) {
+    for (int32_t i = node->parameters.size() - 1; i >= static_cast<int32_t>(node->required_arguments); i--) {
+      const std::string& argname = node->parameters[i];
+      AST::AbstractNode* exp = node->default_values.at(argname);
+
+      // if arguments.length § %i {
+      //   <argname> = <default value>
+      // }
+      AST::Assignment* assignment = new AST::Assignment(argname, exp);
+      assignment->yielded_value_needed = false;
+
+      AST::Member* arguments_length = new AST::Member(new AST::Identifier("arguments"), "length");
+      AST::Binary* comparison = new AST::Binary(TokenType::LessEqual, arguments_length, new AST::Number(i));
+      AST::If* cond_assignment = new AST::If(comparison, new AST::Assignment(argname, exp));
+
+      body->prepend_node(cond_assignment);
+    }
+
+    // Clear the default_values array to prevent double frees in the future
+    node->default_values.clear();
   }
 
   bool mark_func_as_generator_backup = this->mark_func_as_generator;
@@ -532,40 +560,26 @@ AST::AbstractNode* Normalizer::visit_class(AST::Class* node, VisitContinue cont)
     static_symbols.emplace(symbol, static_property);
   }
 
-  // if there is no user defined constructor we inject a default constructor
-  // that initializes all the member variables
+  // Generate a default constructor for this class
   if (node->constructor->type() == AST::kTypeEmpty) {
-
-    std::vector<std::string> member_names;
-
-    for (auto member_property : node->member_properties->children) {
-      AST::Identifier* as_ident = member_property->as<AST::Identifier>();
-      member_names.push_back(as_ident->name);
-    }
-
-    AST::Block* block = new AST::Block({});
-
-    // Generate member initialisations
-    uint32_t i = 0;
-    for (auto& member_name : member_names) {
-      AST::Identifier* source = new AST::Identifier("$" + std::to_string(i));
-      AST::MemberAssignment* assignment = new AST::MemberAssignment(new AST::Self(), member_name, source);
-      assignment->yielded_value_needed = false;
-      block->prepend_node(assignment);
-      i++;
-    }
-
     AST::Function* constructor = new AST::Function(
       "constructor",
       {},
       {},
-      block,
+      new AST::Block(),
       false
     );
+
+    for (auto member_property : node->member_properties->children) {
+      AST::Identifier* as_ident = member_property->as<AST::Identifier>();
+      constructor->parameters.push_back(as_ident->name);
+      constructor->self_initialisations.push_back(as_ident->name);
+      constructor->default_values[as_ident->name] = new AST::Null();
+    }
+    constructor->required_arguments = 0;
     constructor->needs_arguments = true;
 
-    constructor = this->visit_function(constructor, cont)->as<AST::Function>();
-
+    constructor = this->visit_node(constructor)->as<AST::Function>();
     delete node->constructor;
     node->constructor = constructor;
   }

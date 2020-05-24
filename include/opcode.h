@@ -177,6 +177,7 @@ enum Opcode : uint8_t {
   // - anonymous
   // - needs_arguments
   // - argc
+  // - minimum_argc
   // - lvarcount
   PutFunction,
 
@@ -451,52 +452,56 @@ enum Opcode : uint8_t {
   Typeof
 };
 
+#define i8 sizeof(uint8_t)
+#define i32 sizeof(uint32_t)
+#define i64 sizeof(uint64_t)
+
 // clang-format off
 // Constant lengths of all instructions
 static constexpr uint32_t kInstructionLengths[]{
   /* Nop */                   1,
-  /* ReadLocal */             1 + sizeof(uint32_t) + sizeof(uint32_t),
-  /* ReadMemberSymbol */      1 + sizeof(VALUE),
+  /* ReadLocal */             1 + i32 + i32,
+  /* ReadMemberSymbol */      1 + i64,
   /* ReadMemberValue */       1,
-  /* ReadArrayIndex */        1 + sizeof(uint32_t),
-  /* SetLocalPush */          1 + sizeof(uint32_t) + sizeof(uint32_t),
-  /* SetMemberSymbolPush */   1 + sizeof(VALUE),
+  /* ReadArrayIndex */        1 + i32,
+  /* SetLocalPush */          1 + i32 + i32,
+  /* SetMemberSymbolPush */   1 + i64,
   /* SetMemberValuePush */    1,
-  /* SetArrayIndexPush */     1 + sizeof(uint32_t),
-  /* SetLocal */              1 + sizeof(uint32_t) + sizeof(uint32_t),
-  /* SetMemberSymbol */       1 + sizeof(VALUE),
+  /* SetArrayIndexPush */     1 + i32,
+  /* SetLocal */              1 + i32 + i32,
+  /* SetMemberSymbol */       1 + i64,
   /* SetMemberValue */        1,
-  /* SetArrayIndex */         1 + sizeof(uint32_t),
-  /* PutSelf */               1 + sizeof(uint32_t),
-  /* PutValue */              1 + sizeof(VALUE),
-  /* PutString */             1 + sizeof(uint32_t) + sizeof(uint32_t),
-  /* PutFunction */           1 + sizeof(VALUE) + sizeof(int32_t) + sizeof(bool) * 2 + sizeof(uint32_t) + sizeof(uint32_t),
-  /* PutCFunction */          1 + sizeof(VALUE) + sizeof(uintptr_t) + sizeof(uint32_t),
-  /* PutGenerator */          1 + sizeof(VALUE) + sizeof(int32_t),
-  /* PutArray */              1 + sizeof(uint32_t),
-  /* PutHash */               1 + sizeof(uint32_t),
-  /* PutClass */              1 + sizeof(VALUE) + sizeof(uint32_t) * 4 + sizeof(bool) + sizeof(bool),
+  /* SetArrayIndex */         1 + i32,
+  /* PutSelf */               1 + i32,
+  /* PutValue */              1 + i64,
+  /* PutString */             1 + i32 + i32,
+  /* PutFunction */           1 + i64 + i32 + i8 * 2 + i32 + i32 + i32,
+  /* PutCFunction */          1 + i64 + i64 + i32,
+  /* PutGenerator */          1 + i64 + i32,
+  /* PutArray */              1 + i32,
+  /* PutHash */               1 + i32,
+  /* PutClass */              1 + i64 + i32 * 4 + i8 + i8,
   /* Pop */                   1,
   /* Dup */                   1,
-  /* Dupn */                  1 + sizeof(uint32_t),
+  /* Dupn */                  1 + i32,
   /* Swap */                  1,
-  /* Call */                  1 + sizeof(uint32_t),
-  /* CallMember */            1 + sizeof(uint32_t),
-  /* New */                   1 + sizeof(uint32_t),
+  /* Call */                  1 + i32,
+  /* CallMember */            1 + i32,
+  /* New */                   1 + i32,
   /* Return */                1,
   /* Yield */                 1,
   /* Throw */                 1,
-  /* RegisterCatchTable */    1 + sizeof(int32_t),
+  /* RegisterCatchTable */    1 + i32,
   /* PopCatchTable */         1,
-  /* Branch */                1 + sizeof(uint32_t),
-  /* BranchIf */              1 + sizeof(uint32_t),
-  /* BranchUnless */          1 + sizeof(uint32_t),
-  /* BranchLt */              1 + sizeof(uint32_t),
-  /* BranchGt */              1 + sizeof(uint32_t),
-  /* BranchLe */              1 + sizeof(uint32_t),
-  /* BranchGe */              1 + sizeof(uint32_t),
-  /* BranchEq */              1 + sizeof(uint32_t),
-  /* BranchNeq */             1 + sizeof(uint32_t),
+  /* Branch */                1 + i32,
+  /* BranchIf */              1 + i32,
+  /* BranchUnless */          1 + i32,
+  /* BranchLt */              1 + i32,
+  /* BranchGt */              1 + i32,
+  /* BranchLe */              1 + i32,
+  /* BranchGe */              1 + i32,
+  /* BranchEq */              1 + i32,
+  /* BranchNeq */             1 + i32,
   /* Add, */                  1,
   /* Sub, */                  1,
   /* Mul, */                  1,
@@ -522,6 +527,10 @@ static constexpr uint32_t kInstructionLengths[]{
   /* GCCollect */             1,
   /* Typeof */                1
 };
+
+#undef i8
+#undef i32
+#undef i64
 
 // String representations of instruction opcodes
 static std::string kOpcodeMnemonics[]{

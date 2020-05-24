@@ -1,3 +1,20 @@
+- Reduce instruction argument size
+  - We do not need a 32bit integer to represent argc, lvarcount etc.
+    If you have 4.2 billion arguments you have bigger problems and need therapy.
+  - Stuff like 'argc', 'minimum_argc' can be represented using just 8 bits. I seriously
+    doubt any good code will have a function with over 256 arguments.
+  - 'lvarcount' should be represented by a 16bit int. It does not seem impossible to me for code
+    to reach the 256 local variable limit, so to be future-proof 16 bits should be used.
+  - Also document existing argument sizes in the opcode.h file
+
+- Do not generate a default constructor for classes without any properties
+
+- Implement default values for class properties
+
+- Ability to omit the 'func' keyword in class function declarations
+  - Any identifier standing by itself is assumed to be the beginning of a
+    function declaration.
+
 - Implement default arguments for functions
 
 - Implement object & array destructuring assignment

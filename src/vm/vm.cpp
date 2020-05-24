@@ -316,6 +316,7 @@ VALUE VM::create_empty_short_string() {
 VALUE VM::create_function(VALUE name,
                           uint8_t* body_address,
                           uint32_t argc,
+                          uint32_t minimum_argc,
                           uint32_t lvarcount,
                           bool anonymous,
                           bool needs_arguments) {
@@ -323,6 +324,7 @@ VALUE VM::create_function(VALUE name,
   cell->basic.type = kTypeFunction;
   cell->function.name = name;
   cell->function.argc = argc;
+  cell->function.minimum_argc = minimum_argc;
   cell->function.lvarcount = lvarcount;
   cell->function.context = this->frames;
   cell->function.body_address = body_address;
@@ -482,8 +484,8 @@ VALUE VM::copy_string(VALUE string) {
 VALUE VM::copy_function(VALUE function) {
   Function* source = charly_as_function(function);
   Function* target =
-      charly_as_function(this->create_function(source->name, source->body_address, source->argc, source->lvarcount,
-                                               source->anonymous(), source->needs_arguments()));
+      charly_as_function(this->create_function(source->name, source->body_address, source->argc, source->minimum_argc,
+                                               source->lvarcount, source->anonymous(), source->needs_arguments()));
 
   target->context = source->context;
   target->bound_self_set = source->bound_self_set;
@@ -1430,7 +1432,7 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
 
 void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self, bool halt_after_return) {
   // Check if the function was called with enough arguments
-  if (argc < function->argc) {
+  if (argc < function->minimum_argc) {
     this->throw_exception("Not enough arguments for function call");
     return;
   }
@@ -1801,8 +1803,9 @@ void VM::op_putfunction(VALUE symbol,
                         bool anonymous,
                         bool needs_arguments,
                         uint32_t argc,
+                        uint32_t minimum_argc,
                         uint32_t lvarcount) {
-  VALUE function = this->create_function(symbol, body_address, argc, lvarcount, anonymous, needs_arguments);
+  VALUE function = this->create_function(symbol, body_address, argc, minimum_argc, lvarcount, anonymous, needs_arguments);
   this->push_stack(function);
 }
 
@@ -2338,6 +2341,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << " ";
       io << "argc=" << func->argc;
       io << " ";
+      io << "minimum_argc=" << func->minimum_argc;
+      io << " ";
       io << "lvarcount=" << func->lvarcount;
       io << " ";
       io << "context=" << func->context << " ";
@@ -2682,7 +2687,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
       io << "<Function ";
       io << "";
       this->to_s(io, func->name);
-      io << "#" << func->argc;
+      io << "#" << func->minimum_argc;
 
       for (auto& entry : *func->container) {
         io << " ";
@@ -3083,10 +3088,12 @@ charly_main_switch_putfunction : {
       *reinterpret_cast<bool*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t) + sizeof(bool));
   uint32_t argc = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t) +
                                                sizeof(bool) + sizeof(bool));
+  uint32_t minimum_argc = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t) +
+                                               sizeof(bool) + sizeof(bool) + sizeof(uint32_t));
   uint32_t lvarcount = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(int32_t) +
-                                                    sizeof(bool) + sizeof(bool) + sizeof(uint32_t));
+                                                    sizeof(bool) + sizeof(bool) + sizeof(uint32_t) + sizeof(uint32_t));
 
-  this->op_putfunction(symbol, this->ip + body_offset, anonymous, needs_arguments, argc, lvarcount);
+  this->op_putfunction(symbol, this->ip + body_offset, anonymous, needs_arguments, argc, minimum_argc, lvarcount);
   OPCODE_EPILOGUE();
   NEXTOP();
 }
