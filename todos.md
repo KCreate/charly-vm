@@ -11,12 +11,6 @@
 
 - Implement default values for class properties
 
-- Ability to omit the 'func' keyword in class function declarations
-  - Any identifier standing by itself is assumed to be the beginning of a
-    function declaration.
-
-- Implement default arguments for functions
-
 - Implement object & array destructuring assignment
   - `
       const obj = { name: "leonard", age: 20 }

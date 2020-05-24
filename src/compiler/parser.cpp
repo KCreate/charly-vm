@@ -1502,9 +1502,12 @@ std::pair<std::string, AST::AbstractNode*> Parser::parse_hash_entry() {
   return {key, value};
 }
 
-AST::AbstractNode* Parser::parse_func() {
+AST::AbstractNode* Parser::parse_func(bool ignore_func_keyword) {
   Location location_start = this->token.location;
-  this->expect_token(TokenType::Func);
+
+  if (!ignore_func_keyword) {
+    this->expect_token(TokenType::Func);
+  }
 
   std::string name;
   bool has_symbol = false;
@@ -1718,12 +1721,15 @@ AST::AbstractNode* Parser::parse_class() {
         this->advance();
       }
 
-      if (this->token.type == TokenType::Func) {
-        if (static_declaration) {
-          static_functions->append_node(this->parse_func());
-        } else {
-          AST::Function* func = this->parse_func()->as<AST::Function>();
+      if (this->token.type == TokenType::Func || this->token.type == TokenType::Identifier) {
 
+        // Inside classes we can omit the func keyword
+        bool ignore_func_keyword = this->token.type == TokenType::Identifier;
+        AST::Function* func = this->parse_func(ignore_func_keyword)->as<AST::Function>();
+
+        if (static_declaration) {
+          static_functions->append_node(func);
+        } else {
           if (func->name == "constructor") {
             if (constructor != nullptr) {
               this->illegal_node(func, "Duplicate constructor");

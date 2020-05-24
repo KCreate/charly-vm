@@ -125,7 +125,7 @@ public:
   AST::AbstractNode* parse_array();
   AST::AbstractNode* parse_hash();
   std::pair<std::string, AST::AbstractNode*> parse_hash_entry();
-  AST::AbstractNode* parse_func();
+  AST::AbstractNode* parse_func(bool ignore_func_keyword = false);
   AST::AbstractNode* parse_arrowfunc();
   AST::AbstractNode* parse_class();
 

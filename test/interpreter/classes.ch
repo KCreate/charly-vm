@@ -287,4 +287,28 @@ export = ->(describe, it, assert) {
 
   })
 
+  it("allows the func keyword to be ommitted in class declarations", ->{
+    class Person {
+      property name
+      property age
+
+      constructor(name, age) {
+        @name = "test" + name
+        @age = age + 5
+      }
+
+      do_stuff {
+        return [@name, @age]
+      }
+
+      static do_more_stuff {
+        return "this is a static function"
+      }
+    }
+
+    const p = new Person("leonard", 20)
+    assert(p.do_stuff(), ["testleonard", 25])
+    assert(Person.do_more_stuff(), "this is a static function")
+  })
+
 }
