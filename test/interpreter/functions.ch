@@ -132,6 +132,26 @@ export = ->(describe, it, assert) {
     assert(call_me()()(), 25)
   })
 
+  it("changes the name of a function", ->{
+    func foo {}
+
+    assert(foo.name, "foo")
+
+    foo.name = "bar"
+
+    assert(foo.name, "bar")
+  })
+
+  it("changes the name of a cfunction", ->{
+    const foo = Charly.internals.get_method("write")
+
+    assert(foo.name, "write")
+
+    foo.name = "bar"
+
+    assert(foo.name, "bar")
+  })
+
   describe("dynamic calls", ->{
     it("calls a function with a context and arguments", ->{
       const ctx = { v: 20 }

@@ -1015,6 +1015,14 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
         return func->running ? kTrue : kFalse;
       }
 
+      if (symbol == charly_create_symbol("name")) {
+        return this->create_string(this->context.symtable(func->name).value_or(kUndefinedSymbolString));
+      }
+
+      if (func->container->count(symbol) == 1) {
+        return (*func->container)[symbol];
+      }
+
       break;
     }
 
@@ -1133,7 +1141,7 @@ VALUE VM::readmembervalue(VALUE source, VALUE value) {
 
         return (*arr->data)[index];
       } else {
-        return this->readmembersymbol(source, charly_create_symbol(value));
+        return this->readmembersymbol(source, this->create_symbol(value));
       }
     }
     case kTypeString: {
@@ -1141,10 +1149,10 @@ VALUE VM::readmembervalue(VALUE source, VALUE value) {
         int32_t index = charly_number_to_int32(value);
         return charly_string_cp_at_index(source, index);
       } else {
-        return this->readmembersymbol(source, charly_create_symbol(value));
+        return this->readmembersymbol(source, this->create_symbol(value));
       }
     }
-    default: { return this->readmembersymbol(source, charly_create_symbol(value)); }
+    default: { return this->readmembersymbol(source, this->create_symbol(value)); }
   }
 }
 
@@ -1164,6 +1172,24 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
 
     case kTypeFunction: {
       Function* func = charly_as_function(target);
+
+      if (symbol == charly_create_symbol("name")) {
+        func->name = this->create_symbol(value);
+        break;
+      }
+
+      (*func->container)[symbol] = value;
+      break;
+    }
+
+    case kTypeGenerator: {
+      Generator* func = charly_as_generator(target);
+
+      if (symbol == charly_create_symbol("name")) {
+        func->name = this->create_symbol(value);
+        break;
+      }
+
       (*func->container)[symbol] = value;
       break;
     }
@@ -1173,6 +1199,11 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
 
       if (symbol == charly_create_symbol("push_return_value")) {
         cfunc->push_return_value = charly_truthyness(value);
+        break;
+      }
+
+      if (symbol == charly_create_symbol("name")) {
+        cfunc->name = this->create_symbol(value);
         break;
       }
 
@@ -1190,6 +1221,16 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
 
       if (symbol == charly_create_symbol("constructor")) {
         klass->constructor = value;
+        break;
+      }
+
+      if (symbol == charly_create_symbol("name")) {
+        klass->name = this->create_symbol(value);
+        break;
+      }
+
+      if (symbol == charly_create_symbol("parent_class")) {
+        klass->parent_class = value;
         break;
       }
 

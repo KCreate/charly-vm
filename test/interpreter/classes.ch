@@ -250,6 +250,23 @@ export = ->(describe, it, assert) {
     assert(caught_exception.message, "Attempted to call a non-callable type: class")
   })
 
+  it("changes the name of a class", ->{
+    class A {}
+    assert(A.name, "A")
+    A.name = "B"
+    assert(A.name, "B")
+  })
+
+  it("changes the parent_class of a class", ->{
+    class A {}
+    class B {}
+    class C extends A {}
+
+    assert(C.parent_class, A)
+    C.parent_class = B
+    assert(C.parent_class, B)
+  })
+
   describe("correctly unpacks call nodes", ->{
 
     it("parses the member call syntax", ->{

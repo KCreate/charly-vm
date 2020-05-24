@@ -24,7 +24,21 @@
  * SOFTWARE.
  */
 
-const f = ->(a, b) {
-  yield a
-  yield b
+class A {
+  func f = "A"
 }
+
+class B {
+  func f = "B"
+}
+
+class C extends A {}
+
+const c = new C()
+
+
+print << c.f()
+
+C.parent_class = B
+
+print << c.f()

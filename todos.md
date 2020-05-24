@@ -1,5 +1,3 @@
-- Ignore assignments to reserved members of types
-
 - Implement default arguments for functions
 
 - Implement object & array destructuring assignment
