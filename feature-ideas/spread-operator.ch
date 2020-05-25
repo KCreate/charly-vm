@@ -24,13 +24,30 @@
  * SOFTWARE.
  */
 
-class A {
-  property name
-}
+// Unpack array into function call
+//
+// Should contain a runtime check to make sure the unpacked value is an array
+//
+// This process should work for all different (low-level internal) call types, like
+// regular calls, membercalls, indexcall and the new operator
+f(...[1, 2, 3])
 
-class B extends A {
-  property age
-}
+// Unpack an array into an array literal
+//
+// Should contain a runtime check to make sure the unpacked value is an array
+[ ...<somearr> ]
 
-const b = new B("leonard", 20)
-print(b)
+// Unpack an object into an object literal
+//
+// Should contain a runtime check to make sure the unpacked value is an object
+{ ...<someobj> }
+
+// Inclusive range
+//
+// Iterating over this range would yield the values 1 to 10
+1..10
+
+// Exclusive range
+//
+// Iterating over this range would yield the values 1 to 9
+1...10

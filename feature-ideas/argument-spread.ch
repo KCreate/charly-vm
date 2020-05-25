@@ -24,7 +24,14 @@
  * SOFTWARE.
  */
 
-// Implementation:
+// Implementation:  The runtime Function struct gets a new flag which
+//                  stores if the function's last argument has a spread-operator
+//                  If yes, the VM will pack all the correct arguments into
+//                  an array and pass that as the last parameter.
+//
+//                  This needs to be implemented inside the VM::call_function
+//                  method and should not require any changes to the code generation
+//                  facilities.
 //
 // Note:  The '...' operator defined in this proposal is only
 //        applicable within function argument lists.

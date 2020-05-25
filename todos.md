@@ -1,3 +1,76 @@
+- Changes to the class system
+  - Classes that are not subclasses can have their constructor auto-generated
+  - Subclasses are required to have a hand-written constructor
+    - That constructor is required to contain a 'super(...)' call
+  - 'super.foo' should call the foo method of the parent object
+    - super is a keyword and cannot be used as a regular identifier
+    - super can only be used inside class constructors and functions
+      - Inside a constructor it will invoke the constructor of the parent class
+      - Inside a class function it will invoke the function defined by the parent class
+        - If no such function exists, an exception is thrown
+
+- New global class: Error
+  - `throw new Error("something bad happened")`
+  - Possible subclasses:
+    - RangeError
+    - ReferenceError
+    - TypeError
+  - Implement a global basic exception handler which just prints the message
+    and a nice human readable stacktrace.
+  - If the global exception handler is reached it should not crash the whole machine
+    but only the currently running Fiber (see Fiber ideas below)
+  - Syntax to only catch certain specific exceptions (i.e: `try {...} catch(CustomError e) {...}`)
+
+- Argument spread operator
+  - Collect all remaining arguments
+    `
+      func f(a, b, c...) {
+        return [a, b, c]
+      }
+
+      f(1, 2, 3, 4, 5, 6) // => [1, 2, [3, 4, 5, 6]]
+    `
+
+- Spread operator
+  - Different parsing styles
+    - ...<exp>        Unpack array or object
+    - <exp>..<exp>    Inclusive range e.g '1..3' would be Range{1, 2, 3}
+    - <exp>...<exp>   Exclusive range e.g '1...3' would be Range{1, 2}
+    - func foo(<ident>...)   Argument spread operator, see argument-spread.ch
+  - Places where the spread operator can be used
+    - Inside function calls 'foo(...args)'
+    - Inside array literals '[...other_array]'
+    - Inside object literals '{ ...other_obj }'
+
+- Iterators
+  - Types which can be iterated over should all have a common method to obtain
+    such an iterator. The returned object will be of the class 'Iterator'.
+  - Can be implemented using generators
+
+- Ability to pause a thread of execution and resume it at a later time
+  - Usecase #1: Waiting for a Timer to finish
+  - `
+      const handle = defer(->{
+        print("waited for 1 second")
+      }, 1000)
+
+      handle.wait()
+
+      print("this runs after the timer")
+    `
+  - Maybe implement a lightweight fiber system with a task scheduler?
+    - Task scheduler should be configurable via charly code.
+    - Different fibers should not run in parallel, but concurrently, meaning
+      the task scheduler can pause a fiber and resume another without the programmer knowing.
+    - Ability to block transfer to another fiber for some time
+    - Ability to manually pass control to some other fiber
+    - Is this actually a good idea? Is it a better idea to just follow through with the whole
+      event queue system?
+    - Ability to communicate between fibers, similar to how Go implements Channels
+    - Mutexes, locks etc.
+
+- Ability to flush stdout, stderr
+
 - Reduce instruction argument size
   - We do not need a 32bit integer to represent argc, lvarcount etc.
     If you have 4.2 billion arguments you have bigger problems and need therapy.
@@ -33,18 +106,6 @@
   - The local variable allocator has been finished and this allows for the match
     syntax to be implemented now (see feature-ideas/match-statement.ch for proposal)
 
-- Ability to pause a thread of execution and resume it at a later time
-  - Usecase #1: Waiting for a Timer to finish
-  - `
-      const handle = defer(->{
-        print("waited for 1 second")
-      }, 1000)
-
-      handle.wait()
-
-      print("this runs after the timer")
-    `
-
 - Implement magic constants
   - __DIR__
   - __FILE__
@@ -71,22 +132,10 @@
   - add a day, add a year, add 20 years
     - should automatically calculate leap days and stuff like that
 
-- fix exceptions on deferred functions
-  - declare a global exception handler in the charly object that gets
-    called whenever there is no exception handler declared
-      - also useful for thrown that are running in the top frame
-        as there is no exception handler there too and it always results
-        in some ugly looking error messages
-
 - Improved Garbage Collector
   - Implement a fully fledged garbage collector that has the ability to crawl
     the call tree, inspect the machine stack and search for VALUE pointers (pointers
     pointing into the gc heap area)
-
-- Rewrite the class system
-  - `super` method needs to be supported
-  - Multiple inheritance
-  - Default values for member properties
 
 - Fix runtime crash when executing the runtime profiler
   - A frame gets deallocated while the vm is still using it, resulting in the return instruction
