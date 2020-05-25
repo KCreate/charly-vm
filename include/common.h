@@ -38,6 +38,7 @@ inline bool IS_BIG_ENDIAN() {
 template <typename T>
 bool FP_ARE_EQUAL(T f1, T f2) {
   if (std::isnan(f1) && std::isnan(f2)) return true;
+  if (std::isnan(f1) || std::isnan(f2)) return false;
   return (std::fabs(f1 - f2) <= std::numeric_limits<T>::epsilon() * std::fmax(fabs(f1), fabs(f2)));
 }
 
