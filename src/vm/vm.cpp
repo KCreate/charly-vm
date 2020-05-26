@@ -1215,27 +1215,6 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
 
     case kTypeClass: {
       Class* klass = charly_as_class(target);
-
-      if (symbol == charly_create_symbol("prototype")) {
-        klass->prototype = value;
-        break;
-      }
-
-      if (symbol == charly_create_symbol("constructor")) {
-        klass->constructor = value;
-        break;
-      }
-
-      if (symbol == charly_create_symbol("name")) {
-        klass->name = this->create_symbol(value);
-        break;
-      }
-
-      if (symbol == charly_create_symbol("parent_class")) {
-        klass->parent_class = value;
-        break;
-      }
-
       (*klass->container)[symbol] = value;
       break;
     }
