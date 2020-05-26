@@ -1708,20 +1708,21 @@ AST::AbstractNode* Parser::parse_class() {
 
   // Parse the class body
   this->expect_token(TokenType::LeftCurly);
-  if (this->token.type != TokenType::RightCurly) {
-    // Parse all class statements
-    while (true) {
-      Location statement_location_start = this->token.location;
+  while (this->token.type != TokenType::RightCurly) {
+    Location statement_location_start = this->token.location;
+    bool static_declaration = false;
 
-      bool static_declaration = false;
+    // Check if this is a static declaration
+    if (this->token.type == TokenType::Static) {
+      static_declaration = true;
+      this->advance();
+    }
 
-      // Check if this is a static declaration
-      if (this->token.type == TokenType::Static) {
-        static_declaration = true;
-        this->advance();
-      }
+    switch(this->token.type) {
 
-      if (this->token.type == TokenType::Func || this->token.type == TokenType::Identifier) {
+      // Parse function declarations
+      case TokenType::Identifier:
+      case TokenType::Func: {
 
         // Inside classes we can omit the func keyword
         bool ignore_func_keyword = this->token.type == TokenType::Identifier;
@@ -1740,7 +1741,12 @@ AST::AbstractNode* Parser::parse_class() {
             member_functions->append_node(func);
           }
         }
-      } else if (this->token.type == TokenType::Property) {
+
+        break;
+      }
+
+      // Parse property declarations
+      case TokenType::Property: {
         this->advance();
         Token name;
         this->expect_token(TokenType::Identifier, [&]() {
@@ -1767,14 +1773,16 @@ AST::AbstractNode* Parser::parse_class() {
           member_properties->append_node((new AST::Identifier(name.value))->at(name.location));
         }
         this->skip_token(TokenType::Semicolon);
-      } else {
-        this->unexpected_token("func or property");
+
+        break;
       }
 
-      if (this->token.type == TokenType::RightCurly)
-        break;
+      default: {
+        this->unexpected_token("func or property");
+      }
     }
   }
+
   Location location_end = this->token.location;
   this->expect_token(TokenType::RightCurly);
 

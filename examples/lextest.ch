@@ -26,11 +26,12 @@
 
 class A {
   property name
-}
-
-class B extends A {
   property age
 }
 
-const b = new B("leonard", 20)
-print(b)
+class B extends A {
+  property height
+}
+
+print(A.constructor)
+print(B.constructor)

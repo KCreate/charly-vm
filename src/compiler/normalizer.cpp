@@ -560,28 +560,36 @@ AST::AbstractNode* Normalizer::visit_class(AST::Class* node, VisitContinue cont)
     static_symbols.emplace(symbol, static_property);
   }
 
-  // Generate a default constructor for this class
+  // Check if we can generate a default constructor
   if (node->constructor->type() == AST::kTypeEmpty) {
-    AST::Function* constructor = new AST::Function(
-      "constructor",
-      {},
-      {},
-      new AST::Block(),
-      false
-    );
+    if (node->member_properties->children.size() > 0) {
 
-    for (auto member_property : node->member_properties->children) {
-      AST::Identifier* as_ident = member_property->as<AST::Identifier>();
-      constructor->parameters.push_back(as_ident->name);
-      constructor->self_initialisations.push_back(as_ident->name);
-      constructor->default_values[as_ident->name] = new AST::Null();
+      // Subclasses that define new properties need an explicit constructor
+      if (node->parent_class->type() != AST::kTypeEmpty) {
+        this->push_error(node, "Class '" + node->name + "' is missing a constructor");
+      } else {
+        AST::Function* constructor = new AST::Function(
+          "constructor",
+          {},
+          {},
+          new AST::Block(),
+          false
+        );
+
+        for (auto member_property : node->member_properties->children) {
+          AST::Identifier* as_ident = member_property->as<AST::Identifier>();
+          constructor->parameters.push_back(as_ident->name);
+          constructor->self_initialisations.push_back(as_ident->name);
+          constructor->default_values[as_ident->name] = new AST::Null();
+        }
+        constructor->required_arguments = 0;
+        constructor->needs_arguments = true;
+
+        constructor = this->visit_node(constructor)->as<AST::Function>();
+        delete node->constructor;
+        node->constructor = constructor;
+      }
     }
-    constructor->required_arguments = 0;
-    constructor->needs_arguments = true;
-
-    constructor = this->visit_node(constructor)->as<AST::Function>();
-    delete node->constructor;
-    node->constructor = constructor;
   }
 
   return node;
