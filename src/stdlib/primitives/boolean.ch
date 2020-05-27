@@ -30,7 +30,7 @@ export = ->(Base) {
     /*
      * Returns the number representation of this boolean
      * */
-    func to_n {
+    to_n {
       self ? 1 : 0
     }
   }

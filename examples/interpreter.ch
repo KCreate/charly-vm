@@ -30,7 +30,7 @@ class Lexer {
   property pos
   property buffer
 
-  func constructor() {
+  constructor() {
     @tokens = []
     @token = null
     @source = ""
@@ -38,13 +38,13 @@ class Lexer {
     @buffer = ""
   }
 
-  func setup(source) {
+  setup(source) {
     @tokens = []
     @source = source
     @pos = 0
   }
 
-  func tokenize(source) {
+  tokenize(source) {
     @setup(source)
 
     while @pos < @source.length {
@@ -55,7 +55,7 @@ class Lexer {
     @tokens
   }
 
-  func read_token() {
+  read_token() {
     let char = @current_char()
 
     guard typeof char == "string" {
@@ -96,21 +96,21 @@ class Lexer {
     throw "Unrecognized char: " + char
   }
 
-  func read_char() {
+  read_char() {
     @source[@pos + 1].tap(->{
       @pos += 1
     })
   }
 
-  func peek_char() {
+  peek_char() {
     @source[@pos + 1]
   }
 
-  func current_char() {
+  current_char() {
     @source[@pos]
   }
 
-  func read_numeric() {
+  read_numeric() {
     @buffer = ""
 
     loop {
@@ -145,13 +145,13 @@ class Parser {
   property tokens
   property pos
 
-  func constructor() {
+  constructor() {
     @lexer = new Lexer()
     @tokens = []
     @pos = -1
   }
 
-  func parse_error(expected, real) {
+  parse_error(expected, real) {
     if typeof real == "null" {
       throw "Expected " + expected + " but reached end of input"
     }
@@ -159,28 +159,28 @@ class Parser {
     throw "Expected " + expected + " but got " + real.type
   }
 
-  func setup(source) {
+  setup(source) {
     @pos = -1
     @tokens = @lexer.tokenize(source)
     @advance()
   }
 
-  func parse(source) {
+  parse(source) {
     @setup(source)
     @parse_expression()
   }
 
-  func advance() {
+  advance() {
     @token = @tokens[@pos + 1].tap(->{
       @pos += 1
     })
   }
 
-  func parse_expression() {
+  parse_expression() {
     @parse_addition()
   }
 
-  func parse_addition() {
+  parse_addition() {
     let left = @parse_multiplication()
 
     while @token.type == "Operator" {
@@ -202,7 +202,7 @@ class Parser {
     return left
   }
 
-  func parse_multiplication() {
+  parse_multiplication() {
     let left = @parse_literal()
 
     while @token.type == "Operator" {
@@ -224,7 +224,7 @@ class Parser {
     return left
   }
 
-  func parse_literal() {
+  parse_literal() {
     if @token.type == "Numeric" {
       let node = {}
       node.type = "NumericLiteral"
@@ -252,17 +252,17 @@ class Parser {
 class Visitor {
   property tree
 
-  func constructor() {
+  constructor() {
     @tree = {}
   }
 
-  func execute(tree) {
+  execute(tree) {
     @tree = tree
 
     @visit(tree)
   }
 
-  func visit(node) {
+  visit(node) {
     if node.type == "NumericLiteral" {
       return node.value
     }

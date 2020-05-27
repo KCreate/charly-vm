@@ -68,7 +68,7 @@ export = ->(describe, it, assert) {
     class Box {
       property value
 
-      func set(@value) {}
+      set(@value) {}
     }
 
     const myBox = new Box(0)
@@ -79,7 +79,7 @@ export = ->(describe, it, assert) {
 
   it("calls methods from parent classes", ->{
     class Box {
-      func foo() {
+      foo() {
         "it works"
       }
     }
@@ -92,13 +92,13 @@ export = ->(describe, it, assert) {
 
   it("calls methods from parent classes inside child methods", ->{
     class Box {
-      func foo() {
+      foo() {
         "it works"
       }
     }
 
     class SpecialBox extends Box {
-      func bar() {
+      bar() {
         @foo()
       }
     }
@@ -125,7 +125,7 @@ export = ->(describe, it, assert) {
     class Box {
       static property count = 0
 
-      func constructor() {
+      constructor() {
         Box.count += 1
       }
     }
@@ -140,11 +140,11 @@ export = ->(describe, it, assert) {
 
   it("creates static methods on classes", ->{
     class Box {
-      static func do_something() {
+      static do_something() {
         "static do_something"
       }
 
-      func do_something() {
+      do_something() {
         "instance do_something"
       }
     }
@@ -156,7 +156,7 @@ export = ->(describe, it, assert) {
 
   it("passes the class via the self identifier on static methods", ->{
     class Box {
-      static func foo() {
+      static foo() {
         assert(self, Box)
       }
     }
@@ -168,7 +168,7 @@ export = ->(describe, it, assert) {
     class Box {
       property value
 
-      func constructor {
+      constructor {
         @value = $0 + $1 + $2
       }
     }
@@ -186,11 +186,11 @@ export = ->(describe, it, assert) {
 
   it("inherits methods from parent classes", ->{
     class Foo {
-      func a() { "method a" }
+      a() { "method a" }
     }
 
     class Bar extends Foo {
-      func b() { "method b" }
+      b() { "method b" }
     }
 
     class Baz extends Bar {}
@@ -204,13 +204,13 @@ export = ->(describe, it, assert) {
     class A {
       property v1
 
-      func constructor(@v1) {}
+      constructor(@v1) {}
     }
 
     class B extends A {
       property v2
 
-      func constructor(v1, @v2) {}
+      constructor(v1, @v2) {}
     }
 
     let a = new B(10, 20)
@@ -220,7 +220,7 @@ export = ->(describe, it, assert) {
 
   it("handles exceptions inside constructors correctly", ->{
     class A {
-      func constructor {
+      constructor {
         throw "test"
       }
     }

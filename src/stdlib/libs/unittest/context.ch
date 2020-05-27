@@ -9,13 +9,13 @@ class Context {
   property depth
   property visitor
 
-  func constructor(@visitor) {
+  constructor(@visitor) {
     @tree = @current = new Node("Charly Unit Testing Framework", NodeType.Root)
     @visitor.on_root(@current)
     @depth = 0
   }
 
-  func add_node(type, title, callback) {
+  add_node(type, title, callback) {
     @depth += 1
 
     const new_node = new Node(title, type)
@@ -35,15 +35,15 @@ class Context {
     self
   }
 
-  func suite(title, callback) {
+  suite(title, callback) {
     @add_node(NodeType.Suite, title, callback)
   }
 
-  func it(title, callback) {
+  it(title, callback) {
     @add_node(NodeType.Test, title, callback)
   }
 
-  func assert(real, expected) {
+  assert(real, expected) {
     const assertion = new Assertion(real, expected)
 
     @current.push(
@@ -55,7 +55,7 @@ class Context {
     self
   }
 
-  func catch_exception(e) {
+  catch_exception(e) {
     @assert(e, "No exception to be thrown")
   }
 }

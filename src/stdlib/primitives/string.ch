@@ -53,35 +53,35 @@ export = ->(Base) {
     /*
      * Returns an all lowercase copy of this string
      * */
-    func lowercase {
+    lowercase {
       __lowercase(self)
     }
 
     /*
      * Returns an all uppercase copy of this string
      * */
-    func uppercase {
+    uppercase {
       __uppercase(self)
     }
 
     /*
      * Trim whitespace off the left side of the string
      * */
-    func ltrim {
+    ltrim {
       __ltrim(self)
     }
 
     /*
      * Trim whitespace off the right side of the string
      * */
-    func rtrim {
+    rtrim {
       __rtrim(self)
     }
 
     /*
      * Trim whitespace off both sides of the string
      * */
-    func trim {
+    trim {
       @ltrim().rtrim()
     }
 
@@ -93,7 +93,7 @@ export = ->(Base) {
      * "hello world".substring(5, 5) // => "world"
      * ```
      * */
-    func substring(start) {
+    substring(start) {
       const offset = arguments.length > 1 ? arguments[1] : @length
       if offset == 0 return ""
       const buf = new Buffer((offset == @length) ? (@length - start) : (offset))
@@ -114,7 +114,7 @@ export = ->(Base) {
      * Returns a new string where the first *n* characters are removed
      * from the left side of the string
      * */
-    func lstrip(n) {
+    lstrip(n) {
       @substring(n, @length - n)
     }
 
@@ -122,14 +122,14 @@ export = ->(Base) {
      * Returns a new string where the first *n* characters are removed
      * from the right side of the string
      * */
-    func rstrip(n) {
+    rstrip(n) {
       @substring(0, @length - n)
     }
 
     /*
      * Returns a reversed copy of this string
      * */
-    func reverse {
+    reverse {
       const buf = new Buffer(@length)
       const end = @length - 1
       end.downto(0, ->(i) {
@@ -147,7 +147,7 @@ export = ->(Base) {
      * })
      * ```
      * */
-    func each(cb) {
+    each(cb) {
       let i = 0
 
       while i < @length {
@@ -168,7 +168,7 @@ export = ->(Base) {
      * })
      * ```
      * */
-    func map(cb) {
+    map(cb) {
       let i = 0
       let buf = new Buffer(@length)
 
@@ -189,7 +189,7 @@ export = ->(Base) {
      * })
      * ```
      * */
-    func filter(cb) {
+    filter(cb) {
       let i = 0
       let buf = new Buffer(@length)
 
@@ -211,7 +211,7 @@ export = ->(Base) {
      * "whats up".split("") // => ["h", "e", "l", "l", "o", " ", "w", "o", "r", "l", "d"]
      * ```
      * */
-    func split(needle) {
+    split(needle) {
 
       // If the needle is the empty string, we split after each utf8 codepoint
       if needle == "" {
@@ -244,7 +244,7 @@ export = ->(Base) {
     /*
      * Returns the index of a substring
      * */
-    func index(o) {
+    index(o) {
       let offset = (arguments.length > 1) ? $1 : 0
       if offset < 0 offset += @length
       if offset < 0 return -1
@@ -262,7 +262,7 @@ export = ->(Base) {
     /*
      * Returns the index of a substring starting at the back of the string
      * */
-    func rindex(o) {
+    rindex(o) {
       let offset = (arguments.length > 1) ? $1 : @length
       if offset < 0 offset += @length
       if offset < 0 return -1
@@ -287,7 +287,7 @@ export = ->(Base) {
      * "f".is_digit() // => false
      * ```
      * */
-    func is_digit {
+    is_digit {
       const r = ({
         @"0": true,
         @"1": true,
@@ -314,7 +314,7 @@ export = ->(Base) {
      * "test".to_n() // => NaN
      * ```
      * */
-    func to_n {
+    to_n {
       if self.length == 0 return NaN
       if self == " " return NaN
       __to_n(self)
@@ -323,21 +323,21 @@ export = ->(Base) {
     /*
      * Returns the first character in this string
      * */
-    func first {
+    first {
       self[0]
     }
 
     /*
      * Returns the last character in this string
      * */
-    func last {
+    last {
       self[@length - 1]
     }
 
     /*
      * Returns obj[self]
      * */
-    func select(obj) {
+    select(obj) {
       obj[self]
     }
   }

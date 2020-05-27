@@ -33,7 +33,7 @@ class ContainerIteratorResult {
 class Container {
   property data
 
-  func each {
+  each {
     let i = 0
     while i < data.length {
       yield new ContainerIteratorResult(data[i], i, false)

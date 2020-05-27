@@ -29,13 +29,13 @@ __internal_dynamic_call.push_return_value = false
 
 export = ->(Base) {
   return class Function extends Base {
-    func @"<<"(o) {
+    @"<<"(o) {
       self(o)
     }
 
     // Calls *self* using ctx as the target object
     // and the values inside args as the parameters
-    func call(ctx, args) {
+    call(ctx, args) {
       /*print([self, args])*/
       __internal_dynamic_call(self, ctx, args)
     }

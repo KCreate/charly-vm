@@ -25,13 +25,18 @@
  */
 
 class A {
-  property name
-  property age
+  property data
+  property prop
+
+  each(cb) {
+    @data.each(->(e, i, a) {
+      cb(e, self.prop)
+    })
+  }
 }
 
-class B extends A {
-  property height
-}
+const a = new A([1, 2, 3, 4, 5], 50)
 
-print(A.constructor)
-print(B.constructor)
+a.each(->(e, prop) {
+  print(e, " ", prop)
+})

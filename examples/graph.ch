@@ -46,7 +46,7 @@ class Grapher {
   property bounds
   property view
 
-  func render(io, graphed_function) {
+  render(io, graphed_function) {
     const bounds = @bounds
     const view = @view
 

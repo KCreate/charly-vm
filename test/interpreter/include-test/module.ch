@@ -14,7 +14,7 @@ export.Person = class Person {
   property name
   property birthyear
 
-  func greeting() {
+  greeting() {
     @name + " was born in " + @birthyear + "."
   }
 

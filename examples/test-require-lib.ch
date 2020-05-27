@@ -32,7 +32,7 @@ export.someclass = class Person {
   property name
   property age
 
-  func method {
+  method {
     print(self)
   }
 }

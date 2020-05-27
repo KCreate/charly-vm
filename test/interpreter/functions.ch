@@ -101,7 +101,7 @@ export = ->(describe, it, assert) {
     class A {
       property a1
 
-      func c(a, cb) {
+      c(a, cb) {
         cb(a, ->(a1) {
           self.a1 = a1
         })
@@ -199,7 +199,7 @@ export = ->(describe, it, assert) {
       class A {
         property name
 
-        func set_name(@name = "default name");
+        set_name(@name = "default name");
       }
 
       const a = new A()

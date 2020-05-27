@@ -1,9 +1,9 @@
 class TestVisitor {
-  func on_root(node) {
+  on_root(node) {
     print(node.title)
   }
 
-  func on_node(node, depth, cb) {
+  on_node(node, depth, cb) {
     cb()
     if node.passed() {
       write(".")
@@ -12,7 +12,7 @@ class TestVisitor {
     }
   }
 
-  func on_assertion(index, assertion, depth) {}
+  on_assertion(index, assertion, depth) {}
 }
 
 export = TestVisitor

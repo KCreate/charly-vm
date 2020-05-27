@@ -41,7 +41,7 @@ class __HeapBase {
   property size
   property data
 
-  func constructor(@capacity) {
+  constructor(@capacity) {
     if capacity <= 0 throw "Heap capacity needs to be at least 1"
     @capacity_locked = false
     @size = 0
@@ -49,22 +49,22 @@ class __HeapBase {
   }
 
   // Calculate indices of parent and child nodes
-  func get_parent_index(n)      = ((n - 1) / 2).floor()
-  func get_left_child_index(n)  = (n * 2 + 1).floor()
-  func get_right_child_index(n) = (n * 2 + 2).floor()
+  get_parent_index(n)      = ((n - 1) / 2).floor()
+  get_left_child_index(n)  = (n * 2 + 1).floor()
+  get_right_child_index(n) = (n * 2 + 2).floor()
 
   // Check wether parent or child nodes exist
-  func has_parent(n)            = n > 0
-  func has_left_child(n)        = @get_left_child_index(n) < @size
-  func has_right_child(n)       = @get_right_child_index(n) < @size
+  has_parent(n)            = n > 0
+  has_left_child(n)        = @get_left_child_index(n) < @size
+  has_right_child(n)       = @get_right_child_index(n) < @size
 
   // Get parent or child nodes
-  func get_parent(n)            = @data[@get_parent_index(n)]
-  func get_left_child(n)        = @data[@get_left_child_index(n)]
-  func get_right_child(n)       = @data[@get_right_child_index(n)]
+  get_parent(n)            = @data[@get_parent_index(n)]
+  get_left_child(n)        = @data[@get_left_child_index(n)]
+  get_right_child(n)       = @data[@get_right_child_index(n)]
 
   // Make sure we have space for at least one new node
-  func ensure_capacity {
+  ensure_capacity {
     if @size == @capacity {
       @data = @data + Array.create(@data.length, null)
       @capacity *= 2
@@ -72,26 +72,26 @@ class __HeapBase {
   }
 
   // Checks if the heap is currently empty
-  func is_empty = @size == 0
+  is_empty = @size == 0
 
   // Compare two elements using the heap specific comparison operator
-  func compare_entry(l, r) = @compare(l.weight, r.weight)
+  compare_entry(l, r) = @compare(l.weight, r.weight)
 
   // Checks wether the heap is full
   // This only makes sense when the heap's capacity has been locked
-  func is_full {
+  is_full {
     if !@capacity_locked return false
     return @size == @capacity
   }
 
   // Returns the first item on the heap or throws if the heap is empty
-  func peek {
+  peek {
     if @is_empty() throw "Heap is empty"
     @data[0].data
   }
 
   // Returns the top element of the heap
-  func poll {
+  poll {
     if @is_empty() throw "Heap is empty"
 
     const entry = @data[0]
@@ -110,7 +110,7 @@ class __HeapBase {
   // Add a new item to the heap
   //
   // When passed a second argument as the data, $0 will be used as the weight
-  func push(weight) {
+  push(weight) {
     const data = arguments.length > 1 ? $1 : weight
 
     // Special insertion when capacity is locked
@@ -130,7 +130,7 @@ class __HeapBase {
   }
 
   // Heapify the heap downwards
-  func heapify_down {
+  heapify_down {
     let index = 0
     const entry = @data[index]
 
@@ -157,7 +157,7 @@ class __HeapBase {
   }
 
   // Heapify the heap upwards
-  func heapify_up {
+  heapify_up {
     let index = @size - 1
     const entry = @data[index]
 
@@ -172,11 +172,11 @@ class __HeapBase {
 }
 
 class MinHeap extends __HeapBase {
-  func compare(l, r) = l < r
+  compare(l, r) = l < r
 }
 
 class MaxHeap extends __HeapBase {
-  func compare(l, r) = l > r
+  compare(l, r) = l > r
 }
 
 export = {
@@ -187,12 +187,12 @@ export = {
 
   // Heaps of fixed size
   FixedMinHeap: class FixedMinHeap extends MaxHeap {
-    func constructor {
+    constructor {
       @capacity_locked = true
     }
   },
   FixedMaxHeap: class FixedMaxHeap extends MinHeap {
-    func constructor {
+    constructor {
       @capacity_locked = true
     }
   }

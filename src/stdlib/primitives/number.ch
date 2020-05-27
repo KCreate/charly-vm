@@ -33,7 +33,7 @@ export = ->(Base) {
      * Calls the callback *self* times, passing the current iteration count
      * as the first argument
      * */
-    func times(cb) {
+    times(cb) {
       let i = 0
 
       while i < self {
@@ -47,13 +47,13 @@ export = ->(Base) {
     /*
      * The same as times, but shorter
      * */
-    func n(cb) = @times(cb)
+    n(cb) = @times(cb)
 
     /*
      * Calls the callback with each number from *self* down to *num*
      * Both *self* and num are inclusive
      * */
-    func downto(num, callback) {
+    downto(num, callback) {
       let i = self
 
       while i >= num {
@@ -68,7 +68,7 @@ export = ->(Base) {
      * Calls the callback with each number from *self* up to *num*
      * Both *self* and num are inclusive
      * */
-    func upto(num, callback) {
+    upto(num, callback) {
       let i = self
 
       while i <= num {
@@ -82,7 +82,7 @@ export = ->(Base) {
     /*
      * Returns the absolute value of this number
      * */
-    func abs {
+    abs {
       if self < 0 return -self
       self
     }
@@ -90,21 +90,21 @@ export = ->(Base) {
     /*
      * Returns the next highest integer
      * */
-    func ceil {
+    ceil {
       math.ceil(self)
     }
 
     /*
      * Returns the next lowest integer
      * */
-    func floor {
+    floor {
       math.floor(self)
     }
 
     /*
      * Rounds this number to the nearest integer
      * */
-    func round {
+    round {
       const r = self % 1
       if r < 0.5 return math.floor(self)
       math.ceil(self)
@@ -114,7 +114,7 @@ export = ->(Base) {
      * Returns the sign of this number
      * Returns 0 if self is 0
      * */
-    func sign {
+    sign {
       if self < 0 return -1
       if self > 0 return 1
       0
@@ -123,7 +123,7 @@ export = ->(Base) {
     /*
      * Returns the bigger number
      * */
-    func max(o) {
+    max(o) {
       if o > self return o
       self
     }
@@ -131,7 +131,7 @@ export = ->(Base) {
     /*
      * Returns the smaller number
      * */
-    func min(o) {
+    min(o) {
       if o < self return o
       self
     }
@@ -139,35 +139,35 @@ export = ->(Base) {
     /*
      * Checks if self is close to *expected* with a given *delta*
      * */
-    func close_to(expected, delta) {
+    close_to(expected, delta) {
       (self - expected).abs() <= delta
     }
 
     /*
      * Return the number itself
      * */
-    func to_n {
+    to_n {
       self
     }
 
     // Converters for different time scales
-    func nanosecond   = new Charly.time.Duration(self / 1000000)
-    func nanoseconds  = new Charly.time.Duration(self / 1000000)
-    func microsecond  = new Charly.time.Duration(self / 1000)
-    func microseconds = new Charly.time.Duration(self / 1000)
-    func millisecond  = new Charly.time.Duration(self)
-    func milliseconds = new Charly.time.Duration(self)
-    func second       = new Charly.time.Duration(self * 1000)
-    func seconds      = new Charly.time.Duration(self * 1000)
-    func minute       = new Charly.time.Duration(self * 1000 * 60)
-    func minutes      = new Charly.time.Duration(self * 1000 * 60)
-    func hour         = new Charly.time.Duration(self * 1000 * 60 * 60)
-    func hours        = new Charly.time.Duration(self * 1000 * 60 * 60)
-    func day          = new Charly.time.Duration(self * 1000 * 60 * 60 * 24)
-    func days         = new Charly.time.Duration(self * 1000 * 60 * 60 * 24)
-    func week         = new Charly.time.Duration(self * 1000 * 60 * 60 * 24 * 7)
-    func weeks        = new Charly.time.Duration(self * 1000 * 60 * 60 * 24 * 7)
-    func year         = new Charly.time.Duration(self * 1000 * 60 * 60 * 24 * 365)
-    func years        = new Charly.time.Duration(self * 1000 * 60 * 60 * 24 * 365)
+    nanosecond   = new Charly.time.Duration(self / 1000000)
+    nanoseconds  = new Charly.time.Duration(self / 1000000)
+    microsecond  = new Charly.time.Duration(self / 1000)
+    microseconds = new Charly.time.Duration(self / 1000)
+    millisecond  = new Charly.time.Duration(self)
+    milliseconds = new Charly.time.Duration(self)
+    second       = new Charly.time.Duration(self * 1000)
+    seconds      = new Charly.time.Duration(self * 1000)
+    minute       = new Charly.time.Duration(self * 1000 * 60)
+    minutes      = new Charly.time.Duration(self * 1000 * 60)
+    hour         = new Charly.time.Duration(self * 1000 * 60 * 60)
+    hours        = new Charly.time.Duration(self * 1000 * 60 * 60)
+    day          = new Charly.time.Duration(self * 1000 * 60 * 60 * 24)
+    days         = new Charly.time.Duration(self * 1000 * 60 * 60 * 24)
+    week         = new Charly.time.Duration(self * 1000 * 60 * 60 * 24 * 7)
+    weeks        = new Charly.time.Duration(self * 1000 * 60 * 60 * 24 * 7)
+    year         = new Charly.time.Duration(self * 1000 * 60 * 60 * 24 * 365)
+    years        = new Charly.time.Duration(self * 1000 * 60 * 60 * 24 * 365)
   }
 }

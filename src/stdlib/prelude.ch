@@ -102,7 +102,7 @@ ignoreconst {
     // Run constructor, from top to bottom
     while constructor_queue.length {
       const constructor = constructor_queue.pop()
-      constructor.call(obj, args)
+      if constructor constructor.call(obj, args)
     }
 
     return obj

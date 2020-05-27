@@ -72,7 +72,7 @@ export = ->(describe, it, assert) {
     class Box {
       property data
 
-      func iterator {
+      iterator {
         yield self
       }
     }

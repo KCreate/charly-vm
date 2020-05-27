@@ -31,7 +31,7 @@ class Point {
   property x
   property y
 
-  func distance_to(o) {
+  distance_to(o) {
     const diff_x = math.abs(@x - o.x)
     const diff_y = math.abs(@y - o.y)
     math.sqrt(diff_x ** 2 + diff_y ** 2)

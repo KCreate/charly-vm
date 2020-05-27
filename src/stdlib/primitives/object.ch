@@ -32,7 +32,7 @@ export = ->(Base) {
     /*
      * Returns an array containing the keys contained inside v
      * */
-    static func keys(v) {
+    static keys(v) {
       __internal_keys(v)
     }
 

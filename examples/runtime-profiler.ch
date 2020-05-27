@@ -85,11 +85,11 @@ while (i < iterations) {
   const someclass = class SomeClass extends class Base {
     property boye
 
-    func method {
+    method {
       someclass_repetitions += 1
     }
   } {
-    func call {
+    call {
       @method()
       @method()
       @method()

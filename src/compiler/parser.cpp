@@ -1721,25 +1721,22 @@ AST::AbstractNode* Parser::parse_class() {
     switch(this->token.type) {
 
       // Parse function declarations
-      case TokenType::Identifier:
-      case TokenType::Func: {
+      case TokenType::Identifier: {
 
-        // Inside classes we can omit the func keyword
-        bool ignore_func_keyword = this->token.type == TokenType::Identifier;
-        AST::Function* func = this->parse_func(ignore_func_keyword)->as<AST::Function>();
+        // Only the constructor method is allowed to have a 'super()' call
+        bool is_constructor = (this->token.value == "constructor" && !static_declaration);
+        AST::Function* func = this->parse_func(true, is_constructor, true)->as<AST::Function>();
 
         if (static_declaration) {
           static_functions->append_node(func);
-        } else {
-          if (func->name == "constructor") {
-            if (constructor != nullptr) {
-              this->illegal_node(func, "Duplicate constructor");
-            } else {
-              constructor = func;
-            }
+        } else if (is_constructor) {
+          if (constructor != nullptr) {
+            this->illegal_node(func, "Duplicate constructor");
           } else {
-            member_functions->append_node(func);
+            constructor = func;
           }
+        } else {
+          member_functions->append_node(func);
         }
 
         break;
@@ -1778,7 +1775,7 @@ AST::AbstractNode* Parser::parse_class() {
       }
 
       default: {
-        this->unexpected_token("func or property");
+        this->unexpected_token("method or property");
       }
     }
   }

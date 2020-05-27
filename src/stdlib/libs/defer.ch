@@ -34,7 +34,7 @@ class _DeferHandle {
   property id
   property callbacks
 
-  func constructor {
+  constructor {
     @callbacks = []
   }
 
@@ -43,7 +43,7 @@ class _DeferHandle {
    *
    * Note: "Finishing" for an interval is defined as the interval being cleared
    * */
-  func then(cb) {
+  then(cb) {
     const immediate = arguments.length > 1 ? $1 : false
     @callbacks << {cb, immediate}
 
@@ -53,7 +53,7 @@ class _DeferHandle {
   /*
    * Invoke the scheduled callbacks
    * */
-  func finish {
+  finish {
     @callbacks.each(->(s) {
       unless s.immediate {
         return defer(s.cb)
@@ -77,7 +77,7 @@ class _DeferHandle {
 class _IntervalHandle extends _DeferHandle {
   property iterations
 
-  func constructor(cb, period) {
+  constructor(cb, period) {
     const this = self
     let period = arguments.length > 1 ? $1 : 0
 
@@ -92,7 +92,7 @@ class _IntervalHandle extends _DeferHandle {
     }, period)
   }
 
-  func clear {
+  clear {
     __internal_clear_interval(@id)
     @id = null
     @finish()
@@ -102,7 +102,7 @@ class _IntervalHandle extends _DeferHandle {
 }
 
 class _TimerHandle extends _DeferHandle {
-  func constructor(cb) {
+  constructor(cb) {
     const this = self
     let duration = arguments.length > 1 ? $1 : 0
 
@@ -117,7 +117,7 @@ class _TimerHandle extends _DeferHandle {
     }, duration)
   }
 
-  func clear {
+  clear {
     __internal_clear_timer(@id)
     @id = null
     @finish()

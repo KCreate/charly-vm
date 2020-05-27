@@ -1,5 +1,5 @@
 export = class ResultPrinter {
-  func display(results) {
+  display(results) {
 
     // Print another newline to avoid conflicting with
     // the previous visitor

@@ -37,49 +37,49 @@ const __parse = Charly.internals.get_method("Time::parse")
 class Duration {
   property ms
 
-  func in_nanoseconds  = @ms * 1000000
-  func in_microseconds = @ms * 1000
-  func in_milliseconds = @ms
-  func in_seconds      = @ms / 1000
-  func in_minutes      = @ms / (1000 * 60)
-  func in_hours        = @ms / (1000 * 60 * 60)
-  func in_days         = @ms / (1000 * 60 * 60 * 24)
-  func in_weeks        = @ms / (1000 * 60 * 60 * 24 * 7)
-  func in_years        = @ms / (1000 * 60 * 60 * 24 * 365)
+  in_nanoseconds  = @ms * 1000000
+  in_microseconds = @ms * 1000
+  in_milliseconds = @ms
+  in_seconds      = @ms / 1000
+  in_minutes      = @ms / (1000 * 60)
+  in_hours        = @ms / (1000 * 60 * 60)
+  in_days         = @ms / (1000 * 60 * 60 * 24)
+  in_weeks        = @ms / (1000 * 60 * 60 * 24 * 7)
+  in_years        = @ms / (1000 * 60 * 60 * 24 * 365)
 
-  func add(o) {
+  add(o) {
     new Duration(@ms + o.ms)
   }
 
-  func sub(o) {
+  sub(o) {
     new Duration(@ms - o.ms)
   }
 
-  func mul(o) {
+  mul(o) {
     new Duration(@ms * o)
   }
 
-  func div(o) {
+  div(o) {
     if typeof o == "number" return new Duration(@ms / o)
     @ms / o.ms
   }
 
-  func mod(o) {
+  mod(o) {
     new Duration(@ms % o.ms)
   }
 
-  func @"+"(o) = @add(o)
-  func @"-"(o) = @sub(o)
-  func @"*"(o) = @mul(o)
-  func @"/"(o) = @div(o)
-  func @"%"(o) = @mod(o)
-  func @"="(o) = @ms == o.ms
-  func @"<"(o) = @ms < o.ms
-  func @">"(o) = @ms > o.ms
-  func @"<="(o) = @ms <= o.ms
-  func @">="(o) = @ms >= o.ms
+  @"+"(o) = @add(o)
+  @"-"(o) = @sub(o)
+  @"*"(o) = @mul(o)
+  @"/"(o) = @div(o)
+  @"%"(o) = @mod(o)
+  @"="(o) = @ms == o.ms
+  @"<"(o) = @ms < o.ms
+  @">"(o) = @ms > o.ms
+  @"<="(o) = @ms <= o.ms
+  @">="(o) = @ms >= o.ms
 
-  func to_s {
+  to_s {
     let remainder = self
     let buf = ""
 
@@ -125,7 +125,7 @@ class Duration {
 class Timestamp {
   property ms
 
-  func constructor(o) {
+  constructor(o) {
     if (typeof o == "object") {
       @ms = o.ms
       return
@@ -133,76 +133,76 @@ class Timestamp {
     @ms = o
   }
 
-  func add(o) {
+  add(o) {
     new Timestamp(@ms + o.ms)
   }
 
-  func sub(o) {
+  sub(o) {
     if o.klass == Duration return new Timestamp(@ms - o.ms)
     new Duration(@ms - o.ms)
   }
 
-  func @"+"(o) = @add(o)
-  func @"-"(o) = @sub(o)
-  func @"="(o) = @ms == o.ms
-  func @"<"(o) = @ms < o.ms
-  func @">"(o) = @ms > o.ms
-  func @"<="(o) = @ms <= o.ms
-  func @">="(o) = @ms >= o.ms
+  @"+"(o) = @add(o)
+  @"-"(o) = @sub(o)
+  @"="(o) = @ms == o.ms
+  @"<"(o) = @ms < o.ms
+  @">"(o) = @ms > o.ms
+  @"<="(o) = @ms <= o.ms
+  @">="(o) = @ms >= o.ms
 
-  func floor(d) {
+  floor(d) {
     const rem = @ms % d.ms
     new Timestamp(@ms - rem)
   }
 
-  func ceil(d) {
+  ceil(d) {
     const rem = @ms % d.ms
     new Timestamp(@ms + (d.ms - rem))
   }
 
-  func to_s {
+  to_s {
     @to_utc()
   }
 
-  func to_local {
+  to_local {
     __to_local(@ms)
   }
 
-  func to_utc {
+  to_utc {
     __to_utc(@ms)
   }
 
-  func fmt(format) {
+  fmt(format) {
     __fmt(@ms, format)
   }
 
-  func fmtutc(format) {
+  fmtutc(format) {
     __fmtutc(@ms, format)
   }
 }
 
 class Time {
-  func constructor {
+  constructor {
     throw "Cannot initialize an instance of the Time class"
   }
 
-  static func now {
+  static now {
     new Timestamp(__system_clock_now())
   }
 
-  static func now_steady {
+  static now_steady {
     new Timestamp(__steady_clock_now())
   }
 
-  static func now_highres {
+  static now_highres {
     new Timestamp(__highres_now() / 1000000)
   }
 
-  static func parse(string, fmt) {
+  static parse(string, fmt) {
     new Timestamp(__parse(string, fmt))
   }
 
-  static func measure(cb) {
+  static measure(cb) {
     const begin = Time.now_highres()
     cb()
     Time.now_highres() - begin

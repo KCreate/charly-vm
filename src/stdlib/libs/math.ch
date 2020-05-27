@@ -27,7 +27,7 @@
 const __rand = Charly.internals.get_method("Math::rand")
 
 class Math {
-  func constructor {
+  constructor {
     throw "Cannot initialize an instance of the Math class"
   }
 
@@ -69,7 +69,7 @@ class Math {
    * 1  arg: 0 - x
    * 2 args: x - y
    * */
-  static func rand {
+  static rand {
     switch arguments.length {
       case 1 {
         return __rand(0, $0)
@@ -88,7 +88,7 @@ class Math {
   /*
    * Returns the absolute value of a number
    * */
-  static func abs(n) {
+  static abs(n) {
     if n < 0 return -n
     n
   }

@@ -38,7 +38,7 @@ export = ->(Base) {
   }
 
   return class Array extends Base {
-    static func create(size, cb) {
+    static create(size, cb) {
       const arr = []
 
       let i = 0
@@ -51,11 +51,11 @@ export = ->(Base) {
       arr
     }
 
-    func copy {
+    copy {
       @map(->$0)
     }
 
-    func each(cb) {
+    each(cb) {
       let i = 0
 
       while i < @length {
@@ -66,7 +66,7 @@ export = ->(Base) {
       self
     }
 
-    func map(cb) {
+    map(cb) {
       let i = 0
       const new_array = []
 
@@ -78,7 +78,7 @@ export = ->(Base) {
       new_array
     }
 
-    func reduce(cb, first) {
+    reduce(cb, first) {
       let i = 0
       let sum = first
 
@@ -90,11 +90,11 @@ export = ->(Base) {
       sum
     }
 
-    func sum(first) {
+    sum(first) {
       self.reduce(->(l, c) l + c, first)
     }
 
-    func filter(cb) {
+    filter(cb) {
       let i = 0
       const new_array = []
 
@@ -108,7 +108,7 @@ export = ->(Base) {
       new_array
     }
 
-    func join(str) {
+    join(str) {
       // TODO: Use some smarter heuristics for the final string length
       const buf = new Buffer(@length * 3)
       @each(->(v, i) {
@@ -120,57 +120,57 @@ export = ->(Base) {
       buf.str()
     }
 
-    func empty {
+    empty {
       !@length
     }
 
-    func push(item) {
+    push(item) {
       self << item
       self
     }
 
-    func pop {
+    pop {
       const item = @last()
       _.remove(self, @length - 1)
       item
     }
 
-    func unshift(item) {
+    unshift(item) {
       _.insert(self, item, 0)
       self
     }
 
-    func shift {
+    shift {
       const item = @first()
       _.remove(self, 0)
       item
     }
 
-    func insert(index, item) {
+    insert(index, item) {
       _.insert(self, index, item)
       self
     }
 
-    func remove(index) {
+    remove(index) {
       _.remove(self, index)
       self
     }
 
-    func clear {
+    clear {
       while @length {
         _.remove(self, 0)
       }
       self
     }
 
-    func swap(l, r) {
+    swap(l, r) {
       const tmp = self[l]
       self[l] = self[r]
       self[r] = tmp
       self
     }
 
-    func iterate(callback) {
+    iterate(callback) {
       let i = 0
 
       func read() {
@@ -187,37 +187,37 @@ export = ->(Base) {
       self
     }
 
-    func first {
+    first {
       self[0]
     }
 
-    func last {
+    last {
       self[@length - 1]
     }
 
-    func reverse {
+    reverse {
       _.reverse(self)
     }
 
-    func flatten {
+    flatten {
       _.flatten(self)
     }
 
-    func index(element) {
+    index(element) {
       const offset = $1 || 0
       _.index(self, element, offset)
     }
 
-    func rindex(element) {
+    rindex(element) {
       const offset = $1 || -1
       _.rindex(self, element, offset)
     }
 
-    func range(start, count) {
+    range(start, count) {
       _.range(self, start, count)
     }
 
-    func contains(search) {
+    contains(search) {
       let i = 0
 
       while i < @length {

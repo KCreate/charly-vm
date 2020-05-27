@@ -28,12 +28,12 @@ const __to_s = Charly.internals.get_method("to_s")
 
 export = -> {
   return class Value {
-    func tap(cb) {
+    tap(cb) {
       cb(self)
       self
     }
 
-    func pipe() {
+    pipe() {
       const pipes = arguments
 
       pipes.each(->(p) {
@@ -47,7 +47,7 @@ export = -> {
       self
     }
 
-    func transform() {
+    transform() {
       const pipes = arguments
 
       let result = self
@@ -68,7 +68,7 @@ export = -> {
      *
      * Meant to be overridden by other primitive classes
      * */
-    func to_s {
+    to_s {
       __to_s(self)
     }
 
@@ -77,7 +77,7 @@ export = -> {
      *
      * Meant to be overridden by other primitive classes
      * */
-    func to_n {
+    to_n {
       NaN
     }
   }

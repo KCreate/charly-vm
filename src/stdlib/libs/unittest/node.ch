@@ -9,7 +9,7 @@ class Node {
 
   // Contains the next id that will be given to a new node
   static property next_id = 0
-  static func get_next_id {
+  static get_next_id {
     const id = @next_id + 1
     @next_id += 1
     id
@@ -21,19 +21,19 @@ class Node {
   property type
   property index
 
-  func constructor(@title, @type) {
+  constructor(@title, @type) {
     @id = Node.get_next_id()
     @children = []
     @index = 0
   }
 
-  func push(node, depth) {
+  push(node, depth) {
     node.index = @children.length
     @children.push(node)
     self
   }
 
-  func passed() {
+  passed() {
     let passed = true
     @children.each(->(child) {
       if passed {
@@ -43,11 +43,11 @@ class Node {
     passed
   }
 
-  func length() {
+  length() {
     @children.length
   }
 
-  func deep_failed(callback) {
+  deep_failed(callback) {
     unless @passed() {
       let path = arguments[1] || []
 
@@ -67,7 +67,7 @@ class Assertion extends Node {
   property real
   property has_passed
 
-  func constructor(@real, @expected) {
+  constructor(@real, @expected) {
     @id = Node.get_next_id()
     @title = ""
     @children = []
@@ -75,7 +75,7 @@ class Assertion extends Node {
     @has_passed = expected == real
   }
 
-  func passed() {
+  passed() {
     @has_passed
   }
 }
