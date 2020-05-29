@@ -26,7 +26,7 @@
 
 const __to_s = Charly.internals.get_method("to_s")
 
-export = -> {
+export = ->{
   return class Value {
     tap(cb) {
       cb(self)

@@ -1163,10 +1163,7 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
     case kTypeObject: {
       Object* obj = charly_as_object(target);
 
-      if (symbol == charly_create_symbol("klass")) {
-        obj->klass = value;
-        break;
-      }
+      if (symbol == charly_create_symbol("klass")) break;
 
       (*obj->container)[symbol] = value;
       break;
@@ -1175,10 +1172,7 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
     case kTypeFunction: {
       Function* func = charly_as_function(target);
 
-      if (symbol == charly_create_symbol("name")) {
-        func->name = this->create_symbol(value);
-        break;
-      }
+      if (symbol == charly_create_symbol("name")) break;
 
       (*func->container)[symbol] = value;
       break;
@@ -1187,10 +1181,10 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
     case kTypeGenerator: {
       Generator* func = charly_as_generator(target);
 
-      if (symbol == charly_create_symbol("name")) {
-        func->name = this->create_symbol(value);
-        break;
-      }
+      if (symbol == charly_create_symbol("finished")) break;
+      if (symbol == charly_create_symbol("started")) break;
+      if (symbol == charly_create_symbol("running")) break;
+      if (symbol == charly_create_symbol("name")) break;
 
       (*func->container)[symbol] = value;
       break;
@@ -1204,10 +1198,7 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
         break;
       }
 
-      if (symbol == charly_create_symbol("name")) {
-        cfunc->name = this->create_symbol(value);
-        break;
-      }
+      if (symbol == charly_create_symbol("name")) break;
 
       (*cfunc->container)[symbol] = value;
       break;
@@ -1215,6 +1206,12 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
 
     case kTypeClass: {
       Class* klass = charly_as_class(target);
+
+      if (symbol == charly_create_symbol("prototype")) break;
+      if (symbol == charly_create_symbol("constructor")) break;
+      if (symbol == charly_create_symbol("name")) break;
+      if (symbol == charly_create_symbol("parent_class")) break;
+
       (*klass->container)[symbol] = value;
       break;
     }

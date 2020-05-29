@@ -118,20 +118,6 @@ export = ->(describe, it, assert) {
     assert(iter.running, false)
   })
 
-  it("changes the name of a generator", ->{
-    func foo {
-      yield 25
-    }
-
-    const f = foo()
-
-    assert(f.name, "foo")
-
-    f.name = "bar"
-
-    assert(f.name, "bar")
-  })
-
   describe("lambda generators", ->{
 
     it("immediately starts the generator", ->{

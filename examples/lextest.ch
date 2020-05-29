@@ -24,13 +24,8 @@
  * SOFTWARE.
  */
 
-class Foo {
-  bar {
-    return ->self
-  }
-}
+let a = null
 
-const f = (new Foo()).bar()
+if true a = func (a = 10, b = 20) { a + b }
 
-print(f())
-print(f.call(25, []))
+print(a)

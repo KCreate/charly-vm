@@ -57,7 +57,7 @@ export = ->(describe, it, assert) {
 
   it("throws exceptions inside object constructors", ->{
     class Foo {
-      func constructor() {
+      constructor() {
         throw "hello world"
       }
     }
@@ -67,6 +67,36 @@ export = ->(describe, it, assert) {
     } catch (e) {
       assert(e, "hello world")
     }
+  })
+
+  it("doesn't write to value container when assigning to reserved fields", ->{
+    const obj = {}
+    const fun = func foo {}
+    const gen = ->{ yield 25 }
+    const cfu = Charly.internals.get_method("write")
+    const kla = class A {}
+
+    obj.klass = null
+
+    fun.name = null
+
+    gen.finished = null
+    gen.started = null
+    gen.running = null
+    gen.name = null
+
+    cfu.name = null
+
+    kla.prototype = null
+    kla.constructor = null
+    kla.name = null
+    kla.parent_class = null
+
+    assert(Object.keys(obj).length, 0)
+    assert(Object.keys(fun).length, 0)
+    assert(Object.keys(gen).length, 0)
+    assert(Object.keys(cfu).length, 0)
+    assert(Object.keys(kla).length, 0)
   })
 
 }
