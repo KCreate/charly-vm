@@ -24,19 +24,13 @@
  * SOFTWARE.
  */
 
-class A {
-  property data
-  property prop
-
-  each(cb) {
-    @data.each(->(e, i, a) {
-      cb(e, self.prop)
-    })
+class Foo {
+  bar {
+    return ->self
   }
 }
 
-const a = new A([1, 2, 3, 4, 5], 50)
+const f = (new Foo()).bar()
 
-a.each(->(e, prop) {
-  print(e, " ", prop)
-})
+print(f())
+print(f.call(25, []))

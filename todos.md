@@ -1,11 +1,27 @@
+- Implement promises class
+
+- Parse binary numbers
+  -  8-bit numbers    0b00000000
+  - 16-bit numbers    0b00000000_00000000
+  - 32-bit numbers    0b00000000_00000000_00000000_00000000
+  - 64-bit numbers are not allowed, since the bitwise operators operate on 32-bit numbers only
+    anyway
+
+- Expose parser and compilation infrastructure to charly code.
+
+- Export keyword `export class Foo {}`
+
+- Changes to import system, see feature-ideas/import-system.ch
+
 - Changes to the class system
-  - Classes that are not subclasses can have their constructor auto-generated
-  - Subclasses are required to have a hand-written constructor
+  - Primary classes can have their constructor auto-generated
+  - Subclasses are required to have a hand-written constructor if new properties are defined
     - That constructor is required to contain a 'super(...)' call
   - 'super.foo' should call the foo method of the parent object
     - super is a keyword and cannot be used as a regular identifier
     - super can only be used inside class constructors and functions
       - Inside a constructor it will invoke the constructor of the parent class
+        - There can only be one superconstructor call inside the constructor method
       - Inside a class function it will invoke the function defined by the parent class
         - If no such function exists, an exception is thrown
 
