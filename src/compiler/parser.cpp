@@ -395,28 +395,28 @@ AST::AbstractNode* Parser::parse_if_statement() {
     test = this->parse_expression();
   }
 
-  AST::AbstractNode* then_node;
+  AST::Block* then_node;
 
   if (this->token.type == TokenType::LeftCurly) {
-    then_node = this->parse_block();
+    then_node = this->parse_block()->as<AST::Block>();
   } else {
-    then_node = this->parse_control_statement();
+    then_node = this->wrap_in_block(this->parse_control_statement());
     this->skip_token(TokenType::Semicolon);
     return (new AST::If(test, then_node))->at(location_start, then_node->location_end);
   }
 
-  AST::AbstractNode* else_node;
+  AST::Block* else_node;
 
   if (this->token.type == TokenType::Else) {
     this->advance();
 
     if (this->token.type == TokenType::If) {
-      else_node = this->parse_if_statement();
+      else_node = this->wrap_in_block(this->parse_if_statement());
     } else {
       if (this->token.type == TokenType::LeftCurly) {
-        else_node = this->parse_block();
+        else_node = this->parse_block()->as<AST::Block>();
       } else {
-        else_node = this->parse_control_statement();
+        else_node = this->wrap_in_block(this->parse_control_statement());
         this->skip_token(TokenType::Semicolon);
       }
     }
@@ -442,17 +442,17 @@ AST::AbstractNode* Parser::parse_unless_statement() {
     test = this->parse_expression();
   }
 
-  AST::AbstractNode* then_node;
+  AST::Block* then_node;
 
   if (this->token.type == TokenType::LeftCurly) {
-    then_node = this->parse_block();
+    then_node = this->parse_block()->as<AST::Block>();
   } else {
-    then_node = this->parse_control_statement();
+    then_node = this->wrap_in_block(this->parse_control_statement());
     this->skip_token(TokenType::Semicolon);
     return (new AST::Unless(test, then_node))->at(location_start, then_node->location_end);
   }
 
-  AST::AbstractNode* else_node;
+  AST::Block* else_node;
 
   // Unless nodes are not allowed to have else if alternative blocks
   // as that would be a way to create really messy code
@@ -460,9 +460,9 @@ AST::AbstractNode* Parser::parse_unless_statement() {
     this->advance();
 
     if (this->token.type == TokenType::LeftCurly) {
-      else_node = this->parse_block();
+      else_node = this->parse_block()->as<AST::Block>();
     } else {
-      else_node = this->parse_control_statement();
+      else_node = this->wrap_in_block(this->parse_control_statement());
       this->skip_token(TokenType::Semicolon);
     }
 
@@ -487,12 +487,12 @@ AST::AbstractNode* Parser::parse_guard_statement() {
     test = this->parse_expression();
   }
 
-  AST::AbstractNode* block;
+  AST::Block* block;
 
   if (this->token.type == TokenType::LeftCurly) {
-    block = this->parse_block();
+    block = this->parse_block()->as<AST::Block>();
   } else {
-    block = this->parse_control_statement();
+    block = this->wrap_in_block(this->parse_control_statement());
     this->skip_token(TokenType::Semicolon);
   }
 
@@ -553,7 +553,7 @@ AST::AbstractNode* Parser::parse_switch_node() {
       this->advance();
 
       AST::NodeList* cases = new AST::NodeList();
-      AST::AbstractNode* block;
+      AST::Block* block;
 
       if (this->token.type == TokenType::LeftParen) {
         this->advance();
@@ -580,9 +580,9 @@ AST::AbstractNode* Parser::parse_switch_node() {
       }
 
       if (this->token.type == TokenType::LeftCurly) {
-        block = this->parse_block();
+        block = this->parse_block()->as<AST::Block>();
       } else {
-        block = this->parse_control_statement();
+        block = this->wrap_in_block(this->parse_control_statement());
         this->skip_token(TokenType::Semicolon);
       }
 
@@ -591,12 +591,12 @@ AST::AbstractNode* Parser::parse_switch_node() {
     case TokenType::Default: {
       this->advance();
 
-      AST::AbstractNode* block;
+      AST::Block* block;
 
       if (this->token.type == TokenType::LeftCurly) {
-        block = this->parse_block();
+        block = this->parse_block()->as<AST::Block>();
       } else {
-        block = this->parse_control_statement();
+        block = this->wrap_in_block(this->parse_control_statement());
         this->skip_token(TokenType::Semicolon);
       }
 
@@ -689,11 +689,11 @@ AST::AbstractNode* Parser::parse_do_statement() {
   this->keyword_context.break_allowed = true;
   this->keyword_context.continue_allowed = true;
 
-  AST::AbstractNode* then_block;
+  AST::Block* then_block;
   if (this->token.type == TokenType::LeftCurly) {
-    then_block = this->parse_block();
+    then_block = this->parse_block()->as<AST::Block>();
   } else {
-    then_block = this->parse_control_statement();
+    then_block = this->wrap_in_block(this->parse_control_statement());
     this->skip_token(TokenType::Semicolon);
   }
   this->keyword_context = context_backup;
@@ -745,12 +745,12 @@ AST::AbstractNode* Parser::parse_while_statement() {
   this->keyword_context.break_allowed = true;
   this->keyword_context.continue_allowed = true;
 
-  AST::AbstractNode* then_block;
+  AST::Block* then_block;
 
   if (this->token.type == TokenType::LeftCurly) {
-    then_block = this->parse_block();
+    then_block = this->parse_block()->as<AST::Block>();
   } else {
-    then_block = this->parse_control_statement();
+    then_block = this->wrap_in_block(this->parse_control_statement());
     this->skip_token(TokenType::Semicolon);
   }
 
@@ -776,12 +776,12 @@ AST::AbstractNode* Parser::parse_until_statement() {
   this->keyword_context.break_allowed = true;
   this->keyword_context.continue_allowed = true;
 
-  AST::AbstractNode* then_block;
+  AST::Block* then_block;
 
   if (this->token.type == TokenType::LeftCurly) {
-    then_block = this->parse_block();
+    then_block = this->parse_block()->as<AST::Block>();
   } else {
-    then_block = this->parse_control_statement();
+    then_block = this->wrap_in_block(this->parse_control_statement());
     this->skip_token(TokenType::Semicolon);
   }
 
@@ -797,12 +797,12 @@ AST::AbstractNode* Parser::parse_loop_statement() {
   this->keyword_context.break_allowed = true;
   this->keyword_context.continue_allowed = true;
 
-  AST::AbstractNode* block;
+  AST::Block* block;
 
   if (this->token.type == TokenType::LeftCurly) {
-    block = this->parse_block();
+    block = this->parse_block()->as<AST::Block>();
   } else {
-    block = this->parse_control_statement();
+    block = this->wrap_in_block(this->parse_control_statement());
     this->skip_token(TokenType::Semicolon);
   }
 
@@ -814,12 +814,12 @@ AST::AbstractNode* Parser::parse_try_statement() {
   Location location_start = this->token.location;
   this->expect_token(TokenType::Try);
 
-  AST::AbstractNode* try_block;
+  AST::Block* try_block;
   AST::Identifier* exception_name = new AST::Identifier("__CHARLY_INTERNAL_EXCEPTION_NAME");
   AST::AbstractNode* catch_block;
   AST::AbstractNode* finally_block;
 
-  try_block = this->parse_block();
+  try_block = this->parse_block()->as<AST::Block>();
 
   if (this->token.type == TokenType::Catch) {
     this->advance();
@@ -1579,17 +1579,17 @@ AST::AbstractNode* Parser::parse_func(bool ignore_func_keyword) {
   // func foo(a, b) { a * b }
   // func foo(a, b) = a * b
   // func foo(@a, @b);
-  AST::AbstractNode* body = nullptr;
+  AST::Block* body = nullptr;
   auto backup_context = this->keyword_context;
   this->keyword_context.return_allowed = true;
   this->keyword_context.break_allowed = false;
   this->keyword_context.continue_allowed = false;
   this->keyword_context.yield_allowed = true;
   if (this->token.type == TokenType::LeftCurly) {
-    body = this->parse_block();
+    body = this->parse_block()->as<AST::Block>();
   } else if (this->token.type == TokenType::Assignment) {
     this->advance();
-    body = this->parse_control_statement();
+    body = this->wrap_in_block(this->parse_control_statement());
   } else if (this->token.type == TokenType::Semicolon) {
     this->advance();
     body = new AST::Block();
@@ -1660,17 +1660,17 @@ AST::AbstractNode* Parser::parse_arrowfunc() {
 
   // ->{ <block> }
   // ->stmt
-  AST::AbstractNode* body;
+  AST::Block* body;
   if (this->token.type == TokenType::LeftCurly) {
     auto backup_context = this->keyword_context;
     this->keyword_context.return_allowed = true;
     this->keyword_context.break_allowed = false;
     this->keyword_context.continue_allowed = false;
     this->keyword_context.yield_allowed = true;
-    body = this->parse_block();
+    body = this->parse_block()->as<AST::Block>();
     this->keyword_context = backup_context;
   } else {
-    body = this->parse_control_statement();
+    body = this->wrap_in_block(this->parse_control_statement());
   }
 
   AST::Function* fun = new AST::Function("", params, {}, body, true);
@@ -1808,6 +1808,15 @@ void Parser::assign_default_name(AST::AbstractNode* node, const std::string& nam
       klass->name = name;
     }
   }
+}
+
+
+AST::Block* Parser::wrap_in_block(AST::AbstractNode* node) {
+  if (node->type() != AST::kTypeBlock) {
+    node = (new AST::Block({node}))->at(node);
+  }
+
+  return node->as<AST::Block>();
 }
 
 }  // namespace Charly::Compilation

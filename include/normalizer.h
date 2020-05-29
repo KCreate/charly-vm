@@ -39,14 +39,8 @@ public:
   AST::AbstractNode* visit_ifelse(AST::IfElse* node, VisitContinue cont);
   AST::AbstractNode* visit_unless(AST::Unless* node, VisitContinue cont);
   AST::AbstractNode* visit_unlesselse(AST::UnlessElse* node, VisitContinue cont);
-  AST::AbstractNode* visit_do_while(AST::DoWhile* node, VisitContinue cont);
-  AST::AbstractNode* visit_do_until(AST::DoUntil* node, VisitContinue cont);
-  AST::AbstractNode* visit_while(AST::While* node, VisitContinue cont);
-  AST::AbstractNode* visit_until(AST::Until* node, VisitContinue cont);
-  AST::AbstractNode* visit_loop(AST::Loop* node, VisitContinue cont);
   AST::AbstractNode* visit_binary(AST::Binary* node, VisitContinue cont);
   AST::AbstractNode* visit_unary(AST::Unary* node, VisitContinue cont);
-  AST::AbstractNode* visit_switch(AST::Switch* node, VisitContinue cont);
   AST::AbstractNode* visit_function(AST::Function* node, VisitContinue cont);
   AST::AbstractNode* visit_class(AST::Class* node, VisitContinue cont);
   AST::AbstractNode* visit_localinitialisation(AST::LocalInitialisation* node, VisitContinue cont);
@@ -55,10 +49,6 @@ public:
   AST::AbstractNode* visit_import(AST::Import* node, VisitContinue cont);
 
 private:
-  AST::AbstractNode* wrap_in_block(AST::AbstractNode* node);
-  AST::AbstractNode* wrap_in_block(AST::AbstractNode* node, VisitContinue cont);
-  AST::AbstractNode* wrap_in_return(AST::AbstractNode* node, VisitContinue cont);
-
   AST::Function* current_function_node = nullptr;
 
   bool mark_func_as_generator = false;

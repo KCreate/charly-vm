@@ -68,7 +68,7 @@ AST::AbstractNode* LVarRewriter::visit_function(AST::Function* node, VisitContin
   return node;
 }
 
-AST::AbstractNode* LVarRewriter::visit_class(AST::Class* node, __attribute__((unused)) VisitContinue descend) {
+AST::AbstractNode* LVarRewriter::visit_class(AST::Class* node, VisitContinue) {
   node->parent_class = this->visit_node(node->parent_class);
 
   this->push_local_scope();

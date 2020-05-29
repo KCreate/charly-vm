@@ -131,5 +131,6 @@ public:
 
   // Helper methods
   void assign_default_name(AST::AbstractNode* node, const std::string& name);
+  AST::Block* wrap_in_block(AST::AbstractNode* node);
 };
 };  // namespace Charly::Compilation

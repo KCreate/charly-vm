@@ -294,9 +294,9 @@ struct TernaryIf : public AbstractNode {
 // }
 struct If : public AbstractNode {
   AbstractNode* condition;
-  AbstractNode* then_block;
+  Block* then_block;
 
-  If(AbstractNode* c, AbstractNode* t) : condition(c), then_block(t) {
+  If(AbstractNode* c, Block* t) : condition(c), then_block(t) {
   }
 
   inline ~If() {
@@ -312,7 +312,7 @@ struct If : public AbstractNode {
 
   inline void visit(VisitFunc func) {
     this->condition = func(this->condition);
-    this->then_block = func(this->then_block);
+    this->then_block = func(this->then_block)->as<AST::Block>();
   }
 };
 
@@ -323,10 +323,10 @@ struct If : public AbstractNode {
 // }
 struct IfElse : public AbstractNode {
   AbstractNode* condition;
-  AbstractNode* then_block;
-  AbstractNode* else_block;
+  Block* then_block;
+  Block* else_block;
 
-  IfElse(AbstractNode* c, AbstractNode* t, AbstractNode* e) : condition(c), then_block(t), else_block(e) {
+  IfElse(AbstractNode* c, Block* t, Block* e) : condition(c), then_block(t), else_block(e) {
   }
 
   inline ~IfElse() {
@@ -344,8 +344,8 @@ struct IfElse : public AbstractNode {
 
   inline void visit(VisitFunc func) {
     this->condition = func(this->condition);
-    this->then_block = func(this->then_block);
-    this->else_block = func(this->else_block);
+    this->then_block = func(this->then_block)->as<AST::Block>();
+    this->else_block = func(this->else_block)->as<AST::Block>();
   }
 };
 
@@ -354,9 +354,9 @@ struct IfElse : public AbstractNode {
 // }
 struct Unless : public AbstractNode {
   AbstractNode* condition;
-  AbstractNode* then_block;
+  Block* then_block;
 
-  Unless(AbstractNode* c, AbstractNode* t) : condition(c), then_block(t) {
+  Unless(AbstractNode* c, Block* t) : condition(c), then_block(t) {
   }
 
   inline ~Unless() {
@@ -372,7 +372,7 @@ struct Unless : public AbstractNode {
 
   inline void visit(VisitFunc func) {
     this->condition = func(this->condition);
-    this->then_block = func(this->then_block);
+    this->then_block = func(this->then_block)->as<AST::Block>();
   }
 };
 
@@ -383,10 +383,10 @@ struct Unless : public AbstractNode {
 // }
 struct UnlessElse : public AbstractNode {
   AbstractNode* condition;
-  AbstractNode* then_block;
-  AbstractNode* else_block;
+  Block* then_block;
+  Block* else_block;
 
-  UnlessElse(AbstractNode* c, AbstractNode* t, AbstractNode* e) : condition(c), then_block(t), else_block(e) {
+  UnlessElse(AbstractNode* c, Block* t, Block* e) : condition(c), then_block(t), else_block(e) {
   }
 
   inline ~UnlessElse() {
@@ -404,8 +404,8 @@ struct UnlessElse : public AbstractNode {
 
   inline void visit(VisitFunc func) {
     this->condition = func(this->condition);
-    this->then_block = func(this->then_block);
-    this->else_block = func(this->else_block);
+    this->then_block = func(this->then_block)->as<AST::Block>();
+    this->else_block = func(this->else_block)->as<AST::Block>();
   }
 };
 
@@ -414,9 +414,9 @@ struct UnlessElse : public AbstractNode {
 // } while <condition>
 struct DoWhile : public AbstractNode {
   AbstractNode* condition;
-  AbstractNode* block;
+  Block* block;
 
-  DoWhile(AbstractNode* c, AbstractNode* b) : condition(c), block(b) {
+  DoWhile(AbstractNode* c, Block* b) : condition(c), block(b) {
   }
 
   inline ~DoWhile() {
@@ -432,7 +432,7 @@ struct DoWhile : public AbstractNode {
 
   inline void visit(VisitFunc func) {
     this->condition = func(this->condition);
-    this->block = func(this->block);
+    this->block = func(this->block)->as<AST::Block>();
   }
 };
 
@@ -441,9 +441,9 @@ struct DoWhile : public AbstractNode {
 // } until <condition>
 struct DoUntil : public AbstractNode {
   AbstractNode* condition;
-  AbstractNode* block;
+  Block* block;
 
-  DoUntil(AbstractNode* c, AbstractNode* b) : condition(c), block(b) {
+  DoUntil(AbstractNode* c, Block* b) : condition(c), block(b) {
   }
 
   inline ~DoUntil() {
@@ -459,7 +459,7 @@ struct DoUntil : public AbstractNode {
 
   inline void visit(VisitFunc func) {
     this->condition = func(this->condition);
-    this->block = func(this->block);
+    this->block = func(this->block)->as<AST::Block>();
   }
 };
 
@@ -468,9 +468,9 @@ struct DoUntil : public AbstractNode {
 // }
 struct While : public AbstractNode {
   AbstractNode* condition;
-  AbstractNode* block;
+  Block* block;
 
-  While(AbstractNode* c, AbstractNode* b) : condition(c), block(b) {
+  While(AbstractNode* c, Block* b) : condition(c), block(b) {
   }
 
   inline ~While() {
@@ -486,7 +486,7 @@ struct While : public AbstractNode {
 
   inline void visit(VisitFunc func) {
     this->condition = func(this->condition);
-    this->block = func(this->block);
+    this->block = func(this->block)->as<AST::Block>();
   }
 };
 
@@ -495,9 +495,9 @@ struct While : public AbstractNode {
 // }
 struct Until : public AbstractNode {
   AbstractNode* condition;
-  AbstractNode* block;
+  Block* block;
 
-  Until(AbstractNode* c, AbstractNode* b) : condition(c), block(b) {
+  Until(AbstractNode* c, Block* b) : condition(c), block(b) {
   }
 
   inline ~Until() {
@@ -513,7 +513,7 @@ struct Until : public AbstractNode {
 
   inline void visit(VisitFunc func) {
     this->condition = func(this->condition);
-    this->block = func(this->block);
+    this->block = func(this->block)->as<AST::Block>();
   }
 };
 
@@ -521,9 +521,9 @@ struct Until : public AbstractNode {
 //   <block>
 // }
 struct Loop : public AbstractNode {
-  AbstractNode* block;
+  Block* block;
 
-  Loop(AbstractNode* b) : block(b) {
+  Loop(Block* b) : block(b) {
   }
 
   inline ~Loop() {
@@ -536,7 +536,7 @@ struct Loop : public AbstractNode {
   }
 
   inline void visit(VisitFunc func) {
-    this->block = func(this->block);
+    this->block = func(this->block)->as<AST::Block>();
   }
 };
 
@@ -593,9 +593,9 @@ struct Binary : public AbstractNode {
 // }
 struct SwitchNode : public AbstractNode {
   NodeList* conditions;
-  AbstractNode* block;
+  Block* block;
 
-  SwitchNode(NodeList* c, AbstractNode* b) : conditions(c), block(b) {
+  SwitchNode(NodeList* c, Block* b) : conditions(c), block(b) {
   }
 
   inline ~SwitchNode() {
@@ -611,7 +611,7 @@ struct SwitchNode : public AbstractNode {
 
   inline void visit(VisitFunc func) {
     this->conditions = reinterpret_cast<NodeList*>(func(this->conditions));
-    this->block = func(this->block);
+    this->block = func(this->block)->as<AST::Block>();
   }
 };
 
@@ -1180,7 +1180,7 @@ struct Function : public AbstractNode {
   std::vector<std::string> parameters;
   std::vector<std::string> self_initialisations;
   std::unordered_map<std::string, AbstractNode*> default_values;
-  AbstractNode* body;
+  Block* body;
   bool anonymous;
   bool generator = false;
   bool needs_arguments = false;
@@ -1191,14 +1191,14 @@ struct Function : public AbstractNode {
   Function(const std::string& n,
            const std::vector<std::string>& p,
            const std::vector<std::string>& s,
-           AbstractNode* b,
+           Block* b,
            bool a)
       : name(n), parameters(p), self_initialisations(s), body(b), anonymous(a), required_arguments(p.size()) {
   }
   Function(const std::string& n,
            std::vector<std::string>&& p,
            const std::vector<std::string>& s,
-           AbstractNode* b,
+           Block* b,
            bool a)
       : name(n),
         parameters(std::move(p)),
@@ -1253,7 +1253,7 @@ struct Function : public AbstractNode {
   }
 
   inline void visit(VisitFunc func) {
-    this->body = func(this->body);
+    this->body = func(this->body)->as<AST::Block>();
   }
 };
 
@@ -1332,11 +1332,11 @@ struct Class : public AbstractNode {
     // See commit: cf75a8
 
     this->constructor = func(this->constructor);
-    this->member_functions = reinterpret_cast<NodeList*>(func(this->member_functions));
-    this->member_properties = reinterpret_cast<NodeList*>(func(this->member_properties));
-    this->static_functions = reinterpret_cast<NodeList*>(func(this->static_functions));
-    this->static_properties = reinterpret_cast<NodeList*>(func(this->static_properties));
-    this->parent_class = reinterpret_cast<AbstractNode*>(func(this->parent_class));
+    this->member_functions = func(this->member_functions)->as<AST::NodeList>();
+    this->member_properties = func(this->member_properties)->as<AST::NodeList>();
+    this->static_functions = func(this->static_functions)->as<AST::NodeList>();
+    this->static_properties = func(this->static_properties)->as<AST::NodeList>();
+    this->parent_class = func(this->parent_class);
   }
 };
 
@@ -1550,12 +1550,12 @@ struct Continue : public AbstractNode {
 //   <finally_block>
 // }
 struct TryCatch : public AbstractNode {
-  AbstractNode* block;
+  Block* block;
   Identifier* exception_name;
   AbstractNode* handler_block;
   AbstractNode* finally_block;
 
-  TryCatch(AbstractNode* b, Identifier* e, AbstractNode* h, AbstractNode* f)
+  TryCatch(Block* b, Identifier* e, AbstractNode* h, AbstractNode* f)
       : block(b), exception_name(e), handler_block(h), finally_block(f) {
   }
 
@@ -1575,7 +1575,7 @@ struct TryCatch : public AbstractNode {
   }
 
   inline void visit(VisitFunc func) {
-    this->block = func(this->block);
+    this->block = func(this->block)->as<AST::Block>();
     this->exception_name = func(this->exception_name)->as<Identifier>();
     this->handler_block = func(this->handler_block);
     this->finally_block = func(this->finally_block);

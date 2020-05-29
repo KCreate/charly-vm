@@ -77,7 +77,6 @@ AST::AbstractNode* Normalizer::visit_block(AST::Block* node, VisitContinue) {
 
 AST::AbstractNode* Normalizer::visit_if(AST::If* node, VisitContinue cont) {
   cont();
-  node->then_block = this->wrap_in_block(node->then_block, cont);
 
   // If the condition is a unary not expression, we can change the type of
   // this node to Unless as it has the same effect, but without the additional
@@ -104,8 +103,6 @@ AST::AbstractNode* Normalizer::visit_if(AST::If* node, VisitContinue cont) {
 
 AST::AbstractNode* Normalizer::visit_ifelse(AST::IfElse* node, VisitContinue cont) {
   cont();
-  node->then_block = this->wrap_in_block(node->then_block, cont);
-  node->else_block = this->wrap_in_block(node->else_block, cont);
 
   // If the condition is a unary not expression, we can change the type of
   // this node to Unless as it has the same effect, but without the additional
@@ -133,7 +130,6 @@ AST::AbstractNode* Normalizer::visit_ifelse(AST::IfElse* node, VisitContinue con
 
 AST::AbstractNode* Normalizer::visit_unless(AST::Unless* node, VisitContinue cont) {
   cont();
-  node->then_block = this->wrap_in_block(node->then_block, cont);
 
   // If the condition is a unary not expression, we can change the type of
   // this node to Unless as it has the same effect, but without the additional
@@ -160,8 +156,6 @@ AST::AbstractNode* Normalizer::visit_unless(AST::Unless* node, VisitContinue con
 
 AST::AbstractNode* Normalizer::visit_unlesselse(AST::UnlessElse* node, VisitContinue cont) {
   cont();
-  node->then_block = this->wrap_in_block(node->then_block, cont);
-  node->else_block = this->wrap_in_block(node->else_block, cont);
 
   // If the condition is a unary not expression, we can change the type of
   // this node to Unless as it has the same effect, but without the additional
@@ -184,36 +178,6 @@ AST::AbstractNode* Normalizer::visit_unlesselse(AST::UnlessElse* node, VisitCont
     }
   }
 
-  return node;
-}
-
-AST::AbstractNode* Normalizer::visit_do_while(AST::DoWhile* node, VisitContinue cont) {
-  cont();
-  node->block = this->wrap_in_block(node->block, cont);
-  return node;
-}
-
-AST::AbstractNode* Normalizer::visit_do_until(AST::DoUntil* node, VisitContinue cont) {
-  cont();
-  node->block = this->wrap_in_block(node->block, cont);
-  return node;
-}
-
-AST::AbstractNode* Normalizer::visit_while(AST::While* node, VisitContinue cont) {
-  cont();
-  node->block = this->wrap_in_block(node->block, cont);
-  return node;
-}
-
-AST::AbstractNode* Normalizer::visit_until(AST::Until* node, VisitContinue cont) {
-  cont();
-  node->block = this->wrap_in_block(node->block, cont);
-  return node;
-}
-
-AST::AbstractNode* Normalizer::visit_loop(AST::Loop* node, VisitContinue cont) {
-  cont();
-  node->block = this->wrap_in_block(node->block, cont);
   return node;
 }
 
@@ -392,26 +356,9 @@ AST::AbstractNode* Normalizer::visit_unary(AST::Unary* node, VisitContinue cont)
   return node;
 }
 
-AST::AbstractNode* Normalizer::visit_switch(AST::Switch* node, VisitContinue cont) {
-  cont();
-
-  if (node->default_block->type() != AST::kTypeEmpty) {
-    node->default_block = this->wrap_in_block(node->default_block, cont);
-  }
-
-  for (auto& _child : node->cases->children) {
-    AST::SwitchNode* switch_node = _child->as<AST::SwitchNode>();
-    switch_node->block = this->wrap_in_block(switch_node->block, cont);
-  }
-
-  return node;
-}
-
 AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue cont) {
   AST::Function* current_backup = this->current_function_node;
   this->current_function_node = node;
-
-  node->body = this->wrap_in_block(node->body);
 
   AST::Block* body = node->body->as<AST::Block>();
 
@@ -467,7 +414,8 @@ AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue
 
       AST::Member* arguments_length = new AST::Member(new AST::Identifier("arguments"), "length");
       AST::Binary* comparison = new AST::Binary(TokenType::LessEqual, arguments_length, new AST::Number(i));
-      AST::If* cond_assignment = new AST::If(comparison, new AST::Assignment(argname, exp));
+      AST::Block* block = new AST::Block({ new AST::Assignment(argname, exp) });
+      AST::If* cond_assignment = new AST::If(comparison, block);
 
       body->prepend_node(cond_assignment);
     }
@@ -669,22 +617,5 @@ AST::AbstractNode* Normalizer::visit_import(AST::Import* node, VisitContinue) {
   delete node;
 
   return new_node;
-}
-
-AST::AbstractNode* Normalizer::wrap_in_block(AST::AbstractNode* node) {
-  if (node->type() != AST::kTypeBlock) {
-    node = (new AST::Block({node}))->at(node);
-  }
-
-  return node;
-}
-
-AST::AbstractNode* Normalizer::wrap_in_block(AST::AbstractNode* node, VisitContinue cont) {
-  if (node->type() != AST::kTypeBlock) {
-    node = (new AST::Block({node}))->at(node);
-    node = this->visit_block(node->as<AST::Block>(), cont);
-  }
-
-  return node;
 }
 }  // namespace Charly::Compilation
