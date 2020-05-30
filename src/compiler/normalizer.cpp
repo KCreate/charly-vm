@@ -397,6 +397,7 @@ AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue
   for (auto& member_init : node->self_initialisations) {
     AST::MemberAssignment* assignment = new AST::MemberAssignment(new AST::Self(), member_init, new AST::Identifier(member_init));
     assignment->yielded_value_needed = false;
+    assignment->at_recursive(node);
     body->prepend_node(assignment);
   }
 
@@ -416,6 +417,7 @@ AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue
       AST::Binary* comparison = new AST::Binary(TokenType::LessEqual, arguments_length, new AST::Number(i));
       AST::Block* block = new AST::Block({ new AST::Assignment(argname, exp) });
       AST::If* cond_assignment = new AST::If(comparison, block);
+      cond_assignment->at_recursive(node);
 
       body->prepend_node(cond_assignment);
     }
@@ -565,12 +567,6 @@ AST::AbstractNode* Normalizer::visit_localinitialisation(AST::LocalInitialisatio
 
 AST::AbstractNode* Normalizer::visit_yield(AST::Yield* node, VisitContinue cont) {
   cont();
-
-  if (node->expression->type() == AST::kTypeEmpty) {
-    delete node->expression;
-    node->expression = new AST::Null();
-  }
-
   this->mark_func_as_generator = true;
   return node;
 }
@@ -611,6 +607,8 @@ AST::AbstractNode* Normalizer::visit_import(AST::Import* node, VisitContinue) {
     new AST::Identifier("__charly_internal_import"),
     new AST::NodeList(node->source, new AST::String(source_filename))
   );
+
+  new_node->at_recursive(node);
 
   node->source = nullptr;
 

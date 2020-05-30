@@ -335,7 +335,7 @@ AST::AbstractNode* CodeGenerator::visit_switch(AST::Switch* node, VisitContinue)
   this->visit_node(node->condition);
 
   std::vector<Label> block_labels;
-  block_labels.reserve(node->cases->children.size());
+  block_labels.reserve(node->cases->size());
 
   // Codegen the switch conditions
   for (auto n : node->cases->children) {
@@ -360,7 +360,7 @@ AST::AbstractNode* CodeGenerator::visit_switch(AST::Switch* node, VisitContinue)
   }
 
   // Branch to the default block
-  if (node->cases->children.size() > 0) {
+  if (node->cases->size() > 0) {
     this->assembler.write_branch_to_label(default_block);
   }
 
@@ -440,7 +440,7 @@ AST::AbstractNode* CodeGenerator::visit_new(AST::New* node, VisitContinue) {
     this->visit_node(arg);
   }
 
-  this->assembler.write_new(node->arguments->children.size());
+  this->assembler.write_new(node->arguments->size());
 
   return node;
 }
@@ -532,7 +532,7 @@ AST::AbstractNode* CodeGenerator::visit_call(AST::Call* node, VisitContinue) {
     this->visit_node(arg);
   }
 
-  this->assembler.write_call(node->arguments->children.size());
+  this->assembler.write_call(node->arguments->size());
 
   return node;
 }
@@ -550,7 +550,7 @@ AST::AbstractNode* CodeGenerator::visit_callmember(AST::CallMember* node, VisitC
     this->visit_node(arg);
   }
 
-  this->assembler.write_callmember(node->arguments->children.size());
+  this->assembler.write_callmember(node->arguments->size());
 
   return node;
 }
@@ -569,7 +569,7 @@ AST::AbstractNode* CodeGenerator::visit_callindex(AST::CallIndex* node, VisitCon
     this->visit_node(arg);
   }
 
-  this->assembler.write_callmember(node->arguments->children.size());
+  this->assembler.write_callmember(node->arguments->size());
 
   return node;
 }
@@ -645,7 +645,7 @@ AST::AbstractNode* CodeGenerator::visit_array(AST::Array* node, VisitContinue) {
   for (auto child : node->expressions->children) {
     this->visit_node(child);
   }
-  this->assembler.write_putarray(node->expressions->children.size());
+  this->assembler.write_putarray(node->expressions->size());
   return node;
 }
 
@@ -712,9 +712,9 @@ AST::AbstractNode* CodeGenerator::visit_class(AST::Class* node, VisitContinue) {
     this->visit_node(node->constructor);
   }
 
-  this->assembler.write_putclass(this->context.symtable(node->name), node->member_properties->children.size(),
-                                 node->static_properties->children.size(), node->member_functions->children.size(),
-                                 node->static_functions->children.size(), node->parent_class->type() != AST::kTypeEmpty,
+  this->assembler.write_putclass(this->context.symtable(node->name), node->member_properties->size(),
+                                 node->static_properties->size(), node->member_functions->size(),
+                                 node->static_functions->size(), node->parent_class->type() != AST::kTypeEmpty,
                                  node->constructor->type() != AST::kTypeEmpty);
 
   for (auto n : node->static_properties->children) {

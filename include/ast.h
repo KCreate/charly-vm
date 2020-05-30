@@ -30,6 +30,9 @@
 #include <list>
 #include <optional>
 #include <vector>
+#include <stack>
+#include <set>
+#include <queue>
 
 #include "lvar-location.h"
 #include "location.h"
@@ -42,6 +45,7 @@ const std::string kPaddingCharacters = "  ";
 
 struct AbstractNode;
 typedef std::function<AbstractNode*(AbstractNode*)> VisitFunc;
+typedef std::function<void(AbstractNode*)> TraverseFunc;
 
 // Abstract base class of all ASTNodes
 struct AbstractNode {
@@ -57,59 +61,50 @@ public:
       delete this->offset_info;
   }
 
-  inline AbstractNode* at(const Token& loc) {
-    return this->at(loc.location);
-  }
+  // Assigning location from tokens
+  inline AbstractNode* at(const Token& loc) { return this->at(loc.location, loc.location); }
+  inline AbstractNode* at(const Token& start, const Token& end) { return this->at(start.location, end.location); }
 
-  inline AbstractNode* at(const Token& start, const Token& end) {
-    return this->at(start.location, end.location);
-  }
-
-  inline AbstractNode* at(const Location& loc) {
-    this->location_start = loc;
-    this->location_end = loc;
-    return this;
-  }
-
+  // Assigning location from a Location object
+  inline AbstractNode* at(const Location& loc) { return this->at(loc, loc); }
   inline AbstractNode* at(const Location& start, const Location& end) {
     this->location_start = start;
     this->location_end = end;
     return this;
   }
 
-  inline AbstractNode* at(const std::optional<Location>& loc) {
-    this->location_start = loc;
-    this->location_end = loc;
-    return this;
-  }
-
+  // Assigning location from an optional Location object
+  inline AbstractNode* at(const std::optional<Location>& loc) { return this->at(loc, loc); }
   inline AbstractNode* at(const std::optional<Location>& start, const std::optional<Location>& end) {
     this->location_start = start;
     this->location_end = end;
     return this;
   }
 
-  inline AbstractNode* at(const AbstractNode& node) {
-    this->location_start = node.location_start;
-    this->location_end = node.location_end;
-    return this;
-  }
-
-  inline AbstractNode* at(AbstractNode* node) {
-    this->location_start = node->location_start;
-    this->location_end = node->location_end;
-    return this;
-  }
-
-  inline AbstractNode* at(const AbstractNode& start, const AbstractNode& end) {
-    this->location_start = start.location_start;
-    this->location_end = end.location_end;
-    return this;
-  }
-
+  // assigning location from an AST node
+  inline AbstractNode* at(AbstractNode* node) { return this->at(node->location_start, node->location_end); }
   inline AbstractNode* at(AbstractNode* start, AbstractNode* end) {
-    this->location_start = start->location_start;
-    this->location_end = end->location_end;
+    return this->at(start->location_start, end->location_end);
+  }
+
+  // Recursively assign a location to this node and all of its subnodes
+  inline AbstractNode* at_recursive(AbstractNode* node) { return this->at_recursive(node->location_start); }
+  inline AbstractNode* at_recursive(const std::optional<Location>& loc) {
+    std::queue<AbstractNode*> node_queue({this});
+
+    while (node_queue.size()) {
+      AbstractNode* top = node_queue.front();
+      node_queue.pop();
+
+      if (top) {
+        top->at(loc);
+      }
+
+      top->traverse([&](AbstractNode* child_node) {
+        node_queue.push(child_node);
+      });
+    }
+
     return this;
   }
 
@@ -122,6 +117,8 @@ public:
   virtual inline void visit(VisitFunc func) {
     (void)func;
   };
+
+  virtual inline void traverse(TraverseFunc) {}
 
   template <typename T>
   T* as() {
@@ -149,16 +146,28 @@ struct NodeList : public AbstractNode {
 
   inline void append_node(AbstractNode* node) {
     if (this->children.size() == 0)
-      this->at(*node);
+      this->at(node);
     this->children.push_back(node);
     this->location_end = node->location_end;
   }
 
   inline void prepend_node(AbstractNode* node) {
     if (this->children.size() == 0)
-      this->at(*node);
+      this->at(node);
     this->children.push_front(node);
     this->location_start = node->location_start;
+  }
+
+  inline size_t size() {
+    return this->children.size();
+  }
+
+  inline AbstractNode* front() {
+    return this->children.front();
+  }
+
+  inline AbstractNode* back() {
+    return this->children.back();
   }
 
   inline ~NodeList() {
@@ -184,6 +193,12 @@ struct NodeList : public AbstractNode {
     }
 
     this->children = std::move(new_children);
+  }
+
+  inline void traverse(TraverseFunc func) {
+    for (auto& node : this->children) {
+      func(node);
+    }
   }
 };
 
@@ -235,6 +250,12 @@ struct Block : public AbstractNode {
 
     this->statements = std::move(new_statements);
   }
+
+  inline void traverse(TraverseFunc func) {
+    for (auto& node : this->statements) {
+      func(node);
+    }
+  }
 };
 
 // Push an expression onto the stack without popping it off
@@ -257,6 +278,10 @@ struct PushStack : public AbstractNode {
 
   inline void visit(VisitFunc func) {
     this->expression = func(this->expression);
+  }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->expression);
   }
 };
 
@@ -287,6 +312,12 @@ struct TernaryIf : public AbstractNode {
     this->then_expression = func(this->then_expression);
     this->else_expression = func(this->else_expression);
   }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->condition);
+    func(this->then_expression);
+    func(this->else_expression);
+  }
 };
 
 // if <condition> {
@@ -313,6 +344,11 @@ struct If : public AbstractNode {
   inline void visit(VisitFunc func) {
     this->condition = func(this->condition);
     this->then_block = func(this->then_block)->as<AST::Block>();
+  }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->condition);
+    func(this->then_block);
   }
 };
 
@@ -347,6 +383,12 @@ struct IfElse : public AbstractNode {
     this->then_block = func(this->then_block)->as<AST::Block>();
     this->else_block = func(this->else_block)->as<AST::Block>();
   }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->condition);
+    func(this->then_block);
+    func(this->else_block);
+  }
 };
 
 // unless <condition> {
@@ -373,6 +415,11 @@ struct Unless : public AbstractNode {
   inline void visit(VisitFunc func) {
     this->condition = func(this->condition);
     this->then_block = func(this->then_block)->as<AST::Block>();
+  }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->condition);
+    func(this->then_block);
   }
 };
 
@@ -407,6 +454,12 @@ struct UnlessElse : public AbstractNode {
     this->then_block = func(this->then_block)->as<AST::Block>();
     this->else_block = func(this->else_block)->as<AST::Block>();
   }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->condition);
+    func(this->then_block);
+    func(this->else_block);
+  }
 };
 
 // do {
@@ -433,6 +486,11 @@ struct DoWhile : public AbstractNode {
   inline void visit(VisitFunc func) {
     this->condition = func(this->condition);
     this->block = func(this->block)->as<AST::Block>();
+  }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->condition);
+    func(this->block);
   }
 };
 
@@ -461,6 +519,11 @@ struct DoUntil : public AbstractNode {
     this->condition = func(this->condition);
     this->block = func(this->block)->as<AST::Block>();
   }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->condition);
+    func(this->block);
+  }
 };
 
 // while <condition> {
@@ -487,6 +550,11 @@ struct While : public AbstractNode {
   inline void visit(VisitFunc func) {
     this->condition = func(this->condition);
     this->block = func(this->block)->as<AST::Block>();
+  }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->condition);
+    func(this->block);
   }
 };
 
@@ -515,6 +583,11 @@ struct Until : public AbstractNode {
     this->condition = func(this->condition);
     this->block = func(this->block)->as<AST::Block>();
   }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->condition);
+    func(this->block);
+  }
 };
 
 // loop {
@@ -538,6 +611,10 @@ struct Loop : public AbstractNode {
   inline void visit(VisitFunc func) {
     this->block = func(this->block)->as<AST::Block>();
   }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->block);
+  }
 };
 
 // <operator_type> <expression>
@@ -559,6 +636,10 @@ struct Unary : public AbstractNode {
 
   inline void visit(VisitFunc func) {
     this->expression = func(this->expression);
+  }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->expression);
   }
 };
 
@@ -586,6 +667,11 @@ struct Binary : public AbstractNode {
     this->left = func(this->left);
     this->right = func(this->right);
   }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->left);
+    func(this->right);
+  }
 };
 
 // case <conditions> {
@@ -612,6 +698,11 @@ struct SwitchNode : public AbstractNode {
   inline void visit(VisitFunc func) {
     this->conditions = reinterpret_cast<NodeList*>(func(this->conditions));
     this->block = func(this->block)->as<AST::Block>();
+  }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->conditions);
+    func(this->block);
   }
 };
 
@@ -645,6 +736,12 @@ struct Switch : public AbstractNode {
     this->cases = reinterpret_cast<NodeList*>(func(this->cases));
     this->default_block = func(this->default_block);
   }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->condition);
+    func(this->cases);
+    func(this->default_block);
+  }
 };
 
 // <left> && <right>
@@ -669,6 +766,11 @@ struct And : public AbstractNode {
   inline void visit(VisitFunc func) {
     this->left = func(this->left);
     this->right = func(this->right);
+  }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->left);
+    func(this->right);
   }
 };
 
@@ -695,6 +797,11 @@ struct Or : public AbstractNode {
     this->left = func(this->left);
     this->right = func(this->right);
   }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->left);
+    func(this->right);
+  }
 };
 
 // typeof <expression>
@@ -715,6 +822,10 @@ struct Typeof : public AbstractNode {
 
   inline void visit(VisitFunc func) {
     this->expression = func(this->expression);
+  }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->expression);
   }
 };
 
@@ -741,6 +852,11 @@ struct New : public AbstractNode {
     this->klass = func(this->klass);
     this->arguments = reinterpret_cast<NodeList*>(func(this->arguments));
   }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->klass);
+    func(this->arguments);
+  }
 };
 
 // <target> = <expression>
@@ -765,6 +881,10 @@ struct Assignment : public AbstractNode {
 
   inline void visit(VisitFunc func) {
     this->expression = func(this->expression);
+  }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->expression);
   }
 };
 
@@ -791,6 +911,11 @@ struct MemberAssignment : public AbstractNode {
   inline void visit(VisitFunc func) {
     this->target = func(this->target);
     this->expression = func(this->expression);
+  }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->target);
+    func(this->expression);
   }
 };
 
@@ -821,6 +946,11 @@ struct ANDMemberAssignment : public AbstractNode {
     this->target = func(this->target);
     this->expression = func(this->expression);
   }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->target);
+    func(this->expression);
+  }
 };
 
 // <target>[<index>] = <expression>
@@ -848,6 +978,12 @@ struct IndexAssignment : public AbstractNode {
     this->target = func(this->target);
     this->index = func(this->index);
     this->expression = func(this->expression);
+  }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->target);
+    func(this->index);
+    func(this->expression);
   }
 };
 
@@ -880,6 +1016,12 @@ struct ANDIndexAssignment : public AbstractNode {
     this->index = func(this->index);
     this->expression = func(this->expression);
   }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->target);
+    func(this->index);
+    func(this->expression);
+  }
 };
 
 // <target>(<arguments>)
@@ -904,6 +1046,11 @@ struct Call : public AbstractNode {
   inline void visit(VisitFunc func) {
     this->target = func(this->target);
     this->arguments = reinterpret_cast<NodeList*>(func(this->arguments));
+  }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->target);
+    func(this->arguments);
   }
 };
 
@@ -930,6 +1077,11 @@ struct CallMember : public AbstractNode {
   inline void visit(VisitFunc func) {
     this->context = func(this->context);
     this->arguments = reinterpret_cast<NodeList*>(func(this->arguments));
+  }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->context);
+    func(this->arguments);
   }
 };
 
@@ -959,6 +1111,12 @@ struct CallIndex : public AbstractNode {
     this->context = func(this->context);
     this->index = func(this->index);
     this->arguments = reinterpret_cast<NodeList*>(func(this->arguments));
+  }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->context);
+    func(this->index);
+    func(this->arguments);
   }
 };
 
@@ -1011,6 +1169,10 @@ struct Member : public AbstractNode {
   inline void visit(VisitFunc func) {
     this->target = func(this->target);
   }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->target);
+  }
 };
 
 // <target>[<argument>]
@@ -1035,6 +1197,11 @@ struct Index : public AbstractNode {
   inline void visit(VisitFunc func) {
     this->target = func(this->target);
     this->argument = func(this->argument);
+  }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->target);
+    func(this->argument);
   }
 };
 
@@ -1112,6 +1279,10 @@ struct Array : public AbstractNode {
   inline void visit(VisitFunc func) {
     this->expressions = reinterpret_cast<NodeList*>(func(this->expressions));
   }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->expressions);
+  }
 };
 
 // {
@@ -1148,6 +1319,12 @@ struct Hash : public AbstractNode {
   inline void visit(VisitFunc func) {
     for (auto& pair : this->pairs) {
       pair.second = func(pair.second);
+    }
+  }
+
+  inline void traverse(TraverseFunc func) {
+    for (const auto& entry : this->pairs) {
+      func(entry.second);
     }
   }
 };
@@ -1255,6 +1432,13 @@ struct Function : public AbstractNode {
   inline void visit(VisitFunc func) {
     this->body = func(this->body)->as<AST::Block>();
   }
+
+  inline void traverse(TraverseFunc func) {
+    for (const auto& entry : this->default_values) {
+      func(entry.second);
+    }
+    func(this->body);
+  }
 };
 
 // property <symbol>;
@@ -1338,6 +1522,15 @@ struct Class : public AbstractNode {
     this->static_properties = func(this->static_properties)->as<AST::NodeList>();
     this->parent_class = func(this->parent_class);
   }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->constructor);
+    func(this->member_properties);
+    func(this->member_functions);
+    func(this->static_properties);
+    func(this->static_functions);
+    func(this->parent_class);
+  }
 };
 
 // let <name>
@@ -1368,6 +1561,10 @@ struct LocalInitialisation : public AbstractNode {
   inline void visit(VisitFunc func) {
     this->expression = func(this->expression);
   }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->expression);
+  }
 };
 
 // <condition> => <expression>
@@ -1396,6 +1593,11 @@ struct MatchArm : public AbstractNode {
 
   inline bool yields_value() {
     return this->expression->type() != typeid(Block).hash_code();
+  }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->condition);
+    func(this->expression);
   }
 };
 
@@ -1439,6 +1641,12 @@ struct Match : public AbstractNode {
     }
     return false;
   }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->condition);
+    func(this->arms);
+    func(this->default_arm);
+  }
 };
 
 // return
@@ -1462,6 +1670,10 @@ struct Return : public AbstractNode {
   inline void visit(VisitFunc func) {
     this->expression = func(this->expression);
   }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->expression);
+  }
 };
 
 
@@ -1484,6 +1696,10 @@ struct Import : public AbstractNode {
   inline void visit(VisitFunc func) {
     this->source = func(this->source);
   }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->source);
+  }
 };
 
 // yield <expression>
@@ -1505,6 +1721,10 @@ struct Yield : public AbstractNode {
   inline void visit(VisitFunc func) {
     this->expression = func(this->expression);
   }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->expression);
+  }
 };
 
 // throw <expression>
@@ -1525,6 +1745,10 @@ struct Throw : public AbstractNode {
 
   inline void visit(VisitFunc func) {
     this->expression = func(this->expression);
+  }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->expression);
   }
 };
 
@@ -1579,6 +1803,13 @@ struct TryCatch : public AbstractNode {
     this->exception_name = func(this->exception_name)->as<Identifier>();
     this->handler_block = func(this->handler_block);
     this->finally_block = func(this->finally_block);
+  }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->block);
+    func(this->exception_name);
+    func(this->handler_block);
+    func(this->finally_block);
   }
 };
 
