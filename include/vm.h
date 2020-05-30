@@ -270,6 +270,7 @@ public:
   }
   void pretty_print(std::ostream& io, VALUE value);
   void to_s(std::ostream& io, VALUE value, uint32_t depth = 0);
+  VALUE get_self_for_function(Function* function, VALUE fallback);
 
   // Private member access
   inline Frame* get_current_frame() {
@@ -378,7 +379,6 @@ public:
   void run();
   void exec_prelude();
   VALUE exec_module(Function* fn);
-  VALUE exec_function(Function* fn, VALUE argument);
   uint8_t start_runtime();
   void exit(uint8_t status_code);
 

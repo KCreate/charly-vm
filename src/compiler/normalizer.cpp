@@ -536,6 +536,7 @@ AST::AbstractNode* Normalizer::visit_class(AST::Class* node, VisitContinue cont)
         constructor->needs_arguments = true;
 
         constructor = this->visit_node(constructor)->as<AST::Function>();
+        constructor->at_recursive(node);
         delete node->constructor;
         node->constructor = constructor;
       }

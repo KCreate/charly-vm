@@ -24,13 +24,15 @@
  * SOFTWARE.
  */
 
+const Time = import "time"
+
 const __internal_defer            = Charly.internals.get_method("defer")
 const __internal_defer_interval   = Charly.internals.get_method("defer_interval")
 const __internal_clear_timer      = Charly.internals.get_method("clear_timer")
 const __internal_clear_interval   = Charly.internals.get_method("clear_interval")
 
 // Stores the task id assigned to this timer / interval by the VM
-class _DeferHandle {
+class DeferHandle {
   property id
   property callbacks
 
@@ -43,10 +45,8 @@ class _DeferHandle {
    *
    * Note: "Finishing" for an interval is defined as the interval being cleared
    * */
-  then(cb) {
-    const immediate = arguments.length > 1 ? $1 : false
+  then(cb, immediate = false) {
     @callbacks << {cb, immediate}
-
     self
   }
 
@@ -74,21 +74,19 @@ class _DeferHandle {
  * of iterations that have been run
  * */
 
-class _IntervalHandle extends _DeferHandle {
+class IntervalHandle extends DeferHandle {
   property iterations
 
   constructor(cb, period) {
-    const this = self
-    let period = arguments.length > 1 ? $1 : 0
 
     // Extract milliseconds from possible Duration objects
-    if period.klass.name == "Duration" {
+    if period.klass == Time.Duration {
       period = period.in_milliseconds()
     }
 
-    @id = __internal_defer_interval(func {
-      cb(this.iterations)
-      this.iterations += 1
+    @id = __internal_defer_interval(->{
+      cb(@iterations)
+      @iterations += 1
     }, period)
   }
 
@@ -101,20 +99,18 @@ class _IntervalHandle extends _DeferHandle {
   }
 }
 
-class _TimerHandle extends _DeferHandle {
-  constructor(cb) {
-    const this = self
-    let duration = arguments.length > 1 ? $1 : 0
+class TimerHandle extends DeferHandle {
+  constructor(cb, period) {
 
     // Extract milliseconds from possible Duration objects
-    if duration.klass.name == "Duration" {
-      duration = duration.in_milliseconds()
+    if period.klass == Time.Duration {
+      period = period.in_milliseconds()
     }
 
-    @id = __internal_defer(func {
+    @id = __internal_defer(->{
       cb()
-      this.finish()
-    }, duration)
+      @finish()
+    }, period)
   }
 
   clear {
@@ -124,8 +120,9 @@ class _TimerHandle extends _DeferHandle {
 
     self
   }
-
-  static property interval = _IntervalHandle
 }
 
-export = _TimerHandle
+export = {
+  TimerHandle,
+  IntervalHandle
+}

@@ -1719,7 +1719,7 @@ AST::AbstractNode* Parser::parse_class() {
 
         // Only the constructor method is allowed to have a 'super()' call
         bool is_constructor = (this->token.value == "constructor" && !static_declaration);
-        AST::Function* func = this->parse_func(true, is_constructor, true)->as<AST::Function>();
+        AST::Function* func = this->parse_func(true)->as<AST::Function>();
 
         if (static_declaration) {
           static_functions->append_node(func);

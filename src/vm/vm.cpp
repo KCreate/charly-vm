@@ -1344,42 +1344,7 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
     // Normal functions as defined via the user
     case kTypeFunction: {
       Function* tfunc = charly_as_function(function);
-
-      // Where to source the self value from
-      //
-      // bound_self_set   anonymous   with_target  has_context   self
-      // |                |           |            |             |
-      // true             -           -            -             bound_self
-      //
-      // false            true        -            true          from context
-      // false            true        -            false         Null
-      //
-      // false            false       true         -             target
-      // false            -           false        true          from context
-      // false            false       false        false         Null
-      if (tfunc->bound_self_set) {
-        target = tfunc->bound_self;
-      } else {
-        if (tfunc->anonymous()) {
-          if (tfunc->context) {
-            target = tfunc->context->self;
-          } else {
-            target = kNull;
-          }
-        } else {
-          if (with_target) {
-            // do nothing as target already contains the one supplied
-            // via the stack
-          } else {
-            if (tfunc->context) {
-              target = tfunc->context->self;
-            } else {
-              target = kNull;
-            }
-          }
-        }
-      }
-
+      target = this->get_self_for_function(tfunc, target);
       this->call_function(tfunc, argc, arguments, target, halt_after_return);
       return;
     }
@@ -2039,8 +2004,6 @@ void VM::op_throw() {
 }
 
 void VM::throw_exception(const std::string& message) {
-  this->unwind_catchstack();
-
   ManagedContext lalloc(*this);
 
   // Create exception object
@@ -2050,12 +2013,13 @@ void VM::throw_exception(const std::string& message) {
   (*ex_obj->container)[this->context.symtable("stacktrace")] = this->stacktrace_array();
 
   this->last_exception_thrown = charly_create_pointer(ex_obj);
+  this->unwind_catchstack();
   this->push_stack(charly_create_pointer(ex_obj));
 }
 
 void VM::throw_exception(VALUE payload) {
-  this->unwind_catchstack();
   this->last_exception_thrown = payload;
+  this->unwind_catchstack();
   this->push_stack(payload);
 }
 
@@ -2780,6 +2744,12 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
       break;
     }
   }
+}
+
+VALUE VM::get_self_for_function(Function* function, VALUE fallback) {
+  if (function->bound_self_set) return function->bound_self;
+  if (function->anonymous()) return function->context ? function->context->self : kNull;
+  return fallback;
 }
 
 void VM::panic(STATUS reason) {
@@ -3586,7 +3556,8 @@ uint8_t VM::start_runtime() {
 
       // 0 is the index of the Charly object in the top frame
       Function* fn = charly_as_function(task.fn);
-      this->call_function(fn, 1, &task.argument, this->top_frame->read_local(0), true);
+      VALUE self = this->get_self_for_function(fn, this->top_frame->read_local(0));
+      this->call_function(fn, 1, &task.argument, self, true);
       this->run();
       this->pop_stack();
 
@@ -3639,14 +3610,6 @@ VALUE VM::exec_module(Function* fn) {
   this->call_function(fn, 1, &export_obj, kNull, true);
   this->frames->parent_environment_frame = this->top_frame;
   this->frames->set_halt_after_return(true);
-  this->run();
-  this->ip = old_ip;
-  return this->pop_stack();
-}
-
-VALUE VM::exec_function(Function* fn, VALUE argument) {
-  uint8_t* old_ip = this->ip;
-  this->call_function(fn, 1, &argument, kNull, true);
   this->run();
   this->ip = old_ip;
   return this->pop_stack();

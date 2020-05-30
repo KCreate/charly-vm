@@ -24,8 +24,18 @@
  * SOFTWARE.
  */
 
-let a = null
+const t = defer(->{
+  print("Timer finished")
+}, 1.second())
 
-if true a = func (a = 10, b = 20) { a + b }
+t.then(->{
+  print("After timer 1")
+})
 
-print(a)
+t.then(->{
+  print("After timer 2")
+})
+
+t.then(->{
+  print("After timer 3")
+})
