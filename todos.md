@@ -1,3 +1,7 @@
+- Store timers and intervals in a min heap, based on their scheduled time
+  - This way we don't have to search through all the scheduled events to find the next one
+  - to execute
+
 - Implement promises class
 
 - Parse binary numbers
