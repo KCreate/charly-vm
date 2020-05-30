@@ -1697,4 +1697,49 @@ inline bool is_comparison(AbstractNode* node) {
           binexp->operator_type == TokenType::Less || binexp->operator_type == TokenType::Greater ||
           binexp->operator_type == TokenType::LessEqual || binexp->operator_type == TokenType::GreaterEqual);
 }
+
+// Collects all child nodes that match the search types
+// Will not further traverse any ignored nodes
+inline std::vector<AbstractNode*> find_child_nodes(AbstractNode* node,
+                                                   std::set<size_t> search_types,
+                                                   std::set<size_t> ignore_types,
+                                                   bool allow_arrow_functions = false) {
+  std::vector<AbstractNode*> result_list;
+
+  // Execution order traversal of the tree, appending all
+  // nodes of the requested types to the results list
+  std::stack<AbstractNode*> node_stack({node});
+  while (node_stack.size()) {
+    AbstractNode* top = node_stack.top();
+    node_stack.pop();
+
+    // Type ignored?
+    if (ignore_types.count(top->type())) {
+      if (allow_arrow_functions && top->type() == AST::kTypeFunction && top->as<AST::Function>()->anonymous) {
+        // Keep traversing
+      } else {
+        continue;
+      }
+    }
+
+    // Check if the node matches any search type
+    if (search_types.count(top->type())) {
+      result_list.push_back(top);
+    }
+
+    // Add child nodes to the node stack, in reverse
+    // order to maintain execution order traversal
+    std::stack<AbstractNode*> child_stack;
+    top->traverse([&](AbstractNode* child_node) {
+      child_stack.push(child_node);
+    });
+    while (child_stack.size()) {
+      node_stack.push(child_stack.top());
+      child_stack.pop();
+    }
+  }
+
+  return result_list;
+}
+
 }  // namespace Charly::Compilation::AST
