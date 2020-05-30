@@ -870,15 +870,9 @@ AST::AbstractNode* Parser::parse_expression() {
 AST::AbstractNode* Parser::parse_yield() {
   if (this->token.type == TokenType::Yield) {
     Location location_start = this->token.location;
-    AST::AbstractNode* exp;
-
     this->advance();
-    if (this->token.could_start_expression()) {
-      exp = this->parse_expression();
-      return (new AST::Yield(exp))->at(location_start, exp->location_end);
-    }
-
-    return (new AST::Yield(new AST::Empty()))->at(location_start);
+    AST::AbstractNode* exp = this->parse_expression();
+    return (new AST::Yield(exp))->at(location_start, exp->location_end);
   }
 
   return parse_assignment();
