@@ -53,13 +53,8 @@ func partition(array, pivot, left, right) {
   return store_index
 }
 
-func sort(array) {
+func sort(array, left = 0, right = array.length - 1) {
   let pivot
-  let left = arguments[1]
-  let right = arguments[2]
-
-  unless typeof left == "number" left = 0
-  unless typeof right == "number" right = array.length - 1
 
   if left < right {
     pivot = left + math.ceil((right - left) / 2)

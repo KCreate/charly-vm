@@ -93,8 +93,7 @@ export = ->(Base) {
      * "hello world".substring(5, 5) // => "world"
      * ```
      * */
-    substring(start) {
-      const offset = arguments.length > 1 ? arguments[1] : @length
+    substring(start, offset = @length) {
       if offset == 0 return ""
       const buf = new Buffer((offset == @length) ? (@length - start) : (offset))
 
@@ -244,15 +243,14 @@ export = ->(Base) {
     /*
      * Returns the index of a substring
      * */
-    index(o) {
-      let offset = (arguments.length > 1) ? $1 : 0
+    index(target, offset = 0) {
       if offset < 0 offset += @length
       if offset < 0 return -1
       let i = offset
 
-      while i + o.length <= @length {
-        const sub = @substring(i, o.length)
-        if sub == o return i
+      while i + target.length <= @length {
+        const sub = @substring(i, target.length)
+        if sub == target return i
         i += 1
       }
 
@@ -262,15 +260,14 @@ export = ->(Base) {
     /*
      * Returns the index of a substring starting at the back of the string
      * */
-    rindex(o) {
-      let offset = (arguments.length > 1) ? $1 : @length
+    rindex(target, offset = @length) {
       if offset < 0 offset += @length
       if offset < 0 return -1
-      let i = offset - o.length
+      let i = offset - target.length
 
       while i > 0 {
-        const sub = @substring(i, o.length)
-        if sub == o return i
+        const sub = @substring(i, target.length)
+        if sub == target return i
         i -= 1
       }
 

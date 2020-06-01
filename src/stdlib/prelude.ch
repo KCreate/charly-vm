@@ -38,8 +38,7 @@ ignoreconst {
   let __internal_import_cache = {}
 
   // Import method for loading other files and libraries
-  __charly_internal_import = ->(path, source) {
-    const ignore_cache = arguments[2] ? true : false
+  __charly_internal_import = ->(path, source, ignore_cache = false) {
 
     // Search for the path in the list of standard libraries
     let is_stdlib = false
@@ -159,8 +158,8 @@ ignoreconst {
   }
 
   // Exits the program with a given status code
-  exit = func exit {
-    __internal_exit(arguments.length ? $0 : 0)
+  exit = func exit(status = 0) {
+    __internal_exit(status)
   }
 
   const defer_internals = import "_charly_defer"
@@ -171,8 +170,8 @@ ignoreconst {
   Charly.io = {
     write,
     print,
-    getn: ->{
-      if arguments.length > 0 write($0)
+    getn: ->(msg = null) {
+      if msg write(msg)
       return __internal_getn()
     },
     dirname: __internal_get_method("dirname")

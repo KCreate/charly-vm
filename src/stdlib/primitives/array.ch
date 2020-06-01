@@ -26,17 +26,15 @@
 
 const Buffer = import "libs/string/buffer.ch"
 
-export = ->(Base) {
-  const _ = {
-    insert:  Charly.internals.get_method("PrimitiveArray::insert"),
-    remove:  Charly.internals.get_method("PrimitiveArray::remove"),
-    reverse: Charly.internals.get_method("PrimitiveArray::reverse"),
-    flatten: Charly.internals.get_method("PrimitiveArray::flatten"),
-    index:   Charly.internals.get_method("PrimitiveArray::index"),
-    rindex:  Charly.internals.get_method("PrimitiveArray::rindex"),
-    range:   Charly.internals.get_method("PrimitiveArray::range")
-  }
+const __internal_insert  = Charly.internals.get_method("PrimitiveArray::insert")
+const __internal_remove  = Charly.internals.get_method("PrimitiveArray::remove")
+const __internal_reverse = Charly.internals.get_method("PrimitiveArray::reverse")
+const __internal_flatten = Charly.internals.get_method("PrimitiveArray::flatten")
+const __internal_index   = Charly.internals.get_method("PrimitiveArray::index")
+const __internal_rindex  = Charly.internals.get_method("PrimitiveArray::rindex")
+const __internal_range   = Charly.internals.get_method("PrimitiveArray::range")
 
+export = ->(Base) {
   return class Array extends Base {
     static create(size, cb) {
       const arr = []
@@ -131,34 +129,34 @@ export = ->(Base) {
 
     pop {
       const item = @last()
-      _.remove(self, @length - 1)
+      __internal_remove(self, @length - 1)
       item
     }
 
     unshift(item) {
-      _.insert(self, item, 0)
+      __internal_insert(self, item, 0)
       self
     }
 
     shift {
       const item = @first()
-      _.remove(self, 0)
+      __internal_remove(self, 0)
       item
     }
 
     insert(index, item) {
-      _.insert(self, index, item)
+      __internal_insert(self, index, item)
       self
     }
 
     remove(index) {
-      _.remove(self, index)
+      __internal_remove(self, index)
       self
     }
 
     clear {
       while @length {
-        _.remove(self, 0)
+        __internal_remove(self, 0)
       }
       self
     }
@@ -196,25 +194,25 @@ export = ->(Base) {
     }
 
     reverse {
-      _.reverse(self)
+      __internal_reverse(self)
     }
 
     flatten {
-      _.flatten(self)
+      __internal_flatten(self)
     }
 
     index(element) {
       const offset = $1 || 0
-      _.index(self, element, offset)
+      __internal_index(self, element, offset)
     }
 
     rindex(element) {
       const offset = $1 || -1
-      _.rindex(self, element, offset)
+      __internal_rindex(self, element, offset)
     }
 
     range(start, count) {
-      _.range(self, start, count)
+      __internal_range(self, start, count)
     }
 
     contains(search) {

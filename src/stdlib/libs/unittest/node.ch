@@ -47,10 +47,8 @@ class Node {
     @children.length
   }
 
-  deep_failed(callback) {
+  deep_failed(callback, path = []) {
     unless @passed() {
-      let path = arguments[1] || []
-
       if @children.length == 0 {
         callback(path + self)
       } else {

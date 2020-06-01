@@ -110,8 +110,7 @@ class __HeapBase {
   // Add a new item to the heap
   //
   // When passed a second argument as the data, $0 will be used as the weight
-  push(weight) {
-    const data = arguments.length > 1 ? $1 : weight
+  push(weight, data = weight) {
 
     // Special insertion when capacity is locked
     if @capacity_locked && @is_full() {
