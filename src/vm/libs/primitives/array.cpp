@@ -263,6 +263,15 @@ VALUE range(VM& vm, VALUE a, VALUE s, VALUE c) {
   return charly_create_pointer(new_array);
 }
 
+VALUE clear(VM& vm, VALUE a) {
+  CHECK(array, a);
+
+  Array* array = charly_as_array(a);
+  array->data->clear();
+
+  return a;
+}
+
 }  // namespace Array
 }  // namespace Internals
 }  // namespace Charly

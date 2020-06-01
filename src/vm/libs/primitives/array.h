@@ -40,6 +40,7 @@ VALUE flatten(VM& vm, VALUE a);
 VALUE index(VM& vm, VALUE a, VALUE i, VALUE o);
 VALUE rindex(VM& vm, VALUE a, VALUE i, VALUE o);
 VALUE range(VM& vm, VALUE a, VALUE s, VALUE c);
+VALUE clear(VM& vm, VALUE a);
 
 }  // namespace PrimitiveArray
 }  // namespace Internals

@@ -33,6 +33,7 @@ const __internal_flatten = Charly.internals.get_method("PrimitiveArray::flatten"
 const __internal_index   = Charly.internals.get_method("PrimitiveArray::index")
 const __internal_rindex  = Charly.internals.get_method("PrimitiveArray::rindex")
 const __internal_range   = Charly.internals.get_method("PrimitiveArray::range")
+const __internal_clear   = Charly.internals.get_method("PrimitiveArray::clear")
 
 export = ->(Base) {
   return class Array extends Base {
@@ -155,9 +156,7 @@ export = ->(Base) {
     }
 
     clear {
-      while @length {
-        __internal_remove(self, 0)
-      }
+      __internal_clear(self)
       self
     }
 
@@ -211,7 +210,7 @@ export = ->(Base) {
       __internal_rindex(self, element, offset)
     }
 
-    range(start, count) {
+    range(start, count = @length) {
       __internal_range(self, start, count)
     }
 
