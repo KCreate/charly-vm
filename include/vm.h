@@ -270,7 +270,7 @@ public:
   }
   void pretty_print(std::ostream& io, VALUE value);
   void to_s(std::ostream& io, VALUE value, uint32_t depth = 0);
-  VALUE get_self_for_function(Function* function, VALUE fallback);
+  VALUE get_self_for_function(Function* function, const VALUE* fallback_ptr);
 
   // Private member access
   inline Frame* get_current_frame() {

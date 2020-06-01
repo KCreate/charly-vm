@@ -97,27 +97,54 @@ export = ->(describe, it, assert) {
     g([1, 2, 3], ->(m) assert(m, "Got [1, 2, 3]"))
   })
 
-  it("correctly sets self value inside callbacks", ->{
-    class A {
-      property a1
+  describe("self value", ->{
 
-      c(a, cb) {
-        cb(a, ->(a1) {
-          self.a1 = a1
-        })
+    it("correctly sets self value inside anonymous functions", ->{
+      class A {
+        property a1
+
+        c(a, cb) {
+          cb(a, ->(a1) {
+            self.a1 = a1
+          })
+        }
       }
-    }
 
-    const o = new A(1)
+      const o = new A(1)
 
-    o.c(20, ->$1($0))
-    assert(o.a1, 20)
+      o.c(20, ->$1($0))
+      assert(o.a1, 20)
 
-    o.c(40, ->$1($0))
-    assert(o.a1, 40)
+      o.c(40, ->$1($0))
+      assert(o.a1, 40)
 
-    o.c(80, ->$1($0))
-    assert(o.a1, 80)
+      o.c(80, ->$1($0))
+      assert(o.a1, 80)
+    })
+
+    it("sets self for regular functions", ->{
+      class A {
+        property v
+
+        foo(a, cb) {
+          cb(a, func {
+            self.v = a
+          })
+        }
+      }
+
+      const a = new A()
+
+      a.foo(20, ->$1($0))
+      assert(a.v, 20)
+
+      a.foo(40, ->$1($0))
+      assert(a.v, 40)
+
+      a.foo(50, ->$1($0))
+      assert(a.v, 50)
+    })
+
   })
 
   it("does consecutive call expressions", ->{

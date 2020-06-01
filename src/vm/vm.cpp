@@ -1344,7 +1344,7 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
     // Normal functions as defined via the user
     case kTypeFunction: {
       Function* tfunc = charly_as_function(function);
-      target = this->get_self_for_function(tfunc, target);
+      target = this->get_self_for_function(tfunc, with_target ? &target : nullptr);
       this->call_function(tfunc, argc, arguments, target, halt_after_return);
       return;
     }
@@ -2746,10 +2746,11 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
   }
 }
 
-VALUE VM::get_self_for_function(Function* function, VALUE fallback) {
+VALUE VM::get_self_for_function(Function* function, const VALUE* fallback) {
   if (function->bound_self_set) return function->bound_self;
   if (function->anonymous()) return function->context ? function->context->self : kNull;
-  return fallback;
+  if (fallback != nullptr) return *fallback;
+  return function->context ? function->context->self : kNull;
 }
 
 void VM::panic(STATUS reason) {
@@ -3555,8 +3556,9 @@ uint8_t VM::start_runtime() {
       this->gc.mark_persistent(task.argument);
 
       // 0 is the index of the Charly object in the top frame
+      VALUE target = this->top_frame->read_local(0);
       Function* fn = charly_as_function(task.fn);
-      VALUE self = this->get_self_for_function(fn, this->top_frame->read_local(0));
+      VALUE self = this->get_self_for_function(fn, &target);
       this->call_function(fn, 1, &task.argument, self, true);
       this->run();
       this->pop_stack();
