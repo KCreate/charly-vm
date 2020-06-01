@@ -251,7 +251,6 @@ public:
   VALUE setmembervalue(VALUE target, VALUE member_value, VALUE value);
   std::optional<VALUE> findprototypevalue(Class* source, VALUE symbol);
   std::optional<VALUE> findprimitivevalue(VALUE value, VALUE symbol);
-  VALUE call_dynamic(VALUE v, const std::vector<VALUE>& args, VALUE target = kNull);
   void call(uint32_t argc, bool with_target, bool halt_after_return = false);
   void call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self, bool halt_after_return = false);
   void call_cfunction(CFunction* function, uint32_t argc, VALUE* argv);

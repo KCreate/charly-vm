@@ -24,16 +24,3 @@
  * SOFTWARE.
  */
 
-class A {
-  foo(@a)
-
-  bar(@a);
-
-  static property some_prop = null
-
-  baz(@a)
-
-  property a
-
-  other_method()
-}

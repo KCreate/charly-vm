@@ -29,9 +29,6 @@ __internal_dynamic_call.push_return_value = false
 
 export = ->(Base) {
   return class Function extends Base {
-    @"<<"(o) {
-      self(o)
-    }
 
     // Calls *self* using ctx as the target object
     // and the values inside args as the parameters

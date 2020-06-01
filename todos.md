@@ -8,14 +8,6 @@
     class information, such as the class to which this method belongs to,
     its super function and
 
-- Remove call_dynamic from VM
-  - Operator overloading can be implemented without it
-  - Remove operator overload from operator methods
-  - Return a specific value that signifies that no condition matched
-    If that value is returned, perform the operator overload check
-  - Add helper methods that simply perform an operation whichout doing any
-    operator overload checking, defaulting to null
-
 - Store timers and intervals in a min heap, based on their scheduled time
   - This way we don't have to search through all the scheduled events to find the next one
   - to execute
@@ -28,6 +20,8 @@
   - 32-bit numbers    0b00000000_00000000_00000000_00000000
   - 64-bit numbers are not allowed, since the bitwise operators operate on 32-bit numbers only
     anyway
+
+- Re-implement operator overloading in a good way
 
 - Expose parser and compilation infrastructure to charly code.
 

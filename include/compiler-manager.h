@@ -47,32 +47,12 @@ public:
   CompilerManager(const RunFlags& f) : flags(f) {
 
     // Pre-register some symbols in the symtable
-    this->symtable("+");
-    this->symtable("-");
-    this->symtable("*");
-    this->symtable("/");
-    this->symtable("%");
-    this->symtable("**");
-    this->symtable("+@");
-    this->symtable("-@");
-    this->symtable("==");
-    this->symtable("<");
-    this->symtable(">");
-    this->symtable("<=");
-    this->symtable(">=");
-    this->symtable("<<");
-    this->symtable(">>");
-    this->symtable("&");
-    this->symtable("|");
-    this->symtable("^");
-    this->symtable("~@");
     this->symtable("klass");
     this->symtable("name");
     this->symtable("prototype");
     this->symtable("parent_class");
     this->symtable("length");
     this->symtable("constructor");
-
     this->symtable("<dead>");
     this->symtable("<class>");
     this->symtable("<object>");

@@ -585,12 +585,6 @@ VALUE VM::add(VALUE left, VALUE right) {
     return this->create_weak_string(new_data, new_length);
   }
 
-  // Operator overloading
-  VALUE v = this->readmembersymbol(left, charly_create_symbol("+"));
-  if (charly_is_callable(v)) {
-    return this->call_dynamic(v, {right}, left);
-  }
-
   // String concatenation for different types
   if (charly_is_string(left) || charly_is_string(right)) {
     std::stringstream buf;
@@ -605,12 +599,6 @@ VALUE VM::add(VALUE left, VALUE right) {
 VALUE VM::sub(VALUE left, VALUE right) {
   if (charly_is_number(left) && charly_is_number(right)) {
     return charly_sub_number(left, right);
-  }
-
-  // Operator overloading
-  VALUE v = this->readmembersymbol(left, charly_create_symbol("-"));
-  if (charly_is_callable(v)) {
-    return this->call_dynamic(v, {right}, left);
   }
 
   return kNaN;
@@ -673,24 +661,12 @@ VALUE VM::mul(VALUE left, VALUE right) {
     return this->create_weak_string(new_data, new_length);
   }
 
-  // Operator overloading
-  VALUE v = this->readmembersymbol(left, charly_create_symbol("*"));
-  if (charly_is_callable(v)) {
-    return this->call_dynamic(v, {right}, left);
-  }
-
   return kNaN;
 }
 
 VALUE VM::div(VALUE left, VALUE right) {
   if (charly_is_number(left) && charly_is_number(right)) {
     return charly_div_number(left, right);
-  }
-
-  // Operator overloading
-  VALUE v = this->readmembersymbol(left, charly_create_symbol("/"));
-  if (charly_is_callable(v)) {
-    return this->call_dynamic(v, {right}, left);
   }
 
   return kNaN;
@@ -701,12 +677,6 @@ VALUE VM::mod(VALUE left, VALUE right) {
     return charly_mod_number(left, right);
   }
 
-  // Operator overloading
-  VALUE v = this->readmembersymbol(left, charly_create_symbol("%"));
-  if (charly_is_callable(v)) {
-    return this->call_dynamic(v, {right}, left);
-  }
-
   return kNaN;
 }
 
@@ -715,35 +685,16 @@ VALUE VM::pow(VALUE left, VALUE right) {
     return charly_pow_number(left, right);
   }
 
-  // Operator overloading
-  VALUE v = this->readmembersymbol(left, charly_create_symbol("**"));
-  if (charly_is_callable(v)) {
-    return this->call_dynamic(v, {right}, left);
-  }
-
   return kNaN;
 }
 
 VALUE VM::uadd(VALUE value) {
-
-  // Operator overloading
-  VALUE v = this->readmembersymbol(value, charly_create_symbol("+@"));
-  if (charly_is_callable(v)) {
-    return this->call_dynamic(v, {}, value);
-  }
-
   return value;
 }
 
 VALUE VM::usub(VALUE value) {
   if (charly_is_number(value)) {
     return charly_usub_number(value);
-  }
-
-  // Operator overloading
-  VALUE v = this->readmembersymbol(value, charly_create_symbol("-@"));
-  if (charly_is_callable(v)) {
-    return this->call_dynamic(v, {}, value);
   }
 
   return kNaN;
@@ -793,12 +744,6 @@ VALUE VM::eq(VALUE left, VALUE right) {
     return kTrue;
   }
 
-  // Operator overloading
-  VALUE v = this->readmembersymbol(left, charly_create_symbol("=="));
-  if (charly_is_callable(v)) {
-    return this->call_dynamic(v, {right}, left);
-  }
-
   return left == right ? kTrue : kFalse;
 }
 
@@ -815,12 +760,6 @@ VALUE VM::lt(VALUE left, VALUE right) {
     return charly_string_length(left) < charly_string_length(right) ? kTrue : kFalse;
   }
 
-  // Operator overloading
-  VALUE v = this->readmembersymbol(left, charly_create_symbol("<"));
-  if (charly_is_callable(v)) {
-    return this->call_dynamic(v, {right}, left);
-  }
-
   return kFalse;
 }
 
@@ -831,12 +770,6 @@ VALUE VM::gt(VALUE left, VALUE right) {
 
   if (charly_is_string(left) && charly_is_string(right)) {
     return charly_string_length(left) > charly_string_length(right) ? kTrue : kFalse;
-  }
-
-  // Operator overloading
-  VALUE v = this->readmembersymbol(left, charly_create_symbol(">"));
-  if (charly_is_callable(v)) {
-    return this->call_dynamic(v, {right}, left);
   }
 
   return kFalse;
@@ -851,12 +784,6 @@ VALUE VM::le(VALUE left, VALUE right) {
     return charly_string_length(left) <= charly_string_length(right) ? kTrue : kFalse;
   }
 
-  // Operator overloading
-  VALUE v = this->readmembersymbol(left, charly_create_symbol("<="));
-  if (charly_is_callable(v)) {
-    return this->call_dynamic(v, {right}, left);
-  }
-
   return kFalse;
 }
 
@@ -867,12 +794,6 @@ VALUE VM::ge(VALUE left, VALUE right) {
 
   if (charly_is_string(left) && charly_is_string(right)) {
     return charly_string_length(left) >= charly_string_length(right) ? kTrue : kFalse;
-  }
-
-  // Operator overloading
-  VALUE v = this->readmembersymbol(left, charly_create_symbol(">="));
-  if (charly_is_callable(v)) {
-    return this->call_dynamic(v, {right}, left);
   }
 
   return kFalse;
@@ -893,24 +814,12 @@ VALUE VM::shl(VALUE left, VALUE right) {
     return charly_shl_number(left, right);
   }
 
-  // Operator overloading
-  VALUE v = this->readmembersymbol(left, charly_create_symbol("<<"));
-  if (charly_is_callable(v)) {
-    return this->call_dynamic(v, {right}, left);
-  }
-
   return kNaN;
 }
 
 VALUE VM::shr(VALUE left, VALUE right) {
   if (charly_is_number(left) && charly_is_number(right)) {
     return charly_shr_number(left, right);
-  }
-
-  // Operator overloading
-  VALUE v = this->readmembersymbol(left, charly_create_symbol(">>"));
-  if (charly_is_callable(v)) {
-    return this->call_dynamic(v, {right}, left);
   }
 
   return kNaN;
@@ -921,24 +830,12 @@ VALUE VM::band(VALUE left, VALUE right) {
     return charly_and_number(left, right);
   }
 
-  // Operator overloading
-  VALUE v = this->readmembersymbol(left, charly_create_symbol("&"));
-  if (charly_is_callable(v)) {
-    return this->call_dynamic(v, {right}, left);
-  }
-
   return kNaN;
 }
 
 VALUE VM::bor(VALUE left, VALUE right) {
   if (charly_is_number(left) && charly_is_number(right)) {
     return charly_or_number(left, right);
-  }
-
-  // Operator overloading
-  VALUE v = this->readmembersymbol(left, charly_create_symbol("|"));
-  if (charly_is_callable(v)) {
-    return this->call_dynamic(v, {right}, left);
   }
 
   return kNaN;
@@ -949,24 +846,12 @@ VALUE VM::bxor(VALUE left, VALUE right) {
     return charly_xor_number(left, right);
   }
 
-  // Operator overloading
-  VALUE v = this->readmembersymbol(left, charly_create_symbol("^"));
-  if (charly_is_callable(v)) {
-    return this->call_dynamic(v, {right}, left);
-  }
-
   return kNaN;
 }
 
 VALUE VM::ubnot(VALUE value) {
   if (charly_is_number(value)) {
     return charly_ubnot_number(value);
-  }
-
-  // Operator overloading
-  VALUE v = this->readmembersymbol(value, charly_create_symbol("~@"));
-  if (charly_is_callable(v)) {
-    return this->call_dynamic(v, {}, value);
   }
 
   return kNaN;
@@ -1298,22 +1183,6 @@ std::optional<VALUE> VM::findprimitivevalue(VALUE value, VALUE symbol) {
 
   Class* pclass = charly_as_class(found_primitive_class);
   return this->findprototypevalue(pclass, symbol);
-}
-
-VALUE VM::call_dynamic(VALUE v, const std::vector<VALUE>& args, VALUE target) {
-  if (!charly_is_callable(v)) {
-    return kNull;
-  }
-
-  this->push_stack(target);
-  this->push_stack(v);
-  for (VALUE i : args) {
-    this->push_stack(i);
-  }
-  this->call(args.size(), true, true);
-  this->run();
-  this->halted = false;
-  return this->pop_stack();
 }
 
 void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {

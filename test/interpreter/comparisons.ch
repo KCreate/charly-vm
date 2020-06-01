@@ -254,24 +254,4 @@ export = ->(describe, it, assert) {
     assert(null ! false, true)
     assert(null ! true, true)
   })
-
-  describe("comparison operator overloading", ->{
-
-    class Box {
-      property value
-
-      @"=="(other) = @value == other.value
-    }
-
-    const a = new Box(100)
-    const b = new Box(200)
-    const c = new Box(300)
-
-    assert(a == b, false)
-    assert(b == c, false)
-    assert(a == c, false)
-    assert(a == a, true)
-    assert(b == b, true)
-    assert(c == c, true)
-  })
 }
