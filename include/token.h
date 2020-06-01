@@ -345,6 +345,11 @@ struct Token {
            this->type == TokenType::Import;
   }
 
+  inline bool could_start_class_expression() {
+    return (this->type == TokenType::Property || this->type == TokenType::Static ||
+            this->type == TokenType::Identifier);
+  }
+
   template <class T>
   inline void write_to_stream(T&& stream) const {
     stream << kTokenTypeStrings[this->type] << " : ";

@@ -1,3 +1,21 @@
+- Maybe remove prototype property on classes
+
+- Programmatic access to call / frame stack
+  - A way to represent a machine frame in Charly.
+
+- Changes to classes system
+  - Member functions of classes should have a property which stores optional
+    class information, such as the class to which this method belongs to,
+    its super function and
+
+- Remove call_dynamic from VM
+  - Operator overloading can be implemented without it
+  - Remove operator overload from operator methods
+  - Return a specific value that signifies that no condition matched
+    If that value is returned, perform the operator overload check
+  - Add helper methods that simply perform an operation whichout doing any
+    operator overload checking, defaulting to null
+
 - Store timers and intervals in a min heap, based on their scheduled time
   - This way we don't have to search through all the scheduled events to find the next one
   - to execute
@@ -50,6 +68,8 @@
 
       f(1, 2, 3, 4, 5, 6) // => [1, 2, [3, 4, 5, 6]]
     `
+
+- Call library destructors inside vm panic handler
 
 - Spread operator
   - Different parsing styles

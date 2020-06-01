@@ -294,4 +294,30 @@ export = ->(describe, it, assert) {
     assert(Person.do_more_stuff(), "this is a static function")
   })
 
+  it("allows blocks to be omitted", ->{
+    class Color {
+      set_r(@r)
+      property r
+
+      property g
+      property b
+
+      set_g(@g)
+      set_b(@b)
+    }
+
+    const c = new Color(1, 2, 3)
+    assert(c.r, 1)
+    assert(c.g, 2)
+    assert(c.b, 3)
+
+    c.set_r(20)
+    c.set_g(30)
+    c.set_b(40)
+
+    assert(c.r, 20)
+    assert(c.g, 30)
+    assert(c.b, 40)
+  })
+
 }

@@ -1579,14 +1579,17 @@ AST::AbstractNode* Parser::parse_func(bool ignore_func_keyword) {
   this->keyword_context.break_allowed = false;
   this->keyword_context.continue_allowed = false;
   this->keyword_context.yield_allowed = true;
+
   if (this->token.type == TokenType::LeftCurly) {
     body = this->parse_block()->as<AST::Block>();
+
   } else if (this->token.type == TokenType::Assignment) {
     this->advance();
     body = this->wrap_in_block(this->parse_control_statement());
-  } else if (this->token.type == TokenType::Semicolon) {
-    this->advance();
+
+  } else if (this->token.type == TokenType::RightCurly || this->token.could_start_class_expression()) {
     body = new AST::Block();
+
   } else {
     this->unexpected_token("block");
     return nullptr;

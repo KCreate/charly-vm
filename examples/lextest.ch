@@ -24,18 +24,16 @@
  * SOFTWARE.
  */
 
-const t = defer(->{
-  print("Timer finished")
-}, 1.second())
+class A {
+  foo(@a)
 
-t.then(->{
-  print("After timer 1")
-})
+  bar(@a);
 
-t.then(->{
-  print("After timer 2")
-})
+  static property some_prop = null
 
-t.then(->{
-  print("After timer 3")
-})
+  baz(@a)
+
+  property a
+
+  other_method()
+}

@@ -206,7 +206,7 @@ export = ->(describe, it, assert) {
       class A {
         property name
 
-        set_name(@name = "default name");
+        set_name(@name = "default name")
       }
 
       const a = new A()
@@ -256,6 +256,14 @@ export = ->(describe, it, assert) {
       assert(f(5, 5), 10)
     })
 
+  })
+
+  it("allows single expression blocks", ->{
+    func foo = 25
+    assert(foo(), 25)
+
+    func bar() = 50
+    assert(bar(), 50)
   })
 
 }
