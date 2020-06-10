@@ -83,13 +83,13 @@ read_state() // => 400
 ```javascript
 const iv = defer.interval(->{
   print("Doing stuff...")
-}, 1000)
+}, 1.second())
 
 defer(->{
   iv.clear()
 
   print("Done!!")
-}, 5000)
+}, 5.seconds())
 
 /* Console output:
 
@@ -98,6 +98,24 @@ defer(->{
    Doing stuff...
    Doing stuff...
    Done!!
+*/
+```
+
+```javascript
+const t1 = defer(->print("First task"), 10.milliseconds())
+const t2 = defer(->print("Second task"), 5.milliseconds())
+const t3 = defer(->print("Third task"), 15.milliseconds())
+
+defer.wait(t1, t2, t3)
+
+print("After waiting for tasks")
+
+/* Console output:
+
+   Second task
+   First task
+   Third task
+   After waiting for tasks
 */
 ```
 
@@ -133,22 +151,22 @@ print("You should not use memes in example code".mockify())
 class Greeter {
   property name
 
-  func greet {
-    print("Hello " + @name)
+  greet {
+    print("Good morning " + @name)
   }
 }
 
-class RudeGreeter extends Greeter {
-  func greet {
-    print("F**k you " + @name)
+class GermanGreeter extends Greeter {
+  greet {
+    print("Guten Morgen " + @name)
   }
 }
 
-const greeter = Greeter("leonard")
-const rude_greeter = RudeGreeter("leonard")
+const greeter = new Greeter("leonard")
+const german_greeter = new GermanGreeter("leonard")
 
-greeter.greet() // => Hello leonard
-rude_greeter.greet() // => F**k you leonard
+greeter.greet() // => Good morning leonard
+german_greeter.greet() // => Guten Morgen leonard
 ```
 
 ## Teaching Features
