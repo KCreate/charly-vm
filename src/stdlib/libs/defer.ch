@@ -30,99 +30,87 @@ const __internal_defer            = Charly.internals.get_method("defer")
 const __internal_defer_interval   = Charly.internals.get_method("defer_interval")
 const __internal_clear_timer      = Charly.internals.get_method("clear_timer")
 const __internal_clear_interval   = Charly.internals.get_method("clear_interval")
+const __internal_get_thread_uid   = Charly.internals.get_method("get_thread_uid")
+const __internal_resume_thread    = Charly.internals.get_method("resume_thread")
+const __internal_suspend_thread   = Charly.internals.get_method("suspend_thread")
 
-// Stores the task id assigned to this timer / interval by the VM
+__internal_suspend_thread.halt_after_return = true;
+
 class DeferHandle {
   property id
-  property callbacks
+  property origin_thread_uid
+  property live_thread_uid
+  property pending_threads
+  property alive
 
   constructor {
-    @callbacks = []
+    @pending_threads = []
+    @origin_thread_uid = __internal_get_thread_uid()
+    @live_thread_uid = null
+    @alive = true
   }
 
-  /*
-   * Schedules a callback to be run when this timer / interval finishes
-   *
-   * Note: "Finishing" for an interval is defined as the interval being cleared
-   * */
-  then(cb, immediate = false) {
-    @callbacks << {cb, immediate}
-    self
+  // Wait for this task to finish
+  // This will suspend the calling thread and
+  // resume it once this task finishes
+  wait {
+    unless @alive return null
+    const uid = __internal_get_thread_uid()
+    if uid == @live_thread_uid throw "Cannot wait for own thread to complete"
+
+    @pending_threads << uid
+    __internal_suspend_thread()
+
+    null
   }
 
-  /*
-   * Invoke the scheduled callbacks
-   * */
   finish {
-    @callbacks.each(->(s) {
-      unless s.immediate {
-        return defer(s.cb)
-      }
-      const cb = s.cb
-      cb()
-    }).clear()
-
-    self
+    @alive = false
+    @pending_threads.each(->(th) __internal_resume_thread(th))
+    @pending_threads.clear()
   }
 }
-
-/*
- * Interval and Timer specific subclasses
- *
- * These classes are basically wrappers around the raw task scheduling functions
- * keeping track of the relevant ID and in the intervals case, the number
- * of iterations that have been run
- * */
 
 class IntervalHandle extends DeferHandle {
   property iterations
 
   constructor(cb, period) {
-
-    // Extract milliseconds from possible Duration objects
-    if period.klass == Time.Duration {
-      period = period.in_milliseconds()
-    }
-
     @id = __internal_defer_interval(->{
-      cb(@iterations)
+      @live_thread_uid = __internal_get_thread_uid()
+      cb(@iterations, self)
       @iterations += 1
-    }, period)
+    }, period.to_n())
+    @iterations = 0
   }
 
   clear {
     __internal_clear_interval(@id)
-    @id = null
     @finish()
-
-    self
   }
 }
 
 class TimerHandle extends DeferHandle {
   constructor(cb, period) {
-
-    // Extract milliseconds from possible Duration objects
-    if period.klass == Time.Duration {
-      period = period.in_milliseconds()
-    }
-
     @id = __internal_defer(->{
+      @live_thread_uid = __internal_get_thread_uid()
       cb()
       @finish()
-    }, period)
+    }, period.to_n())
   }
 
   clear {
     __internal_clear_timer(@id)
-    @id = null
     @finish()
-
-    self
   }
 }
 
-export = {
-  TimerHandle,
-  IntervalHandle
+const defer    = ->(cb, period = 0) new TimerHandle(cb, period)
+defer.interval = ->(cb, period = 0) new IntervalHandle(cb, period)
+defer.wait     = ->(threads) {
+  if typeof threads ! "array" threads = arguments
+  threads.each(->$0.wait())
+
+  null
 }
+
+export = defer

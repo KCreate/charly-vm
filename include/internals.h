@@ -108,6 +108,10 @@ VALUE clear_timer(VM& vm, VALUE uid);
 VALUE clear_interval(VM& vm, VALUE uid);
 VALUE exit(VM& vm, VALUE status_code);
 
+VALUE suspend_thread(VM& vm);
+VALUE resume_thread(VM& vm, VALUE uid);
+VALUE get_thread_uid(VM& vm);
+
 VALUE register_worker_task(VM& vm, VALUE v, VALUE cb);
 }  // namespace Internals
 }  // namespace Charly

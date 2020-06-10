@@ -196,8 +196,11 @@ void GarbageCollector::collect() {
     while (task_queue_copy.size()) {
       VMTask task = task_queue_copy.front();
       task_queue_copy.pop();
-      this->mark(task.fn);
-      this->mark(task.argument);
+
+      if (!task.is_thread) {
+        this->mark(task.callback.fn);
+        this->mark(task.callback.argument);
+      }
     }
 
     {
@@ -224,14 +227,24 @@ void GarbageCollector::collect() {
       }
     }
 
-    for (auto it : this->host_vm->timers) {
-      this->mark(it.second.fn);
-      this->mark(it.second.argument);
+    for (auto& it : this->host_vm->timers) {
+      this->mark(it.second.callback.fn);
+      this->mark(it.second.callback.argument);
     }
 
-    for (auto it : this->host_vm->intervals) {
-      this->mark(std::get<0>(it.second).fn);
-      this->mark(std::get<0>(it.second).argument);
+    for (auto& it : this->host_vm->intervals) {
+      this->mark(std::get<0>(it.second).callback.fn);
+      this->mark(std::get<0>(it.second).callback.argument);
+    }
+
+    for (auto& it : this->host_vm->paused_threads) {
+      VMThread& thread = it.second;
+      this->mark(thread.last_exception_thrown);
+      for (VALUE v : thread.stack) {
+        this->mark(v);
+      }
+      this->mark(charly_create_pointer(thread.frame));
+      this->mark(charly_create_pointer(thread.catchstack));
     }
   }
 

@@ -38,7 +38,6 @@
 
 namespace Charly {
 
-// TODO: CamelCase
 enum AsyncTaskType : uint8_t {
 
   // Async File System Operations

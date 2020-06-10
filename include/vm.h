@@ -100,13 +100,39 @@ struct VMContext {
  * */
 struct VMTask {
   uint64_t uid;
-  VALUE fn;
-  VALUE argument;
 
-  VMTask(uint64_t u, VALUE f, VALUE a) : uid(u), fn(f), argument(a) {
+  union {
+    uint64_t thread_id;
+    struct {
+      VALUE fn;
+      VALUE argument;
+    } callback;
+  };
+  bool is_thread;
+
+  VMTask(uint64_t tid) : thread_id(tid), is_thread(true) {
   }
 
-  VMTask(VALUE f, VALUE a) : uid(0), fn(f), argument(a) {
+  VMTask(uint64_t u, VALUE f, VALUE a) : uid(u), callback({f, a}), is_thread(false) {
+  }
+
+  VMTask(VALUE f, VALUE a) : uid(0), callback({f, a}), is_thread(false) {
+  }
+};
+
+/*
+ * Suspended VM thread
+ * */
+struct VMThread {
+  uint64_t uid;
+  VALUE last_exception_thrown;
+  std::vector<VALUE> stack;
+  Frame* frame;
+  CatchTable* catchstack;
+  uint8_t* resume_address;
+
+  VMThread(uint64_t u, VALUE l, std::vector<VALUE>&& s, Frame* f, CatchTable* c, uint8_t* r)
+      : uid(u), last_exception_thrown(l), stack(std::move(s)), frame(f), catchstack(c), resume_address(r) {
   }
 };
 
@@ -136,6 +162,7 @@ public:
       : context(ctx),
         gc(GarbageCollectorConfig{.out_stream = ctx.err_stream, .err_stream = ctx.err_stream, .trace = ctx.trace_gc}, this),
         running(true),
+        uid(0),
         frames(nullptr),
         catchstack(nullptr),
         ip(nullptr),
@@ -381,6 +408,11 @@ public:
   uint8_t start_runtime();
   void exit(uint8_t status_code);
 
+  uint64_t get_thread_uid();
+  uint64_t get_next_thread_uid();
+  void suspend_thread();
+  void resume_thread(uint64_t uid);
+
   VALUE register_module(InstructionBlock* block);
   void register_task(VMTask task);
   uint64_t register_timer(Timestamp, VMTask task);
@@ -420,7 +452,9 @@ private:
   // Runtime constructor which handles all "new" calls
   VALUE runtime_constructor = kNull;
 
-  // Contains all tasks that still need to be run
+  // Scheduled tasks and paused VM threads
+  uint64_t next_thread_id = 0;
+  std::map<uint64_t, VMThread> paused_threads;
   std::queue<VMTask> task_queue;
   bool running;
 
@@ -443,6 +477,9 @@ private:
   std::condition_variable worker_result_queue_cv;
   std::mutex worker_result_queue_m;
   std::queue<AsyncTaskResult> worker_result_queue;
+
+  // The uid of the current thread of execution
+  uint64_t uid;
 
   // Holds a pointer to the upper-most environment frame
   // When executing new modules, their parent environment frame is set to

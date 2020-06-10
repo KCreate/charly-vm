@@ -36,6 +36,7 @@ const result = unittest(->(describe, it, assert, context) {
     ["Classes",                     "./interpreter/classes.ch"],
     ["Comments",                    "./interpreter/comments.ch"],
     ["Comparisons",                 "./interpreter/comparisons.ch"],
+    ["Defer",                       "./interpreter/defer.ch"],
     ["Exceptions",                  "./interpreter/exceptions.ch"],
     ["External Files",              "./interpreter/external-files.ch"],
     ["Functions",                   "./interpreter/functions.ch"],

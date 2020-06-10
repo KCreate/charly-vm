@@ -47,37 +47,17 @@ class Duration {
   in_weeks        = @ms / (1000 * 60 * 60 * 24 * 7)
   in_years        = @ms / (1000 * 60 * 60 * 24 * 365)
 
-  add(o) {
-    new Duration(@ms + o.ms)
-  }
+  add(o) = new Duration(@ms + o.ms)
+  sub(o) = new Duration(@ms - o.ms)
+  mul(n) = new Duration(@ms * n)
+  div(n) = new Duration(@ms / n)
+  mod(o) = new Duration(@ms % o.ms)
 
-  sub(o) {
-    new Duration(@ms - o.ms)
-  }
-
-  mul(o) {
-    new Duration(@ms * o)
-  }
-
-  div(o) {
-    if typeof o == "number" return new Duration(@ms / o)
-    @ms / o.ms
-  }
-
-  mod(o) {
-    new Duration(@ms % o.ms)
-  }
-
-  @"+"(o) = @add(o)
-  @"-"(o) = @sub(o)
-  @"*"(o) = @mul(o)
-  @"/"(o) = @div(o)
-  @"%"(o) = @mod(o)
-  @"="(o) = @ms == o.ms
-  @"<"(o) = @ms < o.ms
-  @">"(o) = @ms > o.ms
-  @"<="(o) = @ms <= o.ms
-  @">="(o) = @ms >= o.ms
+  equals(o)        = @ms == o.ms
+  less_than(o)     = @ms < o.ms
+  greater_than(o)  = @ms > o.ms
+  less_equal(o)    = @ms <= o.ms
+  greater_equal(o) = @ms >= o.ms
 
   to_s {
     let remainder = self
@@ -120,7 +100,11 @@ class Duration {
     }
     buf
   }
-};
+
+  to_n {
+    @ms
+  }
+}
 
 class Timestamp {
   property ms
@@ -133,22 +117,17 @@ class Timestamp {
     @ms = o
   }
 
-  add(o) {
-    new Timestamp(@ms + o.ms)
-  }
-
+  add(o) = new Timestamp(@ms + o.ms)
   sub(o) {
     if o.klass == Duration return new Timestamp(@ms - o.ms)
     new Duration(@ms - o.ms)
   }
 
-  @"+"(o) = @add(o)
-  @"-"(o) = @sub(o)
-  @"="(o) = @ms == o.ms
-  @"<"(o) = @ms < o.ms
-  @">"(o) = @ms > o.ms
-  @"<="(o) = @ms <= o.ms
-  @">="(o) = @ms >= o.ms
+  equals(o)        = @ms == o.ms
+  less_than(o)     = @ms < o.ms
+  greater_than(o)  = @ms > o.ms
+  less_equal(o)    = @ms <= o.ms
+  greater_equal(o) = @ms >= o.ms
 
   floor(d) {
     const rem = @ms % d.ms
@@ -162,6 +141,10 @@ class Timestamp {
 
   to_s {
     @to_utc()
+  }
+
+  to_n {
+    @ms
   }
 
   to_local {

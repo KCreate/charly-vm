@@ -92,6 +92,10 @@ static std::unordered_map<std::string, InternalMethodSignature> kMethodSignature
     DEFINE_INTERNAL_METHOD(clear_interval, 1),
     DEFINE_INTERNAL_METHOD(exit, 1),
 
+    DEFINE_INTERNAL_METHOD(suspend_thread, 0),
+    DEFINE_INTERNAL_METHOD(resume_thread, 1),
+    DEFINE_INTERNAL_METHOD(get_thread_uid, 0),
+
     DEFINE_INTERNAL_METHOD(register_worker_task, 2),
 };
 
@@ -423,6 +427,21 @@ VALUE register_worker_task(VM& vm, VALUE v, VALUE cb) {
   task.arguments.push_back(v);
   vm.register_worker_task(task);
   return kNull;
+}
+
+VALUE suspend_thread(VM& vm) {
+  vm.suspend_thread();
+  return kNull;
+}
+
+VALUE resume_thread(VM& vm, VALUE uid) {
+  CHECK(number, uid);
+  vm.resume_thread(charly_number_to_uint64(uid));
+  return kNull;
+}
+
+VALUE get_thread_uid(VM& vm) {
+  return charly_create_integer(vm.get_thread_uid());
 }
 
 }  // namespace Internals

@@ -130,7 +130,9 @@ Frame* VM::create_frame(VALUE self,
 VALUE VM::pop_stack() {
   VALUE val = kNull;
 
-  if (this->stack.size() == 0) this->panic(Status::CorruptedStack);
+  if (this->stack.size() == 0) {
+    this->panic(Status::CorruptedStack);
+  }
   val = this->stack.back();
   this->stack.pop_back();
 
@@ -344,6 +346,7 @@ VALUE VM::create_cfunction(VALUE name, uint32_t argc, void* pointer) {
   cell->cfunction.argc = argc;
   cell->cfunction.container = new std::unordered_map<VALUE, VALUE>();
   cell->cfunction.push_return_value = true;
+  cell->cfunction.halt_after_return = false;
   return cell->as_value();
 }
 
@@ -920,6 +923,10 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
         return cfunc->push_return_value ? kTrue : kFalse;
       }
 
+      if (symbol == charly_create_symbol("halt_after_return")) {
+        return cfunc->halt_after_return ? kTrue : kFalse;
+      }
+
       if (symbol == charly_create_symbol("name")) {
         return this->create_string(this->context.symtable(cfunc->name).value_or(kUndefinedSymbolString));
       }
@@ -1080,6 +1087,11 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
 
       if (symbol == charly_create_symbol("push_return_value")) {
         cfunc->push_return_value = charly_truthyness(value);
+        break;
+      }
+
+      if (symbol == charly_create_symbol("halt_after_return")) {
+        cfunc->halt_after_return = charly_truthyness(value);
         break;
       }
 
@@ -1334,9 +1346,7 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
     this->gc.unmark_persistent(argv[i]);
   }
 
-  // The cfunction call might have halted the machine by either executing a module
-  // or calling a user defined function
-  this->halted = false;
+  this->halted = function->halt_after_return;
 
   if (function->push_return_value && this->catchstack == original_catchtable) {
     this->push_stack(rv);
@@ -3382,21 +3392,31 @@ uint8_t VM::start_runtime() {
     if (this->timers.size()) {
       auto it = this->timers.begin();
       while (it != this->timers.end() && it->first <= now) {
-        now = std::chrono::steady_clock::now();
         this->register_task(it->second);
         this->timers.erase(it);
         it = this->timers.begin();
       }
     }
+
+    // TODO: Rewrite this logic, causes an infinite loop on period 0 intervals
+    //
+    // Scheduling an interval with period 0 will have
+    // it be inserted over and over
     if (this->intervals.size()) {
       auto it = this->intervals.begin();
+
+      std::map<Timestamp, std::tuple<VMTask, uint32_t>> newly_scheduled_intervals;
       while (it != this->intervals.end() && it->first <= now) {
-        now = std::chrono::steady_clock::now();
         this->register_task(std::get<0>(it->second));
-        this->intervals.insert({now + std::chrono::milliseconds(std::get<1>(it->second)), it->second});
+
+        Timestamp scheduled_time = now + std::chrono::milliseconds(std::get<1>(it->second));
+        newly_scheduled_intervals.insert({scheduled_time, it->second});
         this->intervals.erase(it);
+
         it = this->intervals.begin();
       }
+
+      this->intervals.insert(newly_scheduled_intervals.begin(), newly_scheduled_intervals.end());
     }
 
     // Add all worker thread results to the task queue
@@ -3416,24 +3436,51 @@ uint8_t VM::start_runtime() {
       VMTask task = this->task_queue.front();
       this->task_queue.pop();
 
-      // Make sure we got a callable type as callback
-      if (!charly_is_function(task.fn)) {
-        this->panic(Status::RuntimeTaskNotCallable);
+      if (task.is_thread) {
+
+        // Resume a suspended thread
+        uint64_t thread_id = task.thread_id;
+        if (this->paused_threads.count(thread_id) == 0) {
+          this->panic(Status::InvalidThreadId);
+        }
+
+        VMThread& thread = this->paused_threads.at(thread_id);
+
+        // Restore suspended thread
+        this->uid = thread.uid;
+        this->last_exception_thrown = thread.last_exception_thrown;
+        this->stack = std::move(thread.stack);
+        this->frames = thread.frame;
+        this->catchstack = thread.catchstack;
+        this->ip = thread.resume_address;
+
+        this->paused_threads.erase(thread_id);
+
+        // Push null, to act as the return value from __internal_suspend_thread
+        this->push_stack(kNull);
+        this->run();
+      } else {
+
+        // Make sure we got a function as callback
+        if (!charly_is_function(task.callback.fn)) {
+          this->panic(Status::RuntimeTaskNotCallable);
+        }
+
+        this->gc.mark_persistent(task.callback.fn);
+        this->gc.mark_persistent(task.callback.argument);
+
+        // 0 is the index of the Charly object in the top frame
+        VALUE global_self = this->top_frame->read_local(0);
+        Function* fn = charly_as_function(task.callback.fn);
+        VALUE self = this->get_self_for_function(fn, &global_self);
+        this->call_function(fn, 1, &task.callback.argument, self, true);
+        this->uid = this->get_next_thread_uid();
+        this->run();
+        this->pop_stack();
+
+        this->gc.unmark_persistent(task.callback.fn);
+        this->gc.unmark_persistent(task.callback.argument);
       }
-
-      this->gc.mark_persistent(task.fn);
-      this->gc.mark_persistent(task.argument);
-
-      // 0 is the index of the Charly object in the top frame
-      VALUE target = this->top_frame->read_local(0);
-      Function* fn = charly_as_function(task.fn);
-      VALUE self = this->get_self_for_function(fn, &target);
-      this->call_function(fn, 1, &task.argument, self, true);
-      this->run();
-      this->pop_stack();
-
-      this->gc.unmark_persistent(task.fn);
-      this->gc.unmark_persistent(task.argument);
     } else {
 
       // Wait for the next result from the worker result queue
@@ -3523,6 +3570,30 @@ void VM::exit(uint8_t status_code) {
   this->status_code = status_code;
 }
 
+uint64_t VM::get_thread_uid() {
+  return this->uid;
+}
+
+uint64_t VM::get_next_thread_uid() {
+  return this->next_thread_id++;
+}
+
+void VM::suspend_thread() {
+  this->halted = true;
+  this->paused_threads.emplace(this->uid, VMThread(
+    this->uid,
+    this->last_exception_thrown,
+    std::move(this->stack),
+    this->frames,
+    this->catchstack,
+    this->ip + kInstructionLengths[this->fetch_instruction()]
+  ));
+}
+
+void VM::resume_thread(uint64_t uid) {
+  this->register_task(VMTask(uid));
+}
+
 VALUE VM::register_module(InstructionBlock* block) {
   uint8_t* old_ip = this->ip;
   this->ip = block->get_data();
@@ -3532,22 +3603,30 @@ VALUE VM::register_module(InstructionBlock* block) {
 }
 
 void VM::register_task(VMTask task) {
-  this->gc.mark_persistent(task.fn);
-  this->gc.mark_persistent(task.argument);
+  if (!task.is_thread) {
+    this->gc.mark_persistent(task.callback.fn);
+    this->gc.mark_persistent(task.callback.argument);
+  }
+
   this->task_queue.push(task);
 }
 
 uint64_t VM::register_timer(Timestamp ts, VMTask task) {
-  this->gc.mark_persistent(task.fn);
-  this->gc.mark_persistent(task.argument);
+  if (!task.is_thread) {
+    this->gc.mark_persistent(task.callback.fn);
+    this->gc.mark_persistent(task.callback.argument);
+  }
+
   task.uid = this->get_next_timer_id();
   this->timers.insert({ts, task});
   return task.uid;
 }
 
 uint64_t VM::register_interval(uint32_t period, VMTask task) {
-  this->gc.mark_persistent(task.fn);
-  this->gc.mark_persistent(task.argument);
+  if (!task.is_thread) {
+    this->gc.mark_persistent(task.callback.fn);
+    this->gc.mark_persistent(task.callback.argument);
+  }
 
   Timestamp now = std::chrono::steady_clock::now();
   Timestamp exec_at = now + std::chrono::milliseconds(period);

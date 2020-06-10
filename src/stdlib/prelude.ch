@@ -162,9 +162,7 @@ ignoreconst {
     __internal_exit(status)
   }
 
-  const defer_internals = import "_charly_defer"
-  defer          = ->(cb, period = 0) new defer_internals.TimerHandle(cb, period)
-  defer.interval = ->(cb, period = 0) new defer_internals.IntervalHandle(cb, period)
+  defer = import "_charly_defer"
 
   // Setup the charly object
   Charly.io = {
