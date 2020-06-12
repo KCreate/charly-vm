@@ -10,7 +10,11 @@
 
 - Store timers and intervals in a min heap, based on their scheduled time
   - This way we don't have to search through all the scheduled events to find the next one
-  - to execute
+    to execute
+
+- Implement a notifier class which can resume certain threads once a condition is met
+  - Can be used to implement the defer timer and interval handles in a cleaner way
+  - Useful for async worker thread methods
 
 - Implement promises class
 
@@ -80,28 +84,6 @@
   - Types which can be iterated over should all have a common method to obtain
     such an iterator. The returned object will be of the class 'Iterator'.
   - Can be implemented using generators
-
-- Ability to pause a thread of execution and resume it at a later time
-  - Usecase #1: Waiting for a Timer to finish
-  - `
-      const handle = defer(->{
-        print("waited for 1 second")
-      }, 1000)
-
-      handle.wait()
-
-      print("this runs after the timer")
-    `
-  - Maybe implement a lightweight fiber system with a task scheduler?
-    - Task scheduler should be configurable via charly code.
-    - Different fibers should not run in parallel, but concurrently, meaning
-      the task scheduler can pause a fiber and resume another without the programmer knowing.
-    - Ability to block transfer to another fiber for some time
-    - Ability to manually pass control to some other fiber
-    - Is this actually a good idea? Is it a better idea to just follow through with the whole
-      event queue system?
-    - Ability to communicate between fibers, similar to how Go implements Channels
-    - Mutexes, locks etc.
 
 - Ability to flush stdout, stderr
 
