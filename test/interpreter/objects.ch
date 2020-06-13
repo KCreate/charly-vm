@@ -95,6 +95,24 @@ export = ->(describe, it, assert) {
 
     describe("stdlib methods", ->{
 
+      describe("is_a", ->{
+        class A {}
+        class B extends A {}
+        class C extends B {}
+        class D extends C {}
+
+        assert((new D()).is_a(D))
+        assert((new D()).is_a(C))
+        assert((new D()).is_a(B))
+        assert((new D()).is_a(A))
+        assert((new D()).is_a(Object))
+        assert((new D()).is_a(Value))
+
+        assert((new C()).is_a(D), false)
+        assert((new C()).is_a(Number), false)
+        assert((new C()).is_a(String), false)
+      })
+
       describe("tap", ->{
 
         "leonard".tap(->(name) {

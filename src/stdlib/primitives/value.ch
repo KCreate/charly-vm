@@ -80,5 +80,23 @@ export = ->{
     to_n {
       NaN
     }
+
+    /*
+     * Checks if this object is an instance of klass or any of its subclasses
+     * */
+    is_a(target) {
+
+      // Check for a direct match
+      if self.klass == target return true
+
+      // Traverse class chain
+      let klass = @klass
+      while klass {
+        if klass == target return true
+        klass = klass.parent_class
+      }
+
+      return false
+    }
   }
 }

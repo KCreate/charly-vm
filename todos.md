@@ -1,22 +1,64 @@
-- Maybe remove prototype property on classes
-
-- Programmatic access to call / frame stack
-  - A way to represent a machine frame in Charly.
-
-- Changes to classes system
-  - Member functions of classes should have a property which stores optional
-    class information, such as the class to which this method belongs to,
-    its super function and
+- New global class: Error
+  - `throw new Error("something bad happened")`
+  - Possible subclasses:
+    - RangeError
+    - ReferenceError
+    - TypeError
+  - Implement a global basic exception handler which just prints the message
+    and a nice human readable stacktrace.
+  - If the global exception handler is reached it should not crash the whole machine
+    but only the currently running Fiber (see Fiber ideas below)
+  - Syntax to only catch certain specific exceptions (i.e: `try {...} catch(CustomError e) {...}`)
 
 - Store timers and intervals in a min heap, based on their scheduled time
   - This way we don't have to search through all the scheduled events to find the next one
     to execute
 
+- Programmatic access to call / frame stack
+  - A way to represent a machine frame in Charly
+
+- Changes to the class system
+  - Constructors of subclasses that define new properties are required to contain a 'super(...)' call
+  - No 'super.foo(...)' syntax
+    - Functions can only call their own super function, not any arbitrary one
+    - Special syntax for 'super.call(...)' to call with a custom self object and arguments
+
+- Promise class
+  - Main abstraction class for all asynchronous methods in the standard library
+  - Introduce await keyword to wait for a promise to finish
+
+- Class function overloading based on argument size
+  - Looks like a single function from the outside
+    - Dispatch to correct function inside compiler-generated method
+  - `
+      class Math {
+        rand()         = __get_random(0, 1)
+        rand(max)      = __get_random(0, max)
+        rand(min, max) = __get_random(min, max)
+      }
+    `
+
+- String interpolation
+  - `
+      // Parsing
+      const name = "leonard"
+      "Hello #{name}"               "Hello leonard"
+      "Hello \#{name}"              "Hello #{name}"
+      "Hello #name"                 "Hello #name"
+      "Hello #{25 + 25}"            "Hello 50"
+
+      // Tree-rewrite
+      "Hello #{name}, how are you?"       "Hello " + (name).to_s() + ", how are you?"
+      "Number: #{25 + 25}"                "Number: " + (25 + 25).to_s()
+      "#{25 + 25}"                        (25 + 25).to_s()
+    `
+  - Lexer modes
+    - http://www.oilshell.org/blog/2017/12/17.html
+    - https://www.reddit.com/r/ProgrammingLanguages/comments/932372/how_to_implement_string_interpolation/
+
 - Implement a notifier class which can resume certain threads once a condition is met
   - Can be used to implement the defer timer and interval handles in a cleaner way
   - Useful for async worker thread methods
-
-- Implement promises class
 
 - Parse binary numbers
   -  8-bit numbers    0b00000000
@@ -32,30 +74,6 @@
 - Export keyword `export class Foo {}`
 
 - Changes to import system, see feature-ideas/import-system.ch
-
-- Changes to the class system
-  - Primary classes can have their constructor auto-generated
-  - Subclasses are required to have a hand-written constructor if new properties are defined
-    - That constructor is required to contain a 'super(...)' call
-  - 'super.foo' should call the foo method of the parent object
-    - super is a keyword and cannot be used as a regular identifier
-    - super can only be used inside class constructors and functions
-      - Inside a constructor it will invoke the constructor of the parent class
-        - There can only be one superconstructor call inside the constructor method
-      - Inside a class function it will invoke the function defined by the parent class
-        - If no such function exists, an exception is thrown
-
-- New global class: Error
-  - `throw new Error("something bad happened")`
-  - Possible subclasses:
-    - RangeError
-    - ReferenceError
-    - TypeError
-  - Implement a global basic exception handler which just prints the message
-    and a nice human readable stacktrace.
-  - If the global exception handler is reached it should not crash the whole machine
-    but only the currently running Fiber (see Fiber ideas below)
-  - Syntax to only catch certain specific exceptions (i.e: `try {...} catch(CustomError e) {...}`)
 
 - Argument spread operator
   - Collect all remaining arguments
