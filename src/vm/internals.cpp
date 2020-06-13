@@ -305,51 +305,61 @@ VALUE dirname(VM& vm) {
 }
 
 VALUE set_primitive_value(VM& vm, VALUE value) {
+  CHECK(class, value);
   vm.set_primitive_value(value);
   return value;
 }
 
 VALUE set_primitive_object(VM& vm, VALUE value) {
+  CHECK(class, value);
   vm.set_primitive_object(value);
   return value;
 }
 
 VALUE set_primitive_class(VM& vm, VALUE value) {
+  CHECK(class, value);
   vm.set_primitive_class(value);
   return value;
 }
 
 VALUE set_primitive_array(VM& vm, VALUE value) {
+  CHECK(class, value);
   vm.set_primitive_array(value);
   return value;
 }
 
 VALUE set_primitive_string(VM& vm, VALUE value) {
+  CHECK(class, value);
   vm.set_primitive_string(value);
   return value;
 }
 
 VALUE set_primitive_number(VM& vm, VALUE value) {
+  CHECK(class, value);
   vm.set_primitive_number(value);
   return value;
 }
 
 VALUE set_primitive_function(VM& vm, VALUE value) {
+  CHECK(class, value);
   vm.set_primitive_function(value);
   return value;
 }
 
 VALUE set_primitive_generator(VM& vm, VALUE value) {
+  CHECK(class, value);
   vm.set_primitive_generator(value);
   return value;
 }
 
 VALUE set_primitive_boolean(VM& vm, VALUE value) {
+  CHECK(class, value);
   vm.set_primitive_boolean(value);
   return value;
 }
 
 VALUE set_primitive_null(VM& vm, VALUE value) {
+  CHECK(class, value);
   vm.set_primitive_null(value);
   return value;
 }

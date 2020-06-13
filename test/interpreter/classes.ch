@@ -320,4 +320,20 @@ export = ->(describe, it, assert) {
     assert(c.b, 40)
   })
 
+  it("throws an exception when the parent_class isn't a class", ->{
+    const cases = [
+      ->class A extends null {},
+      ->class A extends 25 {},
+      ->class A extends "test" {},
+      ->class A extends [1, 2] {},
+      ->class A extends {a: 1} {}
+    ]
+
+    const expected_error_message = "Can't extend from non class value"
+
+    cases.each(->(c) {
+      assert.exception(c, ->(e) assert(e.message, expected_error_message))
+    })
+  })
+
 }

@@ -1677,12 +1677,16 @@ void VM::op_putclass(VALUE name,
   klass->prototype = lalloc.create_object(methodcount);
   klass->container->reserve(staticpropertycount + staticmethodcount);
 
+  bool parent_class_invalid_type = false;
+
   if (has_constructor) {
     klass->constructor = this->pop_stack();
   }
 
   if (has_parent_class) {
-    klass->parent_class = this->pop_stack();
+    VALUE parent_class = this->pop_stack();
+    parent_class_invalid_type = !charly_is_class(parent_class);
+    klass->parent_class = parent_class;
   } else {
     klass->parent_class = this->primitive_object;
   }
@@ -1722,7 +1726,12 @@ void VM::op_putclass(VALUE name,
     klass->member_properties->push_back(prop);
   }
 
-  this->push_stack(charly_create_pointer(klass));
+  // Make sure the parent class is a class
+  if (parent_class_invalid_type) {
+    this->throw_exception("Can't extend from non class value");
+  } else {
+    this->push_stack(charly_create_pointer(klass));
+  }
 }
 
 void VM::op_pop() {
@@ -2978,7 +2987,8 @@ charly_main_switch_putclass : {
   this->op_putclass(name, propertycount, staticpropertycount, methodcount, staticmethodcount, has_parent_class,
                     has_constructor);
   OPCODE_EPILOGUE();
-  NEXTOP();
+  CONDINCIP();
+  DISPATCH();
 }
 
 charly_main_switch_pop : {

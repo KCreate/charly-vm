@@ -24,15 +24,8 @@
  * SOFTWARE.
  */
 
-const task = defer.interval(->(i) {
-
-  print(i)
-  if i == 10 task.clear()
-
-})
-
-print("before wait")
-
-task.wait()
-
-print("finished waiting")
+try {
+  class A extends 25 {}
+} catch(e) {
+  print(e)
+}
