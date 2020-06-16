@@ -37,18 +37,18 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree) {
   // Generate a module inclusion function if one is requested
   // The module inclusion function wraps a program into a single function that can be
   // called by the runtime
-  AST::Function* inclusion_function = nullptr;
   if (this->config.wrap_inclusion_function) {
     // Append a return export node to the end of the parsed block
     AST::Block* block = result.abstract_syntax_tree->as<AST::Block>();
     AST::Identifier* ret_id = new AST::Identifier(this->config.inclusion_function_return_identifier);
     AST::Return* ret_stmt = new AST::Return(ret_id->at(block));
-    block->statements.push_back(ret_stmt->at(block));
+    ret_stmt->at(block);
+    block->statements.push_back(ret_stmt);
 
     // Wrap the whole program in a function which handles the exporting interface
     // to other programs
-    inclusion_function = new AST::Function(this->config.inclusion_function_name,
-                                           this->config.inclusion_function_arguments, {}, block, true);
+    AST::Function* inclusion_function = new AST::Function(this->config.inclusion_function_name,
+                                                          this->config.inclusion_function_arguments, {}, block, true);
     inclusion_function->at(block);
     inclusion_function->lvarcount = kKnownTopLevelConstants.size();
     result.abstract_syntax_tree = inclusion_function;
@@ -56,7 +56,9 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree) {
     // Push the function onto the stack and wrap it in a block node
     // The PushStack node prevents the optimizer from removing the function literal
     result.abstract_syntax_tree = new AST::PushStack(result.abstract_syntax_tree);
+    result.abstract_syntax_tree->at(block);
     result.abstract_syntax_tree = new AST::Block(result.abstract_syntax_tree);
+    result.abstract_syntax_tree->at(block);
   }
 
   try {

@@ -164,6 +164,15 @@ AST::AbstractNode* Parser::parse_program() {
     block->append_node(this->parse_statement());
   }
 
+  if (block->statements.size() == 0) {
+    block->at(this->token);
+  } else {
+    std::optional<Location> location_start = block->statements.front()->location_start;
+    std::optional<Location> location_end = block->statements.back()->location_end;
+
+    block->at(location_start, location_end);
+  }
+
   return block;
 }
 

@@ -98,11 +98,10 @@ public:
 
       if (top) {
         top->at(loc);
+        top->traverse([&](AbstractNode* child_node) {
+          node_queue.push(child_node);
+        });
       }
-
-      top->traverse([&](AbstractNode* child_node) {
-        node_queue.push(child_node);
-      });
     }
 
     return this;
