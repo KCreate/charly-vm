@@ -26,39 +26,104 @@
 
 #include <tuple>
 #include <vector>
+#include <optional>
 
 #include "defines.h"
-#include "instructionblock.h"
 
 #pragma once
 
 namespace Charly {
 
+// Region of bytecode mapped to a source line
+//
+//                 +- Start offset
+//                 |         +- End offset
+//                 |         |         +- Line number
+//                 v         v         v
+typedef std::tuple<uint32_t, uint32_t, uint32_t> MappedSourceLine;
+
 /*
- * Keeps track of which addresses belong to which files
+ * Stores source mapping information for a specific file
  * */
+struct SourceMap {
+  std::string filename;
+  uint8_t* begin_address = nullptr;
+  uint8_t* end_address = nullptr;
+  std::vector<MappedSourceLine> entries;
+
+  // Fields used to create the entries list
+  uint32_t last_line_number = 0;
+  uint32_t last_bytecode_offset = 0;
+
+  SourceMap(const std::string& f) : filename(f) {}
+
+  SourceMap(SourceMap&& other) : filename(std::move(other.filename)), entries(std::move(other.entries)) {
+  }
+
+  // Start a new line number
+  inline void begin_line_number(uint32_t line_number, uint32_t bytecode_offset) {
+    this->entries.push_back({this->last_bytecode_offset, bytecode_offset, this->last_line_number});
+    this->last_line_number = line_number;
+    this->last_bytecode_offset = bytecode_offset;
+  }
+
+  // Creates the last mapped entry
+  // Calling begin_line_number after this method has been called will result
+  // in corrupted data
+  inline void finish_file(uint32_t bytecode_offset) {
+    this->entries.push_back({this->last_bytecode_offset, bytecode_offset, this->last_line_number});
+    this->last_line_number = 0;
+    this->last_bytecode_offset = 0;
+  }
+
+  // Returns the source line this offset belongs to
+  inline uint32_t resolve_offset(uint32_t offset) {
+    for (const MappedSourceLine& entry : this->entries) {
+      uint32_t start_offset, end_offset, line_number;
+      std::tie(start_offset, end_offset, line_number) = entry;
+
+      if (start_offset <= offset && end_offset >= offset) {
+        return line_number;
+      }
+    }
+
+    return 0;
+  }
+};
+
+// Manages sourcemaps
 class AddressMapping {
-private:
-  std::vector<std::tuple<uint8_t*, uint8_t*, std::string>> mappings;
+  std::vector<SourceMap> mapped_files;
 
 public:
 
-  // Register an instructionblocks address range under a specific filepath
-  inline void register_instructionblock(InstructionBlock* block, const std::string& path) {
-    uint8_t* begin = block->data;
-    uint8_t* end = begin + block->capacity;
-    this->mappings.push_back({begin, end, path});
+  inline void begin_new_file(const std::string& filename) {
+    this->mapped_files.emplace_back(filename);
   }
 
-  // Return the filepath an address belongs to
-  inline std::optional<std::string> resolve_address(uint8_t* address) {
-    for (const auto& a : this->mappings) {
-      if (address >= std::get<0>(a) && address < std::get<1>(a)) {
-        return std::get<2>(a);
+  inline SourceMap& active_file() {
+    return this->mapped_files.back();
+  }
+
+  inline std::optional<std::string> filename_for_address(uint8_t* address) {
+    for (SourceMap& map : this->mapped_files) {
+      if (map.begin_address <= address && map.end_address >= address) {
+        return map.filename;
       }
     }
 
     return std::nullopt;
   }
+
+  inline std::optional<uint32_t> linenumber_for_address(uint8_t* address) {
+    for (SourceMap& map : this->mapped_files) {
+      if (map.begin_address <= address && map.end_address >= address) {
+        return map.resolve_offset(map.begin_address - address);
+      }
+    }
+
+    return std::nullopt;
+  }
+
 };
 }  // namespace Charly

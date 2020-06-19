@@ -291,7 +291,8 @@ VALUE getn(VM& vm) {
 
 VALUE dirname(VM& vm) {
   uint8_t* ip = vm.get_ip();
-  std::optional<std::string> lookup_result = vm.context.compiler_manager.address_mapping.resolve_address(ip);
+
+  std::optional<std::string> lookup_result = vm.context.compiler_manager.address_mapping.filename_for_address(ip);
 
   if (!lookup_result) {
     vm.throw_exception("dirname: this address does not belong to a file");

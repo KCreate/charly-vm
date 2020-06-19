@@ -33,6 +33,7 @@
 #include "sourcefile.h"
 #include "stringpool.h"
 #include "symboltable.h"
+#include "address-mapping.h"
 
 #pragma once
 
@@ -66,8 +67,10 @@ struct CompilerResult {
 struct CompilerContext {
   SymbolTable& symtable;
   StringPool& stringpool;
+  AddressMapping& address_mapping;
 
-  CompilerContext(SymbolTable& st, StringPool& sp) : symtable(st), stringpool(sp) {
+  CompilerContext(SymbolTable& st, StringPool& sp, AddressMapping& am)
+      : symtable(st), stringpool(sp), address_mapping(am) {
   }
 };
 

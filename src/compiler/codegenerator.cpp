@@ -55,12 +55,21 @@ InstructionBlock* CodeGenerator::compile(AST::AbstractNode* node) {
     this->queued_functions.pop_front();
   }
   this->assembler.resolve_unresolved_label_references();
+
+  this->context.address_mapping.active_file().finish_file(this->assembler.get_writeoffset());
   return new InstructionBlock(this->assembler);
 }
 
 AST::AbstractNode* CodeGenerator::visit_block(AST::Block* node, VisitContinue) {
   this->assembler.write_nop();
   for (auto& node : node->statements) {
+
+    if (!node->location_start.has_value()) {
+      uint32_t line_number = node->location_start->row;
+      uint32_t bytecode_offset = this->assembler.get_writeoffset();
+      this->context.address_mapping.active_file().begin_line_number(line_number, bytecode_offset);
+    }
+
     this->visit_node(node);
 
     // If the statement produces an expression, pop it off the stack now

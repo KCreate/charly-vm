@@ -63,7 +63,7 @@ std::optional<CompilerResult> CompilerManager::compile(const std::string& filena
   }
 
   CompilerConfig cconfig = {.flags = this->flags};
-  CompilerContext ccontext(this->symtable, this->stringpool);
+  CompilerContext ccontext(this->symtable, this->stringpool, this->address_mapping);
   Compiler compiler(ccontext, cconfig);
   CompilerResult compiler_result = compiler.compile(parser_result->abstract_syntax_tree.value());
 
@@ -121,9 +121,6 @@ std::optional<CompilerResult> CompilerManager::compile(const std::string& filena
       disassembler.dump(this->err_stream);
     }
   }
-
-  // Register this blocks address range
-  this->address_mapping.register_instructionblock(compiler_result.instructionblock.value(), filename);
 
   return compiler_result;
 }

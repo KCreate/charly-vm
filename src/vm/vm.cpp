@@ -2349,8 +2349,12 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       }
 
       // Lookup the name of the file this address is from
-      auto lookup_result =
-          this->context.compiler_manager.address_mapping.resolve_address(reinterpret_cast<uint8_t*>(body_address));
+      //
+      // TODO: Rewrite address lookup
+      AddressMapping& mapping = this->context.compiler_manager.address_mapping;
+      uint8_t* address = reinterpret_cast<uint8_t*>(body_address);
+      std::optional<std::string> map_filename = mapping.filename_for_address(address);
+      std::optional<uint32_t> map_linenumber = mapping.linenumber_for_address(address);
 
       io << "(";
       io << std::setfill(' ') << std::setw(14);
@@ -2364,7 +2368,9 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << ") ";
       io << this->context.symtable(name).value_or("??");
       io << " ";
-      io << lookup_result.value_or("??");
+      io << map_filename.value_or("??");
+      io << ":";
+      io << map_linenumber.value_or(0);
 
       break;
     }

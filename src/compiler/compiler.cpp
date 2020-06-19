@@ -41,8 +41,8 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree) {
     // Append a return export node to the end of the parsed block
     AST::Block* block = result.abstract_syntax_tree->as<AST::Block>();
     AST::Identifier* ret_id = new AST::Identifier(this->config.inclusion_function_return_identifier);
-    AST::Return* ret_stmt = new AST::Return(ret_id->at(block));
-    ret_stmt->at(block);
+    AST::Return* ret_stmt = new AST::Return(ret_id);
+    ret_stmt->at_recursive(block->location_end);
     block->statements.push_back(ret_stmt);
 
     // Wrap the whole program in a function which handles the exporting interface
@@ -99,9 +99,15 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree) {
 
     // Optionally skip code generation
     if (this->config.codegen) {
+      this->context.address_mapping.begin_new_file(result.abstract_syntax_tree->location_start->filename);
+
       CodeGenerator codegenerator(this->context, this->config, result);
       InstructionBlock* compiled_block = codegenerator.compile(result.abstract_syntax_tree);
       result.instructionblock = compiled_block;
+
+      SourceMap& map = this->context.address_mapping.active_file();
+      map.begin_address = compiled_block->get_data();
+      map.end_address = compiled_block->get_data() + compiled_block->get_writeoffset();
     }
   } catch (CompilerMessage msg) {
     result.has_errors = true;
