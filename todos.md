@@ -1,3 +1,14 @@
+- Implement globals
+  - Remove compiler warning on undefined symbols, generate a global-lookup
+    - ReadGlobal
+    - SetGlobal
+    - SetGlobalPush
+  - Throw an exception if no symbol is found
+  - Globals are stored inside `Charly.globals`
+
+- Method to remove a key from an object
+  - `Object.delete(obj, "my_key")`
+
 - New global class: Error
   - `throw new Error("something bad happened")`
   - Possible subclasses:
@@ -8,11 +19,6 @@
     and a nice human readable stacktrace.
   - If the global exception handler is reached it should not crash the whole machine
     but only the currently running Fiber (see Fiber ideas below)
-  - Syntax to only catch certain specific exceptions (i.e: `try {...} catch(CustomError e) {...}`)
-
-- Store timers and intervals in a min heap, based on their scheduled time
-  - This way we don't have to search through all the scheduled events to find the next one
-    to execute
 
 - Programmatic access to call / frame stack
   - A way to represent a machine frame in Charly
@@ -22,6 +28,17 @@
   - No 'super.foo(...)' syntax
     - Functions can only call their own super function, not any arbitrary one
     - Special syntax for 'super.call(...)' to call with a custom self object and arguments
+
+- Refactor codebase
+  - Compiler, Parser stuff is a huge mess
+  - ASTNodes should be passed around by shared_ptr's
+
+- Instruction Pointer to filename & line number mapping for better stack traces
+  - Foreach entry inside a block, map current bytecode offset to the starting linenumber of the entry
+
+- Store timers and intervals in a min heap, based on their scheduled time
+  - This way we don't have to search through all the scheduled events to find the next one
+    to execute
 
 - Promise class
   - Main abstraction class for all asynchronous methods in the standard library
@@ -70,8 +87,6 @@
 - Re-implement operator overloading in a good way
 
 - Expose parser and compilation infrastructure to charly code.
-
-- Export keyword `export class Foo {}`
 
 - Changes to import system, see feature-ideas/import-system.ch
 
@@ -132,10 +147,6 @@
       c // => 3
     `
 
-- Implement globals
-  - Remove compiler warning on unknown symbols, look them up at runtime
-    in the globals table
-
 - Match statements
   - The local variable allocator has been finished and this allows for the match
     syntax to be implemented now (see feature-ideas/match-statement.ch for proposal)
@@ -150,11 +161,6 @@
 - Rename `lstrip` and `rstrip` methods to some other more correct name
   - These methods should remove whitespace characters from the left or right side of a string
   - Add a `strip` method, which is equivalent to calling `rstrip(lstrip(<string>))`
-
-- Instruction Pointer to filename & line number mapping for better stack traces
-  - Create utility functions that return various location information of the call chain
-    This is needed to completet the import system as some helper functions inside the prelude
-    need to know from which file an import was requested.
 
 - do panic if some vm methods are called not from the main thread
 

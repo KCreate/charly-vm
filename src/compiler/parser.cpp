@@ -1562,7 +1562,7 @@ AST::AbstractNode* Parser::parse_func(bool ignore_func_keyword) {
           default_values[last_identifier] = exp;
         } else {
           if (default_argument_detected) {
-            this->illegal_token("Expected a default argument");
+            default_values[last_identifier] = new AST::Null();
           }
         }
 
