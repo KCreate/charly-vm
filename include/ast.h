@@ -1362,26 +1362,27 @@ struct Function : public AbstractNode {
   bool needs_arguments = false;
 
   uint32_t lvarcount = 0;
-  uint32_t required_arguments;
+  uint32_t required_arguments = 0;
 
   Function(const std::string& n,
            const std::vector<std::string>& p,
            const std::vector<std::string>& s,
            Block* b,
            bool a)
-      : name(n), parameters(p), self_initialisations(s), body(b), anonymous(a), required_arguments(p.size()) {
+      : name(n), parameters(p), self_initialisations(s), body(b), anonymous(a) {
+    this->required_arguments = this->parameters.size();
   }
   Function(const std::string& n,
            std::vector<std::string>&& p,
-           const std::vector<std::string>& s,
+           const std::vector<std::string>&& s,
            Block* b,
            bool a)
       : name(n),
         parameters(std::move(p)),
         self_initialisations(std::move(s)),
         body(b),
-        anonymous(a),
-        required_arguments(p.size()) {
+        anonymous(a) {
+    this->required_arguments = this->parameters.size();
   }
 
   inline ~Function() {

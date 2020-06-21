@@ -33,7 +33,7 @@
 namespace Charly {
 // An opcode identifies a single instruction the machine can perform
 // Opcodes can have arguments
-const uint32_t kOpcodeCount = 66;
+const uint32_t kOpcodeCount = 69;
 enum Opcode : uint8_t {
 
   // Do nothing
@@ -74,9 +74,15 @@ enum Opcode : uint8_t {
   // - array
   ReadArrayIndex,
 
+  // Reads a global symbol
+  //
+  // args:
+  // - symbol
+  ReadGlobal,
+
   // Set a value at a given offset inside a given frame
-  // Will write null if the stack is empty
   // Will pop, but not write, if the index is out-of-bounds
+  // Will push the assigned value onto the stack
   //
   // args:
   // - index
@@ -147,6 +153,27 @@ enum Opcode : uint8_t {
 
   // Same as the SetArrayIndexPush instruction, except it doesn't push the value onto the stack
   SetArrayIndex,
+
+  // Write to a global symbol
+  // Will throw an exception if no such global symbol is found
+  //
+  // args:
+  // - symbol
+  //
+  // stack:
+  // - value
+  SetGlobal,
+
+  // Write to a global symbol
+  // Will throw an exception if no such global symbol is found
+  // Will push the assigned value onto the stack
+  //
+  // args:
+  // - symbol
+  //
+  // stack:
+  // - value
+  SetGlobalPush,
 
   // Put the self value of a specified frame onto the stack
   //
@@ -464,6 +491,7 @@ static constexpr uint32_t kInstructionLengths[]{
   /* ReadMemberSymbol */      1 + i64,
   /* ReadMemberValue */       1,
   /* ReadArrayIndex */        1 + i32,
+  /* ReadGlobal */            1 + i64,
   /* SetLocalPush */          1 + i32 + i32,
   /* SetMemberSymbolPush */   1 + i64,
   /* SetMemberValuePush */    1,
@@ -472,6 +500,8 @@ static constexpr uint32_t kInstructionLengths[]{
   /* SetMemberSymbol */       1 + i64,
   /* SetMemberValue */        1,
   /* SetArrayIndex */         1 + i32,
+  /* SetGlobal */             1 + i64,
+  /* SetGlobalPush */         1 + i64,
   /* PutSelf */               1 + i32,
   /* PutValue */              1 + i64,
   /* PutString */             1 + i32 + i32,
@@ -539,6 +569,7 @@ static std::string kOpcodeMnemonics[]{
   "readmembersymbol",
   "readmembervalue",
   "readarrayindex",
+  "readglobal",
   "setlocalpush",
   "setmembersymbolpush",
   "setmembervaluepush",
@@ -547,6 +578,8 @@ static std::string kOpcodeMnemonics[]{
   "setmembersymbol",
   "setmembervalue",
   "setarrayindex",
+  "setglobal",
+  "setglobalpush",
   "putself",
   "putvalue",
   "putstring",

@@ -31,11 +31,9 @@
 #include "vm.h"
 #include "managedcontext.h"
 
-using namespace std;
-
 namespace Charly {
 namespace Internals {
-namespace String {
+namespace PrimitiveString {
 
 VALUE to_n(VM& vm, VALUE str) {
   CHECK(string, str);
@@ -49,7 +47,8 @@ VALUE to_n(VM& vm, VALUE str) {
   double number;
   sstream >> number;
 
-  if (sstream.fail()) return kNaN;
+  if (sstream.fail())
+    return kNaN;
   return charly_create_number(number);
 }
 
@@ -76,9 +75,7 @@ VALUE lowercase(VM& vm, VALUE src) {
   CHECK(string, src);
   std::string _str(charly_string_data(src), charly_string_length(src));
 
-  std::transform(_str.begin(), _str.end(), _str.begin(), [](char c) {
-    return std::tolower(c, std::locale());
-  });
+  std::transform(_str.begin(), _str.end(), _str.begin(), [](char c) { return std::tolower(c, std::locale()); });
 
   ManagedContext lalloc(vm);
   return lalloc.create_string(_str);
@@ -89,14 +86,12 @@ VALUE uppercase(VM& vm, VALUE src) {
   CHECK(string, src);
   std::string _str(charly_string_data(src), charly_string_length(src));
 
-  std::transform(_str.begin(), _str.end(), _str.begin(), [](char c) {
-    return std::toupper(c, std::locale());
-  });
+  std::transform(_str.begin(), _str.end(), _str.begin(), [](char c) { return std::toupper(c, std::locale()); });
 
   ManagedContext lalloc(vm);
   return lalloc.create_string(_str);
 }
 
-}  // namespace String
+}  // namespace PrimitiveString
 }  // namespace Internals
 }  // namespace Charly

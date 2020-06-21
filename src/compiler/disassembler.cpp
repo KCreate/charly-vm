@@ -63,8 +63,11 @@ void Disassembler::dump(std::ostream& stream) {
         break;
       }
       case Opcode::ReadMemberSymbol:
+      case Opcode::ReadGlobal:
       case Opcode::SetMemberSymbolPush:
-      case Opcode::SetMemberSymbol: {
+      case Opcode::SetMemberSymbol:
+      case Opcode::SetGlobal:
+      case Opcode::SetGlobalPush: {
         this->print_symbol(this->block->read<VALUE>(offset + 1), stream);
         break;
       }

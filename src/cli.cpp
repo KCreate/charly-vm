@@ -87,6 +87,11 @@ int CLI::run() {
   std::string prelude_string((std::istreambuf_iterator<char>(preludefile)), std::istreambuf_iterator<char>());
 
   Compilation::CompilerManager cmanager(this->flags);
+
+  // Load symbols of internal vm methods
+  for (auto& sig : Internals::Index::methods)
+    cmanager.symtable.encode_string(sig.second.name);
+
   auto cresult_userfile = cmanager.compile(inputfile_path, source_string);
   auto cresult_prelude = cmanager.compile(preludepath, prelude_string);
 

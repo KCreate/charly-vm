@@ -24,37 +24,23 @@
  * SOFTWARE.
  */
 
-#include <sstream>
-#include <algorithm>
+#include "defines.h"
+#include "internals.h"
 
-#include "object.h"
-#include "vm.h"
-#include "managedcontext.h"
-
-using namespace std;
+#pragma once
 
 namespace Charly {
 namespace Internals {
-namespace Object {
+namespace Defer {
 
-VALUE keys(VM& vm, VALUE obj) {
-  ManagedContext lalloc(vm);
+VALUE defer(VM& vm, VALUE cb, VALUE dur);
+VALUE defer_interval(VM& vm, VALUE cb, VALUE period);
+VALUE clear_timer(VM& vm, VALUE uid);
+VALUE clear_interval(VM& vm, VALUE uid);
+VALUE suspend_thread(VM& vm);
+VALUE resume_thread(VM& vm, VALUE uid);
+VALUE get_thread_uid(VM& vm);
 
-  // Get the container of the value
-  std::unordered_map<VALUE, VALUE>* container = charly_get_container(obj);
-  if (container == nullptr) return lalloc.create_array(0);
-
-  // Create an array containing the keys of the container
-  Array* arr = charly_as_array(lalloc.create_array(container->size()));
-
-  for (auto& entry : *container) {
-    VALUE key = lalloc.create_string(vm.context.symtable(entry.first).value_or(kUndefinedSymbolString));
-    arr->data->push_back(key);
-  }
-
-  return charly_create_pointer(arr);
-}
-
-}  // namespace String
+}  // namespace Defer
 }  // namespace Internals
 }  // namespace Charly

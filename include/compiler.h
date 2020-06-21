@@ -71,40 +71,8 @@ struct CompilerContext {
   }
 };
 
-// Known constants in the toplevel
-typedef std::tuple<std::string, bool> TopLevelConstant;
-static const std::vector<TopLevelConstant> kKnownTopLevelConstants = {
-  {"Charly",                    false},   // 00
-  {"__charly_internal_import",  true},    // 01
-  {"Value",                     true},    // 02
-  {"Object",                    true},    // 03
-  {"Class",                     true},    // 04
-  {"Array",                     true},    // 05
-  {"String",                    true},    // 06
-  {"Number",                    true},    // 07
-  {"Function",                  true},    // 08
-  {"Generator",                 true},    // 09
-  {"Boolean",                   true},    // 10
-  {"Null",                      true},    // 11
-  {"stdin",                     false},   // 12
-  {"stdout",                    false},   // 13
-  {"stderr",                    false},   // 14
-  {"print",                     false},   // 15
-  {"write",                     false},   // 16
-  {"gets",                      false},   // 17
-  {"getc",                      false},   // 18
-  {"exit",                      false},   // 19
-  {"defer",                     false},   // 20
-};
-
 // Configuration passed to the compiler
 struct CompilerConfig {
-
-  // Module inclusion function
-  bool wrap_inclusion_function = true;
-  std::string inclusion_function_name = "__CHARLY_MODULE_FUNC";
-  std::vector<std::string> inclusion_function_arguments = {"export"};
-  std::string inclusion_function_return_identifier = "export";
 
   // Wether to run the codegen phase at all
   bool codegen = true;

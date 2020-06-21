@@ -24,11 +24,4 @@
  * SOFTWARE.
  */
 
-DEFINE_INTERNAL_METHOD(PrimitiveArray::insert, 3),
-DEFINE_INTERNAL_METHOD(PrimitiveArray::remove, 2),
-DEFINE_INTERNAL_METHOD(PrimitiveArray::reverse, 1),
-DEFINE_INTERNAL_METHOD(PrimitiveArray::flatten, 1),
-DEFINE_INTERNAL_METHOD(PrimitiveArray::index, 3),
-DEFINE_INTERNAL_METHOD(PrimitiveArray::rindex, 3),
-DEFINE_INTERNAL_METHOD(PrimitiveArray::range, 3),
-DEFINE_INTERNAL_METHOD(PrimitiveArray::clear, 1),
+DEFINE_INTERNAL_METHOD("charly.primitive.function.call", PrimitiveFunction::call, 3),

@@ -24,11 +24,11 @@
  * SOFTWARE.
  */
 
-DEFINE_INTERNAL_METHOD(Time::system_clock_now, 0),
-DEFINE_INTERNAL_METHOD(Time::steady_clock_now, 0),
-DEFINE_INTERNAL_METHOD(Time::highres_now, 0),
-DEFINE_INTERNAL_METHOD(Time::to_local, 1),
-DEFINE_INTERNAL_METHOD(Time::to_utc, 1),
-DEFINE_INTERNAL_METHOD(Time::fmt, 2),
-DEFINE_INTERNAL_METHOD(Time::fmtutc, 2),
-DEFINE_INTERNAL_METHOD(Time::parse, 2),
+DEFINE_INTERNAL_METHOD("charly.stdlib.time.system_clock_now", Time::system_clock_now, 0),
+DEFINE_INTERNAL_METHOD("charly.stdlib.time.steady_clock_now", Time::steady_clock_now, 0),
+DEFINE_INTERNAL_METHOD("charly.stdlib.time.highres_now",      Time::highres_now,      0),
+DEFINE_INTERNAL_METHOD("charly.stdlib.time.to_local",         Time::to_local,         1),
+DEFINE_INTERNAL_METHOD("charly.stdlib.time.to_utc",           Time::to_utc,           1),
+DEFINE_INTERNAL_METHOD("charly.stdlib.time.fmt",              Time::fmt,              2),
+DEFINE_INTERNAL_METHOD("charly.stdlib.time.fmtutc",           Time::fmtutc,           2),
+DEFINE_INTERNAL_METHOD("charly.stdlib.time.parse",            Time::parse,            2),

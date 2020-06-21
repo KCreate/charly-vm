@@ -153,6 +153,7 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
   }
 
   // Check if this symbol exists
+  this->context.symtable(node->name);
   LocalOffsetInfo result = this->scope->access_symbol(node->name);
   if (!result.valid) {
     this->push_error(node, "Could not resolve symbol: " + node->name);
@@ -164,6 +165,7 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
 }
 
 AST::AbstractNode* LVarRewriter::visit_assignment(AST::Assignment* node, VisitContinue cont) {
+  this->context.symtable(node->target);
   if (!node->no_codegen) {
     LocalOffsetInfo result = this->scope->access_symbol(node->target);
     if (!result.valid) {

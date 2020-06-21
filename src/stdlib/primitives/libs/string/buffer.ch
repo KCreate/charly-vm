@@ -25,15 +25,15 @@
  */
 
 // Internal Method Import
-const __buffer_create        = Charly.internals.get_method("Buffer::create")
-const __buffer_reserve       = Charly.internals.get_method("Buffer::reserve")
-const __buffer_get_size      = Charly.internals.get_method("Buffer::get_size")
-const __buffer_get_offset    = Charly.internals.get_method("Buffer::get_offset")
-const __buffer_write         = Charly.internals.get_method("Buffer::write")
-const __buffer_write_partial = Charly.internals.get_method("Buffer::write_partial")
-const __buffer_write_bytes   = Charly.internals.get_method("Buffer::write_bytes")
-const __buffer_str           = Charly.internals.get_method("Buffer::str")
-const __buffer_bytes         = Charly.internals.get_method("Buffer::bytes")
+const __buffer_create        = @"charly.stdlib.buffer.create"
+const __buffer_reserve       = @"charly.stdlib.buffer.reserve"
+const __buffer_get_size      = @"charly.stdlib.buffer.get_size"
+const __buffer_get_offset    = @"charly.stdlib.buffer.get_offset"
+const __buffer_write         = @"charly.stdlib.buffer.write"
+const __buffer_write_partial = @"charly.stdlib.buffer.write_partial"
+const __buffer_write_bytes   = @"charly.stdlib.buffer.write_bytes"
+const __buffer_str           = @"charly.stdlib.buffer.str"
+const __buffer_bytes         = @"charly.stdlib.buffer.bytes"
 
 /*
  * Represents a buffer

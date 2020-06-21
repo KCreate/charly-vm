@@ -26,13 +26,13 @@
 
 const Time = import "time"
 
-const __internal_defer            = Charly.internals.get_method("defer")
-const __internal_defer_interval   = Charly.internals.get_method("defer_interval")
-const __internal_clear_timer      = Charly.internals.get_method("clear_timer")
-const __internal_clear_interval   = Charly.internals.get_method("clear_interval")
-const __internal_get_thread_uid   = Charly.internals.get_method("get_thread_uid")
-const __internal_resume_thread    = Charly.internals.get_method("resume_thread")
-const __internal_suspend_thread   = Charly.internals.get_method("suspend_thread")
+const __internal_defer            = @"charly.vm.defer"
+const __internal_defer_interval   = @"charly.vm.defer_interval"
+const __internal_clear_timer      = @"charly.vm.clear_timer"
+const __internal_clear_interval   = @"charly.vm.clear_interval"
+const __internal_get_thread_uid   = @"charly.vm.get_thread_uid"
+const __internal_resume_thread    = @"charly.vm.resume_thread"
+const __internal_suspend_thread   = @"charly.vm.suspend_thread"
 
 __internal_suspend_thread.halt_after_return = true;
 

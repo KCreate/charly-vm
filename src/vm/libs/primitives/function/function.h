@@ -24,8 +24,17 @@
  * SOFTWARE.
  */
 
-DEFINE_INTERNAL_METHOD(String::to_n, 1),
-DEFINE_INTERNAL_METHOD(String::ltrim, 1),
-DEFINE_INTERNAL_METHOD(String::rtrim, 1),
-DEFINE_INTERNAL_METHOD(String::lowercase, 1),
-DEFINE_INTERNAL_METHOD(String::uppercase, 1),
+#include "defines.h"
+#include "internals.h"
+
+#pragma once
+
+namespace Charly {
+namespace Internals {
+namespace PrimitiveFunction {
+
+VALUE call(VM& vm, VALUE func, VALUE ctx, VALUE args);
+
+}  // namespace PrimitiveFunction
+}  // namespace Internals
+}  // namespace Charly

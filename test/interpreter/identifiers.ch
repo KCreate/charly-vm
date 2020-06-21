@@ -59,4 +59,90 @@ export = ->(describe, it, assert) {
     assert(@"let", 1)
   })
 
+  describe("global symbols", ->{
+
+    /*
+     * Things that should be tested:
+     *
+     * - writing to global variables
+     * - reading global variables
+     * - setglobalpush instruction
+     * - writing to vm internals
+     * - reading vm internals
+     *   - last_exception_thrown
+     * - getting internal methods
+     * - check error exceptions
+     * */
+
+    it("sets global symbols", ->{
+      Charly.globals.mytestvar = 150
+      assert(mytestvar, 150)
+    })
+
+    it("setlocalpush instruction works correctly", ->{
+      let foo = null
+      const bar = foo = @"charly.vm.globals"
+      assert(foo, @"charly.vm.globals")
+      assert(bar, @"charly.vm.globals")
+    })
+
+    it("writes to vm internals", ->{
+      const backup_v = @"charly.vm.primitive.null"
+      @"charly.vm.primitive.null" = "hello world"
+      assert(@"charly.vm.primitive.null", "hello world")
+      @"charly.vm.primitive.null" = backup_v
+      assert(@"charly.vm.primitive.null", backup_v)
+    })
+
+    describe("throws exceptions", ->{
+
+      it("when trying to access unidentified global symbol", ->{
+        try {
+          let a = null
+          a = @"some undefined symbol"
+        } catch(e) {
+          assert(typeof e, "object")
+          assert(typeof e.message, "string")
+          assert(e.message, "Unidentified global symbol 'some undefined symbol'")
+        }
+      })
+
+      it("when trying to write to unidentified global symbol", ->{
+        try {
+          @"some undefined symbol" = 25
+        } catch(e) {
+          assert(typeof e, "object")
+          assert(typeof e.message, "string")
+          assert(e.message, "Unidentified global symbol 'some undefined symbol'")
+        }
+
+        try {
+          @"charly.vm.write" = 25
+        } catch(e) {
+          assert(typeof e, "object")
+          assert(typeof e.message, "string")
+          assert(e.message, "Cannot overwrite internal vm methods")
+        }
+
+        try {
+          const foo = @"some undefined symbol" = 25
+        } catch(e) {
+          assert(typeof e, "object")
+          assert(typeof e.message, "string")
+          assert(e.message, "Unidentified global symbol 'some undefined symbol'")
+        }
+
+        try {
+          const foo = @"charly.vm.write" = 25
+        } catch(e) {
+          assert(typeof e, "object")
+          assert(typeof e.message, "string")
+          assert(e.message, "Cannot overwrite internal vm methods")
+        }
+      })
+
+    })
+
+  })
+
 }

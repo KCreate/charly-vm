@@ -33,8 +33,6 @@
 #include "vm.h"
 #include "managedcontext.h"
 
-using namespace std;
-
 namespace Charly {
 namespace Internals {
 namespace PrimitiveArray {
@@ -200,7 +198,6 @@ VALUE rindex(VM& vm, VALUE a, VALUE i, VALUE o) {
 
   // Iterate through the array
   while (static_cast<uint32_t>(offset) >= 0) {
-
     // Skip indices we can't access
     if (static_cast<uint32_t>(offset) >= array->data->size()) {
       offset--;
@@ -272,6 +269,6 @@ VALUE clear(VM& vm, VALUE a) {
   return a;
 }
 
-}  // namespace Array
+}  // namespace PrimitiveArray
 }  // namespace Internals
 }  // namespace Charly

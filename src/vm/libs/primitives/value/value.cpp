@@ -24,17 +24,22 @@
  * SOFTWARE.
  */
 
-const __internal_keys = @"charly.primitive.object.keys"
+#include <sstream>
 
-export = ->(Base) {
-  return class Object extends Base {
+#include "managedcontext.h"
+#include "value.h"
+#include "vm.h"
 
-    /*
-     * Returns an array containing the keys contained inside v
-     * */
-    static keys(v) {
-      __internal_keys(v)
-    }
+namespace Charly {
+namespace Internals {
+namespace PrimitiveValue {
 
-  }
+VALUE to_s(VM& vm, VALUE value) {
+  std::stringstream buffer;
+  vm.to_s(buffer, value);
+  return vm.create_string(buffer.str());
 }
+
+}  // namespace PrimitiveValue
+}  // namespace Internals
+}  // namespace Charly

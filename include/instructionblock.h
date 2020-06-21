@@ -58,6 +58,11 @@ public:
     this->write(index);
   }
 
+  inline void write_readglobal(VALUE symbol) {
+    this->write(Opcode::ReadGlobal);
+    this->write(symbol);
+  }
+
   inline void write_setlocal(uint32_t index, uint32_t level) {
     this->write(Opcode::SetLocal);
     this->write(index);
@@ -71,6 +76,16 @@ public:
 
   inline void write_setmembervalue() {
     this->write(Opcode::SetMemberValue);
+  }
+
+  inline void write_setglobal(VALUE symbol) {
+    this->write(Opcode::SetGlobal);
+    this->write(symbol);
+  }
+
+  inline void write_setglobalpush(VALUE symbol) {
+    this->write(Opcode::SetGlobalPush);
+    this->write(symbol);
   }
 
   inline void write_setarrayindex(uint32_t index) {

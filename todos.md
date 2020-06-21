@@ -1,13 +1,21 @@
-- Implement globals
-  - Remove compiler warning on undefined symbols, generate a global-lookup
-    - ReadGlobal
-    - SetGlobal
-    - SetGlobalPush
-  - Throw an exception if no symbol is found
-  - Globals are stored inside `Charly.globals`
+- Ability to freeze objects
+  - Simple status bits on every object
+    - f1 = freeze_values        When set to 1, no values can be overwritten
+    - f2 = freeze_keys          When set to 1, no keys can be added or removed
 
-- Method to remove a key from an object
+- Ability to delete a key from an object
   - `Object.delete(obj, "my_key")`
+  - Returns the old value of the key
+
+- Implement control access to objects
+  - Mark a key as private
+    - Can only be accessed via the `@xxx` syntax
+      - ReadSelfMember
+      - SetSelfMember
+      - SetSelfMemberPush
+    - Refactor AST Nodes which handle assignment
+  - Mark a key as constant
+    - Key cannot be overwritten or deleted
 
 - New global class: Error
   - `throw new Error("something bad happened")`

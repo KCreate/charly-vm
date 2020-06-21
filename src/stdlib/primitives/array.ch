@@ -26,14 +26,14 @@
 
 const Buffer = import "libs/string/buffer.ch"
 
-const __internal_insert  = Charly.internals.get_method("PrimitiveArray::insert")
-const __internal_remove  = Charly.internals.get_method("PrimitiveArray::remove")
-const __internal_reverse = Charly.internals.get_method("PrimitiveArray::reverse")
-const __internal_flatten = Charly.internals.get_method("PrimitiveArray::flatten")
-const __internal_index   = Charly.internals.get_method("PrimitiveArray::index")
-const __internal_rindex  = Charly.internals.get_method("PrimitiveArray::rindex")
-const __internal_range   = Charly.internals.get_method("PrimitiveArray::range")
-const __internal_clear   = Charly.internals.get_method("PrimitiveArray::clear")
+const __internal_insert  = @"charly.primitive.array.insert"
+const __internal_remove  = @"charly.primitive.array.remove"
+const __internal_reverse = @"charly.primitive.array.reverse"
+const __internal_flatten = @"charly.primitive.array.flatten"
+const __internal_index   = @"charly.primitive.array.index"
+const __internal_rindex  = @"charly.primitive.array.rindex"
+const __internal_range   = @"charly.primitive.array.range"
+const __internal_clear   = @"charly.primitive.array.clear"
 
 export = ->(Base) {
   return class Array extends Base {

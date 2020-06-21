@@ -24,17 +24,4 @@
  * SOFTWARE.
  */
 
-const __internal_keys = @"charly.primitive.object.keys"
-
-export = ->(Base) {
-  return class Object extends Base {
-
-    /*
-     * Returns an array containing the keys contained inside v
-     * */
-    static keys(v) {
-      __internal_keys(v)
-    }
-
-  }
-}
+DEFINE_INTERNAL_METHOD("charly.primitive.value.to_s", PrimitiveValue::to_s, 1),

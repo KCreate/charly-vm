@@ -24,7 +24,7 @@
  * SOFTWARE.
  */
 
-const __to_s = Charly.internals.get_method("to_s")
+const __internal_to_s = @"charly.primitive.value.to_s"
 
 export = ->{
   return class Value {
@@ -69,7 +69,7 @@ export = ->{
      * Meant to be overridden by other primitive classes
      * */
     to_s {
-      __to_s(self)
+      __internal_to_s(self)
     }
 
     /*

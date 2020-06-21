@@ -176,8 +176,6 @@ public:
     for (int i = 0; i < num_threads; i++) {
       this->worker_threads.push_back(new WorkerThread(this->worker_thread_handler, this, i));
     }
-
-    this->exec_prelude();
   }
   VM(const VM& other) = delete;
   VM(VM&& other) = delete;
@@ -309,6 +307,7 @@ public:
   void op_readmembersymbol(VALUE symbol);
   void op_readmembervalue();
   void op_readarrayindex(uint32_t index);
+  void op_readglobal(VALUE symbol);
   void op_setlocalpush(uint32_t index, uint32_t level);
   void op_setmembersymbolpush(VALUE symbol);
   void op_setmembervaluepush();
@@ -317,6 +316,8 @@ public:
   void op_setmembersymbol(VALUE symbol);
   void op_setmembervalue();
   void op_setarrayindex(uint32_t index);
+  void op_setglobal(VALUE symbol);
+  void op_setglobalpush(VALUE symbol);
   void op_putself(uint32_t level);
   void op_putvalue(VALUE value);
   void op_putstring(char* data, uint32_t length);
@@ -403,7 +404,6 @@ public:
   }
 
   void run();
-  void exec_prelude();
   VALUE exec_module(Function* fn);
   uint8_t start_runtime();
   void exit(uint8_t status_code);
@@ -451,6 +451,9 @@ private:
 
   // Runtime constructor which handles all "new" calls
   VALUE runtime_constructor = kNull;
+
+  // Object which contains all the global variables
+  VALUE globals = kNull;
 
   // Scheduled tasks and paused VM threads
   uint64_t next_thread_id = 0;

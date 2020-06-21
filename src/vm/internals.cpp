@@ -35,68 +35,72 @@
 #include "managedcontext.h"
 #include "vm.h"
 
+#include "libs/buffer/buffer.h"
+#include "libs/defer/defer.h"
 #include "libs/math/math.h"
 #include "libs/time/time.h"
-#include "libs/buffer/buffer.h"
-#include "libs/primitives/array.h"
-#include "libs/primitives/string.h"
-#include "libs/primitives/object.h"
+#include "libs/primitives/value/value.h"
+#include "libs/primitives/array/array.h"
+#include "libs/primitives/function/function.h"
+#include "libs/primitives/object/object.h"
+#include "libs/primitives/string/string.h"
 
-using namespace std;
+#define DEFINE_INTERNAL_METHOD(N, S, C)                   \
+  {                                                       \
+    charly_create_symbol(N), {                                                  \
+      N, C, reinterpret_cast<void*>(Charly::Internals::S) \
+    }                                                     \
+  }
 
 namespace Charly {
 namespace Internals {
-#define ID_TO_STRING(I) #I
-#define DEFINE_INTERNAL_METHOD(N, C)                                \
-  {                                                                 \
-    ID_TO_STRING(N), {                                              \
-      ID_TO_STRING(N), C, reinterpret_cast<void*>(Internals::N) \
-    }                                                               \
-  }
-static std::unordered_map<std::string, InternalMethodSignature> kMethodSignatures = {
+std::unordered_map<VALUE, MethodSignature> Index::methods = {
 
     // Primitives
-#import "libs/primitives/array.def"
-#import "libs/primitives/string.def"
-#import "libs/primitives/object.def"
+#import "libs/primitives/array/array.def"
+#import "libs/primitives/function/function.def"
+#import "libs/primitives/object/object.def"
+#import "libs/primitives/string/string.def"
+#import "libs/primitives/value/value.def"
 
     // Libraries
 #import "libs/math/math.def"
 #import "libs/time/time.def"
 #import "libs/buffer/buffer.def"
+#import "libs/defer/defer.def"
 
-    // VM Barebones
-    DEFINE_INTERNAL_METHOD(import, 2),
-    DEFINE_INTERNAL_METHOD(write, 1),
-    DEFINE_INTERNAL_METHOD(getn, 0),
-    DEFINE_INTERNAL_METHOD(dirname, 0),
+    // VM internals
+    DEFINE_INTERNAL_METHOD("charly.vm.import", import, 2),
+    DEFINE_INTERNAL_METHOD("charly.vm.write", write, 1),
+    DEFINE_INTERNAL_METHOD("charly.vm.getn", getn, 0),
+    DEFINE_INTERNAL_METHOD("charly.vm.dirname", dirname, 0),
+    DEFINE_INTERNAL_METHOD("charly.vm.exit", exit, 1),
+    DEFINE_INTERNAL_METHOD("charly.vm.register_worker_task", register_worker_task, 2),
+};
 
-    DEFINE_INTERNAL_METHOD(set_primitive_value, 1),
-    DEFINE_INTERNAL_METHOD(set_primitive_object, 1),
-    DEFINE_INTERNAL_METHOD(set_primitive_class, 1),
-    DEFINE_INTERNAL_METHOD(set_primitive_array, 1),
-    DEFINE_INTERNAL_METHOD(set_primitive_string, 1),
-    DEFINE_INTERNAL_METHOD(set_primitive_number, 1),
-    DEFINE_INTERNAL_METHOD(set_primitive_function, 1),
-    DEFINE_INTERNAL_METHOD(set_primitive_generator, 1),
-    DEFINE_INTERNAL_METHOD(set_primitive_boolean, 1),
-    DEFINE_INTERNAL_METHOD(set_primitive_null, 1),
-    DEFINE_INTERNAL_METHOD(set_runtime_constructor, 1),
-    DEFINE_INTERNAL_METHOD(to_s, 1),
+// Standard charly libraries
+std::unordered_map<std::string, std::string> Index::standard_libraries = {
 
-    DEFINE_INTERNAL_METHOD(call_dynamic, 3),
+    // Internal primitives
+    {"_charly_array", "src/stdlib/primitives/array.ch"},
+    {"_charly_value", "src/stdlib/primitives/value.ch"},
+    {"_charly_boolean", "src/stdlib/primitives/boolean.ch"},
+    {"_charly_class", "src/stdlib/primitives/class.ch"},
+    {"_charly_function", "src/stdlib/primitives/function.ch"},
+    {"_charly_generator", "src/stdlib/primitives/generator.ch"},
+    {"_charly_null", "src/stdlib/primitives/null.ch"},
+    {"_charly_number", "src/stdlib/primitives/number.ch"},
+    {"_charly_object", "src/stdlib/primitives/object.ch"},
+    {"_charly_string", "src/stdlib/primitives/string.ch"},
 
-    DEFINE_INTERNAL_METHOD(defer, 2),
-    DEFINE_INTERNAL_METHOD(defer_interval, 2),
-    DEFINE_INTERNAL_METHOD(clear_timer, 1),
-    DEFINE_INTERNAL_METHOD(clear_interval, 1),
-    DEFINE_INTERNAL_METHOD(exit, 1),
+    // Helper stuff
+    {"_charly_defer", "src/stdlib/libs/defer.ch"},
 
-    DEFINE_INTERNAL_METHOD(suspend_thread, 0),
-    DEFINE_INTERNAL_METHOD(resume_thread, 1),
-    DEFINE_INTERNAL_METHOD(get_thread_uid, 0),
-
-    DEFINE_INTERNAL_METHOD(register_worker_task, 2),
+    // Libraries
+    {"_charly_math", "src/stdlib/libs/math.ch"},
+    {"_charly_time", "src/stdlib/libs/time.ch"},
+    {"_charly_heap", "src/stdlib/libs/heap.ch"},
+    {"_charly_unittest", "src/stdlib/libs/unittest.ch"}
 };
 
 VALUE import(VM& vm, VALUE include, VALUE source) {
@@ -110,8 +114,9 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
 
   // Check if we are importing a standard charly library
   bool import_library = false;
-  if (kStandardCharlyLibraries.find(include_filename) != kStandardCharlyLibraries.end()) {
-    include_filename = std::string(std::getenv("CHARLYVMDIR")) + "/" + kStandardCharlyLibraries.at(include_filename);
+  auto& std_libs = Index::standard_libraries;
+  if (std_libs.find(include_filename) != std_libs.end()) {
+    include_filename = std::string(std::getenv("CHARLYVMDIR")) + "/" + std_libs.at(include_filename);
     import_library = true;
   }
 
@@ -259,24 +264,6 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
   return vm.exec_module(fn);
 }
 
-VALUE get_method(VM& vm, VALUE argument) {
-  if (!charly_is_string(argument)) {
-    vm.throw_exception("get_method: expected string");
-    return kNull;
-  }
-
-  char* str_data = charly_string_data(argument);
-  uint32_t str_length = charly_string_length(argument);
-  std::string methodname(str_data, str_length);
-
-  if (kMethodSignatures.count(methodname) > 0) {
-    auto& sig = kMethodSignatures[methodname];
-    return vm.create_cfunction(vm.context.symtable(sig.name), sig.argc, sig.func_pointer);
-  }
-
-  return kNull;
-}
-
 VALUE write(VM& vm, VALUE value) {
   vm.to_s(vm.context.out_stream, value);
 
@@ -304,131 +291,10 @@ VALUE dirname(VM& vm) {
   return vm.create_string(filename.c_str(), filename.size());
 }
 
-VALUE set_primitive_value(VM& vm, VALUE value) {
-  CHECK(class, value);
-  vm.set_primitive_value(value);
-  return value;
-}
-
-VALUE set_primitive_object(VM& vm, VALUE value) {
-  CHECK(class, value);
-  vm.set_primitive_object(value);
-  return value;
-}
-
-VALUE set_primitive_class(VM& vm, VALUE value) {
-  CHECK(class, value);
-  vm.set_primitive_class(value);
-  return value;
-}
-
-VALUE set_primitive_array(VM& vm, VALUE value) {
-  CHECK(class, value);
-  vm.set_primitive_array(value);
-  return value;
-}
-
-VALUE set_primitive_string(VM& vm, VALUE value) {
-  CHECK(class, value);
-  vm.set_primitive_string(value);
-  return value;
-}
-
-VALUE set_primitive_number(VM& vm, VALUE value) {
-  CHECK(class, value);
-  vm.set_primitive_number(value);
-  return value;
-}
-
-VALUE set_primitive_function(VM& vm, VALUE value) {
-  CHECK(class, value);
-  vm.set_primitive_function(value);
-  return value;
-}
-
-VALUE set_primitive_generator(VM& vm, VALUE value) {
-  CHECK(class, value);
-  vm.set_primitive_generator(value);
-  return value;
-}
-
-VALUE set_primitive_boolean(VM& vm, VALUE value) {
-  CHECK(class, value);
-  vm.set_primitive_boolean(value);
-  return value;
-}
-
-VALUE set_primitive_null(VM& vm, VALUE value) {
-  CHECK(class, value);
-  vm.set_primitive_null(value);
-  return value;
-}
-
-VALUE set_runtime_constructor(VM& vm, VALUE func) {
-  CHECK(function, func);
-  vm.set_runtime_constructor(func);
-  return kNull;
-}
-
-VALUE call_dynamic(VM& vm, VALUE func, VALUE ctx, VALUE args) {
-  CHECK(callable, func);
-  CHECK(array, args);
-
-  vm.push_stack(ctx);
-  vm.push_stack(func);
-
-  for (VALUE a : *(charly_as_array(args)->data)) {
-    vm.push_stack(a);
-  }
-
-  vm.call(charly_as_array(args)->data->size(), true, false);
-
-  return kNull;
-}
-
-VALUE defer(VM& vm, VALUE cb, VALUE dur) {
-  CHECK(function, cb);
-  CHECK(number, dur);
-
-  uint32_t ms = charly_number_to_uint32(dur);
-
-  Timestamp now = std::chrono::steady_clock::now();
-  Timestamp exec_at = now + std::chrono::milliseconds(ms);
-
-  return charly_create_integer(vm.register_timer(exec_at, VMTask(cb, kNull)));
-}
-
-VALUE defer_interval(VM& vm, VALUE cb, VALUE period) {
-  CHECK(function, cb);
-  CHECK(number, period);
-
-  uint32_t ms = charly_number_to_uint32(period);
-
-  return charly_create_integer(vm.register_interval(ms, VMTask(cb, kNull)));
-}
-
-VALUE clear_timer(VM&vm, VALUE uid) {
-  CHECK(number, uid);
-  vm.clear_timer(charly_number_to_uint64(uid));
-  return kNull;
-}
-
-VALUE clear_interval(VM&vm, VALUE uid) {
-  CHECK(number, uid);
-  vm.clear_interval(charly_number_to_uint64(uid));
-  return kNull;
-}
-
 VALUE exit(VM& vm, VALUE status_code) {
   CHECK(number, status_code);
   vm.exit(charly_number_to_uint8(status_code));
   return kNull;
-}
-
-VALUE to_s(VM& vm, VALUE value) {
-  std::stringstream buffer;
-  vm.to_s(buffer, value);
-  return vm.create_string(buffer.str());
 }
 
 VALUE register_worker_task(VM& vm, VALUE v, VALUE cb) {
@@ -437,21 +303,6 @@ VALUE register_worker_task(VM& vm, VALUE v, VALUE cb) {
   task.arguments.push_back(v);
   vm.register_worker_task(task);
   return kNull;
-}
-
-VALUE suspend_thread(VM& vm) {
-  vm.suspend_thread();
-  return kNull;
-}
-
-VALUE resume_thread(VM& vm, VALUE uid) {
-  CHECK(number, uid);
-  vm.resume_thread(charly_number_to_uint64(uid));
-  return kNull;
-}
-
-VALUE get_thread_uid(VM& vm) {
-  return charly_create_integer(vm.get_thread_uid());
 }
 
 }  // namespace Internals

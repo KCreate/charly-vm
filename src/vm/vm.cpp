@@ -1478,6 +1478,44 @@ void VM::op_readarrayindex(uint32_t index) {
   this->push_stack((*arr->data)[index]);
 }
 
+void VM::op_readglobal(VALUE symbol) {
+
+  // Check internal methods table
+  if (Internals::Index::methods.count(symbol)) {
+    Internals::MethodSignature& sig = Internals::Index::methods.at(symbol);
+    VALUE cfunc = this->create_cfunction(symbol, sig.argc, sig.func_pointer);
+    this->push_stack(cfunc);
+    return;
+  }
+
+  // Check vm specific symbols
+#define SYM(S, T)  if (symbol == charly_create_symbol(S)) { this->push_stack(this->T); return; }
+  SYM("charly.vm.primitive.value", primitive_value);
+  SYM("charly.vm.primitive.object", primitive_object);
+  SYM("charly.vm.primitive.class", primitive_class);
+  SYM("charly.vm.primitive.array", primitive_array);
+  SYM("charly.vm.primitive.string", primitive_string);
+  SYM("charly.vm.primitive.number", primitive_number);
+  SYM("charly.vm.primitive.function", primitive_function);
+  SYM("charly.vm.primitive.generator", primitive_generator);
+  SYM("charly.vm.primitive.boolean", primitive_boolean);
+  SYM("charly.vm.primitive.null", primitive_null);
+  SYM("charly.vm.runtime_constructor", runtime_constructor);
+  SYM("charly.vm.globals", globals);
+  SYM("charly.vm.last_exception_thrown", last_exception_thrown);
+#undef SYM
+
+  // Check globals table
+  if (!charly_is_object(this->globals)) this->panic(Status::GlobalsNotAnObject);
+  Object* globals_obj = charly_as_object(this->globals);
+  if (globals_obj->container->count(symbol)) {
+    this->push_stack(globals_obj->container->at(symbol));
+    return;
+  }
+
+  this->throw_exception("Unidentified global symbol '" + this->context.symtable(symbol).value_or("??") + "'");
+}
+
 void VM::op_setlocalpush(uint32_t index, uint32_t level) {
   VALUE value = this->pop_stack();
 
@@ -1589,6 +1627,81 @@ void VM::op_setarrayindex(uint32_t index) {
 
   (*arr->data)[index] = expression;
 }
+
+#define SYM(S, T)  if (symbol == charly_create_symbol(S)) { this->T = value; return; }
+void VM::op_setglobal(VALUE symbol) {
+  VALUE value = this->pop_stack();
+
+  // Check internal methods table
+  if (Internals::Index::methods.count(symbol)) {
+    this->throw_exception("Cannot overwrite internal vm methods");
+    return;
+  }
+
+
+  // Check vm specific symbols
+  SYM("charly.vm.primitive.value", primitive_value);
+  SYM("charly.vm.primitive.object", primitive_object);
+  SYM("charly.vm.primitive.class", primitive_class);
+  SYM("charly.vm.primitive.array", primitive_array);
+  SYM("charly.vm.primitive.string", primitive_string);
+  SYM("charly.vm.primitive.number", primitive_number);
+  SYM("charly.vm.primitive.function", primitive_function);
+  SYM("charly.vm.primitive.generator", primitive_generator);
+  SYM("charly.vm.primitive.boolean", primitive_boolean);
+  SYM("charly.vm.primitive.null", primitive_null);
+  SYM("charly.vm.runtime_constructor", runtime_constructor);
+  SYM("charly.vm.globals", globals);
+  SYM("charly.vm.last_exception_thrown", last_exception_thrown);
+
+  // Check globals table
+  if (!charly_is_object(this->globals)) this->panic(Status::GlobalsNotAnObject);
+  Object* globals_obj = charly_as_object(this->globals);
+  if (globals_obj->container->count(symbol)) {
+    globals_obj->container->insert_or_assign(symbol, value);
+    return;
+  }
+
+  this->throw_exception("Unidentified global symbol '" + this->context.symtable(symbol).value_or("??") + "'");
+}
+
+void VM::op_setglobalpush(VALUE symbol) {
+  VALUE value = this->pop_stack();
+  this->push_stack(value);
+
+  // Check internal methods table
+  if (Internals::Index::methods.count(symbol)) {
+    this->throw_exception("Cannot overwrite internal vm methods");
+    return;
+  }
+
+  // Check vm specific symbols
+  SYM("charly.vm.primitive.value", primitive_value);
+  SYM("charly.vm.primitive.object", primitive_object);
+  SYM("charly.vm.primitive.class", primitive_class);
+  SYM("charly.vm.primitive.array", primitive_array);
+  SYM("charly.vm.primitive.string", primitive_string);
+  SYM("charly.vm.primitive.number", primitive_number);
+  SYM("charly.vm.primitive.function", primitive_function);
+  SYM("charly.vm.primitive.generator", primitive_generator);
+  SYM("charly.vm.primitive.boolean", primitive_boolean);
+  SYM("charly.vm.primitive.null", primitive_null);
+  SYM("charly.vm.runtime_constructor", runtime_constructor);
+  SYM("charly.vm.globals", globals);
+  SYM("charly.vm.last_exception_thrown", last_exception_thrown);
+
+  // Check globals table
+  if (!charly_is_object(this->globals))
+    this->panic(Status::GlobalsNotAnObject);
+  Object* globals_obj = charly_as_object(this->globals);
+  if (globals_obj->container->count(symbol)) {
+    globals_obj->container->insert_or_assign(symbol, value);
+    return;
+  }
+
+  this->throw_exception("Unidentified global symbol '" + this->context.symtable(symbol).value_or("??") + "'");
+}
+#undef SYM
 
 void VM::op_putself(uint32_t level) {
   if (this->frames == nullptr) {
@@ -2717,6 +2830,7 @@ void VM::run() {
                                           &&charly_main_switch_readmembersymbol,
                                           &&charly_main_switch_readmembervalue,
                                           &&charly_main_switch_readarrayindex,
+                                          &&charly_main_switch_readglobal,
                                           &&charly_main_switch_setlocalpush,
                                           &&charly_main_switch_setmembersymbolpush,
                                           &&charly_main_switch_setmembervaluepush,
@@ -2725,6 +2839,8 @@ void VM::run() {
                                           &&charly_main_switch_setmembersymbol,
                                           &&charly_main_switch_setmembervalue,
                                           &&charly_main_switch_setarrayindex,
+                                          &&charly_main_switch_setglobal,
+                                          &&charly_main_switch_setglobalpush,
                                           &&charly_main_switch_putself,
                                           &&charly_main_switch_putvalue,
                                           &&charly_main_switch_putstring,
@@ -2819,6 +2935,15 @@ charly_main_switch_readarrayindex : {
   NEXTOP();
 }
 
+charly_main_switch_readglobal : {
+  OPCODE_PROLOGUE();
+  VALUE symbol = *reinterpret_cast<uint64_t*>(this->ip + sizeof(Opcode));
+  this->op_readglobal(symbol);
+  OPCODE_EPILOGUE();
+  CONDINCIP();
+  DISPATCH();
+}
+
 charly_main_switch_setlocalpush : {
   OPCODE_PROLOGUE();
   uint32_t index = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
@@ -2881,6 +3006,24 @@ charly_main_switch_setarrayindex : {
   this->op_setarrayindex(index);
   OPCODE_EPILOGUE();
   NEXTOP();
+}
+
+charly_main_switch_setglobal : {
+  OPCODE_PROLOGUE();
+  VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
+  this->op_setglobal(symbol);
+  OPCODE_EPILOGUE();
+  CONDINCIP();
+  DISPATCH();
+}
+
+charly_main_switch_setglobalpush : {
+  OPCODE_PROLOGUE();
+  VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
+  this->op_setglobalpush(symbol);
+  OPCODE_EPILOGUE();
+  CONDINCIP();
+  DISPATCH();
 }
 
 charly_main_switch_putself : {
@@ -3374,24 +3517,6 @@ charly_main_switch_typeof : {
 }
 }
 
-void VM::exec_prelude() {
-  // Charly = {
-  //   internals: {
-  //     get_method: <Internals::get_method>
-  //   }
-  // }
-  this->top_frame =
-      this->create_frame(kNull, this->frames, Compilation::kKnownTopLevelConstants.size(), nullptr);
-  this->op_putcfunction(this->context.symtable("get_method"), reinterpret_cast<void*>(Internals::get_method), 1);
-  this->op_putvalue(this->context.symtable("get_method"));
-  this->op_puthash(1);
-  this->op_putvalue(this->context.symtable("internals"));
-  this->op_puthash(1);
-
-  // The Charly value is the first top level constant
-  this->op_setlocal(0, 0);
-}
-
 uint8_t VM::start_runtime() {
   this->starttime = std::chrono::high_resolution_clock::now();
 
@@ -3479,8 +3604,13 @@ uint8_t VM::start_runtime() {
         this->gc.mark_persistent(task.callback.fn);
         this->gc.mark_persistent(task.callback.argument);
 
-        // 0 is the index of the Charly object in the top frame
-        VALUE global_self = this->top_frame->read_local(0);
+        // Get Charly object
+        VALUE global_self = kNull;
+        if (charly_is_object(this->globals)) {
+          Object* globals_obj = charly_as_object(this->globals);
+          if (globals_obj->container->count(charly_create_symbol("Charly")))
+            global_self = globals_obj->container->at(charly_create_symbol("Charly"));
+        }
         Function* fn = charly_as_function(task.callback.fn);
         VALUE self = this->get_self_for_function(fn, &global_self);
         this->call_function(fn, 1, &task.callback.argument, self, true);

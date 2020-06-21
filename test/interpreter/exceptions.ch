@@ -73,7 +73,7 @@ export = ->(describe, it, assert) {
     const obj = {}
     const fun = func foo {}
     const gen = ->{ yield 25 }
-    const cfu = Charly.internals.get_method("write")
+    const cfu = @"charly.vm.write"
     const kla = class A {}
 
     obj.klass = null

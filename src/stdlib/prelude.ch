@@ -26,12 +26,31 @@
 
 ignoreconst {
 
+  // Setup globals and Charly object
+  @"charly.vm.globals" = {}
+  @"charly.vm.globals".Charly = { globals: @"charly.vm.globals" }
+  @"charly.vm.globals".__charly_internal_import = null
+  @"charly.vm.globals".Value                    = null
+  @"charly.vm.globals".Object                   = null
+  @"charly.vm.globals".Class                    = null
+  @"charly.vm.globals".Array                    = null
+  @"charly.vm.globals".String                   = null
+  @"charly.vm.globals".Number                   = null
+  @"charly.vm.globals".Function                 = null
+  @"charly.vm.globals".Generator                = null
+  @"charly.vm.globals".Boolean                  = null
+  @"charly.vm.globals".Null                     = null
+  @"charly.vm.globals".print                    = null
+  @"charly.vm.globals".write                    = null
+  @"charly.vm.globals".exit                     = null
+  @"charly.vm.globals".defer                    = null
+
   // Cache some internal methods
-  const __internal_get_method       = Charly.internals.get_method
-  const __internal_write            = __internal_get_method("write")
-  const __internal_getn             = __internal_get_method("getn")
-  const __internal_import           = __internal_get_method("import")
-  const __internal_exit             = __internal_get_method("exit")
+  const __internal_write   = @"charly.vm.write"
+  const __internal_getn    = @"charly.vm.getn"
+  const __internal_import  = @"charly.vm.import"
+  const __internal_dirname = @"charly.vm.dirname"
+  const __internal_exit    = @"charly.vm.exit"
 
   let __internal_standard_libs_names
   let __internal_standard_libs
@@ -85,15 +104,13 @@ ignoreconst {
 
   // The runtime constructor is a special method the VM keeps track of.
   // All object allocations inside charly run through this method
-  //
   // It walks the class hierarchy and executed all the necessary constructors
-  const set_runtime_constructor = Charly.internals.get_method("set_runtime_constructor")
-  set_runtime_constructor(->(klass, args, obj) {
+  @"charly.vm.runtime_constructor" = ->(klass, args, obj) {
 
     // Build queue of constructors to run
     const constructor_queue = []
     let tmp_klass = klass
-    while tmp_klass ! Value {
+    while tmp_klass ! null {
       constructor_queue << tmp_klass.constructor
       tmp_klass = tmp_klass.parent_class
     }
@@ -105,35 +122,19 @@ ignoreconst {
     }
 
     return obj
-  })
+  }
 
-  // Method to modify the primitive objects
-  const set_primitive_value = Charly.internals.get_method("set_primitive_object")
-  const set_primitive_object = Charly.internals.get_method("set_primitive_object")
-  const set_primitive_class = Charly.internals.get_method("set_primitive_class")
-  const set_primitive_array = Charly.internals.get_method("set_primitive_array")
-  const set_primitive_string = Charly.internals.get_method("set_primitive_string")
-  const set_primitive_number = Charly.internals.get_method("set_primitive_number")
-  const set_primitive_function = Charly.internals.get_method("set_primitive_function")
-  const set_primitive_generator = Charly.internals.get_method("set_primitive_generator")
-  const set_primitive_boolean = Charly.internals.get_method("set_primitive_boolean")
-  const set_primitive_null = Charly.internals.get_method("set_primitive_null")
-
-  // Value class
-  //
-  // All classes automatically depend on this class
-  Value = set_primitive_value((import "_charly_value")())
-
-  // The rest of the primitive classes
-  Object = set_primitive_object((import "_charly_object")(Value))
-  Number = set_primitive_number((import "_charly_number")(Value))
-  Array = set_primitive_array((import "_charly_array")(Value))
-  Class = set_primitive_class((import "_charly_class")(Value))
-  String = set_primitive_string((import "_charly_string")(Value))
-  Function = set_primitive_function((import "_charly_function")(Value))
-  Generator = set_primitive_generator((import "_charly_generator")(Value))
-  Boolean = set_primitive_boolean((import "_charly_boolean")(Value))
-  Null = set_primitive_null((import "_charly_null")(Value))
+  // Setup primitive classes
+  Value     = @"charly.vm.primitive.value"     = (import "_charly_value")()
+  Array     = @"charly.vm.primitive.array"     = (import "_charly_array")(Value)
+  Boolean   = @"charly.vm.primitive.boolean"   = (import "_charly_boolean")(Value)
+  Class     = @"charly.vm.primitive.class"     = (import "_charly_class")(Value)
+  Function  = @"charly.vm.primitive.function"  = (import "_charly_function")(Value)
+  Generator = @"charly.vm.primitive.generator" = (import "_charly_generator")(Value)
+  Null      = @"charly.vm.primitive.null"      = (import "_charly_null")(Value)
+  Number    = @"charly.vm.primitive.number"    = (import "_charly_number")(Value)
+  Object    = @"charly.vm.primitive.object"    = (import "_charly_object")(Value)
+  String    = @"charly.vm.primitive.string"    = (import "_charly_string")(Value)
 
   // Write a value to stdout, without a trailing newline
   write = func write {
@@ -172,7 +173,7 @@ ignoreconst {
       if msg write(msg)
       return __internal_getn()
     },
-    dirname: __internal_get_method("dirname")
+    dirname: __internal_dirname
   }
   Charly.math = import "math"
   Charly.time = import "time"

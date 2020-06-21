@@ -24,17 +24,21 @@
  * SOFTWARE.
  */
 
-const __internal_keys = @"charly.primitive.object.keys"
+#include "defines.h"
+#include "internals.h"
 
-export = ->(Base) {
-  return class Object extends Base {
+#pragma once
 
-    /*
-     * Returns an array containing the keys contained inside v
-     * */
-    static keys(v) {
-      __internal_keys(v)
-    }
+namespace Charly {
+namespace Internals {
+namespace PrimitiveString {
 
-  }
-}
+VALUE to_n(VM& vm, VALUE str);
+VALUE ltrim(VM& vm, VALUE str);
+VALUE rtrim(VM& vm, VALUE str);
+VALUE lowercase(VM& vm, VALUE str);
+VALUE uppercase(VM& vm, VALUE str);
+
+}  // namespace PrimitiveString
+}  // namespace Internals
+}  // namespace Charly

@@ -34,36 +34,17 @@
 namespace Charly {
 namespace Internals {
 
-// Standard charly libraries
-static const std::unordered_map<std::string, std::string> kStandardCharlyLibraries = {
-
-    // Internal primitives
-    {"_charly_array", "src/stdlib/primitives/array.ch"},
-    {"_charly_value", "src/stdlib/primitives/value.ch"},
-    {"_charly_boolean", "src/stdlib/primitives/boolean.ch"},
-    {"_charly_class", "src/stdlib/primitives/class.ch"},
-    {"_charly_function", "src/stdlib/primitives/function.ch"},
-    {"_charly_generator", "src/stdlib/primitives/generator.ch"},
-    {"_charly_null", "src/stdlib/primitives/null.ch"},
-    {"_charly_number", "src/stdlib/primitives/number.ch"},
-    {"_charly_object", "src/stdlib/primitives/object.ch"},
-    {"_charly_string", "src/stdlib/primitives/string.ch"},
-
-    // Helper stuff
-    {"_charly_defer", "src/stdlib/libs/defer.ch"},
-
-    // Libraries
-    {"_charly_math", "src/stdlib/libs/math.ch"},
-    {"_charly_time", "src/stdlib/libs/time.ch"},
-    {"_charly_heap", "src/stdlib/libs/heap.ch"},
-    {"_charly_unittest", "src/stdlib/libs/unittest.ch"}
-};
-
 // The signature of an internal method
-struct InternalMethodSignature {
+struct MethodSignature {
   std::string name;
   size_t argc;
   void* func_pointer;
+};
+
+// Stores runtime lookup tables for internals
+struct Index {
+  static std::unordered_map<std::string, std::string> standard_libraries;
+  static std::unordered_map<VALUE, MethodSignature> methods;
 };
 
 #define CHECK(T, V)                                             \
@@ -83,10 +64,10 @@ struct InternalMethodSignature {
   }
 
 VALUE import(VM& vm, VALUE filename, VALUE source);
-VALUE get_method(VM& vm, VALUE argument);
 VALUE write(VM& vm, VALUE value);
 VALUE getn(VM& vm);
 VALUE dirname(VM& vm);
+VALUE exit(VM& vm, VALUE status_code);
 VALUE set_primitive_value(VM& vm, VALUE klass);
 VALUE set_primitive_object(VM& vm, VALUE klass);
 VALUE set_primitive_class(VM& vm, VALUE klass);
@@ -98,19 +79,6 @@ VALUE set_primitive_generator(VM& vm, VALUE klass);
 VALUE set_primitive_boolean(VM& vm, VALUE klass);
 VALUE set_primitive_null(VM& vm, VALUE klass);
 VALUE set_runtime_constructor(VM& vm, VALUE func);
-VALUE to_s(VM& vm, VALUE value);
-
-VALUE call_dynamic(VM& vm, VALUE func, VALUE ctx, VALUE args);
-
-VALUE defer(VM& vm, VALUE cb, VALUE dur);
-VALUE defer_interval(VM& vm, VALUE cb, VALUE period);
-VALUE clear_timer(VM& vm, VALUE uid);
-VALUE clear_interval(VM& vm, VALUE uid);
-VALUE exit(VM& vm, VALUE status_code);
-
-VALUE suspend_thread(VM& vm);
-VALUE resume_thread(VM& vm, VALUE uid);
-VALUE get_thread_uid(VM& vm);
 
 VALUE register_worker_task(VM& vm, VALUE v, VALUE cb);
 }  // namespace Internals

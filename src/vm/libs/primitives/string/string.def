@@ -24,17 +24,8 @@
  * SOFTWARE.
  */
 
-const __internal_keys = @"charly.primitive.object.keys"
-
-export = ->(Base) {
-  return class Object extends Base {
-
-    /*
-     * Returns an array containing the keys contained inside v
-     * */
-    static keys(v) {
-      __internal_keys(v)
-    }
-
-  }
-}
+DEFINE_INTERNAL_METHOD("charly.primitive.string.to_n",      PrimitiveString::to_n,      1),
+DEFINE_INTERNAL_METHOD("charly.primitive.string.ltrim",     PrimitiveString::ltrim,     1),
+DEFINE_INTERNAL_METHOD("charly.primitive.string.rtrim",     PrimitiveString::rtrim,     1),
+DEFINE_INTERNAL_METHOD("charly.primitive.string.lowercase", PrimitiveString::lowercase, 1),
+DEFINE_INTERNAL_METHOD("charly.primitive.string.uppercase", PrimitiveString::uppercase, 1),

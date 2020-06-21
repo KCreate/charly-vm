@@ -24,7 +24,7 @@
  * SOFTWARE.
  */
 
-const __internal_dynamic_call = Charly.internals.get_method("call_dynamic")
+const __internal_dynamic_call = "charly.primitive.function.call"
 __internal_dynamic_call.push_return_value = false
 
 export = ->(Base) {

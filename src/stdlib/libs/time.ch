@@ -24,14 +24,14 @@
  * SOFTWARE.
  */
 
-const __system_clock_now = Charly.internals.get_method("Time::system_clock_now")
-const __steady_clock_now = Charly.internals.get_method("Time::steady_clock_now")
-const __highres_now = Charly.internals.get_method("Time::highres_now")
-const __to_local = Charly.internals.get_method("Time::to_local")
-const __to_utc = Charly.internals.get_method("Time::to_utc")
-const __fmt = Charly.internals.get_method("Time::fmt")
-const __fmtutc = Charly.internals.get_method("Time::fmtutc")
-const __parse = Charly.internals.get_method("Time::parse")
+const __system_clock_now = @"charly.stdlib.time.system_clock_now"
+const __steady_clock_now = @"charly.stdlib.time.steady_clock_now"
+const __highres_now      = @"charly.stdlib.time.highres_now"
+const __to_local         = @"charly.stdlib.time.to_local"
+const __to_utc           = @"charly.stdlib.time.to_utc"
+const __fmt              = @"charly.stdlib.time.fmt"
+const __fmtutc           = @"charly.stdlib.time.fmtutc"
+const __parse            = @"charly.stdlib.time.parse"
 
 // Helper classes
 class Duration {

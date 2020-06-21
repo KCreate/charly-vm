@@ -36,7 +36,8 @@ namespace Charly::Compilation {
     LocArguments,
     LocSelf,
     LocStack,
-    LocInvalid
+    LocInvalid,
+    LocGlobal
   };
 
   // Stores the location of a value
@@ -59,6 +60,10 @@ namespace Charly::Compilation {
 
     static ValueLocation self(uint64_t symbol, uint32_t level = 0) {
       return { .type = LocationType::LocSelf, .as_self = { symbol, level } };
+    }
+
+    static ValueLocation global(uint64_t symbol) {
+      return { .type = LocationType::LocGlobal, .as_global = { symbol } };
     }
 
     static ValueLocation patch_level(ValueLocation location, uint32_t new_level) {
@@ -100,6 +105,10 @@ namespace Charly::Compilation {
         uint64_t symbol;
         uint32_t level;
       } as_self;
+
+      struct {
+        uint64_t symbol;
+      } as_global;
 
       struct {
         uint64_t __1;

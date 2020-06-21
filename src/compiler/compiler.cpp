@@ -34,32 +34,32 @@ namespace Charly::Compilation {
 CompilerResult Compiler::compile(AST::AbstractNode* tree) {
   CompilerResult result = {.abstract_syntax_tree = tree};
 
-  // Generate a module inclusion function if one is requested
-  // The module inclusion function wraps a program into a single function that can be
-  // called by the runtime
-  if (this->config.wrap_inclusion_function) {
-    // Append a return export node to the end of the parsed block
-    AST::Block* block = result.abstract_syntax_tree->as<AST::Block>();
-    AST::Identifier* ret_id = new AST::Identifier(this->config.inclusion_function_return_identifier);
-    AST::Return* ret_stmt = new AST::Return(ret_id->at(block));
-    ret_stmt->at(block);
-    block->statements.push_back(ret_stmt);
+  // We wrap the entire program inside a function
+  // This function gets called by the runtime
+  // This function receives a single argument called export, which it
+  // returns at the end. This object serves as the return value to an
+  // import call
 
-    // Wrap the whole program in a function which handles the exporting interface
-    // to other programs
-    AST::Function* inclusion_function = new AST::Function(this->config.inclusion_function_name,
-                                                          this->config.inclusion_function_arguments, {}, block, true);
-    inclusion_function->at(block);
-    inclusion_function->lvarcount = kKnownTopLevelConstants.size();
-    result.abstract_syntax_tree = inclusion_function;
+  // Append a return export node to the end of the parsed block
+  AST::Block* block = result.abstract_syntax_tree->as<AST::Block>();
+  AST::Identifier* ret_id = new AST::Identifier("export");
+  AST::Return* ret_stmt = new AST::Return(ret_id->at(block));
+  ret_stmt->at(block);
+  block->statements.push_back(ret_stmt);
 
-    // Push the function onto the stack and wrap it in a block node
-    // The PushStack node prevents the optimizer from removing the function literal
-    result.abstract_syntax_tree = new AST::PushStack(result.abstract_syntax_tree);
-    result.abstract_syntax_tree->at(block);
-    result.abstract_syntax_tree = new AST::Block(result.abstract_syntax_tree);
-    result.abstract_syntax_tree->at(block);
-  }
+  // Wrap the whole program in a function which handles the exporting interface
+  // to other programs
+  AST::Function* inclusion_function = new AST::Function("__CHARLY_MODULE_FUNC", {"export"}, {}, block, true);
+  inclusion_function->at(block);
+  inclusion_function->lvarcount = 0;
+  result.abstract_syntax_tree = inclusion_function;
+
+  // Push the function onto the stack and wrap it in a block node
+  // The PushStack node prevents the optimizer from removing the function literal
+  result.abstract_syntax_tree = new AST::PushStack(result.abstract_syntax_tree);
+  result.abstract_syntax_tree->at(block);
+  result.abstract_syntax_tree = new AST::Block(result.abstract_syntax_tree);
+  result.abstract_syntax_tree->at(block);
 
   try {
     // Clean up the code a little bit and add or remove some nodes
@@ -73,24 +73,6 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree) {
     // Calculate all offsets of all variables, assignments and declarations
     LVarRewriter lvar_rewriter(this->context, this->config, result);
     lvar_rewriter.push_local_scope();
-
-    // Register the known local variables in the top level
-    uint32_t i = 0;
-    for (const auto& tlc : kKnownTopLevelConstants) {
-      lvar_rewriter.scope->register_symbol(
-        this->context.symtable(std::get<0>(tlc)),
-        LocalOffsetInfo(
-          ValueLocation::frame(i, 1),
-          true,
-          true,
-          std::get<1>(tlc)
-        ),
-        true,
-        std::get<1>(tlc)
-      );
-      i++;
-    }
-
     result.abstract_syntax_tree = lvar_rewriter.visit_node(result.abstract_syntax_tree);
 
     if (result.has_errors) {

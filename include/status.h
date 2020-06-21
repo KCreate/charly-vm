@@ -48,7 +48,8 @@ enum Status : STATUS {
   ObjectClassNotAClass,
   RuntimeTaskNotCallable,
   InvalidInstructionPointer,
-  InvalidThreadId
+  InvalidThreadId,
+  GlobalsNotAnObject
 };
 
 // Human-readable status messages
@@ -72,7 +73,8 @@ static const std::string kStatusHumanReadable[] = {
   "Object's klass field not set to an instance of a class",
   "Callback of runtime task is not a callable type",
   "Invalid instruction pointer",
-  "Invalid thread id"
+  "Invalid thread id",
+  "Globals value is not an object"
 };
 // clang-format on
 }  // namespace Charly

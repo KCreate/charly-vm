@@ -166,7 +166,8 @@ LocalOffsetInfo LocalScope::access_symbol(size_t symbol) {
     }
   }
 
-  return LocalOffsetInfo();
+  // Global read
+  return LocalOffsetInfo(ValueLocation::global(symbol));
 }
 
 }  // namespace Charly::Compilation

@@ -847,6 +847,10 @@ bool CodeGenerator::codegen_read(ValueLocation& location) {
       this->assembler.write_readmembersymbol(location.as_self.symbol);
       break;
     }
+    case LocationType::LocGlobal: {
+      this->assembler.write_readglobal(location.as_global.symbol);
+      break;
+    }
     case LocationType::LocInvalid: {
       return false;
       break;
@@ -892,6 +896,14 @@ bool CodeGenerator::codegen_write(ValueLocation& location, bool keep_on_stack) {
         this->assembler.write_setmembersymbolpush(location.as_self.symbol);
       } else {
         this->assembler.write_setmembersymbol(location.as_self.symbol);
+      }
+      break;
+    }
+    case LocationType::LocGlobal: {
+      if (keep_on_stack) {
+        this->assembler.write_setglobalpush(location.as_global.symbol);
+      } else {
+        this->assembler.write_setglobal(location.as_global.symbol);
       }
       break;
     }

@@ -24,8 +24,4 @@
  * SOFTWARE.
  */
 
-try {
-  class A extends 25 {}
-} catch(e) {
-  print(e)
-}
+print(Object.keys({ age: 20 }))

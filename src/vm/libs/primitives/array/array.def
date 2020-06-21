@@ -24,17 +24,11 @@
  * SOFTWARE.
  */
 
-#include "defines.h"
-#include "internals.h"
-
-#pragma once
-
-namespace Charly {
-namespace Internals {
-namespace Object {
-
-VALUE keys(VM& vm, VALUE obj);
-
-}  // namespace String
-}  // namespace Internals
-}  // namespace Charly
+DEFINE_INTERNAL_METHOD("charly.primitive.array.insert",  PrimitiveArray::insert,  3),
+DEFINE_INTERNAL_METHOD("charly.primitive.array.remove",  PrimitiveArray::remove,  2),
+DEFINE_INTERNAL_METHOD("charly.primitive.array.reverse", PrimitiveArray::reverse, 1),
+DEFINE_INTERNAL_METHOD("charly.primitive.array.flatten", PrimitiveArray::flatten, 1),
+DEFINE_INTERNAL_METHOD("charly.primitive.array.index",   PrimitiveArray::index,   3),
+DEFINE_INTERNAL_METHOD("charly.primitive.array.rindex",  PrimitiveArray::rindex,  3),
+DEFINE_INTERNAL_METHOD("charly.primitive.array.range",   PrimitiveArray::range,   3),
+DEFINE_INTERNAL_METHOD("charly.primitive.array.clear",   PrimitiveArray::clear,   1),

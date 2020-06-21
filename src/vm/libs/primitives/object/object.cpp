@@ -24,21 +24,36 @@
  * SOFTWARE.
  */
 
-#include "defines.h"
-#include "internals.h"
+#include <sstream>
+#include <algorithm>
 
-#pragma once
+#include "object.h"
+#include "vm.h"
+#include "managedcontext.h"
 
 namespace Charly {
 namespace Internals {
-namespace String {
+namespace PrimitiveObject {
 
-VALUE to_n(VM& vm, VALUE str);
-VALUE ltrim(VM& vm, VALUE str);
-VALUE rtrim(VM& vm, VALUE str);
-VALUE lowercase(VM& vm, VALUE str);
-VALUE uppercase(VM& vm, VALUE str);
+VALUE keys(VM& vm, VALUE obj) {
+  ManagedContext lalloc(vm);
 
-}  // namespace String
+  // Get the container of the value
+  std::unordered_map<VALUE, VALUE>* container = charly_get_container(obj);
+  if (container == nullptr)
+    return lalloc.create_array(0);
+
+  // Create an array containing the keys of the container
+  Array* arr = charly_as_array(lalloc.create_array(container->size()));
+
+  for (auto& entry : *container) {
+    VALUE key = lalloc.create_string(vm.context.symtable(entry.first).value_or(kUndefinedSymbolString));
+    arr->data->push_back(key);
+  }
+
+  return charly_create_pointer(arr);
+}
+
+}  // namespace PrimitiveObject
 }  // namespace Internals
 }  // namespace Charly

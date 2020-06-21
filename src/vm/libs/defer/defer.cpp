@@ -24,51 +24,61 @@
  * SOFTWARE.
  */
 
-#include <optional>
-
-#include "value.h"
-
-#pragma once
+#include "defer.h"
+#include "vm.h"
 
 namespace Charly {
-const std::string kUndefinedSymbolString = "<undefined symbol>";
-class SymbolTable {
-  std::unordered_map<VALUE, std::string> table;
+namespace Internals {
+namespace Defer {
 
-public:
-  SymbolTable() = default;
-  SymbolTable(const SymbolTable& other) : table(other.table) {
-  }
-  SymbolTable(SymbolTable&& other) : table(std::move(other.table)) {
-  }
+VALUE defer(VM& vm, VALUE cb, VALUE dur) {
+  CHECK(function, cb);
+  CHECK(number, dur);
 
-  SymbolTable& operator=(const SymbolTable& other) {
-    if (this == &other)
-      return *this;
+  uint32_t ms = charly_number_to_uint32(dur);
 
-    this->table = other.table;
+  Timestamp now = std::chrono::steady_clock::now();
+  Timestamp exec_at = now + std::chrono::milliseconds(ms);
 
-    return *this;
-  }
+  return charly_create_integer(vm.register_timer(exec_at, VMTask(cb, kNull)));
+}
 
-  SymbolTable& operator=(SymbolTable&& other) {
-    std::swap(this->table, other.table);
-    return *this;
-  }
+VALUE defer_interval(VM& vm, VALUE cb, VALUE period) {
+  CHECK(function, cb);
+  CHECK(number, period);
 
-  VALUE encode_string(const std::string& input);
-  std::optional<std::string> decode_symbol(VALUE symbol);
+  uint32_t ms = charly_number_to_uint32(period);
 
-  VALUE operator()(const std::string& input) {
-    return this->encode_string(input);
-  }
-  std::optional<std::string> operator()(VALUE symbol) {
-    return this->decode_symbol(symbol);
-  }
+  return charly_create_integer(vm.register_interval(ms, VMTask(cb, kNull)));
+}
 
-  void copy_symbols_to_table(SymbolTable& other);
-  inline void copy_symbols_from_table(SymbolTable& other) {
-    other.copy_symbols_to_table(*this);
-  }
-};
+VALUE clear_timer(VM&vm, VALUE uid) {
+  CHECK(number, uid);
+  vm.clear_timer(charly_number_to_uint64(uid));
+  return kNull;
+}
+
+VALUE clear_interval(VM&vm, VALUE uid) {
+  CHECK(number, uid);
+  vm.clear_interval(charly_number_to_uint64(uid));
+  return kNull;
+}
+
+VALUE suspend_thread(VM& vm) {
+  vm.suspend_thread();
+  return kNull;
+}
+
+VALUE resume_thread(VM& vm, VALUE uid) {
+  CHECK(number, uid);
+  vm.resume_thread(charly_number_to_uint64(uid));
+  return kNull;
+}
+
+VALUE get_thread_uid(VM& vm) {
+  return charly_create_integer(vm.get_thread_uid());
+}
+
+}  // namespace Defer
+}  // namespace Internals
 }  // namespace Charly

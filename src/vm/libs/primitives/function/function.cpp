@@ -24,17 +24,30 @@
  * SOFTWARE.
  */
 
-const __internal_keys = @"charly.primitive.object.keys"
+#include "function.h"
+#include "vm.h"
+#include "managedcontext.h"
 
-export = ->(Base) {
-  return class Object extends Base {
+namespace Charly {
+namespace Internals {
+namespace PrimitiveFunction {
 
-    /*
-     * Returns an array containing the keys contained inside v
-     * */
-    static keys(v) {
-      __internal_keys(v)
-    }
+VALUE call(VM& vm, VALUE func, VALUE ctx, VALUE args) {
+  CHECK(callable, func);
+  CHECK(array, args);
 
+  vm.push_stack(ctx);
+  vm.push_stack(func);
+
+  for (VALUE a : *(charly_as_array(args)->data)) {
+    vm.push_stack(a);
   }
+
+  vm.call(charly_as_array(args)->data->size(), true, false);
+
+  return kNull;
 }
+
+}  // namespace PrimitiveFunction
+}  // namespace Internals
+}  // namespace Charly

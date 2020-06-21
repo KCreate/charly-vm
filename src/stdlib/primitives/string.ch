@@ -28,11 +28,11 @@
 const Buffer = import "libs/string/buffer.ch"
 
 // String Methods
-const __to_n                 = Charly.internals.get_method("String::to_n")
-const __ltrim                = Charly.internals.get_method("String::ltrim")
-const __rtrim                = Charly.internals.get_method("String::rtrim")
-const __lowercase            = Charly.internals.get_method("String::lowercase")
-const __uppercase            = Charly.internals.get_method("String::uppercase")
+const __to_n      = @"charly.primitive.string.to_n"
+const __ltrim     = @"charly.primitive.string.ltrim"
+const __rtrim     = @"charly.primitive.string.rtrim"
+const __lowercase = @"charly.primitive.string.lowercase"
+const __uppercase = @"charly.primitive.string.uppercase"
 
 export = ->(Base) {
   return class String extends Base {

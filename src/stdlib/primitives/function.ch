@@ -24,17 +24,16 @@
  * SOFTWARE.
  */
 
-const __internal_dynamic_call = Charly.internals.get_method("call_dynamic")
-__internal_dynamic_call.push_return_value = false
+const __internal_function_call = @"charly.primitive.function.call"
+__internal_function_call.push_return_value = false
 
 export = ->(Base) {
   return class Function extends Base {
 
     // Calls *self* using ctx as the target object
     // and the values inside args as the parameters
-    call(ctx, args) {
-      /*print([self, args])*/
-      __internal_dynamic_call(self, ctx, args)
+    call(ctx, args = []) {
+      __internal_function_call(self, ctx, args)
     }
   }
 }
