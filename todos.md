@@ -1,12 +1,3 @@
-- Ability to freeze objects
-  - Simple status bits on every object
-    - f1 = freeze_values        When set to 1, no values can be overwritten
-    - f2 = freeze_keys          When set to 1, no keys can be added or removed
-
-- Ability to delete a key from an object
-  - `Object.delete(obj, "my_key")`
-  - Returns the old value of the key
-
 - Implement control access to objects
   - Mark a key as private
     - Can only be accessed via the `@xxx` syntax
@@ -80,6 +71,11 @@
   - Lexer modes
     - http://www.oilshell.org/blog/2017/12/17.html
     - https://www.reddit.com/r/ProgrammingLanguages/comments/932372/how_to_implement_string_interpolation/
+
+- Ability to freeze objects
+  - Simple status bits on every object
+    - f1 = freeze_values        When set to 1, no values can be overwritten
+    - f2 = freeze_keys          When set to 1, no keys can be added or removed
 
 - Implement a notifier class which can resume certain threads once a condition is met
   - Can be used to implement the defer timer and interval handles in a cleaner way

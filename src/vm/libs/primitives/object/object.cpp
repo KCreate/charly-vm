@@ -24,9 +24,6 @@
  * SOFTWARE.
  */
 
-#include <sstream>
-#include <algorithm>
-
 #include "object.h"
 #include "vm.h"
 #include "managedcontext.h"
@@ -52,6 +49,20 @@ VALUE keys(VM& vm, VALUE obj) {
   }
 
   return charly_create_pointer(arr);
+}
+
+VALUE delete_key(VM& vm, VALUE v, VALUE symbol) {
+  CHECK(string, symbol);
+
+  // Check if the value has a container
+  auto* container = charly_get_container(v);
+  if (!container) return v;
+
+  // Erase key from container
+  VALUE key_symbol = charly_create_symbol(symbol);
+  container->erase(key_symbol);
+
+  return v;
 }
 
 }  // namespace PrimitiveObject

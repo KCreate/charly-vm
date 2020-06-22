@@ -24,7 +24,8 @@
  * SOFTWARE.
  */
 
-const __internal_keys = @"charly.primitive.object.keys"
+const __internal_keys       = @"charly.primitive.object.keys"
+const __internal_delete_key = @"charly.primitive.object.delete_key"
 
 export = ->(Base) {
   return class Object extends Base {
@@ -34,6 +35,13 @@ export = ->(Base) {
      * */
     static keys(v) {
       __internal_keys(v)
+    }
+
+    /*
+     * Deletes a key from a type with a container
+     * */
+    static delete(v, symbol) {
+      __internal_delete_key(v, symbol)
     }
 
   }

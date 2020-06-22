@@ -114,7 +114,6 @@ export = ->(describe, it, assert) {
       })
 
       describe("tap", ->{
-
         "leonard".tap(->(name) {
           assert(name, "leonard")
         })
@@ -122,7 +121,6 @@ export = ->(describe, it, assert) {
       })
 
       describe("pipe", ->{
-
         let v = 0
 
         const a = ->v += $0
@@ -135,7 +133,6 @@ export = ->(describe, it, assert) {
       })
 
       describe("transform", ->{
-
         const r = 10.transform(
           ->(v) {
             v + 10
@@ -149,6 +146,28 @@ export = ->(describe, it, assert) {
         )
 
         assert(r, 100)
+      })
+
+      describe("delete_key", ->{
+        const obj = {}
+
+        obj.foo = 25
+        obj.bar = 50
+        obj.baz = 75
+
+        assert(obj.foo, 25)
+        assert(obj.bar, 50)
+        assert(obj.baz, 75)
+        assert(Object.keys(obj).length, 3)
+
+        Object.delete(obj, "foo")
+        Object.delete(obj, "bar")
+        Object.delete(obj, "baz")
+
+        assert(obj.foo, null)
+        assert(obj.bar, null)
+        assert(obj.baz, null)
+        assert(Object.keys(obj).length, 0)
       })
 
     })

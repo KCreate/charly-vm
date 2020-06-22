@@ -25,3 +25,4 @@
  */
 
 DEFINE_INTERNAL_METHOD("charly.primitive.object.keys", PrimitiveObject::keys, 1),
+DEFINE_INTERNAL_METHOD("charly.primitive.object.delete_key", PrimitiveObject::delete_key, 2),

@@ -34,6 +34,7 @@ namespace Internals {
 namespace PrimitiveObject {
 
 VALUE keys(VM& vm, VALUE obj);
+VALUE delete_key(VM& vm, VALUE obj, VALUE symbol);
 
 }  // namespace PrimitiveObject
 }  // namespace Internals
