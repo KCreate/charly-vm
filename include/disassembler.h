@@ -28,6 +28,7 @@
 #include <iostream>
 #include <type_traits>
 #include <vector>
+#include <string_view>
 
 #include "compiler.h"
 #include "instructionblock.h"
@@ -115,11 +116,35 @@ private:
     }
   }
 
-  inline void print_symbol(uint64_t value, std::ostream& stream) {
-    if (this->compiler_context != nullptr) {
-      std::optional<std::string> decoded_str = this->compiler_context->symtable(value);
-      if (decoded_str.has_value()) {
-        stream << "@\"" << decoded_str.value() << "\"";
+  inline void print_symbol(VALUE value, std::ostream& stream) {
+    switch (charly_get_type(value)) {
+      case kTypeSymbol: {
+        if (this->compiler_context != nullptr) {
+          std::optional<std::string> decoded_str = this->compiler_context->symtable.decode_symbol(value);
+          if (decoded_str.has_value()) {
+            stream << "@\"" << decoded_str.value() << "\"";
+            return;
+          }
+        }
+        break;
+      }
+      case kTypeNumber: {
+        if (charly_is_float(value)) stream << charly_number_to_double(value);
+        if (charly_is_int(value)) stream << charly_number_to_int64(value);
+        return;
+      }
+      case kTypeString: {
+        std::string_view data(charly_string_data(value), charly_string_length(value));
+        stream << "\"" << data << "\"";
+        return;
+      }
+      case kTypeBoolean: {
+        if (value == kTrue) stream << "true";
+        if (value == kFalse) stream << "false";
+        return;
+      }
+      case kTypeNull: {
+        stream << "null";
         return;
       }
     }
