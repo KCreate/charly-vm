@@ -40,6 +40,14 @@ VALUE to_s(VM& vm, VALUE value) {
   return vm.create_string(buffer.str());
 }
 
+VALUE copy(VM& vm, VALUE value) {
+  return vm.copy_value(value);
+}
+
+VALUE deepcopy(VM& vm, VALUE value) {
+  return vm.deep_copy_value(value);
+}
+
 }  // namespace PrimitiveValue
 }  // namespace Internals
 }  // namespace Charly

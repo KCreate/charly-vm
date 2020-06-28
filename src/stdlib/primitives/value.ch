@@ -24,10 +24,26 @@
  * SOFTWARE.
  */
 
-const __internal_to_s = @"charly.primitive.value.to_s"
+const __internal_to_s     = @"charly.primitive.value.to_s"
+const __internal_copy     = @"charly.primitive.value.copy"
+const __internal_deepcopy = @"charly.primitive.value.deepcopy"
 
 export = ->{
   return class Value {
+
+    /*
+     * Creates a copy of this value
+     * */
+    copy {
+      __internal_copy(self)
+    }
+
+    /*
+     * Creates a deep copy of this value
+     * */
+    deepcopy {
+      __internal_deepcopy(self)
+    }
 
     /*
      * Check if self belongs to a given class

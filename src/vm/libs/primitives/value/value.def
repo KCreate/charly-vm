@@ -24,4 +24,6 @@
  * SOFTWARE.
  */
 
-DEFINE_INTERNAL_METHOD("charly.primitive.value.to_s", PrimitiveValue::to_s, 1),
+DEFINE_INTERNAL_METHOD("charly.primitive.value.to_s",     PrimitiveValue::to_s,     1),
+DEFINE_INTERNAL_METHOD("charly.primitive.value.copy",     PrimitiveValue::copy,     1),
+DEFINE_INTERNAL_METHOD("charly.primitive.value.deepcopy", PrimitiveValue::deepcopy, 1),
