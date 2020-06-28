@@ -1,6 +1,6 @@
 Disassembly of block at 0x129cb60
           0x00000129cb80: nop
-      *-- 0x00000129cb81: putfunction @"__CHARLY_MODULE_FUNC", 0x18, true, 1, 3
+      *-- 0x00000129cb81: putfunction @"main", 0x18, true, 1, 3
       |   0x00000129cb97: halt
       *-> 0x00000129cb98: nop
           0x00000129cb99: putvalue 0x7ffc000000000019

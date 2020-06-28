@@ -1,6 +1,6 @@
 Disassembly of block at 0x8f5420
     0x0000008f9b80: nop
-*-- 0x0000008f9b81: putfunction @"__CHARLY_MODULE_FUNC", 0x18, true, 1, 4
+*-- 0x0000008f9b81: putfunction @"main", 0x18, true, 1, 4
 |   0x0000008f9b97: halt
 *-> 0x0000008f9b98: nop
 *-- 0x0000008f9b99: putfunction @"create_counter", 0xea, false, 0, 2

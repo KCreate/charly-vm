@@ -1,6 +1,6 @@
 Disassembly of block at 0x1ae2bc0
     0x000001ae88d0: nop
-*-- 0x000001ae88d1: putfunction @"__CHARLY_MODULE_FUNC", 0x18, true, 1, 3
+*-- 0x000001ae88d1: putfunction @"main", 0x18, true, 1, 3
 |   0x000001ae88e7: halt
 *-> 0x000001ae88e8: nop
 *-- 0x000001ae88e9: putfunction @"add_nums", 0xea, false, 3, 4

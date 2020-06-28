@@ -1,6 +1,6 @@
 Disassembly of block at 0x976ec0
              0x000000979400: nop
-         *-- 0x000000979401: putfunction @"__CHARLY_MODULE_FUNC", 0x18, true, 1, 6
+         *-- 0x000000979401: putfunction @"main", 0x18, true, 1, 6
          |   0x000000979417: halt
          *-> 0x000000979418: nop
 *----------- 0x000000979419: putfunction @"throw_some_message", 0x11f, false, 1, 2

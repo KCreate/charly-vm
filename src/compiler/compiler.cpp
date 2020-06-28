@@ -49,7 +49,7 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree) {
 
   // Wrap the whole program in a function which handles the exporting interface
   // to other programs
-  AST::Function* inclusion_function = new AST::Function("__CHARLY_MODULE_FUNC", {"export"}, {}, block, true);
+  AST::Function* inclusion_function = new AST::Function("main", {"export"}, {}, block, true);
   inclusion_function->at(block);
   inclusion_function->lvarcount = 0;
   result.abstract_syntax_tree = inclusion_function;

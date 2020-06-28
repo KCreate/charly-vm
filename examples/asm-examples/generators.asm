@@ -1,6 +1,6 @@
 Disassembly of block at 0x175c310
     0x000001761c10: nop
-*-- 0x000001761c11: putfunction @"__CHARLY_MODULE_FUNC", 0x18, true, 1, 4
+*-- 0x000001761c11: putfunction @"main", 0x18, true, 1, 4
 |   0x000001761c27: halt
 *-> 0x000001761c28: nop
 *-- 0x000001761c29: putfunction @"create_generator", 0xcd, false, 0, 2
