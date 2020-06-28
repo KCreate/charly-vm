@@ -276,6 +276,7 @@ struct Function {
   uint8_t* body_address;
   bool bound_self_set;
   VALUE bound_self;
+  VALUE host_class;
   std::unordered_map<VALUE, VALUE>* container;
 
   inline bool anonymous() { return this->basic.f1; }

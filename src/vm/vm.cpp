@@ -334,6 +334,7 @@ VALUE VM::create_function(VALUE name,
   cell->function.set_needs_arguments(needs_arguments);
   cell->function.bound_self_set = false;
   cell->function.bound_self = kNull;
+  cell->function.host_class = kNull;
   cell->function.container = new std::unordered_map<VALUE, VALUE>();
   return cell->as_value();
 }
@@ -883,6 +884,10 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
         return this->create_string(this->context.symtable(func->name).value_or(kUndefinedSymbolString));
       }
 
+      if (symbol == charly_create_symbol("host_class")) {
+        return func->host_class;
+      }
+
       if (func->container->count(symbol) == 1) {
         return (*func->container)[symbol];
       }
@@ -1065,6 +1070,7 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
       Function* func = charly_as_function(target);
 
       if (symbol == charly_create_symbol("name")) break;
+      if (symbol == charly_create_symbol("host_class")) break;
 
       (*func->container)[symbol] = value;
       break;
@@ -1794,6 +1800,11 @@ void VM::op_putclass(VALUE name,
 
   if (has_constructor) {
     klass->constructor = this->pop_stack();
+    if (!charly_is_function(klass->constructor)) {
+      this->panic(Status::InvalidArgumentType);
+    }
+    Function* constructor = charly_as_function(klass->constructor);
+    constructor->host_class = charly_create_pointer(klass);
   }
 
   if (has_parent_class) {
@@ -1810,6 +1821,7 @@ void VM::op_putclass(VALUE name,
       this->panic(Status::InvalidArgumentType);
     }
     Function* func_smethod = charly_as_function(smethod);
+    func_smethod->host_class = charly_create_pointer(klass);
     (*klass->container)[func_smethod->name] = smethod;
   }
 
@@ -1819,6 +1831,7 @@ void VM::op_putclass(VALUE name,
       this->panic(Status::InvalidArgumentType);
     }
     Function* func_method = charly_as_function(method);
+    func_method->host_class = charly_create_pointer(klass);
     Object* obj_methods = charly_as_object(klass->prototype);
     (*obj_methods->container)[func_method->name] = method;
   }
@@ -2278,6 +2291,11 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       io << "<Function ";
       io << "name=";
+      if (charly_is_class(func->host_class)) {
+        Class* host_class = charly_as_class(func->host_class);
+        this->pretty_print(io, host_class->name);
+        io << ":";
+      }
       this->pretty_print(io, func->name);
       io << " ";
       io << "argc=" << func->argc;
@@ -2627,6 +2645,11 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
 
       io << "<Function ";
       io << "";
+      if (charly_is_class(func->host_class)) {
+        Class* host_class = charly_as_class(func->host_class);
+        this->pretty_print(io, host_class->name);
+        io << ":";
+      }
       this->to_s(io, func->name);
       io << "#" << func->minimum_argc;
 

@@ -266,4 +266,15 @@ export = ->(describe, it, assert) {
     assert(bar(), 50)
   })
 
+  it("sets klass property on class member functions & constructor", ->{
+    class A {
+      constructor = null
+      foo = null
+    }
+
+    assert(A.constructor.host_class, A)
+
+    const a = new A()
+    assert(a.foo.host_class, A)
+  })
 }

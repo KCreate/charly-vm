@@ -60,20 +60,6 @@ export = ->(describe, it, assert) {
   })
 
   describe("global symbols", ->{
-
-    /*
-     * Things that should be tested:
-     *
-     * - writing to global variables
-     * - reading global variables
-     * - setglobalpush instruction
-     * - writing to vm internals
-     * - reading vm internals
-     *   - last_exception_thrown
-     * - getting internal methods
-     * - check error exceptions
-     * */
-
     it("sets global symbols", ->{
       Charly.globals.mytestvar = 150
       assert(mytestvar, 150)

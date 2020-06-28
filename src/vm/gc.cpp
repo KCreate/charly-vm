@@ -103,6 +103,7 @@ void GarbageCollector::mark(VALUE value) {
     case kTypeFunction: {
       Function* func = charly_as_function(value);
       this->mark(charly_create_pointer(func->context));
+      this->mark(func->host_class);
 
       if (func->bound_self_set)
         this->mark(func->bound_self);
