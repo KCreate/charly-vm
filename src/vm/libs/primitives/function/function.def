@@ -24,4 +24,6 @@
  * SOFTWARE.
  */
 
-DEFINE_INTERNAL_METHOD("charly.primitive.function.call", PrimitiveFunction::call, 3),
+DEFINE_INTERNAL_METHOD("charly.primitive.function.call",        PrimitiveFunction::call,        3),
+DEFINE_INTERNAL_METHOD("charly.primitive.function.bind_self",   PrimitiveFunction::bind_self,   2),
+DEFINE_INTERNAL_METHOD("charly.primitive.function.unbind_self", PrimitiveFunction::unbind_self, 1),

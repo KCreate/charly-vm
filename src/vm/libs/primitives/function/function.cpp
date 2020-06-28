@@ -48,6 +48,26 @@ VALUE call(VM& vm, VALUE func, VALUE ctx, VALUE args) {
   return kNull;
 }
 
+VALUE bind_self(VM& vm, VALUE func, VALUE self) {
+  CHECK(function, func);
+
+  Function* function = charly_as_function(func);
+  function->bound_self_set = true;
+  function->bound_self = self;
+
+  return func;
+}
+
+VALUE unbind_self(VM& vm, VALUE func) {
+  CHECK(function, func);
+
+  Function* function = charly_as_function(func);
+  function->bound_self_set = false;
+  function->bound_self = kNull;
+
+  return func;
+}
+
 }  // namespace PrimitiveFunction
 }  // namespace Internals
 }  // namespace Charly

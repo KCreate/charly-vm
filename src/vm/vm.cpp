@@ -500,13 +500,20 @@ VALUE VM::copy_string(VALUE string) {
 
 VALUE VM::copy_function(VALUE function) {
   Function* source = charly_as_function(function);
-  Function* target =
-      charly_as_function(this->create_function(source->name, source->body_address, source->argc, source->minimum_argc,
-                                               source->lvarcount, source->anonymous(), source->needs_arguments()));
+  Function* target = charly_as_function(this->create_function(
+    source->name,
+    source->body_address,
+    source->argc,
+    source->minimum_argc,
+    source->lvarcount,
+    source->anonymous(),
+    source->needs_arguments()
+  ));
 
   target->context = source->context;
   target->bound_self_set = source->bound_self_set;
   target->bound_self = source->bound_self;
+  target->host_class = source->host_class;
   *(target->container) = *(source->container);
 
   return charly_create_pointer(target);

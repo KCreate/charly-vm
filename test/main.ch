@@ -31,27 +31,28 @@ const result = unittest(->(describe, it, assert, context) {
   const testcases = [
 
     // Interpreter specs
-    ["Arithmetic operations",       "./interpreter/arithmetic.ch"],
-    ["Bitwise operations",          "./interpreter/bitwise.ch"],
-    ["Classes",                     "./interpreter/classes.ch"],
-    ["Comments",                    "./interpreter/comments.ch"],
-    ["Comparisons",                 "./interpreter/comparisons.ch"],
-    ["Defer",                       "./interpreter/defer.ch"],
-    ["Exceptions",                  "./interpreter/exceptions.ch"],
-    ["External Files",              "./interpreter/external-files.ch"],
-    ["Functions",                   "./interpreter/functions.ch"],
-    ["Generators",                  "./interpreter/generators.ch"],
-    ["Guard",                       "./interpreter/guard.ch"],
-    ["Identifiers",                 "./interpreter/identifiers.ch"],
-    ["Loops",                       "./interpreter/loops.ch"],
-    ["Objects",                     "./interpreter/objects.ch"],
-    ["Primitives",                  "./interpreter/primitives.ch"],
-    ["Switch",                      "./interpreter/switch.ch"],
-    ["Ternary",                     "./interpreter/ternary.ch"],
-    ["Unless",                      "./interpreter/unless.ch"],
+    ["Arithmetic operations", "./interpreter/arithmetic.ch"],
+    ["Bitwise operations",    "./interpreter/bitwise.ch"],
+    ["Classes",               "./interpreter/classes.ch"],
+    ["Comments",              "./interpreter/comments.ch"],
+    ["Comparisons",           "./interpreter/comparisons.ch"],
+    ["Defer",                 "./interpreter/defer.ch"],
+    ["Exceptions",            "./interpreter/exceptions.ch"],
+    ["External Files",        "./interpreter/external-files.ch"],
+    ["Functions",             "./interpreter/functions.ch"],
+    ["Generators",            "./interpreter/generators.ch"],
+    ["Guard",                 "./interpreter/guard.ch"],
+    ["Identifiers",           "./interpreter/identifiers.ch"],
+    ["Loops",                 "./interpreter/loops.ch"],
+    ["Objects",               "./interpreter/objects.ch"],
+    ["Primitives",            "./interpreter/primitives.ch"],
+    ["Switch",                "./interpreter/switch.ch"],
+    ["Ternary",               "./interpreter/ternary.ch"],
+    ["Unless",                "./interpreter/unless.ch"],
+    ["Value",                 "./interpreter/value.ch"],
 
     // Standard library specs
-    ["Heaps",                       "./stdlib/heaps.ch"]
+    ["Heaps",                 "./stdlib/heaps.ch"]
   ]
 
   // Loads and runs all the test cases sequentially

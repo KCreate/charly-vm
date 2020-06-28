@@ -24,8 +24,6 @@
  * SOFTWARE.
  */
 
-import "math"
-
 export = ->(describe, it, assert) {
 
   describe("lambda notation", ->{
@@ -49,8 +47,10 @@ export = ->(describe, it, assert) {
   })
 
   it("calls functions", ->{
+    func foo(x) = return x
+
     func p(x) {
-      math.sqrt(x)
+      foo(x)
     }
 
     assert(p(25), 5)
@@ -276,5 +276,30 @@ export = ->(describe, it, assert) {
 
     const a = new A()
     assert(a.foo.host_class, A)
+  })
+
+  it("assigns bound_self to anonymous functions", ->{
+    const method = ->{ self }
+    assert(method(), self)
+    method.bind_self(25)
+    assert(method(), 25)
+    method.unbind_self()
+    assert(method(), self)
+  })
+
+  it("assigns bound_self of class member functions", ->{
+    class A {
+      property value
+      foo = @value
+    }
+
+    const a = new A("test")
+    assert(a.foo(), "test")
+
+    a.foo.bind_self({ value: "something else" })
+    assert(a.foo(), "something else")
+
+    a.foo.unbind_self()
+    assert(a.foo(), "test")
   })
 }

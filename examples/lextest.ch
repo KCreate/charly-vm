@@ -24,4 +24,25 @@
  * SOFTWARE.
  */
 
-print(Object.keys({ age: 20 }))
+class Person {
+  property name
+
+  greet {
+    print("hello " + @name)
+  }
+}
+
+const p = new Person("leonard")
+
+p.greet()
+
+const new_self = {
+  name: "peter"
+}
+
+const greet_func = p.greet.copy()
+greet_func.bind_self(new_self)
+
+greet_func()
+
+p.greet()

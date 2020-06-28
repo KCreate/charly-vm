@@ -24,7 +24,9 @@
  * SOFTWARE.
  */
 
-const __internal_function_call = @"charly.primitive.function.call"
+const __internal_function_bind_self   = @"charly.primitive.function.bind_self"
+const __internal_function_unbind_self = @"charly.primitive.function.unbind_self"
+const __internal_function_call        = @"charly.primitive.function.call"
 __internal_function_call.push_return_value = false
 
 export = ->(Base) {
@@ -34,6 +36,22 @@ export = ->(Base) {
     // and the values inside args as the parameters
     call(ctx, args = []) {
       __internal_function_call(self, ctx, args)
+    }
+
+    /*
+     * Bind a self value for this function
+     * */
+    bind_self(value) {
+      __internal_function_bind_self(self, value)
+      self
+    }
+
+    /*
+     * Unbind the self value
+     * */
+    unbind_self {
+      __internal_function_unbind_self(self)
+      self
     }
   }
 }
