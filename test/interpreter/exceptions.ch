@@ -99,4 +99,40 @@ export = ->(describe, it, assert) {
     assert(Object.keys(kla).length, 0)
   })
 
+  it("packs exceptions thrown by the vm into error objects", ->{
+    assert.exception(func functionname { const a = @"some undefined symbol" }, ->(e) {
+      assert(typeof e, "object")
+      assert(e.klass, InternalError)
+      assert(e.message, "Unidentified global symbol 'some undefined symbol'")
+      assert(typeof e.stacktrace, "array")
+      assert(typeof e.stacktrace[0].caller, "function")
+      assert(e.stacktrace[0].caller.name, "functionname")
+    })
+
+    assert.exception(->{ class A extends null {} }, ->(e) {
+      assert(typeof e, "object")
+      assert(e.klass, InternalError)
+      assert(e.message, "Can't extend from non class value")
+    })
+
+    assert.exception(->{ const a = null a() }, ->(e) {
+      assert(typeof e, "object")
+      assert(e.klass, InternalError)
+      assert(e.message, "Attempted to call a non-callable type: null")
+    })
+  })
+
+  it("rethrows exceptions", ->{
+    try {
+      try {
+        throw new Error("some error happened")
+      } catch(e) {
+        e.rethrow()
+      }
+    } catch(e) {
+      assert(e.klass, Error)
+      assert(e.message, "some error happened")
+    }
+  })
+
 }

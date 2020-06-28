@@ -125,14 +125,13 @@ struct VMTask {
  * */
 struct VMThread {
   uint64_t uid;
-  VALUE last_exception_thrown;
   std::vector<VALUE> stack;
   Frame* frame;
   CatchTable* catchstack;
   uint8_t* resume_address;
 
-  VMThread(uint64_t u, VALUE l, std::vector<VALUE>&& s, Frame* f, CatchTable* c, uint8_t* r)
-      : uid(u), last_exception_thrown(l), stack(std::move(s)), frame(f), catchstack(c), resume_address(r) {
+  VMThread(uint64_t u, std::vector<VALUE>&& s, Frame* f, CatchTable* c, uint8_t* r)
+      : uid(u), stack(std::move(s)), frame(f), catchstack(c), resume_address(r) {
   }
 };
 
@@ -208,7 +207,7 @@ public:
   // CatchStack manipulation
   CatchTable* create_catchtable(uint8_t* address);
   CatchTable* pop_catchtable();
-  void unwind_catchstack();
+  void unwind_catchstack(std::optional<VALUE> payload);
 
   // Methods to create new data types
   VALUE create_object(uint32_t initial_capacity);
@@ -284,14 +283,8 @@ public:
   void initialize_member_properties(Class* klass, Object* object);
   void throw_exception(const std::string& message);
   void throw_exception(VALUE payload);
-  VALUE stacktrace_array();
   void panic(STATUS reason);
-  void stacktrace(std::ostream& io);
-  void catchstacktrace(std::ostream& io);
   void stackdump(std::ostream& io);
-  void inline pretty_print(std::ostream& io, void* value) {
-    this->pretty_print(io, (VALUE)value);
-  }
   void pretty_print(std::ostream& io, VALUE value);
   void to_s(std::ostream& io, VALUE value, uint32_t depth = 0);
   VALUE get_self_for_function(Function* function, const VALUE* fallback_ptr);
@@ -451,6 +444,9 @@ private:
   VALUE primitive_boolean = kNull;
   VALUE primitive_null = kNull;
 
+  // A function which handles uncaught exceptions
+  VALUE uncaught_exception_handler = kNull;
+
   // Runtime constructor which handles all "new" calls
   VALUE runtime_constructor = kNull;
 
@@ -493,9 +489,6 @@ private:
   // Both modules can still communicate with each other via the several global
   // objects & methods.
   Frame* top_frame;
-
-  // Holds the last value that was thrown as an exception
-  VALUE last_exception_thrown;
 
   std::vector<VALUE> stack;
   Frame* frames;

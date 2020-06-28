@@ -1,35 +1,46 @@
+- Way to reconcile global variables with undefined symbol warnings at compile-time
+  - Special syntax to access global variables?
+
+- Hoist local variable declarations
+  - `
+      func foo { bar() } <- would generate a readglobal call
+      func bar { ... }
+    `
+
+- Replace symbol function with CRC32
+  - Allows for compile-time calculation of hashes which in turn allows us to use
+    the switch statement for symbols.
+
+- Add ARGV, ENV mappings
+
 - Implement control access to objects
   - Mark a key as private
-    - Can only be accessed via the `@xxx` syntax
-      - ReadSelfMember
-      - SetSelfMember
-      - SetSelfMemberPush
-    - Refactor AST Nodes which handle assignment
+    - Can only be accessed via functions which are registered
+      member functions of the klass of the object in question
   - Mark a key as constant
     - Key cannot be overwritten or deleted
-
-- New global class: Error
-  - `throw new Error("something bad happened")`
-  - Possible subclasses:
-    - RangeError
-    - ReferenceError
-    - TypeError
-  - Implement a global basic exception handler which just prints the message
-    and a nice human readable stacktrace.
-  - If the global exception handler is reached it should not crash the whole machine
-    but only the currently running Fiber (see Fiber ideas below)
-
-- Programmatic access to call / frame stack
-  - A way to represent a machine frame in Charly
 
 - Changes to the class system
   - Constructors of subclasses that define new properties are required to contain a 'super(...)' call
   - No 'super.foo(...)' syntax
     - Functions can only call their own super function, not any arbitrary one
     - Special syntax for 'super.call(...)' to call with a custom self object and arguments
+  - Hide prototype variable
+    - Add internal method to add new method to prototype
+    - Throw if the method already belongs to a class
+    - Configure klass property of function
+
+- Raw memory access methods
+  - Create a library and internal methods that allow access to raw memory, via pointers
+  - Load buffers of specific size
+  - Some kinda DSL that allows the automatic mapping of memory to offset fields
+    (basically recreate the C struct in Charly)
 
 - Refactor codebase
   - Compiler, Parser stuff is a huge mess
+  - VM should keep track of compiled blocks, source information etc.
+    This is currently also a huge mess and needs to be cleaned up before things
+    like sourcemaps can become a reality
   - ASTNodes should be passed around by shared_ptr's
 
 - Instruction Pointer to filename & line number mapping for better stack traces
@@ -53,6 +64,11 @@
         rand(min, max) = __get_random(min, max)
       }
     `
+- Refactor unit tests
+  - Organize into different categories
+    - Basic VM functionality
+    - Primitive classes standard methods
+    - Standard libraries
 
 - String interpolation
   - `
@@ -71,6 +87,8 @@
   - Lexer modes
     - http://www.oilshell.org/blog/2017/12/17.html
     - https://www.reddit.com/r/ProgrammingLanguages/comments/932372/how_to_implement_string_interpolation/
+
+- Implement C signal handlers
 
 - Ability to freeze objects
   - Simple status bits on every object

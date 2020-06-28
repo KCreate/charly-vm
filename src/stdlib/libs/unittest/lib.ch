@@ -9,14 +9,11 @@ export = ->(callback) {
 
   const assert = ->(real, expected = true) context.assert(real, expected)
   assert.exception = ->(cb1, cb2) {
-    let caught_exception = null
-
     try {
       cb1()
+      assert(null, "An exception to be thrown")
     } catch(e) {
-      caught_exception = e
-    } finally {
-      cb2(caught_exception)
+      cb2(e)
     }
   }
 

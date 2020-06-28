@@ -58,6 +58,7 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address,
   cell->frame.caller_value = charly_create_pointer(function);
   cell->frame.stacksize_at_entry = 0;  // set by call_generator
   cell->frame.self = self;
+  cell->frame.origin_address = this->ip;
   cell->frame.return_address = return_address;
   cell->frame.set_halt_after_return(halt_after_return);
 
@@ -101,6 +102,7 @@ Frame* VM::create_frame(VALUE self,
   cell->frame.caller_value = kNull;
   cell->frame.stacksize_at_entry = 0;  // set by call_generator
   cell->frame.self = self;
+  cell->frame.origin_address = this->ip;
   cell->frame.return_address = return_address;
   cell->frame.set_halt_after_return(halt_after_return);
 
@@ -165,9 +167,6 @@ CatchTable* VM::create_catchtable(uint8_t* address) {
 CatchTable* VM::pop_catchtable() {
   if (!this->catchstack) {
     this->context.err_stream << "No catchtable registered" << '\n';
-    this->context.err_stream << "Last exception thrown: ";
-    this->to_s(this->context.err_stream, this->last_exception_thrown);
-    this->context.err_stream << '\n';
     this->panic(Status::CatchStackEmpty);
   }
   CatchTable* current = this->catchstack;
@@ -176,7 +175,17 @@ CatchTable* VM::pop_catchtable() {
   return current;
 }
 
-void VM::unwind_catchstack() {
+void VM::unwind_catchstack(std::optional<VALUE> payload = std::nullopt) {
+
+  // Check if there is a catchtable
+  if (!this->catchstack && charly_is_function(this->uncaught_exception_handler)) {
+    Function* exception_handler = charly_as_function(this->uncaught_exception_handler);
+    VALUE global_self = this->get_global_self();
+    VALUE payload_value = payload.value_or(charly_create_number(25));
+    this->call_function(exception_handler, 1, &payload_value, global_self, true);
+    return;
+  }
+
   CatchTable* table = this->pop_catchtable();
 
   // Walk the frame tree until we reach the frame stored in the catchtable
@@ -223,7 +232,11 @@ void VM::unwind_catchstack() {
   // calculate the amount of values we can pop
   size_t popcount = this->stack.size() - table->stacksize;
   while (popcount--) {
-    this->stack.pop_back();
+    this->pop_stack();
+  }
+
+  if (payload.has_value()) {
+    this->push_stack(payload.value());
   }
 }
 
@@ -1392,6 +1405,7 @@ void VM::call_generator(Generator* generator, uint32_t argc, VALUE* argv) {
   frame->last_active_catchtable = this->catchstack;
   frame->caller_value = charly_create_pointer(generator);
   frame->stacksize_at_entry = this->stack.size();
+  frame->origin_address = this->ip;
   frame->return_address = return_address;
 
   this->frames = frame;
@@ -1506,9 +1520,9 @@ void VM::op_readglobal(VALUE symbol) {
   SYM("charly.vm.primitive.generator", primitive_generator);
   SYM("charly.vm.primitive.boolean", primitive_boolean);
   SYM("charly.vm.primitive.null", primitive_null);
+  SYM("charly.vm.uncaught_exception_handler", uncaught_exception_handler);
   SYM("charly.vm.runtime_constructor", runtime_constructor);
   SYM("charly.vm.globals", globals);
-  SYM("charly.vm.last_exception_thrown", last_exception_thrown);
 #undef SYM
 
   // Check globals table
@@ -1656,9 +1670,9 @@ void VM::op_setglobal(VALUE symbol) {
   SYM("charly.vm.primitive.generator", primitive_generator);
   SYM("charly.vm.primitive.boolean", primitive_boolean);
   SYM("charly.vm.primitive.null", primitive_null);
+  SYM("charly.vm.uncaught_exception_handler", uncaught_exception_handler);
   SYM("charly.vm.runtime_constructor", runtime_constructor);
   SYM("charly.vm.globals", globals);
-  SYM("charly.vm.last_exception_thrown", last_exception_thrown);
 
   // Check globals table
   if (!charly_is_object(this->globals)) this->panic(Status::GlobalsNotAnObject);
@@ -1692,9 +1706,9 @@ void VM::op_setglobalpush(VALUE symbol) {
   SYM("charly.vm.primitive.generator", primitive_generator);
   SYM("charly.vm.primitive.boolean", primitive_boolean);
   SYM("charly.vm.primitive.null", primitive_null);
+  SYM("charly.vm.uncaught_exception_handler", uncaught_exception_handler);
   SYM("charly.vm.runtime_constructor", runtime_constructor);
   SYM("charly.vm.globals", globals);
-  SYM("charly.vm.last_exception_thrown", last_exception_thrown);
 
   // Check globals table
   if (!charly_is_object(this->globals))
@@ -2018,43 +2032,26 @@ void VM::op_throw() {
 }
 
 void VM::throw_exception(const std::string& message) {
-  ManagedContext lalloc(*this);
+  Frame* old_frame = this->frames;
 
-  // Create exception object
-  Object* ex_obj = charly_as_object(lalloc.create_object(2));
-  VALUE ex_msg = lalloc.create_string(message.c_str(), message.size());
-  (*ex_obj->container)[this->context.symtable("message")] = ex_msg;
-  (*ex_obj->container)[this->context.symtable("stacktrace")] = this->stacktrace_array();
+  // Load the error class
+  VALUE error_class_val = this->get_global_symbol(charly_create_symbol("InternalError"));
+  if (charly_is_class(error_class_val)) {
 
-  this->last_exception_thrown = charly_create_pointer(ex_obj);
-  this->unwind_catchstack();
-  this->push_stack(charly_create_pointer(ex_obj));
+    // Instantiate error object
+    this->push_stack(error_class_val);
+    this->push_stack(this->create_string(message.c_str(), message.size()));
+    this->push_stack(charly_create_integer(reinterpret_cast<size_t>(old_frame)));
+    this->op_new(2);
+  } else {
+
+    // If no valid 'InternalError' class exists, we simply throw the message itself
+    this->unwind_catchstack(this->create_string(message.c_str(), message.size()));
+  }
 }
 
 void VM::throw_exception(VALUE payload) {
-  this->last_exception_thrown = payload;
-  this->unwind_catchstack();
-  this->push_stack(payload);
-}
-
-VALUE VM::stacktrace_array() {
-  ManagedContext lalloc(*this);
-  Array* arr = charly_as_array(lalloc.create_array(1));
-
-  std::stringstream io;
-
-  Frame* frame = this->frames;
-  while (frame && charly_is_frame(charly_create_pointer(frame))) {
-    this->pretty_print(io, charly_create_pointer(frame));
-    frame = frame->parent;
-
-    // Append the trace entry to the array and reset the stringstream
-    std::string strcopy = io.str();
-    arr->data->push_back(lalloc.create_string(strcopy.data(), strcopy.size()));
-    io.str("");
-  }
-
-  return charly_create_pointer(arr);
+  this->unwind_catchstack(payload);
 }
 
 void VM::op_registercatchtable(int32_t offset) {
@@ -2139,33 +2136,6 @@ void VM::op_typeof() {
   VALUE value = this->pop_stack();
   const std::string& stringrep = charly_get_typestring(value);
   this->push_stack(this->create_string(stringrep.data(), stringrep.size()));
-}
-
-void VM::stacktrace(std::ostream& io) {
-  Frame* frame = this->frames;
-
-  int i = 0;
-  io << "IP: " << static_cast<void*>(this->ip) << '\n';
-  while (frame && charly_is_frame(charly_create_pointer(frame))) {
-    io << std::setfill(' ') << std::setw(2);
-    io << i++ << ": ";
-    io << std::setw(1);
-    this->pretty_print(io, charly_create_pointer(frame));
-    io << '\n';
-    frame = frame->parent;
-  }
-}
-
-void VM::catchstacktrace(std::ostream& io) {
-  CatchTable* table = this->catchstack;
-
-  int i = 0;
-  while (table) {
-    io << i++ << "# ";
-    this->pretty_print(io, charly_create_pointer(table));
-    io << '\n';
-    table = table->parent;
-  }
 }
 
 void VM::stackdump(std::ostream& io) {
@@ -2647,7 +2617,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
       io << "";
       if (charly_is_class(func->host_class)) {
         Class* host_class = charly_as_class(func->host_class);
-        this->pretty_print(io, host_class->name);
+        this->to_s(io, host_class->name);
         io << ":";
       }
       this->to_s(io, func->name);
@@ -2762,6 +2732,12 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
       break;
     }
 
+    case kTypeFrame: {
+      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
+      io << "<Frame>";
+      break;
+    }
+
     default: {
       if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
       io << "<?>";
@@ -2793,8 +2769,6 @@ VALUE VM::get_global_symbol(VALUE symbol) {
 
 void VM::panic(STATUS reason) {
   this->context.err_stream << "Panic: " << kStatusHumanReadable[reason] << '\n';
-  this->context.err_stream << '\n' << "Stacktrace:" << '\n';
-  this->stacktrace(this->context.err_stream);
   this->context.err_stream << '\n' << "Stackdump:" << '\n';
   this->stackdump(this->context.err_stream);
 
@@ -3620,7 +3594,6 @@ uint8_t VM::start_runtime() {
 
         // Restore suspended thread
         this->uid = thread.uid;
-        this->last_exception_thrown = thread.last_exception_thrown;
         this->stack = std::move(thread.stack);
         this->frames = thread.frame;
         this->catchstack = thread.catchstack;
@@ -3754,7 +3727,6 @@ void VM::suspend_thread() {
   this->halted = true;
   this->paused_threads.emplace(this->uid, VMThread(
     this->uid,
-    this->last_exception_thrown,
     std::move(this->stack),
     this->frames,
     this->catchstack,

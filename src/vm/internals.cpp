@@ -78,6 +78,10 @@ std::unordered_map<VALUE, MethodSignature> Index::methods = {
     DEFINE_INTERNAL_METHOD("charly.vm.dirname",              dirname,              0),
     DEFINE_INTERNAL_METHOD("charly.vm.exit",                 exit,                 1),
     DEFINE_INTERNAL_METHOD("charly.vm.register_worker_task", register_worker_task, 2),
+    DEFINE_INTERNAL_METHOD("charly.vm.get_active_frame",     get_active_frame,     0),
+    DEFINE_INTERNAL_METHOD("charly.vm.get_parent_frame",     get_parent_frame,     1),
+    DEFINE_INTERNAL_METHOD("charly.vm.get_block_address",    get_block_address,    1),
+    DEFINE_INTERNAL_METHOD("charly.vm.resolve_address",      resolve_address,      1),
 };
 
 // Standard charly libraries
@@ -97,6 +101,7 @@ std::unordered_map<std::string, std::string> Index::standard_libraries = {
 
     // Libraries
     {"_charly_defer", "src/stdlib/libs/defer.ch"},
+    {"_charly_error", "src/stdlib/libs/error.ch"},
     {"_charly_heap", "src/stdlib/libs/heap.ch"},
     {"_charly_math", "src/stdlib/libs/math.ch"},
     {"_charly_time", "src/stdlib/libs/time.ch"},
@@ -303,6 +308,84 @@ VALUE register_worker_task(VM& vm, VALUE v, VALUE cb) {
   task.arguments.push_back(v);
   vm.register_worker_task(task);
   return kNull;
+}
+
+VALUE get_active_frame(VM& vm) {
+  ManagedContext lalloc(vm);
+
+  // Acquire frame information
+  Frame* vm_frame      = vm.get_current_frame();
+  VALUE frame_id       = charly_create_pointer(vm_frame);
+  VALUE caller_value   = vm_frame->caller_value;
+  VALUE self_value     = vm_frame->self;
+  VALUE origin_address = charly_create_integer(reinterpret_cast<size_t>(vm_frame->origin_address));
+
+  // Create stacktrace entry
+  Object* obj = charly_as_object(lalloc.create_object(3));
+  obj->container->insert({vm.context.symtable("id"),             frame_id});
+  obj->container->insert({vm.context.symtable("caller"),         caller_value});
+  obj->container->insert({vm.context.symtable("self_value"),     self_value});
+  obj->container->insert({vm.context.symtable("origin_address"), origin_address});
+
+  return charly_create_pointer(obj);
+}
+
+VALUE get_parent_frame(VM& vm, VALUE frame_ref) {
+  CHECK(frame, frame_ref);
+
+  ManagedContext lalloc(vm);
+
+  Frame* ctx_frame = charly_as_frame(frame_ref);
+  if (ctx_frame == nullptr) return kNull;
+
+  // Acquire frame information
+  Frame* vm_frame      = ctx_frame->parent;
+  if (vm_frame == nullptr) return kNull;
+
+  VALUE frame_id       = charly_create_pointer(vm_frame);
+  VALUE caller_value   = vm_frame->caller_value;
+  VALUE self_value     = vm_frame->self;
+  VALUE origin_address = charly_create_integer(reinterpret_cast<size_t>(vm_frame->origin_address));
+
+  // Create stacktrace entry
+  Object* obj = charly_as_object(lalloc.create_object(3));
+  obj->container->insert({vm.context.symtable("id"),             frame_id});
+  obj->container->insert({vm.context.symtable("caller"),         caller_value});
+  obj->container->insert({vm.context.symtable("self_value"),     self_value});
+  obj->container->insert({vm.context.symtable("origin_address"), origin_address});
+
+  return charly_create_pointer(obj);
+}
+
+VALUE get_block_address(VM& vm, VALUE func) {
+  switch (charly_get_type(func)) {
+    case kTypeFunction: {
+      Function* ptr = charly_as_function(func);
+      return charly_create_number(reinterpret_cast<uint64_t>(ptr->body_address));
+    }
+    case kTypeGenerator: {
+      Generator* ptr = charly_as_generator(func);
+      Function* ctx_frame_func = charly_as_function(ptr->context_frame->caller_value);
+      return charly_create_number(reinterpret_cast<uint64_t>(ctx_frame_func->body_address));
+    }
+    default: {
+      vm.throw_exception("Expected function or generator");
+      return kNull;
+    }
+  }
+}
+
+VALUE resolve_address(VM& vm, VALUE address) {
+  CHECK(number, address);
+
+  uint8_t* ip = reinterpret_cast<uint8_t*>(charly_number_to_uint64(address));
+  std::optional<std::string> lookup_result = vm.context.compiler_manager.address_mapping.resolve_address(ip);
+
+  if (!lookup_result) {
+    return kNull;
+  }
+
+  return vm.create_string(lookup_result.value());
 }
 
 }  // namespace Internals

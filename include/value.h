@@ -168,7 +168,7 @@ struct String {
 //
 // Uses the f1 flag of the basic structure to differentiate between small and regular frames
 // Uses the f2 flag of the basic structure to store the machine should halt after this frame
-static constexpr uint32_t kSmallFrameLocalCount = 6;
+static constexpr uint32_t kSmallFrameLocalCount = 5;
 struct Frame {
   Basic basic;
   Frame* parent;
@@ -184,6 +184,7 @@ struct Frame {
     } senv;
   };
   VALUE self;
+  uint8_t* origin_address;
   uint8_t* return_address;
 
   inline bool halt_after_return() {

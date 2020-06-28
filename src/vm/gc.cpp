@@ -186,7 +186,7 @@ void GarbageCollector::collect() {
     this->mark(charly_create_pointer(this->host_vm->frames));
     this->mark(charly_create_pointer(this->host_vm->catchstack));
     this->mark(charly_create_pointer(this->host_vm->top_frame));
-    this->mark(this->host_vm->last_exception_thrown);
+    this->mark(this->host_vm->uncaught_exception_handler);
     this->mark(this->host_vm->runtime_constructor);
     this->mark(this->host_vm->globals);
     this->mark(this->host_vm->primitive_value);
@@ -251,7 +251,6 @@ void GarbageCollector::collect() {
 
     for (auto& it : this->host_vm->paused_threads) {
       VMThread& thread = it.second;
-      this->mark(thread.last_exception_thrown);
       for (VALUE v : thread.stack) {
         this->mark(v);
       }
