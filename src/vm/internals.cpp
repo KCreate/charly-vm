@@ -70,11 +70,13 @@ std::unordered_map<VALUE, MethodSignature> Index::methods = {
 #import "libs/defer/defer.def"
 
     // VM internals
-    DEFINE_INTERNAL_METHOD("charly.vm.import", import, 2),
-    DEFINE_INTERNAL_METHOD("charly.vm.write", write, 1),
-    DEFINE_INTERNAL_METHOD("charly.vm.getn", getn, 0),
-    DEFINE_INTERNAL_METHOD("charly.vm.dirname", dirname, 0),
-    DEFINE_INTERNAL_METHOD("charly.vm.exit", exit, 1),
+    //
+    //                     Symbol                            Function Pointer      ARGC
+    DEFINE_INTERNAL_METHOD("charly.vm.import",               import,               2),
+    DEFINE_INTERNAL_METHOD("charly.vm.write",                write,                1),
+    DEFINE_INTERNAL_METHOD("charly.vm.getn",                 getn,                 0),
+    DEFINE_INTERNAL_METHOD("charly.vm.dirname",              dirname,              0),
+    DEFINE_INTERNAL_METHOD("charly.vm.exit",                 exit,                 1),
     DEFINE_INTERNAL_METHOD("charly.vm.register_worker_task", register_worker_task, 2),
 };
 
@@ -83,7 +85,6 @@ std::unordered_map<std::string, std::string> Index::standard_libraries = {
 
     // Internal primitives
     {"_charly_array", "src/stdlib/primitives/array.ch"},
-    {"_charly_value", "src/stdlib/primitives/value.ch"},
     {"_charly_boolean", "src/stdlib/primitives/boolean.ch"},
     {"_charly_class", "src/stdlib/primitives/class.ch"},
     {"_charly_function", "src/stdlib/primitives/function.ch"},
@@ -92,14 +93,13 @@ std::unordered_map<std::string, std::string> Index::standard_libraries = {
     {"_charly_number", "src/stdlib/primitives/number.ch"},
     {"_charly_object", "src/stdlib/primitives/object.ch"},
     {"_charly_string", "src/stdlib/primitives/string.ch"},
-
-    // Helper stuff
-    {"_charly_defer", "src/stdlib/libs/defer.ch"},
+    {"_charly_value", "src/stdlib/primitives/value.ch"},
 
     // Libraries
+    {"_charly_defer", "src/stdlib/libs/defer.ch"},
+    {"_charly_heap", "src/stdlib/libs/heap.ch"},
     {"_charly_math", "src/stdlib/libs/math.ch"},
     {"_charly_time", "src/stdlib/libs/time.ch"},
-    {"_charly_heap", "src/stdlib/libs/heap.ch"},
     {"_charly_unittest", "src/stdlib/libs/unittest.ch"}
 };
 

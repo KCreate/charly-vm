@@ -2777,6 +2777,20 @@ VALUE VM::get_self_for_function(Function* function, const VALUE* fallback) {
   return function->context ? function->context->self : kNull;
 }
 
+VALUE VM::get_global_self() {
+  return this->get_global_symbol(charly_create_symbol("Charly"));
+}
+
+VALUE VM::get_global_symbol(VALUE symbol) {
+  if (charly_is_object(this->globals)) {
+    Object* globals_obj = charly_as_object(this->globals);
+    if (globals_obj->container->count(symbol))
+      return globals_obj->container->at(symbol);
+  }
+
+  return kNull;
+}
+
 void VM::panic(STATUS reason) {
   this->context.err_stream << "Panic: " << kStatusHumanReadable[reason] << '\n';
   this->context.err_stream << '\n' << "Stacktrace:" << '\n';
@@ -3628,12 +3642,7 @@ uint8_t VM::start_runtime() {
         this->gc.mark_persistent(task.callback.argument);
 
         // Get Charly object
-        VALUE global_self = kNull;
-        if (charly_is_object(this->globals)) {
-          Object* globals_obj = charly_as_object(this->globals);
-          if (globals_obj->container->count(charly_create_symbol("Charly")))
-            global_self = globals_obj->container->at(charly_create_symbol("Charly"));
-        }
+        VALUE global_self = this->get_global_self();
         Function* fn = charly_as_function(task.callback.fn);
         VALUE self = this->get_self_for_function(fn, &global_self);
         this->call_function(fn, 1, &task.callback.argument, self, true);

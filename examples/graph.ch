@@ -51,7 +51,7 @@ class Grapher {
     const view = @view
 
     // Render table header
-    io << "# Grapher Output " << Charly.time.now().to_local() << " #" << "\n"
+    io << "# Grapher Output " << Time.now().to_local() << " #" << "\n"
 
     // Setup the drawing area
     const out = Array.create(bounds.height + 1, ->Array.create(bounds.width + 1, " "))

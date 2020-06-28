@@ -68,18 +68,6 @@ VALUE write(VM& vm, VALUE value);
 VALUE getn(VM& vm);
 VALUE dirname(VM& vm);
 VALUE exit(VM& vm, VALUE status_code);
-VALUE set_primitive_value(VM& vm, VALUE klass);
-VALUE set_primitive_object(VM& vm, VALUE klass);
-VALUE set_primitive_class(VM& vm, VALUE klass);
-VALUE set_primitive_array(VM& vm, VALUE klass);
-VALUE set_primitive_string(VM& vm, VALUE klass);
-VALUE set_primitive_number(VM& vm, VALUE klass);
-VALUE set_primitive_function(VM& vm, VALUE klass);
-VALUE set_primitive_generator(VM& vm, VALUE klass);
-VALUE set_primitive_boolean(VM& vm, VALUE klass);
-VALUE set_primitive_null(VM& vm, VALUE klass);
-VALUE set_runtime_constructor(VM& vm, VALUE func);
-
 VALUE register_worker_task(VM& vm, VALUE v, VALUE cb);
 }  // namespace Internals
 }  // namespace Charly

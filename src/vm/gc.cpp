@@ -188,6 +188,17 @@ void GarbageCollector::collect() {
     this->mark(charly_create_pointer(this->host_vm->top_frame));
     this->mark(this->host_vm->last_exception_thrown);
     this->mark(this->host_vm->runtime_constructor);
+    this->mark(this->host_vm->globals);
+    this->mark(this->host_vm->primitive_value);
+    this->mark(this->host_vm->primitive_object);
+    this->mark(this->host_vm->primitive_class);
+    this->mark(this->host_vm->primitive_array);
+    this->mark(this->host_vm->primitive_string);
+    this->mark(this->host_vm->primitive_number);
+    this->mark(this->host_vm->primitive_function);
+    this->mark(this->host_vm->primitive_generator);
+    this->mark(this->host_vm->primitive_boolean);
+    this->mark(this->host_vm->primitive_null);
 
     for (VALUE item : this->host_vm->stack) {
       this->mark(item);

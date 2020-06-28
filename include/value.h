@@ -585,6 +585,12 @@ inline uint8_t charly_get_type(VALUE value) {
   return kTypeUnknown;
 }
 
+// Return a human readable string of the type of value
+__attribute__((always_inline))
+inline const std::string& charly_get_typestring(VALUE value) {
+  return kHumanReadableTypes[charly_get_type(value)];
+}
+
 // Return a pointer to the container of a specified value
 // Returns a nullptr if the value doesn't have a container
 __attribute__((always_inline))
@@ -597,12 +603,6 @@ inline std::unordered_map<VALUE, VALUE>* charly_get_container(VALUE value) {
     case kTypeGenerator: return charly_as_generator(value)->container;
     default: return nullptr;
   }
-}
-
-// Return a human readable string of the type of value
-__attribute__((always_inline))
-inline const std::string& charly_get_typestring(VALUE value) {
-  return kHumanReadableTypes[charly_get_type(value)];
 }
 
 // Return a human readable string of the type of value

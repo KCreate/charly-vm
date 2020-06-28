@@ -295,6 +295,8 @@ public:
   void pretty_print(std::ostream& io, VALUE value);
   void to_s(std::ostream& io, VALUE value, uint32_t depth = 0);
   VALUE get_self_for_function(Function* function, const VALUE* fallback_ptr);
+  VALUE get_global_self();
+  VALUE get_global_symbol(VALUE symbol);
 
   // Private member access
   inline Frame* get_current_frame() {

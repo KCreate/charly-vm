@@ -37,7 +37,7 @@ const __internal_clear   = @"charly.primitive.array.clear"
 
 export = ->(Base) {
   return class Array extends Base {
-    static create(size, cb) {
+    static create(size, cb = null) {
       const arr = []
 
       let i = 0

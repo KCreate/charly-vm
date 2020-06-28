@@ -86,7 +86,7 @@ class Buffer {
   }
 
   /*
-   * Append the entire content of the src string to the buffer's end
+   * Append bytes to the buffer
    * */
   write_bytes(bytes) {
     @offset = __buffer_write_bytes(@cp, bytes)

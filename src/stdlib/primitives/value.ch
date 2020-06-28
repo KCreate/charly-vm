@@ -28,11 +28,39 @@ const __internal_to_s = @"charly.primitive.value.to_s"
 
 export = ->{
   return class Value {
+
+    /*
+     * Check if self belongs to a given class
+     * */
+    is_a(klass) {
+
+      // Traverse class hierarchy
+      let top = self.klass
+      while top {
+        if top == klass return true
+        top = top.parent_class
+      }
+
+      false
+    }
+
+    /*
+     * Call a function with self, returning the original self
+     * */
     tap(cb) {
       cb(self)
       self
     }
 
+    /*
+     * Calls a series of functions with self
+     *
+     * Code:        value.pipe(a, b, c)
+     * Equivalent:  a(value)
+     *              b(value)
+     *              c(value)
+     *
+     * */
     pipe() {
       const pipes = arguments
 
@@ -47,6 +75,13 @@ export = ->{
       self
     }
 
+    /*
+     * Transform a value via a series of functions
+     *
+     * Code:        value = value.transform(a, b, c)
+     * Equivalent:  value = c(b(a(value)))
+     *
+     * */
     transform() {
       const pipes = arguments
 
@@ -54,7 +89,7 @@ export = ->{
 
       pipes.each(->(p) {
         guard typeof p == "function" || typeof p == "cfunction" {
-          throw ("pipe expected an array of functions, got " + typeof p)
+          throw ("transform expected an array of functions, got " + typeof p)
         }
 
         result = p(result)
@@ -79,24 +114,6 @@ export = ->{
      * */
     to_n {
       NaN
-    }
-
-    /*
-     * Checks if this object is an instance of klass or any of its subclasses
-     * */
-    is_a(target) {
-
-      // Check for a direct match
-      if self.klass == target return true
-
-      // Traverse class chain
-      let klass = @klass
-      while klass {
-        if klass == target return true
-        klass = klass.parent_class
-      }
-
-      return false
     }
   }
 }
