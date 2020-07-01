@@ -1321,7 +1321,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
       arguments_array->data->push_back(argv[i]);
     }
   } else {
-    for (size_t i = 0; i < function->argc; i++)
+    for (size_t i = 0; i < argc; i++)
       frame->write_local(i, argv[i]);
   }
 
