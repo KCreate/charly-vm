@@ -63,6 +63,15 @@ class Math {
   static property log10 = @"charly.stdlib.math.log10"
 
   /*
+   * Round number to nearest integer
+   * */
+  static round(n) {
+    const rem = n % 1
+    if rem < 0.5 return Math.floor(n)
+    if rem >= 0.5 return Math.ceil(n)
+  }
+
+  /*
    * Returns a random value depending on the arguments passed
    *
    * 0 args: 0 - 1
