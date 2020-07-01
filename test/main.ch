@@ -56,7 +56,6 @@ const result = unittest(->(describe, it, assert, context) {
   ]
 
   // Loads and runs all the test cases sequentially
-  // TODO: schedule them asynchronously maybe???
   testcases.each(->(test) {
     describe(test[1], ->{
       const module = import test[1]

@@ -24,5 +24,27 @@
  * SOFTWARE.
  */
 
-print(Charly.argv)
-print(Charly.environment)
+func progress_bar(value, width = 20) {
+  const to_print = Math.ceil(value * width)
+
+  const bar = ("=" * to_print) + (" " * (width - to_print))
+
+  return "[" + bar + "]"
+}
+
+20.times(->(index) {
+  let i = 0
+  let target = (index + 1) * 5
+
+  loop {
+    write("\r")
+    write(progress_bar(i / target))
+
+    defer.sleep(5)
+
+    if i >= target break
+    i += 1
+  }
+
+  print("")
+})

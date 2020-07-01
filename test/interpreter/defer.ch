@@ -87,7 +87,9 @@ export = ->(describe, it, assert) {
 
       task.wait()
 
-      assert(caught_exception, "Cannot wait for own thread to complete")
+      assert(caught_exception.is_a(Error))
+      assert(typeof caught_exception, "object")
+      assert(caught_exception.message, "Task cannot wait for itself to complete")
     })
 
     it("multiple threads can wait for another thread to finish", ->{

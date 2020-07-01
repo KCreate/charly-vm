@@ -24,50 +24,108 @@
  * SOFTWARE.
  */
 
-const Time = import "time"
-
 const __internal_defer            = @"charly.vm.defer"
 const __internal_defer_interval   = @"charly.vm.defer_interval"
 const __internal_clear_timer      = @"charly.vm.clear_timer"
 const __internal_clear_interval   = @"charly.vm.clear_interval"
 const __internal_get_thread_uid   = @"charly.vm.get_thread_uid"
 const __internal_resume_thread    = @"charly.vm.resume_thread"
-const __internal_suspend_thread   = @"charly.vm.suspend_thread"
+const __internal_suspend_thread   = @"charly.vm.suspend_thread".tap(->$0.halt_after_return = true)
 
-__internal_suspend_thread.halt_after_return = true;
-
-class DeferHandle {
-  property id
+/*
+ * Keeps track of paused threads
+ * */
+class Notifier {
   property origin_thread_uid
-  property live_thread_uid
   property pending_threads
-  property alive
 
-  constructor(@id) {
-    @pending_threads = []
+  constructor {
     @origin_thread_uid = __internal_get_thread_uid()
-    @live_thread_uid = null
-    @alive = true
+    @pending_threads = []
   }
 
-  // Wait for this task to finish
-  // This will suspend the calling thread and
-  // resume it once this task finishes
+  // Suspend calling thread until notify is called
   wait {
-    unless @alive return null
-    const uid = __internal_get_thread_uid()
-    if uid == @live_thread_uid throw "Cannot wait for own thread to complete"
-
-    @pending_threads << uid
+    @pending_threads << __internal_get_thread_uid()
     __internal_suspend_thread()
 
     null
   }
 
-  clear {
-    @alive = false
-    @pending_threads.each(->(th) __internal_resume_thread(th))
+  // Notify paused threads that they may resume execution
+  notify {
+    @pending_threads.each(->__internal_resume_thread($0))
     @pending_threads.clear()
+
+    null
+  }
+}
+
+class DeferHandle {
+  property id
+  property alive
+  property notifier
+  property live_thread_uid
+
+  constructor(@id) {
+    @alive = true
+    @notifier = new Notifier()
+    @live_thread_uid = null
+  }
+
+  // Wait for this handle to complete
+  wait {
+    if !@alive return null
+
+    const thread_uid = __internal_get_thread_uid()
+    if thread_uid == @live_thread_uid throw new Error("Task cannot wait for itself to complete")
+    @notifier.wait()
+
+    null
+  }
+
+  // Updates the currently active thread uid
+  update_live_thread_uid {
+    @live_thread_uid = __internal_get_thread_uid()
+
+    null
+  }
+
+  // Clears this handle, marks it as dead and resumes all waiting threads
+  clear {
+    @id = null
+    @alive = false
+    @notifier.notify()
+    @live_thread_uid = null
+
+    null
+  }
+}
+
+class TimerHandle extends DeferHandle {
+  constructor(cb, period) {
+
+    // Convert period to number
+    if typeof period ! "number" period = period.to_n()
+
+    // Schedule timer in VM
+    const task_id = __internal_defer(->{
+      @update_live_thread_uid()
+      cb()
+      @clear()
+    }, period)
+
+    super(task_id)
+  }
+
+  // Prevent this timer from running
+  clear {
+    if !@alive return null
+
+    __internal_clear_timer(@id)
+    super()
+
+    null
   }
 }
 
@@ -75,32 +133,29 @@ class IntervalHandle extends DeferHandle {
   property iterations
 
   constructor(cb, period) {
-    super(__internal_defer_interval(->{
-      @live_thread_uid = __internal_get_thread_uid()
+    @iterations = 0
+
+    // Convert period to number
+    if typeof period ! "number" period = period.to_n()
+
+    // Schedule interval in VM
+    const task_id = __internal_defer_interval(->{
+      @update_live_thread_uid()
       cb(@iterations, self)
       @iterations += 1
-    }, period.to_n()))
-    @iterations = 0
+    }, period)
+
+    super(task_id)
   }
 
+  // Prevent this interval from running again
   clear {
+    if !@alive return null
+
     __internal_clear_interval(@id)
     super()
-  }
-}
 
-class TimerHandle extends DeferHandle {
-  constructor(cb, period) {
-    super(__internal_defer(->{
-      @live_thread_uid = __internal_get_thread_uid()
-      cb()
-      @clear()
-    }, period.to_n()))
-  }
-
-  clear {
-    __internal_clear_timer(@id)
-    super()
+    null
   }
 }
 
@@ -110,6 +165,13 @@ defer.wait     = ->(threads) {
   if typeof threads ! "array" threads = arguments
   threads.each(->$0.wait())
 
+  null
+}
+
+// Sleep for some time
+defer.sleep = ->(duration) {
+  const task = defer(->null, duration)
+  task.wait()
   null
 }
 

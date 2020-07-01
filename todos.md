@@ -25,10 +25,6 @@
     - Key cannot be overwritten or deleted
 
 - Changes to the class system
-  - Constructors of subclasses that define new properties are required to contain a 'super(...)' call
-  - No 'super.foo(...)' syntax
-    - Functions can only call their own super function, not any arbitrary one
-    - Special syntax for 'super.call(...)' to call with a custom self object and arguments
   - Hide prototype variable
     - Add internal method to add new method to prototype
     - Throw if the method already belongs to a class
@@ -106,10 +102,6 @@
   - Simple status bits on every object
     - f1 = freeze_values        When set to 1, no values can be overwritten
     - f2 = freeze_keys          When set to 1, no keys can be added or removed
-
-- Implement a notifier class which can resume certain threads once a condition is met
-  - Can be used to implement the defer timer and interval handles in a cleaner way
-  - Useful for async worker thread methods
 
 - Parse binary numbers
   -  8-bit numbers    0b00000000
