@@ -51,6 +51,7 @@ const result = unittest(->(describe, it, assert, context) {
     ["Unless",                "./interpreter/unless.ch"],
 
     // Standard library specs
+    ["ARGV & Environment",    "./stdlib/argv-environ.ch"],
     ["Heaps",                 "./stdlib/heaps.ch"]
   ]
 

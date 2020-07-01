@@ -24,5 +24,19 @@
  * SOFTWARE.
  */
 
-print(Charly.argv)
-print(Charly.environment)
+export = ->(describe, it, assert) {
+
+  it("inserts ARGV into Charly object", ->{
+    const argv = Charly.argv
+    assert(typeof argv, "array")
+    assert(argv.length > 0)
+    assert(typeof argv[0], "string")
+  })
+
+  it("inserts environment variables into Charly object", ->{
+    const env = Charly.environment
+    assert(typeof env, "object")
+    assert(Object.keys(env).length > 0)
+  })
+
+}

@@ -70,6 +70,9 @@ VALUE dirname(VM& vm);
 VALUE exit(VM& vm, VALUE status_code);
 VALUE register_worker_task(VM& vm, VALUE v, VALUE cb);
 
+VALUE get_argv(VM& vm);
+VALUE get_environment(VM& vm);
+
 VALUE get_active_frame(VM& vm);
 VALUE get_parent_frame(VM& vm, VALUE frame_ref);
 VALUE get_block_address(VM& vm, VALUE func);

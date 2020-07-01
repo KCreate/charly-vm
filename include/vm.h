@@ -90,6 +90,9 @@ struct VMContext {
   bool verbose_addresses = false;
   bool single_worker_thread = false;
 
+  std::vector<std::string>* argv;
+  std::unordered_map<std::string, std::string>* environment;
+
   std::istream& in_stream = std::cin;
   std::ostream& out_stream = std::cout;
   std::ostream& err_stream = std::cerr;

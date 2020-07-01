@@ -61,13 +61,14 @@ struct RunFlags {
   bool single_worker_thread = false;
 
   RunFlags(int argc, char** argv, char** envp) {
+
     // Parse environment variables
     for (char** current = envp; *current; current++) {
       std::string envstring(*current);
-      size_t string_delimiter_post = envstring.find(kEnvironmentStringDelimiter);
+      size_t string_delimiter_index = envstring.find(kEnvironmentStringDelimiter);
 
-      std::string key(envstring, 0, string_delimiter_post);
-      std::string value(envstring, string_delimiter_post, std::string::npos);
+      std::string key(envstring, 0, string_delimiter_index);
+      std::string value(envstring, string_delimiter_index + 1, std::string::npos);
 
       this->environment[key] = value;
     }
@@ -79,6 +80,7 @@ struct RunFlags {
 
     bool append_to_flags = false;
     bool append_to_dump_files_include = false;
+    bool argument_parser_active = true;
 
     auto append_flag = [&](const std::string& flag) {
       if (!flag.compare("dump_ast"))
@@ -118,6 +120,14 @@ struct RunFlags {
     for (int argi = 1; argi < argc; argi++) {
       std::string arg(argv[argi]);
 
+      // After the '--' token has been parsed, the argument parser
+      // will store all remaining arguments into the arguments array,
+      // ignoring any flags that may be special to Charly
+      if (!argument_parser_active) {
+        this->arguments.push_back(arg);
+        continue;
+      }
+
       // If this argument comes after a flag, append it to the flags
       //
       // This would be parsed in one step
@@ -149,6 +159,14 @@ struct RunFlags {
 
       // Check single character flags like -h, -v etc.
       if (arg.size() == 2) {
+
+        // '--' terminates the argument parser, all remaining arguments
+        // are added as is to the argument list
+        if (arg[0] == '-' && arg[1] == '-') {
+          argument_parser_active = false;
+          continue;
+        }
+
         bool found_flag = false;
         switch (arg[1]) {
           case 'h': {

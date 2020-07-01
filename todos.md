@@ -17,8 +17,6 @@
   - Allows for compile-time calculation of hashes which in turn allows us to use
     the switch statement for symbols.
 
-- Add ARGV, ENV mappings
-
 - Implement control access to objects
   - Mark a key as private
     - Can only be accessed via functions which are registered

@@ -51,11 +51,13 @@
 @"charly.vm.globals".defer = null
 
 // Cache some internal methods
-const __internal_write   = @"charly.vm.write"
-const __internal_getn    = @"charly.vm.getn"
-const __internal_import  = @"charly.vm.import"
-const __internal_dirname = @"charly.vm.dirname"
-const __internal_exit    = @"charly.vm.exit"
+const __internal_get_argv        = @"charly.vm.get_argv"
+const __internal_get_environment = @"charly.vm.get_environment"
+const __internal_write           = @"charly.vm.write"
+const __internal_getn            = @"charly.vm.getn"
+const __internal_import          = @"charly.vm.import"
+const __internal_dirname         = @"charly.vm.dirname"
+const __internal_exit            = @"charly.vm.exit"
 __internal_exit.halt_after_return = true
 
 let __internal_standard_libs_names
@@ -156,6 +158,8 @@ defer = import "_charly_defer"
 Error = import "_charly_error"
 
 // Setup the charly object
+Charly.argv        = __internal_get_argv()
+Charly.environment = __internal_get_environment()
 Charly.io = {
   write,
   print,
