@@ -47,7 +47,7 @@ export = ->(describe, it, assert) {
   })
 
   it("calls functions", ->{
-    func foo(x) = return x
+    func foo(x) = return Math.sqrt(x)
 
     func p(x) {
       foo(x)
@@ -266,7 +266,7 @@ export = ->(describe, it, assert) {
     assert(bar(), 50)
   })
 
-  it("sets klass property on class member functions & constructor", ->{
+  it("sets host_class property on class member functions & constructor", ->{
     class A {
       constructor = null
       foo = null

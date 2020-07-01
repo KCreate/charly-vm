@@ -210,7 +210,7 @@ export = ->(describe, it, assert) {
     class B extends A {
       property v2
 
-      constructor(v1, @v2) {}
+      constructor(v1, @v2) = super(v1)
     }
 
     let a = new B(10, 20)
@@ -334,6 +334,129 @@ export = ->(describe, it, assert) {
     cases.each(->(c) {
       assert.exception(c, ->(e) assert(e.message, expected_error_message))
     })
+  })
+
+  it("correctly instantiates subclasses with no constructor", ->{
+    class A {
+      property name
+      property age
+    }
+
+    class B extends A {}
+
+    const obj = new B("foo", 25)
+
+    assert(obj.name, "foo")
+    assert(obj.age, 25)
+  })
+
+  it("calls super constructor", ->{
+    let a_called = false
+    let c_called = false
+    let d_called = false
+
+    class A {
+      constructor {
+        a_called = true
+      }
+    }
+
+    class B extends A {}
+
+    class C extends B {
+      constructor {
+        super()
+        c_called = true
+      }
+    }
+
+    class D extends C {
+      constructor {
+        super()
+        d_called = true
+      }
+    }
+
+    const obj = new D()
+
+    assert(a_called)
+    assert(c_called)
+    assert(d_called)
+  })
+
+  it("calls super member methods", ->{
+    class A {
+      foo = "a foo"
+      bar = "a bar"
+    }
+
+    let b_called = false
+    let testval = null
+
+    class B extends A {
+      constructor {
+        b_called = true
+        testval = super.bar()
+      }
+
+      foo = super()
+      bar = super.bar()
+      baz = super.bar()
+    }
+
+    const obj = new B()
+
+    assert(obj.foo(), "a foo")
+    assert(obj.bar(), "a bar")
+    assert(obj.baz(), "a bar")
+
+    assert(b_called)
+    assert(testval, "a bar")
+  })
+
+  it("sets self correctly in the super method", ->{
+    let self_val = null
+
+    class A {
+      foo {
+        self_val = self
+      }
+    }
+
+    class B extends A {
+      foo {
+        super()
+      }
+    }
+
+    const obj = new B()
+    obj.foo()
+
+    assert(self_val, obj)
+  })
+
+  it("copies super and supermember methods", ->{
+    class A {
+      property name
+
+      foo { @name }
+    }
+
+    class B extends A {
+      foo { super }
+    }
+
+    const obj = new B("myvalue")
+    const super_foo = obj.foo()
+
+    assert(typeof super_foo, "function")
+    assert(super_foo.name, "foo")
+    assert(super_foo(), "myvalue")
+
+    super_foo.bind_self({ name: "some other value" })
+
+    assert(super_foo(), "some other value")
+    assert(obj.foo()(), "myvalue")
   })
 
 }

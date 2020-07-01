@@ -61,15 +61,12 @@ class Node {
 }
 
 class Assertion extends Node {
-  property expected
   property real
+  property expected
   property has_passed
 
   constructor(@real, @expected) {
-    @id = Node.get_next_id()
-    @title = ""
-    @children = []
-    @type = NodeType.Assertion
+    super("", NodeType.Assertion)
     @has_passed = expected == real
   }
 

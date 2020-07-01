@@ -117,17 +117,20 @@ private:
   }
 
   inline void print_symbol(VALUE value, std::ostream& stream) {
-    switch (charly_get_type(value)) {
-      case kTypeSymbol: {
-        if (this->compiler_context != nullptr) {
-          std::optional<std::string> decoded_str = this->compiler_context->symtable.decode_symbol(value);
-          if (decoded_str.has_value()) {
-            stream << "@\"" << decoded_str.value() << "\"";
-            return;
-          }
-        }
-        break;
+    if (this->compiler_context != nullptr) {
+      std::optional<std::string> decoded_str = this->compiler_context->symtable.decode_symbol(value);
+      if (decoded_str.has_value()) {
+        stream << "@\"" << decoded_str.value() << "\"";
+        return;
       }
+    }
+
+    this->print_hex(value, stream);
+  }
+
+
+  inline void print_value(VALUE value, std::ostream& stream) {
+    switch (charly_get_type(value)) {
       case kTypeNumber: {
         if (charly_is_float(value)) stream << charly_number_to_double(value);
         if (charly_is_int(value)) stream << charly_number_to_int64(value);
@@ -147,13 +150,14 @@ private:
         stream << "null";
         return;
       }
+      default: {
+        this->print_hex(value, stream);
+      }
     }
-
-    this->print_hex(value, stream);
   }
 
   template <typename V>
-  inline void print_value(V value, std::ostream& stream) {
+  inline void print(V value, std::ostream& stream) {
     stream << value;
   }
 
@@ -169,7 +173,7 @@ private:
 };
 
 template <>
-inline void Disassembler::print_value(bool value, std::ostream& stream) {
+inline void Disassembler::print(bool value, std::ostream& stream) {
   stream << std::boolalpha << value << std::noboolalpha;
 }
 }  // namespace Charly::Compilation

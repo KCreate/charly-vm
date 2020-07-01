@@ -64,7 +64,7 @@ class Error {
   property stacktrace
 
   constructor(@message = "Unspecified error") {
-    @stacktrace = Error.capture_stack_trace(null, 3)
+    @stacktrace = Error.capture_stack_trace()
   }
 
   /*
@@ -82,13 +82,13 @@ class Error {
 
     // Generate stack trace entries
     @stacktrace.each(->(frame, index) {
-      const host_klass = frame.caller.host_klass
+      const host_class = frame.caller.host_class
       const func_name  = frame.caller.name.length > 0 ? frame.caller.name : "??"
       const block_addr = __internal_get_block_address(frame.caller)
       const filename   = __internal_resolve_address(block_addr) || "??"
 
       buf.write("  at ")
-      if host_klass buf.write(host_klass.name + ".")
+      if host_class buf.write(host_class.name + ".")
       buf.write(func_name)
       buf.write(" (" + filename + ")")
 
@@ -172,8 +172,9 @@ class Error {
 
 // Error class thrown by the VM
 // Not meant to be used by the user directly
-class InternalError extends Error {
-  constructor {
+@"charly.vm.internal_error_class" = class InternalError extends Error {
+  constructor(message) {
+    super(message)
     throw self
   }
 }
@@ -195,6 +196,9 @@ class InternalError extends Error {
 
     print("Uncaught exception")
     print(exception)
+  } catch(e) {
+    print("Exception thrown inside uncaught exception handler, exiting now")
+    print.dir(e)
   } finally {
 
     // Status code 1 means an error has occured
@@ -202,4 +206,4 @@ class InternalError extends Error {
   }
 }
 
-export = { Error, InternalError }
+export = Error

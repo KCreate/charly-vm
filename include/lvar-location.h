@@ -34,7 +34,6 @@ namespace Charly::Compilation {
   enum LocationType : uint8_t {
     LocFrame,
     LocArguments,
-    LocSelf,
     LocStack,
     LocInvalid,
     LocGlobal
@@ -58,10 +57,6 @@ namespace Charly::Compilation {
       return { .type = LocationType::LocArguments, .as_arguments = { index, level } };
     }
 
-    static ValueLocation self(uint64_t symbol, uint32_t level = 0) {
-      return { .type = LocationType::LocSelf, .as_self = { symbol, level } };
-    }
-
     static ValueLocation global(uint64_t symbol) {
       return { .type = LocationType::LocGlobal, .as_global = { symbol } };
     }
@@ -74,10 +69,6 @@ namespace Charly::Compilation {
         }
         case LocationType::LocArguments: {
           location.as_arguments.level = new_level;
-          break;
-        }
-        case LocationType::LocSelf: {
-          location.as_self.level = new_level;
           break;
         }
         default: { break; }
@@ -100,11 +91,6 @@ namespace Charly::Compilation {
         uint32_t index;
         uint32_t level;
       } as_arguments;
-
-      struct {
-        uint64_t symbol;
-        uint32_t level;
-      } as_self;
 
       struct {
         uint64_t symbol;

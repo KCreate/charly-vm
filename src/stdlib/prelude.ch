@@ -43,7 +43,6 @@
 
 // Error classes
 @"charly.vm.globals".Error = null
-@"charly.vm.globals".InternalError = null
 
 // Global methods
 @"charly.vm.globals".print = null
@@ -111,28 +110,6 @@ __internal_standard_libs = {
   unittest: "_charly_unittest"
 }
 
-// The runtime constructor is a special method the VM keeps track of.
-// All object allocations inside charly run through this method
-// It walks the class hierarchy and executed all the necessary constructors
-@"charly.vm.runtime_constructor" = ->(klass, args, obj) {
-
-  // Build queue of constructors to run
-  const constructor_queue = []
-  let tmp_klass = klass
-  while tmp_klass ! null {
-    constructor_queue << tmp_klass.constructor
-    tmp_klass = tmp_klass.parent_class
-  }
-
-  // Run constructor, from top to bottom
-  while constructor_queue.length {
-    const constructor = constructor_queue.pop()
-    if constructor constructor.call(obj, args)
-  }
-
-  return obj
-}
-
 // Setup primitive classes
 Value     = @"charly.vm.primitive.value"     = (import "_charly_value")()
 Object    = @"charly.vm.primitive.object"    = (import "_charly_object")(Value)
@@ -175,10 +152,8 @@ exit = func exit(status = 0) {
 // Defer lib
 defer = import "_charly_defer"
 
-// Global error classes
-const error_classes = import "_charly_error"
-Error = error_classes.Error
-InternalError = error_classes.InternalError
+// Global error class
+Error = import "_charly_error"
 
 // Setup the charly object
 Charly.io = {

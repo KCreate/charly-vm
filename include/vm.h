@@ -62,7 +62,7 @@ struct VMInstructionProfileEntry {
 class VMInstructionProfile {
 public:
   VMInstructionProfile() : entries(nullptr) {
-    this->entries = new VMInstructionProfileEntry[kOpcodeCount];
+    this->entries = new VMInstructionProfileEntry[OpcodeCount];
   }
   ~VMInstructionProfile() {
     delete[] this->entries;
@@ -224,7 +224,7 @@ public:
                         bool anonymous,
                         bool needs_arguments);
   VALUE create_cfunction(VALUE name, uint32_t argc, void* pointer);
-  VALUE create_generator(VALUE name, uint8_t* resume_address);
+  VALUE create_generator(VALUE name, uint8_t* resume_address, Function* boot_function);
   VALUE create_class(VALUE name);
   VALUE create_cpointer(void* data, void* destructor);
   VALUE create_symbol(VALUE value);
@@ -273,7 +273,6 @@ public:
   VALUE setmembersymbol(VALUE target, VALUE symbol, VALUE value);
   VALUE readmembervalue(VALUE source, VALUE value);
   VALUE setmembervalue(VALUE target, VALUE member_value, VALUE value);
-  std::optional<VALUE> findprototypevalue(Class* source, VALUE symbol);
   std::optional<VALUE> findprimitivevalue(VALUE value, VALUE symbol);
   void call(uint32_t argc, bool with_target, bool halt_after_return = false);
   void call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self, bool halt_after_return = false);
@@ -290,6 +289,7 @@ public:
   VALUE get_self_for_function(Function* function, const VALUE* fallback_ptr);
   VALUE get_global_self();
   VALUE get_global_symbol(VALUE symbol);
+  Function* get_active_function();
 
   // Private member access
   inline Frame* get_current_frame() {
@@ -313,7 +313,9 @@ public:
   void op_setarrayindex(uint32_t index);
   void op_setglobal(VALUE symbol);
   void op_setglobalpush(VALUE symbol);
-  void op_putself(uint32_t level);
+  void op_putself();
+  void op_putsuper();
+  void op_putsupermember(VALUE symbol);
   void op_putvalue(VALUE value);
   void op_putstring(char* data, uint32_t length);
   void op_putfunction(VALUE symbol,
@@ -356,40 +358,6 @@ public:
   void op_brancheq(int32_t offset);
   void op_branchneq(int32_t offset);
   void op_typeof();
-
-  inline void set_primitive_value(VALUE value) {
-    this->primitive_value = value;
-  }
-  inline void set_primitive_object(VALUE value) {
-    this->primitive_object = value;
-  }
-  inline void set_primitive_class(VALUE value) {
-    this->primitive_class = value;
-  }
-  inline void set_primitive_array(VALUE value) {
-    this->primitive_array = value;
-  }
-  inline void set_primitive_string(VALUE value) {
-    this->primitive_string = value;
-  }
-  inline void set_primitive_number(VALUE value) {
-    this->primitive_number = value;
-  }
-  inline void set_primitive_function(VALUE value) {
-    this->primitive_function = value;
-  }
-  inline void set_primitive_generator(VALUE value) {
-    this->primitive_generator = value;
-  }
-  inline void set_primitive_boolean(VALUE value) {
-    this->primitive_boolean = value;
-  }
-  inline void set_primitive_null(VALUE value) {
-    this->primitive_null = value;
-  }
-  inline void set_runtime_constructor(VALUE func) {
-    this->runtime_constructor = func;
-  }
 
   VMContext context;
   VMInstructionProfile instruction_profile;
@@ -447,8 +415,8 @@ private:
   // A function which handles uncaught exceptions
   VALUE uncaught_exception_handler = kNull;
 
-  // Runtime constructor which handles all "new" calls
-  VALUE runtime_constructor = kNull;
+  // Error class used by the VM
+  VALUE internal_error_class = kNull;
 
   // Object which contains all the global variables
   VALUE globals = kNull;

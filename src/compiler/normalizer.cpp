@@ -510,36 +510,72 @@ AST::AbstractNode* Normalizer::visit_class(AST::Class* node, VisitContinue cont)
     static_symbols.emplace(symbol, static_property);
   }
 
-  // Check if we can generate a default constructor
-  if (node->constructor->type() == AST::kTypeEmpty) {
-    if (node->member_properties->children.size() > 0) {
+  // If this class has a parent class and introduces new properties,
+  // an explicit constructor is required
+  //
+  // If this class doesn't have a parent class and introduces new properties
+  // we can auto-generate a constructor for it
+  //
+  // If the class introduces no new properties, no constructor is required
+  // nor has to be generated
+  if (node->member_properties->size() > 0) {
 
-      // Subclasses that define new properties need an explicit constructor
-      if (node->parent_class->type() != AST::kTypeEmpty) {
+    // If we have a parent class, a constructor is exlicitly required
+    if (node->parent_class->type() != AST::kTypeEmpty) {
+      if (node->constructor->type() == AST::kTypeEmpty) {
         this->push_error(node, "Class '" + node->name + "' is missing a constructor");
       } else {
-        AST::Function* constructor = new AST::Function(
-          "constructor",
-          {},
-          {},
-          new AST::Block(),
-          false
-        );
 
-        for (auto member_property : node->member_properties->children) {
-          AST::Identifier* as_ident = member_property->as<AST::Identifier>();
-          constructor->parameters.push_back(as_ident->name);
-          constructor->self_initialisations.push_back(as_ident->name);
-          constructor->default_values[as_ident->name] = new AST::Null();
-        }
-        constructor->required_arguments = 0;
-        constructor->needs_arguments = true;
+        // Make sure there is at least one reference to super
+        if(AST::find_child_nodes(
 
-        constructor = this->visit_node(constructor)->as<AST::Function>();
-        constructor->at_recursive(node);
-        delete node->constructor;
-        node->constructor = constructor;
+          // Search base node
+          node->constructor->as<AST::Function>()->body,
+
+          // Search types
+          {
+            AST::kTypeSuper
+          },
+
+          // Ignore types
+          {
+            AST::kTypeFunction,
+            AST::kTypeClass
+          },
+
+          // Traverse arrow functions
+          true
+          ).size() == 0) {
+          this->push_error(node->constructor, "Missing access to super constructor");
+        };
       }
+    } else if (node->constructor->type() == AST::kTypeEmpty) {
+      AST::Function* constructor = new AST::Function(
+        "constructor",
+        {},
+        {},
+        new AST::Block(),
+        false
+      );
+
+      // Create self initialisations
+      // equivalent to:
+      //    constructor(@var1, @var2, @varn)
+      for (auto member_property : node->member_properties->children) {
+        AST::Identifier* as_ident = member_property->as<AST::Identifier>();
+        constructor->parameters.push_back(as_ident->name);
+        constructor->self_initialisations.push_back(as_ident->name);
+        constructor->default_values[as_ident->name] = new AST::Null();
+      }
+      constructor->required_arguments = 0;
+      constructor->needs_arguments = true;
+
+      // Append 'return self' to the constructor body
+      constructor->body->append_node(new AST::Return(new AST::Self()));
+      constructor = this->visit_node(constructor)->as<AST::Function>();
+      constructor->at_recursive(node);
+      delete node->constructor;
+      node->constructor = constructor;
     }
   }
 

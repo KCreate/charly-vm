@@ -1141,10 +1141,27 @@ struct Identifier : public AbstractNode {
 
 // self
 struct Self : public AbstractNode {
-  uint32_t ir_frame_level = 0;
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Self: " << '\n';
+  }
+};
+
+// super
+struct Super : public AbstractNode {
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Super:" << '\n';
+  }
+};
+
+// super.<symbol>
+struct SuperMember : public AbstractNode {
+  std::string symbol;
+
+  SuperMember(const std::string& s) : symbol(s) {
+  }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Self: ir_frame_level=" << this->ir_frame_level << '\n';
+    stream << std::string(depth, ' ') << "- SuperMember: " << this->symbol << '\n';
   }
 };
 
@@ -1814,61 +1831,63 @@ struct TryCatch : public AbstractNode {
 };
 
 // Precomputed typeid hashes for all AST nodes
-const size_t kTypeEmpty = typeid(Empty).hash_code();
-const size_t kTypeNodeList = typeid(NodeList).hash_code();
-const size_t kTypeBlock = typeid(Block).hash_code();
-const size_t kTypePushStack = typeid(PushStack).hash_code();
-const size_t kTypeTernaryIf = typeid(TernaryIf).hash_code();
-const size_t kTypeIf = typeid(If).hash_code();
-const size_t kTypeIfElse = typeid(IfElse).hash_code();
-const size_t kTypeUnless = typeid(Unless).hash_code();
-const size_t kTypeUnlessElse = typeid(UnlessElse).hash_code();
-const size_t kTypeDoWhile = typeid(DoWhile).hash_code();
-const size_t kTypeDoUntil = typeid(DoUntil).hash_code();
-const size_t kTypeWhile = typeid(While).hash_code();
-const size_t kTypeUntil = typeid(Until).hash_code();
-const size_t kTypeLoop = typeid(Loop).hash_code();
-const size_t kTypeUnary = typeid(Unary).hash_code();
-const size_t kTypeBinary = typeid(Binary).hash_code();
-const size_t kTypeSwitchNode = typeid(SwitchNode).hash_code();
-const size_t kTypeSwitch = typeid(Switch).hash_code();
-const size_t kTypeAnd = typeid(And).hash_code();
-const size_t kTypeOr = typeid(Or).hash_code();
-const size_t kTypeTypeof = typeid(Typeof).hash_code();
-const size_t kTypeNew = typeid(New).hash_code();
-const size_t kTypeAssignment = typeid(Assignment).hash_code();
-const size_t kTypeMemberAssignment = typeid(MemberAssignment).hash_code();
+const size_t kTypeANDIndexAssignment  = typeid(ANDIndexAssignment).hash_code();
 const size_t kTypeANDMemberAssignment = typeid(ANDMemberAssignment).hash_code();
-const size_t kTypeIndexAssignment = typeid(IndexAssignment).hash_code();
-const size_t kTypeANDIndexAssignment = typeid(ANDIndexAssignment).hash_code();
-const size_t kTypeCall = typeid(Call).hash_code();
-const size_t kTypeCallMember = typeid(CallMember).hash_code();
-const size_t kTypeCallIndex = typeid(CallIndex).hash_code();
-const size_t kTypeStackValue = typeid(StackValue).hash_code();
-const size_t kTypeIdentifier = typeid(Identifier).hash_code();
-const size_t kTypeSelf = typeid(Self).hash_code();
-const size_t kTypeMember = typeid(Member).hash_code();
-const size_t kTypeIndex = typeid(Index).hash_code();
-const size_t kTypeNull = typeid(Null).hash_code();
-const size_t kTypeNan = typeid(Nan).hash_code();
-const size_t kTypeString = typeid(String).hash_code();
-const size_t kTypeNumber = typeid(Number).hash_code();
-const size_t kTypeBoolean = typeid(Boolean).hash_code();
-const size_t kTypeArray = typeid(Array).hash_code();
-const size_t kTypeHash = typeid(Hash).hash_code();
-const size_t kTypeFunction = typeid(Function).hash_code();
-const size_t kTypePropertyDeclaration = typeid(PropertyDeclaration).hash_code();
-const size_t kTypeClass = typeid(Class).hash_code();
+const size_t kTypeAnd                 = typeid(And).hash_code();
+const size_t kTypeArray               = typeid(Array).hash_code();
+const size_t kTypeAssignment          = typeid(Assignment).hash_code();
+const size_t kTypeBinary              = typeid(Binary).hash_code();
+const size_t kTypeBlock               = typeid(Block).hash_code();
+const size_t kTypeBoolean             = typeid(Boolean).hash_code();
+const size_t kTypeBreak               = typeid(Break).hash_code();
+const size_t kTypeCall                = typeid(Call).hash_code();
+const size_t kTypeCallIndex           = typeid(CallIndex).hash_code();
+const size_t kTypeCallMember          = typeid(CallMember).hash_code();
+const size_t kTypeClass               = typeid(Class).hash_code();
+const size_t kTypeContinue            = typeid(Continue).hash_code();
+const size_t kTypeDoUntil             = typeid(DoUntil).hash_code();
+const size_t kTypeDoWhile             = typeid(DoWhile).hash_code();
+const size_t kTypeEmpty               = typeid(Empty).hash_code();
+const size_t kTypeFunction            = typeid(Function).hash_code();
+const size_t kTypeHash                = typeid(Hash).hash_code();
+const size_t kTypeIdentifier          = typeid(Identifier).hash_code();
+const size_t kTypeIf                  = typeid(If).hash_code();
+const size_t kTypeIfElse              = typeid(IfElse).hash_code();
+const size_t kTypeImport              = typeid(Import).hash_code();
+const size_t kTypeIndex               = typeid(Index).hash_code();
+const size_t kTypeIndexAssignment     = typeid(IndexAssignment).hash_code();
 const size_t kTypeLocalInitialisation = typeid(LocalInitialisation).hash_code();
-const size_t kTypeMatch = typeid(Match).hash_code();
-const size_t kTypeMatchArm = typeid(MatchArm).hash_code();
-const size_t kTypeReturn = typeid(Return).hash_code();
-const size_t kTypeYield = typeid(Yield).hash_code();
-const size_t kTypeThrow = typeid(Throw).hash_code();
-const size_t kTypeBreak = typeid(Break).hash_code();
-const size_t kTypeContinue = typeid(Continue).hash_code();
-const size_t kTypeTryCatch = typeid(TryCatch).hash_code();
-const size_t kTypeImport = typeid(Import).hash_code();
+const size_t kTypeLoop                = typeid(Loop).hash_code();
+const size_t kTypeMatch               = typeid(Match).hash_code();
+const size_t kTypeMatchArm            = typeid(MatchArm).hash_code();
+const size_t kTypeMember              = typeid(Member).hash_code();
+const size_t kTypeMemberAssignment    = typeid(MemberAssignment).hash_code();
+const size_t kTypeNan                 = typeid(Nan).hash_code();
+const size_t kTypeNew                 = typeid(New).hash_code();
+const size_t kTypeNodeList            = typeid(NodeList).hash_code();
+const size_t kTypeNull                = typeid(Null).hash_code();
+const size_t kTypeNumber              = typeid(Number).hash_code();
+const size_t kTypeOr                  = typeid(Or).hash_code();
+const size_t kTypePropertyDeclaration = typeid(PropertyDeclaration).hash_code();
+const size_t kTypePushStack           = typeid(PushStack).hash_code();
+const size_t kTypeReturn              = typeid(Return).hash_code();
+const size_t kTypeSelf                = typeid(Self).hash_code();
+const size_t kTypeStackValue          = typeid(StackValue).hash_code();
+const size_t kTypeString              = typeid(String).hash_code();
+const size_t kTypeSuper               = typeid(Super).hash_code();
+const size_t kTypeSuperMember         = typeid(SuperMember).hash_code();
+const size_t kTypeSwitch              = typeid(Switch).hash_code();
+const size_t kTypeSwitchNode          = typeid(SwitchNode).hash_code();
+const size_t kTypeTernaryIf           = typeid(TernaryIf).hash_code();
+const size_t kTypeThrow               = typeid(Throw).hash_code();
+const size_t kTypeTryCatch            = typeid(TryCatch).hash_code();
+const size_t kTypeTypeof              = typeid(Typeof).hash_code();
+const size_t kTypeUnary               = typeid(Unary).hash_code();
+const size_t kTypeUnless              = typeid(Unless).hash_code();
+const size_t kTypeUnlessElse          = typeid(UnlessElse).hash_code();
+const size_t kTypeUntil               = typeid(Until).hash_code();
+const size_t kTypeWhile               = typeid(While).hash_code();
+const size_t kTypeYield               = typeid(Yield).hash_code();
 
 // Casts node to a given type without checking for errors
 template <class T>
@@ -1909,7 +1928,8 @@ inline bool yields_value(AbstractNode* node) {
           node->type() == kTypeIndex || node->type() == kTypeNull || node->type() == kTypeNan ||
           node->type() == kTypeString || node->type() == kTypeNumber || node->type() == kTypeBoolean ||
           node->type() == kTypeArray || node->type() == kTypeHash || node->type() == kTypeFunction ||
-          node->type() == kTypeClass || node->type() == kTypeImport);
+          node->type() == kTypeClass || node->type() == kTypeImport || node->type() == kTypeSuper ||
+          node->type() == kTypeSuperMember);
 }
 
 // Checks wether a given node is an assignment

@@ -41,13 +41,12 @@ const __buffer_bytes         = @"charly.stdlib.buffer.bytes"
  * Buffers are regularly allocated memory blocks provided by the VM
  * */
 class Buffer {
-  property cp
+  property handle
   property size
   property offset
 
-  constructor(size) {
-    @cp = __buffer_create(size)
-    @size = size
+  constructor(@size) {
+    @handle = __buffer_create(size)
     @offset = 0
   }
 
@@ -57,7 +56,7 @@ class Buffer {
    * to reduce the amount of reallocations in total
    * */
   reserve(size) {
-    __buffer_reserve(@cp, size)
+    __buffer_reserve(@handle, size)
     @size = @get_size()
     @offset = @get_offset()
   }
@@ -66,14 +65,14 @@ class Buffer {
    * Get the size of the current buffer in bytes and the offset of the write
    * pointer inside that buffer, also in bytes
    * */
-  get_size = __buffer_get_size(@cp)
-  get_offset = __buffer_get_offset(@cp)
+  get_size = __buffer_get_size(@handle)
+  get_offset = __buffer_get_offset(@handle)
 
   /*
    * Append the entire content of the src string to the buffer's end
    * */
   write(src) {
-    @offset = __buffer_write(@cp, src)
+    @offset = __buffer_write(@handle, src)
     @size = @get_size()
   }
 
@@ -81,7 +80,7 @@ class Buffer {
    * Append only parts of a string to the buffer
    * */
   write_partial(src, off, cnt) {
-    @offset = __buffer_write_partial(@cp, src, off, cnt)
+    @offset = __buffer_write_partial(@handle, src, off, cnt)
     @size = @get_size()
   }
 
@@ -89,7 +88,7 @@ class Buffer {
    * Append bytes to the buffer
    * */
   write_bytes(bytes) {
-    @offset = __buffer_write_bytes(@cp, bytes)
+    @offset = __buffer_write_bytes(@handle, bytes)
     @size = @get_size()
   }
 
@@ -97,14 +96,14 @@ class Buffer {
    * Return the string representation of the buffers contents
    * */
   str {
-    __buffer_str(@cp)
+    __buffer_str(@handle)
   }
 
   /*
    * Returns the bytes of this string as an int array
    * */
   bytes {
-    __buffer_bytes(@cp)
+    __buffer_bytes(@handle)
   }
 }
 

@@ -29,6 +29,7 @@
 #include <unordered_map>
 #include <vector>
 #include <chrono>
+#include <optional>
 
 #include <utf8/utf8.h>
 
@@ -335,6 +336,7 @@ struct Generator {
   Basic basic;
   VALUE name;
   Frame* context_frame;
+  Function* boot_function;
   CatchTable* context_catchtable;
   std::vector<VALUE>* context_stack;
   uint8_t* resume_address;
@@ -1382,6 +1384,69 @@ __attribute__((always_inline))
 inline VALUE charly_create_pointer(void* ptr) {
   if (ptr > kMaxPointer) return kSignaturePointer; // null pointer
   return kSignaturePointer | (kMaskPointer & reinterpret_cast<int64_t>(ptr));
+}
+
+// Lookup a symbol inside a class
+__attribute__((always_inline))
+inline std::optional<VALUE> charly_find_prototype_value(Class* klass, VALUE symbol) {
+  std::optional<VALUE> result;
+
+  if (charly_is_object(klass->prototype)) {
+    Object* prototype = charly_as_object(klass->prototype);
+
+    // Check if this class container contains the symbol
+    if (prototype->container->count(symbol)) {
+      result = (*prototype->container)[symbol];
+    } else if (charly_is_class(klass->parent_class)) {
+      Class* pklass = charly_as_class(klass->parent_class);
+      auto presult = charly_find_prototype_value(pklass, symbol);
+
+      if (presult.has_value()) {
+        return presult;
+      }
+    }
+  }
+
+  return result;
+}
+
+// Lookup super method
+__attribute__((always_inline))
+inline VALUE charly_find_super_method(Class* base, VALUE symbol) {
+  if (!charly_is_class(base->parent_class)) return kNull;
+  Class* parent_class = charly_as_class(base->parent_class);
+  return charly_find_prototype_value(parent_class, symbol).value_or(kNull);
+}
+
+// Lookup super constructor
+__attribute__((always_inline))
+inline VALUE charly_find_super_constructor(Class* base) {
+  if (!charly_is_class(base->parent_class)) return kNull;
+  VALUE search_class = base->parent_class;
+
+  // Traverse the class hierarchy for the next constructor
+  while (charly_is_class(search_class)) {
+    Class* klass = charly_as_class(search_class);
+    if (charly_is_function(klass->constructor)) return klass->constructor;
+    search_class = klass->parent_class;
+  }
+
+  return kNull;
+}
+
+// Lookup first available constructor of a class
+__attribute__((always_inline))
+inline VALUE charly_find_constructor(Class* base) {
+  VALUE search_class = charly_create_pointer(base);
+
+  // Traverse the class hierarchy
+  while (charly_is_class(search_class)) {
+    Class* klass = charly_as_class(search_class);
+    if (charly_is_function(klass->constructor)) return klass->constructor;
+    search_class = klass->parent_class;
+  }
+
+  return kNull;
 }
 
 // External libs interface

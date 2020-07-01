@@ -187,7 +187,7 @@ void GarbageCollector::collect() {
     this->mark(charly_create_pointer(this->host_vm->catchstack));
     this->mark(charly_create_pointer(this->host_vm->top_frame));
     this->mark(this->host_vm->uncaught_exception_handler);
-    this->mark(this->host_vm->runtime_constructor);
+    this->mark(this->host_vm->internal_error_class);
     this->mark(this->host_vm->globals);
     this->mark(this->host_vm->primitive_value);
     this->mark(this->host_vm->primitive_object);

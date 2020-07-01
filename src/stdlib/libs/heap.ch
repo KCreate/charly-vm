@@ -186,12 +186,14 @@ export = {
 
   // Heaps of fixed size
   FixedMinHeap: class FixedMinHeap extends MaxHeap {
-    constructor {
+    constructor(capacity) {
+      super(capacity)
       @capacity_locked = true
     }
   },
   FixedMaxHeap: class FixedMaxHeap extends MinHeap {
-    constructor {
+    constructor(capacity) {
+      super(capacity)
       @capacity_locked = true
     }
   }
