@@ -24,25 +24,57 @@
  * SOFTWARE.
  */
 
-class Person {
-  property name
-
-  greet {
-    print("hello " + @name)
+class TypeError extends Error {
+  constructor(expected_type, name, value) {
+    const actual_type = typeof value
+    super("Expected argument '" + name + "' to be of type " + expected_type + ", not " + actual_type)
   }
 }
 
-const p = new Person("leonard")
+class A {
+  property name
+  property age
 
-p.greet()
+  constructor(@name, @age) {
+    if typeof name ! "string" throw new TypeError("string", "name", name)
+  }
 
-const new_self = {
-  name: "peter"
+  foo {
+    print("inside A foo")
+  }
+
+  bar {
+    print("inside A bar")
+  }
 }
 
-const greet_func = p.greet.copy()
-greet_func.bind_self(new_self)
+class B extends A {
+  property height
 
-greet_func()
+  constructor(name, age, @height) {
+    super(name, age)
+  }
 
-p.greet()
+  foo {
+    print("inside B foo")
+    @bar()
+  }
+
+  bar {
+    print("inside B bar")
+    super.bar()
+  }
+}
+
+const o = new B("leonard", 20, 186)
+print(o)
+o.foo()
+
+try {
+ new B(null, null, null)
+} catch(e) {
+  print("caught exception:")
+  print(e)
+}
+
+print("Success!")

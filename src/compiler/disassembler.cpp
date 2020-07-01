@@ -54,12 +54,16 @@ void Disassembler::dump(std::ostream& stream) {
     // Print the mnemonic and its arguments
     stream << kOpcodeMnemonics[opcode] << " ";
 
+#define i1 sizeof(bool)
+#define i8 sizeof(uint8_t)
+#define i32 sizeof(uint32_t)
+#define i64 sizeof(uint64_t)
+
     switch (opcode) {
       case Opcode::ReadLocal:
       case Opcode::SetLocalPush:
       case Opcode::SetLocal: {
-        stream << this->block->read<uint32_t>(offset + 1) << ", "
-               << this->block->read<uint32_t>(offset + 1 + sizeof(uint32_t));
+        stream << this->block->read<uint32_t>(offset + 1) << ", " << this->block->read<uint32_t>(offset + 1 + i32);
         break;
       }
       case Opcode::ReadMemberSymbol:
@@ -77,11 +81,11 @@ void Disassembler::dump(std::ostream& stream) {
         stream << this->block->read<uint32_t>(offset + 1);
         break;
       }
-      case Opcode::PutSelf: {
-        stream << this->block->read<uint32_t>(offset + 1);
+      case Opcode::PutValue: {
+        this->print_value(this->block->read<VALUE>(offset + 1), stream);
         break;
       }
-      case Opcode::PutValue: {
+      case Opcode::PutSuperMember: {
         this->print_symbol(this->block->read<VALUE>(offset + 1), stream);
         break;
       }
@@ -89,7 +93,7 @@ void Disassembler::dump(std::ostream& stream) {
         // Print the string literal if we have a compiler context object
         if (this->compiler_context != nullptr) {
           uint32_t str_offset = this->block->read<uint32_t>(offset + 1);
-          uint32_t str_size = this->block->read<uint32_t>(offset + 1 + sizeof(uint32_t));
+          uint32_t str_size = this->block->read<uint32_t>(offset + 1 + i32);
           char* blk_ptr = reinterpret_cast<char*>(this->compiler_context->stringpool.get_data() + str_offset);
 
           stream << '"';
@@ -98,7 +102,7 @@ void Disassembler::dump(std::ostream& stream) {
         } else {
           this->print_hex(this->block->read<uint32_t>(offset + 1), stream, 12);
           stream << ", ";
-          this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(uint32_t)), stream);
+          this->print(this->block->read<uint32_t>(offset + 1 + i32), stream);
         }
 
         break;
@@ -106,53 +110,45 @@ void Disassembler::dump(std::ostream& stream) {
       case Opcode::PutFunction: {
         this->print_symbol(this->block->read<VALUE>(offset + 1), stream);
         stream << ", ";
-        this->print_hex(this->block->get_data() + offset + this->block->read<int32_t>(offset + 1 + sizeof(VALUE)),
-                        stream, 12);
+        this->print_hex(this->block->get_data() + offset + this->block->read<int32_t>(offset + 1 + i64), stream, 12);
         stream << ", ";
-        this->print_value(this->block->read<bool>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t)), stream);
+        this->print(this->block->read<bool>(offset + 1 + i64 + i32), stream);
         stream << ", ";
-        this->print_value(this->block->read<bool>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool)),
-                          stream);
+        this->print(this->block->read<bool>(offset + 1 + i64 + i32 + i1), stream);
         stream << ", ";
-        this->print_value(
-            this->block->read<uint32_t>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool) + sizeof(bool)),
-            stream);
+        this->print(this->block->read<uint32_t>(offset + 1 + i64 + i32 + i1 + i1), stream);
         stream << ", ";
-        this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) + sizeof(bool) +
-                                                      sizeof(bool) + sizeof(uint32_t)),
-                          stream);
+        this->print(this->block->read<uint32_t>(offset + 1 + i64 + i32 + i1 + i1 + i32), stream);
         break;
       }
       case Opcode::PutCFunction: {
         this->print_symbol(this->block->read<VALUE>(offset + 1), stream);
         stream << ", ";
-        this->print_hex(this->block->read<void*>(offset + 1 + sizeof(VALUE)), stream, 12);
+        this->print_hex(this->block->read<void*>(offset + 1 + i64), stream, 12);
         stream << ", ";
-        this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(VALUE) + sizeof(void*)), stream);
+        this->print(this->block->read<uint32_t>(offset + 1 + i64 + sizeof(void*)), stream);
         break;
       }
       case Opcode::PutGenerator: {
         this->print_symbol(this->block->read<VALUE>(offset + 1), stream);
         stream << ", ";
-        this->print_hex(this->block->get_data() + offset + this->block->read<int32_t>(offset + 1 + sizeof(VALUE)),
-                        stream, 12);
+        this->print_hex(this->block->get_data() + offset + this->block->read<int32_t>(offset + 1 + i64), stream, 12);
         break;
       }
       case Opcode::PutClass: {
         this->print_symbol(this->block->read<VALUE>(offset + 1), stream);
         stream << ", ";
-        this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(VALUE)), stream);
+        this->print(this->block->read<uint32_t>(offset + 1 + i64), stream);
         stream << ", ";
-        this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 1), stream);
+        this->print(this->block->read<uint32_t>(offset + 1 + i64 + i32 * 1), stream);
         stream << ", ";
-        this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 2), stream);
+        this->print(this->block->read<uint32_t>(offset + 1 + i64 + i32 * 2), stream);
         stream << ", ";
-        this->print_value(this->block->read<uint32_t>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 3), stream);
+        this->print(this->block->read<uint32_t>(offset + 1 + i64 + i32 * 3), stream);
         stream << ", ";
-        this->print_value(this->block->read<bool>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 4), stream);
+        this->print(this->block->read<bool>(offset + 1 + i64 + i32 * 4), stream);
         stream << ", ";
-        this->print_value(this->block->read<bool>(offset + 1 + sizeof(VALUE) + sizeof(uint32_t) * 4 + sizeof(bool)),
-                          stream);
+        this->print(this->block->read<bool>(offset + 1 + i64 + i32 * 4 + i1), stream);
         break;
       }
       case Opcode::PutArray:
@@ -161,7 +157,7 @@ void Disassembler::dump(std::ostream& stream) {
       case Opcode::Call:
       case Opcode::CallMember:
       case Opcode::New: {
-        this->print_value(this->block->read<uint32_t>(offset + 1), stream);
+        this->print(this->block->read<uint32_t>(offset + 1), stream);
         break;
       }
       case Opcode::RegisterCatchTable:
@@ -182,7 +178,11 @@ void Disassembler::dump(std::ostream& stream) {
       }
     }
 
-    stream << '\n';
+#undef i8
+#undef i32
+#undef i64
+
+    stream << std::endl;
     offset += kInstructionLengths[opcode];
   }
 }

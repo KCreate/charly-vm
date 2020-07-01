@@ -1,3 +1,12 @@
+- Todos
+  - unit test 'is_a' method for primitive types
+  - typeof operator should return the primitive class, not a string
+  - helper methods to check variables for specific types
+    - throw TypeError exceptions
+    - check arrays for specific types
+    - check object for specific layout
+    - syntax support for type checking?
+
 - Hoist local variable declarations
   - `
       func foo { bar() } <- would generate a readglobal call
@@ -74,7 +83,6 @@
 
 - Way to reconcile global variables with undefined symbol warnings at compile-time
   - Special syntax to access global variables?
-
 
 - String interpolation
   - `

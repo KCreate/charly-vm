@@ -49,7 +49,6 @@ const result = unittest(->(describe, it, assert, context) {
     ["Switch",                "./interpreter/switch.ch"],
     ["Ternary",               "./interpreter/ternary.ch"],
     ["Unless",                "./interpreter/unless.ch"],
-    ["Value",                 "./interpreter/value.ch"],
 
     // Standard library specs
     ["Heaps",                 "./stdlib/heaps.ch"]

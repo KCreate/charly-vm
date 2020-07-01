@@ -64,12 +64,13 @@ enum TokenType : uint8_t {
   Import,
   Let,
   Loop,
-  New,
   Match,
+  New,
   Primitive,
   Property,
   Return,
   Static,
+  Super,
   Switch,
   Throw,
   Try,
@@ -180,12 +181,13 @@ static std::string kTokenTypeStrings[] = {
   "Import",
   "Let",
   "Loop",
-  "New",
   "Match",
+  "New",
   "Primitive",
   "Property",
   "Return",
   "Static",
+  "Super",
   "Switch",
   "Throw",
   "Try",
@@ -271,14 +273,15 @@ static const std::unordered_map<std::string, TokenType> kTokenKeywordsAndLiteral
   {"import", TokenType::Import},
   {"let", TokenType::Let},
   {"loop", TokenType::Loop},
-  {"new", TokenType::New},
   {"match", TokenType::Match},
+  {"new", TokenType::New},
   {"null", TokenType::Null},
   {"primitive", TokenType::Primitive},
   {"property", TokenType::Property},
   {"return", TokenType::Return},
   {"self", TokenType::Self},
   {"static", TokenType::Static},
+  {"super", TokenType::Super},
   {"switch", TokenType::Switch},
   {"throw", TokenType::Throw},
   {"true", TokenType::BooleanTrue},
@@ -342,7 +345,7 @@ struct Token {
             this->type == TokenType::BitNOT || this->type == TokenType::Not || this->type == TokenType::LeftParen ||
             this->type == TokenType::LeftCurly || this->type == TokenType::LeftBracket ||
             this->type == TokenType::AtSign || this->type == TokenType::RightArrow || this->type == TokenType::Match) ||
-           this->type == TokenType::Import;
+           this->type == TokenType::Import || this->type == TokenType::Super;
   }
 
   inline bool could_start_class_expression() {

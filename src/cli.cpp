@@ -130,7 +130,7 @@ int CLI::run() {
   if (this->flags.instruction_profile) {
     uint8_t opcode = 0;
     std::cerr << "Instruction Profile:" << '\n';
-    while (opcode < kOpcodeCount) {
+    while (opcode < OpcodeCount) {
       std::cerr << std::setw(26);
       std::cerr << kOpcodeMnemonics[opcode] << ": ";
       std::cerr << std::setw(1);

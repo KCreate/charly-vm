@@ -56,6 +56,8 @@ struct KeywordContext {
   bool continue_allowed = false;
   bool return_allowed = false;
   bool yield_allowed = false;
+  bool super_allowed = false;
+  bool super_member_allowed = false;
 };
 
 class Parser : public Lexer {
@@ -125,7 +127,13 @@ public:
   AST::AbstractNode* parse_array();
   AST::AbstractNode* parse_hash();
   std::pair<std::string, AST::AbstractNode*> parse_hash_entry();
-  AST::AbstractNode* parse_func(bool ignore_func_keyword = false);
+  AST::AbstractNode* parse_func(bool ignore_func_keyword = false,
+                                KeywordContext keyword_context = {.break_allowed = false,
+                                                                  .continue_allowed = false,
+                                                                  .return_allowed = true,
+                                                                  .yield_allowed = true,
+                                                                  .super_allowed = false,
+                                                                  .super_member_allowed = false});
   AST::AbstractNode* parse_arrowfunc();
   AST::AbstractNode* parse_class();
 

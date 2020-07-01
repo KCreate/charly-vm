@@ -33,7 +33,6 @@
 namespace Charly {
 // An opcode identifies a single instruction the machine can perform
 // Opcodes can have arguments
-const uint32_t kOpcodeCount = 69;
 enum Opcode : uint8_t {
 
   // Do nothing
@@ -180,6 +179,16 @@ enum Opcode : uint8_t {
   // args:
   // - level
   PutSelf,
+
+  // If inside a class constructor, puts a copy of the parent constructor
+  // onto the stack, with its bound_self value set to the current
+  // self value
+  PutSuper,
+
+  // If inside a class member method, puts a copy of the parent member
+  // function onto the stack, with its bound_self value set to
+  // the current self value
+  PutSuperMember,
 
   // Put value onto the stack
   //
@@ -476,7 +485,10 @@ enum Opcode : uint8_t {
   GCCollect,
 
   // Push the type of the uppermost value on the stack as a string
-  Typeof
+  Typeof,
+
+  // The amount of opcodes that are defined, not an actual opcode
+  OpcodeCount
 };
 
 #define i8 sizeof(uint8_t)
@@ -486,76 +498,78 @@ enum Opcode : uint8_t {
 // clang-format off
 // Constant lengths of all instructions
 static constexpr uint32_t kInstructionLengths[]{
-  /* Nop */                   1,
-  /* ReadLocal */             1 + i32 + i32,
-  /* ReadMemberSymbol */      1 + i64,
-  /* ReadMemberValue */       1,
-  /* ReadArrayIndex */        1 + i32,
-  /* ReadGlobal */            1 + i64,
-  /* SetLocalPush */          1 + i32 + i32,
-  /* SetMemberSymbolPush */   1 + i64,
-  /* SetMemberValuePush */    1,
-  /* SetArrayIndexPush */     1 + i32,
-  /* SetLocal */              1 + i32 + i32,
-  /* SetMemberSymbol */       1 + i64,
-  /* SetMemberValue */        1,
-  /* SetArrayIndex */         1 + i32,
-  /* SetGlobal */             1 + i64,
-  /* SetGlobalPush */         1 + i64,
-  /* PutSelf */               1 + i32,
-  /* PutValue */              1 + i64,
-  /* PutString */             1 + i32 + i32,
-  /* PutFunction */           1 + i64 + i32 + i8 * 2 + i32 + i32 + i32,
-  /* PutCFunction */          1 + i64 + i64 + i32,
-  /* PutGenerator */          1 + i64 + i32,
-  /* PutArray */              1 + i32,
-  /* PutHash */               1 + i32,
-  /* PutClass */              1 + i64 + i32 * 4 + i8 + i8,
-  /* Pop */                   1,
-  /* Dup */                   1,
-  /* Dupn */                  1 + i32,
-  /* Swap */                  1,
-  /* Call */                  1 + i32,
-  /* CallMember */            1 + i32,
-  /* New */                   1 + i32,
-  /* Return */                1,
-  /* Yield */                 1,
-  /* Throw */                 1,
-  /* RegisterCatchTable */    1 + i32,
-  /* PopCatchTable */         1,
-  /* Branch */                1 + i32,
-  /* BranchIf */              1 + i32,
-  /* BranchUnless */          1 + i32,
-  /* BranchLt */              1 + i32,
-  /* BranchGt */              1 + i32,
-  /* BranchLe */              1 + i32,
-  /* BranchGe */              1 + i32,
-  /* BranchEq */              1 + i32,
-  /* BranchNeq */             1 + i32,
-  /* Add, */                  1,
-  /* Sub, */                  1,
-  /* Mul, */                  1,
-  /* Div, */                  1,
-  /* Mod, */                  1,
-  /* Pow, */                  1,
-  /* Eq, */                   1,
-  /* Neq, */                  1,
-  /* Lt, */                   1,
-  /* Gt, */                   1,
-  /* Le, */                   1,
-  /* Ge, */                   1,
-  /* Shr, */                  1,
-  /* Shl, */                  1,
-  /* And, */                  1,
-  /* Or, */                   1,
-  /* Xor, */                  1,
-  /* UAdd */                  1,
-  /* USub */                  1,
-  /* UNot */                  1,
-  /* UBNot */                 1,
-  /* Halt */                  1,
-  /* GCCollect */             1,
-  /* Typeof */                1
+  /* Nop */                               1,
+  /* ReadLocal */                         1 + i32 + i32,
+  /* ReadMemberSymbol */                  1 + i64,
+  /* ReadMemberValue */                   1,
+  /* ReadArrayIndex */                    1 + i32,
+  /* ReadGlobal */                        1 + i64,
+  /* SetLocalPush */                      1 + i32 + i32,
+  /* SetMemberSymbolPush */               1 + i64,
+  /* SetMemberValuePush */                1,
+  /* SetArrayIndexPush */                 1 + i32,
+  /* SetLocal */                          1 + i32 + i32,
+  /* SetMemberSymbol */                   1 + i64,
+  /* SetMemberValue */                    1,
+  /* SetArrayIndex */                     1 + i32,
+  /* SetGlobal */                         1 + i64,
+  /* SetGlobalPush */                     1 + i64,
+  /* PutSelf */                           1,
+  /* PutSuper */                          1,
+  /* PutSuperMember */                    1 + i64,
+  /* PutValue */                          1 + i64,
+  /* PutString */                         1 + i32 + i32,
+  /* PutFunction */                       1 + i64 + i32 + i8 * 2 + i32 + i32 + i32,
+  /* PutCFunction */                      1 + i64 + i64 + i32,
+  /* PutGenerator */                      1 + i64 + i32,
+  /* PutArray */                          1 + i32,
+  /* PutHash */                           1 + i32,
+  /* PutClass */                          1 + i64 + i32 * 4 + i8 + i8,
+  /* Pop */                               1,
+  /* Dup */                               1,
+  /* Dupn */                              1 + i32,
+  /* Swap */                              1,
+  /* Call */                              1 + i32,
+  /* CallMember */                        1 + i32,
+  /* New */                               1 + i32,
+  /* Return */                            1,
+  /* Yield */                             1,
+  /* Throw */                             1,
+  /* RegisterCatchTable */                1 + i32,
+  /* PopCatchTable */                     1,
+  /* Branch */                            1 + i32,
+  /* BranchIf */                          1 + i32,
+  /* BranchUnless */                      1 + i32,
+  /* BranchLt */                          1 + i32,
+  /* BranchGt */                          1 + i32,
+  /* BranchLe */                          1 + i32,
+  /* BranchGe */                          1 + i32,
+  /* BranchEq */                          1 + i32,
+  /* BranchNeq */                         1 + i32,
+  /* Add, */                              1,
+  /* Sub, */                              1,
+  /* Mul, */                              1,
+  /* Div, */                              1,
+  /* Mod, */                              1,
+  /* Pow, */                              1,
+  /* Eq, */                               1,
+  /* Neq, */                              1,
+  /* Lt, */                               1,
+  /* Gt, */                               1,
+  /* Le, */                               1,
+  /* Ge, */                               1,
+  /* Shr, */                              1,
+  /* Shl, */                              1,
+  /* And, */                              1,
+  /* Or, */                               1,
+  /* Xor, */                              1,
+  /* UAdd */                              1,
+  /* USub */                              1,
+  /* UNot */                              1,
+  /* UBNot */                             1,
+  /* Halt */                              1,
+  /* GCCollect */                         1,
+  /* Typeof */                            1
 };
 
 #undef i8
@@ -581,6 +595,8 @@ static std::string kOpcodeMnemonics[]{
   "setglobal",
   "setglobalpush",
   "putself",
+  "putsuper",
+  "putsupermember",
   "putvalue",
   "putstring",
   "putfunction",

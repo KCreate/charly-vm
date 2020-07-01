@@ -110,11 +110,8 @@ class Timestamp {
   property ms
 
   constructor(o) {
-    if (typeof o == "object") {
-      @ms = o.ms
-      return
-    }
-    @ms = o
+    if typeof o == "object" { @ms = o.ms }
+    else                    { @ms = o }
   }
 
   add(o) = new Timestamp(@ms + o.ms)

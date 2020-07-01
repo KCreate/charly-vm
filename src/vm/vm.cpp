@@ -364,11 +364,12 @@ VALUE VM::create_cfunction(VALUE name, uint32_t argc, void* pointer) {
   return cell->as_value();
 }
 
-VALUE VM::create_generator(VALUE name, uint8_t* resume_address) {
+VALUE VM::create_generator(VALUE name, uint8_t* resume_address, Function* boot_function) {
   MemoryCell* cell = this->gc.allocate();
   cell->basic.type = kTypeGenerator;
   cell->generator.name = name;
   cell->generator.context_frame = this->frames;
+  cell->generator.boot_function = boot_function;
   cell->generator.context_catchtable = this->catchstack;
   cell->generator.context_stack = new std::vector<VALUE>();
   cell->generator.resume_address = resume_address;
@@ -529,7 +530,8 @@ VALUE VM::copy_cfunction(VALUE function) {
 
 VALUE VM::copy_generator(VALUE generator) {
   Generator* source = charly_as_generator(generator);
-  Generator* target = charly_as_generator(this->create_generator(source->name, source->resume_address));
+  Generator* target = charly_as_generator(this->create_generator(
+        source->name, source->resume_address, source->boot_function));
 
   target->bound_self_set = source->bound_self_set;
   target->bound_self = source->bound_self;
@@ -1024,7 +1026,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
 
     if (charly_is_class(val_klass)) {
       Class* klass = charly_as_class(val_klass);
-      auto result = this->findprototypevalue(klass, symbol);
+      auto result = charly_find_prototype_value(klass, symbol);
 
       if (result.has_value()) {
         return result.value();
@@ -1170,31 +1172,6 @@ VALUE VM::setmembervalue(VALUE target, VALUE member_value, VALUE value) {
   return this->setmembersymbol(target, this->create_symbol(member_value), value);
 }
 
-// TODO: Move this method to value.h file
-std::optional<VALUE> VM::findprototypevalue(Class* klass, VALUE symbol) {
-  std::optional<VALUE> result;
-
-  if (charly_is_object(klass->prototype)) {
-    Object* prototype = charly_as_object(klass->prototype);
-
-    // Check if this class container contains the symbol
-    if (prototype->container->count(symbol) == 1) {
-      result = (*prototype->container)[symbol];
-    } else {
-      if (charly_is_class(klass->parent_class)) {
-        Class* pklass = charly_as_class(klass->parent_class);
-        auto presult = this->findprototypevalue(pklass, symbol);
-
-        if (presult.has_value()) {
-          return presult;
-        }
-      }
-    }
-  }
-
-  return result;
-}
-
 std::optional<VALUE> VM::findprimitivevalue(VALUE value, VALUE symbol) {
 
   // Get the corresponding primitive class
@@ -1220,7 +1197,7 @@ std::optional<VALUE> VM::findprimitivevalue(VALUE value, VALUE symbol) {
   }
 
   Class* pclass = charly_as_class(found_primitive_class);
-  return this->findprototypevalue(pclass, symbol);
+  return charly_find_prototype_value(pclass, symbol);
 }
 
 void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
@@ -1528,7 +1505,7 @@ void VM::op_readglobal(VALUE symbol) {
   SYM("charly.vm.primitive.boolean", primitive_boolean);
   SYM("charly.vm.primitive.null", primitive_null);
   SYM("charly.vm.uncaught_exception_handler", uncaught_exception_handler);
-  SYM("charly.vm.runtime_constructor", runtime_constructor);
+  SYM("charly.vm.internal_error_class", internal_error_class);
   SYM("charly.vm.globals", globals);
 #undef SYM
 
@@ -1678,7 +1655,7 @@ void VM::op_setglobal(VALUE symbol) {
   SYM("charly.vm.primitive.boolean", primitive_boolean);
   SYM("charly.vm.primitive.null", primitive_null);
   SYM("charly.vm.uncaught_exception_handler", uncaught_exception_handler);
-  SYM("charly.vm.runtime_constructor", runtime_constructor);
+  SYM("charly.vm.internal_error_class", internal_error_class);
   SYM("charly.vm.globals", globals);
 
   // Check globals table
@@ -1714,7 +1691,7 @@ void VM::op_setglobalpush(VALUE symbol) {
   SYM("charly.vm.primitive.boolean", primitive_boolean);
   SYM("charly.vm.primitive.null", primitive_null);
   SYM("charly.vm.uncaught_exception_handler", uncaught_exception_handler);
-  SYM("charly.vm.runtime_constructor", runtime_constructor);
+  SYM("charly.vm.internal_error_class", internal_error_class);
   SYM("charly.vm.globals", globals);
 
   // Check globals table
@@ -1730,24 +1707,62 @@ void VM::op_setglobalpush(VALUE symbol) {
 }
 #undef SYM
 
-void VM::op_putself(uint32_t level) {
+void VM::op_putself() {
   if (this->frames == nullptr) {
     this->push_stack(kNull);
     return;
   }
 
-  VALUE self_val = kNull;
+  this->push_stack(this->frames->self);
+}
 
-  Frame* frm = this->frames;
-  while (frm && level--) {
-    frm = frm->parent_environment_frame;
+void VM::op_putsuper() {
+  Function* func = this->get_active_function();
+  if (!func) this->panic(Status::InvalidArgumentType);
+  if (!charly_is_class(func->host_class)) this->panic(Status::InvalidArgumentType);
+
+  Class* host_class = charly_as_class(func->host_class);
+
+  // A super call inside a constructor will return the super constructor
+  // A super call inside a member function will return the super function of
+  // the currently active function
+  VALUE super_value = kNull;
+  if (func->name == charly_create_symbol("constructor")) {
+    super_value = charly_find_super_constructor(host_class);
+  } else {
+    super_value = charly_find_super_method(host_class, func->name);
   }
 
-  if (frm) {
-    self_val = frm->self;
+  // If we've got a function, we need to make a copy of it and bind the currently
+  // active self value to it
+  if (charly_is_function(super_value)) {
+    Function* copied_super_value = charly_as_function(this->copy_function(super_value));
+    copied_super_value->bound_self_set = true;
+    copied_super_value->bound_self = this->frames->self;
+    super_value = charly_create_pointer(copied_super_value);
   }
 
-  this->push_stack(self_val);
+  this->push_stack(super_value);
+}
+
+void VM::op_putsupermember(VALUE symbol) {
+  Function* func = this->get_active_function();
+  if (!func) this->panic(Status::InvalidArgumentType);
+  if (!charly_is_class(func->host_class)) this->panic(Status::InvalidArgumentType);
+
+  Class* host_class = charly_as_class(func->host_class);
+  VALUE super_value = charly_find_super_method(host_class, symbol);
+
+  // If we've got a function, we need to make a copy of it and bind the currently
+  // active self value to it
+  if (charly_is_function(super_value)) {
+    Function* copied_super_value = charly_as_function(this->copy_function(super_value));
+    copied_super_value->bound_self_set = true;
+    copied_super_value->bound_self = this->frames->self;
+    super_value = charly_create_pointer(copied_super_value);
+  }
+
+  this->push_stack(super_value);
 }
 
 void VM::op_putvalue(VALUE value) {
@@ -1775,7 +1790,10 @@ void VM::op_putcfunction(VALUE symbol, void* pointer, uint32_t argc) {
 }
 
 void VM::op_putgenerator(VALUE symbol, uint8_t* resume_address) {
-  VALUE generator = this->create_generator(symbol, resume_address);
+  VALUE current_caller = this->frames->caller_value;
+  if (!charly_is_function(current_caller)) this->panic(Status::InvalidArgumentType);
+  Function* boot_function = charly_as_function(current_caller);
+  VALUE generator = this->create_generator(symbol, resume_address, boot_function);
   this->push_stack(generator);
 }
 
@@ -1925,47 +1943,48 @@ void VM::op_callmember(uint32_t argc) {
 }
 
 void VM::op_new(uint32_t argc) {
-  if (!charly_is_function(this->runtime_constructor)) {
-    this->throw_exception("Expected runtime constructor to be a function");
-    return;
+
+  // Load arguments from stack
+  VALUE tmp_args[argc];
+  for (uint32_t i = 0; i < argc; i++) {
+    tmp_args[i] = this->pop_stack();
   }
 
-  // Pop the arguments off the stack and pack them into an array
-  // We're not directly inserting into the array because the items are on the
-  // stack in reverse order, which would cause an O(N) copy operation each
-  // time we insert at the beginning of the array
-  //
-  // Doing it this way reduces time complexity from O(N^2) to O(N)
-  ManagedContext lalloc(*this);
-  Array* arguments = charly_as_array(lalloc.create_array(argc));
-  VALUE tmp_args[argc];
-  for (int i = argc - 1; i >= 0; i--) tmp_args[i] = this->pop_stack();
-  for (uint32_t i = 0; i < argc; i++) arguments->data->push_back(tmp_args[i]);
-
+  // Load klass from stack
   VALUE klass = this->pop_stack();
-
   if (!charly_is_class(klass)) {
     this->throw_exception("Value is not a class");
     return;
   }
 
-  // Push stuff back in the following order:
-  //
-  // 1. Runtime Constructor Method
-  // 2. Klass
-  // 3. Arguments array
-  // 4. Object to construct
-  this->push_stack(this->runtime_constructor);
-  this->push_stack(klass);
-  this->push_stack(charly_create_pointer(arguments));
-
-  // Create the object to construct and pre-initialize all member properties
-  Object* obj = charly_as_object(lalloc.create_object(4));
+  // Setup object
+  ManagedContext lalloc(*this);
+  uint32_t member_property_count = charly_as_class(klass)->member_properties->size();
+  Object* obj = charly_as_object(lalloc.create_object(member_property_count));
   obj->klass = klass;
   this->initialize_member_properties(charly_as_class(klass), obj);
-  this->push_stack(charly_create_pointer(obj));
 
-  this->call(3, false);
+  // Call initial constructor if there is one
+  // else just return the object
+  VALUE initial_constructor = charly_find_constructor(charly_as_class(klass));
+  if (charly_is_function(initial_constructor)) {
+
+    // Check if there are enough arguments
+    if (charly_as_function(initial_constructor)->minimum_argc > argc) {
+      std::string&& class_name = this->context.symtable(charly_as_class(klass)->name).value_or("??");
+      this->throw_exception("Not enough arguments for class constructor: " + class_name);
+      return;
+    }
+
+    this->push_stack(charly_create_pointer(obj));
+    this->push_stack(initial_constructor);
+    for (int i = argc - 1; i >= 0; i--) {
+      this->push_stack(tmp_args[i]);
+    }
+    this->call(argc, true);
+  } else {
+    this->push_stack(charly_create_pointer(obj));
+  }
 }
 
 void VM::op_return() {
@@ -2042,7 +2061,7 @@ void VM::throw_exception(const std::string& message) {
   Frame* old_frame = this->frames;
 
   // Load the error class
-  VALUE error_class_val = this->get_global_symbol(charly_create_symbol("InternalError"));
+  VALUE error_class_val = this->internal_error_class;
   if (charly_is_class(error_class_val)) {
 
     // Instantiate error object
@@ -2051,8 +2070,6 @@ void VM::throw_exception(const std::string& message) {
     this->push_stack(charly_create_integer(reinterpret_cast<size_t>(old_frame)));
     this->op_new(2);
   } else {
-
-    // If no valid 'InternalError' class exists, we simply throw the message itself
     this->unwind_catchstack(this->create_string(message.c_str(), message.size()));
   }
 }
@@ -2774,6 +2791,18 @@ VALUE VM::get_global_symbol(VALUE symbol) {
   return kNull;
 }
 
+Function* VM::get_active_function() {
+  VALUE caller = this->frames->caller_value;
+
+  if (charly_is_generator(caller)) {
+    return charly_as_generator(caller)->boot_function;
+  } else if (charly_is_function(caller)) {
+    return charly_as_function(caller);
+  } else {
+    return nullptr;
+  }
+}
+
 void VM::panic(STATUS reason) {
   this->context.err_stream << "Panic: " << kStatusHumanReadable[reason] << '\n';
   this->context.err_stream << '\n' << "Stackdump:" << '\n';
@@ -2860,6 +2889,8 @@ void VM::run() {
                                           &&charly_main_switch_setglobal,
                                           &&charly_main_switch_setglobalpush,
                                           &&charly_main_switch_putself,
+                                          &&charly_main_switch_putsuper,
+                                          &&charly_main_switch_putsupermember,
                                           &&charly_main_switch_putvalue,
                                           &&charly_main_switch_putstring,
                                           &&charly_main_switch_putfunction,
@@ -3046,10 +3077,26 @@ charly_main_switch_setglobalpush : {
 
 charly_main_switch_putself : {
   OPCODE_PROLOGUE();
-  uint32_t level = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode));
-  this->op_putself(level);
+  this->op_putself();
   OPCODE_EPILOGUE();
   NEXTOP();
+}
+
+charly_main_switch_putsuper : {
+  OPCODE_PROLOGUE();
+  this->op_putsuper();
+  OPCODE_EPILOGUE();
+  CONDINCIP();
+  DISPATCH();
+}
+
+charly_main_switch_putsupermember : {
+  OPCODE_PROLOGUE();
+  VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
+  this->op_putsupermember(symbol);
+  OPCODE_EPILOGUE();
+  CONDINCIP();
+  DISPATCH();
 }
 
 charly_main_switch_putvalue : {

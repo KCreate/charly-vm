@@ -43,7 +43,7 @@ class DeferHandle {
   property pending_threads
   property alive
 
-  constructor {
+  constructor(@id) {
     @pending_threads = []
     @origin_thread_uid = __internal_get_thread_uid()
     @live_thread_uid = null
@@ -64,7 +64,7 @@ class DeferHandle {
     null
   }
 
-  finish {
+  clear {
     @alive = false
     @pending_threads.each(->(th) __internal_resume_thread(th))
     @pending_threads.clear()
@@ -75,32 +75,32 @@ class IntervalHandle extends DeferHandle {
   property iterations
 
   constructor(cb, period) {
-    @id = __internal_defer_interval(->{
+    super(__internal_defer_interval(->{
       @live_thread_uid = __internal_get_thread_uid()
       cb(@iterations, self)
       @iterations += 1
-    }, period.to_n())
+    }, period.to_n()))
     @iterations = 0
   }
 
   clear {
     __internal_clear_interval(@id)
-    @finish()
+    super()
   }
 }
 
 class TimerHandle extends DeferHandle {
   constructor(cb, period) {
-    @id = __internal_defer(->{
+    super(__internal_defer(->{
       @live_thread_uid = __internal_get_thread_uid()
       cb()
-      @finish()
-    }, period.to_n())
+      @clear()
+    }, period.to_n()))
   }
 
   clear {
     __internal_clear_timer(@id)
-    @finish()
+    super()
   }
 }
 

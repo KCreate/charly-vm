@@ -878,6 +878,12 @@ AST::AbstractNode* Parser::parse_expression() {
 
 AST::AbstractNode* Parser::parse_yield() {
   if (this->token.type == TokenType::Yield) {
+
+    // Check if yield is allowed at this position
+    if (!this->keyword_context.yield_allowed) {
+      this->illegal_token();
+    }
+
     Location location_start = this->token.location;
     this->advance();
     AST::AbstractNode* exp = this->parse_expression();
@@ -1330,7 +1336,16 @@ AST::AbstractNode* Parser::parse_member_call() {
           location_end = this->token.location;
         });
 
-        target = (new AST::Member(target, symbol))->at(target->location_end, location_end);
+        // Check if we're reading the member on a super keyword
+        if (target->type() == AST::kTypeSuper) {
+          if (!this->keyword_context.super_member_allowed) {
+            this->illegal_node(target, "super is not allowed at this position");
+          }
+          target = (new AST::SuperMember(symbol))->at(target->location_end, location_end);
+        } else {
+          target = (new AST::Member(target, symbol))->at(target->location_end, location_end);
+        }
+
         break;
       }
       default: { return target; }
@@ -1359,6 +1374,17 @@ AST::AbstractNode* Parser::parse_literal() {
     case TokenType::Self: {
       AST::AbstractNode* node = new AST::Self();
       node->at(this->token.location);
+      this->advance();
+      return node;
+    }
+    case TokenType::Super: {
+      AST::AbstractNode* node = new AST::Super();
+      node->at(this->token.location);
+
+      if (!this->keyword_context.super_allowed) {
+        this->illegal_node(node, "super is not allowed at this position");
+      }
+
       this->advance();
       return node;
     }
@@ -1505,7 +1531,7 @@ std::pair<std::string, AST::AbstractNode*> Parser::parse_hash_entry() {
   return {key, value};
 }
 
-AST::AbstractNode* Parser::parse_func(bool ignore_func_keyword) {
+AST::AbstractNode* Parser::parse_func(bool ignore_func_keyword, KeywordContext keyword_context) {
   Location location_start = this->token.location;
 
   if (!ignore_func_keyword) {
@@ -1540,7 +1566,6 @@ AST::AbstractNode* Parser::parse_func(bool ignore_func_keyword) {
         }
 
         this->expect_token(TokenType::Identifier, [&]() {
-
           // Check if this argument already exists
           auto search = std::find(params.begin(), params.end(), this->token.value);
           if (search == params.end()) {
@@ -1584,10 +1609,7 @@ AST::AbstractNode* Parser::parse_func(bool ignore_func_keyword) {
   // func foo(@a, @b);
   AST::Block* body = nullptr;
   auto backup_context = this->keyword_context;
-  this->keyword_context.return_allowed = true;
-  this->keyword_context.break_allowed = false;
-  this->keyword_context.continue_allowed = false;
-  this->keyword_context.yield_allowed = true;
+  this->keyword_context = keyword_context;
 
   if (this->token.type == TokenType::LeftCurly) {
     body = this->parse_block()->as<AST::Block>();
@@ -1607,7 +1629,8 @@ AST::AbstractNode* Parser::parse_func(bool ignore_func_keyword) {
 
   AST::Function* fun = new AST::Function(name, params, self_initialisations, body, false);
   fun->at(location_start, body->location_end);
-  if (default_values.size()) fun->needs_arguments = true;
+  if (default_values.size())
+    fun->needs_arguments = true;
   fun->default_values = std::move(default_values);
   fun->required_arguments = fun->parameters.size() - fun->default_values.size();
 
@@ -1673,6 +1696,8 @@ AST::AbstractNode* Parser::parse_arrowfunc() {
     this->keyword_context.break_allowed = false;
     this->keyword_context.continue_allowed = false;
     this->keyword_context.yield_allowed = true;
+    this->keyword_context.super_allowed = false;
+    this->keyword_context.super_member_allowed = false;
     body = this->parse_block()->as<AST::Block>();
     this->keyword_context = backup_context;
   } else {
@@ -1730,8 +1755,15 @@ AST::AbstractNode* Parser::parse_class() {
       case TokenType::Identifier: {
 
         // Only the constructor method is allowed to have a 'super()' call
-        bool is_constructor = (this->token.value == "constructor" && !static_declaration);
-        AST::Function* func = this->parse_func(true)->as<AST::Function>();
+        bool is_constructor = this->token.value == "constructor" && !static_declaration;
+        KeywordContext constructor_keyword_context = {
+          .return_allowed = !is_constructor,
+          .yield_allowed = !is_constructor,
+          .super_allowed = !static_declaration,
+          .super_member_allowed = !static_declaration
+        };
+        AST::AbstractNode* func_node = this->parse_func(true, constructor_keyword_context);
+        AST::Function* func = func_node->as<AST::Function>();
 
         if (static_declaration) {
           static_functions->append_node(func);
@@ -1739,6 +1771,12 @@ AST::AbstractNode* Parser::parse_class() {
           if (constructor != nullptr) {
             this->illegal_node(func, "Duplicate constructor");
           } else {
+
+            // Append 'return self' to the constructor
+            AST::Return* return_self = new AST::Return(new AST::Self());
+            return_self->at_recursive(func);
+            func->body->append_node(return_self);
+
             constructor = func;
           }
         } else {

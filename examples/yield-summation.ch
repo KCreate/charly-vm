@@ -29,7 +29,7 @@ const summer = ->{
   sum = yield ->sum
 
   loop {
-    sum += yield
+    sum += yield null
   }
 }
 

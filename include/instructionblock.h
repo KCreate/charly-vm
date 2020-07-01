@@ -113,9 +113,8 @@ public:
     this->write(index);
   }
 
-  inline void write_putself(uint32_t level) {
+  inline void write_putself() {
     this->write(Opcode::PutSelf);
-    this->write(level);
   }
 
   inline void write_putvalue(VALUE value) {
@@ -209,6 +208,15 @@ public:
   inline void write_callmember(uint32_t argc) {
     this->write(Opcode::CallMember);
     this->write(argc);
+  }
+
+  inline void write_putsuper() {
+    this->write(Opcode::PutSuper);
+  }
+
+  inline void write_putsupermember(VALUE symbol) {
+    this->write(Opcode::PutSuperMember);
+    this->write(symbol);
   }
 
   inline void write_new(uint32_t argc) {

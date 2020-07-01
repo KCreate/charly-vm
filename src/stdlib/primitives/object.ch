@@ -30,6 +30,9 @@ const __internal_delete_key = @"charly.primitive.object.delete_key"
 export = ->(Base) {
   return class Object extends Base {
 
+    // Empty constructor fallback
+    constructor()
+
     /*
      * Returns an array containing the keys contained inside v
      * */

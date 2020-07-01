@@ -588,7 +588,17 @@ AST::AbstractNode* CodeGenerator::visit_identifier(AST::Identifier* node, VisitC
 }
 
 AST::AbstractNode* CodeGenerator::visit_self(AST::Self* node, VisitContinue) {
-  this->assembler.write_putself(node->ir_frame_level);
+  this->assembler.write_putself();
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_super(AST::Super* node, VisitContinue) {
+  this->assembler.write_putsuper();
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_supermember(AST::SuperMember* node, VisitContinue) {
+  this->assembler.write_putsupermember(this->context.symtable(node->symbol));
   return node;
 }
 
@@ -842,11 +852,6 @@ bool CodeGenerator::codegen_read(ValueLocation& location) {
       this->assembler.write_readarrayindex(location.as_arguments.index);
       break;
     }
-    case LocationType::LocSelf: {
-      this->assembler.write_putself(location.as_self.level);
-      this->assembler.write_readmembersymbol(location.as_self.symbol);
-      break;
-    }
     case LocationType::LocGlobal: {
       this->assembler.write_readglobal(location.as_global.symbol);
       break;
@@ -887,15 +892,6 @@ bool CodeGenerator::codegen_write(ValueLocation& location, bool keep_on_stack) {
         this->assembler.write_setarrayindexpush(location.as_arguments.index);
       } else {
         this->assembler.write_setarrayindex(location.as_arguments.index);
-      }
-      break;
-    }
-    case LocationType::LocSelf: {
-      this->assembler.write_putself(location.as_self.level);
-      if (keep_on_stack) {
-        this->assembler.write_setmembersymbolpush(location.as_self.symbol);
-      } else {
-        this->assembler.write_setmembersymbol(location.as_self.symbol);
       }
       break;
     }
