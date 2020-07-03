@@ -1,3 +1,38 @@
+- Bug with try catch statements
+  - `break`, `continue` do not drop the active catchtable
+  - `break`, `continue`, `return` do not respect the `finally` handler
+
+- Replace symbol function with CRC32
+  - Allows for compile-time calculation of hashes which in turn allows us to use
+    the switch statement for symbols.
+
+- Use global static variable for some things
+  - symbol table
+  - compiled files, results of compilations etc
+
+- Changes to the class system
+  - Hide prototype variable
+    - Add internal method to add new method to prototype
+    - Throw if the method already belongs to a class
+    - Configure klass property of function
+  - Rename constructor to class name
+    - `
+        class MyClass {
+          MyClass(somearg) {
+            print(somarg)
+          }
+        }
+      `
+
+- `on` handler for try catch statements
+  - `
+      try {
+        ...
+      } on IOError {
+        ...
+      }
+    `
+
 - Todos
   - unit test 'is_a' method for primitive types
   - typeof operator should return the primitive class, not a string
@@ -13,22 +48,12 @@
       func bar { ... }
     `
 
-- Replace symbol function with CRC32
-  - Allows for compile-time calculation of hashes which in turn allows us to use
-    the switch statement for symbols.
-
 - Implement control access to objects
   - Mark a key as private
     - Can only be accessed via functions which are registered
       member functions of the klass of the object in question
   - Mark a key as constant
     - Key cannot be overwritten or deleted
-
-- Changes to the class system
-  - Hide prototype variable
-    - Add internal method to add new method to prototype
-    - Throw if the method already belongs to a class
-    - Configure klass property of function
 
 - Raw memory access methods
   - Create a library and internal methods that allow access to raw memory, via pointers

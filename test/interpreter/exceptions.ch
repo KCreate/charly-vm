@@ -105,8 +105,8 @@ export = ->(describe, it, assert) {
       assert(e.klass.name, "InternalError")
       assert(e.message, "Unidentified global symbol 'some undefined symbol'")
       assert(typeof e.stacktrace, "array")
-      assert(typeof e.stacktrace[2].caller, "function")
-      assert(e.stacktrace[2].caller.name, "functionname")
+      assert(typeof e.stacktrace[1].caller, "function")
+      assert(e.stacktrace[1].caller.name, "functionname")
     })
 
     assert.exception(->{ class A extends null {} }, ->(e) {
@@ -133,6 +133,20 @@ export = ->(describe, it, assert) {
       assert(e.klass, Error)
       assert(e.message, "some error happened")
     }
+  })
+
+  it("throws an exception when trying to construct primitive class", ->{
+    const err_msg_base = "Cannot construct instance of primitive class: "
+
+    assert.exception(->new Value(),     ->assert($0.message, err_msg_base + "Value"))
+    assert.exception(->new Array(),     ->assert($0.message, err_msg_base + "Array"))
+    assert.exception(->new Boolean(),   ->assert($0.message, err_msg_base + "Boolean"))
+    assert.exception(->new Class(),     ->assert($0.message, err_msg_base + "Class"))
+    assert.exception(->new Function(),  ->assert($0.message, err_msg_base + "Function"))
+    assert.exception(->new Generator(), ->assert($0.message, err_msg_base + "Generator"))
+    assert.exception(->new Null(),      ->assert($0.message, err_msg_base + "Null"))
+    assert.exception(->new Number(),    ->assert($0.message, err_msg_base + "Number"))
+    assert.exception(->new String(),    ->assert($0.message, err_msg_base + "String"))
   })
 
 }

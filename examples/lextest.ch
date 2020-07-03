@@ -24,27 +24,17 @@
  * SOFTWARE.
  */
 
-func progress_bar(value, width = 20) {
-  const to_print = Math.ceil(value * width)
-
-  const bar = ("=" * to_print) + (" " * (width - to_print))
-
-  return "[" + bar + "]"
+loop {
+  try {
+    break
+  } catch(e) {
+    print("caught exception inside loop")
+    print(e)
+    exit()
+  } finally {
+    print("inside finally")
+  }
 }
 
-20.times(->(index) {
-  let i = 0
-  let target = (index + 1) * 5
-
-  loop {
-    write("\r")
-    write(progress_bar(i / target))
-
-    defer.sleep(5)
-
-    if i >= target break
-    i += 1
-  }
-
-  print("")
-})
+print("exited loop")
+throw new Error("an error happened!")

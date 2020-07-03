@@ -31,6 +31,10 @@ const __internal_deepcopy = @"charly.primitive.value.deepcopy"
 export = ->{
   return class Value {
 
+    constructor {
+      throw new Error("Cannot construct instance of primitive class: " + @klass.name)
+    }
+
     /*
      * Creates a copy of this value
      * */

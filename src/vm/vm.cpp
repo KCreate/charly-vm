@@ -1186,6 +1186,7 @@ std::optional<VALUE> VM::findprimitivevalue(VALUE value, VALUE symbol) {
     case kTypeCFunction: found_primitive_class = this->primitive_function; break;
     case kTypeGenerator: found_primitive_class = this->primitive_generator; break;
     case kTypeClass: found_primitive_class = this->primitive_class; break;
+    default: found_primitive_class = this->primitive_value; break;
   }
 
   if (symbol == charly_create_symbol("klass")) {

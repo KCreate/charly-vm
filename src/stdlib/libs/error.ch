@@ -64,7 +64,7 @@ class Error {
   property stacktrace
 
   constructor(@message = "Unspecified error") {
-    @stacktrace = Error.capture_stack_trace()
+    @stacktrace = Error.capture_stack_trace(null, 1)
   }
 
   /*
