@@ -1517,7 +1517,7 @@ void VM::op_readglobal(VALUE symbol) {
     return;
   }
 
-  this->throw_exception("Unidentified global symbol '" + this->context.symtable(symbol).value_or("??") + "'");
+  this->throw_exception("Unidentified global symbol '" + this->context.symtable(symbol).value_or(kUndefinedSymbolString) + "'");
 }
 
 void VM::op_setlocalpush(uint32_t index, uint32_t level) {
@@ -1666,7 +1666,7 @@ void VM::op_setglobal(VALUE symbol) {
     return;
   }
 
-  this->throw_exception("Unidentified global symbol '" + this->context.symtable(symbol).value_or("??") + "'");
+  this->throw_exception("Unidentified global symbol '" + this->context.symtable(symbol).value_or(kUndefinedSymbolString) + "'");
 }
 
 void VM::op_setglobalpush(VALUE symbol) {
@@ -1703,7 +1703,7 @@ void VM::op_setglobalpush(VALUE symbol) {
     return;
   }
 
-  this->throw_exception("Unidentified global symbol '" + this->context.symtable(symbol).value_or("??") + "'");
+  this->throw_exception("Unidentified global symbol '" + this->context.symtable(symbol).value_or(kUndefinedSymbolString) + "'");
 }
 #undef SYM
 
@@ -1971,7 +1971,7 @@ void VM::op_new(uint32_t argc) {
 
     // Check if there are enough arguments
     if (charly_as_function(initial_constructor)->minimum_argc > argc) {
-      std::string&& class_name = this->context.symtable(charly_as_class(klass)->name).value_or("??");
+      std::string&& class_name = this->context.symtable(charly_as_class(klass)->name).value_or(kUndefinedSymbolString);
       this->throw_exception("Not enough arguments for class constructor: " + class_name);
       return;
     }
@@ -2461,7 +2461,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
         }
         case kTypeGenerator: name = charly_as_generator(callee)->name; break;
         case kTypeCFunction: name = charly_as_cfunction(callee)->name; break;
-        default: name = charly_create_istring("??");
+        default: name = charly_create_istring(kUndefinedSymbolString);
       }
 
       // Get the body address of the calling value
@@ -2487,9 +2487,9 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << charly_get_typestring(callee);
       io << std::setw(1);
       io << ") ";
-      io << this->context.symtable(name).value_or("??");
+      io << this->context.symtable(name).value_or(kUndefinedSymbolString);
       io << " ";
-      io << lookup_result.value_or("??");
+      io << lookup_result.value_or(kUndefinedSymbolString);
 
       break;
     }

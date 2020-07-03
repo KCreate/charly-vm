@@ -922,6 +922,10 @@ inline VALUE charly_create_istring(const char* ptr, uint8_t length) {
   }
 }
 
+inline VALUE charly_create_istring(const std::string& input) {
+  return charly_create_istring(input.c_str(), input.size());
+}
+
 // Get the amount of utf8 codepoints inside a string
 __attribute__((always_inline))
 inline uint32_t charly_string_utf8_length(VALUE value) {
