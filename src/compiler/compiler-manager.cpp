@@ -63,7 +63,7 @@ std::optional<CompilerResult> CompilerManager::compile(const std::string& filena
   }
 
   CompilerConfig cconfig = {.flags = this->flags};
-  CompilerContext ccontext(this->symtable, this->stringpool);
+  CompilerContext ccontext(this->stringpool);
   Compiler compiler(ccontext, cconfig);
   CompilerResult compiler_result = compiler.compile(parser_result->abstract_syntax_tree.value());
 

@@ -118,7 +118,7 @@ private:
 
   inline void print_symbol(VALUE value, std::ostream& stream) {
     if (this->compiler_context != nullptr) {
-      std::optional<std::string> decoded_str = this->compiler_context->symtable.decode_symbol(value);
+      std::optional<std::string> decoded_str = SymbolTable::decode(value);
       if (decoded_str.has_value()) {
         stream << "@\"" << decoded_str.value() << "\"";
         return;

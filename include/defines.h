@@ -47,7 +47,6 @@ struct Context;
 class SourceFile;
 class MemoryBlock;
 class UTF8Buffer;
-class SymbolTable;
 class StringPool;
 class AddressMapping;
 

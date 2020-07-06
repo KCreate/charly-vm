@@ -459,7 +459,7 @@ AST::AbstractNode* Normalizer::visit_class(AST::Class* node, VisitContinue cont)
   // Check for duplicate declarations or declarations that shadow other declarations
   for (auto member_func : node->member_functions->children) {
     AST::Function* as_func = member_func->as<AST::Function>();
-    VALUE symbol = this->context.symtable(as_func->name);
+    VALUE symbol = SymbolTable::encode(as_func->name);
 
     // Check if this symbol is already taken
     if (member_symbols.count(symbol) > 0) {
@@ -471,7 +471,7 @@ AST::AbstractNode* Normalizer::visit_class(AST::Class* node, VisitContinue cont)
 
   for (auto member_property : node->member_properties->children) {
     AST::Identifier* as_ident = member_property->as<AST::Identifier>();
-    VALUE symbol = this->context.symtable(as_ident->name);
+    VALUE symbol = SymbolTable::encode(as_ident->name);
 
     // Check if this symbol is already taken
     if (member_symbols.count(symbol) > 0) {
@@ -488,7 +488,7 @@ AST::AbstractNode* Normalizer::visit_class(AST::Class* node, VisitContinue cont)
 
   for (auto static_func : node->static_functions->children) {
     AST::Function* as_func = static_func->as<AST::Function>();
-    VALUE symbol = this->context.symtable(as_func->name);
+    VALUE symbol = SymbolTable::encode(as_func->name);
 
     // Check if this symbol is already taken
     if (static_symbols.count(symbol) > 0) {
@@ -500,7 +500,7 @@ AST::AbstractNode* Normalizer::visit_class(AST::Class* node, VisitContinue cont)
 
   for (auto static_property : node->static_properties->children) {
     AST::Identifier* as_ident = static_property->as<AST::Identifier>();
-    VALUE symbol = this->context.symtable(as_ident->name);
+    VALUE symbol = SymbolTable::encode(as_ident->name);
 
     // Check if this symbol is already taken
     if (static_symbols.count(symbol) > 0) {

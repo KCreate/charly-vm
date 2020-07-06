@@ -78,7 +78,6 @@ public:
 };
 
 struct VMContext {
-  SymbolTable& symtable;
   StringPool& stringpool;
   Compilation::CompilerManager& compiler_manager;
 

@@ -418,7 +418,7 @@ VALUE VM::create_symbol(VALUE value) {
 
   std::stringstream buffer;
   this->to_s(buffer, value);
-  return this->context.symtable(buffer.str());
+  return SymbolTable::encode(buffer.str());
 }
 
 VALUE VM::copy_value(VALUE value) {
@@ -903,7 +903,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
       Function* func = charly_as_function(source);
 
       if (symbol == charly_create_symbol("name")) {
-        return this->create_string(this->context.symtable(func->name).value_or(kUndefinedSymbolString));
+        return this->create_string(SymbolTable::decode(func->name));
       }
 
       if (symbol == charly_create_symbol("host_class")) {
@@ -933,7 +933,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
       }
 
       if (symbol == charly_create_symbol("name")) {
-        return this->create_string(this->context.symtable(func->name).value_or(kUndefinedSymbolString));
+        return this->create_string(SymbolTable::decode(func->name));
       }
 
       if (func->container->count(symbol) == 1) {
@@ -955,7 +955,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
       }
 
       if (symbol == charly_create_symbol("name")) {
-        return this->create_string(this->context.symtable(cfunc->name).value_or(kUndefinedSymbolString));
+        return this->create_string(SymbolTable::decode(cfunc->name));
       }
 
       if (cfunc->container->count(symbol) == 1) {
@@ -976,7 +976,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
       }
 
       if (symbol == charly_create_symbol("name")) {
-        return this->create_string(this->context.symtable(klass->name).value_or(kUndefinedSymbolString));
+        return this->create_string(SymbolTable::decode(klass->name));
       }
 
       if (symbol == charly_create_symbol("parent_class")) {
@@ -1518,7 +1518,7 @@ void VM::op_readglobal(VALUE symbol) {
     return;
   }
 
-  this->throw_exception("Unidentified global symbol '" + this->context.symtable(symbol).value_or(kUndefinedSymbolString) + "'");
+  this->throw_exception("Unidentified global symbol '" + SymbolTable::decode(symbol) + "'");
 }
 
 void VM::op_setlocalpush(uint32_t index, uint32_t level) {
@@ -1667,7 +1667,7 @@ void VM::op_setglobal(VALUE symbol) {
     return;
   }
 
-  this->throw_exception("Unidentified global symbol '" + this->context.symtable(symbol).value_or(kUndefinedSymbolString) + "'");
+  this->throw_exception("Unidentified global symbol '" + SymbolTable::decode(symbol) + "'");
 }
 
 void VM::op_setglobalpush(VALUE symbol) {
@@ -1704,7 +1704,7 @@ void VM::op_setglobalpush(VALUE symbol) {
     return;
   }
 
-  this->throw_exception("Unidentified global symbol '" + this->context.symtable(symbol).value_or(kUndefinedSymbolString) + "'");
+  this->throw_exception("Unidentified global symbol '" + SymbolTable::decode(symbol) + "'");
 }
 #undef SYM
 
@@ -1972,7 +1972,7 @@ void VM::op_new(uint32_t argc) {
 
     // Check if there are enough arguments
     if (charly_as_function(initial_constructor)->minimum_argc > argc) {
-      std::string&& class_name = this->context.symtable(charly_as_class(klass)->name).value_or(kUndefinedSymbolString);
+      std::string class_name = SymbolTable::decode(charly_as_class(klass)->name);
       this->throw_exception("Not enough arguments for class constructor: " + class_name);
       return;
     }
@@ -2232,7 +2232,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       for (auto& entry : *object->container) {
         io << " ";
-        std::string key = this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
+        std::string key = SymbolTable::decode(entry.first);
         io << key << "=";
         this->pretty_print(io, entry.second);
       }
@@ -2307,7 +2307,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       for (auto& entry : *func->container) {
         io << " ";
-        std::string key = this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
+        std::string key = SymbolTable::decode(entry.first);
         io << key << "=";
         this->pretty_print(io, entry.second);
       }
@@ -2338,7 +2338,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       for (auto& entry : *func->container) {
         io << " ";
-        std::string key = this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
+        std::string key = SymbolTable::decode(entry.first);
         io << key << "=";
         this->pretty_print(io, entry.second);
       }
@@ -2375,7 +2375,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       for (auto& entry : *generator->container) {
         io << " ";
-        std::string key = this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
+        std::string key = SymbolTable::decode(entry.first);
         io << key << "=";
         this->pretty_print(io, entry.second);
       }
@@ -2406,7 +2406,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       io << "member_properties=[";
       for (auto entry : *klass->member_properties) {
-        io << " " << this->context.symtable(entry).value_or(kUndefinedSymbolString);
+        io << " " << SymbolTable::decode(entry);
       }
       io << "] ";
 
@@ -2419,7 +2419,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << " ";
 
       for (auto entry : *klass->container) {
-        io << " " << this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
+        io << " " << SymbolTable::decode(entry.first);
         io << "=";
         this->pretty_print(io, entry.second);
       }
@@ -2439,7 +2439,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     }
 
     case kTypeSymbol: {
-      io << this->context.symtable(value).value_or(kUndefinedSymbolString);
+      io << SymbolTable::decode(value);
       break;
     }
 
@@ -2453,7 +2453,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
         case kTypeFunction: {
           Function* fn = charly_as_function(callee);
           if (fn->anonymous()) {
-            name = this->context.symtable("<anonymous>");
+            name = SymbolTable::encode("<anonymous>");
           } else {
             name = charly_as_function(callee)->name; break;
           }
@@ -2488,9 +2488,9 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << charly_get_typestring(callee);
       io << std::setw(1);
       io << ") ";
-      io << this->context.symtable(name).value_or(kUndefinedSymbolString);
+      io << SymbolTable::decode(name);
       io << " ";
-      io << lookup_result.value_or(kUndefinedSymbolString);
+      io << lookup_result.value_or("??");
 
       break;
     }
@@ -2583,7 +2583,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
 
       for (auto& entry : *object->container) {
         io << std::string(depth + 2, ' ');
-        std::string key = this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
+        std::string key = SymbolTable::decode(entry.first);
         io << key << " = ";
         this->to_s(io, entry.second, depth + 2);
         io << '\n';
@@ -2650,7 +2650,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
 
       for (auto& entry : *func->container) {
         io << " ";
-        std::string key = this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
+        std::string key = SymbolTable::decode(entry.first);
         io << key << "=";
         this->to_s(io, entry.second, depth);
       }
@@ -2678,7 +2678,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
 
       for (auto& entry : *func->container) {
         io << " ";
-        std::string key = this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
+        std::string key = SymbolTable::decode(entry.first);
         io << key << "=";
         this->to_s(io, entry.second, depth);
       }
@@ -2708,7 +2708,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
 
       for (auto& entry : *generator->container) {
         io << " ";
-        std::string key = this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
+        std::string key = SymbolTable::decode(entry.first);
         io << key << "=";
         this->to_s(io, entry.second, depth);
       }
@@ -2734,7 +2734,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
       this->to_s(io, klass->name, depth);
 
       for (auto entry : *klass->container) {
-        io << " " << this->context.symtable(entry.first).value_or(kUndefinedSymbolString);
+        io << " " << SymbolTable::decode(entry.first);
         io << "=";
         this->to_s(io, entry.second, depth);
       }
@@ -2753,7 +2753,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
 
     case kTypeSymbol: {
       if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
-      io << this->context.symtable(value).value_or(kUndefinedSymbolString);
+      io << SymbolTable::decode(value);
       break;
     }
 
@@ -2806,6 +2806,12 @@ Function* VM::get_active_function() {
 
 void VM::panic(STATUS reason) {
   this->context.err_stream << "Panic: " << kStatusHumanReadable[reason] << '\n';
+  this->context.err_stream << "IP: ";
+  this->context.err_stream.fill('0');                                                                \
+  this->context.err_stream << "0x" << std::hex;                                                      \
+  this->context.err_stream << std::setw(12) << reinterpret_cast<uint64_t>(this->ip) << std::setw(1); \
+  this->context.err_stream << std::dec;                                                              \
+  this->context.err_stream.fill(' ');                                                                \
   this->context.err_stream << '\n' << "Stackdump:" << '\n';
   this->stackdump(this->context.err_stream);
 

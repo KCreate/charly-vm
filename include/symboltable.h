@@ -25,50 +25,67 @@
  */
 
 #include <optional>
+#include <thread>
+#include <iostream>
 
 #include "value.h"
 
 #pragma once
 
 namespace Charly {
+
 const std::string kUndefinedSymbolString = "<undefined symbol>";
+
+// Manages global symbol table contents,
+// provides thread-safe access to it
 class SymbolTable {
-  std::unordered_map<VALUE, std::string> table;
-
 public:
-  SymbolTable() = default;
-  SymbolTable(const SymbolTable& other) : table(other.table) {
-  }
-  SymbolTable(SymbolTable&& other) : table(std::move(other.table)) {
-  }
 
-  SymbolTable& operator=(const SymbolTable& other) {
-    if (this == &other)
-      return *this;
+  // Global symbol table
+  inline static std::unordered_map<VALUE, std::string> global_symbol_table;
 
-    this->table = other.table;
+  // Synchronisation
+  inline static std::mutex global_symbol_table_mutex;
 
-    return *this;
-  }
+  /*
+   * Create a symbol via an input string
+   * */
+  inline static VALUE encode(const std::string& input) {
+    VALUE symbol = charly_create_symbol(input);
 
-  SymbolTable& operator=(SymbolTable&& other) {
-    std::swap(this->table, other.table);
-    return *this;
-  }
+    // Register previously unseen symbols in the global table
+    {
+      std::unique_lock<std::mutex> lk(global_symbol_table_mutex);
+      if (SymbolTable::global_symbol_table.count(symbol) == 0)
+        SymbolTable::global_symbol_table.insert({symbol, input});
+    }
 
-  VALUE encode_string(const std::string& input);
-  std::optional<std::string> decode_symbol(VALUE symbol);
 
-  VALUE operator()(const std::string& input) {
-    return this->encode_string(input);
-  }
-  std::optional<std::string> operator()(VALUE symbol) {
-    return this->decode_symbol(symbol);
+    return symbol;
   }
 
-  void copy_symbols_to_table(SymbolTable& other);
-  inline void copy_symbols_from_table(SymbolTable& other) {
-    other.copy_symbols_to_table(*this);
+  /*
+   * Returns an optional containing the decoded value of this symbol
+   * */
+  inline static std::optional<std::string> decode_optional(VALUE symbol) {
+    std::optional<std::string> decoded_string;
+
+    {
+      std::unique_lock<std::mutex> lk(global_symbol_table_mutex);
+      auto found_string = SymbolTable::global_symbol_table.find(symbol);
+      if (found_string != SymbolTable::global_symbol_table.end()) {
+        decoded_string = found_string->second;
+      }
+    }
+
+    return decoded_string;
+  }
+
+  /*
+   * Returns either the decoded value of this symbol or the fallback string
+   * */
+  inline static std::string decode(VALUE symbol) {
+    return SymbolTable::decode_optional(symbol).value_or(kUndefinedSymbolString);
   }
 };
 }  // namespace Charly

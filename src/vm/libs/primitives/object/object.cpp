@@ -44,7 +44,7 @@ VALUE keys(VM& vm, VALUE obj) {
   Array* arr = charly_as_array(lalloc.create_array(container->size()));
 
   for (auto& entry : *container) {
-    VALUE key = lalloc.create_string(vm.context.symtable(entry.first).value_or(kUndefinedSymbolString));
+    VALUE key = lalloc.create_string(SymbolTable::decode(entry.first));
     arr->data->push_back(key);
   }
 

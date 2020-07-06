@@ -257,9 +257,9 @@ CHARLY_API(poll_event) (VM& vm, VALUE w) {
 
   Charly::ManagedContext lalloc(vm);
   Object* obj = charly_as_object(lalloc.create_object(3));
-  obj->container->insert({vm.context.symtable("type"), charly_create_number(event.type)});
-  obj->container->insert({vm.context.symtable("keycode"), charly_create_number(event.key.code)});
-  obj->container->insert({vm.context.symtable("modifiers"), charly_create_number(modifier_byte)});
+  obj->container->insert({SymbolTable::encode("type"), charly_create_number(event.type)});
+  obj->container->insert({SymbolTable::encode("keycode"), charly_create_number(event.key.code)});
+  obj->container->insert({SymbolTable::encode("modifiers"), charly_create_number(modifier_byte)});
 
   return charly_create_pointer(obj);
 }

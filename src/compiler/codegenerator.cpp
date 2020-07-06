@@ -44,7 +44,7 @@ InstructionBlock* CodeGenerator::compile(AST::AbstractNode* node) {
     if (queued_block.function->generator) {
       Label generator_label = this->assembler.reserve_label();
       this->assembler.write_nop();
-      this->assembler.write_putgenerator_to_label(this->context.symtable(queued_block.function->name), generator_label);
+      this->assembler.write_putgenerator_to_label(SymbolTable::encode(queued_block.function->name), generator_label);
       this->assembler.write_return();
       this->assembler.place_label(generator_label);
       this->visit_node(queued_block.function->body);
@@ -466,9 +466,9 @@ AST::AbstractNode* CodeGenerator::visit_memberassignment(AST::MemberAssignment* 
   this->visit_node(node->expression);
 
   if (node->yielded_value_needed) {
-    this->assembler.write_setmembersymbolpush(this->context.symtable(node->member));
+    this->assembler.write_setmembersymbolpush(SymbolTable::encode(node->member));
   } else {
-    this->assembler.write_setmembersymbol(this->context.symtable(node->member));
+    this->assembler.write_setmembersymbol(SymbolTable::encode(node->member));
   }
 
   return node;
@@ -478,14 +478,14 @@ AST::AbstractNode* CodeGenerator::visit_andmemberassignment(AST::ANDMemberAssign
   // Codegen assignment
   this->visit_node(node->target);
   this->assembler.write_dup();
-  this->assembler.write_readmembersymbol(this->context.symtable(node->member));
+  this->assembler.write_readmembersymbol(SymbolTable::encode(node->member));
   this->visit_node(node->expression);
   this->assembler.write_operator(kOperatorOpcodeMapping[node->operator_type]);
 
   if (node->yielded_value_needed) {
-    this->assembler.write_setmembersymbolpush(this->context.symtable(node->member));
+    this->assembler.write_setmembersymbolpush(SymbolTable::encode(node->member));
   } else {
-    this->assembler.write_setmembersymbol(this->context.symtable(node->member));
+    this->assembler.write_setmembersymbol(SymbolTable::encode(node->member));
   }
 
   return node;
@@ -543,7 +543,7 @@ AST::AbstractNode* CodeGenerator::visit_callmember(AST::CallMember* node, VisitC
 
   // Codegen function
   this->assembler.write_dup();
-  this->assembler.write_readmembersymbol(this->context.symtable(node->symbol));
+  this->assembler.write_readmembersymbol(SymbolTable::encode(node->symbol));
 
   // Codegen arguments
   for (auto arg : node->arguments->children) {
@@ -598,14 +598,14 @@ AST::AbstractNode* CodeGenerator::visit_super(AST::Super* node, VisitContinue) {
 }
 
 AST::AbstractNode* CodeGenerator::visit_supermember(AST::SuperMember* node, VisitContinue) {
-  this->assembler.write_putsupermember(this->context.symtable(node->symbol));
+  this->assembler.write_putsupermember(SymbolTable::encode(node->symbol));
   return node;
 }
 
 AST::AbstractNode* CodeGenerator::visit_member(AST::Member* node, VisitContinue) {
   // Codegen target
   this->visit_node(node->target);
-  this->assembler.write_readmembersymbol(this->context.symtable(node->symbol));
+  this->assembler.write_readmembersymbol(SymbolTable::encode(node->symbol));
 
   return node;
 }
@@ -663,7 +663,7 @@ AST::AbstractNode* CodeGenerator::visit_hash(AST::Hash* node, VisitContinue) {
   // Codegen hash key and values expressions
   for (auto& pair : node->pairs) {
     this->visit_node(pair.second);
-    this->assembler.write_putvalue(this->context.symtable(pair.first));
+    this->assembler.write_putvalue(SymbolTable::encode(pair.first));
   }
   this->assembler.write_puthash(node->pairs.size());
   return node;
@@ -673,7 +673,7 @@ AST::AbstractNode* CodeGenerator::visit_function(AST::Function* node, VisitConti
   // Label setup
   Label function_block_label = this->assembler.reserve_label();
 
-  this->assembler.write_putfunction_to_label(this->context.symtable(node->name), function_block_label, node->anonymous,
+  this->assembler.write_putfunction_to_label(SymbolTable::encode(node->name), function_block_label, node->anonymous,
                                              node->needs_arguments, node->parameters.size(), node->required_arguments,
                                              node->lvarcount);
 
@@ -693,16 +693,16 @@ AST::AbstractNode* CodeGenerator::visit_class(AST::Class* node, VisitContinue) {
   for (auto n : node->member_properties->children) {
     if (n->type() != AST::kTypeIdentifier)
       this->push_fatal_error(n, "Expected node to be an identifier");
-    this->assembler.write_putvalue(this->context.symtable(n->as<AST::Identifier>()->name));
+    this->assembler.write_putvalue(SymbolTable::encode(n->as<AST::Identifier>()->name));
   }
   for (auto n : node->static_properties->children) {
     if (n->type() == AST::kTypeAssignment) {
-      this->assembler.write_putvalue(this->context.symtable(n->as<AST::Assignment>()->target));
+      this->assembler.write_putvalue(SymbolTable::encode(n->as<AST::Assignment>()->target));
       continue;
     }
 
     if (n->type() == AST::kTypeIdentifier) {
-      this->assembler.write_putvalue(this->context.symtable(n->as<AST::Identifier>()->name));
+      this->assembler.write_putvalue(SymbolTable::encode(n->as<AST::Identifier>()->name));
       continue;
     }
 
@@ -722,14 +722,14 @@ AST::AbstractNode* CodeGenerator::visit_class(AST::Class* node, VisitContinue) {
     this->visit_node(node->constructor);
   }
 
-  this->assembler.write_putclass(this->context.symtable(node->name), node->member_properties->size(),
+  this->assembler.write_putclass(SymbolTable::encode(node->name), node->member_properties->size(),
                                  node->static_properties->size(), node->member_functions->size(),
                                  node->static_functions->size(), node->parent_class->type() != AST::kTypeEmpty,
                                  node->constructor->type() != AST::kTypeEmpty);
 
   for (auto n : node->static_properties->children) {
     if (n->type() == AST::kTypeAssignment) {
-      VALUE target_symbol = this->context.symtable(n->as<AST::Assignment>()->target);
+      VALUE target_symbol = SymbolTable::encode(n->as<AST::Assignment>()->target);
       this->assembler.write_dup();
       this->visit_node(n->as<AST::Assignment>()->expression);
       this->assembler.write_setmembersymbol(target_symbol);

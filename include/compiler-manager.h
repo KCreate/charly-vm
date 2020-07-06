@@ -47,28 +47,28 @@ public:
   CompilerManager(const RunFlags& f) : flags(f) {
 
     // Pre-register some symbols in the symtable
-    this->symtable("klass");
-    this->symtable("name");
-    this->symtable("prototype");
-    this->symtable("parent_class");
-    this->symtable("length");
-    this->symtable("constructor");
-    this->symtable("<dead>");
-    this->symtable("<class>");
-    this->symtable("<object>");
-    this->symtable("<array>");
-    this->symtable("<string>");
-    this->symtable("<function>");
-    this->symtable("<cfunction>");
-    this->symtable("<generator>");
-    this->symtable("<frame>");
-    this->symtable("<catchtable>");
-    this->symtable("<cpointer>");
-    this->symtable("<number>");
-    this->symtable("<boolean>");
-    this->symtable("<null>");
-    this->symtable("<symbol>");
-    this->symtable("<unknown>");
+    SymbolTable::encode("klass");
+    SymbolTable::encode("name");
+    SymbolTable::encode("prototype");
+    SymbolTable::encode("parent_class");
+    SymbolTable::encode("length");
+    SymbolTable::encode("constructor");
+    SymbolTable::encode("<dead>");
+    SymbolTable::encode("<class>");
+    SymbolTable::encode("<object>");
+    SymbolTable::encode("<array>");
+    SymbolTable::encode("<string>");
+    SymbolTable::encode("<function>");
+    SymbolTable::encode("<cfunction>");
+    SymbolTable::encode("<generator>");
+    SymbolTable::encode("<frame>");
+    SymbolTable::encode("<catchtable>");
+    SymbolTable::encode("<cpointer>");
+    SymbolTable::encode("<number>");
+    SymbolTable::encode("<boolean>");
+    SymbolTable::encode("<null>");
+    SymbolTable::encode("<symbol>");
+    SymbolTable::encode("<unknown>");
   };
   CompilerManager(const CompilerManager&) = delete;
   CompilerManager(CompilerManager&&) = delete;
@@ -82,7 +82,6 @@ private:
   std::ostream& err_stream = std::cerr;
 
 public:
-  SymbolTable symtable;
   StringPool stringpool;
   AddressMapping address_mapping;
 };

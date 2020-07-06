@@ -222,7 +222,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
           dlsym(clib, name.c_str())
         ));
 
-        lib->container->insert({vm.context.symtable(name), charly_create_pointer(cfunc)});
+        lib->container->insert({SymbolTable::encode(name), charly_create_pointer(cfunc)});
 
         i++;
       }
@@ -239,13 +239,13 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
         dlclose(clib);
       };
       lib->container->insert({
-        vm.context.symtable("__libptr"),
+        SymbolTable::encode("__libptr"),
         lalloc.create_cpointer(clib, reinterpret_cast<void*>(destructor))
       });
 
       // Insert the path of the library into the object
       lib->container->insert({
-        vm.context.symtable("__libpath"),
+        SymbolTable::encode("__libpath"),
         lalloc.create_string(include_filename)
       });
 
@@ -344,7 +344,7 @@ VALUE get_environment(VM& vm) {
   // Append environment variables
   for (const auto& entry : environment) {
     environment_obj->container->insert({
-      vm.context.symtable(entry.first),
+      SymbolTable::encode(entry.first),
       lalloc.create_string(entry.second)
     });
   }
@@ -364,10 +364,10 @@ VALUE get_active_frame(VM& vm) {
 
   // Create stacktrace entry
   Object* obj = charly_as_object(lalloc.create_object(3));
-  obj->container->insert({vm.context.symtable("id"),             frame_id});
-  obj->container->insert({vm.context.symtable("caller"),         caller_value});
-  obj->container->insert({vm.context.symtable("self_value"),     self_value});
-  obj->container->insert({vm.context.symtable("origin_address"), origin_address});
+  obj->container->insert({SymbolTable::encode("id"),             frame_id});
+  obj->container->insert({SymbolTable::encode("caller"),         caller_value});
+  obj->container->insert({SymbolTable::encode("self_value"),     self_value});
+  obj->container->insert({SymbolTable::encode("origin_address"), origin_address});
 
   return charly_create_pointer(obj);
 }
@@ -391,10 +391,10 @@ VALUE get_parent_frame(VM& vm, VALUE frame_ref) {
 
   // Create stacktrace entry
   Object* obj = charly_as_object(lalloc.create_object(3));
-  obj->container->insert({vm.context.symtable("id"),             frame_id});
-  obj->container->insert({vm.context.symtable("caller"),         caller_value});
-  obj->container->insert({vm.context.symtable("self_value"),     self_value});
-  obj->container->insert({vm.context.symtable("origin_address"), origin_address});
+  obj->container->insert({SymbolTable::encode("id"),             frame_id});
+  obj->container->insert({SymbolTable::encode("caller"),         caller_value});
+  obj->container->insert({SymbolTable::encode("self_value"),     self_value});
+  obj->container->insert({SymbolTable::encode("origin_address"), origin_address});
 
   return charly_create_pointer(obj);
 }

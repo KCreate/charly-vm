@@ -24,17 +24,5 @@
  * SOFTWARE.
  */
 
-loop {
-  try {
-    break
-  } catch(e) {
-    print("caught exception inside loop")
-    print(e)
-    exit()
-  } finally {
-    print("inside finally")
-  }
-}
-
-print("exited loop")
-throw new Error("an error happened!")
+print("hello world!!")
+print(@"some undefined symbol")

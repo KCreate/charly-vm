@@ -90,7 +90,7 @@ int CLI::run() {
 
   // Load symbols of internal vm methods
   for (auto& sig : Internals::Index::methods)
-    cmanager.symtable.encode_string(sig.second.name);
+    SymbolTable::encode(sig.second.name);
 
   auto cresult_userfile = cmanager.compile(inputfile_path, source_string);
   auto cresult_prelude = cmanager.compile(preludepath, prelude_string);
@@ -107,8 +107,7 @@ int CLI::run() {
     return 0;
   }
 
-  VMContext context({.symtable = cmanager.symtable,
-                     .stringpool = cmanager.stringpool,
+  VMContext context({.stringpool = cmanager.stringpool,
                      .compiler_manager = cmanager,
                      .instruction_profile = this->flags.instruction_profile,
                      .trace_opcodes = this->flags.trace_opcodes,

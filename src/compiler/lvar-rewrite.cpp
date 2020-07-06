@@ -36,15 +36,15 @@ AST::AbstractNode* LVarRewriter::visit_function(AST::Function* node, VisitContin
 
   // Register the function arguments
   if (node->needs_arguments) {
-    this->scope->alloc_slot(this->context.symtable("arguments"), true);
+    this->scope->alloc_slot(SymbolTable::encode("arguments"), true);
     this->scope->register_symbol(
-      this->context.symtable("arguments"),
+      SymbolTable::encode("arguments"),
       LocalOffsetInfo(ValueLocation::frame(0, 0))
     );
   }
 
   for (const std::string& param : node->parameters) {
-    VALUE symbol = this->context.symtable(param);
+    VALUE symbol = SymbolTable::encode(param);
 
     LocalOffsetInfo tmp = this->scope->access_symbol(symbol);
     if (tmp.valid && tmp.shadowing) {
@@ -99,7 +99,7 @@ AST::AbstractNode* LVarRewriter::visit_block(AST::Block* node, VisitContinue des
 }
 
 AST::AbstractNode* LVarRewriter::visit_localinitialisation(AST::LocalInitialisation* node, VisitContinue descend) {
-  VALUE name_symbol = this->context.symtable(node->name);
+  VALUE name_symbol = SymbolTable::encode(node->name);
 
   // Check if this is a duplicate declaration
   if (this->scope->scope_contains_symbol(name_symbol)) {
@@ -153,7 +153,7 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
   }
 
   // Check if this symbol exists
-  this->context.symtable(node->name);
+  SymbolTable::encode(node->name);
   LocalOffsetInfo result = this->scope->access_symbol(node->name);
   if (!result.valid) {
     this->push_error(node, "Could not resolve symbol: " + node->name);
@@ -165,7 +165,7 @@ AST::AbstractNode* LVarRewriter::visit_identifier(AST::Identifier* node, VisitCo
 }
 
 AST::AbstractNode* LVarRewriter::visit_assignment(AST::Assignment* node, VisitContinue cont) {
-  this->context.symtable(node->target);
+  SymbolTable::encode(node->target);
   if (!node->no_codegen) {
     LocalOffsetInfo result = this->scope->access_symbol(node->target);
     if (!result.valid) {
@@ -192,7 +192,7 @@ AST::AbstractNode* LVarRewriter::visit_trycatch(AST::TryCatch* node, VisitContin
 
   this->push_local_scope();
 
-  VALUE ex_name_symbol = this->context.symtable(node->exception_name->name);
+  VALUE ex_name_symbol = SymbolTable::encode(node->exception_name->name);
 
   LocalOffsetInfo tmp = this->scope->access_symbol(ex_name_symbol);
   if (tmp.valid && tmp.shadowing) {
