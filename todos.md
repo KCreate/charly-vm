@@ -1,28 +1,20 @@
+- Symbols overhaul
+  - Implement symbol literals
+    - :name, :"foo bar baz"
+  - Allow symbols to be used as object keys
+  - Primitive class for Symbols
+    - to_s
+    - create
+
 - Bug with try catch statements
   - `break`, `continue` do not drop the active catchtable
   - `break`, `continue`, `return` do not respect the `finally` handler
-
-- Replace symbol function with CRC32
-  - Allows for compile-time calculation of hashes which in turn allows us to use
-    the switch statement for symbols.
-
-- Use global static variable for some things
-  - symbol table
-  - compiled files, results of compilations etc
 
 - Changes to the class system
   - Hide prototype variable
     - Add internal method to add new method to prototype
     - Throw if the method already belongs to a class
     - Configure klass property of function
-  - Rename constructor to class name
-    - `
-        class MyClass {
-          MyClass(somearg) {
-            print(somarg)
-          }
-        }
-      `
 
 - `on` handler for try catch statements
   - `
@@ -89,6 +81,7 @@
         rand(min, max) = __get_random(min, max)
       }
     `
+
 - Refactor unit tests
   - Organize into different categories
     - Basic VM functionality
@@ -179,8 +172,6 @@
   - 'lvarcount' should be represented by a 16bit int. It does not seem impossible to me for code
     to reach the 256 local variable limit, so to be future-proof 16 bits should be used.
   - Also document existing argument sizes in the opcode.h file
-
-- Do not generate a default constructor for classes without any properties
 
 - Implement default values for class properties
 

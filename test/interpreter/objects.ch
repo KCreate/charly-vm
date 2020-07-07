@@ -38,6 +38,34 @@ export = ->(describe, it, assert) {
       assert(myBox.age, 16)
     })
 
+    it("correctly encodes symbols", ->{
+      const obj = {}
+
+      obj["foo"]        = "foo"
+      obj[25]           = "25"
+      obj[true]         = "true"
+      obj[false]        = "false"
+      obj[null]         = "null"
+      obj[NaN]          = "NaN"
+      obj[25]           = "25"
+      obj[-200]         = "-200"
+      obj[[1, 2]]       = "<array>"
+      obj[{ val: 2 }]   = "<object>"
+      obj[class Foo {}] = "<class>"
+
+      assert(Object.keys(obj).contains("foo"))
+      assert(Object.keys(obj).contains("25"))
+      assert(Object.keys(obj).contains("true"))
+      assert(Object.keys(obj).contains("false"))
+      assert(Object.keys(obj).contains("null"))
+      assert(Object.keys(obj).contains("nan"))
+      assert(Object.keys(obj).contains("25"))
+      assert(Object.keys(obj).contains("-200"))
+      assert(Object.keys(obj).contains("<array>"))
+      assert(Object.keys(obj).contains("<object>"))
+      assert(Object.keys(obj).contains("<class>"))
+    })
+
     it("adds functions to objects", ->{
       class Box {}
       const myBox = new Box()

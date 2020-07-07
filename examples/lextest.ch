@@ -24,5 +24,12 @@
  * SOFTWARE.
  */
 
-print("hello world!!")
-print(@"some undefined symbol")
+const obj = {}
+
+obj[[1, 2, 3]]       = "test 1"
+obj[{ name: "foo" }] = "test 2"
+obj[25]              = "test 3"
+obj["test"]          = "test 4"
+obj[print]           = "test 5"
+
+print(obj)

@@ -69,6 +69,11 @@ public:
     SymbolTable::encode("<null>");
     SymbolTable::encode("<symbol>");
     SymbolTable::encode("<unknown>");
+
+    // Pre-register numbers -1000 to 1000
+    for (int32_t i = -1000; i <= 1000; i++) {
+      SymbolTable::encode(std::to_string(i));
+    }
   };
   CompilerManager(const CompilerManager&) = delete;
   CompilerManager(CompilerManager&&) = delete;

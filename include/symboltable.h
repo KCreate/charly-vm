@@ -65,6 +65,56 @@ public:
   }
 
   /*
+   * Create a symbol via a charly VALUE
+   * */
+  inline static VALUE encode(VALUE value) {
+    uint8_t type = charly_get_type(value);
+    switch (type) {
+
+      case kTypeString: {
+        char* str_data = charly_string_data(value);
+        uint32_t str_length = charly_string_length(value);
+        return SymbolTable::encode(std::string(str_data, str_length));
+      }
+
+      case kTypeNumber: {
+        if (charly_is_float(value)) {
+          double val = charly_double_to_double(value);
+          std::string str = std::to_string(val);
+          return SymbolTable::encode(str);
+        } else {
+          int64_t val = charly_int_to_uint64(value);
+          std::string str = std::to_string(val);
+          return SymbolTable::encode(str);
+        }
+      }
+
+      case kTypeBoolean: {
+        return SymbolTable::encode(value == kTrue ? "true" : "false");
+      }
+
+      case kTypeNull: {
+        return SymbolTable::encode("null");
+      }
+
+      case kTypeSymbol: {
+        return SymbolTable::encode(SymbolTable::decode(value));
+      }
+
+      default: {
+        static const std::string symbol_type_symbol_table[] = {
+          "<dead>",      "<class>",     "<object>", "<array>",      "<string>",   "<function>",
+          "<cfunction>", "<generator>", "<frame>",  "<catchtable>", "<cpointer>", "<number>",
+          "<boolean>",   "<null>",      "<symbol>", "<unknown>"
+        };
+
+        const std::string& symbol = symbol_type_symbol_table[type];
+        return SymbolTable::encode(symbol);
+      }
+    }
+  }
+
+  /*
    * Returns an optional containing the decoded value of this symbol
    * */
   inline static std::optional<std::string> decode_optional(VALUE symbol) {

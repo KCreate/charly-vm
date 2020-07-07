@@ -403,24 +403,6 @@ VALUE VM::create_cpointer(void* data, void* destructor) {
   return cell->as_value();
 }
 
-VALUE VM::create_symbol(VALUE value) {
-  switch (charly_get_type(value)) {
-    case kTypeClass:
-    case kTypeObject:
-    case kTypeArray:
-    case kTypeFunction:
-    case kTypeCFunction:
-    case kTypeGenerator:
-    case kTypeCPointer: {
-      return charly_create_symbol("<" + charly_get_typestring(value) + ">");
-    }
-  }
-
-  std::stringstream buffer;
-  this->to_s(buffer, value);
-  return SymbolTable::encode(buffer.str());
-}
-
 VALUE VM::copy_value(VALUE value) {
   switch (charly_get_type(value)) {
     case kTypeString: return this->copy_string(value);
@@ -888,7 +870,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
     case kTypeObject: {
       Object* obj = charly_as_object(source);
 
-      if (symbol == charly_create_symbol("klass")) {
+      if (symbol == SYM("klass")) {
         return obj->klass;
       }
 
@@ -902,11 +884,11 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
     case kTypeFunction: {
       Function* func = charly_as_function(source);
 
-      if (symbol == charly_create_symbol("name")) {
+      if (symbol == SYM("name")) {
         return this->create_string(SymbolTable::decode(func->name));
       }
 
-      if (symbol == charly_create_symbol("host_class")) {
+      if (symbol == SYM("host_class")) {
         return func->host_class;
       }
 
@@ -920,19 +902,19 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
     case kTypeGenerator: {
       Generator* func = charly_as_generator(source);
 
-      if (symbol == charly_create_symbol("finished")) {
+      if (symbol == SYM("finished")) {
         return func->finished() ? kTrue : kFalse;
       }
 
-      if (symbol == charly_create_symbol("started")) {
+      if (symbol == SYM("started")) {
         return func->started() ? kTrue : kFalse;
       }
 
-      if (symbol == charly_create_symbol("running")) {
+      if (symbol == SYM("running")) {
         return func->running ? kTrue : kFalse;
       }
 
-      if (symbol == charly_create_symbol("name")) {
+      if (symbol == SYM("name")) {
         return this->create_string(SymbolTable::decode(func->name));
       }
 
@@ -946,15 +928,15 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
     case kTypeCFunction: {
       CFunction* cfunc = charly_as_cfunction(source);
 
-      if (symbol == charly_create_symbol("push_return_value")) {
+      if (symbol == SYM("push_return_value")) {
         return cfunc->push_return_value ? kTrue : kFalse;
       }
 
-      if (symbol == charly_create_symbol("halt_after_return")) {
+      if (symbol == SYM("halt_after_return")) {
         return cfunc->halt_after_return ? kTrue : kFalse;
       }
 
-      if (symbol == charly_create_symbol("name")) {
+      if (symbol == SYM("name")) {
         return this->create_string(SymbolTable::decode(cfunc->name));
       }
 
@@ -967,19 +949,19 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
     case kTypeClass: {
       Class* klass = charly_as_class(source);
 
-      if (symbol == charly_create_symbol("prototype")) {
+      if (symbol == SYM("prototype")) {
         return klass->prototype;
       }
 
-      if (symbol == charly_create_symbol("constructor")) {
+      if (symbol == SYM("constructor")) {
         return klass->constructor;
       }
 
-      if (symbol == charly_create_symbol("name")) {
+      if (symbol == SYM("name")) {
         return this->create_string(SymbolTable::decode(klass->name));
       }
 
-      if (symbol == charly_create_symbol("parent_class")) {
+      if (symbol == SYM("parent_class")) {
         return klass->parent_class;
       }
 
@@ -992,14 +974,14 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
     case kTypeArray: {
       Array* arr = charly_as_array(source);
 
-      if (symbol == charly_create_symbol("length")) {
+      if (symbol == SYM("length")) {
         return charly_create_integer(arr->data->size());
       }
 
       break;
     }
     case kTypeString: {
-      if (symbol == charly_create_symbol("length")) {
+      if (symbol == SYM("length")) {
         return charly_create_integer(charly_string_utf8_length(source));
       }
 
@@ -1044,9 +1026,9 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
 
 VALUE VM::readmembervalue(VALUE source, VALUE value) {
   switch (charly_get_type(source)) {
+
     case kTypeArray: {
       Array* arr = charly_as_array(source);
-
       if (charly_is_number(value)) {
         int32_t index = charly_number_to_int32(value);
 
@@ -1061,20 +1043,20 @@ VALUE VM::readmembervalue(VALUE source, VALUE value) {
         }
 
         return (*arr->data)[index];
-      } else {
-        return this->readmembersymbol(source, this->create_symbol(value));
       }
     }
+
     case kTypeString: {
       if (charly_is_number(value)) {
         int32_t index = charly_number_to_int32(value);
         return charly_string_cp_at_index(source, index);
-      } else {
-        return this->readmembersymbol(source, this->create_symbol(value));
       }
+
+      break;
     }
-    default: { return this->readmembersymbol(source, this->create_symbol(value)); }
   }
+
+  return this->readmembersymbol(source, SymbolTable::encode(value));
 }
 
 VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
@@ -1082,7 +1064,7 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
     case kTypeObject: {
       Object* obj = charly_as_object(target);
 
-      if (symbol == charly_create_symbol("klass")) break;
+      if (symbol == SYM("klass")) break;
 
       (*obj->container)[symbol] = value;
       break;
@@ -1091,8 +1073,8 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
     case kTypeFunction: {
       Function* func = charly_as_function(target);
 
-      if (symbol == charly_create_symbol("name")) break;
-      if (symbol == charly_create_symbol("host_class")) break;
+      if (symbol == SYM("name")) break;
+      if (symbol == SYM("host_class")) break;
 
       (*func->container)[symbol] = value;
       break;
@@ -1101,10 +1083,10 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
     case kTypeGenerator: {
       Generator* func = charly_as_generator(target);
 
-      if (symbol == charly_create_symbol("finished")) break;
-      if (symbol == charly_create_symbol("started")) break;
-      if (symbol == charly_create_symbol("running")) break;
-      if (symbol == charly_create_symbol("name")) break;
+      if (symbol == SYM("finished")) break;
+      if (symbol == SYM("started")) break;
+      if (symbol == SYM("running")) break;
+      if (symbol == SYM("name")) break;
 
       (*func->container)[symbol] = value;
       break;
@@ -1113,17 +1095,17 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
     case kTypeCFunction: {
       CFunction* cfunc = charly_as_cfunction(target);
 
-      if (symbol == charly_create_symbol("push_return_value")) {
+      if (symbol == SYM("push_return_value")) {
         cfunc->push_return_value = charly_truthyness(value);
         break;
       }
 
-      if (symbol == charly_create_symbol("halt_after_return")) {
+      if (symbol == SYM("halt_after_return")) {
         cfunc->halt_after_return = charly_truthyness(value);
         break;
       }
 
-      if (symbol == charly_create_symbol("name")) break;
+      if (symbol == SYM("name")) break;
 
       (*cfunc->container)[symbol] = value;
       break;
@@ -1132,10 +1114,10 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
     case kTypeClass: {
       Class* klass = charly_as_class(target);
 
-      if (symbol == charly_create_symbol("prototype")) break;
-      if (symbol == charly_create_symbol("constructor")) break;
-      if (symbol == charly_create_symbol("name")) break;
-      if (symbol == charly_create_symbol("parent_class")) break;
+      if (symbol == SYM("prototype")) break;
+      if (symbol == SYM("constructor")) break;
+      if (symbol == SYM("name")) break;
+      if (symbol == SYM("parent_class")) break;
 
       (*klass->container)[symbol] = value;
       break;
@@ -1169,7 +1151,7 @@ VALUE VM::setmembervalue(VALUE target, VALUE member_value, VALUE value) {
   }
 
   // Turn member_value into a symbol
-  return this->setmembersymbol(target, this->create_symbol(member_value), value);
+  return this->setmembersymbol(target, SymbolTable::encode(member_value), value);
 }
 
 std::optional<VALUE> VM::findprimitivevalue(VALUE value, VALUE symbol) {
@@ -1189,7 +1171,7 @@ std::optional<VALUE> VM::findprimitivevalue(VALUE value, VALUE symbol) {
     default: found_primitive_class = this->primitive_value; break;
   }
 
-  if (symbol == charly_create_symbol("klass")) {
+  if (symbol == SYM("klass")) {
     return found_primitive_class;
   }
 
@@ -1494,21 +1476,21 @@ void VM::op_readglobal(VALUE symbol) {
   }
 
   // Check vm specific symbols
-#define SYM(S, T)  if (symbol == charly_create_symbol(S)) { this->push_stack(this->T); return; }
-  SYM("charly.vm.primitive.value", primitive_value);
-  SYM("charly.vm.primitive.object", primitive_object);
-  SYM("charly.vm.primitive.class", primitive_class);
-  SYM("charly.vm.primitive.array", primitive_array);
-  SYM("charly.vm.primitive.string", primitive_string);
-  SYM("charly.vm.primitive.number", primitive_number);
-  SYM("charly.vm.primitive.function", primitive_function);
-  SYM("charly.vm.primitive.generator", primitive_generator);
-  SYM("charly.vm.primitive.boolean", primitive_boolean);
-  SYM("charly.vm.primitive.null", primitive_null);
-  SYM("charly.vm.uncaught_exception_handler", uncaught_exception_handler);
-  SYM("charly.vm.internal_error_class", internal_error_class);
-  SYM("charly.vm.globals", globals);
-#undef SYM
+  switch (symbol) {
+    case SYM("charly.vm.primitive.value"):            this->push_stack(this->primitive_value); return;
+    case SYM("charly.vm.primitive.object"):           this->push_stack(this->primitive_object); return;
+    case SYM("charly.vm.primitive.class"):            this->push_stack(this->primitive_class); return;
+    case SYM("charly.vm.primitive.array"):            this->push_stack(this->primitive_array); return;
+    case SYM("charly.vm.primitive.string"):           this->push_stack(this->primitive_string); return;
+    case SYM("charly.vm.primitive.number"):           this->push_stack(this->primitive_number); return;
+    case SYM("charly.vm.primitive.function"):         this->push_stack(this->primitive_function); return;
+    case SYM("charly.vm.primitive.generator"):        this->push_stack(this->primitive_generator); return;
+    case SYM("charly.vm.primitive.boolean"):          this->push_stack(this->primitive_boolean); return;
+    case SYM("charly.vm.primitive.null"):             this->push_stack(this->primitive_null); return;
+    case SYM("charly.vm.uncaught_exception_handler"): this->push_stack(this->uncaught_exception_handler); return;
+    case SYM("charly.vm.internal_error_class"):       this->push_stack(this->internal_error_class); return;
+    case SYM("charly.vm.globals"):                    this->push_stack(this->globals); return;
+  }
 
   // Check globals table
   if (!charly_is_object(this->globals)) this->panic(Status::GlobalsNotAnObject);
@@ -1633,7 +1615,6 @@ void VM::op_setarrayindex(uint32_t index) {
   (*arr->data)[index] = expression;
 }
 
-#define SYM(S, T)  if (symbol == charly_create_symbol(S)) { this->T = value; return; }
 void VM::op_setglobal(VALUE symbol) {
   VALUE value = this->pop_stack();
 
@@ -1645,19 +1626,21 @@ void VM::op_setglobal(VALUE symbol) {
 
 
   // Check vm specific symbols
-  SYM("charly.vm.primitive.value", primitive_value);
-  SYM("charly.vm.primitive.object", primitive_object);
-  SYM("charly.vm.primitive.class", primitive_class);
-  SYM("charly.vm.primitive.array", primitive_array);
-  SYM("charly.vm.primitive.string", primitive_string);
-  SYM("charly.vm.primitive.number", primitive_number);
-  SYM("charly.vm.primitive.function", primitive_function);
-  SYM("charly.vm.primitive.generator", primitive_generator);
-  SYM("charly.vm.primitive.boolean", primitive_boolean);
-  SYM("charly.vm.primitive.null", primitive_null);
-  SYM("charly.vm.uncaught_exception_handler", uncaught_exception_handler);
-  SYM("charly.vm.internal_error_class", internal_error_class);
-  SYM("charly.vm.globals", globals);
+  switch (symbol) {
+    case SYM("charly.vm.primitive.value"):            this->primitive_value            = value; return;
+    case SYM("charly.vm.primitive.object"):           this->primitive_object           = value; return;
+    case SYM("charly.vm.primitive.class"):            this->primitive_class            = value; return;
+    case SYM("charly.vm.primitive.array"):            this->primitive_array            = value; return;
+    case SYM("charly.vm.primitive.string"):           this->primitive_string           = value; return;
+    case SYM("charly.vm.primitive.number"):           this->primitive_number           = value; return;
+    case SYM("charly.vm.primitive.function"):         this->primitive_function         = value; return;
+    case SYM("charly.vm.primitive.generator"):        this->primitive_generator        = value; return;
+    case SYM("charly.vm.primitive.boolean"):          this->primitive_boolean          = value; return;
+    case SYM("charly.vm.primitive.null"):             this->primitive_null             = value; return;
+    case SYM("charly.vm.uncaught_exception_handler"): this->uncaught_exception_handler = value; return;
+    case SYM("charly.vm.internal_error_class"):       this->internal_error_class       = value; return;
+    case SYM("charly.vm.globals"):                    this->globals                    = value; return;
+  }
 
   // Check globals table
   if (!charly_is_object(this->globals)) this->panic(Status::GlobalsNotAnObject);
@@ -1681,19 +1664,21 @@ void VM::op_setglobalpush(VALUE symbol) {
   }
 
   // Check vm specific symbols
-  SYM("charly.vm.primitive.value", primitive_value);
-  SYM("charly.vm.primitive.object", primitive_object);
-  SYM("charly.vm.primitive.class", primitive_class);
-  SYM("charly.vm.primitive.array", primitive_array);
-  SYM("charly.vm.primitive.string", primitive_string);
-  SYM("charly.vm.primitive.number", primitive_number);
-  SYM("charly.vm.primitive.function", primitive_function);
-  SYM("charly.vm.primitive.generator", primitive_generator);
-  SYM("charly.vm.primitive.boolean", primitive_boolean);
-  SYM("charly.vm.primitive.null", primitive_null);
-  SYM("charly.vm.uncaught_exception_handler", uncaught_exception_handler);
-  SYM("charly.vm.internal_error_class", internal_error_class);
-  SYM("charly.vm.globals", globals);
+  switch (symbol) {
+    case SYM("charly.vm.primitive.value"):            this->primitive_value            = value; return;
+    case SYM("charly.vm.primitive.object"):           this->primitive_object           = value; return;
+    case SYM("charly.vm.primitive.class"):            this->primitive_class            = value; return;
+    case SYM("charly.vm.primitive.array"):            this->primitive_array            = value; return;
+    case SYM("charly.vm.primitive.string"):           this->primitive_string           = value; return;
+    case SYM("charly.vm.primitive.number"):           this->primitive_number           = value; return;
+    case SYM("charly.vm.primitive.function"):         this->primitive_function         = value; return;
+    case SYM("charly.vm.primitive.generator"):        this->primitive_generator        = value; return;
+    case SYM("charly.vm.primitive.boolean"):          this->primitive_boolean          = value; return;
+    case SYM("charly.vm.primitive.null"):             this->primitive_null             = value; return;
+    case SYM("charly.vm.uncaught_exception_handler"): this->uncaught_exception_handler = value; return;
+    case SYM("charly.vm.internal_error_class"):       this->internal_error_class       = value; return;
+    case SYM("charly.vm.globals"):                    this->globals                    = value; return;
+  }
 
   // Check globals table
   if (!charly_is_object(this->globals))
@@ -1706,7 +1691,7 @@ void VM::op_setglobalpush(VALUE symbol) {
 
   this->throw_exception("Unidentified global symbol '" + SymbolTable::decode(symbol) + "'");
 }
-#undef SYM
+#undef WORDGLOB
 
 void VM::op_putself() {
   if (this->frames == nullptr) {
@@ -1728,7 +1713,7 @@ void VM::op_putsuper() {
   // A super call inside a member function will return the super function of
   // the currently active function
   VALUE super_value = kNull;
-  if (func->name == charly_create_symbol("constructor")) {
+  if (func->name == SYM("constructor")) {
     super_value = charly_find_super_constructor(host_class);
   } else {
     super_value = charly_find_super_method(host_class, func->name);
@@ -2779,7 +2764,7 @@ VALUE VM::get_self_for_function(Function* function, const VALUE* fallback) {
 }
 
 VALUE VM::get_global_self() {
-  return this->get_global_symbol(charly_create_symbol("Charly"));
+  return this->get_global_symbol(SYM("Charly"));
 }
 
 VALUE VM::get_global_symbol(VALUE symbol) {

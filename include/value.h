@@ -44,8 +44,8 @@ using Timestamp = std::chrono::time_point<std::chrono::steady_clock>;
 
 // Human readable types of all data types
 const std::string kHumanReadableTypes[] = {"dead",      "class",     "object", "array",      "string",   "function",
-                                           "cfunction", "generator", "frame",  "catchtable", "cpointer", "number",
-                                           "boolean",   "null",      "symbol", "unknown"};
+                                          "cfunction", "generator", "frame",  "catchtable", "cpointer", "number",
+                                          "boolean",   "null",      "symbol", "unknown"};
 
 // Identifies which type a VALUE points to
 enum ValueType : uint8_t {
@@ -1346,11 +1346,76 @@ inline VALUE charly_string_mul_into_immediate(VALUE left, int64_t amount) {
   return result;
 }
 
-// Convert types into symbols
+// Compile-time CRC32 hashing
+// Source: https://stackoverflow.com/questions/28675727/using-crc32-algorithm-to-hash-string-at-compile-time
+namespace CRC32 {
+  template <unsigned c, int k = 8>
+  struct f : f<((c & 1) ? 0xedb88320 : 0) ^ (c >> 1), k - 1> {};
+  template <unsigned c> struct f<c, 0>{enum {value = c};};
+
+#define CRCA(x) CRCB(x) CRCB(x + 128)
+#define CRCB(x) CRCC(x) CRCC(x +  64)
+#define CRCC(x) CRCD(x) CRCD(x +  32)
+#define CRCD(x) CRCE(x) CRCE(x +  16)
+#define CRCE(x) CRCF(x) CRCF(x +   8)
+#define CRCF(x) CRCG(x) CRCG(x +   4)
+#define CRCG(x) CRCH(x) CRCH(x +   2)
+#define CRCH(x) CRCI(x) CRCI(x +   1)
+#define CRCI(x) f<x>::value ,
+  constexpr unsigned crc_table[] = { CRCA(0) };
+#undef CRCA
+#undef CRCB
+#undef CRCC
+#undef CRCD
+#undef CRCE
+#undef CRCF
+#undef CRCG
+#undef CRCH
+#undef CRCI
+
+  constexpr uint32_t crc32_impl(const char* p, size_t len, uint32_t crc) {
+    return len ?
+            crc32_impl(p + 1,len - 1,(crc >> 8) ^ crc_table[(crc & 0xFF) ^ *p])
+            : crc;
+  }
+
+  constexpr uint32_t crc32(const char* data, size_t length) {
+    return ~crc32_impl(data, length, ~0);
+  }
+
+  constexpr uint32_t crc32(const std::string& str) {
+    return crc32(str.c_str(), str.size());
+  }
+
+  constexpr size_t strlen_c(const char* str) {
+    return *str ? 1 + strlen_c(str + 1) : 0;
+  }
+
+  constexpr uint32_t crc32(const char* str) {
+    return crc32(str, strlen_c(str));
+  }
+
+  template <size_t N>
+  constexpr uint32_t crc(char const (& input)[N]) {
+    return crc32(&input, N);
+  }
+
+  constexpr VALUE crc32_to_symbol(uint32_t value) {
+    uint64_t val = value;
+    return kSignatureSymbol | (val & kMaskSymbol);
+  }
+}
+
+#define SYM(X) CRC32::crc32_to_symbol(CRC32::crc32(X))
+
+__attribute__((always_inline))
+inline VALUE charly_create_symbol(const char* data, size_t length) {
+  return CRC32::crc32_to_symbol(CRC32::crc32(data, length));
+}
+
 __attribute__((always_inline))
 inline VALUE charly_create_symbol(const std::string& input) {
-  size_t val = std::hash<std::string>{}(input);
-  return kSignatureSymbol | (val & kMaskSymbol);
+  return CRC32::crc32_to_symbol(CRC32::crc32(input));
 }
 
 // TODO: Refactor this...
@@ -1359,26 +1424,46 @@ __attribute__((always_inline))
 inline VALUE charly_create_symbol(VALUE value) {
   uint8_t type = charly_get_type(value);
   switch (type) {
+
     case kTypeString: {
       char* str_data = charly_string_data(value);
       uint32_t str_length = charly_string_length(value);
-      return charly_create_symbol(std::string(str_data, str_length));
+      return charly_create_symbol(str_data, str_length);
     }
+
     case kTypeNumber: {
       if (charly_is_float(value)) {
         double val = charly_double_to_double(value);
-        std::stringstream io;
-        io << val;
-        return charly_create_symbol(io.str());
+        std::string str = std::to_string(val);
+        return charly_create_symbol(std::move(str));
       } else {
         int64_t val = charly_int_to_int64(value);
-        std::stringstream io;
-        io << val;
-        return charly_create_symbol(io.str());
+        std::string str = std::to_string(val);
+        return charly_create_symbol(std::move(str));
       }
     }
+
+    case kTypeBoolean: {
+      return SYM(value == kTrue ? "true" : "false");
+    }
+
+    case kTypeNull: {
+      return SYM("null");
+    }
+
+    case kTypeSymbol: {
+      return value;
+    }
+
     default: {
-      return charly_create_symbol(charly_get_typestring(type));
+      static const std::string symbol_type_symbol_table[] = {
+        "<dead>",      "<class>",     "<object>", "<array>",      "<string>",   "<function>",
+        "<cfunction>", "<generator>", "<frame>",  "<catchtable>", "<cpointer>", "<number>",
+        "<boolean>",   "<null>",      "<symbol>", "<unknown>"
+      };
+
+      const std::string& symbol = symbol_type_symbol_table[type];
+      return charly_create_symbol(symbol);
     }
   }
 }
