@@ -40,7 +40,6 @@ public:
   AST::AbstractNode* visit_unless(AST::Unless* node, VisitContinue cont);
   AST::AbstractNode* visit_unlesselse(AST::UnlessElse* node, VisitContinue cont);
   AST::AbstractNode* visit_binary(AST::Binary* node, VisitContinue cont);
-  AST::AbstractNode* visit_unary(AST::Unary* node, VisitContinue cont);
   AST::AbstractNode* visit_function(AST::Function* node, VisitContinue cont);
   AST::AbstractNode* visit_class(AST::Class* node, VisitContinue cont);
   AST::AbstractNode* visit_localinitialisation(AST::LocalInitialisation* node, VisitContinue cont);

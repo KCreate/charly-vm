@@ -314,7 +314,13 @@ static std::unordered_map<TokenType, TokenType> kTokenAndAssignmentOperators = {
 struct Token {
   TokenType type;
   std::string value;
-  double numeric_value;
+
+  union {
+    double float_num;
+    uint64_t int_num;
+  };
+
+  bool is_float_num = false;
 
   Location location;
 
@@ -358,7 +364,11 @@ struct Token {
     stream << kTokenTypeStrings[this->type] << " : ";
 
     if (this->type == TokenType::Number) {
-      stream << this->numeric_value;
+      if (this->is_float_num) {
+        stream << this->float_num;
+      } else {
+        stream << this->int_num;
+      }
     } else {
       stream << this->value;
     }

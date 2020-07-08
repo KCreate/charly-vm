@@ -1401,7 +1401,12 @@ AST::AbstractNode* Parser::parse_literal() {
       return exp;
     }
     case TokenType::Number: {
-      AST::AbstractNode* val = new AST::Number(this->token.numeric_value);
+      AST::AbstractNode* val;
+      if (this->token.is_float_num) {
+        val = new AST::FloatNum(this->token.float_num);
+      } else {
+        val = new AST::IntNum(this->token.int_num);
+      }
       val->at(this->token.location);
       this->advance();
       return val;

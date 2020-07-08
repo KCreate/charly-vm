@@ -31,6 +31,7 @@
 #include <random>
 #include "math.h"
 #include "vm.h"
+#include "array.h"
 #include "managedcontext.h"
 
 namespace Charly {

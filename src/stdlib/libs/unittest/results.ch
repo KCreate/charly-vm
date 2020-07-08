@@ -29,13 +29,8 @@ export = class ResultPrinter {
         print("Assertion #" + (fnode.index + 1))
 
         // Check if the types match
-        if typeof fnode.expected == typeof fnode.real {
-          print("Expected value: " + fnode.expected.to_s())
-          print("Actual value:   " + fnode.real.to_s())
-        } else {
-          print("Expected type: " + typeof fnode.expected)
-          print("Actual type:   " + typeof fnode.real)
-        }
+        print("Expected value: " + fnode.expected.to_s())
+        print("Actual value:   " + fnode.real.to_s())
         write("\n")
 
         index += 1

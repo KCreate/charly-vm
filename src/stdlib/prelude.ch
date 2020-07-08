@@ -70,6 +70,7 @@ __charly_internal_import = ->(path, source, ignore_cache = false) {
   // Search for the path in the list of standard libraries
   let is_stdlib = false
   let i = 0
+
   while (i < __internal_standard_libs_names.length) {
     const value = __internal_standard_libs_names[i]
     if (value == path) {

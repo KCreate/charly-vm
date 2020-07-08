@@ -402,16 +402,16 @@ private:
   std::vector<VALUE> pretty_print_stack;
 
   // References to the primitive classes of the VM
-  VALUE primitive_value = kNull;
-  VALUE primitive_object = kNull;
-  VALUE primitive_class = kNull;
-  VALUE primitive_array = kNull;
-  VALUE primitive_string = kNull;
-  VALUE primitive_number = kNull;
-  VALUE primitive_function = kNull;
+  VALUE primitive_array     = kNull;
+  VALUE primitive_boolean   = kNull;
+  VALUE primitive_class     = kNull;
+  VALUE primitive_function  = kNull;
   VALUE primitive_generator = kNull;
-  VALUE primitive_boolean = kNull;
-  VALUE primitive_null = kNull;
+  VALUE primitive_null      = kNull;
+  VALUE primitive_number    = kNull;
+  VALUE primitive_object    = kNull;
+  VALUE primitive_string    = kNull;
+  VALUE primitive_value     = kNull;
 
   // A function which handles uncaught exceptions
   VALUE uncaught_exception_handler = kNull;

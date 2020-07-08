@@ -42,6 +42,7 @@ void Lexer::reset_token() {
   this->token.value = "";
   this->token.location =
       Location(this->source.pos - 1, this->source.row, this->source.column, 0, this->source.filename);
+  this->token.is_float_num = false;
 }
 
 void Lexer::read_token() {
@@ -515,11 +516,19 @@ void Lexer::consume_decimal() {
     }
   }
 
-  double num = 0;
-  decoder >> num;
+  // Check if we parsed a float
+  if (point_passed) {
+    double num = 0;
+    decoder >> num;
+    this->token.float_num = num;
+    this->token.is_float_num = true;
+  } else {
+    int64_t num = 0;
+    decoder >> num;
+    this->token.int_num = num;
+  }
 
   this->token.type = TokenType::Number;
-  this->token.numeric_value = num;
 }
 
 void Lexer::consume_hex() {
@@ -547,7 +556,7 @@ void Lexer::consume_hex() {
   uint64_t num = 0;
   decoder >> num;
 
-  this->token.numeric_value = num;
+  this->token.int_num = num;
 }
 
 void Lexer::consume_octal() {
@@ -573,10 +582,10 @@ void Lexer::consume_octal() {
     }
   }
 
-  double num = 0;
+  uint64_t num = 0;
   decoder >> num;
 
-  this->token.numeric_value = num;
+  this->token.int_num = num;
 }
 
 void Lexer::consume_string() {

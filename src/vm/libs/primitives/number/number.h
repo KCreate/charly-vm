@@ -24,4 +24,19 @@
  * SOFTWARE.
  */
 
-print("hello world")
+#include "defines.h"
+#include "internals.h"
+
+#pragma once
+
+namespace Charly {
+namespace Internals {
+namespace PrimitiveNumber {
+
+VALUE to_float(VM& vm, VALUE number);
+VALUE to_int(VM& vm, VALUE number);
+VALUE is_float(VM& vm, VALUE number);
+
+}  // namespace PrimitiveNumber
+}  // namespace Internals
+}  // namespace Charly

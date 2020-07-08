@@ -89,7 +89,8 @@ private:
   AST::AbstractNode* visit_null(AST::Null* node, VisitContinue cont);
   AST::AbstractNode* visit_nan(AST::Nan* node, VisitContinue cont);
   AST::AbstractNode* visit_string(AST::String* node, VisitContinue cont);
-  AST::AbstractNode* visit_number(AST::Number* node, VisitContinue cont);
+  AST::AbstractNode* visit_floatnum(AST::FloatNum* node, VisitContinue cont);
+  AST::AbstractNode* visit_intnum(AST::IntNum* node, VisitContinue cont);
   AST::AbstractNode* visit_boolean(AST::Boolean* node, VisitContinue cont);
   AST::AbstractNode* visit_array(AST::Array* node, VisitContinue cont);
   AST::AbstractNode* visit_hash(AST::Hash* node, VisitContinue cont);

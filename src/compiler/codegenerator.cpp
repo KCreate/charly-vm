@@ -640,7 +640,12 @@ AST::AbstractNode* CodeGenerator::visit_string(AST::String* node, VisitContinue)
   return node;
 }
 
-AST::AbstractNode* CodeGenerator::visit_number(AST::Number* node, VisitContinue) {
+AST::AbstractNode* CodeGenerator::visit_floatnum(AST::FloatNum* node, VisitContinue) {
+  this->assembler.write_putvalue(charly_create_number(node->value));
+  return node;
+}
+
+AST::AbstractNode* CodeGenerator::visit_intnum(AST::IntNum* node, VisitContinue) {
   this->assembler.write_putvalue(charly_create_number(node->value));
   return node;
 }

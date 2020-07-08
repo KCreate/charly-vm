@@ -24,4 +24,28 @@
  * SOFTWARE.
  */
 
-print("hello world")
+#include "number.h"
+#include "vm.h"
+
+namespace Charly {
+namespace Internals {
+namespace PrimitiveNumber {
+
+VALUE to_float(VM& vm, VALUE value) {
+  CHECK(number, value);
+  return charly_create_double(charly_number_to_double(value));
+}
+
+VALUE to_int(VM& vm, VALUE value) {
+  CHECK(number, value);
+  return charly_create_integer(charly_number_to_int64(value));
+}
+
+VALUE is_float(VM& vm, VALUE value) {
+  CHECK(number, value);
+  return charly_is_float(value) ? kTrue : kFalse;
+}
+
+}  // namespace PrimitiveNumber
+}  // namespace Internals
+}  // namespace Charly

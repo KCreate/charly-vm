@@ -201,15 +201,6 @@ AST::AbstractNode* Normalizer::visit_binary(AST::Binary* node, VisitContinue con
         return cat_array;
       }
 
-      if (node->left->type() == AST::kTypeNumber && node->right->type() == AST::kTypeNumber) {
-        double left = node->left->as<AST::Number>()->value;
-        double right = node->right->as<AST::Number>()->value;
-        AST::Number* result = new AST::Number(left + right);
-        result->at(node);
-        delete node;
-        return result;
-      }
-
       if (node->left->type() == AST::kTypeString && node->right->type() == AST::kTypeString) {
         AST::String* cat_string = node->left->as<AST::String>();
         cat_string->at(node);
@@ -223,30 +214,9 @@ AST::AbstractNode* Normalizer::visit_binary(AST::Binary* node, VisitContinue con
 
       break;
     }
-    case TokenType::Minus: {
-      if (node->left->type() == AST::kTypeNumber && node->right->type() == AST::kTypeNumber) {
-        double left = node->left->as<AST::Number>()->value;
-        double right = node->right->as<AST::Number>()->value;
-        AST::Number* result = new AST::Number(left - right);
-        result->at(node);
-        delete node;
-        return result;
-      }
-
-      break;
-    }
     case TokenType::Mul: {
-      if (node->left->type() == AST::kTypeNumber && node->right->type() == AST::kTypeNumber) {
-        double left = node->left->as<AST::Number>()->value;
-        double right = node->right->as<AST::Number>()->value;
-        AST::Number* result = new AST::Number(left * right);
-        result->at(node);
-        delete node;
-        return result;
-      }
-
-      if ((node->left->type() == AST::kTypeString && node->right->type() == AST::kTypeNumber) ||
-          (node->left->type() == AST::kTypeNumber && node->right->type() == AST::kTypeString)) {
+      if ((node->left->type() == AST::kTypeString && node->right->type() == AST::kTypeIntNum) ||
+          (node->left->type() == AST::kTypeIntNum && node->right->type() == AST::kTypeString)) {
         AST::String* new_string;
         std::string source_string;
         int64_t num;
@@ -254,11 +224,11 @@ AST::AbstractNode* Normalizer::visit_binary(AST::Binary* node, VisitContinue con
         if (node->left->type() == AST::kTypeString) {
           new_string = node->left->as<AST::String>();
           new_string->at(node);
-          num = node->right->as<AST::Number>()->value;
+          num = node->right->as<AST::IntNum>()->value;
         } else {
           new_string = node->right->as<AST::String>();
           new_string->at(node);
-          num = node->left->as<AST::Number>()->value;
+          num = node->left->as<AST::IntNum>()->value;
         }
         source_string = new_string->value;
 
@@ -282,74 +252,8 @@ AST::AbstractNode* Normalizer::visit_binary(AST::Binary* node, VisitContinue con
 
       break;
     }
-    case TokenType::Div: {
-      if (node->left->type() == AST::kTypeNumber && node->right->type() == AST::kTypeNumber) {
-        double left = node->left->as<AST::Number>()->value;
-        double right = node->right->as<AST::Number>()->value;
-        AST::Number* result = new AST::Number(left / right);
-        result->at(node);
-        delete node;
-        return result;
-      }
-
-      break;
-    }
-    case TokenType::Mod: {
-      if (node->left->type() == AST::kTypeNumber && node->right->type() == AST::kTypeNumber) {
-        int64_t left = node->left->as<AST::Number>()->value;
-        int64_t right = node->right->as<AST::Number>()->value;
-
-        // Division by 0 would cause a SIGFPE
-        if (right == 0) return node;
-
-        AST::Number* result = new AST::Number(left % right);
-        result->at(node);
-        delete node;
-        return result;
-      }
-
-      break;
-    }
-    case TokenType::Pow: {
-      if (node->left->type() == AST::kTypeNumber && node->right->type() == AST::kTypeNumber) {
-        double left = node->left->as<AST::Number>()->value;
-        double right = node->right->as<AST::Number>()->value;
-        AST::Number* result = new AST::Number(pow(left, right));
-        result->at(node);
-        delete node;
-        return result;
-      }
-
-      break;
-    }
     default: {
-      // Do nothing
-    }
-  }
-
-  return node;
-}
-
-AST::AbstractNode* Normalizer::visit_unary(AST::Unary* node, VisitContinue cont) {
-  cont();
-
-  if (node->expression->type() == AST::kTypeNumber) {
-    switch (node->operator_type) {
-      case TokenType::UMinus: {
-        double num = node->expression->as<AST::Number>()->value;
-        AST::Number* num_node = new AST::Number(-num);
-        num_node->at(node);
-        delete node;
-        return num_node;
-      }
-      case TokenType::BitNOT: {
-        int64_t num = node->expression->as<AST::Number>()->value;
-        AST::Number* num_node = new AST::Number(~num);
-        num_node->at(node);
-        delete node;
-        return num_node;
-      }
-      default: { return node; }
+      // do nothing
     }
   }
 
@@ -414,7 +318,7 @@ AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue
       assignment->yielded_value_needed = false;
 
       AST::Member* arguments_length = new AST::Member(new AST::Identifier("arguments"), "length");
-      AST::Binary* comparison = new AST::Binary(TokenType::LessEqual, arguments_length, new AST::Number(i));
+      AST::Binary* comparison = new AST::Binary(TokenType::LessEqual, arguments_length, new AST::IntNum(i));
       AST::Block* block = new AST::Block({ new AST::Assignment(argname, exp) });
       AST::If* cond_assignment = new AST::If(comparison, block);
       cond_assignment->at_recursive(node);

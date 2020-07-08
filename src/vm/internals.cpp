@@ -39,11 +39,12 @@
 #include "libs/defer/defer.h"
 #include "libs/math/math.h"
 #include "libs/time/time.h"
-#include "libs/primitives/value/value.h"
 #include "libs/primitives/array/array.h"
 #include "libs/primitives/function/function.h"
+#include "libs/primitives/number/number.h"
 #include "libs/primitives/object/object.h"
 #include "libs/primitives/string/string.h"
+#include "libs/primitives/value/value.h"
 
 #define DEFINE_INTERNAL_METHOD(N, S, C)                   \
   {                                                       \
@@ -59,6 +60,7 @@ std::unordered_map<VALUE, MethodSignature> Index::methods = {
     // Primitives
 #import "libs/primitives/array/array.def"
 #import "libs/primitives/function/function.def"
+#import "libs/primitives/number/number.def"
 #import "libs/primitives/object/object.def"
 #import "libs/primitives/string/string.def"
 #import "libs/primitives/value/value.def"

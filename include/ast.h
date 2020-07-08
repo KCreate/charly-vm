@@ -34,6 +34,7 @@
 #include <set>
 #include <queue>
 
+#include "symboltable.h"
 #include "lvar-location.h"
 #include "location.h"
 #include "token.h"
@@ -1249,17 +1250,27 @@ struct String : public AbstractNode {
 };
 
 // <value>
-//
-// TODO: Have two separate nodes for double and integer numbers as doubles can't store integers precisely
-// which are bigger than 2^24
-struct Number : public AbstractNode {
-  double value;
+struct IntNum : public AbstractNode {
+  int64_t value;
 
-  Number(double v) : value(v) {
+  IntNum(int64_t v) : value(v) {
   }
 
   inline void dump(std::ostream& stream, size_t depth = 0) {
-    stream << std::string(depth, ' ') << "- Number:";
+    stream << std::string(depth, ' ') << "- IntNum:";
+    stream << ' ' << this->value << '\n';
+  }
+};
+
+// <value>
+struct FloatNum : public AbstractNode {
+  double value;
+
+  FloatNum(double v) : value(v) {
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- FloatNum:";
     stream << ' ' << this->value << '\n';
   }
 };
@@ -1866,7 +1877,8 @@ const size_t kTypeNan                 = typeid(Nan).hash_code();
 const size_t kTypeNew                 = typeid(New).hash_code();
 const size_t kTypeNodeList            = typeid(NodeList).hash_code();
 const size_t kTypeNull                = typeid(Null).hash_code();
-const size_t kTypeNumber              = typeid(Number).hash_code();
+const size_t kTypeFloatNum            = typeid(FloatNum).hash_code();
+const size_t kTypeIntNum              = typeid(IntNum).hash_code();
 const size_t kTypeOr                  = typeid(Or).hash_code();
 const size_t kTypePropertyDeclaration = typeid(PropertyDeclaration).hash_code();
 const size_t kTypePushStack           = typeid(PushStack).hash_code();
@@ -1908,9 +1920,9 @@ inline bool terminates_block(AbstractNode* node) {
 
 // Checks wether a given node is a literal that can be safely removed from a block
 inline bool is_literal(AbstractNode* node) {
-  return (node->type() == kTypeIdentifier || node->type() == kTypeSelf ||
-          node->type() == kTypeNull || node->type() == kTypeNan || node->type() == kTypeString ||
-          node->type() == kTypeNumber || node->type() == kTypeBoolean || node->type() == kTypeFunction);
+  return (node->type() == kTypeIdentifier || node->type() == kTypeSelf || node->type() == kTypeNull ||
+          node->type() == kTypeNan || node->type() == kTypeString || node->type() == kTypeFloatNum ||
+          node->type() == kTypeIntNum || node->type() == kTypeBoolean || node->type() == kTypeFunction);
 }
 
 // Checks wether a given node yields a value
@@ -1926,10 +1938,10 @@ inline bool yields_value(AbstractNode* node) {
           node->type() == kTypeCallIndex || node->type() == kTypeStackValue || node->type() == kTypeIdentifier ||
           node->type() == kTypeSelf || node->type() == kTypeMember || node->type() == kTypeYield ||
           node->type() == kTypeIndex || node->type() == kTypeNull || node->type() == kTypeNan ||
-          node->type() == kTypeString || node->type() == kTypeNumber || node->type() == kTypeBoolean ||
-          node->type() == kTypeArray || node->type() == kTypeHash || node->type() == kTypeFunction ||
-          node->type() == kTypeClass || node->type() == kTypeImport || node->type() == kTypeSuper ||
-          node->type() == kTypeSuperMember);
+          node->type() == kTypeString || node->type() == kTypeFloatNum || node->type() == kTypeIntNum ||
+          node->type() == kTypeBoolean || node->type() == kTypeArray || node->type() == kTypeHash ||
+          node->type() == kTypeFunction || node->type() == kTypeClass || node->type() == kTypeImport ||
+          node->type() == kTypeSuper || node->type() == kTypeSuperMember);
 }
 
 // Checks wether a given node is an assignment

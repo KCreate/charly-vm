@@ -96,4 +96,30 @@ export = ->(describe, it, assert) {
     assert(a, 8)
   })
 
+  it("casts numbers to floats", ->{
+    const input = [
+      25, 100, -200, 0, 1, 2, 3,
+      25.0, 100.0, -200.0, 0.0, 1.0, 2.0, 3.0
+    ]
+
+    input.each(->(n, i) {
+      assert(n.to_float().is_float())
+    })
+  })
+
+  it("casts numbers to integers", ->{
+    const input = [
+      25.25, 3.333, 2.1, 9.999, 0.0, -1.0, -100.25, 5.888
+    ]
+
+    const output = [
+      25, 3, 2, 9, 0, -1, -100, 5
+    ]
+
+    input.each(->(n, i) {
+      assert(n.to_int().is_int())
+      assert(n.to_int(), output[i])
+    })
+  })
+
 }
