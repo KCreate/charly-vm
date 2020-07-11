@@ -92,7 +92,7 @@ public:
   };
 
 public:
-  Disassembler(InstructionBlock* b, Flags f, CompilerContext* cc = nullptr) : block(b), flags(f), compiler_context(cc) {
+  Disassembler(InstructionBlock* b, Flags f) : block(b), flags(f) {
     if (!f.no_branches) {
       this->detect_branches();
     }
@@ -117,15 +117,13 @@ private:
   }
 
   inline void print_symbol(VALUE value, std::ostream& stream) {
-    if (this->compiler_context != nullptr) {
-      std::optional<std::string> decoded_str = SymbolTable::decode(value);
-      if (decoded_str.has_value()) {
-        stream << "@\"" << decoded_str.value() << "\"";
-        return;
-      }
-    }
+    std::optional<std::string> decoded_str = SymbolTable::decode(value);
 
-    this->print_hex(value, stream);
+    if (decoded_str.has_value()) {
+      stream << "@\"" << decoded_str.value() << "\"";
+    } else {
+      this->print_hex(value, stream);
+    }
   }
 
 
@@ -169,7 +167,6 @@ private:
   std::vector<Branch> branches;
   uint32_t highest_branch_density = 0;
   Flags flags;
-  CompilerContext* compiler_context;
 };
 
 template <>

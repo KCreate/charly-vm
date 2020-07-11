@@ -63,7 +63,7 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree) {
 
   try {
     // Clean up the code a little bit and add or remove some nodes
-    Normalizer normalizer(this->context, this->config, result);
+    Normalizer normalizer(this->config, result);
     result.abstract_syntax_tree = normalizer.visit_node(result.abstract_syntax_tree);
 
     if (result.has_errors) {
@@ -71,7 +71,7 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree) {
     }
 
     // Calculate all offsets of all variables, assignments and declarations
-    LVarRewriter lvar_rewriter(this->context, this->config, result);
+    LVarRewriter lvar_rewriter(this->config, result);
     lvar_rewriter.push_local_scope();
     result.abstract_syntax_tree = lvar_rewriter.visit_node(result.abstract_syntax_tree);
 
@@ -81,7 +81,7 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree) {
 
     // Optionally skip code generation
     if (this->config.codegen) {
-      CodeGenerator codegenerator(this->context, this->config, result);
+      CodeGenerator codegenerator(this->config, result);
       InstructionBlock* compiled_block = codegenerator.compile(result.abstract_syntax_tree);
       result.instructionblock = compiled_block;
     }

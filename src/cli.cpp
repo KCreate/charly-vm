@@ -107,8 +107,7 @@ int CLI::run() {
     return 0;
   }
 
-  VMContext context({.stringpool = cmanager.stringpool,
-                     .compiler_manager = cmanager,
+  VMContext context({.compiler_manager = cmanager,
                      .instruction_profile = this->flags.instruction_profile,
                      .trace_opcodes = this->flags.trace_opcodes,
                      .trace_catchtables = this->flags.trace_catchtables,

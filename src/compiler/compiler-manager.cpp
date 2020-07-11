@@ -63,8 +63,7 @@ std::optional<CompilerResult> CompilerManager::compile(const std::string& filena
   }
 
   CompilerConfig cconfig = {.flags = this->flags};
-  CompilerContext ccontext(this->stringpool);
-  Compiler compiler(ccontext, cconfig);
+  Compiler compiler(cconfig);
   CompilerResult compiler_result = compiler.compile(parser_result->abstract_syntax_tree.value());
 
   if (this->flags.dump_ast) {
@@ -117,7 +116,7 @@ std::optional<CompilerResult> CompilerManager::compile(const std::string& filena
           Disassembler::Flags({.no_branches = this->flags.asm_no_branches,
                                .no_func_branches = this->flags.asm_no_func_branches,
                                .no_offsets = this->flags.asm_no_offsets});
-      Disassembler disassembler(compiler_result.instructionblock.value(), disassembler_flags, &ccontext);
+      Disassembler disassembler(compiler_result.instructionblock.value(), disassembler_flags);
       disassembler.dump(this->err_stream);
     }
   }

@@ -27,6 +27,8 @@
 #include <optional>
 #include <thread>
 #include <iostream>
+#include <mutex>
+#include <shared_mutex>
 
 #include "value.h"
 
@@ -45,7 +47,7 @@ public:
   inline static std::unordered_map<VALUE, std::string> global_symbol_table;
 
   // Synchronisation
-  inline static std::mutex global_symbol_table_mutex;
+  inline static std::shared_mutex global_symbol_table_mutex;
 
   /*
    * Create a symbol via an input string
@@ -55,11 +57,10 @@ public:
 
     // Register previously unseen symbols in the global table
     {
-      std::unique_lock<std::mutex> lk(global_symbol_table_mutex);
+      std::unique_lock<std::shared_mutex> lk(global_symbol_table_mutex);
       if (SymbolTable::global_symbol_table.count(symbol) == 0)
         SymbolTable::global_symbol_table.insert({symbol, input});
     }
-
 
     return symbol;
   }
@@ -121,7 +122,7 @@ public:
     std::optional<std::string> decoded_string;
 
     {
-      std::unique_lock<std::mutex> lk(global_symbol_table_mutex);
+      std::shared_lock<std::shared_mutex> lk(global_symbol_table_mutex);
       auto found_string = SymbolTable::global_symbol_table.find(symbol);
       if (found_string != SymbolTable::global_symbol_table.end()) {
         decoded_string = found_string->second;

@@ -35,9 +35,15 @@ namespace Charly {
 
 class MemoryBlock {
 friend class AddressMapping;
+friend class StringPool;
 
   static constexpr const size_t kInitialCapacity = 64;
   static constexpr const float kGrowthFactor = 2;
+
+protected:
+  uint8_t* data;
+  size_t capacity = kInitialCapacity;
+  size_t writeoffset = 0;
 
 public:
   MemoryBlock() {
@@ -193,10 +199,5 @@ public:
   inline size_t get_writeoffset() {
     return this->writeoffset;
   }
-
-protected:
-  uint8_t* data;
-  size_t capacity = kInitialCapacity;
-  size_t writeoffset = 0;
 };
 }  // namespace Charly

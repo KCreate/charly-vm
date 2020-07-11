@@ -78,7 +78,6 @@ public:
 };
 
 struct VMContext {
-  StringPool& stringpool;
   Compilation::CompilerManager& compiler_manager;
 
   bool instruction_profile = false;

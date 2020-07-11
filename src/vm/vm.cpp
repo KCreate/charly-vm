@@ -3107,7 +3107,7 @@ charly_main_switch_putstring : {
   // We assume the compiler generated valid offsets and lengths, so we don't do
   // any out-of-bounds checking here
   // TODO: Should we do out-of-bounds checking here?
-  char* str_start = reinterpret_cast<char*>(this->context.stringpool.get_data() + offset);
+  char* str_start = StringPool::get_char_ptr(offset);
   this->op_putstring(str_start, length);
 
   OPCODE_EPILOGUE();

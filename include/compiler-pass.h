@@ -38,7 +38,6 @@
 namespace Charly::Compilation {
 class CompilerPass : public TreeWalker {
 protected:
-  CompilerContext& context;
   CompilerConfig& config;
   CompilerResult& result;
 
@@ -62,8 +61,8 @@ protected:
   }
 
 public:
-  CompilerPass(CompilerContext& c, CompilerConfig& cfg, CompilerResult& r)
-      : TreeWalker(), context(c), config(cfg), result(r) {
+  CompilerPass(CompilerConfig& cfg, CompilerResult& r)
+      : TreeWalker(), config(cfg), result(r) {
   }
 };
 }  // namespace Charly::Compilation

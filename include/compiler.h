@@ -62,14 +62,6 @@ struct CompilerResult {
   bool has_errors = false;
 };
 
-// Context for multiple compilations
-struct CompilerContext {
-  StringPool& stringpool;
-
-  CompilerContext(StringPool& sp) : stringpool(sp) {
-  }
-};
-
 // Configuration passed to the compiler
 struct CompilerConfig {
 
@@ -86,13 +78,12 @@ struct CompilerConfig {
 
 class Compiler {
 public:
-  Compiler(CompilerContext& ctx, CompilerConfig& cfg) : context(ctx), config(cfg) {
+  Compiler(CompilerConfig& cfg) : config(cfg) {
   }
 
   CompilerResult compile(AST::AbstractNode* tree);
 
 private:
-  CompilerContext& context;
   CompilerConfig& config;
 };
 }  // namespace Charly::Compilation

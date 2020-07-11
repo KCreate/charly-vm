@@ -28,8 +28,11 @@
 #include <functional>
 #include <string>
 #include <unordered_map>
+#include <mutex>
+#include <shared_mutex>
 
 #include "memoryblock.h"
+#include "value.h"
 
 #pragma once
 
@@ -41,29 +44,52 @@ struct StringOffsetInfo {
   uint32_t length;
 };
 
-class StringPool : public MemoryBlock {
-  std::unordered_map<size_t, StringOffsetInfo> known_strings;
-
-  inline size_t hash_string(const std::string& str) {
-    return std::hash<std::string>{}(str);
-  }
+// Manages global string table
+class StringPool {
+  inline static MemoryBlock buffer;
+  inline static std::unordered_map<size_t, StringOffsetInfo> offset_map;
+  inline static std::shared_mutex buffer_mutex;
 
 public:
-  inline bool is_known(size_t strhash) {
-    return this->known_strings.count(strhash) > 0;
+
+  /*
+   * Returns a char* to the referenced string
+   * */
+  inline static char* get_char_ptr(uint32_t offset) {
+    return reinterpret_cast<char*>(StringPool::buffer.get_data() + offset);
   }
-  inline StringOffsetInfo get_offsetinfo(size_t strhash) {
-    return this->known_strings[strhash];
+
+  /*
+   * Returns the offset info for a given hash
+   * */
+  inline static StringOffsetInfo lookup_hash(size_t str_hash) {
+    std::shared_lock<std::shared_mutex> lk(StringPool::buffer_mutex);
+    return StringPool::offset_map[str_hash];
   }
-  inline StringOffsetInfo get_offsetinfo(const std::string& str) {
-    size_t str_hash = this->hash_string(str);
-    if (this->is_known(str_hash)) {
-      return this->get_offsetinfo(str_hash);
-    } else {
-      uint32_t start_offset = this->writeoffset;
-      this->write_string(str);
-      StringOffsetInfo info = {start_offset, static_cast<uint32_t>(str.size())};
-      this->known_strings.emplace(str_hash, info);
+
+  /*
+   * Store a string in the buffer and return its offset info
+   * Will return already existing reference if string has already
+   * been encoded
+   * */
+  inline static StringOffsetInfo encode_string(const std::string& str) {
+    size_t str_hash = std::hash<std::string>{}(str);
+
+    // Return already existing mapping
+    {
+      std::shared_lock<std::shared_mutex> lk(StringPool::buffer_mutex);
+      if (StringPool::offset_map.count(str_hash)) {
+        return StringPool::lookup_hash(str_hash);
+      }
+    }
+
+    // Store the symbol in the global buffer
+    {
+      std::unique_lock<std::shared_mutex> lk(StringPool::buffer_mutex);
+      uint32_t start_offset = StringPool::buffer.writeoffset;
+      StringPool::buffer.write_string(str);
+      StringOffsetInfo info({ start_offset, static_cast<uint32_t>(str.size()) });
+      StringPool::offset_map.emplace(str_hash, info);
       return info;
     }
   }

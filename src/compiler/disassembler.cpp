@@ -90,20 +90,13 @@ void Disassembler::dump(std::ostream& stream) {
         break;
       }
       case Opcode::PutString: {
-        // Print the string literal if we have a compiler context object
-        if (this->compiler_context != nullptr) {
-          uint32_t str_offset = this->block->read<uint32_t>(offset + 1);
-          uint32_t str_size = this->block->read<uint32_t>(offset + 1 + i32);
-          char* blk_ptr = reinterpret_cast<char*>(this->compiler_context->stringpool.get_data() + str_offset);
+        uint32_t str_offset = this->block->read<uint32_t>(offset + 1);
+        uint32_t str_size = this->block->read<uint32_t>(offset + 1 + i32);
+        char* blk_ptr = StringPool::get_char_ptr(str_offset);
 
-          stream << '"';
-          stream.write(blk_ptr, str_size);
-          stream << '"';
-        } else {
-          this->print_hex(this->block->read<uint32_t>(offset + 1), stream, 12);
-          stream << ", ";
-          this->print(this->block->read<uint32_t>(offset + 1 + i32), stream);
-        }
+        stream << '"';
+        stream.write(blk_ptr, str_size);
+        stream << '"';
 
         break;
       }

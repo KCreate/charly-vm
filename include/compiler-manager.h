@@ -87,7 +87,6 @@ private:
   std::ostream& err_stream = std::cerr;
 
 public:
-  StringPool stringpool;
   AddressMapping address_mapping;
 };
 }  // namespace Charly::Compilation
