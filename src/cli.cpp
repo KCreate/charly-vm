@@ -114,7 +114,6 @@ int CLI::run() {
                      .trace_frames = this->flags.trace_frames,
                      .trace_gc = this->flags.trace_gc,
                      .verbose_addresses = this->flags.verbose_addresses,
-                     .single_worker_thread = this->flags.single_worker_thread,
                      .argv = &this->flags.arguments,
                      .environment = &this->flags.environment});
   VM vm(context);

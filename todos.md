@@ -1,3 +1,48 @@
+- Async C functions
+  - Thread safety
+    - Which methods can be safely accessed, what needs to be changed?
+    - Do object accesses need to be synced via mutexes?
+    - Does every heap object require a mutex?
+  - Utility functions for C methods
+    - check if we're running inside the main thread
+
+- Refactor heap type accesses
+  - Types should define their own methods / functionality
+  - No external access to private member fields
+  - No performance penalty since such methods can be inlined
+
+- Promise class
+  - Main abstraction class for all asynchronous methods in the standard library
+  - Introduce await keyword to wait for a promise to finish
+
+- Path class
+  - Static methods
+    - Useful mappings for one-time usage of member methods
+    - current_path
+  - Member methods
+    - append(path)
+    - concat(path)
+    - clear
+    - remove_filename
+    - replace_filename(string)
+    - replace_extension(string)
+    - str
+    - normalize
+    - relative_to
+    - parent_path
+    - filename
+    - stem
+    - extension
+    - equivalent
+    - has_filename
+    - has_extension
+    - has_parent_path
+    - is_absolute
+    - is_relative
+
+- File system library
+  - C++17 native std::filesystem library
+
 - Bug with try catch statements
   - `break`, `continue` do not drop the active catchtable
   - `break`, `continue`, `return` do not respect the `finally` handler
@@ -59,10 +104,6 @@
   - This way we don't have to search through all the scheduled events to find the next one
     to execute
 
-- Promise class
-  - Main abstraction class for all asynchronous methods in the standard library
-  - Introduce await keyword to wait for a promise to finish
-
 - Class function overloading based on argument size
   - Looks like a single function from the outside
     - Dispatch to correct function inside compiler-generated method
@@ -107,6 +148,9 @@
     - https://www.reddit.com/r/ProgrammingLanguages/comments/932372/how_to_implement_string_interpolation/
 
 - Implement C signal handlers
+
+- Integer format methods
+  - Wrap the C++ number formatting API
 
 - Ability to freeze objects
   - Simple status bits on every object

@@ -181,8 +181,9 @@ void GarbageCollector::collect() {
     this->config.out_stream << "#-- GC: Pause --#" << '\n';
   }
 
-  // Mark all top level values from the vm
   if (this->host_vm->running) {
+
+    // Top level values
     this->mark(charly_create_pointer(this->host_vm->frames));
     this->mark(charly_create_pointer(this->host_vm->catchstack));
     this->mark(charly_create_pointer(this->host_vm->top_frame));
@@ -200,55 +201,39 @@ void GarbageCollector::collect() {
     this->mark(this->host_vm->primitive_boolean);
     this->mark(this->host_vm->primitive_null);
 
+    // Stack
     for (VALUE item : this->host_vm->stack) {
       this->mark(item);
     }
 
-    auto task_queue_copy = this->host_vm->task_queue;
-    while (task_queue_copy.size()) {
-      VMTask task = task_queue_copy.front();
-      task_queue_copy.pop();
-
-      if (!task.is_thread) {
-        this->mark(task.callback.fn);
-        this->mark(task.callback.argument);
-      }
-    }
-
+    // Task queue
     {
-      std::unique_lock<std::mutex> lk(this->host_vm->worker_task_queue_m);
-      auto task_queue_copy = this->host_vm->worker_task_queue;
+      std::lock_guard<std::mutex> lock(this->host_vm->task_queue_m);
+      auto task_queue_copy = this->host_vm->task_queue;
       while (task_queue_copy.size()) {
-        AsyncTask task = task_queue_copy.front();
-        for (VALUE item : task.arguments) {
-          this->mark(item);
-        }
-        this->mark(task.cb);
+        VMTask task = task_queue_copy.front();
         task_queue_copy.pop();
+
+        if (!task.is_thread) {
+          this->mark(task.callback.fn);
+          this->mark(task.callback.argument);
+        }
       }
     }
 
-    {
-      std::unique_lock<std::mutex> lk(this->host_vm->worker_result_queue_m);
-      auto result_queue_copy = this->host_vm->worker_result_queue;
-      while (result_queue_copy.size()) {
-        AsyncTaskResult result = result_queue_copy.front();
-        result_queue_copy.pop();
-        this->mark(result.cb);
-        this->mark(result.result);
-      }
-    }
-
+    // Timers
     for (auto& it : this->host_vm->timers) {
       this->mark(it.second.callback.fn);
       this->mark(it.second.callback.argument);
     }
 
+    // Intervals
     for (auto& it : this->host_vm->intervals) {
       this->mark(std::get<0>(it.second).callback.fn);
       this->mark(std::get<0>(it.second).callback.argument);
     }
 
+    // Paused threads
     for (auto& it : this->host_vm->paused_threads) {
       VMThread& thread = it.second;
       for (VALUE v : thread.stack) {
@@ -256,6 +241,18 @@ void GarbageCollector::collect() {
       }
       this->mark(charly_create_pointer(thread.frame));
       this->mark(charly_create_pointer(thread.catchstack));
+    }
+
+    // Worker threads
+    {
+      std::lock_guard<std::mutex> lock(this->host_vm->worker_threads_m);
+      for (auto& entry : this->host_vm->worker_threads) {
+        this->mark(entry.second->cfunc);
+        for (VALUE val : entry.second->arguments) {
+          this->mark(val);
+        }
+        this->mark(entry.second->callback);
+      }
     }
   }
 

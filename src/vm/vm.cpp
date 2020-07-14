@@ -1305,27 +1305,8 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
   // After the constructor call we check if the table changed
   CatchTable* original_catchtable = this->catchstack;
 
-  VALUE rv = kNull;
-
-  // TODO: Expand this to 15 arguments
-  switch (function->argc) {
-    case 0: rv = reinterpret_cast<VALUE (*)(VM&)>(function->pointer)(*this); break;
-    case 1: rv = reinterpret_cast<VALUE (*)(VM&, VALUE)>(function->pointer)(*this, argv[0]); break;
-    case 2: rv = reinterpret_cast<VALUE (*)(VM&, VALUE, VALUE)>(function->pointer)(*this, argv[0], argv[1]); break;
-    case 3:
-      rv = reinterpret_cast<VALUE (*)(VM&, VALUE, VALUE, VALUE)>(function->pointer)(*this, argv[0], argv[1], argv[2]);
-      break;
-    case 4:
-      rv = reinterpret_cast<VALUE (*)(VM&, VALUE, VALUE, VALUE, VALUE)>(function->pointer)(*this, argv[0], argv[1], argv[2], argv[3]);
-      break;
-    case 5:
-      rv = reinterpret_cast<VALUE (*)(VM&, VALUE, VALUE, VALUE, VALUE, VALUE)>(function->pointer)(*this, argv[0], argv[1], argv[2], argv[3], argv[4]);
-      break;
-    default: {
-      this->throw_exception("Too many arguments for CFunction call");
-      return;
-    }
-  }
+  // Invoke the C function
+  VALUE rv = charly_call_cfunction(this, function, argc, argv);
 
   this->gc.unmark_persistent(charly_create_pointer(function));
   for (uint i = 0; i < argc; i++) {
@@ -3590,8 +3571,6 @@ uint8_t VM::start_runtime() {
       }
     }
 
-    // TODO: Rewrite this logic, causes an infinite loop on period 0 intervals
-    //
     // Scheduling an interval with period 0 will have
     // it be inserted over and over
     if (this->intervals.size()) {
@@ -3611,25 +3590,13 @@ uint8_t VM::start_runtime() {
       this->intervals.insert(newly_scheduled_intervals.begin(), newly_scheduled_intervals.end());
     }
 
-    // Add all worker thread results to the task queue
-    {
-      std::unique_lock<std::mutex> lk(this->worker_result_queue_m);
-      while (this->worker_result_queue.size()) {
-        AsyncTaskResult result = this->worker_result_queue.front();
-        this->worker_result_queue.pop();
-        this->register_task(VMTask(result.cb, result.result));
-      }
-    }
+    // Check if there is a task to execute
+    VMTask task;
+    if (this->pop_task(&task)) {
 
-    // Execute a task from the task queue
-    if (this->task_queue.size()) {
-      ManagedContext lalloc(*this);
-
-      VMTask task = this->task_queue.front();
-      this->task_queue.pop();
-
+      // A VMTask can either call a function with an argument or resume the execution
+      // of a previously paused thread
       if (task.is_thread) {
-
         // Resume a suspended thread
         uint64_t thread_id = task.thread_id;
         if (this->paused_threads.count(thread_id) == 0) {
@@ -3651,7 +3618,6 @@ uint8_t VM::start_runtime() {
         this->push_stack(kNull);
         this->run();
       } else {
-
         // Make sure we got a function as callback
         if (!charly_is_function(task.callback.fn)) {
           this->panic(Status::RuntimeTaskNotCallable);
@@ -3674,10 +3640,10 @@ uint8_t VM::start_runtime() {
       }
     } else {
 
-      // Wait for the next result from the worker result queue
-      //
-      // We calculate the wait timeout based on the next timers and / or intervals
-      // This is so we don't stall the thread unneccesarily
+      // Since there are no tasks in the task queue, we can now simply wait until
+      // there is one. In order to not miss out on any timers or intervals, we
+      // calculate when the next timer/interval is going to fire and use this time
+      // as our maximum wait time.
       now = std::chrono::steady_clock::now();
       auto timer_wait = std::chrono::milliseconds(10 * 1000);
       auto interval_wait = std::chrono::milliseconds(10 * 1000);
@@ -3689,22 +3655,16 @@ uint8_t VM::start_runtime() {
         interval_wait = std::chrono::duration_cast<std::chrono::milliseconds>(this->intervals.begin()->first - now);
 
       // Wait for the result queue
-      std::unique_lock<std::mutex> lk(this->worker_result_queue_m);
-      this->worker_result_queue_cv.wait_for(lk, std::min(timer_wait, interval_wait));
+      std::unique_lock<std::mutex> lk(this->task_queue_m);
+      this->task_queue_cv.wait_for(lk, std::min(timer_wait, interval_wait));
     }
 
     // Check if we can exit the runtime
-    if (this->task_queue.size() == 0 && this->timers.size() == 0 && this->intervals.size() == 0 &&
-        this->worker_task_queue.size() == 0 && this->worker_result_queue.size() == 0) {
-
-      // Check if there is at least one worker thread executing a task
-      auto it_begin = this->worker_threads.begin();
-      auto it_end = this->worker_threads.end();
-      if (std::find_if(it_begin, it_end, [](WorkerThread* wt) {
-        return wt->currently_executing_task;
-        }) == it_end) {
-        this->running = false;
-      }
+    if (this->task_queue.size() == 0 &&
+        this->timers.size() == 0 &&
+        this->intervals.size() == 0 &&
+        this->worker_threads.size() == 0) {
+      this->running = false;
     }
   }
 
@@ -3725,40 +3685,34 @@ VALUE VM::exec_module(Function* fn) {
 }
 
 void VM::exit(uint8_t status_code) {
-
-  // Clear all timers and remaining tasks
-  // and interrupt currently running task
-  // Stop all the currently running worker threads
   this->timers.clear();
-  while (this->task_queue.size()) {
-    this->task_queue.pop();
-  }
-
-  {
-    std::unique_lock<std::mutex> lk(this->worker_task_queue_m);
-    while (this->worker_task_queue.size()) {
-      this->worker_task_queue.pop();
-    }
-  }
-
-  {
-    std::unique_lock<std::mutex> lk(this->worker_result_queue_m);
-    while (this->worker_result_queue.size()) {
-      this->worker_result_queue.pop();
-    }
-  }
+  this->clear_task_queue();
 
   this->halted = true;
   this->running = false;
 
-  // Join all worker threads
-  this->worker_threads_active = false;
-  this->worker_task_queue_cv.notify_all();
-  for (WorkerThread* t : this->worker_threads) {
-    if (t->th.joinable()) t->th.join();
-  }
-
   this->status_code = status_code;
+
+  // Join the remaining worker threads
+  {
+    std::lock_guard<std::mutex> lock(this->worker_threads_m);
+
+    if (this->worker_threads.size()) {
+      this->context.err_stream << "Waiting for worker threads to terminate" << std::endl;
+    }
+
+    while (this->worker_threads.size()) {
+      auto entry = this->worker_threads.begin();
+
+      // Join worker thread if it is still running
+      WorkerThread* thread = entry->second;
+      if (thread->thread.joinable())
+        thread->thread.join();
+
+      this->worker_threads.erase(entry->first);
+      delete thread;
+    }
+  }
 }
 
 uint64_t VM::get_thread_uid() {
@@ -3784,21 +3738,49 @@ void VM::resume_thread(uint64_t uid) {
   this->register_task(VMTask(uid));
 }
 
-VALUE VM::register_module(InstructionBlock* block) {
-  uint8_t* old_ip = this->ip;
-  this->ip = block->get_data();
-  this->run();
-  this->ip = old_ip;
-  return this->pop_stack();
-}
-
 void VM::register_task(VMTask task) {
+  std::unique_lock<std::mutex> lock(this->task_queue_m);
+
   if (!task.is_thread) {
     this->gc.mark_persistent(task.callback.fn);
     this->gc.mark_persistent(task.callback.argument);
   }
 
   this->task_queue.push(task);
+
+  lock.unlock();
+  this->task_queue_cv.notify_one();
+}
+
+bool VM::pop_task(VMTask* target) {
+  std::lock_guard<std::mutex> lock(this->task_queue_m);
+
+  if (this->task_queue.size() == 0) return false;
+
+  VMTask front = this->task_queue.front();
+  this->task_queue.pop();
+
+  if (target != nullptr) {
+    *target = front;
+  }
+
+  return true;
+}
+
+void VM::clear_task_queue() {
+  std::lock_guard<std::mutex> lock(this->task_queue_m);
+
+  while (this->task_queue.size()) {
+    this->task_queue.pop();
+  }
+}
+
+VALUE VM::register_module(InstructionBlock* block) {
+  uint8_t* old_ip = this->ip;
+  this->ip = block->get_data();
+  this->run();
+  this->ip = old_ip;
+  return this->pop_stack();
 }
 
 uint64_t VM::register_timer(Timestamp ts, VMTask task) {
@@ -3848,68 +3830,48 @@ void VM::clear_interval(uint64_t uid) {
   }
 }
 
-std::mutex db_mutex;
+void VM::register_worker_task(VALUE cfunc, VALUE args, VALUE callback) {
+  std::lock_guard<std::mutex> lock(this->worker_threads_m);
 
-void VM::worker_thread_handler(void* vm_handle, uint16_t tid) {
-  VM* vm = static_cast<VM*>(vm_handle);
-  WorkerThread* wt = vm->worker_threads[tid];
-
-  while (vm->worker_threads_active) {
-    AsyncTask task;
-
-    // If there are no tasks available right now, we wait
-    {
-      std::unique_lock<std::mutex> lk(vm->worker_task_queue_m);
-      while (vm->worker_task_queue.size() == 0) {
-        vm->worker_task_queue_cv.wait(lk);
-
-        if (!vm->worker_threads_active) {
-          return;
-        }
-      }
-
-      wt->currently_executing_task = true;
-      task = vm->worker_task_queue.front();
-
-      // Mark the task payload as persistent in the gc
-      vm->gc.mark_persistent(task.cb);
-      for (VALUE item : task.arguments) {
-        vm->gc.mark_persistent(item);
-      }
-      vm->worker_task_queue.pop();
-    }
-
-    // Simulate some cpu action
-    //
-    // We can't just sleep because that would pause the thread
-    std::random_device rd;  // Will be used to obtain a seed for the random number engine
-    std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
-    std::uniform_int_distribution<> dis(1, 3);
-    Timestamp work_till = std::chrono::steady_clock::now() + std::chrono::milliseconds(100 * dis(gen));
-    while (std::chrono::steady_clock::now() < work_till) {
-      continue;
-    }
-
-    // Push the result onto the vms result queue
-    {
-      std::unique_lock<std::mutex> lk(vm->worker_result_queue_m);
-      vm->worker_result_queue.push({task.cb, task.arguments[0]});
-      vm->worker_result_queue_cv.notify_one();
-      wt->currently_executing_task = false;
-
-      // Unmark the task payload as persistent in the gc
-      vm->gc.unmark_persistent(task.cb);
-      for (VALUE item : task.arguments) {
-        vm->gc.unmark_persistent(item);
-      }
-    }
+  // Argument count check
+  Array* args_array = charly_as_array(args);
+  if (args_array->data->size() < charly_as_cfunction(cfunc)->argc) {
+    this->throw_exception("Not enough arguments for CFunction call");
+    return;
   }
+
+  // Register metadata in table
+  uint64_t worker_thread_id = this->next_worker_thread_id++;
+  WorkerThread* worker_thread = new WorkerThread(worker_thread_id, cfunc, *args_array->data, callback);
+  this->worker_threads.insert({ worker_thread_id, worker_thread });
+
+  // Start worker thread
+  worker_thread->thread = std::thread([this, worker_thread]() {
+
+    // Sleep for some time to simulate some action
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    // Invoke c function
+    uint32_t argc = worker_thread->arguments.size();
+    VALUE* argv   = &worker_thread->arguments.at(0);
+    VALUE return_value = charly_call_cfunction(this, charly_as_cfunction(worker_thread->cfunc), argc, argv);
+
+    // Return our value to the VM
+    this->close_worker_task(worker_thread, return_value);
+  });
 }
 
-void VM::register_worker_task(AsyncTask task) {
-  std::unique_lock<std::mutex> lk(this->worker_task_queue_m);
-  this->worker_task_queue.push(task);
-  this->worker_task_queue_cv.notify_one();
+void VM::close_worker_task(WorkerThread* thread, VALUE return_value) {
+  if (this->running) {
+    this->register_task(VMTask(thread->callback, return_value));
+    std::lock_guard<std::mutex> lock(this->worker_threads_m);
+    this->worker_threads.erase(thread->id);
+    delete thread;
+  } else {
+    // If the VM is no longer running we simply do nothing here
+    // The VM main thread is currently in the exit function waiting
+    // for this thread to finish and will clean us up
+  }
 }
 
 }  // namespace Charly

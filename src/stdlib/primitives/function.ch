@@ -27,15 +27,39 @@
 const __internal_function_bind_self   = @"charly.primitive.function.bind_self"
 const __internal_function_unbind_self = @"charly.primitive.function.unbind_self"
 const __internal_function_call        = @"charly.primitive.function.call"
+const __internal_function_call_async  = @"charly.primitive.function.call_async"
+const __internal_function_is_cfunc    = @"charly.primitive.function.is_cfunc"
 __internal_function_call.push_return_value = false
 
 export = ->(Base) {
   return class Function extends Base {
 
-    // Calls *self* using ctx as the target object
-    // and the values inside args as the parameters
+    /*
+     * Calls *self* using ctx as the target object
+     * and the values inside args as the parameters
+     * */
     call(ctx, args = []) {
       __internal_function_call(self, ctx, args)
+    }
+
+    /*
+     * Call this function asynchronously
+     *
+     * if *self* is a charly function this will invoke it via defer
+     * if *self* is a c function this will start a worker thread
+     *
+     * TODO: Replace this code with a Promise implementation once implemented
+     * */
+    call_async(ctx, args = [], callback) {
+      if @is_charly_func() {
+        defer(->{
+          callback(self.call(ctx, args))
+        })
+      } else {
+        __internal_function_call_async(self, args, callback)
+      }
+
+      return null
     }
 
     /*
@@ -53,5 +77,11 @@ export = ->(Base) {
       __internal_function_unbind_self(self)
       self
     }
+
+    /*
+     * Checks wether this function is a C function
+     * */
+    is_c_func      = __internal_function_is_cfunc(self)
+    is_charly_func = !@is_c_func()
   }
 }

@@ -79,13 +79,13 @@ std::unordered_map<VALUE, MethodSignature> Index::methods = {
     DEFINE_INTERNAL_METHOD("charly.vm.getn",                 getn,                 0),
     DEFINE_INTERNAL_METHOD("charly.vm.dirname",              dirname,              0),
     DEFINE_INTERNAL_METHOD("charly.vm.exit",                 exit,                 1),
-    DEFINE_INTERNAL_METHOD("charly.vm.register_worker_task", register_worker_task, 2),
     DEFINE_INTERNAL_METHOD("charly.vm.get_argv",             get_argv,             0),
     DEFINE_INTERNAL_METHOD("charly.vm.get_environment",      get_environment,      0),
     DEFINE_INTERNAL_METHOD("charly.vm.get_active_frame",     get_active_frame,     0),
     DEFINE_INTERNAL_METHOD("charly.vm.get_parent_frame",     get_parent_frame,     1),
     DEFINE_INTERNAL_METHOD("charly.vm.get_block_address",    get_block_address,    1),
     DEFINE_INTERNAL_METHOD("charly.vm.resolve_address",      resolve_address,      1),
+    DEFINE_INTERNAL_METHOD("charly.vm.debug_func",           debug_func,           1),
 };
 
 // Standard charly libraries
@@ -307,14 +307,6 @@ VALUE exit(VM& vm, VALUE status_code) {
   return kNull;
 }
 
-VALUE register_worker_task(VM& vm, VALUE v, VALUE cb) {
-  CHECK(function, cb);
-  AsyncTask task = {AsyncTaskType::fs_access, {}, cb};
-  task.arguments.push_back(v);
-  vm.register_worker_task(task);
-  return kNull;
-}
-
 VALUE get_argv(VM& vm) {
 
   // Check for nullptr
@@ -430,6 +422,15 @@ VALUE resolve_address(VM& vm, VALUE address) {
   }
 
   return vm.create_string(lookup_result.value());
+}
+
+VALUE debug_func(VM& vm, VALUE testvalue) {
+  ManagedContext lalloc(vm);
+
+  Object* obj = charly_as_object(lalloc.create_object(1));
+  obj->container->insert({ SymbolTable::encode("input_value"), testvalue });
+
+  return charly_create_pointer(obj);
 }
 
 }  // namespace Internals

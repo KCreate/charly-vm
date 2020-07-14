@@ -36,16 +36,20 @@ const __internal_suspend_thread   = @"charly.vm.suspend_thread".tap(->$0.halt_af
  * Keeps track of paused threads
  * */
 class Notifier {
+  property alive
   property origin_thread_uid
   property pending_threads
 
   constructor {
+    @alive = true
     @origin_thread_uid = __internal_get_thread_uid()
     @pending_threads = []
   }
 
   // Suspend calling thread until notify is called
   wait {
+    unless @alive return null
+
     @pending_threads << __internal_get_thread_uid()
     __internal_suspend_thread()
 
@@ -54,8 +58,12 @@ class Notifier {
 
   // Notify paused threads that they may resume execution
   notify {
+    unless @alive return null
+
     @pending_threads.each(->__internal_resume_thread($0))
     @pending_threads.clear()
+
+    @alive = false
 
     null
   }
@@ -168,11 +176,12 @@ defer.wait     = ->(threads) {
   null
 }
 
-// Sleep for some time
 defer.sleep = ->(duration) {
   const task = defer(->null, duration)
   task.wait()
   null
 }
+
+defer.Notifier = Notifier
 
 export = defer

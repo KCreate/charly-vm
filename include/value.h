@@ -1274,6 +1274,23 @@ inline bool charly_truthyness(VALUE value) {
   return true;
 }
 
+__attribute__((always_inline))
+inline VALUE charly_call_cfunction(VM* vm_handle, CFunction* cfunc, uint32_t argc, VALUE* argv) {
+  if (argc < cfunc->argc) return kNull;
+
+  switch (cfunc->argc) {
+    case 0: return reinterpret_cast<VALUE (*)(VM&)>                                           (cfunc->pointer)(*vm_handle);
+    case 1: return reinterpret_cast<VALUE (*)(VM&, VALUE)>                                    (cfunc->pointer)(*vm_handle, argv[0]);
+    case 2: return reinterpret_cast<VALUE (*)(VM&, VALUE, VALUE)>                             (cfunc->pointer)(*vm_handle, argv[0], argv[1]);
+    case 3: return reinterpret_cast<VALUE (*)(VM&, VALUE, VALUE, VALUE)>                      (cfunc->pointer)(*vm_handle, argv[0], argv[1], argv[2]);
+    case 4: return reinterpret_cast<VALUE (*)(VM&, VALUE, VALUE, VALUE, VALUE)>               (cfunc->pointer)(*vm_handle, argv[0], argv[1], argv[2], argv[3]);
+    case 5: return reinterpret_cast<VALUE (*)(VM&, VALUE, VALUE, VALUE, VALUE, VALUE)>        (cfunc->pointer)(*vm_handle, argv[0], argv[1], argv[2], argv[3], argv[4]);
+    case 6: return reinterpret_cast<VALUE (*)(VM&, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> (cfunc->pointer)(*vm_handle, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
+  }
+
+  return kNull;
+}
+
 // Concatenate two strings into a packed encoded string
 //
 // Assumes the caller made sure both strings fit into exactly 6 bytes

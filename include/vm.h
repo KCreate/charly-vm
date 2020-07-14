@@ -46,8 +46,6 @@
 #include "parser.h"
 #include "sourcefile.h"
 
-#include "async_task.h"
-
 #pragma once
 
 namespace Charly {
@@ -86,7 +84,6 @@ struct VMContext {
   bool trace_frames = false;
   bool trace_gc = false;
   bool verbose_addresses = false;
-  bool single_worker_thread = false;
 
   std::vector<std::string>* argv;
   std::unordered_map<std::string, std::string>* environment;
@@ -110,6 +107,8 @@ struct VMTask {
     } callback;
   };
   bool is_thread;
+
+  VMTask() : VMTask(kNull, kNull) {}
 
   VMTask(uint64_t tid) : thread_id(tid), is_thread(true) {
   }
@@ -136,20 +135,29 @@ struct VMThread {
   }
 };
 
-/*
- * Represents the state of a single worker thread
- * */
+// Represents a worker thread started by the VM
 struct WorkerThread {
-  uint16_t tid;
-  bool currently_executing_task;
-  std::thread th;
+  uint64_t id;
+  VALUE cfunc;
+  std::vector<VALUE> arguments;
+  VALUE callback;
+  std::thread thread;
 
-  WorkerThread(std::function<void(void*, uint16_t)> fn, void* vm_handle, uint16_t _tid)
-      : tid(_tid), currently_executing_task(false), th(fn, vm_handle, _tid) {
+  WorkerThread(uint64_t _id, VALUE _cf, std::vector<VALUE>& _args, VALUE _cb, std::thread&& _th)
+      : id(_id), cfunc(_cf), arguments(_args), callback(_cb), thread(std::move(_th)) {
+  }
+
+  WorkerThread(uint64_t _id, VALUE _cf, std::vector<VALUE>& _args, VALUE _cb)
+      : id(_id), cfunc(_cf), arguments(_args), callback(_cb) {
   }
 
   ~WorkerThread() {
-    if (this->th.joinable()) this->th.join();
+    if (std::this_thread::get_id() == this->thread.get_id()) {
+      this->thread.detach();
+    } else {
+      if (this->thread.joinable())
+        this->thread.join();
+    }
   }
 };
 
@@ -167,29 +175,11 @@ public:
         catchstack(nullptr),
         ip(nullptr),
         halted(false) {
-
-    // Determine how many worker threads to spawn
-    uint16_t num_threads = std::max(std::thread::hardware_concurrency(), static_cast<uint32_t>(32));
-    if (ctx.single_worker_thread) num_threads = 1;
-
-    // Start all the worker threads
-    for (int i = 0; i < num_threads; i++) {
-      this->worker_threads.push_back(new WorkerThread(this->worker_thread_handler, this, i));
-    }
   }
   VM(const VM& other) = delete;
   VM(VM&& other) = delete;
   ~VM() {
-    this->exit(0);
     this->gc.do_collect();
-
-    // Deallocate worker threads
-    auto it = this->worker_threads.begin();
-    while (it != this->worker_threads.end()) {
-      WorkerThread* wt = *it;
-      delete wt;
-      this->worker_threads.erase(it);
-    }
   }
 
   // Methods that operate on the VM's frames
@@ -376,8 +366,19 @@ public:
   void suspend_thread();
   void resume_thread(uint64_t uid);
 
-  VALUE register_module(InstructionBlock* block);
+  // Registers a new task to be executed by the VM
   void register_task(VMTask task);
+
+  // Pop a task from the queue
+  //
+  // Stores the dequeued task inside &target
+  // Returns true if a task was popped
+  bool pop_task(VMTask* target);
+
+  // Clears the task queue
+  void clear_task_queue();
+
+  VALUE register_module(InstructionBlock* block);
   uint64_t register_timer(Timestamp, VMTask task);
   uint64_t register_interval(uint32_t, VMTask task);
 
@@ -386,9 +387,8 @@ public:
   void clear_timer(uint64_t uid);
   void clear_interval(uint64_t uid);
 
-  static void worker_thread_handler(void* vm_handle, uint16_t tid);
-
-  void register_worker_task(AsyncTask task);
+  void register_worker_task(VALUE cfunc, VALUE args, VALUE callback);
+  void close_worker_task(WorkerThread* thread, VALUE return_value);
 
   std::chrono::time_point<std::chrono::high_resolution_clock> starttime;
 private:
@@ -425,7 +425,9 @@ private:
   uint64_t next_thread_id = 0;
   std::map<uint64_t, VMThread> paused_threads;
   std::queue<VMTask> task_queue;
-  bool running;
+  std::mutex task_queue_m;
+  std::condition_variable task_queue_cv;
+  std::atomic<bool> running;
 
   // Remaining timers & intervals
   std::map<Timestamp, VMTask> timers;
@@ -434,18 +436,9 @@ private:
   uint64_t next_timer_id = 0;
 
   // Worker threads
-  bool worker_threads_active = true;
-  std::vector<WorkerThread*> worker_threads;
-
-  // Holds the remaining tasks
-  std::condition_variable worker_task_queue_cv;
-  std::mutex worker_task_queue_m;
-  std::queue<AsyncTask> worker_task_queue;
-
-  // Finished tasks which are ready to be handled by the vm
-  std::condition_variable worker_result_queue_cv;
-  std::mutex worker_result_queue_m;
-  std::queue<AsyncTaskResult> worker_result_queue;
+  uint64_t next_worker_thread_id = 0;
+  std::mutex worker_threads_m;
+  std::unordered_map<uint64_t, WorkerThread*> worker_threads;
 
   // The uid of the current thread of execution
   uint64_t uid;

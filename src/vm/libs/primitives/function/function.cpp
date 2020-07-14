@@ -32,6 +32,10 @@ namespace Charly {
 namespace Internals {
 namespace PrimitiveFunction {
 
+VALUE is_cfunc(VM&, VALUE func) {
+  return charly_is_cfunction(func) ? kTrue : kFalse;
+}
+
 VALUE call(VM& vm, VALUE func, VALUE ctx, VALUE args) {
   CHECK(callable, func);
   CHECK(array, args);
@@ -44,6 +48,16 @@ VALUE call(VM& vm, VALUE func, VALUE ctx, VALUE args) {
   }
 
   vm.call(charly_as_array(args)->data->size(), true, false);
+
+  return kNull;
+}
+
+VALUE call_async(VM& vm, VALUE cfunc, VALUE args, VALUE callback) {
+  CHECK(cfunction, cfunc);
+  CHECK(array, args);
+  CHECK(function, callback);
+
+  vm.register_worker_task(cfunc, args, callback);
 
   return kNull;
 }
