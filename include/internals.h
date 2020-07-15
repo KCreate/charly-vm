@@ -39,6 +39,7 @@ struct MethodSignature {
   std::string name;
   size_t argc;
   void* func_pointer;
+  uint8_t thread_policy;
 };
 
 // Stores runtime lookup tables for internals
@@ -51,14 +52,6 @@ struct Index {
   {                                                             \
     if (!charly_is_##T(V)) {                                    \
       vm.throw_exception("Expected argument " #V " to be " #T); \
-      return kNull;                                             \
-    }                                                           \
-  }
-
-#define WARN_TYPE(T, V)                                             \
-  {                                                             \
-    if (!charly_is_##T(V)) {                                    \
-      vm.context.out_stream << "Expected argument " #V " to be " #T; \
       return kNull;                                             \
     }                                                           \
   }
@@ -76,8 +69,6 @@ VALUE get_active_frame(VM& vm);
 VALUE get_parent_frame(VM& vm, VALUE frame_ref);
 VALUE get_block_address(VM& vm, VALUE func);
 VALUE resolve_address(VM& vm, VALUE address);
-
-VALUE debug_func(VM& vm, VALUE testvalue);
 
 }  // namespace Internals
 }  // namespace Charly

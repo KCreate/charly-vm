@@ -352,13 +352,14 @@ VALUE VM::create_function(VALUE name,
   return cell->as_value();
 }
 
-VALUE VM::create_cfunction(VALUE name, uint32_t argc, void* pointer) {
+VALUE VM::create_cfunction(VALUE name, uint32_t argc, void* pointer, uint8_t thread_policy) {
   MemoryCell* cell = this->gc.allocate();
   cell->basic.type = kTypeCFunction;
   cell->cfunction.name = name;
   cell->cfunction.pointer = pointer;
   cell->cfunction.argc = argc;
   cell->cfunction.container = new std::unordered_map<VALUE, VALUE>();
+  cell->cfunction.thread_policy = thread_policy;
   cell->cfunction.push_return_value = true;
   cell->cfunction.halt_after_return = false;
   return cell->as_value();
@@ -504,7 +505,12 @@ VALUE VM::copy_function(VALUE function) {
 
 VALUE VM::copy_cfunction(VALUE function) {
   CFunction* source = charly_as_cfunction(function);
-  CFunction* target = charly_as_cfunction(this->create_cfunction(source->name, source->argc, source->pointer));
+  CFunction* target = charly_as_cfunction(this->create_cfunction(
+    source->name,
+    source->argc,
+    source->pointer,
+    source->thread_policy
+  ));
   *(target->container) = *(source->container);
 
   return charly_create_pointer(target);
@@ -1289,6 +1295,11 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
 }
 
 void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
+  if (!function->allowed_on_main_thread()) {
+    this->throw_exception("Calling this CFunction in the main thread is prohibited");
+    return;
+  }
+
   // Check if enough arguments have been passed
   if (argc < function->argc) {
     this->throw_exception("Not enough arguments for CFunction call");
@@ -1451,7 +1462,7 @@ void VM::op_readglobal(VALUE symbol) {
   // Check internal methods table
   if (Internals::Index::methods.count(symbol)) {
     Internals::MethodSignature& sig = Internals::Index::methods.at(symbol);
-    VALUE cfunc = this->create_cfunction(symbol, sig.argc, sig.func_pointer);
+    VALUE cfunc = this->create_cfunction(symbol, sig.argc, sig.func_pointer, sig.thread_policy);
     this->push_stack(cfunc);
     return;
   }
@@ -1748,11 +1759,6 @@ void VM::op_putfunction(VALUE symbol,
                         uint32_t minimum_argc,
                         uint32_t lvarcount) {
   VALUE function = this->create_function(symbol, body_address, argc, minimum_argc, lvarcount, anonymous, needs_arguments);
-  this->push_stack(function);
-}
-
-void VM::op_putcfunction(VALUE symbol, void* pointer, uint32_t argc) {
-  VALUE function = this->create_cfunction(symbol, argc, pointer);
   this->push_stack(function);
 }
 
@@ -2867,7 +2873,6 @@ void VM::run() {
                                           &&charly_main_switch_putvalue,
                                           &&charly_main_switch_putstring,
                                           &&charly_main_switch_putfunction,
-                                          &&charly_main_switch_putcfunction,
                                           &&charly_main_switch_putgenerator,
                                           &&charly_main_switch_putarray,
                                           &&charly_main_switch_puthash,
@@ -3110,16 +3115,6 @@ charly_main_switch_putfunction : {
                                                     sizeof(bool) + sizeof(bool) + sizeof(uint32_t) + sizeof(uint32_t));
 
   this->op_putfunction(symbol, this->ip + body_offset, anonymous, needs_arguments, argc, minimum_argc, lvarcount);
-  OPCODE_EPILOGUE();
-  NEXTOP();
-}
-
-charly_main_switch_putcfunction : {
-  OPCODE_PROLOGUE();
-  VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
-  void* pointer = this->ip + sizeof(Opcode) + sizeof(VALUE);
-  uint32_t argc = *reinterpret_cast<uint32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE) + sizeof(void*));
-  this->op_putcfunction(symbol, pointer, argc);
   OPCODE_EPILOGUE();
   NEXTOP();
 }
@@ -3830,48 +3825,47 @@ void VM::clear_interval(uint64_t uid) {
   }
 }
 
-void VM::register_worker_task(VALUE cfunc, VALUE args, VALUE callback) {
+WorkerThread* VM::start_worker_thread(CFunction* cfunc, const std::vector<VALUE>& args, Function* callback) {
   std::lock_guard<std::mutex> lock(this->worker_threads_m);
-
-  // Argument count check
-  Array* args_array = charly_as_array(args);
-  if (args_array->data->size() < charly_as_cfunction(cfunc)->argc) {
-    this->throw_exception("Not enough arguments for CFunction call");
-    return;
-  }
 
   // Register metadata in table
   uint64_t worker_thread_id = this->next_worker_thread_id++;
-  WorkerThread* worker_thread = new WorkerThread(worker_thread_id, cfunc, *args_array->data, callback);
+  WorkerThread* worker_thread = new WorkerThread(worker_thread_id, cfunc, args, callback);
   this->worker_threads.insert({ worker_thread_id, worker_thread });
 
-  // Start worker thread
   worker_thread->thread = std::thread([this, worker_thread]() {
-
-    // Sleep for some time to simulate some action
-    std::this_thread::sleep_for(std::chrono::seconds(1));
 
     // Invoke c function
     uint32_t argc = worker_thread->arguments.size();
     VALUE* argv   = &worker_thread->arguments.at(0);
-    VALUE return_value = charly_call_cfunction(this, charly_as_cfunction(worker_thread->cfunc), argc, argv);
+    VALUE return_value = charly_call_cfunction(this, worker_thread->cfunc, argc, argv);
 
     // Return our value to the VM
-    this->close_worker_task(worker_thread, return_value);
+    this->close_worker_thread(worker_thread, return_value);
   });
+
+  return worker_thread;
 }
 
-void VM::close_worker_task(WorkerThread* thread, VALUE return_value) {
-  if (this->running) {
-    this->register_task(VMTask(thread->callback, return_value));
+void VM::close_worker_thread(WorkerThread* thread, VALUE return_value) {
+  if (!this->running) return; // Do nothing if VM is dead
+
+  this->register_task(VMTask(charly_create_pointer(thread->callback), return_value));
+
+  {
     std::lock_guard<std::mutex> lock(this->worker_threads_m);
     this->worker_threads.erase(thread->id);
-    delete thread;
-  } else {
-    // If the VM is no longer running we simply do nothing here
-    // The VM main thread is currently in the exit function waiting
-    // for this thread to finish and will clean us up
   }
+
+  delete thread;
+}
+
+bool VM::is_main_thread() {
+  return std::this_thread::get_id() == this->main_thread_id;
+}
+
+bool VM::is_worker_thread() {
+  return !this->is_main_thread();
 }
 
 }  // namespace Charly

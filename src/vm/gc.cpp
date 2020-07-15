@@ -247,11 +247,12 @@ void GarbageCollector::collect() {
     {
       std::lock_guard<std::mutex> lock(this->host_vm->worker_threads_m);
       for (auto& entry : this->host_vm->worker_threads) {
-        this->mark(entry.second->cfunc);
+        if (entry.second->cfunc)
+          this->mark(charly_create_pointer(entry.second->cfunc));
         for (VALUE val : entry.second->arguments) {
           this->mark(val);
         }
-        this->mark(entry.second->callback);
+        this->mark(charly_create_pointer(entry.second->callback));
       }
     }
   }

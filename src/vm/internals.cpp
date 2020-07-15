@@ -46,11 +46,15 @@
 #include "libs/primitives/string/string.h"
 #include "libs/primitives/value/value.h"
 
-#define DEFINE_INTERNAL_METHOD(N, S, C)                   \
-  {                                                       \
-    charly_create_symbol(N), {                                                  \
-      N, C, reinterpret_cast<void*>(Charly::Internals::S) \
-    }                                                     \
+//        (N)ame
+//        (S)ymbol
+//     arg(C)
+// thread (P)olicy
+#define DEFINE_INTERNAL_METHOD(N, S, C, P)                   \
+  {                                                          \
+    charly_create_symbol(N), {                               \
+      N, C, reinterpret_cast<void*>(Charly::Internals::S), P \
+    }                                                        \
   }
 
 namespace Charly {
@@ -73,19 +77,18 @@ std::unordered_map<VALUE, MethodSignature> Index::methods = {
 
     // VM internals
     //
-    //                     Symbol                            Function Pointer      ARGC
-    DEFINE_INTERNAL_METHOD("charly.vm.import",               import,               2),
-    DEFINE_INTERNAL_METHOD("charly.vm.write",                write,                1),
-    DEFINE_INTERNAL_METHOD("charly.vm.getn",                 getn,                 0),
-    DEFINE_INTERNAL_METHOD("charly.vm.dirname",              dirname,              0),
-    DEFINE_INTERNAL_METHOD("charly.vm.exit",                 exit,                 1),
-    DEFINE_INTERNAL_METHOD("charly.vm.get_argv",             get_argv,             0),
-    DEFINE_INTERNAL_METHOD("charly.vm.get_environment",      get_environment,      0),
-    DEFINE_INTERNAL_METHOD("charly.vm.get_active_frame",     get_active_frame,     0),
-    DEFINE_INTERNAL_METHOD("charly.vm.get_parent_frame",     get_parent_frame,     1),
-    DEFINE_INTERNAL_METHOD("charly.vm.get_block_address",    get_block_address,    1),
-    DEFINE_INTERNAL_METHOD("charly.vm.resolve_address",      resolve_address,      1),
-    DEFINE_INTERNAL_METHOD("charly.vm.debug_func",           debug_func,           1),
+    //                     Symbol                            Function Pointer      ARGC   Thread-policy
+    DEFINE_INTERNAL_METHOD("charly.vm.import",               import,               2,     kThreadMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.write",                write,                1,     kThreadMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.getn",                 getn,                 0,     kThreadMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.dirname",              dirname,              0,     kThreadMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.exit",                 exit,                 1,     kThreadMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.get_argv",             get_argv,             0,     kThreadMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.get_environment",      get_environment,      0,     kThreadMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.get_active_frame",     get_active_frame,     0,     kThreadMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.get_parent_frame",     get_parent_frame,     1,     kThreadMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.get_block_address",    get_block_address,    1,     kThreadMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.resolve_address",      resolve_address,      1,     kThreadMain),
 };
 
 // Standard charly libraries
@@ -214,17 +217,20 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
       while (i < signatures->signatures.size()) {
         std::string name;
         uint32_t argc;
-        std::tie(name, argc) = signatures->signatures[i];
+        uint8_t thread_policy;
+        std::tie(name, argc, thread_policy) = signatures->signatures[i];
 
         // While we are extracting the method names, we can create
         // CFunction objects for the vm
+        void* func_pointer = dlsym(clib, name.c_str());
         CFunction* cfunc = charly_as_cfunction(lalloc.create_cfunction(
           charly_create_symbol(name),
           argc,
-          dlsym(clib, name.c_str())
+          func_pointer,
+          thread_policy
         ));
 
-        lib->container->insert({SymbolTable::encode(name), charly_create_pointer(cfunc)});
+        lib->container->insert({charly_create_symbol(name), charly_create_pointer(cfunc)});
 
         i++;
       }
@@ -422,15 +428,6 @@ VALUE resolve_address(VM& vm, VALUE address) {
   }
 
   return vm.create_string(lookup_result.value());
-}
-
-VALUE debug_func(VM& vm, VALUE testvalue) {
-  ManagedContext lalloc(vm);
-
-  Object* obj = charly_as_object(lalloc.create_object(1));
-  obj->container->insert({ SymbolTable::encode("input_value"), testvalue });
-
-  return charly_create_pointer(obj);
 }
 
 }  // namespace Internals

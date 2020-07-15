@@ -65,35 +65,35 @@ class Duration {
 
     while remainder >= 1.nanosecond() {
       if remainder >= 1.year() {
-        let c = Charly.math.floor(remainder / 1.year())
+        let c = Math.floor(remainder / 1.year())
         buf += "" + c + " year" + ((c == 1) ? "" : "s") + " "
         remainder = remainder % 1.year()
       } else if remainder >= 1.day() {
-        let c = Charly.math.floor(remainder / 1.day())
+        let c = Math.floor(remainder / 1.day())
         buf += "" + c + " day" + ((c == 1) ? "" : "s") + " "
         remainder = remainder % 1.day()
       } else if remainder >= 1.hour() {
-        let c = Charly.math.floor(remainder / 1.hour())
+        let c = Math.floor(remainder / 1.hour())
         buf += "" + c + " hour" + ((c == 1) ? "" : "s") + " "
         remainder = remainder % 1.hour()
       } else if remainder >= 1.minute() {
-        let c = Charly.math.floor(remainder / 1.minute())
+        let c = Math.floor(remainder / 1.minute())
         buf += "" + c + " minute" + ((c == 1) ? "" : "s") + " "
         remainder = remainder % 1.minute()
       } else if remainder >= 1.second() {
-        let c = Charly.math.floor(remainder / 1.second())
+        let c = Math.floor(remainder / 1.second())
         buf += "" + c + " second" + ((c == 1) ? "" : "s") + " "
         remainder = remainder % 1.second()
       } else if remainder >= 1.millisecond() {
-        let c = Charly.math.floor(remainder / 1.millisecond())
+        let c = Math.floor(remainder / 1.millisecond())
         buf += "" + c + " millisecond" + ((c == 1) ? "" : "s") + " "
         remainder = remainder % 1.millisecond()
       } else if remainder >= 1.microsecond() {
-        let c = Charly.math.floor(remainder / 1.microsecond())
+        let c = Math.floor(remainder / 1.microsecond())
         buf += "" + c + " microsecond" + ((c == 1) ? "" : "s") + " "
         remainder = remainder % 1.microsecond()
       } else if remainder >= 1.nanosecond() {
-        let c = Charly.math.floor(remainder / 1.nanosecond())
+        let c = Math.floor(remainder / 1.nanosecond())
         buf += "" + c + " nanosecond" + ((c == 1) ? "" : "s") + " "
         remainder = remainder % 1.nanosecond()
       }

@@ -80,6 +80,11 @@ public:
   }
 
   template <typename... Args>
+  inline VALUE create_weak_string(Args&&... params) {
+    return mark_in_gc(this->vm.create_weak_string(std::forward<Args>(params)...));
+  }
+
+  template <typename... Args>
   inline VALUE create_function(Args&&... params) {
     return mark_in_gc(this->vm.create_function(std::forward<Args>(params)...));
   }

@@ -24,19 +24,4 @@
  * SOFTWARE.
  */
 
-const debug_func = @"charly.vm.debug_func"
-
-const obj = {
-  name: "leonard"
-}
-
-const args = [obj]
-
-debug_func.call_async(null, args, ->(result) {
-  print("async debug_func finished with result: " + result)
-})
-
-defer(->{
-  obj.name = "peter"
-  args.clear()
-}, 500.milliseconds())
+print("hello world")

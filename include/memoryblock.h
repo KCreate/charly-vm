@@ -166,6 +166,11 @@ public:
     return size;
   }
 
+  // Write a block of memory into the internal buffer
+  inline size_t write_block(char* data, size_t size) {
+    return this->write_block(reinterpret_cast<uint8_t*>(data), size);
+  }
+
   // Write a string into the internal buffer
   inline size_t write_string(const std::string& data) {
     this->grow_to_fit(this->writeoffset + data.size());
@@ -197,6 +202,9 @@ public:
 
   // Returns the current writeoffset into the internal buffer
   inline size_t get_writeoffset() {
+    return this->writeoffset;
+  }
+  inline size_t get_length() {
     return this->writeoffset;
   }
 };

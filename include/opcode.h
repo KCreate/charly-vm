@@ -217,14 +217,6 @@ enum Opcode : uint8_t {
   // - lvarcount
   PutFunction,
 
-  // Put a function pointer onto the stack
-  //
-  // args:
-  // - symbol
-  // - pointer
-  // - argc
-  PutCFunction,
-
   // Put a generator onto the stack
   //
   // args:
@@ -520,7 +512,6 @@ static constexpr uint32_t kInstructionLengths[]{
   /* PutValue */                          1 + i64,
   /* PutString */                         1 + i32 + i32,
   /* PutFunction */                       1 + i64 + i32 + i8 * 2 + i32 + i32 + i32,
-  /* PutCFunction */                      1 + i64 + i64 + i32,
   /* PutGenerator */                      1 + i64 + i32,
   /* PutArray */                          1 + i32,
   /* PutHash */                           1 + i32,
@@ -600,7 +591,6 @@ static std::string kOpcodeMnemonics[]{
   "putvalue",
   "putstring",
   "putfunction",
-  "putcfunction",
   "putgenerator",
   "putarray",
   "puthash",

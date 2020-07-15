@@ -138,16 +138,12 @@ struct VMThread {
 // Represents a worker thread started by the VM
 struct WorkerThread {
   uint64_t id;
-  VALUE cfunc;
+  CFunction* cfunc;
   std::vector<VALUE> arguments;
-  VALUE callback;
+  Function* callback;
   std::thread thread;
 
-  WorkerThread(uint64_t _id, VALUE _cf, std::vector<VALUE>& _args, VALUE _cb, std::thread&& _th)
-      : id(_id), cfunc(_cf), arguments(_args), callback(_cb), thread(std::move(_th)) {
-  }
-
-  WorkerThread(uint64_t _id, VALUE _cf, std::vector<VALUE>& _args, VALUE _cb)
+  WorkerThread(uint64_t _id, CFunction* _cf, const std::vector<VALUE>& _args, Function* _cb)
       : id(_id), cfunc(_cf), arguments(_args), callback(_cb) {
   }
 
@@ -175,6 +171,7 @@ public:
         catchstack(nullptr),
         ip(nullptr),
         halted(false) {
+    this->main_thread_id = std::this_thread::get_id();
   }
   VM(const VM& other) = delete;
   VM(VM&& other) = delete;
@@ -205,6 +202,7 @@ public:
   VALUE create_array(uint32_t initial_capacity);
   VALUE create_string(const char* data, uint32_t length);
   VALUE create_string(const std::string& str);
+  VALUE create_string(MemoryBlock* block);
   VALUE create_weak_string(char* data, uint32_t length);
   VALUE create_empty_short_string();
   VALUE create_function(VALUE name,
@@ -214,7 +212,7 @@ public:
                         uint32_t lvarcount,
                         bool anonymous,
                         bool needs_arguments);
-  VALUE create_cfunction(VALUE name, uint32_t argc, void* pointer);
+  VALUE create_cfunction(VALUE name, uint32_t argc, void* pointer, uint8_t thread_policy = kThreadMain);
   VALUE create_generator(VALUE name, uint8_t* resume_address, Function* boot_function);
   VALUE create_class(VALUE name);
   VALUE create_cpointer(void* data, void* destructor);
@@ -315,7 +313,6 @@ public:
                       uint32_t argc,
                       uint32_t minimum_argc,
                       uint32_t lvarcount);
-  void op_putcfunction(VALUE symbol, void* pointer, uint32_t argc);
   void op_putgenerator(VALUE symbol, uint8_t* resume_address);
   void op_putarray(uint32_t count);
   void op_puthash(uint32_t count);
@@ -360,35 +357,26 @@ public:
   VALUE exec_module(Function* fn);
   uint8_t start_runtime();
   void exit(uint8_t status_code);
-
   uint64_t get_thread_uid();
   uint64_t get_next_thread_uid();
   void suspend_thread();
   void resume_thread(uint64_t uid);
-
-  // Registers a new task to be executed by the VM
   void register_task(VMTask task);
-
-  // Pop a task from the queue
-  //
-  // Stores the dequeued task inside &target
-  // Returns true if a task was popped
   bool pop_task(VMTask* target);
-
-  // Clears the task queue
   void clear_task_queue();
-
   VALUE register_module(InstructionBlock* block);
   uint64_t register_timer(Timestamp, VMTask task);
   uint64_t register_interval(uint32_t, VMTask task);
-
   uint64_t get_next_timer_id();
-
   void clear_timer(uint64_t uid);
   void clear_interval(uint64_t uid);
 
-  void register_worker_task(VALUE cfunc, VALUE args, VALUE callback);
-  void close_worker_task(WorkerThread* thread, VALUE return_value);
+  WorkerThread* start_worker_thread(CFunction* cfunc, const std::vector<VALUE>& args, Function* callback);
+  void close_worker_thread(WorkerThread* thread, VALUE return_value);
+
+  // Check wether calling thread is main / worker
+  bool is_main_thread();
+  bool is_worker_thread();
 
   std::chrono::time_point<std::chrono::high_resolution_clock> starttime;
 private:
@@ -439,6 +427,7 @@ private:
   uint64_t next_worker_thread_id = 0;
   std::mutex worker_threads_m;
   std::unordered_map<uint64_t, WorkerThread*> worker_threads;
+  std::thread::id main_thread_id;
 
   // The uid of the current thread of execution
   uint64_t uid;

@@ -24,12 +24,12 @@
  * SOFTWARE.
  */
 
-DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.create",        Buffer::create,        1),
-DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.reserve",       Buffer::reserve,       2),
-DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.get_size",      Buffer::get_size,      1),
-DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.get_offset",    Buffer::get_offset,    1),
-DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.write",         Buffer::write,         2),
-DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.write_partial", Buffer::write_partial, 4),
-DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.write_bytes",   Buffer::write_bytes,   2),
-DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.str",           Buffer::str,           1),
-DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.bytes",         Buffer::bytes,         1),
+DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.create",        Buffer::create,        1, kThreadMain),
+DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.reserve",       Buffer::reserve,       2, kThreadMain),
+DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.get_size",      Buffer::get_size,      1, kThreadMain),
+DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.get_offset",    Buffer::get_offset,    1, kThreadMain),
+DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.write",         Buffer::write,         2, kThreadMain),
+DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.write_partial", Buffer::write_partial, 4, kThreadMain),
+DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.write_bytes",   Buffer::write_bytes,   2, kThreadMain),
+DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.str",           Buffer::str,           1, kThreadMain),
+DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.bytes",         Buffer::bytes,         1, kThreadMain),

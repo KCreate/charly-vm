@@ -143,13 +143,6 @@ public:
     this->write(lvarcount);
   }
 
-  inline void write_putcfunction(VALUE symbol, uintptr_t funcptr, uint32_t argc) {
-    this->write(Opcode::PutCFunction);
-    this->write(symbol);
-    this->write(funcptr);
-    this->write(argc);
-  }
-
   inline void write_putgenerator(VALUE symbol, int32_t body_offset) {
     this->write(Opcode::PutGenerator);
     this->write(symbol);

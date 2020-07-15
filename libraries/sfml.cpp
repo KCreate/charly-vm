@@ -207,8 +207,8 @@ CHARLY_API(sleep) (VM&vm, VALUE ms) {
 }
 
 CHARLY_API(create_window) (VM& vm, VALUE w, VALUE h) {
-  WARN_TYPE(number, w);
-  WARN_TYPE(number, h);
+  CHECK(number, w);
+  CHECK(number, h);
 
   Graphics::Vec size = {charly_number_to_uint32(w), charly_number_to_uint32(h)};
   uint32_t window_id = wm->create_window(size);
@@ -216,7 +216,7 @@ CHARLY_API(create_window) (VM& vm, VALUE w, VALUE h) {
 }
 
 CHARLY_API(close_window) (VM& vm, VALUE w) {
-  WARN_TYPE(number, w);
+  CHECK(number, w);
 
   uint32_t window_id = charly_number_to_uint32(w);
   wm->close_window(window_id);
@@ -233,7 +233,7 @@ CHARLY_API(get_mouse_pos) (VALUE wid) {
 }
 
 CHARLY_API(poll_event) (VM& vm, VALUE w) {
-  WARN_TYPE(number, w);
+  CHECK(number, w);
 
   uint32_t wid = charly_number_to_uint32(w);
   Graphics::Window* window = wm->get_window(wid);
@@ -321,10 +321,10 @@ CHARLY_API(draw_dot) (VM& vm, VALUE wid, VALUE x, VALUE y) {
 }
 
 CHARLY_API(set_color) (VM& vm, VALUE wid, VALUE r, VALUE g, VALUE b) {
-  WARN_TYPE(number, wid);
-  WARN_TYPE(number, r);
-  WARN_TYPE(number, g);
-  WARN_TYPE(number, b);
+  CHECK(number, wid);
+  CHECK(number, r);
+  CHECK(number, g);
+  CHECK(number, b);
 
   uint8_t red   = charly_number_to_uint8(r);
   uint8_t green = charly_number_to_uint8(g);

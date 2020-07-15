@@ -114,14 +114,6 @@ void Disassembler::dump(std::ostream& stream) {
         this->print(this->block->read<uint32_t>(offset + 1 + i64 + i32 + i1 + i1 + i32), stream);
         break;
       }
-      case Opcode::PutCFunction: {
-        this->print_symbol(this->block->read<VALUE>(offset + 1), stream);
-        stream << ", ";
-        this->print_hex(this->block->read<void*>(offset + 1 + i64), stream, 12);
-        stream << ", ";
-        this->print(this->block->read<uint32_t>(offset + 1 + i64 + sizeof(void*)), stream);
-        break;
-      }
       case Opcode::PutGenerator: {
         this->print_symbol(this->block->read<VALUE>(offset + 1), stream);
         stream << ", ";

@@ -293,6 +293,11 @@ struct Function {
   // TODO: Bound argumentlist
 };
 
+// Thread policies for C functions
+static constexpr uint8_t kThreadMain   = 0b00000001;
+static constexpr uint8_t kThreadWorker = 0b00000010;
+static constexpr uint8_t kThreadBoth   = 0b00000011;
+
 // Function type used for including external functions from C-Land into the virtual machine
 // These are basically just a function pointer with some metadata associated to them
 struct CFunction {
@@ -301,11 +306,20 @@ struct CFunction {
   void* pointer;
   uint32_t argc;
   std::unordered_map<VALUE, VALUE>* container;
+  uint8_t thread_policy;
   bool push_return_value;
   bool halt_after_return;
 
   inline void clean() {
     delete this->container;
+  }
+
+  inline bool allowed_on_main_thread() {
+    return this->thread_policy & kThreadMain;
+  }
+
+  inline bool allowed_on_worker_thread() {
+    return this->thread_policy & kThreadWorker;
   }
 
   // TODO: Bound argumentlist
@@ -1556,8 +1570,9 @@ inline VALUE charly_find_constructor(Class* base) {
 }
 
 // External libs interface
+typedef std::tuple<std::string, uint32_t, uint8_t> CharlyLibSignature;
 struct CharlyLibSignatures {
-  std::vector<std::tuple<std::string, uint32_t>> signatures;
+  std::vector<CharlyLibSignature> signatures;
 };
 
 // Shorthand for declaring charly api methods to export
@@ -1565,7 +1580,7 @@ struct CharlyLibSignatures {
   extern "C" VALUE N
 
 // Shorthands for defining the signatures
-#define F(N, A) {#N, A},
+#define F(N, A, P) {#N, A, P},
 #define CHARLY_MANIFEST(P) \
   extern "C" { \
     CharlyLibSignatures __charly_signatures = {{ \

@@ -57,7 +57,20 @@ VALUE call_async(VM& vm, VALUE cfunc, VALUE args, VALUE callback) {
   CHECK(array, args);
   CHECK(function, callback);
 
-  vm.register_worker_task(cfunc, args, callback);
+  Array* _args = charly_as_array(args);
+  CFunction* _cfunc = charly_as_cfunction(cfunc);
+
+  if (_args->data->size() < charly_as_cfunction(cfunc)->argc) {
+    vm.throw_exception("Not enough arguments for CFunction call");
+    return kNull;
+  }
+
+  if (!_cfunc->allowed_on_worker_thread()) {
+    vm.throw_exception("Calling this CFunction in a worker thread is prohibited");
+    return kNull;
+  }
+
+  vm.start_worker_thread(charly_as_cfunction(cfunc), *_args->data, charly_as_function(callback));
 
   return kNull;
 }

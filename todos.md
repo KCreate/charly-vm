@@ -1,10 +1,11 @@
+- Should async calls return a response and an error object?
+  - Common pattern in libraries and would simplify writing bindings
+
 - Async C functions
   - Thread safety
-    - Which methods can be safely accessed, what needs to be changed?
     - Do object accesses need to be synced via mutexes?
-    - Does every heap object require a mutex?
-  - Utility functions for C methods
-    - check if we're running inside the main thread
+
+- Write prototype file handling API as external lib as a general systems check
 
 - Refactor heap type accesses
   - Types should define their own methods / functionality
