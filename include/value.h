@@ -1288,22 +1288,120 @@ inline bool charly_truthyness(VALUE value) {
   return true;
 }
 
+#define VALUE_01 VALUE
+#define VALUE_02 VALUE_01, VALUE
+#define VALUE_03 VALUE_02, VALUE
+#define VALUE_04 VALUE_03, VALUE
+#define VALUE_05 VALUE_04, VALUE
+#define VALUE_06 VALUE_05, VALUE
+#define VALUE_07 VALUE_06, VALUE
+#define VALUE_08 VALUE_07, VALUE
+#define VALUE_09 VALUE_08, VALUE
+#define VALUE_10 VALUE_09, VALUE
+#define VALUE_11 VALUE_10, VALUE
+#define VALUE_12 VALUE_11, VALUE
+#define VALUE_13 VALUE_12, VALUE
+#define VALUE_14 VALUE_13, VALUE
+#define VALUE_15 VALUE_14, VALUE
+#define VALUE_16 VALUE_15, VALUE
+#define VALUE_17 VALUE_16, VALUE
+#define VALUE_18 VALUE_17, VALUE
+#define VALUE_19 VALUE_18, VALUE
+#define VALUE_20 VALUE_19, VALUE
+
+#define ARG_01 argv[0]
+#define ARG_02 ARG_01, argv[1]
+#define ARG_03 ARG_02, argv[2]
+#define ARG_04 ARG_03, argv[3]
+#define ARG_05 ARG_04, argv[4]
+#define ARG_06 ARG_05, argv[5]
+#define ARG_07 ARG_06, argv[6]
+#define ARG_08 ARG_07, argv[7]
+#define ARG_09 ARG_08, argv[8]
+#define ARG_10 ARG_09, argv[9]
+#define ARG_11 ARG_10, argv[10]
+#define ARG_12 ARG_11, argv[11]
+#define ARG_13 ARG_12, argv[12]
+#define ARG_14 ARG_13, argv[13]
+#define ARG_15 ARG_14, argv[14]
+#define ARG_16 ARG_15, argv[15]
+#define ARG_17 ARG_16, argv[16]
+#define ARG_18 ARG_17, argv[17]
+#define ARG_19 ARG_18, argv[18]
+#define ARG_20 ARG_19, argv[19]
+
 __attribute__((always_inline))
 inline VALUE charly_call_cfunction(VM* vm_handle, CFunction* cfunc, uint32_t argc, VALUE* argv) {
   if (argc < cfunc->argc) return kNull;
 
   switch (cfunc->argc) {
-    case 0: return reinterpret_cast<VALUE (*)(VM&)>                                           (cfunc->pointer)(*vm_handle);
-    case 1: return reinterpret_cast<VALUE (*)(VM&, VALUE)>                                    (cfunc->pointer)(*vm_handle, argv[0]);
-    case 2: return reinterpret_cast<VALUE (*)(VM&, VALUE, VALUE)>                             (cfunc->pointer)(*vm_handle, argv[0], argv[1]);
-    case 3: return reinterpret_cast<VALUE (*)(VM&, VALUE, VALUE, VALUE)>                      (cfunc->pointer)(*vm_handle, argv[0], argv[1], argv[2]);
-    case 4: return reinterpret_cast<VALUE (*)(VM&, VALUE, VALUE, VALUE, VALUE)>               (cfunc->pointer)(*vm_handle, argv[0], argv[1], argv[2], argv[3]);
-    case 5: return reinterpret_cast<VALUE (*)(VM&, VALUE, VALUE, VALUE, VALUE, VALUE)>        (cfunc->pointer)(*vm_handle, argv[0], argv[1], argv[2], argv[3], argv[4]);
-    case 6: return reinterpret_cast<VALUE (*)(VM&, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE)> (cfunc->pointer)(*vm_handle, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
+    case  0: return reinterpret_cast<VALUE (*)(VM&)>           (cfunc->pointer)(*vm_handle);
+    case  1: return reinterpret_cast<VALUE (*)(VM&, VALUE_01)> (cfunc->pointer)(*vm_handle, ARG_01);
+    case  2: return reinterpret_cast<VALUE (*)(VM&, VALUE_02)> (cfunc->pointer)(*vm_handle, ARG_02);
+    case  3: return reinterpret_cast<VALUE (*)(VM&, VALUE_03)> (cfunc->pointer)(*vm_handle, ARG_03);
+    case  4: return reinterpret_cast<VALUE (*)(VM&, VALUE_04)> (cfunc->pointer)(*vm_handle, ARG_04);
+    case  5: return reinterpret_cast<VALUE (*)(VM&, VALUE_05)> (cfunc->pointer)(*vm_handle, ARG_05);
+    case  6: return reinterpret_cast<VALUE (*)(VM&, VALUE_06)> (cfunc->pointer)(*vm_handle, ARG_06);
+    case  7: return reinterpret_cast<VALUE (*)(VM&, VALUE_07)> (cfunc->pointer)(*vm_handle, ARG_07);
+    case  8: return reinterpret_cast<VALUE (*)(VM&, VALUE_08)> (cfunc->pointer)(*vm_handle, ARG_08);
+    case  9: return reinterpret_cast<VALUE (*)(VM&, VALUE_09)> (cfunc->pointer)(*vm_handle, ARG_09);
+    case 10: return reinterpret_cast<VALUE (*)(VM&, VALUE_10)> (cfunc->pointer)(*vm_handle, ARG_10);
+    case 11: return reinterpret_cast<VALUE (*)(VM&, VALUE_11)> (cfunc->pointer)(*vm_handle, ARG_11);
+    case 12: return reinterpret_cast<VALUE (*)(VM&, VALUE_12)> (cfunc->pointer)(*vm_handle, ARG_12);
+    case 13: return reinterpret_cast<VALUE (*)(VM&, VALUE_13)> (cfunc->pointer)(*vm_handle, ARG_13);
+    case 14: return reinterpret_cast<VALUE (*)(VM&, VALUE_14)> (cfunc->pointer)(*vm_handle, ARG_14);
+    case 15: return reinterpret_cast<VALUE (*)(VM&, VALUE_15)> (cfunc->pointer)(*vm_handle, ARG_15);
+    case 16: return reinterpret_cast<VALUE (*)(VM&, VALUE_16)> (cfunc->pointer)(*vm_handle, ARG_16);
+    case 17: return reinterpret_cast<VALUE (*)(VM&, VALUE_17)> (cfunc->pointer)(*vm_handle, ARG_17);
+    case 18: return reinterpret_cast<VALUE (*)(VM&, VALUE_18)> (cfunc->pointer)(*vm_handle, ARG_18);
+    case 19: return reinterpret_cast<VALUE (*)(VM&, VALUE_19)> (cfunc->pointer)(*vm_handle, ARG_19);
+    case 20: return reinterpret_cast<VALUE (*)(VM&, VALUE_20)> (cfunc->pointer)(*vm_handle, ARG_20);
   }
 
   return kNull;
 }
+
+#undef VALUE_01
+#undef VALUE_02
+#undef VALUE_03
+#undef VALUE_04
+#undef VALUE_05
+#undef VALUE_06
+#undef VALUE_07
+#undef VALUE_08
+#undef VALUE_09
+#undef VALUE_10
+#undef VALUE_11
+#undef VALUE_12
+#undef VALUE_13
+#undef VALUE_14
+#undef VALUE_15
+#undef VALUE_16
+#undef VALUE_17
+#undef VALUE_18
+#undef VALUE_19
+#undef VALUE_20
+
+#undef ARG_01
+#undef ARG_02
+#undef ARG_03
+#undef ARG_04
+#undef ARG_05
+#undef ARG_06
+#undef ARG_07
+#undef ARG_08
+#undef ARG_09
+#undef ARG_10
+#undef ARG_11
+#undef ARG_12
+#undef ARG_13
+#undef ARG_14
+#undef ARG_15
+#undef ARG_16
+#undef ARG_17
+#undef ARG_18
+#undef ARG_19
+#undef ARG_20
 
 // Concatenate two strings into a packed encoded string
 //
