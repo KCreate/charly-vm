@@ -2031,6 +2031,13 @@ void VM::op_throw() {
 }
 
 void VM::throw_exception(const std::string& message) {
+
+  // Special exception logic when coming from a worker thread
+  if (this->is_worker_thread()) {
+    this->handle_worker_thread_exception(message);
+    return;
+  }
+
   Frame* old_frame = this->frames;
 
   // Load the error class
@@ -3593,7 +3600,7 @@ uint8_t VM::start_runtime() {
       // of a previously paused thread
       if (task.is_thread) {
         // Resume a suspended thread
-        uint64_t thread_id = task.thread_id;
+        uint64_t thread_id = task.thread.id;
         if (this->paused_threads.count(thread_id) == 0) {
           this->panic(Status::InvalidThreadId);
         }
@@ -3610,28 +3617,41 @@ uint8_t VM::start_runtime() {
         this->paused_threads.erase(thread_id);
 
         // Push null, to act as the return value from __internal_suspend_thread
-        this->push_stack(kNull);
+        this->push_stack(task.thread.argument);
         this->run();
       } else {
+
         // Make sure we got a function as callback
-        if (!charly_is_function(task.callback.fn)) {
+        if (!charly_is_function(task.callback.func)) {
           this->panic(Status::RuntimeTaskNotCallable);
         }
 
-        this->gc.mark_persistent(task.callback.fn);
-        this->gc.mark_persistent(task.callback.argument);
+        this->gc.mark_persistent(task.callback.func);
+        this->gc.mark_persistent(task.callback.arguments[0]);
+        this->gc.mark_persistent(task.callback.arguments[1]);
+        this->gc.mark_persistent(task.callback.arguments[2]);
+        this->gc.mark_persistent(task.callback.arguments[3]);
+
+        // Prepare VM object
+        this->catchstack = nullptr;
 
         // Get Charly object
         VALUE global_self = this->get_global_self();
-        Function* fn = charly_as_function(task.callback.fn);
+        Function* fn = charly_as_function(task.callback.func);
         VALUE self = this->get_self_for_function(fn, &global_self);
-        this->call_function(fn, 1, &task.callback.argument, self, true);
+
+        // Invoke function
+        this->call_function(fn, 4, reinterpret_cast<VALUE*>(task.callback.arguments), self, true);
         this->uid = this->get_next_thread_uid();
         this->run();
         this->pop_stack();
 
-        this->gc.unmark_persistent(task.callback.fn);
-        this->gc.unmark_persistent(task.callback.argument);
+        // Unmark this task in the GC
+        this->gc.unmark_persistent(task.callback.func);
+        this->gc.unmark_persistent(task.callback.arguments[0]);
+        this->gc.unmark_persistent(task.callback.arguments[1]);
+        this->gc.unmark_persistent(task.callback.arguments[2]);
+        this->gc.unmark_persistent(task.callback.arguments[3]);
       }
     } else {
 
@@ -3672,7 +3692,6 @@ VALUE VM::exec_module(Function* fn) {
 
   uint8_t* old_ip = this->ip;
   this->call_function(fn, 1, &export_obj, kNull, true);
-  this->frames->parent_environment_frame = this->top_frame;
   this->frames->set_halt_after_return(true);
   this->run();
   this->ip = old_ip;
@@ -3729,16 +3748,19 @@ void VM::suspend_thread() {
   ));
 }
 
-void VM::resume_thread(uint64_t uid) {
-  this->register_task(VMTask(uid));
+void VM::resume_thread(uint64_t uid, VALUE argument) {
+  this->register_task(VMTask::init_thread(uid, argument));
 }
 
 void VM::register_task(VMTask task) {
   std::unique_lock<std::mutex> lock(this->task_queue_m);
 
   if (!task.is_thread) {
-    this->gc.mark_persistent(task.callback.fn);
-    this->gc.mark_persistent(task.callback.argument);
+    this->gc.mark_persistent(task.callback.func);
+    this->gc.mark_persistent(task.callback.arguments[0]);
+    this->gc.mark_persistent(task.callback.arguments[1]);
+    this->gc.mark_persistent(task.callback.arguments[2]);
+    this->gc.mark_persistent(task.callback.arguments[3]);
   }
 
   this->task_queue.push(task);
@@ -3780,8 +3802,11 @@ VALUE VM::register_module(InstructionBlock* block) {
 
 uint64_t VM::register_timer(Timestamp ts, VMTask task) {
   if (!task.is_thread) {
-    this->gc.mark_persistent(task.callback.fn);
-    this->gc.mark_persistent(task.callback.argument);
+    this->gc.mark_persistent(task.callback.func);
+    this->gc.mark_persistent(task.callback.arguments[0]);
+    this->gc.mark_persistent(task.callback.arguments[1]);
+    this->gc.mark_persistent(task.callback.arguments[2]);
+    this->gc.mark_persistent(task.callback.arguments[3]);
   }
 
   task.uid = this->get_next_timer_id();
@@ -3791,8 +3816,11 @@ uint64_t VM::register_timer(Timestamp ts, VMTask task) {
 
 uint64_t VM::register_interval(uint32_t period, VMTask task) {
   if (!task.is_thread) {
-    this->gc.mark_persistent(task.callback.fn);
-    this->gc.mark_persistent(task.callback.argument);
+    this->gc.mark_persistent(task.callback.func);
+    this->gc.mark_persistent(task.callback.arguments[0]);
+    this->gc.mark_persistent(task.callback.arguments[1]);
+    this->gc.mark_persistent(task.callback.arguments[2]);
+    this->gc.mark_persistent(task.callback.arguments[3]);
   }
 
   Timestamp now = std::chrono::steady_clock::now();
@@ -3826,13 +3854,7 @@ void VM::clear_interval(uint64_t uid) {
 }
 
 WorkerThread* VM::start_worker_thread(CFunction* cfunc, const std::vector<VALUE>& args, Function* callback) {
-  std::lock_guard<std::mutex> lock(this->worker_threads_m);
-
-  // Register metadata in table
-  uint64_t worker_thread_id = this->next_worker_thread_id++;
-  WorkerThread* worker_thread = new WorkerThread(worker_thread_id, cfunc, args, callback);
-  this->worker_threads.insert({ worker_thread_id, worker_thread });
-
+  WorkerThread* worker_thread = new WorkerThread(cfunc, args, callback);
   worker_thread->thread = std::thread([this, worker_thread]() {
 
     // Invoke c function
@@ -3844,20 +3866,29 @@ WorkerThread* VM::start_worker_thread(CFunction* cfunc, const std::vector<VALUE>
     this->close_worker_thread(worker_thread, return_value);
   });
 
+  std::lock_guard<std::mutex> lock(this->worker_threads_m);
+  this->worker_threads.insert({ worker_thread->thread.get_id(), worker_thread });
+
   return worker_thread;
 }
 
 void VM::close_worker_thread(WorkerThread* thread, VALUE return_value) {
   if (!this->running) return; // Do nothing if VM is dead
+  std::lock_guard<std::mutex> lock(this->worker_threads_m);
 
-  this->register_task(VMTask(charly_create_pointer(thread->callback), return_value));
-
-  {
-    std::lock_guard<std::mutex> lock(this->worker_threads_m);
-    this->worker_threads.erase(thread->id);
-  }
+  this->register_task(
+      VMTask::init_callback(charly_create_pointer(thread->callback), return_value, thread->error_value));
+  this->worker_threads.erase(thread->thread.get_id());
 
   delete thread;
+}
+
+void VM::handle_worker_thread_exception(const std::string& message) {
+  ManagedContext lalloc(*this);
+  std::thread::id current_thread_id = std::this_thread::get_id();
+  std::lock_guard<std::mutex> lock(this->worker_threads_m);
+  WorkerThread* handle = this->worker_threads[current_thread_id];
+  handle->error_value = lalloc.create_string(message);
 }
 
 bool VM::is_main_thread() {

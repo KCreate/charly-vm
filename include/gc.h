@@ -69,9 +69,9 @@ struct MemoryCell {
 // Flagas for the memory manager
 struct GarbageCollectorConfig {
   size_t initial_heap_count = 4;
-  size_t heap_cell_count = 1 << 16;
-  float heap_growth_factor = 2;
-  size_t min_free_cells = 32;
+  size_t heap_cell_count    = 1 << 12;
+  float heap_growth_factor  = 2;
+  size_t min_free_cells     = 32;
 
   bool trace = false;
   std::ostream& out_stream = std::cerr;

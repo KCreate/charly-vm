@@ -51,16 +51,14 @@ class Notifier {
     unless @alive return null
 
     @pending_threads << __internal_get_thread_uid()
-    __internal_suspend_thread()
-
-    null
+    return __internal_suspend_thread()
   }
 
   // Notify paused threads that they may resume execution
-  notify {
+  notify(argument = null) {
     unless @alive return null
 
-    @pending_threads.each(->__internal_resume_thread($0))
+    @pending_threads.each(->__internal_resume_thread($0, argument))
     @pending_threads.clear()
 
     @alive = false
@@ -87,9 +85,8 @@ class DeferHandle {
 
     const thread_uid = __internal_get_thread_uid()
     if thread_uid == @live_thread_uid throw new Error("Task cannot wait for itself to complete")
-    @notifier.wait()
 
-    null
+    @notifier.wait()
   }
 
   // Updates the currently active thread uid
@@ -100,10 +97,10 @@ class DeferHandle {
   }
 
   // Clears this handle, marks it as dead and resumes all waiting threads
-  clear {
+  clear(argument = null) {
     @id = null
     @alive = false
-    @notifier.notify()
+    @notifier.notify(argument)
     @live_thread_uid = null
 
     null
@@ -119,19 +116,18 @@ class TimerHandle extends DeferHandle {
     // Schedule timer in VM
     const task_id = __internal_defer(->{
       @update_live_thread_uid()
-      cb()
-      @clear()
+      @clear(cb())
     }, period)
 
     super(task_id)
   }
 
   // Prevent this timer from running
-  clear {
+  clear(argument = null) {
     if !@alive return null
 
     __internal_clear_timer(@id)
-    super()
+    super(argument)
 
     null
   }
@@ -171,9 +167,8 @@ const defer    = ->(cb, period = 0) new TimerHandle(cb, period)
 defer.interval = ->(cb, period = 0) new IntervalHandle(cb, period)
 defer.wait     = ->(threads) {
   if typeof threads ! "array" threads = arguments
-  threads.each(->$0.wait())
 
-  null
+  threads.map(->$0.wait())
 }
 
 defer.sleep = ->(duration) {

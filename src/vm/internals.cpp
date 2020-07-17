@@ -77,18 +77,19 @@ std::unordered_map<VALUE, MethodSignature> Index::methods = {
 
     // VM internals
     //
-    //                     Symbol                            Function Pointer      ARGC   Thread-policy
-    DEFINE_INTERNAL_METHOD("charly.vm.import",               import,               2,     kThreadMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.write",                write,                1,     kThreadMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.getn",                 getn,                 0,     kThreadMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.dirname",              dirname,              0,     kThreadMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.exit",                 exit,                 1,     kThreadMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.get_argv",             get_argv,             0,     kThreadMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.get_environment",      get_environment,      0,     kThreadMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.get_active_frame",     get_active_frame,     0,     kThreadMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.get_parent_frame",     get_parent_frame,     1,     kThreadMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.get_block_address",    get_block_address,    1,     kThreadMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.resolve_address",      resolve_address,      1,     kThreadMain),
+    //                     Symbol                           Function Pointer       ARGC   Thread-policy
+    DEFINE_INTERNAL_METHOD("charly.vm.import",              import,                2,     kThreadMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.write",               write,                 1,     kThreadMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.getn",                getn,                  0,     kThreadMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.dirname",             dirname,               0,     kThreadMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.exit",                exit,                  1,     kThreadMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.get_argv",            get_argv,              0,     kThreadMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.get_environment",     get_environment,       0,     kThreadMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.get_active_frame",    get_active_frame,      0,     kThreadMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.get_parent_frame",    get_parent_frame,      1,     kThreadMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.get_block_address",   get_block_address,     1,     kThreadMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.resolve_address",     resolve_address,       1,     kThreadMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.debug_func",          debug_func,            1,     kThreadBoth),
 };
 
 // Standard charly libraries
@@ -428,6 +429,25 @@ VALUE resolve_address(VM& vm, VALUE address) {
   }
 
   return vm.create_string(lookup_result.value());
+}
+
+VALUE debug_func(VM& vm, VALUE value) {
+  CHECK(string, value);
+
+  vm.context.out_stream << "sizeof(MemoryCell) = " << sizeof(MemoryCell) << std::endl;
+  vm.context.out_stream << "sizeof(Basic)      = " << sizeof(Basic) << std::endl;
+  vm.context.out_stream << "sizeof(Object)     = " << sizeof(Object) << std::endl;
+  vm.context.out_stream << "sizeof(Array)      = " << sizeof(Array) << std::endl;
+  vm.context.out_stream << "sizeof(String)     = " << sizeof(String) << std::endl;
+  vm.context.out_stream << "sizeof(Function)   = " << sizeof(Function) << std::endl;
+  vm.context.out_stream << "sizeof(CFunction)  = " << sizeof(CFunction) << std::endl;
+  vm.context.out_stream << "sizeof(Generator)  = " << sizeof(Generator) << std::endl;
+  vm.context.out_stream << "sizeof(Class)      = " << sizeof(Class) << std::endl;
+  vm.context.out_stream << "sizeof(Frame)      = " << sizeof(Frame) << std::endl;
+  vm.context.out_stream << "sizeof(CatchTable) = " << sizeof(CatchTable) << std::endl;
+  vm.context.out_stream << "sizeof(CPointer)   = " << sizeof(CPointer) << std::endl;
+
+  return kNull;
 }
 
 }  // namespace Internals

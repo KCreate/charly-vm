@@ -70,5 +70,7 @@ VALUE get_parent_frame(VM& vm, VALUE frame_ref);
 VALUE get_block_address(VM& vm, VALUE func);
 VALUE resolve_address(VM& vm, VALUE address);
 
+VALUE debug_func(VM& vm, VALUE input);
+
 }  // namespace Internals
 }  // namespace Charly

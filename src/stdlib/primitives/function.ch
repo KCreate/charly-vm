@@ -50,13 +50,21 @@ export = ->(Base) {
      *
      * TODO: Replace this code with a Promise implementation once implemented
      * */
-    call_async(ctx, args = [], callback) {
+    call_async(ctx, args = [], callback = null) {
       if @is_charly_func() {
         defer(->{
           callback(self.call(ctx, args))
         })
       } else {
-        __internal_function_call_async(self, args, callback)
+        const error_template = new Error(self.name + ": ")
+        __internal_function_call_async(self, args, ->(a1, error, a3, a4) {
+          if typeof error == "string" {
+            error_template.message += error
+            error = error_template
+          }
+
+          if callback callback(a1, error, a3, a4)
+        })
       }
 
       return null

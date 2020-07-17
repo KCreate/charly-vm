@@ -186,7 +186,6 @@ void GarbageCollector::collect() {
     // Top level values
     this->mark(charly_create_pointer(this->host_vm->frames));
     this->mark(charly_create_pointer(this->host_vm->catchstack));
-    this->mark(charly_create_pointer(this->host_vm->top_frame));
     this->mark(this->host_vm->uncaught_exception_handler);
     this->mark(this->host_vm->internal_error_class);
     this->mark(this->host_vm->globals);
@@ -214,23 +213,34 @@ void GarbageCollector::collect() {
         VMTask task = task_queue_copy.front();
         task_queue_copy.pop();
 
-        if (!task.is_thread) {
-          this->mark(task.callback.fn);
-          this->mark(task.callback.argument);
+        if (task.is_thread) {
+          this->mark(task.thread.argument);
+        } else {
+          this->mark(task.callback.func);
+          this->mark(task.callback.arguments[0]);
+          this->mark(task.callback.arguments[1]);
+          this->mark(task.callback.arguments[2]);
+          this->mark(task.callback.arguments[3]);
         }
       }
     }
 
     // Timers
     for (auto& it : this->host_vm->timers) {
-      this->mark(it.second.callback.fn);
-      this->mark(it.second.callback.argument);
+      this->mark(it.second.callback.func);
+      this->mark(it.second.callback.arguments[0]);
+      this->mark(it.second.callback.arguments[1]);
+      this->mark(it.second.callback.arguments[2]);
+      this->mark(it.second.callback.arguments[3]);
     }
 
     // Intervals
     for (auto& it : this->host_vm->intervals) {
-      this->mark(std::get<0>(it.second).callback.fn);
-      this->mark(std::get<0>(it.second).callback.argument);
+      this->mark(std::get<0>(it.second).callback.func);
+      this->mark(std::get<0>(it.second).callback.arguments[0]);
+      this->mark(std::get<0>(it.second).callback.arguments[1]);
+      this->mark(std::get<0>(it.second).callback.arguments[2]);
+      this->mark(std::get<0>(it.second).callback.arguments[3]);
     }
 
     // Paused threads
@@ -249,10 +259,12 @@ void GarbageCollector::collect() {
       for (auto& entry : this->host_vm->worker_threads) {
         if (entry.second->cfunc)
           this->mark(charly_create_pointer(entry.second->cfunc));
+        if (entry.second->callback)
+          this->mark(charly_create_pointer(entry.second->callback));
+        this->mark(entry.second->error_value);
         for (VALUE val : entry.second->arguments) {
           this->mark(val);
         }
-        this->mark(charly_create_pointer(entry.second->callback));
       }
     }
   }

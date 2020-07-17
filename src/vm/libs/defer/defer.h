@@ -38,7 +38,7 @@ VALUE defer_interval(VM& vm, VALUE cb, VALUE period);
 VALUE clear_timer(VM& vm, VALUE uid);
 VALUE clear_interval(VM& vm, VALUE uid);
 VALUE suspend_thread(VM& vm);
-VALUE resume_thread(VM& vm, VALUE uid);
+VALUE resume_thread(VM& vm, VALUE uid, VALUE argument);
 VALUE get_thread_uid(VM& vm);
 
 }  // namespace Defer

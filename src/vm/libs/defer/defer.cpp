@@ -40,7 +40,7 @@ VALUE defer(VM& vm, VALUE cb, VALUE dur) {
   Timestamp now = std::chrono::steady_clock::now();
   Timestamp exec_at = now + std::chrono::milliseconds(ms);
 
-  return charly_create_integer(vm.register_timer(exec_at, VMTask(cb, kNull)));
+  return charly_create_integer(vm.register_timer(exec_at, VMTask::init_callback(cb)));
 }
 
 VALUE defer_interval(VM& vm, VALUE cb, VALUE period) {
@@ -49,7 +49,7 @@ VALUE defer_interval(VM& vm, VALUE cb, VALUE period) {
 
   uint32_t ms = charly_number_to_uint32(period);
 
-  return charly_create_integer(vm.register_interval(ms, VMTask(cb, kNull)));
+  return charly_create_integer(vm.register_interval(ms, VMTask::init_callback(cb)));
 }
 
 VALUE clear_timer(VM&vm, VALUE uid) {
@@ -69,9 +69,9 @@ VALUE suspend_thread(VM& vm) {
   return kNull;
 }
 
-VALUE resume_thread(VM& vm, VALUE uid) {
+VALUE resume_thread(VM& vm, VALUE uid, VALUE argument) {
   CHECK(number, uid);
-  vm.resume_thread(charly_number_to_uint64(uid));
+  vm.resume_thread(charly_number_to_uint64(uid), argument);
   return kNull;
 }
 

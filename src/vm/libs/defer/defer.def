@@ -29,5 +29,5 @@ DEFINE_INTERNAL_METHOD("charly.vm.defer_interval", Defer::defer_interval, 2, kTh
 DEFINE_INTERNAL_METHOD("charly.vm.clear_timer",    Defer::clear_timer,    1, kThreadMain),
 DEFINE_INTERNAL_METHOD("charly.vm.clear_interval", Defer::clear_interval, 1, kThreadMain),
 DEFINE_INTERNAL_METHOD("charly.vm.suspend_thread", Defer::suspend_thread, 0, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.vm.resume_thread",  Defer::resume_thread,  1, kThreadMain),
+DEFINE_INTERNAL_METHOD("charly.vm.resume_thread",  Defer::resume_thread,  2, kThreadMain),
 DEFINE_INTERNAL_METHOD("charly.vm.get_thread_uid", Defer::get_thread_uid, 0, kThreadMain),

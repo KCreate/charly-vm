@@ -97,26 +97,43 @@ struct VMContext {
  * Stores information about a callback the VM needs to execute
  * */
 struct VMTask {
+  bool is_thread;
   uint64_t uid;
-
   union {
-    uint64_t thread_id;
     struct {
-      VALUE fn;
+      uint64_t id;
       VALUE argument;
+    } thread;
+    struct {
+      VALUE func;
+      VALUE arguments[4];
     } callback;
   };
-  bool is_thread;
 
-  VMTask() : VMTask(kNull, kNull) {}
-
-  VMTask(uint64_t tid) : thread_id(tid), is_thread(true) {
+  /*
+   * Initialize a VMTask which resumes a thread
+   * */
+  static inline VMTask init_thread(uint64_t id, VALUE argument) {
+    return VMTask{.uid = 0, .thread = {.id = id, argument}, .is_thread = true};
   }
 
-  VMTask(uint64_t u, VALUE f, VALUE a) : uid(u), callback({f, a}), is_thread(false) {
+  /*
+   * Initialize a VMTask which calls a callback, with up to 4 arguments
+   * */
+  static inline VMTask init_callback_with_id(uint64_t id,
+                                     VALUE func,
+                                     VALUE arg1 = kNull,
+                                     VALUE arg2 = kNull,
+                                     VALUE arg3 = kNull,
+                                     VALUE arg4 = kNull) {
+    return VMTask{.uid = id, .callback = {.func = func, .arguments = {arg1, arg2, arg3, arg4}}, .is_thread = false};
   }
-
-  VMTask(VALUE f, VALUE a) : uid(0), callback({f, a}), is_thread(false) {
+  static inline VMTask init_callback(VALUE func,
+                                     VALUE arg1 = kNull,
+                                     VALUE arg2 = kNull,
+                                     VALUE arg3 = kNull,
+                                     VALUE arg4 = kNull) {
+    return VMTask::init_callback_with_id(0, func, arg1, arg2, arg3, arg4);
   }
 };
 
@@ -137,14 +154,14 @@ struct VMThread {
 
 // Represents a worker thread started by the VM
 struct WorkerThread {
-  uint64_t id;
   CFunction* cfunc;
   std::vector<VALUE> arguments;
   Function* callback;
+  VALUE error_value;
   std::thread thread;
 
-  WorkerThread(uint64_t _id, CFunction* _cf, const std::vector<VALUE>& _args, Function* _cb)
-      : id(_id), cfunc(_cf), arguments(_args), callback(_cb) {
+  WorkerThread(CFunction* _cf, const std::vector<VALUE>& _args, Function* _cb)
+      : cfunc(_cf), arguments(_args), callback(_cb), error_value(kNull) {
   }
 
   ~WorkerThread() {
@@ -360,7 +377,7 @@ public:
   uint64_t get_thread_uid();
   uint64_t get_next_thread_uid();
   void suspend_thread();
-  void resume_thread(uint64_t uid);
+  void resume_thread(uint64_t uid, VALUE argument);
   void register_task(VMTask task);
   bool pop_task(VMTask* target);
   void clear_task_queue();
@@ -373,6 +390,7 @@ public:
 
   WorkerThread* start_worker_thread(CFunction* cfunc, const std::vector<VALUE>& args, Function* callback);
   void close_worker_thread(WorkerThread* thread, VALUE return_value);
+  void handle_worker_thread_exception(const std::string& message);
 
   // Check wether calling thread is main / worker
   bool is_main_thread();
@@ -424,21 +442,12 @@ private:
   uint64_t next_timer_id = 0;
 
   // Worker threads
-  uint64_t next_worker_thread_id = 0;
   std::mutex worker_threads_m;
-  std::unordered_map<uint64_t, WorkerThread*> worker_threads;
+  std::unordered_map<std::thread::id, WorkerThread*> worker_threads;
   std::thread::id main_thread_id;
 
   // The uid of the current thread of execution
   uint64_t uid;
-
-  // Holds a pointer to the upper-most environment frame
-  // When executing new modules, their parent environment frame is set to
-  // this frame, so they are not able to interact with the calling module
-  //
-  // Both modules can still communicate with each other via the several global
-  // objects & methods.
-  Frame* top_frame;
 
   std::vector<VALUE> stack;
   Frame* frames;

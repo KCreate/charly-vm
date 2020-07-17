@@ -1,9 +1,19 @@
-- Should async calls return a response and an error object?
-  - Common pattern in libraries and would simplify writing bindings
-
-- Async C functions
-  - Thread safety
-    - Do object accesses need to be synced via mutexes?
+- Channel class
+  - bi-directional message queue
+  - backed by a thread-safe queue written in C
+  - can be used to communicate with a running worker thread
+  - can be used to communicate with other charly threads
+  - a single read call will always return a single entry from the queue
+  - if multiple reader-threads are waiting for an entry, and a new entry comes along,
+    it only gets sent to a single reader-thread. the other threads are left waiting
+    for another entry. the order should be FIFO
+  - Maybe implement as a new datatype?
+    - Implementation using regular datatypes
+    - CPointer which points to a mutex controlled C object
+    - Interactions with the channel object are done via C functions
+      - read, write, close
+  - Closing a channel will deny all new writes and reads
+    - Outstanding read operations will return null
 
 - Write prototype file handling API as external lib as a general systems check
 
@@ -44,6 +54,15 @@
 - File system library
   - C++17 native std::filesystem library
 
+- Todos
+  - unit test 'is_a' method for primitive types
+  - typeof operator should return the primitive class, not a string
+  - helper methods to check variables for specific types
+    - throw TypeError exceptions
+    - check arrays for specific types
+    - check object for specific layout
+    - syntax support for type checking?
+
 - Bug with try catch statements
   - `break`, `continue` do not drop the active catchtable
   - `break`, `continue`, `return` do not respect the `finally` handler
@@ -63,15 +82,6 @@
       }
     `
 
-- Todos
-  - unit test 'is_a' method for primitive types
-  - typeof operator should return the primitive class, not a string
-  - helper methods to check variables for specific types
-    - throw TypeError exceptions
-    - check arrays for specific types
-    - check object for specific layout
-    - syntax support for type checking?
-
 - Hoist local variable declarations
   - `
       func foo { bar() } <- would generate a readglobal call
@@ -84,6 +94,14 @@
       member functions of the klass of the object in question
   - Mark a key as constant
     - Key cannot be overwritten or deleted
+
+- Reintroduce multiple inheritance
+  - Currently there is no easy way to declare "interfaces", like in other languages
+  - Example use case: an EventEmitter interface which adds the needed logic to listen for and emit events
+  - How are constructors invoked?
+  - How is method lookup performed?
+  - Which parent classes have priority?
+  - SHould a class and an interface be separate things?
 
 - Raw memory access methods
   - Create a library and internal methods that allow access to raw memory, via pointers

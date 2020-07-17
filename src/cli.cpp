@@ -121,8 +121,8 @@ int CLI::run() {
   VALUE fn_prelude = vm.register_module(cresult_prelude->instructionblock.value());
   VALUE fn_user = vm.register_module(cresult_userfile->instructionblock.value());
 
-  vm.register_task({fn_prelude, kNull});
-  vm.register_task({fn_user, kNull});
+  vm.register_task(VMTask::init_callback(fn_prelude));
+  vm.register_task(VMTask::init_callback(fn_user));
   uint8_t status_code = vm.start_runtime();
 
   // Display the instruction profile if requested
