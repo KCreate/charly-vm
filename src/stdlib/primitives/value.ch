@@ -65,6 +65,14 @@ export = ->{
     }
 
     /*
+     * Returns itself or a fallback value if self is null
+     * */
+    value_or(fallback) {
+      if typeof self == "null" return fallback
+      self
+    }
+
+    /*
      * Call a function with self, returning the original self
      * */
     tap(cb) {

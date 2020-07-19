@@ -45,7 +45,7 @@ class Buffer {
   property size
   property offset
 
-  constructor(@size) {
+  constructor(@size = 64) {
     @handle = __buffer_create(size)
     @offset = 0
   }
@@ -72,7 +72,7 @@ class Buffer {
    * Append the entire content of the src string to the buffer's end
    * */
   write(src) {
-    @offset = __buffer_write(@handle, src)
+    @offset = __buffer_write(@handle, src.to_s())
     @size = @get_size()
   }
 
