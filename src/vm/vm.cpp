@@ -898,6 +898,10 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
         return func->host_class;
       }
 
+      if (symbol == SYM("argc")) {
+        return charly_create_number(func->minimum_argc);
+      }
+
       if (func->container->count(symbol) == 1) {
         return (*func->container)[symbol];
       }
@@ -934,6 +938,10 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
     case kTypeCFunction: {
       CFunction* cfunc = charly_as_cfunction(source);
 
+      if (symbol == SYM("name")) {
+        return this->create_string(SymbolTable::decode(cfunc->name));
+      }
+
       if (symbol == SYM("push_return_value")) {
         return cfunc->push_return_value ? kTrue : kFalse;
       }
@@ -942,8 +950,12 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
         return cfunc->halt_after_return ? kTrue : kFalse;
       }
 
-      if (symbol == SYM("name")) {
-        return this->create_string(SymbolTable::decode(cfunc->name));
+      if (symbol == SYM("argc")) {
+        return charly_create_number(cfunc->argc);
+      }
+
+      if (symbol == SYM("thread_policy")) {
+        return charly_create_number(cfunc->thread_policy);
       }
 
       if (cfunc->container->count(symbol) == 1) {
