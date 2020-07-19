@@ -175,6 +175,7 @@ class Error {
 @"charly.vm.internal_error_class" = class InternalError extends Error {
   constructor(message) {
     super(message)
+    @stacktrace = Error.capture_stack_trace(null, 1)
     throw self
   }
 }
