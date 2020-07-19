@@ -1546,6 +1546,7 @@ AST::AbstractNode* Parser::parse_func(bool ignore_func_keyword, KeywordContext k
   std::string name;
   bool has_symbol = false;
 
+  this->interpret_keyword_as_identifier();
   if (this->token.type == TokenType::Identifier) {
     name = this->token.value;
     has_symbol = true;
@@ -1752,6 +1753,10 @@ AST::AbstractNode* Parser::parse_class() {
     if (this->token.type == TokenType::Static) {
       static_declaration = true;
       this->advance();
+    }
+
+    if (this->token.type != TokenType::Property) {
+      this->interpret_keyword_as_identifier();
     }
 
     switch(this->token.type) {
