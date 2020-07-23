@@ -21,6 +21,56 @@ asynchronous, multithreaded worker-queue.
 
 ## Example code
 
+### Promises
+
+The `defer` method is a shorthand for the regular `new Promise(->(resolve, reject) {...})` kind of way
+to creating a promise. The created promise resolves once the callback returns or rejects
+if the callback throws an exception.
+
+```javascript
+const p = defer(->"Hello world!", 1.second())
+
+p.then(->(result) {
+  print("Got result: " + result) // Got result: Hello world!
+})
+```
+
+You can also synchronously wait for a promise to finish. This currently active
+thread pauses and will resume once the promise resolves or throw an exception
+if it gets rejected.
+
+```javascript
+const p = defer(->"Hello world", 1.second())
+
+// The wait method returns the value the promise resolved with.
+// If the promise got rejected, it will throw
+const result = p.wait()
+
+print(result) // "Hello world!"
+```
+
+### Turning asynchronous into synchronous flow
+
+```javascript
+// Implementation of the sleep method using standard library constructs
+func sleep(duration) {
+
+  // The Notifier allows the user to pause and
+  // resume different threads of execution
+  const n = new Sync.Notifier()
+
+  // Invoking the notify method will resume any waiting threads
+  defer(->n.notify(), duration)
+
+  // Waits until some other thread calls the notify method
+  n.wait()
+}
+
+print("Hello")
+sleep(1.second())
+print("World")
+```
+
 ### Closures
 ```javascript
 // This function returns another function which, when invoked,
@@ -58,6 +108,40 @@ try {
 }
 ```
 
+### Classes
+```javascript
+class Greeter {
+  property name
+
+  greet {
+    print("Good morning " + @name)
+  }
+}
+
+class RudeGreeter extends Greeter {
+  constructor(name) {
+    super("stupid " + name)
+  }
+
+  greet {
+    print("...oh no, not him again...")
+    super()
+    print("...now go away...")
+  }
+}
+
+const greeter      = new Greeter("Leonard")
+const rude_greeter = new RudeGreeter("Leonard")
+
+greeter.greet()
+// Good morning Leonard
+
+rude_greeter.greet()
+// ...oh no, not him again...
+// Good morning stupid Leonard
+// ...now go away...
+```
+
 ### Generators
 ```javascript
 const summer = ->{
@@ -77,52 +161,6 @@ summer(100)
 summer(100)
 
 read_state() // => 400
-```
-
-### Promises
-
-The `defer` method is a shorthand for the regular `new Promise(->(resolve, reject) {...})` kind of way
-to creating a promise. The created promise resolves once the callback returns or rejects
-if the callback throws an exception.
-
-```javascript
-const p = defer(->"Hello world!", 1.second())
-
-p.then(->(result) {
-  print("Got result: " + result) // Got result: Hello world!
-})
-```
-
-```javascript
-const p = defer(->"Hello world", 1.second())
-
-// The wait method returns the value the promise resolved with.
-// If the promise got rejected, it will throw
-const result = p.wait()
-
-print(result) // "Hello world!"
-```
-
-### Turning asynchronous into synchronous flow
-
-```javascript
-// Implementation of the sleep method using standard library constructs
-func sleep(duration) {
-
-  // The Notifier allows the user to pause and
-  // resume different threads of execution
-  const n = new Sync.Notifier()
-
-  // Invoking the notify method will resume any waiting threads
-  defer(->n.notify(), duration)
-
-  // Waits until some other thread calls the notify method
-  n.wait()
-}
-
-print("Hello")
-sleep(1.second())
-print("World")
 ```
 
 ### Tickers
@@ -164,29 +202,6 @@ String.prototype.mockify = func {
 
 print("You should not use memes in example code".mockify())
 // => yOu ShOuLd NoT uSe MeMeS iN eXaMpLe CoDe
-```
-
-### Classes
-```javascript
-class Greeter {
-  property name
-
-  greet {
-    print("Good morning " + @name)
-  }
-}
-
-class GermanGreeter extends Greeter {
-  greet {
-    print("Guten Morgen " + @name)
-  }
-}
-
-const greeter = new Greeter("leonard")
-const german_greeter = new GermanGreeter("leonard")
-
-greeter.greet() // => Good morning leonard
-german_greeter.greet() // => Guten Morgen leonard
 ```
 
 ## Teaching Features

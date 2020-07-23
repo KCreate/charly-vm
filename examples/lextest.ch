@@ -24,3 +24,33 @@
  * SOFTWARE.
  */
 
+class Greeter {
+  property name
+
+  greet {
+    print("Good morning " + @name)
+  }
+}
+
+class RudeGreeter extends Greeter {
+  constructor(name) {
+    super("stupid " + name)
+  }
+
+  greet {
+    print("...oh no, not him again...")
+    super()
+    print("...now go away...")
+  }
+}
+
+const greeter      = new Greeter("Leonard")
+const rude_greeter = new RudeGreeter("Leonard")
+
+greeter.greet()
+// Good morning Leonard
+
+rude_greeter.greet()
+// ...oh no, not him again...
+// Good morning stupid Leonard
+// ...now go away...
