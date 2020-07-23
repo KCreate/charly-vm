@@ -24,13 +24,3 @@
  * SOFTWARE.
  */
 
-const debug_func = @"charly.vm.debug_func"
-
-debug_func.call_async(null, [25], ->(result, err) {
-  if err {
-    print(err)
-    return;
-  }
-
-  print(result)
-})

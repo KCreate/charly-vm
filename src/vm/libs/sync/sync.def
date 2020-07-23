@@ -24,20 +24,10 @@
  * SOFTWARE.
  */
 
-import "time"
-
-let t = time.now()
-defer.interval(->(i) {
-  const now = time.now()
-
-  50000.times(->{
-    [1, 2, 3].reverse()
-  })
-
-  const duration = now - t
-  print("ø: " + duration.to_s())
-  t = now
-}, 1500)
-
-let d = 500.years() + 20.days() + 12.hours() + 34.minutes() + 33.seconds() + 2.milliseconds()
-print(d)
+DEFINE_INTERNAL_METHOD("charly.vm.init_timer",     Sync::init_timer,     2, kThreadMain),
+DEFINE_INTERNAL_METHOD("charly.vm.clear_timer",    Sync::clear_timer,    1, kThreadMain),
+DEFINE_INTERNAL_METHOD("charly.vm.init_ticker",    Sync::init_ticker,    2, kThreadMain),
+DEFINE_INTERNAL_METHOD("charly.vm.clear_ticker",   Sync::clear_ticker,   1, kThreadMain),
+DEFINE_INTERNAL_METHOD("charly.vm.suspend_thread", Sync::suspend_thread, 0, kThreadMain),
+DEFINE_INTERNAL_METHOD("charly.vm.resume_thread",  Sync::resume_thread,  2, kThreadMain),
+DEFINE_INTERNAL_METHOD("charly.vm.get_thread_uid", Sync::get_thread_uid, 0, kThreadMain),

@@ -43,31 +43,32 @@ export = ->(Base) {
     }
 
     /*
-     * Call this function asynchronously
-     *
-     * if *self* is a charly function this will invoke it via defer
-     * if *self* is a c function this will start a worker thread
-     *
-     * TODO: Replace this code with a Promise implementation once implemented
+     * Asynchronously call this function
      * */
-    call_async(ctx, args = [], callback = null) {
-      if @is_charly_func() {
-        defer(->{
-          callback(self.call(ctx, args))
-        })
-      } else {
-        const error_template = new Error(self.name + ": ")
-        __internal_function_call_async(self, args, ->(a1, error, a3, a4) {
-          if typeof error == "string" {
-            error_template.message += error
-            error = error_template
-          }
+    call_async(ctx = null, args = []) {
+      new Promise(->(resolve, reject) {
+        if (@is_charly_func()) {
+          defer(->{
+            try {
+              resolve(self.call(ctx, args))
+            } catch(e) {
+              reject(e)
+            }
+          })
+        } else {
+          const error_template = new Error(self.name + ": ")
+          __internal_function_call_async(self, args, ->(a1, error, a2, a3) {
 
-          if callback callback(a1, error, a3, a4)
-        })
-      }
+            // Exceptions thrown by the VM are delivered as a string
+            if typeof error == "string" {
+              error = error_template.tap(->$0.message += error)
+              return reject(error)
+            }
 
-      return null
+            resolve(a1, a2, a3)
+          })
+        }
+      })
     }
 
     /*

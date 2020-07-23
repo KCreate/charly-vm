@@ -383,10 +383,10 @@ public:
   void clear_task_queue();
   VALUE register_module(InstructionBlock* block);
   uint64_t register_timer(Timestamp, VMTask task);
-  uint64_t register_interval(uint32_t, VMTask task);
+  uint64_t register_ticker(uint32_t, VMTask task);
   uint64_t get_next_timer_id();
   void clear_timer(uint64_t uid);
-  void clear_interval(uint64_t uid);
+  void clear_ticker(uint64_t uid);
 
   WorkerThread* start_worker_thread(CFunction* cfunc, const std::vector<VALUE>& args, Function* callback);
   void close_worker_thread(WorkerThread* thread, VALUE return_value);
@@ -435,9 +435,9 @@ private:
   std::condition_variable task_queue_cv;
   std::atomic<bool> running;
 
-  // Remaining timers & intervals
+  // Remaining timers & tickers
   std::map<Timestamp, VMTask> timers;
-  std::map<Timestamp, std::tuple<VMTask, uint32_t>> intervals;
+  std::map<Timestamp, std::tuple<VMTask, uint32_t>> tickers;
 
   uint64_t next_timer_id = 0;
 

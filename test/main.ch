@@ -36,7 +36,7 @@ const result = unittest(->(describe, it, assert, context) {
     ["Classes",               "./interpreter/classes.ch"],
     ["Comments",              "./interpreter/comments.ch"],
     ["Comparisons",           "./interpreter/comparisons.ch"],
-    ["Defer",                 "./interpreter/defer.ch"],
+    ["Sync",                  "./interpreter/sync.ch"],
     ["Exceptions",            "./interpreter/exceptions.ch"],
     ["External Files",        "./interpreter/external-files.ch"],
     ["Functions",             "./interpreter/functions.ch"],
@@ -51,8 +51,8 @@ const result = unittest(->(describe, it, assert, context) {
     ["Unless",                "./interpreter/unless.ch"],
 
     // Standard library specs
-    ["ARGV & Environment",    "./stdlib/argv-environ.ch"],
-    ["Heaps",                 "./stdlib/heaps.ch"]
+    ["ARGV & Environment", "./stdlib/argv-environ.ch"],
+    ["Heaps",              "./stdlib/heaps.ch"]
   ]
 
   // Loads and runs all the test cases sequentially

@@ -24,23 +24,19 @@
  * SOFTWARE.
  */
 
-#include "defines.h"
-#include "internals.h"
+let t = Time.now()
 
-#pragma once
+new Sync.Ticker(->{
+  const now = Time.now()
 
-namespace Charly {
-namespace Internals {
-namespace Defer {
+  50000.times(->{
+    [1, 2, 3].reverse()
+  })
 
-VALUE defer(VM& vm, VALUE cb, VALUE dur);
-VALUE defer_interval(VM& vm, VALUE cb, VALUE period);
-VALUE clear_timer(VM& vm, VALUE uid);
-VALUE clear_interval(VM& vm, VALUE uid);
-VALUE suspend_thread(VM& vm);
-VALUE resume_thread(VM& vm, VALUE uid, VALUE argument);
-VALUE get_thread_uid(VM& vm);
+  const duration = now - t
+  print("ø: " + duration.to_s())
+  t = now
+}, 2.seconds())
 
-}  // namespace Defer
-}  // namespace Internals
-}  // namespace Charly
+let d = 500.years() + 20.days() + 12.hours() + 34.minutes() + 33.seconds() + 2.milliseconds()
+print(d)

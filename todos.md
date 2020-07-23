@@ -1,19 +1,38 @@
+- Notifier::notify_one
+  - Only resumes the front paused thread
+  - Does not finish the Notifier, other waits are simply enqueued
+  - New API:
+    - wait          -> Enqueue this thread, throw if Notifier is closed
+    - notify_one    -> Resume a single thread
+    - notify_all    -> Resume all threads
+    - close         -> Resume all threads, arg = null, closes the Notifier
+
+- 'users.each(->.name)' Syntax
+  - Arrow functions which begin with a "." (dot) are parsed as '->$0.foo'
+
+- GC memory bug
+  - At the beginning of each opcode which could potentially allocate things:
+    - Store current freecell pointer
+    - If there is a collection, mark all cells starting from that pointer as marked
+    - I think this fix even allows me to remove all the ManagedContext stuff from
+      - Worker threads will still need it i believe because they are not inside main instruction loop
+
+- Look into Fiber architectures
+  - Could we already implement this using the Sync.Notifier primitives
+  - Create basic runtime scheduler and scheduling methods prototypes
+    - See: Go Goroutines, Ruby Fibers / Threads
+
 - Channel class
-  - bi-directional message queue
-  - backed by a thread-safe queue written in C
-  - can be used to communicate with a running worker thread
-  - can be used to communicate with other charly threads
-  - a single read call will always return a single entry from the queue
-  - if multiple reader-threads are waiting for an entry, and a new entry comes along,
-    it only gets sent to a single reader-thread. the other threads are left waiting
-    for another entry. the order should be FIFO
-  - Maybe implement as a new datatype?
-    - Implementation using regular datatypes
-    - CPointer which points to a mutex controlled C object
-    - Interactions with the channel object are done via C functions
-      - read, write, close
-  - Closing a channel will deny all new writes and reads
-    - Outstanding read operations will return null
+  - Backed by a thread-safe C queue
+  - Main abstraction to communicate with worker threads
+  - Max size of queue can be determined at creation
+  - A read from an empty channel will block until there is data available
+  - A write to a full channel will block until someone reads from the queue
+  - Calls to read are served in order of invocation. The first thread to
+    call read will be the first thread to get a value from the channel
+  - Closing a channel
+    - Outstanding writes will throw an exception
+    - Outstanding reads will read from the queue and return null if queue is empty
 
 - Write prototype file handling API as external lib as a general systems check
 
@@ -21,10 +40,13 @@
   - Types should define their own methods / functionality
   - No external access to private member fields
   - No performance penalty since such methods can be inlined
+  - Use a spinlock to sync access to heap types
+    - Much better performance than a mutex
+    - We only use the lock for a very short amount of time
 
-- Promise class
-  - Main abstraction class for all asynchronous methods in the standard library
-  - Introduce await keyword to wait for a promise to finish
+- Smarter stacktraces
+  - Timers should contain the stacktrace that led up to its invocation
+  - Clearly mark any async boundaries
 
 - Path class
   - Static methods
@@ -50,6 +72,13 @@
     - has_parent_path
     - is_absolute
     - is_relative
+
+- Architecture changes to worker threads
+  - Have a fixed amount of worker threads which are always alive, delivering jobs via some message queue
+  - Other stuff like network and file change watchers can be implemented using other more efficient mechanisms
+    - epoll
+    - kqueue
+    - select
 
 - File system library
   - C++17 native std::filesystem library

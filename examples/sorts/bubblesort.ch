@@ -57,7 +57,4 @@ func sort(array) {
 }
 
 const sorter = sort(numbers)
-
-const t = defer.interval(->(i) {
-  print(sorter())
-}, 500)
+new Sync.Ticker(->print(sorter()), 500.milliseconds())

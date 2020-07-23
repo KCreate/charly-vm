@@ -41,8 +41,9 @@
 @"charly.vm.globals".Boolean   = null
 @"charly.vm.globals".Null      = null
 
-// Error classes
-@"charly.vm.globals".Error = null
+// Global classes
+@"charly.vm.globals".Error   = null
+@"charly.vm.globals".Promise = null
 
 // Global methods
 @"charly.vm.globals".print = null
@@ -101,7 +102,8 @@ __internal_standard_libs_names = [
   "time",
   "error",
   "heap",
-  "unittest"
+  "unittest",
+  "sync"
 ]
 
 // All libraries that come with charly
@@ -110,7 +112,8 @@ __internal_standard_libs = {
   time: "_charly_time",
   error: "_charly_error",
   heap: "_charly_heap",
-  unittest: "_charly_unittest"
+  unittest: "_charly_unittest",
+  sync: "_charly_sync"
 }
 
 // Setup primitive classes
@@ -152,12 +155,6 @@ exit = func exit(status = 0) {
   __internal_exit(status)
 }
 
-// Defer lib
-defer = import "_charly_defer"
-
-// Global error class
-Error = import "_charly_error"
-
 // Setup the charly object
 Charly.argv        = __internal_get_argv()
 Charly.environment = __internal_get_environment()
@@ -171,5 +168,10 @@ Charly.io = {
   dirname: __internal_dirname
 }
 
-Charly.globals.Math = import "math"
-Charly.globals.Time = import "time"
+// Register global symbols
+Charly.globals.Error   = import "_charly_error"
+Charly.globals.Math    = import "math"
+Charly.globals.Time    = import "time"
+Charly.globals.Sync    = import "sync"
+Charly.globals.Promise = Sync.Promise
+Charly.globals.defer   = Sync.defer

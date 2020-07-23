@@ -79,44 +79,64 @@ summer(100)
 read_state() // => 400
 ```
 
-### Taskqueue interactions
+### Promises
+
+The `defer` method is a shorthand for the regular `new Promise(->(resolve, reject) {...})` kind of way
+to creating a promise. The created promise resolves once the callback returns or rejects
+if the callback throws an exception.
+
 ```javascript
-const iv = defer.interval(->{
-  print("Doing stuff...")
-}, 1.second())
+const p = defer(->"Hello world!", 1.second())
 
-defer(->{
-  iv.clear()
-
-  print("Done!!")
-}, 5.seconds())
-
-/* Console output:
-
-   Doing stuff...
-   Doing stuff...
-   Doing stuff...
-   Doing stuff...
-   Done!!
-*/
+p.then(->(result) {
+  print("Got result: " + result) // Got result: Hello world!
+})
 ```
 
 ```javascript
-const t1 = defer(->print("First task"), 10.milliseconds())
-const t2 = defer(->print("Second task"), 5.milliseconds())
-const t3 = defer(->print("Third task"), 15.milliseconds())
+const p = defer(->"Hello world", 1.second())
 
-defer.wait(t1, t2, t3)
+// The wait method returns the value the promise resolved with.
+// If the promise got rejected, it will throw
+const result = p.wait()
 
-print("After waiting for tasks")
+print(result) // "Hello world!"
+```
 
-/* Console output:
+### Turning asynchronous into synchronous flow
 
-   Second task
-   First task
-   Third task
-   After waiting for tasks
-*/
+```javascript
+// Implementation of the sleep method using standard library constructs
+func sleep(duration) {
+
+  // The Notifier allows the user to pause and
+  // resume different threads of execution
+  const n = new Sync.Notifier()
+
+  // Invoking the notify method will resume any waiting threads
+  defer(->n.notify(), duration)
+
+  // Waits until some other thread calls the notify method
+  n.wait()
+}
+
+print("Hello")
+sleep(1.second())
+print("World")
+```
+
+### Tickers
+
+```javascript
+const t = new Sync.Ticker(->(i) {
+  print("Iteration: " + i)
+}, 250.ms())
+
+t.then(->{
+  print("Ticker iterations: " + t.iterations)
+})
+
+defer(->t.stop(), 2.seconds())
 ```
 
 ### Extending primitive classes

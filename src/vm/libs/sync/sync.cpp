@@ -24,14 +24,14 @@
  * SOFTWARE.
  */
 
-#include "defer.h"
+#include "sync.h"
 #include "vm.h"
 
 namespace Charly {
 namespace Internals {
-namespace Defer {
+namespace Sync {
 
-VALUE defer(VM& vm, VALUE cb, VALUE dur) {
+VALUE init_timer(VM& vm, VALUE cb, VALUE dur) {
   CHECK(function, cb);
   CHECK(number, dur);
 
@@ -43,24 +43,24 @@ VALUE defer(VM& vm, VALUE cb, VALUE dur) {
   return charly_create_integer(vm.register_timer(exec_at, VMTask::init_callback(cb)));
 }
 
-VALUE defer_interval(VM& vm, VALUE cb, VALUE period) {
-  CHECK(function, cb);
-  CHECK(number, period);
-
-  uint32_t ms = charly_number_to_uint32(period);
-
-  return charly_create_integer(vm.register_interval(ms, VMTask::init_callback(cb)));
-}
-
-VALUE clear_timer(VM&vm, VALUE uid) {
+VALUE clear_timer(VM& vm, VALUE uid) {
   CHECK(number, uid);
   vm.clear_timer(charly_number_to_uint64(uid));
   return kNull;
 }
 
-VALUE clear_interval(VM&vm, VALUE uid) {
+VALUE init_ticker(VM& vm, VALUE cb, VALUE period) {
+  CHECK(function, cb);
+  CHECK(number, period);
+
+  uint32_t ms = charly_number_to_uint32(period);
+
+  return charly_create_integer(vm.register_ticker(ms, VMTask::init_callback(cb)));
+}
+
+VALUE clear_ticker(VM& vm, VALUE uid) {
   CHECK(number, uid);
-  vm.clear_interval(charly_number_to_uint64(uid));
+  vm.clear_ticker(charly_number_to_uint64(uid));
   return kNull;
 }
 
@@ -79,6 +79,6 @@ VALUE get_thread_uid(VM& vm) {
   return charly_create_integer(vm.get_thread_uid());
 }
 
-}  // namespace Defer
+}  // namespace Sync
 }  // namespace Internals
 }  // namespace Charly

@@ -3575,7 +3575,7 @@ uint8_t VM::start_runtime() {
   while (this->running) {
     Timestamp now = std::chrono::steady_clock::now();
 
-    // Add all expired timers and intervals to the task_queue
+    // Add all expired timers and tickers to the task_queue
     if (this->timers.size()) {
       auto it = this->timers.begin();
       while (it != this->timers.end() && it->first <= now) {
@@ -3585,23 +3585,23 @@ uint8_t VM::start_runtime() {
       }
     }
 
-    // Scheduling an interval with period 0 will have
+    // Scheduling a ticker with period 0 will have
     // it be inserted over and over
-    if (this->intervals.size()) {
-      auto it = this->intervals.begin();
+    if (this->tickers.size()) {
+      auto it = this->tickers.begin();
 
-      std::map<Timestamp, std::tuple<VMTask, uint32_t>> newly_scheduled_intervals;
-      while (it != this->intervals.end() && it->first <= now) {
+      std::map<Timestamp, std::tuple<VMTask, uint32_t>> newly_scheduled_tickers;
+      while (it != this->tickers.end() && it->first <= now) {
         this->register_task(std::get<0>(it->second));
 
         Timestamp scheduled_time = now + std::chrono::milliseconds(std::get<1>(it->second));
-        newly_scheduled_intervals.insert({scheduled_time, it->second});
-        this->intervals.erase(it);
+        newly_scheduled_tickers.insert({scheduled_time, it->second});
+        this->tickers.erase(it);
 
-        it = this->intervals.begin();
+        it = this->tickers.begin();
       }
 
-      this->intervals.insert(newly_scheduled_intervals.begin(), newly_scheduled_intervals.end());
+      this->tickers.insert(newly_scheduled_tickers.begin(), newly_scheduled_tickers.end());
     }
 
     // Check if there is a task to execute
@@ -3669,28 +3669,28 @@ uint8_t VM::start_runtime() {
     } else {
 
       // Since there are no tasks in the task queue, we can now simply wait until
-      // there is one. In order to not miss out on any timers or intervals, we
-      // calculate when the next timer/interval is going to fire and use this time
+      // there is one. In order to not miss out on any timers or tickers, we
+      // calculate when the next timer/ticker is going to fire and use this time
       // as our maximum wait time.
       now = std::chrono::steady_clock::now();
       auto timer_wait = std::chrono::milliseconds(10 * 1000);
-      auto interval_wait = std::chrono::milliseconds(10 * 1000);
+      auto ticker_wait = std::chrono::milliseconds(10 * 1000);
 
-      // Check the next timers and intervals
+      // Check the next timers and tickers
       if (this->timers.size())
         timer_wait = std::chrono::duration_cast<std::chrono::milliseconds>(this->timers.begin()->first - now);
-      if (this->intervals.size())
-        interval_wait = std::chrono::duration_cast<std::chrono::milliseconds>(this->intervals.begin()->first - now);
+      if (this->tickers.size())
+        ticker_wait = std::chrono::duration_cast<std::chrono::milliseconds>(this->tickers.begin()->first - now);
 
       // Wait for the result queue
       std::unique_lock<std::mutex> lk(this->task_queue_m);
-      this->task_queue_cv.wait_for(lk, std::min(timer_wait, interval_wait));
+      this->task_queue_cv.wait_for(lk, std::min(timer_wait, ticker_wait));
     }
 
     // Check if we can exit the runtime
     if (this->task_queue.size() == 0 &&
         this->timers.size() == 0 &&
-        this->intervals.size() == 0 &&
+        this->tickers.size() == 0 &&
         this->worker_threads.size() == 0) {
       this->running = false;
     }
@@ -3827,7 +3827,7 @@ uint64_t VM::register_timer(Timestamp ts, VMTask task) {
   return task.uid;
 }
 
-uint64_t VM::register_interval(uint32_t period, VMTask task) {
+uint64_t VM::register_ticker(uint32_t period, VMTask task) {
   if (!task.is_thread) {
     this->gc.mark_persistent(task.callback.func);
     this->gc.mark_persistent(task.callback.arguments[0]);
@@ -3840,7 +3840,7 @@ uint64_t VM::register_interval(uint32_t period, VMTask task) {
   Timestamp exec_at = now + std::chrono::milliseconds(period);
 
   task.uid = this->get_next_timer_id();
-  this->intervals.insert({exec_at, {task, period}});
+  this->tickers.insert({exec_at, {task, period}});
   return task.uid;
 }
 
@@ -3857,10 +3857,10 @@ void VM::clear_timer(uint64_t uid) {
   }
 }
 
-void VM::clear_interval(uint64_t uid) {
-  for (auto it : this->intervals) {
+void VM::clear_ticker(uint64_t uid) {
+  for (auto it : this->tickers) {
     if (std::get<0>(it.second).uid == uid) {
-      this->intervals.erase(it.first);
+      this->tickers.erase(it.first);
       break;
     }
   }

@@ -236,8 +236,8 @@ void GarbageCollector::collect() {
       this->mark(it.second.callback.arguments[3]);
     }
 
-    // Intervals
-    for (auto& it : this->host_vm->intervals) {
+    // Tickers
+    for (auto& it : this->host_vm->tickers) {
       this->mark(std::get<0>(it.second).callback.func);
       this->mark(std::get<0>(it.second).callback.arguments[0]);
       this->mark(std::get<0>(it.second).callback.arguments[1]);

@@ -24,10 +24,25 @@
  * SOFTWARE.
  */
 
-DEFINE_INTERNAL_METHOD("charly.vm.defer",          Defer::defer,          2, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.vm.defer_interval", Defer::defer_interval, 2, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.vm.clear_timer",    Defer::clear_timer,    1, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.vm.clear_interval", Defer::clear_interval, 1, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.vm.suspend_thread", Defer::suspend_thread, 0, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.vm.resume_thread",  Defer::resume_thread,  2, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.vm.get_thread_uid", Defer::get_thread_uid, 0, kThreadMain),
+#include "defines.h"
+#include "internals.h"
+
+#pragma once
+
+namespace Charly {
+namespace Internals {
+namespace Sync {
+
+VALUE init_timer(VM& vm, VALUE cb, VALUE dur);
+VALUE clear_timer(VM& vm, VALUE uid);
+
+VALUE init_ticker(VM& vm, VALUE cb, VALUE period);
+VALUE clear_ticker(VM& vm, VALUE uid);
+
+VALUE suspend_thread(VM& vm);
+VALUE resume_thread(VM& vm, VALUE uid, VALUE argument);
+VALUE get_thread_uid(VM& vm);
+
+}  // namespace Sync
+}  // namespace Internals
+}  // namespace Charly

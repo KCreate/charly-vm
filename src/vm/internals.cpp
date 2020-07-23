@@ -36,7 +36,7 @@
 #include "vm.h"
 
 #include "libs/buffer/buffer.h"
-#include "libs/defer/defer.h"
+#include "libs/sync/sync.h"
 #include "libs/math/math.h"
 #include "libs/time/time.h"
 #include "libs/primitives/array/array.h"
@@ -73,7 +73,7 @@ std::unordered_map<VALUE, MethodSignature> Index::methods = {
 #import "libs/math/math.def"
 #import "libs/time/time.def"
 #import "libs/buffer/buffer.def"
-#import "libs/defer/defer.def"
+#import "libs/sync/sync.def"
 
     // VM internals
     //
@@ -96,23 +96,23 @@ std::unordered_map<VALUE, MethodSignature> Index::methods = {
 std::unordered_map<std::string, std::string> Index::standard_libraries = {
 
     // Internal primitives
-    {"_charly_array", "src/stdlib/primitives/array.ch"},
-    {"_charly_boolean", "src/stdlib/primitives/boolean.ch"},
-    {"_charly_class", "src/stdlib/primitives/class.ch"},
-    {"_charly_function", "src/stdlib/primitives/function.ch"},
+    {"_charly_array",     "src/stdlib/primitives/array.ch"},
+    {"_charly_boolean",   "src/stdlib/primitives/boolean.ch"},
+    {"_charly_class",     "src/stdlib/primitives/class.ch"},
+    {"_charly_function",  "src/stdlib/primitives/function.ch"},
     {"_charly_generator", "src/stdlib/primitives/generator.ch"},
-    {"_charly_null", "src/stdlib/primitives/null.ch"},
-    {"_charly_number", "src/stdlib/primitives/number.ch"},
-    {"_charly_object", "src/stdlib/primitives/object.ch"},
-    {"_charly_string", "src/stdlib/primitives/string.ch"},
-    {"_charly_value", "src/stdlib/primitives/value.ch"},
+    {"_charly_null",      "src/stdlib/primitives/null.ch"},
+    {"_charly_number",    "src/stdlib/primitives/number.ch"},
+    {"_charly_object",    "src/stdlib/primitives/object.ch"},
+    {"_charly_string",    "src/stdlib/primitives/string.ch"},
+    {"_charly_value",     "src/stdlib/primitives/value.ch"},
 
     // Libraries
-    {"_charly_defer", "src/stdlib/libs/defer.ch"},
-    {"_charly_error", "src/stdlib/libs/error.ch"},
-    {"_charly_heap", "src/stdlib/libs/heap.ch"},
-    {"_charly_math", "src/stdlib/libs/math.ch"},
-    {"_charly_time", "src/stdlib/libs/time.ch"},
+    {"_charly_sync",     "src/stdlib/libs/sync.ch"},
+    {"_charly_error",    "src/stdlib/libs/error.ch"},
+    {"_charly_heap",     "src/stdlib/libs/heap.ch"},
+    {"_charly_math",     "src/stdlib/libs/math.ch"},
+    {"_charly_time",     "src/stdlib/libs/time.ch"},
     {"_charly_unittest", "src/stdlib/libs/unittest.ch"}
 };
 
