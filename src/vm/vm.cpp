@@ -438,7 +438,7 @@ VALUE VM::copy_object(VALUE object) {
 }
 
 VALUE VM::deep_copy_object(VALUE object) {
-  ManagedContext lalloc(*this);
+  ManagedContext lalloc(this);
 
   Object* source = charly_as_object(object);
   Object* target = charly_as_object(lalloc.create_object(source->container->size()));
@@ -463,7 +463,7 @@ VALUE VM::copy_array(VALUE array) {
 }
 
 VALUE VM::deep_copy_array(VALUE array) {
-  ManagedContext lalloc(*this);
+  ManagedContext lalloc(this);
 
   Array* source = charly_as_array(array);
   Array* target = charly_as_array(lalloc.create_array(source->data->size()));
@@ -558,7 +558,7 @@ VALUE VM::add(VALUE left, VALUE right) {
     uint64_t new_length = left_length + right_length;
 
     // Check if we have to do any work at all
-    if (left_length == 0 && right_length == 0) {
+    if (new_length == 0) {
       return charly_create_empty_string();
     }
 
@@ -583,20 +583,20 @@ VALUE VM::add(VALUE left, VALUE right) {
     char* left_data = charly_string_data(left);
     char* right_data = charly_string_data(right);
 
-    // Check if both strings would fit into the short encoding
+    // Check if we can store the result in a short string or if a
+    // buffer needs to be allocated
     if (new_length <= kShortStringMaxSize) {
       String* new_string = charly_as_hstring(this->create_empty_short_string());
       std::memcpy(new_string->sbuf.data, left_data, left_length);
       std::memcpy(new_string->sbuf.data + left_length, right_data, right_length);
       new_string->sbuf.length = new_length;
       return charly_create_pointer(new_string);
+    } else {
+      char* new_data = reinterpret_cast<char*>(std::malloc(new_length));
+      std::memcpy(new_data, left_data, left_length);
+      std::memcpy(new_data + left_length, right_data, right_length);
+      return this->create_weak_string(new_data, new_length);
     }
-
-    // Allocate the buffer for the string
-    char* new_data = reinterpret_cast<char*>(std::malloc(new_length));
-    std::memcpy(new_data, left_data, left_length);
-    std::memcpy(new_data + left_length, right_data, right_length);
-    return this->create_weak_string(new_data, new_length);
   }
 
   // String concatenation for different types
@@ -1813,7 +1813,7 @@ void VM::op_putclass(VALUE name,
                      uint32_t staticmethodcount,
                      bool has_parent_class,
                      bool has_constructor) {
-  ManagedContext lalloc(*this);
+  ManagedContext lalloc(this);
 
   Class* klass = charly_as_class(lalloc.create_class(name));
   klass->member_properties->reserve(propertycount);
@@ -1943,7 +1943,7 @@ void VM::op_new(uint32_t argc) {
   }
 
   // Setup object
-  ManagedContext lalloc(*this);
+  ManagedContext lalloc(this);
   uint32_t member_property_count = charly_as_class(klass)->member_properties->size();
   Object* obj = charly_as_object(lalloc.create_object(member_property_count));
   obj->klass = klass;
@@ -3611,6 +3611,7 @@ uint8_t VM::start_runtime() {
       // A VMTask can either call a function with an argument or resume the execution
       // of a previously paused thread
       if (task.is_thread) {
+
         // Resume a suspended thread
         uint64_t thread_id = task.thread.id;
         if (this->paused_threads.count(thread_id) == 0) {
@@ -3699,7 +3700,7 @@ uint8_t VM::start_runtime() {
 }
 
 VALUE VM::exec_module(Function* fn) {
-  ManagedContext lalloc(*this);
+  ManagedContext lalloc(this);
   VALUE export_obj = lalloc.create_object(0);
 
   uint8_t* old_ip = this->ip;
@@ -3896,7 +3897,7 @@ void VM::close_worker_thread(WorkerThread* thread, VALUE return_value) {
 }
 
 void VM::handle_worker_thread_exception(const std::string& message) {
-  ManagedContext lalloc(*this);
+  ManagedContext lalloc(this);
   std::thread::id current_thread_id = std::this_thread::get_id();
   std::lock_guard<std::mutex> lock(this->worker_threads_m);
   WorkerThread* handle = this->worker_threads[current_thread_id];

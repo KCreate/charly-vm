@@ -167,6 +167,19 @@ class Error {
     null
   }
 
+  /*
+   * Expect the callback to throw an exception
+   * Will throw an exception itself if no exception gets thrown
+   * */
+  static expect(callback) {
+    try {
+      callback()
+      throw new Error("Expected an exception to be thrown")
+    } catch(e) {
+      return e
+    }
+  }
+
   static property StackFrame = StackFrame
 }
 

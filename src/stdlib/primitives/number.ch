@@ -177,6 +177,7 @@ export = ->(Base) {
     nanoseconds  = new Time.Duration(self / 1000000)
     microsecond  = new Time.Duration(self / 1000)
     microseconds = new Time.Duration(self / 1000)
+    ms           = new Time.Duration(self)
     millisecond  = new Time.Duration(self)
     milliseconds = new Time.Duration(self)
     second       = new Time.Duration(self * 1000)

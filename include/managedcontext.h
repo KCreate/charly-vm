@@ -41,6 +41,7 @@ private:
 public:
   ManagedContext(VM& t_vm) : vm(t_vm) {
   }
+  ManagedContext(VM* t_vm) : vm(*t_vm) {}
   ~ManagedContext() {
     for (auto& temp : this->temporaries) {
       this->vm.gc.unmark_persistent(temp);

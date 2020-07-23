@@ -124,6 +124,8 @@ void GarbageCollector::mark(VALUE value) {
       // We only mark these values if the generator is still running
       if (!gen->finished()) {
         this->mark(charly_create_pointer(gen->context_frame));
+        this->mark(charly_create_pointer(gen->boot_function));
+        this->mark(charly_create_pointer(gen->context_catchtable));
         if (gen->bound_self_set)
           this->mark(gen->bound_self);
         for (auto entry : *gen->context_stack)
@@ -189,16 +191,16 @@ void GarbageCollector::collect() {
     this->mark(this->host_vm->uncaught_exception_handler);
     this->mark(this->host_vm->internal_error_class);
     this->mark(this->host_vm->globals);
-    this->mark(this->host_vm->primitive_value);
-    this->mark(this->host_vm->primitive_object);
-    this->mark(this->host_vm->primitive_class);
     this->mark(this->host_vm->primitive_array);
-    this->mark(this->host_vm->primitive_string);
-    this->mark(this->host_vm->primitive_number);
+    this->mark(this->host_vm->primitive_boolean);
+    this->mark(this->host_vm->primitive_class);
     this->mark(this->host_vm->primitive_function);
     this->mark(this->host_vm->primitive_generator);
-    this->mark(this->host_vm->primitive_boolean);
     this->mark(this->host_vm->primitive_null);
+    this->mark(this->host_vm->primitive_number);
+    this->mark(this->host_vm->primitive_object);
+    this->mark(this->host_vm->primitive_string);
+    this->mark(this->host_vm->primitive_value);
 
     // Stack
     for (VALUE item : this->host_vm->stack) {

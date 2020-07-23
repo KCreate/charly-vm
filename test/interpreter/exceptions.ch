@@ -149,4 +149,10 @@ export = ->(describe, it, assert) {
     assert.exception(->new String(),    ->assert($0.message, err_msg_base + "String"))
   })
 
+  describe("Error.expect", ->{
+    const exc = Error.expect(->{ throw new Error("some error") })
+    assert(typeof exc, "object")
+    assert(exc.message, "some error")
+  })
+
 }

@@ -1600,6 +1600,7 @@ inline VALUE charly_create_symbol(VALUE value) {
 // Create a VALUE from a ptr
 __attribute__((always_inline))
 inline VALUE charly_create_pointer(void* ptr) {
+  if (ptr == nullptr) return kNull;
   if (ptr > kMaxPointer) return kSignaturePointer; // null pointer
   return kSignaturePointer | (kMaskPointer & reinterpret_cast<int64_t>(ptr));
 }
