@@ -3692,7 +3692,17 @@ uint8_t VM::start_runtime() {
         this->timers.size() == 0 &&
         this->tickers.size() == 0 &&
         this->worker_threads.size() == 0) {
-      this->running = false;
+
+      if (this->paused_threads.size()) {
+        for (auto& entry : this->paused_threads) {
+          ManagedContext lalloc(this);
+          VALUE exc_obj = lalloc.create_object(1);
+          charly_as_object(exc_obj)->container->insert({ SYM("__charly_internal_stale_thread_exception"), kTrue });
+          this->resume_thread(entry.first, exc_obj);
+        }
+      } else {
+        this->running = false;
+      }
     }
   }
 
