@@ -4,7 +4,19 @@ class TestVisitor {
   }
 
   on_node(node, depth, cb) {
-    cb()
+    // If the callback takes at least one argument, we assume the test case will
+    // run something asynchronously, so we provide a done callback which wraps
+    // the asynchronous flow back into the synchronous flow of this method
+    if cb.argc == 1 {
+      const n = new Sync.Notifier()
+      cb(->n.notify())
+      const timeout = defer(->n.throw(new Error("Test case timed out")), 5.second())
+      n.wait()
+      timeout.clear()
+    } else {
+      cb()
+    }
+
     if node.passed() {
       write(".")
     } else {
