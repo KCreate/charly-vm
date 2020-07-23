@@ -65,6 +65,12 @@ class Assertion extends Node {
   property expected
   property has_passed
 
+  static single_value(value) {
+    const node = new Assertion(value, true)
+    if value node.has_passed = true
+    node
+  }
+
   constructor(@real, @expected) {
     super("", NodeType.Assertion)
     @has_passed = expected == real

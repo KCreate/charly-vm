@@ -43,8 +43,14 @@ class Context {
     @add_node(NodeType.Test, title, callback)
   }
 
-  assert(real, expected) {
-    const assertion = new Assertion(real, expected)
+  assert(real, expected = null) {
+    let assertion
+
+    if arguments.length == 1 {
+      assertion = Assertion.single_value(real)
+    } else {
+      assertion = new Assertion(real, expected)
+    }
 
     @current.push(
       assertion,

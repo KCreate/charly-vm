@@ -7,7 +7,10 @@ export = ->(callback) {
   const visitor = new TestVisitor(write, print)
   const context = new Context(visitor)
 
-  const assert = ->(real, expected = true) context.assert(real, expected)
+  const assert = ->(real, expected = true) {
+    if arguments.length == 1 return context.assert(real)
+    context.assert(real, expected)
+  }
   assert.exception = ->(cb1, cb2) {
     try {
       cb1()
