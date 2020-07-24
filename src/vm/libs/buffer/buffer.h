@@ -47,6 +47,7 @@ VALUE write_partial(VM& vm, VALUE buf, VALUE src, VALUE off, VALUE cnt);
 VALUE write_bytes(VM& vm, VALUE buf, VALUE bytes);
 VALUE str(VM& vm, VALUE buf);
 VALUE bytes(VM& vm, VALUE buf);
+VALUE clear(VM& vm, VALUE buf);
 
 }  // namespace Buffer
 }  // namespace Internals

@@ -34,6 +34,7 @@ const __buffer_write_partial = @"charly.stdlib.buffer.write_partial"
 const __buffer_write_bytes   = @"charly.stdlib.buffer.write_bytes"
 const __buffer_str           = @"charly.stdlib.buffer.str"
 const __buffer_bytes         = @"charly.stdlib.buffer.bytes"
+const __buffer_clear         = @"charly.stdlib.buffer.clear"
 
 /*
  * Represents a buffer
@@ -104,6 +105,15 @@ class Buffer {
    * */
   bytes {
     __buffer_bytes(@handle)
+  }
+
+  /*
+   * Clear the buffer
+   * */
+  clear {
+    __buffer_clear(@handle)
+    @size = @get_size()
+    @offset = @get_offset()
   }
 }
 

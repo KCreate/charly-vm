@@ -207,5 +207,10 @@ public:
   inline size_t get_length() {
     return this->writeoffset;
   }
+
+  inline void clear() {
+    std::memset(this->data, 0, this->capacity);
+    this->writeoffset = 0;
+  }
 };
 }  // namespace Charly

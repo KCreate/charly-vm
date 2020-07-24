@@ -33,3 +33,4 @@ DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.write_partial", Buffer::write_parti
 DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.write_bytes",   Buffer::write_bytes,   2, kThreadMain),
 DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.str",           Buffer::str,           1, kThreadMain),
 DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.bytes",         Buffer::bytes,         1, kThreadMain),
+DEFINE_INTERNAL_METHOD("charly.stdlib.buffer.clear",         Buffer::clear,         1, kThreadMain),

@@ -197,6 +197,19 @@ VALUE bytes(VM& vm, VALUE buf) {
   return charly_create_pointer(byte_array);
 }
 
+VALUE clear(VM& vm, VALUE buf) {
+  CHECK(cpointer, buf);
+
+  UTF8Buffer* buffer = buffer_list[reinterpret_cast<uint64_t>(charly_as_cpointer(buf)->data)];
+  if (!buffer) {
+    return kNull;
+  }
+
+  buffer->clear();
+
+  return kNull;
+}
+
 }  // namespace Buffer
 }  // namespace Internals
 }  // namespace Charly
