@@ -7,7 +7,8 @@ OPTPROD := -O3 -Ofast
 SRCDIR := src
 BUILDDIR := build
 INCLUDEDIR := include
-TARGET := bin/vm
+TARGET := bin/dev
+PRODTARGET := bin/charly
 SRCEXT := cpp
 HEADEREXT := h
 HEADERS := $(shell find $(INCLUDEDIR) -type f -name *.$(HEADEREXT))
@@ -48,8 +49,8 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
 	$(call colorecho, " Built $@", 2)
 
 production:
-	$(call colorecho, " Building production binary $(TARGET)", 2)
-	@$(CC) $(SOURCES) $(CFLAGSPROD) $(OPTPROD) $(INC) $(LIB) $(LFLAGS) -o $(TARGET)
+	$(call colorecho, " Building production binary $(PRODTARGET)", 2)
+	@$(CC) $(SOURCES) $(CFLAGSPROD) $(OPTPROD) $(INC) $(LIB) $(LFLAGS) -o $(PRODTARGET)
 
 profiledproduction:
 	$(call colorecho, " Building profiling production binary $(TARGET)", 2)
@@ -64,8 +65,12 @@ profiledproduction:
 	$(call colorecho, " Finished profile guided production binary", 2)
 
 clean:
-	$(call colorecho, " Cleaning...", 2)
+	$(call colorecho, " Cleaning dev...", 2)
 	@rm -rf $(BUILDDIR) $(TARGET)
+
+clean_prod:
+	$(call colorecho, " Cleaning prod...", 2)
+	@rm -rf $(BUILDDIR) $(PRODTARGET)
 
 rebuild:
 	@make clean
