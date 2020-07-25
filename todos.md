@@ -1,27 +1,3 @@
-- Notifier::notify_one
-  - Only resumes the front paused thread
-  - Does not finish the Notifier, other waits are simply enqueued
-  - New API:
-    - wait          -> Enqueue this thread, throw if Notifier is closed
-    - notify_one    -> Resume a single thread
-    - notify_all    -> Resume all threads
-    - close         -> Resume all threads, arg = null, closes the Notifier
-
-- 'users.each(->.name)' Syntax
-  - Arrow functions which begin with a "." (dot) are parsed as '->$0.foo'
-
-- GC memory bug
-  - At the beginning of each opcode which could potentially allocate things:
-    - Store current freecell pointer
-    - If there is a collection, mark all cells starting from that pointer as marked
-    - I think this fix even allows me to remove all the ManagedContext stuff from
-      - Worker threads will still need it i believe because they are not inside main instruction loop
-
-- Look into Fiber architectures
-  - Could we already implement this using the Sync.Notifier primitives
-  - Create basic runtime scheduler and scheduling methods prototypes
-    - See: Go Goroutines, Ruby Fibers / Threads
-
 - Channel class
   - Backed by a thread-safe C queue
   - Main abstraction to communicate with worker threads
@@ -33,16 +9,27 @@
   - Closing a channel
     - Outstanding writes will throw an exception
     - Outstanding reads will read from the queue and return null if queue is empty
+  - Channel API will replace the Notifier API
+    - Notifier can just be a subclass of the unbuffered Channel
+
+- Look into Fiber architectures
+  - Could we already implement this using the Sync.Notifier primitives
+  - Create basic runtime scheduler and scheduling methods prototypes
+    - See: Go Goroutines, Ruby Fibers / Threads
 
 - Write prototype file handling API as external lib as a general systems check
 
-- Refactor heap type accesses
+- 'users.each(->.name)' Syntax
+  - Arrow functions which begin with a "." (dot) are parsed as '->$0.foo'
+
+- Refactor interactions with Charly data types which are stored on the heap
   - Types should define their own methods / functionality
   - No external access to private member fields
-  - No performance penalty since such methods can be inlined
+  - Turn structs into classes to enforce access rights
   - Use a spinlock to sync access to heap types
     - Much better performance than a mutex
     - We only use the lock for a very short amount of time
+    - Shared reads / unique locks?
 
 - Smarter stacktraces
   - Timers should contain the stacktrace that led up to its invocation
@@ -302,6 +289,11 @@
   - Implement a fully fledged garbage collector that has the ability to crawl
     the call tree, inspect the machine stack and search for VALUE pointers (pointers
     pointing into the gc heap area)
+  - GC looses track of VALUES that are stored in the machine stack
+  - GC collections need to pause the VM
+    - GC collections can be caused inside the VM or inside Worker threads
+      - If a collection is started inside a worker thread, the VM needs to be paused
+
 
 - Fix runtime crash when executing the runtime profiler
   - A frame gets deallocated while the vm is still using it, resulting in the return instruction
