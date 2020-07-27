@@ -79,6 +79,9 @@
     - check object for specific layout
     - syntax support for type checking?
 
+- Fix the Garbage Collector bug for reals
+  - VM::pop_queue is a temporary fix and needs to be revisited in the future
+
 - Bug with try catch statements
   - `break`, `continue` do not drop the active catchtable
   - `break`, `continue`, `return` do not respect the `finally` handler

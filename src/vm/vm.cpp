@@ -138,6 +138,9 @@ VALUE VM::pop_stack() {
   val = this->stack.back();
   this->stack.pop_back();
 
+  pop_queue.push(val);
+  if (pop_queue.size() >= 10) pop_queue.pop();
+
   return val;
 }
 

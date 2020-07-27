@@ -449,6 +449,7 @@ private:
   // The uid of the current thread of execution
   uint64_t uid;
 
+  std::queue<VALUE> pop_queue;
   std::vector<VALUE> stack;
   Frame* frames;
   CatchTable* catchstack;
