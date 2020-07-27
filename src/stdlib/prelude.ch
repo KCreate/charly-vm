@@ -44,6 +44,7 @@
 // Global classes
 @"charly.vm.globals".Error          = null
 @"charly.vm.globals".Promise        = null
+@"charly.vm.globals".CircularBuffer = null
 @"charly.vm.globals".Queue          = null
 
 // Global methods
@@ -130,6 +131,7 @@ Number    = @"charly.vm.primitive.number"    = (import "_charly_number")(Value)
 String    = @"charly.vm.primitive.string"    = (import "_charly_string")(Value)
 
 // Setup some additional data structures
+CircularBuffer = import "./libs/circular_buffer.ch"
 Queue          = import "./libs/queue.ch"
 
 // Write a value to stdout, without a trailing newline

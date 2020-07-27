@@ -53,6 +53,7 @@ const result = unittest(->(describe, it, assert, context) {
     // Standard library specs
     ["ARGV & Environment", "./stdlib/argv-environ.ch"],
     ["Heaps",              "./stdlib/heaps.ch"],
+    ["CircularBuffer",     "./stdlib/circular_buffer.ch"],
     ["Queue",              "./stdlib/queue.ch"]
   ]
 
