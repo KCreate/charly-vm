@@ -80,11 +80,8 @@ format:
 	$(call colorecho, " Formatting...", 2)
 	@clang-format -i $(SOURCES) $(HEADERS) -style=file
 
-valgrind: $(TARGET)
-	valgrind --leak-check=full --show-leak-kinds=all --show-reachable=no bin/vm todos.md
-
 test:
-	@find test -name "*.ch" | xargs bin/vm
+	@find test -name "*.ch" | xargs bin/dev
 
 .PHONY: whole clean rebuild format valgrind test
 

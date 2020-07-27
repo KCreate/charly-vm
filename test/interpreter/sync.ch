@@ -66,7 +66,7 @@ export = ->(describe, it, assert) {
         t1.clear()
       }, 2.milliseconds())
 
-      Sync.wait(t1, t2)
+      Sync.wait_settled(t1, t2)
 
       assert(t1_called, false)
       assert(t2_called, true)
@@ -158,13 +158,13 @@ export = ->(describe, it, assert) {
     it("resumes flow of a thread at a later time", ->{
       const n = new Sync.Notifier()
 
-      defer(->n.notify("this is the result"), 10.milliseconds())
+      defer(->n.notify_one("this is the result"), 10.milliseconds())
 
       const result = n.wait()
       assert(result, "this is the result")
     })
 
-    it("resumes flow of multiple threads at a later time", ->{
+    it("closes a notifier, resuming all pending threads", ->{
       const n = new Sync.Notifier()
 
       const tasks = Array.create(4, ->(i) defer(->{
@@ -172,7 +172,7 @@ export = ->(describe, it, assert) {
         return [i, msg]
       }))
 
-      defer(->n.notify("hello world"), 10.milliseconds())
+      defer(->n.close("hello world"), 10.milliseconds())
 
       const results = Sync.wait(tasks)
 
@@ -184,14 +184,14 @@ export = ->(describe, it, assert) {
     it("throws exceptions in the waiting thread", ->{
       const n = new Sync.Notifier()
 
-      defer(->n.throw(new Error("something went wrong")), 10.milliseconds())
+      defer(->n.error(new Error("something went wrong")), 10.milliseconds())
 
       try {
         n.wait()
       } catch(e) {
-        assert(typeof e == "object")
-        assert(e.klass == Error)
-        assert(e.message == "something went wrong")
+        assert(typeof e, "object")
+        assert(e.klass, Error)
+        assert(e.message, "something went wrong")
       }
     })
 
@@ -206,7 +206,7 @@ export = ->(describe, it, assert) {
         }
       }))
 
-      defer(->n.throw("hello world"), 10.milliseconds())
+      defer(->n.error("hello world"), 10.milliseconds())
 
       const results = Sync.wait(tasks)
 

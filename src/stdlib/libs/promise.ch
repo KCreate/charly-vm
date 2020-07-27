@@ -69,7 +69,7 @@ class Promise {
 
     if @then_handlers.length {
       @status |= kFlagSettled
-      @then_handlers.each(->(handler) handler(value))
+      @then_handlers.each(->(handler) defer(->handler(value)))
       @then_handlers.clear()
     }
 
@@ -86,7 +86,7 @@ class Promise {
 
     if @catch_handlers.length {
       @status |= kFlagSettled
-      @catch_handlers.each(->(handler) handler(value))
+      @catch_handlers.each(->(handler) defer(->handler(value)))
       @catch_handlers.clear()
     }
 
@@ -100,7 +100,7 @@ class Promise {
     if @is_pending() @then_handlers << callback
     if @is_resolved() {
       @status |= kFlagSettled
-      callback(@value)
+      defer(->callback(@value))
     }
 
     self
@@ -111,20 +111,24 @@ class Promise {
    * Throws an exception if the promise gets rejected
    * */
   wait {
-    return Sync.Notifier.capture(->(resolve, reject) {
-      @then(->resolve($0))
-      @catch(->reject($0))
-    })
+    const n = new Sync.Notifier()
+
+    @then(->n.close($0))
+    @catch(->n.error($0))
+
+    n.wait()
   }
 
   /*
    * Synchronously wait for this promise to settle
    * */
   wait_settle {
-    return Sync.Notifier.capture(->(resolve, reject) {
-      @then(->resolve(self))
-      @catch(->resolve(self))
-    })
+    const n = new Sync.Notifier()
+
+    @then(->n.close(self))
+    @catch(->n.close(self))
+
+    n.wait()
   }
 
   /*
@@ -134,7 +138,7 @@ class Promise {
     if @is_pending() @catch_handlers << callback
     if @is_rejected() {
       @status |= kFlagSettled
-      callback(@value)
+      defer(->callback(@value))
     }
 
     self

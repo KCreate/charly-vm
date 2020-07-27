@@ -60,7 +60,7 @@ func sleep(duration) {
   const n = new Sync.Notifier()
 
   // Invoking the notify method will resume any waiting threads
-  defer(->n.notify(), duration)
+  defer(->n.notify_one(), duration)
 
   // Waits until some other thread calls the notify method
   n.wait()

@@ -38,71 +38,75 @@ const __internal_suspend_thread = @"charly.vm.suspend_thread".tap(->$0.halt_afte
  * The Notifier class suspends threads and resumes them at a later time
  * */
 class Notifier {
-  property alive
-  property pending_threads
-  property pending_exception
+  property open
   property result
+  property error_val
+  property pending
 
   constructor {
-    @alive = true
-    @pending_threads = []
-    @pending_exception = null
+    @open = true
     @result = null
+    @error_val = null
+    @pending = new Queue()
   }
 
   // Suspend calling thread until notify is called
   wait {
-    unless @alive {
-      if @pending_exception throw @pending_exception
+    unless @open {
+      if @error_val throw @error_val
       return @result
     }
 
     const thread_id = __internal_get_thread_uid()
-    @pending_threads << thread_id
+    @pending.write(thread_id)
     const return_value = __internal_suspend_thread()
-    if @pending_exception throw @pending_exception
+    if @error_val {
+      throw @error_val
+    }
 
-    // Stale thread exception mechanism
-    if typeof return_value == "object" {
-      if return_value.__charly_internal_stale_thread_exception {
-        @alive = false
-        @pending_threads.clear()
-        throw new Error("VM exited while this thread was still paused")
-      }
+    // VM stale thread exception mechanism
+    if typeof return_value == "object" && return_value.__charly_internal_stale_thread_exception {
+      @pending.clear()
+      throw new Error("VM exited while this thread was still paused")
     }
 
     return return_value
   }
 
-  // Notify paused threads that they may resume execution
-  notify(@result = null) {
-    unless @alive return null
+  // Notify a single pending thread
+  notify_one(result = null) {
+    unless @open throw new Error("Cannot notify closed notifier")
 
-    @pending_threads.each(->(thread_id) {
-      __internal_resume_thread(thread_id, result)
-    })
-    @pending_threads.clear()
-
-    @alive = false
+    if @pending.length {
+      const th = @pending.read()
+      __internal_resume_thread(th, result)
+    }
 
     null
   }
 
-  // Shorthand for the most common usage
-  static capture(callback) {
-    const n = new Notifier()
-
-    const resolve = ->(v = null) n.notify(v)
-    const reject = ->(e = null) n.throw(e)
-    callback(resolve, reject)
-
-    n.wait()
+  // Closes the notifier, throwing error inside all pending threads
+  // Future waits will throw with the same error
+  error(@error_val) {
+    unless @open throw new Error("Cannot throw error on closed notifier")
+    @close()
   }
 
-  // Throws an exception in any waiting thread
-  throw(@pending_exception) {
-    @notify(null)
+  // Resume all waiting threads with result,
+  // future waits will return this result too
+  close(@result = null) {
+    unless @open throw new Error("Notifier already closed")
+
+    while @pending.length {
+      @notify_one(result)
+    }
+    @open = false
+
+    null
   }
+
+  // Check if anyone is waiting for this notifier currently
+  has_waiters = @pending.length > 0
 }
 
 /*
@@ -168,8 +172,8 @@ class Ticker extends Promise {
     if @id == null return null
 
     __internal_clear_ticker(@id)
-    @id = null
     @resolve(arg)
+    @id = null
 
     null
   }

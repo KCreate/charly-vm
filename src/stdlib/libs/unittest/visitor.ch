@@ -9,9 +9,10 @@ class TestVisitor {
     // the asynchronous flow back into the synchronous flow of this method
     if cb.argc == 1 {
       const n = new Sync.Notifier()
-      defer(->cb(->n.notify()))
-      const timeout = defer(->n.throw(new Error("Test case timed out")), 1.second())
-      n.wait()
+      defer(->cb(->n.close()))
+      const timeout = defer(->n.error(new Error("Test case timed out")), 100.ms())
+      const exc = n.wait()
+      if exc throw exc
       timeout.clear()
     } else {
       cb()

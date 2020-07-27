@@ -24,3 +24,7 @@
  * SOFTWARE.
  */
 
+const t = defer(->25)
+
+const msg = t.wait()
+print(msg)
