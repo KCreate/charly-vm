@@ -52,7 +52,8 @@ const result = unittest(->(describe, it, assert, context) {
 
     // Standard library specs
     ["ARGV & Environment", "./stdlib/argv-environ.ch"],
-    ["Heaps",              "./stdlib/heaps.ch"]
+    ["Heaps",              "./stdlib/heaps.ch"],
+    ["Queue",              "./stdlib/queue.ch"]
   ]
 
   // Loads and runs all the test cases sequentially

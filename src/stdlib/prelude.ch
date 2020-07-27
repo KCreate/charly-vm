@@ -42,8 +42,9 @@
 @"charly.vm.globals".Null      = null
 
 // Global classes
-@"charly.vm.globals".Error   = null
-@"charly.vm.globals".Promise = null
+@"charly.vm.globals".Error          = null
+@"charly.vm.globals".Promise        = null
+@"charly.vm.globals".Queue          = null
 
 // Global methods
 @"charly.vm.globals".print = null
@@ -127,6 +128,9 @@ Generator = @"charly.vm.primitive.generator" = (import "_charly_generator")(Valu
 Null      = @"charly.vm.primitive.null"      = (import "_charly_null")(Value)
 Number    = @"charly.vm.primitive.number"    = (import "_charly_number")(Value)
 String    = @"charly.vm.primitive.string"    = (import "_charly_string")(Value)
+
+// Setup some additional data structures
+Queue          = import "./libs/queue.ch"
 
 // Write a value to stdout, without a trailing newline
 write = func write {
