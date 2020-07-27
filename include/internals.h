@@ -51,7 +51,7 @@ struct Index {
 #define CHECK(T, V)                                             \
   {                                                             \
     if (!charly_is_##T(V)) {                                    \
-      vm.throw_exception("Expected argument " #V " to be " #T); \
+      vm.throw_exception("Expected argument " #V " to be " #T ", got " + charly_get_typestring(V)); \
       return kNull;                                             \
     }                                                           \
   }
