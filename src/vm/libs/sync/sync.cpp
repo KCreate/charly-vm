@@ -37,6 +37,11 @@ VALUE init_timer(VM& vm, VALUE cb, VALUE dur) {
 
   uint32_t ms = charly_number_to_uint32(dur);
 
+  if (ms == 0) {
+    vm.register_task(VMTask::init_callback(cb));
+    return kNull;
+  }
+
   Timestamp now = std::chrono::steady_clock::now();
   Timestamp exec_at = now + std::chrono::milliseconds(ms);
 
