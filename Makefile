@@ -53,14 +53,14 @@ production:
 	@$(CC) $(SOURCES) $(CFLAGSPROD) $(OPTPROD) $(INC) $(LIB) $(LFLAGS) -o $(PRODTARGET)
 
 profiledproduction:
-	$(call colorecho, " Building profiling production binary $(TARGET)", 2)
-	@$(CC) $(SOURCES) $(CFLAGSPROD) $(OPTPROD) $(INC) $(LIB) $(LFLAGS) -fprofile-instr-generate=default.profraw -o $(TARGET)
+	$(call colorecho, " Building profiling production binary $(PRODTARGET)", 2)
+	@$(CC) $(SOURCES) $(CFLAGSPROD) $(OPTPROD) $(INC) $(LIB) $(LFLAGS) -fprofile-instr-generate=default.profraw -o $(PRODTARGET)
 	$(call colorecho, " Running runtime profiler", 2)
-	@$(TARGET) $(RUNTIME_PROFILER)
+	@$(PRODTARGET) $(RUNTIME_PROFILER)
 	$(call colorecho, " Converting profile to clang format", 2)
 	@llvm-profdata merge -output=code.profdata default.profraw
 	$(call colorecho, " Building profile guided production binary", 2)
-	@$(CC) $(SOURCES) $(CFLAGSPROD) $(OPTPROD) $(INC) $(LIB) $(LFLAGS) -fprofile-instr-use=code.profdata -o $(TARGET)
+	@$(CC) $(SOURCES) $(CFLAGSPROD) $(OPTPROD) $(INC) $(LIB) $(LFLAGS) -fprofile-instr-use=code.profdata -o $(PRODTARGET)
 	@rm code.profdata default.profraw
 	$(call colorecho, " Finished profile guided production binary", 2)
 
