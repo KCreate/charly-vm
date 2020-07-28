@@ -162,8 +162,8 @@ exit = func exit(status = 0) {
 }
 
 // Setup the charly object
-Charly.argv        = __internal_get_argv()
-Charly.environment = __internal_get_environment()
+Charly.globals.ARGV        = __internal_get_argv()
+Charly.globals.ENVIRONMENT = __internal_get_environment()
 Charly.io = {
   write,
   print,
