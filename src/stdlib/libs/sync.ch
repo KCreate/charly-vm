@@ -25,6 +25,7 @@
  */
 
 const Promise = import "./promise.ch"
+const Channel = import "./channel.ch"
 
 const __internal_init_timer     = @"charly.vm.init_timer"
 const __internal_clear_timer    = @"charly.vm.clear_timer"
@@ -201,6 +202,7 @@ export = {
   Promise,
   Timer,
   Ticker,
+  Channel,
 
   defer,
   sleep,

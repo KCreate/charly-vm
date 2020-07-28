@@ -24,7 +24,21 @@
  * SOFTWARE.
  */
 
-const t = defer(->25)
+const c = new Sync.Channel()
 
-const msg = t.wait()
-print(msg)
+// Writer loop
+defer(->{
+  let i = 0
+  loop {
+    c.write(i)
+    i += 1
+  }
+})
+
+// Reader loop
+defer(->{
+  loop {
+    const msg = c.read()
+    print("Message: " + msg)
+  }
+})

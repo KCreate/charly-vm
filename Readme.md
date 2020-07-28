@@ -49,6 +49,38 @@ const result = p.wait()
 print(result) // "Hello world!"
 ```
 
+### Channels
+
+```javascript
+// Create a new channel
+const c = new Sync.Channel()
+
+// Writer loop
+defer(->{
+  let i = 0
+  loop {
+    c.write(i)
+    i += 1
+  }
+})
+
+// Reader loop
+defer(->{
+  loop {
+    const msg = c.read()
+    print("Message: " + msg)
+  }
+})
+
+// Output:
+// Message: 0
+// Message: 1
+// Message: 2
+// Message: 3
+// Message: 4
+// ...
+```
+
 ### Turning asynchronous into synchronous flow
 
 ```javascript
@@ -59,10 +91,10 @@ func sleep(duration) {
   // resume different threads of execution
   const n = new Sync.Notifier()
 
-  // Invoking the notify method will resume any waiting threads
+  // notify_one will resume one waiting thread
   defer(->n.notify_one(), duration)
 
-  // Waits until some other thread calls the notify method
+  // Wait until we are notified to resume
   n.wait()
 }
 

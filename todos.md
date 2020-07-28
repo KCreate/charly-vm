@@ -1,27 +1,3 @@
-- Channel class
-  - Backed by a thread-safe C queue
-  - Main abstraction to communicate with worker threads
-  - Max size of queue can be determined at creation
-  - A read from an empty channel will block until there is data available
-  - A write to a full channel will block until someone reads from the queue
-  - Calls to read are served in order of invocation. The first thread to
-    call read will be the first thread to get a value from the channel
-  - Closing a channel
-    - Outstanding writes will throw an exception
-    - Outstanding reads will read from the queue and return null if queue is empty
-  - Channel API will replace the Notifier API
-    - Notifier can just be a subclass of the unbuffered Channel
-
-- Look into Fiber architectures
-  - Could we already implement this using the Sync.Notifier primitives
-  - Create basic runtime scheduler and scheduling methods prototypes
-    - See: Go Goroutines, Ruby Fibers / Threads
-
-- Write prototype file handling API as external lib as a general systems check
-
-- 'users.each(->.name)' Syntax
-  - Arrow functions which begin with a "." (dot) are parsed as '->$0.foo'
-
 - Refactor interactions with Charly data types which are stored on the heap
   - Types should define their own methods / functionality
   - No external access to private member fields
@@ -30,6 +6,20 @@
     - Much better performance than a mutex
     - We only use the lock for a very short amount of time
     - Shared reads / unique locks?
+
+- Architecture changes to worker threads
+  - Have a fixed amount of worker threads which are always alive, delivering jobs via some message queue
+  - Implement kqueue for async networking
+
+- Basic file io methods
+
+- Look into Fiber architectures
+  - Could we already implement this using the Sync.Notifier primitives
+  - Create basic runtime scheduler and scheduling methods prototypes
+    - See: Go Goroutines, Ruby Fibers / Threads
+
+- 'users.each(->.name)' Syntax
+  - Arrow functions which begin with a "." (dot) are parsed as '->$0.foo'
 
 - Smarter stacktraces
   - Timers should contain the stacktrace that led up to its invocation
@@ -59,13 +49,6 @@
     - has_parent_path
     - is_absolute
     - is_relative
-
-- Architecture changes to worker threads
-  - Have a fixed amount of worker threads which are always alive, delivering jobs via some message queue
-  - Other stuff like network and file change watchers can be implemented using other more efficient mechanisms
-    - epoll
-    - kqueue
-    - select
 
 - File system library
   - C++17 native std::filesystem library
