@@ -24,8 +24,6 @@
  * SOFTWARE.
  */
 
-import "math"
-
 func mergesort(arr, start, end) {
 
   // Single items can't be sorted
@@ -44,7 +42,7 @@ func mergesort(arr, start, end) {
   }
 
   // Sort left and right half
-  const center_pivot = math.floor((start + end) / 2)
+  const center_pivot = Math.floor((start + end) / 2)
   const left_half = mergesort(arr, start, center_pivot - 1)
   const right_half = mergesort(arr, center_pivot, end)
 
@@ -64,7 +62,7 @@ func mergesort(arr, start, end) {
   return result_array
 }
 
-const numbers = Array.create(20, ->math.rand(0, 100).floor())
+const numbers = Array.create(20, ->Math.rand(0, 100).floor())
 
 print(numbers)
 

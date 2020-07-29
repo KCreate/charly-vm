@@ -92,79 +92,36 @@ std::unordered_map<VALUE, MethodSignature> Index::methods = {
     DEFINE_INTERNAL_METHOD("charly.vm.debug_func",          debug_func,            1,     kThreadBoth),
 };
 
-// Standard charly libraries
-std::unordered_map<std::string, std::string> Index::standard_libraries = {
-
-    // Internal primitives
-    {"_charly_array",     "src/stdlib/primitives/array.ch"},
-    {"_charly_boolean",   "src/stdlib/primitives/boolean.ch"},
-    {"_charly_class",     "src/stdlib/primitives/class.ch"},
-    {"_charly_function",  "src/stdlib/primitives/function.ch"},
-    {"_charly_generator", "src/stdlib/primitives/generator.ch"},
-    {"_charly_null",      "src/stdlib/primitives/null.ch"},
-    {"_charly_number",    "src/stdlib/primitives/number.ch"},
-    {"_charly_object",    "src/stdlib/primitives/object.ch"},
-    {"_charly_string",    "src/stdlib/primitives/string.ch"},
-    {"_charly_value",     "src/stdlib/primitives/value.ch"},
-
-    // Libraries
-    {"_charly_sync",     "src/stdlib/libs/sync.ch"},
-    {"_charly_error",    "src/stdlib/libs/error.ch"},
-    {"_charly_heap",     "src/stdlib/libs/heap.ch"},
-    {"_charly_math",     "src/stdlib/libs/math.ch"},
-    {"_charly_time",     "src/stdlib/libs/time.ch"},
-    {"_charly_unittest", "src/stdlib/libs/unittest.ch"}
-};
-
 VALUE import(VM& vm, VALUE include, VALUE source) {
   // TODO: Deallocate stuff on error
-
   CHECK(string, include);
   CHECK(string, source);
 
   std::string include_filename = charly_string_std(include);
   std::string source_filename = charly_string_std(source);
 
-  // Check if we are importing a standard charly library
-  bool import_library = false;
-  auto& std_libs = Index::standard_libraries;
-  if (std_libs.find(include_filename) != std_libs.end()) {
-    include_filename = std::string(std::getenv("CHARLYVMDIR")) + "/" + std_libs.at(include_filename);
-    import_library = true;
-  }
-
   // Delete the filename of the source file
   std::string source_folder(source_filename);
   source_folder.erase(source_filename.rfind('/'));
 
   // Resolve the input file path
-  if (!import_library) {
+  switch (include_filename[0]) {
 
-    // Importing the same file
-    if (include_filename == ".") {
-      vm.throw_exception("import: could not open '.'");
-      return kNull;
-    } else {
-      // Other include strategies
-      switch (include_filename[0]) {
-
-        // Absolute paths
-        case '/': {
-          // Do nothing to the filepath
-          break;
-        }
-
-        // Relative paths
-        case '.': {
-          include_filename = source_folder + "/" + include_filename;
-          break;
-        }
-
-        // Everything else
-        // FIXME: Make sure we catch all edge cases
-        default: { include_filename = source_folder + "/" + include_filename; }
-      }
+    // Absolute paths
+    case '/': {
+      // Do nothing to the filepath
+      break;
     }
+
+    // Relative paths
+    case '.': {
+      include_filename = source_folder + "/" + include_filename;
+      break;
+    }
+
+    // Everything else
+    // FIXME: Make sure we catch all edge cases
+    default: { include_filename = source_folder + "/" + include_filename; }
   }
 
   // Check if this is a compiled charly library

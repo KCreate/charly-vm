@@ -24,9 +24,6 @@
  * SOFTWARE.
  */
 
-import "math"
-import "time"
-
 class Point {
   property x
   property y
@@ -92,8 +89,8 @@ func heart(x, y) {
 }
 
 func g1(x, y) {
-  const r0 = math.sin(math.sin(x))
-  const r1 = math.cos(math.sin(x * y) + math.cos(x))
+  const r0 = Math.sin(Math.sin(x))
+  const r1 = Math.cos(Math.sin(x * y) + Math.cos(x))
   r0.close_to(r1, 0.1)
 }
 
@@ -121,7 +118,7 @@ loop {
     }
   }
 
-  const render_time = time.measure(->{
+  const render_time = Time.measure(->{
     const graph = grapher.render(write, ->(x, y) {
       g1(x, y)
     })

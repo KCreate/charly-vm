@@ -46,6 +46,7 @@
 @"charly.vm.globals".Promise        = null
 @"charly.vm.globals".CircularBuffer = null
 @"charly.vm.globals".Queue          = null
+@"charly.vm.globals".Heap           = null
 
 // Global methods
 @"charly.vm.globals".print = null
@@ -63,7 +64,6 @@ const __internal_dirname         = @"charly.vm.dirname"
 const __internal_exit            = @"charly.vm.exit"
 __internal_exit.halt_after_return = true
 
-let __internal_standard_libs_names
 let __internal_standard_libs
 let __internal_import_cache = {}
 
@@ -71,21 +71,14 @@ let __internal_import_cache = {}
 __charly_internal_import = ->(path, source, ignore_cache = false) {
 
   // Search for the path in the list of standard libraries
-  let is_stdlib = false
-  let i = 0
-
-  while (i < __internal_standard_libs_names.length) {
-    const value = __internal_standard_libs_names[i]
-    if (value == path) {
-      is_stdlib = true
-      break
+  const lib = __internal_standard_libs[path]
+  if lib {
+    const ctxdir = ENVIRONMENT["CHARLYVMDIR"]
+    if ctxdir {
+      path = ctxdir + "/" + lib
+    } else {
+      path = lib
     }
-
-    i += 1
-  }
-
-  if (is_stdlib) {
-    path = __internal_standard_libs[path]
   }
 
   unless ignore_cache {
@@ -93,46 +86,34 @@ __charly_internal_import = ->(path, source, ignore_cache = false) {
     if cache_entry return cache_entry.v
   }
 
-  const v = __internal_import(path, source)
+  const module_fn = __internal_import(path, source)
+  unless module_fn throw new Error("Import didn't return a module function")
+  const v = module_fn({})
   __internal_import_cache[path] = {v}
   v
 }
 
-// The names of all standard libraries that come with charly
-__internal_standard_libs_names = [
-  "math",
-  "time",
-  "error",
-  "heap",
-  "unittest",
-  "sync"
-]
-
 // All libraries that come with charly
 __internal_standard_libs = {
-  math: "_charly_math",
-  time: "_charly_time",
-  error: "_charly_error",
-  heap: "_charly_heap",
-  unittest: "_charly_unittest",
-  sync: "_charly_sync"
+  unittest: "src/stdlib/libs/unittest/lib.ch"
 }
 
 // Setup primitive classes
-Value     = @"charly.vm.primitive.value"     = (import "_charly_value")()
-Object    = @"charly.vm.primitive.object"    = (import "_charly_object")(Value)
-Array     = @"charly.vm.primitive.array"     = (import "_charly_array")(Value)
-Boolean   = @"charly.vm.primitive.boolean"   = (import "_charly_boolean")(Value)
-Class     = @"charly.vm.primitive.class"     = (import "_charly_class")(Value)
-Function  = @"charly.vm.primitive.function"  = (import "_charly_function")(Value)
-Generator = @"charly.vm.primitive.generator" = (import "_charly_generator")(Value)
-Null      = @"charly.vm.primitive.null"      = (import "_charly_null")(Value)
-Number    = @"charly.vm.primitive.number"    = (import "_charly_number")(Value)
-String    = @"charly.vm.primitive.string"    = (import "_charly_string")(Value)
+Value     = @"charly.vm.primitive.value"     = (import "./primitives/value.ch")()
+Object    = @"charly.vm.primitive.object"    = (import "./primitives/object.ch")(Value)
+Array     = @"charly.vm.primitive.array"     = (import "./primitives/array.ch")(Value)
+Boolean   = @"charly.vm.primitive.boolean"   = (import "./primitives/boolean.ch")(Value)
+Class     = @"charly.vm.primitive.class"     = (import "./primitives/class.ch")(Value)
+Function  = @"charly.vm.primitive.function"  = (import "./primitives/function.ch")(Value)
+Generator = @"charly.vm.primitive.generator" = (import "./primitives/generator.ch")(Value)
+Null      = @"charly.vm.primitive.null"      = (import "./primitives/null.ch")(Value)
+Number    = @"charly.vm.primitive.number"    = (import "./primitives/number.ch")(Value)
+String    = @"charly.vm.primitive.string"    = (import "./primitives/string.ch")(Value)
 
 // Setup some additional data structures
 CircularBuffer = import "./libs/circular_buffer.ch"
 Queue          = import "./libs/queue.ch"
+Heap           = import "./libs/heap.ch"
 
 // Write a value to stdout, without a trailing newline
 write = func write {
@@ -175,9 +156,10 @@ Charly.io = {
 }
 
 // Register global symbols
-Charly.globals.Error   = import "_charly_error"
-Charly.globals.Math    = import "math"
-Charly.globals.Time    = import "time"
-Charly.globals.Sync    = import "sync"
+Charly.globals.Error   = import "./libs/error.ch"
+Charly.globals.Math    = import "./libs/math.ch"
+Charly.globals.Time    = import "./libs/time.ch"
+Charly.globals.Sync    = import "./libs/sync.ch"
+Charly.globals.Path    = import "./libs/path.ch"
 Charly.globals.Promise = Sync.Promise
 Charly.globals.defer   = Sync.defer

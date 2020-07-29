@@ -29,11 +29,9 @@ export = ->(describe, it, assert) {
   describe("require", ->{
 
     it("loads an internal module", ->{
-      const math = import "math"
-
-      assert(typeof math, "class")
-      assert(typeof math.rand, "function")
-      assert(typeof math.sin(25), "number")
+      assert(typeof Math, "class")
+      assert(typeof Math.rand, "function")
+      assert(typeof Math.sin(25), "number")
     })
 
     it("includes files", ->{

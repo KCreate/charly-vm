@@ -24,8 +24,6 @@
  * SOFTWARE.
  */
 
-import "math"
-
 export = ->(describe, it, assert) {
 
   it("parses different identifier styles", ->{

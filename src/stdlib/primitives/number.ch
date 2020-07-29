@@ -28,8 +28,6 @@ const __internal_to_float = @"charly.primitive.number.to_float"
 const __internal_to_int   = @"charly.primitive.number.to_int"
 const __internal_is_float = @"charly.primitive.number.is_float"
 
-import "math"
-
 export = ->(Base) {
   return class Number extends Base {
 
@@ -113,14 +111,14 @@ export = ->(Base) {
      * Returns the next highest integer
      * */
     ceil {
-      math.ceil(self)
+      Math.ceil(self)
     }
 
     /*
      * Returns the next lowest integer
      * */
     floor {
-      math.floor(self)
+      Math.floor(self)
     }
 
     /*
@@ -128,8 +126,8 @@ export = ->(Base) {
      * */
     round {
       const r = self % 1
-      if r < 0.5 return math.floor(self)
-      math.ceil(self)
+      if r < 0.5 return Math.floor(self)
+      Math.ceil(self)
     }
 
     /*

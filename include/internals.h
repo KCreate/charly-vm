@@ -44,7 +44,6 @@ struct MethodSignature {
 
 // Stores runtime lookup tables for internals
 struct Index {
-  static std::unordered_map<std::string, std::string> standard_libraries;
   static std::unordered_map<VALUE, MethodSignature> methods;
 };
 

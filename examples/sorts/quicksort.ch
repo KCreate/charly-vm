@@ -24,9 +24,7 @@
  * SOFTWARE.
  */
 
-import "math"
-
-const numbers = Array.create(100, ->math.rand(0, 100).round())
+const numbers = Array.create(100, ->Math.rand(0, 100).round())
 
 func swap(a, i1, i2) {
   const tmp = a[i1]
@@ -57,7 +55,7 @@ func sort(array, left = 0, right = array.length - 1) {
   let pivot
 
   if left < right {
-    pivot = left + math.ceil((right - left) / 2)
+    pivot = left + Math.ceil((right - left) / 2)
     pivot = partition(array, pivot, left, right)
     sort(array, left, pivot - 1)
     sort(array, pivot + 1, right)

@@ -24,12 +24,10 @@
  * SOFTWARE.
  */
 
-import "heap"
-
 export = ->(describe, it, assert) {
 
   it("creates a min heap", ->{
-    const h = new heap.MinHeap(5)
+    const h = new Heap.MinHeap(5)
 
     h.push(3)
     h.push(9)
@@ -58,7 +56,7 @@ export = ->(describe, it, assert) {
   })
 
   it("creates a max heap", ->{
-    const h = new heap.MaxHeap(5)
+    const h = new Heap.MaxHeap(5)
 
     h.push(3)
     h.push(9)
@@ -91,7 +89,7 @@ export = ->(describe, it, assert) {
       property data
     }
 
-    const h = new heap.MaxHeap(5)
+    const h = new Heap.MaxHeap(5)
     h.push(1, new Num(1))
     h.push(4, new Num(2))
     h.push(3, new Num(3))
@@ -120,14 +118,14 @@ export = ->(describe, it, assert) {
 
   it("throws an exception on invalid capacity values", ->{
     assert.exception(->{
-      const h = new heap.MaxHeap(0)
+      const h = new Heap.MaxHeap(0)
     }, ->(e) {
       assert(typeof e, "string")
       assert(e, "Heap capacity needs to be at least 1")
     })
 
     assert.exception(->{
-      const h = new heap.MaxHeap(-20)
+      const h = new Heap.MaxHeap(-20)
     }, ->(e) {
       assert(typeof e, "string")
       assert(e, "Heap capacity needs to be at least 1")
@@ -136,7 +134,7 @@ export = ->(describe, it, assert) {
 
   describe("heaps of fixed size", ->{
     it("min heap", ->{
-      const minh = new heap.FixedMinHeap(3)
+      const minh = new Heap.FixedMinHeap(3)
 
       assert(minh.is_full(), false)
       assert(minh.size, 0)
@@ -172,7 +170,7 @@ export = ->(describe, it, assert) {
     })
 
     it("max heap", ->{
-      const maxh = new heap.FixedMaxHeap(3)
+      const maxh = new Heap.FixedMaxHeap(3)
 
       assert(maxh.is_full(), false)
       assert(maxh.size, 0)
