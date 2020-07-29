@@ -3712,18 +3712,6 @@ uint8_t VM::start_runtime() {
   return this->status_code;
 }
 
-VALUE VM::exec_module(Function* fn) {
-  ManagedContext lalloc(this);
-  VALUE export_obj = lalloc.create_object(0);
-
-  uint8_t* old_ip = this->ip;
-  this->call_function(fn, 1, &export_obj, kNull, true);
-  this->frames->set_halt_after_return(true);
-  this->run();
-  this->ip = old_ip;
-  return this->pop_stack();
-}
-
 void VM::exit(uint8_t status_code) {
   this->timers.clear();
   this->clear_task_queue();

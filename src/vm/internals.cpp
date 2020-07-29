@@ -233,8 +233,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
     return kNull;
   }
 
-  Function* fn = charly_as_function(vm.register_module(cresult->instructionblock.value()));
-  return vm.exec_module(fn);
+  return vm.register_module(cresult->instructionblock.value());
 }
 
 VALUE write(VM& vm, VALUE value) {

@@ -371,7 +371,6 @@ public:
   }
 
   void run();
-  VALUE exec_module(Function* fn);
   uint8_t start_runtime();
   void exit(uint8_t status_code);
   uint64_t get_thread_uid();
