@@ -159,7 +159,7 @@ export = ->(describe, it, assert) {
       check = true
     })
 
-    it("reading remaining buffer from closed channel", ->{
+    it("reading remaining buffer from closed channel", ->(done) {
       const c = new Sync.Channel(4)
       let check = false
 
@@ -181,6 +181,7 @@ export = ->(describe, it, assert) {
       c.write(3)
       c.write(4)
       c.close()
+      assert(c.open, false)
       check = true
     })
   })

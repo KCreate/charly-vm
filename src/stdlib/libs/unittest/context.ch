@@ -25,6 +25,13 @@ class Context {
 
     try {
       @visitor.on_node(@current, @depth, callback)
+
+      // Test nodes need to contain at least a single assertion
+      if @current.type == NodeType.Test {
+        unless @current.contains_assertion() {
+          throw new Error("Expected at least a single assertion")
+        }
+      }
     } catch(e) {
       @catch_exception(e)
     }

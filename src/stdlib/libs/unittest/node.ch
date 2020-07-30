@@ -47,6 +47,16 @@ class Node {
     @children.length
   }
 
+  contains_assertion {
+    let found = false
+
+    @children.each(->(c) {
+      if c.type == NodeType.Assertion found = true
+    })
+
+    found
+  }
+
   deep_failed(callback, path = []) {
     unless @passed() {
       if @children.length == 0 {

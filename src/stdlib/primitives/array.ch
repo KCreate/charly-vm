@@ -219,8 +219,8 @@ export = ->(Base) {
 
       while i < @length {
         const value = self[i]
-        if (value == search) return true;
-        i += 1;
+        if (value == search) return true
+        i += 1
       }
 
       false

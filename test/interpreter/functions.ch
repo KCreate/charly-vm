@@ -30,18 +30,26 @@ export = ->(describe, it, assert) {
 
     it("allows the parens to be omitted", ->{
       let foo = ->{}
-      foo()
+
+      assert(typeof foo, "function")
+      assert(typeof foo(), "null")
     })
 
     it("allows the curly braces to be ommited", ->{
       let foo = ->(a, b) a + b
-      foo(1, 2)
+
+      assert(typeof foo, "function")
+      assert(foo(1, 2), 3)
     })
 
     it("allows both parens and curly braces to be ommited", ->{
       let bar = ->{}
       let foo = ->bar()
       foo()
+
+      assert(typeof bar, "function")
+      assert(typeof foo, "function")
+      assert(foo(), null)
     })
 
   })

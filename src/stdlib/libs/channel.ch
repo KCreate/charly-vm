@@ -41,7 +41,11 @@ class Channel {
   read {
     if @buffer && @buffer.length {
       const value = @buffer.read()
-      @pending_write.notify_one()
+
+      if @pending_write.has_waiters() {
+        @pending_write.notify_one()
+      }
+
       return value
     }
 
