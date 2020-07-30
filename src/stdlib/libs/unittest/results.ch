@@ -30,7 +30,12 @@ export = class ResultPrinter {
 
         // Check if the types match
         print("Expected value: " + fnode.expected.to_s())
-        print("Actual value:   " + fnode.real.to_s())
+        if fnode.real.is_a(Error) && ARGV.contains("--hide-stacktraces") {
+          print("Actual value:   " + fnode.real.message)
+        } else {
+          print("Actual value:   " + fnode.real.to_s())
+        }
+
         write("\n")
 
         index += 1
