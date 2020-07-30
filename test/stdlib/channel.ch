@@ -43,7 +43,7 @@ export = ->(describe, it, assert) {
       check = true
     })
 
-    it("reading from channel blocks", ->{
+    it("reading from channel blocks", ->(done) {
       const c = new Sync.Channel()
       let check = false
 
@@ -136,7 +136,7 @@ export = ->(describe, it, assert) {
       check = true
     })
 
-    it("being able to read N consecutive values without blocking", ->{
+    it("being able to read N consecutive values without blocking", ->(done) {
       const c = new Sync.Channel(4)
       let check = false
 
