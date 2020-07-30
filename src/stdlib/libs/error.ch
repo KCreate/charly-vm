@@ -151,6 +151,8 @@ class Error {
         }
       }
 
+      if frames.length >= Error.stack_trace_limit break
+
       // Load parent frame
       top = top.parent()
     }
