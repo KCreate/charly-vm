@@ -32,7 +32,7 @@ const __buffer_get_offset    = @"charly.stdlib.buffer.get_offset"
 const __buffer_write         = @"charly.stdlib.buffer.write"
 const __buffer_write_partial = @"charly.stdlib.buffer.write_partial"
 const __buffer_write_bytes   = @"charly.stdlib.buffer.write_bytes"
-const __buffer_str           = @"charly.stdlib.buffer.str"
+const __buffer_to_s          = @"charly.stdlib.buffer.to_s"
 const __buffer_bytes         = @"charly.stdlib.buffer.bytes"
 const __buffer_clear         = @"charly.stdlib.buffer.clear"
 
@@ -96,8 +96,8 @@ class Buffer {
   /*
    * Return the string representation of the buffers contents
    * */
-  str {
-    __buffer_str(@handle)
+  to_s {
+    __buffer_to_s(@handle)
   }
 
   /*

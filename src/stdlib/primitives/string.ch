@@ -106,7 +106,7 @@ export = ->(Base) {
         buf.write_partial(self, start, offset)
       }
 
-      buf.str()
+      buf.to_s()
     }
 
     /*
@@ -134,7 +134,7 @@ export = ->(Base) {
       end.downto(0, ->(i) {
         buf.write(self[i])
       })
-      buf.str()
+      buf.to_s()
     }
 
     /*
@@ -176,7 +176,7 @@ export = ->(Base) {
         i += 1
       }
 
-      buf.str()
+      buf.to_s()
     }
 
     /*
@@ -198,7 +198,7 @@ export = ->(Base) {
         i += 1
       }
 
-      buf.str()
+      buf.to_s()
     }
 
     /*

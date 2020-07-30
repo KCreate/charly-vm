@@ -96,7 +96,7 @@ class Error {
       if index < @stacktrace.length - 1 buf.write("\n")
     })
 
-    buf.str()
+    buf.to_s()
   }
 
   /*

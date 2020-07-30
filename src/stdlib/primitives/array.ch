@@ -116,7 +116,7 @@ export = ->(Base) {
           buf.write(str.to_s())
         }
       })
-      buf.str()
+      buf.to_s()
     }
 
     empty {

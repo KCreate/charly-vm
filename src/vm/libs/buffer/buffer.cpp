@@ -165,7 +165,7 @@ VALUE write_bytes(VM&vm, VALUE buf, VALUE bytes) {
   return charly_create_integer(buffer->get_writeoffset());
 }
 
-VALUE str(VM& vm, VALUE buf) {
+VALUE to_s(VM& vm, VALUE buf) {
   CHECK(cpointer, buf);
   UTF8Buffer* buffer = buffer_list[reinterpret_cast<uint64_t>(charly_as_cpointer(buf)->data)];
   if (!buffer) {

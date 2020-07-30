@@ -163,7 +163,7 @@ class Promise {
     }
     buf.write(">")
 
-    buf.str()
+    buf.to_s()
   }
 
   /*
