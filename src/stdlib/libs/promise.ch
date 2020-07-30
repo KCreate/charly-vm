@@ -69,7 +69,7 @@ class Promise {
 
     if @then_handlers.length {
       @status |= kFlagSettled
-      @then_handlers.each(->(handler) defer(->handler(value)))
+      @then_handlers.each(->(handler) spawn(->handler(value)))
       @then_handlers.clear()
     }
 
@@ -86,7 +86,7 @@ class Promise {
 
     if @catch_handlers.length {
       @status |= kFlagSettled
-      @catch_handlers.each(->(handler) defer(->handler(value)))
+      @catch_handlers.each(->(handler) spawn(->handler(value)))
       @catch_handlers.clear()
     }
 
@@ -100,7 +100,7 @@ class Promise {
     if @is_pending() @then_handlers << callback
     if @is_resolved() {
       @status |= kFlagSettled
-      defer(->callback(@value))
+      spawn(->callback(@value))
     }
 
     self
@@ -138,7 +138,7 @@ class Promise {
     if @is_pending() @catch_handlers << callback
     if @is_rejected() {
       @status |= kFlagSettled
-      defer(->callback(@value))
+      spawn(->callback(@value))
     }
 
     self

@@ -24,21 +24,11 @@
  * SOFTWARE.
  */
 
-const c = new Sync.Channel()
+const task = spawn.promise(->{
+  sleep(1.second())
 
-// Writer loop
-defer(->{
-  let i = 0
-  loop {
-    c.write(i)
-    i += 1
-  }
+  return "hello world"
 })
 
-// Reader loop
-defer(->{
-  loop {
-    const msg = c.read()
-    print("Message: " + msg)
-  }
-})
+const result = task.wait()
+print(result)

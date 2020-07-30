@@ -34,62 +34,41 @@ __internal_function_call.push_return_value = false
 export = ->(Base) {
   return class Function extends Base {
 
-    /*
-     * Calls *self* using ctx as the target object
-     * and the values inside args as the parameters
-     * */
-    call(ctx, args = []) {
-      __internal_function_call(self, ctx, args)
-    }
+    // Calls this function with a self value and arguments array
+    call(ctx, args = [], async = false) {
+      unless async return __internal_function_call(self, ctx, args)
 
-    /*
-     * Asynchronously call this function
-     * */
-    call_async(ctx = null, args = []) {
-      new Promise(->(resolve, reject) {
-        if (@is_charly_func()) {
-          defer(->{
-            try {
-              resolve(self.call(ctx, args))
-            } catch(e) {
-              reject(e)
-            }
-          })
-        } else {
-          const error_template = new Error(self.name + ": ")
-          __internal_function_call_async(self, args, ->(a1, error, a2, a3) {
+      if @is_charly_func() {
+        return spawn.promise(->self.call(ctx, args))
+      }
 
-            // Exceptions thrown by the VM are delivered as a string
-            if typeof error == "string" {
-              error = error_template.tap(->$0.message += error)
-              return reject(error)
-            }
+      const error_template = new Error(self.name + ": ")
+      __internal_function_call_async(self, args, ->(a1, error, a2, a3) {
 
-            resolve(a1, a2, a3)
-          })
+        // Exceptions thrown by the VM are delivered as a string
+        if typeof error == "string" {
+          error_template.message += error
+          error = error_template
+          return reject(error)
         }
+
+        resolve(a1, a2, a3)
       })
     }
 
-    /*
-     * Bind a self value for this function
-     * */
+    // Bind a self value for this function
     bind_self(value) {
       __internal_function_bind_self(self, value)
       self
     }
 
-    /*
-     * Unbind the self value
-     * */
+    // Unbind the self value
     unbind_self {
       __internal_function_unbind_self(self)
       self
     }
 
-    /*
-     * Checks wether this function is a C function
-     * */
+    // Checks wether this function is a C function or not
     is_c_func      = __internal_function_is_cfunc(self)
     is_charly_func = !@is_c_func()
   }

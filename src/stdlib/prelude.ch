@@ -24,37 +24,11 @@
  * SOFTWARE.
  */
 
-// Setup globals and Charly object
-@"charly.vm.globals"                          = {}
-@"charly.vm.globals".Charly                   = { globals: @"charly.vm.globals" }
-@"charly.vm.globals".__charly_internal_import = null
+// Setup the global scope
+@"charly.vm.globals"        = {}
+@"charly.vm.globals".Charly = { globals: @"charly.vm.globals" }
 
-// Primitive classes
-@"charly.vm.globals".Value     = null
-@"charly.vm.globals".Object    = null
-@"charly.vm.globals".Class     = null
-@"charly.vm.globals".Array     = null
-@"charly.vm.globals".String    = null
-@"charly.vm.globals".Number    = null
-@"charly.vm.globals".Function  = null
-@"charly.vm.globals".Generator = null
-@"charly.vm.globals".Boolean   = null
-@"charly.vm.globals".Null      = null
-
-// Global classes
-@"charly.vm.globals".Error          = null
-@"charly.vm.globals".Promise        = null
-@"charly.vm.globals".CircularBuffer = null
-@"charly.vm.globals".Queue          = null
-@"charly.vm.globals".Heap           = null
-
-// Global methods
-@"charly.vm.globals".print = null
-@"charly.vm.globals".write = null
-@"charly.vm.globals".exit  = null
-@"charly.vm.globals".defer = null
-
-// Cache some internal methods
+// Load internal methods
 const __internal_get_argv        = @"charly.vm.get_argv"
 const __internal_get_environment = @"charly.vm.get_environment"
 const __internal_write           = @"charly.vm.write"
@@ -64,87 +38,79 @@ const __internal_dirname         = @"charly.vm.dirname"
 const __internal_exit            = @"charly.vm.exit"
 __internal_exit.halt_after_return = true
 
-let __internal_standard_libs
-let __internal_import_cache = {}
+// Setup some information about our runtime environment
+Charly.globals.ARGV         = __internal_get_argv()
+Charly.globals.ENVIRONMENT  = __internal_get_environment()
+const CHARLYVMDIR = ENVIRONMENT["CHARLYVMDIR"] || ->{throw "Missing CHARLYVMDIR environment variable"}()
 
-// Import method for loading other files and libraries
-__charly_internal_import = ->(path, source, ignore_cache = false) {
+// Setup import function
+const BUILTIN_LIBS = {
+  unittest: "src/stdlib/libs/unittest/lib.ch"
+}
 
-  // Search for the path in the list of standard libraries
-  const lib = __internal_standard_libs[path]
+const IMPORT_CACHE = {}
+Charly.globals.__charly_internal_import = ->(path, source, ignore_cache = false) {
+
+  // Check if we're importing a builtin library
+  const lib = BUILTIN_LIBS[path]
   if lib {
-    const ctxdir = ENVIRONMENT["CHARLYVMDIR"]
-    if ctxdir {
-      path = ctxdir + "/" + lib
-    } else {
-      path = lib
-    }
+    path = CHARLYVMDIR + "/" + lib
   }
 
   unless ignore_cache {
-    const cache_entry = __internal_import_cache[path]
+    const cache_entry = IMPORT_CACHE[path]
     if cache_entry return cache_entry.v
   }
 
   const module_fn = __internal_import(path, source)
   unless module_fn throw new Error("Import didn't return a module function")
   const v = module_fn({})
-  __internal_import_cache[path] = {v}
+  IMPORT_CACHE[path] = {v}
   v
 }
 
-// All libraries that come with charly
-__internal_standard_libs = {
-  unittest: "src/stdlib/libs/unittest/lib.ch"
-}
-
 // Setup primitive classes
-Value     = @"charly.vm.primitive.value"     = (import "./primitives/value.ch")()
-Object    = @"charly.vm.primitive.object"    = (import "./primitives/object.ch")(Value)
-Array     = @"charly.vm.primitive.array"     = (import "./primitives/array.ch")(Value)
-Boolean   = @"charly.vm.primitive.boolean"   = (import "./primitives/boolean.ch")(Value)
-Class     = @"charly.vm.primitive.class"     = (import "./primitives/class.ch")(Value)
-Function  = @"charly.vm.primitive.function"  = (import "./primitives/function.ch")(Value)
-Generator = @"charly.vm.primitive.generator" = (import "./primitives/generator.ch")(Value)
-Null      = @"charly.vm.primitive.null"      = (import "./primitives/null.ch")(Value)
-Number    = @"charly.vm.primitive.number"    = (import "./primitives/number.ch")(Value)
-String    = @"charly.vm.primitive.string"    = (import "./primitives/string.ch")(Value)
+Charly.globals.Value     = @"charly.vm.primitive.value"     = (import "./primitives/value.ch")()
+Charly.globals.Object    = @"charly.vm.primitive.object"    = (import "./primitives/object.ch")(Value)
+Charly.globals.Array     = @"charly.vm.primitive.array"     = (import "./primitives/array.ch")(Value)
+Charly.globals.Boolean   = @"charly.vm.primitive.boolean"   = (import "./primitives/boolean.ch")(Value)
+Charly.globals.Class     = @"charly.vm.primitive.class"     = (import "./primitives/class.ch")(Value)
+Charly.globals.Function  = @"charly.vm.primitive.function"  = (import "./primitives/function.ch")(Value)
+Charly.globals.Generator = @"charly.vm.primitive.generator" = (import "./primitives/generator.ch")(Value)
+Charly.globals.Null      = @"charly.vm.primitive.null"      = (import "./primitives/null.ch")(Value)
+Charly.globals.Number    = @"charly.vm.primitive.number"    = (import "./primitives/number.ch")(Value)
+Charly.globals.String    = @"charly.vm.primitive.string"    = (import "./primitives/string.ch")(Value)
 
 // Setup some additional data structures
-CircularBuffer = import "./libs/circular_buffer.ch"
-Queue          = import "./libs/queue.ch"
-Heap           = import "./libs/heap.ch"
 
 // Write a value to stdout, without a trailing newline
-write = func write {
+Charly.globals.write = func write {
   arguments.each(->(a) __internal_write(a.to_s()))
   write
 }
-write.dir = func write_dir {
+Charly.globals.write.dir = func write_dir {
   arguments.each(->(v) __internal_write(v))
   write.dir
 }
 
 // Write a value to stdout, with a trailing newline
-print = func print {
+Charly.globals.print = func print {
   arguments.each(->(v) __internal_write(v.to_s()))
   __internal_write("\n")
   write
 }
-print.dir = func print_dir {
+Charly.globals.print.dir = func print_dir {
   arguments.each(->(v) __internal_write(v))
   __internal_write("\n")
   print.dir
 }
 
 // Exits the program with a given status code
-exit = func exit(status = 0) {
+Charly.globals.exit = func exit(status = 0) {
   __internal_exit(status)
 }
 
 // Setup the charly object
-Charly.globals.ARGV        = __internal_get_argv()
-Charly.globals.ENVIRONMENT = __internal_get_environment()
 Charly.io = {
   write,
   print,
@@ -155,11 +121,18 @@ Charly.io = {
   dirname: __internal_dirname
 }
 
-// Register global symbols
-Charly.globals.Error   = import "./libs/error.ch"
-Charly.globals.Math    = import "./libs/math.ch"
-Charly.globals.Time    = import "./libs/time.ch"
-Charly.globals.Sync    = import "./libs/sync.ch"
-Charly.globals.Path    = import "./libs/path.ch"
+// Some libraries and data structures
+Charly.globals.CircularBuffer = import "./libs/circular_buffer.ch"
+Charly.globals.Error          = import "./libs/error.ch"
+Charly.globals.Heap           = import "./libs/heap.ch"
+Charly.globals.Math           = import "./libs/math.ch"
+Charly.globals.Path           = import "./libs/path.ch"
+Charly.globals.Queue          = import "./libs/queue.ch"
+Charly.globals.Sync           = import "./libs/sync.ch"
+Charly.globals.Time           = import "./libs/time.ch"
+
+// Quick access to commonly used stuff
 Charly.globals.Promise = Sync.Promise
-Charly.globals.defer   = Sync.defer
+Charly.globals.Channel = Sync.Channel
+Charly.globals.spawn   = Sync.spawn
+Charly.globals.sleep   = Sync.sleep

@@ -183,19 +183,24 @@ class Ticker extends Promise {
   stop(arg = null)   = @clear(arg)
 }
 
-/*
- * Schedules a task to be executed at a later date
- * The return value of the callback is the result of the promise
- * */
-func defer(callback, period = 0, arg = null) = new Timer(callback, period, arg)
+// Invoke callback asynchronously
+func spawn(callback, duration = 0, arg = null) {
+  __internal_init_timer(func init_spawn {
+    callback(arg)
+  }, 0)
 
-/*
- * Sleeps for a given amount of time
- * */
-func sleep(duration) {
-  const t = new Timer(->null, duration)
-  t.wait()
+  null
 }
+
+// Invoke callback asynchronously
+// Returns a promise that resolves with the callbacks
+// return value, or rejects with any thrown error
+spawn.promise = func promise(callback, period = 0, arg = null) {
+  return new Timer(callback, period, arg)
+}
+
+// Sleep for some time
+func sleep(duration) = (new Timer(->null, duration)).wait()
 
 export = {
   Notifier,
@@ -204,7 +209,7 @@ export = {
   Ticker,
   Channel,
 
-  defer,
+  spawn,
   sleep,
 
   wait:         Promise.wait,

@@ -8,11 +8,15 @@ class TestVisitor {
     // run something asynchronously, so we provide a done callback which wraps
     // the asynchronous flow back into the synchronous flow of this method
     if cb.argc == 1 {
+
       const n = new Sync.Notifier()
-      defer(->cb(->n.close()))
-      const timeout = defer(->n.error(new Error("Test case timed out")), 100.ms())
-      const exc = n.wait()
-      if exc throw exc
+      const close_func = ->n.notify_one()
+      spawn(->cb(close_func))
+
+      // Each asynchronous test case has a fixed amount
+      // of time to finish before it times out
+      const timeout = spawn.promise(->n.error(new Error("Test case timed out")), 100.ms())
+      n.wait()
       timeout.clear()
     } else {
       cb()

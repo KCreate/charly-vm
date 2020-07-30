@@ -30,14 +30,14 @@ export = ->(describe, it, assert) {
 
     it("waits for a timer to finish", ->{
       let v = false
-      defer(->v = true).wait()
+      spawn.promise(->v = true).wait()
       assert(v)
     })
 
     it("calls a timer after some time", ->{
       const start_time = Time.now_steady()
       let v = false
-      defer(->v = true, 10.milliseconds()).wait()
+      spawn.promise(->v = true, 10.milliseconds()).wait()
       assert(v, true)
 
       const current_time = Time.now_steady()
@@ -47,9 +47,9 @@ export = ->(describe, it, assert) {
     it("waits for multiple timers to finish", ->{
       const n = []
 
-      const t1 = defer(->n << 1, 8.milliseconds())
-      const t2 = defer(->n << 2, 2.milliseconds())
-      const t3 = defer(->n << 3, 4.milliseconds())
+      const t1 = spawn.promise(->n << 1, 8.milliseconds())
+      const t2 = spawn.promise(->n << 2, 2.milliseconds())
+      const t3 = spawn.promise(->n << 3, 4.milliseconds())
 
       Sync.wait(t1, t2, t3)
 
@@ -60,8 +60,8 @@ export = ->(describe, it, assert) {
       let t1_called = false
       let t2_called = false
 
-      const t1 = defer(->t1_called = true, 5.milliseconds())
-      const t2 = defer(->{
+      const t1 = spawn.promise(->t1_called = true, 5.milliseconds())
+      const t2 = spawn.promise(->{
         t2_called = true
         t1.clear()
       }, 2.milliseconds())
@@ -76,14 +76,14 @@ export = ->(describe, it, assert) {
       let t2_called = false
       let t3_called = false
 
-      const t1 = defer(->{}, 10.milliseconds())
+      const t1 = spawn.promise(->{}, 10.milliseconds())
 
-      const t2 = defer(->{
+      const t2 = spawn.promise(->{
         t1.wait()
         t2_called = true
       }, 3.milliseconds())
 
-      const t3 = defer(->{
+      const t3 = spawn.promise(->{
         t1.wait()
         t3_called = true
       }, 5.milliseconds())
@@ -158,7 +158,7 @@ export = ->(describe, it, assert) {
     it("resumes flow of a thread at a later time", ->{
       const n = new Sync.Notifier()
 
-      defer(->n.notify_one("this is the result"), 10.milliseconds())
+      spawn(->n.notify_one("this is the result"), 10.milliseconds())
 
       const result = n.wait()
       assert(result, "this is the result")
@@ -167,12 +167,12 @@ export = ->(describe, it, assert) {
     it("closes a notifier, resuming all pending threads", ->{
       const n = new Sync.Notifier()
 
-      const tasks = Array.create(4, ->(i) defer(->{
+      const tasks = Array.create(4, ->(i) spawn.promise(->{
         const msg = n.wait()
         return [i, msg]
       }))
 
-      defer(->n.close("hello world"), 10.milliseconds())
+      spawn(->n.close("hello world"), 10.milliseconds())
 
       const results = Sync.wait(tasks)
 
@@ -184,7 +184,7 @@ export = ->(describe, it, assert) {
     it("throws exceptions in the waiting thread", ->{
       const n = new Sync.Notifier()
 
-      defer(->n.error(new Error("something went wrong")), 10.milliseconds())
+      spawn(->n.error(new Error("something went wrong")), 10.milliseconds())
 
       try {
         n.wait()
@@ -198,7 +198,7 @@ export = ->(describe, it, assert) {
     it("throws exceptions in multiple waiting threads", ->{
       const n = new Sync.Notifier()
 
-      const tasks = Array.create(4, ->(i) defer(->{
+      const tasks = Array.create(4, ->(i) spawn.promise(->{
         try {
           n.wait()
         } catch(e) {
@@ -206,7 +206,7 @@ export = ->(describe, it, assert) {
         }
       }))
 
-      defer(->n.error("hello world"), 10.milliseconds())
+      spawn(->n.error("hello world"), 10.milliseconds())
 
       const results = Sync.wait(tasks)
 
@@ -271,7 +271,7 @@ export = ->(describe, it, assert) {
     })
 
     it("allows multiple then handlers", ->(done) {
-      const task = defer(->"test", 10.milliseconds())
+      const task = spawn.promise(->"test", 10.milliseconds())
 
       assert(task.is_pending(), true)
       assert(task.is_resolved(), false)
@@ -296,7 +296,7 @@ export = ->(describe, it, assert) {
     })
 
     it("allows multiple catch handlers", ->(done) {
-      const task = defer(->throw new Error("my error"), 10.milliseconds())
+      const task = spawn.promise(->throw new Error("my error"), 10.milliseconds())
 
       assert(task.is_pending(), true)
       assert(task.is_resolved(), false)
@@ -321,7 +321,7 @@ export = ->(describe, it, assert) {
     })
 
     it("waits synchronously for a promise to finish", ->{
-      const task = defer(->"response message", 10.milliseconds())
+      const task = spawn.promise(->"response message", 10.milliseconds())
       const result = task.wait()
       assert(result, "response message")
       assert(task.is_pending(), false)
@@ -331,7 +331,7 @@ export = ->(describe, it, assert) {
     })
 
     it("waits synchronously for a promise to settle", ->{
-      const task = defer(->throw "my error", 10.milliseconds())
+      const task = spawn.promise(->throw "my error", 10.milliseconds())
       const result = task.wait_settle()
 
       assert(result, task)
@@ -343,12 +343,12 @@ export = ->(describe, it, assert) {
     })
 
     it("Sync.wait", ->{
-      const tasks = Array.create(5, ->(i) defer(->i * ".", i * 5.milliseconds()))
+      const tasks = Array.create(5, ->(i) spawn.promise(->i * ".", i * 5.milliseconds()))
       const results = Sync.wait(tasks)
       assert(results, ["", ".", "..", "...", "...."])
 
       it("throws exceptions", ->{
-        const tasks = Array.create(5, ->(i) defer(->throw new Error(i * "."), i * 5.milliseconds()))
+        const tasks = Array.create(5, ->(i) spawn.promise(->throw new Error(i * "."), i * 5.milliseconds()))
         const exc = Error.expect(->Sync.wait(tasks))
         assert(typeof exc, "object")
         assert(exc.message, "")
@@ -356,9 +356,9 @@ export = ->(describe, it, assert) {
     })
 
     it("Sync.wait_settled", ->{
-      const t1 = defer(->"result 1",      10.millisecond())
-      const t2 = defer(->"result 2",      5.millisecond())
-      const t3 = defer(->throw "error 3", 3.millisecond())
+      const t1 = spawn.promise(->"result 1",      10.millisecond())
+      const t2 = spawn.promise(->"result 2",      5.millisecond())
+      const t3 = spawn.promise(->throw "error 3", 3.millisecond())
 
       const results = Sync.wait_settled(t1, t2, t3)
       assert(results,                         [t1, t2, t3])
@@ -367,9 +367,9 @@ export = ->(describe, it, assert) {
     })
 
     it("Sync.all", ->{
-      const t1 = defer(->"result 1", 10.millisecond())
-      const t2 = defer(->"result 2", 5.millisecond())
-      const t3 = defer(->"result 3", 3.millisecond())
+      const t1 = spawn.promise(->"result 1", 10.millisecond())
+      const t2 = spawn.promise(->"result 2", 5.millisecond())
+      const t3 = spawn.promise(->"result 3", 3.millisecond())
 
       const p = Sync.all(t1, t2, t3)
       assert(p.is_pending(), true)
@@ -385,9 +385,9 @@ export = ->(describe, it, assert) {
       assert(results, ["result 1", "result 2", "result 3"])
 
       it("throws exceptions", ->{
-        const t1 = defer(->"result 1",                 10.millisecond())
-        const t2 = defer(->"result 2",                 5.millisecond())
-        const t3 = defer(->throw new Error("error 3"), 3.millisecond())
+        const t1 = spawn.promise(->"result 1",                 10.millisecond())
+        const t2 = spawn.promise(->"result 2",                 5.millisecond())
+        const t3 = spawn.promise(->throw new Error("error 3"), 3.millisecond())
 
         const p = Sync.all(t1, t2, t3)
         assert(p.is_pending(), true)
@@ -407,9 +407,9 @@ export = ->(describe, it, assert) {
     })
 
     it("Sync.all_settled", ->{
-      const t1 = defer(->"result 1",               10.millisecond())
-      const t2 = defer(->"result 2",               5.millisecond())
-      const t3 = defer(->throw new Error("error"), 3.millisecond())
+      const t1 = spawn.promise(->"result 1",               10.millisecond())
+      const t2 = spawn.promise(->"result 2",               5.millisecond())
+      const t3 = spawn.promise(->throw new Error("error"), 3.millisecond())
 
       const p = Sync.all_settled(t1, t2, t3)
       assert(p.is_pending(), true)
@@ -429,9 +429,9 @@ export = ->(describe, it, assert) {
     })
 
     it("Sync.race", ->{
-      const t1 = defer(->"result 1", 10.millisecond())
-      const t2 = defer(->"result 2", 5.millisecond())
-      const t3 = defer(->"result 3", 3.millisecond())
+      const t1 = spawn.promise(->"result 1", 10.millisecond())
+      const t2 = spawn.promise(->"result 2", 5.millisecond())
+      const t3 = spawn.promise(->"result 3", 3.millisecond())
 
       const p = Sync.race(t1, t2, t3)
       const result = p.wait()
@@ -440,9 +440,9 @@ export = ->(describe, it, assert) {
     })
 
     it("Sync.race_settled", ->{
-      const t1 = defer(->"result 1", 10.millisecond())
-      const t2 = defer(->"result 2", 5.millisecond())
-      const t3 = defer(->throw "error 3", 3.millisecond())
+      const t1 = spawn.promise(->"result 1", 10.millisecond())
+      const t2 = spawn.promise(->"result 2", 5.millisecond())
+      const t3 = spawn.promise(->throw "error 3", 3.millisecond())
 
       const p = Sync.race(t1, t2, t3)
       const exc = Error.expect(->p.wait())

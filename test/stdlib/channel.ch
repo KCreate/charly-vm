@@ -30,7 +30,7 @@ export = ->(describe, it, assert) {
       const c = new Sync.Channel()
       let check = false
 
-      defer(->{
+      spawn(->{
         assert(check, false)
         assert(c.read(), "test")
         Sync.sleep(0)
@@ -47,7 +47,7 @@ export = ->(describe, it, assert) {
       const c = new Sync.Channel()
       let check = false
 
-      defer(->{
+      spawn(->{
         assert(check, false)
         c.write("test")
         Sync.sleep(0)
@@ -80,7 +80,7 @@ export = ->(describe, it, assert) {
     it("outstanding reads return null when channel is closed", ->{
       const c = new Sync.Channel()
 
-      defer(->c.close())
+      spawn(->c.close())
 
       assert(c.open, true)
 
@@ -92,7 +92,7 @@ export = ->(describe, it, assert) {
     it("outstanding writes throw when channel is closed", ->{
       const c = new Sync.Channel()
 
-      defer(->c.close())
+      spawn(->c.close())
 
       const exc = Error.expect(->c.write("testvalue"))
       assert(exc.message, "Write cancelled, channel was closed")
@@ -121,7 +121,7 @@ export = ->(describe, it, assert) {
       const c = new Sync.Channel(4)
       let check = false
 
-      defer(->{
+      spawn(->{
         assert(check, true)
         assert(c.open, false)
 
@@ -140,7 +140,7 @@ export = ->(describe, it, assert) {
       const c = new Sync.Channel(4)
       let check = false
 
-      defer(->{
+      spawn(->{
         assert(check, true)
         assert(c.open, false)
 
@@ -163,7 +163,7 @@ export = ->(describe, it, assert) {
       const c = new Sync.Channel(4)
       let check = false
 
-      defer(->{
+      spawn(->{
         assert(check, true)
         assert(c.open, false)
 

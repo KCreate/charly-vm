@@ -21,34 +21,6 @@ asynchronous, multithreaded worker-queue.
 
 ## Example code
 
-### Promises
-
-The `defer` method is a shorthand for the regular `new Promise(->(resolve, reject) {...})` kind of way
-to creating a promise. The created promise resolves once the callback returns or rejects
-if the callback throws an exception.
-
-```javascript
-const p = defer(->"Hello world!", 1.second())
-
-p.then(->(result) {
-  print("Got result: " + result) // Got result: Hello world!
-})
-```
-
-You can also synchronously wait for a promise to finish. This currently active
-thread pauses and will resume once the promise resolves or throw an exception
-if it gets rejected.
-
-```javascript
-const p = defer(->"Hello world", 1.second())
-
-// The wait method returns the value the promise resolved with.
-// If the promise got rejected, it will throw
-const result = p.wait()
-
-print(result) // "Hello world!"
-```
-
 ### Channels
 
 ```javascript
@@ -56,7 +28,7 @@ print(result) // "Hello world!"
 const c = new Sync.Channel()
 
 // Writer loop
-defer(->{
+spawn(->{
   let i = 0
   loop {
     c.write(i)
@@ -65,7 +37,7 @@ defer(->{
 })
 
 // Reader loop
-defer(->{
+spawn(->{
   loop {
     const msg = c.read()
     print("Message: " + msg)
@@ -81,6 +53,34 @@ defer(->{
 // ...
 ```
 
+### Promises
+
+The `spawn.promise` method is a shorthand for the regular `new Promise(->(resolve, reject) {...})` kind of way
+to creating a promise. The created promise resolves once the callback returns or rejects
+if the callback throws an exception.
+
+```javascript
+const p = spawn.promise(->"Hello world!", 1.second())
+
+p.then(->(result) {
+  print("Got result: " + result) // Got result: Hello world!
+})
+```
+
+You can also synchronously wait for a promise to finish. This currently active
+thread pauses and will resume once the promise resolves or throw an exception
+if it gets rejected.
+
+```javascript
+const p = spawn.promise(->"Hello world", 1.second())
+
+// The wait method returns the value the promise resolved with.
+// If the promise got rejected, it will throw
+const result = p.wait()
+
+print(result) // "Hello world!"
+```
+
 ### Turning asynchronous into synchronous flow
 
 ```javascript
@@ -92,7 +92,7 @@ func sleep(duration) {
   const n = new Sync.Notifier()
 
   // notify_one will resume one waiting thread
-  defer(->n.notify_one(), duration)
+  spawn(->n.notify_one(), duration)
 
   // Wait until we are notified to resume
   n.wait()
@@ -206,7 +206,7 @@ t.then(->{
   print("Ticker iterations: " + t.iterations)
 })
 
-defer(->t.stop(), 2.seconds())
+spawn(->t.stop(), 2.seconds())
 ```
 
 ### Extending primitive classes
