@@ -29,26 +29,58 @@ const __internal_get_parent_frame  = @"charly.vm.get_parent_frame"
 const __internal_get_block_address = @"charly.vm.get_block_address"
 const __internal_resolve_address   = @"charly.vm.resolve_address"
 
-/*
- * Represents a stackframe inside the VM
- * */
+// Represents a Frame inside the VM
 class StackFrame {
   property id
   property caller
   property self_value
   property origin_address
 
-  // Create a StackFrame obj from the obj returned by the builtin methods
-  static from_internal(obj) = new StackFrame(obj.id, obj.caller, obj.self_value, obj.origin_address)
+  // Create a stackframe from the data object
+  // returned by the internal methods
+  constructor(@data) {
+    @id = data.id
+    @caller = data.caller
+    @self_value = data.self_value
+    @origin_address = data.origin_address
+  }
 
-  // Returns the frame of the calling function
-  static get_current = StackFrame.from_internal(__internal_get_active_frame()).parent()
+  // Returns the current stackframe
+  static current {
+    const frame = new StackFrame(__internal_get_active_frame())
+    frame.parent()
+  }
 
-  // Return the parent frame
+  // Returns the parent frame of this frame
   parent {
     const p = __internal_get_parent_frame(@id)
     if !p return null
-    StackFrame.from_internal(p)
+    new StackFrame(p)
+  }
+
+  // Returns the location of the caller function
+  get_caller_location {
+    const block_addr = __internal_get_block_address(@caller)
+    __internal_resolve_address(block_addr)
+  }
+
+  // Returns the location of where this frame originated
+  get_origin_location {
+    __internal_resolve_address(@origin_address)
+  }
+
+  to_s {
+    const host_class = @caller.host_class
+    const func_name  = @caller.name.length ? @caller.name : "??"
+    const filename   = @get_caller_location()
+
+    const buf = new String.Buffer(32)
+
+    if host_class buf.write(host_class.name + ".")
+    buf.write(func_name)
+    buf.write(" (" + filename + ")")
+
+    buf.to_s()
   }
 }
 
@@ -82,18 +114,12 @@ class Error {
 
     // Generate stack trace entries
     @stacktrace.each(->(frame, index) {
-      const host_class = frame.caller.host_class
-      const func_name  = frame.caller.name.length > 0 ? frame.caller.name : "??"
-      const block_addr = __internal_get_block_address(frame.caller)
-      const filename   = __internal_resolve_address(block_addr) || "??"
-
       buf.write("  at ")
-      if host_class buf.write(host_class.name + ".")
-      buf.write(func_name)
-      buf.write(" (" + filename + ")")
+      buf.write(frame)
 
-      // Don't print newline on last entry
-      if index < @stacktrace.length - 1 buf.write("\n")
+      unless index == @stacktrace.length - 1 {
+        buf.write("\n")
+      }
     })
 
     buf.to_s()
@@ -132,7 +158,7 @@ class Error {
     const frames = []
 
     // Get frame of the caller
-    let top = StackFrame.get_current().parent()
+    let top = StackFrame.current().parent()
 
     // The skip_func argument allows us to skip all
     // frames until we reach a specific function

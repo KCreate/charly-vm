@@ -15,7 +15,7 @@ class TestVisitor {
 
       // Each asynchronous test case has a fixed amount
       // of time to finish before it times out
-      const timeout = spawn.promise(->n.error(new Error("Test case timed out")), 100.ms())
+      const timeout = spawn.timer(->n.error(new Error("Test case timed out")), 100.ms())
       n.wait()
       timeout.clear()
     } else {

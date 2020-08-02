@@ -24,11 +24,6 @@
  * SOFTWARE.
  */
 
-const task = spawn.promise(->{
-  sleep(1.second())
-
-  return "hello world"
-})
-
-const result = task.wait()
-print(result)
+spawn.timer(->{
+  print("hi")
+}, 1.second())

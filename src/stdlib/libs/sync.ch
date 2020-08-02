@@ -118,7 +118,7 @@ class Notifier {
 class Timer extends Promise {
   property id
 
-  constructor(callback, period = 0, arg = null) {
+  constructor(callback, period, arg = null) {
     super(->(resolve, reject) {
       const this = self
       @id = __internal_init_timer(func init_timer {
@@ -152,7 +152,7 @@ class Ticker extends Promise {
   property id
   property iterations
 
-  constructor(callback, period = 0, arg = null) {
+  constructor(callback, period, arg = null) {
     super(->(resolve, reject) {
       const this = self
       @iterations = 0
@@ -183,8 +183,8 @@ class Ticker extends Promise {
   stop(arg = null)   = @clear(arg)
 }
 
-// Invoke callback asynchronously
-func spawn(callback, duration = 0, arg = null) {
+// Schedule a callback to execute asynchronously
+func spawn(callback, arg = null) {
   __internal_init_timer(func init_spawn {
     callback(arg)
   }, 0)
@@ -192,12 +192,24 @@ func spawn(callback, duration = 0, arg = null) {
   null
 }
 
-// Invoke callback asynchronously
-// Returns a promise that resolves with the callbacks
-// return value, or rejects with any thrown error
-spawn.promise = func promise(callback, period = 0, arg = null) {
-  return new Timer(callback, period, arg)
+// Schedule a callback to execute asynchronously
+// Returned promise resolves with the callbacks return value
+// Rejects with thrown promise
+spawn.promise = func spawn_promise(callback, arg = null) {
+  new Promise(->(resolve, reject) {
+    spawn(->{
+      try {
+        resolve(callback(arg))
+      } catch(e) {
+        reject(e)
+      }
+    })
+  })
 }
+
+// Shorthands for Timer and Ticker
+spawn.timer  = func spawn_timer(callback, period, arg = null)  = new Timer(callback, period, arg)
+spawn.ticker = func spawn_ticker(callback, period, arg = null) = new Ticker(callback, period, arg)
 
 // Sleep for some time
 func sleep(duration) = (new Timer(->null, duration)).wait()

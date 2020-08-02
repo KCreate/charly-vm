@@ -25,7 +25,7 @@ asynchronous, multithreaded worker-queue.
 
 ```javascript
 // Create a new channel
-const c = new Sync.Channel()
+const c = new Channel()
 
 // Writer loop
 spawn(->{
@@ -92,7 +92,7 @@ func sleep(duration) {
   const n = new Sync.Notifier()
 
   // notify_one will resume one waiting thread
-  spawn(->n.notify_one(), duration)
+  spawn.timer(->n.notify_one(), duration)
 
   // Wait until we are notified to resume
   n.wait()
@@ -198,7 +198,7 @@ read_state() // => 400
 ### Tickers
 
 ```javascript
-const t = new Sync.Ticker(->(i) {
+const t = spawn.ticker(->(i) {
   print("Iteration: " + i)
 }, 250.ms())
 
@@ -206,7 +206,7 @@ t.then(->{
   print("Ticker iterations: " + t.iterations)
 })
 
-spawn(->t.stop(), 2.seconds())
+spawn.timer(->t.stop(), 2.seconds())
 ```
 
 ### Extending primitive classes

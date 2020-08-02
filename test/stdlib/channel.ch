@@ -27,7 +27,7 @@
 export = ->(describe, it, assert) {
   describe("Unbuffered channels", ->{
     it("writing to channel blocks", ->(done) {
-      const c = new Sync.Channel()
+      const c = new Channel()
       let check = false
 
       spawn(->{
@@ -44,7 +44,7 @@ export = ->(describe, it, assert) {
     })
 
     it("reading from channel blocks", ->(done) {
-      const c = new Sync.Channel()
+      const c = new Channel()
       let check = false
 
       spawn(->{
@@ -61,7 +61,7 @@ export = ->(describe, it, assert) {
     })
 
     it("closing a channel", ->{
-      const c = new Sync.Channel()
+      const c = new Channel()
 
       assert(c.open, true)
       c.close()
@@ -69,7 +69,7 @@ export = ->(describe, it, assert) {
     })
 
     it("read from closed channel returns null", ->{
-      const c = new Sync.Channel()
+      const c = new Channel()
       c.close()
 
       assert(c.read(), null)
@@ -78,7 +78,7 @@ export = ->(describe, it, assert) {
     })
 
     it("outstanding reads return null when channel is closed", ->{
-      const c = new Sync.Channel()
+      const c = new Channel()
 
       spawn(->c.close())
 
@@ -90,7 +90,7 @@ export = ->(describe, it, assert) {
     })
 
     it("outstanding writes throw when channel is closed", ->{
-      const c = new Sync.Channel()
+      const c = new Channel()
 
       spawn(->c.close())
 
@@ -99,7 +99,7 @@ export = ->(describe, it, assert) {
     })
 
     it("exception on write to closed channel", ->{
-      const c = new Sync.Channel()
+      const c = new Channel()
 
       c.close()
 
@@ -108,7 +108,7 @@ export = ->(describe, it, assert) {
     })
 
     it("exception on closing already closed channel", ->{
-      const c = new Sync.Channel()
+      const c = new Channel()
       c.close()
 
       const exc = Error.expect(->c.close())
@@ -118,7 +118,7 @@ export = ->(describe, it, assert) {
 
   describe("Buffered channels", ->{
     it("being able to write consecutive values without blocking", ->(done) {
-      const c = new Sync.Channel(4)
+      const c = new Channel(4)
       let check = false
 
       spawn(->{
@@ -137,7 +137,7 @@ export = ->(describe, it, assert) {
     })
 
     it("being able to read N consecutive values without blocking", ->(done) {
-      const c = new Sync.Channel(4)
+      const c = new Channel(4)
       let check = false
 
       spawn(->{
@@ -160,7 +160,7 @@ export = ->(describe, it, assert) {
     })
 
     it("reading remaining buffer from closed channel", ->(done) {
-      const c = new Sync.Channel(4)
+      const c = new Channel(4)
       let check = false
 
       spawn(->{
