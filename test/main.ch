@@ -50,6 +50,9 @@ const result = unittest(->(describe, it, assert, context) {
     ["Ternary",               "./interpreter/ternary.ch"],
     ["Unless",                "./interpreter/unless.ch"],
 
+    // Primitive data type library specs
+    ["String stdlib",         "./stdlib/primitives/string.ch"],
+
     // Standard library specs
     ["ARGV & Environment", "./stdlib/argv-environ.ch"],
     ["Channels",           "./stdlib/channel.ch"],

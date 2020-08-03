@@ -81,32 +81,14 @@ export = ->(Base) {
       if offset == 0 return ""
       const buf = new StringBuffer((offset == @length) ? (@length - start) : (offset))
 
-      if (start < 0) {
-        const new_start = start + @length
-        if (new_start < 0) return ""
-        buf.write_partial(self, new_start, @length - new_start)
-        buf.write_partial(self, 0, offset - (@length - new_start))
-      } else {
-        buf.write_partial(self, start, offset)
+      if start < 0 {
+        start += @length
+        if start < 0 return ""
       }
 
+      buf.write_partial(self, start, offset)
+
       buf.to_s()
-    }
-
-    /*
-     * Returns a new string where the first *n* characters are removed
-     * from the left side of the string
-     * */
-    lstrip(n) {
-      @substring(n, @length - n)
-    }
-
-    /*
-     * Returns a new string where the first *n* characters are removed
-     * from the right side of the string
-     * */
-    rstrip(n) {
-      @substring(0, @length - n)
     }
 
     /*
@@ -123,12 +105,6 @@ export = ->(Base) {
 
     /*
      * Calls the callback with each character in this string
-     *
-     * ```
-     * "hello".each(->(c) {
-     *   print(char)
-     * })
-     * ```
      * */
     each(cb) {
       let i = 0
@@ -144,12 +120,6 @@ export = ->(Base) {
     /*
      * Returns a new string where each char is replaced by the value
      * returned for it by the callback
-     *
-     * ```
-     * "hello".each(->(c) {
-     *   print(char)
-     * })
-     * ```
      * */
     map(cb) {
       let i = 0
@@ -165,12 +135,6 @@ export = ->(Base) {
 
     /*
      * Returns a new string where each char, for which the cb returned false, is removed
-     *
-     * ```
-     * "hello".each(->(c) {
-     *   print(char)
-     * })
-     * ```
      * */
     filter(cb) {
       let i = 0
@@ -228,6 +192,8 @@ export = ->(Base) {
      * Returns the index of a substring
      * */
     index(target, offset = 0) {
+      if target.length > @length return -1
+
       if offset < 0 offset += @length
       if offset < 0 return -1
       let i = offset
@@ -245,6 +211,8 @@ export = ->(Base) {
      * Returns the index of a substring starting at the back of the string
      * */
     rindex(target, offset = @length) {
+      if target.length > @length return -1
+
       if offset < 0 offset += @length
       if offset < 0 return -1
       let i = offset - target.length
@@ -259,7 +227,36 @@ export = ->(Base) {
     }
 
     /*
-     * Checks if this string is a digit
+     * Checks wether this string contains another string
+     * */
+    contains(target) {
+      const index = @index(target)
+      if index == -1 return false
+      true
+    }
+
+    /*
+     * Checks wether this string begins with another string
+     * */
+    begins_with(target) {
+      const index = @index(target)
+      if index == -1 return false
+      if index == 0 return true
+      false
+    }
+
+    /*
+     * Checks wether this string ends with another string
+     * */
+    ends_with(target) {
+      const index = @index(target)
+      if index == -1 return false
+      if index == @length - target.length return true
+      false
+    }
+
+    /*
+     * Checks if this string is a single digit
      *
      * ```
      * "5".is_digit() // => true
@@ -313,13 +310,6 @@ export = ->(Base) {
      * */
     last {
       self[@length - 1]
-    }
-
-    /*
-     * Returns obj[self]
-     * */
-    select(obj) {
-      obj[self]
     }
   }
 }
