@@ -148,7 +148,7 @@ class Promise {
    * Convert to string
    * */
   to_s {
-    const buf = new String.Buffer()
+    const buf = new StringBuffer()
 
     buf.write("<Promise:")
     if @is_pending() {

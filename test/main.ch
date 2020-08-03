@@ -54,6 +54,7 @@ const result = unittest(->(describe, it, assert, context) {
     ["ARGV & Environment", "./stdlib/argv-environ.ch"],
     ["Channels",           "./stdlib/channel.ch"],
     ["CircularBuffer",     "./stdlib/circular_buffer.ch"],
+    ["StringBuffer",       "./stdlib/stringbuffer.ch"],
     ["Heaps",              "./stdlib/heaps.ch"],
     ["Queue",              "./stdlib/queue.ch"]
   ]

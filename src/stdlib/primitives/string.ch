@@ -24,9 +24,6 @@
  * SOFTWARE.
  */
 
-// Library imports
-const Buffer = import "libs/string/buffer.ch"
-
 // String Methods
 const __to_n      = @"charly.primitive.string.to_n"
 const __ltrim     = @"charly.primitive.string.ltrim"
@@ -36,19 +33,6 @@ const __uppercase = @"charly.primitive.string.uppercase"
 
 export = ->(Base) {
   return class String extends Base {
-    static property Buffer = Buffer
-
-    static property whitespace = [" ", "\t", "\f", "\n", "\r", "\v"]
-
-    static property digits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-
-    static property lowercase = [ "a", "b", "c", "d", "e", "f", "g", "h", "i", "j",
-                                  "k", "l", "m", "n", "o", "p", "q", "r", "s", "t",
-                                  "u", "v", "w", "x", "y", "z"]
-
-    static property uppercase = [ "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
-                                  "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T",
-                                  "U", "V", "W", "X", "Y", "Z"]
 
     /*
      * Returns an all lowercase copy of this string
@@ -95,7 +79,7 @@ export = ->(Base) {
      * */
     substring(start, offset = @length) {
       if offset == 0 return ""
-      const buf = new Buffer((offset == @length) ? (@length - start) : (offset))
+      const buf = new StringBuffer((offset == @length) ? (@length - start) : (offset))
 
       if (start < 0) {
         const new_start = start + @length
@@ -129,7 +113,7 @@ export = ->(Base) {
      * Returns a reversed copy of this string
      * */
     reverse {
-      const buf = new Buffer(@length)
+      const buf = new StringBuffer(@length)
       const end = @length - 1
       end.downto(0, ->(i) {
         buf.write(self[i])
@@ -169,7 +153,7 @@ export = ->(Base) {
      * */
     map(cb) {
       let i = 0
-      let buf = new Buffer(@length)
+      let buf = new StringBuffer(@length)
 
       while i < @length {
         buf.write(cb(self[i], i, self))
@@ -190,7 +174,7 @@ export = ->(Base) {
      * */
     filter(cb) {
       let i = 0
-      let buf = new Buffer(@length)
+      let buf = new StringBuffer(@length)
 
       while i < @length {
         const r = cb(self[i], i, self)

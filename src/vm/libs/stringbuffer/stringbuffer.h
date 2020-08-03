@@ -32,7 +32,7 @@
 
 namespace Charly {
 namespace Internals {
-namespace Buffer {
+namespace StringBuffer {
 
 // Buffer id management
 static uint64_t next_buf_id = 0;
@@ -49,6 +49,6 @@ VALUE to_s(VM& vm, VALUE buf);
 VALUE bytes(VM& vm, VALUE buf);
 VALUE clear(VM& vm, VALUE buf);
 
-}  // namespace Buffer
+}  // namespace StringBuffer
 }  // namespace Internals
 }  // namespace Charly

@@ -25,29 +25,29 @@
  */
 
 // Internal Method Import
-const __buffer_create        = @"charly.stdlib.buffer.create"
-const __buffer_reserve       = @"charly.stdlib.buffer.reserve"
-const __buffer_get_size      = @"charly.stdlib.buffer.get_size"
-const __buffer_get_offset    = @"charly.stdlib.buffer.get_offset"
-const __buffer_write         = @"charly.stdlib.buffer.write"
-const __buffer_write_partial = @"charly.stdlib.buffer.write_partial"
-const __buffer_write_bytes   = @"charly.stdlib.buffer.write_bytes"
-const __buffer_to_s          = @"charly.stdlib.buffer.to_s"
-const __buffer_bytes         = @"charly.stdlib.buffer.bytes"
-const __buffer_clear         = @"charly.stdlib.buffer.clear"
+const __stringbuffer_create        = @"charly.stdlib.stringbuffer.create"
+const __stringbuffer_reserve       = @"charly.stdlib.stringbuffer.reserve"
+const __stringbuffer_get_size      = @"charly.stdlib.stringbuffer.get_size"
+const __stringbuffer_get_offset    = @"charly.stdlib.stringbuffer.get_offset"
+const __stringbuffer_write         = @"charly.stdlib.stringbuffer.write"
+const __stringbuffer_write_partial = @"charly.stdlib.stringbuffer.write_partial"
+const __stringbuffer_write_bytes   = @"charly.stdlib.stringbuffer.write_bytes"
+const __stringbuffer_to_s          = @"charly.stdlib.stringbuffer.to_s"
+const __stringbuffer_bytes         = @"charly.stdlib.stringbuffer.bytes"
+const __stringbuffer_clear         = @"charly.stdlib.stringbuffer.clear"
 
 /*
  * Represents a buffer
  *
- * Buffers are regularly allocated memory blocks provided by the VM
+ * StringBuffers are memory blocks provided by the VM
  * */
-class Buffer {
+class StringBuffer {
   property handle
   property size
   property offset
 
   constructor(@size = 64) {
-    @handle = __buffer_create(size)
+    @handle = __stringbuffer_create(size)
     @offset = 0
   }
 
@@ -57,7 +57,7 @@ class Buffer {
    * to reduce the amount of reallocations in total
    * */
   reserve(size) {
-    __buffer_reserve(@handle, size)
+    __stringbuffer_reserve(@handle, size)
     @size = @get_size()
     @offset = @get_offset()
   }
@@ -66,14 +66,14 @@ class Buffer {
    * Get the size of the current buffer in bytes and the offset of the write
    * pointer inside that buffer, also in bytes
    * */
-  get_size = __buffer_get_size(@handle)
-  get_offset = __buffer_get_offset(@handle)
+  get_size = __stringbuffer_get_size(@handle)
+  get_offset = __stringbuffer_get_offset(@handle)
 
   /*
    * Append the entire content of the src string to the buffer's end
    * */
   write(src) {
-    @offset = __buffer_write(@handle, src.to_s())
+    @offset = __stringbuffer_write(@handle, src.to_s())
     @size = @get_size()
   }
 
@@ -81,7 +81,7 @@ class Buffer {
    * Append only parts of a string to the buffer
    * */
   write_partial(src, off, cnt) {
-    @offset = __buffer_write_partial(@handle, src, off, cnt)
+    @offset = __stringbuffer_write_partial(@handle, src, off, cnt)
     @size = @get_size()
   }
 
@@ -89,7 +89,7 @@ class Buffer {
    * Append bytes to the buffer
    * */
   write_bytes(bytes) {
-    @offset = __buffer_write_bytes(@handle, bytes)
+    @offset = __stringbuffer_write_bytes(@handle, bytes)
     @size = @get_size()
   }
 
@@ -97,24 +97,24 @@ class Buffer {
    * Return the string representation of the buffers contents
    * */
   to_s {
-    __buffer_to_s(@handle)
+    __stringbuffer_to_s(@handle)
   }
 
   /*
    * Returns the bytes of this string as an int array
    * */
   bytes {
-    __buffer_bytes(@handle)
+    __stringbuffer_bytes(@handle)
   }
 
   /*
    * Clear the buffer
    * */
   clear {
-    __buffer_clear(@handle)
+    __stringbuffer_clear(@handle)
     @size = @get_size()
     @offset = @get_offset()
   }
 }
 
-export = Buffer
+export = StringBuffer

@@ -26,7 +26,7 @@
 
 #include <utf8/utf8.h>
 
-#include "buffer.h"
+#include "stringbuffer.h"
 #include "vm.h"
 #include "managedcontext.h"
 
@@ -34,7 +34,7 @@ using namespace std;
 
 namespace Charly {
 namespace Internals {
-namespace Buffer {
+namespace StringBuffer {
 
 static void destructor(void* data) {
   uint64_t id = reinterpret_cast<uint64_t>(data);
@@ -77,7 +77,7 @@ VALUE get_size(VM& vm, VALUE buf) {
     return kNull;
   }
 
-  return charly_create_number(buffer->get_capacity());
+  return charly_create_integer(buffer->get_capacity());
 }
 
 VALUE get_offset(VM& vm, VALUE buf) {
@@ -210,6 +210,6 @@ VALUE clear(VM& vm, VALUE buf) {
   return kNull;
 }
 
-}  // namespace Buffer
+}  // namespace StringBuffer
 }  // namespace Internals
 }  // namespace Charly

@@ -35,7 +35,7 @@
 #include "managedcontext.h"
 #include "vm.h"
 
-#include "libs/buffer/buffer.h"
+#include "libs/stringbuffer/stringbuffer.h"
 #include "libs/sync/sync.h"
 #include "libs/math/math.h"
 #include "libs/time/time.h"
@@ -72,7 +72,7 @@ std::unordered_map<VALUE, MethodSignature> Index::methods = {
     // Libraries
 #import "libs/math/math.def"
 #import "libs/time/time.def"
-#import "libs/buffer/buffer.def"
+#import "libs/stringbuffer/stringbuffer.def"
 #import "libs/sync/sync.def"
 
     // VM internals

@@ -24,8 +24,6 @@
  * SOFTWARE.
  */
 
-const Buffer = import "libs/string/buffer.ch"
-
 const __internal_insert  = @"charly.primitive.array.insert"
 const __internal_remove  = @"charly.primitive.array.remove"
 const __internal_reverse = @"charly.primitive.array.reverse"
@@ -109,7 +107,7 @@ export = ->(Base) {
 
     join(str) {
       // TODO: Use some smarter heuristics for the final string length
-      const buf = new Buffer(@length * 3)
+      const buf = new StringBuffer(@length * 3)
       @each(->(v, i) {
         buf.write(v.to_s())
         if i < @length - 1 {

@@ -24,6 +24,6 @@
  * SOFTWARE.
  */
 
-spawn.timer(->{
-  print("hi")
-}, 1.second())
+const buf = new StringBuffer(32)
+print(buf.get_size())
+print(buf.get_offset())

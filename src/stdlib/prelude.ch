@@ -121,8 +121,10 @@ Charly.io = {
   dirname: __internal_dirname
 }
 
+
 // Some libraries and data structures
 Charly.globals.CircularBuffer = import "./libs/circular_buffer.ch"
+Charly.globals.StringBuffer   = import "./libs/stringbuffer.ch"
 Charly.globals.Error          = import "./libs/error.ch"
 Charly.globals.Heap           = import "./libs/heap.ch"
 Charly.globals.Math           = import "./libs/math.ch"

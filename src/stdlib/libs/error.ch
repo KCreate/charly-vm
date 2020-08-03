@@ -74,7 +74,7 @@ class StackFrame {
     const func_name  = @caller.name.length ? @caller.name : "??"
     const filename   = @get_caller_location()
 
-    const buf = new String.Buffer(32)
+    const buf = new StringBuffer(32)
 
     if host_class buf.write(host_class.name + ".")
     buf.write(func_name)
@@ -106,7 +106,7 @@ class Error {
    *   at main (/home/user/file.ch)
    * */
   to_s {
-    const buf = new String.Buffer(32)
+    const buf = new StringBuffer(32)
 
     // Generate error description
     buf.write(@klass.name + " : " + @message)
