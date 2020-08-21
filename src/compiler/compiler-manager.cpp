@@ -112,10 +112,11 @@ std::optional<CompilerResult> CompilerManager::compile(const std::string& filena
   // Dump a disassembly of the compiled block
   if (this->flags.dump_asm) {
     if (this->flags.dump_file_contains(filename)) {
-      Disassembler::Flags disassembler_flags =
-          Disassembler::Flags({.no_branches = this->flags.asm_no_branches,
-                               .no_func_branches = this->flags.asm_no_func_branches,
-                               .no_offsets = this->flags.asm_no_offsets});
+      Disassembler::Flags disassembler_flags = {
+        .no_branches = this->flags.asm_no_branches,
+        .no_offsets = this->flags.asm_no_offsets,
+        .no_func_branches = this->flags.asm_no_func_branches
+      };
       Disassembler disassembler(compiler_result.instructionblock.value(), disassembler_flags);
       disassembler.dump(this->err_stream);
     }

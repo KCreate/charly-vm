@@ -33,7 +33,7 @@ CFLAGSPROD := -std=$(CPPSTD) \
 							-ferror-limit=1 \
 							-flto \
 							-ffast-math
-LFLAGS := -lm
+LFLAGS := -lm -lpthread -ldl
 INC := -I libs -I $(INCLUDEDIR) -I/usr/local/opt/llvm/include/c++/v1 -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
 LIB := -lstdc++
 RUNTIME_PROFILER := examples/runtime-profiler.ch

@@ -114,7 +114,7 @@ struct VMTask {
    * Initialize a VMTask which resumes a thread
    * */
   static inline VMTask init_thread(uint64_t id, VALUE argument) {
-    return VMTask{.uid = 0, .thread = {.id = id, argument}, .is_thread = true};
+    return { .is_thread = true, .uid = 0, .thread = { id, argument } };
   }
 
   /*
@@ -126,7 +126,7 @@ struct VMTask {
                                      VALUE arg2 = kNull,
                                      VALUE arg3 = kNull,
                                      VALUE arg4 = kNull) {
-    return VMTask{.uid = id, .callback = {.func = func, .arguments = {arg1, arg2, arg3, arg4}}, .is_thread = false};
+    return { .is_thread = false, .uid = id, .callback = { func, { arg1, arg2, arg3, arg4 } } };
   }
   static inline VMTask init_callback(VALUE func,
                                      VALUE arg1 = kNull,
@@ -181,7 +181,8 @@ class VM {
 public:
   VM(VMContext& ctx)
       : context(ctx),
-        gc(GarbageCollectorConfig{.out_stream = ctx.err_stream, .err_stream = ctx.err_stream, .trace = ctx.trace_gc}, this),
+        gc(GarbageCollectorConfig{.trace = ctx.trace_gc, .out_stream = ctx.err_stream, .err_stream = ctx.err_stream},
+           this),
         running(true),
         uid(0),
         frames(nullptr),

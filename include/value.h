@@ -1111,11 +1111,15 @@ inline VALUE charly_create_number(uint64_t value) {
   if (value >= kMaxUInt) return charly_create_double(value);
   return charly_create_integer(value);
 }
+
+#ifdef __APPLE__
 __attribute__((always_inline))
 inline VALUE charly_create_number(size_t value) {
   if (value >= kMaxUInt) return charly_create_double(value);
   return charly_create_integer(value);
 }
+#endif
+
 __attribute__((always_inline))
 inline VALUE charly_create_number(int32_t value)  { return charly_create_integer(value); }
 __attribute__((always_inline))

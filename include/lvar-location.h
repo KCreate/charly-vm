@@ -77,6 +77,7 @@ namespace Charly::Compilation {
       return location;
     }
 
+    LocationType type;
     union {
       struct {
         uint32_t index;
@@ -101,8 +102,6 @@ namespace Charly::Compilation {
         uint32_t __2;
       } as_invalid;
     };
-
-    LocationType type;
   };
 
   // This struct stores information about the relative location of a variable during the compilation process.
