@@ -1,3 +1,23 @@
+- Path library
+  - Write unit tests
+  - Implement methods
+
+- Write more unit tests
+  - Primitives
+    - Array
+    - Boolean
+    - Class
+    - Function
+    - Generator
+    - Null
+    - Number
+    - Object
+    - Value
+  - Math module
+  - Time module
+
+- Fix worker threads a1, a2, a3, a4 mess
+
 - Refactor interactions with Charly data types which are stored on the heap
   - Types should define their own methods / functionality
   - No external access to private member fields
@@ -17,6 +37,7 @@
   - Could we already implement this using the Sync.Notifier primitives
   - Create basic runtime scheduler and scheduling methods prototypes
     - See: Go Goroutines, Ruby Fibers / Threads
+  - Parallelism using fibers?
 
 - 'users.each(->.name)' Syntax
   - Arrow functions which begin with a "." (dot) are parsed as '->$0.foo'
@@ -24,31 +45,6 @@
 - Smarter stacktraces
   - Timers should contain the stacktrace that led up to its invocation
   - Clearly mark any async boundaries
-
-- Path class
-  - Static methods
-    - Useful mappings for one-time usage of member methods
-    - current_path
-  - Member methods
-    - append(path)
-    - concat(path)
-    - clear
-    - remove_filename
-    - replace_filename(string)
-    - replace_extension(string)
-    - str
-    - normalize
-    - relative_to
-    - parent_path
-    - filename
-    - stem
-    - extension
-    - equivalent
-    - has_filename
-    - has_extension
-    - has_parent_path
-    - is_absolute
-    - is_relative
 
 - File system library
   - C++17 native std::filesystem library
@@ -135,17 +131,6 @@
         rand(min, max) = __get_random(min, max)
       }
     `
-
-- Refactor unit tests
-  - Organize into different categories
-    - Basic VM functionality
-    - Primitive classes standard methods
-    - Standard libraries
-
-- Write more unit tests
-  - Math module
-  - Time module
-  - Buffer module
 
 - Way to reconcile global variables with undefined symbol warnings at compile-time
   - Special syntax to access global variables?

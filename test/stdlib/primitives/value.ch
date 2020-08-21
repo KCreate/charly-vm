@@ -26,4 +26,8 @@
 
 export = ->(describe, it, assert) {
 
+  it("throws an exception when trying to construct a primitive class", ->{
+
+  })
+
 }
