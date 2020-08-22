@@ -24,6 +24,6 @@
  * SOFTWARE.
  */
 
-const buf = new StringBuffer(32)
-print(buf.get_size())
-print(buf.get_offset())
+print((1.5).to_int())
+print((0.15).to_int())
+print((-25.5).to_int())

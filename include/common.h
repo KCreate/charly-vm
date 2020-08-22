@@ -39,19 +39,22 @@ inline bool IS_BIG_ENDIAN() {
 #endif
 }
 
+inline bool IS_NAN(double f) {
+  uint64_t c = *reinterpret_cast<uint64_t*>(&f);
+  return c == 0x7ff8000000000000; // NaN
+}
+
 template <typename T>
-bool FP_ARE_EQUAL(T f1, T f2) {
-  if (std::isnan(f1) && std::isnan(f2)) return true;
-  if (std::isnan(f1) || std::isnan(f2)) return false;
-  return (std::fabs(f1 - f2) <= std::numeric_limits<T>::epsilon() * std::fmax(fabs(f1), fabs(f2)));
+inline bool FP_ARE_EQUAL(T f1, T f2) {
+  if (IS_NAN(f1) && IS_NAN(f2)) return true;
+  if (IS_NAN(f1) || IS_NAN(f2)) return false;
+  return f1 == f2;
 }
 
-// Branchlessly replaces NAN with 0.0
 inline double FP_STRIP_NAN(double value) {
-  return std::isnan(value) ? 0.0 : value;
+  return IS_NAN(value) ? 0.0 : value;
 }
 
-// Branchlessly replaces NAN with 0.0
 inline double FP_STRIP_INF(double value) {
   return std::isinf(value) ? 0.0 : value;
 }

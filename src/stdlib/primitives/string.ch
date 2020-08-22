@@ -293,8 +293,8 @@ export = ->(Base) {
      * ```
      * */
     to_n {
+      const str = self.trim()
       if self.length == 0 return NaN
-      if self == " " return NaN
       __to_n(self)
     }
 

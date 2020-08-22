@@ -662,16 +662,16 @@ inline float charly_int_to_float(VALUE value)     { return charly_int_to_int64(v
 __attribute__((always_inline))
 inline double charly_int_to_double(VALUE value)   { return charly_int_to_int64(value); }
 
-// Convert an immediate double to other integer or float types
-//
-// Warning: These methods don't perform any type checks and assume
-// the caller made sure that the input value is an immediate double
-
 // The purpose of this method is to replace INFINITY, -INFINITY, NAN with 0
 // Conversion from these values to int is undefined behaviour and will result
 // in random gibberish being returned
 __attribute__((always_inline))
 inline double charly_double_to_safe_double(VALUE value) { return FP_STRIP_INF(FP_STRIP_NAN(BITCAST_DOUBLE(value))); }
+
+// Convert an immediate double to other integer or float types
+//
+// Warning: These methods don't perform any type checks and assume
+// the caller made sure that the input value is an immediate double
 __attribute__((always_inline))
 inline int64_t charly_double_to_int64(VALUE value)      { return charly_double_to_safe_double(value); }
 __attribute__((always_inline))

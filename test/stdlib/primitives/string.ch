@@ -193,7 +193,14 @@ export = ->(describe, it, assert) {
 
     assert("test".to_n(), NaN)
     assert("".to_n(), NaN)
-    assert("25f25".to_n(), NaN)
+
+    assert("25f25".to_n(),                 25)
+    assert("f25".to_n(),                   NaN)
+    assert("   25".to_n(),                 25)
+    assert("25   ".to_n(),                 25)
+    assert("25   f".to_n(),                25)
+    assert("f   25".to_n(),                NaN)
+    assert("100 some other string".to_n(), 100)
   })
 
   it("returns the first / last character", ->{
