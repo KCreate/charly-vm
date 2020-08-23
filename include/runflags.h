@@ -44,6 +44,7 @@ struct RunFlags {
   bool show_help = false;
   bool show_version = false;
   bool show_license = false;
+  bool show_vmdir = false;
   bool dump_tokens = false;
   bool dump_ast = false;
   bool dump_asm = false;
@@ -209,6 +210,10 @@ struct RunFlags {
           }
           if (!arg.compare("--license")) {
             this->show_license = true;
+            found_flag = true;
+          }
+          if (!arg.compare("--vmdir")) {
+            this->show_vmdir = true;
             found_flag = true;
           }
           if (!arg.compare("--flag")) {

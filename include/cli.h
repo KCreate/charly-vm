@@ -30,11 +30,12 @@
 
 namespace Charly {
 static const std::string kHelpMessage =
-    "Usage: charly [filename] [flags] [arguments]\n"
+    "Usage: charly [filename] [flags] [--] [arguments]\n"
     "    -f FLAG, --flag FLAG             Set a flag\n"
     "    -h, --help                       Print this help message\n"
     "    -v, --version                    Prints the version number\n"
     "    -l, --license                    Prints the license\n"
+    "    --vmdir                          Prints the CHARLYVMDIR environment variable\n"
     "\n"
     "Flags:\n"
     "    dump_ast                         Display the AST of the input file\n"
@@ -61,7 +62,10 @@ static const std::string kHelpMessage =
     "    $ charly file.ch -fskipexec -fdump_asm\n"
     "\n"
     "    Dumping generated AST for a file:\n"
-    "    $ charly file.ch -fskipexec -fdump_ast";
+    "    $ charly file.ch -fskipexec -fdump_ast\n"
+    "\n"
+    "    Disabling the cli-parser using '--'\n"
+    "    $ charly dump-argv.ch -- -fdump_asm -fskipexec";
 
 static const std::string kLicense =
     "MIT License \n"

@@ -51,6 +51,19 @@ int CLI::run() {
     return 0;
   }
 
+  // Check that CHARLYVMDIR environment variable is set
+  char* CHARLYVMDIR = std::getenv("CHARLYVMDIR");
+  if (CHARLYVMDIR) {
+    if (this->flags.show_vmdir) {
+      std::cout << CHARLYVMDIR << '\n';
+      return 0;
+    }
+  } else {
+    std::cout << "Missing CHARLYVMDIR environment variable!" << '\n';
+    std::cout << "Set CHARLYVMDIR to the charly-vm project root folder" << '\n';
+    return 1;
+  }
+
   // Check if a filename was given
   if (this->flags.arguments.size() == 0) {
     std::cerr << "No filename given!" << '\n';

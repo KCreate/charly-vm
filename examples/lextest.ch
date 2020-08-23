@@ -24,8 +24,4 @@
  * SOFTWARE.
  */
 
-const p = new Path("/../bar/../foo")
-
-print(p)
-p.normalize()
-print(p)
+print(ARGV)
