@@ -59,7 +59,7 @@ const result = unittest(->(describe, it, assert, context) {
     ["CircularBuffer",     "./stdlib/circular_buffer.ch"],
     ["StringBuffer",       "./stdlib/stringbuffer.ch"],
     ["Heaps",              "./stdlib/heaps.ch"],
-    /*["Path",               "./stdlib/path.ch"],*/
+    ["Path",               "./stdlib/path.ch"],
     ["Queue",              "./stdlib/queue.ch"]
   ]
 

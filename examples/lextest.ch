@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
-print((1.5).to_int())
-print((0.15).to_int())
-print((-25.5).to_int())
+const p = new Path("/../bar/../foo")
+
+print(p)
+p.normalize()
+print(p)

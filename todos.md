@@ -18,6 +18,17 @@
 
 - Fix worker threads a1, a2, a3, a4 mess
 
+- Refactor stack storage
+  - Allocate with initial size of 8kb / fiber
+  - Total allowed stack size should 1024 kilobytes (or 1 megabyte)
+  - Runtime access to stacksize
+    - Charly.Stack.capacity():   Return current total capacity of stack
+    - Charly.Stack.size():       Return remaining amount of VALUE slots on stack
+    - Charly.Stack.grow():       Grow the stack by doubling its size, throw if total limit reached
+    - Charly.Stack.shrink():     Shrink to 50% of current size, throw if not possible
+  - Quick to switch out, just swap a pointer
+  - To improve startup performance of new threads, 8 kilobyte pages can be preallocated
+
 - Refactor interactions with Charly data types which are stored on the heap
   - Types should define their own methods / functionality
   - No external access to private member fields
@@ -38,6 +49,8 @@
   - Create basic runtime scheduler and scheduling methods prototypes
     - See: Go Goroutines, Ruby Fibers / Threads
   - Parallelism using fibers?
+  - If implemented, Promises can be removed again
+    - They are not needed anymore, since we now have independently running fibers
 
 - 'users.each(->.name)' Syntax
   - Arrow functions which begin with a "." (dot) are parsed as '->$0.foo'

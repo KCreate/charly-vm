@@ -101,13 +101,25 @@ export = ->(describe, it, assert) {
       ENVIRONMENT["HOME"] = "/foo/bar/baz"
 
       assert(Path.normalize("foo.txt").to_s(), "foo.txt")
+      assert(Path.normalize("/foo.txt").to_s(), "/foo.txt")
       assert(Path.normalize("./foo.txt").to_s(), "foo.txt")
-      assert(Path.normalize("~/foo.txt").to_s(), "foo.txt")
-      assert(Path.normalize("base/foo/../bar/../baz/foo.txt").to_s(), "foo.txt")
-      assert(Path.normalize("../../foo/foo.txt").to_s(), "foo.txt")
-      assert(Path.normalize("////foo.txt").to_s(), "foo.txt")
-      assert(Path.normalize("//////..////////foo.txt").to_s(), "foo.txt")
-      assert(Path.normalize("foo/////bar/./././baz.txt").to_s(), "foo.txt")
+      assert(Path.normalize("~/foo.txt").to_s(), "~/foo.txt")
+      assert(Path.normalize("~/../foo.txt").to_s(), "~/../foo.txt")
+      assert(Path.normalize("../foo").to_s(), "../foo")
+      assert(Path.normalize("../../foo").to_s(), "../../foo")
+      assert(Path.normalize("./../../foo").to_s(), "../../foo")
+      assert(Path.normalize("/../../foo").to_s(), "/foo")
+      assert(Path.normalize("/../bar/foo").to_s(), "/bar/foo")
+      assert(Path.normalize("/../bar/../foo").to_s(), "/foo")
+      assert(Path.normalize("/../~/foo").to_s(), "/~/foo")
+      assert(Path.normalize("/~/../foo").to_s(), "/foo")
+      assert(Path.normalize("///../../~/../foo").to_s(), "/foo")
+      assert(Path.normalize("/../~/../foo").to_s(), "/foo")
+      assert(Path.normalize("base/foo/../bar/../baz/foo.txt").to_s(), "base/baz/foo.txt")
+      assert(Path.normalize("../../foo/foo.txt").to_s(), "../../foo/foo.txt")
+      assert(Path.normalize("////foo.txt").to_s(), "/foo.txt")
+      assert(Path.normalize("//////..////////foo.txt").to_s(), "/foo.txt")
+      assert(Path.normalize("foo/////bar/./././baz.txt").to_s(), "foo/bar/baz.txt")
       assert(Path.normalize("").to_s(), ".")
 
       // Restore original HOME ENV
@@ -115,95 +127,105 @@ export = ->(describe, it, assert) {
     })
 
     it("resolves a path", ->{
+      assert(Path.resolve("foo.txt", "/base").to_s(), "/base/foo.txt")
+      assert(Path.resolve("../foo.txt", "/base").to_s(), "/foo.txt")
+      assert(Path.resolve("../foo.txt", "/base/../foo").to_s(), "/foo.txt")
+      assert(Path.resolve("/foo.txt", "/base").to_s(), "/foo.txt")
 
+      const wd = Path.getwd()
+      const origin_path = new Path("foo.txt")
+      const resolved_path = (new Path(origin_path)).resolve(wd)
+      const expected = (new Path(wd)).append(origin_path)
+
+      assert(resolved_path.to_s(), expected.to_s())
     })
 
-    it("creates a path relative to another", ->{
+    /*it("creates a path relative to another", ->{*/
 
-    })
+    /*})*/
 
-    it("removes filename from path", ->{
+    /*it("removes filename from path", ->{*/
 
-    })
+    /*})*/
 
-    it("removes filename extension from path", ->{
+    /*it("removes filename extension from path", ->{*/
 
-    })
+    /*})*/
 
-    it("replaces extension of path", ->{
+    /*it("replaces extension of path", ->{*/
 
-    })
+    /*})*/
 
-    it("replaces filename of path", ->{
+    /*it("replaces filename of path", ->{*/
 
-    })
+    /*})*/
   })
 
-  describe("path querying", ->{
-    it("returns the filename of a path", ->{
+  /*describe("path querying", ->{*/
+    /*it("returns the filename of a path", ->{*/
 
-    })
+    /*})*/
 
-    it("returns the extension of a path", ->{
+    /*it("returns the extension of a path", ->{*/
 
-    })
+    /*})*/
 
-    it("returns the stem of a path", ->{
+    /*it("returns the stem of a path", ->{*/
 
-    })
+    /*})*/
 
-    it("returns the parent directory of a path", ->{
+    /*it("returns the parent directory of a path", ->{*/
 
-    })
+    /*})*/
 
-    it("checks wether a path is absolute", ->{
+    /*it("checks wether a path is absolute", ->{*/
 
-    })
+    /*})*/
 
-    it("checks wether a path is based on the home directory", ->{
+    /*it("checks wether a path is based on the home directory", ->{*/
 
-    })
+    /*})*/
 
-    it("checks wether a path is relative", ->{
+    /*it("checks wether a path is relative", ->{*/
 
-    })
+    /*})*/
 
-    it("checks wether a path begins with another path", ->{
+    /*it("checks wether a path begins with another path", ->{*/
 
-    })
+    /*})*/
 
-    it("checks wether a path ends with another path", ->{
+    /*it("checks wether a path ends with another path", ->{*/
 
-    })
+    /*})*/
 
-    it("checks wether a path contains another path", ->{
+    /*it("checks wether a path contains another path", ->{*/
 
-    })
+    /*})*/
 
-    it("converts a path object to a string", ->{
+    /*it("converts a path object to a string", ->{*/
 
-    })
-  })
+    /*})*/
+  /*})*/
 
-  describe("static path methods", ->{
-    it("returns the path of the calling file", ->{
+  /*describe("static path methods", ->{*/
+    /*it("returns the path of the calling file", ->{*/
 
-    })
+    /*})*/
 
-    it("returns the directory of the calling file", ->{
+    /*it("returns the directory of the calling file", ->{*/
 
-    })
+    /*})*/
 
-    it("returns the current working directory", ->{
+    /*it("returns the current working directory", ->{*/
 
-    })
+    /*})*/
 
-    it("changes the current working directory", ->{
+    /*it("changes the current working directory", ->{*/
 
-    })
+    /*})*/
 
-    it("returns the home directory of the user", ->{
+    /*it("returns the home directory of the user", ->{*/
 
-    })
-  })
+    /*})*/
+  /*})*/
 }

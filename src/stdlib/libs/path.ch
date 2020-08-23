@@ -37,7 +37,7 @@ class Path {
   constructor(v) {
     if v.is_a(Path) {
       @elements = v.elements.copy()
-    } else if typeof v == "string" {
+    } else if typeof v == "string" && v.length {
       @elements = v.split(DIRECTORY_SEPARATOR).map(->$0.trim())
     } else {
       @elements = ["."]
@@ -96,19 +96,39 @@ class Path {
         }
 
         case PARENT_DIRECTORY {
+
+          // Do not remove parent node on certain types
           if stack.length {
-            stack.pop()
+            const top = stack.last()
+
+            switch top {
+              case "" {
+                break
+              }
+              case HOME_DIRECTORY {
+                unless i == 1 {
+                  stack.pop()
+                } else {
+                  stack.push("..")
+                }
+              }
+              case PARENT_DIRECTORY, CURRENT_DIRECTORY {
+                stack.push("..")
+              }
+
+              default {
+                stack.pop()
+              }
+            }
           } else {
             stack.push("..")
           }
         }
 
         case CURRENT_DIRECTORY {
-          unless i == @elements.length - 1 {
-            break
+          if i == @elements.length - 1 {
+            stack.push(element)
           }
-
-          stack.push(element)
         }
 
         default {
@@ -213,18 +233,18 @@ class Path {
     path
   }
 
-  // Normalizes a path
-  static normalize(path) = (new Path(path)).normalize()
+  // Quick access methods
+  static normalize(path)                    = (new Path(path)).normalize()
+  static resolve(path, base = Path.getwd()) = (new Path(path)).resolve(base)
 
   // Returns the current working directory
-  // TODO: Implement with native method
-  static getwd { ENVIRONMENT["PWD"] }
+  static getwd = new Path(ENVIRONMENT["PWD"])
 
   // Changes the current working directory
   static chwd(path) {}
 
   // Returns the users home directory
-  static get_home { ENVIRONMENT["HOME"] }
+  static get_home = new Path(ENVIRONMENT["HOME"])
 }
 
 export = Path
