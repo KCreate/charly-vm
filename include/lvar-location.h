@@ -26,6 +26,8 @@
 
 #pragma once
 
+#include <stdint.h>
+
 namespace Charly::Compilation {
 
   // Different types of locations
