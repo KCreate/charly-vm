@@ -2512,7 +2512,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
   }
 }
 
-void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
+void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_container) {
   // Check if this value was already printed before
   auto begin = this->pretty_print_stack.begin();
   auto end = this->pretty_print_stack.end();
@@ -2552,7 +2552,9 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
 
     case kTypeString: {
       if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
+      if (inside_container) io << "\"";
       io.write(charly_string_data(value), charly_string_length(value));
+      if (inside_container) io << "\"";
       break;
     }
 
@@ -2579,7 +2581,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
         io << std::string(depth + 2, ' ');
         std::string key = SymbolTable::decode(entry.first);
         io << key << " = ";
-        this->to_s(io, entry.second, depth + 2);
+        this->to_s(io, entry.second, depth + 2, true);
         io << '\n';
       }
 
@@ -2612,7 +2614,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
           first = true;
         }
 
-        this->to_s(io, entry, depth);
+        this->to_s(io, entry, depth, true);
       }
 
       io << "]";
@@ -2646,7 +2648,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
         io << " ";
         std::string key = SymbolTable::decode(entry.first);
         io << key << "=";
-        this->to_s(io, entry.second, depth);
+        this->to_s(io, entry.second, depth, true);
       }
 
       io << ">";
@@ -2674,7 +2676,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
         io << " ";
         std::string key = SymbolTable::decode(entry.first);
         io << key << "=";
-        this->to_s(io, entry.second, depth);
+        this->to_s(io, entry.second, depth, true);
       }
 
       io << ">";
@@ -2704,7 +2706,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
         io << " ";
         std::string key = SymbolTable::decode(entry.first);
         io << key << "=";
-        this->to_s(io, entry.second, depth);
+        this->to_s(io, entry.second, depth, true);
       }
 
       io << ">";
@@ -2730,7 +2732,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth) {
       for (auto entry : *klass->container) {
         io << " " << SymbolTable::decode(entry.first);
         io << "=";
-        this->to_s(io, entry.second, depth);
+        this->to_s(io, entry.second, depth, true);
       }
 
       io << ">";

@@ -210,4 +210,11 @@ export = ->(describe, it, assert) {
     assert("".last(), null)
     assert("hello".last(), "o")
   })
+
+  it("adds quotes to strings inside arrays or objects", ->{
+    assert("hello".to_s(), "hello")
+    assert(["hello"].to_s(), "[\"hello\"]")
+    assert([""].to_s(), "[\"\"]")
+    assert({ value: "hello" }.to_s(), "Object{\n  value = \"hello\"\n}")
+  })
 }
