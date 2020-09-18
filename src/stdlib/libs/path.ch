@@ -32,15 +32,21 @@ const HOME_DIRECTORY      = "~"
 
 // Represents a file system path
 class Path {
+  property __is_absolute
   property elements
 
   constructor(v) {
     if v.is_a(Path) {
-      @elements = v.elements.copy()
+      @__is_absolute = v.is_absolute()
+      @elements    = v.elements.copy()
     } else if typeof v == "string" && v.length {
-      @elements = v.split(DIRECTORY_SEPARATOR).map(->$0.trim())
+      @__is_absolute = v[0] == "/"
+      @elements    = v.split(DIRECTORY_SEPARATOR)
+                      .map(->(part) part.trim())
+                      .filter(->(part) part.length)
     } else {
-      @elements = ["."]
+      @__is_absolute = false
+      @elements    = []
     }
   }
 
@@ -48,13 +54,15 @@ class Path {
   append(other) {
     unless other.is_a(Path) other = new Path(other)
 
+    if other.is_absolute() {
+      throw new Error("Can't append an absolute path")
+    }
+
     const new_elements = []
     @elements.each(->(e) new_elements.push(e))
     other.elements.each(->(e) new_elements.push(e))
 
     @elements = new_elements
-
-    @normalize()
 
     self
   }
@@ -63,13 +71,19 @@ class Path {
   prepend(other) {
     unless other.is_a(Path) other = new Path(other)
 
+    if @is_absolute() {
+      throw new Error("Can't prepend to an absolute path")
+    }
+
     const new_elements = []
     other.elements.each(->(e) new_elements.push(e))
     @elements.each(->(e) new_elements.push(e))
 
     @elements = new_elements
 
-    @normalize()
+    if other.is_absolute() {
+      @__is_absolute = true
+    }
 
     self
   }
@@ -87,52 +101,38 @@ class Path {
     const stack = []
 
     while i < @elements.length {
-      const element = @elements[i]
+      const current = @elements[i]
 
-      switch element {
-        case "" {
-          unless i == 0 break
-          stack.push(element)
-        }
+      switch current {
+        case CURRENT_DIRECTORY {
 
-        case PARENT_DIRECTORY {
-
-          // Do not remove parent node on certain types
-          if stack.length {
-            const top = stack.last()
-
-            switch top {
-              case "" {
-                break
-              }
-              case HOME_DIRECTORY {
-                unless i == 1 {
-                  stack.pop()
-                } else {
-                  stack.push("..")
-                }
-              }
-              case PARENT_DIRECTORY, CURRENT_DIRECTORY {
-                stack.push("..")
-              }
-
-              default {
-                stack.pop()
-              }
-            }
-          } else {
-            stack.push("..")
+          // Relative paths whose only element is a "." can keep it
+          // In any other case we remove those
+          if !@__is_absolute && @elements.length == 1 {
+            stack.push(current)
           }
         }
 
-        case CURRENT_DIRECTORY {
-          if i == @elements.length - 1 {
-            stack.push(element)
+        // ".." is preserved in the following cases
+        //
+        // - at the beginning of relative paths
+        // - if the previous element pushed onto the stack is also a ".."
+        case PARENT_DIRECTORY {
+          if stack.length {
+            if stack.last() == PARENT_DIRECTORY {
+              stack.push(PARENT_DIRECTORY)
+            } else {
+              stack.pop()
+            }
+          } else {
+            if !@__is_absolute {
+              stack.push(PARENT_DIRECTORY)
+            }
           }
         }
 
         default {
-          stack.push(element)
+          stack.push(current)
         }
       }
 
@@ -140,37 +140,51 @@ class Path {
     }
 
     @elements = stack
-
     self
   }
 
-  // Resolve the path
-  resolve(base = Path.getwd()) {
+  // Expand the path
+  expand(base = Path.getwd()) {
     if @is_absolute() return self
 
-    // Resolve home directory
-    if @is_home() {
+    // Expand home directory
+    if @elements.length && @elements[0] == HOME_DIRECTORY {
       @elements.shift()
       @prepend(Path.get_home())
+      @__is_absolute = true
       return self
     }
 
     unless base.is_a(Path) base = new Path(base)
     self.prepend(base)
+
+    @normalize()
+
     self
   }
 
-  // Returns this path, relative to another path
-  relative_to(other) {}
-
   // Removes the last component of the path
-  remove_filename {
-    @elements.pop()
+  remove_last {
+    if @elements.length @elements.pop()
     self
   }
 
   // Removes an extension if present
-  remove_extension {}
+  remove_extension {
+    unless @elements.length return self
+    const last = @elements.last()
+
+    // Try to split on the "." character
+    const parts = last.split(".")
+
+    if parts.length > 1 {
+      parts.pop()
+      @elements.pop()
+      @elements.push(parts.join("."))
+    }
+
+    self
+  }
 
   // Replace the extension of the last component of this path
   replace_extension(ext) {}
@@ -191,13 +205,13 @@ class Path {
   parent_directory {}
 
   // Checks wether this is an absolute path
-  is_absolute = @elements.first() == ""
+  is_absolute = @__is_absolute
 
   // Checks wether this is a home path
   is_home = @elements.first() == HOME_DIRECTORY
 
   // Checks wether this is a relative path
-  is_relative = !@is_absolute() && !@is_home()
+  is_relative = !@__is_absolute
 
   // Check wether this path begins with another path
   begins_with(other) {}
@@ -210,7 +224,18 @@ class Path {
 
   // Returns this path as a string
   to_s {
-    @elements.join(DIRECTORY_SEPARATOR)
+    if @elements.length == 0 {
+      return @__is_absolute ? "/" : "."
+    }
+
+    const elements_string = @elements.join(DIRECTORY_SEPARATOR)
+
+    // Add initial slash for absolute strings
+    if @__is_absolute {
+      return "/" + elements_string
+    }
+
+    elements_string
   }
 
   // Returns the absolute path of the file where the call originated
@@ -229,13 +254,13 @@ class Path {
     const filename = parent_frame.get_filename()
 
     const path = new Path(filename)
-    path.remove_filename()
+    path.remove_last()
     path
   }
 
   // Quick access methods
-  static normalize(path)                    = (new Path(path)).normalize()
-  static resolve(path, base = Path.getwd()) = (new Path(path)).resolve(base)
+  static normalize(path) = (new Path(path)).normalize()
+  static expand(path, base = Path.getwd()) = (new Path(path)).expand(base)
 
   // Returns the current working directory
   static getwd = new Path(ENVIRONMENT["PWD"])

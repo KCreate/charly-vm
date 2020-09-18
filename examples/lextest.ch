@@ -24,4 +24,7 @@
  * SOFTWARE.
  */
 
-print(ARGV)
+print({
+  name: "leonard",
+  age: 20
+})

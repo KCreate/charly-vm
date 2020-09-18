@@ -35,7 +35,7 @@ export = ->(describe, it, assert) {
       assert((new Path("..")).to_s(), "..")
       assert((new Path("../.././foo.txt")).to_s(), "../.././foo.txt")
       assert((new Path("~/foo.txt")).to_s(), "~/foo.txt")
-      assert((new Path("////./foo/bar/baz")).to_s(), "////./foo/bar/baz")
+      assert((new Path("////./foo/bar/baz")).to_s(), "/./foo/bar/baz")
     })
 
     it("appends other paths", ->{
@@ -43,18 +43,16 @@ export = ->(describe, it, assert) {
 
       const cases = [
         "foo.txt",
-        "/foo.txt",
         "./foo.txt",
         "../foo.txt",
         "~/foo.txt"
       ]
 
       const results = [
-        "base/foo.txt",
-        "base/foo.txt",
-        "base/foo.txt",
-        "foo.txt",
-        "base/~/foo.txt"
+        "./base/foo.txt",
+        "./base/./foo.txt",
+        "./base/../foo.txt",
+        "./base/~/foo.txt"
       ]
 
       cases.each(->(c, i) {
@@ -79,7 +77,7 @@ export = ->(describe, it, assert) {
 
       const results = [
         "/data/test/foo.txt",
-        "foo/data/test/foo.txt",
+        "./foo/data/test/foo.txt",
         "../foo/data/test/foo.txt",
         "~/data/data/test/foo.txt",
         "foo/data/test/foo.txt",
@@ -104,53 +102,82 @@ export = ->(describe, it, assert) {
       assert(Path.normalize("/foo.txt").to_s(), "/foo.txt")
       assert(Path.normalize("./foo.txt").to_s(), "foo.txt")
       assert(Path.normalize("~/foo.txt").to_s(), "~/foo.txt")
-      assert(Path.normalize("~/../foo.txt").to_s(), "~/../foo.txt")
+
+      assert(Path.normalize("~/../foo.txt").to_s(), "foo.txt")
       assert(Path.normalize("../foo").to_s(), "../foo")
       assert(Path.normalize("../../foo").to_s(), "../../foo")
       assert(Path.normalize("./../../foo").to_s(), "../../foo")
+
       assert(Path.normalize("/../../foo").to_s(), "/foo")
       assert(Path.normalize("/../bar/foo").to_s(), "/bar/foo")
       assert(Path.normalize("/../bar/../foo").to_s(), "/foo")
+      assert(Path.normalize("/foo/bar/").to_s(), "/foo/bar")
+
       assert(Path.normalize("/../~/foo").to_s(), "/~/foo")
       assert(Path.normalize("/~/../foo").to_s(), "/foo")
       assert(Path.normalize("///../../~/../foo").to_s(), "/foo")
       assert(Path.normalize("/../~/../foo").to_s(), "/foo")
+
       assert(Path.normalize("base/foo/../bar/../baz/foo.txt").to_s(), "base/baz/foo.txt")
       assert(Path.normalize("../../foo/foo.txt").to_s(), "../../foo/foo.txt")
       assert(Path.normalize("////foo.txt").to_s(), "/foo.txt")
       assert(Path.normalize("//////..////////foo.txt").to_s(), "/foo.txt")
+
       assert(Path.normalize("foo/////bar/./././baz.txt").to_s(), "foo/bar/baz.txt")
       assert(Path.normalize("").to_s(), ".")
+      assert(Path.normalize("/foo/.").to_s(), "/foo")
+      assert(Path.normalize("/foo/./../bar").to_s(), "/bar")
+
+      assert(Path.normalize("/foo/./../bar").to_s(), "/bar")
+      assert(Path.normalize("/./").to_s(), "/")
+      assert(Path.normalize("/foo/.").to_s(), "/foo")
+      assert(Path.normalize("/foo/../.").to_s(), "/")
+
+      assert(Path.normalize(".").to_s(), ".")
+      assert(Path.normalize("./././").to_s(), ".")
+      assert(Path.normalize("/").to_s(), "/")
+      assert(Path.normalize("/foo/..").to_s(), "/")
 
       // Restore original HOME ENV
       ENVIRONMENT["HOME"] = home_backup
     })
 
-    it("resolves a path", ->{
-      assert(Path.resolve("foo.txt", "/base").to_s(), "/base/foo.txt")
-      assert(Path.resolve("../foo.txt", "/base").to_s(), "/foo.txt")
-      assert(Path.resolve("../foo.txt", "/base/../foo").to_s(), "/foo.txt")
-      assert(Path.resolve("/foo.txt", "/base").to_s(), "/foo.txt")
+    it("expands a path", ->{
+      assert(Path.expand("foo.txt", "/base").to_s(), "/base/foo.txt")
+      assert(Path.expand("../foo.txt", "/base").to_s(), "/foo.txt")
+      assert(Path.expand("../foo.txt", "/base/../foo").to_s(), "/foo.txt")
+      assert(Path.expand("/foo.txt", "/base").to_s(), "/foo.txt")
 
       const wd = Path.getwd()
       const origin_path = new Path("foo.txt")
-      const resolved_path = (new Path(origin_path)).resolve(wd)
+      const expanded_path = (new Path(origin_path)).expand(wd)
       const expected = (new Path(wd)).append(origin_path)
 
-      assert(resolved_path.to_s(), expected.to_s())
+      assert(expanded_path.to_s(), expected.to_s())
     })
 
-    /*it("creates a path relative to another", ->{*/
+    it("removes last component from path", ->{
+      assert((new Path("/foo.txt")).remove_last().to_s(), "/")
+      assert((new Path(".")).remove_last().to_s(),        ".")
+      assert((new Path("/")).remove_last().to_s(),        "/")
+      assert((new Path("~")).remove_last().to_s(),        ".")
+      assert((new Path("./foo")).remove_last().to_s(),    ".")
+      assert((new Path("/foo")).remove_last().to_s(),     "/")
+      assert((new Path("~/foo")).remove_last().to_s(),    "~")
+      assert((new Path("/foo/")).remove_last().to_s(),    "/")
+      assert((new Path("/foo/~")).remove_last().to_s(),   "/foo")
+      assert((new Path("/foo///")).remove_last().to_s(),  "/")
+      assert((new Path("/foo/..")).remove_last().to_s(),  "/foo")
+      assert((new Path("foo/..")).remove_last().to_s(),   "foo")
+      assert((new Path("~/foo/..")).remove_last().to_s(), "~/foo")
+    })
 
-    /*})*/
-
-    /*it("removes filename from path", ->{*/
-
-    /*})*/
-
-    /*it("removes filename extension from path", ->{*/
-
-    /*})*/
+    it("removes filename extension from path", ->{
+      assert((new Path("foo")).remove_extension().to_s(), "foo")
+      assert((new Path("foo.bar")).remove_extension().to_s(), "foo")
+      assert((new Path("foo.bar.baz")).remove_extension().to_s(), "foo.bar")
+      assert((new Path("foo.bar.baz.qux")).remove_extension().to_s(), "foo.bar.baz")
+    })
 
     /*it("replaces extension of path", ->{*/
 
