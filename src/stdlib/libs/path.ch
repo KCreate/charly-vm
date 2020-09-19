@@ -339,22 +339,21 @@ class Path {
 
   // Returns the absolute path of the file where the call originated
   static current {
-    const frame = Error.StackFrame.get_current()
+    const frame = Error.StackFrame.current()
     const parent_frame = frame.parent()
-    const filename = parent_frame.get_filename()
+    const filename = parent_frame.get_caller_location()
 
     new Path(filename)
   }
 
   // Returns the absolute path of the directory where the call originated
   static current_dir {
-    const frame = Error.StackFrame.get_current()
+    const frame = Error.StackFrame.current()
     const parent_frame = frame.parent()
-    const filename = parent_frame.get_filename()
+    const filename = parent_frame.get_caller_location()
 
     const path = new Path(filename)
-    path.remove_last()
-    path
+    path.parent_directory()
   }
 
   // Quick access methods
