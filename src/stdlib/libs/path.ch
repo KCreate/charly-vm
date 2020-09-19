@@ -174,6 +174,10 @@ class Path {
     unless @elements.length return self
     const last = @elements.last()
 
+    if last == CURRENT_DIRECTORY || last == PARENT_DIRECTORY {
+      return self
+    }
+
     // Try to split on the "." character
     const parts = last.split(".")
 
@@ -187,28 +191,123 @@ class Path {
   }
 
   // Replace the extension of the last component of this path
-  replace_extension(ext) {}
+  replace_extension(ext) {
+    unless @elements.length return self
+    const last = @elements.last()
+
+    if last == CURRENT_DIRECTORY || last == PARENT_DIRECTORY {
+      return self
+    }
+
+    // Try to split on the "." character
+    const parts = last.split(".")
+
+    if parts.length > 1 {
+      parts.pop()
+      parts.push(ext)
+      @elements.pop()
+      @elements.push(parts.join("."))
+    }
+
+    self
+  }
 
   // Replace the last component of this path
-  replace_filename(name) {}
+  replace_filename(name) {
+    unless @elements.length return self
+
+    @elements.pop()
+    @elements.push(name)
+
+    self
+  }
 
   // Returns the last component of the path
-  filename {}
+  filename {
+    unless @elements.length {
+      if @__is_absolute {
+        return "/"
+      } else {
+        return "."
+      }
+    }
+
+    @elements.last()
+  }
 
   // Returns the extension of the last component of the path
-  extension {}
+  extension {
+    unless @elements.length return ""
+    const last = @elements.last()
+
+    if last == CURRENT_DIRECTORY || last == PARENT_DIRECTORY {
+      return ""
+    }
+
+    const parts = last.split(".")
+    if parts.length > 1 {
+      return parts.last()
+    }
+
+    ""
+  }
 
   // Returns the last component of the path, without the extension
-  stem {}
+  stem {
+    unless @elements.length {
+      if @__is_absolute {
+        return "/"
+      } else {
+        return "."
+      }
+    }
+
+    const last = @elements.last()
+    if last == CURRENT_DIRECTORY || last == PARENT_DIRECTORY {
+      return last
+    }
+
+    const parts = last.split(".")
+    if parts.length > 1 {
+      parts.pop()
+      return parts.join(".")
+    }
+
+    last
+  }
 
   // Returns the parent directory
-  parent_directory {}
+  parent_directory {
+    unless @elements.length {
+      if @__is_absolute {
+        return new Path("/")
+      } else {
+        return new Path("..")
+      }
+    }
+
+    const last = @elements.last()
+
+    if last == CURRENT_DIRECTORY || last == PARENT_DIRECTORY {
+      const p = new Path(self)
+      p.append("..")
+      return p
+    }
+
+    const p = new Path(self)
+    p.remove_last()
+    p
+  }
 
   // Checks wether this is an absolute path
   is_absolute = @__is_absolute
 
   // Checks wether this is a home path
-  is_home = @elements.first() == HOME_DIRECTORY
+  is_home {
+    unless @elements.length return false
+    if @__is_absolute return false
+    @elements.first() == HOME_DIRECTORY
+  }
 
   // Checks wether this is a relative path
   is_relative = !@__is_absolute

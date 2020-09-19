@@ -172,50 +172,125 @@ export = ->(describe, it, assert) {
       assert((new Path("~/foo/..")).remove_last().to_s(), "~/foo")
     })
 
-    it("removes filename extension from path", ->{
+    it("removes extension from path", ->{
       assert((new Path("foo")).remove_extension().to_s(), "foo")
       assert((new Path("foo.bar")).remove_extension().to_s(), "foo")
       assert((new Path("foo.bar.baz")).remove_extension().to_s(), "foo.bar")
       assert((new Path("foo.bar.baz.qux")).remove_extension().to_s(), "foo.bar.baz")
+
+      assert((new Path("foo/bar/foo.bar.baz.qux")).remove_extension().to_s(), "foo/bar/foo.bar.baz")
+      assert((new Path("/foo/bar/foo.bar.baz.qux")).remove_extension().to_s(), "/foo/bar/foo.bar.baz")
+
+      assert((new Path(".")).remove_extension().to_s(), ".")
+      assert((new Path("..")).remove_extension().to_s(), "..")
     })
 
-    /*it("replaces extension of path", ->{*/
+    it("replaces extension of path", ->{
+      assert((new Path("foo")).replace_extension("txt").to_s(), "foo")
+      assert((new Path("foo.bar")).replace_extension("txt").to_s(), "foo.txt")
+      assert((new Path("foo.bar.baz")).replace_extension("txt").to_s(), "foo.bar.txt")
 
-    /*})*/
+      assert((new Path("foo/bar/foo.bar.baz.qux")).replace_extension("txt").to_s(), "foo/bar/foo.bar.baz.txt")
+      assert((new Path("/foo/bar/foo.bar.baz.qux")).replace_extension("txt").to_s(), "/foo/bar/foo.bar.baz.txt")
 
-    /*it("replaces filename of path", ->{*/
+      assert((new Path(".")).replace_extension("txt").to_s(), ".")
+      assert((new Path("..")).replace_extension("txt").to_s(), "..")
+    })
 
-    /*})*/
+    it("replaces filename of path", ->{
+      assert((new Path("foo")).replace_filename("bar").to_s(), "bar")
+      assert((new Path("foo/bar")).replace_filename("baz").to_s(), "foo/baz")
+      assert((new Path("/foo/bar/baz")).replace_filename("bar").to_s(), "/foo/bar/bar")
+      assert((new Path("/test.txt")).replace_filename("bar").to_s(), "/bar")
+    })
   })
 
-  /*describe("path querying", ->{*/
-    /*it("returns the filename of a path", ->{*/
+  describe("path querying", ->{
+    it("returns the filename of a path", ->{
+      assert((new Path("foo")).filename(), "foo")
+      assert((new Path("foo/bar")).filename(), "bar")
+      assert((new Path("foo/bar.txt")).filename(), "bar.txt")
+      assert((new Path("/foo/bar.txt")).filename(), "bar.txt")
 
-    /*})*/
+      assert((new Path("")).filename(), ".")
+      assert((new Path("/")).filename(), "/")
+      assert((new Path(".")).filename(), ".")
+      assert((new Path("..")).filename(), "..")
+    })
 
-    /*it("returns the extension of a path", ->{*/
+    it("returns the extension of a path", ->{
+      assert((new Path("foo")).extension(), "")
+      assert((new Path("foo/bar")).extension(), "")
+      assert((new Path("foo/bar.txt")).extension(), "txt")
+      assert((new Path("/foo/bar.txt")).extension(), "txt")
 
-    /*})*/
+      assert((new Path("")).extension(), "")
+      assert((new Path("/")).extension(), "")
+      assert((new Path(".")).extension(), "")
+      assert((new Path("..")).extension(), "")
+    })
 
-    /*it("returns the stem of a path", ->{*/
+    it("returns the stem of a path", ->{
+      assert((new Path("foo")).stem(), "foo")
+      assert((new Path("foo/bar")).stem(), "bar")
+      assert((new Path("foo/bar.txt")).stem(), "bar")
+      assert((new Path("/foo/bar.txt")).stem(), "bar")
+      assert((new Path("foo/bar.baz.txt")).stem(), "bar.baz")
 
-    /*})*/
+      assert((new Path("")).stem(), ".")
+      assert((new Path("/")).stem(), "/")
+      assert((new Path(".")).stem(), ".")
+      assert((new Path("..")).stem(), "..")
+    })
 
-    /*it("returns the parent directory of a path", ->{*/
+    it("returns the parent directory of a path", ->{
+      assert((new Path("foo")).parent_directory().to_s(), ".")
+      assert((new Path("foo/bar")).parent_directory().to_s(), "foo")
+      assert((new Path("foo/bar/baz")).parent_directory().to_s(), "foo/bar")
+      assert((new Path("/foo/bar/baz")).parent_directory().to_s(), "/foo/bar")
 
-    /*})*/
+      assert((new Path("..")).parent_directory().to_s(), "../..")
+      assert((new Path("foo/..")).parent_directory().to_s(), "foo/../..")
+      assert((new Path(".")).parent_directory().to_s(), "./..")
+      assert((new Path("/")).parent_directory().to_s(), "/")
 
-    /*it("checks wether a path is absolute", ->{*/
+      assert((new Path("foo/.")).parent_directory().to_s(), "foo/./..")
+      assert((new Path("/..")).parent_directory().to_s(), "/../..")
+    })
 
-    /*})*/
+    it("checks wether a path is absolute", ->{
+      assert((new Path("/")).is_absolute(), true)
+      assert((new Path("/foo")).is_absolute(), true)
+      assert((new Path("/foo/bar")).is_absolute(), true)
+      assert((new Path("/.")).is_absolute(), true)
+      assert((new Path("/..")).is_absolute(), true)
+      assert((new Path("foo")).is_absolute(), false)
+      assert((new Path("foo/bar")).is_absolute(), false)
+      assert((new Path("~")).is_absolute(), false)
+      assert((new Path("~/foo")).is_absolute(), false)
+      assert((new Path(".")).is_absolute(), false)
+      assert((new Path("..")).is_absolute(), false)
 
-    /*it("checks wether a path is based on the home directory", ->{*/
+      assert((new Path("/")).is_relative(), false)
+      assert((new Path("/foo")).is_relative(), false)
+      assert((new Path("/foo/bar")).is_relative(), false)
+      assert((new Path("/.")).is_relative(), false)
+      assert((new Path("/..")).is_relative(), false)
+      assert((new Path("foo")).is_relative(), true)
+      assert((new Path("foo/bar")).is_relative(), true)
+      assert((new Path("~")).is_relative(), true)
+      assert((new Path("~/foo")).is_relative(), true)
+      assert((new Path(".")).is_relative(), true)
+      assert((new Path("..")).is_relative(), true)
+    })
 
-    /*})*/
+    it("checks wether a path is based on the home directory", ->{
+      assert((new Path("~")).is_home(), true)
+      assert((new Path("~/foo")).is_home(), true)
 
-    /*it("checks wether a path is relative", ->{*/
-
-    /*})*/
+      assert((new Path("/~")).is_home(), false)
+      assert((new Path("/~/foo")).is_home(), false)
+    })
 
     /*it("checks wether a path begins with another path", ->{*/
 
@@ -228,11 +303,7 @@ export = ->(describe, it, assert) {
     /*it("checks wether a path contains another path", ->{*/
 
     /*})*/
-
-    /*it("converts a path object to a string", ->{*/
-
-    /*})*/
-  /*})*/
+  })
 
   /*describe("static path methods", ->{*/
     /*it("returns the path of the calling file", ->{*/
