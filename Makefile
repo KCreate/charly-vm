@@ -1,6 +1,9 @@
 # Adapted for the Charly VM
 # Original: https://hiltmon.com/blog/2013/07/03/a-simple-c-plus-plus-project-structure/
 
+# Hide the annoying Entering / Leaving directory prints
+MAKEFLAGS += --no-print-directory
+
 CC := clang
 OPT := -O0
 OPTPROD := -O3 -Ofast
@@ -65,6 +68,10 @@ profiledproduction:
 	$(call colorecho, " Finished profile guided production binary", 2)
 
 clean:
+	@make clean_dev
+	@make clean_prod
+
+clean_dev:
 	$(call colorecho, " Cleaning dev...", 2)
 	@rm -rf $(BUILDDIR) $(TARGET)
 
@@ -81,9 +88,9 @@ format:
 	@clang-format -i $(SOURCES) $(HEADERS) -style=file
 
 test:
-	@find test -name "*.ch" | xargs bin/dev
+	bin/dev test/main.ch
 
-.PHONY: whole clean rebuild format valgrind test
+.PHONY: whole clean clean_dev clean_prod rebuild format test
 
 # Create colored output
 define colorecho
