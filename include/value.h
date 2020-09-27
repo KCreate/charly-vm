@@ -123,45 +123,13 @@ struct Array {
 };
 
 // String type
-//
-// Strings which are <= 62 bytes long, are stored inside the String structure itself. Most strings should fall
-// into this category.
-//
-// If a string exceeds this limit, the string is allocated separately on the heap. The String structure
-// now only stores a pointer and a length to the allocated memory
-//
-// Uses the f1 flag of the basic structure to differentiate between short and heap strings
-static constexpr uint32_t kShortStringMaxSize = 118;
 struct String {
   Basic basic;
+  char* data;
+  uint32_t length;
 
-  union {
-    struct {
-      uint32_t length;
-      char* data;
-    } lbuf;
-    struct {
-      uint8_t length;
-      char data[kShortStringMaxSize];
-    } sbuf;
-  };
-
-  inline char* data() {
-    return basic.f1 ? sbuf.data : lbuf.data;
-  }
-  inline uint32_t length() {
-    return basic.f1 ? sbuf.length : lbuf.length;
-  }
-  inline void set_shortstring(bool f) {
-    this->basic.f1 = f;
-  }
-  inline bool is_shortstring() {
-    return basic.f1;
-  }
   inline void clean() {
-    if (!basic.f1) {
-      std::free(lbuf.data);
-    }
+    std::free(data);
   }
 };
 
@@ -719,7 +687,7 @@ inline double charly_number_to_double(VALUE value)   {
 __attribute__((always_inline))
 inline char* charly_string_data(VALUE& value) {
   if (charly_is_hstring(value)) {
-    return charly_as_hstring(value)->data();
+    return charly_as_hstring(value)->data;
   }
 
   // If this machine is little endian, the buffer is already conventiently layed out at the
@@ -754,7 +722,7 @@ inline uint32_t charly_string_length(VALUE value) {
   }
 
   if (charly_is_hstring(value)) {
-    return charly_as_hstring(value)->length();
+    return charly_as_hstring(value)->length;
   }
 
   return 0xFFFFFFFF;

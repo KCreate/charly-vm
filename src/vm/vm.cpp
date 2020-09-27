@@ -251,21 +251,13 @@ VALUE VM::create_string(const char* data, uint32_t length) {
   MemoryCell* cell = this->gc.allocate();
   cell->basic.type = kTypeString;
 
-  if (length <= kShortStringMaxSize) {
-    // Copy the string into the cell itself
-    cell->string.set_shortstring(true);
-    std::memcpy(cell->string.sbuf.data, data, length);
-    cell->string.sbuf.length = length;
-  } else {
-    // Copy the string onto the heap
-    char* copied_string = static_cast<char*>(calloc(sizeof(char), length));
-    std::memcpy(copied_string, data, length);
+  // Copy the string onto the heap
+  char* copied_string = static_cast<char*>(calloc(sizeof(char), length));
+  std::memcpy(copied_string, data, length);
 
-    // Setup long string
-    cell->string.set_shortstring(false);
-    cell->string.lbuf.data = copied_string;
-    cell->string.lbuf.length = length;
-  }
+  // Setup long string
+  cell->string.data = copied_string;
+  cell->string.length = length;
 
   return cell->as_value();
 }
@@ -278,21 +270,13 @@ VALUE VM::create_string(const std::string& str) {
   MemoryCell* cell = this->gc.allocate();
   cell->basic.type = kTypeString;
 
-  if (str.size() <= kShortStringMaxSize) {
-    // Copy the string into the cell itself
-    cell->string.set_shortstring(true);
-    std::memcpy(cell->string.sbuf.data, str.c_str(), str.size());
-    cell->string.sbuf.length = str.size();
-  } else {
-    // Copy the string onto the heap
-    char* copied_string = static_cast<char*>(calloc(sizeof(char), str.size()));
-    std::memcpy(copied_string, str.c_str(), str.size());
+  // Copy the string onto the heap
+  char* copied_string = static_cast<char*>(calloc(sizeof(char), str.size()));
+  std::memcpy(copied_string, str.c_str(), str.size());
 
-    // Setup long string
-    cell->string.set_shortstring(false);
-    cell->string.lbuf.data = copied_string;
-    cell->string.lbuf.length = str.size();
-  }
+  // Setup long string
+  cell->string.data = copied_string;
+  cell->string.length = str.size();
 
   return cell->as_value();
 }
@@ -300,17 +284,8 @@ VALUE VM::create_string(const std::string& str) {
 VALUE VM::create_weak_string(char* data, uint32_t length) {
   MemoryCell* cell = this->gc.allocate();
   cell->basic.type = kTypeString;
-  cell->string.set_shortstring(false);
-  cell->string.lbuf.data = data;
-  cell->string.lbuf.length = length;
-  return cell->as_value();
-}
-
-VALUE VM::create_empty_short_string() {
-  MemoryCell* cell = this->gc.allocate();
-  cell->basic.type = kTypeString;
-  cell->string.set_shortstring(true);
-  cell->string.sbuf.length = 0;
+  cell->string.data = data;
+  cell->string.length = length;
   return cell->as_value();
 }
 
@@ -569,20 +544,11 @@ VALUE VM::add(VALUE left, VALUE right) {
     char* left_data = charly_string_data(left);
     char* right_data = charly_string_data(right);
 
-    // Check if we can store the result in a short string or if a
-    // buffer needs to be allocated
-    if (new_length <= kShortStringMaxSize) {
-      String* new_string = charly_as_hstring(this->create_empty_short_string());
-      std::memcpy(new_string->sbuf.data, left_data, left_length);
-      std::memcpy(new_string->sbuf.data + left_length, right_data, right_length);
-      new_string->sbuf.length = new_length;
-      return charly_create_pointer(new_string);
-    } else {
-      char* new_data = reinterpret_cast<char*>(std::malloc(new_length));
-      std::memcpy(new_data, left_data, left_length);
-      std::memcpy(new_data + left_length, right_data, right_length);
-      return this->create_weak_string(new_data, new_length);
-    }
+    // Allocate buffer and copy in the data
+    char* new_data = reinterpret_cast<char*>(std::malloc(new_length));
+    std::memcpy(new_data, left_data, left_length);
+    std::memcpy(new_data + left_length, right_data, right_length);
+    return this->create_weak_string(new_data, new_length);
   }
 
   // String concatenation for different types
@@ -634,21 +600,6 @@ VALUE VM::mul(VALUE left, VALUE right) {
     }
     if (new_length <= kMaxIStringLength) {
       return charly_string_mul_into_immediate(left, amount);
-    }
-
-    // Check if the result would fit into the short encoding
-    if (new_length <= kShortStringMaxSize) {
-      String* new_string = charly_as_hstring(this->create_empty_short_string());
-
-      // Copy the string amount times
-      uint32_t offset = 0;
-      while (amount--) {
-        std::memcpy(new_string->sbuf.data + offset, str_data, str_length);
-        offset += str_length;
-      }
-
-      new_string->sbuf.length = new_length;
-      return charly_create_pointer(new_string);
     }
 
     // Allocate the buffer for the string

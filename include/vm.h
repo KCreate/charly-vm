@@ -222,7 +222,6 @@ public:
   VALUE create_string(const std::string& str);
   VALUE create_string(MemoryBlock* block);
   VALUE create_weak_string(char* data, uint32_t length);
-  VALUE create_empty_short_string();
   VALUE create_function(VALUE name,
                         uint8_t* body_address,
                         uint32_t argc,
