@@ -56,7 +56,6 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address,
   cell->frame.parent_environment_frame = function->context;
   cell->frame.last_active_catchtable = this->catchstack;
   cell->frame.caller_value = charly_create_pointer(function);
-  cell->frame.stacksize_at_entry = 0;  // set by call_generator
   cell->frame.self = self;
   cell->frame.origin_address = this->ip;
   cell->frame.return_address = return_address;
@@ -92,7 +91,6 @@ Frame* VM::create_frame(VALUE self,
   cell->frame.parent_environment_frame = parent_environment_frame;
   cell->frame.last_active_catchtable = this->catchstack;
   cell->frame.caller_value = kNull;
-  cell->frame.stacksize_at_entry = 0;  // set by call_generator
   cell->frame.self = self;
   cell->frame.origin_address = this->ip;
   cell->frame.return_address = return_address;
@@ -181,14 +179,6 @@ void VM::unwind_catchstack(std::optional<VALUE> payload = std::nullopt) {
     } else {
       if (this->frames->halt_after_return) {
         this->halted = true;
-      }
-
-      // If this frame was created by a generator, we need to switch the catchtable to the one
-      // stored inside the frame. The catchtables stored inside the generator are only valid inside the
-      // generator itself
-      if (charly_is_generator(this->frames->caller_value)) {
-        Generator* generator = charly_as_generator(this->frames->caller_value);
-        table = generator->context_frame->last_active_catchtable;
       }
     }
 
@@ -326,25 +316,6 @@ VALUE VM::create_cfunction(VALUE name, uint32_t argc, void* pointer, uint8_t thr
   return cell->as_value();
 }
 
-VALUE VM::create_generator(VALUE name, uint8_t* resume_address, Function* boot_function) {
-  MemoryCell* cell = this->gc.allocate();
-  cell->basic.type = kTypeGenerator;
-  cell->generator.name = name;
-  cell->generator.context_frame = this->frames;
-  cell->generator.boot_function = boot_function;
-  cell->generator.context_catchtable = this->catchstack;
-  cell->generator.context_stack = new std::vector<VALUE>();
-  cell->generator.resume_address = resume_address;
-  cell->generator.owns_catchtable = false;
-  cell->generator.running = false;
-  cell->generator.finished = false;
-  cell->generator.started = false;
-  cell->generator.bound_self_set = false;
-  cell->generator.bound_self = kNull;
-  cell->generator.container = new std::unordered_map<VALUE, VALUE>();
-  return cell->as_value();
-}
-
 VALUE VM::create_class(VALUE name) {
   MemoryCell* cell = this->gc.allocate();
   cell->basic.type = kTypeClass;
@@ -372,7 +343,6 @@ VALUE VM::copy_value(VALUE value) {
     case kTypeArray: return this->copy_array(value);
     case kTypeFunction: return this->copy_function(value);
     case kTypeCFunction: return this->copy_cfunction(value);
-    case kTypeGenerator: return this->copy_generator(value);
   }
 
   return value;
@@ -385,7 +355,6 @@ VALUE VM::deep_copy_value(VALUE value) {
     case kTypeArray: return this->deep_copy_array(value);
     case kTypeFunction: return this->copy_function(value);
     case kTypeCFunction: return this->copy_cfunction(value);
-    case kTypeGenerator: return this->copy_generator(value);
   }
 
   return value;
@@ -473,21 +442,6 @@ VALUE VM::copy_cfunction(VALUE function) {
     source->thread_policy
   ));
   *(target->container) = *(source->container);
-
-  return charly_create_pointer(target);
-}
-
-VALUE VM::copy_generator(VALUE generator) {
-  Generator* source = charly_as_generator(generator);
-  Generator* target = charly_as_generator(this->create_generator(
-        source->name, source->resume_address, source->boot_function));
-
-  target->bound_self_set = source->bound_self_set;
-  target->bound_self = source->bound_self;
-  target->finished = source->finished;
-  *(target->container) = *(source->container);
-  *(target->context_stack) = *(source->context_stack);
-  *(target->context_frame) = *(source->context_frame);
 
   return charly_create_pointer(target);
 }
@@ -846,32 +800,6 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
       break;
     }
 
-    case kTypeGenerator: {
-      Generator* func = charly_as_generator(source);
-
-      if (symbol == SYM("finished")) {
-        return func->finished ? kTrue : kFalse;
-      }
-
-      if (symbol == SYM("started")) {
-        return func->started ? kTrue : kFalse;
-      }
-
-      if (symbol == SYM("running")) {
-        return func->running ? kTrue : kFalse;
-      }
-
-      if (symbol == SYM("name")) {
-        return this->create_string(SymbolTable::decode(func->name));
-      }
-
-      if (func->container->count(symbol) == 1) {
-        return (*func->container)[symbol];
-      }
-
-      break;
-    }
-
     case kTypeCFunction: {
       CFunction* cfunc = charly_as_cfunction(source);
 
@@ -1035,18 +963,6 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
       break;
     }
 
-    case kTypeGenerator: {
-      Generator* func = charly_as_generator(target);
-
-      if (symbol == SYM("finished")) break;
-      if (symbol == SYM("started")) break;
-      if (symbol == SYM("running")) break;
-      if (symbol == SYM("name")) break;
-
-      (*func->container)[symbol] = value;
-      break;
-    }
-
     case kTypeCFunction: {
       CFunction* cfunc = charly_as_cfunction(target);
 
@@ -1121,7 +1037,6 @@ std::optional<VALUE> VM::findprimitivevalue(VALUE value, VALUE symbol) {
     case kTypeArray: found_primitive_class = this->primitive_array; break;
     case kTypeFunction: found_primitive_class = this->primitive_function; break;
     case kTypeCFunction: found_primitive_class = this->primitive_function; break;
-    case kTypeGenerator: found_primitive_class = this->primitive_generator; break;
     case kTypeClass: found_primitive_class = this->primitive_class; break;
     default: found_primitive_class = this->primitive_value; break;
   }
@@ -1174,15 +1089,6 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
     // Functions which wrap around a C function pointer
     case kTypeCFunction: {
       this->call_cfunction(charly_as_cfunction(function), argc, arguments);
-      if (halt_after_return) {
-        this->halted = true;
-      }
-      return;
-    }
-
-    // Generators
-    case kTypeGenerator: {
-      this->call_generator(charly_as_generator(function), argc, arguments);
       if (halt_after_return) {
         this->halted = true;
       }
@@ -1280,68 +1186,6 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
   }
 }
 
-void VM::call_generator(Generator* generator, uint32_t argc, VALUE* argv) {
-  // You can only call a generator with a single argument
-  if (argc > 1) {
-    this->throw_exception("Can't call generator with more than 1 argument");
-    return;
-  }
-
-  // If the generator is currently running, we throw an error
-  if (generator->running) {
-    this->throw_exception("Can't call already running generator");
-    return;
-  }
-
-  // If the generator is already finished, we return null
-  if (generator->finished) {
-    this->push_stack(kNull);
-    return;
-  }
-
-  // Calculate the return address
-  uint8_t* return_address = nullptr;
-  if (this->ip != nullptr) {
-    return_address = this->ip + kInstructionLengths[this->fetch_instruction()];
-  }
-
-  // Restore the frame that was active when the generator was created
-  // We patch some fields of the frame, so a return or yield call can return to the
-  // correct position
-  Frame* frame = generator->context_frame;
-  frame->parent = this->frames;
-  frame->last_active_catchtable = this->catchstack;
-  frame->caller_value = charly_create_pointer(generator);
-  frame->stacksize_at_entry = this->stack.size();
-  frame->origin_address = this->ip;
-  frame->return_address = return_address;
-
-  this->frames = frame;
-  if (generator->owns_catchtable) {
-    this->catchstack = generator->context_catchtable;
-  }
-  this->ip = generator->resume_address;
-
-  // Restore the values on the stack which were active when the generator was paused
-  while (generator->context_stack->size()) {
-    this->push_stack(generator->context_stack->back());
-    generator->context_stack->pop_back();
-  }
-
-  // Push the argument onto the stack
-  if (generator->started) {
-    if (argc == 0) {
-      this->push_stack(kNull);
-    } else {
-      this->push_stack(argv[0]);
-    }
-  } else {
-    generator->started = true;
-  }
-
-  generator->running = true;
-}
-
 void VM::initialize_member_properties(Class* klass, Object* object) {
   if (charly_is_class(klass->parent_class)) {
     this->initialize_member_properties(charly_as_class(klass->parent_class), object);
@@ -1425,7 +1269,6 @@ void VM::op_readglobal(VALUE symbol) {
     case SYM("charly.vm.primitive.string"):           this->push_stack(this->primitive_string); return;
     case SYM("charly.vm.primitive.number"):           this->push_stack(this->primitive_number); return;
     case SYM("charly.vm.primitive.function"):         this->push_stack(this->primitive_function); return;
-    case SYM("charly.vm.primitive.generator"):        this->push_stack(this->primitive_generator); return;
     case SYM("charly.vm.primitive.boolean"):          this->push_stack(this->primitive_boolean); return;
     case SYM("charly.vm.primitive.null"):             this->push_stack(this->primitive_null); return;
     case SYM("charly.vm.uncaught_exception_handler"): this->push_stack(this->uncaught_exception_handler); return;
@@ -1575,7 +1418,6 @@ void VM::op_setglobal(VALUE symbol) {
     case SYM("charly.vm.primitive.string"):           this->primitive_string           = value; return;
     case SYM("charly.vm.primitive.number"):           this->primitive_number           = value; return;
     case SYM("charly.vm.primitive.function"):         this->primitive_function         = value; return;
-    case SYM("charly.vm.primitive.generator"):        this->primitive_generator        = value; return;
     case SYM("charly.vm.primitive.boolean"):          this->primitive_boolean          = value; return;
     case SYM("charly.vm.primitive.null"):             this->primitive_null             = value; return;
     case SYM("charly.vm.uncaught_exception_handler"): this->uncaught_exception_handler = value; return;
@@ -1613,7 +1455,6 @@ void VM::op_setglobalpush(VALUE symbol) {
     case SYM("charly.vm.primitive.string"):           this->primitive_string           = value; return;
     case SYM("charly.vm.primitive.number"):           this->primitive_number           = value; return;
     case SYM("charly.vm.primitive.function"):         this->primitive_function         = value; return;
-    case SYM("charly.vm.primitive.generator"):        this->primitive_generator        = value; return;
     case SYM("charly.vm.primitive.boolean"):          this->primitive_boolean          = value; return;
     case SYM("charly.vm.primitive.null"):             this->primitive_null             = value; return;
     case SYM("charly.vm.uncaught_exception_handler"): this->uncaught_exception_handler = value; return;
@@ -1709,14 +1550,6 @@ void VM::op_putfunction(VALUE symbol,
                         uint32_t lvarcount) {
   VALUE function = this->create_function(symbol, body_address, argc, minimum_argc, lvarcount, anonymous, needs_arguments);
   this->push_stack(function);
-}
-
-void VM::op_putgenerator(VALUE symbol, uint8_t* resume_address) {
-  VALUE current_caller = this->frames->caller_value;
-  if (!charly_is_function(current_caller)) this->panic(Status::InvalidArgumentType);
-  Function* boot_function = charly_as_function(current_caller);
-  VALUE generator = this->create_generator(symbol, resume_address, boot_function);
-  this->push_stack(generator);
 }
 
 void VM::op_putarray(uint32_t count) {
@@ -1914,14 +1747,6 @@ void VM::op_return() {
   if (!frame)
     this->panic(Status::CantReturnFromTopLevel);
 
-  // Returning from a generator causes the generator to terminate
-  // Mark it as done and delete some items which are no longer needed
-  if (charly_is_generator(frame->caller_value)) {
-    Generator* generator = charly_as_generator(frame->caller_value);
-    generator->finished = true;
-    generator->running = false;
-  }
-
   this->catchstack = frame->last_active_catchtable;
   this->frames = frame->parent;
   this->ip = frame->return_address;
@@ -1939,40 +1764,7 @@ void VM::op_return() {
 }
 
 void VM::op_yield() {
-  Frame* frame = this->frames;
-  if (!frame)
-    this->panic(Status::CantReturnFromTopLevel);
-
-  // Check if we are exiting from a generator
-  if (!charly_is_generator(frame->caller_value)) {
-    this->panic(Status::CantYieldFromNonGenerator);
-  }
-
-  // Store the yielded value
-  VALUE yield_value = this->pop_stack();
-
-  // Store context info inside the generator
-  Generator* generator = charly_as_generator(frame->caller_value);
-  generator->owns_catchtable = generator->context_catchtable != this->catchstack;
-  generator->context_catchtable = this->catchstack;
-  generator->resume_address = this->ip + kInstructionLengths[Opcode::Yield];
-  generator->running = false;
-  size_t stack_value_pop_count = this->stack.size() - frame->stacksize_at_entry;
-  while (stack_value_pop_count--) {
-    generator->context_stack->push_back(this->pop_stack());
-  }
-
-  this->push_stack(yield_value);
-
-  // We can't restore catchtables by popping them, since the list of tables
-  // in the generator might be different than of the outside world
-  this->catchstack = frame->last_active_catchtable;
-  this->frames = frame->parent;
-  this->ip = frame->return_address;
-
-  if (frame->halt_after_return) {
-    this->halted = true;
-  }
+  this->throw_exception("Unused opcode: Yield");
 }
 
 void VM::op_throw() {
@@ -2277,43 +2069,6 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       break;
     }
 
-    case kTypeGenerator: {
-      Generator* generator = charly_as_generator(value);
-
-      if (printed_before) {
-        io << "<Generator ...>";
-        break;
-      }
-
-      this->pretty_print_stack.push_back(value);
-
-      io << "<Generator ";
-      io << "name=";
-      this->pretty_print(io, generator->name);
-      io << " ";
-      io << "resume_address=" << reinterpret_cast<void*>(generator->resume_address) << " ";
-      io << "finished=" << (generator->finished ? "true" : "false") << " ";
-      io << "started=" << (generator->started ? "true" : "false") << " ";
-      io << "running=" << (generator->running ? "true" : "false") << " ";
-      io << "context_frame=" << reinterpret_cast<void*>(generator->context_frame) << " ";
-      io << "context_catchtable=" << reinterpret_cast<void*>(generator->context_catchtable) << " ";
-      io << "bound_self_set=" << (generator->bound_self_set ? "true" : "false") << " ";
-      io << "bound_self=";
-      this->pretty_print(io, generator->bound_self);
-
-      for (auto& entry : *generator->container) {
-        io << " ";
-        std::string key = SymbolTable::decode(entry.first);
-        io << key << "=";
-        this->pretty_print(io, entry.second);
-      }
-
-      io << ">";
-
-      this->pretty_print_stack.pop_back();
-      break;
-    }
-
     case kTypeClass: {
       Class* klass = charly_as_class(value);
 
@@ -2388,7 +2143,6 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
           break;
         }
-        case kTypeGenerator: name = charly_as_generator(callee)->name; break;
         case kTypeCFunction: name = charly_as_cfunction(callee)->name; break;
         default: name = charly_create_istring(kUndefinedSymbolString);
       }
@@ -2397,7 +2151,6 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       void* body_address = nullptr;
       switch (charly_get_type(callee)) {
         case kTypeFunction:   body_address = charly_as_function(callee)->body_address; break;
-        case kTypeGenerator:  body_address = charly_as_generator(callee)->resume_address; break;
         case kTypeCFunction:  body_address = charly_as_cfunction(callee)->pointer; break;
         default:              body_address = nullptr;
       }
@@ -2619,36 +2372,6 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
       break;
     }
 
-    case kTypeGenerator: {
-      Generator* generator = charly_as_generator(value);
-      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
-
-      if (printed_before) {
-        io << "<Generator ...>";
-        break;
-      }
-
-      this->pretty_print_stack.push_back(value);
-
-      io << "<Generator ";
-      this->to_s(io, generator->name, depth);
-      io << (generator->finished ? " finished" : "");
-      io << (generator->started ? " started" : "");
-      io << (generator->running ? " running" : "");
-
-      for (auto& entry : *generator->container) {
-        io << " ";
-        std::string key = SymbolTable::decode(entry.first);
-        io << key << "=";
-        this->to_s(io, entry.second, depth, true);
-      }
-
-      io << ">";
-
-      this->pretty_print_stack.pop_back();
-      break;
-    }
-
     case kTypeClass: {
       Class* klass = charly_as_class(value);
       if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
@@ -2725,9 +2448,7 @@ VALUE VM::get_global_symbol(VALUE symbol) {
 Function* VM::get_active_function() {
   VALUE caller = this->frames->caller_value;
 
-  if (charly_is_generator(caller)) {
-    return charly_as_generator(caller)->boot_function;
-  } else if (charly_is_function(caller)) {
+  if (charly_is_function(caller)) {
     return charly_as_function(caller);
   } else {
     return nullptr;
@@ -2831,7 +2552,6 @@ void VM::run() {
                                           &&charly_main_switch_putvalue,
                                           &&charly_main_switch_putstring,
                                           &&charly_main_switch_putfunction,
-                                          &&charly_main_switch_putgenerator,
                                           &&charly_main_switch_putarray,
                                           &&charly_main_switch_puthash,
                                           &&charly_main_switch_putclass,
@@ -3073,16 +2793,6 @@ charly_main_switch_putfunction : {
                                                     sizeof(bool) + sizeof(bool) + sizeof(uint32_t) + sizeof(uint32_t));
 
   this->op_putfunction(symbol, this->ip + body_offset, anonymous, needs_arguments, argc, minimum_argc, lvarcount);
-  OPCODE_EPILOGUE();
-  NEXTOP();
-}
-
-charly_main_switch_putgenerator : {
-  OPCODE_PROLOGUE();
-  VALUE symbol = *reinterpret_cast<VALUE*>(this->ip + sizeof(Opcode));
-  int32_t body_offset = *reinterpret_cast<int32_t*>(this->ip + sizeof(Opcode) + sizeof(VALUE));
-
-  this->op_putgenerator(symbol, this->ip + body_offset);
   OPCODE_EPILOGUE();
   NEXTOP();
 }

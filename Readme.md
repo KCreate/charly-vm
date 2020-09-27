@@ -174,27 +174,6 @@ rude_greeter.greet()
 // ...now go away...
 ```
 
-### Generators
-```javascript
-const summer = ->{
-  let sum = 0
-  sum = yield ->sum
-
-  loop {
-    sum += yield null
-  }
-}
-
-const read_state = summer()
-
-summer(100)
-summer(100)
-summer(100)
-summer(100)
-
-read_state() // => 400
-```
-
 ### Tickers
 
 ```javascript

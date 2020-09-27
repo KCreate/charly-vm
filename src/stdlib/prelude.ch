@@ -76,7 +76,6 @@ Charly.globals.Array     = @"charly.vm.primitive.array"     = (import "./primiti
 Charly.globals.Boolean   = @"charly.vm.primitive.boolean"   = (import "./primitives/boolean.ch")(Value)
 Charly.globals.Class     = @"charly.vm.primitive.class"     = (import "./primitives/class.ch")(Value)
 Charly.globals.Function  = @"charly.vm.primitive.function"  = (import "./primitives/function.ch")(Value)
-Charly.globals.Generator = @"charly.vm.primitive.generator" = (import "./primitives/generator.ch")(Value)
 Charly.globals.Null      = @"charly.vm.primitive.null"      = (import "./primitives/null.ch")(Value)
 Charly.globals.Number    = @"charly.vm.primitive.number"    = (import "./primitives/number.ch")(Value)
 Charly.globals.String    = @"charly.vm.primitive.string"    = (import "./primitives/string.ch")(Value)

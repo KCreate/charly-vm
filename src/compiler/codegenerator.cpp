@@ -39,19 +39,7 @@ InstructionBlock* CodeGenerator::compile(AST::AbstractNode* node) {
   while (this->queued_functions.size() > 0) {
     QueuedFunction& queued_block = this->queued_functions.front();
     this->assembler.place_label(queued_block.label);
-
-    // Generate a putgenerator instruction if this is a generator function
-    if (queued_block.function->generator) {
-      Label generator_label = this->assembler.reserve_label();
-      this->assembler.write_nop();
-      this->assembler.write_putgenerator_to_label(SymbolTable::encode(queued_block.function->name), generator_label);
-      this->assembler.write_return();
-      this->assembler.place_label(generator_label);
-      this->visit_node(queued_block.function->body);
-    } else {
-      this->visit_node(queued_block.function->body);
-    }
-
+    this->visit_node(queued_block.function->body);
     this->queued_functions.pop_front();
   }
   this->assembler.resolve_unresolved_label_references();
@@ -681,11 +669,6 @@ AST::AbstractNode* CodeGenerator::visit_function(AST::Function* node, VisitConti
   this->assembler.write_putfunction_to_label(SymbolTable::encode(node->name), function_block_label, node->anonymous,
                                              node->needs_arguments, node->parameters.size(), node->required_arguments,
                                              node->lvarcount);
-
-  // Anonymous generators are invoked immediately
-  if (node->generator && node->anonymous) {
-    this->assembler.write_call(0);
-  }
 
   // Codegen the block
   this->queued_functions.push_back(QueuedFunction({function_block_label, node}));

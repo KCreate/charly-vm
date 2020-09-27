@@ -143,12 +143,6 @@ public:
     this->write(lvarcount);
   }
 
-  inline void write_putgenerator(VALUE symbol, int32_t body_offset) {
-    this->write(Opcode::PutGenerator);
-    this->write(symbol);
-    this->write(body_offset);
-  }
-
   inline void write_putarray(uint32_t count) {
     this->write(Opcode::PutArray);
     this->write(count);

@@ -119,23 +119,6 @@ void GarbageCollector::mark(VALUE value) {
       break;
     }
 
-    case kTypeGenerator: {
-      Generator* gen = charly_as_generator(value);
-      // We only mark these values if the generator is still running
-      if (!gen->finished) {
-        this->mark(charly_create_pointer(gen->context_frame));
-        this->mark(charly_create_pointer(gen->boot_function));
-        this->mark(charly_create_pointer(gen->context_catchtable));
-        if (gen->bound_self_set)
-          this->mark(gen->bound_self);
-        for (auto entry : *gen->context_stack)
-          this->mark(entry);
-      }
-      for (auto entry : *gen->container)
-        this->mark(entry.second);
-      break;
-    }
-
     case kTypeClass: {
       Class* klass = charly_as_class(value);
       this->mark(klass->constructor);
@@ -195,7 +178,6 @@ void GarbageCollector::collect() {
     this->mark(this->host_vm->primitive_boolean);
     this->mark(this->host_vm->primitive_class);
     this->mark(this->host_vm->primitive_function);
-    this->mark(this->host_vm->primitive_generator);
     this->mark(this->host_vm->primitive_null);
     this->mark(this->host_vm->primitive_number);
     this->mark(this->host_vm->primitive_object);
@@ -365,11 +347,6 @@ void GarbageCollector::deallocate(MemoryCell* cell) {
 
     case kTypeCFunction: {
       cell->cfunction.clean();
-      break;
-    }
-
-    case kTypeGenerator: {
-      cell->generator.clean();
       break;
     }
 

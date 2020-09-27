@@ -40,7 +40,6 @@ const result = unittest(->(describe, it, assert, context) {
     ["Exceptions",            "./interpreter/exceptions.ch"],
     ["External Files",        "./interpreter/external-files.ch"],
     ["Functions",             "./interpreter/functions.ch"],
-    ["Generators",            "./interpreter/generators.ch"],
     ["Guard",                 "./interpreter/guard.ch"],
     ["Identifiers",           "./interpreter/identifiers.ch"],
     ["Loops",                 "./interpreter/loops.ch"],

@@ -72,18 +72,12 @@ export = ->(describe, it, assert) {
   it("doesn't write to value container when assigning to reserved fields", ->{
     const obj = {}
     const fun = func foo {}
-    const gen = ->{ yield 25 }
     const cfu = @"charly.vm.write"
     const kla = class A {}
 
     obj.klass = null
 
     fun.name = null
-
-    gen.finished = null
-    gen.started = null
-    gen.running = null
-    gen.name = null
 
     cfu.name = null
 
@@ -94,7 +88,6 @@ export = ->(describe, it, assert) {
 
     assert(Object.keys(obj).length, 0)
     assert(Object.keys(fun).length, 0)
-    assert(Object.keys(gen).length, 0)
     assert(Object.keys(cfu).length, 0)
     assert(Object.keys(kla).length, 0)
   })
@@ -143,7 +136,6 @@ export = ->(describe, it, assert) {
     assert.exception(->new Boolean(),   ->assert($0.message, err_msg_base + "Boolean"))
     assert.exception(->new Class(),     ->assert($0.message, err_msg_base + "Class"))
     assert.exception(->new Function(),  ->assert($0.message, err_msg_base + "Function"))
-    assert.exception(->new Generator(), ->assert($0.message, err_msg_base + "Generator"))
     assert.exception(->new Null(),      ->assert($0.message, err_msg_base + "Null"))
     assert.exception(->new Number(),    ->assert($0.message, err_msg_base + "Number"))
     assert.exception(->new String(),    ->assert($0.message, err_msg_base + "String"))

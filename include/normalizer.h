@@ -50,7 +50,6 @@ public:
 private:
   AST::Function* current_function_node = nullptr;
 
-  bool mark_func_as_generator = false;
   bool mark_func_needs_arguments = false;
 };
 }  // namespace Charly::Compilation

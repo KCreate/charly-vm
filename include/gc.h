@@ -49,7 +49,6 @@ struct MemoryCell {
     String string;
     Function function;
     CFunction cfunction;
-    Generator generator;
     Class klass;
     Frame frame;
     CatchTable catchtable;

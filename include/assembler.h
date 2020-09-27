@@ -77,7 +77,6 @@ public:
                                   uint32_t argc,
                                   uint32_t minimum_argc,
                                   uint32_t lvarcount);
-  void write_putgenerator_to_label(VALUE symbol, Label label);
 
   // Unresolved reference handling
   void resolve_unresolved_label_references();

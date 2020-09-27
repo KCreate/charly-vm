@@ -23,3 +23,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
+const debug_func = @"charly.vm.debug_func"
+debug_func("hello")

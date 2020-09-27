@@ -194,21 +194,6 @@ while (i < iterations) {
     "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef" * 10
   ]
 
-  func generatorcounter(a) {
-    let i = 0
-    while i < a - 1 {
-      yield i
-      i += 1
-    }
-    a
-  }
-
-  const counter = generatorcounter(10)
-  let sum = 0
-  while counter {
-    sum += counter()
-  }
-
   i += 1
 
   // branchlt, branchgt, branchle instructions

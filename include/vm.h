@@ -230,7 +230,6 @@ public:
                         bool anonymous,
                         bool needs_arguments);
   VALUE create_cfunction(VALUE name, uint32_t argc, void* pointer, uint8_t thread_policy = kThreadMain);
-  VALUE create_generator(VALUE name, uint8_t* resume_address, Function* boot_function);
   VALUE create_class(VALUE name);
   VALUE create_cpointer(void* data, void* destructor);
 
@@ -244,7 +243,6 @@ public:
   VALUE copy_string(VALUE string);
   VALUE copy_function(VALUE function);
   VALUE copy_cfunction(VALUE cfunction);
-  VALUE copy_generator(VALUE generator);
 
   // Arithmetics
   VALUE add(VALUE left, VALUE right);
@@ -283,7 +281,6 @@ public:
   void call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self, bool halt_after_return = false);
   void call_cfunction(CFunction* function, uint32_t argc, VALUE* argv);
   void call_class(Class* klass, uint32_t argc, VALUE* argv);
-  void call_generator(Generator* klass, uint32_t argc, VALUE* argv);
   void initialize_member_properties(Class* klass, Object* object);
   void throw_exception(const std::string& message);
   void throw_exception(VALUE payload);
@@ -330,7 +327,6 @@ public:
                       uint32_t argc,
                       uint32_t minimum_argc,
                       uint32_t lvarcount);
-  void op_putgenerator(VALUE symbol, uint8_t* resume_address);
   void op_putarray(uint32_t count);
   void op_puthash(uint32_t count);
   void op_putclass(VALUE name,
@@ -410,7 +406,6 @@ private:
   VALUE primitive_boolean   = kNull;
   VALUE primitive_class     = kNull;
   VALUE primitive_function  = kNull;
-  VALUE primitive_generator = kNull;
   VALUE primitive_null      = kNull;
   VALUE primitive_number    = kNull;
   VALUE primitive_object    = kNull;

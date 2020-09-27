@@ -362,13 +362,8 @@ VALUE get_block_address(VM& vm, VALUE func) {
       Function* ptr = charly_as_function(func);
       return charly_create_number(reinterpret_cast<uint64_t>(ptr->body_address));
     }
-    case kTypeGenerator: {
-      Generator* ptr = charly_as_generator(func);
-      Function* ctx_frame_func = charly_as_function(ptr->context_frame->caller_value);
-      return charly_create_number(reinterpret_cast<uint64_t>(ctx_frame_func->body_address));
-    }
     default: {
-      vm.throw_exception("Expected function or generator");
+      vm.throw_exception("Expected function");
       return kNull;
     }
   }
@@ -397,7 +392,6 @@ VALUE debug_func(VM& vm, VALUE value) {
   vm.context.out_stream << "sizeof(String)     = " << sizeof(String) << std::endl;
   vm.context.out_stream << "sizeof(Function)   = " << sizeof(Function) << std::endl;
   vm.context.out_stream << "sizeof(CFunction)  = " << sizeof(CFunction) << std::endl;
-  vm.context.out_stream << "sizeof(Generator)  = " << sizeof(Generator) << std::endl;
   vm.context.out_stream << "sizeof(Class)      = " << sizeof(Class) << std::endl;
   vm.context.out_stream << "sizeof(Frame)      = " << sizeof(Frame) << std::endl;
   vm.context.out_stream << "sizeof(CatchTable) = " << sizeof(CatchTable) << std::endl;

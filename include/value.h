@@ -43,9 +43,9 @@ namespace Charly {
 using Timestamp = std::chrono::time_point<std::chrono::steady_clock>;
 
 // Human readable types of all data types
-const std::string kHumanReadableTypes[] = {"dead",      "class",     "object", "array",      "string",   "function",
-                                          "cfunction", "generator", "frame",  "catchtable", "cpointer", "number",
-                                          "boolean",   "null",      "symbol", "unknown"};
+const std::string kHumanReadableTypes[] = {"dead",     "class",     "object", "array",      "string",
+                                           "function", "cfunction", "frame",  "catchtable", "cpointer",
+                                           "number",   "boolean",   "null",   "symbol",     "unknown"};
 
 // Identifies which type a VALUE points to
 enum ValueType : uint8_t {
@@ -58,7 +58,6 @@ enum ValueType : uint8_t {
   kTypeString,
   kTypeFunction,
   kTypeCFunction,
-  kTypeGenerator,
   kTypeFrame,
   kTypeCatchTable,
   kTypeCPointer,
@@ -126,7 +125,6 @@ struct Frame {
   Frame* parent_environment_frame;
   CatchTable* last_active_catchtable;
   VALUE caller_value;
-  uint32_t stacksize_at_entry;
   std::vector<VALUE>* locals;
   VALUE self;
   uint8_t* origin_address;
@@ -230,49 +228,6 @@ struct CFunction {
 
   inline bool allowed_on_worker_thread() {
     return this->thread_policy & kThreadWorker;
-  }
-
-  // TODO: Bound argumentlist
-};
-
-// Generators allow pausing and resuming execution of their block
-//
-// A generator allows you to pause execution of a function at an arbitrary location
-// and resume it at a later time
-//
-// The generator saves enough state to be able to resume from the last position
-//
-// Relevant fields which differ from the Function struct
-//
-// context_frame: Stores the frame that is active in the generator
-// context_catchtable: Stores the catchtable that is active in the generator
-// context_stack: Stores all values on the stack which belong to the generator
-// resume_address: Stores the address at which execution should continue the next time it is called
-// finished: Wether the generator has finished, if true, calling it will throw an exception
-//
-// The context_frame field contains the frame which was created for the function.
-// Nested functions also have a reference to that same frame, but we can freely modify it because
-// child functions only require the environment for variable lookups
-// This means we can freely modify the parent_frame pointer to correctly handle generator returns
-struct Generator {
-  Basic basic;
-  VALUE name;
-  Frame* context_frame;
-  Function* boot_function;
-  CatchTable* context_catchtable;
-  std::vector<VALUE>* context_stack;
-  uint8_t* resume_address;
-  bool owns_catchtable;
-  bool running;
-  bool finished;
-  bool started;
-  bool bound_self_set;
-  VALUE bound_self;
-  std::unordered_map<VALUE, VALUE>* container;
-
-  inline void clean() {
-    delete this->container;
-    delete this->context_stack;
   }
 
   // TODO: Bound argumentlist
@@ -420,8 +375,6 @@ inline Function* charly_as_function(VALUE value)      { return charly_as_pointer
 __attribute__((always_inline))
 inline CFunction* charly_as_cfunction(VALUE value)    { return charly_as_pointer_to<CFunction>(value); }
 __attribute__((always_inline))
-inline Generator* charly_as_generator(VALUE value)    { return charly_as_pointer_to<Generator>(value); }
-__attribute__((always_inline))
 inline Frame* charly_as_frame(VALUE value)            { return charly_as_pointer_to<Frame>(value); }
 __attribute__((always_inline))
 inline CatchTable* charly_as_catchtable(VALUE value)  { return charly_as_pointer_to<CatchTable>(value); }
@@ -482,8 +435,6 @@ inline bool charly_is_function(VALUE value) { return charly_is_heap_type(value, 
 __attribute__((always_inline))
 inline bool charly_is_cfunction(VALUE value) { return charly_is_heap_type(value, kTypeCFunction); }
 __attribute__((always_inline))
-inline bool charly_is_generator(VALUE value) { return charly_is_heap_type(value, kTypeGenerator); }
-__attribute__((always_inline))
 inline bool charly_is_callable(VALUE value) {
   return charly_is_function(value) || charly_is_cfunction(value);
 }
@@ -522,7 +473,6 @@ inline std::unordered_map<VALUE, VALUE>* charly_get_container(VALUE value) {
     case kTypeClass: return charly_as_class(value)->container;
     case kTypeFunction: return charly_as_function(value)->container;
     case kTypeCFunction: return charly_as_cfunction(value)->container;
-    case kTypeGenerator: return charly_as_generator(value)->container;
     default: return nullptr;
   }
 }
@@ -1193,7 +1143,6 @@ inline bool charly_truthyness(VALUE value) {
   if (value == kFalse) return false;
   if (charly_is_int(value)) return charly_int_to_int64(value) != 0;
   if (charly_is_float(value)) return charly_double_to_double(value) != 0;
-  if (charly_is_generator(value)) return !charly_as_generator(value)->finished;
   return true;
 }
 
@@ -1496,7 +1445,7 @@ inline VALUE charly_create_symbol(VALUE value) {
     default: {
       static const std::string symbol_type_symbol_table[] = {
         "<dead>",      "<class>",     "<object>", "<array>",      "<string>",   "<function>",
-        "<cfunction>", "<generator>", "<frame>",  "<catchtable>", "<cpointer>", "<number>",
+        "<cfunction>", "<frame>",  "<catchtable>", "<cpointer>", "<number>",
         "<boolean>",   "<null>",      "<symbol>", "<unknown>"
       };
 

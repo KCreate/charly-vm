@@ -60,7 +60,6 @@ public:
     SymbolTable::encode("<string>");
     SymbolTable::encode("<function>");
     SymbolTable::encode("<cfunction>");
-    SymbolTable::encode("<generator>");
     SymbolTable::encode("<frame>");
     SymbolTable::encode("<catchtable>");
     SymbolTable::encode("<cpointer>");

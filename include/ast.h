@@ -1386,7 +1386,6 @@ struct Function : public AbstractNode {
   std::unordered_map<std::string, AbstractNode*> default_values;
   Block* body;
   bool anonymous;
-  bool generator = false;
   bool needs_arguments = false;
 
   uint32_t lvarcount = 0;
@@ -1429,7 +1428,6 @@ struct Function : public AbstractNode {
       stream << ' ' << this->name;
     }
     stream << (this->anonymous ? " anonymous" : "");
-    stream << (this->generator ? " generator" : "");
     stream << (this->needs_arguments ? " needs_arguments" : "");
 
     stream << ' ' << '(';

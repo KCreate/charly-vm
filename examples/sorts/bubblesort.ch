@@ -47,8 +47,6 @@ func sort(array) {
         had_swaps = true;
       }
 
-      yield array
-
       i += 1
     }
   } while had_swaps
@@ -56,5 +54,4 @@ func sort(array) {
   array
 }
 
-const sorter = sort(numbers)
-new Sync.Ticker(->print(sorter()), 500.milliseconds())
+print(sort(numbers))

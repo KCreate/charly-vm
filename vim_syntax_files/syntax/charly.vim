@@ -32,7 +32,7 @@ syn region  charlyRegexpString        start=+/[^/*]+me=e-1 skip=+\\\\\|\\/+ end=
 syn keyword charlyConditional	        if else unless guard switch match
 syn keyword charlyRepeat		          while do loop
 syn keyword charlyBranch		          break continue
-syn keyword charlyType		            Array Boolean Class Function Generator Number Object String Null Value
+syn keyword charlyType		            Array Boolean Class Function Number Object String Null Value
 syn keyword charlyStatement		        return yield
 syn keyword charlyBoolean	      	    true false
 syn keyword charlyNull		            null NaN

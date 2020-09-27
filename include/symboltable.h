@@ -104,10 +104,8 @@ public:
 
       default: {
         static const std::string symbol_type_symbol_table[] = {
-          "<dead>",      "<class>",     "<object>", "<array>",      "<string>",   "<function>",
-          "<cfunction>", "<generator>", "<frame>",  "<catchtable>", "<cpointer>", "<number>",
-          "<boolean>",   "<null>",      "<symbol>", "<unknown>"
-        };
+            "<dead>",       "<class>",    "<object>", "<array>",   "<string>", "<function>", "<cfunction>", "<frame>",
+            "<catchtable>", "<cpointer>", "<number>", "<boolean>", "<null>",   "<symbol>",   "<unknown>"};
 
         const std::string& symbol = symbol_type_symbol_table[type];
         return SymbolTable::encode(symbol);

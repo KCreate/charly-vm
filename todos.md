@@ -119,7 +119,6 @@
     - Boolean
     - Class
     - Function
-    - Generator
     - Null
     - Number
     - Object
