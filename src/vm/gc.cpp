@@ -122,7 +122,7 @@ void GarbageCollector::mark(VALUE value) {
     case kTypeGenerator: {
       Generator* gen = charly_as_generator(value);
       // We only mark these values if the generator is still running
-      if (!gen->finished()) {
+      if (!gen->finished) {
         this->mark(charly_create_pointer(gen->context_frame));
         this->mark(charly_create_pointer(gen->boot_function));
         this->mark(charly_create_pointer(gen->context_catchtable));

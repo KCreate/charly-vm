@@ -3,9 +3,7 @@
 - VM Refactor
   - Implementation timeline
     - Class interface to heap types
-      - Remove short and heap strings abstraction
-      - Remove f1 and f2 flags from values
-      - In the future this can be replaced with a smaller more efficient lock type
+      - Replace std::mutex with something more efficient (smaller and faster??)
         - This looks interesting: https://webkit.org/blog/6161/locking-in-webkit/
     - Fixed amount of native worker threads, waiting for jobs via some job queue
     - Refactor worker thread result return system

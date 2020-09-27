@@ -77,24 +77,10 @@ enum ValueType : uint8_t {
 // the beginning. It allows us to determine it's type and other information
 // about it.
 struct Basic {
-  // Unreserved flags which can be used by the datatypes for anything they want
-  // This is mostly an optimisation so that data types don't need to allocate
-  // a byte for their own flags
-  union {
-    struct {
-      bool f1 : 1;
-      bool f2 : 1;
-    };
-    uint8_t flags : 2;
-  };
+  uint8_t type; // actual type of this value
+  bool mark; // used by the GC to mark reachable values
 
-  // Used by the Garbage Collector during the Mark & Sweep Cycle
-  bool mark : 1;
-
-  // Holds the type of the heap allocated struct
-  uint8_t type : 5;
-
-  Basic() : f1(false), f2(false), mark(false), type(kTypeDead) {
+  Basic() : type(kTypeDead), mark(false) {
   }
 };
 
@@ -195,8 +181,6 @@ struct CPointer {
 };
 
 // Normal functions defined inside the virtual machine.
-//
-// Stores anonymous and needs_arguments inside f1 and f2
 struct Function {
   Basic basic;
   VALUE name;
@@ -209,11 +193,8 @@ struct Function {
   VALUE bound_self;
   VALUE host_class;
   std::unordered_map<VALUE, VALUE>* container;
-
-  inline bool anonymous() { return this->basic.f1; }
-  inline bool needs_arguments() { return this->basic.f2; }
-  inline void set_anonymous(bool f) { this->basic.f1 = f; }
-  inline void set_needs_arguments(bool f) { this->basic.f2 = f; }
+  bool anonymous;
+  bool needs_arguments;
 
   inline void clean() {
     delete this->container;
@@ -273,8 +254,6 @@ struct CFunction {
 // Nested functions also have a reference to that same frame, but we can freely modify it because
 // child functions only require the environment for variable lookups
 // This means we can freely modify the parent_frame pointer to correctly handle generator returns
-//
-// Uses f1 and f2 to store finished and started flags
 struct Generator {
   Basic basic;
   VALUE name;
@@ -285,14 +264,11 @@ struct Generator {
   uint8_t* resume_address;
   bool owns_catchtable;
   bool running;
+  bool finished;
+  bool started;
   bool bound_self_set;
   VALUE bound_self;
   std::unordered_map<VALUE, VALUE>* container;
-
-  inline bool finished() { return this->basic.f1; }
-  inline bool started() { return this->basic.f2; }
-  inline void set_finished(bool f) { this->basic.f1 = f; }
-  inline void set_started(bool f) { this->basic.f2 = f; }
 
   inline void clean() {
     delete this->container;
@@ -1217,7 +1193,7 @@ inline bool charly_truthyness(VALUE value) {
   if (value == kFalse) return false;
   if (charly_is_int(value)) return charly_int_to_int64(value) != 0;
   if (charly_is_float(value)) return charly_double_to_double(value) != 0;
-  if (charly_is_generator(value)) return !charly_as_generator(value)->finished();
+  if (charly_is_generator(value)) return !charly_as_generator(value)->finished;
   return true;
 }
 

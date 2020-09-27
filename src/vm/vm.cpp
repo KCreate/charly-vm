@@ -304,8 +304,8 @@ VALUE VM::create_function(VALUE name,
   cell->function.lvarcount = lvarcount;
   cell->function.context = this->frames;
   cell->function.body_address = body_address;
-  cell->function.set_anonymous(anonymous);
-  cell->function.set_needs_arguments(needs_arguments);
+  cell->function.anonymous = anonymous;
+  cell->function.needs_arguments = needs_arguments;
   cell->function.bound_self_set = false;
   cell->function.bound_self = kNull;
   cell->function.host_class = kNull;
@@ -337,8 +337,8 @@ VALUE VM::create_generator(VALUE name, uint8_t* resume_address, Function* boot_f
   cell->generator.resume_address = resume_address;
   cell->generator.owns_catchtable = false;
   cell->generator.running = false;
-  cell->generator.set_finished(false);
-  cell->generator.set_started(false);
+  cell->generator.finished = false;
+  cell->generator.started = false;
   cell->generator.bound_self_set = false;
   cell->generator.bound_self = kNull;
   cell->generator.container = new std::unordered_map<VALUE, VALUE>();
@@ -451,8 +451,8 @@ VALUE VM::copy_function(VALUE function) {
     source->argc,
     source->minimum_argc,
     source->lvarcount,
-    source->anonymous(),
-    source->needs_arguments()
+    source->anonymous,
+    source->needs_arguments
   ));
 
   target->context = source->context;
@@ -484,7 +484,7 @@ VALUE VM::copy_generator(VALUE generator) {
 
   target->bound_self_set = source->bound_self_set;
   target->bound_self = source->bound_self;
-  target->set_finished(source->finished());
+  target->finished = source->finished;
   *(target->container) = *(source->container);
   *(target->context_stack) = *(source->context_stack);
   *(target->context_frame) = *(source->context_frame);
@@ -850,11 +850,11 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
       Generator* func = charly_as_generator(source);
 
       if (symbol == SYM("finished")) {
-        return func->finished() ? kTrue : kFalse;
+        return func->finished ? kTrue : kFalse;
       }
 
       if (symbol == SYM("started")) {
-        return func->started() ? kTrue : kFalse;
+        return func->started ? kTrue : kFalse;
       }
 
       if (symbol == SYM("running")) {
@@ -1225,7 +1225,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   //
   // If the function requires an arguments array, we create one and push it onto
   // offset 0 of the frame
-  if (function->needs_arguments()) {
+  if (function->needs_arguments) {
     Array* arguments_array = charly_as_array(ctx.create_array(argc));
     frame->write_local(0, charly_create_pointer(arguments_array));
 
@@ -1294,7 +1294,7 @@ void VM::call_generator(Generator* generator, uint32_t argc, VALUE* argv) {
   }
 
   // If the generator is already finished, we return null
-  if (generator->finished()) {
+  if (generator->finished) {
     this->push_stack(kNull);
     return;
   }
@@ -1329,14 +1329,14 @@ void VM::call_generator(Generator* generator, uint32_t argc, VALUE* argv) {
   }
 
   // Push the argument onto the stack
-  if (generator->started()) {
+  if (generator->started) {
     if (argc == 0) {
       this->push_stack(kNull);
     } else {
       this->push_stack(argv[0]);
     }
   } else {
-    generator->set_started(true);
+    generator->started = true;
   }
 
   generator->running = true;
@@ -1918,7 +1918,7 @@ void VM::op_return() {
   // Mark it as done and delete some items which are no longer needed
   if (charly_is_generator(frame->caller_value)) {
     Generator* generator = charly_as_generator(frame->caller_value);
-    generator->set_finished(true);
+    generator->finished = true;
     generator->running = false;
   }
 
@@ -2292,8 +2292,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       this->pretty_print(io, generator->name);
       io << " ";
       io << "resume_address=" << reinterpret_cast<void*>(generator->resume_address) << " ";
-      io << "finished=" << (generator->finished() ? "true" : "false") << " ";
-      io << "started=" << (generator->started() ? "true" : "false") << " ";
+      io << "finished=" << (generator->finished ? "true" : "false") << " ";
+      io << "started=" << (generator->started ? "true" : "false") << " ";
       io << "running=" << (generator->running ? "true" : "false") << " ";
       io << "context_frame=" << reinterpret_cast<void*>(generator->context_frame) << " ";
       io << "context_catchtable=" << reinterpret_cast<void*>(generator->context_catchtable) << " ";
@@ -2380,7 +2380,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       switch (charly_get_type(callee)) {
         case kTypeFunction: {
           Function* fn = charly_as_function(callee);
-          if (fn->anonymous()) {
+          if (fn->anonymous) {
             name = SymbolTable::encode("<anonymous>");
           } else {
             name = charly_as_function(callee)->name; break;
@@ -2632,8 +2632,8 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
 
       io << "<Generator ";
       this->to_s(io, generator->name, depth);
-      io << (generator->finished() ? " finished" : "");
-      io << (generator->started() ? " started" : "");
+      io << (generator->finished ? " finished" : "");
+      io << (generator->started ? " started" : "");
       io << (generator->running ? " running" : "");
 
       for (auto& entry : *generator->container) {
@@ -2703,7 +2703,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
 
 VALUE VM::get_self_for_function(Function* function, const VALUE* fallback) {
   if (function->bound_self_set) return function->bound_self;
-  if (function->anonymous()) return function->context ? function->context->self : kNull;
+  if (function->anonymous) return function->context ? function->context->self : kNull;
   if (fallback != nullptr) return *fallback;
   return function->context ? function->context->self : kNull;
 }
