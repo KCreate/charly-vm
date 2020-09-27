@@ -1,3 +1,116 @@
+# Todos
+
+- VM Refactor
+  - Implementation timeline
+    - Class interface to heap types
+      - Remove short and heap strings abstraction
+      - Remove f1 and f2 flags from values
+      - In the future this can be replaced with a smaller more efficient lock type
+        - This looks interesting: https://webkit.org/blog/6161/locking-in-webkit/
+    - Fixed amount of native worker threads, waiting for jobs via some job queue
+    - Refactor worker thread result return system
+    - ManagedContext ability to mark cells as immortal
+    - ManagedContext ability to reserve cells in advance
+    - Refactor thread system to use the states and ability to wait for certain signals
+      - GC goes into its own thread
+      - Fibers create a Fiber heap object that mirrors the real fiber
+
+  - What threads are active in our runtime (N = logical CPU cores)
+    - 1x Coordinator thread (main thread)   | Timers, tickers, task queue, fiber queue
+    - 1x Async networking thread            | Epoll, kqueue
+    - Nx Fiber executor threads             | Executes fibers
+    - Nx Native code worker threads         | Executes async C code
+
+  - ManagedContext doesn't have to keep a temporary list
+    - After allocating the cell, it is marked as `immortal`.
+    - This tells the garbage collector to never deallocate it, even if there
+      are no references to it.
+    - Once the ManagedContext is closed, all the allocates values get their `immortal` bit
+      set to false, thus allowing them to be collected again.
+
+  - Fiber executors, worker threads can be in certain modes
+    - The coordinator can broadcast signals to all its threads, notifying them
+      of certain events in the VM
+    - A child thread can check what state the coordinator currently is in and can
+      wait for a certain signal based on that state. The check and wait should be atomic.
+    - The coordinator is a state machine which gets status updates and wait requests from its child
+      threads.
+    - Available states:
+      - EXEC_CHARLY
+      - EXEC_NATIVE
+      - EXEC_NATIVE_PROTECTED
+      - EXEC_GC
+      - IDLE
+    - Transitions between these states sometimes are dependant on outside state
+      - For example, a thread executing native code which wants to switch to a protected section
+        has to check if currently a GC is running. If there is it has to wait for the GC to finish
+      - A thread wanting to execute charly code has to wait for the GC to finish
+      - A thread wanting to execute native code doesn't have to wait for the GC to finish
+        as native code sections are not allowed to interact with anything that the GC might interrupt
+      - If the GC thread wants to perform a collection and some other thread is currently inside a
+        protected section, then the GC will have to wait for all protected sections to finish
+        - During this time, other threads will be waiting for the GC to finish
+        - A protected section could therefore stall the GC and thus the entire VM if it takes too long
+        - Protected sections shouldn't contain any big operations and should simply register the
+          result values with the coordinator or VM and remove their immortal status.
+      - If there is a thread that is currently waiting for all protected sections to end,
+        any thread wanting to switch from native to native protected has to wait for that other task
+        to finish as to not starve the program.
+
+    - Scenarios
+      - Fiber 1 ran out of memory, requests a GC. Fiber 2-4 pause and wait for GC to complete.
+        Fiber 6-8 and Native 4 are executing protected sections. The GC is waiting for these sections
+        to complete before starting its work. Native 2 and 3 are waiting for the GC to complete to
+        enter their protected sections.
+        ```
+        GC       - ACTIVE                 (WAIT_FOR_PROTECTED -> ACTIVE)
+
+        Fiber  1 - EXEC_CHARLY            (NEEDS_GC    -> EXEC_CHARLY)
+        Fiber  2 - EXEC_CHARLY            (WAIT_FOR_GC -> EXEC_CHARLY)
+        Fiber  3 - EXEC_NATIVE            (WAIT_FOR_GC -> EXEC_NATIVE_PROTECTED)
+        Fiber  4 - EXEC_NATIVE            (WAIT_FOR_GC -> EXEC_CHARLY)
+        Fiber  5 - IDLE
+        Fiber  6 - EXEC_NATIVE_PROTECTED
+        Fiber  7 - EXEC_NATIVE_PROTECTED
+        Fiber  8 - EXEC_NATIVE_PROTECTED
+
+        Native 1 - EXEC_NATIVE
+        Native 2 - EXEC_NATIVE            (WAIT_FOR_GC -> EXEC_NATIVE_PROTECTED)
+        Native 3 - EXEC_NATIVE            (WAIT_FOR_GC -> EXEC_NATIVE_PROTECTED)
+        Native 4 - EXEC_NATIVE_PROTECTED
+        ```
+
+  - Elaborate on the ideas of the ManagedContext
+    - We should be able to reserve some amount of cells via this interface
+    - It manages reserved cells or puts the current fiber into a GC requesting mode
+    - Also contains GC synchronisation methods, either waiting for a collection to finish or
+      making sure that no collection can start while in this section
+
+  - Introduce some mechanism by which instructions and worker threads can "reserve" memory cells in the GC.
+    - That way we make sure that collections happen at well-defined points in the code and not inside
+      random allocations.
+    - Allocations should never trigger a GC. GC should always be triggered before an allocation might
+      trigger one.
+
+  - A GC collection happens once one fiber requests one. It then waits for all the other fibers
+    to finish their current instruction / native function call.
+    - Technically other fibers / native functions do not have to completely finish. If they want to do
+      another allocation, they just pause on that allocation and we somehow have to tell the
+      requesting thread that they are now paused.
+    - The GC thread only has to make sure that all fiber and worker threads have entered some well-known
+      region of code.
+      - For fiber threads executing regular charly bytecodes, this means simply the begin
+        of an instruction. The opcode handles reserve enough cells to fully execute themselves, to make sure
+        they can make it to the next instruction without causing a GC.
+      - For fibers running native C code or worker threads currently in some long running C section,
+        this means these parts of the code have to be in some specific mode, which tells the GC thread
+        that they won't interfere with anything that the GC is up to. This means being able to
+        remove these threads from the GCs pause-list. If these threads finish their C business, they have to
+        wait for the GC to finish its job before they can continue. this might cause a native thread to be
+        blocked while the GC is running. if a worker task knows ahead of time how many memory cells it
+        will need, it can reserve these, making sure it won't block at runtime.
+        - This could be a tuneable parameter, "how many tasks should memory be pre-reserved for"
+
 - Path library
   - Write unit tests
   - Implement methods
@@ -30,6 +143,9 @@
   - To improve startup performance of new threads, 8 kilobyte pages can be preallocated
 
 - Refactor interactions with Charly data types which are stored on the heap
+  - Write initializer functions for each type
+  - How is key enumeration being handled?
+    - Some kind of iterator?
   - Types should define their own methods / functionality
   - No external access to private member fields
   - Turn structs into classes to enforce access rights

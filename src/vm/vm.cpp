@@ -60,21 +60,13 @@ Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address,
   cell->frame.self = self;
   cell->frame.origin_address = this->ip;
   cell->frame.return_address = return_address;
-  cell->frame.set_halt_after_return(halt_after_return);
+  cell->frame.halt_after_return = halt_after_return;
 
   // Calculate the number of local variables this frame has to support
   uint32_t lvarcount = function->lvarcount;
 
   // Allocate and prefill local variable space
-  if (lvarcount <= kSmallFrameLocalCount) {
-    cell->frame.senv.lvarcount = lvarcount;
-    cell->frame.set_smallframe(true);
-
-    while (lvarcount--)
-      cell->frame.senv.data[lvarcount] = kNull;
-  } else {
-    cell->frame.lenv = new std::vector<VALUE>(lvarcount, kNull);
-  }
+  cell->frame.locals = new std::vector<VALUE>(lvarcount, kNull);
 
   // Append the frame
   this->frames = cell->as<Frame>();
@@ -104,17 +96,8 @@ Frame* VM::create_frame(VALUE self,
   cell->frame.self = self;
   cell->frame.origin_address = this->ip;
   cell->frame.return_address = return_address;
-  cell->frame.set_halt_after_return(halt_after_return);
-
-  if (lvarcount <= kSmallFrameLocalCount) {
-    cell->frame.senv.lvarcount = lvarcount;
-    cell->frame.set_smallframe(true);
-
-    while (lvarcount--)
-      cell->frame.senv.data[lvarcount] = kNull;
-  } else {
-    cell->frame.lenv = new std::vector<VALUE>(lvarcount, kNull);
-  }
+  cell->frame.halt_after_return = halt_after_return;
+  cell->frame.locals = new std::vector<VALUE>(lvarcount, kNull);
 
   // Append the frame
   this->frames = cell->as<Frame>();
@@ -196,7 +179,7 @@ void VM::unwind_catchstack(std::optional<VALUE> payload = std::nullopt) {
     if (this->frames == table->frame) {
       break;
     } else {
-      if (this->frames->halt_after_return()) {
+      if (this->frames->halt_after_return) {
         this->halted = true;
       }
 
@@ -1302,7 +1285,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
       arguments_array->data->push_back(argv[i]);
     }
   } else {
-    for (size_t i = 0; i < argc; i++)
+    for (size_t i = 0; i < argc && i < function->lvarcount; i++)
       frame->write_local(i, argv[i]);
   }
 
@@ -1992,7 +1975,7 @@ void VM::op_return() {
   this->frames = frame->parent;
   this->ip = frame->return_address;
 
-  if (frame->halt_after_return()) {
+  if (frame->halt_after_return) {
     this->halted = true;
   }
 
@@ -2036,7 +2019,7 @@ void VM::op_yield() {
   this->frames = frame->parent;
   this->ip = frame->return_address;
 
-  if (frame->halt_after_return()) {
+  if (frame->halt_after_return) {
     this->halted = true;
   }
 }

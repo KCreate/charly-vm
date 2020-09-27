@@ -166,10 +166,6 @@ struct String {
 };
 
 // Frames introduce new environments
-//
-// Uses the f1 flag of the basic structure to differentiate between small and regular frames
-// Uses the f2 flag of the basic structure to store the machine should halt after this frame
-static constexpr uint32_t kSmallFrameLocalCount = 5;
 struct Frame {
   Basic basic;
   Frame* parent;
@@ -177,69 +173,34 @@ struct Frame {
   CatchTable* last_active_catchtable;
   VALUE caller_value;
   uint32_t stacksize_at_entry;
-  union {
-    std::vector<VALUE>* lenv;
-    struct {
-      VALUE data[kSmallFrameLocalCount];
-      uint8_t lvarcount;
-    } senv;
-  };
+  std::vector<VALUE>* locals;
   VALUE self;
   uint8_t* origin_address;
   uint8_t* return_address;
-
-  inline bool halt_after_return() {
-    return this->basic.f2;
-  }
-
-  inline void set_halt_after_return(bool f) {
-    this->basic.f2 = f;
-  }
+  bool halt_after_return;
 
   // Read the local variable at a given index
   //
   // This method performs no overflow checks
   inline VALUE read_local(uint32_t index) {
-    if (this->basic.f1) {
-      return this->senv.data[index];
-    } else {
-      return (* this->lenv)[index];
-    }
+    return (* this->locals)[index];
   }
 
   // Set the local variable at a given index
   //
   // This method performs no overflow checks
   inline void write_local(uint32_t index, VALUE value) {
-    if (this->basic.f1) {
-      this->senv.data[index] = value;
-    } else {
-      (* this->lenv)[index] = value;
-    }
+    (* this->locals)[index] = value;
   }
 
   // Returns the amount of local variables this frame currently holds
   inline size_t lvarcount() {
-    if (this->basic.f1) {
-      return this->senv.lvarcount;
-    } else {
-      if (this->lenv) return this->lenv->size();
-      return 0;
-    }
-  }
-
-  inline bool is_smallframe() {
-    return this->basic.f1;
-  }
-
-  inline void set_smallframe(bool f) {
-    this->basic.f1 = f;
+    if (this->locals) return this->locals->size();
+    return 0;
   }
 
   inline void clean() {
-    if (!this->basic.f1) {
-      delete this->lenv;
-    }
+    delete this->locals;
   }
 };
 
