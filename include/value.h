@@ -201,10 +201,12 @@ struct Function {
   // TODO: Bound argumentlist
 };
 
-// Thread policies for C functions
-static constexpr uint8_t kThreadMain   = 0b00000001;
-static constexpr uint8_t kThreadWorker = 0b00000010;
-static constexpr uint8_t kThreadBoth   = 0b00000011;
+// Thread policies describing what thread a native function is allowed to run on
+enum ThreadPolicy : uint8_t {
+  ThreadPolicyMain    = 0b00000001,
+  ThreadPolicyWorker  = 0b00000010,
+  ThreadPolicyBoth    = ThreadPolicyMain | ThreadPolicyWorker
+};
 
 // Function type used for including external functions from C-Land into the virtual machine
 // These are basically just a function pointer with some metadata associated to them
@@ -214,7 +216,7 @@ struct CFunction {
   void* pointer;
   uint32_t argc;
   std::unordered_map<VALUE, VALUE>* container;
-  uint8_t thread_policy;
+  ThreadPolicy thread_policy;
   bool push_return_value;
   bool halt_after_return;
 
@@ -223,11 +225,11 @@ struct CFunction {
   }
 
   inline bool allowed_on_main_thread() {
-    return this->thread_policy & kThreadMain;
+    return this->thread_policy & ThreadPolicyMain;
   }
 
   inline bool allowed_on_worker_thread() {
-    return this->thread_policy & kThreadWorker;
+    return this->thread_policy & ThreadPolicyWorker;
   }
 
   // TODO: Bound argumentlist

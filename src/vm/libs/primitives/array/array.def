@@ -24,11 +24,11 @@
  * SOFTWARE.
  */
 
-DEFINE_INTERNAL_METHOD("charly.primitive.array.insert",  PrimitiveArray::insert,  3, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.primitive.array.remove",  PrimitiveArray::remove,  2, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.primitive.array.reverse", PrimitiveArray::reverse, 1, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.primitive.array.flatten", PrimitiveArray::flatten, 1, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.primitive.array.index",   PrimitiveArray::index,   3, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.primitive.array.rindex",  PrimitiveArray::rindex,  3, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.primitive.array.range",   PrimitiveArray::range,   3, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.primitive.array.clear",   PrimitiveArray::clear,   1, kThreadMain),
+DEFINE_INTERNAL_METHOD("charly.primitive.array.insert",  PrimitiveArray::insert,  3, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.primitive.array.remove",  PrimitiveArray::remove,  2, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.primitive.array.reverse", PrimitiveArray::reverse, 1, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.primitive.array.flatten", PrimitiveArray::flatten, 1, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.primitive.array.index",   PrimitiveArray::index,   3, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.primitive.array.rindex",  PrimitiveArray::rindex,  3, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.primitive.array.range",   PrimitiveArray::range,   3, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.primitive.array.clear",   PrimitiveArray::clear,   1, ThreadPolicyMain),

@@ -39,7 +39,7 @@ struct MethodSignature {
   std::string name;
   size_t argc;
   void* func_pointer;
-  uint8_t thread_policy;
+  ThreadPolicy thread_policy;
 };
 
 // Stores runtime lookup tables for internals

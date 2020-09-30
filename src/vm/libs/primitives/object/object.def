@@ -24,5 +24,5 @@
  * SOFTWARE.
  */
 
-DEFINE_INTERNAL_METHOD("charly.primitive.object.keys",       PrimitiveObject::keys,       1, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.primitive.object.delete_key", PrimitiveObject::delete_key, 2, kThreadMain),
+DEFINE_INTERNAL_METHOD("charly.primitive.object.keys",       PrimitiveObject::keys,       1, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.primitive.object.delete_key", PrimitiveObject::delete_key, 2, ThreadPolicyMain),

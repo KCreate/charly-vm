@@ -78,18 +78,18 @@ std::unordered_map<VALUE, MethodSignature> Index::methods = {
     // VM internals
     //
     //                     Symbol                           Function Pointer       ARGC   Thread-policy
-    DEFINE_INTERNAL_METHOD("charly.vm.import",              import,                2,     kThreadMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.write",               write,                 1,     kThreadMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.getn",                getn,                  0,     kThreadMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.dirname",             dirname,               0,     kThreadMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.exit",                exit,                  1,     kThreadMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.get_argv",            get_argv,              0,     kThreadMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.get_environment",     get_environment,       0,     kThreadMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.get_active_frame",    get_active_frame,      0,     kThreadMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.get_parent_frame",    get_parent_frame,      1,     kThreadMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.get_block_address",   get_block_address,     1,     kThreadMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.resolve_address",     resolve_address,       1,     kThreadMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.debug_func",          debug_func,            1,     kThreadBoth),
+    DEFINE_INTERNAL_METHOD("charly.vm.import",              import,                2,     ThreadPolicyMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.write",               write,                 1,     ThreadPolicyMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.getn",                getn,                  0,     ThreadPolicyMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.dirname",             dirname,               0,     ThreadPolicyMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.exit",                exit,                  1,     ThreadPolicyMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.get_argv",            get_argv,              0,     ThreadPolicyMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.get_environment",     get_environment,       0,     ThreadPolicyMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.get_active_frame",    get_active_frame,      0,     ThreadPolicyMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.get_parent_frame",    get_parent_frame,      1,     ThreadPolicyMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.get_block_address",   get_block_address,     1,     ThreadPolicyMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.resolve_address",     resolve_address,       1,     ThreadPolicyMain),
+    DEFINE_INTERNAL_METHOD("charly.vm.debug_func",          debug_func,            1,     ThreadPolicyBoth),
 };
 
 VALUE import(VM& vm, VALUE include, VALUE source) {
@@ -175,7 +175,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
       while (i < signatures->signatures.size()) {
         std::string name;
         uint32_t argc;
-        uint8_t thread_policy;
+        ThreadPolicy thread_policy;
         std::tie(name, argc, thread_policy) = signatures->signatures[i];
 
         // While we are extracting the method names, we can create

@@ -229,7 +229,7 @@ public:
                         uint32_t lvarcount,
                         bool anonymous,
                         bool needs_arguments);
-  VALUE create_cfunction(VALUE name, uint32_t argc, void* pointer, uint8_t thread_policy = kThreadMain);
+  VALUE create_cfunction(VALUE name, uint32_t argc, void* pointer, ThreadPolicy thread_policy = ThreadPolicyMain);
   VALUE create_class(VALUE name);
   VALUE create_cpointer(void* data, void* destructor);
 

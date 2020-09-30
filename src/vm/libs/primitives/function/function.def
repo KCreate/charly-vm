@@ -24,8 +24,8 @@
  * SOFTWARE.
  */
 
-DEFINE_INTERNAL_METHOD("charly.primitive.function.is_cfunc",    PrimitiveFunction::is_cfunc,    1, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.primitive.function.call",        PrimitiveFunction::call,        3, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.primitive.function.call_async",  PrimitiveFunction::call_async,  3, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.primitive.function.bind_self",   PrimitiveFunction::bind_self,   2, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.primitive.function.unbind_self", PrimitiveFunction::unbind_self, 1, kThreadMain),
+DEFINE_INTERNAL_METHOD("charly.primitive.function.is_cfunc",    PrimitiveFunction::is_cfunc,    1, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.primitive.function.call",        PrimitiveFunction::call,        3, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.primitive.function.call_async",  PrimitiveFunction::call_async,  3, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.primitive.function.bind_self",   PrimitiveFunction::bind_self,   2, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.primitive.function.unbind_self", PrimitiveFunction::unbind_self, 1, ThreadPolicyMain),

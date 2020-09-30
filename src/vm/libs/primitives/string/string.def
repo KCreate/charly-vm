@@ -24,8 +24,8 @@
  * SOFTWARE.
  */
 
-DEFINE_INTERNAL_METHOD("charly.primitive.string.to_n",      PrimitiveString::to_n,      1, kThreadBoth),
-DEFINE_INTERNAL_METHOD("charly.primitive.string.ltrim",     PrimitiveString::ltrim,     1, kThreadBoth),
-DEFINE_INTERNAL_METHOD("charly.primitive.string.rtrim",     PrimitiveString::rtrim,     1, kThreadBoth),
-DEFINE_INTERNAL_METHOD("charly.primitive.string.lowercase", PrimitiveString::lowercase, 1, kThreadBoth),
-DEFINE_INTERNAL_METHOD("charly.primitive.string.uppercase", PrimitiveString::uppercase, 1, kThreadBoth),
+DEFINE_INTERNAL_METHOD("charly.primitive.string.to_n",      PrimitiveString::to_n,      1, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.primitive.string.ltrim",     PrimitiveString::ltrim,     1, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.primitive.string.rtrim",     PrimitiveString::rtrim,     1, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.primitive.string.lowercase", PrimitiveString::lowercase, 1, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.primitive.string.uppercase", PrimitiveString::uppercase, 1, ThreadPolicyMain),

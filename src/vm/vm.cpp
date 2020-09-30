@@ -303,7 +303,7 @@ VALUE VM::create_function(VALUE name,
   return cell->as_value();
 }
 
-VALUE VM::create_cfunction(VALUE name, uint32_t argc, void* pointer, uint8_t thread_policy) {
+VALUE VM::create_cfunction(VALUE name, uint32_t argc, void* pointer, ThreadPolicy thread_policy) {
   MemoryCell* cell = this->gc.allocate();
   cell->basic.type = kTypeCFunction;
   cell->cfunction.name = name;

@@ -9,6 +9,9 @@
     - Refactor worker thread result return system
     - ManagedContext ability to mark cells as immortal
     - ManagedContext ability to reserve cells in advance
+    - Refactor exceptions
+      - How do native methods throw exceptions?
+      - How are exceptions handled inside regular charly code?
     - Refactor thread system to use the states and ability to wait for certain signals
       - GC goes into its own thread
       - Fibers create a Fiber heap object that mirrors the real fiber
@@ -108,6 +111,9 @@
         blocked while the GC is running. if a worker task knows ahead of time how many memory cells it
         will need, it can reserve these, making sure it won't block at runtime.
         - This could be a tuneable parameter, "how many tasks should memory be pre-reserved for"
+
+- Move some `charly_` methods into the heap value classes themselves
+  - Example: `charly_find_super_method` should just be a method on the Class class
 
 - Path library
   - Write unit tests

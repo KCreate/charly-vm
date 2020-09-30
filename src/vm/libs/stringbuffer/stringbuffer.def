@@ -24,13 +24,13 @@
  * SOFTWARE.
  */
 
-DEFINE_INTERNAL_METHOD("charly.stdlib.stringbuffer.create",        StringBuffer::create,        1, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.stdlib.stringbuffer.reserve",       StringBuffer::reserve,       2, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.stdlib.stringbuffer.get_size",      StringBuffer::get_size,      1, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.stdlib.stringbuffer.get_offset",    StringBuffer::get_offset,    1, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.stdlib.stringbuffer.write",         StringBuffer::write,         2, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.stdlib.stringbuffer.write_partial", StringBuffer::write_partial, 4, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.stdlib.stringbuffer.write_bytes",   StringBuffer::write_bytes,   2, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.stdlib.stringbuffer.to_s",          StringBuffer::to_s,          1, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.stdlib.stringbuffer.bytes",         StringBuffer::bytes,         1, kThreadMain),
-DEFINE_INTERNAL_METHOD("charly.stdlib.stringbuffer.clear",         StringBuffer::clear,         1, kThreadMain),
+DEFINE_INTERNAL_METHOD("charly.stdlib.stringbuffer.create",        StringBuffer::create,        1, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.stdlib.stringbuffer.reserve",       StringBuffer::reserve,       2, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.stdlib.stringbuffer.get_size",      StringBuffer::get_size,      1, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.stdlib.stringbuffer.get_offset",    StringBuffer::get_offset,    1, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.stdlib.stringbuffer.write",         StringBuffer::write,         2, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.stdlib.stringbuffer.write_partial", StringBuffer::write_partial, 4, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.stdlib.stringbuffer.write_bytes",   StringBuffer::write_bytes,   2, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.stdlib.stringbuffer.to_s",          StringBuffer::to_s,          1, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.stdlib.stringbuffer.bytes",         StringBuffer::bytes,         1, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.stdlib.stringbuffer.clear",         StringBuffer::clear,         1, ThreadPolicyMain),
