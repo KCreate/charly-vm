@@ -165,7 +165,7 @@ void VM::unwind_catchstack(std::optional<VALUE> payload = std::nullopt) {
   if (!this->catchstack && charly_is_function(this->uncaught_exception_handler)) {
     Function* exception_handler = charly_as_function(this->uncaught_exception_handler);
     VALUE global_self = this->get_global_self();
-    VALUE payload_value = payload.value_or(charly_create_number(25));
+    VALUE payload_value = payload.value_or(kNull);
     this->call_function(exception_handler, 1, &payload_value, global_self, true);
     return;
   }
@@ -891,17 +891,17 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
 
     if (charly_is_class(val_klass)) {
       Class* klass = charly_as_class(val_klass);
-      auto result = charly_find_prototype_value(klass, symbol);
 
-      if (result.has_value()) {
-        return result.value();
+      VALUE result;
+      if (charly_find_prototype_value(klass, symbol, &result)) {
+        return result;
       }
     }
   }
 
-  auto primitive_lookup = this->findprimitivevalue(source, symbol);
-  if (primitive_lookup.has_value()) {
-    return primitive_lookup.value();
+  VALUE lookup;
+  if (this->findprimitivevalue(source, symbol, &lookup)) {
+    return lookup;
   } else {
     return kNull;
   }
@@ -1025,7 +1025,7 @@ VALUE VM::setmembervalue(VALUE target, VALUE member_value, VALUE value) {
   return this->setmembersymbol(target, SymbolTable::encode(member_value), value);
 }
 
-std::optional<VALUE> VM::findprimitivevalue(VALUE value, VALUE symbol) {
+bool VM::findprimitivevalue(VALUE value, VALUE symbol, VALUE* result) {
 
   // Get the corresponding primitive class
   VALUE found_primitive_class = kNull;
@@ -1042,15 +1042,16 @@ std::optional<VALUE> VM::findprimitivevalue(VALUE value, VALUE symbol) {
   }
 
   if (symbol == SYM("klass")) {
-    return found_primitive_class;
+    *result = found_primitive_class;
+    return true;
   }
 
   if (!charly_is_class(found_primitive_class)) {
-    return std::nullopt;
+    return false;
   }
 
   Class* pclass = charly_as_class(found_primitive_class);
-  return charly_find_prototype_value(pclass, symbol);
+  return charly_find_prototype_value(pclass, symbol, result);
 }
 
 void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {

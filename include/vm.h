@@ -276,7 +276,7 @@ public:
   VALUE setmembersymbol(VALUE target, VALUE symbol, VALUE value);
   VALUE readmembervalue(VALUE source, VALUE value);
   VALUE setmembervalue(VALUE target, VALUE member_value, VALUE value);
-  std::optional<VALUE> findprimitivevalue(VALUE value, VALUE symbol);
+  bool findprimitivevalue(VALUE value, VALUE symbol, VALUE* result);
   void call(uint32_t argc, bool with_target, bool halt_after_return = false);
   void call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self, bool halt_after_return = false);
   void call_cfunction(CFunction* function, uint32_t argc, VALUE* argv);

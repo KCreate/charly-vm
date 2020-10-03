@@ -1426,26 +1426,21 @@ inline VALUE charly_create_pointer(void* ptr) {
 
 // Lookup a symbol inside a class
 __attribute__((always_inline))
-inline std::optional<VALUE> charly_find_prototype_value(Class* klass, VALUE symbol) {
-  std::optional<VALUE> result;
-
+inline bool charly_find_prototype_value(Class* klass, VALUE symbol, VALUE* result) {
   if (charly_is_object(klass->prototype)) {
     Object* prototype = charly_as_object(klass->prototype);
 
-    // Check if this class container contains the symbol
-    if (prototype->container->count(symbol)) {
-      result = (*prototype->container)[symbol];
+    VALUE value;
+    if (prototype->read(symbol, &value)) {
+      *result = value;
+      return true;
     } else if (charly_is_class(klass->parent_class)) {
       Class* pklass = charly_as_class(klass->parent_class);
-      auto presult = charly_find_prototype_value(pklass, symbol);
-
-      if (presult.has_value()) {
-        return presult;
-      }
+      return charly_find_prototype_value(pklass, symbol, result);
     }
   }
 
-  return result;
+  return false;
 }
 
 // Lookup super method
@@ -1453,7 +1448,11 @@ __attribute__((always_inline))
 inline VALUE charly_find_super_method(Class* base, VALUE symbol) {
   if (!charly_is_class(base->parent_class)) return kNull;
   Class* parent_class = charly_as_class(base->parent_class);
-  return charly_find_prototype_value(parent_class, symbol).value_or(kNull);
+
+  VALUE value;
+  if (charly_find_prototype_value(parent_class, symbol, &value))
+    return value;
+  return kNull;
 }
 
 // Lookup super constructor
@@ -1488,7 +1487,7 @@ inline VALUE charly_find_constructor(Class* base) {
 }
 
 // External libs interface
-typedef std::tuple<std::string, uint32_t, uint8_t> CharlyLibSignature;
+typedef std::tuple<std::string, uint32_t, ThreadPolicy> CharlyLibSignature;
 struct CharlyLibSignatures {
   std::vector<CharlyLibSignature> signatures;
 };

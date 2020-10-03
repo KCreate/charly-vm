@@ -3,12 +3,25 @@
 - VM Refactor
   - Implementation timeline
     - Class interface to heap types
+      - How are values allocated and created via the GC?
+      - Rename Basic -> Header
+        - Make properties protected
+      - Start by replacing all accesses to the Object type with class methods
+        - Learn from this and see if we have to change anything with our design
+        - Is the Container type actually a good idea?
       - Replace std::mutex with something more efficient (smaller and faster??)
         - This looks interesting: https://webkit.org/blog/6161/locking-in-webkit/
     - Fixed amount of native worker threads, waiting for jobs via some job queue
     - Refactor worker thread result return system
     - ManagedContext ability to mark cells as immortal
     - ManagedContext ability to reserve cells in advance
+    - Some global values can be stored as atomics, no mutex needed
+    - C methods should receive the following arguments
+      - The ID of the fiber which created their task
+      - A reference/pointer to the coordinator object
+      - A reference to a managed context, which handles the allocations inside that worker function
+      - The "self" value
+      - The arguments passed to the function from charly
     - Refactor exceptions
       - How do native methods throw exceptions?
       - How are exceptions handled inside regular charly code?
@@ -111,6 +124,10 @@
         blocked while the GC is running. if a worker task knows ahead of time how many memory cells it
         will need, it can reserve these, making sure it won't block at runtime.
         - This could be a tuneable parameter, "how many tasks should memory be pre-reserved for"
+
+- Enforce max string length of 2^32 (uint32_t as length field)
+
+- Remove panic system from the VM, turn into asserts
 
 - Move some `charly_` methods into the heap value classes themselves
   - Example: `charly_find_super_method` should just be a method on the Class class
