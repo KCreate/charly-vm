@@ -676,63 +676,6 @@ inline uint8_t* charly_istring_length_field(VALUE* value) {
   return nullptr;
 }
 
-// Create immediate encoded strings of size 0 - 5
-//
-// Note: Because char* should always contain a null terminator at the end, we check for <= 6 bytes
-// instead of <= 5.
-template <size_t N>
-__attribute__((always_inline))
-VALUE charly_create_istring(char const (& input)[N]) {
-  static_assert(N <= 6, "charly_create_istring can only create strings of length <= 5 (excluding null-terminator)");
-
-  VALUE val = kSignatureIString;
-  char* buf = (char*)&val;
-
-  // Copy the string buffer
-  if (IS_BIG_ENDIAN()) {
-    if constexpr (N >= 1) buf[3] = input[0];
-    if constexpr (N >= 2) buf[4] = input[1];
-    if constexpr (N >= 3) buf[5] = input[2];
-    if constexpr (N >= 4) buf[6] = input[3];
-    if constexpr (N >= 5) buf[7] = input[4];
-    buf[2] = N - 1;
-  } else {
-    if constexpr (N >= 1) buf[0] = input[0];
-    if constexpr (N >= 2) buf[1] = input[1];
-    if constexpr (N >= 3) buf[2] = input[2];
-    if constexpr (N >= 4) buf[3] = input[3];
-    if constexpr (N >= 5) buf[4] = input[4];
-    buf[5] = N - 1;
-  }
-
-  return val;
-}
-
-__attribute__((always_inline))
-inline VALUE charly_create_istring(char const (& input)[7]) {
-  VALUE val = kSignaturePString;
-  char* buf = (char*)&val;
-
-  // Copy the string buffer
-  if (IS_BIG_ENDIAN()) {
-    buf[2] = input[0];
-    buf[3] = input[1];
-    buf[4] = input[2];
-    buf[5] = input[3];
-    buf[6] = input[4];
-    buf[7] = input[5];
-  } else {
-    buf[0] = input[0];
-    buf[1] = input[1];
-    buf[2] = input[2];
-    buf[3] = input[3];
-    buf[4] = input[4];
-    buf[5] = input[5];
-  }
-
-  return val;
-}
-
 __attribute__((always_inline))
 inline VALUE charly_create_empty_string() {
   return kSignatureIString;
@@ -791,6 +734,22 @@ inline VALUE charly_create_istring(const char* ptr, uint8_t length) {
   } else {
     return kNull;
   }
+}
+
+// Create immediate encoded strings of size 0 - 5
+//
+// Note: Because char* should always contain a null terminator at the end, we check for <= 6 bytes
+// instead of <= 5.
+template <size_t N>
+__attribute__((always_inline))
+VALUE charly_create_istring(char const (& input)[N]) {
+  static_assert(N <= 6, "charly_create_istring can only create strings of length <= 5 (excluding null-terminator)");
+  return charly_create_istring(input, N - 1);
+}
+
+__attribute__((always_inline))
+inline VALUE charly_create_istring(char const (& input)[7]) {
+  return charly_create_istring(input, 6);
 }
 
 inline VALUE charly_create_istring(const std::string& input) {
