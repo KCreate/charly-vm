@@ -28,8 +28,6 @@
 #include <sstream>
 #include <unordered_map>
 #include <vector>
-#include <chrono>
-#include <optional>
 
 #include <utf8/utf8.h>
 
@@ -39,219 +37,6 @@
 #pragma once
 
 namespace Charly {
-
-using Timestamp = std::chrono::time_point<std::chrono::steady_clock>;
-
-// Human readable types of all data types
-const std::string kHumanReadableTypes[] = {"dead",     "class",     "object", "array",      "string",
-                                           "function", "cfunction", "frame",  "catchtable", "cpointer",
-                                           "number",   "boolean",   "null",   "symbol",     "unknown"};
-
-// Identifies which type a VALUE points to
-enum ValueType : uint8_t {
-
-  // Types which are allocated on the heap
-  kTypeDead,
-  kTypeClass,
-  kTypeObject,
-  kTypeArray,
-  kTypeString,
-  kTypeFunction,
-  kTypeCFunction,
-  kTypeFrame,
-  kTypeCatchTable,
-  kTypeCPointer,
-
-  // Types which are immediate encoded using nan-boxing
-  kTypeNumber,
-  kTypeBoolean,
-  kTypeNull,
-  kTypeSymbol,
-
-  // This should never appear anywhere
-  kTypeUnknown
-};
-
-// Every heap allocated structure in Charly contains this structure at
-// the beginning. It allows us to determine it's type and other information
-// about it.
-struct Basic {
-  uint8_t type; // actual type of this value
-  bool mark; // used by the GC to mark reachable values
-
-  Basic() : type(kTypeDead), mark(false) {
-  }
-};
-
-// Describes an object type
-//
-// It contains an unordered map which holds the objects values
-// The klass field is a VALUE containing the class the object was constructed from
-struct Object {
-  Basic basic;
-  VALUE klass;
-  std::unordered_map<VALUE, VALUE>* container;
-
-  inline void clean() {
-    delete this->container;
-  }
-};
-
-// Array type
-struct Array {
-  Basic basic;
-  std::vector<VALUE>* data;
-
-  inline void clean() {
-    delete this->data;
-  }
-};
-
-// String type
-struct String {
-  Basic basic;
-  char* data;
-  uint32_t length;
-
-  inline void clean() {
-    std::free(data);
-  }
-};
-
-// Frames introduce new environments
-struct Frame {
-  Basic basic;
-  Frame* parent;
-  Frame* parent_environment_frame;
-  CatchTable* last_active_catchtable;
-  VALUE caller_value;
-  std::vector<VALUE>* locals;
-  VALUE self;
-  uint8_t* origin_address;
-  uint8_t* return_address;
-  bool halt_after_return;
-
-  // Read the local variable at a given index
-  //
-  // This method performs no overflow checks
-  inline VALUE read_local(uint32_t index) {
-    return (* this->locals)[index];
-  }
-
-  // Set the local variable at a given index
-  //
-  // This method performs no overflow checks
-  inline void write_local(uint32_t index, VALUE value) {
-    (* this->locals)[index] = value;
-  }
-
-  // Returns the amount of local variables this frame currently holds
-  inline size_t lvarcount() {
-    if (this->locals) return this->locals->size();
-    return 0;
-  }
-
-  inline void clean() {
-    delete this->locals;
-  }
-};
-
-// Catchtable used for exception handling
-struct CatchTable {
-  Basic basic;
-  uint8_t* address;
-  size_t stacksize;
-  Frame* frame;
-  CatchTable* parent;
-};
-
-// Contains a data pointer and a destructor method to deallocate c library resources
-struct CPointer {
-  Basic basic;
-  void* data;
-  void* destructor;
-
-  inline void clean() {
-    if (this->destructor) {
-      reinterpret_cast<void (*)(void*)>(this->destructor)(this->data);
-    }
-  }
-};
-
-// Normal functions defined inside the virtual machine.
-struct Function {
-  Basic basic;
-  VALUE name;
-  uint32_t argc;
-  uint32_t minimum_argc;
-  uint32_t lvarcount;
-  Frame* context;
-  uint8_t* body_address;
-  bool bound_self_set;
-  VALUE bound_self;
-  VALUE host_class;
-  std::unordered_map<VALUE, VALUE>* container;
-  bool anonymous;
-  bool needs_arguments;
-
-  inline void clean() {
-    delete this->container;
-  }
-
-  // TODO: Bound argumentlist
-};
-
-// Thread policies describing what thread a native function is allowed to run on
-enum ThreadPolicy : uint8_t {
-  ThreadPolicyMain    = 0b00000001,
-  ThreadPolicyWorker  = 0b00000010,
-  ThreadPolicyBoth    = ThreadPolicyMain | ThreadPolicyWorker
-};
-
-// Function type used for including external functions from C-Land into the virtual machine
-// These are basically just a function pointer with some metadata associated to them
-struct CFunction {
-  Basic basic;
-  VALUE name;
-  void* pointer;
-  uint32_t argc;
-  std::unordered_map<VALUE, VALUE>* container;
-  ThreadPolicy thread_policy;
-  bool push_return_value;
-  bool halt_after_return;
-
-  inline void clean() {
-    delete this->container;
-  }
-
-  inline bool allowed_on_main_thread() {
-    return this->thread_policy & ThreadPolicyMain;
-  }
-
-  inline bool allowed_on_worker_thread() {
-    return this->thread_policy & ThreadPolicyWorker;
-  }
-
-  // TODO: Bound argumentlist
-};
-
-// Classes defined inside the virtual machine
-struct Class {
-  Basic basic;
-  VALUE name;
-  VALUE constructor;
-  std::vector<VALUE>* member_properties;
-  VALUE prototype;
-  VALUE parent_class;
-  std::unordered_map<VALUE, VALUE>* container;
-
-  inline void clean() {
-    delete this->member_properties;
-    delete this->container;
-  }
-};
-
-// clang-format off
 
 // An IEEE 754 double-precision float is a regular 64-bit value. The bits are laid out as follows:
 //
@@ -356,6 +141,232 @@ static constexpr uint32_t kMaxIStringLength  = 5;
 static constexpr uint32_t kMaxPStringLength  = 6;
 static constexpr int64_t kMaxStringLength    = 0xffffffff;
 
+// Human readable types of all data types
+const std::string kHumanReadableTypes[] = {"dead",     "class",     "object", "array",      "string",
+                                           "function", "cfunction", "frame",  "catchtable", "cpointer",
+                                           "number",   "boolean",   "null",   "symbol",     "unknown"};
+
+// Identifies which type a VALUE points to
+enum ValueType : uint8_t {
+
+  // Types which are allocated on the heap
+  kTypeDead,
+  kTypeClass,
+  kTypeObject,
+  kTypeArray,
+  kTypeString,
+  kTypeFunction,
+  kTypeCFunction,
+  kTypeFrame,
+  kTypeCatchTable,
+  kTypeCPointer,
+
+  // Types which are immediate encoded using nan-boxing
+  kTypeNumber,
+  kTypeBoolean,
+  kTypeNull,
+  kTypeSymbol,
+
+  // This should never appear anywhere
+  kTypeUnknown
+};
+
+// Metadata which is stores in every heap value
+class Header {
+protected:
+  ValueType type; // the type of this heap value
+  bool mark;   // set by the GC to mark reachable values
+
+public:
+  void init(ValueType type);
+
+  ValueType get_type();
+  bool get_gc_mark();
+  void set_gc_mark();
+  void clear_gc_mark();
+
+  void clean();
+};
+
+// Underlying type of every value which has its own
+// value container (e.g. Object, Function, Class)
+using ContainerType = std::unordered_map<VALUE, VALUE>;
+class Container : public Header {
+protected:
+  ContainerType* container;
+
+public:
+  void init(ValueType type, uint32_t initial_capacity = 4);
+  void copy_container_from(const Container* other);
+
+  bool read(VALUE key, VALUE* result);              // reads a value from the container
+  VALUE read_or(VALUE key, VALUE fallback = kNull); // reads a value from the container or returns fallback
+  bool contains(VALUE key);                         // check wether the container contains some key
+  uint32_t keycount();                              // returns amount of keys inside container
+  bool erase(VALUE key);                            // erases a key from the container, returns true on success
+  void write(VALUE key, VALUE value);               // insert or assign to some key
+  bool assign(VALUE key, VALUE value);              // assign to some key, returns false if key did not exist
+
+  // Access the internal container data structure
+  // via a callback function
+  void access_container(std::function<void(ContainerType*)> cb);
+
+  void clean();
+};
+
+// Object type
+class Object : public Container {
+protected:
+  VALUE klass; // The class this object was constructed from, otherwise null
+
+public:
+  void init(VALUE klass = kNull, uint32_t initial_capacity = 4);
+
+  VALUE get_klass();
+  void set_klass(VALUE klass);
+};
+
+// Array type
+struct Array : public Header {
+  std::vector<VALUE>* data;
+
+  inline void clean() {
+    Header::clean();
+    delete this->data;
+  }
+};
+
+// String type
+struct String : public Header {
+  char* data;
+  uint32_t length;
+
+  inline void clean() {
+    Header::clean();
+    std::free(data);
+  }
+};
+
+// Frames introduce new environments
+struct Frame : public Header {
+  Frame* parent;
+  Frame* parent_environment_frame;
+  CatchTable* last_active_catchtable;
+  VALUE caller_value;
+  std::vector<VALUE>* locals;
+  VALUE self;
+  uint8_t* origin_address;
+  uint8_t* return_address;
+  bool halt_after_return;
+
+  // Read the local variable at a given index
+  //
+  // This method performs no overflow checks
+  inline VALUE read_local(uint32_t index) {
+    return (* this->locals)[index];
+  }
+
+  // Set the local variable at a given index
+  //
+  // This method performs no overflow checks
+  inline void write_local(uint32_t index, VALUE value) {
+    (* this->locals)[index] = value;
+  }
+
+  // Returns the amount of local variables this frame currently holds
+  inline size_t lvarcount() {
+    if (this->locals) return this->locals->size();
+    return 0;
+  }
+
+  inline void clean() {
+    Header::clean();
+    delete this->locals;
+  }
+};
+
+// Catchtable used for exception handling
+struct CatchTable : public Header {
+  uint8_t* address;
+  size_t stacksize;
+  Frame* frame;
+  CatchTable* parent;
+};
+
+// Contains a data pointer and a destructor method to deallocate c library resources
+struct CPointer : public Header {
+  void* data;
+  void* destructor;
+
+  inline void clean() {
+    Header::clean();
+    if (this->destructor) {
+      reinterpret_cast<void (*)(void*)>(this->destructor)(this->data);
+    }
+  }
+};
+
+// Normal functions defined inside the virtual machine.
+struct Function : public Container {
+  VALUE name;
+  uint32_t argc;
+  uint32_t minimum_argc;
+  uint32_t lvarcount;
+  Frame* context;
+  uint8_t* body_address;
+  bool bound_self_set;
+  VALUE bound_self;
+  VALUE host_class;
+  bool anonymous;
+  bool needs_arguments;
+
+  // TODO: Bound argumentlist
+};
+
+// Thread policies describing what thread a native function is allowed to run on
+enum ThreadPolicy : uint8_t {
+  ThreadPolicyMain    = 0b00000001,
+  ThreadPolicyWorker  = 0b00000010,
+  ThreadPolicyBoth    = ThreadPolicyMain | ThreadPolicyWorker
+};
+
+// Function type used for including external functions from C-Land into the virtual machine
+// These are basically just a function pointer with some metadata associated to them
+struct CFunction : public Container {
+  VALUE name;
+  void* pointer;
+  uint32_t argc;
+  ThreadPolicy thread_policy;
+  bool push_return_value;
+  bool halt_after_return;
+
+  inline bool allowed_on_main_thread() {
+    return this->thread_policy & ThreadPolicyMain;
+  }
+
+  inline bool allowed_on_worker_thread() {
+    return this->thread_policy & ThreadPolicyWorker;
+  }
+
+  // TODO: Bound argumentlist
+};
+
+// Classes defined inside the virtual machine
+struct Class : public Container {
+  VALUE name;
+  VALUE constructor;
+  std::vector<VALUE>* member_properties;
+  VALUE prototype;
+  VALUE parent_class;
+
+  inline void clean() {
+    Container::clean();
+    delete this->member_properties;
+  }
+};
+
+// clang-format off
+
 // Type casting functions
 template <typename T>
 __attribute__((always_inline))
@@ -363,7 +374,9 @@ T* charly_as_pointer_to(VALUE value)                  { return reinterpret_cast<
 __attribute__((always_inline))
 inline void* charly_as_pointer(VALUE value)           { return charly_as_pointer_to<void>(value); }
 __attribute__((always_inline))
-inline Basic* charly_as_basic(VALUE value)            { return charly_as_pointer_to<Basic>(value); }
+inline Header* charly_as_header(VALUE value)          { return charly_as_pointer_to<Header>(value); }
+__attribute__((always_inline))
+inline Container* charly_as_container(VALUE value)    { return charly_as_pointer_to<Container>(value); }
 __attribute__((always_inline))
 inline Class* charly_as_class(VALUE value)            { return charly_as_pointer_to<Class>(value); }
 __attribute__((always_inline))
@@ -416,7 +429,7 @@ __attribute__((always_inline))
 inline bool charly_is_on_heap(VALUE value) { return charly_is_ptr(value); }
 __attribute__((always_inline))
 inline bool charly_is_heap_type(VALUE value, uint8_t type) {
-  return charly_is_on_heap(value) && charly_as_basic(value)->type == type;
+  return charly_is_on_heap(value) && charly_as_header(value)->get_type() == type;
 }
 __attribute__((always_inline))
 inline bool charly_is_dead(VALUE value) { return charly_is_heap_type(value, kTypeDead); }
@@ -450,7 +463,7 @@ inline bool charly_is_cpointer(VALUE value) { return charly_is_heap_type(value, 
 // Return the ValueType representation of the type of the value
 __attribute__((always_inline))
 inline uint8_t charly_get_type(VALUE value) {
-  if (charly_is_on_heap(value)) return charly_as_basic(value)->type;
+  if (charly_is_on_heap(value)) return charly_as_header(value)->get_type();
   if (charly_is_float(value)) return kTypeNumber;
   if (charly_is_int(value)) return kTypeNumber;
   if (charly_is_null(value)) return kTypeNull;
@@ -460,23 +473,23 @@ inline uint8_t charly_get_type(VALUE value) {
   return kTypeUnknown;
 }
 
+// Checks wether this value is a container
+__attribute__((always_inline))
+inline bool charly_is_container(VALUE value) {
+  switch(charly_get_type(value)) {
+    case kTypeObject:
+    case kTypeClass:
+    case kTypeFunction:
+    case kTypeCFunction: return true;
+  }
+
+  return false;
+}
+
 // Return a human readable string of the type of value
 __attribute__((always_inline))
 inline const std::string& charly_get_typestring(VALUE value) {
   return kHumanReadableTypes[charly_get_type(value)];
-}
-
-// Return a pointer to the container of a specified value
-// Returns a nullptr if the value doesn't have a container
-__attribute__((always_inline))
-inline std::unordered_map<VALUE, VALUE>* charly_get_container(VALUE value) {
-  switch(charly_get_type(value)) {
-    case kTypeObject: return charly_as_object(value)->container;
-    case kTypeClass: return charly_as_class(value)->container;
-    case kTypeFunction: return charly_as_function(value)->container;
-    case kTypeCFunction: return charly_as_cfunction(value)->container;
-    default: return nullptr;
-  }
 }
 
 // Return a human readable string of the type of value

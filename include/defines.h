@@ -24,6 +24,7 @@
  * SOFTWARE.
  */
 
+#include <chrono>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -35,6 +36,8 @@
 namespace Charly {
 typedef uint64_t VALUE;
 typedef uint16_t STATUS;
+
+using Timestamp = std::chrono::time_point<std::chrono::steady_clock>;
 
 class VM;
 struct Frame;
@@ -55,8 +58,9 @@ struct MemoryCell;
 class MemoryManager;
 class ManagedContext;
 
-struct Basic;
-struct Object;
+class Header;
+class Container;
+class Object;
 struct Array;
 struct String;
 struct Function;

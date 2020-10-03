@@ -188,7 +188,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
           thread_policy
         ));
 
-        lib->container->insert({charly_create_symbol(name), charly_create_pointer(cfunc)});
+        lib->write(charly_create_symbol(name), charly_create_pointer(cfunc));
 
         i++;
       }
@@ -204,16 +204,8 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
 
         dlclose(clib);
       };
-      lib->container->insert({
-        SymbolTable::encode("__libptr"),
-        lalloc.create_cpointer(clib, reinterpret_cast<void*>(destructor))
-      });
-
-      // Insert the path of the library into the object
-      lib->container->insert({
-        SymbolTable::encode("__libpath"),
-        lalloc.create_string(include_filename)
-      });
+      lib->write( SymbolTable::encode("__libptr"), lalloc.create_cpointer(clib, reinterpret_cast<void*>(destructor)));
+      lib->write( SymbolTable::encode("__libpath"), lalloc.create_string(include_filename));
 
       return charly_create_pointer(lib);
     }
@@ -300,10 +292,7 @@ VALUE get_environment(VM& vm) {
 
   // Append environment variables
   for (const auto& entry : environment) {
-    environment_obj->container->insert({
-      SymbolTable::encode(entry.first),
-      lalloc.create_string(entry.second)
-    });
+    environment_obj->write(SymbolTable::encode(entry.first), lalloc.create_string(entry.second));
   }
 
   return charly_create_pointer(environment_obj);
@@ -320,11 +309,11 @@ VALUE get_active_frame(VM& vm) {
   VALUE origin_address = charly_create_integer(reinterpret_cast<size_t>(vm_frame->origin_address));
 
   // Create stacktrace entry
-  Object* obj = charly_as_object(lalloc.create_object(3));
-  obj->container->insert({SymbolTable::encode("id"),             frame_id});
-  obj->container->insert({SymbolTable::encode("caller"),         caller_value});
-  obj->container->insert({SymbolTable::encode("self_value"),     self_value});
-  obj->container->insert({SymbolTable::encode("origin_address"), origin_address});
+  Object* obj = charly_as_object(lalloc.create_object(4));
+  obj->write(SymbolTable::encode("id"),             frame_id);
+  obj->write(SymbolTable::encode("caller"),         caller_value);
+  obj->write(SymbolTable::encode("self_value"),     self_value);
+  obj->write(SymbolTable::encode("origin_address"), origin_address);
 
   return charly_create_pointer(obj);
 }
@@ -347,11 +336,11 @@ VALUE get_parent_frame(VM& vm, VALUE frame_ref) {
   VALUE origin_address = charly_create_integer(reinterpret_cast<size_t>(vm_frame->origin_address));
 
   // Create stacktrace entry
-  Object* obj = charly_as_object(lalloc.create_object(3));
-  obj->container->insert({SymbolTable::encode("id"),             frame_id});
-  obj->container->insert({SymbolTable::encode("caller"),         caller_value});
-  obj->container->insert({SymbolTable::encode("self_value"),     self_value});
-  obj->container->insert({SymbolTable::encode("origin_address"), origin_address});
+  Object* obj = charly_as_object(lalloc.create_object(4));
+  obj->write(SymbolTable::encode("id"),             frame_id);
+  obj->write(SymbolTable::encode("caller"),         caller_value);
+  obj->write(SymbolTable::encode("self_value"),     self_value);
+  obj->write(SymbolTable::encode("origin_address"), origin_address);
 
   return charly_create_pointer(obj);
 }
@@ -386,7 +375,8 @@ VALUE debug_func(VM& vm, VALUE value) {
   CHECK(string, value);
 
   vm.context.out_stream << "sizeof(MemoryCell) = " << sizeof(MemoryCell) << std::endl;
-  vm.context.out_stream << "sizeof(Basic)      = " << sizeof(Basic) << std::endl;
+  vm.context.out_stream << "sizeof(Header)     = " << sizeof(Header) << std::endl;
+  vm.context.out_stream << "sizeof(Container)  = " << sizeof(Container) << std::endl;
   vm.context.out_stream << "sizeof(Object)     = " << sizeof(Object) << std::endl;
   vm.context.out_stream << "sizeof(Array)      = " << sizeof(Array) << std::endl;
   vm.context.out_stream << "sizeof(String)     = " << sizeof(String) << std::endl;
@@ -397,7 +387,11 @@ VALUE debug_func(VM& vm, VALUE value) {
   vm.context.out_stream << "sizeof(CatchTable) = " << sizeof(CatchTable) << std::endl;
   vm.context.out_stream << "sizeof(CPointer)   = " << sizeof(CPointer) << std::endl;
 
-  return kNull;
+  ManagedContext lalloc(vm);
+  Object* obj = charly_as_object(lalloc.create_object(4));
+  obj->write(SymbolTable::encode("test"), lalloc.create_string("hello world!!!!"));
+
+  return charly_create_pointer(obj);
 }
 
 }  // namespace Internals

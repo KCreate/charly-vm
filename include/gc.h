@@ -40,10 +40,11 @@ namespace Charly {
 struct MemoryCell {
   union {
     struct {
-      Basic basic;
+      Header header;
       MemoryCell* next;
     } free;
-    Basic basic;
+    Header header;
+    Container container;
     Object object;
     Array array;
     String string;
@@ -114,6 +115,7 @@ public:
     }
   }
   MemoryCell* allocate();
+
   void mark(VALUE cell);
   template <typename T>
   inline void mark(T* cell) {

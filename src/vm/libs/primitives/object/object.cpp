@@ -33,34 +33,27 @@ namespace Internals {
 namespace PrimitiveObject {
 
 VALUE keys(VM& vm, VALUE obj) {
+  CHECK(container, obj);
   ManagedContext lalloc(vm);
 
-  // Get the container of the value
-  std::unordered_map<VALUE, VALUE>* container = charly_get_container(obj);
-  if (container == nullptr)
-    return lalloc.create_array(0);
+  Container* obj_container = charly_as_container(obj);
+  Array* arr = charly_as_array(lalloc.create_array(obj_container->keycount()));
 
-  // Create an array containing the keys of the container
-  Array* arr = charly_as_array(lalloc.create_array(container->size()));
-
-  for (auto& entry : *container) {
-    VALUE key = lalloc.create_string(SymbolTable::decode(entry.first));
-    arr->data->push_back(key);
-  }
+  obj_container->access_container([&](ContainerType* container) {
+    for (auto& entry : *container) {
+      VALUE key = lalloc.create_string(SymbolTable::decode(entry.first));
+      arr->data->push_back(key);
+    }
+  });
 
   return charly_create_pointer(arr);
 }
 
 VALUE delete_key(VM& vm, VALUE v, VALUE symbol) {
   CHECK(string, symbol);
+  CHECK(container, v);
 
-  // Check if the value has a container
-  auto* container = charly_get_container(v);
-  if (!container) return v;
-
-  // Erase key from container
-  VALUE key_symbol = charly_create_symbol(symbol);
-  container->erase(key_symbol);
+  charly_as_container(v)->erase(charly_create_symbol(symbol));
 
   return v;
 }

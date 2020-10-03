@@ -79,17 +79,19 @@ void GarbageCollector::mark(VALUE value) {
     return;
   }
 
-  if (charly_as_basic(value)->mark) {
+  if (charly_as_header(value)->get_gc_mark()) {
     return;
   }
 
-  charly_as_basic(value)->mark = true;
-  switch (charly_as_basic(value)->type) {
+  charly_as_header(value)->set_gc_mark();
+  switch (charly_as_header(value)->get_type()) {
     case kTypeObject: {
       Object* obj = charly_as_object(value);
-      this->mark(obj->klass);
-      for (auto entry : *obj->container)
-        this->mark(entry.second);
+      this->mark(obj->get_klass());
+      obj->access_container([&](ContainerType* container) {
+        for (auto entry : *container)
+          this->mark(entry.second);
+      });
       break;
     }
 
@@ -107,15 +109,19 @@ void GarbageCollector::mark(VALUE value) {
 
       if (func->bound_self_set)
         this->mark(func->bound_self);
-      for (auto entry : *func->container)
-        this->mark(entry.second);
+      func->access_container([&](ContainerType* container) {
+        for (auto entry : *container)
+          this->mark(entry.second);
+      });
       break;
     }
 
     case kTypeCFunction: {
       CFunction* cfunc = charly_as_cfunction(value);
-      for (auto entry : *cfunc->container)
-        this->mark(entry.second);
+      cfunc->access_container([&](ContainerType* container) {
+        for (auto entry : *container)
+          this->mark(entry.second);
+      });
       break;
     }
 
@@ -124,8 +130,12 @@ void GarbageCollector::mark(VALUE value) {
       this->mark(klass->constructor);
       this->mark(klass->prototype);
       this->mark(klass->parent_class);
-      for (auto entry : *klass->container)
-        this->mark(entry.second);
+
+      klass->access_container([&](ContainerType* container) {
+        for (auto entry : *container)
+          this->mark(entry.second);
+      });
+
       break;
     }
 
@@ -149,6 +159,10 @@ void GarbageCollector::mark(VALUE value) {
       this->mark(charly_create_pointer(table->frame));
       this->mark(charly_create_pointer(table->parent));
       break;
+    }
+
+    default: {
+      // This type doesn't reference any other types
     }
   }
 }
@@ -269,8 +283,8 @@ void GarbageCollector::collect() {
   for (MemoryCell* heap : this->heaps) {
     for (size_t i = 0; i < this->config.heap_cell_count; i++) {
       MemoryCell* cell = heap + i;
-      if (charly_as_basic(charly_create_pointer(cell))->mark) {
-        charly_as_basic(charly_create_pointer(cell))->mark = false;
+      if (charly_as_header(charly_create_pointer(cell))->get_gc_mark()) {
+        charly_as_header(charly_create_pointer(cell))->clear_gc_mark();
       } else {
         // This cell might already be on the free list
         // Make sure we don't double free cells
@@ -317,6 +331,7 @@ MemoryCell* GarbageCollector::allocate() {
   }
 
   this->remaining_free_cells--;
+  memset(reinterpret_cast<void*>(cell), 0, sizeof(MemoryCell));
   return cell;
 }
 
@@ -324,7 +339,7 @@ void GarbageCollector::deallocate(MemoryCell* cell) {
   std::unique_lock<std::recursive_mutex>(this->g_mutex);
 
   // Run the type specific cleanup function
-  switch (charly_as_basic(charly_create_pointer(cell))->type) {
+  switch (charly_as_header(charly_create_pointer(cell))->get_type()) {
     case kTypeObject: {
       cell->object.clean();
       break;
@@ -370,7 +385,7 @@ void GarbageCollector::deallocate(MemoryCell* cell) {
 
   // Clear the cell and link it into the freelist
   memset(reinterpret_cast<void*>(cell), 0, sizeof(MemoryCell));
-  cell->free.basic.type = kTypeDead;
+  cell->free.header.init(kTypeDead);
   cell->free.next = this->free_cell;
   this->free_cell = cell;
   this->remaining_free_cells++;

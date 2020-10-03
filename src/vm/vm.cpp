@@ -51,7 +51,7 @@ Frame* VM::pop_frame() {
 
 Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address, bool halt_after_return) {
   MemoryCell* cell = this->gc.allocate();
-  cell->basic.type = kTypeFrame;
+  cell->header.init(kTypeFrame);
   cell->frame.parent = this->frames;
   cell->frame.parent_environment_frame = function->context;
   cell->frame.last_active_catchtable = this->catchstack;
@@ -86,7 +86,7 @@ Frame* VM::create_frame(VALUE self,
                         uint8_t* return_address,
                         bool halt_after_return) {
   MemoryCell* cell = this->gc.allocate();
-  cell->basic.type = kTypeFrame;
+  cell->header.init(kTypeFrame);
   cell->frame.parent = this->frames;
   cell->frame.parent_environment_frame = parent_environment_frame;
   cell->frame.last_active_catchtable = this->catchstack;
@@ -131,7 +131,7 @@ void VM::push_stack(VALUE value) {
 
 CatchTable* VM::create_catchtable(uint8_t* address) {
   MemoryCell* cell = this->gc.allocate();
-  cell->basic.type = kTypeCatchTable;
+  cell->header.init(kTypeCatchTable);
   cell->catchtable.stacksize = this->stack.size();
   cell->catchtable.frame = this->frames;
   cell->catchtable.parent = this->catchstack;
@@ -218,16 +218,13 @@ void VM::unwind_catchstack(std::optional<VALUE> payload = std::nullopt) {
 
 VALUE VM::create_object(uint32_t initial_capacity) {
   MemoryCell* cell = this->gc.allocate();
-  cell->basic.type = kTypeObject;
-  cell->object.klass = this->primitive_object;
-  cell->object.container = new std::unordered_map<VALUE, VALUE>();
-  cell->object.container->reserve(initial_capacity);
+  cell->object.init(this->primitive_object, initial_capacity);
   return cell->as_value();
 }
 
 VALUE VM::create_array(uint32_t initial_capacity) {
   MemoryCell* cell = this->gc.allocate();
-  cell->basic.type = kTypeArray;
+  cell->header.init(kTypeArray);
   cell->array.data = new std::vector<VALUE>();
   cell->array.data->reserve(initial_capacity);
   return cell->as_value();
@@ -237,18 +234,14 @@ VALUE VM::create_string(const char* data, uint32_t length) {
   if (length <= 6)
     return charly_create_istring(data, length);
 
-  // Check if we can create a short string
-  MemoryCell* cell = this->gc.allocate();
-  cell->basic.type = kTypeString;
-
   // Copy the string onto the heap
   char* copied_string = static_cast<char*>(calloc(sizeof(char), length));
   std::memcpy(copied_string, data, length);
 
-  // Setup long string
+  MemoryCell* cell = this->gc.allocate();
+  cell->header.init(kTypeString);
   cell->string.data = copied_string;
   cell->string.length = length;
-
   return cell->as_value();
 }
 
@@ -256,24 +249,21 @@ VALUE VM::create_string(const std::string& str) {
   if (str.size() <= 6)
     return charly_create_istring(str.c_str(), str.size());
 
-  // Check if we can create a short string
-  MemoryCell* cell = this->gc.allocate();
-  cell->basic.type = kTypeString;
-
   // Copy the string onto the heap
-  char* copied_string = static_cast<char*>(calloc(sizeof(char), str.size()));
-  std::memcpy(copied_string, str.c_str(), str.size());
+  size_t string_size = str.size();
+  char* copied_string = static_cast<char*>(calloc(sizeof(char), string_size));
+  std::memcpy(copied_string, str.c_str(), string_size);
 
-  // Setup long string
+  MemoryCell* cell = this->gc.allocate();
+  cell->header.init(kTypeString);
   cell->string.data = copied_string;
-  cell->string.length = str.size();
-
+  cell->string.length = string_size;
   return cell->as_value();
 }
 
 VALUE VM::create_weak_string(char* data, uint32_t length) {
   MemoryCell* cell = this->gc.allocate();
-  cell->basic.type = kTypeString;
+  cell->header.init(kTypeString);
   cell->string.data = data;
   cell->string.length = length;
   return cell->as_value();
@@ -287,7 +277,7 @@ VALUE VM::create_function(VALUE name,
                           bool anonymous,
                           bool needs_arguments) {
   MemoryCell* cell = this->gc.allocate();
-  cell->basic.type = kTypeFunction;
+  cell->container.init(kTypeFunction);
   cell->function.name = name;
   cell->function.argc = argc;
   cell->function.minimum_argc = minimum_argc;
@@ -299,17 +289,15 @@ VALUE VM::create_function(VALUE name,
   cell->function.bound_self_set = false;
   cell->function.bound_self = kNull;
   cell->function.host_class = kNull;
-  cell->function.container = new std::unordered_map<VALUE, VALUE>();
   return cell->as_value();
 }
 
 VALUE VM::create_cfunction(VALUE name, uint32_t argc, void* pointer, ThreadPolicy thread_policy) {
   MemoryCell* cell = this->gc.allocate();
-  cell->basic.type = kTypeCFunction;
+  cell->container.init(kTypeCFunction);
   cell->cfunction.name = name;
   cell->cfunction.pointer = pointer;
   cell->cfunction.argc = argc;
-  cell->cfunction.container = new std::unordered_map<VALUE, VALUE>();
   cell->cfunction.thread_policy = thread_policy;
   cell->cfunction.push_return_value = true;
   cell->cfunction.halt_after_return = false;
@@ -318,19 +306,18 @@ VALUE VM::create_cfunction(VALUE name, uint32_t argc, void* pointer, ThreadPolic
 
 VALUE VM::create_class(VALUE name) {
   MemoryCell* cell = this->gc.allocate();
-  cell->basic.type = kTypeClass;
+  cell->container.init(kTypeClass);
   cell->klass.name = name;
   cell->klass.constructor = kNull;
   cell->klass.member_properties = new std::vector<VALUE>();
   cell->klass.prototype = kNull;
   cell->klass.parent_class = kNull;
-  cell->klass.container = new std::unordered_map<VALUE, VALUE>();
   return cell->as_value();
 }
 
 VALUE VM::create_cpointer(void* data, void* destructor) {
   MemoryCell* cell = this->gc.allocate();
-  cell->basic.type = kTypeCPointer;
+  cell->header.init(kTypeCPointer);
   cell->cpointer.data = data;
   cell->cpointer.destructor = destructor;
   return cell->as_value();
@@ -362,8 +349,8 @@ VALUE VM::deep_copy_value(VALUE value) {
 
 VALUE VM::copy_object(VALUE object) {
   Object* source = charly_as_object(object);
-  Object* target = charly_as_object(this->create_object(source->container->size()));
-  target->container->insert(source->container->begin(), source->container->end());
+  Object* target = charly_as_object(this->create_object(source->keycount()));
+  target->copy_container_from(source);
   return charly_create_pointer(target);
 }
 
@@ -371,12 +358,16 @@ VALUE VM::deep_copy_object(VALUE object) {
   ManagedContext lalloc(this);
 
   Object* source = charly_as_object(object);
-  Object* target = charly_as_object(lalloc.create_object(source->container->size()));
+  Object* target = charly_as_object(lalloc.create_object(source->keycount()));
 
   // Copy each member from the source object into the target
-  for (auto & [ key, value ] : *source->container) {
-    (*target->container)[key] = this->deep_copy_value(value);
-  }
+  target->access_container([&](auto* target_container) {
+    source->access_container([&](auto* source_container) {
+      for (auto & [key, value] : *source_container) {
+        target_container->insert_or_assign(key, this->deep_copy_value(value));
+      }
+    });
+  });
 
   return charly_create_pointer(target);
 }
@@ -428,7 +419,7 @@ VALUE VM::copy_function(VALUE function) {
   target->bound_self_set = source->bound_self_set;
   target->bound_self = source->bound_self;
   target->host_class = source->host_class;
-  *(target->container) = *(source->container);
+  target->copy_container_from(source);
 
   return charly_create_pointer(target);
 }
@@ -441,7 +432,7 @@ VALUE VM::copy_cfunction(VALUE function) {
     source->pointer,
     source->thread_policy
   ));
-  *(target->container) = *(source->container);
+  target->copy_container_from(source);
 
   return charly_create_pointer(target);
 }
@@ -768,11 +759,12 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
       Object* obj = charly_as_object(source);
 
       if (symbol == SYM("klass")) {
-        return obj->klass;
+        return obj->get_klass();
       }
 
-      if (obj->container->count(symbol) == 1) {
-        return (*obj->container)[symbol];
+      VALUE value;
+      if (obj->read(symbol, &value)) {
+        return value;
       }
 
       break;
@@ -793,8 +785,9 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
         return charly_create_number(func->minimum_argc);
       }
 
-      if (func->container->count(symbol) == 1) {
-        return (*func->container)[symbol];
+      VALUE value;
+      if (func->read(symbol, &value)) {
+        return value;
       }
 
       break;
@@ -823,8 +816,9 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
         return charly_create_number(cfunc->thread_policy);
       }
 
-      if (cfunc->container->count(symbol) == 1) {
-        return (*cfunc->container)[symbol];
+      VALUE value;
+      if (cfunc->read(symbol, &value)) {
+        return value;
       }
 
       break;
@@ -848,8 +842,9 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
         return klass->parent_class;
       }
 
-      if (klass->container->count(symbol) == 1) {
-        return (*klass->container)[symbol];
+      VALUE value;
+      if (klass->read(symbol, &value)) {
+        return value;
       }
 
       break;
@@ -882,7 +877,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
   //
   // If no result was found, null is returned
   if (charly_is_object(source)) {
-    VALUE val_klass = charly_as_object(source)->klass;
+    VALUE val_klass = charly_as_object(source)->get_klass();
 
     // Make sure the klass field is a Class value
     if (!charly_is_class(val_klass)) {
@@ -949,7 +944,7 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
 
       if (symbol == SYM("klass")) break;
 
-      (*obj->container)[symbol] = value;
+      obj->write(symbol, value);
       break;
     }
 
@@ -959,7 +954,7 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
       if (symbol == SYM("name")) break;
       if (symbol == SYM("host_class")) break;
 
-      (*func->container)[symbol] = value;
+      func->write(symbol, value);
       break;
     }
 
@@ -978,7 +973,7 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
 
       if (symbol == SYM("name")) break;
 
-      (*cfunc->container)[symbol] = value;
+      cfunc->write(symbol, value);
       break;
     }
 
@@ -990,7 +985,7 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
       if (symbol == SYM("name")) break;
       if (symbol == SYM("parent_class")) break;
 
-      (*klass->container)[symbol] = value;
+      klass->write(symbol, value);
       break;
     }
   }
@@ -1193,7 +1188,7 @@ void VM::initialize_member_properties(Class* klass, Object* object) {
   }
 
   for (auto field : *klass->member_properties) {
-    (*object->container)[field] = kNull;
+    object->write(field, kNull);
   }
 }
 
@@ -1279,9 +1274,9 @@ void VM::op_readglobal(VALUE symbol) {
 
   // Check globals table
   if (!charly_is_object(this->globals)) this->panic(Status::GlobalsNotAnObject);
-  Object* globals_obj = charly_as_object(this->globals);
-  if (globals_obj->container->count(symbol)) {
-    this->push_stack(globals_obj->container->at(symbol));
+  VALUE value;
+  if (charly_as_object(this->globals)->read(symbol, &value)) {
+    this->push_stack(value);
     return;
   }
 
@@ -1429,12 +1424,9 @@ void VM::op_setglobal(VALUE symbol) {
   // Check globals table
   if (!charly_is_object(this->globals)) this->panic(Status::GlobalsNotAnObject);
   Object* globals_obj = charly_as_object(this->globals);
-  if (globals_obj->container->count(symbol)) {
-    globals_obj->container->insert_or_assign(symbol, value);
-    return;
+  if (!globals_obj->assign(symbol, value)) {
+    this->throw_exception("Unidentified global symbol '" + SymbolTable::decode(symbol) + "'");
   }
-
-  this->throw_exception("Unidentified global symbol '" + SymbolTable::decode(symbol) + "'");
 }
 
 void VM::op_setglobalpush(VALUE symbol) {
@@ -1467,12 +1459,9 @@ void VM::op_setglobalpush(VALUE symbol) {
   if (!charly_is_object(this->globals))
     this->panic(Status::GlobalsNotAnObject);
   Object* globals_obj = charly_as_object(this->globals);
-  if (globals_obj->container->count(symbol)) {
-    globals_obj->container->insert_or_assign(symbol, value);
-    return;
+  if (!globals_obj->assign(symbol, value)) {
+    this->throw_exception("Unidentified global symbol '" + SymbolTable::decode(symbol) + "'");
   }
-
-  this->throw_exception("Unidentified global symbol '" + SymbolTable::decode(symbol) + "'");
 }
 #undef WORDGLOB
 
@@ -1571,7 +1560,7 @@ void VM::op_puthash(uint32_t count) {
   while (count--) {
     key = this->pop_stack();
     value = this->pop_stack();
-    (*object->container)[key] = value;
+    object->write(key, value);
   }
 
   this->push_stack(charly_create_pointer(object));
@@ -1589,7 +1578,6 @@ void VM::op_putclass(VALUE name,
   Class* klass = charly_as_class(lalloc.create_class(name));
   klass->member_properties->reserve(propertycount);
   klass->prototype = lalloc.create_object(methodcount);
-  klass->container->reserve(staticpropertycount + staticmethodcount);
 
   bool parent_class_invalid_type = false;
 
@@ -1617,7 +1605,7 @@ void VM::op_putclass(VALUE name,
     }
     Function* func_smethod = charly_as_function(smethod);
     func_smethod->host_class = charly_create_pointer(klass);
-    (*klass->container)[func_smethod->name] = smethod;
+    klass->write(func_smethod->name, smethod);
   }
 
   while (methodcount--) {
@@ -1628,7 +1616,7 @@ void VM::op_putclass(VALUE name,
     Function* func_method = charly_as_function(method);
     func_method->host_class = charly_create_pointer(klass);
     Object* obj_methods = charly_as_object(klass->prototype);
-    (*obj_methods->container)[func_method->name] = method;
+    obj_methods->write(func_method->name, method);
   }
 
   while (staticpropertycount--) {
@@ -1636,7 +1624,7 @@ void VM::op_putclass(VALUE name,
     if (!charly_is_symbol(sprop)) {
       this->panic(Status::InvalidArgumentType);
     }
-    (*klass->container)[sprop] = kNull;
+    klass->write(sprop, kNull);
   }
 
   while (propertycount--) {
@@ -1717,7 +1705,7 @@ void VM::op_new(uint32_t argc) {
   ManagedContext lalloc(this);
   uint32_t member_property_count = charly_as_class(klass)->member_properties->size();
   Object* obj = charly_as_object(lalloc.create_object(member_property_count));
-  obj->klass = klass;
+  obj->set_klass(klass);
   this->initialize_member_properties(charly_as_class(klass), obj);
 
   // Call initial constructor if there is one
@@ -1951,12 +1939,14 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       this->pretty_print_stack.push_back(value);
 
-      for (auto& entry : *object->container) {
-        io << " ";
-        std::string key = SymbolTable::decode(entry.first);
-        io << key << "=";
-        this->pretty_print(io, entry.second);
-      }
+      object->access_container([&](auto* container) {
+        for (auto& entry : *container) {
+          io << " ";
+          std::string key = SymbolTable::decode(entry.first);
+          io << key << "=";
+          this->pretty_print(io, entry.second);
+        }
+      });
 
       io << ">";
 
@@ -2026,12 +2016,14 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << "bound_self=";
       this->pretty_print(io, func->bound_self);
 
-      for (auto& entry : *func->container) {
-        io << " ";
-        std::string key = SymbolTable::decode(entry.first);
-        io << key << "=";
-        this->pretty_print(io, entry.second);
-      }
+      func->access_container([&](ContainerType* container) {
+        for (auto& entry : *container) {
+          io << " ";
+          std::string key = SymbolTable::decode(entry.first);
+          io << key << "=";
+          this->pretty_print(io, entry.second);
+        }
+      });
 
       io << ">";
 
@@ -2057,12 +2049,14 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << " ";
       io << "pointer=" << reinterpret_cast<uint64_t*>(func->pointer) << "";
 
-      for (auto& entry : *func->container) {
-        io << " ";
-        std::string key = SymbolTable::decode(entry.first);
-        io << key << "=";
-        this->pretty_print(io, entry.second);
-      }
+      func->access_container([&](ContainerType* container) {
+        for (auto& entry : *container) {
+          io << " ";
+          std::string key = SymbolTable::decode(entry.first);
+          io << key << "=";
+          this->pretty_print(io, entry.second);
+        }
+      });
 
       io << ">";
 
@@ -2102,11 +2096,13 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       this->pretty_print(io, klass->parent_class);
       io << " ";
 
-      for (auto entry : *klass->container) {
-        io << " " << SymbolTable::decode(entry.first);
-        io << "=";
-        this->pretty_print(io, entry.second);
-      }
+      klass->access_container([&](ContainerType* container) {
+        for (auto entry : *container) {
+          io << " " << SymbolTable::decode(entry.first);
+          io << "=";
+          this->pretty_print(io, entry.second);
+        }
+      });
 
       io << ">";
 
@@ -2257,21 +2253,23 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
 
       this->pretty_print_stack.push_back(value);
 
-      if (charly_is_class(object->klass)) {
-        Class* klass = charly_as_class(object->klass);
+      if (charly_is_class(object->get_klass())) {
+        Class* klass = charly_as_class(object->get_klass());
         this->to_s(io, klass->name);
       }
 
       if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
       io << "{\n";
 
-      for (auto& entry : *object->container) {
-        io << std::string(depth + 2, ' ');
-        std::string key = SymbolTable::decode(entry.first);
-        io << key << " = ";
-        this->to_s(io, entry.second, depth + 2, true);
-        io << '\n';
-      }
+      object->access_container([&](auto* container) {
+        for (auto& entry : *container) {
+          io << std::string(depth + 2, ' ');
+          std::string key = SymbolTable::decode(entry.first);
+          io << key << " = ";
+          this->to_s(io, entry.second, depth + 2, true);
+          io << '\n';
+        }
+      });
 
       io << std::string(depth == 0 ? 0 : depth, ' ');
       io << "}";
@@ -2332,12 +2330,14 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
       this->to_s(io, func->name);
       io << "#" << func->minimum_argc;
 
-      for (auto& entry : *func->container) {
-        io << " ";
-        std::string key = SymbolTable::decode(entry.first);
-        io << key << "=";
-        this->to_s(io, entry.second, depth, true);
-      }
+      func->access_container([&](ContainerType* container) {
+        for (auto& entry : *container) {
+          io << " ";
+          std::string key = SymbolTable::decode(entry.first);
+          io << key << "=";
+          this->to_s(io, entry.second, depth, true);
+        }
+      });
 
       io << ">";
 
@@ -2360,12 +2360,14 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
       this->to_s(io, func->name, depth);
       io << "#" << func->argc;
 
-      for (auto& entry : *func->container) {
-        io << " ";
-        std::string key = SymbolTable::decode(entry.first);
-        io << key << "=";
-        this->to_s(io, entry.second, depth, true);
-      }
+      func->access_container([&](ContainerType* container) {
+        for (auto entry : *container) {
+          io << " ";
+          std::string key = SymbolTable::decode(entry.first);
+          io << key << "=";
+          this->to_s(io, entry.second, depth, true);
+        }
+      });
 
       io << ">";
 
@@ -2387,11 +2389,13 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
       io << "<Class ";
       this->to_s(io, klass->name, depth);
 
-      for (auto entry : *klass->container) {
-        io << " " << SymbolTable::decode(entry.first);
-        io << "=";
-        this->to_s(io, entry.second, depth, true);
-      }
+      klass->access_container([&](ContainerType* container) {
+        for (auto entry : *container) {
+          io << " " << SymbolTable::decode(entry.first);
+          io << "=";
+          this->to_s(io, entry.second, depth, true);
+        }
+      });
 
       io << ">";
 
@@ -2438,9 +2442,7 @@ VALUE VM::get_global_self() {
 
 VALUE VM::get_global_symbol(VALUE symbol) {
   if (charly_is_object(this->globals)) {
-    Object* globals_obj = charly_as_object(this->globals);
-    if (globals_obj->container->count(symbol))
-      return globals_obj->container->at(symbol);
+    return charly_as_object(this->globals)->read_or(symbol, kNull);
   }
 
   return kNull;
@@ -3347,7 +3349,7 @@ uint8_t VM::start_runtime() {
         for (auto& entry : this->paused_threads) {
           ManagedContext lalloc(this);
           VALUE exc_obj = lalloc.create_object(1);
-          charly_as_object(exc_obj)->container->insert({ SYM("__charly_internal_stale_thread_exception"), kTrue });
+          charly_as_object(exc_obj)->write(SYM("__charly_internal_stale_thread_exception"), kTrue);
           this->resume_thread(entry.first, exc_obj);
         }
       } else {
