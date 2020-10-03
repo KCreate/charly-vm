@@ -59,46 +59,113 @@ class Duration {
   less_equal(o)    = @ms <= o.ms
   greater_equal(o) = @ms >= o.ms
 
-  to_s {
-    let remainder = self
-    let buf = ""
+  components {
+    const obj = {
+      years: 0,
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      milliseconds: 0,
+      microseconds: 0
+    }
 
-    while remainder >= 1.nanosecond() {
-      if remainder >= 1.year() {
-        let c = Math.floor(remainder / 1.year())
-        buf += "" + c + " year" + ((c == 1) ? "" : "s") + " "
-        remainder = remainder % 1.year()
-      } else if remainder >= 1.day() {
-        let c = Math.floor(remainder / 1.day())
-        buf += "" + c + " day" + ((c == 1) ? "" : "s") + " "
-        remainder = remainder % 1.day()
-      } else if remainder >= 1.hour() {
-        let c = Math.floor(remainder / 1.hour())
-        buf += "" + c + " hour" + ((c == 1) ? "" : "s") + " "
-        remainder = remainder % 1.hour()
-      } else if remainder >= 1.minute() {
-        let c = Math.floor(remainder / 1.minute())
-        buf += "" + c + " minute" + ((c == 1) ? "" : "s") + " "
-        remainder = remainder % 1.minute()
-      } else if remainder >= 1.second() {
-        let c = Math.floor(remainder / 1.second())
-        buf += "" + c + " second" + ((c == 1) ? "" : "s") + " "
-        remainder = remainder % 1.second()
-      } else if remainder >= 1.millisecond() {
-        let c = Math.floor(remainder / 1.millisecond())
-        buf += "" + c + " millisecond" + ((c == 1) ? "" : "s") + " "
-        remainder = remainder % 1.millisecond()
-      } else if remainder >= 1.microsecond() {
-        let c = Math.floor(remainder / 1.microsecond())
-        buf += "" + c + " microsecond" + ((c == 1) ? "" : "s") + " "
-        remainder = remainder % 1.microsecond()
-      } else if remainder >= 1.nanosecond() {
-        let c = Math.floor(remainder / 1.nanosecond())
-        buf += "" + c + " nanosecond" + ((c == 1) ? "" : "s") + " "
-        remainder = remainder % 1.nanosecond()
+    let remainder = self.ms
+    while remainder >= 1.nanosecond().ms {
+      if remainder >= 1.year().ms {
+        let c = Math.floor(remainder / 1.year().ms)
+        obj.years = c
+        remainder = remainder % 1.year().ms
+      } else if remainder >= 1.day().ms {
+        let c = Math.floor(remainder / 1.day().ms)
+        obj.days = c
+        remainder = remainder % 1.day().ms
+      } else if remainder >= 1.hour().ms {
+        let c = Math.floor(remainder / 1.hour().ms)
+        obj.hours = c
+        remainder = remainder % 1.hour().ms
+      } else if remainder >= 1.minute().ms {
+        let c = Math.floor(remainder / 1.minute().ms)
+        obj.minutes = c
+        remainder = remainder % 1.minute().ms
+      } else if remainder >= 1.second().ms {
+        let c = Math.floor(remainder / 1.second().ms)
+        obj.seconds = c
+        remainder = remainder % 1.second().ms
+      } else if remainder >= 1.millisecond().ms {
+        let c = Math.floor(remainder / 1.millisecond().ms)
+        obj.milliseconds = c
+        remainder = remainder % 1.millisecond().ms
+      } else if remainder >= 1.microsecond().ms {
+        let c = Math.floor(remainder / 1.microsecond().ms)
+        obj.microseconds = c
+        remainder = remainder % 1.microsecond().ms
+      } else if remainder >= 1.nanosecond().ms {
+        let c = Math.floor(remainder / 1.nanosecond().ms)
+        obj.nanoseconds = c
+        remainder = remainder % 1.nanosecond().ms
       }
     }
-    buf
+
+    obj
+  }
+
+  format() {
+    const buf = new StringBuffer()
+
+    const components = @components()
+
+    if components.years > 0 {
+      const c = components.years
+      if buf.get_offset() buf.write(" ")
+      buf.write(c + " " + (c > 1 ? "years" : "year"))
+    }
+    if components.days > 0 {
+      const c = components.days
+      if buf.get_offset() buf.write(" ")
+      buf.write(c + " " + (c > 1 ? "days" : "day"))
+    }
+    if components.hours > 0 {
+      const c = components.hours
+      if buf.get_offset() buf.write(" ")
+      buf.write(c + " " + (c > 1 ? "hours" : "hour"))
+    }
+    if components.seconds > 0 {
+      const c = components.seconds
+      if buf.get_offset() buf.write(" ")
+      buf.write(c + " " + (c > 1 ? "seconds" : "second"))
+    }
+    if components.minutes > 0 {
+      const c = components.minutes
+      if buf.get_offset() buf.write(" ")
+      buf.write(c + " " + (c > 1 ? "minutes" : "minute"))
+    }
+    if components.seconds > 0 {
+      const c = components.seconds
+      if buf.get_offset() buf.write(" ")
+      buf.write(c + " " + (c > 1 ? "seconds" : "second"))
+    }
+    if components.milliseconds > 0 {
+      const c = components.milliseconds
+      if buf.get_offset() buf.write(" ")
+      buf.write(c + " " + (c > 1 ? "milliseconds" : "millisecond"))
+    }
+    if components.microseconds > 0 {
+      const c = components.microseconds
+      if buf.get_offset() buf.write(" ")
+      buf.write(c + " " + (c > 1 ? "microseconds" : "microsecond"))
+    }
+    if components.nanoseconds > 0 {
+      const c = components.nanoseconds
+      if buf.get_offset() buf.write(" ")
+      buf.write(c + " " + (c > 1 ? "nanoseconds" : "nanosecond"))
+    }
+
+    buf.to_s()
+  }
+
+  to_s {
+    @format()
   }
 
   to_n {
@@ -185,7 +252,7 @@ class Time {
   static measure(cb) {
     const begin = Time.now_highres()
     cb()
-    Time.now_highres() - begin
+    Time.now_highres().sub(begin)
   }
 
   static property Timestamp = Timestamp

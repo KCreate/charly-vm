@@ -24,14 +24,6 @@
  * SOFTWARE.
  */
 
-class A {
-  constructor(a, b) {
-    print(a, b)
-  }
-}
-
-new A()
-
-/*const debug_func = @"charly.vm.debug_func"*/
-/*const result = debug_func("hello")*/
-/*print(result)*/
+const debug_func = @"charly.vm.debug_func"
+const result = debug_func("hello")
+print(result)
