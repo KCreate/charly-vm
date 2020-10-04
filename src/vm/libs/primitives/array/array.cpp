@@ -43,28 +43,7 @@ VALUE insert(VM& vm, VALUE a, VALUE i, VALUE v) {
   CHECK(number, i);
 
   Array* array = charly_as_array(a);
-  int32_t index = charly_number_to_int32(i);
-
-  // Insert at end of array
-  if (static_cast<uint32_t>(index) == array->data->size()) {
-    array->data->push_back(v);
-    return charly_create_pointer(array);
-  }
-
-  // Wrap around negative indices
-  if (index < 0) {
-    index += array->data->size();
-  }
-
-  // Out-of-bounds check
-  if (static_cast<uint32_t>(index) >= array->data->size() || index < 0) {
-    vm.throw_exception("Index out of bounds");
-    return kNull;
-  }
-
-  // Insert the element into the array
-  auto it = array->data->begin();
-  array->data->insert(it + index, v);
+  array->insert(charly_number_to_int64(i), v);
 
   return charly_create_pointer(array);
 }
@@ -74,22 +53,7 @@ VALUE remove(VM& vm, VALUE a, VALUE i) {
   CHECK(number, i);
 
   Array* array = charly_as_array(a);
-  int32_t index = charly_number_to_int32(i);
-
-  // Wrap around negative indices
-  if (index < 0) {
-    index += array->data->size();
-  }
-
-  // Out-of-bounds check
-  if (static_cast<uint32_t>(index) >= array->data->size() || index < 0) {
-    vm.throw_exception("Index out of bounds");
-    return kNull;
-  }
-
-  // Insert the element into the array
-  auto it = array->data->begin();
-  array->data->erase(it + index);
+  array->remove(charly_number_to_int64(i));
 
   return charly_create_pointer(array);
 }
@@ -98,82 +62,53 @@ VALUE reverse(VM& vm, VALUE a) {
   CHECK(array, a);
 
   Array* array = charly_as_array(a);
-
   Charly::ManagedContext lalloc(vm);
-  Array* new_array = charly_as_array(lalloc.create_array(array->data->size()));
 
-  // Check if we have any elements at all
-  if (array->data->size() == 0) {
-    return charly_create_pointer(new_array);
-  }
+  Array* new_array;
+  array->access_vector_shared([&](VectorType* vec) {
+    new_array = charly_as_array(lalloc.create_array(vec->size()));
 
-  auto it = array->data->rbegin();
-  while (it != array->data->rend()) {
-    new_array->data->push_back(*it);
-    it++;
-  }
-
-  return charly_create_pointer(new_array);
-}
-
-VALUE flatten(VM& vm, VALUE a) {
-  CHECK(array, a);
-
-  Array* array = charly_as_array(a);
-
-  Charly::ManagedContext lalloc(vm);
-  Array* new_array = charly_as_array(lalloc.create_array(array->data->size()));
-
-  std::function<void(Array*)> visit = [&visit, new_array](const Array* source) {
-    for (VALUE item : *(source->data)) {
-      if (charly_is_array(item)) {
-        visit(charly_as_array(item));
-      } else {
-        new_array->data->push_back(item);
-      }
+    auto it = vec->rbegin();
+    while (it != vec->rend()) {
+      new_array->push(*it);
+      it++;
     }
-  };
-
-  visit(array);
+  });
 
   return charly_create_pointer(new_array);
 }
 
 VALUE index(VM& vm, VALUE a, VALUE i, VALUE o) {
   CHECK(array, a);
+  CHECK(number, i);
   CHECK(number, o);
 
   Array* array = charly_as_array(a);
-  VALUE item = i;
   int32_t offset = charly_number_to_int32(o);
-
   int32_t found_offset = -1;
 
-  // Wrap around negative indices
-  if (offset < 0) {
-    offset += array->data->size();
+  array->access_vector_shared([&](VectorType* vec) {
+
+    // wrap around negative indices
     if (offset < 0) {
-      return charly_create_number(-1);
-    }
-  }
-
-  // Iterate through the array
-  while (static_cast<uint32_t>(offset) < array->data->size()) {
-    VALUE v = array->data->at(offset);
-
-    // Compare the object values
-    if (item == v) {
-      found_offset = offset;
-      break;
+      offset += vec->size();
+      if (offset < 0) {
+        return;
+      }
     }
 
-    if (vm.eq(item, v) == kTrue) {
-      found_offset = offset;
-      break;
-    }
+    // iterate through array, starting at the beginning
+    while (offset < static_cast<int32_t>(vec->size())) {
+      VALUE v = (* vec)[offset];
 
-    offset++;
-  }
+      if (vm.eq(i, v) == kTrue) {
+        found_offset = offset;
+        break;
+      }
+
+      offset++;
+    }
+  });
 
   return charly_create_number(found_offset);
 }
@@ -184,42 +119,36 @@ VALUE rindex(VM& vm, VALUE a, VALUE i, VALUE o) {
   CHECK(number, o);
 
   Array* array = charly_as_array(a);
-  VALUE item = i;
   int32_t offset = charly_number_to_int32(o);
-
   int32_t found_offset = -1;
 
-  // Wrap around negative indices
-  if (offset < 0) {
-    offset += array->data->size();
+  array->access_vector_shared([&](VectorType* vec) {
+
+    // wrap around negative indices
     if (offset < 0) {
-      return charly_create_number(-1);
+      offset += vec->size();
+      if (offset < 0) {
+        return;
+      }
     }
-  }
 
-  // Iterate through the array
-  while (static_cast<uint32_t>(offset) >= 0) {
-    // Skip indices we can't access
-    if (static_cast<uint32_t>(offset) >= array->data->size()) {
+    // iterate through array, starting from the back
+    while (offset >= 0) {
+      if (static_cast<uint32_t>(offset) >= vec->size()) {
+        offset--;
+        continue;
+      }
+
+      VALUE v = (* vec)[offset];
+
+      if (vm.eq(i, v) == kTrue) {
+        found_offset = offset;
+        return;
+      }
+
       offset--;
-      continue;
     }
-
-    VALUE v = array->data->at(offset);
-
-    // Compare the object values
-    if (item == v) {
-      found_offset = offset;
-      break;
-    }
-
-    if (vm.eq(item, v) == kTrue) {
-      found_offset = offset;
-      break;
-    }
-
-    offset--;
-  }
+  });
 
   return charly_create_number(found_offset);
 }
@@ -233,30 +162,33 @@ VALUE range(VM& vm, VALUE a, VALUE s, VALUE c) {
   int32_t start = charly_number_to_uint32(s);
   uint32_t count = charly_number_to_uint32(c);
 
-  Charly::ManagedContext lalloc(vm);
+  ManagedContext lalloc(vm);
   Array* new_array = charly_as_array(lalloc.create_array(count));
 
-  uint32_t offset = 0;
-  while (offset < count) {
-    int32_t index = start + offset;
+  array->access_vector_shared([&](VectorType* vec) {
+    uint32_t offset = 0;
 
-    // Wrap negative indices
-    if (index < 0) {
-      index += array->data->size();
+    while (offset < count) {
+      int32_t index = start + offset;
+
+      // wrap negative indices
       if (index < 0) {
-        offset++;
-        continue;
+        index += vec->size();
+        if (index < 0) {
+          offset++;
+          continue;
+        }
       }
-    }
 
-    // No error on positive out-of-bounds read
-    if (static_cast<uint32_t>(index) >= array->data->size()) {
-      break;
-    }
+      // break loop once we reach the end of the array
+      if (index >= static_cast<int32_t>(vec->size())) {
+        break;
+      }
 
-    new_array->data->push_back(array->data->at(index));
-    offset++;
-  }
+      new_array->push((* vec)[index]);
+      offset++;
+    }
+  });
 
   return charly_create_pointer(new_array);
 }
@@ -265,7 +197,7 @@ VALUE clear(VM& vm, VALUE a) {
   CHECK(array, a);
 
   Array* array = charly_as_array(a);
-  array->data->clear();
+  array->clear();
 
   return a;
 }

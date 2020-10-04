@@ -27,7 +27,6 @@
 const __internal_insert  = @"charly.primitive.array.insert"
 const __internal_remove  = @"charly.primitive.array.remove"
 const __internal_reverse = @"charly.primitive.array.reverse"
-const __internal_flatten = @"charly.primitive.array.flatten"
 const __internal_index   = @"charly.primitive.array.index"
 const __internal_rindex  = @"charly.primitive.array.rindex"
 const __internal_range   = @"charly.primitive.array.range"
@@ -87,10 +86,6 @@ export = ->(Base) {
       sum
     }
 
-    sum(first) {
-      self.reduce(->(l, c) l + c, first)
-    }
-
     filter(cb) {
       let i = 0
       const new_array = []
@@ -118,7 +113,7 @@ export = ->(Base) {
     }
 
     empty {
-      !@length
+      @length == 0
     }
 
     push(item) {
@@ -133,7 +128,7 @@ export = ->(Base) {
     }
 
     unshift(item) {
-      __internal_insert(self, item, 0)
+      __internal_insert(self, 0, item)
       self
     }
 
@@ -194,17 +189,11 @@ export = ->(Base) {
       __internal_reverse(self)
     }
 
-    flatten {
-      __internal_flatten(self)
-    }
-
-    index(element) {
-      const offset = $1 || 0
+    index(element, offset = 0) {
       __internal_index(self, element, offset)
     }
 
-    rindex(element) {
-      const offset = $1 || -1
+    rindex(element, offset = -1) {
       __internal_rindex(self, element, offset)
     }
 

@@ -64,16 +64,19 @@ void Container::init(ValueType type, uint32_t initial_capacity) {
 }
 
 void Container::copy_container_from(const Container* other) {
+  assert(this->container);
   this->container->insert(other->container->begin(), other->container->end());
 }
 
 bool Container::read(VALUE key, VALUE* result) {
+  assert(this->container);
   if (this->container->count(key) == 0) return false;
   *result = (* this->container)[key];
   return true;
 }
 
 VALUE Container::read_or(VALUE key, VALUE fallback) {
+  assert(this->container);
   if (this->container->count(key) == 1) {
     return (* this->container)[key];
   }
@@ -82,28 +85,38 @@ VALUE Container::read_or(VALUE key, VALUE fallback) {
 }
 
 bool Container::contains(VALUE key) {
+  assert(this->container);
   return this->container->count(key);
 }
 
 uint32_t Container::keycount() {
+  assert(this->container);
   return this->container->size();
 }
 
 bool Container::erase(VALUE key) {
+  assert(this->container);
   return this->container->erase(key) > 0;
 }
 
 void Container::write(VALUE key, VALUE value) {
+  assert(this->container);
   this->container->insert_or_assign(key, value);
 }
 
 bool Container::assign(VALUE key, VALUE value) {
+  assert(this->container);
   if (this->container->count(key) == 0) return false;
   (* this->container)[key] = value;
   return true;
 }
 
 void Container::access_container(std::function<void(ContainerType*)> cb) {
+  assert(this->container);
+  cb(this->container);
+}
+
+void Container::access_container_shared(std::function<void(ContainerType*)> cb) {
   assert(this->container);
   cb(this->container);
 }
@@ -126,6 +139,123 @@ VALUE Object::get_klass() {
 
 void Object::set_klass(VALUE klass) {
   this->klass = klass;
+}
+
+void Array::init(uint32_t initial_capacity) {
+  Header::init(kTypeArray);
+  this->data = new VectorType();
+  this->data->reserve(initial_capacity);
+}
+
+void Array::clean() {
+  Header::clean();
+  assert(this->data);
+  delete this->data;
+  this->data = nullptr;
+}
+
+uint32_t Array::size() {
+  assert(this->data);
+  return this->data->size();
+}
+
+VALUE Array::read(int64_t index) {
+  assert(this->data);
+
+  // wrap around negative indices
+  if (index < 0) {
+    index += this->data->size();
+  }
+
+  // bounds check
+  if (index < 0 || index >= static_cast<int64_t>(this->data->size())) {
+    return kNull;
+  }
+
+  return (* this->data)[index];
+}
+
+VALUE Array::write(int64_t index, VALUE value) {
+  assert(this->data);
+
+  // check if appending to array
+  if (index == static_cast<int64_t>(this->data->size())) {
+    this->data->push_back(value);
+    return value;
+  }
+
+  // wrap around negative indices
+  if (index < 0) {
+    index += this->data->size();
+  }
+
+  // bounds check
+  if (index < 0 || index > static_cast<int64_t>(this->data->size())) {
+    return kNull;
+  }
+
+  (* this->data)[index] = value;
+  return value;
+}
+
+void Array::insert(int64_t index, VALUE value) {
+  assert(this->data);
+
+  // check if appending to array
+  if (index == static_cast<int64_t>(this->data->size())) {
+    this->data->push_back(value);
+    return;
+  }
+
+  // wrap around negative indices
+  if (index < 0) {
+    index += this->data->size();
+  }
+
+  // bounds check
+  if (index < 0 || index > static_cast<int64_t>(this->data->size())) {
+    return;
+  }
+
+  auto it = this->data->begin() + index;
+  this->data->insert(it, value);
+}
+
+void Array::push(VALUE value) {
+  assert(this->data);
+  this->data->push_back(value);
+}
+
+void Array::remove(int64_t index) {
+  assert(this->data);
+
+  // wrap around negative indices
+  if (index < 0) {
+    index += this->data->size();
+  }
+
+  // bounds check
+  if (index < 0 || index >= static_cast<int64_t>(this->data->size())) {
+    return;
+  }
+
+  auto it = this->data->begin() + index;
+  this->data->erase(it);
+}
+
+void Array::clear() {
+  assert(this->data);
+  this->data->clear();
+}
+
+void Array::access_vector(std::function<void(VectorType*)> cb) {
+  assert(this->data);
+  cb(this->data);
+}
+
+void Array::access_vector_shared(std::function<void(VectorType*)> cb) {
+  assert(this->data);
+  cb(this->data);
 }
 
 }  // namespace Charly

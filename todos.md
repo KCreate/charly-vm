@@ -9,6 +9,7 @@
       - Start by replacing all accesses to the Object type with class methods
         - Learn from this and see if we have to change anything with our design
         - Is the Container type actually a good idea?
+      - Operations such as eq, lt can also be moved out of the VM into the value classes themselves
       - Replace std::mutex with something more efficient (smaller and faster??)
         - This looks interesting: https://webkit.org/blog/6161/locking-in-webkit/
     - Fixed amount of native worker threads, waiting for jobs via some job queue
@@ -126,6 +127,7 @@
         - This could be a tuneable parameter, "how many tasks should memory be pre-reserved for"
 
 - Enforce max string length of 2^32 (uint32_t as length field)
+- Enforce max array length of 2^32 (uint32_t as length field)
 
 - Remove panic system from the VM, turn into asserts
 

@@ -158,9 +158,11 @@ VALUE write_bytes(VM&vm, VALUE buf, VALUE bytes) {
   }
 
   Array* arr = charly_as_array(bytes);
-  for (VALUE v : *(arr->data)) {
-    buffer->write_u8(charly_number_to_uint8(v));
-  }
+  arr->access_vector_shared([&](VectorType* vec) {
+    for (VALUE v : *vec) {
+      buffer->write_u8(charly_number_to_uint8(v));
+    }
+  });
 
   return charly_create_integer(buffer->get_writeoffset());
 }
@@ -191,7 +193,7 @@ VALUE bytes(VM& vm, VALUE buf) {
   Array* byte_array = charly_as_array(lalloc.create_array(offset));
 
   for (uint32_t i = 0; i < offset; i++) {
-    byte_array->data->push_back(charly_create_integer(data[i]));
+    byte_array->push(charly_create_integer(data[i]));
   }
 
   return charly_create_pointer(byte_array);

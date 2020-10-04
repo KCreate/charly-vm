@@ -274,7 +274,7 @@ VALUE get_argv(VM& vm) {
 
   // Append argv elements
   for (const std::string& argument : argv) {
-    argv_array->data->push_back(lalloc.create_string(argument));
+    argv_array->push(lalloc.create_string(argument));
   }
 
   return charly_create_pointer(argv_array);

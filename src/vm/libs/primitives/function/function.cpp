@@ -43,11 +43,14 @@ VALUE call(VM& vm, VALUE func, VALUE ctx, VALUE args) {
   vm.push_stack(ctx);
   vm.push_stack(func);
 
-  for (VALUE a : *(charly_as_array(args)->data)) {
-    vm.push_stack(a);
-  }
+  Array* args_array = charly_as_array(args);
+  args_array->access_vector_shared([&](VectorType* vec) {
+    for (VALUE a : *vec) {
+      vm.push_stack(a);
+    }
 
-  vm.call(charly_as_array(args)->data->size(), true, false);
+    vm.call(vec->size(), true, false);
+  });
 
   return kNull;
 }
@@ -60,17 +63,19 @@ VALUE call_async(VM& vm, VALUE cfunc, VALUE args, VALUE callback) {
   Array* _args = charly_as_array(args);
   CFunction* _cfunc = charly_as_cfunction(cfunc);
 
-  if (_args->data->size() < charly_as_cfunction(cfunc)->argc) {
-    vm.throw_exception("Not enough arguments for CFunction call");
-    return kNull;
-  }
+  _args->access_vector_shared([&](VectorType* vec) {
+    if (vec->size() < _cfunc->argc) {
+      vm.throw_exception("Not enough arguments for CFunction call");
+      return;
+    }
 
-  if (!_cfunc->allowed_on_worker_thread()) {
-    vm.throw_exception("Calling this CFunction in a worker thread is prohibited");
-    return kNull;
-  }
+    if (!_cfunc->allowed_on_worker_thread()) {
+      vm.throw_exception("Calling this CFunction in a worker thread is prohibited");
+      return;
+    }
 
-  vm.start_worker_thread(charly_as_cfunction(cfunc), *_args->data, charly_as_function(callback));
+    vm.start_worker_thread(_cfunc, *vec, charly_as_function(callback));
+  });
 
   return kNull;
 }

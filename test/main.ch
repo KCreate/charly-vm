@@ -50,6 +50,7 @@ const result = unittest(->(describe, it, assert, context) {
     ["Unless",                "./interpreter/unless.ch"],
 
     // Primitive data type library specs
+    ["Array stdlib",          "./stdlib/primitives/array.ch"],
     ["String stdlib",         "./stdlib/primitives/string.ch"],
 
     // Standard library specs

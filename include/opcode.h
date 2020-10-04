@@ -110,7 +110,6 @@ enum Opcode : uint8_t {
   SetMemberValuePush,
 
   // Sets the value at a given index inside an array
-  // The value popped from the stack needs to be an array, else this instruction does nothing
   //
   // The array is pushed back onto the stack in any case
   //

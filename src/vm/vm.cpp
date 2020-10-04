@@ -224,9 +224,7 @@ VALUE VM::create_object(uint32_t initial_capacity) {
 
 VALUE VM::create_array(uint32_t initial_capacity) {
   MemoryCell* cell = this->gc.allocate();
-  cell->header.init(kTypeArray);
-  cell->array.data = new std::vector<VALUE>();
-  cell->array.data->reserve(initial_capacity);
+  cell->array.init(initial_capacity);
   return cell->as_value();
 }
 
@@ -358,15 +356,14 @@ VALUE VM::deep_copy_object(VALUE object) {
   ManagedContext lalloc(this);
 
   Object* source = charly_as_object(object);
-  Object* target = charly_as_object(lalloc.create_object(source->keycount()));
+  Object* target;
 
-  // Copy each member from the source object into the target
-  target->access_container([&](auto* target_container) {
-    source->access_container([&](auto* source_container) {
-      for (auto & [key, value] : *source_container) {
-        target_container->insert_or_assign(key, this->deep_copy_value(value));
-      }
-    });
+  source->access_container_shared([&](ContainerType* source_container) {
+    target = charly_as_object(lalloc.create_object(source_container->size()));
+
+    for (auto& [key, value] : *source_container) {
+      target->write(key, this->deep_copy_value(value));
+    }
   });
 
   return charly_create_pointer(target);
@@ -374,11 +371,15 @@ VALUE VM::deep_copy_object(VALUE object) {
 
 VALUE VM::copy_array(VALUE array) {
   Array* source = charly_as_array(array);
-  Array* target = charly_as_array(this->create_array(source->data->size()));
+  Array* target;
 
-  for (auto value : *source->data) {
-    target->data->push_back(value);
-  }
+  source->access_vector_shared([&](VectorType* vec) {
+    target = charly_as_array(this->create_array(vec->size()));
+
+    for (VALUE value : *vec) {
+      target->push(value);
+    }
+  });
 
   return charly_create_pointer(target);
 }
@@ -387,12 +388,14 @@ VALUE VM::deep_copy_array(VALUE array) {
   ManagedContext lalloc(this);
 
   Array* source = charly_as_array(array);
-  Array* target = charly_as_array(lalloc.create_array(source->data->size()));
+  Array* target;
+  source->access_vector_shared([&](VectorType* vec) {
+    target = charly_as_array(lalloc.create_array(vec->size()));
 
-  // Copy each member from the source object into the target
-  for (auto& value : *source->data) {
-    target->data->push_back(this->deep_copy_value(value));
-  }
+    for (VALUE value : *vec) {
+      target->push(this->deep_copy_value(value));
+    }
+  });
 
   return charly_create_pointer(target);
 }
@@ -444,17 +447,18 @@ VALUE VM::add(VALUE left, VALUE right) {
 
   if (charly_is_array(left)) {
     Array* new_array = charly_as_array(this->copy_array(left));
+
     if (charly_is_array(right)) {
       Array* aright = charly_as_array(right);
-
-      for (auto& value : *aright->data) {
-        new_array->data->push_back(value);
-      }
-
-      return charly_create_pointer(new_array);
+      aright->access_vector_shared([&](VectorType* vec) {
+        for (auto& value : *vec) {
+          new_array->push(value);
+        }
+      });
+    } else {
+      new_array->push(right);
     }
 
-    new_array->data->push_back(right);
     return charly_create_pointer(new_array);
   }
 
@@ -624,20 +628,37 @@ VALUE VM::eq(VALUE left, VALUE right) {
     Array* a_left = charly_as_array(left);
     Array* a_right = charly_as_array(right);
 
-    // Arrays of different sizes are not equal
-    if (a_left->data->size() != a_right->data->size()) return kFalse;
+    bool comparison;
+    a_left->access_vector_shared([&](VectorType* vec_left) {
+      a_right->access_vector_shared([&](VectorType* vec_right) {
 
-    // Empty arrays are always equal
-    if (a_left->data->size() == 0 && a_right->data->size() == 0) return kTrue;
+        // arrays of different sizes are never equal
+        if (vec_left->size() != vec_right->size()) {
+          comparison = false;
+          return;
+        }
 
-    // Compare each item, return false if a value doesn't match
-    for (uint32_t i = 0; i < a_left->data->size(); i++) {
-      VALUE vl = a_left->data->at(i);
-      VALUE vr = a_right->data->at(i);
-      if (this->eq(vl, vr) == kFalse) return kFalse;
-    }
+        // empty arrays are always equal
+        if (vec_left->size() == 0 && vec_right->size() == 0) {
+          comparison = true;
+          return;
+        }
 
-    return kTrue;
+        // compare each item
+        for (uint32_t i = 0; i < vec_left->size(); i++) {
+          VALUE vl = (* vec_left)[i];
+          VALUE vr = (* vec_right)[i];
+          if (this->eq(vl, vr) == kFalse) {
+            comparison = false;
+            return;
+          }
+        }
+
+        comparison = true;
+      });
+    });
+
+    return comparison ? kTrue : kFalse;
   }
 
   return left == right ? kTrue : kFalse;
@@ -702,7 +723,7 @@ VALUE VM::unot(VALUE value) {
 VALUE VM::shl(VALUE left, VALUE right) {
   if (charly_is_array(left)) {
     Array* arr = charly_as_array(left);
-    (*arr->data).push_back(right);
+    arr->push(right);
     return left;
   }
 
@@ -853,7 +874,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
       Array* arr = charly_as_array(source);
 
       if (symbol == SYM("length")) {
-        return charly_create_integer(arr->data->size());
+        return charly_create_integer(arr->size());
       }
 
       break;
@@ -908,20 +929,11 @@ VALUE VM::readmembervalue(VALUE source, VALUE value) {
     case kTypeArray: {
       Array* arr = charly_as_array(source);
       if (charly_is_number(value)) {
-        int32_t index = charly_number_to_int32(value);
-
-        // Negative indices read from the end of the array
-        if (index < 0) {
-          index += arr->data->size();
-        }
-
-        // Out of bounds check
-        if (index < 0 || index >= static_cast<int>(arr->data->size())) {
-          return kNull;
-        }
-
-        return (*arr->data)[index];
+        int64_t index = charly_number_to_int64(value);
+        return arr->read(index);
       }
+
+      break;
     }
 
     case kTypeString: {
@@ -998,21 +1010,8 @@ VALUE VM::setmembervalue(VALUE target, VALUE member_value, VALUE value) {
     Array* arr = charly_as_array(target);
 
     if (charly_is_number(member_value)) {
-      int32_t index = charly_number_to_int32(member_value);
-
-      // Negative indices read from the end of the array
-      if (index < 0) {
-        index += arr->data->size();
-      }
-
-      // Out of bounds check
-      if (index < 0 || index >= static_cast<int>(arr->data->size())) {
-        return kNull;
-      }
-
-      // Update the value
-      (*arr->data)[index] = value;
-      return value;
+      int64_t index = charly_number_to_int64(member_value);
+      return arr->write(index, value);
     }
   }
 
@@ -1135,7 +1134,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
       if (i < function->argc) {
         frame->write_local(i + 1, argv[i]);
       }
-      arguments_array->data->push_back(argv[i]);
+      arguments_array->push(argv[i]);
     }
   } else {
     for (size_t i = 0; i < argc && i < function->lvarcount; i++)
@@ -1227,23 +1226,15 @@ void VM::op_readmembervalue() {
 }
 
 void VM::op_readarrayindex(uint32_t index) {
-  VALUE stackval = this->pop_stack();
+  VALUE target = this->pop_stack();
 
-  // Check if we popped an array, if not push it back onto the stack
-  if (!charly_is_array(stackval)) {
-    this->push_stack(stackval);
+  if (!charly_is_array(target)) {
+    this->panic(Status::InvalidArgumentType);
     return;
   }
 
-  Array* arr = charly_as_array(stackval);
-
-  // Out-of-bounds checking
-  if (index >= arr->data->size()) {
-    this->push_stack(kNull);
-    return;
-  }
-
-  this->push_stack((*arr->data)[index]);
+  Array* arr = charly_as_array(target);
+  this->push_stack(arr->read(index));
 }
 
 void VM::op_readglobal(VALUE symbol) {
@@ -1320,25 +1311,18 @@ void VM::op_setmembervaluepush() {
 }
 
 void VM::op_setarrayindexpush(uint32_t index) {
-  VALUE expression = this->pop_stack();
-  VALUE stackval = this->pop_stack();
+  VALUE value = this->pop_stack();
+  VALUE target = this->pop_stack();
 
-  // Check if we popped an array, if not push it back onto the stack
-  if (!charly_is_array(stackval)) {
-    this->push_stack(stackval);
+  if (!charly_is_array(target)) {
+    this->panic(Status::InvalidArgumentType);
     return;
   }
 
-  Array* arr = charly_as_array(stackval);
+  Array* arr = charly_as_array(target);
+  arr->write(index, value);
 
-  // Out-of-bounds checking
-  if (index >= arr->data->size()) {
-    this->push_stack(kNull);
-  }
-
-  (*arr->data)[index] = expression;
-
-  this->push_stack(stackval);
+  this->push_stack(value);
 }
 
 void VM::op_setlocal(uint32_t index, uint32_t level) {
@@ -1376,23 +1360,16 @@ void VM::op_setmembervalue() {
 }
 
 void VM::op_setarrayindex(uint32_t index) {
-  VALUE expression = this->pop_stack();
-  VALUE stackval = this->pop_stack();
+  VALUE value = this->pop_stack();
+  VALUE target = this->pop_stack();
 
-  // Check if we popped an array, if not push it back onto the stack
-  if (!charly_is_array(stackval)) {
-    this->push_stack(stackval);
+  if (!charly_is_array(target)) {
+    this->panic(Status::InvalidArgumentType);
     return;
   }
 
-  Array* arr = charly_as_array(stackval);
-
-  // Out-of-bounds checking
-  if (index >= arr->data->size()) {
-    this->push_stack(kNull);
-  }
-
-  (*arr->data)[index] = expression;
+  Array* arr = charly_as_array(target);
+  arr->write(index, value);
 }
 
 void VM::op_setglobal(VALUE symbol) {
@@ -1403,7 +1380,6 @@ void VM::op_setglobal(VALUE symbol) {
     this->throw_exception("Cannot overwrite internal vm methods");
     return;
   }
-
 
   // Check vm specific symbols
   switch (symbol) {
@@ -1545,8 +1521,9 @@ void VM::op_putfunction(VALUE symbol,
 void VM::op_putarray(uint32_t count) {
   Array* array = charly_as_array(this->create_array(count));
 
+  // TODO: clean this up
   while (count--) {
-    array->data->insert(array->data->begin(), this->pop_stack());
+    array->insert(0, this->pop_stack());
   }
 
   this->push_stack(charly_create_pointer(array));
@@ -1939,7 +1916,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       this->pretty_print_stack.push_back(value);
 
-      object->access_container([&](auto* container) {
+      object->access_container_shared([&](ContainerType* container) {
         for (auto& entry : *container) {
           io << " ";
           std::string key = SymbolTable::decode(entry.first);
@@ -1968,16 +1945,17 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       io << "[";
 
-      bool first = false;
-      for (VALUE& entry : *array->data) {
-        if (first) {
-          io << ", ";
-        } else {
-          first = true;
-        }
+      bool first = true;
+      array->access_vector_shared([&](VectorType* vec) {
+        for (VALUE entry : *vec) {
+          if (!first) {
+            io << ", ";
+          }
 
-        this->pretty_print(io, entry);
-      }
+          first = false;
+          this->pretty_print(io, entry);
+        }
+      });
 
       io << "]>";
 
@@ -2016,7 +1994,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << "bound_self=";
       this->pretty_print(io, func->bound_self);
 
-      func->access_container([&](ContainerType* container) {
+      func->access_container_shared([&](ContainerType* container) {
         for (auto& entry : *container) {
           io << " ";
           std::string key = SymbolTable::decode(entry.first);
@@ -2049,7 +2027,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << " ";
       io << "pointer=" << reinterpret_cast<uint64_t*>(func->pointer) << "";
 
-      func->access_container([&](ContainerType* container) {
+      func->access_container_shared([&](ContainerType* container) {
         for (auto& entry : *container) {
           io << " ";
           std::string key = SymbolTable::decode(entry.first);
@@ -2096,7 +2074,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       this->pretty_print(io, klass->parent_class);
       io << " ";
 
-      klass->access_container([&](ContainerType* container) {
+      klass->access_container_shared([&](ContainerType* container) {
         for (auto entry : *container) {
           io << " " << SymbolTable::decode(entry.first);
           io << "=";
@@ -2261,7 +2239,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
       if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
       io << "{\n";
 
-      object->access_container([&](auto* container) {
+      object->access_container_shared([&](ContainerType* container) {
         for (auto& entry : *container) {
           io << std::string(depth + 2, ' ');
           std::string key = SymbolTable::decode(entry.first);
@@ -2292,16 +2270,17 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
 
       io << "[";
 
-      bool first = false;
-      for (VALUE& entry : *array->data) {
-        if (first) {
-          io << ", ";
-        } else {
-          first = true;
-        }
+      bool first = true;
+      array->access_vector_shared([&](VectorType* vec) {
+        for (VALUE entry : *vec) {
+          if (!first) {
+            io << ", ";
+          }
 
-        this->to_s(io, entry, depth, true);
-      }
+          first = false;
+          this->to_s(io, entry, depth, true);
+        }
+      });
 
       io << "]";
 
@@ -2330,7 +2309,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
       this->to_s(io, func->name);
       io << "#" << func->minimum_argc;
 
-      func->access_container([&](ContainerType* container) {
+      func->access_container_shared([&](ContainerType* container) {
         for (auto& entry : *container) {
           io << " ";
           std::string key = SymbolTable::decode(entry.first);
@@ -2360,7 +2339,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
       this->to_s(io, func->name, depth);
       io << "#" << func->argc;
 
-      func->access_container([&](ContainerType* container) {
+      func->access_container_shared([&](ContainerType* container) {
         for (auto entry : *container) {
           io << " ";
           std::string key = SymbolTable::decode(entry.first);
@@ -2389,7 +2368,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
       io << "<Class ";
       this->to_s(io, klass->name, depth);
 
-      klass->access_container([&](ContainerType* container) {
+      klass->access_container_shared([&](ContainerType* container) {
         for (auto entry : *container) {
           io << " " << SymbolTable::decode(entry.first);
           io << "=";

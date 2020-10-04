@@ -37,16 +37,16 @@ VALUE keys(VM& vm, VALUE obj) {
   ManagedContext lalloc(vm);
 
   Container* obj_container = charly_as_container(obj);
-  Array* arr = charly_as_array(lalloc.create_array(obj_container->keycount()));
+  Array* keys_array;
+  obj_container->access_container_shared([&](ContainerType* container) {
+    keys_array = charly_as_array(lalloc.create_array(container->size()));
 
-  obj_container->access_container([&](ContainerType* container) {
-    for (auto& entry : *container) {
-      VALUE key = lalloc.create_string(SymbolTable::decode(entry.first));
-      arr->data->push_back(key);
+    for (auto& [key, value] : *container) {
+      keys_array->push(lalloc.create_string(SymbolTable::decode(key)));
     }
   });
 
-  return charly_create_pointer(arr);
+  return charly_create_pointer(keys_array);
 }
 
 VALUE delete_key(VM& vm, VALUE v, VALUE symbol) {

@@ -36,7 +36,6 @@ namespace PrimitiveArray {
 VALUE insert(VM& vm, VALUE a, VALUE i, VALUE v);
 VALUE remove(VM& vm, VALUE a, VALUE i);
 VALUE reverse(VM& vm, VALUE a);
-VALUE flatten(VM& vm, VALUE a);
 VALUE index(VM& vm, VALUE a, VALUE i, VALUE o);
 VALUE rindex(VM& vm, VALUE a, VALUE i, VALUE o);
 VALUE range(VM& vm, VALUE a, VALUE s, VALUE c);

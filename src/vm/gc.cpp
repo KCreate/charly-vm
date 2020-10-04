@@ -88,7 +88,7 @@ void GarbageCollector::mark(VALUE value) {
     case kTypeObject: {
       Object* obj = charly_as_object(value);
       this->mark(obj->get_klass());
-      obj->access_container([&](ContainerType* container) {
+      obj->access_container_shared([&](ContainerType* container) {
         for (auto entry : *container)
           this->mark(entry.second);
       });
@@ -97,8 +97,11 @@ void GarbageCollector::mark(VALUE value) {
 
     case kTypeArray: {
       Array* arr = charly_as_array(value);
-      for (auto arr_entry : *arr->data)
-        this->mark(arr_entry);
+      arr->access_vector_shared([&](VectorType* vec) {
+        for (VALUE value : *vec) {
+          this->mark(value);
+        }
+      });
       break;
     }
 
@@ -109,7 +112,7 @@ void GarbageCollector::mark(VALUE value) {
 
       if (func->bound_self_set)
         this->mark(func->bound_self);
-      func->access_container([&](ContainerType* container) {
+      func->access_container_shared([&](ContainerType* container) {
         for (auto entry : *container)
           this->mark(entry.second);
       });
@@ -118,7 +121,7 @@ void GarbageCollector::mark(VALUE value) {
 
     case kTypeCFunction: {
       CFunction* cfunc = charly_as_cfunction(value);
-      cfunc->access_container([&](ContainerType* container) {
+      cfunc->access_container_shared([&](ContainerType* container) {
         for (auto entry : *container)
           this->mark(entry.second);
       });
@@ -131,7 +134,7 @@ void GarbageCollector::mark(VALUE value) {
       this->mark(klass->prototype);
       this->mark(klass->parent_class);
 
-      klass->access_container([&](ContainerType* container) {
+      klass->access_container_shared([&](ContainerType* container) {
         for (auto entry : *container)
           this->mark(entry.second);
       });

@@ -61,7 +61,7 @@ class ManagedContext;
 class Header;
 class Container;
 class Object;
-struct Array;
+class Array;
 struct String;
 struct Function;
 struct CFunction;

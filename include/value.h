@@ -197,6 +197,7 @@ protected:
 
 public:
   void init(ValueType type, uint32_t initial_capacity = 4);
+  void clean();
   void copy_container_from(const Container* other);
 
   bool read(VALUE key, VALUE* result);              // reads a value from the container
@@ -210,8 +211,7 @@ public:
   // Access the internal container data structure
   // via a callback function
   void access_container(std::function<void(ContainerType*)> cb);
-
-  void clean();
+  void access_container_shared(std::function<void(ContainerType*)> cb);
 };
 
 // Object type
@@ -227,13 +227,26 @@ public:
 };
 
 // Array type
-struct Array : public Header {
-  std::vector<VALUE>* data;
+using VectorType = std::vector<VALUE>;
+class Array : public Header {
+protected:
+  VectorType* data;
 
-  inline void clean() {
-    Header::clean();
-    delete this->data;
-  }
+public:
+  void init(uint32_t initial_capacity = 4);
+  void clean();
+
+  uint32_t size();                         // returns the amount of values stored
+  VALUE read(int64_t index);               // read the value at index, returns null if out-of-bounds
+  VALUE write(int64_t index, VALUE value); // write value to index, returns value if successful, null if not
+  void insert(int64_t index, VALUE value); // insert a value at some index, nop if out-of-bounds
+  void push(VALUE value);                  // append value to the end of the array
+  void remove(int64_t index);              // remove a alue at index, nop if out-of-bounds
+  void clear();                            // remove all elements from the array
+
+  // Access to internal vector via a callback function
+  void access_vector(std::function<void(VectorType*)> cb);
+  void access_vector_shared(std::function<void(VectorType*)> cb);
 };
 
 // String type
@@ -473,6 +486,27 @@ inline uint8_t charly_get_type(VALUE value) {
   return kTypeUnknown;
 }
 
+// Check if all values inside an array are of the same type
+template <unsigned char T>
+__attribute__((always_inline))
+inline bool charly_is_array_of(VALUE v) {
+  Array* arr = charly_as_array(v);
+
+  bool comparison;
+  arr->access_vector_shared([&](VectorType* vec) {
+    for (VALUE v : *vec) {
+      if (charly_get_type(v) != T) {
+        comparison = false;
+        break;
+      }
+    }
+
+    comparison = true;
+  });
+
+  return comparison;
+}
+
 // Checks wether this value is a container
 __attribute__((always_inline))
 inline bool charly_is_container(VALUE value) {
@@ -490,16 +524,6 @@ inline bool charly_is_container(VALUE value) {
 __attribute__((always_inline))
 inline const std::string& charly_get_typestring(VALUE value) {
   return kHumanReadableTypes[charly_get_type(value)];
-}
-
-// Return a human readable string of the type of value
-template <unsigned char T>
-__attribute__((always_inline))
-inline bool charly_is_array_of(VALUE v) {
-  for (VALUE v : *(charly_as_array(v)->data)) {
-    if (charly_get_type(v) != T) return false;
-  }
-  return true;
 }
 
 // Convert an immediate integer to other integer or float types
