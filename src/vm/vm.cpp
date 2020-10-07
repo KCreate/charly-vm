@@ -232,14 +232,8 @@ VALUE VM::create_string(const char* data, uint32_t length) {
   if (length <= 6)
     return charly_create_istring(data, length);
 
-  // Copy the string onto the heap
-  char* copied_string = static_cast<char*>(calloc(sizeof(char), length));
-  std::memcpy(copied_string, data, length);
-
   MemoryCell* cell = this->gc.allocate();
-  cell->header.init(kTypeString);
-  cell->string.data = copied_string;
-  cell->string.length = length;
+  cell->string.init_copy(data, length);
   return cell->as_value();
 }
 
@@ -247,23 +241,14 @@ VALUE VM::create_string(const std::string& str) {
   if (str.size() <= 6)
     return charly_create_istring(str.c_str(), str.size());
 
-  // Copy the string onto the heap
-  size_t string_size = str.size();
-  char* copied_string = static_cast<char*>(calloc(sizeof(char), string_size));
-  std::memcpy(copied_string, str.c_str(), string_size);
-
   MemoryCell* cell = this->gc.allocate();
-  cell->header.init(kTypeString);
-  cell->string.data = copied_string;
-  cell->string.length = string_size;
+  cell->string.init_copy(str);
   return cell->as_value();
 }
 
 VALUE VM::create_weak_string(char* data, uint32_t length) {
   MemoryCell* cell = this->gc.allocate();
-  cell->header.init(kTypeString);
-  cell->string.data = data;
-  cell->string.length = length;
+  cell->string.init(data, length);
   return cell->as_value();
 }
 

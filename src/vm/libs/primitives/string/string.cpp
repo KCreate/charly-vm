@@ -37,19 +37,7 @@ namespace PrimitiveString {
 
 VALUE to_n(VM& vm, VALUE str) {
   CHECK(string, str);
-  char* data = charly_string_data(str);
-  uint32_t length = charly_string_length(str);
-
-  std::stringstream sstream;
-  sstream << std::dec;
-  sstream.write(data, length);
-
-  double number;
-  sstream >> number;
-
-  if (sstream.fail())
-    return kNaN;
-  return charly_create_number(number);
+  return charly_create_number(charly_string_to_double(str));
 }
 
 VALUE ltrim(VM& vm, VALUE src) {

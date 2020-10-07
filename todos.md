@@ -3,9 +3,7 @@
 - VM Refactor
   - Implementation timeline
     - Class interface to heap types
-      - How are values allocated and created via the GC?
-      - Rename Basic -> Header
-        - Make properties protected
+      - init methods should return a pointer to the object
       - Start by replacing all accesses to the Object type with class methods
         - Learn from this and see if we have to change anything with our design
         - Is the Container type actually a good idea?
@@ -16,6 +14,9 @@
     - Refactor worker thread result return system
     - ManagedContext ability to mark cells as immortal
     - ManagedContext ability to reserve cells in advance
+    - Value allocation
+      - `String* str = ctx.alloc<String>()->init_move("hello world");`
+      - `Object* obj = ctx.alloc<Object>()->init(klass, klass->propcount());`
     - Some global values can be stored as atomics, no mutex needed
     - C methods should receive the following arguments
       - The ID of the fiber which created their task
@@ -23,6 +24,7 @@
       - A reference to a managed context, which handles the allocations inside that worker function
       - The "self" value
       - The arguments passed to the function from charly
+      - Some way of asking the coordinator wether they should terminate themselves
     - Refactor exceptions
       - How do native methods throw exceptions?
       - How are exceptions handled inside regular charly code?
@@ -128,6 +130,16 @@
 
 - Enforce max string length of 2^32 (uint32_t as length field)
 - Enforce max array length of 2^32 (uint32_t as length field)
+
+- Communication between charly and C code
+  - C code can send data back to the charly world by appending an entry to the task
+    queue, invoking some call with some data.
+  - There is no way that charly code can communicate with running C code.
+    - Could be implemented via some kind of message queue accessed via a CPointer?
+  - Long running C code runs either inside a Fiber thread or inside a C worker thread.
+    - Both these threads are constrained and if all of them are executing long running C code,
+      this will starve the entire machine. There needs to be some mechanism to split off a thread
+      and keep executing it in the background.
 
 - Remove panic system from the VM, turn into asserts
 

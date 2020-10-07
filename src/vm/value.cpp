@@ -51,6 +51,10 @@ void Header::clear_gc_mark() {
   this->mark = false;
 }
 
+VALUE Header::as_value() {
+  return reinterpret_cast<VALUE>(this);
+}
+
 void Header::clean() {
   // do nothing, this method is kept for possible future expansion
 }
@@ -256,6 +260,39 @@ void Array::access_vector(std::function<void(VectorType*)> cb) {
 void Array::access_vector_shared(std::function<void(VectorType*)> cb) {
   assert(this->data);
   cb(this->data);
+}
+
+void String::init(char* data, uint32_t length) {
+  Header::init(kTypeString);
+  this->data = data;
+  this->length = length;
+}
+
+void String::init_copy(const char* data, uint32_t length) {
+  Header::init(kTypeString);
+
+  // allocate new buffer and copy the data
+  char* buffer = (char*)malloc(length);
+  std::memcpy(buffer, data, length);
+  this->data = buffer;
+  this->length = length;
+}
+
+void String::init_copy(const std::string& source) {
+  this->init_copy(source.c_str(), source.size());
+}
+
+void String::clean() {
+  Header::clean();
+  std::free(data);
+}
+
+char* String::get_data() {
+  return this->data;
+}
+
+uint32_t String::get_length() {
+  return this->length;
 }
 
 }  // namespace Charly

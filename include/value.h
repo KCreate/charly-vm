@@ -179,13 +179,14 @@ protected:
 
 public:
   void init(ValueType type);
+  void clean();
 
   ValueType get_type();
   bool get_gc_mark();
   void set_gc_mark();
   void clear_gc_mark();
 
-  void clean();
+  VALUE as_value();
 };
 
 // Underlying type of every value which has its own
@@ -221,6 +222,7 @@ protected:
 
 public:
   void init(VALUE klass = kNull, uint32_t initial_capacity = 4);
+  void init(uint32_t initial_capacity = 4);
 
   VALUE get_klass();
   void set_klass(VALUE klass);
@@ -250,14 +252,19 @@ public:
 };
 
 // String type
-struct String : public Header {
+class String : public Header {
+protected:
   char* data;
   uint32_t length;
 
-  inline void clean() {
-    Header::clean();
-    std::free(data);
-  }
+public:
+  void init(char* data, uint32_t length);             // assume ownership over the data
+  void init_copy(const char* data, uint32_t length);  // copy the buffer
+  void init_copy(const std::string& source);          // copy the string
+  void clean();
+
+  char* get_data();       // returns a pointer to the data buffer
+  uint32_t get_length();  // returns the length of the buffer in bytes
 };
 
 // Frames introduce new environments
@@ -652,7 +659,7 @@ inline double charly_number_to_double(VALUE value)   {
 __attribute__((always_inline))
 inline char* charly_string_data(VALUE& value) {
   if (charly_is_hstring(value)) {
-    return charly_as_hstring(value)->data;
+    return charly_as_hstring(value)->get_data();
   }
 
   // If this machine is little endian, the buffer is already conventiently layed out at the
@@ -687,7 +694,7 @@ inline uint32_t charly_string_length(VALUE value) {
   }
 
   if (charly_is_hstring(value)) {
-    return charly_as_hstring(value)->length;
+    return charly_as_hstring(value)->get_length();
   }
 
   return 0xFFFFFFFF;

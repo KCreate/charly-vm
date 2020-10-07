@@ -62,7 +62,7 @@ class Header;
 class Container;
 class Object;
 class Array;
-struct String;
+class String;
 struct Function;
 struct CFunction;
 }  // namespace Charly
