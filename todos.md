@@ -1,5 +1,9 @@
 # Todos
 
+- Make instructionblocks values allocated by the GC, thus accessible to charly code
+  - Also allows instructionblocks to be deallocated once they are no longer needed
+  - Would allow us to store location information in a format easily accessible via the VM
+
 - VM Refactor
   - Implementation timeline
     - Class interface to heap types
@@ -25,6 +29,7 @@
       - The "self" value
       - The arguments passed to the function from charly
       - Some way of asking the coordinator wether they should terminate themselves
+    - Remove `halt_after_return`, replace with dedicated instructions
     - Refactor exceptions
       - How do native methods throw exceptions?
       - How are exceptions handled inside regular charly code?
@@ -56,6 +61,8 @@
       - EXEC_CHARLY
       - EXEC_NATIVE
       - EXEC_NATIVE_PROTECTED
+        - What are protected sections for? Interactions with important queues can be abstracted away via some
+          context object passed to the native function, disallowing direct access to important data structures.
       - EXEC_GC
       - IDLE
     - Transitions between these states sometimes are dependant on outside state
@@ -128,8 +135,92 @@
         will need, it can reserve these, making sure it won't block at runtime.
         - This could be a tuneable parameter, "how many tasks should memory be pre-reserved for"
 
-- Enforce max string length of 2^32 (uint32_t as length field)
-- Enforce max array length of 2^32 (uint32_t as length field)
+- New instructions to replace functionality in native C methods
+  - Timer and ticker handlers
+    - timercreate
+    - tickercreate
+    - timerclear
+    - tickerclear
+  - Fiber instructions
+    - pushfiberid
+    - fibercreate
+    - fibercall
+    - fibersuspend
+    - fiberresume
+    - fiberyield
+  - Native task scheduling
+    - schedulenativetask
+  - Type cast instructions
+    - castint
+    - castfloat
+    - castnumber
+    - caststring
+    - castboolean
+    - castsymbol
+  - Function dynamic call
+    - calldynamic
+    - callmemberdynamic
+  - Function bound self
+    - setboundself
+    - clearboundself
+  - Frame handling
+    - putlocalframe
+  - Delete instructions
+    - deletemembersymbol
+    - deletemembervalue
+    - deleteglobal
+  - Type assertions
+    - checktypeclass
+    - checktypeobject
+    - checktypearray
+    - checktypestring
+    - checktypefunction
+    - checktypecfunction
+    - checktypeframe
+    - checktypecatchtable
+    - checktypecpointer
+    - checktypenumber
+    - checktypeboolean
+    - checktypenull
+    - checktypesymbol
+
+- Reimplement default argument in a smarter way
+  - Instead of checking the arguments length, generate the necessary code to generate
+    the default argument in sequence, storing offsets to be applied to the instruction pointer
+    when calling the function with different amounts of arguments
+  -
+    ```
+    // Initial code
+    func foo(a = 1, b = 2) = a + b
+
+    // Becomes:
+    func foo(a, b) { // required argc = 0
+      .A0:      <- entry point for argc = 0
+        a = 1
+      .A1       <- entry point for argc = 1
+        b = 2
+      .A2       <- entry point for argc >= 2
+        return a + b
+    }
+    ```
+
+- Implement an assembler for charly bytecodes
+  - Should be accessible via C++ to generate an InstructionBuffer from the assembly representation
+  - Should be accessible via Charly code via some __asm__("") keyword
+  - Might allow us to bootstrap the VM from charly bytecodes, making the compiler only accessible via
+    external C methods
+  - Move VM logic out of external C methods and into actual opcodes, now accessible via
+    asm calls
+  - Labels should be supported
+
+- Implement a custom hashmap for containers to allow concurrent reads and writes to separate buckets
+  - Each bucket has its own lock, which allows multiple writers concurrent access to different buckets
+  - To grow the queue we acquire all the bucket locks, increase the size, copy the old elements over
+    - Waiting threads need to wait via some condition_variable
+
+- Enforce max string length of uint32_t
+- Enforce max array length of uint32_t
+- Enforce max frame lvarcount of uint16_t
 
 - Communication between charly and C code
   - C code can send data back to the charly world by appending an entry to the task

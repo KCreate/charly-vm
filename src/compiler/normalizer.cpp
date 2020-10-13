@@ -311,7 +311,7 @@ AST::AbstractNode* Normalizer::visit_function(AST::Function* node, VisitContinue
       const std::string& argname = node->parameters[i];
       AST::AbstractNode* exp = node->default_values.at(argname);
 
-      // if arguments.length § %i {
+      // if arguments.length < %i {
       //   <argname> = <default value>
       // }
       AST::Assignment* assignment = new AST::Assignment(argname, exp);

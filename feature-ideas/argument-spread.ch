@@ -33,15 +33,11 @@
 //                  method and should not require any changes to the code generation
 //                  facilities.
 //
-// Note:  The '...' operator defined in this proposal is only
-//        applicable within function argument lists.
-//
-//        A separate proposal, found in the file spread-operator.ch
-//        contains information on how the spread operator could
-//        be implemented.
+//                  The previous 'arguments' identifier gets removed
+//                  This means the instructions readarrayindex and setarrayindex can
+//                  also be removed
 
 // The '...' spread operator can be used to access all remaining arguments
-// The 'arguments' identifier will still contain all the arguments
 func h(a, b, c...) = _
 
 // The argument followed by the spread operator has to be
@@ -56,3 +52,11 @@ func j(a, b, c..., d) = _
 // The following function declaration effectively renames the
 // 'argument' identifier.
 func k(a...) = _
+
+// Arguments before can have default arguments
+//
+// l()            => [100, []]
+// l(1)           => [1, []]
+// l(1, 2)        => [1, [2]]
+// l(1, 2, 3)     => [1, [2, 3]]
+func l(num = 100, other...) = [num, other]
