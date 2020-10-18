@@ -842,11 +842,16 @@ inline VALUE charly_string_cp_at_index(VALUE value, int32_t index) {
 // Convert a string to a int64
 __attribute__((always_inline))
 inline int64_t charly_string_to_int64(VALUE value) {
+  char* source_buffer = charly_string_data(value);
   size_t length = charly_string_length(value);
-  char* buffer = charly_string_data(value);
-  char* buffer_end = buffer + length;
 
-  int64_t interpreted = strtol(buffer, &buffer_end, 0);
+  // copy string into local null-terminated buffer
+  char buffer[length + 1];
+  std::memset(buffer, 0, length + 1);
+  std::memcpy(buffer, source_buffer, length);
+
+  char* end_ptr;
+  int64_t interpreted = strtol(buffer, &end_ptr, 0);
 
   // strtol sets errno to ERANGE if the result value doesn't fit
   // into the return type
@@ -855,7 +860,7 @@ inline int64_t charly_string_to_int64(VALUE value) {
     return 0;
   }
 
-  if (buffer_end == buffer) {
+  if (end_ptr == buffer) {
     return 0;
   }
 
@@ -865,23 +870,25 @@ inline int64_t charly_string_to_int64(VALUE value) {
 // Convert a string to a double
 __attribute__((always_inline))
 inline double charly_string_to_double(VALUE value) {
+  char* source_buffer = charly_string_data(value);
   size_t length = charly_string_length(value);
-  char* buffer = charly_string_data(value);
-  char* buffer_end = buffer + length;
 
-  double interpreted = strtod(buffer, &buffer_end);
+  // copy string into local null-terminated buffer
+  char buffer[length + 1];
+  std::memset(buffer, 0, length + 1);
+  std::memcpy(buffer, source_buffer, length);
 
-  // HUGE_VAL gets returned when the converted value
-  // doesn't fit inside a double value
-  // In this case we just return NAN
-  if (interpreted == HUGE_VAL) {
+  char* end_ptr;
+  double interpreted = strtod(buffer, &end_ptr);
+
+  // filter out incorrect or unsupported values
+  if (interpreted == HUGE_VAL || interpreted == INFINITY) {
     return NAN;
   }
 
   // If strtod could not perform a conversion it returns 0
   // and sets str_end to str
-  // We just return NAN in this case
-  if (buffer_end == buffer) {
+  if (end_ptr == buffer) {
     return NAN;
   }
 

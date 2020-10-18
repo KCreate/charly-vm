@@ -1,9 +1,5 @@
 # Todos
 
-- Make instructionblocks values allocated by the GC, thus accessible to charly code
-  - Also allows instructionblocks to be deallocated once they are no longer needed
-  - Would allow us to store location information in a format easily accessible via the VM
-
 - VM Refactor
   - Implementation timeline
     - Class interface to heap types
@@ -134,6 +130,21 @@
         blocked while the GC is running. if a worker task knows ahead of time how many memory cells it
         will need, it can reserve these, making sure it won't block at runtime.
         - This could be a tuneable parameter, "how many tasks should memory be pre-reserved for"
+
+- Fibers can be represented by GC allocated structures, making them accessible to charly code
+  - We simply store a `map<FIBER_ID, Fiber*>` of all active fibers
+  - Returning the current fiber object becomes as easy as looking it up in the table
+  - Operations can be performed directly on the fiber value itself, without having to worry
+    about syncing it with charly space.
+
+- Lots of data structures used by the VM can actually be represented using these GC structures
+  - This makes it a lot easier to interact with them from charly code.
+  - Timers and tickers can also be represented using this scheme
+  - Task queue can also be represented by GC structures
+
+- Make instructionblocks values allocated by the GC, thus accessible to charly code
+  - Also allows instructionblocks to be deallocated once they are no longer needed
+  - Would allow us to store location information in a format easily accessible via the VM
 
 - New instructions to replace functionality in native C methods
   - Timer and ticker handlers
