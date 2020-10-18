@@ -77,6 +77,7 @@ Charly.globals.Function  = @"charly.vm.primitive.function"  = (import "./primiti
 Charly.globals.Null      = @"charly.vm.primitive.null"      = (import "./primitives/null.ch")(Value)
 Charly.globals.Number    = @"charly.vm.primitive.number"    = (import "./primitives/number.ch")(Value)
 Charly.globals.String    = @"charly.vm.primitive.string"    = (import "./primitives/string.ch")(Value)
+Charly.globals.Frame     = @"charly.vm.primitive.frame"     = (import "./primitives/frame.ch")(Value)
 
 // Setup some additional data structures
 

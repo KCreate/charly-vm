@@ -27,6 +27,7 @@
 #include <cassert>
 
 #include "value.h"
+#include "opcode.h"
 
 namespace Charly {
 
@@ -37,18 +38,6 @@ void Header::init(ValueType type) {
 
 ValueType Header::get_type() {
   return this->type;
-}
-
-bool Header::get_gc_mark() {
-  return this->mark;
-}
-
-void Header::set_gc_mark() {
-  this->mark = true;
-}
-
-void Header::clear_gc_mark() {
-  this->mark = false;
 }
 
 VALUE Header::as_value() {
@@ -293,6 +282,124 @@ char* String::get_data() {
 
 uint32_t String::get_length() {
   return this->length;
+}
+
+void Frame::init(Frame* parent, CatchTable* catchtable, Function* function, uint8_t* origin, VALUE self, bool halt) {
+  Header::init(kTypeFrame);
+
+  this->parent = parent;
+  this->environment = function->context;
+  this->catchtable = catchtable;
+  this->function = function;
+  this->self = self;
+  this->origin_address = origin;
+  this->halt_after_return = halt;
+
+  this->locals = new std::vector<VALUE>(function->lvarcount, kNull);
+}
+
+void Frame::clean() {
+  if (this->locals) {
+    delete this->locals;
+    this->locals = nullptr;
+  }
+}
+
+void Frame::set_parent(Frame* frame) {
+  this->parent = frame;
+}
+
+void Frame::set_environment(Frame* frame) {
+  this->environment = frame;
+}
+
+void Frame::set_catchtable(CatchTable* catchtable) {
+  this->catchtable = catchtable;
+}
+
+void Frame::set_function(Function* function) {
+  this->function = function;
+}
+
+void Frame::set_self(VALUE self) {
+  this->self = self;
+}
+
+void Frame::set_origin_address(uint8_t* origin_address) {
+  this->origin_address = origin_address;
+}
+
+void Frame::set_halt_after_return(bool halt_after_return) {
+  this->halt_after_return = halt_after_return;
+}
+
+Frame* Frame::get_parent() {
+  return this->parent;
+}
+
+Frame* Frame::get_environment() {
+  return this->environment;
+}
+
+CatchTable* Frame::get_catchtable() {
+  return this->catchtable;
+}
+
+Function* Frame::get_function() {
+  return this->function;
+}
+
+VALUE Frame::get_self() {
+  return this->self;
+}
+
+uint8_t* Frame::get_origin_address() {
+  return this->origin_address;
+}
+
+uint8_t* Frame::get_return_address() {
+  if (this->origin_address == nullptr) return nullptr;
+
+  if (this->halt_after_return) {
+    return this->origin_address;
+  } else {
+    Opcode opcode = static_cast<Opcode>(*(this->origin_address));
+    return this->origin_address + kInstructionLengths[opcode];
+  }
+}
+
+bool Frame::get_halt_after_return() {
+  return this->halt_after_return;
+}
+
+bool Frame::read_local(uint32_t index, VALUE* result) {
+  assert(this->locals);
+  if (index >= this->locals->size()) return false;
+  *result = (* this->locals)[index];
+  return true;
+}
+
+VALUE Frame::read_local_or(uint32_t index, VALUE fallback) {
+  assert(this->locals);
+  if (index >= this->locals->size()) return fallback;
+  return (* this->locals)[index];
+}
+
+bool Frame::write_local(uint32_t index, VALUE value) {
+  assert(this->locals);
+  if (index >= this->locals->size()) return false;
+  (* this->locals)[index] = value;
+  return true;
+}
+
+void Frame::access_locals(std::function<void(VectorType*)> cb) {
+  assert(this->locals);
+  cb(this->locals);
+}
+
+void Frame::access_locals_shared(std::function<void(VectorType*)> cb) {
+  assert(this->locals);
+  cb(this->locals);
 }
 
 }  // namespace Charly

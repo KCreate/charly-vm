@@ -339,19 +339,15 @@ class Path {
 
   // Returns the absolute path of the file where the call originated
   static current {
-    const frame = Error.StackFrame.current()
-    const parent_frame = frame.parent()
-    const filename = parent_frame.get_caller_location()
-
+    const frame = Frame.current().parent
+    const filename = frame.function.source_location
     new Path(filename)
   }
 
   // Returns the absolute path of the directory where the call originated
   static current_dir {
-    const frame = Error.StackFrame.current()
-    const parent_frame = frame.parent()
-    const filename = parent_frame.get_caller_location()
-
+    const frame = Frame.current().parent
+    const filename = frame.function.source_location
     const path = new Path(filename)
     path.parent_directory()
   }

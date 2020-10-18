@@ -52,6 +52,7 @@ const result = unittest(->(describe, it, assert, context) {
     // Primitive data type library specs
     ["Array stdlib",          "./stdlib/primitives/array.ch"],
     ["String stdlib",         "./stdlib/primitives/string.ch"],
+    ["Frame stdlib",          "./stdlib/primitives/frame.ch"],
 
     // Standard library specs
     ["ARGV & Environment", "./stdlib/argv-environ.ch"],

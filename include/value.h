@@ -272,41 +272,49 @@ protected:
 };
 
 // Frames introduce new environments
-struct Frame : public Header {
-  Frame* parent;
-  Frame* parent_environment_frame;
-  CatchTable* last_active_catchtable;
-  VALUE caller_value;
-  std::vector<VALUE>* locals;
-  VALUE self;
-  uint8_t* origin_address;
-  uint8_t* return_address;
-  bool halt_after_return;
+class Frame : public Header {
+  friend class GarbageCollector;
+public:
+  using VectorType = std::vector<VALUE>;
 
-  // Read the local variable at a given index
-  //
-  // This method performs no overflow checks
-  inline VALUE read_local(uint32_t index) {
-    return (* this->locals)[index];
-  }
+  void init(Frame* parent, CatchTable* catchtable, Function* function, uint8_t* origin, VALUE self, bool halt = false);
+  void clean();
 
-  // Set the local variable at a given index
-  //
-  // This method performs no overflow checks
-  inline void write_local(uint32_t index, VALUE value) {
-    (* this->locals)[index] = value;
-  }
+  void set_parent(Frame* frame);                      // set the parent frame
+  void set_environment(Frame* frame);                 // set the parent environment frame
+  void set_catchtable(CatchTable* catchtable);        // set the active catchtable
+  void set_function(Function* function);                  // set the function value
+  void set_self(VALUE self);                          // set the self value
+  void set_origin_address(uint8_t* origin_address);   // set the origin address
+  void set_halt_after_return(bool halt_after_return); // set halt_after_return flag
 
-  // Returns the amount of local variables this frame currently holds
-  inline size_t lvarcount() {
-    if (this->locals) return this->locals->size();
-    return 0;
-  }
+  Frame* get_parent();            // return parent frame
+  Frame* get_environment();       // return parent environment frame
+  CatchTable* get_catchtable();   // return parent catchtable
+  Function* get_function();         // return function value
+  VALUE get_self();               // return self value
+  uint8_t* get_origin_address();  // return the origin address
+  uint8_t* get_return_address();  // return the calculated return address
+  bool get_halt_after_return();   // return halt_after_return flag
 
-  inline void clean() {
-    Header::clean();
-    delete this->locals;
-  }
+  bool read_local(uint32_t index, VALUE* result);               // read value at index and store into result
+  VALUE read_local_or(uint32_t index, VALUE fallback = kNull);  // read value at index or return fallback
+
+  bool write_local(uint32_t index, VALUE value);  // write value to index, returns false if out-of-bounds
+
+  // Access to internal vector via a callback function
+  void access_locals(std::function<void(VectorType*)> cb);
+  void access_locals_shared(std::function<void(VectorType*)> cb);
+
+protected:
+  Frame* parent;              // parent frame
+  Frame* environment;         // parent environment frame (used by closures)
+  CatchTable* catchtable;     // last active catchtable on frame entry
+  Function* function;         // the function which pushed this frame
+  VALUE self;                 // the object this function was invoked on
+  uint8_t* origin_address;    // the address where this call originated
+  std::vector<VALUE>* locals; // local variables
+  bool halt_after_return;     // wether the machine should halt after returning
 };
 
 // Catchtable used for exception handling

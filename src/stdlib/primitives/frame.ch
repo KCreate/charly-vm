@@ -24,44 +24,29 @@
  * SOFTWARE.
  */
 
-#include <unordered_map>
+export = ->(Base) {
+  return class Frame extends Base {
 
-#include "defines.h"
-#include "value.h"
+    /*
+     * Returns the currently active frame (relative to the calling frame)
+     * */
+    static current = @"charly.vm.frame".parent
 
-#pragma once
+    /*
+     * Format as an entry inside a stacktrace
+     * */
+    format_stacktrace {
+      const host_class = @function.host_class
+      const func_name  = @function.name.length ? @function.name : "??"
+      const filename   = @function.source_location
 
-namespace Charly {
-namespace Internals {
+      const buf = new StringBuffer(32)
 
-// The signature of an internal method
-struct MethodSignature {
-  std::string name;
-  size_t argc;
-  void* func_pointer;
-  ThreadPolicy thread_policy;
-};
+      if host_class buf.write(host_class.name + "::")
+      buf.write(func_name)
+      buf.write(" (" + filename + ")")
 
-// Stores runtime lookup tables for internals
-struct Index {
-  static std::unordered_map<VALUE, MethodSignature> methods;
-};
-
-#define CHECK(T, V)                                             \
-  {                                                             \
-    if (!charly_is_##T(V)) {                                    \
-      vm.throw_exception("Expected argument " #V " to be " #T ", got " + charly_get_typestring(V)); \
-      return kNull;                                             \
-    }                                                           \
+      buf.to_s()
+    }
   }
-
-VALUE import(VM& vm, VALUE filename, VALUE source);
-VALUE write(VM& vm, VALUE value);
-VALUE getn(VM& vm);
-VALUE dirname(VM& vm);
-VALUE exit(VM& vm, VALUE status_code);
-
-VALUE debug_func(VM& vm, VALUE input);
-
-}  // namespace Internals
-}  // namespace Charly
+}

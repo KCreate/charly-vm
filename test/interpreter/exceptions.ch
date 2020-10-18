@@ -98,8 +98,8 @@ export = ->(describe, it, assert) {
       assert(e.klass.name, "InternalError")
       assert(e.message, "Unidentified global symbol 'some undefined symbol'")
       assert(typeof e.stacktrace, "array")
-      assert(typeof e.stacktrace[0].caller, "function")
-      assert(e.stacktrace[0].caller.name, "functionname")
+      assert(typeof e.stacktrace[0].function, "function")
+      assert(e.stacktrace[0].function.name, "functionname")
     })
 
     assert.exception(->{ class A extends null {} }, ->(e) {
@@ -146,5 +146,4 @@ export = ->(describe, it, assert) {
     assert(typeof exc, "object")
     assert(exc.message, "some error")
   })
-
 }

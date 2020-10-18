@@ -83,10 +83,6 @@ std::unordered_map<VALUE, MethodSignature> Index::methods = {
     DEFINE_INTERNAL_METHOD("charly.vm.getn",                getn,                  0,     ThreadPolicyMain),
     DEFINE_INTERNAL_METHOD("charly.vm.dirname",             dirname,               0,     ThreadPolicyMain),
     DEFINE_INTERNAL_METHOD("charly.vm.exit",                exit,                  1,     ThreadPolicyMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.get_active_frame",    get_active_frame,      0,     ThreadPolicyMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.get_parent_frame",    get_parent_frame,      1,     ThreadPolicyMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.get_block_address",   get_block_address,     1,     ThreadPolicyMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.resolve_address",     resolve_address,       1,     ThreadPolicyMain),
     DEFINE_INTERNAL_METHOD("charly.vm.debug_func",          debug_func,            1,     ThreadPolicyBoth),
 };
 
@@ -258,79 +254,6 @@ VALUE exit(VM& vm, VALUE status_code) {
   CHECK(number, status_code);
   vm.exit(charly_number_to_uint8(status_code));
   return kNull;
-}
-
-VALUE get_active_frame(VM& vm) {
-  ManagedContext lalloc(vm);
-
-  // Acquire frame information
-  Frame* vm_frame      = vm.get_current_frame();
-  VALUE frame_id       = charly_create_pointer(vm_frame);
-  VALUE caller_value   = vm_frame->caller_value;
-  VALUE self_value     = vm_frame->self;
-  VALUE origin_address = charly_create_integer(reinterpret_cast<size_t>(vm_frame->origin_address));
-
-  // Create stacktrace entry
-  Object* obj = charly_as_object(lalloc.create_object(4));
-  obj->write(SymbolTable::encode("id"),             frame_id);
-  obj->write(SymbolTable::encode("caller"),         caller_value);
-  obj->write(SymbolTable::encode("self_value"),     self_value);
-  obj->write(SymbolTable::encode("origin_address"), origin_address);
-
-  return charly_create_pointer(obj);
-}
-
-VALUE get_parent_frame(VM& vm, VALUE frame_ref) {
-  CHECK(frame, frame_ref);
-
-  ManagedContext lalloc(vm);
-
-  Frame* ctx_frame = charly_as_frame(frame_ref);
-  if (ctx_frame == nullptr) return kNull;
-
-  // Acquire frame information
-  Frame* vm_frame      = ctx_frame->parent;
-  if (vm_frame == nullptr) return kNull;
-
-  VALUE frame_id       = charly_create_pointer(vm_frame);
-  VALUE caller_value   = vm_frame->caller_value;
-  VALUE self_value     = vm_frame->self;
-  VALUE origin_address = charly_create_integer(reinterpret_cast<size_t>(vm_frame->origin_address));
-
-  // Create stacktrace entry
-  Object* obj = charly_as_object(lalloc.create_object(4));
-  obj->write(SymbolTable::encode("id"),             frame_id);
-  obj->write(SymbolTable::encode("caller"),         caller_value);
-  obj->write(SymbolTable::encode("self_value"),     self_value);
-  obj->write(SymbolTable::encode("origin_address"), origin_address);
-
-  return charly_create_pointer(obj);
-}
-
-VALUE get_block_address(VM& vm, VALUE func) {
-  switch (charly_get_type(func)) {
-    case kTypeFunction: {
-      Function* ptr = charly_as_function(func);
-      return charly_create_number(reinterpret_cast<uint64_t>(ptr->body_address));
-    }
-    default: {
-      vm.throw_exception("Expected function");
-      return kNull;
-    }
-  }
-}
-
-VALUE resolve_address(VM& vm, VALUE address) {
-  CHECK(number, address);
-
-  uint8_t* ip = reinterpret_cast<uint8_t*>(charly_number_to_uint64(address));
-  std::optional<std::string> lookup_result = vm.context.compiler_manager.address_mapping.resolve_address(ip);
-
-  if (!lookup_result) {
-    return kNull;
-  }
-
-  return vm.create_string(lookup_result.value());
 }
 
 VALUE debug_func(VM& vm, VALUE value) {

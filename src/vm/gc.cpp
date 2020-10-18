@@ -133,10 +133,10 @@ void GarbageCollector::mark(VALUE value) {
 
     case kTypeFrame: {
       Frame* frame = charly_as_frame(value);
-      this->mark(frame->caller_value);
       this->mark(frame->parent->as_value());
       this->mark(frame->environment->as_value());
       this->mark(frame->catchtable->as_value());
+      this->mark(frame->function);
       this->mark(frame->self);
 
       for (VALUE value : *(frame->locals)) {
@@ -189,6 +189,7 @@ void GarbageCollector::collect() {
     this->mark(this->host_vm->primitive_object);
     this->mark(this->host_vm->primitive_string);
     this->mark(this->host_vm->primitive_value);
+    this->mark(this->host_vm->primitive_frame);
 
     // Stack
     for (VALUE item : this->host_vm->stack) {

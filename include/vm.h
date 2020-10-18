@@ -199,12 +199,7 @@ public:
 
   // Methods that operate on the VM's frames
   Frame* pop_frame();
-  Frame* create_frame(VALUE self, Function* calling_function, uint8_t* return_address, bool halt_after_return = false);
-  Frame* create_frame(VALUE self,
-                      Frame* parent_environment_frame,
-                      uint32_t lvarcount,
-                      uint8_t* return_address,
-                      bool halt_after_return = false);
+  Frame* create_frame(VALUE self, Function* function, bool halt = false);
 
   // Stack manipulation
   VALUE pop_stack();
@@ -291,12 +286,6 @@ public:
   VALUE get_self_for_function(Function* function, const VALUE* fallback_ptr);
   VALUE get_global_self();
   VALUE get_global_symbol(VALUE symbol);
-  Function* get_active_function();
-
-  // Private member access
-  inline Frame* get_current_frame() {
-    return this->frames;
-  }
 
   // Instructions
   Opcode fetch_instruction();
@@ -411,6 +400,7 @@ private:
   VALUE primitive_object    = kNull;
   VALUE primitive_string    = kNull;
   VALUE primitive_value     = kNull;
+  VALUE primitive_frame     = kNull;
 
   // A function which handles uncaught exceptions
   VALUE uncaught_exception_handler = kNull;

@@ -24,44 +24,41 @@
  * SOFTWARE.
  */
 
-#include <unordered_map>
+export = ->(describe, it, assert) {
+  it("returns the current stackframe", ->{
+    const top_frame = Frame.current()
 
-#include "defines.h"
-#include "value.h"
+    const obj = {}
+    obj.foo = func foo { return Frame.current() }
 
-#pragma once
+    let bar_frame = null
+    func bar {
+      bar_frame = Frame.current()
+      obj.foo()
+    }
 
-namespace Charly {
-namespace Internals {
+    const frame = bar()
+    assert(frame.parent, bar_frame)
+    assert(frame.parent_environment, top_frame)
+    assert(frame.function, obj.foo)
+    assert(frame.parent.function, bar)
+    assert(frame.self_value, obj)
+  })
 
-// The signature of an internal method
-struct MethodSignature {
-  std::string name;
-  size_t argc;
-  void* func_pointer;
-  ThreadPolicy thread_policy;
-};
+  it("formats a frame as a string", ->{
+    class HostClass {
+      testfunc {
+        return Frame.current()
+      }
+    }
 
-// Stores runtime lookup tables for internals
-struct Index {
-  static std::unordered_map<VALUE, MethodSignature> methods;
-};
+    const obj = new HostClass()
+    const frame = obj.testfunc()
+    assert(frame.to_s(), "<Frame HostClass::testfunc>")
 
-#define CHECK(T, V)                                             \
-  {                                                             \
-    if (!charly_is_##T(V)) {                                    \
-      vm.throw_exception("Expected argument " #V " to be " #T ", got " + charly_get_typestring(V)); \
-      return kNull;                                             \
-    }                                                           \
-  }
-
-VALUE import(VM& vm, VALUE filename, VALUE source);
-VALUE write(VM& vm, VALUE value);
-VALUE getn(VM& vm);
-VALUE dirname(VM& vm);
-VALUE exit(VM& vm, VALUE status_code);
-
-VALUE debug_func(VM& vm, VALUE input);
-
-}  // namespace Internals
-}  // namespace Charly
+    func foo {
+      return Frame.current()
+    }
+    assert(foo().to_s(), "<Frame foo>")
+  })
+}

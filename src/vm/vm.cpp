@@ -45,57 +45,13 @@ namespace Charly {
 Frame* VM::pop_frame() {
   Frame* frame = this->frames;
   if (frame)
-    this->frames = this->frames->parent;
+    this->frames = this->frames->get_parent();
   return frame;
 }
 
-Frame* VM::create_frame(VALUE self, Function* function, uint8_t* return_address, bool halt_after_return) {
+Frame* VM::create_frame(VALUE self, Function* function, bool halt_after_return) {
   MemoryCell* cell = this->gc.allocate();
-  cell->header.init(kTypeFrame);
-  cell->frame.parent = this->frames;
-  cell->frame.parent_environment_frame = function->context;
-  cell->frame.last_active_catchtable = this->catchstack;
-  cell->frame.caller_value = charly_create_pointer(function);
-  cell->frame.self = self;
-  cell->frame.origin_address = this->ip;
-  cell->frame.return_address = return_address;
-  cell->frame.halt_after_return = halt_after_return;
-
-  // Calculate the number of local variables this frame has to support
-  uint32_t lvarcount = function->lvarcount;
-
-  // Allocate and prefill local variable space
-  cell->frame.locals = new std::vector<VALUE>(lvarcount, kNull);
-
-  // Append the frame
-  this->frames = cell->as<Frame>();
-
-  // Print the frame if the corresponding flag was set
-  if (this->context.trace_frames) {
-    this->context.err_stream << "Entering frame: ";
-    this->pretty_print(this->context.err_stream, cell->as_value());
-    this->context.err_stream << '\n';
-  }
-
-  return cell->as<Frame>();
-}
-
-Frame* VM::create_frame(VALUE self,
-                        Frame* parent_environment_frame,
-                        uint32_t lvarcount,
-                        uint8_t* return_address,
-                        bool halt_after_return) {
-  MemoryCell* cell = this->gc.allocate();
-  cell->header.init(kTypeFrame);
-  cell->frame.parent = this->frames;
-  cell->frame.parent_environment_frame = parent_environment_frame;
-  cell->frame.last_active_catchtable = this->catchstack;
-  cell->frame.caller_value = kNull;
-  cell->frame.self = self;
-  cell->frame.origin_address = this->ip;
-  cell->frame.return_address = return_address;
-  cell->frame.halt_after_return = halt_after_return;
-  cell->frame.locals = new std::vector<VALUE>(lvarcount, kNull);
+  cell->frame.init(this->frames, this->catchstack, function, this->ip, self, halt_after_return);
 
   // Append the frame
   this->frames = cell->as<Frame>();
@@ -177,12 +133,12 @@ void VM::unwind_catchstack(std::optional<VALUE> payload = std::nullopt) {
     if (this->frames == table->frame) {
       break;
     } else {
-      if (this->frames->halt_after_return) {
+      if (this->frames->get_halt_after_return()) {
         this->halted = true;
       }
     }
 
-    this->frames = this->frames->parent;
+    this->frames = this->frames->get_parent();
   }
 
   // Jump to the handler block of the catchtable
@@ -791,6 +747,17 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
         return charly_create_number(func->minimum_argc);
       }
 
+      if (symbol == SYM("source_location")) {
+        uint8_t* addr = func->body_address;
+        std::optional<std::string> lookup = this->context.compiler_manager.address_mapping.resolve_address(addr);
+
+        if (!lookup) {
+          return kNull;
+        }
+
+        return this->create_string(lookup.value());
+      }
+
       VALUE value;
       if (func->read(symbol, &value)) {
         return value;
@@ -870,6 +837,30 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
     case kTypeString: {
       if (symbol == SYM("length")) {
         return charly_create_integer(charly_string_utf8_length(source));
+      }
+
+      break;
+    }
+
+    case kTypeFrame: {
+      Frame* frame = charly_as_frame(source);
+
+      if (symbol == SYM("parent")) {
+        Frame* parent = frame->get_parent();
+        return parent == nullptr ? kNull : parent->as_value();
+      }
+
+      if (symbol == SYM("parent_environment")) {
+        Frame* parent_environment = frame->get_environment();
+        return parent_environment == nullptr ? kNull : parent_environment->as_value();
+      }
+
+      if (symbol == SYM("function")) {
+        return frame->get_function()->as_value();
+      }
+
+      if (symbol == SYM("self_value")) {
+        return frame->get_self();
       }
 
       break;
@@ -1020,6 +1011,7 @@ bool VM::findprimitivevalue(VALUE value, VALUE symbol, VALUE* result) {
     case kTypeFunction:  found_primitive_class = this->primitive_function; break;
     case kTypeCFunction: found_primitive_class = this->primitive_function; break;
     case kTypeClass:     found_primitive_class = this->primitive_class; break;
+    case kTypeFrame:     found_primitive_class = this->primitive_frame; break;
     default:             found_primitive_class = this->primitive_value; break;
   }
 
@@ -1108,7 +1100,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
     ctx.mark_in_gc(argv[i]);
   }
 
-  Frame* frame = ctx.create_frame(self, function, return_address, halt_after_return);
+  Frame* frame = ctx.create_frame(self, function, halt_after_return);
 
   // Copy the arguments into the function frame
   //
@@ -1187,19 +1179,21 @@ void VM::op_readlocal(uint32_t index, uint32_t level) {
   // Travel to the correct frame
   Frame* frame = this->frames;
   while (level != 0 && level--) {
-    if (!frame->parent_environment_frame) {
+    Frame* parent_environment = frame->get_environment();
+
+    if (parent_environment == nullptr) {
       return this->panic(Status::ReadFailedTooDeep);
     }
 
-    frame = frame->parent_environment_frame;
+    frame = parent_environment;
   }
 
-  // Check if the index isn't out-of-bounds
-  if (index >= frame->lvarcount()) {
+  VALUE value;
+  if (!frame->read_local(index, &value)) {
     return this->panic(Status::ReadFailedOutOfBounds);
   }
 
-  this->push_stack(frame->read_local(index));
+  this->push_stack(value);
 }
 
 void VM::op_readmembersymbol(VALUE symbol) {
@@ -1248,9 +1242,11 @@ void VM::op_readglobal(VALUE symbol) {
     GLOBAL("charly.vm.primitive.function",         this->push_stack(this->primitive_function))
     GLOBAL("charly.vm.primitive.boolean",          this->push_stack(this->primitive_boolean))
     GLOBAL("charly.vm.primitive.null",             this->push_stack(this->primitive_null))
+    GLOBAL("charly.vm.primitive.frame",            this->push_stack(this->primitive_frame))
     GLOBAL("charly.vm.uncaught_exception_handler", this->push_stack(this->uncaught_exception_handler))
     GLOBAL("charly.vm.internal_error_class",       this->push_stack(this->internal_error_class))
     GLOBAL("charly.vm.globals",                    this->push_stack(this->globals))
+    GLOBAL("charly.vm.frame",                      this->push_stack(this->frames->as_value()))
     GLOBAL("charly.vm.argv", {
       if (this->context.argv == nullptr) {
         this->push_stack(kNull);
@@ -1299,17 +1295,14 @@ void VM::op_setlocalpush(uint32_t index, uint32_t level) {
   // Travel to the correct frame
   Frame* frame = this->frames;
   while (level--) {
-    if (!frame->parent_environment_frame) {
+    if (!frame->get_environment()) {
       return this->panic(Status::WriteFailedTooDeep);
     }
 
-    frame = frame->parent_environment_frame;
+    frame = frame->get_environment();
   }
 
-  // Check if the index isn't out-of-bounds
-  if (index < frame->lvarcount()) {
-    frame->write_local(index, value);
-  } else {
+  if (!frame->write_local(index, value)) {
     this->panic(Status::WriteFailedOutOfBounds);
   }
 
@@ -1350,17 +1343,14 @@ void VM::op_setlocal(uint32_t index, uint32_t level) {
   // Travel to the correct frame
   Frame* frame = this->frames;
   while (level--) {
-    if (!frame->parent_environment_frame) {
+    if (!frame->get_environment()) {
       return this->panic(Status::WriteFailedTooDeep);
     }
 
-    frame = frame->parent_environment_frame;
+    frame = frame->get_environment();
   }
 
-  // Check if the index isn't out-of-bounds
-  if (index < frame->lvarcount()) {
-    frame->write_local(index, value);
-  } else {
+  if (!frame->write_local(index, value)) {
     this->panic(Status::WriteFailedOutOfBounds);
   }
 }
@@ -1411,6 +1401,7 @@ void VM::op_setglobal(VALUE symbol) {
     case SYM("charly.vm.primitive.function"):         this->primitive_function         = value; return;
     case SYM("charly.vm.primitive.boolean"):          this->primitive_boolean          = value; return;
     case SYM("charly.vm.primitive.null"):             this->primitive_null             = value; return;
+    case SYM("charly.vm.primitive.frame"):            this->primitive_frame            = value; return;
     case SYM("charly.vm.uncaught_exception_handler"): this->uncaught_exception_handler = value; return;
     case SYM("charly.vm.internal_error_class"):       this->internal_error_class       = value; return;
     case SYM("charly.vm.globals"):                    this->globals                    = value; return;
@@ -1445,6 +1436,7 @@ void VM::op_setglobalpush(VALUE symbol) {
     case SYM("charly.vm.primitive.function"):         this->primitive_function         = value; return;
     case SYM("charly.vm.primitive.boolean"):          this->primitive_boolean          = value; return;
     case SYM("charly.vm.primitive.null"):             this->primitive_null             = value; return;
+    case SYM("charly.vm.primitive.frame"):            this->primitive_frame            = value; return;
     case SYM("charly.vm.uncaught_exception_handler"): this->uncaught_exception_handler = value; return;
     case SYM("charly.vm.internal_error_class"):       this->internal_error_class       = value; return;
     case SYM("charly.vm.globals"):                    this->globals                    = value; return;
@@ -1465,11 +1457,11 @@ void VM::op_putself() {
     return;
   }
 
-  this->push_stack(this->frames->self);
+  this->push_stack(this->frames->get_self());
 }
 
 void VM::op_putsuper() {
-  Function* func = this->get_active_function();
+  Function* func = this->frames->get_function();
   if (!func) this->panic(Status::InvalidArgumentType);
   if (!charly_is_class(func->host_class)) this->panic(Status::InvalidArgumentType);
 
@@ -1490,7 +1482,7 @@ void VM::op_putsuper() {
   if (charly_is_function(super_value)) {
     Function* copied_super_value = charly_as_function(this->copy_function(super_value));
     copied_super_value->bound_self_set = true;
-    copied_super_value->bound_self = this->frames->self;
+    copied_super_value->bound_self = this->frames->get_self();
     super_value = copied_super_value->as_value();
   }
 
@@ -1498,7 +1490,7 @@ void VM::op_putsuper() {
 }
 
 void VM::op_putsupermember(VALUE symbol) {
-  Function* func = this->get_active_function();
+  Function* func = this->frames->get_function();
   if (!func) this->panic(Status::InvalidArgumentType);
   if (!charly_is_class(func->host_class)) this->panic(Status::InvalidArgumentType);
 
@@ -1510,7 +1502,7 @@ void VM::op_putsupermember(VALUE symbol) {
   if (charly_is_function(super_value)) {
     Function* copied_super_value = charly_as_function(this->copy_function(super_value));
     copied_super_value->bound_self_set = true;
-    copied_super_value->bound_self = this->frames->self;
+    copied_super_value->bound_self = this->frames->get_self();
     super_value = copied_super_value->as_value();
   }
 
@@ -1731,11 +1723,11 @@ void VM::op_return() {
   if (!frame)
     this->panic(Status::CantReturnFromTopLevel);
 
-  this->catchstack = frame->last_active_catchtable;
-  this->frames = frame->parent;
-  this->ip = frame->return_address;
+  this->catchstack = frame->get_catchtable();
+  this->frames = frame->get_parent();
+  this->ip = frame->get_return_address();
 
-  if (frame->halt_after_return) {
+  if (frame->get_halt_after_return()) {
     this->halted = true;
   }
 
@@ -2121,45 +2113,14 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
     case kTypeFrame: {
       Frame* frame = charly_as_frame(value);
-      VALUE callee = frame->caller_value;
-
-      // Get the name of the calling value
-      VALUE name = kNull;
-      switch (charly_get_type(callee)) {
-        case kTypeFunction: {
-          Function* fn = charly_as_function(callee);
-          if (fn->anonymous) {
-            name = SymbolTable::encode("<anonymous>");
-          } else {
-            name = charly_as_function(callee)->name; break;
-          }
-
-          break;
-        }
-        case kTypeCFunction: name = charly_as_cfunction(callee)->name; break;
-        default: name = charly_create_istring(kUndefinedSymbolString);
-      }
-
-      // Get the body address of the calling value
-      void* body_address = nullptr;
-      switch (charly_get_type(callee)) {
-        case kTypeFunction:   body_address = charly_as_function(callee)->body_address; break;
-        case kTypeCFunction:  body_address = charly_as_cfunction(callee)->pointer; break;
-        default:              body_address = nullptr;
-      }
-
-      // Lookup the name of the file this address is from
-      auto lookup_result =
-          this->context.compiler_manager.address_mapping.resolve_address(reinterpret_cast<uint8_t*>(body_address));
+      Function* function = frame->get_function();
+      VALUE name = function->anonymous ? SYM("<anonymous>") : function->name;
+      uint8_t* body_address = function->body_address;
+      auto lookup_result = this->context.compiler_manager.address_mapping.resolve_address(body_address);
 
       io << "(";
       io << std::setfill(' ') << std::setw(14);
-      io << body_address;
-      io << std::setw(1);
-      io << ") ";
-      io << "(";
-      io << std::setw(10);
-      io << charly_get_typestring(callee);
+      io << static_cast<void*>(body_address);
       io << std::setw(1);
       io << ") ";
       io << SymbolTable::decode(name);
@@ -2414,7 +2375,21 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
 
     case kTypeFrame: {
       if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
-      io << "<Frame>";
+      io << "<Frame ";
+
+      Frame* frame = charly_as_frame(value);
+      Function* function = frame->get_function();
+      VALUE host_class = function->host_class;
+      VALUE name = function->anonymous ? SYM("<anonymous>") : function->name;
+
+      if (host_class != kNull) {
+        io << SymbolTable::decode(charly_as_class(host_class)->name);
+        io << "::";
+      }
+
+      io << SymbolTable::decode(name);
+
+      io << ">";
       break;
     }
 
@@ -2428,9 +2403,9 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
 
 VALUE VM::get_self_for_function(Function* function, const VALUE* fallback) {
   if (function->bound_self_set) return function->bound_self;
-  if (function->anonymous) return function->context ? function->context->self : kNull;
+  if (function->anonymous) return function->context ? function->context->get_self() : kNull;
   if (fallback != nullptr) return *fallback;
-  return function->context ? function->context->self : kNull;
+  return function->context ? function->context->get_self() : kNull;
 }
 
 VALUE VM::get_global_self() {
@@ -2443,16 +2418,6 @@ VALUE VM::get_global_symbol(VALUE symbol) {
   }
 
   return kNull;
-}
-
-Function* VM::get_active_function() {
-  VALUE caller = this->frames->caller_value;
-
-  if (charly_is_function(caller)) {
-    return charly_as_function(caller);
-  } else {
-    return nullptr;
-  }
 }
 
 void VM::panic(STATUS reason) {

@@ -305,14 +305,16 @@ export = ->(describe, it, assert) {
     /*})*/
   })
 
-  /*describe("static path methods", ->{*/
-    /*it("returns the path of the calling file", ->{*/
+  describe("static path methods", ->{
+    it("returns the path of the calling file", ->{
+      const path = Path.current()
+      assert(path.filename(), "path.ch")
+    })
 
-    /*})*/
-
-    /*it("returns the directory of the calling file", ->{*/
-
-    /*})*/
+    it("returns the directory of the calling file", ->{
+      const path = Path.current_dir()
+      assert(path.filename(), "stdlib")
+    })
 
     /*it("returns the current working directory", ->{*/
 
@@ -325,5 +327,5 @@ export = ->(describe, it, assert) {
     /*it("returns the home directory of the user", ->{*/
 
     /*})*/
-  /*})*/
+  })
 }

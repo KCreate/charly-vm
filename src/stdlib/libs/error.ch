@@ -24,66 +24,6 @@
  * SOFTWARE.
  */
 
-const __internal_get_active_frame  = @"charly.vm.get_active_frame"
-const __internal_get_parent_frame  = @"charly.vm.get_parent_frame"
-const __internal_get_block_address = @"charly.vm.get_block_address"
-const __internal_resolve_address   = @"charly.vm.resolve_address"
-
-// Represents a Frame inside the VM
-class StackFrame {
-  property id
-  property caller
-  property self_value
-  property origin_address
-
-  // Create a stackframe from the data object
-  // returned by the internal methods
-  constructor(@data) {
-    @id = data.id
-    @caller = data.caller
-    @self_value = data.self_value
-    @origin_address = data.origin_address
-  }
-
-  // Returns the current stackframe
-  static current {
-    const frame = new StackFrame(__internal_get_active_frame())
-    frame.parent()
-  }
-
-  // Returns the parent frame of this frame
-  parent {
-    const p = __internal_get_parent_frame(@id)
-    if !p return null
-    new StackFrame(p)
-  }
-
-  // Returns the location of the caller function
-  get_caller_location {
-    const block_addr = __internal_get_block_address(@caller)
-    __internal_resolve_address(block_addr)
-  }
-
-  // Returns the location of where this frame originated
-  get_origin_location {
-    __internal_resolve_address(@origin_address)
-  }
-
-  to_s {
-    const host_class = @caller.host_class
-    const func_name  = @caller.name.length ? @caller.name : "??"
-    const filename   = @get_caller_location()
-
-    const buf = new StringBuffer(32)
-
-    if host_class buf.write(host_class.name + ".")
-    buf.write(func_name)
-    buf.write(" (" + filename + ")")
-
-    buf.to_s()
-  }
-}
-
 /*
  * List of callbacks to be called before the vm terminates because
  * of an uncaught exception
@@ -115,7 +55,7 @@ class Error {
     // Generate stack trace entries
     @stacktrace.each(->(frame, index) {
       buf.write("  at ")
-      buf.write(frame)
+      buf.write(frame.format_stacktrace())
 
       unless index == @stacktrace.length - 1 {
         buf.write("\n")
@@ -158,7 +98,7 @@ class Error {
     const frames = []
 
     // Get frame of the caller
-    let top = StackFrame.current().parent()
+    let top = Frame.current().parent
 
     // The skip_func argument allows us to skip all
     // frames until we reach a specific function
@@ -170,7 +110,7 @@ class Error {
       if skip_n > 0 {
         skip_n -= 1
       } else {
-        if !allow_insertion && top.caller == skip_func {
+        if !allow_insertion && top.function == skip_func {
           allow_insertion = true
         } else {
           frames << top
@@ -180,7 +120,7 @@ class Error {
       if frames.length >= Error.stack_trace_limit break
 
       // Load parent frame
-      top = top.parent()
+      top = top.parent
     }
 
     frames
@@ -207,8 +147,6 @@ class Error {
       return e
     }
   }
-
-  static property StackFrame = StackFrame
 }
 
 // Error class thrown by the VM

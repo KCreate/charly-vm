@@ -40,8 +40,6 @@ typedef uint16_t STATUS;
 using Timestamp = std::chrono::time_point<std::chrono::steady_clock>;
 
 class VM;
-struct Frame;
-struct CatchTable;
 class InstructionBlock;
 
 class CLI;
@@ -63,6 +61,8 @@ class Container;
 class Object;
 class Array;
 class String;
+class Frame;
+struct CatchTable;
 struct Function;
 struct CFunction;
 struct Class;
