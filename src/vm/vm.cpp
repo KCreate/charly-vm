@@ -1232,21 +1232,52 @@ void VM::op_readglobal(VALUE symbol) {
     return;
   }
 
+#define GLOBAL(S, H) case SYM(S): { H; return; }
+
   // Check vm specific symbols
   switch (symbol) {
-    case SYM("charly.vm.primitive.value"):            this->push_stack(this->primitive_value); return;
-    case SYM("charly.vm.primitive.object"):           this->push_stack(this->primitive_object); return;
-    case SYM("charly.vm.primitive.class"):            this->push_stack(this->primitive_class); return;
-    case SYM("charly.vm.primitive.array"):            this->push_stack(this->primitive_array); return;
-    case SYM("charly.vm.primitive.string"):           this->push_stack(this->primitive_string); return;
-    case SYM("charly.vm.primitive.number"):           this->push_stack(this->primitive_number); return;
-    case SYM("charly.vm.primitive.function"):         this->push_stack(this->primitive_function); return;
-    case SYM("charly.vm.primitive.boolean"):          this->push_stack(this->primitive_boolean); return;
-    case SYM("charly.vm.primitive.null"):             this->push_stack(this->primitive_null); return;
-    case SYM("charly.vm.uncaught_exception_handler"): this->push_stack(this->uncaught_exception_handler); return;
-    case SYM("charly.vm.internal_error_class"):       this->push_stack(this->internal_error_class); return;
-    case SYM("charly.vm.globals"):                    this->push_stack(this->globals); return;
+    GLOBAL("charly.vm.primitive.value",            this->push_stack(this->primitive_value))
+    GLOBAL("charly.vm.primitive.object",           this->push_stack(this->primitive_object))
+    GLOBAL("charly.vm.primitive.class",            this->push_stack(this->primitive_class))
+    GLOBAL("charly.vm.primitive.array",            this->push_stack(this->primitive_array))
+    GLOBAL("charly.vm.primitive.string",           this->push_stack(this->primitive_string))
+    GLOBAL("charly.vm.primitive.number",           this->push_stack(this->primitive_number))
+    GLOBAL("charly.vm.primitive.function",         this->push_stack(this->primitive_function))
+    GLOBAL("charly.vm.primitive.boolean",          this->push_stack(this->primitive_boolean))
+    GLOBAL("charly.vm.primitive.null",             this->push_stack(this->primitive_null))
+    GLOBAL("charly.vm.uncaught_exception_handler", this->push_stack(this->uncaught_exception_handler))
+    GLOBAL("charly.vm.internal_error_class",       this->push_stack(this->internal_error_class))
+    GLOBAL("charly.vm.globals",                    this->push_stack(this->globals))
+    GLOBAL("charly.vm.argv", {
+      if (this->context.argv == nullptr) {
+        this->push_stack(kNull);
+        return;
+      }
+
+      Array* argv = charly_as_array(this->create_array(this->context.argv->size()));
+      for (const std::string& argument : *(this->context.argv)) {
+        argv->push(this->create_string(argument));
+      }
+
+      this->push_stack(argv->as_value());
+    })
+    GLOBAL("charly.vm.env", {
+      if (this->context.environment == nullptr) {
+        this->push_stack(kNull);
+        return;
+      }
+
+      Object* env = charly_as_object(this->create_object(this->context.environment->size()));
+
+      // Append environment variables
+      for (const auto& entry : *(this->context.environment)) {
+        env->write(SymbolTable::encode(entry.first), this->create_string(entry.second));
+      }
+
+      this->push_stack(env->as_value());
+    })
   }
+#undef GLOBAL
 
   // Check globals table
   if (!charly_is_object(this->globals)) this->panic(Status::GlobalsNotAnObject);

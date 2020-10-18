@@ -81,7 +81,7 @@ clean_prod:
 	@rm -rf $(BUILDDIR) $(PRODTARGET)
 
 rebuild:
-	@make clean
+	@make clean_dev
 	@make -j
 
 format:

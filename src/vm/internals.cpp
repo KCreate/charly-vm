@@ -83,8 +83,6 @@ std::unordered_map<VALUE, MethodSignature> Index::methods = {
     DEFINE_INTERNAL_METHOD("charly.vm.getn",                getn,                  0,     ThreadPolicyMain),
     DEFINE_INTERNAL_METHOD("charly.vm.dirname",             dirname,               0,     ThreadPolicyMain),
     DEFINE_INTERNAL_METHOD("charly.vm.exit",                exit,                  1,     ThreadPolicyMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.get_argv",            get_argv,              0,     ThreadPolicyMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.get_environment",     get_environment,       0,     ThreadPolicyMain),
     DEFINE_INTERNAL_METHOD("charly.vm.get_active_frame",    get_active_frame,      0,     ThreadPolicyMain),
     DEFINE_INTERNAL_METHOD("charly.vm.get_parent_frame",    get_parent_frame,      1,     ThreadPolicyMain),
     DEFINE_INTERNAL_METHOD("charly.vm.get_block_address",   get_block_address,     1,     ThreadPolicyMain),
@@ -260,42 +258,6 @@ VALUE exit(VM& vm, VALUE status_code) {
   CHECK(number, status_code);
   vm.exit(charly_number_to_uint8(status_code));
   return kNull;
-}
-
-VALUE get_argv(VM& vm) {
-
-  // Check for nullptr
-  if (!vm.context.argv) return kNull;
-  std::vector<std::string>& argv = (* vm.context.argv);
-
-  // Allocate result array
-  ManagedContext lalloc(vm);
-  Array* argv_array = charly_as_array(lalloc.create_array(argv.size()));
-
-  // Append argv elements
-  for (const std::string& argument : argv) {
-    argv_array->push(lalloc.create_string(argument));
-  }
-
-  return charly_create_pointer(argv_array);
-}
-
-VALUE get_environment(VM& vm) {
-
-  // Check for nullptr
-  if (!vm.context.environment) return kNull;
-  std::unordered_map<std::string, std::string>& environment = (* vm.context.environment);
-
-  // Allocate result object
-  ManagedContext lalloc(vm);
-  Object* environment_obj = charly_as_object(lalloc.create_object(environment.size()));
-
-  // Append environment variables
-  for (const auto& entry : environment) {
-    environment_obj->write(SymbolTable::encode(entry.first), lalloc.create_string(entry.second));
-  }
-
-  return charly_create_pointer(environment_obj);
 }
 
 VALUE get_active_frame(VM& vm) {

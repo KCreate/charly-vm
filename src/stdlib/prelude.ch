@@ -29,8 +29,6 @@
 @"charly.vm.globals".Charly = { globals: @"charly.vm.globals" }
 
 // Load internal methods
-const __internal_get_argv        = @"charly.vm.get_argv"
-const __internal_get_environment = @"charly.vm.get_environment"
 const __internal_write           = @"charly.vm.write"
 const __internal_getn            = @"charly.vm.getn"
 const __internal_import          = @"charly.vm.import"
@@ -39,8 +37,8 @@ const __internal_exit            = @"charly.vm.exit"
 __internal_exit.halt_after_return = true
 
 // Setup some information about our runtime environment
-Charly.globals.ARGV         = __internal_get_argv()
-Charly.globals.ENVIRONMENT  = __internal_get_environment()
+Charly.globals.ARGV         = @"charly.vm.argv"
+Charly.globals.ENVIRONMENT  = @"charly.vm.env"
 const CHARLYVMDIR = ENVIRONMENT["CHARLYVMDIR"] || ->{throw "Missing CHARLYVMDIR environment variable"}()
 
 // Setup import function

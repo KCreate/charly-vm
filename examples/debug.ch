@@ -24,16 +24,5 @@
  * SOFTWARE.
  */
 
-const arr = []
-
-arr.unshift(1)
-arr.unshift(2)
-arr.unshift(3)
-arr.unshift(4)
-
-arr.insert(0, 1)
-arr.insert(0, 2)
-arr.insert(0, 3)
-arr.insert(0, 4)
-
-print(arr)
+print(ARGV)
+print(ENVIRONMENT)
