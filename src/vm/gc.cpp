@@ -79,52 +79,43 @@ void GarbageCollector::mark(VALUE value) {
     return;
   }
 
-  if (charly_as_header(value)->get_gc_mark()) {
+  if (charly_as_header(value)->mark) {
     return;
   }
 
-  charly_as_header(value)->set_gc_mark();
-  switch (charly_as_header(value)->get_type()) {
+  charly_as_header(value)->mark = true;
+  switch (charly_as_header(value)->type) {
     case kTypeObject: {
       Object* obj = charly_as_object(value);
-      this->mark(obj->get_klass());
-      obj->access_container_shared([&](ContainerType* container) {
-        for (auto entry : *container)
-          this->mark(entry.second);
-      });
+      this->mark(obj->klass);
+      for (auto entry : *(obj->container))
+        this->mark(entry.second);
       break;
     }
 
     case kTypeArray: {
       Array* arr = charly_as_array(value);
-      arr->access_vector_shared([&](VectorType* vec) {
-        for (VALUE value : *vec) {
-          this->mark(value);
-        }
-      });
+      for (VALUE value : *(arr->data))
+        this->mark(value);
       break;
     }
 
     case kTypeFunction: {
       Function* func = charly_as_function(value);
-      this->mark(charly_create_pointer(func->context));
+      this->mark(func->context->as_value());
       this->mark(func->host_class);
 
       if (func->bound_self_set)
         this->mark(func->bound_self);
-      func->access_container_shared([&](ContainerType* container) {
-        for (auto entry : *container)
-          this->mark(entry.second);
-      });
+      for (auto entry : *(func->container))
+        this->mark(entry.second);
       break;
     }
 
     case kTypeCFunction: {
       CFunction* cfunc = charly_as_cfunction(value);
-      cfunc->access_container_shared([&](ContainerType* container) {
-        for (auto entry : *container)
-          this->mark(entry.second);
-      });
+      for (auto entry : *(cfunc->container))
+        this->mark(entry.second);
       break;
     }
 
@@ -134,24 +125,22 @@ void GarbageCollector::mark(VALUE value) {
       this->mark(klass->prototype);
       this->mark(klass->parent_class);
 
-      klass->access_container_shared([&](ContainerType* container) {
-        for (auto entry : *container)
-          this->mark(entry.second);
-      });
+      for (auto entry : *(klass->container))
+        this->mark(entry.second);
 
       break;
     }
 
     case kTypeFrame: {
       Frame* frame = charly_as_frame(value);
-      this->mark(charly_create_pointer(frame->parent));
-      this->mark(charly_create_pointer(frame->parent_environment_frame));
-      this->mark(charly_create_pointer(frame->last_active_catchtable));
       this->mark(frame->caller_value);
+      this->mark(frame->parent->as_value());
+      this->mark(frame->environment->as_value());
+      this->mark(frame->catchtable->as_value());
       this->mark(frame->self);
 
-      for (size_t i = 0; i < frame->lvarcount(); i++) {
-        this->mark(frame->read_local(i));
+      for (VALUE value : *(frame->locals)) {
+        this->mark(value);
       }
 
       break;
@@ -159,8 +148,8 @@ void GarbageCollector::mark(VALUE value) {
 
     case kTypeCatchTable: {
       CatchTable* table = charly_as_catchtable(value);
-      this->mark(charly_create_pointer(table->frame));
-      this->mark(charly_create_pointer(table->parent));
+      this->mark(table->frame->as_value());
+      this->mark(table->parent->as_value());
       break;
     }
 
@@ -186,8 +175,8 @@ void GarbageCollector::collect() {
   if (this->host_vm->running) {
 
     // Top level values
-    this->mark(charly_create_pointer(this->host_vm->frames));
-    this->mark(charly_create_pointer(this->host_vm->catchstack));
+    this->mark(this->host_vm->frames->as_value());
+    this->mark(this->host_vm->catchstack->as_value());
     this->mark(this->host_vm->uncaught_exception_handler);
     this->mark(this->host_vm->internal_error_class);
     this->mark(this->host_vm->globals);
@@ -256,8 +245,8 @@ void GarbageCollector::collect() {
       for (VALUE v : thread.stack) {
         this->mark(v);
       }
-      this->mark(charly_create_pointer(thread.frame));
-      this->mark(charly_create_pointer(thread.catchstack));
+      this->mark(thread.frame->as_value());
+      this->mark(thread.catchstack->as_value());
     }
 
     // Worker threads
@@ -265,9 +254,9 @@ void GarbageCollector::collect() {
       std::lock_guard<std::mutex> lock(this->host_vm->worker_threads_m);
       for (auto& entry : this->host_vm->worker_threads) {
         if (entry.second->cfunc)
-          this->mark(charly_create_pointer(entry.second->cfunc));
+          this->mark(entry.second->cfunc->as_value());
         if (entry.second->callback)
-          this->mark(charly_create_pointer(entry.second->callback));
+          this->mark(entry.second->callback->as_value());
         this->mark(entry.second->error_value);
         for (VALUE val : entry.second->arguments) {
           this->mark(val);
@@ -286,12 +275,14 @@ void GarbageCollector::collect() {
   for (MemoryCell* heap : this->heaps) {
     for (size_t i = 0; i < this->config.heap_cell_count; i++) {
       MemoryCell* cell = heap + i;
-      if (charly_as_header(charly_create_pointer(cell))->get_gc_mark()) {
-        charly_as_header(charly_create_pointer(cell))->clear_gc_mark();
+      Header* cell_header = cell->as<Header>();
+
+      if (cell_header->mark) {
+        cell_header->mark = false;
       } else {
         // This cell might already be on the free list
         // Make sure we don't double free cells
-        if (!charly_is_dead(charly_create_pointer(cell))) {
+        if (!charly_is_dead(cell->as_value())) {
           freed_cells_count++;
           this->deallocate(cell);
         }
@@ -342,7 +333,7 @@ void GarbageCollector::deallocate(MemoryCell* cell) {
   std::unique_lock<std::recursive_mutex>(this->g_mutex);
 
   // Run the type specific cleanup function
-  switch (charly_as_header(charly_create_pointer(cell))->get_type()) {
+  switch (cell->as<Header>()->type) {
     case kTypeObject: {
       cell->object.clean();
       break;

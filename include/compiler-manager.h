@@ -68,6 +68,7 @@ public:
     SymbolTable::encode("<null>");
     SymbolTable::encode("<symbol>");
     SymbolTable::encode("<unknown>");
+    SymbolTable::encode("<anonymous>");
 
     // Pre-register numbers -1000 to 1000
     for (int32_t i = -1000; i <= 1000; i++) {

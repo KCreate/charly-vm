@@ -45,7 +45,7 @@ VALUE insert(VM& vm, VALUE a, VALUE i, VALUE v) {
   Array* array = charly_as_array(a);
   array->insert(charly_number_to_int64(i), v);
 
-  return charly_create_pointer(array);
+  return array->as_value();
 }
 
 VALUE remove(VM& vm, VALUE a, VALUE i) {
@@ -55,7 +55,7 @@ VALUE remove(VM& vm, VALUE a, VALUE i) {
   Array* array = charly_as_array(a);
   array->remove(charly_number_to_int64(i));
 
-  return charly_create_pointer(array);
+  return array->as_value();
 }
 
 VALUE reverse(VM& vm, VALUE a) {
@@ -65,7 +65,7 @@ VALUE reverse(VM& vm, VALUE a) {
   Charly::ManagedContext lalloc(vm);
 
   Array* new_array;
-  array->access_vector_shared([&](VectorType* vec) {
+  array->access_vector_shared([&](Array::VectorType* vec) {
     new_array = charly_as_array(lalloc.create_array(vec->size()));
 
     auto it = vec->rbegin();
@@ -75,7 +75,7 @@ VALUE reverse(VM& vm, VALUE a) {
     }
   });
 
-  return charly_create_pointer(new_array);
+  return new_array->as_value();
 }
 
 VALUE index(VM& vm, VALUE a, VALUE i, VALUE o) {
@@ -87,7 +87,7 @@ VALUE index(VM& vm, VALUE a, VALUE i, VALUE o) {
   int32_t offset = charly_number_to_int32(o);
   int32_t found_offset = -1;
 
-  array->access_vector_shared([&](VectorType* vec) {
+  array->access_vector_shared([&](Array::VectorType* vec) {
 
     // wrap around negative indices
     if (offset < 0) {
@@ -122,7 +122,7 @@ VALUE rindex(VM& vm, VALUE a, VALUE i, VALUE o) {
   int32_t offset = charly_number_to_int32(o);
   int32_t found_offset = -1;
 
-  array->access_vector_shared([&](VectorType* vec) {
+  array->access_vector_shared([&](Array::VectorType* vec) {
 
     // wrap around negative indices
     if (offset < 0) {
@@ -165,7 +165,7 @@ VALUE range(VM& vm, VALUE a, VALUE s, VALUE c) {
   ManagedContext lalloc(vm);
   Array* new_array = charly_as_array(lalloc.create_array(count));
 
-  array->access_vector_shared([&](VectorType* vec) {
+  array->access_vector_shared([&](Array::VectorType* vec) {
     uint32_t offset = 0;
 
     while (offset < count) {
@@ -190,7 +190,7 @@ VALUE range(VM& vm, VALUE a, VALUE s, VALUE c) {
     }
   });
 
-  return charly_create_pointer(new_array);
+  return new_array->as_value();
 }
 
 VALUE clear(VM& vm, VALUE a) {

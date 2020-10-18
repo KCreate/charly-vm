@@ -192,7 +192,7 @@ void VM::unwind_catchstack(std::optional<VALUE> payload = std::nullopt) {
   if (this->context.trace_catchtables) {
     // Show the table we've restored
     this->context.err_stream << "Restored CatchTable: ";
-    this->pretty_print(this->context.err_stream, charly_create_pointer(table));
+    this->pretty_print(this->context.err_stream, table->as_value());
     this->context.err_stream << '\n';
   }
 
@@ -334,7 +334,7 @@ VALUE VM::copy_object(VALUE object) {
   Object* source = charly_as_object(object);
   Object* target = charly_as_object(this->create_object(source->keycount()));
   target->copy_container_from(source);
-  return charly_create_pointer(target);
+  return target->as_value();
 }
 
 VALUE VM::deep_copy_object(VALUE object) {
@@ -343,7 +343,7 @@ VALUE VM::deep_copy_object(VALUE object) {
   Object* source = charly_as_object(object);
   Object* target;
 
-  source->access_container_shared([&](ContainerType* source_container) {
+  source->access_container_shared([&](Container::ContainerType* source_container) {
     target = charly_as_object(lalloc.create_object(source_container->size()));
 
     for (auto& [key, value] : *source_container) {
@@ -351,14 +351,14 @@ VALUE VM::deep_copy_object(VALUE object) {
     }
   });
 
-  return charly_create_pointer(target);
+  return target->as_value();
 }
 
 VALUE VM::copy_array(VALUE array) {
   Array* source = charly_as_array(array);
   Array* target;
 
-  source->access_vector_shared([&](VectorType* vec) {
+  source->access_vector_shared([&](Array::VectorType* vec) {
     target = charly_as_array(this->create_array(vec->size()));
 
     for (VALUE value : *vec) {
@@ -366,7 +366,7 @@ VALUE VM::copy_array(VALUE array) {
     }
   });
 
-  return charly_create_pointer(target);
+  return target->as_value();
 }
 
 VALUE VM::deep_copy_array(VALUE array) {
@@ -374,7 +374,7 @@ VALUE VM::deep_copy_array(VALUE array) {
 
   Array* source = charly_as_array(array);
   Array* target;
-  source->access_vector_shared([&](VectorType* vec) {
+  source->access_vector_shared([&](Array::VectorType* vec) {
     target = charly_as_array(lalloc.create_array(vec->size()));
 
     for (VALUE value : *vec) {
@@ -382,7 +382,7 @@ VALUE VM::deep_copy_array(VALUE array) {
     }
   });
 
-  return charly_create_pointer(target);
+  return target->as_value();
 }
 
 VALUE VM::copy_string(VALUE string) {
@@ -409,7 +409,7 @@ VALUE VM::copy_function(VALUE function) {
   target->host_class = source->host_class;
   target->copy_container_from(source);
 
-  return charly_create_pointer(target);
+  return target->as_value();
 }
 
 VALUE VM::copy_cfunction(VALUE function) {
@@ -422,7 +422,7 @@ VALUE VM::copy_cfunction(VALUE function) {
   ));
   target->copy_container_from(source);
 
-  return charly_create_pointer(target);
+  return target->as_value();
 }
 
 VALUE VM::add(VALUE left, VALUE right) {
@@ -435,7 +435,7 @@ VALUE VM::add(VALUE left, VALUE right) {
 
     if (charly_is_array(right)) {
       Array* aright = charly_as_array(right);
-      aright->access_vector_shared([&](VectorType* vec) {
+      aright->access_vector_shared([&](Array::VectorType* vec) {
         for (auto& value : *vec) {
           new_array->push(value);
         }
@@ -444,7 +444,7 @@ VALUE VM::add(VALUE left, VALUE right) {
       new_array->push(right);
     }
 
-    return charly_create_pointer(new_array);
+    return new_array->as_value();
   }
 
   if (charly_is_string(left) && charly_is_string(right)) {
@@ -614,8 +614,8 @@ VALUE VM::eq(VALUE left, VALUE right) {
     Array* a_right = charly_as_array(right);
 
     bool comparison;
-    a_left->access_vector_shared([&](VectorType* vec_left) {
-      a_right->access_vector_shared([&](VectorType* vec_right) {
+    a_left->access_vector_shared([&](Array::VectorType* vec_left) {
+      a_right->access_vector_shared([&](Array::VectorType* vec_right) {
 
         // arrays of different sizes are never equal
         if (vec_left->size() != vec_right->size()) {
@@ -829,6 +829,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
 
       break;
     }
+
     case kTypeClass: {
       Class* klass = charly_as_class(source);
 
@@ -855,6 +856,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
 
       break;
     }
+
     case kTypeArray: {
       Array* arr = charly_as_array(source);
 
@@ -864,6 +866,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
 
       break;
     }
+
     case kTypeString: {
       if (symbol == SYM("length")) {
         return charly_create_integer(charly_string_utf8_length(source));
@@ -1009,15 +1012,15 @@ bool VM::findprimitivevalue(VALUE value, VALUE symbol, VALUE* result) {
   // Get the corresponding primitive class
   VALUE found_primitive_class = kNull;
   switch (charly_get_type(value)) {
-    case kTypeNumber: found_primitive_class = this->primitive_number; break;
-    case kTypeString: found_primitive_class = this->primitive_string; break;
-    case kTypeBoolean: found_primitive_class = this->primitive_boolean; break;
-    case kTypeNull: found_primitive_class = this->primitive_null; break;
-    case kTypeArray: found_primitive_class = this->primitive_array; break;
-    case kTypeFunction: found_primitive_class = this->primitive_function; break;
+    case kTypeNumber:    found_primitive_class = this->primitive_number; break;
+    case kTypeString:    found_primitive_class = this->primitive_string; break;
+    case kTypeBoolean:   found_primitive_class = this->primitive_boolean; break;
+    case kTypeNull:      found_primitive_class = this->primitive_null; break;
+    case kTypeArray:     found_primitive_class = this->primitive_array; break;
+    case kTypeFunction:  found_primitive_class = this->primitive_function; break;
     case kTypeCFunction: found_primitive_class = this->primitive_function; break;
-    case kTypeClass: found_primitive_class = this->primitive_class; break;
-    default: found_primitive_class = this->primitive_value; break;
+    case kTypeClass:     found_primitive_class = this->primitive_class; break;
+    default:             found_primitive_class = this->primitive_value; break;
   }
 
   if (symbol == SYM("klass")) {
@@ -1113,7 +1116,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   // offset 0 of the frame
   if (function->needs_arguments) {
     Array* arguments_array = charly_as_array(ctx.create_array(argc));
-    frame->write_local(0, charly_create_pointer(arguments_array));
+    frame->write_local(0, arguments_array->as_value());
 
     for (size_t i = 0; i < argc; i++) {
       if (i < function->argc) {
@@ -1142,7 +1145,7 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
   }
 
   // Mark the function and function arguments as temporaries
-  this->gc.mark_persistent(charly_create_pointer(function));
+  this->gc.mark_persistent(function->as_value());
   for (uint i = 0; i < argc; i++) {
     this->gc.mark_persistent(argv[i]);
   }
@@ -1154,7 +1157,7 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
   // Invoke the C function
   VALUE rv = charly_call_cfunction(this, function, argc, argv);
 
-  this->gc.unmark_persistent(charly_create_pointer(function));
+  this->gc.unmark_persistent(function->as_value());
   for (uint i = 0; i < argc; i++) {
     this->gc.unmark_persistent(argv[i]);
   }
@@ -1455,7 +1458,6 @@ void VM::op_setglobalpush(VALUE symbol) {
     this->throw_exception("Unidentified global symbol '" + SymbolTable::decode(symbol) + "'");
   }
 }
-#undef WORDGLOB
 
 void VM::op_putself() {
   if (this->frames == nullptr) {
@@ -1489,7 +1491,7 @@ void VM::op_putsuper() {
     Function* copied_super_value = charly_as_function(this->copy_function(super_value));
     copied_super_value->bound_self_set = true;
     copied_super_value->bound_self = this->frames->self;
-    super_value = charly_create_pointer(copied_super_value);
+    super_value = copied_super_value->as_value();
   }
 
   this->push_stack(super_value);
@@ -1509,7 +1511,7 @@ void VM::op_putsupermember(VALUE symbol) {
     Function* copied_super_value = charly_as_function(this->copy_function(super_value));
     copied_super_value->bound_self_set = true;
     copied_super_value->bound_self = this->frames->self;
-    super_value = charly_create_pointer(copied_super_value);
+    super_value = copied_super_value->as_value();
   }
 
   this->push_stack(super_value);
@@ -1542,7 +1544,7 @@ void VM::op_putarray(uint32_t count) {
     array->insert(0, this->pop_stack());
   }
 
-  this->push_stack(charly_create_pointer(array));
+  this->push_stack(array->as_value());
 }
 
 void VM::op_puthash(uint32_t count) {
@@ -1556,7 +1558,7 @@ void VM::op_puthash(uint32_t count) {
     object->write(key, value);
   }
 
-  this->push_stack(charly_create_pointer(object));
+  this->push_stack(object->as_value());
 }
 
 void VM::op_putclass(VALUE name,
@@ -1580,7 +1582,7 @@ void VM::op_putclass(VALUE name,
       this->panic(Status::InvalidArgumentType);
     }
     Function* constructor = charly_as_function(klass->constructor);
-    constructor->host_class = charly_create_pointer(klass);
+    constructor->host_class = klass->as_value();
   }
 
   if (has_parent_class) {
@@ -1597,7 +1599,7 @@ void VM::op_putclass(VALUE name,
       this->panic(Status::InvalidArgumentType);
     }
     Function* func_smethod = charly_as_function(smethod);
-    func_smethod->host_class = charly_create_pointer(klass);
+    func_smethod->host_class = klass->as_value();
     klass->write(func_smethod->name, smethod);
   }
 
@@ -1607,7 +1609,7 @@ void VM::op_putclass(VALUE name,
       this->panic(Status::InvalidArgumentType);
     }
     Function* func_method = charly_as_function(method);
-    func_method->host_class = charly_create_pointer(klass);
+    func_method->host_class = klass->as_value();
     Object* obj_methods = charly_as_object(klass->prototype);
     obj_methods->write(func_method->name, method);
   }
@@ -1632,7 +1634,7 @@ void VM::op_putclass(VALUE name,
   if (parent_class_invalid_type) {
     this->throw_exception("Can't extend from non class value");
   } else {
-    this->push_stack(charly_create_pointer(klass));
+    this->push_stack(klass->as_value());
   }
 }
 
@@ -1713,14 +1715,14 @@ void VM::op_new(uint32_t argc) {
       return;
     }
 
-    this->push_stack(charly_create_pointer(obj));
+    this->push_stack(obj->as_value());
     this->push_stack(initial_constructor);
     for (int i = argc - 1; i >= 0; i--) {
       this->push_stack(tmp_args[i]);
     }
     this->call(argc, true);
   } else {
-    this->push_stack(charly_create_pointer(obj));
+    this->push_stack(obj->as_value());
   }
 }
 
@@ -1740,7 +1742,7 @@ void VM::op_return() {
   // Print the frame if the correponding flag was set
   if (this->context.trace_frames) {
     this->context.err_stream << "Left frame: ";
-    this->pretty_print(this->context.err_stream, charly_create_pointer(frame));
+    this->pretty_print(this->context.err_stream, frame->as_value());
     this->context.err_stream << '\n';
   }
 }
@@ -1795,7 +1797,7 @@ void VM::op_popcatchtable() {
     if (table != nullptr) {
       // Show the table we've restored
       this->context.err_stream << "Restored CatchTable: ";
-      this->pretty_print(this->context.err_stream, charly_create_pointer(table));
+      this->pretty_print(this->context.err_stream, table->as_value());
       this->context.err_stream << '\n';
     }
   }
@@ -1932,7 +1934,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       this->pretty_print_stack.push_back(value);
 
-      object->access_container_shared([&](ContainerType* container) {
+      object->access_container_shared([&](Container::ContainerType* container) {
         for (auto& entry : *container) {
           io << " ";
           std::string key = SymbolTable::decode(entry.first);
@@ -1962,7 +1964,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << "[";
 
       bool first = true;
-      array->access_vector_shared([&](VectorType* vec) {
+      array->access_vector_shared([&](Array::VectorType* vec) {
         for (VALUE entry : *vec) {
           if (!first) {
             io << ", ";
@@ -2010,7 +2012,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << "bound_self=";
       this->pretty_print(io, func->bound_self);
 
-      func->access_container_shared([&](ContainerType* container) {
+      func->access_container_shared([&](Container::ContainerType* container) {
         for (auto& entry : *container) {
           io << " ";
           std::string key = SymbolTable::decode(entry.first);
@@ -2043,7 +2045,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << " ";
       io << "pointer=" << reinterpret_cast<uint64_t*>(func->pointer) << "";
 
-      func->access_container_shared([&](ContainerType* container) {
+      func->access_container_shared([&](Container::ContainerType* container) {
         for (auto& entry : *container) {
           io << " ";
           std::string key = SymbolTable::decode(entry.first);
@@ -2090,7 +2092,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       this->pretty_print(io, klass->parent_class);
       io << " ";
 
-      klass->access_container_shared([&](ContainerType* container) {
+      klass->access_container_shared([&](Container::ContainerType* container) {
         for (auto entry : *container) {
           io << " " << SymbolTable::decode(entry.first);
           io << "=";
@@ -2255,7 +2257,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
       if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
       io << "{\n";
 
-      object->access_container_shared([&](ContainerType* container) {
+      object->access_container_shared([&](Container::ContainerType* container) {
         for (auto& entry : *container) {
           io << std::string(depth + 2, ' ');
           std::string key = SymbolTable::decode(entry.first);
@@ -2287,7 +2289,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
       io << "[";
 
       bool first = true;
-      array->access_vector_shared([&](VectorType* vec) {
+      array->access_vector_shared([&](Array::VectorType* vec) {
         for (VALUE entry : *vec) {
           if (!first) {
             io << ", ";
@@ -2325,7 +2327,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
       this->to_s(io, func->name);
       io << "#" << func->minimum_argc;
 
-      func->access_container_shared([&](ContainerType* container) {
+      func->access_container_shared([&](Container::ContainerType* container) {
         for (auto& entry : *container) {
           io << " ";
           std::string key = SymbolTable::decode(entry.first);
@@ -2355,7 +2357,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
       this->to_s(io, func->name, depth);
       io << "#" << func->argc;
 
-      func->access_container_shared([&](ContainerType* container) {
+      func->access_container_shared([&](Container::ContainerType* container) {
         for (auto entry : *container) {
           io << " ";
           std::string key = SymbolTable::decode(entry.first);
@@ -2384,7 +2386,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
       io << "<Class ";
       this->to_s(io, klass->name, depth);
 
-      klass->access_container_shared([&](ContainerType* container) {
+      klass->access_container_shared([&](Container::ContainerType* container) {
         for (auto entry : *container) {
           io << " " << SymbolTable::decode(entry.first);
           io << "=";
@@ -3535,7 +3537,7 @@ void VM::close_worker_thread(WorkerThread* thread, VALUE return_value) {
   std::lock_guard<std::mutex> lock(this->worker_threads_m);
 
   this->register_task(
-      VMTask::init_callback(charly_create_pointer(thread->callback), return_value, thread->error_value));
+      VMTask::init_callback(thread->callback->as_value(), return_value, thread->error_value));
   this->worker_threads.erase(thread->thread.get_id());
 
   delete thread;

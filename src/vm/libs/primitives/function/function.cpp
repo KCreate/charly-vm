@@ -44,7 +44,7 @@ VALUE call(VM& vm, VALUE func, VALUE ctx, VALUE args) {
   vm.push_stack(func);
 
   Array* args_array = charly_as_array(args);
-  args_array->access_vector_shared([&](VectorType* vec) {
+  args_array->access_vector_shared([&](Array::VectorType* vec) {
     for (VALUE a : *vec) {
       vm.push_stack(a);
     }
@@ -63,7 +63,7 @@ VALUE call_async(VM& vm, VALUE cfunc, VALUE args, VALUE callback) {
   Array* _args = charly_as_array(args);
   CFunction* _cfunc = charly_as_cfunction(cfunc);
 
-  _args->access_vector_shared([&](VectorType* vec) {
+  _args->access_vector_shared([&](Array::VectorType* vec) {
     if (vec->size() < _cfunc->argc) {
       vm.throw_exception("Not enough arguments for CFunction call");
       return;

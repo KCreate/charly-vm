@@ -89,36 +89,36 @@ namespace Charly {
 //       https://github.com/munificent/wren/blob/master/src/vm/wren_value.h
 
 // Masks for the VALUE type
-static constexpr uint64_t kMaskSignBit       = 0x8000000000000000; // Sign bit
-static constexpr uint64_t kMaskExponentBits  = 0x7ff0000000000000; // Exponent bits
-static constexpr uint64_t kMaskQuietBit      = 0x0008000000000000; // Quiet bit
-static constexpr uint64_t kMaskTypeBits      = 0x0007000000000000; // Type bits
-static constexpr uint64_t kMaskSignature     = 0xffff000000000000; // Signature bits
-static constexpr uint64_t kMaskPayloadBits   = 0x0000ffffffffffff; // Payload bits
+static constexpr uint64_t kMaskSignBit      = 0x8000000000000000; // Sign bit
+static constexpr uint64_t kMaskExponentBits = 0x7ff0000000000000; // Exponent bits
+static constexpr uint64_t kMaskQuietBit     = 0x0008000000000000; // Quiet bit
+static constexpr uint64_t kMaskTypeBits     = 0x0007000000000000; // Type bits
+static constexpr uint64_t kMaskSignature    = 0xffff000000000000; // Signature bits
+static constexpr uint64_t kMaskPayloadBits  = 0x0000ffffffffffff; // Payload bits
 
 // Types that are encoded in the type field
-static constexpr uint64_t kITypeNaN          = 0x0000000000000000;
-static constexpr uint64_t kITypeFalse        = 0x0001000000000000;
-static constexpr uint64_t kITypeTrue         = 0x0002000000000000;
-static constexpr uint64_t kITypeNull         = 0x0003000000000000;
-static constexpr uint64_t kITypeInteger      = 0x0004000000000000;
-static constexpr uint64_t kITypeSymbol       = 0x0005000000000000;
-static constexpr uint64_t kITypePString      = 0x0006000000000000;
-static constexpr uint64_t kITypeIString      = 0x0007000000000000;
+static constexpr uint64_t kITypeNaN     = 0x0000000000000000;
+static constexpr uint64_t kITypeFalse   = 0x0001000000000000;
+static constexpr uint64_t kITypeTrue    = 0x0002000000000000;
+static constexpr uint64_t kITypeNull    = 0x0003000000000000;
+static constexpr uint64_t kITypeInteger = 0x0004000000000000;
+static constexpr uint64_t kITypeSymbol  = 0x0005000000000000;
+static constexpr uint64_t kITypePString = 0x0006000000000000;
+static constexpr uint64_t kITypeIString = 0x0007000000000000;
 
 // Shorthand values
-static constexpr uint64_t kBitsNaN           = kMaskExponentBits | kMaskQuietBit;
-static constexpr uint64_t kNaN               = kBitsNaN;
-static constexpr uint64_t kFalse             = kBitsNaN | kITypeFalse; // 0x7ff9000000000000
-static constexpr uint64_t kTrue              = kBitsNaN | kITypeTrue;  // 0x7ffa000000000000
-static constexpr uint64_t kNull              = kBitsNaN | kITypeNull;  // 0x7ffb000000000000
+static constexpr uint64_t kBitsNaN = kMaskExponentBits | kMaskQuietBit;
+static constexpr uint64_t kNaN     = kBitsNaN;
+static constexpr uint64_t kFalse   = kBitsNaN | kITypeFalse; // 0x7ff9000000000000
+static constexpr uint64_t kTrue    = kBitsNaN | kITypeTrue;  // 0x7ffa000000000000
+static constexpr uint64_t kNull    = kBitsNaN | kITypeNull;  // 0x7ffb000000000000
 
 // Signatures of complex encoded types
-static constexpr uint64_t kSignaturePointer  = kMaskSignBit | kBitsNaN;
-static constexpr uint64_t kSignatureInteger  = kBitsNaN | kITypeInteger;
-static constexpr uint64_t kSignatureSymbol   = kBitsNaN | kITypeSymbol;
-static constexpr uint64_t kSignaturePString  = kBitsNaN | kITypePString;
-static constexpr uint64_t kSignatureIString  = kBitsNaN | kITypeIString;
+static constexpr uint64_t kSignaturePointer = kMaskSignBit | kBitsNaN;
+static constexpr uint64_t kSignatureInteger = kBitsNaN | kITypeInteger;
+static constexpr uint64_t kSignatureSymbol  = kBitsNaN | kITypeSymbol;
+static constexpr uint64_t kSignaturePString = kBitsNaN | kITypePString;
+static constexpr uint64_t kSignatureIString = kBitsNaN | kITypeIString;
 
 // Masks for the immediate encoded types
 static constexpr uint64_t kMaskPointer       = 0x0000ffffffffffff;
@@ -130,16 +130,16 @@ static constexpr uint64_t kMaskIString       = 0x000000ffffffffff;
 static constexpr uint64_t kMaskIStringLength = 0x0000ff0000000000;
 
 // Constants used when converting between different representations
-static constexpr int64_t kMaxInt             = (static_cast<int64_t>(1) << 47) - 1;
-static constexpr int64_t kMaxUInt            = (static_cast<int64_t>(1) << 48) - 1;
-static constexpr int64_t kMinInt             = -(static_cast<int64_t>(1) << 47);
-static const void* const kMaxPointer         = (void*)0x0000FFFFFFFFFFFF;
-static constexpr uint64_t kSignBlock         = 0xFFFF000000000000;
+static constexpr int64_t kMaxInt     = (static_cast<int64_t>(1) << 47) - 1;
+static constexpr int64_t kMaxUInt    = (static_cast<int64_t>(1) << 48) - 1;
+static constexpr int64_t kMinInt     = -(static_cast<int64_t>(1) << 47);
+static const void* const kMaxPointer = (void*)0x0000FFFFFFFFFFFF;
+static constexpr uint64_t kSignBlock = 0xFFFF000000000000;
 
 // Misc. constants
-static constexpr uint32_t kMaxIStringLength  = 5;
-static constexpr uint32_t kMaxPStringLength  = 6;
-static constexpr int64_t kMaxStringLength    = 0xffffffff;
+static constexpr uint32_t kMaxIStringLength = 5;
+static constexpr uint32_t kMaxPStringLength = 6;
+static constexpr int64_t kMaxStringLength   = 0xffffffff;
 
 // Human readable types of all data types
 const std::string kHumanReadableTypes[] = {"dead",     "class",     "object", "array",      "string",
@@ -173,30 +173,27 @@ enum ValueType : uint8_t {
 
 // Metadata which is stores in every heap value
 class Header {
-protected:
-  ValueType type; // the type of this heap value
-  bool mark;   // set by the GC to mark reachable values
-
+  friend class GarbageCollector;
 public:
   void init(ValueType type);
   void clean();
 
   ValueType get_type();
-  bool get_gc_mark();
-  void set_gc_mark();
-  void clear_gc_mark();
 
   VALUE as_value();
+
+protected:
+  ValueType type; // the type of this heap value
+  bool mark;   // set by the GC to mark reachable values
 };
 
 // Underlying type of every value which has its own
 // value container (e.g. Object, Function, Class)
-using ContainerType = std::unordered_map<VALUE, VALUE>;
 class Container : public Header {
-protected:
-  ContainerType* container;
-
+  friend class GarbageCollector;
 public:
+  using ContainerType = std::unordered_map<VALUE, VALUE>;
+
   void init(ValueType type, uint32_t initial_capacity = 4);
   void clean();
   void copy_container_from(const Container* other);
@@ -213,28 +210,31 @@ public:
   // via a callback function
   void access_container(std::function<void(ContainerType*)> cb);
   void access_container_shared(std::function<void(ContainerType*)> cb);
+
+protected:
+  ContainerType* container;
 };
 
 // Object type
 class Object : public Container {
-protected:
-  VALUE klass; // The class this object was constructed from, otherwise null
-
+  friend class GarbageCollector;
 public:
   void init(VALUE klass = kNull, uint32_t initial_capacity = 4);
   void init(uint32_t initial_capacity = 4);
 
   VALUE get_klass();
   void set_klass(VALUE klass);
+
+protected:
+  VALUE klass; // The class this object was constructed from, otherwise null
 };
 
 // Array type
-using VectorType = std::vector<VALUE>;
 class Array : public Header {
-protected:
-  VectorType* data;
-
+  friend class GarbageCollector;
 public:
+  using VectorType = std::vector<VALUE>;
+
   void init(uint32_t initial_capacity = 4);
   void clean();
 
@@ -249,14 +249,14 @@ public:
   // Access to internal vector via a callback function
   void access_vector(std::function<void(VectorType*)> cb);
   void access_vector_shared(std::function<void(VectorType*)> cb);
+
+protected:
+  VectorType* data;
 };
 
 // String type
 class String : public Header {
-protected:
-  char* data;
-  uint32_t length;
-
+  friend class GarbageCollector;
 public:
   void init(char* data, uint32_t length);             // assume ownership over the data
   void init_copy(const char* data, uint32_t length);  // copy the buffer
@@ -265,6 +265,10 @@ public:
 
   char* get_data();       // returns a pointer to the data buffer
   uint32_t get_length();  // returns the length of the buffer in bytes
+
+protected:
+  char* data;
+  uint32_t length;
 };
 
 // Frames introduce new environments
@@ -500,7 +504,7 @@ inline bool charly_is_array_of(VALUE v) {
   Array* arr = charly_as_array(v);
 
   bool comparison;
-  arr->access_vector_shared([&](VectorType* vec) {
+  arr->access_vector_shared([&](Array::VectorType* vec) {
     for (VALUE v : *vec) {
       if (charly_get_type(v) != T) {
         comparison = false;
@@ -1525,7 +1529,7 @@ inline VALUE charly_find_super_constructor(Class* base) {
 // Lookup first available constructor of a class
 __attribute__((always_inline))
 inline VALUE charly_find_constructor(Class* base) {
-  VALUE search_class = charly_create_pointer(base);
+  VALUE search_class = base->as_value();
 
   // Traverse the class hierarchy
   while (charly_is_class(search_class)) {

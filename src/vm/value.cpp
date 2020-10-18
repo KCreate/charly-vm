@@ -52,7 +52,7 @@ void Header::clear_gc_mark() {
 }
 
 VALUE Header::as_value() {
-  return reinterpret_cast<VALUE>(this);
+  return charly_create_pointer(this);
 }
 
 void Header::clean() {
@@ -63,7 +63,7 @@ void Container::init(ValueType type, uint32_t initial_capacity) {
   Header::init(type);
 
   assert(this->container == nullptr);
-  this->container = new ContainerType();
+  this->container = new Container::ContainerType();
   this->container->reserve(initial_capacity);
 }
 
@@ -115,12 +115,12 @@ bool Container::assign(VALUE key, VALUE value) {
   return true;
 }
 
-void Container::access_container(std::function<void(ContainerType*)> cb) {
+void Container::access_container(std::function<void(Container::ContainerType*)> cb) {
   assert(this->container);
   cb(this->container);
 }
 
-void Container::access_container_shared(std::function<void(ContainerType*)> cb) {
+void Container::access_container_shared(std::function<void(Container::ContainerType*)> cb) {
   assert(this->container);
   cb(this->container);
 }
@@ -147,7 +147,7 @@ void Object::set_klass(VALUE klass) {
 
 void Array::init(uint32_t initial_capacity) {
   Header::init(kTypeArray);
-  this->data = new VectorType();
+  this->data = new Array::VectorType();
   this->data->reserve(initial_capacity);
 }
 
@@ -252,12 +252,12 @@ void Array::clear() {
   this->data->clear();
 }
 
-void Array::access_vector(std::function<void(VectorType*)> cb) {
+void Array::access_vector(std::function<void(Array::VectorType*)> cb) {
   assert(this->data);
   cb(this->data);
 }
 
-void Array::access_vector_shared(std::function<void(VectorType*)> cb) {
+void Array::access_vector_shared(std::function<void(Array::VectorType*)> cb) {
   assert(this->data);
   cb(this->data);
 }

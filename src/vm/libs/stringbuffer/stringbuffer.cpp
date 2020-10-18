@@ -158,7 +158,7 @@ VALUE write_bytes(VM&vm, VALUE buf, VALUE bytes) {
   }
 
   Array* arr = charly_as_array(bytes);
-  arr->access_vector_shared([&](VectorType* vec) {
+  arr->access_vector_shared([&](Array::VectorType* vec) {
     for (VALUE v : *vec) {
       buffer->write_u8(charly_number_to_uint8(v));
     }
@@ -196,7 +196,7 @@ VALUE bytes(VM& vm, VALUE buf) {
     byte_array->push(charly_create_integer(data[i]));
   }
 
-  return charly_create_pointer(byte_array);
+  return byte_array->as_value();
 }
 
 VALUE clear(VM& vm, VALUE buf) {

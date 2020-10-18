@@ -186,7 +186,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
           thread_policy
         ));
 
-        lib->write(charly_create_symbol(name), charly_create_pointer(cfunc));
+        lib->write(charly_create_symbol(name), cfunc->as_value());
 
         i++;
       }
@@ -205,7 +205,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
       lib->write( SymbolTable::encode("__libptr"), lalloc.create_cpointer(clib, reinterpret_cast<void*>(destructor)));
       lib->write( SymbolTable::encode("__libpath"), lalloc.create_string(include_filename));
 
-      return charly_create_pointer(lib);
+      return lib->as_value();
     }
   }
 
@@ -353,7 +353,7 @@ VALUE debug_func(VM& vm, VALUE value) {
   Object* obj = charly_as_object(lalloc.create_object(4));
   obj->write(SymbolTable::encode("test"), lalloc.create_string("hello world!!!!"));
 
-  return charly_create_pointer(obj);
+  return obj->as_value();
 }
 
 }  // namespace Internals

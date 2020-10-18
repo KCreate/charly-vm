@@ -55,7 +55,7 @@ class AddressMapping;
 enum Opcode : uint8_t;
 
 struct MemoryCell;
-class MemoryManager;
+class GarbageCollector;
 class ManagedContext;
 
 class Header;
@@ -65,4 +65,5 @@ class Array;
 class String;
 struct Function;
 struct CFunction;
+struct Class;
 }  // namespace Charly

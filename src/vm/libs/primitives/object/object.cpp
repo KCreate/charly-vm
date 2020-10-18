@@ -38,7 +38,7 @@ VALUE keys(VM& vm, VALUE obj) {
 
   Container* obj_container = charly_as_container(obj);
   Array* keys_array;
-  obj_container->access_container_shared([&](ContainerType* container) {
+  obj_container->access_container_shared([&](Container::ContainerType* container) {
     keys_array = charly_as_array(lalloc.create_array(container->size()));
 
     for (auto& [key, value] : *container) {
@@ -46,7 +46,7 @@ VALUE keys(VM& vm, VALUE obj) {
     }
   });
 
-  return charly_create_pointer(keys_array);
+  return keys_array->as_value();
 }
 
 VALUE delete_key(VM& vm, VALUE v, VALUE symbol) {
