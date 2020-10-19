@@ -226,7 +226,7 @@ public:
                         bool needs_arguments);
   VALUE create_cfunction(VALUE name, uint32_t argc, void* pointer, ThreadPolicy thread_policy = ThreadPolicyMain);
   VALUE create_class(VALUE name);
-  VALUE create_cpointer(void* data, void* destructor);
+  VALUE create_cpointer(void* data, CPointer::DestructorType destructor);
 
   // Methods to copy existing data types
   VALUE copy_value(VALUE value);

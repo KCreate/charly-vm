@@ -341,16 +341,22 @@ protected:
 };
 
 // Contains a data pointer and a destructor method to deallocate c library resources
-struct CPointer : public Header {
-  void* data;
-  void* destructor;
+class CPointer : public Header {
+public:
+  using DestructorType = void (*)(void*);
 
-  inline void clean() {
-    Header::clean();
-    if (this->destructor) {
-      reinterpret_cast<void (*)(void*)>(this->destructor)(this->data);
-    }
-  }
+  void init(void* data, DestructorType destructor);
+  void clean();
+
+  void set_data(void* data);
+  void set_destructor(DestructorType destructor);
+
+  void* get_data();
+  DestructorType get_destructor();
+
+protected:
+  void* data;
+  DestructorType destructor;
 };
 
 // Normal functions defined inside the virtual machine.

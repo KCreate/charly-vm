@@ -34,10 +34,6 @@ namespace Charly {
 namespace Internals {
 namespace StringBuffer {
 
-// Buffer id management
-static uint64_t next_buf_id = 0;
-static std::unordered_map<uint64_t, UTF8Buffer*> buffer_list;
-
 VALUE create(VM& vm, VALUE size);
 VALUE reserve(VM& vm, VALUE buf, VALUE size);
 VALUE get_size(VM& vm, VALUE buf);

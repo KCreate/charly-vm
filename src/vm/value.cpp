@@ -299,6 +299,7 @@ void Frame::init(Frame* parent, CatchTable* catchtable, Function* function, uint
 }
 
 void Frame::clean() {
+  Header::clean();
   if (this->locals) {
     delete this->locals;
     this->locals = nullptr;
@@ -440,6 +441,35 @@ uint8_t* CatchTable::get_address() {
 
 size_t CatchTable::get_stacksize() {
   return this->stacksize;
+}
+
+void CPointer::init(void* data, CPointer::DestructorType destructor) {
+  Header::init(kTypeCPointer);
+  this->data = data;
+  this->destructor = destructor;
+}
+
+void CPointer::clean() {
+  Header::clean();
+  if (this->destructor) {
+    this->destructor(this->data);
+  }
+}
+
+void CPointer::set_data(void* data) {
+  this->data = data;
+}
+
+void CPointer::set_destructor(CPointer::DestructorType destructor) {
+  this->destructor = destructor;
+}
+
+void* CPointer::get_data() {
+  return this->data;
+}
+
+CPointer::DestructorType CPointer::get_destructor() {
+  return this->destructor;
 }
 
 }  // namespace Charly

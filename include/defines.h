@@ -63,6 +63,7 @@ class Array;
 class String;
 class Frame;
 class CatchTable;
+class CPointer;
 struct Function;
 struct CFunction;
 struct Class;

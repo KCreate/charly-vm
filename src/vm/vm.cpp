@@ -252,11 +252,9 @@ VALUE VM::create_class(VALUE name) {
   return cell->as_value();
 }
 
-VALUE VM::create_cpointer(void* data, void* destructor) {
+VALUE VM::create_cpointer(void* data, CPointer::DestructorType destructor) {
   MemoryCell* cell = this->gc.allocate();
-  cell->header.init(kTypeCPointer);
-  cell->cpointer.data = data;
-  cell->cpointer.destructor = destructor;
+  cell->cpointer.init(data, destructor);
   return cell->as_value();
 }
 
@@ -2098,8 +2096,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
     case kTypeCPointer: {
       CPointer* cpointer = charly_as_cpointer(value);
-      io << "<CPointer " << reinterpret_cast<void*>(cpointer->data);
-      io << ":" << reinterpret_cast<void*>(cpointer->destructor);
+      io << "<CPointer " << cpointer->get_data();
+      io << ":" << reinterpret_cast<void*>(cpointer->get_destructor());
       io << ">";
       break;
     }

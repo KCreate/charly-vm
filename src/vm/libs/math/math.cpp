@@ -32,8 +32,6 @@
 #include "math.h"
 #include "vm.h"
 
-using namespace std;
-
 namespace Charly {
 namespace Internals {
 namespace Math {

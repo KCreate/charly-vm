@@ -33,8 +33,6 @@
 #include "vm.h"
 #include "managedcontext.h"
 
-using namespace std;
-
 namespace Charly {
 namespace Internals {
 namespace Time {

@@ -24,5 +24,5 @@
  * SOFTWARE.
  */
 
-print(ARGV)
-print(ENVIRONMENT)
+const N = 10000
+const bufs = Array.create(N, ->new StringBuffer()).each(->$0.write("hello world"))

@@ -198,7 +198,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
 
         dlclose(clib);
       };
-      lib->write( SymbolTable::encode("__libptr"), lalloc.create_cpointer(clib, reinterpret_cast<void*>(destructor)));
+      lib->write( SymbolTable::encode("__libptr"), lalloc.create_cpointer(clib, destructor));
       lib->write( SymbolTable::encode("__libpath"), lalloc.create_string(include_filename));
 
       return lib->as_value();

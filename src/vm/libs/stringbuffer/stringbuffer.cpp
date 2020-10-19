@@ -30,39 +30,30 @@
 #include "vm.h"
 #include "managedcontext.h"
 
-using namespace std;
-
 namespace Charly {
 namespace Internals {
 namespace StringBuffer {
 
 static void destructor(void* data) {
-  uint64_t id = reinterpret_cast<uint64_t>(data);
-  UTF8Buffer* buf = buffer_list[id];
-  if (buf) {
+  UTF8Buffer* buf = static_cast<UTF8Buffer*>(data);
+  if (buf)
     delete buf;
-  };
 }
 
 VALUE create(VM& vm, VALUE size) {
   CHECK(number, size);
-  uint64_t id = next_buf_id++;
   UTF8Buffer* buf = new UTF8Buffer();
   buf->grow_to_fit(charly_number_to_uint32(size));
-  buffer_list[id] = buf;
-
-  ManagedContext lalloc(vm);
-  return lalloc.create_cpointer(reinterpret_cast<void*>(id), reinterpret_cast<void*>(destructor));
+  return vm.create_cpointer(static_cast<void*>(buf), destructor);
 }
 
 VALUE reserve(VM& vm, VALUE buf, VALUE size) {
   CHECK(cpointer, buf);
   CHECK(number, size);
 
-  UTF8Buffer* buffer = buffer_list[reinterpret_cast<uint64_t>(charly_as_cpointer(buf)->data)];
-  if (!buffer) {
+  UTF8Buffer* buffer = static_cast<UTF8Buffer*>(charly_as_cpointer(buf)->get_data());
+  if (!buffer)
     return kNull;
-  }
 
   buffer->grow_to_fit(charly_number_to_uint32(size));
 
@@ -72,10 +63,9 @@ VALUE reserve(VM& vm, VALUE buf, VALUE size) {
 VALUE get_size(VM& vm, VALUE buf) {
   CHECK(cpointer, buf);
 
-  UTF8Buffer* buffer = buffer_list[reinterpret_cast<uint64_t>(charly_as_cpointer(buf)->data)];
-  if (!buffer) {
+  UTF8Buffer* buffer = static_cast<UTF8Buffer*>(charly_as_cpointer(buf)->get_data());
+  if (!buffer)
     return kNull;
-  }
 
   return charly_create_integer(buffer->get_capacity());
 }
@@ -83,10 +73,9 @@ VALUE get_size(VM& vm, VALUE buf) {
 VALUE get_offset(VM& vm, VALUE buf) {
   CHECK(cpointer, buf);
 
-  UTF8Buffer* buffer = buffer_list[reinterpret_cast<uint64_t>(charly_as_cpointer(buf)->data)];
-  if (!buffer) {
+  UTF8Buffer* buffer = static_cast<UTF8Buffer*>(charly_as_cpointer(buf)->get_data());
+  if (!buffer)
     return kNull;
-  }
 
   return charly_create_integer(buffer->get_writeoffset());
 }
@@ -95,10 +84,9 @@ VALUE write(VM& vm, VALUE buf, VALUE src) {
   CHECK(cpointer, buf);
   CHECK(string, src);
 
-  UTF8Buffer* buffer = buffer_list[reinterpret_cast<uint64_t>(charly_as_cpointer(buf)->data)];
-  if (!buffer) {
+  UTF8Buffer* buffer = static_cast<UTF8Buffer*>(charly_as_cpointer(buf)->get_data());
+  if (!buffer)
     return kNull;
-  }
 
   buffer->write_block(reinterpret_cast<uint8_t*>(charly_string_data(src)), charly_string_length(src));
   return charly_create_integer(buffer->get_writeoffset());
@@ -113,10 +101,9 @@ VALUE write_partial(VM& vm, VALUE buf, VALUE src, VALUE off, VALUE cnt) {
   uint32_t _off = charly_number_to_uint32(off);
   uint32_t _cnt = charly_number_to_uint32(cnt);
 
-  UTF8Buffer* buffer = buffer_list[reinterpret_cast<uint64_t>(charly_as_cpointer(buf)->data)];
-  if (!buffer) {
+  UTF8Buffer* buffer = static_cast<UTF8Buffer*>(charly_as_cpointer(buf)->get_data());
+  if (!buffer)
     return kNull;
-  }
 
   // Calculate the offset of the start pointer and the amount of bytes to copy
   uint8_t* data_ptr = reinterpret_cast<uint8_t*>(charly_string_data(src));
@@ -152,10 +139,9 @@ VALUE write_bytes(VM&vm, VALUE buf, VALUE bytes) {
   CHECK(array, bytes);
   CHECK(array_of<kTypeNumber>, bytes);
 
-  UTF8Buffer* buffer = buffer_list[reinterpret_cast<uint64_t>(charly_as_cpointer(buf)->data)];
-  if (!buffer) {
+  UTF8Buffer* buffer = static_cast<UTF8Buffer*>(charly_as_cpointer(buf)->get_data());
+  if (!buffer)
     return kNull;
-  }
 
   Array* arr = charly_as_array(bytes);
   arr->access_vector_shared([&](Array::VectorType* vec) {
@@ -169,28 +155,27 @@ VALUE write_bytes(VM&vm, VALUE buf, VALUE bytes) {
 
 VALUE to_s(VM& vm, VALUE buf) {
   CHECK(cpointer, buf);
-  UTF8Buffer* buffer = buffer_list[reinterpret_cast<uint64_t>(charly_as_cpointer(buf)->data)];
-  if (!buffer) {
+
+  UTF8Buffer* buffer = static_cast<UTF8Buffer*>(charly_as_cpointer(buf)->get_data());
+  if (!buffer)
     return kNull;
-  }
-  ManagedContext lalloc(vm);
-  return lalloc.create_string(buffer->get_const_data(), buffer->get_writeoffset());
+
+  return vm.create_string(buffer->get_const_data(), buffer->get_writeoffset());
 }
 
 VALUE bytes(VM& vm, VALUE buf) {
   CHECK(cpointer, buf);
-  UTF8Buffer* buffer = buffer_list[reinterpret_cast<uint64_t>(charly_as_cpointer(buf)->data)];
-  if (!buffer) {
+
+  UTF8Buffer* buffer = static_cast<UTF8Buffer*>(charly_as_cpointer(buf)->get_data());
+  if (!buffer)
     return kNull;
-  }
 
   uint8_t* data = buffer->get_data();
   uint32_t offset = buffer->get_writeoffset();
 
   // Allocate the array that will return the bytes
   // offset is the amount of bytes we need to store
-  ManagedContext lalloc(vm);
-  Array* byte_array = charly_as_array(lalloc.create_array(offset));
+  Array* byte_array = charly_as_array(vm.create_array(offset));
 
   for (uint32_t i = 0; i < offset; i++) {
     byte_array->push(charly_create_integer(data[i]));
@@ -202,13 +187,11 @@ VALUE bytes(VM& vm, VALUE buf) {
 VALUE clear(VM& vm, VALUE buf) {
   CHECK(cpointer, buf);
 
-  UTF8Buffer* buffer = buffer_list[reinterpret_cast<uint64_t>(charly_as_cpointer(buf)->data)];
-  if (!buffer) {
+  UTF8Buffer* buffer = static_cast<UTF8Buffer*>(charly_as_cpointer(buf)->get_data());
+  if (!buffer)
     return kNull;
-  }
 
   buffer->clear();
-
   return kNull;
 }
 
