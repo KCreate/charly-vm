@@ -62,7 +62,7 @@ class Object;
 class Array;
 class String;
 class Frame;
-struct CatchTable;
+class CatchTable;
 struct Function;
 struct CFunction;
 struct Class;

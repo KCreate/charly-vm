@@ -87,11 +87,9 @@ void VM::push_stack(VALUE value) {
 
 CatchTable* VM::create_catchtable(uint8_t* address) {
   MemoryCell* cell = this->gc.allocate();
-  cell->header.init(kTypeCatchTable);
-  cell->catchtable.stacksize = this->stack.size();
-  cell->catchtable.frame = this->frames;
-  cell->catchtable.parent = this->catchstack;
-  cell->catchtable.address = address;
+  cell->catchtable.init(this->catchstack, this->frames, address, this->stack.size());
+
+  // Append to catchstack
   this->catchstack = cell->as<CatchTable>();
 
   // Print the catchtable if the corresponding flag was set
@@ -110,7 +108,7 @@ CatchTable* VM::pop_catchtable() {
     this->panic(Status::CatchStackEmpty);
   }
   CatchTable* current = this->catchstack;
-  this->catchstack = current->parent;
+  this->catchstack = current->get_parent();
 
   return current;
 }
@@ -130,7 +128,7 @@ void VM::unwind_catchstack(std::optional<VALUE> payload = std::nullopt) {
 
   // Walk the frame tree until we reach the frame stored in the catchtable
   while (this->frames) {
-    if (this->frames == table->frame) {
+    if (this->frames == table->get_frame()) {
       break;
     } else {
       if (this->frames->get_halt_after_return()) {
@@ -142,7 +140,7 @@ void VM::unwind_catchstack(std::optional<VALUE> payload = std::nullopt) {
   }
 
   // Jump to the handler block of the catchtable
-  this->ip = table->address;
+  this->ip = table->get_address();
 
   // Show the catchtable we just restored if the corresponding flag was set
   if (this->context.trace_catchtables) {
@@ -155,14 +153,14 @@ void VM::unwind_catchstack(std::optional<VALUE> payload = std::nullopt) {
   // If there are less elements on the stack than there were when the table was pushed
   // that means that the stack is not in a predictable state anymore
   // There is nothing we can do, but crash
-  if (this->stack.size() < table->stacksize) {
+  if (this->stack.size() < table->get_stacksize()) {
     this->panic(Status::CorruptedStack);
   }
 
   // Unwind the stack to be the size it was when this catchtable
   // was pushed. Because the stack could be smaller, we need to
   // calculate the amount of values we can pop
-  size_t popcount = this->stack.size() - table->stacksize;
+  size_t popcount = this->stack.size() - table->get_stacksize();
   while (popcount--) {
     this->pop_stack();
   }
@@ -2141,10 +2139,10 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       this->pretty_print_stack.push_back(value);
 
       io << "<CatchTable ";
-      io << "address=" << reinterpret_cast<void*>(table->address) << " ";
-      io << "stacksize=" << table->stacksize << " ";
-      io << "frame=" << table->frame << " ";
-      io << "parent=" << table->parent;
+      io << "address=" << reinterpret_cast<void*>(table->get_address()) << " ";
+      io << "stacksize=" << table->get_stacksize() << " ";
+      io << "frame=" << table->get_frame() << " ";
+      io << "parent=" << table->get_parent();
       io << ">";
 
       this->pretty_print_stack.pop_back();

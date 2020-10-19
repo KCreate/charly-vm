@@ -402,4 +402,44 @@ void Frame::access_locals_shared(std::function<void(VectorType*)> cb) {
   cb(this->locals);
 }
 
+void CatchTable::init(CatchTable* parent, Frame* frame, uint8_t* address, size_t stacksize) {
+  Header::init(kTypeCatchTable);
+  this->parent = parent;
+  this->frame = frame;
+  this->address = address;
+  this->stacksize = stacksize;
+}
+
+void CatchTable::set_parent(CatchTable* parent) {
+  this->parent = parent;
+}
+
+void CatchTable::set_frame(Frame* frame) {
+  this->frame = frame;
+}
+
+void CatchTable::set_address(uint8_t* address) {
+  this->address = address;
+}
+
+void CatchTable::set_stacksize(size_t stacksize) {
+  this->stacksize = stacksize;
+}
+
+CatchTable* CatchTable::get_parent() {
+  return this->parent;
+}
+
+Frame* CatchTable::get_frame() {
+  return this->frame;
+}
+
+uint8_t* CatchTable::get_address() {
+  return this->address;
+}
+
+size_t CatchTable::get_stacksize() {
+  return this->stacksize;
+}
+
 }  // namespace Charly

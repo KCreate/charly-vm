@@ -318,11 +318,26 @@ protected:
 };
 
 // Catchtable used for exception handling
-struct CatchTable : public Header {
+class CatchTable : public Header {
+  friend class GarbageCollector;
+public:
+  void init(CatchTable* parent, Frame* frame, uint8_t* address, size_t stacksize);
+
+  void set_parent(CatchTable* parent);    // set parent catchtable
+  void set_frame(Frame* frame);           // set active frame
+  void set_address(uint8_t* address);     // set exception handler address
+  void set_stacksize(size_t stacksize);   // set stacksize at table begin
+
+  CatchTable* get_parent(); // return parent catchtable
+  Frame* get_frame();       // return active frame
+  uint8_t* get_address();   // return exception handler address
+  size_t get_stacksize();   // return stacksize at table begin
+
+protected:
+  CatchTable* parent;
+  Frame* frame;
   uint8_t* address;
   size_t stacksize;
-  Frame* frame;
-  CatchTable* parent;
 };
 
 // Contains a data pointer and a destructor method to deallocate c library resources
