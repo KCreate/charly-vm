@@ -394,21 +394,31 @@ enum ThreadPolicy : uint8_t {
 
 // Function type used for including external functions from C-Land into the virtual machine
 // These are basically just a function pointer with some metadata associated to them
-struct CFunction : public Container {
+class CFunction : public Container {
+  friend class GarbageCollector;
+public:
+  void init(VALUE name, void* pointer, uint32_t argc, ThreadPolicy thread_policy);
+
+  void set_push_return_value(bool value);
+  void set_halt_after_return(bool value);
+
+  VALUE get_name();
+  void* get_pointer();
+  uint32_t get_argc();
+  ThreadPolicy get_thread_policy();
+  bool get_push_return_value();
+  bool get_halt_after_return();
+
+  bool allowed_on_main_thread();
+  bool allowed_on_worker_thread();
+
+protected:
   VALUE name;
   void* pointer;
   uint32_t argc;
   ThreadPolicy thread_policy;
   bool push_return_value;
   bool halt_after_return;
-
-  inline bool allowed_on_main_thread() {
-    return this->thread_policy & ThreadPolicyMain;
-  }
-
-  inline bool allowed_on_worker_thread() {
-    return this->thread_policy & ThreadPolicyWorker;
-  }
 };
 
 // Classes defined inside the virtual machine
@@ -1242,30 +1252,31 @@ inline bool charly_truthyness(VALUE value) {
 
 __attribute__((always_inline))
 inline VALUE charly_call_cfunction(VM* vm_handle, CFunction* cfunc, uint32_t argc, VALUE* argv) {
-  if (argc < cfunc->argc) return kNull;
+  if (argc < cfunc->get_argc()) return kNull;
 
-  switch (cfunc->argc) {
-    case  0: return reinterpret_cast<VALUE (*)(VM&)>           (cfunc->pointer)(*vm_handle);
-    case  1: return reinterpret_cast<VALUE (*)(VM&, VALUE_01)> (cfunc->pointer)(*vm_handle, ARG_01);
-    case  2: return reinterpret_cast<VALUE (*)(VM&, VALUE_02)> (cfunc->pointer)(*vm_handle, ARG_02);
-    case  3: return reinterpret_cast<VALUE (*)(VM&, VALUE_03)> (cfunc->pointer)(*vm_handle, ARG_03);
-    case  4: return reinterpret_cast<VALUE (*)(VM&, VALUE_04)> (cfunc->pointer)(*vm_handle, ARG_04);
-    case  5: return reinterpret_cast<VALUE (*)(VM&, VALUE_05)> (cfunc->pointer)(*vm_handle, ARG_05);
-    case  6: return reinterpret_cast<VALUE (*)(VM&, VALUE_06)> (cfunc->pointer)(*vm_handle, ARG_06);
-    case  7: return reinterpret_cast<VALUE (*)(VM&, VALUE_07)> (cfunc->pointer)(*vm_handle, ARG_07);
-    case  8: return reinterpret_cast<VALUE (*)(VM&, VALUE_08)> (cfunc->pointer)(*vm_handle, ARG_08);
-    case  9: return reinterpret_cast<VALUE (*)(VM&, VALUE_09)> (cfunc->pointer)(*vm_handle, ARG_09);
-    case 10: return reinterpret_cast<VALUE (*)(VM&, VALUE_10)> (cfunc->pointer)(*vm_handle, ARG_10);
-    case 11: return reinterpret_cast<VALUE (*)(VM&, VALUE_11)> (cfunc->pointer)(*vm_handle, ARG_11);
-    case 12: return reinterpret_cast<VALUE (*)(VM&, VALUE_12)> (cfunc->pointer)(*vm_handle, ARG_12);
-    case 13: return reinterpret_cast<VALUE (*)(VM&, VALUE_13)> (cfunc->pointer)(*vm_handle, ARG_13);
-    case 14: return reinterpret_cast<VALUE (*)(VM&, VALUE_14)> (cfunc->pointer)(*vm_handle, ARG_14);
-    case 15: return reinterpret_cast<VALUE (*)(VM&, VALUE_15)> (cfunc->pointer)(*vm_handle, ARG_15);
-    case 16: return reinterpret_cast<VALUE (*)(VM&, VALUE_16)> (cfunc->pointer)(*vm_handle, ARG_16);
-    case 17: return reinterpret_cast<VALUE (*)(VM&, VALUE_17)> (cfunc->pointer)(*vm_handle, ARG_17);
-    case 18: return reinterpret_cast<VALUE (*)(VM&, VALUE_18)> (cfunc->pointer)(*vm_handle, ARG_18);
-    case 19: return reinterpret_cast<VALUE (*)(VM&, VALUE_19)> (cfunc->pointer)(*vm_handle, ARG_19);
-    case 20: return reinterpret_cast<VALUE (*)(VM&, VALUE_20)> (cfunc->pointer)(*vm_handle, ARG_20);
+  void* pointer = cfunc->get_pointer();
+  switch (cfunc->get_argc()) {
+    case  0: return reinterpret_cast<VALUE (*)(VM&)>           (pointer)(*vm_handle);
+    case  1: return reinterpret_cast<VALUE (*)(VM&, VALUE_01)> (pointer)(*vm_handle, ARG_01);
+    case  2: return reinterpret_cast<VALUE (*)(VM&, VALUE_02)> (pointer)(*vm_handle, ARG_02);
+    case  3: return reinterpret_cast<VALUE (*)(VM&, VALUE_03)> (pointer)(*vm_handle, ARG_03);
+    case  4: return reinterpret_cast<VALUE (*)(VM&, VALUE_04)> (pointer)(*vm_handle, ARG_04);
+    case  5: return reinterpret_cast<VALUE (*)(VM&, VALUE_05)> (pointer)(*vm_handle, ARG_05);
+    case  6: return reinterpret_cast<VALUE (*)(VM&, VALUE_06)> (pointer)(*vm_handle, ARG_06);
+    case  7: return reinterpret_cast<VALUE (*)(VM&, VALUE_07)> (pointer)(*vm_handle, ARG_07);
+    case  8: return reinterpret_cast<VALUE (*)(VM&, VALUE_08)> (pointer)(*vm_handle, ARG_08);
+    case  9: return reinterpret_cast<VALUE (*)(VM&, VALUE_09)> (pointer)(*vm_handle, ARG_09);
+    case 10: return reinterpret_cast<VALUE (*)(VM&, VALUE_10)> (pointer)(*vm_handle, ARG_10);
+    case 11: return reinterpret_cast<VALUE (*)(VM&, VALUE_11)> (pointer)(*vm_handle, ARG_11);
+    case 12: return reinterpret_cast<VALUE (*)(VM&, VALUE_12)> (pointer)(*vm_handle, ARG_12);
+    case 13: return reinterpret_cast<VALUE (*)(VM&, VALUE_13)> (pointer)(*vm_handle, ARG_13);
+    case 14: return reinterpret_cast<VALUE (*)(VM&, VALUE_14)> (pointer)(*vm_handle, ARG_14);
+    case 15: return reinterpret_cast<VALUE (*)(VM&, VALUE_15)> (pointer)(*vm_handle, ARG_15);
+    case 16: return reinterpret_cast<VALUE (*)(VM&, VALUE_16)> (pointer)(*vm_handle, ARG_16);
+    case 17: return reinterpret_cast<VALUE (*)(VM&, VALUE_17)> (pointer)(*vm_handle, ARG_17);
+    case 18: return reinterpret_cast<VALUE (*)(VM&, VALUE_18)> (pointer)(*vm_handle, ARG_18);
+    case 19: return reinterpret_cast<VALUE (*)(VM&, VALUE_19)> (pointer)(*vm_handle, ARG_19);
+    case 20: return reinterpret_cast<VALUE (*)(VM&, VALUE_20)> (pointer)(*vm_handle, ARG_20);
   }
 
   return kNull;

@@ -65,6 +65,6 @@ class Frame;
 class CatchTable;
 class CPointer;
 class Function;
-struct CFunction;
+class CFunction;
 struct Class;
 }  // namespace Charly

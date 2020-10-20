@@ -64,7 +64,7 @@ VALUE call_async(VM& vm, VALUE cfunc, VALUE args, VALUE callback) {
   CFunction* _cfunc = charly_as_cfunction(cfunc);
 
   _args->access_vector_shared([&](Array::VectorType* vec) {
-    if (vec->size() < _cfunc->argc) {
+    if (vec->size() < _cfunc->get_argc()) {
       vm.throw_exception("Not enough arguments for CFunction call");
       return;
     }

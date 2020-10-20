@@ -226,13 +226,7 @@ VALUE VM::create_function(VALUE name,
 
 VALUE VM::create_cfunction(VALUE name, uint32_t argc, void* pointer, ThreadPolicy thread_policy) {
   MemoryCell* cell = this->gc.allocate();
-  cell->container.init(kTypeCFunction);
-  cell->cfunction.name = name;
-  cell->cfunction.pointer = pointer;
-  cell->cfunction.argc = argc;
-  cell->cfunction.thread_policy = thread_policy;
-  cell->cfunction.push_return_value = true;
-  cell->cfunction.halt_after_return = false;
+  cell->cfunction.init(name, pointer, argc, thread_policy);
   return cell->as_value();
 }
 
@@ -366,12 +360,14 @@ VALUE VM::copy_function(VALUE function) {
 VALUE VM::copy_cfunction(VALUE function) {
   CFunction* source = charly_as_cfunction(function);
   CFunction* target = charly_as_cfunction(this->create_cfunction(
-    source->name,
-    source->argc,
-    source->pointer,
-    source->thread_policy
+    source->get_name(),
+    source->get_argc(),
+    source->get_pointer(),
+    source->get_thread_policy()
   ));
   target->copy_container_from(source);
+  target->set_push_return_value(source->get_push_return_value());
+  target->set_halt_after_return(source->get_halt_after_return());
 
   return target->as_value();
 }
@@ -768,23 +764,23 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
       CFunction* cfunc = charly_as_cfunction(source);
 
       if (symbol == SYM("name")) {
-        return this->create_string(SymbolTable::decode(cfunc->name));
+        return this->create_string(SymbolTable::decode(cfunc->get_name()));
       }
 
       if (symbol == SYM("push_return_value")) {
-        return cfunc->push_return_value ? kTrue : kFalse;
+        return cfunc->get_push_return_value() ? kTrue : kFalse;
       }
 
       if (symbol == SYM("halt_after_return")) {
-        return cfunc->halt_after_return ? kTrue : kFalse;
+        return cfunc->get_halt_after_return() ? kTrue : kFalse;
       }
 
       if (symbol == SYM("argc")) {
-        return charly_create_number(cfunc->argc);
+        return charly_create_number(cfunc->get_argc());
       }
 
       if (symbol == SYM("thread_policy")) {
-        return charly_create_number(cfunc->thread_policy);
+        return charly_create_number(cfunc->get_thread_policy());
       }
 
       VALUE value;
@@ -951,12 +947,12 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
       CFunction* cfunc = charly_as_cfunction(target);
 
       if (symbol == SYM("push_return_value")) {
-        cfunc->push_return_value = charly_truthyness(value);
+        cfunc->set_push_return_value(charly_truthyness(value));
         break;
       }
 
       if (symbol == SYM("halt_after_return")) {
-        cfunc->halt_after_return = charly_truthyness(value);
+        cfunc->set_halt_after_return(charly_truthyness(value));
         break;
       }
 
@@ -1129,7 +1125,7 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
   }
 
   // Check if enough arguments have been passed
-  if (argc < function->argc) {
+  if (argc < function->get_argc()) {
     this->throw_exception("Not enough arguments for CFunction call");
     return;
   }
@@ -1152,9 +1148,9 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
     this->gc.unmark_persistent(argv[i]);
   }
 
-  this->halted = function->halt_after_return;
+  this->halted = function->get_halt_after_return();
 
-  if (function->push_return_value && this->catchstack == original_catchtable) {
+  if (function->get_push_return_value() && this->catchstack == original_catchtable) {
     this->push_stack(rv);
   }
 }
@@ -2028,11 +2024,11 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       io << "<CFunction ";
       io << "name=";
-      this->pretty_print(io, func->name);
+      this->pretty_print(io, func->get_name());
       io << " ";
-      io << "argc=" << func->argc;
+      io << "argc=" << func->get_argc();
       io << " ";
-      io << "pointer=" << reinterpret_cast<uint64_t*>(func->pointer) << "";
+      io << "pointer=" << static_cast<void*>(func->get_pointer()) << "";
 
       func->access_container_shared([&](Container::ContainerType* container) {
         for (auto& entry : *container) {
@@ -2313,8 +2309,8 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
       this->pretty_print_stack.push_back(value);
 
       io << "<CFunction ";
-      this->to_s(io, func->name, depth);
-      io << "#" << func->argc;
+      this->to_s(io, func->get_name(), depth);
+      io << "#" << func->get_argc();
 
       func->access_container_shared([&](Container::ContainerType* container) {
         for (auto entry : *container) {

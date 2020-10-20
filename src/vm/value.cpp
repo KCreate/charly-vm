@@ -533,4 +533,55 @@ VALUE Function::get_self(VALUE* fallback) {
   return kNull;
 }
 
+void CFunction::init(VALUE name, void* pointer, uint32_t argc, ThreadPolicy thread_policy) {
+  Container::init(kTypeCFunction, 2);
+
+  this->name = name;
+  this->pointer = pointer;
+  this->argc = argc;
+  this->thread_policy = thread_policy;
+  this->push_return_value = true;
+  this->halt_after_return = false;
+}
+
+void CFunction::set_push_return_value(bool value) {
+  this->push_return_value = value;
+}
+
+void CFunction::set_halt_after_return(bool value) {
+  this->halt_after_return = value;
+}
+
+VALUE CFunction::get_name() {
+  return this->name;
+}
+
+void* CFunction::get_pointer() {
+  return this->pointer;
+}
+
+uint32_t CFunction::get_argc() {
+  return this->argc;
+}
+
+ThreadPolicy CFunction::get_thread_policy() {
+  return this->thread_policy;
+}
+
+bool CFunction::get_push_return_value() {
+  return this->push_return_value;
+}
+
+bool CFunction::get_halt_after_return() {
+  return this->halt_after_return;
+}
+
+bool CFunction::allowed_on_main_thread() {
+  return this->thread_policy & ThreadPolicyMain;
+}
+
+bool CFunction::allowed_on_worker_thread() {
+  return this->thread_policy & ThreadPolicyWorker;
+}
+
 }  // namespace Charly
