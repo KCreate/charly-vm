@@ -176,6 +176,12 @@ VALUE VM::create_object(uint32_t initial_capacity) {
   return cell->as_value();
 }
 
+VALUE VM::create_object(VALUE klass, uint32_t initial_capacity) {
+  MemoryCell* cell = this->gc.allocate();
+  cell->object.init(klass, initial_capacity);
+  return cell->as_value();
+}
+
 VALUE VM::create_array(uint32_t initial_capacity) {
   MemoryCell* cell = this->gc.allocate();
   cell->array.init(initial_capacity);
@@ -214,18 +220,7 @@ VALUE VM::create_function(VALUE name,
                           bool anonymous,
                           bool needs_arguments) {
   MemoryCell* cell = this->gc.allocate();
-  cell->container.init(kTypeFunction);
-  cell->function.name = name;
-  cell->function.argc = argc;
-  cell->function.minimum_argc = minimum_argc;
-  cell->function.lvarcount = lvarcount;
-  cell->function.context = this->frames;
-  cell->function.body_address = body_address;
-  cell->function.anonymous = anonymous;
-  cell->function.needs_arguments = needs_arguments;
-  cell->function.bound_self_set = false;
-  cell->function.bound_self = kNull;
-  cell->function.host_class = kNull;
+  cell->function.init(name, this->frames, body_address, argc, minimum_argc, lvarcount, anonymous, needs_arguments);
   return cell->as_value();
 }
 
@@ -346,19 +341,23 @@ VALUE VM::copy_string(VALUE string) {
 VALUE VM::copy_function(VALUE function) {
   Function* source = charly_as_function(function);
   Function* target = charly_as_function(this->create_function(
-    source->name,
-    source->body_address,
-    source->argc,
-    source->minimum_argc,
-    source->lvarcount,
-    source->anonymous,
-    source->needs_arguments
+    source->get_name(),
+    source->get_body_address(),
+    source->get_argc(),
+    source->get_minimum_argc(),
+    source->get_lvarcount(),
+    source->get_anonymous(),
+    source->get_needs_arguments()
   ));
 
-  target->context = source->context;
-  target->bound_self_set = source->bound_self_set;
-  target->bound_self = source->bound_self;
-  target->host_class = source->host_class;
+
+  VALUE bound_self;
+  if (source->get_bound_self(&bound_self)) {
+    target->set_bound_self(bound_self);
+  }
+
+  target->set_context(source->get_context());
+  target->set_host_class(source->get_host_class());
   target->copy_container_from(source);
 
   return target->as_value();
@@ -732,19 +731,22 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
       Function* func = charly_as_function(source);
 
       if (symbol == SYM("name")) {
-        return this->create_string(SymbolTable::decode(func->name));
+        return this->create_string(SymbolTable::decode(func->get_name()));
       }
 
       if (symbol == SYM("host_class")) {
-        return func->host_class;
+        Class* host_class = func->get_host_class();
+        if (host_class)
+          return host_class->as_value();
+        return kNull;
       }
 
       if (symbol == SYM("argc")) {
-        return charly_create_number(func->minimum_argc);
+        return charly_create_number(func->get_minimum_argc());
       }
 
       if (symbol == SYM("source_location")) {
-        uint8_t* addr = func->body_address;
+        uint8_t* addr = func->get_body_address();
         std::optional<std::string> lookup = this->context.compiler_manager.address_mapping.resolve_address(addr);
 
         if (!lookup) {
@@ -1052,7 +1054,7 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
     // Normal functions as defined via the user
     case kTypeFunction: {
       Function* tfunc = charly_as_function(function);
-      target = this->get_self_for_function(tfunc, with_target ? &target : nullptr);
+      target = tfunc->get_self(with_target ? &target : nullptr);
       this->call_function(tfunc, argc, arguments, target, halt_after_return);
       return;
     }
@@ -1072,7 +1074,7 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
 
 void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self, bool halt_after_return) {
   // Check if the function was called with enough arguments
-  if (argc < function->minimum_argc) {
+  if (argc < function->get_minimum_argc()) {
     this->throw_exception("Not enough arguments for function call");
     return;
   }
@@ -1102,22 +1104,22 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   //
   // If the function requires an arguments array, we create one and push it onto
   // offset 0 of the frame
-  if (function->needs_arguments) {
+  if (function->get_needs_arguments()) {
     Array* arguments_array = charly_as_array(ctx.create_array(argc));
     frame->write_local(0, arguments_array->as_value());
 
     for (size_t i = 0; i < argc; i++) {
-      if (i < function->argc) {
+      if (i < function->get_argc()) {
         frame->write_local(i + 1, argv[i]);
       }
       arguments_array->push(argv[i]);
     }
   } else {
-    for (size_t i = 0; i < argc && i < function->lvarcount; i++)
+    for (size_t i = 0; i < argc && i < function->get_lvarcount(); i++)
       frame->write_local(i, argv[i]);
   }
 
-  this->ip = function->body_address;
+  this->ip = function->get_body_address();
 }
 
 void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
@@ -1459,26 +1461,26 @@ void VM::op_putself() {
 void VM::op_putsuper() {
   Function* func = this->frames->get_function();
   if (!func) this->panic(Status::InvalidArgumentType);
-  if (!charly_is_class(func->host_class)) this->panic(Status::InvalidArgumentType);
 
-  Class* host_class = charly_as_class(func->host_class);
+  Class* host_class = func->get_host_class();
+  if (host_class == nullptr)
+    this->panic(Status::InvalidArgumentType);
 
   // A super call inside a constructor will return the super constructor
   // A super call inside a member function will return the super function of
   // the currently active function
   VALUE super_value = kNull;
-  if (func->name == SYM("constructor")) {
+  if (func->get_name() == SYM("constructor")) {
     super_value = charly_find_super_constructor(host_class);
   } else {
-    super_value = charly_find_super_method(host_class, func->name);
+    super_value = charly_find_super_method(host_class, func->get_name());
   }
 
   // If we've got a function, we need to make a copy of it and bind the currently
   // active self value to it
   if (charly_is_function(super_value)) {
     Function* copied_super_value = charly_as_function(this->copy_function(super_value));
-    copied_super_value->bound_self_set = true;
-    copied_super_value->bound_self = this->frames->get_self();
+    copied_super_value->set_bound_self(this->frames->get_self());
     super_value = copied_super_value->as_value();
   }
 
@@ -1488,17 +1490,17 @@ void VM::op_putsuper() {
 void VM::op_putsupermember(VALUE symbol) {
   Function* func = this->frames->get_function();
   if (!func) this->panic(Status::InvalidArgumentType);
-  if (!charly_is_class(func->host_class)) this->panic(Status::InvalidArgumentType);
 
-  Class* host_class = charly_as_class(func->host_class);
+  Class* host_class = func->get_host_class();
+  if (host_class == nullptr)
+    this->panic(Status::InvalidArgumentType);
   VALUE super_value = charly_find_super_method(host_class, symbol);
 
   // If we've got a function, we need to make a copy of it and bind the currently
   // active self value to it
   if (charly_is_function(super_value)) {
     Function* copied_super_value = charly_as_function(this->copy_function(super_value));
-    copied_super_value->bound_self_set = true;
-    copied_super_value->bound_self = this->frames->get_self();
+    copied_super_value->set_bound_self(this->frames->get_self());
     super_value = copied_super_value->as_value();
   }
 
@@ -1570,7 +1572,7 @@ void VM::op_putclass(VALUE name,
       this->panic(Status::InvalidArgumentType);
     }
     Function* constructor = charly_as_function(klass->constructor);
-    constructor->host_class = klass->as_value();
+    constructor->set_host_class(klass);
   }
 
   if (has_parent_class) {
@@ -1587,8 +1589,8 @@ void VM::op_putclass(VALUE name,
       this->panic(Status::InvalidArgumentType);
     }
     Function* func_smethod = charly_as_function(smethod);
-    func_smethod->host_class = klass->as_value();
-    klass->write(func_smethod->name, smethod);
+    func_smethod->set_host_class(klass);
+    klass->write(func_smethod->get_name(), smethod);
   }
 
   while (methodcount--) {
@@ -1597,9 +1599,9 @@ void VM::op_putclass(VALUE name,
       this->panic(Status::InvalidArgumentType);
     }
     Function* func_method = charly_as_function(method);
-    func_method->host_class = klass->as_value();
+    func_method->set_host_class(klass);
     Object* obj_methods = charly_as_object(klass->prototype);
-    obj_methods->write(func_method->name, method);
+    obj_methods->write(func_method->get_name(), method);
   }
 
   while (staticpropertycount--) {
@@ -1687,8 +1689,7 @@ void VM::op_new(uint32_t argc) {
   // Setup object
   ManagedContext lalloc(this);
   uint32_t member_property_count = charly_as_class(klass)->member_properties->size();
-  Object* obj = charly_as_object(lalloc.create_object(member_property_count));
-  obj->set_klass(klass);
+  Object* obj = charly_as_object(lalloc.create_object(klass, member_property_count));
   this->initialize_member_properties(charly_as_class(klass), obj);
 
   // Call initial constructor if there is one
@@ -1697,7 +1698,7 @@ void VM::op_new(uint32_t argc) {
   if (charly_is_function(initial_constructor)) {
 
     // Check if there are enough arguments
-    if (charly_as_function(initial_constructor)->minimum_argc > argc) {
+    if (charly_as_function(initial_constructor)->get_minimum_argc() > argc) {
       std::string class_name = SymbolTable::decode(charly_as_class(klass)->name);
       this->throw_exception("Not enough arguments for class constructor: " + class_name);
       return;
@@ -1981,24 +1982,24 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       io << "<Function ";
       io << "name=";
-      if (charly_is_class(func->host_class)) {
-        Class* host_class = charly_as_class(func->host_class);
+      if (Class* host_class = func->get_host_class()) {
         this->pretty_print(io, host_class->name);
         io << ":";
       }
-      this->pretty_print(io, func->name);
+      this->pretty_print(io, func->get_name());
       io << " ";
-      io << "argc=" << func->argc;
+      io << "argc=" << func->get_argc();
       io << " ";
-      io << "minimum_argc=" << func->minimum_argc;
+      io << "minimum_argc=" << func->get_minimum_argc();
       io << " ";
-      io << "lvarcount=" << func->lvarcount;
-      io << " ";
-      io << "context=" << func->context << " ";
-      io << "body_address=" << reinterpret_cast<void*>(func->body_address) << " ";
-      io << "bound_self_set=" << (func->bound_self_set ? "true" : "false") << " ";
-      io << "bound_self=";
-      this->pretty_print(io, func->bound_self);
+      io << "lvarcount=" << func->get_lvarcount();
+      io << "body_address=" << reinterpret_cast<void*>(func->get_body_address()) << " ";
+
+      VALUE bound_self;
+      if (func->get_bound_self(&bound_self)) {
+        io << "bound_self=";
+        this->pretty_print(io, bound_self);
+      }
 
       func->access_container_shared([&](Container::ContainerType* container) {
         for (auto& entry : *container) {
@@ -2110,8 +2111,8 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
     case kTypeFrame: {
       Frame* frame = charly_as_frame(value);
       Function* function = frame->get_function();
-      VALUE name = function->anonymous ? SYM("<anonymous>") : function->name;
-      uint8_t* body_address = function->body_address;
+      VALUE name = function->get_anonymous() ? SYM("<anonymous>") : function->get_name();
+      uint8_t* body_address = function->get_body_address();
       auto lookup_result = this->context.compiler_manager.address_mapping.resolve_address(body_address);
 
       io << "(";
@@ -2276,13 +2277,14 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
 
       io << "<Function ";
       io << "";
-      if (charly_is_class(func->host_class)) {
-        Class* host_class = charly_as_class(func->host_class);
+
+      if (Class* host_class = func->get_host_class()) {
         this->to_s(io, host_class->name);
         io << ":";
       }
-      this->to_s(io, func->name);
-      io << "#" << func->minimum_argc;
+
+      this->to_s(io, func->get_name());
+      io << "#" << func->get_minimum_argc();
 
       func->access_container_shared([&](Container::ContainerType* container) {
         for (auto& entry : *container) {
@@ -2375,14 +2377,12 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
 
       Frame* frame = charly_as_frame(value);
       Function* function = frame->get_function();
-      VALUE host_class = function->host_class;
-      VALUE name = function->anonymous ? SYM("<anonymous>") : function->name;
-
-      if (host_class != kNull) {
-        io << SymbolTable::decode(charly_as_class(host_class)->name);
+      if (Class* host_class = function->get_host_class()) {
+        io << SymbolTable::decode(host_class->name);
         io << "::";
       }
 
+      VALUE name = function->get_anonymous() ? SYM("<anonymous>") : function->get_name();
       io << SymbolTable::decode(name);
 
       io << ">";
@@ -2395,13 +2395,6 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
       break;
     }
   }
-}
-
-VALUE VM::get_self_for_function(Function* function, const VALUE* fallback) {
-  if (function->bound_self_set) return function->bound_self;
-  if (function->anonymous) return function->context ? function->context->get_self() : kNull;
-  if (fallback != nullptr) return *fallback;
-  return function->context ? function->context->get_self() : kNull;
 }
 
 VALUE VM::get_global_self() {
@@ -3261,7 +3254,7 @@ uint8_t VM::start_runtime() {
         // Get Charly object
         VALUE global_self = this->get_global_self();
         Function* fn = charly_as_function(task.callback.func);
-        VALUE self = this->get_self_for_function(fn, &global_self);
+        VALUE self = fn->get_self(&global_self);
 
         // Invoke function
         this->call_function(fn, 4, reinterpret_cast<VALUE*>(task.callback.arguments), self, true);

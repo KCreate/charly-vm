@@ -130,10 +130,6 @@ VALUE Object::get_klass() {
   return this->klass;
 }
 
-void Object::set_klass(VALUE klass) {
-  this->klass = klass;
-}
-
 void Array::init(uint32_t initial_capacity) {
   Header::init(kTypeArray);
   this->data = new Array::VectorType();
@@ -288,14 +284,14 @@ void Frame::init(Frame* parent, CatchTable* catchtable, Function* function, uint
   Header::init(kTypeFrame);
 
   this->parent = parent;
-  this->environment = function->context;
+  this->environment = function->get_context();
   this->catchtable = catchtable;
   this->function = function;
   this->self = self;
   this->origin_address = origin;
   this->halt_after_return = halt;
 
-  this->locals = new std::vector<VALUE>(function->lvarcount, kNull);
+  this->locals = new std::vector<VALUE>(function->get_lvarcount(), kNull);
 }
 
 void Frame::clean() {
@@ -304,34 +300,6 @@ void Frame::clean() {
     delete this->locals;
     this->locals = nullptr;
   }
-}
-
-void Frame::set_parent(Frame* frame) {
-  this->parent = frame;
-}
-
-void Frame::set_environment(Frame* frame) {
-  this->environment = frame;
-}
-
-void Frame::set_catchtable(CatchTable* catchtable) {
-  this->catchtable = catchtable;
-}
-
-void Frame::set_function(Function* function) {
-  this->function = function;
-}
-
-void Frame::set_self(VALUE self) {
-  this->self = self;
-}
-
-void Frame::set_origin_address(uint8_t* origin_address) {
-  this->origin_address = origin_address;
-}
-
-void Frame::set_halt_after_return(bool halt_after_return) {
-  this->halt_after_return = halt_after_return;
 }
 
 Frame* Frame::get_parent() {
@@ -411,22 +379,6 @@ void CatchTable::init(CatchTable* parent, Frame* frame, uint8_t* address, size_t
   this->stacksize = stacksize;
 }
 
-void CatchTable::set_parent(CatchTable* parent) {
-  this->parent = parent;
-}
-
-void CatchTable::set_frame(Frame* frame) {
-  this->frame = frame;
-}
-
-void CatchTable::set_address(uint8_t* address) {
-  this->address = address;
-}
-
-void CatchTable::set_stacksize(size_t stacksize) {
-  this->stacksize = stacksize;
-}
-
 CatchTable* CatchTable::get_parent() {
   return this->parent;
 }
@@ -470,6 +422,115 @@ void* CPointer::get_data() {
 
 CPointer::DestructorType CPointer::get_destructor() {
   return this->destructor;
+}
+
+void Function::init(VALUE name,
+                    Frame* context,
+                    uint8_t* body,
+                    uint32_t argc,
+                    uint32_t minimum_argc,
+                    uint32_t lvarcount,
+                    bool anonymous,
+                    bool needs_arguments) {
+  Container::init(kTypeFunction, 2);
+  this->name = name;
+  this->context = context;
+  this->body_address = body;
+  this->host_class = nullptr;
+  this->bound_self = kNull;
+  this->bound_self_set = false;
+  this->argc = argc;
+  this->minimum_argc = minimum_argc;
+  this->lvarcount = lvarcount;
+  this->anonymous = anonymous;
+  this->needs_arguments = needs_arguments;
+}
+
+void Function::set_context(Frame* context) {
+  this->context = context;
+}
+
+void Function::set_host_class(Class* host_class) {
+  this->host_class = host_class;
+}
+
+void Function::set_bound_self(VALUE bound_self) {
+  this->bound_self = bound_self;
+  this->bound_self_set = true;
+}
+
+void Function::clear_bound_self() {
+  this->bound_self = kNull;
+  this->bound_self_set = false;
+}
+
+VALUE Function::get_name() {
+  return this->name;
+}
+
+Frame* Function::get_context() {
+  return this->context;
+}
+
+uint8_t* Function::get_body_address() {
+  return this->body_address;
+}
+
+Class* Function::get_host_class() {
+  return this->host_class;
+}
+
+bool Function::get_bound_self(VALUE* target) {
+  if (this->bound_self_set) {
+    *target = this->bound_self;
+    return true;
+  }
+
+  return false;
+}
+
+uint32_t Function::get_argc() {
+  return this->argc;
+}
+
+uint32_t Function::get_minimum_argc() {
+  return this->minimum_argc;
+}
+
+uint32_t Function::get_lvarcount() {
+  return this->lvarcount;
+}
+
+bool Function::get_anonymous() {
+  return this->anonymous;
+}
+
+bool Function::get_needs_arguments() {
+  return this->needs_arguments;
+}
+
+VALUE Function::get_self(VALUE* fallback) {
+  if (this->bound_self_set) {
+    return this->bound_self;
+  }
+
+  if (this->anonymous) {
+    if (this->context != nullptr) {
+      return this->context->get_self();
+    } else {
+      return kNull;
+    }
+  }
+
+  if (fallback != nullptr) {
+    return *fallback;
+  }
+
+  if (this->context != nullptr) {
+    return this->context->get_self();
+  }
+
+  return kNull;
 }
 
 }  // namespace Charly

@@ -24,39 +24,44 @@
  * SOFTWARE.
  */
 
-// Implementation:  The runtime Function struct gets a new flag which
-//                  stores if the function's last argument has a spread-operator
-//                  If yes, the VM will pack all the correct arguments into
-//                  an array and pass that as the last parameter.
+// Default argument refactor:
+//    Default arguments no longer need to be implemented as arguments
+//    array length checks. Because we know how many arguments are passed
+//    in, and each function knows at compile-time how many default arguments
+//    it has, we can simply jump to a specific offset of the function and
+//    let it generate all default arguments in sequence.
 //
-//                  This needs to be implemented inside the VM::call_function
-//                  method and should not require any changes to the code generation
-//                  facilities.
+//    The function prologue gets implemented as a series of branch
+//    instructions which jump to the relevant default argument initializer.
+//    Default argument intializers are compiled in definition order, allowing
+//    later arguments to reference previous ones and to avoid any additional
+//    jumps, letting the code just flow into the main body.
 //
-//                  The previous 'arguments' identifier gets removed
-//                  This means the instructions readarrayindex and setarrayindex can
-//                  also be removed
-
-// The '...' spread operator can be used to access all remaining arguments
-func h(a, b, c...) = _
-
-// The argument followed by the spread operator has to be
-// the last argument of the function
+//    The function 'func foo(a = 1, b = 2) { a + b }' would get compiled to the following
+//    bytecodes
 //
-//                 +- Can't have an argument after
-//                 |  a argument spread operator
-//                 |
-//                 v
-func j(a, b, c..., d) = _
-
-// The following function declaration effectively renames the
-// 'argument' identifier.
-func k(a...) = _
-
-// Arguments before can have default arguments
+//    foo {
+//      .LARG0    // if given 0 arguments
+//        a = 1
+//      .LARG1    // if given 1 argument
+//        b = 2
+//      .MAIN     // if given 2 or more arguments (depending on argc of function)
+//        readlocal 0, 0
+//        readlocal 0, 1
+//        add
+//        return
+//    }
 //
-// l()            => [100, []]
-// l(1)           => [1, []]
-// l(1, 2)        => [1, [2]]
-// l(1, 2, 3)     => [1, [2, 3]]
-func l(num = 100, other...) = [num, other]
+//    Calls to the function with enough arguments simply jump directly to the
+//    MAIN block and skip all default argument initialisation code.
+//
+//
+// Argument spread:
+//    The argument spread construct can be implemented as an additional flag
+//    in the Function struct. It stores wether the last argument of the function
+//    should be an array containing the last and all additional arguments passed
+//    to the function.
+//
+//    The packing of the arguments into the array is performed inside the
+//    call_function method of the VM. If no arguments are applicable, it simply
+//    pushes an empty array.

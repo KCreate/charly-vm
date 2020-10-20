@@ -25,7 +25,7 @@ CFLAGS := -std=$(CPPSTD) \
 					-Werror \
 					-Wno-unused-private-field \
 					-Wno-trigraphs \
-					-ferror-limit=50 \
+					-ferror-limit=100 \
 					-ffast-math
 CFLAGSPROD := -std=$(CPPSTD) \
 							-Wall \
@@ -33,7 +33,7 @@ CFLAGSPROD := -std=$(CPPSTD) \
 							-Werror \
 							-Wno-unused-private-field \
 							-Wno-trigraphs \
-							-ferror-limit=1 \
+							-ferror-limit=100 \
 							-flto \
 							-ffast-math \
 							-DNDEBUG

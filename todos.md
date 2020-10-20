@@ -10,6 +10,9 @@
       - Operations such as eq, lt can also be moved out of the VM into the value classes themselves
       - Replace std::mutex with something more efficient (smaller and faster??)
         - This looks interesting: https://webkit.org/blog/6161/locking-in-webkit/
+    - Refactor value copying system
+    - Store global internal VM variables as pointers to their real type, not as VALUEs
+    - Store global variables not as Object but as a Container
     - Fixed amount of native worker threads, waiting for jobs via some job queue
     - Refactor worker thread result return system
     - ManagedContext ability to mark cells as immortal

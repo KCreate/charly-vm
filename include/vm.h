@@ -212,6 +212,7 @@ public:
 
   // Methods to create new data types
   VALUE create_object(uint32_t initial_capacity);
+  VALUE create_object(VALUE klass, uint32_t initial_capacity);
   VALUE create_array(uint32_t initial_capacity);
   VALUE create_string(const char* data, uint32_t length);
   VALUE create_string(const std::string& str);
@@ -283,7 +284,6 @@ public:
   void stackdump(std::ostream& io);
   void pretty_print(std::ostream& io, VALUE value);
   void to_s(std::ostream& io, VALUE value, uint32_t depth = 0, bool inside_container = false);
-  VALUE get_self_for_function(Function* function, const VALUE* fallback_ptr);
   VALUE get_global_self();
   VALUE get_global_symbol(VALUE symbol);
 

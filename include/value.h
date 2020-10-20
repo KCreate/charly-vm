@@ -183,8 +183,8 @@ public:
   VALUE as_value();
 
 protected:
-  ValueType type; // the type of this heap value
-  bool mark;   // set by the GC to mark reachable values
+  ValueType type;   // the type of this heap value
+  bool mark;        // set by the GC to mark reachable values
 };
 
 // Underlying type of every value which has its own
@@ -223,7 +223,6 @@ public:
   void init(uint32_t initial_capacity = 4);
 
   VALUE get_klass();
-  void set_klass(VALUE klass);
 
 protected:
   VALUE klass; // The class this object was constructed from, otherwise null
@@ -263,8 +262,8 @@ public:
   void init_copy(const std::string& source);          // copy the string
   void clean();
 
-  char* get_data();       // returns a pointer to the data buffer
-  uint32_t get_length();  // returns the length of the buffer in bytes
+  char* get_data();
+  uint32_t get_length();
 
 protected:
   char* data;
@@ -280,22 +279,14 @@ public:
   void init(Frame* parent, CatchTable* catchtable, Function* function, uint8_t* origin, VALUE self, bool halt = false);
   void clean();
 
-  void set_parent(Frame* frame);                      // set the parent frame
-  void set_environment(Frame* frame);                 // set the parent environment frame
-  void set_catchtable(CatchTable* catchtable);        // set the active catchtable
-  void set_function(Function* function);                  // set the function value
-  void set_self(VALUE self);                          // set the self value
-  void set_origin_address(uint8_t* origin_address);   // set the origin address
-  void set_halt_after_return(bool halt_after_return); // set halt_after_return flag
-
-  Frame* get_parent();            // return parent frame
-  Frame* get_environment();       // return parent environment frame
-  CatchTable* get_catchtable();   // return parent catchtable
-  Function* get_function();         // return function value
-  VALUE get_self();               // return self value
-  uint8_t* get_origin_address();  // return the origin address
-  uint8_t* get_return_address();  // return the calculated return address
-  bool get_halt_after_return();   // return halt_after_return flag
+  Frame* get_parent();
+  Frame* get_environment();
+  CatchTable* get_catchtable();
+  Function* get_function();
+  VALUE get_self();
+  uint8_t* get_origin_address();
+  uint8_t* get_return_address();  // calculate the return address of this frame
+  bool get_halt_after_return();
 
   bool read_local(uint32_t index, VALUE* result);               // read value at index and store into result
   VALUE read_local_or(uint32_t index, VALUE fallback = kNull);  // read value at index or return fallback
@@ -323,25 +314,21 @@ class CatchTable : public Header {
 public:
   void init(CatchTable* parent, Frame* frame, uint8_t* address, size_t stacksize);
 
-  void set_parent(CatchTable* parent);    // set parent catchtable
-  void set_frame(Frame* frame);           // set active frame
-  void set_address(uint8_t* address);     // set exception handler address
-  void set_stacksize(size_t stacksize);   // set stacksize at table begin
-
-  CatchTable* get_parent(); // return parent catchtable
-  Frame* get_frame();       // return active frame
-  uint8_t* get_address();   // return exception handler address
-  size_t get_stacksize();   // return stacksize at table begin
+  CatchTable* get_parent();
+  Frame* get_frame();
+  uint8_t* get_address();
+  size_t get_stacksize();
 
 protected:
-  CatchTable* parent;
-  Frame* frame;
-  uint8_t* address;
-  size_t stacksize;
+  CatchTable* parent;   // the parent catchtable
+  Frame* frame;         // the frame in which this created was created
+  uint8_t* address;     // the address of the exception handler
+  size_t stacksize;     // the amount of values on the stack when this table was created
 };
 
 // Contains a data pointer and a destructor method to deallocate c library resources
 class CPointer : public Header {
+  friend class GarbageCollector;
 public:
   using DestructorType = void (*)(void*);
 
@@ -355,25 +342,47 @@ public:
   DestructorType get_destructor();
 
 protected:
-  void* data;
-  DestructorType destructor;
+  void* data;                 // arbitrary data pointer used by native libraries
+  DestructorType destructor;  // destructor function pointer
 };
 
 // Normal functions defined inside the virtual machine.
-struct Function : public Container {
-  VALUE name;
-  uint32_t argc;
-  uint32_t minimum_argc;
-  uint32_t lvarcount;
-  Frame* context;
-  uint8_t* body_address;
-  bool bound_self_set;
-  VALUE bound_self;
-  VALUE host_class;
-  bool anonymous;
-  bool needs_arguments;
+class Function : public Container {
+  friend class GarbageCollector;
+public:
+  void init(VALUE name, Frame* context, uint8_t* body, uint32_t argc, uint32_t minimum_argc,
+            uint32_t lvarcount, bool anonymous, bool needs_arguments);
 
-  // TODO: Bound argumentlist
+  void set_context(Frame* context);
+  void set_host_class(Class* host_class);
+  void set_bound_self(VALUE bound_self);  // set the bound_self value
+  void clear_bound_self();                // remove the bound_self value
+
+  VALUE get_name();
+  Frame* get_context();
+  uint8_t* get_body_address();
+  Class* get_host_class();
+  bool get_bound_self(VALUE* target);     // load bound_self into target, returns false if not set
+  uint32_t get_argc();
+  uint32_t get_minimum_argc();
+  uint32_t get_lvarcount();
+  bool get_anonymous();
+  bool get_needs_arguments();
+
+  VALUE get_self(VALUE* fallback); // determines the self value passed to the function
+
+protected:
+  VALUE name;             // symbol encoded name
+  Frame* context;         // frame this function was defined in
+  uint8_t* body_address;  // address of the body
+  Class* host_class;      // host class of this function, nullptr if none
+  VALUE bound_self;       // the bound self value
+  uint32_t argc;          // amount of named arguments
+  uint32_t minimum_argc;  // minimum amount of arguments needed to call
+  uint32_t lvarcount;     // amount of local variable slots required
+  bool bound_self_set;    // wether a bound self value is set, see bound_self above
+  bool anonymous;         // wether this function is anonymous (-> syntax)
+  bool needs_arguments;   // wether this function needs the arguments special value
 };
 
 // Thread policies describing what thread a native function is allowed to run on
@@ -400,8 +409,6 @@ struct CFunction : public Container {
   inline bool allowed_on_worker_thread() {
     return this->thread_policy & ThreadPolicyWorker;
   }
-
-  // TODO: Bound argumentlist
 };
 
 // Classes defined inside the virtual machine
