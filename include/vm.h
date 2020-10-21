@@ -226,7 +226,7 @@ public:
                         bool anonymous,
                         bool needs_arguments);
   VALUE create_cfunction(VALUE name, uint32_t argc, void* pointer, ThreadPolicy thread_policy = ThreadPolicyMain);
-  VALUE create_class(VALUE name);
+  VALUE create_class(VALUE name, Function* constructor, Class* parent_class);
   VALUE create_cpointer(void* data, CPointer::DestructorType destructor);
 
   // Methods to copy existing data types
@@ -277,7 +277,6 @@ public:
   void call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self, bool halt_after_return = false);
   void call_cfunction(CFunction* function, uint32_t argc, VALUE* argv);
   void call_class(Class* klass, uint32_t argc, VALUE* argv);
-  void initialize_member_properties(Class* klass, Object* object);
   void throw_exception(const std::string& message);
   void throw_exception(VALUE payload);
   void panic(STATUS reason);

@@ -230,14 +230,9 @@ VALUE VM::create_cfunction(VALUE name, uint32_t argc, void* pointer, ThreadPolic
   return cell->as_value();
 }
 
-VALUE VM::create_class(VALUE name) {
+VALUE VM::create_class(VALUE name, Function* constructor, Class* parent_class) {
   MemoryCell* cell = this->gc.allocate();
-  cell->container.init(kTypeClass);
-  cell->klass.name = name;
-  cell->klass.constructor = kNull;
-  cell->klass.member_properties = new std::vector<VALUE>();
-  cell->klass.prototype = kNull;
-  cell->klass.parent_class = kNull;
+  cell->klass.init(name, constructor, parent_class);
   return cell->as_value();
 }
 
@@ -795,19 +790,31 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
       Class* klass = charly_as_class(source);
 
       if (symbol == SYM("prototype")) {
-        return klass->prototype;
+        if (Object* prototype = klass->get_prototype()) {
+          return prototype->as_value();
+        }
+
+        return kNull;
       }
 
       if (symbol == SYM("constructor")) {
-        return klass->constructor;
+        if (Function* constructor = klass->get_constructor()) {
+          return constructor->as_value();
+        }
+
+        return kNull;
       }
 
       if (symbol == SYM("name")) {
-        return this->create_string(SymbolTable::decode(klass->name));
+        return this->create_string(SymbolTable::decode(klass->get_name()));
       }
 
       if (symbol == SYM("parent_class")) {
-        return klass->parent_class;
+        if (Class* parent_class = klass->get_parent_class()) {
+          return parent_class->as_value();
+        }
+
+        return kNull;
       }
 
       VALUE value;
@@ -841,12 +848,12 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
 
       if (symbol == SYM("parent")) {
         Frame* parent = frame->get_parent();
-        return parent == nullptr ? kNull : parent->as_value();
+        return !parent ? kNull : parent->as_value();
       }
 
       if (symbol == SYM("parent_environment")) {
         Frame* parent_environment = frame->get_environment();
-        return parent_environment == nullptr ? kNull : parent_environment->as_value();
+        return !parent_environment ? kNull : parent_environment->as_value();
       }
 
       if (symbol == SYM("function")) {
@@ -882,7 +889,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
       Class* klass = charly_as_class(val_klass);
 
       VALUE result;
-      if (charly_find_prototype_value(klass, symbol, &result)) {
+      if (klass->find_value(symbol, &result)) {
         return result;
       }
     }
@@ -1019,7 +1026,7 @@ bool VM::findprimitivevalue(VALUE value, VALUE symbol, VALUE* result) {
   }
 
   Class* pclass = charly_as_class(found_primitive_class);
-  return charly_find_prototype_value(pclass, symbol, result);
+  return pclass->find_value(symbol, result);
 }
 
 void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
@@ -1155,16 +1162,6 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
   }
 }
 
-void VM::initialize_member_properties(Class* klass, Object* object) {
-  if (charly_is_class(klass->parent_class)) {
-    this->initialize_member_properties(charly_as_class(klass->parent_class), object);
-  }
-
-  for (auto field : *klass->member_properties) {
-    object->write(field, kNull);
-  }
-}
-
 Opcode VM::fetch_instruction() {
   return *reinterpret_cast<Opcode*>(this->ip);
 }
@@ -1175,7 +1172,7 @@ void VM::op_readlocal(uint32_t index, uint32_t level) {
   while (level != 0 && level--) {
     Frame* parent_environment = frame->get_environment();
 
-    if (parent_environment == nullptr) {
+    if (!parent_environment) {
       return this->panic(Status::ReadFailedTooDeep);
     }
 
@@ -1242,7 +1239,7 @@ void VM::op_readglobal(VALUE symbol) {
     GLOBAL("charly.vm.globals",                    this->push_stack(this->globals))
     GLOBAL("charly.vm.frame",                      this->push_stack(this->frames->as_value()))
     GLOBAL("charly.vm.argv", {
-      if (this->context.argv == nullptr) {
+      if (!this->context.argv) {
         this->push_stack(kNull);
         return;
       }
@@ -1255,7 +1252,7 @@ void VM::op_readglobal(VALUE symbol) {
       this->push_stack(argv->as_value());
     })
     GLOBAL("charly.vm.env", {
-      if (this->context.environment == nullptr) {
+      if (!this->context.environment) {
         this->push_stack(kNull);
         return;
       }
@@ -1446,7 +1443,7 @@ void VM::op_setglobalpush(VALUE symbol) {
 }
 
 void VM::op_putself() {
-  if (this->frames == nullptr) {
+  if (!this->frames) {
     this->push_stack(kNull);
     return;
   }
@@ -1459,7 +1456,7 @@ void VM::op_putsuper() {
   if (!func) this->panic(Status::InvalidArgumentType);
 
   Class* host_class = func->get_host_class();
-  if (host_class == nullptr)
+  if (!host_class)
     this->panic(Status::InvalidArgumentType);
 
   // A super call inside a constructor will return the super constructor
@@ -1467,9 +1464,12 @@ void VM::op_putsuper() {
   // the currently active function
   VALUE super_value = kNull;
   if (func->get_name() == SYM("constructor")) {
-    super_value = charly_find_super_constructor(host_class);
+    Function* constructor = host_class->find_super_constructor();
+    if (constructor) {
+      super_value = constructor->as_value();
+    }
   } else {
-    super_value = charly_find_super_method(host_class, func->get_name());
+    host_class->find_super_value(func->get_name(), &super_value);
   }
 
   // If we've got a function, we need to make a copy of it and bind the currently
@@ -1488,13 +1488,13 @@ void VM::op_putsupermember(VALUE symbol) {
   if (!func) this->panic(Status::InvalidArgumentType);
 
   Class* host_class = func->get_host_class();
-  if (host_class == nullptr)
+  if (!host_class)
     this->panic(Status::InvalidArgumentType);
-  VALUE super_value = charly_find_super_method(host_class, symbol);
 
   // If we've got a function, we need to make a copy of it and bind the currently
   // active self value to it
-  if (charly_is_function(super_value)) {
+  VALUE super_value = kNull;
+  if (host_class->find_super_value(symbol, &super_value) && charly_is_function(super_value)) {
     Function* copied_super_value = charly_as_function(this->copy_function(super_value));
     copied_super_value->set_bound_self(this->frames->get_self());
     super_value = copied_super_value->as_value();
@@ -1556,28 +1556,38 @@ void VM::op_putclass(VALUE name,
                      bool has_constructor) {
   ManagedContext lalloc(this);
 
-  Class* klass = charly_as_class(lalloc.create_class(name));
-  klass->member_properties->reserve(propertycount);
-  klass->prototype = lalloc.create_object(methodcount);
-
-  bool parent_class_invalid_type = false;
+  Function* constructor = nullptr;
+  Class* parent_class = nullptr;
 
   if (has_constructor) {
-    klass->constructor = this->pop_stack();
-    if (!charly_is_function(klass->constructor)) {
+    VALUE value = this->pop_stack();
+    if (!charly_is_function(value)) {
       this->panic(Status::InvalidArgumentType);
     }
-    Function* constructor = charly_as_function(klass->constructor);
-    constructor->set_host_class(klass);
+
+    constructor = charly_as_function(value);
   }
 
   if (has_parent_class) {
-    VALUE parent_class = this->pop_stack();
-    parent_class_invalid_type = !charly_is_class(parent_class);
-    klass->parent_class = parent_class;
+    VALUE value = this->pop_stack();
+
+    if (!charly_is_class(value)) {
+      this->throw_exception("Can't extend from non class value");
+      return;
+    }
+
+    parent_class = charly_as_class(value);
   } else {
-    klass->parent_class = this->primitive_object;
+    if (charly_is_class(this->primitive_object)) {
+      parent_class = charly_as_class(this->primitive_object);
+    }
   }
+
+  Class* klass = charly_as_class(lalloc.create_class(name, constructor, parent_class));
+  if (constructor) {
+    constructor->set_host_class(klass);
+  }
+  klass->set_prototype(charly_as_object(lalloc.create_object(methodcount)));
 
   while (staticmethodcount--) {
     VALUE smethod = this->pop_stack();
@@ -1596,7 +1606,7 @@ void VM::op_putclass(VALUE name,
     }
     Function* func_method = charly_as_function(method);
     func_method->set_host_class(klass);
-    Object* obj_methods = charly_as_object(klass->prototype);
+    Object* obj_methods = klass->get_prototype();
     obj_methods->write(func_method->get_name(), method);
   }
 
@@ -1613,15 +1623,12 @@ void VM::op_putclass(VALUE name,
     if (!charly_is_symbol(prop)) {
       this->panic(Status::InvalidArgumentType);
     }
-    klass->member_properties->push_back(prop);
+    klass->access_member_properties([&](Class::VectorType* props) {
+      props->push_back(prop);
+    });
   }
 
-  // Make sure the parent class is a class
-  if (parent_class_invalid_type) {
-    this->throw_exception("Can't extend from non class value");
-  } else {
-    this->push_stack(klass->as_value());
-  }
+  this->push_stack(klass->as_value());
 }
 
 void VM::op_pop() {
@@ -1684,24 +1691,22 @@ void VM::op_new(uint32_t argc) {
 
   // Setup object
   ManagedContext lalloc(this);
-  uint32_t member_property_count = charly_as_class(klass)->member_properties->size();
-  Object* obj = charly_as_object(lalloc.create_object(klass, member_property_count));
-  this->initialize_member_properties(charly_as_class(klass), obj);
+  Class* source_class = charly_as_class(klass);
+  Object* obj = charly_as_object(lalloc.create_object(klass, source_class->get_member_property_count()));
+  source_class->initialize_member_properties(obj);
 
-  // Call initial constructor if there is one
-  // else just return the object
-  VALUE initial_constructor = charly_find_constructor(charly_as_class(klass));
-  if (charly_is_function(initial_constructor)) {
-
-    // Check if there are enough arguments
-    if (charly_as_function(initial_constructor)->get_minimum_argc() > argc) {
-      std::string class_name = SymbolTable::decode(charly_as_class(klass)->name);
-      this->throw_exception("Not enough arguments for class constructor: " + class_name);
+  // Invoke constructor if one exists
+  if (Function* constructor = source_class->find_constructor()) {
+    if (constructor->get_minimum_argc() > argc) {
+      this->throw_exception(
+        "Not enough arguments for class constructor: " +
+        SymbolTable::decode(source_class->get_name())
+      );
       return;
     }
 
     this->push_stack(obj->as_value());
-    this->push_stack(initial_constructor);
+    this->push_stack(constructor->as_value());
     for (int i = argc - 1; i >= 0; i--) {
       this->push_stack(tmp_args[i]);
     }
@@ -1748,8 +1753,6 @@ void VM::throw_exception(const std::string& message) {
     return;
   }
 
-  Frame* old_frame = this->frames;
-
   // Load the error class
   VALUE error_class_val = this->internal_error_class;
   if (charly_is_class(error_class_val)) {
@@ -1757,8 +1760,7 @@ void VM::throw_exception(const std::string& message) {
     // Instantiate error object
     this->push_stack(error_class_val);
     this->push_stack(this->create_string(message.c_str(), message.size()));
-    this->push_stack(charly_create_integer(reinterpret_cast<size_t>(old_frame)));
-    this->op_new(2);
+    this->op_new(1);
   } else {
     this->unwind_catchstack(this->create_string(message.c_str(), message.size()));
   }
@@ -1779,7 +1781,7 @@ void VM::op_popcatchtable() {
   if (this->context.trace_catchtables) {
     CatchTable* table = this->catchstack;
 
-    if (table != nullptr) {
+    if (table) {
       // Show the table we've restored
       this->context.err_stream << "Restored CatchTable: ";
       this->pretty_print(this->context.err_stream, table->as_value());
@@ -1979,7 +1981,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << "<Function ";
       io << "name=";
       if (Class* host_class = func->get_host_class()) {
-        this->pretty_print(io, host_class->name);
+        this->pretty_print(io, host_class->get_name());
         io << ":";
       }
       this->pretty_print(io, func->get_name());
@@ -1989,7 +1991,9 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
       io << "minimum_argc=" << func->get_minimum_argc();
       io << " ";
       io << "lvarcount=" << func->get_lvarcount();
-      io << "body_address=" << reinterpret_cast<void*>(func->get_body_address()) << " ";
+      io << " ";
+      io << "body_address=" << reinterpret_cast<void*>(func->get_body_address());
+      io << " ";
 
       VALUE bound_self;
       if (func->get_bound_self(&bound_self)) {
@@ -2057,25 +2061,33 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
       io << "<Class ";
       io << "name=";
-      this->pretty_print(io, klass->name);
+      this->pretty_print(io, klass->get_name());
       io << " ";
-      io << "constructor=";
-      this->pretty_print(io, klass->constructor);
-      io << " ";
+      if (Function* constructor = klass->get_constructor()) {
+        io << "constructor=";
+        this->pretty_print(io, constructor->as_value());
+        io << " ";
+      }
 
       io << "member_properties=[";
-      for (auto entry : *klass->member_properties) {
-        io << " " << SymbolTable::decode(entry);
-      }
+      klass->access_member_properties([&](Class::VectorType* props) {
+        for (auto entry : *props) {
+          io << " " << SymbolTable::decode(entry);
+        }
+      });
       io << "] ";
 
-      io << "member_functions=";
-      this->pretty_print(io, klass->prototype);
-      io << " ";
+      if (Object* prototype = klass->get_prototype()) {
+        io << "member_functions=";
+        this->pretty_print(io, prototype->as_value());
+        io << " ";
+      }
 
-      io << "parent_class=";
-      this->pretty_print(io, klass->parent_class);
-      io << " ";
+      if (Class* parent_class = klass->get_parent_class()) {
+        io << "parent_class=";
+        this->pretty_print(io, parent_class->as_value());
+        io << " ";
+      }
 
       klass->access_container_shared([&](Container::ContainerType* container) {
         for (auto entry : *container) {
@@ -2205,7 +2217,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
 
       if (charly_is_class(object->get_klass())) {
         Class* klass = charly_as_class(object->get_klass());
-        this->to_s(io, klass->name);
+        this->to_s(io, klass->get_name());
       }
 
       if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
@@ -2275,7 +2287,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
       io << "";
 
       if (Class* host_class = func->get_host_class()) {
-        this->to_s(io, host_class->name);
+        this->to_s(io, host_class->get_name());
         io << ":";
       }
 
@@ -2339,7 +2351,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
       this->pretty_print_stack.push_back(value);
 
       io << "<Class ";
-      this->to_s(io, klass->name, depth);
+      this->to_s(io, klass->get_name(), depth);
 
       klass->access_container_shared([&](Container::ContainerType* container) {
         for (auto entry : *container) {
@@ -2374,7 +2386,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
       Frame* frame = charly_as_frame(value);
       Function* function = frame->get_function();
       if (Class* host_class = function->get_host_class()) {
-        io << SymbolTable::decode(host_class->name);
+        io << SymbolTable::decode(host_class->get_name());
         io << "::";
       }
 
@@ -3387,7 +3399,7 @@ bool VM::pop_task(VMTask* target) {
   VMTask front = this->task_queue.front();
   this->task_queue.pop();
 
-  if (target != nullptr) {
+  if (target) {
     *target = front;
   }
 

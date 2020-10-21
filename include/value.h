@@ -362,7 +362,7 @@ public:
   Frame* get_context();
   uint8_t* get_body_address();
   Class* get_host_class();
-  bool get_bound_self(VALUE* target);     // load bound_self into target, returns false if not set
+  bool get_bound_self(VALUE* result);     // load bound_self into result, returns false if not set
   uint32_t get_argc();
   uint32_t get_minimum_argc();
   uint32_t get_lvarcount();
@@ -422,17 +422,41 @@ protected:
 };
 
 // Classes defined inside the virtual machine
-struct Class : public Container {
-  VALUE name;
-  VALUE constructor;
-  std::vector<VALUE>* member_properties;
-  VALUE prototype;
-  VALUE parent_class;
+class Class : public Container {
+  friend class GarbageCollector;
+public:
+  using VectorType = std::vector<VALUE>;
 
-  inline void clean() {
-    Container::clean();
-    delete this->member_properties;
-  }
+  void init(VALUE name, Function* constructor, Class* parent_class);
+  void clean();
+
+  void set_prototype(Object* prototype);
+
+  VALUE get_name();
+  Class* get_parent_class();
+  Function* get_constructor();
+  Object* get_prototype();
+
+  uint32_t get_member_property_count();
+
+  bool find_value(VALUE symbol, VALUE* result);       // find method/value in class hierarchy
+  bool find_super_value(VALUE symbol, VALUE* result); // find method/value in class hierarchy, starting at parent
+
+  Function* find_constructor();       // find the first constructor in the class hierarchy
+  Function* find_super_constructor(); // find the first constructor in the class hierarchy, starting at parent
+
+  void initialize_member_properties(Object* object); // Initialize an object as an instance of this class
+
+  // Access to member_properties vector via callback
+  void access_member_properties(std::function<void(VectorType*)> cb);
+  void access_member_properties_shared(std::function<void(VectorType*)> cb);
+
+protected:
+  VALUE name;
+  Class* parent_class;
+  Function* constructor;
+  Object* prototype;
+  VectorType* member_properties;
 };
 
 // clang-format off
@@ -1524,68 +1548,6 @@ inline VALUE charly_create_pointer(void* ptr) {
   if (ptr == nullptr) return kNull;
   if (ptr > kMaxPointer) return kSignaturePointer; // null pointer
   return kSignaturePointer | (kMaskPointer & reinterpret_cast<int64_t>(ptr));
-}
-
-// Lookup a symbol inside a class
-__attribute__((always_inline))
-inline bool charly_find_prototype_value(Class* klass, VALUE symbol, VALUE* result) {
-  if (charly_is_object(klass->prototype)) {
-    Object* prototype = charly_as_object(klass->prototype);
-
-    VALUE value;
-    if (prototype->read(symbol, &value)) {
-      *result = value;
-      return true;
-    } else if (charly_is_class(klass->parent_class)) {
-      Class* pklass = charly_as_class(klass->parent_class);
-      return charly_find_prototype_value(pklass, symbol, result);
-    }
-  }
-
-  return false;
-}
-
-// Lookup super method
-__attribute__((always_inline))
-inline VALUE charly_find_super_method(Class* base, VALUE symbol) {
-  if (!charly_is_class(base->parent_class)) return kNull;
-  Class* parent_class = charly_as_class(base->parent_class);
-
-  VALUE value;
-  if (charly_find_prototype_value(parent_class, symbol, &value))
-    return value;
-  return kNull;
-}
-
-// Lookup super constructor
-__attribute__((always_inline))
-inline VALUE charly_find_super_constructor(Class* base) {
-  if (!charly_is_class(base->parent_class)) return kNull;
-  VALUE search_class = base->parent_class;
-
-  // Traverse the class hierarchy for the next constructor
-  while (charly_is_class(search_class)) {
-    Class* klass = charly_as_class(search_class);
-    if (charly_is_function(klass->constructor)) return klass->constructor;
-    search_class = klass->parent_class;
-  }
-
-  return kNull;
-}
-
-// Lookup first available constructor of a class
-__attribute__((always_inline))
-inline VALUE charly_find_constructor(Class* base) {
-  VALUE search_class = base->as_value();
-
-  // Traverse the class hierarchy
-  while (charly_is_class(search_class)) {
-    Class* klass = charly_as_class(search_class);
-    if (charly_is_function(klass->constructor)) return klass->constructor;
-    search_class = klass->parent_class;
-  }
-
-  return kNull;
 }
 
 // External libs interface

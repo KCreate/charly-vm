@@ -480,9 +480,9 @@ Class* Function::get_host_class() {
   return this->host_class;
 }
 
-bool Function::get_bound_self(VALUE* target) {
+bool Function::get_bound_self(VALUE* result) {
   if (this->bound_self_set) {
-    *target = this->bound_self;
+    *result = this->bound_self;
     return true;
   }
 
@@ -582,6 +582,110 @@ bool CFunction::allowed_on_main_thread() {
 
 bool CFunction::allowed_on_worker_thread() {
   return this->thread_policy & ThreadPolicyWorker;
+}
+
+void Class::init(VALUE name, Function* constructor, Class* parent_class) {
+  Container::init(kTypeClass, 2);
+
+  this->name = name;
+  this->constructor = constructor;
+  this->parent_class = parent_class;
+  this->prototype = nullptr;
+  this->member_properties = new Class::VectorType();
+}
+
+void Class::clean() {
+  assert(this->member_properties);
+  delete this->member_properties;
+  this->member_properties = nullptr;
+}
+
+void Class::set_prototype(Object* prototype) {
+  this->prototype = prototype;
+}
+
+VALUE Class::get_name() {
+  return this->name;
+}
+
+Class* Class::get_parent_class() {
+  return this->parent_class;
+}
+
+Function* Class::get_constructor() {
+  return this->constructor;
+}
+
+Object* Class::get_prototype() {
+  return this->prototype;
+}
+
+uint32_t Class::get_member_property_count() {
+  assert(this->member_properties);
+  return this->member_properties->size();
+}
+
+bool Class::find_value(VALUE symbol, VALUE* result) {
+  if (Object* prototype = this->prototype) {
+    if (prototype->read(symbol, result)) {
+      return true;
+    }
+
+    if (Class* parent = this->parent_class) {
+      return parent->find_value(symbol, result);
+    }
+  }
+
+  return false;
+}
+
+bool Class::find_super_value(VALUE symbol, VALUE* result) {
+  if (Class* parent = this->parent_class) {
+    return parent->find_value(symbol, result);
+  }
+
+  return false;
+}
+
+Function* Class::find_constructor() {
+  Class* search_class = this;
+
+  while (search_class) {
+    if (search_class->constructor)
+      return search_class->constructor;
+
+    search_class = search_class->parent_class;
+  }
+
+  return nullptr;
+}
+
+Function* Class::find_super_constructor() {
+  if (Class* parent = this->parent_class) {
+    return parent->find_constructor();
+  }
+
+  return nullptr;
+}
+
+void Class::initialize_member_properties(Object* object) {
+  if (Class* parent = this->parent_class) {
+    parent->initialize_member_properties(object);
+  }
+
+  for (const auto& field : *(this->member_properties)) {
+    object->write(field, kNull);
+  }
+}
+
+void Class::access_member_properties(std::function<void(Class::VectorType*)> cb) {
+  assert(this->member_properties);
+  cb(this->member_properties);
+}
+
+void Class::access_member_properties_shared(std::function<void(Class::VectorType*)> cb) {
+  assert(this->member_properties);
+  cb(this->member_properties);
 }
 
 }  // namespace Charly
