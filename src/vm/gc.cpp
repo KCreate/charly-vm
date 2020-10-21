@@ -102,7 +102,7 @@ void GarbageCollector::mark(VALUE value) {
 
     case kTypeFunction: {
       Function* func = charly_as_function(value);
-      this->mark(func->context->as_value());
+      this->mark(func->context);
       this->mark(func->host_class);
 
       if (func->bound_self_set)
@@ -133,9 +133,9 @@ void GarbageCollector::mark(VALUE value) {
 
     case kTypeFrame: {
       Frame* frame = charly_as_frame(value);
-      this->mark(frame->parent->as_value());
-      this->mark(frame->environment->as_value());
-      this->mark(frame->catchtable->as_value());
+      this->mark(frame->parent);
+      this->mark(frame->environment);
+      this->mark(frame->catchtable);
       this->mark(frame->function);
       this->mark(frame->self);
 
@@ -148,8 +148,8 @@ void GarbageCollector::mark(VALUE value) {
 
     case kTypeCatchTable: {
       CatchTable* table = charly_as_catchtable(value);
-      this->mark(table->frame->as_value());
-      this->mark(table->parent->as_value());
+      this->mark(table->frame);
+      this->mark(table->parent);
       break;
     }
 
@@ -175,8 +175,8 @@ void GarbageCollector::collect() {
   if (this->host_vm->running) {
 
     // Top level values
-    this->mark(this->host_vm->frames->as_value());
-    this->mark(this->host_vm->catchstack->as_value());
+    this->mark(this->host_vm->frames);
+    this->mark(this->host_vm->catchstack);
     this->mark(this->host_vm->uncaught_exception_handler);
     this->mark(this->host_vm->internal_error_class);
     this->mark(this->host_vm->globals);
@@ -246,8 +246,8 @@ void GarbageCollector::collect() {
       for (VALUE v : thread.stack) {
         this->mark(v);
       }
-      this->mark(thread.frame->as_value());
-      this->mark(thread.catchstack->as_value());
+      this->mark(thread.frame);
+      this->mark(thread.catchstack);
     }
 
     // Worker threads
@@ -255,9 +255,9 @@ void GarbageCollector::collect() {
       std::lock_guard<std::mutex> lock(this->host_vm->worker_threads_m);
       for (auto& entry : this->host_vm->worker_threads) {
         if (entry.second->cfunc)
-          this->mark(entry.second->cfunc->as_value());
+          this->mark(entry.second->cfunc);
         if (entry.second->callback)
-          this->mark(entry.second->callback->as_value());
+          this->mark(entry.second->callback);
         this->mark(entry.second->error_value);
         for (VALUE val : entry.second->arguments) {
           this->mark(val);

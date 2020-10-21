@@ -48,10 +48,16 @@ public:
     }
   }
 
-  template <class T>
-  inline T mark_in_gc(T&& value) {
-    this->vm.gc.mark_persistent(reinterpret_cast<VALUE>(value));
-    this->temporaries.push_back(reinterpret_cast<VALUE>(value));
+  template <typename T>
+  inline T* mark_in_gc(T* value) {
+    this->vm.gc.mark_persistent(value->as_value());
+    this->temporaries.push_back(value->as_value());
+    return value;
+  }
+
+  inline VALUE mark_in_gc(VALUE value) {
+    this->vm.gc.mark_persistent(value);
+    this->temporaries.push_back(value);
     return value;
   }
 

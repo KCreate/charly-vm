@@ -117,9 +117,10 @@ public:
   MemoryCell* allocate();
 
   void mark(VALUE cell);
-  template <typename T>
-  inline void mark(T* cell) {
-    this->mark(reinterpret_cast<VALUE>(cell));
+  inline void mark(Header* cell) {
+    if (cell == nullptr)
+      return;
+    this->mark(cell->as_value());
   }
   void do_collect();
   void mark_persistent(VALUE value);
