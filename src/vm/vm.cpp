@@ -775,7 +775,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
       }
 
       if (symbol == SYM("thread_policy")) {
-        return charly_create_number(cfunc->get_thread_policy());
+        return charly_create_number(static_cast<uint8_t>(cfunc->get_thread_policy()));
       }
 
       VALUE value;
