@@ -2,14 +2,13 @@
 
 - VM Refactor
   - Implementation timeline
-    - Class interface to heap types
-      - init methods should return a pointer to the object
-      - Start by replacing all accesses to the Object type with class methods
-        - Learn from this and see if we have to change anything with our design
-        - Is the Container type actually a good idea?
-      - Operations such as eq, lt can also be moved out of the VM into the value classes themselves
-      - Replace std::mutex with something more efficient (smaller and faster??)
-        - This looks interesting: https://webkit.org/blog/6161/locking-in-webkit/
+    - init methods should return a pointer to the object
+    - Operations such as eq, lt can also be moved out of the VM into the value classes themselves
+    - Property access methods can actually be removed again, make properties atomic.
+      - This won't work for all properties, so some accessor methods will still be needed.
+      - I don't plan on putting the locking code into the accessor methods but will probably go
+        for some RAII style locking thing which locks a value during the scope of some block.
+        I'll want a UniqueValueLock and a SharedValueLock (typedef ValueLock).
     - Refactor value copying system
     - Store global internal VM variables as pointers to their real type, not as VALUEs
     - Store global variables not as Object but as a Container

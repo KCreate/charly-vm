@@ -24,6 +24,17 @@
  * SOFTWARE.
  */
 
+// The following transformations should be transformations on the AST only.
+// The result of a structured assignment cannot be used as another expression
+// e.g. the following code would be invalid:
+//
+//  const obj = { name: "leonard", age: 20 }
+//  const a = <exp> + ({name, age} = obj)
+//                                 ^
+//                                 |
+//                                 +- structured object assignment cannot
+//                                    be used as expression!
+
 // Object destructuring initialisation
 //
 // Desugared to:
@@ -44,22 +55,46 @@ let {num, foo} = obj
 // foo = %tmp.foo
 {num, foo} = obj
 
-// Object destructuring self initialisation
-//
-// Desugared to:
-//
-// let num
-// let foo
-// %tmp = obj
-// num = self.num = %tmp.num
-// foo = self.foo = %tmp.foo
-let {@num, @foo} = obj
-
 // Object destructuring self assignment
 //
 // Desugared to:
 //
 // %tmp = obj
+// other.num = %tmp.num
+// other.foo = %tmp.foo
+{other.num, other.foo} = obj
+
+// error! cannot use member assignment as variable name
+let {other.num, other.foo} = obj
+
+// %tmp = obj
 // self.num = %tmp.num
 // self.foo = %tmp.foo
 {@num, @foo} = obj
+
+// %tmp = obj
+// foo.bar.baz = %tmp.baz
+// foo.bar.qux = %tmp.qux
+{foo.bar.baz, foo.bar.qux} = obj
+
+// %tmp = obj
+// foo[0].name = %tmp.name
+// foo[0].age = %tmp.age
+{foo[0].name, foo[0].age} = obj
+
+// %tmp = obj
+// obj = %tmp.obj
+{ obj } = obj
+
+// %tmp = get_person()
+// name = %tmp.name
+// age = %tmp.age
+// height = %tmp.height
+{name, age, height} = get_person()
+
+// error! one identifier minimum
+let {} = obj
+{} = obj
+
+// error! expected structured assignment target, not object literal
+{ name: "leonard", age: 20 } = obj
