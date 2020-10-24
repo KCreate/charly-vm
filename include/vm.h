@@ -176,7 +176,6 @@ struct WorkerThread {
 
 class VM {
   friend GarbageCollector;
-  friend ManagedContext;
 
 public:
   VM(VMContext& ctx)

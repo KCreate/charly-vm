@@ -32,7 +32,6 @@
 #include "math.h"
 #include "vm.h"
 #include "array.h"
-#include "managedcontext.h"
 
 namespace Charly {
 namespace Internals {
@@ -62,11 +61,10 @@ VALUE reverse(VM& vm, VALUE a) {
   CHECK(array, a);
 
   Array* array = charly_as_array(a);
-  Charly::ManagedContext lalloc(vm);
 
   Array* new_array;
   array->access_vector_shared([&](Array::VectorType* vec) {
-    new_array = charly_as_array(lalloc.create_array(vec->size()));
+    new_array = charly_as_array(vm.create_array(vec->size()));
 
     auto it = vec->rbegin();
     while (it != vec->rend()) {
@@ -162,8 +160,7 @@ VALUE range(VM& vm, VALUE a, VALUE s, VALUE c) {
   int32_t start = charly_number_to_uint32(s);
   uint32_t count = charly_number_to_uint32(c);
 
-  ManagedContext lalloc(vm);
-  Array* new_array = charly_as_array(lalloc.create_array(count));
+  Array* new_array = charly_as_array(vm.create_array(count));
 
   array->access_vector_shared([&](Array::VectorType* vec) {
     uint32_t offset = 0;

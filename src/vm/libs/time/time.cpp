@@ -31,7 +31,6 @@
 #include "time.h"
 
 #include "vm.h"
-#include "managedcontext.h"
 
 namespace Charly {
 namespace Internals {
@@ -71,8 +70,7 @@ VALUE to_local(VM& vm, VALUE ts) {
   // std::strftime(buf, sizeof(buf), "Www Mmm dd hh:mm:ss yyyy", &tm);
   std::strftime(buf, sizeof(buf), "%a %d. %b %Y %H:%M:%S", &tm);
 
-  Charly::ManagedContext lalloc(vm);
-  return lalloc.create_string(buf, sizeof(buf));
+  return vm.create_string(buf, sizeof(buf));
 }
 
 VALUE to_utc(VM& vm, VALUE ts) {
@@ -87,8 +85,7 @@ VALUE to_utc(VM& vm, VALUE ts) {
   // std::strftime(buf, sizeof(buf), "Www Mmm dd hh:mm:ss yyyy", &tm);
   std::strftime(buf, sizeof(buf), "%a %d. %b %Y %H:%M:%S", &tm);
 
-  Charly::ManagedContext lalloc(vm);
-  return lalloc.create_string(buf, sizeof(buf));
+  return vm.create_string(buf, sizeof(buf));
 }
 
 VALUE fmt(VM& vm, VALUE ts, VALUE fmt) {
@@ -118,8 +115,7 @@ VALUE fmt(VM& vm, VALUE ts, VALUE fmt) {
   char result_buf[26] = {0};
   std::strftime(result_buf, sizeof(result_buf), format_buf, &tm);
 
-  Charly::ManagedContext lalloc(vm);
-  return lalloc.create_string(result_buf, strlen(result_buf));
+  return vm.create_string(result_buf, strlen(result_buf));
 }
 
 VALUE fmtutc(VM& vm, VALUE ts, VALUE fmt) {
@@ -149,8 +145,7 @@ VALUE fmtutc(VM& vm, VALUE ts, VALUE fmt) {
   char result_buf[26] = {0};
   std::strftime(result_buf, sizeof(result_buf), format_buf, &tm);
 
-  Charly::ManagedContext lalloc(vm);
-  return lalloc.create_string(result_buf, strlen(result_buf));
+  return vm.create_string(result_buf, strlen(result_buf));
 }
 
 VALUE parse(VM& vm, VALUE src, VALUE fmt) {

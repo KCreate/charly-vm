@@ -24,5 +24,5 @@
  * SOFTWARE.
  */
 
-const N = 10000
-const bufs = Array.create(N, ->new StringBuffer()).each(->$0.write("hello world"))
+const debug_func = @"charly.vm.debug_func"
+debug_func("wazzupp")

@@ -31,6 +31,7 @@
 #include <set>
 
 #include "value.h"
+#include "immortal.h"
 
 #pragma once
 
@@ -71,7 +72,6 @@ struct GarbageCollectorConfig {
   size_t initial_heap_count = 4;
   size_t heap_cell_count    = 1 << 12;
   float heap_growth_factor  = 2;
-  size_t min_free_cells     = 32;
 
   bool trace = false;
   std::ostream& out_stream = std::cerr;
@@ -83,9 +83,7 @@ class GarbageCollector {
   GarbageCollectorConfig config;
   VM* host_vm;
   MemoryCell* free_cell;
-  size_t remaining_free_cells = 0;
   std::vector<MemoryCell*> heaps;
-  std::multiset<VALUE> temporaries;
 
   void add_heap();
   void grow_heap();
@@ -123,8 +121,6 @@ public:
     this->mark(cell->as_value());
   }
   void do_collect();
-  void mark_persistent(VALUE value);
-  void unmark_persistent(VALUE value);
 
   void lock();
   void unlock();

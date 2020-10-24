@@ -28,7 +28,6 @@
 
 #include "stringbuffer.h"
 #include "vm.h"
-#include "managedcontext.h"
 
 namespace Charly {
 namespace Internals {

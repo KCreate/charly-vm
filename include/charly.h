@@ -28,7 +28,6 @@
 #include "gc.h"
 #include "instructionblock.h"
 #include "internals.h"
-#include "managedcontext.h"
 #include "memoryblock.h"
 #include "opcode.h"
 #include "runflags.h"

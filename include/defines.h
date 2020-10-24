@@ -54,7 +54,7 @@ enum Opcode : uint8_t;
 
 struct MemoryCell;
 class GarbageCollector;
-class ManagedContext;
+template <typename T> class Immortal;
 
 class Header;
 class Container;

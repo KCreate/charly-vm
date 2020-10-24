@@ -26,7 +26,6 @@
 
 #include <sstream>
 
-#include "managedcontext.h"
 #include "value.h"
 #include "vm.h"
 

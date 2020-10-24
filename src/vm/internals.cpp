@@ -32,7 +32,6 @@
 
 #include "gc.h"
 #include "internals.h"
-#include "managedcontext.h"
 #include "vm.h"
 
 #include "libs/stringbuffer/stringbuffer.h"
@@ -125,8 +124,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
 
     // Check if we got a *.lib file
     if (!std::strcmp(include_filename.c_str() + include_filename.size() - 4, ".lib")) {
-      ManagedContext lalloc(vm);
-      Charly::Object* lib = charly_as_object(lalloc.create_object(8));
+      Immortal<Object> lib = vm.create_object(8);
 
       // Check if there is already a resident copy of this library
       //
@@ -175,7 +173,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
         // While we are extracting the method names, we can create
         // CFunction objects for the vm
         void* func_pointer = dlsym(clib, name.c_str());
-        CFunction* cfunc = charly_as_cfunction(lalloc.create_cfunction(
+        CFunction* cfunc = charly_as_cfunction(vm.create_cfunction(
           charly_create_symbol(name),
           argc,
           func_pointer,
@@ -198,8 +196,9 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
 
         dlclose(clib);
       };
-      lib->write( SymbolTable::encode("__libptr"), lalloc.create_cpointer(clib, destructor));
-      lib->write( SymbolTable::encode("__libpath"), lalloc.create_string(include_filename));
+
+      lib->write(SymbolTable::encode("__libptr"), vm.create_cpointer(clib, destructor));
+      lib->write(SymbolTable::encode("__libpath"), vm.create_string(include_filename));
 
       return lib->as_value();
     }
@@ -259,6 +258,7 @@ VALUE exit(VM& vm, VALUE status_code) {
 VALUE debug_func(VM& vm, VALUE value) {
   CHECK(string, value);
 
+  vm.context.out_stream << "### Heap cell sizes ###" << std::endl;
   vm.context.out_stream << "sizeof(MemoryCell) = " << sizeof(MemoryCell) << std::endl;
   vm.context.out_stream << "sizeof(Header)     = " << sizeof(Header) << std::endl;
   vm.context.out_stream << "sizeof(Container)  = " << sizeof(Container) << std::endl;
@@ -271,10 +271,25 @@ VALUE debug_func(VM& vm, VALUE value) {
   vm.context.out_stream << "sizeof(Frame)      = " << sizeof(Frame) << std::endl;
   vm.context.out_stream << "sizeof(CatchTable) = " << sizeof(CatchTable) << std::endl;
   vm.context.out_stream << "sizeof(CPointer)   = " << sizeof(CPointer) << std::endl;
+  vm.context.out_stream << std::endl;
 
-  ManagedContext lalloc(vm);
-  Object* obj = charly_as_object(lalloc.create_object(4));
-  obj->write(SymbolTable::encode("test"), lalloc.create_string("hello world!!!!"));
+  vm.context.out_stream << "### Instruction lengths ###" << std::endl;
+  for (uint8_t i = 0; i < Opcode::OpcodeCount; i++) {
+    std::string& mnemonic = kOpcodeMnemonics[i];
+    uint32_t length = kInstructionLengths[i];
+    vm.context.out_stream << std::setw(20);
+    vm.context.out_stream << mnemonic;
+    vm.context.out_stream << std::setw(1);
+    vm.context.out_stream << " = ";
+    vm.context.out_stream << std::setw(2);
+    vm.context.out_stream << length;
+    vm.context.out_stream << std::setw(1);
+    vm.context.out_stream << " bytes" << std::endl;
+  }
+
+  Immortal<Object> obj = vm.create_object(2);
+  obj->write(SymbolTable::encode("input"), vm.create_string("hello world"));
+  obj->write(SymbolTable::encode("test"), value);
 
   return obj->as_value();
 }

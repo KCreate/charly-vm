@@ -36,7 +36,6 @@
 #include <utf8/utf8.h>
 
 #include "gc.h"
-#include "managedcontext.h"
 #include "status.h"
 #include "vm.h"
 
@@ -274,13 +273,11 @@ VALUE VM::copy_object(VALUE object) {
 }
 
 VALUE VM::deep_copy_object(VALUE object) {
-  ManagedContext lalloc(this);
-
   Object* source = charly_as_object(object);
-  Object* target;
+  Immortal<Object> target;
 
   source->access_container_shared([&](Container::ContainerType* source_container) {
-    target = charly_as_object(lalloc.create_object(source_container->size()));
+    target = this->create_object(source_container->size());
 
     for (auto& [key, value] : *source_container) {
       target->write(key, this->deep_copy_value(value));
@@ -306,12 +303,10 @@ VALUE VM::copy_array(VALUE array) {
 }
 
 VALUE VM::deep_copy_array(VALUE array) {
-  ManagedContext lalloc(this);
-
   Array* source = charly_as_array(array);
-  Array* target;
+  Immortal<Array> target;
   source->access_vector_shared([&](Array::VectorType* vec) {
-    target = charly_as_array(lalloc.create_array(vec->size()));
+    target = this->create_array(vec->size());
 
     for (VALUE value : *vec) {
       target->push(this->deep_copy_value(value));
@@ -1076,6 +1071,13 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
 }
 
 void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self, bool halt_after_return) {
+  Immortal<Function> i_function(function);
+  Immortal<> i_self(self);
+  Immortal<> i_argv[argc];
+  for (uint32_t i = 0; i < argc; i++) {
+    i_argv[i] = argv[i];
+  }
+
   // Check if the function was called with enough arguments
   if (argc < function->get_minimum_argc()) {
     this->throw_exception("Not enough arguments for function call");
@@ -1094,21 +1096,14 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
     }
   }
 
-  ManagedContext ctx(*this);
-  ctx.mark_in_gc(function);
-  ctx.mark_in_gc(self);
-  for (uint32_t i = 0; i < argc; i++) {
-    ctx.mark_in_gc(argv[i]);
-  }
-
-  Frame* frame = ctx.create_frame(self, function, halt_after_return);
+  Immortal<Frame> frame = this->create_frame(self, function, halt_after_return);
 
   // Copy the arguments into the function frame
   //
   // If the function requires an arguments array, we create one and push it onto
   // offset 0 of the frame
   if (function->get_needs_arguments()) {
-    Array* arguments_array = charly_as_array(ctx.create_array(argc));
+    Array* arguments_array = charly_as_array(this->create_array(argc));
     frame->write_local(0, arguments_array->as_value());
 
     for (size_t i = 0; i < argc; i++) {
@@ -1126,6 +1121,12 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
 }
 
 void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
+  Immortal<CFunction> i_cfunc(function);
+  Immortal<> i_argv[argc];
+  for (uint i = 0; i < argc; i++) {
+    i_argv[i] = argv[i];
+  }
+
   if (!function->allowed_on_main_thread()) {
     this->throw_exception("Calling this CFunction in the main thread is prohibited");
     return;
@@ -1137,23 +1138,12 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
     return;
   }
 
-  // Mark the function and function arguments as temporaries
-  this->gc.mark_persistent(function->as_value());
-  for (uint i = 0; i < argc; i++) {
-    this->gc.mark_persistent(argv[i]);
-  }
-
   // We keep a reference to the current catchtable around in case the constructor throws an exception
   // After the constructor call we check if the table changed
   CatchTable* original_catchtable = this->catchstack;
 
   // Invoke the C function
   VALUE rv = charly_call_cfunction(this, function, argc, argv);
-
-  this->gc.unmark_persistent(function->as_value());
-  for (uint i = 0; i < argc; i++) {
-    this->gc.unmark_persistent(argv[i]);
-  }
 
   this->halted = function->get_halt_after_return();
 
@@ -1554,8 +1544,6 @@ void VM::op_putclass(VALUE name,
                      uint32_t staticmethodcount,
                      bool has_parent_class,
                      bool has_constructor) {
-  ManagedContext lalloc(this);
-
   Function* constructor = nullptr;
   Class* parent_class = nullptr;
 
@@ -1583,11 +1571,11 @@ void VM::op_putclass(VALUE name,
     }
   }
 
-  Class* klass = charly_as_class(lalloc.create_class(name, constructor, parent_class));
+  Immortal<Class> klass = this->create_class(name, constructor, parent_class);
   if (constructor) {
     constructor->set_host_class(klass);
   }
-  klass->set_prototype(charly_as_object(lalloc.create_object(methodcount)));
+  klass->set_prototype(charly_as_object(this->create_object(methodcount)));
 
   while (staticmethodcount--) {
     VALUE smethod = this->pop_stack();
@@ -1690,9 +1678,8 @@ void VM::op_new(uint32_t argc) {
   }
 
   // Setup object
-  ManagedContext lalloc(this);
   Class* source_class = charly_as_class(klass);
-  Object* obj = charly_as_object(lalloc.create_object(klass, source_class->get_member_property_count()));
+  Immortal<Object> obj = this->create_object(klass, source_class->get_member_property_count());
   source_class->initialize_member_properties(obj);
 
   // Invoke constructor if one exists
@@ -3250,32 +3237,27 @@ uint8_t VM::start_runtime() {
           this->panic(Status::RuntimeTaskNotCallable);
         }
 
-        this->gc.mark_persistent(task.callback.func);
-        this->gc.mark_persistent(task.callback.arguments[0]);
-        this->gc.mark_persistent(task.callback.arguments[1]);
-        this->gc.mark_persistent(task.callback.arguments[2]);
-        this->gc.mark_persistent(task.callback.arguments[3]);
+        {
+          Immortal<> func(task.callback.func);
+          Immortal<> a1(task.callback.arguments[0]);
+          Immortal<> a2(task.callback.arguments[1]);
+          Immortal<> a3(task.callback.arguments[2]);
+          Immortal<> a4(task.callback.arguments[3]);
 
-        // Prepare VM object
-        this->catchstack = nullptr;
+          // Prepare VM object
+          this->catchstack = nullptr;
 
-        // Get Charly object
-        VALUE global_self = this->get_global_self();
-        Function* fn = charly_as_function(task.callback.func);
-        VALUE self = fn->get_self(&global_self);
+          // Get Charly object
+          VALUE global_self = this->get_global_self();
+          Function* fn = charly_as_function(func);
+          VALUE self = fn->get_self(&global_self);
 
-        // Invoke function
-        this->call_function(fn, 4, reinterpret_cast<VALUE*>(task.callback.arguments), self, true);
-        this->uid = this->get_next_thread_uid();
-        this->run();
-        this->pop_stack();
-
-        // Unmark this task in the GC
-        this->gc.unmark_persistent(task.callback.func);
-        this->gc.unmark_persistent(task.callback.arguments[0]);
-        this->gc.unmark_persistent(task.callback.arguments[1]);
-        this->gc.unmark_persistent(task.callback.arguments[2]);
-        this->gc.unmark_persistent(task.callback.arguments[3]);
+          // Invoke function
+          this->call_function(fn, 4, reinterpret_cast<VALUE*>(task.callback.arguments), self, true);
+          this->uid = this->get_next_thread_uid();
+          this->run();
+          this->pop_stack();
+        }
       }
     } else {
 
@@ -3306,10 +3288,9 @@ uint8_t VM::start_runtime() {
 
       if (this->paused_threads.size()) {
         for (auto& entry : this->paused_threads) {
-          ManagedContext lalloc(this);
-          VALUE exc_obj = lalloc.create_object(1);
-          charly_as_object(exc_obj)->write(SYM("__charly_internal_stale_thread_exception"), kTrue);
-          this->resume_thread(entry.first, exc_obj);
+          Object* exc_obj = charly_as_object(this->create_object(1));
+          exc_obj->write(SYM("__charly_internal_stale_thread_exception"), kTrue);
+          this->resume_thread(entry.first, exc_obj->as_value());
         }
       } else {
         this->running = false;
@@ -3377,14 +3358,6 @@ void VM::resume_thread(uint64_t uid, VALUE argument) {
 void VM::register_task(VMTask task) {
   std::unique_lock<std::mutex> lock(this->task_queue_m);
 
-  if (!task.is_thread) {
-    this->gc.mark_persistent(task.callback.func);
-    this->gc.mark_persistent(task.callback.arguments[0]);
-    this->gc.mark_persistent(task.callback.arguments[1]);
-    this->gc.mark_persistent(task.callback.arguments[2]);
-    this->gc.mark_persistent(task.callback.arguments[3]);
-  }
-
   this->task_queue.push(task);
 
   lock.unlock();
@@ -3423,28 +3396,12 @@ VALUE VM::register_module(InstructionBlock* block) {
 }
 
 uint64_t VM::register_timer(Timestamp ts, VMTask task) {
-  if (!task.is_thread) {
-    this->gc.mark_persistent(task.callback.func);
-    this->gc.mark_persistent(task.callback.arguments[0]);
-    this->gc.mark_persistent(task.callback.arguments[1]);
-    this->gc.mark_persistent(task.callback.arguments[2]);
-    this->gc.mark_persistent(task.callback.arguments[3]);
-  }
-
   task.uid = this->get_next_timer_id();
   this->timers.insert({ts, task});
   return task.uid;
 }
 
 uint64_t VM::register_ticker(uint32_t period, VMTask task) {
-  if (!task.is_thread) {
-    this->gc.mark_persistent(task.callback.func);
-    this->gc.mark_persistent(task.callback.arguments[0]);
-    this->gc.mark_persistent(task.callback.arguments[1]);
-    this->gc.mark_persistent(task.callback.arguments[2]);
-    this->gc.mark_persistent(task.callback.arguments[3]);
-  }
-
   Timestamp now = std::chrono::steady_clock::now();
   Timestamp exec_at = now + std::chrono::milliseconds(period);
 
@@ -3506,11 +3463,10 @@ void VM::close_worker_thread(WorkerThread* thread, VALUE return_value) {
 }
 
 void VM::handle_worker_thread_exception(const std::string& message) {
-  ManagedContext lalloc(this);
   std::thread::id current_thread_id = std::this_thread::get_id();
   std::lock_guard<std::mutex> lock(this->worker_threads_m);
   WorkerThread* handle = this->worker_threads[current_thread_id];
-  handle->error_value = lalloc.create_string(message);
+  handle->error_value = this->create_string(message);
 }
 
 bool VM::is_main_thread() {

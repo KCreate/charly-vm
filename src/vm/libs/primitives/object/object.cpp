@@ -26,7 +26,6 @@
 
 #include "object.h"
 #include "vm.h"
-#include "managedcontext.h"
 
 namespace Charly {
 namespace Internals {
@@ -34,15 +33,14 @@ namespace PrimitiveObject {
 
 VALUE keys(VM& vm, VALUE obj) {
   CHECK(container, obj);
-  ManagedContext lalloc(vm);
 
   Container* obj_container = charly_as_container(obj);
-  Array* keys_array;
+  Immortal<Array> keys_array;
   obj_container->access_container_shared([&](Container::ContainerType* container) {
-    keys_array = charly_as_array(lalloc.create_array(container->size()));
+    keys_array = vm.create_array(container->size());
 
     for (auto& [key, value] : *container) {
-      keys_array->push(lalloc.create_string(SymbolTable::decode(key)));
+      keys_array->push(vm.create_string(SymbolTable::decode(key)));
     }
   });
 

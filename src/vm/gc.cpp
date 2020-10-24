@@ -34,7 +34,6 @@ namespace Charly {
 void GarbageCollector::add_heap() {
   MemoryCell* heap = static_cast<MemoryCell*>(std::calloc(this->config.heap_cell_count, sizeof(MemoryCell)));
   this->heaps.push_back(heap);
-  this->remaining_free_cells += this->config.heap_cell_count;
 
   // Add the newly allocated cells to the free list
   MemoryCell* last_cell = this->free_cell;
@@ -51,23 +50,6 @@ void GarbageCollector::grow_heap() {
   size_t heaps_to_add = (heap_count * this->config.heap_growth_factor + 1) - heap_count;
   while (heaps_to_add--)
     this->add_heap();
-}
-
-void GarbageCollector::mark_persistent(VALUE value) {
-  std::unique_lock<std::recursive_mutex> g_lock(this->g_mutex);
-  this->temporaries.insert(value);
-}
-
-void GarbageCollector::unmark_persistent(VALUE value) {
-  std::unique_lock<std::recursive_mutex> g_lock(this->g_mutex);
-
-  // Check if this value is a registered temporary variable
-  if (this->temporaries.count(value)) {
-    auto it = this->temporaries.find(value);
-    if (it != this->temporaries.end()) {
-      this->temporaries.erase(it);
-    }
-  }
 }
 
 void GarbageCollector::mark(VALUE value) {
@@ -266,9 +248,16 @@ void GarbageCollector::collect() {
     }
   }
 
-  // Mark all temporaries
-  for (auto temp_item_iter : this->temporaries) {
-    this->mark(temp_item_iter);
+  // Immortals mark phase
+  for (MemoryCell* heap : this->heaps) {
+    for (size_t i = 0; i < this->config.heap_cell_count; i++) {
+      MemoryCell* cell = heap + i;
+      Header* cell_header = cell->as<Header>();
+
+      if (cell_header->immortal) {
+        this->mark(cell->as_value());
+      }
+    }
   }
 
   // Sweep Phase
@@ -278,14 +267,13 @@ void GarbageCollector::collect() {
       MemoryCell* cell = heap + i;
       Header* cell_header = cell->as<Header>();
 
-      if (cell_header->mark) {
-        cell_header->mark = false;
-      } else {
-        // This cell might already be on the free list
-        // Make sure we don't double free cells
-        if (!charly_is_dead(cell->as_value())) {
-          freed_cells_count++;
+      // deallocate live cells that have not been reached by the marking phase
+      if (!charly_is_dead(cell->as_value())) {
+        if (cell_header->mark) {
+          cell_header->mark = false;
+        } else {
           this->deallocate(cell);
+          freed_cells_count++;
         }
       }
     }
@@ -296,7 +284,7 @@ void GarbageCollector::collect() {
     this->config.out_stream << std::fixed;
     this->config.out_stream << std::setprecision(0);
     this->config.out_stream << "#-- GC: Freed " << (freed_cells_count * sizeof(MemoryCell)) << " bytes --#" << '\n';
-    this->config.out_stream << "#-- GC: Finished in " << gc_collect_duration.count() * 1000000000 << " nanoseconds --#"
+    this->config.out_stream << "#-- GC: Finished in " << gc_collect_duration.count() * 1000 << " milliseconds --#"
                             << '\n';
     this->config.out_stream << std::setprecision(6);
   }
@@ -311,13 +299,16 @@ MemoryCell* GarbageCollector::allocate() {
   // If we've just allocated the last available cell,
   // we do a collect in order to make sure we never get a failing
   // allocation in the future
-  if (this->free_cell == nullptr || this->remaining_free_cells <= this->config.min_free_cells) {
+  if (this->free_cell == nullptr) {
     this->collect();
 
     // If a collection didn't yield new available space,
     // allocate more heaps
     if (this->free_cell == nullptr) {
       this->grow_heap();
+      if (this->config.trace) {
+        this->config.out_stream << "#-- GC: Growing heap " << '\n';
+      }
 
       if (!this->free_cell) {
         this->config.err_stream << "Failed to expand heap, the next allocation will cause a segfault." << '\n';
@@ -325,7 +316,6 @@ MemoryCell* GarbageCollector::allocate() {
     }
   }
 
-  this->remaining_free_cells--;
   memset(reinterpret_cast<void*>(cell), 0, sizeof(MemoryCell));
   return cell;
 }
@@ -383,7 +373,6 @@ void GarbageCollector::deallocate(MemoryCell* cell) {
   cell->free.header.init(kTypeDead);
   cell->free.next = this->free_cell;
   this->free_cell = cell;
-  this->remaining_free_cells++;
 }
 
 void GarbageCollector::lock() {

@@ -2,6 +2,9 @@
 
 - VM Refactor
   - Implementation timeline
+    - Refactor whole VM with Immortal classes, make sure there are absolutetly no chance of
+      anything being leaked
+    - Allocation methods shouldn't depend on the VM's state (e.g. klass = this->primitive_object)
     - init methods should return a pointer to the object
     - Operations such as eq, lt can also be moved out of the VM into the value classes themselves
     - Property access methods can actually be removed again, make properties atomic.
@@ -14,7 +17,6 @@
     - Store global variables not as Object but as a Container
     - Fixed amount of native worker threads, waiting for jobs via some job queue
     - Refactor worker thread result return system
-    - ManagedContext ability to mark cells as immortal
     - ManagedContext ability to reserve cells in advance
     - Value allocation
       - `String* str = ctx.alloc<String>()->init_move("hello world");`
@@ -40,13 +42,6 @@
     - 1x Async networking thread            | Epoll, kqueue
     - Nx Fiber executor threads             | Executes fibers
     - Nx Native code worker threads         | Executes async C code
-
-  - ManagedContext doesn't have to keep a temporary list
-    - After allocating the cell, it is marked as `immortal`.
-    - This tells the garbage collector to never deallocate it, even if there
-      are no references to it.
-    - Once the ManagedContext is closed, all the allocates values get their `immortal` bit
-      set to false, thus allowing them to be collected again.
 
   - Fiber executors, worker threads can be in certain modes
     - The coordinator can broadcast signals to all its threads, notifying them

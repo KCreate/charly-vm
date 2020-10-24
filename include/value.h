@@ -174,6 +174,7 @@ enum ValueType : uint8_t {
 // Metadata which is stores in every heap value
 class Header {
   friend class GarbageCollector;
+  template<typename T> friend class Immortal;
 public:
   void init(ValueType type);
   void clean();
@@ -185,6 +186,7 @@ public:
 protected:
   ValueType type;   // the type of this heap value
   bool mark;        // set by the GC to mark reachable values
+  bool immortal;    // wether this value is immortal (e.g. should never be deleted by the GC)
 };
 
 // Underlying type of every value which has its own
