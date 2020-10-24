@@ -210,12 +210,10 @@ public:
   void unwind_catchstack(std::optional<VALUE> payload);
 
   // Methods to create new data types
-  VALUE create_object(uint32_t initial_capacity);
-  VALUE create_object(VALUE klass, uint32_t initial_capacity);
+  VALUE create_object(uint32_t initial_capacity, Class* klass = nullptr);
   VALUE create_array(uint32_t initial_capacity);
   VALUE create_string(const char* data, uint32_t length);
   VALUE create_string(const std::string& str);
-  VALUE create_string(MemoryBlock* block);
   VALUE create_weak_string(char* data, uint32_t length);
   VALUE create_function(VALUE name,
                         uint8_t* body_address,

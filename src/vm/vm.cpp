@@ -169,15 +169,9 @@ void VM::unwind_catchstack(std::optional<VALUE> payload = std::nullopt) {
   }
 }
 
-VALUE VM::create_object(uint32_t initial_capacity) {
+VALUE VM::create_object(uint32_t initial_capacity, Class* klass) {
   MemoryCell* cell = this->gc.allocate();
-  cell->object.init(this->primitive_object, initial_capacity);
-  return cell->as_value();
-}
-
-VALUE VM::create_object(VALUE klass, uint32_t initial_capacity) {
-  MemoryCell* cell = this->gc.allocate();
-  cell->object.init(klass, initial_capacity);
+  cell->object.init(initial_capacity, klass);
   return cell->as_value();
 }
 
@@ -416,7 +410,7 @@ VALUE VM::add(VALUE left, VALUE right) {
     char* right_data = charly_string_data(right);
 
     // Allocate buffer and copy in the data
-    char* new_data = reinterpret_cast<char*>(std::malloc(new_length));
+    char* new_data = static_cast<char*>(std::malloc(new_length));
     std::memcpy(new_data, left_data, left_length);
     std::memcpy(new_data + left_length, right_data, right_length);
     return this->create_weak_string(new_data, new_length);
@@ -474,7 +468,7 @@ VALUE VM::mul(VALUE left, VALUE right) {
     }
 
     // Allocate the buffer for the string
-    char* new_data = reinterpret_cast<char*>(std::malloc(new_length));
+    char* new_data = static_cast<char*>(std::malloc(new_length));
     uint32_t offset = 0;
     while (amount--) {
       std::memcpy(new_data + offset, str_data, str_length);
@@ -702,12 +696,25 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
       Object* obj = charly_as_object(source);
 
       if (symbol == SYM("klass")) {
-        return obj->get_klass();
+        if (Class* klass = obj->get_klass()) {
+          return klass->as_value();
+        } else {
+          return this->primitive_object;
+        }
       }
 
+      // container access
       VALUE value;
       if (obj->read(symbol, &value)) {
         return value;
+      }
+
+      // klass hierarchy lookup
+      if (Class* klass = obj->get_klass()) {
+        VALUE result;
+        if (klass->find_value(symbol, &result)) {
+          return result;
+        }
       }
 
       break;
@@ -807,6 +814,8 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
       if (symbol == SYM("parent_class")) {
         if (Class* parent_class = klass->get_parent_class()) {
           return parent_class->as_value();
+        } else {
+          return kNull;
         }
 
         return kNull;
@@ -863,33 +872,8 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
     }
   }
 
-  // At this point, the symbol was not found in the container of the source
-  // or it didn't have a container
-  //
-  // If the value was an object, we walk the class hierarchy and search for a method
-  // If the value was any other object, we check it's primitive class
-  // If the primitive class didn't contain a method, the primitive class for Object
-  // is checked
-  //
-  // If no result was found, null is returned
-  if (charly_is_object(source)) {
-    VALUE val_klass = charly_as_object(source)->get_klass();
-
-    // Make sure the klass field is a Class value
-    if (!charly_is_class(val_klass)) {
-      val_klass = this->primitive_object;
-    }
-
-    if (charly_is_class(val_klass)) {
-      Class* klass = charly_as_class(val_klass);
-
-      VALUE result;
-      if (klass->find_value(symbol, &result)) {
-        return result;
-      }
-    }
-  }
-
+  // The value was found neither in the object container itself, nor somewhere in the
+  // class hierarchy. Search for the value in one of the primitive classes
   VALUE lookup;
   if (this->findprimitivevalue(source, symbol, &lookup)) {
     return lookup;
@@ -999,6 +983,7 @@ bool VM::findprimitivevalue(VALUE value, VALUE symbol, VALUE* result) {
   // Get the corresponding primitive class
   VALUE found_primitive_class = kNull;
   switch (charly_get_type(value)) {
+    case kTypeObject:    found_primitive_class = this->primitive_object; break;
     case kTypeNumber:    found_primitive_class = this->primitive_number; break;
     case kTypeString:    found_primitive_class = this->primitive_string; break;
     case kTypeBoolean:   found_primitive_class = this->primitive_boolean; break;
@@ -1679,7 +1664,7 @@ void VM::op_new(uint32_t argc) {
 
   // Setup object
   Class* source_class = charly_as_class(klass);
-  Immortal<Object> obj = this->create_object(klass, source_class->get_member_property_count());
+  Immortal<Object> obj = this->create_object(source_class->get_member_property_count(), source_class);
   source_class->initialize_member_properties(obj);
 
   // Invoke constructor if one exists
@@ -1858,9 +1843,7 @@ void VM::pretty_print(std::ostream& io, VALUE value) {
 
   switch (charly_get_type(value)) {
     case kTypeDead: {
-      io << "<@";
-      io << reinterpret_cast<void*>(value);
-      io << " : Dead>";
+      io << "<@" << charly_as_pointer(value) << " : Dead>";
       break;
     }
 
@@ -2153,7 +2136,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
 
   switch (charly_get_type(value)) {
     case kTypeDead: {
-      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
+      if (this->context.verbose_addresses) io << "@" << charly_as_pointer(value) << ":";
       io << "<dead>";
       break;
     }
@@ -2184,7 +2167,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
     }
 
     case kTypeString: {
-      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
+      if (this->context.verbose_addresses) io << "@" << charly_as_pointer(value) << ":";
       if (inside_container) io << "\"";
       io.write(charly_string_data(value), charly_string_length(value));
       if (inside_container) io << "\"";
@@ -2202,12 +2185,11 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
 
       this->pretty_print_stack.push_back(value);
 
-      if (charly_is_class(object->get_klass())) {
-        Class* klass = charly_as_class(object->get_klass());
+      if (Class* klass = object->get_klass()) {
         this->to_s(io, klass->get_name());
       }
 
-      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
+      if (this->context.verbose_addresses) io << "@" << charly_as_pointer(value) << ":";
       io << "{\n";
 
       object->access_container_shared([&](Container::ContainerType* container) {
@@ -2229,7 +2211,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
 
     case kTypeArray: {
       Array* array = charly_as_array(value);
-      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
+      if (this->context.verbose_addresses) io << "@" << charly_as_pointer(value) << ":";
 
       // If this array was already printed, we avoid printing it again
       if (printed_before) {
@@ -2261,7 +2243,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
 
     case kTypeFunction: {
       Function* func = charly_as_function(value);
-      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
+      if (this->context.verbose_addresses) io << "@" << charly_as_pointer(value) << ":";
 
       if (printed_before) {
         io << "<Function ...>";
@@ -2298,7 +2280,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
 
     case kTypeCFunction: {
       CFunction* func = charly_as_cfunction(value);
-      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
+      if (this->context.verbose_addresses) io << "@" << charly_as_pointer(value) << ":";
 
       if (printed_before) {
         io << "<CFunction ...>";
@@ -2328,7 +2310,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
 
     case kTypeClass: {
       Class* klass = charly_as_class(value);
-      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
+      if (this->context.verbose_addresses) io << "@" << charly_as_pointer(value) << ":";
 
       if (printed_before) {
         io << "<Class ...>";
@@ -2355,19 +2337,19 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
     }
 
     case kTypeCPointer: {
-      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
+      if (this->context.verbose_addresses) io << "@" << charly_as_pointer(value) << ":";
       io << "<CPointer>";
       break;
     }
 
     case kTypeSymbol: {
-      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
+      if (this->context.verbose_addresses) io << "@" << charly_as_pointer(value) << ":";
       io << SymbolTable::decode(value);
       break;
     }
 
     case kTypeFrame: {
-      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
+      if (this->context.verbose_addresses) io << "@" << charly_as_pointer(value) << ":";
       io << "<Frame ";
 
       Frame* frame = charly_as_frame(value);
@@ -2385,7 +2367,7 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
     }
 
     default: {
-      if (this->context.verbose_addresses) io << "@" << reinterpret_cast<void*>(value) << ":";
+      if (this->context.verbose_addresses) io << "@" << charly_as_pointer(value) << ":";
       io << "<?>";
       break;
     }

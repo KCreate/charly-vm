@@ -221,13 +221,12 @@ protected:
 class Object : public Container {
   friend class GarbageCollector;
 public:
-  void init(VALUE klass = kNull, uint32_t initial_capacity = 4);
-  void init(uint32_t initial_capacity = 4);
+  void init(uint32_t initial_capacity, Class* klass = nullptr);
 
-  VALUE get_klass();
+  Class* get_klass();
 
 protected:
-  VALUE klass; // The class this object was constructed from, otherwise null
+  Class* klass; // The class this object was constructed from
 };
 
 // Array type

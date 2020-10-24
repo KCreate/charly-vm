@@ -217,6 +217,13 @@ export = ->(describe, it, assert) {
     assert("hello".to_s(), "hello")
     assert(["hello"].to_s(), "[\"hello\"]")
     assert([""].to_s(), "[\"\"]")
-    assert({ value: "hello" }.to_s(), "Object{\n  value = \"hello\"\n}")
+    assert({ value: "hello" }.to_s(), "{\n  value = \"hello\"\n}")
+
+    class TestClass {
+      property value
+    }
+
+    const i = new TestClass("hello")
+    assert(i.to_s(), "TestClass{\n  value = \"hello\"\n}")
   })
 }

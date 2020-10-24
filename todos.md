@@ -4,7 +4,6 @@
   - Implementation timeline
     - Refactor whole VM with Immortal classes, make sure there are absolutetly no chance of
       anything being leaked
-    - Allocation methods shouldn't depend on the VM's state (e.g. klass = this->primitive_object)
     - init methods should return a pointer to the object
     - Operations such as eq, lt can also be moved out of the VM into the value classes themselves
     - Property access methods can actually be removed again, make properties atomic.
@@ -211,6 +210,13 @@
         return a + b
     }
     ```
+
+- Automated CI testing
+  - TravisCI supports C++ builds and also has nice GitHub integration
+  - https://docs.travis-ci.com/user/languages/cpp/
+
+- Change enums to enum classes
+  - https://wiggling-bits.net/using-enum-classes-as-type-safe-bitmasks/
 
 - Implement an assembler for charly bytecodes
   - Should be accessible via C++ to generate an InstructionBuffer from the assembly representation

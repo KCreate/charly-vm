@@ -24,5 +24,9 @@
  * SOFTWARE.
  */
 
-const debug_func = @"charly.vm.debug_func"
-debug_func("wazzupp")
+Object.prototype.foo = ->{
+  return "hello world"
+}
+
+print({}.foo)
+print({}.foo())

@@ -121,12 +121,12 @@ void Container::clean() {
   this->container = nullptr;
 }
 
-void Object::init(VALUE klass, uint32_t initial_capacity) {
+void Object::init(uint32_t initial_capacity, Class* klass) {
   Container::init(kTypeObject, initial_capacity);
   this->klass = klass;
 }
 
-VALUE Object::get_klass() {
+Class* Object::get_klass() {
   return this->klass;
 }
 
