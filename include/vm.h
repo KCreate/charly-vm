@@ -203,11 +203,8 @@ public:
 
   // Methods to copy existing data types
   VALUE copy_value(VALUE value);
-  VALUE deep_copy_value(VALUE value);
   VALUE copy_object(VALUE object);
-  VALUE deep_copy_object(VALUE object);
   VALUE copy_array(VALUE array);
-  VALUE deep_copy_array(VALUE array);
   VALUE copy_string(VALUE string);
   VALUE copy_function(VALUE function);
   VALUE copy_cfunction(VALUE cfunction);

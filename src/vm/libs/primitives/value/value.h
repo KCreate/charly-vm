@@ -35,7 +35,6 @@ namespace PrimitiveValue {
 
 VALUE to_s(VM& vm, VALUE value);
 VALUE copy(VM& vm, VALUE value);
-VALUE deepcopy(VM& vm, VALUE value);
 
 }  // namespace PrimitiveValue
 }  // namespace Internals

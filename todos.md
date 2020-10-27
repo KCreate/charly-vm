@@ -4,7 +4,6 @@
   - Implementation timeline
     - Refactor whole VM with Immortal classes, make sure there are absolutetly no chance of
       anything being leaked
-    - init methods should return a pointer to the object
     - Operations such as eq, lt can also be moved out of the VM into the value classes themselves
     - Property access methods can actually be removed again, make properties atomic.
       - This won't work for all properties, so some accessor methods will still be needed.

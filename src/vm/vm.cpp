@@ -159,35 +159,10 @@ VALUE VM::copy_value(VALUE value) {
   return value;
 }
 
-VALUE VM::deep_copy_value(VALUE value) {
-  switch (charly_get_type(value)) {
-    case kTypeString: return this->copy_string(value);
-    case kTypeObject: return this->deep_copy_object(value);
-    case kTypeArray: return this->deep_copy_array(value);
-    case kTypeFunction: return this->copy_function(value);
-    case kTypeCFunction: return this->copy_cfunction(value);
-  }
-
-  return value;
-}
-
 VALUE VM::copy_object(VALUE object) {
   Object* source = charly_as_object(object);
   Object* target = this->gc.allocate<Object>(source->keycount());
   target->copy_container_from(source);
-  return target->as_value();
-}
-
-VALUE VM::deep_copy_object(VALUE object) {
-  Object* source = charly_as_object(object);
-  Immortal<Object> target = this->gc.allocate<Object>();
-
-  source->access_container_shared([&](Container::ContainerType* source_container) {
-    for (auto& [key, value] : *source_container) {
-      target->write(key, this->deep_copy_value(value));
-    }
-  });
-
   return target->as_value();
 }
 
@@ -198,18 +173,6 @@ VALUE VM::copy_array(VALUE array) {
   source->access_vector_shared([&](Array::VectorType* vec) {
     for (VALUE value : *vec) {
       target->push(value);
-    }
-  });
-
-  return target->as_value();
-}
-
-VALUE VM::deep_copy_array(VALUE array) {
-  Array* source = charly_as_array(array);
-  Immortal<Array> target = this->gc.allocate<Array>();
-  source->access_vector_shared([&](Array::VectorType* vec) {
-    for (VALUE value : *vec) {
-      target->push(this->deep_copy_value(value));
     }
   });
 
