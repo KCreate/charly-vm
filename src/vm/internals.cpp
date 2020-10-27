@@ -124,7 +124,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
 
     // Check if we got a *.lib file
     if (!std::strcmp(include_filename.c_str() + include_filename.size() - 4, ".lib")) {
-      Immortal<Object> lib = vm.create_object(8);
+      Immortal<Object> lib = vm.gc.allocate<Object>(8);
 
       // Check if there is already a resident copy of this library
       //
@@ -173,14 +173,14 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
         // While we are extracting the method names, we can create
         // CFunction objects for the vm
         void* func_pointer = dlsym(clib, name.c_str());
-        CFunction* cfunc = charly_as_cfunction(vm.create_cfunction(
-          charly_create_symbol(name),
-          argc,
-          func_pointer,
-          thread_policy
-        ));
+        if (signatures == nullptr) {
+          dlclose(clib);
+          vm.throw_exception("Could not read library symbol " + name);
+          return kNull;
+        }
 
-        lib->write(charly_create_symbol(name), cfunc->as_value());
+        VALUE symbol = charly_create_symbol(name);
+        lib->write(symbol, vm.gc.allocate<CFunction>(symbol, func_pointer, argc, thread_policy)->as_value());
 
         i++;
       }
@@ -197,7 +197,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
         dlclose(clib);
       };
 
-      lib->write(SymbolTable::encode("__libptr"), vm.create_cpointer(clib, destructor));
+      lib->write(SymbolTable::encode("__libptr"), vm.gc.allocate<CPointer>(clib, destructor)->as_value());
       lib->write(SymbolTable::encode("__libpath"), vm.create_string(include_filename));
 
       return lib->as_value();
@@ -287,7 +287,7 @@ VALUE debug_func(VM& vm, VALUE value) {
     vm.context.out_stream << " bytes" << std::endl;
   }
 
-  Immortal<Object> obj = vm.create_object(2);
+  Immortal<Object> obj = vm.gc.allocate<Object>(2);
   obj->write(SymbolTable::encode("input"), vm.create_string("hello world"));
   obj->write(SymbolTable::encode("test"), value);
 

@@ -24,9 +24,8 @@
  * SOFTWARE.
  */
 
-Object.prototype.foo = ->{
-  return "hello world"
+func foo(a, b, c) {
+  return [a, b, c]
 }
 
-print({}.foo)
-print({}.foo())
+print(foo(1, 2, 3))

@@ -43,7 +43,7 @@ VALUE create(VM& vm, VALUE size) {
   CHECK(number, size);
   UTF8Buffer* buf = new UTF8Buffer();
   buf->grow_to_fit(charly_number_to_uint32(size));
-  return vm.create_cpointer(static_cast<void*>(buf), destructor);
+  return vm.gc.allocate<CPointer>(static_cast<void*>(buf), destructor)->as_value();
 }
 
 VALUE reserve(VM& vm, VALUE buf, VALUE size) {
@@ -174,10 +174,11 @@ VALUE bytes(VM& vm, VALUE buf) {
 
   // Allocate the array that will return the bytes
   // offset is the amount of bytes we need to store
-  Array* byte_array = charly_as_array(vm.create_array(offset));
+  Array* byte_array = vm.gc.allocate<Array>(offset);
+  byte_array->fill(kNull, offset);
 
   for (uint32_t i = 0; i < offset; i++) {
-    byte_array->push(charly_create_integer(data[i]));
+    byte_array->write(i, charly_create_integer(data[i]));
   }
 
   return byte_array->as_value();

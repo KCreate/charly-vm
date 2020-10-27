@@ -237,6 +237,11 @@ void Array::clear() {
   this->data->clear();
 }
 
+void Array::fill(VALUE value, uint32_t count) {
+  assert(this->data);
+  this->data->assign(count, value);
+}
+
 void Array::access_vector(std::function<void(Array::VectorType*)> cb) {
   assert(this->data);
   cb(this->data);
@@ -247,29 +252,34 @@ void Array::access_vector_shared(std::function<void(Array::VectorType*)> cb) {
   cb(this->data);
 }
 
-void String::init(char* data, uint32_t length) {
+void String::init(const char* data, uint32_t length) {
   Header::init(kTypeString);
-  this->data = data;
-  this->length = length;
-}
-
-void String::init_copy(const char* data, uint32_t length) {
-  Header::init(kTypeString);
-
-  // allocate new buffer and copy the data
   char* buffer = (char*)malloc(length);
   std::memcpy(buffer, data, length);
   this->data = buffer;
   this->length = length;
 }
+void String::init(char* data, uint32_t length, bool copy) {
+  Header::init(kTypeString);
 
-void String::init_copy(const std::string& source) {
-  this->init_copy(source.c_str(), source.size());
+  if (copy) {
+    char* buffer = (char*)malloc(length);
+    std::memcpy(buffer, data, length);
+    this->data = buffer;
+    this->length = length;
+  } else {
+    this->data = data;
+    this->length = length;
+  }
+}
+
+void String::init(const std::string& source) {
+  this->init(source.c_str(), source.size());
 }
 
 void String::clean() {
   Header::clean();
-  std::free(data);
+  std::free(static_cast<void*>(this->data));
 }
 
 char* String::get_data() {

@@ -27,7 +27,6 @@
 import "unittest"
 
 const result = unittest(->(describe, it, assert, context) {
-
   const testcases = [
 
     // Interpreter specs
@@ -36,7 +35,6 @@ const result = unittest(->(describe, it, assert, context) {
     ["Classes",               "./interpreter/classes.ch"],
     ["Comments",              "./interpreter/comments.ch"],
     ["Comparisons",           "./interpreter/comparisons.ch"],
-    ["Sync",                  "./interpreter/sync.ch"],
     ["Exceptions",            "./interpreter/exceptions.ch"],
     ["External Files",        "./interpreter/external-files.ch"],
     ["Functions",             "./interpreter/functions.ch"],
@@ -46,6 +44,7 @@ const result = unittest(->(describe, it, assert, context) {
     ["Objects",               "./interpreter/objects.ch"],
     ["Primitives",            "./interpreter/primitives.ch"],
     ["Switch",                "./interpreter/switch.ch"],
+    ["Sync",                  "./interpreter/sync.ch"],
     ["Ternary",               "./interpreter/ternary.ch"],
     ["Unless",                "./interpreter/unless.ch"],
 

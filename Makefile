@@ -43,41 +43,41 @@ LIB := -lstdc++
 RUNTIME_PROFILER := examples/runtime-profiler.ch
 
 $(TARGET): $(OBJECTS)
-	$(call colorecho, " Linking...", 2)
+	@echo "Linking..."
 	@$(CC) $(OBJECTS) $(CFLAGS) $(OPT) $(LIB) $(LFLAGS) -o $(TARGET)
-	$(call colorecho, " Built executable $(TARGET)", 2)
+	@echo "Built executable $(TARGET)"
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
 	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) $(OPT) $(INC) -c -o $@ $<
-	$(call colorecho, " Built $@", 2)
+	@echo "Built $@"
 
 production:
-	$(call colorecho, " Building production binary $(PRODTARGET)", 2)
+	@echo "Building production binary $(PRODTARGET)"
 	@$(CC) $(SOURCES) $(CFLAGSPROD) $(OPTPROD) $(INC) $(LIB) $(LFLAGS) -o $(PRODTARGET)
 
 profiledproduction:
-	$(call colorecho, " Building profiling production binary $(PRODTARGET)", 2)
+	@echo "Building profiling production binary $(PRODTARGET)"
 	@$(CC) $(SOURCES) $(CFLAGSPROD) $(OPTPROD) $(INC) $(LIB) $(LFLAGS) -fprofile-instr-generate=default.profraw -o $(PRODTARGET)
-	$(call colorecho, " Running runtime profiler", 2)
+	@echo "Running runtime profiler"
 	@$(PRODTARGET) $(RUNTIME_PROFILER)
-	$(call colorecho, " Converting profile to clang format", 2)
+	@echo "Converting profile to clang format"
 	@llvm-profdata merge -output=code.profdata default.profraw
-	$(call colorecho, " Building profile guided production binary", 2)
+	@echo "Building profile guided production binary"
 	@$(CC) $(SOURCES) $(CFLAGSPROD) $(OPTPROD) $(INC) $(LIB) $(LFLAGS) -fprofile-instr-use=code.profdata -o $(PRODTARGET)
 	@rm code.profdata default.profraw
-	$(call colorecho, " Finished profile guided production binary", 2)
+	@echo "Finished profile guided production binary"
 
 clean:
 	@make clean_dev
 	@make clean_prod
 
 clean_dev:
-	$(call colorecho, " Cleaning dev...", 2)
+	@echo "Cleaning dev..."
 	@rm -rf $(BUILDDIR) $(TARGET)
 
 clean_prod:
-	$(call colorecho, " Cleaning prod...", 2)
+	@echo "Cleaning prod..."
 	@rm -rf $(BUILDDIR) $(PRODTARGET)
 
 rebuild:
@@ -85,17 +85,10 @@ rebuild:
 	@make -j
 
 format:
-	$(call colorecho, " Formatting...", 2)
+	@echo "Formatting..."
 	@clang-format -i $(SOURCES) $(HEADERS) -style=file
 
 test:
 	bin/dev test/main.ch
 
 .PHONY: whole clean clean_dev clean_prod rebuild format test
-
-# Create colored output
-define colorecho
-      @tput setaf $2
-      @echo $1
-      @tput sgr0
-endef

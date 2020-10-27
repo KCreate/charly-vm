@@ -31,124 +31,36 @@
 #include "vm.h"
 
 namespace Charly {
+
 void GarbageCollector::add_heap() {
-  MemoryCell* heap = static_cast<MemoryCell*>(std::calloc(this->config.heap_cell_count, sizeof(MemoryCell)));
+  MemoryCell* heap = (MemoryCell*)std::malloc(kHeapCellCount * sizeof(MemoryCell));
   this->heaps.push_back(heap);
 
   // Add the newly allocated cells to the free list
-  MemoryCell* last_cell = this->free_cell;
-  for (size_t i = 0; i < this->config.heap_cell_count; i++) {
+  MemoryCell* last_cell = this->freelist;
+  for (size_t i = 0; i < kHeapCellCount; i++) {
     heap[i].free.next = last_cell;
     last_cell = heap + i;
   }
 
-  this->free_cell = last_cell;
+  this->freelist = last_cell;
+}
+
+void GarbageCollector::free_heap(MemoryCell* heap) {
+  for (size_t i = 0; i < kHeapCellCount; i++) {
+    this->clean(heap + i);
+  }
+
+  std::free(heap);
 }
 
 void GarbageCollector::grow_heap() {
   size_t heap_count = this->heaps.size();
-  size_t heaps_to_add = (heap_count * this->config.heap_growth_factor + 1) - heap_count;
-  while (heaps_to_add--)
+  while (heap_count--)
     this->add_heap();
 }
 
-void GarbageCollector::mark(VALUE value) {
-  if (!charly_is_ptr(value)) {
-    return;
-  }
-
-  if (charly_as_pointer(value) == nullptr) {
-    return;
-  }
-
-  if (charly_as_header(value)->mark) {
-    return;
-  }
-
-  charly_as_header(value)->mark = true;
-  switch (charly_as_header(value)->type) {
-    case kTypeObject: {
-      Object* obj = charly_as_object(value);
-      this->mark(obj->klass);
-      for (auto entry : *(obj->container))
-        this->mark(entry.second);
-      break;
-    }
-
-    case kTypeArray: {
-      Array* arr = charly_as_array(value);
-      for (VALUE value : *(arr->data))
-        this->mark(value);
-      break;
-    }
-
-    case kTypeFunction: {
-      Function* func = charly_as_function(value);
-      this->mark(func->context);
-      this->mark(func->host_class);
-
-      if (func->bound_self_set)
-        this->mark(func->bound_self);
-      for (auto entry : *(func->container))
-        this->mark(entry.second);
-      break;
-    }
-
-    case kTypeCFunction: {
-      CFunction* cfunc = charly_as_cfunction(value);
-      for (auto entry : *(cfunc->container))
-        this->mark(entry.second);
-      break;
-    }
-
-    case kTypeClass: {
-      Class* klass = charly_as_class(value);
-      this->mark(klass->constructor);
-      this->mark(klass->prototype);
-      this->mark(klass->parent_class);
-
-      for (auto entry : *(klass->container))
-        this->mark(entry.second);
-
-      break;
-    }
-
-    case kTypeFrame: {
-      Frame* frame = charly_as_frame(value);
-      this->mark(frame->parent);
-      this->mark(frame->environment);
-      this->mark(frame->catchtable);
-      this->mark(frame->function);
-      this->mark(frame->self);
-
-      for (VALUE value : *(frame->locals)) {
-        this->mark(value);
-      }
-
-      break;
-    }
-
-    case kTypeCatchTable: {
-      CatchTable* table = charly_as_catchtable(value);
-      this->mark(table->frame);
-      this->mark(table->parent);
-      break;
-    }
-
-    default: {
-      // This type doesn't reference any other types
-    }
-  }
-}
-
-void GarbageCollector::do_collect() {
-  std::unique_lock<std::recursive_mutex> g_lock(this->g_mutex);
-  this->collect();
-}
-
 void GarbageCollector::collect() {
-  std::unique_lock<std::recursive_mutex>(this->g_mutex);
-
   auto gc_start_time = std::chrono::high_resolution_clock::now();
   if (this->config.trace) {
     this->config.out_stream << "#-- GC: Pause --#" << '\n';
@@ -250,7 +162,7 @@ void GarbageCollector::collect() {
 
   // Immortals mark phase
   for (MemoryCell* heap : this->heaps) {
-    for (size_t i = 0; i < this->config.heap_cell_count; i++) {
+    for (size_t i = 0; i < kHeapCellCount; i++) {
       MemoryCell* cell = heap + i;
       Header* cell_header = cell->as<Header>();
 
@@ -263,7 +175,7 @@ void GarbageCollector::collect() {
   // Sweep Phase
   int freed_cells_count = 0;
   for (MemoryCell* heap : this->heaps) {
-    for (size_t i = 0; i < this->config.heap_cell_count; i++) {
+    for (size_t i = 0; i < kHeapCellCount; i++) {
       MemoryCell* cell = heap + i;
       Header* cell_header = cell->as<Header>();
 
@@ -290,40 +202,15 @@ void GarbageCollector::collect() {
   }
 }
 
-MemoryCell* GarbageCollector::allocate() {
-  std::unique_lock<std::recursive_mutex> g_lock(this->g_mutex);
-
-  MemoryCell* cell = this->free_cell;
-  this->free_cell = this->free_cell->free.next;
-
-  // If we've just allocated the last available cell,
-  // we do a collect in order to make sure we never get a failing
-  // allocation in the future
-  if (this->free_cell == nullptr) {
-    this->collect();
-
-    // If a collection didn't yield new available space,
-    // allocate more heaps
-    if (this->free_cell == nullptr) {
-      this->grow_heap();
-      if (this->config.trace) {
-        this->config.out_stream << "#-- GC: Growing heap " << '\n';
-      }
-
-      if (!this->free_cell) {
-        this->config.err_stream << "Failed to expand heap, the next allocation will cause a segfault." << '\n';
-      }
-    }
-  }
-
-  memset(reinterpret_cast<void*>(cell), 0, sizeof(MemoryCell));
-  return cell;
+void GarbageCollector::deallocate(MemoryCell* cell) {
+  this->clean(cell);
+  std::memset(cell, 0xEA, sizeof(MemoryCell));
+  cell->free.header.init(kTypeDead);
+  cell->free.next = this->freelist;
+  this->freelist = cell;
 }
 
-void GarbageCollector::deallocate(MemoryCell* cell) {
-  std::unique_lock<std::recursive_mutex>(this->g_mutex);
-
-  // Run the type specific cleanup function
+void GarbageCollector::clean(MemoryCell* cell) {
   switch (cell->as<Header>()->type) {
     case kTypeObject: {
       cell->object.clean();
@@ -355,32 +242,142 @@ void GarbageCollector::deallocate(MemoryCell* cell) {
       break;
     }
 
-    case kTypeCPointer: {
-      cell->cpointer.clean();
-      break;
-    }
-
     case kTypeFrame: {
       cell->frame.clean();
       break;
     }
 
-    default: { break; }
+    case kTypeCatchTable: {
+      cell->catchtable.clean();
+      break;
+    }
+
+    case kTypeCPointer: {
+      cell->cpointer.clean();
+      break;
+    }
+
+    default: break;
+  }
+}
+
+MemoryCell* GarbageCollector::allocate_cell() {
+  std::unique_lock<std::recursive_mutex> lock(this->mutex);
+
+  MemoryCell* cell = this->freelist;
+  this->freelist = this->freelist->free.next;
+
+  // If we've just allocated the last available cell,
+  // we do a collect in order to make sure we never get a failing
+  // allocation in the future
+  if (this->freelist == nullptr) {
+    this->collect();
+
+    // If a collection didn't yield new available space,
+    // allocate more heaps
+    if (this->freelist == nullptr) {
+      this->grow_heap();
+      if (this->config.trace) {
+        this->config.out_stream << "#-- GC: Growing heap " << '\n';
+      }
+
+      if (!this->freelist) {
+        this->config.err_stream << "Failed to expand heap, the next allocation will cause a segfault." << '\n';
+      }
+    }
   }
 
-  // Clear the cell and link it into the freelist
   memset(reinterpret_cast<void*>(cell), 0, sizeof(MemoryCell));
-  cell->free.header.init(kTypeDead);
-  cell->free.next = this->free_cell;
-  this->free_cell = cell;
+  return cell;
 }
 
-void GarbageCollector::lock() {
-  this->g_mutex.lock();
-}
+void GarbageCollector::mark(VALUE value) {
+  if (!charly_is_ptr(value)) {
+    return;
+  }
 
-void GarbageCollector::unlock() {
-  this->g_mutex.unlock();
+  if (charly_as_pointer(value) == nullptr) {
+    return;
+  }
+
+  if (charly_as_header(value)->mark) {
+    return;
+  }
+
+  charly_as_header(value)->mark = true;
+  switch (charly_as_header(value)->type) {
+    case kTypeObject: {
+      Object* obj = charly_as_object(value);
+      this->mark(obj->klass);
+      for (auto entry : *(obj->container))
+        this->mark(entry.second);
+      break;
+    }
+
+    case kTypeArray: {
+      Array* arr = charly_as_array(value);
+      for (VALUE value : *(arr->data))
+        this->mark(value);
+      break;
+    }
+
+    case kTypeFunction: {
+      Function* func = charly_as_function(value);
+      this->mark(func->context);
+      this->mark(func->host_class);
+
+      if (func->bound_self_set)
+        this->mark(func->bound_self);
+      for (auto entry : *(func->container))
+        this->mark(entry.second);
+      break;
+    }
+
+    case kTypeCFunction: {
+      CFunction* cfunc = charly_as_cfunction(value);
+      for (auto entry : *(cfunc->container))
+        this->mark(entry.second);
+      break;
+    }
+
+    case kTypeClass: {
+      Class* klass = charly_as_class(value);
+      this->mark(klass->constructor);
+      this->mark(klass->prototype);
+      this->mark(klass->parent_class);
+
+      for (auto entry : *(klass->container))
+        this->mark(entry.second);
+
+      break;
+    }
+
+    case kTypeFrame: {
+      Frame* frame = charly_as_frame(value);
+      this->mark(frame->parent);
+      this->mark(frame->environment);
+      this->mark(frame->catchtable);
+      this->mark(frame->function);
+      this->mark(frame->self);
+
+      for (VALUE value : *(frame->locals)) {
+        this->mark(value);
+      }
+
+      break;
+    }
+
+    case kTypeCatchTable: {
+      CatchTable* table = charly_as_catchtable(value);
+      this->mark(table->frame);
+      this->mark(table->parent);
+      break;
+    }
+
+    default: {
+      // This type doesn't reference any other types
+    }
+  }
 }
 
 }  // namespace Charly

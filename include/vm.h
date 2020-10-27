@@ -175,56 +175,31 @@ struct WorkerThread {
 };
 
 class VM {
-  friend GarbageCollector;
+  friend class GarbageCollector;
 
 public:
-  VM(VMContext& ctx)
-      : context(ctx),
-        gc(GarbageCollectorConfig{.trace = ctx.trace_gc, .out_stream = ctx.err_stream, .err_stream = ctx.err_stream},
-           this),
-        running(true),
-        uid(0),
-        frames(nullptr),
-        catchstack(nullptr),
-        ip(nullptr),
-        halted(false) {
+  VM(VMContext& ctx) : gc(GarbageCollector::Config{
+      .trace = ctx.trace_gc,
+      .out_stream = ctx.err_stream,
+      .err_stream = ctx.err_stream
+    }, this), context(ctx) {
     this->main_thread_id = std::this_thread::get_id();
   }
   VM(const VM& other) = delete;
   VM(VM&& other) = delete;
-  ~VM() {
-    this->gc.do_collect();
-  }
-
-  // Methods that operate on the VM's frames
-  Frame* pop_frame();
-  Frame* create_frame(VALUE self, Function* function, bool halt = false);
 
   // Stack manipulation
   VALUE pop_stack();
   void push_stack(VALUE value);
 
-  // CatchStack manipulation
-  CatchTable* create_catchtable(uint8_t* address);
+  // Misc. machine operations
+  Frame* pop_frame();
   CatchTable* pop_catchtable();
   void unwind_catchstack(std::optional<VALUE> payload);
 
   // Methods to create new data types
-  VALUE create_object(uint32_t initial_capacity, Class* klass = nullptr);
-  VALUE create_array(uint32_t initial_capacity);
   VALUE create_string(const char* data, uint32_t length);
   VALUE create_string(const std::string& str);
-  VALUE create_weak_string(char* data, uint32_t length);
-  VALUE create_function(VALUE name,
-                        uint8_t* body_address,
-                        uint32_t argc,
-                        uint32_t minimum_argc,
-                        uint32_t lvarcount,
-                        bool anonymous,
-                        bool needs_arguments);
-  VALUE create_cfunction(VALUE name, uint32_t argc, void* pointer, ThreadPolicy thread_policy = ThreadPolicyMain);
-  VALUE create_class(VALUE name, Function* constructor, Class* parent_class);
-  VALUE create_cpointer(void* data, CPointer::DestructorType destructor);
 
   // Methods to copy existing data types
   VALUE copy_value(VALUE value);
@@ -344,9 +319,6 @@ public:
   void op_branchneq(int32_t offset);
   void op_typeof();
 
-  VMContext context;
-  VMInstructionProfile instruction_profile;
-
   inline uint8_t* get_ip() {
     return this->ip;
   }
@@ -377,11 +349,11 @@ public:
   bool is_worker_thread();
 
   std::chrono::time_point<std::chrono::high_resolution_clock> starttime;
-private:
-
-  uint8_t status_code = 0;
 
   GarbageCollector gc;
+  VMContext context;
+  VMInstructionProfile instruction_profile;
+private:
 
   // Used to avoid an overflow when printing cyclic data structures
   std::vector<VALUE> pretty_print_stack;
@@ -413,7 +385,7 @@ private:
   std::queue<VMTask> task_queue;
   std::mutex task_queue_m;
   std::condition_variable task_queue_cv;
-  std::atomic<bool> running;
+  std::atomic<bool> running = true;
 
   // Remaining timers & tickers
   std::map<Timestamp, VMTask> timers;
@@ -427,13 +399,14 @@ private:
   std::thread::id main_thread_id;
 
   // The uid of the current thread of execution
-  uint64_t uid;
+  uint64_t uid = 0;
 
   std::queue<VALUE> pop_queue;
   std::vector<VALUE> stack;
-  Frame* frames;
-  CatchTable* catchstack;
-  uint8_t* ip;
-  bool halted;
+  Frame* frames = nullptr;
+  CatchTable* catchstack = nullptr;
+  uint8_t* ip = nullptr;
+  bool halted = false;
+  uint8_t status_code = 0;
 };
 }  // namespace Charly

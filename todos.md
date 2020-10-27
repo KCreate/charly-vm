@@ -126,10 +126,16 @@
         blocked while the GC is running. if a worker task knows ahead of time how many memory cells it
         will need, it can reserve these, making sure it won't block at runtime.
         - This could be a tuneable parameter, "how many tasks should memory be pre-reserved for"
+      - Deadlock could happen if a code section currently holds a lock of some heap value
+        allocates something inside the critical section and then triggers a GC. For the GC to be able
+        to start, all other threads need to be at well-known places. If another thread is waiting for the
+        value lock to be released, it will wait forever and the runtime will freeze.
+        - This could be resolved by somehow figuring out wether a thread is currently waiting for a
+          lock to be released. This would obviously only work with our well-known heap value locks.
+          Maybe some wrapper class which updates the thread status once it starts waiting?
 
 - Fibers can be represented by GC allocated structures, making them accessible to charly code
-  - We simply store a `map<FIBER_ID, Fiber*>` of all active fibers
-  - Returning the current fiber object becomes as easy as looking it up in the table
+  - We simply store a `set<Fiber*>` of all active fibers
   - Operations can be performed directly on the fiber value itself, without having to worry
     about syncing it with charly space.
 
@@ -141,6 +147,14 @@
 - Make instructionblocks values allocated by the GC, thus accessible to charly code
   - Also allows instructionblocks to be deallocated once they are no longer needed
   - Would allow us to store location information in a format easily accessible via the VM
+
+- Write a new thread-safe queue class that is easily traversable for the GC
+  - For the beginning this could just be a simple linked list with a mutex
+
+- Implement a Heap class
+  - Needed to efficiently store the current active timers.
+  - Getting the next timer to fire becomes very easy.
+  - Tickers can also be stored inside a heap
 
 - New instructions to replace functionality in native C methods
   - Timer and ticker handlers

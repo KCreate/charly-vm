@@ -285,10 +285,6 @@ public:
     this->write(Opcode::Halt);
   }
 
-  inline void write_gccollect() {
-    this->write(Opcode::GCCollect);
-  }
-
   inline void write_typeof() {
     this->write(Opcode::Typeof);
   }

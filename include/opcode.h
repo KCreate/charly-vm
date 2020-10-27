@@ -466,9 +466,6 @@ enum Opcode : uint8_t {
   // Halt execution of the machine and return to the caller
   Halt,
 
-  // Manually instruct the VM to perform a garbage collection right now
-  GCCollect,
-
   // Push the type of the uppermost value on the stack as a string
   Typeof,
 
@@ -551,7 +548,6 @@ static constexpr uint32_t kInstructionLengths[]{
   /* UNot */                              1,
   /* UBNot */                             1,
   /* Halt */                              1,
-  /* GCCollect */                         1,
   /* Typeof */                            1
 };
 
@@ -629,7 +625,6 @@ static std::string kOpcodeMnemonics[]{
   "unot",
   "ubnot",
   "halt",
-  "gccollect",
   "typeof"
 };
 // clang-format on

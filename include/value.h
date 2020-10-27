@@ -221,7 +221,7 @@ protected:
 class Object : public Container {
   friend class GarbageCollector;
 public:
-  void init(uint32_t initial_capacity, Class* klass = nullptr);
+  void init(uint32_t initial_capacity = 4, Class* klass = nullptr);
 
   Class* get_klass();
 
@@ -245,6 +245,7 @@ public:
   void push(VALUE value);                  // append value to the end of the array
   void remove(int64_t index);              // remove a alue at index, nop if out-of-bounds
   void clear();                            // remove all elements from the array
+  void fill(VALUE value, uint32_t count);  // fill the array with count instances of value
 
   // Access to internal vector via a callback function
   void access_vector(std::function<void(VectorType*)> cb);
@@ -258,14 +259,13 @@ protected:
 class String : public Header {
   friend class GarbageCollector;
 public:
-  void init(char* data, uint32_t length);             // assume ownership over the data
-  void init_copy(const char* data, uint32_t length);  // copy the buffer
-  void init_copy(const std::string& source);          // copy the string
+  void init(const char* data, uint32_t length);
+  void init(char* data, uint32_t length, bool copy = true);
+  void init(const std::string& source);
   void clean();
 
   char* get_data();
   uint32_t get_length();
-
 protected:
   char* data;
   uint32_t length;

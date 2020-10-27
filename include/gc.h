@@ -67,62 +67,63 @@ struct MemoryCell {
   }
 };
 
-// Flagas for the memory manager
-struct GarbageCollectorConfig {
-  size_t initial_heap_count = 4;
-  size_t heap_cell_count    = 1 << 12;
-  float heap_growth_factor  = 2;
-
-  bool trace = false;
-  std::ostream& out_stream = std::cerr;
-  std::ostream& err_stream = std::cout;
-};
+static const size_t kInitialHeapCount = 4;
+static const size_t kHeapCellCount    = 4096;
 
 class GarbageCollector {
-  friend VM;
-  GarbageCollectorConfig config;
-  VM* host_vm;
-  MemoryCell* free_cell;
-  std::vector<MemoryCell*> heaps;
-
-  void add_heap();
-  void grow_heap();
-  void collect();
-
-  void deallocate(MemoryCell* value);
-  template <typename T>
-  inline void deallocate(T value) {
-    this->deallocate(reinterpret_cast<MemoryCell*>(value));
-  }
-  std::recursive_mutex g_mutex;
+  friend class VM;
 public:
-  GarbageCollector(GarbageCollectorConfig cfg, VM* host_vm) : config(cfg), host_vm(host_vm), free_cell(nullptr) {
-    this->free_cell = nullptr;
+  struct Config {
+    bool trace = false;
+    std::ostream& out_stream = std::cerr;
+    std::ostream& err_stream = std::cout;
+  };
 
-    // Allocate the initial heaps
-    size_t heapc = cfg.initial_heap_count;
-    while (heapc--) {
+  GarbageCollector(Config cfg, VM* vm) : config(cfg), host_vm(vm) {
+    this->freelist = nullptr;
+    for (size_t i = 0; i < kInitialHeapCount; i++) {
       this->add_heap();
     }
   }
-  GarbageCollector(const GarbageCollector&) = delete;
-  GarbageCollector(GarbageCollector&&) = delete;
+
   ~GarbageCollector() {
     for (MemoryCell* heap : this->heaps) {
-      std::free(heap);
+      this->free_heap(heap);
     }
   }
-  MemoryCell* allocate();
+
+  GarbageCollector(GarbageCollector&) = delete;
+  GarbageCollector(GarbageCollector&&) = delete;
+
+  template <class T, typename... Args>
+  T* allocate(Args&&... params) {
+    MemoryCell* cell = this->allocate_cell();
+    T* value = cell->as<T>();
+    value->init(std::forward<Args>(params)...);
+    return value;
+  }
+
+protected:
+  void add_heap();
+  void free_heap(MemoryCell* heap);
+  void grow_heap();
+  void collect();
+  void deallocate(MemoryCell* cell);
+  void clean(MemoryCell* cell);
+
+  MemoryCell* allocate_cell();
 
   void mark(VALUE cell);
-  inline void mark(Header* cell) {
-    if (cell == nullptr)
-      return;
-    this->mark(cell->as_value());
+  void mark(Header* cell) {
+    if (cell) {
+      this->mark(cell->as_value());
+    }
   }
-  void do_collect();
 
-  void lock();
-  void unlock();
+  Config config;
+  VM* host_vm;
+  MemoryCell* freelist;
+  std::vector<MemoryCell*> heaps;
+  std::recursive_mutex mutex;
 };
 }  // namespace Charly

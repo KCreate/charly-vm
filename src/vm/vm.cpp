@@ -48,23 +48,6 @@ Frame* VM::pop_frame() {
   return frame;
 }
 
-Frame* VM::create_frame(VALUE self, Function* function, bool halt_after_return) {
-  MemoryCell* cell = this->gc.allocate();
-  cell->frame.init(this->frames, this->catchstack, function, this->ip, self, halt_after_return);
-
-  // Append the frame
-  this->frames = cell->as<Frame>();
-
-  // Print the frame if the corresponding flag was set
-  if (this->context.trace_frames) {
-    this->context.err_stream << "Entering frame: ";
-    this->pretty_print(this->context.err_stream, cell->as_value());
-    this->context.err_stream << '\n';
-  }
-
-  return cell->as<Frame>();
-}
-
 VALUE VM::pop_stack() {
   VALUE val = kNull;
 
@@ -82,23 +65,6 @@ VALUE VM::pop_stack() {
 
 void VM::push_stack(VALUE value) {
   this->stack.push_back(value);
-}
-
-CatchTable* VM::create_catchtable(uint8_t* address) {
-  MemoryCell* cell = this->gc.allocate();
-  cell->catchtable.init(this->catchstack, this->frames, address, this->stack.size());
-
-  // Append to catchstack
-  this->catchstack = cell->as<CatchTable>();
-
-  // Print the catchtable if the corresponding flag was set
-  if (this->context.trace_catchtables) {
-    this->context.err_stream << "Entering catchtable: ";
-    this->pretty_print(this->context.err_stream, cell->as_value());
-    this->context.err_stream << '\n';
-  }
-
-  return cell->as<CatchTable>();
 }
 
 CatchTable* VM::pop_catchtable() {
@@ -169,70 +135,16 @@ void VM::unwind_catchstack(std::optional<VALUE> payload = std::nullopt) {
   }
 }
 
-VALUE VM::create_object(uint32_t initial_capacity, Class* klass) {
-  MemoryCell* cell = this->gc.allocate();
-  cell->object.init(initial_capacity, klass);
-  return cell->as_value();
-}
-
-VALUE VM::create_array(uint32_t initial_capacity) {
-  MemoryCell* cell = this->gc.allocate();
-  cell->array.init(initial_capacity);
-  return cell->as_value();
-}
-
 VALUE VM::create_string(const char* data, uint32_t length) {
   if (length <= 6)
     return charly_create_istring(data, length);
-
-  MemoryCell* cell = this->gc.allocate();
-  cell->string.init_copy(data, length);
-  return cell->as_value();
+  return this->gc.allocate<String>(data, length)->as_value();
 }
 
 VALUE VM::create_string(const std::string& str) {
   if (str.size() <= 6)
     return charly_create_istring(str.c_str(), str.size());
-
-  MemoryCell* cell = this->gc.allocate();
-  cell->string.init_copy(str);
-  return cell->as_value();
-}
-
-VALUE VM::create_weak_string(char* data, uint32_t length) {
-  MemoryCell* cell = this->gc.allocate();
-  cell->string.init(data, length);
-  return cell->as_value();
-}
-
-VALUE VM::create_function(VALUE name,
-                          uint8_t* body_address,
-                          uint32_t argc,
-                          uint32_t minimum_argc,
-                          uint32_t lvarcount,
-                          bool anonymous,
-                          bool needs_arguments) {
-  MemoryCell* cell = this->gc.allocate();
-  cell->function.init(name, this->frames, body_address, argc, minimum_argc, lvarcount, anonymous, needs_arguments);
-  return cell->as_value();
-}
-
-VALUE VM::create_cfunction(VALUE name, uint32_t argc, void* pointer, ThreadPolicy thread_policy) {
-  MemoryCell* cell = this->gc.allocate();
-  cell->cfunction.init(name, pointer, argc, thread_policy);
-  return cell->as_value();
-}
-
-VALUE VM::create_class(VALUE name, Function* constructor, Class* parent_class) {
-  MemoryCell* cell = this->gc.allocate();
-  cell->klass.init(name, constructor, parent_class);
-  return cell->as_value();
-}
-
-VALUE VM::create_cpointer(void* data, CPointer::DestructorType destructor) {
-  MemoryCell* cell = this->gc.allocate();
-  cell->cpointer.init(data, destructor);
-  return cell->as_value();
+  return this->gc.allocate<String>(str)->as_value();
 }
 
 VALUE VM::copy_value(VALUE value) {
@@ -261,18 +173,16 @@ VALUE VM::deep_copy_value(VALUE value) {
 
 VALUE VM::copy_object(VALUE object) {
   Object* source = charly_as_object(object);
-  Object* target = charly_as_object(this->create_object(source->keycount()));
+  Object* target = this->gc.allocate<Object>(source->keycount());
   target->copy_container_from(source);
   return target->as_value();
 }
 
 VALUE VM::deep_copy_object(VALUE object) {
   Object* source = charly_as_object(object);
-  Immortal<Object> target;
+  Immortal<Object> target = this->gc.allocate<Object>();
 
   source->access_container_shared([&](Container::ContainerType* source_container) {
-    target = this->create_object(source_container->size());
-
     for (auto& [key, value] : *source_container) {
       target->write(key, this->deep_copy_value(value));
     }
@@ -283,11 +193,9 @@ VALUE VM::deep_copy_object(VALUE object) {
 
 VALUE VM::copy_array(VALUE array) {
   Array* source = charly_as_array(array);
-  Array* target;
+  Array* target = this->gc.allocate<Array>();
 
   source->access_vector_shared([&](Array::VectorType* vec) {
-    target = charly_as_array(this->create_array(vec->size()));
-
     for (VALUE value : *vec) {
       target->push(value);
     }
@@ -298,10 +206,8 @@ VALUE VM::copy_array(VALUE array) {
 
 VALUE VM::deep_copy_array(VALUE array) {
   Array* source = charly_as_array(array);
-  Immortal<Array> target;
+  Immortal<Array> target = this->gc.allocate<Array>();
   source->access_vector_shared([&](Array::VectorType* vec) {
-    target = this->create_array(vec->size());
-
     for (VALUE value : *vec) {
       target->push(this->deep_copy_value(value));
     }
@@ -318,15 +224,16 @@ VALUE VM::copy_string(VALUE string) {
 
 VALUE VM::copy_function(VALUE function) {
   Function* source = charly_as_function(function);
-  Function* target = charly_as_function(this->create_function(
+  Function* target = this->gc.allocate<Function>(
     source->get_name(),
+    source->get_context(),
     source->get_body_address(),
     source->get_argc(),
     source->get_minimum_argc(),
     source->get_lvarcount(),
     source->get_anonymous(),
     source->get_needs_arguments()
-  ));
+  );
 
 
   VALUE bound_self;
@@ -343,12 +250,12 @@ VALUE VM::copy_function(VALUE function) {
 
 VALUE VM::copy_cfunction(VALUE function) {
   CFunction* source = charly_as_cfunction(function);
-  CFunction* target = charly_as_cfunction(this->create_cfunction(
+  CFunction* target = this->gc.allocate<CFunction>(
     source->get_name(),
-    source->get_argc(),
     source->get_pointer(),
+    source->get_argc(),
     source->get_thread_policy()
-  ));
+  );
   target->copy_container_from(source);
   target->set_push_return_value(source->get_push_return_value());
   target->set_halt_after_return(source->get_halt_after_return());
@@ -413,7 +320,7 @@ VALUE VM::add(VALUE left, VALUE right) {
     char* new_data = static_cast<char*>(std::malloc(new_length));
     std::memcpy(new_data, left_data, left_length);
     std::memcpy(new_data + left_length, right_data, right_length);
-    return this->create_weak_string(new_data, new_length);
+    return this->gc.allocate<String>(new_data, new_length, false)->as_value();
   }
 
   // String concatenation for different types
@@ -474,7 +381,8 @@ VALUE VM::mul(VALUE left, VALUE right) {
       std::memcpy(new_data + offset, str_data, str_length);
       offset += str_length;
     }
-    return this->create_weak_string(new_data, new_length);
+
+    return this->gc.allocate<String>(new_data, new_length, false)->as_value();
   }
 
   return kNaN;
@@ -1081,14 +989,29 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
     }
   }
 
-  Immortal<Frame> frame = this->create_frame(self, function, halt_after_return);
+  Immortal<Frame> frame = this->gc.allocate<Frame>(
+    this->frames,
+    this->catchstack,
+    function,
+    this->ip,
+    self,
+    halt_after_return
+  );
+  this->frames = frame;
+
+  // Debugging output
+  if (this->context.trace_frames) {
+    this->context.err_stream << "Entering frame: ";
+    this->pretty_print(this->context.err_stream, frame->as_value());
+    this->context.err_stream << '\n';
+  }
 
   // Copy the arguments into the function frame
   //
   // If the function requires an arguments array, we create one and push it onto
   // offset 0 of the frame
   if (function->get_needs_arguments()) {
-    Array* arguments_array = charly_as_array(this->create_array(argc));
+    Array* arguments_array = this->gc.allocate<Array>(argc);
     frame->write_local(0, arguments_array->as_value());
 
     for (size_t i = 0; i < argc; i++) {
@@ -1190,8 +1113,8 @@ void VM::op_readglobal(VALUE symbol) {
   // Check internal methods table
   if (Internals::Index::methods.count(symbol)) {
     Internals::MethodSignature& sig = Internals::Index::methods.at(symbol);
-    VALUE cfunc = this->create_cfunction(symbol, sig.argc, sig.func_pointer, sig.thread_policy);
-    this->push_stack(cfunc);
+    CFunction* cfunc = this->gc.allocate<CFunction>(symbol, sig.func_pointer, sig.argc, sig.thread_policy);
+    this->push_stack(cfunc->as_value());
     return;
   }
 
@@ -1219,7 +1142,7 @@ void VM::op_readglobal(VALUE symbol) {
         return;
       }
 
-      Array* argv = charly_as_array(this->create_array(this->context.argv->size()));
+      Immortal<Array> argv = this->gc.allocate<Array>(this->context.argv->size());
       for (const std::string& argument : *(this->context.argv)) {
         argv->push(this->create_string(argument));
       }
@@ -1232,7 +1155,7 @@ void VM::op_readglobal(VALUE symbol) {
         return;
       }
 
-      Object* env = charly_as_object(this->create_object(this->context.environment->size()));
+      Immortal<Object> env = this->gc.allocate<Object>(this->context.environment->size());
 
       // Append environment variables
       for (const auto& entry : *(this->context.environment)) {
@@ -1493,29 +1416,37 @@ void VM::op_putfunction(VALUE symbol,
                         uint32_t argc,
                         uint32_t minimum_argc,
                         uint32_t lvarcount) {
-  VALUE function = this->create_function(symbol, body_address, argc, minimum_argc, lvarcount, anonymous, needs_arguments);
-  this->push_stack(function);
+  Function* function = this->gc.allocate<Function>(
+    symbol,
+    this->frames,
+    body_address,
+    argc,
+    minimum_argc,
+    lvarcount,
+    anonymous,
+    needs_arguments
+  );
+
+  this->push_stack(function->as_value());
 }
 
 void VM::op_putarray(uint32_t count) {
-  Array* array = charly_as_array(this->create_array(count));
+  Array* array = this->gc.allocate<Array>(count);
+  array->fill(kNull, count);
 
-  // TODO: clean this up
-  while (count--) {
-    array->insert(0, this->pop_stack());
+  for (uint32_t i = count; i > 0; i--) {
+    array->write(i - 1, this->pop_stack());
   }
 
   this->push_stack(array->as_value());
 }
 
 void VM::op_puthash(uint32_t count) {
-  Object* object = charly_as_object(this->create_object(count));
+  Object* object = this->gc.allocate<Object>(count);
 
-  VALUE key;
-  VALUE value;
   while (count--) {
-    key = this->pop_stack();
-    value = this->pop_stack();
+    VALUE key = this->pop_stack();
+    VALUE value = this->pop_stack();
     object->write(key, value);
   }
 
@@ -1556,11 +1487,11 @@ void VM::op_putclass(VALUE name,
     }
   }
 
-  Immortal<Class> klass = this->create_class(name, constructor, parent_class);
+  Immortal<Class> klass = this->gc.allocate<Class>(name, constructor, parent_class);
   if (constructor) {
     constructor->set_host_class(klass);
   }
-  klass->set_prototype(charly_as_object(this->create_object(methodcount)));
+  klass->set_prototype(this->gc.allocate<Object>(methodcount));
 
   while (staticmethodcount--) {
     VALUE smethod = this->pop_stack();
@@ -1664,7 +1595,7 @@ void VM::op_new(uint32_t argc) {
 
   // Setup object
   Class* source_class = charly_as_class(klass);
-  Immortal<Object> obj = this->create_object(source_class->get_member_property_count(), source_class);
+  Immortal<Object> obj = this->gc.allocate<Object>(source_class->get_member_property_count(), source_class);
   source_class->initialize_member_properties(obj);
 
   // Invoke constructor if one exists
@@ -1743,7 +1674,16 @@ void VM::throw_exception(VALUE payload) {
 }
 
 void VM::op_registercatchtable(int32_t offset) {
-  this->create_catchtable(this->ip + offset);
+  uint8_t* address = this->ip + offset;
+  CatchTable* table = this->gc.allocate<CatchTable>(this->catchstack, this->frames, address, this->stack.size());
+  this->catchstack = table;
+
+  // Print the catchtable if the corresponding flag was set
+  if (this->context.trace_catchtables) {
+    this->context.err_stream << "Entering catchtable: ";
+    this->pretty_print(this->context.err_stream, table->as_value());
+    this->context.err_stream << '\n';
+  }
 }
 
 void VM::op_popcatchtable() {
@@ -2529,7 +2469,6 @@ void VM::run() {
                                           &&charly_main_switch_unot,
                                           &&charly_main_switch_ubnot,
                                           &&charly_main_switch_halt,
-                                          &&charly_main_switch_gccollect,
                                           &&charly_main_switch_typeof};
 
   DISPATCH();
@@ -3134,13 +3073,6 @@ charly_main_switch_halt : {
   return;
 }
 
-charly_main_switch_gccollect : {
-  OPCODE_PROLOGUE();
-  this->gc.do_collect();
-  OPCODE_EPILOGUE();
-  NEXTOP();
-}
-
 charly_main_switch_typeof : {
   OPCODE_PROLOGUE();
   this->op_typeof();
@@ -3270,7 +3202,7 @@ uint8_t VM::start_runtime() {
 
       if (this->paused_threads.size()) {
         for (auto& entry : this->paused_threads) {
-          Object* exc_obj = charly_as_object(this->create_object(1));
+          Object* exc_obj = this->gc.allocate<Object>(1);
           exc_obj->write(SYM("__charly_internal_stale_thread_exception"), kTrue);
           this->resume_thread(entry.first, exc_obj->as_value());
         }
