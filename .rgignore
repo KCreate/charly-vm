@@ -1,3 +1,5 @@
 bin/
 ./libs/
 .git/
+code.profdata
+default.profraw

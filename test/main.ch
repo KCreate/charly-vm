@@ -63,14 +63,20 @@ const result = unittest(->(describe, it, assert, context) {
     ["Queue",              "./stdlib/queue.ch"]
   ]
 
+  let N = 1
+  if ARGV.contains("--runtime-profiler") {
+    N = 50
+  }
+
   // Loads and runs all the test cases sequentially
-  testcases.each(->(test) {
-    describe(test[1], ->{
-      const module = import test[1]
-      module(describe, it, assert, context)
+  N.times(->{
+    testcases.each(->(test) {
+      describe(test[1], ->{
+        const module = import test[1]
+        module(describe, it, assert, context)
+      })
     })
   })
-
 })
 
 unittest.display_result(result)

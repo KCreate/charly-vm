@@ -1,7 +1,5 @@
 class TestVisitor {
-  on_root(node) {
-    print(node.title)
-  }
+  on_root(node) {}
 
   on_node(node, depth, cb) {
     // If the callback takes at least one argument, we assume the test case will
@@ -20,12 +18,6 @@ class TestVisitor {
       timeout.clear()
     } else {
       cb()
-    }
-
-    if node.passed() {
-      write(".")
-    } else {
-      write("F")
     }
   }
 

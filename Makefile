@@ -40,7 +40,7 @@ CFLAGSPROD := -std=$(CPPSTD) \
 LFLAGS := -lm -lpthread -ldl
 INC := -I libs -I $(INCLUDEDIR) -I/usr/local/opt/llvm/include/c++/v1 -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
 LIB := -lstdc++
-RUNTIME_PROFILER := examples/runtime-profiler.ch
+RUNTIME_PROFILER := test/main.ch --runtime-profiler
 
 $(TARGET): $(OBJECTS)
 	@echo "Linking..."

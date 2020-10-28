@@ -1,10 +1,5 @@
 export = class ResultPrinter {
   display(results) {
-
-    // Print another newline to avoid conflicting with
-    // the previous visitor
-    print("\n")
-
     const status = results.passed()
 
     if status {

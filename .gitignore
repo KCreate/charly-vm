@@ -5,3 +5,5 @@ bin/
 build/
 *.dSYM
 *.lib
+code.profdata
+default.profraw
