@@ -2,6 +2,13 @@
 
 - VM Refactor
   - Implementation timeline
+    - Remove time based tests from unit-tests
+    - Store global internal VM variables as pointers to their real type, not as VALUEs
+    - Store global variables not as Object but as a Container
+    - Remove packed / var-length strings from the nan-boxing types
+      - Replace with a utf8 codepoint character type
+    - Remove pretty_print_stack from VM, pass as argument in to_s and pretty_print methods
+    - Some helper class to allocate memory cells in advance
     - Refactor whole VM with Immortal classes, make sure there are absolutetly no chance of
       anything being leaked
     - Operations such as eq, lt can also be moved out of the VM into the value classes themselves
@@ -10,12 +17,8 @@
       - I don't plan on putting the locking code into the accessor methods but will probably go
         for some RAII style locking thing which locks a value during the scope of some block.
         I'll want a UniqueValueLock and a SharedValueLock (typedef ValueLock).
-    - Refactor value copying system
-    - Store global internal VM variables as pointers to their real type, not as VALUEs
-    - Store global variables not as Object but as a Container
     - Fixed amount of native worker threads, waiting for jobs via some job queue
     - Refactor worker thread result return system
-    - ManagedContext ability to reserve cells in advance
     - Value allocation
       - `String* str = ctx.alloc<String>()->init_move("hello world");`
       - `Object* obj = ctx.alloc<Object>()->init(klass, klass->propcount());`
@@ -132,6 +135,12 @@
         - This could be resolved by somehow figuring out wether a thread is currently waiting for a
           lock to be released. This would obviously only work with our well-known heap value locks.
           Maybe some wrapper class which updates the thread status once it starts waiting?
+
+- Changes to the class system
+  - Hide prototype variable
+    - Add internal method to add new method to prototype
+    - Throw if the method already belongs to a class
+    - Configure klass property of function
 
 - Fibers can be represented by GC allocated structures, making them accessible to charly code
   - We simply store a `set<Fiber*>` of all active fibers
@@ -345,12 +354,6 @@
 - Bug with try catch statements
   - `break`, `continue` do not drop the active catchtable
   - `break`, `continue`, `return` do not respect the `finally` handler
-
-- Changes to the class system
-  - Hide prototype variable
-    - Add internal method to add new method to prototype
-    - Throw if the method already belongs to a class
-    - Configure klass property of function
 
 - `on` handler for try catch statements
   - `

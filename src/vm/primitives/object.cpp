@@ -24,40 +24,25 @@
  * SOFTWARE.
  */
 
-#include <sstream>
+#include <cassert>
 
 #include "value.h"
-#include "vm.h"
+#include "opcode.h"
 
 namespace Charly {
-namespace Internals {
-namespace PrimitiveValue {
 
-VALUE to_s(VM& vm, VALUE value) {
-  std::stringstream buffer;
-  vm.to_s(buffer, value);
-  return vm.create_string(buffer.str());
+void Object::init(uint32_t initial_capacity, Class* klass) {
+  Container::init(kTypeObject, initial_capacity);
+  this->klass = klass;
 }
 
-VALUE copy(VM& vm, VALUE value) {
-  switch (charly_get_type(value)) {
-    case kTypeObject:    return vm.gc.allocate<Object>(charly_as_object(value))->as_value();
-    case kTypeArray:     return vm.gc.allocate<Array>(charly_as_array(value))->as_value();
-    case kTypeString:    return vm.create_string(charly_string_data(value), charly_string_length(value));
-    case kTypeFunction:  return vm.gc.allocate<Function>(charly_as_function(value))->as_value();
-    case kTypeCFunction: return vm.gc.allocate<CFunction>(charly_as_cfunction(value))->as_value();
-
-    case kTypeClass:
-    case kTypeFrame:
-    case kTypeCatchTable:
-    case kTypeCPointer: {
-      vm.throw_exception("Cannot copy value of type: " + charly_get_typestring(value));
-      return kNull;
-    }
-    default: return value;
-  }
+void Object::init(Object* source) {
+  Container::init(source);
+  this->klass = source->klass;
 }
 
-}  // namespace PrimitiveValue
-}  // namespace Internals
+Class* Object::get_klass() {
+  return this->klass;
+}
+
 }  // namespace Charly

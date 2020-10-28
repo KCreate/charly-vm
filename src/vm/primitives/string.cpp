@@ -24,40 +24,54 @@
  * SOFTWARE.
  */
 
-#include <sstream>
+#include <cassert>
 
 #include "value.h"
-#include "vm.h"
+#include "opcode.h"
 
 namespace Charly {
-namespace Internals {
-namespace PrimitiveValue {
 
-VALUE to_s(VM& vm, VALUE value) {
-  std::stringstream buffer;
-  vm.to_s(buffer, value);
-  return vm.create_string(buffer.str());
+void String::init(const char* data, uint32_t length) {
+  Header::init(kTypeString);
+  char* buffer = (char*)malloc(length);
+  std::memcpy(buffer, data, length);
+  this->data = buffer;
+  this->length = length;
 }
 
-VALUE copy(VM& vm, VALUE value) {
-  switch (charly_get_type(value)) {
-    case kTypeObject:    return vm.gc.allocate<Object>(charly_as_object(value))->as_value();
-    case kTypeArray:     return vm.gc.allocate<Array>(charly_as_array(value))->as_value();
-    case kTypeString:    return vm.create_string(charly_string_data(value), charly_string_length(value));
-    case kTypeFunction:  return vm.gc.allocate<Function>(charly_as_function(value))->as_value();
-    case kTypeCFunction: return vm.gc.allocate<CFunction>(charly_as_cfunction(value))->as_value();
+void String::init(char* data, uint32_t length, bool copy) {
+  Header::init(kTypeString);
 
-    case kTypeClass:
-    case kTypeFrame:
-    case kTypeCatchTable:
-    case kTypeCPointer: {
-      vm.throw_exception("Cannot copy value of type: " + charly_get_typestring(value));
-      return kNull;
-    }
-    default: return value;
+  if (copy) {
+    char* buffer = (char*)malloc(length);
+    std::memcpy(buffer, data, length);
+    this->data = buffer;
+    this->length = length;
+  } else {
+    this->data = data;
+    this->length = length;
   }
 }
 
-}  // namespace PrimitiveValue
-}  // namespace Internals
+void String::init(const std::string& source) {
+  this->init(source.c_str(), source.size());
+}
+
+void String::init(String* source) {
+  this->init(source->get_data(), source->get_length());
+}
+
+void String::clean() {
+  Header::clean();
+  std::free(static_cast<void*>(this->data));
+}
+
+char* String::get_data() {
+  return this->data;
+}
+
+uint32_t String::get_length() {
+  return this->length;
+}
+
 }  // namespace Charly

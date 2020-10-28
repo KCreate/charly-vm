@@ -310,4 +310,19 @@ export = ->(describe, it, assert) {
     a.foo.unbind_self()
     assert(a.foo(), "test")
   })
+
+  it("copies functions", ->{
+    func foo = self
+
+    const a = foo.bind_self("hello world")
+    const b = a.copy()
+
+    assert(a(), "hello world")
+    assert(b(), "hello world")
+
+    a.bind_self("test")
+
+    assert(a(), "test")
+    assert(b(), "hello world")
+  })
 }

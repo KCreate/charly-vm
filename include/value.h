@@ -24,6 +24,7 @@
  * SOFTWARE.
  */
 
+#include <cassert>
 #include <cmath>
 #include <sstream>
 #include <unordered_map>
@@ -197,8 +198,8 @@ public:
   using ContainerType = std::unordered_map<VALUE, VALUE>;
 
   void init(ValueType type, uint32_t initial_capacity = 4);
+  void init(Container* source);
   void clean();
-  void copy_container_from(const Container* other);
 
   bool read(VALUE key, VALUE* result);              // reads a value from the container
   VALUE read_or(VALUE key, VALUE fallback = kNull); // reads a value from the container or returns fallback
@@ -222,6 +223,7 @@ class Object : public Container {
   friend class GarbageCollector;
 public:
   void init(uint32_t initial_capacity = 4, Class* klass = nullptr);
+  void init(Object* source); // copy constructor
 
   Class* get_klass();
 
@@ -236,6 +238,7 @@ public:
   using VectorType = std::vector<VALUE>;
 
   void init(uint32_t initial_capacity = 4);
+  void init(Array* source); // copy constructor
   void clean();
 
   uint32_t size();                         // returns the amount of values stored
@@ -262,6 +265,7 @@ public:
   void init(const char* data, uint32_t length);
   void init(char* data, uint32_t length, bool copy = true);
   void init(const std::string& source);
+  void init(String* source); // copy constructor
   void clean();
 
   char* get_data();
@@ -353,6 +357,7 @@ class Function : public Container {
 public:
   void init(VALUE name, Frame* context, uint8_t* body, uint32_t argc, uint32_t minimum_argc,
             uint32_t lvarcount, bool anonymous, bool needs_arguments);
+  void init(Function* source); // copy constructor
 
   void set_context(Frame* context);
   void set_host_class(Class* host_class);
@@ -399,6 +404,7 @@ class CFunction : public Container {
   friend class GarbageCollector;
 public:
   void init(VALUE name, void* pointer, uint32_t argc, ThreadPolicy thread_policy);
+  void init(CFunction* source); // copy constructor
 
   void set_push_return_value(bool value);
   void set_halt_after_return(bool value);

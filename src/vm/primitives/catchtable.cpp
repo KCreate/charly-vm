@@ -24,40 +24,32 @@
  * SOFTWARE.
  */
 
-#include <sstream>
-
 #include "value.h"
-#include "vm.h"
 
 namespace Charly {
-namespace Internals {
-namespace PrimitiveValue {
 
-VALUE to_s(VM& vm, VALUE value) {
-  std::stringstream buffer;
-  vm.to_s(buffer, value);
-  return vm.create_string(buffer.str());
+void CatchTable::init(CatchTable* parent, Frame* frame, uint8_t* address, size_t stacksize) {
+  Header::init(kTypeCatchTable);
+  this->parent = parent;
+  this->frame = frame;
+  this->address = address;
+  this->stacksize = stacksize;
 }
 
-VALUE copy(VM& vm, VALUE value) {
-  switch (charly_get_type(value)) {
-    case kTypeObject:    return vm.gc.allocate<Object>(charly_as_object(value))->as_value();
-    case kTypeArray:     return vm.gc.allocate<Array>(charly_as_array(value))->as_value();
-    case kTypeString:    return vm.create_string(charly_string_data(value), charly_string_length(value));
-    case kTypeFunction:  return vm.gc.allocate<Function>(charly_as_function(value))->as_value();
-    case kTypeCFunction: return vm.gc.allocate<CFunction>(charly_as_cfunction(value))->as_value();
-
-    case kTypeClass:
-    case kTypeFrame:
-    case kTypeCatchTable:
-    case kTypeCPointer: {
-      vm.throw_exception("Cannot copy value of type: " + charly_get_typestring(value));
-      return kNull;
-    }
-    default: return value;
-  }
+CatchTable* CatchTable::get_parent() {
+  return this->parent;
 }
 
-}  // namespace PrimitiveValue
-}  // namespace Internals
+Frame* CatchTable::get_frame() {
+  return this->frame;
+}
+
+uint8_t* CatchTable::get_address() {
+  return this->address;
+}
+
+size_t CatchTable::get_stacksize() {
+  return this->stacksize;
+}
+
 }  // namespace Charly

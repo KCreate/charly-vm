@@ -64,6 +64,15 @@ export = ->(describe, it, assert) {
     assert(5.foo(), "overridden")
     assert({}.foo(), "overridden")
     assert("lol".foo(), "overridden")
+
+    Object.delete(Array.prototype, "foo")
+    Object.delete(Boolean.prototype, "foo")
+    Object.delete(Class.prototype, "foo")
+    Object.delete(Function.prototype, "foo")
+    Object.delete(Null.prototype, "foo")
+    Object.delete(Number.prototype, "foo")
+    Object.delete(Object.prototype, "foo")
+    Object.delete(String.prototype, "foo")
   })
 
   it("gives primitive classes the name property", ->{

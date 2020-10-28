@@ -201,14 +201,6 @@ public:
   VALUE create_string(const char* data, uint32_t length);
   VALUE create_string(const std::string& str);
 
-  // Methods to copy existing data types
-  VALUE copy_value(VALUE value);
-  VALUE copy_object(VALUE object);
-  VALUE copy_array(VALUE array);
-  VALUE copy_string(VALUE string);
-  VALUE copy_function(VALUE function);
-  VALUE copy_cfunction(VALUE cfunction);
-
   // Arithmetics
   VALUE add(VALUE left, VALUE right);
   VALUE sub(VALUE left, VALUE right);

@@ -24,40 +24,37 @@
  * SOFTWARE.
  */
 
-#include <sstream>
-
 #include "value.h"
-#include "vm.h"
 
 namespace Charly {
-namespace Internals {
-namespace PrimitiveValue {
 
-VALUE to_s(VM& vm, VALUE value) {
-  std::stringstream buffer;
-  vm.to_s(buffer, value);
-  return vm.create_string(buffer.str());
+void CPointer::init(void* data, CPointer::DestructorType destructor) {
+  Header::init(kTypeCPointer);
+  this->data = data;
+  this->destructor = destructor;
 }
 
-VALUE copy(VM& vm, VALUE value) {
-  switch (charly_get_type(value)) {
-    case kTypeObject:    return vm.gc.allocate<Object>(charly_as_object(value))->as_value();
-    case kTypeArray:     return vm.gc.allocate<Array>(charly_as_array(value))->as_value();
-    case kTypeString:    return vm.create_string(charly_string_data(value), charly_string_length(value));
-    case kTypeFunction:  return vm.gc.allocate<Function>(charly_as_function(value))->as_value();
-    case kTypeCFunction: return vm.gc.allocate<CFunction>(charly_as_cfunction(value))->as_value();
-
-    case kTypeClass:
-    case kTypeFrame:
-    case kTypeCatchTable:
-    case kTypeCPointer: {
-      vm.throw_exception("Cannot copy value of type: " + charly_get_typestring(value));
-      return kNull;
-    }
-    default: return value;
+void CPointer::clean() {
+  Header::clean();
+  if (this->destructor) {
+    this->destructor(this->data);
   }
 }
 
-}  // namespace PrimitiveValue
-}  // namespace Internals
+void CPointer::set_data(void* data) {
+  this->data = data;
+}
+
+void CPointer::set_destructor(CPointer::DestructorType destructor) {
+  this->destructor = destructor;
+}
+
+void* CPointer::get_data() {
+  return this->data;
+}
+
+CPointer::DestructorType CPointer::get_destructor() {
+  return this->destructor;
+}
+
 }  // namespace Charly

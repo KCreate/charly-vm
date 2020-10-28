@@ -147,92 +147,13 @@ VALUE VM::create_string(const std::string& str) {
   return this->gc.allocate<String>(str)->as_value();
 }
 
-VALUE VM::copy_value(VALUE value) {
-  switch (charly_get_type(value)) {
-    case kTypeString: return this->copy_string(value);
-    case kTypeObject: return this->copy_object(value);
-    case kTypeArray: return this->copy_array(value);
-    case kTypeFunction: return this->copy_function(value);
-    case kTypeCFunction: return this->copy_cfunction(value);
-  }
-
-  return value;
-}
-
-VALUE VM::copy_object(VALUE object) {
-  Object* source = charly_as_object(object);
-  Object* target = this->gc.allocate<Object>(source->keycount());
-  target->copy_container_from(source);
-  return target->as_value();
-}
-
-VALUE VM::copy_array(VALUE array) {
-  Array* source = charly_as_array(array);
-  Array* target = this->gc.allocate<Array>();
-
-  source->access_vector_shared([&](Array::VectorType* vec) {
-    for (VALUE value : *vec) {
-      target->push(value);
-    }
-  });
-
-  return target->as_value();
-}
-
-VALUE VM::copy_string(VALUE string) {
-  char* str_data = charly_string_data(string);
-  uint32_t str_length = charly_string_length(string);
-  return this->create_string(str_data, str_length);
-}
-
-VALUE VM::copy_function(VALUE function) {
-  Function* source = charly_as_function(function);
-  Function* target = this->gc.allocate<Function>(
-    source->get_name(),
-    source->get_context(),
-    source->get_body_address(),
-    source->get_argc(),
-    source->get_minimum_argc(),
-    source->get_lvarcount(),
-    source->get_anonymous(),
-    source->get_needs_arguments()
-  );
-
-
-  VALUE bound_self;
-  if (source->get_bound_self(&bound_self)) {
-    target->set_bound_self(bound_self);
-  }
-
-  target->set_context(source->get_context());
-  target->set_host_class(source->get_host_class());
-  target->copy_container_from(source);
-
-  return target->as_value();
-}
-
-VALUE VM::copy_cfunction(VALUE function) {
-  CFunction* source = charly_as_cfunction(function);
-  CFunction* target = this->gc.allocate<CFunction>(
-    source->get_name(),
-    source->get_pointer(),
-    source->get_argc(),
-    source->get_thread_policy()
-  );
-  target->copy_container_from(source);
-  target->set_push_return_value(source->get_push_return_value());
-  target->set_halt_after_return(source->get_halt_after_return());
-
-  return target->as_value();
-}
-
 VALUE VM::add(VALUE left, VALUE right) {
   if (charly_is_number(left) && charly_is_number(right)) {
     return charly_add_number(left, right);
   }
 
   if (charly_is_array(left)) {
-    Array* new_array = charly_as_array(this->copy_array(left));
+    Array* new_array = this->gc.allocate<Array>(charly_as_array(left));
 
     if (charly_is_array(right)) {
       Array* aright = charly_as_array(right);
@@ -283,7 +204,7 @@ VALUE VM::add(VALUE left, VALUE right) {
     char* new_data = static_cast<char*>(std::malloc(new_length));
     std::memcpy(new_data, left_data, left_length);
     std::memcpy(new_data + left_length, right_data, right_length);
-    return this->gc.allocate<String>(new_data, new_length, false)->as_value();
+    return this->create_string(new_data, new_length);
   }
 
   // String concatenation for different types
@@ -345,7 +266,7 @@ VALUE VM::mul(VALUE left, VALUE right) {
       offset += str_length;
     }
 
-    return this->gc.allocate<String>(new_data, new_length, false)->as_value();
+    return this->create_string(new_data, new_length);
   }
 
   return kNaN;
@@ -1336,9 +1257,9 @@ void VM::op_putsuper() {
   // If we've got a function, we need to make a copy of it and bind the currently
   // active self value to it
   if (charly_is_function(super_value)) {
-    Function* copied_super_value = charly_as_function(this->copy_function(super_value));
-    copied_super_value->set_bound_self(this->frames->get_self());
-    super_value = copied_super_value->as_value();
+    Function* super_func = this->gc.allocate<Function>(charly_as_function(super_value));
+    super_func->set_bound_self(this->frames->get_self());
+    super_value = super_func->as_value();
   }
 
   this->push_stack(super_value);
@@ -1356,9 +1277,9 @@ void VM::op_putsupermember(VALUE symbol) {
   // active self value to it
   VALUE super_value = kNull;
   if (host_class->find_super_value(symbol, &super_value) && charly_is_function(super_value)) {
-    Function* copied_super_value = charly_as_function(this->copy_function(super_value));
-    copied_super_value->set_bound_self(this->frames->get_self());
-    super_value = copied_super_value->as_value();
+    Function* super_func = this->gc.allocate<Function>(charly_as_function(super_value));
+    super_func->set_bound_self(this->frames->get_self());
+    super_value = super_func->as_value();
   }
 
   this->push_stack(super_value);

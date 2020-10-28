@@ -36,6 +36,20 @@ export = ->(describe, it, assert) {
     assert(myBox.age, 16)
   })
 
+  it("copies an object", ->{
+    const a = { a: 1, b: 2 }
+    const b = a.copy()
+
+    assert(b.a, 1)
+    assert(b.b, 2)
+
+    a.a = 100
+    a.b = 200
+
+    assert(b.a, 1)
+    assert(b.b, 2)
+  })
+
   it("correctly encodes symbols", ->{
     const obj = {}
 
