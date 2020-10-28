@@ -41,7 +41,15 @@ void Container::init(ValueType type, uint32_t initial_capacity) {
 
 void Container::init(Container* source) {
   Header::init(source->type);
+  assert(this->container == nullptr);
   this->container = new Container::ContainerType(*(source->container));
+}
+
+void Container::clean() {
+  Header::clean();
+  assert(this->container);
+  delete this->container;
+  this->container = nullptr;
 }
 
 bool Container::read(VALUE key, VALUE* result) {
@@ -95,13 +103,6 @@ void Container::access_container(std::function<void(Container::ContainerType*)> 
 void Container::access_container_shared(std::function<void(Container::ContainerType*)> cb) {
   assert(this->container);
   cb(this->container);
-}
-
-void Container::clean() {
-  Header::clean();
-  assert(this->container);
-  delete this->container;
-  this->container = nullptr;
 }
 
 }  // namespace Charly

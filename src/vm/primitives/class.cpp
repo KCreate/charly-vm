@@ -40,6 +40,7 @@ void Class::init(VALUE name, Function* constructor, Class* parent_class) {
 }
 
 void Class::clean() {
+  Container::clean();
   assert(this->member_properties);
   delete this->member_properties;
   this->member_properties = nullptr;

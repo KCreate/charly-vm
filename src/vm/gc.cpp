@@ -33,12 +33,13 @@
 namespace Charly {
 
 void GarbageCollector::add_heap() {
-  MemoryCell* heap = (MemoryCell*)std::malloc(kHeapCellCount * sizeof(MemoryCell));
+  MemoryCell* heap = (MemoryCell*)std::calloc(kHeapCellCount, sizeof(MemoryCell));
   this->heaps.push_back(heap);
 
   // Add the newly allocated cells to the free list
   MemoryCell* last_cell = this->freelist;
   for (size_t i = 0; i < kHeapCellCount; i++) {
+    heap[i].free.header.init(kTypeDead);
     heap[i].free.next = last_cell;
     last_cell = heap + i;
   }
