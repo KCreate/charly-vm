@@ -310,7 +310,6 @@ Flags:
     trace_catchtables                Display catchtables as they are being created or left
     trace_frames                     Display frames as they are being entered and left
     trace_gc                         Display statistics about the gc at runtime
-    verbose_addresses                Display addresses of printed values, when applicable
 
 Examples:
 

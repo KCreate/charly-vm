@@ -58,7 +58,6 @@ struct RunFlags {
   bool trace_catchtables = false;
   bool trace_frames = false;
   bool trace_gc = false;
-  bool verbose_addresses = false;
 
   RunFlags(int argc, char** argv, char** envp) {
 
@@ -105,8 +104,6 @@ struct RunFlags {
         this->trace_frames = true;
       if (!flag.compare("trace_gc"))
         this->trace_gc = true;
-      if (!flag.compare("verbose_addresses"))
-        this->verbose_addresses = true;
       if (!flag.compare("instruction_profile"))
         this->instruction_profile = true;
       if (!flag.compare("dump_file_include"))

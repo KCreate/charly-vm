@@ -1948,7 +1948,6 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
 
   switch (charly_get_type(value)) {
     case kTypeDead: {
-      if (this->context.verbose_addresses) io << "@" << charly_as_pointer(value) << ":";
       io << "<dead>";
       break;
     }
@@ -1979,7 +1978,6 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
     }
 
     case kTypeString: {
-      if (this->context.verbose_addresses) io << "@" << charly_as_pointer(value) << ":";
       if (inside_container) io << "\"";
       io.write(charly_string_data(value), charly_string_length(value));
       if (inside_container) io << "\"";
@@ -2001,7 +1999,6 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
         this->to_s(io, klass->get_name());
       }
 
-      if (this->context.verbose_addresses) io << "@" << charly_as_pointer(value) << ":";
       io << "{\n";
 
       object->access_container_shared([&](Container::ContainerType* container) {
@@ -2023,7 +2020,6 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
 
     case kTypeArray: {
       Array* array = charly_as_array(value);
-      if (this->context.verbose_addresses) io << "@" << charly_as_pointer(value) << ":";
 
       // If this array was already printed, we avoid printing it again
       if (printed_before) {
@@ -2055,7 +2051,6 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
 
     case kTypeFunction: {
       Function* func = charly_as_function(value);
-      if (this->context.verbose_addresses) io << "@" << charly_as_pointer(value) << ":";
 
       if (printed_before) {
         io << "<Function ...>";
@@ -2092,7 +2087,6 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
 
     case kTypeCFunction: {
       CFunction* func = charly_as_cfunction(value);
-      if (this->context.verbose_addresses) io << "@" << charly_as_pointer(value) << ":";
 
       if (printed_before) {
         io << "<CFunction ...>";
@@ -2122,7 +2116,6 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
 
     case kTypeClass: {
       Class* klass = charly_as_class(value);
-      if (this->context.verbose_addresses) io << "@" << charly_as_pointer(value) << ":";
 
       if (printed_before) {
         io << "<Class ...>";
@@ -2149,19 +2142,16 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
     }
 
     case kTypeCPointer: {
-      if (this->context.verbose_addresses) io << "@" << charly_as_pointer(value) << ":";
       io << "<CPointer>";
       break;
     }
 
     case kTypeSymbol: {
-      if (this->context.verbose_addresses) io << "@" << charly_as_pointer(value) << ":";
       io << SymbolTable::decode(value);
       break;
     }
 
     case kTypeFrame: {
-      if (this->context.verbose_addresses) io << "@" << charly_as_pointer(value) << ":";
       io << "<Frame ";
 
       Frame* frame = charly_as_frame(value);
@@ -2179,7 +2169,6 @@ void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_contain
     }
 
     default: {
-      if (this->context.verbose_addresses) io << "@" << charly_as_pointer(value) << ":";
       io << "<?>";
       break;
     }

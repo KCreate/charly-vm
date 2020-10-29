@@ -2,7 +2,6 @@
 
 - VM Refactor
   - Implementation timeline
-    - Remove verbose_address flag
     - Some syntax to perform builtin operation on builtin types
     - Remove time based tests from unit-tests
     - Store global internal VM variables as pointers to their real type, not as VALUEs

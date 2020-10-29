@@ -126,7 +126,6 @@ int CLI::run() {
                      .trace_catchtables = this->flags.trace_catchtables,
                      .trace_frames = this->flags.trace_frames,
                      .trace_gc = this->flags.trace_gc,
-                     .verbose_addresses = this->flags.verbose_addresses,
                      .argv = &this->flags.arguments,
                      .environment = &this->flags.environment});
   VM vm(context);

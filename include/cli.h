@@ -51,7 +51,6 @@ static const std::string kHelpMessage =
     "    trace_catchtables                Display catchtables as they are being created or left\n"
     "    trace_frames                     Display frames as they are being entered and left\n"
     "    trace_gc                         Display statistics about the gc at runtime\n"
-    "    verbose_addresses                Display addresses of printed values, when applicable\n"
     "\n"
     "Examples:\n"
     "\n"
