@@ -159,7 +159,7 @@ VALUE to_s(VM& vm, VALUE buf) {
   if (!buffer)
     return kNull;
 
-  return vm.create_string(buffer->get_const_data(), buffer->get_writeoffset());
+  return vm.gc.create_string(buffer->get_const_data(), buffer->get_writeoffset());
 }
 
 VALUE bytes(VM& vm, VALUE buf) {

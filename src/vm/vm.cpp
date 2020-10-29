@@ -135,18 +135,6 @@ void VM::unwind_catchstack(std::optional<VALUE> payload = std::nullopt) {
   }
 }
 
-VALUE VM::create_string(const char* data, uint32_t length) {
-  if (length <= 6)
-    return charly_create_istring(data, length);
-  return this->gc.allocate<String>(data, length)->as_value();
-}
-
-VALUE VM::create_string(const std::string& str) {
-  if (str.size() <= 6)
-    return charly_create_istring(str.c_str(), str.size());
-  return this->gc.allocate<String>(str)->as_value();
-}
-
 VALUE VM::add(VALUE left, VALUE right) {
   if (charly_is_number(left) && charly_is_number(right)) {
     return charly_add_number(left, right);
@@ -204,7 +192,7 @@ VALUE VM::add(VALUE left, VALUE right) {
     char* new_data = static_cast<char*>(std::malloc(new_length));
     std::memcpy(new_data, left_data, left_length);
     std::memcpy(new_data + left_length, right_data, right_length);
-    return this->create_string(new_data, new_length);
+    return this->gc.create_string(new_data, new_length);
   }
 
   // String concatenation for different types
@@ -212,7 +200,7 @@ VALUE VM::add(VALUE left, VALUE right) {
     std::stringstream buf;
     this->to_s(buf, left);
     this->to_s(buf, right);
-    return this->create_string(buf.str());
+    return this->gc.create_string(buf.str());
   }
 
   return kNaN;
@@ -266,7 +254,7 @@ VALUE VM::mul(VALUE left, VALUE right) {
       offset += str_length;
     }
 
-    return this->create_string(new_data, new_length);
+    return this->gc.create_string(new_data, new_length);
   }
 
   return kNaN;
@@ -516,7 +504,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
       Function* func = charly_as_function(source);
 
       if (symbol == SYM("name")) {
-        return this->create_string(SymbolTable::decode(func->get_name()));
+        return this->gc.create_string(SymbolTable::decode(func->get_name()));
       }
 
       if (symbol == SYM("host_class")) {
@@ -538,7 +526,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
           return kNull;
         }
 
-        return this->create_string(lookup.value());
+        return this->gc.create_string(lookup.value());
       }
 
       VALUE value;
@@ -553,7 +541,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
       CFunction* cfunc = charly_as_cfunction(source);
 
       if (symbol == SYM("name")) {
-        return this->create_string(SymbolTable::decode(cfunc->get_name()));
+        return this->gc.create_string(SymbolTable::decode(cfunc->get_name()));
       }
 
       if (symbol == SYM("push_return_value")) {
@@ -600,7 +588,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
       }
 
       if (symbol == SYM("name")) {
-        return this->create_string(SymbolTable::decode(klass->get_name()));
+        return this->gc.create_string(SymbolTable::decode(klass->get_name()));
       }
 
       if (symbol == SYM("parent_class")) {
@@ -1028,7 +1016,7 @@ void VM::op_readglobal(VALUE symbol) {
 
       Immortal<Array> argv = this->gc.allocate<Array>(this->context.argv->size());
       for (const std::string& argument : *(this->context.argv)) {
-        argv->push(this->create_string(argument));
+        argv->push(this->gc.create_string(argument));
       }
 
       this->push_stack(argv->as_value());
@@ -1043,7 +1031,7 @@ void VM::op_readglobal(VALUE symbol) {
 
       // Append environment variables
       for (const auto& entry : *(this->context.environment)) {
-        env->write(SymbolTable::encode(entry.first), this->create_string(entry.second));
+        env->write(SymbolTable::encode(entry.first), this->gc.create_string(entry.second));
       }
 
       this->push_stack(env->as_value());
@@ -1290,7 +1278,7 @@ void VM::op_putvalue(VALUE value) {
 }
 
 void VM::op_putstring(char* data, uint32_t length) {
-  this->push_stack(this->create_string(data, length));
+  this->push_stack(this->gc.create_string(data, length));
 }
 
 void VM::op_putfunction(VALUE symbol,
@@ -1546,10 +1534,10 @@ void VM::throw_exception(const std::string& message) {
 
     // Instantiate error object
     this->push_stack(error_class_val);
-    this->push_stack(this->create_string(message.c_str(), message.size()));
+    this->push_stack(this->gc.create_string(message.c_str(), message.size()));
     this->op_new(1);
   } else {
-    this->unwind_catchstack(this->create_string(message.c_str(), message.size()));
+    this->unwind_catchstack(this->gc.create_string(message.c_str(), message.size()));
   }
 }
 
@@ -1647,7 +1635,7 @@ void VM::op_branchneq(int32_t offset) {
 void VM::op_typeof() {
   VALUE value = this->pop_stack();
   const std::string& stringrep = charly_get_typestring(value);
-  this->push_stack(this->create_string(stringrep.data(), stringrep.size()));
+  this->push_stack(this->gc.create_string(stringrep.data(), stringrep.size()));
 }
 
 void VM::stackdump(std::ostream& io) {
@@ -3264,7 +3252,7 @@ void VM::handle_worker_thread_exception(const std::string& message) {
   std::thread::id current_thread_id = std::this_thread::get_id();
   std::lock_guard<std::mutex> lock(this->worker_threads_m);
   WorkerThread* handle = this->worker_threads[current_thread_id];
-  handle->error_value = this->create_string(message);
+  handle->error_value = this->gc.create_string(message);
 }
 
 bool VM::is_main_thread() {

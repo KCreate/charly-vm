@@ -198,7 +198,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
       };
 
       lib->write(SymbolTable::encode("__libptr"), vm.gc.allocate<CPointer>(clib, destructor)->as_value());
-      lib->write(SymbolTable::encode("__libpath"), vm.create_string(include_filename));
+      lib->write(SymbolTable::encode("__libpath"), vm.gc.create_string(include_filename));
 
       return lib->as_value();
     }
@@ -246,7 +246,7 @@ VALUE dirname(VM& vm) {
   std::string filename = lookup_result.value();
   filename.erase(filename.rfind('/'));
 
-  return vm.create_string(filename.c_str(), filename.size());
+  return vm.gc.create_string(filename.c_str(), filename.size());
 }
 
 VALUE exit(VM& vm, VALUE status_code) {
@@ -288,7 +288,7 @@ VALUE debug_func(VM& vm, VALUE value) {
   }
 
   Immortal<Object> obj = vm.gc.allocate<Object>(2);
-  obj->write(SymbolTable::encode("input"), vm.create_string("hello world"));
+  obj->write(SymbolTable::encode("input"), vm.gc.create_string("hello world"));
   obj->write(SymbolTable::encode("test"), value);
 
   return obj->as_value();

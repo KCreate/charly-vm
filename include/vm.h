@@ -197,10 +197,6 @@ public:
   CatchTable* pop_catchtable();
   void unwind_catchstack(std::optional<VALUE> payload);
 
-  // Methods to create new data types
-  VALUE create_string(const char* data, uint32_t length);
-  VALUE create_string(const std::string& str);
-
   // Arithmetics
   VALUE add(VALUE left, VALUE right);
   VALUE sub(VALUE left, VALUE right);

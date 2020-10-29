@@ -2,11 +2,11 @@
 
 - VM Refactor
   - Implementation timeline
+    - Remove verbose_address flag
+    - Some syntax to perform builtin operation on builtin types
     - Remove time based tests from unit-tests
     - Store global internal VM variables as pointers to their real type, not as VALUEs
     - Store global variables not as Object but as a Container
-    - Remove packed / var-length strings from the nan-boxing types
-      - Replace with a utf8 codepoint character type
     - Remove pretty_print_stack from VM, pass as argument in to_s and pretty_print methods
     - Some helper class to allocate memory cells in advance
     - Refactor whole VM with Immortal classes, make sure there are absolutetly no chance of
@@ -19,9 +19,6 @@
         I'll want a UniqueValueLock and a SharedValueLock (typedef ValueLock).
     - Fixed amount of native worker threads, waiting for jobs via some job queue
     - Refactor worker thread result return system
-    - Value allocation
-      - `String* str = ctx.alloc<String>()->init_move("hello world");`
-      - `Object* obj = ctx.alloc<Object>()->init(klass, klass->propcount());`
     - Some global values can be stored as atomics, no mutex needed
     - C methods should receive the following arguments
       - The ID of the fiber which created their task

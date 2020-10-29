@@ -103,6 +103,15 @@ public:
     return value;
   }
 
+  // Strings can be represented using the immediate encoded form
+  VALUE create_string(const char* data, uint32_t length) {
+    if (length <= 6)
+      return charly_create_istring(data, length);
+    return this->allocate<String>(data, length)->as_value();
+  }
+
+  VALUE create_string(const std::string& source) { return this->create_string(source.c_str(), source.size()); }
+
 protected:
   void add_heap();
   void free_heap(MemoryCell* heap);
