@@ -81,8 +81,8 @@ CatchTable* VM::pop_catchtable() {
 void VM::unwind_catchstack(std::optional<VALUE> payload = std::nullopt) {
 
   // Check if there is a catchtable
-  if (!this->catchstack && charly_is_function(this->uncaught_exception_handler)) {
-    Function* exception_handler = charly_as_function(this->uncaught_exception_handler);
+  if (!this->catchstack && this->uncaught_exception_handler) {
+    Function* exception_handler = this->uncaught_exception_handler;
     VALUE global_self = this->get_global_self();
     VALUE payload_value = payload.value_or(kNull);
     this->call_function(exception_handler, 1, &payload_value, global_self, true);
@@ -479,7 +479,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
         if (Class* klass = obj->get_klass()) {
           return klass->as_value();
         } else {
-          return this->primitive_object;
+          return this->primitive_object->as_value();
         }
       }
 
@@ -761,7 +761,7 @@ VALUE VM::setmembervalue(VALUE target, VALUE member_value, VALUE value) {
 bool VM::findprimitivevalue(VALUE value, VALUE symbol, VALUE* result) {
 
   // Get the corresponding primitive class
-  VALUE found_primitive_class = kNull;
+  Class* found_primitive_class = nullptr;
   switch (charly_get_type(value)) {
     case kTypeObject:    found_primitive_class = this->primitive_object; break;
     case kTypeNumber:    found_primitive_class = this->primitive_number; break;
@@ -777,16 +777,15 @@ bool VM::findprimitivevalue(VALUE value, VALUE symbol, VALUE* result) {
   }
 
   if (symbol == SYM("klass")) {
-    *result = found_primitive_class;
+    *result = found_primitive_class->as_value();
     return true;
   }
 
-  if (!charly_is_class(found_primitive_class)) {
+  if (!found_primitive_class) {
     return false;
   }
 
-  Class* pclass = charly_as_class(found_primitive_class);
-  return pclass->find_value(symbol, result);
+  return found_primitive_class->find_value(symbol, result);
 }
 
 void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
@@ -994,19 +993,19 @@ void VM::op_readglobal(VALUE symbol) {
 
   // Check vm specific symbols
   switch (symbol) {
-    GLOBAL("charly.vm.primitive.value",            this->push_stack(this->primitive_value))
-    GLOBAL("charly.vm.primitive.object",           this->push_stack(this->primitive_object))
-    GLOBAL("charly.vm.primitive.class",            this->push_stack(this->primitive_class))
-    GLOBAL("charly.vm.primitive.array",            this->push_stack(this->primitive_array))
-    GLOBAL("charly.vm.primitive.string",           this->push_stack(this->primitive_string))
-    GLOBAL("charly.vm.primitive.number",           this->push_stack(this->primitive_number))
-    GLOBAL("charly.vm.primitive.function",         this->push_stack(this->primitive_function))
-    GLOBAL("charly.vm.primitive.boolean",          this->push_stack(this->primitive_boolean))
-    GLOBAL("charly.vm.primitive.null",             this->push_stack(this->primitive_null))
-    GLOBAL("charly.vm.primitive.frame",            this->push_stack(this->primitive_frame))
-    GLOBAL("charly.vm.uncaught_exception_handler", this->push_stack(this->uncaught_exception_handler))
-    GLOBAL("charly.vm.internal_error_class",       this->push_stack(this->internal_error_class))
-    GLOBAL("charly.vm.globals",                    this->push_stack(this->globals))
+    GLOBAL("charly.vm.primitive.value",            this->push_stack(this->primitive_value->as_value()))
+    GLOBAL("charly.vm.primitive.object",           this->push_stack(this->primitive_object->as_value()))
+    GLOBAL("charly.vm.primitive.class",            this->push_stack(this->primitive_class->as_value()))
+    GLOBAL("charly.vm.primitive.array",            this->push_stack(this->primitive_array->as_value()))
+    GLOBAL("charly.vm.primitive.string",           this->push_stack(this->primitive_string->as_value()))
+    GLOBAL("charly.vm.primitive.number",           this->push_stack(this->primitive_number->as_value()))
+    GLOBAL("charly.vm.primitive.function",         this->push_stack(this->primitive_function->as_value()))
+    GLOBAL("charly.vm.primitive.boolean",          this->push_stack(this->primitive_boolean->as_value()))
+    GLOBAL("charly.vm.primitive.null",             this->push_stack(this->primitive_null->as_value()))
+    GLOBAL("charly.vm.primitive.frame",            this->push_stack(this->primitive_frame->as_value()))
+    GLOBAL("charly.vm.uncaught_exception_handler", this->push_stack(this->uncaught_exception_handler->as_value()))
+    GLOBAL("charly.vm.internal_error_class",       this->push_stack(this->internal_error_class->as_value()))
+    GLOBAL("charly.vm.globals",                    this->push_stack(this->globals->as_value()))
     GLOBAL("charly.vm.frame",                      this->push_stack(this->frames->as_value()))
     GLOBAL("charly.vm.argv", {
       if (!this->context.argv) {
@@ -1040,14 +1039,17 @@ void VM::op_readglobal(VALUE symbol) {
 #undef GLOBAL
 
   // Check globals table
-  if (!charly_is_object(this->globals)) this->panic(Status::GlobalsNotAnObject);
-  VALUE value;
-  if (charly_as_object(this->globals)->read(symbol, &value)) {
-    this->push_stack(value);
-    return;
+  if (Object* globals = this->globals) {
+    VALUE value;
+    if (this->globals->read(symbol, &value)) {
+      this->push_stack(value);
+      return;
+    } else {
+      this->throw_exception("Unidentified global symbol '" + SymbolTable::decode(symbol) + "'");
+    }
+  } else {
+    this->panic(Status::UndefinedGlobalReference);
   }
-
-  this->throw_exception("Unidentified global symbol '" + SymbolTable::decode(symbol) + "'");
 }
 
 void VM::op_setlocalpush(uint32_t index, uint32_t level) {
@@ -1142,6 +1144,23 @@ void VM::op_setarrayindex(uint32_t index) {
   arr->write(index, value);
 }
 
+#define SETGLOBALVALUE(S, T, C, F)                                                                                \
+  case SYM(S): {                                                                                                  \
+    if (charly_get_type(value) != T) {                                                                            \
+      this->throw_exception("Global variable '" + std::string(S) + "' requires type '" + kHumanReadableTypes[T] + \
+                            "', got '" + charly_get_typestring(value) + "'");                                     \
+      return;                                                                                                     \
+    }                                                                                                             \
+                                                                                                                  \
+    if (this->F) {                                                                                                \
+      this->throw_exception("Global variable '" + std::string(S) + "' already set!");                             \
+      return;                                                                                                     \
+    }                                                                                                             \
+                                                                                                                  \
+    this->F = charly_as_pointer_to<C>(value);                                                                     \
+    return;                                                                                                       \
+  }
+
 void VM::op_setglobal(VALUE symbol) {
   VALUE value = this->pop_stack();
 
@@ -1153,26 +1172,27 @@ void VM::op_setglobal(VALUE symbol) {
 
   // Check vm specific symbols
   switch (symbol) {
-    case SYM("charly.vm.primitive.value"):            this->primitive_value            = value; return;
-    case SYM("charly.vm.primitive.object"):           this->primitive_object           = value; return;
-    case SYM("charly.vm.primitive.class"):            this->primitive_class            = value; return;
-    case SYM("charly.vm.primitive.array"):            this->primitive_array            = value; return;
-    case SYM("charly.vm.primitive.string"):           this->primitive_string           = value; return;
-    case SYM("charly.vm.primitive.number"):           this->primitive_number           = value; return;
-    case SYM("charly.vm.primitive.function"):         this->primitive_function         = value; return;
-    case SYM("charly.vm.primitive.boolean"):          this->primitive_boolean          = value; return;
-    case SYM("charly.vm.primitive.null"):             this->primitive_null             = value; return;
-    case SYM("charly.vm.primitive.frame"):            this->primitive_frame            = value; return;
-    case SYM("charly.vm.uncaught_exception_handler"): this->uncaught_exception_handler = value; return;
-    case SYM("charly.vm.internal_error_class"):       this->internal_error_class       = value; return;
-    case SYM("charly.vm.globals"):                    this->globals                    = value; return;
+    SETGLOBALVALUE("charly.vm.primitive.value",            kTypeClass,    Class,    primitive_value)
+    SETGLOBALVALUE("charly.vm.primitive.object",           kTypeClass,    Class,    primitive_object)
+    SETGLOBALVALUE("charly.vm.primitive.class",            kTypeClass,    Class,    primitive_class)
+    SETGLOBALVALUE("charly.vm.primitive.array",            kTypeClass,    Class,    primitive_array)
+    SETGLOBALVALUE("charly.vm.primitive.string",           kTypeClass,    Class,    primitive_string)
+    SETGLOBALVALUE("charly.vm.primitive.number",           kTypeClass,    Class,    primitive_number)
+    SETGLOBALVALUE("charly.vm.primitive.function",         kTypeClass,    Class,    primitive_function)
+    SETGLOBALVALUE("charly.vm.primitive.boolean",          kTypeClass,    Class,    primitive_boolean)
+    SETGLOBALVALUE("charly.vm.primitive.null",             kTypeClass,    Class,    primitive_null)
+    SETGLOBALVALUE("charly.vm.primitive.frame",            kTypeClass,    Class,    primitive_frame)
+    SETGLOBALVALUE("charly.vm.uncaught_exception_handler", kTypeFunction, Function, uncaught_exception_handler)
+    SETGLOBALVALUE("charly.vm.internal_error_class",       kTypeClass,    Class,    internal_error_class)
+    SETGLOBALVALUE("charly.vm.globals",                    kTypeObject,   Object,   globals)
   }
 
-  // Check globals table
-  if (!charly_is_object(this->globals)) this->panic(Status::GlobalsNotAnObject);
-  Object* globals_obj = charly_as_object(this->globals);
-  if (!globals_obj->assign(symbol, value)) {
-    this->throw_exception("Unidentified global symbol '" + SymbolTable::decode(symbol) + "'");
+  if (Object* globals = this->globals) {
+    if (!globals->assign(symbol, value)) {
+      this->throw_exception("Unidentified global symbol '" + SymbolTable::decode(symbol) + "'");
+    }
+  } else {
+    this->panic(Status::UndefinedGlobalReference);
   }
 }
 
@@ -1188,29 +1208,31 @@ void VM::op_setglobalpush(VALUE symbol) {
 
   // Check vm specific symbols
   switch (symbol) {
-    case SYM("charly.vm.primitive.value"):            this->primitive_value            = value; return;
-    case SYM("charly.vm.primitive.object"):           this->primitive_object           = value; return;
-    case SYM("charly.vm.primitive.class"):            this->primitive_class            = value; return;
-    case SYM("charly.vm.primitive.array"):            this->primitive_array            = value; return;
-    case SYM("charly.vm.primitive.string"):           this->primitive_string           = value; return;
-    case SYM("charly.vm.primitive.number"):           this->primitive_number           = value; return;
-    case SYM("charly.vm.primitive.function"):         this->primitive_function         = value; return;
-    case SYM("charly.vm.primitive.boolean"):          this->primitive_boolean          = value; return;
-    case SYM("charly.vm.primitive.null"):             this->primitive_null             = value; return;
-    case SYM("charly.vm.primitive.frame"):            this->primitive_frame            = value; return;
-    case SYM("charly.vm.uncaught_exception_handler"): this->uncaught_exception_handler = value; return;
-    case SYM("charly.vm.internal_error_class"):       this->internal_error_class       = value; return;
-    case SYM("charly.vm.globals"):                    this->globals                    = value; return;
+    SETGLOBALVALUE("charly.vm.primitive.value",            kTypeClass,    Class,    primitive_value)
+    SETGLOBALVALUE("charly.vm.primitive.object",           kTypeClass,    Class,    primitive_object)
+    SETGLOBALVALUE("charly.vm.primitive.class",            kTypeClass,    Class,    primitive_class)
+    SETGLOBALVALUE("charly.vm.primitive.array",            kTypeClass,    Class,    primitive_array)
+    SETGLOBALVALUE("charly.vm.primitive.string",           kTypeClass,    Class,    primitive_string)
+    SETGLOBALVALUE("charly.vm.primitive.number",           kTypeClass,    Class,    primitive_number)
+    SETGLOBALVALUE("charly.vm.primitive.function",         kTypeClass,    Class,    primitive_function)
+    SETGLOBALVALUE("charly.vm.primitive.boolean",          kTypeClass,    Class,    primitive_boolean)
+    SETGLOBALVALUE("charly.vm.primitive.null",             kTypeClass,    Class,    primitive_null)
+    SETGLOBALVALUE("charly.vm.primitive.frame",            kTypeClass,    Class,    primitive_frame)
+    SETGLOBALVALUE("charly.vm.uncaught_exception_handler", kTypeFunction, Function, uncaught_exception_handler)
+    SETGLOBALVALUE("charly.vm.internal_error_class",       kTypeClass,    Class,    internal_error_class)
+    SETGLOBALVALUE("charly.vm.globals",                    kTypeObject,   Object,   globals)
   }
 
-  // Check globals table
-  if (!charly_is_object(this->globals))
-    this->panic(Status::GlobalsNotAnObject);
-  Object* globals_obj = charly_as_object(this->globals);
-  if (!globals_obj->assign(symbol, value)) {
-    this->throw_exception("Unidentified global symbol '" + SymbolTable::decode(symbol) + "'");
+  if (Object* globals = this->globals) {
+    if (!globals->assign(symbol, value)) {
+      this->throw_exception("Unidentified global symbol '" + SymbolTable::decode(symbol) + "'");
+    }
+  } else {
+    this->panic(Status::UndefinedGlobalReference);
   }
 }
+
+#undef SETGLOBALVALUE
 
 void VM::op_putself() {
   if (!this->frames) {
@@ -1354,8 +1376,8 @@ void VM::op_putclass(VALUE name,
 
     parent_class = charly_as_class(value);
   } else {
-    if (charly_is_class(this->primitive_object)) {
-      parent_class = charly_as_class(this->primitive_object);
+    if (this->primitive_object) {
+      parent_class = this->primitive_object;
     }
   }
 
@@ -1528,17 +1550,13 @@ void VM::throw_exception(const std::string& message) {
     return;
   }
 
-  // Load the error class
-  VALUE error_class_val = this->internal_error_class;
-  if (charly_is_class(error_class_val)) {
-
-    // Instantiate error object
-    this->push_stack(error_class_val);
-    this->push_stack(this->gc.create_string(message.c_str(), message.size()));
-    this->op_new(1);
-  } else {
-    this->unwind_catchstack(this->gc.create_string(message.c_str(), message.size()));
+  if (!this->internal_error_class) {
+    this->panic(Status::UndefinedGlobalReference);
   }
+
+  this->push_stack(this->internal_error_class->as_value());
+  this->push_stack(this->gc.create_string(message.c_str(), message.size()));
+  this->op_new(1);
 }
 
 void VM::throw_exception(VALUE payload) {
@@ -2180,10 +2198,8 @@ VALUE VM::get_global_self() {
 }
 
 VALUE VM::get_global_symbol(VALUE symbol) {
-  if (charly_is_object(this->globals)) {
-    return charly_as_object(this->globals)->read_or(symbol, kNull);
-  }
-
+  if (Object* globals = this->globals)
+    return globals->read_or(symbol, kNull);
   return kNull;
 }
 

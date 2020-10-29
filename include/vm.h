@@ -343,25 +343,21 @@ private:
   std::vector<VALUE> pretty_print_stack;
 
   // References to the primitive classes of the VM
-  VALUE primitive_array     = kNull;
-  VALUE primitive_boolean   = kNull;
-  VALUE primitive_class     = kNull;
-  VALUE primitive_function  = kNull;
-  VALUE primitive_null      = kNull;
-  VALUE primitive_number    = kNull;
-  VALUE primitive_object    = kNull;
-  VALUE primitive_string    = kNull;
-  VALUE primitive_value     = kNull;
-  VALUE primitive_frame     = kNull;
+  Class* primitive_array    = nullptr;
+  Class* primitive_boolean  = nullptr;
+  Class* primitive_class    = nullptr;
+  Class* primitive_function = nullptr;
+  Class* primitive_null     = nullptr;
+  Class* primitive_number   = nullptr;
+  Class* primitive_object   = nullptr;
+  Class* primitive_string   = nullptr;
+  Class* primitive_value    = nullptr;
+  Class* primitive_frame    = nullptr;
 
   // A function which handles uncaught exceptions
-  VALUE uncaught_exception_handler = kNull;
-
-  // Error class used by the VM
-  VALUE internal_error_class = kNull;
-
-  // Object which contains all the global variables
-  VALUE globals = kNull;
+  Function* uncaught_exception_handler = nullptr; // function handling uncaught exceptions
+  Class* internal_error_class = nullptr;          // error class used by internal exceptions
+  Object* globals = nullptr;                      // container for global variables
 
   // Scheduled tasks and paused VM threads
   uint64_t next_thread_id = 0;

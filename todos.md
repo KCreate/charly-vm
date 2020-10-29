@@ -2,10 +2,7 @@
 
 - VM Refactor
   - Implementation timeline
-    - Some syntax to perform builtin operation on builtin types
-    - Remove time based tests from unit-tests
-    - Store global internal VM variables as pointers to their real type, not as VALUEs
-    - Store global variables not as Object but as a Container
+    - Make some panic status codes exceptions
     - Remove pretty_print_stack from VM, pass as argument in to_s and pretty_print methods
     - Some helper class to allocate memory cells in advance
     - Refactor whole VM with Immortal classes, make sure there are absolutetly no chance of

@@ -70,14 +70,6 @@ export = ->(describe, it, assert) {
       assert(bar, @"charly.vm.globals")
     })
 
-    it("writes to vm internals", ->{
-      const backup_v = @"charly.vm.primitive.null"
-      @"charly.vm.primitive.null" = "hello world"
-      assert(@"charly.vm.primitive.null", "hello world")
-      @"charly.vm.primitive.null" = backup_v
-      assert(@"charly.vm.primitive.null", backup_v)
-    })
-
     describe("throws exceptions", ->{
 
       it("when trying to access unidentified global symbol", ->{
