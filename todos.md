@@ -2,7 +2,6 @@
 
 - VM Refactor
   - Implementation timeline
-    - Make some panic status codes exceptions
     - Remove pretty_print_stack from VM, pass as argument in to_s and pretty_print methods
     - Some helper class to allocate memory cells in advance
     - Refactor whole VM with Immortal classes, make sure there are absolutetly no chance of
