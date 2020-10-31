@@ -586,7 +586,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
         return this->gc.create_string(SymbolTable::decode(klass->get_name()));
       }
 
-      if (symbol == SYM("parent_class")) {
+      if (symbol == SYM("parent")) {
         if (Class* parent_class = klass->get_parent_class()) {
           return parent_class->as_value();
         } else {
@@ -729,7 +729,7 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
       if (symbol == SYM("prototype")) break;
       if (symbol == SYM("constructor")) break;
       if (symbol == SYM("name")) break;
-      if (symbol == SYM("parent_class")) break;
+      if (symbol == SYM("parent")) break;
 
       klass->write(symbol, value);
       break;

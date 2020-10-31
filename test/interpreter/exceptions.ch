@@ -84,7 +84,7 @@ export = ->(describe, it, assert) {
     kla.prototype = null
     kla.constructor = null
     kla.name = null
-    kla.parent_class = null
+    kla.parent = null
 
     assert(Object.keys(obj).length, 0)
     assert(Object.keys(fun).length, 0)

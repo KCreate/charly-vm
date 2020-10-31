@@ -50,7 +50,7 @@ export = ->{
       let top = self.klass
       while top {
         if top == klass return true
-        top = top.parent_class
+        top = top.parent
       }
 
       false

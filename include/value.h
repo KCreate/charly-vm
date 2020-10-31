@@ -198,19 +198,6 @@ public:
 
   VALUE as_value();
 
-  void debug_print(std::ostream& io, std::vector<VALUE>& trace);
-  void to_string(std::ostream& io, std::vector<VALUE>& trace);
-
-  // Shorthand access with no explicit trace vector
-  inline void debug_print(std::ostream& io) {
-    std::vector<VALUE> vec;
-    charly_debug_print(io, this->as_value(), vec);
-  }
-  inline void to_string(std::ostream& io) {
-    std::vector<VALUE> vec;
-    charly_to_string(io, this->as_value(), vec);
-  }
-
 protected:
   ValueType type;   // the type of this heap value
   bool mark;        // set by the GC to mark reachable values

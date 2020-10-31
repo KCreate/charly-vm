@@ -5,7 +5,7 @@
 MAKEFLAGS += --no-print-directory
 
 CC := clang
-OPT := -O0
+OPT := -O2
 OPTPROD := -O3 -Ofast
 SRCDIR := src
 BUILDDIR := build

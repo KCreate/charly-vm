@@ -224,7 +224,7 @@ void charly_debug_print(std::ostream& io, VALUE value, std::vector<VALUE>& trace
       }
 
       if (Class* parent_class = klass->get_parent_class()) {
-        io << "parent_class=";
+        io << "parent=";
         charly_debug_print(io, parent_class->as_value(), trace);
         io << " ";
       }

@@ -2,7 +2,6 @@
 
 - VM Refactor
   - Implementation timeline
-    - Rename Class.parent_class to parent (in Charly code)
     - Some helper class to allocate memory cells in advance
     - Refactor whole VM with Immortal classes, make sure there are absolutetly no chance of
       anything being leaked

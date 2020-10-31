@@ -118,7 +118,7 @@ export = ->(describe, it, assert) {
     class B extends A {}
 
     assert(B.name, "B")
-    assert(B.parent_class.name, "A")
+    assert(B.parent.name, "A")
   })
 
   it("creates static properties on classes", ->{

@@ -50,7 +50,7 @@ public:
     SymbolTable::encode("klass");
     SymbolTable::encode("name");
     SymbolTable::encode("prototype");
-    SymbolTable::encode("parent_class");
+    SymbolTable::encode("parent");
     SymbolTable::encode("length");
     SymbolTable::encode("constructor");
     SymbolTable::encode("<dead>");
