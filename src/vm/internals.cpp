@@ -222,7 +222,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
 }
 
 VALUE write(VM& vm, VALUE value) {
-  vm.to_s(vm.context.out_stream, value);
+  charly_to_string(vm.context.out_stream, value);
   vm.context.out_stream.flush();
 
   return kNull;

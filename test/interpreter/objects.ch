@@ -128,7 +128,15 @@ export = ->(describe, it, assert) {
 
       let render = a.to_s()
 
-      assert(render, "[[[...]]]")
+      assert(render, "[[<...>]]")
+    })
+
+    it("prints circular objects", ->{
+      const a = {}
+      a.a = a
+
+      const render = a.to_s()
+      assert(render, "{\n  a = <...>\n}")
     })
 
   })

@@ -237,8 +237,6 @@ public:
   void throw_exception(VALUE payload);
   void panic(STATUS reason);
   void stackdump(std::ostream& io);
-  void pretty_print(std::ostream& io, VALUE value);
-  void to_s(std::ostream& io, VALUE value, uint32_t depth = 0, bool inside_container = false);
   VALUE get_global_self();
   VALUE get_global_symbol(VALUE symbol);
 
@@ -338,9 +336,6 @@ public:
   VMContext context;
   VMInstructionProfile instruction_profile;
 private:
-
-  // Used to avoid an overflow when printing cyclic data structures
-  std::vector<VALUE> pretty_print_stack;
 
   // References to the primitive classes of the VM
   Class* primitive_array    = nullptr;

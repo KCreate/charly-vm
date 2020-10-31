@@ -2,7 +2,7 @@
 
 - VM Refactor
   - Implementation timeline
-    - Remove pretty_print_stack from VM, pass as argument in to_s and pretty_print methods
+    - Rename Class.parent_class to parent (in Charly code)
     - Some helper class to allocate memory cells in advance
     - Refactor whole VM with Immortal classes, make sure there are absolutetly no chance of
       anything being leaked

@@ -35,7 +35,7 @@ namespace PrimitiveValue {
 
 VALUE to_s(VM& vm, VALUE value) {
   std::stringstream buffer;
-  vm.to_s(buffer, value);
+  charly_to_string(buffer, value);
   return vm.gc.create_string(buffer.str());
 }
 

@@ -24,14 +24,9 @@
  * SOFTWARE.
  */
 
-#include <algorithm>
 #include <cmath>
 #include <functional>
-#include <iomanip>
 #include <iostream>
-#include <sstream>
-#include <thread>
-#include <random>
 
 #include <utf8/utf8.h>
 
@@ -111,7 +106,7 @@ void VM::unwind_catchstack(std::optional<VALUE> payload = std::nullopt) {
   if (this->context.trace_catchtables) {
     // Show the table we've restored
     this->context.err_stream << "Restored CatchTable: ";
-    this->pretty_print(this->context.err_stream, table->as_value());
+    charly_debug_print(this->context.err_stream, table->as_value());
     this->context.err_stream << '\n';
   }
 
@@ -198,8 +193,8 @@ VALUE VM::add(VALUE left, VALUE right) {
   // String concatenation for different types
   if (charly_is_string(left) || charly_is_string(right)) {
     std::stringstream buf;
-    this->to_s(buf, left);
-    this->to_s(buf, right);
+    charly_to_string(buf, left);
+    charly_to_string(buf, right);
     return this->gc.create_string(buf.str());
   }
 
@@ -873,7 +868,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   // Debugging output
   if (this->context.trace_frames) {
     this->context.err_stream << "Entering frame: ";
-    this->pretty_print(this->context.err_stream, frame->as_value());
+    charly_debug_print(this->context.err_stream, frame->as_value());
     this->context.err_stream << '\n';
   }
 
@@ -1529,7 +1524,7 @@ void VM::op_return() {
   // Print the frame if the correponding flag was set
   if (this->context.trace_frames) {
     this->context.err_stream << "Left frame: ";
-    this->pretty_print(this->context.err_stream, frame->as_value());
+    charly_debug_print(this->context.err_stream, frame->as_value());
     this->context.err_stream << '\n';
   }
 }
@@ -1571,7 +1566,7 @@ void VM::op_registercatchtable(int32_t offset) {
   // Print the catchtable if the corresponding flag was set
   if (this->context.trace_catchtables) {
     this->context.err_stream << "Entering catchtable: ";
-    this->pretty_print(this->context.err_stream, table->as_value());
+    charly_debug_print(this->context.err_stream, table->as_value());
     this->context.err_stream << '\n';
   }
 }
@@ -1586,7 +1581,7 @@ void VM::op_popcatchtable() {
     if (table) {
       // Show the table we've restored
       this->context.err_stream << "Restored CatchTable: ";
-      this->pretty_print(this->context.err_stream, table->as_value());
+      charly_debug_print(this->context.err_stream, table->as_value());
       this->context.err_stream << '\n';
     }
   }
@@ -1658,538 +1653,8 @@ void VM::op_typeof() {
 
 void VM::stackdump(std::ostream& io) {
   for (VALUE stackitem : this->stack) {
-    this->pretty_print(io, stackitem);
+    charly_debug_print(io, stackitem);
     io << '\n';
-  }
-}
-
-// TODO: Move this message to value.h
-// TODO: It will still require access to the symbol table, figure out how to remove this dependency
-void VM::pretty_print(std::ostream& io, VALUE value) {
-  // Check if this value was already printed before
-  auto begin = this->pretty_print_stack.begin();
-  auto end = this->pretty_print_stack.end();
-  bool printed_before = std::find(begin, end, value) != end;
-
-  switch (charly_get_type(value)) {
-    case kTypeDead: {
-      io << "<@" << charly_as_pointer(value) << " : Dead>";
-      break;
-    }
-
-    case kTypeNumber: {
-      const double d = io.precision();
-      io.precision(16);
-      io << std::fixed;
-      if (charly_is_int(value)) {
-        io << charly_int_to_int64(value);
-      } else {
-        io << charly_double_to_double(value);
-      }
-      io << std::scientific;
-      io.precision(d);
-
-      break;
-    }
-
-    case kTypeBoolean: {
-      io << std::boolalpha << (value == kTrue) << std::noboolalpha;
-      break;
-    }
-
-    case kTypeNull: {
-      io << "null";
-      break;
-    }
-
-    case kTypeString: {
-      io << "\"";
-      io.write(charly_string_data(value), charly_string_length(value));
-      io << "\"";
-      break;
-    }
-
-    case kTypeObject: {
-      Object* object = charly_as_object(value);
-      io << "<Object";
-
-      // If this object was already printed, we avoid printing it again
-      if (printed_before) {
-        io << " ...>";
-        break;
-      }
-
-      this->pretty_print_stack.push_back(value);
-
-      object->access_container_shared([&](Container::ContainerType* container) {
-        for (auto& entry : *container) {
-          io << " ";
-          std::string key = SymbolTable::decode(entry.first);
-          io << key << "=";
-          this->pretty_print(io, entry.second);
-        }
-      });
-
-      io << ">";
-
-      this->pretty_print_stack.pop_back();
-      break;
-    }
-
-    case kTypeArray: {
-      Array* array = charly_as_array(value);
-      io << "<Array ";
-
-      // If this array was already printed, we avoid printing it again
-      if (printed_before) {
-        io << "[...]>";
-        break;
-      }
-
-      this->pretty_print_stack.push_back(value);
-
-      io << "[";
-
-      bool first = true;
-      array->access_vector_shared([&](Array::VectorType* vec) {
-        for (VALUE entry : *vec) {
-          if (!first) {
-            io << ", ";
-          }
-
-          first = false;
-          this->pretty_print(io, entry);
-        }
-      });
-
-      io << "]>";
-
-      this->pretty_print_stack.pop_back();
-      break;
-    }
-
-    case kTypeFunction: {
-      Function* func = charly_as_function(value);
-
-      if (printed_before) {
-        io << "<Function ...>";
-        break;
-      }
-
-      this->pretty_print_stack.push_back(value);
-
-      io << "<Function ";
-      io << "name=";
-      if (Class* host_class = func->get_host_class()) {
-        this->pretty_print(io, host_class->get_name());
-        io << ":";
-      }
-      this->pretty_print(io, func->get_name());
-      io << " ";
-      io << "argc=" << func->get_argc();
-      io << " ";
-      io << "minimum_argc=" << func->get_minimum_argc();
-      io << " ";
-      io << "lvarcount=" << func->get_lvarcount();
-      io << " ";
-      io << "body_address=" << reinterpret_cast<void*>(func->get_body_address());
-      io << " ";
-
-      VALUE bound_self;
-      if (func->get_bound_self(&bound_self)) {
-        io << "bound_self=";
-        this->pretty_print(io, bound_self);
-      }
-
-      func->access_container_shared([&](Container::ContainerType* container) {
-        for (auto& entry : *container) {
-          io << " ";
-          std::string key = SymbolTable::decode(entry.first);
-          io << key << "=";
-          this->pretty_print(io, entry.second);
-        }
-      });
-
-      io << ">";
-
-      this->pretty_print_stack.pop_back();
-      break;
-    }
-
-    case kTypeCFunction: {
-      CFunction* func = charly_as_cfunction(value);
-
-      if (printed_before) {
-        io << "<CFunction ...>";
-        break;
-      }
-
-      this->pretty_print_stack.push_back(value);
-
-      io << "<CFunction ";
-      io << "name=";
-      this->pretty_print(io, func->get_name());
-      io << " ";
-      io << "argc=" << func->get_argc();
-      io << " ";
-      io << "pointer=" << static_cast<void*>(func->get_pointer()) << "";
-
-      func->access_container_shared([&](Container::ContainerType* container) {
-        for (auto& entry : *container) {
-          io << " ";
-          std::string key = SymbolTable::decode(entry.first);
-          io << key << "=";
-          this->pretty_print(io, entry.second);
-        }
-      });
-
-      io << ">";
-
-      this->pretty_print_stack.pop_back();
-      break;
-    }
-
-    case kTypeClass: {
-      Class* klass = charly_as_class(value);
-
-      if (printed_before) {
-        io << "<Class ...>";
-        break;
-      }
-
-      this->pretty_print_stack.push_back(value);
-
-      io << "<Class ";
-      io << "name=";
-      this->pretty_print(io, klass->get_name());
-      io << " ";
-      if (Function* constructor = klass->get_constructor()) {
-        io << "constructor=";
-        this->pretty_print(io, constructor->as_value());
-        io << " ";
-      }
-
-      io << "member_properties=[";
-      klass->access_member_properties([&](Class::VectorType* props) {
-        for (auto entry : *props) {
-          io << " " << SymbolTable::decode(entry);
-        }
-      });
-      io << "] ";
-
-      if (Object* prototype = klass->get_prototype()) {
-        io << "member_functions=";
-        this->pretty_print(io, prototype->as_value());
-        io << " ";
-      }
-
-      if (Class* parent_class = klass->get_parent_class()) {
-        io << "parent_class=";
-        this->pretty_print(io, parent_class->as_value());
-        io << " ";
-      }
-
-      klass->access_container_shared([&](Container::ContainerType* container) {
-        for (auto entry : *container) {
-          io << " " << SymbolTable::decode(entry.first);
-          io << "=";
-          this->pretty_print(io, entry.second);
-        }
-      });
-
-      io << ">";
-
-      this->pretty_print_stack.pop_back();
-      break;
-    }
-
-    case kTypeCPointer: {
-      CPointer* cpointer = charly_as_cpointer(value);
-      io << "<CPointer " << cpointer->get_data();
-      io << ":" << reinterpret_cast<void*>(cpointer->get_destructor());
-      io << ">";
-      break;
-    }
-
-    case kTypeSymbol: {
-      io << SymbolTable::decode(value);
-      break;
-    }
-
-    case kTypeFrame: {
-      Frame* frame = charly_as_frame(value);
-      Function* function = frame->get_function();
-      VALUE name = function->get_anonymous() ? SYM("<anonymous>") : function->get_name();
-      uint8_t* body_address = function->get_body_address();
-      auto lookup_result = this->context.compiler_manager.address_mapping.resolve_address(body_address);
-
-      io << "(";
-      io << std::setfill(' ') << std::setw(14);
-      io << static_cast<void*>(body_address);
-      io << std::setw(1);
-      io << ") ";
-      io << SymbolTable::decode(name);
-      io << " ";
-      io << lookup_result.value_or("??");
-
-      break;
-    }
-
-    case kTypeCatchTable: {
-      CatchTable* table = charly_as_catchtable(value);
-
-      if (printed_before) {
-        io << "<CatchTable ...>";
-        break;
-      }
-
-      this->pretty_print_stack.push_back(value);
-
-      io << "<CatchTable ";
-      io << "address=" << reinterpret_cast<void*>(table->get_address()) << " ";
-      io << "stacksize=" << table->get_stacksize() << " ";
-      io << "frame=" << table->get_frame() << " ";
-      io << "parent=" << table->get_parent();
-      io << ">";
-
-      this->pretty_print_stack.pop_back();
-      break;
-    }
-  }
-}
-
-void VM::to_s(std::ostream& io, VALUE value, uint32_t depth, bool inside_container) {
-  // Check if this value was already printed before
-  auto begin = this->pretty_print_stack.begin();
-  auto end = this->pretty_print_stack.end();
-  bool printed_before = std::find(begin, end, value) != end;
-
-  switch (charly_get_type(value)) {
-    case kTypeDead: {
-      io << "<dead>";
-      break;
-    }
-
-    case kTypeNumber: {
-      const double d = io.precision();
-      io.precision(16);
-      io << std::fixed;
-      if (charly_is_int(value)) {
-        io << charly_int_to_int64(value);
-      } else {
-        io << charly_double_to_double(value);
-      }
-      io << std::scientific;
-      io.precision(d);
-
-      break;
-    }
-
-    case kTypeBoolean: {
-      io << std::boolalpha << (value == kTrue) << std::noboolalpha;
-      break;
-    }
-
-    case kTypeNull: {
-      io << "null";
-      break;
-    }
-
-    case kTypeString: {
-      if (inside_container) io << "\"";
-      io.write(charly_string_data(value), charly_string_length(value));
-      if (inside_container) io << "\"";
-      break;
-    }
-
-    case kTypeObject: {
-      Object* object = charly_as_object(value);
-
-      // If this object was already printed, we avoid printing it again
-      if (printed_before) {
-        io << "{...}";
-        break;
-      }
-
-      this->pretty_print_stack.push_back(value);
-
-      if (Class* klass = object->get_klass()) {
-        this->to_s(io, klass->get_name());
-      }
-
-      io << "{\n";
-
-      object->access_container_shared([&](Container::ContainerType* container) {
-        for (auto& entry : *container) {
-          io << std::string(depth + 2, ' ');
-          std::string key = SymbolTable::decode(entry.first);
-          io << key << " = ";
-          this->to_s(io, entry.second, depth + 2, true);
-          io << '\n';
-        }
-      });
-
-      io << std::string(depth == 0 ? 0 : depth, ' ');
-      io << "}";
-
-      this->pretty_print_stack.pop_back();
-      break;
-    }
-
-    case kTypeArray: {
-      Array* array = charly_as_array(value);
-
-      // If this array was already printed, we avoid printing it again
-      if (printed_before) {
-        io << "[...]";
-        break;
-      }
-
-      this->pretty_print_stack.push_back(value);
-
-      io << "[";
-
-      bool first = true;
-      array->access_vector_shared([&](Array::VectorType* vec) {
-        for (VALUE entry : *vec) {
-          if (!first) {
-            io << ", ";
-          }
-
-          first = false;
-          this->to_s(io, entry, depth, true);
-        }
-      });
-
-      io << "]";
-
-      this->pretty_print_stack.pop_back();
-      break;
-    }
-
-    case kTypeFunction: {
-      Function* func = charly_as_function(value);
-
-      if (printed_before) {
-        io << "<Function ...>";
-        break;
-      }
-
-      this->pretty_print_stack.push_back(value);
-
-      io << "<Function ";
-      io << "";
-
-      if (Class* host_class = func->get_host_class()) {
-        this->to_s(io, host_class->get_name());
-        io << ":";
-      }
-
-      this->to_s(io, func->get_name());
-      io << "#" << func->get_minimum_argc();
-
-      func->access_container_shared([&](Container::ContainerType* container) {
-        for (auto& entry : *container) {
-          io << " ";
-          std::string key = SymbolTable::decode(entry.first);
-          io << key << "=";
-          this->to_s(io, entry.second, depth, true);
-        }
-      });
-
-      io << ">";
-
-      this->pretty_print_stack.pop_back();
-      break;
-    }
-
-    case kTypeCFunction: {
-      CFunction* func = charly_as_cfunction(value);
-
-      if (printed_before) {
-        io << "<CFunction ...>";
-        break;
-      }
-
-      this->pretty_print_stack.push_back(value);
-
-      io << "<CFunction ";
-      this->to_s(io, func->get_name(), depth);
-      io << "#" << func->get_argc();
-
-      func->access_container_shared([&](Container::ContainerType* container) {
-        for (auto entry : *container) {
-          io << " ";
-          std::string key = SymbolTable::decode(entry.first);
-          io << key << "=";
-          this->to_s(io, entry.second, depth, true);
-        }
-      });
-
-      io << ">";
-
-      this->pretty_print_stack.pop_back();
-      break;
-    }
-
-    case kTypeClass: {
-      Class* klass = charly_as_class(value);
-
-      if (printed_before) {
-        io << "<Class ...>";
-        break;
-      }
-
-      this->pretty_print_stack.push_back(value);
-
-      io << "<Class ";
-      this->to_s(io, klass->get_name(), depth);
-
-      klass->access_container_shared([&](Container::ContainerType* container) {
-        for (auto entry : *container) {
-          io << " " << SymbolTable::decode(entry.first);
-          io << "=";
-          this->to_s(io, entry.second, depth, true);
-        }
-      });
-
-      io << ">";
-
-      this->pretty_print_stack.pop_back();
-      break;
-    }
-
-    case kTypeCPointer: {
-      io << "<CPointer>";
-      break;
-    }
-
-    case kTypeSymbol: {
-      io << SymbolTable::decode(value);
-      break;
-    }
-
-    case kTypeFrame: {
-      io << "<Frame ";
-
-      Frame* frame = charly_as_frame(value);
-      Function* function = frame->get_function();
-      if (Class* host_class = function->get_host_class()) {
-        io << SymbolTable::decode(host_class->get_name());
-        io << "::";
-      }
-
-      VALUE name = function->get_anonymous() ? SYM("<anonymous>") : function->get_name();
-      io << SymbolTable::decode(name);
-
-      io << ">";
-      break;
-    }
-
-    default: {
-      io << "<?>";
-      break;
-    }
   }
 }
 

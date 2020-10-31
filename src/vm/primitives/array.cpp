@@ -148,6 +148,21 @@ void Array::fill(VALUE value, uint32_t count) {
   this->data->assign(count, value);
 }
 
+bool Array::contains_only(ValueType type) {
+  bool comparison = true;
+
+  this->access_vector_shared([&](Array::VectorType* vec) {
+    for (VALUE v : *vec) {
+      if (charly_get_type(v) != type) {
+        comparison = false;
+        return;
+      }
+    }
+  });
+
+  return comparison;
+}
+
 void Array::access_vector(std::function<void(Array::VectorType*)> cb) {
   assert(this->data);
   cb(this->data);

@@ -172,6 +172,20 @@ enum ValueType : uint8_t {
   kTypeUnknown
 };
 
+// Print a more detailed output of charly values and data structures
+void charly_debug_print(std::ostream& io, VALUE value, std::vector<VALUE>& trace);
+inline void charly_debug_print(std::ostream& io, VALUE value) {
+  std::vector<VALUE> vec;
+  charly_debug_print(io, value, vec);
+}
+
+// Print a user-friendly version of charly values and data structures
+void charly_to_string(std::ostream& io, VALUE value, std::vector<VALUE>& trace);
+inline void charly_to_string(std::ostream& io, VALUE value) {
+  std::vector<VALUE> vec;
+  charly_to_string(io, value, vec);
+}
+
 // Metadata which is stores in every heap value
 class Header {
   friend class GarbageCollector;
@@ -183,6 +197,19 @@ public:
   ValueType get_type();
 
   VALUE as_value();
+
+  void debug_print(std::ostream& io, std::vector<VALUE>& trace);
+  void to_string(std::ostream& io, std::vector<VALUE>& trace);
+
+  // Shorthand access with no explicit trace vector
+  inline void debug_print(std::ostream& io) {
+    std::vector<VALUE> vec;
+    charly_debug_print(io, this->as_value(), vec);
+  }
+  inline void to_string(std::ostream& io) {
+    std::vector<VALUE> vec;
+    charly_to_string(io, this->as_value(), vec);
+  }
 
 protected:
   ValueType type;   // the type of this heap value
@@ -249,6 +276,8 @@ public:
   void remove(int64_t index);              // remove a alue at index, nop if out-of-bounds
   void clear();                            // remove all elements from the array
   void fill(VALUE value, uint32_t count);  // fill the array with count instances of value
+
+  bool contains_only(ValueType type);
 
   // Access to internal vector via a callback function
   void access_vector(std::function<void(VectorType*)> cb);
@@ -467,6 +496,12 @@ protected:
 };
 
 // clang-format off
+__attribute__((always_inline))
+inline VALUE charly_create_pointer(void* ptr) {
+  if (ptr == nullptr) return kNull;
+  if (ptr > kMaxPointer) return kSignaturePointer; // null pointer
+  return kSignaturePointer | (kMaskPointer & reinterpret_cast<int64_t>(ptr));
+}
 
 // Type casting functions
 template <typename T>
@@ -574,25 +609,12 @@ inline uint8_t charly_get_type(VALUE value) {
   return kTypeUnknown;
 }
 
-// Check if all values inside an array are of the same type
-template <unsigned char T>
+// Check wether an array consists only of certain elements
+template <ValueType T>
 __attribute__((always_inline))
-inline bool charly_is_array_of(VALUE v) {
-  Array* arr = charly_as_array(v);
-
-  bool comparison;
-  arr->access_vector_shared([&](Array::VectorType* vec) {
-    for (VALUE v : *vec) {
-      if (charly_get_type(v) != T) {
-        comparison = false;
-        break;
-      }
-    }
-
-    comparison = true;
-  });
-
-  return comparison;
+inline bool charly_is_array_of(VALUE value) {
+  assert(charly_is_array(value));
+  return charly_as_array(value)->contains_only(T);
 }
 
 // Checks wether this value is a container
@@ -1549,14 +1571,6 @@ inline VALUE charly_create_symbol(VALUE value) {
   }
 }
 
-// Create a VALUE from a ptr
-__attribute__((always_inline))
-inline VALUE charly_create_pointer(void* ptr) {
-  if (ptr == nullptr) return kNull;
-  if (ptr > kMaxPointer) return kSignaturePointer; // null pointer
-  return kSignaturePointer | (kMaskPointer & reinterpret_cast<int64_t>(ptr));
-}
-
 // External libs interface
 typedef std::tuple<std::string, uint32_t, ThreadPolicy> CharlyLibSignature;
 struct CharlyLibSignatures {
@@ -1575,7 +1589,6 @@ struct CharlyLibSignatures {
       P \
     }}; \
   }
-
 
 // clang-format on
 
