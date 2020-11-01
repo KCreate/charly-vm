@@ -130,7 +130,7 @@ bool Function::get_needs_arguments() {
   return this->needs_arguments;
 }
 
-VALUE Function::get_self(VALUE* fallback) {
+VALUE Function::get_self(VALUE fallback) {
   if (this->bound_self_set) {
     return this->bound_self;
   }
@@ -143,8 +143,20 @@ VALUE Function::get_self(VALUE* fallback) {
     }
   }
 
-  if (fallback != nullptr) {
-    return *fallback;
+  return fallback;
+}
+
+VALUE Function::get_self() {
+  if (this->bound_self_set) {
+    return this->bound_self;
+  }
+
+  if (this->anonymous) {
+    if (this->context != nullptr) {
+      return this->context->get_self();
+    } else {
+      return kNull;
+    }
   }
 
   if (this->context != nullptr) {

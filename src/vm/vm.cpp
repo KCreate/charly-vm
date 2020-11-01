@@ -77,9 +77,10 @@ void VM::unwind_catchstack(std::optional<VALUE> payload = std::nullopt) {
 
   // Check if there is a catchtable
   if (!this->catchstack && this->uncaught_exception_handler) {
-    Function* exception_handler = this->uncaught_exception_handler;
-    VALUE global_self = this->get_global_self();
+    Immortal<Function> exception_handler = this->uncaught_exception_handler;
+    Immortal<> global_self = this->get_global_self();
     VALUE payload_value = payload.value_or(kNull);
+    Immortal<> i_payload_value = payload_value;
     this->call_function(exception_handler, 1, &payload_value, global_self, true);
     return;
   }
@@ -785,6 +786,7 @@ bool VM::findprimitivevalue(VALUE value, VALUE symbol, VALUE* result) {
 
 void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
   // Stack allocate enough space to copy all arguments into
+  Immortal<> i_arguments[argc];
   VALUE arguments[argc];
 
   // Basically what this loop does is it counts argc_copy down to 0
@@ -792,17 +794,18 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
   // in the reverse order than we are popping them off
   for (int argc_copy = argc - 1; argc_copy >= 0; argc_copy--) {
     VALUE value = this->pop_stack();
+    i_arguments[argc_copy] = value;
     arguments[argc_copy] = value;
   }
 
   // Pop the function off of the stack
-  VALUE function = this->pop_stack();
+  Immortal<> function = this->pop_stack();
 
   // The target of the function is either supplied explicitly via the call_member instruction
   // or implicitly via the functions frame
   // If it's supplied via the frame hierarchy, we need to resolve it here
   // If not we simply pop it off the stack
-  VALUE target = kNull;
+  Immortal<> target = kNull;
   if (with_target)
     target = this->pop_stack();
 
@@ -811,7 +814,7 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
     // Normal functions as defined via the user
     case kTypeFunction: {
       Function* tfunc = charly_as_function(function);
-      target = tfunc->get_self(with_target ? &target : nullptr);
+      target = with_target ? tfunc->get_self(target) : tfunc->get_self();
       this->call_function(tfunc, argc, arguments, target, halt_after_return);
       return;
     }
@@ -830,13 +833,6 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
 }
 
 void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self, bool halt_after_return) {
-  Immortal<Function> i_function(function);
-  Immortal<> i_self(self);
-  Immortal<> i_argv[argc];
-  for (uint32_t i = 0; i < argc; i++) {
-    i_argv[i] = argv[i];
-  }
-
   // Check if the function was called with enough arguments
   if (argc < function->get_minimum_argc()) {
     this->throw_exception("Not enough arguments for function call");
@@ -877,8 +873,8 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   // If the function requires an arguments array, we create one and push it onto
   // offset 0 of the frame
   if (function->get_needs_arguments()) {
-    Array* arguments_array = this->gc.allocate<Array>(argc);
-    frame->write_local(0, arguments_array->as_value());
+    Immortal<Array> arguments_array = this->gc.allocate<Array>(argc);
+    frame->write_local(0, arguments_array);
 
     for (size_t i = 0; i < argc; i++) {
       if (i < function->get_argc()) {
@@ -895,12 +891,6 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
 }
 
 void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
-  Immortal<CFunction> i_cfunc(function);
-  Immortal<> i_argv[argc];
-  for (uint i = 0; i < argc; i++) {
-    i_argv[i] = argv[i];
-  }
-
   if (!function->allowed_on_main_thread()) {
     this->throw_exception("Calling this CFunction in the main thread is prohibited");
     return;
@@ -952,18 +942,18 @@ void VM::op_readlocal(uint32_t index, uint32_t level) {
 }
 
 void VM::op_readmembersymbol(VALUE symbol) {
-  VALUE source = this->pop_stack();
+  Immortal<> source = this->pop_stack();
   this->push_stack(this->readmembersymbol(source, symbol));
 }
 
 void VM::op_readmembervalue() {
-  VALUE value = this->pop_stack();
-  VALUE source = this->pop_stack();
+  Immortal<> value = this->pop_stack();
+  Immortal<> source = this->pop_stack();
   this->push_stack(this->readmembervalue(source, value));
 }
 
 void VM::op_readarrayindex(uint32_t index) {
-  VALUE target = this->pop_stack();
+  Immortal<> target = this->pop_stack();
 
   if (!charly_is_array(target)) {
     this->panic(Status::InvalidArgumentType);
@@ -1048,7 +1038,7 @@ void VM::op_readglobal(VALUE symbol) {
 }
 
 void VM::op_setlocalpush(uint32_t index, uint32_t level) {
-  VALUE value = this->pop_stack();
+  Immortal<> value = this->pop_stack();
 
   // Travel to the correct frame
   Frame* frame = this->frames;
@@ -1068,21 +1058,21 @@ void VM::op_setlocalpush(uint32_t index, uint32_t level) {
 }
 
 void VM::op_setmembersymbolpush(VALUE symbol) {
-  VALUE value = this->pop_stack();
-  VALUE target = this->pop_stack();
+  Immortal<> value = this->pop_stack();
+  Immortal<> target = this->pop_stack();
   this->push_stack(this->setmembersymbol(target, symbol, value));
 }
 
 void VM::op_setmembervaluepush() {
-  VALUE value = this->pop_stack();
-  VALUE member_value = this->pop_stack();
-  VALUE target = this->pop_stack();
+  Immortal<> value = this->pop_stack();
+  Immortal<> member_value = this->pop_stack();
+  Immortal<> target = this->pop_stack();
   this->push_stack(this->setmembervalue(target, member_value, value));
 }
 
 void VM::op_setarrayindexpush(uint32_t index) {
-  VALUE value = this->pop_stack();
-  VALUE target = this->pop_stack();
+  Immortal<> value = this->pop_stack();
+  Immortal<> target = this->pop_stack();
 
   if (!charly_is_array(target)) {
     this->panic(Status::InvalidArgumentType);
@@ -1096,7 +1086,7 @@ void VM::op_setarrayindexpush(uint32_t index) {
 }
 
 void VM::op_setlocal(uint32_t index, uint32_t level) {
-  VALUE value = this->pop_stack();
+  Immortal<> value = this->pop_stack();
 
   // Travel to the correct frame
   Frame* frame = this->frames;
@@ -1114,21 +1104,21 @@ void VM::op_setlocal(uint32_t index, uint32_t level) {
 }
 
 void VM::op_setmembersymbol(VALUE symbol) {
-  VALUE value = this->pop_stack();
-  VALUE target = this->pop_stack();
+  Immortal<> value = this->pop_stack();
+  Immortal<> target = this->pop_stack();
   this->setmembersymbol(target, symbol, value);
 }
 
 void VM::op_setmembervalue() {
-  VALUE value = this->pop_stack();
-  VALUE member_value = this->pop_stack();
-  VALUE target = this->pop_stack();
+  Immortal<> value = this->pop_stack();
+  Immortal<> member_value = this->pop_stack();
+  Immortal<> target = this->pop_stack();
   this->setmembervalue(target, member_value, value);
 }
 
 void VM::op_setarrayindex(uint32_t index) {
-  VALUE value = this->pop_stack();
-  VALUE target = this->pop_stack();
+  Immortal<> value = this->pop_stack();
+  Immortal<> target = this->pop_stack();
 
   if (!charly_is_array(target)) {
     this->panic(Status::InvalidArgumentType);
@@ -1157,7 +1147,7 @@ void VM::op_setarrayindex(uint32_t index) {
   }
 
 void VM::op_setglobal(VALUE symbol) {
-  VALUE value = this->pop_stack();
+  Immortal<> value = this->pop_stack();
 
   // Check internal methods table
   if (Internals::Index::methods.count(symbol)) {
@@ -1192,7 +1182,7 @@ void VM::op_setglobal(VALUE symbol) {
 }
 
 void VM::op_setglobalpush(VALUE symbol) {
-  VALUE value = this->pop_stack();
+  Immortal<> value = this->pop_stack();
   this->push_stack(value);
 
   // Check internal methods table
@@ -1470,13 +1460,13 @@ void VM::op_callmember(uint32_t argc) {
 void VM::op_new(uint32_t argc) {
 
   // Load arguments from stack
-  VALUE tmp_args[argc];
+  Immortal<> tmp_args[argc];
   for (uint32_t i = 0; i < argc; i++) {
     tmp_args[i] = this->pop_stack();
   }
 
   // Load klass from stack
-  VALUE klass = this->pop_stack();
+  Immortal<> klass = this->pop_stack();
   if (!charly_is_class(klass)) {
     this->throw_exception("Value is not a class");
     return;
@@ -2225,185 +2215,227 @@ charly_main_switch_branchneq : {
 
 charly_main_switch_add : {
   OPCODE_PROLOGUE();
-  VALUE right = this->pop_stack();
-  VALUE left = this->pop_stack();
-  this->push_stack(this->add(left, right));
+  {
+    Immortal<> right = this->pop_stack();
+    Immortal<> left = this->pop_stack();
+    this->push_stack(this->add(left, right));
+  }
   OPCODE_EPILOGUE();
   NEXTOP();
 }
 
 charly_main_switch_sub : {
   OPCODE_PROLOGUE();
-  VALUE right = this->pop_stack();
-  VALUE left = this->pop_stack();
-  this->push_stack(this->sub(left, right));
+  {
+    Immortal<> right = this->pop_stack();
+    Immortal<> left = this->pop_stack();
+    this->push_stack(this->sub(left, right));
+  }
   OPCODE_EPILOGUE();
   NEXTOP();
 }
 
 charly_main_switch_mul : {
   OPCODE_PROLOGUE();
-  VALUE right = this->pop_stack();
-  VALUE left = this->pop_stack();
-  this->push_stack(this->mul(left, right));
+  {
+    Immortal<> right = this->pop_stack();
+    Immortal<> left = this->pop_stack();
+    this->push_stack(this->mul(left, right));
+  }
   OPCODE_EPILOGUE();
   NEXTOP();
 }
 
 charly_main_switch_div : {
   OPCODE_PROLOGUE();
-  VALUE right = this->pop_stack();
-  VALUE left = this->pop_stack();
-  this->push_stack(this->div(left, right));
+  {
+    Immortal<> right = this->pop_stack();
+    Immortal<> left = this->pop_stack();
+    this->push_stack(this->div(left, right));
+  }
   OPCODE_EPILOGUE();
   NEXTOP();
 }
 
 charly_main_switch_mod : {
   OPCODE_PROLOGUE();
-  VALUE right = this->pop_stack();
-  VALUE left = this->pop_stack();
-  this->push_stack(this->mod(left, right));
+  {
+    Immortal<> right = this->pop_stack();
+    Immortal<> left = this->pop_stack();
+    this->push_stack(this->mod(left, right));
+  }
   OPCODE_EPILOGUE();
   NEXTOP();
 }
 
 charly_main_switch_pow : {
   OPCODE_PROLOGUE();
-  VALUE right = this->pop_stack();
-  VALUE left = this->pop_stack();
-  this->push_stack(this->pow(left, right));
+  {
+    Immortal<> right = this->pop_stack();
+    Immortal<> left = this->pop_stack();
+    this->push_stack(this->pow(left, right));
+  }
   OPCODE_EPILOGUE();
   NEXTOP();
 }
 
 charly_main_switch_uadd : {
   OPCODE_PROLOGUE();
-  VALUE value = this->pop_stack();
-  this->push_stack(this->uadd(value));
+  {
+    Immortal<> value = this->pop_stack();
+    this->push_stack(this->uadd(value));
+  }
   OPCODE_EPILOGUE();
   NEXTOP();
 }
 
 charly_main_switch_usub : {
   OPCODE_PROLOGUE();
-  VALUE value = this->pop_stack();
-  this->push_stack(this->usub(value));
+  {
+    Immortal<> value = this->pop_stack();
+    this->push_stack(this->usub(value));
+  }
   OPCODE_EPILOGUE();
   NEXTOP();
 }
 
 charly_main_switch_eq : {
   OPCODE_PROLOGUE();
-  VALUE right = this->pop_stack();
-  VALUE left = this->pop_stack();
-  this->push_stack(this->eq(left, right));
+  {
+    Immortal<> right = this->pop_stack();
+    Immortal<> left = this->pop_stack();
+    this->push_stack(this->eq(left, right));
+  }
   OPCODE_EPILOGUE();
   NEXTOP();
 }
 
 charly_main_switch_neq : {
   OPCODE_PROLOGUE();
-  VALUE right = this->pop_stack();
-  VALUE left = this->pop_stack();
-  this->push_stack(this->neq(left, right));
+  {
+    Immortal<> right = this->pop_stack();
+    Immortal<> left = this->pop_stack();
+    this->push_stack(this->neq(left, right));
+  }
   OPCODE_EPILOGUE();
   NEXTOP();
 }
 
 charly_main_switch_lt : {
   OPCODE_PROLOGUE();
-  VALUE right = this->pop_stack();
-  VALUE left = this->pop_stack();
-  this->push_stack(this->lt(left, right));
+  {
+    Immortal<> right = this->pop_stack();
+    Immortal<> left = this->pop_stack();
+    this->push_stack(this->lt(left, right));
+  }
   OPCODE_EPILOGUE();
   NEXTOP();
 }
 
 charly_main_switch_gt : {
   OPCODE_PROLOGUE();
-  VALUE right = this->pop_stack();
-  VALUE left = this->pop_stack();
-  this->push_stack(this->gt(left, right));
+  {
+    Immortal<> right = this->pop_stack();
+    Immortal<> left = this->pop_stack();
+    this->push_stack(this->gt(left, right));
+  }
   OPCODE_EPILOGUE();
   NEXTOP();
 }
 
 charly_main_switch_le : {
   OPCODE_PROLOGUE();
-  VALUE right = this->pop_stack();
-  VALUE left = this->pop_stack();
-  this->push_stack(this->le(left, right));
+  {
+    Immortal<> right = this->pop_stack();
+    Immortal<> left = this->pop_stack();
+    this->push_stack(this->le(left, right));
+  }
   OPCODE_EPILOGUE();
   NEXTOP();
 }
 
 charly_main_switch_ge : {
   OPCODE_PROLOGUE();
-  VALUE right = this->pop_stack();
-  VALUE left = this->pop_stack();
-  this->push_stack(this->ge(left, right));
+  {
+    Immortal<> right = this->pop_stack();
+    Immortal<> left = this->pop_stack();
+    this->push_stack(this->ge(left, right));
+  }
   OPCODE_EPILOGUE();
   NEXTOP();
 }
 
 charly_main_switch_unot : {
   OPCODE_PROLOGUE();
-  VALUE value = this->pop_stack();
-  this->push_stack(this->unot(value));
+  {
+    Immortal<> value = this->pop_stack();
+    this->push_stack(this->unot(value));
+  }
   OPCODE_EPILOGUE();
   NEXTOP();
 }
 
 charly_main_switch_shr : {
   OPCODE_PROLOGUE();
-  VALUE right = this->pop_stack();
-  VALUE left = this->pop_stack();
-  this->push_stack(this->shr(left, right));
+  {
+    Immortal<> right = this->pop_stack();
+    Immortal<> left = this->pop_stack();
+    this->push_stack(this->shr(left, right));
+  }
   OPCODE_EPILOGUE();
   NEXTOP();
 }
 
 charly_main_switch_shl : {
   OPCODE_PROLOGUE();
-  VALUE right = this->pop_stack();
-  VALUE left = this->pop_stack();
-  this->push_stack(this->shl(left, right));
+  {
+    Immortal<> right = this->pop_stack();
+    Immortal<> left = this->pop_stack();
+    this->push_stack(this->shl(left, right));
+  }
   OPCODE_EPILOGUE();
   NEXTOP();
 }
 
 charly_main_switch_band : {
   OPCODE_PROLOGUE();
-  VALUE right = this->pop_stack();
-  VALUE left = this->pop_stack();
-  this->push_stack(this->band(left, right));
+  {
+    Immortal<> right = this->pop_stack();
+    Immortal<> left = this->pop_stack();
+    this->push_stack(this->band(left, right));
+  }
   OPCODE_EPILOGUE();
   NEXTOP();
 }
 
 charly_main_switch_bor : {
   OPCODE_PROLOGUE();
-  VALUE right = this->pop_stack();
-  VALUE left = this->pop_stack();
-  this->push_stack(this->bor(left, right));
+  {
+    Immortal<> right = this->pop_stack();
+    Immortal<> left = this->pop_stack();
+    this->push_stack(this->bor(left, right));
+  }
   OPCODE_EPILOGUE();
   NEXTOP();
 }
 
 charly_main_switch_bxor : {
   OPCODE_PROLOGUE();
-  VALUE right = this->pop_stack();
-  VALUE left = this->pop_stack();
-  this->push_stack(this->bxor(left, right));
+  {
+    Immortal<> right = this->pop_stack();
+    Immortal<> left = this->pop_stack();
+    this->push_stack(this->bxor(left, right));
+  }
   OPCODE_EPILOGUE();
   NEXTOP();
 }
 
 charly_main_switch_ubnot : {
   OPCODE_PROLOGUE();
-  VALUE value = this->pop_stack();
-  this->push_stack(this->ubnot(value));
+  {
+    Immortal<> value = this->pop_stack();
+    this->push_stack(this->ubnot(value));
+  }
   OPCODE_EPILOGUE();
   NEXTOP();
 }
@@ -2504,9 +2536,8 @@ uint8_t VM::start_runtime() {
           this->catchstack = nullptr;
 
           // Get Charly object
-          VALUE global_self = this->get_global_self();
           Function* fn = charly_as_function(func);
-          VALUE self = fn->get_self(&global_self);
+          VALUE self = fn->get_self(this->get_global_self());
 
           // Invoke function
           this->call_function(fn, 4, reinterpret_cast<VALUE*>(task.callback.arguments), self, true);

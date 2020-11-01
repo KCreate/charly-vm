@@ -77,6 +77,10 @@ public:
     return this->m_value;
   }
 
+  operator VALUE() {
+    return this->m_value->as_value();
+  }
+
   // delete copy and move constructors
   Immortal(Immortal<T>& o) = delete;
   Immortal(Immortal<T>&& o) = delete;

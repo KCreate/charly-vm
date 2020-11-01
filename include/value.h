@@ -391,7 +391,8 @@ public:
   bool get_anonymous();
   bool get_needs_arguments();
 
-  VALUE get_self(VALUE* fallback); // determines the self value passed to the function
+  VALUE get_self(VALUE fallback); // determines the self value passed to the function
+  VALUE get_self(); // determines the self value passed to the function
 
 protected:
   VALUE name;             // symbol encoded name
