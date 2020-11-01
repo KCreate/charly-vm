@@ -376,7 +376,6 @@ private:
   // The uid of the current thread of execution
   uint64_t uid = 0;
 
-  std::queue<VALUE> pop_queue;
   std::vector<VALUE> stack;
   Frame* frames = nullptr;
   CatchTable* catchstack = nullptr;

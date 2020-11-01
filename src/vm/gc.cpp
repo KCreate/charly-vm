@@ -91,12 +91,6 @@ void GarbageCollector::collect() {
       this->mark(item);
     }
 
-    while (this->host_vm->pop_queue.size()) {
-      VALUE front = this->host_vm->pop_queue.front();
-      this->host_vm->pop_queue.pop();
-      this->mark(front);
-    }
-
     // Task queue
     {
       std::lock_guard<std::mutex> lock(this->host_vm->task_queue_m);

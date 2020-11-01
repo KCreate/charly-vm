@@ -7,8 +7,6 @@
     - pop_stack should take an optional type parameter to perform a typecheck
       - panic if argument is invalid
     - Some helper class to allocate memory cells in advance
-    - Refactor whole VM with Immortal classes, make sure there are absolutetly no chance of
-      anything being leaked
     - Operations such as eq, lt can also be moved out of the VM into the value classes themselves
     - Property access methods can actually be removed again, make properties atomic.
       - This won't work for all properties, so some accessor methods will still be needed.
@@ -265,9 +263,6 @@
 
 - Remove panic system from the VM, turn into asserts
 
-- Move some `charly_` methods into the heap value classes themselves
-  - Example: `charly_find_super_method` should just be a method on the Class class
-
 - Path library
   - Write unit tests
   - Implement methods
@@ -299,12 +294,8 @@
   - To improve startup performance of new threads, 8 kilobyte pages can be preallocated
 
 - Refactor interactions with Charly data types which are stored on the heap
-  - Write initializer functions for each type
   - How is key enumeration being handled?
     - Some kind of iterator?
-  - Types should define their own methods / functionality
-  - No external access to private member fields
-  - Turn structs into classes to enforce access rights
   - Use a spinlock to sync access to heap types
     - Much better performance than a mutex
     - We only use the lock for a very short amount of time
