@@ -25,6 +25,5 @@
  */
 
 const debug_func = @"charly.vm.debug_func"
-const result = debug_func("test")
-
+const result = debug_func()
 print(result)
