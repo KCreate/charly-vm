@@ -82,7 +82,7 @@ std::unordered_map<VALUE, MethodSignature> Index::methods = {
     DEFINE_INTERNAL_METHOD("charly.vm.getn",                getn,                  0,     ThreadPolicyMain),
     DEFINE_INTERNAL_METHOD("charly.vm.dirname",             dirname,               0,     ThreadPolicyMain),
     DEFINE_INTERNAL_METHOD("charly.vm.exit",                exit,                  1,     ThreadPolicyMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.debug_func",          debug_func,            1,     ThreadPolicyBoth),
+    DEFINE_INTERNAL_METHOD("charly.vm.debug_func",          debug_func,            0,     ThreadPolicyBoth),
 };
 
 VALUE import(VM& vm, VALUE include, VALUE source) {
@@ -255,41 +255,39 @@ VALUE exit(VM& vm, VALUE status_code) {
   return kNull;
 }
 
-VALUE debug_func(VM& vm, VALUE value) {
-  CHECK(string, value);
+VALUE debug_func(VM& vm) {
+  Immortal<Object> obj = vm.gc.allocate<Object>(2);
 
-  vm.context.out_stream << "### Heap cell sizes ###" << std::endl;
-  vm.context.out_stream << "sizeof(MemoryCell) = " << sizeof(MemoryCell) << std::endl;
-  vm.context.out_stream << "sizeof(Header)     = " << sizeof(Header) << std::endl;
-  vm.context.out_stream << "sizeof(Container)  = " << sizeof(Container) << std::endl;
-  vm.context.out_stream << "sizeof(Object)     = " << sizeof(Object) << std::endl;
-  vm.context.out_stream << "sizeof(Array)      = " << sizeof(Array) << std::endl;
-  vm.context.out_stream << "sizeof(String)     = " << sizeof(String) << std::endl;
-  vm.context.out_stream << "sizeof(Function)   = " << sizeof(Function) << std::endl;
-  vm.context.out_stream << "sizeof(CFunction)  = " << sizeof(CFunction) << std::endl;
-  vm.context.out_stream << "sizeof(Class)      = " << sizeof(Class) << std::endl;
-  vm.context.out_stream << "sizeof(Frame)      = " << sizeof(Frame) << std::endl;
-  vm.context.out_stream << "sizeof(CatchTable) = " << sizeof(CatchTable) << std::endl;
-  vm.context.out_stream << "sizeof(CPointer)   = " << sizeof(CPointer) << std::endl;
-  vm.context.out_stream << std::endl;
+  // Store the sizes of heap types
+  Immortal<Object> cell_sizes = vm.gc.allocate<Object>(12);
+  cell_sizes->write(SymbolTable::encode("MemoryCell"), charly_create_number(sizeof(MemoryCell)));
+  cell_sizes->write(SymbolTable::encode("Header"), charly_create_number(sizeof(Header)));
+  cell_sizes->write(SymbolTable::encode("Container"), charly_create_number(sizeof(Container)));
+  cell_sizes->write(SymbolTable::encode("Object"), charly_create_number(sizeof(Object)));
+  cell_sizes->write(SymbolTable::encode("Array"), charly_create_number(sizeof(Array)));
+  cell_sizes->write(SymbolTable::encode("String"), charly_create_number(sizeof(String)));
+  cell_sizes->write(SymbolTable::encode("Function"), charly_create_number(sizeof(Function)));
+  cell_sizes->write(SymbolTable::encode("CFunction"), charly_create_number(sizeof(CFunction)));
+  cell_sizes->write(SymbolTable::encode("Class"), charly_create_number(sizeof(Class)));
+  cell_sizes->write(SymbolTable::encode("Frame"), charly_create_number(sizeof(Frame)));
+  cell_sizes->write(SymbolTable::encode("CatchTable"), charly_create_number(sizeof(CatchTable)));
+  cell_sizes->write(SymbolTable::encode("CPointer"), charly_create_number(sizeof(CPointer)));
+  obj->write(SymbolTable::encode("cell_sizes"), cell_sizes);
 
-  vm.context.out_stream << "### Instruction lengths ###" << std::endl;
+  // Store the byte lengths of bytecode instructions
+  Immortal<Object> bytecode_lengths = vm.gc.allocate<Object>(Opcode::OpcodeCount);
   for (uint8_t i = 0; i < Opcode::OpcodeCount; i++) {
     std::string& mnemonic = kOpcodeMnemonics[i];
     uint32_t length = kInstructionLengths[i];
-    vm.context.out_stream << std::setw(20);
-    vm.context.out_stream << mnemonic;
-    vm.context.out_stream << std::setw(1);
-    vm.context.out_stream << " = ";
-    vm.context.out_stream << std::setw(2);
-    vm.context.out_stream << length;
-    vm.context.out_stream << std::setw(1);
-    vm.context.out_stream << " bytes" << std::endl;
+    bytecode_lengths->write(SymbolTable::encode(mnemonic), charly_create_number(length));
   }
+  obj->write(SymbolTable::encode("bytecode_lengths"), bytecode_lengths);
 
-  Immortal<Object> obj = vm.gc.allocate<Object>(2);
-  obj->write(SymbolTable::encode("input"), vm.gc.create_string("hello world"));
-  obj->write(SymbolTable::encode("test"), value);
+#ifdef CHARLY_PRODUCTION
+  obj->write(SymbolTable::encode("production"), kTrue);
+#else
+  obj->write(SymbolTable::encode("production"), kFalse);
+#endif
 
   return obj->as_value();
 }

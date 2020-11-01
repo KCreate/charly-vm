@@ -24,4 +24,7 @@
  * SOFTWARE.
  */
 
-print(Null)
+const debug_func = @"charly.vm.debug_func"
+const result = debug_func("test")
+
+print(result)

@@ -2,6 +2,10 @@
 
 - VM Refactor
   - Implementation timeline
+    - Make instructions smaller in size
+      - Some uint32_t can be just uint16_t or even uint8_t
+    - pop_stack should take an optional type parameter to perform a typecheck
+      - panic if argument is invalid
     - Some helper class to allocate memory cells in advance
     - Refactor whole VM with Immortal classes, make sure there are absolutetly no chance of
       anything being leaked

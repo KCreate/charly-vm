@@ -61,7 +61,7 @@ VALUE getn(VM& vm);
 VALUE dirname(VM& vm);
 VALUE exit(VM& vm, VALUE status_code);
 
-VALUE debug_func(VM& vm, VALUE input);
+VALUE debug_func(VM& vm);
 
 }  // namespace Internals
 }  // namespace Charly

@@ -36,7 +36,7 @@ CFLAGSPROD := -std=$(CPPSTD) \
 							-ferror-limit=100 \
 							-flto \
 							-ffast-math \
-							-DNDEBUG
+							-D CHARLY_PRODUCTION
 LFLAGS := -lm -lpthread -ldl
 INC := -I libs -I $(INCLUDEDIR) -I/usr/local/opt/llvm/include/c++/v1 -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
 LIB := -lstdc++
