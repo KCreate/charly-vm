@@ -2,12 +2,10 @@
 
 - VM Refactor
   - Implementation timeline
-    - Make instructions smaller in size
-      - Some uint32_t can be just uint16_t or even uint8_t
-    - pop_stack should take an optional type parameter to perform a typecheck
-      - panic if argument is invalid
-    - Some helper class to allocate memory cells in advance
-    - Operations such as eq, lt can also be moved out of the VM into the value classes themselves
+    - Remove the async C function execution mechanism completely, it will be
+      rewritten from scratch
+    - Make the Garbage collector a static singleton, securing memory allocation with a
+      mutex for the beginning.
     - Property access methods can actually be removed again, make properties atomic.
       - This won't work for all properties, so some accessor methods will still be needed.
       - I don't plan on putting the locking code into the accessor methods but will probably go
@@ -129,11 +127,18 @@
           lock to be released. This would obviously only work with our well-known heap value locks.
           Maybe some wrapper class which updates the thread status once it starts waiting?
 
+- Move comparison operations out of the VM into external methods or directly into the value classes
+
 - Changes to the class system
   - Hide prototype variable
     - Add internal method to add new method to prototype
     - Throw if the method already belongs to a class
     - Configure klass property of function
+
+- Smaller bytecode instructions
+  - Some instructions use a 32bit integer to store a count field, which is way too much.
+  - Lots of these can be replaced with 8 bit integers
+  - Also switch to using a flags byte instead of using multiple bytes for boolean flags in instructions
 
 - Fibers can be represented by GC allocated structures, making them accessible to charly code
   - We simply store a `set<Fiber*>` of all active fibers
