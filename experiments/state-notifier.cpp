@@ -52,7 +52,8 @@ enum class WorkerState : uint8_t {
   Working,
   Waiting,
   GCRequested,
-  GCExecuting
+  GCExecuting,
+  Native
 };
 
 struct WorkerThread {
@@ -97,8 +98,7 @@ int get_random_number() {
 void worker_thread(WorkerThread* worker_thread) {
   worker_thread->state = WorkerState::Working;
   for (;;) {
-
-    int rand_num = get_random_number() % 100;
+    int rand_num = get_random_number() % 1000;
 
     std::ostringstream stream;
     stream << "rand_num = " << rand_num;
@@ -106,14 +106,15 @@ void worker_thread(WorkerThread* worker_thread) {
 
     // check if we want to pause the system for some time
     if (rand_num == 0) {
+      safeprint(worker_thread->id, "        requesting GC pause");
 
       // check if we are the first thread to request a pause
       SystemState old = SystemState::Working;
       state.compare_exchange_strong(old, SystemState::Waiting);
 
       if (old == SystemState::Working) {
-        safeprint(worker_thread->id, "        requesting GC pause");
-        worker_thread->state = WorkerState::GCRequested;
+        worker_thread->state.store(WorkerState::GCRequested, std::memory_order_release);
+        safeprint(worker_thread->id, "        wait phase started");
 
         // wait until all other threads have paused.
         // we only need to make sure all working threads are paused.
@@ -121,14 +122,29 @@ void worker_thread(WorkerThread* worker_thread) {
 
           // check if we have to wait for this thread
           if (handle->id != worker_thread->id) {
-            if (handle->state == WorkerState::Working) {
+            if (handle->state.load(std::memory_order_acquire) == WorkerState::Working) {
               std::ostringstream stream;
-              stream << "        waiting for thread #" << handle->id;
+              stream << "        init wait for thread #" << handle->id;
               safeprint(worker_thread->id, stream.str());
 
+              // wait until the thread has reached the waiting state
               std::mutex foo;
               std::unique_lock<std::mutex> lk(foo);
-              handle->cv.wait(lk, [&] { return handle->state == WorkerState::Waiting; });
+              while (handle->state.load(std::memory_order_acquire) != WorkerState::Waiting) {
+
+                // Don't wait for native running threads
+                if (handle->state.load(std::memory_order_acquire) == WorkerState::Native) {
+                  break;
+                }
+
+                std::ostringstream stream;
+                stream << "        wait iteration for thread #" << handle->id;
+                safeprint(worker_thread->id, stream.str());
+                handle->cv.wait_for(lk, std::chrono::microseconds(100), [&] {
+                  WorkerState state = handle->state.load(std::memory_order_acquire);
+                  return state == WorkerState::Waiting || state == WorkerState::Native;
+                });
+              }
             }
           }
 
@@ -148,43 +164,64 @@ void worker_thread(WorkerThread* worker_thread) {
         }
 
         safeprint(worker_thread->id, "        finished GC");
+        //std::terminate();
         worker_thread->state = WorkerState::Working;
         state = SystemState::Working;
         cv.notify_all();
-      } else {
-        safeprint(worker_thread->id, "chance wait for gc to finish");
-        worker_thread->state.store(WorkerState::Waiting, std::memory_order_seq_cst);
-        worker_thread->cv.notify_one();
-        std::unique_lock<std::mutex> lk(wait_mutex);
-        cv.wait(lk, [&] { return state == SystemState::Working; });
-        worker_thread->state = WorkerState::Working;
+        safeprint(worker_thread->id, "        notified waiting threads");
       }
     }
 
-    if (state == SystemState::Waiting) {
-      safeprint(worker_thread->id, "waiting for gc to finish");
-      worker_thread->state.store(WorkerState::Waiting, std::memory_order_seq_cst);
-      worker_thread->cv.notify_one();
+    if (state.load(std::memory_order_acquire) == SystemState::Waiting) {
+      safeprint(worker_thread->id, "reached gc wait point");
+      worker_thread->state.store(WorkerState::Waiting, std::memory_order_release);
+      worker_thread->cv.notify_all();
+
+      safeprint(worker_thread->id, "waiting for gc finish signal");
       std::unique_lock<std::mutex> lk(wait_mutex);
       cv.wait(lk, [&] { return state == SystemState::Working; });
       worker_thread->state = WorkerState::Working;
     }
 
-    // Get a random amount of milliseconds to wait for
-    uint64_t wait_milliseconds = 100 + (get_random_number() % 100) + (worker_thread->id * 200);
-    auto wait_delay = std::chrono::milliseconds(wait_milliseconds);
+    // random chance to enter into native mode for 10 seconds
+    if (get_random_number() % 1000 == 0) {
+      worker_thread->state.store(WorkerState::Native, std::memory_order_release);
+      std::this_thread::sleep_for(std::chrono::seconds(5));
 
-    safeprint(worker_thread->id, "beginning work");
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    //safeprint(worker_thread->id, "finished work");
+      // wait for the GC to finish
+      if (state.load(std::memory_order_acquire) == SystemState::Waiting) {
+        safeprint(worker_thread->id, "reached gc wait point");
+        worker_thread->state.store(WorkerState::Waiting, std::memory_order_release);
+
+        safeprint(worker_thread->id, "waiting for gc finish signal");
+        std::unique_lock<std::mutex> lk(wait_mutex);
+        cv.wait(lk, [&] { return state == SystemState::Working; });
+      }
+
+      worker_thread->state = WorkerState::Working;
+    } else {
+      // Get a random amount of milliseconds to wait for
+      uint64_t wait_milliseconds = get_random_number() % 500;
+      if (wait_milliseconds < 450) wait_milliseconds = 0;
+      auto wait_delay = std::chrono::milliseconds(wait_milliseconds);
+
+      // safeprint(worker_thread->id, "beginning work");
+      std::this_thread::sleep_for(std::chrono::milliseconds(wait_delay));
+      safeprint(worker_thread->id, "finished work");
+    }
   }
 }
 
-int main() {
+int main(int argc, char** argv) {
   std::srand(std::time(nullptr));
 
+  if (argc != 2) {
+    std::cout << "Expected one argument for amount of threads to spawn" << std::endl;
+    return 1;
+  }
+
   // Setup workers array
-  for (uint32_t i = 0; i < 10; i++) {
+  for (uint32_t i = 0; i < std::atoi(argv[1]); i++) {
     WorkerThread* handle = new WorkerThread { i, nullptr, WorkerState::Idle };
     worker_threads.push_back(handle);
   }
@@ -195,6 +232,7 @@ int main() {
 
   // print current status of threads
   for (;;) {
+    //break;
 
     // print thread IDs
     //for (WorkerThread* handle : worker_threads) {
@@ -230,12 +268,16 @@ int main() {
           std::cout << "GCEX";
           break;
         }
+        case WorkerState::Native: {
+          std::cout << "NATI";
+          break;
+        }
       }
       std::cout << " ";
     }
     std::cout << std::endl;
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 
   for (WorkerThread* thread : worker_threads) {
@@ -244,3 +286,7 @@ int main() {
 
   return 0;
 }
+
+// Modifications to add to this prototype program
+//
+// - Rewrite to be more organized, Coordinator class, Allocate stub etc
