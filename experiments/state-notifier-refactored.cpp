@@ -34,15 +34,47 @@
 #include <cassert>
 #include <chrono>
 #include <cstdint>
-#include <cstdlib>
 #include <cstring>
 #include <iomanip>
 #include <iostream>
+#include <functional>
 
 // data structures
 #include <vector>
+#include <list>
 
 void safeprint(std::string output, int payload = -1);
+
+class TaskQueue {
+public:
+  void push(int value) {
+    std::unique_lock<std::mutex> lk(m_queue_mutex);
+    safeprint("pushing task", (int)value);
+    m_queue.push_back(value);
+    m_queue_cv.notify_one();
+  }
+
+  int pop() {
+    std::unique_lock<std::mutex> lk(m_queue_mutex);
+
+    // wait for items to arrive
+    if (m_queue.size() == 0) {
+      safeprint("waiting for task");
+      m_queue_cv.wait(lk, [&] { return m_queue.size() > 0; });
+    }
+
+    // pop item off queue
+    int front = m_queue.front();
+    m_queue.pop_front();
+    safeprint("popping task", (int)front);
+    return front;
+  }
+
+private:
+  std::list<int>            m_queue;
+  std::mutex              m_queue_mutex;
+  std::condition_variable m_queue_cv;
+};
 
 int rand_seed = 0;
 int get_random_number() {
@@ -54,7 +86,7 @@ int get_random_number() {
 
 struct WorkerThread {
   enum class State : uint8_t {
-    Idle,         // waiting for work
+    Idle,         // doing nothing, waiting for work
     Working,      // regular working mode
     Untracked     // thread does not need to be paused
   };
@@ -79,21 +111,19 @@ public:
 
   // park this thread and wait for gc to complete, if active
   void sync() {
-    WorkerThread* thandle = this->get_current_worker_thread();
-
-    // check if there is a garbage collection currently active
     while (m_state.load(std::memory_order_acquire) == State::GarbageCollection) {
+      WorkerThread* thandle = this->get_current_worker_thread();
       safeprint("parking thread");
 
       // mark as waiting for gc and notify the controller thread
       thandle->gc_state.store(WorkerThread::GCState::WaitingForGC, std::memory_order_release);
-      thandle->condition.notify_all();
+      thandle->condition.notify_one();
 
       // wait for the garbage collection phase to be over
       //
       // TODO: should we spin on this?
-      std::unique_lock<std::mutex> lk(m_wait_mutex);
-      m_wait_condition.wait(lk, [&] {
+      std::unique_lock<std::mutex> lk(m_state_mutex);
+      m_state_cv.wait(lk, [&] {
         return m_state.load(std::memory_order_acquire) == State::Working;
       });
 
@@ -131,24 +161,17 @@ public:
         continue;
       }
 
-      // thread is in idle or untracked mode
-      WorkerThread::State state = thandle->state.load(std::memory_order_acquire);
-      if (state == WorkerThread::State::Idle || state == WorkerThread::State::Untracked) {
-        safeprint("thread is idle / untracked", thandle->id);
-        continue;
-      }
+      // proceed in the following cases
+      // state = Working && gc_state = WaitingForGC
+      // state = Idle | Untracked
 
-      // thread is still running, wait for it to change its state
-      // or set the wait for gc flag
-      while (thandle->gc_state != WorkerThread::GCState::WaitingForGC) {
+      // wait for the condition to either switch to Idle / Untracked or
+      // for the gc state to change to WaitingForGC
+      while (thandle->state.load() == WorkerThread::State::Working &&
+             thandle->gc_state.load() != WorkerThread::GCState::WaitingForGC) {
         safeprint("wait iteration", thandle->id);
-
-        // wait for status changes on the worker thread
         std::unique_lock<std::mutex> lk(thandle->condition_mutex);
-        thandle->condition.wait_for(lk, std::chrono::milliseconds(1000), [&] {
-          WorkerThread::GCState gc_state = thandle->gc_state.load(std::memory_order_acquire);
-          return gc_state == WorkerThread::GCState::WaitingForGC;
-        });
+        thandle->condition.wait_for(lk, std::chrono::milliseconds(1000));
       }
     }
 
@@ -158,38 +181,51 @@ public:
 
   // resume parked threads
   void finish_gc() {
-    safeprint("gc finished");
-
-    // set coordinator status to working
     assert(m_state.load(std::memory_order_acquire) == State::GarbageCollection);
     m_state.store(State::Working, std::memory_order_release);
 
-    // set worker thread state to working
     WorkerThread* thandle = this->get_current_worker_thread();
     thandle->gc_state.store(WorkerThread::GCState::None, std::memory_order_release);
-    m_wait_condition.notify_all();
+    m_state_cv.notify_all();
   }
 
   // request a state change of the calling thread
   void request_state_change(WorkerThread::State state) {
     WorkerThread* thandle = this->get_current_worker_thread();
-    safeprint("changing state to", (int)state);
 
-    // changing into idle and untracked state does not require a sync
+    // changing into idle / untracked state does not require a sync
     // we still need to notify a potential controller thread so it can
     // understand that it no longer has to wait for us
     if (state != WorkerThread::State::Working) {
+      safeprint("changing state", (int)state);
       thandle->state.store(state, std::memory_order_release);
-      thandle->condition.notify_all();
+      thandle->condition.notify_one();
       return;
     }
 
     this->sync();
+    safeprint("changing state", (int)state);
     thandle->state.store(WorkerThread::State::Working, std::memory_order_release);
   }
 
-  std::mutex                 m_worker_threads_mutex;
-  std::vector<WorkerThread*> m_worker_threads;
+  // try to hold the lock, this effectively waits until
+  // the main thread has registered all other threads with
+  // the controller
+  void wait_for_start() {
+    std::unique_lock<std::mutex> lk(m_worker_threads_mutex);
+  }
+
+  // register new worker threads
+  // holds the mutex to prevent started threads from starting
+  // before all threads are registered
+  void register_worker_threads(std::function<void(std::vector<WorkerThread*>&)> cb) {
+    std::unique_lock<std::mutex> lk(m_worker_threads_mutex);
+    cb(m_worker_threads);
+  }
+
+  std::vector<WorkerThread*>& get_workers() {
+    return m_worker_threads;
+  }
 
   WorkerThread* get_current_worker_thread() {
     for (WorkerThread* thandle : m_worker_threads) {
@@ -201,60 +237,80 @@ public:
     return nullptr;
   }
 
+  void queue_task(int task) {
+    assert_thread_state(WorkerThread::State::Working);
+    safeprint("waiting for task insertion", task);
+    m_task_queue.push(task);
+  }
+
+  int pop_task() {
+    assert_thread_state(WorkerThread::State::Working);
+    request_state_change(WorkerThread::State::Idle);
+    int task = m_task_queue.pop();
+    request_state_change(WorkerThread::State::Working);
+    return task;
+  }
+
+  void assert_thread_state(WorkerThread::State expected) {
+    WorkerThread* thandle = get_current_worker_thread();
+    assert(thandle->state == expected);
+  }
+
 private:
   enum class State : uint8_t {
     Working,            // currently running in normal mode
     GarbageCollection   // currently inside a garbage collection phase
   };
 
-  std::atomic<State>      m_state = State::Working;
-  std::condition_variable m_wait_condition;
-  std::mutex              m_wait_mutex;
+  // thread synchronisation
+  std::vector<WorkerThread*> m_worker_threads;
+  std::mutex                 m_worker_threads_mutex;
+  std::atomic<State>         m_state = State::Working;
+  std::mutex                 m_state_mutex;
+  std::condition_variable    m_state_cv;
+  TaskQueue                  m_task_queue;
 };
 
 static Coordinator global_coordinator;
 
 void worker_thread() {
-  // acquire the worker threads mutex at least once to make sure
-  // we don't start our thread before all other threads are registered
-  {
-    std::unique_lock<std::mutex> lk(global_coordinator.m_worker_threads_mutex);
-  }
-
+  global_coordinator.wait_for_start();
   global_coordinator.request_state_change(WorkerThread::State::Working);
 
   // runtime loop
-  int task_id = 0;
-  for (;; task_id++) {
+  for (;;) {
     global_coordinator.sync();
+    int task = global_coordinator.pop_task();
 
     // random chance of causing a garbage collection
-    int rand_num = get_random_number() % 100;
+    int rand_num = get_random_number() % 25;
+    safeprint("rand_num", rand_num);
     if (rand_num == 0) {
       safeprint("request gc");
       if (global_coordinator.request_gc()) {
         safeprint("starting gc");
 
         for (int i = 0; i < 10; i++) {
-          std::this_thread::sleep_for(std::chrono::milliseconds(100));
+          std::this_thread::sleep_for(std::chrono::milliseconds(300));
           safeprint("gc progress", i);
         }
 
+        safeprint("finished gc");
         global_coordinator.finish_gc();
       }
-
-      continue;
     }
 
     // random chance of switching into untracked mode
     if (get_random_number() % 100 == 0) {
+      safeprint("entering untracked mode");
       global_coordinator.request_state_change(WorkerThread::State::Untracked);
-      std::this_thread::sleep_for(std::chrono::seconds(5));
+      std::this_thread::sleep_for(std::chrono::seconds(2));
       global_coordinator.request_state_change(WorkerThread::State::Working);
+      safeprint("leaving untracked mode");
     }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(get_random_number() % 400));
-    safeprint("executed task", task_id);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    safeprint("executed task", task);
   }
 }
 
@@ -266,64 +322,75 @@ int main(int argc, char** argv) {
   if (argc < 2) {
     std::cout << "Missing argument" << std::endl;
     std::cout << "./program thread count [status]" << std::endl;
-    std::cout << "    log             : print log output of worker threads" << std::endl;
-    std::cout << "    status          : print overview of thread status" << std::endl;
+    std::cout << "    status  : thread overview instead of log" << std::endl;
     return 1;
   }
 
-  {
-    std::unique_lock<std::mutex> lk(global_coordinator.m_worker_threads_mutex);
+  global_coordinator.register_worker_threads([&](std::vector<WorkerThread*>& workers) {
     for (uint32_t i = 0; i < std::atoi(argv[1]); i++) {
       WorkerThread* thandle = new WorkerThread {
         .id = i,
         .thread_handle = new std::thread(worker_thread)
       };
-      global_coordinator.m_worker_threads.push_back(thandle);
+      workers.push_back(thandle);
     }
-  }
+
+    workers.push_back(new WorkerThread {
+      .id = 9999,
+      .thread_handle = new std::thread([&] {
+        for (int i = 0;; i++) {
+          global_coordinator.request_state_change(WorkerThread::State::Working);
+          global_coordinator.queue_task(i);
+          global_coordinator.request_state_change(WorkerThread::State::Idle);
+          std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        }
+      })
+    });
+  });
 
   if (argc >= 3 && std::strcmp(argv[2], "status") == 0) {
     should_log = false;
     for (;;) {
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
       std::unique_lock<std::mutex> lk(print_mutex);
-      for (WorkerThread* handle : global_coordinator.m_worker_threads) {
+      for (WorkerThread* handle : global_coordinator.get_workers()) {
         switch (handle->gc_state) {
           case WorkerThread::GCState::RequestGC: {
-            std::cout << " GCRE ";
+            std::cout << "|GCRE";
             break;
           }
           case WorkerThread::GCState::WaitingForGC: {
-            std::cout << " WAIT ";
+            std::cout << "|WAIT";
             break;
           }
           case WorkerThread::GCState::ExecutingGC: {
-            std::cout << " GCEX ";
+            std::cout << "|GCEX";
             break;
           }
           default: {
             switch (handle->state) {
               case WorkerThread::State::Idle: {
-                std::cout << "      ";
+                std::cout << "|    ";
                 break;
               }
               case WorkerThread::State::Working: {
-                std::cout << " ~~~~ ";
+                std::cout << "|WORK";
                 break;
               }
               case WorkerThread::State::Untracked: {
-                std::cout << " FREE ";
+                std::cout << "|FREE";
                 break;
               }
             }
           }
         }
       }
+      std::cout << "|";
       std::cout << std::endl;
     }
   }
 
-  for (WorkerThread* thandle : global_coordinator.m_worker_threads) {
+  for (WorkerThread* thandle : global_coordinator.get_workers()) {
     thandle->thread_handle->join();
   }
 
@@ -347,9 +414,13 @@ void safeprint(std::string output, int payload) {
   std::cout << std::setw(1);
   std::cout << "]";
   std::cout << " ";
-  std::cout << std::setw(2);
+  std::cout << std::setw(4);
   std::cout << std::right;
-  std::cout << handle->id;
+  if (handle) {
+    std::cout << handle->id;
+  } else {
+    std::cout << "main";
+  }
   std::cout << std::setw(1);
   std::cout << ": ";
   std::cout << output;
@@ -359,9 +430,3 @@ void safeprint(std::string output, int payload) {
   }
   std::cout << std::endl;
 }
-
-// TODO:
-//
-// - Is thread mode idle really needed?
-// - Implement mock task queue for threads
-// - Implement mock networking thread
