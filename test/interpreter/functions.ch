@@ -173,6 +173,41 @@ export = ->(describe, it, assert) {
       func foo(a, b) = @v + a + b
       assert(foo.call(ctx, [1, 2]), 23)
     })
+
+    it("asynchronously calls a function", ->{
+      const ctx = { v: 20 }
+      func foo(a, b) = @v + a + b
+
+      const p = foo.call(ctx, [1, 2], true)
+      const result = p.wait()
+      assert(result, 23)
+    })
+
+    it("calls a cfunction", ->{
+      const testfunc = @"charly.vm.testfunc"
+      const arg = 0
+      const result = testfunc(arg)
+
+      assert(typeof result, "object")
+      assert(Object.keys(result).similar(["a", "b", "c", "d"]))
+      assert(result.a, 0)
+      assert(result.b, 1)
+      assert(result.c, 2)
+      assert(result.d, 3)
+    })
+
+    it("asynchronously calls a cfunction", ->{
+      const testfunc = @"charly.vm.testfunc"
+      const p = testfunc.call(null, [0], true)
+
+      const result = p.wait()
+      assert(typeof result, "object")
+      assert(Object.keys(result).similar(["a", "b", "c", "d"]))
+      assert(result.a, 0)
+      assert(result.b, 1)
+      assert(result.c, 2)
+      assert(result.d, 3)
+    })
   })
 
   describe("default arguments", ->{

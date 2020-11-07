@@ -39,7 +39,6 @@ struct MethodSignature {
   std::string name;
   size_t argc;
   void* func_pointer;
-  ThreadPolicy thread_policy;
 };
 
 // Stores runtime lookup tables for internals
@@ -62,6 +61,7 @@ VALUE dirname(VM& vm);
 VALUE exit(VM& vm, VALUE status_code);
 
 VALUE debug_func(VM& vm);
+VALUE testfunc(VM& vm, VALUE argument);
 
 }  // namespace Internals
 }  // namespace Charly

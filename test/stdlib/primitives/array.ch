@@ -260,4 +260,13 @@ export = ->(describe, it, assert) {
     assert(arr.contains([1, 2, 4]), false)
     assert(arr.contains(0), false)
   })
+
+  it("checks wether two array are similar", ->{
+    const arr = [1, 2, 3, [1, 2, 3]]
+
+    assert(arr.similar([3, 1, [1, 2, 3], 2]))
+    assert(arr.similar([3, 1, [1, 2, 3, 4], 2]), false)
+    assert(arr.similar([1, [1, 2, 3], 2]), false)
+    assert(arr.similar([3, 2, 1, [1, 2, 3], 4]), false)
+  })
 }

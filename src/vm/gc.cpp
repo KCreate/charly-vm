@@ -138,21 +138,6 @@ void GarbageCollector::collect() {
       this->mark(thread.frame);
       this->mark(thread.catchstack);
     }
-
-    // Worker threads
-    {
-      std::lock_guard<std::mutex> lock(this->host_vm->worker_threads_m);
-      for (auto& entry : this->host_vm->worker_threads) {
-        if (entry.second->cfunc)
-          this->mark(entry.second->cfunc);
-        if (entry.second->callback)
-          this->mark(entry.second->callback);
-        this->mark(entry.second->error_value);
-        for (VALUE val : entry.second->arguments) {
-          this->mark(val);
-        }
-      }
-    }
   }
 
   // Immortals mark phase

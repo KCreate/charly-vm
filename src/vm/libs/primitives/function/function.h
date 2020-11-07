@@ -35,7 +35,6 @@ namespace PrimitiveFunction {
 
 VALUE is_cfunc(VM& vm, VALUE func);
 VALUE call(VM& vm, VALUE func, VALUE ctx, VALUE args);
-VALUE call_async(VM& vm, VALUE cfunc, VALUE args, VALUE callback);
 VALUE bind_self(VM& vm, VALUE func, VALUE self);
 VALUE unbind_self(VM& vm, VALUE func);
 

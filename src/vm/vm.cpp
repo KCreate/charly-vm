@@ -549,10 +549,6 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
         return charly_create_number(cfunc->get_argc());
       }
 
-      if (symbol == SYM("thread_policy")) {
-        return charly_create_number(static_cast<uint8_t>(cfunc->get_thread_policy()));
-      }
-
       VALUE value;
       if (cfunc->read(symbol, &value)) {
         return value;
@@ -587,8 +583,6 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
       if (symbol == SYM("parent")) {
         if (Class* parent_class = klass->get_parent_class()) {
           return parent_class->as_value();
-        } else {
-          return kNull;
         }
 
         return kNull;
@@ -888,11 +882,6 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
 }
 
 void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
-  if (!function->allowed_on_main_thread()) {
-    this->throw_exception("Calling this CFunction in the main thread is prohibited");
-    return;
-  }
-
   // Check if enough arguments have been passed
   if (argc < function->get_argc()) {
     this->throw_exception("Not enough arguments for CFunction call");
@@ -966,7 +955,7 @@ void VM::op_readglobal(VALUE symbol) {
   // Check internal methods table
   if (Internals::Index::methods.count(symbol)) {
     Internals::MethodSignature& sig = Internals::Index::methods.at(symbol);
-    CFunction* cfunc = this->gc.allocate<CFunction>(symbol, sig.func_pointer, sig.argc, sig.thread_policy);
+    CFunction* cfunc = this->gc.allocate<CFunction>(symbol, sig.func_pointer, sig.argc);
     this->push_stack(cfunc->as_value());
     return;
   }
@@ -1525,13 +1514,6 @@ void VM::op_throw() {
 }
 
 void VM::throw_exception(const std::string& message) {
-
-  // Special exception logic when coming from a worker thread
-  if (this->is_worker_thread()) {
-    this->handle_worker_thread_exception(message);
-    return;
-  }
-
   if (!this->internal_error_class) {
     this->panic(Status::UndefinedGlobalReference);
   }
@@ -2567,9 +2549,7 @@ uint8_t VM::start_runtime() {
     // Check if we can exit the runtime
     if (this->task_queue.size() == 0 &&
         this->timers.size() == 0 &&
-        this->tickers.size() == 0 &&
-        this->worker_threads.size() == 0) {
-
+        this->tickers.size() == 0) {
       if (this->paused_threads.size()) {
         for (auto& entry : this->paused_threads) {
           Object* exc_obj = this->gc.allocate<Object>(1);
@@ -2588,32 +2568,9 @@ uint8_t VM::start_runtime() {
 void VM::exit(uint8_t status_code) {
   this->timers.clear();
   this->clear_task_queue();
-
   this->halted = true;
   this->running = false;
-
   this->status_code = status_code;
-
-  // Join the remaining worker threads
-  {
-    std::lock_guard<std::mutex> lock(this->worker_threads_m);
-
-    if (this->worker_threads.size()) {
-      this->context.err_stream << "Waiting for worker threads to terminate" << std::endl;
-    }
-
-    while (this->worker_threads.size()) {
-      auto entry = this->worker_threads.begin();
-
-      // Join worker thread if it is still running
-      WorkerThread* thread = entry->second;
-      if (thread->thread.joinable())
-        thread->thread.join();
-
-      this->worker_threads.erase(entry->first);
-      delete thread;
-    }
-  }
 }
 
 uint64_t VM::get_thread_uid() {
@@ -2714,51 +2671,6 @@ void VM::clear_ticker(uint64_t uid) {
       break;
     }
   }
-}
-
-WorkerThread* VM::start_worker_thread(CFunction* cfunc, const std::vector<VALUE>& args, Function* callback) {
-  WorkerThread* worker_thread = new WorkerThread(cfunc, args, callback);
-  worker_thread->thread = std::thread([this, worker_thread]() {
-
-    // Invoke c function
-    uint32_t argc = worker_thread->arguments.size();
-    VALUE* argv   = &worker_thread->arguments.at(0);
-    VALUE return_value = charly_call_cfunction(this, worker_thread->cfunc, argc, argv);
-
-    // Return our value to the VM
-    this->close_worker_thread(worker_thread, return_value);
-  });
-
-  std::lock_guard<std::mutex> lock(this->worker_threads_m);
-  this->worker_threads.insert({ worker_thread->thread.get_id(), worker_thread });
-
-  return worker_thread;
-}
-
-void VM::close_worker_thread(WorkerThread* thread, VALUE return_value) {
-  if (!this->running) return; // Do nothing if VM is dead
-  std::lock_guard<std::mutex> lock(this->worker_threads_m);
-
-  this->register_task(
-      VMTask::init_callback(thread->callback->as_value(), return_value, thread->error_value));
-  this->worker_threads.erase(thread->thread.get_id());
-
-  delete thread;
-}
-
-void VM::handle_worker_thread_exception(const std::string& message) {
-  std::thread::id current_thread_id = std::this_thread::get_id();
-  std::lock_guard<std::mutex> lock(this->worker_threads_m);
-  WorkerThread* handle = this->worker_threads[current_thread_id];
-  handle->error_value = this->gc.create_string(message);
-}
-
-bool VM::is_main_thread() {
-  return std::this_thread::get_id() == this->main_thread_id;
-}
-
-bool VM::is_worker_thread() {
-  return !this->is_main_thread();
 }
 
 }  // namespace Charly

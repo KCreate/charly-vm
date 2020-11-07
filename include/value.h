@@ -408,19 +408,12 @@ protected:
   bool needs_arguments;   // wether this function needs the arguments special value
 };
 
-// Thread policies describing what thread a native function is allowed to run on
-enum ThreadPolicy : uint8_t {
-  ThreadPolicyMain    = 0b00000001,
-  ThreadPolicyWorker  = 0b00000010,
-  ThreadPolicyBoth    = ThreadPolicyMain | ThreadPolicyWorker
-};
-
 // Function type used for including external functions from C-Land into the virtual machine
 // These are basically just a function pointer with some metadata associated to them
 class CFunction : public Container {
   friend class GarbageCollector;
 public:
-  void init(VALUE name, void* pointer, uint32_t argc, ThreadPolicy thread_policy);
+  void init(VALUE name, void* pointer, uint32_t argc);
   void init(CFunction* source); // copy constructor
 
   void set_push_return_value(bool value);
@@ -429,18 +422,13 @@ public:
   VALUE get_name();
   void* get_pointer();
   uint32_t get_argc();
-  ThreadPolicy get_thread_policy();
   bool get_push_return_value();
   bool get_halt_after_return();
-
-  bool allowed_on_main_thread();
-  bool allowed_on_worker_thread();
 
 protected:
   VALUE name;
   void* pointer;
   uint32_t argc;
-  ThreadPolicy thread_policy;
   bool push_return_value;
   bool halt_after_return;
 };
@@ -1560,7 +1548,7 @@ inline VALUE charly_create_symbol(VALUE value) {
 }
 
 // External libs interface
-typedef std::tuple<std::string, uint32_t, ThreadPolicy> CharlyLibSignature;
+typedef std::tuple<std::string, uint32_t> CharlyLibSignature;
 struct CharlyLibSignatures {
   std::vector<CharlyLibSignature> signatures;
 };
@@ -1570,7 +1558,7 @@ struct CharlyLibSignatures {
   extern "C" VALUE N
 
 // Shorthands for defining the signatures
-#define F(N, A, P) {#N, A, P},
+#define F(N, A) {#N, A},
 #define CHARLY_MANIFEST(P) \
   extern "C" { \
     CharlyLibSignatures __charly_signatures = {{ \

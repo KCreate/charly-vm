@@ -2,8 +2,10 @@
 
 - VM Refactor
   - Implementation timeline
-    - Remove the async C function execution mechanism completely, it will be
-      rewritten from scratch
+    - C methods refactor
+      - C methods should not have access to the VM internals
+      - Only receive the self value and arguments passed to the function
+      - How do C methods throw exceptions?
     - Make the Garbage collector a static singleton, securing memory allocation with a
       mutex for the beginning.
     - Property access methods can actually be removed again, make properties atomic.
@@ -12,19 +14,8 @@
         for some RAII style locking thing which locks a value during the scope of some block.
         I'll want a UniqueValueLock and a SharedValueLock (typedef ValueLock).
     - Fixed amount of native worker threads, waiting for jobs via some job queue
-    - Refactor worker thread result return system
     - Some global values can be stored as atomics, no mutex needed
-    - C methods should receive the following arguments
-      - The ID of the fiber which created their task
-      - A reference/pointer to the coordinator object
-      - A reference to a managed context, which handles the allocations inside that worker function
-      - The "self" value
-      - The arguments passed to the function from charly
-      - Some way of asking the coordinator wether they should terminate themselves
     - Remove `halt_after_return`, replace with dedicated instructions
-    - Refactor exceptions
-      - How do native methods throw exceptions?
-      - How are exceptions handled inside regular charly code?
     - Refactor thread system to use the states and ability to wait for certain signals
       - GC goes into its own thread
       - Fibers create a Fiber heap object that mirrors the real fiber
@@ -94,12 +85,6 @@
     - It manages reserved cells or puts the current fiber into a GC requesting mode
     - Also contains GC synchronisation methods, either waiting for a collection to finish or
       making sure that no collection can start while in this section
-
-  - Introduce some mechanism by which instructions and worker threads can "reserve" memory cells in the GC.
-    - That way we make sure that collections happen at well-defined points in the code and not inside
-      random allocations.
-    - Allocations should never trigger a GC. GC should always be triggered before an allocation might
-      trigger one.
 
   - A GC collection happens once one fiber requests one. It then waits for all the other fibers
     to finish their current instruction / native function call.
@@ -285,8 +270,6 @@
   - Math module
   - Time module
 
-- Fix worker threads a1, a2, a3, a4 mess
-
 - Refactor stack storage
   - Allocate with initial size of 8kb / fiber
   - Total allowed stack size should 1024 kilobytes (or 1 megabyte)
@@ -305,10 +288,6 @@
     - Much better performance than a mutex
     - We only use the lock for a very short amount of time
     - Shared reads / unique locks?
-
-- Architecture changes to worker threads
-  - Have a fixed amount of worker threads which are always alive, delivering jobs via some message queue
-  - Implement kqueue for async networking
 
 - Basic file io methods
 
@@ -521,8 +500,6 @@
   - These methods should remove whitespace characters from the left or right side of a string
   - Add a `strip` method, which is equivalent to calling `rstrip(lstrip(<string>))`
 
-- do panic if some vm methods are called not from the main thread
-
 - locale handling?
   - localization framework
   - time methods need localisation
@@ -530,18 +507,3 @@
 - calendar time operations
   - add a day, add a year, add 20 years
     - should automatically calculate leap days and stuff like that
-
-- Improved Garbage Collector
-  - Implement a fully fledged garbage collector that has the ability to crawl
-    the call tree, inspect the machine stack and search for VALUE pointers (pointers
-    pointing into the gc heap area)
-  - GC looses track of VALUES that are stored in the machine stack
-  - GC collections need to pause the VM
-    - GC collections can be caused inside the VM or inside Worker threads
-      - If a collection is started inside a worker thread, the VM needs to be paused
-
-
-- Fix runtime crash when executing the runtime profiler
-  - A frame gets deallocated while the vm is still using it, resulting in the return instruction
-    jumping to a nullpointer. This bug has to be related to some place not having the right checks
-    in place.

@@ -54,31 +54,6 @@ VALUE call(VM& vm, VALUE func, VALUE ctx, VALUE args) {
   return kNull;
 }
 
-VALUE call_async(VM& vm, VALUE cfunc, VALUE args, VALUE callback) {
-  CHECK(cfunction, cfunc);
-  CHECK(array, args);
-  CHECK(function, callback);
-
-  Array* _args = charly_as_array(args);
-  CFunction* _cfunc = charly_as_cfunction(cfunc);
-
-  _args->access_vector_shared([&](Array::VectorType* vec) {
-    if (vec->size() < _cfunc->get_argc()) {
-      vm.throw_exception("Not enough arguments for CFunction call");
-      return;
-    }
-
-    if (!_cfunc->allowed_on_worker_thread()) {
-      vm.throw_exception("Calling this CFunction in a worker thread is prohibited");
-      return;
-    }
-
-    vm.start_worker_thread(_cfunc, *vec, charly_as_function(callback));
-  });
-
-  return kNull;
-}
-
 VALUE bind_self(VM& vm, VALUE func, VALUE self) {
   CHECK(function, func);
 

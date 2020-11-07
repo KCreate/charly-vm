@@ -24,11 +24,9 @@
  * SOFTWARE.
  */
 
-#include <iostream>
-#include <unordered_set>
 #include <vector>
 #include <mutex>
-#include <set>
+#include <atomic>
 
 #include "value.h"
 #include "immortal.h"

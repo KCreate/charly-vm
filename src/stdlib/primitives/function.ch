@@ -27,7 +27,6 @@
 const __internal_function_bind_self   = @"charly.primitive.function.bind_self"
 const __internal_function_unbind_self = @"charly.primitive.function.unbind_self"
 const __internal_function_call        = @"charly.primitive.function.call"
-const __internal_function_call_async  = @"charly.primitive.function.call_async"
 const __internal_function_is_cfunc    = @"charly.primitive.function.is_cfunc"
 __internal_function_call.push_return_value = false
 
@@ -36,24 +35,11 @@ export = ->(Base) {
 
     // Calls this function with a self value and arguments array
     call(ctx, args = [], async = false) {
-      unless async return __internal_function_call(self, ctx, args)
-
-      if @is_charly_func() {
+      if async {
         return spawn.promise(->self.call(ctx, args))
       }
 
-      const error_template = new Error(self.name + ": ")
-      __internal_function_call_async(self, args, ->(a1, error, a2, a3) {
-
-        // Exceptions thrown by the VM are delivered as a string
-        if typeof error == "string" {
-          error_template.message += error
-          error = error_template
-          return reject(error)
-        }
-
-        resolve(a1, a2, a3)
-      })
+      __internal_function_call(self, ctx, args)
     }
 
     // Bind a self value for this function

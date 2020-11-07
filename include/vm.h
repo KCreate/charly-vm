@@ -151,28 +151,6 @@ struct VMThread {
   }
 };
 
-// Represents a worker thread started by the VM
-struct WorkerThread {
-  CFunction* cfunc;
-  std::vector<VALUE> arguments;
-  Function* callback;
-  VALUE error_value;
-  std::thread thread;
-
-  WorkerThread(CFunction* _cf, const std::vector<VALUE>& _args, Function* _cb)
-      : cfunc(_cf), arguments(_args), callback(_cb), error_value(kNull) {
-  }
-
-  ~WorkerThread() {
-    if (std::this_thread::get_id() == this->thread.get_id()) {
-      this->thread.detach();
-    } else {
-      if (this->thread.joinable())
-        this->thread.join();
-    }
-  }
-};
-
 class VM {
   friend class GarbageCollector;
 
@@ -181,9 +159,7 @@ public:
       .trace = ctx.trace_gc,
       .out_stream = ctx.err_stream,
       .err_stream = ctx.err_stream
-    }, this), context(ctx) {
-    this->main_thread_id = std::this_thread::get_id();
-  }
+    }, this), context(ctx) {}
   VM(const VM& other) = delete;
   VM(VM&& other) = delete;
 
@@ -322,14 +298,6 @@ public:
   void clear_timer(uint64_t uid);
   void clear_ticker(uint64_t uid);
 
-  WorkerThread* start_worker_thread(CFunction* cfunc, const std::vector<VALUE>& args, Function* callback);
-  void close_worker_thread(WorkerThread* thread, VALUE return_value);
-  void handle_worker_thread_exception(const std::string& message);
-
-  // Check wether calling thread is main / worker
-  bool is_main_thread();
-  bool is_worker_thread();
-
   std::chrono::time_point<std::chrono::high_resolution_clock> starttime;
 
   GarbageCollector gc;
@@ -363,15 +331,9 @@ private:
   std::atomic<bool> running = true;
 
   // Remaining timers & tickers
+  uint64_t next_timer_id = 0;
   std::map<Timestamp, VMTask> timers;
   std::map<Timestamp, std::tuple<VMTask, uint32_t>> tickers;
-
-  uint64_t next_timer_id = 0;
-
-  // Worker threads
-  std::mutex worker_threads_m;
-  std::unordered_map<std::thread::id, WorkerThread*> worker_threads;
-  std::thread::id main_thread_id;
 
   // The uid of the current thread of execution
   uint64_t uid = 0;

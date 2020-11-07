@@ -24,6 +24,6 @@
  * SOFTWARE.
  */
 
-DEFINE_INTERNAL_METHOD("charly.primitive.number.to_float", PrimitiveNumber::to_float, 1, ThreadPolicyMain),
-DEFINE_INTERNAL_METHOD("charly.primitive.number.to_int",   PrimitiveNumber::to_int,   1, ThreadPolicyMain),
-DEFINE_INTERNAL_METHOD("charly.primitive.number.is_float", PrimitiveNumber::is_float, 1, ThreadPolicyMain),
+DEFINE_INTERNAL_METHOD("charly.primitive.number.to_float", PrimitiveNumber::to_float, 1),
+DEFINE_INTERNAL_METHOD("charly.primitive.number.to_int",   PrimitiveNumber::to_int,   1),
+DEFINE_INTERNAL_METHOD("charly.primitive.number.is_float", PrimitiveNumber::is_float, 1),

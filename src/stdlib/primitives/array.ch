@@ -34,6 +34,12 @@ const __internal_clear   = @"charly.primitive.array.clear"
 
 export = ->(Base) {
   return class Array extends Base {
+
+    /*
+     * Create new array of *size*
+     * If *cb* is a function, it calls that function with each index
+     * else it uses the value as the initial value
+     * */
     static create(size, cb = null) {
       const arr = []
 
@@ -47,10 +53,16 @@ export = ->(Base) {
       arr
     }
 
+    /*
+     * Create a shallow copy of this array
+     * */
     copy {
       @map(->$0)
     }
 
+    /*
+     * Call the callback with each index, element pair
+     * */
     each(cb) {
       let i = 0
 
@@ -62,6 +74,10 @@ export = ->(Base) {
       self
     }
 
+    /*
+     * Call the callback with each index and element and return
+     * a new array with the return values of the callback
+     * */
     map(cb) {
       let i = 0
       const new_array = []
@@ -74,6 +90,11 @@ export = ->(Base) {
       new_array
     }
 
+    /*
+     * Calls the callback with each element and the result of the previous
+     * call.
+     * *first* is used as the first result value
+     * */
     reduce(cb, first) {
       let i = 0
       let sum = first
@@ -86,6 +107,10 @@ export = ->(Base) {
       sum
     }
 
+    /*
+     * Creates a new array with each element not passing the callback test
+     * removed
+     * */
     filter(cb) {
       let i = 0
       const new_array = []
@@ -100,6 +125,9 @@ export = ->(Base) {
       new_array
     }
 
+    /*
+     * Join the elements together into a string
+     * */
     join(str) {
       // TODO: Use some smarter heuristics for the final string length
       const buf = new StringBuffer(@length * 3)
@@ -112,47 +140,76 @@ export = ->(Base) {
       buf.to_s()
     }
 
+    /*
+     * Checks wether this array is empty
+     * */
     empty {
       @length == 0
     }
 
+    /*
+     * Append an element to the arrays
+     * */
     push(item) {
       self << item
       self
     }
 
+    /*
+     * Removes the last element of the array
+     * */
     pop {
+      if @empty() return null
       const item = @last()
       __internal_remove(self, @length - 1)
       item
     }
 
+    /*
+     * Append to the beginning of the array
+     * */
     unshift(item) {
       __internal_insert(self, 0, item)
       self
     }
 
+    /*
+     * Removes the first element of the array
+     * */
     shift {
+      if @empty() return null
       const item = @first()
       __internal_remove(self, 0)
       item
     }
 
+    /*
+     * Inserts an element at some index in the array
+     * */
     insert(index, item) {
       __internal_insert(self, index, item)
       self
     }
 
+    /*
+     * Removes an element at some index
+     * */
     remove(index) {
       __internal_remove(self, index)
       self
     }
 
+    /*
+     * Clears the contents of the array
+     * */
     clear {
       __internal_clear(self)
       self
     }
 
+    /*
+     * Swap the values at two indices
+     * */
     swap(l, r) {
       const tmp = self[l]
       self[l] = self[r]
@@ -160,6 +217,12 @@ export = ->(Base) {
       self
     }
 
+    /*
+     * Calls the callback with a function which returns the next
+     * element in the array
+     *
+     * Useful for parsing sequential data
+     * */
     iterate(callback) {
       let i = 0
 
@@ -177,40 +240,90 @@ export = ->(Base) {
       self
     }
 
+    /*
+     * Returns the first element of the array
+     * */
     first {
       self[0]
     }
 
+    /*
+     * Returns the last element of the array
+     * */
     last {
       self[@length - 1]
     }
 
+    /*
+     * Returns a reversed copy of the array
+     * */
     reverse {
       __internal_reverse(self)
     }
 
+    /*
+     * Returns the index of some element in the array, starting at offset
+     * Returns -1 if not found
+     * */
     index(element, offset = 0) {
       __internal_index(self, element, offset)
     }
 
+    /*
+     * Returns the index of some element in the array, starting at offset
+     * Starts at the back of the array
+     * Returns -1 if not found
+     * */
     rindex(element, offset = -1) {
       __internal_rindex(self, element, offset)
     }
 
+    /*
+     * Returns a new array containing all the elements in the range of
+     * [start, start + count]
+     * */
     range(start, count = @length) {
       __internal_range(self, start, count)
     }
 
+    /*
+     * Checks wether the array contains an index
+     * */
     contains(search) {
-      let i = 0
+      @index(search) ! -1
+    }
 
+    /*
+     * Checks wether the array contains the same elements as another array,
+     * meaning self contains all elements in the other array and the
+     * other array contains all elements in self
+     * */
+    similar(other) {
+      unless typeof other == "array" throw new Error("expected argument to be an array")
+
+      // elements of different length are not equal
+      if @length ! other.length return false
+
+      // empty arrays are always similar
+      if @length == 0 && other.length == 0 return true
+
+      // check if each value contained in self is contained in other
+      // and the opposite way around too
+      let i = 0
       while i < @length {
-        const value = self[i]
-        if (value == search) return true
+        const element = self[i]
+        unless other.contains(element) return false
         i += 1
       }
 
-      false
+      i = 0
+      while i < other.length {
+        const element = other[i]
+        unless @contains(element) return false
+        i += 1
+      }
+
+      true
     }
   }
 }

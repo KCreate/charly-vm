@@ -48,12 +48,11 @@
 //        (N)ame
 //        (S)ymbol
 //     arg(C)
-// thread (P)olicy
-#define DEFINE_INTERNAL_METHOD(N, S, C, P)                   \
-  {                                                          \
-    charly_create_symbol(N), {                               \
-      N, C, reinterpret_cast<void*>(Charly::Internals::S), P \
-    }                                                        \
+#define DEFINE_INTERNAL_METHOD(N, S, C)                   \
+  {                                                       \
+    charly_create_symbol(N), {                            \
+      N, C, reinterpret_cast<void*>(Charly::Internals::S) \
+    }                                                     \
   }
 
 namespace Charly {
@@ -76,13 +75,14 @@ std::unordered_map<VALUE, MethodSignature> Index::methods = {
 
     // VM internals
     //
-    //                     Symbol                           Function Pointer       ARGC   Thread-policy
-    DEFINE_INTERNAL_METHOD("charly.vm.import",              import,                2,     ThreadPolicyMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.write",               write,                 1,     ThreadPolicyMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.getn",                getn,                  0,     ThreadPolicyMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.dirname",             dirname,               0,     ThreadPolicyMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.exit",                exit,                  1,     ThreadPolicyMain),
-    DEFINE_INTERNAL_METHOD("charly.vm.debug_func",          debug_func,            0,     ThreadPolicyBoth),
+    //                     Symbol                           Function Pointer       ARGC
+    DEFINE_INTERNAL_METHOD("charly.vm.import",              import,                2),
+    DEFINE_INTERNAL_METHOD("charly.vm.write",               write,                 1),
+    DEFINE_INTERNAL_METHOD("charly.vm.getn",                getn,                  0),
+    DEFINE_INTERNAL_METHOD("charly.vm.dirname",             dirname,               0),
+    DEFINE_INTERNAL_METHOD("charly.vm.exit",                exit,                  1),
+    DEFINE_INTERNAL_METHOD("charly.vm.debug_func",          debug_func,            0),
+    DEFINE_INTERNAL_METHOD("charly.vm.testfunc",            testfunc,              1),
 };
 
 VALUE import(VM& vm, VALUE include, VALUE source) {
@@ -167,8 +167,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
       while (i < signatures->signatures.size()) {
         std::string name;
         uint32_t argc;
-        ThreadPolicy thread_policy;
-        std::tie(name, argc, thread_policy) = signatures->signatures[i];
+        std::tie(name, argc) = signatures->signatures[i];
 
         // While we are extracting the method names, we can create
         // CFunction objects for the vm
@@ -180,7 +179,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
         }
 
         VALUE symbol = charly_create_symbol(name);
-        lib->write(symbol, vm.gc.allocate<CFunction>(symbol, func_pointer, argc, thread_policy)->as_value());
+        lib->write(symbol, vm.gc.allocate<CFunction>(symbol, func_pointer, argc)->as_value());
 
         i++;
       }
@@ -290,6 +289,17 @@ VALUE debug_func(VM& vm) {
 #endif
 
   return obj->as_value();
+}
+
+VALUE testfunc(VM& vm, VALUE argument) {
+  CHECK(number, argument);
+
+  Immortal<Object> object = vm.gc.allocate<Object>(2);
+  object->write(SymbolTable::encode("a"), argument);
+  object->write(SymbolTable::encode("b"), charly_add_number(argument, charly_create_number(1)));
+  object->write(SymbolTable::encode("c"), charly_add_number(argument, charly_create_number(2)));
+  object->write(SymbolTable::encode("d"), charly_add_number(argument, charly_create_number(3)));
+  return object;
 }
 
 }  // namespace Internals
