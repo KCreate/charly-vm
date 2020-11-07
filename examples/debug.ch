@@ -24,6 +24,5 @@
  * SOFTWARE.
  */
 
-const debug_func = @"charly.vm.debug_func"
-const result = debug_func()
-print(result)
+print(Path.current())
+print(Path.current_dir())

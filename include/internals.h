@@ -57,7 +57,6 @@ struct Index {
 VALUE import(VM& vm, VALUE filename, VALUE source);
 VALUE write(VM& vm, VALUE value);
 VALUE getn(VM& vm);
-VALUE dirname(VM& vm);
 VALUE exit(VM& vm, VALUE status_code);
 
 VALUE debug_func(VM& vm);

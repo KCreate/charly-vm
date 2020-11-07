@@ -79,7 +79,6 @@ std::unordered_map<VALUE, MethodSignature> Index::methods = {
     DEFINE_INTERNAL_METHOD("charly.vm.import",              import,                2),
     DEFINE_INTERNAL_METHOD("charly.vm.write",               write,                 1),
     DEFINE_INTERNAL_METHOD("charly.vm.getn",                getn,                  0),
-    DEFINE_INTERNAL_METHOD("charly.vm.dirname",             dirname,               0),
     DEFINE_INTERNAL_METHOD("charly.vm.exit",                exit,                  1),
     DEFINE_INTERNAL_METHOD("charly.vm.debug_func",          debug_func,            0),
     DEFINE_INTERNAL_METHOD("charly.vm.testfunc",            testfunc,              1),
@@ -231,21 +230,6 @@ VALUE getn(VM& vm) {
   double num;
   vm.context.in_stream >> num;
   return charly_create_number(num);
-}
-
-VALUE dirname(VM& vm) {
-  uint8_t* ip = vm.get_ip();
-  std::optional<std::string> lookup_result = vm.context.compiler_manager.address_mapping.resolve_address(ip);
-
-  if (!lookup_result) {
-    vm.throw_exception("dirname: this address does not belong to a file");
-    return kNull;
-  }
-
-  std::string filename = lookup_result.value();
-  filename.erase(filename.rfind('/'));
-
-  return vm.gc.create_string(filename.c_str(), filename.size());
 }
 
 VALUE exit(VM& vm, VALUE status_code) {

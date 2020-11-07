@@ -32,7 +32,6 @@
 const __internal_write           = @"charly.vm.write"
 const __internal_getn            = @"charly.vm.getn"
 const __internal_import          = @"charly.vm.import"
-const __internal_dirname         = @"charly.vm.dirname"
 const __internal_exit            = @"charly.vm.exit"
 __internal_exit.halt_after_return = true
 
@@ -115,8 +114,7 @@ Charly.io = {
   getn: ->(msg = null) {
     if msg write(msg)
     return __internal_getn()
-  },
-  dirname: __internal_dirname
+  }
 }
 
 
