@@ -219,16 +219,16 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
   return vm.register_module(cresult->instructionblock.value());
 }
 
-VALUE write(VM& vm, VALUE value) {
-  charly_to_string(vm.context.out_stream, value);
-  vm.context.out_stream.flush();
+VALUE write(VM&, VALUE value) {
+  charly_to_string(std::cout, value);
+  std::cout.flush();
 
   return kNull;
 }
 
-VALUE getn(VM& vm) {
+VALUE getn(VM&) {
   double num;
-  vm.context.in_stream >> num;
+  std::cin >> num;
   return charly_create_number(num);
 }
 

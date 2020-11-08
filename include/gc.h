@@ -71,12 +71,7 @@ static const size_t kHeapCellCount    = 4096;
 class GarbageCollector {
   friend class VM;
 public:
-  struct Config {
-    std::ostream& out_stream = std::cerr;
-    std::ostream& err_stream = std::cout;
-  };
-
-  GarbageCollector(Config cfg, VM* vm) : config(cfg), host_vm(vm) {
+  GarbageCollector(VM* vm) : host_vm(vm) {
     this->freelist = nullptr;
     for (size_t i = 0; i < kInitialHeapCount; i++) {
       this->add_heap();
@@ -126,7 +121,6 @@ protected:
     }
   }
 
-  Config config;
   VM* host_vm;
   MemoryCell* freelist;
   std::vector<MemoryCell*> heaps;

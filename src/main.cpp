@@ -77,8 +77,8 @@ int main(int argc, char** argv) {
       return 0;
     }
   } else {
-    std::cout << "Missing CHARLYVMDIR environment variable!" << '\n';
-    std::cout << "Set CHARLYVMDIR to the charly-vm project root folder" << '\n';
+    std::cerr << "Missing CHARLYVMDIR environment variable!" << '\n';
+    std::cerr << "Set CHARLYVMDIR to the charly-vm project root folder" << '\n';
     return 1;
   }
 

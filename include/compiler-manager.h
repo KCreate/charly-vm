@@ -80,10 +80,6 @@ public:
   std::optional<ParserResult> parse(const std::string& filename, const std::string& source);
   std::optional<CompilerResult> compile(const std::string& filename, const std::string& source);
 
-private:
-  std::ostream& out_stream = std::cout;
-  std::ostream& err_stream = std::cerr;
-
 public:
   AddressMapping address_mapping;
 };

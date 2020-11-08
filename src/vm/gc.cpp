@@ -66,7 +66,7 @@ void GarbageCollector::collect() {
 #ifndef CHARLY_PRODUCTION
   auto gc_start_time = std::chrono::high_resolution_clock::now();
   if (CLIFlags::is_flag_set("trace_gc")) {
-    this->config.out_stream << "#-- GC: Pause --#" << '\n';
+    std::cerr << "#-- GC: Pause --#" << '\n';
   }
 #endif
 
@@ -177,12 +177,12 @@ void GarbageCollector::collect() {
 #ifndef CHARLY_PRODUCTION
   if (CLIFlags::is_flag_set("trace_gc")) {
     std::chrono::duration<double> gc_collect_duration = std::chrono::high_resolution_clock::now() - gc_start_time;
-    this->config.out_stream << std::fixed;
-    this->config.out_stream << std::setprecision(0);
-    this->config.out_stream << "#-- GC: Freed " << (freed_cells_count * sizeof(MemoryCell)) << " bytes --#" << '\n';
-    this->config.out_stream << "#-- GC: Finished in " << gc_collect_duration.count() * 1000 << " milliseconds --#"
+    std::cerr << std::fixed;
+    std::cerr << std::setprecision(0);
+    std::cerr << "#-- GC: Freed " << (freed_cells_count * sizeof(MemoryCell)) << " bytes --#" << '\n';
+    std::cerr << "#-- GC: Finished in " << gc_collect_duration.count() * 1000 << " milliseconds --#"
                             << '\n';
-    this->config.out_stream << std::setprecision(6);
+    std::cerr << std::setprecision(6);
   }
 #endif
 }
@@ -265,11 +265,11 @@ MemoryCell* GarbageCollector::allocate_cell() {
 
 #ifndef CHARLY_PRODUCTION
       if (CLIFlags::is_flag_set("trace_gc")) {
-        this->config.out_stream << "#-- GC: Growing heap " << '\n';
-      }
+        std::cerr << "#-- GC: Growing heap --#" << '\n';
 
-      if (!this->freelist) {
-        this->config.err_stream << "Failed to expand heap, the next allocation will cause a segfault." << '\n';
+        if (!this->freelist) {
+          std::cerr << "#-- GC: Failed to expand heap, the next allocation will cause a segfault. --#" << '\n';
+        }
       }
 #endif
     }

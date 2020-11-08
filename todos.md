@@ -2,8 +2,6 @@
 
 - VM Refactor
   - Implementation timeline
-    - Remove configurability of stdout and stderr streams
-      - Always print debug messages to stderr, not stdout
     - C methods refactor
       - C methods should not have access to the VM internals
       - Only receive the self value and arguments passed to the function

@@ -38,7 +38,6 @@
 namespace Charly::Compilation {
 class CompilerPass : public TreeWalker {
 protected:
-  CompilerConfig& config;
   CompilerResult& result;
 
   inline void push_info(AST::AbstractNode* node, const std::string& message) {
@@ -61,8 +60,7 @@ protected:
   }
 
 public:
-  CompilerPass(CompilerConfig& cfg, CompilerResult& r)
-      : TreeWalker(), config(cfg), result(r) {
+  CompilerPass(CompilerResult& r) : TreeWalker(), result(r) {
   }
 };
 }  // namespace Charly::Compilation

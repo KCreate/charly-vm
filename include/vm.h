@@ -77,9 +77,6 @@ public:
 
 struct VMContext {
   Compilation::CompilerManager& compiler_manager;
-  std::istream& in_stream = std::cin;
-  std::ostream& out_stream = std::cout;
-  std::ostream& err_stream = std::cerr;
 };
 
 /*
@@ -145,10 +142,7 @@ class VM {
   friend class GarbageCollector;
 
 public:
-  VM(VMContext& ctx) : gc(GarbageCollector::Config{
-      .out_stream = ctx.err_stream,
-      .err_stream = ctx.err_stream
-    }, this), context(ctx) {}
+  VM(VMContext& ctx) : gc(this), context(ctx) {}
   VM(const VM& other) = delete;
   VM(VM&& other) = delete;
 

@@ -36,9 +36,9 @@ std::optional<ParserResult> CompilerManager::parse(const std::string& filename, 
 
   // Check for syntax errors
   if (parse_result.syntax_error.has_value()) {
-    this->err_stream << parse_result.syntax_error->message << " ";
-    parse_result.syntax_error->location.write_to_stream(this->err_stream);
-    this->err_stream << '\n';
+    std::cerr << parse_result.syntax_error->message << " ";
+    parse_result.syntax_error->location.write_to_stream(std::cerr);
+    std::cerr << '\n';
     return std::nullopt;
   }
 
@@ -46,8 +46,8 @@ std::optional<ParserResult> CompilerManager::parse(const std::string& filename, 
   if (CLIFlags::is_flag_set("dump_tokens") && CLIFlags::flag_has_argument("dump_file_include", filename, true)) {
     auto& tokens = parse_result.tokens.value();
     for (const auto& token : tokens) {
-      token.write_to_stream(this->err_stream);
-      this->err_stream << '\n';
+      token.write_to_stream(std::cerr);
+      std::cerr << '\n';
     }
   }
 
@@ -61,12 +61,10 @@ std::optional<CompilerResult> CompilerManager::compile(const std::string& filena
     return std::nullopt;
   }
 
-  CompilerConfig config;
-  Compiler compiler(config);
-  CompilerResult compiler_result = compiler.compile(parser_result->abstract_syntax_tree.value());
+  CompilerResult compiler_result = Compiler::compile(parser_result->abstract_syntax_tree.value());
 
   if (CLIFlags::is_flag_set("dump_ast") && CLIFlags::flag_has_argument("dump_file_include", filename, true)) {
-    compiler_result.abstract_syntax_tree->dump(this->err_stream);
+    compiler_result.abstract_syntax_tree->dump(std::cerr);
   }
 
   // Print infos, warnings or errors to the console
@@ -93,12 +91,12 @@ std::optional<CompilerResult> CompilerManager::compile(const std::string& filena
         AST::AbstractNode* msg_node = message.node.value();
 
         if (msg_node->location_start.has_value()) {
-          msg_node->location_start.value().write_to_stream(this->err_stream);
-          this->err_stream << ": ";
+          msg_node->location_start.value().write_to_stream(std::cerr);
+          std::cerr << ": ";
         }
       }
 
-      this->err_stream << severity << ": " << message.message << '\n';
+      std::cerr << severity << ": " << message.message << '\n';
     }
 
     if (compiler_result.has_errors) {
@@ -114,7 +112,7 @@ std::optional<CompilerResult> CompilerManager::compile(const std::string& filena
       .no_func_branches = CLIFlags::is_flag_set("asm_no_func_branches")
     };
     Disassembler disassembler(compiler_result.instructionblock.value(), disassembler_flags);
-    disassembler.dump(this->err_stream);
+    disassembler.dump(std::cerr);
   }
 
   // Register this blocks address range

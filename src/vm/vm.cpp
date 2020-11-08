@@ -62,7 +62,7 @@ void VM::push_stack(VALUE value) {
 
 CatchTable* VM::pop_catchtable() {
   if (!this->catchstack) {
-    this->context.err_stream << "No catchtable registered" << '\n';
+    std::cerr << "No catchtable registered" << '\n';
     this->panic(Status::CatchStackEmpty);
   }
   CatchTable* current = this->catchstack;
@@ -105,9 +105,9 @@ void VM::unwind_catchstack(std::optional<VALUE> payload = std::nullopt) {
 #ifndef CHARLY_PRODUCTION
   if (CLIFlags::is_flag_set("trace_catchtables")) {
     // Show the table we've restored
-    this->context.err_stream << "Restored CatchTable: ";
-    charly_debug_print(this->context.err_stream, table->as_value());
-    this->context.err_stream << '\n';
+    std::cerr << "Restored CatchTable: ";
+    charly_debug_print(std::cerr, table->as_value());
+    std::cerr << '\n';
   }
 #endif
 
@@ -858,9 +858,9 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   // Debugging output
 #ifndef CHARLY_PRODUCTION
   if (CLIFlags::is_flag_set("trace_frames")) {
-    this->context.err_stream << "Entering frame: ";
-    charly_debug_print(this->context.err_stream, frame->as_value());
-    this->context.err_stream << '\n';
+    std::cerr << "Entering frame: ";
+    charly_debug_print(std::cerr, frame->as_value());
+    std::cerr << '\n';
   }
 #endif
 
@@ -1495,9 +1495,9 @@ void VM::op_return() {
   // Print the frame if the correponding flag was set
 #ifndef CHARLY_PRODUCTION
   if (CLIFlags::is_flag_set("trace_frames")) {
-    this->context.err_stream << "Leaving frame: ";
-    charly_debug_print(this->context.err_stream, frame->as_value());
-    this->context.err_stream << '\n';
+    std::cerr << "Leaving frame: ";
+    charly_debug_print(std::cerr, frame->as_value());
+    std::cerr << '\n';
   }
 #endif
 }
@@ -1532,9 +1532,9 @@ void VM::op_registercatchtable(int32_t offset) {
   // Print the catchtable if the corresponding flag was set
 #ifndef CHARLY_PRODUCTION
   if (CLIFlags::is_flag_set("trace_catchtables")) {
-    this->context.err_stream << "Entering catchtable: ";
-    charly_debug_print(this->context.err_stream, table->as_value());
-    this->context.err_stream << '\n';
+    std::cerr << "Entering catchtable: ";
+    charly_debug_print(std::cerr, table->as_value());
+    std::cerr << '\n';
   }
 #endif
 }
@@ -1549,9 +1549,9 @@ void VM::op_popcatchtable() {
 
     if (table) {
       // Show the table we've restored
-      this->context.err_stream << "Restored CatchTable: ";
-      charly_debug_print(this->context.err_stream, table->as_value());
-      this->context.err_stream << '\n';
+      std::cerr << "Restored CatchTable: ";
+      charly_debug_print(std::cerr, table->as_value());
+      std::cerr << '\n';
     }
   }
 #endif
@@ -1639,18 +1639,18 @@ VALUE VM::get_global_symbol(VALUE symbol) {
 }
 
 void VM::panic(STATUS reason) {
-  this->context.err_stream << "Panic: " << kStatusHumanReadable[reason] << '\n';
-  this->context.err_stream << "IP: ";
-  this->context.err_stream.fill('0');                                                                \
-  this->context.err_stream << "0x" << std::hex;                                                      \
-  this->context.err_stream << std::setw(12) << reinterpret_cast<uint64_t>(this->ip) << std::setw(1); \
-  this->context.err_stream << std::dec;                                                              \
-  this->context.err_stream.fill(' ');                                                                \
-  this->context.err_stream << '\n' << "Stackdump:" << '\n';
-  this->stackdump(this->context.err_stream);
+  std::cerr << "Panic: " << kStatusHumanReadable[reason] << '\n';
+  std::cerr << "IP: ";
+  std::cerr.fill('0');                                                                \
+  std::cerr << "0x" << std::hex;                                                      \
+  std::cerr << std::setw(12) << reinterpret_cast<uint64_t>(this->ip) << std::setw(1); \
+  std::cerr << std::dec;                                                              \
+  std::cerr.fill(' ');                                                                \
+  std::cerr << '\n' << "Stackdump:" << '\n';
+  this->stackdump(std::cerr);
 
   this->exit(1);
-  this->context.err_stream << "Aborting the charly runtime!" << '\n';
+  std::cerr << "Aborting the charly runtime!" << '\n';
   std::abort();
 }
 
@@ -1683,12 +1683,12 @@ void VM::run() {
     this->panic(Status::InvalidInstructionPointer);                                                    \
   }                                                                                                    \
   if (CLIFlags::is_flag_set("trace_opcodes")) {                                                        \
-    this->context.err_stream.fill('0');                                                                \
-    this->context.err_stream << "0x" << std::hex;                                                      \
-    this->context.err_stream << std::setw(12) << reinterpret_cast<uint64_t>(this->ip) << std::setw(1); \
-    this->context.err_stream << std::dec;                                                              \
-    this->context.err_stream.fill(' ');                                                                \
-    this->context.err_stream << ": " << kOpcodeMnemonics[opcode] << '\n';                              \
+    std::cerr.fill('0');                                                                \
+    std::cerr << "0x" << std::hex;                                                      \
+    std::cerr << std::setw(12) << reinterpret_cast<uint64_t>(this->ip) << std::setw(1); \
+    std::cerr << std::dec;                                                              \
+    std::cerr.fill(' ');                                                                \
+    std::cerr << ": " << kOpcodeMnemonics[opcode] << '\n';                              \
   }
 #endif
 

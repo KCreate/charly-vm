@@ -61,20 +61,8 @@ struct CompilerResult {
   bool has_errors = false;
 };
 
-// Configuration passed to the compiler
-struct CompilerConfig {
-  std::ostream& log_stream = std::cout;
-  std::ostream& err_stream = std::cerr;
-};
-
 class Compiler {
 public:
-  Compiler(CompilerConfig& cfg) : config(cfg) {
-  }
-
-  CompilerResult compile(AST::AbstractNode* tree);
-
-private:
-  CompilerConfig& config;
+  static CompilerResult compile(AST::AbstractNode* tree);
 };
 }  // namespace Charly::Compilation
