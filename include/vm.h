@@ -77,16 +77,6 @@ public:
 
 struct VMContext {
   Compilation::CompilerManager& compiler_manager;
-
-  bool instruction_profile = false;
-  bool trace_opcodes = false;
-  bool trace_catchtables = false;
-  bool trace_frames = false;
-  bool trace_gc = false;
-
-  std::vector<std::string>* argv;
-  std::unordered_map<std::string, std::string>* environment;
-
   std::istream& in_stream = std::cin;
   std::ostream& out_stream = std::cout;
   std::ostream& err_stream = std::cerr;
@@ -156,7 +146,6 @@ class VM {
 
 public:
   VM(VMContext& ctx) : gc(GarbageCollector::Config{
-      .trace = ctx.trace_gc,
       .out_stream = ctx.err_stream,
       .err_stream = ctx.err_stream
     }, this), context(ctx) {}

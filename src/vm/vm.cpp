@@ -30,6 +30,7 @@
 
 #include <utf8/utf8.h>
 
+#include "cliflags.h"
 #include "gc.h"
 #include "status.h"
 #include "vm.h"
@@ -101,12 +102,14 @@ void VM::unwind_catchstack(std::optional<VALUE> payload = std::nullopt) {
   this->ip = table->get_address();
 
   // Show the catchtable we just restored if the corresponding flag was set
-  if (this->context.trace_catchtables) {
+#ifndef CHARLY_PRODUCTION
+  if (CLIFlags::is_flag_set("trace_catchtables")) {
     // Show the table we've restored
     this->context.err_stream << "Restored CatchTable: ";
     charly_debug_print(this->context.err_stream, table->as_value());
     this->context.err_stream << '\n';
   }
+#endif
 
   // If there are less elements on the stack than there were when the table was pushed
   // that means that the stack is not in a predictable state anymore
@@ -853,11 +856,13 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   this->frames = frame;
 
   // Debugging output
-  if (this->context.trace_frames) {
+#ifndef CHARLY_PRODUCTION
+  if (CLIFlags::is_flag_set("trace_frames")) {
     this->context.err_stream << "Entering frame: ";
     charly_debug_print(this->context.err_stream, frame->as_value());
     this->context.err_stream << '\n';
   }
+#endif
 
   // Copy the arguments into the function frame
   //
@@ -979,28 +984,18 @@ void VM::op_readglobal(VALUE symbol) {
     GLOBAL("charly.vm.globals",                    this->push_stack(this->globals->as_value()))
     GLOBAL("charly.vm.frame",                      this->push_stack(this->frames->as_value()))
     GLOBAL("charly.vm.argv", {
-      if (!this->context.argv) {
-        this->push_stack(kNull);
-        return;
-      }
+      Immortal<Array> argv = this->gc.allocate<Array>(CLIFlags::s_user_flags.size());
 
-      Immortal<Array> argv = this->gc.allocate<Array>(this->context.argv->size());
-      for (const std::string& argument : *(this->context.argv)) {
+      for (const std::string& argument : CLIFlags::s_user_flags) {
         argv->push(this->gc.create_string(argument));
       }
 
       this->push_stack(argv->as_value());
     })
     GLOBAL("charly.vm.env", {
-      if (!this->context.environment) {
-        this->push_stack(kNull);
-        return;
-      }
+      Immortal<Object> env = this->gc.allocate<Object>(CLIFlags::s_environment.size());
 
-      Immortal<Object> env = this->gc.allocate<Object>(this->context.environment->size());
-
-      // Append environment variables
-      for (const auto& entry : *(this->context.environment)) {
+      for (const auto& entry : CLIFlags::s_environment) {
         env->write(SymbolTable::encode(entry.first), this->gc.create_string(entry.second));
       }
 
@@ -1498,11 +1493,13 @@ void VM::op_return() {
   }
 
   // Print the frame if the correponding flag was set
-  if (this->context.trace_frames) {
-    this->context.err_stream << "Left frame: ";
+#ifndef CHARLY_PRODUCTION
+  if (CLIFlags::is_flag_set("trace_frames")) {
+    this->context.err_stream << "Leaving frame: ";
     charly_debug_print(this->context.err_stream, frame->as_value());
     this->context.err_stream << '\n';
   }
+#endif
 }
 
 void VM::op_yield() {
@@ -1533,18 +1530,21 @@ void VM::op_registercatchtable(int32_t offset) {
   this->catchstack = table;
 
   // Print the catchtable if the corresponding flag was set
-  if (this->context.trace_catchtables) {
+#ifndef CHARLY_PRODUCTION
+  if (CLIFlags::is_flag_set("trace_catchtables")) {
     this->context.err_stream << "Entering catchtable: ";
     charly_debug_print(this->context.err_stream, table->as_value());
     this->context.err_stream << '\n';
   }
+#endif
 }
 
 void VM::op_popcatchtable() {
   this->pop_catchtable();
 
   // Show the catchtable we just restored if the corresponding flag was set
-  if (this->context.trace_catchtables) {
+#ifndef CHARLY_PRODUCTION
+  if (CLIFlags::is_flag_set("trace_catchtables")) {
     CatchTable* table = this->catchstack;
 
     if (table) {
@@ -1554,6 +1554,7 @@ void VM::op_popcatchtable() {
       this->context.err_stream << '\n';
     }
   }
+#endif
 }
 
 void VM::op_branch(int32_t offset) {
@@ -1657,21 +1658,31 @@ void VM::run() {
   this->halted = false;
 
   // High resolution clock used to track how long instructions take
+#ifndef CHARLY_PRODUCTION
   std::chrono::time_point<std::chrono::high_resolution_clock> exec_start;
+#endif
   Opcode opcode = Opcode::Halt;
   uint8_t* old_ip = this->ip;
 
 // Runs at the beginning of every instruction
+#ifdef CHARLY_PRODUCTION
+#define OPCODE_PROLOGUE()                           \
+  if (this->halted)                                 \
+    return;                                         \
+  if (this->ip == nullptr) {                        \
+    this->panic(Status::InvalidInstructionPointer); \
+  }
+#else
 #define OPCODE_PROLOGUE()                                                                              \
   if (this->halted)                                                                                    \
     return;                                                                                            \
-  if (this->context.instruction_profile) {                                                             \
+  if (CLIFlags::is_flag_set("instruction_profile")) {                                                  \
     exec_start = std::chrono::high_resolution_clock::now();                                            \
   }                                                                                                    \
   if (this->ip == nullptr) {                                                                           \
     this->panic(Status::InvalidInstructionPointer);                                                    \
   }                                                                                                    \
-  if (this->context.trace_opcodes) {                                                                   \
+  if (CLIFlags::is_flag_set("trace_opcodes")) {                                                        \
     this->context.err_stream.fill('0');                                                                \
     this->context.err_stream << "0x" << std::hex;                                                      \
     this->context.err_stream << std::setw(12) << reinterpret_cast<uint64_t>(this->ip) << std::setw(1); \
@@ -1679,16 +1690,21 @@ void VM::run() {
     this->context.err_stream.fill(' ');                                                                \
     this->context.err_stream << ": " << kOpcodeMnemonics[opcode] << '\n';                              \
   }
+#endif
 
 // Runs at the end of each instruction
+#ifdef CHARLY_PRODUCTION
+#define OPCODE_EPILOGUE() \
+  if (false) {            \
+  }
+#else
 #define OPCODE_EPILOGUE()                                                                                 \
-  if (this->context.instruction_profile) {                                                                \
+  if (CLIFlags::is_flag_set("instruction_profile")) {                                                     \
     std::chrono::duration<double> exec_duration = std::chrono::high_resolution_clock::now() - exec_start; \
     uint64_t duration_in_nanoseconds = static_cast<uint32_t>(exec_duration.count() * 1000000000);         \
-    if (this->context.instruction_profile) {                                                              \
-      this->instruction_profile.add_entry(opcode, duration_in_nanoseconds);                               \
-    }                                                                                                     \
+    this->instruction_profile.add_entry(opcode, duration_in_nanoseconds);                                 \
   }
+#endif
 
 // Increment the instruction pointer
 #define INCIP() this->ip += kInstructionLengths[opcode];

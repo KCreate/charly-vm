@@ -79,12 +79,9 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree) {
       return result;
     }
 
-    // Optionally skip code generation
-    if (this->config.codegen) {
-      CodeGenerator codegenerator(this->config, result);
-      InstructionBlock* compiled_block = codegenerator.compile(result.abstract_syntax_tree);
-      result.instructionblock = compiled_block;
-    }
+    CodeGenerator codegenerator(this->config, result);
+    InstructionBlock* compiled_block = codegenerator.compile(result.abstract_syntax_tree);
+    result.instructionblock = compiled_block;
   } catch (CompilerMessage msg) {
     result.has_errors = true;
   }

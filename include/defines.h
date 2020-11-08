@@ -43,8 +43,6 @@ class VM;
 class InstructionBlock;
 
 class CLI;
-struct RunFlags;
-struct Context;
 class SourceFile;
 class MemoryBlock;
 class UTF8Buffer;

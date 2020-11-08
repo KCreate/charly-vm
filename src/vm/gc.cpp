@@ -27,6 +27,7 @@
 #include <cassert>
 #include <iostream>
 
+#include "cliflags.h"
 #include "gc.h"
 #include "vm.h"
 
@@ -62,10 +63,12 @@ void GarbageCollector::grow_heap() {
 }
 
 void GarbageCollector::collect() {
+#ifndef CHARLY_PRODUCTION
   auto gc_start_time = std::chrono::high_resolution_clock::now();
-  if (this->config.trace) {
+  if (CLIFlags::is_flag_set("trace_gc")) {
     this->config.out_stream << "#-- GC: Pause --#" << '\n';
   }
+#endif
 
   if (this->host_vm->running) {
 
@@ -171,7 +174,8 @@ void GarbageCollector::collect() {
     }
   }
 
-  if (this->config.trace) {
+#ifndef CHARLY_PRODUCTION
+  if (CLIFlags::is_flag_set("trace_gc")) {
     std::chrono::duration<double> gc_collect_duration = std::chrono::high_resolution_clock::now() - gc_start_time;
     this->config.out_stream << std::fixed;
     this->config.out_stream << std::setprecision(0);
@@ -180,6 +184,7 @@ void GarbageCollector::collect() {
                             << '\n';
     this->config.out_stream << std::setprecision(6);
   }
+#endif
 }
 
 void GarbageCollector::deallocate(MemoryCell* cell) {
@@ -257,13 +262,16 @@ MemoryCell* GarbageCollector::allocate_cell() {
     // allocate more heaps
     if (this->freelist == nullptr) {
       this->grow_heap();
-      if (this->config.trace) {
+
+#ifndef CHARLY_PRODUCTION
+      if (CLIFlags::is_flag_set("trace_gc")) {
         this->config.out_stream << "#-- GC: Growing heap " << '\n';
       }
 
       if (!this->freelist) {
         this->config.err_stream << "Failed to expand heap, the next allocation will cause a segfault." << '\n';
       }
+#endif
     }
   }
 

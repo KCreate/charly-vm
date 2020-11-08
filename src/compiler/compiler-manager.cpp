@@ -24,6 +24,7 @@
  * SOFTWARE.
  */
 
+#include "cliflags.h"
 #include "compiler-manager.h"
 
 namespace Charly::Compilation {
@@ -42,13 +43,11 @@ std::optional<ParserResult> CompilerManager::parse(const std::string& filename, 
   }
 
   // Dump tokens if the flag was set
-  if (this->flags.dump_tokens) {
-    if (this->flags.dump_file_contains(filename)) {
-      auto& tokens = parse_result.tokens.value();
-      for (const auto& token : tokens) {
-        token.write_to_stream(this->err_stream);
-        this->err_stream << '\n';
-      }
+  if (CLIFlags::is_flag_set("dump_tokens") && CLIFlags::flag_has_argument("dump_file_include", filename, true)) {
+    auto& tokens = parse_result.tokens.value();
+    for (const auto& token : tokens) {
+      token.write_to_stream(this->err_stream);
+      this->err_stream << '\n';
     }
   }
 
@@ -62,14 +61,12 @@ std::optional<CompilerResult> CompilerManager::compile(const std::string& filena
     return std::nullopt;
   }
 
-  CompilerConfig cconfig = {.flags = this->flags};
-  Compiler compiler(cconfig);
+  CompilerConfig config;
+  Compiler compiler(config);
   CompilerResult compiler_result = compiler.compile(parser_result->abstract_syntax_tree.value());
 
-  if (this->flags.dump_ast) {
-    if (this->flags.dump_file_contains(filename)) {
-      compiler_result.abstract_syntax_tree->dump(this->err_stream);
-    }
+  if (CLIFlags::is_flag_set("dump_ast") && CLIFlags::flag_has_argument("dump_file_include", filename, true)) {
+    compiler_result.abstract_syntax_tree->dump(this->err_stream);
   }
 
   // Print infos, warnings or errors to the console
@@ -110,16 +107,14 @@ std::optional<CompilerResult> CompilerManager::compile(const std::string& filena
   }
 
   // Dump a disassembly of the compiled block
-  if (this->flags.dump_asm) {
-    if (this->flags.dump_file_contains(filename)) {
-      Disassembler::Flags disassembler_flags = {
-        .no_branches = this->flags.asm_no_branches,
-        .no_offsets = this->flags.asm_no_offsets,
-        .no_func_branches = this->flags.asm_no_func_branches
-      };
-      Disassembler disassembler(compiler_result.instructionblock.value(), disassembler_flags);
-      disassembler.dump(this->err_stream);
-    }
+  if (CLIFlags::is_flag_set("dump_asm") && CLIFlags::flag_has_argument("dump_file_include", filename, true)) {
+    Disassembler::Flags disassembler_flags = {
+      .no_branches = CLIFlags::is_flag_set("asm_no_branches"),
+      .no_offsets = CLIFlags::is_flag_set("asm_no_offsets"),
+      .no_func_branches = CLIFlags::is_flag_set("asm_no_func_branches")
+    };
+    Disassembler disassembler(compiler_result.instructionblock.value(), disassembler_flags);
+    disassembler.dump(this->err_stream);
   }
 
   // Register this blocks address range

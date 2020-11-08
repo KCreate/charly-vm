@@ -29,7 +29,6 @@
 
 #include "ast.h"
 #include "instructionblock.h"
-#include "runflags.h"
 #include "sourcefile.h"
 #include "stringpool.h"
 #include "symboltable.h"
@@ -64,16 +63,8 @@ struct CompilerResult {
 
 // Configuration passed to the compiler
 struct CompilerConfig {
-
-  // Wether to run the codegen phase at all
-  bool codegen = true;
-
-  // Errors are written to this stream
-  std::ostream& err_stream = std::cout;
-  std::ostream& log_stream = std::cerr;
-
-  // Various other flags
-  RunFlags& flags;
+  std::ostream& log_stream = std::cout;
+  std::ostream& err_stream = std::cerr;
 };
 
 class Compiler {

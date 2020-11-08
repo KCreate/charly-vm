@@ -72,7 +72,6 @@ class GarbageCollector {
   friend class VM;
 public:
   struct Config {
-    bool trace = false;
     std::ostream& out_stream = std::cerr;
     std::ostream& err_stream = std::cout;
   };

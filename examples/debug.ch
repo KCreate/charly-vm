@@ -24,5 +24,4 @@
  * SOFTWARE.
  */
 
-print(Path.current())
-print(Path.current_dir())
+print(ARGV)

@@ -34,7 +34,6 @@
 #include "compiler.h"
 #include "disassembler.h"
 #include "parser.h"
-#include "runflags.h"
 #include "sourcefile.h"
 
 #pragma once
@@ -44,7 +43,7 @@ namespace Charly::Compilation {
 // Interface to the parser and compiler
 class CompilerManager {
 public:
-  CompilerManager(const RunFlags& f) : flags(f) {
+  CompilerManager() {
 
     // Pre-register some symbols in the symtable
     SymbolTable::encode("klass");
@@ -82,7 +81,6 @@ public:
   std::optional<CompilerResult> compile(const std::string& filename, const std::string& source);
 
 private:
-  RunFlags flags;
   std::ostream& out_stream = std::cout;
   std::ostream& err_stream = std::cerr;
 

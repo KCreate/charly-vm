@@ -30,7 +30,7 @@
 #include "internals.h"
 #include "memoryblock.h"
 #include "opcode.h"
-#include "runflags.h"
+#include "cliflags.h"
 #include "sourcefile.h"
 #include "status.h"
 #include "symboltable.h"
