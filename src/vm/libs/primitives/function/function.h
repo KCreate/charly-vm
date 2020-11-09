@@ -24,7 +24,6 @@
  * SOFTWARE.
  */
 
-#include "defines.h"
 #include "internals.h"
 
 #pragma once

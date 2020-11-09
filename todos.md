@@ -2,23 +2,23 @@
 
 - VM Refactor
   - Implementation timeline
+    - Make the Garbage collector a static singleton, securing memory allocation with a
+      mutex for the beginning.
     - C methods refactor
       - C methods should not have access to the VM internals
       - Only receive the self value and arguments passed to the function
       - How do C methods throw exceptions?
-    - Make the Garbage collector a static singleton, securing memory allocation with a
-      mutex for the beginning.
     - Property access methods can actually be removed again, make properties atomic.
       - This won't work for all properties, so some accessor methods will still be needed.
       - I don't plan on putting the locking code into the accessor methods but will probably go
         for some RAII style locking thing which locks a value during the scope of some block.
         I'll want a UniqueValueLock and a SharedValueLock (typedef ValueLock).
-    - Fixed amount of native worker threads, waiting for jobs via some job queue
     - Some global values can be stored as atomics, no mutex needed
     - Remove `halt_after_return`, replace with dedicated instructions
     - Refactor thread system to use the states and ability to wait for certain signals
       - GC goes into its own thread
       - Fibers create a Fiber heap object that mirrors the real fiber
+    - Fixed amount of native worker threads, waiting for jobs via some job queue
 
   - What threads are active in our runtime (N = logical CPU cores)
     - 1x Coordinator thread (main thread)   | Timers, tickers, task queue, fiber queue
@@ -111,6 +111,10 @@
         - This could be resolved by somehow figuring out wether a thread is currently waiting for a
           lock to be released. This would obviously only work with our well-known heap value locks.
           Maybe some wrapper class which updates the thread status once it starts waiting?
+
+- Clearing a timer / ticker should also remove all its invocations from
+  the task queue
+  - Can the task somehow be marked as invalid, then skip it at schedule time
 
 - Move comparison operations out of the VM into external methods or directly into the value classes
 

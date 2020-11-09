@@ -26,7 +26,6 @@
 
 #include <unordered_map>
 
-#include "defines.h"
 #include "value.h"
 
 #pragma once

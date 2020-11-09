@@ -68,6 +68,7 @@ struct MemoryCell {
 static const size_t kInitialHeapCount = 4;
 static const size_t kHeapCellCount    = 4096;
 
+class VM;
 class GarbageCollector {
   friend class VM;
 public:

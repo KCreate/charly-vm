@@ -27,6 +27,7 @@
 #pragma once
 
 namespace Charly {
+using STATUS = uint16_t;
 
 // Status codes used throughout the machine
 enum Status : STATUS {
@@ -42,7 +43,8 @@ enum Status : STATUS {
   RuntimeTaskNotCallable,
   InvalidInstructionPointer,
   InvalidThreadId,
-  UndefinedGlobalReference
+  UndefinedGlobalReference,
+  Debug
 };
 
 // Human-readable status messages
@@ -60,7 +62,8 @@ static const std::string kStatusHumanReadable[] = {
   "Callback of runtime task is not a callable type",
   "Invalid instruction pointer",
   "Invalid thread id",
-  "UndefinedGlobalReference"
+  "UndefinedGlobalReference",
+  "Debug"
 };
 // clang-format on
 }  // namespace Charly

@@ -26,8 +26,6 @@
 
 #include <cstdint>
 
-#include "defines.h"
-
 #pragma once
 
 namespace Charly {

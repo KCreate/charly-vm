@@ -28,6 +28,7 @@
 
 #include "memoryblock.h"
 #include "opcode.h"
+#include "value.h"
 
 #pragma once
 

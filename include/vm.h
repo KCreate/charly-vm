@@ -31,7 +31,6 @@
 #include <atomic>
 #include <chrono>
 
-#include "defines.h"
 #include "gc.h"
 #include "instructionblock.h"
 #include "internals.h"
@@ -49,6 +48,7 @@
 #pragma once
 
 namespace Charly {
+using Timestamp = std::chrono::time_point<std::chrono::steady_clock>;
 
 struct VMInstructionProfileEntry {
   uint64_t encountered = 0;

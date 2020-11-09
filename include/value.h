@@ -26,6 +26,10 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstdlib>
+#include <cstring>
+#include <functional>
+#include <iostream>
 #include <sstream>
 #include <unordered_map>
 #include <vector>
@@ -33,11 +37,11 @@
 #include <utf8/utf8.h>
 
 #include "common.h"
-#include "defines.h"
 
 #pragma once
 
 namespace Charly {
+using VALUE = uint64_t;
 
 // An IEEE 754 double-precision float is a regular 64-bit value. The bits are laid out as follows:
 //
@@ -233,6 +237,7 @@ protected:
 };
 
 // Object type
+class Class;
 class Object : public Container {
   friend class GarbageCollector;
 public:
@@ -292,6 +297,8 @@ protected:
 };
 
 // Frames introduce new environments
+class CatchTable;
+class Function;
 class Frame : public Header {
   friend class GarbageCollector;
 public:
@@ -1279,6 +1286,7 @@ inline bool charly_truthyness(VALUE value) {
 #define ARG_19 ARG_18, argv[18]
 #define ARG_20 ARG_19, argv[19]
 
+class VM;
 __attribute__((always_inline))
 inline VALUE charly_call_cfunction(VM* vm_handle, CFunction* cfunc, uint32_t argc, VALUE* argv) {
   if (argc < cfunc->get_argc()) return kNull;

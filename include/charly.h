@@ -24,7 +24,6 @@
  * SOFTWARE.
  */
 
-#include "defines.h"
 #include "gc.h"
 #include "instructionblock.h"
 #include "internals.h"
