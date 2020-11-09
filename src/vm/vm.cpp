@@ -1320,8 +1320,8 @@ void VM::op_putclass(VALUE name,
                      uint32_t staticmethodcount,
                      bool has_parent_class,
                      bool has_constructor) {
-  Function* constructor = nullptr;
-  Class* parent_class = nullptr;
+  Immortal<Function> constructor = nullptr;
+  Immortal<Class> parent_class = nullptr;
 
   if (has_constructor) {
     VALUE value = this->pop_stack();
@@ -1639,6 +1639,7 @@ VALUE VM::get_global_symbol(VALUE symbol) {
 }
 
 void VM::panic(STATUS reason) {
+  std::cerr << std::endl;
   std::cerr << "Panic: " << kStatusHumanReadable[reason] << '\n';
   std::cerr << "IP: ";
   std::cerr.fill('0');                                                                \

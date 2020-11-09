@@ -24,4 +24,16 @@
  * SOFTWARE.
  */
 
-print(ARGV)
+const N = ARGV[1].to_n()
+
+N.times(->(i) {
+  class Box {
+    property foo
+    property bar
+    property baz
+  }
+
+  const b1 = new Box(1, 2, 3)
+  const b2 = new Box()
+  const b3 = new Box(1, 2)
+})

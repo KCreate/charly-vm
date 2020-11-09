@@ -160,13 +160,13 @@ void GarbageCollector::collect() {
   for (MemoryCell* heap : this->heaps) {
     for (size_t i = 0; i < kHeapCellCount; i++) {
       MemoryCell* cell = heap + i;
-      Header* cell_header = cell->as<Header>();
 
-      // deallocate live cells that have not been reached by the marking phase
-      if (!charly_is_dead(cell->as_value())) {
-        if (cell_header->mark) {
-          cell_header->mark = false;
-        } else {
+      if (cell->header.mark) {
+        cell->header.mark = false;
+      } else {
+
+        // do not double free cells
+        if (!charly_is_dead(cell->as_value())) {
           this->deallocate(cell);
           freed_cells_count++;
         }

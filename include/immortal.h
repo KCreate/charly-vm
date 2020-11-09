@@ -81,6 +81,10 @@ public:
     return this->m_value->as_value();
   }
 
+  operator bool() {
+    return this->m_value != nullptr;
+  }
+
   // delete copy and move constructors
   Immortal(Immortal<T>& o) = delete;
   Immortal(Immortal<T>&& o) = delete;
