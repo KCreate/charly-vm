@@ -34,12 +34,12 @@ namespace PrimitiveObject {
 VALUE keys(VM& vm, VALUE obj) {
   CHECK(container, obj);
 
-  Immortal<Array> keys_array = vm.gc.allocate<Array>(4);
+  Immortal<Array> keys_array = charly_allocate<Array>(4);
 
   Container* obj_container = charly_as_container(obj);
   obj_container->access_container_shared([&](Container::ContainerType* container) {
     for (auto& [key, value] : *container) {
-      keys_array->push(vm.gc.allocate<String>(SymbolTable::decode(key))->as_value());
+      keys_array->push(charly_allocate<String>(SymbolTable::decode(key))->as_value());
     }
   });
 

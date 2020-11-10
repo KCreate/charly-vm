@@ -140,9 +140,8 @@ struct VMThread {
 
 class VM {
   friend class GarbageCollector;
-
 public:
-  VM(VMContext& ctx) : gc(this), context(ctx) {}
+  VM(VMContext& ctx) : context(ctx) {}
   VM(const VM& other) = delete;
   VM(VM&& other) = delete;
 
@@ -283,7 +282,6 @@ public:
 
   std::chrono::time_point<std::chrono::high_resolution_clock> starttime;
 
-  GarbageCollector gc;
   VMContext context;
   VMInstructionProfile instruction_profile;
 private:

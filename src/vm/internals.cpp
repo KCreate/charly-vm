@@ -123,7 +123,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
 
     // Check if we got a *.lib file
     if (!std::strcmp(include_filename.c_str() + include_filename.size() - 4, ".lib")) {
-      Immortal<Object> lib = vm.gc.allocate<Object>(8);
+      Immortal<Object> lib = charly_allocate<Object>(8);
 
       // Check if there is already a resident copy of this library
       //
@@ -178,7 +178,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
         }
 
         VALUE symbol = charly_create_symbol(name);
-        lib->write(symbol, vm.gc.allocate<CFunction>(symbol, func_pointer, argc)->as_value());
+        lib->write(symbol, charly_allocate<CFunction>(symbol, func_pointer, argc)->as_value());
 
         i++;
       }
@@ -195,8 +195,8 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
         dlclose(clib);
       };
 
-      lib->write(SymbolTable::encode("__libptr"), vm.gc.allocate<CPointer>(clib, destructor)->as_value());
-      lib->write(SymbolTable::encode("__libpath"), vm.gc.create_string(include_filename));
+      lib->write(SymbolTable::encode("__libptr"), charly_allocate<CPointer>(clib, destructor)->as_value());
+      lib->write(SymbolTable::encode("__libpath"), charly_allocate_string(include_filename));
 
       return lib->as_value();
     }
@@ -238,11 +238,11 @@ VALUE exit(VM& vm, VALUE status_code) {
   return kNull;
 }
 
-VALUE debug_func(VM& vm) {
-  Immortal<Object> obj = vm.gc.allocate<Object>(2);
+VALUE debug_func(VM&) {
+  Immortal<Object> obj = charly_allocate<Object>(2);
 
   // Store the sizes of heap types
-  Immortal<Object> cell_sizes = vm.gc.allocate<Object>(12);
+  Immortal<Object> cell_sizes = charly_allocate<Object>(12);
   cell_sizes->write(SymbolTable::encode("MemoryCell"), charly_create_number(sizeof(MemoryCell)));
   cell_sizes->write(SymbolTable::encode("Header"), charly_create_number(sizeof(Header)));
   cell_sizes->write(SymbolTable::encode("Container"), charly_create_number(sizeof(Container)));
@@ -258,7 +258,7 @@ VALUE debug_func(VM& vm) {
   obj->write(SymbolTable::encode("cell_sizes"), cell_sizes);
 
   // Store the byte lengths of bytecode instructions
-  Immortal<Object> bytecode_lengths = vm.gc.allocate<Object>(Opcode::OpcodeCount);
+  Immortal<Object> bytecode_lengths = charly_allocate<Object>(Opcode::OpcodeCount);
   for (uint8_t i = 0; i < Opcode::OpcodeCount; i++) {
     std::string& mnemonic = kOpcodeMnemonics[i];
     uint32_t length = kInstructionLengths[i];
@@ -278,7 +278,7 @@ VALUE debug_func(VM& vm) {
 VALUE testfunc(VM& vm, VALUE argument) {
   CHECK(number, argument);
 
-  Immortal<Object> object = vm.gc.allocate<Object>(2);
+  Immortal<Object> object = charly_allocate<Object>(2);
   object->write(SymbolTable::encode("a"), argument);
   object->write(SymbolTable::encode("b"), charly_add_number(argument, charly_create_number(1)));
   object->write(SymbolTable::encode("c"), charly_add_number(argument, charly_create_number(2)));

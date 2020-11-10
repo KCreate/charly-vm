@@ -70,10 +70,28 @@ static const size_t kHeapCellCount    = 4096;
 
 class VM;
 class GarbageCollector {
-  friend class VM;
 public:
-  GarbageCollector(VM* vm) : host_vm(vm) {
-    this->freelist = nullptr;
+
+  /*
+   * Create a singel instance of the garbage collector that gets deconstructed at
+   * program termination
+   * */
+  static GarbageCollector& get_instance() {
+    static GarbageCollector collector;
+    return collector;
+  }
+
+  static void set_host_vm(VM& vm) {
+    GarbageCollector::get_instance().host_vm = &vm;
+  }
+
+  GarbageCollector(GarbageCollector&) = delete;
+  GarbageCollector(GarbageCollector&&) = delete;
+
+  MemoryCell* allocate_cell();
+
+protected:
+  GarbageCollector() {
     for (size_t i = 0; i < kInitialHeapCount; i++) {
       this->add_heap();
     }
@@ -85,35 +103,12 @@ public:
     }
   }
 
-  GarbageCollector(GarbageCollector&) = delete;
-  GarbageCollector(GarbageCollector&&) = delete;
-
-  template <class T, typename... Args>
-  T* allocate(Args&&... params) {
-    MemoryCell* cell = this->allocate_cell();
-    T* value = cell->as<T>();
-    value->init(std::forward<Args>(params)...);
-    return value;
-  }
-
-  // Strings can be represented using the immediate encoded form
-  VALUE create_string(const char* data, uint32_t length) {
-    if (length <= 6)
-      return charly_create_istring(data, length);
-    return this->allocate<String>(data, length)->as_value();
-  }
-
-  VALUE create_string(const std::string& source) { return this->create_string(source.c_str(), source.size()); }
-
-protected:
   void add_heap();
   void free_heap(MemoryCell* heap);
   void grow_heap();
   void collect();
   void deallocate(MemoryCell* cell);
   void clean(MemoryCell* cell);
-
-  MemoryCell* allocate_cell();
 
   void mark(VALUE cell);
   void mark(Header* cell) {
@@ -122,9 +117,38 @@ protected:
     }
   }
 
-  VM* host_vm;
-  MemoryCell* freelist;
+  VM* host_vm = nullptr;
+  MemoryCell* freelist = nullptr;
   std::vector<MemoryCell*> heaps;
   std::recursive_mutex mutex;
 };
+
+/*
+ * Allocate cell from GC
+ * Passes arguments on to the relevant initializer function
+ * */
+template <class T, typename... Args>
+__attribute__((always_inline))
+inline T* charly_allocate(Args&&... params) {
+  MemoryCell* cell = GarbageCollector::get_instance().allocate_cell();
+  T* value = cell->as<T>();
+  value->init(std::forward<Args>(params)...);
+  return value;
+}
+
+/*
+ * Allocate a string
+ * If the string fits into the immediate encoded format,
+ * returns that instead
+ * */
+__attribute__((always_inline))
+inline VALUE charly_allocate_string(const char* data, uint32_t length) {
+  if (length <= 6)
+    return charly_create_istring(data, length);
+  return charly_allocate<String>(data, length)->as_value();
+}
+inline VALUE charly_allocate_string(const std::string& source) {
+  return charly_allocate_string(source.c_str(), source.size());
+}
+
 }  // namespace Charly

@@ -137,7 +137,7 @@ VALUE VM::add(VALUE left, VALUE right) {
   }
 
   if (charly_is_array(left)) {
-    Array* new_array = this->gc.allocate<Array>(charly_as_array(left));
+    Array* new_array = charly_allocate<Array>(charly_as_array(left));
 
     if (charly_is_array(right)) {
       Array* aright = charly_as_array(right);
@@ -188,7 +188,7 @@ VALUE VM::add(VALUE left, VALUE right) {
     char* new_data = static_cast<char*>(std::malloc(new_length));
     std::memcpy(new_data, left_data, left_length);
     std::memcpy(new_data + left_length, right_data, right_length);
-    return this->gc.create_string(new_data, new_length);
+    return charly_allocate_string(new_data, new_length);
   }
 
   // String concatenation for different types
@@ -196,7 +196,7 @@ VALUE VM::add(VALUE left, VALUE right) {
     std::stringstream buf;
     charly_to_string(buf, left);
     charly_to_string(buf, right);
-    return this->gc.create_string(buf.str());
+    return charly_allocate_string(buf.str());
   }
 
   return kNaN;
@@ -250,7 +250,7 @@ VALUE VM::mul(VALUE left, VALUE right) {
       offset += str_length;
     }
 
-    return this->gc.create_string(new_data, new_length);
+    return charly_allocate_string(new_data, new_length);
   }
 
   return kNaN;
@@ -500,7 +500,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
       Function* func = charly_as_function(source);
 
       if (symbol == SYM("name")) {
-        return this->gc.create_string(SymbolTable::decode(func->get_name()));
+        return charly_allocate_string(SymbolTable::decode(func->get_name()));
       }
 
       if (symbol == SYM("host_class")) {
@@ -522,7 +522,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
           return kNull;
         }
 
-        return this->gc.create_string(lookup.value());
+        return charly_allocate_string(lookup.value());
       }
 
       VALUE value;
@@ -537,7 +537,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
       CFunction* cfunc = charly_as_cfunction(source);
 
       if (symbol == SYM("name")) {
-        return this->gc.create_string(SymbolTable::decode(cfunc->get_name()));
+        return charly_allocate_string(SymbolTable::decode(cfunc->get_name()));
       }
 
       if (symbol == SYM("push_return_value")) {
@@ -580,7 +580,7 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
       }
 
       if (symbol == SYM("name")) {
-        return this->gc.create_string(SymbolTable::decode(klass->get_name()));
+        return charly_allocate_string(SymbolTable::decode(klass->get_name()));
       }
 
       if (symbol == SYM("parent")) {
@@ -845,7 +845,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
     }
   }
 
-  Immortal<Frame> frame = this->gc.allocate<Frame>(
+  Immortal<Frame> frame = charly_allocate<Frame>(
     this->frames,
     this->catchstack,
     function,
@@ -869,7 +869,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   // If the function requires an arguments array, we create one and push it onto
   // offset 0 of the frame
   if (function->get_needs_arguments()) {
-    Immortal<Array> arguments_array = this->gc.allocate<Array>(argc);
+    Immortal<Array> arguments_array = charly_allocate<Array>(argc);
     frame->write_local(0, arguments_array);
 
     for (size_t i = 0; i < argc; i++) {
@@ -960,7 +960,7 @@ void VM::op_readglobal(VALUE symbol) {
   // Check internal methods table
   if (Internals::Index::methods.count(symbol)) {
     Internals::MethodSignature& sig = Internals::Index::methods.at(symbol);
-    CFunction* cfunc = this->gc.allocate<CFunction>(symbol, sig.func_pointer, sig.argc);
+    CFunction* cfunc = charly_allocate<CFunction>(symbol, sig.func_pointer, sig.argc);
     this->push_stack(cfunc->as_value());
     return;
   }
@@ -984,19 +984,19 @@ void VM::op_readglobal(VALUE symbol) {
     GLOBAL("charly.vm.globals",                    this->push_stack(this->globals->as_value()))
     GLOBAL("charly.vm.frame",                      this->push_stack(this->frames->as_value()))
     GLOBAL("charly.vm.argv", {
-      Immortal<Array> argv = this->gc.allocate<Array>(CLIFlags::s_user_flags.size());
+      Immortal<Array> argv = charly_allocate<Array>(CLIFlags::s_user_flags.size());
 
       for (const std::string& argument : CLIFlags::s_user_flags) {
-        argv->push(this->gc.create_string(argument));
+        argv->push(charly_allocate_string(argument));
       }
 
       this->push_stack(argv->as_value());
     })
     GLOBAL("charly.vm.env", {
-      Immortal<Object> env = this->gc.allocate<Object>(CLIFlags::s_environment.size());
+      Immortal<Object> env = charly_allocate<Object>(CLIFlags::s_environment.size());
 
       for (const auto& entry : CLIFlags::s_environment) {
-        env->write(SymbolTable::encode(entry.first), this->gc.create_string(entry.second));
+        env->write(SymbolTable::encode(entry.first), charly_allocate_string(entry.second));
       }
 
       this->push_stack(env->as_value());
@@ -1233,7 +1233,7 @@ void VM::op_putsuper() {
   // If we've got a function, we need to make a copy of it and bind the currently
   // active self value to it
   if (charly_is_function(super_value)) {
-    Function* super_func = this->gc.allocate<Function>(charly_as_function(super_value));
+    Function* super_func = charly_allocate<Function>(charly_as_function(super_value));
     super_func->set_bound_self(this->frames->get_self());
     super_value = super_func->as_value();
   }
@@ -1253,7 +1253,7 @@ void VM::op_putsupermember(VALUE symbol) {
   // active self value to it
   VALUE super_value = kNull;
   if (host_class->find_super_value(symbol, &super_value) && charly_is_function(super_value)) {
-    Function* super_func = this->gc.allocate<Function>(charly_as_function(super_value));
+    Function* super_func = charly_allocate<Function>(charly_as_function(super_value));
     super_func->set_bound_self(this->frames->get_self());
     super_value = super_func->as_value();
   }
@@ -1266,7 +1266,7 @@ void VM::op_putvalue(VALUE value) {
 }
 
 void VM::op_putstring(char* data, uint32_t length) {
-  this->push_stack(this->gc.create_string(data, length));
+  this->push_stack(charly_allocate_string(data, length));
 }
 
 void VM::op_putfunction(VALUE symbol,
@@ -1276,7 +1276,7 @@ void VM::op_putfunction(VALUE symbol,
                         uint32_t argc,
                         uint32_t minimum_argc,
                         uint32_t lvarcount) {
-  Function* function = this->gc.allocate<Function>(
+  Function* function = charly_allocate<Function>(
     symbol,
     this->frames,
     body_address,
@@ -1291,7 +1291,7 @@ void VM::op_putfunction(VALUE symbol,
 }
 
 void VM::op_putarray(uint32_t count) {
-  Array* array = this->gc.allocate<Array>(count);
+  Array* array = charly_allocate<Array>(count);
   array->fill(kNull, count);
 
   for (uint32_t i = count; i > 0; i--) {
@@ -1302,7 +1302,7 @@ void VM::op_putarray(uint32_t count) {
 }
 
 void VM::op_puthash(uint32_t count) {
-  Object* object = this->gc.allocate<Object>(count);
+  Object* object = charly_allocate<Object>(count);
 
   while (count--) {
     VALUE key = this->pop_stack();
@@ -1347,11 +1347,11 @@ void VM::op_putclass(VALUE name,
     }
   }
 
-  Immortal<Class> klass = this->gc.allocate<Class>(name, constructor, parent_class);
+  Immortal<Class> klass = charly_allocate<Class>(name, constructor, parent_class);
   if (constructor) {
     constructor->set_host_class(klass);
   }
-  klass->set_prototype(this->gc.allocate<Object>(methodcount));
+  klass->set_prototype(charly_allocate<Object>(methodcount));
 
   while (staticmethodcount--) {
     VALUE smethod = this->pop_stack();
@@ -1455,7 +1455,7 @@ void VM::op_new(uint32_t argc) {
 
   // Setup object
   Class* source_class = charly_as_class(klass);
-  Immortal<Object> obj = this->gc.allocate<Object>(source_class->get_member_property_count(), source_class);
+  Immortal<Object> obj = charly_allocate<Object>(source_class->get_member_property_count(), source_class);
   source_class->initialize_member_properties(obj);
 
   // Invoke constructor if one exists
@@ -1516,7 +1516,7 @@ void VM::throw_exception(const std::string& message) {
   }
 
   this->push_stack(this->internal_error_class->as_value());
-  this->push_stack(this->gc.create_string(message.c_str(), message.size()));
+  this->push_stack(charly_allocate_string(message.c_str(), message.size()));
   this->op_new(1);
 }
 
@@ -1526,7 +1526,7 @@ void VM::throw_exception(VALUE payload) {
 
 void VM::op_registercatchtable(int32_t offset) {
   uint8_t* address = this->ip + offset;
-  CatchTable* table = this->gc.allocate<CatchTable>(this->catchstack, this->frames, address, this->stack.size());
+  CatchTable* table = charly_allocate<CatchTable>(this->catchstack, this->frames, address, this->stack.size());
   this->catchstack = table;
 
   // Print the catchtable if the corresponding flag was set
@@ -1618,7 +1618,7 @@ void VM::op_branchneq(int32_t offset) {
 void VM::op_typeof() {
   VALUE value = this->pop_stack();
   const std::string& stringrep = charly_get_typestring(value);
-  this->push_stack(this->gc.create_string(stringrep.data(), stringrep.size()));
+  this->push_stack(charly_allocate_string(stringrep.data(), stringrep.size()));
 }
 
 void VM::stackdump(std::ostream& io) {
@@ -2569,7 +2569,7 @@ uint8_t VM::start_runtime() {
         this->tickers.size() == 0) {
       if (this->paused_threads.size()) {
         for (auto& entry : this->paused_threads) {
-          Object* exc_obj = this->gc.allocate<Object>(1);
+          Object* exc_obj = charly_allocate<Object>(1);
           exc_obj->write(SYM("__charly_internal_stale_thread_exception"), kTrue);
           this->resume_thread(entry.first, exc_obj->as_value());
         }

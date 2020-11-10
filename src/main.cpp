@@ -157,6 +157,7 @@ int main(int argc, char** argv) {
 
   VMContext context({ .compiler_manager = cmanager });
   VM vm(context);
+  GarbageCollector::set_host_vm(vm);
 
   VALUE fn_prelude = vm.register_module(cresult_prelude->instructionblock.value());
   VALUE fn_user = vm.register_module(cresult_userfile->instructionblock.value());

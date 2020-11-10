@@ -60,7 +60,7 @@ VALUE remove(VM& vm, VALUE a, VALUE i) {
 VALUE reverse(VM& vm, VALUE a) {
   CHECK(array, a);
 
-  Array* new_array = vm.gc.allocate<Array>(4);
+  Array* new_array = charly_allocate<Array>(4);
 
   Array* array = charly_as_array(a);
   array->access_vector_shared([&](Array::VectorType* vec) {
@@ -156,7 +156,7 @@ VALUE range(VM& vm, VALUE a, VALUE s, VALUE c) {
   int32_t start = charly_number_to_uint32(s);
   uint32_t count = charly_number_to_uint32(c);
 
-  Array* new_array = vm.gc.allocate<Array>(count);
+  Array* new_array = charly_allocate<Array>(count);
 
   array->access_vector_shared([&](Array::VectorType* vec) {
     uint32_t offset = 0;

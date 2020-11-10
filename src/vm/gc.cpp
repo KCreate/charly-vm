@@ -70,7 +70,7 @@ void GarbageCollector::collect() {
   }
 #endif
 
-  if (this->host_vm->running) {
+  if (this->host_vm && this->host_vm->running) {
 
     // Top level values
     this->mark(this->host_vm->frames);

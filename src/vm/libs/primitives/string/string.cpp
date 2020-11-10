@@ -44,7 +44,7 @@ VALUE ltrim(VM& vm, VALUE src) {
 
   std::string _str(charly_string_data(src), charly_string_length(src));
   _str.erase(0, _str.find_first_not_of(" \t\n\v\f\r"));
-  return vm.gc.create_string(_str);
+  return charly_allocate_string(_str);
 }
 
 VALUE rtrim(VM& vm, VALUE src) {
@@ -52,7 +52,7 @@ VALUE rtrim(VM& vm, VALUE src) {
 
   std::string _str(charly_string_data(src), charly_string_length(src));
   _str.erase(_str.find_last_not_of(" \t\n\v\f\r") + 1);
-  return vm.gc.create_string(_str);
+  return charly_allocate_string(_str);
 }
 
 // TODO: Implement utf8 conversions
@@ -62,7 +62,7 @@ VALUE lowercase(VM& vm, VALUE src) {
 
   std::transform(_str.begin(), _str.end(), _str.begin(), [](char c) { return std::tolower(c, std::locale()); });
 
-  return vm.gc.create_string(_str);
+  return charly_allocate_string(_str);
 }
 
 // TODO: Implement utf8 conversions
@@ -72,7 +72,7 @@ VALUE uppercase(VM& vm, VALUE src) {
 
   std::transform(_str.begin(), _str.end(), _str.begin(), [](char c) { return std::toupper(c, std::locale()); });
 
-  return vm.gc.create_string(_str);
+  return charly_allocate_string(_str);
 }
 
 }  // namespace PrimitiveString

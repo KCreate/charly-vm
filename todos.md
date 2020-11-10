@@ -2,12 +2,12 @@
 
 - VM Refactor
   - Implementation timeline
-    - Make the Garbage collector a static singleton, securing memory allocation with a
-      mutex for the beginning.
     - C methods refactor
       - C methods should not have access to the VM internals
       - Only receive the self value and arguments passed to the function
       - How do C methods throw exceptions?
+      - C methods do not return a VALUE directly
+        - create return wrapper struct for regular returns and exceptions
     - Property access methods can actually be removed again, make properties atomic.
       - This won't work for all properties, so some accessor methods will still be needed.
       - I don't plan on putting the locking code into the accessor methods but will probably go
@@ -15,6 +15,7 @@
         I'll want a UniqueValueLock and a SharedValueLock (typedef ValueLock).
     - Some global values can be stored as atomics, no mutex needed
     - Remove `halt_after_return`, replace with dedicated instructions
+    - Make the compiler thread-safe (or just protect its VM interface with a mutex)
     - Refactor thread system to use the states and ability to wait for certain signals
       - GC goes into its own thread
       - Fibers create a Fiber heap object that mirrors the real fiber
