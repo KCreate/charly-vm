@@ -8,6 +8,15 @@
       - How do C methods throw exceptions?
       - C methods do not return a VALUE directly
         - create return wrapper struct for regular returns and exceptions
+    - Refactor compiler address mapping
+      - Each function should have a reference to the instructionblock
+        it is contained in.
+      - InstructionBlock should be a native Charly type, making it
+        accessible to charly runtime introspection
+      - Address mapping stored directly inside the InstructionBlock
+      - Looking up the location information for the currently executing instruction means
+        figuring out what function we are currently in, following the instructionblock pointer
+        and then lookup up the address in that instructionblock address mapping
     - Property access methods can actually be removed again, make properties atomic.
       - This won't work for all properties, so some accessor methods will still be needed.
       - I don't plan on putting the locking code into the accessor methods but will probably go

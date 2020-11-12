@@ -43,7 +43,7 @@ std::optional<ParserResult> CompilerManager::parse(const std::string& filename, 
   }
 
   // Dump tokens if the flag was set
-  if (CLIFlags::is_flag_set("dump_tokens") && CLIFlags::flag_has_argument("dump_file_include", filename, true)) {
+  if (CLIFlags::is_flag_set("dump_tokens") && CLIFlags::flag_has_argument("dump", filename, true)) {
     auto& tokens = parse_result.tokens.value();
     for (const auto& token : tokens) {
       token.write_to_stream(std::cerr);
@@ -63,7 +63,7 @@ std::optional<CompilerResult> CompilerManager::compile(const std::string& filena
 
   CompilerResult compiler_result = Compiler::compile(parser_result->abstract_syntax_tree.value());
 
-  if (CLIFlags::is_flag_set("dump_ast") && CLIFlags::flag_has_argument("dump_file_include", filename, true)) {
+  if (CLIFlags::is_flag_set("dump_ast") && CLIFlags::flag_has_argument("dump", filename, true)) {
     compiler_result.abstract_syntax_tree->dump(std::cerr);
   }
 
@@ -105,7 +105,7 @@ std::optional<CompilerResult> CompilerManager::compile(const std::string& filena
   }
 
   // Dump a disassembly of the compiled block
-  if (CLIFlags::is_flag_set("dump_asm") && CLIFlags::flag_has_argument("dump_file_include", filename, true)) {
+  if (CLIFlags::is_flag_set("dump_asm") && CLIFlags::flag_has_argument("dump", filename, true)) {
     Disassembler::Flags disassembler_flags = {
       .no_branches = CLIFlags::is_flag_set("asm_no_branches"),
       .no_offsets = CLIFlags::is_flag_set("asm_no_offsets"),

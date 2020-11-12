@@ -25,6 +25,7 @@
  */
 
 #include "value.h"
+#include "instructionblock.h"
 
 namespace Charly {
 
@@ -65,6 +66,10 @@ void Function::init(Function* source) {
   this->lvarcount       = source->lvarcount;
   this->anonymous       = source->anonymous;
   this->needs_arguments = source->needs_arguments;
+}
+
+void Function::init(VALUE name, InstructionBlock* iblock) {
+  Function::init(name, nullptr, iblock->get_data(), 0, 0, 0, false, false);
 }
 
 void Function::set_context(Frame* context) {

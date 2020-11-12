@@ -290,26 +290,60 @@ All tests have passed
 ```
 $ bin/charly -h
 Usage: charly [filename] [flags] [--] [arguments]
-    -f FLAG, --flag FLAG             Set a flag
-    -h, --help                       Print this help message
-    -v, --version                    Prints the version number
-    -l, --license                    Prints the license
-    --vmdir                          Prints the CHARLYVMDIR environment variable
 
-Flags:
-    dump_ast                         Display the AST of the input file
-    dump_tokens                      Display tokens of the input file
-    dump_asm                         Display a disassembly of the input file
-    dump_file_include filename       Add a file to the list of files to be dumped
-    asm_no_offsets                   Don't display offsets in the disassembly
-    asm_no_branches                  Don't display branches as arrows in the disassembly
-    asm_no_func_branches             Don't display branches for PutFunction instructions
-    skipexec                         Don't execute after parsing
-    instruction_profile              Display a profile of all executed instructions
-    trace_opcodes                    Display opcodes as they are being executed
-    trace_catchtables                Display catchtables as they are being created or left
-    trace_frames                     Display frames as they are being entered and left
-    trace_gc                         Display statistics about the gc at runtime
+Default
+  -h, --help
+      Prints the help page
+
+  -v, --version
+      Prints the version
+
+  -l, --license
+      Prints the license
+
+  --vmdir
+      Prints the CHARLYVMDIR environment variable
+
+Dump
+  --skipexec
+      Don't execute the code
+
+  --dump <filename>
+      Add file to list of files to be dumped
+
+  --dump_ast
+      Dump the AST of the input file
+
+  --dump_tokens
+      Dump the tokens of the input file
+
+  --dump_asm
+      Dump the compiled bytecode of the input file
+
+  --asm_no_offsets
+      Do not print offsets in dumped bytecode
+
+  --asm_no_branches
+      Do not print branches in dumped bytecode
+
+  --asm_no_func_branches
+      Do not print function branches in dumped bytecode
+
+Debugging
+  --instruction_profile
+      Profile the execution time of individual bytecodes
+
+  --trace_opcodes
+      Display opcodes as they are executed
+
+  --trace_catchtables
+      Trace catchtable enter / leave
+
+  --trace_frames
+      Trace frame enter / leave
+
+  --trace_gc
+      Display GC debug output
 
 Examples:
 

@@ -58,8 +58,12 @@ export = ->(describe, it, assert) {
   })
 
   describe("global symbols", ->{
+    it("sets the Charly global symbol to the globals table", ->{
+      assert(Charly, @"charly.vm.globals")
+    })
+
     it("sets global symbols", ->{
-      Charly.globals.mytestvar = 150
+      Charly.mytestvar = 150
       assert(mytestvar, 150)
     })
 

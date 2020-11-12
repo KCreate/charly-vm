@@ -91,7 +91,7 @@ struct VMTask {
       VALUE argument;
     } thread;
     struct {
-      VALUE func;
+      Function* func;
       VALUE arguments[4];
     } callback;
   };
@@ -107,14 +107,15 @@ struct VMTask {
    * Initialize a VMTask which calls a callback, with up to 4 arguments
    * */
   static inline VMTask init_callback_with_id(uint64_t id,
-                                     VALUE func,
+#include "instructionblock.h"
+                                     Function* func,
                                      VALUE arg1 = kNull,
                                      VALUE arg2 = kNull,
                                      VALUE arg3 = kNull,
                                      VALUE arg4 = kNull) {
     return { .is_thread = false, .uid = id, .callback = { func, { arg1, arg2, arg3, arg4 } } };
   }
-  static inline VMTask init_callback(VALUE func,
+  static inline VMTask init_callback(Function* func,
                                      VALUE arg1 = kNull,
                                      VALUE arg2 = kNull,
                                      VALUE arg3 = kNull,
@@ -195,7 +196,6 @@ public:
   void throw_exception(VALUE payload);
   void panic(STATUS reason);
   void stackdump(std::ostream& io);
-  VALUE get_global_self();
   VALUE get_global_symbol(VALUE symbol);
 
   // Instructions
@@ -273,7 +273,6 @@ public:
   void register_task(VMTask task);
   bool pop_task(VMTask* target);
   void clear_task_queue();
-  VALUE register_module(InstructionBlock* block);
   uint64_t register_timer(Timestamp, VMTask task);
   uint64_t register_ticker(uint32_t, VMTask task);
   uint64_t get_next_timer_id();
@@ -301,7 +300,7 @@ private:
   // A function which handles uncaught exceptions
   Function* uncaught_exception_handler = nullptr; // function handling uncaught exceptions
   Class* internal_error_class = nullptr;          // error class used by internal exceptions
-  Object* globals = nullptr;                      // container for global variables
+  Object* globals = charly_allocate<Object>(32);  // container for global variables
 
   // Scheduled tasks and paused VM threads
   uint64_t next_thread_id = 0;

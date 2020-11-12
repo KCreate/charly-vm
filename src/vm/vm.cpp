@@ -62,8 +62,7 @@ void VM::push_stack(VALUE value) {
 
 CatchTable* VM::pop_catchtable() {
   if (!this->catchstack) {
-    std::cerr << "No catchtable registered" << '\n';
-    this->panic(Status::CatchStackEmpty);
+    return nullptr;
   }
   CatchTable* current = this->catchstack;
   this->catchstack = current->get_parent();
@@ -76,14 +75,19 @@ void VM::unwind_catchstack(std::optional<VALUE> payload = std::nullopt) {
   // Check if there is a catchtable
   if (!this->catchstack && this->uncaught_exception_handler) {
     Immortal<Function> exception_handler = this->uncaught_exception_handler;
-    Immortal<> global_self = this->get_global_self();
+    Immortal<Object> global_self = this->globals;
     VALUE payload_value = payload.value_or(kNull);
     Immortal<> i_payload_value = payload_value;
-    this->call_function(exception_handler, 1, &payload_value, global_self, true);
+    this->call_function(exception_handler, 1, &payload_value, global_self->as_value(), true);
     return;
   }
 
   CatchTable* table = this->pop_catchtable();
+  if (!table) {
+    std::cerr << "No catchtable registered" << '\n';
+    charly_debug_print(std::cerr, payload.value_or(kNull));
+    this->panic(Status::CatchStackEmpty);
+  }
 
   // Walk the frame tree until we reach the frame stored in the catchtable
   while (this->frames) {
@@ -799,7 +803,7 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
   // or implicitly via the functions frame
   // If it's supplied via the frame hierarchy, we need to resolve it here
   // If not we simply pop it off the stack
-  Immortal<> target = kNull;
+  Immortal<> target;
   if (with_target)
     target = this->pop_stack();
 
@@ -1626,10 +1630,6 @@ void VM::stackdump(std::ostream& io) {
     charly_debug_print(io, stackitem);
     io << '\n';
   }
-}
-
-VALUE VM::get_global_self() {
-  return this->get_global_symbol(SYM("Charly"));
 }
 
 VALUE VM::get_global_symbol(VALUE symbol) {
@@ -2515,31 +2515,26 @@ uint8_t VM::start_runtime() {
         this->push_stack(task.thread.argument);
         this->run();
       } else {
-
-        // Make sure we got a function as callback
-        if (!charly_is_function(task.callback.func)) {
-          this->panic(Status::RuntimeTaskNotCallable);
-        }
-
-        {
-          Immortal<> func(task.callback.func);
+        if (task.callback.func) {
+          Immortal<Function> func(task.callback.func);
           Immortal<> a1(task.callback.arguments[0]);
           Immortal<> a2(task.callback.arguments[1]);
           Immortal<> a3(task.callback.arguments[2]);
           Immortal<> a4(task.callback.arguments[3]);
 
           // Prepare VM object
+          this->ip = nullptr;
+          this->frames = nullptr;
           this->catchstack = nullptr;
 
-          // Get Charly object
-          Function* fn = charly_as_function(func);
-          VALUE self = fn->get_self(this->get_global_self());
-
           // Invoke function
-          this->call_function(fn, 4, reinterpret_cast<VALUE*>(task.callback.arguments), self, true);
+          VALUE self = func->get_self(this->globals->as_value());
+          this->call_function(func, 4, reinterpret_cast<VALUE*>(task.callback.arguments), self, true);
           this->uid = this->get_next_thread_uid();
           this->run();
           this->pop_stack();
+        } else {
+          this->panic(Status::RuntimeTaskNotCallable);
         }
       }
     } else {
@@ -2643,14 +2638,6 @@ void VM::clear_task_queue() {
   while (this->task_queue.size()) {
     this->task_queue.pop();
   }
-}
-
-VALUE VM::register_module(InstructionBlock* block) {
-  uint8_t* old_ip = this->ip;
-  this->ip = block->get_data();
-  this->run();
-  this->ip = old_ip;
-  return this->pop_stack();
 }
 
 uint64_t VM::register_timer(Timestamp ts, VMTask task) {

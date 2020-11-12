@@ -33,7 +33,6 @@ namespace Charly::Compilation {
 
 InstructionBlock* CodeGenerator::compile(AST::AbstractNode* node) {
   this->visit_node(node);
-  this->assembler.write_halt();
 
   // Codegen all blocks
   while (this->queued_functions.size() > 0) {

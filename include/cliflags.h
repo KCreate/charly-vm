@@ -91,30 +91,30 @@ struct FlagGroup {
 
 // All existing flags in the charly program
 static std::vector<FlagGroup> kDefinedFlagGroups = {
-  { "Default", {
-    { "help",                 'h',             "Prints the help page" },
-    { "version",              'v',             "Prints the version" },
-    { "license",              'l',             "Prints the license" },
-    { "vmdir",                std::nullopt,    "Prints the CHARLYVMDIR environment variable" }
+  { "Default",                {
+    { "help",                 'h',          "Prints the help page" },
+    { "version",              'v',          "Prints the version" },
+    { "license",              'l',          "Prints the license" },
+    { "vmdir",                std::nullopt, "Prints the CHARLYVMDIR environment variable" }
   } },
-  { "Dump", {
-    { "skipexec",             std::nullopt,    "Don't execute the code" },
-    { "dump_file_include",    std::nullopt,    "Add file to list of files to be dumped",               "filename" },
-    { "dump_ast",             std::nullopt,    "Dump the AST of the input file" },
-    { "dump_tokens",          std::nullopt,    "Dump the tokens of the input file" },
-    { "dump_asm",             std::nullopt,    "Dump the compiled bytecode of the input file" },
-    { "asm_no_offsets",       std::nullopt,    "Do not print offsets in dumped bytecode" },
-    { "asm_no_branches",      std::nullopt,    "Do not print branches in dumped bytecode" },
-    { "asm_no_func_branches", std::nullopt,    "Do not print function branches in dumped bytecode" }
+  { "Dump",                   {
+    { "skipexec",             std::nullopt, "Don't execute the code" },
+    { "dump",                 std::nullopt, "Add file to list of files to be dumped",               "filename" },
+    { "dump_ast",             std::nullopt, "Dump the AST of the input file" },
+    { "dump_tokens",          std::nullopt, "Dump the tokens of the input file" },
+    { "dump_asm",             std::nullopt, "Dump the compiled bytecode of the input file" },
+    { "asm_no_offsets",       std::nullopt, "Do not print offsets in dumped bytecode" },
+    { "asm_no_branches",      std::nullopt, "Do not print branches in dumped bytecode" },
+    { "asm_no_func_branches", std::nullopt, "Do not print function branches in dumped bytecode" }
   } },
 
 #ifndef CHARLY_PRODUCTION
-  { "Debugging", {
-    { "instruction_profile",  std::nullopt,    "Profile the execution time of individual bytecodes" },
-    { "trace_opcodes",        std::nullopt,    "Display opcodes as they are executed" },
-    { "trace_catchtables",    std::nullopt,    "Trace catchtable enter / leave" },
-    { "trace_frames",         std::nullopt,    "Trace frame enter / leave" },
-    { "trace_gc",             std::nullopt,    "Display GC debug output" }
+  { "Debugging",              {
+    { "instruction_profile",  std::nullopt, "Profile the execution time of individual bytecodes" },
+    { "trace_opcodes",        std::nullopt, "Display opcodes as they are executed" },
+    { "trace_catchtables",    std::nullopt, "Trace catchtable enter / leave" },
+    { "trace_frames",         std::nullopt, "Trace frame enter / leave" },
+    { "trace_gc",             std::nullopt, "Display GC debug output" }
   } }
 #endif
 };
@@ -142,7 +142,7 @@ namespace CLIFlags {
   // Check wether a flag has a specific argument set
   //
   // e.g:
-  // CLIFlags::flag_has_argument("dump_file_include", current_filename, true)
+  // CLIFlags::flag_has_argument("dump", current_filename, true)
   bool flag_has_argument(const std::string& name, const std::string& argument, bool match_substring = false);
 
   // Return the value of some environment variable

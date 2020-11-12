@@ -49,16 +49,17 @@ CompilerResult Compiler::compile(AST::AbstractNode* tree) {
 
   // Wrap the whole program in a function which handles the exporting interface
   // to other programs
-  AST::Function* inclusion_function = new AST::Function("main", {"export"}, {}, block, true);
+  AST::Function* inclusion_function = new AST::Function("main", {"export"}, {}, block, false);
   inclusion_function->at(block);
   inclusion_function->lvarcount = 0;
   result.abstract_syntax_tree = inclusion_function;
 
   // Push the function onto the stack and wrap it in a block node
   // The PushStack node prevents the optimizer from removing the function literal
-  result.abstract_syntax_tree = new AST::PushStack(result.abstract_syntax_tree);
+  AST::NodeList* arglist = new AST::NodeList(new AST::Hash());
+  result.abstract_syntax_tree = new AST::Call(result.abstract_syntax_tree, arglist);
   result.abstract_syntax_tree->at(block);
-  result.abstract_syntax_tree = new AST::Block(result.abstract_syntax_tree);
+  result.abstract_syntax_tree = new AST::Return(result.abstract_syntax_tree);
   result.abstract_syntax_tree->at(block);
 
   try {

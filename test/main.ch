@@ -26,6 +26,13 @@
 
 import "unittest"
 
+if ARGV.contains("help") {
+  print("Charly Unit Test Framework")
+  print("--hide-stacktraces       Do not show stacktraces in error outputs")
+  print("--runtime-profiler       Execute the test suite many times in a loop")
+  return 0
+}
+
 const result = unittest(->(describe, it, assert, context) {
   const testcases = [
 

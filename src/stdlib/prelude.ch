@@ -24,9 +24,8 @@
  * SOFTWARE.
  */
 
-// Setup the global scope
-@"charly.vm.globals"        = {}
-@"charly.vm.globals".Charly = { globals: @"charly.vm.globals" }
+// Link global scope
+@"charly.vm.globals".Charly = @"charly.vm.globals"
 
 // Load internal methods
 const __internal_write           = @"charly.vm.write"
@@ -36,8 +35,8 @@ const __internal_exit            = @"charly.vm.exit"
 __internal_exit.halt_after_return = true
 
 // Setup some information about our runtime environment
-Charly.globals.ARGV         = @"charly.vm.argv"
-Charly.globals.ENVIRONMENT  = @"charly.vm.env"
+Charly.ARGV         = @"charly.vm.argv"
+Charly.ENVIRONMENT  = @"charly.vm.env"
 const CHARLYVMDIR = ENVIRONMENT["CHARLYVMDIR"] || ->{throw "Missing CHARLYVMDIR environment variable"}()
 
 // Setup import function
@@ -46,7 +45,14 @@ const BUILTIN_LIBS = {
 }
 
 const IMPORT_CACHE = {}
-Charly.globals.__charly_internal_import = ->(path, source, ignore_cache = false) {
+Charly.__charly_internal_import = func __charly_internal_import(path, source, ignore_cache = false) {
+
+  // check for stdlib Path object
+  if Charly.Path {
+    if path.is_a(Path) {
+      path = path.to_s()
+    }
+  }
 
   // Check if we're importing a builtin library
   const lib = BUILTIN_LIBS[path]
@@ -56,81 +62,80 @@ Charly.globals.__charly_internal_import = ->(path, source, ignore_cache = false)
 
   unless ignore_cache {
     const cache_entry = IMPORT_CACHE[path]
-    if cache_entry return cache_entry.v
+    if cache_entry return cache_entry.module
   }
 
-  const module_fn = __internal_import(path, source)
-  unless module_fn throw new Error("Import didn't return a module function")
-  const v = module_fn({})
-  IMPORT_CACHE[path] = {v}
-  v
+  const module = __internal_import(path, source)()
+  IMPORT_CACHE[path] = {module}
+  module
 }
 
 // Setup primitive classes
-Charly.globals.Value     = @"charly.vm.primitive.value"     = (import "./primitives/value.ch")()
-Charly.globals.Object    = @"charly.vm.primitive.object"    = (import "./primitives/object.ch")(Value)
-Charly.globals.Array     = @"charly.vm.primitive.array"     = (import "./primitives/array.ch")(Value)
-Charly.globals.Boolean   = @"charly.vm.primitive.boolean"   = (import "./primitives/boolean.ch")(Value)
-Charly.globals.Class     = @"charly.vm.primitive.class"     = (import "./primitives/class.ch")(Value)
-Charly.globals.Function  = @"charly.vm.primitive.function"  = (import "./primitives/function.ch")(Value)
-Charly.globals.Null      = @"charly.vm.primitive.null"      = (import "./primitives/null.ch")(Value)
-Charly.globals.Number    = @"charly.vm.primitive.number"    = (import "./primitives/number.ch")(Value)
-Charly.globals.String    = @"charly.vm.primitive.string"    = (import "./primitives/string.ch")(Value)
-Charly.globals.Frame     = @"charly.vm.primitive.frame"     = (import "./primitives/frame.ch")(Value)
+Charly.Value     = @"charly.vm.primitive.value"     = (import "./primitives/value.ch")()
+Charly.Object    = @"charly.vm.primitive.object"    = (import "./primitives/object.ch")(Value)
+Charly.Array     = @"charly.vm.primitive.array"     = (import "./primitives/array.ch")(Value)
+Charly.Boolean   = @"charly.vm.primitive.boolean"   = (import "./primitives/boolean.ch")(Value)
+Charly.Class     = @"charly.vm.primitive.class"     = (import "./primitives/class.ch")(Value)
+Charly.Function  = @"charly.vm.primitive.function"  = (import "./primitives/function.ch")(Value)
+Charly.Null      = @"charly.vm.primitive.null"      = (import "./primitives/null.ch")(Value)
+Charly.Number    = @"charly.vm.primitive.number"    = (import "./primitives/number.ch")(Value)
+Charly.String    = @"charly.vm.primitive.string"    = (import "./primitives/string.ch")(Value)
+Charly.Frame     = @"charly.vm.primitive.frame"     = (import "./primitives/frame.ch")(Value)
 
 // Setup some additional data structures
 
 // Write a value to stdout, without a trailing newline
-Charly.globals.write = func write {
+Charly.write = func write {
   arguments.each(->(a) __internal_write(a.to_s()))
   write
 }
-Charly.globals.write.dir = func write_dir {
+Charly.write.dir = func write_dir {
   arguments.each(->(v) __internal_write(v))
   write.dir
 }
 
 // Write a value to stdout, with a trailing newline
-Charly.globals.print = func print {
+Charly.print = func print {
   arguments.each(->(v) __internal_write(v.to_s()))
   __internal_write("\n")
   write
 }
-Charly.globals.print.dir = func print_dir {
+Charly.print.dir = func print_dir {
   arguments.each(->(v) __internal_write(v))
   __internal_write("\n")
   print.dir
 }
 
 // Exits the program with a given status code
-Charly.globals.exit = func exit(status = 0) {
+Charly.exit = func exit(status = 0) {
   __internal_exit(status)
 }
 
-// Setup the charly object
-Charly.io = {
-  write,
-  print,
-  getn: ->(msg = null) {
-    if msg write(msg)
-    return __internal_getn()
-  }
+Charly.getn = func getn(msg = null) {
+  if msg write(msg)
+  return __internal_getn()
 }
 
-
 // Some libraries and data structures
-Charly.globals.CircularBuffer = import "./libs/circular_buffer.ch"
-Charly.globals.StringBuffer   = import "./libs/stringbuffer.ch"
-Charly.globals.Error          = import "./libs/error.ch"
-Charly.globals.Heap           = import "./libs/heap.ch"
-Charly.globals.Math           = import "./libs/math.ch"
-Charly.globals.Path           = import "./libs/path.ch"
-Charly.globals.Queue          = import "./libs/queue.ch"
-Charly.globals.Sync           = import "./libs/sync.ch"
-Charly.globals.Time           = import "./libs/time.ch"
+Charly.CircularBuffer = import "./libs/circular_buffer.ch"
+Charly.StringBuffer   = import "./libs/stringbuffer.ch"
+Charly.Error          = import "./libs/error.ch"
+Charly.Heap           = import "./libs/heap.ch"
+Charly.Math           = import "./libs/math.ch"
+Charly.Path           = import "./libs/path.ch"
+Charly.Queue          = import "./libs/queue.ch"
+Charly.Sync           = import "./libs/sync.ch"
+Charly.Time           = import "./libs/time.ch"
 
 // Quick access to commonly used stuff
-Charly.globals.Promise = Sync.Promise
-Charly.globals.Channel = Sync.Channel
-Charly.globals.spawn   = Sync.spawn
-Charly.globals.sleep   = Sync.sleep
+Charly.Promise = Sync.Promise
+Charly.Channel = Sync.Channel
+Charly.spawn   = Sync.spawn
+Charly.sleep   = Sync.sleep
+
+// Load the userfile
+const userfile = Path.expand(ARGV[0])
+const user_export = import userfile
+if typeof user_export == "number" {
+  exit(user_export)
+}

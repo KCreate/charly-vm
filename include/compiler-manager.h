@@ -44,14 +44,22 @@ namespace Charly::Compilation {
 class CompilerManager {
 public:
   CompilerManager() {
-
-    // Pre-register some symbols in the symtable
-    SymbolTable::encode("klass");
-    SymbolTable::encode("name");
-    SymbolTable::encode("prototype");
-    SymbolTable::encode("parent");
-    SymbolTable::encode("length");
+    SymbolTable::encode("__charly_internal_stale_thread_exception");
+    SymbolTable::encode("argc");
     SymbolTable::encode("constructor");
+    SymbolTable::encode("function");
+    SymbolTable::encode("halt_after_return");
+    SymbolTable::encode("host_class");
+    SymbolTable::encode("klass");
+    SymbolTable::encode("length");
+    SymbolTable::encode("main");
+    SymbolTable::encode("name");
+    SymbolTable::encode("parent");
+    SymbolTable::encode("parent_environment");
+    SymbolTable::encode("prototype");
+    SymbolTable::encode("push_return_value");
+    SymbolTable::encode("self_value");
+    SymbolTable::encode("source_location");
     SymbolTable::encode("<dead>");
     SymbolTable::encode("<class>");
     SymbolTable::encode("<object>");
@@ -68,11 +76,6 @@ public:
     SymbolTable::encode("<symbol>");
     SymbolTable::encode("<unknown>");
     SymbolTable::encode("<anonymous>");
-
-    // Pre-register numbers -1000 to 1000
-    for (int32_t i = -1000; i <= 1000; i++) {
-      SymbolTable::encode(std::to_string(i));
-    }
   };
   CompilerManager(const CompilerManager&) = delete;
   CompilerManager(CompilerManager&&) = delete;

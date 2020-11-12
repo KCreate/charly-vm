@@ -24,16 +24,15 @@
  * SOFTWARE.
  */
 
-const N = ARGV[1].to_n()
-
-N.times(->(i) {
-  class Box {
-    property foo
-    property bar
-    property baz
+if Charly.foo {
+  print("loading package")
+  return {
+    data: "hello world!!!"
   }
+}
 
-  const b1 = new Box(1, 2, 3)
-  const b2 = new Box()
-  const b3 = new Box(1, 2)
-})
+Charly.foo = true
+
+print(import "debug.ch")
+print(import "debug.ch")
+print(import "debug.ch")

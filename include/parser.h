@@ -54,7 +54,7 @@ struct ParserResult {
 struct KeywordContext {
   bool break_allowed = false;
   bool continue_allowed = false;
-  bool return_allowed = false;
+  bool return_allowed = true;
   bool yield_allowed = false;
   bool super_allowed = false;
   bool super_member_allowed = false;

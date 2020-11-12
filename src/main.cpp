@@ -83,6 +83,7 @@ int main(int argc, char** argv) {
   }
 
   std::optional<std::string> filename = CLIFlags::get_argument(0);
+  CLIFlags::set_flag("dump", filename);
 
   // Check if a filename was given
   if (!filename) {
@@ -106,17 +107,6 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  CLIFlags::set_flag("dump_file_include", filename);
-
-  std::string inputfile_path(std::string(std::getenv("PWD")) + "/" + filename.value());
-
-  // Read the userfile
-  std::ifstream inputfile(inputfile_path);
-  if (!inputfile.is_open()) {
-    std::cerr << "Could not open file" << '\n';
-    return 1;
-  }
-  std::string source_string((std::istreambuf_iterator<char>(inputfile)), std::istreambuf_iterator<char>());
 
   // Read the prelude
   char* stdlibpath = std::getenv("CHARLYVMDIR");
@@ -140,12 +130,7 @@ int main(int argc, char** argv) {
   for (auto& sig : Internals::Index::methods)
     SymbolTable::encode(sig.second.name);
 
-  auto cresult_userfile = cmanager.compile(inputfile_path, source_string);
   auto cresult_prelude = cmanager.compile(preludepath, prelude_string);
-
-  if (!cresult_userfile.has_value()) {
-    return 1;
-  }
 
   if (!cresult_prelude.has_value()) {
     return 1;
@@ -159,11 +144,8 @@ int main(int argc, char** argv) {
   VM vm(context);
   GarbageCollector::set_host_vm(vm);
 
-  VALUE fn_prelude = vm.register_module(cresult_prelude->instructionblock.value());
-  VALUE fn_user = vm.register_module(cresult_userfile->instructionblock.value());
-
-  vm.register_task(VMTask::init_callback(fn_prelude));
-  vm.register_task(VMTask::init_callback(fn_user));
+  InstructionBlock* iblock = cresult_prelude->instructionblock.value();
+  vm.register_task(VMTask::init_callback(charly_allocate<Function>(SYM("main"), iblock)));
   uint8_t status_code = vm.start_runtime();
 
   // Display the instruction profile if requested

@@ -216,7 +216,10 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
     return kNull;
   }
 
-  return vm.register_module(cresult->instructionblock.value());
+  InstructionBlock* iblock = cresult->instructionblock.value();
+  Immortal<Function> module_fn = charly_allocate<Function>(SYM("main"), iblock);
+  module_fn->write(SYM("path"), charly_allocate_string(include_filename));
+  return module_fn->as_value();
 }
 
 VALUE write(VM&, VALUE value) {

@@ -375,12 +375,14 @@ protected:
 };
 
 // Normal functions defined inside the virtual machine.
+class InstructionBlock;
 class Function : public Container {
   friend class GarbageCollector;
 public:
   void init(VALUE name, Frame* context, uint8_t* body, uint32_t argc, uint32_t minimum_argc,
             uint32_t lvarcount, bool anonymous, bool needs_arguments);
   void init(Function* source); // copy constructor
+  void init(VALUE name, InstructionBlock* iblock);
 
   void set_context(Frame* context);
   void set_host_class(Class* host_class);
