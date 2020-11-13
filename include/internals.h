@@ -33,17 +33,13 @@
 namespace Charly {
 namespace Internals {
 
-// The signature of an internal method
 struct MethodSignature {
   std::string name;
   size_t argc;
   void* func_pointer;
 };
 
-// Stores runtime lookup tables for internals
-struct Index {
-  static std::unordered_map<VALUE, MethodSignature> methods;
-};
+extern std::unordered_map<VALUE, MethodSignature> methods;
 
 #define CHECK(T, V)                                             \
   {                                                             \
@@ -52,14 +48,6 @@ struct Index {
       return kNull;                                             \
     }                                                           \
   }
-
-VALUE import(VM& vm, VALUE filename, VALUE source);
-VALUE write(VM& vm, VALUE value);
-VALUE getn(VM& vm);
-VALUE exit(VM& vm, VALUE status_code);
-
-VALUE debug_func(VM& vm);
-VALUE testfunc(VM& vm, VALUE argument);
 
 }  // namespace Internals
 }  // namespace Charly

@@ -962,8 +962,9 @@ void VM::op_readarrayindex(uint32_t index) {
 void VM::op_readglobal(VALUE symbol) {
 
   // Check internal methods table
-  if (Internals::Index::methods.count(symbol)) {
-    Internals::MethodSignature& sig = Internals::Index::methods.at(symbol);
+  if (Internals::methods.count(symbol)) {
+    Internals::MethodSignature& sig = Internals::methods.at(symbol);
+    SymbolTable::encode(sig.name);
     CFunction* cfunc = charly_allocate<CFunction>(symbol, sig.func_pointer, sig.argc);
     this->push_stack(cfunc->as_value());
     return;
@@ -994,7 +995,7 @@ void VM::op_readglobal(VALUE symbol) {
         argv->push(charly_allocate_string(argument));
       }
 
-      this->push_stack(argv->as_value());
+      this->push_stack(argv);
     })
     GLOBAL("charly.vm.env", {
       Immortal<Object> env = charly_allocate<Object>(CLIFlags::s_environment.size());
@@ -1003,7 +1004,20 @@ void VM::op_readglobal(VALUE symbol) {
         env->write(SymbolTable::encode(entry.first), charly_allocate_string(entry.second));
       }
 
-      this->push_stack(env->as_value());
+      this->push_stack(env);
+    })
+    GLOBAL("charly.vm.flags", {
+      Immortal<Object> flags = charly_allocate<Object>(CLIFlags::s_charly_flags.size());
+
+      for (const auto& entry : CLIFlags::s_charly_flags) {
+        Immortal<Array> arguments = charly_allocate<Array>(entry.second.size());
+        for (const std::string& arg : entry.second) {
+          arguments->push(charly_allocate_string(arg));
+        }
+        flags->write(SymbolTable::encode(entry.first), arguments);
+      }
+
+      this->push_stack(flags);
     })
   }
 #undef GLOBAL
@@ -1135,7 +1149,7 @@ void VM::op_setglobal(VALUE symbol) {
   Immortal<> value = this->pop_stack();
 
   // Check internal methods table
-  if (Internals::Index::methods.count(symbol)) {
+  if (Internals::methods.count(symbol)) {
     this->throw_exception("Cannot overwrite internal vm methods");
     return;
   }
@@ -1171,7 +1185,7 @@ void VM::op_setglobalpush(VALUE symbol) {
   this->push_stack(value);
 
   // Check internal methods table
-  if (Internals::Index::methods.count(symbol)) {
+  if (Internals::methods.count(symbol)) {
     this->throw_exception("Cannot overwrite internal vm methods");
     return;
   }
@@ -2569,7 +2583,7 @@ uint8_t VM::start_runtime() {
           this->resume_thread(entry.first, exc_obj->as_value());
         }
       } else {
-        this->running = false;
+        break;
       }
     }
   }

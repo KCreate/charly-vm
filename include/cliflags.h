@@ -95,10 +95,11 @@ static std::vector<FlagGroup> kDefinedFlagGroups = {
     { "help",                 'h',          "Prints the help page" },
     { "version",              'v',          "Prints the version" },
     { "license",              'l',          "Prints the license" },
-    { "vmdir",                std::nullopt, "Prints the CHARLYVMDIR environment variable" }
+    { "vmdir",                std::nullopt, "Prints the CHARLYVMDIR environment variable" },
+    { "skipexec",             std::nullopt, "Don't execute the code" },
+    { "skipprelude",          std::nullopt, "Don't execute the prelude" },
   } },
   { "Dump",                   {
-    { "skipexec",             std::nullopt, "Don't execute the code" },
     { "dump",                 std::nullopt, "Add file to list of files to be dumped",               "filename" },
     { "dump_ast",             std::nullopt, "Dump the AST of the input file" },
     { "dump_tokens",          std::nullopt, "Dump the tokens of the input file" },

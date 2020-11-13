@@ -45,44 +45,8 @@
 #include "libs/primitives/string/string.h"
 #include "libs/primitives/value/value.h"
 
-//        (N)ame
-//        (S)ymbol
-//     arg(C)
-#define DEFINE_INTERNAL_METHOD(N, S, C)                   \
-  {                                                       \
-    charly_create_symbol(N), {                            \
-      N, C, reinterpret_cast<void*>(Charly::Internals::S) \
-    }                                                     \
-  }
-
 namespace Charly {
 namespace Internals {
-std::unordered_map<VALUE, MethodSignature> Index::methods = {
-
-    // Primitives
-#import "libs/primitives/array/array.def"
-#import "libs/primitives/function/function.def"
-#import "libs/primitives/number/number.def"
-#import "libs/primitives/object/object.def"
-#import "libs/primitives/string/string.def"
-#import "libs/primitives/value/value.def"
-
-    // Libraries
-#import "libs/math/math.def"
-#import "libs/time/time.def"
-#import "libs/stringbuffer/stringbuffer.def"
-#import "libs/sync/sync.def"
-
-    // VM internals
-    //
-    //                     Symbol                           Function Pointer       ARGC
-    DEFINE_INTERNAL_METHOD("charly.vm.import",              import,                2),
-    DEFINE_INTERNAL_METHOD("charly.vm.write",               write,                 1),
-    DEFINE_INTERNAL_METHOD("charly.vm.getn",                getn,                  0),
-    DEFINE_INTERNAL_METHOD("charly.vm.exit",                exit,                  1),
-    DEFINE_INTERNAL_METHOD("charly.vm.debug_func",          debug_func,            0),
-    DEFINE_INTERNAL_METHOD("charly.vm.testfunc",            testfunc,              1),
-};
 
 VALUE import(VM& vm, VALUE include, VALUE source) {
   // TODO: Deallocate stuff on error
@@ -135,7 +99,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
         return kNull;
       }
 
-      void* clib = dlopen(include_filename.c_str(), RTLD_LAZY);
+      void* clib = dlopen(include_filename.c_str(), RTLD_NOW);
 
       if (clib == nullptr) {
         vm.throw_exception("Could not open lib file " + include_filename);
@@ -288,6 +252,43 @@ VALUE testfunc(VM& vm, VALUE argument) {
   object->write(SymbolTable::encode("d"), charly_add_number(argument, charly_create_number(3)));
   return object;
 }
+
+//        (N)ame
+//        (S)ymbol
+//     arg(C)
+#define DEFINE_INTERNAL_METHOD(N, S, C)                   \
+  {                                                       \
+    charly_create_symbol(N), {                            \
+      N, C, reinterpret_cast<void*>(Charly::Internals::S) \
+    }                                                     \
+  }
+
+std::unordered_map<VALUE, MethodSignature> methods = {
+
+    // Primitives
+#import "libs/primitives/array/array.def"
+#import "libs/primitives/function/function.def"
+#import "libs/primitives/number/number.def"
+#import "libs/primitives/object/object.def"
+#import "libs/primitives/string/string.def"
+#import "libs/primitives/value/value.def"
+
+    // Libraries
+#import "libs/math/math.def"
+#import "libs/time/time.def"
+#import "libs/stringbuffer/stringbuffer.def"
+#import "libs/sync/sync.def"
+
+    // VM internals
+    //
+    //                     Symbol                           Function Pointer       ARGC
+    DEFINE_INTERNAL_METHOD("charly.vm.import",              import,                2),
+    DEFINE_INTERNAL_METHOD("charly.vm.write",               write,                 1),
+    DEFINE_INTERNAL_METHOD("charly.vm.getn",                getn,                  0),
+    DEFINE_INTERNAL_METHOD("charly.vm.exit",                exit,                  1),
+    DEFINE_INTERNAL_METHOD("charly.vm.debug_func",          debug_func,            0),
+    DEFINE_INTERNAL_METHOD("charly.vm.testfunc",            testfunc,              1),
+};
 
 }  // namespace Internals
 }  // namespace Charly

@@ -37,6 +37,7 @@ __internal_exit.halt_after_return = true
 // Setup some information about our runtime environment
 Charly.ARGV         = @"charly.vm.argv"
 Charly.ENVIRONMENT  = @"charly.vm.env"
+Charly.FLAGS        = @"charly.vm.flags"
 const CHARLYVMDIR = ENVIRONMENT["CHARLYVMDIR"] || ->{throw "Missing CHARLYVMDIR environment variable"}()
 
 // Setup import function
@@ -65,7 +66,8 @@ Charly.__charly_internal_import = func __charly_internal_import(path, source, ig
     if cache_entry return cache_entry.module
   }
 
-  const module = __internal_import(path, source)()
+  const module_main = __internal_import(path, source)
+  const module = module_main()
   IMPORT_CACHE[path] = {module}
   module
 }
@@ -132,10 +134,3 @@ Charly.Promise = Sync.Promise
 Charly.Channel = Sync.Channel
 Charly.spawn   = Sync.spawn
 Charly.sleep   = Sync.sleep
-
-// Load the userfile
-const userfile = Path.expand(ARGV[0])
-const user_export = import userfile
-if typeof user_export == "number" {
-  exit(user_export)
-}

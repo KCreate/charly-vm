@@ -107,6 +107,14 @@ int main(int argc, char** argv) {
     return 0;
   }
 
+  // Read the userfile
+  std::string inputfile_path = std::string(std::getenv("PWD")) + "/" + filename.value();
+  std::ifstream inputfile(inputfile_path);
+  if (!inputfile.is_open()) {
+    std::cerr << "Could not open file" << '\n';
+    return 1;
+  }
+  std::string source_string((std::istreambuf_iterator<char>(inputfile)), std::istreambuf_iterator<char>());
 
   // Read the prelude
   char* stdlibpath = std::getenv("CHARLYVMDIR");
@@ -125,28 +133,33 @@ int main(int argc, char** argv) {
   std::string prelude_string((std::istreambuf_iterator<char>(preludefile)), std::istreambuf_iterator<char>());
 
   Compilation::CompilerManager cmanager;
-
-  // Load symbols of internal vm methods
-  for (auto& sig : Internals::Index::methods)
-    SymbolTable::encode(sig.second.name);
-
   auto cresult_prelude = cmanager.compile(preludepath, prelude_string);
+  auto cresult_userfile = cmanager.compile(inputfile_path, source_string);
 
   if (!cresult_prelude.has_value()) {
     return 1;
   }
 
-  if (CLIFlags::is_flag_set("skipexec")) {
-    return 0;
+  if (!cresult_userfile.has_value()) {
+    return 1;
   }
 
   VMContext context({ .compiler_manager = cmanager });
   VM vm(context);
   GarbageCollector::set_host_vm(vm);
 
-  InstructionBlock* iblock = cresult_prelude->instructionblock.value();
-  vm.register_task(VMTask::init_callback(charly_allocate<Function>(SYM("main"), iblock)));
-  uint8_t status_code = vm.start_runtime();
+  uint8_t status_code = 0;
+  if (!CLIFlags::is_flag_set("skipprelude")) {
+    InstructionBlock* iblock_prelude = cresult_prelude->instructionblock.value();
+    vm.register_task(VMTask::init_callback(charly_allocate<Function>(SYM("main"), iblock_prelude)));
+    status_code = vm.start_runtime();
+  }
+
+  if (!CLIFlags::is_flag_set("skipexec")) {
+    InstructionBlock* iblock = cresult_userfile->instructionblock.value();
+    vm.register_task(VMTask::init_callback(charly_allocate<Function>(SYM("main"), iblock)));
+    status_code = vm.start_runtime();
+  }
 
   // Display the instruction profile if requested
   if (CLIFlags::is_flag_set("instruction_profile")) {
