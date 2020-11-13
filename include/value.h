@@ -1464,7 +1464,7 @@ namespace CRC32 {
 
   constexpr uint32_t crc32_impl(const char* p, size_t len, uint32_t crc) {
     return len ?
-            crc32_impl(p + 1,len - 1,(crc >> 8) ^ crc_table[(crc & 0xFF) ^ *p])
+            crc32_impl(p + 1, len - 1, (crc >> 8) ^ crc_table[(uint8_t)((crc & 0xFF) ^ *p)])
             : crc;
   }
 

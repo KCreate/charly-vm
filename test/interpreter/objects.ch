@@ -78,6 +78,16 @@ export = ->(describe, it, assert) {
     assert(Object.keys(obj).contains("<class>"))
   })
 
+  it("correctly encodes symbols containing unicode codepoints", ->{
+    const obj = {}
+
+    obj["ƒ"] = "ƒ"
+    obj["ä"] = "ä"
+    obj["üäö"] = "üäö"
+
+    assert(Object.keys(obj).similar(["ƒ", "ä", "üäö"]))
+  })
+
   it("adds functions to objects", ->{
     class Box {}
     const myBox = new Box()
