@@ -28,18 +28,19 @@
 #include <algorithm>
 
 #include "string.h"
-#include "vm.h"
+#include "gc.h"
 
 namespace Charly {
 namespace Internals {
 namespace PrimitiveString {
 
-VALUE to_n(VM& vm, VALUE str) {
+Result to_n(VM&, VALUE str) {
   CHECK(string, str);
+
   return charly_create_number(charly_string_to_double(str));
 }
 
-VALUE ltrim(VM& vm, VALUE src) {
+Result ltrim(VM&, VALUE src) {
   CHECK(string, src);
 
   std::string _str(charly_string_data(src), charly_string_length(src));
@@ -47,7 +48,7 @@ VALUE ltrim(VM& vm, VALUE src) {
   return charly_allocate_string(_str);
 }
 
-VALUE rtrim(VM& vm, VALUE src) {
+Result rtrim(VM&, VALUE src) {
   CHECK(string, src);
 
   std::string _str(charly_string_data(src), charly_string_length(src));
@@ -56,22 +57,20 @@ VALUE rtrim(VM& vm, VALUE src) {
 }
 
 // TODO: Implement utf8 conversions
-VALUE lowercase(VM& vm, VALUE src) {
+Result lowercase(VM&, VALUE src) {
   CHECK(string, src);
+
   std::string _str(charly_string_data(src), charly_string_length(src));
-
   std::transform(_str.begin(), _str.end(), _str.begin(), [](char c) { return std::tolower(c, std::locale()); });
-
   return charly_allocate_string(_str);
 }
 
 // TODO: Implement utf8 conversions
-VALUE uppercase(VM& vm, VALUE src) {
+Result uppercase(VM&, VALUE src) {
   CHECK(string, src);
+
   std::string _str(charly_string_data(src), charly_string_length(src));
-
   std::transform(_str.begin(), _str.end(), _str.begin(), [](char c) { return std::toupper(c, std::locale()); });
-
   return charly_allocate_string(_str);
 }
 

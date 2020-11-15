@@ -30,12 +30,18 @@
 
 #include <utf8/utf8.h>
 
-#include "cliflags.h"
-#include "gc.h"
-#include "status.h"
 #include "vm.h"
+#include "gc.h"
+#include "cliflags.h"
+#include "status.h"
+#include "internals.h"
+#include "internals.h"
 
 namespace Charly {
+
+VM::VM(VMContext& ctx) : context(ctx) {
+  this->globals = charly_allocate<Object>(32);
+}
 
 Frame* VM::pop_frame() {
   Frame* frame = this->frames;
@@ -902,12 +908,16 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
   CatchTable* original_catchtable = this->catchstack;
 
   // Invoke the C function
-  VALUE rv = charly_call_cfunction(this, function, argc, argv);
+  Internals::Result result = function->call(this, argc, argv);
+  if (std::holds_alternative<std::string>(result)) {
+    this->throw_exception(std::get<std::string>(result));
+    return;
+  }
 
   this->halted = function->get_halt_after_return();
 
   if (function->get_push_return_value() && this->catchstack == original_catchtable) {
-    this->push_stack(rv);
+    this->push_stack(std::get<VALUE>(result));
   }
 }
 
@@ -1529,13 +1539,13 @@ void VM::op_throw() {
 }
 
 void VM::throw_exception(const std::string& message) {
-  if (!this->internal_error_class) {
-    this->panic(Status::UndefinedGlobalReference);
+  if (this->internal_error_class) {
+    this->push_stack(this->internal_error_class->as_value());
+    this->push_stack(charly_allocate_string(message.c_str(), message.size()));
+    this->op_new(1);
+  } else {
+    this->throw_exception(charly_allocate_string(message));
   }
-
-  this->push_stack(this->internal_error_class->as_value());
-  this->push_stack(charly_allocate_string(message.c_str(), message.size()));
-  this->op_new(1);
 }
 
 void VM::throw_exception(VALUE payload) {
@@ -2466,8 +2476,6 @@ charly_main_switch_typeof : {
 }
 
 uint8_t VM::start_runtime() {
-  this->starttime = std::chrono::high_resolution_clock::now();
-
   while (this->running) {
     Timestamp now = std::chrono::steady_clock::now();
 

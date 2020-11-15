@@ -2,12 +2,18 @@
 
 - VM Refactor
   - Implementation timeline
-    - C methods refactor
-      - C methods should not have access to the VM internals
-      - Only receive the self value and arguments passed to the function
-      - How do C methods throw exceptions?
-      - C methods do not return a VALUE directly
-        - create return wrapper struct for regular returns and exceptions
+    - C methods shouldn't need access to VM struct
+      - Write some kind of syscall mechanism, access to it via charly source code
+      - Which modules / methods need to be turned into syscalls
+        - Function library (dynamic function calls)
+        - Sync library (task queue, timers, fibers)
+        - Internals (vm.exit, and compiler manager)
+        - Array library (vm.eq)
+      - Refactor compiler manager
+      - Refactor address mapping
+      - Refactor instructionblock lifetime management
+      - Refactor VM comparison methods
+      - Refactor C method return system (with error handling, no direct access to exceptions)
     - Refactor compiler address mapping
       - Each function should have a reference to the instructionblock
         it is contained in.
@@ -230,6 +236,21 @@
     }
     ```
 
+- Differentiate between wrapped C code and methods that operate on VM internals.
+  - VM internals should be accessed via some VM syscall mechanism
+  - Wrapped C methods should be accesed via an FFI interface built with libffi
+    - Charly can load shared libraries that are built explicitly for Charly
+      - Shared libraries should export the following information
+        - Name of the library
+        - Description of the library
+        - List of methods the library provides
+          - Name of the method
+          - Argument count
+          - Types of arguments
+    - Charly can also load misc. shared libraries, in this case an FFI interface is needed
+      to call the functions
+    - Charly should do automatic type conversion from charly types to C types whenever possible
+
 - Automated CI testing
   - TravisCI supports C++ builds and also has nice GitHub integration
   - https://docs.travis-ci.com/user/languages/cpp/
@@ -332,9 +353,6 @@
     - check object for specific layout
     - syntax support for type checking?
 
-- Fix the Garbage Collector bug for reals
-  - VM::pop_queue is a temporary fix and needs to be revisited in the future
-
 - Bug with try catch statements
   - `break`, `continue` do not drop the active catchtable
   - `break`, `continue`, `return` do not respect the `finally` handler
@@ -368,12 +386,6 @@
   - How is method lookup performed?
   - Which parent classes have priority?
   - SHould a class and an interface be separate things?
-
-- Raw memory access methods
-  - Create a library and internal methods that allow access to raw memory, via pointers
-  - Load buffers of specific size
-  - Some kinda DSL that allows the automatic mapping of memory to offset fields
-    (basically recreate the C struct in Charly)
 
 - Refactor codebase
   - Compiler, Parser stuff is a huge mess

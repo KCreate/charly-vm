@@ -31,11 +31,11 @@ namespace Charly {
 namespace Internals {
 namespace PrimitiveFunction {
 
-VALUE is_cfunc(VM&, VALUE func) {
+Result is_cfunc(VM&, VALUE func) {
   return charly_is_cfunction(func) ? kTrue : kFalse;
 }
 
-VALUE call(VM& vm, VALUE func, VALUE ctx, VALUE args) {
+Result call(VM& vm, VALUE func, VALUE ctx, VALUE args) {
   CHECK(callable, func);
   CHECK(array, args);
 
@@ -54,7 +54,7 @@ VALUE call(VM& vm, VALUE func, VALUE ctx, VALUE args) {
   return kNull;
 }
 
-VALUE bind_self(VM& vm, VALUE func, VALUE self) {
+Result bind_self(VM&, VALUE func, VALUE self) {
   CHECK(function, func);
 
   Function* function = charly_as_function(func);
@@ -63,7 +63,7 @@ VALUE bind_self(VM& vm, VALUE func, VALUE self) {
   return func;
 }
 
-VALUE unbind_self(VM& vm, VALUE func) {
+Result unbind_self(VM&, VALUE func) {
   CHECK(function, func);
 
   Function* function = charly_as_function(func);

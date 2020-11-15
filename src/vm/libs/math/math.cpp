@@ -24,138 +24,114 @@
  * SOFTWARE.
  */
 
-#include <iostream>
-
 #include <cmath>
-#include <complex>
 #include <random>
 #include "math.h"
-#include "vm.h"
 
 namespace Charly {
 namespace Internals {
 namespace Math {
 
-std::random_device rand_engine;
-
-VALUE cos(VM& vm, VALUE n) {
-  (void)vm;
+Result cos(VM&, VALUE n) {
   CHECK(number, n);
   return charly_create_number(std::cos(charly_number_to_double(n)));
 }
 
-VALUE cosh(VM& vm, VALUE n) {
-  (void)vm;
+Result cosh(VM&, VALUE n) {
   CHECK(number, n);
   return charly_create_number(std::cosh(charly_number_to_double(n)));
 }
 
-VALUE acos(VM& vm, VALUE n) {
-  (void)vm;
+Result acos(VM&, VALUE n) {
   CHECK(number, n);
   return charly_create_number(std::acos(charly_number_to_double(n)));
 }
 
-VALUE acosh(VM& vm, VALUE n) {
-  (void)vm;
+Result acosh(VM&, VALUE n) {
   CHECK(number, n);
   return charly_create_number(std::acosh(charly_number_to_double(n)));
 }
 
-VALUE sin(VM& vm, VALUE n) {
-  (void)vm;
+Result sin(VM&, VALUE n) {
   CHECK(number, n);
   return charly_create_number(std::sin(charly_number_to_double(n)));
 }
 
-VALUE sinh(VM& vm, VALUE n) {
-  (void)vm;
+Result sinh(VM&, VALUE n) {
   CHECK(number, n);
   return charly_create_number(std::sinh(charly_number_to_double(n)));
 }
 
-VALUE asin(VM& vm, VALUE n) {
-  (void)vm;
+Result asin(VM&, VALUE n) {
   CHECK(number, n);
   return charly_create_number(std::asin(charly_number_to_double(n)));
 }
 
-VALUE asinh(VM& vm, VALUE n) {
-  (void)vm;
+Result asinh(VM&, VALUE n) {
   CHECK(number, n);
   return charly_create_number(std::asinh(charly_number_to_double(n)));
 }
 
-VALUE tan(VM& vm, VALUE n) {
-  (void)vm;
+Result tan(VM&, VALUE n) {
   CHECK(number, n);
   return charly_create_number(std::tan(charly_number_to_double(n)));
 }
 
-VALUE tanh(VM& vm, VALUE n) {
-  (void)vm;
+Result tanh(VM&, VALUE n) {
   CHECK(number, n);
   return charly_create_number(std::tanh(charly_number_to_double(n)));
 }
 
-VALUE atan(VM& vm, VALUE n) {
-  (void)vm;
+Result atan(VM&, VALUE n) {
   CHECK(number, n);
   return charly_create_number(std::atan(charly_number_to_double(n)));
 }
 
-VALUE atanh(VM& vm, VALUE n) {
-  (void)vm;
+Result atanh(VM&, VALUE n) {
   CHECK(number, n);
   return charly_create_number(std::atanh(charly_number_to_double(n)));
 }
 
-VALUE cbrt(VM& vm, VALUE n) {
-  (void)vm;
+Result cbrt(VM&, VALUE n) {
   CHECK(number, n);
   return charly_create_number(std::cbrt(charly_number_to_double(n)));
 }
 
-VALUE sqrt(VM& vm, VALUE n) {
-  (void)vm;
+Result sqrt(VM&, VALUE n) {
   CHECK(number, n);
   return charly_create_number(std::sqrt(charly_number_to_double(n)));
 }
 
-VALUE ceil(VM& vm, VALUE n) {
-  (void)vm;
+Result ceil(VM&, VALUE n) {
   CHECK(number, n);
   return charly_create_number(std::ceil(charly_number_to_double(n)));
 }
 
-VALUE floor(VM& vm, VALUE n) {
-  (void)vm;
+Result floor(VM&, VALUE n) {
   CHECK(number, n);
   return charly_create_number(std::floor(charly_number_to_double(n)));
 }
 
-VALUE log(VM& vm, VALUE n) {
-  (void)vm;
+Result log(VM&, VALUE n) {
   CHECK(number, n);
   return charly_create_number(std::log(charly_number_to_double(n)));
 }
 
-VALUE log2(VM& vm, VALUE n) {
-  (void)vm;
+Result log2(VM&, VALUE n) {
   CHECK(number, n);
   return charly_create_number(std::log2(charly_number_to_double(n)));
 }
 
-VALUE log10(VM& vm, VALUE n) {
-  (void)vm;
+Result log10(VM&, VALUE n) {
   CHECK(number, n);
   return charly_create_number(std::log10(charly_number_to_double(n)));
 }
 
-VALUE rand(VM& vm, VALUE min, VALUE max) {
-  (void)vm;
+Result rand(VM&, VALUE min, VALUE max) {
   CHECK(number, min);
   CHECK(number, max);
+
+  static std::random_device rand_engine;
   return charly_create_double(std::uniform_real_distribution<double>(
     charly_number_to_double(min),
     charly_number_to_double(max)

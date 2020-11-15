@@ -31,7 +31,7 @@ namespace Charly {
 namespace Internals {
 namespace Sync {
 
-VALUE init_timer(VM& vm, VALUE cb, VALUE dur) {
+Result init_timer(VM& vm, VALUE cb, VALUE dur) {
   CHECK(function, cb);
   CHECK(number, dur);
 
@@ -48,13 +48,13 @@ VALUE init_timer(VM& vm, VALUE cb, VALUE dur) {
   return charly_create_integer(vm.register_timer(exec_at, VMTask::init_callback(charly_as_function(cb))));
 }
 
-VALUE clear_timer(VM& vm, VALUE uid) {
+Result clear_timer(VM& vm, VALUE uid) {
   CHECK(number, uid);
   vm.clear_timer(charly_number_to_uint64(uid));
   return kNull;
 }
 
-VALUE init_ticker(VM& vm, VALUE cb, VALUE period) {
+Result init_ticker(VM& vm, VALUE cb, VALUE period) {
   CHECK(function, cb);
   CHECK(number, period);
 
@@ -63,24 +63,24 @@ VALUE init_ticker(VM& vm, VALUE cb, VALUE period) {
   return charly_create_integer(vm.register_ticker(ms, VMTask::init_callback(charly_as_function(cb))));
 }
 
-VALUE clear_ticker(VM& vm, VALUE uid) {
+Result clear_ticker(VM& vm, VALUE uid) {
   CHECK(number, uid);
   vm.clear_ticker(charly_number_to_uint64(uid));
   return kNull;
 }
 
-VALUE suspend_thread(VM& vm) {
+Result suspend_thread(VM& vm) {
   vm.suspend_thread();
   return kNull;
 }
 
-VALUE resume_thread(VM& vm, VALUE uid, VALUE argument) {
+Result resume_thread(VM& vm, VALUE uid, VALUE argument) {
   CHECK(number, uid);
   vm.resume_thread(charly_number_to_uint64(uid), argument);
   return kNull;
 }
 
-VALUE get_thread_uid(VM& vm) {
+Result get_thread_uid(VM& vm) {
   return charly_create_integer(vm.get_thread_uid());
 }
 

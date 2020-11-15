@@ -25,13 +25,14 @@
  */
 
 #include "object.h"
-#include "vm.h"
+#include "gc.h"
+#include "symboltable.h"
 
 namespace Charly {
 namespace Internals {
 namespace PrimitiveObject {
 
-VALUE keys(VM& vm, VALUE obj) {
+Result keys(VM&, VALUE obj) {
   CHECK(container, obj);
 
   Immortal<Array> keys_array = charly_allocate<Array>(4);
@@ -46,7 +47,7 @@ VALUE keys(VM& vm, VALUE obj) {
   return keys_array->as_value();
 }
 
-VALUE delete_key(VM& vm, VALUE v, VALUE symbol) {
+Result delete_key(VM&, VALUE v, VALUE symbol) {
   CHECK(string, symbol);
   CHECK(container, v);
 

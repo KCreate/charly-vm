@@ -24,13 +24,13 @@
  * SOFTWARE.
  */
 
-#include <sstream>
 #include <chrono>
+#include <iomanip>
+#include <sstream>
 #include <time.h>
 
 #include "time.h"
-
-#include "vm.h"
+#include "gc.h"
 
 namespace Charly {
 namespace Internals {
@@ -38,27 +38,27 @@ namespace Time {
 
 using TimepointSystem = std::chrono::time_point<std::chrono::system_clock>;
 using TimepointSteady = std::chrono::time_point<std::chrono::steady_clock>;
+using TimepointHighRes = std::chrono::time_point<std::chrono::high_resolution_clock>;
 
-VALUE system_clock_now(VM& vm) {
-  (void)vm;
+static TimepointSteady s_starttime = std::chrono::steady_clock::now();
+
+Result system_clock_now(VM&) {
   TimepointSystem now = std::chrono::system_clock::now();
   return charly_create_double(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count());
 }
 
-VALUE steady_clock_now(VM& vm) {
-  (void)vm;
+Result steady_clock_now(VM&) {
   TimepointSteady now = std::chrono::steady_clock::now();
   return charly_create_double(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count());
 }
 
-VALUE highres_now(VM& vm) {
-  (void)vm;
-  std::chrono::time_point<std::chrono::high_resolution_clock> now = std::chrono::high_resolution_clock::now();
-  auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(now - vm.starttime);
+Result highres_now(VM&) {
+  TimepointSteady now = std::chrono::steady_clock::now();
+  auto ns = std::chrono::duration_cast<std::chrono::microseconds>(now - s_starttime);
   return charly_create_double(ns.count());
 }
 
-VALUE to_local(VM& vm, VALUE ts) {
+Result to_local(VM&, VALUE ts) {
   CHECK(number, ts);
 
   int64_t ms = charly_number_to_int64(ts);
@@ -67,13 +67,12 @@ VALUE to_local(VM& vm, VALUE ts) {
   std::tm tm = *(std::localtime(&time_obj));
 
   char buf[26] = {0};
-  // std::strftime(buf, sizeof(buf), "Www Mmm dd hh:mm:ss yyyy", &tm);
   std::strftime(buf, sizeof(buf), "%a %d. %b %Y %H:%M:%S", &tm);
 
   return charly_allocate_string(buf, sizeof(buf));
 }
 
-VALUE to_utc(VM& vm, VALUE ts) {
+Result to_utc(VM&, VALUE ts) {
   CHECK(number, ts);
 
   int64_t ms = charly_number_to_int64(ts);
@@ -88,7 +87,7 @@ VALUE to_utc(VM& vm, VALUE ts) {
   return charly_allocate_string(buf, sizeof(buf));
 }
 
-VALUE fmt(VM& vm, VALUE ts, VALUE fmt) {
+Result fmt(VM&, VALUE ts, VALUE fmt) {
   CHECK(number, ts);
   CHECK(string, fmt);
 
@@ -118,7 +117,7 @@ VALUE fmt(VM& vm, VALUE ts, VALUE fmt) {
   return charly_allocate_string(result_buf, strlen(result_buf));
 }
 
-VALUE fmtutc(VM& vm, VALUE ts, VALUE fmt) {
+Result fmtutc(VM&, VALUE ts, VALUE fmt) {
   CHECK(number, ts);
   CHECK(string, fmt);
 
@@ -148,7 +147,7 @@ VALUE fmtutc(VM& vm, VALUE ts, VALUE fmt) {
   return charly_allocate_string(result_buf, strlen(result_buf));
 }
 
-VALUE parse(VM& vm, VALUE src, VALUE fmt) {
+Result parse(VM&, VALUE src, VALUE fmt) {
   CHECK(string, src);
   CHECK(string, fmt);
 

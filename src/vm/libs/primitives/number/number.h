@@ -32,9 +32,9 @@ namespace Charly {
 namespace Internals {
 namespace PrimitiveNumber {
 
-VALUE to_float(VM& vm, VALUE number);
-VALUE to_int(VM& vm, VALUE number);
-VALUE is_float(VM& vm, VALUE number);
+Result to_float(VM& vm, VALUE number);
+Result to_int(VM& vm, VALUE number);
+Result is_float(VM& vm, VALUE number);
 
 }  // namespace PrimitiveNumber
 }  // namespace Internals

@@ -48,7 +48,7 @@
 namespace Charly {
 namespace Internals {
 
-VALUE import(VM& vm, VALUE include, VALUE source) {
+Result import(VM& vm, VALUE include, VALUE source) {
   // TODO: Deallocate stuff on error
   CHECK(string, include);
   CHECK(string, source);
@@ -95,15 +95,13 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
       // a library handle if it was already opened before and NULL
       // if it was not
       if (dlopen(include_filename.c_str(), RTLD_NOLOAD)) {
-        vm.throw_exception("Can't reopen lib file a second time " + include_filename);
-        return kNull;
+        return ERR("Can't reopen lib file a second time " + include_filename);
       }
 
       void* clib = dlopen(include_filename.c_str(), RTLD_NOW);
 
       if (clib == nullptr) {
-        vm.throw_exception("Could not open lib file " + include_filename);
-        return kNull;
+        return ERR("Could not open lib file " + include_filename);
       }
 
       // Call the constructor of the library
@@ -122,8 +120,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
       CharlyLibSignatures* signatures = reinterpret_cast<CharlyLibSignatures*>(__charly_signatures_ptr);
       if (signatures == nullptr) {
         dlclose(clib);
-        vm.throw_exception("Could not open library signature section of " + include_filename);
-        return kNull;
+        return ERR("Could not open library signature section of " + include_filename);
       }
 
       uint32_t i = 0;
@@ -137,8 +134,7 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
         void* func_pointer = dlsym(clib, name.c_str());
         if (signatures == nullptr) {
           dlclose(clib);
-          vm.throw_exception("Could not read library symbol " + name);
-          return kNull;
+          return ERR("Could not read library symbol " + name);
         }
 
         VALUE symbol = charly_create_symbol(name);
@@ -168,16 +164,14 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
 
   std::ifstream inputfile(include_filename);
   if (!inputfile.is_open()) {
-    vm.throw_exception("import: could not open " + include_filename);
-    return kNull;
+    return ERR("could not open " + include_filename);
   }
   std::string source_string((std::istreambuf_iterator<char>(inputfile)), std::istreambuf_iterator<char>());
 
   auto cresult = vm.context.compiler_manager.compile(include_filename, source_string);
 
   if (!cresult.has_value()) {
-    vm.throw_exception("import: could not compile " + include_filename);
-    return kNull;
+    return ERR("could not compile" + include_filename);
   }
 
   InstructionBlock* iblock = cresult->instructionblock.value();
@@ -186,26 +180,26 @@ VALUE import(VM& vm, VALUE include, VALUE source) {
   return module_fn->as_value();
 }
 
-VALUE write(VM&, VALUE value) {
+Result write(VM&, VALUE value) {
   charly_to_string(std::cout, value);
   std::cout.flush();
 
   return kNull;
 }
 
-VALUE getn(VM&) {
+Result getn(VM&) {
   double num;
   std::cin >> num;
   return charly_create_number(num);
 }
 
-VALUE exit(VM& vm, VALUE status_code) {
+Result exit(VM& vm, VALUE status_code) {
   CHECK(number, status_code);
   vm.exit(charly_number_to_uint8(status_code));
   return kNull;
 }
 
-VALUE debug_func(VM&) {
+Result debug_func(VM&) {
   Immortal<Object> obj = charly_allocate<Object>(2);
 
   // Store the sizes of heap types
@@ -242,15 +236,20 @@ VALUE debug_func(VM&) {
   return obj->as_value();
 }
 
-VALUE testfunc(VM& vm, VALUE argument) {
+Result testfunc(VM&, VALUE argument) {
   CHECK(number, argument);
+
+  double num = charly_number_to_double(argument);
+  if (num < 100) {
+    return ERR("some error");
+  }
 
   Immortal<Object> object = charly_allocate<Object>(2);
   object->write(SymbolTable::encode("a"), argument);
   object->write(SymbolTable::encode("b"), charly_add_number(argument, charly_create_number(1)));
   object->write(SymbolTable::encode("c"), charly_add_number(argument, charly_create_number(2)));
   object->write(SymbolTable::encode("d"), charly_add_number(argument, charly_create_number(3)));
-  return object;
+  return object->as_value();
 }
 
 //        (N)ame

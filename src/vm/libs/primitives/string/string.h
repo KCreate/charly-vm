@@ -32,11 +32,11 @@ namespace Charly {
 namespace Internals {
 namespace PrimitiveString {
 
-VALUE to_n(VM& vm, VALUE str);
-VALUE ltrim(VM& vm, VALUE str);
-VALUE rtrim(VM& vm, VALUE str);
-VALUE lowercase(VM& vm, VALUE str);
-VALUE uppercase(VM& vm, VALUE str);
+Result to_n(VM& vm, VALUE str);
+Result ltrim(VM& vm, VALUE str);
+Result rtrim(VM& vm, VALUE str);
+Result lowercase(VM& vm, VALUE str);
+Result uppercase(VM& vm, VALUE str);
 
 }  // namespace PrimitiveString
 }  // namespace Internals

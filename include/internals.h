@@ -31,6 +31,7 @@
 #pragma once
 
 namespace Charly {
+class VM;
 namespace Internals {
 
 struct MethodSignature {
@@ -39,14 +40,16 @@ struct MethodSignature {
   void* func_pointer;
 };
 
+using Result = CFunction::Result;
+using ERR = Result;
+
 extern std::unordered_map<VALUE, MethodSignature> methods;
 
-#define CHECK(T, V)                                             \
-  {                                                             \
-    if (!charly_is_##T(V)) {                                    \
-      vm.throw_exception("Expected argument " #V " to be " #T ", got " + charly_get_typestring(V)); \
-      return kNull;                                             \
-    }                                                           \
+#define CHECK(T, V)                                                                         \
+  {                                                                                         \
+    if (!charly_is_##T(V)) {                                                                \
+      return ERR("Expected argument '" #V "' to be " #T ", got " + charly_get_typestring(V)); \
+    }                                                                                       \
   }
 
 }  // namespace Internals

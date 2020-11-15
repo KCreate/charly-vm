@@ -31,17 +31,17 @@ namespace Charly {
 namespace Internals {
 namespace PrimitiveNumber {
 
-VALUE to_float(VM& vm, VALUE value) {
+Result to_float(VM&, VALUE value) {
   CHECK(number, value);
   return charly_create_double(charly_number_to_double(value));
 }
 
-VALUE to_int(VM& vm, VALUE value) {
+Result to_int(VM&, VALUE value) {
   CHECK(number, value);
   return charly_create_integer(charly_number_to_int64(value));
 }
 
-VALUE is_float(VM& vm, VALUE value) {
+Result is_float(VM&, VALUE value) {
   CHECK(number, value);
   return charly_is_float(value) ? kTrue : kFalse;
 }

@@ -27,19 +27,19 @@
 #include <sstream>
 
 #include "value.h"
-#include "vm.h"
+#include "gc.h"
 
 namespace Charly {
 namespace Internals {
 namespace PrimitiveValue {
 
-VALUE to_s(VM&, VALUE value) {
+Result to_s(VM&, VALUE value) {
   std::stringstream buffer;
   charly_to_string(buffer, value);
   return charly_allocate_string(buffer.str());
 }
 
-VALUE copy(VM& vm, VALUE value) {
+Result copy(VM&, VALUE value) {
   switch (charly_get_type(value)) {
     case kTypeObject:    return charly_allocate<Object>(charly_as_object(value))->as_value();
     case kTypeArray:     return charly_allocate<Array>(charly_as_array(value))->as_value();
@@ -51,8 +51,7 @@ VALUE copy(VM& vm, VALUE value) {
     case kTypeFrame:
     case kTypeCatchTable:
     case kTypeCPointer: {
-      vm.throw_exception("Cannot copy value of type: " + charly_get_typestring(value));
-      return kNull;
+      return ERR("Cannot copy value of type: " + charly_get_typestring(value));
     }
     default: return value;
   }

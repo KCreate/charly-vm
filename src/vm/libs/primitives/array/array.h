@@ -32,13 +32,13 @@ namespace Charly {
 namespace Internals {
 namespace PrimitiveArray {
 
-VALUE insert(VM& vm, VALUE a, VALUE i, VALUE v);
-VALUE remove(VM& vm, VALUE a, VALUE i);
-VALUE reverse(VM& vm, VALUE a);
-VALUE index(VM& vm, VALUE a, VALUE i, VALUE o);
-VALUE rindex(VM& vm, VALUE a, VALUE i, VALUE o);
-VALUE range(VM& vm, VALUE a, VALUE s, VALUE c);
-VALUE clear(VM& vm, VALUE a);
+Result insert(VM& vm, VALUE a, VALUE i, VALUE v);
+Result remove(VM& vm, VALUE a, VALUE i);
+Result reverse(VM& vm, VALUE a);
+Result index(VM& vm, VALUE a, VALUE i, VALUE o);
+Result rindex(VM& vm, VALUE a, VALUE i, VALUE o);
+Result range(VM& vm, VALUE a, VALUE s, VALUE c);
+Result clear(VM& vm, VALUE a);
 
 }  // namespace PrimitiveArray
 }  // namespace Internals

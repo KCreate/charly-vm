@@ -32,10 +32,10 @@ namespace Charly {
 namespace Internals {
 namespace PrimitiveFunction {
 
-VALUE is_cfunc(VM& vm, VALUE func);
-VALUE call(VM& vm, VALUE func, VALUE ctx, VALUE args);
-VALUE bind_self(VM& vm, VALUE func, VALUE self);
-VALUE unbind_self(VM& vm, VALUE func);
+Result is_cfunc(VM& vm, VALUE func);
+Result call(VM& vm, VALUE func, VALUE ctx, VALUE args);
+Result bind_self(VM& vm, VALUE func, VALUE self);
+Result unbind_self(VM& vm, VALUE func);
 
 }  // namespace PrimitiveFunction
 }  // namespace Internals

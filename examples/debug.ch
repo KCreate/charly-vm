@@ -24,15 +24,5 @@
  * SOFTWARE.
  */
 
-if Charly.foo {
-  print("loading package")
-  return {
-    data: "hello world!!!"
-  }
-}
-
-Charly.foo = true
-
-print(import "debug.ch")
-print(import "debug.ch")
-print(import "debug.ch")
+const testfunc = @"charly.vm.testfunc"
+print(testfunc(50))

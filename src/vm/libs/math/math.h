@@ -32,26 +32,26 @@ namespace Charly {
 namespace Internals {
 namespace Math {
 
-VALUE cos(VM& vm, VALUE n);
-VALUE cosh(VM& vm, VALUE n);
-VALUE acos(VM& vm, VALUE n);
-VALUE acosh(VM& vm, VALUE n);
-VALUE sin(VM& vm, VALUE n);
-VALUE sinh(VM& vm, VALUE n);
-VALUE asin(VM& vm, VALUE n);
-VALUE asinh(VM& vm, VALUE n);
-VALUE tan(VM& vm, VALUE n);
-VALUE tanh(VM& vm, VALUE n);
-VALUE atan(VM& vm, VALUE n);
-VALUE atanh(VM& vm, VALUE n);
-VALUE cbrt(VM& vm, VALUE n);
-VALUE sqrt(VM& vm, VALUE n);
-VALUE ceil(VM& vm, VALUE n);
-VALUE floor(VM& vm, VALUE n);
-VALUE log(VM& vm, VALUE n);
-VALUE log2(VM& vm, VALUE n);
-VALUE log10(VM& vm, VALUE n);
-VALUE rand(VM& vm, VALUE min, VALUE max);
+Result cos(VM& vm, VALUE n);
+Result cosh(VM& vm, VALUE n);
+Result acos(VM& vm, VALUE n);
+Result acosh(VM& vm, VALUE n);
+Result sin(VM& vm, VALUE n);
+Result sinh(VM& vm, VALUE n);
+Result asin(VM& vm, VALUE n);
+Result asinh(VM& vm, VALUE n);
+Result tan(VM& vm, VALUE n);
+Result tanh(VM& vm, VALUE n);
+Result atan(VM& vm, VALUE n);
+Result atanh(VM& vm, VALUE n);
+Result cbrt(VM& vm, VALUE n);
+Result sqrt(VM& vm, VALUE n);
+Result ceil(VM& vm, VALUE n);
+Result floor(VM& vm, VALUE n);
+Result log(VM& vm, VALUE n);
+Result log2(VM& vm, VALUE n);
+Result log10(VM& vm, VALUE n);
+Result rand(VM& vm, VALUE min, VALUE max);
 
 }  // namespace Math
 }  // namespace Internals

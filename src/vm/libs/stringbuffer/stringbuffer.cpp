@@ -27,71 +27,71 @@
 #include <utf8/utf8.h>
 
 #include "stringbuffer.h"
-#include "vm.h"
+#include "gc.h"
 
 namespace Charly {
 namespace Internals {
 namespace StringBuffer {
 
-static void destructor(void* data) {
+void destructor(void* data) {
   UTF8Buffer* buf = static_cast<UTF8Buffer*>(data);
   if (buf)
     delete buf;
 }
 
-VALUE create(VM& vm, VALUE size) {
+Result create(VM&, VALUE size) {
   CHECK(number, size);
   UTF8Buffer* buf = new UTF8Buffer();
   buf->grow_to_fit(charly_number_to_uint32(size));
   return charly_allocate<CPointer>(static_cast<void*>(buf), destructor)->as_value();
 }
 
-VALUE reserve(VM& vm, VALUE buf, VALUE size) {
+Result reserve(VM&, VALUE buf, VALUE size) {
   CHECK(cpointer, buf);
   CHECK(number, size);
 
   UTF8Buffer* buffer = static_cast<UTF8Buffer*>(charly_as_cpointer(buf)->get_data());
   if (!buffer)
-    return kNull;
+    return ERR("Invalid buffer");
 
   buffer->grow_to_fit(charly_number_to_uint32(size));
 
   return kNull;
 }
 
-VALUE get_size(VM& vm, VALUE buf) {
+Result get_size(VM&, VALUE buf) {
   CHECK(cpointer, buf);
 
   UTF8Buffer* buffer = static_cast<UTF8Buffer*>(charly_as_cpointer(buf)->get_data());
   if (!buffer)
-    return kNull;
+    return ERR("Invalid buffer");
 
   return charly_create_integer(buffer->get_capacity());
 }
 
-VALUE get_offset(VM& vm, VALUE buf) {
+Result get_offset(VM&, VALUE buf) {
   CHECK(cpointer, buf);
 
   UTF8Buffer* buffer = static_cast<UTF8Buffer*>(charly_as_cpointer(buf)->get_data());
   if (!buffer)
-    return kNull;
+    return ERR("Invalid buffer");
 
   return charly_create_integer(buffer->get_writeoffset());
 }
 
-VALUE write(VM& vm, VALUE buf, VALUE src) {
+Result write(VM&, VALUE buf, VALUE src) {
   CHECK(cpointer, buf);
   CHECK(string, src);
 
   UTF8Buffer* buffer = static_cast<UTF8Buffer*>(charly_as_cpointer(buf)->get_data());
   if (!buffer)
-    return kNull;
+    return ERR("Invalid buffer");
 
   buffer->write_block(reinterpret_cast<uint8_t*>(charly_string_data(src)), charly_string_length(src));
   return charly_create_integer(buffer->get_writeoffset());
 }
 
-VALUE write_partial(VM& vm, VALUE buf, VALUE src, VALUE off, VALUE cnt) {
+Result write_partial(VM&, VALUE buf, VALUE src, VALUE off, VALUE cnt) {
   CHECK(cpointer, buf);
   CHECK(string, src);
   CHECK(number, off);
@@ -102,7 +102,7 @@ VALUE write_partial(VM& vm, VALUE buf, VALUE src, VALUE off, VALUE cnt) {
 
   UTF8Buffer* buffer = static_cast<UTF8Buffer*>(charly_as_cpointer(buf)->get_data());
   if (!buffer)
-    return kNull;
+    return ERR("Invalid buffer");
 
   // Calculate the offset of the start pointer and the amount of bytes to copy
   uint8_t* data_ptr = reinterpret_cast<uint8_t*>(charly_string_data(src));
@@ -133,14 +133,14 @@ VALUE write_partial(VM& vm, VALUE buf, VALUE src, VALUE off, VALUE cnt) {
   return charly_create_integer(buffer->get_writeoffset());
 }
 
-VALUE write_bytes(VM&vm, VALUE buf, VALUE bytes) {
+Result write_bytes(VM&, VALUE buf, VALUE bytes) {
   CHECK(cpointer, buf);
   CHECK(array, bytes);
   CHECK(array_of<kTypeNumber>, bytes);
 
   UTF8Buffer* buffer = static_cast<UTF8Buffer*>(charly_as_cpointer(buf)->get_data());
   if (!buffer)
-    return kNull;
+    return ERR("Invalid buffer");
 
   Array* arr = charly_as_array(bytes);
   arr->access_vector_shared([&](Array::VectorType* vec) {
@@ -152,22 +152,22 @@ VALUE write_bytes(VM&vm, VALUE buf, VALUE bytes) {
   return charly_create_integer(buffer->get_writeoffset());
 }
 
-VALUE to_s(VM& vm, VALUE buf) {
+Result to_s(VM&, VALUE buf) {
   CHECK(cpointer, buf);
 
   UTF8Buffer* buffer = static_cast<UTF8Buffer*>(charly_as_cpointer(buf)->get_data());
   if (!buffer)
-    return kNull;
+    return ERR("Invalid buffer");
 
   return charly_allocate_string(buffer->get_const_data(), buffer->get_writeoffset());
 }
 
-VALUE bytes(VM& vm, VALUE buf) {
+Result bytes(VM&, VALUE buf) {
   CHECK(cpointer, buf);
 
   UTF8Buffer* buffer = static_cast<UTF8Buffer*>(charly_as_cpointer(buf)->get_data());
   if (!buffer)
-    return kNull;
+    return ERR("Invalid buffer");
 
   uint8_t* data = buffer->get_data();
   uint32_t offset = buffer->get_writeoffset();
@@ -184,12 +184,12 @@ VALUE bytes(VM& vm, VALUE buf) {
   return byte_array->as_value();
 }
 
-VALUE clear(VM& vm, VALUE buf) {
+Result clear(VM&, VALUE buf) {
   CHECK(cpointer, buf);
 
   UTF8Buffer* buffer = static_cast<UTF8Buffer*>(charly_as_cpointer(buf)->get_data());
   if (!buffer)
-    return kNull;
+    return ERR("Invalid buffer");
 
   buffer->clear();
   return kNull;

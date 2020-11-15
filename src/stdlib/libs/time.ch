@@ -242,7 +242,7 @@ class Time {
   }
 
   static now_highres {
-    new Timestamp(__highres_now() / 1000000)
+    new Timestamp(__highres_now() / 1000)
   }
 
   static parse(string, fmt) {

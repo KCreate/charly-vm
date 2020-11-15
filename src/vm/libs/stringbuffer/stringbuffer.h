@@ -33,16 +33,16 @@ namespace Charly {
 namespace Internals {
 namespace StringBuffer {
 
-VALUE create(VM& vm, VALUE size);
-VALUE reserve(VM& vm, VALUE buf, VALUE size);
-VALUE get_size(VM& vm, VALUE buf);
-VALUE get_offset(VM& vm, VALUE buf);
-VALUE write(VM& vm, VALUE buf, VALUE src);
-VALUE write_partial(VM& vm, VALUE buf, VALUE src, VALUE off, VALUE cnt);
-VALUE write_bytes(VM& vm, VALUE buf, VALUE bytes);
-VALUE to_s(VM& vm, VALUE buf);
-VALUE bytes(VM& vm, VALUE buf);
-VALUE clear(VM& vm, VALUE buf);
+Result create(VM& vm, VALUE size);
+Result reserve(VM& vm, VALUE buf, VALUE size);
+Result get_size(VM& vm, VALUE buf);
+Result get_offset(VM& vm, VALUE buf);
+Result write(VM& vm, VALUE buf, VALUE src);
+Result write_partial(VM& vm, VALUE buf, VALUE src, VALUE off, VALUE cnt);
+Result write_bytes(VM& vm, VALUE buf, VALUE bytes);
+Result to_s(VM& vm, VALUE buf);
+Result bytes(VM& vm, VALUE buf);
+Result clear(VM& vm, VALUE buf);
 
 }  // namespace StringBuffer
 }  // namespace Internals

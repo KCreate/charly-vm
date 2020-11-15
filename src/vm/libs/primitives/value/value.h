@@ -32,8 +32,8 @@ namespace Charly {
 namespace Internals {
 namespace PrimitiveValue {
 
-VALUE to_s(VM& vm, VALUE value);
-VALUE copy(VM& vm, VALUE value);
+Result to_s(VM& vm, VALUE value);
+Result copy(VM& vm, VALUE value);
 
 }  // namespace PrimitiveValue
 }  // namespace Internals

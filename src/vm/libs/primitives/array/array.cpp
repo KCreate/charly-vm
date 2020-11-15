@@ -24,20 +24,15 @@
  * SOFTWARE.
  */
 
-#include <iostream>
-
-#include <cmath>
-#include <complex>
-#include <random>
-#include "math.h"
-#include "vm.h"
 #include "array.h"
+#include "vm.h"
+#include "gc.h"
 
 namespace Charly {
 namespace Internals {
 namespace PrimitiveArray {
 
-VALUE insert(VM& vm, VALUE a, VALUE i, VALUE v) {
+Result insert(VM&, VALUE a, VALUE i, VALUE v) {
   CHECK(array, a);
   CHECK(number, i);
 
@@ -47,7 +42,7 @@ VALUE insert(VM& vm, VALUE a, VALUE i, VALUE v) {
   return array->as_value();
 }
 
-VALUE remove(VM& vm, VALUE a, VALUE i) {
+Result remove(VM&, VALUE a, VALUE i) {
   CHECK(array, a);
   CHECK(number, i);
 
@@ -57,7 +52,7 @@ VALUE remove(VM& vm, VALUE a, VALUE i) {
   return array->as_value();
 }
 
-VALUE reverse(VM& vm, VALUE a) {
+Result reverse(VM&, VALUE a) {
   CHECK(array, a);
 
   Array* new_array = charly_allocate<Array>(4);
@@ -74,7 +69,7 @@ VALUE reverse(VM& vm, VALUE a) {
   return new_array->as_value();
 }
 
-VALUE index(VM& vm, VALUE a, VALUE i, VALUE o) {
+Result index(VM& vm, VALUE a, VALUE i, VALUE o) {
   CHECK(array, a);
   CHECK(number, o);
 
@@ -108,7 +103,7 @@ VALUE index(VM& vm, VALUE a, VALUE i, VALUE o) {
   return charly_create_number(found_offset);
 }
 
-VALUE rindex(VM& vm, VALUE a, VALUE i, VALUE o) {
+Result rindex(VM& vm, VALUE a, VALUE i, VALUE o) {
   CHECK(array, a);
   CHECK(number, o);
 
@@ -147,7 +142,7 @@ VALUE rindex(VM& vm, VALUE a, VALUE i, VALUE o) {
   return charly_create_number(found_offset);
 }
 
-VALUE range(VM& vm, VALUE a, VALUE s, VALUE c) {
+Result range(VM&, VALUE a, VALUE s, VALUE c) {
   CHECK(array, a);
   CHECK(number, s);
   CHECK(number, c);
@@ -186,7 +181,7 @@ VALUE range(VM& vm, VALUE a, VALUE s, VALUE c) {
   return new_array->as_value();
 }
 
-VALUE clear(VM& vm, VALUE a) {
+Result clear(VM&, VALUE a) {
   CHECK(array, a);
 
   Array* array = charly_as_array(a);

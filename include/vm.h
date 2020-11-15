@@ -31,19 +31,13 @@
 #include <atomic>
 #include <chrono>
 
-#include "gc.h"
-#include "instructionblock.h"
-#include "internals.h"
+#include "value.h"
 #include "opcode.h"
 #include "status.h"
-#include "stringpool.h"
-#include "symboltable.h"
-#include "value.h"
+#include "instructionblock.h"
 
 #include "compiler-manager.h"
 #include "compiler.h"
-#include "parser.h"
-#include "sourcefile.h"
 
 #pragma once
 
@@ -142,7 +136,7 @@ struct VMThread {
 class VM {
   friend class GarbageCollector;
 public:
-  VM(VMContext& ctx) : context(ctx) {}
+  VM(VMContext& ctx);
   VM(const VM& other) = delete;
   VM(VM&& other) = delete;
 
@@ -279,8 +273,6 @@ public:
   void clear_timer(uint64_t uid);
   void clear_ticker(uint64_t uid);
 
-  std::chrono::time_point<std::chrono::high_resolution_clock> starttime;
-
   VMContext context;
   VMInstructionProfile instruction_profile;
 private:
@@ -300,7 +292,7 @@ private:
   // A function which handles uncaught exceptions
   Function* uncaught_exception_handler = nullptr; // function handling uncaught exceptions
   Class* internal_error_class = nullptr;          // error class used by internal exceptions
-  Object* globals = charly_allocate<Object>(32);  // container for global variables
+  Object* globals = nullptr;                      // container for global variables
 
   // Scheduled tasks and paused VM threads
   uint64_t next_thread_id = 0;
