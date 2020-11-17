@@ -120,7 +120,7 @@ private:
     std::optional<std::string> decoded_str = SymbolTable::decode(value);
 
     if (decoded_str.has_value()) {
-      stream << "@\"" << decoded_str.value() << "\"";
+      stream << ":" << decoded_str.value();
     } else {
       this->print_hex(value, stream);
     }
@@ -148,6 +148,10 @@ private:
         stream << "null";
         return;
       }
+      case kTypeSymbol: {
+        stream << ":" << SymbolTable::decode(value);
+        return;
+      }
       default: {
         this->print_hex(value, stream);
       }
@@ -160,7 +164,9 @@ private:
   }
 
   void detect_branches();
-  void draw_branchlines_for_offset(uint32_t offset, std::ostream& stream);
+  bool offset_is_branch_source(uint32_t offset);
+  bool offset_is_branch_target(uint32_t offset);
+  void draw_branchlines_for_offset(uint32_t offset, std::ostream& stream, bool transient_only = false);
 
 private:
   InstructionBlock* block;

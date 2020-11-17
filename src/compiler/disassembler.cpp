@@ -167,7 +167,17 @@ void Disassembler::dump(std::ostream& stream) {
 #undef i64
 
     stream << std::endl;
+
+    // Break up the disassembly output into chunks of blocks that have
+    // jumps to them
+    uint32_t old_offset = offset;
     offset += kInstructionLengths[opcode];
+    if (!this->flags.no_branches && this->highest_branch_density > 0) {
+      if (this->offset_is_branch_target(offset)) {
+        this->draw_branchlines_for_offset(old_offset, stream, true);
+        stream << std::endl;
+      }
+    }
   }
 }
 
@@ -177,7 +187,8 @@ void Disassembler::detect_branches() {
   uint32_t offset = start_offset;
 
   // Walk the block and detect all branches
-  while (offset < this->block->get_writeoffset() && offset < end_offset) {
+  uint32_t writeoffset = this->block->get_writeoffset();
+  while (offset < writeoffset && offset < end_offset) {
     Opcode opcode = static_cast<Opcode>(this->block->read<uint8_t>(offset));
 
     switch (opcode) {
@@ -250,7 +261,16 @@ void Disassembler::detect_branches() {
   this->highest_branch_density = highest_active_branches;
 }
 
-void Disassembler::draw_branchlines_for_offset(uint32_t offset, std::ostream& stream) {
+bool Disassembler::offset_is_branch_target(uint32_t offset) {
+  for (auto& branch : this->branches) {
+    if (branch.end_offset == offset)
+      return true;
+  }
+
+  return false;
+}
+
+void Disassembler::draw_branchlines_for_offset(uint32_t offset, std::ostream& stream, bool transient_only) {
   // Initialize the branchlanes row
   uint32_t branchlanewidth = this->highest_branch_density * 3;
   char branchlane[branchlanewidth];
@@ -258,6 +278,22 @@ void Disassembler::draw_branchlines_for_offset(uint32_t offset, std::ostream& st
 
   for (auto& branch : this->branches) {
     if (branch.in_range(offset)) {
+      bool print_arrows = true;
+
+      if (transient_only) {
+        if (branch.end_offset == offset) {
+          continue;
+        }
+
+        if (branch.start_offset == offset) {
+          if (branch.end_offset > branch.start_offset) {
+            print_arrows = false;
+          } else {
+            continue;
+          }
+        }
+      }
+
       uint32_t start_offset = (branchlanewidth - 3) - branch.branchline * 3;
 
       if (branchlane[start_offset] == '-' || branchlane[start_offset] == '+') {
@@ -268,39 +304,41 @@ void Disassembler::draw_branchlines_for_offset(uint32_t offset, std::ostream& st
 
       // Draw a complete line to the right if this is either the start
       // or the end of a branch
-      if (branch.is_start(offset) || branch.is_end(offset)) {
-        uint32_t leftmost_offset = start_offset;
+      if (print_arrows) {
+        if (branch.is_start(offset) || branch.is_end(offset)) {
+          uint32_t leftmost_offset = start_offset;
 
-        // Draw a line to the right
-        while (start_offset < branchlanewidth) {
-          // Do not draw this line if there is either a star or an arrow already placed here
-          if (branchlane[start_offset + 2] != '>' && branchlane[start_offset] != '*') {
-            if (branchlane[start_offset] == '|' || branchlane[start_offset] == '+') {
-              branchlane[start_offset] = '+';
+          // Draw a line to the right
+          while (start_offset < branchlanewidth) {
+            // Do not draw this line if there is either a star or an arrow already placed here
+            if (branchlane[start_offset + 2] != '>' && branchlane[start_offset] != '*') {
+              if (branchlane[start_offset] == '|' || branchlane[start_offset] == '+') {
+                branchlane[start_offset] = '+';
+              } else {
+                branchlane[start_offset] = '-';
+              }
+
+              branchlane[start_offset + 1] = '-';
+              branchlane[start_offset + 2] = '-';
+            }
+            start_offset += 3;
+          }
+
+          // Draw a little arrow if this is the end of a branch
+          if (branch.is_end(offset)) {
+            if (branchlane[branchlanewidth - 3] == '|' || branchlane[branchlanewidth - 3] == '+') {
+              branchlane[branchlanewidth - 3] = '+';
             } else {
-              branchlane[start_offset] = '-';
+              if (branchlane[branchlanewidth - 3] != '*') {
+                branchlane[branchlanewidth - 3] = '-';
+              }
             }
-
-            branchlane[start_offset + 1] = '-';
-            branchlane[start_offset + 2] = '-';
+            branchlane[branchlanewidth - 2] = '-';
+            branchlane[branchlanewidth - 1] = '>';
           }
-          start_offset += 3;
-        }
 
-        // Draw a little arrow if this is the end of a branch
-        if (branch.is_end(offset)) {
-          if (branchlane[branchlanewidth - 3] == '|' || branchlane[branchlanewidth - 3] == '+') {
-            branchlane[branchlanewidth - 3] = '+';
-          } else {
-            if (branchlane[branchlanewidth - 3] != '*') {
-              branchlane[branchlanewidth - 3] = '-';
-            }
-          }
-          branchlane[branchlanewidth - 2] = '-';
-          branchlane[branchlanewidth - 1] = '>';
+          branchlane[leftmost_offset] = '*';
         }
-
-        branchlane[leftmost_offset] = '*';
       }
     }
   }
