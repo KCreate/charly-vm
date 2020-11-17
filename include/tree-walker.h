@@ -170,6 +170,10 @@ public:
     cont();
     return node;
   }
+  virtual inline AST::AbstractNode* visit_syscall(AST::Syscall* node, VisitContinue cont) {
+    cont();
+    return node;
+  }
   virtual inline AST::AbstractNode* visit_identifier(AST::Identifier* node, VisitContinue cont) {
     cont();
     return node;
@@ -337,6 +341,8 @@ public:
       return walker->visit_callmember(node->as<AST::CallMember>(), cont);
     if (node->type() == AST::kTypeCallIndex)
       return walker->visit_callindex(node->as<AST::CallIndex>(), cont);
+    if (node->type() == AST::kTypeSyscall)
+      return walker->visit_syscall(node->as<AST::Syscall>(), cont);
     if (node->type() == AST::kTypeIdentifier)
       return walker->visit_identifier(node->as<AST::Identifier>(), cont);
     if (node->type() == AST::kTypeSelf)

@@ -44,6 +44,7 @@ enum Status : STATUS {
   InvalidInstructionPointer,
   InvalidThreadId,
   UndefinedGlobalReference,
+  InvalidSyscallId,
   Debug
 };
 
@@ -63,6 +64,7 @@ static const std::string kStatusHumanReadable[] = {
   "Invalid instruction pointer",
   "Invalid thread id",
   "UndefinedGlobalReference",
+  "Invalid syscall id",
   "Debug"
 };
 // clang-format on

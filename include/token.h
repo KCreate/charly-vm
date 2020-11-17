@@ -72,6 +72,7 @@ enum TokenType : uint8_t {
   Static,
   Super,
   Switch,
+  Syscall,
   Throw,
   Try,
   Typeof,
@@ -189,6 +190,7 @@ static std::string kTokenTypeStrings[] = {
   "Static",
   "Super",
   "Switch",
+  "Syscall",
   "Throw",
   "Try",
   "Typeof",
@@ -283,6 +285,7 @@ static const std::unordered_map<std::string, TokenType> kTokenKeywordsAndLiteral
   {"static", TokenType::Static},
   {"super", TokenType::Super},
   {"switch", TokenType::Switch},
+  {"__syscall", TokenType::Syscall},
   {"throw", TokenType::Throw},
   {"true", TokenType::BooleanTrue},
   {"try", TokenType::Try},
@@ -351,7 +354,7 @@ struct Token {
             this->type == TokenType::BitNOT || this->type == TokenType::Not || this->type == TokenType::LeftParen ||
             this->type == TokenType::LeftCurly || this->type == TokenType::LeftBracket ||
             this->type == TokenType::AtSign || this->type == TokenType::RightArrow || this->type == TokenType::Match) ||
-           this->type == TokenType::Import || this->type == TokenType::Super;
+           this->type == TokenType::Import || this->type == TokenType::Super || this->type == TokenType::Syscall;
   }
 
   inline bool could_start_class_expression() {

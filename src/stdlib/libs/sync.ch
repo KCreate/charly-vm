@@ -27,14 +27,6 @@
 const Promise = import "./promise.ch"
 const Channel = import "./channel.ch"
 
-const __internal_init_timer     = @"charly.vm.init_timer"
-const __internal_clear_timer    = @"charly.vm.clear_timer"
-const __internal_init_ticker    = @"charly.vm.init_ticker"
-const __internal_clear_ticker   = @"charly.vm.clear_ticker"
-const __internal_get_thread_uid = @"charly.vm.get_thread_uid"
-const __internal_resume_thread  = @"charly.vm.resume_thread"
-const __internal_suspend_thread = @"charly.vm.suspend_thread".tap(->$0.halt_after_return = true)
-
 /*
  * The Notifier class suspends threads and resumes them at a later time
  * */
@@ -58,9 +50,9 @@ class Notifier {
       return @result
     }
 
-    const thread_id = __internal_get_thread_uid()
+    const thread_id = @"charly.vm.current_fiber"
     @pending.write(thread_id)
-    const return_value = __internal_suspend_thread()
+    const return_value = __syscall("fibersuspend")
     if @error_val {
       throw @error_val
     }
@@ -80,7 +72,7 @@ class Notifier {
 
     if @pending.length {
       const th = @pending.read()
-      __internal_resume_thread(th, result)
+      __syscall("fiberresume", th, result)
     }
 
     null
@@ -121,7 +113,7 @@ class Timer extends Promise {
   constructor(callback, period, arg = null) {
     super(->(resolve, reject) {
       const this = self
-      @id = __internal_init_timer(func init_timer {
+      @id = __syscall("timerinit", func init_timer {
         this.id = null
         try {
           resolve(callback(arg))
@@ -135,7 +127,7 @@ class Timer extends Promise {
   clear(arg = null) {
     if @id == null return null
 
-    __internal_clear_timer(@id)
+    __syscall("timerclear", @id)
     @id = null
     @reject(arg)
 
@@ -156,12 +148,12 @@ class Ticker extends Promise {
     super(->(resolve, reject) {
       const this = self
       @iterations = 0
-      @id = __internal_init_ticker(func init_ticker {
+      @id = __syscall("tickerinit", func init_ticker {
         try {
           callback(this.iterations, this)
           this.iterations += 1
         } catch(e) {
-          __internal_clear_ticker(this.id)
+          __syscall("tickerclear", this.id)
           this.id = null
           reject(e)
         }
@@ -172,7 +164,7 @@ class Ticker extends Promise {
   clear(arg = null) {
     if @id == null return null
 
-    __internal_clear_ticker(@id)
+    __syscall("tickerclear", @id)
     @resolve(arg)
     @id = null
 
@@ -185,7 +177,7 @@ class Ticker extends Promise {
 
 // Schedule a callback to execute asynchronously
 func spawn(callback, arg = null) {
-  __internal_init_timer(func init_spawn {
+  __syscall("timerinit", func init_spawn {
     callback(arg)
   }, 0)
 

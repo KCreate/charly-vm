@@ -124,6 +124,7 @@ public:
   AST::AbstractNode* parse_typeof_new();
   AST::AbstractNode* parse_member_call();
   AST::AbstractNode* parse_literal();
+  AST::AbstractNode* parse_syscall();
   AST::AbstractNode* parse_array();
   AST::AbstractNode* parse_hash();
   std::pair<std::string, AST::AbstractNode*> parse_hash_entry();

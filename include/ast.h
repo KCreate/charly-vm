@@ -1120,6 +1120,32 @@ struct CallIndex : public AbstractNode {
   }
 };
 
+// __syscall("name", [arguments])
+struct Syscall : public AbstractNode {
+  std::string name;
+  NodeList* arguments;
+
+  Syscall(const std::string& str, NodeList* a) : name(str), arguments(a) {
+  }
+
+  inline ~Syscall() {
+    delete arguments;
+  }
+
+  inline void dump(std::ostream& stream, size_t depth = 0) {
+    stream << std::string(depth, ' ') << "- Syscall: " << this->name << '\n';
+    this->arguments->dump(stream, depth + 1);
+  }
+
+  inline void visit(VisitFunc func) {
+    this->arguments = reinterpret_cast<NodeList*>(func(this->arguments));
+  }
+
+  inline void traverse(TraverseFunc func) {
+    func(this->arguments);
+  }
+};
+
 // reads a value from the stack
 struct StackValue : public AbstractNode {
   inline void dump(std::ostream& stream, size_t depth = 0) {
@@ -1857,6 +1883,7 @@ const size_t kTypeContinue            = typeid(Continue).hash_code();
 const size_t kTypeDoUntil             = typeid(DoUntil).hash_code();
 const size_t kTypeDoWhile             = typeid(DoWhile).hash_code();
 const size_t kTypeEmpty               = typeid(Empty).hash_code();
+const size_t kTypeFloatNum            = typeid(FloatNum).hash_code();
 const size_t kTypeFunction            = typeid(Function).hash_code();
 const size_t kTypeHash                = typeid(Hash).hash_code();
 const size_t kTypeIdentifier          = typeid(Identifier).hash_code();
@@ -1865,6 +1892,7 @@ const size_t kTypeIfElse              = typeid(IfElse).hash_code();
 const size_t kTypeImport              = typeid(Import).hash_code();
 const size_t kTypeIndex               = typeid(Index).hash_code();
 const size_t kTypeIndexAssignment     = typeid(IndexAssignment).hash_code();
+const size_t kTypeIntNum              = typeid(IntNum).hash_code();
 const size_t kTypeLocalInitialisation = typeid(LocalInitialisation).hash_code();
 const size_t kTypeLoop                = typeid(Loop).hash_code();
 const size_t kTypeMatch               = typeid(Match).hash_code();
@@ -1875,8 +1903,6 @@ const size_t kTypeNan                 = typeid(Nan).hash_code();
 const size_t kTypeNew                 = typeid(New).hash_code();
 const size_t kTypeNodeList            = typeid(NodeList).hash_code();
 const size_t kTypeNull                = typeid(Null).hash_code();
-const size_t kTypeFloatNum            = typeid(FloatNum).hash_code();
-const size_t kTypeIntNum              = typeid(IntNum).hash_code();
 const size_t kTypeOr                  = typeid(Or).hash_code();
 const size_t kTypePropertyDeclaration = typeid(PropertyDeclaration).hash_code();
 const size_t kTypePushStack           = typeid(PushStack).hash_code();
@@ -1888,6 +1914,7 @@ const size_t kTypeSuper               = typeid(Super).hash_code();
 const size_t kTypeSuperMember         = typeid(SuperMember).hash_code();
 const size_t kTypeSwitch              = typeid(Switch).hash_code();
 const size_t kTypeSwitchNode          = typeid(SwitchNode).hash_code();
+const size_t kTypeSyscall             = typeid(Syscall).hash_code();
 const size_t kTypeTernaryIf           = typeid(TernaryIf).hash_code();
 const size_t kTypeThrow               = typeid(Throw).hash_code();
 const size_t kTypeTryCatch            = typeid(TryCatch).hash_code();
@@ -1933,13 +1960,13 @@ inline bool yields_value(AbstractNode* node) {
           node->type() == kTypeNew || node->type() == kTypeAssignment || node->type() == kTypeMemberAssignment ||
           node->type() == kTypeANDMemberAssignment || node->type() == kTypeIndexAssignment ||
           node->type() == kTypeANDIndexAssignment || node->type() == kTypeCall || node->type() == kTypeCallMember ||
-          node->type() == kTypeCallIndex || node->type() == kTypeStackValue || node->type() == kTypeIdentifier ||
-          node->type() == kTypeSelf || node->type() == kTypeMember || node->type() == kTypeYield ||
-          node->type() == kTypeIndex || node->type() == kTypeNull || node->type() == kTypeNan ||
-          node->type() == kTypeString || node->type() == kTypeFloatNum || node->type() == kTypeIntNum ||
-          node->type() == kTypeBoolean || node->type() == kTypeArray || node->type() == kTypeHash ||
-          node->type() == kTypeFunction || node->type() == kTypeClass || node->type() == kTypeImport ||
-          node->type() == kTypeSuper || node->type() == kTypeSuperMember);
+          node->type() == kTypeCallIndex || node->type() == kTypeSyscall || node->type() == kTypeStackValue ||
+          node->type() == kTypeIdentifier || node->type() == kTypeSelf || node->type() == kTypeMember ||
+          node->type() == kTypeYield || node->type() == kTypeIndex || node->type() == kTypeNull ||
+          node->type() == kTypeNan || node->type() == kTypeString || node->type() == kTypeFloatNum ||
+          node->type() == kTypeIntNum || node->type() == kTypeBoolean || node->type() == kTypeArray ||
+          node->type() == kTypeHash || node->type() == kTypeFunction || node->type() == kTypeClass ||
+          node->type() == kTypeImport || node->type() == kTypeSuper || node->type() == kTypeSuperMember);
 }
 
 // Checks wether a given node is an assignment

@@ -35,7 +35,6 @@
 #include "vm.h"
 
 #include "libs/stringbuffer/stringbuffer.h"
-#include "libs/sync/sync.h"
 #include "libs/math/math.h"
 #include "libs/time/time.h"
 #include "libs/primitives/array/array.h"
@@ -238,12 +237,6 @@ Result debug_func(VM&) {
 
 Result testfunc(VM&, VALUE argument) {
   CHECK(number, argument);
-
-  double num = charly_number_to_double(argument);
-  if (num < 100) {
-    return ERR("some error");
-  }
-
   Immortal<Object> object = charly_allocate<Object>(2);
   object->write(SymbolTable::encode("a"), argument);
   object->write(SymbolTable::encode("b"), charly_add_number(argument, charly_create_number(1)));
@@ -276,7 +269,6 @@ std::unordered_map<VALUE, MethodSignature> methods = {
 #import "libs/math/math.def"
 #import "libs/time/time.def"
 #import "libs/stringbuffer/stringbuffer.def"
-#import "libs/sync/sync.def"
 
     // VM internals
     //

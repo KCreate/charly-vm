@@ -561,6 +561,29 @@ AST::AbstractNode* CodeGenerator::visit_callindex(AST::CallIndex* node, VisitCon
   return node;
 }
 
+AST::AbstractNode* CodeGenerator::visit_syscall(AST::Syscall* node, VisitContinue) {
+  if (kSyscallNameMapping.count(node->name) == 0) {
+    this->push_fatal_error(node, "No syscall with name '" + node->name + "' exists.");
+    return node;
+  }
+
+  SyscallID syscall_id = kSyscallNameMapping.at(node->name);
+
+  if (node->arguments->children.size() < kSyscallArgumentCount[syscall_id]) {
+    this->push_fatal_error(node, "Not enough arguments for syscall '" + node->name + "'");
+    return node;
+  }
+
+  // Codegen arguments
+  for (auto arg : node->arguments->children) {
+    this->visit_node(arg);
+  }
+
+  this->assembler.write_syscall(syscall_id);
+
+  return node;
+}
+
 AST::AbstractNode* CodeGenerator::visit_identifier(AST::Identifier* node, VisitContinue) {
   // Check if we have the offset info for this identifier
   if (node->offset_info == nullptr) {

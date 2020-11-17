@@ -1463,11 +1463,37 @@ AST::AbstractNode* Parser::parse_literal() {
     case TokenType::Import: {
       return this->parse_import();
     }
+    case TokenType::Syscall: {
+      return this->parse_syscall();
+    }
     default: {
       this->unexpected_token("expression");
       return nullptr;
     }
   }
+}
+
+AST::AbstractNode* Parser::parse_syscall() {
+  Location location_start = this->token.location;
+
+  this->expect_token(TokenType::Syscall);
+  this->expect_token(TokenType::LeftParen);
+
+  this->assert_token(TokenType::String);
+  std::string name = this->token.value;
+  this->advance();
+
+  AST::NodeList* items = new AST::NodeList();
+  while (this->token.type == TokenType::Comma) {
+    this->advance();
+    items->append_node(this->parse_expression());
+  }
+  Location location_end = this->token.location;
+  this->expect_token(TokenType::RightParen);
+
+  AST::Syscall* syscall = new AST::Syscall(name, items);
+  syscall->at(location_start, location_end);
+  return syscall;
 }
 
 AST::AbstractNode* Parser::parse_array() {

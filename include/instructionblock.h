@@ -289,5 +289,10 @@ public:
   inline void write_typeof() {
     this->write(Opcode::Typeof);
   }
+
+  inline void write_syscall(SyscallID id) {
+    this->write(Opcode::Syscall);
+    this->write(id);
+  }
 };
 }  // namespace Charly

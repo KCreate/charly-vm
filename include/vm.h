@@ -252,6 +252,14 @@ public:
   void op_brancheq(int32_t offset);
   void op_branchneq(int32_t offset);
   void op_typeof();
+  void op_syscall(SyscallID id);
+
+  VALUE syscall_timerinit(Function* function, uint32_t ms);
+  VALUE syscall_timerclear(uint64_t id);
+  VALUE syscall_tickerinit(Function* function, uint32_t period);
+  VALUE syscall_tickerclear(uint64_t id);
+  VALUE syscall_fibersuspend();
+  VALUE syscall_fiberresume(uint64_t id, VALUE argument);
 
   inline uint8_t* get_ip() {
     return this->ip;
@@ -260,7 +268,6 @@ public:
   void run();
   uint8_t start_runtime();
   void exit(uint8_t status_code);
-  uint64_t get_thread_uid();
   uint64_t get_next_thread_uid();
   void suspend_thread();
   void resume_thread(uint64_t uid, VALUE argument);

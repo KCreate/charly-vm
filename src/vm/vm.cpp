@@ -998,6 +998,7 @@ void VM::op_readglobal(VALUE symbol) {
     GLOBAL("charly.vm.internal_error_class",       this->push_stack(this->internal_error_class->as_value()))
     GLOBAL("charly.vm.globals",                    this->push_stack(this->globals->as_value()))
     GLOBAL("charly.vm.frame",                      this->push_stack(this->frames->as_value()))
+    GLOBAL("charly.vm.current_fiber",              this->push_stack(charly_create_integer(this->uid)))
     GLOBAL("charly.vm.argv", {
       Immortal<Array> argv = charly_allocate<Array>(CLIFlags::s_user_flags.size());
 
@@ -1649,6 +1650,92 @@ void VM::op_typeof() {
   this->push_stack(charly_allocate_string(stringrep.data(), stringrep.size()));
 }
 
+void VM::op_syscall(SyscallID id) {
+  switch (id) {
+    case SyscallID::TimerInit: {
+      Immortal<> ms = this->pop_stack();
+      Immortal<> function = this->pop_stack();
+      if (!charly_is_function(function) || !charly_is_number(ms)) {
+        this->panic(Status::InvalidArgumentType);
+      }
+      this->push_stack(this->syscall_timerinit(charly_as_function(function), charly_number_to_uint32(ms)));
+      break;
+    }
+    case SyscallID::TimerClear: {
+      Immortal<> id = this->pop_stack();
+      if (!charly_is_number(id)) {
+        this->panic(Status::InvalidArgumentType);
+      }
+      this->push_stack(this->syscall_timerclear(charly_number_to_uint64(id)));
+      break;
+    }
+    case SyscallID::TickerInit: {
+      Immortal<> period = this->pop_stack();
+      Immortal<> function = this->pop_stack();
+      if (!charly_is_function(function) || !charly_is_number(period)) {
+        this->panic(Status::InvalidArgumentType);
+      }
+      this->push_stack(this->syscall_tickerinit(charly_as_function(function), charly_number_to_uint32(period)));
+      break;
+    }
+    case SyscallID::TickerClear: {
+      Immortal<> id = this->pop_stack();
+      if (!charly_is_number(id)) {
+        this->panic(Status::InvalidArgumentType);
+      }
+      this->push_stack(this->syscall_tickerclear(charly_number_to_uint64(id)));
+      break;
+    }
+    case SyscallID::FiberSuspend: {
+      this->push_stack(this->syscall_fibersuspend());
+      break;
+    }
+    case SyscallID::FiberResume: {
+      Immortal<> argument = this->pop_stack();
+      Immortal<> id = this->pop_stack();
+      if (!charly_is_number(id)) {
+        this->panic(Status::InvalidArgumentType);
+      }
+      this->push_stack(this->syscall_fiberresume(charly_number_to_uint64(id), argument));
+      break;
+    }
+    default: {
+      this->panic(Status::InvalidSyscallId);
+    }
+  }
+}
+
+VALUE VM::syscall_timerinit(Function* function, uint32_t ms) {
+  Timestamp exec_at = std::chrono::steady_clock::now() + std::chrono::milliseconds(ms);
+  uint64_t id = this->register_timer(exec_at, VMTask::init_callback(function));
+  return charly_create_integer(id);
+}
+
+VALUE VM::syscall_timerclear(uint64_t id) {
+  this->clear_timer(id);
+  return kNull;
+}
+
+VALUE VM::syscall_tickerinit(Function* function, uint32_t period) {
+  uint64_t id = this->register_ticker(period, VMTask::init_callback(function));
+  return charly_create_integer(id);
+}
+
+VALUE VM::syscall_tickerclear(uint64_t id) {
+  this->clear_ticker(id);
+  return kNull;
+}
+
+VALUE VM::syscall_fibersuspend() {
+  this->suspend_thread();
+  return kNull;
+}
+
+VALUE VM::syscall_fiberresume(uint64_t id, VALUE argument) {
+  this->resume_thread(id, argument);
+  return kNull;
+}
+
 void VM::stackdump(std::ostream& io) {
   for (VALUE stackitem : this->stack) {
     charly_debug_print(io, stackitem);
@@ -1821,7 +1908,8 @@ void VM::run() {
                                           &&charly_main_switch_unot,
                                           &&charly_main_switch_ubnot,
                                           &&charly_main_switch_halt,
-                                          &&charly_main_switch_typeof};
+                                          &&charly_main_switch_typeof,
+                                          &&charly_main_switch_syscall};
 
   DISPATCH();
 charly_main_switch_nop : {
@@ -2473,6 +2561,15 @@ charly_main_switch_typeof : {
   OPCODE_EPILOGUE();
   NEXTOP();
 }
+
+charly_main_switch_syscall : {
+  OPCODE_PROLOGUE();
+  SyscallID id = *reinterpret_cast<SyscallID*>(this->ip + sizeof(Opcode));
+  this->op_syscall(id);
+  OPCODE_EPILOGUE();
+  CONDINCIP();
+  DISPATCH();
+}
 }
 
 uint8_t VM::start_runtime() {
@@ -2605,10 +2702,6 @@ void VM::exit(uint8_t status_code) {
   this->halted = true;
   this->running = false;
   this->status_code = status_code;
-}
-
-uint64_t VM::get_thread_uid() {
-  return this->uid;
 }
 
 uint64_t VM::get_next_thread_uid() {

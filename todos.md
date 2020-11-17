@@ -2,13 +2,16 @@
 
 - VM Refactor
   - Implementation timeline
+    - Represent VM runtime data structures as GC objects
+      - Already done with Frames, CatchTables
+      - Syscalls no longer return an ID, but a direct reference to the timer, ticker, fiber
     - C methods shouldn't need access to VM struct
-      - Write some kind of syscall mechanism, access to it via charly source code
-      - Which modules / methods need to be turned into syscalls
+      - Turn CFunctions into VM syscalls
         - Function library (dynamic function calls)
-        - Sync library (task queue, timers, fibers)
         - Internals (vm.exit, and compiler manager)
         - Array library (vm.eq)
+      - Remove push_return_value property from CFunctions
+      - Remove halt after return property from CFunctions
       - Refactor compiler manager
       - Refactor address mapping
       - Refactor instructionblock lifetime management
@@ -128,6 +131,9 @@
           lock to be released. This would obviously only work with our well-known heap value locks.
           Maybe some wrapper class which updates the thread status once it starts waiting?
 
+- Remove needless as_value() calls
+  - Create method overloads for Header*
+
 - Clearing a timer / ticker should also remove all its invocations from
   the task queue
   - Can the task somehow be marked as invalid, then skip it at schedule time
@@ -174,7 +180,6 @@
     - timerclear
     - tickerclear
   - Fiber instructions
-    - pushfiberid
     - fibercreate
     - fibercall
     - fibersuspend
@@ -195,8 +200,6 @@
   - Function bound self
     - setboundself
     - clearboundself
-  - Frame handling
-    - putlocalframe
   - Delete instructions
     - deletemembersymbol
     - deletemembervalue

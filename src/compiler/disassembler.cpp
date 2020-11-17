@@ -152,6 +152,11 @@ void Disassembler::dump(std::ostream& stream) {
         this->print_hex(this->block->get_data() + offset + this->block->read<int32_t>(offset + 1), stream, 12);
         break;
       }
+      case Opcode::Syscall: {
+        uint16_t id = this->block->read<uint16_t>(offset + 1);
+        stream << kSyscallNames[id];
+        break;
+      }
       default: {
         // Do nothing
       }

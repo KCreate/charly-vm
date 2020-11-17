@@ -147,25 +147,24 @@ static constexpr uint32_t kMaxIStringLength = 5;
 static constexpr uint32_t kMaxPStringLength = 6;
 static constexpr int64_t kMaxStringLength   = 0xffffffff;
 
-// Human readable types of all data types
-const std::string kHumanReadableTypes[] = {"dead",     "class",     "object", "array",      "string",
-                                           "function", "cfunction", "frame",  "catchtable", "cpointer",
-                                           "number",   "boolean",   "null",   "symbol",     "unknown"};
-
 // Identifies which type a VALUE points to
 enum ValueType : uint8_t {
 
-  // Types which are allocated on the heap
+  // Free GC cells have this type
   kTypeDead,
+
+  // Primitive charly types
   kTypeClass,
   kTypeObject,
   kTypeArray,
   kTypeString,
   kTypeFunction,
   kTypeCFunction,
+  kTypeCPointer,
+
+  // Runtime data structures
   kTypeFrame,
   kTypeCatchTable,
-  kTypeCPointer,
 
   // Types which are immediate encoded using nan-boxing
   kTypeNumber,
@@ -173,8 +172,31 @@ enum ValueType : uint8_t {
   kTypeNull,
   kTypeSymbol,
 
-  // This should never appear anywhere
+  // Used in error messages / debugging
   kTypeUnknown
+};
+
+// Human readable types of all data types
+const std::string kHumanReadableTypes[] = {
+  "dead",
+
+  "class",
+  "object",
+  "array",
+  "string",
+  "function",
+  "cfunction",
+  "cpointer",
+
+  "frame",
+  "catchtable",
+
+  "number",
+  "boolean",
+  "null",
+  "symbol",
+
+  "unknown"
 };
 
 // Print a more detailed output of charly values and data structures

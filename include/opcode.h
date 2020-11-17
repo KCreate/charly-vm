@@ -25,6 +25,7 @@
  */
 
 #include <cstdint>
+#include <unordered_map>
 
 #pragma once
 
@@ -467,11 +468,95 @@ enum Opcode : uint8_t {
   // Push the type of the uppermost value on the stack as a string
   Typeof,
 
+  // Execute VM syscall
+  // Pops required arguments from the stack
+  //
+  // args:
+  // - id
+  Syscall,
+
   // The amount of opcodes that are defined, not an actual opcode
   OpcodeCount
 };
 
+// IDs of VM syscalls
+enum SyscallID : uint16_t {
+
+  // Create a timer, pushes id onto the stack
+  //
+  // args:
+  // - function
+  // - timeout
+  TimerInit,
+
+  // Clear a timer
+  //
+  // args:
+  // - id
+  TimerClear,
+
+  // Create a ticker, pushes id onto the stack
+  //
+  // args:
+  // - function
+  // - period
+  TickerInit,
+
+  // Clear a ticker
+  //
+  // args:
+  // - id
+  TickerClear,
+
+  // Suspend the currently executing fiber
+  //
+  // The return value of this syscall is the argument
+  // passed to the corresponding FiberResume call
+  FiberSuspend,
+
+  // Resume a paused fiber
+  //
+  // args:
+  // - id
+  // - argumen
+  FiberResume,
+
+  // The amount of defined syscalls
+  SyscallCount
+};
+
+// The amount of arguments each syscall requires
+static constexpr uint16_t kSyscallArgumentCount[] {
+  /* TimerInit */    2,
+  /* TimerClear */   1,
+  /* TickerInit */   2,
+  /* TickerClear */  1,
+  /* FiberSuspend */ 0,
+  /* FiberResume */  2
+};
+
+// Plaintext names of syscalls
+static std::string kSyscallNames[] = {
+  "timerinit",
+  "timerclear",
+  "tickerinit",
+  "tickerclear",
+  "fibersuspend",
+  "fiberresume"
+};
+
+// Mapping from plaintext names to ids
+static std::unordered_map<std::string, SyscallID> kSyscallNameMapping = {
+  {"timerinit",    SyscallID::TimerInit},
+  {"timerclear",   SyscallID::TimerClear},
+  {"tickerinit",   SyscallID::TickerInit},
+  {"tickerclear",  SyscallID::TickerClear},
+  {"fibersuspend", SyscallID::FiberSuspend},
+  {"fiberresume",  SyscallID::FiberResume}
+};
+
 #define i8 sizeof(uint8_t)
+#define i16 sizeof(uint16_t)
 #define i32 sizeof(uint32_t)
 #define i64 sizeof(uint64_t)
 
@@ -546,10 +631,12 @@ static constexpr uint32_t kInstructionLengths[]{
   /* UNot */                              1,
   /* UBNot */                             1,
   /* Halt */                              1,
-  /* Typeof */                            1
+  /* Typeof */                            1,
+  /* Syscall */                           1 + i16,
 };
 
 #undef i8
+#undef i16
 #undef i32
 #undef i64
 
@@ -623,7 +710,8 @@ static std::string kOpcodeMnemonics[]{
   "unot",
   "ubnot",
   "halt",
-  "typeof"
+  "typeof",
+  "syscall"
 };
 // clang-format on
 
