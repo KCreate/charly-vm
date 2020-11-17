@@ -24,5 +24,6 @@
  * SOFTWARE.
  */
 
-const testfunc = @"charly.vm.testfunc"
-print(testfunc(50))
+print(FLAGS)
+print(ARGV)
+spawn.timer(->print("hello world"), 500.ms())

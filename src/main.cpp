@@ -37,6 +37,7 @@
 extern char** environ;
 
 using namespace Charly;
+using namespace Charly::CLIFlags;
 
 void print_help_page() {
   std::cout << kUsageMessage << std::endl;
@@ -71,12 +72,21 @@ int main(int argc, char** argv) {
 
   // Check that CHARLYVMDIR environment variable is set
   char* CHARLYVMDIR = std::getenv("CHARLYVMDIR");
-  if (CHARLYVMDIR) {
+  if (!CHARLYVMDIR) {
     if (CLIFlags::is_flag_set("vmdir")) {
-      std::cout << CHARLYVMDIR << '\n';
-      return 0;
+      auto arguments = CLIFlags::get_arguments_for_flag("vmdir");
+      if (arguments.size() >= 1) {
+        std::string& path = arguments.at(0);
+        char* path_buf = (char*)malloc(path.size() + 1);
+        std::memset(path_buf, 0, path.size() + 1);
+        std::memcpy(path_buf, path.c_str(), path.size());
+        CHARLYVMDIR = path_buf;
+        CLIFlags::s_environment["CHARLYVMDIR"] = path;
+      }
     }
-  } else {
+  }
+  if (!CHARLYVMDIR) {
+
     std::cerr << "Missing CHARLYVMDIR environment variable!" << '\n';
     std::cerr << "Set CHARLYVMDIR to the charly-vm project root folder" << '\n';
     return 1;
@@ -116,15 +126,7 @@ int main(int argc, char** argv) {
   }
   std::string source_string((std::istreambuf_iterator<char>(inputfile)), std::istreambuf_iterator<char>());
 
-  // Read the prelude
-  char* stdlibpath = std::getenv("CHARLYVMDIR");
-
-  if (stdlibpath == nullptr) {
-    std::cerr << "Could not locate stdlib folder. Set the CHARLYVMDIR environment variable" << '\n';
-    return 1;
-  }
-
-  std::string preludepath = std::string(stdlibpath) + "/src/stdlib/prelude.ch";
+  std::string preludepath = std::string(CHARLYVMDIR) + "/src/stdlib/prelude.ch";
   std::ifstream preludefile(preludepath);
   if (!preludefile.is_open()) {
     std::cerr << "Could not open prelude" << '\n';

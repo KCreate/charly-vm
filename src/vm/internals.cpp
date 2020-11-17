@@ -110,36 +110,21 @@ Result import(VM& vm, VALUE include, VALUE source) {
         __charly_constructor();
       }
 
-      // Load the function called __charly_signatures
-      // It returns a CharlyLibSignatures struct declared in value.h
-      //
-      // This struct contains the signatures of all the methods in this
-      // library
-      void* __charly_signatures_ptr = dlsym(clib, "__charly_signatures");
-      CharlyLibSignatures* signatures = reinterpret_cast<CharlyLibSignatures*>(__charly_signatures_ptr);
-      if (signatures == nullptr) {
+      LibraryManifest* manifest = static_cast<LibraryManifest*>(dlsym(clib, "__charly_manifest"));
+      if (!manifest) {
         dlclose(clib);
         return ERR("Could not open library signature section of " + include_filename);
       }
 
-      uint32_t i = 0;
-      while (i < signatures->signatures.size()) {
-        std::string name;
-        uint32_t argc;
-        std::tie(name, argc) = signatures->signatures[i];
-
-        // While we are extracting the method names, we can create
-        // CFunction objects for the vm
-        void* func_pointer = dlsym(clib, name.c_str());
-        if (signatures == nullptr) {
+      for (LibraryManifest::Signature& signature : manifest->methods) {
+        void* ptr = dlsym(clib, signature.name.c_str());
+        if (!ptr) {
           dlclose(clib);
-          return ERR("Could not read library symbol " + name);
+          return ERR("Could not read library symbol " + signature.name);
         }
-
-        VALUE symbol = charly_create_symbol(name);
-        lib->write(symbol, charly_allocate<CFunction>(symbol, func_pointer, argc)->as_value());
-
-        i++;
+        VALUE name_symbol = charly_create_symbol(signature.name);
+        CFunction* func = charly_allocate<CFunction>(name_symbol, ptr, signature.argc);
+        lib->write(name_symbol, func->as_value());
       }
 
       // Add a CPointer object into the returned object to
@@ -237,6 +222,11 @@ Result debug_func(VM&) {
 
 Result testfunc(VM&, VALUE argument) {
   CHECK(number, argument);
+
+  if (charly_number_to_int32(argument) == 100) {
+    return ERR("testfunc exception");
+  }
+
   Immortal<Object> object = charly_allocate<Object>(2);
   object->write(SymbolTable::encode("a"), argument);
   object->write(SymbolTable::encode("b"), charly_add_number(argument, charly_create_number(1)));

@@ -167,6 +167,24 @@ export = ->(describe, it, assert) {
     assert(call_me()()(), 25)
   })
 
+  it("calls a cfunction", ->{
+    const testfunc = @"charly.vm.testfunc"
+    const arg = 0
+    const result = testfunc(arg)
+
+    assert(typeof result, "object")
+    assert(Object.keys(result).similar(["a", "b", "c", "d"]))
+    assert(result.a, 0)
+    assert(result.b, 1)
+    assert(result.c, 2)
+    assert(result.d, 3)
+  })
+
+  it("cfunctions can throw errors", ->{
+    const testfunc = @"charly.vm.testfunc"
+    assert.exception(->testfunc(100), ->assert($0.message, "testfunc exception"))
+  })
+
   describe("dynamic calls", ->{
     it("calls a function with a context and arguments", ->{
       const ctx = { v: 20 }
@@ -181,19 +199,6 @@ export = ->(describe, it, assert) {
       const p = foo.call(ctx, [1, 2], true)
       const result = p.wait()
       assert(result, 23)
-    })
-
-    it("calls a cfunction", ->{
-      const testfunc = @"charly.vm.testfunc"
-      const arg = 0
-      const result = testfunc(arg)
-
-      assert(typeof result, "object")
-      assert(Object.keys(result).similar(["a", "b", "c", "d"]))
-      assert(result.a, 0)
-      assert(result.b, 1)
-      assert(result.c, 2)
-      assert(result.d, 3)
     })
 
     it("asynchronously calls a cfunction", ->{

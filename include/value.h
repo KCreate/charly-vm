@@ -1468,20 +1468,22 @@ inline VALUE charly_create_symbol(VALUE value) {
 }
 
 // External libs interface
-typedef std::tuple<std::string, uint32_t> CharlyLibSignature;
-struct CharlyLibSignatures {
-  std::vector<CharlyLibSignature> signatures;
+struct LibraryManifest {
+  struct Signature {
+    std::string name;
+    uint32_t argc;
+  };
+
+  std::vector<Signature> methods;
 };
 
-// Shorthand for declaring charly api methods to export
 #define CHARLY_API(N) \
   extern "C" VALUE N
 
-// Shorthands for defining the signatures
 #define F(N, A) {#N, A},
 #define CHARLY_MANIFEST(P) \
   extern "C" { \
-    CharlyLibSignatures __charly_signatures = {{ \
+    LibraryManifest __charly_manifest = {{ \
       P \
     }}; \
   }

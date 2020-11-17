@@ -1179,7 +1179,6 @@ void VM::op_setglobal(VALUE symbol) {
     SETGLOBALVALUE("charly.vm.primitive.frame",            kTypeClass,    Class,    primitive_frame)
     SETGLOBALVALUE("charly.vm.uncaught_exception_handler", kTypeFunction, Function, uncaught_exception_handler)
     SETGLOBALVALUE("charly.vm.internal_error_class",       kTypeClass,    Class,    internal_error_class)
-    SETGLOBALVALUE("charly.vm.globals",                    kTypeObject,   Object,   globals)
   }
 
   if (Object* globals = this->globals) {
@@ -1215,7 +1214,6 @@ void VM::op_setglobalpush(VALUE symbol) {
     SETGLOBALVALUE("charly.vm.primitive.frame",            kTypeClass,    Class,    primitive_frame)
     SETGLOBALVALUE("charly.vm.uncaught_exception_handler", kTypeFunction, Function, uncaught_exception_handler)
     SETGLOBALVALUE("charly.vm.internal_error_class",       kTypeClass,    Class,    internal_error_class)
-    SETGLOBALVALUE("charly.vm.globals",                    kTypeObject,   Object,   globals)
   }
 
   if (Object* globals = this->globals) {
@@ -1751,13 +1749,18 @@ VALUE VM::get_global_symbol(VALUE symbol) {
 
 void VM::panic(STATUS reason) {
   std::cerr << std::endl;
-  std::cerr << "Panic: " << kStatusHumanReadable[reason] << '\n';
-  std::cerr << "IP: ";
-  std::cerr.fill('0');                                                                \
-  std::cerr << "0x" << std::hex;                                                      \
-  std::cerr << std::setw(12) << reinterpret_cast<uint64_t>(this->ip) << std::setw(1); \
-  std::cerr << std::dec;                                                              \
-  std::cerr.fill(' ');                                                                \
+  std::cerr << "Panic: " << kStatusHumanReadable[reason] << std::endl;
+
+  AddressMapping& mapping = this->context.compiler_manager.address_mapping;
+  if (std::optional<std::string> filename_lookup = mapping.resolve_address(this->ip)) {
+    std::cerr << "File: " << filename_lookup.value() << std::endl;
+  }
+
+  std::cerr << "IP: 0x";
+  std::cerr << std::hex;
+  std::cerr << std::hex << std::setw(12) << std::setfill('0');
+  std::cerr << reinterpret_cast<uint64_t>(this->ip);
+  std::cerr << std::dec << std::setw(1) << std::setfill(' ');
   std::cerr << '\n' << "Stackdump:" << '\n';
   this->stackdump(std::cerr);
 
