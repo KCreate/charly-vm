@@ -48,7 +48,6 @@ public:
     SymbolTable::encode("argc");
     SymbolTable::encode("constructor");
     SymbolTable::encode("function");
-    SymbolTable::encode("halt_after_return");
     SymbolTable::encode("host_class");
     SymbolTable::encode("klass");
     SymbolTable::encode("length");

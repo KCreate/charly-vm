@@ -36,7 +36,6 @@ void CFunction::init(VALUE name, void* pointer, uint32_t argc) {
   this->pointer           = pointer;
   this->argc              = argc;
   this->push_return_value = true;
-  this->halt_after_return = false;
 }
 
 void CFunction::init(CFunction* source) {
@@ -45,15 +44,10 @@ void CFunction::init(CFunction* source) {
   this->pointer           = source->pointer;
   this->argc              = source->argc;
   this->push_return_value = source->push_return_value;
-  this->halt_after_return = source->halt_after_return;
 }
 
 void CFunction::set_push_return_value(bool value) {
   this->push_return_value = value;
-}
-
-void CFunction::set_halt_after_return(bool value) {
-  this->halt_after_return = value;
 }
 
 VALUE CFunction::get_name() {
@@ -70,10 +64,6 @@ uint32_t CFunction::get_argc() {
 
 bool CFunction::get_push_return_value() {
   return this->push_return_value;
-}
-
-bool CFunction::get_halt_after_return() {
-  return this->halt_after_return;
 }
 
 #define VALUE_01 VALUE

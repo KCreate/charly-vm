@@ -521,18 +521,42 @@ enum SyscallID : uint16_t {
   // - argumen
   FiberResume,
 
+  // Dynamically call a function
+  //
+  // args:
+  // - function
+  // - arguments
+  CallDynamic,
+
+  // Dynamically call a function with member value
+  //
+  // args:
+  // - context
+  // - function
+  // - arguments
+  CallMemberDynamic,
+
+  // Remove the bound_self value of a function
+  //
+  // args:
+  // - function
+  ClearBoundSelf,
+
   // The amount of defined syscalls
   SyscallCount
 };
 
 // The amount of arguments each syscall requires
-static constexpr uint16_t kSyscallArgumentCount[] {
-  /* TimerInit */    2,
-  /* TimerClear */   1,
-  /* TickerInit */   2,
-  /* TickerClear */  1,
-  /* FiberSuspend */ 0,
-  /* FiberResume */  2
+static constexpr uint16_t kSyscallArgumentCount[]{
+  /* TimerInit */         2,
+  /* TimerClear */        1,
+  /* TickerInit */        2,
+  /* TickerClear */       1,
+  /* FiberSuspend */      0,
+  /* FiberResume */       2,
+  /* CallDynamic */       2,
+  /* CallMemberDynamic */ 3,
+  /* ClearBoundSelf */    1
 };
 
 // Plaintext names of syscalls
@@ -542,17 +566,23 @@ static std::string kSyscallNames[] = {
   "tickerinit",
   "tickerclear",
   "fibersuspend",
-  "fiberresume"
+  "fiberresume",
+  "calldynamic",
+  "callmemberdynamic",
+  "clearboundself"
 };
 
 // Mapping from plaintext names to ids
 static std::unordered_map<std::string, SyscallID> kSyscallNameMapping = {
-  {"timerinit",    SyscallID::TimerInit},
-  {"timerclear",   SyscallID::TimerClear},
-  {"tickerinit",   SyscallID::TickerInit},
-  {"tickerclear",  SyscallID::TickerClear},
-  {"fibersuspend", SyscallID::FiberSuspend},
-  {"fiberresume",  SyscallID::FiberResume}
+  {"timerinit",         SyscallID::TimerInit},
+  {"timerclear",        SyscallID::TimerClear},
+  {"tickerinit",        SyscallID::TickerInit},
+  {"tickerclear",       SyscallID::TickerClear},
+  {"fibersuspend",      SyscallID::FiberSuspend},
+  {"fiberresume",       SyscallID::FiberResume},
+  {"calldynamic",       SyscallID::CallDynamic},
+  {"callmemberdynamic", SyscallID::CallMemberDynamic},
+  {"clearboundself",    SyscallID::ClearBoundSelf}
 };
 
 #define i8 sizeof(uint8_t)

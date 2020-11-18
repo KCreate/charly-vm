@@ -327,7 +327,7 @@ class Frame : public Header {
 public:
   using VectorType = std::vector<VALUE>;
 
-  void init(Frame* parent, CatchTable* catchtable, Function* function, uint8_t* origin, VALUE self, bool halt = false);
+  void init(Frame* parent, CatchTable* catchtable, Function* function, uint8_t* origin, VALUE self);
   void clean();
 
   Frame* get_parent();
@@ -337,7 +337,6 @@ public:
   VALUE get_self();
   uint8_t* get_origin_address();
   uint8_t* get_return_address();  // calculate the return address of this frame
-  bool get_halt_after_return();
 
   bool read_local(uint32_t index, VALUE* result);               // read value at index and store into result
   VALUE read_local_or(uint32_t index, VALUE fallback = kNull);  // read value at index or return fallback
@@ -356,7 +355,6 @@ protected:
   VALUE self;                 // the object this function was invoked on
   uint8_t* origin_address;    // the address where this call originated
   std::vector<VALUE>* locals; // local variables
-  bool halt_after_return;     // wether the machine should halt after returning
 };
 
 // Catchtable used for exception handling
@@ -450,13 +448,11 @@ public:
   void init(CFunction* source); // copy constructor
 
   void set_push_return_value(bool value);
-  void set_halt_after_return(bool value);
 
   VALUE get_name();
   void* get_pointer();
   uint32_t get_argc();
   bool get_push_return_value();
-  bool get_halt_after_return();
 
   using Result = std::variant<VALUE, std::string>;
   Result call(VM* vm_handle, uint32_t argc, VALUE* argv);
@@ -466,7 +462,6 @@ protected:
   void* pointer;
   uint32_t argc;
   bool push_return_value;
-  bool halt_after_return;
 };
 
 // Classes defined inside the virtual machine

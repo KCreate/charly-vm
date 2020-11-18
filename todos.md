@@ -2,21 +2,20 @@
 
 - VM Refactor
   - Implementation timeline
-    - Represent VM runtime data structures as GC objects
-      - Already done with Frames, CatchTables
-      - Syscalls no longer return an ID, but a direct reference to the timer, ticker, fiber
     - C methods shouldn't need access to VM struct
       - Turn CFunctions into VM syscalls
         - Function library (dynamic function calls)
         - Internals (vm.exit, and compiler manager)
         - Array library (vm.eq)
       - Remove push_return_value property from CFunctions
-      - Remove halt after return property from CFunctions
       - Refactor compiler manager
       - Refactor address mapping
       - Refactor instructionblock lifetime management
       - Refactor VM comparison methods
       - Refactor C method return system (with error handling, no direct access to exceptions)
+    - Represent VM runtime data structures as GC objects
+      - Already done with Frames, CatchTables
+      - Syscalls no longer return an ID, but a direct reference to the timer, ticker, fiber
     - Refactor compiler address mapping
       - Each function should have a reference to the instructionblock
         it is contained in.
@@ -32,7 +31,6 @@
         for some RAII style locking thing which locks a value during the scope of some block.
         I'll want a UniqueValueLock and a SharedValueLock (typedef ValueLock).
     - Some global values can be stored as atomics, no mutex needed
-    - Remove `halt_after_return`, replace with dedicated instructions
     - Make the compiler thread-safe (or just protect its VM interface with a mutex)
     - Refactor thread system to use the states and ability to wait for certain signals
       - GC goes into its own thread

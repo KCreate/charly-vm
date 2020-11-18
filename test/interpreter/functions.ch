@@ -189,21 +189,21 @@ export = ->(describe, it, assert) {
     it("calls a function with a context and arguments", ->{
       const ctx = { v: 20 }
       func foo(a, b) = @v + a + b
-      assert(foo.call(ctx, [1, 2]), 23)
+      assert(foo.call_member(ctx, [1, 2]), 23)
     })
 
     it("asynchronously calls a function", ->{
       const ctx = { v: 20 }
       func foo(a, b) = @v + a + b
 
-      const p = foo.call(ctx, [1, 2], true)
+      const p = foo.call_member(ctx, [1, 2], true)
       const result = p.wait()
       assert(result, 23)
     })
 
     it("asynchronously calls a cfunction", ->{
       const testfunc = @"charly.vm.testfunc"
-      const p = testfunc.call(null, [0], true)
+      const p = testfunc.call([0], true)
 
       const result = p.wait()
       assert(typeof result, "object")
@@ -212,6 +212,16 @@ export = ->(describe, it, assert) {
       assert(result.b, 1)
       assert(result.c, 2)
       assert(result.d, 3)
+    })
+
+    it("throws an exception if args is not array", ->{
+      func add(a, b) = a + b
+
+      assert.exception(->add.call(1), ->(e) {
+        assert(typeof e, "object")
+        assert(e.is_a(Error))
+        assert(e.message, "Expected first argument to be an array")
+      })
     })
   })
 
@@ -329,7 +339,7 @@ export = ->(describe, it, assert) {
   it("assigns bound_self to anonymous functions", ->{
     const method = ->{ self }
     assert(method(), self)
-    method.bind_self(25)
+    method.bound_self = 25
     assert(method(), 25)
     method.unbind_self()
     assert(method(), self)
@@ -344,7 +354,7 @@ export = ->(describe, it, assert) {
     const a = new A("test")
     assert(a.foo(), "test")
 
-    a.foo.bind_self({ value: "something else" })
+    a.foo.bound_self = { value: "something else" }
     assert(a.foo(), "something else")
 
     a.foo.unbind_self()
@@ -354,13 +364,14 @@ export = ->(describe, it, assert) {
   it("copies functions", ->{
     func foo = self
 
-    const a = foo.bind_self("hello world")
+    const a = foo
+    a.bound_self = "hello world"
     const b = a.copy()
 
     assert(a(), "hello world")
     assert(b(), "hello world")
 
-    a.bind_self("test")
+    a.bound_self = "test"
 
     assert(a(), "test")
     assert(b(), "hello world")

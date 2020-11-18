@@ -24,6 +24,14 @@
  * SOFTWARE.
  */
 
-print(FLAGS)
-print(ARGV)
-spawn.timer(->print("hello world"), 500.ms())
+func foo(x) = self + x
+
+print(foo.call)
+print(foo.call_member)
+
+print(foo.call([25]))
+print(foo.call_member(100, [25]))
+
+foo.bound_self = 1000
+print(foo.call([25]))
+print(foo.call([1]))

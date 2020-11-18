@@ -29,7 +29,7 @@
 
 namespace Charly {
 
-void Frame::init(Frame* parent, CatchTable* catchtable, Function* function, uint8_t* origin, VALUE self, bool halt) {
+void Frame::init(Frame* parent, CatchTable* catchtable, Function* function, uint8_t* origin, VALUE self) {
   Header::init(kTypeFrame);
 
   this->parent = parent;
@@ -38,7 +38,6 @@ void Frame::init(Frame* parent, CatchTable* catchtable, Function* function, uint
   this->function = function;
   this->self = self;
   this->origin_address = origin;
-  this->halt_after_return = halt;
 
   this->locals = new std::vector<VALUE>(function->get_lvarcount(), kNull);
 }
@@ -77,17 +76,8 @@ uint8_t* Frame::get_origin_address() {
 
 uint8_t* Frame::get_return_address() {
   if (this->origin_address == nullptr) return nullptr;
-
-  if (this->halt_after_return) {
-    return this->origin_address;
-  } else {
-    Opcode opcode = static_cast<Opcode>(*(this->origin_address));
-    return this->origin_address + kInstructionLengths[opcode];
-  }
-}
-
-bool Frame::get_halt_after_return() {
-  return this->halt_after_return;
+  Opcode opcode = static_cast<Opcode>(*(this->origin_address));
+  return this->origin_address + kInstructionLengths[opcode];
 }
 
 bool Frame::read_local(uint32_t index, VALUE* result) {

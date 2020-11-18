@@ -24,38 +24,39 @@
  * SOFTWARE.
  */
 
-const __internal_function_bind_self   = @"charly.primitive.function.bind_self"
-const __internal_function_unbind_self = @"charly.primitive.function.unbind_self"
-const __internal_function_call        = @"charly.primitive.function.call"
-const __internal_function_is_cfunc    = @"charly.primitive.function.is_cfunc"
-__internal_function_call.push_return_value = false
-
 export = ->(Base) {
   return class Function extends Base {
 
     // Calls this function with a self value and arguments array
-    call(ctx, args = [], async = false) {
+    call(args = [], async = false) {
       if async {
-        return spawn.promise(->self.call(ctx, args))
+        return spawn.promise(->self.call(args))
       }
 
-      __internal_function_call(self, ctx, args)
+      if typeof args ! "array" {
+        throw new Error("Expected first argument to be an array")
+      }
+
+      __syscall("calldynamic", self, args)
     }
 
-    // Bind a self value for this function
-    bind_self(value) {
-      __internal_function_bind_self(self, value)
-      self
+    // Call *self* with self value and arguments array
+    call_member(ctx, args = [], async = false) {
+      if async {
+        return spawn.promise(->self.call_member(ctx, args))
+      }
+
+      if typeof args ! "array" {
+        throw new Error("Expected first argument to be an array")
+      }
+
+      __syscall("callmemberdynamic", ctx, self, args)
     }
 
     // Unbind the self value
     unbind_self {
-      __internal_function_unbind_self(self)
+      __syscall("clearboundself", self)
       self
     }
-
-    // Checks wether this function is a C function or not
-    is_c_func      = __internal_function_is_cfunc(self)
-    is_charly_func = !@is_c_func()
   }
 }

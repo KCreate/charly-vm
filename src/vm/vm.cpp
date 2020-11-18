@@ -84,7 +84,7 @@ void VM::unwind_catchstack(std::optional<VALUE> payload = std::nullopt) {
     Immortal<Object> global_self = this->globals;
     VALUE payload_value = payload.value_or(kNull);
     Immortal<> i_payload_value = payload_value;
-    this->call_function(exception_handler, 1, &payload_value, global_self->as_value(), true);
+    this->call_function(exception_handler, 1, &payload_value, global_self->as_value());
     return;
   }
 
@@ -97,14 +97,8 @@ void VM::unwind_catchstack(std::optional<VALUE> payload = std::nullopt) {
 
   // Walk the frame tree until we reach the frame stored in the catchtable
   while (this->frames) {
-    if (this->frames == table->get_frame()) {
+    if (this->frames == table->get_frame())
       break;
-    } else {
-      if (this->frames->get_halt_after_return()) {
-        this->halted = true;
-      }
-    }
-
     this->frames = this->frames->get_parent();
   }
 
@@ -554,10 +548,6 @@ VALUE VM::readmembersymbol(VALUE source, VALUE symbol) {
         return cfunc->get_push_return_value() ? kTrue : kFalse;
       }
 
-      if (symbol == SYM("halt_after_return")) {
-        return cfunc->get_halt_after_return() ? kTrue : kFalse;
-      }
-
       if (symbol == SYM("argc")) {
         return charly_create_number(cfunc->get_argc());
       }
@@ -705,6 +695,11 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
       if (symbol == SYM("name")) break;
       if (symbol == SYM("host_class")) break;
 
+      if (symbol == SYM("bound_self")) {
+        func->set_bound_self(value);
+        break;
+      }
+
       func->write(symbol, value);
       break;
     }
@@ -714,11 +709,6 @@ VALUE VM::setmembersymbol(VALUE target, VALUE symbol, VALUE value) {
 
       if (symbol == SYM("push_return_value")) {
         cfunc->set_push_return_value(charly_truthyness(value));
-        break;
-      }
-
-      if (symbol == SYM("halt_after_return")) {
-        cfunc->set_halt_after_return(charly_truthyness(value));
         break;
       }
 
@@ -788,7 +778,7 @@ bool VM::findprimitivevalue(VALUE value, VALUE symbol, VALUE* result) {
   return found_primitive_class->find_value(symbol, result);
 }
 
-void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
+void VM::call(uint32_t argc, bool with_target) {
   // Stack allocate enough space to copy all arguments into
   Immortal<> i_arguments[argc];
   VALUE arguments[argc];
@@ -819,16 +809,13 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
     case kTypeFunction: {
       Function* tfunc = charly_as_function(function);
       target = with_target ? tfunc->get_self(target) : tfunc->get_self();
-      this->call_function(tfunc, argc, arguments, target, halt_after_return);
+      this->call_function(tfunc, argc, arguments, target);
       return;
     }
 
     // Functions which wrap around a C function pointer
     case kTypeCFunction: {
       this->call_cfunction(charly_as_cfunction(function), argc, arguments);
-      if (halt_after_return) {
-        this->halted = true;
-      }
       return;
     }
 
@@ -836,7 +823,7 @@ void VM::call(uint32_t argc, bool with_target, bool halt_after_return) {
   }
 }
 
-void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self, bool halt_after_return) {
+void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self) {
   // Check if the function was called with enough arguments
   if (argc < function->get_minimum_argc()) {
     this->throw_exception("Not enough arguments for function call");
@@ -848,11 +835,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
   // don't compute a return address
   uint8_t* return_address = nullptr;
   if (this->ip != nullptr) {
-    if (halt_after_return) {
-      return_address = this->ip;
-    } else {
-      return_address = this->ip + kInstructionLengths[this->fetch_instruction()];
-    }
+    return_address = this->ip + kInstructionLengths[this->fetch_instruction()];
   }
 
   Immortal<Frame> frame = charly_allocate<Frame>(
@@ -860,8 +843,7 @@ void VM::call_function(Function* function, uint32_t argc, VALUE* argv, VALUE sel
     this->catchstack,
     function,
     this->ip,
-    self,
-    halt_after_return
+    self
   );
   this->frames = frame;
 
@@ -913,8 +895,6 @@ void VM::call_cfunction(CFunction* function, uint32_t argc, VALUE* argv) {
     this->throw_exception(std::get<std::string>(result));
     return;
   }
-
-  this->halted = function->get_halt_after_return();
 
   if (function->get_push_return_value() && this->catchstack == original_catchtable) {
     this->push_stack(std::get<VALUE>(result));
@@ -1515,10 +1495,6 @@ void VM::op_return() {
   this->frames = frame->get_parent();
   this->ip = frame->get_return_address();
 
-  if (frame->get_halt_after_return()) {
-    this->halted = true;
-  }
-
   // Print the frame if the correponding flag was set
 #ifndef CHARLY_PRODUCTION
   if (CLIFlags::is_flag_set("trace_frames")) {
@@ -1688,6 +1664,33 @@ void VM::op_syscall(SyscallID id) {
       this->push_stack(this->syscall_fibersuspend());
       break;
     }
+    case SyscallID::CallDynamic: {
+      Immortal<> arguments = this->pop_stack();
+      Immortal<> function = this->pop_stack();
+      if (!charly_is_array(arguments)) {
+        this->panic(Status::InvalidArgumentType);
+      }
+      this->syscall_calldynamic(function, charly_as_array(arguments));
+      break;
+    }
+    case SyscallID::CallMemberDynamic: {
+      Immortal<> arguments = this->pop_stack();
+      Immortal<> function = this->pop_stack();
+      Immortal<> context = this->pop_stack();
+      if (!charly_is_array(arguments)) {
+        this->panic(Status::InvalidArgumentType);
+      }
+      this->syscall_callmemberdynamic(function, context, charly_as_array(arguments));
+      break;
+    }
+    case SyscallID::ClearBoundSelf: {
+      Immortal<> function = this->pop_stack();
+      if (!charly_is_function(function)) {
+        this->panic(Status::InvalidArgumentType);
+      }
+      this->push_stack(this->syscall_clearboundself(charly_as_function(function)));
+      break;
+    }
     case SyscallID::FiberResume: {
       Immortal<> argument = this->pop_stack();
       Immortal<> id = this->pop_stack();
@@ -1734,10 +1737,64 @@ VALUE VM::syscall_fiberresume(uint64_t id, VALUE argument) {
   return kNull;
 }
 
-void VM::stackdump(std::ostream& io) {
+VALUE VM::syscall_calldynamic(VALUE function, Array* arguments) {
+  this->push_stack(function);
+
+  uint32_t argc = 0;
+  arguments->access_vector_shared([&](Array::VectorType* vec) {
+    for (VALUE a : *vec)
+      this->push_stack(a);
+    argc = vec->size();
+  });
+
+  this->call(argc, false);
+  return kNull;
+}
+
+VALUE VM::syscall_callmemberdynamic(VALUE function, VALUE context, Array* arguments) {
+  this->push_stack(context);
+  this->push_stack(function);
+
+  uint32_t argc = 0;
+  arguments->access_vector_shared([&](Array::VectorType* vec) {
+    for (VALUE a : *vec)
+      this->push_stack(a);
+    argc = vec->size();
+  });
+
+  this->call(argc, true);
+  return kNull;
+}
+
+VALUE VM::syscall_clearboundself(Function* function) {
+  function->clear_bound_self();
+  return kNull;
+}
+
+void VM::debug_stackdump(std::ostream& io) {
   for (VALUE stackitem : this->stack) {
     charly_debug_print(io, stackitem);
     io << '\n';
+  }
+}
+
+void VM::debug_stacktrace(std::ostream& io) {
+  Frame* top = this->frames;
+  while (top) {
+    Function* function = top->get_function();
+
+    if (function) {
+      VALUE name = function->get_name();
+      uint8_t* addr = function->get_body_address();
+      std::optional<std::string> lookup = this->context.compiler_manager.address_mapping.resolve_address(addr);
+
+      io << SymbolTable::decode(name) << " - ";
+      io << lookup.value_or("??") << std::endl;
+    } else {
+      io << "--" << std::endl;
+    }
+
+    top = top->get_parent();
   }
 }
 
@@ -1751,18 +1808,17 @@ void VM::panic(STATUS reason) {
   std::cerr << std::endl;
   std::cerr << "Panic: " << kStatusHumanReadable[reason] << std::endl;
 
-  AddressMapping& mapping = this->context.compiler_manager.address_mapping;
-  if (std::optional<std::string> filename_lookup = mapping.resolve_address(this->ip)) {
-    std::cerr << "File: " << filename_lookup.value() << std::endl;
-  }
-
   std::cerr << "IP: 0x";
   std::cerr << std::hex;
   std::cerr << std::hex << std::setw(12) << std::setfill('0');
   std::cerr << reinterpret_cast<uint64_t>(this->ip);
   std::cerr << std::dec << std::setw(1) << std::setfill(' ');
+
+  std::cerr << '\n' << "Stacktrace:" << '\n';
+  this->debug_stacktrace(std::cerr);
+
   std::cerr << '\n' << "Stackdump:" << '\n';
-  this->stackdump(std::cerr);
+  this->debug_stackdump(std::cerr);
 
   this->exit(1);
   std::cerr << "Aborting the charly runtime!" << '\n';
@@ -2651,7 +2707,7 @@ uint8_t VM::start_runtime() {
 
           // Invoke function
           VALUE self = func->get_self(this->globals->as_value());
-          this->call_function(func, 4, reinterpret_cast<VALUE*>(task.callback.arguments), self, true);
+          this->call_function(func, 4, reinterpret_cast<VALUE*>(task.callback.arguments), self);
           this->uid = this->get_next_thread_uid();
           this->run();
           this->pop_stack();

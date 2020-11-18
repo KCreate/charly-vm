@@ -32,7 +32,6 @@ const __internal_write           = @"charly.vm.write"
 const __internal_getn            = @"charly.vm.getn"
 const __internal_import          = @"charly.vm.import"
 const __internal_exit            = @"charly.vm.exit"
-__internal_exit.halt_after_return = true
 
 // Setup some information about our runtime environment
 Charly.ARGV         = @"charly.vm.argv"

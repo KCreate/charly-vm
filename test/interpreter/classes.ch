@@ -453,7 +453,7 @@ export = ->(describe, it, assert) {
     assert(super_foo.name, "foo")
     assert(super_foo(), "myvalue")
 
-    super_foo.bind_self({ name: "some other value" })
+    super_foo.bound_self = { name: "some other value" }
 
     assert(super_foo(), "some other value")
     assert(obj.foo()(), "myvalue")

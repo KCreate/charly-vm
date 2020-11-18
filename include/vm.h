@@ -182,15 +182,17 @@ public:
   VALUE readmembervalue(VALUE source, VALUE value);
   VALUE setmembervalue(VALUE target, VALUE member_value, VALUE value);
   bool findprimitivevalue(VALUE value, VALUE symbol, VALUE* result);
-  void call(uint32_t argc, bool with_target, bool halt_after_return = false);
-  void call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self, bool halt_after_return = false);
+  void call(uint32_t argc, bool with_target);
+  void call_function(Function* function, uint32_t argc, VALUE* argv, VALUE self);
   void call_cfunction(CFunction* function, uint32_t argc, VALUE* argv);
   void call_class(Class* klass, uint32_t argc, VALUE* argv);
   void throw_exception(const std::string& message);
   void throw_exception(VALUE payload);
-  void panic(STATUS reason);
-  void stackdump(std::ostream& io);
   VALUE get_global_symbol(VALUE symbol);
+
+  void panic(STATUS reason);
+  void debug_stackdump(std::ostream& io);
+  void debug_stacktrace(std::ostream& io);
 
   // Instructions
   Opcode fetch_instruction();
@@ -260,6 +262,10 @@ public:
   VALUE syscall_tickerclear(uint64_t id);
   VALUE syscall_fibersuspend();
   VALUE syscall_fiberresume(uint64_t id, VALUE argument);
+
+  VALUE syscall_calldynamic(VALUE function, Array* arguments);
+  VALUE syscall_callmemberdynamic(VALUE function, VALUE context, Array* arguments);
+  VALUE syscall_clearboundself(Function* function);
 
   inline uint8_t* get_ip() {
     return this->ip;
