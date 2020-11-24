@@ -4,9 +4,10 @@
   - Implementation timeline
     - C methods shouldn't need access to VM struct
       - Turn CFunctions into VM syscalls
-        - Function library (dynamic function calls)
+        - All primitive types
         - Internals (vm.exit, and compiler manager)
         - Array library (vm.eq)
+      - Math, Time and Stringbuffer libraries should be implemented as dynamic libraries
       - Remove push_return_value property from CFunctions
       - Refactor compiler manager
       - Refactor address mapping
@@ -172,32 +173,12 @@
   - Tickers can also be stored inside a heap
 
 - New instructions to replace functionality in native C methods
-  - Timer and ticker handlers
-    - timercreate
-    - tickercreate
-    - timerclear
-    - tickerclear
   - Fiber instructions
     - fibercreate
     - fibercall
-    - fibersuspend
-    - fiberresume
     - fiberyield
   - Native task scheduling
     - schedulenativetask
-  - Type cast instructions
-    - castint
-    - castfloat
-    - castnumber
-    - caststring
-    - castboolean
-    - castsymbol
-  - Function dynamic call
-    - calldynamic
-    - callmemberdynamic
-  - Function bound self
-    - setboundself
-    - clearboundself
   - Delete instructions
     - deletemembersymbol
     - deletemembervalue

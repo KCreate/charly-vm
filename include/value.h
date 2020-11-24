@@ -1036,7 +1036,7 @@ inline VALUE charly_value_to_number(VALUE value) {
   if (charly_is_boolean(value)) return value == kTrue ? charly_create_integer(1) : charly_create_integer(0);
   if (charly_is_null(value)) return charly_create_integer(0);
   if (charly_is_symbol(value)) return charly_create_integer(0);
-  if (charly_is_string(value)) return charly_string_to_double(value);
+  if (charly_is_string(value)) return charly_create_double(charly_string_to_double(value));
   return charly_create_double(NAN);
 }
 __attribute__((always_inline))

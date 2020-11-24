@@ -25,7 +25,6 @@
  */
 
 // String Methods
-const __to_n      = @"charly.primitive.string.to_n"
 const __ltrim     = @"charly.primitive.string.ltrim"
 const __rtrim     = @"charly.primitive.string.rtrim"
 const __lowercase = @"charly.primitive.string.lowercase"
@@ -293,9 +292,7 @@ export = ->(Base) {
      * ```
      * */
     to_n {
-      const str = self.trim()
-      if self.length == 0 return NaN
-      __to_n(self)
+      __syscall("castnumber", self.trim())
     }
 
     /*

@@ -1700,6 +1700,61 @@ void VM::op_syscall(SyscallID id) {
       this->push_stack(this->syscall_fiberresume(charly_number_to_uint64(id), argument));
       break;
     }
+    case SyscallID::CastInt: {
+      Immortal<> value = this->pop_stack();
+      this->push_stack(charly_create_number(charly_value_to_int64(value)));
+      break;
+    }
+    case SyscallID::CastFloat: {
+      Immortal<> value = this->pop_stack();
+      this->push_stack(charly_create_double(charly_number_to_double(value)));
+      break;
+    }
+    case SyscallID::CastNumber: {
+      Immortal<> value = this->pop_stack();
+      this->push_stack(charly_value_to_number(value));
+      break;
+    }
+    case SyscallID::CastString: {
+      Immortal<> value = this->pop_stack();
+      std::stringstream buffer;
+      charly_to_string(buffer, value);
+      this->push_stack(charly_allocate_string(buffer.str()));
+      break;
+    }
+    case SyscallID::CopyValue: {
+      Immortal<> value = this->pop_stack();
+
+      VALUE copy = value;
+      switch (charly_get_type(value)) {
+        case kTypeObject:
+          copy = charly_allocate<Object>(charly_as_object(value))->as_value();
+          break;
+        case kTypeArray:
+          copy = charly_allocate<Array>(charly_as_array(value))->as_value();
+          break;
+        case kTypeString:
+          copy = charly_allocate_string(charly_string_data(copy), charly_string_length(copy));
+          break;
+        case kTypeFunction:
+          copy = charly_allocate<Function>(charly_as_function(value))->as_value();
+          break;
+        case kTypeCFunction:
+          copy = charly_allocate<CFunction>(charly_as_cfunction(value))->as_value();
+          break;
+
+        case kTypeClass:
+        case kTypeFrame:
+        case kTypeCatchTable:
+        case kTypeCPointer: {
+          this->throw_exception("Can't copy value of type " + charly_get_typestring(value));
+          return;
+        }
+      }
+
+      this->push_stack(copy);
+      break;
+    }
     default: {
       this->panic(Status::InvalidSyscallId);
     }
@@ -1788,6 +1843,7 @@ void VM::debug_stacktrace(std::ostream& io) {
       uint8_t* addr = function->get_body_address();
       std::optional<std::string> lookup = this->context.compiler_manager.address_mapping.resolve_address(addr);
 
+      io << "  ";
       io << SymbolTable::decode(name) << " - ";
       io << lookup.value_or("??") << std::endl;
     } else {

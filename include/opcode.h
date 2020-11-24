@@ -479,112 +479,6 @@ enum Opcode : uint8_t {
   OpcodeCount
 };
 
-// IDs of VM syscalls
-enum SyscallID : uint16_t {
-
-  // Create a timer, pushes id onto the stack
-  //
-  // args:
-  // - function
-  // - timeout
-  TimerInit,
-
-  // Clear a timer
-  //
-  // args:
-  // - id
-  TimerClear,
-
-  // Create a ticker, pushes id onto the stack
-  //
-  // args:
-  // - function
-  // - period
-  TickerInit,
-
-  // Clear a ticker
-  //
-  // args:
-  // - id
-  TickerClear,
-
-  // Suspend the currently executing fiber
-  //
-  // The return value of this syscall is the argument
-  // passed to the corresponding FiberResume call
-  FiberSuspend,
-
-  // Resume a paused fiber
-  //
-  // args:
-  // - id
-  // - argumen
-  FiberResume,
-
-  // Dynamically call a function
-  //
-  // args:
-  // - function
-  // - arguments
-  CallDynamic,
-
-  // Dynamically call a function with member value
-  //
-  // args:
-  // - context
-  // - function
-  // - arguments
-  CallMemberDynamic,
-
-  // Remove the bound_self value of a function
-  //
-  // args:
-  // - function
-  ClearBoundSelf,
-
-  // The amount of defined syscalls
-  SyscallCount
-};
-
-// The amount of arguments each syscall requires
-static constexpr uint16_t kSyscallArgumentCount[]{
-  /* TimerInit */         2,
-  /* TimerClear */        1,
-  /* TickerInit */        2,
-  /* TickerClear */       1,
-  /* FiberSuspend */      0,
-  /* FiberResume */       2,
-  /* CallDynamic */       2,
-  /* CallMemberDynamic */ 3,
-  /* ClearBoundSelf */    1
-};
-
-// Plaintext names of syscalls
-static std::string kSyscallNames[] = {
-  "timerinit",
-  "timerclear",
-  "tickerinit",
-  "tickerclear",
-  "fibersuspend",
-  "fiberresume",
-  "calldynamic",
-  "callmemberdynamic",
-  "clearboundself"
-};
-
-// Mapping from plaintext names to ids
-static std::unordered_map<std::string, SyscallID> kSyscallNameMapping = {
-  {"timerinit",         SyscallID::TimerInit},
-  {"timerclear",        SyscallID::TimerClear},
-  {"tickerinit",        SyscallID::TickerInit},
-  {"tickerclear",       SyscallID::TickerClear},
-  {"fibersuspend",      SyscallID::FiberSuspend},
-  {"fiberresume",       SyscallID::FiberResume},
-  {"calldynamic",       SyscallID::CallDynamic},
-  {"callmemberdynamic", SyscallID::CallMemberDynamic},
-  {"clearboundself",    SyscallID::ClearBoundSelf}
-};
-
 #define i8 sizeof(uint8_t)
 #define i16 sizeof(uint16_t)
 #define i32 sizeof(uint32_t)
@@ -742,6 +636,125 @@ static std::string kOpcodeMnemonics[]{
   "halt",
   "typeof",
   "syscall"
+};
+
+// IDs of VM syscalls
+enum SyscallID : uint16_t {
+
+  // Create a timer, pushes id onto the stack
+  // - function
+  // - timeout
+  TimerInit,
+
+  // Clear a timer
+  // - id
+  TimerClear,
+
+  // Create a ticker, pushes id onto the stack
+  // - function
+  // - period
+  TickerInit,
+
+  // Clear a ticker
+  // - id
+  TickerClear,
+
+  // Suspend the currently executing fiber
+  // The return value of this syscall is the argument
+  // passed to the corresponding FiberResume call
+  FiberSuspend,
+
+  // Resume a paused fiber
+  // - id
+  // - argument
+  FiberResume,
+
+  // Dynamically call a function
+  // - function
+  // - arguments
+  CallDynamic,
+
+  // Dynamically call a function with member value
+  // - context
+  // - function
+  // - arguments
+  CallMemberDynamic,
+
+  // Remove the bound_self value of a function
+  // - function
+  ClearBoundSelf,
+
+  // Cast input value to a given type
+  // - value
+  CastInt,
+  CastFloat,
+  CastNumber,
+  CastString,
+  CastBoolean,
+
+  // Copy a value
+  // - value
+  CopyValue,
+
+  // The amount of defined syscalls
+  SyscallCount
+};
+
+// The amount of arguments each syscall requires
+static constexpr uint16_t kSyscallArgumentCount[]{
+  /* TimerInit */         2,
+  /* TimerClear */        1,
+  /* TickerInit */        2,
+  /* TickerClear */       1,
+  /* FiberSuspend */      0,
+  /* FiberResume */       2,
+  /* CallDynamic */       2,
+  /* CallMemberDynamic */ 3,
+  /* ClearBoundSelf */    1,
+  /* CastInt */           1,
+  /* CastFloat */         1,
+  /* CastNumber */        1,
+  /* CastString */        1,
+  /* CastBoolean */       1,
+  /* CopyValue */         1
+};
+
+// Plaintext names of syscalls
+static std::string kSyscallNames[] = {
+  "timerinit",
+  "timerclear",
+  "tickerinit",
+  "tickerclear",
+  "fibersuspend",
+  "fiberresume",
+  "calldynamic",
+  "callmemberdynamic",
+  "clearboundself",
+  "castint",
+  "castfloat",
+  "castnumber",
+  "caststring",
+  "castboolean",
+  "copyvalue"
+};
+
+// Mapping from plaintext names to ids
+static std::unordered_map<std::string, SyscallID> kSyscallNameMapping = {
+  {"timerinit",         SyscallID::TimerInit},
+  {"timerclear",        SyscallID::TimerClear},
+  {"tickerinit",        SyscallID::TickerInit},
+  {"tickerclear",       SyscallID::TickerClear},
+  {"fibersuspend",      SyscallID::FiberSuspend},
+  {"fiberresume",       SyscallID::FiberResume},
+  {"calldynamic",       SyscallID::CallDynamic},
+  {"callmemberdynamic", SyscallID::CallMemberDynamic},
+  {"clearboundself",    SyscallID::ClearBoundSelf},
+  {"castint",           SyscallID::CastInt},
+  {"castfloat",         SyscallID::CastFloat},
+  {"castnumber",        SyscallID::CastNumber},
+  {"caststring",        SyscallID::CastString},
+  {"castboolean",       SyscallID::CastBoolean},
+  {"copyvalue",         SyscallID::CopyValue}
 };
 // clang-format on
 

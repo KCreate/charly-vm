@@ -24,26 +24,10 @@
  * SOFTWARE.
  */
 
-const __internal_to_float = @"charly.primitive.number.to_float"
-const __internal_to_int   = @"charly.primitive.number.to_int"
 const __internal_is_float = @"charly.primitive.number.is_float"
 
 export = ->(Base) {
   return class Number extends Base {
-
-    /*
-     * Convert this number to a floating-point number
-     * */
-    to_float {
-      __internal_to_float(self)
-    }
-
-    /*
-     * Convert this number to an integer
-     * */
-    to_int {
-      __internal_to_int(self)
-    }
 
     // Type checks
     is_float = __internal_is_float(self)

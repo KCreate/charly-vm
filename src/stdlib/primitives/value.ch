@@ -24,9 +24,6 @@
  * SOFTWARE.
  */
 
-const __internal_to_s     = @"charly.primitive.value.to_s"
-const __internal_copy     = @"charly.primitive.value.copy"
-
 export = ->{
   return class Value {
 
@@ -38,7 +35,7 @@ export = ->{
      * Creates a copy of this value
      * */
     copy {
-      __internal_copy(self)
+      __syscall("copyvalue", self)
     }
 
     /*
@@ -124,7 +121,7 @@ export = ->{
      * Meant to be overridden by other primitive classes
      * */
     to_s {
-      __internal_to_s(self)
+      __syscall("caststring", self)
     }
 
     /*
@@ -133,7 +130,21 @@ export = ->{
      * Meant to be overridden by other primitive classes
      * */
     to_n {
-      NaN
+      __syscall("castnumber", self)
+    }
+
+    /*
+     * Convert this value to a float
+     * */
+    to_f {
+      __syscall("castfloat", self)
+    }
+
+    /*
+     * Convert this value to an int
+     * */
+    to_i {
+      __syscall("castint", self)
     }
   }
 }

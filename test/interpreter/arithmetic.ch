@@ -103,7 +103,7 @@ export = ->(describe, it, assert) {
     ]
 
     input.each(->(n, i) {
-      assert(n.to_float().is_float())
+      assert(n.to_f().is_float())
     })
   })
 
@@ -117,8 +117,8 @@ export = ->(describe, it, assert) {
     ]
 
     input.each(->(n, i) {
-      assert(n.to_int().is_int())
-      assert(n.to_int(), output[i])
+      assert(n.to_i().is_int())
+      assert(n.to_i(), output[i])
     })
   })
 

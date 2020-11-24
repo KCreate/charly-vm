@@ -267,6 +267,13 @@ public:
   VALUE syscall_callmemberdynamic(VALUE function, VALUE context, Array* arguments);
   VALUE syscall_clearboundself(Function* function);
 
+  VALUE syscall_castint(VALUE value);
+  VALUE syscall_castfloat(VALUE value);
+  VALUE syscall_castnumber(VALUE value);
+  VALUE syscall_caststring(VALUE value);
+  VALUE syscall_castboolean(VALUE value);
+  VALUE syscall_copyvalue(VALUE value);
+
   inline uint8_t* get_ip() {
     return this->ip;
   }

@@ -41,7 +41,6 @@
 #include "libs/primitives/number/number.h"
 #include "libs/primitives/object/object.h"
 #include "libs/primitives/string/string.h"
-#include "libs/primitives/value/value.h"
 
 namespace Charly {
 namespace Internals {
@@ -251,7 +250,6 @@ std::unordered_map<VALUE, MethodSignature> methods = {
 #import "libs/primitives/number/number.def"
 #import "libs/primitives/object/object.def"
 #import "libs/primitives/string/string.def"
-#import "libs/primitives/value/value.def"
 
     // Libraries
 #import "libs/math/math.def"
