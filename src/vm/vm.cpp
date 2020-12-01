@@ -1664,6 +1664,15 @@ void VM::op_syscall(SyscallID id) {
       this->push_stack(this->syscall_fibersuspend());
       break;
     }
+    case SyscallID::FiberResume: {
+      Immortal<> argument = this->pop_stack();
+      Immortal<> id = this->pop_stack();
+      if (!charly_is_number(id)) {
+        this->panic(Status::InvalidArgumentType);
+      }
+      this->push_stack(this->syscall_fiberresume(charly_number_to_uint64(id), argument));
+      break;
+    }
     case SyscallID::CallDynamic: {
       Immortal<> arguments = this->pop_stack();
       Immortal<> function = this->pop_stack();
@@ -1691,15 +1700,6 @@ void VM::op_syscall(SyscallID id) {
       this->push_stack(this->syscall_clearboundself(charly_as_function(function)));
       break;
     }
-    case SyscallID::FiberResume: {
-      Immortal<> argument = this->pop_stack();
-      Immortal<> id = this->pop_stack();
-      if (!charly_is_number(id)) {
-        this->panic(Status::InvalidArgumentType);
-      }
-      this->push_stack(this->syscall_fiberresume(charly_number_to_uint64(id), argument));
-      break;
-    }
     case SyscallID::CastInt: {
       Immortal<> value = this->pop_stack();
       this->push_stack(charly_create_number(charly_value_to_int64(value)));
@@ -1717,42 +1717,17 @@ void VM::op_syscall(SyscallID id) {
     }
     case SyscallID::CastString: {
       Immortal<> value = this->pop_stack();
-      std::stringstream buffer;
-      charly_to_string(buffer, value);
-      this->push_stack(charly_allocate_string(buffer.str()));
+      this->push_stack(this->syscall_caststring(value));
       break;
     }
     case SyscallID::CopyValue: {
       Immortal<> value = this->pop_stack();
-
-      VALUE copy = value;
-      switch (charly_get_type(value)) {
-        case kTypeObject:
-          copy = charly_allocate<Object>(charly_as_object(value))->as_value();
-          break;
-        case kTypeArray:
-          copy = charly_allocate<Array>(charly_as_array(value))->as_value();
-          break;
-        case kTypeString:
-          copy = charly_allocate_string(charly_string_data(copy), charly_string_length(copy));
-          break;
-        case kTypeFunction:
-          copy = charly_allocate<Function>(charly_as_function(value))->as_value();
-          break;
-        case kTypeCFunction:
-          copy = charly_allocate<CFunction>(charly_as_cfunction(value))->as_value();
-          break;
-
-        case kTypeClass:
-        case kTypeFrame:
-        case kTypeCatchTable:
-        case kTypeCPointer: {
-          this->throw_exception("Can't copy value of type " + charly_get_typestring(value));
-          return;
-        }
-      }
-
-      this->push_stack(copy);
+      this->push_stack(this->syscall_copyvalue(value));
+      break;
+    }
+    case SyscallID::IsFloat: {
+      Immortal<> value = this->pop_stack();
+      this->push_stack(charly_is_float(value) ? kTrue : kFalse);
       break;
     }
     default: {
@@ -1824,6 +1799,40 @@ VALUE VM::syscall_callmemberdynamic(VALUE function, VALUE context, Array* argume
 VALUE VM::syscall_clearboundself(Function* function) {
   function->clear_bound_self();
   return kNull;
+}
+
+VALUE VM::syscall_caststring(VALUE value) {
+  std::stringstream buffer;
+  charly_to_string(buffer, value);
+  return charly_allocate_string(buffer.str());
+}
+
+VALUE VM::syscall_copyvalue(VALUE value) {
+  VALUE copy = value;
+  switch (charly_get_type(value)) {
+    case kTypeObject:
+      copy = charly_allocate<Object>(charly_as_object(value))->as_value();
+      break;
+    case kTypeArray:
+      copy = charly_allocate<Array>(charly_as_array(value))->as_value();
+      break;
+    case kTypeString:
+      copy = charly_allocate_string(charly_string_data(copy), charly_string_length(copy));
+      break;
+    case kTypeFunction:
+      copy = charly_allocate<Function>(charly_as_function(value))->as_value();
+      break;
+    case kTypeCFunction:
+      copy = charly_allocate<CFunction>(charly_as_cfunction(value))->as_value();
+      break;
+
+    default: {
+      this->throw_exception("Can't copy value of type " + charly_get_typestring(value));
+      break;
+    }
+  }
+
+  return copy;
 }
 
 void VM::debug_stackdump(std::ostream& io) {

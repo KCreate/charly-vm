@@ -690,7 +690,10 @@ enum SyscallID : uint16_t {
   CastFloat,
   CastNumber,
   CastString,
-  CastBoolean,
+
+  // Check wether input value is a float number
+  // - value
+  IsFloat,
 
   // Copy a value
   // - value
@@ -715,7 +718,7 @@ static constexpr uint16_t kSyscallArgumentCount[]{
   /* CastFloat */         1,
   /* CastNumber */        1,
   /* CastString */        1,
-  /* CastBoolean */       1,
+  /* IsFloat */           1,
   /* CopyValue */         1
 };
 
@@ -734,7 +737,7 @@ static std::string kSyscallNames[] = {
   "castfloat",
   "castnumber",
   "caststring",
-  "castboolean",
+  "isfloat",
   "copyvalue"
 };
 
@@ -753,7 +756,7 @@ static std::unordered_map<std::string, SyscallID> kSyscallNameMapping = {
   {"castfloat",         SyscallID::CastFloat},
   {"castnumber",        SyscallID::CastNumber},
   {"caststring",        SyscallID::CastString},
-  {"castboolean",       SyscallID::CastBoolean},
+  {"isfloat",           SyscallID::IsFloat},
   {"copyvalue",         SyscallID::CopyValue}
 };
 // clang-format on

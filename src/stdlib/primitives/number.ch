@@ -24,13 +24,11 @@
  * SOFTWARE.
  */
 
-const __internal_is_float = @"charly.primitive.number.is_float"
-
 export = ->(Base) {
   return class Number extends Base {
 
     // Type checks
-    is_float = __internal_is_float(self)
+    is_float = __syscall("isfloat", self)
     is_int   = !@is_float()
 
     /*
@@ -145,13 +143,6 @@ export = ->(Base) {
      * */
     close_to(expected, delta) {
       (self - expected).abs() <= delta
-    }
-
-    /*
-     * Return the number itself
-     * */
-    to_n {
-      self
     }
 
     // Converters for different time scales

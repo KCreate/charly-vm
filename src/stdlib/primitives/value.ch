@@ -116,12 +116,17 @@ export = ->{
     }
 
     /*
-     * Turn this value into a string
-     *
-     * Meant to be overridden by other primitive classes
+     * Convert this value to an int
      * */
-    to_s {
-      __syscall("caststring", self)
+    to_i {
+      __syscall("castint", self)
+    }
+
+    /*
+     * Convert this value to a float
+     * */
+    to_f {
+      __syscall("castfloat", self)
     }
 
     /*
@@ -134,17 +139,12 @@ export = ->{
     }
 
     /*
-     * Convert this value to a float
+     * Turn this value into a string
+     *
+     * Meant to be overridden by other primitive classes
      * */
-    to_f {
-      __syscall("castfloat", self)
-    }
-
-    /*
-     * Convert this value to an int
-     * */
-    to_i {
-      __syscall("castint", self)
+    to_s {
+      __syscall("caststring", self)
     }
   }
 }
