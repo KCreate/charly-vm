@@ -37,7 +37,6 @@
 #include "libs/stringbuffer/stringbuffer.h"
 #include "libs/math/math.h"
 #include "libs/time/time.h"
-#include "libs/primitives/array/array.h"
 #include "libs/primitives/object/object.h"
 #include "libs/primitives/string/string.h"
 
@@ -245,7 +244,6 @@ Result testfunc(VM&, VALUE argument) {
 std::unordered_map<VALUE, MethodSignature> methods = {
 
     // Primitives
-#import "libs/primitives/array/array.def"
 #import "libs/primitives/object/object.def"
 #import "libs/primitives/string/string.def"
 

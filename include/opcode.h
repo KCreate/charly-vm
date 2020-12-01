@@ -699,6 +699,21 @@ enum SyscallID : uint16_t {
   // - value
   CopyValue,
 
+  // Insert a value into an array
+  // - array
+  // - index
+  // - value
+  ArrayInsert,
+
+  // Remove some element from an array
+  // - array
+  // - index
+  ArrayRemove,
+
+  // Clear the contents of an array
+  // - array
+  ArrayClear,
+
   // The amount of defined syscalls
   SyscallCount
 };
@@ -719,7 +734,10 @@ static constexpr uint16_t kSyscallArgumentCount[]{
   /* CastNumber */        1,
   /* CastString */        1,
   /* IsFloat */           1,
-  /* CopyValue */         1
+  /* CopyValue */         1,
+  /* ArrayInsert */       3,
+  /* ArrayRemove */       2,
+  /* ArrayClear */        1
 };
 
 // Plaintext names of syscalls
@@ -738,7 +756,10 @@ static std::string kSyscallNames[] = {
   "castnumber",
   "caststring",
   "isfloat",
-  "copyvalue"
+  "copyvalue",
+  "arrayinsert",
+  "arrayremove",
+  "arrayclear"
 };
 
 // Mapping from plaintext names to ids
@@ -757,7 +778,10 @@ static std::unordered_map<std::string, SyscallID> kSyscallNameMapping = {
   {"castnumber",        SyscallID::CastNumber},
   {"caststring",        SyscallID::CastString},
   {"isfloat",           SyscallID::IsFloat},
-  {"copyvalue",         SyscallID::CopyValue}
+  {"copyvalue",         SyscallID::CopyValue},
+  {"arrayinsert",       SyscallID::ArrayInsert},
+  {"arrayremove",       SyscallID::ArrayRemove},
+  {"arrayclear",        SyscallID::ArrayClear}
 };
 // clang-format on
 

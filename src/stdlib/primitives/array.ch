@@ -24,14 +24,6 @@
  * SOFTWARE.
  */
 
-const __internal_insert  = @"charly.primitive.array.insert"
-const __internal_remove  = @"charly.primitive.array.remove"
-const __internal_reverse = @"charly.primitive.array.reverse"
-const __internal_index   = @"charly.primitive.array.index"
-const __internal_rindex  = @"charly.primitive.array.rindex"
-const __internal_range   = @"charly.primitive.array.range"
-const __internal_clear   = @"charly.primitive.array.clear"
-
 export = ->(Base) {
   return class Array extends Base {
 
@@ -161,7 +153,7 @@ export = ->(Base) {
     pop {
       if @empty() return null
       const item = @last()
-      __internal_remove(self, @length - 1)
+      @remove(@length - 1)
       item
     }
 
@@ -169,8 +161,7 @@ export = ->(Base) {
      * Append to the beginning of the array
      * */
     unshift(item) {
-      __internal_insert(self, 0, item)
-      self
+      @insert(0, item)
     }
 
     /*
@@ -179,7 +170,7 @@ export = ->(Base) {
     shift {
       if @empty() return null
       const item = @first()
-      __internal_remove(self, 0)
+      @remove(0)
       item
     }
 
@@ -187,7 +178,7 @@ export = ->(Base) {
      * Inserts an element at some index in the array
      * */
     insert(index, item) {
-      __internal_insert(self, index, item)
+      __syscall("arrayinsert", self, index, item)
       self
     }
 
@@ -195,7 +186,7 @@ export = ->(Base) {
      * Removes an element at some index
      * */
     remove(index) {
-      __internal_remove(self, index)
+      __syscall("arrayremove", self, index)
       self
     }
 
@@ -203,7 +194,7 @@ export = ->(Base) {
      * Clears the contents of the array
      * */
     clear {
-      __internal_clear(self)
+      __syscall("arrayclear", self)
       self
     }
 
@@ -258,7 +249,16 @@ export = ->(Base) {
      * Returns a reversed copy of the array
      * */
     reverse {
-      __internal_reverse(self)
+      if @length == 0 return []
+
+      const result = []
+      let index = @length - 1
+      while index >= 0 {
+        result << self[index]
+        index -= 1
+      }
+
+      result
     }
 
     /*
@@ -266,7 +266,22 @@ export = ->(Base) {
      * Returns -1 if not found
      * */
     index(element, offset = 0) {
-      __internal_index(self, element, offset)
+      if offset < 0 {
+        offset += @length
+        if offset < 0 return -1
+      }
+
+      while offset < @length {
+        const v = self[offset]
+
+        if v == element {
+          return offset
+        }
+
+        offset += 1
+      }
+
+      -1
     }
 
     /*
@@ -275,7 +290,27 @@ export = ->(Base) {
      * Returns -1 if not found
      * */
     rindex(element, offset = -1) {
-      __internal_rindex(self, element, offset)
+      if offset < 0 {
+        offset += @length
+        if offset < 0 return -1
+      }
+
+      while offset >= 0 {
+        if offset >= @length {
+          offset -= 1
+          continue
+        }
+
+        const v = self[offset]
+
+        if v == element {
+          return offset
+        }
+
+        offset -= 1
+      }
+
+      -1
     }
 
     /*
@@ -283,7 +318,30 @@ export = ->(Base) {
      * [start, start + count]
      * */
     range(start, count = @length) {
-      __internal_range(self, start, count)
+      const result = []
+
+      let offset = 0
+
+      while offset < count {
+        let index = start + offset
+
+        if index < 0 {
+          index += @length
+          if index < 0 {
+            offset += 1
+            continue
+          }
+        }
+
+        if index >= @length {
+          break
+        }
+
+        result << self[index]
+        offset += 1
+      }
+
+      result
     }
 
     /*

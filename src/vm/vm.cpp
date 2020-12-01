@@ -1730,6 +1730,42 @@ void VM::op_syscall(SyscallID id) {
       this->push_stack(charly_is_float(value) ? kTrue : kFalse);
       break;
     }
+    case SyscallID::ArrayInsert: {
+      Immortal<> value = this->pop_stack();
+      Immortal<> index = this->pop_stack();
+      Immortal<> array = this->pop_stack();
+
+      if (!charly_is_array(array) || !charly_is_number(index)) {
+        this->panic(Status::InvalidArgumentType);
+      }
+
+      charly_as_array(array)->insert(charly_number_to_int64(index), value);
+      this->push_stack(array);
+      break;
+    }
+    case SyscallID::ArrayRemove: {
+      Immortal<> index = this->pop_stack();
+      Immortal<> array = this->pop_stack();
+
+      if (!charly_is_array(array) || !charly_is_number(index)) {
+        this->panic(Status::InvalidArgumentType);
+      }
+
+      charly_as_array(array)->remove(charly_number_to_int64(index));
+      this->push_stack(array);
+      break;
+    }
+    case SyscallID::ArrayClear: {
+      Immortal<> array = this->pop_stack();
+
+      if (!charly_is_array(array)) {
+        this->panic(Status::InvalidArgumentType);
+      }
+
+      charly_as_array(array)->clear();
+      this->push_stack(array);
+      break;
+    }
     default: {
       this->panic(Status::InvalidSyscallId);
     }
