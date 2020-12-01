@@ -267,6 +267,7 @@ public:
   VALUE syscall_clearboundself(Function* function);
   VALUE syscall_caststring(VALUE value);
   VALUE syscall_copyvalue(VALUE value);
+  VALUE syscall_containerlistkeys(Container* container);
 
   void run();
   uint8_t start_runtime();

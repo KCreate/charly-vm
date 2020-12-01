@@ -1766,6 +1766,28 @@ void VM::op_syscall(SyscallID id) {
       this->push_stack(array);
       break;
     }
+    case SyscallID::ContainerListKeys: {
+      Immortal<> container = this->pop_stack();
+
+      if (!charly_is_container(container)) {
+        this->panic(Status::InvalidArgumentType);
+      }
+
+      this->push_stack(this->syscall_containerlistkeys(charly_as_container(container)));
+      break;
+    }
+    case SyscallID::ContainerDeleteKey: {
+      Immortal<> key = this->pop_stack();
+      Immortal<> container = this->pop_stack();
+
+      if (!charly_is_container(container) || !charly_is_string(key)) {
+        this->panic(Status::InvalidArgumentType);
+      }
+
+      charly_as_container(container)->erase(charly_create_symbol(key));
+      this->push_stack(container);
+      break;
+    }
     default: {
       this->panic(Status::InvalidSyscallId);
     }
@@ -1869,6 +1891,18 @@ VALUE VM::syscall_copyvalue(VALUE value) {
   }
 
   return copy;
+}
+
+VALUE VM::syscall_containerlistkeys(Container* container) {
+  Immortal<Array> keys_array = charly_allocate<Array>(4);
+
+  container->access_container_shared([&](Container::ContainerType* ct) {
+    for (auto& [key, value] : *ct) {
+      keys_array->push(charly_allocate<String>(SymbolTable::decode(key))->as_value());
+    }
+  });
+
+  return keys_array->as_value();
 }
 
 void VM::debug_stackdump(std::ostream& io) {

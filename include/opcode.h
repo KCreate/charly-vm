@@ -714,30 +714,41 @@ enum SyscallID : uint16_t {
   // - array
   ArrayClear,
 
+  // Return keys of object as array
+  // - object
+  ContainerListKeys,
+
+  // Delete some key out of a container
+  // - container
+  // - key
+  ContainerDeleteKey,
+
   // The amount of defined syscalls
   SyscallCount
 };
 
 // The amount of arguments each syscall requires
 static constexpr uint16_t kSyscallArgumentCount[]{
-  /* TimerInit */         2,
-  /* TimerClear */        1,
-  /* TickerInit */        2,
-  /* TickerClear */       1,
-  /* FiberSuspend */      0,
-  /* FiberResume */       2,
-  /* CallDynamic */       2,
-  /* CallMemberDynamic */ 3,
-  /* ClearBoundSelf */    1,
-  /* CastInt */           1,
-  /* CastFloat */         1,
-  /* CastNumber */        1,
-  /* CastString */        1,
-  /* IsFloat */           1,
-  /* CopyValue */         1,
-  /* ArrayInsert */       3,
-  /* ArrayRemove */       2,
-  /* ArrayClear */        1
+  /* TimerInit */           2,
+  /* TimerClear */          1,
+  /* TickerInit */          2,
+  /* TickerClear */         1,
+  /* FiberSuspend */        0,
+  /* FiberResume */         2,
+  /* CallDynamic */         2,
+  /* CallMemberDynamic */   3,
+  /* ClearBoundSelf */      1,
+  /* CastInt */             1,
+  /* CastFloat */           1,
+  /* CastNumber */          1,
+  /* CastString */          1,
+  /* IsFloat */             1,
+  /* CopyValue */           1,
+  /* ArrayInsert */         3,
+  /* ArrayRemove */         2,
+  /* ArrayClear */          1,
+  /* ContainerListKeys */   1,
+  /* ContainerDeleteKey */  2
 };
 
 // Plaintext names of syscalls
@@ -759,29 +770,33 @@ static std::string kSyscallNames[] = {
   "copyvalue",
   "arrayinsert",
   "arrayremove",
-  "arrayclear"
+  "arrayclear",
+  "containerlistkeys",
+  "containerdeletekey"
 };
 
 // Mapping from plaintext names to ids
 static std::unordered_map<std::string, SyscallID> kSyscallNameMapping = {
-  {"timerinit",         SyscallID::TimerInit},
-  {"timerclear",        SyscallID::TimerClear},
-  {"tickerinit",        SyscallID::TickerInit},
-  {"tickerclear",       SyscallID::TickerClear},
-  {"fibersuspend",      SyscallID::FiberSuspend},
-  {"fiberresume",       SyscallID::FiberResume},
-  {"calldynamic",       SyscallID::CallDynamic},
-  {"callmemberdynamic", SyscallID::CallMemberDynamic},
-  {"clearboundself",    SyscallID::ClearBoundSelf},
-  {"castint",           SyscallID::CastInt},
-  {"castfloat",         SyscallID::CastFloat},
-  {"castnumber",        SyscallID::CastNumber},
-  {"caststring",        SyscallID::CastString},
-  {"isfloat",           SyscallID::IsFloat},
-  {"copyvalue",         SyscallID::CopyValue},
-  {"arrayinsert",       SyscallID::ArrayInsert},
-  {"arrayremove",       SyscallID::ArrayRemove},
-  {"arrayclear",        SyscallID::ArrayClear}
+  {"timerinit",          SyscallID::TimerInit},
+  {"timerclear",         SyscallID::TimerClear},
+  {"tickerinit",         SyscallID::TickerInit},
+  {"tickerclear",        SyscallID::TickerClear},
+  {"fibersuspend",       SyscallID::FiberSuspend},
+  {"fiberresume",        SyscallID::FiberResume},
+  {"calldynamic",        SyscallID::CallDynamic},
+  {"callmemberdynamic",  SyscallID::CallMemberDynamic},
+  {"clearboundself",     SyscallID::ClearBoundSelf},
+  {"castint",            SyscallID::CastInt},
+  {"castfloat",          SyscallID::CastFloat},
+  {"castnumber",         SyscallID::CastNumber},
+  {"caststring",         SyscallID::CastString},
+  {"isfloat",            SyscallID::IsFloat},
+  {"copyvalue",          SyscallID::CopyValue},
+  {"arrayinsert",        SyscallID::ArrayInsert},
+  {"arrayremove",        SyscallID::ArrayRemove},
+  {"arrayclear",         SyscallID::ArrayClear},
+  {"containerlistkeys",  SyscallID::ContainerListKeys},
+  {"containerdeletekey", SyscallID::ContainerDeleteKey}
 };
 // clang-format on
 
