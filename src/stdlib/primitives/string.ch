@@ -24,12 +24,6 @@
  * SOFTWARE.
  */
 
-// String Methods
-const __ltrim     = @"charly.primitive.string.ltrim"
-const __rtrim     = @"charly.primitive.string.rtrim"
-const __lowercase = @"charly.primitive.string.lowercase"
-const __uppercase = @"charly.primitive.string.uppercase"
-
 export = ->(Base) {
   return class String extends Base {
 
@@ -37,28 +31,28 @@ export = ->(Base) {
      * Returns an all lowercase copy of this string
      * */
     lowercase {
-      __lowercase(self)
+      __syscall("stringlowercase", self)
     }
 
     /*
      * Returns an all uppercase copy of this string
      * */
     uppercase {
-      __uppercase(self)
+      __syscall("stringuppercase", self)
     }
 
     /*
      * Trim whitespace off the left side of the string
      * */
     ltrim {
-      __ltrim(self)
+      __syscall("stringtriml", self)
     }
 
     /*
      * Trim whitespace off the right side of the string
      * */
     rtrim {
-      __rtrim(self)
+      __syscall("stringtrimr", self)
     }
 
     /*

@@ -262,12 +262,20 @@ public:
   VALUE syscall_tickerclear(uint64_t id);
   VALUE syscall_fibersuspend();
   VALUE syscall_fiberresume(uint64_t id, VALUE argument);
+
   VALUE syscall_calldynamic(VALUE function, Array* arguments);
   VALUE syscall_callmemberdynamic(VALUE function, VALUE context, Array* arguments);
   VALUE syscall_clearboundself(Function* function);
+
   VALUE syscall_caststring(VALUE value);
   VALUE syscall_copyvalue(VALUE value);
+
   VALUE syscall_containerlistkeys(Container* container);
+
+  VALUE syscall_stringtriml(VALUE string);
+  VALUE syscall_stringtrimr(VALUE string);
+  VALUE syscall_stringlowercase(VALUE string);
+  VALUE syscall_stringuppercase(VALUE string);
 
   void run();
   uint8_t start_runtime();

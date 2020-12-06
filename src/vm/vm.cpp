@@ -1788,6 +1788,46 @@ void VM::op_syscall(SyscallID id) {
       this->push_stack(container);
       break;
     }
+    case SyscallID::StringTrimL: {
+      Immortal<> string = this->pop_stack();
+
+      if (!charly_is_string(string)) {
+        this->panic(Status::InvalidArgumentType);
+      }
+
+      this->push_stack(this->syscall_stringtriml(string));
+      break;
+    }
+    case SyscallID::StringTrimR: {
+      Immortal<> string = this->pop_stack();
+
+      if (!charly_is_string(string)) {
+        this->panic(Status::InvalidArgumentType);
+      }
+
+      this->push_stack(this->syscall_stringtrimr(string));
+      break;
+    }
+    case SyscallID::StringLowercase: {
+      Immortal<> string = this->pop_stack();
+
+      if (!charly_is_string(string)) {
+        this->panic(Status::InvalidArgumentType);
+      }
+
+      this->push_stack(this->syscall_stringlowercase(string));
+      break;
+    }
+    case SyscallID::StringUppercase: {
+      Immortal<> string = this->pop_stack();
+
+      if (!charly_is_string(string)) {
+        this->panic(Status::InvalidArgumentType);
+      }
+
+      this->push_stack(this->syscall_stringuppercase(string));
+      break;
+    }
     default: {
       this->panic(Status::InvalidSyscallId);
     }
@@ -1903,6 +1943,32 @@ VALUE VM::syscall_containerlistkeys(Container* container) {
   });
 
   return keys_array->as_value();
+}
+
+VALUE VM::syscall_stringtriml(VALUE string) {
+  std::string _str(charly_string_data(string), charly_string_length(string));
+  _str.erase(0, _str.find_first_not_of(" \t\n\v\f\r"));
+  return charly_allocate_string(_str);
+}
+
+VALUE VM::syscall_stringtrimr(VALUE string) {
+  std::string _str(charly_string_data(string), charly_string_length(string));
+  _str.erase(_str.find_last_not_of(" \t\n\v\f\r") + 1);
+  return charly_allocate_string(_str);
+}
+
+// TODO: Implement utf8 conversions
+VALUE VM::syscall_stringlowercase(VALUE string) {
+  std::string _str(charly_string_data(string), charly_string_length(string));
+  std::transform(_str.begin(), _str.end(), _str.begin(), [](char c) { return std::tolower(c, std::locale()); });
+  return charly_allocate_string(_str);
+}
+
+// TODO: Implement utf8 conversions
+VALUE VM::syscall_stringuppercase(VALUE string) {
+  std::string _str(charly_string_data(string), charly_string_length(string));
+  std::transform(_str.begin(), _str.end(), _str.begin(), [](char c) { return std::toupper(c, std::locale()); });
+  return charly_allocate_string(_str);
 }
 
 void VM::debug_stackdump(std::ostream& io) {
