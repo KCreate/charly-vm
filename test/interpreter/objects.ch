@@ -36,6 +36,18 @@ export = ->(describe, it, assert) {
     assert(myBox.age, 16)
   })
 
+  it("strings can be used as keys in object literals", ->{
+    const box = {
+      "foo": 1,
+      "bar": 2,
+      "baz": 3
+    }
+
+    assert(box.foo, 1)
+    assert(box.bar, 2)
+    assert(box.baz, 3)
+  })
+
   it("copies an object", ->{
     const a = { a: 1, b: 2 }
     const b = a.copy()
@@ -243,6 +255,68 @@ export = ->(describe, it, assert) {
       assert(obj.bar, null)
       assert(obj.baz, null)
       assert(Object.keys(obj).length, 0)
+    })
+
+    describe("each method", ->{
+      const obj = {
+        foo: "hello",
+        bar: "world",
+        baz: "!!!"
+      }
+
+      const result = []
+
+      obj.each(->(key, value, obj) {
+        result << [key, value, obj]
+      })
+
+      assert(result, [
+        ["foo", "hello", obj],
+        ["bar", "world", obj],
+        ["baz", "!!!",   obj]
+      ])
+    })
+
+    describe("map method", ->{
+      const obj = {
+        foo: 100,
+        bar: 200,
+        baz: 300
+      }
+
+      const new_values = {
+        foo: 1,
+        baz: 3,
+        bar: 2
+      }
+
+      const result = obj.map(->(key, value, obj) {
+        return new_values[key] + value
+      })
+
+      assert(result.foo, 101)
+      assert(result.bar, 202)
+      assert(result.baz, 303)
+    })
+
+    describe("filter method", ->{
+      const obj = {
+        foo: 2,
+        bar: 4,
+        baz: 8,
+        qux: 16,
+        quz: 32
+      }
+
+      const result = obj.filter(->(key, value) {
+        return value > 10
+      })
+
+      assert(result.foo, null)
+      assert(result.bar, null)
+      assert(result.baz, null)
+      assert(result.qux, 16)
+      assert(result.quz, 32)
     })
 
   })

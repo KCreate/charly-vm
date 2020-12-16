@@ -4,9 +4,12 @@
   - Implementation timeline
     - C methods shouldn't need access to VM struct
       - Turn CFunctions into VM syscalls
-        - All primitive types
-        - Internals (vm.exit, and compiler manager)
-        - Array library (vm.eq)
+        - import
+        - write
+        - getn
+        - exit
+        - debug_func
+        - testfunc
       - Math, Time and Stringbuffer libraries should be implemented as dynamic libraries
       - Remove push_return_value property from CFunctions
       - Refactor compiler manager
@@ -129,6 +132,9 @@
         - This could be resolved by somehow figuring out wether a thread is currently waiting for a
           lock to be released. This would obviously only work with our well-known heap value locks.
           Maybe some wrapper class which updates the thread status once it starts waiting?
+
+- Container primitive class
+  - objects which are containers are subclasses of this class
 
 - Remove needless as_value() calls
   - Create method overloads for Header*

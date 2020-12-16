@@ -1547,10 +1547,14 @@ std::pair<std::string, AST::AbstractNode*> Parser::parse_hash_entry() {
   AST::AbstractNode* value;
 
   this->interpret_keyword_as_identifier();
-  this->expect_token(TokenType::Identifier, [&]() {
+
+  if (this->token.type == TokenType::Identifier || this->token.type == TokenType::String) {
     key = this->token.value;
     key_location = this->token.location;
-  });
+    this->advance();
+  } else {
+    this->unexpected_token("identifier or string");
+  }
 
   if (this->token.type == TokenType::Colon) {
     this->advance();

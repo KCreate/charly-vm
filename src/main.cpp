@@ -151,7 +151,7 @@ int main(int argc, char** argv) {
   GarbageCollector::set_host_vm(vm);
 
   uint8_t status_code = 0;
-  if (!CLIFlags::is_flag_set("skipprelude")) {
+  if (!(CLIFlags::is_flag_set("skipprelude") || CLIFlags::is_flag_set("skipexec"))) {
     InstructionBlock* iblock_prelude = cresult_prelude->instructionblock.value();
     vm.register_task(VMTask::init_callback(charly_allocate<Function>(SYM("main"), iblock_prelude)));
     status_code = vm.start_runtime();

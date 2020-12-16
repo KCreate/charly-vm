@@ -163,6 +163,12 @@ class Path {
     self
   }
 
+  // Removes the first component of the path
+  remove_first {
+    if @elements.length @elements.shift()
+    self
+  }
+
   // Removes the last component of the path
   remove_last {
     if @elements.length @elements.pop()

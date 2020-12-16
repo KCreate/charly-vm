@@ -156,6 +156,15 @@ export = ->(describe, it, assert) {
       assert(expanded_path.to_s(), expected.to_s())
     })
 
+    it("removes first component from path", ->{
+      assert((new Path("foo")).remove_first().to_s(), ".")
+      assert((new Path("foo/bar")).remove_first().to_s(), "bar")
+      assert((new Path("foo/bar/baz")).remove_first().to_s(), "bar/baz")
+      assert((new Path("./foo")).remove_first().to_s(), "foo")
+      assert((new Path("/foo")).remove_first().to_s(), "/")
+      assert((new Path("/foo/bar")).remove_first().to_s(), "/bar")
+    })
+
     it("removes last component from path", ->{
       assert((new Path("/foo.txt")).remove_last().to_s(), "/")
       assert((new Path(".")).remove_last().to_s(),        ".")
@@ -170,6 +179,7 @@ export = ->(describe, it, assert) {
       assert((new Path("/foo/..")).remove_last().to_s(),  "/foo")
       assert((new Path("foo/..")).remove_last().to_s(),   "foo")
       assert((new Path("~/foo/..")).remove_last().to_s(), "~/foo")
+      assert((new Path("foo")).remove_last().to_s(), ".")
     })
 
     it("removes extension from path", ->{

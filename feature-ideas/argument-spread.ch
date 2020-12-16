@@ -41,15 +41,20 @@
 //    bytecodes
 //
 //    foo {
-//      .LARG0    // if given 0 arguments
-//        a = 1
-//      .LARG1    // if given 1 argument
-//        b = 2
-//      .MAIN     // if given 2 or more arguments (depending on argc of function)
-//        readlocal 0, 0
-//        readlocal 0, 1
+//        br .L0
+//        br .L1
+//      .MAIN  // if given 2 or more arguments (depending on argc of function)
+//        readlocal 0 ; a
+//        readlocal 1 ; b
 //        add
 //        return
+//      .L0    // if given 0 arguments
+//        loadi 1
+//        setlocal 0 ; a
+//      .L1    // if given 1 argument
+//        loadi 2
+//        setlocal 1 ; b
+//        br .MAIN
 //    }
 //
 //    Calls to the function with enough arguments simply jump directly to the

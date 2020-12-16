@@ -107,6 +107,22 @@ export = ->(describe, it, assert) {
     assert("00001010001010".split("1"), ["0000", "0", "000", "0", "0"])
   })
 
+  it("indents a string", ->{
+    const source = [
+      "hello",
+      "world",
+      "!!"
+    ].join("\n")
+
+    const expected = [
+      "  hello",
+      "  world",
+      "  !!"
+    ].join("\n")
+
+    assert(source.indent(2), expected)
+  })
+
   it("searches for a substring", ->{
     const base = "hello world this is a test hello world"
 

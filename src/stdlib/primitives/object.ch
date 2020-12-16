@@ -44,5 +44,46 @@ export = ->(Base) {
       __syscall("containerdeletekey", v, symbol)
     }
 
+    /*
+     * Call the callback with each key, value pair
+     * */
+    each(cb) {
+      Object.keys(self).each(->(key) {
+        cb(key, self[key], self)
+      })
+
+      self
+    }
+
+    /*
+     * Create a new object using the return values of the callback
+     * function. Callback receives each key, value pair
+     * */
+    map(cb) {
+      const obj = {}
+
+      Object.keys(self).each(->(key) {
+        obj[key] = cb(key, self[key], self)
+      })
+
+      obj
+    }
+
+    /*
+     * Create a new object containing only the keys for which
+     * the filter callback returned true
+     * */
+    filter(cb) {
+      const obj = {}
+
+      Object.keys(self).each(->(key) {
+        const value = self[key]
+        if cb(key, value, self) {
+          obj[key] = value
+        }
+      })
+
+      obj
+    }
   }
 }

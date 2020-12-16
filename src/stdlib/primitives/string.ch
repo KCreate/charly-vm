@@ -182,6 +182,21 @@ export = ->(Base) {
     }
 
     /*
+     * Returns an indented version of this string
+     *
+     * Prepends *count* occurences of *pad* to every line
+     * */
+    indent(count, pad = " ", newline = "\n") {
+      const lines = self.split(newline)
+
+      const indented_lines = lines.map(->(line) {
+        (count * pad) + line
+      })
+
+      indented_lines.join(newline)
+    }
+
+    /*
      * Returns the index of a substring
      * */
     index(target, offset = 0) {
