@@ -64,20 +64,28 @@ public:
   inline uint32_t write_##N##_to(T value, uint32_t offset) { \
     return this->write_to(value, offset);                    \
   }
-  WRITE(uint8_t,  i8);
-  WRITE(uint16_t, i16);
-  WRITE(uint32_t, i32);
-  WRITE(uint64_t, i64);
+  WRITE(uint8_t,  u8);
+  WRITE(uint16_t, u16);
+  WRITE(uint32_t, u32);
+  WRITE(uint64_t, u64);
+  WRITE(int8_t,   i8);
+  WRITE(int16_t,  i16);
+  WRITE(int32_t,  i32);
+  WRITE(int64_t,  i64);
   WRITE(float,    float);
   WRITE(double,   double);
   WRITE(void*,    ptr);
 #undef WRITE
 
 #define READ(T, N) inline T read_ ## N(uint32_t offset) { return this->read_from<T>(offset); }
-  READ(uint8_t,  i8);
-  READ(uint16_t, i16);
-  READ(uint32_t, i32);
-  READ(uint64_t, i64);
+  READ(uint8_t,  u8);
+  READ(uint16_t, u16);
+  READ(uint32_t, u32);
+  READ(uint64_t, u64);
+  READ(int8_t,   i8);
+  READ(int16_t,  i16);
+  READ(int32_t,  i32);
+  READ(int64_t,  i64);
   READ(float,    float);
   READ(double,   double);
   READ(void*,    ptr);
@@ -96,9 +104,8 @@ public:
 
   // move offset inside buffer
   inline void seek(uint32_t offset) {
-    if (offset <= m_capacity) {
-      m_offset = offset;
-    }
+    this->check_fit(offset);
+    m_offset = offset;
   }
 
   // const access to member buffer

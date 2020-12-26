@@ -1,7 +1,5 @@
 # Todos
 
-- Setup test framework for c++ code
-- Write buffer unit tests
 - Build a file reader class
 - Build token reader
 - Build AST representation
