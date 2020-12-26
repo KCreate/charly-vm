@@ -25,8 +25,9 @@
  */
 
 #include <cstdint>
-#include <string>
 #include <cstring>
+#include <string>
+#include <string_view>
 
 #pragma once
 
@@ -102,10 +103,18 @@ public:
     return this->write_block(string.c_str(), string.size());
   }
 
+  inline uint32_t write_cstring(const char* data) {
+    return this->write_block(data, std::strlen(data));
+  }
+
   // move offset inside buffer
   inline void seek(uint32_t offset) {
     this->check_fit(offset);
     m_offset = offset;
+  }
+
+  inline std::string_view view() {
+    return std::string_view(m_data, m_offset);
   }
 
   // const access to member buffer

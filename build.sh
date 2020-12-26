@@ -1,4 +1,18 @@
 #!/bin/sh
 
+mkdir build -p
 cd build
-make $@
+
+test -f Makefile
+if [ $? -gt 0 ]
+then
+  cmake ..
+fi
+
+make charly
+if [ $? -eq 0 ]
+then
+  cd ..
+  echo ""
+  build/charly $@
+fi

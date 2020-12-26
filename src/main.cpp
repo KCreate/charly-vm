@@ -25,31 +25,22 @@
  */
 
 #include <iostream>
+#include <cstring>
 
 #include "charly/utils/buffer.h"
 
 using namespace charly;
 
-int main() {
+int main(int argc, char** argv) {
   utils::Buffer buf;
 
-  buf.write_i32(25);
-  buf.write_i32(26);
-  buf.write_i32(27);
+  for (int i = 0; i < argc; i++) {
+    buf.write_block(argv[i], strlen(argv[i]));
+    buf.write_cstring(" ");
+  }
 
-  std::cout << buf.read_i32(0) << std::endl;
-  std::cout << buf.read_i32(4) << std::endl;
-  std::cout << buf.read_i32(8) << std::endl;
+  //buf.write_i32(argc);
 
-  buf.write_float(3.1415);
-  buf.write_double(3.1415);
-  buf.write_i64(123454321);
-  buf.write_ptr(nullptr);
-
-  std::cout << buf.read_float(12) << std::endl;
-  std::cout << buf.read_double(16) << std::endl;
-  std::cout << buf.read_i64(24) << std::endl;
-  std::cout << buf.read_ptr(32) << std::endl;
-
+  std::cout << buf.view() << std::endl;
   return buf.size();
 }
