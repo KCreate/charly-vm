@@ -24,21 +24,40 @@
  * SOFTWARE.
  */
 
-#include <iostream>
+#include <memory>
 
+#include "charly/utils/string.h"
 #include "charly/utils/buffer.h"
-#include "charly/core/compiler.h"
+#include "charly/utils/vector.h"
+#include "charly/core/compiler/token.h"
 
-using namespace charly;
+#pragma once
 
-int main(int argc, char** argv) {
-  utils::Buffer buf;
+namespace charly::core::compiler {
 
-  for (int i = 0; i < argc; i++) {
-    buf.append_string(argv[i]);
-    buf.append_string(" ");
+class Lexer {
+public:
+  Lexer(const utils::string& filename,
+        const utils::string& source)
+    : m_filename(filename), m_source(source) {
   }
 
-  std::cout << buf.view_buffer() << std::endl;
-  return buf.size();
+private:
+  Lexer(Lexer&) = delete;
+  Lexer(Lexer&&) = delete;
+
+  void reset_token();
+  void increment_row();
+  void increment_column();
+  void reset_column();
+
+  utils::Buffer m_filename;
+  utils::Buffer m_source;
+
+  Token    m_token;
+  Location m_location;
+
+  utils::vector<Token> m_tokens;
+};
+
 }

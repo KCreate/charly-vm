@@ -24,80 +24,138 @@
  * SOFTWARE.
  */
 
-#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_all.hpp>
 
 #include "charly/utils/buffer.h"
 
 using namespace charly;
 
-TEST_CASE("Creates a buffer", "[buffer]") {
-  utils::Buffer buf;
+TEST_CASE("Buffer", "[Buffer]") {
+  utils::Buffer buf(128);
 
-  REQUIRE(buf.buf() != nullptr);
-  REQUIRE(buf.size() == 0);
-  REQUIRE(buf.capacity() == 64);
+  REQUIRE(buf.data() != nullptr);
+  REQUIRE(buf.capacity() == 128);
+  REQUIRE(buf.writeoffset() == 0);
+  REQUIRE(buf.readoffset() == 0);
+  REQUIRE(buf.copy_window().compare("") == 0);
 
-  SECTION("writes primitive types") {
-    buf.write_i8(-25);
-    buf.write_i16(-550);
-    buf.write_i32(1000000);
-    buf.write_i64(123123123123);
-    buf.write_float(25.25);
-    buf.write_double(3.00000005);
-    buf.write_ptr(nullptr);
+  SECTION("Initialize buffer with string value") {
+    utils::Buffer buf("hello world!!");
 
-    CHECK(buf.buf() != nullptr);
-    CHECK(buf.size() == 35);
-    CHECK(buf.capacity() == 64);
+    for (int i = 0; i < 13; i++) {
+      buf.read_utf8();
+    }
 
-    CHECK(buf.read_i8(0)     == -25);
-    CHECK(buf.read_i16(1)    == -550);
-    CHECK(buf.read_i32(3)    == 1000000);
-    CHECK(buf.read_i64(7)    == 123123123123);
-    CHECK(buf.read_float(15)  == 25.25);
-    CHECK(buf.read_double(19) == 3.00000005);
-    CHECK(buf.read_ptr(27)    == nullptr);
+    CHECK(buf.copy_window().compare("hello world!!") == 0);
   }
 
-  SECTION("writes strings") {
-    buf.write_string("abcdef");
+  SECTION("Append data to buffer") {
+    buf.append_string("hello world\n");
 
-    CHECK(buf.buf() != nullptr);
-    CHECK(buf.size() == 6);
-    CHECK(buf.capacity() == 64);
+    CHECK(buf.read_utf8() == 0x68);
+    CHECK(buf.read_utf8() == 0x65);
+    CHECK(buf.read_utf8() == 0x6c);
+    CHECK(buf.read_utf8() == 0x6c);
+    CHECK(buf.read_utf8() == 0x6f);
+
+    CHECK(buf.read_utf8() == 0x20);
+    CHECK(buf.read_utf8() == 0x77);
+    CHECK(buf.read_utf8() == 0x6f);
+    CHECK(buf.read_utf8() == 0x72);
+    CHECK(buf.read_utf8() == 0x6c);
+
+    CHECK(buf.read_utf8() == 0x64);
+    CHECK(buf.read_utf8() == 0x0a);
+
+    const char* data = "teststring";
+    buf.append_block(data, 10);
+    buf.append_string(data);
+    buf.append_string("hallo welt");
+    buf.append_buffer(buf);
+
+    CHECK(buf.capacity() == 128);
+    CHECK(buf.writeoffset() == 84);
+    CHECK(buf.readoffset() == 12);
   }
 
-  SECTION("writes blocks of memory") {
-    char data[] = "hello world this is a string";
+  SECTION("reads / peeks unicode codepoints") {
+    buf.append_utf8(L'ä');
+    buf.append_utf8(L'Ʒ');
+    buf.append_utf8(L'π');
 
-    buf.write_block(data + 5, 15);
+    CHECK(buf.peek_utf8() == 0xE4);
+    CHECK(buf.peek_utf8() == 0xE4);
+    CHECK(buf.peek_utf8() == 0xE4);
 
-    CHECK(buf.buf() != nullptr);
-    CHECK(buf.size() == 15);
-    CHECK(buf.capacity() == 64);
+    CHECK(buf.read_utf8() == 0xE4);
+    CHECK(buf.read_utf8() == 0x01B7);
+    CHECK(buf.read_utf8() == 0x03C0);
+
+    CHECK(buf.writeoffset() == 6);
+    CHECK(buf.readoffset() == 6);
   }
 
-  SECTION("seeks to some position") {
-    buf.seek(3);
-    buf.write_u8(1);
+  SECTION("reads ascii chars") {
+    buf.append_string("abc123");
 
-    buf.seek(4);
-    buf.seek(2);
-    buf.write_u8(2);
+    CHECK(buf.read_utf8() == 0x61);
+    CHECK(buf.read_utf8() == 0x62);
+    CHECK(buf.read_utf8() == 0x63);
 
-    buf.seek(1);
-    buf.write_u8(3);
+    CHECK(buf.readoffset() == 3);
 
-    buf.seek(0);
-    buf.write_u8(4);
+    CHECK(buf.read_utf8() == 0x31);
+    CHECK(buf.read_utf8() == 0x32);
+    CHECK(buf.read_utf8() == 0x33);
 
-    buf.seek(0);
-    CHECK(buf.read_u32(0) == 0x01020304);
+    CHECK(buf.writeoffset() == 6);
+    CHECK(buf.readoffset() == 6);
+  }
 
-    buf.seek(200);
+  SECTION("throw exception on buffer resize failure") {
+    CHECK_THROWS(buf.append_block(nullptr, 0xFFFFFFFFFF));
+  }
 
-    CHECK(buf.buf() != nullptr);
-    CHECK(buf.size() == 200);
-    CHECK(buf.capacity() == 256);
+  SECTION("copies window contents into string") {
+    CHECK(buf.copy_window().compare("") == 0);
+    buf.append_string("hello world!!");
+
+    for (int i = 0; i < 13; i++) {
+      buf.read_utf8();
+    }
+
+    utils::string window = buf.copy_window();
+    CHECK(window.compare("hello world!!") == 0);
+  }
+
+  SECTION("resets window") {
+    buf.append_string("test");
+
+    for (int i = 0; i < 4; i++) {
+      buf.read_utf8();
+    }
+
+    {
+      utils::string window = buf.copy_window();
+      CHECK(buf.copy_window().compare("test") == 0);
+    }
+
+    buf.reset_window();
+
+    {
+      utils::string window = buf.copy_window();
+      CHECK(buf.copy_window().compare("") == 0);
+    }
+  }
+
+  SECTION("creates a string view of the whole buffer and window sections") {
+    buf.append_string("hello world my name is leonard!");
+
+    for (int i = 0; i < 12; i++) {
+      buf.read_utf8();
+    }
+
+    CHECK(buf.view_window().compare("hello world ") == 0);
+    CHECK(buf.view_buffer().compare("hello world my name is leonard!") == 0);
   }
 }

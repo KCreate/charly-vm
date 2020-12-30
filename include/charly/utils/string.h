@@ -24,21 +24,15 @@
  * SOFTWARE.
  */
 
-#include <iostream>
+#include <cstring>
+#include <string>
+#include <string_view>
 
-#include "charly/utils/buffer.h"
-#include "charly/core/compiler.h"
+#pragma once
 
-using namespace charly;
+namespace charly::utils {
 
-int main(int argc, char** argv) {
-  utils::Buffer buf;
+using string = std::string;
+using string_view = std::string_view;
 
-  for (int i = 0; i < argc; i++) {
-    buf.append_string(argv[i]);
-    buf.append_string(" ");
-  }
-
-  std::cout << buf.view_buffer() << std::endl;
-  return buf.size();
 }

@@ -4,6 +4,9 @@ project(charly-vm)
 # public headers
 include_directories(include)
 
+# public headers
+include_directories(libs)
+
 # main executable
 add_subdirectory(src)
 add_executable(charly src/main.cpp)

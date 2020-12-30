@@ -26,178 +26,191 @@
 
 #include <cstdint>
 #include <cstring>
-#include <string>
-#include <string_view>
+#include <cstdlib>
+#include <cassert>
+#include <stdexcept>
+
+#include <utf8/utf8.h>
+
+#include "charly/utils/string.h"
 
 #pragma once
 
 namespace charly::utils {
 
+// provides utf8 access to raw byte buffers
 class Buffer {
-  static const uint32_t kInitialCapacity = 64;
-
 public:
-  inline Buffer(uint32_t initial_capacity = kInitialCapacity) :
-    m_data(new char[initial_capacity]),
-    m_capacity(initial_capacity),
-    m_offset(0) {
+  Buffer(size_t initial_capacity = kInitialCapacity) {
+    this->reserve_space(initial_capacity);
   }
 
-  inline ~Buffer() {
-    if (m_data) {
-      delete[] m_data;
-    }
+  Buffer(const utils::string& str) : Buffer(str.size()) {
+    this->append_string(str);
+  }
+
+  // copy constructor
+  Buffer(const Buffer& other) {
+    this->reserve_space(other.m_capacity);
+    this->write_to(other.m_data, other.m_writeoffset, 0);
+    m_readoffset = other.m_readoffset;
+  }
+
+  // move constructor
+  Buffer(Buffer&& other)
+      : m_data(other.m_data),
+        m_capacity(other.m_capacity),
+        m_writeoffset(other.m_writeoffset),
+        m_readoffset(other.m_readoffset) {
+    other.m_data = nullptr;
+    other.m_capacity = 0;
+    other.m_writeoffset = 0;
+    other.m_readoffset = 0;
+  }
+
+  ~Buffer() {
+    if (m_data)
+      std::free(m_data);
+
     m_data = nullptr;
-    m_offset = 0;
     m_capacity = 0;
+    m_writeoffset = 0;
+    m_readoffset = 0;
   }
-
-  Buffer(Buffer& other) = delete;
-  Buffer(Buffer&& other) = delete;
 
   Buffer& operator=(Buffer& other) = delete;
   Buffer& operator=(Buffer&& other) = delete;
 
-#define WRITE(T, N)                                          \
-  inline uint32_t write_##N(T value) {                       \
-    return this->write(value);                               \
-  }                                                          \
-  inline uint32_t write_##N##_to(T value, uint32_t offset) { \
-    return this->write_to(value, offset);                    \
-  }
-  WRITE(uint8_t,  u8);
-  WRITE(uint16_t, u16);
-  WRITE(uint32_t, u32);
-  WRITE(uint64_t, u64);
-  WRITE(int8_t,   i8);
-  WRITE(int16_t,  i16);
-  WRITE(int32_t,  i32);
-  WRITE(int64_t,  i64);
-  WRITE(float,    float);
-  WRITE(double,   double);
-  WRITE(void*,    ptr);
-#undef WRITE
-
-#define READ(T, N) inline T read_ ## N(uint32_t offset) { return this->read_from<T>(offset); }
-  READ(uint8_t,  u8);
-  READ(uint16_t, u16);
-  READ(uint32_t, u32);
-  READ(uint64_t, u64);
-  READ(int8_t,   i8);
-  READ(int16_t,  i16);
-  READ(int32_t,  i32);
-  READ(int64_t,  i64);
-  READ(float,    float);
-  READ(double,   double);
-  READ(void*,    ptr);
-#undef READ
-
-  inline uint32_t write_block(const char* data, uint32_t size) {
-    this->check_fit(m_offset + size);
-    std::memmove(m_data + m_offset, data, size);
-    m_offset += size;
-    return size;
+  // write data into the buffer
+  void append_block(const void* data, size_t length) {
+    this->write_to(data, length, m_writeoffset);
+    m_writeoffset += length;
   }
 
-  inline uint32_t write_string(const std::string& string) {
-    return this->write_block(string.c_str(), string.size());
+  // append other buffer to this buffer
+  void append_buffer(const Buffer& other) {
+    this->write_to(other.data(), other.size(), m_writeoffset);
+    m_writeoffset += other.size();
   }
 
-  inline uint32_t write_cstring(const char* data) {
-    return this->write_block(data, std::strlen(data));
+  // write string into the buffer
+  void append_string(const utils::string& str) {
+    this->write_to(str.c_str(), str.size(), m_writeoffset);
+    m_writeoffset += str.size();
   }
 
-  // move offset inside buffer
-  inline void seek(uint32_t offset) {
-    this->check_fit(offset);
-    m_offset = offset;
+  // write null terminated string into the buffer
+  void append_string(const char* str) {
+    size_t length = std::strlen(str);
+    this->write_to(str, length, m_writeoffset);
+    m_writeoffset += length;
   }
 
-  inline std::string_view view() {
-    return std::string_view(m_data, m_offset);
+  // write null terminated string into the buffer
+  void append_utf8(uint32_t cp) {
+    this->reserve_space(m_writeoffset + 4);
+
+    char* buffer_initial = m_data + m_writeoffset;
+    char* buffer_ptr = buffer_initial;
+    buffer_ptr = utf8::append(cp, buffer_ptr);
+    m_writeoffset += buffer_ptr - buffer_initial;
   }
 
-  // const access to member buffer
-  inline const char* buf() {
-    return m_data;
+  // peek the next utf8 character
+  uint32_t peek_utf8() const {
+    if (m_readoffset >= m_writeoffset)
+      return L'\0';
+
+    // read a codepoint
+    char* buffer_initial = m_data + m_readoffset;
+    char* buffer_ptr = buffer_initial;
+    return utf8::peek_next(buffer_ptr, m_data + m_writeoffset);
   }
 
-  // amount of written bytes
-  inline uint32_t size() {
-    return m_offset;
+  // read a utf8 character
+  uint32_t read_utf8() {
+    if (m_readoffset >= m_writeoffset)
+      return L'\0';
+
+    // advance by one utf8 codepoint
+    char* buffer_initial = m_data + m_readoffset;
+    char* buffer_ptr = buffer_initial;
+    uint32_t codepoint = utf8::next(buffer_ptr, m_data + m_writeoffset);
+    m_readoffset += buffer_ptr - buffer_initial;
+    return codepoint;
   }
 
-  // current buffer capacity
-  inline uint32_t capacity() {
-    return m_capacity;
+  utils::string_view view_buffer() {
+    return utils::string_view(m_data, m_writeoffset);
   }
 
-private:
+  utils::string_view view_window() {
+    return utils::string_view(m_data + m_window, m_readoffset - m_window);
+  }
 
-  // checks wether *size* bytes could fit into the buffer
-  // will grow the buffer if it is too small
-  inline bool check_fit(uint32_t size) {
+  // reset the window
+  void reset_window() {
+    m_window = m_readoffset;
+  }
 
-    // size does fit
-    if (m_capacity >= size) {
-      return true;
+  // create a string copy of the current window
+  utils::string copy_window() const {
+    size_t window_size = m_readoffset - m_window;
+
+    if (window_size == 0)
+      return utils::string("");
+
+    return utils::string(m_data + m_window, window_size);
+  }
+
+  const char* data() const { return m_data; }
+  size_t capacity() const { return m_capacity; }
+  size_t writeoffset() const { return m_writeoffset; }
+  size_t size() const { return m_writeoffset; }
+  size_t readoffset() const { return m_readoffset; }
+
+protected:
+  static const size_t kInitialCapacity = 64;
+  static const size_t kMaximumSize = 0xFFFFFFFF; // ca. 4.2Gb
+
+  // reserve space for at least size bytes
+  void reserve_space(size_t size) {
+    if (m_capacity >= size)
+      return;
+
+    size_t new_capacity = m_capacity ? m_capacity * 2 : kInitialCapacity;
+    while (new_capacity < size) {
+      new_capacity *= 2;
+
+      if (new_capacity >= kMaximumSize)
+        throw new std::runtime_error("Reached maximum buffer size");
     }
 
-    // increase buffer capacity until we can fit size
-    uint32_t new_capacity = m_capacity;
-    while (size > new_capacity) {
-      if (new_capacity == 0x80000000)
-        return false;
-      new_capacity <<= 1;
+    char* new_buffer = static_cast<char*>(std::realloc(m_data, new_capacity));
+    if (new_buffer == nullptr)
+      throw new std::runtime_error("Could not realloc buffer");
+
+    // copy old buffer if it exists
+    if (m_data != nullptr && m_data != new_buffer) {
+      std::memcpy(new_buffer, m_data, m_writeoffset);
     }
 
-    // allocate the new buffer
-    char* new_buf = new char[new_capacity];
-    std::memcpy(new_buf, m_data, m_offset);
-    delete[] m_data;
-    m_data = new_buf;
+    std::free(m_data);
+    m_data = new_buffer;
     m_capacity = new_capacity;
-
-    return true;
   }
 
-  // appends the memory contents of *value* to the buffer
-  // returns the amount of bytes written
-  template <typename T>
-  inline uint32_t write(const T& value) {
-    if (this->check_fit(m_offset + sizeof(T))) {
-      std::memmove(m_data + m_offset, &value, sizeof(T));
-      m_offset += sizeof(T);
-      return sizeof(T);
-    }
-    return 0;
+  // copy data into buffer at offset
+  void write_to(const void* data, size_t length, size_t offset) {
+    this->reserve_space(offset + length);
+    std::memmove(m_data + offset, data, length);
   }
 
-  // copies the memory contents of *value* into the buffer at *offset*
-  // returns the amount of bytes written
-  template <typename T>
-  inline uint32_t write_to(const T& value, uint32_t offset) {
-    if (this->check_fit(offset + sizeof(T))) {
-      std::memmove(m_data + offset, &value, sizeof(T));
-      return sizeof(T);
-    }
-    return 0;
-  }
-
-  // reads a certain type from the memory buffer
-  template <typename T>
-  inline T read_from(uint32_t offset) {
-    int64_t last_byte_offset = offset + sizeof(T) - 1;
-    if (last_byte_offset <= static_cast<int64_t>(m_capacity)) {
-      return *reinterpret_cast<T*>(m_data + offset);
-    }
-
-    return T();
-  }
-
-  char*    m_data;
-  uint32_t m_capacity;
-  uint32_t m_offset;
+  char*  m_data = 0;        // raw buffer
+  size_t m_capacity = 0;    // total backing buffer capacity
+  size_t m_writeoffset = 0; // offset of the first unwritten byte
+  size_t m_readoffset = 0;  // offset of the first unread character
+  size_t m_window = 0;      // begin offset of current window
 };
 
 }

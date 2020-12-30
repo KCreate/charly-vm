@@ -10,11 +10,9 @@ then
   cmake .. -DCMAKE_BUILD_TYPE=Debug
 fi
 
-make tests
+make charly
 if [ $? -eq 0 ]
 then
   cd ..
-
-  # --batch exits lldb on success and prompts for further input on failure
-  lldb --batch -o run cmake-build-debug/tests -- $@
+  cmake-build-debug/charly $@
 fi

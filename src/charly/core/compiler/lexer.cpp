@@ -24,21 +24,8 @@
  * SOFTWARE.
  */
 
-#include <iostream>
+#include "charly/core/compiler/lexer.h"
 
-#include "charly/utils/buffer.h"
-#include "charly/core/compiler.h"
+namespace charly::core::compiler {
 
-using namespace charly;
-
-int main(int argc, char** argv) {
-  utils::Buffer buf;
-
-  for (int i = 0; i < argc; i++) {
-    buf.append_string(argv[i]);
-    buf.append_string(" ");
-  }
-
-  std::cout << buf.view_buffer() << std::endl;
-  return buf.size();
 }

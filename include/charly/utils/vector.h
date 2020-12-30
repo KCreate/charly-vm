@@ -24,21 +24,13 @@
  * SOFTWARE.
  */
 
-#include <iostream>
+#include <vector>
 
-#include "charly/utils/buffer.h"
-#include "charly/core/compiler.h"
+#pragma once
 
-using namespace charly;
+namespace charly::utils {
 
-int main(int argc, char** argv) {
-  utils::Buffer buf;
+template <typename T>
+using vector = std::vector<T>;
 
-  for (int i = 0; i < argc; i++) {
-    buf.append_string(argv[i]);
-    buf.append_string(" ");
-  }
-
-  std::cout << buf.view_buffer() << std::endl;
-  return buf.size();
 }

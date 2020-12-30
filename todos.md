@@ -1,6 +1,5 @@
 # Todos
 
-- Build a file reader class
 - Build token reader
 - Build AST representation
   - Easy to build by hand

@@ -24,21 +24,17 @@
  * SOFTWARE.
  */
 
-#include <iostream>
+#include <map>
+#include <unordered_map>
 
-#include "charly/utils/buffer.h"
-#include "charly/core/compiler.h"
+#pragma once
 
-using namespace charly;
+namespace charly::utils {
 
-int main(int argc, char** argv) {
-  utils::Buffer buf;
+template <typename K, typename V>
+using map = std::map<K, V>;
 
-  for (int i = 0; i < argc; i++) {
-    buf.append_string(argv[i]);
-    buf.append_string(" ");
-  }
+template <typename K, typename V>
+using unordered_map = std::unordered_map<K, V>;
 
-  std::cout << buf.view_buffer() << std::endl;
-  return buf.size();
 }

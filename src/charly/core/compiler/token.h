@@ -24,21 +24,53 @@
  * SOFTWARE.
  */
 
-#include <iostream>
+#include "charly/utils/map.h"
+#include "charly/utils/string.h"
+#include "charly/core/compiler/location.h"
 
-#include "charly/utils/buffer.h"
-#include "charly/core/compiler.h"
+#pragma once
 
-using namespace charly;
+namespace charly::core::compiler {
 
-int main(int argc, char** argv) {
-  utils::Buffer buf;
+enum class TokenType : uint8_t {
+  Int,
+  True,
+  False,
+  Identifier,
+  Whitespace,
+  Newline,
+  Unknown,
+  Eof
+};
 
-  for (int i = 0; i < argc; i++) {
-    buf.append_string(argv[i]);
-    buf.append_string(" ");
-  }
+static utils::string kTokenTypeStrings[] = {
+  "Int",
+  "True",
+  "False",
+  "Identifier",
+  "Whitespace",
+  "Newline",
+  "Unknown",
+  "Eof"
+};
 
-  std::cout << buf.view_buffer() << std::endl;
-  return buf.size();
+static const utils::unordered_map<utils::string, TokenType> kKeywordsAndLiterals = {
+  {"true",  TokenType::True},
+  {"false", TokenType::False}
+};
+
+class Token {
+public:
+
+private:
+  Location      m_location;
+  TokenType     m_type;
+  utils::string m_value;
+
+  union {
+    int64_t       m_int;
+    double        m_float;
+  };
+};
+
 }

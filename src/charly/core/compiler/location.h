@@ -24,21 +24,28 @@
  * SOFTWARE.
  */
 
-#include <iostream>
+#include <cstdint>
 
-#include "charly/utils/buffer.h"
-#include "charly/core/compiler.h"
+#pragma once
 
-using namespace charly;
+namespace charly::core::compiler {
 
-int main(int argc, char** argv) {
-  utils::Buffer buf;
+struct Location {
 
-  for (int i = 0; i < argc; i++) {
-    buf.append_string(argv[i]);
-    buf.append_string(" ");
-  }
+  // offset in source bytestream
+  uint32_t offset;
+  uint32_t length;
 
-  std::cout << buf.view_buffer() << std::endl;
-  return buf.size();
+  // file coordinates
+  uint32_t row;
+  uint32_t column;
+  uint32_t final_row;
+  uint32_t final_column;
+};
+
+struct LocationRange {
+  Location begin;
+  Location end;
+};
+
 }
