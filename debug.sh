@@ -10,7 +10,7 @@ then
   cmake .. -DCMAKE_BUILD_TYPE=Debug
 fi
 
-make charly
+make charly -j6
 if [ $? -eq 0 ]
 then
   cd ..

@@ -24,8 +24,57 @@
  * SOFTWARE.
  */
 
+#include <cstdint>
+#include <cstring>
+#include <cstdlib>
+#include <cmath>
+
+#include "charly/utils/string.h"
+
 #pragma once
 
-namespace charly::core::compiler {
+namespace charly::utils {
+
+inline int64_t charptr_to_int(const char* data, size_t length, int base = 10) {
+  char buffer[length + 1];
+  std::memset(buffer, 0, length + 1);
+  std::memcpy(buffer, data, length);
+
+  char* end_ptr;
+  int64_t result = std::strtol(buffer, &end_ptr, base);
+
+  if (errno == ERANGE) {
+    errno = 0;
+    return 0;
+  }
+
+  if (end_ptr == buffer) {
+    return 0;
+  }
+
+  return result;
+}
+
+inline int64_t string_to_int(const utils::string& str, int base = 10) {
+  return charptr_to_int(str.c_str(), str.size(), base);
+}
+
+inline double charptr_to_double(const char* data, size_t length) {
+  char buffer[length + 1];
+  std::memset(buffer, 0, length + 1);
+  std::memcpy(buffer, data, length);
+
+  char* end_ptr;
+  double result = std::strtod(buffer, &end_ptr);
+
+  if (result == HUGE_VAL || end_ptr == buffer)
+    return NAN;
+
+  return result;
+}
+
+inline double string_to_double(const utils::string& str) {
+  return charptr_to_double(str.c_str(), str.size());
+}
 
 }

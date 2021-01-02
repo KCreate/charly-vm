@@ -25,22 +25,24 @@
  */
 
 #include <cstdint>
+#include <memory>
+
+#include "charly/utils/string.h"
 
 #pragma once
 
 namespace charly::core::compiler {
 
 struct Location {
+  std::shared_ptr<utils::string> filename;
 
   // offset in source bytestream
-  uint32_t offset;
-  uint32_t length;
+  size_t offset = 0;
+  size_t length = 0;
 
   // file coordinates
-  uint32_t row;
-  uint32_t column;
-  uint32_t final_row;
-  uint32_t final_column;
+  uint32_t row = 0;
+  uint32_t column = 0;
 };
 
 struct LocationRange {

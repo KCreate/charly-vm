@@ -23,10 +23,12 @@ IF(Catch2_FOUND)
   file(GLOB tests_SRC
     "test/runtime/main.cpp"
     "test/runtime/utils/*.cpp"
+    "test/runtime/core/compiler/*.cpp"
   )
 
   add_executable(tests ${tests_SRC})
   target_link_libraries(tests Catch2::Catch2)
+  target_link_libraries(tests libcharly)
   target_include_directories(tests PRIVATE src)
   target_compile_features(tests PRIVATE cxx_std_17)
 ELSE()

@@ -30,15 +30,43 @@
 #include "charly/core/compiler.h"
 
 using namespace charly;
+using namespace charly::core::compiler;
 
 int main(int argc, char** argv) {
-  utils::Buffer buf;
 
-  for (int i = 0; i < argc; i++) {
-    buf.append_string(argv[i]);
-    buf.append_string(" ");
+  utils::string line;
+  for (;;) {
+    std::cout << "> ";
+
+    if (!std::getline(std::cin, line))
+      break;
+
+    if (line.compare(".exit") == 0)
+      break;
+
+    // put argv into source buffer
+    utils::Buffer buf;
+    buf.append_string(line);
+
+    // parse tokens from source file
+    Lexer lexer("stdin", buf.buffer_string());
+
+    try {
+      for (;;) {
+        Token token = lexer.read_token_skip_whitespace();
+
+        if (token.type == TokenType::Eof) {
+          break;
+        }
+
+        token.dump(std::cout);
+        std::cout << std::endl;
+      }
+    } catch (LexerException& exc) {
+      exc.dump(std::cout);
+      std::cout << std::endl;
+    }
   }
 
-  std::cout << buf.view_buffer() << std::endl;
-  return buf.size();
+  return 0;
 }

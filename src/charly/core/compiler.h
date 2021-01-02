@@ -24,8 +24,9 @@
  * SOFTWARE.
  */
 
-#include "charly/core/compiler/token.h"
 #include "charly/core/compiler/lexer.h"
+
+#pragma once
 
 namespace charly::core::compiler {
 

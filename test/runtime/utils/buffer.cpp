@@ -30,14 +30,14 @@
 
 using namespace charly;
 
-TEST_CASE("Buffer", "[Buffer]") {
+TEST_CASE("Buffer") {
   utils::Buffer buf(128);
 
   REQUIRE(buf.data() != nullptr);
   REQUIRE(buf.capacity() == 128);
   REQUIRE(buf.writeoffset() == 0);
   REQUIRE(buf.readoffset() == 0);
-  REQUIRE(buf.copy_window().compare("") == 0);
+  REQUIRE(buf.window_string().compare("") == 0);
 
   SECTION("Initialize buffer with string value") {
     utils::Buffer buf("hello world!!");
@@ -46,7 +46,7 @@ TEST_CASE("Buffer", "[Buffer]") {
       buf.read_utf8();
     }
 
-    CHECK(buf.copy_window().compare("hello world!!") == 0);
+    CHECK(buf.window_string().compare("hello world!!") == 0);
   }
 
   SECTION("Append data to buffer") {
@@ -78,7 +78,7 @@ TEST_CASE("Buffer", "[Buffer]") {
     CHECK(buf.readoffset() == 12);
   }
 
-  SECTION("reads / peeks unicode codepoints") {
+  SECTION("reads / peeks utf8 codepoints") {
     buf.append_utf8(L'ä');
     buf.append_utf8(L'Ʒ');
     buf.append_utf8(L'π');
@@ -117,14 +117,14 @@ TEST_CASE("Buffer", "[Buffer]") {
   }
 
   SECTION("copies window contents into string") {
-    CHECK(buf.copy_window().compare("") == 0);
+    CHECK(buf.window_string().compare("") == 0);
     buf.append_string("hello world!!");
 
     for (int i = 0; i < 13; i++) {
       buf.read_utf8();
     }
 
-    utils::string window = buf.copy_window();
+    utils::string window = buf.window_string();
     CHECK(window.compare("hello world!!") == 0);
   }
 
@@ -136,15 +136,15 @@ TEST_CASE("Buffer", "[Buffer]") {
     }
 
     {
-      utils::string window = buf.copy_window();
-      CHECK(buf.copy_window().compare("test") == 0);
+      utils::string window = buf.window_string();
+      CHECK(buf.window_string().compare("test") == 0);
     }
 
     buf.reset_window();
 
     {
-      utils::string window = buf.copy_window();
-      CHECK(buf.copy_window().compare("") == 0);
+      utils::string window = buf.window_string();
+      CHECK(buf.window_string().compare("") == 0);
     }
   }
 
@@ -155,7 +155,7 @@ TEST_CASE("Buffer", "[Buffer]") {
       buf.read_utf8();
     }
 
-    CHECK(buf.view_window().compare("hello world ") == 0);
-    CHECK(buf.view_buffer().compare("hello world my name is leonard!") == 0);
+    CHECK(buf.window_string().compare("hello world ") == 0);
+    CHECK(buf.buffer_string().compare("hello world my name is leonard!") == 0);
   }
 }

@@ -26,13 +26,11 @@
 
 #include <cstring>
 #include <string>
-#include <string_view>
 
 #pragma once
 
 namespace charly::utils {
 
 using string = std::string;
-using string_view = std::string_view;
 
 }

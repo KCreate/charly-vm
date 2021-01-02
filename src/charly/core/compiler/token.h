@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+#include <iostream>
+
 #include "charly/utils/map.h"
 #include "charly/utils/string.h"
 #include "charly/core/compiler/location.h"
@@ -32,8 +34,9 @@
 
 namespace charly::core::compiler {
 
-enum class TokenType : uint8_t {
+enum TokenType : uint8_t {
   Int,
+  Float,
   True,
   False,
   Identifier,
@@ -45,6 +48,7 @@ enum class TokenType : uint8_t {
 
 static utils::string kTokenTypeStrings[] = {
   "Int",
+  "Float",
   "True",
   "False",
   "Identifier",
@@ -59,18 +63,44 @@ static const utils::unordered_map<utils::string, TokenType> kKeywordsAndLiterals
   {"false", TokenType::False}
 };
 
-class Token {
-public:
+struct Token {
+  TokenType     type = TokenType::Unknown;
+  Location      location;
+  utils::string source;
+  int64_t       intval;
+  double        floatval;
 
-private:
-  Location      m_location;
-  TokenType     m_type;
-  utils::string m_value;
+  // check wether this token is a whitespace / newline token
+  bool is_whitespace() {
+    return type == TokenType::Whitespace || type == TokenType::Newline;
+  }
 
-  union {
-    int64_t       m_int;
-    double        m_float;
-  };
+  // write a formatted version of the token to the stream
+  void dump(std::ostream& io) {
+    io << '(';
+    io << kTokenTypeStrings[this->type];
+
+    if (this->type == TokenType::Int ||
+        this->type == TokenType::Float ||
+        this->type == TokenType::Identifier) {
+      io << ',';
+      io << ' ';
+
+      switch (this->type) {
+        case TokenType::Int:          io << this->intval;   break;
+        case TokenType::Float:        io << this->floatval; break;
+        case TokenType::Identifier:   io << this->source; break;
+      }
+    }
+
+    io << ')';
+    io << ' ';
+    io << *location.filename;
+    io << ':';
+    io << location.row;
+    io << ':';
+    io << location.column;
+  }
 };
 
 }

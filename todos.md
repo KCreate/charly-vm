@@ -1,12 +1,17 @@
 # Todos
 
-- Build token reader
+- token reader
+  - implement features of old version
+  - string interpolation
+  - new keywords (defer for in)
+
 - Build AST representation
   - Easy to build by hand
   - Editable
   - Semantic annotations
     - Easily dump-able
   - Location information
+  - Easily traversable
 - Semantic constraints
   - Desugaring passes
   - Constant checking
