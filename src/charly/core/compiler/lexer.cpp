@@ -117,6 +117,147 @@ Token Lexer::read_token() {
       increment_row();
       break;
     }
+    case '+': {
+      read_char();
+      token.type = TokenType::Plus;
+      break;
+    }
+    case '-': {
+      read_char();
+      token.type = TokenType::Minus;
+      break;
+    }
+    case '*': {
+      read_char();
+
+      if (peek_char() == '*') {
+        read_char();
+        token.type = TokenType::Pow;
+        break;
+      }
+
+      token.type = TokenType::Mul;
+      break;
+    }
+    case '/': {
+      read_char();
+      token.type = TokenType::Div;
+      break;
+    }
+    case '%': {
+      read_char();
+      token.type = TokenType::Mod;
+      break;
+    }
+    case '=': {
+      read_char();
+
+      if (peek_char() == '=') {
+        read_char();
+        token.type = TokenType::Equal;
+        break;
+      }
+
+      token.type = TokenType::Assignment;
+      break;
+    }
+    case '!': {
+      read_char();
+
+      if (peek_char() == '=') {
+        read_char();
+        token.type = TokenType::NotEqual;
+        break;
+      }
+
+      token.type = TokenType::UnaryNot;
+      break;
+    }
+    case '<': {
+      read_char();
+
+      switch (peek_char()) {
+        case '=': {
+          read_char();
+          token.type = TokenType::LessEqual;
+          break;
+        }
+        case '<': {
+          read_char();
+          token.type = TokenType::BitLeftShift;
+          break;
+        }
+        default: {
+          token.type = TokenType::LessThan;
+          break;
+        }
+      }
+
+      break;
+    }
+    case '>': {
+      read_char();
+
+      switch (peek_char()) {
+        case '=': {
+          read_char();
+          token.type = TokenType::GreaterEqual;
+          break;
+        }
+        case '>': {
+          read_char();
+
+          if (peek_char() == '>') {
+            read_char();
+            token.type = TokenType::BitUnsignedRightShift;
+            break;
+          }
+
+          token.type = TokenType::BitRightShift;
+          break;
+        }
+        default: {
+          token.type = TokenType::GreaterThan;
+          break;
+        }
+      }
+
+      break;
+    }
+    case '&': {
+      read_char();
+
+      if (peek_char() == '&') {
+        read_char();
+        token.type = TokenType::And;
+        break;
+      }
+
+      token.type = TokenType::BitAND;
+      break;
+    }
+    case '|': {
+      read_char();
+
+      if (peek_char() == '|') {
+        read_char();
+        token.type = TokenType::Or;
+        break;
+      }
+
+      token.type = TokenType::BitOR;
+      break;
+    }
+    case '^': {
+      read_char();
+      token.type = TokenType::BitXOR;
+      break;
+    }
+    case '~': {
+      read_char();
+      token.type = TokenType::BitNOT;
+      break;
+    }
     default: {
 
       // parse identifiers

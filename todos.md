@@ -1,8 +1,9 @@
 # Todos
 
 - token reader
-  - parse operators
   - parse AND operators
+  - parse structure tokens
+  - parse comments
   - string interpolation
 
 - Parser
@@ -10,12 +11,13 @@
     - inside subscript, call parsing methods
 
 - Build AST representation
+  - No boilerplate code for traversal and modification visitors
+    - Visitor classes should just be able to define certain virtual methods
+    - Somehow automatically generate these methods?
   - Easy to build by hand
-  - Editable
   - Semantic annotations
-    - Easily dump-able
   - Location information
-  - Easily traversable
+
 - Semantic constraints
   - Desugaring passes
   - Constant checking

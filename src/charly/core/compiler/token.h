@@ -49,7 +49,7 @@ enum TokenType : uint8_t {
   True,
 
   // keywords
-  And,
+  LiteralAnd,
   As,
   Await,
   Break,
@@ -78,7 +78,7 @@ enum TokenType : uint8_t {
   Module,
   New,
   Operator,
-  Or,
+  LiteralOr,
   Property,
   Return,
   Spawn,
@@ -91,6 +91,35 @@ enum TokenType : uint8_t {
   Until,
   While,
   Yield,
+
+  // basic operators
+  Plus,
+  Minus,
+  Mul,
+  Div,
+  Mod,
+  Pow,
+  Assignment,
+
+  // comparison operators
+  Equal,
+  NotEqual,
+  LessThan,
+  GreaterThan,
+  LessEqual,
+  GreaterEqual,
+  And,
+  Or,
+  UnaryNot,
+
+  // bitwise operators
+  BitOR,
+  BitXOR,
+  BitNOT,
+  BitAND,
+  BitLeftShift,
+  BitRightShift,
+  BitUnsignedRightShift,
 
   // misc
   Newline,
@@ -110,7 +139,7 @@ static utils::string kTokenTypeStrings[] = {
   "Super",
   "True",
 
-  "And",
+  "LiteralAnd",
   "As",
   "Await",
   "Break",
@@ -139,7 +168,7 @@ static utils::string kTokenTypeStrings[] = {
   "Module",
   "New",
   "Operator",
-  "Or",
+  "LiteralOr",
   "Property",
   "Return",
   "Spawn",
@@ -153,6 +182,31 @@ static utils::string kTokenTypeStrings[] = {
   "While",
   "Yield",
 
+  "Plus",
+  "Minus",
+  "Mul",
+  "Div",
+  "Mod",
+  "Pow",
+  "Assignment",
+
+  "Equal",
+  "NotEqual",
+  "LessThan",
+  "GreaterThan",
+  "LessEqual",
+  "GreaterEqual",
+  "And",
+  "Or",
+
+  "BitOR",
+  "BitXOR",
+  "BitNOT",
+  "BitAND",
+  "BitLeftShift",
+  "BitRightShift",
+  "BitUnsignedRightShift",
+
   "Newline",
   "Whitespace"
 };
@@ -164,7 +218,7 @@ static const utils::unordered_map<utils::string, TokenType> kKeywordsAndLiterals
   {"self",        TokenType::Self},
   {"super",       TokenType::Super},
   {"true",        TokenType::True},
-  {"and",         TokenType::And},
+  {"and",         TokenType::LiteralAnd},
   {"as",          TokenType::As},
   {"await",       TokenType::Await},
   {"break",       TokenType::Break},
@@ -192,7 +246,7 @@ static const utils::unordered_map<utils::string, TokenType> kKeywordsAndLiterals
   {"module",      TokenType::Module},
   {"new",         TokenType::New},
   {"operator",    TokenType::Operator},
-  {"or",          TokenType::Or},
+  {"or",          TokenType::LiteralOr},
   {"property",    TokenType::Property},
   {"return",      TokenType::Return},
   {"spawn",       TokenType::Spawn},
