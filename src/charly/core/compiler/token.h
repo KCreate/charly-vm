@@ -135,6 +135,23 @@ enum TokenType : uint8_t {
   BitRightShift,
   BitUnsignedRightShift,
 
+  // structure
+  LeftParen,
+  RightParen,
+  LeftCurly,
+  RightCurly,
+  LeftBracket,
+  RightBracket,
+  Point,
+  Colon,
+  Comma,
+  Semicolon,
+  AtSign,
+  LeftArrow,
+  RightArrow,
+  RightThickArrow,
+  QuestionMark,
+
   // misc
   Newline,
   Whitespace
@@ -235,6 +252,22 @@ static utils::string kTokenTypeStrings[] = {
   "BitLeftShift",
   "BitRightShift",
   "BitUnsignedRightShift",
+
+  "LeftParen",
+  "RightParen",
+  "LeftCurly",
+  "RightCurly",
+  "LeftBracket",
+  "RightBracket",
+  "Point",
+  "Colon",
+  "Comma",
+  "Semicolon",
+  "AtSign",
+  "LeftArrow",
+  "RightArrow",
+  "RightThickArrow",
+  "QuestionMark",
 
   "Newline",
   "Whitespace"

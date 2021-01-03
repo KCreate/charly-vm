@@ -124,6 +124,13 @@ Token Lexer::read_token() {
     }
     case '-': {
       read_char();
+
+      if (peek_char() == '>') {
+        read_char();
+        token.type = TokenType::RightArrow;
+        break;
+      }
+
       token.type = TokenType::Minus;
       break;
     }
@@ -152,13 +159,23 @@ Token Lexer::read_token() {
     case '=': {
       read_char();
 
-      if (peek_char() == '=') {
-        read_char();
-        token.type = TokenType::Equal;
-        break;
+      switch (peek_char()) {
+        case '=': {
+          read_char();
+          token.type = TokenType::Equal;
+          break;
+        }
+        case '>': {
+          read_char();
+          token.type = TokenType::RightThickArrow;
+          break;
+        }
+        default: {
+          token.type = TokenType::Assignment;
+          break;
+        }
       }
 
-      token.type = TokenType::Assignment;
       break;
     }
     case '!': {
@@ -185,6 +202,11 @@ Token Lexer::read_token() {
         case '<': {
           read_char();
           token.type = TokenType::BitLeftShift;
+          break;
+        }
+        case '-': {
+          read_char();
+          token.type = TokenType::LeftArrow;
           break;
         }
         default: {
@@ -256,6 +278,66 @@ Token Lexer::read_token() {
     case '~': {
       read_char();
       token.type = TokenType::BitNOT;
+      break;
+    }
+    case '(': {
+      read_char();
+      token.type = TokenType::LeftParen;
+      break;
+    }
+    case ')': {
+      read_char();
+      token.type = TokenType::RightParen;
+      break;
+    }
+    case '{': {
+      read_char();
+      token.type = TokenType::LeftCurly;
+      break;
+    }
+    case '}': {
+      read_char();
+      token.type = TokenType::RightCurly;
+      break;
+    }
+    case '[': {
+      read_char();
+      token.type = TokenType::LeftBracket;
+      break;
+    }
+    case ']': {
+      read_char();
+      token.type = TokenType::RightBracket;
+      break;
+    }
+    case '.': {
+      read_char();
+      token.type = TokenType::Point;
+      break;
+    }
+    case ':': {
+      read_char();
+      token.type = TokenType::Colon;
+      break;
+    }
+    case ',': {
+      read_char();
+      token.type = TokenType::Comma;
+      break;
+    }
+    case ';': {
+      read_char();
+      token.type = TokenType::Semicolon;
+      break;
+    }
+    case '@': {
+      read_char();
+      token.type = TokenType::AtSign;
+      break;
+    }
+    case '?': {
+      read_char();
+      token.type = TokenType::QuestionMark;
       break;
     }
     default: {
