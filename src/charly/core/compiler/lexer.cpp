@@ -270,6 +270,12 @@ Token Lexer::read_token() {
     }
   }
 
+  // and assignment operators
+  if (token.is_and_assignment_operator() && peek_char() == '=') {
+    read_char();
+    token.type = kANDAssignmentOperators.at(token.type);
+  }
+
   token.location.length = m_source.window_size();
   token.source = m_source.window_string();
   m_source.reset_window();

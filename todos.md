@@ -1,7 +1,6 @@
 # Todos
 
 - token reader
-  - parse AND operators
   - parse structure tokens
   - parse comments
   - string interpolation

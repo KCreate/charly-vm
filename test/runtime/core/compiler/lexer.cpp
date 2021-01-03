@@ -276,6 +276,19 @@ TEST_CASE("Lexer") {
       "<<\n"
       ">>\n"
       ">>>\n"
+
+      "+=\n"
+      "-=\n"
+      "*=\n"
+      "/=\n"
+      "%=\n"
+      "**=\n"
+      "&=\n"
+      "|=\n"
+      "^=\n"
+      "<<=\n"
+      ">>=\n"
+      ">>>=\n"
     ));
 
     CHECK(lexer.read_token_skip_whitespace().type == TokenType::Plus);
@@ -303,6 +316,19 @@ TEST_CASE("Lexer") {
     CHECK(lexer.read_token_skip_whitespace().type == TokenType::BitLeftShift);
     CHECK(lexer.read_token_skip_whitespace().type == TokenType::BitRightShift);
     CHECK(lexer.read_token_skip_whitespace().type == TokenType::BitUnsignedRightShift);
+
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::PlusAssignment);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::MinusAssignment);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::MulAssignment);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::DivAssignment);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::ModAssignment);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::PowAssignment);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::BitANDAssignment);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::BitORAssignment);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::BitXORAssignment);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::BitLeftShiftAssignment);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::BitRightShiftAssignment);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::BitUnsignedRightShiftAssignment);
   }
 
   SECTION("formats a LexerException") {

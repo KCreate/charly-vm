@@ -92,14 +92,28 @@ enum TokenType : uint8_t {
   While,
   Yield,
 
-  // basic operators
+  // arithmetic operators
   Plus,
   Minus,
   Mul,
   Div,
   Mod,
   Pow,
+
+  // assignment operators
   Assignment,
+  PlusAssignment,
+  MinusAssignment,
+  MulAssignment,
+  DivAssignment,
+  ModAssignment,
+  PowAssignment,
+  BitANDAssignment,
+  BitORAssignment,
+  BitXORAssignment,
+  BitLeftShiftAssignment,
+  BitRightShiftAssignment,
+  BitUnsignedRightShiftAssignment,
 
   // comparison operators
   Equal,
@@ -126,6 +140,7 @@ enum TokenType : uint8_t {
   Whitespace
 };
 
+// string representations of token types
 static utils::string kTokenTypeStrings[] = {
   "Eof",
 
@@ -188,7 +203,20 @@ static utils::string kTokenTypeStrings[] = {
   "Div",
   "Mod",
   "Pow",
+
   "Assignment",
+  "PlusAssignment",
+  "MinusAssignment",
+  "MulAssignment",
+  "DivAssignment",
+  "ModAssignment",
+  "PowAssignment",
+  "BitANDAssignment",
+  "BitORAssignment",
+  "BitXORAssignment",
+  "BitLeftShiftAssignment",
+  "BitRightShiftAssignment",
+  "BitUnsignedRightShiftAssignment",
 
   "Equal",
   "NotEqual",
@@ -198,6 +226,7 @@ static utils::string kTokenTypeStrings[] = {
   "GreaterEqual",
   "And",
   "Or",
+  "UnaryNot",
 
   "BitOR",
   "BitXOR",
@@ -211,6 +240,7 @@ static utils::string kTokenTypeStrings[] = {
   "Whitespace"
 };
 
+// identifiers with these names get remapped to keyword tokens
 static const utils::unordered_map<utils::string, TokenType> kKeywordsAndLiterals = {
   {"false",       TokenType::False},
   {"NaN",         TokenType::NaN},
@@ -261,12 +291,36 @@ static const utils::unordered_map<utils::string, TokenType> kKeywordsAndLiterals
   {"yield",       TokenType::Yield}
 };
 
+// mapping from original binary operator to AND assignment token
+static const utils::unordered_map<TokenType, TokenType> kANDAssignmentOperators = {
+  {TokenType::Plus,                  TokenType::PlusAssignment},
+  {TokenType::Minus,                 TokenType::MinusAssignment},
+  {TokenType::Mul,                   TokenType::MulAssignment},
+  {TokenType::Div,                   TokenType::DivAssignment},
+  {TokenType::Mod,                   TokenType::ModAssignment},
+  {TokenType::Pow,                   TokenType::PowAssignment},
+  {TokenType::BitAND,                TokenType::BitANDAssignment},
+  {TokenType::BitOR,                 TokenType::BitORAssignment},
+  {TokenType::BitXOR,                TokenType::BitXORAssignment},
+  {TokenType::BitLeftShift,          TokenType::BitLeftShiftAssignment},
+  {TokenType::BitRightShift,         TokenType::BitRightShiftAssignment},
+  {TokenType::BitUnsignedRightShift, TokenType::BitUnsignedRightShiftAssignment}
+};
+
 struct Token {
   TokenType     type = TokenType::Eof;
   Location      location;
   utils::string source;
   int64_t       intval;
   double        floatval;
+
+  // checks wether this token is an operator that could be used in an AND
+  // assignment
+  //
+  // foo += 25
+  bool is_and_assignment_operator() {
+    return kANDAssignmentOperators.count(type);
+  }
 
   // write a formatted version of the token to the stream
   void dump(std::ostream& io) {
