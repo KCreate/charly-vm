@@ -153,6 +153,7 @@ enum TokenType : uint8_t {
   QuestionMark,
 
   // misc
+  Comment,
   Newline,
   Whitespace
 };
@@ -269,6 +270,7 @@ static utils::string kTokenTypeStrings[] = {
   "RightThickArrow",
   "QuestionMark",
 
+  "Comment",
   "Newline",
   "Whitespace"
 };
@@ -362,6 +364,7 @@ struct Token {
 
     if (this->type == TokenType::Int ||
         this->type == TokenType::Float ||
+        this->type == TokenType::Comment ||
         this->type == TokenType::Identifier) {
       io << ',';
       io << ' ';
@@ -369,6 +372,7 @@ struct Token {
       switch (this->type) {
         case TokenType::Int:          io << this->intval;   break;
         case TokenType::Float:        io << this->floatval; break;
+        case TokenType::Comment:
         case TokenType::Identifier:   io << this->source; break;
       }
     }

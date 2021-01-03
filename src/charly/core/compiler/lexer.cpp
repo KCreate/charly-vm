@@ -148,7 +148,24 @@ Token Lexer::read_token() {
     }
     case '/': {
       read_char();
-      token.type = TokenType::Div;
+
+      switch (peek_char()) {
+        case '/': {
+          read_char();
+          consume_comment(token);
+          break;
+        }
+        case '*': {
+          read_char();
+          consume_multiline_comment(token);
+          break;
+        }
+        default: {
+          token.type = TokenType::Div;
+          break;
+        }
+      }
+
       break;
     }
     case '%': {
@@ -348,7 +365,7 @@ Token Lexer::read_token() {
         break;
       }
 
-      throw LexerException("Unexpected character", token.location);
+      throw LexerException("unexpected character", token.location);
     }
   }
 
@@ -521,7 +538,7 @@ void Lexer::consume_hex(Token& token) {
 
   // there has to be at least one hex character
   if (!is_hex(peek_char())) {
-    throw LexerException("Hex number literal expected at least one digit", token.location);
+    throw LexerException("hex number literal expected at least one digit", token.location);
   }
 
   while (is_hex(peek_char())) {
@@ -536,7 +553,7 @@ void Lexer::consume_octal(Token& token) {
 
   // there has to be at least one hex character
   if (!is_octal(peek_char())) {
-    throw LexerException("Octal number literal expected at least one digit", token.location);
+    throw LexerException("octal number literal expected at least one digit", token.location);
   }
 
   while (is_octal(peek_char())) {
@@ -551,7 +568,7 @@ void Lexer::consume_binary(Token& token) {
 
   // there has to be at least one hex character
   if (!is_binary(peek_char())) {
-    throw LexerException("Binary number literal expected at least one digit", token.location);
+    throw LexerException("binary number literal expected at least one digit", token.location);
   }
 
   while (is_binary(peek_char())) {
@@ -566,6 +583,62 @@ void Lexer::consume_identifier(Token& token) {
 
   while (is_id_part(peek_char())) {
     read_char();
+  }
+}
+
+void Lexer::consume_comment(Token& token) {
+  token.type = TokenType::Comment;
+
+  for (;;) {
+    uint32_t cp = peek_char();
+
+    if (cp == '\n' || cp == '\0')
+      break;
+
+    read_char();
+  }
+}
+
+void Lexer::consume_multiline_comment(Token& token) {
+  token.type = TokenType::Comment;
+
+  uint32_t comment_depth = 1;
+
+  while (comment_depth > 0) {
+    uint32_t cp = peek_char();
+
+    switch (cp) {
+      case '\0': {
+        throw LexerException("unclosed comment", token.location);
+      }
+      case '/': {
+        read_char();
+
+        // increment comment depth if a new multiline comment is being started
+        if (peek_char() == '*') {
+          read_char();
+          comment_depth += 1;
+          continue;
+        }
+
+        break;
+      }
+      case '*': {
+        read_char();
+
+        // decrement comment depth if a multiline comment is being closed
+        if (peek_char() == '/') {
+          read_char();
+          comment_depth -= 1;
+          continue;
+        }
+
+        break;
+      }
+      default: {
+        read_char();
+      }
+    }
   }
 }
 

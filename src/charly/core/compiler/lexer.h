@@ -111,6 +111,8 @@ private:
   void consume_octal(Token& token);
   void consume_binary(Token& token);
   void consume_identifier(Token& token);
+  void consume_comment(Token& token);
+  void consume_multiline_comment(Token& token);
 
   // current source row / column
   uint32_t m_row;

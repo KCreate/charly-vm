@@ -51,15 +51,15 @@ TEST_CASE("tokenizes integers") {
 TEST_CASE("throws an error on incomplete number literals") {
   {
     Lexer lexer("test", "0x");
-    CHECK_THROWS_WITH(lexer.read_token_skip_whitespace(), "Hex number literal expected at least one digit");
+    CHECK_THROWS_WITH(lexer.read_token_skip_whitespace(), "hex number literal expected at least one digit");
   }
   {
     Lexer lexer("test", "0b");
-    CHECK_THROWS_WITH(lexer.read_token_skip_whitespace(), "Binary number literal expected at least one digit");
+    CHECK_THROWS_WITH(lexer.read_token_skip_whitespace(), "binary number literal expected at least one digit");
   }
   {
     Lexer lexer("test", "0o");
-    CHECK_THROWS_WITH(lexer.read_token_skip_whitespace(), "Octal number literal expected at least one digit");
+    CHECK_THROWS_WITH(lexer.read_token_skip_whitespace(), "octal number literal expected at least one digit");
   }
 }
 
@@ -121,7 +121,7 @@ TEST_CASE("writes location information to tokens") {
 
 TEST_CASE("throws on unexpected characters") {
   Lexer lexer("test", "π");
-  CHECK_THROWS_WITH(lexer.read_token_skip_whitespace(), "Unexpected character");
+  CHECK_THROWS_WITH(lexer.read_token_skip_whitespace(), "unexpected character");
 }
 
 TEST_CASE("formats a token") {
@@ -314,6 +314,55 @@ TEST_CASE("recognizes structure tokens") {
   CHECK(lexer.read_token_skip_whitespace().type == TokenType::QuestionMark);
 }
 
+TEST_CASE("recognizes comments") {
+  Lexer lexer("test", (
+    "foo bar // some comment\n"
+    "// hello\n"
+    "// world\n"
+    "//\n"
+    "/*\n"
+    "multiline comment!!\n"
+    "*/\n"
+    "/* hello world */ /* test */\n"
+    "/* foo /* nested */ */\n"
+  ));
+
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::Identifier);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::Identifier);
+
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::Comment);
+  CHECK(lexer.last_token().source.compare("// some comment") == 0);
+
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::Comment);
+  CHECK(lexer.last_token().source.compare("// hello") == 0);
+
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::Comment);
+  CHECK(lexer.last_token().source.compare("// world") == 0);
+
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::Comment);
+  CHECK(lexer.last_token().source.compare("//") == 0);
+
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::Comment);
+  CHECK(lexer.last_token().source.compare("/*\nmultiline comment!!\n*/") == 0);
+
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::Comment);
+  CHECK(lexer.last_token().source.compare("/* hello world */") == 0);
+
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::Comment);
+  CHECK(lexer.last_token().source.compare("/* test */") == 0);
+
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::Comment);
+  CHECK(lexer.last_token().source.compare("/* foo /* nested */ */") == 0);
+}
+
+TEST_CASE("detects unclosed multiline comments") {
+  Lexer lexer("test", (
+    "/* /* */"
+  ));
+
+  CHECK_THROWS_WITH(lexer.read_token_skip_whitespace(), "unclosed comment");
+}
+
 TEST_CASE("formats a LexerException") {
   Lexer lexer("test", "0x");
 
@@ -323,6 +372,6 @@ TEST_CASE("formats a LexerException") {
     std::stringstream stream;
     exc.dump(stream);
 
-    CHECK(stream.str().compare("test:1:1: Hex number literal expected at least one digit") == 0);
+    CHECK(stream.str().compare("test:1:1: hex number literal expected at least one digit") == 0);
   }
 }
