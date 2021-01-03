@@ -35,45 +35,184 @@
 namespace charly::core::compiler {
 
 enum TokenType : uint8_t {
-  Int,
-  Float,
-  True,
+  Eof,
+
+  // literals
   False,
+  Float,
   Identifier,
-  Whitespace,
+  Int,
+  NaN,
+  Null,
+  Self,
+  Super,
+  True,
+
+  // keywords
+  And,
+  As,
+  Await,
+  Break,
+  Case,
+  Catch,
+  Class,
+  Const,
+  Continue,
+  Default,
+  Defer,
+  Do,
+  Else,
+  Export,
+  Extends,
+  Finally,
+  For,
+  Func,
+  Guard,
+  If,
+  IgnoreConst,
+  Import,
+  In,
+  Let,
+  Loop,
+  Match,
+  Module,
+  New,
+  Operator,
+  Or,
+  Property,
+  Return,
+  Spawn,
+  Static,
+  Switch,
+  Throw,
+  Try,
+  Typeof,
+  Unless,
+  Until,
+  While,
+  Yield,
+
+  // misc
   Newline,
-  Unknown,
-  Eof
+  Whitespace
 };
 
 static utils::string kTokenTypeStrings[] = {
-  "Int",
-  "Float",
-  "True",
+  "Eof",
+
   "False",
+  "Float",
   "Identifier",
-  "Whitespace",
+  "Int",
+  "NaN",
+  "Null",
+  "Self",
+  "Super",
+  "True",
+
+  "And",
+  "As",
+  "Await",
+  "Break",
+  "Case",
+  "Catch",
+  "Class",
+  "Const",
+  "Continue",
+  "Default",
+  "Defer",
+  "Do",
+  "Else",
+  "Export",
+  "Extends",
+  "Finally",
+  "For",
+  "Func",
+  "Guard",
+  "If",
+  "IgnoreConst",
+  "Import",
+  "In",
+  "Let",
+  "Loop",
+  "Match",
+  "Module",
+  "New",
+  "Operator",
+  "Or",
+  "Property",
+  "Return",
+  "Spawn",
+  "Static",
+  "Switch",
+  "Throw",
+  "Try",
+  "Typeof",
+  "Unless",
+  "Until",
+  "While",
+  "Yield",
+
   "Newline",
-  "Unknown",
-  "Eof"
+  "Whitespace"
 };
 
 static const utils::unordered_map<utils::string, TokenType> kKeywordsAndLiterals = {
-  {"true",  TokenType::True},
-  {"false", TokenType::False}
+  {"false",       TokenType::False},
+  {"NaN",         TokenType::NaN},
+  {"null",        TokenType::Null},
+  {"self",        TokenType::Self},
+  {"super",       TokenType::Super},
+  {"true",        TokenType::True},
+  {"and",         TokenType::And},
+  {"as",          TokenType::As},
+  {"await",       TokenType::Await},
+  {"break",       TokenType::Break},
+  {"case",        TokenType::Case},
+  {"catch",       TokenType::Catch},
+  {"class",       TokenType::Class},
+  {"const",       TokenType::Const},
+  {"continue",    TokenType::Continue},
+  {"default",     TokenType::Default},
+  {"defer",       TokenType::Defer},
+  {"do",          TokenType::Do},
+  {"else",        TokenType::Else},
+  {"export",      TokenType::Export},
+  {"extends",     TokenType::Extends},
+  {"finally",     TokenType::Finally},
+  {"for",         TokenType::For},
+  {"func",        TokenType::Func},
+  {"guard",       TokenType::Guard},
+  {"if",          TokenType::If},
+  {"import",      TokenType::Import},
+  {"in",          TokenType::In},
+  {"let",         TokenType::Let},
+  {"loop",        TokenType::Loop},
+  {"match",       TokenType::Match},
+  {"module",      TokenType::Module},
+  {"new",         TokenType::New},
+  {"operator",    TokenType::Operator},
+  {"or",          TokenType::Or},
+  {"property",    TokenType::Property},
+  {"return",      TokenType::Return},
+  {"spawn",       TokenType::Spawn},
+  {"static",      TokenType::Static},
+  {"switch",      TokenType::Switch},
+  {"throw",       TokenType::Throw},
+  {"try",         TokenType::Try},
+  {"typeof",      TokenType::Typeof},
+  {"unless",      TokenType::Unless},
+  {"until",       TokenType::Until},
+  {"while",       TokenType::While},
+  {"yield",       TokenType::Yield}
 };
 
 struct Token {
-  TokenType     type = TokenType::Unknown;
+  TokenType     type = TokenType::Eof;
   Location      location;
   utils::string source;
   int64_t       intval;
   double        floatval;
-
-  // check wether this token is a whitespace / newline token
-  bool is_whitespace() {
-    return type == TokenType::Whitespace || type == TokenType::Newline;
-  }
 
   // write a formatted version of the token to the stream
   void dump(std::ostream& io) {

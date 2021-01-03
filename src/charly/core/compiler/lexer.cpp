@@ -150,8 +150,14 @@ Token Lexer::read_token() {
 Token Lexer::read_token_skip_whitespace() {
   Token token;
 
-  while ((token = read_token()).is_whitespace()) {
-    continue;
+  for (;;) {
+    token = read_token();
+
+    if (token.type == TokenType::Whitespace || token.type == TokenType::Newline) {
+      continue;
+    }
+
+    break;
   }
 
   return token;

@@ -16,5 +16,5 @@ then
   cd ..
 
   # --batch exits lldb on success and prompts for further input on failure
-  lldb --batch -o run cmake-build-debug/tests -- $@
+  cmake-build-debug/tests $@
 fi

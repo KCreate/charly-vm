@@ -1,9 +1,13 @@
 # Todos
 
 - token reader
-  - implement features of old version
+  - parse operators
+  - parse AND operators
   - string interpolation
-  - new keywords (defer for in)
+
+- Parser
+  - some illegal syntaxes can be caught by sometimes parsing newline tokens
+    - inside subscript, call parsing methods
 
 - Build AST representation
   - Easy to build by hand

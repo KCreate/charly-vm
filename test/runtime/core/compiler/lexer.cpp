@@ -148,6 +148,107 @@ TEST_CASE("Lexer") {
     }
   }
 
+  SECTION("recognizes keywords") {
+    Lexer lexer("test", (
+      "false\n"
+      "NaN\n"
+      "null\n"
+      "self\n"
+      "super\n"
+      "true\n"
+      "and\n"
+      "as\n"
+      "await\n"
+      "break\n"
+      "case\n"
+      "catch\n"
+      "class\n"
+      "const\n"
+      "continue\n"
+      "default\n"
+      "defer\n"
+      "do\n"
+      "else\n"
+      "export\n"
+      "extends\n"
+      "finally\n"
+      "for\n"
+      "func\n"
+      "guard\n"
+      "if\n"
+      "import\n"
+      "in\n"
+      "let\n"
+      "loop\n"
+      "match\n"
+      "module\n"
+      "new\n"
+      "operator\n"
+      "or\n"
+      "property\n"
+      "return\n"
+      "spawn\n"
+      "static\n"
+      "switch\n"
+      "throw\n"
+      "try\n"
+      "typeof\n"
+      "unless\n"
+      "until\n"
+      "while\n"
+      "yield\n"
+    ));
+
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::False);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::NaN);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Null);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Self);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Super);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::True);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::And);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::As);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Await);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Break);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Case);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Catch);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Class);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Const);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Continue);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Default);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Defer);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Do);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Else);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Export);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Extends);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Finally);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::For);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Func);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Guard);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::If);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Import);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::In);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Let);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Loop);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Match);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Module);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::New);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Operator);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Or);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Property);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Return);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Spawn);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Static);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Switch);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Throw);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Try);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Typeof);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Unless);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Until);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::While);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Yield);
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::Eof);
+  }
+
   SECTION("formats a LexerException") {
     Lexer lexer("test", "0x");
 
