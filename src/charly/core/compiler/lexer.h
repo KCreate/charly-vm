@@ -69,6 +69,8 @@ public:
         uint32_t row = 1,
         uint32_t column = 1)
     : m_filename(filename), m_source(source), m_row(row), m_column(column) {
+    m_last_character = '\0';
+    m_mode = Mode::TopLevel;
   }
 
   // read the next token from the source
@@ -113,15 +115,36 @@ private:
   void consume_identifier(Token& token);
   void consume_comment(Token& token);
   void consume_multiline_comment(Token& token);
+  void consume_string(Token& token);
+
+  // full path of the source file (or empty buffer)
+  utils::string m_filename;
+
+  // source code
+  utils::Buffer m_source;
 
   // current source row / column
   uint32_t m_row;
   uint32_t m_column;
 
-  utils::string m_filename;   // full path of the source file (or empty buffer)
-  utils::Buffer m_source;     // source code
+  // the last character that was read from the source
+  uint32_t m_last_character;
 
-  uint32_t m_last_character; // the last character that was read from the source
+  // current parsing mode
+  enum class Mode {
+    TopLevel,
+    String,
+    InterpolatedExpression
+  };
+  Mode m_mode;
+
+  // keep track of interpolation brackets
+  utils::vector<size_t> m_interpolation_bracket_stack;
+
+  // Opening brackets get pushed onto the stack, closing brackets pop
+  // their corresponding opening bracket from the stack
+  // throws an error on invalid bracket arrangement
+  utils::vector<TokenType> m_bracket_stack;
 
   // list of parsed tokens
   utils::vector<Token> m_tokens;

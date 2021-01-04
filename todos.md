@@ -1,8 +1,5 @@
 # Todos
 
-- token reader
-  - string interpolation
-
 - Parser
   - some illegal syntaxes can be caught by sometimes parsing newline tokens
     - inside subscript, call parsing methods

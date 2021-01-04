@@ -38,15 +38,17 @@ enum TokenType : uint8_t {
   Eof,
 
   // literals
-  False,
-  Float,
-  Identifier,
   Int,
+  Float,
   NaN,
+  True,
+  False,
+  Identifier,
+  String,
+  StringPart,
   Null,
   Self,
   Super,
-  True,
 
   // keywords
   LiteralAnd,
@@ -162,15 +164,17 @@ enum TokenType : uint8_t {
 static utils::string kTokenTypeStrings[] = {
   "Eof",
 
-  "False",
-  "Float",
-  "Identifier",
   "Int",
+  "Float",
   "NaN",
+  "True",
+  "False",
+  "Identifier",
+  "String",
+  "StringPart",
   "Null",
   "Self",
   "Super",
-  "True",
 
   "LiteralAnd",
   "As",
@@ -365,6 +369,8 @@ struct Token {
     if (this->type == TokenType::Int ||
         this->type == TokenType::Float ||
         this->type == TokenType::Comment ||
+        this->type == TokenType::String ||
+        this->type == TokenType::StringPart ||
         this->type == TokenType::Identifier) {
       io << ',';
       io << ' ';
@@ -374,6 +380,8 @@ struct Token {
         case TokenType::Float:        io << this->floatval; break;
         case TokenType::Comment:
         case TokenType::Identifier:   io << this->source; break;
+        case TokenType::String:
+        case TokenType::StringPart:   io << '"' << this->source << '"'; break;
       }
     }
 

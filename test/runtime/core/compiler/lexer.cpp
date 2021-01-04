@@ -355,6 +355,160 @@ TEST_CASE("recognizes comments") {
   CHECK(lexer.last_token().source.compare("/* foo /* nested */ */") == 0);
 }
 
+TEST_CASE("tokenizes strings") {
+  Lexer lexer("test", (
+    "\"hello world\"\n"
+    "\"äüöø¡œΣ€\"\n"
+    "\"\"\n"
+  ));
+
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::String);
+  CHECK(lexer.last_token().source.compare("hello world") == 0);
+
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::String);
+  CHECK(lexer.last_token().source.compare("äüöø¡œΣ€") == 0);
+
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::String);
+  CHECK(lexer.last_token().source.compare("") == 0);
+}
+
+TEST_CASE("escape sequences in strings") {
+  {
+    Lexer lexer("test", (
+      "\"\\a \\b \\n \\r \\t \\v \\f \\e \\\" \\{ \\\\ \"\n"
+    ));
+
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::String);
+    CHECK(lexer.last_token().source.compare("\a \b \n \r \t \v \f \e \" { \\ ") == 0);
+  }
+
+  {
+    Lexer lexer("test", (
+      "\"\\k\""
+    ));
+
+    CHECK_THROWS_WITH(lexer.read_token_skip_whitespace(), "unknown escape sequence");
+  }
+
+  {
+    Lexer lexer("test", (
+      "\"\\"
+    ));
+
+    CHECK_THROWS_WITH(lexer.read_token_skip_whitespace(), "unfinished escape sequence");
+  }
+}
+
+TEST_CASE("tokenizes string interpolations") {
+  Lexer lexer("test", (
+    "\"before ${name({{}})} ${more} after\""
+    "\"${}\""
+    "\"${}}\""
+    "\"$\\{}\""
+  ));
+
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::StringPart);
+  CHECK(lexer.last_token().source.compare("before ") == 0);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::Identifier);
+  CHECK(lexer.last_token().source.compare("name") == 0);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::LeftParen);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::LeftCurly);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::LeftCurly);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::RightCurly);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::RightCurly);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::RightParen);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::StringPart);
+  CHECK(lexer.last_token().source.compare(" ") == 0);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::Identifier);
+  CHECK(lexer.last_token().source.compare("more") == 0);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::String);
+  CHECK(lexer.last_token().source.compare(" after") == 0);
+
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::StringPart);
+  CHECK(lexer.last_token().source.compare("") == 0);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::String);
+  CHECK(lexer.last_token().source.compare("") == 0);
+
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::StringPart);
+  CHECK(lexer.last_token().source.compare("") == 0);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::String);
+  CHECK(lexer.last_token().source.compare("}") == 0);
+
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::String);
+  CHECK(lexer.last_token().source.compare("${}") == 0);
+}
+
+TEST_CASE("catches erronious string interpolations") {
+  {
+    Lexer lexer("test", (
+      "\"${\""
+    ));
+
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::StringPart);
+    CHECK_THROWS_WITH(lexer.read_token_skip_whitespace(), "unclosed string");
+  }
+
+  {
+    Lexer lexer("test", (
+      "\"${"
+    ));
+
+    CHECK(lexer.read_token_skip_whitespace().type == TokenType::StringPart);
+    CHECK_THROWS_WITH(lexer.read_token_skip_whitespace(), "unfinished string interpolation");
+  }
+}
+
+TEST_CASE("detects mismatched brackets") {
+  {
+    Lexer lexer("test", (
+      "("
+    ));
+
+    lexer.read_token_skip_whitespace();
+    CHECK_THROWS_WITH(lexer.read_token_skip_whitespace(), "unclosed bracket");
+  }
+  {
+    Lexer lexer("test", (
+      "["
+    ));
+
+    lexer.read_token_skip_whitespace();
+    CHECK_THROWS_WITH(lexer.read_token_skip_whitespace(), "unclosed bracket");
+  }
+  {
+    Lexer lexer("test", (
+      "{"
+    ));
+
+    lexer.read_token_skip_whitespace();
+    CHECK_THROWS_WITH(lexer.read_token_skip_whitespace(), "unclosed bracket");
+  }
+  {
+    Lexer lexer("test", (
+      "(}"
+    ));
+
+    lexer.read_token_skip_whitespace();
+    CHECK_THROWS_WITH(lexer.read_token_skip_whitespace(), "unexpected }");
+  }
+  {
+    Lexer lexer("test", (
+      "{)"
+    ));
+
+    lexer.read_token_skip_whitespace();
+    CHECK_THROWS_WITH(lexer.read_token_skip_whitespace(), "unexpected )");
+  }
+  {
+    Lexer lexer("test", (
+      "(]"
+    ));
+
+    lexer.read_token_skip_whitespace();
+    CHECK_THROWS_WITH(lexer.read_token_skip_whitespace(), "unexpected ]");
+  }
+}
+
 TEST_CASE("detects unclosed multiline comments") {
   Lexer lexer("test", (
     "/* /* */"

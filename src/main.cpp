@@ -44,27 +44,30 @@ int main(int argc, char** argv) {
     if (line.compare(".exit") == 0)
       break;
 
-    // put argv into source buffer
-    utils::Buffer buf;
-    buf.append_string(line);
+    {
 
-    // parse tokens from source file
-    Lexer lexer("stdin", buf.buffer_string());
+      // put argv into source buffer
+      utils::Buffer buf;
+      buf.append_string(line);
 
-    try {
-      for (;;) {
-        Token token = lexer.read_token_skip_whitespace();
+      // parse tokens from source file
+      Lexer lexer("stdin", buf.buffer_string());
 
-        if (token.type == TokenType::Eof) {
-          break;
+      try {
+        for (;;) {
+          Token token = lexer.read_token_skip_whitespace();
+
+          if (token.type == TokenType::Eof) {
+            break;
+          }
+
+          token.dump(std::cout);
+          std::cout << std::endl;
         }
-
-        token.dump(std::cout);
+      } catch (LexerException& exc) {
+        exc.dump(std::cout);
         std::cout << std::endl;
       }
-    } catch (LexerException& exc) {
-      exc.dump(std::cout);
-      std::cout << std::endl;
     }
   }
 
