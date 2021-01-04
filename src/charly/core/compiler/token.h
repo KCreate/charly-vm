@@ -350,8 +350,12 @@ struct Token {
   TokenType     type = TokenType::Eof;
   Location      location;
   utils::string source;
-  int64_t       intval;
-  double        floatval;
+
+  // int / float token sources
+  union {
+    int64_t       intval;
+    double        floatval;
+  };
 
   // checks wether this token is an operator that could be used in an AND
   // assignment

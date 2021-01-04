@@ -43,374 +43,368 @@ Token Lexer::read_token() {
   token.location.row = m_row;
   token.location.column = m_column;
 
-  if (m_mode == Mode::TopLevel || m_mode == Mode::InterpolatedExpression) {
-    switch (peek_char()) {
-
-      // null byte means end of file
-      case '\0': {
-        read_char();
-        token.type = TokenType::Eof;
-
-        if (m_interpolation_bracket_stack.size())
-          throw LexerException("unfinished string interpolation", token.location);
-
-        if (m_bracket_stack.size())
-          throw LexerException("unclosed bracket", token.location);
-
-        break;
-      }
-
-      // binary, hex, octal literals
-      case '0': {
-        bool parse_decimal = false;
-
-        switch (peek_char(1)) {
-          case 'b': {
-            read_char();
-            read_char();
-            m_source.reset_window();
-            consume_binary(token);
-            break;
-          }
-          case 'x': {
-            read_char();
-            read_char();
-            m_source.reset_window();
-            consume_hex(token);
-            break;
-          }
-          case 'o': {
-            read_char();
-            read_char();
-            m_source.reset_window();
-            consume_octal(token);
-            break;
-          }
-          default: {
-            parse_decimal = true;
-          }
-        }
-
-        if (!parse_decimal)
-          break;
-      }
-      case '1':
-      case '2':
-      case '3':
-      case '4':
-      case '5':
-      case '6':
-      case '7':
-      case '8':
-      case '9': {
-        consume_decimal(token);
-        break;
-      }
-      case '\"': {
-        read_char();
-        consume_string(token);
-        break;
-      }
-      case '\t':
-      case '\r':
-      case ' ': {
-        consume_whitespace(token);
-        break;
-      }
-      case '\n': {
-        read_char();
-        token.type = TokenType::Newline;
-        increment_row();
-        break;
-      }
-      case '+': {
-        read_char();
-        token.type = TokenType::Plus;
-        break;
-      }
-      case '-': {
-        read_char();
-
-        if (peek_char() == '>') {
-          read_char();
-          token.type = TokenType::RightArrow;
-          break;
-        }
-
-        token.type = TokenType::Minus;
-        break;
-      }
-      case '*': {
-        read_char();
-
-        if (peek_char() == '*') {
-          read_char();
-          token.type = TokenType::Pow;
-          break;
-        }
-
-        token.type = TokenType::Mul;
-        break;
-      }
-      case '/': {
-        read_char();
-
-        switch (peek_char()) {
-          case '/': {
-            read_char();
-            consume_comment(token);
-            break;
-          }
-          case '*': {
-            read_char();
-            consume_multiline_comment(token);
-            break;
-          }
-          default: {
-            token.type = TokenType::Div;
-            break;
-          }
-        }
-
-        break;
-      }
-      case '%': {
-        read_char();
-        token.type = TokenType::Mod;
-        break;
-      }
-      case '=': {
-        read_char();
-
-        switch (peek_char()) {
-          case '=': {
-            read_char();
-            token.type = TokenType::Equal;
-            break;
-          }
-          case '>': {
-            read_char();
-            token.type = TokenType::RightThickArrow;
-            break;
-          }
-          default: {
-            token.type = TokenType::Assignment;
-            break;
-          }
-        }
-
-        break;
-      }
-      case '!': {
-        read_char();
-
-        if (peek_char() == '=') {
-          read_char();
-          token.type = TokenType::NotEqual;
-          break;
-        }
-
-        token.type = TokenType::UnaryNot;
-        break;
-      }
-      case '<': {
-        read_char();
-
-        switch (peek_char()) {
-          case '=': {
-            read_char();
-            token.type = TokenType::LessEqual;
-            break;
-          }
-          case '<': {
-            read_char();
-            token.type = TokenType::BitLeftShift;
-            break;
-          }
-          case '-': {
-            read_char();
-            token.type = TokenType::LeftArrow;
-            break;
-          }
-          default: {
-            token.type = TokenType::LessThan;
-            break;
-          }
-        }
-
-        break;
-      }
-      case '>': {
-        read_char();
-
-        switch (peek_char()) {
-          case '=': {
-            read_char();
-            token.type = TokenType::GreaterEqual;
-            break;
-          }
-          case '>': {
-            read_char();
-
-            if (peek_char() == '>') {
-              read_char();
-              token.type = TokenType::BitUnsignedRightShift;
-              break;
-            }
-
-            token.type = TokenType::BitRightShift;
-            break;
-          }
-          default: {
-            token.type = TokenType::GreaterThan;
-            break;
-          }
-        }
-
-        break;
-      }
-      case '&': {
-        read_char();
-
-        if (peek_char() == '&') {
-          read_char();
-          token.type = TokenType::And;
-          break;
-        }
-
-        token.type = TokenType::BitAND;
-        break;
-      }
-      case '|': {
-        read_char();
-
-        if (peek_char() == '|') {
-          read_char();
-          token.type = TokenType::Or;
-          break;
-        }
-
-        token.type = TokenType::BitOR;
-        break;
-      }
-      case '^': {
-        read_char();
-        token.type = TokenType::BitXOR;
-        break;
-      }
-      case '~': {
-        read_char();
-        token.type = TokenType::BitNOT;
-        break;
-      }
-      case '(': {
-        read_char();
-        token.type = TokenType::LeftParen;
-        m_bracket_stack.push_back(TokenType::RightParen);
-        break;
-      }
-      case ')': {
-        read_char();
-        token.type = TokenType::RightParen;
-
-        if (m_bracket_stack.size() == 0 || m_bracket_stack.back() != token.type) {
-          throw LexerException("unexpected )", token.location);
-        } else {
-          m_bracket_stack.pop_back();
-        }
-
-        break;
-      }
-      case '{': {
-        read_char();
-        token.type = TokenType::LeftCurly;
-        m_bracket_stack.push_back(TokenType::RightCurly);
-        break;
-      }
-      case '}': {
-        read_char();
-        token.type = TokenType::RightCurly;
-
-        if (m_bracket_stack.size() == 0 || m_bracket_stack.back() != token.type) {
-          throw LexerException("unexpected }", token.location);
-        } else {
-
-          // switch lexer mode
-          if (m_interpolation_bracket_stack.size() &&
-              m_interpolation_bracket_stack.back() == m_bracket_stack.size()) {
-            m_interpolation_bracket_stack.pop_back();
-            m_bracket_stack.pop_back();
-            m_mode = Mode::String;
-
-            return read_token();
-          }
-
-          m_bracket_stack.pop_back();
-        }
-
-        break;
-      }
-      case '[': {
-        read_char();
-        token.type = TokenType::LeftBracket;
-        m_bracket_stack.push_back(TokenType::RightBracket);
-        break;
-      }
-      case ']': {
-        read_char();
-        token.type = TokenType::RightBracket;
-
-        if (m_bracket_stack.size() == 0 || m_bracket_stack.back() != token.type) {
-          throw LexerException("unexpected ]", token.location);
-        } else {
-          m_bracket_stack.pop_back();
-        }
-
-        break;
-      }
-      case '.': {
-        read_char();
-        token.type = TokenType::Point;
-        break;
-      }
-      case ':': {
-        read_char();
-        token.type = TokenType::Colon;
-        break;
-      }
-      case ',': {
-        read_char();
-        token.type = TokenType::Comma;
-        break;
-      }
-      case ';': {
-        read_char();
-        token.type = TokenType::Semicolon;
-        break;
-      }
-      case '@': {
-        read_char();
-        token.type = TokenType::AtSign;
-        break;
-      }
-      case '?': {
-        read_char();
-        token.type = TokenType::QuestionMark;
-        break;
-      }
-      default: {
-
-        // parse identifiers
-        if (is_id_begin(peek_char())) {
-          consume_identifier(token);
-          break;
-        }
-
-        throw LexerException("unexpected character", token.location);
-      }
-    }
-  } else {
+  if (m_mode == Mode::String) {
     consume_string(token);
+  } else switch (peek_char()) {
+    // null byte means end of file
+    case '\0': {
+      read_char();
+      token.type = TokenType::Eof;
+
+      if (m_interpolation_bracket_stack.size())
+        throw LexerException("unfinished string interpolation", token.location);
+
+      if (m_bracket_stack.size())
+        throw LexerException("unclosed bracket", token.location);
+
+      break;
+    }
+
+    // binary, hex, octal literals
+    case '0': {
+      bool parse_decimal = false;
+
+      switch (peek_char(1)) {
+        case 'b': {
+          read_char();
+          read_char();
+          m_source.reset_window();
+          consume_binary(token);
+          break;
+        }
+        case 'x': {
+          read_char();
+          read_char();
+          m_source.reset_window();
+          consume_hex(token);
+          break;
+        }
+        case 'o': {
+          read_char();
+          read_char();
+          m_source.reset_window();
+          consume_octal(token);
+          break;
+        }
+        default: {
+          parse_decimal = true;
+        }
+      }
+
+      if (!parse_decimal)
+        break;
+    }
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6':
+    case '7':
+    case '8':
+    case '9': {
+      consume_decimal(token);
+      break;
+    }
+    case '\"': {
+      read_char();
+      consume_string(token);
+      break;
+    }
+    case '\t':
+    case '\r':
+    case ' ': {
+      consume_whitespace(token);
+      break;
+    }
+    case '\n': {
+      read_char();
+      token.type = TokenType::Newline;
+      increment_row();
+      break;
+    }
+    case '+': {
+      read_char();
+      token.type = TokenType::Plus;
+      break;
+    }
+    case '-': {
+      read_char();
+
+      if (peek_char() == '>') {
+        read_char();
+        token.type = TokenType::RightArrow;
+        break;
+      }
+
+      token.type = TokenType::Minus;
+      break;
+    }
+    case '*': {
+      read_char();
+
+      if (peek_char() == '*') {
+        read_char();
+        token.type = TokenType::Pow;
+        break;
+      }
+
+      token.type = TokenType::Mul;
+      break;
+    }
+    case '/': {
+      read_char();
+
+      switch (peek_char()) {
+        case '/': {
+          read_char();
+          consume_comment(token);
+          break;
+        }
+        case '*': {
+          read_char();
+          consume_multiline_comment(token);
+          break;
+        }
+        default: {
+          token.type = TokenType::Div;
+          break;
+        }
+      }
+
+      break;
+    }
+    case '%': {
+      read_char();
+      token.type = TokenType::Mod;
+      break;
+    }
+    case '=': {
+      read_char();
+
+      switch (peek_char()) {
+        case '=': {
+          read_char();
+          token.type = TokenType::Equal;
+          break;
+        }
+        case '>': {
+          read_char();
+          token.type = TokenType::RightThickArrow;
+          break;
+        }
+        default: {
+          token.type = TokenType::Assignment;
+          break;
+        }
+      }
+
+      break;
+    }
+    case '!': {
+      read_char();
+
+      if (peek_char() == '=') {
+        read_char();
+        token.type = TokenType::NotEqual;
+        break;
+      }
+
+      token.type = TokenType::UnaryNot;
+      break;
+    }
+    case '<': {
+      read_char();
+
+      switch (peek_char()) {
+        case '=': {
+          read_char();
+          token.type = TokenType::LessEqual;
+          break;
+        }
+        case '<': {
+          read_char();
+          token.type = TokenType::BitLeftShift;
+          break;
+        }
+        case '-': {
+          read_char();
+          token.type = TokenType::LeftArrow;
+          break;
+        }
+        default: {
+          token.type = TokenType::LessThan;
+          break;
+        }
+      }
+
+      break;
+    }
+    case '>': {
+      read_char();
+
+      switch (peek_char()) {
+        case '=': {
+          read_char();
+          token.type = TokenType::GreaterEqual;
+          break;
+        }
+        case '>': {
+          read_char();
+
+          if (peek_char() == '>') {
+            read_char();
+            token.type = TokenType::BitUnsignedRightShift;
+            break;
+          }
+
+          token.type = TokenType::BitRightShift;
+          break;
+        }
+        default: {
+          token.type = TokenType::GreaterThan;
+          break;
+        }
+      }
+
+      break;
+    }
+    case '&': {
+      read_char();
+
+      if (peek_char() == '&') {
+        read_char();
+        token.type = TokenType::And;
+        break;
+      }
+
+      token.type = TokenType::BitAND;
+      break;
+    }
+    case '|': {
+      read_char();
+
+      if (peek_char() == '|') {
+        read_char();
+        token.type = TokenType::Or;
+        break;
+      }
+
+      token.type = TokenType::BitOR;
+      break;
+    }
+    case '^': {
+      read_char();
+      token.type = TokenType::BitXOR;
+      break;
+    }
+    case '~': {
+      read_char();
+      token.type = TokenType::BitNOT;
+      break;
+    }
+    case '(': {
+      read_char();
+      token.type = TokenType::LeftParen;
+      m_bracket_stack.push_back(TokenType::RightParen);
+      break;
+    }
+    case ')': {
+      read_char();
+      token.type = TokenType::RightParen;
+
+      // check matching brace
+      if (m_bracket_stack.size() == 0 || m_bracket_stack.back() != token.type) {
+        throw LexerException("unexpected )", token.location);
+      }
+
+      m_bracket_stack.pop_back();
+
+      break;
+    }
+    case '{': {
+      read_char();
+      token.type = TokenType::LeftCurly;
+      m_bracket_stack.push_back(TokenType::RightCurly);
+      break;
+    }
+    case '}': {
+      read_char();
+      token.type = TokenType::RightCurly;
+
+      if (m_bracket_stack.size() == 0 || m_bracket_stack.back() != token.type) {
+        throw LexerException("unexpected }", token.location);
+      }
+
+      // switch lexer mode
+      if (m_interpolation_bracket_stack.size() &&
+          m_interpolation_bracket_stack.back() == m_bracket_stack.size()) {
+        m_interpolation_bracket_stack.pop_back();
+        m_mode = Mode::String;
+      }
+
+      m_bracket_stack.pop_back();
+
+      break;
+    }
+    case '[': {
+      read_char();
+      token.type = TokenType::LeftBracket;
+      m_bracket_stack.push_back(TokenType::RightBracket);
+      break;
+    }
+    case ']': {
+      read_char();
+      token.type = TokenType::RightBracket;
+
+      if (m_bracket_stack.size() == 0 || m_bracket_stack.back() != token.type) {
+        throw LexerException("unexpected ]", token.location);
+      }
+
+      m_bracket_stack.pop_back();
+
+      break;
+    }
+    case '.': {
+      read_char();
+      token.type = TokenType::Point;
+      break;
+    }
+    case ':': {
+      read_char();
+      token.type = TokenType::Colon;
+      break;
+    }
+    case ',': {
+      read_char();
+      token.type = TokenType::Comma;
+      break;
+    }
+    case ';': {
+      read_char();
+      token.type = TokenType::Semicolon;
+      break;
+    }
+    case '@': {
+      read_char();
+      token.type = TokenType::AtSign;
+      break;
+    }
+    case '?': {
+      read_char();
+      token.type = TokenType::QuestionMark;
+      break;
+    }
+    default: {
+
+      // parse identifiers
+      if (is_id_begin(peek_char())) {
+        consume_identifier(token);
+        break;
+      }
+
+      throw LexerException("unexpected character", token.location);
+    }
   }
 
   // and assignment operators
@@ -697,120 +691,64 @@ void Lexer::consume_string(Token& token) {
 
   // consume string component
   for (;;) {
-    switch (peek_char()) {
+    uint32_t cp = peek_char();
 
-      // unclosed string
-      case '\0': {
-        throw LexerException("unclosed string", token.location);
-      }
+    // end of string
+    if (cp == '"') {
+      read_char();
 
-      // escape sequences
-      case '\\': {
-        read_char();
-        switch (peek_char()) {
-          case 'a': {
-            read_char();
-            string_buf.append_utf8('\a');
-            continue;
-          }
-          case 'b': {
-            read_char();
-            string_buf.append_utf8('\b');
-            continue;
-          }
-          case 'n': {
-            read_char();
-            string_buf.append_utf8('\n');
-            continue;
-          }
-          case 'r': {
-            read_char();
-            string_buf.append_utf8('\r');
-            continue;
-          }
-          case 't': {
-            read_char();
-            string_buf.append_utf8('\t');
-            continue;
-          }
-          case 'v': {
-            read_char();
-            string_buf.append_utf8('\v');
-            continue;
-          }
-          case 'f': {
-            read_char();
-            string_buf.append_utf8('\f');
-            continue;
-          }
-          case 'e': {
-            read_char();
-            string_buf.append_utf8('\e');
-            continue;
-          }
-          case '"': {
-            read_char();
-            string_buf.append_utf8('\"');
-            continue;
-          }
-          case '{': {
-            read_char();
-            string_buf.append_utf8('{');
-            continue;
-          }
-          case '\\': {
-            read_char();
-            string_buf.append_utf8('\\');
-            continue;
-          }
-          case '\0': {
-            throw LexerException("unfinished escape sequence", token.location);
-          }
-          default: {
-            throw LexerException("unknown escape sequence", token.location);
-          }
-        }
-      }
-
-      // end of string
-      case '\"': {
-        read_char();
-        goto FINISH_LOOP; // goto end of for loop
-        break;
-      }
-
-      // string interpolation
-      case '{': {
-        read_char();
-
-        // switch lexer mode
+      if (m_interpolation_bracket_stack.size()) {
         m_mode = Mode::InterpolatedExpression;
-        m_bracket_stack.push_back(TokenType::RightCurly);
-        m_interpolation_bracket_stack.push_back(m_bracket_stack.size());
-
-        token.type = TokenType::StringPart;
-        token.source = string_buf.buffer_string();
-
-        return;
+      } else {
+        m_mode = Mode::TopLevel;
       }
 
-      // regular string character
-      default: {
-        string_buf.append_utf8(read_char());
-        break;
+      break;
+    }
+
+    // end of file reached, unclosed string detected
+    if (cp == '\0') {
+      throw LexerException("unclosed string", token.location);
+    }
+
+    // string interpolation
+    if (cp == '{') {
+      read_char();
+
+      // switch lexer mode
+      m_mode = Mode::InterpolatedExpression;
+      m_bracket_stack.push_back(TokenType::RightCurly);
+      m_interpolation_bracket_stack.push_back(m_bracket_stack.size());
+
+      token.type = TokenType::StringPart;
+
+      break;
+    }
+
+    // escape sequences
+    if (cp == '\\') {
+      read_char();
+      switch (peek_char()) {
+        case 'a':  { read_char(); string_buf.append_utf8('\a'); break; }
+        case 'b':  { read_char(); string_buf.append_utf8('\b'); break; }
+        case 'n':  { read_char(); string_buf.append_utf8('\n'); break; }
+        case 'r':  { read_char(); string_buf.append_utf8('\r'); break; }
+        case 't':  { read_char(); string_buf.append_utf8('\t'); break; }
+        case 'v':  { read_char(); string_buf.append_utf8('\v'); break; }
+        case 'f':  { read_char(); string_buf.append_utf8('\f'); break; }
+        case 'e':  { read_char(); string_buf.append_utf8('\e'); break; }
+        case '"':  { read_char(); string_buf.append_utf8('\"'); break; }
+        case '{':  { read_char(); string_buf.append_utf8('{'); break; }
+        case '\\': { read_char(); string_buf.append_utf8('\\'); break; }
+        case '\0':  throw LexerException("unfinished escape sequence", token.location);
+        default:    throw LexerException("unknown escape sequence", token.location);
       }
     }
+
+    string_buf.append_utf8(read_char());
   }
 
-  // goto target when the string is finished
-FINISH_LOOP:
   token.source = string_buf.buffer_string();
-
-  if (m_interpolation_bracket_stack.size()) {
-    m_mode = Mode::InterpolatedExpression;
-  } else {
-    m_mode = Mode::TopLevel;
-  }
 
   return;
 }

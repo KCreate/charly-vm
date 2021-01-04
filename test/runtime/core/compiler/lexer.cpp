@@ -418,10 +418,12 @@ TEST_CASE("tokenizes string interpolations") {
   CHECK(lexer.read_token_skip_whitespace().type == TokenType::RightCurly);
   CHECK(lexer.read_token_skip_whitespace().type == TokenType::RightCurly);
   CHECK(lexer.read_token_skip_whitespace().type == TokenType::RightParen);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::RightCurly);
   CHECK(lexer.read_token_skip_whitespace().type == TokenType::StringPart);
   CHECK(lexer.last_token().source.compare(" ") == 0);
   CHECK(lexer.read_token_skip_whitespace().type == TokenType::Identifier);
   CHECK(lexer.last_token().source.compare("more") == 0);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::RightCurly);
   CHECK(lexer.read_token_skip_whitespace().type == TokenType::String);
   CHECK(lexer.last_token().source.compare(" after") == 0);
 
@@ -431,18 +433,22 @@ TEST_CASE("tokenizes string interpolations") {
   CHECK(lexer.last_token().source.compare("") == 0);
   CHECK(lexer.read_token_skip_whitespace().type == TokenType::Identifier);
   CHECK(lexer.last_token().source.compare("nested") == 0);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::RightCurly);
   CHECK(lexer.read_token_skip_whitespace().type == TokenType::String);
   CHECK(lexer.last_token().source.compare("") == 0);
-  CHECK(lexer.read_token_skip_whitespace().type == TokenType::String);
-  CHECK(lexer.last_token().source.compare("") == 0);
-
-  CHECK(lexer.read_token_skip_whitespace().type == TokenType::StringPart);
-  CHECK(lexer.last_token().source.compare("") == 0);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::RightCurly);
   CHECK(lexer.read_token_skip_whitespace().type == TokenType::String);
   CHECK(lexer.last_token().source.compare("") == 0);
 
   CHECK(lexer.read_token_skip_whitespace().type == TokenType::StringPart);
   CHECK(lexer.last_token().source.compare("") == 0);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::RightCurly);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::String);
+  CHECK(lexer.last_token().source.compare("") == 0);
+
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::StringPart);
+  CHECK(lexer.last_token().source.compare("") == 0);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::RightCurly);
   CHECK(lexer.read_token_skip_whitespace().type == TokenType::String);
   CHECK(lexer.last_token().source.compare("}") == 0);
 
