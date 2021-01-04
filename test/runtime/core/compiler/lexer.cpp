@@ -42,7 +42,7 @@ TEST_CASE("tokenizes integers") {
   CHECK(lexer.read_token_skip_whitespace().intval == 25);
   CHECK(lexer.read_token_skip_whitespace().intval == 15);
   CHECK(lexer.read_token_skip_whitespace().intval == 511);
-  CHECK(lexer.read_token_skip_whitespace().intval == 511);
+  CHECK(lexer.read_token_skip_whitespace().intval == 777);
   CHECK(lexer.read_token_skip_whitespace().intval == 65535);
   CHECK(lexer.read_token_skip_whitespace().intval == 255);
   CHECK(lexer.read_token_skip_whitespace().intval == 0);
@@ -401,10 +401,11 @@ TEST_CASE("escape sequences in strings") {
 
 TEST_CASE("tokenizes string interpolations") {
   Lexer lexer("test", (
-    "\"before ${name({{}})} ${more} after\""
-    "\"${}\""
-    "\"${}}\""
-    "\"$\\{}\""
+    "\"before {name({{}})} {more} after\""
+    "\"{\"{nested}\"}\""
+    "\"{}\""
+    "\"{}}\""
+    "\"\\{}\""
   ));
 
   CHECK(lexer.read_token_skip_whitespace().type == TokenType::StringPart);
@@ -426,6 +427,17 @@ TEST_CASE("tokenizes string interpolations") {
 
   CHECK(lexer.read_token_skip_whitespace().type == TokenType::StringPart);
   CHECK(lexer.last_token().source.compare("") == 0);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::StringPart);
+  CHECK(lexer.last_token().source.compare("") == 0);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::Identifier);
+  CHECK(lexer.last_token().source.compare("nested") == 0);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::String);
+  CHECK(lexer.last_token().source.compare("") == 0);
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::String);
+  CHECK(lexer.last_token().source.compare("") == 0);
+
+  CHECK(lexer.read_token_skip_whitespace().type == TokenType::StringPart);
+  CHECK(lexer.last_token().source.compare("") == 0);
   CHECK(lexer.read_token_skip_whitespace().type == TokenType::String);
   CHECK(lexer.last_token().source.compare("") == 0);
 
@@ -435,13 +447,13 @@ TEST_CASE("tokenizes string interpolations") {
   CHECK(lexer.last_token().source.compare("}") == 0);
 
   CHECK(lexer.read_token_skip_whitespace().type == TokenType::String);
-  CHECK(lexer.last_token().source.compare("${}") == 0);
+  CHECK(lexer.last_token().source.compare("{}") == 0);
 }
 
 TEST_CASE("catches erronious string interpolations") {
   {
     Lexer lexer("test", (
-      "\"${\""
+      "\"{\""
     ));
 
     CHECK(lexer.read_token_skip_whitespace().type == TokenType::StringPart);
@@ -450,7 +462,7 @@ TEST_CASE("catches erronious string interpolations") {
 
   {
     Lexer lexer("test", (
-      "\"${"
+      "\"{"
     ));
 
     CHECK(lexer.read_token_skip_whitespace().type == TokenType::StringPart);

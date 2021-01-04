@@ -62,7 +62,7 @@ Token Lexer::read_token() {
 
       // binary, hex, octal literals
       case '0': {
-        bool parse_as_decimal = false;
+        bool parse_decimal = false;
 
         switch (peek_char(1)) {
           case 'b': {
@@ -87,18 +87,11 @@ Token Lexer::read_token() {
             break;
           }
           default: {
-            if (is_octal(peek_char(1))) {
-              read_char();
-              m_source.reset_window();
-              consume_octal(token);
-              break;
-            }
-
-            parse_as_decimal = true;
+            parse_decimal = true;
           }
         }
 
-        if (!parse_as_decimal)
+        if (!parse_decimal)
           break;
       }
       case '1':
@@ -787,23 +780,18 @@ void Lexer::consume_string(Token& token) {
       }
 
       // string interpolation
-      case '$': {
-        if (peek_char(1) == '{') {
-          read_char();
-          read_char();
+      case '{': {
+        read_char();
 
-          // switch lexer mode
-          m_mode = Mode::InterpolatedExpression;
-          m_bracket_stack.push_back(TokenType::RightCurly);
-          m_interpolation_bracket_stack.push_back(m_bracket_stack.size());
+        // switch lexer mode
+        m_mode = Mode::InterpolatedExpression;
+        m_bracket_stack.push_back(TokenType::RightCurly);
+        m_interpolation_bracket_stack.push_back(m_bracket_stack.size());
 
-          token.type = TokenType::StringPart;
-          token.source = string_buf.buffer_string();
+        token.type = TokenType::StringPart;
+        token.source = string_buf.buffer_string();
 
-          return;
-        }
-
-        // fallthrough
+        return;
       }
 
       // regular string character
