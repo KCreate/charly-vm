@@ -31,7 +31,6 @@
 using namespace charly::utils;
 
 TEST_CASE("string_to_int") {
-
   // decimals
   CHECK(string_to_int("0") == 0);
   CHECK(string_to_int("1") == 1);

@@ -35,9 +35,8 @@ namespace charly::core::compiler {
 // base class of all compiler errors
 class CompilerError : public std::runtime_error {
 public:
-  CompilerError(const utils::string& message, const Location& location)
-      : std::runtime_error(message), m_location(location) {
-  }
+  CompilerError(const utils::string& message, const Location& location) :
+    std::runtime_error(message), m_location(location) {}
 
   // write a formatted version of this error to the stream:
   //
@@ -57,4 +56,4 @@ private:
   Location m_location;
 };
 
-}
+}  // namespace charly::core::compiler

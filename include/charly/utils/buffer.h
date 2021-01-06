@@ -24,10 +24,10 @@
  * SOFTWARE.
  */
 
-#include <cstdint>
-#include <cstring>
-#include <cstdlib>
 #include <cassert>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include <stdexcept>
 
 #include <utf8/utf8.h>
@@ -57,11 +57,11 @@ public:
   }
 
   // move constructor
-  Buffer(Buffer&& other)
-      : m_data(other.m_data),
-        m_capacity(other.m_capacity),
-        m_writeoffset(other.m_writeoffset),
-        m_readoffset(other.m_readoffset) {
+  Buffer(Buffer&& other) :
+    m_data(other.m_data),
+    m_capacity(other.m_capacity),
+    m_writeoffset(other.m_writeoffset),
+    m_readoffset(other.m_readoffset) {
     other.m_data = nullptr;
     other.m_capacity = 0;
     other.m_writeoffset = 0;
@@ -111,17 +111,31 @@ public:
   // create a string copy of the current buffer
   utils::string buffer_string() const;
 
-  const char* data() const { return m_data; }
-  const char* window() const { return m_data + m_window; }
-  size_t capacity() const { return m_capacity; }
-  size_t writeoffset() const { return m_writeoffset; }
-  size_t size() const { return m_writeoffset; }
-  size_t readoffset() const { return m_readoffset; }
-  size_t window_size() const { return m_readoffset - m_window; }
+  const char* data() const {
+    return m_data;
+  }
+  const char* window() const {
+    return m_data + m_window;
+  }
+  size_t capacity() const {
+    return m_capacity;
+  }
+  size_t writeoffset() const {
+    return m_writeoffset;
+  }
+  size_t size() const {
+    return m_writeoffset;
+  }
+  size_t readoffset() const {
+    return m_readoffset;
+  }
+  size_t window_size() const {
+    return m_readoffset - m_window;
+  }
 
 protected:
   static const size_t kInitialCapacity = 64;
-  static const size_t kMaximumSize = 0xFFFFFFFF; // ca. 4.2Gb
+  static const size_t kMaximumSize = 0xFFFFFFFF;  // ca. 4.2Gb
 
   // reserve space for at least size bytes
   void reserve_space(size_t size);
@@ -129,11 +143,11 @@ protected:
   // copy data into buffer at offset
   void write_to(const void* data, size_t length, size_t offset);
 
-  char*  m_data = 0;        // raw buffer
-  size_t m_capacity = 0;    // total backing buffer capacity
-  size_t m_writeoffset = 0; // offset of the first unwritten byte
-  size_t m_readoffset = 0;  // offset of the first unread character
-  size_t m_window = 0;      // begin offset of current window
+  char* m_data = 0;          // raw buffer
+  size_t m_capacity = 0;     // total backing buffer capacity
+  size_t m_writeoffset = 0;  // offset of the first unwritten byte
+  size_t m_readoffset = 0;   // offset of the first unread character
+  size_t m_window = 0;       // begin offset of current window
 };
 
 inline void Buffer::append_block(const void* data, size_t length) {
@@ -249,4 +263,4 @@ inline void Buffer::write_to(const void* data, size_t length, size_t offset) {
   std::memmove(m_data + offset, data, length);
 }
 
-}
+}  // namespace charly::utils

@@ -24,15 +24,16 @@
  * SOFTWARE.
  */
 
-#include <iostream>
 #include <functional>
+#include <iostream>
 #include <memory>
 
 #include "charly/utils/map.h"
-#include "charly/utils/vector.h"
 #include "charly/utils/string.h"
-#include "charly/core/compiler/token.h"
+#include "charly/utils/vector.h"
+
 #include "charly/core/compiler/location.h"
+#include "charly/core/compiler/token.h"
 
 #pragma once
 
@@ -57,24 +58,43 @@ using VisitorCallback = std::function<void(ref<Node>)>;
 struct Node : std::enable_shared_from_this<Node> {
   LocationRange location;
 
+  virtual ~Node(){};
+
   // set whole location
-  void at(Location& loc)  { location.begin = loc; location.end = loc; }
-  void at(ref<Node> node) { location = node->location; }
+  void at(Location& loc) {
+    location.begin = loc;
+    location.end = loc;
+  }
+  void at(ref<Node> node) {
+    location = node->location;
+  }
 
   // set begin location
-  void begin(Location& loc)      { location.begin = loc; }
-  void begin(LocationRange& loc) { location.begin = loc.begin; }
-  void begin(ref<Node> node)     { location.begin = node->location.begin; }
+  void begin(Location& loc) {
+    location.begin = loc;
+  }
+  void begin(LocationRange& loc) {
+    location.begin = loc.begin;
+  }
+  void begin(ref<Node> node) {
+    location.begin = node->location.begin;
+  }
 
   // set end location
-  void end(Location& loc)      { location.end = loc; }
-  void end(LocationRange& loc) { location.end = loc.end; }
-  void end(ref<Node> node)     { location.end = node->location.end; }
+  void end(Location& loc) {
+    location.end = loc;
+  }
+  void end(LocationRange& loc) {
+    location.end = loc.end;
+  }
+  void end(ref<Node> node) {
+    location.end = node->location.end;
+  }
 
   // dump this node to the output stream
   void dump(std::ostream& output, uint32_t depth = 0) {
     // indent
-    for (int i = 0; i < depth; i++) {
+    for (uint32_t i = 0; i < depth; i++) {
       output << "  ";
     }
 
@@ -98,7 +118,7 @@ struct Node : std::enable_shared_from_this<Node> {
   }
 
   // call the callback with all child nodes
-  virtual void children(VisitorCallback cb) {}
+  virtual void children(VisitorCallback) {}
 
   // checks wether a node is of a certain type
   template <typename T>
@@ -114,7 +134,7 @@ struct Node : std::enable_shared_from_this<Node> {
 
 struct Statement : public Node {};
 
-struct Block : public Statement {
+struct Block final : public Statement {
   NAME(Block);
 
   utils::vector<ref<Statement>> statements;
@@ -133,7 +153,7 @@ struct Block : public Statement {
   }
 };
 
-struct Program : public Node {
+struct Program final : public Node {
   NAME(Program);
 
   utils::string filename;
@@ -162,7 +182,7 @@ struct ControlStructure : public Statement {};
 
 struct Expression : public Statement {};
 
-struct Identifier : public Expression {
+struct Identifier final : public Expression {
   NAME(Identifier);
 
   utils::string value;
@@ -174,7 +194,7 @@ struct Identifier : public Expression {
   }
 };
 
-struct Int : public Expression {
+struct Int final : public Expression {
   NAME(Int);
 
   int64_t value;
@@ -186,7 +206,7 @@ struct Int : public Expression {
   }
 };
 
-struct Float : public Expression {
+struct Float final : public Expression {
   NAME(Float);
 
   double value;
@@ -203,7 +223,7 @@ struct Float : public Expression {
   }
 };
 
-struct Boolean : public Expression {
+struct Boolean final : public Expression {
   NAME(Boolean);
 
   bool value;
@@ -215,7 +235,7 @@ struct Boolean : public Expression {
   }
 };
 
-struct String : public Expression {
+struct String final : public Expression {
   NAME(String);
 
   utils::string value;
@@ -227,7 +247,7 @@ struct String : public Expression {
   }
 };
 
-struct FormatString : public Expression {
+struct FormatString final : public Expression {
   NAME(FormatString);
 
   utils::vector<ref<Expression>> parts;
@@ -252,19 +272,19 @@ struct FormatString : public Expression {
   }
 };
 
-struct Null : public Expression {
+struct Null final : public Expression {
   NAME(Null);
 };
 
-struct Self : public Expression {
+struct Self final : public Expression {
   NAME(Self);
 };
 
-struct Super : public Expression {
+struct Super final : public Expression {
   NAME(Super);
 };
 
-struct Tuple : public Expression {
+struct Tuple final : public Expression {
   NAME(Tuple);
 
   utils::vector<ref<Expression>> elements;
@@ -286,4 +306,4 @@ struct Tuple : public Expression {
 
 #undef NAME
 
-}
+}  // namespace charly::core::compiler::ast

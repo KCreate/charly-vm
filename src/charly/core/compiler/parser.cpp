@@ -254,4 +254,4 @@ ref<Super> Parser::parse_super_token() {
   return node;
 }
 
-}
+}  // namespace charly::core::compiler

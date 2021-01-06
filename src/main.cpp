@@ -26,14 +26,13 @@
 
 #include <iostream>
 
-#include "charly/utils/buffer.h"
 #include "charly/core/compiler.h"
+#include "charly/utils/buffer.h"
 
 using namespace charly;
 using namespace charly::core::compiler;
 
-int main(int argc, char** argv) {
-
+int main() {
   utils::string line;
   for (;;) {
     std::cout << "> ";
@@ -57,11 +56,11 @@ int main(int argc, char** argv) {
         if (program->block->statements.size() == 0)
           continue;
 
-        //for (ref<Statement>& node : program->block->statements) {
-          //if (ref<Int> int_node = node->as<Int>()) {
-            //int_node->value += 100;
-          //}
-        //}
+        // for (ref<Statement>& node : program->block->statements) {
+        //   if (ref<Int> int_node = node->as<Int>()) {
+        //     int_node->value += 100;
+        //   }
+        // }
 
         program->dump(std::cout);
       } catch (CompilerError& exc) {

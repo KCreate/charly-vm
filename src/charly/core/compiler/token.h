@@ -26,9 +26,9 @@
 
 #include <iostream>
 
+#include "charly/core/compiler/location.h"
 #include "charly/utils/map.h"
 #include "charly/utils/string.h"
-#include "charly/core/compiler/location.h"
 
 #pragma once
 
@@ -161,199 +161,65 @@ enum class TokenType {
 
 // string representations of token types
 static utils::string kTokenTypeStrings[] = {
-  "EOF",
-
-  "Int",
-  "Float",
-  "NaN",
-  "True",
-  "false",
-  "Identifier",
-  "String",
-  "FormatString",
-  "null",
-  "self",
-  "super",
-
-  "and",
-  "as",
-  "await",
-  "break",
-  "case",
-  "catch",
-  "class",
-  "const",
-  "continue",
-  "default",
-  "defer",
-  "do",
-  "else",
-  "export",
-  "extends",
-  "finally",
-  "for",
-  "from",
-  "func",
-  "guard",
-  "if",
-  "import",
-  "in",
-  "let",
-  "loop",
-  "match",
-  "new",
-  "operator",
-  "or",
-  "property",
-  "return",
-  "spawn",
-  "static",
-  "switch",
-  "throw",
-  "try",
-  "typeof",
-  "unless",
-  "until",
-  "while",
-  "yield",
-
-  "+",
-  "-",
-  "*",
-  "/",
-  "%",
-  "**",
-
-  "=",
-  "+=",
-  "-=",
-  "*=",
-  "/=",
-  "%=",
-  "**=",
-  "&=",
-  "|=",
-  "^=",
-  "<<=",
-  ">>=",
-  ">>>=",
-
-  "==",
-  "!=",
-  "<",
-  ">",
-  "<=",
-  ">=",
-  "&&",
-  "||",
-  "!",
-
-  "|",
-  "^",
-  "~",
-  "&",
-  "<<",
-  ">>",
-  ">>>",
-
-  "(",
-  ")",
-  "{",
-  "}",
-  "[",
-  "]",
-  ".",
-  ":",
-  ",",
-  ";",
-  "@",
-  "<-",
-  "->",
-  "=>",
-  "?",
-
-  "Comment",
-  "Newline",
-  "Whitespace"
+  "EOF",     "Int",   "Float",    "NaN",      "True",    "false",    "Identifier", "String", "FormatString",
+  "null",    "self",  "super",    "and",      "as",      "await",    "break",      "case",   "catch",
+  "class",   "const", "continue", "default",  "defer",   "do",       "else",       "export", "extends",
+  "finally", "for",   "from",     "func",     "guard",   "if",       "import",     "in",     "let",
+  "loop",    "match", "new",      "operator", "or",      "property", "return",     "spawn",  "static",
+  "switch",  "throw", "try",      "typeof",   "unless",  "until",    "while",      "yield",  "+",
+  "-",       "*",     "/",        "%",        "**",      "=",        "+=",         "-=",     "*=",
+  "/=",      "%=",    "**=",      "&=",       "|=",      "^=",       "<<=",        ">>=",    ">>>=",
+  "==",      "!=",    "<",        ">",        "<=",      ">=",       "&&",         "||",     "!",
+  "|",       "^",     "~",        "&",        "<<",      ">>",       ">>>",        "(",      ")",
+  "{",       "}",     "[",        "]",        ".",       ":",        ",",          ";",      "@",
+  "<-",      "->",    "=>",       "?",        "Comment", "Newline",  "Whitespace"
 };
 
 // identifiers with these names get remapped to keyword tokens
 static const utils::unordered_map<utils::string, TokenType> kKeywordsAndLiterals = {
-  {"NaN",         TokenType::Float},
-  {"false",       TokenType::False},
-  {"null",        TokenType::Null},
-  {"self",        TokenType::Self},
-  {"super",       TokenType::Super},
-  {"true",        TokenType::True},
-
-  {"and",         TokenType::AndLiteral},
-  {"as",          TokenType::As},
-  {"await",       TokenType::Await},
-  {"break",       TokenType::Break},
-  {"case",        TokenType::Case},
-  {"catch",       TokenType::Catch},
-  {"class",       TokenType::Class},
-  {"const",       TokenType::Const},
-  {"continue",    TokenType::Continue},
-  {"default",     TokenType::Default},
-  {"defer",       TokenType::Defer},
-  {"do",          TokenType::Do},
-  {"else",        TokenType::Else},
-  {"export",      TokenType::Export},
-  {"extends",     TokenType::Extends},
-  {"finally",     TokenType::Finally},
-  {"for",         TokenType::For},
-  {"from",        TokenType::From},
-  {"func",        TokenType::Func},
-  {"guard",       TokenType::Guard},
-  {"if",          TokenType::If},
-  {"import",      TokenType::Import},
-  {"in",          TokenType::In},
-  {"let",         TokenType::Let},
-  {"loop",        TokenType::Loop},
-  {"match",       TokenType::Match},
-  {"new",         TokenType::New},
-  {"operator",    TokenType::Operator},
-  {"or",          TokenType::OrLiteral},
-  {"property",    TokenType::Property},
-  {"return",      TokenType::Return},
-  {"spawn",       TokenType::Spawn},
-  {"static",      TokenType::Static},
-  {"switch",      TokenType::Switch},
-  {"throw",       TokenType::Throw},
-  {"try",         TokenType::Try},
-  {"typeof",      TokenType::Typeof},
-  {"unless",      TokenType::Unless},
-  {"until",       TokenType::Until},
-  {"while",       TokenType::While},
-  {"yield",       TokenType::Yield}
+  { "NaN", TokenType::Float },         { "false", TokenType::False },   { "null", TokenType::Null },
+  { "self", TokenType::Self },         { "super", TokenType::Super },   { "true", TokenType::True },
+  { "and", TokenType::AndLiteral },    { "as", TokenType::As },         { "await", TokenType::Await },
+  { "break", TokenType::Break },       { "case", TokenType::Case },     { "catch", TokenType::Catch },
+  { "class", TokenType::Class },       { "const", TokenType::Const },   { "continue", TokenType::Continue },
+  { "default", TokenType::Default },   { "defer", TokenType::Defer },   { "do", TokenType::Do },
+  { "else", TokenType::Else },         { "export", TokenType::Export }, { "extends", TokenType::Extends },
+  { "finally", TokenType::Finally },   { "for", TokenType::For },       { "from", TokenType::From },
+  { "func", TokenType::Func },         { "guard", TokenType::Guard },   { "if", TokenType::If },
+  { "import", TokenType::Import },     { "in", TokenType::In },         { "let", TokenType::Let },
+  { "loop", TokenType::Loop },         { "match", TokenType::Match },   { "new", TokenType::New },
+  { "operator", TokenType::Operator }, { "or", TokenType::OrLiteral },  { "property", TokenType::Property },
+  { "return", TokenType::Return },     { "spawn", TokenType::Spawn },   { "static", TokenType::Static },
+  { "switch", TokenType::Switch },     { "throw", TokenType::Throw },   { "try", TokenType::Try },
+  { "typeof", TokenType::Typeof },     { "unless", TokenType::Unless }, { "until", TokenType::Until },
+  { "while", TokenType::While },       { "yield", TokenType::Yield }
 };
 
 // mapping from original binary operator to AND assignment token
 static const utils::unordered_map<TokenType, TokenType> kANDAssignmentOperators = {
-  {TokenType::Plus,                  TokenType::PlusAssignment},
-  {TokenType::Minus,                 TokenType::MinusAssignment},
-  {TokenType::Mul,                   TokenType::MulAssignment},
-  {TokenType::Div,                   TokenType::DivAssignment},
-  {TokenType::Mod,                   TokenType::ModAssignment},
-  {TokenType::Pow,                   TokenType::PowAssignment},
-  {TokenType::BitAND,                TokenType::BitANDAssignment},
-  {TokenType::BitOR,                 TokenType::BitORAssignment},
-  {TokenType::BitXOR,                TokenType::BitXORAssignment},
-  {TokenType::BitLeftShift,          TokenType::BitLeftShiftAssignment},
-  {TokenType::BitRightShift,         TokenType::BitRightShiftAssignment},
-  {TokenType::BitUnsignedRightShift, TokenType::BitUnsignedRightShiftAssignment}
+  { TokenType::Plus, TokenType::PlusAssignment },
+  { TokenType::Minus, TokenType::MinusAssignment },
+  { TokenType::Mul, TokenType::MulAssignment },
+  { TokenType::Div, TokenType::DivAssignment },
+  { TokenType::Mod, TokenType::ModAssignment },
+  { TokenType::Pow, TokenType::PowAssignment },
+  { TokenType::BitAND, TokenType::BitANDAssignment },
+  { TokenType::BitOR, TokenType::BitORAssignment },
+  { TokenType::BitXOR, TokenType::BitXORAssignment },
+  { TokenType::BitLeftShift, TokenType::BitLeftShiftAssignment },
+  { TokenType::BitRightShift, TokenType::BitRightShiftAssignment },
+  { TokenType::BitUnsignedRightShift, TokenType::BitUnsignedRightShiftAssignment }
 };
 
 struct Token {
-  TokenType     type = TokenType::Eof;
-  Location      location;
+  TokenType type = TokenType::Eof;
+  Location location;
   utils::string source;
 
   // int / float token sources
   union {
-    int64_t       intval;
-    double        floatval;
+    int64_t intval;
+    double floatval;
   };
 
   // checks wether this token is an operator that could be used in an AND
@@ -369,21 +235,18 @@ struct Token {
     io << '(';
     io << kTokenTypeStrings[static_cast<uint8_t>(this->type)];
 
-    if (this->type == TokenType::Int ||
-        this->type == TokenType::Float ||
-        this->type == TokenType::Comment ||
-        this->type == TokenType::String ||
-        this->type == TokenType::FormatString ||
+    if (this->type == TokenType::Int || this->type == TokenType::Float || this->type == TokenType::Comment ||
+        this->type == TokenType::String || this->type == TokenType::FormatString ||
         this->type == TokenType::Identifier) {
       io << ',';
       io << ' ';
 
       switch (this->type) {
-        case TokenType::Int:          io << this->intval;   break;
-        case TokenType::Float:        io << this->floatval; break;
+        case TokenType::Int: io << this->intval; break;
+        case TokenType::Float: io << this->floatval; break;
 
         case TokenType::Comment:
-        case TokenType::Identifier:   io << this->source; break;
+        case TokenType::Identifier: io << this->source; break;
 
         case TokenType::String:
         case TokenType::FormatString: io << '"' << this->source << '"'; break;
@@ -401,4 +264,4 @@ struct Token {
   }
 };
 
-}
+}  // namespace charly::core::compiler

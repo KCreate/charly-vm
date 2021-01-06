@@ -24,10 +24,10 @@
  * SOFTWARE.
  */
 
-#include "charly/utils/string.h"
 #include "charly/core/compiler/ast.h"
 #include "charly/core/compiler/error.h"
 #include "charly/core/compiler/lexer.h"
+#include "charly/utils/string.h"
 
 #pragma once
 
@@ -37,47 +37,39 @@ using namespace ast;
 
 class Parser : public Lexer {
 public:
-  Parser(const utils::string& filename,
-        const utils::string& source,
-        uint32_t row = 1,
-        uint32_t column = 1)
-    : Lexer(filename, source, row, column) {
+  Parser(const utils::string& filename, const utils::string& source, uint32_t row = 1, uint32_t column = 1) :
+    Lexer(filename, source, row, column) {
     advance();
   }
 
   ref<Program> parse_program();
 
 private:
-
-  [[noreturn]]
-  void unexpected_token() {
-    utils::string& real_type     = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
+  [[noreturn]] void unexpected_token() {
+    utils::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
     throw CompilerError("Unexpected token '" + real_type + "'", m_token.location);
   }
 
-  [[noreturn]]
-  void unexpected_token(const utils::string& expected) {
-    utils::string& real_type     = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
+  [[noreturn]] void unexpected_token(const utils::string& expected) {
+    utils::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
     throw CompilerError("Unexpected token '" + real_type + "' expected " + expected, m_token.location);
   }
 
-  [[noreturn]]
-  void unexpected_token(TokenType expected) {
-    utils::string& real_type     = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
+  [[noreturn]] void unexpected_token(TokenType expected) {
+    utils::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
     utils::string& expected_type = kTokenTypeStrings[static_cast<uint8_t>(expected)];
     throw CompilerError("Unexpected token '" + real_type + "' expected '" + expected_type + "'", m_token.location);
   }
 
-  [[noreturn]]
-  void unexpected_node(std::shared_ptr<Node> node, const utils::string& message) {
+  [[noreturn]] void unexpected_node(std::shared_ptr<Node> node, const utils::string& message) {
     throw CompilerError(message, node->location.begin);
   }
 
   // advance to the next token
   void advance() {
     m_token = read_token();
-    //m_token.dump(std::cout);
-    //std::cout << '\n';
+    // m_token.dump(std::cout);
+    // std::cout << '\n';
   }
 
   // check the current type of the token
@@ -119,27 +111,27 @@ private:
     end(node);
   }
 
-  ref<Block>        parse_block();
-  ref<Block>        parse_block_body();
-  ref<Statement>    parse_statement();
+  ref<Block> parse_block();
+  ref<Block> parse_block_body();
+  ref<Statement> parse_statement();
 
-  ref<Expression>   parse_comma_expression();
-  ref<Expression>   parse_expression();
+  ref<Expression> parse_comma_expression();
+  ref<Expression> parse_expression();
   ref<FormatString> parse_format_string();
-  ref<Expression>   parse_tuple();
-  ref<Expression>   parse_literal();
+  ref<Expression> parse_tuple();
+  ref<Expression> parse_literal();
 
-  ref<Int>          parse_int_token();
-  ref<Float>        parse_float_token();
-  ref<Boolean>      parse_bool_token();
-  ref<Identifier>   parse_identifier_token();
-  ref<String>       parse_string_token();
-  ref<Null>         parse_null_token();
-  ref<Self>         parse_self_token();
-  ref<Super>        parse_super_token();
+  ref<Int> parse_int_token();
+  ref<Float> parse_float_token();
+  ref<Boolean> parse_bool_token();
+  ref<Identifier> parse_identifier_token();
+  ref<String> parse_string_token();
+  ref<Null> parse_null_token();
+  ref<Self> parse_self_token();
+  ref<Super> parse_super_token();
 
 private:
   Token m_token;
 };
 
-}
+}  // namespace charly::core::compiler

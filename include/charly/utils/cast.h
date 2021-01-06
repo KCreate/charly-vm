@@ -24,10 +24,11 @@
  * SOFTWARE.
  */
 
-#include <cstdint>
-#include <cstring>
-#include <cstdlib>
+#include <array>
 #include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
 
 #include "charly/utils/string.h"
 
@@ -77,4 +78,4 @@ inline double string_to_double(const utils::string& str) {
   return charptr_to_double(str.c_str(), str.size());
 }
 
-}
+}  // namespace charly::utils

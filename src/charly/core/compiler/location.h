@@ -64,8 +64,7 @@ struct Location {
     if (column)
       io << column;
     else
-
-    io << ">";
+      io << ">";
   }
 };
 
@@ -103,4 +102,4 @@ struct LocationRange {
   }
 };
 
-}
+}  // namespace charly::core::compiler

@@ -147,56 +147,54 @@ TEST_CASE("formats a token") {
 }
 
 TEST_CASE("recognizes keywords") {
-  Lexer lexer("test", (
-    "false\n"
-    "NaN\n"
-    "null\n"
-    "self\n"
-    "super\n"
-    "true\n"
-    "and\n"
-    "as\n"
-    "await\n"
-    "break\n"
-    "case\n"
-    "catch\n"
-    "class\n"
-    "const\n"
-    "continue\n"
-    "default\n"
-    "defer\n"
-    "do\n"
-    "else\n"
-    "export\n"
-    "extends\n"
-    "finally\n"
-    "for\n"
-    "from\n"
-    "func\n"
-    "guard\n"
-    "if\n"
-    "import\n"
-    "in\n"
-    "let\n"
-    "loop\n"
-    "match\n"
-    "module\n"
-    "new\n"
-    "operator\n"
-    "or\n"
-    "property\n"
-    "return\n"
-    "spawn\n"
-    "static\n"
-    "switch\n"
-    "throw\n"
-    "try\n"
-    "typeof\n"
-    "unless\n"
-    "until\n"
-    "while\n"
-    "yield\n"
-  ));
+  Lexer lexer("test",
+              ("false\n"
+               "NaN\n"
+               "null\n"
+               "self\n"
+               "super\n"
+               "true\n"
+               "and\n"
+               "as\n"
+               "await\n"
+               "break\n"
+               "case\n"
+               "catch\n"
+               "class\n"
+               "const\n"
+               "continue\n"
+               "default\n"
+               "defer\n"
+               "do\n"
+               "else\n"
+               "export\n"
+               "extends\n"
+               "finally\n"
+               "for\n"
+               "from\n"
+               "func\n"
+               "guard\n"
+               "if\n"
+               "import\n"
+               "in\n"
+               "let\n"
+               "loop\n"
+               "match\n"
+               "new\n"
+               "operator\n"
+               "or\n"
+               "property\n"
+               "return\n"
+               "spawn\n"
+               "static\n"
+               "switch\n"
+               "throw\n"
+               "try\n"
+               "typeof\n"
+               "unless\n"
+               "until\n"
+               "while\n"
+               "yield\n"));
 
   CHECK(lexer.read_token().type == TokenType::False);
   CHECK(lexer.read_token().type == TokenType::Float);
@@ -230,7 +228,6 @@ TEST_CASE("recognizes keywords") {
   CHECK(lexer.read_token().type == TokenType::Let);
   CHECK(lexer.read_token().type == TokenType::Loop);
   CHECK(lexer.read_token().type == TokenType::Match);
-  CHECK(lexer.read_token().type == TokenType::Module);
   CHECK(lexer.read_token().type == TokenType::New);
   CHECK(lexer.read_token().type == TokenType::Operator);
   CHECK(lexer.read_token().type == TokenType::OrLiteral);
@@ -250,9 +247,7 @@ TEST_CASE("recognizes keywords") {
 }
 
 TEST_CASE("recognizes operators") {
-  Lexer lexer("test", (
-    "+-*/%** = == != < > <= >= && || ! | ^~&<< >> >>> += -= *= /= %= **= &= |= ^= <<= >>= >>>="
-  ));
+  Lexer lexer("test", ("+-*/%** = == != < > <= >= && || ! | ^~&<< >> >>> += -= *= /= %= **= &= |= ^= <<= >>= >>>="));
 
   CHECK(lexer.read_token().type == TokenType::Plus);
   CHECK(lexer.read_token().type == TokenType::Minus);
@@ -295,9 +290,7 @@ TEST_CASE("recognizes operators") {
 }
 
 TEST_CASE("recognizes structure tokens") {
-  Lexer lexer("test", (
-    "(){}[].:,;@<-->=>?\n"
-  ));
+  Lexer lexer("test", ("(){}[].:,;@<-->=>?\n"));
 
   CHECK(lexer.read_token().type == TokenType::LeftParen);
   CHECK(lexer.read_token().type == TokenType::RightParen);
@@ -317,17 +310,16 @@ TEST_CASE("recognizes structure tokens") {
 }
 
 TEST_CASE("recognizes comments") {
-  Lexer lexer("test", (
-    "foo bar // some comment\n"
-    "// hello\n"
-    "// world\n"
-    "//\n"
-    "/*\n"
-    "multiline comment!!\n"
-    "*/\n"
-    "/* hello world */ /* test */\n"
-    "/* foo /* nested */ */\n"
-  ));
+  Lexer lexer("test",
+              ("foo bar // some comment\n"
+               "// hello\n"
+               "// world\n"
+               "//\n"
+               "/*\n"
+               "multiline comment!!\n"
+               "*/\n"
+               "/* hello world */ /* test */\n"
+               "/* foo /* nested */ */\n"));
 
   CHECK(lexer.read_token().type == TokenType::Identifier);
   CHECK(lexer.read_token().type == TokenType::Identifier);
@@ -366,11 +358,10 @@ TEST_CASE("recognizes comments") {
 }
 
 TEST_CASE("tokenizes strings") {
-  Lexer lexer("test", (
-    "\"hello world\"\n"
-    "\"äüöø¡œΣ€\"\n"
-    "\"\"\n"
-  ));
+  Lexer lexer("test",
+              ("\"hello world\"\n"
+               "\"äüöø¡œΣ€\"\n"
+               "\"\"\n"));
 
   CHECK(lexer.read_token().type == TokenType::String);
   CHECK(lexer.last_token().source.compare("hello world") == 0);
@@ -384,39 +375,32 @@ TEST_CASE("tokenizes strings") {
 
 TEST_CASE("escape sequences in strings") {
   {
-    Lexer lexer("test", (
-      "\"\\a \\b \\n \\r \\t \\v \\f \\e \\\" \\{ \\\\ \"\n"
-    ));
+    Lexer lexer("test", ("\"\\a \\b \\n \\r \\t \\v \\f \\\" \\{ \\\\ \"\n"));
 
     CHECK(lexer.read_token().type == TokenType::String);
-    CHECK(lexer.last_token().source.compare("\a \b \n \r \t \v \f \e \" { \\ ") == 0);
+    CHECK(lexer.last_token().source.compare("\a \b \n \r \t \v \f \" { \\ ") == 0);
   }
 
   {
-    Lexer lexer("test", (
-      "\"\\k\""
-    ));
+    Lexer lexer("test", ("\"\\k\""));
 
     CHECK_THROWS_WITH(lexer.read_token(), "unknown escape sequence");
   }
 
   {
-    Lexer lexer("test", (
-      "\"\\"
-    ));
+    Lexer lexer("test", ("\"\\"));
 
     CHECK_THROWS_WITH(lexer.read_token(), "unfinished escape sequence");
   }
 }
 
 TEST_CASE("tokenizes string interpolations") {
-  Lexer lexer("test", (
-    "\"before {name({{}})} {more} after\""
-    "\"{\"{nested}\"}\""
-    "\"{}\""
-    "\"{}}\""
-    "\"\\{}\""
-  ));
+  Lexer lexer("test",
+              ("\"before {name({{}})} {more} after\""
+               "\"{\"{nested}\"}\""
+               "\"{}\""
+               "\"{}}\""
+               "\"\\{}\""));
 
   CHECK(lexer.read_token().type == TokenType::FormatString);
   CHECK(lexer.last_token().source.compare("before ") == 0);
@@ -468,18 +452,14 @@ TEST_CASE("tokenizes string interpolations") {
 
 TEST_CASE("catches erronious string interpolations") {
   {
-    Lexer lexer("test", (
-      "\"{\""
-    ));
+    Lexer lexer("test", ("\"{\""));
 
     CHECK(lexer.read_token().type == TokenType::FormatString);
     CHECK_THROWS_WITH(lexer.read_token(), "unclosed string");
   }
 
   {
-    Lexer lexer("test", (
-      "\"{"
-    ));
+    Lexer lexer("test", ("\"{"));
 
     CHECK(lexer.read_token().type == TokenType::FormatString);
     CHECK_THROWS_WITH(lexer.read_token(), "unfinished string interpolation");
@@ -488,49 +468,37 @@ TEST_CASE("catches erronious string interpolations") {
 
 TEST_CASE("detects mismatched brackets") {
   {
-    Lexer lexer("test", (
-      "("
-    ));
+    Lexer lexer("test", ("("));
 
     lexer.read_token();
     CHECK_THROWS_WITH(lexer.read_token(), "unclosed bracket");
   }
   {
-    Lexer lexer("test", (
-      "["
-    ));
+    Lexer lexer("test", ("["));
 
     lexer.read_token();
     CHECK_THROWS_WITH(lexer.read_token(), "unclosed bracket");
   }
   {
-    Lexer lexer("test", (
-      "{"
-    ));
+    Lexer lexer("test", ("{"));
 
     lexer.read_token();
     CHECK_THROWS_WITH(lexer.read_token(), "unclosed bracket");
   }
   {
-    Lexer lexer("test", (
-      "(}"
-    ));
+    Lexer lexer("test", ("(}"));
 
     lexer.read_token();
     CHECK_THROWS_WITH(lexer.read_token(), "unexpected }");
   }
   {
-    Lexer lexer("test", (
-      "{)"
-    ));
+    Lexer lexer("test", ("{)"));
 
     lexer.read_token();
     CHECK_THROWS_WITH(lexer.read_token(), "unexpected )");
   }
   {
-    Lexer lexer("test", (
-      "(]"
-    ));
+    Lexer lexer("test", ("(]"));
 
     lexer.read_token();
     CHECK_THROWS_WITH(lexer.read_token(), "unexpected ]");
@@ -538,9 +506,7 @@ TEST_CASE("detects mismatched brackets") {
 }
 
 TEST_CASE("detects unclosed multiline comments") {
-  Lexer lexer("test", (
-    "/* /* */"
-  ));
+  Lexer lexer("test", ("/* /* */"));
 
   CHECK_THROWS_WITH(lexer.read_token(), "unclosed comment");
 }
@@ -550,7 +516,7 @@ TEST_CASE("formats a CompilerError") {
 
   try {
     lexer.read_token();
-  } catch(CompilerError& exc) {
+  } catch (CompilerError& exc) {
     std::stringstream stream;
     exc.dump(stream);
 
