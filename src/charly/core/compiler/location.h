@@ -25,6 +25,7 @@
  */
 
 #include <cstdint>
+#include <iostream>
 #include <memory>
 
 #include "charly/utils/string.h"
@@ -43,11 +44,63 @@ struct Location {
   // file coordinates
   uint32_t row = 0;
   uint32_t column = 0;
+
+  void dump(std::ostream& io) {
+    io << "<";
+
+    if (row && column) {
+      io << "line " << row << ":" << column;
+    } else {
+      io << "-:-";
+    }
+
+    if (row)
+      io << row;
+    else
+      io << "-";
+
+    io << ":";
+
+    if (column)
+      io << column;
+    else
+
+    io << ">";
+  }
 };
 
 struct LocationRange {
   Location begin;
   Location end;
+
+  void dump(std::ostream& io, bool with_filename = false) {
+    io << "<";
+
+    if (with_filename) {
+      io << (begin.filename ? *begin.filename : "???");
+      io << " ";
+    }
+
+    // B.row = E.row          <B.filename:B.row:B.col : E.col>
+    // B.row ! E.row          <B.filename:B.row:B.col : E.row:E.col>
+    if (begin.row == end.row) {
+      if (begin.row == end.row && begin.row == 0) {
+        io << "-:-";
+      } else {
+        if (begin.column == end.column) {
+          io << "line " << begin.row << ":" << begin.column;
+        } else {
+          io << "line " << begin.row << ":" << begin.column << " col:" << end.column + end.length - 1;
+        }
+      }
+    } else {
+      io << begin.row << ":" << begin.column;
+      io << " : ";
+      io << end.row << ":" << end.column;
+    }
+
+    io << ">";
+  }
 };
 
 }

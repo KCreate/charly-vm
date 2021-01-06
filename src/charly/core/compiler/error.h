@@ -24,52 +24,37 @@
  * SOFTWARE.
  */
 
-#include <iostream>
+#include <stdexcept>
 
-#include "charly/utils/buffer.h"
-#include "charly/core/compiler.h"
+#include "charly/core/compiler/location.h"
 
-using namespace charly;
-using namespace charly::core::compiler;
+#pragma once
 
-int main(int argc, char** argv) {
+namespace charly::core::compiler {
 
-  utils::string line;
-  for (;;) {
-    std::cout << "> ";
-
-    if (!std::getline(std::cin, line))
-      break;
-
-    if (line.compare(".exit") == 0)
-      break;
-
-    {
-      utils::Buffer buf;
-      buf.append_string(line);
-
-      Parser parser("stdin", buf.buffer_string());
-
-      try {
-        ref<Program> program = parser.parse_program();
-
-        // check if program has nodes
-        if (program->block->statements.size() == 0)
-          continue;
-
-        //for (ref<Statement>& node : program->block->statements) {
-          //if (ref<Int> int_node = node->as<Int>()) {
-            //int_node->value += 100;
-          //}
-        //}
-
-        program->dump(std::cout);
-      } catch (CompilerError& exc) {
-        exc.dump(std::cout);
-        std::cout << '\n';
-      }
-    }
+// base class of all compiler errors
+class CompilerError : public std::runtime_error {
+public:
+  CompilerError(const utils::string& message, const Location& location)
+      : std::runtime_error(message), m_location(location) {
   }
 
-  return 0;
+  // write a formatted version of this error to the stream:
+  //
+  // <filename>:<row>:<col>: <message>
+  virtual void dump(std::ostream& io) {
+    io << *m_location.filename;
+    io << ':';
+    io << m_location.row;
+    io << ':';
+    io << m_location.column;
+    io << ':';
+    io << ' ';
+    io << what();
+  }
+
+private:
+  Location m_location;
+};
+
 }

@@ -26,13 +26,14 @@
 
 #include <cstdlib>
 #include <memory>
+#include <limits>
 
 #include "charly/utils/cast.h"
 #include "charly/core/compiler/lexer.h"
 
 namespace charly::core::compiler {
 
-Token Lexer::read_token() {
+Token Lexer::read_token_all() {
   Token token;
 
   size_t offset_start = m_source.readoffset();
@@ -52,10 +53,10 @@ Token Lexer::read_token() {
       token.type = TokenType::Eof;
 
       if (m_interpolation_bracket_stack.size())
-        throw LexerException("unfinished string interpolation", token.location);
+        throw CompilerError("unfinished string interpolation", token.location);
 
       if (m_bracket_stack.size())
-        throw LexerException("unclosed bracket", token.location);
+        throw CompilerError("unclosed bracket", token.location);
 
       break;
     }
@@ -315,7 +316,7 @@ Token Lexer::read_token() {
 
       // check matching brace
       if (m_bracket_stack.size() == 0 || m_bracket_stack.back() != token.type) {
-        throw LexerException("unexpected )", token.location);
+        throw CompilerError("unexpected )", token.location);
       }
 
       m_bracket_stack.pop_back();
@@ -333,7 +334,7 @@ Token Lexer::read_token() {
       token.type = TokenType::RightCurly;
 
       if (m_bracket_stack.size() == 0 || m_bracket_stack.back() != token.type) {
-        throw LexerException("unexpected }", token.location);
+        throw CompilerError("unexpected }", token.location);
       }
 
       // switch lexer mode
@@ -358,7 +359,7 @@ Token Lexer::read_token() {
       token.type = TokenType::RightBracket;
 
       if (m_bracket_stack.size() == 0 || m_bracket_stack.back() != token.type) {
-        throw LexerException("unexpected ]", token.location);
+        throw CompilerError("unexpected ]", token.location);
       }
 
       m_bracket_stack.pop_back();
@@ -403,7 +404,7 @@ Token Lexer::read_token() {
         break;
       }
 
-      throw LexerException("unexpected character", token.location);
+      throw CompilerError("unexpected character", token.location);
     }
   }
 
@@ -413,7 +414,7 @@ Token Lexer::read_token() {
     token.type = kANDAssignmentOperators.at(token.type);
   }
 
-  if (!(token.type == TokenType::String || token.type == TokenType::StringPart))
+  if (!(token.type == TokenType::String || token.type == TokenType::FormatString))
     token.source = m_source.window_string();
 
   token.location.length = m_source.window_size();
@@ -423,9 +424,12 @@ Token Lexer::read_token() {
     increment_column(m_source.readoffset() - offset_start);
   }
 
-
   if (kKeywordsAndLiterals.count(token.source)) {
     token.type = kKeywordsAndLiterals.at(token.source);
+
+    if (token.type == TokenType::Float) {
+      token.floatval = std::numeric_limits<double>::quiet_NaN();
+    }
   }
 
   m_tokens.push_back(token);
@@ -433,13 +437,15 @@ Token Lexer::read_token() {
   return token;
 }
 
-Token Lexer::read_token_skip_whitespace() {
+Token Lexer::read_token() {
   Token token;
 
   for (;;) {
-    token = read_token();
+    token = read_token_all();
 
-    if (token.type == TokenType::Whitespace || token.type == TokenType::Newline) {
+    if (token.type == TokenType::Whitespace ||
+        token.type == TokenType::Newline ||
+        token.type == TokenType::Comment) {
       continue;
     }
 
@@ -578,7 +584,7 @@ void Lexer::consume_hex(Token& token) {
 
   // there has to be at least one hex character
   if (!is_hex(peek_char())) {
-    throw LexerException("hex number literal expected at least one digit", token.location);
+    throw CompilerError("hex number literal expected at least one digit", token.location);
   }
 
   while (is_hex(peek_char())) {
@@ -593,7 +599,7 @@ void Lexer::consume_octal(Token& token) {
 
   // there has to be at least one hex character
   if (!is_octal(peek_char())) {
-    throw LexerException("octal number literal expected at least one digit", token.location);
+    throw CompilerError("octal number literal expected at least one digit", token.location);
   }
 
   while (is_octal(peek_char())) {
@@ -608,7 +614,7 @@ void Lexer::consume_binary(Token& token) {
 
   // there has to be at least one hex character
   if (!is_binary(peek_char())) {
-    throw LexerException("binary number literal expected at least one digit", token.location);
+    throw CompilerError("binary number literal expected at least one digit", token.location);
   }
 
   while (is_binary(peek_char())) {
@@ -649,7 +655,7 @@ void Lexer::consume_multiline_comment(Token& token) {
 
     switch (cp) {
       case '\0': {
-        throw LexerException("unclosed comment", token.location);
+        throw CompilerError("unclosed comment", token.location);
       }
       case '/': {
         read_char();
@@ -708,7 +714,7 @@ void Lexer::consume_string(Token& token) {
 
     // end of file reached, unclosed string detected
     if (cp == '\0') {
-      throw LexerException("unclosed string", token.location);
+      throw CompilerError("unclosed string", token.location);
     }
 
     // string interpolation
@@ -720,7 +726,7 @@ void Lexer::consume_string(Token& token) {
       m_bracket_stack.push_back(TokenType::RightCurly);
       m_interpolation_bracket_stack.push_back(m_bracket_stack.size());
 
-      token.type = TokenType::StringPart;
+      token.type = TokenType::FormatString;
 
       break;
     }
@@ -740,8 +746,8 @@ void Lexer::consume_string(Token& token) {
         case '"':  { read_char(); string_buf.append_utf8('\"'); break; }
         case '{':  { read_char(); string_buf.append_utf8('{'); break; }
         case '\\': { read_char(); string_buf.append_utf8('\\'); break; }
-        case '\0':  throw LexerException("unfinished escape sequence", token.location);
-        default:    throw LexerException("unknown escape sequence", token.location);
+        case '\0':  throw CompilerError("unfinished escape sequence", token.location);
+        default:    throw CompilerError("unknown escape sequence", token.location);
       }
     }
 

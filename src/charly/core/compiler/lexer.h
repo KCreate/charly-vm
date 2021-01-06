@@ -25,41 +25,16 @@
  */
 
 #include <memory>
-#include <stdexcept>
 
 #include "charly/utils/string.h"
 #include "charly/utils/buffer.h"
 #include "charly/utils/vector.h"
 #include "charly/core/compiler/token.h"
+#include "charly/core/compiler/error.h"
 
 #pragma once
 
 namespace charly::core::compiler {
-
-// base class of all compiler errors
-class LexerException : public std::runtime_error {
-public:
-  LexerException(const utils::string& message, const Location& location)
-      : std::runtime_error(message), m_location(location) {
-  }
-
-  // write a formatted version of this error to the stream:
-  //
-  // <filename>:<row>:<col>: <message>
-  virtual void dump(std::ostream& io) {
-    io << *m_location.filename;
-    io << ':';
-    io << m_location.row;
-    io << ':';
-    io << m_location.column;
-    io << ':';
-    io << ' ';
-    io << what();
-  }
-
-private:
-  Location m_location;
-};
 
 // splits source input into individual tokens for parsing
 class Lexer {
@@ -73,14 +48,23 @@ public:
     m_mode = Mode::TopLevel;
   }
 
-  // read the next token from the source
-  Token read_token();
+  // reads the next token
+  Token read_token_all();
 
-  // reads the next token, skipping over whitespace and newlines
-  Token read_token_skip_whitespace();
+  // read the next token
+  // skips over whitespace, newlines and comments
+  Token read_token();
 
   // returns the last read token
   Token last_token();
+
+protected:
+
+  // full path of the source file (or empty buffer)
+  utils::string m_filename;
+
+  // source code
+  utils::Buffer m_source;
 
 private:
   Lexer(Lexer&) = delete;
@@ -116,12 +100,6 @@ private:
   void consume_comment(Token& token);
   void consume_multiline_comment(Token& token);
   void consume_string(Token& token);
-
-  // full path of the source file (or empty buffer)
-  utils::string m_filename;
-
-  // source code
-  utils::Buffer m_source;
 
   // current source row / column
   uint32_t m_row;

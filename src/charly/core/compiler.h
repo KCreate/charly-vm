@@ -24,7 +24,7 @@
  * SOFTWARE.
  */
 
-#include "charly/core/compiler/lexer.h"
+#include "charly/core/compiler/parser.h"
 
 #pragma once
 
