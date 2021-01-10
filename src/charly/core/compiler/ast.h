@@ -59,8 +59,9 @@ class ASTPass; // forward declaration
 class Node : std::enable_shared_from_this<Node> {
   friend class ASTPass;
 public:
-  enum class Type {
-    Program,
+  enum class Type : uint8_t {
+    Unknown = 0,
+    Program = 1,
     Block,
     Id,
     Int,
@@ -71,10 +72,12 @@ public:
     Null,
     Self,
     Super,
-    Tuple
+    Tuple,
+    TypeCount
   };
 
   static constexpr const char* TypeNames[] = {
+    "Unknown",
     "Program",
     "Block",
     "Id",
@@ -86,7 +89,8 @@ public:
     "Null",
     "Self",
     "Super",
-    "Tuple"
+    "Tuple",
+    "__SENTINEL",
   };
 
   const LocationRange& location() const {
@@ -161,9 +165,10 @@ public:
     return out;
   }
 
+  virtual Type type() const = 0;
+
 protected:
   virtual ~Node() {};
-  virtual Type type() const = 0;
   void visit(ASTPass*);
   virtual void visit_children(ASTPass*) {}
   virtual void details(std::ostream&) const {}

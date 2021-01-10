@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+#include <algorithm>
+
 #include "charly/core/compiler/ast.h"
 #include "charly/core/compiler/astpass.h"
 
@@ -33,6 +35,10 @@ void Block::visit_children(ASTPass* pass) {
   for (ref<Statement>& node : this->statements) {
     node = cast<Statement>(pass->visit(node));
   }
+
+  auto begin = this->statements.begin();
+  auto end = this->statements.end();
+  this->statements.erase(std::remove(begin, end, nullptr), end);
 }
 
 void Program::visit_children(ASTPass* pass) {
@@ -43,12 +49,20 @@ void FormatString::visit_children(ASTPass* pass) {
   for (ref<Expression>& node : this->elements) {
     node = cast<Expression>(pass->visit(node));
   }
+
+  auto begin = this->elements.begin();
+  auto end = this->elements.end();
+  this->elements.erase(std::remove(begin, end, nullptr), end);
 }
 
 void Tuple::visit_children(ASTPass* pass) {
   for (ref<Expression>& node : this->elements) {
     node = cast<Expression>(pass->visit(node));
   }
+
+  auto begin = this->elements.begin();
+  auto end = this->elements.end();
+  this->elements.erase(std::remove(begin, end, nullptr), end);
 }
 
 }  // namespace charly::core::compiler

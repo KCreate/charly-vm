@@ -40,6 +40,8 @@ public:                                   \
   ref<R> visit(ref<T> node) {             \
     ref<R> replacement = on_enter(node);  \
     on_enter_any(replacement);            \
+    if (replacement.get() != node.get()) \
+      return replacement; \
     node->visit_children(this);           \
     replacement = on_leave(node);         \
     on_leave_any(replacement);            \
