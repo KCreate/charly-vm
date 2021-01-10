@@ -26,8 +26,8 @@
 
 #include <iostream>
 
-#include "charly/core/compiler.h"
 #include "charly/utils/buffer.h"
+#include "charly/core/compiler.h"
 
 using namespace charly;
 using namespace charly::core::compiler;
@@ -50,22 +50,15 @@ int main() {
       Parser parser("stdin", buf.buffer_string());
 
       try {
-        ref<Program> program = parser.parse_program();
+        ast::ref<ast::Program> program = parser.parse_program();
 
         // check if program has nodes
         if (program->block->statements.size() == 0)
           continue;
 
-        // for (ref<Statement>& node : program->block->statements) {
-        //   if (ref<Int> int_node = node->as<Int>()) {
-        //     int_node->value += 100;
-        //   }
-        // }
-
-        program->dump(std::cout);
+        DumpPass().visit(program);
       } catch (CompilerError& exc) {
-        exc.dump(std::cout);
-        std::cout << '\n';
+        std::cout << exc << '\n';
       }
     }
   }

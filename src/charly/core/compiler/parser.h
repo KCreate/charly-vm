@@ -33,7 +33,9 @@
 
 namespace charly::core::compiler {
 
+namespace {
 using namespace ast;
+}
 
 class Parser : public Lexer {
 public:
@@ -42,7 +44,29 @@ public:
     advance();
   }
 
+  static ref<Program> parse_program(const utils::string& source);
+  static ref<Statement> parse_statement(const utils::string& source);
+  static ref<Expression> parse_expression(const utils::string& source);
+
   ref<Program> parse_program();
+  ref<Block> parse_block();
+  ref<Block> parse_block_body();
+  ref<Statement> parse_statement();
+
+  // ref<Expression> parse_comma_expression();
+  ref<Expression> parse_expression();
+  ref<FormatString> parse_format_string();
+  ref<Expression> parse_tuple();
+  ref<Expression> parse_literal();
+
+  ref<Int> parse_int_token();
+  ref<Float> parse_float_token();
+  ref<Bool> parse_bool_token();
+  ref<Id> parse_identifier_token();
+  ref<String> parse_string_token();
+  ref<Null> parse_null_token();
+  ref<Self> parse_self_token();
+  ref<Super> parse_super_token();
 
 private:
   [[noreturn]] void unexpected_token() {
@@ -61,19 +85,18 @@ private:
     throw CompilerError("Unexpected token '" + real_type + "' expected '" + expected_type + "'", m_token.location);
   }
 
-  [[noreturn]] void unexpected_node(std::shared_ptr<Node> node, const utils::string& message) {
-    throw CompilerError(message, node->location.begin);
+  [[noreturn]] void unexpected_node(const ref<Node> node, const utils::string& message) {
+    throw CompilerError(message, node->begin());
   }
 
   // advance to the next token
   void advance() {
     m_token = read_token();
-    // m_token.dump(std::cout);
-    // std::cout << '\n';
+    // std::cout << m_token << '\n';
   }
 
   // check the current type of the token
-  bool type(TokenType t) {
+  bool type(TokenType t) const {
     return m_token.type == t;
   }
 
@@ -96,39 +119,20 @@ private:
   }
 
   // set the begin location of a node to the current token
-  void begin(ref<Node> node) {
-    node->location.begin = m_token.location;
+  void begin(const ref<Node>& node) {
+    node->set_begin(m_token.location);
   }
 
   // set the end location of a node to the current token
-  void end(ref<Node> node) {
-    node->location.end = m_token.location;
+  void end(const ref<Node>& node) {
+    node->set_end(m_token.location);
   }
 
   // set the location of a node to the current token
-  void at(ref<Node> node) {
+  void at(const ref<Node>& node) {
     begin(node);
     end(node);
   }
-
-  ref<Block> parse_block();
-  ref<Block> parse_block_body();
-  ref<Statement> parse_statement();
-
-  ref<Expression> parse_comma_expression();
-  ref<Expression> parse_expression();
-  ref<FormatString> parse_format_string();
-  ref<Expression> parse_tuple();
-  ref<Expression> parse_literal();
-
-  ref<Int> parse_int_token();
-  ref<Float> parse_float_token();
-  ref<Boolean> parse_bool_token();
-  ref<Identifier> parse_identifier_token();
-  ref<String> parse_string_token();
-  ref<Null> parse_null_token();
-  ref<Self> parse_self_token();
-  ref<Super> parse_super_token();
 
 private:
   Token m_token;

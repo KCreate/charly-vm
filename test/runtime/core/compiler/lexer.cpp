@@ -129,19 +129,19 @@ TEST_CASE("formats a token") {
 
   {
     std::stringstream stream;
-    lexer.read_token().dump(stream);
+    stream << lexer.read_token();
     CHECK(stream.str().compare("(Identifier, foobarbaz) test:1:1") == 0);
   }
 
   {
     std::stringstream stream;
-    lexer.read_token().dump(stream);
+    stream << lexer.read_token();
     CHECK(stream.str().compare("(Int, 25) test:2:3") == 0);
   }
 
   {
     std::stringstream stream;
-    lexer.read_token().dump(stream);
+    stream << lexer.read_token();
     CHECK(stream.str().compare("(Float, 25.25) test:3:6") == 0);
   }
 }
@@ -518,8 +518,7 @@ TEST_CASE("formats a CompilerError") {
     lexer.read_token();
   } catch (CompilerError& exc) {
     std::stringstream stream;
-    exc.dump(stream);
-
+    stream << exc;
     CHECK(stream.str().compare("test:1:1: hex number literal expected at least one digit") == 0);
   }
 }

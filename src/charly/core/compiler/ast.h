@@ -26,6 +26,7 @@
 
 #include <functional>
 #include <iostream>
+#include <sstream>
 #include <memory>
 
 #include "charly/utils/map.h"
@@ -47,263 +48,312 @@ inline ref<T> make(Args... params) {
   return std::make_shared<T>(std::forward<Args>(params)...);
 }
 
-#define NAME(N)        \
-  const char* name() { \
-    return #N;         \
+template <typename T, typename O>
+inline ref<T> cast(ref<O> node) {
+  return std::dynamic_pointer_cast<T>(node);
+}
+
+class ASTPass; // forward declaration
+
+// base class of all ast nodes
+class Node : std::enable_shared_from_this<Node> {
+  friend class ASTPass;
+public:
+  enum class Type {
+    Program,
+    Block,
+    Id,
+    Int,
+    Float,
+    Bool,
+    String,
+    FormatString,
+    Null,
+    Self,
+    Super,
+    Tuple
+  };
+
+  static constexpr const char* TypeNames[] = {
+    "Program",
+    "Block",
+    "Id",
+    "Int",
+    "Float",
+    "Bool",
+    "String",
+    "FormatString",
+    "Null",
+    "Self",
+    "Super",
+    "Tuple"
+  };
+
+  const LocationRange& location() const {
+    return m_location;
   }
 
-struct Node;
-using VisitorCallback = std::function<void(ref<Node>)>;
-
-struct Node : std::enable_shared_from_this<Node> {
-  LocationRange location;
-
-  virtual ~Node(){};
-
-  // set whole location
-  void at(Location& loc) {
-    location.begin = loc;
-    location.end = loc;
-  }
-  void at(ref<Node> node) {
-    location = node->location;
+  const Location& begin() const {
+    return m_location.begin;
   }
 
-  // set begin location
-  void begin(Location& loc) {
-    location.begin = loc;
-  }
-  void begin(LocationRange& loc) {
-    location.begin = loc.begin;
-  }
-  void begin(ref<Node> node) {
-    location.begin = node->location.begin;
+  const Location& end() const {
+    return m_location.end;
   }
 
-  // set end location
-  void end(Location& loc) {
-    location.end = loc;
-  }
-  void end(LocationRange& loc) {
-    location.end = loc.end;
-  }
-  void end(ref<Node> node) {
-    location.end = node->location.end;
+  void set_location(const Location& loc) {
+    set_begin(loc);
+    set_end(loc);
   }
 
-  // dump this node to the output stream
-  void dump(std::ostream& output, uint32_t depth = 0) {
-    // indent
-    for (uint32_t i = 0; i < depth; i++) {
-      output << "  ";
+  void set_location(const LocationRange& range) {
+    m_location = range;
+  }
+
+  void set_location(const ref<Node>& node) {
+    m_location = node->location();
+  }
+
+  void set_begin(const Location& loc) {
+    m_location.begin = loc;
+  }
+
+  void set_begin(const LocationRange& range) {
+    m_location.begin = range.begin;
+  }
+
+  void set_begin(const ref<Node>& node) {
+    set_begin(node->begin());
+  }
+
+  void set_end(const Location& loc) {
+    m_location.end = loc;
+  }
+
+  void set_end(const LocationRange& range) {
+    m_location.end = range.end;
+  }
+
+  void set_end(const ref<Node>& node) {
+    set_end(node->end());
+  }
+
+  // get the name of this node based on its type
+  const char* name() const {
+    return TypeNames[static_cast<int>(this->type())];
+  }
+
+  friend std::ostream& operator<<(std::ostream& out, const Node& node) {
+    out << "- " << node.name();
+
+    std::stringstream stream;
+    node.details(stream);
+    utils::string details_str = stream.str();
+
+    if (details_str.size()) {
+      out << " ";
+      out << details_str;
     }
 
-    output << '-';
-    output << this->name();
-    this->details(output);
-    this->location.dump(output, false);
-    output << '\n';
+    out << " ";
+    out << node.location();
 
-    this->children([&](std::shared_ptr<Node> node) {
-      node->dump(output, depth + 1);
-    });
+    return out;
   }
 
-  // return the name of this node
-  virtual const char* name() = 0;
+protected:
+  virtual ~Node() {};
+  virtual Type type() const = 0;
+  void visit(ASTPass*);
+  virtual void visit_children(ASTPass*) {}
+  virtual void details(std::ostream&) const {}
 
-  // write the details of this node into the output stream
-  virtual void details(std::ostream& output) {
-    output << " ";
-  }
-
-  // call the callback with all child nodes
-  virtual void children(VisitorCallback) {}
-
-  // checks wether a node is of a certain type
-  template <typename T>
-  bool is() {
-    return dynamic_cast<T*>(this) != nullptr;
-  }
-
-  template <typename T>
-  ref<T> as() {
-    return std::dynamic_pointer_cast<T>(this->shared_from_this());
-  }
+  LocationRange m_location;
 };
 
-struct Statement : public Node {};
+template <typename T>
+bool isa(const ref<Node>& node) {
+  return dynamic_cast<T*>(node.get()) != nullptr;
+}
 
-struct Block final : public Statement {
-  NAME(Block);
+#define AST_NODE(T)                          \
+  virtual Node::Type type() const override { \
+    return Node::Type::T;                    \
+  }
 
+/*
+ *  - #Node
+ *    - Program
+ *    - #Statement
+ *      - Block
+ *      - Declaration
+ *      - #ControlStructure
+ *        - If
+ *        - DoWhile
+ *        - While
+ *        - Switch
+ *          + SwitchCase
+ *        - Try
+ *          + Catch
+ *      - #ControlStatement
+ *        - Return
+ *        - Break
+ *        - Continue
+ *        - Throw
+ *      - #Expression
+ *        - #ControlExpression
+ *          - Yield
+ *          - Await
+ *          - Spawn
+ *          - Import
+ *          - Typeof
+ *          - Match
+ *            + MatchArm
+ *          - Ternary
+ *        - #Literal
+ *          - #ConstantLiteral
+ *            - Int
+ *            - Float
+ *            - String
+ *            - Bool
+ *            - Null
+ *          - Id
+ *          - List
+ *          - Dict
+ *          - FormatString
+ *          - Function
+ *          - Super
+ *          - Self
+ *          - Class
+ *            + #ClassStatement
+ *              - PropertyDeclaration
+ *              - MethodDeclaration
+ *        - BinaryOp
+ *        - Member
+ *        - Subscript
+ *        - Call
+ *        - UnaryOp
+ *        - #AssignmentExpression
+ *          - Assignment
+ *          - OperatorAssignment
+ * */
+
+class Statement : public Node {};
+
+class ControlStructure : public Statement {};
+
+class Expression : public Statement {};
+
+class ConstantExpression : public Expression {};
+
+class Block final : public Statement {
+  AST_NODE(Block)
+public:
   utils::vector<ref<Statement>> statements;
 
-  void add_statement(ref<Statement> statement) {
-    statements.push_back(statement);
-  }
-
-  Block() {}
-  Block(utils::vector<ref<Statement>>&& statements) : statements(statements) {}
-
-  void children(VisitorCallback cb) {
-    for (ref<Statement>& node : statements) {
-      cb(node);
-    }
-  }
+  virtual void visit_children(ASTPass*) override;
 };
 
-struct Program final : public Node {
-  NAME(Program);
+class Program final : public Node {
+  AST_NODE(Program)
+public:
+  Program(const utils::string& filename, ref<Block> block = nullptr) : filename(filename), block(block) {}
 
   utils::string filename;
   ref<Block> block;
 
-  void set_block(ref<Block> block) {
-    this->block = block;
-    this->at(block);
+  virtual void details(std::ostream& out) const override {
+    out << filename;
   }
 
-  Program(const utils::string& filename) : filename(filename) {}
-  Program(const utils::string& filename, ref<Block> block) : filename(filename), block(block) {
-    this->at(block);
-  }
+  virtual void visit_children(ASTPass*) override;
+};
 
-  void details(std::ostream& io) {
-    io << " " << filename << " ";
-  }
-
-  void children(VisitorCallback cb) {
-    cb(block);
+template <typename T>
+class Atom : public ConstantExpression {
+public:
+  Atom(T value) : value(value) {}
+  T value;
+  virtual void details(std::ostream& out) const override {
+    out << value;
   }
 };
 
-struct ControlStructure : public Statement {};
+class Id final : public Atom<utils::string> {
+  AST_NODE(Id)
+public:
+  using Atom<utils::string>::Atom;
+};
 
-struct Expression : public Statement {};
+class Int final : public Atom<int64_t> {
+  AST_NODE(Int)
+public:
+  using Atom<int64_t>::Atom;
+};
 
-struct Identifier final : public Expression {
-  NAME(Identifier);
+class Float final : public Atom<double> {
+  AST_NODE(Float)
+public:
+  using Atom<double>::Atom;
 
-  utils::string value;
-
-  Identifier(const utils::string& value) : value(value) {}
-
-  void details(std::ostream& io) {
-    io << " " << value << " ";
+  virtual void details(std::ostream& out) const override {
+    const double d = out.precision();
+    out.precision(6);
+    out << std::fixed;
+    out << value;
+    out << std::scientific;
+    out.precision(d);
   }
 };
 
-struct Int final : public Expression {
-  NAME(Int);
+class Bool final : public Atom<bool> {
+  AST_NODE(Bool)
+public:
+  using Atom<bool>::Atom;
 
-  int64_t value;
-
-  Int(int64_t value) : value(value) {}
-
-  void details(std::ostream& io) {
-    io << " " << value << " ";
+  virtual void details(std::ostream& out) const override {
+    out << (value ? "true" : "false");
   }
 };
 
-struct Float final : public Expression {
-  NAME(Float);
+class String final : public Atom<utils::string> {
+  AST_NODE(String)
+public:
+  using Atom<utils::string>::Atom;
 
-  double value;
-
-  Float(double value) : value(value) {}
-
-  void details(std::ostream& io) {
-    const double d = io.precision();
-    io.precision(4);
-    io << std::fixed;
-    io << " " << value << " ";
-    io << std::scientific;
-    io.precision(d);
+  virtual void details(std::ostream& out) const override {
+    out << "\"" << value << "\"";
   }
 };
 
-struct Boolean final : public Expression {
-  NAME(Boolean);
-
-  bool value;
-
-  Boolean(bool value) : value(value) {}
-
-  void details(std::ostream& io) {
-    io << " " << (value ? "true" : "false") << " ";
-  }
-};
-
-struct String final : public Expression {
-  NAME(String);
-
-  utils::string value;
-
-  String(const utils::string& value) : value(value) {}
-
-  void details(std::ostream& io) {
-    io << " \"" << value << "\" ";
-  }
-};
-
-struct FormatString final : public Expression {
-  NAME(FormatString);
-
-  utils::vector<ref<Expression>> parts;
-
-  void add_part(ref<Expression> part) {
-    parts.push_back(part);
-    this->end(part);
-  }
-
-  FormatString() {}
-  FormatString(utils::vector<ref<Expression>>&& parts) : parts(parts) {
-    if (parts.size()) {
-      this->begin(parts.front());
-      this->end(parts.back());
-    }
-  }
-
-  void children(VisitorCallback cb) {
-    for (ref<Expression> node : parts) {
-      cb(node);
-    }
-  }
-};
-
-struct Null final : public Expression {
-  NAME(Null);
-};
-
-struct Self final : public Expression {
-  NAME(Self);
-};
-
-struct Super final : public Expression {
-  NAME(Super);
-};
-
-struct Tuple final : public Expression {
-  NAME(Tuple);
-
+class FormatString final : public Expression {
+  AST_NODE(FormatString)
+public:
   utils::vector<ref<Expression>> elements;
 
-  void add_element(ref<Expression> node) {
-    elements.push_back(node);
-    this->end(node);
-  }
-
-  Tuple() {}
-  Tuple(utils::vector<ref<Expression>>&& elements) : elements(elements) {}
-
-  void children(VisitorCallback cb) {
-    for (ref<Expression>& node : elements) {
-      cb(node);
-    }
-  }
+  virtual void visit_children(ASTPass*) override;
 };
 
-#undef NAME
+class Null final : public ConstantExpression {
+  AST_NODE(Null)
+};
+
+class Self final : public ConstantExpression {
+  AST_NODE(Self)
+};
+
+class Super final : public ConstantExpression {
+  AST_NODE(Super)
+};
+
+class Tuple final : public Expression {
+  AST_NODE(Tuple)
+public:
+  utils::vector<ref<Expression>> elements;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+#undef AST_NODE
 
 }  // namespace charly::core::compiler::ast

@@ -226,42 +226,43 @@ struct Token {
   // assignment
   //
   // foo += 25
-  bool is_and_assignment_operator() {
+  bool is_and_assignment_operator() const {
     return kANDAssignmentOperators.count(type);
   }
 
-  // write a formatted version of the token to the stream
-  void dump(std::ostream& io) {
-    io << '(';
-    io << kTokenTypeStrings[static_cast<uint8_t>(this->type)];
+  friend std::ostream& operator<<(std::ostream& out, const Token& token) {
+    out << '(';
+    out << kTokenTypeStrings[static_cast<uint8_t>(token.type)];
 
-    if (this->type == TokenType::Int || this->type == TokenType::Float || this->type == TokenType::Comment ||
-        this->type == TokenType::String || this->type == TokenType::FormatString ||
-        this->type == TokenType::Identifier) {
-      io << ',';
-      io << ' ';
+    if (token.type == TokenType::Int || token.type == TokenType::Float || token.type == TokenType::Comment ||
+        token.type == TokenType::String || token.type == TokenType::FormatString ||
+        token.type == TokenType::Identifier) {
+      out << ',';
+      out << ' ';
 
-      switch (this->type) {
-        case TokenType::Int: io << this->intval; break;
-        case TokenType::Float: io << this->floatval; break;
+      switch (token.type) {
+        case TokenType::Int: out << token.intval; break;
+        case TokenType::Float: out << token.floatval; break;
 
         case TokenType::Comment:
-        case TokenType::Identifier: io << this->source; break;
+        case TokenType::Identifier: out << token.source; break;
 
         case TokenType::String:
-        case TokenType::FormatString: io << '"' << this->source << '"'; break;
+        case TokenType::FormatString: out << '"' << token.source << '"'; break;
         default: break;
       }
     }
 
-    io << ')';
-    io << ' ';
-    io << *location.filename;
-    io << ':';
-    io << location.row;
-    io << ':';
-    io << location.column;
-  }
+    out << ')';
+    out << ' ';
+    out << *token.location.filename;
+    out << ':';
+    out << token.location.row;
+    out << ':';
+    out << token.location.column;
+
+    return out;
+	}
 };
 
 }  // namespace charly::core::compiler

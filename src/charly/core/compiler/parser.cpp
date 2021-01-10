@@ -28,10 +28,27 @@
 
 namespace charly::core::compiler {
 
+namespace {
 using namespace ast;
+}
+
+ref<Program> Parser::parse_program(const utils::string& source) {
+  return Parser("-", source).parse_program();
+}
+
+ref<Statement> Parser::parse_statement(const utils::string& source) {
+  return Parser("-", source).parse_statement();
+}
+
+ref<Expression> Parser::parse_expression(const utils::string& source) {
+  return Parser("-", source).parse_expression();
+}
 
 ref<Program> Parser::parse_program() {
-  return make<Program>(m_filename, parse_block_body());
+  ref<Block> body = parse_block_body();
+  ref<Program> program = make<Program>(*m_filename, body);
+  program->set_location(body);
+  return program;
 }
 
 ref<Block> Parser::parse_block() {
@@ -49,7 +66,7 @@ ref<Block> Parser::parse_block_body() {
   while (!(type(TokenType::RightCurly) || type(TokenType::Eof))) {
     ref<Statement> stmt = parse_statement();
     block->statements.push_back(stmt);
-    block->end(stmt);
+    block->set_end(stmt);
   }
 
   return block;
@@ -65,22 +82,22 @@ ref<Statement> Parser::parse_statement() {
   }
 }
 
-ref<Expression> Parser::parse_comma_expression() {
-  ref<Expression> exp = parse_expression();
-  if (!type(TokenType::Comma))
-    return exp;
-
-  ref<Tuple> tuple = make<Tuple>();
-  tuple->begin(exp);
-  tuple->add_element(exp);
-
-  while (type(TokenType::Comma)) {
-    eat(TokenType::Comma);
-    tuple->add_element(parse_expression());
-  }
-
-  return tuple;
-}
+// ref<Expression> Parser::parse_comma_expression() {
+//   ref<Expression> exp = parse_expression();
+//   if (!type(TokenType::Comma))
+//     return exp;
+//
+//   ref<Tuple> tuple = make<Tuple>();
+//   tuple->set_begin(exp);
+//   tuple->elements.push_back(exp);
+//
+//   while (type(TokenType::Comma)) {
+//     eat(TokenType::Comma);
+//     tuple->elements.push_back(parse_expression());
+//   }
+//
+//   return tuple;
+// }
 
 ref<Expression> Parser::parse_expression() {
   return parse_tuple();
@@ -99,7 +116,7 @@ ref<Expression> Parser::parse_tuple() {
   bool force_tuple = false;
 
   while (!(type(TokenType::RightParen))) {
-    tuple->add_element(parse_expression());
+    tuple->elements.push_back(parse_expression());
 
     // (<exp>,) becomes a tuple with one element
     if (skip(TokenType::Comma) && type(TokenType::RightParen)) {
@@ -161,10 +178,10 @@ ref<FormatString> Parser::parse_format_string() {
   ref<FormatString> str = make<FormatString>();
   begin(str);
 
-  str->add_part(parse_string_token());
+  str->elements.push_back(parse_string_token());
 
   for (;;) {
-    str->add_part(parse_expression());
+    str->elements.push_back(parse_expression());
     eat(TokenType::RightCurly);
 
     // if the expression is followed by another FormatString token the loop
@@ -173,7 +190,7 @@ ref<FormatString> Parser::parse_format_string() {
     // the format string is only terminated once a regular String token is passed
     if (type(TokenType::FormatString) || type(TokenType::String)) {
       bool last_part = type(TokenType::String);
-      str->add_part(parse_string_token());
+      str->elements.push_back(parse_string_token());
       if (last_part)
         break;
     } else {
@@ -187,7 +204,7 @@ ref<FormatString> Parser::parse_format_string() {
 ref<Int> Parser::parse_int_token() {
   match(TokenType::Int);
   ref<Int> node = make<Int>(m_token.intval);
-  node->at(m_token.location);
+  at(node);
   advance();
   return node;
 }
@@ -195,15 +212,15 @@ ref<Int> Parser::parse_int_token() {
 ref<Float> Parser::parse_float_token() {
   match(TokenType::Float);
   ref<Float> node = make<Float>(m_token.floatval);
-  node->at(m_token.location);
+  at(node);
   advance();
   return node;
 }
 
-ref<Boolean> Parser::parse_bool_token() {
+ref<Bool> Parser::parse_bool_token() {
   if (type(TokenType::True) || type(TokenType::False)) {
-    ref<Boolean> node = make<Boolean>(type(TokenType::True));
-    node->at(m_token.location);
+    ref<Bool> node = make<Bool>(type(TokenType::True));
+    at(node);
     advance();
     return node;
   } else {
@@ -211,10 +228,10 @@ ref<Boolean> Parser::parse_bool_token() {
   }
 }
 
-ref<Identifier> Parser::parse_identifier_token() {
+ref<Id> Parser::parse_identifier_token() {
   match(TokenType::Identifier);
-  ref<Identifier> node = make<Identifier>(m_token.source);
-  node->at(m_token.location);
+  ref<Id> node = make<Id>(m_token.source);
+  at(node);
   advance();
   return node;
 }
@@ -222,7 +239,7 @@ ref<Identifier> Parser::parse_identifier_token() {
 ref<String> Parser::parse_string_token() {
   if (type(TokenType::String) || type(TokenType::FormatString)) {
     ref<String> node = make<String>(m_token.source);
-    node->at(m_token.location);
+    at(node);
     advance();
     return node;
   } else {
@@ -233,7 +250,7 @@ ref<String> Parser::parse_string_token() {
 ref<Null> Parser::parse_null_token() {
   match(TokenType::Null);
   ref<Null> node = make<Null>();
-  node->at(m_token.location);
+  at(node);
   advance();
   return node;
 }
@@ -241,7 +258,7 @@ ref<Null> Parser::parse_null_token() {
 ref<Self> Parser::parse_self_token() {
   match(TokenType::Self);
   ref<Self> node = make<Self>();
-  node->at(m_token.location);
+  at(node);
   advance();
   return node;
 }
@@ -249,7 +266,7 @@ ref<Self> Parser::parse_self_token() {
 ref<Super> Parser::parse_super_token() {
   match(TokenType::Super);
   ref<Super> node = make<Super>();
-  node->at(m_token.location);
+  at(node);
   advance();
   return node;
 }

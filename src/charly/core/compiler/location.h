@@ -45,26 +45,30 @@ struct Location {
   uint32_t row = 0;
   uint32_t column = 0;
 
-  void dump(std::ostream& io) {
-    io << "<";
+  friend std::ostream& operator<<(std::ostream& out, const Location& loc) {
+    out << "<";
 
-    if (row && column) {
-      io << "line " << row << ":" << column;
+    if (loc.row && loc.column) {
+      out << "line " << loc.row << ":" << loc.column;
     } else {
-      io << "-:-";
+      out << "-:-";
     }
 
-    if (row)
-      io << row;
+    if (loc.row)
+      out << loc.row;
     else
-      io << "-";
+      out << "-";
 
-    io << ":";
+    out << ":";
 
-    if (column)
-      io << column;
+    if (loc.column)
+      out << loc.column;
     else
-      io << ">";
+      out << "-";
+
+    out << ">";
+
+    return out;
   }
 };
 
@@ -72,33 +76,31 @@ struct LocationRange {
   Location begin;
   Location end;
 
-  void dump(std::ostream& io, bool with_filename = false) {
-    io << "<";
-
-    if (with_filename) {
-      io << (begin.filename ? *begin.filename : "???");
-      io << " ";
-    }
+  friend std::ostream& operator<<(std::ostream& out, const LocationRange& range) {
+    out << "<";
 
     // B.row = E.row          <B.filename:B.row:B.col : E.col>
     // B.row ! E.row          <B.filename:B.row:B.col : E.row:E.col>
-    if (begin.row == end.row) {
-      if (begin.row == end.row && begin.row == 0) {
-        io << "-:-";
+    if (range.begin.row == range.end.row) {
+      if (range.begin.row == range.end.row && range.begin.row == 0) {
+        out << "-:-";
       } else {
-        if (begin.column == end.column) {
-          io << "line " << begin.row << ":" << begin.column;
+        if (range.begin.column == range.end.column) {
+          out << "line " << range.begin.row << ":" << range.begin.column;
         } else {
-          io << "line " << begin.row << ":" << begin.column << " col:" << end.column + end.length - 1;
+          out << "line " << range.begin.row << ":" << range.begin.column;
+          out << " col:" << (range.end.column + range.end.length - 1);
         }
       }
     } else {
-      io << begin.row << ":" << begin.column;
-      io << " : ";
-      io << end.row << ":" << end.column;
+      out << range.begin.row << ":" << range.begin.column;
+      out << " : ";
+      out << range.end.row << ":" << range.end.column;
     }
 
-    io << ">";
+    out << ">";
+
+    return out;
   }
 };
 

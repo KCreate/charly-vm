@@ -40,7 +40,7 @@ namespace charly::core::compiler {
 class Lexer {
 public:
   Lexer(const utils::string& filename, const utils::string& source, uint32_t row = 1, uint32_t column = 1) :
-    m_filename(filename), m_source(source), m_row(row), m_column(column) {
+    m_filename(std::make_shared<utils::string>(filename)), m_source(source), m_row(row), m_column(column) {
     m_last_character = '\0';
     m_mode = Mode::TopLevel;
   }
@@ -57,7 +57,7 @@ public:
 
 protected:
   // full path of the source file (or empty buffer)
-  utils::string m_filename;
+  std::shared_ptr<utils::string> m_filename;
 
   // source code
   utils::Buffer m_source;
@@ -69,22 +69,22 @@ private:
   void increment_row();
   void increment_column(size_t delta);
 
-  uint32_t peek_char(uint32_t nth = 0);  // peek the next char
-  uint32_t read_char();                  // read the next char
-  uint32_t last_char();                  // return the last read char or \0
+  uint32_t peek_char(uint32_t nth = 0) const;  // peek the next char
+  uint32_t read_char();                        // read the next char
+  uint32_t last_char() const;                  // return the last read char or \0
 
   // character identification
-  bool is_whitespace(uint32_t cp);    // \r \t ' '
-  bool is_decimal(uint32_t cp);       // 0-9
-  bool is_hex(uint32_t cp);           // 0-9a-fA-F
-  bool is_binary(uint32_t cp);        // 0-1
-  bool is_octal(uint32_t cp);         // 0-7
-  bool is_alpha_lower(uint32_t cp);   // a-z
-  bool is_alpha_upper(uint32_t cp);   // A-Z
-  bool is_alpha(uint32_t cp);         // a-zA-Z
-  bool is_alphanumeric(uint32_t cp);  // a-zA-Z0-9
-  bool is_id_begin(uint32_t cp);      // alpha $ _
-  bool is_id_part(uint32_t cp);       // alpha $ _ numeric
+  bool is_whitespace(uint32_t cp) const;    // \r \t ' '
+  bool is_decimal(uint32_t cp) const;       // 0-9
+  bool is_hex(uint32_t cp) const;           // 0-9a-fA-F
+  bool is_binary(uint32_t cp) const;        // 0-1
+  bool is_octal(uint32_t cp) const;         // 0-7
+  bool is_alpha_lower(uint32_t cp) const;   // a-z
+  bool is_alpha_upper(uint32_t cp) const;   // A-Z
+  bool is_alpha(uint32_t cp) const;         // a-zA-Z
+  bool is_alphanumeric(uint32_t cp) const;  // a-zA-Z0-9
+  bool is_id_begin(uint32_t cp) const;      // alpha $ _
+  bool is_id_part(uint32_t cp) const;       // alpha $ _ numeric
 
   // consume some token type
   void consume_whitespace(Token& token);

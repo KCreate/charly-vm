@@ -24,12 +24,31 @@
  * SOFTWARE.
  */
 
-#include "charly/core/compiler/parser.h"
+#include "charly/core/compiler/ast.h"
 #include "charly/core/compiler/astpass.h"
-#include "charly/core/compiler/passes/dump.h"
 
-#pragma once
+namespace charly::core::compiler::ast {
 
-namespace charly::core::compiler {
-
+void Block::visit_children(ASTPass* pass) {
+  for (ref<Statement>& node : this->statements) {
+    node = cast<Statement>(pass->visit(node));
+  }
 }
+
+void Program::visit_children(ASTPass* pass) {
+  this->block = cast<Block>(pass->visit(this->block));
+}
+
+void FormatString::visit_children(ASTPass* pass) {
+  for (ref<Expression>& node : this->elements) {
+    node = cast<Expression>(pass->visit(node));
+  }
+}
+
+void Tuple::visit_children(ASTPass* pass) {
+  for (ref<Expression>& node : this->elements) {
+    node = cast<Expression>(pass->visit(node));
+  }
+}
+
+}  // namespace charly::core::compiler

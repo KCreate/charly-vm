@@ -39,7 +39,7 @@ Token Lexer::read_token_all() {
 
   size_t offset_start = m_source.readoffset();
 
-  token.location.filename = std::make_shared<utils::string>(m_filename);
+  token.location.filename = m_filename;
   token.location.offset = offset_start;
   token.location.length = 1;
   token.location.row = m_row;
@@ -470,7 +470,7 @@ void Lexer::increment_column(size_t delta) {
   m_column += delta;
 }
 
-uint32_t Lexer::peek_char(uint32_t nth) {
+uint32_t Lexer::peek_char(uint32_t nth) const {
   return m_source.peek_utf8(nth);
 }
 
@@ -480,51 +480,51 @@ uint32_t Lexer::read_char() {
   return cp;
 }
 
-uint32_t Lexer::last_char() {
+uint32_t Lexer::last_char() const {
   return m_last_character;
 }
 
-bool Lexer::is_whitespace(uint32_t cp) {
+bool Lexer::is_whitespace(uint32_t cp) const {
   return (cp == ' ' || cp == '\r' || cp == '\t');
 }
 
-bool Lexer::is_decimal(uint32_t cp) {
+bool Lexer::is_decimal(uint32_t cp) const {
   return (cp >= '0' && cp <= '9');
 }
 
-bool Lexer::is_hex(uint32_t cp) {
+bool Lexer::is_hex(uint32_t cp) const {
   return is_decimal(cp) || (cp >= 'a' && cp <= 'f') || (cp >= 'A' && cp <= 'F');
 }
 
-bool Lexer::is_binary(uint32_t cp) {
+bool Lexer::is_binary(uint32_t cp) const {
   return (cp == '0' || cp == '1');
 }
 
-bool Lexer::is_octal(uint32_t cp) {
+bool Lexer::is_octal(uint32_t cp) const {
   return (cp >= '0' && cp <= '7');
 }
 
-bool Lexer::is_alpha_lower(uint32_t cp) {
+bool Lexer::is_alpha_lower(uint32_t cp) const {
   return (cp >= 'a' && cp <= 'z');
 }
 
-bool Lexer::is_alpha_upper(uint32_t cp) {
+bool Lexer::is_alpha_upper(uint32_t cp) const {
   return (cp >= 'A' && cp <= 'Z');
 }
 
-bool Lexer::is_alpha(uint32_t cp) {
+bool Lexer::is_alpha(uint32_t cp) const {
   return is_alpha_lower(cp) || is_alpha_upper(cp);
 }
 
-bool Lexer::is_alphanumeric(uint32_t cp) {
+bool Lexer::is_alphanumeric(uint32_t cp) const {
   return is_alpha(cp) || is_decimal(cp);
 }
 
-bool Lexer::is_id_begin(uint32_t cp) {
+bool Lexer::is_id_begin(uint32_t cp) const {
   return is_alpha(cp) || cp == '$' || cp == '_';
 }
 
-bool Lexer::is_id_part(uint32_t cp) {
+bool Lexer::is_id_part(uint32_t cp) const {
   return is_id_begin(cp) || is_decimal(cp);
 }
 

@@ -1,30 +1,16 @@
 # Todos
 
-- Clang Tidy Setup
-  - Function naming scheme?
-
-- AST building methods
-  - Constructing new AST nodes should be short and simple
+- AST Visitor
+  - Need to be able to replace occurences of visited node with some other node
+    - Not every node can be replaced with every other node (cannot replace an Int with an If)
+  - Different tree traversal hooks
+    - on_enter          called before children are visited
+    - on_leave          called after children are visited
 
 - Match methods to check for AST structure and extract nodes from the graph
   - Similar to LLVMs match syntax
 
 - Parser unit tests
-
-- AST Visitor
-  - Different tree traversal hooks
-    - OnEnterBlock, OnLeaveBlock    Called when the node is entered, left
-    - OnVisitBlock                  Called when the node is entered, expected to visit children manually
-    - Visited node can be replaced by writing to the
-      shared_ptr reference passed to the visitor callback
-
-- Build AST representation
-  - No boilerplate code for traversal and modification visitors
-    - Visitor classes should just be able to define certain virtual methods
-    - Somehow automatically generate these methods?
-  - Easy to build by hand
-  - Semantic annotations
-  - Location information
 
 - Parser
   - No desugaring or optimizations

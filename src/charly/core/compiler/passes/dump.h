@@ -24,12 +24,32 @@
  * SOFTWARE.
  */
 
-#include "charly/core/compiler/parser.h"
 #include "charly/core/compiler/astpass.h"
-#include "charly/core/compiler/passes/dump.h"
 
 #pragma once
 
-namespace charly::core::compiler {
+namespace charly::core::compiler::ast {
 
-}
+class DumpPass : public ASTPass {
+  virtual void on_enter_any(const ref<Node>& node) override {
+    for (uint16_t i = 0; i < m_depth; i++) {
+      m_stream << "  ";
+    }
+
+    m_stream << *node << '\n';
+    m_depth++;
+  }
+
+  virtual void on_leave_any(const ref<Node>&) override {
+    m_depth--;
+  }
+
+public:
+  DumpPass(std::ostream& stream = std::cout) : m_stream(stream), m_depth(0) {}
+
+private:
+  std::ostream& m_stream;
+  uint16_t m_depth;
+};
+
+}  // namespace charly::core::compiler::ast

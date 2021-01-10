@@ -33,27 +33,27 @@
 namespace charly::core::compiler {
 
 // base class of all compiler errors
-class CompilerError : public std::runtime_error {
-public:
+struct CompilerError : public std::runtime_error {
+  Location location;
+
   CompilerError(const utils::string& message, const Location& location) :
-    std::runtime_error(message), m_location(location) {}
+    std::runtime_error(message), location(location) {}
 
   // write a formatted version of this error to the stream:
   //
   // <filename>:<row>:<col>: <message>
-  virtual void dump(std::ostream& io) {
-    io << *m_location.filename;
-    io << ':';
-    io << m_location.row;
-    io << ':';
-    io << m_location.column;
-    io << ':';
-    io << ' ';
-    io << what();
-  }
+  friend std::ostream& operator<<(std::ostream& out, const CompilerError& error) {
+    out << *error.location.filename;
+    out << ':';
+    out << error.location.row;
+    out << ':';
+    out << error.location.column;
+    out << ':';
+    out << ' ';
+    out << error.what();
 
-private:
-  Location m_location;
+    return out;
+  }
 };
 
 }  // namespace charly::core::compiler
