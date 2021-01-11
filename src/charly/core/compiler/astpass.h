@@ -34,73 +34,37 @@
 
 namespace charly::core::compiler::ast {
 
+#define AST_NODE(R, T)                       \
+public:                                      \
+  ref<R> visit(const ref<T>& node) {         \
+    enter_any(node);                         \
+    if (enter(node))                         \
+      node->visit_children(this);            \
+    ref<R> replacement = leave(node);        \
+    if (replacement.get() != node.get())     \
+      m_modified_nodes++;                    \
+    leave_any(replacement);                  \
+    return replacement;                      \
+  }                                          \
+                                             \
+private:                                     \
+  virtual bool enter(const ref<T>&) {        \
+    return true;                             \
+  }                                          \
+  virtual ref<R> leave(const ref<T>& node) { \
+    return node;                             \
+  }
+
+// base class of all ast passes.
+//
+// subclasses may override the virtual begin and leave methods
 class ASTPass {
-#define AST_NODE(R, T)                    \
-public:                                   \
-  ref<R> visit(ref<T> node) {             \
-    ref<R> replacement = on_enter(node);  \
-    on_enter_any(replacement);            \
-    if (replacement.get() != node.get()) \
-      return replacement; \
-    node->visit_children(this);           \
-    replacement = on_leave(node);         \
-    on_leave_any(replacement);            \
-    return replacement;                   \
-  }                                       \
-                                          \
-private:                                  \
-  virtual ref<R> on_leave(ref<T>& node) { \
-    return node;                          \
-  }                                       \
-  virtual ref<R> on_enter(ref<T>& node) { \
-    return node;                          \
-  }
+  friend class Node; // for overload switch handling
 
-public:
-  ref<Node> visit(ref<Node> node) {
-    if (ref<Block> n = cast<Block>(node)) {
-      return this->visit(n);
-    }
-    if (ref<Program> n = cast<Program>(node)) {
-      return this->visit(n);
-    }
-    if (ref<Id> n = cast<Id>(node)) {
-      return this->visit(n);
-    }
-    if (ref<Int> n = cast<Int>(node)) {
-      return this->visit(n);
-    }
-    if (ref<Float> n = cast<Float>(node)) {
-      return this->visit(n);
-    }
-    if (ref<Bool> n = cast<Bool>(node)) {
-      return this->visit(n);
-    }
-    if (ref<String> n = cast<String>(node)) {
-      return this->visit(n);
-    }
-    if (ref<FormatString> n = cast<FormatString>(node)) {
-      return this->visit(n);
-    }
-    if (ref<Null> n = cast<Null>(node)) {
-      return this->visit(n);
-    }
-    if (ref<Self> n = cast<Self>(node)) {
-      return this->visit(n);
-    }
-    if (ref<Super> n = cast<Super>(node)) {
-      return this->visit(n);
-    }
-    if (ref<Tuple> n = cast<Tuple>(node)) {
-      return this->visit(n);
-    }
+  uint32_t m_modified_nodes = 0;
 
-    assert(false && "Unsupported node type");
-  }
-
-private:
-  virtual void on_enter_any(const ref<Node>&) {}
-  virtual void on_leave_any(const ref<Node>&) {}
+  virtual void enter_any(const ref<Node>&) {}
+  virtual void leave_any(const ref<Node>&) {}
 
   AST_NODE(Statement,  Block)
   AST_NODE(Node,       Program)
@@ -115,7 +79,24 @@ private:
   AST_NODE(Expression, Super)
   AST_NODE(Expression, Tuple)
 
-#undef AST_NODE
+public:
+  ref<Node> visit(const ref<Node>& node) {
+    return node->visit(this, node);
+  }
+
+  ref<Statement> visit(const ref<Statement>& node) {
+    return node->visit(this, node);
+  }
+
+  ref<Expression> visit(const ref<Expression>& node) {
+    return node->visit(this, node);
+  }
+
+  uint32_t modified_count() {
+    return m_modified_nodes;
+  }
 };
+
+#undef AST_NODE
 
 }  // namespace charly::core::compiler::ast

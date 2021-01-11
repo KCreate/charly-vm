@@ -28,6 +28,9 @@
 
 #include <catch2/catch_all.hpp>
 
+#include "charly/utils/vector.h"
+#include "charly/utils/queue.h"
+
 #include "charly/core/compiler/parser.h"
 #include "charly/core/compiler/astpass.h"
 
@@ -65,7 +68,7 @@ using namespace charly::core::compiler;
 struct VisitedNodesStatisticsPass : public ASTPass {
   int types[256] = {static_cast<int>(Node::Type::Unknown)};
 
-  virtual void on_enter_any(const ref<Node>& node) override {
+  virtual void enter_any(const ref<Node>& node) override {
     types[static_cast<int>(node->type())] += 1;
   }
 };
@@ -74,12 +77,12 @@ struct NumberSummerPass : public ASTPass {
     int64_t intsum = 0;
     double floatsum = 0.0;
 
-    virtual ref<Expression> on_leave(ref<Int>& node) override {
+    virtual ref<Expression> leave(const ref<Int>& node) override {
       intsum += node->value;
       return node;
     }
 
-    virtual ref<Expression> on_leave(ref<Float>& node) override {
+    virtual ref<Expression> leave(const ref<Float>& node) override {
       floatsum += node->value;
       return node;
     }
@@ -105,7 +108,7 @@ TEST_CASE("can modify ast nodes") {
   ref<Expression> node1 = Parser::parse_expression("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)");
 
   struct IntsAboveFiveWithZeroReplacerPass : public ASTPass {
-    virtual ref<Expression> on_leave(ref<Int>& node) override {
+    virtual ref<Expression> leave(const ref<Int>& node) override {
       if (node->value > 5) {
         node->value = 0;
       }
@@ -128,7 +131,7 @@ TEST_CASE("can replace nodes") {
   ref<Expression> node1 = Parser::parse_expression("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)");
 
   struct IntsThatAreFiveOrAboveWithPiReplacerPass : public ASTPass {
-    virtual ref<Expression> on_leave(ref<Int>& node) override {
+    virtual ref<Expression> leave(const ref<Int>& node) override {
       if (node->value >= 5) {
         return make<Float>(3.1415);
       }
@@ -151,7 +154,7 @@ TEST_CASE("can remove statements from blocks and tuples") {
   ref<Block> block = Parser::parse_program("1 2 3 4")->block;
 
   struct IntsAbove2RemoverPass : public ASTPass {
-    virtual ref<Expression> on_leave(ref<Int>& node) {
+    virtual ref<Expression> leave(const ref<Int>& node) override {
       if (node->value > 2)
         return nullptr;
 
@@ -175,11 +178,11 @@ TEST_CASE("calls enter and leave callbacks") {
   struct OrderVerifyPass : public ASTPass {
     utils::vector<Node::Type> typestack;
 
-    virtual void on_enter_any(const ref<Node>& node) {
+    virtual void enter_any(const ref<Node>& node) override {
       typestack.push_back(node->type());
     }
 
-    virtual void on_leave_any(const ref<Node>& node) {
+    virtual void leave_any(const ref<Node>& node) override {
       CHECK(typestack.back() == node->type());
       typestack.pop_back();
     }
@@ -187,4 +190,80 @@ TEST_CASE("calls enter and leave callbacks") {
 
   OrderVerifyPass verify_pass;
   verify_pass.visit(exp);
+}
+
+TEST_CASE("enter method can prevent children from being visited") {
+  struct TupleSequencerPass : public ASTPass {
+    utils::vector<ref<Int>> visited_ints;
+    utils::queue<ref<Tuple>> queued_tuples;
+
+    void keep_processing() {
+      ref<Tuple> tup = queued_tuples.front();
+      queued_tuples.pop();
+
+      for (ref<Expression>& exp : tup->elements) {
+        visit(exp);
+      }
+    }
+
+    bool finished() {
+      return queued_tuples.size() == 0;
+    }
+
+    virtual ref<Expression> leave(const ref<Int>& node) override {
+      visited_ints.push_back(node);
+      return node;
+    }
+
+    virtual bool enter(const ref<Tuple>& block) override {
+      queued_tuples.push(block);
+      return false;
+    }
+  };
+
+  TupleSequencerPass sequencer;
+
+  sequencer.visit(Parser::parse_expression("((((((0,), 1), 2), 3), 4), 5)"));
+
+  do {
+    sequencer.keep_processing();
+  } while (!sequencer.finished());
+
+  CHECK(sequencer.visited_ints.size() == 6);
+  CHECK(sequencer.visited_ints[0]->value == 5);
+  CHECK(sequencer.visited_ints[1]->value == 4);
+  CHECK(sequencer.visited_ints[2]->value == 3);
+  CHECK(sequencer.visited_ints[3]->value == 2);
+  CHECK(sequencer.visited_ints[4]->value == 1);
+  CHECK(sequencer.visited_ints[5]->value == 0);
+}
+
+TEST_CASE("counts how many nodes have been modified") {
+  ref<Tuple> tup = EXP("((((5,),),),)", Tuple);
+
+  struct RemoveTopTuplePass : public ASTPass {
+    virtual bool enter(const ref<Tuple>&) override {
+      return false;
+    }
+
+    virtual ref<Expression> leave(const ref<Tuple>& node) override {
+      REQUIRE(node->elements.size() == 1);
+      return node->elements[0];
+    }
+  };
+
+  RemoveTopTuplePass pass;
+
+  CHECK(pass.modified_count() == 0);
+
+  ref<Expression> result;
+  result = pass.visit(tup);
+  result = pass.visit(result);
+  result = pass.visit(result);
+  result = pass.visit(result);
+
+  CHECK(pass.modified_count() == 4);
+
+  REQUIRE(isa<Int>(result));
+  CHECK(cast<Int>(result)->value == 5);
 }

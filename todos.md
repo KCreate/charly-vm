@@ -1,14 +1,13 @@
 # Todos
 
-- AST Visitor
-  - Need to be able to replace occurences of visited node with some other node
-    - Not every node can be replaced with every other node (cannot replace an Int with an If)
-  - Different tree traversal hooks
-    - on_enter          called before children are visited
-    - on_leave          called after children are visited
+- AST helper methods
+  - Inline functional `as` method (e.g. `block->statements[0]->as<Int>()`)
+    - Currently some issue with bad_weak_ptr exceptions and shared_ptrs
+    - Happens inside shared_from_this() when there are no previous shared ptrs to this pointer
+
+- Replace utils::vector, map, queue with regular std:: usage
 
 - Match methods to check for AST structure and extract nodes from the graph
-  - Similar to LLVMs match syntax
 
 - Parser unit tests
 

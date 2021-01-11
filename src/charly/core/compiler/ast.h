@@ -58,6 +58,7 @@ class ASTPass; // forward declaration
 // base class of all ast nodes
 class Node : std::enable_shared_from_this<Node> {
   friend class ASTPass;
+
 public:
   enum class Type : uint8_t {
     Unknown = 0,
@@ -169,7 +170,8 @@ public:
 
 protected:
   virtual ~Node() {};
-  void visit(ASTPass*);
+  template <typename T>
+  ref<T> visit(ASTPass* pass, const ref<T>& node);
   virtual void visit_children(ASTPass*) {}
   virtual void details(std::ostream&) const {}
 
@@ -186,70 +188,7 @@ bool isa(const ref<Node>& node) {
     return Node::Type::T;                    \
   }
 
-/*
- *  - #Node
- *    - Program
- *    - #Statement
- *      - Block
- *      - Declaration
- *      - #ControlStructure
- *        - If
- *        - DoWhile
- *        - While
- *        - Switch
- *          + SwitchCase
- *        - Try
- *          + Catch
- *      - #ControlStatement
- *        - Return
- *        - Break
- *        - Continue
- *        - Throw
- *      - #Expression
- *        - #ControlExpression
- *          - Yield
- *          - Await
- *          - Spawn
- *          - Import
- *          - Typeof
- *          - Match
- *            + MatchArm
- *          - Ternary
- *        - #Literal
- *          - #ConstantLiteral
- *            - Int
- *            - Float
- *            - String
- *            - Bool
- *            - Null
- *          - Id
- *          - List
- *          - Dict
- *          - FormatString
- *          - Function
- *          - Super
- *          - Self
- *          - Class
- *            + #ClassStatement
- *              - PropertyDeclaration
- *              - MethodDeclaration
- *        - BinaryOp
- *        - Member
- *        - Subscript
- *        - Call
- *        - UnaryOp
- *        - #AssignmentExpression
- *          - Assignment
- *          - OperatorAssignment
- * */
-
 class Statement : public Node {};
-
-class ControlStructure : public Statement {};
-
-class Expression : public Statement {};
-
-class ConstantExpression : public Expression {};
 
 class Block final : public Statement {
   AST_NODE(Block)
@@ -272,6 +211,22 @@ public:
   }
 
   virtual void visit_children(ASTPass*) override;
+};
+
+class Expression : public Statement {};
+
+class ConstantExpression : public Expression {};
+
+class Null final : public ConstantExpression {
+  AST_NODE(Null)
+};
+
+class Self final : public ConstantExpression {
+  AST_NODE(Self)
+};
+
+class Super final : public ConstantExpression {
+  AST_NODE(Super)
 };
 
 template <typename T>
@@ -337,18 +292,6 @@ public:
   utils::vector<ref<Expression>> elements;
 
   virtual void visit_children(ASTPass*) override;
-};
-
-class Null final : public ConstantExpression {
-  AST_NODE(Null)
-};
-
-class Self final : public ConstantExpression {
-  AST_NODE(Self)
-};
-
-class Super final : public ConstantExpression {
-  AST_NODE(Super)
 };
 
 class Tuple final : public Expression {
