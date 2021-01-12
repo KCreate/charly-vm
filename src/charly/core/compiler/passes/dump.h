@@ -25,30 +25,77 @@
  */
 
 #include "charly/core/compiler/astpass.h"
+#include "charly/utils/colorwriter.h"
 
 #pragma once
 
 namespace charly::core::compiler::ast {
 
 class DumpPass : public ASTPass {
-  virtual void on_enter_any(const ref<Node>& node) override {
+  virtual void before_enter_any(const ref<Node>& node) override {
     for (uint16_t i = 0; i < m_depth; i++) {
-      m_stream << "  ";
+      m_writer.write("  ");
     }
 
-    m_stream << *node << '\n';
+    m_writer.write("- ");
+    m_writer.blue(node->name());
+  }
+
+  virtual void after_enter_any(const ref<Node>& node) override {
+    m_writer.write(" ");
+    m_writer.grey(node->location());
+    m_writer.write('\n');
     m_depth++;
   }
 
-  virtual void on_leave_any(const ref<Node>&) override {
+  virtual void before_leave_any(const ref<Node>&) override {
     m_depth--;
   }
 
-public:
-  DumpPass(std::ostream& stream = std::cout) : m_stream(stream), m_depth(0) {}
+  virtual bool enter(const ref<Program>& node) override {
+    m_writer.write(' ');
+    m_writer.yellow("filename");
+    m_writer.white(" = ");
+    m_writer.yellow(node->filename);
+    return true;
+  }
 
-private:
-  std::ostream& m_stream;
+  virtual bool enter(const ref<Id>& node) override {
+    m_writer.write(' ');
+    m_writer.yellow(node->value);
+    return true;
+  }
+
+  virtual bool enter(const ref<Int>& node) override {
+    m_writer.write(' ');
+    m_writer.red(node->value);
+    return true;
+  }
+
+  virtual bool enter(const ref<Float>& node) override {
+    m_writer.write(' ');
+    m_writer.red(node->value);
+    return true;
+  }
+
+  virtual bool enter(const ref<Bool>& node) override {
+    m_writer.write(' ');
+    m_writer.red(node->value ? "true" : "false");
+    return true;
+  }
+
+  virtual bool enter(const ref<String>& node) override {
+    m_writer.write(' ');
+    m_writer.yellow('\"');
+    m_writer.yellow(node->value);
+    m_writer.yellow('\"');
+    return true;
+  }
+
+public:
+  DumpPass(std::ostream& stream = std::cout) : m_writer(stream), m_depth(0) {}
+
+  utils::ColorWriter m_writer;
   uint16_t m_depth;
 };
 

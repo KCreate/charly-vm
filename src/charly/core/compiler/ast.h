@@ -148,24 +148,6 @@ public:
     return TypeNames[static_cast<int>(this->type())];
   }
 
-  friend std::ostream& operator<<(std::ostream& out, const Node& node) {
-    out << "- " << node.name();
-
-    std::stringstream stream;
-    node.details(stream);
-    utils::string details_str = stream.str();
-
-    if (details_str.size()) {
-      out << " ";
-      out << details_str;
-    }
-
-    out << " ";
-    out << node.location();
-
-    return out;
-  }
-
   virtual Type type() const = 0;
 
 protected:
@@ -173,7 +155,6 @@ protected:
   template <typename T>
   ref<T> visit(ASTPass* pass, const ref<T>& node);
   virtual void visit_children(ASTPass*) {}
-  virtual void details(std::ostream&) const {}
 
   LocationRange m_location;
 };
@@ -206,10 +187,6 @@ public:
   utils::string filename;
   ref<Block> block;
 
-  virtual void details(std::ostream& out) const override {
-    out << filename;
-  }
-
   virtual void visit_children(ASTPass*) override;
 };
 
@@ -234,9 +211,6 @@ class Atom : public ConstantExpression {
 public:
   Atom(T value) : value(value) {}
   T value;
-  virtual void details(std::ostream& out) const override {
-    out << value;
-  }
 };
 
 class Id final : public Atom<utils::string> {
@@ -255,35 +229,18 @@ class Float final : public Atom<double> {
   AST_NODE(Float)
 public:
   using Atom<double>::Atom;
-
-  virtual void details(std::ostream& out) const override {
-    const double d = out.precision();
-    out.precision(6);
-    out << std::fixed;
-    out << value;
-    out << std::scientific;
-    out.precision(d);
-  }
 };
 
 class Bool final : public Atom<bool> {
   AST_NODE(Bool)
 public:
   using Atom<bool>::Atom;
-
-  virtual void details(std::ostream& out) const override {
-    out << (value ? "true" : "false");
-  }
 };
 
 class String final : public Atom<utils::string> {
   AST_NODE(String)
 public:
   using Atom<utils::string>::Atom;
-
-  virtual void details(std::ostream& out) const override {
-    out << "\"" << value << "\"";
-  }
 };
 
 class FormatString final : public Expression {

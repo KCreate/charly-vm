@@ -1,23 +1,14 @@
 # Todos
 
-- AST helper methods
-  - Inline functional `as` method (e.g. `block->statements[0]->as<Int>()`)
-    - Currently some issue with bad_weak_ptr exceptions and shared_ptrs
-    - Happens inside shared_from_this() when there are no previous shared ptrs to this pointer
-
 - Replace utils::vector, map, queue with regular std:: usage
 
 - Match methods to check for AST structure and extract nodes from the graph
 
-- Parser unit tests
-
 - Parser
-  - No desugaring or optimizations
-    - These transformations are performed in the next layer
+  - parse assignment operators
   - parse comparison operators
   - parse bitwise operators
   - parse arithmetic operators
-  - parse assignment operators
   - parse control keywords (return, break, continue, defer, throw)
   - parse expression keywords (yield, spawn, import, await, typeof)
   - parse ternary expressions

@@ -37,22 +37,26 @@ namespace charly::core::compiler::ast {
 #define AST_NODE(R, T)                       \
 public:                                      \
   ref<R> visit(const ref<T>& node) {         \
-    enter_any(node);                         \
-    if (enter(node))                         \
+    before_enter_any(node);                  \
+    bool visit_children = enter(node);       \
+    after_enter_any(node);                   \
+    if (visit_children) {                    \
       node->visit_children(this);            \
+    }                                        \
+    before_leave_any(node);                  \
     ref<R> replacement = leave(node);        \
+    after_leave_any(replacement);            \
     if (replacement.get() != node.get())     \
       m_modified_nodes++;                    \
-    leave_any(replacement);                  \
     return replacement;                      \
   }                                          \
                                              \
 private:                                     \
-  virtual bool enter(const ref<T>&) {        \
-    return true;                             \
+  virtual bool enter(const ref<T>& node) {   \
+    return enter_any(node);                  \
   }                                          \
   virtual ref<R> leave(const ref<T>& node) { \
-    return node;                             \
+    return cast<R>(leave_any(node));         \
   }
 
 // base class of all ast passes.
@@ -63,8 +67,13 @@ class ASTPass {
 
   uint32_t m_modified_nodes = 0;
 
-  virtual void enter_any(const ref<Node>&) {}
-  virtual void leave_any(const ref<Node>&) {}
+  virtual void before_enter_any(const ref<Node>&) {}
+  virtual void after_enter_any(const ref<Node>&) {}
+  virtual void before_leave_any(const ref<Node>&) {}
+  virtual void after_leave_any(const ref<Node>&) {}
+
+  virtual bool enter_any(const ref<Node>&) { return true; }
+  virtual ref<Node> leave_any(const ref<Node>& node) { return node; }
 
   AST_NODE(Statement,  Block)
   AST_NODE(Node,       Program)
