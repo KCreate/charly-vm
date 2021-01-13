@@ -32,15 +32,15 @@ namespace {
 using namespace ast;
 }
 
-ref<Program> Parser::parse_program(const utils::string& source) {
+ref<Program> Parser::parse_program(const std::string& source) {
   return Parser("-", source).parse_program();
 }
 
-ref<Statement> Parser::parse_statement(const utils::string& source) {
+ref<Statement> Parser::parse_statement(const std::string& source) {
   return Parser("-", source).parse_statement();
 }
 
-ref<Expression> Parser::parse_expression(const utils::string& source) {
+ref<Expression> Parser::parse_expression(const std::string& source) {
   return Parser("-", source).parse_expression();
 }
 

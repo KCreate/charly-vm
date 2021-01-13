@@ -25,6 +25,7 @@
  */
 
 #include <stdexcept>
+#include <string>
 
 #include "charly/core/compiler/location.h"
 
@@ -36,7 +37,7 @@ namespace charly::core::compiler {
 struct CompilerError : public std::runtime_error {
   Location location;
 
-  CompilerError(const utils::string& message, const Location& location) :
+  CompilerError(const std::string& message, const Location& location) :
     std::runtime_error(message), location(location) {}
 
   // write a formatted version of this error to the stream:

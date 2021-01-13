@@ -25,11 +25,10 @@
  */
 
 #include <sstream>
+#include <vector>
+#include <queue>
 
 #include <catch2/catch_all.hpp>
-
-#include "charly/utils/vector.h"
-#include "charly/utils/queue.h"
 
 #include "charly/core/compiler/parser.h"
 #include "charly/core/compiler/astpass.h"
@@ -177,7 +176,7 @@ TEST_CASE("calls enter and leave callbacks") {
   ref<Expression> exp = Parser::parse_expression("((1, 2), (3, 4))");
 
   struct OrderVerifyPass : public ASTPass {
-    utils::vector<Node::Type> typestack;
+    std::vector<Node::Type> typestack;
 
     virtual bool enter_any(const ref<Node>& node) override {
       typestack.push_back(node->type());
@@ -197,8 +196,8 @@ TEST_CASE("calls enter and leave callbacks") {
 
 TEST_CASE("enter method can prevent children from being visited") {
   struct TupleSequencerPass : public ASTPass {
-    utils::vector<ref<Int>> visited_ints;
-    utils::queue<ref<Tuple>> queued_tuples;
+    std::vector<ref<Int>> visited_ints;
+    std::queue<ref<Tuple>> queued_tuples;
 
     void keep_processing() {
       ref<Tuple> tup = queued_tuples.front();

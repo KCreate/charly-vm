@@ -27,15 +27,14 @@
 #include <cstdint>
 #include <iostream>
 #include <memory>
-
-#include "charly/utils/string.h"
+#include <string>
 
 #pragma once
 
 namespace charly::core::compiler {
 
 struct Location {
-  std::shared_ptr<utils::string> filename;
+  std::shared_ptr<std::string> filename;
 
   // offset in source bytestream
   size_t offset = 0;

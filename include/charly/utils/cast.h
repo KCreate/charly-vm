@@ -30,8 +30,6 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "charly/utils/string.h"
-
 #pragma once
 
 namespace charly::utils {
@@ -56,7 +54,7 @@ inline int64_t charptr_to_int(const char* data, size_t length, int base = 10) {
   return result;
 }
 
-inline int64_t string_to_int(const utils::string& str, int base = 10) {
+inline int64_t string_to_int(const std::string& str, int base = 10) {
   return charptr_to_int(str.c_str(), str.size(), base);
 }
 
@@ -74,7 +72,7 @@ inline double charptr_to_double(const char* data, size_t length) {
   return result;
 }
 
-inline double string_to_double(const utils::string& str) {
+inline double string_to_double(const std::string& str) {
   return charptr_to_double(str.c_str(), str.size());
 }
 

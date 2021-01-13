@@ -24,10 +24,11 @@
  * SOFTWARE.
  */
 
+#include <string>
+
 #include "charly/core/compiler/ast.h"
 #include "charly/core/compiler/error.h"
 #include "charly/core/compiler/lexer.h"
-#include "charly/utils/string.h"
 
 #pragma once
 
@@ -39,14 +40,14 @@ using namespace ast;
 
 class Parser : public Lexer {
 public:
-  Parser(const utils::string& filename, const utils::string& source, uint32_t row = 1, uint32_t column = 1) :
+  Parser(const std::string& filename, const std::string& source, uint32_t row = 1, uint32_t column = 1) :
     Lexer(filename, source, row, column) {
     advance();
   }
 
-  static ref<Program> parse_program(const utils::string& source);
-  static ref<Statement> parse_statement(const utils::string& source);
-  static ref<Expression> parse_expression(const utils::string& source);
+  static ref<Program> parse_program(const std::string& source);
+  static ref<Statement> parse_statement(const std::string& source);
+  static ref<Expression> parse_expression(const std::string& source);
 
   ref<Program>   parse_program();
   ref<Block>     parse_block();
@@ -72,22 +73,22 @@ public:
 
 private:
   [[noreturn]] void unexpected_token() {
-    utils::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
+    std::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
     throw CompilerError("Unexpected token '" + real_type + "'", m_token.location);
   }
 
-  [[noreturn]] void unexpected_token(const utils::string& expected) {
-    utils::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
+  [[noreturn]] void unexpected_token(const std::string& expected) {
+    std::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
     throw CompilerError("Unexpected token '" + real_type + "' expected " + expected, m_token.location);
   }
 
   [[noreturn]] void unexpected_token(TokenType expected) {
-    utils::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
-    utils::string& expected_type = kTokenTypeStrings[static_cast<uint8_t>(expected)];
+    std::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
+    std::string& expected_type = kTokenTypeStrings[static_cast<uint8_t>(expected)];
     throw CompilerError("Unexpected token '" + real_type + "' expected '" + expected_type + "'", m_token.location);
   }
 
-  [[noreturn]] void unexpected_node(const ref<Node> node, const utils::string& message) {
+  [[noreturn]] void unexpected_node(const ref<Node> node, const std::string& message) {
     throw CompilerError(message, node->begin());
   }
 

@@ -1,7 +1,5 @@
 # Todos
 
-- Replace utils::vector, map, queue with regular std:: usage
-
 - Match methods to check for AST structure and extract nodes from the graph
 
 - Parser

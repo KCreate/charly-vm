@@ -25,10 +25,10 @@
  */
 
 #include <iostream>
+#include <string>
+#include <unordered_map>
 
 #include "charly/core/compiler/location.h"
-#include "charly/utils/map.h"
-#include "charly/utils/string.h"
 
 #pragma once
 
@@ -144,7 +144,7 @@ enum class TokenType {
 };
 
 // string representations of token types
-static utils::string kTokenTypeStrings[] = {
+static std::string kTokenTypeStrings[] = {
   "EOF",     "Int",     "Float",    "NaN",       "True",   "false",    "Identifier", "String", "FormatString",
   "null",    "self",    "super",    "and",       "as",     "await",    "break",      "case",   "catch",
   "class",   "const",   "continue", "default",   "defer",  "do",       "else",       "export", "extends",
@@ -159,7 +159,7 @@ static utils::string kTokenTypeStrings[] = {
 };
 
 // identifiers with these names get remapped to keyword tokens
-static const utils::unordered_map<utils::string, TokenType> kKeywordsAndLiterals = {
+static const std::unordered_map<std::string, TokenType> kKeywordsAndLiterals = {
   { "NaN", TokenType::Float },         { "false", TokenType::False },   { "null", TokenType::Null },
   { "self", TokenType::Self },         { "super", TokenType::Super },   { "true", TokenType::True },
   { "and", TokenType::AndLiteral },    { "as", TokenType::As },         { "await", TokenType::Await },
@@ -181,7 +181,7 @@ static const utils::unordered_map<utils::string, TokenType> kKeywordsAndLiterals
 struct Token {
   TokenType type = TokenType::Eof;
   Location location;
-  utils::string source;
+  std::string source;
 
   union {
     TokenType assignment_operator;

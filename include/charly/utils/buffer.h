@@ -29,10 +29,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <stdexcept>
+#include <string>
 
 #include <utf8/utf8.h>
-
-#include "charly/utils/string.h"
 
 #pragma once
 
@@ -45,7 +44,7 @@ public:
     this->reserve_space(initial_capacity);
   }
 
-  Buffer(const utils::string& str) : Buffer(str.size()) {
+  Buffer(const std::string& str) : Buffer(str.size()) {
     this->append_string(str);
   }
 
@@ -88,7 +87,7 @@ public:
   void append_buffer(const Buffer& other);
 
   // write string into the buffer
-  void append_string(const utils::string& str);
+  void append_string(const std::string& str);
 
   // write null terminated string into the buffer
   void append_string(const char* str);
@@ -106,10 +105,10 @@ public:
   void reset_window();
 
   // create a string copy of the current window
-  utils::string window_string() const;
+  std::string window_string() const;
 
   // create a string copy of the current buffer
-  utils::string buffer_string() const;
+  std::string buffer_string() const;
 
   const char* data() const {
     return m_data;
@@ -160,7 +159,7 @@ inline void Buffer::append_buffer(const Buffer& other) {
   m_writeoffset += other.size();
 }
 
-inline void Buffer::append_string(const utils::string& str) {
+inline void Buffer::append_string(const std::string& str) {
   this->write_to(str.c_str(), str.size(), m_writeoffset);
   m_writeoffset += str.size();
 }
@@ -216,20 +215,20 @@ inline void Buffer::reset_window() {
   m_window = m_readoffset;
 }
 
-inline utils::string Buffer::window_string() const {
+inline std::string Buffer::window_string() const {
   size_t window_size = m_readoffset - m_window;
 
   if (window_size == 0)
-    return utils::string("");
+    return std::string("");
 
-  return utils::string(m_data + m_window, window_size);
+  return std::string(m_data + m_window, window_size);
 }
 
-inline utils::string Buffer::buffer_string() const {
+inline std::string Buffer::buffer_string() const {
   if (m_writeoffset == 0)
-    return utils::string("");
+    return std::string("");
 
-  return utils::string(m_data, m_writeoffset);
+  return std::string(m_data, m_writeoffset);
 }
 
 inline void Buffer::reserve_space(size_t size) {

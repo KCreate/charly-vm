@@ -28,10 +28,9 @@
 #include <iostream>
 #include <sstream>
 #include <memory>
-
-#include "charly/utils/map.h"
-#include "charly/utils/string.h"
-#include "charly/utils/vector.h"
+#include <unordered_map>
+#include <string>
+#include <vector>
 
 #include "charly/core/compiler/location.h"
 #include "charly/core/compiler/token.h"
@@ -181,7 +180,7 @@ public:
   template <typename... Args>
   Block(Args&&... params) : statements({std::forward<Args>(params)...}) {}
 
-  utils::vector<ref<Statement>> statements;
+  std::vector<ref<Statement>> statements;
 
   virtual void visit_children(ASTPass*) override;
 };
@@ -189,11 +188,11 @@ public:
 class Program final : public Node {
   AST_NODE(Program)
 public:
-  Program(const utils::string& filename, ref<Statement> body = nullptr) : filename(filename), body(body) {
+  Program(const std::string& filename, ref<Statement> body = nullptr) : filename(filename), body(body) {
     this->set_location(body);
   }
 
-  utils::string filename;
+  std::string filename;
   ref<Statement> body;
 
   virtual void visit_children(ASTPass*) override;
@@ -252,10 +251,10 @@ public:
   T value;
 };
 
-class Id final : public Atom<utils::string> {
+class Id final : public Atom<std::string> {
   AST_NODE(Id)
 public:
-  using Atom<utils::string>::Atom;
+  using Atom<std::string>::Atom;
 };
 
 class Int final : public Atom<int64_t> {
@@ -276,10 +275,10 @@ public:
   using Atom<bool>::Atom;
 };
 
-class String final : public Atom<utils::string> {
+class String final : public Atom<std::string> {
   AST_NODE(String)
 public:
-  using Atom<utils::string>::Atom;
+  using Atom<std::string>::Atom;
 };
 
 class FormatString final : public Expression {
@@ -288,7 +287,7 @@ public:
   template <typename... Args>
   FormatString(Args&&... params) : elements({std::forward<Args>(params)...}) {}
 
-  utils::vector<ref<Expression>> elements;
+  std::vector<ref<Expression>> elements;
 
   virtual void visit_children(ASTPass*) override;
 };
@@ -299,7 +298,7 @@ public:
   template <typename... Args>
   Tuple(Args&&... params) : elements({std::forward<Args>(params)...}) {}
 
-  utils::vector<ref<Expression>> elements;
+  std::vector<ref<Expression>> elements;
 
   virtual void visit_children(ASTPass*) override;
 };

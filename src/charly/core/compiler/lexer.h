@@ -25,12 +25,12 @@
  */
 
 #include <memory>
+#include <unordered_map>
+#include <vector>
 
 #include "charly/core/compiler/error.h"
 #include "charly/core/compiler/token.h"
 #include "charly/utils/buffer.h"
-#include "charly/utils/string.h"
-#include "charly/utils/vector.h"
 
 #pragma once
 
@@ -39,8 +39,8 @@ namespace charly::core::compiler {
 // splits source input into individual tokens for parsing
 class Lexer {
 public:
-  Lexer(const utils::string& filename, const utils::string& source, uint32_t row = 1, uint32_t column = 1) :
-    m_filename(std::make_shared<utils::string>(filename)), m_source(source), m_row(row), m_column(column) {
+  Lexer(const std::string& filename, const std::string& source, uint32_t row = 1, uint32_t column = 1) :
+    m_filename(std::make_shared<std::string>(filename)), m_source(source), m_row(row), m_column(column) {
     m_last_character = '\0';
     m_mode = Mode::TopLevel;
   }
@@ -57,7 +57,7 @@ public:
 
 protected:
   // full path of the source file (or empty buffer)
-  std::shared_ptr<utils::string> m_filename;
+  std::shared_ptr<std::string> m_filename;
 
   // source code
   utils::Buffer m_source;
@@ -109,15 +109,15 @@ private:
   Mode m_mode;
 
   // keep track of interpolation brackets
-  utils::vector<size_t> m_interpolation_bracket_stack;
+  std::vector<size_t> m_interpolation_bracket_stack;
 
   // Opening brackets get pushed onto the stack, closing brackets pop
   // their corresponding opening bracket from the stack
   // throws an error on invalid bracket arrangement
-  utils::vector<TokenType> m_bracket_stack;
+  std::vector<TokenType> m_bracket_stack;
 
   // list of parsed tokens
-  utils::vector<Token> m_tokens;
+  std::vector<Token> m_tokens;
 };
 
 }  // namespace charly::core::compiler

@@ -124,7 +124,7 @@ TEST_CASE("Buffer") {
       buf.read_utf8();
     }
 
-    utils::string window = buf.window_string();
+    std::string window = buf.window_string();
     CHECK(window.compare("hello world!!") == 0);
   }
 
@@ -136,14 +136,14 @@ TEST_CASE("Buffer") {
     }
 
     {
-      utils::string window = buf.window_string();
+      std::string window = buf.window_string();
       CHECK(buf.window_string().compare("test") == 0);
     }
 
     buf.reset_window();
 
     {
-      utils::string window = buf.window_string();
+      std::string window = buf.window_string();
       CHECK(buf.window_string().compare("") == 0);
     }
   }

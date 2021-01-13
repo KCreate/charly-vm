@@ -25,6 +25,7 @@
  */
 
 #include <iostream>
+#include <string>
 
 #include "charly/utils/buffer.h"
 #include "charly/core/compiler.h"
@@ -33,7 +34,7 @@ using namespace charly;
 using namespace charly::core::compiler;
 
 int main() {
-  utils::string line;
+  std::string line;
 
   bool print_location = false;
 
@@ -42,6 +43,13 @@ int main() {
 
     if (!std::getline(std::cin, line))
       break;
+
+    if (line.compare(".help") == 0) {
+      std::cout << ".exit     Exit the REPL" << '\n';
+      std::cout << ".help     List of meta commands" << '\n';
+      std::cout << ".ast_loc  Display source locations in AST dump" << '\n';
+      continue;
+    }
 
     if (line.compare(".exit") == 0)
       break;
