@@ -75,6 +75,7 @@ public:
     Tuple,
     Assignment,
     ANDAssignment,
+    Ternary,
     TypeCount
   };
 
@@ -94,6 +95,7 @@ public:
     "Tuple",
     "Assignment",
     "ANDAssignment",
+    "Ternary",
     "__SENTINEL",
   };
 
@@ -226,6 +228,22 @@ public:
   TokenType opcode;
   ref<Expression> target;
   ref<Expression> source;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+class Ternary : public Expression {
+  AST_NODE(Ternary)
+public:
+  Ternary(ref<Expression> condition, ref<Expression> then_exp, ref<Expression> else_exp) :
+    condition(condition), then_exp(then_exp), else_exp(else_exp) {
+    this->set_begin(condition);
+    this->set_end(else_exp);
+  }
+
+  ref<Expression> condition;
+  ref<Expression> then_exp;
+  ref<Expression> else_exp;
 
   virtual void visit_children(ASTPass*) override;
 };

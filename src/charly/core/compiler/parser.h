@@ -45,23 +45,28 @@ public:
     advance();
   }
 
-  static ref<Program> parse_program(const std::string& source);
-  static ref<Statement> parse_statement(const std::string& source);
+  static ref<Program>    parse_program(const std::string& source);
+  static ref<Statement>  parse_statement(const std::string& source);
   static ref<Expression> parse_expression(const std::string& source);
 
+  // structural and statements
   ref<Program>   parse_program();
   ref<Block>     parse_block();
   ref<Block>     parse_block_body();
   ref<Statement> parse_statement();
 
+  // expressions
   ref<Expression> parse_comma_expression();
   ref<Expression> parse_expression();
   ref<Expression> parse_assignment();
+  ref<Expression> parse_ternary();
 
+  // compound literals
   ref<Expression>   parse_literal();
   ref<FormatString> parse_format_string();
   ref<Expression>   parse_tuple();
 
+  // single token ast nodes
   ref<Int>    parse_int_token();
   ref<Float>  parse_float_token();
   ref<Bool>   parse_bool_token();

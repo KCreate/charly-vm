@@ -1,15 +1,11 @@
 # Todos
 
-- Match methods to check for AST structure and extract nodes from the graph
-
 - Parser
-  - parse assignment operators
   - parse comparison operators
   - parse bitwise operators
   - parse arithmetic operators
   - parse control keywords (return, break, continue, defer, throw)
   - parse expression keywords (yield, spawn, import, await, typeof)
-  - parse ternary expressions
   - parse lists
   - parse dicts
   - parse sets

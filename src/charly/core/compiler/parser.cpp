@@ -104,7 +104,7 @@ ref<Expression> Parser::parse_expression() {
 }
 
 ref<Expression> Parser::parse_assignment() {
-  ref<Expression> target = parse_literal();
+  ref<Expression> target = parse_ternary();
 
   if (m_token.type == TokenType::Assignment) {
     TokenType assignment_operator = m_token.assignment_operator;
@@ -112,13 +112,26 @@ ref<Expression> Parser::parse_assignment() {
     eat(TokenType::Assignment);
 
     if (assignment_operator == TokenType::Assignment) {
-      return make<Assignment>(target, parse_assignment());
+      return make<Assignment>(target, parse_expression());
     } else {
-      return make<ANDAssignment>(assignment_operator, target, parse_assignment());
+      return make<ANDAssignment>(assignment_operator, target, parse_expression());
     }
   } else {
     return target;
   }
+}
+
+ref<Expression> Parser::parse_ternary() {
+  ref<Expression> condition = parse_literal();
+
+  if (skip(TokenType::QuestionMark)) {
+    ref<Expression> then_exp = parse_expression();
+    eat(TokenType::Colon);
+    ref<Expression> else_exp = parse_expression();
+    return make<Ternary>(condition, then_exp, else_exp);
+  }
+
+  return condition;
 }
 
 ref<Expression> Parser::parse_literal() {

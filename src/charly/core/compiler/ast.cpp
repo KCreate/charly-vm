@@ -43,6 +43,7 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
 
   SWITCH_NODE(Assignment)
   SWITCH_NODE(ANDAssignment)
+  SWITCH_NODE(Ternary)
 
   SWITCH_NODE(Id)
   SWITCH_NODE(Int)
@@ -86,6 +87,12 @@ void Assignment::visit_children(ASTPass* pass) {
 void ANDAssignment::visit_children(ASTPass* pass) {
   this->target = pass->visit(this->target);
   this->source = pass->visit(this->source);
+}
+
+void Ternary::visit_children(ASTPass* pass) {
+  this->condition = pass->visit(this->condition);
+  this->then_exp = pass->visit(this->then_exp);
+  this->else_exp = pass->visit(this->else_exp);
 }
 
 void FormatString::visit_children(ASTPass* pass) {

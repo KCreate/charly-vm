@@ -148,3 +148,17 @@ TEST_CASE("assignments") {
     make<Int>(25)
   ));
 }
+
+TEST_CASE("ternary if") {
+  CHECK_AST_EXP("true ? 1 : 0", make<Ternary>(make<Bool>(true), make<Int>(1), make<Int>(0)));
+  CHECK_AST_EXP("true ? foo ? bar : baz : 0", make<Ternary>(
+    make<Bool>(true),
+    make<Ternary>(make<Id>("foo"), make<Id>("bar"), make<Id>("baz")),
+    make<Int>(0)
+  ));
+  CHECK_AST_EXP("(foo ? bar : baz) ? foo ? bar : baz : foo ? bar : baz", make<Ternary>(
+    make<Ternary>(make<Id>("foo"), make<Id>("bar"), make<Id>("baz")),
+    make<Ternary>(make<Id>("foo"), make<Id>("bar"), make<Id>("baz")),
+    make<Ternary>(make<Id>("foo"), make<Id>("bar"), make<Id>("baz"))
+  ));
+}
