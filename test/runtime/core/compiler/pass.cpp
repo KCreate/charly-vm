@@ -66,10 +66,11 @@ using namespace charly::core::compiler;
 #define EXP(S, T) cast<T>(Parser::parse_expression(S))
 
 struct VisitedNodesStatisticsPass : public ASTPass {
-  int types[256] = {static_cast<int>(Node::Type::Unknown)};
+  int types[256] = {0};
 
-  virtual void enter_any(const ref<Node>& node) override {
+  virtual bool enter_any(const ref<Node>& node) override {
     types[static_cast<int>(node->type())] += 1;
+    return true;
   }
 };
 
@@ -151,7 +152,7 @@ TEST_CASE("can replace nodes") {
 }
 
 TEST_CASE("can remove statements from blocks and tuples") {
-  ref<Block> block = Parser::parse_program("1 2 3 4")->block;
+  ref<Block> block = cast<Block>(Parser::parse_program("1 2 3 4")->body);
 
   struct IntsAbove2RemoverPass : public ASTPass {
     virtual ref<Expression> leave(const ref<Int>& node) override {
@@ -178,13 +179,15 @@ TEST_CASE("calls enter and leave callbacks") {
   struct OrderVerifyPass : public ASTPass {
     utils::vector<Node::Type> typestack;
 
-    virtual void enter_any(const ref<Node>& node) override {
+    virtual bool enter_any(const ref<Node>& node) override {
       typestack.push_back(node->type());
+      return true;
     }
 
-    virtual void leave_any(const ref<Node>& node) override {
+    virtual ref<Node> leave_any(const ref<Node>& node) override {
       CHECK(typestack.back() == node->type());
       typestack.pop_back();
+      return node;
     }
   };
 

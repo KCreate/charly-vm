@@ -198,6 +198,7 @@ Token Lexer::read_token_all() {
           }
           default: {
             token.type = TokenType::Assignment;
+            token.assignment_operator = TokenType::Assignment;
             break;
           }
         }
@@ -409,9 +410,10 @@ Token Lexer::read_token_all() {
     }
 
   // and assignment operators
-  if (token.is_and_assignment_operator() && peek_char() == '=') {
+  if (token.is_operator() && peek_char() == '=') {
     read_char();
-    token.type = kANDAssignmentOperators.at(token.type);
+    token.assignment_operator = token.type;
+    token.type = TokenType::Assignment;
   }
 
   if (!(token.type == TokenType::String || token.type == TokenType::FormatString))

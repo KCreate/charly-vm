@@ -74,6 +74,8 @@ public:
     Self,
     Super,
     Tuple,
+    Assignment,
+    ANDAssignment,
     TypeCount
   };
 
@@ -91,6 +93,8 @@ public:
     "Self",
     "Super",
     "Tuple",
+    "Assignment",
+    "ANDAssignment",
     "__SENTINEL",
   };
 
@@ -174,6 +178,9 @@ class Statement : public Node {};
 class Block final : public Statement {
   AST_NODE(Block)
 public:
+  template <typename... Args>
+  Block(Args&&... params) : statements({std::forward<Args>(params)...}) {}
+
   utils::vector<ref<Statement>> statements;
 
   virtual void visit_children(ASTPass*) override;
@@ -182,15 +189,47 @@ public:
 class Program final : public Node {
   AST_NODE(Program)
 public:
-  Program(const utils::string& filename, ref<Block> block = nullptr) : filename(filename), block(block) {}
+  Program(const utils::string& filename, ref<Statement> body = nullptr) : filename(filename), body(body) {
+    this->set_location(body);
+  }
 
   utils::string filename;
-  ref<Block> block;
+  ref<Statement> body;
 
   virtual void visit_children(ASTPass*) override;
 };
 
 class Expression : public Statement {};
+
+class Assignment : public Expression {
+  AST_NODE(Assignment)
+public:
+  Assignment(ref<Expression> target, ref<Expression> source) : target(target), source(source) {
+    this->set_begin(target);
+    this->set_end(source);
+  }
+
+  ref<Expression> target;
+  ref<Expression> source;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+class ANDAssignment : public Expression {
+  AST_NODE(ANDAssignment)
+public:
+  ANDAssignment(TokenType opcode, ref<Expression> target, ref<Expression> source) :
+    opcode(opcode), target(target), source(source) {
+    this->set_begin(target);
+    this->set_end(source);
+  }
+
+  TokenType opcode;
+  ref<Expression> target;
+  ref<Expression> source;
+
+  virtual void visit_children(ASTPass*) override;
+};
 
 class ConstantExpression : public Expression {};
 
@@ -246,6 +285,9 @@ public:
 class FormatString final : public Expression {
   AST_NODE(FormatString)
 public:
+  template <typename... Args>
+  FormatString(Args&&... params) : elements({std::forward<Args>(params)...}) {}
+
   utils::vector<ref<Expression>> elements;
 
   virtual void visit_children(ASTPass*) override;
@@ -254,6 +296,9 @@ public:
 class Tuple final : public Expression {
   AST_NODE(Tuple)
 public:
+  template <typename... Args>
+  Tuple(Args&&... params) : elements({std::forward<Args>(params)...}) {}
+
   utils::vector<ref<Expression>> elements;
 
   virtual void visit_children(ASTPass*) override;

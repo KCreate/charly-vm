@@ -42,8 +42,10 @@ class DumpPass : public ASTPass {
   }
 
   virtual void after_enter_any(const ref<Node>& node) override {
-    m_writer.write(" ");
-    m_writer.grey(node->location());
+    if (m_print_location) {
+      m_writer.write(" ");
+      m_writer.white(node->location());
+    }
     m_writer.write('\n');
     m_depth++;
   }
@@ -57,6 +59,16 @@ class DumpPass : public ASTPass {
     m_writer.yellow("filename");
     m_writer.white(" = ");
     m_writer.yellow(node->filename);
+    return true;
+  }
+
+  virtual bool enter(const ref<ANDAssignment>& node) override {
+    m_writer.write(' ');
+    m_writer.yellow("operator");
+    m_writer.white(" = ");
+    m_writer.yellow('\'');
+    m_writer.yellow(kTokenTypeStrings[static_cast<int>(node->opcode)]);
+    m_writer.yellow('\'');
     return true;
   }
 
@@ -93,10 +105,12 @@ class DumpPass : public ASTPass {
   }
 
 public:
-  DumpPass(std::ostream& stream = std::cout) : m_writer(stream), m_depth(0) {}
+  DumpPass(std::ostream& stream = std::cout, bool print_location = true) :
+    m_writer(stream), m_depth(0), m_print_location(print_location) {}
 
   utils::ColorWriter m_writer;
   uint16_t m_depth;
+  bool m_print_location;
 };
 
 }  // namespace charly::core::compiler::ast

@@ -34,6 +34,9 @@ using namespace charly::core::compiler;
 
 int main() {
   utils::string line;
+
+  bool print_location = false;
+
   for (;;) {
     std::cout << "> ";
 
@@ -42,6 +45,11 @@ int main() {
 
     if (line.compare(".exit") == 0)
       break;
+
+    if (line.compare(".ast_loc") == 0) {
+      print_location = !print_location;
+      continue;
+    }
 
     {
       utils::Buffer buf;
@@ -53,10 +61,12 @@ int main() {
         ast::ref<ast::Program> program = parser.parse_program();
 
         // check if program has nodes
-        if (program->block->statements.size() == 0)
-          continue;
+        if (ref<Block> body = cast<Block>(program->body)) {
+          if (body->statements.size() == 0)
+            continue;
+        }
 
-        DumpPass().visit(program);
+        DumpPass(std::cout, print_location).visit(program);
       } catch (CompilerError& exc) {
         std::cout << exc << '\n';
       }

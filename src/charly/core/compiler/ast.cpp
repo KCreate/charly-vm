@@ -38,18 +38,22 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
     if (ref<ASTType> casted_node = cast<ASTType>(node)) \
       return cast<T>(pass->visit(casted_node));
 
-  SWITCH_NODE(Id)
-  SWITCH_NODE(Tuple)
-  SWITCH_NODE(FormatString)
-  SWITCH_NODE(Self)
-  SWITCH_NODE(Super)
-  SWITCH_NODE(Int)
-  SWITCH_NODE(Float)
-  SWITCH_NODE(String)
-  SWITCH_NODE(Bool)
-  SWITCH_NODE(Null)
   SWITCH_NODE(Block)
   SWITCH_NODE(Program)
+
+  SWITCH_NODE(Assignment)
+  SWITCH_NODE(ANDAssignment)
+
+  SWITCH_NODE(Id)
+  SWITCH_NODE(Int)
+  SWITCH_NODE(Float)
+  SWITCH_NODE(Bool)
+  SWITCH_NODE(String)
+  SWITCH_NODE(FormatString)
+  SWITCH_NODE(Null)
+  SWITCH_NODE(Self)
+  SWITCH_NODE(Super)
+  SWITCH_NODE(Tuple)
 #undef SWITCH_NODE
 
   assert(false && "Unknown node type");
@@ -71,7 +75,17 @@ void Block::visit_children(ASTPass* pass) {
 }
 
 void Program::visit_children(ASTPass* pass) {
-  this->block = cast<Block>(pass->visit(this->block));
+  this->body = pass->visit(this->body);
+}
+
+void Assignment::visit_children(ASTPass* pass) {
+  this->target = pass->visit(this->target);
+  this->source = pass->visit(this->source);
+}
+
+void ANDAssignment::visit_children(ASTPass* pass) {
+  this->target = pass->visit(this->target);
+  this->source = pass->visit(this->source);
 }
 
 void FormatString::visit_children(ASTPass* pass) {

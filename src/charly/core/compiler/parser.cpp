@@ -82,32 +82,118 @@ ref<Statement> Parser::parse_statement() {
   }
 }
 
-// ref<Expression> Parser::parse_comma_expression() {
-//   ref<Expression> exp = parse_expression();
-//   if (!type(TokenType::Comma))
-//     return exp;
-//
-//   ref<Tuple> tuple = make<Tuple>();
-//   tuple->set_begin(exp);
-//   tuple->elements.push_back(exp);
-//
-//   while (type(TokenType::Comma)) {
-//     eat(TokenType::Comma);
-//     tuple->elements.push_back(parse_expression());
-//   }
-//
-//   return tuple;
-// }
+ref<Expression> Parser::parse_comma_expression() {
+  ref<Expression> exp = parse_expression();
+  if (!type(TokenType::Comma))
+    return exp;
+
+  ref<Tuple> tuple = make<Tuple>();
+  tuple->set_begin(exp);
+  tuple->elements.push_back(exp);
+
+  while (type(TokenType::Comma)) {
+    eat(TokenType::Comma);
+    tuple->elements.push_back(parse_expression());
+  }
+
+  return tuple;
+}
 
 ref<Expression> Parser::parse_expression() {
-  return parse_tuple();
+  return parse_assignment();
+}
+
+ref<Expression> Parser::parse_assignment() {
+  ref<Expression> target = parse_literal();
+
+  if (m_token.type == TokenType::Assignment) {
+    TokenType assignment_operator = m_token.assignment_operator;
+
+    eat(TokenType::Assignment);
+
+    if (assignment_operator == TokenType::Assignment) {
+      return make<Assignment>(target, parse_assignment());
+    } else {
+      return make<ANDAssignment>(assignment_operator, target, parse_assignment());
+    }
+  } else {
+    return target;
+  }
+}
+
+ref<Expression> Parser::parse_literal() {
+  switch (m_token.type) {
+    case TokenType::Int: {
+      return parse_int_token();
+    }
+    case TokenType::Float: {
+      return parse_float_token();
+    }
+    case TokenType::True:
+    case TokenType::False: {
+      return parse_bool_token();
+    }
+    case TokenType::Identifier: {
+      return parse_identifier_token();
+    }
+    case TokenType::String: {
+      return parse_string_token();
+    }
+    case TokenType::FormatString: {
+      return parse_format_string();
+    }
+    case TokenType::LeftParen: {
+      return parse_tuple();
+    }
+    case TokenType::Null: {
+      return parse_null_token();
+    }
+    case TokenType::Self: {
+      return parse_self_token();
+    }
+    case TokenType::Super: {
+      return parse_super_token();
+    }
+    default: {
+      unexpected_token("literal");
+    }
+  }
+}
+
+ref<FormatString> Parser::parse_format_string() {
+  ref<FormatString> str = make<FormatString>();
+  begin(str);
+
+  ref<String> first_element = parse_string_token();
+  if (first_element->value.size() > 0) {
+    str->elements.push_back(first_element);
+  }
+
+  for (;;) {
+    str->elements.push_back(parse_expression());
+    eat(TokenType::RightCurly);
+
+    // if the expression is followed by another FormatString token the loop
+    // repeats and we parse another interpolated expression
+    //
+    // the format string is only terminated once a regular String token is passed
+    if (type(TokenType::FormatString) || type(TokenType::String)) {
+      bool last_part = type(TokenType::String);
+      ref<String> element = parse_string_token();
+      if (element->value.size() > 0)
+        str->elements.push_back(element);
+      if (last_part) {
+        break;
+      }
+    } else {
+      unexpected_token(TokenType::String);
+    }
+  }
+
+  return str;
 }
 
 ref<Expression> Parser::parse_tuple() {
-  if (!type(TokenType::LeftParen)) {
-    return parse_literal();
-  }
-
   ref<Tuple> tuple = make<Tuple>();
   begin(tuple);
 
@@ -136,69 +222,6 @@ ref<Expression> Parser::parse_tuple() {
   }
 
   return tuple;
-}
-
-ref<Expression> Parser::parse_literal() {
-  switch (m_token.type) {
-    case TokenType::Int: {
-      return parse_int_token();
-    }
-    case TokenType::Float: {
-      return parse_float_token();
-    }
-    case TokenType::True:
-    case TokenType::False: {
-      return parse_bool_token();
-    }
-    case TokenType::Identifier: {
-      return parse_identifier_token();
-    }
-    case TokenType::String: {
-      return parse_string_token();
-    }
-    case TokenType::FormatString: {
-      return parse_format_string();
-    }
-    case TokenType::Null: {
-      return parse_null_token();
-    }
-    case TokenType::Self: {
-      return parse_self_token();
-    }
-    case TokenType::Super: {
-      return parse_super_token();
-    }
-    default: {
-      unexpected_token("literal");
-    }
-  }
-}
-
-ref<FormatString> Parser::parse_format_string() {
-  ref<FormatString> str = make<FormatString>();
-  begin(str);
-
-  str->elements.push_back(parse_string_token());
-
-  for (;;) {
-    str->elements.push_back(parse_expression());
-    eat(TokenType::RightCurly);
-
-    // if the expression is followed by another FormatString token the loop
-    // repeats and we parse another interpolated expression
-    //
-    // the format string is only terminated once a regular String token is passed
-    if (type(TokenType::FormatString) || type(TokenType::String)) {
-      bool last_part = type(TokenType::String);
-      str->elements.push_back(parse_string_token());
-      if (last_part)
-        break;
-    } else {
-      unexpected_token(TokenType::String);
-    }
-  }
-
-  return str;
 }
 
 ref<Int> Parser::parse_int_token() {

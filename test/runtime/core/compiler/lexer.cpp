@@ -275,18 +275,18 @@ TEST_CASE("recognizes operators") {
   CHECK(lexer.read_token().type == TokenType::BitRightShift);
   CHECK(lexer.read_token().type == TokenType::BitUnsignedRightShift);
 
-  CHECK(lexer.read_token().type == TokenType::PlusAssignment);
-  CHECK(lexer.read_token().type == TokenType::MinusAssignment);
-  CHECK(lexer.read_token().type == TokenType::MulAssignment);
-  CHECK(lexer.read_token().type == TokenType::DivAssignment);
-  CHECK(lexer.read_token().type == TokenType::ModAssignment);
-  CHECK(lexer.read_token().type == TokenType::PowAssignment);
-  CHECK(lexer.read_token().type == TokenType::BitANDAssignment);
-  CHECK(lexer.read_token().type == TokenType::BitORAssignment);
-  CHECK(lexer.read_token().type == TokenType::BitXORAssignment);
-  CHECK(lexer.read_token().type == TokenType::BitLeftShiftAssignment);
-  CHECK(lexer.read_token().type == TokenType::BitRightShiftAssignment);
-  CHECK(lexer.read_token().type == TokenType::BitUnsignedRightShiftAssignment);
+  CHECK(lexer.read_token().assignment_operator == TokenType::Plus);
+  CHECK(lexer.read_token().assignment_operator == TokenType::Minus);
+  CHECK(lexer.read_token().assignment_operator == TokenType::Mul);
+  CHECK(lexer.read_token().assignment_operator == TokenType::Div);
+  CHECK(lexer.read_token().assignment_operator == TokenType::Mod);
+  CHECK(lexer.read_token().assignment_operator == TokenType::Pow);
+  CHECK(lexer.read_token().assignment_operator == TokenType::BitAND);
+  CHECK(lexer.read_token().assignment_operator == TokenType::BitOR);
+  CHECK(lexer.read_token().assignment_operator == TokenType::BitXOR);
+  CHECK(lexer.read_token().assignment_operator == TokenType::BitLeftShift);
+  CHECK(lexer.read_token().assignment_operator == TokenType::BitRightShift);
+  CHECK(lexer.read_token().assignment_operator == TokenType::BitUnsignedRightShift);
 }
 
 TEST_CASE("recognizes structure tokens") {

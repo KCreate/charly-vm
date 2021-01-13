@@ -29,10 +29,12 @@
 #include <catch2/catch_all.hpp>
 
 #include "charly/core/compiler/parser.h"
+#include "charly/core/compiler/passes/dump.h"
 
 using Catch::Matchers::Contains;
 
 using namespace charly::core::compiler;
+using namespace charly::core::compiler::ast;
 
 #define ASSERT_AST_TYPE(S, T)                          \
   {                                                    \
@@ -60,20 +62,41 @@ using namespace charly::core::compiler;
 
 #define EXP(S, T) cast<T>(Parser::parse_expression(S))
 
-TEST_CASE("parses literals") {
-  ASSERT_AST_VALUE("100",   Int,   100);
-  ASSERT_AST_VALUE("0",     Int,   0);
-  ASSERT_AST_VALUE("25.25", Float, 25.25);
-  ASSERT_AST_TYPE("NaN",    Float);
-  ASSERT_AST_VALUE("true",  Bool,  true);
-  ASSERT_AST_VALUE("false", Bool,  false);
-  ASSERT_AST_TYPE("null",   Null);
-  ASSERT_AST_TYPE("self",   Self);
-  ASSERT_AST_TYPE("super",  Super);
+#define CHECK_AST_EXP(S, N)                                           \
+  {                                                               \
+    std::stringstream exp_dump;                                   \
+    std::stringstream ref_dump;                                   \
+    DumpPass(exp_dump, false).visit(Parser::parse_expression(S)); \
+    DumpPass(ref_dump, false).visit(N);                           \
+    CHECK(exp_dump.str().compare(ref_dump.str()) == 0);           \
+  }
 
-  ASSERT_AST_STRING("\"\"",                                       String, "");
-  ASSERT_AST_STRING("\"hello world\"",                            String, "hello world");
-  ASSERT_AST_STRING("\"\\a \\b \\n \\t \\v \\f \\\" \\{ \\\\ \"", String, "\a \b \n \t \v \f \" { \\ ");
+TEST_CASE("parses literals") {
+  CHECK_AST_EXP("0",               make<Int>(0));
+  CHECK_AST_EXP("0x10",            make<Int>(0x10));
+  CHECK_AST_EXP("0xFFFF",          make<Int>(0xFFFF));
+  CHECK_AST_EXP("0b11111111",      make<Int>(0xFF));
+  CHECK_AST_EXP("0b01010101",      make<Int>(0x55));
+  CHECK_AST_EXP("0b00000000",      make<Int>(0x00));
+  CHECK_AST_EXP("0o777",           make<Int>(0777));
+  CHECK_AST_EXP("0o234",           make<Int>(0234));
+  CHECK_AST_EXP("foo",             make<Id>("foo"));
+  CHECK_AST_EXP("$",               make<Id>("$"));
+  CHECK_AST_EXP("$$foo",           make<Id>("$$foo"));
+  CHECK_AST_EXP("$1",              make<Id>("$1"));
+  CHECK_AST_EXP("__foo",           make<Id>("__foo"));
+  CHECK_AST_EXP("100",             make<Int>(100));
+  CHECK_AST_EXP("25.25",           make<Float>(25.25));
+  CHECK_AST_EXP("NaN",             make<Float>(NAN));
+  CHECK_AST_EXP("true",            make<Bool>(true));
+  CHECK_AST_EXP("false",           make<Bool>(false));
+  CHECK_AST_EXP("null",            make<Null>());
+  CHECK_AST_EXP("self",            make<Self>());
+  CHECK_AST_EXP("super",           make<Super>());
+  CHECK_AST_EXP("\"\"",            make<String>(""));
+  CHECK_AST_EXP("\"hello world\"", make<String>("hello world"));
+
+  CHECK_AST_EXP("\"\\a \\b \\n \\t \\v \\f \\\" \\{ \\\\ \"", make<String>("\a \b \n \t \v \f \" { \\ "));
 }
 
 TEST_CASE("parses tuples") {
@@ -99,43 +122,29 @@ TEST_CASE("parses tuples") {
 }
 
 TEST_CASE("interpolated strings") {
-  ref<FormatString> f1 = EXP("\"x:{x}\"", FormatString);
+  CHECK_AST_EXP("\"{x}\"", make<FormatString>(make<Id>("x")));
+  CHECK_AST_EXP("\"x:{x} after\"", make<FormatString>(make<String>("x:"), make<Id>("x"), make<String>(" after")));
+  CHECK_AST_EXP("\"x:{x} y:{\"{y}\"}\"", make<FormatString>(
+    make<String>("x:"),
+    make<Id>("x"),
+    make<String>(" y:"),
+    make<FormatString>(make<Id>("y"))
+  ));
+  CHECK_AST_EXP("\"{\"{x}\"}\"", make<FormatString>(
+    make<FormatString>(make<Id>("x"))
+  ));
+  CHECK_AST_EXP("\"x:{(foo, bar)}\"", make<FormatString>(
+    make<String>("x:"), make<Tuple>(make<Id>("foo"), make <Id>("bar")
+  )));
+}
 
-  CHECK(f1->elements.size() == 3);
-  REQUIRE(isa<String>(f1->elements[0]));
-  CHECK(cast<String>(f1->elements[0])->value.compare("x:") == 0);
-
-  REQUIRE(isa<Id>(f1->elements[1]));
-  CHECK(cast<Id>(f1->elements[1])->value.compare("x") == 0);
-
-  REQUIRE(isa<String>(f1->elements[2]));
-  CHECK(cast<String>(f1->elements[2])->value.compare("") == 0);
-
-
-
-  ref<FormatString> f2 = EXP("\"x:{x} y:{\"{y}\"}\"", FormatString);
-
-  CHECK(f2->elements.size() == 5);
-  REQUIRE(isa<String>(f2->elements[0]));
-  CHECK(cast<String>(f2->elements[0])->value.compare("x:") == 0);
-
-  REQUIRE(isa<Id>(f2->elements[1]));
-  CHECK(cast<Id>(f2->elements[1])->value.compare("x") == 0);
-
-  REQUIRE(isa<String>(f2->elements[2]));
-  CHECK(cast<String>(f2->elements[2])->value.compare(" y:") == 0);
-
-  REQUIRE(isa<FormatString>(f2->elements[3]));
-  CHECK(cast<FormatString>(f2->elements[3])->elements.size() == 3);
-
-  ref<FormatString> f2y = cast<FormatString>(f2->elements[3]);
-
-  REQUIRE(isa<String>(f2y->elements[0]));
-  CHECK(cast<String>(f2y->elements[0])->value.compare("") == 0);
-
-  REQUIRE(isa<Id>(f2y->elements[1]));
-  CHECK(cast<Id>(f2y->elements[1])->value.compare("y") == 0);
-
-  REQUIRE(isa<String>(f2y->elements[2]));
-  CHECK(cast<String>(f2y->elements[2])->value.compare("") == 0);
+TEST_CASE("assignments") {
+  CHECK_AST_EXP("x = 0", make<Assignment>(make<Id>("x"), make<Int>(0)));
+  CHECK_AST_EXP("x = 1", make<Assignment>(make<Id>("x"), make<Int>(1)));
+  CHECK_AST_EXP("x = true", make<Assignment>(make<Id>("x"), make<Bool>(true)));
+  CHECK_AST_EXP("x = (1, 2)", make<Assignment>(make<Id>("x"), make<Tuple>(make<Int>(1), make<Int>(2))));
+  CHECK_AST_EXP("(a, b, c) = 25", make<Assignment>(
+    make<Tuple>(make<Id>("a"), make<Id>("b"), make<Id>("c")),
+    make<Int>(25)
+  ));
 }
