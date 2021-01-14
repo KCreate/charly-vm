@@ -788,6 +788,7 @@ void Lexer::consume_string(Token& token) {
         case '\0': throw CompilerError("unfinished escape sequence", token.location);
         default: throw CompilerError("unknown escape sequence", token.location);
       }
+      continue;
     }
 
     string_buf.append_utf8(read_char());
