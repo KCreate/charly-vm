@@ -27,8 +27,8 @@
 #include <iostream>
 #include <string>
 
-#include <readline/readline.h>
 #include <readline/history.h>
+#include <readline/readline.h>
 
 #include "charly/core/compiler.h"
 #include "charly/utils/buffer.h"
@@ -37,7 +37,6 @@ using namespace charly;
 using namespace charly::core::compiler;
 
 int main() {
-
   bool print_location = false;
 
   char* buf = nullptr;

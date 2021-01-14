@@ -43,6 +43,8 @@ namespace {
 // clang-format off
 
 static const std::unordered_map<TokenType, uint32_t> kBinopPrecedenceLevels = {
+  { TokenType::DoublePoint,           9 },
+  { TokenType::TriplePoint,           9 },
   { TokenType::Or,                    10 },
   { TokenType::And,                   11 },
   { TokenType::BitOR,                 12 },

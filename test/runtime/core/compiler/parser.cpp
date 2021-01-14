@@ -217,4 +217,12 @@ TEST_CASE("binary operator relative precedence") {
 
   CHECK_AST_EXP("1 ** 2 ** 3",
                 make<Binop>(TokenType::Pow, make<Int>(1), make<Binop>(TokenType::Pow, make<Int>(2), make<Int>(3))));
+
+  CHECK_AST_EXP("1+1..2&&3",
+                make<Binop>(TokenType::DoublePoint, make<Binop>(TokenType::Plus, make<Int>(1), make<Int>(1)),
+                            make<Binop>(TokenType::And, make<Int>(2), make<Int>(3))));
+
+  CHECK_AST_EXP("1 .. 1 ... 2 ** 3",
+                make<Binop>(TokenType::TriplePoint, make<Binop>(TokenType::DoublePoint, make<Int>(1), make<Int>(1)),
+                            make<Binop>(TokenType::Pow, make<Int>(2), make<Int>(3))));
 }

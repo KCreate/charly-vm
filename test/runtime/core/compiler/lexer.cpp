@@ -289,7 +289,7 @@ TEST_CASE("recognizes operators") {
 }
 
 TEST_CASE("recognizes structure tokens") {
-  Lexer lexer("test", ("(){}[].:,;@<-->=>?\n"));
+  Lexer lexer("test", ("(){}[]. .. ...:,;@<-->=>?\n"));
 
   CHECK(lexer.read_token().type == TokenType::LeftParen);
   CHECK(lexer.read_token().type == TokenType::RightParen);
@@ -298,6 +298,8 @@ TEST_CASE("recognizes structure tokens") {
   CHECK(lexer.read_token().type == TokenType::LeftBracket);
   CHECK(lexer.read_token().type == TokenType::RightBracket);
   CHECK(lexer.read_token().type == TokenType::Point);
+  CHECK(lexer.read_token().type == TokenType::DoublePoint);
+  CHECK(lexer.read_token().type == TokenType::TriplePoint);
   CHECK(lexer.read_token().type == TokenType::Colon);
   CHECK(lexer.read_token().type == TokenType::Comma);
   CHECK(lexer.read_token().type == TokenType::Semicolon);

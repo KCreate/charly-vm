@@ -128,6 +128,8 @@ enum class TokenType {
   LeftBracket,
   RightBracket,
   Point,
+  DoublePoint,
+  TriplePoint,
   Colon,
   Comma,
   Semicolon,
@@ -145,17 +147,17 @@ enum class TokenType {
 
 // string representations of token types
 static std::string kTokenTypeStrings[] = {
-  "EOF",     "Int",       "Float",    "NaN",      "True",   "false",  "Identifier", "String",  "FormatString",
-  "null",    "self",      "super",    "as",       "await",  "break",  "case",       "catch",   "class",
-  "const",   "continue",  "default",  "defer",    "do",     "else",   "export",     "extends", "finally",
-  "for",     "from",      "func",     "guard",    "if",     "import", "in",         "let",     "loop",
-  "match",   "new",       "operator", "property", "return", "spawn",  "static",     "switch",  "throw",
-  "try",     "typeof",    "unless",   "until",    "while",  "yield",  "=",          "+",       "-",
-  "*",       "/",         "%",        "**",       "==",     "!=",     "<",          ">",       "<=",
-  ">=",      "&&",        "||",       "|",        "^",      "&",      "<<",         ">>",      ">>>",
-  "!",       "~",         "(",        ")",        "{",      "}",      "[",          "]",       ".",
-  ":",       ",",         ";",        "@",        "<-",     "->",     "=>",         "?",       "Comment",
-  "Newline", "Whitespace"
+  "EOF",   "Int",      "Float",    "NaN",       "True",   "false",  "Identifier", "String",  "FormatString",
+  "null",  "self",     "super",    "as",        "await",  "break",  "case",       "catch",   "class",
+  "const", "continue", "default",  "defer",     "do",     "else",   "export",     "extends", "finally",
+  "for",   "from",     "func",     "guard",     "if",     "import", "in",         "let",     "loop",
+  "match", "new",      "operator", "property",  "return", "spawn",  "static",     "switch",  "throw",
+  "try",   "typeof",   "unless",   "until",     "while",  "yield",  "=",          "+",       "-",
+  "*",     "/",        "%",        "**",        "==",     "!=",     "<",          ">",       "<=",
+  ">=",    "&&",       "||",       "|",         "^",      "&",      "<<",         ">>",      ">>>",
+  "!",     "~",        "(",        ")",         "{",      "}",      "[",          "]",       ".",
+  "..",    "...",      ":",        ",",         ";",      "@",      "<-",         "->",      "=>",
+  "?",     "Comment",  "Newline",  "Whitespace"
 };
 
 // identifiers with these names get remapped to keyword tokens
@@ -195,7 +197,8 @@ struct Token {
            type == TokenType::BitXOR || type == TokenType::BitLeftShift || type == TokenType::BitRightShift ||
            type == TokenType::BitUnsignedRightShift || type == TokenType::Or || type == TokenType::And ||
            type == TokenType::Equal || type == TokenType::NotEqual || type == TokenType::LessThan ||
-           type == TokenType::GreaterThan || type == TokenType::LessEqual || type == TokenType::GreaterEqual;
+           type == TokenType::GreaterThan || type == TokenType::LessEqual || type == TokenType::GreaterEqual ||
+           type == TokenType::DoublePoint || type == TokenType::TriplePoint;
   }
 
   bool legal_assignment_operator() const {

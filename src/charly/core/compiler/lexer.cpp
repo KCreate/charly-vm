@@ -370,6 +370,20 @@ Token Lexer::read_token_all() {
       }
       case '.': {
         read_char();
+
+        if (peek_char() == '.') {
+          read_char();
+
+          if (peek_char() == '.') {
+            read_char();
+            token.type = TokenType::TriplePoint;
+            break;
+          }
+
+          token.type = TokenType::DoublePoint;
+          break;
+        }
+
         token.type = TokenType::Point;
         break;
       }
