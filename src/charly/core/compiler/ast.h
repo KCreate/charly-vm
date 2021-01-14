@@ -67,6 +67,7 @@ public:
     Int,
     Float,
     Bool,
+    Char,
     String,
     FormatString,
     Null,
@@ -81,8 +82,9 @@ public:
   };
 
   static constexpr const char* TypeNames[] = {
-    "Unknown", "Program", "Block", "Id",    "Int",        "Float",         "Bool",    "String", "FormatString",
-    "Null",    "Self",    "Super", "Tuple", "Assignment", "ANDAssignment", "Ternary", "Binop",  "__SENTINEL",
+    "Unknown",    "Program",       "Block",        "Id",    "Int",        "Float", "Bool",
+    "Char",       "String",        "FormatString", "Null",  "Self",       "Super", "Tuple",
+    "Assignment", "ANDAssignment", "Ternary",      "Binop", "__SENTINEL",
   };
 
   const LocationRange& location() const {
@@ -292,6 +294,12 @@ class Bool final : public Atom<bool> {
   AST_NODE(Bool)
 public:
   using Atom<bool>::Atom;
+};
+
+class Char final : public Atom<uint32_t> {
+  AST_NODE(Char)
+public:
+  using Atom<uint32_t>::Atom;
 };
 
 class String final : public Atom<std::string> {

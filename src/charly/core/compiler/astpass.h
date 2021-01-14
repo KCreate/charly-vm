@@ -91,6 +91,7 @@ class ASTPass {
   AST_NODE(Expression, Int)
   AST_NODE(Expression, Float)
   AST_NODE(Expression, Bool)
+  AST_NODE(Expression, Char)
   AST_NODE(Expression, String)
   AST_NODE(Expression, FormatString)
   AST_NODE(Expression, Null)

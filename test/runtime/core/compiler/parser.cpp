@@ -100,7 +100,15 @@ TEST_CASE("parses literals") {
   CHECK_AST_EXP("null", make<Null>());
   CHECK_AST_EXP("self", make<Self>());
   CHECK_AST_EXP("super", make<Super>());
+  CHECK_AST_EXP("'a'", make<Char>('a'));
+  CHECK_AST_EXP("'π'", make<Char>(u'π'));
+  CHECK_AST_EXP("'ä'", make<Char>(u'ä'));
+  CHECK_AST_EXP("'ä'", make<Char>(u'ä'));
+  CHECK_AST_EXP("'\n'", make<Char>('\n'));
+  CHECK_AST_EXP("'\\\''", make<Char>('\''));
+  CHECK_AST_EXP("' '", make<Char>(' '));
   CHECK_AST_EXP("\"\"", make<String>(""));
+  CHECK_AST_EXP("\"На берегу пустынных волн\"", make<String>("На берегу пустынных волн"));
   CHECK_AST_EXP("\"hello world\"", make<String>("hello world"));
 
   CHECK_AST_EXP("\"\\a \\b \\n \\t \\v \\f \\\" \\{ \\\\ \"", make<String>("\a \b \n \t \v \f \" { \\ "));

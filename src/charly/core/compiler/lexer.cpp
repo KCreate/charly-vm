@@ -114,6 +114,11 @@ Token Lexer::read_token_all() {
         consume_string(token);
         break;
       }
+      case '\'': {
+        read_char();
+        consume_char(token);
+        break;
+      }
       case '\t':
       case '\r':
       case ' ': {
@@ -700,6 +705,73 @@ void Lexer::consume_multiline_comment(Token& token) {
       }
     }
   }
+}
+
+void Lexer::consume_char(Token& token) {
+  token.type = TokenType::Character;
+
+  uint32_t cp = read_char();
+
+  // escape sequences
+  if (cp == '\\') {
+    switch (peek_char()) {
+      case 'a': {
+        read_char();
+        cp = '\a';
+        break;
+      }
+      case 'b': {
+        read_char();
+        cp = '\b';
+        break;
+      }
+      case 'n': {
+        read_char();
+        cp = '\n';
+        break;
+      }
+      case 'r': {
+        read_char();
+        cp = '\r';
+        break;
+      }
+      case 't': {
+        read_char();
+        cp = '\t';
+        break;
+      }
+      case 'v': {
+        read_char();
+        cp = '\v';
+        break;
+      }
+      case 'f': {
+        read_char();
+        cp = '\f';
+        break;
+      }
+      case '\'': {
+        read_char();
+        cp = '\'';
+        break;
+      }
+      case '\\': {
+        read_char();
+        cp = '\\';
+        break;
+      }
+      case '\0': throw CompilerError("unfinished escape sequence", token.location);
+      default: throw CompilerError("unknown escape sequence", token.location);
+    }
+  }
+
+  if (read_char() != '\'') {
+    throw CompilerError("expected closing ' for char literal", token.location);
+  }
+
+  token.charval = cp;
+
+  return;
 }
 
 void Lexer::consume_string(Token& token) {

@@ -1,8 +1,5 @@
 # Todos
 
-- Parse utf8 character literal
-  - Becomes a new literal type
-
 - Refactor node visiting code
   - Remove places where new nodes have to be registered
 

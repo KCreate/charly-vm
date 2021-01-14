@@ -357,6 +357,28 @@ TEST_CASE("recognizes comments") {
   CHECK(lexer.read_token_all().type == TokenType::Newline);
 }
 
+TEST_CASE("tokenizes characters") {
+  Lexer lexer("test", "'a' 'b' '\\t' '\\n' '\\'' '\"'");
+
+  CHECK(lexer.read_token().type == TokenType::Character);
+  CHECK(lexer.last_token().charval == 'a');
+
+  CHECK(lexer.read_token().type == TokenType::Character);
+  CHECK(lexer.last_token().charval == 'b');
+
+  CHECK(lexer.read_token().type == TokenType::Character);
+  CHECK(lexer.last_token().charval == '\t');
+
+  CHECK(lexer.read_token().type == TokenType::Character);
+  CHECK(lexer.last_token().charval == '\n');
+
+  CHECK(lexer.read_token().type == TokenType::Character);
+  CHECK(lexer.last_token().charval == '\'');
+
+  CHECK(lexer.read_token().type == TokenType::Character);
+  CHECK(lexer.last_token().charval == '"');
+}
+
 TEST_CASE("tokenizes strings") {
   Lexer lexer("test", ("\"hello world\"\n"
                        "\"äüöø¡œΣ€\"\n"

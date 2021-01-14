@@ -49,6 +49,7 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
   SWITCH_NODE(Int)
   SWITCH_NODE(Float)
   SWITCH_NODE(Bool)
+  SWITCH_NODE(Char)
   SWITCH_NODE(String)
   SWITCH_NODE(FormatString)
   SWITCH_NODE(Null)

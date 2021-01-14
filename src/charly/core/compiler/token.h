@@ -44,6 +44,7 @@ enum class TokenType {
   True,
   False,
   Identifier,
+  Character,
   String,
   FormatString,
   Null,
@@ -146,19 +147,25 @@ enum class TokenType {
 };
 
 // string representations of token types
-static std::string kTokenTypeStrings[] = {
-  "EOF",   "Int",      "Float",    "NaN",       "True",   "false",  "Identifier", "String",  "FormatString",
-  "null",  "self",     "super",    "as",        "await",  "break",  "case",       "catch",   "class",
-  "const", "continue", "default",  "defer",     "do",     "else",   "export",     "extends", "finally",
-  "for",   "from",     "func",     "guard",     "if",     "import", "in",         "let",     "loop",
-  "match", "new",      "operator", "property",  "return", "spawn",  "static",     "switch",  "throw",
-  "try",   "typeof",   "unless",   "until",     "while",  "yield",  "=",          "+",       "-",
-  "*",     "/",        "%",        "**",        "==",     "!=",     "<",          ">",       "<=",
-  ">=",    "&&",       "||",       "|",         "^",      "&",      "<<",         ">>",      ">>>",
-  "!",     "~",        "(",        ")",         "{",      "}",      "[",          "]",       ".",
-  "..",    "...",      ":",        ",",         ";",      "@",      "<-",         "->",      "=>",
-  "?",     "Comment",  "Newline",  "Whitespace"
-};
+static std::string kTokenTypeStrings[] = { "EOF",      "Int",        "Float",     "NaN",     "True",
+                                           "false",    "Identifier", "Character", "String",  "FormatString",
+                                           "null",     "self",       "super",     "as",      "await",
+                                           "break",    "case",       "catch",     "class",   "const",
+                                           "continue", "default",    "defer",     "do",      "else",
+                                           "export",   "extends",    "finally",   "for",     "from",
+                                           "func",     "guard",      "if",        "import",  "in",
+                                           "let",      "loop",       "match",     "new",     "operator",
+                                           "property", "return",     "spawn",     "static",  "switch",
+                                           "throw",    "try",        "typeof",    "unless",  "until",
+                                           "while",    "yield",      "=",         "+",       "-",
+                                           "*",        "/",          "%",         "**",      "==",
+                                           "!=",       "<",          ">",         "<=",      ">=",
+                                           "&&",       "||",         "|",         "^",       "&",
+                                           "<<",       ">>",         ">>>",       "!",       "~",
+                                           "(",        ")",          "{",         "}",       "[",
+                                           "]",        ".",          "..",        "...",     ":",
+                                           ",",        ";",          "@",         "<-",      "->",
+                                           "=>",       "?",          "Comment",   "Newline", "Whitespace" };
 
 // identifiers with these names get remapped to keyword tokens
 static const std::unordered_map<std::string, TokenType> kKeywordsAndLiterals = {
@@ -187,6 +194,7 @@ struct Token {
 
   union {
     TokenType assignment_operator;
+    uint32_t charval;
     int64_t intval;
     double floatval;
   };
@@ -227,6 +235,8 @@ struct Token {
 
         case TokenType::String:
         case TokenType::FormatString: out << '"' << token.source << '"'; break;
+
+        case TokenType::Character: out << '\'' << token.source << '\''; break;
         default: break;
       }
     }

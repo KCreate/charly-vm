@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+#include <sstream>
+
 #include "charly/core/compiler/astpass.h"
 #include "charly/utils/colorwriter.h"
 
@@ -97,6 +99,17 @@ class DumpPass : public ASTPass {
   virtual bool enter(const ref<Bool>& node) override {
     m_writer.write(' ');
     m_writer.red(node->value ? "true" : "false");
+    return true;
+  }
+
+  virtual bool enter(const ref<Char>& node) override {
+    m_writer.write(' ');
+    m_writer.yellow('\'');
+    char buf[4] = { 0 };
+    char* buf_ptr = buf;
+    char* end = utf8::append(node->value, buf_ptr);
+    m_writer.yellow(std::string(buf_ptr, end - buf_ptr));
+    m_writer.yellow('\'');
     return true;
   }
 

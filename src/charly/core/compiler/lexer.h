@@ -95,6 +95,7 @@ private:
   void consume_identifier(Token& token);
   void consume_comment(Token& token);
   void consume_multiline_comment(Token& token);
+  void consume_char(Token& token);
   void consume_string(Token& token);
 
   // current source row / column
