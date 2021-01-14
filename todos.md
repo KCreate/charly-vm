@@ -4,7 +4,6 @@
   - Remove places where new nodes have to be registered
 
 - Parser
-  - parse unary operators
   - parse control keywords (return, break, continue, defer, throw)
   - parse expression keywords (yield, spawn, import, await, typeof)
   - parse lists

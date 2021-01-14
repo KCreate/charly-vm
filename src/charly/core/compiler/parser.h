@@ -42,27 +42,34 @@ namespace {
 
 // clang-format off
 
-static const std::unordered_map<TokenType, uint32_t> kBinopPrecedenceLevels = {
-  { TokenType::DoublePoint,           9 },
-  { TokenType::TriplePoint,           9 },
-  { TokenType::Or,                    10 },
-  { TokenType::And,                   11 },
-  { TokenType::BitOR,                 12 },
-  { TokenType::BitXOR,                13 },
-  { TokenType::BitAND,                14 },
-  { TokenType::Equal,                 20 },
-  { TokenType::NotEqual,              20 },
-  { TokenType::LessThan,              30 },
-  { TokenType::GreaterThan,           30 },
-  { TokenType::LessEqual,             30 },
-  { TokenType::GreaterEqual,          30 },
-  { TokenType::BitLeftShift,          40 },
-  { TokenType::BitRightShift,         40 },
-  { TokenType::BitUnsignedRightShift, 40 },
+static const std::unordered_map<TokenType, uint32_t> kBinaryOpPrecedenceLevels = {
+  { TokenType::Or,                    8 },
+  { TokenType::And,                   9 },
+
+  { TokenType::Equal,                 10 },
+  { TokenType::NotEqual,              10 },
+
+  { TokenType::LessThan,              20 },
+  { TokenType::GreaterThan,           20 },
+  { TokenType::LessEqual,             20 },
+  { TokenType::GreaterEqual,          20 },
+
+  { TokenType::BitLeftShift,          30 },
+  { TokenType::BitRightShift,         30 },
+  { TokenType::BitUnsignedRightShift, 30 },
+
+  { TokenType::DoublePoint,           40 },
+  { TokenType::TriplePoint,           40 },
+  { TokenType::BitOR,                 41 },
+  { TokenType::BitXOR,                42 },
+  { TokenType::BitAND,                43 },
+
   { TokenType::Plus,                  50 },
   { TokenType::Minus,                 50 },
+
   { TokenType::Mul,                   60 },
   { TokenType::Div,                   60 },
+
   { TokenType::Mod,                   60 },
   { TokenType::Pow,                   70 }
 };
@@ -95,7 +102,8 @@ public:
   ref<Expression> parse_expression();
   ref<Expression> parse_assignment();
   ref<Expression> parse_ternary();
-  ref<Expression> parse_binop();
+  ref<Expression> parse_binaryop();
+  ref<Expression> parse_unaryop();
 
   // compound literals
   ref<Expression> parse_literal();
@@ -114,7 +122,7 @@ public:
   ref<Super> parse_super_token();
 
 private:
-  ref<Expression> parse_binop_1(ref<Expression> lhs, uint32_t min_precedence);
+  ref<Expression> parse_binaryop_1(ref<Expression> lhs, uint32_t min_precedence);
 
   [[noreturn]] void unexpected_token() {
     std::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];

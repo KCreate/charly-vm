@@ -167,70 +167,107 @@ TEST_CASE("ternary if") {
 }
 
 TEST_CASE("binary operators") {
-  CHECK_AST_EXP("1 + 1", make<Binop>(TokenType::Plus, make<Int>(1), make<Int>(1)));
-  CHECK_AST_EXP("1 - 1", make<Binop>(TokenType::Minus, make<Int>(1), make<Int>(1)));
-  CHECK_AST_EXP("1 * 1", make<Binop>(TokenType::Mul, make<Int>(1), make<Int>(1)));
-  CHECK_AST_EXP("1 / 1", make<Binop>(TokenType::Div, make<Int>(1), make<Int>(1)));
-  CHECK_AST_EXP("1 % 1", make<Binop>(TokenType::Mod, make<Int>(1), make<Int>(1)));
-  CHECK_AST_EXP("1 ** 1", make<Binop>(TokenType::Pow, make<Int>(1), make<Int>(1)));
+  CHECK_AST_EXP("1 + 1", make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(1)));
+  CHECK_AST_EXP("1 - 1", make<BinaryOp>(TokenType::Minus, make<Int>(1), make<Int>(1)));
+  CHECK_AST_EXP("1 * 1", make<BinaryOp>(TokenType::Mul, make<Int>(1), make<Int>(1)));
+  CHECK_AST_EXP("1 / 1", make<BinaryOp>(TokenType::Div, make<Int>(1), make<Int>(1)));
+  CHECK_AST_EXP("1 % 1", make<BinaryOp>(TokenType::Mod, make<Int>(1), make<Int>(1)));
+  CHECK_AST_EXP("1 ** 1", make<BinaryOp>(TokenType::Pow, make<Int>(1), make<Int>(1)));
 
-  CHECK_AST_EXP("1 == 1", make<Binop>(TokenType::Equal, make<Int>(1), make<Int>(1)));
-  CHECK_AST_EXP("1 != 1", make<Binop>(TokenType::NotEqual, make<Int>(1), make<Int>(1)));
-  CHECK_AST_EXP("1 < 1", make<Binop>(TokenType::LessThan, make<Int>(1), make<Int>(1)));
-  CHECK_AST_EXP("1 > 1", make<Binop>(TokenType::GreaterThan, make<Int>(1), make<Int>(1)));
-  CHECK_AST_EXP("1 <= 1", make<Binop>(TokenType::LessEqual, make<Int>(1), make<Int>(1)));
-  CHECK_AST_EXP("1 >= 1", make<Binop>(TokenType::GreaterEqual, make<Int>(1), make<Int>(1)));
+  CHECK_AST_EXP("1 == 1", make<BinaryOp>(TokenType::Equal, make<Int>(1), make<Int>(1)));
+  CHECK_AST_EXP("1 != 1", make<BinaryOp>(TokenType::NotEqual, make<Int>(1), make<Int>(1)));
+  CHECK_AST_EXP("1 < 1", make<BinaryOp>(TokenType::LessThan, make<Int>(1), make<Int>(1)));
+  CHECK_AST_EXP("1 > 1", make<BinaryOp>(TokenType::GreaterThan, make<Int>(1), make<Int>(1)));
+  CHECK_AST_EXP("1 <= 1", make<BinaryOp>(TokenType::LessEqual, make<Int>(1), make<Int>(1)));
+  CHECK_AST_EXP("1 >= 1", make<BinaryOp>(TokenType::GreaterEqual, make<Int>(1), make<Int>(1)));
 
-  CHECK_AST_EXP("1 and 1", make<Binop>(TokenType::And, make<Int>(1), make<Int>(1)));
-  CHECK_AST_EXP("1 or 1", make<Binop>(TokenType::Or, make<Int>(1), make<Int>(1)));
-  CHECK_AST_EXP("1 && 1", make<Binop>(TokenType::And, make<Int>(1), make<Int>(1)));
-  CHECK_AST_EXP("1 or 1", make<Binop>(TokenType::Or, make<Int>(1), make<Int>(1)));
+  CHECK_AST_EXP("1 and 1", make<BinaryOp>(TokenType::And, make<Int>(1), make<Int>(1)));
+  CHECK_AST_EXP("1 or 1", make<BinaryOp>(TokenType::Or, make<Int>(1), make<Int>(1)));
+  CHECK_AST_EXP("1 && 1", make<BinaryOp>(TokenType::And, make<Int>(1), make<Int>(1)));
+  CHECK_AST_EXP("1 or 1", make<BinaryOp>(TokenType::Or, make<Int>(1), make<Int>(1)));
 
-  CHECK_AST_EXP("1 | 1", make<Binop>(TokenType::BitOR, make<Int>(1), make<Int>(1)));
-  CHECK_AST_EXP("1 & 1", make<Binop>(TokenType::BitAND, make<Int>(1), make<Int>(1)));
-  CHECK_AST_EXP("1 ^ 1", make<Binop>(TokenType::BitXOR, make<Int>(1), make<Int>(1)));
-  CHECK_AST_EXP("1 << 1", make<Binop>(TokenType::BitLeftShift, make<Int>(1), make<Int>(1)));
-  CHECK_AST_EXP("1 >> 1", make<Binop>(TokenType::BitRightShift, make<Int>(1), make<Int>(1)));
-  CHECK_AST_EXP("1 >>> 1", make<Binop>(TokenType::BitUnsignedRightShift, make<Int>(1), make<Int>(1)));
+  CHECK_AST_EXP("1 | 1", make<BinaryOp>(TokenType::BitOR, make<Int>(1), make<Int>(1)));
+  CHECK_AST_EXP("1 & 1", make<BinaryOp>(TokenType::BitAND, make<Int>(1), make<Int>(1)));
+  CHECK_AST_EXP("1 ^ 1", make<BinaryOp>(TokenType::BitXOR, make<Int>(1), make<Int>(1)));
+  CHECK_AST_EXP("1 << 1", make<BinaryOp>(TokenType::BitLeftShift, make<Int>(1), make<Int>(1)));
+  CHECK_AST_EXP("1 >> 1", make<BinaryOp>(TokenType::BitRightShift, make<Int>(1), make<Int>(1)));
+  CHECK_AST_EXP("1 >>> 1", make<BinaryOp>(TokenType::BitUnsignedRightShift, make<Int>(1), make<Int>(1)));
+
+  CHECK_AST_EXP("1..2", make<BinaryOp>(TokenType::DoublePoint, make<Int>(1), make<Int>(2)));
+  CHECK_AST_EXP("1...2", make<BinaryOp>(TokenType::TriplePoint, make<Int>(1), make<Int>(2)));
 }
 
 TEST_CASE("binary operator relative precedence") {
-  CHECK_AST_EXP("1 + 2 + 3",
-                make<Binop>(TokenType::Plus, make<Binop>(TokenType::Plus, make<Int>(1), make<Int>(2)), make<Int>(3)));
+  CHECK_AST_EXP("1 + 2 + 3", make<BinaryOp>(TokenType::Plus,
+                                            make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(2)), make<Int>(3)));
 
-  CHECK_AST_EXP("1 + 2 * 3",
-                make<Binop>(TokenType::Plus, make<Int>(1), make<Binop>(TokenType::Mul, make<Int>(2), make<Int>(3))));
+  CHECK_AST_EXP("1 + 2 * 3", make<BinaryOp>(TokenType::Plus, make<Int>(1),
+                                            make<BinaryOp>(TokenType::Mul, make<Int>(2), make<Int>(3))));
 
-  CHECK_AST_EXP("1 * 2 + 3",
-                make<Binop>(TokenType::Plus, make<Binop>(TokenType::Mul, make<Int>(1), make<Int>(2)), make<Int>(3)));
+  CHECK_AST_EXP("1 * 2 + 3", make<BinaryOp>(TokenType::Plus, make<BinaryOp>(TokenType::Mul, make<Int>(1), make<Int>(2)),
+                                            make<Int>(3)));
 
   CHECK_AST_EXP(
     "foo == 1 && 0",
-    make<Binop>(TokenType::And, make<Binop>(TokenType::Equal, make<Id>("foo"), make<Int>(1)), make<Int>(0)));
+    make<BinaryOp>(TokenType::And, make<BinaryOp>(TokenType::Equal, make<Id>("foo"), make<Int>(1)), make<Int>(0)));
 
-  CHECK_AST_EXP("foo == (1 && 0)", make<Binop>(TokenType::Equal, make<Id>("foo"),
-                                               make<Binop>(TokenType::And, make<Int>(1), make<Int>(0))));
+  CHECK_AST_EXP("foo == (1 && 0)", make<BinaryOp>(TokenType::Equal, make<Id>("foo"),
+                                                  make<BinaryOp>(TokenType::And, make<Int>(1), make<Int>(0))));
 
-  CHECK_AST_EXP("1 || 2 && 3",
-                make<Binop>(TokenType::Or, make<Int>(1), make<Binop>(TokenType::And, make<Int>(2), make<Int>(3))));
+  CHECK_AST_EXP("1 || 2 && 3", make<BinaryOp>(TokenType::Or, make<Int>(1),
+                                              make<BinaryOp>(TokenType::And, make<Int>(2), make<Int>(3))));
 
-  CHECK_AST_EXP("1 * 2 / 3",
-                make<Binop>(TokenType::Div, make<Binop>(TokenType::Mul, make<Int>(1), make<Int>(2)), make<Int>(3)));
+  CHECK_AST_EXP("1 * 2 / 3", make<BinaryOp>(TokenType::Div, make<BinaryOp>(TokenType::Mul, make<Int>(1), make<Int>(2)),
+                                            make<Int>(3)));
 
-  CHECK_AST_EXP("1 * 2 ** 3",
-                make<Binop>(TokenType::Mul, make<Int>(1), make<Binop>(TokenType::Pow, make<Int>(2), make<Int>(3))));
+  CHECK_AST_EXP("1 * 2 ** 3", make<BinaryOp>(TokenType::Mul, make<Int>(1),
+                                             make<BinaryOp>(TokenType::Pow, make<Int>(2), make<Int>(3))));
 
-  CHECK_AST_EXP("1 ** 2 * 3",
-                make<Binop>(TokenType::Mul, make<Binop>(TokenType::Pow, make<Int>(1), make<Int>(2)), make<Int>(3)));
+  CHECK_AST_EXP("1 ** 2 * 3", make<BinaryOp>(TokenType::Mul, make<BinaryOp>(TokenType::Pow, make<Int>(1), make<Int>(2)),
+                                             make<Int>(3)));
 
-  CHECK_AST_EXP("1 ** 2 ** 3",
-                make<Binop>(TokenType::Pow, make<Int>(1), make<Binop>(TokenType::Pow, make<Int>(2), make<Int>(3))));
+  CHECK_AST_EXP("1 ** 2 ** 3", make<BinaryOp>(TokenType::Pow, make<Int>(1),
+                                              make<BinaryOp>(TokenType::Pow, make<Int>(2), make<Int>(3))));
 
-  CHECK_AST_EXP("1+1..2&&3",
-                make<Binop>(TokenType::DoublePoint, make<Binop>(TokenType::Plus, make<Int>(1), make<Int>(1)),
-                            make<Binop>(TokenType::And, make<Int>(2), make<Int>(3))));
+  CHECK_AST_EXP(
+    "1 + 1 .. 2 && 3",
+    make<BinaryOp>(
+      TokenType::And,
+      make<BinaryOp>(TokenType::DoublePoint, make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(1)), make<Int>(2)),
+      make<Int>(3)));
 
-  CHECK_AST_EXP("1 .. 1 ... 2 ** 3",
-                make<Binop>(TokenType::TriplePoint, make<Binop>(TokenType::DoublePoint, make<Int>(1), make<Int>(1)),
-                            make<Binop>(TokenType::Pow, make<Int>(2), make<Int>(3))));
+  CHECK_AST_EXP("1 .. 1 ... 2 ** 3", make<BinaryOp>(TokenType::TriplePoint,
+                                                    make<BinaryOp>(TokenType::DoublePoint, make<Int>(1), make<Int>(1)),
+                                                    make<BinaryOp>(TokenType::Pow, make<Int>(2), make<Int>(3))));
+
+  CHECK_AST_EXP("1..1 && 2..2",
+                make<BinaryOp>(TokenType::And, make<BinaryOp>(TokenType::DoublePoint, make<Int>(1), make<Int>(1)),
+                               make<BinaryOp>(TokenType::DoublePoint, make<Int>(2), make<Int>(2))));
+
+  CHECK_AST_EXP("1..1 == 2..2",
+                make<BinaryOp>(TokenType::Equal, make<BinaryOp>(TokenType::DoublePoint, make<Int>(1), make<Int>(1)),
+                               make<BinaryOp>(TokenType::DoublePoint, make<Int>(2), make<Int>(2))));
+
+  CHECK_AST_EXP("1..1 < 2..2",
+                make<BinaryOp>(TokenType::LessThan, make<BinaryOp>(TokenType::DoublePoint, make<Int>(1), make<Int>(1)),
+                               make<BinaryOp>(TokenType::DoublePoint, make<Int>(2), make<Int>(2))));
+}
+
+TEST_CASE("unary operators") {
+  CHECK_AST_EXP("-0", make<UnaryOp>(TokenType::Minus, make<Int>(0)));
+  CHECK_AST_EXP("-100", make<UnaryOp>(TokenType::Minus, make<Int>(100)));
+  CHECK_AST_EXP("-0x500", make<UnaryOp>(TokenType::Minus, make<Int>(0x500)));
+  CHECK_AST_EXP("-0.5", make<UnaryOp>(TokenType::Minus, make<Float>(0.5)));
+  CHECK_AST_EXP("-15.5", make<UnaryOp>(TokenType::Minus, make<Float>(15.5)));
+  CHECK_AST_EXP("-null", make<UnaryOp>(TokenType::Minus, make<Null>()));
+  CHECK_AST_EXP("-false", make<UnaryOp>(TokenType::Minus, make<Bool>(false)));
+  CHECK_AST_EXP("-true", make<UnaryOp>(TokenType::Minus, make<Bool>(true)));
+  CHECK_AST_EXP("+0", make<UnaryOp>(TokenType::Plus, make<Int>(0)));
+  CHECK_AST_EXP("!0", make<UnaryOp>(TokenType::UnaryNot, make<Int>(0)));
+  CHECK_AST_EXP("~0", make<UnaryOp>(TokenType::BitNOT, make<Int>(0)));
+  CHECK_AST_EXP("...foo", make<UnaryOp>(TokenType::TriplePoint, make<Id>("foo")));
+  CHECK_AST_EXP("-1 + -2", make<BinaryOp>(TokenType::Plus, make<UnaryOp>(TokenType::Minus, make<Int>(1)),
+                                          make<UnaryOp>(TokenType::Minus, make<Int>(2))));
+  CHECK_AST_EXP("-1..-5", make<BinaryOp>(TokenType::DoublePoint, make<UnaryOp>(TokenType::Minus, make<Int>(1)),
+                                         make<UnaryOp>(TokenType::Minus, make<Int>(5))));
 }

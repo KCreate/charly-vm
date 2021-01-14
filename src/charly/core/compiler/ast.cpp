@@ -43,7 +43,8 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
   SWITCH_NODE(Assignment)
   SWITCH_NODE(ANDAssignment)
   SWITCH_NODE(Ternary)
-  SWITCH_NODE(Binop)
+  SWITCH_NODE(BinaryOp)
+  SWITCH_NODE(UnaryOp)
 
   SWITCH_NODE(Id)
   SWITCH_NODE(Int)
@@ -96,9 +97,13 @@ void Ternary::visit_children(ASTPass* pass) {
   this->else_exp = pass->visit(this->else_exp);
 }
 
-void Binop::visit_children(ASTPass* pass) {
+void BinaryOp::visit_children(ASTPass* pass) {
   this->lhs = pass->visit(this->lhs);
   this->rhs = pass->visit(this->rhs);
+}
+
+void UnaryOp::visit_children(ASTPass* pass) {
+  this->expression = pass->visit(this->expression);
 }
 
 void FormatString::visit_children(ASTPass* pass) {

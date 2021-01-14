@@ -70,11 +70,19 @@ class DumpPass : public ASTPass {
     return true;
   }
 
-  virtual bool enter(const ref<Binop>& node) override {
+  virtual bool enter(const ref<BinaryOp>& node) override {
     m_writer.write(' ');
     m_writer.yellow('\'');
     m_writer.yellow(kTokenTypeStrings[static_cast<int>(node->operation)]);
     m_writer.yellow('\'');
+    return true;
+  }
+
+  virtual bool enter(const ref<UnaryOp>& node) override {
+    m_writer.write(' ');
+    m_writer.blue('\'');
+    m_writer.blue(kTokenTypeStrings[static_cast<int>(node->operation)]);
+    m_writer.blue('\'');
     return true;
   }
 

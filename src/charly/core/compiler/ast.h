@@ -77,14 +77,15 @@ public:
     Assignment,
     ANDAssignment,
     Ternary,
-    Binop,
+    BinaryOp,
+    UnaryOp,
     TypeCount
   };
 
   static constexpr const char* TypeNames[] = {
-    "Unknown",    "Program",       "Block",        "Id",    "Int",        "Float", "Bool",
-    "Char",       "String",        "FormatString", "Null",  "Self",       "Super", "Tuple",
-    "Assignment", "ANDAssignment", "Ternary",      "Binop", "__SENTINEL",
+    "Unknown",    "Program",       "Block",        "Id",       "Int",     "Float",      "Bool",
+    "Char",       "String",        "FormatString", "Null",     "Self",    "Super",      "Tuple",
+    "Assignment", "ANDAssignment", "Ternary",      "BinaryOp", "UnaryOp", "__SENTINEL",
   };
 
   const LocationRange& location() const {
@@ -236,10 +237,10 @@ public:
   virtual void visit_children(ASTPass*) override;
 };
 
-class Binop : public Expression {
-  AST_NODE(Binop)
+class BinaryOp : public Expression {
+  AST_NODE(BinaryOp)
 public:
-  Binop(TokenType operation, ref<Expression> lhs, ref<Expression> rhs) : operation(operation), lhs(lhs), rhs(rhs) {
+  BinaryOp(TokenType operation, ref<Expression> lhs, ref<Expression> rhs) : operation(operation), lhs(lhs), rhs(rhs) {
     this->set_begin(lhs);
     this->set_end(rhs);
   }
@@ -247,6 +248,19 @@ public:
   TokenType operation;
   ref<Expression> lhs;
   ref<Expression> rhs;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+class UnaryOp : public Expression {
+  AST_NODE(UnaryOp)
+public:
+  UnaryOp(TokenType operation, ref<Expression> expression) : operation(operation), expression(expression) {
+    this->set_location(expression);
+  }
+
+  TokenType operation;
+  ref<Expression> expression;
 
   virtual void visit_children(ASTPass*) override;
 };

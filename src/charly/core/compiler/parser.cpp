@@ -122,7 +122,7 @@ ref<Expression> Parser::parse_assignment() {
 }
 
 ref<Expression> Parser::parse_ternary() {
-  ref<Expression> condition = parse_binop();
+  ref<Expression> condition = parse_binaryop();
 
   if (skip(TokenType::QuestionMark)) {
     ref<Expression> then_exp = parse_expression();
@@ -134,41 +134,62 @@ ref<Expression> Parser::parse_ternary() {
   return condition;
 }
 
-ref<Expression> Parser::parse_binop_1(ref<Expression> lhs, uint32_t min_precedence) {
+ref<Expression> Parser::parse_binaryop_1(ref<Expression> lhs, uint32_t min_precedence) {
   for (;;) {
-    if (kBinopPrecedenceLevels.count(m_token.type) == 0)
+    if (kBinaryOpPrecedenceLevels.count(m_token.type) == 0)
       break;
 
     TokenType operation = m_token.type;
-    uint32_t precedence = kBinopPrecedenceLevels.at(operation);
+    uint32_t precedence = kBinaryOpPrecedenceLevels.at(operation);
     if (precedence < min_precedence)
       break;
 
     advance();
-    ref<Expression> rhs = parse_literal();
+    ref<Expression> rhs = parse_unaryop();
 
     // higher precedence operators or right associative operators
     for (;;) {
-      if (kBinopPrecedenceLevels.count(m_token.type) == 0)
+      if (kBinaryOpPrecedenceLevels.count(m_token.type) == 0)
         break;
 
-      uint32_t next_precedence = kBinopPrecedenceLevels.at(m_token.type);
+      uint32_t next_precedence = kBinaryOpPrecedenceLevels.at(m_token.type);
       if ((next_precedence > precedence) ||
           (kRightAssociativeOperators.count(m_token.type) && next_precedence == precedence)) {
-        rhs = parse_binop_1(rhs, next_precedence);
+        rhs = parse_binaryop_1(rhs, next_precedence);
       } else {
         break;
       }
     }
 
-    lhs = make<Binop>(operation, lhs, rhs);
+    lhs = make<BinaryOp>(operation, lhs, rhs);
   }
 
   return lhs;
 }
 
-ref<Expression> Parser::parse_binop() {
-  return parse_binop_1(parse_literal(), 0);
+ref<Expression> Parser::parse_binaryop() {
+  return parse_binaryop_1(parse_unaryop(), 0);
+}
+
+ref<Expression> Parser::parse_unaryop() {
+  switch (m_token.type) {
+    case TokenType::Plus:
+    case TokenType::Minus:
+    case TokenType::UnaryNot:
+    case TokenType::BitNOT:
+    case TokenType::TriplePoint: {
+      TokenType operation = m_token.type;
+      Location start_loc = m_token.location;
+      advance();
+      ref<UnaryOp> op = make<UnaryOp>(operation, parse_unaryop());
+      op->set_begin(start_loc);
+      return op;
+      break;
+    }
+    default: {
+      return parse_literal();
+    }
+  }
 }
 
 ref<Expression> Parser::parse_literal() {

@@ -85,7 +85,8 @@ class ASTPass {
   AST_NODE(Expression, Assignment)
   AST_NODE(Expression, ANDAssignment)
   AST_NODE(Expression, Ternary)
-  AST_NODE(Expression, Binop)
+  AST_NODE(Expression, BinaryOp)
+  AST_NODE(Expression, UnaryOp)
 
   AST_NODE(Expression, Id)
   AST_NODE(Expression, Int)
