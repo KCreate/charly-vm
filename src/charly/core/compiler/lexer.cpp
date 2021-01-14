@@ -426,7 +426,7 @@ Token Lexer::read_token_all() {
     increment_column(m_source.readoffset() - offset_start);
   }
 
-  if (kKeywordsAndLiterals.count(token.source)) {
+  if (token.type == TokenType::Identifier && kKeywordsAndLiterals.count(token.source)) {
     token.type = kKeywordsAndLiterals.at(token.source);
 
     if (token.type == TokenType::Float) {
