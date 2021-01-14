@@ -27,6 +27,9 @@
 #include <iostream>
 #include <string>
 
+#include <readline/readline.h>
+#include <readline/history.h>
+
 #include "charly/core/compiler.h"
 #include "charly/utils/buffer.h"
 
@@ -34,15 +37,16 @@ using namespace charly;
 using namespace charly::core::compiler;
 
 int main() {
-  std::string line;
 
   bool print_location = false;
 
-  for (;;) {
-    std::cout << "> ";
-
-    if (!std::getline(std::cin, line))
-      break;
+  char* buf = nullptr;
+  while ((buf = readline("> "))) {
+    if (strlen(buf) > 0) {
+      add_history(buf);
+    }
+    std::string line(buf);
+    free(buf);
 
     if (line.compare(".help") == 0) {
       std::cout << ".exit     Exit the REPL" << '\n';
@@ -63,9 +67,8 @@ int main() {
       utils::Buffer buf;
       buf.append_string(line);
 
-      Parser parser("stdin", buf.buffer_string());
-
       try {
+        Parser parser("stdin", buf.buffer_string());
         ast::ref<ast::Program> program = parser.parse_program();
 
         // check if program has nodes
