@@ -56,18 +56,22 @@ class DumpPass : public ASTPass {
 
   virtual bool enter(const ref<Program>& node) override {
     m_writer.write(' ');
-    m_writer.yellow("filename");
-    m_writer.white(" = ");
     m_writer.yellow(node->filename);
     return true;
   }
 
   virtual bool enter(const ref<ANDAssignment>& node) override {
     m_writer.write(' ');
-    m_writer.yellow("operator");
-    m_writer.white(" = ");
     m_writer.yellow('\'');
-    m_writer.yellow(kTokenTypeStrings[static_cast<int>(node->opcode)]);
+    m_writer.yellow(kTokenTypeStrings[static_cast<int>(node->operation)]);
+    m_writer.yellow('\'');
+    return true;
+  }
+
+  virtual bool enter(const ref<Binop>& node) override {
+    m_writer.write(' ');
+    m_writer.yellow('\'');
+    m_writer.yellow(kTokenTypeStrings[static_cast<int>(node->operation)]);
     m_writer.yellow('\'');
     return true;
   }

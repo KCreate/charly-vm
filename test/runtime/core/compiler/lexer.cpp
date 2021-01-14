@@ -202,7 +202,7 @@ TEST_CASE("recognizes keywords") {
   CHECK(lexer.read_token().type == TokenType::Self);
   CHECK(lexer.read_token().type == TokenType::Super);
   CHECK(lexer.read_token().type == TokenType::True);
-  CHECK(lexer.read_token().type == TokenType::AndLiteral);
+  CHECK(lexer.read_token().type == TokenType::And);
   CHECK(lexer.read_token().type == TokenType::As);
   CHECK(lexer.read_token().type == TokenType::Await);
   CHECK(lexer.read_token().type == TokenType::Break);
@@ -230,7 +230,7 @@ TEST_CASE("recognizes keywords") {
   CHECK(lexer.read_token().type == TokenType::Match);
   CHECK(lexer.read_token().type == TokenType::New);
   CHECK(lexer.read_token().type == TokenType::Operator);
-  CHECK(lexer.read_token().type == TokenType::OrLiteral);
+  CHECK(lexer.read_token().type == TokenType::Or);
   CHECK(lexer.read_token().type == TokenType::Property);
   CHECK(lexer.read_token().type == TokenType::Return);
   CHECK(lexer.read_token().type == TokenType::Spawn);

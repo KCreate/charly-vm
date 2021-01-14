@@ -122,7 +122,7 @@ ref<Expression> Parser::parse_assignment() {
 }
 
 ref<Expression> Parser::parse_ternary() {
-  ref<Expression> condition = parse_literal();
+  ref<Expression> condition = parse_binop();
 
   if (skip(TokenType::QuestionMark)) {
     ref<Expression> then_exp = parse_expression();
@@ -132,6 +132,43 @@ ref<Expression> Parser::parse_ternary() {
   }
 
   return condition;
+}
+
+ref<Expression> Parser::parse_binop_1(ref<Expression> lhs, uint32_t min_precedence) {
+  for (;;) {
+    if (kBinopPrecedenceLevels.count(m_token.type) == 0)
+      break;
+
+    TokenType operation = m_token.type;
+    uint32_t precedence = kBinopPrecedenceLevels.at(operation);
+    if (precedence < min_precedence)
+      break;
+
+    advance();
+    ref<Expression> rhs = parse_literal();
+
+    // higher precedence operators or right associative operators
+    for (;;) {
+      if (kBinopPrecedenceLevels.count(m_token.type) == 0)
+        break;
+
+      uint32_t next_precedence = kBinopPrecedenceLevels.at(m_token.type);
+      if ((next_precedence > precedence) ||
+          (kRightAssociativeOperators.count(m_token.type) && next_precedence == precedence)) {
+        rhs = parse_binop_1(rhs, next_precedence);
+      } else {
+        break;
+      }
+    }
+
+    lhs = make<Binop>(operation, lhs, rhs);
+  }
+
+  return lhs;
+}
+
+ref<Expression> Parser::parse_binop() {
+  return parse_binop_1(parse_literal(), 0);
 }
 
 ref<Expression> Parser::parse_literal() {

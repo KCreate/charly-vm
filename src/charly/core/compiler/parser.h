@@ -25,6 +25,8 @@
  */
 
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 
 #include "charly/core/compiler/ast.h"
 #include "charly/core/compiler/error.h"
@@ -37,6 +39,37 @@ namespace charly::core::compiler {
 namespace {
 using namespace ast;
 }
+
+// clang-format off
+
+static const std::unordered_map<TokenType, uint32_t> kBinopPrecedenceLevels = {
+  { TokenType::Or,                    10 },
+  { TokenType::And,                   11 },
+  { TokenType::BitOR,                 12 },
+  { TokenType::BitXOR,                13 },
+  { TokenType::BitAND,                14 },
+  { TokenType::Equal,                 20 },
+  { TokenType::NotEqual,              20 },
+  { TokenType::LessThan,              30 },
+  { TokenType::GreaterThan,           30 },
+  { TokenType::LessEqual,             30 },
+  { TokenType::GreaterEqual,          30 },
+  { TokenType::BitLeftShift,          40 },
+  { TokenType::BitRightShift,         40 },
+  { TokenType::BitUnsignedRightShift, 40 },
+  { TokenType::Plus,                  50 },
+  { TokenType::Minus,                 50 },
+  { TokenType::Mul,                   60 },
+  { TokenType::Div,                   60 },
+  { TokenType::Mod,                   60 },
+  { TokenType::Pow,                   70 }
+};
+
+static const std::unordered_set<TokenType> kRightAssociativeOperators = {
+  TokenType::Pow
+};
+
+// clang-format on
 
 class Parser : public Lexer {
 public:
@@ -60,6 +93,7 @@ public:
   ref<Expression> parse_expression();
   ref<Expression> parse_assignment();
   ref<Expression> parse_ternary();
+  ref<Expression> parse_binop();
 
   // compound literals
   ref<Expression>   parse_literal();
@@ -77,6 +111,8 @@ public:
   ref<Super>  parse_super_token();
 
 private:
+  ref<Expression> parse_binop_1(ref<Expression> lhs, uint32_t min_precedence);
+
   [[noreturn]] void unexpected_token() {
     std::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
     throw CompilerError("Unexpected token '" + real_type + "'", m_token.location);

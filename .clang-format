@@ -10,6 +10,7 @@ AlignConsecutiveMacros:                         false
 AlignEscapedNewlines:                           true
 AlignOperands:                                  true
 AlignTrailingComments:                          true
+AllowAllArgumentsOnNextLine:                    false
 AllowShortBlocksOnASingleLine:                  Empty
 AllowShortCaseLabelsOnASingleLine:              true
 AllowShortFunctionsOnASingleLine:               Empty
@@ -19,7 +20,7 @@ AllowShortLoopsOnASingleLine:                   false
 AlwaysBreakAfterReturnType:                     None
 AlwaysBreakBeforeMultilineStrings:              false
 AlwaysBreakTemplateDeclarations:                Yes
-BinPackArguments:                               false
+BinPackArguments:                               true
 BinPackParameters:                              false
 BreakBeforeBinaryOperators:                     None
 BreakBeforeBraces:                              Attach
@@ -30,8 +31,8 @@ BreakStringLiterals:                            true
 ColumnLimit:                                    120
 CompactNamespaces:                              true
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
-ContinuationIndentWidth:                        2
 ConstructorInitializerIndentWidth:              2
+ContinuationIndentWidth:                        2
 Cpp11BracedListStyle:                           false
 FixNamespaceComments:                           true
 IncludeBlocks:                                  Preserve

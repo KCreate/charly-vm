@@ -76,6 +76,7 @@ public:
     Assignment,
     ANDAssignment,
     Ternary,
+    Binop,
     TypeCount
   };
 
@@ -96,6 +97,7 @@ public:
     "Assignment",
     "ANDAssignment",
     "Ternary",
+    "Binop",
     "__SENTINEL",
   };
 
@@ -219,13 +221,13 @@ public:
 class ANDAssignment : public Expression {
   AST_NODE(ANDAssignment)
 public:
-  ANDAssignment(TokenType opcode, ref<Expression> target, ref<Expression> source) :
-    opcode(opcode), target(target), source(source) {
+  ANDAssignment(TokenType operation, ref<Expression> target, ref<Expression> source) :
+    operation(operation), target(target), source(source) {
     this->set_begin(target);
     this->set_end(source);
   }
 
-  TokenType opcode;
+  TokenType operation;
   ref<Expression> target;
   ref<Expression> source;
 
@@ -244,6 +246,22 @@ public:
   ref<Expression> condition;
   ref<Expression> then_exp;
   ref<Expression> else_exp;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+class Binop : public Expression {
+  AST_NODE(Binop)
+public:
+  Binop(TokenType operation, ref<Expression> lhs, ref<Expression> rhs) :
+    operation(operation), lhs(lhs), rhs(rhs) {
+    this->set_begin(lhs);
+    this->set_end(rhs);
+  }
+
+  TokenType operation;
+  ref<Expression> lhs;
+  ref<Expression> rhs;
 
   virtual void visit_children(ASTPass*) override;
 };
