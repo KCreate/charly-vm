@@ -33,10 +33,9 @@ namespace charly::core::compiler::ast {
 
 template <typename T>
 ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
-
-#define SWITCH_NODE(ASTType)                    \
-    if (ref<ASTType> casted_node = cast<ASTType>(node)) \
-      return cast<T>(pass->visit(casted_node));
+#define SWITCH_NODE(ASTType)                          \
+  if (ref<ASTType> casted_node = cast<ASTType>(node)) \
+    return cast<T>(pass->visit(casted_node));
 
   SWITCH_NODE(Block)
   SWITCH_NODE(Program)
@@ -121,4 +120,4 @@ void Tuple::visit_children(ASTPass* pass) {
   this->elements.erase(std::remove(begin, end, nullptr), end);
 }
 
-}  // namespace charly::core::compiler
+}  // namespace charly::core::compiler::ast

@@ -32,16 +32,7 @@
 
 namespace charly::utils {
 
-enum class Color : uint8_t {
-  Grey,
-  Red,
-  Green,
-  Yellow,
-  Blue,
-  Magenta,
-  Cyan,
-  White
-};
+enum class Color : uint8_t { Grey, Red, Green, Yellow, Blue, Magenta, Cyan, White };
 
 class ColorWriter {
 public:
@@ -112,4 +103,4 @@ private:
   std::ostream& m_stream;
 };
 
-}
+}  // namespace charly::utils

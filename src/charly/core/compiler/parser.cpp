@@ -29,7 +29,7 @@
 namespace charly::core::compiler {
 
 namespace {
-using namespace ast;
+  using namespace ast;
 }
 
 ref<Program> Parser::parse_program(const std::string& source) {

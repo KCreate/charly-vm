@@ -27,8 +27,8 @@
 #include <iostream>
 #include <string>
 
-#include "charly/utils/buffer.h"
 #include "charly/core/compiler.h"
+#include "charly/utils/buffer.h"
 
 using namespace charly;
 using namespace charly::core::compiler;
@@ -75,9 +75,7 @@ int main() {
         }
 
         DumpPass(std::cout, print_location).visit(program);
-      } catch (CompilerError& exc) {
-        std::cout << exc << '\n';
-      }
+      } catch (CompilerError& exc) { std::cout << exc << '\n'; }
     }
   }
 

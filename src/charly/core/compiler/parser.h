@@ -37,7 +37,7 @@
 namespace charly::core::compiler {
 
 namespace {
-using namespace ast;
+  using namespace ast;
 }
 
 // clang-format off
@@ -78,14 +78,14 @@ public:
     advance();
   }
 
-  static ref<Program>    parse_program(const std::string& source);
-  static ref<Statement>  parse_statement(const std::string& source);
+  static ref<Program> parse_program(const std::string& source);
+  static ref<Statement> parse_statement(const std::string& source);
   static ref<Expression> parse_expression(const std::string& source);
 
   // structural and statements
-  ref<Program>   parse_program();
-  ref<Block>     parse_block();
-  ref<Block>     parse_block_body();
+  ref<Program> parse_program();
+  ref<Block> parse_block();
+  ref<Block> parse_block_body();
   ref<Statement> parse_statement();
 
   // expressions
@@ -96,19 +96,19 @@ public:
   ref<Expression> parse_binop();
 
   // compound literals
-  ref<Expression>   parse_literal();
+  ref<Expression> parse_literal();
   ref<FormatString> parse_format_string();
-  ref<Expression>   parse_tuple();
+  ref<Expression> parse_tuple();
 
   // single token ast nodes
-  ref<Int>    parse_int_token();
-  ref<Float>  parse_float_token();
-  ref<Bool>   parse_bool_token();
-  ref<Id>     parse_identifier_token();
+  ref<Int> parse_int_token();
+  ref<Float> parse_float_token();
+  ref<Bool> parse_bool_token();
+  ref<Id> parse_identifier_token();
   ref<String> parse_string_token();
-  ref<Null>   parse_null_token();
-  ref<Self>   parse_self_token();
-  ref<Super>  parse_super_token();
+  ref<Null> parse_null_token();
+  ref<Self> parse_self_token();
+  ref<Super> parse_super_token();
 
 private:
   ref<Expression> parse_binop_1(ref<Expression> lhs, uint32_t min_precedence);

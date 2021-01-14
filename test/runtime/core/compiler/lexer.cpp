@@ -147,54 +147,53 @@ TEST_CASE("formats a token") {
 }
 
 TEST_CASE("recognizes keywords") {
-  Lexer lexer("test",
-              ("false\n"
-               "NaN\n"
-               "null\n"
-               "self\n"
-               "super\n"
-               "true\n"
-               "and\n"
-               "as\n"
-               "await\n"
-               "break\n"
-               "case\n"
-               "catch\n"
-               "class\n"
-               "const\n"
-               "continue\n"
-               "default\n"
-               "defer\n"
-               "do\n"
-               "else\n"
-               "export\n"
-               "extends\n"
-               "finally\n"
-               "for\n"
-               "from\n"
-               "func\n"
-               "guard\n"
-               "if\n"
-               "import\n"
-               "in\n"
-               "let\n"
-               "loop\n"
-               "match\n"
-               "new\n"
-               "operator\n"
-               "or\n"
-               "property\n"
-               "return\n"
-               "spawn\n"
-               "static\n"
-               "switch\n"
-               "throw\n"
-               "try\n"
-               "typeof\n"
-               "unless\n"
-               "until\n"
-               "while\n"
-               "yield\n"));
+  Lexer lexer("test", ("false\n"
+                       "NaN\n"
+                       "null\n"
+                       "self\n"
+                       "super\n"
+                       "true\n"
+                       "and\n"
+                       "as\n"
+                       "await\n"
+                       "break\n"
+                       "case\n"
+                       "catch\n"
+                       "class\n"
+                       "const\n"
+                       "continue\n"
+                       "default\n"
+                       "defer\n"
+                       "do\n"
+                       "else\n"
+                       "export\n"
+                       "extends\n"
+                       "finally\n"
+                       "for\n"
+                       "from\n"
+                       "func\n"
+                       "guard\n"
+                       "if\n"
+                       "import\n"
+                       "in\n"
+                       "let\n"
+                       "loop\n"
+                       "match\n"
+                       "new\n"
+                       "operator\n"
+                       "or\n"
+                       "property\n"
+                       "return\n"
+                       "spawn\n"
+                       "static\n"
+                       "switch\n"
+                       "throw\n"
+                       "try\n"
+                       "typeof\n"
+                       "unless\n"
+                       "until\n"
+                       "while\n"
+                       "yield\n"));
 
   CHECK(lexer.read_token().type == TokenType::False);
   CHECK(lexer.read_token().type == TokenType::Float);
@@ -310,16 +309,15 @@ TEST_CASE("recognizes structure tokens") {
 }
 
 TEST_CASE("recognizes comments") {
-  Lexer lexer("test",
-              ("foo bar // some comment\n"
-               "// hello\n"
-               "// world\n"
-               "//\n"
-               "/*\n"
-               "multiline comment!!\n"
-               "*/\n"
-               "/* hello world */ /* test */\n"
-               "/* foo /* nested */ */\n"));
+  Lexer lexer("test", ("foo bar // some comment\n"
+                       "// hello\n"
+                       "// world\n"
+                       "//\n"
+                       "/*\n"
+                       "multiline comment!!\n"
+                       "*/\n"
+                       "/* hello world */ /* test */\n"
+                       "/* foo /* nested */ */\n"));
 
   CHECK(lexer.read_token().type == TokenType::Identifier);
   CHECK(lexer.read_token().type == TokenType::Identifier);
@@ -358,10 +356,9 @@ TEST_CASE("recognizes comments") {
 }
 
 TEST_CASE("tokenizes strings") {
-  Lexer lexer("test",
-              ("\"hello world\"\n"
-               "\"äüöø¡œΣ€\"\n"
-               "\"\"\n"));
+  Lexer lexer("test", ("\"hello world\"\n"
+                       "\"äüöø¡œΣ€\"\n"
+                       "\"\"\n"));
 
   CHECK(lexer.read_token().type == TokenType::String);
   CHECK(lexer.last_token().source.compare("hello world") == 0);
@@ -395,12 +392,11 @@ TEST_CASE("escape sequences in strings") {
 }
 
 TEST_CASE("tokenizes string interpolations") {
-  Lexer lexer("test",
-              ("\"before {name({{}})} {more} after\""
-               "\"{\"{nested}\"}\""
-               "\"{}\""
-               "\"{}}\""
-               "\"\\{}\""));
+  Lexer lexer("test", ("\"before {name({{}})} {more} after\""
+                       "\"{\"{nested}\"}\""
+                       "\"{}\""
+                       "\"{}}\""
+                       "\"\\{}\""));
 
   CHECK(lexer.read_token().type == TokenType::FormatString);
   CHECK(lexer.last_token().source.compare("before ") == 0);

@@ -24,14 +24,14 @@
  * SOFTWARE.
  */
 
+#include <queue>
 #include <sstream>
 #include <vector>
-#include <queue>
 
 #include <catch2/catch_all.hpp>
 
-#include "charly/core/compiler/parser.h"
 #include "charly/core/compiler/astpass.h"
+#include "charly/core/compiler/parser.h"
 
 using Catch::Matchers::Contains;
 
@@ -65,7 +65,7 @@ using namespace charly::core::compiler;
 #define EXP(S, T) cast<T>(Parser::parse_expression(S))
 
 struct VisitedNodesStatisticsPass : public ASTPass {
-  int types[256] = {0};
+  int types[256] = { 0 };
 
   virtual bool enter_any(const ref<Node>& node) override {
     types[static_cast<int>(node->type())] += 1;
@@ -74,23 +74,22 @@ struct VisitedNodesStatisticsPass : public ASTPass {
 };
 
 struct NumberSummerPass : public ASTPass {
-    int64_t intsum = 0;
-    double floatsum = 0.0;
+  int64_t intsum = 0;
+  double floatsum = 0.0;
 
-    virtual ref<Expression> leave(const ref<Int>& node) override {
-      intsum += node->value;
-      return node;
-    }
+  virtual ref<Expression> leave(const ref<Int>& node) override {
+    intsum += node->value;
+    return node;
+  }
 
-    virtual ref<Expression> leave(const ref<Float>& node) override {
-      floatsum += node->value;
-      return node;
-    }
+  virtual ref<Expression> leave(const ref<Float>& node) override {
+    floatsum += node->value;
+    return node;
+  }
 };
 
 TEST_CASE("visits each node") {
   ref<Expression> node1 = Parser::parse_expression("(1, (2.5, 3), 4.25, (5, (((6.75, 7))), 8.1555), 9)");
-
 
   VisitedNodesStatisticsPass visited_stat_pass;
   visited_stat_pass.visit(node1);

@@ -190,40 +190,18 @@ struct Token {
   };
 
   bool is_binary_operator() const {
-    return type == TokenType::Plus ||
-           type == TokenType::Minus ||
-           type == TokenType::Mul ||
-           type == TokenType::Div ||
-           type == TokenType::Mod ||
-           type == TokenType::Pow ||
-           type == TokenType::BitAND ||
-           type == TokenType::BitOR ||
-           type == TokenType::BitXOR ||
-           type == TokenType::BitLeftShift ||
-           type == TokenType::BitRightShift ||
-           type == TokenType::BitUnsignedRightShift ||
-           type == TokenType::Or ||
-           type == TokenType::And ||
-           type == TokenType::Equal ||
-           type == TokenType::NotEqual ||
-           type == TokenType::LessThan ||
-           type == TokenType::GreaterThan ||
-           type == TokenType::LessEqual ||
-           type == TokenType::GreaterEqual;
+    return type == TokenType::Plus || type == TokenType::Minus || type == TokenType::Mul || type == TokenType::Div ||
+           type == TokenType::Mod || type == TokenType::Pow || type == TokenType::BitAND || type == TokenType::BitOR ||
+           type == TokenType::BitXOR || type == TokenType::BitLeftShift || type == TokenType::BitRightShift ||
+           type == TokenType::BitUnsignedRightShift || type == TokenType::Or || type == TokenType::And ||
+           type == TokenType::Equal || type == TokenType::NotEqual || type == TokenType::LessThan ||
+           type == TokenType::GreaterThan || type == TokenType::LessEqual || type == TokenType::GreaterEqual;
   }
 
   bool legal_assignment_operator() const {
-    return type == TokenType::Plus ||
-           type == TokenType::Minus ||
-           type == TokenType::Mul ||
-           type == TokenType::Div ||
-           type == TokenType::Mod ||
-           type == TokenType::Pow ||
-           type == TokenType::BitAND ||
-           type == TokenType::BitOR ||
-           type == TokenType::BitXOR ||
-           type == TokenType::BitLeftShift ||
-           type == TokenType::BitRightShift ||
+    return type == TokenType::Plus || type == TokenType::Minus || type == TokenType::Mul || type == TokenType::Div ||
+           type == TokenType::Mod || type == TokenType::Pow || type == TokenType::BitAND || type == TokenType::BitOR ||
+           type == TokenType::BitXOR || type == TokenType::BitLeftShift || type == TokenType::BitRightShift ||
            type == TokenType::BitUnsignedRightShift;
   }
 
@@ -259,7 +237,7 @@ struct Token {
     out << token.location.column;
 
     return out;
-	}
+  }
 };
 
 }  // namespace charly::core::compiler

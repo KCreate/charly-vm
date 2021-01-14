@@ -79,36 +79,36 @@ using namespace charly::core::compiler::ast;
   }
 
 TEST_CASE("parses literals") {
-  CHECK_AST_EXP("0",               make<Int>(0));
-  CHECK_AST_EXP("0x10",            make<Int>(0x10));
-  CHECK_AST_EXP("0xFFFF",          make<Int>(0xFFFF));
-  CHECK_AST_EXP("0b11111111",      make<Int>(0xFF));
-  CHECK_AST_EXP("0b01010101",      make<Int>(0x55));
-  CHECK_AST_EXP("0b00000000",      make<Int>(0x00));
-  CHECK_AST_EXP("0o777",           make<Int>(0777));
-  CHECK_AST_EXP("0o234",           make<Int>(0234));
-  CHECK_AST_EXP("foo",             make<Id>("foo"));
-  CHECK_AST_EXP("$",               make<Id>("$"));
-  CHECK_AST_EXP("$$foo",           make<Id>("$$foo"));
-  CHECK_AST_EXP("$1",              make<Id>("$1"));
-  CHECK_AST_EXP("__foo",           make<Id>("__foo"));
-  CHECK_AST_EXP("100",             make<Int>(100));
-  CHECK_AST_EXP("25.25",           make<Float>(25.25));
-  CHECK_AST_EXP("NaN",             make<Float>(NAN));
-  CHECK_AST_EXP("true",            make<Bool>(true));
-  CHECK_AST_EXP("false",           make<Bool>(false));
-  CHECK_AST_EXP("null",            make<Null>());
-  CHECK_AST_EXP("self",            make<Self>());
-  CHECK_AST_EXP("super",           make<Super>());
-  CHECK_AST_EXP("\"\"",            make<String>(""));
+  CHECK_AST_EXP("0", make<Int>(0));
+  CHECK_AST_EXP("0x10", make<Int>(0x10));
+  CHECK_AST_EXP("0xFFFF", make<Int>(0xFFFF));
+  CHECK_AST_EXP("0b11111111", make<Int>(0xFF));
+  CHECK_AST_EXP("0b01010101", make<Int>(0x55));
+  CHECK_AST_EXP("0b00000000", make<Int>(0x00));
+  CHECK_AST_EXP("0o777", make<Int>(0777));
+  CHECK_AST_EXP("0o234", make<Int>(0234));
+  CHECK_AST_EXP("foo", make<Id>("foo"));
+  CHECK_AST_EXP("$", make<Id>("$"));
+  CHECK_AST_EXP("$$foo", make<Id>("$$foo"));
+  CHECK_AST_EXP("$1", make<Id>("$1"));
+  CHECK_AST_EXP("__foo", make<Id>("__foo"));
+  CHECK_AST_EXP("100", make<Int>(100));
+  CHECK_AST_EXP("25.25", make<Float>(25.25));
+  CHECK_AST_EXP("NaN", make<Float>(NAN));
+  CHECK_AST_EXP("true", make<Bool>(true));
+  CHECK_AST_EXP("false", make<Bool>(false));
+  CHECK_AST_EXP("null", make<Null>());
+  CHECK_AST_EXP("self", make<Self>());
+  CHECK_AST_EXP("super", make<Super>());
+  CHECK_AST_EXP("\"\"", make<String>(""));
   CHECK_AST_EXP("\"hello world\"", make<String>("hello world"));
 
   CHECK_AST_EXP("\"\\a \\b \\n \\t \\v \\f \\\" \\{ \\\\ \"", make<String>("\a \b \n \t \v \f \" { \\ "));
 }
 
 TEST_CASE("parses tuples") {
-  ASSERT_AST_TYPE("(1)",   Int);
-  ASSERT_AST_TYPE("(1,)",  Tuple);
+  ASSERT_AST_TYPE("(1)", Int);
+  ASSERT_AST_TYPE("(1,)", Tuple);
   ASSERT_AST_TYPE("(1,2)", Tuple);
 
   CHECK(EXP("(1,)", Tuple)->elements.size() == 1);
@@ -131,18 +131,11 @@ TEST_CASE("parses tuples") {
 TEST_CASE("interpolated strings") {
   CHECK_AST_EXP("\"{x}\"", make<FormatString>(make<Id>("x")));
   CHECK_AST_EXP("\"x:{x} after\"", make<FormatString>(make<String>("x:"), make<Id>("x"), make<String>(" after")));
-  CHECK_AST_EXP("\"x:{x} y:{\"{y}\"}\"", make<FormatString>(
-    make<String>("x:"),
-    make<Id>("x"),
-    make<String>(" y:"),
-    make<FormatString>(make<Id>("y"))
-  ));
-  CHECK_AST_EXP("\"{\"{x}\"}\"", make<FormatString>(
-    make<FormatString>(make<Id>("x"))
-  ));
-  CHECK_AST_EXP("\"x:{(foo, bar)}\"", make<FormatString>(
-    make<String>("x:"), make<Tuple>(make<Id>("foo"), make <Id>("bar")
-  )));
+  CHECK_AST_EXP("\"x:{x} y:{\"{y}\"}\"", make<FormatString>(make<String>("x:"), make<Id>("x"), make<String>(" y:"),
+                                                            make<FormatString>(make<Id>("y"))));
+  CHECK_AST_EXP("\"{\"{x}\"}\"", make<FormatString>(make<FormatString>(make<Id>("x"))));
+  CHECK_AST_EXP("\"x:{(foo, bar)}\"",
+                make<FormatString>(make<String>("x:"), make<Tuple>(make<Id>("foo"), make<Id>("bar"))));
 }
 
 TEST_CASE("assignments") {
@@ -150,24 +143,19 @@ TEST_CASE("assignments") {
   CHECK_AST_EXP("x = 1", make<Assignment>(make<Id>("x"), make<Int>(1)));
   CHECK_AST_EXP("x = true", make<Assignment>(make<Id>("x"), make<Bool>(true)));
   CHECK_AST_EXP("x = (1, 2)", make<Assignment>(make<Id>("x"), make<Tuple>(make<Int>(1), make<Int>(2))));
-  CHECK_AST_EXP("(a, b, c) = 25", make<Assignment>(
-    make<Tuple>(make<Id>("a"), make<Id>("b"), make<Id>("c")),
-    make<Int>(25)
-  ));
+  CHECK_AST_EXP("(a, b, c) = 25",
+                make<Assignment>(make<Tuple>(make<Id>("a"), make<Id>("b"), make<Id>("c")), make<Int>(25)));
 }
 
 TEST_CASE("ternary if") {
   CHECK_AST_EXP("true ? 1 : 0", make<Ternary>(make<Bool>(true), make<Int>(1), make<Int>(0)));
-  CHECK_AST_EXP("true ? foo ? bar : baz : 0", make<Ternary>(
-    make<Bool>(true),
-    make<Ternary>(make<Id>("foo"), make<Id>("bar"), make<Id>("baz")),
-    make<Int>(0)
-  ));
-  CHECK_AST_EXP("(foo ? bar : baz) ? foo ? bar : baz : foo ? bar : baz", make<Ternary>(
-    make<Ternary>(make<Id>("foo"), make<Id>("bar"), make<Id>("baz")),
-    make<Ternary>(make<Id>("foo"), make<Id>("bar"), make<Id>("baz")),
-    make<Ternary>(make<Id>("foo"), make<Id>("bar"), make<Id>("baz"))
-  ));
+  CHECK_AST_EXP(
+    "true ? foo ? bar : baz : 0",
+    make<Ternary>(make<Bool>(true), make<Ternary>(make<Id>("foo"), make<Id>("bar"), make<Id>("baz")), make<Int>(0)));
+  CHECK_AST_EXP("(foo ? bar : baz) ? foo ? bar : baz : foo ? bar : baz",
+                make<Ternary>(make<Ternary>(make<Id>("foo"), make<Id>("bar"), make<Id>("baz")),
+                              make<Ternary>(make<Id>("foo"), make<Id>("bar"), make<Id>("baz")),
+                              make<Ternary>(make<Id>("foo"), make<Id>("bar"), make<Id>("baz"))));
 }
 
 TEST_CASE("binary operators") {

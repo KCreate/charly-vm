@@ -26,10 +26,10 @@
 
 #include <functional>
 #include <iostream>
-#include <sstream>
 #include <memory>
-#include <unordered_map>
+#include <sstream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "charly/core/compiler/location.h"
@@ -52,7 +52,7 @@ inline ref<T> cast(ref<O> node) {
   return std::dynamic_pointer_cast<T>(node);
 }
 
-class ASTPass; // forward declaration
+class ASTPass;  // forward declaration
 
 // base class of all ast nodes
 class Node : std::enable_shared_from_this<Node> {
@@ -81,24 +81,8 @@ public:
   };
 
   static constexpr const char* TypeNames[] = {
-    "Unknown",
-    "Program",
-    "Block",
-    "Id",
-    "Int",
-    "Float",
-    "Bool",
-    "String",
-    "FormatString",
-    "Null",
-    "Self",
-    "Super",
-    "Tuple",
-    "Assignment",
-    "ANDAssignment",
-    "Ternary",
-    "Binop",
-    "__SENTINEL",
+    "Unknown", "Program", "Block", "Id",    "Int",        "Float",         "Bool",    "String", "FormatString",
+    "Null",    "Self",    "Super", "Tuple", "Assignment", "ANDAssignment", "Ternary", "Binop",  "__SENTINEL",
   };
 
   const LocationRange& location() const {
@@ -158,7 +142,7 @@ public:
   virtual Type type() const = 0;
 
 protected:
-  virtual ~Node() {};
+  virtual ~Node(){};
   template <typename T>
   ref<T> visit(ASTPass* pass, const ref<T>& node);
   virtual void visit_children(ASTPass*) {}
@@ -182,7 +166,7 @@ class Block final : public Statement {
   AST_NODE(Block)
 public:
   template <typename... Args>
-  Block(Args&&... params) : statements({std::forward<Args>(params)...}) {}
+  Block(Args&&... params) : statements({ std::forward<Args>(params)... }) {}
 
   std::vector<ref<Statement>> statements;
 
@@ -253,8 +237,7 @@ public:
 class Binop : public Expression {
   AST_NODE(Binop)
 public:
-  Binop(TokenType operation, ref<Expression> lhs, ref<Expression> rhs) :
-    operation(operation), lhs(lhs), rhs(rhs) {
+  Binop(TokenType operation, ref<Expression> lhs, ref<Expression> rhs) : operation(operation), lhs(lhs), rhs(rhs) {
     this->set_begin(lhs);
     this->set_end(rhs);
   }
@@ -321,7 +304,7 @@ class FormatString final : public Expression {
   AST_NODE(FormatString)
 public:
   template <typename... Args>
-  FormatString(Args&&... params) : elements({std::forward<Args>(params)...}) {}
+  FormatString(Args&&... params) : elements({ std::forward<Args>(params)... }) {}
 
   std::vector<ref<Expression>> elements;
 
@@ -332,7 +315,7 @@ class Tuple final : public Expression {
   AST_NODE(Tuple)
 public:
   template <typename... Args>
-  Tuple(Args&&... params) : elements({std::forward<Args>(params)...}) {}
+  Tuple(Args&&... params) : elements({ std::forward<Args>(params)... }) {}
 
   std::vector<ref<Expression>> elements;
 

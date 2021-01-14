@@ -24,9 +24,9 @@
  * SOFTWARE.
  */
 
-#include <memory>
-#include <iostream>
 #include <cassert>
+#include <iostream>
+#include <memory>
 
 #include "charly/core/compiler/ast.h"
 
@@ -63,7 +63,7 @@ private:                                     \
 //
 // subclasses may override the virtual begin and leave methods
 class ASTPass {
-  friend class Node; // for overload switch handling
+  friend class Node;  // for overload switch handling
 
   uint32_t m_modified_nodes = 0;
 
@@ -72,11 +72,15 @@ class ASTPass {
   virtual void before_leave_any(const ref<Node>&) {}
   virtual void after_leave_any(const ref<Node>&) {}
 
-  virtual bool enter_any(const ref<Node>&) { return true; }
-  virtual ref<Node> leave_any(const ref<Node>& node) { return node; }
+  virtual bool enter_any(const ref<Node>&) {
+    return true;
+  }
+  virtual ref<Node> leave_any(const ref<Node>& node) {
+    return node;
+  }
 
-  AST_NODE(Statement,  Block)
-  AST_NODE(Node,       Program)
+  AST_NODE(Statement, Block)
+  AST_NODE(Node, Program)
 
   AST_NODE(Expression, Assignment)
   AST_NODE(Expression, ANDAssignment)
