@@ -4,11 +4,11 @@
   - Remove places where new nodes have to be registered
 
 - Parser
-  - parse control keywords (return, break, continue, defer, throw)
   - parse expression keywords (yield, spawn, import, await, typeof)
   - parse lists
-  - parse dicts
-  - parse sets
+  - curly braces
+    - parse dicts `{a: 1, b: 2}`
+    - parse blocks as statements `func foo { foo() { const a = 2; print(a) } }`
   - parse functions
   - parse arrow function
   - parse generators
@@ -23,10 +23,6 @@
   - parse loop
   - parse for
   - parse try
-  - parse defer
-  - parse spawn
-  - parse list destructuring assignment
-  - parse object destructuring assignment
   - some illegal syntaxes can be caught by sometimes parsing newline tokens
     - inside subscript, call parsing methods
 
@@ -52,6 +48,15 @@
 # Rewrite of the codebase
 
 - open questions
+  - JIT compilation of charly opcodes
+    - Implement fiber scheduler with makecontext, setcontext methods
+
+  - JVM exception tables
+    - Generate exception tables for each function at compile time
+      - How is the type id obtained for the exception classes?
+      - Can the catchtables be completely removed?
+      - Unwinding of block stack for defer and loop constructs
+
   - object handles that also work with immediate encoded values (Handle<Object>, Handle<VALUE>)
     - std::is_base_of can be used to enforce subclasses of Header only for Handle type
     - thread safe object handles
@@ -82,8 +87,8 @@
     - module    code exports file code inside a module function
 
   - how are iterators implemented
-    - wrappers around builtin collection types (list, dict, set, tuple)
-    - when iterating over non indexable types (dict, set) an iterator to the underlying data structure
+    - wrappers around builtin collection types (list, dict, tuple)
+    - when iterating over non indexable types (like dict) an iterator to the underlying data structure
       is stored and incremented for each read operation
       - iterator invalidation?
     - if passed a value which can't be trivially turned into a iterator call the to_iterator function on it
@@ -287,7 +292,6 @@
       - null
     - container
       - list
-      - set
       - dict
       - tuple
     - language

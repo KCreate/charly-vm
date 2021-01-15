@@ -37,8 +37,14 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
   if (ref<ASTType> casted_node = cast<ASTType>(node)) \
     return cast<T>(pass->visit(casted_node));
 
-  SWITCH_NODE(Block)
   SWITCH_NODE(Program)
+  SWITCH_NODE(Block)
+  SWITCH_NODE(Return)
+  SWITCH_NODE(Break)
+  SWITCH_NODE(Continue)
+  SWITCH_NODE(Defer)
+  SWITCH_NODE(Throw)
+  SWITCH_NODE(Export)
 
   SWITCH_NODE(Assignment)
   SWITCH_NODE(ANDAssignment)
@@ -75,6 +81,22 @@ void Block::visit_children(ASTPass* pass) {
   auto begin = this->statements.begin();
   auto end = this->statements.end();
   this->statements.erase(std::remove(begin, end, nullptr), end);
+}
+
+void Return::visit_children(ASTPass* pass) {
+  this->expression = pass->visit(this->expression);
+}
+
+void Defer::visit_children(ASTPass* pass) {
+  this->statement = pass->visit(this->statement);
+}
+
+void Throw::visit_children(ASTPass* pass) {
+  this->expression = pass->visit(this->expression);
+}
+
+void Export::visit_children(ASTPass* pass) {
+  this->expression = pass->visit(this->expression);
 }
 
 void Program::visit_children(ASTPass* pass) {

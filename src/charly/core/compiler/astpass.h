@@ -79,8 +79,14 @@ class ASTPass {
     return node;
   }
 
-  AST_NODE(Statement, Block)
   AST_NODE(Node, Program)
+  AST_NODE(Statement, Block)
+  AST_NODE(Statement, Return)
+  AST_NODE(Statement, Break)
+  AST_NODE(Statement, Continue)
+  AST_NODE(Statement, Defer)
+  AST_NODE(Statement, Throw)
+  AST_NODE(Statement, Export)
 
   AST_NODE(Expression, Assignment)
   AST_NODE(Expression, ANDAssignment)

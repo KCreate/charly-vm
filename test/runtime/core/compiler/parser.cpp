@@ -78,6 +78,22 @@ using namespace charly::core::compiler::ast;
     CHECK(equal == true);                                         \
   }
 
+#define CHECK_AST_STMT(S, N)                                      \
+  {                                                               \
+    std::stringstream stmt_dump;                                  \
+    std::stringstream ref_dump;                                   \
+    DumpPass(stmt_dump, false).visit(Parser::parse_statement(S)); \
+    DumpPass(ref_dump, false).visit(N);                           \
+    bool equal = stmt_dump.str().compare(ref_dump.str()) == 0;    \
+    if (!equal) {                                                 \
+      std::cout << "Expected:" << '\n';                           \
+      std::cout << ref_dump.str() << '\n';                        \
+      std::cout << "Got:" << '\n';                                \
+      std::cout << stmt_dump.str() << '\n';                       \
+    }                                                             \
+    CHECK(equal == true);                                         \
+  }
+
 TEST_CASE("parses literals") {
   CHECK_AST_EXP("0", make<Int>(0));
   CHECK_AST_EXP("0x10", make<Int>(0x10));
@@ -270,4 +286,22 @@ TEST_CASE("unary operators") {
                                           make<UnaryOp>(TokenType::Minus, make<Int>(2))));
   CHECK_AST_EXP("-1..-5", make<BinaryOp>(TokenType::DoublePoint, make<UnaryOp>(TokenType::Minus, make<Int>(1)),
                                          make<UnaryOp>(TokenType::Minus, make<Int>(5))));
+}
+
+TEST_CASE("parses control statements") {
+  CHECK_AST_STMT("return", make<Return>(make<Null>()));
+  CHECK_AST_STMT("return 1", make<Return>(make<Int>(1)));
+  CHECK_AST_STMT("return 1 + 2", make<Return>(make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(2))));
+
+  CHECK_AST_STMT("break", make<Break>());
+  CHECK_AST_STMT("continue", make<Continue>());
+
+  CHECK_AST_STMT("defer exp", make<Defer>(make<Id>("exp")));
+  CHECK_AST_STMT("defer 25", make<Defer>(make<Int>(25)));
+
+  CHECK_AST_STMT("throw null", make<Throw>(make<Null>()));
+  CHECK_AST_STMT("throw 25", make<Throw>(make<Int>(25)));
+  CHECK_AST_STMT("throw 1 + 2", make<Throw>(make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(2))));
+
+  CHECK_AST_STMT("export exp", make<Export>(make<Id>("exp")));
 }

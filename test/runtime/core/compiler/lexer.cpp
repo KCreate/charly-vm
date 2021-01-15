@@ -179,7 +179,6 @@ TEST_CASE("recognizes keywords") {
                        "let\n"
                        "loop\n"
                        "match\n"
-                       "new\n"
                        "operator\n"
                        "or\n"
                        "property\n"
@@ -227,7 +226,6 @@ TEST_CASE("recognizes keywords") {
   CHECK(lexer.read_token().type == TokenType::Let);
   CHECK(lexer.read_token().type == TokenType::Loop);
   CHECK(lexer.read_token().type == TokenType::Match);
-  CHECK(lexer.read_token().type == TokenType::New);
   CHECK(lexer.read_token().type == TokenType::Operator);
   CHECK(lexer.read_token().type == TokenType::Or);
   CHECK(lexer.read_token().type == TokenType::Property);

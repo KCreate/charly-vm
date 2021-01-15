@@ -63,6 +63,12 @@ public:
     Unknown = 0,
     Program = 1,
     Block,
+    Return,
+    Break,
+    Continue,
+    Defer,
+    Throw,
+    Export,
     Id,
     Int,
     Float,
@@ -83,9 +89,9 @@ public:
   };
 
   static constexpr const char* TypeNames[] = {
-    "Unknown",    "Program",       "Block",        "Id",       "Int",     "Float",      "Bool",
-    "Char",       "String",        "FormatString", "Null",     "Self",    "Super",      "Tuple",
-    "Assignment", "ANDAssignment", "Ternary",      "BinaryOp", "UnaryOp", "__SENTINEL",
+    "Unknown", "Program", "Block",      "Return",        "Break",   "Continue", "Defer",        "Throw",      "Export",
+    "Id",      "Int",     "Float",      "Bool",          "Char",    "String",   "FormatString", "Null",       "Self",
+    "Super",   "Tuple",   "Assignment", "ANDAssignment", "Ternary", "BinaryOp", "UnaryOp",      "__SENTINEL",
   };
 
   const LocationRange& location() const {
@@ -163,8 +169,20 @@ bool isa(const ref<Node>& node) {
     return Node::Type::T;                    \
   }
 
+// {
+//   <statement>
+// }
 class Statement : public Node {};
 
+// 1 + x, false, foo(bar)
+class Expression : public Statement {};
+
+// 1, 0.5, false, null, "hello", 0
+class ConstantExpression : public Expression {};
+
+// {
+//   ...
+// }
 class Block final : public Statement {
   AST_NODE(Block)
 public:
@@ -176,6 +194,7 @@ public:
   virtual void visit_children(ASTPass*) override;
 };
 
+// top level node of a compiled program
 class Program final : public Node {
   AST_NODE(Program)
 public:
@@ -189,8 +208,69 @@ public:
   virtual void visit_children(ASTPass*) override;
 };
 
-class Expression : public Statement {};
+// return <exp>
+class Return final : public Statement {
+  AST_NODE(Return)
+public:
+  Return(ref<Expression> expression) : expression(expression) {
+    this->set_location(expression);
+  }
 
+  ref<Expression> expression;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+// break
+class Break final : public Statement {
+  AST_NODE(Break)
+};
+
+// continue
+class Continue final : public Statement {
+  AST_NODE(Continue)
+};
+
+// defer <statement>
+class Defer final : public Statement {
+  AST_NODE(Defer)
+public:
+  Defer(ref<Statement> statement) : statement(statement) {
+    this->set_location(statement);
+  }
+
+  ref<Statement> statement;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+// throw <expression>
+class Throw final : public Statement {
+  AST_NODE(Throw)
+public:
+  Throw(ref<Expression> expression) : expression(expression) {
+    this->set_location(expression);
+  }
+
+  ref<Expression> expression;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+// export <expression>
+class Export final : public Statement {
+  AST_NODE(Export)
+public:
+  Export(ref<Expression> expression) : expression(expression) {
+    this->set_location(expression);
+  }
+
+  ref<Expression> expression;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+// <target> = <source>
 class Assignment : public Expression {
   AST_NODE(Assignment)
 public:
@@ -205,6 +285,7 @@ public:
   virtual void visit_children(ASTPass*) override;
 };
 
+// <target> <operation>= <source>
 class ANDAssignment : public Expression {
   AST_NODE(ANDAssignment)
 public:
@@ -221,6 +302,7 @@ public:
   virtual void visit_children(ASTPass*) override;
 };
 
+// <condition> ? <then_exp> : <else_exp>
 class Ternary : public Expression {
   AST_NODE(Ternary)
 public:
@@ -237,6 +319,7 @@ public:
   virtual void visit_children(ASTPass*) override;
 };
 
+// <lhs> <operation> <rhs>
 class BinaryOp : public Expression {
   AST_NODE(BinaryOp)
 public:
@@ -252,6 +335,7 @@ public:
   virtual void visit_children(ASTPass*) override;
 };
 
+// <operation> <expression>
 class UnaryOp : public Expression {
   AST_NODE(UnaryOp)
 public:
@@ -265,16 +349,17 @@ public:
   virtual void visit_children(ASTPass*) override;
 };
 
-class ConstantExpression : public Expression {};
-
+// null
 class Null final : public ConstantExpression {
   AST_NODE(Null)
 };
 
+// self
 class Self final : public ConstantExpression {
   AST_NODE(Self)
 };
 
+// super
 class Super final : public ConstantExpression {
   AST_NODE(Super)
 };
@@ -286,42 +371,49 @@ public:
   T value;
 };
 
+// foo, bar, $_baz42
 class Id final : public Atom<std::string> {
   AST_NODE(Id)
 public:
   using Atom<std::string>::Atom;
 };
 
+// 1, 2, 42
 class Int final : public Atom<int64_t> {
   AST_NODE(Int)
 public:
   using Atom<int64_t>::Atom;
 };
 
+// 0.5, 25.25, 5000.1234
 class Float final : public Atom<double> {
   AST_NODE(Float)
 public:
   using Atom<double>::Atom;
 };
 
+// true, false
 class Bool final : public Atom<bool> {
   AST_NODE(Bool)
 public:
   using Atom<bool>::Atom;
 };
 
+// 'a', '\n', 'ä', 'π'
 class Char final : public Atom<uint32_t> {
   AST_NODE(Char)
 public:
   using Atom<uint32_t>::Atom;
 };
 
+// "hello world"
 class String final : public Atom<std::string> {
   AST_NODE(String)
 public:
   using Atom<std::string>::Atom;
 };
 
+// "name: {name} age: {age}"
 class FormatString final : public Expression {
   AST_NODE(FormatString)
 public:
@@ -333,6 +425,7 @@ public:
   virtual void visit_children(ASTPass*) override;
 };
 
+// (1, 2, 3)
 class Tuple final : public Expression {
   AST_NODE(Tuple)
 public:

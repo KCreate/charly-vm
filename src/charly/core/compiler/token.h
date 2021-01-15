@@ -27,6 +27,7 @@
 #include <iostream>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "charly/core/compiler/location.h"
 
@@ -40,7 +41,6 @@ enum class TokenType {
   // literals
   Int,
   Float,
-  NaN,
   True,
   False,
   Identifier,
@@ -77,7 +77,6 @@ enum class TokenType {
   Let,
   Loop,
   Match,
-  New,
   Operator,
   Property,
   Return,
@@ -147,44 +146,89 @@ enum class TokenType {
 };
 
 // string representations of token types
-static std::string kTokenTypeStrings[] = { "EOF",      "Int",        "Float",     "NaN",     "True",
-                                           "false",    "Identifier", "Character", "String",  "FormatString",
-                                           "null",     "self",       "super",     "as",      "await",
-                                           "break",    "case",       "catch",     "class",   "const",
-                                           "continue", "default",    "defer",     "do",      "else",
-                                           "export",   "extends",    "finally",   "for",     "from",
-                                           "func",     "guard",      "if",        "import",  "in",
-                                           "let",      "loop",       "match",     "new",     "operator",
-                                           "property", "return",     "spawn",     "static",  "switch",
-                                           "throw",    "try",        "typeof",    "unless",  "until",
-                                           "while",    "yield",      "=",         "+",       "-",
-                                           "*",        "/",          "%",         "**",      "==",
-                                           "!=",       "<",          ">",         "<=",      ">=",
-                                           "&&",       "||",         "|",         "^",       "&",
-                                           "<<",       ">>",         ">>>",       "!",       "~",
-                                           "(",        ")",          "{",         "}",       "[",
-                                           "]",        ".",          "..",        "...",     ":",
-                                           ",",        ";",          "@",         "<-",      "->",
-                                           "=>",       "?",          "Comment",   "Newline", "Whitespace" };
+static std::string kTokenTypeStrings[] = {
+  "EOF",     "Int",      "Float",     "True",   "false", "Identifier", "Character", "String",  "FormatString",
+  "null",    "self",     "super",     "as",     "await", "break",      "case",      "catch",   "class",
+  "const",   "continue", "default",   "defer",  "do",    "else",       "export",    "extends", "finally",
+  "for",     "from",     "func",      "guard",  "if",    "import",     "in",        "let",     "loop",
+  "match",   "operator", "property",  "return", "spawn", "static",     "switch",    "throw",   "try",
+  "typeof",  "unless",   "until",     "while",  "yield", "=",          "+",         "-",       "*",
+  "/",       "%",        "**",        "==",     "!=",    "<",          ">",         "<=",      ">=",
+  "&&",      "||",       "|",         "^",      "&",     "<<",         ">>",        ">>>",     "!",
+  "~",       "(",        ")",         "{",      "}",     "[",          "]",         ".",       "..",
+  "...",     ":",        ",",         ";",      "@",     "<-",         "->",        "=>",      "?",
+  "Comment", "Newline",  "Whitespace"
+};
 
 // identifiers with these names get remapped to keyword tokens
-static const std::unordered_map<std::string, TokenType> kKeywordsAndLiterals = {
-  { "NaN", TokenType::Float },         { "false", TokenType::False },   { "null", TokenType::Null },
-  { "self", TokenType::Self },         { "super", TokenType::Super },   { "true", TokenType::True },
-  { "and", TokenType::And },           { "as", TokenType::As },         { "await", TokenType::Await },
-  { "break", TokenType::Break },       { "case", TokenType::Case },     { "catch", TokenType::Catch },
-  { "class", TokenType::Class },       { "const", TokenType::Const },   { "continue", TokenType::Continue },
-  { "default", TokenType::Default },   { "defer", TokenType::Defer },   { "do", TokenType::Do },
-  { "else", TokenType::Else },         { "export", TokenType::Export }, { "extends", TokenType::Extends },
-  { "finally", TokenType::Finally },   { "for", TokenType::For },       { "from", TokenType::From },
-  { "func", TokenType::Func },         { "guard", TokenType::Guard },   { "if", TokenType::If },
-  { "import", TokenType::Import },     { "in", TokenType::In },         { "let", TokenType::Let },
-  { "loop", TokenType::Loop },         { "match", TokenType::Match },   { "new", TokenType::New },
-  { "operator", TokenType::Operator }, { "or", TokenType::Or },         { "property", TokenType::Property },
-  { "return", TokenType::Return },     { "spawn", TokenType::Spawn },   { "static", TokenType::Static },
-  { "switch", TokenType::Switch },     { "throw", TokenType::Throw },   { "try", TokenType::Try },
-  { "typeof", TokenType::Typeof },     { "unless", TokenType::Unless }, { "until", TokenType::Until },
-  { "while", TokenType::While },       { "yield", TokenType::Yield }
+static const std::unordered_map<std::string, TokenType> kKeywordsAndLiterals = { { "NaN", TokenType::Float },
+                                                                                 { "false", TokenType::False },
+                                                                                 { "null", TokenType::Null },
+                                                                                 { "self", TokenType::Self },
+                                                                                 { "super", TokenType::Super },
+                                                                                 { "true", TokenType::True },
+                                                                                 { "and", TokenType::And },
+                                                                                 { "as", TokenType::As },
+                                                                                 { "await", TokenType::Await },
+                                                                                 { "break", TokenType::Break },
+                                                                                 { "case", TokenType::Case },
+                                                                                 { "catch", TokenType::Catch },
+                                                                                 { "class", TokenType::Class },
+                                                                                 { "const", TokenType::Const },
+                                                                                 { "continue", TokenType::Continue },
+                                                                                 { "default", TokenType::Default },
+                                                                                 { "defer", TokenType::Defer },
+                                                                                 { "do", TokenType::Do },
+                                                                                 { "else", TokenType::Else },
+                                                                                 { "export", TokenType::Export },
+                                                                                 { "extends", TokenType::Extends },
+                                                                                 { "finally", TokenType::Finally },
+                                                                                 { "for", TokenType::For },
+                                                                                 { "from", TokenType::From },
+                                                                                 { "func", TokenType::Func },
+                                                                                 { "guard", TokenType::Guard },
+                                                                                 { "if", TokenType::If },
+                                                                                 { "import", TokenType::Import },
+                                                                                 { "in", TokenType::In },
+                                                                                 { "let", TokenType::Let },
+                                                                                 { "loop", TokenType::Loop },
+                                                                                 { "match", TokenType::Match },
+                                                                                 { "operator", TokenType::Operator },
+                                                                                 { "or", TokenType::Or },
+                                                                                 { "property", TokenType::Property },
+                                                                                 { "return", TokenType::Return },
+                                                                                 { "spawn", TokenType::Spawn },
+                                                                                 { "static", TokenType::Static },
+                                                                                 { "switch", TokenType::Switch },
+                                                                                 { "throw", TokenType::Throw },
+                                                                                 { "try", TokenType::Try },
+                                                                                 { "typeof", TokenType::Typeof },
+                                                                                 { "unless", TokenType::Unless },
+                                                                                 { "until", TokenType::Until },
+                                                                                 { "while", TokenType::While },
+                                                                                 { "yield", TokenType::Yield } };
+
+static const std::unordered_set<TokenType> kExpressionValidInitialTokens = {
+  TokenType::Int,       TokenType::Float,       TokenType::True,        TokenType::False,  TokenType::Character,
+  TokenType::String,    TokenType::Null,        TokenType::Await,       TokenType::Class,  TokenType::Func,
+  TokenType::Import,    TokenType::Match,       TokenType::Spawn,       TokenType::Typeof, TokenType::Yield,
+  TokenType::Plus,      TokenType::Minus,       TokenType::UnaryNot,    TokenType::BitNOT, TokenType::LeftParen,
+  TokenType::LeftCurly, TokenType::LeftBracket, TokenType::TriplePoint, TokenType::AtSign, TokenType::RightArrow
+};
+
+static const std::unordered_set<TokenType> kBinaryOperatorTokens = {
+  TokenType::Plus,        TokenType::Minus,        TokenType::Mul,           TokenType::Div,
+  TokenType::Mod,         TokenType::Pow,          TokenType::BitAND,        TokenType::BitOR,
+  TokenType::BitXOR,      TokenType::BitLeftShift, TokenType::BitRightShift, TokenType::BitUnsignedRightShift,
+  TokenType::Or,          TokenType::And,          TokenType::Equal,         TokenType::NotEqual,
+  TokenType::LessThan,    TokenType::GreaterThan,  TokenType::LessEqual,     TokenType::GreaterEqual,
+  TokenType::DoublePoint, TokenType::TriplePoint,
+};
+
+static const std::unordered_set<TokenType> kANDAssignmentOperators = {
+  TokenType::Plus,   TokenType::Minus,        TokenType::Mul,           TokenType::Div,
+  TokenType::Mod,    TokenType::Pow,          TokenType::BitAND,        TokenType::BitOR,
+  TokenType::BitXOR, TokenType::BitLeftShift, TokenType::BitRightShift, TokenType::BitUnsignedRightShift,
 };
 
 struct Token {
@@ -200,20 +244,15 @@ struct Token {
   };
 
   bool is_binary_operator() const {
-    return type == TokenType::Plus || type == TokenType::Minus || type == TokenType::Mul || type == TokenType::Div ||
-           type == TokenType::Mod || type == TokenType::Pow || type == TokenType::BitAND || type == TokenType::BitOR ||
-           type == TokenType::BitXOR || type == TokenType::BitLeftShift || type == TokenType::BitRightShift ||
-           type == TokenType::BitUnsignedRightShift || type == TokenType::Or || type == TokenType::And ||
-           type == TokenType::Equal || type == TokenType::NotEqual || type == TokenType::LessThan ||
-           type == TokenType::GreaterThan || type == TokenType::LessEqual || type == TokenType::GreaterEqual ||
-           type == TokenType::DoublePoint || type == TokenType::TriplePoint;
+    return kBinaryOperatorTokens.count(type);
   }
 
   bool legal_assignment_operator() const {
-    return type == TokenType::Plus || type == TokenType::Minus || type == TokenType::Mul || type == TokenType::Div ||
-           type == TokenType::Mod || type == TokenType::Pow || type == TokenType::BitAND || type == TokenType::BitOR ||
-           type == TokenType::BitXOR || type == TokenType::BitLeftShift || type == TokenType::BitRightShift ||
-           type == TokenType::BitUnsignedRightShift;
+    return kANDAssignmentOperators.count(type);
+  }
+
+  bool could_start_expression() const {
+    return kExpressionValidInitialTokens.count(type);
   }
 
   friend std::ostream& operator<<(std::ostream& out, const Token& token) {

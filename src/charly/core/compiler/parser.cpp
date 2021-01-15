@@ -73,13 +73,107 @@ ref<Block> Parser::parse_block_body() {
 }
 
 ref<Statement> Parser::parse_statement() {
+  ref<Statement> stmt;
+
   switch (m_token.type) {
+    case TokenType::Return: {
+      stmt = parse_return();
+      break;
+    }
+    case TokenType::Break: {
+      stmt = parse_break();
+      break;
+    }
+    case TokenType::Continue: {
+      stmt = parse_continue();
+      break;
+    }
+    case TokenType::Defer: {
+      stmt = parse_defer();
+      break;
+    }
+    case TokenType::Throw: {
+      stmt = parse_throw();
+      break;
+    }
+    case TokenType::Export: {
+      stmt = parse_export();
+      break;
+    }
     default: {
-      ref<Expression> exp = parse_expression();
-      skip(TokenType::Semicolon);
-      return exp;
+      stmt = parse_expression();
+      break;
     }
   }
+
+  skip(TokenType::Semicolon);
+
+  return stmt;
+}
+
+ref<Statement> Parser::parse_return() {
+  match(TokenType::Return);
+  Location begin = m_token.location;
+  advance();
+
+  if (m_token.could_start_expression()) {
+    ref<Expression> exp = parse_expression();
+    ref<Return> ret = make<Return>(exp);
+    ret->set_begin(begin);
+    return ret;
+  }
+
+  ref<Null> null = make<Null>();
+  null->set_location(begin);
+  ref<Return> ret = make<Return>(null);
+  ret->set_begin(begin);
+  return ret;
+}
+
+ref<Statement> Parser::parse_break() {
+  match(TokenType::Break);
+  ref<Break> node = make<Break>();
+  at(node);
+  advance();
+  return node;
+}
+
+ref<Statement> Parser::parse_continue() {
+  match(TokenType::Continue);
+  ref<Continue> node = make<Continue>();
+  at(node);
+  advance();
+  return node;
+}
+
+ref<Statement> Parser::parse_defer() {
+  match(TokenType::Defer);
+  Location begin = m_token.location;
+  advance();
+  ref<Statement> stmt = parse_statement();
+  ref<Defer> ret = make<Defer>(stmt);
+  ret->set_begin(begin);
+  return ret;
+}
+
+ref<Statement> Parser::parse_throw() {
+  match(TokenType::Throw);
+  Location begin = m_token.location;
+  advance();
+  ref<Expression> exp = parse_expression();
+  ref<Throw> ret = make<Throw>(exp);
+  ret->set_begin(begin);
+  return ret;
+}
+
+ref<Statement> Parser::parse_export() {
+  match(TokenType::Export);
+  Location begin = m_token.location;
+  advance();
+  ref<Expression> exp = parse_expression();
+  ref<Export> ret = make<Export>(exp);
+  ret->set_begin(begin);
+  return ret;
 }
 
 ref<Expression> Parser::parse_comma_expression() {

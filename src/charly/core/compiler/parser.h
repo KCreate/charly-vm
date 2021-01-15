@@ -96,6 +96,12 @@ public:
   ref<Block> parse_block();
   ref<Block> parse_block_body();
   ref<Statement> parse_statement();
+  ref<Statement> parse_return();
+  ref<Statement> parse_break();
+  ref<Statement> parse_continue();
+  ref<Statement> parse_defer();
+  ref<Statement> parse_throw();
+  ref<Statement> parse_export();
 
   // expressions
   ref<Expression> parse_comma_expression();
