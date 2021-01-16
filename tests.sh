@@ -1,6 +1,6 @@
 #!/bin/sh
 
-mkdir cmake-build-debug -p
+mkdir -p cmake-build-debug
 cd cmake-build-debug
 
 # initial cmake run

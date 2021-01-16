@@ -10,7 +10,7 @@ then
   cmake .. -DCMAKE_BUILD_TYPE=Release
 fi
 
-make charly
+make charly -j12
 if [ $? -eq 0 ]
 then
   cd ..

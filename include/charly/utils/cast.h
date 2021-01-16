@@ -24,11 +24,12 @@
  * SOFTWARE.
  */
 
-#include <array>
+#include <cerrno>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 
 #pragma once
 

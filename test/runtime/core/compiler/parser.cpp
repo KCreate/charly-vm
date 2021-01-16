@@ -26,7 +26,7 @@
 
 #include <sstream>
 
-#include <catch2/catch_all.hpp>
+#include <catch2/catch.hpp>
 
 #include "charly/core/compiler/parser.h"
 #include "charly/core/compiler/passes/dump.h"

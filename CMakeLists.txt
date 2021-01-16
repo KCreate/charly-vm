@@ -3,6 +3,19 @@ set(CMAKE_C_COMPILER_NAMES clang)
 set(CMAKE_CXX_COMPILER_NAMES clang++)
 project(charly-vm)
 
+# osx check
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  message("-- Detected apple installation")
+  add_compile_definitions(APPLE)
+  set(APPLE TRUE)
+endif()
+
+if(APPLE)
+  include_directories(SYSTEM /usr/local/include)
+else()
+  include_directories(SYSTEM /usr/include)
+endif()
+
 # public headers
 include_directories(include)
 
@@ -23,7 +36,9 @@ install(TARGETS charly RUNTIME DESTINATION bin)
 
 # unit tests
 find_package(Catch2)
-IF(Catch2_FOUND)
+if(Catch2_FOUND)
+  message("-- Detected 'Catch2' library, enabling target 'tests'")
+
   file(GLOB tests_SRC
     "test/runtime/main.cpp"
     "test/runtime/utils/*.cpp"
@@ -36,6 +51,6 @@ IF(Catch2_FOUND)
   target_include_directories(tests PRIVATE src)
   target_compile_features(tests PRIVATE cxx_std_17)
   target_compile_options(tests PRIVATE -Wall -Wextra -Wpedantic -Werror -Wno-vla-extension)
-ELSE()
+else()
   message("-- Could not find 'Catch2' library, omitting build target 'tests'")
-ENDIF()
+endif()

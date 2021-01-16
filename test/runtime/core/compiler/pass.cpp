@@ -28,7 +28,7 @@
 #include <sstream>
 #include <vector>
 
-#include <catch2/catch_all.hpp>
+#include <catch2/catch.hpp>
 
 #include "charly/core/compiler/astpass.h"
 #include "charly/core/compiler/parser.h"
