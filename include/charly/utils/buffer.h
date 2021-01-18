@@ -247,12 +247,6 @@ inline void Buffer::reserve_space(size_t size) {
   if (new_buffer == nullptr)
     throw new std::runtime_error("Could not realloc buffer");
 
-  // copy old buffer if it exists
-  if (m_data != nullptr && m_data != new_buffer) {
-    std::memcpy(new_buffer, m_data, m_writeoffset);
-  }
-
-  std::free(m_data);
   m_data = new_buffer;
   m_capacity = new_capacity;
 }

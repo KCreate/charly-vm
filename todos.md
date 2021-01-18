@@ -1,9 +1,26 @@
 # Todos
 
+- Unit tests
+  - Import statement
+    - Check for invalid nodes
+    - Check for exceptions
+  - Yield, Await, Typeof
+  - Operator precedence
+  - Check for parser exceptions
+  - Spawn statement
+    - Needs call syntax to be implemented
+
+- Diagnostic message emitter abstraction instead of throwing an exception
+  - Diagnosts manager gets source code of file and can print pretty
+    color highlighted dump of stuff
+  - Specific error message for each scenario
+  - Puts all error messages into one place
+
 - Refactor node visiting code
   - Remove places where new nodes have to be registered
 
 - Parser
+  - parse member, call and index expressions
   - parse expression keywords (yield, spawn, import, await, typeof)
   - parse lists
   - curly braces
@@ -27,9 +44,17 @@
     - inside subscript, call parsing methods
 
 - Semantic constraints
-  - Desugaring passes
-  - Constant checking
-  - Legal keywords
+  - Desugar syntax constructs
+  - Check if keywords are placed at legal positions
+  - Only catch errors which would constitute an ill-formed charly program
+    not incorrect (buggy) programs. for example `defer return 1` should be an error since
+    a return statement is not allowed to be present inside a defer clause
+  - Insert missing statements (return null inside empty blocks)
+  - Check for illegal identifiers
+  - Generate constructor for class
+  - Check if super is present inside subclass constructors
+  - Class and function literals are rewritten to declarations
+
 - Intermediate representation for charly code
   - Human readable charly bytecode syntax
   - Assembler for charly bytecodes
