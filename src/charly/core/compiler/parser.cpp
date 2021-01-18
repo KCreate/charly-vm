@@ -100,6 +100,14 @@ ref<Statement> Parser::parse_statement() {
       stmt = parse_export();
       break;
     }
+    case TokenType::From:
+    case TokenType::Import: {
+      return parse_import();
+    }
+    case TokenType::LeftCurly: {
+      stmt = parse_block();
+      break;
+    }
     default: {
       stmt = parse_expression();
       break;
@@ -176,31 +184,115 @@ ref<Statement> Parser::parse_export() {
   return ret;
 }
 
-ref<Expression> Parser::parse_comma_expression() {
-  ref<Expression> exp = parse_expression();
-  if (!type(TokenType::Comma))
-    return exp;
+ref<Statement> Parser::parse_import() {
+  Location begin_location = m_token.location;
 
-  ref<Tuple> tuple = make<Tuple>();
-  tuple->set_begin(exp);
-  tuple->elements.push_back(exp);
+  if (type(TokenType::Import)) {
+    eat(TokenType::Import);
+    ref<Expression> source_exp = parse_as_expression();
+
+    ref<Import> import_node = make<Import>(source_exp);
+    import_node->set_begin(begin_location);
+
+    return import_node;
+  } else if (type(TokenType::From)) {
+    eat(TokenType::From);
+    ref<Expression> source_exp = parse_as_expression();
+
+    ref<Import> import_node = make<Import>(source_exp);
+    import_node->set_begin(begin_location);
+
+    eat(TokenType::Import);
+    this->parse_comma_as_expression(import_node->declarations);
+
+    if (import_node->declarations.size() == 0) {
+      unexpected_node(import_node, "expected at least one identifier after import");
+    }
+
+    for (ref<Expression>& node : import_node->declarations) {
+      switch (node->type()) {
+        case Node::Type::Id: {
+          break;
+        }
+        case Node::Type::As: {
+          ref<As> as_node = cast<As>(node);
+
+          if (!isa<Id>(as_node->expression)) {
+            unexpected_node(as_node->expression, "expected an identifier");
+          }
+
+          break;
+        }
+        default: {
+          unexpected_node(node, "unexpected node type");
+        }
+      }
+    }
+
+    import_node->set_end(import_node->declarations.back()->location());
+
+    return import_node;
+  } else {
+    unexpected_token(TokenType::Import);
+  }
+}
+
+void Parser::parse_comma_expression(std::vector<ref<Expression>>& result) {
+  if (!m_token.could_start_expression())
+    return;
+
+  ref<Expression> exp = parse_expression();
+  result.push_back(exp);
 
   while (type(TokenType::Comma)) {
     eat(TokenType::Comma);
-    tuple->elements.push_back(parse_expression());
+    result.push_back(parse_expression());
   }
+}
 
-  return tuple;
+void Parser::parse_comma_as_expression(std::vector<ref<Expression>>& result) {
+  if (!m_token.could_start_expression())
+    return;
+
+  ref<Expression> exp = parse_as_expression();
+  result.push_back(exp);
+
+  while (type(TokenType::Comma)) {
+    eat(TokenType::Comma);
+    result.push_back(parse_as_expression());
+  }
 }
 
 ref<Expression> Parser::parse_expression() {
+  return parse_yield();
+}
+
+ref<Expression> Parser::parse_as_expression() {
+  ref<Expression> exp = parse_expression();
+
+  if (skip(TokenType::As)) {
+    return make<As>(exp, parse_identifier_token());
+  }
+
+  return exp;
+}
+
+ref<Expression> Parser::parse_yield() {
+  if (type(TokenType::Yield)) {
+    Location begin_location = m_token.location;
+    eat(TokenType::Yield);
+    ref<Yield> node = make<Yield>(parse_yield());
+    node->set_begin(begin_location);
+    return node;
+  }
+
   return parse_assignment();
 }
 
 ref<Expression> Parser::parse_assignment() {
   ref<Expression> target = parse_ternary();
 
-  if (m_token.type == TokenType::Assignment) {
+  if (type(TokenType::Assignment)) {
     TokenType assignment_operator = m_token.assignment_operator;
 
     eat(TokenType::Assignment);
@@ -266,24 +358,55 @@ ref<Expression> Parser::parse_binaryop() {
 }
 
 ref<Expression> Parser::parse_unaryop() {
+  if (m_token.is_unary_operator()) {
+    TokenType operation = m_token.type;
+    Location start_loc = m_token.location;
+    advance();
+    ref<UnaryOp> op = make<UnaryOp>(operation, parse_unaryop());
+    op->set_begin(start_loc);
+    return op;
+  }
+
+  return parse_control_expression();
+
+}
+
+ref<Expression> Parser::parse_control_expression() {
   switch (m_token.type) {
-    case TokenType::Plus:
-    case TokenType::Minus:
-    case TokenType::UnaryNot:
-    case TokenType::BitNOT:
-    case TokenType::TriplePoint: {
-      TokenType operation = m_token.type;
-      Location start_loc = m_token.location;
-      advance();
-      ref<UnaryOp> op = make<UnaryOp>(operation, parse_unaryop());
-      op->set_begin(start_loc);
-      return op;
-      break;
+    case TokenType::Await: {
+      return parse_await();
+    }
+    case TokenType::Typeof: {
+      return parse_typeof();
     }
     default: {
       return parse_literal();
     }
   }
+}
+
+ref<Expression> Parser::parse_await() {
+  if (type(TokenType::Await)) {
+    Location begin_location = m_token.location;
+    eat(TokenType::Await);
+    ref<Await> node = make<Await>(parse_await());
+    node->set_begin(begin_location);
+    return node;
+  }
+
+  return parse_literal();
+}
+
+ref<Expression> Parser::parse_typeof() {
+  if (type(TokenType::Typeof)) {
+    Location begin_location = m_token.location;
+    eat(TokenType::Typeof);
+    ref<Typeof> node = make<Typeof>(parse_typeof());
+    node->set_begin(begin_location);
+    return node;
+  }
+
+  return parse_literal();
 }
 
 ref<Expression> Parser::parse_literal() {

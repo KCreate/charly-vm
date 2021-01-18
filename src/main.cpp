@@ -47,37 +47,41 @@ int main() {
     std::string line(buf);
     free(buf);
 
-    if (line.compare(".help") == 0) {
-      std::cout << ".exit     Exit the REPL" << '\n';
-      std::cout << ".help     List of meta commands" << '\n';
-      std::cout << ".ast_loc  Display source locations in AST dump" << '\n';
+    if (line[0] == '.') {
+      if (line.compare(".help") == 0) {
+        std::cout << ".exit     Exit the REPL" << '\n';
+        std::cout << ".help     List of meta commands" << '\n';
+        std::cout << ".ast_loc  Display source locations in AST dump" << '\n';
+        continue;
+      }
+
+      if (line.compare(".exit") == 0)
+        break;
+
+      if (line.compare(".ast_loc") == 0) {
+        print_location = !print_location;
+        continue;
+      }
+
       continue;
     }
 
-    if (line.compare(".exit") == 0)
-      break;
+    utils::Buffer buf;
+    buf.append_string(line);
 
-    if (line.compare(".ast_loc") == 0) {
-      print_location = !print_location;
-      continue;
-    }
+    try {
+      Parser parser("stdin", buf.buffer_string());
+      ast::ref<ast::Program> program = parser.parse_program();
 
-    {
-      utils::Buffer buf;
-      buf.append_string(line);
+      // check if program has nodes
+      if (ref<Block> body = cast<Block>(program->body)) {
+        if (body->statements.size() == 0)
+          continue;
+      }
 
-      try {
-        Parser parser("stdin", buf.buffer_string());
-        ast::ref<ast::Program> program = parser.parse_program();
-
-        // check if program has nodes
-        if (ref<Block> body = cast<Block>(program->body)) {
-          if (body->statements.size() == 0)
-            continue;
-        }
-
-        DumpPass(std::cout, print_location).visit(program);
-      } catch (CompilerError& exc) { std::cout << exc << '\n'; }
+      DumpPass(std::cout, print_location).visit(program);
+    } catch (CompilerError& exc) {
+      std::cout << exc << '\n';
     }
   }
 

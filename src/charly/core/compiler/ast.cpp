@@ -45,6 +45,11 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
   SWITCH_NODE(Defer)
   SWITCH_NODE(Throw)
   SWITCH_NODE(Export)
+  SWITCH_NODE(Yield)
+  SWITCH_NODE(Import)
+  SWITCH_NODE(Await)
+  SWITCH_NODE(Typeof)
+  SWITCH_NODE(As)
 
   SWITCH_NODE(Assignment)
   SWITCH_NODE(ANDAssignment)
@@ -96,6 +101,34 @@ void Throw::visit_children(ASTPass* pass) {
 }
 
 void Export::visit_children(ASTPass* pass) {
+  this->expression = pass->visit(this->expression);
+}
+
+void Yield::visit_children(ASTPass* pass) {
+  this->expression = pass->visit(this->expression);
+}
+
+void Import::visit_children(ASTPass* pass) {
+  this->source = pass->visit(this->source);
+
+  for (ref<Expression>& node : this->declarations) {
+    node = cast<Expression>(pass->visit(node));
+  }
+
+  auto begin = this->declarations.begin();
+  auto end = this->declarations.end();
+  this->declarations.erase(std::remove(begin, end, nullptr), end);
+}
+
+void Await::visit_children(ASTPass* pass) {
+  this->expression = pass->visit(this->expression);
+}
+
+void Typeof::visit_children(ASTPass* pass) {
+  this->expression = pass->visit(this->expression);
+}
+
+void As::visit_children(ASTPass* pass) {
   this->expression = pass->visit(this->expression);
 }
 

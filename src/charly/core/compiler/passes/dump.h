@@ -86,6 +86,14 @@ class DumpPass : public ASTPass {
     return true;
   }
 
+  virtual bool enter(const ref<As>& node) override {
+    m_writer.write(' ');
+    m_writer.yellow('\"');
+    m_writer.yellow(node->name);
+    m_writer.yellow('\"');
+    return true;
+  }
+
   virtual bool enter(const ref<Id>& node) override {
     m_writer.write(' ');
     m_writer.yellow(node->value);

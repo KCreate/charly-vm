@@ -102,14 +102,23 @@ public:
   ref<Statement> parse_defer();
   ref<Statement> parse_throw();
   ref<Statement> parse_export();
+  ref<Statement> parse_import();
 
   // expressions
-  ref<Expression> parse_comma_expression();
+  void parse_comma_expression(std::vector<ref<Expression>>& result);
+  void parse_comma_as_expression(std::vector<ref<Expression>>& result);
   ref<Expression> parse_expression();
+  ref<Expression> parse_as_expression();
+  ref<Expression> parse_yield();
   ref<Expression> parse_assignment();
   ref<Expression> parse_ternary();
   ref<Expression> parse_binaryop();
   ref<Expression> parse_unaryop();
+
+  // control expressions
+  ref<Expression> parse_control_expression();
+  ref<Expression> parse_await();
+  ref<Expression> parse_typeof();
 
   // compound literals
   ref<Expression> parse_literal();

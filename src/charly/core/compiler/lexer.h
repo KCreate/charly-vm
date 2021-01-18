@@ -96,7 +96,7 @@ private:
   void consume_comment(Token& token);
   void consume_multiline_comment(Token& token);
   void consume_char(Token& token);
-  void consume_string(Token& token);
+  void consume_string(Token& token, bool allow_format = true);
 
   // current source row / column
   uint32_t m_row;

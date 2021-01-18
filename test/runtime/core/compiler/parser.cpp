@@ -108,6 +108,11 @@ TEST_CASE("parses literals") {
   CHECK_AST_EXP("$$foo", make<Id>("$$foo"));
   CHECK_AST_EXP("$1", make<Id>("$1"));
   CHECK_AST_EXP("__foo", make<Id>("__foo"));
+  CHECK_AST_EXP("@\"\"", make<Id>(""));
+  CHECK_AST_EXP("@\"foobar\"", make<Id>("foobar"));
+  CHECK_AST_EXP("@\"25\"", make<Id>("25"));
+  CHECK_AST_EXP("@\"{}{{{}}}}}}}}{{{{\"", make<Id>("{}{{{}}}}}}}}{{{{"));
+  CHECK_AST_EXP("@\"foo bar baz \\n hello world\"", make<Id>("foo bar baz \n hello world"));
   CHECK_AST_EXP("100", make<Int>(100));
   CHECK_AST_EXP("25.25", make<Float>(25.25));
   CHECK_AST_EXP("NaN", make<Float>(NAN));
@@ -304,4 +309,43 @@ TEST_CASE("parses control statements") {
   CHECK_AST_STMT("throw 1 + 2", make<Throw>(make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(2))));
 
   CHECK_AST_STMT("export exp", make<Export>(make<Id>("exp")));
+}
+
+TEST_CASE("import statement") {
+  CHECK_AST_STMT("import foo", make<Import>(make<Id>("foo")));
+  CHECK_AST_STMT("import foo as bar", make<Import>(make<As>(make<Id>("foo"), "bar")));
+  CHECK_AST_STMT("from foo import bar", make<Import>(make<Id>("foo"), make<Id>("bar")));
+  CHECK_AST_STMT("from foo import bar, baz", make<Import>(make<Id>("foo"), make<Id>("bar"), make<Id>("baz")));
+  CHECK_AST_STMT("from foo import bar as barfunc, baz",
+                 make<Import>(make<Id>("foo"), make<As>(make<Id>("bar"), "barfunc"), make<Id>("baz")));
+  CHECK_AST_STMT("from foo as lib import bar", make<Import>(make<As>(make<Id>("foo"), "lib"), make<Id>("bar")));
+  CHECK_AST_STMT("from \"\" as lib import bar", make<Import>(make<As>(make<String>(""), "lib"), make<Id>("bar")));
+  CHECK_AST_STMT("from \"test\" as lib import bar as baz",
+                 make<Import>(make<As>(make<String>("test"), "lib"), make<As>(make<Id>("bar"), "baz")));
+
+  CHECK_THROWS_WITH(Parser::parse_statement("from foo import"), "expected at least one identifier after import");
+  CHECK_THROWS_WITH(Parser::parse_statement("from foo import 25 as foo"), "expected an identifier");
+}
+
+TEST_CASE("yield, await, typeof expressions") {
+  CHECK_AST_EXP("yield 1", make<Yield>(make<Int>(1)));
+  CHECK_AST_EXP("yield(1, 2, 3)", make<Yield>(make<Tuple>(make<Int>(1), make<Int>(2), make<Int>(3))));
+  CHECK_AST_EXP("yield foo", make<Yield>(make<Id>("foo")));
+  CHECK_AST_EXP("yield 1 + 1", make<Yield>(make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(1))));
+  CHECK_AST_EXP("yield yield 1", make<Yield>(make<Yield>(make<Int>(1))));
+
+  CHECK_AST_EXP("await 1", make<Await>(make<Int>(1)));
+  CHECK_AST_EXP("await(1, 2, 3)", make<Await>(make<Tuple>(make<Int>(1), make<Int>(2), make<Int>(3))));
+  CHECK_AST_EXP("await foo", make<Await>(make<Id>("foo")));
+  CHECK_AST_EXP("await 1 + 1", make<BinaryOp>(TokenType::Plus, make<Await>(make<Int>(1)), make<Int>(1)));
+  CHECK_AST_EXP("await await 1", make<Await>(make<Await>(make<Int>(1))));
+  CHECK_AST_EXP("await x == 1", make<BinaryOp>(TokenType::Equal, make<Await>(make<Id>("x")), make<Int>(1)));
+
+  CHECK_AST_EXP("typeof 1", make<Typeof>(make<Int>(1)));
+  CHECK_AST_EXP("typeof(1, 2, 3)", make<Typeof>(make<Tuple>(make<Int>(1), make<Int>(2), make<Int>(3))));
+  CHECK_AST_EXP("typeof foo", make<Typeof>(make<Id>("foo")));
+  CHECK_AST_EXP("typeof 1 + 1", make<BinaryOp>(TokenType::Plus, make<Typeof>(make<Int>(1)), make<Int>(1)));
+  CHECK_AST_EXP("typeof typeof 1", make<Typeof>(make<Typeof>(make<Int>(1))));
+  CHECK_AST_EXP("typeof x == \"int\"",
+                make<BinaryOp>(TokenType::Equal, make<Typeof>(make<Id>("x")), make<String>("int")));
 }

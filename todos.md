@@ -1,12 +1,8 @@
 # Todos
 
 - Unit tests
-  - Import statement
-    - Check for invalid nodes
-    - Check for exceptions
-  - Yield, Await, Typeof
-  - Operator precedence
   - Check for parser exceptions
+  - Operator precedence
   - Spawn statement
     - Needs call syntax to be implemented
 

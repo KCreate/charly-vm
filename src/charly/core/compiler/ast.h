@@ -69,6 +69,11 @@ public:
     Defer,
     Throw,
     Export,
+    Yield,
+    Import,
+    Await,
+    Typeof,
+    As,
     Id,
     Int,
     Float,
@@ -89,9 +94,10 @@ public:
   };
 
   static constexpr const char* TypeNames[] = {
-    "Unknown", "Program", "Block",      "Return",        "Break",   "Continue", "Defer",        "Throw",      "Export",
-    "Id",      "Int",     "Float",      "Bool",          "Char",    "String",   "FormatString", "Null",       "Self",
-    "Super",   "Tuple",   "Assignment", "ANDAssignment", "Ternary", "BinaryOp", "UnaryOp",      "__SENTINEL",
+    "Unknown", "Program", "Block",      "Return",        "Break",   "Continue",     "Defer",   "Throw",
+    "Export",  "Yield",   "Spawn",      "Import",        "Await",   "Typeof",       "As",      "Id",
+    "Int",     "Float",   "Bool",       "Char",          "String",  "FormatString", "Null",    "Self",
+    "Super",   "Tuple",   "Assignment", "ANDAssignment", "Ternary", "BinaryOp",     "UnaryOp", "__SENTINEL",
   };
 
   const LocationRange& location() const {
@@ -270,8 +276,58 @@ public:
   virtual void visit_children(ASTPass*) override;
 };
 
+class Import final : public Statement {
+  AST_NODE(Import)
+public:
+  template <typename... Args>
+  Import(ref<Expression> source, Args&&... params) : source(source), declarations({ std::forward<Args>(params)... }) {
+    this->set_location(source);
+  }
+
+  ref<Expression> source;
+  std::vector<ref<Expression>> declarations;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+class Yield final : public Expression {
+  AST_NODE(Yield)
+public:
+  Yield(ref<Expression> expression) : expression(expression) {
+    this->set_location(expression);
+  }
+
+  ref<Expression> expression;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+class Await final : public Expression {
+  AST_NODE(Await)
+public:
+  Await(ref<Expression> expression) : expression(expression) {
+    this->set_location(expression);
+  }
+
+  ref<Expression> expression;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+class Typeof final : public Expression {
+  AST_NODE(Typeof)
+public:
+  Typeof(ref<Expression> expression) : expression(expression) {
+    this->set_location(expression);
+  }
+
+  ref<Expression> expression;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
 // <target> = <source>
-class Assignment : public Expression {
+class Assignment final : public Expression {
   AST_NODE(Assignment)
 public:
   Assignment(ref<Expression> target, ref<Expression> source) : target(target), source(source) {
@@ -286,7 +342,7 @@ public:
 };
 
 // <target> <operation>= <source>
-class ANDAssignment : public Expression {
+class ANDAssignment final : public Expression {
   AST_NODE(ANDAssignment)
 public:
   ANDAssignment(TokenType operation, ref<Expression> target, ref<Expression> source) :
@@ -303,7 +359,7 @@ public:
 };
 
 // <condition> ? <then_exp> : <else_exp>
-class Ternary : public Expression {
+class Ternary final : public Expression {
   AST_NODE(Ternary)
 public:
   Ternary(ref<Expression> condition, ref<Expression> then_exp, ref<Expression> else_exp) :
@@ -320,7 +376,7 @@ public:
 };
 
 // <lhs> <operation> <rhs>
-class BinaryOp : public Expression {
+class BinaryOp final : public Expression {
   AST_NODE(BinaryOp)
 public:
   BinaryOp(TokenType operation, ref<Expression> lhs, ref<Expression> rhs) : operation(operation), lhs(lhs), rhs(rhs) {
@@ -336,7 +392,7 @@ public:
 };
 
 // <operation> <expression>
-class UnaryOp : public Expression {
+class UnaryOp final : public Expression {
   AST_NODE(UnaryOp)
 public:
   UnaryOp(TokenType operation, ref<Expression> expression) : operation(operation), expression(expression) {
@@ -376,6 +432,24 @@ class Id final : public Atom<std::string> {
   AST_NODE(Id)
 public:
   using Atom<std::string>::Atom;
+};
+
+// <expression> as <name>
+class As final : public Expression {
+  AST_NODE(As)
+public:
+  As(ref<Expression> expression, std::string name) : expression(expression), name(name) {
+    this->set_location(expression);
+  }
+  As(ref<Expression> expression, ref<Id> name) : expression(expression), name(name->value) {
+    this->set_begin(expression);
+    this->set_end(name);
+  }
+
+  ref<Expression> expression;
+  std::string name;
+
+  virtual void visit_children(ASTPass*) override;
 };
 
 // 1, 2, 42

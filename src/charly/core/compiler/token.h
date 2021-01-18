@@ -209,11 +209,12 @@ static const std::unordered_map<std::string, TokenType> kKeywordsAndLiterals = {
                                                                                  { "yield", TokenType::Yield } };
 
 static const std::unordered_set<TokenType> kExpressionValidInitialTokens = {
-  TokenType::Int,       TokenType::Float,       TokenType::True,        TokenType::False,  TokenType::Character,
-  TokenType::String,    TokenType::Null,        TokenType::Await,       TokenType::Class,  TokenType::Func,
-  TokenType::Import,    TokenType::Match,       TokenType::Spawn,       TokenType::Typeof, TokenType::Yield,
-  TokenType::Plus,      TokenType::Minus,       TokenType::UnaryNot,    TokenType::BitNOT, TokenType::LeftParen,
-  TokenType::LeftCurly, TokenType::LeftBracket, TokenType::TriplePoint, TokenType::AtSign, TokenType::RightArrow
+  TokenType::Int,         TokenType::Float,  TokenType::True,         TokenType::False,     TokenType::Identifier,
+  TokenType::Character,   TokenType::String, TokenType::FormatString, TokenType::Null,      TokenType::Self,
+  TokenType::Super,       TokenType::Await,  TokenType::Class,        TokenType::Func,      TokenType::Match,
+  TokenType::Spawn,       TokenType::Typeof, TokenType::Yield,        TokenType::Plus,      TokenType::Minus,
+  TokenType::UnaryNot,    TokenType::BitNOT, TokenType::LeftParen,    TokenType::LeftCurly, TokenType::LeftBracket,
+  TokenType::TriplePoint, TokenType::AtSign, TokenType::RightArrow
 };
 
 static const std::unordered_set<TokenType> kBinaryOperatorTokens = {
@@ -224,6 +225,10 @@ static const std::unordered_set<TokenType> kBinaryOperatorTokens = {
   TokenType::LessThan,    TokenType::GreaterThan,  TokenType::LessEqual,     TokenType::GreaterEqual,
   TokenType::DoublePoint, TokenType::TriplePoint,
 };
+
+static const std::unordered_set<TokenType> kUnaryOperatorTokens = { TokenType::Plus, TokenType::Minus,
+                                                                    TokenType::UnaryNot, TokenType::BitNOT,
+                                                                    TokenType::TriplePoint };
 
 static const std::unordered_set<TokenType> kANDAssignmentOperators = {
   TokenType::Plus,   TokenType::Minus,        TokenType::Mul,           TokenType::Div,
@@ -245,6 +250,10 @@ struct Token {
 
   bool is_binary_operator() const {
     return kBinaryOperatorTokens.count(type);
+  }
+
+  bool is_unary_operator() const {
+    return kUnaryOperatorTokens.count(type);
   }
 
   bool legal_assignment_operator() const {

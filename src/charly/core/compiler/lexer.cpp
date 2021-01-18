@@ -410,6 +410,13 @@ Token Lexer::read_token_all() {
       case '@': {
         read_char();
         token.type = TokenType::AtSign;
+
+        if (peek_char() == '\"') {
+          read_char();
+          consume_string(token, false);
+          token.type = TokenType::Identifier;
+          break;
+        }
         break;
       }
       case '?': {
@@ -435,7 +442,8 @@ Token Lexer::read_token_all() {
     token.type = TokenType::Assignment;
   }
 
-  if (!(token.type == TokenType::String || token.type == TokenType::FormatString))
+  if (!(token.type == TokenType::String || token.type == TokenType::FormatString ||
+        token.type == TokenType::Identifier))
     token.source = m_source.window_string();
 
   token.location.length = m_source.window_size();
@@ -646,9 +654,11 @@ void Lexer::consume_binary(Token& token) {
 void Lexer::consume_identifier(Token& token) {
   token.type = TokenType::Identifier;
 
+  m_source.reset_window();
   while (is_id_part(peek_char())) {
     read_char();
   }
+  token.source = m_source.window_string();
 }
 
 void Lexer::consume_comment(Token& token) {
@@ -774,7 +784,7 @@ void Lexer::consume_char(Token& token) {
   return;
 }
 
-void Lexer::consume_string(Token& token) {
+void Lexer::consume_string(Token& token, bool allow_format) {
   token.type = TokenType::String;
   m_mode = Mode::String;
 
@@ -804,7 +814,7 @@ void Lexer::consume_string(Token& token) {
     }
 
     // string interpolation
-    if (cp == '{') {
+    if (allow_format && cp == '{') {
       read_char();
 
       // switch lexer mode
