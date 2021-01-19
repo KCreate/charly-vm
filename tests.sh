@@ -1,7 +1,7 @@
 #!/bin/sh
 
-mkdir -p cmake-build-debug
-cd cmake-build-debug
+mkdir -p build
+cd build
 
 # initial cmake run
 test -f Makefile
@@ -16,5 +16,5 @@ then
   cd ..
 
   # --batch exits lldb on success and prompts for further input on failure
-  cmake-build-debug/tests $@
+  build/tests $@
 fi

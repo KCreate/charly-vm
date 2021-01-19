@@ -70,8 +70,7 @@ int main() {
     buf.append_string(line);
 
     try {
-      Parser parser("stdin", buf.buffer_string());
-      ast::ref<ast::Program> program = parser.parse_program();
+      ast::ref<ast::Program> program = Parser::parse_program(buf.buffer_string(), "stdin");
 
       // check if program has nodes
       if (ref<Block> body = cast<Block>(program->body)) {
@@ -80,9 +79,7 @@ int main() {
       }
 
       DumpPass(std::cout, print_location).visit(program);
-    } catch (CompilerError& exc) {
-      std::cout << exc << '\n';
-    }
+    } catch (CompilerError& exc) { std::cout << exc << '\n'; }
   }
 
   return 0;

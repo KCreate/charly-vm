@@ -1,7 +1,7 @@
 #!/bin/sh
 
-mkdir cmake-build-debug -p
-cd cmake-build-debug
+mkdir build -p
+cd build
 
 # initial cmake run
 test -f Makefile
@@ -14,5 +14,5 @@ make charly
 if [ $? -eq 0 ]
 then
   cd ..
-  cmake-build-debug/charly $@
+  build/charly $@
 fi

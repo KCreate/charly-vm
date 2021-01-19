@@ -32,44 +32,51 @@ namespace {
   using namespace ast;
 }
 
-ref<Program> Parser::parse_program(const std::string& source) {
-  return Parser("-", source).parse_program();
+ref<Program> Parser::parse_program(const std::string& source, const std::string& name) {
+  return Parser(name, source).parse_program();
 }
 
-ref<Statement> Parser::parse_statement(const std::string& source) {
-  return Parser("-", source).parse_statement();
+ref<Statement> Parser::parse_statement(const std::string& source, const std::string& name) {
+  return Parser(name, source).parse_statement();
 }
 
-ref<Expression> Parser::parse_expression(const std::string& source) {
-  return Parser("-", source).parse_expression();
+ref<Expression> Parser::parse_expression(const std::string& source, const std::string& name) {
+  return Parser(name, source).parse_expression();
 }
 
 ref<Program> Parser::parse_program() {
-  ref<Block> body = parse_block_body();
+  ref<Block> body = make<Block>();
+  parse_block_body(body);
   ref<Program> program = make<Program>(*m_filename, body);
   program->set_location(body);
   return program;
 }
 
 ref<Block> Parser::parse_block() {
+  ref<Block> block = make<Block>();
+  begin(block);
   eat(TokenType::LeftCurly);
-  ref<Block> block = parse_block_body();
+  parse_block_body(block);
+  end(block);
   eat(TokenType::RightCurly);
   return block;
 }
 
-ref<Block> Parser::parse_block_body() {
-  ref<Block> block = make<Block>();
-
-  at(block);
+void Parser::parse_block_body(const ref<Block>& block) {
+  uint32_t parsed_statements = 0;
 
   while (!(type(TokenType::RightCurly) || type(TokenType::Eof))) {
     ref<Statement> stmt = parse_statement();
+
+    if (parsed_statements == 0) {
+      block->set_begin(stmt);
+    }
+
     block->statements.push_back(stmt);
     block->set_end(stmt);
-  }
 
-  return block;
+    parsed_statements++;
+  }
 }
 
 ref<Statement> Parser::parse_statement() {
@@ -100,8 +107,8 @@ ref<Statement> Parser::parse_statement() {
       stmt = parse_export();
       break;
     }
-    case TokenType::From:
-    case TokenType::Import: {
+    // import form is parsed as expression
+    case TokenType::From: {
       return parse_import();
     }
     case TokenType::LeftCurly: {
@@ -184,12 +191,21 @@ ref<Statement> Parser::parse_export() {
   return ret;
 }
 
-ref<Statement> Parser::parse_import() {
+ref<Expression> Parser::parse_import() {
   Location begin_location = m_token.location;
 
   if (type(TokenType::Import)) {
     eat(TokenType::Import);
     ref<Expression> source_exp = parse_as_expression();
+
+    switch (source_exp->type()) {
+      case Node::Type::Id:
+      case Node::Type::As:
+      case Node::Type::String: break;
+      default: {
+        unexpected_node(source_exp, "expected identifier or string");
+      }
+    }
 
     ref<Import> import_node = make<Import>(source_exp);
     import_node->set_begin(begin_location);
@@ -224,7 +240,7 @@ ref<Statement> Parser::parse_import() {
           break;
         }
         default: {
-          unexpected_node(node, "unexpected node type");
+          unexpected_node(node, "expected an identifier");
         }
       }
     }
@@ -264,7 +280,17 @@ void Parser::parse_comma_as_expression(std::vector<ref<Expression>>& result) {
 }
 
 ref<Expression> Parser::parse_expression() {
-  return parse_yield();
+  switch (m_token.type) {
+    case TokenType::Yield: {
+      return parse_yield();
+    }
+    case TokenType::Import: {
+      return parse_import();
+    }
+    default: {
+      return parse_assignment();
+    }
+  }
 }
 
 ref<Expression> Parser::parse_as_expression() {
@@ -368,7 +394,6 @@ ref<Expression> Parser::parse_unaryop() {
   }
 
   return parse_control_expression();
-
 }
 
 ref<Expression> Parser::parse_control_expression() {
@@ -452,36 +477,44 @@ ref<Expression> Parser::parse_literal() {
 }
 
 ref<FormatString> Parser::parse_format_string() {
-  ref<FormatString> str = make<FormatString>();
-  begin(str);
+  ref<FormatString> format_string = make<FormatString>();
 
-  ref<String> first_element = parse_string_token();
-  if (first_element->value.size() > 0) {
-    str->elements.push_back(first_element);
-  }
+  match(TokenType::FormatString);
+  begin(format_string);
+  end(format_string);
 
-  for (;;) {
-    str->elements.push_back(parse_expression());
+  ref<String> element = parse_string_token();
+  if (element->value.size() > 0)
+    format_string->elements.push_back(element);
+
+  do {
+    // parse interpolated expression
+    ref<Expression> exp = parse_expression();
+    format_string->elements.push_back(exp);
+    format_string->set_end(exp);
+
     eat(TokenType::RightCurly);
+
+    // lexer should only generate string or formatstring tokens at this point
+    if (!(type(TokenType::FormatString) || type(TokenType::String))) {
+      unexpected_token(TokenType::String);
+    }
 
     // if the expression is followed by another FormatString token the loop
     // repeats and we parse another interpolated expression
     //
-    // the format string is only terminated once a regular String token is passed
-    if (type(TokenType::FormatString) || type(TokenType::String)) {
-      bool last_part = type(TokenType::String);
-      ref<String> element = parse_string_token();
-      if (element->value.size() > 0)
-        str->elements.push_back(element);
-      if (last_part) {
-        break;
-      }
-    } else {
-      unexpected_token(TokenType::String);
-    }
-  }
+    // a regular string token signals the end of the format string
+    bool final_element = type(TokenType::String);
 
-  return str;
+    ref<String> element = parse_string_token();
+    format_string->set_end(element);
+
+    if (element->value.size() > 0)
+      format_string->elements.push_back(element);
+
+    if (final_element)
+      return format_string;
+  } while (true);
 }
 
 ref<Expression> Parser::parse_tuple() {
@@ -490,27 +523,29 @@ ref<Expression> Parser::parse_tuple() {
 
   eat(TokenType::LeftParen);
 
-  bool force_tuple = false;
+  if (!type(TokenType::RightParen)) {
+    ref<Expression> exp = parse_expression();
 
-  while (!(type(TokenType::RightParen))) {
-    tuple->elements.push_back(parse_expression());
+    // (x) is treated as parentheses, not a tuple
+    if (type(TokenType::RightParen)) {
+      advance();
+      return exp;
+    }
 
-    // (<exp>,) becomes a tuple with one element
-    if (skip(TokenType::Comma) && type(TokenType::RightParen)) {
-      if (tuple->elements.size() == 1) {
-        force_tuple = true;
+    tuple->elements.push_back(exp);
+
+    while (skip(TokenType::Comma)) {
+      // (x,) is treated as a tuple with one value
+      if (tuple->elements.size() == 1 && type(TokenType::RightParen)) {
         break;
       }
+
+      tuple->elements.push_back(parse_expression());
     }
   }
 
   end(tuple);
   eat(TokenType::RightParen);
-
-  // (<exp>) becomes just <exp>
-  if (!force_tuple && tuple->elements.size() == 1) {
-    return tuple->elements.at(0);
-  }
 
   return tuple;
 }

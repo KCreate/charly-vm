@@ -34,6 +34,7 @@
 #include "charly/core/compiler/parser.h"
 
 using Catch::Matchers::Contains;
+using Catch::Matchers::Equals;
 
 using namespace charly;
 using namespace charly::core::compiler;
@@ -58,7 +59,7 @@ using namespace charly::core::compiler;
     ref<Expression> exp = Parser::parse_expression(S); \
     CHECK(isa<T>(exp));                                \
     if (isa<T>(exp)) {                                 \
-      CHECK(cast<T>(exp)->value.compare(V) == 0);      \
+      CHECK_THAT(cast<T>(exp)->value, Equals(V));      \
     }                                                  \
   }
 

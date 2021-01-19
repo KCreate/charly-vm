@@ -449,6 +449,11 @@ Token Lexer::read_token_all() {
   token.location.length = m_source.window_size();
   m_source.reset_window();
 
+  // remove the '{' from the stored length
+  if (token.type == TokenType::FormatString) {
+    token.location.length--;
+  }
+
   if (token.type != TokenType::Newline) {
     increment_column(m_source.readoffset() - offset_start);
   }

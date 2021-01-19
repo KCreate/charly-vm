@@ -31,6 +31,7 @@
 #include "charly/core/compiler/lexer.h"
 
 using Catch::Matchers::Contains;
+using Catch::Matchers::Equals;
 
 using namespace charly::core::compiler;
 
@@ -79,11 +80,11 @@ TEST_CASE("tokenizes floats") {
 TEST_CASE("tokenizes identifiers") {
   Lexer lexer("test", "foo foo25 $foo $_foobar foo$bar");
 
-  CHECK(lexer.read_token().source.compare("foo") == 0);
-  CHECK(lexer.read_token().source.compare("foo25") == 0);
-  CHECK(lexer.read_token().source.compare("$foo") == 0);
-  CHECK(lexer.read_token().source.compare("$_foobar") == 0);
-  CHECK(lexer.read_token().source.compare("foo$bar") == 0);
+  CHECK_THAT(lexer.read_token().source, Equals("foo"));
+  CHECK_THAT(lexer.read_token().source, Equals("foo25"));
+  CHECK_THAT(lexer.read_token().source, Equals("$foo"));
+  CHECK_THAT(lexer.read_token().source, Equals("$_foobar"));
+  CHECK_THAT(lexer.read_token().source, Equals("foo$bar"));
 }
 
 TEST_CASE("tokenizes whitespace and newlines") {
@@ -116,7 +117,7 @@ TEST_CASE("writes location information to tokens") {
   CHECK(lexer.last_token().location.length == 11);
   CHECK(lexer.last_token().location.row == 4);
   CHECK(lexer.last_token().location.column == 4);
-  CHECK(lexer.last_token().source.compare("hello_world") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals("hello_world"));
 }
 
 TEST_CASE("throws on unexpected characters") {
@@ -130,19 +131,19 @@ TEST_CASE("formats a token") {
   {
     std::stringstream stream;
     stream << lexer.read_token();
-    CHECK(stream.str().compare("(Identifier, foobarbaz) test:1:1") == 0);
+    CHECK_THAT(stream.str(), Equals("(Identifier, foobarbaz) test:1:1"));
   }
 
   {
     std::stringstream stream;
     stream << lexer.read_token();
-    CHECK(stream.str().compare("(Int, 25) test:2:3") == 0);
+    CHECK_THAT(stream.str(), Equals("(Int, 25) test:2:3"));
   }
 
   {
     std::stringstream stream;
     stream << lexer.read_token();
-    CHECK(stream.str().compare("(Float, 25.25) test:3:6") == 0);
+    CHECK_THAT(stream.str(), Equals("(Float, 25.25) test:3:6"));
   }
 }
 
@@ -324,34 +325,34 @@ TEST_CASE("recognizes comments") {
   CHECK(lexer.read_token_all().type == TokenType::Whitespace);
 
   CHECK(lexer.read_token_all().type == TokenType::Comment);
-  CHECK(lexer.last_token().source.compare("// some comment") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals("// some comment"));
   CHECK(lexer.read_token_all().type == TokenType::Newline);
 
   CHECK(lexer.read_token_all().type == TokenType::Comment);
-  CHECK(lexer.last_token().source.compare("// hello") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals("// hello"));
   CHECK(lexer.read_token_all().type == TokenType::Newline);
 
   CHECK(lexer.read_token_all().type == TokenType::Comment);
-  CHECK(lexer.last_token().source.compare("// world") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals("// world"));
   CHECK(lexer.read_token_all().type == TokenType::Newline);
 
   CHECK(lexer.read_token_all().type == TokenType::Comment);
-  CHECK(lexer.last_token().source.compare("//") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals("//"));
   CHECK(lexer.read_token_all().type == TokenType::Newline);
 
   CHECK(lexer.read_token_all().type == TokenType::Comment);
-  CHECK(lexer.last_token().source.compare("/*\nmultiline comment!!\n*/") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals("/*\nmultiline comment!!\n*/"));
   CHECK(lexer.read_token_all().type == TokenType::Newline);
 
   CHECK(lexer.read_token_all().type == TokenType::Comment);
-  CHECK(lexer.last_token().source.compare("/* hello world */") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals("/* hello world */"));
   CHECK(lexer.read_token_all().type == TokenType::Whitespace);
   CHECK(lexer.read_token_all().type == TokenType::Comment);
-  CHECK(lexer.last_token().source.compare("/* test */") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals("/* test */"));
   CHECK(lexer.read_token_all().type == TokenType::Newline);
 
   CHECK(lexer.read_token_all().type == TokenType::Comment);
-  CHECK(lexer.last_token().source.compare("/* foo /* nested */ */") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals("/* foo /* nested */ */"));
   CHECK(lexer.read_token_all().type == TokenType::Newline);
 }
 
@@ -383,13 +384,13 @@ TEST_CASE("tokenizes strings") {
                        "\"\"\n"));
 
   CHECK(lexer.read_token().type == TokenType::String);
-  CHECK(lexer.last_token().source.compare("hello world") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals("hello world"));
 
   CHECK(lexer.read_token().type == TokenType::String);
-  CHECK(lexer.last_token().source.compare("äüöø¡œΣ€") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals("äüöø¡œΣ€"));
 
   CHECK(lexer.read_token().type == TokenType::String);
-  CHECK(lexer.last_token().source.compare("") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals(""));
 }
 
 TEST_CASE("escape sequences in strings") {
@@ -397,7 +398,7 @@ TEST_CASE("escape sequences in strings") {
     Lexer lexer("test", ("\"\\a \\b \\n \\r \\t \\v \\f \\\" \\{ \\\\ \"\n"));
 
     CHECK(lexer.read_token().type == TokenType::String);
-    CHECK(lexer.last_token().source.compare("\a \b \n \r \t \v \f \" { \\ ") == 0);
+    CHECK_THAT(lexer.last_token().source, Equals("\a \b \n \r \t \v \f \" { \\ "));
   }
 
   {
@@ -421,9 +422,9 @@ TEST_CASE("tokenizes string interpolations") {
                        "\"\\{}\""));
 
   CHECK(lexer.read_token().type == TokenType::FormatString);
-  CHECK(lexer.last_token().source.compare("before ") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals("before "));
   CHECK(lexer.read_token().type == TokenType::Identifier);
-  CHECK(lexer.last_token().source.compare("name") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals("name"));
   CHECK(lexer.read_token().type == TokenType::LeftParen);
   CHECK(lexer.read_token().type == TokenType::LeftCurly);
   CHECK(lexer.read_token().type == TokenType::LeftCurly);
@@ -432,40 +433,40 @@ TEST_CASE("tokenizes string interpolations") {
   CHECK(lexer.read_token().type == TokenType::RightParen);
   CHECK(lexer.read_token().type == TokenType::RightCurly);
   CHECK(lexer.read_token().type == TokenType::FormatString);
-  CHECK(lexer.last_token().source.compare(" ") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals(" "));
   CHECK(lexer.read_token().type == TokenType::Identifier);
-  CHECK(lexer.last_token().source.compare("more") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals("more"));
   CHECK(lexer.read_token().type == TokenType::RightCurly);
   CHECK(lexer.read_token().type == TokenType::String);
-  CHECK(lexer.last_token().source.compare(" after") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals(" after"));
 
   CHECK(lexer.read_token().type == TokenType::FormatString);
-  CHECK(lexer.last_token().source.compare("") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals(""));
   CHECK(lexer.read_token().type == TokenType::FormatString);
-  CHECK(lexer.last_token().source.compare("") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals(""));
   CHECK(lexer.read_token().type == TokenType::Identifier);
-  CHECK(lexer.last_token().source.compare("nested") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals("nested"));
   CHECK(lexer.read_token().type == TokenType::RightCurly);
   CHECK(lexer.read_token().type == TokenType::String);
-  CHECK(lexer.last_token().source.compare("") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals(""));
   CHECK(lexer.read_token().type == TokenType::RightCurly);
   CHECK(lexer.read_token().type == TokenType::String);
-  CHECK(lexer.last_token().source.compare("") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals(""));
 
   CHECK(lexer.read_token().type == TokenType::FormatString);
-  CHECK(lexer.last_token().source.compare("") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals(""));
   CHECK(lexer.read_token().type == TokenType::RightCurly);
   CHECK(lexer.read_token().type == TokenType::String);
-  CHECK(lexer.last_token().source.compare("") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals(""));
 
   CHECK(lexer.read_token().type == TokenType::FormatString);
-  CHECK(lexer.last_token().source.compare("") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals(""));
   CHECK(lexer.read_token().type == TokenType::RightCurly);
   CHECK(lexer.read_token().type == TokenType::String);
-  CHECK(lexer.last_token().source.compare("}") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals("}"));
 
   CHECK(lexer.read_token().type == TokenType::String);
-  CHECK(lexer.last_token().source.compare("{}") == 0);
+  CHECK_THAT(lexer.last_token().source, Equals("{}"));
 }
 
 TEST_CASE("catches erronious string interpolations") {
@@ -537,6 +538,6 @@ TEST_CASE("formats a CompilerError") {
   } catch (CompilerError& exc) {
     std::stringstream stream;
     stream << exc;
-    CHECK(stream.str().compare("test:1:1: hex number literal expected at least one digit") == 0);
+    CHECK_THAT(stream.str(), Equals("test<1:1:1>: hex number literal expected at least one digit"));
   }
 }

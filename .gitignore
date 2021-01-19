@@ -3,8 +3,7 @@
 .DS_Store
 bin/
 build/
-cmake-build-debug/
-cmake-build-release/
+buildrelease/
 *.dSYM
 *.lib
 code.profdata

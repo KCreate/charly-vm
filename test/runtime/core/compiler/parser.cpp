@@ -32,6 +32,7 @@
 #include "charly/core/compiler/passes/dump.h"
 
 using Catch::Matchers::Contains;
+using Catch::Matchers::Equals;
 
 using namespace charly::core::compiler;
 using namespace charly::core::compiler::ast;
@@ -56,7 +57,7 @@ using namespace charly::core::compiler::ast;
     ref<Expression> exp = Parser::parse_expression(S); \
     CHECK(isa<T>(exp));                                \
     if (isa<T>(exp)) {                                 \
-      CHECK(cast<T>(exp)->value.compare(V) == 0);      \
+      CHECK_THAT(cast<T>(exp)->value, Equals(V));      \
     }                                                  \
   }
 
@@ -93,6 +94,9 @@ using namespace charly::core::compiler::ast;
     }                                                             \
     CHECK(equal == true);                                         \
   }
+
+#define CHECK_ERROR_EXP(S, E) CHECK_THROWS_WITH(Parser::parse_expression(S), E);
+#define CHECK_ERROR_STMT(S, E) CHECK_THROWS_WITH(Parser::parse_statement(S), E);
 
 TEST_CASE("parses literals") {
   CHECK_AST_EXP("0", make<Int>(0));
@@ -139,6 +143,11 @@ TEST_CASE("parses tuples") {
   ASSERT_AST_TYPE("(1)", Int);
   ASSERT_AST_TYPE("(1,)", Tuple);
   ASSERT_AST_TYPE("(1,2)", Tuple);
+
+  CHECK_ERROR_EXP("(", "unclosed bracket");
+  CHECK_ERROR_EXP("(,)", "unexpected ',', expected a literal");
+  CHECK_ERROR_EXP("(1,2,)", "unexpected ')', expected a literal");
+  CHECK_ERROR_EXP("(1 2)", "unexpected 'Int', expected a ')' token");
 
   CHECK(EXP("(1,)", Tuple)->elements.size() == 1);
   CHECK(EXP("(1, 2)", Tuple)->elements.size() == 2);
@@ -323,8 +332,8 @@ TEST_CASE("import statement") {
   CHECK_AST_STMT("from \"test\" as lib import bar as baz",
                  make<Import>(make<As>(make<String>("test"), "lib"), make<As>(make<Id>("bar"), "baz")));
 
-  CHECK_THROWS_WITH(Parser::parse_statement("from foo import"), "expected at least one identifier after import");
-  CHECK_THROWS_WITH(Parser::parse_statement("from foo import 25 as foo"), "expected an identifier");
+  CHECK_ERROR_STMT("from foo import", "expected at least one identifier after import");
+  CHECK_ERROR_STMT("from foo import 25 as foo", "expected an identifier");
 }
 
 TEST_CASE("yield, await, typeof expressions") {

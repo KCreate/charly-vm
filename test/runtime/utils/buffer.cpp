@@ -28,6 +28,8 @@
 
 #include "charly/utils/buffer.h"
 
+using Catch::Matchers::Equals;
+
 using namespace charly;
 
 TEST_CASE("Buffer") {
@@ -37,7 +39,7 @@ TEST_CASE("Buffer") {
   REQUIRE(buf.capacity() == 128);
   REQUIRE(buf.writeoffset() == 0);
   REQUIRE(buf.readoffset() == 0);
-  REQUIRE(buf.window_string().compare("") == 0);
+  REQUIRE_THAT(buf.window_string(), Equals(""));
 
   SECTION("Initialize buffer with string value") {
     utils::Buffer buf("hello world!!");
@@ -46,7 +48,7 @@ TEST_CASE("Buffer") {
       buf.read_utf8();
     }
 
-    CHECK(buf.window_string().compare("hello world!!") == 0);
+    CHECK_THAT(buf.window_string(), Equals("hello world!!"));
   }
 
   SECTION("Append data to buffer") {
@@ -117,7 +119,7 @@ TEST_CASE("Buffer") {
   }
 
   SECTION("copies window contents into string") {
-    CHECK(buf.window_string().compare("") == 0);
+    CHECK_THAT(buf.window_string(), Equals(""));
     buf.append_string("hello world!!");
 
     for (int i = 0; i < 13; i++) {
@@ -125,7 +127,7 @@ TEST_CASE("Buffer") {
     }
 
     std::string window = buf.window_string();
-    CHECK(window.compare("hello world!!") == 0);
+    CHECK_THAT(window, Equals("hello world!!"));
   }
 
   SECTION("resets window") {
@@ -137,14 +139,14 @@ TEST_CASE("Buffer") {
 
     {
       std::string window = buf.window_string();
-      CHECK(buf.window_string().compare("test") == 0);
+      CHECK_THAT(buf.window_string(), Equals("test"));
     }
 
     buf.reset_window();
 
     {
       std::string window = buf.window_string();
-      CHECK(buf.window_string().compare("") == 0);
+      CHECK_THAT(buf.window_string(), Equals(""));
     }
   }
 
@@ -155,7 +157,7 @@ TEST_CASE("Buffer") {
       buf.read_utf8();
     }
 
-    CHECK(buf.window_string().compare("hello world ") == 0);
-    CHECK(buf.buffer_string().compare("hello world my name is leonard!") == 0);
+    CHECK_THAT(buf.window_string(), Equals("hello world "));
+    CHECK_THAT(buf.buffer_string(), Equals("hello world my name is leonard!"));
   }
 }

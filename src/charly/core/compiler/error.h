@@ -45,10 +45,7 @@ struct CompilerError : public std::runtime_error {
   // <filename>:<row>:<col>: <message>
   friend std::ostream& operator<<(std::ostream& out, const CompilerError& error) {
     out << *error.location.filename;
-    out << ':';
-    out << error.location.row;
-    out << ':';
-    out << error.location.column;
+    out << error.location;
     out << ':';
     out << ' ';
     out << error.what();

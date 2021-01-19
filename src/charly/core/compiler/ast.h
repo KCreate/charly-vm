@@ -276,7 +276,7 @@ public:
   virtual void visit_children(ASTPass*) override;
 };
 
-class Import final : public Statement {
+class Import final : public Expression {
   AST_NODE(Import)
 public:
   template <typename... Args>

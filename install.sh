@@ -10,9 +10,13 @@ then
   cmake .. -DCMAKE_BUILD_TYPE=Release
 fi
 
-make charly -j12
+make charly tests -j12
 if [ $? -eq 0 ]
 then
-  cd ..
-  buildrelease/charly $@
+  ./tests
+
+  if [ $? -eq 0 ]
+  then
+    sudo make install
+  fi
 fi

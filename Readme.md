@@ -1,17 +1,21 @@
 ![Charly Programming Language](docs/charly-vm.png)
 
+# Play
+
+This launches a REPL which (at the moment) doesn't do very much.
+
+`./debug.sh <arguments>`
+
 # Installation
 
-1. `mkdir build`
-2. `cmake ..`
-4. `make install`
+Installation via this method may require you to enter your root password
+in order for make to copy the charly executable to the relevant system directory.
+
+`./install.sh`
 
 # Running the unit tests
 
-1. `mkdir build`
-2. `cmake ..`
-3. `make tests`
-4. `./tests`
+`./tests.sh`
 
 # Required third-party libraries
 - Catch2 (development only) ([https://github.com/catchorg/Catch2](https://github.com/catchorg/Catch2))

@@ -47,12 +47,6 @@ struct Location {
   friend std::ostream& operator<<(std::ostream& out, const Location& loc) {
     out << "<";
 
-    if (loc.row && loc.column) {
-      out << "line " << loc.row << ":" << loc.column;
-    } else {
-      out << "-:-";
-    }
-
     if (loc.row)
       out << loc.row;
     else
@@ -65,41 +59,35 @@ struct Location {
     else
       out << "-";
 
+    out << ":";
+
+    if (loc.length)
+      out << loc.length;
+    else
+      out << "-";
+
     out << ">";
 
     return out;
   }
 };
 
-struct LocationRange {
+class LocationRange {
+public:
   Location begin;
   Location end;
 
   friend std::ostream& operator<<(std::ostream& out, const LocationRange& range) {
-    out << "<";
+    return out << range.sum_location();
+  }
 
-    // B.row = E.row          <B.filename:B.row:B.col : E.col>
-    // B.row ! E.row          <B.filename:B.row:B.col : E.row:E.col>
-    if (range.begin.row == range.end.row) {
-      if (range.begin.row == range.end.row && range.begin.row == 0) {
-        out << "-:-";
-      } else {
-        if (range.begin.column == range.end.column) {
-          out << "line " << range.begin.row << ":" << range.begin.column;
-        } else {
-          out << "line " << range.begin.row << ":" << range.begin.column;
-          out << " col:" << (range.end.column + range.end.length - 1);
-        }
-      }
-    } else {
-      out << range.begin.row << ":" << range.begin.column;
-      out << " : ";
-      out << range.end.row << ":" << range.end.column;
-    }
-
-    out << ">";
-
-    return out;
+private:
+  Location sum_location() const {
+    return Location{ .filename = begin.filename,
+                     .offset = begin.offset,
+                     .length = end.offset - begin.offset + end.length,
+                     .row = begin.row,
+                     .column = begin.column };
   }
 };
 

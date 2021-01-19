@@ -87,14 +87,15 @@ public:
     advance();
   }
 
-  static ref<Program> parse_program(const std::string& source);
-  static ref<Statement> parse_statement(const std::string& source);
-  static ref<Expression> parse_expression(const std::string& source);
+  static ref<Program> parse_program(const std::string& source, const std::string& name = "unnamed");
+  static ref<Statement> parse_statement(const std::string& source, const std::string& name = "unnamed");
+  static ref<Expression> parse_expression(const std::string& source, const std::string& name = "unnamed");
 
+private:
   // structural and statements
   ref<Program> parse_program();
   ref<Block> parse_block();
-  ref<Block> parse_block_body();
+  void parse_block_body(const ref<Block>& block);
   ref<Statement> parse_statement();
   ref<Statement> parse_return();
   ref<Statement> parse_break();
@@ -102,7 +103,6 @@ public:
   ref<Statement> parse_defer();
   ref<Statement> parse_throw();
   ref<Statement> parse_export();
-  ref<Statement> parse_import();
 
   // expressions
   void parse_comma_expression(std::vector<ref<Expression>>& result);
@@ -110,9 +110,11 @@ public:
   ref<Expression> parse_expression();
   ref<Expression> parse_as_expression();
   ref<Expression> parse_yield();
+  ref<Expression> parse_import();
   ref<Expression> parse_assignment();
   ref<Expression> parse_ternary();
   ref<Expression> parse_binaryop();
+  ref<Expression> parse_binaryop_1(ref<Expression> lhs, uint32_t min_precedence);
   ref<Expression> parse_unaryop();
 
   // control expressions
@@ -136,26 +138,23 @@ public:
   ref<Self> parse_self_token();
   ref<Super> parse_super_token();
 
-private:
-  ref<Expression> parse_binaryop_1(ref<Expression> lhs, uint32_t min_precedence);
-
-  [[noreturn]] void unexpected_token() {
+  [[noreturn]] void unexpected_token() const {
     std::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
-    throw CompilerError("Unexpected token '" + real_type + "'", m_token.location);
+    throw CompilerError("unexpected token '" + real_type + "'", m_token.location);
   }
 
-  [[noreturn]] void unexpected_token(const std::string& expected) {
+  [[noreturn]] void unexpected_token(const std::string& expected) const {
     std::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
-    throw CompilerError("Unexpected token '" + real_type + "' expected " + expected, m_token.location);
+    throw CompilerError("unexpected '" + real_type + "', expected a " + expected, m_token.location);
   }
 
-  [[noreturn]] void unexpected_token(TokenType expected) {
+  [[noreturn]] void unexpected_token(TokenType expected) const {
     std::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
     std::string& expected_type = kTokenTypeStrings[static_cast<uint8_t>(expected)];
-    throw CompilerError("Unexpected token '" + real_type + "' expected '" + expected_type + "'", m_token.location);
+    throw CompilerError("unexpected '" + real_type + "', expected a '" + expected_type + "' token", m_token.location);
   }
 
-  [[noreturn]] void unexpected_node(const ref<Node> node, const std::string& message) {
+  [[noreturn]] void unexpected_node(const ref<Node> node, const std::string& message) const {
     throw CompilerError(message, node->begin());
   }
 
