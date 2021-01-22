@@ -34,60 +34,23 @@
 namespace charly::core::compiler {
 
 struct Location {
-  std::shared_ptr<std::string> filename;
+  bool valid = true;
 
   // offset in source bytestream
-  size_t offset = 0;
-  size_t length = 0;
+  size_t offset;
+  size_t end_offset;
 
   // file coordinates
-  uint32_t row = 0;
-  uint32_t column = 0;
+  uint32_t row;
+  uint32_t column;
+  uint32_t end_row;
+  uint32_t end_column;
 
   friend std::ostream& operator<<(std::ostream& out, const Location& loc) {
-    out << "<";
-
-    if (loc.row)
-      out << loc.row;
-    else
-      out << "-";
-
+    out << loc.row + 1;
     out << ":";
-
-    if (loc.column)
-      out << loc.column;
-    else
-      out << "-";
-
-    out << ":";
-
-    if (loc.length)
-      out << loc.length;
-    else
-      out << "-";
-
-    out << ">";
-
+    out << loc.column + 1;
     return out;
-  }
-};
-
-class LocationRange {
-public:
-  Location begin;
-  Location end;
-
-  friend std::ostream& operator<<(std::ostream& out, const LocationRange& range) {
-    return out << range.sum_location();
-  }
-
-private:
-  Location sum_location() const {
-    return Location{ .filename = begin.filename,
-                     .offset = begin.offset,
-                     .length = end.offset - begin.offset + end.length,
-                     .row = begin.row,
-                     .column = begin.column };
   }
 };
 

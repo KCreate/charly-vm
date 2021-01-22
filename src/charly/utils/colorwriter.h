@@ -38,65 +38,89 @@ class ColorWriter {
 public:
   ColorWriter(std::ostream& stream = std::cout) : m_stream(stream) {}
 
-  template <typename T>
-  void write(const T& v) {
-    m_stream << v;
+  template <typename... Args>
+  void write(Args&&... params) {
+    (m_stream << ... << params);
   }
 
-  template <typename T>
-  void grey(const T& v) {
-    m_stream << termcolor::grey;
-    m_stream << v;
-    m_stream << termcolor::reset;
+  template <typename... Args>
+  void grey(Args&&... params) {
+    write(termcolor::dark, std::forward<Args>(params)..., termcolor::reset);
   }
 
-  template <typename T>
-  void red(const T& v) {
-    m_stream << termcolor::red;
-    m_stream << v;
-    m_stream << termcolor::reset;
+  template <typename... Args>
+  void grey_bg(Args&&... params) {
+    write(termcolor::on_grey, std::forward<Args>(params)..., termcolor::reset);
   }
 
-  template <typename T>
-  void green(const T& v) {
-    m_stream << termcolor::green;
-    m_stream << v;
-    m_stream << termcolor::reset;
+  template <typename... Args>
+  void red(Args&&... params) {
+    write(termcolor::red, std::forward<Args>(params)..., termcolor::reset);
   }
 
-  template <typename T>
-  void yellow(const T& v) {
-    m_stream << termcolor::yellow;
-    m_stream << v;
-    m_stream << termcolor::reset;
+  template <typename... Args>
+  void red_bg(Args&&... params) {
+    write(termcolor::on_red, std::forward<Args>(params)..., termcolor::reset);
   }
 
-  template <typename T>
-  void blue(const T& v) {
-    m_stream << termcolor::blue;
-    m_stream << v;
-    m_stream << termcolor::reset;
+  template <typename... Args>
+  void green(Args&&... params) {
+    write(termcolor::green, std::forward<Args>(params)..., termcolor::reset);
   }
 
-  template <typename T>
-  void magenta(const T& v) {
-    m_stream << termcolor::magenta;
-    m_stream << v;
-    m_stream << termcolor::reset;
+  template <typename... Args>
+  void green_bg(Args&&... params) {
+    write(termcolor::on_green, std::forward<Args>(params)..., termcolor::reset);
   }
 
-  template <typename T>
-  void cyan(const T& v) {
-    m_stream << termcolor::cyan;
-    m_stream << v;
-    m_stream << termcolor::reset;
+  template <typename... Args>
+  void yellow(Args&&... params) {
+    write(termcolor::yellow, std::forward<Args>(params)..., termcolor::reset);
   }
 
-  template <typename T>
-  void white(const T& v) {
-    m_stream << termcolor::white;
-    m_stream << v;
-    m_stream << termcolor::reset;
+  template <typename... Args>
+  void yellow_bg(Args&&... params) {
+    write(termcolor::on_yellow, termcolor::grey, std::forward<Args>(params)..., termcolor::reset);
+  }
+
+  template <typename... Args>
+  void blue(Args&&... params) {
+    write(termcolor::blue, std::forward<Args>(params)..., termcolor::reset);
+  }
+
+  template <typename... Args>
+  void blue_bg(Args&&... params) {
+    write(termcolor::on_blue, std::forward<Args>(params)..., termcolor::reset);
+  }
+
+  template <typename... Args>
+  void magenta(Args&&... params) {
+    write(termcolor::magenta, std::forward<Args>(params)..., termcolor::reset);
+  }
+
+  template <typename... Args>
+  void magenta_bg(Args&&... params) {
+    write(termcolor::on_magenta, std::forward<Args>(params)..., termcolor::reset);
+  }
+
+  template <typename... Args>
+  void cyan(Args&&... params) {
+    write(termcolor::cyan, std::forward<Args>(params)..., termcolor::reset);
+  }
+
+  template <typename... Args>
+  void cyan_bg(Args&&... params) {
+    write(termcolor::on_cyan, std::forward<Args>(params)..., termcolor::reset);
+  }
+
+  template <typename... Args>
+  void white(Args&&... params) {
+    write(termcolor::white, params..., termcolor::reset);
+  }
+
+  template <typename... Args>
+  void white_bg(Args&&... params) {
+    write(termcolor::on_white, std::forward<Args>(params)..., termcolor::reset);
   }
 
 private:

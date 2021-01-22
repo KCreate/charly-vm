@@ -113,14 +113,20 @@ class ASTPass {
 
 public:
   ref<Node> visit(const ref<Node>& node) {
+    if (node.get() == nullptr)
+      return node;
     return node->visit(this, node);
   }
 
   ref<Statement> visit(const ref<Statement>& node) {
+    if (node.get() == nullptr)
+      return node;
     return node->visit(this, node);
   }
 
   ref<Expression> visit(const ref<Expression>& node) {
+    if (node.get() == nullptr)
+      return node;
     return node->visit(this, node);
   }
 

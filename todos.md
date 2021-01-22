@@ -1,23 +1,11 @@
 # Todos
 
-- Diagnostic message emitter abstraction instead of throwing an exception
-  - Diagnosts manager gets source code of file and can print pretty
-    color highlighted dump of stuff
-  - Specific error message for each scenario
-  - Puts all error messages into one place
-  - General
-    - Knows about program source
-    - Understands location formation of diagnostic messages
-    - Can generate a pretty (with colors on ttys) error format
+- Call expressions
 
-- Unit tests
-  - Check for parser exceptions
-  - Operator precedence
-  - Spawn statement
-    - Needs call syntax to be implemented
+- Spawn expressions
 
-- Write some unit tests for ast node location
-  - Check row, column and length output
+- Setup CI service that runs unit tests
+  - GitHub actions?
 
 - Refactor node visiting code
   - Remove places where new nodes have to be registered

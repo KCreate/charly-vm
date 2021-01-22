@@ -35,15 +35,9 @@
 namespace charly::core::compiler {
 
 Token Lexer::read_token_all() {
-  Token token;
+  Token& token = m_token;
 
-  size_t offset_start = m_source.readoffset();
-
-  token.location.filename = m_filename;
-  token.location.offset = offset_start;
-  token.location.length = 1;
-  token.location.row = m_row;
-  token.location.column = m_column;
+  reset_token();
 
   if (m_mode == Mode::String) {
     consume_string(token);
@@ -55,10 +49,10 @@ Token Lexer::read_token_all() {
         token.type = TokenType::Eof;
 
         if (m_interpolation_bracket_stack.size())
-          throw CompilerError("unfinished string interpolation", token.location);
+          unexpected_character("unclosed string interpolation");
 
         if (m_bracket_stack.size())
-          throw CompilerError("unclosed bracket", token.location);
+          unexpected_character(m_bracket_stack.back());
 
         break;
       }
@@ -71,21 +65,18 @@ Token Lexer::read_token_all() {
           case 'b': {
             read_char();
             read_char();
-            m_source.reset_window();
             consume_binary(token);
             break;
           }
           case 'x': {
             read_char();
             read_char();
-            m_source.reset_window();
             consume_hex(token);
             break;
           }
           case 'o': {
             read_char();
             read_char();
-            m_source.reset_window();
             consume_octal(token);
             break;
           }
@@ -322,9 +313,12 @@ Token Lexer::read_token_all() {
         read_char();
         token.type = TokenType::RightParen;
 
-        // check matching brace
-        if (m_bracket_stack.size() == 0 || m_bracket_stack.back() != token.type) {
-          throw CompilerError("unexpected )", token.location);
+        if (m_bracket_stack.size() == 0) {
+          unexpected_character();
+        }
+
+        if (m_bracket_stack.back() != token.type) {
+          unexpected_character(m_bracket_stack.back());
         }
 
         m_bracket_stack.pop_back();
@@ -341,8 +335,12 @@ Token Lexer::read_token_all() {
         read_char();
         token.type = TokenType::RightCurly;
 
-        if (m_bracket_stack.size() == 0 || m_bracket_stack.back() != token.type) {
-          throw CompilerError("unexpected }", token.location);
+        if (m_bracket_stack.size() == 0) {
+          unexpected_character();
+        }
+
+        if (m_bracket_stack.back() != token.type) {
+          unexpected_character(m_bracket_stack.back());
         }
 
         // switch lexer mode
@@ -365,8 +363,12 @@ Token Lexer::read_token_all() {
         read_char();
         token.type = TokenType::RightBracket;
 
-        if (m_bracket_stack.size() == 0 || m_bracket_stack.back() != token.type) {
-          throw CompilerError("unexpected ]", token.location);
+        if (m_bracket_stack.size() == 0) {
+          unexpected_character();
+        }
+
+        if (m_bracket_stack.back() != token.type) {
+          unexpected_character(m_bracket_stack.back());
         }
 
         m_bracket_stack.pop_back();
@@ -431,7 +433,8 @@ Token Lexer::read_token_all() {
           break;
         }
 
-        throw CompilerError("unexpected character", token.location);
+        read_char();
+        unexpected_character();
       }
     }
 
@@ -442,20 +445,25 @@ Token Lexer::read_token_all() {
     token.type = TokenType::Assignment;
   }
 
-  if (!(token.type == TokenType::String || token.type == TokenType::FormatString ||
-        token.type == TokenType::Identifier))
-    token.source = m_source.window_string();
+  // the token.source value is set by the consume_* methods
+  // of the above tokens, so we do nothing here
+  switch (token.type) {
+    case TokenType::String:
+    case TokenType::FormatString:
+    case TokenType::Identifier: {
+      break;
+    }
+    default: {
+      token.source = m_source.window_string();
+      break;
+    }
+  }
 
-  token.location.length = m_source.window_size();
-  m_source.reset_window();
+  token.location.end_column = m_column;
 
   // remove the '{' from the stored length
   if (token.type == TokenType::FormatString) {
-    token.location.length--;
-  }
-
-  if (token.type != TokenType::Newline) {
-    increment_column(m_source.readoffset() - offset_start);
+    token.location.end_column--;
   }
 
   if (token.type == TokenType::Identifier && kKeywordsAndLiterals.count(token.source)) {
@@ -495,13 +503,123 @@ Token Lexer::last_token() {
   return Token();
 }
 
+void Lexer::unexpected_character() {
+  m_token.location.offset = m_source.readoffset() - utils::Buffer::encoded_length_utf8(m_last_character);
+  m_token.location.end_offset = m_source.readoffset();
+  m_token.location.end_row = m_row;
+  m_token.location.end_column = m_column;
+
+  utils::Buffer formatbuf;
+
+  switch (m_last_character) {
+    case u'\0': {
+      formatbuf.append_string("unexpected end of file");
+      break;
+    }
+    default: {
+      formatbuf.append_string("unexpected '");
+      formatbuf.append_utf8(m_last_character);
+      formatbuf.append_string("'");
+      break;
+    }
+  }
+
+  m_console.fatal(formatbuf.buffer_string(), m_token.location);
+}
+
+void Lexer::unexpected_character(uint32_t expected) {
+  m_token.location.offset = m_source.readoffset() - utils::Buffer::encoded_length_utf8(m_last_character);
+  m_token.location.end_offset = m_source.readoffset();
+  m_token.location.end_row = m_row;
+  m_token.location.end_column = m_column;
+
+  utils::Buffer formatbuf;
+
+  switch (m_last_character) {
+    case u'\0': {
+      formatbuf.append_string("unexpected end of file, ");
+      formatbuf.append_string("expected the character '");
+      formatbuf.append_utf8(expected);
+      formatbuf.append_string("'");
+      break;
+    }
+    default: {
+      formatbuf.append_string("unexpected '");
+      formatbuf.append_utf8(m_last_character);
+      formatbuf.append_string("', expected the character '");
+      formatbuf.append_utf8(expected);
+      formatbuf.append_string("'");
+      break;
+    }
+  }
+
+  m_console.fatal(formatbuf.buffer_string(), m_token.location);
+}
+
+void Lexer::unexpected_character(TokenType expected) {
+  m_token.location.offset = m_source.readoffset() - utils::Buffer::encoded_length_utf8(m_last_character);
+  m_token.location.end_offset = m_source.readoffset();
+  m_token.location.end_row = m_row;
+  m_token.location.end_column = m_column;
+
+  utils::Buffer formatbuf;
+
+  switch (m_last_character) {
+    case u'\0': {
+      formatbuf.append_string("unexpected end of file, ");
+      formatbuf.append_string("expected a '");
+      formatbuf.append_string(kTokenTypeStrings[static_cast<int>(expected)]);
+      formatbuf.append_string("' token");
+      break;
+    }
+    default: {
+      formatbuf.append_string("unexpected '");
+      formatbuf.append_utf8(m_last_character);
+      formatbuf.append_string("', expected a '");
+      formatbuf.append_string(kTokenTypeStrings[static_cast<int>(expected)]);
+      formatbuf.append_string("' token");
+      break;
+    }
+  }
+
+  m_console.fatal(formatbuf.buffer_string(), m_token.location);
+}
+
+void Lexer::unexpected_character(const std::string& message) {
+  m_token.location.offset = m_source.readoffset() - utils::Buffer::encoded_length_utf8(m_last_character);
+  m_token.location.end_offset = m_source.readoffset();
+  m_token.location.end_row = m_row;
+  m_token.location.end_column = m_column;
+
+  utils::Buffer formatbuf;
+
+  switch (m_last_character) {
+    case u'\0': {
+      formatbuf.append_string("unexpected end of file, ");
+      formatbuf.append_string(message);
+      break;
+    }
+    default: {
+      formatbuf.append_string("unexpected '");
+      formatbuf.append_utf8(m_last_character);
+      formatbuf.append_string("', ");
+      formatbuf.append_string(message);
+      break;
+    }
+  }
+
+  m_console.fatal(formatbuf.buffer_string(), m_token.location);
+}
+
 void Lexer::increment_row() {
   m_row++;
-  m_column = 1;
+  m_column = 0;
+  m_token.location.end_row++;
 }
 
 void Lexer::increment_column(size_t delta) {
   m_column += delta;
+  m_token.location.end_column++;
 }
 
 uint32_t Lexer::peek_char(uint32_t nth) const {
@@ -511,6 +629,8 @@ uint32_t Lexer::peek_char(uint32_t nth) const {
 uint32_t Lexer::read_char() {
   uint32_t cp = m_source.read_utf8();
   m_last_character = cp;
+  m_token.location.end_offset = m_source.readoffset();
+  increment_column(1);
   return cp;
 }
 
@@ -555,7 +675,7 @@ bool Lexer::is_alphanumeric(uint32_t cp) const {
 }
 
 bool Lexer::is_id_begin(uint32_t cp) const {
-  return is_alpha(cp) || cp == '$' || cp == '_';
+  return is_alpha(cp) || cp == '$' || cp == '_' || cp > 0x80;
 }
 
 bool Lexer::is_id_part(uint32_t cp) const {
@@ -615,51 +735,50 @@ void Lexer::consume_hex(Token& token) {
   token.type = TokenType::Int;
 
   // there has to be at least one hex character
-  if (!is_hex(peek_char())) {
-    throw CompilerError("hex number literal expected at least one digit", token.location);
+  if (!is_hex(read_char())) {
+    unexpected_character("expected a hex digit");
   }
 
   while (is_hex(peek_char())) {
     read_char();
   }
 
-  token.intval = utils::charptr_to_int(m_source.window(), m_source.window_size(), 16);
+  token.intval = utils::charptr_to_int(m_source.window() + 2, m_source.window_size() - 2, 16);
 }
 
 void Lexer::consume_octal(Token& token) {
   token.type = TokenType::Int;
 
   // there has to be at least one hex character
-  if (!is_octal(peek_char())) {
-    throw CompilerError("octal number literal expected at least one digit", token.location);
+  if (!is_octal(read_char())) {
+    unexpected_character("expected an octal digit");
   }
 
   while (is_octal(peek_char())) {
     read_char();
   }
 
-  token.intval = utils::charptr_to_int(m_source.window(), m_source.window_size(), 8);
+  token.intval = utils::charptr_to_int(m_source.window() + 2, m_source.window_size() - 2, 8);
 }
 
 void Lexer::consume_binary(Token& token) {
   token.type = TokenType::Int;
 
   // there has to be at least one hex character
-  if (!is_binary(peek_char())) {
-    throw CompilerError("binary number literal expected at least one digit", token.location);
+  if (!is_binary(read_char())) {
+    unexpected_character("expected either a 1 or 0");
   }
 
   while (is_binary(peek_char())) {
     read_char();
   }
 
-  token.intval = utils::charptr_to_int(m_source.window(), m_source.window_size(), 2);
+  token.intval = utils::charptr_to_int(m_source.window() + 2, m_source.window_size() - 2, 2);
 }
 
 void Lexer::consume_identifier(Token& token) {
   token.type = TokenType::Identifier;
 
-  m_source.reset_window();
   while (is_id_part(peek_char())) {
     read_char();
   }
@@ -683,13 +802,13 @@ void Lexer::consume_multiline_comment(Token& token) {
   token.type = TokenType::Comment;
 
   uint32_t comment_depth = 1;
-
   while (comment_depth > 0) {
     uint32_t cp = peek_char();
 
     switch (cp) {
       case '\0': {
-        throw CompilerError("unclosed comment", token.location);
+        read_char();
+        unexpected_character("unclosed comment");
       }
       case '/': {
         read_char();
@@ -775,13 +894,15 @@ void Lexer::consume_char(Token& token) {
         cp = '\\';
         break;
       }
-      case '\0': throw CompilerError("unfinished escape sequence", token.location);
-      default: throw CompilerError("unknown escape sequence", token.location);
+      default: {
+        read_char();
+        unexpected_character("expected a valid escape sequence");
+      }
     }
   }
 
   if (read_char() != '\'') {
-    throw CompilerError("expected closing ' for char literal", token.location);
+    unexpected_character('\'');
   }
 
   token.charval = cp;
@@ -815,7 +936,8 @@ void Lexer::consume_string(Token& token, bool allow_format) {
 
     // end of file reached, unclosed string detected
     if (cp == '\0') {
-      throw CompilerError("unclosed string", token.location);
+      read_char();
+      unexpected_character("unclosed string");
     }
 
     // string interpolation
@@ -886,8 +1008,10 @@ void Lexer::consume_string(Token& token, bool allow_format) {
           string_buf.append_utf8('\\');
           break;
         }
-        case '\0': throw CompilerError("unfinished escape sequence", token.location);
-        default: throw CompilerError("unknown escape sequence", token.location);
+        default: {
+          read_char();
+          unexpected_character("expected a valid escape sequence");
+        }
       }
       continue;
     }
@@ -898,6 +1022,18 @@ void Lexer::consume_string(Token& token, bool allow_format) {
   token.source = string_buf.buffer_string();
 
   return;
+}
+
+void Lexer::reset_token() {
+  size_t offset_start = m_source.readoffset();
+  m_token.location.valid = true;
+  m_token.location.offset = offset_start;
+  m_token.location.end_offset = offset_start;
+  m_token.location.row = m_row;
+  m_token.location.column = m_column;
+  m_token.location.end_row = m_row;
+  m_token.location.end_column = m_column;
+  m_source.reset_window();
 }
 
 }  // namespace charly::core::compiler

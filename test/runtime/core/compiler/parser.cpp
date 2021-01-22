@@ -31,72 +31,7 @@
 #include "charly/core/compiler/parser.h"
 #include "charly/core/compiler/passes/dump.h"
 
-using Catch::Matchers::Contains;
-using Catch::Matchers::Equals;
-
-using namespace charly::core::compiler;
-using namespace charly::core::compiler::ast;
-
-#define ASSERT_AST_TYPE(S, T)                          \
-  {                                                    \
-    ref<Expression> exp = Parser::parse_expression(S); \
-    CHECK(isa<T>(exp));                                \
-  }
-
-#define ASSERT_AST_VALUE(S, T, V)                      \
-  {                                                    \
-    ref<Expression> exp = Parser::parse_expression(S); \
-    CHECK(isa<T>(exp));                                \
-    if (isa<T>(exp)) {                                 \
-      CHECK(cast<T>(exp)->value == V);                 \
-    }                                                  \
-  }
-
-#define ASSERT_AST_STRING(S, T, V)                     \
-  {                                                    \
-    ref<Expression> exp = Parser::parse_expression(S); \
-    CHECK(isa<T>(exp));                                \
-    if (isa<T>(exp)) {                                 \
-      CHECK_THAT(cast<T>(exp)->value, Equals(V));      \
-    }                                                  \
-  }
-
-#define EXP(S, T) cast<T>(Parser::parse_expression(S))
-
-#define CHECK_AST_EXP(S, N)                                       \
-  {                                                               \
-    std::stringstream exp_dump;                                   \
-    std::stringstream ref_dump;                                   \
-    DumpPass(exp_dump, false).visit(Parser::parse_expression(S)); \
-    DumpPass(ref_dump, false).visit(N);                           \
-    bool equal = exp_dump.str().compare(ref_dump.str()) == 0;     \
-    if (!equal) {                                                 \
-      std::cout << "Expected:" << '\n';                           \
-      std::cout << ref_dump.str() << '\n';                        \
-      std::cout << "Got:" << '\n';                                \
-      std::cout << exp_dump.str() << '\n';                        \
-    }                                                             \
-    CHECK(equal == true);                                         \
-  }
-
-#define CHECK_AST_STMT(S, N)                                      \
-  {                                                               \
-    std::stringstream stmt_dump;                                  \
-    std::stringstream ref_dump;                                   \
-    DumpPass(stmt_dump, false).visit(Parser::parse_statement(S)); \
-    DumpPass(ref_dump, false).visit(N);                           \
-    bool equal = stmt_dump.str().compare(ref_dump.str()) == 0;    \
-    if (!equal) {                                                 \
-      std::cout << "Expected:" << '\n';                           \
-      std::cout << ref_dump.str() << '\n';                        \
-      std::cout << "Got:" << '\n';                                \
-      std::cout << stmt_dump.str() << '\n';                       \
-    }                                                             \
-    CHECK(equal == true);                                         \
-  }
-
-#define CHECK_ERROR_EXP(S, E) CHECK_THROWS_WITH(Parser::parse_expression(S), E);
-#define CHECK_ERROR_STMT(S, E) CHECK_THROWS_WITH(Parser::parse_statement(S), E);
+#include "astmacros.h"
 
 TEST_CASE("parses literals") {
   CHECK_AST_EXP("0", make<Int>(0));
@@ -112,12 +47,17 @@ TEST_CASE("parses literals") {
   CHECK_AST_EXP("$$foo", make<Id>("$$foo"));
   CHECK_AST_EXP("$1", make<Id>("$1"));
   CHECK_AST_EXP("__foo", make<Id>("__foo"));
+  CHECK_AST_EXP("π", make<Id>("π"));
+  CHECK_AST_EXP("Δ", make<Id>("Δ"));
+  CHECK_AST_EXP("берегу", make<Id>("берегу"));
   CHECK_AST_EXP("@\"\"", make<Id>(""));
   CHECK_AST_EXP("@\"foobar\"", make<Id>("foobar"));
   CHECK_AST_EXP("@\"25\"", make<Id>("25"));
   CHECK_AST_EXP("@\"{}{{{}}}}}}}}{{{{\"", make<Id>("{}{{{}}}}}}}}{{{{"));
   CHECK_AST_EXP("@\"foo bar baz \\n hello world\"", make<Id>("foo bar baz \n hello world"));
   CHECK_AST_EXP("100", make<Int>(100));
+  CHECK_AST_EXP("0.0", make<Float>(0.0));
+  CHECK_AST_EXP("1234.12345678", make<Float>(1234.12345678));
   CHECK_AST_EXP("25.25", make<Float>(25.25));
   CHECK_AST_EXP("NaN", make<Float>(NAN));
   CHECK_AST_EXP("true", make<Bool>(true));
@@ -137,17 +77,25 @@ TEST_CASE("parses literals") {
   CHECK_AST_EXP("\"hello world\"", make<String>("hello world"));
 
   CHECK_AST_EXP("\"\\a \\b \\n \\t \\v \\f \\\" \\{ \\\\ \"", make<String>("\a \b \n \t \v \f \" { \\ "));
+
+  CHECK_ERROR_STMT("\"", "unexpected end of file, unclosed string");
+}
+
+TEST_CASE("incomplete number literals error") {
+  CHECK_ERROR_STMT("0x", "unexpected end of file, expected a hex digit");
+  CHECK_ERROR_STMT("0b", "unexpected end of file, expected either a 1 or 0");
+  CHECK_ERROR_STMT("0o", "unexpected end of file, expected an octal digit");
+
+  CHECK_ERROR_STMT("0xz", "unexpected 'z', expected a hex digit");
+  CHECK_ERROR_STMT("0bz", "unexpected 'z', expected either a 1 or 0");
+  CHECK_ERROR_STMT("0oz", "unexpected 'z', expected an octal digit");
 }
 
 TEST_CASE("parses tuples") {
-  ASSERT_AST_TYPE("(1)", Int);
-  ASSERT_AST_TYPE("(1,)", Tuple);
-  ASSERT_AST_TYPE("(1,2)", Tuple);
-
-  CHECK_ERROR_EXP("(", "unclosed bracket");
-  CHECK_ERROR_EXP("(,)", "unexpected ',', expected a literal");
-  CHECK_ERROR_EXP("(1,2,)", "unexpected ')', expected a literal");
-  CHECK_ERROR_EXP("(1 2)", "unexpected 'Int', expected a ')' token");
+  CHECK_ERROR_EXP("(", "unexpected end of file, expected a ')' token");
+  CHECK_ERROR_EXP("(,)", "unexpected token ','");
+  CHECK_ERROR_EXP("(1,2,)", "unexpected token ')'");
+  CHECK_ERROR_EXP("(1 2)", "unexpected numerical constant, expected a ')' token");
 
   CHECK(EXP("(1,)", Tuple)->elements.size() == 1);
   CHECK(EXP("(1, 2)", Tuple)->elements.size() == 2);
@@ -174,6 +122,23 @@ TEST_CASE("interpolated strings") {
   CHECK_AST_EXP("\"{\"{x}\"}\"", make<FormatString>(make<FormatString>(make<Id>("x"))));
   CHECK_AST_EXP("\"x:{(foo, bar)}\"",
                 make<FormatString>(make<String>("x:"), make<Tuple>(make<Id>("foo"), make<Id>("bar"))));
+
+  CHECK_ERROR_EXP("\"{", "unexpected end of file, unclosed string interpolation");
+}
+
+TEST_CASE("mismatched brackets") {
+  CHECK_ERROR_EXP("(", "unexpected end of file, expected a ')' token");
+  CHECK_ERROR_STMT("{", "unexpected end of file, expected a '}' token");
+
+  CHECK_ERROR_EXP("(}", "unexpected '}', expected a ')' token");
+  CHECK_ERROR_STMT("{)", "unexpected ')', expected a '}' token");
+
+  CHECK_ERROR_EXP("(]", "unexpected ']', expected a ')' token");
+  CHECK_ERROR_STMT("{]", "unexpected ']', expected a '}' token");
+}
+
+TEST_CASE("unclosed multiline comments") {
+  CHECK_ERROR_EXP("/*", "unexpected end of file, unclosed comment");
 }
 
 TEST_CASE("assignments") {
@@ -332,8 +297,7 @@ TEST_CASE("import statement") {
   CHECK_AST_STMT("from \"test\" as lib import bar as baz",
                  make<Import>(make<As>(make<String>("test"), "lib"), make<As>(make<Id>("bar"), "baz")));
 
-  CHECK_ERROR_STMT("from foo import", "expected at least one identifier after import");
-  CHECK_ERROR_STMT("from foo import 25 as foo", "expected an identifier");
+  CHECK_ERROR_STMT("from foo import", "expected at least one imported symbol");
 }
 
 TEST_CASE("yield, await, typeof expressions") {

@@ -28,7 +28,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "charly/core/compiler/error.h"
+#include "charly/core/compiler/diagnostic.h"
 #include "charly/core/compiler/token.h"
 #include "charly/utils/buffer.h"
 
@@ -39,8 +39,14 @@ namespace charly::core::compiler {
 // splits source input into individual tokens for parsing
 class Lexer {
 public:
-  Lexer(const std::string& filename, const std::string& source, uint32_t row = 1, uint32_t column = 1) :
-    m_filename(std::make_shared<std::string>(filename)), m_source(source), m_row(row), m_column(column) {
+  Lexer(utils::Buffer& source,
+        DiagnosticConsole& console,
+        uint32_t row = 0,
+        uint32_t column = 0) :
+    m_console(console),
+    m_source(source),
+    m_row(row),
+    m_column(column) {
     m_last_character = '\0';
     m_mode = Mode::TopLevel;
   }
@@ -54,13 +60,6 @@ public:
 
   // returns the last read token
   Token last_token();
-
-protected:
-  // full path of the source file (or empty buffer)
-  std::shared_ptr<std::string> m_filename;
-
-  // source code
-  utils::Buffer m_source;
 
 private:
   Lexer(Lexer&) = delete;
@@ -97,6 +96,22 @@ private:
   void consume_multiline_comment(Token& token);
   void consume_char(Token& token);
   void consume_string(Token& token, bool allow_format = true);
+
+  void reset_token();
+
+protected:
+  DiagnosticConsole& m_console;
+
+  [[noreturn]] void unexpected_character();
+  [[noreturn]] void unexpected_character(uint32_t expected);
+  [[noreturn]] void unexpected_character(TokenType expected);
+  [[noreturn]] void unexpected_character(const std::string& message);
+
+  // buffer containing source code
+  utils::Buffer& m_source;
+
+  // the current token
+  Token m_token;
 
   // current source row / column
   uint32_t m_row;

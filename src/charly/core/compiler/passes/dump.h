@@ -46,7 +46,9 @@ class DumpPass : public ASTPass {
   virtual void after_enter_any(const ref<Node>& node) override {
     if (m_print_location) {
       m_writer.write(" ");
-      m_writer.white(node->location());
+      m_writer.write('<');
+      m_writer.write(node->location());
+      m_writer.write('>');
     }
     m_writer.write('\n');
     m_depth++;
@@ -54,12 +56,6 @@ class DumpPass : public ASTPass {
 
   virtual void before_leave_any(const ref<Node>&) override {
     m_depth--;
-  }
-
-  virtual bool enter(const ref<Program>& node) override {
-    m_writer.write(' ');
-    m_writer.yellow(node->filename);
-    return true;
   }
 
   virtual bool enter(const ref<ANDAssignment>& node) override {

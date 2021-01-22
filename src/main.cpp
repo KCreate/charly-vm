@@ -26,6 +26,7 @@
 
 #include <iostream>
 #include <string>
+#include <cassert>
 
 #include <readline/history.h>
 #include <readline/readline.h>
@@ -66,20 +67,34 @@ int main() {
       continue;
     }
 
-    utils::Buffer buf;
-    buf.append_string(line);
+    utils::Buffer source_buffer;
+    source_buffer.append_string(line);
+    // source_buffer.append_string((
+    //   "        25 25 { (1, 2, 3)\n" \
+    //   "foo = bar = baz\n" \
+    //   "from math as @\"ääää\" import (1, 2, 3) as sin\n" \
+    //   "from math as ääää import (1, 2, 3) as sin\n" \
+    //   "from x import 25 as bar\n" \
+    //   "(x, y, z) = coords } 25 25"
+    // ));
 
-    try {
-      ast::ref<ast::Program> program = Parser::parse_program(buf.buffer_string(), "stdin");
+    DiagnosticConsole console("stdin", source_buffer);
+    ast::ref<ast::Program> program = Parser::parse_program(source_buffer, console);
 
-      // check if program has nodes
-      if (ref<Block> body = cast<Block>(program->body)) {
-        if (body->statements.size() == 0)
-          continue;
-      }
+    console.dump_all(std::cerr);
 
-      DumpPass(std::cout, print_location).visit(program);
-    } catch (CompilerError& exc) { std::cout << exc << '\n'; }
+    if (console.has_errors())
+      continue;
+
+    assert(program.get());
+
+    // check if program has nodes
+    if (ref<Block> body = cast<Block>(program->body)) {
+      if (body->statements.size() == 0)
+        continue;
+    }
+
+    DumpPass(std::cout, print_location).visit(program);
   }
 
   return 0;

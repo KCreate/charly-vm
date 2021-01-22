@@ -26,29 +26,34 @@
 
 #include "charly/core/compiler/parser.h"
 
+using namespace charly::core::compiler::ast;
+
 namespace charly::core::compiler {
 
-namespace {
-  using namespace ast;
+ref<Program> Parser::parse_program(utils::Buffer& source, DiagnosticConsole& console) {
+  try {
+    return Parser(source, console).parse_program();
+  } catch (DiagnosticException&) { return nullptr; }
 }
 
-ref<Program> Parser::parse_program(const std::string& source, const std::string& name) {
-  return Parser(name, source).parse_program();
+ref<Statement> Parser::parse_statement(utils::Buffer& source, DiagnosticConsole& console) {
+  try {
+    return Parser(source, console).parse_statement();
+  } catch (DiagnosticException&) { return nullptr; }
 }
 
-ref<Statement> Parser::parse_statement(const std::string& source, const std::string& name) {
-  return Parser(name, source).parse_statement();
-}
-
-ref<Expression> Parser::parse_expression(const std::string& source, const std::string& name) {
-  return Parser(name, source).parse_expression();
+ref<Expression> Parser::parse_expression(utils::Buffer& source, DiagnosticConsole& console) {
+  try {
+    return Parser(source, console).parse_expression();
+  } catch (DiagnosticException&) { return nullptr; }
 }
 
 ref<Program> Parser::parse_program() {
   ref<Block> body = make<Block>();
   parse_block_body(body);
-  ref<Program> program = make<Program>(*m_filename, body);
+  ref<Program> program = make<Program>(body);
   program->set_location(body);
+
   return program;
 }
 
@@ -68,7 +73,7 @@ void Parser::parse_block_body(const ref<Block>& block) {
   while (!(type(TokenType::RightCurly) || type(TokenType::Eof))) {
     ref<Statement> stmt = parse_statement();
 
-    if (parsed_statements == 0) {
+    if (parsed_statements == 0 && !block->location().valid) {
       block->set_begin(stmt);
     }
 
@@ -196,20 +201,8 @@ ref<Expression> Parser::parse_import() {
 
   if (type(TokenType::Import)) {
     eat(TokenType::Import);
-    ref<Expression> source_exp = parse_as_expression();
-
-    switch (source_exp->type()) {
-      case Node::Type::Id:
-      case Node::Type::As:
-      case Node::Type::String: break;
-      default: {
-        unexpected_node(source_exp, "expected identifier or string");
-      }
-    }
-
-    ref<Import> import_node = make<Import>(source_exp);
+    ref<Import> import_node = make<Import>(parse_as_expression());
     import_node->set_begin(begin_location);
-
     return import_node;
   } else if (type(TokenType::From)) {
     eat(TokenType::From);
@@ -218,34 +211,15 @@ ref<Expression> Parser::parse_import() {
     ref<Import> import_node = make<Import>(source_exp);
     import_node->set_begin(begin_location);
 
+    end(import_node);
     eat(TokenType::Import);
     this->parse_comma_as_expression(import_node->declarations);
 
     if (import_node->declarations.size() == 0) {
-      unexpected_node(import_node, "expected at least one identifier after import");
+      m_console.error("expected at least one imported symbol", import_node->location());
+    } else {
+      import_node->set_end(import_node->declarations.back()->location());
     }
-
-    for (ref<Expression>& node : import_node->declarations) {
-      switch (node->type()) {
-        case Node::Type::Id: {
-          break;
-        }
-        case Node::Type::As: {
-          ref<As> as_node = cast<As>(node);
-
-          if (!isa<Id>(as_node->expression)) {
-            unexpected_node(as_node->expression, "expected an identifier");
-          }
-
-          break;
-        }
-        default: {
-          unexpected_node(node, "expected an identifier");
-        }
-      }
-    }
-
-    import_node->set_end(import_node->declarations.back()->location());
 
     return import_node;
   } else {
@@ -471,7 +445,7 @@ ref<Expression> Parser::parse_literal() {
       return parse_super_token();
     }
     default: {
-      unexpected_token("literal");
+      unexpected_token();
     }
   }
 }
@@ -626,6 +600,74 @@ ref<Super> Parser::parse_super_token() {
   at(node);
   advance();
   return node;
+}
+
+void Parser::unexpected_token() {
+  std::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
+
+  utils::Buffer formatbuf;
+  if (m_token.type == TokenType::Eof) {
+    formatbuf.append_string("unexpected end of file");
+  } else {
+    formatbuf.append_string("unexpected token '");
+    formatbuf.append_string(real_type);
+    formatbuf.append_string("'");
+  }
+
+  m_console.fatal(formatbuf.buffer_string(), m_token.location);
+}
+
+void Parser::unexpected_token(const std::string& message) {
+  m_console.fatal(message, m_token.location);
+}
+
+void Parser::unexpected_token(TokenType expected) {
+  std::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
+  std::string& expected_type = kTokenTypeStrings[static_cast<uint8_t>(expected)];
+
+  utils::Buffer formatbuf;
+
+  switch (m_token.type) {
+    case TokenType::Eof: {
+      formatbuf.append_string("unexpected end of file");
+      formatbuf.append_string(", expected a '");
+      formatbuf.append_string(expected_type);
+      formatbuf.append_string("' token");
+      break;
+    }
+    case TokenType::Int:
+    case TokenType::Float: {
+      formatbuf.append_string("unexpected numerical constant");
+      formatbuf.append_string(", expected a '");
+      formatbuf.append_string(expected_type);
+      formatbuf.append_string("' token");
+      break;
+    }
+    case TokenType::String: {
+      formatbuf.append_string("unexpected string literal");
+      formatbuf.append_string(", expected a '");
+      formatbuf.append_string(expected_type);
+      formatbuf.append_string("' token");
+      break;
+    }
+    case TokenType::FormatString: {
+      formatbuf.append_string("unexpected format string");
+      formatbuf.append_string(", expected a '");
+      formatbuf.append_string(expected_type);
+      formatbuf.append_string("' token");
+      break;
+    }
+    default: {
+      formatbuf.append_string("unexpected '");
+      formatbuf.append_string(real_type);
+      formatbuf.append_string("' token, expected a '");
+      formatbuf.append_string(expected_type);
+      formatbuf.append_string("' token");
+      break;
+    }
+  }
+
+  m_console.fatal(formatbuf.buffer_string(), m_token.location);
 }
 
 }  // namespace charly::core::compiler

@@ -147,7 +147,7 @@ enum class TokenType {
 
 // string representations of token types
 static std::string kTokenTypeStrings[] = {
-  "EOF",     "Int",      "Float",     "True",   "false", "Identifier", "Character", "String",  "FormatString",
+  "EOF",     "integer",  "float",     "true",   "false", "identifier", "character", "string",  "formatstring",
   "null",    "self",     "super",     "as",     "await", "break",      "case",      "catch",   "class",
   "const",   "continue", "default",   "defer",  "do",    "else",       "export",    "extends", "finally",
   "for",     "from",     "func",      "guard",  "if",    "import",     "in",        "let",     "loop",
@@ -157,7 +157,7 @@ static std::string kTokenTypeStrings[] = {
   "&&",      "||",       "|",         "^",      "&",     "<<",         ">>",        ">>>",     "!",
   "~",       "(",        ")",         "{",      "}",     "[",          "]",         ".",       "..",
   "...",     ":",        ",",         ";",      "@",     "<-",         "->",        "=>",      "?",
-  "Comment", "Newline",  "Whitespace"
+  "comment", "newline",  "whitespace"
 };
 
 // identifiers with these names get remapped to keyword tokens
@@ -262,42 +262,6 @@ struct Token {
 
   bool could_start_expression() const {
     return kExpressionValidInitialTokens.count(type);
-  }
-
-  friend std::ostream& operator<<(std::ostream& out, const Token& token) {
-    out << '(';
-    out << kTokenTypeStrings[static_cast<uint8_t>(token.type)];
-
-    if (token.type == TokenType::Int || token.type == TokenType::Float || token.type == TokenType::Comment ||
-        token.type == TokenType::String || token.type == TokenType::FormatString ||
-        token.type == TokenType::Identifier) {
-      out << ',';
-      out << ' ';
-
-      switch (token.type) {
-        case TokenType::Int: out << token.intval; break;
-        case TokenType::Float: out << token.floatval; break;
-
-        case TokenType::Comment:
-        case TokenType::Identifier: out << token.source; break;
-
-        case TokenType::String:
-        case TokenType::FormatString: out << '"' << token.source << '"'; break;
-
-        case TokenType::Character: out << '\'' << token.source << '\''; break;
-        default: break;
-      }
-    }
-
-    out << ')';
-    out << ' ';
-    out << *token.location.filename;
-    out << ':';
-    out << token.location.row;
-    out << ':';
-    out << token.location.column;
-
-    return out;
   }
 };
 

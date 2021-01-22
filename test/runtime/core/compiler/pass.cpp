@@ -33,37 +33,9 @@
 #include "charly/core/compiler/astpass.h"
 #include "charly/core/compiler/parser.h"
 
-using Catch::Matchers::Contains;
-using Catch::Matchers::Equals;
-
 using namespace charly;
-using namespace charly::core::compiler;
 
-#define ASSERT_AST_TYPE(S, T)                          \
-  {                                                    \
-    ref<Expression> exp = Parser::parse_expression(S); \
-    CHECK(isa<T>(exp));                                \
-  }
-
-#define ASSERT_AST_VALUE(S, T, V)                      \
-  {                                                    \
-    ref<Expression> exp = Parser::parse_expression(S); \
-    CHECK(isa<T>(exp));                                \
-    if (isa<T>(exp)) {                                 \
-      CHECK(cast<T>(exp)->value == V);                 \
-    }                                                  \
-  }
-
-#define ASSERT_AST_STRING(S, T, V)                     \
-  {                                                    \
-    ref<Expression> exp = Parser::parse_expression(S); \
-    CHECK(isa<T>(exp));                                \
-    if (isa<T>(exp)) {                                 \
-      CHECK_THAT(cast<T>(exp)->value, Equals(V));      \
-    }                                                  \
-  }
-
-#define EXP(S, T) cast<T>(Parser::parse_expression(S))
+#include "astmacros.h"
 
 struct VisitedNodesStatisticsPass : public ASTPass {
   int types[256] = { 0 };
@@ -90,7 +62,7 @@ struct NumberSummerPass : public ASTPass {
 };
 
 TEST_CASE("visits each node") {
-  ref<Expression> node1 = Parser::parse_expression("(1, (2.5, 3), 4.25, (5, (((6.75, 7))), 8.1555), 9)");
+  ref<Expression> node1 = EXP("(1, (2.5, 3), 4.25, (5, (((6.75, 7))), 8.1555), 9)", Expression);
 
   VisitedNodesStatisticsPass visited_stat_pass;
   visited_stat_pass.visit(node1);
@@ -105,7 +77,7 @@ TEST_CASE("visits each node") {
 }
 
 TEST_CASE("can modify ast nodes") {
-  ref<Expression> node1 = Parser::parse_expression("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)");
+  ref<Expression> node1 = EXP("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)", Expression);
 
   struct IntsAboveFiveWithZeroReplacerPass : public ASTPass {
     virtual ref<Expression> leave(const ref<Int>& node) override {
@@ -128,7 +100,7 @@ TEST_CASE("can modify ast nodes") {
 }
 
 TEST_CASE("can replace nodes") {
-  ref<Expression> node1 = Parser::parse_expression("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)");
+  ref<Expression> node1 = EXP("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)", Expression);
 
   struct IntsThatAreFiveOrAboveWithPiReplacerPass : public ASTPass {
     virtual ref<Expression> leave(const ref<Int>& node) override {
@@ -166,14 +138,14 @@ TEST_CASE("can remove statements from blocks and tuples") {
   IntsAbove2RemoverPass().visit(block);
   CHECK(block->statements.size() == 2);
 
-  ref<Tuple> tuple = cast<Tuple>(Parser::parse_expression("(1, 2, 3, 4)"));
+  ref<Tuple> tuple = cast<Tuple>(EXP("(1, 2, 3, 4)", Tuple));
   CHECK(tuple->elements.size() == 4);
   IntsAbove2RemoverPass().visit(tuple);
   CHECK(tuple->elements.size() == 2);
 }
 
 TEST_CASE("calls enter and leave callbacks") {
-  ref<Expression> exp = Parser::parse_expression("((1, 2), (3, 4))");
+  ref<Expression> exp = EXP("((1, 2), (3, 4))", Expression);
 
   struct OrderVerifyPass : public ASTPass {
     std::vector<Node::Type> typestack;
@@ -225,7 +197,7 @@ TEST_CASE("enter method can prevent children from being visited") {
 
   TupleSequencerPass sequencer;
 
-  sequencer.visit(Parser::parse_expression("((((((0,), 1), 2), 3), 4), 5)"));
+  sequencer.visit(EXP("((((((0,), 1), 2), 3), 4), 5)", Expression));
 
   do {
     sequencer.keep_processing();

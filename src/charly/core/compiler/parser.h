@@ -29,7 +29,7 @@
 #include <unordered_set>
 
 #include "charly/core/compiler/ast.h"
-#include "charly/core/compiler/error.h"
+#include "charly/core/compiler/diagnostic.h"
 #include "charly/core/compiler/lexer.h"
 
 #pragma once
@@ -82,16 +82,34 @@ static const std::unordered_set<TokenType> kRightAssociativeOperators = {
 
 class Parser : public Lexer {
 public:
-  Parser(const std::string& filename, const std::string& source, uint32_t row = 1, uint32_t column = 1) :
-    Lexer(filename, source, row, column) {
+  static ref<Program> parse_program(const std::string& source) {
+    utils::Buffer buffer(source);
+    DiagnosticConsole console("unknown", buffer);
+    return parse_program(buffer, console);
+  }
+
+  static ref<Statement> parse_statement(const std::string& source) {
+    utils::Buffer buffer(source);
+    DiagnosticConsole console("unknown", buffer);
+    return parse_statement(buffer, console);
+  }
+
+  static ref<Expression> parse_expression(const std::string& source) {
+    utils::Buffer buffer(source);
+    DiagnosticConsole console("unknown", buffer);
+    return parse_expression(buffer, console);
+  }
+
+  static ref<Program> parse_program(utils::Buffer& source, DiagnosticConsole& console);
+  static ref<Statement> parse_statement(utils::Buffer& source, DiagnosticConsole& console);
+  static ref<Expression> parse_expression(utils::Buffer& source, DiagnosticConsole& console);
+
+private:
+  Parser(utils::Buffer& source, DiagnosticConsole& console) :
+    Lexer(source, console) {
     advance();
   }
 
-  static ref<Program> parse_program(const std::string& source, const std::string& name = "unnamed");
-  static ref<Statement> parse_statement(const std::string& source, const std::string& name = "unnamed");
-  static ref<Expression> parse_expression(const std::string& source, const std::string& name = "unnamed");
-
-private:
   // structural and statements
   ref<Program> parse_program();
   ref<Block> parse_block();
@@ -138,30 +156,13 @@ private:
   ref<Self> parse_self_token();
   ref<Super> parse_super_token();
 
-  [[noreturn]] void unexpected_token() const {
-    std::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
-    throw CompilerError("unexpected token '" + real_type + "'", m_token.location);
-  }
-
-  [[noreturn]] void unexpected_token(const std::string& expected) const {
-    std::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
-    throw CompilerError("unexpected '" + real_type + "', expected a " + expected, m_token.location);
-  }
-
-  [[noreturn]] void unexpected_token(TokenType expected) const {
-    std::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
-    std::string& expected_type = kTokenTypeStrings[static_cast<uint8_t>(expected)];
-    throw CompilerError("unexpected '" + real_type + "', expected a '" + expected_type + "' token", m_token.location);
-  }
-
-  [[noreturn]] void unexpected_node(const ref<Node> node, const std::string& message) const {
-    throw CompilerError(message, node->begin());
-  }
+  [[noreturn]] void unexpected_token();
+  [[noreturn]] void unexpected_token(const std::string& message);
+  [[noreturn]] void unexpected_token(TokenType expected);
 
   // advance to the next token
   void advance() {
-    m_token = read_token();
-    // std::cout << m_token << '\n';
+    read_token();
   }
 
   // check the current type of the token
@@ -202,9 +203,6 @@ private:
     begin(node);
     end(node);
   }
-
-private:
-  Token m_token;
 };
 
 }  // namespace charly::core::compiler

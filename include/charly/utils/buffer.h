@@ -80,6 +80,15 @@ public:
   Buffer& operator=(Buffer& other) = delete;
   Buffer& operator=(Buffer&& other) = delete;
 
+  // returns the amount of bytes neede to encode this
+  // utf8 character into a character stream
+  static size_t encoded_length_utf8(uint32_t character) {
+    if (character < 0x80) return 1;
+    if (character < 0x800) return 2;
+    if (character < 0x10000) return 3;
+    return 4;
+  }
+
   // write data into the buffer
   void append_block(const void* data, size_t length);
 

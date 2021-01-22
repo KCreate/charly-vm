@@ -100,16 +100,8 @@ public:
     "Super",   "Tuple",   "Assignment", "ANDAssignment", "Ternary", "BinaryOp",     "UnaryOp", "__SENTINEL",
   };
 
-  const LocationRange& location() const {
+  const Location& location() const {
     return m_location;
-  }
-
-  const Location& begin() const {
-    return m_location.begin;
-  }
-
-  const Location& end() const {
-    return m_location.end;
   }
 
   void set_location(const Location& loc) {
@@ -117,36 +109,30 @@ public:
     set_end(loc);
   }
 
-  void set_location(const LocationRange& range) {
-    m_location = range;
-  }
-
   void set_location(const ref<Node>& node) {
     m_location = node->location();
   }
 
   void set_begin(const Location& loc) {
-    m_location.begin = loc;
-  }
-
-  void set_begin(const LocationRange& range) {
-    m_location.begin = range.begin;
-  }
-
-  void set_begin(const ref<Node>& node) {
-    set_begin(node->begin());
+    m_location.valid = loc.valid;
+    m_location.offset = loc.offset;
+    m_location.row = loc.row;
+    m_location.column = loc.column;
   }
 
   void set_end(const Location& loc) {
-    m_location.end = loc;
+    m_location.valid = loc.valid;
+    m_location.end_offset = loc.end_offset;
+    m_location.end_row = loc.end_row;
+    m_location.end_column = loc.end_column;
   }
 
-  void set_end(const LocationRange& range) {
-    m_location.end = range.end;
+  void set_begin(const ref<Node>& node) {
+    set_begin(node->location());
   }
 
   void set_end(const ref<Node>& node) {
-    set_end(node->end());
+    set_end(node->location());
   }
 
   // get the name of this node based on its type
@@ -162,7 +148,7 @@ protected:
   ref<T> visit(ASTPass* pass, const ref<T>& node);
   virtual void visit_children(ASTPass*) {}
 
-  LocationRange m_location;
+  Location m_location = {.valid = false};
 };
 
 template <typename T>
@@ -204,11 +190,10 @@ public:
 class Program final : public Node {
   AST_NODE(Program)
 public:
-  Program(const std::string& filename, ref<Statement> body = nullptr) : filename(filename), body(body) {
+  Program(ref<Statement> body = nullptr) : body(body) {
     this->set_location(body);
   }
 
-  std::string filename;
   ref<Statement> body;
 
   virtual void visit_children(ASTPass*) override;
