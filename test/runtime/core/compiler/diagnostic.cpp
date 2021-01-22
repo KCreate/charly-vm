@@ -46,7 +46,7 @@ TEST_CASE("formats errors") {
   console.dump_all(out);
 
   CHECK_THAT(out.str(), Equals((
-    "test:1:1: error: unexpected token ','\n" \
+    "test:1:1: error: unexpected ',', expected an expression\n" \
     "       1 | ,\n"
   )));
 }

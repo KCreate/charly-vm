@@ -34,6 +34,8 @@
 
 #pragma once
 
+using Color = charly::utils::Color;
+
 namespace charly::core::compiler {
 
 enum DiagnosticType : uint8_t {
@@ -47,6 +49,23 @@ struct DiagnosticMessage {
   std::string message;
   Location location;
 
+  utils::Color format_color() const {
+    switch (type) {
+      case DiagnosticInfo: {
+        return utils::Color::Blue;
+        break;
+      }
+      case DiagnosticWarning: {
+        return utils::Color::Yellow;
+        break;
+      }
+      case DiagnosticError: {
+        return utils::Color::Red;
+        break;
+      }
+    }
+  }
+
   // write a formatted version of this error to the stream:
   //
   // <filename>:<row>:<col>: <message>
@@ -54,28 +73,27 @@ struct DiagnosticMessage {
     utils::ColorWriter writer(out);
 
     if (message.location.valid) {
-      writer.write(message.location);
-      writer.write(':');
+      writer << message.location << ':';
     }
 
-    writer.write(' ');
+    writer << ' ';
 
     switch (message.type) {
       case DiagnosticInfo: {
-        writer.blue("info: ");
+        writer.fg(message.format_color(), "info:");
         break;
       }
       case DiagnosticWarning: {
-        writer.yellow("warning: ");
+        writer.fg(message.format_color(), "warning:");
         break;
       }
       case DiagnosticError: {
-        writer.red("error: ");
+        writer.fg(message.format_color(), "error:");
         break;
       }
     }
 
-    writer.write(message.message);
+    writer << ' ' << message.message;
 
     return out;
   }
@@ -116,7 +134,7 @@ private:
 
   // writes the section of the source code to which location
   // refers to to the out stream
-  void write_annotated_source(std::ostream& out, DiagnosticType type, const Location& location) const;
+  void write_annotated_source(std::ostream& out, const DiagnosticMessage& message) const;
 
   std::string m_filename;
   std::vector<std::string> m_source;

@@ -62,6 +62,8 @@ public:
   enum class Type : uint8_t {
     Unknown = 0,
     Program = 1,
+
+    // Statements
     Block,
     Return,
     Break,
@@ -69,11 +71,15 @@ public:
     Defer,
     Throw,
     Export,
+
+    // Control Expressions
     Yield,
     Import,
     Await,
     Typeof,
     As,
+
+    // Literals
     Id,
     Int,
     Float,
@@ -85,19 +91,26 @@ public:
     Self,
     Super,
     Tuple,
+
+    // Expressions
     Assignment,
     ANDAssignment,
     Ternary,
     BinaryOp,
     UnaryOp,
+    CallOp,
+    MemberOp,
+    IndexOp,
+
+    // Meta
     TypeCount
   };
 
   static constexpr const char* TypeNames[] = {
-    "Unknown", "Program", "Block",      "Return",        "Break",   "Continue",     "Defer",   "Throw",
-    "Export",  "Yield",   "Spawn",      "Import",        "Await",   "Typeof",       "As",      "Id",
-    "Int",     "Float",   "Bool",       "Char",          "String",  "FormatString", "Null",    "Self",
-    "Super",   "Tuple",   "Assignment", "ANDAssignment", "Ternary", "BinaryOp",     "UnaryOp", "__SENTINEL",
+    "Unknown",       "Program", "Block",    "Return",       "Break",  "Continue", "Defer",   "Throw",      "Export",
+    "Yield",         "Spawn",   "Import",   "Await",        "Typeof", "As",       "Id",      "Int",        "Float",
+    "Bool",          "Char",    "String",   "FormatString", "Null",   "Self",     "Super",   "Tuple",      "Assignment",
+    "ANDAssignment", "Ternary", "BinaryOp", "UnaryOp",      "CallOp", "MemberOp", "IndexOp", "__SENTINEL",
   };
 
   const Location& location() const {
@@ -492,6 +505,55 @@ public:
   Tuple(Args&&... params) : elements({ std::forward<Args>(params)... }) {}
 
   std::vector<ref<Expression>> elements;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+// <target>(<arguments>)
+class CallOp final : public Expression {
+  AST_NODE(CallOp)
+public:
+  template <typename... Args>
+  CallOp(ref<Expression> target, Args&&... params) : target(target), arguments({ std::forward<Args>(params)... }) {
+    this->set_begin(target);
+    if (arguments.size() && arguments.back().get())
+      this->set_end(arguments.back()->location());
+  }
+
+  ref<Expression> target;
+  std::vector<ref<Expression>> arguments;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+// <target>.<member>
+class MemberOp final : public Expression {
+  AST_NODE(MemberOp)
+public:
+  template <typename... Args>
+  MemberOp(ref<Expression> target, ref<Id> member) : target(target), member(member->value) {
+    this->set_begin(target);
+    this->set_end(member);
+  }
+
+  ref<Expression> target;
+  std::string member;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+// <target>[<index>]
+class IndexOp final : public Expression {
+  AST_NODE(IndexOp)
+public:
+  template <typename... Args>
+  IndexOp(ref<Expression> target, ref<Expression> index) : target(target), index(index) {
+    this->set_begin(target);
+    this->set_end(index);
+  }
+
+  ref<Expression> target;
+  ref<Expression> index;
 
   virtual void visit_children(ASTPass*) override;
 };

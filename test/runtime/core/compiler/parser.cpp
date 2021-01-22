@@ -93,8 +93,8 @@ TEST_CASE("incomplete number literals error") {
 
 TEST_CASE("parses tuples") {
   CHECK_ERROR_EXP("(", "unexpected end of file, expected a ')' token");
-  CHECK_ERROR_EXP("(,)", "unexpected token ','");
-  CHECK_ERROR_EXP("(1,2,)", "unexpected token ')'");
+  CHECK_ERROR_EXP("(,)", "unexpected ',', expected an expression");
+  CHECK_ERROR_EXP("(1,2,)", "unexpected ')', expected an expression");
   CHECK_ERROR_EXP("(1 2)", "unexpected numerical constant, expected a ')' token");
 
   CHECK(EXP("(1,)", Tuple)->elements.size() == 1);
@@ -321,4 +321,63 @@ TEST_CASE("yield, await, typeof expressions") {
   CHECK_AST_EXP("typeof typeof 1", make<Typeof>(make<Typeof>(make<Int>(1))));
   CHECK_AST_EXP("typeof x == \"int\"",
                 make<BinaryOp>(TokenType::Equal, make<Typeof>(make<Id>("x")), make<String>("int")));
+}
+
+TEST_CASE("call expressions") {
+  CHECK_AST_EXP("foo()", make<CallOp>(make<Id>("foo")));
+  CHECK_AST_EXP("foo(1)", make<CallOp>(make<Id>("foo"), make<Int>(1)));
+  CHECK_AST_EXP("foo(1) + foo(2)", make<BinaryOp>(TokenType::Plus, make<CallOp>(make<Id>("foo"), make<Int>(1)),
+                                                  make<CallOp>(make<Id>("foo"), make<Int>(2))));
+  CHECK_AST_EXP("foo(1, 2, 3)", make<CallOp>(make<Id>("foo"), make<Int>(1), make<Int>(2), make<Int>(3)));
+  CHECK_AST_EXP("foo(bar())", make<CallOp>(make<Id>("foo"), make<CallOp>(make<Id>("bar"))));
+  CHECK_AST_EXP("foo()()()", make<CallOp>(make<CallOp>(make<CallOp>(make<Id>("foo")))));
+  CHECK_AST_EXP("foo(yield 1, 2)", make<CallOp>(make<Id>("foo"), make<Yield>(make<Int>(1)), make<Int>(2)));
+
+  CHECK_AST_EXP("foo.bar(2, 3).test[1](1, 2).bar", make<MemberOp>(
+    make<CallOp>(
+      make<IndexOp>(
+        make<MemberOp>(
+          make<CallOp>(
+            make<MemberOp>(
+              make<Id>("foo"),
+              make<Id>("bar")
+            ),
+            make<Int>(2),
+            make<Int>(3)
+          ),
+          make<Id>("test")
+        ),
+        make<Int>(1)
+      ),
+      make<Int>(1),
+      make<Int>(2)
+    ),
+    make<Id>("bar")
+  ));
+
+  CHECK_ERROR_EXP("foo(", "unexpected end of file, expected a ')' token");
+}
+
+TEST_CASE("member expressions") {
+  CHECK_AST_EXP("foo.bar", make<MemberOp>(make<Id>("foo"), make<Id>("bar")));
+  CHECK_AST_EXP("foo.bar + foo.baz", make<BinaryOp>(TokenType::Plus, make<MemberOp>(make<Id>("foo"), make<Id>("bar")),
+                                                    make<MemberOp>(make<Id>("foo"), make<Id>("baz"))));
+  CHECK_AST_EXP("foo.@\"hello world\"", make<MemberOp>(make<Id>("foo"), make<Id>("hello world")));
+  CHECK_AST_EXP("1.foo", make<MemberOp>(make<Int>(1), make<Id>("foo")));
+  CHECK_AST_EXP("2.2.@\"hello world\"", make<MemberOp>(make<Float>(2.2), make<Id>("hello world")));
+  CHECK_AST_EXP("foo.bar.baz", make<MemberOp>(make<MemberOp>(make<Id>("foo"), make<Id>("bar")), make<Id>("baz")));
+}
+
+TEST_CASE("index expressions") {
+  CHECK_AST_EXP("foo[1]", make<IndexOp>(make<Id>("foo"), make<Int>(1)));
+  CHECK_AST_EXP("foo[1] + foo[2]", make<BinaryOp>(TokenType::Plus, make<IndexOp>(make<Id>("foo"), make<Int>(1)),
+                                                  make<IndexOp>(make<Id>("foo"), make<Int>(2))));
+  CHECK_AST_EXP("foo[bar()]", make<IndexOp>(make<Id>("foo"), make<CallOp>(make<Id>("bar"))));
+  CHECK_AST_EXP("foo[yield 1]", make<IndexOp>(make<Id>("foo"), make<Yield>(make<Int>(1))));
+  CHECK_AST_EXP("foo[(1, 2, 3)]",
+                make<IndexOp>(make<Id>("foo"), make<Tuple>(make<Int>(1), make<Int>(2), make<Int>(3))));
+
+  CHECK_ERROR_EXP("foo[]", "unexpected ']', expected an expression");
+  CHECK_ERROR_EXP("foo[1, 2]", "unexpected ',' token, expected a ']' token");
+  CHECK_ERROR_EXP("foo[", "unexpected end of file, expected a ']' token");
 }

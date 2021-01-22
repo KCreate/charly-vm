@@ -98,6 +98,9 @@ class ASTPass {
   AST_NODE(Expression, Ternary)
   AST_NODE(Expression, BinaryOp)
   AST_NODE(Expression, UnaryOp)
+  AST_NODE(Expression, CallOp)
+  AST_NODE(Expression, MemberOp)
+  AST_NODE(Expression, IndexOp)
 
   AST_NODE(Expression, Id)
   AST_NODE(Expression, Int)

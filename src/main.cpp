@@ -63,13 +63,10 @@ int main() {
         print_location = !print_location;
         continue;
       }
-
-      continue;
     }
 
-    utils::Buffer source_buffer;
-    source_buffer.append_string(line);
-    // source_buffer.append_string((
+    utils::Buffer source_buffer(line);
+    // utils::Buffer source_buffer((
     //   "        25 25 { (1, 2, 3)\n" \
     //   "foo = bar = baz\n" \
     //   "from math as @\"ääää\" import (1, 2, 3) as sin\n" \
@@ -82,9 +79,10 @@ int main() {
     ast::ref<ast::Program> program = Parser::parse_program(source_buffer, console);
 
     console.dump_all(std::cerr);
-
-    if (console.has_errors())
+    if (console.has_errors()) {
+      std::cerr << std::endl;
       continue;
+    }
 
     assert(program.get());
 

@@ -43,84 +43,42 @@ public:
     (m_stream << ... << params);
   }
 
-  template <typename... Args>
-  void grey(Args&&... params) {
-    write(termcolor::dark, std::forward<Args>(params)..., termcolor::reset);
+  template <typename T>
+  ColorWriter& operator<<(T&& v) {
+    m_stream << v;
+    return *this;
   }
 
   template <typename... Args>
-  void grey_bg(Args&&... params) {
-    write(termcolor::on_grey, std::forward<Args>(params)..., termcolor::reset);
+  void fg(Color color, Args&&... params) {
+    switch (color) {
+      case Color::Grey:    write(termcolor::dark,    std::forward<Args>(params)..., termcolor::reset); break;
+      case Color::Red:     write(termcolor::red,     std::forward<Args>(params)..., termcolor::reset); break;
+      case Color::Green:   write(termcolor::green,   std::forward<Args>(params)..., termcolor::reset); break;
+      case Color::Yellow:  write(termcolor::yellow,  std::forward<Args>(params)..., termcolor::reset); break;
+      case Color::Blue:    write(termcolor::blue,    std::forward<Args>(params)..., termcolor::reset); break;
+      case Color::Magenta: write(termcolor::magenta, std::forward<Args>(params)..., termcolor::reset); break;
+      case Color::Cyan:    write(termcolor::cyan,    std::forward<Args>(params)..., termcolor::reset); break;
+      case Color::White:   write(termcolor::white,   std::forward<Args>(params)..., termcolor::reset); break;
+    }
   }
 
   template <typename... Args>
-  void red(Args&&... params) {
-    write(termcolor::red, std::forward<Args>(params)..., termcolor::reset);
-  }
-
-  template <typename... Args>
-  void red_bg(Args&&... params) {
-    write(termcolor::on_red, std::forward<Args>(params)..., termcolor::reset);
-  }
-
-  template <typename... Args>
-  void green(Args&&... params) {
-    write(termcolor::green, std::forward<Args>(params)..., termcolor::reset);
-  }
-
-  template <typename... Args>
-  void green_bg(Args&&... params) {
-    write(termcolor::on_green, std::forward<Args>(params)..., termcolor::reset);
-  }
-
-  template <typename... Args>
-  void yellow(Args&&... params) {
-    write(termcolor::yellow, std::forward<Args>(params)..., termcolor::reset);
-  }
-
-  template <typename... Args>
-  void yellow_bg(Args&&... params) {
-    write(termcolor::on_yellow, termcolor::grey, std::forward<Args>(params)..., termcolor::reset);
-  }
-
-  template <typename... Args>
-  void blue(Args&&... params) {
-    write(termcolor::blue, std::forward<Args>(params)..., termcolor::reset);
-  }
-
-  template <typename... Args>
-  void blue_bg(Args&&... params) {
-    write(termcolor::on_blue, std::forward<Args>(params)..., termcolor::reset);
-  }
-
-  template <typename... Args>
-  void magenta(Args&&... params) {
-    write(termcolor::magenta, std::forward<Args>(params)..., termcolor::reset);
-  }
-
-  template <typename... Args>
-  void magenta_bg(Args&&... params) {
-    write(termcolor::on_magenta, std::forward<Args>(params)..., termcolor::reset);
-  }
-
-  template <typename... Args>
-  void cyan(Args&&... params) {
-    write(termcolor::cyan, std::forward<Args>(params)..., termcolor::reset);
-  }
-
-  template <typename... Args>
-  void cyan_bg(Args&&... params) {
-    write(termcolor::on_cyan, std::forward<Args>(params)..., termcolor::reset);
-  }
-
-  template <typename... Args>
-  void white(Args&&... params) {
-    write(termcolor::white, params..., termcolor::reset);
-  }
-
-  template <typename... Args>
-  void white_bg(Args&&... params) {
-    write(termcolor::on_white, std::forward<Args>(params)..., termcolor::reset);
+  void bg(Color color, Args&&... params) {
+    switch (color) {
+      case Color::Grey: write(termcolor::on_grey, std::forward<Args>(params)..., termcolor::reset); break;
+      case Color::Red: write(termcolor::on_red, std::forward<Args>(params)..., termcolor::reset); break;
+      case Color::Green: write(termcolor::on_green, std::forward<Args>(params)..., termcolor::reset); break;
+      case Color::Yellow:
+        write(termcolor::on_yellow, termcolor::grey, std::forward<Args>(params)..., termcolor::reset);
+        break;
+      case Color::Blue: write(termcolor::on_blue, std::forward<Args>(params)..., termcolor::reset); break;
+      case Color::Magenta: write(termcolor::on_magenta, std::forward<Args>(params)..., termcolor::reset); break;
+      case Color::Cyan: write(termcolor::on_cyan, std::forward<Args>(params)..., termcolor::reset); break;
+      case Color::White:
+        write(termcolor::on_white, termcolor::grey, std::forward<Args>(params)..., termcolor::reset);
+        break;
+    }
   }
 
 private:

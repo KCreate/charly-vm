@@ -140,12 +140,18 @@ private:
   ref<Expression> parse_await();
   ref<Expression> parse_typeof();
 
-  // compound literals
+  // expressions
+  ref<Expression> parse_call_member_index();
+  ref<CallOp> parse_call(ref<Expression> target);
+  ref<MemberOp> parse_member(ref<Expression> target);
+  ref<IndexOp> parse_index(ref<Expression> target);
   ref<Expression> parse_literal();
+
+  // compound literals
   ref<FormatString> parse_format_string();
   ref<Expression> parse_tuple();
 
-  // single token ast nodes
+  // literals
   ref<Int> parse_int_token();
   ref<Float> parse_float_token();
   ref<Bool> parse_bool_token();

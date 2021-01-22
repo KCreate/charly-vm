@@ -44,19 +44,12 @@ using namespace charly::core::compiler::ast;
   {                                                                             \
     std::stringstream exp_dump;                                                 \
     std::stringstream ref_dump;                                                 \
-    charly::utils::Buffer buffer(S);                                                    \
+    charly::utils::Buffer buffer(S);                                            \
     DiagnosticConsole console("test", buffer);                                  \
     DumpPass(exp_dump, false).visit(Parser::parse_expression(buffer, console)); \
     CHECK(!console.has_errors());                                               \
     DumpPass(ref_dump, false).visit(N);                                         \
-    bool equal = exp_dump.str().compare(ref_dump.str()) == 0;                   \
-    if (!equal) {                                                               \
-      std::cout << "Expected:" << '\n';                                         \
-      std::cout << ref_dump.str() << '\n';                                      \
-      std::cout << "Got:" << '\n';                                              \
-      std::cout << exp_dump.str() << '\n';                                      \
-    }                                                                           \
-    CHECK(equal == true);                                                       \
+    CHECK_THAT(exp_dump.str(), Equals(ref_dump.str()));                         \
   }
 
 #define CHECK_AST_STMT(S, N)                                                    \
@@ -68,14 +61,7 @@ using namespace charly::core::compiler::ast;
     DumpPass(stmt_dump, false).visit(Parser::parse_statement(buffer, console)); \
     CHECK(!console.has_errors());                                               \
     DumpPass(ref_dump, false).visit(N);                                         \
-    bool equal = stmt_dump.str().compare(ref_dump.str()) == 0;                  \
-    if (!equal) {                                                               \
-      std::cout << "Expected:" << '\n';                                         \
-      std::cout << ref_dump.str() << '\n';                                      \
-      std::cout << "Got:" << '\n';                                              \
-      std::cout << stmt_dump.str() << '\n';                                     \
-    }                                                                           \
-    CHECK(equal == true);                                                       \
+    CHECK_THAT(stmt_dump.str(), Equals(ref_dump.str()));                         \
   }
 
 #define CHECK_ERROR_EXP(S, E)                                 \

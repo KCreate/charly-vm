@@ -38,6 +38,7 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
     return cast<T>(pass->visit(casted_node));
 
   SWITCH_NODE(Program)
+
   SWITCH_NODE(Block)
   SWITCH_NODE(Return)
   SWITCH_NODE(Break)
@@ -45,6 +46,7 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
   SWITCH_NODE(Defer)
   SWITCH_NODE(Throw)
   SWITCH_NODE(Export)
+
   SWITCH_NODE(Yield)
   SWITCH_NODE(Import)
   SWITCH_NODE(Await)
@@ -56,6 +58,9 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
   SWITCH_NODE(Ternary)
   SWITCH_NODE(BinaryOp)
   SWITCH_NODE(UnaryOp)
+  SWITCH_NODE(CallOp)
+  SWITCH_NODE(MemberOp)
+  SWITCH_NODE(IndexOp)
 
   SWITCH_NODE(Id)
   SWITCH_NODE(Int)
@@ -159,6 +164,27 @@ void BinaryOp::visit_children(ASTPass* pass) {
 
 void UnaryOp::visit_children(ASTPass* pass) {
   this->expression = pass->visit(this->expression);
+}
+
+void CallOp::visit_children(ASTPass* pass) {
+  this->target = pass->visit(this->target);
+
+  for (ref<Expression>& node : this->arguments) {
+    node = cast<Expression>(pass->visit(node));
+  }
+
+  auto begin = this->arguments.begin();
+  auto end = this->arguments.end();
+  this->arguments.erase(std::remove(begin, end, nullptr), end);
+}
+
+void MemberOp::visit_children(ASTPass* pass) {
+  this->target = pass->visit(this->target);
+}
+
+void IndexOp::visit_children(ASTPass* pass) {
+  this->target = pass->visit(this->target);
+  this->index = pass->visit(this->index);
 }
 
 void FormatString::visit_children(ASTPass* pass) {

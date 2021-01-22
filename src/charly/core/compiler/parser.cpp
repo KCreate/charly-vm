@@ -379,7 +379,7 @@ ref<Expression> Parser::parse_control_expression() {
       return parse_typeof();
     }
     default: {
-      return parse_literal();
+      return parse_call_member_index();
     }
   }
 }
@@ -388,24 +388,70 @@ ref<Expression> Parser::parse_await() {
   if (type(TokenType::Await)) {
     Location begin_location = m_token.location;
     eat(TokenType::Await);
-    ref<Await> node = make<Await>(parse_await());
+    ref<Await> node = make<Await>(parse_control_expression());
     node->set_begin(begin_location);
     return node;
   }
 
-  return parse_literal();
+  return parse_control_expression();
 }
 
 ref<Expression> Parser::parse_typeof() {
   if (type(TokenType::Typeof)) {
     Location begin_location = m_token.location;
     eat(TokenType::Typeof);
-    ref<Typeof> node = make<Typeof>(parse_typeof());
+    ref<Typeof> node = make<Typeof>(parse_control_expression());
     node->set_begin(begin_location);
     return node;
   }
 
-  return parse_literal();
+  return parse_control_expression();
+}
+
+ref<Expression> Parser::parse_call_member_index() {
+  ref<Expression> target = parse_literal();
+
+  for (;;) {
+    switch (m_token.type) {
+      case TokenType::LeftParen: {
+        target = parse_call(target);
+        break;
+      }
+      case TokenType::Point: {
+        target = parse_member(target);
+        break;
+      }
+      case TokenType::LeftBracket: {
+        target = parse_index(target);
+        break;
+      }
+      default: {
+        return target;
+      }
+    }
+  }
+}
+
+ref<CallOp> Parser::parse_call(ref<Expression> target) {
+  eat(TokenType::LeftParen);
+  ref<CallOp> callop = make<CallOp>(target);
+  parse_comma_expression(callop->arguments);
+  end(callop);
+  eat(TokenType::RightParen);
+  return callop;
+}
+
+ref<MemberOp> Parser::parse_member(ref<Expression> target) {
+  eat(TokenType::Point);
+  return make<MemberOp>(target, parse_identifier_token());
+}
+
+ref<IndexOp> Parser::parse_index(ref<Expression> target) {
+  eat(TokenType::LeftBracket);
+  ref<IndexOp> indexop = make<IndexOp>(target, parse_expression());
+  end(indexop);
+  eat(TokenType::RightBracket);
+  return indexop;
 }
 
 ref<Expression> Parser::parse_literal() {
@@ -445,7 +491,7 @@ ref<Expression> Parser::parse_literal() {
       return parse_super_token();
     }
     default: {
-      unexpected_token();
+      unexpected_character("expected an expression");
     }
   }
 }

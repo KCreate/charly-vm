@@ -29,6 +29,8 @@
 
 #include "charly/core/compiler/diagnostic.h"
 
+using Color = charly::utils::Color;
+
 namespace charly::core::compiler {
 
 DiagnosticConsole::DiagnosticConsole(const std::string& filename, const utils::Buffer& buffer) : m_filename(filename) {
@@ -59,25 +61,24 @@ void DiagnosticConsole::dump_all(std::ostream& out) const {
 
   size_t i = 0;
   for (const DiagnosticMessage& message : m_messages) {
-    writer.write(m_filename);
-    writer.write(":");
-    writer.write(message);
-    writer.write('\n');
+    writer << m_filename << ":" << message << '\n';
 
     if (message.location.valid) {
-      write_annotated_source(out, message.type, message.location);
+      write_annotated_source(out, message);
     }
 
     if (i < m_messages.size() - 1) {
-      writer.write('\n');
+      writer << '\n';
     }
 
     i++;
   }
 }
 
-void DiagnosticConsole::write_annotated_source(std::ostream& out, DiagnosticType type, const Location& location) const {
+void DiagnosticConsole::write_annotated_source(std::ostream& out, const DiagnosticMessage& message) const {
   utils::ColorWriter writer(out);
+
+  const Location& location = message.location;
 
   // the first row to be printed
   uint32_t first_printed_row = kContextRows > location.row ? 0 : location.row - kContextRows;
@@ -95,32 +96,21 @@ void DiagnosticConsole::write_annotated_source(std::ostream& out, DiagnosticType
       continue;
     }
 
-    writer.write("    ");
+    writer << "    ";
+
+    Color highlight_color = message.format_color();
 
     // print the line number
-    writer.write(std::right);
+    writer << std::right;
     if (contains_annotation) {
-      switch (type) {
-        case DiagnosticError: {
-          writer.red(std::setw(4), row + 1);
-          break;
-        }
-        case DiagnosticWarning: {
-          writer.yellow(std::setw(4), row + 1);
-          break;
-        }
-        default: {
-          writer.blue(std::setw(4), row + 1);
-          break;
-        }
-      }
+      writer.fg(highlight_color, std::setw(4), row + 1);
     } else {
-      writer.write("    ");
+      writer << "    ";
     }
-    writer.write(std::left);
+    writer << std::left;
 
     // divider between line number and source code
-    writer.write(" | ");
+    writer << " | ";
 
     if (contains_annotation) {
       if (row == location.row && location.row == location.end_row) {
@@ -128,43 +118,27 @@ void DiagnosticConsole::write_annotated_source(std::ostream& out, DiagnosticType
         size_t annotate_end_offset = location.end_offset - offset;
         size_t annotate_length = annotate_end_offset - annotate_start_offset;
 
-        writer.write(line.substr(0, annotate_start_offset));
-
-        switch (type) {
-          case DiagnosticError: {
-            writer.red_bg(line.substr(annotate_start_offset, annotate_length));
-            break;
-          }
-          case DiagnosticWarning: {
-            writer.yellow_bg(line.substr(annotate_start_offset, annotate_length));
-            break;
-          }
-          default: {
-            writer.blue_bg(line.substr(annotate_start_offset, annotate_length));
-            break;
-          }
-        }
-
-        if (annotate_end_offset < line.size())
-          writer.write(line.substr(annotate_end_offset));
+        writer << line.substr(0, annotate_start_offset);
+        writer.bg(highlight_color, line.substr(annotate_start_offset, annotate_length));
+        writer << line.substr(annotate_end_offset);
       } else {
 
         // check if we are on the first or last line
         if (row == location.row) {
           writer.write(line.substr(0, location.offset - offset));
-          writer.red_bg(line.substr(location.offset - offset));
+          writer.bg(highlight_color, line.substr(location.offset - offset));
         } else if (row == location.end_row) {
-          writer.red_bg(line.substr(0, location.end_offset - offset));
+          writer.bg(highlight_color, line.substr(0, location.end_offset - offset));
           writer.write(line.substr(location.end_offset - offset));
         } else {
-          writer.red_bg(line);
+          writer.bg(highlight_color, line);
         }
       }
     } else {
-      writer.grey(line);
+      writer.fg(Color::Grey, line);
     }
 
-    writer.write("\n");
+    writer << '\n';
 
     row++;
     offset += line.size() + 1;

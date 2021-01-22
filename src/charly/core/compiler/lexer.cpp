@@ -504,11 +504,6 @@ Token Lexer::last_token() {
 }
 
 void Lexer::unexpected_character() {
-  m_token.location.offset = m_source.readoffset() - utils::Buffer::encoded_length_utf8(m_last_character);
-  m_token.location.end_offset = m_source.readoffset();
-  m_token.location.end_row = m_row;
-  m_token.location.end_column = m_column;
-
   utils::Buffer formatbuf;
 
   switch (m_last_character) {
@@ -517,6 +512,11 @@ void Lexer::unexpected_character() {
       break;
     }
     default: {
+      m_token.location.offset = m_source.readoffset() - utils::Buffer::encoded_length_utf8(m_last_character);
+      m_token.location.end_offset = m_source.readoffset();
+      m_token.location.end_row = m_row;
+      m_token.location.end_column = m_column;
+
       formatbuf.append_string("unexpected '");
       formatbuf.append_utf8(m_last_character);
       formatbuf.append_string("'");
@@ -528,11 +528,6 @@ void Lexer::unexpected_character() {
 }
 
 void Lexer::unexpected_character(uint32_t expected) {
-  m_token.location.offset = m_source.readoffset() - utils::Buffer::encoded_length_utf8(m_last_character);
-  m_token.location.end_offset = m_source.readoffset();
-  m_token.location.end_row = m_row;
-  m_token.location.end_column = m_column;
-
   utils::Buffer formatbuf;
 
   switch (m_last_character) {
@@ -544,6 +539,11 @@ void Lexer::unexpected_character(uint32_t expected) {
       break;
     }
     default: {
+      m_token.location.offset = m_source.readoffset() - utils::Buffer::encoded_length_utf8(m_last_character);
+      m_token.location.end_offset = m_source.readoffset();
+      m_token.location.end_row = m_row;
+      m_token.location.end_column = m_column;
+
       formatbuf.append_string("unexpected '");
       formatbuf.append_utf8(m_last_character);
       formatbuf.append_string("', expected the character '");
@@ -557,11 +557,6 @@ void Lexer::unexpected_character(uint32_t expected) {
 }
 
 void Lexer::unexpected_character(TokenType expected) {
-  m_token.location.offset = m_source.readoffset() - utils::Buffer::encoded_length_utf8(m_last_character);
-  m_token.location.end_offset = m_source.readoffset();
-  m_token.location.end_row = m_row;
-  m_token.location.end_column = m_column;
-
   utils::Buffer formatbuf;
 
   switch (m_last_character) {
@@ -573,6 +568,11 @@ void Lexer::unexpected_character(TokenType expected) {
       break;
     }
     default: {
+      m_token.location.offset = m_source.readoffset() - utils::Buffer::encoded_length_utf8(m_last_character);
+      m_token.location.end_offset = m_source.readoffset();
+      m_token.location.end_row = m_row;
+      m_token.location.end_column = m_column;
+
       formatbuf.append_string("unexpected '");
       formatbuf.append_utf8(m_last_character);
       formatbuf.append_string("', expected a '");
@@ -586,11 +586,6 @@ void Lexer::unexpected_character(TokenType expected) {
 }
 
 void Lexer::unexpected_character(const std::string& message) {
-  m_token.location.offset = m_source.readoffset() - utils::Buffer::encoded_length_utf8(m_last_character);
-  m_token.location.end_offset = m_source.readoffset();
-  m_token.location.end_row = m_row;
-  m_token.location.end_column = m_column;
-
   utils::Buffer formatbuf;
 
   switch (m_last_character) {
@@ -600,6 +595,11 @@ void Lexer::unexpected_character(const std::string& message) {
       break;
     }
     default: {
+      m_token.location.offset = m_source.readoffset() - utils::Buffer::encoded_length_utf8(m_last_character);
+      m_token.location.end_offset = m_source.readoffset();
+      m_token.location.end_row = m_row;
+      m_token.location.end_column = m_column;
+
       formatbuf.append_string("unexpected '");
       formatbuf.append_utf8(m_last_character);
       formatbuf.append_string("', ");

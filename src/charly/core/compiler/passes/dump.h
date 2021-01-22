@@ -31,26 +31,25 @@
 
 #pragma once
 
+using Color = charly::utils::Color;
+
 namespace charly::core::compiler::ast {
 
 class DumpPass : public ASTPass {
   virtual void before_enter_any(const ref<Node>& node) override {
     for (uint16_t i = 0; i < m_depth; i++) {
-      m_writer.write("  ");
+      m_writer << "  ";
     }
 
-    m_writer.write("- ");
-    m_writer.blue(node->name());
+    m_writer << "- ";
+    m_writer.fg(Color::Blue, node->name());
   }
 
   virtual void after_enter_any(const ref<Node>& node) override {
     if (m_print_location) {
-      m_writer.write(" ");
-      m_writer.write('<');
-      m_writer.write(node->location());
-      m_writer.write('>');
+      m_writer << " " << '<' << node->location() << '>';
     }
-    m_writer.write('\n');
+    m_writer << '\n';
     m_depth++;
   }
 
@@ -59,77 +58,72 @@ class DumpPass : public ASTPass {
   }
 
   virtual bool enter(const ref<ANDAssignment>& node) override {
-    m_writer.write(' ');
-    m_writer.yellow('\'');
-    m_writer.yellow(kTokenTypeStrings[static_cast<int>(node->operation)]);
-    m_writer.yellow('\'');
+    m_writer << ' ';
+    m_writer.fg(Color::Yellow, '\'', kTokenTypeStrings[static_cast<int>(node->operation)], '\'');
     return true;
   }
 
   virtual bool enter(const ref<BinaryOp>& node) override {
-    m_writer.write(' ');
-    m_writer.yellow('\'');
-    m_writer.yellow(kTokenTypeStrings[static_cast<int>(node->operation)]);
-    m_writer.yellow('\'');
+    m_writer << ' ';
+    m_writer.fg(Color::Yellow, '\'', kTokenTypeStrings[static_cast<int>(node->operation)], '\'');
     return true;
   }
 
   virtual bool enter(const ref<UnaryOp>& node) override {
-    m_writer.write(' ');
-    m_writer.blue('\'');
-    m_writer.blue(kTokenTypeStrings[static_cast<int>(node->operation)]);
-    m_writer.blue('\'');
+    m_writer << ' ';
+    m_writer.fg(Color::Blue, '\'', kTokenTypeStrings[static_cast<int>(node->operation)], '\'');
     return true;
   }
 
   virtual bool enter(const ref<As>& node) override {
-    m_writer.write(' ');
-    m_writer.yellow('\"');
-    m_writer.yellow(node->name);
-    m_writer.yellow('\"');
+    m_writer << ' ';
+    m_writer.fg(Color::Yellow, '\"', node->name, '\"');
     return true;
   }
 
   virtual bool enter(const ref<Id>& node) override {
-    m_writer.write(' ');
-    m_writer.yellow(node->value);
+    m_writer << ' ';
+    m_writer.fg(Color::Yellow, node->value);
     return true;
   }
 
   virtual bool enter(const ref<Int>& node) override {
-    m_writer.write(' ');
-    m_writer.red(node->value);
+    m_writer << ' ';
+    m_writer.fg(Color::Red, node->value);
     return true;
   }
 
   virtual bool enter(const ref<Float>& node) override {
-    m_writer.write(' ');
-    m_writer.red(node->value);
+    m_writer << ' ';
+    m_writer.fg(Color::Red, node->value);
     return true;
   }
 
   virtual bool enter(const ref<Bool>& node) override {
-    m_writer.write(' ');
-    m_writer.red(node->value ? "true" : "false");
+    m_writer << ' ';
+    m_writer.fg(Color::Red, node->value ? "true" : "false");
     return true;
   }
 
   virtual bool enter(const ref<Char>& node) override {
-    m_writer.write(' ');
-    m_writer.yellow('\'');
+    m_writer << ' ';
+    m_writer.fg(Color::Yellow, '\'');
     char buf[4] = { 0 };
     char* buf_ptr = buf;
     char* end = utf8::append(node->value, buf_ptr);
-    m_writer.yellow(std::string(buf_ptr, end - buf_ptr));
-    m_writer.yellow('\'');
+    m_writer.fg(Color::Yellow, std::string(buf_ptr, end - buf_ptr), '\'');
     return true;
   }
 
   virtual bool enter(const ref<String>& node) override {
-    m_writer.write(' ');
-    m_writer.yellow('\"');
-    m_writer.yellow(node->value);
-    m_writer.yellow('\"');
+    m_writer << ' ';
+    m_writer.fg(Color::Yellow, '\"', node->value, '\"');
+    return true;
+  }
+
+  virtual bool enter(const ref<MemberOp>& node) override {
+    m_writer << ' ';
+    m_writer.fg(Color::Yellow, '\"', node->member, '\"');
     return true;
   }
 
