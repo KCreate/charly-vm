@@ -24,9 +24,9 @@
  * SOFTWARE.
  */
 
+#include <cassert>
 #include <iostream>
 #include <string>
-#include <cassert>
 
 #include <readline/history.h>
 #include <readline/readline.h>

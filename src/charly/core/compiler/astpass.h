@@ -89,6 +89,7 @@ class ASTPass {
   AST_NODE(Statement, Export)
   AST_NODE(Statement, Import)
   AST_NODE(Expression, Yield)
+  AST_NODE(Expression, Spawn)
   AST_NODE(Expression, Await)
   AST_NODE(Expression, Typeof)
   AST_NODE(Expression, As)

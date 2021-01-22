@@ -33,10 +33,10 @@ using Catch::Matchers::Equals;
 using namespace charly::core::compiler;
 using namespace charly::core::compiler::ast;
 
-#define EXP(S, T)                                             \
-  ([&]() {                                                    \
-    charly::utils::Buffer buffer(S);                          \
-    DiagnosticConsole console("test", buffer);                \
+#define EXP(S, T)                                              \
+  ([&]() {                                                     \
+    charly::utils::Buffer buffer(S);                           \
+    DiagnosticConsole console("test", buffer);                 \
     return cast<T>(Parser::parse_expression(buffer, console)); \
   }())
 
@@ -56,17 +56,17 @@ using namespace charly::core::compiler::ast;
   {                                                                             \
     std::stringstream stmt_dump;                                                \
     std::stringstream ref_dump;                                                 \
-    charly::utils::Buffer buffer(S);                                                    \
+    charly::utils::Buffer buffer(S);                                            \
     DiagnosticConsole console("test", buffer);                                  \
     DumpPass(stmt_dump, false).visit(Parser::parse_statement(buffer, console)); \
     CHECK(!console.has_errors());                                               \
     DumpPass(ref_dump, false).visit(N);                                         \
-    CHECK_THAT(stmt_dump.str(), Equals(ref_dump.str()));                         \
+    CHECK_THAT(stmt_dump.str(), Equals(ref_dump.str()));                        \
   }
 
 #define CHECK_ERROR_EXP(S, E)                                 \
   {                                                           \
-    charly::utils::Buffer buffer(S);                                  \
+    charly::utils::Buffer buffer(S);                          \
     DiagnosticConsole console("test", buffer);                \
     Parser::parse_expression(buffer, console);                \
     REQUIRE(console.has_errors());                            \
@@ -75,7 +75,7 @@ using namespace charly::core::compiler::ast;
 
 #define CHECK_ERROR_STMT(S, E)                                \
   {                                                           \
-    charly::utils::Buffer buffer(S);                                  \
+    charly::utils::Buffer buffer(S);                          \
     DiagnosticConsole console("test", buffer);                \
     Parser::parse_statement(buffer, console);                 \
     REQUIRE(console.has_errors());                            \

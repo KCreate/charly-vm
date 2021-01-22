@@ -24,8 +24,8 @@
  * SOFTWARE.
  */
 
-#include <iomanip>
 #include <algorithm>
+#include <iomanip>
 
 #include "charly/core/compiler/diagnostic.h"
 
@@ -122,7 +122,6 @@ void DiagnosticConsole::write_annotated_source(std::ostream& out, const Diagnost
         writer.bg(highlight_color, line.substr(annotate_start_offset, annotate_length));
         writer << line.substr(annotate_end_offset);
       } else {
-
         // check if we are on the first or last line
         if (row == location.row) {
           writer.write(line.substr(0, location.offset - offset));
@@ -146,19 +145,19 @@ void DiagnosticConsole::write_annotated_source(std::ostream& out, const Diagnost
 }
 
 void DiagnosticConsole::info(const std::string& message, const Location& location) {
-  m_messages.push_back(DiagnosticMessage{DiagnosticInfo, message, location});
+  m_messages.push_back(DiagnosticMessage{ DiagnosticInfo, message, location });
 }
 
 void DiagnosticConsole::warning(const std::string& message, const Location& location) {
-  m_messages.push_back(DiagnosticMessage{DiagnosticWarning, message, location});
+  m_messages.push_back(DiagnosticMessage{ DiagnosticWarning, message, location });
 }
 
 void DiagnosticConsole::error(const std::string& message, const Location& location) {
-  m_messages.push_back(DiagnosticMessage{DiagnosticError, message, location});
+  m_messages.push_back(DiagnosticMessage{ DiagnosticError, message, location });
 }
 
 void DiagnosticConsole::fatal(const std::string& message, const Location& location) {
-  m_messages.push_back(DiagnosticMessage{DiagnosticError, message, location});
+  m_messages.push_back(DiagnosticMessage{ DiagnosticError, message, location });
   throw DiagnosticException();
 }
 

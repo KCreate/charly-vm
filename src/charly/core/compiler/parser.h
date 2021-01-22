@@ -105,8 +105,7 @@ public:
   static ref<Expression> parse_expression(utils::Buffer& source, DiagnosticConsole& console);
 
 private:
-  Parser(utils::Buffer& source, DiagnosticConsole& console) :
-    Lexer(source, console) {
+  Parser(utils::Buffer& source, DiagnosticConsole& console) : Lexer(source, console) {
     advance();
   }
 
@@ -137,6 +136,7 @@ private:
 
   // control expressions
   ref<Expression> parse_control_expression();
+  ref<Expression> parse_spawn();
   ref<Expression> parse_await();
   ref<Expression> parse_typeof();
 

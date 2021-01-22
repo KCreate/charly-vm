@@ -24,13 +24,13 @@
  * SOFTWARE.
  */
 
-#include <vector>
-#include <string>
 #include <exception>
+#include <string>
+#include <vector>
 
+#include "charly/core/compiler/location.h"
 #include "charly/utils/buffer.h"
 #include "charly/utils/colorwriter.h"
-#include "charly/core/compiler/location.h"
 
 #pragma once
 
@@ -38,11 +38,7 @@ using Color = charly::utils::Color;
 
 namespace charly::core::compiler {
 
-enum DiagnosticType : uint8_t {
-  DiagnosticInfo,
-  DiagnosticWarning,
-  DiagnosticError
-};
+enum DiagnosticType : uint8_t { DiagnosticInfo, DiagnosticWarning, DiagnosticError };
 
 struct DiagnosticMessage {
   DiagnosticType type;

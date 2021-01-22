@@ -39,14 +39,8 @@ namespace charly::core::compiler {
 // splits source input into individual tokens for parsing
 class Lexer {
 public:
-  Lexer(utils::Buffer& source,
-        DiagnosticConsole& console,
-        uint32_t row = 0,
-        uint32_t column = 0) :
-    m_console(console),
-    m_source(source),
-    m_row(row),
-    m_column(column) {
+  Lexer(utils::Buffer& source, DiagnosticConsole& console, uint32_t row = 0, uint32_t column = 0) :
+    m_console(console), m_source(source), m_row(row), m_column(column) {
     m_last_character = '\0';
     m_mode = Mode::TopLevel;
   }

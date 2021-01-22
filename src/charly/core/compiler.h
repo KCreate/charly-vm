@@ -25,9 +25,9 @@
  */
 
 #include "charly/core/compiler/astpass.h"
+#include "charly/core/compiler/diagnostic.h"
 #include "charly/core/compiler/parser.h"
 #include "charly/core/compiler/passes/dump.h"
-#include "charly/core/compiler/diagnostic.h"
 
 #pragma once
 

@@ -74,6 +74,7 @@ public:
 
     // Control Expressions
     Yield,
+    Spawn,
     Import,
     Await,
     Typeof,
@@ -161,7 +162,7 @@ protected:
   ref<T> visit(ASTPass* pass, const ref<T>& node);
   virtual void visit_children(ASTPass*) {}
 
-  Location m_location = {.valid = false};
+  Location m_location = { .valid = false };
 };
 
 template <typename T>
@@ -296,6 +297,18 @@ public:
   }
 
   ref<Expression> expression;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+class Spawn final : public Expression {
+  AST_NODE(Spawn)
+public:
+  Spawn(ref<Expression> call) : call(call) {
+    this->set_location(call);
+  }
+
+  ref<Expression> call;
 
   virtual void visit_children(ASTPass*) override;
 };

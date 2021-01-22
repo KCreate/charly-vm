@@ -323,6 +323,13 @@ TEST_CASE("yield, await, typeof expressions") {
                 make<BinaryOp>(TokenType::Equal, make<Typeof>(make<Id>("x")), make<String>("int")));
 }
 
+TEST_CASE("spawn expressions") {
+  CHECK_ERROR_EXP("spawn foo", "expected a call expression");
+  CHECK_AST_EXP("spawn foo()", make<Spawn>(make<CallOp>(make<Id>("foo"))));
+  CHECK_AST_EXP("spawn foo.bar()", make<Spawn>(make<CallOp>(make<MemberOp>(make<Id>("foo"), make<Id>("bar")))));
+  CHECK_AST_EXP("spawn foo()()", make<Spawn>(make<CallOp>(make<CallOp>(make<Id>("foo")))));
+}
+
 TEST_CASE("call expressions") {
   CHECK_AST_EXP("foo()", make<CallOp>(make<Id>("foo")));
   CHECK_AST_EXP("foo(1)", make<CallOp>(make<Id>("foo"), make<Int>(1)));
@@ -333,27 +340,15 @@ TEST_CASE("call expressions") {
   CHECK_AST_EXP("foo()()()", make<CallOp>(make<CallOp>(make<CallOp>(make<Id>("foo")))));
   CHECK_AST_EXP("foo(yield 1, 2)", make<CallOp>(make<Id>("foo"), make<Yield>(make<Int>(1)), make<Int>(2)));
 
-  CHECK_AST_EXP("foo.bar(2, 3).test[1](1, 2).bar", make<MemberOp>(
-    make<CallOp>(
-      make<IndexOp>(
-        make<MemberOp>(
-          make<CallOp>(
-            make<MemberOp>(
-              make<Id>("foo"),
-              make<Id>("bar")
-            ),
-            make<Int>(2),
-            make<Int>(3)
-          ),
-          make<Id>("test")
-        ),
-        make<Int>(1)
-      ),
-      make<Int>(1),
-      make<Int>(2)
-    ),
-    make<Id>("bar")
-  ));
+  CHECK_AST_EXP(
+    "foo.bar(2, 3).test[1](1, 2).bar",
+    make<MemberOp>(
+      make<CallOp>(make<IndexOp>(make<MemberOp>(make<CallOp>(make<MemberOp>(make<Id>("foo"), make<Id>("bar")),
+                                                             make<Int>(2), make<Int>(3)),
+                                                make<Id>("test")),
+                                 make<Int>(1)),
+                   make<Int>(1), make<Int>(2)),
+      make<Id>("bar")));
 
   CHECK_ERROR_EXP("foo(", "unexpected end of file, expected a ')' token");
 }

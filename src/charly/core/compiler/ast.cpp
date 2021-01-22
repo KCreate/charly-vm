@@ -48,6 +48,7 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
   SWITCH_NODE(Export)
 
   SWITCH_NODE(Yield)
+  SWITCH_NODE(Spawn)
   SWITCH_NODE(Import)
   SWITCH_NODE(Await)
   SWITCH_NODE(Typeof)
@@ -111,6 +112,10 @@ void Export::visit_children(ASTPass* pass) {
 
 void Yield::visit_children(ASTPass* pass) {
   this->expression = pass->visit(this->expression);
+}
+
+void Spawn::visit_children(ASTPass* pass) {
+  this->call = pass->visit(this->call);
 }
 
 void Import::visit_children(ASTPass* pass) {

@@ -372,6 +372,9 @@ ref<Expression> Parser::parse_unaryop() {
 
 ref<Expression> Parser::parse_control_expression() {
   switch (m_token.type) {
+    case TokenType::Spawn: {
+      return parse_spawn();
+    }
     case TokenType::Await: {
       return parse_await();
     }
@@ -382,6 +385,30 @@ ref<Expression> Parser::parse_control_expression() {
       return parse_call_member_index();
     }
   }
+}
+
+ref<Expression> Parser::parse_spawn() {
+  if (type(TokenType::Spawn)) {
+    Location begin_location = m_token.location;
+    eat(TokenType::Spawn);
+
+    ref<Expression> exp;
+    if (type(TokenType::LeftCurly)) {
+      unexpected_token("spawn {} expression not implemented yet, need function literals");
+    } else {
+      exp = parse_expression();
+    }
+
+    if (!isa<CallOp>(exp)) {
+      m_console.error("expected a call expression", exp->location());
+    }
+
+    ref<Spawn> node = make<Spawn>(exp);
+    node->set_begin(begin_location);
+    return node;
+  }
+
+  return parse_control_expression();
 }
 
 ref<Expression> Parser::parse_await() {

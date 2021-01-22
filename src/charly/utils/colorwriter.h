@@ -52,14 +52,14 @@ public:
   template <typename... Args>
   void fg(Color color, Args&&... params) {
     switch (color) {
-      case Color::Grey:    write(termcolor::dark,    std::forward<Args>(params)..., termcolor::reset); break;
-      case Color::Red:     write(termcolor::red,     std::forward<Args>(params)..., termcolor::reset); break;
-      case Color::Green:   write(termcolor::green,   std::forward<Args>(params)..., termcolor::reset); break;
-      case Color::Yellow:  write(termcolor::yellow,  std::forward<Args>(params)..., termcolor::reset); break;
-      case Color::Blue:    write(termcolor::blue,    std::forward<Args>(params)..., termcolor::reset); break;
+      case Color::Grey: write(termcolor::dark, std::forward<Args>(params)..., termcolor::reset); break;
+      case Color::Red: write(termcolor::red, std::forward<Args>(params)..., termcolor::reset); break;
+      case Color::Green: write(termcolor::green, std::forward<Args>(params)..., termcolor::reset); break;
+      case Color::Yellow: write(termcolor::yellow, std::forward<Args>(params)..., termcolor::reset); break;
+      case Color::Blue: write(termcolor::blue, std::forward<Args>(params)..., termcolor::reset); break;
       case Color::Magenta: write(termcolor::magenta, std::forward<Args>(params)..., termcolor::reset); break;
-      case Color::Cyan:    write(termcolor::cyan,    std::forward<Args>(params)..., termcolor::reset); break;
-      case Color::White:   write(termcolor::white,   std::forward<Args>(params)..., termcolor::reset); break;
+      case Color::Cyan: write(termcolor::cyan, std::forward<Args>(params)..., termcolor::reset); break;
+      case Color::White: write(termcolor::white, std::forward<Args>(params)..., termcolor::reset); break;
     }
   }
 

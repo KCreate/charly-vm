@@ -45,10 +45,8 @@ TEST_CASE("formats errors") {
   std::stringstream out;
   console.dump_all(out);
 
-  CHECK_THAT(out.str(), Equals((
-    "test:1:1: error: unexpected ',', expected an expression\n" \
-    "       1 | ,\n"
-  )));
+  CHECK_THAT(out.str(), Equals(("test:1:1: error: unexpected ',', expected an expression\n"
+                                "       1 | ,\n")));
 }
 
 TEST_CASE("formats messages without a location") {
@@ -64,11 +62,9 @@ TEST_CASE("formats messages without a location") {
   std::stringstream out;
   console.dump_all(out);
 
-  CHECK_THAT(out.str(), Equals((
-    "test: info: foo\n\n" \
-    "test: warning: bar\n\n" \
-    "test: error: baz\n" \
-  )));
+  CHECK_THAT(out.str(), Equals(("test: info: foo\n\n"
+                                "test: warning: bar\n\n"
+                                "test: error: baz\n")));
 }
 
 TEST_CASE("formats multiple lines") {
@@ -81,12 +77,10 @@ TEST_CASE("formats multiple lines") {
   std::stringstream out;
   console.dump_all(out);
 
-  CHECK_THAT(out.str(), Equals((
-    "test:3:10: error: unexpected numerical constant, expected a ')' token\n" \
-    "         | \n"
-    "         | \n"
-    "       3 | (25      25)\n"
-    "         | \n"
-    "         | \n"
-  )));
+  CHECK_THAT(out.str(), Equals(("test:3:10: error: unexpected numerical constant, expected a ')' token\n"
+                                "         | \n"
+                                "         | \n"
+                                "       3 | (25      25)\n"
+                                "         | \n"
+                                "         | \n")));
 }

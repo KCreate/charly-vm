@@ -1,5 +1,7 @@
 # Todos
 
+- Load source from file
+
 - Setup CI service that runs unit tests
   - GitHub actions?
 
@@ -7,7 +9,6 @@
   - Remove places where new nodes have to be registered
 
 - Parser
-  - Spawn expressions
   - parse lists
   - curly braces
     - parse dicts `{a: 1, b: 2}`
