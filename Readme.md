@@ -1,3 +1,5 @@
+![Unit Test](https://github.com/KCreate/charly-vm/workflows/Unit%20Test/badge.svg?branch=rewrite)
+
 ![Charly Programming Language](docs/charly-vm.png)
 
 # Setup
