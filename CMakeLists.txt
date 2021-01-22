@@ -35,23 +35,18 @@ target_compile_options(charly PRIVATE -Wall -Wextra -Wpedantic -Werror -Wno-vla-
 install(TARGETS charly RUNTIME DESTINATION bin)
 
 # unit tests
-find_package(Catch2)
-if(Catch2_FOUND)
-  message("-- Detected 'Catch2' library, enabling target 'tests'")
+add_subdirectory(libs/Catch2)
 
-  file(GLOB tests_SRC
-    "test/runtime/main.cpp"
-    "test/runtime/utils/*.cpp"
-    "test/runtime/core/compiler/*.cpp"
-  )
+file(GLOB tests_SRC
+  "test/runtime/main.cpp"
+  "test/runtime/utils/*.cpp"
+  "test/runtime/core/compiler/*.cpp"
+)
 
-  add_executable(tests ${tests_SRC})
-  target_link_libraries(tests Catch2::Catch2)
-  target_link_libraries(tests libcharly)
-  target_include_directories(tests PRIVATE src)
-  target_include_directories(tests PRIVATE SYSTEM /usr/include)
-  target_compile_features(tests PRIVATE cxx_std_17)
-  target_compile_options(tests PRIVATE -Wall -Wextra -Wpedantic -Werror -Wno-vla-extension -Wno-c++20-designator)
-else()
-  message("-- Could not find 'Catch2' library, omitting build target 'tests'")
-endif()
+add_executable(tests ${tests_SRC})
+target_link_libraries(tests Catch2::Catch2)
+target_link_libraries(tests libcharly)
+target_include_directories(tests PRIVATE src)
+target_include_directories(tests PRIVATE SYSTEM /usr/include)
+target_compile_features(tests PRIVATE cxx_std_17)
+target_compile_options(tests PRIVATE -Wall -Wextra -Wpedantic -Werror -Wno-vla-extension -Wno-c++20-designator)
