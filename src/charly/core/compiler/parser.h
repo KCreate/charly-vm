@@ -114,21 +114,24 @@ private:
   ref<Block> parse_block();
   void parse_block_body(const ref<Block>& block);
   ref<Statement> parse_statement();
-  ref<Statement> parse_return();
-  ref<Statement> parse_break();
-  ref<Statement> parse_continue();
-  ref<Statement> parse_defer();
-  ref<Statement> parse_throw();
-  ref<Statement> parse_export();
+  ref<Return> parse_return();
+  ref<Break> parse_break();
+  ref<Continue> parse_continue();
+  ref<Defer> parse_defer();
+  ref<Throw> parse_throw();
+  ref<Export> parse_export();
+  ref<Import> parse_import();
+
+  // control statements
+  ref<If> parse_if();
 
   // expressions
   void parse_comma_expression(std::vector<ref<Expression>>& result);
   void parse_comma_as_expression(std::vector<ref<Expression>>& result);
-  ref<Expression> parse_expression();
   ref<Expression> parse_as_expression();
-  ref<Expression> parse_yield();
-  ref<Import> parse_import();
-  ref<Import> parse_from();
+  ref<Expression> parse_expression();
+  ref<Yield> parse_yield();
+  ref<ImportExpression> parse_import_expression();
   ref<Expression> parse_assignment();
   ref<Expression> parse_ternary();
   ref<Expression> parse_binaryop();

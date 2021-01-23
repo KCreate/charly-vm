@@ -294,22 +294,20 @@ TEST_CASE("parses control statements") {
 TEST_CASE("import statement") {
   CHECK_AST_STMT("import foo", make<Import>(make<Id>("foo")));
   CHECK_AST_STMT("import foo as bar", make<Import>(make<As>(make<Id>("foo"), "bar")));
-  CHECK_AST_STMT("from foo import bar", make<Import>(make<Id>("foo"), make<Id>("bar")));
-  CHECK_AST_STMT("from foo import bar, baz", make<Import>(make<Id>("foo"), make<Id>("bar"), make<Id>("baz")));
-  CHECK_AST_STMT("from foo import bar as barfunc, baz",
-                 make<Import>(make<Id>("foo"), make<As>(make<Id>("bar"), "barfunc"), make<Id>("baz")));
-  CHECK_AST_STMT("from foo as lib import bar", make<Import>(make<As>(make<Id>("foo"), "lib"), make<Id>("bar")));
-  CHECK_AST_STMT("from \"\" as lib import bar", make<Import>(make<As>(make<String>(""), "lib"), make<Id>("bar")));
-  CHECK_AST_STMT("from \"test\" as lib import bar as baz",
-                 make<Import>(make<As>(make<String>("test"), "lib"), make<As>(make<Id>("bar"), "baz")));
+  CHECK_AST_STMT("import \"foo\" as bar", make<Import>(make<As>(make<String>("foo"), "bar")));
+  CHECK_AST_STMT("import \"{path}\" as bar", make<Import>(make<As>(make<FormatString>(make<Id>("path")), "bar")));
 
-  CHECK_ERROR_STMT("import \"foo bar\"", "expected an identifier");
+  CHECK_ERROR_STMT("import", "unexpected end of file, expected an expression");
   CHECK_ERROR_STMT("import 25", "expected an identifier");
-  CHECK_ERROR_STMT("import false", "expected an identifier");
-  CHECK_ERROR_STMT("from foo import 25", "expected an identifier");
-  CHECK_ERROR_STMT("from foo import false", "expected an identifier");
-  CHECK_ERROR_STMT("from foo import \"foo bar\"", "expected an identifier");
-  CHECK_ERROR_STMT("from foo import", "expected at least one imported symbol");
+  CHECK_ERROR_STMT("import 25 as bar", "expected an identifier or a string literal");
+}
+
+TEST_CASE("import expression") {
+  CHECK_AST_EXP("import foo", make<ImportExpression>(make<Id>("foo")));
+  CHECK_AST_EXP("import 25", make<ImportExpression>(make<Int>(25)));
+  CHECK_AST_EXP("import \"foo\"", make<ImportExpression>(make<String>("foo")));
+
+  CHECK_ERROR_EXP("(import foo as bar)", "unexpected 'as' token, expected a ')' token");
 }
 
 TEST_CASE("yield, await, typeof expressions") {
@@ -429,4 +427,20 @@ TEST_CASE("dict literals") {
   CHECK_ERROR_EXP("{[1, 2]: 1}", "list can only contain a single element");
   CHECK_ERROR_EXP("{25: 1}", "expected identifier, string literal, formatstring or '[x]: y' expression");
   CHECK_ERROR_EXP("{true: 1}", "expected identifier, string literal, formatstring or '[x]: y' expression");
+}
+
+TEST_CASE("if statements") {
+  CHECK_AST_STMT("if x 1", make<If>(make<Id>("x"), make<Int>(1), make<Nop>()));
+  CHECK_AST_STMT("if x {}", make<If>(make<Id>("x"), make<Block>(), make<Nop>()));
+  CHECK_AST_STMT("if x 1 else 2", make<If>(make<Id>("x"), make<Int>(1), make<Int>(2)));
+  CHECK_AST_STMT("if (x) 1", make<If>(make<Id>("x"), make<Int>(1), make<Nop>()));
+  CHECK_AST_STMT("if (x) {}", make<If>(make<Id>("x"), make<Block>(), make<Nop>()));
+  CHECK_AST_STMT("if x {} else x", make<If>(make<Id>("x"), make<Block>(), make<Id>("x")));
+  CHECK_AST_STMT("if x x else {}", make<If>(make<Id>("x"), make<Id>("x"), make<Block>()));
+  CHECK_AST_STMT("if x {} else {}", make<If>(make<Id>("x"), make<Block>(), make<Block>()));
+
+  CHECK_ERROR_STMT("if", "unexpected end of file, expected an expression");
+  CHECK_ERROR_STMT("if x", "unexpected end of file, expected a statement");
+  CHECK_ERROR_STMT("if x 1 else", "unexpected end of file, expected a statement");
+  CHECK_ERROR_STMT("if else x", "unexpected 'else' token, expected an expression");
 }

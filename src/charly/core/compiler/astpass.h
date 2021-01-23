@@ -80,6 +80,8 @@ class ASTPass {
   }
 
   AST_NODE(Node, Program)
+
+  AST_NODE(Statement, Nop)
   AST_NODE(Statement, Block)
   AST_NODE(Statement, Return)
   AST_NODE(Statement, Break)
@@ -88,20 +90,13 @@ class ASTPass {
   AST_NODE(Statement, Throw)
   AST_NODE(Statement, Export)
   AST_NODE(Statement, Import)
+
+  AST_NODE(Expression, ImportExpression)
   AST_NODE(Expression, Yield)
   AST_NODE(Expression, Spawn)
   AST_NODE(Expression, Await)
   AST_NODE(Expression, Typeof)
   AST_NODE(Expression, As)
-
-  AST_NODE(Expression, Assignment)
-  AST_NODE(Expression, ANDAssignment)
-  AST_NODE(Expression, Ternary)
-  AST_NODE(Expression, BinaryOp)
-  AST_NODE(Expression, UnaryOp)
-  AST_NODE(Expression, CallOp)
-  AST_NODE(Expression, MemberOp)
-  AST_NODE(Expression, IndexOp)
 
   AST_NODE(Expression, Id)
   AST_NODE(Expression, Int)
@@ -117,6 +112,17 @@ class ASTPass {
   AST_NODE(Expression, List)
   AST_NODE(DictEntry, DictEntry)
   AST_NODE(Expression, Dict)
+
+  AST_NODE(Expression, Assignment)
+  AST_NODE(Expression, ANDAssignment)
+  AST_NODE(Expression, Ternary)
+  AST_NODE(Expression, BinaryOp)
+  AST_NODE(Expression, UnaryOp)
+  AST_NODE(Expression, CallOp)
+  AST_NODE(Expression, MemberOp)
+  AST_NODE(Expression, IndexOp)
+
+  AST_NODE(Statement, If)
 
 public:
   ref<Node> visit(const ref<Node>& node) {

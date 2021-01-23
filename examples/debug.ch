@@ -850,3 +850,15 @@ spawn foo().bar(1, 2)
 func foo(a, b, c, d) {
   return ->[b, d]
 }
+
+
+
+
+
+// import statement
+import <identifier>
+import <identifier> as <identifier>
+import <string> as <identifier>
+
+// import expression
+import <expression>

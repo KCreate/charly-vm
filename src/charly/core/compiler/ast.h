@@ -64,6 +64,7 @@ public:
     Program = 1,
 
     // Statements
+    Nop,
     Block,
     Return,
     Break,
@@ -71,11 +72,12 @@ public:
     Defer,
     Throw,
     Export,
+    Import,
 
     // Control Expressions
+    ImportExpression,
     Yield,
     Spawn,
-    Import,
     Await,
     Typeof,
     As,
@@ -106,16 +108,19 @@ public:
     MemberOp,
     IndexOp,
 
+    // Control Statements
+    If,
+
     // Meta
     TypeCount
   };
 
   static constexpr const char* TypeNames[] = {
-    "Unknown",   "Program",    "Block",      "Return",        "Break",   "Continue", "Defer",   "Throw",  "Export",
-    "Yield",     "Spawn",      "Import",     "Await",         "Typeof",  "As",       "Id",      "Int",    "Float",
-    "Bool",      "Char",       "String",     "FormatString",  "Null",    "Self",     "Super",   "Tuple",  "List",
-    "DictEntry", "Dict",       "Assignment", "ANDAssignment", "Ternary", "BinaryOp", "UnaryOp", "CallOp", "MemberOp",
-    "IndexOp",   "__SENTINEL",
+    "Unknown", "Program",  "Nop",       "Block", "Return",     "Break",         "Continue", "Defer",    "Throw",
+    "Export",  "Import",   "Import",    "Yield", "Spawn",      "Await",         "Typeof",   "As",       "Id",
+    "Int",     "Float",    "Bool",      "Char",  "String",     "FormatString",  "Null",     "Self",     "Super",
+    "Tuple",   "List",     "DictEntry", "Dict",  "Assignment", "ANDAssignment", "Ternary",  "BinaryOp", "UnaryOp",
+    "CallOp",  "MemberOp", "IndexOp",   "If",    "__SENTINEL",
   };
 
   const Location& location() const {
@@ -188,6 +193,11 @@ bool isa(const ref<Node>& node) {
 //   <statement>
 // }
 class Statement : public Node {};
+
+// no operation
+class Nop final : public Statement {
+  AST_NODE(Nop);
+};
 
 // 1 + x, false, foo(bar)
 class Expression : public Statement {};
@@ -284,21 +294,37 @@ public:
   virtual void visit_children(ASTPass*) override;
 };
 
-class Import final : public Expression {
+// import <identifier>
+// import <identifier> as <identifier>
+// import <string> as <identifier>
+class Import final : public Statement {
   AST_NODE(Import)
 public:
   template <typename... Args>
-  Import(ref<Expression> source, Args&&... params) : source(source), declarations({ std::forward<Args>(params)... }) {
+  Import(ref<Expression> source) : source(source) {
     this->set_location(source);
   }
 
-  bool is_from_node = false;
   ref<Expression> source;
-  std::vector<ref<Expression>> declarations;
 
   virtual void visit_children(ASTPass*) override;
 };
 
+// (import <expression>)
+class ImportExpression final : public Expression {
+  AST_NODE(ImportExpression)
+public:
+  template <typename... Args>
+  ImportExpression(ref<Expression> source) : source(source) {
+    this->set_location(source);
+  }
+
+  ref<Expression> source;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+// yield <expression>
 class Yield final : public Expression {
   AST_NODE(Yield)
 public:
@@ -311,6 +337,7 @@ public:
   virtual void visit_children(ASTPass*) override;
 };
 
+// spawn <statement>
 class Spawn final : public Expression {
   AST_NODE(Spawn)
 public:
@@ -323,6 +350,7 @@ public:
   virtual void visit_children(ASTPass*) override;
 };
 
+// await <expression>
 class Await final : public Expression {
   AST_NODE(Await)
 public:
@@ -335,6 +363,7 @@ public:
   virtual void visit_children(ASTPass*) override;
 };
 
+// typeof <expression>
 class Typeof final : public Expression {
   AST_NODE(Typeof)
 public:
@@ -629,6 +658,27 @@ public:
   virtual bool assignable() const override {
     return true;
   }
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+// if <condition>
+//   <then_block>
+// else
+//   <else_block>
+class If final : public Expression {
+  AST_NODE(If)
+public:
+  template <typename... Args>
+  If(ref<Expression> condition, ref<Statement> then_stmt, ref<Statement> else_stmt) :
+    condition(condition), then_stmt(then_stmt), else_stmt(else_stmt) {
+    this->set_begin(condition);
+    this->set_end(else_stmt);
+  }
+
+  ref<Expression> condition;
+  ref<Statement> then_stmt;
+  ref<Statement> else_stmt;
 
   virtual void visit_children(ASTPass*) override;
 };

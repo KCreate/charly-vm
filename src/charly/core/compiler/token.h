@@ -209,12 +209,12 @@ static const std::unordered_map<std::string, TokenType> kKeywordsAndLiterals = {
                                                                                  { "yield", TokenType::Yield } };
 
 static const std::unordered_set<TokenType> kExpressionValidInitialTokens = {
-  TokenType::Int,         TokenType::Float,  TokenType::True,         TokenType::False,     TokenType::Identifier,
-  TokenType::Character,   TokenType::String, TokenType::FormatString, TokenType::Null,      TokenType::Self,
-  TokenType::Super,       TokenType::Await,  TokenType::Class,        TokenType::Func,      TokenType::Match,
-  TokenType::Spawn,       TokenType::Typeof, TokenType::Yield,        TokenType::Plus,      TokenType::Minus,
-  TokenType::UnaryNot,    TokenType::BitNOT, TokenType::LeftParen,    TokenType::LeftCurly, TokenType::LeftBracket,
-  TokenType::TriplePoint, TokenType::AtSign, TokenType::RightArrow
+  TokenType::Int,         TokenType::Float,       TokenType::True,         TokenType::False,     TokenType::Identifier,
+  TokenType::Character,   TokenType::String,      TokenType::FormatString, TokenType::Null,      TokenType::Self,
+  TokenType::Super,       TokenType::Await,       TokenType::Class,        TokenType::Func,      TokenType::Import,
+  TokenType::Match,       TokenType::Spawn,       TokenType::Typeof,       TokenType::Yield,     TokenType::Plus,
+  TokenType::Minus,       TokenType::UnaryNot,    TokenType::BitNOT,       TokenType::LeftParen, TokenType::LeftCurly,
+  TokenType::LeftBracket, TokenType::TriplePoint, TokenType::AtSign,       TokenType::RightArrow
 };
 
 static const std::unordered_set<TokenType> kBinaryOperatorTokens = {

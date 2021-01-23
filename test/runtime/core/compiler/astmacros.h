@@ -47,7 +47,7 @@ using namespace charly::core::compiler::ast;
     charly::utils::Buffer buffer(S);                                            \
     DiagnosticConsole console("test", buffer);                                  \
     DumpPass(exp_dump, false).visit(Parser::parse_expression(buffer, console)); \
-    CHECK(!console.has_errors());                                               \
+    REQUIRE(!console.has_errors());                                               \
     DumpPass(ref_dump, false).visit(N);                                         \
     CHECK_THAT(exp_dump.str(), Equals(ref_dump.str()));                         \
   }
@@ -59,7 +59,7 @@ using namespace charly::core::compiler::ast;
     charly::utils::Buffer buffer(S);                                            \
     DiagnosticConsole console("test", buffer);                                  \
     DumpPass(stmt_dump, false).visit(Parser::parse_statement(buffer, console)); \
-    CHECK(!console.has_errors());                                               \
+    REQUIRE(!console.has_errors());                                               \
     DumpPass(ref_dump, false).visit(N);                                         \
     CHECK_THAT(stmt_dump.str(), Equals(ref_dump.str()));                        \
   }

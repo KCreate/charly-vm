@@ -39,6 +39,7 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
 
   SWITCH_NODE(Program)
 
+  SWITCH_NODE(Nop)
   SWITCH_NODE(Block)
   SWITCH_NODE(Return)
   SWITCH_NODE(Break)
@@ -46,22 +47,14 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
   SWITCH_NODE(Defer)
   SWITCH_NODE(Throw)
   SWITCH_NODE(Export)
+  SWITCH_NODE(Import)
 
+  SWITCH_NODE(ImportExpression)
   SWITCH_NODE(Yield)
   SWITCH_NODE(Spawn)
-  SWITCH_NODE(Import)
   SWITCH_NODE(Await)
   SWITCH_NODE(Typeof)
   SWITCH_NODE(As)
-
-  SWITCH_NODE(Assignment)
-  SWITCH_NODE(ANDAssignment)
-  SWITCH_NODE(Ternary)
-  SWITCH_NODE(BinaryOp)
-  SWITCH_NODE(UnaryOp)
-  SWITCH_NODE(CallOp)
-  SWITCH_NODE(MemberOp)
-  SWITCH_NODE(IndexOp)
 
   SWITCH_NODE(Id)
   SWITCH_NODE(Int)
@@ -77,6 +70,17 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
   SWITCH_NODE(List)
   SWITCH_NODE(DictEntry)
   SWITCH_NODE(Dict)
+
+  SWITCH_NODE(Assignment)
+  SWITCH_NODE(ANDAssignment)
+  SWITCH_NODE(Ternary)
+  SWITCH_NODE(BinaryOp)
+  SWITCH_NODE(UnaryOp)
+  SWITCH_NODE(CallOp)
+  SWITCH_NODE(MemberOp)
+  SWITCH_NODE(IndexOp)
+
+  SWITCH_NODE(If)
 #undef SWITCH_NODE
 
   assert(false && "Unknown node type");
@@ -113,24 +117,20 @@ void Export::visit_children(ASTPass* pass) {
   this->expression = pass->visit(this->expression);
 }
 
+void Import::visit_children(ASTPass* pass) {
+  this->source = pass->visit(this->source);
+}
+
+void ImportExpression::visit_children(ASTPass* pass) {
+  this->source = pass->visit(this->source);
+}
+
 void Yield::visit_children(ASTPass* pass) {
   this->expression = pass->visit(this->expression);
 }
 
 void Spawn::visit_children(ASTPass* pass) {
   this->statement = pass->visit(this->statement);
-}
-
-void Import::visit_children(ASTPass* pass) {
-  this->source = pass->visit(this->source);
-
-  for (ref<Expression>& node : this->declarations) {
-    node = cast<Expression>(pass->visit(node));
-  }
-
-  auto begin = this->declarations.begin();
-  auto end = this->declarations.end();
-  this->declarations.erase(std::remove(begin, end, nullptr), end);
 }
 
 void Await::visit_children(ASTPass* pass) {
@@ -242,6 +242,12 @@ void Dict::visit_children(ASTPass* pass) {
   auto begin = this->elements.begin();
   auto end = this->elements.end();
   this->elements.erase(std::remove(begin, end, nullptr), end);
+}
+
+void If::visit_children(ASTPass* pass) {
+  this->condition = pass->visit(this->condition);
+  this->then_stmt = pass->visit(this->then_stmt);
+  this->else_stmt = pass->visit(this->else_stmt);
 }
 
 }  // namespace charly::core::compiler::ast

@@ -36,7 +36,7 @@ using namespace charly;
 using namespace charly::core::compiler;
 
 TEST_CASE("formats errors") {
-  utils::Buffer buffer(",");
+  utils::Buffer buffer("foo,");
   DiagnosticConsole console("test", buffer);
   Parser::parse_program(buffer, console);
 
@@ -45,8 +45,8 @@ TEST_CASE("formats errors") {
   std::stringstream out;
   console.dump_all(out);
 
-  CHECK_THAT(out.str(), Equals(("test:1:1: error: unexpected ',' token, expected an expression\n"
-                                "       1 | ,\n")));
+  CHECK_THAT(out.str(), Equals(("test:1:4: error: unexpected ',' token, expected a statement\n"
+                                "       1 | foo,\n")));
 }
 
 TEST_CASE("formats messages without a location") {

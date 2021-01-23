@@ -114,17 +114,25 @@ ref<Statement> Parser::parse_statement() {
       stmt = parse_export();
       break;
     }
-    // import form is parsed as expression
-    case TokenType::From: {
-      stmt = parse_from();
+    case TokenType::Import: {
+      stmt = parse_import();
       break;
     }
     case TokenType::LeftCurly: {
       stmt = parse_block();
       break;
     }
+    case TokenType::If: {
+      stmt = parse_if();
+      break;
+    }
     default: {
-      stmt = parse_expression();
+      if (m_token.could_start_expression()) {
+        stmt = parse_expression();
+        break;
+      }
+
+      unexpected_token("expected a statement");
       break;
     }
   }
@@ -132,10 +140,9 @@ ref<Statement> Parser::parse_statement() {
   return stmt;
 }
 
-ref<Statement> Parser::parse_return() {
-  match(TokenType::Return);
+ref<Return> Parser::parse_return() {
   Location begin = m_token.location;
-  advance();
+  eat(TokenType::Return);
 
   if (m_token.could_start_expression()) {
     ref<Expression> exp = parse_expression();
@@ -151,26 +158,23 @@ ref<Statement> Parser::parse_return() {
   return node;
 }
 
-ref<Statement> Parser::parse_break() {
-  match(TokenType::Break);
+ref<Break> Parser::parse_break() {
   ref<Break> node = make<Break>();
   at(node);
-  advance();
+  eat(TokenType::Break);
   return node;
 }
 
-ref<Statement> Parser::parse_continue() {
-  match(TokenType::Continue);
+ref<Continue> Parser::parse_continue() {
   ref<Continue> node = make<Continue>();
   at(node);
-  advance();
+  eat(TokenType::Continue);
   return node;
 }
 
-ref<Statement> Parser::parse_defer() {
-  match(TokenType::Defer);
+ref<Defer> Parser::parse_defer() {
   Location begin = m_token.location;
-  advance();
+  eat(TokenType::Defer);
   ref<Statement> stmt = parse_statement();
   ref<Defer> node = make<Defer>(stmt);
   node->set_begin(begin);
@@ -178,20 +182,18 @@ ref<Statement> Parser::parse_defer() {
   return node;
 }
 
-ref<Statement> Parser::parse_throw() {
-  match(TokenType::Throw);
+ref<Throw> Parser::parse_throw() {
   Location begin = m_token.location;
-  advance();
+  eat(TokenType::Throw);
   ref<Expression> exp = parse_expression();
   ref<Throw> node = make<Throw>(exp);
   node->set_begin(begin);
   return node;
 }
 
-ref<Statement> Parser::parse_export() {
-  match(TokenType::Export);
+ref<Export> Parser::parse_export() {
   Location begin = m_token.location;
-  advance();
+  eat(TokenType::Export);
   ref<Expression> exp = parse_expression();
   ref<Export> node = make<Export>(exp);
   node->set_begin(begin);
@@ -199,36 +201,30 @@ ref<Statement> Parser::parse_export() {
 }
 
 ref<Import> Parser::parse_import() {
-  Location begin_location = m_token.location;
+  Location begin = m_token.location;
   eat(TokenType::Import);
   ref<Expression> source_exp = parse_as_expression();
   ref<Import> import_node = make<Import>(source_exp);
-  import_node->set_begin(begin_location);
+  import_node->set_begin(begin);
   validate_import(import_node);
   return import_node;
 }
 
-ref<Import> Parser::parse_from() {
-  Location begin_location = m_token.location;
+ref<If> Parser::parse_if() {
+  Location begin = m_token.location;
+  eat(TokenType::If);
 
-  eat(TokenType::From);
-  ref<Expression> source_exp = parse_as_expression();
+  ref<Expression> condition = parse_expression();
+  ref<Statement> then_stmt = parse_statement();
+  ref<Statement> else_stmt = make<Nop>();
 
-  ref<Import> import_node = make<Import>(source_exp);
-  import_node->is_from_node = true;
-  import_node->set_begin(begin_location);
-
-  end(import_node);
-  eat(TokenType::Import);
-  this->parse_comma_as_expression(import_node->declarations);
-
-  if (import_node->declarations.size()) {
-    import_node->set_end(import_node->declarations.back()->location());
+  if (skip(TokenType::Else)) {
+    else_stmt = parse_statement();
   }
 
-  validate_import(import_node);
-
-  return import_node;
+  ref<If> node = make<If>(condition, then_stmt, else_stmt);
+  node->set_begin(begin);
+  return node;
 }
 
 void Parser::parse_comma_expression(std::vector<ref<Expression>>& result) {
@@ -257,20 +253,6 @@ void Parser::parse_comma_as_expression(std::vector<ref<Expression>>& result) {
   }
 }
 
-ref<Expression> Parser::parse_expression() {
-  switch (m_token.type) {
-    case TokenType::Yield: {
-      return parse_yield();
-    }
-    case TokenType::Import: {
-      return parse_import();
-    }
-    default: {
-      return parse_assignment();
-    }
-  }
-}
-
 ref<Expression> Parser::parse_as_expression() {
   ref<Expression> exp = parse_expression();
 
@@ -281,16 +263,34 @@ ref<Expression> Parser::parse_as_expression() {
   return exp;
 }
 
-ref<Expression> Parser::parse_yield() {
-  if (type(TokenType::Yield)) {
-    Location begin_location = m_token.location;
-    eat(TokenType::Yield);
-    ref<Yield> node = make<Yield>(parse_yield());
-    node->set_begin(begin_location);
-    return node;
+ref<Expression> Parser::parse_expression() {
+  switch (m_token.type) {
+    case TokenType::Yield: {
+      return parse_yield();
+    }
+    case TokenType::Import: {
+      return parse_import_expression();
+    }
+    default: {
+      return parse_assignment();
+    }
   }
+}
 
-  return parse_assignment();
+ref<Yield> Parser::parse_yield() {
+  Location begin = m_token.location;
+  eat(TokenType::Yield);
+  ref<Yield> node = make<Yield>(parse_expression());
+  node->set_begin(begin);
+  return node;
+}
+
+ref<ImportExpression> Parser::parse_import_expression() {
+  Location begin = m_token.location;
+  eat(TokenType::Import);
+  ref<ImportExpression> import_node = make<ImportExpression>(parse_expression());
+  import_node->set_begin(begin);
+  return import_node;
 }
 
 ref<Expression> Parser::parse_assignment() {
@@ -396,27 +396,27 @@ ref<Expression> Parser::parse_control_expression() {
 }
 
 ref<Expression> Parser::parse_spawn() {
-  Location begin_location = m_token.location;
+  Location begin = m_token.location;
   eat(TokenType::Spawn);
   ref<Spawn> node = make<Spawn>(parse_statement());
-  node->set_begin(begin_location);
+  node->set_begin(begin);
   validate_spawn(node);
   return node;
 }
 
 ref<Expression> Parser::parse_await() {
-  Location begin_location = m_token.location;
+  Location begin = m_token.location;
   eat(TokenType::Await);
   ref<Await> node = make<Await>(parse_control_expression());
-  node->set_begin(begin_location);
+  node->set_begin(begin);
   return node;
 }
 
 ref<Expression> Parser::parse_typeof() {
-  Location begin_location = m_token.location;
+  Location begin = m_token.location;
   eat(TokenType::Typeof);
   ref<Typeof> node = make<Typeof>(parse_control_expression());
-  node->set_begin(begin_location);
+  node->set_begin(begin);
   return node;
 }
 
@@ -719,20 +719,15 @@ void Parser::validate_defer(const ref<Defer>& node) {
 }
 
 void Parser::validate_import(const ref<Import>& node) {
-  if (node->is_from_node && node->declarations.size() == 0) {
-    m_console.error("expected at least one imported symbol", node->location());
-  }
-
-  for (const ref<Expression>& declaration : node->declarations) {
-    if (!isa<As>(declaration) && !isa<Id>(declaration)) {
-      m_console.error("expected an identifier", declaration->location());
-      m_console.info("write 'import x as y' to import from arbitrary expressions");
+  if (ref<As> as_node = cast<As>(node->source)) {
+    const ref<Expression>& exp = as_node->expression;
+    if (!(isa<Id>(exp) || isa<String>(exp) || isa<FormatString>(exp))) {
+      m_console.error("expected an identifier or a string literal", exp->location());
     }
-  }
-
-  if (!isa<As>(node->source) && !isa<Id>(node->source)) {
-    m_console.error("expected an identifier", node->source->location());
-    m_console.info("write 'import x as y' to import from arbitrary expressions");
+  } else {
+    if (!isa<Id>(node->source)) {
+      m_console.error("expected an identifier", node->source->location());
+    }
   }
 }
 
