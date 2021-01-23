@@ -404,3 +404,29 @@ TEST_CASE("list literals") {
   CHECK_ERROR_EXP("[1,]", "unexpected ']' token, expected an expression");
   CHECK_ERROR_EXP("[1, 2,]", "unexpected ']' token, expected an expression");
 }
+
+TEST_CASE("dict literals") {
+  CHECK_AST_EXP("{}", make<Dict>());
+  CHECK_AST_EXP("{x}", make<Dict>(make<DictEntry>(make<Id>("x"), nullptr)));
+  CHECK_AST_EXP("{x, y}", make<Dict>(make<DictEntry>(make<Id>("x"), nullptr), make<DictEntry>(make<Id>("y"), nullptr)));
+  CHECK_AST_EXP("{x.y}", make<Dict>(make<DictEntry>(make<MemberOp>(make<Id>("x"), make<Id>("y")), nullptr)));
+  CHECK_AST_EXP("{...x}", make<Dict>(make<DictEntry>(make<UnaryOp>(TokenType::TriplePoint, make<Id>("x")), nullptr)));
+  CHECK_AST_EXP("{x: 1}", make<Dict>(make<DictEntry>(make<Id>("x"), make<Int>(1))));
+  CHECK_AST_EXP("{x: 1, y: 2}",
+                make<Dict>(make<DictEntry>(make<Id>("x"), make<Int>(1)), make<DictEntry>(make<Id>("y"), make<Int>(2))));
+  CHECK_AST_EXP("{\"foo\": 1}", make<Dict>(make<DictEntry>(make<Id>("foo"), make<Int>(1))));
+  CHECK_AST_EXP("{\"foo bar\": 1}", make<Dict>(make<DictEntry>(make<Id>("foo bar"), make<Int>(1))));
+  CHECK_AST_EXP("{\"{name}\": 1}", make<Dict>(make<DictEntry>(make<FormatString>(make<Id>("name")), make<Int>(1))));
+  CHECK_AST_EXP("{[name]: 1}", make<Dict>(make<DictEntry>(make<FormatString>(make<Id>("name")), make<Int>(1))));
+
+  CHECK_ERROR_EXP("{25}", "expected identifier, member access or spread expression");
+  CHECK_ERROR_EXP("{false}", "expected identifier, member access or spread expression");
+  CHECK_ERROR_EXP("{,}", "unexpected ',' token, expected an expression");
+  CHECK_ERROR_EXP("{:}", "unexpected ':' token, expected an expression");
+  CHECK_ERROR_EXP("{\"foo\"}", "expected identifier, member access or spread expression");
+  CHECK_ERROR_EXP("{[x]}", "expected identifier, member access or spread expression");
+  CHECK_ERROR_EXP("{-5}", "unexpected operation");
+  CHECK_ERROR_EXP("{[1, 2]: 1}", "list can only contain a single element");
+  CHECK_ERROR_EXP("{25: 1}", "expected identifier, string literal, formatstring or '[x]: y' expression");
+  CHECK_ERROR_EXP("{true: 1}", "expected identifier, string literal, formatstring or '[x]: y' expression");
+}

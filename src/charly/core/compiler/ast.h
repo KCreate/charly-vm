@@ -93,6 +93,8 @@ public:
     Super,
     Tuple,
     List,
+    DictEntry,
+    Dict,
 
     // Expressions
     Assignment,
@@ -546,6 +548,30 @@ public:
   List(Args&&... params) : elements({ std::forward<Args>(params)... }) {}
 
   std::vector<ref<Expression>> elements;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+// { a: 1, b: false, c: foo }
+class DictEntry final : public Node {
+  AST_NODE(DictEntry)
+public:
+  DictEntry(ref<Expression> key, ref<Expression> value) : key(key), value(value) {}
+
+  ref<Expression> key;
+  ref<Expression> value;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+// { a: 1, b: false, c: foo }
+class Dict final : public Expression {
+  AST_NODE(Dict)
+public:
+  template <typename... Args>
+  Dict(Args&&... params) : elements({ std::forward<Args>(params)... }) {}
+
+  std::vector<ref<DictEntry>> elements;
 
   virtual void visit_children(ASTPass*) override;
 };

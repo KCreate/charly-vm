@@ -75,6 +75,8 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
   SWITCH_NODE(Super)
   SWITCH_NODE(Tuple)
   SWITCH_NODE(List)
+  SWITCH_NODE(DictEntry)
+  SWITCH_NODE(Dict)
 #undef SWITCH_NODE
 
   assert(false && "Unknown node type");
@@ -216,6 +218,25 @@ void Tuple::visit_children(ASTPass* pass) {
 void List::visit_children(ASTPass* pass) {
   for (ref<Expression>& node : this->elements) {
     node = cast<Expression>(pass->visit(node));
+  }
+
+  auto begin = this->elements.begin();
+  auto end = this->elements.end();
+  this->elements.erase(std::remove(begin, end, nullptr), end);
+}
+
+void DictEntry::visit_children(ASTPass* pass) {
+  if (this->value) {
+    this->key = pass->visit(this->key);
+    this->value = pass->visit(this->value);
+  } else {
+    this->key = pass->visit(this->key);
+  }
+}
+
+void Dict::visit_children(ASTPass* pass) {
+  for (ref<DictEntry>& node : this->elements) {
+    node = cast<DictEntry>(pass->visit(node));
   }
 
   auto begin = this->elements.begin();

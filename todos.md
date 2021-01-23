@@ -1,9 +1,6 @@
 # Todos
 
 - Parser
-  - curly braces
-    - parse dicts `{a: 1, b: 2}`
-    - parse blocks as statements `func foo { foo() { const a = 2; print(a) } }`
   - parse if
   - parse while
   - parse loop
@@ -34,6 +31,12 @@
   - Human readable charly bytecode syntax
   - Assembler for charly bytecodes
   - Bytecode to file / line / column mapping
+
+- Concurrent Garbage Collector
+  - Write barrier
+  - Mark stack
+    - Pause threads once in a while to allow mark-thread to catch up
+
 - Value model
 - Memory allocator
 - Codegenerator

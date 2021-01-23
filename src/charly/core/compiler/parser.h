@@ -152,6 +152,7 @@ private:
   ref<FormatString> parse_format_string();
   ref<Expression> parse_tuple();
   ref<List> parse_list();
+  ref<Dict> parse_dict();
 
   // literals
   ref<Int> parse_int_token();
@@ -169,6 +170,7 @@ private:
   void validate_assignment(const ref<Assignment>& node);
   void validate_andassignment(const ref<ANDAssignment>& node);
   void validate_spawn(const ref<Spawn>& node);
+  void validate_dict(const ref<Dict>& node);
 
   [[noreturn]] void unexpected_token();
   [[noreturn]] void unexpected_token(const std::string& message);

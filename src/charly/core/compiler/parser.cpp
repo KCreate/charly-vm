@@ -493,6 +493,9 @@ ref<Expression> Parser::parse_literal() {
     case TokenType::LeftParen: {
       return parse_tuple();
     }
+    case TokenType::LeftCurly: {
+      return parse_dict();
+    }
     case TokenType::LeftBracket: {
       return parse_list();
     }
@@ -602,6 +605,33 @@ ref<List> Parser::parse_list() {
   eat(TokenType::RightBracket);
 
   return list;
+}
+
+ref<Dict> Parser::parse_dict() {
+  ref<Dict> dict = make<Dict>();
+  begin(dict);
+
+  eat(TokenType::LeftCurly);
+
+  if (!type(TokenType::RightCurly)) {
+    do {
+      ref<Expression> key = parse_expression();
+      ref<Expression> value = nullptr;
+
+      if (skip(TokenType::Colon)) {
+        value = parse_expression();
+      }
+
+      dict->elements.push_back(make<DictEntry>(key, value));
+    } while (skip(TokenType::Comma));
+  }
+
+  end(dict);
+  eat(TokenType::RightCurly);
+
+  validate_dict(dict);
+
+  return dict;
 }
 
 ref<Int> Parser::parse_int_token() {
@@ -721,6 +751,54 @@ void Parser::validate_andassignment(const ref<ANDAssignment>& node) {
 void Parser::validate_spawn(const ref<Spawn>& node) {
   if (!isa<Block>(node->statement) && !isa<CallOp>(node->statement)) {
     m_console.error("expected a call expression", node->statement->location());
+  }
+}
+
+void Parser::validate_dict(const ref<Dict>& node) {
+  for (ref<DictEntry>& entry : node->elements) {
+    ref<Expression>& key = entry->key;
+    ref<Expression>& value = entry->value;
+
+    // key-only elements
+    if (value.get() == nullptr) {
+      if (isa<Id>(key))
+        continue;
+
+      if (isa<MemberOp>(key))
+        continue;
+
+      // { ...other }
+      if (ref<UnaryOp> unaryop = cast<UnaryOp>(key)) {
+        if (unaryop->operation != TokenType::TriplePoint) {
+          m_console.error("unexpected operation", key->location());
+        }
+        continue;
+      }
+
+      m_console.error("expected identifier, member access or spread expression", key->location());
+      continue;
+    }
+
+    if (ref<String> string = cast<String>(key)) {
+      key = make<Id>(string->value);
+      continue;
+    }
+
+    // check key expression
+    if (isa<Id>(key) || isa<FormatString>(key))
+      continue;
+
+    // check valid '{ [2 + 2]: foo }' key syntax
+    if (ref<List> list = cast<List>(key)) {
+      if (list->elements.size() != 1) {
+        m_console.error("list can only contain a single element", list->location());
+      }
+
+      key = make<FormatString>(list->elements.at(0));
+      continue;
+    }
+
+    m_console.error("expected identifier, string literal, formatstring or '[x]: y' expression", key->location());
   }
 }
 

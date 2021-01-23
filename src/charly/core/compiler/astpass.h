@@ -115,6 +115,8 @@ class ASTPass {
   AST_NODE(Expression, Super)
   AST_NODE(Expression, Tuple)
   AST_NODE(Expression, List)
+  AST_NODE(DictEntry, DictEntry)
+  AST_NODE(Expression, Dict)
 
 public:
   ref<Node> visit(const ref<Node>& node) {

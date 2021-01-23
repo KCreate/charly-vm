@@ -1,9 +1,17 @@
-from math import sin, cos, tan
 
-spawn {
-  print("some text")
+
+
+foo = {
+  a: "hello",
+  b: "world"
 }
 
+{x, y, z} = coords
+
 {
-  data = table[x]
+  foo = 25
+
+  foo() = 25
+
+  foo[1] = 25
 }
