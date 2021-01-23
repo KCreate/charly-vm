@@ -123,8 +123,6 @@ public:
   [[noreturn]] void fatal(const std::string& msg, const Location& loc);
 
 private:
-  static const uint32_t kContextRows = 2;
-
   DiagnosticConsole(DiagnosticConsole&) = delete;
   DiagnosticConsole(DiagnosticConsole&&) = delete;
 

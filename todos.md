@@ -1,32 +1,26 @@
 # Todos
 
-- Load source from file
-
-- Setup CI service that runs unit tests
-  - GitHub actions?
-
 - Refactor node visiting code
   - Remove places where new nodes have to be registered
+
+- Check for invalid node types inside parser (from math import 25 is an error)
 
 - Parser
   - parse lists
   - curly braces
     - parse dicts `{a: 1, b: 2}`
     - parse blocks as statements `func foo { foo() { const a = 2; print(a) } }`
+  - parse if
+  - parse while
+  - parse loop
+  - parse for
   - parse functions
   - parse arrow function
   - parse generators
   - parse classes
-  - parse if
-  - parse unless
-  - parse guard
+  - parse try
   - parse switch
   - parse match
-  - parse while
-  - parse until
-  - parse loop
-  - parse for
-  - parse try
   - some illegal syntaxes can be caught by sometimes parsing newline tokens
     - inside subscript, call parsing methods
 

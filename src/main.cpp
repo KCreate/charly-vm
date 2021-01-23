@@ -25,6 +25,7 @@
  */
 
 #include <cassert>
+#include <fstream>
 #include <iostream>
 #include <string>
 
@@ -37,7 +38,7 @@
 using namespace charly;
 using namespace charly::core::compiler;
 
-int main() {
+int run_repl() {
   bool print_location = false;
 
   char* buf = nullptr;
@@ -96,4 +97,40 @@ int main() {
   }
 
   return 0;
+}
+
+int run_file(int, char** argv) {
+  std::string filename(argv[1]);
+  std::ifstream file(filename);
+
+  if (!file.is_open()) {
+    std::cout << "Could not open the input file!" << std::endl;
+    return 1;
+  }
+
+  utils::Buffer file_buffer;
+  std::string line;
+
+  for (std::string line; std::getline(file, line);) {
+    file_buffer.append_string(line);
+    file_buffer.append_utf8('\n');
+  }
+  file.close();
+
+  DiagnosticConsole console(filename, file_buffer);
+  auto program = Parser::parse_program(file_buffer, console);
+
+  console.dump_all(std::cerr);
+
+  if (console.has_errors())
+    return 1;
+
+  DumpPass(std::cout, true).visit(program);
+  return 0;
+}
+
+int main(int argc, char** argv) {
+  if (argc > 1)
+    return run_file(argc, argv);
+  return run_repl();
 }

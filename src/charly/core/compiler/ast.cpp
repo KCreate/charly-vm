@@ -115,7 +115,7 @@ void Yield::visit_children(ASTPass* pass) {
 }
 
 void Spawn::visit_children(ASTPass* pass) {
-  this->call = pass->visit(this->call);
+  this->statement = pass->visit(this->statement);
 }
 
 void Import::visit_children(ASTPass* pass) {

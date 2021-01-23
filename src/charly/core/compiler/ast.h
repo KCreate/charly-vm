@@ -119,8 +119,7 @@ public:
   }
 
   void set_location(const Location& loc) {
-    set_begin(loc);
-    set_end(loc);
+    m_location = loc;
   }
 
   void set_location(const ref<Node>& node) {
@@ -129,6 +128,7 @@ public:
 
   void set_begin(const Location& loc) {
     m_location.valid = loc.valid;
+    m_location.compound = true;
     m_location.offset = loc.offset;
     m_location.row = loc.row;
     m_location.column = loc.column;
@@ -136,6 +136,7 @@ public:
 
   void set_end(const Location& loc) {
     m_location.valid = loc.valid;
+    m_location.compound = true;
     m_location.end_offset = loc.end_offset;
     m_location.end_row = loc.end_row;
     m_location.end_column = loc.end_column;
@@ -304,11 +305,11 @@ public:
 class Spawn final : public Expression {
   AST_NODE(Spawn)
 public:
-  Spawn(ref<Expression> call) : call(call) {
-    this->set_location(call);
+  Spawn(ref<Statement> statement) : statement(statement) {
+    this->set_location(statement);
   }
 
-  ref<Expression> call;
+  ref<Statement> statement;
 
   virtual void visit_children(ASTPass*) override;
 };

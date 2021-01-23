@@ -114,7 +114,8 @@ ref<Statement> Parser::parse_statement() {
     }
     // import form is parsed as expression
     case TokenType::From: {
-      return parse_import();
+      stmt = parse_import();
+      break;
     }
     case TokenType::LeftCurly: {
       stmt = parse_block();
@@ -392,12 +393,13 @@ ref<Expression> Parser::parse_spawn() {
     Location begin_location = m_token.location;
     eat(TokenType::Spawn);
 
-    ref<Expression> exp;
     if (type(TokenType::LeftCurly)) {
-      unexpected_token("spawn {} expression not implemented yet, need function literals");
-    } else {
-      exp = parse_expression();
+      ref<Spawn> node = make<Spawn>(parse_block());
+      node->set_begin(begin_location);
+      return node;
     }
+
+    ref<Expression> exp = parse_expression();
 
     if (!isa<CallOp>(exp)) {
       m_console.error("expected a call expression", exp->location());
@@ -405,6 +407,7 @@ ref<Expression> Parser::parse_spawn() {
 
     ref<Spawn> node = make<Spawn>(exp);
     node->set_begin(begin_location);
+
     return node;
   }
 

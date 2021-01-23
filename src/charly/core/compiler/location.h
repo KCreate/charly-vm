@@ -34,7 +34,8 @@
 namespace charly::core::compiler {
 
 struct Location {
-  bool valid = true;
+  bool valid = true;        // wether this location contains actual data
+  bool compound = false;    // wether this location is a mixup of multiple other locations
 
   // offset in source bytestream
   size_t offset;
@@ -47,10 +48,7 @@ struct Location {
   uint32_t end_column;
 
   friend std::ostream& operator<<(std::ostream& out, const Location& loc) {
-    out << loc.row + 1;
-    out << ":";
-    out << loc.column + 1;
-    return out;
+    return out << loc.row + 1 << ":" << loc.column + 1;
   }
 };
 

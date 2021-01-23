@@ -206,8 +206,7 @@ private:
 
   // set the location of a node to the current token
   void at(const ref<Node>& node) {
-    begin(node);
-    end(node);
+    node->set_location(m_token.location);
   }
 };
 

@@ -33,6 +33,8 @@ using Color = charly::utils::Color;
 
 namespace charly::core::compiler {
 
+static const uint32_t kDiagnosticContextRows = 3;
+
 DiagnosticConsole::DiagnosticConsole(const std::string& filename, const utils::Buffer& buffer) : m_filename(filename) {
   int begin = 0;
   int end = 0;
@@ -81,8 +83,8 @@ void DiagnosticConsole::write_annotated_source(std::ostream& out, const Diagnost
   const Location& location = message.location;
 
   // the first row to be printed
-  uint32_t first_printed_row = kContextRows > location.row ? 0 : location.row - kContextRows;
-  uint32_t last_printed_row = location.end_row + kContextRows;
+  uint32_t first_printed_row = kDiagnosticContextRows > location.row ? 0 : location.row - kDiagnosticContextRows;
+  uint32_t last_printed_row = location.end_row + kDiagnosticContextRows;
 
   size_t offset = 0;
   uint32_t row = 0;
@@ -103,9 +105,9 @@ void DiagnosticConsole::write_annotated_source(std::ostream& out, const Diagnost
     // print the line number
     writer << std::right;
     if (contains_annotation) {
-      writer.fg(highlight_color, std::setw(4), row + 1);
+      writer.fg(Color::White, std::setw(4), row + 1);
     } else {
-      writer << "    ";
+      writer.fg(Color::Grey, std::setw(4), row + 1);
     }
     writer << std::left;
 
@@ -121,6 +123,25 @@ void DiagnosticConsole::write_annotated_source(std::ostream& out, const Diagnost
         writer << line.substr(0, annotate_start_offset);
         writer.bg(highlight_color, line.substr(annotate_start_offset, annotate_length));
         writer << line.substr(annotate_end_offset);
+
+        // writer << '\n';
+        // writer << "    " << "    " << " | ";
+        //
+        // for (size_t i = 0; i < annotate_start_offset; i++) {
+        //   writer << " ";
+        // }
+        //
+        // if (location.compound && annotate_length >= 2) {
+        //   writer.fg(highlight_color, '^');
+        //   for (size_t i = 0; i < annotate_length - 2; i++) {
+        //     writer.fg(highlight_color, '~');
+        //   }
+        //   writer.fg(highlight_color, '^');
+        // } else {
+        //   for (size_t i = 0; i < annotate_length; i++) {
+        //     writer.fg(highlight_color, '^');
+        //   }
+        // }
       } else {
         // check if we are on the first or last line
         if (row == location.row) {

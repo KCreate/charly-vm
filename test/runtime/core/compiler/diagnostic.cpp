@@ -78,9 +78,9 @@ TEST_CASE("formats multiple lines") {
   console.dump_all(out);
 
   CHECK_THAT(out.str(), Equals(("test:3:10: error: unexpected numerical constant, expected a ')' token\n"
-                                "         | \n"
-                                "         | \n"
+                                "       1 | \n"
+                                "       2 | \n"
                                 "       3 | (25      25)\n"
-                                "         | \n"
-                                "         | \n")));
+                                "       4 | \n"
+                                "       5 | \n")));
 }
