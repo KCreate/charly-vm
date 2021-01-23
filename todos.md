@@ -1,7 +1,6 @@
 # Todos
 
 - Parser
-  - parse loop
   - parse for
   - parse functions
   - parse arrow function

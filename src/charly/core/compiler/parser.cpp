@@ -130,6 +130,10 @@ ref<Statement> Parser::parse_statement() {
       stmt = parse_while();
       break;
     }
+    case TokenType::Loop: {
+      stmt = parse_loop();
+      break;
+    }
     default: {
       if (m_token.could_start_expression()) {
         stmt = parse_expression();
@@ -239,6 +243,16 @@ ref<While> Parser::parse_while() {
   ref<Statement> then_stmt = parse_statement();
 
   ref<While> node = make<While>(condition, then_stmt);
+  node->set_begin(begin);
+  return node;
+}
+
+ref<While> Parser::parse_loop() {
+  Location begin = m_token.location;
+  eat(TokenType::Loop);
+  ref<Expression> condition = make<Bool>(true);
+  condition->set_location(begin);
+  ref<While> node = make<While>(condition, parse_statement());
   node->set_begin(begin);
   return node;
 }

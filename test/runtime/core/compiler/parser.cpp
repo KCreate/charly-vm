@@ -453,3 +453,10 @@ TEST_CASE("while statements") {
   CHECK_ERROR_STMT("while", "unexpected end of file, expected an expression");
   CHECK_ERROR_STMT("while x", "unexpected end of file, expected a statement");
 }
+
+TEST_CASE("loop statements") {
+  CHECK_AST_STMT("loop 1", make<While>(make<Bool>(true), make<Int>(1)));
+  CHECK_AST_STMT("loop {}", make<While>(make<Bool>(true), make<Block>()));
+
+  CHECK_ERROR_STMT("loop", "unexpected end of file, expected a statement");
+}
