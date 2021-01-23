@@ -70,7 +70,7 @@ using namespace charly::core::compiler::ast;
     DiagnosticConsole console("test", buffer);                \
     Parser::parse_expression(buffer, console);                \
     REQUIRE(console.has_errors());                            \
-    CHECK_THAT(console.messages().back().message, Equals(E)); \
+    CHECK_THAT(console.messages().front().message, Equals(E)); \
   }
 
 #define CHECK_ERROR_STMT(S, E)                                \
@@ -79,5 +79,5 @@ using namespace charly::core::compiler::ast;
     DiagnosticConsole console("test", buffer);                \
     Parser::parse_statement(buffer, console);                 \
     REQUIRE(console.has_errors());                            \
-    CHECK_THAT(console.messages().back().message, Equals(E)); \
+    CHECK_THAT(console.messages().front().message, Equals(E)); \
   }

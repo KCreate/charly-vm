@@ -93,8 +93,8 @@ TEST_CASE("incomplete number literals error") {
 
 TEST_CASE("parses tuples") {
   CHECK_ERROR_EXP("(", "unexpected end of file, expected a ')' token");
-  CHECK_ERROR_EXP("(,)", "unexpected ',', expected an expression");
-  CHECK_ERROR_EXP("(1,2,)", "unexpected ')', expected an expression");
+  CHECK_ERROR_EXP("(,)", "unexpected ',' token, expected an expression");
+  CHECK_ERROR_EXP("(1,2,)", "unexpected ')' token, expected an expression");
   CHECK_ERROR_EXP("(1 2)", "unexpected numerical constant, expected a ')' token");
 
   CHECK(EXP("(1,)", Tuple)->elements.size() == 1);
@@ -148,6 +148,12 @@ TEST_CASE("assignments") {
   CHECK_AST_EXP("x = (1, 2)", make<Assignment>(make<Id>("x"), make<Tuple>(make<Int>(1), make<Int>(2))));
   CHECK_AST_EXP("(a, b, c) = 25",
                 make<Assignment>(make<Tuple>(make<Id>("a"), make<Id>("b"), make<Id>("c")), make<Int>(25)));
+  CHECK_AST_EXP("foo.bar = true", make<Assignment>(make<MemberOp>(make<Id>("foo"), make<Id>("bar")), make<Bool>(true)));
+  CHECK_AST_EXP("foo[0] = true", make<Assignment>(make<IndexOp>(make<Id>("foo"), make<Int>(0)), make<Bool>(true)));
+
+  CHECK_ERROR_EXP("2 = 25", "left-hand side of assignment is not assignable");
+  CHECK_ERROR_EXP("false = 25", "left-hand side of assignment is not assignable");
+  CHECK_ERROR_EXP("\"foo\" = 25", "left-hand side of assignment is not assignable");
 }
 
 TEST_CASE("ternary if") {
@@ -275,8 +281,8 @@ TEST_CASE("parses control statements") {
   CHECK_AST_STMT("break", make<Break>());
   CHECK_AST_STMT("continue", make<Continue>());
 
-  CHECK_AST_STMT("defer exp", make<Defer>(make<Id>("exp")));
-  CHECK_AST_STMT("defer 25", make<Defer>(make<Int>(25)));
+  CHECK_ERROR_STMT("defer foo", "expected a call expression");
+  CHECK_AST_STMT("defer foo()", make<Defer>(make<CallOp>(make<Id>("foo"))));
 
   CHECK_AST_STMT("throw null", make<Throw>(make<Null>()));
   CHECK_AST_STMT("throw 25", make<Throw>(make<Int>(25)));
@@ -297,6 +303,12 @@ TEST_CASE("import statement") {
   CHECK_AST_STMT("from \"test\" as lib import bar as baz",
                  make<Import>(make<As>(make<String>("test"), "lib"), make<As>(make<Id>("bar"), "baz")));
 
+  CHECK_ERROR_STMT("import \"foo bar\"", "expected an identifier");
+  CHECK_ERROR_STMT("import 25", "expected an identifier");
+  CHECK_ERROR_STMT("import false", "expected an identifier");
+  CHECK_ERROR_STMT("from foo import 25", "expected an identifier");
+  CHECK_ERROR_STMT("from foo import false", "expected an identifier");
+  CHECK_ERROR_STMT("from foo import \"foo bar\"", "expected an identifier");
   CHECK_ERROR_STMT("from foo import", "expected at least one imported symbol");
 }
 
@@ -372,7 +384,7 @@ TEST_CASE("index expressions") {
   CHECK_AST_EXP("foo[(1, 2, 3)]",
                 make<IndexOp>(make<Id>("foo"), make<Tuple>(make<Int>(1), make<Int>(2), make<Int>(3))));
 
-  CHECK_ERROR_EXP("foo[]", "unexpected ']', expected an expression");
+  CHECK_ERROR_EXP("foo[]", "unexpected ']' token, expected an expression");
   CHECK_ERROR_EXP("foo[1, 2]", "unexpected ',' token, expected a ']' token");
   CHECK_ERROR_EXP("foo[", "unexpected end of file, expected a ']' token");
 }

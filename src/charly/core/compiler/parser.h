@@ -127,7 +127,8 @@ private:
   ref<Expression> parse_expression();
   ref<Expression> parse_as_expression();
   ref<Expression> parse_yield();
-  ref<Expression> parse_import();
+  ref<Import> parse_import();
+  ref<Import> parse_from();
   ref<Expression> parse_assignment();
   ref<Expression> parse_ternary();
   ref<Expression> parse_binaryop();
@@ -161,6 +162,12 @@ private:
   ref<Null> parse_null_token();
   ref<Self> parse_self_token();
   ref<Super> parse_super_token();
+
+  void validate_defer(const ref<Defer>& node);
+  void validate_import(const ref<Import>& node);
+  void validate_assignment(const ref<Assignment>& node);
+  void validate_andassignment(const ref<ANDAssignment>& node);
+  void validate_spawn(const ref<Spawn>& node);
 
   [[noreturn]] void unexpected_token();
   [[noreturn]] void unexpected_token(const std::string& message);

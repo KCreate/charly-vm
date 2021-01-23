@@ -1,10 +1,5 @@
 # Todos
 
-- Refactor node visiting code
-  - Remove places where new nodes have to be registered
-
-- Check for invalid node types inside parser (from math import 25 is an error)
-
 - Parser
   - parse lists
   - curly braces

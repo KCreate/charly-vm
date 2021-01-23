@@ -157,6 +157,10 @@ public:
 
   virtual Type type() const = 0;
 
+  virtual bool assignable() const {
+    return false;
+  }
+
 protected:
   virtual ~Node(){};
   template <typename T>
@@ -284,6 +288,7 @@ public:
     this->set_location(source);
   }
 
+  bool is_from_node = false;
   ref<Expression> source;
   std::vector<ref<Expression>> declarations;
 
@@ -444,6 +449,10 @@ class Id final : public Atom<std::string> {
   AST_NODE(Id)
 public:
   using Atom<std::string>::Atom;
+
+  virtual bool assignable() const override {
+    return true;
+  }
 };
 
 // <expression> as <name>
@@ -520,6 +529,10 @@ public:
 
   std::vector<ref<Expression>> elements;
 
+  virtual bool assignable() const override {
+    return true;
+  }
+
   virtual void visit_children(ASTPass*) override;
 };
 
@@ -553,6 +566,10 @@ public:
   ref<Expression> target;
   std::string member;
 
+  virtual bool assignable() const override {
+    return true;
+  }
+
   virtual void visit_children(ASTPass*) override;
 };
 
@@ -568,6 +585,10 @@ public:
 
   ref<Expression> target;
   ref<Expression> index;
+
+  virtual bool assignable() const override {
+    return true;
+  }
 
   virtual void visit_children(ASTPass*) override;
 };
