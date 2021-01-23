@@ -124,6 +124,7 @@ private:
 
   // control statements
   ref<If> parse_if();
+  ref<While> parse_while();
 
   // expressions
   void parse_comma_expression(std::vector<ref<Expression>>& result);

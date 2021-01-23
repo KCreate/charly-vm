@@ -444,3 +444,12 @@ TEST_CASE("if statements") {
   CHECK_ERROR_STMT("if x 1 else", "unexpected end of file, expected a statement");
   CHECK_ERROR_STMT("if else x", "unexpected 'else' token, expected an expression");
 }
+
+TEST_CASE("while statements") {
+  CHECK_AST_STMT("while x 1", make<While>(make<Id>("x"), make<Int>(1)));
+  CHECK_AST_STMT("while (x) {}", make<While>(make<Id>("x"), make<Block>()));
+  CHECK_AST_STMT("while (x) foo()", make<While>(make<Id>("x"), make<CallOp>(make<Id>("foo"))));
+
+  CHECK_ERROR_STMT("while", "unexpected end of file, expected an expression");
+  CHECK_ERROR_STMT("while x", "unexpected end of file, expected a statement");
+}

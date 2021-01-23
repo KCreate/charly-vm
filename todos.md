@@ -1,7 +1,6 @@
 # Todos
 
 - Parser
-  - parse while
   - parse loop
   - parse for
   - parse functions

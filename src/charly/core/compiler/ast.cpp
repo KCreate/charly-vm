@@ -81,6 +81,7 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
   SWITCH_NODE(IndexOp)
 
   SWITCH_NODE(If)
+  SWITCH_NODE(While)
 #undef SWITCH_NODE
 
   assert(false && "Unknown node type");
@@ -248,6 +249,11 @@ void If::visit_children(ASTPass* pass) {
   this->condition = pass->visit(this->condition);
   this->then_stmt = pass->visit(this->then_stmt);
   this->else_stmt = pass->visit(this->else_stmt);
+}
+
+void While::visit_children(ASTPass* pass) {
+  this->condition = pass->visit(this->condition);
+  this->then_stmt = pass->visit(this->then_stmt);
 }
 
 }  // namespace charly::core::compiler::ast

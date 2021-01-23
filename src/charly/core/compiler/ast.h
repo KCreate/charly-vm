@@ -110,17 +110,10 @@ public:
 
     // Control Statements
     If,
+    While,
 
     // Meta
     TypeCount
-  };
-
-  static constexpr const char* TypeNames[] = {
-    "Unknown", "Program",  "Nop",       "Block", "Return",     "Break",         "Continue", "Defer",    "Throw",
-    "Export",  "Import",   "Import",    "Yield", "Spawn",      "Await",         "Typeof",   "As",       "Id",
-    "Int",     "Float",    "Bool",      "Char",  "String",     "FormatString",  "Null",     "Self",     "Super",
-    "Tuple",   "List",     "DictEntry", "Dict",  "Assignment", "ANDAssignment", "Ternary",  "BinaryOp", "UnaryOp",
-    "CallOp",  "MemberOp", "IndexOp",   "If",    "__SENTINEL",
   };
 
   const Location& location() const {
@@ -159,12 +152,8 @@ public:
     set_end(node->location());
   }
 
-  // get the name of this node based on its type
-  const char* name() const {
-    return TypeNames[static_cast<int>(this->type())];
-  }
-
   virtual Type type() const = 0;
+  virtual const char* node_name() const = 0;
 
   virtual bool assignable() const {
     return false;
@@ -184,9 +173,12 @@ bool isa(const ref<Node>& node) {
   return dynamic_cast<T*>(node.get()) != nullptr;
 }
 
-#define AST_NODE(T)                          \
-  virtual Node::Type type() const override { \
-    return Node::Type::T;                    \
+#define AST_NODE(T)                           \
+  virtual Node::Type type() const override {  \
+    return Node::Type::T;                     \
+  }                                           \
+  virtual const char* node_name() const override { \
+    return #T;                               \
   }
 
 // {
@@ -300,7 +292,6 @@ public:
 class Import final : public Statement {
   AST_NODE(Import)
 public:
-  template <typename... Args>
   Import(ref<Expression> source) : source(source) {
     this->set_location(source);
   }
@@ -314,7 +305,6 @@ public:
 class ImportExpression final : public Expression {
   AST_NODE(ImportExpression)
 public:
-  template <typename... Args>
   ImportExpression(ref<Expression> source) : source(source) {
     this->set_location(source);
   }
@@ -626,7 +616,6 @@ public:
 class MemberOp final : public Expression {
   AST_NODE(MemberOp)
 public:
-  template <typename... Args>
   MemberOp(ref<Expression> target, ref<Id> member) : target(target), member(member->value) {
     this->set_begin(target);
     this->set_end(member);
@@ -646,7 +635,6 @@ public:
 class IndexOp final : public Expression {
   AST_NODE(IndexOp)
 public:
-  template <typename... Args>
   IndexOp(ref<Expression> target, ref<Expression> index) : target(target), index(index) {
     this->set_begin(target);
     this->set_end(index);
@@ -663,13 +651,12 @@ public:
 };
 
 // if <condition>
-//   <then_block>
+//   <then_stmt>
 // else
-//   <else_block>
+//   <else_stmt>
 class If final : public Expression {
   AST_NODE(If)
 public:
-  template <typename... Args>
   If(ref<Expression> condition, ref<Statement> then_stmt, ref<Statement> else_stmt) :
     condition(condition), then_stmt(then_stmt), else_stmt(else_stmt) {
     this->set_begin(condition);
@@ -679,6 +666,22 @@ public:
   ref<Expression> condition;
   ref<Statement> then_stmt;
   ref<Statement> else_stmt;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+// while <condition>
+//   <then_stmt>
+class While final : public Expression {
+  AST_NODE(While)
+public:
+  While(ref<Expression> condition, ref<Statement> then_stmt) : condition(condition), then_stmt(then_stmt) {
+    this->set_begin(condition);
+    this->set_end(then_stmt);
+  }
+
+  ref<Expression> condition;
+  ref<Statement> then_stmt;
 
   virtual void visit_children(ASTPass*) override;
 };

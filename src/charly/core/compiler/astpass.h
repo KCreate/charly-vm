@@ -123,6 +123,7 @@ class ASTPass {
   AST_NODE(Expression, IndexOp)
 
   AST_NODE(Statement, If)
+  AST_NODE(Statement, While)
 
 public:
   ref<Node> visit(const ref<Node>& node) {

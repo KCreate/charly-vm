@@ -42,7 +42,7 @@ class DumpPass : public ASTPass {
     }
 
     m_writer << "- ";
-    m_writer.fg(Color::Blue, node->name());
+    m_writer.fg(Color::Blue, node->node_name());
   }
 
   virtual void after_enter_any(const ref<Node>& node) override {
