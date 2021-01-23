@@ -493,6 +493,9 @@ ref<Expression> Parser::parse_literal() {
     case TokenType::LeftParen: {
       return parse_tuple();
     }
+    case TokenType::LeftBracket: {
+      return parse_list();
+    }
     case TokenType::Null: {
       return parse_null_token();
     }
@@ -580,6 +583,25 @@ ref<Expression> Parser::parse_tuple() {
   eat(TokenType::RightParen);
 
   return tuple;
+}
+
+ref<List> Parser::parse_list() {
+  ref<List> list = make<List>();
+  begin(list);
+
+  eat(TokenType::LeftBracket);
+
+  if (!type(TokenType::RightBracket)) {
+    list->elements.push_back(parse_expression());
+    while (skip(TokenType::Comma)) {
+      list->elements.push_back(parse_expression());
+    }
+  }
+
+  end(list);
+  eat(TokenType::RightBracket);
+
+  return list;
 }
 
 ref<Int> Parser::parse_int_token() {

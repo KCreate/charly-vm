@@ -388,3 +388,19 @@ TEST_CASE("index expressions") {
   CHECK_ERROR_EXP("foo[1, 2]", "unexpected ',' token, expected a ']' token");
   CHECK_ERROR_EXP("foo[", "unexpected end of file, expected a ']' token");
 }
+
+TEST_CASE("list literals") {
+  CHECK_AST_EXP("[]", make<List>());
+  CHECK_AST_EXP("[[]]", make<List>(make<List>()));
+  CHECK_AST_EXP("[[1]]", make<List>(make<List>(make<Int>(1))));
+  CHECK_AST_EXP("[1]", make<List>(make<Int>(1)));
+  CHECK_AST_EXP("[1, 2]", make<List>(make<Int>(1), make<Int>(2)));
+  CHECK_AST_EXP("[1, \"foo\", bar, false]",
+                make<List>(make<Int>(1), make<String>("foo"), make<Id>("bar"), make<Bool>(false)));
+
+  CHECK_ERROR_EXP("[", "unexpected end of file, expected a ']' token");
+  CHECK_ERROR_EXP("]", "unexpected ']'");
+  CHECK_ERROR_EXP("[,]", "unexpected ',' token, expected an expression");
+  CHECK_ERROR_EXP("[1,]", "unexpected ']' token, expected an expression");
+  CHECK_ERROR_EXP("[1, 2,]", "unexpected ']' token, expected an expression");
+}

@@ -74,6 +74,7 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
   SWITCH_NODE(Self)
   SWITCH_NODE(Super)
   SWITCH_NODE(Tuple)
+  SWITCH_NODE(List)
 #undef SWITCH_NODE
 
   assert(false && "Unknown node type");
@@ -203,6 +204,16 @@ void FormatString::visit_children(ASTPass* pass) {
 }
 
 void Tuple::visit_children(ASTPass* pass) {
+  for (ref<Expression>& node : this->elements) {
+    node = cast<Expression>(pass->visit(node));
+  }
+
+  auto begin = this->elements.begin();
+  auto end = this->elements.end();
+  this->elements.erase(std::remove(begin, end, nullptr), end);
+}
+
+void List::visit_children(ASTPass* pass) {
   for (ref<Expression>& node : this->elements) {
     node = cast<Expression>(pass->visit(node));
   }

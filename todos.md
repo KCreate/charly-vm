@@ -1,7 +1,6 @@
 # Todos
 
 - Parser
-  - parse lists
   - curly braces
     - parse dicts `{a: 1, b: 2}`
     - parse blocks as statements `func foo { foo() { const a = 2; print(a) } }`

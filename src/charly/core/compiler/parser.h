@@ -151,6 +151,7 @@ private:
   // compound literals
   ref<FormatString> parse_format_string();
   ref<Expression> parse_tuple();
+  ref<List> parse_list();
 
   // literals
   ref<Int> parse_int_token();

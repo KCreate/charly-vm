@@ -92,6 +92,7 @@ public:
     Self,
     Super,
     Tuple,
+    List,
 
     // Expressions
     Assignment,
@@ -108,10 +109,11 @@ public:
   };
 
   static constexpr const char* TypeNames[] = {
-    "Unknown",       "Program", "Block",    "Return",       "Break",  "Continue", "Defer",   "Throw",      "Export",
-    "Yield",         "Spawn",   "Import",   "Await",        "Typeof", "As",       "Id",      "Int",        "Float",
-    "Bool",          "Char",    "String",   "FormatString", "Null",   "Self",     "Super",   "Tuple",      "Assignment",
-    "ANDAssignment", "Ternary", "BinaryOp", "UnaryOp",      "CallOp", "MemberOp", "IndexOp", "__SENTINEL",
+    "Unknown",   "Program",    "Block",      "Return",        "Break",   "Continue", "Defer",   "Throw",  "Export",
+    "Yield",     "Spawn",      "Import",     "Await",         "Typeof",  "As",       "Id",      "Int",    "Float",
+    "Bool",      "Char",       "String",     "FormatString",  "Null",    "Self",     "Super",   "Tuple",  "List",
+    "DictEntry", "Dict",       "Assignment", "ANDAssignment", "Ternary", "BinaryOp", "UnaryOp", "CallOp", "MemberOp",
+    "IndexOp",   "__SENTINEL",
   };
 
   const Location& location() const {
@@ -532,6 +534,18 @@ public:
   virtual bool assignable() const override {
     return true;
   }
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+// [1, 2, 3]
+class List final : public Expression {
+  AST_NODE(List)
+public:
+  template <typename... Args>
+  List(Args&&... params) : elements({ std::forward<Args>(params)... }) {}
+
+  std::vector<ref<Expression>> elements;
 
   virtual void visit_children(ASTPass*) override;
 };
