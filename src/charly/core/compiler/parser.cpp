@@ -446,17 +446,23 @@ ref<Expression> Parser::parse_call_member_index() {
   ref<Expression> target = parse_literal();
 
   for (;;) {
+    bool newline_passed_since_base = target->location().end_row != m_token.location.row;
+
     switch (m_token.type) {
       case TokenType::LeftParen: {
+        if (newline_passed_since_base)
+          return target;
         target = parse_call(target);
+        break;
+      }
+      case TokenType::LeftBracket: {
+        if (newline_passed_since_base)
+          return target;
+        target = parse_index(target);
         break;
       }
       case TokenType::Point: {
         target = parse_member(target);
-        break;
-      }
-      case TokenType::LeftBracket: {
-        target = parse_index(target);
         break;
       }
       default: {
