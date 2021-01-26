@@ -114,7 +114,6 @@ class ASTPass {
   AST_NODE(Expression, Dict)
 
   AST_NODE(Expression, Assignment)
-  AST_NODE(Expression, ANDAssignment)
   AST_NODE(Expression, Ternary)
   AST_NODE(Expression, BinaryOp)
   AST_NODE(Expression, UnaryOp)

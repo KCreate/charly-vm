@@ -142,18 +142,47 @@ TEST_CASE("unclosed multiline comments") {
 }
 
 TEST_CASE("assignments") {
-  CHECK_AST_EXP("x = 0", make<Assignment>(make<Id>("x"), make<Int>(0)));
   CHECK_AST_EXP("x = 1", make<Assignment>(make<Id>("x"), make<Int>(1)));
-  CHECK_AST_EXP("x = true", make<Assignment>(make<Id>("x"), make<Bool>(true)));
-  CHECK_AST_EXP("x = (1, 2)", make<Assignment>(make<Id>("x"), make<Tuple>(make<Int>(1), make<Int>(2))));
-  CHECK_AST_EXP("(a, b, c) = 25",
-                make<Assignment>(make<Tuple>(make<Id>("a"), make<Id>("b"), make<Id>("c")), make<Int>(25)));
-  CHECK_AST_EXP("foo.bar = true", make<Assignment>(make<MemberOp>(make<Id>("foo"), make<Id>("bar")), make<Bool>(true)));
-  CHECK_AST_EXP("foo[0] = true", make<Assignment>(make<IndexOp>(make<Id>("foo"), make<Int>(0)), make<Bool>(true)));
+  CHECK_AST_EXP("x = 1 + 2",
+                make<Assignment>(make<Id>("x"), make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(2))));
+  CHECK_AST_EXP("(x) = 1", make<Assignment>(make<Id>("x"), make<Int>(1)));
+
+  CHECK_AST_EXP("foo.bar = 1", make<Assignment>(make<MemberOp>(make<Id>("foo"), "bar"), make<Int>(1)));
+  CHECK_AST_EXP("foo[0] = 1", make<Assignment>(make<IndexOp>(make<Id>("foo"), make<Int>(0)), make<Int>(1)));
+  CHECK_AST_EXP("(a, b) = 1", make<Assignment>(make<Tuple>(make<Id>("a"), make<Id>("b")), make<Int>(1)));
+  CHECK_AST_EXP("(...b,) = 1",
+                make<Assignment>(make<Tuple>(make<UnaryOp>(TokenType::TriplePoint, make<Id>("b"))), make<Int>(1)));
+  CHECK_AST_EXP(
+    "(a, ...b, c) = 1",
+    make<Assignment>(make<Tuple>(make<Id>("a"), make<UnaryOp>(TokenType::TriplePoint, make<Id>("b")), make<Id>("c")),
+                     make<Int>(1)));
+  CHECK_AST_EXP(
+    "{a, b} = 1",
+    make<Assignment>(make<Dict>(make<DictEntry>(make<Id>("a")), make<DictEntry>(make<Id>("b"))), make<Int>(1)));
+  CHECK_AST_EXP("{a, ...b, c} = 1",
+                make<Assignment>(make<Dict>(make<DictEntry>(make<Id>("a")),
+                                            make<DictEntry>(make<UnaryOp>(TokenType::TriplePoint, make<Id>("b"))),
+                                            make<DictEntry>(make<Id>("c"))),
+                                 make<Int>(1)));
+  CHECK_AST_EXP("x += 1", make<Assignment>(TokenType::Plus, make<Id>("x"), make<Int>(1)));
+  CHECK_AST_EXP("foo.bar += 1",
+                make<Assignment>(TokenType::Plus, make<MemberOp>(make<Id>("foo"), "bar"), make<Int>(1)));
+  CHECK_AST_EXP("foo[0] += 1",
+                make<Assignment>(TokenType::Plus, make<IndexOp>(make<Id>("foo"), make<Int>(0)), make<Int>(1)));
 
   CHECK_ERROR_EXP("2 = 25", "left-hand side of assignment is not assignable");
   CHECK_ERROR_EXP("false = 25", "left-hand side of assignment is not assignable");
-  CHECK_ERROR_EXP("\"foo\" = 25", "left-hand side of assignment is not assignable");
+  CHECK_ERROR_EXP("self = 25", "left-hand side of assignment is not assignable");
+  CHECK_ERROR_EXP("(a, b) += 25",
+                  "this type of expression cannot be used as the left-hand side of an operator assignment");
+  CHECK_ERROR_EXP("{a, b} += 25",
+                  "this type of expression cannot be used as the left-hand side of an operator assignment");
+  CHECK_ERROR_EXP("() = 25", "left-hand side of assignment is not assignable");
+  CHECK_ERROR_EXP("(1) = 25", "left-hand side of assignment is not assignable");
+  CHECK_ERROR_EXP("(...a, ...b) = 25", "left-hand side of assignment is not assignable");
+  CHECK_ERROR_EXP("{} = 25", "left-hand side of assignment is not assignable");
+  CHECK_ERROR_EXP("{a: 1} = 25", "left-hand side of assignment is not assignable");
+  CHECK_ERROR_EXP("{...a, ...b} = 25", "left-hand side of assignment is not assignable");
 }
 
 TEST_CASE("ternary if") {
@@ -349,6 +378,9 @@ TEST_CASE("call expressions") {
   CHECK_AST_EXP("foo(bar())", make<CallOp>(make<Id>("foo"), make<CallOp>(make<Id>("bar"))));
   CHECK_AST_EXP("foo()()()", make<CallOp>(make<CallOp>(make<CallOp>(make<Id>("foo")))));
   CHECK_AST_EXP("foo(yield 1, 2)", make<CallOp>(make<Id>("foo"), make<Yield>(make<Int>(1)), make<Int>(2)));
+  CHECK_AST_STMT("foo\n(0)", make<Id>("foo"));
+  CHECK_AST_STMT("foo(0)\n(1)", make<CallOp>(make<Id>("foo"), make<Int>(0)));
+  CHECK_AST_STMT("foo(0)(1)\n(2)", make<CallOp>(make<CallOp>(make<Id>("foo"), make<Int>(0)), make<Int>(1)));
 
   CHECK_AST_EXP(
     "foo.bar(2, 3).test[1](1, 2).bar",
@@ -371,6 +403,9 @@ TEST_CASE("member expressions") {
   CHECK_AST_EXP("1.foo", make<MemberOp>(make<Int>(1), make<Id>("foo")));
   CHECK_AST_EXP("2.2.@\"hello world\"", make<MemberOp>(make<Float>(2.2), make<Id>("hello world")));
   CHECK_AST_EXP("foo.bar.baz", make<MemberOp>(make<MemberOp>(make<Id>("foo"), make<Id>("bar")), make<Id>("baz")));
+  CHECK_AST_EXP("foo.bar\n.baz", make<MemberOp>(make<MemberOp>(make<Id>("foo"), make<Id>("bar")), make<Id>("baz")));
+  CHECK_AST_EXP("foo\n.\nbar\n.\nbaz",
+                make<MemberOp>(make<MemberOp>(make<Id>("foo"), make<Id>("bar")), make<Id>("baz")));
 }
 
 TEST_CASE("index expressions") {
@@ -381,6 +416,9 @@ TEST_CASE("index expressions") {
   CHECK_AST_EXP("foo[yield 1]", make<IndexOp>(make<Id>("foo"), make<Yield>(make<Int>(1))));
   CHECK_AST_EXP("foo[(1, 2, 3)]",
                 make<IndexOp>(make<Id>("foo"), make<Tuple>(make<Int>(1), make<Int>(2), make<Int>(3))));
+  CHECK_AST_STMT("foo\n[0]", make<Id>("foo"));
+  CHECK_AST_STMT("foo[0]\n[1]", make<IndexOp>(make<Id>("foo"), make<Int>(0)));
+  CHECK_AST_STMT("foo[0][1]\n[2]", make<IndexOp>(make<IndexOp>(make<Id>("foo"), make<Int>(0)), make<Int>(1)));
 
   CHECK_ERROR_EXP("foo[]", "unexpected ']' token, expected an expression");
   CHECK_ERROR_EXP("foo[1, 2]", "unexpected ',' token, expected a ']' token");

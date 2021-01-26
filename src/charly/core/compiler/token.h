@@ -230,7 +230,7 @@ static const std::unordered_set<TokenType> kUnaryOperatorTokens = { TokenType::P
                                                                     TokenType::UnaryNot, TokenType::BitNOT,
                                                                     TokenType::TriplePoint };
 
-static const std::unordered_set<TokenType> kANDAssignmentOperators = {
+static const std::unordered_set<TokenType> kAssignmentOperators = {
   TokenType::Plus,   TokenType::Minus,        TokenType::Mul,           TokenType::Div,
   TokenType::Mod,    TokenType::Pow,          TokenType::BitAND,        TokenType::BitOR,
   TokenType::BitXOR, TokenType::BitLeftShift, TokenType::BitRightShift, TokenType::BitUnsignedRightShift,
@@ -257,7 +257,7 @@ struct Token {
   }
 
   bool legal_assignment_operator() const {
-    return kANDAssignmentOperators.count(type);
+    return kAssignmentOperators.count(type);
   }
 
   bool could_start_expression() const {

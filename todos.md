@@ -1,8 +1,15 @@
 # Todos
 
 - Parser
+  - parse declarations
+    - let, const
+    - let x = <exp>         regular
+    - let (x, y) = <exp>    unpack sequence
+    - let {x, y} = <exp>    unpack attributes
   - parse for
   - parse functions
+    - parse arguments declaration list
+  - parse range syntax (`x..y` and `x...y`)
   - parse arrow function
   - parse generators
   - parse classes
@@ -10,7 +17,7 @@
   - parse switch
   - parse match
   - some illegal syntaxes can be caught by sometimes parsing newline tokens
-    - inside subscript, call parsing methods
+    - prevents subscript, call nodes
 
 - Semantic constraints
   - Desugar syntax constructs
@@ -41,6 +48,7 @@
   - Allocates constants
 - Thread control
 - Fiber threads
+  - ucontext.h
 - Implement basic opcodes
 - Memory locking
 - REPL support

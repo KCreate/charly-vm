@@ -173,7 +173,6 @@ private:
   void validate_defer(const ref<Defer>& node);
   void validate_import(const ref<Import>& node);
   void validate_assignment(const ref<Assignment>& node);
-  void validate_andassignment(const ref<ANDAssignment>& node);
   void validate_spawn(const ref<Spawn>& node);
   void validate_dict(const ref<Dict>& node);
 

@@ -68,12 +68,10 @@ int run_repl() {
 
     utils::Buffer source_buffer(line);
     // utils::Buffer source_buffer((
-    //   "        25 25 { (1, 2, 3)\n" \
-    //   "foo = bar = baz\n" \
-    //   "from math as @\"ääää\" import (1, 2, 3) as sin\n" \
-    //   "from math as ääää import (1, 2, 3) as sin\n" \
-    //   "from x import 25 as bar\n" \
-    //   "(x, y, z) = coords } 25 25"
+    //   "foo(\"hello world\")(3)\n" \
+    //   ".     foo \n" \
+    //   "(a, b, c) = data\n"
+    //   "[1, 2, 3].data\n"
     // ));
 
     DiagnosticConsole console("stdin", source_buffer);

@@ -72,7 +72,6 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
   SWITCH_NODE(Dict)
 
   SWITCH_NODE(Assignment)
-  SWITCH_NODE(ANDAssignment)
   SWITCH_NODE(Ternary)
   SWITCH_NODE(BinaryOp)
   SWITCH_NODE(UnaryOp)
@@ -151,11 +150,6 @@ void Program::visit_children(ASTPass* pass) {
 }
 
 void Assignment::visit_children(ASTPass* pass) {
-  this->target = pass->visit(this->target);
-  this->source = pass->visit(this->source);
-}
-
-void ANDAssignment::visit_children(ASTPass* pass) {
   this->target = pass->visit(this->target);
   this->source = pass->visit(this->source);
 }

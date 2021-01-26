@@ -328,21 +328,13 @@ ref<Expression> Parser::parse_assignment() {
 
   if (type(TokenType::Assignment)) {
     TokenType assignment_operator = m_token.assignment_operator;
-
     eat(TokenType::Assignment);
-
-    if (assignment_operator == TokenType::Assignment) {
-      ref<Assignment> node = make<Assignment>(target, parse_expression());
-      validate_assignment(node);
-      return node;
-    } else {
-      ref<ANDAssignment> node = make<ANDAssignment>(assignment_operator, target, parse_expression());
-      validate_andassignment(node);
-      return node;
-    }
-  } else {
-    return target;
+    ref<Assignment> node = make<Assignment>(assignment_operator, target, parse_expression());
+    validate_assignment(node);
+    return node;
   }
+
+  return target;
 }
 
 ref<Expression> Parser::parse_ternary() {
@@ -555,7 +547,7 @@ ref<FormatString> Parser::parse_format_string() {
   if (element->value.size() > 0)
     format_string->elements.push_back(element);
 
-  do {
+  for (;;) {
     // parse interpolated expression
     ref<Expression> exp = parse_expression();
     format_string->elements.push_back(exp);
@@ -582,7 +574,7 @@ ref<FormatString> Parser::parse_format_string() {
 
     if (final_element)
       return format_string;
-  } while (true);
+  };
 }
 
 ref<Expression> Parser::parse_tuple() {
@@ -762,12 +754,22 @@ void Parser::validate_import(const ref<Import>& node) {
 }
 
 void Parser::validate_assignment(const ref<Assignment>& node) {
-  if (!node->target->assignable()) {
-    m_console.error("left-hand side of assignment is not assignable", node->target->location());
+  // tuple or dict assignment not allowed if the assignment
+  // operator is anything else than regular assignment
+  if (node->operation != TokenType::Assignment) {
+    switch (node->target->type()) {
+      case Node::Type::Tuple:
+      case Node::Type::Dict: {
+        m_console.error("this type of expression cannot be used as the left-hand side of an operator assignment",
+                        node->target->location());
+        return;
+      }
+      default: {
+        break;
+      }
+    }
   }
-}
 
-void Parser::validate_andassignment(const ref<ANDAssignment>& node) {
   if (!node->target->assignable()) {
     m_console.error("left-hand side of assignment is not assignable", node->target->location());
   }

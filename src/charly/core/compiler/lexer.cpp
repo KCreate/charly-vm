@@ -438,7 +438,7 @@ Token Lexer::read_token_all() {
       }
     }
 
-  // and assignment operators
+  // operator assignment
   if (token.legal_assignment_operator() && peek_char() == '=') {
     read_char();
     token.assignment_operator = token.type;
@@ -485,11 +485,9 @@ Token Lexer::read_token() {
   for (;;) {
     token = read_token_all();
 
-    if (token.type == TokenType::Whitespace || token.type == TokenType::Newline || token.type == TokenType::Comment) {
-      continue;
+    if (token.type != TokenType::Whitespace && token.type != TokenType::Newline && token.type != TokenType::Comment) {
+      break;
     }
-
-    break;
   }
 
   return token;

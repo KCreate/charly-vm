@@ -34,8 +34,8 @@
 namespace charly::core::compiler {
 
 struct Location {
-  bool valid = true;        // wether this location contains actual data
-  bool compound = false;    // wether this location is a mixup of multiple other locations
+  bool valid = true;      // wether this location contains actual data
+  bool compound = false;  // wether this location is a mixup of multiple other locations
 
   // offset in source bytestream
   size_t offset;

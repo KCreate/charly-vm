@@ -100,7 +100,6 @@ public:
 
     // Expressions
     Assignment,
-    ANDAssignment,
     Ternary,
     BinaryOp,
     UnaryOp,
@@ -173,12 +172,15 @@ bool isa(const ref<Node>& node) {
   return dynamic_cast<T*>(node.get()) != nullptr;
 }
 
-#define AST_NODE(T)                           \
-  virtual Node::Type type() const override {  \
-    return Node::Type::T;                     \
-  }                                           \
+#define AST_NODE(T)                                \
+public:                                            \
+  virtual Node::Type type() const override {       \
+    return Node::Type::T;                          \
+  }                                                \
+                                                   \
+private:                                           \
   virtual const char* node_name() const override { \
-    return #T;                               \
+    return #T;                                     \
   }
 
 // {
@@ -366,26 +368,16 @@ public:
   virtual void visit_children(ASTPass*) override;
 };
 
-// <target> = <source>
+// <target> <operation>= <source>
 class Assignment final : public Expression {
   AST_NODE(Assignment)
 public:
-  Assignment(ref<Expression> target, ref<Expression> source) : target(target), source(source) {
+  Assignment(ref<Expression> target, ref<Expression> source) :
+    operation(TokenType::Assignment), target(target), source(source) {
     this->set_begin(target);
     this->set_end(source);
   }
-
-  ref<Expression> target;
-  ref<Expression> source;
-
-  virtual void visit_children(ASTPass*) override;
-};
-
-// <target> <operation>= <source>
-class ANDAssignment final : public Expression {
-  AST_NODE(ANDAssignment)
-public:
-  ANDAssignment(TokenType operation, ref<Expression> target, ref<Expression> source) :
+  Assignment(TokenType operation, ref<Expression> target, ref<Expression> source) :
     operation(operation), target(target), source(source) {
     this->set_begin(target);
     this->set_end(source);
@@ -553,6 +545,29 @@ public:
   std::vector<ref<Expression>> elements;
 
   virtual bool assignable() const override {
+    if (elements.size() == 0)
+      return false;
+
+    bool spread_passed = false;
+    for (const ref<Expression>& node : elements) {
+      if (isa<Id>(node)) {
+        continue;
+      }
+
+      if (ref<UnaryOp> unaryop = cast<UnaryOp>(node)) {
+        if (spread_passed)
+          return false;
+
+        spread_passed = true;
+
+        if (isa<Id>(unaryop->expression)) {
+          continue;
+        }
+      }
+
+      return false;
+    }
+
     return true;
   }
 
@@ -575,10 +590,32 @@ public:
 class DictEntry final : public Node {
   AST_NODE(DictEntry)
 public:
-  DictEntry(ref<Expression> key, ref<Expression> value) : key(key), value(value) {}
+  DictEntry(ref<Expression> key) : DictEntry(key, nullptr) {}
+  DictEntry(ref<Expression> key, ref<Expression> value) : key(key), value(value) {
+    if (value) {
+      this->set_begin(key);
+      this->set_end(value);
+    } else {
+      this->set_location(key);
+    }
+  }
 
   ref<Expression> key;
   ref<Expression> value;
+
+  virtual bool assignable() const override {
+    if (value.get())
+      return false;
+
+    if (isa<Id>(key))
+      return true;
+
+    if (ref<UnaryOp> unaryop = cast<UnaryOp>(key)) {
+      return isa<Id>(unaryop->expression);
+    }
+
+    return false;
+  }
 
   virtual void visit_children(ASTPass*) override;
 };
@@ -591,6 +628,25 @@ public:
   Dict(Args&&... params) : elements({ std::forward<Args>(params)... }) {}
 
   std::vector<ref<DictEntry>> elements;
+
+  virtual bool assignable() const override {
+    if (elements.size() == 0)
+      return false;
+
+    bool spread_passed = false;
+    for (const ref<DictEntry>& node : elements) {
+      if (!node->assignable())
+        return false;
+
+      if (isa<UnaryOp>(node->key)) {
+        if (spread_passed)
+          return false;
+        spread_passed = true;
+      }
+    }
+
+    return true;
+  }
 
   virtual void visit_children(ASTPass*) override;
 };
@@ -616,6 +672,9 @@ public:
 class MemberOp final : public Expression {
   AST_NODE(MemberOp)
 public:
+  MemberOp(ref<Expression> target, const std::string& member) : target(target), member(member) {
+    this->set_location(target);
+  }
   MemberOp(ref<Expression> target, ref<Id> member) : target(target), member(member->value) {
     this->set_begin(target);
     this->set_end(member);

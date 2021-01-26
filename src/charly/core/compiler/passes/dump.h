@@ -57,9 +57,12 @@ class DumpPass : public ASTPass {
     m_depth--;
   }
 
-  virtual bool enter(const ref<ANDAssignment>& node) override {
-    m_writer << ' ';
-    m_writer.fg(Color::Yellow, '\'', kTokenTypeStrings[static_cast<int>(node->operation)], '\'');
+  virtual bool enter(const ref<Assignment>& node) override {
+    if (node->operation != TokenType::Assignment) {
+      m_writer << ' ';
+      m_writer.fg(Color::Yellow, '\'', kTokenTypeStrings[static_cast<int>(node->operation)], '\'');
+    }
+
     return true;
   }
 
