@@ -40,6 +40,22 @@ using namespace charly::core::compiler::ast;
     return cast<T>(Parser::parse_expression(buffer, console)); \
   }())
 
+#define CHECK_EXP(S)                           \
+  {                                            \
+    charly::utils::Buffer buffer(S);           \
+    DiagnosticConsole console("test", buffer); \
+    Parser::parse_expression(buffer, console); \
+    REQUIRE(!console.has_errors());            \
+  }
+
+#define CHECK_STMT(S)                          \
+  {                                            \
+    charly::utils::Buffer buffer(S);           \
+    DiagnosticConsole console("test", buffer); \
+    Parser::parse_statement(buffer, console);  \
+    REQUIRE(!console.has_errors());            \
+  }
+
 #define CHECK_AST_EXP(S, N)                                                     \
   {                                                                             \
     std::stringstream exp_dump;                                                 \

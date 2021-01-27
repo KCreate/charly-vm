@@ -1,11 +1,6 @@
 # Todos
 
 - Parser
-  - parse declarations
-    - let, const
-    - let x = <exp>         regular
-    - let (x, y) = <exp>    unpack sequence
-    - let {x, y} = <exp>    unpack attributes
   - parse for
   - parse functions
     - parse arguments declaration list
@@ -48,7 +43,18 @@
   - Allocates constants
 - Thread control
 - Fiber threads
-  - ucontext.h
+  - Write custom scheduler using setjmp/longjmp
+  - Allocate custom stack (4kb) per fiber
+    - How to grow / shrink stack automatically?
+    - How does Go do this?
+  - Using setjmp/longjmp is orders of magnitude faster than ucontext or a regular thread context
+    switch because it does not involve any system calls.
+  - ucontext is useless in this case because it involves system calls
+  - Allocating a dummy page with mprotect(PROT_NONE) after the stack (before because it grows downwards)
+    allows us to detect stack-overflows
+    - I don't know if we could recover a fiber with an overflowed stack
+  - Ideally the stack overflow would be detected before it actually happens so we can
+    gracefully throw a Charly or grow the stack to accomodate more data
 - Implement basic opcodes
 - Memory locking
 - REPL support

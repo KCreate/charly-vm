@@ -498,3 +498,83 @@ TEST_CASE("loop statements") {
 
   CHECK_ERROR_STMT("loop", "unexpected end of file, expected a statement");
 }
+
+TEST_CASE("declarations") {
+  CHECK_AST_STMT("let a", make<Declaration>(make<Id>("a"), make<Null>()));
+  CHECK_AST_STMT("let a = 1", make<Declaration>(make<Id>("a"), make<Int>(1)));
+  CHECK_AST_STMT("let a = 1 + 2",
+                 make<Declaration>(make<Id>("a"), make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(2))));
+  CHECK_AST_STMT("const a = 1", make<Declaration>(make<Id>("a"), make<Int>(1), true));
+  CHECK_AST_STMT("const a = 1 + 2",
+                 make<Declaration>(make<Id>("a"), make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(2)), true));
+
+  CHECK_AST_STMT("let (a) = x", make<Declaration>(make<Tuple>(make<Id>("a")), make<Id>("x")));
+  CHECK_AST_STMT("let (a, b) = x", make<Declaration>(make<Tuple>(make<Id>("a"), make<Id>("b")), make<Id>("x")));
+  CHECK_AST_STMT(
+    "let (a, ...b) = x",
+    make<Declaration>(make<Tuple>(make<Id>("a"), make<UnaryOp>(TokenType::TriplePoint, make<Id>("b"))), make<Id>("x")));
+  CHECK_AST_STMT(
+    "let (a, ...b, c) = x",
+    make<Declaration>(make<Tuple>(make<Id>("a"), make<UnaryOp>(TokenType::TriplePoint, make<Id>("b")), make<Id>("c")),
+                      make<Id>("x")));
+
+  CHECK_AST_STMT("const (a) = x", make<Declaration>(make<Tuple>(make<Id>("a")), make<Id>("x"), true));
+  CHECK_AST_STMT("const (a, b) = x", make<Declaration>(make<Tuple>(make<Id>("a"), make<Id>("b")), make<Id>("x"), true));
+  CHECK_AST_STMT("const (a, ...b) = x",
+                 make<Declaration>(make<Tuple>(make<Id>("a"), make<UnaryOp>(TokenType::TriplePoint, make<Id>("b"))),
+                                   make<Id>("x"), true));
+  CHECK_AST_STMT(
+    "const (a, ...b, c) = x",
+    make<Declaration>(make<Tuple>(make<Id>("a"), make<UnaryOp>(TokenType::TriplePoint, make<Id>("b")), make<Id>("c")),
+                      make<Id>("x"), true));
+
+  CHECK_AST_STMT("let {a} = x", make<Declaration>(make<Dict>(make<DictEntry>(make<Id>("a"))), make<Id>("x")));
+  CHECK_AST_STMT(
+    "let {a, b} = x",
+    make<Declaration>(make<Dict>(make<DictEntry>(make<Id>("a")), make<DictEntry>(make<Id>("b"))), make<Id>("x")));
+  CHECK_AST_STMT("let {a, ...b} = x",
+                 make<Declaration>(make<Dict>(make<DictEntry>(make<Id>("a")),
+                                              make<DictEntry>(make<UnaryOp>(TokenType::TriplePoint, make<Id>("b")))),
+                                   make<Id>("x")));
+  CHECK_AST_STMT("let {a, ...b, c} = x",
+                 make<Declaration>(make<Dict>(make<DictEntry>(make<Id>("a")),
+                                              make<DictEntry>(make<UnaryOp>(TokenType::TriplePoint, make<Id>("b"))),
+                                              make<DictEntry>(make<Id>("c"))),
+                                   make<Id>("x")));
+
+  CHECK_AST_STMT("const {a} = x", make<Declaration>(make<Dict>(make<DictEntry>(make<Id>("a"))), make<Id>("x"), true));
+  CHECK_AST_STMT(
+    "const {a, b} = x",
+    make<Declaration>(make<Dict>(make<DictEntry>(make<Id>("a")), make<DictEntry>(make<Id>("b"))), make<Id>("x"), true));
+  CHECK_AST_STMT("const {a, ...b} = x",
+                 make<Declaration>(make<Dict>(make<DictEntry>(make<Id>("a")),
+                                              make<DictEntry>(make<UnaryOp>(TokenType::TriplePoint, make<Id>("b")))),
+                                   make<Id>("x"), true));
+  CHECK_AST_STMT("const {a, ...b, c} = x",
+                 make<Declaration>(make<Dict>(make<DictEntry>(make<Id>("a")),
+                                              make<DictEntry>(make<UnaryOp>(TokenType::TriplePoint, make<Id>("b"))),
+                                              make<DictEntry>(make<Id>("c"))),
+                                   make<Id>("x"), true));
+
+  CHECK_ERROR_STMT("let () = 1", "left-hand side of declaration is not assignable");
+  CHECK_ERROR_STMT("let (1) = 1", "left-hand side of declaration is not assignable");
+  CHECK_ERROR_STMT("let (a.a) = 1", "left-hand side of declaration is not assignable");
+  CHECK_ERROR_STMT("let (2 + 2) = 1", "left-hand side of declaration is not assignable");
+  CHECK_ERROR_STMT("let (...a, ...d) = 1", "left-hand side of declaration is not assignable");
+  CHECK_ERROR_STMT("let ([1, 2]) = 1", "left-hand side of declaration is not assignable");
+  CHECK_ERROR_STMT("let (\"a\") = 1", "left-hand side of declaration is not assignable");
+
+  CHECK_ERROR_STMT("let {} = 1", "left-hand side of declaration is not assignable");
+  CHECK_ERROR_STMT("let {1} = 1", "expected identifier, member access or spread expression");
+  CHECK_ERROR_STMT("let {a.a} = 1", "left-hand side of declaration is not assignable");
+  CHECK_ERROR_STMT("let {2 + 2} = 1", "expected identifier, member access or spread expression");
+  CHECK_ERROR_STMT("let {...a, ...d} = 1", "left-hand side of declaration is not assignable");
+  CHECK_ERROR_STMT("let {[1, 2]} = 1", "expected identifier, member access or spread expression");
+  CHECK_ERROR_STMT("let {\"a\"} = 1", "expected identifier, member access or spread expression");
+
+  CHECK_ERROR_STMT("let (a)", "unexpected end of file, expected a '=' token");
+  CHECK_ERROR_STMT("let {a}", "unexpected end of file, expected a '=' token");
+  CHECK_ERROR_STMT("const a", "unexpected end of file, expected a '=' token");
+  CHECK_ERROR_STMT("const (a)", "unexpected end of file, expected a '=' token");
+  CHECK_ERROR_STMT("const {a}", "unexpected end of file, expected a '=' token");
+}

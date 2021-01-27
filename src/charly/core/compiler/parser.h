@@ -127,6 +127,9 @@ private:
   ref<While> parse_while();
   ref<While> parse_loop();
 
+  // declarations
+  ref<Statement> parse_declaration();
+
   // expressions
   void parse_comma_expression(std::vector<ref<Expression>>& result);
   void parse_comma_as_expression(std::vector<ref<Expression>>& result);
@@ -155,7 +158,7 @@ private:
 
   // compound literals
   ref<FormatString> parse_format_string();
-  ref<Expression> parse_tuple();
+  ref<Expression> parse_tuple(bool paren_conversion = true);
   ref<List> parse_list();
   ref<Dict> parse_dict();
 
@@ -172,6 +175,7 @@ private:
 
   void validate_defer(const ref<Defer>& node);
   void validate_import(const ref<Import>& node);
+  void validate_declaration(const ref<Declaration>& node);
   void validate_assignment(const ref<Assignment>& node);
   void validate_spawn(const ref<Spawn>& node);
   void validate_dict(const ref<Dict>& node);

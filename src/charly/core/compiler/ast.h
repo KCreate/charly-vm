@@ -108,6 +108,7 @@ public:
     IndexOp,
 
     // Control Statements
+    Declaration,
     If,
     While,
 
@@ -705,6 +706,27 @@ public:
   virtual bool assignable() const override {
     return true;
   }
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+// let a
+// let a = 2
+// const b = 3
+// let (a, ...b, c) = 1
+// const (a, ...b, c) = x
+class Declaration final : public Expression {
+  AST_NODE(Declaration)
+public:
+  Declaration(ref<Expression> target, ref<Expression> expression, bool constant = false) :
+    constant(constant), target(target), expression(expression) {
+    this->set_begin(target);
+    this->set_end(expression);
+  }
+
+  bool constant;
+  ref<Expression> target;
+  ref<Expression> expression;
 
   virtual void visit_children(ASTPass*) override;
 };

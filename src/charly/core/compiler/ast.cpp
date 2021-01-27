@@ -79,6 +79,7 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
   SWITCH_NODE(MemberOp)
   SWITCH_NODE(IndexOp)
 
+  SWITCH_NODE(Declaration)
   SWITCH_NODE(If)
   SWITCH_NODE(While)
 #undef SWITCH_NODE
@@ -188,6 +189,11 @@ void MemberOp::visit_children(ASTPass* pass) {
 void IndexOp::visit_children(ASTPass* pass) {
   this->target = pass->visit(this->target);
   this->index = pass->visit(this->index);
+}
+
+void Declaration::visit_children(ASTPass* pass) {
+  this->target = pass->visit(this->target);
+  this->expression = pass->visit(this->expression);
 }
 
 void FormatString::visit_children(ASTPass* pass) {

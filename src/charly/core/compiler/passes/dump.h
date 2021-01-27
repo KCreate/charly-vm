@@ -130,6 +130,18 @@ class DumpPass : public ASTPass {
     return true;
   }
 
+  virtual bool enter(const ref<Declaration>& node) override {
+    if (isa<Tuple>(node->target) || isa<Dict>(node->target)) {
+      m_writer << ' ';
+      m_writer.fg(Color::Cyan, "unpack");
+    }
+    if (node->constant) {
+      m_writer << ' ';
+      m_writer.fg(Color::Red, "const");
+    }
+    return true;
+  }
+
 public:
   DumpPass(std::ostream& stream = std::cout, bool print_location = true) :
     m_writer(stream), m_depth(0), m_print_location(print_location) {}

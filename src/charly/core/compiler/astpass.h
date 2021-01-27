@@ -121,6 +121,8 @@ class ASTPass {
   AST_NODE(Expression, MemberOp)
   AST_NODE(Expression, IndexOp)
 
+  AST_NODE(Statement, Declaration)
+
   AST_NODE(Statement, If)
   AST_NODE(Statement, While)
 

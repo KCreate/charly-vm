@@ -134,6 +134,11 @@ ref<Statement> Parser::parse_statement() {
       stmt = parse_loop();
       break;
     }
+    case TokenType::Let:
+    case TokenType::Const: {
+      stmt = parse_declaration();
+      break;
+    }
     default: {
       if (m_token.could_start_expression()) {
         stmt = parse_expression();
@@ -255,6 +260,66 @@ ref<While> Parser::parse_loop() {
   ref<While> node = make<While>(condition, parse_statement());
   node->set_begin(begin);
   return node;
+}
+
+ref<Statement> Parser::parse_declaration() {
+  if (!(type(TokenType::Let) || type(TokenType::Const)))
+    unexpected_token("let or const");
+
+  Location begin = m_token.location;
+
+  bool const_declaration = type(TokenType::Const);
+  advance();
+
+  // parse the left-hand side of the declaration
+  ref<Expression> target;
+  bool requires_assignment = const_declaration;
+  switch (m_token.type) {
+
+    // regular local variable
+    case TokenType::Identifier: {
+      target = parse_identifier_token();
+      break;
+    }
+
+    // sequence unpack declaration
+    case TokenType::LeftParen: {
+      target = parse_tuple(false); // disable paren conversion
+      requires_assignment = true;
+      break;
+    }
+
+    // object unpack declaration
+    case TokenType::LeftCurly: {
+      target = parse_dict();
+      requires_assignment = true;
+      break;
+    }
+
+    default: {
+      unexpected_token("expected variable declaration");
+    }
+  }
+
+  if (requires_assignment)
+    match(TokenType::Assignment);
+
+  ref<Declaration> declaration_node;
+
+  if (skip(TokenType::Assignment)) {
+    ref<Expression> value = parse_expression();
+    declaration_node = make<Declaration>(target, value, const_declaration);
+  } else {
+    ref<Null> null = make<Null>();
+    null->set_location(target);
+    declaration_node = make<Declaration>(target, null, const_declaration);
+  }
+
+  declaration_node->set_begin(begin);
+
+  validate_declaration(declaration_node);
+
+  return declaration_node;
 }
 
 void Parser::parse_comma_expression(std::vector<ref<Expression>>& result) {
@@ -583,7 +648,7 @@ ref<FormatString> Parser::parse_format_string() {
   };
 }
 
-ref<Expression> Parser::parse_tuple() {
+ref<Expression> Parser::parse_tuple(bool paren_conversion) {
   ref<Tuple> tuple = make<Tuple>();
   begin(tuple);
 
@@ -593,7 +658,7 @@ ref<Expression> Parser::parse_tuple() {
     ref<Expression> exp = parse_expression();
 
     // (x) is treated as parentheses, not a tuple
-    if (type(TokenType::RightParen)) {
+    if (type(TokenType::RightParen) && paren_conversion) {
       advance();
       return exp;
     }
@@ -755,6 +820,24 @@ void Parser::validate_import(const ref<Import>& node) {
   } else {
     if (!isa<Id>(node->source)) {
       m_console.error("expected an identifier", node->source->location());
+    }
+  }
+}
+
+void Parser::validate_declaration(const ref<Declaration>& node) {
+  switch (node->target->type()) {
+    case Node::Type::Id: {
+      return;
+    }
+    case Node::Type::Tuple:
+    case Node::Type::Dict: {
+      if (!node->target->assignable())
+        m_console.error("left-hand side of declaration is not assignable", node->target->location());
+      return;
+    }
+    default: {
+      assert(false && "unexpected node");
+      break;
     }
   }
 }

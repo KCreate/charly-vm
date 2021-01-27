@@ -855,10 +855,7 @@ func foo(a, b, c, d) {
 
 
 
-// import statement
-import <identifier>
-import <identifier> as <identifier>
-import <string> as <identifier>
 
-// import expression
-import <expression>
+
+
+
