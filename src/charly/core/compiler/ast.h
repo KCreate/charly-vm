@@ -97,6 +97,7 @@ public:
     List,
     DictEntry,
     Dict,
+    Function,
 
     // Expressions
     Assignment,
@@ -130,18 +131,12 @@ public:
 
   void set_begin(const Location& loc) {
     m_location.valid = loc.valid;
-    m_location.compound = true;
-    m_location.offset = loc.offset;
-    m_location.row = loc.row;
-    m_location.column = loc.column;
+    m_location.set_begin(loc);
   }
 
   void set_end(const Location& loc) {
     m_location.valid = loc.valid;
-    m_location.compound = true;
-    m_location.end_offset = loc.end_offset;
-    m_location.end_row = loc.end_row;
-    m_location.end_column = loc.end_column;
+    m_location.set_end(loc);
   }
 
   void set_begin(const ref<Node>& node) {
@@ -648,6 +643,33 @@ public:
 
     return true;
   }
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+// func foo(a, b = 1, ...rest) {}
+// ->(a, b) a + b
+class Function final : public Expression {
+  AST_NODE(Function)
+public:
+  Function(ref<Statement> body, const std::vector<ref<Expression>>& arguments) :
+    name(""), arrow_function(true), body(body), arguments(arguments) {}
+
+  Function(const std::string& name, ref<Statement> body, const std::vector<ref<Expression>>& arguments) :
+    name(name), arrow_function(true), body(body), arguments(arguments) {}
+
+  template <typename... Args>
+  Function(ref<Statement> body, Args&&... params) :
+    name(""), arrow_function(true), body(body), arguments({ std::forward<Args>(params)... }) {}
+
+  template <typename... Args>
+  Function(const std::string& name, ref<Statement> body, Args&&... params) :
+    name(name), arrow_function(false), body(body), arguments({ std::forward<Args>(params)... }) {}
+
+  std::string name;
+  bool arrow_function;
+  ref<Statement> body;
+  std::vector<ref<Expression>> arguments;
 
   virtual void visit_children(ASTPass*) override;
 };

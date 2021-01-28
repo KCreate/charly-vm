@@ -478,8 +478,8 @@ TEST_CASE("if statements") {
   CHECK_AST_STMT("if x {} else {}", make<If>(make<Id>("x"), make<Block>(), make<Block>()));
 
   CHECK_ERROR_STMT("if", "unexpected end of file, expected an expression");
-  CHECK_ERROR_STMT("if x", "unexpected end of file, expected a statement");
-  CHECK_ERROR_STMT("if x 1 else", "unexpected end of file, expected a statement");
+  CHECK_ERROR_STMT("if x", "unexpected end of file, expected an expression");
+  CHECK_ERROR_STMT("if x 1 else", "unexpected end of file, expected an expression");
   CHECK_ERROR_STMT("if else x", "unexpected 'else' token, expected an expression");
 }
 
@@ -489,14 +489,14 @@ TEST_CASE("while statements") {
   CHECK_AST_STMT("while (x) foo()", make<While>(make<Id>("x"), make<CallOp>(make<Id>("foo"))));
 
   CHECK_ERROR_STMT("while", "unexpected end of file, expected an expression");
-  CHECK_ERROR_STMT("while x", "unexpected end of file, expected a statement");
+  CHECK_ERROR_STMT("while x", "unexpected end of file, expected an expression");
 }
 
 TEST_CASE("loop statements") {
   CHECK_AST_STMT("loop 1", make<While>(make<Bool>(true), make<Int>(1)));
   CHECK_AST_STMT("loop {}", make<While>(make<Bool>(true), make<Block>()));
 
-  CHECK_ERROR_STMT("loop", "unexpected end of file, expected a statement");
+  CHECK_ERROR_STMT("loop", "unexpected end of file, expected an expression");
 }
 
 TEST_CASE("declarations") {
@@ -577,4 +577,77 @@ TEST_CASE("declarations") {
   CHECK_ERROR_STMT("const a", "unexpected end of file, expected a '=' token");
   CHECK_ERROR_STMT("const (a)", "unexpected end of file, expected a '=' token");
   CHECK_ERROR_STMT("const {a}", "unexpected end of file, expected a '=' token");
+}
+
+TEST_CASE("functions") {
+  CHECK_AST_EXP("func foo = null", make<Function>("foo", make<Null>()));
+  CHECK_AST_EXP("func foo {}", make<Function>("foo", make<Block>()));
+  CHECK_AST_EXP("func foo { x }", make<Function>("foo", make<Block>(make<Id>("x"))));
+  CHECK_AST_EXP("func foo(a) {}", make<Function>("foo", make<Block>(), make<Id>("a")));
+  CHECK_AST_EXP("func foo(a, b) {}", make<Function>("foo", make<Block>(), make<Id>("a"), make<Id>("b")));
+  CHECK_AST_EXP("func foo(a, ...b) {}", make<Function>("foo", make<Block>(), make<Id>("a"),
+                                                       make<UnaryOp>(TokenType::TriplePoint, make<Id>("b"))));
+  CHECK_AST_EXP("func foo(...b) {}",
+                make<Function>("foo", make<Block>(), make<UnaryOp>(TokenType::TriplePoint, make<Id>("b"))));
+  CHECK_AST_EXP("func foo(a = 1) {}",
+                make<Function>("foo", make<Block>(), make<Assignment>(make<Id>("a"), make<Int>(1))));
+  CHECK_AST_EXP("func foo(a = 1, b = 2) {}",
+                make<Function>("foo", make<Block>(), make<Assignment>(make<Id>("a"), make<Int>(1)),
+                               make<Assignment>(make<Id>("b"), make<Int>(2))));
+  CHECK_AST_EXP("func foo(a = 1, b = 2, ...c) {}",
+                make<Function>("foo", make<Block>(), make<Assignment>(make<Id>("a"), make<Int>(1)),
+                               make<Assignment>(make<Id>("b"), make<Int>(2)),
+                               make<UnaryOp>(TokenType::TriplePoint, make<Id>("c"))));
+
+  CHECK_AST_EXP("->null", make<Function>(make<Null>()));
+  CHECK_AST_EXP("->{}", make<Function>(make<Block>()));
+  CHECK_AST_EXP("->{ x }", make<Function>(make<Block>(make<Id>("x"))));
+  CHECK_AST_EXP("->(a) {}", make<Function>(make<Block>(), make<Id>("a")));
+  CHECK_AST_EXP("->(a, b) {}", make<Function>(make<Block>(), make<Id>("a"), make<Id>("b")));
+  CHECK_AST_EXP("->(a, ...b) {}",
+                make<Function>(make<Block>(), make<Id>("a"), make<UnaryOp>(TokenType::TriplePoint, make<Id>("b"))));
+  CHECK_AST_EXP("->(...b) {}", make<Function>(make<Block>(), make<UnaryOp>(TokenType::TriplePoint, make<Id>("b"))));
+  CHECK_AST_EXP("->(a = 1) {}", make<Function>(make<Block>(), make<Assignment>(make<Id>("a"), make<Int>(1))));
+  CHECK_AST_EXP("->(a = 1, b = 2) {}", make<Function>(make<Block>(), make<Assignment>(make<Id>("a"), make<Int>(1)),
+                                                      make<Assignment>(make<Id>("b"), make<Int>(2))));
+  CHECK_AST_EXP("->(a = 1, b = 2, ...c) {}",
+                make<Function>(make<Block>(), make<Assignment>(make<Id>("a"), make<Int>(1)),
+                               make<Assignment>(make<Id>("b"), make<Int>(2)),
+                               make<UnaryOp>(TokenType::TriplePoint, make<Id>("c"))));
+
+  CHECK_EXP("func foo = import 25");
+  CHECK_EXP("func foo = throw 1");
+  CHECK_EXP("->import \"test\"");
+  CHECK_EXP("->import \"test\"");
+  CHECK_EXP("->throw 1");
+
+  CHECK_ERROR_EXP("func", "unexpected end of file, expected a '{' token");
+  CHECK_ERROR_EXP("func foo", "unexpected end of file, expected a '{' token");
+  CHECK_ERROR_EXP("func foo =", "unexpected end of file, expected an expression");
+  CHECK_ERROR_EXP("func foo(1) {}", "unexpected numerical constant, expected a 'identifier' token");
+  CHECK_ERROR_EXP("func foo(a.b) {}", "unexpected '.' token, expected a ')' token");
+  CHECK_ERROR_EXP("func foo(\"test\") {}", "unexpected string literal, expected a 'identifier' token");
+  CHECK_ERROR_EXP("func foo(a = 1, b) {}", "missing default argument");
+  CHECK_ERROR_EXP("func foo(...foo, ...rest) {}", "excess parameter(s)");
+  CHECK_ERROR_EXP("func foo(...foo, a, b, c) {}", "excess parameter(s)");
+  CHECK_ERROR_EXP("func foo(...a.b) {}", "unexpected '.' token, expected a ')' token");
+  CHECK_ERROR_EXP("func foo(...1) {}", "unexpected numerical constant, expected a 'identifier' token");
+  CHECK_ERROR_EXP("func foo(...1 = 25) {}", "unexpected numerical constant, expected a 'identifier' token");
+  CHECK_ERROR_EXP("->", "unexpected end of file, expected an expression");
+  CHECK_ERROR_EXP("-> =", "unexpected '=' token, expected an expression");
+  CHECK_ERROR_EXP("->(1) {}", "unexpected numerical constant, expected a 'identifier' token");
+  CHECK_ERROR_EXP("->(a.b) {}", "unexpected '.' token, expected a ')' token");
+  CHECK_ERROR_EXP("->(\"test\") {}", "unexpected string literal, expected a 'identifier' token");
+  CHECK_ERROR_EXP("->(a = 1, b) {}", "missing default argument");
+  CHECK_ERROR_EXP("->(...foo, ...rest) {}", "excess parameter(s)");
+  CHECK_ERROR_EXP("->(...foo, a, b, c) {}", "excess parameter(s)");
+  CHECK_ERROR_EXP("->(...a.b) {}", "unexpected '.' token, expected a ')' token");
+  CHECK_ERROR_EXP("->(...a = 2) {}", "spread argument cannot have a default value");
+  CHECK_ERROR_EXP("->(...1) {}", "unexpected numerical constant, expected a 'identifier' token");
+  CHECK_ERROR_EXP("->(...1 = 25) {}", "unexpected numerical constant, expected a 'identifier' token");
+
+  CHECK_ERROR_EXP("->return", "unexpected 'return' token, expected an expression");
+  CHECK_ERROR_EXP("->break", "unexpected 'break' token, expected an expression");
+  CHECK_ERROR_EXP("->continue", "unexpected 'continue' token, expected an expression");
+  CHECK_ERROR_EXP("->if true x", "unexpected 'if' token, expected an expression");
 }

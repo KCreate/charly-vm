@@ -124,6 +124,18 @@ class DumpPass : public ASTPass {
     return true;
   }
 
+  virtual bool enter(const ref<Function>& node) override {
+    m_writer << ' ';
+
+    if (node->arrow_function) {
+      m_writer.fg(Color::Cyan, "anonymous");
+    } else {
+      m_writer.fg(Color::Yellow, node->name);
+    }
+
+    return true;
+  }
+
   virtual bool enter(const ref<MemberOp>& node) override {
     m_writer << ' ';
     m_writer.fg(Color::Yellow, '\"', node->member, '\"');

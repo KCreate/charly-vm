@@ -87,70 +87,67 @@ void Parser::parse_block_body(const ref<Block>& block) {
 }
 
 ref<Statement> Parser::parse_statement() {
-  ref<Statement> stmt;
-
   switch (m_token.type) {
-    case TokenType::Return: {
-      stmt = parse_return();
-      break;
-    }
-    case TokenType::Break: {
-      stmt = parse_break();
-      break;
-    }
-    case TokenType::Continue: {
-      stmt = parse_continue();
-      break;
-    }
-    case TokenType::Defer: {
-      stmt = parse_defer();
-      break;
-    }
-    case TokenType::Throw: {
-      stmt = parse_throw();
-      break;
-    }
-    case TokenType::Export: {
-      stmt = parse_export();
-      break;
-    }
     case TokenType::Import: {
-      stmt = parse_import();
-      break;
+      return parse_import();
     }
     case TokenType::LeftCurly: {
-      stmt = parse_block();
-      break;
+      return parse_block();
     }
     case TokenType::If: {
-      stmt = parse_if();
-      break;
+      return parse_if();
     }
     case TokenType::While: {
-      stmt = parse_while();
-      break;
+      return parse_while();
     }
     case TokenType::Loop: {
-      stmt = parse_loop();
-      break;
+      return parse_loop();
     }
     case TokenType::Let:
     case TokenType::Const: {
-      stmt = parse_declaration();
-      break;
+      return parse_declaration();
     }
     default: {
-      if (m_token.could_start_expression()) {
-        stmt = parse_expression();
-        break;
-      }
-
-      unexpected_token("expected a statement");
-      break;
+      return parse_jump_statement();
     }
   }
+}
 
-  return stmt;
+ref<Statement> Parser::parse_jump_statement() {
+  switch (m_token.type) {
+    case TokenType::Return: {
+      return parse_return();
+    }
+    case TokenType::Break: {
+      return parse_break();
+    }
+    case TokenType::Continue: {
+      return parse_continue();
+    }
+    case TokenType::Defer: {
+      return parse_defer();
+    }
+    case TokenType::Throw: {
+      return parse_throw();
+    }
+    case TokenType::Export: {
+      return parse_export();
+    }
+    default: {
+      return parse_throw_statement();
+    }
+  }
+}
+
+ref<Statement> Parser::parse_throw_statement() {
+  switch (m_token.type) {
+    case TokenType::Throw: {
+      return parse_throw();
+    }
+    default: {
+      return parse_expression();
+    }
+  }
 }
 
 ref<Return> Parser::parse_return() {
@@ -583,6 +580,12 @@ ref<Expression> Parser::parse_literal() {
     case TokenType::FormatString: {
       return parse_format_string();
     }
+    case TokenType::RightArrow: {
+      return parse_arrow_function();
+    }
+    case TokenType::Func: {
+      return parse_function();
+    }
     case TokenType::LeftParen: {
       return parse_tuple();
     }
@@ -725,6 +728,90 @@ ref<Dict> Parser::parse_dict() {
   validate_dict(dict);
 
   return dict;
+}
+
+ref<Function> Parser::parse_function() {
+  if (type(TokenType::RightArrow))
+    return parse_arrow_function();
+
+  Location begin = m_token.location;
+  skip(TokenType::Func);
+
+  // function name
+  std::string function_name = "";
+  if (type(TokenType::Identifier)) {
+    function_name = parse_identifier_token()->value;
+  }
+
+  // argument list
+  std::vector<ref<Expression>> argument_list;
+  parse_function_arguments(argument_list);
+
+  ref<Statement> body;
+
+  if (skip(TokenType::Assignment)) {
+    body = parse_throw_statement();
+  } else {
+    body = parse_block();
+  }
+
+  ref<Function> node = make<Function>(function_name, body, argument_list);
+  node->set_begin(begin);
+
+  validate_function(node);
+
+  return node;
+}
+
+ref<Function> Parser::parse_arrow_function() {
+  Location begin = m_token.location;
+  eat(TokenType::RightArrow);
+
+  // argument list
+  std::vector<ref<Expression>> argument_list;
+  parse_function_arguments(argument_list);
+
+  ref<Statement> body;
+  if (type(TokenType::LeftCurly)) {
+    body = parse_block();
+  } else {
+    body = parse_throw_statement();
+  }
+
+  ref<Function> node = make<Function>(body, argument_list);
+  node->set_begin(begin);
+
+  validate_function(node);
+
+  return node;
+}
+
+void Parser::parse_function_arguments(std::vector<ref<Expression>>& result) {
+  if (skip(TokenType::LeftParen)) {
+    if (!type(TokenType::RightParen)) {
+      do {
+        bool spread_passed = false;
+        Location spread_token_location = m_token.location;
+        if (skip(TokenType::TriplePoint))
+          spread_passed = true;
+
+        ref<Expression> argument = parse_identifier_token();
+
+        if (spread_passed) {
+          argument = make<UnaryOp>(TokenType::TriplePoint, argument);
+          argument->set_begin(spread_token_location);
+        }
+
+        if (skip(TokenType::Assignment)) {
+          argument = make<Assignment>(argument, parse_expression());
+        }
+
+        result.push_back(argument);
+      } while (skip(TokenType::Comma));
+    }
+
+    eat(TokenType::RightParen);
+  }
 }
 
 ref<Int> Parser::parse_int_token() {
@@ -915,6 +1002,46 @@ void Parser::validate_dict(const ref<Dict>& node) {
     }
 
     m_console.error("expected identifier, string literal, formatstring or '[x]: y' expression", key->location());
+  }
+}
+
+void Parser::validate_function(const ref<Function>& node) {
+  bool default_argument_passed = false;
+  bool spread_argument_passed = false;
+  for (const ref<Expression>& arg : node->arguments) {
+    if (spread_argument_passed) {
+      // combine the location of the remaining arguments
+      Location excess_arguments_location = arg->location();
+      excess_arguments_location.set_end(node->arguments.back()->location());
+
+      m_console.error("excess parameter(s)", excess_arguments_location);
+      break;
+    }
+
+    if (isa<Id>(arg)) {
+      if (default_argument_passed) {
+        m_console.error("missing default argument", arg->location());
+      }
+      continue;
+    }
+
+    if (ref<Assignment> assignment = cast<Assignment>(arg)) {
+      if (isa<UnaryOp>(assignment->target)) {
+        m_console.error("spread argument cannot have a default value", assignment->location());
+      } else if (!isa<Id>(assignment->target)) {
+        m_console.error("expected identifier", assignment->target->location());
+      }
+
+      default_argument_passed = true;
+      continue;
+    }
+
+    if (ref<UnaryOp> unaryop = cast<UnaryOp>(arg)) {
+      spread_argument_passed = true;
+      continue;
+    }
+
+    assert(false && "unexpected node type");
   }
 }
 

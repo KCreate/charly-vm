@@ -114,6 +114,8 @@ private:
   ref<Block> parse_block();
   void parse_block_body(const ref<Block>& block);
   ref<Statement> parse_statement();
+  ref<Statement> parse_jump_statement();
+  ref<Statement> parse_throw_statement();
   ref<Return> parse_return();
   ref<Break> parse_break();
   ref<Continue> parse_continue();
@@ -161,6 +163,9 @@ private:
   ref<Expression> parse_tuple(bool paren_conversion = true);
   ref<List> parse_list();
   ref<Dict> parse_dict();
+  ref<Function> parse_function();
+  ref<Function> parse_arrow_function();
+  void parse_function_arguments(std::vector<ref<Expression>>& result);
 
   // literals
   ref<Int> parse_int_token();
@@ -179,6 +184,7 @@ private:
   void validate_assignment(const ref<Assignment>& node);
   void validate_spawn(const ref<Spawn>& node);
   void validate_dict(const ref<Dict>& node);
+  void validate_function(const ref<Function>& node);
 
   [[noreturn]] void unexpected_token();
   [[noreturn]] void unexpected_token(const std::string& message);

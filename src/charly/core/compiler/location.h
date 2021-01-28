@@ -47,6 +47,20 @@ struct Location {
   uint32_t end_row;
   uint32_t end_column;
 
+  void set_begin(const Location& other) {
+    this->compound = true;
+    this->offset = other.offset;
+    this->row = other.row;
+    this->column = other.column;
+  }
+
+  void set_end(const Location& other) {
+    this->compound = true;
+    this->end_offset = other.end_offset;
+    this->end_row = other.end_row;
+    this->end_column = other.end_column;
+  }
+
   friend std::ostream& operator<<(std::ostream& out, const Location& loc) {
     return out << loc.row + 1 << ":" << loc.column + 1;
   }

@@ -1,18 +1,16 @@
 # Todos
 
+- Check wether jump statements are allowed
+  - Stack of permission flags for each type of keyword
+
 - Parser
-  - parse for
-  - parse functions
-    - parse arguments declaration list
-  - parse range syntax (`x..y` and `x...y`)
-  - parse arrow function
-  - parse generators
   - parse classes
   - parse try
+  - parse for
+  - parse range syntax (`x..y` and `x...y`)
+  - parse generators
   - parse switch
   - parse match
-  - some illegal syntaxes can be caught by sometimes parsing newline tokens
-    - prevents subscript, call nodes
 
 - Semantic constraints
   - Desugar syntax constructs

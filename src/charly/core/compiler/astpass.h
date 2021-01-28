@@ -112,6 +112,7 @@ class ASTPass {
   AST_NODE(Expression, List)
   AST_NODE(DictEntry, DictEntry)
   AST_NODE(Expression, Dict)
+  AST_NODE(Expression, Function)
 
   AST_NODE(Expression, Assignment)
   AST_NODE(Expression, Ternary)

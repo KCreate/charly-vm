@@ -45,7 +45,7 @@ TEST_CASE("formats errors") {
   std::stringstream out;
   console.dump_all(out);
 
-  CHECK_THAT(out.str(), Equals(("test:1:4: error: unexpected ',' token, expected a statement\n"
+  CHECK_THAT(out.str(), Equals(("test:1:4: error: unexpected ',' token, expected an expression\n"
                                 "       1 | foo,\n")));
 }
 

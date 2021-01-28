@@ -70,6 +70,7 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
   SWITCH_NODE(List)
   SWITCH_NODE(DictEntry)
   SWITCH_NODE(Dict)
+  SWITCH_NODE(Function)
 
   SWITCH_NODE(Assignment)
   SWITCH_NODE(Ternary)
@@ -243,6 +244,19 @@ void Dict::visit_children(ASTPass* pass) {
   auto begin = this->elements.begin();
   auto end = this->elements.end();
   this->elements.erase(std::remove(begin, end, nullptr), end);
+}
+
+void Function::visit_children(ASTPass* pass) {
+  for (ref<Expression>& node : this->arguments) {
+    node = cast<Expression>(pass->visit(node));
+  }
+
+  auto begin = this->arguments.begin();
+  auto end = this->arguments.end();
+  this->arguments.erase(std::remove(begin, end, nullptr), end);
+
+  this->body = pass->visit(this->body);
+
 }
 
 void If::visit_children(ASTPass* pass) {
