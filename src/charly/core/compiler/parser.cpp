@@ -294,7 +294,6 @@ ref<While> Parser::parse_while() {
 
   ref<Expression> condition = parse_expression();
 
-
   auto kwcontext = m_keyword_context;
   m_keyword_context._break = true;
   m_keyword_context._continue = true;
@@ -336,7 +335,6 @@ ref<Statement> Parser::parse_declaration() {
   ref<Expression> target;
   bool requires_assignment = const_declaration;
   switch (m_token.type) {
-
     // regular local variable
     case TokenType::Identifier: {
       target = parse_identifier_token();
@@ -345,7 +343,7 @@ ref<Statement> Parser::parse_declaration() {
 
     // sequence unpack declaration
     case TokenType::LeftParen: {
-      target = parse_tuple(false); // disable paren conversion
+      target = parse_tuple(false);  // disable paren conversion
       requires_assignment = true;
       break;
     }
@@ -383,30 +381,13 @@ ref<Statement> Parser::parse_declaration() {
   return declaration_node;
 }
 
-void Parser::parse_comma_expression(std::vector<ref<Expression>>& result) {
+void Parser::parse_call_arguments(std::vector<ref<Expression>>& result) {
   if (!m_token.could_start_expression())
     return;
 
-  ref<Expression> exp = parse_expression();
-  result.push_back(exp);
-
-  while (type(TokenType::Comma)) {
-    eat(TokenType::Comma);
-    result.push_back(parse_expression());
-  }
-}
-
-void Parser::parse_comma_as_expression(std::vector<ref<Expression>>& result) {
-  if (!m_token.could_start_expression())
-    return;
-
-  ref<Expression> exp = parse_as_expression();
-  result.push_back(exp);
-
-  while (type(TokenType::Comma)) {
-    eat(TokenType::Comma);
-    result.push_back(parse_as_expression());
-  }
+  do {
+    result.push_back(parse_possible_spread_expression());
+  } while (skip(TokenType::Comma));
 }
 
 ref<Expression> Parser::parse_as_expression() {
@@ -476,6 +457,10 @@ ref<Expression> Parser::parse_ternary() {
   return condition;
 }
 
+ref<Expression> Parser::parse_binaryop() {
+  return parse_binaryop_1(parse_unaryop(), 0);
+}
+
 ref<Expression> Parser::parse_binaryop_1(ref<Expression> lhs, uint32_t min_precedence) {
   for (;;) {
     if (kBinaryOpPrecedenceLevels.count(m_token.type) == 0)
@@ -509,8 +494,16 @@ ref<Expression> Parser::parse_binaryop_1(ref<Expression> lhs, uint32_t min_prece
   return lhs;
 }
 
-ref<Expression> Parser::parse_binaryop() {
-  return parse_binaryop_1(parse_unaryop(), 0);
+ref<Expression> Parser::parse_possible_spread_expression() {
+  if (type(TokenType::TriplePoint)) {
+    Location start_loc = m_token.location;
+    advance();
+    ref<Spread> op = make<Spread>(parse_call_member_index());
+    op->set_begin(start_loc);
+    return op;
+  }
+
+  return parse_expression();
 }
 
 ref<Expression> Parser::parse_unaryop() {
@@ -607,7 +600,7 @@ ref<Expression> Parser::parse_call_member_index() {
 ref<CallOp> Parser::parse_call(ref<Expression> target) {
   eat(TokenType::LeftParen);
   ref<CallOp> callop = make<CallOp>(target);
-  parse_comma_expression(callop->arguments);
+  parse_call_arguments(callop->arguments);
   end(callop);
   eat(TokenType::RightParen);
   return callop;
@@ -727,26 +720,28 @@ ref<Expression> Parser::parse_tuple(bool paren_conversion) {
 
   eat(TokenType::LeftParen);
 
-  if (!type(TokenType::RightParen)) {
-    ref<Expression> exp = parse_expression();
+  do {
+    // parse the empty tuple ()
+    if (type(TokenType::RightParen)) {
+      if (tuple->elements.size() <= 1) {
+        break;
+      }
+    }
 
-    // (x) is treated as parentheses, not a tuple
-    if (type(TokenType::RightParen) && paren_conversion) {
-      advance();
-      return exp;
+    ref<Expression> exp = parse_possible_spread_expression();
+
+    // (x) is parsed as just x
+    // if x is a spread expression (...x) then the tuple
+    // shouldn't be omitted
+    if (paren_conversion && tuple->elements.size() == 0 && type(TokenType::RightParen)) {
+      if (!isa<Spread>(exp)) {
+        advance();
+        return exp;
+      }
     }
 
     tuple->elements.push_back(exp);
-
-    while (skip(TokenType::Comma)) {
-      // (x,) is treated as a tuple with one value
-      if (tuple->elements.size() == 1 && type(TokenType::RightParen)) {
-        break;
-      }
-
-      tuple->elements.push_back(parse_expression());
-    }
-  }
+  } while (skip(TokenType::Comma));
 
   end(tuple);
   eat(TokenType::RightParen);
@@ -762,7 +757,7 @@ ref<List> Parser::parse_list() {
 
   if (!type(TokenType::RightBracket)) {
     do {
-      list->elements.push_back(parse_expression());
+      list->elements.push_back(parse_possible_spread_expression());
     } while (skip(TokenType::Comma));
   }
 
@@ -780,8 +775,12 @@ ref<Dict> Parser::parse_dict() {
 
   if (!type(TokenType::RightCurly)) {
     do {
-      ref<Expression> key = parse_expression();
+      ref<Expression> key = parse_possible_spread_expression();
       ref<Expression> value = nullptr;
+
+      if (isa<Spread>(key) && type(TokenType::Colon)) {
+        unexpected_token(TokenType::Comma);
+      }
 
       if (skip(TokenType::Colon)) {
         value = parse_expression();
@@ -882,7 +881,7 @@ void Parser::parse_function_arguments(std::vector<ref<Expression>>& result) {
         ref<Expression> argument = parse_identifier_token();
 
         if (spread_passed) {
-          argument = make<UnaryOp>(TokenType::TriplePoint, argument);
+          argument = make<Spread>(argument);
           argument->set_begin(spread_token_location);
         }
 
@@ -1055,10 +1054,7 @@ void Parser::validate_dict(const ref<Dict>& node) {
         continue;
 
       // { ...other }
-      if (ref<UnaryOp> unaryop = cast<UnaryOp>(key)) {
-        if (unaryop->operation != TokenType::TriplePoint) {
-          m_console.error("unexpected operation", key->location());
-        }
+      if (ref<Spread> spread = cast<Spread>(key)) {
         continue;
       }
 
@@ -1075,17 +1071,7 @@ void Parser::validate_dict(const ref<Dict>& node) {
     if (isa<Id>(key) || isa<FormatString>(key))
       continue;
 
-    // check valid '{ [2 + 2]: foo }' key syntax
-    if (ref<List> list = cast<List>(key)) {
-      if (list->elements.size() != 1) {
-        m_console.error("list can only contain a single element", list->location());
-      }
-
-      key = make<FormatString>(list->elements.at(0));
-      continue;
-    }
-
-    m_console.error("expected identifier, string literal, formatstring or '[x]: y' expression", key->location());
+    m_console.error("expected identifier or string literal", key->location());
   }
 }
 
@@ -1110,7 +1096,7 @@ void Parser::validate_function(const ref<Function>& node) {
     }
 
     if (ref<Assignment> assignment = cast<Assignment>(arg)) {
-      if (isa<UnaryOp>(assignment->target)) {
+      if (isa<Spread>(assignment->target)) {
         m_console.error("spread argument cannot have a default value", assignment->location());
       } else if (!isa<Id>(assignment->target)) {
         m_console.error("expected identifier", assignment->target->location());
@@ -1120,7 +1106,7 @@ void Parser::validate_function(const ref<Function>& node) {
       continue;
     }
 
-    if (ref<UnaryOp> unaryop = cast<UnaryOp>(arg)) {
+    if (ref<Spread> spread = cast<Spread>(arg)) {
       spread_argument_passed = true;
       continue;
     }

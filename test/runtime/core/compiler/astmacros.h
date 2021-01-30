@@ -45,7 +45,7 @@ using namespace charly::core::compiler::ast;
     charly::utils::Buffer buffer(S);           \
     DiagnosticConsole console("test", buffer); \
     Parser::parse_expression(buffer, console); \
-    CHECK(!console.has_errors());            \
+    CHECK(!console.has_errors());              \
   }
 
 #define CHECK_STMT(S)                          \
@@ -53,7 +53,7 @@ using namespace charly::core::compiler::ast;
     charly::utils::Buffer buffer(S);           \
     DiagnosticConsole console("test", buffer); \
     Parser::parse_statement(buffer, console);  \
-    CHECK(!console.has_errors());            \
+    CHECK(!console.has_errors());              \
   }
 
 #define CHECK_PROGRAM(S)                       \
@@ -61,31 +61,33 @@ using namespace charly::core::compiler::ast;
     charly::utils::Buffer buffer(S);           \
     DiagnosticConsole console("test", buffer); \
     Parser::parse_program(buffer, console);    \
-    CHECK(!console.has_errors());            \
+    CHECK(!console.has_errors());              \
   }
 
-#define CHECK_AST_EXP(S, N)                                                     \
-  {                                                                             \
-    std::stringstream exp_dump;                                                 \
-    std::stringstream ref_dump;                                                 \
-    charly::utils::Buffer buffer(S);                                            \
-    DiagnosticConsole console("test", buffer);                                  \
-    DumpPass(exp_dump, false).visit(Parser::parse_expression(buffer, console)); \
-    DumpPass(ref_dump, false).visit(N);                                         \
-    CHECK(!console.has_errors());                                             \
-    CHECK_THAT(exp_dump.str(), Equals(ref_dump.str()));                         \
+#define CHECK_AST_EXP(S, N)                                          \
+  {                                                                  \
+    std::stringstream exp_dump;                                      \
+    std::stringstream ref_dump;                                      \
+    charly::utils::Buffer buffer(S);                                 \
+    DiagnosticConsole console("test", buffer);                       \
+    ref<Expression> exp = Parser::parse_expression(buffer, console); \
+    REQUIRE(!console.has_errors());                                  \
+    DumpPass(exp_dump, false).visit(exp);                            \
+    DumpPass(ref_dump, false).visit(N);                              \
+    CHECK_THAT(exp_dump.str(), Equals(ref_dump.str()));              \
   }
 
-#define CHECK_AST_STMT(S, N)                                                    \
-  {                                                                             \
-    std::stringstream stmt_dump;                                                \
-    std::stringstream ref_dump;                                                 \
-    charly::utils::Buffer buffer(S);                                            \
-    DiagnosticConsole console("test", buffer);                                  \
-    DumpPass(stmt_dump, false).visit(Parser::parse_statement(buffer, console)); \
-    DumpPass(ref_dump, false).visit(N);                                         \
-    CHECK(!console.has_errors());                                             \
-    CHECK_THAT(stmt_dump.str(), Equals(ref_dump.str()));                        \
+#define CHECK_AST_STMT(S, N)                                        \
+  {                                                                 \
+    std::stringstream stmt_dump;                                    \
+    std::stringstream ref_dump;                                     \
+    charly::utils::Buffer buffer(S);                                \
+    DiagnosticConsole console("test", buffer);                      \
+    ref<Statement> stmt = Parser::parse_statement(buffer, console); \
+    REQUIRE(!console.has_errors());                                 \
+    DumpPass(stmt_dump, false).visit(stmt);                         \
+    DumpPass(ref_dump, false).visit(N);                             \
+    CHECK_THAT(stmt_dump.str(), Equals(ref_dump.str()));            \
   }
 
 #define CHECK_ERROR_EXP(S, E)                                  \
@@ -93,7 +95,7 @@ using namespace charly::core::compiler::ast;
     charly::utils::Buffer buffer(S);                           \
     DiagnosticConsole console("test", buffer);                 \
     Parser::parse_expression(buffer, console);                 \
-    CHECK(console.has_errors());                             \
+    REQUIRE(console.has_errors());                             \
     CHECK_THAT(console.messages().front().message, Equals(E)); \
   }
 
@@ -102,7 +104,7 @@ using namespace charly::core::compiler::ast;
     charly::utils::Buffer buffer(S);                           \
     DiagnosticConsole console("test", buffer);                 \
     Parser::parse_statement(buffer, console);                  \
-    CHECK(console.has_errors());                             \
+    REQUIRE(console.has_errors());                             \
     CHECK_THAT(console.messages().front().message, Equals(E)); \
   }
 
@@ -111,6 +113,6 @@ using namespace charly::core::compiler::ast;
     charly::utils::Buffer buffer(S);                           \
     DiagnosticConsole console("test", buffer);                 \
     Parser::parse_program(buffer, console);                    \
-    CHECK(console.has_errors());                             \
+    REQUIRE(console.has_errors());                             \
     CHECK_THAT(console.messages().front().message, Equals(E)); \
   }

@@ -226,9 +226,10 @@ static const std::unordered_set<TokenType> kBinaryOperatorTokens = {
   TokenType::DoublePoint, TokenType::TriplePoint,
 };
 
+// Note: The TriplePoint token or spread operator (...) is not included in this list is it is
+// being parsed in a special manner by the parser.
 static const std::unordered_set<TokenType> kUnaryOperatorTokens = { TokenType::Plus, TokenType::Minus,
-                                                                    TokenType::UnaryNot, TokenType::BitNOT,
-                                                                    TokenType::TriplePoint };
+                                                                    TokenType::UnaryNot, TokenType::BitNOT };
 
 static const std::unordered_set<TokenType> kAssignmentOperators = {
   TokenType::Plus,   TokenType::Minus,        TokenType::Mul,           TokenType::Div,

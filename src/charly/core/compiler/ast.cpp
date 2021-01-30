@@ -76,6 +76,7 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
   SWITCH_NODE(Ternary)
   SWITCH_NODE(BinaryOp)
   SWITCH_NODE(UnaryOp)
+  SWITCH_NODE(Spread)
   SWITCH_NODE(CallOp)
   SWITCH_NODE(MemberOp)
   SWITCH_NODE(IndexOp)
@@ -171,6 +172,10 @@ void UnaryOp::visit_children(ASTPass* pass) {
   this->expression = pass->visit(this->expression);
 }
 
+void Spread::visit_children(ASTPass* pass) {
+  this->expression = pass->visit(this->expression);
+}
+
 void CallOp::visit_children(ASTPass* pass) {
   this->target = pass->visit(this->target);
 
@@ -256,7 +261,6 @@ void Function::visit_children(ASTPass* pass) {
   this->arguments.erase(std::remove(begin, end, nullptr), end);
 
   this->body = pass->visit(this->body);
-
 }
 
 void If::visit_children(ASTPass* pass) {

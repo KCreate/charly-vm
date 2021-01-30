@@ -148,8 +148,7 @@ private:
   ref<Statement> parse_declaration();
 
   // expressions
-  void parse_comma_expression(std::vector<ref<Expression>>& result);
-  void parse_comma_as_expression(std::vector<ref<Expression>>& result);
+  void parse_call_arguments(std::vector<ref<Expression>>& result);
   ref<Expression> parse_as_expression();
   ref<Expression> parse_expression();
   ref<Yield> parse_yield();
@@ -158,6 +157,7 @@ private:
   ref<Expression> parse_ternary();
   ref<Expression> parse_binaryop();
   ref<Expression> parse_binaryop_1(ref<Expression> lhs, uint32_t min_precedence);
+  ref<Expression> parse_possible_spread_expression();
   ref<Expression> parse_unaryop();
 
   // control expressions

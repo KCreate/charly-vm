@@ -29,6 +29,7 @@
 #include <memory>
 
 #include "charly/core/compiler/ast.h"
+#include "charly/core/compiler/diagnostic.h"
 
 #pragma once
 
@@ -118,6 +119,7 @@ class ASTPass {
   AST_NODE(Expression, Ternary)
   AST_NODE(Expression, BinaryOp)
   AST_NODE(Expression, UnaryOp)
+  AST_NODE(Expression, Spread)
   AST_NODE(Expression, CallOp)
   AST_NODE(Expression, MemberOp)
   AST_NODE(Expression, IndexOp)

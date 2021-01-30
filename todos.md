@@ -1,20 +1,10 @@
 # Todos
 
-- Check wether certain nodes are allowed
-  - expression types
-    - super expressions may only occur inside class member or static functions
-    - spread expressions may only occur inside the following types of expressions
-      - tuple literals
-      - list literals
-      - dict literals
-      - call expression argument list
-      - function parameter declarations
-
 - Parser
   - parse classes
+    - allow super keyword inside class functions only
   - parse try
   - parse for
-  - parse range syntax (`x..y` and `x...y`)
   - parse generators
   - parse switch
   - parse match

@@ -104,6 +104,7 @@ public:
     Ternary,
     BinaryOp,
     UnaryOp,
+    Spread,
     CallOp,
     MemberOp,
     IndexOp,
@@ -438,6 +439,19 @@ public:
   virtual void visit_children(ASTPass*) override;
 };
 
+// ...<exp>
+class Spread final : public Expression {
+  AST_NODE(Spread)
+public:
+  Spread(ref<Expression> expression) : expression(expression) {
+    this->set_location(expression);
+  }
+
+  ref<Expression> expression;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
 // null
 class Null final : public ConstantExpression {
   AST_NODE(Null)
@@ -555,13 +569,13 @@ public:
         continue;
       }
 
-      if (ref<UnaryOp> unaryop = cast<UnaryOp>(node)) {
+      if (ref<Spread> spread = cast<Spread>(node)) {
         if (spread_passed)
           return false;
 
         spread_passed = true;
 
-        if (isa<Id>(unaryop->expression)) {
+        if (isa<Id>(spread->expression)) {
           continue;
         }
       }
@@ -611,8 +625,8 @@ public:
     if (isa<Id>(key))
       return true;
 
-    if (ref<UnaryOp> unaryop = cast<UnaryOp>(key)) {
-      return isa<Id>(unaryop->expression);
+    if (ref<Spread> spread = cast<Spread>(key)) {
+      return isa<Id>(spread->expression);
     }
 
     return false;
@@ -639,7 +653,7 @@ public:
       if (!node->assignable())
         return false;
 
-      if (isa<UnaryOp>(node->key)) {
+      if (isa<Spread>(node->key)) {
         if (spread_passed)
           return false;
         spread_passed = true;
@@ -657,19 +671,19 @@ public:
 class Function final : public Expression {
   AST_NODE(Function)
 public:
-  Function(ref<Statement> body, const std::vector<ref<Expression>>& arguments) :
-    name(""), arrow_function(true), body(body), arguments(arguments) {}
-
+  // regular functions
   Function(const std::string& name, ref<Statement> body, const std::vector<ref<Expression>>& arguments) :
-    name(name), arrow_function(true), body(body), arguments(arguments) {}
-
-  template <typename... Args>
-  Function(ref<Statement> body, Args&&... params) :
-    name(""), arrow_function(true), body(body), arguments({ std::forward<Args>(params)... }) {}
-
+    name(name), arrow_function(false), body(body), arguments(arguments) {}
   template <typename... Args>
   Function(const std::string& name, ref<Statement> body, Args&&... params) :
     name(name), arrow_function(false), body(body), arguments({ std::forward<Args>(params)... }) {}
+
+  // arrow functions
+  Function(ref<Statement> body, const std::vector<ref<Expression>>& arguments) :
+    name(""), arrow_function(true), body(body), arguments(arguments) {}
+  template <typename... Args>
+  Function(ref<Statement> body, Args&&... params) :
+    name(""), arrow_function(true), body(body), arguments({ std::forward<Args>(params)... }) {}
 
   std::string name;
   bool arrow_function;
