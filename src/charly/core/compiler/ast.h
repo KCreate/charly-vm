@@ -202,7 +202,12 @@ class Block final : public Statement {
   AST_NODE(Block)
 public:
   template <typename... Args>
-  Block(Args&&... params) : statements({ std::forward<Args>(params)... }) {}
+  Block(Args&&... params) : statements({ std::forward<Args>(params)... }) {
+    if (this->statements.size() > 0) {
+      this->set_begin(this->statements.front()->location());
+      this->set_end(this->statements.back()->location());
+    }
+  }
 
   std::vector<ref<Statement>> statements;
 

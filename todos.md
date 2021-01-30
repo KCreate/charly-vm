@@ -1,7 +1,14 @@
 # Todos
 
-- Check wether jump statements are allowed
-  - Stack of permission flags for each type of keyword
+- Check wether certain nodes are allowed
+  - expression types
+    - super expressions may only occur inside class member or static functions
+    - spread expressions may only occur inside the following types of expressions
+      - tuple literals
+      - list literals
+      - dict literals
+      - call expression argument list
+      - function parameter declarations
 
 - Parser
   - parse classes

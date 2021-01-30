@@ -307,8 +307,8 @@ TEST_CASE("parses control statements") {
   CHECK_AST_STMT("return 1", make<Return>(make<Int>(1)));
   CHECK_AST_STMT("return 1 + 2", make<Return>(make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(2))));
 
-  CHECK_AST_STMT("break", make<Break>());
-  CHECK_AST_STMT("continue", make<Continue>());
+  CHECK_AST_STMT("loop { break }", make<While>(make<Bool>(1), make<Block>(make<Break>())));
+  CHECK_AST_STMT("loop { continue }", make<While>(make<Bool>(1), make<Block>(make<Continue>())));
 
   CHECK_ERROR_STMT("defer foo", "expected a call expression");
   CHECK_AST_STMT("defer foo()", make<Defer>(make<CallOp>(make<Id>("foo"))));
@@ -650,4 +650,23 @@ TEST_CASE("functions") {
   CHECK_ERROR_EXP("->break", "unexpected 'break' token, expected an expression");
   CHECK_ERROR_EXP("->continue", "unexpected 'continue' token, expected an expression");
   CHECK_ERROR_EXP("->if true x", "unexpected 'if' token, expected an expression");
+}
+
+TEST_CASE("catches illegal control statements") {
+  CHECK_PROGRAM("return 1");
+  CHECK_PROGRAM("defer { ->{ return 1 } }");
+  CHECK_PROGRAM("func foo { return 42 }");
+  CHECK_PROGRAM("loop { break }");
+  CHECK_PROGRAM("loop { continue }");
+  CHECK_PROGRAM("loop { if 1 { break continue } }");
+  CHECK_PROGRAM("import foo");
+  CHECK_PROGRAM("export foo");
+  CHECK_ERROR_PROGRAM("defer { return 1 }", "return statement not allowed at this point");
+  CHECK_ERROR_PROGRAM("break", "break statement not allowed at this point");
+  CHECK_ERROR_PROGRAM("if true { break }", "break statement not allowed at this point");
+  CHECK_ERROR_PROGRAM("continue", "continue statement not allowed at this point");
+  CHECK_ERROR_PROGRAM("if true { continue }", "continue statement not allowed at this point");
+  CHECK_ERROR_PROGRAM("loop { ->{ continue } }", "continue statement not allowed at this point");
+  CHECK_ERROR_PROGRAM("{ import foo }", "import statement not allowed at this point");
+  CHECK_ERROR_PROGRAM("{ export foo }", "export statement not allowed at this point");
 }

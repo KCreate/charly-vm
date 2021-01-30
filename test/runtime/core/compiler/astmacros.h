@@ -45,7 +45,7 @@ using namespace charly::core::compiler::ast;
     charly::utils::Buffer buffer(S);           \
     DiagnosticConsole console("test", buffer); \
     Parser::parse_expression(buffer, console); \
-    REQUIRE(!console.has_errors());            \
+    CHECK(!console.has_errors());            \
   }
 
 #define CHECK_STMT(S)                          \
@@ -53,7 +53,15 @@ using namespace charly::core::compiler::ast;
     charly::utils::Buffer buffer(S);           \
     DiagnosticConsole console("test", buffer); \
     Parser::parse_statement(buffer, console);  \
-    REQUIRE(!console.has_errors());            \
+    CHECK(!console.has_errors());            \
+  }
+
+#define CHECK_PROGRAM(S)                       \
+  {                                            \
+    charly::utils::Buffer buffer(S);           \
+    DiagnosticConsole console("test", buffer); \
+    Parser::parse_program(buffer, console);    \
+    CHECK(!console.has_errors());            \
   }
 
 #define CHECK_AST_EXP(S, N)                                                     \
@@ -63,8 +71,8 @@ using namespace charly::core::compiler::ast;
     charly::utils::Buffer buffer(S);                                            \
     DiagnosticConsole console("test", buffer);                                  \
     DumpPass(exp_dump, false).visit(Parser::parse_expression(buffer, console)); \
-    REQUIRE(!console.has_errors());                                             \
     DumpPass(ref_dump, false).visit(N);                                         \
+    CHECK(!console.has_errors());                                             \
     CHECK_THAT(exp_dump.str(), Equals(ref_dump.str()));                         \
   }
 
@@ -75,8 +83,8 @@ using namespace charly::core::compiler::ast;
     charly::utils::Buffer buffer(S);                                            \
     DiagnosticConsole console("test", buffer);                                  \
     DumpPass(stmt_dump, false).visit(Parser::parse_statement(buffer, console)); \
-    REQUIRE(!console.has_errors());                                             \
     DumpPass(ref_dump, false).visit(N);                                         \
+    CHECK(!console.has_errors());                                             \
     CHECK_THAT(stmt_dump.str(), Equals(ref_dump.str()));                        \
   }
 
@@ -85,7 +93,7 @@ using namespace charly::core::compiler::ast;
     charly::utils::Buffer buffer(S);                           \
     DiagnosticConsole console("test", buffer);                 \
     Parser::parse_expression(buffer, console);                 \
-    REQUIRE(console.has_errors());                             \
+    CHECK(console.has_errors());                             \
     CHECK_THAT(console.messages().front().message, Equals(E)); \
   }
 
@@ -94,6 +102,15 @@ using namespace charly::core::compiler::ast;
     charly::utils::Buffer buffer(S);                           \
     DiagnosticConsole console("test", buffer);                 \
     Parser::parse_statement(buffer, console);                  \
-    REQUIRE(console.has_errors());                             \
+    CHECK(console.has_errors());                             \
+    CHECK_THAT(console.messages().front().message, Equals(E)); \
+  }
+
+#define CHECK_ERROR_PROGRAM(S, E)                              \
+  {                                                            \
+    charly::utils::Buffer buffer(S);                           \
+    DiagnosticConsole console("test", buffer);                 \
+    Parser::parse_program(buffer, console);                    \
+    CHECK(console.has_errors());                             \
     CHECK_THAT(console.messages().front().message, Equals(E)); \
   }

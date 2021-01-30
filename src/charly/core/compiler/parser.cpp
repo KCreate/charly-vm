@@ -61,7 +61,13 @@ ref<Block> Parser::parse_block() {
   ref<Block> block = make<Block>();
   begin(block);
   eat(TokenType::LeftCurly);
+
+  auto kwcontext = m_keyword_context;
+  m_keyword_context._export = false;
+  m_keyword_context._import = false;
   parse_block_body(block);
+  m_keyword_context = kwcontext;
+
   end(block);
   eat(TokenType::RightCurly);
   return block;
@@ -84,6 +90,23 @@ void Parser::parse_block_body(const ref<Block>& block) {
 
     parsed_statements++;
   }
+}
+
+ref<Statement> Parser::parse_block_or_statement() {
+  auto kwcontext = m_keyword_context;
+  m_keyword_context._export = false;
+  m_keyword_context._import = false;
+
+  ref<Statement> stmt;
+  if (type(TokenType::LeftCurly)) {
+    stmt = parse_block();
+  } else {
+    stmt = parse_throw_statement();
+  }
+
+  m_keyword_context = kwcontext;
+
+  return stmt;
 }
 
 ref<Statement> Parser::parse_statement() {
@@ -154,17 +177,20 @@ ref<Return> Parser::parse_return() {
   Location begin = m_token.location;
   eat(TokenType::Return);
 
+  ref<Expression> return_value;
   if (m_token.could_start_expression()) {
-    ref<Expression> exp = parse_expression();
-    ref<Return> ret = make<Return>(exp);
-    ret->set_begin(begin);
-    return ret;
+    return_value = parse_expression();
+  } else {
+    return_value = make<Null>();
+    return_value->set_location(begin);
   }
 
-  ref<Null> null = make<Null>();
-  null->set_location(begin);
-  ref<Return> node = make<Return>(null);
+  ref<Return> node = make<Return>(return_value);
   node->set_begin(begin);
+
+  if (!m_keyword_context._return)
+    m_console.error("return statement not allowed at this point", node->location());
+
   return node;
 }
 
@@ -172,6 +198,10 @@ ref<Break> Parser::parse_break() {
   ref<Break> node = make<Break>();
   at(node);
   eat(TokenType::Break);
+
+  if (!m_keyword_context._break)
+    m_console.error("break statement not allowed at this point", node->location());
+
   return node;
 }
 
@@ -179,13 +209,24 @@ ref<Continue> Parser::parse_continue() {
   ref<Continue> node = make<Continue>();
   at(node);
   eat(TokenType::Continue);
+
+  if (!m_keyword_context._continue)
+    m_console.error("continue statement not allowed at this point", node->location());
+
   return node;
 }
 
 ref<Defer> Parser::parse_defer() {
   Location begin = m_token.location;
   eat(TokenType::Defer);
-  ref<Statement> stmt = parse_statement();
+
+  auto kwcontext = m_keyword_context;
+  m_keyword_context._return = false;
+  m_keyword_context._break = false;
+  m_keyword_context._continue = false;
+  ref<Statement> stmt = parse_block_or_statement();
+  m_keyword_context = kwcontext;
+
   ref<Defer> node = make<Defer>(stmt);
   node->set_begin(begin);
   validate_defer(node);
@@ -207,6 +248,10 @@ ref<Export> Parser::parse_export() {
   ref<Expression> exp = parse_expression();
   ref<Export> node = make<Export>(exp);
   node->set_begin(begin);
+
+  if (!m_keyword_context._export)
+    m_console.error("export statement not allowed at this point", node->location());
+
   return node;
 }
 
@@ -214,10 +259,14 @@ ref<Import> Parser::parse_import() {
   Location begin = m_token.location;
   eat(TokenType::Import);
   ref<Expression> source_exp = parse_as_expression();
-  ref<Import> import_node = make<Import>(source_exp);
-  import_node->set_begin(begin);
-  validate_import(import_node);
-  return import_node;
+  ref<Import> node = make<Import>(source_exp);
+  node->set_begin(begin);
+  validate_import(node);
+
+  if (!m_keyword_context._import)
+    m_console.error("import statement not allowed at this point", node->location());
+
+  return node;
 }
 
 ref<If> Parser::parse_if() {
@@ -225,11 +274,13 @@ ref<If> Parser::parse_if() {
   eat(TokenType::If);
 
   ref<Expression> condition = parse_expression();
-  ref<Statement> then_stmt = parse_statement();
-  ref<Statement> else_stmt = make<Nop>();
+  ref<Statement> then_stmt = parse_block_or_statement();
+  ref<Statement> else_stmt;
 
   if (skip(TokenType::Else)) {
-    else_stmt = parse_statement();
+    else_stmt = parse_block_or_statement();
+  } else {
+    else_stmt = make<Nop>();
   }
 
   ref<If> node = make<If>(condition, then_stmt, else_stmt);
@@ -242,7 +293,13 @@ ref<While> Parser::parse_while() {
   eat(TokenType::While);
 
   ref<Expression> condition = parse_expression();
-  ref<Statement> then_stmt = parse_statement();
+
+
+  auto kwcontext = m_keyword_context;
+  m_keyword_context._break = true;
+  m_keyword_context._continue = true;
+  ref<Statement> then_stmt = parse_block_or_statement();
+  m_keyword_context = kwcontext;
 
   ref<While> node = make<While>(condition, then_stmt);
   node->set_begin(begin);
@@ -254,7 +311,14 @@ ref<While> Parser::parse_loop() {
   eat(TokenType::Loop);
   ref<Expression> condition = make<Bool>(true);
   condition->set_location(begin);
-  ref<While> node = make<While>(condition, parse_statement());
+
+  auto kwcontext = m_keyword_context;
+  m_keyword_context._break = true;
+  m_keyword_context._continue = true;
+  ref<Statement> then_stmt = parse_block_or_statement();
+  m_keyword_context = kwcontext;
+
+  ref<While> node = make<While>(condition, then_stmt);
   node->set_begin(begin);
   return node;
 }
@@ -482,7 +546,13 @@ ref<Expression> Parser::parse_control_expression() {
 ref<Expression> Parser::parse_spawn() {
   Location begin = m_token.location;
   eat(TokenType::Spawn);
-  ref<Spawn> node = make<Spawn>(parse_statement());
+  auto kwcontext = m_keyword_context;
+  m_keyword_context._break = false;
+  m_keyword_context._continue = false;
+  ref<Statement> stmt = parse_block_or_statement();
+  m_keyword_context = kwcontext;
+
+  ref<Spawn> node = make<Spawn>(stmt);
   node->set_begin(begin);
   validate_spawn(node);
   return node;
@@ -691,10 +761,9 @@ ref<List> Parser::parse_list() {
   eat(TokenType::LeftBracket);
 
   if (!type(TokenType::RightBracket)) {
-    list->elements.push_back(parse_expression());
-    while (skip(TokenType::Comma)) {
+    do {
       list->elements.push_back(parse_expression());
-    }
+    } while (skip(TokenType::Comma));
   }
 
   end(list);
@@ -749,11 +818,18 @@ ref<Function> Parser::parse_function() {
 
   ref<Statement> body;
 
+  auto kwcontext = m_keyword_context;
+  m_keyword_context._return = true;
+  m_keyword_context._break = false;
+  m_keyword_context._continue = false;
+  m_keyword_context._export = false;
+  m_keyword_context._import = false;
   if (skip(TokenType::Assignment)) {
     body = parse_throw_statement();
   } else {
     body = parse_block();
   }
+  m_keyword_context = kwcontext;
 
   ref<Function> node = make<Function>(function_name, body, argument_list);
   node->set_begin(begin);
@@ -772,11 +848,19 @@ ref<Function> Parser::parse_arrow_function() {
   parse_function_arguments(argument_list);
 
   ref<Statement> body;
+
+  auto kwcontext = m_keyword_context;
+  m_keyword_context._return = true;
+  m_keyword_context._break = false;
+  m_keyword_context._continue = false;
+  m_keyword_context._export = false;
+  m_keyword_context._import = false;
   if (type(TokenType::LeftCurly)) {
     body = parse_block();
   } else {
     body = parse_throw_statement();
   }
+  m_keyword_context = kwcontext;
 
   ref<Function> node = make<Function>(body, argument_list);
   node->set_begin(begin);

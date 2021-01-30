@@ -80,6 +80,14 @@ static const std::unordered_set<TokenType> kRightAssociativeOperators = {
 
 // clang-format on
 
+struct KeywordContext {
+  bool _return;
+  bool _break;
+  bool _continue;
+  bool _export;
+  bool _import;  // only applies to the import statement, not expression
+};
+
 class Parser : public Lexer {
 public:
   static ref<Program> parse_program(const std::string& source) {
@@ -107,12 +115,19 @@ public:
 private:
   Parser(utils::Buffer& source, DiagnosticConsole& console) : Lexer(source, console) {
     advance();
+
+    m_keyword_context._return = true;
+    m_keyword_context._break = false;
+    m_keyword_context._continue = false;
+    m_keyword_context._export = true;
+    m_keyword_context._import = true;
   }
 
   // structural and statements
   ref<Program> parse_program();
   ref<Block> parse_block();
   void parse_block_body(const ref<Block>& block);
+  ref<Statement> parse_block_or_statement();
   ref<Statement> parse_statement();
   ref<Statement> parse_jump_statement();
   ref<Statement> parse_throw_statement();
@@ -232,6 +247,8 @@ private:
   void at(const ref<Node>& node) {
     node->set_location(m_token.location);
   }
+
+  KeywordContext m_keyword_context;
 };
 
 }  // namespace charly::core::compiler
