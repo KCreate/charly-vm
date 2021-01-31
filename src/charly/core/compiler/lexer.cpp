@@ -789,8 +789,10 @@ void Lexer::consume_comment(Token& token) {
   for (;;) {
     uint32_t cp = peek_char();
 
-    if (cp == '\n' || cp == '\0')
+    if (cp == '\n' || cp == '\0') {
+      increment_row();
       break;
+    }
 
     read_char();
   }
@@ -830,6 +832,11 @@ void Lexer::consume_multiline_comment(Token& token) {
           continue;
         }
 
+        break;
+      }
+      case '\n': {
+        read_char();
+        increment_row();
         break;
       }
       default: {
