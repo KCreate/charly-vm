@@ -71,6 +71,8 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
   SWITCH_NODE(DictEntry)
   SWITCH_NODE(Dict)
   SWITCH_NODE(Function)
+  SWITCH_NODE(Class)
+  SWITCH_NODE(ClassProperty)
 
   SWITCH_NODE(Assignment)
   SWITCH_NODE(Ternary)
@@ -94,14 +96,18 @@ template ref<Node> Node::visit(ASTPass*, const ref<Node>&);
 template ref<Statement> Node::visit(ASTPass*, const ref<Statement>&);
 template ref<Expression> Node::visit(ASTPass*, const ref<Expression>&);
 
-void Block::visit_children(ASTPass* pass) {
-  for (ref<Statement>& node : this->statements) {
-    node = cast<Statement>(pass->visit(node));
+#define VISIT_NODE_VECTOR(T, V)                           \
+  {                                                       \
+    for (ref<T> & node : this->V) {                       \
+      node = cast<T>(pass->visit(node));                  \
+    }                                                     \
+    auto begin = this->V.begin();                         \
+    auto end = this->V.end();                             \
+    this->V.erase(std::remove(begin, end, nullptr), end); \
   }
 
-  auto begin = this->statements.begin();
-  auto end = this->statements.end();
-  this->statements.erase(std::remove(begin, end, nullptr), end);
+void Block::visit_children(ASTPass* pass) {
+  VISIT_NODE_VECTOR(Statement, statements)
 }
 
 void Return::visit_children(ASTPass* pass) {
@@ -178,14 +184,7 @@ void Spread::visit_children(ASTPass* pass) {
 
 void CallOp::visit_children(ASTPass* pass) {
   this->target = pass->visit(this->target);
-
-  for (ref<Expression>& node : this->arguments) {
-    node = cast<Expression>(pass->visit(node));
-  }
-
-  auto begin = this->arguments.begin();
-  auto end = this->arguments.end();
-  this->arguments.erase(std::remove(begin, end, nullptr), end);
+  VISIT_NODE_VECTOR(Expression, arguments)
 }
 
 void MemberOp::visit_children(ASTPass* pass) {
@@ -203,33 +202,15 @@ void Declaration::visit_children(ASTPass* pass) {
 }
 
 void FormatString::visit_children(ASTPass* pass) {
-  for (ref<Expression>& node : this->elements) {
-    node = cast<Expression>(pass->visit(node));
-  }
-
-  auto begin = this->elements.begin();
-  auto end = this->elements.end();
-  this->elements.erase(std::remove(begin, end, nullptr), end);
+  VISIT_NODE_VECTOR(Expression, elements)
 }
 
 void Tuple::visit_children(ASTPass* pass) {
-  for (ref<Expression>& node : this->elements) {
-    node = cast<Expression>(pass->visit(node));
-  }
-
-  auto begin = this->elements.begin();
-  auto end = this->elements.end();
-  this->elements.erase(std::remove(begin, end, nullptr), end);
+  VISIT_NODE_VECTOR(Expression, elements)
 }
 
 void List::visit_children(ASTPass* pass) {
-  for (ref<Expression>& node : this->elements) {
-    node = cast<Expression>(pass->visit(node));
-  }
-
-  auto begin = this->elements.begin();
-  auto end = this->elements.end();
-  this->elements.erase(std::remove(begin, end, nullptr), end);
+  VISIT_NODE_VECTOR(Expression, elements)
 }
 
 void DictEntry::visit_children(ASTPass* pass) {
@@ -242,25 +223,32 @@ void DictEntry::visit_children(ASTPass* pass) {
 }
 
 void Dict::visit_children(ASTPass* pass) {
-  for (ref<DictEntry>& node : this->elements) {
-    node = cast<DictEntry>(pass->visit(node));
-  }
-
-  auto begin = this->elements.begin();
-  auto end = this->elements.end();
-  this->elements.erase(std::remove(begin, end, nullptr), end);
+  VISIT_NODE_VECTOR(DictEntry, elements)
 }
 
 void Function::visit_children(ASTPass* pass) {
-  for (ref<Expression>& node : this->arguments) {
-    node = cast<Expression>(pass->visit(node));
+  VISIT_NODE_VECTOR(Expression, arguments)
+  this->body = pass->visit(this->body);
+}
+
+void Class::visit_children(ASTPass* pass) {
+  if (this->parent) {
+    this->parent = pass->visit(this->parent);
   }
 
-  auto begin = this->arguments.begin();
-  auto end = this->arguments.end();
-  this->arguments.erase(std::remove(begin, end, nullptr), end);
+  if (this->constructor) {
+    this->constructor = cast<Function>(pass->visit(this->constructor));
+  }
 
-  this->body = pass->visit(this->body);
+  VISIT_NODE_VECTOR(Function, member_functions)
+  VISIT_NODE_VECTOR(ClassProperty, member_properties)
+  VISIT_NODE_VECTOR(ClassProperty, static_properties)
+}
+
+void ClassProperty::visit_children(ASTPass* pass) {
+  if (this->value) {
+    this->value = pass->visit(this->value);
+  }
 }
 
 void If::visit_children(ASTPass* pass) {
@@ -273,5 +261,7 @@ void While::visit_children(ASTPass* pass) {
   this->condition = pass->visit(this->condition);
   this->then_stmt = pass->visit(this->then_stmt);
 }
+
+#undef VISIT_NODE_VECTOR
 
 }  // namespace charly::core::compiler::ast

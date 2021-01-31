@@ -542,6 +542,7 @@ ref<Expression> Parser::parse_spawn() {
   auto kwcontext = m_keyword_context;
   m_keyword_context._break = false;
   m_keyword_context._continue = false;
+  m_keyword_context._super = false;
   ref<Statement> stmt = parse_block_or_statement();
   m_keyword_context = kwcontext;
 
@@ -648,6 +649,9 @@ ref<Expression> Parser::parse_literal() {
     }
     case TokenType::Func: {
       return parse_function();
+    }
+    case TokenType::Class: {
+      return parse_class();
     }
     case TokenType::LeftParen: {
       return parse_tuple();
@@ -798,8 +802,8 @@ ref<Dict> Parser::parse_dict() {
   return dict;
 }
 
-ref<Function> Parser::parse_function() {
-  if (type(TokenType::RightArrow))
+ref<Function> Parser::parse_function(bool class_function) {
+  if (!class_function && type(TokenType::RightArrow))
     return parse_arrow_function();
 
   Location begin = m_token.location;
@@ -809,6 +813,8 @@ ref<Function> Parser::parse_function() {
   std::string function_name = "";
   if (type(TokenType::Identifier)) {
     function_name = parse_identifier_token()->value;
+  } else if (class_function) {
+    unexpected_token(TokenType::Identifier);
   }
 
   // argument list
@@ -823,6 +829,7 @@ ref<Function> Parser::parse_function() {
   m_keyword_context._continue = false;
   m_keyword_context._export = false;
   m_keyword_context._import = false;
+  m_keyword_context._super = class_function;
   if (skip(TokenType::Assignment)) {
     body = parse_throw_statement();
   } else {
@@ -854,6 +861,7 @@ ref<Function> Parser::parse_arrow_function() {
   m_keyword_context._continue = false;
   m_keyword_context._export = false;
   m_keyword_context._import = false;
+  m_keyword_context._super = false;
   if (type(TokenType::LeftCurly)) {
     body = parse_block();
   } else {
@@ -895,6 +903,75 @@ void Parser::parse_function_arguments(std::vector<ref<Expression>>& result) {
 
     eat(TokenType::RightParen);
   }
+}
+
+ref<Class> Parser::parse_class() {
+  Location begin = m_token.location;
+  eat(TokenType::Class);
+
+  // class name
+  std::string class_name = "";
+  if (type(TokenType::Identifier)) {
+    class_name = parse_identifier_token()->value;
+  }
+
+  ref<Expression> parent;
+  if (skip(TokenType::Extends)) {
+    parent = parse_expression();
+  }
+
+  ref<Class> node = make<Class>(class_name, parent);
+  node->set_begin(begin);
+
+  // parse class body
+  eat(TokenType::LeftCurly);
+
+  while (!type(TokenType::RightCurly)) {
+    bool static_property = false;
+
+    if (skip(TokenType::Static))
+      static_property = true;
+
+    if (type(TokenType::Property)) {
+      advance();
+
+      std::string name = parse_identifier_token()->value;
+
+      ref<Expression> value;
+      if (skip(TokenType::Assignment)) {
+        value = parse_expression();
+      } else {
+        value = make<Null>();
+      }
+
+      if (static_property) {
+        node->static_properties.push_back(make<ClassProperty>(true, name, value));
+      } else {
+        node->member_properties.push_back(make<ClassProperty>(false, name, value));
+      }
+    } else {
+      ref<Function> function = parse_function(true);
+
+      if (static_property) {
+        node->static_properties.push_back(make<ClassProperty>(true, function->name, function));
+      } else {
+        if (function->name.compare("constructor") == 0) {
+          if (node->constructor) {
+            m_console.error("duplicate constructor", function->location());
+          } else {
+            node->constructor = function;
+          }
+        } else {
+          node->member_functions.push_back(function);
+        }
+      }
+    }
+  }
+
+  end(node);
+  eat(TokenType::RightCurly);
+
+  return node;
 }
 
 ref<Int> Parser::parse_int_token() {
@@ -972,6 +1049,10 @@ ref<Super> Parser::parse_super_token() {
   ref<Super> node = make<Super>();
   at(node);
   advance();
+
+  if (!m_keyword_context._super)
+    m_console.error("super is not allowed at this point", node->location());
+
   return node;
 }
 

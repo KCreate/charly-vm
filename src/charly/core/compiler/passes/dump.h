@@ -136,6 +136,22 @@ class DumpPass : public ASTPass {
     return true;
   }
 
+  virtual bool enter(const ref<Class>& node) override {
+    m_writer << ' ';
+    m_writer.fg(Color::Yellow, node->name);
+    return true;
+  }
+
+  virtual bool enter(const ref<ClassProperty>& node) override {
+    if (node->is_static) {
+      m_writer << ' ';
+      m_writer.fg(Color::Red, "static");
+    }
+    m_writer << ' ';
+    m_writer.fg(Color::Yellow, node->name);
+    return true;
+  }
+
   virtual bool enter(const ref<MemberOp>& node) override {
     m_writer << ' ';
     m_writer.fg(Color::Yellow, '\"', node->member, '\"');

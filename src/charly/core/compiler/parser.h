@@ -86,6 +86,7 @@ struct KeywordContext {
   bool _continue;
   bool _export;
   bool _import;  // only applies to the import statement, not expression
+  bool _super;
 };
 
 class Parser : public Lexer {
@@ -121,6 +122,7 @@ private:
     m_keyword_context._continue = false;
     m_keyword_context._export = true;
     m_keyword_context._import = true;
+    m_keyword_context._super = false;
   }
 
   // structural and statements
@@ -178,9 +180,10 @@ private:
   ref<Expression> parse_tuple(bool paren_conversion = true);
   ref<List> parse_list();
   ref<Dict> parse_dict();
-  ref<Function> parse_function();
+  ref<Function> parse_function(bool class_function = false);
   ref<Function> parse_arrow_function();
   void parse_function_arguments(std::vector<ref<Expression>>& result);
+  ref<Class> parse_class();
 
   // literals
   ref<Int> parse_int_token();

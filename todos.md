@@ -1,8 +1,6 @@
 # Todos
 
 - Parser
-  - parse classes
-    - allow super keyword inside class functions only
   - parse try
   - parse for
   - parse generators

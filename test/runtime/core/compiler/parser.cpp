@@ -64,7 +64,6 @@ TEST_CASE("parses literals") {
   CHECK_AST_EXP("false", make<Bool>(false));
   CHECK_AST_EXP("null", make<Null>());
   CHECK_AST_EXP("self", make<Self>());
-  CHECK_AST_EXP("super", make<Super>());
   CHECK_AST_EXP("'a'", make<Char>('a'));
   CHECK_AST_EXP("'π'", make<Char>(u'π'));
   CHECK_AST_EXP("'ä'", make<Char>(u'ä'));
@@ -78,6 +77,7 @@ TEST_CASE("parses literals") {
 
   CHECK_AST_EXP("\"\\a \\b \\n \\t \\v \\f \\\" \\{ \\\\ \"", make<String>("\a \b \n \t \v \f \" { \\ "));
 
+  CHECK_ERROR_EXP("super", "super is not allowed at this point");
   CHECK_ERROR_STMT("\"", "unexpected end of file, unclosed string");
 }
 
@@ -692,4 +692,44 @@ TEST_CASE("spread operator") {
     make<Declaration>(make<Dict>(make<DictEntry>(make<Id>("a")), make<DictEntry>(make<Spread>(make<Id>("copy"))),
                                  make<DictEntry>(make<Id>("b"))),
                       make<Id>("original")));
+}
+
+TEST_CASE("class literals") {
+  CHECK_AST_EXP("class Foo extends Bar {}", make<Class>("Foo", make<Id>("Bar")));
+
+  ref<Class> class_node = make<Class>("Foo", make<Id>("Bar"));
+  class_node->constructor = make<Function>("constructor", make<Block>(), make<Id>("a"));
+  class_node->member_properties.push_back(make<ClassProperty>(false, "foo", make<Int>(100)));
+  class_node->static_properties.push_back(make<ClassProperty>(true, "foo", make<Int>(200)));
+  class_node->member_functions.push_back(make<Function>("foo", make<Block>(), make<Id>("a")));
+  class_node->member_functions.push_back(make<Function>("bar", make<Block>(), make<Id>("a")));
+  class_node->static_properties.push_back(
+    make<ClassProperty>(true, "foo", make<Function>("foo", make<Block>(), make<Id>("a"))));
+  class_node->static_properties.push_back(
+    make<ClassProperty>(true, "bar", make<Function>("bar", make<Block>(), make<Id>("a"))));
+
+  CHECK_AST_EXP(("class Foo extends Bar {\n"
+                 "  constructor(a) {}\n"
+                 "  property foo = 100\n"
+                 "  static property foo = 200\n"
+                 "  func foo(a) {}\n"
+                 "  bar(a) {}\n"
+                 "  static func foo(a) {}\n"
+                 "  static bar(a) {}\n"
+                 "}"),
+                class_node);
+}
+
+TEST_CASE("super expressions") {
+  CHECK_ERROR_EXP("super", "super is not allowed at this point");
+  CHECK_ERROR_EXP("super.foo()", "super is not allowed at this point");
+  CHECK_ERROR_EXP("class { foo { ->{ super } } }", "super is not allowed at this point");
+  CHECK_ERROR_EXP("class { static foo { ->{ super } } }", "super is not allowed at this point");
+
+  ref<Class> class_node = make<Class>("Foo", make<Id>("Bar"));
+  class_node->member_functions.push_back(make<Function>("foo", make<Block>(make<Super>())));
+  CHECK_AST_EXP("class Foo extends Bar { foo { super } }", class_node);
+
+  CHECK_EXP("class Foo extends Bar { static foo { super } }");
+  CHECK_EXP("class Foo extends Bar { constructor { super } }");
 }

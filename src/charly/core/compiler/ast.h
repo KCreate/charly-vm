@@ -98,6 +98,8 @@ public:
     DictEntry,
     Dict,
     Function,
+    Class,
+    ClassProperty,
 
     // Expressions
     Assignment,
@@ -689,6 +691,37 @@ public:
   bool arrow_function;
   ref<Statement> body;
   std::vector<ref<Expression>> arguments;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+// property foo
+// static property bar = 42
+class ClassProperty final : public Expression {
+  AST_NODE(ClassProperty)
+public:
+  ClassProperty(bool is_static, const std::string& name, ref<Expression> value) :
+    is_static(is_static), name(name), value(value) {}
+
+  bool is_static;
+  std::string name;
+  ref<Expression> value;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+// class <name> [extends <parent>] { ... }
+class Class final : public Expression {
+  AST_NODE(Class)
+public:
+  Class(const std::string& name, ref<Expression> parent) : name(name), parent(parent), constructor(nullptr) {}
+
+  std::string name;
+  ref<Expression> parent;
+  ref<Function> constructor;
+  std::vector<ref<Function>> member_functions;
+  std::vector<ref<ClassProperty>> member_properties;
+  std::vector<ref<ClassProperty>> static_properties;
 
   virtual void visit_children(ASTPass*) override;
 };

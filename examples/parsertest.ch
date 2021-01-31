@@ -7,10 +7,26 @@
 
 
 
-const t = (a, b, c, ...rest)
-const (first, ...rest) = [1, 2, ...t, ...x, 3, 4]
-const d = {[key]: value, ...other}
-print(1, 2, ...args, 3, 4)
-func foo(x, y, ...rest) {
-  print(x, y, ...rest)
+
+
+
+
+class Foo extends BaseClass {
+  property x = []
+  property y = {}
+  property z = 42
+
+  static property a = 1
+  static property b = 2
+
+  constructor(x, y) {
+
+  }
+
+  func foo {}
+  bar {}
+
+  // syntax sugar for static property foo = func foo {}
+  static func foo {}
+  static bar {}
 }
