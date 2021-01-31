@@ -84,8 +84,10 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
   SWITCH_NODE(IndexOp)
 
   SWITCH_NODE(Declaration)
+
   SWITCH_NODE(If)
   SWITCH_NODE(While)
+  SWITCH_NODE(Try)
 #undef SWITCH_NODE
 
   assert(false && "Unknown node type");
@@ -260,6 +262,12 @@ void If::visit_children(ASTPass* pass) {
 void While::visit_children(ASTPass* pass) {
   this->condition = pass->visit(this->condition);
   this->then_stmt = pass->visit(this->then_stmt);
+}
+
+void Try::visit_children(ASTPass* pass) {
+  this->try_stmt = pass->visit(this->try_stmt);
+  if (this->catch_stmt)
+    this->catch_stmt = pass->visit(this->catch_stmt);
 }
 
 #undef VISIT_NODE_VECTOR

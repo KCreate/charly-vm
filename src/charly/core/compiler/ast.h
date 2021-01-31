@@ -111,10 +111,13 @@ public:
     MemberOp,
     IndexOp,
 
-    // Control Statements
+    // Declaration
     Declaration,
+
+    // Control structures
     If,
     While,
+    Try,
 
     // Meta
     TypeCount
@@ -837,6 +840,24 @@ public:
 
   ref<Expression> condition;
   ref<Statement> then_stmt;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+// try <try_stmt>
+// [catch (<exception_name>) <catch_stmt>]
+class Try final : public Expression {
+  AST_NODE(Try)
+public:
+  Try(ref<Statement> try_stmt, const std::string& exception_name, ref<Statement> catch_stmt) :
+    try_stmt(try_stmt), exception_name(exception_name), catch_stmt(catch_stmt) {
+    this->set_begin(try_stmt);
+    this->set_end(catch_stmt);
+  }
+
+  ref<Statement> try_stmt;
+  std::string exception_name;
+  ref<Statement> catch_stmt;
 
   virtual void visit_children(ASTPass*) override;
 };

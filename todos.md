@@ -1,7 +1,6 @@
 # Todos
 
 - Parser
-  - parse try
   - parse for
   - parse generators
   - parse switch

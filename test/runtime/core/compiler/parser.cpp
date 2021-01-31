@@ -733,3 +733,18 @@ TEST_CASE("super expressions") {
   CHECK_EXP("class Foo extends Bar { static foo { super } }");
   CHECK_EXP("class Foo extends Bar { constructor { super } }");
 }
+
+TEST_CASE("try statements") {
+  CHECK_AST_STMT("try foo catch bar", make<Try>(make<Id>("foo"), "exception", make<Id>("bar")));
+  CHECK_AST_STMT("try foo catch(err) bar", make<Try>(make<Id>("foo"), "err", make<Id>("bar")));
+  CHECK_AST_STMT("try foo catch(err) bar finally baz",
+                 make<Block>(make<Defer>(make<Id>("baz")), make<Try>(make<Id>("foo"), "err", make<Id>("bar"))));
+  CHECK_AST_STMT("try {} catch(err) {} finally {}",
+                 make<Block>(make<Defer>(make<Block>()), make<Try>(make<Block>(), "err", make<Block>())));
+
+  CHECK_STMT("loop { try { break continue } catch { break continue } }");
+  CHECK_ERROR_STMT("try {}", "unexpected end of file, expected a 'catch' token");
+  CHECK_ERROR_STMT("try {} finally {}", "unexpected 'finally' token, expected a 'catch' token");
+  CHECK_ERROR_STMT("loop { try {} catch {} finally { break } }", "break statement not allowed at this point");
+  CHECK_ERROR_STMT("loop { try {} catch {} finally { return } }", "return statement not allowed at this point");
+}

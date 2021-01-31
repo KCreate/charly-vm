@@ -126,6 +126,9 @@ ref<Statement> Parser::parse_statement() {
     case TokenType::Loop: {
       return parse_loop();
     }
+    case TokenType::Try: {
+      return parse_try();
+    }
     case TokenType::Let:
     case TokenType::Const: {
       return parse_declaration();
@@ -320,6 +323,42 @@ ref<While> Parser::parse_loop() {
   ref<While> node = make<While>(condition, then_stmt);
   node->set_begin(begin);
   return node;
+}
+
+ref<Statement> Parser::parse_try() {
+  Location begin = m_token.location;
+  eat(TokenType::Try);
+
+  ref<Statement> try_stmt = parse_block_or_statement();
+
+  eat(TokenType::Catch);
+  std::string exception_name;
+  if (skip(TokenType::LeftParen)) {
+    exception_name = parse_identifier_token()->value;
+    eat(TokenType::RightParen);
+  } else {
+    exception_name = "exception";
+  }
+  ref<Statement> catch_stmt = parse_block_or_statement();
+
+  ref<Statement> finally_stmt = nullptr;
+  if (skip(TokenType::Finally)) {
+    auto kwcontext = m_keyword_context;
+    m_keyword_context._return = false;
+    m_keyword_context._break = false;
+    m_keyword_context._continue = false;
+    finally_stmt = parse_block_or_statement();
+    m_keyword_context = kwcontext;
+  }
+
+  ref<Try> try_node = make<Try>(try_stmt, exception_name, catch_stmt);
+  try_node->set_begin(begin);
+
+  if (finally_stmt) {
+    return make<Block>(make<Defer>(finally_stmt), try_node);
+  } else {
+    return try_node;
+  }
 }
 
 ref<Statement> Parser::parse_declaration() {
