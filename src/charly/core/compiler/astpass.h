@@ -131,6 +131,8 @@ class ASTPass {
   AST_NODE(Statement, If)
   AST_NODE(Statement, While)
   AST_NODE(Statement, Try)
+  AST_NODE(Statement, Switch)
+  AST_NODE(Statement, SwitchCase)
 
 public:
   ref<Node> visit(const ref<Node>& node) {

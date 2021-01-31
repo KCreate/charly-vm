@@ -9,10 +9,18 @@
 
 
 
-try {
-  print("foo: {foo()}")
-} catch (err) {
-  print("error: {err}")
-} finally {
-  print("finally handlers")
+
+
+
+
+switch (foo) {
+  case 100 {
+
+  }
+  case 200 {
+
+  }
+  default {
+
+  }
 }

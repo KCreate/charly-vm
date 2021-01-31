@@ -2,8 +2,6 @@
 
 - Parser
   - parse for
-  - parse generators
-  - parse switch
   - parse match
 
 - Semantic constraints

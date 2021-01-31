@@ -118,6 +118,8 @@ public:
     If,
     While,
     Try,
+    Switch,
+    SwitchCase,
 
     // Meta
     TypeCount
@@ -858,6 +860,45 @@ public:
   ref<Statement> try_stmt;
   std::string exception_name;
   ref<Statement> catch_stmt;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+class SwitchCase final : public Expression {
+  AST_NODE(SwitchCase)
+public:
+  SwitchCase(ref<Expression> test, ref<Statement> stmt) : test(test), stmt(stmt) {
+    this->set_begin(test);
+    this->set_end(stmt);
+  }
+
+  ref<Expression> test;
+  ref<Statement> stmt;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+// switch (<test>) { case <test> <stmt> default <default_stmt> }
+class Switch final : public Expression {
+  AST_NODE(Switch)
+public:
+  Switch(ref<Expression> test) : test(test), default_stmt(nullptr) {
+    this->set_location(test);
+  }
+  template <typename... Args>
+  Switch(ref<Expression> test, ref<Statement> default_stmt, Args&&... params) :
+    test(test), default_stmt(default_stmt), cases({ std::forward<Args>(params)... }) {
+    this->set_begin(test);
+    if (default_stmt) {
+      this->set_end(default_stmt);
+    } else {
+      this->set_end(test);
+    }
+  }
+
+  ref<Expression> test;
+  ref<Statement> default_stmt;
+  std::vector<ref<SwitchCase>> cases;
 
   virtual void visit_children(ASTPass*) override;
 };

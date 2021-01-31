@@ -32,19 +32,49 @@ namespace charly::core::compiler {
 
 ref<Program> Parser::parse_program(utils::Buffer& source, DiagnosticConsole& console) {
   try {
-    return Parser(source, console).parse_program();
+    Parser parser = Parser(source, console);
+
+    parser.m_keyword_context._return = true;
+    parser.m_keyword_context._break = false;
+    parser.m_keyword_context._continue = false;
+    parser.m_keyword_context._yield = false;
+    parser.m_keyword_context._export = true;
+    parser.m_keyword_context._import = true;
+    parser.m_keyword_context._super = false;
+
+    return parser.parse_program();
   } catch (DiagnosticException&) { return nullptr; }
 }
 
 ref<Statement> Parser::parse_statement(utils::Buffer& source, DiagnosticConsole& console) {
   try {
-    return Parser(source, console).parse_statement();
+    Parser parser = Parser(source, console);
+
+    parser.m_keyword_context._return = true;
+    parser.m_keyword_context._break = true;
+    parser.m_keyword_context._continue = true;
+    parser.m_keyword_context._yield = true;
+    parser.m_keyword_context._export = true;
+    parser.m_keyword_context._import = true;
+    parser.m_keyword_context._super = true;
+
+    return parser.parse_statement();
   } catch (DiagnosticException&) { return nullptr; }
 }
 
 ref<Expression> Parser::parse_expression(utils::Buffer& source, DiagnosticConsole& console) {
   try {
-    return Parser(source, console).parse_expression();
+    Parser parser = Parser(source, console);
+
+    parser.m_keyword_context._return = true;
+    parser.m_keyword_context._break = true;
+    parser.m_keyword_context._continue = true;
+    parser.m_keyword_context._yield = true;
+    parser.m_keyword_context._export = true;
+    parser.m_keyword_context._import = true;
+    parser.m_keyword_context._super = true;
+
+    return parser.parse_expression();
   } catch (DiagnosticException&) { return nullptr; }
 }
 
@@ -53,7 +83,6 @@ ref<Program> Parser::parse_program() {
   parse_block_body(body);
   ref<Program> program = make<Program>(body);
   program->set_location(body);
-
   return program;
 }
 
@@ -128,6 +157,9 @@ ref<Statement> Parser::parse_statement() {
     }
     case TokenType::Try: {
       return parse_try();
+    }
+    case TokenType::Switch: {
+      return parse_switch();
     }
     case TokenType::Let:
     case TokenType::Const: {
@@ -361,6 +393,65 @@ ref<Statement> Parser::parse_try() {
   }
 }
 
+ref<Switch> Parser::parse_switch() {
+  Location begin = m_token.location;
+  eat(TokenType::Switch);
+
+  ref<Expression> test;
+  if (skip(TokenType::LeftParen)) {
+    test = parse_expression();
+    eat(TokenType::RightParen);
+  } else {
+    test = parse_expression();
+  }
+
+  ref<Switch> node = make<Switch>(test);
+  node->set_begin(begin);
+
+  eat(TokenType::LeftCurly);
+
+  while (!type(TokenType::RightCurly)) {
+    Location case_begin = m_token.location;
+
+    switch (m_token.type) {
+      case TokenType::Case: {
+        advance();
+        ref<Expression> case_test = parse_expression();
+
+        auto kwcontext = m_keyword_context;
+        m_keyword_context._break = true;
+        ref<Statement> case_stmt = parse_block_or_statement();
+        m_keyword_context = kwcontext;
+
+        ref<SwitchCase> case_node = make<SwitchCase>(case_test, case_stmt);
+        case_node->set_begin(case_begin);
+        node->cases.push_back(make<SwitchCase>(case_test, case_stmt));
+        break;
+      }
+      case TokenType::Default: {
+        advance();
+
+        auto kwcontext = m_keyword_context;
+        m_keyword_context._break = true;
+        ref<Statement> stmt = parse_block_or_statement();
+        m_keyword_context = kwcontext;
+
+        stmt->set_begin(case_begin);
+        node->default_stmt = stmt;
+        break;
+      }
+      default: {
+        unexpected_token("case or default");
+      }
+    }
+  }
+
+  end(node);
+  eat(TokenType::RightCurly);
+
+  return node;
+}
+
 ref<Statement> Parser::parse_declaration() {
   if (!(type(TokenType::Let) || type(TokenType::Const)))
     unexpected_token("let or const");
@@ -458,6 +549,10 @@ ref<Yield> Parser::parse_yield() {
   eat(TokenType::Yield);
   ref<Yield> node = make<Yield>(parse_expression());
   node->set_begin(begin);
+
+  if (!m_keyword_context._yield)
+    m_console.error("yield expression not allowed at this point", node->location());
+
   return node;
 }
 
@@ -579,8 +674,10 @@ ref<Expression> Parser::parse_spawn() {
   Location begin = m_token.location;
   eat(TokenType::Spawn);
   auto kwcontext = m_keyword_context;
+  m_keyword_context._return = true;
   m_keyword_context._break = false;
   m_keyword_context._continue = false;
+  m_keyword_context._yield = true;
   m_keyword_context._super = false;
   ref<Statement> stmt = parse_block_or_statement();
   m_keyword_context = kwcontext;
@@ -866,6 +963,7 @@ ref<Function> Parser::parse_function(bool class_function) {
   m_keyword_context._return = true;
   m_keyword_context._break = false;
   m_keyword_context._continue = false;
+  m_keyword_context._yield = true;
   m_keyword_context._export = false;
   m_keyword_context._import = false;
   m_keyword_context._super = class_function;
@@ -898,6 +996,7 @@ ref<Function> Parser::parse_arrow_function() {
   m_keyword_context._return = true;
   m_keyword_context._break = false;
   m_keyword_context._continue = false;
+  m_keyword_context._yield = true;
   m_keyword_context._export = false;
   m_keyword_context._import = false;
   m_keyword_context._super = false;

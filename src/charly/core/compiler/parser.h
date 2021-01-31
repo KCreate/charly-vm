@@ -85,6 +85,7 @@ struct KeywordContext {
   bool _break;
   bool _continue;
   bool _export;
+  bool _yield;
   bool _import;  // only applies to the import statement, not expression
   bool _super;
 };
@@ -120,6 +121,7 @@ private:
     m_keyword_context._return = true;
     m_keyword_context._break = false;
     m_keyword_context._continue = false;
+    m_keyword_context._yield = false;
     m_keyword_context._export = true;
     m_keyword_context._import = true;
     m_keyword_context._super = false;
@@ -146,6 +148,7 @@ private:
   ref<While> parse_while();
   ref<While> parse_loop();
   ref<Statement> parse_try();
+  ref<Switch> parse_switch();
 
   // declarations
   ref<Statement> parse_declaration();

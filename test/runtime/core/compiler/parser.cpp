@@ -76,8 +76,6 @@ TEST_CASE("parses literals") {
   CHECK_AST_EXP("\"hello world\"", make<String>("hello world"));
 
   CHECK_AST_EXP("\"\\a \\b \\n \\t \\v \\f \\\" \\{ \\\\ \"", make<String>("\a \b \n \t \v \f \" { \\ "));
-
-  CHECK_ERROR_EXP("super", "super is not allowed at this point");
   CHECK_ERROR_STMT("\"", "unexpected end of file, unclosed string");
 }
 
@@ -337,6 +335,10 @@ TEST_CASE("import expression") {
 }
 
 TEST_CASE("yield, await, typeof expressions") {
+  CHECK_PROGRAM("func foo { yield 1 }");
+  CHECK_PROGRAM("->{ yield 1 }");
+  CHECK_PROGRAM("spawn { yield 2 }");
+  CHECK_PROGRAM("spawn { defer { yield 2 } }");
   CHECK_AST_EXP("yield 1", make<Yield>(make<Int>(1)));
   CHECK_AST_EXP("yield(1, 2, 3)", make<Yield>(make<Tuple>(make<Int>(1), make<Int>(2), make<Int>(3))));
   CHECK_AST_EXP("yield foo", make<Yield>(make<Id>("foo")));
@@ -360,10 +362,15 @@ TEST_CASE("yield, await, typeof expressions") {
 }
 
 TEST_CASE("spawn expressions") {
-  CHECK_ERROR_EXP("spawn foo", "expected a call expression");
   CHECK_AST_EXP("spawn foo()", make<Spawn>(make<CallOp>(make<Id>("foo"))));
   CHECK_AST_EXP("spawn foo.bar()", make<Spawn>(make<CallOp>(make<MemberOp>(make<Id>("foo"), make<Id>("bar")))));
   CHECK_AST_EXP("spawn foo()()", make<Spawn>(make<CallOp>(make<CallOp>(make<Id>("foo")))));
+  CHECK_AST_EXP("spawn { yield foo }", make<Spawn>(make<Block>(make<Yield>(make<Id>("foo")))));
+  CHECK_AST_EXP("spawn { return foo }", make<Spawn>(make<Block>(make<Return>(make<Id>("foo")))));
+
+  CHECK_ERROR_EXP("spawn foo", "expected a call expression");
+  CHECK_ERROR_STMT("loop { spawn { break } }", "break statement not allowed at this point");
+  CHECK_ERROR_STMT("loop { spawn { continue } }", "continue statement not allowed at this point");
 }
 
 TEST_CASE("call expressions") {
@@ -646,6 +653,8 @@ TEST_CASE("catches illegal control statements") {
   CHECK_PROGRAM("loop { if 1 { break continue } }");
   CHECK_PROGRAM("import foo");
   CHECK_PROGRAM("export foo");
+  CHECK_PROGRAM("spawn { return x }");
+  CHECK_PROGRAM("spawn { yield x }");
   CHECK_ERROR_PROGRAM("defer { return 1 }", "return statement not allowed at this point");
   CHECK_ERROR_PROGRAM("break", "break statement not allowed at this point");
   CHECK_ERROR_PROGRAM("if true { break }", "break statement not allowed at this point");
@@ -721,8 +730,8 @@ TEST_CASE("class literals") {
 }
 
 TEST_CASE("super expressions") {
-  CHECK_ERROR_EXP("super", "super is not allowed at this point");
-  CHECK_ERROR_EXP("super.foo()", "super is not allowed at this point");
+  CHECK_ERROR_EXP("->super", "super is not allowed at this point");
+  CHECK_ERROR_EXP("->super.foo()", "super is not allowed at this point");
   CHECK_ERROR_EXP("class { foo { ->{ super } } }", "super is not allowed at this point");
   CHECK_ERROR_EXP("class { static foo { ->{ super } } }", "super is not allowed at this point");
 
@@ -747,4 +756,23 @@ TEST_CASE("try statements") {
   CHECK_ERROR_STMT("try {} finally {}", "unexpected 'finally' token, expected a 'catch' token");
   CHECK_ERROR_STMT("loop { try {} catch {} finally { break } }", "break statement not allowed at this point");
   CHECK_ERROR_STMT("loop { try {} catch {} finally { return } }", "return statement not allowed at this point");
+}
+
+TEST_CASE("switch statements") {
+  CHECK_AST_STMT("switch x {}", make<Switch>(make<Id>("x"), nullptr));
+  CHECK_AST_STMT("switch (x) {}", make<Switch>(make<Id>("x"), nullptr));
+  CHECK_AST_STMT("switch (x) { case 1 foo }",
+                 make<Switch>(make<Id>("x"), nullptr, make<SwitchCase>(make<Int>(1), make<Id>("foo"))));
+  CHECK_AST_STMT("switch (x) { case 1 foo case 2 bar }",
+                 make<Switch>(make<Id>("x"), nullptr, make<SwitchCase>(make<Int>(1), make<Id>("foo")),
+                              make<SwitchCase>(make<Int>(2), make<Id>("bar"))));
+  CHECK_AST_STMT("switch (x) { case 1 foo default bar }",
+                 make<Switch>(make<Id>("x"), make<Id>("bar"), make<SwitchCase>(make<Int>(1), make<Id>("foo"))));
+  CHECK_AST_STMT("switch (x) { case 1 {} default {} }",
+                 make<Switch>(make<Id>("x"), make<Block>(), make<SwitchCase>(make<Int>(1), make<Block>())));
+
+  CHECK_PROGRAM("switch x { case 1 { break } }");
+  CHECK_PROGRAM("switch x { default { break } }");
+
+  CHECK_ERROR_PROGRAM("switch x { case 1 { continue } }", "continue statement not allowed at this point");
 }
