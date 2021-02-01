@@ -472,14 +472,18 @@ TEST_CASE("dict literals") {
 }
 
 TEST_CASE("if statements") {
-  CHECK_AST_STMT("if x 1", make<If>(make<Id>("x"), make<Int>(1), make<Nop>()));
-  CHECK_AST_STMT("if x {}", make<If>(make<Id>("x"), make<Block>(), make<Nop>()));
+  CHECK_AST_STMT("if x 1", make<If>(make<Id>("x"), make<Int>(1)));
+  CHECK_AST_STMT("if x {}", make<If>(make<Id>("x"), make<Block>()));
   CHECK_AST_STMT("if x 1 else 2", make<If>(make<Id>("x"), make<Int>(1), make<Int>(2)));
-  CHECK_AST_STMT("if (x) 1", make<If>(make<Id>("x"), make<Int>(1), make<Nop>()));
-  CHECK_AST_STMT("if (x) {}", make<If>(make<Id>("x"), make<Block>(), make<Nop>()));
+  CHECK_AST_STMT("if (x) 1", make<If>(make<Id>("x"), make<Int>(1)));
+  CHECK_AST_STMT("if (x) {}", make<If>(make<Id>("x"), make<Block>()));
   CHECK_AST_STMT("if x {} else x", make<If>(make<Id>("x"), make<Block>(), make<Id>("x")));
   CHECK_AST_STMT("if x x else {}", make<If>(make<Id>("x"), make<Id>("x"), make<Block>()));
   CHECK_AST_STMT("if x {} else {}", make<If>(make<Id>("x"), make<Block>(), make<Block>()));
+  CHECK_AST_STMT("if x {} else if y {}",
+                 make<If>(make<Id>("x"), make<Block>(), make<If>(make<Id>("y"), make<Block>())));
+  CHECK_AST_STMT("if x {} else if y {} else {}",
+                 make<If>(make<Id>("x"), make<Block>(), make<If>(make<Id>("y"), make<Block>(), make<Block>())));
 
   CHECK_ERROR_STMT("if", "unexpected end of file, expected an expression");
   CHECK_ERROR_STMT("if x", "unexpected end of file, expected an expression");

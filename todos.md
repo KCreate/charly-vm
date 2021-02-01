@@ -8,7 +8,9 @@
   - Rewrite toplevel import statements to declarations and import expressions
   - Rewrite for loops into iterator constructs
   - Constant fold expressions
-  - Insert missing statements (return null inside empty blocks)
+  - Insert return null into blocks that aren't already being terminated
+
+- ASTPass needs more fine grained control over visiting and editing child nodes
 
 - Intermediate representation for charly code
   - Human readable charly bytecode syntax

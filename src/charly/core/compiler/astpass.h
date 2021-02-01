@@ -82,7 +82,6 @@ class ASTPass {
 
   AST_NODE(Node, Program)
 
-  AST_NODE(Statement, Nop)
   AST_NODE(Statement, Block)
   AST_NODE(Statement, Return)
   AST_NODE(Statement, Break)

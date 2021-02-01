@@ -343,12 +343,14 @@ ref<If> Parser::parse_if() {
 
   ref<Expression> condition = parse_expression();
   ref<Statement> then_stmt = parse_block_or_statement();
-  ref<Statement> else_stmt;
+  ref<Statement> else_stmt = nullptr;
 
   if (skip(TokenType::Else)) {
-    else_stmt = parse_block_or_statement();
-  } else {
-    else_stmt = make<Nop>();
+    if (type(TokenType::If)) {
+      else_stmt = parse_if();
+    } else {
+      else_stmt = parse_block_or_statement();
+    }
   }
 
   ref<If> node = make<If>(condition, then_stmt, else_stmt);

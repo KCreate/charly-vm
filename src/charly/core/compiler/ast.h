@@ -64,7 +64,6 @@ public:
     Program = 1,
 
     // Statements
-    Nop,
     Block,
     Return,
     Break,
@@ -192,11 +191,6 @@ private:                                           \
 //   <statement>
 // }
 class Statement : public Node {};
-
-// no operation
-class Nop final : public Statement {
-  AST_NODE(Nop);
-};
 
 // 1 + x, false, foo(bar)
 class Expression : public Statement {};
@@ -818,10 +812,15 @@ public:
 class If final : public Expression {
   AST_NODE(If)
 public:
-  If(ref<Expression> condition, ref<Statement> then_stmt, ref<Statement> else_stmt) :
+  If(ref<Expression> condition, ref<Statement> then_stmt, ref<Statement> else_stmt = nullptr) :
     condition(condition), then_stmt(then_stmt), else_stmt(else_stmt) {
     this->set_begin(condition);
-    this->set_end(else_stmt);
+
+    if (else_stmt) {
+      this->set_end(else_stmt);
+    } else {
+      this->set_end(then_stmt);
+    }
   }
 
   ref<Expression> condition;

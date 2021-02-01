@@ -39,7 +39,6 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
 
   SWITCH_NODE(Program)
 
-  SWITCH_NODE(Nop)
   SWITCH_NODE(Block)
   SWITCH_NODE(Return)
   SWITCH_NODE(Break)
@@ -260,7 +259,8 @@ void ClassProperty::visit_children(ASTPass* pass) {
 void If::visit_children(ASTPass* pass) {
   this->condition = pass->visit(this->condition);
   this->then_stmt = pass->visit(this->then_stmt);
-  this->else_stmt = pass->visit(this->else_stmt);
+  if (this->else_stmt)
+    this->else_stmt = pass->visit(this->else_stmt);
 }
 
 void While::visit_children(ASTPass* pass) {
