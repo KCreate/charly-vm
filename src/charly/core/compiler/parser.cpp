@@ -108,6 +108,36 @@ void Parser::parse_block_body(const ref<Block>& block) {
   while (!(type(TokenType::RightCurly) || type(TokenType::Eof))) {
     ref<Statement> stmt = parse_statement();
 
+    // wrap function and class literals inside const declaration nodes
+    switch (stmt->type()) {
+      case Node::Type::Class:
+      case Node::Type::Function: {
+        std::string variable_name;
+
+        if (ref<Function> func = cast<Function>(stmt)) {
+          if (func->arrow_function) {
+            break;
+          }
+          variable_name = func->name;
+        }
+
+        if (ref<Class> klass = cast<Class>(stmt)) {
+          variable_name = klass->name;
+        }
+
+        ref<Id> name = make<Id>(variable_name);
+        name->set_location(stmt);
+        ref<Declaration> declaration = make<Declaration>(name, cast<Expression>(stmt), true);
+        declaration->set_location(stmt);
+
+        stmt = declaration;
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+
     skip(TokenType::Semicolon);
 
     if (parsed_statements == 0 && !block->location().valid) {
@@ -130,7 +160,7 @@ ref<Statement> Parser::parse_block_or_statement() {
   if (type(TokenType::LeftCurly)) {
     stmt = parse_block();
   } else {
-    stmt = parse_throw_statement();
+    stmt = parse_jump_statement();
   }
 
   m_keyword_context = kwcontext;
@@ -985,12 +1015,7 @@ ref<Function> Parser::parse_function(bool class_function) {
   skip(TokenType::Func);
 
   // function name
-  std::string function_name = "";
-  if (type(TokenType::Identifier)) {
-    function_name = parse_identifier_token()->value;
-  } else if (class_function) {
-    unexpected_token(TokenType::Identifier);
-  }
+  std::string function_name = parse_identifier_token()->value;
 
   // argument list
   std::vector<ref<Expression>> argument_list;
@@ -1007,7 +1032,7 @@ ref<Function> Parser::parse_function(bool class_function) {
   m_keyword_context._import = false;
   m_keyword_context._super = class_function;
   if (skip(TokenType::Assignment)) {
-    body = parse_throw_statement();
+    body = parse_jump_statement();
   } else {
     body = parse_block();
   }
@@ -1042,7 +1067,7 @@ ref<Function> Parser::parse_arrow_function() {
   if (type(TokenType::LeftCurly)) {
     body = parse_block();
   } else {
-    body = parse_throw_statement();
+    body = parse_jump_statement();
   }
   m_keyword_context = kwcontext;
 
@@ -1087,10 +1112,7 @@ ref<Class> Parser::parse_class() {
   eat(TokenType::Class);
 
   // class name
-  std::string class_name = "";
-  if (type(TokenType::Identifier)) {
-    class_name = parse_identifier_token()->value;
-  }
+  std::string class_name = parse_identifier_token()->value;
 
   ref<Expression> parent;
   if (skip(TokenType::Extends)) {

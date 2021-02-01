@@ -611,9 +611,12 @@ TEST_CASE("functions") {
   CHECK_EXP("func foo = throw 1");
   CHECK_EXP("->import \"test\"");
   CHECK_EXP("->import \"test\"");
+  CHECK_EXP("->yield 1");
+  CHECK_EXP("->return");
+  CHECK_EXP("->return 1");
   CHECK_EXP("->throw 1");
 
-  CHECK_ERROR_EXP("func", "unexpected end of file, expected a '{' token");
+  CHECK_ERROR_EXP("func", "unexpected end of file, expected a 'identifier' token");
   CHECK_ERROR_EXP("func foo", "unexpected end of file, expected a '{' token");
   CHECK_ERROR_EXP("func foo =", "unexpected end of file, expected an expression");
   CHECK_ERROR_EXP("func foo(1) {}", "unexpected numerical constant, expected a 'identifier' token");
@@ -638,9 +641,8 @@ TEST_CASE("functions") {
   CHECK_ERROR_EXP("->(...1) {}", "unexpected numerical constant, expected a 'identifier' token");
   CHECK_ERROR_EXP("->(...1 = 25) {}", "unexpected numerical constant, expected a 'identifier' token");
 
-  CHECK_ERROR_EXP("->return", "unexpected 'return' token, expected an expression");
-  CHECK_ERROR_EXP("->break", "unexpected 'break' token, expected an expression");
-  CHECK_ERROR_EXP("->continue", "unexpected 'continue' token, expected an expression");
+  CHECK_ERROR_EXP("->break", "break statement not allowed at this point");
+  CHECK_ERROR_EXP("->continue", "continue statement not allowed at this point");
   CHECK_ERROR_EXP("->if true x", "unexpected 'if' token, expected an expression");
 }
 
@@ -732,8 +734,8 @@ TEST_CASE("class literals") {
 TEST_CASE("super expressions") {
   CHECK_ERROR_EXP("->super", "super is not allowed at this point");
   CHECK_ERROR_EXP("->super.foo()", "super is not allowed at this point");
-  CHECK_ERROR_EXP("class { foo { ->{ super } } }", "super is not allowed at this point");
-  CHECK_ERROR_EXP("class { static foo { ->{ super } } }", "super is not allowed at this point");
+  CHECK_ERROR_EXP("class foo { foo { ->{ super } } }", "super is not allowed at this point");
+  CHECK_ERROR_EXP("class foo { static foo { ->{ super } } }", "super is not allowed at this point");
 
   ref<Class> class_node = make<Class>("Foo", make<Id>("Bar"));
   class_node->member_functions.push_back(make<Function>("foo", make<Block>(make<Super>())));
@@ -810,4 +812,13 @@ TEST_CASE("for statements") {
   CHECK_AST_STMT("for const {foo, bar} in bar {}",
                  make<For>(true, make<Dict>(make<DictEntry>(make<Id>("foo")), make<DictEntry>(make<Id>("bar"))),
                            make<Id>("bar"), make<Block>()));
+}
+
+TEST_CASE("wraps functions and classes into declarations") {
+  CHECK_AST_PROGRAM(
+    "func foo {}",
+    make<Program>(make<Block>(make<Declaration>(make<Id>("foo"), make<Function>("foo", make<Block>()), true))));
+  CHECK_AST_PROGRAM("class foo {}",
+                    make<Program>(make<Block>(make<Declaration>(make<Id>("foo"), make<Class>("foo", nullptr), true))));
+  CHECK_AST_PROGRAM("->{}", make<Program>(make<Block>(make<Function>(make<Block>()))));
 }

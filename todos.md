@@ -1,16 +1,14 @@
 # Todos
 
-- Semantic constraints
-  - Desugar syntax constructs
-  - Check if keywords are placed at legal positions
-  - Only catch errors which would constitute an ill-formed charly program
-    not incorrect (buggy) programs. for example `defer return 1` should be an error since
-    a return statement is not allowed to be present inside a defer clause
-  - Insert missing statements (return null inside empty blocks)
+- Tree rewrite
   - Check for illegal identifiers
   - Generate constructor for class
   - Check if super is present inside subclass constructors
-  - Class and function literals are rewritten to declarations
+  - Rewrite control statements to labels, gotos and conditional gotos
+  - Rewrite toplevel import statements to declarations and import expressions
+  - Rewrite for loops into iterator constructs
+  - Constant fold expressions
+  - Insert missing statements (return null inside empty blocks)
 
 - Intermediate representation for charly code
   - Human readable charly bytecode syntax

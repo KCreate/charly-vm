@@ -90,6 +90,19 @@ using namespace charly::core::compiler::ast;
     CHECK_THAT(stmt_dump.str(), Equals(ref_dump.str()));            \
   }
 
+#define CHECK_AST_PROGRAM(S, N)                                 \
+  {                                                             \
+    std::stringstream prog_dump;                                \
+    std::stringstream ref_dump;                                 \
+    charly::utils::Buffer buffer(S);                            \
+    DiagnosticConsole console("test", buffer);                  \
+    ref<Program> prog = Parser::parse_program(buffer, console); \
+    REQUIRE(!console.has_errors());                             \
+    DumpPass(prog_dump, false).visit(prog);                     \
+    DumpPass(ref_dump, false).visit(N);                         \
+    CHECK_THAT(prog_dump.str(), Equals(ref_dump.str()));        \
+  }
+
 #define CHECK_ERROR_EXP(S, E)                                  \
   {                                                            \
     charly::utils::Buffer buffer(S);                           \
