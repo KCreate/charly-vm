@@ -776,3 +776,38 @@ TEST_CASE("switch statements") {
 
   CHECK_ERROR_PROGRAM("switch x { case 1 { continue } }", "continue statement not allowed at this point");
 }
+
+TEST_CASE("for statements") {
+  CHECK_AST_STMT("for foo in bar baz", make<For>(make<Id>("foo"), make<Id>("bar"), make<Id>("baz")));
+  CHECK_AST_STMT("for foo in bar {}", make<For>(make<Id>("foo"), make<Id>("bar"), make<Block>()));
+  CHECK_AST_STMT("for let foo in bar {}", make<For>(make<Id>("foo"), make<Id>("bar"), make<Block>()));
+  CHECK_AST_STMT("for const foo in bar {}", make<For>(true, make<Id>("foo"), make<Id>("bar"), make<Block>()));
+
+  CHECK_AST_STMT("for (foo) in bar {}", make<For>(make<Tuple>(make<Id>("foo")), make<Id>("bar"), make<Block>()));
+  CHECK_AST_STMT("for (foo, bar) in bar {}",
+                 make<For>(make<Tuple>(make<Id>("foo"), make<Id>("bar")), make<Id>("bar"), make<Block>()));
+  CHECK_AST_STMT("for {foo} in bar {}",
+                 make<For>(make<Dict>(make<DictEntry>(make<Id>("foo"))), make<Id>("bar"), make<Block>()));
+  CHECK_AST_STMT("for {foo, bar} in bar {}",
+                 make<For>(make<Dict>(make<DictEntry>(make<Id>("foo")), make<DictEntry>(make<Id>("bar"))),
+                           make<Id>("bar"), make<Block>()));
+
+  CHECK_AST_STMT("for let (foo) in bar {}", make<For>(make<Tuple>(make<Id>("foo")), make<Id>("bar"), make<Block>()));
+  CHECK_AST_STMT("for let (foo, bar) in bar {}",
+                 make<For>(make<Tuple>(make<Id>("foo"), make<Id>("bar")), make<Id>("bar"), make<Block>()));
+  CHECK_AST_STMT("for let {foo} in bar {}",
+                 make<For>(make<Dict>(make<DictEntry>(make<Id>("foo"))), make<Id>("bar"), make<Block>()));
+  CHECK_AST_STMT("for let {foo, bar} in bar {}",
+                 make<For>(make<Dict>(make<DictEntry>(make<Id>("foo")), make<DictEntry>(make<Id>("bar"))),
+                           make<Id>("bar"), make<Block>()));
+
+  CHECK_AST_STMT("for const (foo) in bar {}",
+                 make<For>(true, make<Tuple>(make<Id>("foo")), make<Id>("bar"), make<Block>()));
+  CHECK_AST_STMT("for const (foo, bar) in bar {}",
+                 make<For>(true, make<Tuple>(make<Id>("foo"), make<Id>("bar")), make<Id>("bar"), make<Block>()));
+  CHECK_AST_STMT("for const {foo} in bar {}",
+                 make<For>(true, make<Dict>(make<DictEntry>(make<Id>("foo"))), make<Id>("bar"), make<Block>()));
+  CHECK_AST_STMT("for const {foo, bar} in bar {}",
+                 make<For>(true, make<Dict>(make<DictEntry>(make<Id>("foo")), make<DictEntry>(make<Id>("bar"))),
+                           make<Id>("bar"), make<Block>()));
+}

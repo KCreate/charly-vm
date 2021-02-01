@@ -133,6 +133,7 @@ class ASTPass {
   AST_NODE(Statement, Try)
   AST_NODE(Statement, Switch)
   AST_NODE(Statement, SwitchCase)
+  AST_NODE(Statement, For)
 
 public:
   ref<Node> visit(const ref<Node>& node) {

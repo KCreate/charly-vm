@@ -120,6 +120,7 @@ public:
     Try,
     Switch,
     SwitchCase,
+    For,
 
     // Meta
     TypeCount
@@ -899,6 +900,29 @@ public:
   ref<Expression> test;
   ref<Statement> default_stmt;
   std::vector<ref<SwitchCase>> cases;
+
+  virtual void visit_children(ASTPass*) override;
+};
+
+// for <target> in <source> <stmt>
+class For final : public Expression {
+  AST_NODE(For)
+public:
+  For(ref<Expression> target, ref<Expression> source, ref<Statement> stmt) :
+    constant_value(false), target(target), source(source), stmt(stmt) {
+    this->set_begin(target);
+    this->set_end(stmt);
+  }
+  For(bool constant_value, ref<Expression> target, ref<Expression> source, ref<Statement> stmt) :
+    constant_value(constant_value), target(target), source(source), stmt(stmt) {
+    this->set_begin(target);
+    this->set_end(stmt);
+  }
+
+  bool constant_value;
+  ref<Expression> target;
+  ref<Expression> source;
+  ref<Statement> stmt;
 
   virtual void visit_children(ASTPass*) override;
 };

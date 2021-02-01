@@ -1,9 +1,5 @@
 # Todos
 
-- Parser
-  - parse for
-  - parse match
-
 - Semantic constraints
   - Desugar syntax constructs
   - Check if keywords are placed at legal positions

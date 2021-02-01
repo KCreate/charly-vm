@@ -176,6 +176,14 @@ class DumpPass : public ASTPass {
     return true;
   }
 
+  virtual bool enter(const ref<For>& node) override {
+    if (node->constant_value) {
+      m_writer << ' ';
+      m_writer.fg(Color::Red, "const");
+    }
+    return true;
+  }
+
 public:
   DumpPass(std::ostream& stream = std::cout, bool print_location = true) :
     m_writer(stream), m_depth(0), m_print_location(print_location) {}

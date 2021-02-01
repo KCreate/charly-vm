@@ -149,6 +149,7 @@ private:
   ref<While> parse_loop();
   ref<Statement> parse_try();
   ref<Switch> parse_switch();
+  ref<For> parse_for();
 
   // declarations
   ref<Statement> parse_declaration();
@@ -207,6 +208,7 @@ private:
   void validate_spawn(const ref<Spawn>& node);
   void validate_dict(const ref<Dict>& node);
   void validate_function(const ref<Function>& node);
+  void validate_for(const ref<For>& node);
 
   [[noreturn]] void unexpected_token();
   [[noreturn]] void unexpected_token(const std::string& message);

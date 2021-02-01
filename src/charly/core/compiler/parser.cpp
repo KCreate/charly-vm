@@ -161,6 +161,9 @@ ref<Statement> Parser::parse_statement() {
     case TokenType::Switch: {
       return parse_switch();
     }
+    case TokenType::For: {
+      return parse_for();
+    }
     case TokenType::Let:
     case TokenType::Const: {
       return parse_declaration();
@@ -397,15 +400,7 @@ ref<Switch> Parser::parse_switch() {
   Location begin = m_token.location;
   eat(TokenType::Switch);
 
-  ref<Expression> test;
-  if (skip(TokenType::LeftParen)) {
-    test = parse_expression();
-    eat(TokenType::RightParen);
-  } else {
-    test = parse_expression();
-  }
-
-  ref<Switch> node = make<Switch>(test);
+  ref<Switch> node = make<Switch>(parse_expression());
   node->set_begin(begin);
 
   eat(TokenType::LeftCurly);
@@ -448,6 +443,50 @@ ref<Switch> Parser::parse_switch() {
 
   end(node);
   eat(TokenType::RightCurly);
+
+  return node;
+}
+
+ref<For> Parser::parse_for() {
+  Location begin = m_token.location;
+  eat(TokenType::For);
+
+  bool constant_value = false;
+  if (skip(TokenType::Const)) {
+    constant_value = true;
+  } else {
+    skip(TokenType::Let);
+  }
+
+  ref<Expression> target;
+  switch (m_token.type) {
+    case TokenType::Identifier: {
+      target = parse_identifier_token();
+      break;
+    }
+    case TokenType::LeftParen: {
+      target = parse_tuple(false);
+      break;
+    }
+    case TokenType::LeftCurly: {
+      target = parse_dict();
+      break;
+    }
+    default: {
+      unexpected_token("expected identifier or unpack expression");
+    }
+  }
+
+  eat(TokenType::In);
+
+  ref<Expression> source = parse_expression();
+
+  ref<Statement> stmt = parse_block_or_statement();
+
+  ref<For> node = make<For>(constant_value, target, source, stmt);
+  node->set_begin(begin);
+
+  validate_for(node);
 
   return node;
 }
@@ -1331,6 +1370,12 @@ void Parser::validate_function(const ref<Function>& node) {
     }
 
     assert(false && "unexpected node type");
+  }
+}
+
+void Parser::validate_for(const ref<For>& node) {
+  if (!node->target->assignable()) {
+    m_console.error("expression is not assignable", node->target->location());
   }
 }
 

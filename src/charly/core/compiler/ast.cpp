@@ -90,6 +90,8 @@ ref<T> Node::visit(ASTPass* pass, const ref<T>& node) {
   SWITCH_NODE(Try)
   SWITCH_NODE(Switch)
   SWITCH_NODE(SwitchCase)
+  SWITCH_NODE(For)
+
 #undef SWITCH_NODE
 
   assert(false && "Unknown node type");
@@ -281,6 +283,12 @@ void Switch::visit_children(ASTPass* pass) {
   this->test = pass->visit(this->test);
   this->default_stmt = pass->visit(this->default_stmt);
   VISIT_NODE_VECTOR(SwitchCase, cases)
+}
+
+void For::visit_children(ASTPass* pass) {
+  this->target = pass->visit(this->target);
+  this->source = pass->visit(this->source);
+  this->stmt = pass->visit(this->stmt);
 }
 
 #undef VISIT_NODE_VECTOR
