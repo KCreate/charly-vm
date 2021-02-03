@@ -32,8 +32,10 @@
 #include <readline/history.h>
 #include <readline/readline.h>
 
-#include "charly/core/compiler.h"
 #include "charly/utils/buffer.h"
+
+#include "charly/core/compiler.h"
+#include "charly/core/compiler/passes/dump.h"
 
 using namespace charly;
 using namespace charly::core::compiler;
@@ -91,7 +93,7 @@ int run_repl() {
         continue;
     }
 
-    DumpPass(std::cout, print_location).visit(program);
+    DumpPass(std::cout, print_location).apply(program);
   }
 
   return 0;
@@ -123,7 +125,7 @@ int run_file(int, char** argv) {
   if (console.has_errors())
     return 1;
 
-  DumpPass(std::cout, true).visit(program);
+  DumpPass(std::cout).apply(program);
   return 0;
 }
 

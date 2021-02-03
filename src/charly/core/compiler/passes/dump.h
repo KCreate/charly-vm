@@ -24,173 +24,42 @@
  * SOFTWARE.
  */
 
-#include <sstream>
-
-#include "charly/core/compiler/astpass.h"
 #include "charly/utils/colorwriter.h"
+#include "charly/core/compiler/pass.h"
 
 #pragma once
 
-using Color = charly::utils::Color;
-
 namespace charly::core::compiler::ast {
 
-class DumpPass : public ASTPass {
-  virtual void before_enter_any(const ref<Node>& node) override {
-    for (uint16_t i = 0; i < m_depth; i++) {
-      m_writer << "  ";
-    }
-
-    m_writer << "- ";
-    m_writer.fg(Color::Blue, node->node_name());
-  }
-
-  virtual void after_enter_any(const ref<Node>& node) override {
-    if (m_print_location) {
-      m_writer << " " << '<' << node->location() << '>';
-    }
-    m_writer << '\n';
-    m_depth++;
-  }
-
-  virtual void before_leave_any(const ref<Node>&) override {
-    m_depth--;
-  }
-
-  virtual bool enter(const ref<Assignment>& node) override {
-    if (node->operation != TokenType::Assignment) {
-      m_writer << ' ';
-      m_writer.fg(Color::Yellow, '\'', kTokenTypeStrings[static_cast<int>(node->operation)], '\'');
-    }
-
-    return true;
-  }
-
-  virtual bool enter(const ref<BinaryOp>& node) override {
-    m_writer << ' ';
-    m_writer.fg(Color::Yellow, '\'', kTokenTypeStrings[static_cast<int>(node->operation)], '\'');
-    return true;
-  }
-
-  virtual bool enter(const ref<UnaryOp>& node) override {
-    m_writer << ' ';
-    m_writer.fg(Color::Blue, '\'', kTokenTypeStrings[static_cast<int>(node->operation)], '\'');
-    return true;
-  }
-
-  virtual bool enter(const ref<As>& node) override {
-    m_writer << ' ';
-    m_writer.fg(Color::Yellow, '\"', node->name, '\"');
-    return true;
-  }
-
-  virtual bool enter(const ref<Id>& node) override {
-    m_writer << ' ';
-    m_writer.fg(Color::Yellow, node->value);
-    return true;
-  }
-
-  virtual bool enter(const ref<Int>& node) override {
-    m_writer << ' ';
-    m_writer.fg(Color::Red, node->value);
-    return true;
-  }
-
-  virtual bool enter(const ref<Float>& node) override {
-    m_writer << ' ';
-    m_writer.fg(Color::Red, node->value);
-    return true;
-  }
-
-  virtual bool enter(const ref<Bool>& node) override {
-    m_writer << ' ';
-    m_writer.fg(Color::Red, node->value ? "true" : "false");
-    return true;
-  }
-
-  virtual bool enter(const ref<Char>& node) override {
-    m_writer << ' ';
-    m_writer.fg(Color::Yellow, '\'');
-    char buf[4] = { 0 };
-    char* buf_ptr = buf;
-    char* end = utf8::append(node->value, buf_ptr);
-    m_writer.fg(Color::Yellow, std::string(buf_ptr, end - buf_ptr), '\'');
-    return true;
-  }
-
-  virtual bool enter(const ref<String>& node) override {
-    m_writer << ' ';
-    m_writer.fg(Color::Yellow, '\"', node->value, '\"');
-    return true;
-  }
-
-  virtual bool enter(const ref<Function>& node) override {
-    m_writer << ' ';
-
-    if (node->arrow_function) {
-      m_writer.fg(Color::Cyan, "anonymous");
-    } else {
-      m_writer.fg(Color::Yellow, node->name);
-    }
-
-    return true;
-  }
-
-  virtual bool enter(const ref<Class>& node) override {
-    m_writer << ' ';
-    m_writer.fg(Color::Yellow, node->name);
-    return true;
-  }
-
-  virtual bool enter(const ref<ClassProperty>& node) override {
-    if (node->is_static) {
-      m_writer << ' ';
-      m_writer.fg(Color::Red, "static");
-    }
-    m_writer << ' ';
-    m_writer.fg(Color::Yellow, node->name);
-    return true;
-  }
-
-  virtual bool enter(const ref<MemberOp>& node) override {
-    m_writer << ' ';
-    m_writer.fg(Color::Yellow, '\"', node->member, '\"');
-    return true;
-  }
-
-  virtual bool enter(const ref<Declaration>& node) override {
-    if (isa<Tuple>(node->target) || isa<Dict>(node->target)) {
-      m_writer << ' ';
-      m_writer.fg(Color::Cyan, "unpack");
-    }
-    if (node->constant) {
-      m_writer << ' ';
-      m_writer.fg(Color::Red, "const");
-    }
-    return true;
-  }
-
-  virtual bool enter(const ref<Try>& node) override {
-    m_writer << ' ';
-    m_writer.fg(Color::Yellow, node->exception_name);
-    return true;
-  }
-
-  virtual bool enter(const ref<For>& node) override {
-    if (node->constant_value) {
-      m_writer << ' ';
-      m_writer.fg(Color::Red, "const");
-    }
-    return true;
-  }
-
+class DumpPass : public Pass {
 public:
-  DumpPass(std::ostream& stream = std::cout, bool print_location = true) :
-    m_writer(stream), m_depth(0), m_print_location(print_location) {}
+  DumpPass(std::ostream& out = std::cout, bool print_location = true) :
+    m_writer(out), m_print_location(print_location) {}
 
+private:
   utils::ColorWriter m_writer;
-  uint16_t m_depth;
   bool m_print_location;
+
+  virtual void enter(const ref<Node>& node) override;
+
+  void dump(const ref<Node>&);
+  void dump(const ref<Assignment>& node);
+  void dump(const ref<BinaryOp>& node);
+  void dump(const ref<UnaryOp>& node);
+  void dump(const ref<As>& node);
+  void dump(const ref<Id>& node);
+  void dump(const ref<Int>& node);
+  void dump(const ref<Float>& node);
+  void dump(const ref<Bool>& node);
+  void dump(const ref<Char>& node);
+  void dump(const ref<String>& node);
+  void dump(const ref<Function>& node);
+  void dump(const ref<Class>& node);
+  void dump(const ref<ClassProperty>& node);
+  void dump(const ref<MemberOp>& node);
+  void dump(const ref<Declaration>& node);
+  void dump(const ref<Try>& node);
+  void dump(const ref<For>& node);
 };
 
 }  // namespace charly::core::compiler::ast

@@ -1,16 +1,26 @@
 # Todos
 
-- Tree rewrite
+- Compiler API
+  - Parse source file
+  - Apply semantic checks
+  - Desugar AST
+  - Allocate local variables
+  - Convert AST into IR form
+
+- Semantic checks
   - Check for illegal identifiers
   - Generate constructor for class
   - Check if super is present inside subclass constructors
-  - Rewrite control statements to labels, gotos and conditional gotos
+
+- Desugaring
   - Rewrite toplevel import statements to declarations and import expressions
   - Rewrite for loops into iterator constructs
   - Constant fold expressions
   - Insert return null into blocks that aren't already being terminated
 
-- ASTPass needs more fine grained control over visiting and editing child nodes
+- AST to IR lowering process
+  - Rewrite control statements to labels, gotos and conditional gotos
+  - Local variable allocator
 
 - Intermediate representation for charly code
   - Human readable charly bytecode syntax

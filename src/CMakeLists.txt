@@ -1,6 +1,6 @@
 file(GLOB charlycore_SRC
-  "charly/core/**/*.cpp"
-  "charly/utils/**/*.cpp"
+  "charly/core/compiler/*.cpp"
+  "charly/core/compiler/passes/*.cpp"
 )
 
 

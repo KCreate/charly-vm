@@ -52,15 +52,17 @@ inline ref<T> cast(ref<O> node) {
   return std::dynamic_pointer_cast<T>(node);
 }
 
-class ASTPass;  // forward declaration
+class Pass;  // forward declaration
 
 // base class of all ast nodes
 class Node : std::enable_shared_from_this<Node> {
-  friend class ASTPass;
+  friend class Pass;
 
 public:
   enum class Type : uint8_t {
     Unknown = 0,
+
+    // Toplevel
     Program = 1,
 
     // Statements
@@ -119,10 +121,7 @@ public:
     Try,
     Switch,
     SwitchCase,
-    For,
-
-    // Meta
-    TypeCount
+    For
   };
 
   const Location& location() const {
@@ -164,9 +163,6 @@ public:
 
 protected:
   virtual ~Node(){};
-  template <typename T>
-  ref<T> visit(ASTPass* pass, const ref<T>& node);
-  virtual void visit_children(ASTPass*) {}
 
   Location m_location = { .valid = false };
 };
@@ -195,9 +191,6 @@ class Statement : public Node {};
 // 1 + x, false, foo(bar)
 class Expression : public Statement {};
 
-// 1, 0.5, false, null, "hello", 0
-class ConstantExpression : public Expression {};
-
 // {
 //   ...
 // }
@@ -213,8 +206,6 @@ public:
   }
 
   std::vector<ref<Statement>> statements;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // top level node of a compiled program
@@ -226,8 +217,6 @@ public:
   }
 
   ref<Statement> body;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // return <exp>
@@ -239,8 +228,6 @@ public:
   }
 
   ref<Expression> expression;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // break
@@ -262,8 +249,6 @@ public:
   }
 
   ref<Statement> statement;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // throw <expression>
@@ -275,8 +260,6 @@ public:
   }
 
   ref<Expression> expression;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // export <expression>
@@ -288,8 +271,6 @@ public:
   }
 
   ref<Expression> expression;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // import <identifier>
@@ -303,8 +284,6 @@ public:
   }
 
   ref<Expression> source;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // (import <expression>)
@@ -316,8 +295,6 @@ public:
   }
 
   ref<Expression> source;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // yield <expression>
@@ -329,8 +306,6 @@ public:
   }
 
   ref<Expression> expression;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // spawn <statement>
@@ -342,8 +317,6 @@ public:
   }
 
   ref<Statement> statement;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // await <expression>
@@ -355,8 +328,6 @@ public:
   }
 
   ref<Expression> expression;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // typeof <expression>
@@ -368,8 +339,6 @@ public:
   }
 
   ref<Expression> expression;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // <target> <operation>= <source>
@@ -390,8 +359,6 @@ public:
   TokenType operation;
   ref<Expression> target;
   ref<Expression> source;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // <condition> ? <then_exp> : <else_exp>
@@ -407,8 +374,6 @@ public:
   ref<Expression> condition;
   ref<Expression> then_exp;
   ref<Expression> else_exp;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // <lhs> <operation> <rhs>
@@ -423,8 +388,6 @@ public:
   TokenType operation;
   ref<Expression> lhs;
   ref<Expression> rhs;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // <operation> <expression>
@@ -437,8 +400,6 @@ public:
 
   TokenType operation;
   ref<Expression> expression;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // ...<exp>
@@ -450,27 +411,25 @@ public:
   }
 
   ref<Expression> expression;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // null
-class Null final : public ConstantExpression {
+class Null final : public Expression {
   AST_NODE(Null)
 };
 
 // self
-class Self final : public ConstantExpression {
+class Self final : public Expression {
   AST_NODE(Self)
 };
 
 // super
-class Super final : public ConstantExpression {
+class Super final : public Expression {
   AST_NODE(Super)
 };
 
 template <typename T>
-class Atom : public ConstantExpression {
+class Atom : public Expression {
 public:
   Atom(T value) : value(value) {}
   T value;
@@ -501,8 +460,6 @@ public:
 
   ref<Expression> expression;
   std::string name;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // 1, 2, 42
@@ -548,8 +505,6 @@ public:
   FormatString(Args&&... params) : elements({ std::forward<Args>(params)... }) {}
 
   std::vector<ref<Expression>> elements;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // (1, 2, 3)
@@ -587,8 +542,6 @@ public:
 
     return true;
   }
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // [1, 2, 3]
@@ -599,8 +552,6 @@ public:
   List(Args&&... params) : elements({ std::forward<Args>(params)... }) {}
 
   std::vector<ref<Expression>> elements;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // { a: 1, b: false, c: foo }
@@ -633,8 +584,6 @@ public:
 
     return false;
   }
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // { a: 1, b: false, c: foo }
@@ -664,8 +613,6 @@ public:
 
     return true;
   }
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // func foo(a, b = 1, ...rest) {}
@@ -691,8 +638,6 @@ public:
   bool arrow_function;
   ref<Statement> body;
   std::vector<ref<Expression>> arguments;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // property foo
@@ -706,8 +651,6 @@ public:
   bool is_static;
   std::string name;
   ref<Expression> value;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // class <name> [extends <parent>] { ... }
@@ -722,8 +665,6 @@ public:
   std::vector<ref<Function>> member_functions;
   std::vector<ref<ClassProperty>> member_properties;
   std::vector<ref<ClassProperty>> static_properties;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // <target>(<arguments>)
@@ -739,8 +680,6 @@ public:
 
   ref<Expression> target;
   std::vector<ref<Expression>> arguments;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // <target>.<member>
@@ -761,8 +700,6 @@ public:
   virtual bool assignable() const override {
     return true;
   }
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // <target>[<index>]
@@ -780,8 +717,6 @@ public:
   virtual bool assignable() const override {
     return true;
   }
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // let a
@@ -801,8 +736,6 @@ public:
   bool constant;
   ref<Expression> target;
   ref<Expression> expression;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // if <condition>
@@ -817,17 +750,14 @@ public:
     this->set_begin(condition);
 
     if (else_stmt) {
+
       this->set_end(else_stmt);
-    } else {
-      this->set_end(then_stmt);
     }
   }
 
   ref<Expression> condition;
   ref<Statement> then_stmt;
   ref<Statement> else_stmt;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // while <condition>
@@ -842,8 +772,6 @@ public:
 
   ref<Expression> condition;
   ref<Statement> then_stmt;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // try <try_stmt>
@@ -860,8 +788,6 @@ public:
   ref<Statement> try_stmt;
   std::string exception_name;
   ref<Statement> catch_stmt;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 class SwitchCase final : public Expression {
@@ -874,8 +800,6 @@ public:
 
   ref<Expression> test;
   ref<Statement> stmt;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // switch (<test>) { case <test> <stmt> default <default_stmt> }
@@ -899,8 +823,6 @@ public:
   ref<Expression> test;
   ref<Statement> default_stmt;
   std::vector<ref<SwitchCase>> cases;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 // for <target> in <source> <stmt>
@@ -922,8 +844,6 @@ public:
   ref<Expression> target;
   ref<Expression> source;
   ref<Statement> stmt;
-
-  virtual void visit_children(ASTPass*) override;
 };
 
 #undef AST_NODE
