@@ -580,7 +580,9 @@ TEST_CASE("declarations") {
 }
 
 TEST_CASE("functions") {
-  CHECK_AST_EXP("func foo = null", make<Function>("foo", make<Null>()));
+  CHECK_AST_EXP("func foo = null", make<Function>("foo", make<Return>(make<Null>())));
+  CHECK_AST_EXP("func foo = 2 + 2",
+                make<Function>("foo", make<Return>(make<BinaryOp>(TokenType::Plus, make<Int>(2), make<Int>(2)))));
   CHECK_AST_EXP("func foo {}", make<Function>("foo", make<Block>()));
   CHECK_AST_EXP("func foo { x }", make<Function>("foo", make<Block>(make<Id>("x"))));
   CHECK_AST_EXP("func foo(a) {}", make<Function>("foo", make<Block>(), make<Id>("a")));

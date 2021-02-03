@@ -1040,6 +1040,10 @@ ref<Function> Parser::parse_function(bool class_function) {
   }
   m_keyword_context = kwcontext;
 
+  if (isa<Expression>(body)) {
+    body = make<Return>(cast<Expression>(body));
+  }
+
   ref<Function> node = make<Function>(function_name, body, argument_list);
   node->set_begin(begin);
 
