@@ -42,6 +42,7 @@ enum DiagnosticType : uint8_t { DiagnosticInfo, DiagnosticWarning, DiagnosticErr
 
 struct DiagnosticMessage {
   DiagnosticType type;
+  std::string filepath;
   std::string message;
   Location location;
 
@@ -64,9 +65,11 @@ struct DiagnosticMessage {
 
   // write a formatted version of this error to the stream:
   //
-  // <filename>:<row>:<col>: <message>
+  // <filepath>:<row>:<col>: <message>
   friend std::ostream& operator<<(std::ostream& out, const DiagnosticMessage& message) {
     utils::ColorWriter writer(out);
+
+    writer << message.filepath << ':';
 
     if (message.location.valid) {
       writer << message.location << ':';
@@ -103,7 +106,7 @@ class DiagnosticException : std::exception {
 
 class DiagnosticConsole {
 public:
-  DiagnosticConsole(const std::string& filename, const utils::Buffer& buffer);
+  DiagnosticConsole(const std::string& filepath, const utils::Buffer& buffer);
 
   const std::vector<DiagnosticMessage>& messages() const {
     return m_messages;
@@ -130,7 +133,7 @@ private:
   // refers to to the out stream
   void write_annotated_source(std::ostream& out, const DiagnosticMessage& message) const;
 
-  std::string m_filename;
+  std::string m_filepath;
   std::vector<std::string> m_source;
   std::vector<DiagnosticMessage> m_messages;
 };

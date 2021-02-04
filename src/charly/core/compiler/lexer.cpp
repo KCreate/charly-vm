@@ -119,7 +119,6 @@ Token Lexer::read_token_all() {
       case '\n': {
         read_char();
         token.type = TokenType::Newline;
-        increment_row();
         break;
       }
       case '+': {
@@ -628,7 +627,13 @@ uint32_t Lexer::read_char() {
   uint32_t cp = m_source.read_utf8();
   m_last_character = cp;
   m_token.location.end_offset = m_source.readoffset();
-  increment_column(1);
+
+  if (cp == '\n') {
+    increment_row();
+  } else {
+    increment_column(utils::Buffer::encoded_length_utf8(cp));
+  }
+
   return cp;
 }
 
@@ -790,7 +795,6 @@ void Lexer::consume_comment(Token& token) {
     uint32_t cp = peek_char();
 
     if (cp == '\n' || cp == '\0') {
-      increment_row();
       break;
     }
 
@@ -836,7 +840,6 @@ void Lexer::consume_multiline_comment(Token& token) {
       }
       case '\n': {
         read_char();
-        increment_row();
         break;
       }
       default: {

@@ -34,18 +34,18 @@
 namespace charly::core::compiler {
 
 struct Location {
-  bool valid = true;      // wether this location contains actual data
+  bool valid = false;     // wether this location contains actual data
   bool compound = false;  // wether this location is a mixup of multiple other locations
 
   // offset in source bytestream
-  size_t offset;
-  size_t end_offset;
+  size_t offset = 0;
+  size_t end_offset = 0;
 
   // file coordinates
-  uint32_t row;
-  uint32_t column;
-  uint32_t end_row;
-  uint32_t end_column;
+  uint32_t row = 0;
+  uint32_t column = 0;
+  uint32_t end_row = 0;
+  uint32_t end_column = 0;
 
   void set_begin(const Location& other) {
     this->compound = true;

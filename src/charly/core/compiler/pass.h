@@ -41,6 +41,7 @@ public:
   template <typename N>
   ref<N> apply(const ref<N>& node) {
     AST_TYPESWITCH(node, { return cast<N>(apply(node)); });
+    return nullptr;
   }
 
 protected:
