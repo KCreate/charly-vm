@@ -24,43 +24,12 @@
  * SOFTWARE.
  */
 
-#include "charly/core/compiler/pass.h"
-#include "charly/utils/colorwriter.h"
-
-#pragma once
+#include "charly/core/compiler/passes/semantic.h"
 
 namespace charly::core::compiler::ast {
 
-class DumpPass : public Pass {
-public:
-  DumpPass(std::ostream& out = std::cout, bool print_location = true) :
-    m_writer(out), m_print_location(print_location) {}
-
-private:
-  utils::ColorWriter m_writer;
-  bool m_print_location;
-
-  virtual void enter(const ref<Node>& node) override;
-
-  void dump(const ref<Node>&);
-  void dump(const ref<Assignment>& node);
-  void dump(const ref<BinaryOp>& node);
-  void dump(const ref<UnaryOp>& node);
-  void dump(const ref<As>& node);
-  void dump(const ref<Id>& node);
-  void dump(const ref<Name>& node);
-  void dump(const ref<Int>& node);
-  void dump(const ref<Float>& node);
-  void dump(const ref<Bool>& node);
-  void dump(const ref<Char>& node);
-  void dump(const ref<String>& node);
-  void dump(const ref<Function>& node);
-  void dump(const ref<Class>& node);
-  void dump(const ref<ClassProperty>& node);
-  void dump(const ref<MemberOp>& node);
-  void dump(const ref<Declaration>& node);
-  void dump(const ref<UnpackDeclaration>& node);
-  void dump(const ref<Try>& node);
-};
+void SemanticPass::inspect_leave(const ref<Id>& node) {
+  m_console.warning("identifier!!!!", node);
+}
 
 }  // namespace charly::core::compiler::ast

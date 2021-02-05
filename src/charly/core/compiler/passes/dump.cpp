@@ -75,6 +75,11 @@ void DumpPass::dump(const ref<Id>& node) {
   m_writer.fg(Color::Yellow, node->value);
 }
 
+void DumpPass::dump(const ref<Name>& node) {
+  m_writer << ' ';
+  m_writer.fg(Color::Green, node->value);
+}
+
 void DumpPass::dump(const ref<Int>& node) {
   m_writer << ' ';
   m_writer.fg(Color::Red, node->value);
@@ -134,10 +139,15 @@ void DumpPass::dump(const ref<MemberOp>& node) {
 }
 
 void DumpPass::dump(const ref<Declaration>& node) {
-  if (isa<Tuple>(node->target) || isa<Dict>(node->target)) {
+  if (node->constant) {
     m_writer << ' ';
-    m_writer.fg(Color::Cyan, "unpack");
+    m_writer.fg(Color::Red, "const");
   }
+  m_writer << ' ';
+  m_writer.fg(Color::Yellow, node->name);
+}
+
+void DumpPass::dump(const ref<UnpackDeclaration>& node) {
   if (node->constant) {
     m_writer << ' ';
     m_writer.fg(Color::Red, "const");
@@ -147,13 +157,6 @@ void DumpPass::dump(const ref<Declaration>& node) {
 void DumpPass::dump(const ref<Try>& node) {
   m_writer << ' ';
   m_writer.fg(Color::Yellow, node->exception_name);
-}
-
-void DumpPass::dump(const ref<For>& node) {
-  if (node->constant_value) {
-    m_writer << ' ';
-    m_writer.fg(Color::Red, "const");
-  }
 }
 
 }  // namespace charly::core::compiler::ast

@@ -24,11 +24,28 @@
  * SOFTWARE.
  */
 
+#include <string>
+
+#include "charly/core/compiler/ast.h"
 #include "charly/core/compiler/diagnostic.h"
-#include "charly/core/compiler/parser.h"
+#include "charly/utils/buffer.h"
 
 #pragma once
 
 namespace charly::core::compiler {
 
-}
+struct CompilationUnit {
+  CompilationUnit(const std::string& filepath, utils::Buffer& source) :
+    console(filepath, source), filepath(filepath), ast(nullptr) {}
+
+  DiagnosticConsole console;
+  std::string filepath;
+  ast::ref<ast::Program> ast;
+};
+
+class Compiler {
+public:
+  static std::shared_ptr<CompilationUnit> compile(const std::string& filepath, utils::Buffer& source);
+};
+
+}  // namespace charly::core::compiler

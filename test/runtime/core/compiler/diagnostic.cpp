@@ -37,20 +37,19 @@ using namespace charly::core::compiler;
 
 TEST_CASE("formats errors") {
   utils::Buffer buffer("foo,");
-  DiagnosticConsole console("test", buffer);
-  Parser::parse_program(buffer, console);
+  auto unit = Compiler::compile("test", buffer);
 
-  REQUIRE(console.messages().size() == 1);
+  REQUIRE(unit->console.messages().size() == 1);
 
   std::stringstream out;
-  console.dump_all(out);
+  unit->console.dump_all(out);
 
   CHECK_THAT(out.str(), Equals(("test:1:4: error: unexpected ',' token, expected an expression\n"
                                 "       1 | foo,\n")));
 }
 
 TEST_CASE("formats messages without a location") {
-  utils::Buffer buffer(",");
+  utils::Buffer buffer("");
   DiagnosticConsole console("test", buffer);
 
   console.info("foo");
@@ -69,13 +68,12 @@ TEST_CASE("formats messages without a location") {
 
 TEST_CASE("formats multiple lines") {
   utils::Buffer buffer("\n\n(25      25)\n\n");
-  DiagnosticConsole console("test", buffer);
-  Parser::parse_program(buffer, console);
+  auto unit = Compiler::compile("test", buffer);
 
-  REQUIRE(console.messages().size() == 1);
+  REQUIRE(unit->console.messages().size() == 1);
 
   std::stringstream out;
-  console.dump_all(out);
+  unit->console.dump_all(out);
 
   CHECK_THAT(out.str(), Equals(("test:3:10: error: unexpected numerical constant, expected a ')' token\n"
                                 "       1 | \n"

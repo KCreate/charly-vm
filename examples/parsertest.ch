@@ -24,18 +24,15 @@
  * SOFTWARE.
  */
 
-// same as let
-for foo in list {}
-for (foo) in list {}
-for (foo, bar) in list {}
-for {foo, bar} in list {}
+import math
+import foobar
 
-for let foo in list {}
-for let (foo) in list {}
-for let (foo, bar) in list {}
-for let {foo, bar} in list {}
+import "lib/foo.ch"
+import "lib/{name}.ch"
 
-for const foo in list {}
-for const (foo) in list {}
-for const (foo, bar) in list {}
-for const {foo, bar} in list {}
+const foo = import "lib/foo.ch"
+const module = import "lib/{name}.ch"
+
+const foo = import foo
+const foo = import "foo"
+const foo = import "{name}"

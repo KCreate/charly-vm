@@ -86,7 +86,6 @@ struct KeywordContext {
   bool _continue;
   bool _export;
   bool _yield;
-  bool _import;  // only applies to the import statement, not expression
   bool _super;
 };
 
@@ -123,7 +122,6 @@ private:
     m_keyword_context._continue = false;
     m_keyword_context._yield = false;
     m_keyword_context._export = true;
-    m_keyword_context._import = true;
     m_keyword_context._super = false;
   }
 
@@ -141,7 +139,6 @@ private:
   ref<Defer> parse_defer();
   ref<Throw> parse_throw();
   ref<Export> parse_export();
-  ref<Import> parse_import();
 
   // control statements
   ref<If> parse_if();
@@ -159,7 +156,7 @@ private:
   ref<Expression> parse_as_expression();
   ref<Expression> parse_expression();
   ref<Yield> parse_yield();
-  ref<ImportExpression> parse_import_expression();
+  ref<Import> parse_import();
   ref<Expression> parse_assignment();
   ref<Expression> parse_ternary();
   ref<Expression> parse_binaryop();
@@ -203,12 +200,17 @@ private:
 
   void validate_defer(const ref<Defer>& node);
   void validate_import(const ref<Import>& node);
-  void validate_declaration(const ref<Declaration>& node);
+  void validate_unpack_declaration(const ref<UnpackDeclaration>& node);
   void validate_assignment(const ref<Assignment>& node);
   void validate_spawn(const ref<Spawn>& node);
   void validate_dict(const ref<Dict>& node);
   void validate_function(const ref<Function>& node);
-  void validate_for(const ref<For>& node);
+
+  ref<Statement> create_declaration(const ref<Expression>& target, const ref<Expression>& value, bool constant);
+
+  // replaces Id nodes with Name nodes within tuples and dicts that
+  // are used as the target of an assignment
+  void prepare_assignment_target(const ref<Expression>& node);
 
   [[noreturn]] void unexpected_token();
   [[noreturn]] void unexpected_token(const std::string& message);

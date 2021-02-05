@@ -35,10 +35,12 @@
 #include "charly/utils/buffer.h"
 
 #include "charly/core/compiler.h"
+#include "charly/core/compiler/ast.h"
 #include "charly/core/compiler/passes/dump.h"
 
 using namespace charly;
 using namespace charly::core::compiler;
+using namespace charly::core::compiler::ast;
 
 int run_repl() {
   bool print_location = false;
@@ -69,18 +71,12 @@ int run_repl() {
     }
 
     utils::Buffer source_buffer(line);
-    // utils::Buffer source_buffer((
-    //   "foo(\"hello world\")(3)\n" \
-    //   ".     foo \n" \
-    //   "(a, b, c) = data\n"
-    //   "[1, 2, 3].data\n"
-    // ));
+    auto unit = Compiler::compile("stdin", source_buffer);
+    auto program = unit->ast;
 
-    DiagnosticConsole console("stdin", source_buffer);
-    ast::ref<ast::Program> program = Parser::parse_program(source_buffer, console);
+    unit->console.dump_all(std::cerr);
 
-    console.dump_all(std::cerr);
-    if (console.has_errors()) {
+    if (unit->console.has_errors()) {
       std::cerr << std::endl;
       continue;
     }
@@ -117,12 +113,12 @@ int run_file(int, char** argv) {
   }
   file.close();
 
-  DiagnosticConsole console(filename, file_buffer);
-  auto program = Parser::parse_program(file_buffer, console);
+  auto unit = Compiler::compile(filename, file_buffer);
+  auto program = unit->ast;
 
-  console.dump_all(std::cerr);
+  unit->console.dump_all(std::cerr);
 
-  if (console.has_errors())
+  if (unit->console.has_errors())
     return 1;
 
   DumpPass(std::cout).apply(program);

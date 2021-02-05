@@ -76,7 +76,6 @@ public:
     Import,
 
     // Control Expressions
-    ImportExpression,
     Yield,
     Spawn,
     Await,
@@ -85,6 +84,7 @@ public:
 
     // Literals
     Id,
+    Name,
     Int,
     Float,
     Bool,
@@ -114,6 +114,7 @@ public:
 
     // Declaration
     Declaration,
+    UnpackDeclaration,
 
     // Control structures
     If,
@@ -276,21 +277,10 @@ public:
 // import <identifier>
 // import <identifier> as <identifier>
 // import <string> as <identifier>
-class Import final : public Statement {
+class Import final : public Expression {
   AST_NODE(Import)
 public:
   Import(ref<Expression> source) : source(source) {
-    this->set_location(source);
-  }
-
-  ref<Expression> source;
-};
-
-// (import <expression>)
-class ImportExpression final : public Expression {
-  AST_NODE(ImportExpression)
-public:
-  ImportExpression(ref<Expression> source) : source(source) {
     this->set_location(source);
   }
 
@@ -436,15 +426,37 @@ public:
 };
 
 // foo, bar, $_baz42
+class Name;  // forward declaration
 class Id final : public Atom<std::string> {
   AST_NODE(Id)
 public:
   using Atom<std::string>::Atom;
 
+  Id(const ref<Name>& name);
+
   virtual bool assignable() const override {
     return true;
   }
 };
+
+// used to represent names that do not refer to a variable
+class Name final : public Atom<std::string> {
+  AST_NODE(Name)
+public:
+  using Atom<std::string>::Atom;
+
+  Name(const ref<Id>& id) : Atom<std::string>::Atom(id->value) {
+    this->set_location(id);
+  }
+
+  virtual bool assignable() const override {
+    return false;
+  }
+};
+
+inline Id::Id(const ref<Name>& name) : Atom<std::string>::Atom(name->value) {
+  this->set_location(name);
+}
 
 // <expression> as <name>
 class As final : public Expression {
@@ -522,7 +534,7 @@ public:
 
     bool spread_passed = false;
     for (const ref<Expression>& node : elements) {
-      if (isa<Id>(node)) {
+      if (isa<Name>(node)) {
         continue;
       }
 
@@ -532,9 +544,11 @@ public:
 
         spread_passed = true;
 
-        if (isa<Id>(spread->expression)) {
-          continue;
+        if (!isa<Name>(spread->expression)) {
+          return false;
         }
+
+        continue;
       }
 
       return false;
@@ -575,11 +589,11 @@ public:
     if (value.get())
       return false;
 
-    if (isa<Id>(key))
+    if (isa<Name>(key))
       return true;
 
     if (ref<Spread> spread = cast<Spread>(key)) {
-      return isa<Id>(spread->expression);
+      return isa<Name>(spread->expression);
     }
 
     return false;
@@ -622,17 +636,25 @@ class Function final : public Expression {
 public:
   // regular functions
   Function(const std::string& name, ref<Statement> body, const std::vector<ref<Expression>>& arguments) :
-    name(name), arrow_function(false), body(body), arguments(arguments) {}
+    name(name), arrow_function(false), body(body), arguments(arguments) {
+    this->set_location(body);
+  }
   template <typename... Args>
   Function(const std::string& name, ref<Statement> body, Args&&... params) :
-    name(name), arrow_function(false), body(body), arguments({ std::forward<Args>(params)... }) {}
+    name(name), arrow_function(false), body(body), arguments({ std::forward<Args>(params)... }) {
+    this->set_location(body);
+  }
 
   // arrow functions
   Function(ref<Statement> body, const std::vector<ref<Expression>>& arguments) :
-    name(""), arrow_function(true), body(body), arguments(arguments) {}
+    name(""), arrow_function(true), body(body), arguments(arguments) {
+    this->set_location(body);
+  }
   template <typename... Args>
   Function(ref<Statement> body, Args&&... params) :
-    name(""), arrow_function(true), body(body), arguments({ std::forward<Args>(params)... }) {}
+    name(""), arrow_function(true), body(body), arguments({ std::forward<Args>(params)... }) {
+    this->set_location(body);
+  }
 
   std::string name;
   bool arrow_function;
@@ -722,12 +744,30 @@ public:
 // let a
 // let a = 2
 // const b = 3
-// let (a, ...b, c) = 1
-// const (a, ...b, c) = x
 class Declaration final : public Expression {
   AST_NODE(Declaration)
 public:
-  Declaration(ref<Expression> target, ref<Expression> expression, bool constant = false) :
+  Declaration(ref<Id> name, ref<Expression> expression, bool constant = false) :
+    constant(constant), name(name->value), expression(expression) {
+    this->set_begin(name);
+    this->set_end(expression);
+  }
+  Declaration(const std::string& name, ref<Expression> expression, bool constant = false) :
+    constant(constant), name(name), expression(expression) {
+    this->set_location(expression);
+  }
+
+  bool constant;
+  std::string name;
+  ref<Expression> expression;
+};
+
+// let (a, ...b, c) = 1
+// const (a, ...b, c) = x
+class UnpackDeclaration final : public Expression {
+  AST_NODE(UnpackDeclaration)
+public:
+  UnpackDeclaration(ref<Expression> target, ref<Expression> expression, bool constant = false) :
     constant(constant), target(target), expression(expression) {
     this->set_begin(target);
     this->set_end(expression);
@@ -750,7 +790,6 @@ public:
     this->set_begin(condition);
 
     if (else_stmt) {
-
       this->set_end(else_stmt);
     }
   }
@@ -829,20 +868,12 @@ public:
 class For final : public Expression {
   AST_NODE(For)
 public:
-  For(ref<Expression> target, ref<Expression> source, ref<Statement> stmt) :
-    constant_value(false), target(target), source(source), stmt(stmt) {
-    this->set_begin(target);
-    this->set_end(stmt);
-  }
-  For(bool constant_value, ref<Expression> target, ref<Expression> source, ref<Statement> stmt) :
-    constant_value(constant_value), target(target), source(source), stmt(stmt) {
-    this->set_begin(target);
+  For(ref<Statement> declaration, ref<Statement> stmt) : declaration(declaration), stmt(stmt) {
+    this->set_begin(declaration);
     this->set_end(stmt);
   }
 
-  bool constant_value;
-  ref<Expression> target;
-  ref<Expression> source;
+  ref<Statement> declaration;
   ref<Statement> stmt;
 };
 

@@ -147,16 +147,17 @@ TEST_CASE("assignments") {
 
   CHECK_AST_EXP("foo.bar = 1", make<Assignment>(make<MemberOp>(make<Id>("foo"), "bar"), make<Int>(1)));
   CHECK_AST_EXP("foo[0] = 1", make<Assignment>(make<IndexOp>(make<Id>("foo"), make<Int>(0)), make<Int>(1)));
-  CHECK_AST_EXP("(a, b) = 1", make<Assignment>(make<Tuple>(make<Id>("a"), make<Id>("b")), make<Int>(1)));
-  CHECK_AST_EXP("(...b,) = 1", make<Assignment>(make<Tuple>(make<Spread>(make<Id>("b"))), make<Int>(1)));
-  CHECK_AST_EXP("(a, ...b, c) = 1",
-                make<Assignment>(make<Tuple>(make<Id>("a"), make<Spread>(make<Id>("b")), make<Id>("c")), make<Int>(1)));
+  CHECK_AST_EXP("(a, b) = 1", make<Assignment>(make<Tuple>(make<Name>("a"), make<Name>("b")), make<Int>(1)));
+  CHECK_AST_EXP("(...b,) = 1", make<Assignment>(make<Tuple>(make<Spread>(make<Name>("b"))), make<Int>(1)));
+  CHECK_AST_EXP(
+    "(a, ...b, c) = 1",
+    make<Assignment>(make<Tuple>(make<Name>("a"), make<Spread>(make<Name>("b")), make<Name>("c")), make<Int>(1)));
   CHECK_AST_EXP(
     "{a, b} = 1",
-    make<Assignment>(make<Dict>(make<DictEntry>(make<Id>("a")), make<DictEntry>(make<Id>("b"))), make<Int>(1)));
-  CHECK_AST_EXP("{a, ...b, c} = 1", make<Assignment>(make<Dict>(make<DictEntry>(make<Id>("a")),
-                                                                make<DictEntry>(make<Spread>(make<Id>("b"))),
-                                                                make<DictEntry>(make<Id>("c"))),
+    make<Assignment>(make<Dict>(make<DictEntry>(make<Name>("a")), make<DictEntry>(make<Name>("b"))), make<Int>(1)));
+  CHECK_AST_EXP("{a, ...b, c} = 1", make<Assignment>(make<Dict>(make<DictEntry>(make<Name>("a")),
+                                                                make<DictEntry>(make<Spread>(make<Name>("b"))),
+                                                                make<DictEntry>(make<Name>("c"))),
                                                      make<Int>(1)));
   CHECK_AST_EXP("x += 1", make<Assignment>(TokenType::Plus, make<Id>("x"), make<Int>(1)));
   CHECK_AST_EXP("foo.bar += 1",
@@ -315,23 +316,18 @@ TEST_CASE("parses control statements") {
   CHECK_AST_STMT("export exp", make<Export>(make<Id>("exp")));
 }
 
-TEST_CASE("import statement") {
-  CHECK_AST_STMT("import foo", make<Import>(make<Id>("foo")));
-  CHECK_AST_STMT("import foo as bar", make<Import>(make<As>(make<Id>("foo"), "bar")));
-  CHECK_AST_STMT("import \"foo\" as bar", make<Import>(make<As>(make<String>("foo"), "bar")));
-  CHECK_AST_STMT("import \"{path}\" as bar", make<Import>(make<As>(make<FormatString>(make<Id>("path")), "bar")));
+TEST_CASE("import expression") {
+  CHECK_AST_EXP("import foo", make<Import>(make<Name>("foo")));
+  CHECK_AST_EXP("import 25", make<Import>(make<Int>(25)));
+  CHECK_AST_EXP("import \"foo\"", make<Import>(make<String>("foo")));
+
+  CHECK_AST_STMT("import foo", make<Declaration>("foo", make<Import>(make<Name>("foo")), true));
+  CHECK_AST_STMT("import \"foo\"", make<Import>(make<String>("foo")));
+  CHECK_AST_STMT("import \"{path}\"", make<Import>(make<FormatString>(make<Id>("path"))));
+
+  CHECK_AST_STMT("const x = import foo", make<Declaration>("x", make<Import>(make<Name>("foo")), true));
 
   CHECK_ERROR_STMT("import", "unexpected end of file, expected an expression");
-  CHECK_ERROR_STMT("import 25", "expected an identifier");
-  CHECK_ERROR_STMT("import 25 as bar", "expected an identifier or a string literal");
-}
-
-TEST_CASE("import expression") {
-  CHECK_AST_EXP("import foo", make<ImportExpression>(make<Id>("foo")));
-  CHECK_AST_EXP("import 25", make<ImportExpression>(make<Int>(25)));
-  CHECK_AST_EXP("import \"foo\"", make<ImportExpression>(make<String>("foo")));
-
-  CHECK_ERROR_EXP("(import foo as bar)", "unexpected 'as' token, expected a ')' token");
 }
 
 TEST_CASE("yield, await, typeof expressions") {
@@ -447,15 +443,15 @@ TEST_CASE("list literals") {
 
 TEST_CASE("dict literals") {
   CHECK_AST_EXP("{}", make<Dict>());
-  CHECK_AST_EXP("{x}", make<Dict>(make<DictEntry>(make<Id>("x"), nullptr)));
-  CHECK_AST_EXP("{x, y}", make<Dict>(make<DictEntry>(make<Id>("x"), nullptr), make<DictEntry>(make<Id>("y"), nullptr)));
-  CHECK_AST_EXP("{x.y}", make<Dict>(make<DictEntry>(make<MemberOp>(make<Id>("x"), make<Id>("y")), nullptr)));
-  CHECK_AST_EXP("{...x}", make<Dict>(make<DictEntry>(make<Spread>(make<Id>("x")), nullptr)));
-  CHECK_AST_EXP("{x: 1}", make<Dict>(make<DictEntry>(make<Id>("x"), make<Int>(1))));
-  CHECK_AST_EXP("{x: 1, y: 2}",
-                make<Dict>(make<DictEntry>(make<Id>("x"), make<Int>(1)), make<DictEntry>(make<Id>("y"), make<Int>(2))));
-  CHECK_AST_EXP("{\"foo\": 1}", make<Dict>(make<DictEntry>(make<Id>("foo"), make<Int>(1))));
-  CHECK_AST_EXP("{\"foo bar\": 1}", make<Dict>(make<DictEntry>(make<Id>("foo bar"), make<Int>(1))));
+  CHECK_AST_EXP("{x}", make<Dict>(make<DictEntry>(make<Name>("x"))));
+  CHECK_AST_EXP("{x, y}", make<Dict>(make<DictEntry>(make<Name>("x")), make<DictEntry>(make<Name>("y"))));
+  CHECK_AST_EXP("{x.y}", make<Dict>(make<DictEntry>(make<Name>("y"), make<MemberOp>(make<Id>("x"), make<Id>("y")))));
+  CHECK_AST_EXP("{...x}", make<Dict>(make<DictEntry>(make<Spread>(make<Id>("x")))));
+  CHECK_AST_EXP("{x: 1}", make<Dict>(make<DictEntry>(make<Name>("x"), make<Int>(1))));
+  CHECK_AST_EXP("{x: 1, y: 2}", make<Dict>(make<DictEntry>(make<Name>("x"), make<Int>(1)),
+                                           make<DictEntry>(make<Name>("y"), make<Int>(2))));
+  CHECK_AST_EXP("{\"foo\": 1}", make<Dict>(make<DictEntry>(make<Name>("foo"), make<Int>(1))));
+  CHECK_AST_EXP("{\"foo bar\": 1}", make<Dict>(make<DictEntry>(make<Name>("foo bar"), make<Int>(1))));
   CHECK_AST_EXP("{\"{name}\": 1}", make<Dict>(make<DictEntry>(make<FormatString>(make<Id>("name")), make<Int>(1))));
 
   CHECK_ERROR_EXP("{25}", "expected identifier, member access or spread expression");
@@ -508,53 +504,60 @@ TEST_CASE("loop statements") {
 }
 
 TEST_CASE("declarations") {
-  CHECK_AST_STMT("let a", make<Declaration>(make<Id>("a"), make<Null>()));
-  CHECK_AST_STMT("let a = 1", make<Declaration>(make<Id>("a"), make<Int>(1)));
-  CHECK_AST_STMT("let a = 1 + 2",
-                 make<Declaration>(make<Id>("a"), make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(2))));
-  CHECK_AST_STMT("const a = 1", make<Declaration>(make<Id>("a"), make<Int>(1), true));
+  CHECK_AST_STMT("let a", make<Declaration>("a", make<Null>()));
+  CHECK_AST_STMT("let a = 1", make<Declaration>("a", make<Int>(1)));
+  CHECK_AST_STMT("let a = 1 + 2", make<Declaration>("a", make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(2))));
+  CHECK_AST_STMT("const a = 1", make<Declaration>("a", make<Int>(1), true));
   CHECK_AST_STMT("const a = 1 + 2",
-                 make<Declaration>(make<Id>("a"), make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(2)), true));
+                 make<Declaration>("a", make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(2)), true));
 
-  CHECK_AST_STMT("let (a) = x", make<Declaration>(make<Tuple>(make<Id>("a")), make<Id>("x")));
-  CHECK_AST_STMT("let (a, b) = x", make<Declaration>(make<Tuple>(make<Id>("a"), make<Id>("b")), make<Id>("x")));
+  CHECK_AST_STMT("let (a) = x", make<UnpackDeclaration>(make<Tuple>(make<Name>("a")), make<Id>("x")));
+  CHECK_AST_STMT("let (a, b) = x",
+                 make<UnpackDeclaration>(make<Tuple>(make<Name>("a"), make<Name>("b")), make<Id>("x")));
   CHECK_AST_STMT("let (a, ...b) = x",
-                 make<Declaration>(make<Tuple>(make<Id>("a"), make<Spread>(make<Id>("b"))), make<Id>("x")));
-  CHECK_AST_STMT(
-    "let (a, ...b, c) = x",
-    make<Declaration>(make<Tuple>(make<Id>("a"), make<Spread>(make<Id>("b")), make<Id>("c")), make<Id>("x")));
+                 make<UnpackDeclaration>(make<Tuple>(make<Name>("a"), make<Spread>(make<Name>("b"))), make<Id>("x")));
+  CHECK_AST_STMT("let (a, ...b, c) = x",
+                 make<UnpackDeclaration>(make<Tuple>(make<Name>("a"), make<Spread>(make<Name>("b")), make<Name>("c")),
+                                         make<Id>("x")));
 
-  CHECK_AST_STMT("const (a) = x", make<Declaration>(make<Tuple>(make<Id>("a")), make<Id>("x"), true));
-  CHECK_AST_STMT("const (a, b) = x", make<Declaration>(make<Tuple>(make<Id>("a"), make<Id>("b")), make<Id>("x"), true));
-  CHECK_AST_STMT("const (a, ...b) = x",
-                 make<Declaration>(make<Tuple>(make<Id>("a"), make<Spread>(make<Id>("b"))), make<Id>("x"), true));
+  CHECK_AST_STMT("const (a) = x", make<UnpackDeclaration>(make<Tuple>(make<Name>("a")), make<Id>("x"), true));
+  CHECK_AST_STMT("const (a, b) = x",
+                 make<UnpackDeclaration>(make<Tuple>(make<Name>("a"), make<Name>("b")), make<Id>("x"), true));
   CHECK_AST_STMT(
-    "const (a, ...b, c) = x",
-    make<Declaration>(make<Tuple>(make<Id>("a"), make<Spread>(make<Id>("b")), make<Id>("c")), make<Id>("x"), true));
+    "const (a, ...b) = x",
+    make<UnpackDeclaration>(make<Tuple>(make<Name>("a"), make<Spread>(make<Name>("b"))), make<Id>("x"), true));
+  CHECK_AST_STMT("const (a, ...b, c) = x",
+                 make<UnpackDeclaration>(make<Tuple>(make<Name>("a"), make<Spread>(make<Name>("b")), make<Name>("c")),
+                                         make<Id>("x"), true));
 
-  CHECK_AST_STMT("let {a} = x", make<Declaration>(make<Dict>(make<DictEntry>(make<Id>("a"))), make<Id>("x")));
+  CHECK_AST_STMT("let {a} = x", make<UnpackDeclaration>(make<Dict>(make<DictEntry>(make<Name>("a"))), make<Id>("x")));
+  CHECK_AST_STMT("let {a, b} = x",
+                 make<UnpackDeclaration>(make<Dict>(make<DictEntry>(make<Name>("a")), make<DictEntry>(make<Name>("b"))),
+                                         make<Id>("x")));
   CHECK_AST_STMT(
-    "let {a, b} = x",
-    make<Declaration>(make<Dict>(make<DictEntry>(make<Id>("a")), make<DictEntry>(make<Id>("b"))), make<Id>("x")));
-  CHECK_AST_STMT("let {a, ...b} = x", make<Declaration>(make<Dict>(make<DictEntry>(make<Id>("a")),
-                                                                   make<DictEntry>(make<Spread>(make<Id>("b")))),
-                                                        make<Id>("x")));
-  CHECK_AST_STMT("let {a, ...b, c} = x", make<Declaration>(make<Dict>(make<DictEntry>(make<Id>("a")),
-                                                                      make<DictEntry>(make<Spread>(make<Id>("b"))),
-                                                                      make<DictEntry>(make<Id>("c"))),
-                                                           make<Id>("x")));
+    "let {a, ...b} = x",
+    make<UnpackDeclaration>(
+      make<Dict>(make<DictEntry>(make<Name>("a")), make<DictEntry>(make<Spread>(make<Name>("b")))), make<Id>("x")));
+  CHECK_AST_STMT(
+    "let {a, ...b, c} = x",
+    make<UnpackDeclaration>(make<Dict>(make<DictEntry>(make<Name>("a")), make<DictEntry>(make<Spread>(make<Name>("b"))),
+                                       make<DictEntry>(make<Name>("c"))),
+                            make<Id>("x")));
 
-  CHECK_AST_STMT("const {a} = x", make<Declaration>(make<Dict>(make<DictEntry>(make<Id>("a"))), make<Id>("x"), true));
+  CHECK_AST_STMT("const {a} = x",
+                 make<UnpackDeclaration>(make<Dict>(make<DictEntry>(make<Name>("a"))), make<Id>("x"), true));
+  CHECK_AST_STMT("const {a, b} = x",
+                 make<UnpackDeclaration>(make<Dict>(make<DictEntry>(make<Name>("a")), make<DictEntry>(make<Name>("b"))),
+                                         make<Id>("x"), true));
+  CHECK_AST_STMT("const {a, ...b} = x",
+                 make<UnpackDeclaration>(
+                   make<Dict>(make<DictEntry>(make<Name>("a")), make<DictEntry>(make<Spread>(make<Name>("b")))),
+                   make<Id>("x"), true));
   CHECK_AST_STMT(
-    "const {a, b} = x",
-    make<Declaration>(make<Dict>(make<DictEntry>(make<Id>("a")), make<DictEntry>(make<Id>("b"))), make<Id>("x"), true));
-  CHECK_AST_STMT("const {a, ...b} = x", make<Declaration>(make<Dict>(make<DictEntry>(make<Id>("a")),
-                                                                     make<DictEntry>(make<Spread>(make<Id>("b")))),
-                                                          make<Id>("x"), true));
-  CHECK_AST_STMT("const {a, ...b, c} = x", make<Declaration>(make<Dict>(make<DictEntry>(make<Id>("a")),
-                                                                        make<DictEntry>(make<Spread>(make<Id>("b"))),
-                                                                        make<DictEntry>(make<Id>("c"))),
-                                                             make<Id>("x"), true));
+    "const {a, ...b, c} = x",
+    make<UnpackDeclaration>(make<Dict>(make<DictEntry>(make<Name>("a")), make<DictEntry>(make<Spread>(make<Name>("b"))),
+                                       make<DictEntry>(make<Name>("c"))),
+                            make<Id>("x"), true));
 
   CHECK_ERROR_STMT("let () = 1", "left-hand side of declaration is not assignable");
   CHECK_ERROR_STMT("let (1) = 1", "left-hand side of declaration is not assignable");
@@ -585,33 +588,33 @@ TEST_CASE("functions") {
                 make<Function>("foo", make<Return>(make<BinaryOp>(TokenType::Plus, make<Int>(2), make<Int>(2)))));
   CHECK_AST_EXP("func foo {}", make<Function>("foo", make<Block>()));
   CHECK_AST_EXP("func foo { x }", make<Function>("foo", make<Block>(make<Id>("x"))));
-  CHECK_AST_EXP("func foo(a) {}", make<Function>("foo", make<Block>(), make<Id>("a")));
-  CHECK_AST_EXP("func foo(a, b) {}", make<Function>("foo", make<Block>(), make<Id>("a"), make<Id>("b")));
+  CHECK_AST_EXP("func foo(a) {}", make<Function>("foo", make<Block>(), make<Name>("a")));
+  CHECK_AST_EXP("func foo(a, b) {}", make<Function>("foo", make<Block>(), make<Name>("a"), make<Name>("b")));
   CHECK_AST_EXP("func foo(a, ...b) {}",
-                make<Function>("foo", make<Block>(), make<Id>("a"), make<Spread>(make<Id>("b"))));
-  CHECK_AST_EXP("func foo(...b) {}", make<Function>("foo", make<Block>(), make<Spread>(make<Id>("b"))));
+                make<Function>("foo", make<Block>(), make<Name>("a"), make<Spread>(make<Name>("b"))));
+  CHECK_AST_EXP("func foo(...b) {}", make<Function>("foo", make<Block>(), make<Spread>(make<Name>("b"))));
   CHECK_AST_EXP("func foo(a = 1) {}",
-                make<Function>("foo", make<Block>(), make<Assignment>(make<Id>("a"), make<Int>(1))));
+                make<Function>("foo", make<Block>(), make<Assignment>(make<Name>("a"), make<Int>(1))));
   CHECK_AST_EXP("func foo(a = 1, b = 2) {}",
-                make<Function>("foo", make<Block>(), make<Assignment>(make<Id>("a"), make<Int>(1)),
-                               make<Assignment>(make<Id>("b"), make<Int>(2))));
+                make<Function>("foo", make<Block>(), make<Assignment>(make<Name>("a"), make<Int>(1)),
+                               make<Assignment>(make<Name>("b"), make<Int>(2))));
   CHECK_AST_EXP("func foo(a = 1, b = 2, ...c) {}",
-                make<Function>("foo", make<Block>(), make<Assignment>(make<Id>("a"), make<Int>(1)),
-                               make<Assignment>(make<Id>("b"), make<Int>(2)), make<Spread>(make<Id>("c"))));
+                make<Function>("foo", make<Block>(), make<Assignment>(make<Name>("a"), make<Int>(1)),
+                               make<Assignment>(make<Name>("b"), make<Int>(2)), make<Spread>(make<Name>("c"))));
 
   CHECK_AST_EXP("->null", make<Function>(make<Null>()));
   CHECK_AST_EXP("->{}", make<Function>(make<Block>()));
   CHECK_AST_EXP("->{ x }", make<Function>(make<Block>(make<Id>("x"))));
-  CHECK_AST_EXP("->(a) {}", make<Function>(make<Block>(), make<Id>("a")));
-  CHECK_AST_EXP("->(a, b) {}", make<Function>(make<Block>(), make<Id>("a"), make<Id>("b")));
-  CHECK_AST_EXP("->(a, ...b) {}", make<Function>(make<Block>(), make<Id>("a"), make<Spread>(make<Id>("b"))));
-  CHECK_AST_EXP("->(...b) {}", make<Function>(make<Block>(), make<Spread>(make<Id>("b"))));
-  CHECK_AST_EXP("->(a = 1) {}", make<Function>(make<Block>(), make<Assignment>(make<Id>("a"), make<Int>(1))));
-  CHECK_AST_EXP("->(a = 1, b = 2) {}", make<Function>(make<Block>(), make<Assignment>(make<Id>("a"), make<Int>(1)),
-                                                      make<Assignment>(make<Id>("b"), make<Int>(2))));
+  CHECK_AST_EXP("->(a) {}", make<Function>(make<Block>(), make<Name>("a")));
+  CHECK_AST_EXP("->(a, b) {}", make<Function>(make<Block>(), make<Name>("a"), make<Name>("b")));
+  CHECK_AST_EXP("->(a, ...b) {}", make<Function>(make<Block>(), make<Name>("a"), make<Spread>(make<Name>("b"))));
+  CHECK_AST_EXP("->(...b) {}", make<Function>(make<Block>(), make<Spread>(make<Name>("b"))));
+  CHECK_AST_EXP("->(a = 1) {}", make<Function>(make<Block>(), make<Assignment>(make<Name>("a"), make<Int>(1))));
+  CHECK_AST_EXP("->(a = 1, b = 2) {}", make<Function>(make<Block>(), make<Assignment>(make<Name>("a"), make<Int>(1)),
+                                                      make<Assignment>(make<Name>("b"), make<Int>(2))));
   CHECK_AST_EXP("->(a = 1, b = 2, ...c) {}",
-                make<Function>(make<Block>(), make<Assignment>(make<Id>("a"), make<Int>(1)),
-                               make<Assignment>(make<Id>("b"), make<Int>(2)), make<Spread>(make<Id>("c"))));
+                make<Function>(make<Block>(), make<Assignment>(make<Name>("a"), make<Int>(1)),
+                               make<Assignment>(make<Name>("b"), make<Int>(2)), make<Spread>(make<Name>("c"))));
 
   CHECK_EXP("func foo = import 25");
   CHECK_EXP("func foo = throw 1");
@@ -669,7 +672,6 @@ TEST_CASE("catches illegal control statements") {
   CHECK_ERROR_PROGRAM("continue", "continue statement not allowed at this point");
   CHECK_ERROR_PROGRAM("if true { continue }", "continue statement not allowed at this point");
   CHECK_ERROR_PROGRAM("loop { ->{ continue } }", "continue statement not allowed at this point");
-  CHECK_ERROR_PROGRAM("{ import foo }", "import statement not allowed at this point");
   CHECK_ERROR_PROGRAM("{ export foo }", "export statement not allowed at this point");
 }
 
@@ -683,47 +685,50 @@ TEST_CASE("spread operator") {
   CHECK_AST_EXP("[...b, ...c]", make<List>(make<Spread>(make<Id>("b")), make<Spread>(make<Id>("c"))));
 
   CHECK_AST_EXP("{...x}", make<Dict>(make<DictEntry>(make<Spread>(make<Id>("x")))));
-  CHECK_AST_EXP("{a, ...b, c}", make<Dict>(make<DictEntry>(make<Id>("a")), make<DictEntry>(make<Spread>(make<Id>("b"))),
-                                           make<DictEntry>(make<Id>("c"))));
+  CHECK_AST_EXP("{a, ...b, c}",
+                make<Dict>(make<DictEntry>(make<Name>("a")), make<DictEntry>(make<Spread>(make<Id>("b"))),
+                           make<DictEntry>(make<Name>("c"))));
   CHECK_AST_EXP("{...b, ...c}",
                 make<Dict>(make<DictEntry>(make<Spread>(make<Id>("b"))), make<DictEntry>(make<Spread>(make<Id>("c")))));
 
   CHECK_AST_EXP("a(...b)", make<CallOp>(make<Id>("a"), make<Spread>(make<Id>("b"))));
   CHECK_AST_EXP("a(...b, ...c)", make<CallOp>(make<Id>("a"), make<Spread>(make<Id>("b")), make<Spread>(make<Id>("c"))));
 
-  CHECK_AST_EXP("->(...x) {}", make<Function>(make<Block>(), make<Spread>(make<Id>("x"))));
-  CHECK_AST_EXP("->(a, ...x) {}", make<Function>(make<Block>(), make<Id>("a"), make<Spread>(make<Id>("x"))));
+  CHECK_AST_EXP("->(...x) {}", make<Function>(make<Block>(), make<Spread>(make<Name>("x"))));
+  CHECK_AST_EXP("->(a, ...x) {}", make<Function>(make<Block>(), make<Name>("a"), make<Spread>(make<Name>("x"))));
 
   CHECK_AST_STMT("let (...copy) = original",
-                 make<Declaration>(make<Tuple>(make<Spread>(make<Id>("copy"))), make<Id>("original")));
+                 make<UnpackDeclaration>(make<Tuple>(make<Spread>(make<Name>("copy"))), make<Id>("original")));
 
   CHECK_AST_STMT(
     "let (a, ...copy, b) = original",
-    make<Declaration>(make<Tuple>(make<Id>("a"), make<Spread>(make<Id>("copy")), make<Id>("b")), make<Id>("original")));
-
-  CHECK_AST_STMT("let {...copy} = original",
-                 make<Declaration>(make<Dict>(make<DictEntry>(make<Spread>(make<Id>("copy")))), make<Id>("original")));
+    make<UnpackDeclaration>(make<Tuple>(make<Name>("a"), make<Spread>(make<Name>("copy")), make<Name>("b")),
+                            make<Id>("original")));
 
   CHECK_AST_STMT(
-    "let {a, ...copy, b} = original",
-    make<Declaration>(make<Dict>(make<DictEntry>(make<Id>("a")), make<DictEntry>(make<Spread>(make<Id>("copy"))),
-                                 make<DictEntry>(make<Id>("b"))),
-                      make<Id>("original")));
+    "let {...copy} = original",
+    make<UnpackDeclaration>(make<Dict>(make<DictEntry>(make<Spread>(make<Name>("copy")))), make<Id>("original")));
+
+  CHECK_AST_STMT("let {a, ...copy, b} = original",
+                 make<UnpackDeclaration>(
+                   make<Dict>(make<DictEntry>(make<Name>("a")), make<DictEntry>(make<Spread>(make<Name>("copy"))),
+                              make<DictEntry>(make<Name>("b"))),
+                   make<Id>("original")));
 }
 
 TEST_CASE("class literals") {
   CHECK_AST_EXP("class Foo extends Bar {}", make<Class>("Foo", make<Id>("Bar")));
 
   ref<Class> class_node = make<Class>("Foo", make<Id>("Bar"));
-  class_node->constructor = make<Function>("constructor", make<Block>(), make<Id>("a"));
+  class_node->constructor = make<Function>("constructor", make<Block>(), make<Name>("a"));
   class_node->member_properties.push_back(make<ClassProperty>(false, "foo", make<Int>(100)));
   class_node->static_properties.push_back(make<ClassProperty>(true, "foo", make<Int>(200)));
-  class_node->member_functions.push_back(make<Function>("foo", make<Block>(), make<Id>("a")));
-  class_node->member_functions.push_back(make<Function>("bar", make<Block>(), make<Id>("a")));
+  class_node->member_functions.push_back(make<Function>("foo", make<Block>(), make<Name>("a")));
+  class_node->member_functions.push_back(make<Function>("bar", make<Block>(), make<Name>("a")));
   class_node->static_properties.push_back(
-    make<ClassProperty>(true, "foo", make<Function>("foo", make<Block>(), make<Id>("a"))));
+    make<ClassProperty>(true, "foo", make<Function>("foo", make<Block>(), make<Name>("a"))));
   class_node->static_properties.push_back(
-    make<ClassProperty>(true, "bar", make<Function>("bar", make<Block>(), make<Id>("a"))));
+    make<ClassProperty>(true, "bar", make<Function>("bar", make<Block>(), make<Name>("a"))));
 
   CHECK_AST_EXP(("class Foo extends Bar {\n"
                  "  constructor(a) {}\n"
@@ -786,45 +791,59 @@ TEST_CASE("switch statements") {
 }
 
 TEST_CASE("for statements") {
-  CHECK_AST_STMT("for foo in bar baz", make<For>(make<Id>("foo"), make<Id>("bar"), make<Id>("baz")));
-  CHECK_AST_STMT("for foo in bar {}", make<For>(make<Id>("foo"), make<Id>("bar"), make<Block>()));
-  CHECK_AST_STMT("for let foo in bar {}", make<For>(make<Id>("foo"), make<Id>("bar"), make<Block>()));
-  CHECK_AST_STMT("for const foo in bar {}", make<For>(true, make<Id>("foo"), make<Id>("bar"), make<Block>()));
+  CHECK_AST_STMT("for foo in bar baz", make<For>(make<Declaration>("foo", make<Id>("bar")), make<Id>("baz")));
+  CHECK_AST_STMT("for foo in bar {}", make<For>(make<Declaration>("foo", make<Id>("bar")), make<Block>()));
+  CHECK_AST_STMT("for let foo in bar {}", make<For>(make<Declaration>("foo", make<Id>("bar")), make<Block>()));
+  CHECK_AST_STMT("for const foo in bar {}", make<For>(make<Declaration>("foo", make<Id>("bar"), true), make<Block>()));
 
-  CHECK_AST_STMT("for (foo) in bar {}", make<For>(make<Tuple>(make<Id>("foo")), make<Id>("bar"), make<Block>()));
+  CHECK_AST_STMT("for (foo) in bar {}",
+                 make<For>(make<UnpackDeclaration>(make<Tuple>(make<Name>("foo")), make<Id>("bar")), make<Block>()));
   CHECK_AST_STMT("for (foo, bar) in bar {}",
-                 make<For>(make<Tuple>(make<Id>("foo"), make<Id>("bar")), make<Id>("bar"), make<Block>()));
-  CHECK_AST_STMT("for {foo} in bar {}",
-                 make<For>(make<Dict>(make<DictEntry>(make<Id>("foo"))), make<Id>("bar"), make<Block>()));
-  CHECK_AST_STMT("for {foo, bar} in bar {}",
-                 make<For>(make<Dict>(make<DictEntry>(make<Id>("foo")), make<DictEntry>(make<Id>("bar"))),
-                           make<Id>("bar"), make<Block>()));
+                 make<For>(make<UnpackDeclaration>(make<Tuple>(make<Name>("foo"), make<Name>("bar")), make<Id>("bar")),
+                           make<Block>()));
+  CHECK_AST_STMT(
+    "for {foo} in bar {}",
+    make<For>(make<UnpackDeclaration>(make<Dict>(make<DictEntry>(make<Name>("foo"))), make<Id>("bar")), make<Block>()));
+  CHECK_AST_STMT(
+    "for {foo, bar} in bar {}",
+    make<For>(make<UnpackDeclaration>(
+                make<Dict>(make<DictEntry>(make<Name>("foo")), make<DictEntry>(make<Name>("bar"))), make<Id>("bar")),
+              make<Block>()));
 
-  CHECK_AST_STMT("for let (foo) in bar {}", make<For>(make<Tuple>(make<Id>("foo")), make<Id>("bar"), make<Block>()));
+  CHECK_AST_STMT("for let (foo) in bar {}",
+                 make<For>(make<UnpackDeclaration>(make<Tuple>(make<Name>("foo")), make<Id>("bar")), make<Block>()));
   CHECK_AST_STMT("for let (foo, bar) in bar {}",
-                 make<For>(make<Tuple>(make<Id>("foo"), make<Id>("bar")), make<Id>("bar"), make<Block>()));
-  CHECK_AST_STMT("for let {foo} in bar {}",
-                 make<For>(make<Dict>(make<DictEntry>(make<Id>("foo"))), make<Id>("bar"), make<Block>()));
-  CHECK_AST_STMT("for let {foo, bar} in bar {}",
-                 make<For>(make<Dict>(make<DictEntry>(make<Id>("foo")), make<DictEntry>(make<Id>("bar"))),
-                           make<Id>("bar"), make<Block>()));
+                 make<For>(make<UnpackDeclaration>(make<Tuple>(make<Name>("foo"), make<Name>("bar")), make<Id>("bar")),
+                           make<Block>()));
+  CHECK_AST_STMT(
+    "for let {foo} in bar {}",
+    make<For>(make<UnpackDeclaration>(make<Dict>(make<DictEntry>(make<Name>("foo"))), make<Id>("bar")), make<Block>()));
+  CHECK_AST_STMT(
+    "for let {foo, bar} in bar {}",
+    make<For>(make<UnpackDeclaration>(
+                make<Dict>(make<DictEntry>(make<Name>("foo")), make<DictEntry>(make<Name>("bar"))), make<Id>("bar")),
+              make<Block>()));
 
-  CHECK_AST_STMT("for const (foo) in bar {}",
-                 make<For>(true, make<Tuple>(make<Id>("foo")), make<Id>("bar"), make<Block>()));
-  CHECK_AST_STMT("for const (foo, bar) in bar {}",
-                 make<For>(true, make<Tuple>(make<Id>("foo"), make<Id>("bar")), make<Id>("bar"), make<Block>()));
-  CHECK_AST_STMT("for const {foo} in bar {}",
-                 make<For>(true, make<Dict>(make<DictEntry>(make<Id>("foo"))), make<Id>("bar"), make<Block>()));
+  CHECK_AST_STMT(
+    "for const (foo) in bar {}",
+    make<For>(make<UnpackDeclaration>(make<Tuple>(make<Name>("foo")), make<Id>("bar"), true), make<Block>()));
+  CHECK_AST_STMT(
+    "for const (foo, bar) in bar {}",
+    make<For>(make<UnpackDeclaration>(make<Tuple>(make<Name>("foo"), make<Name>("bar")), make<Id>("bar"), true),
+              make<Block>()));
+  CHECK_AST_STMT(
+    "for const {foo} in bar {}",
+    make<For>(make<UnpackDeclaration>(make<Dict>(make<DictEntry>(make<Name>("foo"))), make<Id>("bar"), true),
+              make<Block>()));
   CHECK_AST_STMT("for const {foo, bar} in bar {}",
-                 make<For>(true, make<Dict>(make<DictEntry>(make<Id>("foo")), make<DictEntry>(make<Id>("bar"))),
-                           make<Id>("bar"), make<Block>()));
+                 make<For>(make<UnpackDeclaration>(
+                             make<Dict>(make<DictEntry>(make<Name>("foo")), make<DictEntry>(make<Name>("bar"))),
+                             make<Id>("bar"), true),
+                           make<Block>()));
 }
 
 TEST_CASE("wraps functions and classes into declarations") {
-  CHECK_AST_PROGRAM(
-    "func foo {}",
-    make<Program>(make<Block>(make<Declaration>(make<Id>("foo"), make<Function>("foo", make<Block>()), true))));
-  CHECK_AST_PROGRAM("class foo {}",
-                    make<Program>(make<Block>(make<Declaration>(make<Id>("foo"), make<Class>("foo", nullptr), true))));
-  CHECK_AST_PROGRAM("->{}", make<Program>(make<Block>(make<Function>(make<Block>()))));
+  CHECK_AST_STMT("func foo {}", make<Declaration>("foo", make<Function>("foo", make<Block>()), true));
+  CHECK_AST_STMT("class foo {}", make<Declaration>("foo", make<Class>("foo", nullptr), true));
+  CHECK_AST_STMT("->{}", make<Function>(make<Block>()));
 }

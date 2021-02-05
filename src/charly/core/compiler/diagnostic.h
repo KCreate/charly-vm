@@ -28,6 +28,7 @@
 #include <string>
 #include <vector>
 
+#include "charly/core/compiler/ast.h"
 #include "charly/core/compiler/location.h"
 #include "charly/utils/buffer.h"
 #include "charly/utils/colorwriter.h"
@@ -121,6 +122,16 @@ public:
   void info(const std::string& msg, const Location& loc = Location{ .valid = false });
   void warning(const std::string& msg, const Location& loc = Location{ .valid = false });
   void error(const std::string& msg, const Location& loc = Location{ .valid = false });
+
+  void info(const std::string& msg, const ast::ref<ast::Node>& node) {
+    info(msg, node->location());
+  }
+  void warning(const std::string& msg, const ast::ref<ast::Node>& node) {
+    warning(msg, node->location());
+  }
+  void error(const std::string& msg, const ast::ref<ast::Node>& node) {
+    error(msg, node->location());
+  }
 
   // pushing a fatal message throws a DiagnosticException
   [[noreturn]] void fatal(const std::string& msg, const Location& loc);

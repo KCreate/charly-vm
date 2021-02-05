@@ -612,6 +612,7 @@ void Lexer::increment_row() {
   m_row++;
   m_column = 0;
   m_token.location.end_row++;
+  m_token.location.end_column = 0;
 }
 
 void Lexer::increment_column(size_t delta) {

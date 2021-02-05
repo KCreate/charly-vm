@@ -87,10 +87,6 @@ protected:
     VISIT_NODE(source);
   }
 
-  HANDLE_NODE(Expression, ImportExpression) {
-    VISIT_NODE(source);
-  }
-
   HANDLE_NODE(Expression, Yield) {
     VISIT_NODE(expression);
   }
@@ -112,6 +108,7 @@ protected:
   }
 
   HANDLE_NODE(Expression, Id) {}
+  HANDLE_NODE(Expression, Name) {}
   HANDLE_NODE(Expression, Int) {}
   HANDLE_NODE(Expression, Float) {}
   HANDLE_NODE(Expression, Bool) {}
@@ -199,6 +196,10 @@ protected:
   }
 
   HANDLE_NODE(Statement, Declaration) {
+    VISIT_NODE(expression);
+  }
+
+  HANDLE_NODE(Statement, UnpackDeclaration) {
     VISIT_NODE(target);
     VISIT_NODE(expression);
   }
@@ -231,8 +232,7 @@ protected:
   }
 
   HANDLE_NODE(Statement, For) {
-    VISIT_NODE(target);
-    VISIT_NODE(source);
+    VISIT_NODE(declaration);
     VISIT_NODE(stmt);
   }
   // clang-format on

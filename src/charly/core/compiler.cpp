@@ -24,43 +24,30 @@
  * SOFTWARE.
  */
 
-#include "charly/core/compiler/pass.h"
-#include "charly/utils/colorwriter.h"
+#include "charly/core/compiler.h"
+#include "charly/core/compiler/parser.h"
+#include "charly/core/compiler/passes/semantic.h"
 
-#pragma once
+namespace {
+using namespace charly::core::compiler::ast;
+}
 
-namespace charly::core::compiler::ast {
+namespace charly::core::compiler {
 
-class DumpPass : public Pass {
-public:
-  DumpPass(std::ostream& out = std::cout, bool print_location = true) :
-    m_writer(out), m_print_location(print_location) {}
+std::shared_ptr<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffer& source) {
+  std::shared_ptr<CompilationUnit> unit = std::make_shared<CompilationUnit>(filepath, source);
 
-private:
-  utils::ColorWriter m_writer;
-  bool m_print_location;
+  // parse source file
+  unit->ast = Parser::parse_program(source, unit->console);
 
-  virtual void enter(const ref<Node>& node) override;
+  if (unit->console.has_errors())
+    return unit;
 
-  void dump(const ref<Node>&);
-  void dump(const ref<Assignment>& node);
-  void dump(const ref<BinaryOp>& node);
-  void dump(const ref<UnaryOp>& node);
-  void dump(const ref<As>& node);
-  void dump(const ref<Id>& node);
-  void dump(const ref<Name>& node);
-  void dump(const ref<Int>& node);
-  void dump(const ref<Float>& node);
-  void dump(const ref<Bool>& node);
-  void dump(const ref<Char>& node);
-  void dump(const ref<String>& node);
-  void dump(const ref<Function>& node);
-  void dump(const ref<Class>& node);
-  void dump(const ref<ClassProperty>& node);
-  void dump(const ref<MemberOp>& node);
-  void dump(const ref<Declaration>& node);
-  void dump(const ref<UnpackDeclaration>& node);
-  void dump(const ref<Try>& node);
-};
+  assert(unit->ast.get());
 
-}  // namespace charly::core::compiler::ast
+  SemanticPass(unit->console).apply(unit->ast);
+
+  return unit;
+}
+
+}  // namespace charly::core::compiler

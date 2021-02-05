@@ -39,7 +39,6 @@ ref<Program> Parser::parse_program(utils::Buffer& source, DiagnosticConsole& con
     parser.m_keyword_context._continue = false;
     parser.m_keyword_context._yield = false;
     parser.m_keyword_context._export = true;
-    parser.m_keyword_context._import = true;
     parser.m_keyword_context._super = false;
 
     return parser.parse_program();
@@ -55,7 +54,6 @@ ref<Statement> Parser::parse_statement(utils::Buffer& source, DiagnosticConsole&
     parser.m_keyword_context._continue = true;
     parser.m_keyword_context._yield = true;
     parser.m_keyword_context._export = true;
-    parser.m_keyword_context._import = true;
     parser.m_keyword_context._super = true;
 
     return parser.parse_statement();
@@ -71,7 +69,6 @@ ref<Expression> Parser::parse_expression(utils::Buffer& source, DiagnosticConsol
     parser.m_keyword_context._continue = true;
     parser.m_keyword_context._yield = true;
     parser.m_keyword_context._export = true;
-    parser.m_keyword_context._import = true;
     parser.m_keyword_context._super = true;
 
     return parser.parse_expression();
@@ -93,7 +90,6 @@ ref<Block> Parser::parse_block() {
 
   auto kwcontext = m_keyword_context;
   m_keyword_context._export = false;
-  m_keyword_context._import = false;
   parse_block_body(block);
   m_keyword_context = kwcontext;
 
@@ -107,36 +103,6 @@ void Parser::parse_block_body(const ref<Block>& block) {
 
   while (!(type(TokenType::RightCurly) || type(TokenType::Eof))) {
     ref<Statement> stmt = parse_statement();
-
-    // wrap function and class literals inside const declaration nodes
-    switch (stmt->type()) {
-      case Node::Type::Class:
-      case Node::Type::Function: {
-        std::string variable_name;
-
-        if (ref<Function> func = cast<Function>(stmt)) {
-          if (func->arrow_function) {
-            break;
-          }
-          variable_name = func->name;
-        }
-
-        if (ref<Class> klass = cast<Class>(stmt)) {
-          variable_name = klass->name;
-        }
-
-        ref<Id> name = make<Id>(variable_name);
-        name->set_location(stmt);
-        ref<Declaration> declaration = make<Declaration>(name, cast<Expression>(stmt), true);
-        declaration->set_location(stmt);
-
-        stmt = declaration;
-        break;
-      }
-      default: {
-        break;
-      }
-    }
 
     skip(TokenType::Semicolon);
 
@@ -154,7 +120,6 @@ void Parser::parse_block_body(const ref<Block>& block) {
 ref<Statement> Parser::parse_block_or_statement() {
   auto kwcontext = m_keyword_context;
   m_keyword_context._export = false;
-  m_keyword_context._import = false;
 
   ref<Statement> stmt;
   if (type(TokenType::LeftCurly)) {
@@ -169,39 +134,90 @@ ref<Statement> Parser::parse_block_or_statement() {
 }
 
 ref<Statement> Parser::parse_statement() {
+  ref<Statement> stmt;
+
   switch (m_token.type) {
-    case TokenType::Import: {
-      return parse_import();
-    }
     case TokenType::LeftCurly: {
-      return parse_block();
+      stmt = parse_block();
+      break;
     }
     case TokenType::If: {
-      return parse_if();
+      stmt = parse_if();
+      break;
     }
     case TokenType::While: {
-      return parse_while();
+      stmt = parse_while();
+      break;
     }
     case TokenType::Loop: {
-      return parse_loop();
+      stmt = parse_loop();
+      break;
     }
     case TokenType::Try: {
-      return parse_try();
+      stmt = parse_try();
+      break;
     }
     case TokenType::Switch: {
-      return parse_switch();
+      stmt = parse_switch();
+      break;
     }
     case TokenType::For: {
-      return parse_for();
+      stmt = parse_for();
+      break;
     }
     case TokenType::Let:
     case TokenType::Const: {
-      return parse_declaration();
+      stmt = parse_declaration();
+      break;
     }
     default: {
-      return parse_jump_statement();
+      stmt = parse_jump_statement();
+      break;
     }
   }
+
+  // wrap function and class literals inside const declaration nodes
+  switch (stmt->type()) {
+    case Node::Type::Class:
+    case Node::Type::Function: {
+      std::string variable_name;
+
+      if (ref<Function> func = cast<Function>(stmt)) {
+        if (func->arrow_function) {
+          break;
+        }
+        variable_name = func->name;
+      }
+
+      if (ref<Class> klass = cast<Class>(stmt)) {
+        variable_name = klass->name;
+      }
+
+      ref<Id> name = make<Id>(variable_name);
+      name->set_location(stmt);
+      ref<Declaration> declaration = make<Declaration>(name, cast<Expression>(stmt), true);
+      declaration->set_location(stmt);
+      stmt = declaration;
+
+      break;
+    }
+    case Node::Type::Import: {
+      ref<Import> import = cast<Import>(stmt);
+
+      if (ref<Name> name = cast<Name>(import->source)) {
+        ref<Declaration> declaration = make<Declaration>(name->value, import, true);
+        declaration->set_location(import);
+        stmt = declaration;
+      }
+
+      break;
+    }
+    default: {
+      break;
+    }
+  }
+
+  return stmt;
 }
 
 ref<Statement> Parser::parse_jump_statement() {
@@ -257,7 +273,7 @@ ref<Return> Parser::parse_return() {
   node->set_begin(begin);
 
   if (!m_keyword_context._return)
-    m_console.error("return statement not allowed at this point", node->location());
+    m_console.error("return statement not allowed at this point", node);
 
   return node;
 }
@@ -268,7 +284,7 @@ ref<Break> Parser::parse_break() {
   eat(TokenType::Break);
 
   if (!m_keyword_context._break)
-    m_console.error("break statement not allowed at this point", node->location());
+    m_console.error("break statement not allowed at this point", node);
 
   return node;
 }
@@ -279,7 +295,7 @@ ref<Continue> Parser::parse_continue() {
   eat(TokenType::Continue);
 
   if (!m_keyword_context._continue)
-    m_console.error("continue statement not allowed at this point", node->location());
+    m_console.error("continue statement not allowed at this point", node);
 
   return node;
 }
@@ -318,21 +334,7 @@ ref<Export> Parser::parse_export() {
   node->set_begin(begin);
 
   if (!m_keyword_context._export)
-    m_console.error("export statement not allowed at this point", node->location());
-
-  return node;
-}
-
-ref<Import> Parser::parse_import() {
-  Location begin = m_token.location;
-  eat(TokenType::Import);
-  ref<Expression> source_exp = parse_as_expression();
-  ref<Import> node = make<Import>(source_exp);
-  node->set_begin(begin);
-  validate_import(node);
-
-  if (!m_keyword_context._import)
-    m_console.error("import statement not allowed at this point", node->location());
+    m_console.error("export statement not allowed at this point", node);
 
   return node;
 }
@@ -511,14 +513,10 @@ ref<For> Parser::parse_for() {
 
   eat(TokenType::In);
 
-  ref<Expression> source = parse_expression();
-
-  ref<Statement> stmt = parse_block_or_statement();
-
-  ref<For> node = make<For>(constant_value, target, source, stmt);
+  prepare_assignment_target(target);
+  ref<Statement> declaration = create_declaration(target, parse_expression(), constant_value);
+  ref<For> node = make<For>(declaration, parse_block_or_statement());
   node->set_begin(begin);
-
-  validate_for(node);
 
   return node;
 }
@@ -561,25 +559,30 @@ ref<Statement> Parser::parse_declaration() {
     }
   }
 
-  if (requires_assignment)
-    match(TokenType::Assignment);
-
-  ref<Declaration> declaration_node;
-
-  if (skip(TokenType::Assignment)) {
-    ref<Expression> value = parse_expression();
-    declaration_node = make<Declaration>(target, value, const_declaration);
+  // constant declarations require a value
+  ref<Expression> value;
+  if (requires_assignment ? (eat(TokenType::Assignment), true) : skip(TokenType::Assignment)) {
+    value = parse_expression();
   } else {
-    ref<Null> null = make<Null>();
-    null->set_location(target);
-    declaration_node = make<Declaration>(target, null, const_declaration);
+    value = make<Null>();
+    value->set_location(target);
   }
 
-  declaration_node->set_begin(begin);
+  // Declaration:         const foobar = 25
+  // UnpackDeclaration:   const (a, b) = x
+  if (ref<Id> id_target = cast<Id>(target)) {
+    ref<Declaration> node = make<Declaration>(id_target, value, const_declaration);
+    node->set_begin(begin);
+    return node;
+  } else {
+    prepare_assignment_target(target);
 
-  validate_declaration(declaration_node);
+    ref<UnpackDeclaration> node = make<UnpackDeclaration>(target, value, const_declaration);
+    node->set_begin(begin);
+    validate_unpack_declaration(node);
 
-  return declaration_node;
+    return node;
+  }
 }
 
 void Parser::parse_call_arguments(std::vector<ref<Expression>>& result) {
@@ -607,7 +610,7 @@ ref<Expression> Parser::parse_expression() {
       return parse_yield();
     }
     case TokenType::Import: {
-      return parse_import_expression();
+      return parse_import();
     }
     default: {
       return parse_assignment();
@@ -622,17 +625,24 @@ ref<Yield> Parser::parse_yield() {
   node->set_begin(begin);
 
   if (!m_keyword_context._yield)
-    m_console.error("yield expression not allowed at this point", node->location());
+    m_console.error("yield expression not allowed at this point", node);
 
   return node;
 }
 
-ref<ImportExpression> Parser::parse_import_expression() {
+ref<Import> Parser::parse_import() {
   Location begin = m_token.location;
   eat(TokenType::Import);
-  ref<ImportExpression> import_node = make<ImportExpression>(parse_expression());
-  import_node->set_begin(begin);
-  return import_node;
+  ref<Expression> source = parse_expression();
+
+  if (ref<Id> id = cast<Id>(source)) {
+    source = make<Name>(id);
+  }
+
+  ref<Import> node = make<Import>(source);
+  node->set_begin(begin);
+
+  return node;
 }
 
 ref<Expression> Parser::parse_assignment() {
@@ -641,6 +651,7 @@ ref<Expression> Parser::parse_assignment() {
   if (type(TokenType::Assignment)) {
     TokenType assignment_operator = m_token.assignment_operator;
     eat(TokenType::Assignment);
+    prepare_assignment_target(target);
     ref<Assignment> node = make<Assignment>(assignment_operator, target, parse_expression());
     validate_assignment(node);
     return node;
@@ -989,6 +1000,12 @@ ref<Dict> Parser::parse_dict() {
       ref<Expression> key = parse_possible_spread_expression();
       ref<Expression> value = nullptr;
 
+      if (ref<Id> id = cast<Id>(key)) {
+        key = make<Name>(id);
+      }
+
+      // spread expressions are not allowed to
+      // have values associated with them
       if (isa<Spread>(key) && type(TokenType::Colon)) {
         unexpected_token(TokenType::Comma);
       }
@@ -1031,7 +1048,6 @@ ref<Function> Parser::parse_function(bool class_function) {
   m_keyword_context._continue = false;
   m_keyword_context._yield = true;
   m_keyword_context._export = false;
-  m_keyword_context._import = false;
   m_keyword_context._super = class_function;
   if (skip(TokenType::Assignment)) {
     body = parse_jump_statement();
@@ -1068,7 +1084,6 @@ ref<Function> Parser::parse_arrow_function() {
   m_keyword_context._continue = false;
   m_keyword_context._yield = true;
   m_keyword_context._export = false;
-  m_keyword_context._import = false;
   m_keyword_context._super = false;
   if (type(TokenType::LeftCurly)) {
     body = parse_block();
@@ -1094,7 +1109,7 @@ void Parser::parse_function_arguments(std::vector<ref<Expression>>& result) {
         if (skip(TokenType::TriplePoint))
           spread_passed = true;
 
-        ref<Expression> argument = parse_identifier_token();
+        ref<Expression> argument = make<Name>(parse_identifier_token());
 
         if (spread_passed) {
           argument = make<Spread>(argument);
@@ -1162,7 +1177,7 @@ ref<Class> Parser::parse_class() {
       } else {
         if (function->name.compare("constructor") == 0) {
           if (node->constructor) {
-            m_console.error("duplicate constructor", function->location());
+            m_console.error("duplicate constructor", function);
           } else {
             node->constructor = function;
           }
@@ -1256,40 +1271,24 @@ ref<Super> Parser::parse_super_token() {
   advance();
 
   if (!m_keyword_context._super)
-    m_console.error("super is not allowed at this point", node->location());
+    m_console.error("super is not allowed at this point", node);
 
   return node;
 }
 
 void Parser::validate_defer(const ref<Defer>& node) {
   if (!isa<Block>(node->statement) && !isa<CallOp>(node->statement)) {
-    m_console.error("expected a call expression", node->statement->location());
+    m_console.error("expected a call expression", node->statement);
   }
 }
 
-void Parser::validate_import(const ref<Import>& node) {
-  if (ref<As> as_node = cast<As>(node->source)) {
-    const ref<Expression>& exp = as_node->expression;
-    if (!(isa<Id>(exp) || isa<String>(exp) || isa<FormatString>(exp))) {
-      m_console.error("expected an identifier or a string literal", exp->location());
-    }
-  } else {
-    if (!isa<Id>(node->source)) {
-      m_console.error("expected an identifier", node->source->location());
-    }
-  }
-}
-
-void Parser::validate_declaration(const ref<Declaration>& node) {
+void Parser::validate_unpack_declaration(const ref<UnpackDeclaration>& node) {
   switch (node->target->type()) {
-    case Node::Type::Id: {
-      return;
-    }
     case Node::Type::Tuple:
     case Node::Type::Dict: {
       if (!node->target->assignable())
-        m_console.error("left-hand side of declaration is not assignable", node->target->location());
-      return;
+        m_console.error("left-hand side of declaration is not assignable", node->target);
+      break;
     }
     default: {
       assert(false && "unexpected node");
@@ -1306,7 +1305,7 @@ void Parser::validate_assignment(const ref<Assignment>& node) {
       case Node::Type::Tuple:
       case Node::Type::Dict: {
         m_console.error("this type of expression cannot be used as the left-hand side of an operator assignment",
-                        node->target->location());
+                        node->target);
         return;
       }
       default: {
@@ -1316,13 +1315,13 @@ void Parser::validate_assignment(const ref<Assignment>& node) {
   }
 
   if (!node->target->assignable()) {
-    m_console.error("left-hand side of assignment is not assignable", node->target->location());
+    m_console.error("left-hand side of assignment is not assignable", node->target);
   }
 }
 
 void Parser::validate_spawn(const ref<Spawn>& node) {
   if (!isa<Block>(node->statement) && !isa<CallOp>(node->statement)) {
-    m_console.error("expected a call expression", node->statement->location());
+    m_console.error("expected a call expression", node->statement);
   }
 }
 
@@ -1333,31 +1332,37 @@ void Parser::validate_dict(const ref<Dict>& node) {
 
     // key-only elements
     if (value.get() == nullptr) {
-      if (isa<Id>(key))
+      if (isa<Name>(key)) {
         continue;
+      }
 
-      if (isa<MemberOp>(key))
+      if (ref<MemberOp> member = cast<MemberOp>(key)) {
+        value = key;
+        key = make<Name>(member->member);
+        key->set_location(key);
         continue;
+      }
 
       // { ...other }
       if (ref<Spread> spread = cast<Spread>(key)) {
         continue;
       }
 
-      m_console.error("expected identifier, member access or spread expression", key->location());
+      m_console.error("expected identifier, member access or spread expression", key);
       continue;
     }
 
     if (ref<String> string = cast<String>(key)) {
-      key = make<Id>(string->value);
+      key = make<Name>(string->value);
+      key->set_location(string);
       continue;
     }
 
     // check key expression
-    if (isa<Id>(key) || isa<FormatString>(key))
+    if (isa<Name>(key) || isa<FormatString>(key))
       continue;
 
-    m_console.error("expected identifier or string literal", key->location());
+    m_console.error("expected identifier or string literal", key);
   }
 }
 
@@ -1374,18 +1379,18 @@ void Parser::validate_function(const ref<Function>& node) {
       break;
     }
 
-    if (isa<Id>(arg)) {
+    if (isa<Name>(arg)) {
       if (default_argument_passed) {
-        m_console.error("missing default argument", arg->location());
+        m_console.error("missing default argument", arg);
       }
       continue;
     }
 
     if (ref<Assignment> assignment = cast<Assignment>(arg)) {
       if (isa<Spread>(assignment->target)) {
-        m_console.error("spread argument cannot have a default value", assignment->location());
-      } else if (!isa<Id>(assignment->target)) {
-        m_console.error("expected identifier", assignment->target->location());
+        m_console.error("spread argument cannot have a default value", assignment);
+      } else if (!isa<Name>(assignment->target)) {
+        m_console.error("expected identifier", assignment->target);
       }
 
       default_argument_passed = true;
@@ -1394,6 +1399,11 @@ void Parser::validate_function(const ref<Function>& node) {
 
     if (ref<Spread> spread = cast<Spread>(arg)) {
       spread_argument_passed = true;
+
+      if (!isa<Name>(spread->expression)) {
+        m_console.error("expected identifier", spread->expression);
+      }
+
       continue;
     }
 
@@ -1401,9 +1411,62 @@ void Parser::validate_function(const ref<Function>& node) {
   }
 }
 
-void Parser::validate_for(const ref<For>& node) {
-  if (!node->target->assignable()) {
-    m_console.error("expression is not assignable", node->target->location());
+ref<Statement> Parser::create_declaration(const ref<Expression>& target, const ref<Expression>& value, bool constant) {
+  switch (target->type()) {
+    case Node::Type::Id: {
+      return make<Declaration>(cast<Id>(target), value, constant);
+      break;
+    }
+    case Node::Type::Tuple:
+    case Node::Type::Dict: {
+      auto node = make<UnpackDeclaration>(target, value, constant);
+      validate_unpack_declaration(node);
+      return node;
+    }
+    default: {
+      assert(false && "unexpected node type");
+      return nullptr;
+    }
+  }
+}
+
+void Parser::prepare_assignment_target(const ref<Expression>& node) {
+  switch (node->type()) {
+    case Node::Type::Tuple: {
+      ref<Tuple> tuple = cast<Tuple>(node);
+
+      for (ref<Expression>& member : tuple->elements) {
+        if (isa<Id>(member)) {
+          member = make<Name>(cast<Id>(member));
+          continue;
+        }
+
+        if (ref<Spread> spread = cast<Spread>(member)) {
+          spread->expression = make<Name>(cast<Id>(spread->expression));
+          continue;
+        }
+      }
+
+      break;
+    }
+    case Node::Type::Dict: {
+      ref<Dict> dict = cast<Dict>(node);
+
+      for (ref<DictEntry>& entry : dict->elements) {
+        if (ref<Spread> spread = cast<Spread>(entry->key)) {
+          assert(entry->value.get() == nullptr);
+
+          if (isa<Id>(spread->expression)) {
+            spread->expression = make<Name>(cast<Id>(spread->expression));
+          }
+        }
+      }
+
+      break;
+    }
+    default: {
+      break;
+    }
   }
 }
 
