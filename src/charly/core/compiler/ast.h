@@ -80,7 +80,6 @@ public:
     Spawn,
     Await,
     Typeof,
-    As,
 
     // Literals
     Id,
@@ -433,6 +432,7 @@ public:
   using Atom<std::string>::Atom;
 
   Id(const ref<Name>& name);
+  Id(const std::string& name) : Id(make<Name>(name)) {}
 
   virtual bool assignable() const override {
     return true;
@@ -449,6 +449,8 @@ public:
     this->set_location(id);
   }
 
+  Name(const std::string& value) : Atom<std::string>::Atom(value) {}
+
   virtual bool assignable() const override {
     return false;
   }
@@ -457,22 +459,6 @@ public:
 inline Id::Id(const ref<Name>& name) : Atom<std::string>::Atom(name->value) {
   this->set_location(name);
 }
-
-// <expression> as <name>
-class As final : public Expression {
-  AST_NODE(As)
-public:
-  As(ref<Expression> expression, std::string name) : expression(expression), name(name) {
-    this->set_location(expression);
-  }
-  As(ref<Expression> expression, ref<Id> name) : expression(expression), name(name->value) {
-    this->set_begin(expression);
-    this->set_end(name);
-  }
-
-  ref<Expression> expression;
-  std::string name;
-};
 
 // 1, 2, 42
 class Int final : public Atom<int64_t> {
@@ -635,28 +621,37 @@ class Function final : public Expression {
   AST_NODE(Function)
 public:
   // regular functions
-  Function(const std::string& name, ref<Statement> body, const std::vector<ref<Expression>>& arguments) :
+  Function(ref<Name> name, ref<Statement> body, const std::vector<ref<Expression>>& arguments) :
     name(name), arrow_function(false), body(body), arguments(arguments) {
     this->set_location(body);
   }
   template <typename... Args>
-  Function(const std::string& name, ref<Statement> body, Args&&... params) :
+  Function(ref<Name> name, ref<Statement> body, Args&&... params) :
     name(name), arrow_function(false), body(body), arguments({ std::forward<Args>(params)... }) {
+    this->set_location(body);
+  }
+  Function(const std::string& name, ref<Statement> body, const std::vector<ref<Expression>>& arguments) :
+    name(make<Name>(name)), arrow_function(false), body(body), arguments(arguments) {
+    this->set_location(body);
+  }
+  template <typename... Args>
+  Function(const std::string& name, ref<Statement> body, Args&&... params) :
+    name(make<Name>(name)), arrow_function(false), body(body), arguments({ std::forward<Args>(params)... }) {
     this->set_location(body);
   }
 
   // arrow functions
   Function(ref<Statement> body, const std::vector<ref<Expression>>& arguments) :
-    name(""), arrow_function(true), body(body), arguments(arguments) {
+    name(make<Name>("")), arrow_function(true), body(body), arguments(arguments) {
     this->set_location(body);
   }
   template <typename... Args>
   Function(ref<Statement> body, Args&&... params) :
-    name(""), arrow_function(true), body(body), arguments({ std::forward<Args>(params)... }) {
+    name(make<Name>("")), arrow_function(true), body(body), arguments({ std::forward<Args>(params)... }) {
     this->set_location(body);
   }
 
-  std::string name;
+  ref<Name> name;
   bool arrow_function;
   ref<Statement> body;
   std::vector<ref<Expression>> arguments;
@@ -667,11 +662,13 @@ public:
 class ClassProperty final : public Expression {
   AST_NODE(ClassProperty)
 public:
-  ClassProperty(bool is_static, const std::string& name, ref<Expression> value) :
+  ClassProperty(bool is_static, ref<Name> name, ref<Expression> value) :
     is_static(is_static), name(name), value(value) {}
+  ClassProperty(bool is_static, const std::string& name, ref<Expression> value) :
+    is_static(is_static), name(make<Name>(name)), value(value) {}
 
   bool is_static;
-  std::string name;
+  ref<Name> name;
   ref<Expression> value;
 };
 
@@ -679,9 +676,11 @@ public:
 class Class final : public Expression {
   AST_NODE(Class)
 public:
-  Class(const std::string& name, ref<Expression> parent) : name(name), parent(parent), constructor(nullptr) {}
+  Class(ref<Name> name, ref<Expression> parent) : name(name), parent(parent), constructor(nullptr) {}
+  Class(const std::string& name, ref<Expression> parent) :
+    name(make<Name>(name)), parent(parent), constructor(nullptr) {}
 
-  std::string name;
+  ref<Name> name;
   ref<Expression> parent;
   ref<Function> constructor;
   std::vector<ref<Function>> member_functions;
@@ -708,16 +707,16 @@ public:
 class MemberOp final : public Expression {
   AST_NODE(MemberOp)
 public:
-  MemberOp(ref<Expression> target, const std::string& member) : target(target), member(member) {
-    this->set_location(target);
-  }
-  MemberOp(ref<Expression> target, ref<Id> member) : target(target), member(member->value) {
+  MemberOp(ref<Expression> target, ref<Name> member) : target(target), member(member) {
     this->set_begin(target);
     this->set_end(member);
   }
+  MemberOp(ref<Expression> target, const std::string& member) : target(target), member(make<Name>(member)) {
+    this->set_location(target);
+  }
 
   ref<Expression> target;
-  std::string member;
+  ref<Name> member;
 
   virtual bool assignable() const override {
     return true;
@@ -747,18 +746,18 @@ public:
 class Declaration final : public Expression {
   AST_NODE(Declaration)
 public:
-  Declaration(ref<Id> name, ref<Expression> expression, bool constant = false) :
-    constant(constant), name(name->value), expression(expression) {
+  Declaration(ref<Name> name, ref<Expression> expression, bool constant = false) :
+    constant(constant), name(name), expression(expression) {
     this->set_begin(name);
     this->set_end(expression);
   }
   Declaration(const std::string& name, ref<Expression> expression, bool constant = false) :
-    constant(constant), name(name), expression(expression) {
+    constant(constant), name(make<Name>(name)), expression(expression) {
     this->set_location(expression);
   }
 
   bool constant;
-  std::string name;
+  ref<Name> name;
   ref<Expression> expression;
 };
 
@@ -818,14 +817,19 @@ public:
 class Try final : public Expression {
   AST_NODE(Try)
 public:
-  Try(ref<Statement> try_stmt, const std::string& exception_name, ref<Statement> catch_stmt) :
+  Try(ref<Statement> try_stmt, ref<Name> exception_name, ref<Statement> catch_stmt) :
     try_stmt(try_stmt), exception_name(exception_name), catch_stmt(catch_stmt) {
+    this->set_begin(try_stmt);
+    this->set_end(catch_stmt);
+  }
+  Try(ref<Statement> try_stmt, const std::string& exception_name, ref<Statement> catch_stmt) :
+    try_stmt(try_stmt), exception_name(make<Name>(exception_name)), catch_stmt(catch_stmt) {
     this->set_begin(try_stmt);
     this->set_end(catch_stmt);
   }
 
   ref<Statement> try_stmt;
-  std::string exception_name;
+  ref<Name> exception_name;
   ref<Statement> catch_stmt;
 };
 

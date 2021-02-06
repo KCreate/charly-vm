@@ -103,10 +103,6 @@ protected:
     VISIT_NODE(expression);
   }
 
-  HANDLE_NODE(Expression, As) {
-    VISIT_NODE(expression);
-  }
-
   HANDLE_NODE(Expression, Id) {}
   HANDLE_NODE(Expression, Name) {}
   HANDLE_NODE(Expression, Int) {}

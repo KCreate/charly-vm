@@ -180,7 +180,7 @@ ref<Statement> Parser::parse_statement() {
   switch (stmt->type()) {
     case Node::Type::Class:
     case Node::Type::Function: {
-      std::string variable_name;
+      ref<Name> variable_name;
 
       if (ref<Function> func = cast<Function>(stmt)) {
         if (func->arrow_function) {
@@ -193,9 +193,7 @@ ref<Statement> Parser::parse_statement() {
         variable_name = klass->name;
       }
 
-      ref<Id> name = make<Id>(variable_name);
-      name->set_location(stmt);
-      ref<Declaration> declaration = make<Declaration>(name, cast<Expression>(stmt), true);
+      ref<Declaration> declaration = make<Declaration>(variable_name, cast<Expression>(stmt), true);
       declaration->set_location(stmt);
       stmt = declaration;
 
@@ -205,7 +203,7 @@ ref<Statement> Parser::parse_statement() {
       ref<Import> import = cast<Import>(stmt);
 
       if (ref<Name> name = cast<Name>(import->source)) {
-        ref<Declaration> declaration = make<Declaration>(name->value, import, true);
+        ref<Declaration> declaration = make<Declaration>(name, import, true);
         declaration->set_location(import);
         stmt = declaration;
       }
@@ -401,12 +399,13 @@ ref<Statement> Parser::parse_try() {
   ref<Statement> try_stmt = parse_block_or_statement();
 
   eat(TokenType::Catch);
-  std::string exception_name;
+  ref<Name> exception_name;
   if (skip(TokenType::LeftParen)) {
-    exception_name = parse_identifier_token()->value;
+    exception_name = make<Name>(parse_identifier_token());
     eat(TokenType::RightParen);
   } else {
-    exception_name = "exception";
+    exception_name = make<Name>("exception");
+    exception_name->set_location(begin);
   }
   ref<Statement> catch_stmt = parse_block_or_statement();
 
@@ -571,7 +570,7 @@ ref<Statement> Parser::parse_declaration() {
   // Declaration:         const foobar = 25
   // UnpackDeclaration:   const (a, b) = x
   if (ref<Id> id_target = cast<Id>(target)) {
-    ref<Declaration> node = make<Declaration>(id_target, value, const_declaration);
+    ref<Declaration> node = make<Declaration>(make<Name>(id_target), value, const_declaration);
     node->set_begin(begin);
     return node;
   } else {
@@ -592,16 +591,6 @@ void Parser::parse_call_arguments(std::vector<ref<Expression>>& result) {
   do {
     result.push_back(parse_possible_spread_expression());
   } while (skip(TokenType::Comma));
-}
-
-ref<Expression> Parser::parse_as_expression() {
-  ref<Expression> exp = parse_expression();
-
-  if (skip(TokenType::As)) {
-    return make<As>(exp, parse_identifier_token());
-  }
-
-  return exp;
 }
 
 ref<Expression> Parser::parse_expression() {
@@ -827,7 +816,7 @@ ref<CallOp> Parser::parse_call(ref<Expression> target) {
 
 ref<MemberOp> Parser::parse_member(ref<Expression> target) {
   eat(TokenType::Point);
-  return make<MemberOp>(target, parse_identifier_token());
+  return make<MemberOp>(target, make<Name>(parse_identifier_token()));
 }
 
 ref<IndexOp> Parser::parse_index(ref<Expression> target) {
@@ -1034,7 +1023,7 @@ ref<Function> Parser::parse_function(bool class_function) {
   skip(TokenType::Func);
 
   // function name
-  std::string function_name = parse_identifier_token()->value;
+  ref<Name> function_name = make<Name>(parse_identifier_token());
 
   // argument list
   std::vector<ref<Expression>> argument_list;
@@ -1092,6 +1081,10 @@ ref<Function> Parser::parse_arrow_function() {
   }
   m_keyword_context = kwcontext;
 
+  if (isa<Expression>(body)) {
+    body = make<Return>(cast<Expression>(body));
+  }
+
   ref<Function> node = make<Function>(body, argument_list);
   node->set_begin(begin);
 
@@ -1133,7 +1126,7 @@ ref<Class> Parser::parse_class() {
   eat(TokenType::Class);
 
   // class name
-  std::string class_name = parse_identifier_token()->value;
+  ref<Name> class_name = make<Name>(parse_identifier_token());
 
   ref<Expression> parent;
   if (skip(TokenType::Extends)) {
@@ -1155,7 +1148,7 @@ ref<Class> Parser::parse_class() {
     if (type(TokenType::Property)) {
       advance();
 
-      std::string name = parse_identifier_token()->value;
+      ref<Name> name = make<Name>(parse_identifier_token());
 
       ref<Expression> value;
       if (skip(TokenType::Assignment)) {
@@ -1175,7 +1168,7 @@ ref<Class> Parser::parse_class() {
       if (static_property) {
         node->static_properties.push_back(make<ClassProperty>(true, function->name, function));
       } else {
-        if (function->name.compare("constructor") == 0) {
+        if (function->name->value.compare("constructor") == 0) {
           if (node->constructor) {
             m_console.error("duplicate constructor", function);
           } else {
@@ -1338,7 +1331,7 @@ void Parser::validate_dict(const ref<Dict>& node) {
 
       if (ref<MemberOp> member = cast<MemberOp>(key)) {
         value = key;
-        key = make<Name>(member->member);
+        key = member->member;
         key->set_location(key);
         continue;
       }
@@ -1414,7 +1407,7 @@ void Parser::validate_function(const ref<Function>& node) {
 ref<Statement> Parser::create_declaration(const ref<Expression>& target, const ref<Expression>& value, bool constant) {
   switch (target->type()) {
     case Node::Type::Id: {
-      return make<Declaration>(cast<Id>(target), value, constant);
+      return make<Declaration>(make<Name>(cast<Id>(target)), value, constant);
       break;
     }
     case Node::Type::Tuple:

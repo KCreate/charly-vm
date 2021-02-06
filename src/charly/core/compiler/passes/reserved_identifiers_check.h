@@ -30,12 +30,15 @@
 
 namespace charly::core::compiler::ast {
 
-class SemanticPass : public DiagnosticPass {
+class ReservedIdentifiersCheck : public DiagnosticPass {
 public:
   using DiagnosticPass::DiagnosticPass;
 
 private:
-  virtual void inspect_leave(const ref<Id>& node) override;
+  virtual void inspect_leave(const ref<Declaration>& node) override;
+  virtual void inspect_leave(const ref<UnpackDeclaration>& node) override;
+  virtual void inspect_leave(const ref<Function>& node) override;
+  virtual void inspect_leave(const ref<Class>& node) override;
 };
 
 }  // namespace charly::core::compiler::ast

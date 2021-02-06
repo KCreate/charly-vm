@@ -22,7 +22,6 @@
       AST_TYPESWITCH_CASE_NODE(Spawn, __VA_ARGS__)             \
       AST_TYPESWITCH_CASE_NODE(Await, __VA_ARGS__)             \
       AST_TYPESWITCH_CASE_NODE(Typeof, __VA_ARGS__)            \
-      AST_TYPESWITCH_CASE_NODE(As, __VA_ARGS__)                \
       AST_TYPESWITCH_CASE_NODE(Id, __VA_ARGS__)                \
       AST_TYPESWITCH_CASE_NODE(Name, __VA_ARGS__)              \
       AST_TYPESWITCH_CASE_NODE(Int, __VA_ARGS__)               \

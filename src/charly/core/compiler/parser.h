@@ -153,7 +153,6 @@ private:
 
   // expressions
   void parse_call_arguments(std::vector<ref<Expression>>& result);
-  ref<Expression> parse_as_expression();
   ref<Expression> parse_expression();
   ref<Yield> parse_yield();
   ref<Import> parse_import();

@@ -26,7 +26,8 @@
 
 #include "charly/core/compiler.h"
 #include "charly/core/compiler/parser.h"
-#include "charly/core/compiler/passes/semantic.h"
+
+#include "charly/core/compiler/passes/reserved_identifiers_check.h"
 
 namespace {
 using namespace charly::core::compiler::ast;
@@ -45,7 +46,7 @@ std::shared_ptr<CompilationUnit> Compiler::compile(const std::string& filepath, 
 
   assert(unit->ast.get());
 
-  SemanticPass(unit->console).apply(unit->ast);
+  ReservedIdentifiersCheck(unit->console).apply(unit->ast);
 
   return unit;
 }

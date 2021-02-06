@@ -46,7 +46,6 @@ private:
   void dump(const ref<Assignment>& node);
   void dump(const ref<BinaryOp>& node);
   void dump(const ref<UnaryOp>& node);
-  void dump(const ref<As>& node);
   void dump(const ref<Id>& node);
   void dump(const ref<Name>& node);
   void dump(const ref<Int>& node);

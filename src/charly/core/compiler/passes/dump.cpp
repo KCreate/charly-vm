@@ -51,23 +51,18 @@ void DumpPass::dump(const ref<Node>&) {}
 void DumpPass::dump(const ref<Assignment>& node) {
   if (node->operation != TokenType::Assignment) {
     m_writer << ' ';
-    m_writer.fg(Color::Yellow, '\'', kTokenTypeStrings[static_cast<int>(node->operation)], '\'');
+    m_writer.fg(Color::Yellow, kTokenTypeStrings[static_cast<int>(node->operation)]);
   }
 }
 
 void DumpPass::dump(const ref<BinaryOp>& node) {
   m_writer << ' ';
-  m_writer.fg(Color::Yellow, '\'', kTokenTypeStrings[static_cast<int>(node->operation)], '\'');
+  m_writer.fg(Color::Yellow, kTokenTypeStrings[static_cast<int>(node->operation)]);
 }
 
 void DumpPass::dump(const ref<UnaryOp>& node) {
   m_writer << ' ';
-  m_writer.fg(Color::Blue, '\'', kTokenTypeStrings[static_cast<int>(node->operation)], '\'');
-}
-
-void DumpPass::dump(const ref<As>& node) {
-  m_writer << ' ';
-  m_writer.fg(Color::Yellow, '\"', node->name, '\"');
+  m_writer.fg(Color::Blue, kTokenTypeStrings[static_cast<int>(node->operation)]);
 }
 
 void DumpPass::dump(const ref<Id>& node) {
@@ -115,13 +110,13 @@ void DumpPass::dump(const ref<Function>& node) {
   if (node->arrow_function) {
     m_writer.fg(Color::Cyan, "anonymous");
   } else {
-    m_writer.fg(Color::Yellow, node->name);
+    m_writer.fg(Color::Yellow, node->name->value);
   }
 }
 
 void DumpPass::dump(const ref<Class>& node) {
   m_writer << ' ';
-  m_writer.fg(Color::Yellow, node->name);
+  m_writer.fg(Color::Yellow, node->name->value);
 }
 
 void DumpPass::dump(const ref<ClassProperty>& node) {
@@ -130,12 +125,12 @@ void DumpPass::dump(const ref<ClassProperty>& node) {
     m_writer.fg(Color::Red, "static");
   }
   m_writer << ' ';
-  m_writer.fg(Color::Yellow, node->name);
+  m_writer.fg(Color::Yellow, node->name->value);
 }
 
 void DumpPass::dump(const ref<MemberOp>& node) {
   m_writer << ' ';
-  m_writer.fg(Color::Yellow, '\"', node->member, '\"');
+  m_writer.fg(Color::Yellow, node->member->value);
 }
 
 void DumpPass::dump(const ref<Declaration>& node) {
@@ -144,7 +139,7 @@ void DumpPass::dump(const ref<Declaration>& node) {
     m_writer.fg(Color::Red, "const");
   }
   m_writer << ' ';
-  m_writer.fg(Color::Yellow, node->name);
+  m_writer.fg(Color::Yellow, node->name->value);
 }
 
 void DumpPass::dump(const ref<UnpackDeclaration>& node) {
@@ -156,7 +151,7 @@ void DumpPass::dump(const ref<UnpackDeclaration>& node) {
 
 void DumpPass::dump(const ref<Try>& node) {
   m_writer << ' ';
-  m_writer.fg(Color::Yellow, node->exception_name);
+  m_writer.fg(Color::Yellow, node->exception_name->value);
 }
 
 }  // namespace charly::core::compiler::ast

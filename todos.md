@@ -1,14 +1,9 @@
 # Todos
 
-- Compiler API
-  - Parse source file
-  - Apply semantic checks
-  - Desugar AST
-  - Allocate local variables
-  - Convert AST into IR form
+- Tree searching methods
+- Depth and breadth first iterators
 
 - Semantic checks
-  - Check for reserved identifiers
   - Check classes for duplicate declarations, properties
   - Make sure child class constructors call their parent constructor
 

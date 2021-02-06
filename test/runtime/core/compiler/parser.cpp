@@ -359,7 +359,7 @@ TEST_CASE("yield, await, typeof expressions") {
 
 TEST_CASE("spawn expressions") {
   CHECK_AST_EXP("spawn foo()", make<Spawn>(make<CallOp>(make<Id>("foo"))));
-  CHECK_AST_EXP("spawn foo.bar()", make<Spawn>(make<CallOp>(make<MemberOp>(make<Id>("foo"), make<Id>("bar")))));
+  CHECK_AST_EXP("spawn foo.bar()", make<Spawn>(make<CallOp>(make<MemberOp>(make<Id>("foo"), make<Name>("bar")))));
   CHECK_AST_EXP("spawn foo()()", make<Spawn>(make<CallOp>(make<CallOp>(make<Id>("foo")))));
   CHECK_AST_EXP("spawn { yield foo }", make<Spawn>(make<Block>(make<Yield>(make<Id>("foo")))));
   CHECK_AST_EXP("spawn { return foo }", make<Spawn>(make<Block>(make<Return>(make<Id>("foo")))));
@@ -385,27 +385,27 @@ TEST_CASE("call expressions") {
   CHECK_AST_EXP(
     "foo.bar(2, 3).test[1](1, 2).bar",
     make<MemberOp>(
-      make<CallOp>(make<IndexOp>(make<MemberOp>(make<CallOp>(make<MemberOp>(make<Id>("foo"), make<Id>("bar")),
+      make<CallOp>(make<IndexOp>(make<MemberOp>(make<CallOp>(make<MemberOp>(make<Id>("foo"), make<Name>("bar")),
                                                              make<Int>(2), make<Int>(3)),
-                                                make<Id>("test")),
+                                                make<Name>("test")),
                                  make<Int>(1)),
                    make<Int>(1), make<Int>(2)),
-      make<Id>("bar")));
+      make<Name>("bar")));
 
   CHECK_ERROR_EXP("foo(", "unexpected end of file, expected a ')' token");
 }
 
 TEST_CASE("member expressions") {
-  CHECK_AST_EXP("foo.bar", make<MemberOp>(make<Id>("foo"), make<Id>("bar")));
-  CHECK_AST_EXP("foo.bar + foo.baz", make<BinaryOp>(TokenType::Plus, make<MemberOp>(make<Id>("foo"), make<Id>("bar")),
-                                                    make<MemberOp>(make<Id>("foo"), make<Id>("baz"))));
-  CHECK_AST_EXP("foo.@\"hello world\"", make<MemberOp>(make<Id>("foo"), make<Id>("hello world")));
-  CHECK_AST_EXP("1.foo", make<MemberOp>(make<Int>(1), make<Id>("foo")));
-  CHECK_AST_EXP("2.2.@\"hello world\"", make<MemberOp>(make<Float>(2.2), make<Id>("hello world")));
-  CHECK_AST_EXP("foo.bar.baz", make<MemberOp>(make<MemberOp>(make<Id>("foo"), make<Id>("bar")), make<Id>("baz")));
-  CHECK_AST_EXP("foo.bar\n.baz", make<MemberOp>(make<MemberOp>(make<Id>("foo"), make<Id>("bar")), make<Id>("baz")));
+  CHECK_AST_EXP("foo.bar", make<MemberOp>(make<Id>("foo"), make<Name>("bar")));
+  CHECK_AST_EXP("foo.bar + foo.baz", make<BinaryOp>(TokenType::Plus, make<MemberOp>(make<Id>("foo"), make<Name>("bar")),
+                                                    make<MemberOp>(make<Id>("foo"), make<Name>("baz"))));
+  CHECK_AST_EXP("foo.@\"hello world\"", make<MemberOp>(make<Id>("foo"), make<Name>("hello world")));
+  CHECK_AST_EXP("1.foo", make<MemberOp>(make<Int>(1), make<Name>("foo")));
+  CHECK_AST_EXP("2.2.@\"hello world\"", make<MemberOp>(make<Float>(2.2), make<Name>("hello world")));
+  CHECK_AST_EXP("foo.bar.baz", make<MemberOp>(make<MemberOp>(make<Id>("foo"), make<Name>("bar")), make<Name>("baz")));
+  CHECK_AST_EXP("foo.bar\n.baz", make<MemberOp>(make<MemberOp>(make<Id>("foo"), make<Name>("bar")), make<Name>("baz")));
   CHECK_AST_EXP("foo\n.\nbar\n.\nbaz",
-                make<MemberOp>(make<MemberOp>(make<Id>("foo"), make<Id>("bar")), make<Id>("baz")));
+                make<MemberOp>(make<MemberOp>(make<Id>("foo"), make<Name>("bar")), make<Name>("baz")));
 }
 
 TEST_CASE("index expressions") {
@@ -445,7 +445,7 @@ TEST_CASE("dict literals") {
   CHECK_AST_EXP("{}", make<Dict>());
   CHECK_AST_EXP("{x}", make<Dict>(make<DictEntry>(make<Name>("x"))));
   CHECK_AST_EXP("{x, y}", make<Dict>(make<DictEntry>(make<Name>("x")), make<DictEntry>(make<Name>("y"))));
-  CHECK_AST_EXP("{x.y}", make<Dict>(make<DictEntry>(make<Name>("y"), make<MemberOp>(make<Id>("x"), make<Id>("y")))));
+  CHECK_AST_EXP("{x.y}", make<Dict>(make<DictEntry>(make<Name>("y"), make<MemberOp>(make<Id>("x"), make<Name>("y")))));
   CHECK_AST_EXP("{...x}", make<Dict>(make<DictEntry>(make<Spread>(make<Id>("x")))));
   CHECK_AST_EXP("{x: 1}", make<Dict>(make<DictEntry>(make<Name>("x"), make<Int>(1))));
   CHECK_AST_EXP("{x: 1, y: 2}", make<Dict>(make<DictEntry>(make<Name>("x"), make<Int>(1)),
@@ -602,7 +602,7 @@ TEST_CASE("functions") {
                 make<Function>("foo", make<Block>(), make<Assignment>(make<Name>("a"), make<Int>(1)),
                                make<Assignment>(make<Name>("b"), make<Int>(2)), make<Spread>(make<Name>("c"))));
 
-  CHECK_AST_EXP("->null", make<Function>(make<Null>()));
+  CHECK_AST_EXP("->null", make<Function>(make<Return>(make<Null>())));
   CHECK_AST_EXP("->{}", make<Function>(make<Block>()));
   CHECK_AST_EXP("->{ x }", make<Function>(make<Block>(make<Id>("x"))));
   CHECK_AST_EXP("->(a) {}", make<Function>(make<Block>(), make<Name>("a")));
