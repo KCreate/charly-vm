@@ -124,6 +124,10 @@ public:
     For
   };
 
+  operator Location() const {
+    return m_location;
+  }
+
   const Location& location() const {
     return m_location;
   }
@@ -136,13 +140,20 @@ public:
     m_location = node->location();
   }
 
+  void set_location(const Location& begin, const Location& end) {
+    set_begin(begin);
+    set_end(end);
+  }
+
+  void set_location(const ref<Node>& begin, const ref<Node>& end) {
+    set_location(begin->location(), end->location());
+  }
+
   void set_begin(const Location& loc) {
-    m_location.valid = loc.valid;
     m_location.set_begin(loc);
   }
 
   void set_end(const Location& loc) {
-    m_location.valid = loc.valid;
     m_location.set_end(loc);
   }
 
@@ -663,9 +674,13 @@ class ClassProperty final : public Expression {
   AST_NODE(ClassProperty)
 public:
   ClassProperty(bool is_static, ref<Name> name, ref<Expression> value) :
-    is_static(is_static), name(name), value(value) {}
+    is_static(is_static), name(name), value(value) {
+    this->set_location(name, value);
+  }
   ClassProperty(bool is_static, const std::string& name, ref<Expression> value) :
-    is_static(is_static), name(make<Name>(name)), value(value) {}
+    is_static(is_static), name(make<Name>(name)), value(value) {
+    this->set_location(value);
+  }
 
   bool is_static;
   ref<Name> name;

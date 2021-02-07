@@ -82,7 +82,7 @@ public:
 
   // returns the amount of bytes neede to encode this
   // utf8 character into a character stream
-  static size_t encoded_length_utf8(uint32_t character) {
+  static size_t utf8_encoded_length(uint32_t character) {
     if (character < 0x80)
       return 1;
     if (character < 0x800)
@@ -91,6 +91,14 @@ public:
       return 3;
     return 4;
   }
+
+  // encode the utf8 character into a string
+  static std::string utf8_encode_character(uint32_t character) {
+    Buffer buf;
+    buf.append_utf8(character);
+    return buf.buffer_string();
+  }
+  static constexpr auto u8 = utf8_encode_character;
 
   // write data into the buffer
   void append_block(const void* data, size_t length);

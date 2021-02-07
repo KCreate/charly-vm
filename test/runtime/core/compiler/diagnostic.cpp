@@ -52,9 +52,9 @@ TEST_CASE("formats messages without a location") {
   utils::Buffer buffer("");
   DiagnosticConsole console("test", buffer);
 
-  console.info("foo");
-  console.warning("bar");
-  console.error("baz");
+  console.info(Location{.valid=false}, "foo");
+  console.warning(Location{.valid=false}, "bar");
+  console.error(Location{.valid=false}, "baz");
 
   REQUIRE(console.messages().size() == 3);
 

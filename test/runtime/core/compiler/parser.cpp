@@ -464,7 +464,7 @@ TEST_CASE("dict literals") {
   CHECK_ERROR_EXP("{[1, 2]: 1}", "expected identifier or string literal");
   CHECK_ERROR_EXP("{25: 1}", "expected identifier or string literal");
   CHECK_ERROR_EXP("{true: 1}", "expected identifier or string literal");
-  CHECK_ERROR_EXP("{...x: 1}", "unexpected ':' token, expected a ',' token");
+  CHECK_ERROR_EXP("{...x: 1}", "expected identifier or string literal");
 }
 
 TEST_CASE("if statements") {

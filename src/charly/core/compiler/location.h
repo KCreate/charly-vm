@@ -48,6 +48,7 @@ struct Location {
   uint32_t end_column = 0;
 
   void set_begin(const Location& other) {
+    this->valid = other.valid;
     this->compound = true;
     this->offset = other.offset;
     this->row = other.row;
@@ -55,6 +56,7 @@ struct Location {
   }
 
   void set_end(const Location& other) {
+    this->valid = other.valid;
     this->compound = true;
     this->end_offset = other.end_offset;
     this->end_row = other.end_row;

@@ -146,21 +146,4 @@ void DiagnosticConsole::write_annotated_source(std::ostream& out, const Diagnost
   }
 }
 
-void DiagnosticConsole::info(const std::string& message, const Location& location) {
-  m_messages.push_back(DiagnosticMessage{ DiagnosticInfo, m_filepath, message, location });
-}
-
-void DiagnosticConsole::warning(const std::string& message, const Location& location) {
-  m_messages.push_back(DiagnosticMessage{ DiagnosticWarning, m_filepath, message, location });
-}
-
-void DiagnosticConsole::error(const std::string& message, const Location& location) {
-  m_messages.push_back(DiagnosticMessage{ DiagnosticError, m_filepath, message, location });
-}
-
-void DiagnosticConsole::fatal(const std::string& message, const Location& location) {
-  m_messages.push_back(DiagnosticMessage{ DiagnosticError, m_filepath, message, location });
-  throw DiagnosticException();
-}
-
 }  // namespace charly::core::compiler

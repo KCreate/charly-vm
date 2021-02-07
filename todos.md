@@ -4,15 +4,15 @@
 - Depth and breadth first iterators
 
 - Semantic checks
-  - Check classes for duplicate declarations, properties
-  - Make sure child class constructors call their parent constructor
+  - Class checks
+    - Check that subclass constructors call the super constructor
+  - Emit warning on statements that do not do anything
 
 - Desugaring
   - Constant fold expressions
   - Desugar format strings
   - Generate constructor for class
   - Make sure each function returns a value (null)
-  - Remove expressions that do not do anything
   - Rewrite `$<number>` identifiers
   - Rewrite default arguments and member initializers
   - Rewrite for loops into iterator constructs
@@ -20,7 +20,6 @@
   - Rewrite import expressions into standard library calls
   - Rewrite spawn, defer statements to calls with arrow functions
   - Rewrite toplevel import statements to declarations and import expressions
-  - Desugar dict literals
   - Spread expressions
 
 - AST to IR lowering process

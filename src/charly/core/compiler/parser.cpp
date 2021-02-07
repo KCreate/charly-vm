@@ -24,6 +24,9 @@
  * SOFTWARE.
  */
 
+#include <unordered_map>
+#include <unordered_set>
+
 #include "charly/core/compiler/parser.h"
 
 using namespace charly::core::compiler::ast;
@@ -271,7 +274,7 @@ ref<Return> Parser::parse_return() {
   node->set_begin(begin);
 
   if (!m_keyword_context._return)
-    m_console.error("return statement not allowed at this point", node);
+    m_console.error(node, "return statement not allowed at this point");
 
   return node;
 }
@@ -282,7 +285,7 @@ ref<Break> Parser::parse_break() {
   eat(TokenType::Break);
 
   if (!m_keyword_context._break)
-    m_console.error("break statement not allowed at this point", node);
+    m_console.error(node, "break statement not allowed at this point");
 
   return node;
 }
@@ -293,7 +296,7 @@ ref<Continue> Parser::parse_continue() {
   eat(TokenType::Continue);
 
   if (!m_keyword_context._continue)
-    m_console.error("continue statement not allowed at this point", node);
+    m_console.error(node, "continue statement not allowed at this point");
 
   return node;
 }
@@ -332,7 +335,7 @@ ref<Export> Parser::parse_export() {
   node->set_begin(begin);
 
   if (!m_keyword_context._export)
-    m_console.error("export statement not allowed at this point", node);
+    m_console.error(node, "export statement not allowed at this point");
 
   return node;
 }
@@ -614,7 +617,7 @@ ref<Yield> Parser::parse_yield() {
   node->set_begin(begin);
 
   if (!m_keyword_context._yield)
-    m_console.error("yield expression not allowed at this point", node);
+    m_console.error(node, "yield expression not allowed at this point");
 
   return node;
 }
@@ -993,12 +996,6 @@ ref<Dict> Parser::parse_dict() {
         key = make<Name>(id);
       }
 
-      // spread expressions are not allowed to
-      // have values associated with them
-      if (isa<Spread>(key) && type(TokenType::Colon)) {
-        unexpected_token(TokenType::Comma);
-      }
-
       if (skip(TokenType::Colon)) {
         value = parse_expression();
       }
@@ -1139,6 +1136,9 @@ ref<Class> Parser::parse_class() {
   // parse class body
   eat(TokenType::LeftCurly);
 
+  std::unordered_set<std::string> class_static_fields;
+  std::unordered_set<std::string> class_member_fields;
+
   while (!type(TokenType::RightCurly)) {
     bool static_property = false;
 
@@ -1146,6 +1146,7 @@ ref<Class> Parser::parse_class() {
       static_property = true;
 
     if (type(TokenType::Property)) {
+      Location property_token_location = m_token.location;
       advance();
 
       ref<Name> name = make<Name>(parse_identifier_token());
@@ -1155,12 +1156,17 @@ ref<Class> Parser::parse_class() {
         value = parse_expression();
       } else {
         value = make<Null>();
+        value->set_location(name);
       }
 
       if (static_property) {
-        node->static_properties.push_back(make<ClassProperty>(true, name, value));
+        auto prop = make<ClassProperty>(true, name, value);
+        prop->set_begin(property_token_location);
+        node->static_properties.push_back(prop);
       } else {
-        node->member_properties.push_back(make<ClassProperty>(false, name, value));
+        auto prop = make<ClassProperty>(false, name, value);
+        prop->set_begin(property_token_location);
+        node->member_properties.push_back(prop);
       }
     } else {
       ref<Function> function = parse_function(true);
@@ -1168,15 +1174,7 @@ ref<Class> Parser::parse_class() {
       if (static_property) {
         node->static_properties.push_back(make<ClassProperty>(true, function->name, function));
       } else {
-        if (function->name->value.compare("constructor") == 0) {
-          if (node->constructor) {
-            m_console.error("duplicate constructor", function);
-          } else {
-            node->constructor = function;
-          }
-        } else {
-          node->member_functions.push_back(function);
-        }
+        node->member_functions.push_back(function);
       }
     }
   }
@@ -1264,14 +1262,14 @@ ref<Super> Parser::parse_super_token() {
   advance();
 
   if (!m_keyword_context._super)
-    m_console.error("super is not allowed at this point", node);
+    m_console.error(node, "super is not allowed at this point");
 
   return node;
 }
 
 void Parser::validate_defer(const ref<Defer>& node) {
   if (!isa<Block>(node->statement) && !isa<CallOp>(node->statement)) {
-    m_console.error("expected a call expression", node->statement);
+    m_console.error(node->statement, "expected a call expression");
   }
 }
 
@@ -1280,7 +1278,7 @@ void Parser::validate_unpack_declaration(const ref<UnpackDeclaration>& node) {
     case Node::Type::Tuple:
     case Node::Type::Dict: {
       if (!node->target->assignable())
-        m_console.error("left-hand side of declaration is not assignable", node->target);
+        m_console.error(node->target, "left-hand side of declaration is not assignable");
       break;
     }
     default: {
@@ -1297,8 +1295,8 @@ void Parser::validate_assignment(const ref<Assignment>& node) {
     switch (node->target->type()) {
       case Node::Type::Tuple:
       case Node::Type::Dict: {
-        m_console.error("this type of expression cannot be used as the left-hand side of an operator assignment",
-                        node->target);
+        m_console.error(node->target,
+                        "this type of expression cannot be used as the left-hand side of an operator assignment");
         return;
       }
       default: {
@@ -1308,13 +1306,13 @@ void Parser::validate_assignment(const ref<Assignment>& node) {
   }
 
   if (!node->target->assignable()) {
-    m_console.error("left-hand side of assignment is not assignable", node->target);
+    m_console.error(node->target, "left-hand side of assignment is not assignable");
   }
 }
 
 void Parser::validate_spawn(const ref<Spawn>& node) {
   if (!isa<Block>(node->statement) && !isa<CallOp>(node->statement)) {
-    m_console.error("expected a call expression", node->statement);
+    m_console.error(node->statement, "expected a call expression");
   }
 }
 
@@ -1341,7 +1339,7 @@ void Parser::validate_dict(const ref<Dict>& node) {
         continue;
       }
 
-      m_console.error("expected identifier, member access or spread expression", key);
+      m_console.error(key, "expected identifier, member access or spread expression");
       continue;
     }
 
@@ -1355,7 +1353,7 @@ void Parser::validate_dict(const ref<Dict>& node) {
     if (isa<Name>(key) || isa<FormatString>(key))
       continue;
 
-    m_console.error("expected identifier or string literal", key);
+    m_console.error(key, "expected identifier or string literal");
   }
 }
 
@@ -1368,22 +1366,22 @@ void Parser::validate_function(const ref<Function>& node) {
       Location excess_arguments_location = arg->location();
       excess_arguments_location.set_end(node->arguments.back()->location());
 
-      m_console.error("excess parameter(s)", excess_arguments_location);
+      m_console.error(excess_arguments_location, "excess parameter(s)");
       break;
     }
 
     if (isa<Name>(arg)) {
       if (default_argument_passed) {
-        m_console.error("missing default argument", arg);
+        m_console.error(arg, "missing default argument");
       }
       continue;
     }
 
     if (ref<Assignment> assignment = cast<Assignment>(arg)) {
       if (isa<Spread>(assignment->target)) {
-        m_console.error("spread argument cannot have a default value", assignment);
+        m_console.error(assignment, "spread argument cannot have a default value");
       } else if (!isa<Name>(assignment->target)) {
-        m_console.error("expected identifier", assignment->target);
+        m_console.error(assignment->target, "expected identifier");
       }
 
       default_argument_passed = true;
@@ -1394,7 +1392,7 @@ void Parser::validate_function(const ref<Function>& node) {
       spread_argument_passed = true;
 
       if (!isa<Name>(spread->expression)) {
-        m_console.error("expected identifier", spread->expression);
+        m_console.error(spread->expression, "expected identifier");
       }
 
       continue;
@@ -1466,108 +1464,58 @@ void Parser::prepare_assignment_target(const ref<Expression>& node) {
 void Parser::unexpected_token() {
   std::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
 
-  utils::Buffer formatbuf;
   if (m_token.type == TokenType::Eof) {
-    formatbuf.append_string("unexpected end of file");
+    m_console.fatal(m_token.location, "unexpected end of file");
   } else {
-    formatbuf.append_string("unexpected token '");
-    formatbuf.append_string(real_type);
-    formatbuf.append_string("'");
+    m_console.fatal(m_token.location, "unexpected token '", real_type, "'");
   }
-
-  m_console.fatal(formatbuf.buffer_string(), m_token.location);
 }
 
 void Parser::unexpected_token(const std::string& message) {
   std::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
 
-  utils::Buffer formatbuf;
-
   switch (m_token.type) {
     case TokenType::Eof: {
-      formatbuf.append_string("unexpected end of file");
-      formatbuf.append_string(", ");
-      formatbuf.append_string(message);
-      break;
+      m_console.fatal(m_token.location, "unexpected end of file, ", message);
     }
     case TokenType::Int:
     case TokenType::Float: {
-      formatbuf.append_string("unexpected numerical constant");
-      formatbuf.append_string(", ");
-      formatbuf.append_string(message);
-      break;
+      m_console.fatal(m_token.location, "unexpected numerical constant, ", message);
     }
     case TokenType::String: {
-      formatbuf.append_string("unexpected string literal");
-      formatbuf.append_string(", ");
-      formatbuf.append_string(message);
-      break;
+      m_console.fatal(m_token.location, "unexpected string literal, ", message);
     }
     case TokenType::FormatString: {
-      formatbuf.append_string("unexpected format string");
-      formatbuf.append_string(", ");
-      formatbuf.append_string(message);
-      break;
+      m_console.fatal(m_token.location, "unexpected format string, ", message);
     }
     default: {
-      formatbuf.append_string("unexpected '");
-      formatbuf.append_string(real_type);
-      formatbuf.append_string("' token, ");
-      formatbuf.append_string(message);
-      break;
+      m_console.fatal(m_token.location, "unexpected '", real_type, "' token, ", message);
     }
   }
-
-  m_console.fatal(formatbuf.buffer_string(), m_token.location);
 }
 
 void Parser::unexpected_token(TokenType expected) {
   std::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
   std::string& expected_type = kTokenTypeStrings[static_cast<uint8_t>(expected)];
 
-  utils::Buffer formatbuf;
-
   switch (m_token.type) {
     case TokenType::Eof: {
-      formatbuf.append_string("unexpected end of file");
-      formatbuf.append_string(", expected a '");
-      formatbuf.append_string(expected_type);
-      formatbuf.append_string("' token");
-      break;
+      m_console.fatal(m_token.location, "unexpected end of file, expected a '", expected_type, "' token");
     }
     case TokenType::Int:
     case TokenType::Float: {
-      formatbuf.append_string("unexpected numerical constant");
-      formatbuf.append_string(", expected a '");
-      formatbuf.append_string(expected_type);
-      formatbuf.append_string("' token");
-      break;
+      m_console.fatal(m_token.location, "unexpected numerical constant, expected a '", expected_type, "' token");
     }
     case TokenType::String: {
-      formatbuf.append_string("unexpected string literal");
-      formatbuf.append_string(", expected a '");
-      formatbuf.append_string(expected_type);
-      formatbuf.append_string("' token");
-      break;
+      m_console.fatal(m_token.location, "unexpected string literal, expected a '", expected_type, "' token");
     }
     case TokenType::FormatString: {
-      formatbuf.append_string("unexpected format string");
-      formatbuf.append_string(", expected a '");
-      formatbuf.append_string(expected_type);
-      formatbuf.append_string("' token");
-      break;
+      m_console.fatal(m_token.location, "unexpected format string, expected a '", expected_type, "' token");
     }
     default: {
-      formatbuf.append_string("unexpected '");
-      formatbuf.append_string(real_type);
-      formatbuf.append_string("' token, expected a '");
-      formatbuf.append_string(expected_type);
-      formatbuf.append_string("' token");
-      break;
+      m_console.fatal(m_token.location, "unexpected '", real_type, "' token, expected a '", expected_type, "' token");
     }
   }
-
-  m_console.fatal(formatbuf.buffer_string(), m_token.location);
 }
 
 }  // namespace charly::core::compiler

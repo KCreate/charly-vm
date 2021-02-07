@@ -38,6 +38,21 @@ static const std::unordered_set<std::string> kReservedIdentifiers = {
   "$$"
 };
 
+// list of identifiers which cannot be used as member fields
+// (member properties and functions) of classes
+static std::unordered_set<std::string> kIllegalMemberFieldNames = {
+  "klass",
+  "object_id"
+};
+
+// list of identifiers which cannot be used as static fields
+// (static properties and functions) of classes
+static std::unordered_set<std::string> kIllegalStaticFieldNames = {
+  "constructor",
+  "name",
+  "parent"
+};
+
 bool is_reserved_identifier(const std::string& str) {
   if (kReservedIdentifiers.count(str)) {
     return true;
@@ -55,7 +70,7 @@ bool is_reserved_identifier(const std::string& str) {
 
 void ReservedIdentifiersCheck::inspect_leave(const ref<Declaration>& node) {
   if (is_reserved_identifier(node->name->value)) {
-    m_console.error("reserved variable name", node->name);
+    m_console.error(node->name, "'", node->name->value, "' is a reserved variable name");
   }
 }
 
@@ -64,17 +79,21 @@ void ReservedIdentifiersCheck::inspect_leave(const ref<UnpackDeclaration>& node)
     for (ref<Expression>& element : tuple->elements) {
       switch (element->type()) {
         case Node::Type::Name: {
-          if (is_reserved_identifier(cast<Name>(element)->value)) {
-            m_console.error("reserved variable name", element);
+          ref<Name> name = cast<Name>(element);
+
+          if (is_reserved_identifier(name->value)) {
+            m_console.error(name, "'", name->value, "' is a reserved variable name");
           }
+
           break;
         }
         case Node::Type::Spread: {
           ref<Spread> spread = cast<Spread>(element);
-
           assert(isa<Name>(spread->expression));
-          if (is_reserved_identifier(cast<Name>(spread->expression)->value)) {
-            m_console.error("reserved variable name", spread->expression);
+          ref<Name> name = cast<Name>(spread->expression);
+
+          if (is_reserved_identifier(name->value)) {
+            m_console.error(name, "'", name->value, "' is a reserved variable name");
           }
 
           break;
@@ -88,17 +107,20 @@ void ReservedIdentifiersCheck::inspect_leave(const ref<UnpackDeclaration>& node)
     for (ref<DictEntry>& entry : dict->elements) {
       switch (entry->key->type()) {
         case Node::Type::Name: {
-          if (is_reserved_identifier(cast<Name>(entry->key)->value)) {
-            m_console.error("reserved variable name", entry->key);
+          ref<Name> name = cast<Name>(entry->key);
+
+          if (is_reserved_identifier(name->value)) {
+            m_console.error(name, "'", name->value, "' is a reserved variable name");
           }
           break;
         }
         case Node::Type::Spread: {
           ref<Spread> spread = cast<Spread>(entry->key);
-
           assert(isa<Name>(spread->expression));
-          if (is_reserved_identifier(cast<Name>(spread->expression)->value)) {
-            m_console.error("reserved variable name", spread->expression);
+          ref<Name> name = cast<Name>(spread->expression);
+
+          if (is_reserved_identifier(name->value)) {
+            m_console.error(name, "'", name->value, "' is a reserved variable name");
           }
 
           break;
@@ -117,29 +139,35 @@ void ReservedIdentifiersCheck::inspect_leave(const ref<Function>& node) {
   for (const ref<Expression>& argument : node->arguments) {
     switch (argument->type()) {
       case Node::Type::Name: {
-        if (is_reserved_identifier(cast<Name>(argument)->value)) {
-          m_console.error("reserved variable name", argument);
+        ref<Name> name = cast<Name>(argument);
+
+        if (is_reserved_identifier(name->value)) {
+          m_console.error(name, "'", name->value, "' is a reserved variable name");
         }
+
         break;
       }
       case Node::Type::Assignment: {
         ref<Assignment> assignment = cast<Assignment>(argument);
-
         assert(isa<Name>(assignment->target));
-        if (is_reserved_identifier(cast<Name>(assignment->target)->value)) {
-          m_console.error("reserved variable name", assignment->target);
+        ref<Name> name = cast<Name>(assignment->target);
+
+        if (is_reserved_identifier(name->value)) {
+          m_console.error(name, "'", name->value, "' is a reserved variable name");
         }
+
         break;
       }
       case Node::Type::Spread: {
-        ref<Spread> spread = cast<Spread>(argument);
+          ref<Spread> spread = cast<Spread>(argument);
+          assert(isa<Name>(spread->expression));
+          ref<Name> name = cast<Name>(spread->expression);
 
-        assert(isa<Name>(spread->expression));
-        if (is_reserved_identifier(cast<Name>(spread->expression)->value)) {
-          m_console.error("reserved variable name", spread->expression);
-        }
+          if (is_reserved_identifier(name->value)) {
+            m_console.error(name, "'", name->value, "' is a reserved variable name");
+          }
 
-        break;
+          break;
       }
       default: {
         assert(false && "unexpected node");
@@ -150,14 +178,22 @@ void ReservedIdentifiersCheck::inspect_leave(const ref<Function>& node) {
 
 void ReservedIdentifiersCheck::inspect_leave(const ref<Class>& node) {
   for (const ref<ClassProperty>& prop : node->member_properties) {
-    if (is_reserved_identifier(prop->name->value)) {
-      m_console.error("reserved variable name", prop->name);
+    if (is_reserved_identifier(prop->name->value) || kIllegalMemberFieldNames.count(prop->name->value)) {
+      m_console.error(prop->name, "'", prop->name->value, "' cannot be the name of a property");
+      continue;
     }
   }
 
-  for (const ref<Function>& prop : node->member_functions) {
-    if (is_reserved_identifier(prop->name->value)) {
-      m_console.error("reserved variable name", prop->name);
+  for (const ref<Function>& func : node->member_functions) {
+    if (is_reserved_identifier(func->name->value) || kIllegalMemberFieldNames.count(func->name->value)) {
+      m_console.error(func->name, "'", func->name->value, "' cannot be the name of a member function");
+    }
+  }
+
+  // check for duplicate static properties
+  for (const ref<ClassProperty>& prop : node->static_properties) {
+    if (is_reserved_identifier(prop->name->value) || kIllegalStaticFieldNames.count(prop->name->value)) {
+      m_console.error(prop->name, "'", prop->name->value, "' cannot be the name of a static property");
     }
   }
 }

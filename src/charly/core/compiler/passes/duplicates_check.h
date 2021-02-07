@@ -24,41 +24,21 @@
  * SOFTWARE.
  */
 
-#include "charly/core/compiler.h"
-#include "charly/core/compiler/parser.h"
+#include "charly/core/compiler/pass.h"
 
-#include "charly/core/compiler/passes/reserved_identifiers_check.h"
-#include "charly/core/compiler/passes/duplicates_check.h"
+#pragma once
 
-namespace {
-using namespace charly::core::compiler::ast;
-}
+namespace charly::core::compiler::ast {
 
-namespace charly::core::compiler {
+class DuplicatesCheck : public DiagnosticPass {
+public:
+  using DiagnosticPass::DiagnosticPass;
 
-std::shared_ptr<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffer& source) {
-  std::shared_ptr<CompilationUnit> unit = std::make_shared<CompilationUnit>(filepath, source);
+private:
+  virtual void inspect_leave(const ref<UnpackDeclaration>& node) override;
+  virtual void inspect_leave(const ref<Dict>& node) override;
+  virtual void inspect_leave(const ref<Function>& node) override;
+  virtual void inspect_leave(const ref<Class>& node) override;
+};
 
-  // parse source file
-  unit->ast = Parser::parse_program(source, unit->console);
-
-  if (unit->console.has_errors())
-    return unit;
-
-#define APPLY_DIAGNOSTIC_PASS(PassName)       \
-  {                                           \
-    assert(unit->ast.get());                  \
-    PassName(unit->console).apply(unit->ast); \
-    if (unit->console.has_errors())           \
-      return unit;                            \
-  }
-
-  APPLY_DIAGNOSTIC_PASS(ReservedIdentifiersCheck);
-  APPLY_DIAGNOSTIC_PASS(DuplicatesCheck);
-
-#undef APPLY_DIAGNOSTIC_PASS
-
-  return unit;
-}
-
-}  // namespace charly::core::compiler
+}  // namespace charly::core::compiler::ast

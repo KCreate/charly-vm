@@ -26,6 +26,7 @@
 
 #include <exception>
 #include <string>
+#include <sstream>
 #include <vector>
 
 #include "charly/core/compiler/ast.h"
@@ -119,22 +120,47 @@ public:
   void dump_all(std::ostream& out) const;
 
   // push message of specific type into the console
-  void info(const std::string& msg, const Location& loc = Location{ .valid = false });
-  void warning(const std::string& msg, const Location& loc = Location{ .valid = false });
-  void error(const std::string& msg, const Location& loc = Location{ .valid = false });
+  template <typename... Args>
+  void info(const Location& loc, Args&&... params) {
+    std::stringstream stream;
+    ((stream << std::forward<Args>(params)), ...);
+    m_messages.push_back(DiagnosticMessage{ DiagnosticInfo, m_filepath, stream.str(), loc });
+  }
+  template <typename... Args>
+  void info(const ast::ref<ast::Node>& node, Args&&... params) {
+    info(node->location(), std::forward<Args>(params)...);
+  }
 
-  void info(const std::string& msg, const ast::ref<ast::Node>& node) {
-    info(msg, node->location());
+  template <typename... Args>
+  void warning(const Location& loc, Args&&... params) {
+    std::stringstream stream;
+    ((stream << std::forward<Args>(params)), ...);
+    m_messages.push_back(DiagnosticMessage{ DiagnosticWarning, m_filepath, stream.str(), loc });
   }
-  void warning(const std::string& msg, const ast::ref<ast::Node>& node) {
-    warning(msg, node->location());
+  template <typename... Args>
+  void warning(const ast::ref<ast::Node>& node, Args&&... params) {
+    warning(node->location(), std::forward<Args>(params)...);
   }
-  void error(const std::string& msg, const ast::ref<ast::Node>& node) {
-    error(msg, node->location());
+
+  template <typename... Args>
+  void error(const Location& loc, Args&&... params) {
+    std::stringstream stream;
+    ((stream << std::forward<Args>(params)), ...);
+    m_messages.push_back(DiagnosticMessage{ DiagnosticError, m_filepath, stream.str(), loc });
+  }
+  template <typename... Args>
+  void error(const ast::ref<ast::Node>& node, Args&&... params) {
+    error(node->location(), std::forward<Args>(params)...);
   }
 
   // pushing a fatal message throws a DiagnosticException
-  [[noreturn]] void fatal(const std::string& msg, const Location& loc);
+  template <typename... Args>
+  [[noreturn]] void fatal(const Location& loc, Args&&... params) {
+    std::stringstream stream;
+    ((stream << std::forward<Args>(params)), ...);
+    m_messages.push_back(DiagnosticMessage{ DiagnosticError, m_filepath, stream.str(), loc });
+    throw DiagnosticException();
+  }
 
 private:
   DiagnosticConsole(DiagnosticConsole&) = delete;

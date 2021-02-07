@@ -24,15 +24,10 @@
  * SOFTWARE.
  */
 
-import math
-import foobar
+func foo() {
+  print($0)
+}
 
-import "lib/foo.ch"
-import "lib/{name}.ch"
-
-const foo = import "lib/foo.ch"
-const module = import "lib/{name}.ch"
-
-const foo = import foo
-const foo = import "foo"
-const foo = import "{name}"
+func foo(name) {
+  print($0)
+}

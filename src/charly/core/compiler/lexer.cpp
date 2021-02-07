@@ -505,23 +505,17 @@ void Lexer::unexpected_character() {
 
   switch (m_last_character) {
     case u'\0': {
-      formatbuf.append_string("unexpected end of file");
-      break;
+      m_console.fatal(m_token.location, "unexpected end of file");
     }
     default: {
-      m_token.location.offset = m_source.readoffset() - utils::Buffer::encoded_length_utf8(m_last_character);
+      m_token.location.offset = m_source.readoffset() - utils::Buffer::utf8_encoded_length(m_last_character);
       m_token.location.end_offset = m_source.readoffset();
       m_token.location.end_row = m_row;
       m_token.location.end_column = m_column;
 
-      formatbuf.append_string("unexpected '");
-      formatbuf.append_utf8(m_last_character);
-      formatbuf.append_string("'");
-      break;
+      m_console.fatal(m_token.location, "unexpected '", utils::Buffer::u8(m_last_character), "'");
     }
   }
-
-  m_console.fatal(formatbuf.buffer_string(), m_token.location);
 }
 
 void Lexer::unexpected_character(uint32_t expected) {
@@ -529,28 +523,18 @@ void Lexer::unexpected_character(uint32_t expected) {
 
   switch (m_last_character) {
     case u'\0': {
-      formatbuf.append_string("unexpected end of file, ");
-      formatbuf.append_string("expected the character '");
-      formatbuf.append_utf8(expected);
-      formatbuf.append_string("'");
-      break;
+      m_console.fatal(m_token.location, "unexpected end of file, expected the character '", expected, "'");
     }
     default: {
-      m_token.location.offset = m_source.readoffset() - utils::Buffer::encoded_length_utf8(m_last_character);
+      m_token.location.offset = m_source.readoffset() - utils::Buffer::utf8_encoded_length(m_last_character);
       m_token.location.end_offset = m_source.readoffset();
       m_token.location.end_row = m_row;
       m_token.location.end_column = m_column;
 
-      formatbuf.append_string("unexpected '");
-      formatbuf.append_utf8(m_last_character);
-      formatbuf.append_string("', expected the character '");
-      formatbuf.append_utf8(expected);
-      formatbuf.append_string("'");
-      break;
+      m_console.fatal(m_token.location, "unexpected, '", utils::Buffer::u8(m_last_character),
+                      "' expected the character '", utils::Buffer::u8(expected), "'");
     }
   }
-
-  m_console.fatal(formatbuf.buffer_string(), m_token.location);
 }
 
 void Lexer::unexpected_character(TokenType expected) {
@@ -558,28 +542,19 @@ void Lexer::unexpected_character(TokenType expected) {
 
   switch (m_last_character) {
     case u'\0': {
-      formatbuf.append_string("unexpected end of file, ");
-      formatbuf.append_string("expected a '");
-      formatbuf.append_string(kTokenTypeStrings[static_cast<int>(expected)]);
-      formatbuf.append_string("' token");
-      break;
+      m_console.fatal(m_token.location, "unexpected end of file, expected a '",
+                      kTokenTypeStrings[static_cast<int>(expected)], "' token");
     }
     default: {
-      m_token.location.offset = m_source.readoffset() - utils::Buffer::encoded_length_utf8(m_last_character);
+      m_token.location.offset = m_source.readoffset() - utils::Buffer::utf8_encoded_length(m_last_character);
       m_token.location.end_offset = m_source.readoffset();
       m_token.location.end_row = m_row;
       m_token.location.end_column = m_column;
 
-      formatbuf.append_string("unexpected '");
-      formatbuf.append_utf8(m_last_character);
-      formatbuf.append_string("', expected a '");
-      formatbuf.append_string(kTokenTypeStrings[static_cast<int>(expected)]);
-      formatbuf.append_string("' token");
-      break;
+      m_console.fatal(m_token.location, "unexpected '", utils::Buffer::u8(m_last_character), "', expected a '",
+                      kTokenTypeStrings[static_cast<int>(expected)], "' token");
     }
   }
-
-  m_console.fatal(formatbuf.buffer_string(), m_token.location);
 }
 
 void Lexer::unexpected_character(const std::string& message) {
@@ -587,25 +562,17 @@ void Lexer::unexpected_character(const std::string& message) {
 
   switch (m_last_character) {
     case u'\0': {
-      formatbuf.append_string("unexpected end of file, ");
-      formatbuf.append_string(message);
-      break;
+      m_console.fatal(m_token.location, "unexpected end of file, ", message);
     }
     default: {
-      m_token.location.offset = m_source.readoffset() - utils::Buffer::encoded_length_utf8(m_last_character);
+      m_token.location.offset = m_source.readoffset() - utils::Buffer::utf8_encoded_length(m_last_character);
       m_token.location.end_offset = m_source.readoffset();
       m_token.location.end_row = m_row;
       m_token.location.end_column = m_column;
 
-      formatbuf.append_string("unexpected '");
-      formatbuf.append_utf8(m_last_character);
-      formatbuf.append_string("', ");
-      formatbuf.append_string(message);
-      break;
+      m_console.fatal(m_token.location, "unexpected '", utils::Buffer::u8(m_last_character), "', ", message);
     }
   }
-
-  m_console.fatal(formatbuf.buffer_string(), m_token.location);
 }
 
 void Lexer::increment_row() {
@@ -632,7 +599,7 @@ uint32_t Lexer::read_char() {
   if (cp == '\n') {
     increment_row();
   } else {
-    increment_column(utils::Buffer::encoded_length_utf8(cp));
+    increment_column(utils::Buffer::utf8_encoded_length(cp));
   }
 
   return cp;

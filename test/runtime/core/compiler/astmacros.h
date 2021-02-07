@@ -129,3 +129,18 @@ using namespace charly::core::compiler::ast;
     REQUIRE(console.has_errors());                             \
     CHECK_THAT(console.messages().front().message, Equals(E)); \
   }
+
+#define COMPILE_OK(S)                              \
+  {                                                \
+    charly::utils::Buffer buffer(S);               \
+    auto unit = Compiler::compile("test", buffer); \
+    REQUIRE(!unit->console.has_errors());          \
+  }
+
+#define COMPILE_ERROR(S, E)                                          \
+  {                                                                  \
+    charly::utils::Buffer buffer(S);                                 \
+    auto unit = Compiler::compile("test", buffer);                   \
+    REQUIRE(unit->console.has_errors());                             \
+    CHECK_THAT(unit->console.messages().front().message, Equals(E)); \
+  }
