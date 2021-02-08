@@ -24,26 +24,18 @@
  * SOFTWARE.
  */
 
-class A {
-  property foo
-  property bar
-}
+#include "charly/core/compiler/pass.h"
 
-class B extends A {
-  property baz
-  property quz
+#pragma once
 
-  constructor(baz, quz) {
-    if false {
-      while 1 {
-        if true {
-          super(1, 2)
-        }
-      }
-    }
+namespace charly::core::compiler::ast {
 
-    for const (a, b, c) in baz {
-      self.foo(a, b, c)
-    }
-  }
-}
+class ClassConstructorCheck : public DiagnosticPass {
+public:
+  using DiagnosticPass::DiagnosticPass;
+
+private:
+  virtual void inspect_leave(const ref<Class>& node) override;
+};
+
+}  // namespace charly::core::compiler::ast

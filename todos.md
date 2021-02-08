@@ -1,13 +1,5 @@
 # Todos
 
-- Tree searching methods
-- Depth and breadth first iterators
-
-- Semantic checks
-  - Class checks
-    - Check that subclass constructors call the super constructor
-  - Emit warning on statements that do not do anything
-
 - Desugaring
   - Constant fold expressions
   - Desugar format strings

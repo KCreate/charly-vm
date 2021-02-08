@@ -29,6 +29,7 @@
 
 #include "charly/core/compiler/passes/reserved_identifiers_check.h"
 #include "charly/core/compiler/passes/duplicates_check.h"
+#include "charly/core/compiler/passes/class_constructor_check.h"
 
 namespace {
 using namespace charly::core::compiler::ast;
@@ -55,6 +56,7 @@ std::shared_ptr<CompilationUnit> Compiler::compile(const std::string& filepath, 
 
   APPLY_DIAGNOSTIC_PASS(ReservedIdentifiersCheck);
   APPLY_DIAGNOSTIC_PASS(DuplicatesCheck);
+  APPLY_DIAGNOSTIC_PASS(ClassConstructorCheck);
 
 #undef APPLY_DIAGNOSTIC_PASS
 

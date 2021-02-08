@@ -4,6 +4,7 @@ file(GLOB charlycore_SRC
   "charly/core/compiler/diagnostic.cpp"
   "charly/core/compiler/lexer.cpp"
   "charly/core/compiler/parser.cpp"
+  "charly/core/compiler/passes/class_constructor_check.cpp"
   "charly/core/compiler/passes/duplicates_check.cpp"
   "charly/core/compiler/passes/reserved_identifiers_check.cpp"
 )

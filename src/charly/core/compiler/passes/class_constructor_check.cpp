@@ -24,26 +24,49 @@
  * SOFTWARE.
  */
 
-class A {
-  property foo
-  property bar
-}
+#include <list>
 
-class B extends A {
-  property baz
-  property quz
+#include "charly/core/compiler/passes/class_constructor_check.h"
 
-  constructor(baz, quz) {
-    if false {
-      while 1 {
-        if true {
-          super(1, 2)
-        }
+namespace charly::core::compiler::ast {
+
+void ClassConstructorCheck::inspect_leave(const ref<Class>& node) {
+  if (!node->constructor)
+    return;
+
+  // depth-first search for super(...)
+  std::function<bool(const ref<Node>&)> search_super_call = [&](const ref<Node>& node) {
+    // check for super(...)
+    if (ref<CallOp> call = cast<CallOp>(node)) {
+      if (isa<Super>(call->target)) {
+        return true;
       }
     }
 
-    for const (a, b, c) in baz {
-      self.foo(a, b, c)
+    bool super_call_found = false;
+    switch (node->type()) {
+      case Node::Type::Function:
+      case Node::Type::Class:
+      case Node::Type::Spawn: {
+        break;
+      }
+      default: {
+        node->children([&](const ref<Node>& child) {
+          if (super_call_found)
+            return;
+
+          super_call_found = search_super_call(child);
+        });
+        break;
+      }
     }
+
+    return super_call_found;
+  };
+
+  if (!search_super_call(node->constructor->body)) {
+    m_console.warning(node->constructor->name, "missing call to super constructor inside class constructor");
   }
 }
+
+}  // namespace charly::core::compiler::ast
