@@ -24,10 +24,20 @@
  * SOFTWARE.
  */
 
-func foo() {
-  print($0)
+class A {
+  property foo
+  property bar
 }
 
-func foo(name) {
-  print($0)
+class B extends A {
+  property baz
+  property quz
+
+  constructor(baz, quz) {
+    super(1, 2)
+
+    for const (a, b, c) in baz {
+      self.foo(a, b, c)
+    }
+  }
 }

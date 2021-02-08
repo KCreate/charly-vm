@@ -36,7 +36,6 @@
 
 #include "charly/core/compiler.h"
 #include "charly/core/compiler/ast.h"
-#include "charly/core/compiler/passes/dump.h"
 
 using namespace charly;
 using namespace charly::core::compiler;
@@ -89,7 +88,7 @@ int run_repl() {
         continue;
     }
 
-    DumpPass(std::cout, print_location).apply(program);
+    program->dump(std::cout);
   }
 
   return 0;
@@ -121,12 +120,13 @@ int run_file(int, char** argv) {
   if (unit->console.has_errors())
     return 1;
 
-  DumpPass(std::cout).apply(program);
+  program->dump(std::cout);
   return 0;
 }
 
 int main(int argc, char** argv) {
-  if (argc > 1)
+  if (argc > 1) {
     return run_file(argc, argv);
+  }
   return run_repl();
 }

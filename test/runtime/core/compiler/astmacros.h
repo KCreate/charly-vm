@@ -72,8 +72,8 @@ using namespace charly::core::compiler::ast;
     DiagnosticConsole console("test", buffer);                       \
     ref<Expression> exp = Parser::parse_expression(buffer, console); \
     REQUIRE(!console.has_errors());                                  \
-    DumpPass(exp_dump, false).apply(exp);                            \
-    DumpPass(ref_dump, false).apply(N);                              \
+    exp->dump(exp_dump);                                             \
+    N->dump(ref_dump);                                               \
     CHECK_THAT(exp_dump.str(), Equals(ref_dump.str()));              \
   }
 
@@ -85,8 +85,8 @@ using namespace charly::core::compiler::ast;
     DiagnosticConsole console("test", buffer);                      \
     ref<Statement> stmt = Parser::parse_statement(buffer, console); \
     REQUIRE(!console.has_errors());                                 \
-    DumpPass(stmt_dump, false).apply(stmt);                         \
-    DumpPass(ref_dump, false).apply(N);                             \
+    stmt->dump(stmt_dump);                                          \
+    N->dump(ref_dump);                                              \
     CHECK_THAT(stmt_dump.str(), Equals(ref_dump.str()));            \
   }
 
@@ -98,8 +98,8 @@ using namespace charly::core::compiler::ast;
     DiagnosticConsole console("test", buffer);                  \
     ref<Program> prog = Parser::parse_program(buffer, console); \
     REQUIRE(!console.has_errors());                             \
-    DumpPass(prog_dump, false).apply(prog);                     \
-    DumpPass(ref_dump, false).apply(N);                         \
+    prog->dump(prog_dump);                                      \
+    N->dump(ref_dump);                                          \
     CHECK_THAT(prog_dump.str(), Equals(ref_dump.str()));        \
   }
 

@@ -1,3 +1,5 @@
+#include <functional>
+
 #define AST_TYPESWITCH_CASE_NODE(NodeType, ...)         \
   case Node::Type::NodeType: {                          \
     ref<NodeType> node = cast<NodeType>(original_node); \
@@ -64,7 +66,25 @@
     }                                                          \
   }
 
-#define HANDLE_NODE(ReplacementType, NodeType)                        \
+#define APPLY_NODE(N)                                                  \
+  {                                                                    \
+    if (node->N) {                                                     \
+      node->N = cast<decltype(node->N)::element_type>(apply(node->N)); \
+    }                                                                  \
+  }
+
+#define APPLY_VECTOR(N)                                           \
+  {                                                               \
+    using NodeType = decltype(node->N)::value_type::element_type; \
+    for (ref<NodeType> & child_node : node->N) {                  \
+      child_node = cast<NodeType>(apply(child_node));             \
+    }                                                             \
+    auto begin = node->N.begin();                                 \
+    auto end = node->N.end();                                     \
+    node->N.erase(std::remove(begin, end, nullptr), end);         \
+  }
+
+#define HANDLE_NODE(ReplacementType, NodeType, Children)              \
 public:                                                               \
   virtual ref<ReplacementType> apply(const ref<NodeType>& node) {     \
     if (node.get() == nullptr)                                        \
@@ -73,7 +93,7 @@ public:                                                               \
     bool visit_children = inspect_enter(node);                        \
     m_depth++;                                                        \
     if (visit_children)                                               \
-      children(node);                                                 \
+      apply_children(node);                                           \
     m_depth--;                                                        \
     ref<ReplacementType> replaced_node = transform(node);             \
     if (replaced_node) {                                              \
@@ -91,20 +111,6 @@ private:                                                              \
   virtual ref<ReplacementType> transform(const ref<NodeType>& node) { \
     return node;                                                      \
   }                                                                   \
-  void children([[maybe_unused]] const ref<NodeType>& node)
-
-#define VISIT_NODE(N)                                                \
-  if (node->N) {                                                     \
-    node->N = cast<decltype(node->N)::element_type>(apply(node->N)); \
-  }
-
-#define VISIT_NODE_VECTOR(N)                                      \
-  {                                                               \
-    using NodeType = decltype(node->N)::value_type::element_type; \
-    for (ref<NodeType> & child_node : node->N) {                  \
-      child_node = cast<NodeType>(this->apply(child_node));       \
-    }                                                             \
-    auto begin = node->N.begin();                                 \
-    auto end = node->N.end();                                     \
-    node->N.erase(std::remove(begin, end, nullptr), end);         \
+  void apply_children([[maybe_unused]] const ref<NodeType>& node) {   \
+    Children;                                                         \
   }

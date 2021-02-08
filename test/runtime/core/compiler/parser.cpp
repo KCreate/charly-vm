@@ -29,7 +29,6 @@
 #include <catch2/catch_all.hpp>
 
 #include "charly/core/compiler/parser.h"
-#include "charly/core/compiler/passes/dump.h"
 
 #include "astmacros.h"
 

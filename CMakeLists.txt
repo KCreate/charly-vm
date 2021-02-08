@@ -33,8 +33,12 @@ install(TARGETS charly RUNTIME DESTINATION bin)
 add_subdirectory(libs/catch2)
 
 file(GLOB tests_SRC
-  "test/runtime/utils/*.cpp"
-  "test/runtime/core/compiler/*.cpp"
+  "test/runtime/utils/buffer.cpp"
+  "test/runtime/utils/cast.cpp"
+  "test/runtime/core/compiler/diagnostic.cpp"
+  "test/runtime/core/compiler/parser.cpp"
+  "test/runtime/core/compiler/pass.cpp"
+  "test/runtime/core/compiler/semantic.cpp"
 )
 
 add_executable(tests ${tests_SRC})

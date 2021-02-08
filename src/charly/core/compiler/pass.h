@@ -56,181 +56,181 @@ protected:
   virtual void leave(const ref<Node>&) {}
 
   // clang-format off
-  HANDLE_NODE(Program, Program) {
-    VISIT_NODE(body);
-  }
+  HANDLE_NODE(Program, Program, {
+    APPLY_NODE(body);
+  })
 
-  HANDLE_NODE(Statement, Block) {
-    VISIT_NODE_VECTOR(statements);
-  }
+  HANDLE_NODE(Statement, Block, {
+    APPLY_VECTOR(statements);
+  })
 
-  HANDLE_NODE(Statement, Return) {
-    VISIT_NODE(expression);
-  }
+  HANDLE_NODE(Statement, Return, {
+    APPLY_NODE(expression);
+  })
 
-  HANDLE_NODE(Statement, Break) {}
-  HANDLE_NODE(Statement, Continue) {}
+  HANDLE_NODE(Statement, Break, {})
+  HANDLE_NODE(Statement, Continue, {})
 
-  HANDLE_NODE(Statement, Defer) {
-    VISIT_NODE(statement);
-  }
+  HANDLE_NODE(Statement, Defer, {
+    APPLY_NODE(statement);
+  })
 
-  HANDLE_NODE(Statement, Throw) {
-    VISIT_NODE(expression);
-  }
+  HANDLE_NODE(Statement, Throw, {
+    APPLY_NODE(expression);
+  })
 
-  HANDLE_NODE(Statement, Export) {
-    VISIT_NODE(expression);
-  }
+  HANDLE_NODE(Statement, Export, {
+    APPLY_NODE(expression);
+  })
 
-  HANDLE_NODE(Statement, Import) {
-    VISIT_NODE(source);
-  }
+  HANDLE_NODE(Statement, Import, {
+    APPLY_NODE(source);
+  })
 
-  HANDLE_NODE(Expression, Yield) {
-    VISIT_NODE(expression);
-  }
+  HANDLE_NODE(Expression, Yield, {
+    APPLY_NODE(expression);
+  })
 
-  HANDLE_NODE(Expression, Spawn) {
-    VISIT_NODE(statement);
-  }
+  HANDLE_NODE(Expression, Spawn, {
+    APPLY_NODE(statement);
+  })
 
-  HANDLE_NODE(Expression, Await) {
-    VISIT_NODE(expression);
-  }
+  HANDLE_NODE(Expression, Await, {
+    APPLY_NODE(expression);
+  })
 
-  HANDLE_NODE(Expression, Typeof) {
-    VISIT_NODE(expression);
-  }
+  HANDLE_NODE(Expression, Typeof, {
+    APPLY_NODE(expression);
+  })
 
-  HANDLE_NODE(Expression, Id) {}
-  HANDLE_NODE(Expression, Name) {}
-  HANDLE_NODE(Expression, Int) {}
-  HANDLE_NODE(Expression, Float) {}
-  HANDLE_NODE(Expression, Bool) {}
-  HANDLE_NODE(Expression, Char) {}
-  HANDLE_NODE(Expression, String) {}
+  HANDLE_NODE(Expression, Id, {})
+  HANDLE_NODE(Expression, Name, {})
+  HANDLE_NODE(Expression, Int, {})
+  HANDLE_NODE(Expression, Float, {})
+  HANDLE_NODE(Expression, Bool, {})
+  HANDLE_NODE(Expression, Char, {})
+  HANDLE_NODE(Expression, String, {})
 
-  HANDLE_NODE(Expression, FormatString) {
-    VISIT_NODE_VECTOR(elements)
-  }
+  HANDLE_NODE(Expression, FormatString, {
+    APPLY_VECTOR(elements)
+  })
 
-  HANDLE_NODE(Expression, Null) {}
-  HANDLE_NODE(Expression, Self) {}
-  HANDLE_NODE(Expression, Super) {}
+  HANDLE_NODE(Expression, Null, {})
+  HANDLE_NODE(Expression, Self, {})
+  HANDLE_NODE(Expression, Super, {})
 
-  HANDLE_NODE(Expression, Tuple) {
-    VISIT_NODE_VECTOR(elements)
-  }
+  HANDLE_NODE(Expression, Tuple, {
+    APPLY_VECTOR(elements)
+  })
 
-  HANDLE_NODE(Expression, List) {
-    VISIT_NODE_VECTOR(elements)
-  }
+  HANDLE_NODE(Expression, List, {
+    APPLY_VECTOR(elements)
+  })
 
-  HANDLE_NODE(DictEntry, DictEntry) {
-    VISIT_NODE(key);
-    VISIT_NODE(value);
-  }
+  HANDLE_NODE(DictEntry, DictEntry, {
+    APPLY_NODE(key);
+    APPLY_NODE(value);
+  })
 
-  HANDLE_NODE(Expression, Dict) {
-    VISIT_NODE_VECTOR(elements);
-  }
+  HANDLE_NODE(Expression, Dict, {
+    APPLY_VECTOR(elements);
+  })
 
-  HANDLE_NODE(Expression, Function) {
-    VISIT_NODE_VECTOR(arguments);
-    VISIT_NODE(body);
-  }
+  HANDLE_NODE(Expression, Function, {
+    APPLY_VECTOR(arguments);
+    APPLY_NODE(body);
+  })
 
-  HANDLE_NODE(Expression, Class) {
-    VISIT_NODE(parent);
-    VISIT_NODE(constructor);
-    VISIT_NODE_VECTOR(member_functions)
-    VISIT_NODE_VECTOR(member_properties)
-    VISIT_NODE_VECTOR(static_properties)
-  }
+  HANDLE_NODE(Expression, Class, {
+    APPLY_NODE(parent);
+    APPLY_NODE(constructor);
+    APPLY_VECTOR(member_functions)
+    APPLY_VECTOR(member_properties)
+    APPLY_VECTOR(static_properties)
+  })
 
-  HANDLE_NODE(ClassProperty, ClassProperty) {
-    VISIT_NODE(value);
-  }
+  HANDLE_NODE(ClassProperty, ClassProperty, {
+    APPLY_NODE(value);
+  })
 
-  HANDLE_NODE(Expression, Assignment) {
-    VISIT_NODE(target);
-    VISIT_NODE(source);
-  }
+  HANDLE_NODE(Expression, Assignment, {
+    APPLY_NODE(target);
+    APPLY_NODE(source);
+  })
 
-  HANDLE_NODE(Expression, Ternary) {
-    VISIT_NODE(condition);
-    VISIT_NODE(then_exp);
-    VISIT_NODE(else_exp);
-  }
+  HANDLE_NODE(Expression, Ternary, {
+    APPLY_NODE(condition);
+    APPLY_NODE(then_exp);
+    APPLY_NODE(else_exp);
+  })
 
-  HANDLE_NODE(Expression, BinaryOp) {
-    VISIT_NODE(lhs);
-    VISIT_NODE(rhs);
-  }
+  HANDLE_NODE(Expression, BinaryOp, {
+    APPLY_NODE(lhs);
+    APPLY_NODE(rhs);
+  })
 
-  HANDLE_NODE(Expression, UnaryOp) {
-    VISIT_NODE(expression);
-  }
+  HANDLE_NODE(Expression, UnaryOp, {
+    APPLY_NODE(expression);
+  })
 
-  HANDLE_NODE(Expression, Spread) {
-    VISIT_NODE(expression);
-  }
+  HANDLE_NODE(Expression, Spread, {
+    APPLY_NODE(expression);
+  })
 
-  HANDLE_NODE(Expression, CallOp) {
-    VISIT_NODE(target);
-    VISIT_NODE_VECTOR(arguments)
-  }
+  HANDLE_NODE(Expression, CallOp, {
+    APPLY_NODE(target);
+    APPLY_VECTOR(arguments)
+  })
 
-  HANDLE_NODE(Expression, MemberOp) {
-    VISIT_NODE(target);
-  }
+  HANDLE_NODE(Expression, MemberOp, {
+    APPLY_NODE(target);
+  })
 
-  HANDLE_NODE(Expression, IndexOp) {
-    VISIT_NODE(target);
-    VISIT_NODE(index);
-  }
+  HANDLE_NODE(Expression, IndexOp, {
+    APPLY_NODE(target);
+    APPLY_NODE(index);
+  })
 
-  HANDLE_NODE(Statement, Declaration) {
-    VISIT_NODE(expression);
-  }
+  HANDLE_NODE(Statement, Declaration, {
+    APPLY_NODE(expression);
+  })
 
-  HANDLE_NODE(Statement, UnpackDeclaration) {
-    VISIT_NODE(target);
-    VISIT_NODE(expression);
-  }
+  HANDLE_NODE(Statement, UnpackDeclaration, {
+    APPLY_NODE(target);
+    APPLY_NODE(expression);
+  })
 
-  HANDLE_NODE(Statement, If) {
-    VISIT_NODE(condition);
-    VISIT_NODE(then_stmt);
-    VISIT_NODE(else_stmt);
-  }
+  HANDLE_NODE(Statement, If, {
+    APPLY_NODE(condition);
+    APPLY_NODE(then_stmt);
+    APPLY_NODE(else_stmt);
+  })
 
-  HANDLE_NODE(Statement, While) {
-    VISIT_NODE(condition);
-    VISIT_NODE(then_stmt);
-  }
+  HANDLE_NODE(Statement, While, {
+    APPLY_NODE(condition);
+    APPLY_NODE(then_stmt);
+  })
 
-  HANDLE_NODE(Statement, Try) {
-    VISIT_NODE(try_stmt);
-    VISIT_NODE(catch_stmt);
-  }
+  HANDLE_NODE(Statement, Try, {
+    APPLY_NODE(try_stmt);
+    APPLY_NODE(catch_stmt);
+  })
 
-  HANDLE_NODE(Statement, Switch) {
-    VISIT_NODE(test);
-    VISIT_NODE(default_stmt);
-    VISIT_NODE_VECTOR(cases)
-  }
+  HANDLE_NODE(Statement, Switch, {
+    APPLY_NODE(test);
+    APPLY_NODE(default_stmt);
+    APPLY_VECTOR(cases)
+  })
 
-  HANDLE_NODE(SwitchCase, SwitchCase) {
-    VISIT_NODE(test);
-    VISIT_NODE(stmt);
-  }
+  HANDLE_NODE(SwitchCase, SwitchCase, {
+    APPLY_NODE(test);
+    APPLY_NODE(stmt);
+  })
 
-  HANDLE_NODE(Statement, For) {
-    VISIT_NODE(declaration);
-    VISIT_NODE(stmt);
-  }
+  HANDLE_NODE(Statement, For, {
+    APPLY_NODE(declaration);
+    APPLY_NODE(stmt);
+  })
   // clang-format on
 };
 
@@ -245,5 +245,5 @@ protected:
 }  // namespace charly::core::compiler::ast
 
 #undef HANDLE_NODE
-#undef VISIT_NODE
-#undef VISIT_NODE_VECTOR
+#undef APPLY_NODE
+#undef APPLY_VECTOR

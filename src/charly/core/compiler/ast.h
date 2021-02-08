@@ -27,9 +27,7 @@
 #include <functional>
 #include <iostream>
 #include <memory>
-#include <sstream>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #include "charly/core/compiler/location.h"
@@ -172,6 +170,14 @@ public:
     return false;
   }
 
+  virtual void children(std::function<void(const ref<Node>&)>&&) const {}
+
+  // dump a textual representation of this node into the stream
+  void dump(std::ostream& out, bool print_location = false) const;
+
+  // child classes may override and write additional info into the node output
+  virtual void dump_info(std::ostream&) const {}
+
 protected:
   virtual ~Node(){};
 
@@ -193,6 +199,22 @@ private:                                           \
   virtual const char* node_name() const override { \
     return #T;                                     \
   }
+
+#define CHILD_NODE(N) \
+  {                   \
+    if (N)            \
+      callback(N);    \
+  }
+
+#define CHILD_VECTOR(N)          \
+  {                              \
+    for (const auto& node : N) { \
+      callback(node);            \
+    }                            \
+  }
+
+#define CHILDREN() \
+  virtual void children([[maybe_unused]] std::function<void(const ref<Node>&)>&& callback) const override
 
 // {
 //   <statement>
@@ -217,6 +239,10 @@ public:
   }
 
   std::vector<ref<Statement>> statements;
+
+  CHILDREN() {
+    CHILD_VECTOR(statements);
+  }
 };
 
 // top level node of a compiled program
@@ -228,6 +254,10 @@ public:
   }
 
   ref<Statement> body;
+
+  CHILDREN() {
+    CHILD_NODE(body);
+  }
 };
 
 // return <exp>
@@ -239,6 +269,10 @@ public:
   }
 
   ref<Expression> expression;
+
+  CHILDREN() {
+    CHILD_NODE(expression);
+  }
 };
 
 // break
@@ -260,6 +294,10 @@ public:
   }
 
   ref<Statement> statement;
+
+  CHILDREN() {
+    CHILD_NODE(statement);
+  }
 };
 
 // throw <expression>
@@ -271,6 +309,10 @@ public:
   }
 
   ref<Expression> expression;
+
+  CHILDREN() {
+    CHILD_NODE(expression);
+  }
 };
 
 // export <expression>
@@ -282,6 +324,10 @@ public:
   }
 
   ref<Expression> expression;
+
+  CHILDREN() {
+    CHILD_NODE(expression);
+  }
 };
 
 // import <identifier>
@@ -295,6 +341,10 @@ public:
   }
 
   ref<Expression> source;
+
+  CHILDREN() {
+    CHILD_NODE(source);
+  }
 };
 
 // yield <expression>
@@ -306,6 +356,10 @@ public:
   }
 
   ref<Expression> expression;
+
+  CHILDREN() {
+    CHILD_NODE(expression);
+  }
 };
 
 // spawn <statement>
@@ -317,6 +371,10 @@ public:
   }
 
   ref<Statement> statement;
+
+  CHILDREN() {
+    CHILD_NODE(statement);
+  }
 };
 
 // await <expression>
@@ -328,6 +386,10 @@ public:
   }
 
   ref<Expression> expression;
+
+  CHILDREN() {
+    CHILD_NODE(expression);
+  }
 };
 
 // typeof <expression>
@@ -339,6 +401,10 @@ public:
   }
 
   ref<Expression> expression;
+
+  CHILDREN() {
+    CHILD_NODE(expression);
+  }
 };
 
 // <target> <operation>= <source>
@@ -359,6 +425,13 @@ public:
   TokenType operation;
   ref<Expression> target;
   ref<Expression> source;
+
+  CHILDREN() {
+    CHILD_NODE(target);
+    CHILD_NODE(source);
+  }
+
+  virtual void dump_info(std::ostream& out) const override;
 };
 
 // <condition> ? <then_exp> : <else_exp>
@@ -374,6 +447,12 @@ public:
   ref<Expression> condition;
   ref<Expression> then_exp;
   ref<Expression> else_exp;
+
+  CHILDREN() {
+    CHILD_NODE(condition);
+    CHILD_NODE(then_exp);
+    CHILD_NODE(else_exp);
+  }
 };
 
 // <lhs> <operation> <rhs>
@@ -388,6 +467,13 @@ public:
   TokenType operation;
   ref<Expression> lhs;
   ref<Expression> rhs;
+
+  CHILDREN() {
+    CHILD_NODE(lhs);
+    CHILD_NODE(rhs);
+  }
+
+  virtual void dump_info(std::ostream& out) const override;
 };
 
 // <operation> <expression>
@@ -400,6 +486,12 @@ public:
 
   TokenType operation;
   ref<Expression> expression;
+
+  CHILDREN() {
+    CHILD_NODE(expression);
+  }
+
+  virtual void dump_info(std::ostream& out) const override;
 };
 
 // ...<exp>
@@ -411,6 +503,10 @@ public:
   }
 
   ref<Expression> expression;
+
+  CHILDREN() {
+    CHILD_NODE(expression);
+  }
 };
 
 // null
@@ -448,6 +544,8 @@ public:
   virtual bool assignable() const override {
     return true;
   }
+
+  virtual void dump_info(std::ostream& out) const override;
 };
 
 // used to represent names that do not refer to a variable
@@ -465,6 +563,8 @@ public:
   virtual bool assignable() const override {
     return false;
   }
+
+  virtual void dump_info(std::ostream& out) const override;
 };
 
 inline Id::Id(const ref<Name>& name) : Atom<std::string>::Atom(name->value) {
@@ -476,6 +576,8 @@ class Int final : public Atom<int64_t> {
   AST_NODE(Int)
 public:
   using Atom<int64_t>::Atom;
+
+  virtual void dump_info(std::ostream& out) const override;
 };
 
 // 0.5, 25.25, 5000.1234
@@ -483,6 +585,8 @@ class Float final : public Atom<double> {
   AST_NODE(Float)
 public:
   using Atom<double>::Atom;
+
+  virtual void dump_info(std::ostream& out) const override;
 };
 
 // true, false
@@ -490,6 +594,8 @@ class Bool final : public Atom<bool> {
   AST_NODE(Bool)
 public:
   using Atom<bool>::Atom;
+
+  virtual void dump_info(std::ostream& out) const override;
 };
 
 // 'a', '\n', 'ä', 'π'
@@ -497,6 +603,8 @@ class Char final : public Atom<uint32_t> {
   AST_NODE(Char)
 public:
   using Atom<uint32_t>::Atom;
+
+  virtual void dump_info(std::ostream& out) const override;
 };
 
 // "hello world"
@@ -504,6 +612,8 @@ class String final : public Atom<std::string> {
   AST_NODE(String)
 public:
   using Atom<std::string>::Atom;
+
+  virtual void dump_info(std::ostream& out) const override;
 };
 
 // "name: {name} age: {age}"
@@ -514,6 +624,10 @@ public:
   FormatString(Args&&... params) : elements({ std::forward<Args>(params)... }) {}
 
   std::vector<ref<Expression>> elements;
+
+  CHILDREN() {
+    CHILD_VECTOR(elements);
+  }
 };
 
 // (1, 2, 3)
@@ -553,6 +667,10 @@ public:
 
     return true;
   }
+
+  CHILDREN() {
+    CHILD_VECTOR(elements);
+  }
 };
 
 // [1, 2, 3]
@@ -563,6 +681,10 @@ public:
   List(Args&&... params) : elements({ std::forward<Args>(params)... }) {}
 
   std::vector<ref<Expression>> elements;
+
+  CHILDREN() {
+    CHILD_VECTOR(elements);
+  }
 };
 
 // { a: 1, b: false, c: foo }
@@ -595,6 +717,11 @@ public:
 
     return false;
   }
+
+  CHILDREN() {
+    CHILD_NODE(key);
+    CHILD_NODE(value);
+  }
 };
 
 // { a: 1, b: false, c: foo }
@@ -623,6 +750,10 @@ public:
     }
 
     return true;
+  }
+
+  CHILDREN() {
+    CHILD_VECTOR(elements);
   }
 };
 
@@ -666,6 +797,13 @@ public:
   bool arrow_function;
   ref<Statement> body;
   std::vector<ref<Expression>> arguments;
+
+  CHILDREN() {
+    CHILD_NODE(body);
+    CHILD_VECTOR(arguments);
+  }
+
+  virtual void dump_info(std::ostream& out) const override;
 };
 
 // property foo
@@ -685,6 +823,12 @@ public:
   bool is_static;
   ref<Name> name;
   ref<Expression> value;
+
+  CHILDREN() {
+    CHILD_NODE(value);
+  }
+
+  virtual void dump_info(std::ostream& out) const override;
 };
 
 // class <name> [extends <parent>] { ... }
@@ -701,6 +845,16 @@ public:
   std::vector<ref<Function>> member_functions;
   std::vector<ref<ClassProperty>> member_properties;
   std::vector<ref<ClassProperty>> static_properties;
+
+  CHILDREN() {
+    CHILD_NODE(parent);
+    CHILD_NODE(constructor);
+    CHILD_VECTOR(member_functions);
+    CHILD_VECTOR(member_properties);
+    CHILD_VECTOR(static_properties);
+  }
+
+  virtual void dump_info(std::ostream& out) const override;
 };
 
 // <target>(<arguments>)
@@ -716,6 +870,11 @@ public:
 
   ref<Expression> target;
   std::vector<ref<Expression>> arguments;
+
+  CHILDREN() {
+    CHILD_NODE(target);
+    CHILD_VECTOR(arguments);
+  }
 };
 
 // <target>.<member>
@@ -736,6 +895,12 @@ public:
   virtual bool assignable() const override {
     return true;
   }
+
+  CHILDREN() {
+    CHILD_NODE(target);
+  }
+
+  virtual void dump_info(std::ostream& out) const override;
 };
 
 // <target>[<index>]
@@ -752,6 +917,11 @@ public:
 
   virtual bool assignable() const override {
     return true;
+  }
+
+  CHILDREN() {
+    CHILD_NODE(target);
+    CHILD_NODE(index);
   }
 };
 
@@ -774,6 +944,12 @@ public:
   bool constant;
   ref<Name> name;
   ref<Expression> expression;
+
+  CHILDREN() {
+    CHILD_NODE(expression);
+  }
+
+  virtual void dump_info(std::ostream& out) const override;
 };
 
 // let (a, ...b, c) = 1
@@ -790,6 +966,13 @@ public:
   bool constant;
   ref<Expression> target;
   ref<Expression> expression;
+
+  CHILDREN() {
+    CHILD_NODE(target);
+    CHILD_NODE(expression);
+  }
+
+  virtual void dump_info(std::ostream& out) const override;
 };
 
 // if <condition>
@@ -811,6 +994,12 @@ public:
   ref<Expression> condition;
   ref<Statement> then_stmt;
   ref<Statement> else_stmt;
+
+  CHILDREN() {
+    CHILD_NODE(condition);
+    CHILD_NODE(then_stmt);
+    CHILD_NODE(else_stmt);
+  }
 };
 
 // while <condition>
@@ -825,6 +1014,11 @@ public:
 
   ref<Expression> condition;
   ref<Statement> then_stmt;
+
+  CHILDREN() {
+    CHILD_NODE(condition);
+    CHILD_NODE(then_stmt);
+  }
 };
 
 // try <try_stmt>
@@ -846,6 +1040,13 @@ public:
   ref<Statement> try_stmt;
   ref<Name> exception_name;
   ref<Statement> catch_stmt;
+
+  CHILDREN() {
+    CHILD_NODE(try_stmt);
+    CHILD_NODE(catch_stmt);
+  }
+
+  virtual void dump_info(std::ostream& out) const override;
 };
 
 class SwitchCase final : public Expression {
@@ -858,6 +1059,11 @@ public:
 
   ref<Expression> test;
   ref<Statement> stmt;
+
+  CHILDREN() {
+    CHILD_NODE(test);
+    CHILD_NODE(stmt);
+  }
 };
 
 // switch (<test>) { case <test> <stmt> default <default_stmt> }
@@ -881,6 +1087,12 @@ public:
   ref<Expression> test;
   ref<Statement> default_stmt;
   std::vector<ref<SwitchCase>> cases;
+
+  CHILDREN() {
+    CHILD_NODE(test);
+    CHILD_NODE(default_stmt);
+    CHILD_VECTOR(cases);
+  }
 };
 
 // for <target> in <source> <stmt>
@@ -894,8 +1106,16 @@ public:
 
   ref<Statement> declaration;
   ref<Statement> stmt;
+
+  CHILDREN() {
+    CHILD_NODE(declaration);
+    CHILD_NODE(stmt);
+  }
 };
 
 #undef AST_NODE
+#undef CHILD_NODE
+#undef CHILD_VECTOR
+#undef CHILDREN
 
 }  // namespace charly::core::compiler::ast
