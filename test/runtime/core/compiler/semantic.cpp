@@ -87,3 +87,9 @@ TEST_CASE("checks for duplicate identifiers") {
   COMPILE_OK("class A { foo {} static foo {} }");
   COMPILE_OK("class A { constructor {} }");
 }
+
+TEST_CASE("checks for missing calls to parent constructor in subclasses") {
+  COMPILE_ERROR("class A extends B { constructor {} }", "missing call to super constructor inside class constructor");
+  COMPILE_ERROR("class A extends B { constructor { super.foo() } }", "missing call to super constructor inside class constructor");
+  COMPILE_OK("class A { constructor {} }");
+}

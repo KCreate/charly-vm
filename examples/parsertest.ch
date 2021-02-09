@@ -24,26 +24,19 @@
  * SOFTWARE.
  */
 
-class A {
-  property foo
-  property bar
+class Person {
+  property name
+  property age
+
+  constructor(@name, @age)
 }
 
-class B extends A {
-  property baz
-  property quz
+class Employee extends Person {
+  property salary
 
-  constructor(baz, quz) {
-    if false {
-      while 1 {
-        if true {
-          super(1, 2)
-        }
-      }
-    }
-
-    for const (a, b, c) in baz {
-      self.foo(a, b, c)
-    }
+  constructor(...arguments) {
+    const (...rest, salary) = arguments
+    @salary = salary
+    super(rest)
   }
 }

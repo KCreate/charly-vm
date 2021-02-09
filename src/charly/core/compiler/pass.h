@@ -136,9 +136,13 @@ protected:
     APPLY_VECTOR(elements);
   })
 
+  HANDLE_NODE(FunctionArgument, FunctionArgument, {
+    APPLY_NODE(default_value);
+  })
+
   HANDLE_NODE(Expression, Function, {
-    APPLY_VECTOR(arguments);
     APPLY_NODE(body);
+    APPLY_VECTOR(arguments);
   })
 
   HANDLE_NODE(Expression, Class, {

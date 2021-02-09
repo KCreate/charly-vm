@@ -31,7 +31,7 @@
 namespace charly::core::compiler::ast {
 
 void ClassConstructorCheck::inspect_leave(const ref<Class>& node) {
-  if (!node->constructor)
+  if (!node->constructor || !node->parent)
     return;
 
   // depth-first search for super(...)
@@ -64,8 +64,10 @@ void ClassConstructorCheck::inspect_leave(const ref<Class>& node) {
     return super_call_found;
   };
 
-  if (!search_super_call(node->constructor->body)) {
-    m_console.warning(node->constructor->name, "missing call to super constructor inside class constructor");
+  bool super_called = search_super_call(node->constructor->body);
+
+  if (!super_called) {
+    m_console.error(node->constructor->name, "missing call to super constructor inside class constructor");
   }
 }
 

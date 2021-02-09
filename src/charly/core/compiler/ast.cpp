@@ -147,6 +147,18 @@ void String::dump_info(std::ostream& out) const {
   writer.fg(Color::Yellow, '\"', this->value, '\"');
 }
 
+void FunctionArgument::dump_info(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  writer << ' ';
+  if (this->spread_initializer) {
+    writer.fg(Color::Green, "...");
+  }
+  if (this->self_initializer) {
+    writer.fg(Color::Green, "@");
+  }
+  writer.fg(Color::Green, this->name->value);
+}
+
 void Function::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';

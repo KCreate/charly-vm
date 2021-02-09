@@ -95,6 +95,7 @@ public:
     List,
     DictEntry,
     Dict,
+    FunctionArgument,
     Function,
     Class,
     ClassProperty,
@@ -757,50 +758,66 @@ public:
   }
 };
 
+class FunctionArgument final : public Node {
+  AST_NODE(FunctionArgument)
+public:
+  FunctionArgument(ref<Name> name,
+                   ref<Expression> default_value = nullptr) :
+    self_initializer(false),
+    spread_initializer(false),
+    name(name),
+    default_value(default_value) {}
+  FunctionArgument(bool self_initializer,
+                   bool spread_initializer,
+                   ref<Name> name,
+                   ref<Expression> default_value = nullptr) :
+    self_initializer(self_initializer),
+    spread_initializer(spread_initializer),
+    name(name),
+    default_value(default_value) {}
+
+  bool self_initializer;
+  bool spread_initializer;
+  ref<Name> name;
+  ref<Expression> default_value;
+
+  CHILDREN() {
+    CHILD_NODE(default_value);
+  }
+
+  virtual void dump_info(std::ostream& out) const override;
+};
+
 // func foo(a, b = 1, ...rest) {}
 // ->(a, b) a + b
 class Function final : public Expression {
   AST_NODE(Function)
 public:
   // regular functions
-  Function(ref<Name> name, ref<Statement> body, const std::vector<ref<Expression>>& arguments) :
-    name(name), arrow_function(false), body(body), arguments(arguments) {
-    this->set_location(body);
-  }
   template <typename... Args>
   Function(ref<Name> name, ref<Statement> body, Args&&... params) :
-    name(name), arrow_function(false), body(body), arguments({ std::forward<Args>(params)... }) {
-    this->set_location(body);
-  }
-  Function(const std::string& name, ref<Statement> body, const std::vector<ref<Expression>>& arguments) :
-    name(make<Name>(name)), arrow_function(false), body(body), arguments(arguments) {
-    this->set_location(body);
+    name(name), body(body), arguments({ std::forward<Args>(params)... }) {
+    this->set_location(name, body);
   }
   template <typename... Args>
   Function(const std::string& name, ref<Statement> body, Args&&... params) :
-    name(make<Name>(name)), arrow_function(false), body(body), arguments({ std::forward<Args>(params)... }) {
-    this->set_location(body);
-  }
-
-  // arrow functions
-  Function(ref<Statement> body, const std::vector<ref<Expression>>& arguments) :
-    name(make<Name>("")), arrow_function(true), body(body), arguments(arguments) {
+    name(make<Name>(name)), body(body), arguments({ std::forward<Args>(params)... }) {
     this->set_location(body);
   }
   template <typename... Args>
   Function(ref<Statement> body, Args&&... params) :
-    name(make<Name>("")), arrow_function(true), body(body), arguments({ std::forward<Args>(params)... }) {
+    arrow_function(true), name(make<Name>("")), body(body), arguments({ std::forward<Args>(params)... }) {
     this->set_location(body);
   }
 
+  bool arrow_function = false;
   ref<Name> name;
-  bool arrow_function;
   ref<Statement> body;
-  std::vector<ref<Expression>> arguments;
+  std::vector<ref<FunctionArgument>> arguments;
 
   CHILDREN() {
-    CHILD_NODE(body);
     CHILD_VECTOR(arguments);
+    CHILD_NODE(body);
   }
 
   virtual void dump_info(std::ostream& out) const override;

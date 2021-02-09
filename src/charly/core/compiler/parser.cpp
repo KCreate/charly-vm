@@ -842,6 +842,12 @@ ref<Expression> Parser::parse_literal() {
     case TokenType::False: {
       return parse_bool_token();
     }
+    case TokenType::AtSign: {
+      ref<Self> self = make<Self>();
+      self->set_location(m_token.location);
+      advance();
+      return make<MemberOp>(self, make<Name>(parse_identifier_token()));
+    }
     case TokenType::Identifier: {
       return parse_identifier_token();
     }
@@ -1023,7 +1029,7 @@ ref<Function> Parser::parse_function(bool class_function) {
   ref<Name> function_name = make<Name>(parse_identifier_token());
 
   // argument list
-  std::vector<ref<Expression>> argument_list;
+  std::vector<ref<FunctionArgument>> argument_list;
   parse_function_arguments(argument_list);
 
   ref<Statement> body;
@@ -1037,8 +1043,18 @@ ref<Function> Parser::parse_function(bool class_function) {
   m_keyword_context._super = class_function;
   if (skip(TokenType::Assignment)) {
     body = parse_jump_statement();
-  } else {
+  } else if (type(TokenType::LeftCurly)) {
     body = parse_block();
+  } else {
+
+    // allow foo(@x, @y) declarations inside classes
+    if (class_function) {
+      ref<Null> null = make<Null>();
+      null->set_location(function_name);
+      body = make<Return>(null);
+    } else {
+      unexpected_token(TokenType::LeftCurly);
+    }
   }
   m_keyword_context = kwcontext;
 
@@ -1059,7 +1075,7 @@ ref<Function> Parser::parse_arrow_function() {
   eat(TokenType::RightArrow);
 
   // argument list
-  std::vector<ref<Expression>> argument_list;
+  std::vector<ref<FunctionArgument>> argument_list;
   parse_function_arguments(argument_list);
 
   ref<Statement> body;
@@ -1090,27 +1106,44 @@ ref<Function> Parser::parse_arrow_function() {
   return node;
 }
 
-void Parser::parse_function_arguments(std::vector<ref<Expression>>& result) {
+void Parser::parse_function_arguments(std::vector<ref<FunctionArgument>>& result) {
   if (skip(TokenType::LeftParen)) {
     if (!type(TokenType::RightParen)) {
       do {
-        bool spread_passed = false;
-        Location spread_token_location = m_token.location;
-        if (skip(TokenType::TriplePoint))
-          spread_passed = true;
+        bool self_initializer = false;      // func foo(@a)
+        bool spread_initializer = false;    // func foo(...a)
 
-        ref<Expression> argument = make<Name>(parse_identifier_token());
-
-        if (spread_passed) {
-          argument = make<Spread>(argument);
-          argument->set_begin(spread_token_location);
+        // store the location of a potential accessor token
+        // and set the correct flag
+        Location accessor_token_location = m_token.location;
+        switch (m_token.type) {
+          case TokenType::TriplePoint: {
+            advance();
+            spread_initializer = true;
+            break;
+          }
+          case TokenType::AtSign: {
+            advance();
+            self_initializer = true;
+            break;
+          }
+          default: {
+            break;
+          }
         }
 
+        ref<Name> name = make<Name>(parse_identifier_token());
+
+        Location argument_location = name->location();
+        argument_location.set_begin(accessor_token_location);
+
+        ref<Expression> default_value = nullptr;
         if (skip(TokenType::Assignment)) {
-          argument = make<Assignment>(argument, parse_expression());
+          default_value = parse_expression();
+          argument_location.set_end(default_value->location());
         }
 
-        result.push_back(argument);
+        result.emplace_back(make<FunctionArgument>(self_initializer, spread_initializer, name, default_value));
       } while (skip(TokenType::Comma));
     }
 
@@ -1360,45 +1393,33 @@ void Parser::validate_dict(const ref<Dict>& node) {
 void Parser::validate_function(const ref<Function>& node) {
   bool default_argument_passed = false;
   bool spread_argument_passed = false;
-  for (const ref<Expression>& arg : node->arguments) {
-    if (spread_argument_passed) {
-      // combine the location of the remaining arguments
-      Location excess_arguments_location = arg->location();
-      excess_arguments_location.set_end(node->arguments.back()->location());
+  for (const ref<FunctionArgument>& argument : node->arguments) {
 
+    // no parameters allowed after spread argument (...x)
+    if (spread_argument_passed) {
+      Location excess_arguments_location = argument->location();
+      excess_arguments_location.set_end(node->arguments.back()->location());
       m_console.error(excess_arguments_location, "excess parameter(s)");
       break;
     }
 
-    if (isa<Name>(arg)) {
-      if (default_argument_passed) {
-        m_console.error(arg, "missing default argument");
-      }
-      continue;
-    }
-
-    if (ref<Assignment> assignment = cast<Assignment>(arg)) {
-      if (isa<Spread>(assignment->target)) {
-        m_console.error(assignment, "spread argument cannot have a default value");
-      } else if (!isa<Name>(assignment->target)) {
-        m_console.error(assignment->target, "expected identifier");
-      }
-
-      default_argument_passed = true;
-      continue;
-    }
-
-    if (ref<Spread> spread = cast<Spread>(arg)) {
+    if (argument->spread_initializer) {
       spread_argument_passed = true;
 
-      if (!isa<Name>(spread->expression)) {
-        m_console.error(spread->expression, "expected identifier");
+      // spread arguments cannot have default values
+      if (argument->default_value) {
+        m_console.error(argument, "spread argument cannot have a default value");
       }
 
       continue;
     }
 
-    assert(false && "unexpected node type");
+    // missing default value
+    if (argument->default_value) {
+      default_argument_passed = true;
+    } else if (default_argument_passed) {
+      m_console.error(argument, "argument '", argument->name->value , "' is missing a default value");
+    }
   }
 }
 

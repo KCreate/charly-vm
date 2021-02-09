@@ -113,47 +113,11 @@ void DuplicatesCheck::inspect_leave(const ref<Dict>& node) {
 
 void DuplicatesCheck::inspect_leave(const ref<Function>& node) {
   std::unordered_set<std::string> argument_names;
-
-  for (const ref<Expression>& argument : node->arguments) {
-    switch (argument->type()) {
-      case Node::Type::Name: {
-        ref<Name> name = cast<Name>(argument);
-
-        if (argument_names.count(name->value)) {
-          m_console.error(name, "duplicate argument '", name->value, "'");
-        } else {
-          argument_names.insert(name->value);
-        }
-
-        break;
-      }
-      case Node::Type::Assignment: {
-        ref<Assignment> assignment = cast<Assignment>(argument);
-        ref<Name> name = cast<Name>(assignment->target);
-
-        if (argument_names.count(name->value)) {
-          m_console.error(assignment->target, "duplicate argument '", name->value, "'");
-        } else {
-          argument_names.insert(name->value);
-        }
-
-        break;
-      }
-      case Node::Type::Spread: {
-        ref<Spread> spread = cast<Spread>(argument);
-        ref<Name> name = cast<Name>(spread->expression);
-
-        if (argument_names.count(name->value)) {
-          m_console.error(spread->expression, "duplicate argument '", name->value, "'");
-        } else {
-          argument_names.insert(name->value);
-        }
-
-        break;
-      }
-      default: {
-        assert(false && "unexpected node");
-      }
+  for (const ref<FunctionArgument>& argument : node->arguments) {
+    if (argument_names.count(argument->name->value)) {
+      m_console.error(argument->name, "duplicate argument '", argument->name->value, "'");
+    } else {
+      argument_names.insert(argument->name->value);
     }
   }
 }

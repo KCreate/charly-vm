@@ -405,6 +405,7 @@ TEST_CASE("member expressions") {
   CHECK_AST_EXP("foo.bar\n.baz", make<MemberOp>(make<MemberOp>(make<Id>("foo"), make<Name>("bar")), make<Name>("baz")));
   CHECK_AST_EXP("foo\n.\nbar\n.\nbaz",
                 make<MemberOp>(make<MemberOp>(make<Id>("foo"), make<Name>("bar")), make<Name>("baz")));
+  CHECK_AST_EXP("@foo", make<MemberOp>(make<Self>(), make<Name>("foo")));
 }
 
 TEST_CASE("index expressions") {
@@ -582,38 +583,32 @@ TEST_CASE("declarations") {
 }
 
 TEST_CASE("functions") {
-  CHECK_AST_EXP("func foo = null", make<Function>("foo", make<Return>(make<Null>())));
-  CHECK_AST_EXP("func foo = 2 + 2",
-                make<Function>("foo", make<Return>(make<BinaryOp>(TokenType::Plus, make<Int>(2), make<Int>(2)))));
-  CHECK_AST_EXP("func foo {}", make<Function>("foo", make<Block>()));
-  CHECK_AST_EXP("func foo { x }", make<Function>("foo", make<Block>(make<Id>("x"))));
-  CHECK_AST_EXP("func foo(a) {}", make<Function>("foo", make<Block>(), make<Name>("a")));
-  CHECK_AST_EXP("func foo(a, b) {}", make<Function>("foo", make<Block>(), make<Name>("a"), make<Name>("b")));
-  CHECK_AST_EXP("func foo(a, ...b) {}",
-                make<Function>("foo", make<Block>(), make<Name>("a"), make<Spread>(make<Name>("b"))));
-  CHECK_AST_EXP("func foo(...b) {}", make<Function>("foo", make<Block>(), make<Spread>(make<Name>("b"))));
-  CHECK_AST_EXP("func foo(a = 1) {}",
-                make<Function>("foo", make<Block>(), make<Assignment>(make<Name>("a"), make<Int>(1))));
-  CHECK_AST_EXP("func foo(a = 1, b = 2) {}",
-                make<Function>("foo", make<Block>(), make<Assignment>(make<Name>("a"), make<Int>(1)),
-                               make<Assignment>(make<Name>("b"), make<Int>(2))));
-  CHECK_AST_EXP("func foo(a = 1, b = 2, ...c) {}",
-                make<Function>("foo", make<Block>(), make<Assignment>(make<Name>("a"), make<Int>(1)),
-                               make<Assignment>(make<Name>("b"), make<Int>(2)), make<Spread>(make<Name>("c"))));
+  CHECK_EXP("func foo = null");
+  CHECK_EXP("func foo = 2 + 2");
+  CHECK_EXP("func foo {}");
+  CHECK_EXP("func foo { x }");
+  CHECK_EXP("func foo(a) {}");
+  CHECK_EXP("func foo(a, b) {}");
+  CHECK_EXP("func foo(a, ...b) {}");
+  CHECK_EXP("func foo(...b) {}");
+  CHECK_EXP("func foo(a = 1) {}");
+  CHECK_EXP("func foo(a = 1, b = 2) {}");
+  CHECK_AST_EXP("func foo(x, @a = 1, b = 2, ...c) {}",
+                make<Function>("foo", make<Block>(), make<FunctionArgument>(make<Name>("x")),
+                               make<FunctionArgument>(true, false, make<Name>("a"), make<Int>(1)),
+                               make<FunctionArgument>(make<Name>("b"), make<Int>(2)),
+                               make<FunctionArgument>(false, true, make<Name>("c"))));
 
-  CHECK_AST_EXP("->null", make<Function>(make<Return>(make<Null>())));
-  CHECK_AST_EXP("->{}", make<Function>(make<Block>()));
-  CHECK_AST_EXP("->{ x }", make<Function>(make<Block>(make<Id>("x"))));
-  CHECK_AST_EXP("->(a) {}", make<Function>(make<Block>(), make<Name>("a")));
-  CHECK_AST_EXP("->(a, b) {}", make<Function>(make<Block>(), make<Name>("a"), make<Name>("b")));
-  CHECK_AST_EXP("->(a, ...b) {}", make<Function>(make<Block>(), make<Name>("a"), make<Spread>(make<Name>("b"))));
-  CHECK_AST_EXP("->(...b) {}", make<Function>(make<Block>(), make<Spread>(make<Name>("b"))));
-  CHECK_AST_EXP("->(a = 1) {}", make<Function>(make<Block>(), make<Assignment>(make<Name>("a"), make<Int>(1))));
-  CHECK_AST_EXP("->(a = 1, b = 2) {}", make<Function>(make<Block>(), make<Assignment>(make<Name>("a"), make<Int>(1)),
-                                                      make<Assignment>(make<Name>("b"), make<Int>(2))));
-  CHECK_AST_EXP("->(a = 1, b = 2, ...c) {}",
-                make<Function>(make<Block>(), make<Assignment>(make<Name>("a"), make<Int>(1)),
-                               make<Assignment>(make<Name>("b"), make<Int>(2)), make<Spread>(make<Name>("c"))));
+  CHECK_EXP("->null");
+  CHECK_EXP("->{}");
+  CHECK_EXP("->{ x }");
+  CHECK_EXP("->(a) {}");
+  CHECK_EXP("->(a, b) {}");
+  CHECK_EXP("->(a, ...b) {}");
+  CHECK_EXP("->(...b) {}");
+  CHECK_EXP("->(a = 1) {}");
+  CHECK_EXP("->(a = 1, b = 2) {}");
+  CHECK_EXP("->(a = 1, b = 2, ...c) {}");
 
   CHECK_EXP("func foo = import 25");
   CHECK_EXP("func foo = throw 1");
@@ -630,7 +625,7 @@ TEST_CASE("functions") {
   CHECK_ERROR_EXP("func foo(1) {}", "unexpected numerical constant, expected a 'identifier' token");
   CHECK_ERROR_EXP("func foo(a.b) {}", "unexpected '.' token, expected a ')' token");
   CHECK_ERROR_EXP("func foo(\"test\") {}", "unexpected string literal, expected a 'identifier' token");
-  CHECK_ERROR_EXP("func foo(a = 1, b) {}", "missing default argument");
+  CHECK_ERROR_EXP("func foo(a = 1, b) {}", "argument 'b' is missing a default value");
   CHECK_ERROR_EXP("func foo(...foo, ...rest) {}", "excess parameter(s)");
   CHECK_ERROR_EXP("func foo(...foo, a, b, c) {}", "excess parameter(s)");
   CHECK_ERROR_EXP("func foo(...a.b) {}", "unexpected '.' token, expected a ')' token");
@@ -641,7 +636,7 @@ TEST_CASE("functions") {
   CHECK_ERROR_EXP("->(1) {}", "unexpected numerical constant, expected a 'identifier' token");
   CHECK_ERROR_EXP("->(a.b) {}", "unexpected '.' token, expected a ')' token");
   CHECK_ERROR_EXP("->(\"test\") {}", "unexpected string literal, expected a 'identifier' token");
-  CHECK_ERROR_EXP("->(a = 1, b) {}", "missing default argument");
+  CHECK_ERROR_EXP("->(a = 1, b) {}", "argument 'b' is missing a default value");
   CHECK_ERROR_EXP("->(...foo, ...rest) {}", "excess parameter(s)");
   CHECK_ERROR_EXP("->(...foo, a, b, c) {}", "excess parameter(s)");
   CHECK_ERROR_EXP("->(...a.b) {}", "unexpected '.' token, expected a ')' token");
@@ -693,8 +688,8 @@ TEST_CASE("spread operator") {
   CHECK_AST_EXP("a(...b)", make<CallOp>(make<Id>("a"), make<Spread>(make<Id>("b"))));
   CHECK_AST_EXP("a(...b, ...c)", make<CallOp>(make<Id>("a"), make<Spread>(make<Id>("b")), make<Spread>(make<Id>("c"))));
 
-  CHECK_AST_EXP("->(...x) {}", make<Function>(make<Block>(), make<Spread>(make<Name>("x"))));
-  CHECK_AST_EXP("->(a, ...x) {}", make<Function>(make<Block>(), make<Name>("a"), make<Spread>(make<Name>("x"))));
+  CHECK_AST_EXP("->(...x) {}", make<Function>(make<Block>(), make<FunctionArgument>(false, true, make<Name>("x"))));
+  CHECK_AST_EXP("->(a, ...x) {}", make<Function>(make<Block>(), make<FunctionArgument>(make<Name>("a")), make<FunctionArgument>(false, true, make<Name>("x"))));
 
   CHECK_AST_STMT("let (...copy) = original",
                  make<UnpackDeclaration>(make<Tuple>(make<Spread>(make<Name>("copy"))), make<Id>("original")));
@@ -716,18 +711,19 @@ TEST_CASE("spread operator") {
 }
 
 TEST_CASE("class literals") {
+  CHECK_EXP("class A { foo() }");
   CHECK_AST_EXP("class Foo extends Bar {}", make<Class>("Foo", make<Id>("Bar")));
 
   ref<Class> class_node = make<Class>("Foo", make<Id>("Bar"));
-  class_node->constructor = make<Function>("constructor", make<Block>(), make<Name>("a"));
+  class_node->constructor = make<Function>("constructor", make<Block>(), make<FunctionArgument>(make<Name>("a")));
   class_node->member_properties.push_back(make<ClassProperty>(false, "foo", make<Int>(100)));
   class_node->static_properties.push_back(make<ClassProperty>(true, "foo", make<Int>(200)));
-  class_node->member_functions.push_back(make<Function>("foo", make<Block>(), make<Name>("a")));
-  class_node->member_functions.push_back(make<Function>("bar", make<Block>(), make<Name>("a")));
+  class_node->member_functions.push_back(make<Function>("foo", make<Block>(), make<FunctionArgument>(make<Name>("a"))));
+  class_node->member_functions.push_back(make<Function>("bar", make<Block>(), make<FunctionArgument>(make<Name>("a"))));
   class_node->static_properties.push_back(
-    make<ClassProperty>(true, "foo", make<Function>("foo", make<Block>(), make<Name>("a"))));
+    make<ClassProperty>(true, "foo", make<Function>("foo", make<Block>(), make<FunctionArgument>(make<Name>("a")))));
   class_node->static_properties.push_back(
-    make<ClassProperty>(true, "bar", make<Function>("bar", make<Block>(), make<Name>("a"))));
+    make<ClassProperty>(true, "bar", make<Function>("bar", make<Block>(), make<FunctionArgument>(make<Name>("a")))));
 
   CHECK_AST_EXP(("class Foo extends Bar {\n"
                  "  constructor(a) {}\n"

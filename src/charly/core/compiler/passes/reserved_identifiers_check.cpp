@@ -136,42 +136,9 @@ void ReservedIdentifiersCheck::inspect_leave(const ref<UnpackDeclaration>& node)
 }
 
 void ReservedIdentifiersCheck::inspect_leave(const ref<Function>& node) {
-  for (const ref<Expression>& argument : node->arguments) {
-    switch (argument->type()) {
-      case Node::Type::Name: {
-        ref<Name> name = cast<Name>(argument);
-
-        if (is_reserved_identifier(name->value)) {
-          m_console.error(name, "'", name->value, "' is a reserved variable name");
-        }
-
-        break;
-      }
-      case Node::Type::Assignment: {
-        ref<Assignment> assignment = cast<Assignment>(argument);
-        assert(isa<Name>(assignment->target));
-        ref<Name> name = cast<Name>(assignment->target);
-
-        if (is_reserved_identifier(name->value)) {
-          m_console.error(name, "'", name->value, "' is a reserved variable name");
-        }
-
-        break;
-      }
-      case Node::Type::Spread: {
-          ref<Spread> spread = cast<Spread>(argument);
-          assert(isa<Name>(spread->expression));
-          ref<Name> name = cast<Name>(spread->expression);
-
-          if (is_reserved_identifier(name->value)) {
-            m_console.error(name, "'", name->value, "' is a reserved variable name");
-          }
-
-          break;
-      }
-      default: {
-        assert(false && "unexpected node");
-      }
+  for (const ref<FunctionArgument>& argument : node->arguments) {
+    if (is_reserved_identifier(argument->name->value)) {
+      m_console.error(argument->name, "'", argument->name->value, "' is a reserved variable name");
     }
   }
 }

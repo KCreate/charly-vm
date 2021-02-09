@@ -88,7 +88,7 @@ int run_repl() {
         continue;
     }
 
-    program->dump(std::cout);
+    program->dump(std::cout, print_location);
   }
 
   return 0;

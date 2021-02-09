@@ -183,7 +183,7 @@ private:
   ref<Dict> parse_dict();
   ref<Function> parse_function(bool class_function = false);
   ref<Function> parse_arrow_function();
-  void parse_function_arguments(std::vector<ref<Expression>>& result);
+  void parse_function_arguments(std::vector<ref<FunctionArgument>>& result);
   ref<Class> parse_class();
 
   // literals

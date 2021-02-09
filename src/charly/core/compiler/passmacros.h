@@ -39,6 +39,7 @@
       AST_TYPESWITCH_CASE_NODE(List, __VA_ARGS__)              \
       AST_TYPESWITCH_CASE_NODE(DictEntry, __VA_ARGS__)         \
       AST_TYPESWITCH_CASE_NODE(Dict, __VA_ARGS__)              \
+      AST_TYPESWITCH_CASE_NODE(FunctionArgument, __VA_ARGS__)  \
       AST_TYPESWITCH_CASE_NODE(Function, __VA_ARGS__)          \
       AST_TYPESWITCH_CASE_NODE(Class, __VA_ARGS__)             \
       AST_TYPESWITCH_CASE_NODE(ClassProperty, __VA_ARGS__)     \
