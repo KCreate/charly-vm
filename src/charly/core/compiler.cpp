@@ -63,11 +63,11 @@ std::shared_ptr<CompilationUnit> Compiler::compile(const std::string& filepath, 
       return unit;                                        \
   }
 
-  APPLY_TRANSFORM_PASS(DesugarPass);
-
   APPLY_DIAGNOSTIC_PASS(ReservedIdentifiersCheck);
   APPLY_DIAGNOSTIC_PASS(DuplicatesCheck);
   APPLY_DIAGNOSTIC_PASS(ClassConstructorCheck);
+
+  APPLY_TRANSFORM_PASS(DesugarPass);
 
 #undef APPLY_DIAGNOSTIC_PASS
 #undef APPLY_TRANSFORM_PASS

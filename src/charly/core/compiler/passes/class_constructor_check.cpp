@@ -67,7 +67,8 @@ void ClassConstructorCheck::inspect_leave(const ref<Class>& node) {
   bool super_called = search_super_call(node->constructor->body);
 
   if (!super_called) {
-    m_console.error(node->constructor->name, "missing call to super constructor inside class constructor");
+    m_console.error(node->constructor->name, "missing call to super inside constructor of class '",
+                    node->name->value, "'");
   }
 }
 

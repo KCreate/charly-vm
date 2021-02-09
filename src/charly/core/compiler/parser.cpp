@@ -1062,7 +1062,7 @@ ref<Function> Parser::parse_function(bool class_function) {
     body = make<Return>(cast<Expression>(body));
   }
 
-  ref<Function> node = make<Function>(function_name, body, argument_list);
+  ref<Function> node = make<Function>(false, function_name, body, argument_list);
   node->set_begin(begin);
 
   validate_function(node);
@@ -1098,7 +1098,7 @@ ref<Function> Parser::parse_arrow_function() {
     body = make<Return>(cast<Expression>(body));
   }
 
-  ref<Function> node = make<Function>(body, argument_list);
+  ref<Function> node = make<Function>(true, make<Name>(""), body, argument_list);
   node->set_begin(begin);
 
   validate_function(node);
@@ -1143,7 +1143,11 @@ void Parser::parse_function_arguments(std::vector<ref<FunctionArgument>>& result
           argument_location.set_end(default_value->location());
         }
 
-        result.emplace_back(make<FunctionArgument>(self_initializer, spread_initializer, name, default_value));
+        ref<FunctionArgument> argument =
+          make<FunctionArgument>(self_initializer, spread_initializer, name, default_value);
+        argument->set_begin(argument_location);
+
+        result.emplace_back(argument);
       } while (skip(TokenType::Comma));
     }
 
@@ -1207,7 +1211,15 @@ ref<Class> Parser::parse_class() {
       if (static_property) {
         node->static_properties.push_back(make<ClassProperty>(true, function->name, function));
       } else {
-        node->member_functions.push_back(function);
+        if (function->name->value.compare("constructor") == 0) {
+          if (node->constructor) {
+            m_console.error(function, "duplicate declaration of class constructor");
+          } else {
+            node->constructor = function;
+          }
+        } else {
+          node->member_functions.push_back(function);
+        }
       }
     }
   }

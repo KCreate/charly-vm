@@ -36,6 +36,8 @@ public:
 
 private:
   virtual ref<Expression> transform(const ref<FormatString>&) override;
+
+  virtual void inspect_leave(const ref<Class>&) override;
 };
 
 }  // namespace charly::core::compiler::ast

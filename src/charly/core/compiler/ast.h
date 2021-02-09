@@ -766,12 +766,14 @@ public:
 class FunctionArgument final : public Node {
   AST_NODE(FunctionArgument)
 public:
-  FunctionArgument(ref<Name> name,
-                   ref<Expression> default_value = nullptr) :
-    self_initializer(false),
-    spread_initializer(false),
-    name(name),
-    default_value(default_value) {}
+  FunctionArgument(ref<Name> name, ref<Expression> default_value = nullptr) :
+    self_initializer(false), spread_initializer(false), name(name), default_value(default_value) {
+    if (default_value) {
+      this->set_location(name, default_value);
+    } else {
+      this->set_location(name);
+    }
+  }
   FunctionArgument(bool self_initializer,
                    bool spread_initializer,
                    ref<Name> name,
@@ -779,7 +781,13 @@ public:
     self_initializer(self_initializer),
     spread_initializer(spread_initializer),
     name(name),
-    default_value(default_value) {}
+    default_value(default_value) {
+    if (default_value) {
+      this->set_location(name, default_value);
+    } else {
+      this->set_location(name);
+    }
+  }
 
   bool self_initializer;
   bool spread_initializer;
@@ -800,22 +808,16 @@ class Function final : public Expression {
 public:
   // regular functions
   template <typename... Args>
-  Function(ref<Name> name, ref<Statement> body, Args&&... params) :
-    name(name), body(body), arguments({ std::forward<Args>(params)... }) {
+  Function(bool arrow_function, ref<Name> name, ref<Statement> body, Args&&... params) :
+    arrow_function(arrow_function), name(name), body(body), arguments({ std::forward<Args>(params)... }) {
     this->set_location(name, body);
   }
-  template <typename... Args>
-  Function(const std::string& name, ref<Statement> body, Args&&... params) :
-    name(make<Name>(name)), body(body), arguments({ std::forward<Args>(params)... }) {
-    this->set_location(body);
-  }
-  template <typename... Args>
-  Function(ref<Statement> body, Args&&... params) :
-    arrow_function(true), name(make<Name>("")), body(body), arguments({ std::forward<Args>(params)... }) {
-    this->set_location(body);
+  Function(bool arrow_function, ref<Name> name, ref<Statement> body, std::vector<ref<FunctionArgument>>&& params) :
+    arrow_function(arrow_function), name(name), body(body), arguments(std::move(params)) {
+    this->set_location(name, body);
   }
 
-  bool arrow_function = false;
+  bool arrow_function;
   ref<Name> name;
   ref<Statement> body;
   std::vector<ref<FunctionArgument>> arguments;

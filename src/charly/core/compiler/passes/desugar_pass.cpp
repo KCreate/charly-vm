@@ -26,8 +26,8 @@
 
 #include <list>
 
-#include "charly/utils/cast.h"
 #include "charly/core/compiler/passes/desugar_pass.h"
+#include "charly/utils/cast.h"
 
 namespace charly::core::compiler::ast {
 
@@ -48,6 +48,36 @@ ref<Expression> DesugarPass::transform(const ref<FormatString>& node) {
   }
 
   return builtin;
+}
+
+void DesugarPass::inspect_leave(const ref<Class>& node) {
+  if (node->parent) {
+    if (node->member_properties.size()) {
+      if (node->constructor.get() == nullptr) {
+        m_console.error(node->name, "class '", node->name->value, "' is missing a constructor");
+      }
+    }
+  } else {
+    // generate default constructor for base classes
+    //
+    // class A {
+    //   property a = 1
+    //   property b = 2
+    //   property c = 3
+    //
+    //   constructor(@a, @b, @c)
+    // }
+    if (node->constructor.get() == nullptr) {
+      ref<Function> constructor = make<Function>(false, make<Name>("constructor"), make<Block>());
+
+      // initialize member variables
+      for (const ref<ClassProperty>& prop : node->member_properties) {
+        constructor->arguments.push_back(make<FunctionArgument>(true, false, prop->name, prop->value));
+      }
+
+      node->constructor = constructor;
+    }
+  }
 }
 
 }  // namespace charly::core::compiler::ast

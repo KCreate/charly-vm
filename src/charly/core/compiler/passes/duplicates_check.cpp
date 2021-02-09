@@ -138,39 +138,22 @@ void DuplicatesCheck::inspect_leave(const ref<Class>& node) {
     class_member_properties.insert({prop->name->value, prop});
   }
 
-  for (auto it = node->member_functions.begin(); it != node->member_functions.end();) {
-    const ref<Function>& func = *it;
+  for (const ref<Function>& func : node->member_functions) {
     const std::string& name = func->name->value;
 
     if (class_member_properties.count(name)) {
       m_console.error(func->name, "redeclaration of property '", func->name->value, "' as function");
       m_console.info(class_member_properties.at(name)->name, "declared as property here");
-      ++it;
-      continue;
-    }
-
-    if (name.compare("constructor") == 0) {
-      if (node->constructor) {
-        m_console.error(func->name, "duplicate class constructor");
-        m_console.info(node->constructor->name, "first constructor declared here");
-        ++it;
-        continue;
-      }
-
-      node->constructor = func;
-      it = node->member_functions.erase(it);
       continue;
     }
 
     if (class_member_functions.count(name)) {
       m_console.error(func->name, "duplicate declaration of member function '", func->name->value, "'");
       m_console.info(class_member_functions.at(name)->name, "first declared here");
-      ++it;
       continue;
     }
 
     class_member_functions.insert({name, func});
-    ++it;
   }
 
   // check for duplicate static properties

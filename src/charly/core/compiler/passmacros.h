@@ -98,6 +98,8 @@ public:                                                               \
       apply_children(node);                                           \
     m_depth--;                                                        \
     ref<ReplacementType> replaced_node = transform(node);             \
+    if (replaced_node.get() == nullptr)                               \
+      return nullptr;                                                 \
     if (replaced_node.get() != node.get()) {                          \
       return apply(replaced_node);                                    \
     } else {                                                          \

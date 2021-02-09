@@ -594,7 +594,7 @@ TEST_CASE("functions") {
   CHECK_EXP("func foo(a = 1) {}");
   CHECK_EXP("func foo(a = 1, b = 2) {}");
   CHECK_AST_EXP("func foo(x, @a = 1, b = 2, ...c) {}",
-                make<Function>("foo", make<Block>(), make<FunctionArgument>(make<Name>("x")),
+                make<Function>(false, make<Name>("foo"), make<Block>(), make<FunctionArgument>(make<Name>("x")),
                                make<FunctionArgument>(true, false, make<Name>("a"), make<Int>(1)),
                                make<FunctionArgument>(make<Name>("b"), make<Int>(2)),
                                make<FunctionArgument>(false, true, make<Name>("c"))));
@@ -688,8 +688,10 @@ TEST_CASE("spread operator") {
   CHECK_AST_EXP("a(...b)", make<CallOp>(make<Id>("a"), make<Spread>(make<Id>("b"))));
   CHECK_AST_EXP("a(...b, ...c)", make<CallOp>(make<Id>("a"), make<Spread>(make<Id>("b")), make<Spread>(make<Id>("c"))));
 
-  CHECK_AST_EXP("->(...x) {}", make<Function>(make<Block>(), make<FunctionArgument>(false, true, make<Name>("x"))));
-  CHECK_AST_EXP("->(a, ...x) {}", make<Function>(make<Block>(), make<FunctionArgument>(make<Name>("a")), make<FunctionArgument>(false, true, make<Name>("x"))));
+  CHECK_AST_EXP("->(...x) {}", make<Function>(true, make<Name>(""), make<Block>(), make<FunctionArgument>(false, true, make<Name>("x"))));
+  CHECK_AST_EXP("->(a, ...x) {}",
+                make<Function>(true, make<Name>(""), make<Block>(), make<FunctionArgument>(make<Name>("a")),
+                               make<FunctionArgument>(false, true, make<Name>("x"))));
 
   CHECK_AST_STMT("let (...copy) = original",
                  make<UnpackDeclaration>(make<Tuple>(make<Spread>(make<Name>("copy"))), make<Id>("original")));
@@ -713,28 +715,15 @@ TEST_CASE("spread operator") {
 TEST_CASE("class literals") {
   CHECK_EXP("class A { foo() }");
   CHECK_AST_EXP("class Foo extends Bar {}", make<Class>("Foo", make<Id>("Bar")));
-
-  ref<Class> class_node = make<Class>("Foo", make<Id>("Bar"));
-  class_node->constructor = make<Function>("constructor", make<Block>(), make<FunctionArgument>(make<Name>("a")));
-  class_node->member_properties.push_back(make<ClassProperty>(false, "foo", make<Int>(100)));
-  class_node->static_properties.push_back(make<ClassProperty>(true, "foo", make<Int>(200)));
-  class_node->member_functions.push_back(make<Function>("foo", make<Block>(), make<FunctionArgument>(make<Name>("a"))));
-  class_node->member_functions.push_back(make<Function>("bar", make<Block>(), make<FunctionArgument>(make<Name>("a"))));
-  class_node->static_properties.push_back(
-    make<ClassProperty>(true, "foo", make<Function>("foo", make<Block>(), make<FunctionArgument>(make<Name>("a")))));
-  class_node->static_properties.push_back(
-    make<ClassProperty>(true, "bar", make<Function>("bar", make<Block>(), make<FunctionArgument>(make<Name>("a")))));
-
-  CHECK_AST_EXP(("class Foo extends Bar {\n"
-                 "  constructor(a) {}\n"
-                 "  property foo = 100\n"
-                 "  static property foo = 200\n"
-                 "  func foo(a) {}\n"
-                 "  bar(a) {}\n"
-                 "  static func foo(a) {}\n"
-                 "  static bar(a) {}\n"
-                 "}"),
-                class_node);
+  CHECK_EXP(("class Foo extends Bar {\n"
+             "  constructor(a) {}\n"
+             "  property foo = 100\n"
+             "  static property foo = 200\n"
+             "  func foo(a) {}\n"
+             "  bar(a) {}\n"
+             "  static func foo(a) {}\n"
+             "  static bar(a) {}\n"
+             "}"));
 }
 
 TEST_CASE("super expressions") {
@@ -744,7 +733,7 @@ TEST_CASE("super expressions") {
   CHECK_ERROR_EXP("class foo { static foo { ->{ super } } }", "super is not allowed at this point");
 
   ref<Class> class_node = make<Class>("Foo", make<Id>("Bar"));
-  class_node->member_functions.push_back(make<Function>("foo", make<Block>(make<Super>())));
+  class_node->member_functions.push_back(make<Function>(false, make<Name>("foo"), make<Block>(make<Super>())));
   CHECK_AST_EXP("class Foo extends Bar { foo { super } }", class_node);
 
   CHECK_EXP("class Foo extends Bar { static foo { super } }");
@@ -838,7 +827,8 @@ TEST_CASE("for statements") {
 }
 
 TEST_CASE("wraps functions and classes into declarations") {
-  CHECK_AST_STMT("func foo {}", make<Declaration>("foo", make<Function>("foo", make<Block>()), true));
+  CHECK_AST_STMT("func foo {}",
+                 make<Declaration>("foo", make<Function>(false, make<Name>("foo"), make<Block>()), true));
   CHECK_AST_STMT("class foo {}", make<Declaration>("foo", make<Class>("foo", nullptr), true));
-  CHECK_AST_STMT("->{}", make<Function>(make<Block>()));
+  CHECK_AST_STMT("->{}", make<Function>(true, make<Name>(""), make<Block>()));
 }

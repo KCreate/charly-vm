@@ -1,7 +1,6 @@
 # Todos
 
 - Desugaring
-  - Generate constructor for class
   - Make sure each function returns a value (null)
   - Rewrite toplevel import statements to declarations and import expressions
   - Rewrite for loops into iterator constructs

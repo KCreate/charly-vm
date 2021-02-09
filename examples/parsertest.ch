@@ -33,12 +33,6 @@ class Person {
 
 class Employee extends Person {
   property salary
-
-  constructor(...arguments) {
-    const (...rest, salary) = arguments
-    @salary = salary
-    super(rest)
-  }
 }
 
 print("hello: {name}")

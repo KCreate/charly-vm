@@ -76,7 +76,7 @@ TEST_CASE("checks for duplicate identifiers") {
   COMPILE_ERROR("class A { property foo property foo }", "duplicate declaration of 'foo'");
   COMPILE_ERROR("class A { property foo foo {} }", "redeclaration of property 'foo' as function");
   COMPILE_ERROR("class A { foo {} property foo }", "redeclaration of property 'foo' as function");
-  COMPILE_ERROR("class A { constructor {} constructor {} }", "duplicate class constructor");
+  COMPILE_ERROR("class A { constructor {} constructor {} }", "duplicate declaration of class constructor");
   COMPILE_ERROR("class A { foo {} foo {} }", "duplicate declaration of member function 'foo'");
   COMPILE_ERROR("class A { static property foo static property foo }",
                 "duplicate declaration of static property 'foo'");
@@ -89,8 +89,14 @@ TEST_CASE("checks for duplicate identifiers") {
 }
 
 TEST_CASE("checks for missing calls to parent constructor in subclasses") {
-  COMPILE_ERROR("class A extends B { constructor {} }", "missing call to super constructor inside class constructor");
+  COMPILE_ERROR("class A extends B { constructor {} }",
+                "missing call to super inside constructor of class 'A'");
   COMPILE_ERROR("class A extends B { constructor { super.foo() } }",
-                "missing call to super constructor inside class constructor");
+                "missing call to super inside constructor of class 'A'");
   COMPILE_OK("class A { constructor {} }");
+}
+
+TEST_CASE("checks for missing constructors in subclasses with properties") {
+  COMPILE_ERROR("class A extends B { property x }", "class 'A' is missing a constructor");
+  COMPILE_OK("class A extends B {}");
 }
