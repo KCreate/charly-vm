@@ -3,7 +3,7 @@
  *
  * MIT License
  *
- * Copyright (c) 2017 - 2021 Leonard Schütz
+ * Copyright (c) 2017 - 2020 Leonard Schütz
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,21 +24,50 @@
  * SOFTWARE.
  */
 
-class Person {
-  property name
-  property age
+#include <cstdint>
+#include <string>
+#include <unordered_map>
 
-  constructor(@name, @age)
-}
+#pragma once
 
-class Employee extends Person {
-  property salary
+namespace charly::core::compiler::ir {
 
-  constructor(...arguments) {
-    const (...rest, salary) = arguments
-    @salary = salary
-    super(rest)
-  }
-}
+// ids of builtin operations
+enum BuiltinId : uint16_t {
 
-print("hello: {name}")
+  // concatenate values together
+  stringconcat,
+
+  // cast value to a specific type
+  // - value
+  caststring,
+  castsymbol
+};
+
+// number of required arguments for the builtin operations
+// -1 indicates that there is no min or max limit
+static constexpr int8_t kBuiltinArgumentCount[]{
+  -1,  // StringConcat
+  1,   // caststring
+  1    // castsymbol
+};
+
+// clang-format off
+
+// names of builtin operations
+static std::string kBuiltinNames[] = {
+  "stringconcat",
+  "caststring",
+  "castsymbol"
+};
+
+// mapping from name of builtin operation to its Id
+static std::unordered_map<std::string, BuiltinId> kBuiltinNameMapping = {
+  { "stringconcat", BuiltinId::stringconcat },
+  { "caststring",   BuiltinId::caststring },
+  { "castsymbol",   BuiltinId::castsymbol }
+};
+
+// clang-format on
+
+}  // namespace charly::core::compiler::ir

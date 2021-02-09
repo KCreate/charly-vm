@@ -235,6 +235,10 @@ protected:
     APPLY_NODE(declaration);
     APPLY_NODE(stmt);
   })
+
+  HANDLE_NODE(Expression, BuiltinOperation, {
+    APPLY_VECTOR(arguments);
+  })
   // clang-format on
 };
 

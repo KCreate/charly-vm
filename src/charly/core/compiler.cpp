@@ -30,6 +30,7 @@
 #include "charly/core/compiler/passes/reserved_identifiers_check.h"
 #include "charly/core/compiler/passes/duplicates_check.h"
 #include "charly/core/compiler/passes/class_constructor_check.h"
+#include "charly/core/compiler/passes/desugar_pass.h"
 
 namespace {
 using namespace charly::core::compiler::ast;
@@ -54,11 +55,22 @@ std::shared_ptr<CompilationUnit> Compiler::compile(const std::string& filepath, 
       return unit;                            \
   }
 
+#define APPLY_TRANSFORM_PASS(PassName)                    \
+  {                                                       \
+    assert(unit->ast.get());                              \
+    unit->ast = PassName(unit->console).apply(unit->ast); \
+    if (unit->console.has_errors())                       \
+      return unit;                                        \
+  }
+
+  APPLY_TRANSFORM_PASS(DesugarPass);
+
   APPLY_DIAGNOSTIC_PASS(ReservedIdentifiersCheck);
   APPLY_DIAGNOSTIC_PASS(DuplicatesCheck);
   APPLY_DIAGNOSTIC_PASS(ClassConstructorCheck);
 
 #undef APPLY_DIAGNOSTIC_PASS
+#undef APPLY_TRANSFORM_PASS
 
   return unit;
 }

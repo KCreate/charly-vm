@@ -216,4 +216,10 @@ void Try::dump_info(std::ostream& out) const {
   writer.fg(Color::Yellow, this->exception_name->value);
 }
 
+void BuiltinOperation::dump_info(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  writer << ' ';
+  writer.fg(Color::Red, this->name->value);
+}
+
 }  // namespace charly::core::compiler

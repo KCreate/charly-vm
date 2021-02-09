@@ -24,21 +24,30 @@
  * SOFTWARE.
  */
 
-class Person {
-  property name
-  property age
+#include <list>
 
-  constructor(@name, @age)
-}
+#include "charly/utils/cast.h"
+#include "charly/core/compiler/passes/desugar_pass.h"
 
-class Employee extends Person {
-  property salary
+namespace charly::core::compiler::ast {
 
-  constructor(...arguments) {
-    const (...rest, salary) = arguments
-    @salary = salary
-    super(rest)
+ref<Expression> DesugarPass::transform(const ref<FormatString>& node) {
+  ref<BuiltinOperation> builtin = make<BuiltinOperation>(make<Name>("stringconcat"));
+
+  for (const ref<Expression>& element : node->elements) {
+    if (isa<String>(element)) {
+      builtin->arguments.push_back(element);
+      continue;
+    }
+
+    builtin->arguments.push_back(make<BuiltinOperation>(make<Name>("caststring"), element));
   }
+
+  if (builtin->arguments.size() == 1) {
+    return builtin->arguments.back();
+  }
+
+  return builtin;
 }
 
-print("hello: {name}")
+}  // namespace charly::core::compiler::ast

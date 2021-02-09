@@ -24,21 +24,18 @@
  * SOFTWARE.
  */
 
-class Person {
-  property name
-  property age
+#include "charly/core/compiler/pass.h"
 
-  constructor(@name, @age)
-}
+#pragma once
 
-class Employee extends Person {
-  property salary
+namespace charly::core::compiler::ast {
 
-  constructor(...arguments) {
-    const (...rest, salary) = arguments
-    @salary = salary
-    super(rest)
-  }
-}
+class DesugarPass : public DiagnosticPass {
+public:
+  using DiagnosticPass::DiagnosticPass;
 
-print("hello: {name}")
+private:
+  virtual ref<Expression> transform(const ref<FormatString>&) override;
+};
+
+}  // namespace charly::core::compiler::ast

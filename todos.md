@@ -1,22 +1,22 @@
 # Todos
 
 - Desugaring
-  - Constant fold expressions
-  - Desugar format strings
   - Generate constructor for class
   - Make sure each function returns a value (null)
-  - Rewrite `$<number>` identifiers
-  - Rewrite default arguments and member initializers
+  - Rewrite toplevel import statements to declarations and import expressions
   - Rewrite for loops into iterator constructs
   - Rewrite generator functions and yield to use the stdlib Fiber interface
   - Rewrite import expressions into standard library calls
-  - Rewrite spawn, defer statements to calls with arrow functions
-  - Rewrite toplevel import statements to declarations and import expressions
-  - Spread expressions
+  - Rewrite spawn statements to stdlib calls
+  - Rewrite defer statement to wrap subsequent blocks
 
 - AST to IR lowering process
-  - Rewrite control statements to labels, gotos and conditional gotos
+  - Rewrite spread expressions to
+  - Rewrite default arguments and member initializers
   - Local variable allocator
+    - Rewrite `$<number>` identifiers either to frame offset or dynamic variable index
+  - Constant fold expressions
+  - Rewrite control statements to labels, gotos and conditional gotos
 
 - Intermediate representation for charly code
   - Human readable charly bytecode syntax

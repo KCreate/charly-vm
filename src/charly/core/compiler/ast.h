@@ -29,9 +29,11 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <cassert>
 
 #include "charly/core/compiler/location.h"
 #include "charly/core/compiler/token.h"
+#include "charly/core/compiler/ir/builtin.h"
 
 #pragma once
 
@@ -120,7 +122,10 @@ public:
     Try,
     Switch,
     SwitchCase,
-    For
+    For,
+
+    // Intrinsic Operations
+    BuiltinOperation
   };
 
   operator Location() const {
@@ -1128,6 +1133,31 @@ public:
     CHILD_NODE(declaration);
     CHILD_NODE(stmt);
   }
+};
+
+// builtin(builtin_id, <arguments>...)
+class BuiltinOperation final : public Expression {
+  AST_NODE(BuiltinOperation)
+public:
+  template <typename... Args>
+  BuiltinOperation(const ref<Name>& name, Args&&... params) : name(name), arguments({ std::forward<Args>(params)... }) {
+    assert(ir::kBuiltinNameMapping.count(name->value));
+
+    if (arguments.size()) {
+      this->set_location(name->location(), arguments.back()->location());
+    } else {
+      this->set_location(name->location());
+    }
+  }
+
+  ref<Name> name;
+  std::vector<ref<Expression>> arguments;
+
+  CHILDREN() {
+    CHILD_VECTOR(arguments);
+  }
+
+  virtual void dump_info(std::ostream& out) const override;
 };
 
 #undef AST_NODE

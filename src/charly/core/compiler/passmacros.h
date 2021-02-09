@@ -7,64 +7,65 @@
     break;                                              \
   }
 
-#define AST_TYPESWITCH(OriginalNode, ...)                      \
-  {                                                            \
-    const ref<Node>& original_node = OriginalNode;             \
-    switch (original_node->type()) {                           \
-      AST_TYPESWITCH_CASE_NODE(Program, __VA_ARGS__)           \
-      AST_TYPESWITCH_CASE_NODE(Block, __VA_ARGS__)             \
-      AST_TYPESWITCH_CASE_NODE(Return, __VA_ARGS__)            \
-      AST_TYPESWITCH_CASE_NODE(Break, __VA_ARGS__)             \
-      AST_TYPESWITCH_CASE_NODE(Continue, __VA_ARGS__)          \
-      AST_TYPESWITCH_CASE_NODE(Defer, __VA_ARGS__)             \
-      AST_TYPESWITCH_CASE_NODE(Throw, __VA_ARGS__)             \
-      AST_TYPESWITCH_CASE_NODE(Export, __VA_ARGS__)            \
-      AST_TYPESWITCH_CASE_NODE(Import, __VA_ARGS__)            \
-      AST_TYPESWITCH_CASE_NODE(Yield, __VA_ARGS__)             \
-      AST_TYPESWITCH_CASE_NODE(Spawn, __VA_ARGS__)             \
-      AST_TYPESWITCH_CASE_NODE(Await, __VA_ARGS__)             \
-      AST_TYPESWITCH_CASE_NODE(Typeof, __VA_ARGS__)            \
-      AST_TYPESWITCH_CASE_NODE(Id, __VA_ARGS__)                \
-      AST_TYPESWITCH_CASE_NODE(Name, __VA_ARGS__)              \
-      AST_TYPESWITCH_CASE_NODE(Int, __VA_ARGS__)               \
-      AST_TYPESWITCH_CASE_NODE(Float, __VA_ARGS__)             \
-      AST_TYPESWITCH_CASE_NODE(Bool, __VA_ARGS__)              \
-      AST_TYPESWITCH_CASE_NODE(Char, __VA_ARGS__)              \
-      AST_TYPESWITCH_CASE_NODE(String, __VA_ARGS__)            \
-      AST_TYPESWITCH_CASE_NODE(FormatString, __VA_ARGS__)      \
-      AST_TYPESWITCH_CASE_NODE(Null, __VA_ARGS__)              \
-      AST_TYPESWITCH_CASE_NODE(Self, __VA_ARGS__)              \
-      AST_TYPESWITCH_CASE_NODE(Super, __VA_ARGS__)             \
-      AST_TYPESWITCH_CASE_NODE(Tuple, __VA_ARGS__)             \
-      AST_TYPESWITCH_CASE_NODE(List, __VA_ARGS__)              \
-      AST_TYPESWITCH_CASE_NODE(DictEntry, __VA_ARGS__)         \
-      AST_TYPESWITCH_CASE_NODE(Dict, __VA_ARGS__)              \
-      AST_TYPESWITCH_CASE_NODE(FunctionArgument, __VA_ARGS__)  \
-      AST_TYPESWITCH_CASE_NODE(Function, __VA_ARGS__)          \
-      AST_TYPESWITCH_CASE_NODE(Class, __VA_ARGS__)             \
-      AST_TYPESWITCH_CASE_NODE(ClassProperty, __VA_ARGS__)     \
-      AST_TYPESWITCH_CASE_NODE(Assignment, __VA_ARGS__)        \
-      AST_TYPESWITCH_CASE_NODE(Ternary, __VA_ARGS__)           \
-      AST_TYPESWITCH_CASE_NODE(BinaryOp, __VA_ARGS__)          \
-      AST_TYPESWITCH_CASE_NODE(UnaryOp, __VA_ARGS__)           \
-      AST_TYPESWITCH_CASE_NODE(Spread, __VA_ARGS__)            \
-      AST_TYPESWITCH_CASE_NODE(CallOp, __VA_ARGS__)            \
-      AST_TYPESWITCH_CASE_NODE(MemberOp, __VA_ARGS__)          \
-      AST_TYPESWITCH_CASE_NODE(IndexOp, __VA_ARGS__)           \
-      AST_TYPESWITCH_CASE_NODE(Declaration, __VA_ARGS__)       \
-      AST_TYPESWITCH_CASE_NODE(UnpackDeclaration, __VA_ARGS__) \
-      AST_TYPESWITCH_CASE_NODE(If, __VA_ARGS__)                \
-      AST_TYPESWITCH_CASE_NODE(While, __VA_ARGS__)             \
-      AST_TYPESWITCH_CASE_NODE(Try, __VA_ARGS__)               \
-      AST_TYPESWITCH_CASE_NODE(Switch, __VA_ARGS__)            \
-      AST_TYPESWITCH_CASE_NODE(SwitchCase, __VA_ARGS__)        \
-      AST_TYPESWITCH_CASE_NODE(For, __VA_ARGS__)               \
-      case Node::Type::Unknown:                                \
-      default: {                                               \
-        assert(false && "unexpected node type");               \
-        break;                                                 \
-      }                                                        \
-    }                                                          \
+#define AST_TYPESWITCH(OriginalNode, ...)                          \
+  {                                                                \
+    const ref<Node>& original_node = OriginalNode;                 \
+    switch (original_node->type()) {                               \
+      AST_TYPESWITCH_CASE_NODE(Program, __VA_ARGS__)               \
+      AST_TYPESWITCH_CASE_NODE(Block, __VA_ARGS__)                 \
+      AST_TYPESWITCH_CASE_NODE(Return, __VA_ARGS__)                \
+      AST_TYPESWITCH_CASE_NODE(Break, __VA_ARGS__)                 \
+      AST_TYPESWITCH_CASE_NODE(Continue, __VA_ARGS__)              \
+      AST_TYPESWITCH_CASE_NODE(Defer, __VA_ARGS__)                 \
+      AST_TYPESWITCH_CASE_NODE(Throw, __VA_ARGS__)                 \
+      AST_TYPESWITCH_CASE_NODE(Export, __VA_ARGS__)                \
+      AST_TYPESWITCH_CASE_NODE(Import, __VA_ARGS__)                \
+      AST_TYPESWITCH_CASE_NODE(Yield, __VA_ARGS__)                 \
+      AST_TYPESWITCH_CASE_NODE(Spawn, __VA_ARGS__)                 \
+      AST_TYPESWITCH_CASE_NODE(Await, __VA_ARGS__)                 \
+      AST_TYPESWITCH_CASE_NODE(Typeof, __VA_ARGS__)                \
+      AST_TYPESWITCH_CASE_NODE(Id, __VA_ARGS__)                    \
+      AST_TYPESWITCH_CASE_NODE(Name, __VA_ARGS__)                  \
+      AST_TYPESWITCH_CASE_NODE(Int, __VA_ARGS__)                   \
+      AST_TYPESWITCH_CASE_NODE(Float, __VA_ARGS__)                 \
+      AST_TYPESWITCH_CASE_NODE(Bool, __VA_ARGS__)                  \
+      AST_TYPESWITCH_CASE_NODE(Char, __VA_ARGS__)                  \
+      AST_TYPESWITCH_CASE_NODE(String, __VA_ARGS__)                \
+      AST_TYPESWITCH_CASE_NODE(FormatString, __VA_ARGS__)          \
+      AST_TYPESWITCH_CASE_NODE(Null, __VA_ARGS__)                  \
+      AST_TYPESWITCH_CASE_NODE(Self, __VA_ARGS__)                  \
+      AST_TYPESWITCH_CASE_NODE(Super, __VA_ARGS__)                 \
+      AST_TYPESWITCH_CASE_NODE(Tuple, __VA_ARGS__)                 \
+      AST_TYPESWITCH_CASE_NODE(List, __VA_ARGS__)                  \
+      AST_TYPESWITCH_CASE_NODE(DictEntry, __VA_ARGS__)             \
+      AST_TYPESWITCH_CASE_NODE(Dict, __VA_ARGS__)                  \
+      AST_TYPESWITCH_CASE_NODE(FunctionArgument, __VA_ARGS__)      \
+      AST_TYPESWITCH_CASE_NODE(Function, __VA_ARGS__)              \
+      AST_TYPESWITCH_CASE_NODE(Class, __VA_ARGS__)                 \
+      AST_TYPESWITCH_CASE_NODE(ClassProperty, __VA_ARGS__)         \
+      AST_TYPESWITCH_CASE_NODE(Assignment, __VA_ARGS__)            \
+      AST_TYPESWITCH_CASE_NODE(Ternary, __VA_ARGS__)               \
+      AST_TYPESWITCH_CASE_NODE(BinaryOp, __VA_ARGS__)              \
+      AST_TYPESWITCH_CASE_NODE(UnaryOp, __VA_ARGS__)               \
+      AST_TYPESWITCH_CASE_NODE(Spread, __VA_ARGS__)                \
+      AST_TYPESWITCH_CASE_NODE(CallOp, __VA_ARGS__)                \
+      AST_TYPESWITCH_CASE_NODE(MemberOp, __VA_ARGS__)              \
+      AST_TYPESWITCH_CASE_NODE(IndexOp, __VA_ARGS__)               \
+      AST_TYPESWITCH_CASE_NODE(Declaration, __VA_ARGS__)           \
+      AST_TYPESWITCH_CASE_NODE(UnpackDeclaration, __VA_ARGS__)     \
+      AST_TYPESWITCH_CASE_NODE(If, __VA_ARGS__)                    \
+      AST_TYPESWITCH_CASE_NODE(While, __VA_ARGS__)                 \
+      AST_TYPESWITCH_CASE_NODE(Try, __VA_ARGS__)                   \
+      AST_TYPESWITCH_CASE_NODE(Switch, __VA_ARGS__)                \
+      AST_TYPESWITCH_CASE_NODE(SwitchCase, __VA_ARGS__)            \
+      AST_TYPESWITCH_CASE_NODE(For, __VA_ARGS__)                   \
+      AST_TYPESWITCH_CASE_NODE(BuiltinOperation, __VA_ARGS__)      \
+      case Node::Type::Unknown:                                    \
+      default: {                                                   \
+        assert(false && "unexpected node type in AST_TYPESWITCH"); \
+        break;                                                     \
+      }                                                            \
+    }                                                              \
   }
 
 #define APPLY_NODE(N)                                                  \
@@ -97,11 +98,13 @@ public:                                                               \
       apply_children(node);                                           \
     m_depth--;                                                        \
     ref<ReplacementType> replaced_node = transform(node);             \
-    if (replaced_node) {                                              \
-      AST_TYPESWITCH(replaced_node, { inspect_leave(node); });        \
-      leave(replaced_node);                                           \
+    if (replaced_node.get() != node.get()) {                          \
+      return apply(replaced_node);                                    \
+    } else {                                                          \
+      inspect_leave(node);                                            \
+      leave(node);                                                    \
     }                                                                 \
-    return replaced_node;                                             \
+    return node;                                                      \
   }                                                                   \
                                                                       \
 private:                                                              \
