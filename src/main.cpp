@@ -120,7 +120,7 @@ int run_file(int, char** argv) {
   if (unit->console.has_errors())
     return 1;
 
-  program->dump(std::cout);
+  program->dump(std::cout, true);
   return 0;
 }
 

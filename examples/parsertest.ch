@@ -24,15 +24,12 @@
  * SOFTWARE.
  */
 
-class Person {
-  property name
-  property age
+class BoundFunc {
+  property target
 
-  constructor(@name, @age)
+  constructor(@target)
+
+  apply(...arguments) {
+    return @target(...arguments)
+  }
 }
-
-class Employee extends Person {
-  property salary
-}
-
-print("hello: {name}")

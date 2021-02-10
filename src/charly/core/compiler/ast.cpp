@@ -35,6 +35,29 @@ namespace charly::core::compiler::ast {
 
 using Color = utils::Color;
 
+ref<Node> Node::search(const ref<Node>& node,
+                        std::function<bool(const ref<Node>&)> compare,
+                        std::function<bool(const ref<Node>&)> skip) {
+
+  // check compare function
+  if (compare(node)) {
+    return node;
+  }
+
+  // skip certain node's children
+  ref<Node> result = nullptr;
+  if (!skip(node)) {
+    node->children([&](const ref<Node>& child) {
+      if (result.get())
+        return;
+
+      result = Node::search(child, compare, skip);
+    });
+  }
+
+  return result;
+}
+
 void Node::dump(std::ostream& out, bool print_location) const {
   utils::ColorWriter writer(out);
 
@@ -219,7 +242,7 @@ void Try::dump_info(std::ostream& out) const {
 void BuiltinOperation::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';
-  writer.fg(Color::Red, this->name->value);
+  writer.fg(Color::Red, this->name);
 }
 
 }  // namespace charly::core::compiler

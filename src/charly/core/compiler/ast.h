@@ -128,6 +128,15 @@ public:
     BuiltinOperation
   };
 
+  // search for a node by comparing the ast depth-first
+  // with a compare function
+  //
+  // a second skip function can be used to skip traversal
+  // of certain node types
+  static ref<Node> search(const ref<Node>& node,
+                                 std::function<bool(const ref<Node>&)> compare,
+                                 std::function<bool(const ref<Node>&)> skip);
+
   operator Location() const {
     return m_location;
   }
@@ -299,9 +308,11 @@ public:
     this->set_location(statement);
   }
 
+  ref<Block> body;
   ref<Statement> statement;
 
   CHILDREN() {
+    CHILD_NODE(body);
     CHILD_NODE(statement);
   }
 };
@@ -376,6 +387,7 @@ public:
     this->set_location(statement);
   }
 
+  bool execute_immediately = true; // set by desugar pass
   ref<Statement> statement;
 
   CHILDREN() {
@@ -1142,17 +1154,16 @@ class BuiltinOperation final : public Expression {
   AST_NODE(BuiltinOperation)
 public:
   template <typename... Args>
-  BuiltinOperation(const ref<Name>& name, Args&&... params) : name(name), arguments({ std::forward<Args>(params)... }) {
-    assert(ir::kBuiltinNameMapping.count(name->value));
+  BuiltinOperation(const std::string& name, Args&&... params) :
+    name(name), arguments({ std::forward<Args>(params)... }) {
+    assert(ir::kBuiltinNameMapping.count(name));
 
     if (arguments.size()) {
-      this->set_location(name->location(), arguments.back()->location());
-    } else {
-      this->set_location(name->location());
+      this->set_location(arguments.front()->location(), arguments.back()->location());
     }
   }
 
-  ref<Name> name;
+  std::string name;
   std::vector<ref<Expression>> arguments;
 
   CHILDREN() {

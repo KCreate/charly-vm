@@ -24,18 +24,25 @@
  * SOFTWARE.
  */
 
-#include <list>
-
 #include "charly/core/compiler/passes/class_constructor_check.h"
 
 namespace charly::core::compiler::ast {
 
 void ClassConstructorCheck::inspect_leave(const ref<Class>& node) {
+
+  // subclasses that define new properties need
+  // a user-defined constructor
+  if (node->parent && node->member_properties.size() && !node->constructor) {
+    m_console.error(node->name, "class '", node->name->value, "' is missing a constructor");
+    return;
+  }
+
   if (!node->constructor || !node->parent)
     return;
 
-  // depth-first search for super(...)
-  std::function<bool(const ref<Node>&)> search_super_call = [&](const ref<Node>& node) {
+  // search for a call to the super constructor
+  ref<Node> super_call = Node::search(node->constructor->body, [&](const ref<Node>& node) {
+
     // check for super(...)
     if (ref<CallOp> call = cast<CallOp>(node)) {
       if (isa<Super>(call->target)) {
@@ -43,30 +50,13 @@ void ClassConstructorCheck::inspect_leave(const ref<Class>& node) {
       }
     }
 
-    bool super_call_found = false;
-    switch (node->type()) {
-      case Node::Type::Function:
-      case Node::Type::Class:
-      case Node::Type::Spawn: {
-        break;
-      }
-      default: {
-        node->children([&](const ref<Node>& child) {
-          if (super_call_found)
-            return;
+    return false;
+  }, [&](const ref<Node>& node) {
+    Node::Type type = node->type();
+    return type == Node::Type::Function || type == Node::Type::Class || type == Node::Type::Spawn;
+  });
 
-          super_call_found = search_super_call(child);
-        });
-        break;
-      }
-    }
-
-    return super_call_found;
-  };
-
-  bool super_called = search_super_call(node->constructor->body);
-
-  if (!super_called) {
+  if (!super_call) {
     m_console.error(node->constructor->name, "missing call to super inside constructor of class '",
                     node->name->value, "'");
   }

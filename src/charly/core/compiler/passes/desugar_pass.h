@@ -35,9 +35,13 @@ public:
   using DiagnosticPass::DiagnosticPass;
 
 private:
+  virtual ref<Statement> transform(const ref<Block>&) override;
+  virtual void inspect_leave(const ref<Import>&) override;
+  virtual ref<Expression> transform(const ref<Spawn>&) override;
   virtual ref<Expression> transform(const ref<FormatString>&) override;
-
+  virtual void inspect_leave(const ref<Function>&) override;
   virtual void inspect_leave(const ref<Class>&) override;
+  virtual ref<Statement> transform(const ref<For>&) override;
 };
 
 }  // namespace charly::core::compiler::ast

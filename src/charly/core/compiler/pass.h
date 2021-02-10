@@ -83,7 +83,7 @@ protected:
     APPLY_NODE(expression);
   })
 
-  HANDLE_NODE(Statement, Import, {
+  HANDLE_NODE(Expression, Import, {
     APPLY_NODE(source);
   })
 

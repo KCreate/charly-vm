@@ -858,4 +858,22 @@ func foo(a, b, c, d) {
 
 
 
+// original source
+for const (a, b, c) in foo.bar() {
+  print(a, b, c)
+}
 
+// desugared
+{
+  const __iterator = castiterator(foo.bar())
+  loop {
+    const (__value, __done) = iteratornext(__iterator)
+    if __done break
+    {
+      const (a, b, c) = __value
+      {
+        print(a, b, c)
+      }
+    }
+  }
+}

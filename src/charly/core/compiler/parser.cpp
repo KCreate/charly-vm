@@ -168,6 +168,10 @@ ref<Statement> Parser::parse_statement() {
       stmt = parse_for();
       break;
     }
+    case TokenType::Defer: {
+      stmt = parse_defer();
+      break;
+    }
     case TokenType::Let:
     case TokenType::Const: {
       stmt = parse_declaration();
@@ -231,9 +235,6 @@ ref<Statement> Parser::parse_jump_statement() {
     }
     case TokenType::Continue: {
       return parse_continue();
-    }
-    case TokenType::Defer: {
-      return parse_defer();
     }
     case TokenType::Throw: {
       return parse_throw();
@@ -309,12 +310,12 @@ ref<Defer> Parser::parse_defer() {
   m_keyword_context._return = false;
   m_keyword_context._break = false;
   m_keyword_context._continue = false;
+  m_keyword_context._yield = false;
   ref<Statement> stmt = parse_block_or_statement();
   m_keyword_context = kwcontext;
 
   ref<Defer> node = make<Defer>(stmt);
   node->set_begin(begin);
-  validate_defer(node);
   return node;
 }
 
@@ -418,6 +419,7 @@ ref<Statement> Parser::parse_try() {
     m_keyword_context._return = false;
     m_keyword_context._break = false;
     m_keyword_context._continue = false;
+    m_keyword_context._yield = false;
     finally_stmt = parse_block_or_statement();
     m_keyword_context = kwcontext;
   }
@@ -517,7 +519,14 @@ ref<For> Parser::parse_for() {
 
   prepare_assignment_target(target);
   ref<Statement> declaration = create_declaration(target, parse_expression(), constant_value);
-  ref<For> node = make<For>(declaration, parse_block_or_statement());
+
+  auto kwcontext = m_keyword_context;
+  m_keyword_context._break = true;
+  m_keyword_context._continue = true;
+  ref<Statement> then_stmt = parse_block_or_statement();
+  m_keyword_context = kwcontext;
+
+  ref<For> node = make<For>(declaration, then_stmt);
   node->set_begin(begin);
 
   return node;
@@ -1018,8 +1027,8 @@ ref<Dict> Parser::parse_dict() {
   return dict;
 }
 
-ref<Function> Parser::parse_function(bool class_function) {
-  if (!class_function && type(TokenType::RightArrow))
+ref<Function> Parser::parse_function(FunctionFlags flags) {
+  if (!flags.class_function && type(TokenType::RightArrow))
     return parse_arrow_function();
 
   Location begin = m_token.location;
@@ -1030,7 +1039,7 @@ ref<Function> Parser::parse_function(bool class_function) {
 
   // argument list
   std::vector<ref<FunctionArgument>> argument_list;
-  parse_function_arguments(argument_list);
+  parse_function_arguments(argument_list, flags);
 
   ref<Statement> body;
 
@@ -1038,9 +1047,22 @@ ref<Function> Parser::parse_function(bool class_function) {
   m_keyword_context._return = true;
   m_keyword_context._break = false;
   m_keyword_context._continue = false;
-  m_keyword_context._yield = true;
+
+  // only class functions may contain super statements
+  // yield statements are allowed in all functions except class constructors
+  if (flags.class_function) {
+    if (function_name->value.compare("constructor") == 0 && !flags.static_function) {
+      m_keyword_context._yield = false;
+    } else {
+      m_keyword_context._yield = true;
+    }
+    m_keyword_context._super = true;
+  } else {
+    m_keyword_context._yield = true;
+    m_keyword_context._super = false;
+  }
+
   m_keyword_context._export = false;
-  m_keyword_context._super = class_function;
   if (skip(TokenType::Assignment)) {
     body = parse_jump_statement();
   } else if (type(TokenType::LeftCurly)) {
@@ -1048,7 +1070,7 @@ ref<Function> Parser::parse_function(bool class_function) {
   } else {
 
     // allow foo(@x, @y) declarations inside classes
-    if (class_function) {
+    if (flags.class_function && !flags.static_function) {
       ref<Null> null = make<Null>();
       null->set_location(function_name);
       body = make<Return>(null);
@@ -1084,9 +1106,7 @@ ref<Function> Parser::parse_arrow_function() {
   m_keyword_context._return = true;
   m_keyword_context._break = false;
   m_keyword_context._continue = false;
-  m_keyword_context._yield = true;
   m_keyword_context._export = false;
-  m_keyword_context._super = false;
   if (type(TokenType::LeftCurly)) {
     body = parse_block();
   } else {
@@ -1106,7 +1126,7 @@ ref<Function> Parser::parse_arrow_function() {
   return node;
 }
 
-void Parser::parse_function_arguments(std::vector<ref<FunctionArgument>>& result) {
+void Parser::parse_function_arguments(std::vector<ref<FunctionArgument>>& result, FunctionFlags flags) {
   if (skip(TokenType::LeftParen)) {
     if (!type(TokenType::RightParen)) {
       do {
@@ -1123,6 +1143,13 @@ void Parser::parse_function_arguments(std::vector<ref<FunctionArgument>>& result
             break;
           }
           case TokenType::AtSign: {
+
+            // the (@x, @y) syntax is only allowed inside
+            // class member functions
+            if (!(flags.class_function && !flags.static_function)) {
+              unexpected_token("self initializer arguments are only allowed inside class member functions");
+            }
+
             advance();
             self_initializer = true;
             break;
@@ -1206,7 +1233,10 @@ ref<Class> Parser::parse_class() {
         node->member_properties.push_back(prop);
       }
     } else {
-      ref<Function> function = parse_function(true);
+      FunctionFlags flags;
+      flags.class_function = true;
+      flags.static_function = static_property;
+      ref<Function> function = parse_function(flags);
 
       if (static_property) {
         node->static_properties.push_back(make<ClassProperty>(true, function->name, function));
@@ -1310,12 +1340,6 @@ ref<Super> Parser::parse_super_token() {
     m_console.error(node, "super is not allowed at this point");
 
   return node;
-}
-
-void Parser::validate_defer(const ref<Defer>& node) {
-  if (!isa<Block>(node->statement) && !isa<CallOp>(node->statement)) {
-    m_console.error(node->statement, "expected a call expression");
-  }
 }
 
 void Parser::validate_unpack_declaration(const ref<UnpackDeclaration>& node) {

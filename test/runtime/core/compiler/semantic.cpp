@@ -100,3 +100,24 @@ TEST_CASE("checks for missing constructors in subclasses with properties") {
   COMPILE_ERROR("class A extends B { property x }", "class 'A' is missing a constructor");
   COMPILE_OK("class A extends B {}");
 }
+
+TEST_CASE("checks for yield statements outside regular functions") {
+  COMPILE_ERROR("yield 1", "yield expression not allowed at this point");
+  COMPILE_ERROR("->{ yield 1 }", "yield expression not allowed at this point");
+  COMPILE_ERROR("class A { constructor { yield 1 } }", "yield expression not allowed at this point");
+  COMPILE_ERROR("class A { constructor { ->{ yield 1 } } }", "yield expression not allowed at this point");
+  COMPILE_OK("class A { foo { yield 1 } }");
+  COMPILE_OK("class A { static foo { yield 1 } }");
+  COMPILE_OK("func foo { yield 1 }");
+  COMPILE_OK("spawn { yield 1 }");
+}
+
+TEST_CASE("only allows @a parameter syntax inside class member functions") {
+  COMPILE_ERROR("func foo(@a) {}",
+                "unexpected '@' token, self initializer arguments are only allowed inside class member functions");
+  COMPILE_ERROR("->(@a) {}",
+                "unexpected '@' token, self initializer arguments are only allowed inside class member functions");
+  COMPILE_ERROR("class A { static foo(@a) }",
+                "unexpected '@' token, self initializer arguments are only allowed inside class member functions");
+  COMPILE_OK("class A { foo(@a) }");
+}

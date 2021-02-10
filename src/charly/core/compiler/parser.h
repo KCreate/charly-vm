@@ -181,9 +181,17 @@ private:
   ref<Expression> parse_tuple(bool paren_conversion = true);
   ref<List> parse_list();
   ref<Dict> parse_dict();
-  ref<Function> parse_function(bool class_function = false);
+
+  struct FunctionFlags {
+    bool class_function;
+    bool static_function;
+
+    FunctionFlags(bool class_function = false, bool static_function = false) :
+      class_function(class_function), static_function(static_function) {}
+  };
+  ref<Function> parse_function(FunctionFlags flags = FunctionFlags());
   ref<Function> parse_arrow_function();
-  void parse_function_arguments(std::vector<ref<FunctionArgument>>& result);
+  void parse_function_arguments(std::vector<ref<FunctionArgument>>& result, FunctionFlags flags = FunctionFlags());
   ref<Class> parse_class();
 
   // literals
@@ -197,7 +205,6 @@ private:
   ref<Self> parse_self_token();
   ref<Super> parse_super_token();
 
-  void validate_defer(const ref<Defer>& node);
   void validate_import(const ref<Import>& node);
   void validate_unpack_declaration(const ref<UnpackDeclaration>& node);
   void validate_assignment(const ref<Assignment>& node);

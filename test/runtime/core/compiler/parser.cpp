@@ -305,7 +305,7 @@ TEST_CASE("parses control statements") {
   CHECK_AST_STMT("loop { break }", make<While>(make<Bool>(1), make<Block>(make<Break>())));
   CHECK_AST_STMT("loop { continue }", make<While>(make<Bool>(1), make<Block>(make<Continue>())));
 
-  CHECK_ERROR_STMT("defer foo", "expected a call expression");
+  CHECK_AST_STMT("defer foo", make<Defer>(make<Id>("foo")));
   CHECK_AST_STMT("defer foo()", make<Defer>(make<CallOp>(make<Id>("foo"))));
 
   CHECK_AST_STMT("throw null", make<Throw>(make<Null>()));
@@ -331,9 +331,9 @@ TEST_CASE("import expression") {
 
 TEST_CASE("yield, await, typeof expressions") {
   CHECK_PROGRAM("func foo { yield 1 }");
-  CHECK_PROGRAM("->{ yield 1 }");
-  CHECK_PROGRAM("spawn { yield 2 }");
-  CHECK_PROGRAM("spawn { defer { yield 2 } }");
+  CHECK_PROGRAM("func foo { ->{ yield 1 } }");
+  CHECK_PROGRAM("spawn { yield 1 }");
+  CHECK_PROGRAM("spawn { ->{ yield 1 } }");
   CHECK_AST_EXP("yield 1", make<Yield>(make<Int>(1)));
   CHECK_AST_EXP("yield(1, 2, 3)", make<Yield>(make<Tuple>(make<Int>(1), make<Int>(2), make<Int>(3))));
   CHECK_AST_EXP("yield foo", make<Yield>(make<Id>("foo")));
@@ -593,9 +593,9 @@ TEST_CASE("functions") {
   CHECK_EXP("func foo(...b) {}");
   CHECK_EXP("func foo(a = 1) {}");
   CHECK_EXP("func foo(a = 1, b = 2) {}");
-  CHECK_AST_EXP("func foo(x, @a = 1, b = 2, ...c) {}",
+  CHECK_AST_EXP("func foo(x, a = 1, b = 2, ...c) {}",
                 make<Function>(false, make<Name>("foo"), make<Block>(), make<FunctionArgument>(make<Name>("x")),
-                               make<FunctionArgument>(true, false, make<Name>("a"), make<Int>(1)),
+                               make<FunctionArgument>(make<Name>("a"), make<Int>(1)),
                                make<FunctionArgument>(make<Name>("b"), make<Int>(2)),
                                make<FunctionArgument>(false, true, make<Name>("c"))));
 
@@ -724,13 +724,12 @@ TEST_CASE("class literals") {
              "  static func foo(a) {}\n"
              "  static bar(a) {}\n"
              "}"));
+  CHECK_EXP("class A { property a property b foo(@a, @b) }");
 }
 
 TEST_CASE("super expressions") {
-  CHECK_ERROR_EXP("->super", "super is not allowed at this point");
-  CHECK_ERROR_EXP("->super.foo()", "super is not allowed at this point");
-  CHECK_ERROR_EXP("class foo { foo { ->{ super } } }", "super is not allowed at this point");
-  CHECK_ERROR_EXP("class foo { static foo { ->{ super } } }", "super is not allowed at this point");
+  CHECK_ERROR_PROGRAM("->super", "super is not allowed at this point");
+  CHECK_ERROR_PROGRAM("->super.foo()", "super is not allowed at this point");
 
   ref<Class> class_node = make<Class>("Foo", make<Id>("Bar"));
   class_node->member_functions.push_back(make<Function>(false, make<Name>("foo"), make<Block>(make<Super>())));
