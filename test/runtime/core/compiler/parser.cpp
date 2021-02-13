@@ -144,8 +144,8 @@ TEST_CASE("assignments") {
                 make<Assignment>(make<Id>("x"), make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(2))));
   CHECK_AST_EXP("(x) = 1", make<Assignment>(make<Id>("x"), make<Int>(1)));
 
-  CHECK_AST_EXP("foo.bar = 1", make<Assignment>(make<MemberOp>(make<Id>("foo"), "bar"), make<Int>(1)));
-  CHECK_AST_EXP("foo[0] = 1", make<Assignment>(make<IndexOp>(make<Id>("foo"), make<Int>(0)), make<Int>(1)));
+  CHECK_AST_EXP("foo.bar = 1", make<MemberAssignment>(make<Id>("foo"), make<Name>("bar"), make<Int>(1)));
+  CHECK_AST_EXP("foo[0] = 1", make<IndexAssignment>(make<Id>("foo"), make<Int>(0), make<Int>(1)));
   CHECK_AST_EXP("(a, b) = 1", make<Assignment>(make<Tuple>(make<Name>("a"), make<Name>("b")), make<Int>(1)));
   CHECK_AST_EXP("(...b,) = 1", make<Assignment>(make<Tuple>(make<Spread>(make<Name>("b"))), make<Int>(1)));
   CHECK_AST_EXP(
@@ -160,23 +160,8 @@ TEST_CASE("assignments") {
                                                      make<Int>(1)));
   CHECK_AST_EXP("x += 1", make<Assignment>(TokenType::Plus, make<Id>("x"), make<Int>(1)));
   CHECK_AST_EXP("foo.bar += 1",
-                make<Assignment>(TokenType::Plus, make<MemberOp>(make<Id>("foo"), "bar"), make<Int>(1)));
-  CHECK_AST_EXP("foo[0] += 1",
-                make<Assignment>(TokenType::Plus, make<IndexOp>(make<Id>("foo"), make<Int>(0)), make<Int>(1)));
-
-  CHECK_ERROR_EXP("2 = 25", "left-hand side of assignment is not assignable");
-  CHECK_ERROR_EXP("false = 25", "left-hand side of assignment is not assignable");
-  CHECK_ERROR_EXP("self = 25", "left-hand side of assignment is not assignable");
-  CHECK_ERROR_EXP("(a, b) += 25",
-                  "this type of expression cannot be used as the left-hand side of an operator assignment");
-  CHECK_ERROR_EXP("{a, b} += 25",
-                  "this type of expression cannot be used as the left-hand side of an operator assignment");
-  CHECK_ERROR_EXP("() = 25", "left-hand side of assignment is not assignable");
-  CHECK_ERROR_EXP("(1) = 25", "left-hand side of assignment is not assignable");
-  CHECK_ERROR_EXP("(...a, ...b) = 25", "left-hand side of assignment is not assignable");
-  CHECK_ERROR_EXP("{} = 25", "left-hand side of assignment is not assignable");
-  CHECK_ERROR_EXP("{a: 1} = 25", "left-hand side of assignment is not assignable");
-  CHECK_ERROR_EXP("{...a, ...b} = 25", "left-hand side of assignment is not assignable");
+                make<MemberAssignment>(TokenType::Plus, make<Id>("foo"), make<Name>("bar"), make<Int>(1)));
+  CHECK_AST_EXP("foo[0] += 1", make<IndexAssignment>(TokenType::Plus, make<Id>("foo"), make<Int>(0), make<Int>(1)));
 }
 
 TEST_CASE("ternary if") {
@@ -358,12 +343,11 @@ TEST_CASE("yield, await, typeof expressions") {
 
 TEST_CASE("spawn expressions") {
   CHECK_AST_EXP("spawn foo()", make<Spawn>(make<CallOp>(make<Id>("foo"))));
-  CHECK_AST_EXP("spawn foo.bar()", make<Spawn>(make<CallOp>(make<MemberOp>(make<Id>("foo"), make<Name>("bar")))));
+  CHECK_AST_EXP("spawn foo.bar()", make<Spawn>(make<CallMemberOp>(make<Id>("foo"), make<Name>("bar"))));
   CHECK_AST_EXP("spawn foo()()", make<Spawn>(make<CallOp>(make<CallOp>(make<Id>("foo")))));
   CHECK_AST_EXP("spawn { yield foo }", make<Spawn>(make<Block>(make<Yield>(make<Id>("foo")))));
   CHECK_AST_EXP("spawn { return foo }", make<Spawn>(make<Block>(make<Return>(make<Id>("foo")))));
 
-  CHECK_ERROR_EXP("spawn foo", "expected a call expression");
   CHECK_ERROR_STMT("loop { spawn { break } }", "break statement not allowed at this point");
   CHECK_ERROR_STMT("loop { spawn { continue } }", "continue statement not allowed at this point");
 }
@@ -384,12 +368,23 @@ TEST_CASE("call expressions") {
   CHECK_AST_EXP(
     "foo.bar(2, 3).test[1](1, 2).bar",
     make<MemberOp>(
-      make<CallOp>(make<IndexOp>(make<MemberOp>(make<CallOp>(make<MemberOp>(make<Id>("foo"), make<Name>("bar")),
-                                                             make<Int>(2), make<Int>(3)),
-                                                make<Name>("test")),
-                                 make<Int>(1)),
-                   make<Int>(1), make<Int>(2)),
-      make<Name>("bar")));
+      make<CallIndexOp>(
+        make<MemberOp>(
+          make<CallMemberOp>(
+            make<Id>("foo"),
+            make<Name>("bar"),
+            make<Int>(2),
+            make<Int>(3)
+          ),
+          make<Name>("test")
+        ),
+        make<Int>(1),
+        make<Int>(1),
+        make<Int>(2)
+      ),
+      make<Name>("bar")
+    )
+  );
 
   CHECK_ERROR_EXP("foo(", "unexpected end of file, expected a ')' token");
 }
@@ -445,26 +440,14 @@ TEST_CASE("dict literals") {
   CHECK_AST_EXP("{}", make<Dict>());
   CHECK_AST_EXP("{x}", make<Dict>(make<DictEntry>(make<Name>("x"))));
   CHECK_AST_EXP("{x, y}", make<Dict>(make<DictEntry>(make<Name>("x")), make<DictEntry>(make<Name>("y"))));
-  CHECK_AST_EXP("{x.y}", make<Dict>(make<DictEntry>(make<Name>("y"), make<MemberOp>(make<Id>("x"), make<Name>("y")))));
+  CHECK_AST_EXP("{x.y}", make<Dict>(make<DictEntry>(make<MemberOp>(make<Id>("x"), make<Name>("y")))));
   CHECK_AST_EXP("{...x}", make<Dict>(make<DictEntry>(make<Spread>(make<Id>("x")))));
   CHECK_AST_EXP("{x: 1}", make<Dict>(make<DictEntry>(make<Name>("x"), make<Int>(1))));
   CHECK_AST_EXP("{x: 1, y: 2}", make<Dict>(make<DictEntry>(make<Name>("x"), make<Int>(1)),
                                            make<DictEntry>(make<Name>("y"), make<Int>(2))));
-  CHECK_AST_EXP("{\"foo\": 1}", make<Dict>(make<DictEntry>(make<Name>("foo"), make<Int>(1))));
-  CHECK_AST_EXP("{\"foo bar\": 1}", make<Dict>(make<DictEntry>(make<Name>("foo bar"), make<Int>(1))));
+  CHECK_AST_EXP("{\"foo\": 1}", make<Dict>(make<DictEntry>(make<String>("foo"), make<Int>(1))));
+  CHECK_AST_EXP("{\"foo bar\": 1}", make<Dict>(make<DictEntry>(make<String>("foo bar"), make<Int>(1))));
   CHECK_AST_EXP("{\"{name}\": 1}", make<Dict>(make<DictEntry>(make<FormatString>(make<Id>("name")), make<Int>(1))));
-
-  CHECK_ERROR_EXP("{25}", "expected identifier, member access or spread expression");
-  CHECK_ERROR_EXP("{false}", "expected identifier, member access or spread expression");
-  CHECK_ERROR_EXP("{,}", "unexpected ',' token, expected an expression");
-  CHECK_ERROR_EXP("{:}", "unexpected ':' token, expected an expression");
-  CHECK_ERROR_EXP("{\"foo\"}", "expected identifier, member access or spread expression");
-  CHECK_ERROR_EXP("{[x]}", "expected identifier, member access or spread expression");
-  CHECK_ERROR_EXP("{-5}", "expected identifier, member access or spread expression");
-  CHECK_ERROR_EXP("{[1, 2]: 1}", "expected identifier or string literal");
-  CHECK_ERROR_EXP("{25: 1}", "expected identifier or string literal");
-  CHECK_ERROR_EXP("{true: 1}", "expected identifier or string literal");
-  CHECK_ERROR_EXP("{...x: 1}", "expected identifier or string literal");
 }
 
 TEST_CASE("if statements") {
@@ -559,22 +542,6 @@ TEST_CASE("declarations") {
                                        make<DictEntry>(make<Name>("c"))),
                             make<Id>("x"), true));
 
-  CHECK_ERROR_STMT("let () = 1", "left-hand side of declaration is not assignable");
-  CHECK_ERROR_STMT("let (1) = 1", "left-hand side of declaration is not assignable");
-  CHECK_ERROR_STMT("let (a.a) = 1", "left-hand side of declaration is not assignable");
-  CHECK_ERROR_STMT("let (2 + 2) = 1", "left-hand side of declaration is not assignable");
-  CHECK_ERROR_STMT("let (...a, ...d) = 1", "left-hand side of declaration is not assignable");
-  CHECK_ERROR_STMT("let ([1, 2]) = 1", "left-hand side of declaration is not assignable");
-  CHECK_ERROR_STMT("let (\"a\") = 1", "left-hand side of declaration is not assignable");
-
-  CHECK_ERROR_STMT("let {} = 1", "left-hand side of declaration is not assignable");
-  CHECK_ERROR_STMT("let {1} = 1", "expected identifier, member access or spread expression");
-  CHECK_ERROR_STMT("let {a.a} = 1", "left-hand side of declaration is not assignable");
-  CHECK_ERROR_STMT("let {2 + 2} = 1", "expected identifier, member access or spread expression");
-  CHECK_ERROR_STMT("let {...a, ...d} = 1", "left-hand side of declaration is not assignable");
-  CHECK_ERROR_STMT("let {[1, 2]} = 1", "expected identifier, member access or spread expression");
-  CHECK_ERROR_STMT("let {\"a\"} = 1", "expected identifier, member access or spread expression");
-
   CHECK_ERROR_STMT("let (a)", "unexpected end of file, expected a '=' token");
   CHECK_ERROR_STMT("let {a}", "unexpected end of file, expected a '=' token");
   CHECK_ERROR_STMT("const a", "unexpected end of file, expected a '=' token");
@@ -625,9 +592,6 @@ TEST_CASE("functions") {
   CHECK_ERROR_EXP("func foo(1) {}", "unexpected numerical constant, expected a 'identifier' token");
   CHECK_ERROR_EXP("func foo(a.b) {}", "unexpected '.' token, expected a ')' token");
   CHECK_ERROR_EXP("func foo(\"test\") {}", "unexpected string literal, expected a 'identifier' token");
-  CHECK_ERROR_EXP("func foo(a = 1, b) {}", "argument 'b' is missing a default value");
-  CHECK_ERROR_EXP("func foo(...foo, ...rest) {}", "excess parameter(s)");
-  CHECK_ERROR_EXP("func foo(...foo, a, b, c) {}", "excess parameter(s)");
   CHECK_ERROR_EXP("func foo(...a.b) {}", "unexpected '.' token, expected a ')' token");
   CHECK_ERROR_EXP("func foo(...1) {}", "unexpected numerical constant, expected a 'identifier' token");
   CHECK_ERROR_EXP("func foo(...1 = 25) {}", "unexpected numerical constant, expected a 'identifier' token");
@@ -636,11 +600,7 @@ TEST_CASE("functions") {
   CHECK_ERROR_EXP("->(1) {}", "unexpected numerical constant, expected a 'identifier' token");
   CHECK_ERROR_EXP("->(a.b) {}", "unexpected '.' token, expected a ')' token");
   CHECK_ERROR_EXP("->(\"test\") {}", "unexpected string literal, expected a 'identifier' token");
-  CHECK_ERROR_EXP("->(a = 1, b) {}", "argument 'b' is missing a default value");
-  CHECK_ERROR_EXP("->(...foo, ...rest) {}", "excess parameter(s)");
-  CHECK_ERROR_EXP("->(...foo, a, b, c) {}", "excess parameter(s)");
   CHECK_ERROR_EXP("->(...a.b) {}", "unexpected '.' token, expected a ')' token");
-  CHECK_ERROR_EXP("->(...a = 2) {}", "spread argument cannot have a default value");
   CHECK_ERROR_EXP("->(...1) {}", "unexpected numerical constant, expected a 'identifier' token");
   CHECK_ERROR_EXP("->(...1 = 25) {}", "unexpected numerical constant, expected a 'identifier' token");
 

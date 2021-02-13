@@ -27,6 +27,7 @@
 #include "charly/core/compiler.h"
 #include "charly/core/compiler/parser.h"
 
+#include "charly/core/compiler/passes/grammar_validation_check.h"
 #include "charly/core/compiler/passes/class_constructor_check.h"
 #include "charly/core/compiler/passes/desugar_pass.h"
 #include "charly/core/compiler/passes/duplicates_check.h"
@@ -66,6 +67,8 @@ std::shared_ptr<CompilationUnit> Compiler::compile(CompilationUnit::Type type,
   if (type == CompilationUnit::Type::Module) {
     unit->ast = Compiler::wrap_module(unit->ast);
   }
+
+  APPLY_DIAGNOSTIC_PASS(GrammarValidationCheck);
 
   APPLY_DIAGNOSTIC_PASS(ReservedIdentifiersCheck);
   APPLY_DIAGNOSTIC_PASS(DuplicatesCheck);

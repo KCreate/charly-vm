@@ -108,26 +108,6 @@ void Node::dump(std::ostream& out, bool print_location) const {
   writer << '\n';
 }
 
-void Assignment::dump_info(std::ostream& out) const {
-  utils::ColorWriter writer(out);
-  if (this->operation != TokenType::Assignment) {
-    writer << ' ';
-    writer.fg(Color::Yellow, kTokenTypeStrings[static_cast<int>(this->operation)]);
-  }
-}
-
-void BinaryOp::dump_info(std::ostream& out) const {
-  utils::ColorWriter writer(out);
-  writer << ' ';
-  writer.fg(Color::Yellow, kTokenTypeStrings[static_cast<int>(this->operation)]);
-}
-
-void UnaryOp::dump_info(std::ostream& out) const {
-  utils::ColorWriter writer(out);
-  writer << ' ';
-  writer.fg(Color::Blue, kTokenTypeStrings[static_cast<int>(this->operation)]);
-}
-
 void Id::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';
@@ -170,6 +150,68 @@ void String::dump_info(std::ostream& out) const {
   writer.fg(Color::Yellow, '\"', this->value, '\"');
 }
 
+bool Tuple::assignable() const {
+  if (elements.size() == 0)
+    return false;
+
+  bool spread_passed = false;
+  for (const ref<Expression>& node : elements) {
+    if (isa<Name>(node)) {
+      continue;
+    }
+
+    if (ref<Spread> spread = cast<Spread>(node)) {
+      if (spread_passed)
+        return false;
+
+      spread_passed = true;
+
+      if (!isa<Name>(spread->expression)) {
+        return false;
+      }
+
+      continue;
+    }
+
+    return false;
+  }
+
+  return true;
+}
+
+bool DictEntry::assignable() const {
+  if (value.get())
+    return false;
+
+  if (isa<Name>(key))
+    return true;
+
+  if (ref<Spread> spread = cast<Spread>(key)) {
+    return isa<Name>(spread->expression);
+  }
+
+  return false;
+}
+
+bool Dict::assignable() const {
+  if (elements.size() == 0)
+    return false;
+
+  bool spread_passed = false;
+  for (const ref<DictEntry>& node : elements) {
+    if (!node->assignable())
+      return false;
+
+    if (isa<Spread>(node->key)) {
+      if (spread_passed)
+        return false;
+      spread_passed = true;
+    }
+  }
+
+  return true;
+}
+
 void FunctionArgument::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';
@@ -193,12 +235,6 @@ void Function::dump_info(std::ostream& out) const {
   }
 }
 
-void Class::dump_info(std::ostream& out) const {
-  utils::ColorWriter writer(out);
-  writer << ' ';
-  writer.fg(Color::Green, this->name->value);
-}
-
 void ClassProperty::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   if (this->is_static) {
@@ -209,7 +245,57 @@ void ClassProperty::dump_info(std::ostream& out) const {
   writer.fg(Color::Yellow, this->name->value);
 }
 
+void Class::dump_info(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  writer << ' ';
+  writer.fg(Color::Green, this->name->value);
+}
+
 void MemberOp::dump_info(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  writer << ' ';
+  writer.fg(Color::Green, this->member->value);
+}
+
+void Assignment::dump_info(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  if (this->operation != TokenType::Assignment) {
+    writer << ' ';
+    writer.fg(Color::Yellow, kTokenTypeStrings[static_cast<int>(this->operation)]);
+  }
+}
+
+void MemberAssignment::dump_info(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  writer << ' ';
+  writer.fg(Color::Green, this->member->value);
+  if (this->operation != TokenType::Assignment) {
+    writer << ' ';
+    writer.fg(Color::Yellow, kTokenTypeStrings[static_cast<int>(this->operation)]);
+  }
+}
+
+void IndexAssignment::dump_info(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  if (this->operation != TokenType::Assignment) {
+    writer << ' ';
+    writer.fg(Color::Yellow, kTokenTypeStrings[static_cast<int>(this->operation)]);
+  }
+}
+
+void BinaryOp::dump_info(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  writer << ' ';
+  writer.fg(Color::Yellow, kTokenTypeStrings[static_cast<int>(this->operation)]);
+}
+
+void UnaryOp::dump_info(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  writer << ' ';
+  writer.fg(Color::Blue, kTokenTypeStrings[static_cast<int>(this->operation)]);
+}
+
+void CallMemberOp::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';
   writer.fg(Color::Green, this->member->value);

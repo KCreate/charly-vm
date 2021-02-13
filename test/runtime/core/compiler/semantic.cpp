@@ -28,6 +28,59 @@
 
 #include "astmacros.h"
 
+TEST_CASE("validates assignments") {
+  COMPILE_ERROR("2 = 25", "left-hand side of assignment is not assignable");
+  COMPILE_ERROR("false = 25", "left-hand side of assignment is not assignable");
+  COMPILE_ERROR("self = 25", "left-hand side of assignment is not assignable");
+  COMPILE_ERROR("(a, b) += 25",
+                "this type of expression cannot be used as the left-hand side of an operator assignment");
+  COMPILE_ERROR("({a, b} += 25)",
+                "this type of expression cannot be used as the left-hand side of an operator assignment");
+  COMPILE_ERROR("() = 25", "left-hand side of assignment is not assignable");
+  COMPILE_ERROR("(1) = 25", "left-hand side of assignment is not assignable");
+  COMPILE_ERROR("(...a, ...b) = 25", "left-hand side of assignment is not assignable");
+  COMPILE_ERROR("({} = 25)", "left-hand side of assignment is not assignable");
+  COMPILE_ERROR("({a: 1} = 25)", "left-hand side of assignment is not assignable");
+  COMPILE_ERROR("({...a, ...b} = 25)", "left-hand side of assignment is not assignable");
+
+  COMPILE_ERROR("let () = 1", "left-hand side of declaration is not assignable");
+  COMPILE_ERROR("let (1) = 1", "left-hand side of declaration is not assignable");
+  COMPILE_ERROR("let (a.a) = 1", "left-hand side of declaration is not assignable");
+  COMPILE_ERROR("let (2 + 2) = 1", "left-hand side of declaration is not assignable");
+  COMPILE_ERROR("let (...a, ...d) = 1", "left-hand side of declaration is not assignable");
+  COMPILE_ERROR("let ([1, 2]) = 1", "left-hand side of declaration is not assignable");
+  COMPILE_ERROR("let (\"a\") = 1", "left-hand side of declaration is not assignable");
+
+  COMPILE_ERROR("let {} = 1", "left-hand side of declaration is not assignable");
+  COMPILE_ERROR("let {1} = 1", "expected identifier, member access or spread expression");
+  COMPILE_ERROR("let {a.a} = 1", "left-hand side of declaration is not assignable");
+  COMPILE_ERROR("let {2 + 2} = 1", "expected identifier, member access or spread expression");
+  COMPILE_ERROR("let {...a, ...d} = 1", "left-hand side of declaration is not assignable");
+  COMPILE_ERROR("let {[1, 2]} = 1", "expected identifier, member access or spread expression");
+  COMPILE_ERROR("let {\"a\"} = 1", "expected identifier, member access or spread expression");
+}
+
+TEST_CASE("validates dict literals") {
+  COMPILE_ERROR("({25})", "expected identifier, member access or spread expression");
+  COMPILE_ERROR("({false})", "expected identifier, member access or spread expression");
+  COMPILE_ERROR("({,})", "unexpected ',' token, expected an expression");
+  COMPILE_ERROR("({:})", "unexpected ':' token, expected an expression");
+  COMPILE_ERROR("({\"foo\"})", "expected identifier, member access or spread expression");
+  COMPILE_ERROR("({[x]})", "expected identifier, member access or spread expression");
+  COMPILE_ERROR("({-5})", "expected identifier, member access or spread expression");
+  COMPILE_ERROR("({[1, 2]: 1})", "expected identifier or string literal");
+  COMPILE_ERROR("({25: 1})", "expected identifier or string literal");
+  COMPILE_ERROR("({true: 1})", "expected identifier or string literal");
+  COMPILE_ERROR("({...x: 1})", "expected identifier or string literal");
+}
+
+TEST_CASE("validates spawn statements") {
+  COMPILE_ERROR("spawn foo", "expected a call expression");
+  COMPILE_ERROR("spawn foo.bar", "expected a call expression");
+  COMPILE_ERROR("spawn foo.bar[1]", "expected a call expression");
+  COMPILE_ERROR("spawn foo().bar", "expected a call expression");
+}
+
 TEST_CASE("checks for reserved identifiers") {
   COMPILE_ERROR("const $ = 1", "'$' is a reserved variable name");
   COMPILE_ERROR("const $$ = 1", "'$$' is a reserved variable name");
@@ -86,6 +139,23 @@ TEST_CASE("checks for duplicate identifiers") {
   COMPILE_OK("class A { property foo static property foo }");
   COMPILE_OK("class A { foo {} static foo {} }");
   COMPILE_OK("class A { constructor {} }");
+}
+
+TEST_CASE("checks for missing function default arguments") {
+  COMPILE_ERROR("func foo(a = 1, b) {}", "argument 'b' is missing a default value");
+  COMPILE_ERROR("->(a = 1, b) {}", "argument 'b' is missing a default value");
+}
+
+TEST_CASE("spread arguments cannot have default arguments") {
+  COMPILE_ERROR("func foo(...x = 1) {}", "spread argument cannot have a default value");
+  COMPILE_ERROR("->(...x = 1) {}", "spread argument cannot have a default value");
+}
+
+TEST_CASE("checks for excess arguments in functions") {
+  COMPILE_ERROR("func foo(...foo, ...rest) {}", "excess parameter(s)");
+  COMPILE_ERROR("func foo(...foo, a, b, c) {}", "excess parameter(s)");
+  COMPILE_ERROR("->(...foo, ...rest) {}", "excess parameter(s)");
+  COMPILE_ERROR("->(...foo, a, b, c) {}", "excess parameter(s)");
 }
 
 TEST_CASE("checks for missing calls to parent constructor in subclasses") {

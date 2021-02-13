@@ -588,8 +588,6 @@ ref<Statement> Parser::parse_declaration() {
 
     ref<UnpackDeclaration> node = make<UnpackDeclaration>(target, value, const_declaration);
     node->set_begin(begin);
-    validate_unpack_declaration(node);
-
     return node;
   }
 }
@@ -651,9 +649,22 @@ ref<Expression> Parser::parse_assignment() {
     TokenType assignment_operator = m_token.assignment_operator;
     eat(TokenType::Assignment);
     prepare_assignment_target(target);
-    ref<Assignment> node = make<Assignment>(assignment_operator, target, parse_expression());
-    validate_assignment(node);
-    return node;
+
+    ref<Expression> source = parse_expression();
+
+    switch (target->type()) {
+      case Node::Type::MemberOp: {
+        ref<MemberOp> member = cast<MemberOp>(target);
+        return make<MemberAssignment>(assignment_operator, member, source);
+      }
+      case Node::Type::IndexOp: {
+        ref<IndexOp> index = cast<IndexOp>(target);
+        return make<IndexAssignment>(assignment_operator, index, source);
+      }
+      default: {
+        return make<Assignment>(assignment_operator, target, source);
+      }
+    }
   }
 
   return target;
@@ -765,7 +776,6 @@ ref<Expression> Parser::parse_spawn() {
 
   ref<Spawn> node = make<Spawn>(stmt);
   node->set_begin(begin);
-  validate_spawn(node);
   return node;
 }
 
@@ -796,6 +806,24 @@ ref<Expression> Parser::parse_call_member_index() {
         if (newline_passed_since_base)
           return target;
         target = parse_call(target);
+
+        ref<CallOp> call = cast<CallOp>(target);
+        switch (call->target->type()) {
+          case Node::Type::MemberOp: {
+            ref<MemberOp> member = cast<MemberOp>(call->target);
+            target = make<CallMemberOp>(member, call->arguments);
+            break;
+          }
+          case Node::Type::IndexOp: {
+            ref<IndexOp> index = cast<IndexOp>(call->target);
+            target = make<CallIndexOp>(index, call->arguments);
+            break;
+          }
+          default: {
+            break;
+          }
+        }
+
         break;
       }
       case TokenType::LeftBracket: {
@@ -1020,8 +1048,6 @@ ref<Dict> Parser::parse_dict() {
   end(dict);
   eat(TokenType::RightCurly);
 
-  validate_dict(dict);
-
   return dict;
 }
 
@@ -1084,9 +1110,6 @@ ref<Function> Parser::parse_function(FunctionFlags flags) {
 
   ref<Function> node = make<Function>(false, function_name, body, argument_list);
   node->set_begin(begin);
-
-  validate_function(node);
-
   return node;
 }
 
@@ -1118,9 +1141,6 @@ ref<Function> Parser::parse_arrow_function() {
 
   ref<Function> node = make<Function>(true, make<Name>(""), body, argument_list);
   node->set_begin(begin);
-
-  validate_function(node);
-
   return node;
 }
 
@@ -1340,123 +1360,6 @@ ref<Super> Parser::parse_super_token() {
   return node;
 }
 
-void Parser::validate_unpack_declaration(const ref<UnpackDeclaration>& node) {
-  switch (node->target->type()) {
-    case Node::Type::Tuple:
-    case Node::Type::Dict: {
-      if (!node->target->assignable())
-        m_console.error(node->target, "left-hand side of declaration is not assignable");
-      break;
-    }
-    default: {
-      assert(false && "unexpected node");
-      break;
-    }
-  }
-}
-
-void Parser::validate_assignment(const ref<Assignment>& node) {
-  // tuple or dict assignment not allowed if the assignment
-  // operator is anything else than regular assignment
-  if (node->operation != TokenType::Assignment) {
-    switch (node->target->type()) {
-      case Node::Type::Tuple:
-      case Node::Type::Dict: {
-        m_console.error(node->target,
-                        "this type of expression cannot be used as the left-hand side of an operator assignment");
-        return;
-      }
-      default: {
-        break;
-      }
-    }
-  }
-
-  if (!node->target->assignable()) {
-    m_console.error(node->target, "left-hand side of assignment is not assignable");
-  }
-}
-
-void Parser::validate_spawn(const ref<Spawn>& node) {
-  if (!isa<Block>(node->statement) && !isa<CallOp>(node->statement)) {
-    m_console.error(node->statement, "expected a call expression");
-  }
-}
-
-void Parser::validate_dict(const ref<Dict>& node) {
-  for (ref<DictEntry>& entry : node->elements) {
-    ref<Expression>& key = entry->key;
-    ref<Expression>& value = entry->value;
-
-    // key-only elements
-    if (value.get() == nullptr) {
-      if (isa<Name>(key)) {
-        continue;
-      }
-
-      if (ref<MemberOp> member = cast<MemberOp>(key)) {
-        value = key;
-        key = member->member;
-        key->set_location(key);
-        continue;
-      }
-
-      // { ...other }
-      if (ref<Spread> spread = cast<Spread>(key)) {
-        continue;
-      }
-
-      m_console.error(key, "expected identifier, member access or spread expression");
-      continue;
-    }
-
-    if (ref<String> string = cast<String>(key)) {
-      key = make<Name>(string->value);
-      key->set_location(string);
-      continue;
-    }
-
-    // check key expression
-    if (isa<Name>(key) || isa<FormatString>(key))
-      continue;
-
-    m_console.error(key, "expected identifier or string literal");
-  }
-}
-
-void Parser::validate_function(const ref<Function>& node) {
-  bool default_argument_passed = false;
-  bool spread_argument_passed = false;
-  for (const ref<FunctionArgument>& argument : node->arguments) {
-
-    // no parameters allowed after spread argument (...x)
-    if (spread_argument_passed) {
-      Location excess_arguments_location = argument->location();
-      excess_arguments_location.set_end(node->arguments.back()->location());
-      m_console.error(excess_arguments_location, "excess parameter(s)");
-      break;
-    }
-
-    if (argument->spread_initializer) {
-      spread_argument_passed = true;
-
-      // spread arguments cannot have default values
-      if (argument->default_value) {
-        m_console.error(argument, "spread argument cannot have a default value");
-      }
-
-      continue;
-    }
-
-    // missing default value
-    if (argument->default_value) {
-      default_argument_passed = true;
-    } else if (default_argument_passed) {
-      m_console.error(argument, "argument '", argument->name->value , "' is missing a default value");
-    }
-  }
-}
-
 ref<Statement> Parser::create_declaration(const ref<Expression>& target, const ref<Expression>& value, bool constant) {
   switch (target->type()) {
     case Node::Type::Id: {
@@ -1465,9 +1368,7 @@ ref<Statement> Parser::create_declaration(const ref<Expression>& target, const r
     }
     case Node::Type::Tuple:
     case Node::Type::Dict: {
-      auto node = make<UnpackDeclaration>(target, value, constant);
-      validate_unpack_declaration(node);
-      return node;
+      return make<UnpackDeclaration>(target, value, constant);
     }
     default: {
       assert(false && "unexpected node type");

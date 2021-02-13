@@ -11,7 +11,6 @@
   {                                                                \
     const ref<Node>& original_node = OriginalNode;                 \
     switch (original_node->type()) {                               \
-      AST_TYPESWITCH_CASE_NODE(Program, __VA_ARGS__)               \
       AST_TYPESWITCH_CASE_NODE(Block, __VA_ARGS__)                 \
       AST_TYPESWITCH_CASE_NODE(Return, __VA_ARGS__)                \
       AST_TYPESWITCH_CASE_NODE(Break, __VA_ARGS__)                 \
@@ -20,10 +19,12 @@
       AST_TYPESWITCH_CASE_NODE(Throw, __VA_ARGS__)                 \
       AST_TYPESWITCH_CASE_NODE(Export, __VA_ARGS__)                \
       AST_TYPESWITCH_CASE_NODE(Import, __VA_ARGS__)                \
+                                                                   \
       AST_TYPESWITCH_CASE_NODE(Yield, __VA_ARGS__)                 \
       AST_TYPESWITCH_CASE_NODE(Spawn, __VA_ARGS__)                 \
       AST_TYPESWITCH_CASE_NODE(Await, __VA_ARGS__)                 \
       AST_TYPESWITCH_CASE_NODE(Typeof, __VA_ARGS__)                \
+                                                                   \
       AST_TYPESWITCH_CASE_NODE(Id, __VA_ARGS__)                    \
       AST_TYPESWITCH_CASE_NODE(Name, __VA_ARGS__)                  \
       AST_TYPESWITCH_CASE_NODE(Int, __VA_ARGS__)                   \
@@ -41,23 +42,28 @@
       AST_TYPESWITCH_CASE_NODE(Dict, __VA_ARGS__)                  \
       AST_TYPESWITCH_CASE_NODE(FunctionArgument, __VA_ARGS__)      \
       AST_TYPESWITCH_CASE_NODE(Function, __VA_ARGS__)              \
-      AST_TYPESWITCH_CASE_NODE(Class, __VA_ARGS__)                 \
       AST_TYPESWITCH_CASE_NODE(ClassProperty, __VA_ARGS__)         \
+      AST_TYPESWITCH_CASE_NODE(Class, __VA_ARGS__)                 \
+                                                                   \
+      AST_TYPESWITCH_CASE_NODE(MemberOp, __VA_ARGS__)              \
+      AST_TYPESWITCH_CASE_NODE(IndexOp, __VA_ARGS__)               \
       AST_TYPESWITCH_CASE_NODE(Assignment, __VA_ARGS__)            \
+      AST_TYPESWITCH_CASE_NODE(MemberAssignment, __VA_ARGS__)      \
+      AST_TYPESWITCH_CASE_NODE(IndexAssignment, __VA_ARGS__)       \
       AST_TYPESWITCH_CASE_NODE(Ternary, __VA_ARGS__)               \
       AST_TYPESWITCH_CASE_NODE(BinaryOp, __VA_ARGS__)              \
       AST_TYPESWITCH_CASE_NODE(UnaryOp, __VA_ARGS__)               \
       AST_TYPESWITCH_CASE_NODE(Spread, __VA_ARGS__)                \
       AST_TYPESWITCH_CASE_NODE(CallOp, __VA_ARGS__)                \
-      AST_TYPESWITCH_CASE_NODE(MemberOp, __VA_ARGS__)              \
-      AST_TYPESWITCH_CASE_NODE(IndexOp, __VA_ARGS__)               \
+      AST_TYPESWITCH_CASE_NODE(CallMemberOp, __VA_ARGS__)          \
+      AST_TYPESWITCH_CASE_NODE(CallIndexOp, __VA_ARGS__)           \
       AST_TYPESWITCH_CASE_NODE(Declaration, __VA_ARGS__)           \
       AST_TYPESWITCH_CASE_NODE(UnpackDeclaration, __VA_ARGS__)     \
       AST_TYPESWITCH_CASE_NODE(If, __VA_ARGS__)                    \
       AST_TYPESWITCH_CASE_NODE(While, __VA_ARGS__)                 \
       AST_TYPESWITCH_CASE_NODE(Try, __VA_ARGS__)                   \
-      AST_TYPESWITCH_CASE_NODE(Switch, __VA_ARGS__)                \
       AST_TYPESWITCH_CASE_NODE(SwitchCase, __VA_ARGS__)            \
+      AST_TYPESWITCH_CASE_NODE(Switch, __VA_ARGS__)                \
       AST_TYPESWITCH_CASE_NODE(For, __VA_ARGS__)                   \
       AST_TYPESWITCH_CASE_NODE(BuiltinOperation, __VA_ARGS__)      \
       case Node::Type::Unknown:                                    \
@@ -68,22 +74,29 @@
     }                                                              \
   }
 
-#define APPLY_NODE(N)                                                  \
-  {                                                                    \
-    if (node->N) {                                                     \
-      node->N = cast<decltype(node->N)::element_type>(apply(node->N)); \
-    }                                                                  \
+#define APPLY_NODE(N)                                             \
+  {                                                               \
+    if (node->N) {                                                \
+      using NodeType = decltype(node->N)::element_type;           \
+      ref<NodeType> replacement = cast<NodeType>(apply(node->N)); \
+      if (replacement.get() != node->N.get()) {                   \
+        node->N = replacement;                                    \
+      }                                                           \
+    }                                                             \
   }
 
-#define APPLY_VECTOR(N)                                           \
-  {                                                               \
-    using NodeType = decltype(node->N)::value_type::element_type; \
-    for (ref<NodeType> & child_node : node->N) {                  \
-      child_node = cast<NodeType>(apply(child_node));             \
-    }                                                             \
-    auto begin = node->N.begin();                                 \
-    auto end = node->N.end();                                     \
-    node->N.erase(std::remove(begin, end, nullptr), end);         \
+#define APPLY_VECTOR(N)                                              \
+  {                                                                  \
+    using NodeType = decltype(node->N)::value_type::element_type;    \
+    for (ref<NodeType> & child_node : node->N) {                     \
+      ref<NodeType> replacement = cast<NodeType>(apply(child_node)); \
+      if (replacement.get() != child_node.get()) {                   \
+        child_node = replacement;                                    \
+      }                                                              \
+    }                                                                \
+    auto begin = node->N.begin();                                    \
+    auto end = node->N.end();                                        \
+    node->N.erase(std::remove(begin, end, nullptr), end);            \
   }
 
 #define HANDLE_NODE(ReplacementType, NodeType, Children)              \

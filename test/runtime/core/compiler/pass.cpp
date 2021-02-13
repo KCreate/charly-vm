@@ -120,7 +120,7 @@ TEST_CASE("can replace nodes") {
 }
 
 TEST_CASE("can remove statements from blocks and tuples") {
-  ref<Block> block = cast<Block>(Parser::parse_program("1 2 3 4")->body);
+  ref<Block> block = cast<Block>(Parser::parse_program("1 2 3 4"));
 
   struct IntsAbove2RemoverPass : public Pass {
     virtual ref<Expression> transform(const ref<Int>& node) override {

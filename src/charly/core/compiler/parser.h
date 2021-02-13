@@ -205,13 +205,6 @@ private:
   ref<Self> parse_self_token();
   ref<Super> parse_super_token();
 
-  void validate_import(const ref<Import>& node);
-  void validate_unpack_declaration(const ref<UnpackDeclaration>& node);
-  void validate_assignment(const ref<Assignment>& node);
-  void validate_spawn(const ref<Spawn>& node);
-  void validate_dict(const ref<Dict>& node);
-  void validate_function(const ref<Function>& node);
-
   ref<Statement> create_declaration(const ref<Expression>& target, const ref<Expression>& value, bool constant);
 
   // replaces Id nodes with Name nodes within tuples and dicts that

@@ -1,30 +1,56 @@
 # Todos
 
+- Refactor (split up) UnpackDeclaration and UnpackAssignment into distinct nodes
+  - Similar to FunctionArgument node
+
+- Local variable allocator
+  - Allocate local variable slot for each declaration
+  - Leaked slots are allocated on the heap instead of on the stack
+  - Rewrite `$<number>` identifiers either to frame offset or dynamic variable index
+
 - AST to IR lowering process
-  - Spread expressions
-  - Rewrite default arguments and member initializers
   - Local variable allocator
-    - Rewrite `$<number>` identifiers either to frame offset or dynamic variable index
+  - REPL needs to keep track of variables declared in previous compilations
+  - Spread expressions
   - Constant fold expressions
   - Make sure each function returns null in case of no other returns
+  - Rewrite default arguments and member initializers
   - Rewrite control statements to labels, gotos and conditional gotos
 
 - Intermediate representation for charly code
   - Human readable charly bytecode syntax
-  - Assembler for charly bytecodes
+  - Assembler for charly bytehttps://www.leafly.com/codes
   - Bytecode to file / line / column mapping
 
 - Concurrent Garbage Collector
-  - Write barrier
-  - Mark stack
-    - Pause threads once in a while to allow mark-thread to catch up
+  - Different properties of garbage collector types
+    - Pause times
+    - Application performance overhead
+    - Heap fragmentation (Cache performance)
+    - Compaction? Can the heap shrink over time
+  - Shenandoah collector from OpenJDK
+    - Mark word containing forward pointer
+    - Read / Write barriers for object accesses
 
 - Value model
+  - Each heap cell should be divided into 8 byte cells
+    - Allows for more detailed inline caches as builtin properties can be
+      cached in the same way that object properties may be cached
+  - Classes cannot be modified at runtime. They can only be subclassed
+  - Object creates from classes cannot have new keys assigned to them
+    - They are static shapes that can only store the properties declared in their class
+    - For a dynamic collection of values use the dict primitive datatype
+      - Small dictionaries could be laid out inline and take advantage of inline caches
+
+- Task scheduling
+  - Cannot have a single global task queue, too much overhead
+  - Every worker thread needs to get their own task queue
+    - Implement work stealing between the threads
+
 - Memory allocator
 - Codegenerator
   - Creates instructionblock
   - Allocates constants
-- Thread control
 - Fiber threads
   - Write custom scheduler using setjmp/longjmp
   - Allocate custom stack (4kb) per fiber

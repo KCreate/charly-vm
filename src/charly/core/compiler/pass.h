@@ -56,10 +56,6 @@ protected:
   virtual void leave(const ref<Node>&) {}
 
   // clang-format off
-  HANDLE_NODE(Program, Program, {
-    APPLY_NODE(body);
-  })
-
   HANDLE_NODE(Statement, Block, {
     APPLY_VECTOR(statements);
   })
@@ -145,6 +141,10 @@ protected:
     APPLY_VECTOR(arguments);
   })
 
+  HANDLE_NODE(ClassProperty, ClassProperty, {
+    APPLY_NODE(value);
+  })
+
   HANDLE_NODE(Expression, Class, {
     APPLY_NODE(parent);
     APPLY_NODE(constructor);
@@ -153,12 +153,28 @@ protected:
     APPLY_VECTOR(static_properties)
   })
 
-  HANDLE_NODE(ClassProperty, ClassProperty, {
-    APPLY_NODE(value);
+  HANDLE_NODE(Expression, MemberOp, {
+    APPLY_NODE(target);
+  })
+
+  HANDLE_NODE(Expression, IndexOp, {
+    APPLY_NODE(target);
+    APPLY_NODE(index);
   })
 
   HANDLE_NODE(Expression, Assignment, {
     APPLY_NODE(target);
+    APPLY_NODE(source);
+  })
+
+  HANDLE_NODE(Expression, MemberAssignment, {
+    APPLY_NODE(target);
+    APPLY_NODE(source);
+  })
+
+  HANDLE_NODE(Expression, IndexAssignment, {
+    APPLY_NODE(target);
+    APPLY_NODE(index);
     APPLY_NODE(source);
   })
 
@@ -186,13 +202,15 @@ protected:
     APPLY_VECTOR(arguments)
   })
 
-  HANDLE_NODE(Expression, MemberOp, {
+  HANDLE_NODE(Expression, CallMemberOp, {
     APPLY_NODE(target);
+    APPLY_VECTOR(arguments)
   })
 
-  HANDLE_NODE(Expression, IndexOp, {
+  HANDLE_NODE(Expression, CallIndexOp, {
     APPLY_NODE(target);
     APPLY_NODE(index);
+    APPLY_VECTOR(arguments)
   })
 
   HANDLE_NODE(Statement, Declaration, {
@@ -220,15 +238,15 @@ protected:
     APPLY_NODE(catch_stmt);
   })
 
+  HANDLE_NODE(SwitchCase, SwitchCase, {
+    APPLY_NODE(test);
+    APPLY_NODE(stmt);
+  })
+
   HANDLE_NODE(Statement, Switch, {
     APPLY_NODE(test);
     APPLY_NODE(default_stmt);
     APPLY_VECTOR(cases)
-  })
-
-  HANDLE_NODE(SwitchCase, SwitchCase, {
-    APPLY_NODE(test);
-    APPLY_NODE(stmt);
   })
 
   HANDLE_NODE(Statement, For, {
