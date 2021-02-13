@@ -24,7 +24,10 @@ target_link_libraries(charly readline)
 target_link_libraries(charly stdc++)
 target_include_directories(charly PRIVATE src)
 target_compile_features(charly PRIVATE cxx_std_17)
-target_compile_options(charly PRIVATE -Wall -Wextra -Wpedantic -Werror -Wno-vla-extension -Wno-c++20-designator)
+target_compile_options(charly PRIVATE
+  -Wall -Wextra -Wpedantic -Werror -Wno-vla-extension -Wno-c++20-designator
+  -ferror-limit=5
+)
 
 # install to global folder
 install(TARGETS charly RUNTIME DESTINATION bin)

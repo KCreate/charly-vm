@@ -33,7 +33,7 @@ using namespace charly::core::compiler::ast;
 
 namespace charly::core::compiler {
 
-ref<Program> Parser::parse_program(utils::Buffer& source, DiagnosticConsole& console) {
+ref<Block> Parser::parse_program(utils::Buffer& source, DiagnosticConsole& console) {
   try {
     Parser parser = Parser(source, console);
 
@@ -78,12 +78,10 @@ ref<Expression> Parser::parse_expression(utils::Buffer& source, DiagnosticConsol
   } catch (DiagnosticException&) { return nullptr; }
 }
 
-ref<Program> Parser::parse_program() {
+ref<Block> Parser::parse_program() {
   ref<Block> body = make<Block>();
   parse_block_body(body);
-  ref<Program> program = make<Program>(body);
-  program->set_location(body);
-  return program;
+  return body;
 }
 
 ref<Block> Parser::parse_block() {

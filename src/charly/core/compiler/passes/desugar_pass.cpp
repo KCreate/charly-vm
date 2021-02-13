@@ -229,7 +229,8 @@ void DesugarPass::inspect_leave(const ref<Class>& node) {
   }
 }
 
-// this pass rewrites for expressions from their original form:
+// transform for-statements into their desugared form of using
+// the builtin iterator methods and a while loop
 //
 // for const (a, b, c) in foo.bar() {
 //   print(a, b, c)

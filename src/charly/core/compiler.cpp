@@ -27,19 +27,19 @@
 #include "charly/core/compiler.h"
 #include "charly/core/compiler/parser.h"
 
-#include "charly/core/compiler/passes/reserved_identifiers_check.h"
-#include "charly/core/compiler/passes/duplicates_check.h"
 #include "charly/core/compiler/passes/class_constructor_check.h"
 #include "charly/core/compiler/passes/desugar_pass.h"
+#include "charly/core/compiler/passes/duplicates_check.h"
+#include "charly/core/compiler/passes/reserved_identifiers_check.h"
 
-namespace {
 using namespace charly::core::compiler::ast;
-}
 
 namespace charly::core::compiler {
 
-std::shared_ptr<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffer& source) {
-  std::shared_ptr<CompilationUnit> unit = std::make_shared<CompilationUnit>(filepath, source);
+std::shared_ptr<CompilationUnit> Compiler::compile(CompilationUnit::Type type,
+                                                   const std::string& filepath,
+                                                   utils::Buffer& source) {
+  std::shared_ptr<CompilationUnit> unit = std::make_shared<CompilationUnit>(type, filepath, source);
 
   // parse source file
   unit->ast = Parser::parse_program(source, unit->console);
@@ -63,6 +63,10 @@ std::shared_ptr<CompilationUnit> Compiler::compile(const std::string& filepath, 
       return unit;                                        \
   }
 
+  if (type == CompilationUnit::Type::Module) {
+    unit->ast = Compiler::wrap_module(unit->ast);
+  }
+
   APPLY_DIAGNOSTIC_PASS(ReservedIdentifiersCheck);
   APPLY_DIAGNOSTIC_PASS(DuplicatesCheck);
   APPLY_DIAGNOSTIC_PASS(ClassConstructorCheck);
@@ -73,6 +77,12 @@ std::shared_ptr<CompilationUnit> Compiler::compile(const std::string& filepath, 
 #undef APPLY_TRANSFORM_PASS
 
   return unit;
+}
+
+ast::ref<ast::Statement> Compiler::wrap_module(const ref<Statement>& program) {
+  ref<Function> func = make<Function>(false, make<Name>("main"), program);
+  func->set_location(program);
+  return func;
 }
 
 }  // namespace charly::core::compiler

@@ -70,7 +70,7 @@ int run_repl() {
     }
 
     utils::Buffer source_buffer(line);
-    auto unit = Compiler::compile("stdin", source_buffer);
+    auto unit = Compiler::compile(CompilationUnit::Type::ReplInput, "stdin", source_buffer);
     auto program = unit->ast;
 
     unit->console.dump_all(std::cerr);
@@ -83,7 +83,7 @@ int run_repl() {
     assert(program.get());
 
     // check if program has nodes
-    if (ref<Block> body = cast<Block>(program->body)) {
+    if (ref<Block> body = cast<Block>(program)) {
       if (body->statements.size() == 0)
         continue;
     }
@@ -112,7 +112,7 @@ int run_file(int, char** argv) {
   }
   file.close();
 
-  auto unit = Compiler::compile(filename, file_buffer);
+  auto unit = Compiler::compile(CompilationUnit::Type::Module, filename, file_buffer);
   auto program = unit->ast;
 
   unit->console.dump_all(std::cerr);

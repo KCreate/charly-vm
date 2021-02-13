@@ -91,7 +91,7 @@ struct KeywordContext {
 
 class Parser : public Lexer {
 public:
-  static ref<Program> parse_program(const std::string& source) {
+  static ref<Block> parse_program(const std::string& source) {
     utils::Buffer buffer(source);
     DiagnosticConsole console("unknown", buffer);
     return parse_program(buffer, console);
@@ -109,7 +109,7 @@ public:
     return parse_expression(buffer, console);
   }
 
-  static ref<Program> parse_program(utils::Buffer& source, DiagnosticConsole& console);
+  static ref<Block> parse_program(utils::Buffer& source, DiagnosticConsole& console);
   static ref<Statement> parse_statement(utils::Buffer& source, DiagnosticConsole& console);
   static ref<Expression> parse_expression(utils::Buffer& source, DiagnosticConsole& console);
 
@@ -126,7 +126,7 @@ private:
   }
 
   // structural and statements
-  ref<Program> parse_program();
+  ref<Block> parse_program();
   ref<Block> parse_block();
   void parse_block_body(const ref<Block>& block);
   ref<Statement> parse_block_or_statement();

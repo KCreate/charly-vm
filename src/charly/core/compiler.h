@@ -35,17 +35,29 @@
 namespace charly::core::compiler {
 
 struct CompilationUnit {
-  CompilationUnit(const std::string& filepath, utils::Buffer& source) :
-    console(filepath, source), filepath(filepath), ast(nullptr) {}
+  enum class Type : uint8_t { Module, ReplInput };
 
+  CompilationUnit(Type type, const std::string& filepath, utils::Buffer& source) :
+    type(type), console(filepath, source), filepath(filepath), ast(nullptr) {}
+
+  Type type;
   DiagnosticConsole console;
   std::string filepath;
-  ast::ref<ast::Program> ast;
+  ast::ref<ast::Statement> ast;
 };
 
 class Compiler {
 public:
-  static std::shared_ptr<CompilationUnit> compile(const std::string& filepath, utils::Buffer& source);
+
+  // compile source code into a compilation unit
+  static std::shared_ptr<CompilationUnit> compile(CompilationUnit::Type type,
+                                                  const std::string& filepath,
+                                                  utils::Buffer& source);
+
+private:
+
+  // wrap node in a module inclusion function for the runtime to call
+  static ast::ref<ast::Statement> wrap_module(const ast::ref<ast::Statement>& program);
 };
 
 }  // namespace charly::core::compiler

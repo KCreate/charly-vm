@@ -24,12 +24,21 @@
  * SOFTWARE.
  */
 
-class BoundFunc {
-  property target
+const x = "hello world"
 
-  constructor(@target)
+func foo(cb) = cb(100)
 
-  apply(...arguments) {
-    return @target(...arguments)
-  }
+{
+  const y = x
+  const z = 25
+  print(y, z)
+  foo.bar(1, 2)
+  foo[1](1, 2)
+  foo(->(arg) {
+    const bar = arg + 25
+    print(y, z, bar)
+  })
 }
+
+const y = 1
+const z = "test"
