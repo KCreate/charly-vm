@@ -75,63 +75,10 @@ void ReservedIdentifiersCheck::inspect_leave(const ref<Declaration>& node) {
 }
 
 void ReservedIdentifiersCheck::inspect_leave(const ref<UnpackDeclaration>& node) {
-  if (ref<Tuple> tuple = cast<Tuple>(node->target)) {
-    for (ref<Expression>& element : tuple->elements) {
-      switch (element->type()) {
-        case Node::Type::Name: {
-          ref<Name> name = cast<Name>(element);
-
-          if (is_reserved_identifier(name->value)) {
-            m_console.error(name, "'", name->value, "' is a reserved variable name");
-          }
-
-          break;
-        }
-        case Node::Type::Spread: {
-          ref<Spread> spread = cast<Spread>(element);
-          assert(isa<Name>(spread->expression));
-          ref<Name> name = cast<Name>(spread->expression);
-
-          if (is_reserved_identifier(name->value)) {
-            m_console.error(name, "'", name->value, "' is a reserved variable name");
-          }
-
-          break;
-        }
-        default: {
-          assert(false && "unexpected node");
-        }
-      }
+  for (const ref<UnpackTargetElement>& element : node->target->elements) {
+    if (is_reserved_identifier(element->name->value)) {
+      m_console.error(element->name, "'", element->name->value, "' is a reserved variable name");
     }
-  } else if (ref<Dict> dict = cast<Dict>(node->target)) {
-    for (ref<DictEntry>& entry : dict->elements) {
-      switch (entry->key->type()) {
-        case Node::Type::Name: {
-          ref<Name> name = cast<Name>(entry->key);
-
-          if (is_reserved_identifier(name->value)) {
-            m_console.error(name, "'", name->value, "' is a reserved variable name");
-          }
-          break;
-        }
-        case Node::Type::Spread: {
-          ref<Spread> spread = cast<Spread>(entry->key);
-          assert(isa<Name>(spread->expression));
-          ref<Name> name = cast<Name>(spread->expression);
-
-          if (is_reserved_identifier(name->value)) {
-            m_console.error(name, "'", name->value, "' is a reserved variable name");
-          }
-
-          break;
-        }
-        default: {
-          assert(false && "unexpected node");
-        }
-      }
-    }
-  } else {
-    assert(false && "unexpected node");
   }
 }
 

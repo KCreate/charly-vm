@@ -43,7 +43,7 @@ struct CompilationUnit {
   Type type;
   DiagnosticConsole console;
   std::string filepath;
-  ast::ref<ast::Statement> ast;
+  ast::ref<ast::Block> ast;
 };
 
 class Compiler {
@@ -57,7 +57,7 @@ public:
 private:
 
   // wrap node in a module inclusion function for the runtime to call
-  static ast::ref<ast::Statement> wrap_module(const ast::ref<ast::Statement>& program);
+  static ast::ref<ast::Block> wrap_module(const ast::ref<ast::Block>& block);
 };
 
 }  // namespace charly::core::compiler

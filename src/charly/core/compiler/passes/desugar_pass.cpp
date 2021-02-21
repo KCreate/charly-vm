@@ -34,13 +34,17 @@ namespace charly::core::compiler::ast {
 ref<Statement> DesugarPass::transform(const ref<Block>& node) {
 
   // search for defer nodes
-  auto it = node->statements.begin();
-  for (; it != node->statements.end(); it++) {
+  for (auto it = node->statements.begin(); it != node->statements.end(); it++) {
     const ref<Statement>& statement = *it;
 
     // wrap the remaining statements into
     // the body node of the defer statement
     if (ref<Defer> defer = cast<Defer>(statement)) {
+
+      // do not process nodes twice
+      if (defer->body)
+        continue;
+
       ref<Block> block = make<Block>();
 
       // put the remaining blocks of the parent block into the body
@@ -50,15 +54,14 @@ ref<Statement> DesugarPass::transform(const ref<Block>& node) {
 
       // remove the copied statements from the parent block
       node->statements.erase(it + 1, node->statements.end());
-
       break;
     }
   }
 
   // unwrap block(block(...))
   if (node->statements.size() == 1) {
-    if (isa<Block>(node->statements.back())) {
-      return node->statements.back();
+    if (ref<Block> block = cast<Block>(node->statements.front())) {
+      return block;
     }
   }
 
@@ -72,7 +75,11 @@ void DesugarPass::inspect_leave(const ref<Import>& node) {
     source = make<String>(name->value);
   }
 
-  node->source = make<BuiltinOperation>("caststring", source);
+  if (!isa<String>(source)) {
+    source = make<BuiltinOperation>("caststring", source);
+  }
+
+  node->source = source;
 }
 
 ref<Expression> DesugarPass::transform(const ref<Spawn>& node) {
@@ -134,6 +141,9 @@ ref<Expression> DesugarPass::transform(const ref<FormatString>& node) {
 }
 
 void DesugarPass::inspect_leave(const ref<Function>& node) {
+
+  // the rest of this function detects yield expressions
+  // inside functions and turns them into generator functions
   if (node->arrow_function)
     return;
 
@@ -178,11 +188,7 @@ void DesugarPass::inspect_leave(const ref<Function>& node) {
   if (yield_node) {
 
     // wrapper arrow func
-    ref<Statement> func_stmt = node->body;
-    if (!isa<Block>(func_stmt)) {
-      func_stmt = make<Block>(func_stmt);
-    }
-    ref<Function> func = make<Function>(true, make<Name>(""), func_stmt);
+    ref<Function> func = make<Function>(true, make<Name>(""), node->body);
 
     // insert arguments
     for (const ref<FunctionArgument>& argument : node->arguments) {
@@ -200,8 +206,9 @@ void DesugarPass::inspect_leave(const ref<Function>& node) {
     spawn->execute_immediately = false;
     ref<BuiltinOperation> castgenerator = make<BuiltinOperation>("castgenerator", spawn);
     ref<Return> return_node = make<Return>(castgenerator);
+    ref<Block> new_body = make<Block>(return_node);
 
-    node->body = apply(return_node);
+    node->body = cast<Block>(apply(new_body));
   }
 }
 
@@ -273,13 +280,14 @@ ref<Statement> DesugarPass::transform(const ref<For>& node) {
   ref<While> loop = make<While>(make<Bool>(true), loop_block);
 
   // build iterator result unpack declaration
-  ref<Tuple> unpack_target = make<Tuple>(make<Name>("__value"), make<Name>("__done"));
+  ref<UnpackTarget> unpack_target = make<UnpackTarget>(false, make<UnpackTargetElement>(make<Name>("__value")),
+                                                       make<UnpackTargetElement>(make<Name>("__done")));
   ref<BuiltinOperation> unpack_source = make<BuiltinOperation>("iteratornext", make<Id>("__iterator"));
   ref<UnpackDeclaration> unpack_declaration = make<UnpackDeclaration>(unpack_target, unpack_source, true);
   loop_block->statements.push_back(unpack_declaration);
 
   // break if __done
-  ref<If> break_if = make<If>(make<Id>("__done"), make<Break>());
+  ref<If> break_if = make<If>(make<Id>("__done"), make<Block>(make<Break>()));
   loop_block->statements.push_back(break_if);
 
   // original body

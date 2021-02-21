@@ -47,7 +47,10 @@
                                                                    \
       AST_TYPESWITCH_CASE_NODE(MemberOp, __VA_ARGS__)              \
       AST_TYPESWITCH_CASE_NODE(IndexOp, __VA_ARGS__)               \
+      AST_TYPESWITCH_CASE_NODE(UnpackTargetElement, __VA_ARGS__)   \
+      AST_TYPESWITCH_CASE_NODE(UnpackTarget, __VA_ARGS__)          \
       AST_TYPESWITCH_CASE_NODE(Assignment, __VA_ARGS__)            \
+      AST_TYPESWITCH_CASE_NODE(UnpackAssignment, __VA_ARGS__)            \
       AST_TYPESWITCH_CASE_NODE(MemberAssignment, __VA_ARGS__)      \
       AST_TYPESWITCH_CASE_NODE(IndexAssignment, __VA_ARGS__)       \
       AST_TYPESWITCH_CASE_NODE(Ternary, __VA_ARGS__)               \

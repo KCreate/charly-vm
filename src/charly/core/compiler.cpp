@@ -27,11 +27,13 @@
 #include "charly/core/compiler.h"
 #include "charly/core/compiler/parser.h"
 
-#include "charly/core/compiler/passes/grammar_validation_check.h"
 #include "charly/core/compiler/passes/class_constructor_check.h"
-#include "charly/core/compiler/passes/desugar_pass.h"
 #include "charly/core/compiler/passes/duplicates_check.h"
+#include "charly/core/compiler/passes/grammar_validation_check.h"
 #include "charly/core/compiler/passes/reserved_identifiers_check.h"
+
+#include "charly/core/compiler/passes/desugar_pass.h"
+#include "charly/core/compiler/passes/local_allocator_pass.h"
 
 using namespace charly::core::compiler::ast;
 
@@ -56,12 +58,12 @@ std::shared_ptr<CompilationUnit> Compiler::compile(CompilationUnit::Type type,
       return unit;                            \
   }
 
-#define APPLY_TRANSFORM_PASS(PassName)                    \
-  {                                                       \
-    assert(unit->ast.get());                              \
-    unit->ast = PassName(unit->console).apply(unit->ast); \
-    if (unit->console.has_errors())                       \
-      return unit;                                        \
+#define APPLY_TRANSFORM_PASS(PassName)                                 \
+  {                                                                    \
+    assert(unit->ast.get());                                           \
+    unit->ast = cast<Block>(PassName(unit->console).apply(unit->ast)); \
+    if (unit->console.has_errors())                                    \
+      return unit;                                                     \
   }
 
   if (type == CompilationUnit::Type::Module) {
@@ -75,17 +77,20 @@ std::shared_ptr<CompilationUnit> Compiler::compile(CompilationUnit::Type type,
   APPLY_DIAGNOSTIC_PASS(ClassConstructorCheck);
 
   APPLY_TRANSFORM_PASS(DesugarPass);
+  APPLY_TRANSFORM_PASS(LocalAllocatorPass);
 
 #undef APPLY_DIAGNOSTIC_PASS
 #undef APPLY_TRANSFORM_PASS
 
+  unit->ast->needs_locals_table = false;
+
   return unit;
 }
 
-ast::ref<ast::Statement> Compiler::wrap_module(const ref<Statement>& program) {
-  ref<Function> func = make<Function>(false, make<Name>("main"), program);
-  func->set_location(program);
-  return func;
+ast::ref<ast::Block> Compiler::wrap_module(const ref<Block>& block) {
+  ref<Function> func = make<Function>(false, make<Name>("main"), block);
+  func->set_location(block);
+  return make<Block>(func);
 }
 
 }  // namespace charly::core::compiler

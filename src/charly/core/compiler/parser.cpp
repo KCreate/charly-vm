@@ -344,18 +344,18 @@ ref<If> Parser::parse_if() {
   eat(TokenType::If);
 
   ref<Expression> condition = parse_expression();
-  ref<Statement> then_stmt = parse_block_or_statement();
-  ref<Statement> else_stmt = nullptr;
+  ref<Block> then_block = wrap_statement_in_block(parse_block_or_statement());
+  ref<Block> else_block = nullptr;
 
   if (skip(TokenType::Else)) {
     if (type(TokenType::If)) {
-      else_stmt = parse_if();
+      else_block = wrap_statement_in_block(parse_if());
     } else {
-      else_stmt = parse_block_or_statement();
+      else_block = wrap_statement_in_block(parse_block_or_statement());
     }
   }
 
-  ref<If> node = make<If>(condition, then_stmt, else_stmt);
+  ref<If> node = make<If>(condition, then_block, else_block);
   node->set_begin(begin);
   return node;
 }
@@ -369,10 +369,10 @@ ref<While> Parser::parse_while() {
   auto kwcontext = m_keyword_context;
   m_keyword_context._break = true;
   m_keyword_context._continue = true;
-  ref<Statement> then_stmt = parse_block_or_statement();
+  ref<Block> then_block = wrap_statement_in_block(parse_block_or_statement());
   m_keyword_context = kwcontext;
 
-  ref<While> node = make<While>(condition, then_stmt);
+  ref<While> node = make<While>(condition, then_block);
   node->set_begin(begin);
   return node;
 }
@@ -386,10 +386,10 @@ ref<While> Parser::parse_loop() {
   auto kwcontext = m_keyword_context;
   m_keyword_context._break = true;
   m_keyword_context._continue = true;
-  ref<Statement> then_stmt = parse_block_or_statement();
+  ref<Block> then_block = wrap_statement_in_block(parse_block_or_statement());
   m_keyword_context = kwcontext;
 
-  ref<While> node = make<While>(condition, then_stmt);
+  ref<While> node = make<While>(condition, then_block);
   node->set_begin(begin);
   return node;
 }
@@ -398,7 +398,7 @@ ref<Statement> Parser::parse_try() {
   Location begin = m_token.location;
   eat(TokenType::Try);
 
-  ref<Statement> try_stmt = parse_block_or_statement();
+  ref<Block> try_block = wrap_statement_in_block(parse_block_or_statement());
 
   eat(TokenType::Catch);
   ref<Name> exception_name;
@@ -409,24 +409,24 @@ ref<Statement> Parser::parse_try() {
     exception_name = make<Name>("exception");
     exception_name->set_location(begin);
   }
-  ref<Statement> catch_stmt = parse_block_or_statement();
+  ref<Block> catch_block = wrap_statement_in_block(parse_block_or_statement());
 
-  ref<Statement> finally_stmt = nullptr;
+  ref<Block> finally_block = nullptr;
   if (skip(TokenType::Finally)) {
     auto kwcontext = m_keyword_context;
     m_keyword_context._return = false;
     m_keyword_context._break = false;
     m_keyword_context._continue = false;
     m_keyword_context._yield = false;
-    finally_stmt = parse_block_or_statement();
+    finally_block = wrap_statement_in_block(parse_block_or_statement());
     m_keyword_context = kwcontext;
   }
 
-  ref<Try> try_node = make<Try>(try_stmt, exception_name, catch_stmt);
+  ref<Try> try_node = make<Try>(try_block, exception_name, catch_block);
   try_node->set_begin(begin);
 
-  if (finally_stmt) {
-    return make<Block>(make<Defer>(finally_stmt), try_node);
+  if (finally_block) {
+    return make<Block>(make<Defer>(finally_block), try_node);
   } else {
     return try_node;
   }
@@ -451,12 +451,12 @@ ref<Switch> Parser::parse_switch() {
 
         auto kwcontext = m_keyword_context;
         m_keyword_context._break = true;
-        ref<Statement> case_stmt = parse_block_or_statement();
+        ref<Block> case_block = wrap_statement_in_block(parse_block_or_statement());
         m_keyword_context = kwcontext;
 
-        ref<SwitchCase> case_node = make<SwitchCase>(case_test, case_stmt);
+        ref<SwitchCase> case_node = make<SwitchCase>(case_test, case_block);
         case_node->set_begin(case_begin);
-        node->cases.push_back(make<SwitchCase>(case_test, case_stmt));
+        node->cases.push_back(make<SwitchCase>(case_test, case_block));
         break;
       }
       case TokenType::Default: {
@@ -464,11 +464,10 @@ ref<Switch> Parser::parse_switch() {
 
         auto kwcontext = m_keyword_context;
         m_keyword_context._break = true;
-        ref<Statement> stmt = parse_block_or_statement();
+        ref<Block> block = wrap_statement_in_block(parse_block_or_statement());
         m_keyword_context = kwcontext;
-
-        stmt->set_begin(case_begin);
-        node->default_stmt = stmt;
+        block->set_begin(case_begin);
+        node->default_block = block;
         break;
       }
       default: {
@@ -515,16 +514,15 @@ ref<For> Parser::parse_for() {
 
   eat(TokenType::In);
 
-  prepare_assignment_target(target);
   ref<Statement> declaration = create_declaration(target, parse_expression(), constant_value);
 
   auto kwcontext = m_keyword_context;
   m_keyword_context._break = true;
   m_keyword_context._continue = true;
-  ref<Statement> then_stmt = parse_block_or_statement();
+  ref<Block> then_block = wrap_statement_in_block(parse_block_or_statement());
   m_keyword_context = kwcontext;
 
-  ref<For> node = make<For>(declaration, then_stmt);
+  ref<For> node = make<For>(declaration, then_block);
   node->set_begin(begin);
 
   return node;
@@ -586,7 +584,7 @@ ref<Statement> Parser::parse_declaration() {
   } else {
     prepare_assignment_target(target);
 
-    ref<UnpackDeclaration> node = make<UnpackDeclaration>(target, value, const_declaration);
+    ref<UnpackDeclaration> node = make<UnpackDeclaration>(make<UnpackTarget>(target), value, const_declaration);
     node->set_begin(begin);
     return node;
   }
@@ -653,6 +651,10 @@ ref<Expression> Parser::parse_assignment() {
     ref<Expression> source = parse_expression();
 
     switch (target->type()) {
+      case Node::Type::Id: {
+        ref<Id> id = cast<Id>(target);
+        return make<Assignment>(assignment_operator, id, source);
+      }
       case Node::Type::MemberOp: {
         ref<MemberOp> member = cast<MemberOp>(target);
         return make<MemberAssignment>(assignment_operator, member, source);
@@ -661,8 +663,26 @@ ref<Expression> Parser::parse_assignment() {
         ref<IndexOp> index = cast<IndexOp>(target);
         return make<IndexAssignment>(assignment_operator, index, source);
       }
+      case Node::Type::Tuple:
+      case Node::Type::Dict: {
+        if (assignment_operator != TokenType::Assignment) {
+          m_console.error(target,
+                          "this type of expression cannot be used as the left-hand side of an operator assignment");
+          break;
+        }
+
+        if (!target->assignable()) {
+          m_console.error(target,
+                          "left-hand side of assignment is not assignable");
+          break;
+        }
+
+        return make<UnpackAssignment>(make<UnpackTarget>(target), source);
+      }
       default: {
-        return make<Assignment>(assignment_operator, target, source);
+        m_console.error(target,
+                        "left-hand side of assignment is not assignable");
+        break;
       }
     }
   }
@@ -1108,7 +1128,7 @@ ref<Function> Parser::parse_function(FunctionFlags flags) {
     body = make<Return>(cast<Expression>(body));
   }
 
-  ref<Function> node = make<Function>(false, function_name, body, argument_list);
+  ref<Function> node = make<Function>(false, function_name, wrap_statement_in_block(body), argument_list);
   node->set_begin(begin);
   return node;
 }
@@ -1139,7 +1159,7 @@ ref<Function> Parser::parse_arrow_function() {
     body = make<Return>(cast<Expression>(body));
   }
 
-  ref<Function> node = make<Function>(true, make<Name>(""), body, argument_list);
+  ref<Function> node = make<Function>(true, make<Name>(""), wrap_statement_in_block(body), argument_list);
   node->set_begin(begin);
   return node;
 }
@@ -1361,6 +1381,7 @@ ref<Super> Parser::parse_super_token() {
 }
 
 ref<Statement> Parser::create_declaration(const ref<Expression>& target, const ref<Expression>& value, bool constant) {
+  prepare_assignment_target(target);
   switch (target->type()) {
     case Node::Type::Id: {
       return make<Declaration>(make<Name>(cast<Id>(target)), value, constant);
@@ -1368,7 +1389,7 @@ ref<Statement> Parser::create_declaration(const ref<Expression>& target, const r
     }
     case Node::Type::Tuple:
     case Node::Type::Dict: {
-      return make<UnpackDeclaration>(target, value, constant);
+      return make<UnpackDeclaration>(make<UnpackTarget>(target), value, constant);
     }
     default: {
       assert(false && "unexpected node type");
@@ -1415,6 +1436,14 @@ void Parser::prepare_assignment_target(const ref<Expression>& node) {
       break;
     }
   }
+}
+
+ref<Block> Parser::wrap_statement_in_block(const ref<Statement>& node) {
+  if (isa<Block>(node)) {
+    return cast<Block>(node);
+  }
+
+  return make<Block>(node);
 }
 
 void Parser::unexpected_token() {

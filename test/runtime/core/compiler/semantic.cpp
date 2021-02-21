@@ -115,10 +115,10 @@ TEST_CASE("checks for reserved identifiers") {
 }
 
 TEST_CASE("checks for duplicate identifiers") {
-  COMPILE_ERROR("let (a, a) = x", "duplicate unpack target");
-  COMPILE_ERROR("let (a, ...a) = x", "duplicate unpack target");
+  COMPILE_ERROR("let (a, a) = x", "duplicate key 'a'");
+  COMPILE_ERROR("let (a, ...a) = x", "duplicate key 'a'");
   COMPILE_ERROR("let {a, a} = x", "duplicate key 'a'");
-  COMPILE_ERROR("let {a, ...a} = x", "duplicate unpack target");
+  COMPILE_ERROR("let {a, ...a} = x", "duplicate key 'a'");
 
   COMPILE_ERROR("({a: 1, a: 2})", "duplicate key 'a'");
 
@@ -168,7 +168,7 @@ TEST_CASE("checks for missing calls to parent constructor in subclasses") {
 
 TEST_CASE("checks for missing constructors in subclasses with properties") {
   COMPILE_ERROR("class A extends B { property x }", "class 'A' is missing a constructor");
-  COMPILE_OK("class A extends B {}");
+  COMPILE_OK("let B = null class A extends B {}");
 }
 
 TEST_CASE("checks for yield statements outside regular functions") {

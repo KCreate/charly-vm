@@ -25,19 +25,49 @@
  */
 
 #include "charly/core/compiler/pass.h"
+#include "charly/core/compiler/localvars.h"
 
 #pragma once
 
 namespace charly::core::compiler::ast {
 
-class GrammarValidationCheck : public DiagnosticPass {
+class LocalAllocatorPass : public DiagnosticPass {
 public:
   using DiagnosticPass::DiagnosticPass;
 
 private:
-  virtual void inspect_leave(const ref<Spawn>& node) override;
-  virtual void inspect_leave(const ref<Dict>& node) override;
-  virtual void inspect_leave(const ref<Function>& node) override;
+  std::shared_ptr<FunctionScope> m_function;
+  std::shared_ptr<BlockScope> m_block;
+  // bool m_toplevel = false;
+
+  void push_function(const ref<Function>&);
+  void push_block(const ref<Block>&);
+
+  void pop_function();
+  void pop_block();
+
+  // declare a new variable in the current block
+  const LocalVariable* declare_variable(const ref<Name>&, bool constant = false);
+
+  virtual bool inspect_enter(const ref<Function>&) override;
+  virtual void inspect_leave(const ref<Function>&) override;
+
+  virtual bool inspect_enter(const ref<Block>&) override;
+  virtual void inspect_leave(const ref<Block>&) override;
+
+  virtual bool inspect_enter(const ref<Declaration>&) override;
+  virtual ref<Statement> transform(const ref<Declaration>&) override;
+
+  virtual bool inspect_enter(const ref<UnpackDeclaration>&) override;
+  virtual void inspect_leave(const ref<UnpackDeclaration>&) override;
+
+  virtual void inspect_leave(const ref<Assignment>&) override;
+  virtual void inspect_leave(const ref<UnpackAssignment>&) override;
+
+  virtual bool inspect_enter(const ref<Try>&) override;
+  virtual ref<Statement> transform(const ref<Try>&) override;
+
+  virtual void inspect_leave(const ref<Id>&) override;
 };
 
 }  // namespace charly::core::compiler::ast

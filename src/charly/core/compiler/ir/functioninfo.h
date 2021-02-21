@@ -24,10 +24,38 @@
  * SOFTWARE.
  */
 
-func list_mod(list, ...modifiers) {
-  for mod in modifiers {
-    list = list.map(->(item) mod(item))
-  }
+#include <cstdint>
+#include <vector>
 
-  return list
-}
+#pragma once
+
+namespace charly::core::compiler::ir {
+
+// keep track of local variable info of functions
+struct FunctionInfo {
+  bool valid;
+  uint8_t local_variables;
+  uint8_t argc;
+  uint8_t minargc;
+  bool spread_argument;
+
+  FunctionInfo() : valid(false), local_variables(0), argc(0), minargc(0), spread_argument(false) {}
+  FunctionInfo(uint8_t lvars, uint8_t argc, uint8_t minargc, bool spread) :
+    valid(true), local_variables(lvars), argc(argc), minargc(minargc), spread_argument(spread) {}
+
+  // write a formatted version to the stream:
+  //
+  // (lvars=5, argc=3, minargc=2, spread=false)
+  friend std::ostream& operator<<(std::ostream& out, const FunctionInfo& info) {
+    out << "(";
+    out << "lvars=" << static_cast<int32_t>(info.local_variables) << ", ";
+    out << "argc=" << static_cast<int32_t>(info.argc) << ", ";
+    out << "minargc=" << static_cast<int32_t>(info.minargc) << ", ";
+    out << "spread=" << (info.spread_argument ? "true" : "false");
+    out << ")";
+
+    return out;
+  }
+};
+
+}  // namespace charly::core::compiler

@@ -34,58 +34,11 @@ namespace charly::core::compiler::ast {
 void DuplicatesCheck::inspect_leave(const ref<UnpackDeclaration>& node) {
   std::unordered_set<std::string> names;
 
-  if (ref<Tuple> tuple = cast<Tuple>(node->target)) {
-    for (ref<Expression>& element : tuple->elements) {
-      switch (element->type()) {
-        case Node::Type::Name: {
-          ref<Name> name = cast<Name>(element);
-          if (names.count(name->value)) {
-            m_console.error(element, "duplicate unpack target");
-          }
-          names.insert(name->value);
-          break;
-        }
-        case Node::Type::Spread: {
-          ref<Spread> spread = cast<Spread>(element);
-          ref<Name> name = cast<Name>(spread->expression);
-          if (names.count(name->value)) {
-            m_console.error(spread->expression, "duplicate unpack target");
-          }
-          names.insert(name->value);
-          break;
-        }
-        default: {
-          assert(false && "unexpected node");
-        }
-      }
+  for (const ref<UnpackTargetElement>& element : node->target->elements) {
+    if (names.count(element->name->value)) {
+      m_console.error(element->name, "duplicate key '", element->name->value, "'");
     }
-  } else if (ref<Dict> dict = cast<Dict>(node->target)) {
-    for (ref<DictEntry>& entry : dict->elements) {
-      switch (entry->key->type()) {
-        case Node::Type::Name: {
-          ref<Name> name = cast<Name>(entry->key);
-          if (names.count(name->value)) {
-            m_console.error(entry->key, "duplicate unpack target");
-          }
-          names.insert(name->value);
-          break;
-        }
-        case Node::Type::Spread: {
-          ref<Spread> spread = cast<Spread>(entry->key);
-          ref<Name> name = cast<Name>(spread->expression);
-          if (names.count(name->value)) {
-            m_console.error(spread->expression, "duplicate unpack target");
-          }
-          names.insert(name->value);
-          break;
-        }
-        default: {
-          assert(false && "unexpected node");
-        }
-      }
-    }
-  } else {
-    assert(false && "unexpected node");
+    names.insert(element->name->value);
   }
 }
 

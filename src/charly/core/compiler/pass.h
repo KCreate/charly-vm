@@ -68,6 +68,7 @@ protected:
   HANDLE_NODE(Statement, Continue, {})
 
   HANDLE_NODE(Statement, Defer, {
+    APPLY_NODE(body);
     APPLY_NODE(statement);
   })
 
@@ -162,7 +163,18 @@ protected:
     APPLY_NODE(index);
   })
 
+  HANDLE_NODE(UnpackTargetElement, UnpackTargetElement, {})
+
+  HANDLE_NODE(UnpackTarget, UnpackTarget, {
+    APPLY_VECTOR(elements)
+  })
+
   HANDLE_NODE(Expression, Assignment, {
+    APPLY_NODE(name);
+    APPLY_NODE(source);
+  })
+
+  HANDLE_NODE(Expression, UnpackAssignment, {
     APPLY_NODE(target);
     APPLY_NODE(source);
   })
@@ -224,28 +236,28 @@ protected:
 
   HANDLE_NODE(Statement, If, {
     APPLY_NODE(condition);
-    APPLY_NODE(then_stmt);
-    APPLY_NODE(else_stmt);
+    APPLY_NODE(then_block);
+    APPLY_NODE(else_block);
   })
 
   HANDLE_NODE(Statement, While, {
     APPLY_NODE(condition);
-    APPLY_NODE(then_stmt);
+    APPLY_NODE(then_block);
   })
 
   HANDLE_NODE(Statement, Try, {
-    APPLY_NODE(try_stmt);
-    APPLY_NODE(catch_stmt);
+    APPLY_NODE(try_block);
+    APPLY_NODE(catch_block);
   })
 
   HANDLE_NODE(SwitchCase, SwitchCase, {
     APPLY_NODE(test);
-    APPLY_NODE(stmt);
+    APPLY_NODE(block);
   })
 
   HANDLE_NODE(Statement, Switch, {
     APPLY_NODE(test);
-    APPLY_NODE(default_stmt);
+    APPLY_NODE(default_block);
     APPLY_VECTOR(cases)
   })
 

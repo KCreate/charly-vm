@@ -28,43 +28,6 @@
 
 namespace charly::core::compiler::ast {
 
-void GrammarValidationCheck::inspect_leave(const ref<UnpackDeclaration>& node) {
-  switch (node->target->type()) {
-    case Node::Type::Tuple:
-    case Node::Type::Dict: {
-      if (!node->target->assignable())
-        m_console.error(node->target, "left-hand side of declaration is not assignable");
-      break;
-    }
-    default: {
-      assert(false && "unexpected node");
-      break;
-    }
-  }
-}
-
-void GrammarValidationCheck::inspect_leave(const ref<Assignment>& node) {
-  // tuple or dict assignment not allowed if the assignment
-  // operator is anything else than regular assignment
-  if (node->operation != TokenType::Assignment) {
-    switch (node->target->type()) {
-      case Node::Type::Tuple:
-      case Node::Type::Dict: {
-        m_console.error(node->target,
-                        "this type of expression cannot be used as the left-hand side of an operator assignment");
-        return;
-      }
-      default: {
-        break;
-      }
-    }
-  }
-
-  if (!node->target->assignable()) {
-    m_console.error(node->target, "left-hand side of assignment is not assignable");
-  }
-}
-
 void GrammarValidationCheck::inspect_leave(const ref<Spawn>& node) {
   if (!isa<Block>(node->statement) && !isa<CallOp>(node->statement)) {
     m_console.error(node->statement, "expected a call expression");

@@ -211,6 +211,10 @@ private:
   // are used as the target of an assignment
   void prepare_assignment_target(const ref<Expression>& node);
 
+  // wrap the input statement in a block or return as-is
+  // if already a block
+  ref<Block> wrap_statement_in_block(const ref<Statement>& node);
+
   [[noreturn]] void unexpected_token();
   [[noreturn]] void unexpected_token(const std::string& message);
   [[noreturn]] void unexpected_token(TokenType expected);

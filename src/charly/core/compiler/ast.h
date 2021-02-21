@@ -34,6 +34,8 @@
 #include "charly/core/compiler/location.h"
 #include "charly/core/compiler/token.h"
 #include "charly/core/compiler/ir/builtin.h"
+#include "charly/core/compiler/ir/valuelocation.h"
+#include "charly/core/compiler/ir/functioninfo.h"
 
 #pragma once
 
@@ -102,7 +104,10 @@ public:
     // Expressions
     MemberOp,
     IndexOp,
+    UnpackTargetElement,
+    UnpackTarget,
     Assignment,
+    UnpackAssignment,
     MemberAssignment,
     IndexAssignment,
     Ternary,
@@ -256,9 +261,13 @@ public:
 
   std::vector<ref<Statement>> statements;
 
+  bool needs_locals_table = false;
+
   CHILDREN() {
     CHILD_VECTOR(statements);
   }
+
+  virtual void dump_info(std::ostream& out) const override;
 };
 
 // return <exp>
@@ -443,6 +452,8 @@ public:
   Id(const ref<Name>& name);
   Id(const std::string& name) : Id(make<Name>(name)) {}
 
+  ir::ValueLocation ir_location;
+
   virtual bool assignable() const override {
     return true;
   }
@@ -461,6 +472,8 @@ public:
   }
 
   Name(const std::string& value) : Atom<std::string>::Atom(value) {}
+
+  ir::ValueLocation ir_location;
 
   virtual bool assignable() const override {
     return false;
@@ -634,6 +647,8 @@ public:
   ref<Name> name;
   ref<Expression> default_value;
 
+  ir::ValueLocation ir_location;
+
   CHILDREN() {
     CHILD_NODE(default_value);
   }
@@ -648,23 +663,47 @@ class Function final : public Expression {
 public:
   // regular functions
   template <typename... Args>
-  Function(bool arrow_function, ref<Name> name, ref<Statement> body, Args&&... params) :
+  Function(bool arrow_function, ref<Name> name, ref<Block> body, Args&&... params) :
     arrow_function(arrow_function), name(name), body(body), arguments({ std::forward<Args>(params)... }) {
     this->set_location(name, body);
   }
-  Function(bool arrow_function, ref<Name> name, ref<Statement> body, std::vector<ref<FunctionArgument>>&& params) :
+  Function(bool arrow_function, ref<Name> name, ref<Block> body, std::vector<ref<FunctionArgument>>&& params) :
     arrow_function(arrow_function), name(name), body(body), arguments(std::move(params)) {
     this->set_location(name, body);
   }
 
   bool arrow_function;
   ref<Name> name;
-  ref<Statement> body;
+  ref<Block> body;
   std::vector<ref<FunctionArgument>> arguments;
+
+  ir::FunctionInfo ir_info;
 
   CHILDREN() {
     CHILD_VECTOR(arguments);
     CHILD_NODE(body);
+  }
+
+  uint8_t argc() const {
+    if (arguments.size() && arguments.back()->spread_initializer) {
+      return arguments.size() - 1;
+    }
+
+    return arguments.size();
+  }
+
+  uint8_t minimum_argc() const {
+    for (size_t index = 0; index < arguments.size(); index++) {
+      if (arguments.at(index)->default_value) {
+        return index;
+      }
+    }
+
+    if (arguments.size() && arguments.back()->spread_initializer) {
+      return arguments.size() - 1;
+    }
+
+    return arguments.size();
   }
 
   virtual void dump_info(std::ostream& out) const override;
@@ -769,31 +808,88 @@ public:
   }
 };
 
+class UnpackTargetElement final : public Node {
+  AST_NODE(UnpackTargetElement)
+public:
+  UnpackTargetElement(ref<Name> name, bool spread = false) : spread(spread), name(name) {
+    this->set_location(name);
+  }
+
+  bool spread;
+  ref<Name> name;
+
+  ir::ValueLocation ir_location;
+
+  virtual void dump_info(std::ostream& out) const override;
+};
+
+class UnpackTarget final : public Node {
+  AST_NODE(UnpackTarget)
+public:
+  template <typename... Args>
+  UnpackTarget(bool object_unpack, Args&&... params) :
+    object_unpack(object_unpack), elements({ std::forward<Args>(params)... }) {
+    if (elements.size()) {
+      this->set_location(elements.front(), elements.back());
+    }
+  }
+  UnpackTarget(const ref<Node>& node);
+
+  bool object_unpack;
+  std::vector<ref<UnpackTargetElement>> elements;
+
+  CHILDREN() {
+    CHILD_VECTOR(elements);
+  }
+
+  virtual void dump_info(std::ostream& out) const override;
+};
+
 // <target> <operation>= <source>
 class Assignment final : public Expression {
   AST_NODE(Assignment)
 public:
-  Assignment(ref<Expression> target, ref<Expression> source) :
-    operation(TokenType::Assignment), target(target), source(source) {
-    this->set_begin(target);
+  Assignment(ref<Id> name, ref<Expression> source) :
+    operation(TokenType::Assignment), name(name), source(source) {
+    this->set_begin(name);
     this->set_end(source);
   }
-  Assignment(TokenType operation, ref<Expression> target, ref<Expression> source) :
-    operation(operation), target(target), source(source) {
-    this->set_begin(target);
+  Assignment(TokenType operation, ref<Id> name, ref<Expression> source) :
+    operation(operation), name(name), source(source) {
+    this->set_begin(name);
     this->set_end(source);
   }
 
   TokenType operation;
-  ref<Expression> target;
+  ref<Id> name;
+  ref<Expression> source;
+
+  CHILDREN() {
+    CHILD_NODE(name);
+    CHILD_NODE(source);
+  }
+
+  virtual void dump_info(std::ostream& out) const override;
+};
+
+// (<unpack_target>) = <source>
+// {<unpack_target>} = <source>
+class UnpackAssignment final : public Expression {
+  AST_NODE(UnpackAssignment)
+public:
+  UnpackAssignment(ref<UnpackTarget> target, ref<Expression> source) :
+    target(target), source(source) {
+    this->set_begin(target);
+    this->set_end(source);
+  }
+
+  ref<UnpackTarget> target;
   ref<Expression> source;
 
   CHILDREN() {
     CHILD_NODE(target);
     CHILD_NODE(source);
   }
-
-  virtual void dump_info(std::ostream& out) const override;
 };
 
 // <target>.<member> <operation>= <source>
@@ -1053,6 +1149,8 @@ public:
   ref<Name> name;
   ref<Expression> expression;
 
+  ir::ValueLocation ir_location;
+
   CHILDREN() {
     CHILD_NODE(expression);
   }
@@ -1065,14 +1163,14 @@ public:
 class UnpackDeclaration final : public Expression {
   AST_NODE(UnpackDeclaration)
 public:
-  UnpackDeclaration(ref<Expression> target, ref<Expression> expression, bool constant = false) :
+  UnpackDeclaration(ref<UnpackTarget> target, ref<Expression> expression, bool constant = false) :
     constant(constant), target(target), expression(expression) {
     this->set_begin(target);
     this->set_end(expression);
   }
 
   bool constant;
-  ref<Expression> target;
+  ref<UnpackTarget> target;
   ref<Expression> expression;
 
   CHILDREN() {
@@ -1084,74 +1182,74 @@ public:
 };
 
 // if <condition>
-//   <then_stmt>
+//   <then_block>
 // else
-//   <else_stmt>
+//   <else_block>
 class If final : public Expression {
   AST_NODE(If)
 public:
-  If(ref<Expression> condition, ref<Statement> then_stmt, ref<Statement> else_stmt = nullptr) :
-    condition(condition), then_stmt(then_stmt), else_stmt(else_stmt) {
-    this->set_begin(condition);
-
-    if (else_stmt) {
-      this->set_end(else_stmt);
+  If(ref<Expression> condition, ref<Block> then_block, ref<Block> else_block = nullptr) :
+    condition(condition), then_block(then_block), else_block(else_block) {
+    if (else_block) {
+      this->set_location(condition, else_block);
+    } else {
+      this->set_location(condition);
     }
   }
 
   ref<Expression> condition;
-  ref<Statement> then_stmt;
-  ref<Statement> else_stmt;
+  ref<Block> then_block;
+  ref<Block> else_block;
 
   CHILDREN() {
     CHILD_NODE(condition);
-    CHILD_NODE(then_stmt);
-    CHILD_NODE(else_stmt);
+    CHILD_NODE(then_block);
+    CHILD_NODE(else_block);
   }
 };
 
 // while <condition>
-//   <then_stmt>
+//   <then_block>
 class While final : public Expression {
   AST_NODE(While)
 public:
-  While(ref<Expression> condition, ref<Statement> then_stmt) : condition(condition), then_stmt(then_stmt) {
+  While(ref<Expression> condition, ref<Block> then_block) : condition(condition), then_block(then_block) {
     this->set_begin(condition);
-    this->set_end(then_stmt);
+    this->set_end(then_block);
   }
 
   ref<Expression> condition;
-  ref<Statement> then_stmt;
+  ref<Block> then_block;
 
   CHILDREN() {
     CHILD_NODE(condition);
-    CHILD_NODE(then_stmt);
+    CHILD_NODE(then_block);
   }
 };
 
-// try <try_stmt>
-// [catch (<exception_name>) <catch_stmt>]
+// try <try_block>
+// [catch (<exception_name>) <catch_block>]
 class Try final : public Expression {
   AST_NODE(Try)
 public:
-  Try(ref<Statement> try_stmt, ref<Name> exception_name, ref<Statement> catch_stmt) :
-    try_stmt(try_stmt), exception_name(exception_name), catch_stmt(catch_stmt) {
-    this->set_begin(try_stmt);
-    this->set_end(catch_stmt);
+  Try(ref<Block> try_block, ref<Name> exception_name, ref<Block> catch_block) :
+    try_block(try_block), exception_name(exception_name), catch_block(catch_block) {
+    this->set_begin(try_block);
+    this->set_end(catch_block);
   }
-  Try(ref<Statement> try_stmt, const std::string& exception_name, ref<Statement> catch_stmt) :
-    try_stmt(try_stmt), exception_name(make<Name>(exception_name)), catch_stmt(catch_stmt) {
-    this->set_begin(try_stmt);
-    this->set_end(catch_stmt);
+  Try(ref<Block> try_block, const std::string& exception_name, ref<Block> catch_block) :
+    try_block(try_block), exception_name(make<Name>(exception_name)), catch_block(catch_block) {
+    this->set_begin(try_block);
+    this->set_end(catch_block);
   }
 
-  ref<Statement> try_stmt;
+  ref<Block> try_block;
   ref<Name> exception_name;
-  ref<Statement> catch_stmt;
+  ref<Block> catch_block;
 
   CHILDREN() {
-    CHILD_NODE(try_stmt);
-    CHILD_NODE(catch_stmt);
+    CHILD_NODE(try_block);
+    CHILD_NODE(catch_block);
   }
 
   virtual void dump_info(std::ostream& out) const override;
@@ -1160,45 +1258,45 @@ public:
 class SwitchCase final : public Expression {
   AST_NODE(SwitchCase)
 public:
-  SwitchCase(ref<Expression> test, ref<Statement> stmt) : test(test), stmt(stmt) {
+  SwitchCase(ref<Expression> test, ref<Block> block) : test(test), block(block) {
     this->set_begin(test);
-    this->set_end(stmt);
+    this->set_end(block);
   }
 
   ref<Expression> test;
-  ref<Statement> stmt;
+  ref<Block> block;
 
   CHILDREN() {
     CHILD_NODE(test);
-    CHILD_NODE(stmt);
+    CHILD_NODE(block);
   }
 };
 
-// switch (<test>) { case <test> <stmt> default <default_stmt> }
+// switch (<test>) { case <test> <stmt> default <default_block> }
 class Switch final : public Expression {
   AST_NODE(Switch)
 public:
-  Switch(ref<Expression> test) : test(test), default_stmt(nullptr) {
+  Switch(ref<Expression> test) : test(test), default_block(nullptr) {
     this->set_location(test);
   }
   template <typename... Args>
-  Switch(ref<Expression> test, ref<Statement> default_stmt, Args&&... params) :
-    test(test), default_stmt(default_stmt), cases({ std::forward<Args>(params)... }) {
+  Switch(ref<Expression> test, ref<Block> default_block, Args&&... params) :
+    test(test), default_block(default_block), cases({ std::forward<Args>(params)... }) {
     this->set_begin(test);
-    if (default_stmt) {
-      this->set_end(default_stmt);
+    if (default_block) {
+      this->set_end(default_block);
     } else {
       this->set_end(test);
     }
   }
 
   ref<Expression> test;
-  ref<Statement> default_stmt;
+  ref<Block> default_block;
   std::vector<ref<SwitchCase>> cases;
 
   CHILDREN() {
     CHILD_NODE(test);
-    CHILD_NODE(default_stmt);
+    CHILD_NODE(default_block);
     CHILD_VECTOR(cases);
   }
 };

@@ -108,10 +108,22 @@ void Node::dump(std::ostream& out, bool print_location) const {
   writer << '\n';
 }
 
+void Block::dump_info(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  if (this->needs_locals_table) {
+    writer << ' ';
+    writer.fg(Color::Red, "needs_locals_table");
+  }
+}
+
 void Id::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';
   writer.fg(Color::Yellow, this->value);
+  if (this->ir_location.valid()) {
+    writer << ' ';
+    writer.fg(Color::Magenta, this->ir_location);
+  }
 }
 
 void Name::dump_info(std::ostream& out) const {
@@ -222,6 +234,10 @@ void FunctionArgument::dump_info(std::ostream& out) const {
     writer.fg(Color::Green, "@");
   }
   writer.fg(Color::Green, this->name->value);
+  if (this->ir_location.valid()) {
+    writer << ' ';
+    writer.fg(Color::Magenta, this->ir_location);
+  }
 }
 
 void Function::dump_info(std::ostream& out) const {
@@ -232,6 +248,11 @@ void Function::dump_info(std::ostream& out) const {
     writer.fg(Color::Cyan, "anonymous");
   } else {
     writer.fg(Color::Green, this->name->value);
+  }
+
+  if (this->ir_info.valid) {
+    writer << ' ';
+    writer.fg(Color::Magenta, this->ir_info);
   }
 }
 
@@ -255,6 +276,88 @@ void MemberOp::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';
   writer.fg(Color::Green, this->member->value);
+}
+
+void UnpackTargetElement::dump_info(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  writer << ' ';
+  if (this->spread) {
+    writer.fg(Color::Green, "...");
+  }
+  writer.fg(Color::Green, this->name->value);
+  if (this->ir_location.valid()) {
+    writer << ' ';
+    writer.fg(Color::Magenta, this->ir_location);
+  }
+}
+
+UnpackTarget::UnpackTarget(const ref<Node>& node) {
+  switch (node->type()) {
+    case Node::Type::Tuple: {
+      ref<Tuple> tuple = cast<Tuple>(node);
+      object_unpack = false;
+
+      for (const ref<Expression>& element : tuple->elements) {
+        switch (element->type()) {
+          case Node::Type::Name: {
+            this->elements.push_back(make<UnpackTargetElement>(cast<Name>(element), false));
+            break;
+          }
+          case Node::Type::Spread: {
+            ref<Spread> spread = cast<Spread>(element);
+            this->elements.push_back(make<UnpackTargetElement>(cast<Name>(spread->expression), true));
+            break;
+          }
+          default: {
+            assert(false && "unexpected type");
+            break;
+          }
+        }
+      }
+
+      break;
+    }
+    case Node::Type::Dict: {
+      ref<Dict> dict = cast<Dict>(node);
+      object_unpack = true;
+
+      for (const ref<DictEntry>& entry : dict->elements) {
+        const ref<Expression>& element = entry->key;
+
+        switch (element->type()) {
+          case Node::Type::Name: {
+            this->elements.push_back(make<UnpackTargetElement>(cast<Name>(element), false));
+            break;
+          }
+          case Node::Type::Spread: {
+            ref<Spread> spread = cast<Spread>(element);
+            this->elements.push_back(make<UnpackTargetElement>(cast<Name>(spread->expression), true));
+            break;
+          }
+          default: {
+            assert(false && "unexpected type");
+            break;
+          }
+        }
+      }
+
+      break;
+    }
+    default: {
+      assert(false && "unexpected type");
+      break;
+    }
+  }
+}
+
+void UnpackTarget::dump_info(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  writer << ' ';
+  if (this->object_unpack) {
+    writer.fg(Color::Red, "object-unpack");
+  } else {
+    writer.fg(Color::Red, "sequence-unpack");
+  }
 }
 
 void Assignment::dump_info(std::ostream& out) const {
@@ -309,6 +412,10 @@ void Declaration::dump_info(std::ostream& out) const {
   }
   writer << ' ';
   writer.fg(Color::Green, this->name->value);
+  if (this->ir_location.valid()) {
+    writer << ' ';
+    writer.fg(Color::Magenta, this->ir_location);
+  }
 }
 
 void UnpackDeclaration::dump_info(std::ostream& out) const {
@@ -323,6 +430,10 @@ void Try::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';
   writer.fg(Color::Yellow, this->exception_name->value);
+  if (this->exception_name->ir_location.valid()) {
+    writer << ' ';
+    writer.fg(Color::Magenta, this->exception_name->ir_location);
+  }
 }
 
 void BuiltinOperation::dump_info(std::ostream& out) const {

@@ -24,10 +24,12 @@
  * SOFTWARE.
  */
 
-func list_mod(list, ...modifiers) {
-  for mod in modifiers {
-    list = list.map(->(item) mod(item))
-  }
+#include <cstdint>
 
-  return list
+#include "symbol.h"
+
+#pragma once
+
+namespace charly {
+
 }

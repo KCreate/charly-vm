@@ -1,25 +1,21 @@
 # Todos
 
-- Refactor (split up) UnpackDeclaration and UnpackAssignment into distinct nodes
-  - Similar to FunctionArgument node
-
-- Local variable allocator
-  - Allocate local variable slot for each declaration
-  - Leaked slots are allocated on the heap instead of on the stack
-  - Rewrite `$<number>` identifiers either to frame offset or dynamic variable index
-
 - AST to IR lowering process
-  - Local variable allocator
-  - REPL needs to keep track of variables declared in previous compilations
-  - Spread expressions
   - Constant fold expressions
+  - Spread expressions
+    - Tuple literals
+    - List literals
+    - Dict literals
+    - Call expression
+    - UnpackDeclaration
+    - UnpackAssignment
   - Make sure each function returns null in case of no other returns
   - Rewrite default arguments and member initializers
   - Rewrite control statements to labels, gotos and conditional gotos
 
 - Intermediate representation for charly code
   - Human readable charly bytecode syntax
-  - Assembler for charly bytehttps://www.leafly.com/codes
+  - Assembler for charly byte
   - Bytecode to file / line / column mapping
 
 - Concurrent Garbage Collector
@@ -67,6 +63,14 @@
 - Implement basic opcodes
 - Memory locking
 - REPL support
+
+- Function frames can be allocated on the heap or on the stack
+  - Each function has a bool property on wether the frame locals
+    should be allocated on the stack or heap
+
+- Argument-Indexing identifiers
+  - $0, $1 syntax
+  - In-bounds identifiers can be replaced by the actual arguments
 
 # Rewrite of the codebase
 
