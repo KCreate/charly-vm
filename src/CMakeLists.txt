@@ -11,6 +11,7 @@ file(GLOB charlycore_SRC
   "charly/core/compiler/passes/reserved_identifiers_check.cpp"
   "charly/core/compiler/passes/desugar_pass.cpp"
   "charly/core/compiler/passes/local_allocator_pass.cpp"
+  "charly/core/compiler/passes/constant_folding_pass.cpp"
 )
 
 

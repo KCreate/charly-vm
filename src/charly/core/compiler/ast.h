@@ -199,6 +199,17 @@ public:
   // child classes may override and write additional info into the node output
   virtual void dump_info(std::ostream&) const {}
 
+  // wether this node is a constant value
+  virtual bool is_constant_value() const {
+    return false;
+  }
+
+  // return the truthyness of a value
+  // meant to be overriden by nodes representing primitive types
+  virtual bool truthyness() const {
+    return false;
+  }
+
 protected:
   virtual ~Node(){};
 
@@ -423,8 +434,19 @@ public:
   T value;
 };
 
+template <typename T>
+class ConstantAtom : public Atom<T> {
+public:
+  using Atom<T>::Atom;
+
+  virtual bool is_constant_value() const {
+    return true;
+  }
+};
+
 // foo, bar, $_baz42
-class Name;  // forward declaration
+class Name;         // forward declaration
+class Declaration;
 class Id final : public Atom<std::string> {
   AST_NODE(Id)
 public:
@@ -434,6 +456,7 @@ public:
   Id(const std::string& name) : Id(make<Name>(name)) {}
 
   ir::ValueLocation ir_location;
+  ref<Node> declaration_node;
 
   virtual bool assignable() const override {
     return true;
@@ -468,48 +491,78 @@ inline Id::Id(const ref<Name>& name) : Atom<std::string>::Atom(name->value) {
 }
 
 // 1, 2, 42
-class Int final : public Atom<int64_t> {
+class Int final : public ConstantAtom<int64_t> {
   AST_NODE(Int)
 public:
-  using Atom<int64_t>::Atom;
+  using ConstantAtom<int64_t>::ConstantAtom;
 
   virtual void dump_info(std::ostream& out) const override;
+
+  virtual bool truthyness() const override {
+    return this->value;
+  }
 };
 
 // 0.5, 25.25, 5000.1234
-class Float final : public Atom<double> {
+class Float final : public ConstantAtom<double> {
   AST_NODE(Float)
 public:
-  using Atom<double>::Atom;
+  using ConstantAtom<double>::ConstantAtom;
+
+  Float(const ref<Node>& node) : ConstantAtom<double>::ConstantAtom(0) {
+    if (ref<Int> int_node = cast<Int>(node)) {
+      this->value = (double)int_node->value;
+    } else if (ref<Float> float_node = cast<Float>(node)) {
+      this->value = float_node->value;
+    } else {
+      assert(false && "unexpected type");
+    }
+  }
 
   virtual void dump_info(std::ostream& out) const override;
+
+  virtual bool truthyness() const override {
+    return this->value;
+  }
 };
 
 // true, false
-class Bool final : public Atom<bool> {
+class Bool final : public ConstantAtom<bool> {
   AST_NODE(Bool)
 public:
-  using Atom<bool>::Atom;
+  using ConstantAtom<bool>::ConstantAtom;
 
   virtual void dump_info(std::ostream& out) const override;
+
+  virtual bool truthyness() const override {
+    return this->value;
+  }
 };
 
 // 'a', '\n', 'ä', 'π'
-class Char final : public Atom<uint32_t> {
+class Char final : public ConstantAtom<uint32_t> {
   AST_NODE(Char)
 public:
-  using Atom<uint32_t>::Atom;
+  using ConstantAtom<uint32_t>::ConstantAtom;
 
   virtual void dump_info(std::ostream& out) const override;
+
+  virtual bool truthyness() const override {
+    return this->value != 0;
+  }
 };
 
 // "hello world"
-class String final : public Atom<std::string> {
+class String final : public ConstantAtom<std::string> {
   AST_NODE(String)
 public:
-  using Atom<std::string>::Atom;
+  using ConstantAtom<std::string>::ConstantAtom;
 
   virtual void dump_info(std::ostream& out) const override;
+
+  virtual bool truthyness() const override {
+    return true; // strings are always truthy
+  }
 };
 
 // "name: {name} age: {age}"
@@ -1322,16 +1375,14 @@ class BuiltinOperation final : public Expression {
   AST_NODE(BuiltinOperation)
 public:
   template <typename... Args>
-  BuiltinOperation(const std::string& name, Args&&... params) :
-    name(name), arguments({ std::forward<Args>(params)... }) {
-    assert(ir::kBuiltinNameMapping.count(name));
-
+  BuiltinOperation(ir::BuiltinId operation, Args&&... params) :
+    operation(operation), arguments({ std::forward<Args>(params)... }) {
     if (arguments.size()) {
       this->set_location(arguments.front()->location(), arguments.back()->location());
     }
   }
 
-  std::string name;
+  ir::BuiltinId operation;
   std::vector<ref<Expression>> arguments;
 
   CHILDREN() {

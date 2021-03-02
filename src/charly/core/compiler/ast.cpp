@@ -380,7 +380,7 @@ void Try::dump_info(std::ostream& out) const {
 void BuiltinOperation::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';
-  writer.fg(Color::Red, this->name);
+  writer.fg(Color::Red, ir::kBuiltinNames[this->operation]);
 }
 
 }  // namespace charly::core::compiler

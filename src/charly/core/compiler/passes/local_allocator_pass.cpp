@@ -44,19 +44,20 @@ void LocalAllocatorPass::pop_block() {
   m_block = m_block->parent_block;
 }
 
-const LocalVariable* LocalAllocatorPass::declare_variable(const ref<Name>& node, bool constant) {
-
+const LocalVariable* LocalAllocatorPass::declare_variable(const ref<Name>& name,
+                                                          const ref<Node>& declaration,
+                                                          bool constant) {
   // check if this block already contains a declaration for this variable
-  if (m_block->symbol_declared(node->value)) {
-    const auto* variable = m_block->lookup_symbol(node->value);
-    m_console.error(node, "duplicate declaration of '", node->value, "'");
-    m_console.info(variable->declaration_location, "originally declared here");
+  if (m_block->symbol_declared(name->value)) {
+    const auto* variable = m_block->lookup_symbol(name->value);
+    m_console.error(name, "duplicate declaration of '", name->value, "'");
+    m_console.info(variable->ast_declaration, "originally declared here");
     return nullptr;
   }
 
-  const auto* variable = m_block->alloc_slot(node, constant);
+  const auto* variable = m_block->alloc_slot(name, declaration, constant);
   if (variable) {
-    node->ir_location = variable->value_location;
+    name->ir_location = variable->value_location;
   }
 
   return variable;
@@ -72,7 +73,7 @@ bool LocalAllocatorPass::inspect_enter(const ref<Function>& node) {
 
   // register function node arguments as local variables
   for (const ref<FunctionArgument>& argument : node->arguments) {
-    const auto& variable = m_block->alloc_slot(argument->name);
+    const auto& variable = declare_variable(argument->name, argument);
     if (variable) {
       argument->ir_location = variable->value_location;
     }
@@ -123,7 +124,7 @@ ref<Statement> LocalAllocatorPass::transform(const ref<Declaration>& node) {
     node->expression = apply(node->expression);
   }
 
-  if (const auto* variable = declare_variable(node->name, node->constant)) {
+  if (const auto* variable = declare_variable(node->name, node, node->constant)) {
     node->ir_location = variable->value_location;
   }
 
@@ -144,7 +145,7 @@ bool LocalAllocatorPass::inspect_enter(const ref<UnpackDeclaration>&) {
 
 void LocalAllocatorPass::inspect_leave(const ref<UnpackDeclaration>& node) {
   for (const ref<UnpackTargetElement>& element : node->target->elements) {
-    if (const auto* variable = declare_variable(element->name, node->constant)) {
+    if (const auto* variable = declare_variable(element->name, element, node->constant)) {
       element->ir_location = variable->value_location;
     }
   }
@@ -187,7 +188,7 @@ ref<Statement> LocalAllocatorPass::transform(const ref<Try>& node) {
   node->try_block = cast<Block>(apply(node->try_block));
 
   this->push_block(node->catch_block);
-  if (const auto* variable = declare_variable(node->exception_name, false)) {
+  if (const auto* variable = declare_variable(node->exception_name, node->exception_name, false)) {
     node->exception_name->ir_location = variable->value_location;
   }
   node->catch_block = cast<Block>(apply(node->catch_block));
@@ -200,6 +201,10 @@ void LocalAllocatorPass::inspect_leave(const ref<Id>& node) {
   // lookup the symbol in the current block
   if (const auto* variable = m_block->lookup_symbol(node->value)) {
     node->ir_location = variable->value_location;
+
+    if (ref<Declaration> declaration = cast<Declaration>(variable->ast_declaration)) {
+      node->declaration_node = declaration;
+    }
   } else {
     m_console.error(node, "unknown variable '", node->value, "'");
   }

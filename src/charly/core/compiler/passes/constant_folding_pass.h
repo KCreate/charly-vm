@@ -24,21 +24,24 @@
  * SOFTWARE.
  */
 
-const debug = false
+#include "charly/core/compiler/pass.h"
 
-const name = "leonard"
-const birthyear = 2000
-const years_alive = 21
+#pragma once
 
-const age = birthyear + years_alive
+namespace charly::core::compiler::ast {
 
-if debug {
-  print("name: {name} age: {age}")
-}
+class ConstantFoldingPass : public DiagnosticPass {
+public:
+  using DiagnosticPass::DiagnosticPass;
 
-while debug {
-  print("{debug}")
-}
+private:
+  virtual ref<Expression> transform(const ref<Ternary>&) override;
+  virtual ref<Expression> transform(const ref<BinaryOp>&) override;
+  virtual ref<Expression> transform(const ref<UnaryOp>&) override;
+  virtual ref<Expression> transform(const ref<Id>&) override;
+  virtual ref<Statement> transform(const ref<If>&) override;
+  virtual ref<Statement> transform(const ref<While>&) override;
+  virtual ref<Expression> transform(const ref<BuiltinOperation>&) override;
+};
 
-const tmp = debug ? "debug is active" : "debug is inactive"
-print("status: {tmp}")
+}  // namespace charly::core::compiler::ast

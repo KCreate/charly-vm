@@ -59,12 +59,11 @@ void FunctionScope::leak_slot(uint32_t index) {
   slots[index].leaked = true;
 }
 
-const LocalVariable* BlockScope::alloc_slot(const ref<Name>& symbol, bool constant) {
-
+const LocalVariable* BlockScope::alloc_slot(const ref<Name>& symbol, const ref<Node>& declaration, bool constant) {
   // toplevel declarations
   if (!parent_function) {
     ValueLocation location = ValueLocation::Global(symbol->value);
-    variables.insert_or_assign(symbol->value, LocalVariable{ .declaration_location = symbol->location(),
+    variables.insert_or_assign(symbol->value, LocalVariable{ .ast_declaration = declaration,
                                                              .value_location = location,
                                                              .declared_locally = true,
                                                              .name = symbol->value,
@@ -77,7 +76,7 @@ const LocalVariable* BlockScope::alloc_slot(const ref<Name>& symbol, bool consta
 
   ValueLocation location = ValueLocation::LocalFrame(symbol->value, slot_index);
 
-  variables.insert_or_assign(symbol->value, LocalVariable{ .declaration_location = symbol->location(),
+  variables.insert_or_assign(symbol->value, LocalVariable{ .ast_declaration = declaration,
                                                            .value_location = location,
                                                            .declared_locally = true,
                                                            .name = symbol->value,

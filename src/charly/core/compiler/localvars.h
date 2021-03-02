@@ -71,8 +71,8 @@ struct FunctionScope {
 
 struct LocalVariable {
 
-  // the location where this value originally got declared
-  Location declaration_location;
+  // the node that declared this variable
+  ast::ref<ast::Node> ast_declaration;
 
   // the runtime location where this value can be found
   ir::ValueLocation value_location;
@@ -118,7 +118,9 @@ struct BlockScope {
   }
 
   // register a new variable inside this block
-  const LocalVariable* alloc_slot(const ast::ref<ast::Name>& symbol, bool constant = false);
+  const LocalVariable* alloc_slot(const ast::ref<ast::Name>& symbol,
+                                  const ast::ref<ast::Node>& declaration,
+                                  bool constant = false);
 
   // check wether a given symbol was already declared inside this block
   bool symbol_declared(const std::string& symbol);

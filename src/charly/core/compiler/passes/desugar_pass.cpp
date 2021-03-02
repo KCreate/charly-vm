@@ -51,14 +51,15 @@ void DesugarPass::inspect_leave(const ref<Import>& node) {
   }
 
   if (!isa<String>(source)) {
-    source = make<BuiltinOperation>("caststring", source);
+    source = make<BuiltinOperation>(ir::BuiltinId::caststring, source);
   }
 
   node->source = source;
 }
 
 ref<Expression> DesugarPass::transform(const ref<Spawn>& node) {
-  ref<BuiltinOperation> builtin = make<BuiltinOperation>(node->execute_immediately ? "fiberspawn" : "fibercreate");
+  ir::BuiltinId builtin_id = node->execute_immediately ? ir::BuiltinId::fiberspawn : ir::BuiltinId::fibercreate;
+  ref<BuiltinOperation> builtin = make<BuiltinOperation>(builtin_id);
 
   ref<Expression> function;
   ref<Tuple> arguments = make<Tuple>();
@@ -102,7 +103,7 @@ ref<Expression> DesugarPass::transform(const ref<FormatString>& node) {
   // wrap all non-string elements into a caststring node
   for (ref<Expression>& element : node->elements) {
     if (!isa<String>(element)) {
-      element = make<BuiltinOperation>("caststring", element);
+      element = make<BuiltinOperation>(ir::BuiltinId::caststring, element);
     }
   }
 
@@ -179,7 +180,7 @@ void DesugarPass::inspect_leave(const ref<Function>& node) {
     // build wrapped spawn statement
     ref<Spawn> spawn = make<Spawn>(func_call);
     spawn->execute_immediately = false;
-    ref<BuiltinOperation> castgenerator = make<BuiltinOperation>("castgenerator", spawn);
+    ref<BuiltinOperation> castgenerator = make<BuiltinOperation>(ir::BuiltinId::castgenerator, spawn);
     ref<Return> return_node = make<Return>(castgenerator);
     ref<Block> new_body = make<Block>(return_node);
 
@@ -247,7 +248,7 @@ ref<Statement> DesugarPass::transform(const ref<For>& node) {
   }
 
   // instantiate __iterator
-  ref<BuiltinOperation> __iterator_source = make<BuiltinOperation>("castiterator", source);
+  ref<BuiltinOperation> __iterator_source = make<BuiltinOperation>(ir::BuiltinId::castiterator, source);
   ref<Declaration> __iterator = make<Declaration>("__iterator", __iterator_source, true);
 
   // loop block
@@ -257,7 +258,7 @@ ref<Statement> DesugarPass::transform(const ref<For>& node) {
   // build iterator result unpack declaration
   ref<UnpackTarget> unpack_target = make<UnpackTarget>(false, make<UnpackTargetElement>(make<Name>("__value")),
                                                        make<UnpackTargetElement>(make<Name>("__done")));
-  ref<BuiltinOperation> unpack_source = make<BuiltinOperation>("iteratornext", make<Id>("__iterator"));
+  ref<BuiltinOperation> unpack_source = make<BuiltinOperation>(ir::BuiltinId::iteratornext, make<Id>("__iterator"));
   ref<UnpackDeclaration> unpack_declaration = make<UnpackDeclaration>(unpack_target, unpack_source, true);
   loop_block->statements.push_back(unpack_declaration);
 

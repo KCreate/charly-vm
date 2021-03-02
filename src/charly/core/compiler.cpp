@@ -32,6 +32,7 @@
 #include "charly/core/compiler/passes/grammar_validation_check.h"
 #include "charly/core/compiler/passes/reserved_identifiers_check.h"
 
+#include "charly/core/compiler/passes/constant_folding_pass.h"
 #include "charly/core/compiler/passes/desugar_pass.h"
 #include "charly/core/compiler/passes/local_allocator_pass.h"
 
@@ -78,6 +79,7 @@ std::shared_ptr<CompilationUnit> Compiler::compile(CompilationUnit::Type type,
 
   APPLY_TRANSFORM_PASS(DesugarPass);
   APPLY_TRANSFORM_PASS(LocalAllocatorPass);
+  APPLY_TRANSFORM_PASS(ConstantFoldingPass);
 
 #undef APPLY_DIAGNOSTIC_PASS
 #undef APPLY_TRANSFORM_PASS
