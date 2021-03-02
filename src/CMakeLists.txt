@@ -16,6 +16,9 @@ file(GLOB charlycore_SRC
 
 
 add_library(libcharly ${charlycore_SRC})
+target_link_libraries(libcharly stdc++)
+target_link_libraries(libcharly m)
+target_link_libraries(libcharly readline)
 target_include_directories(libcharly PRIVATE "./")
 target_compile_features(libcharly PRIVATE cxx_std_17)
 target_compile_options(libcharly PRIVATE
