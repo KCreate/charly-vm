@@ -291,65 +291,6 @@ void UnpackTargetElement::dump_info(std::ostream& out) const {
   }
 }
 
-UnpackTarget::UnpackTarget(const ref<Node>& node) {
-  switch (node->type()) {
-    case Node::Type::Tuple: {
-      ref<Tuple> tuple = cast<Tuple>(node);
-      object_unpack = false;
-
-      for (const ref<Expression>& element : tuple->elements) {
-        switch (element->type()) {
-          case Node::Type::Name: {
-            this->elements.push_back(make<UnpackTargetElement>(cast<Name>(element), false));
-            break;
-          }
-          case Node::Type::Spread: {
-            ref<Spread> spread = cast<Spread>(element);
-            this->elements.push_back(make<UnpackTargetElement>(cast<Name>(spread->expression), true));
-            break;
-          }
-          default: {
-            assert(false && "unexpected type");
-            break;
-          }
-        }
-      }
-
-      break;
-    }
-    case Node::Type::Dict: {
-      ref<Dict> dict = cast<Dict>(node);
-      object_unpack = true;
-
-      for (const ref<DictEntry>& entry : dict->elements) {
-        const ref<Expression>& element = entry->key;
-
-        switch (element->type()) {
-          case Node::Type::Name: {
-            this->elements.push_back(make<UnpackTargetElement>(cast<Name>(element), false));
-            break;
-          }
-          case Node::Type::Spread: {
-            ref<Spread> spread = cast<Spread>(element);
-            this->elements.push_back(make<UnpackTargetElement>(cast<Name>(spread->expression), true));
-            break;
-          }
-          default: {
-            assert(false && "unexpected type");
-            break;
-          }
-        }
-      }
-
-      break;
-    }
-    default: {
-      assert(false && "unexpected type");
-      break;
-    }
-  }
-}
-
 void UnpackTarget::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';

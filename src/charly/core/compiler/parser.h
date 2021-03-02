@@ -207,9 +207,9 @@ private:
 
   ref<Statement> create_declaration(const ref<Expression>& target, const ref<Expression>& value, bool constant);
 
-  // replaces Id nodes with Name nodes within tuples and dicts that
-  // are used as the target of an assignment
-  void prepare_assignment_target(const ref<Expression>& node);
+  // create an unpack target node from a source expression
+  // and generate errors on invalid input
+  ref<UnpackTarget> create_unpack_target(const ref<Expression>& node);
 
   // wrap the input statement in a block or return as-is
   // if already a block

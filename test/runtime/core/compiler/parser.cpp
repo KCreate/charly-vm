@@ -438,18 +438,16 @@ TEST_CASE("dict literals") {
 }
 
 TEST_CASE("if statements") {
-  CHECK_AST_STMT("if x 1", make<If>(make<Id>("x"), make<Int>(1)));
-  CHECK_AST_STMT("if x {}", make<If>(make<Id>("x"), make<Block>()));
-  CHECK_AST_STMT("if x 1 else 2", make<If>(make<Id>("x"), make<Int>(1), make<Int>(2)));
-  CHECK_AST_STMT("if (x) 1", make<If>(make<Id>("x"), make<Int>(1)));
-  CHECK_AST_STMT("if (x) {}", make<If>(make<Id>("x"), make<Block>()));
-  CHECK_AST_STMT("if x {} else x", make<If>(make<Id>("x"), make<Block>(), make<Id>("x")));
-  CHECK_AST_STMT("if x x else {}", make<If>(make<Id>("x"), make<Id>("x"), make<Block>()));
-  CHECK_AST_STMT("if x {} else {}", make<If>(make<Id>("x"), make<Block>(), make<Block>()));
-  CHECK_AST_STMT("if x {} else if y {}",
-                 make<If>(make<Id>("x"), make<Block>(), make<If>(make<Id>("y"), make<Block>())));
-  CHECK_AST_STMT("if x {} else if y {} else {}",
-                 make<If>(make<Id>("x"), make<Block>(), make<If>(make<Id>("y"), make<Block>(), make<Block>())));
+  CHECK_STMT("if x 1");
+  CHECK_STMT("if x {}");
+  CHECK_STMT("if x 1 else 2");
+  CHECK_STMT("if (x) 1");
+  CHECK_STMT("if (x) {}");
+  CHECK_STMT("if x {} else x");
+  CHECK_STMT("if x x else {}");
+  CHECK_STMT("if x {} else {}");
+  CHECK_STMT("if x {} else if y {}");
+  CHECK_STMT("if x {} else if y {} else {}");
 
   CHECK_ERROR_STMT("if", "unexpected end of file, expected an expression");
   CHECK_ERROR_STMT("if x", "unexpected end of file, expected an expression");
@@ -458,16 +456,16 @@ TEST_CASE("if statements") {
 }
 
 TEST_CASE("while statements") {
-  CHECK_AST_STMT("while x 1", make<While>(make<Id>("x"), make<Int>(1)));
-  CHECK_AST_STMT("while (x) {}", make<While>(make<Id>("x"), make<Block>()));
-  CHECK_AST_STMT("while (x) foo()", make<While>(make<Id>("x"), make<CallOp>(make<Id>("foo"))));
+  CHECK_STMT("while x 1");
+  CHECK_STMT("while (x) {}");
+  CHECK_STMT("while (x) foo()");
 
   CHECK_ERROR_STMT("while", "unexpected end of file, expected an expression");
   CHECK_ERROR_STMT("while x", "unexpected end of file, expected an expression");
 }
 
 TEST_CASE("loop statements") {
-  CHECK_AST_STMT("loop 1", make<While>(make<Bool>(true), make<Int>(1)));
+  CHECK_AST_STMT("loop 1", make<While>(make<Bool>(true), make<Block>(make<Int>(1))));
   CHECK_AST_STMT("loop {}", make<While>(make<Bool>(true), make<Block>()));
 
   CHECK_ERROR_STMT("loop", "unexpected end of file, expected an expression");
@@ -616,9 +614,9 @@ TEST_CASE("spread operator") {
 }
 
 TEST_CASE("class literals") {
-  CHECK_EXP("class A { foo() }");
-  CHECK_AST_EXP("class Foo extends Bar {}", make<Class>("Foo", make<Id>("Bar")));
-  CHECK_EXP(("class Foo extends Bar {\n"
+  CHECK_STMT("class A { foo() }");
+  CHECK_STMT("class A extends B { foo() }");
+  CHECK_STMT(("class Foo extends Bar {\n"
              "  constructor(a) {}\n"
              "  property foo = 100\n"
              "  static property foo = 200\n"
@@ -627,7 +625,7 @@ TEST_CASE("class literals") {
              "  static func foo(a) {}\n"
              "  static bar(a) {}\n"
              "}"));
-  CHECK_EXP("class A { property a property b foo(@a, @b) }");
+  CHECK_STMT("class A { property a property b foo(@a, @b) }");
 }
 
 TEST_CASE("super expressions") {
@@ -655,18 +653,12 @@ TEST_CASE("try statements") {
 }
 
 TEST_CASE("switch statements") {
-  CHECK_AST_STMT("switch x {}", make<Switch>(make<Id>("x"), nullptr));
-  CHECK_AST_STMT("switch (x) {}", make<Switch>(make<Id>("x"), nullptr));
-  CHECK_AST_STMT("switch (x) { case 1 foo }",
-                 make<Switch>(make<Id>("x"), nullptr, make<SwitchCase>(make<Int>(1), make<Id>("foo"))));
-  CHECK_AST_STMT("switch (x) { case 1 foo case 2 bar }",
-                 make<Switch>(make<Id>("x"), nullptr, make<SwitchCase>(make<Int>(1), make<Id>("foo")),
-                              make<SwitchCase>(make<Int>(2), make<Id>("bar"))));
-  CHECK_AST_STMT("switch (x) { case 1 foo default bar }",
-                 make<Switch>(make<Id>("x"), make<Id>("bar"), make<SwitchCase>(make<Int>(1), make<Id>("foo"))));
-  CHECK_AST_STMT("switch (x) { case 1 {} default {} }",
-                 make<Switch>(make<Id>("x"), make<Block>(), make<SwitchCase>(make<Int>(1), make<Block>())));
-
+  CHECK_PROGRAM("switch x {}");
+  CHECK_PROGRAM("switch (x) {}");
+  CHECK_PROGRAM("switch (x) { case 1 foo }");
+  CHECK_PROGRAM("switch (x) { case 1 foo case 2 bar }");
+  CHECK_PROGRAM("switch (x) { case 1 foo default bar }");
+  CHECK_PROGRAM("switch (x) { case 1 {} default {} }");
   CHECK_PROGRAM("switch x { case 1 { break } }");
   CHECK_PROGRAM("switch x { default { break } }");
 
@@ -682,8 +674,8 @@ TEST_CASE("for statements") {
   CHECK_STMT("for (foo, bar) in bar {}");
   CHECK_STMT("for {foo} in bar {}");
   CHECK_STMT("for {foo, bar} in bar {}");
-  CHECK_STMT("for let (foo) in bar");
-  CHECK_STMT("for let (foo, bar) in bar");
+  CHECK_STMT("for let (foo) in bar {}");
+  CHECK_STMT("for let (foo, bar) in bar {}");
   CHECK_STMT("for let {foo} in bar {}");
   CHECK_STMT("for let {foo, bar} in bar {}");
   CHECK_STMT("for const (foo) in bar {}");

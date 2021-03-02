@@ -36,28 +36,38 @@ TEST_CASE("validates assignments") {
                 "this type of expression cannot be used as the left-hand side of an operator assignment");
   COMPILE_ERROR("({a, b} += 25)",
                 "this type of expression cannot be used as the left-hand side of an operator assignment");
-  COMPILE_ERROR("() = 25", "left-hand side of assignment is not assignable");
+  COMPILE_ERROR("() = 25", "empty unpack target");
   COMPILE_ERROR("(1) = 25", "left-hand side of assignment is not assignable");
-  COMPILE_ERROR("(...a, ...b) = 25", "left-hand side of assignment is not assignable");
-  COMPILE_ERROR("({} = 25)", "left-hand side of assignment is not assignable");
-  COMPILE_ERROR("({a: 1} = 25)", "left-hand side of assignment is not assignable");
-  COMPILE_ERROR("({...a, ...b} = 25)", "left-hand side of assignment is not assignable");
+  COMPILE_ERROR("(...a, ...b) = 25", "excess spread");
+  COMPILE_ERROR("({} = 25)", "empty unpack target");
+  COMPILE_ERROR("({a: 1} = 25)", "dict used as unpack target must not contain any values");
+  COMPILE_ERROR("({...a, ...b} = 25)", "excess spread");
 
-  COMPILE_ERROR("let () = 1", "left-hand side of declaration is not assignable");
-  COMPILE_ERROR("let (1) = 1", "left-hand side of declaration is not assignable");
-  COMPILE_ERROR("let (a.a) = 1", "left-hand side of declaration is not assignable");
-  COMPILE_ERROR("let (2 + 2) = 1", "left-hand side of declaration is not assignable");
-  COMPILE_ERROR("let (...a, ...d) = 1", "left-hand side of declaration is not assignable");
-  COMPILE_ERROR("let ([1, 2]) = 1", "left-hand side of declaration is not assignable");
-  COMPILE_ERROR("let (\"a\") = 1", "left-hand side of declaration is not assignable");
+  COMPILE_ERROR("let () = 1", "empty unpack target");
+  COMPILE_ERROR("let (1) = 1", "expected an identifier or spread");
+  COMPILE_ERROR("let (a.a) = 1", "expected an identifier or spread");
+  COMPILE_ERROR("let (2 + 2) = 1", "expected an identifier or spread");
+  COMPILE_ERROR("let (...2) = 1", "expected an identifier");
+  COMPILE_ERROR("let (...a, ...d) = 1", "excess spread");
+  COMPILE_ERROR("let ([1, 2]) = 1", "expected an identifier or spread");
+  COMPILE_ERROR("let (\"a\") = 1", "expected an identifier or spread");
 
-  COMPILE_ERROR("let {} = 1", "left-hand side of declaration is not assignable");
-  COMPILE_ERROR("let {1} = 1", "expected identifier, member access or spread expression");
-  COMPILE_ERROR("let {a.a} = 1", "left-hand side of declaration is not assignable");
-  COMPILE_ERROR("let {2 + 2} = 1", "expected identifier, member access or spread expression");
-  COMPILE_ERROR("let {...a, ...d} = 1", "left-hand side of declaration is not assignable");
-  COMPILE_ERROR("let {[1, 2]} = 1", "expected identifier, member access or spread expression");
-  COMPILE_ERROR("let {\"a\"} = 1", "expected identifier, member access or spread expression");
+  COMPILE_ERROR("let {} = 1", "empty unpack target");
+  COMPILE_ERROR("let {1} = 1", "expected an identifier or spread");
+  COMPILE_ERROR("let {a.a} = 1", "expected an identifier or spread");
+  COMPILE_ERROR("let {2 + 2} = 1", "expected an identifier or spread");
+  COMPILE_ERROR("let {...2} = 1", "expected an identifier");
+  COMPILE_ERROR("let {...a, ...d} = 1", "excess spread");
+  COMPILE_ERROR("let {[1, 2]} = 1", "expected an identifier or spread");
+  COMPILE_ERROR("let {\"a\"} = 1", "expected an identifier or spread");
+
+  COMPILE_ERROR("for () in [] {}", "empty unpack target");
+  COMPILE_ERROR("for let () in [] {}", "empty unpack target");
+  COMPILE_ERROR("for const () in [] {}", "empty unpack target");
+
+  COMPILE_ERROR("for {} in [] {}", "empty unpack target");
+  COMPILE_ERROR("for let {} in [] {}", "empty unpack target");
+  COMPILE_ERROR("for const {} in [] {}", "empty unpack target");
 }
 
 TEST_CASE("validates dict literals") {
@@ -115,10 +125,10 @@ TEST_CASE("checks for reserved identifiers") {
 }
 
 TEST_CASE("checks for duplicate identifiers") {
-  COMPILE_ERROR("let (a, a) = x", "duplicate key 'a'");
-  COMPILE_ERROR("let (a, ...a) = x", "duplicate key 'a'");
-  COMPILE_ERROR("let {a, a} = x", "duplicate key 'a'");
-  COMPILE_ERROR("let {a, ...a} = x", "duplicate key 'a'");
+  COMPILE_ERROR("let (a, a) = x", "duplicate identifier 'a'");
+  COMPILE_ERROR("let (a, ...a) = x", "duplicate identifier 'a'");
+  COMPILE_ERROR("let {a, a} = x", "duplicate identifier 'a'");
+  COMPILE_ERROR("let {a, ...a} = x", "duplicate identifier 'a'");
 
   COMPILE_ERROR("({a: 1, a: 2})", "duplicate key 'a'");
 

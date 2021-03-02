@@ -588,19 +588,9 @@ ref<Statement> Parser::parse_declaration() {
     value->set_location(target);
   }
 
-  // Declaration:         const foobar = 25
-  // UnpackDeclaration:   const (a, b) = x
-  if (ref<Id> id_target = cast<Id>(target)) {
-    ref<Declaration> node = make<Declaration>(make<Name>(id_target), value, const_declaration);
-    node->set_begin(begin);
-    return node;
-  } else {
-    prepare_assignment_target(target);
-
-    ref<UnpackDeclaration> node = make<UnpackDeclaration>(make<UnpackTarget>(target), value, const_declaration);
-    node->set_begin(begin);
-    return node;
-  }
+  ref<Statement> node = create_declaration(target, value, const_declaration);
+  node->set_begin(begin);
+  return node;
 }
 
 void Parser::parse_call_arguments(std::vector<ref<Expression>>& result) {
@@ -659,8 +649,6 @@ ref<Expression> Parser::parse_assignment() {
   if (type(TokenType::Assignment)) {
     TokenType assignment_operator = m_token.assignment_operator;
     eat(TokenType::Assignment);
-    prepare_assignment_target(target);
-
     ref<Expression> source = parse_expression();
 
     switch (target->type()) {
@@ -678,23 +666,18 @@ ref<Expression> Parser::parse_assignment() {
       }
       case Node::Type::Tuple:
       case Node::Type::Dict: {
+        ref<UnpackTarget> unpack_target = create_unpack_target(target);
+
         if (assignment_operator != TokenType::Assignment) {
-          m_console.error(target,
-                          "this type of expression cannot be used as the left-hand side of an operator assignment");
+          m_console.error(target, "this type of expression cannot be used as the left-hand side of "
+                                  "an operator assignment");
           break;
         }
 
-        if (!target->assignable()) {
-          m_console.error(target,
-                          "left-hand side of assignment is not assignable");
-          break;
-        }
-
-        return make<UnpackAssignment>(make<UnpackTarget>(target), source);
+        return make<UnpackAssignment>(unpack_target, source);
       }
       default: {
-        m_console.error(target,
-                        "left-hand side of assignment is not assignable");
+        m_console.error(target, "left-hand side of assignment is not assignable");
         break;
       }
     }
@@ -1394,7 +1377,6 @@ ref<Super> Parser::parse_super_token() {
 }
 
 ref<Statement> Parser::create_declaration(const ref<Expression>& target, const ref<Expression>& value, bool constant) {
-  prepare_assignment_target(target);
   switch (target->type()) {
     case Node::Type::Id: {
       return make<Declaration>(make<Name>(cast<Id>(target)), value, constant);
@@ -1402,7 +1384,7 @@ ref<Statement> Parser::create_declaration(const ref<Expression>& target, const r
     }
     case Node::Type::Tuple:
     case Node::Type::Dict: {
-      return make<UnpackDeclaration>(make<UnpackTarget>(target), value, constant);
+      return make<UnpackDeclaration>(create_unpack_target(target), value, constant);
     }
     default: {
       assert(false && "unexpected node type");
@@ -1411,44 +1393,80 @@ ref<Statement> Parser::create_declaration(const ref<Expression>& target, const r
   }
 }
 
-void Parser::prepare_assignment_target(const ref<Expression>& node) {
+ref<UnpackTarget> Parser::create_unpack_target(const ref<Expression>& node) {
   switch (node->type()) {
     case Node::Type::Tuple: {
       ref<Tuple> tuple = cast<Tuple>(node);
+      ref<UnpackTarget> target = make<UnpackTarget>(false);
 
-      for (ref<Expression>& member : tuple->elements) {
-        if (isa<Id>(member)) {
-          member = make<Name>(cast<Id>(member));
-          continue;
-        }
+      if (tuple->elements.size() == 0) {
+        m_console.error(tuple, "empty unpack target");
+        break;
+      }
 
-        if (ref<Spread> spread = cast<Spread>(member)) {
-          spread->expression = make<Name>(cast<Id>(spread->expression));
-          continue;
+      for (const ref<Expression>& member : tuple->elements) {
+        if (ref<Id> id = cast<Id>(member)) {
+          target->elements.push_back(make<UnpackTargetElement>(make<Name>(id), false));
+        } else if (ref<Spread> spread = cast<Spread>(member)) {
+          if (ref<Id> id = cast<Id>(spread->expression)) {
+            auto element = make<UnpackTargetElement>(make<Name>(id), true);
+            element->set_begin(spread);
+            target->elements.push_back(element);
+          } else {
+            m_console.error(spread->expression, "expected an identifier");
+          }
+        } else {
+          m_console.error(member, "expected an identifier or spread");
+          break;
         }
       }
 
-      break;
+      target->set_location(node);
+      return target;
     }
     case Node::Type::Dict: {
       ref<Dict> dict = cast<Dict>(node);
+      ref<UnpackTarget> target = make<UnpackTarget>(true);
 
-      for (ref<DictEntry>& entry : dict->elements) {
-        if (ref<Spread> spread = cast<Spread>(entry->key)) {
-          assert(entry->value.get() == nullptr);
+      if (dict->elements.size() == 0) {
+        m_console.error(dict, "empty unpack target");
+        break;
+      }
 
-          if (isa<Id>(spread->expression)) {
-            spread->expression = make<Name>(cast<Id>(spread->expression));
+      for (const ref<DictEntry>& entry : dict->elements) {
+        if (entry->value) {
+          m_console.error(entry->value, "dict used as unpack target must not contain any values");
+          break;
+        }
+
+        if (ref<Name> key_name = cast<Name>(entry->key)) {
+          target->elements.push_back(make<UnpackTargetElement>(key_name, false));
+        } else if (ref<Spread> spread = cast<Spread>(entry->key)) {
+          if (ref<Id> id = cast<Id>(spread->expression)) {
+            auto element = make<UnpackTargetElement>(make<Name>(id), true);
+            element->set_begin(spread);
+            target->elements.push_back(element);
+          } else {
+            m_console.error(spread->expression, "expected an identifier");
           }
+        } else {
+          m_console.error(entry->key, "expected an identifier or spread");
+          break;
         }
       }
 
-      break;
+      target->set_location(node);
+      return target;
     }
     default: {
+      assert(false && "unexpected type");
       break;
     }
   }
+
+  // a dummy UnpackTarget node can be returned here since
+  // we don't care about the AST if any errors have been generated
+  return make<UnpackTarget>(false);
 }
 
 ref<Block> Parser::wrap_statement_in_block(const ref<Statement>& node) {

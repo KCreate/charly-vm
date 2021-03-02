@@ -35,7 +35,7 @@ public:
   using DiagnosticPass::DiagnosticPass;
 
 private:
-  virtual void inspect_leave(const ref<UnpackDeclaration>& node) override;
+  virtual void inspect_leave(const ref<UnpackTarget>& node) override;
   virtual void inspect_leave(const ref<Dict>& node) override;
   virtual void inspect_leave(const ref<Function>& node) override;
   virtual void inspect_leave(const ref<Class>& node) override;

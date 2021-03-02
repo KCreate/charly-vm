@@ -31,14 +31,29 @@
 
 namespace charly::core::compiler::ast {
 
-void DuplicatesCheck::inspect_leave(const ref<UnpackDeclaration>& node) {
+void DuplicatesCheck::inspect_leave(const ref<UnpackTarget>& node) {
   std::unordered_set<std::string> names;
+  bool spread_passed = false;
 
-  for (const ref<UnpackTargetElement>& element : node->target->elements) {
-    if (names.count(element->name->value)) {
-      m_console.error(element->name, "duplicate key '", element->name->value, "'");
+  for (const ref<UnpackTargetElement>& element : node->elements) {
+
+    // duplicate spread check
+    if (element->spread) {
+      if (spread_passed) {
+        m_console.error(element, "excess spread");
+        break;
+      }
+
+      spread_passed = true;
     }
-    names.insert(element->name->value);
+
+    // duplicate identifier check
+    if (names.count(element->name->value)) {
+      m_console.error(element->name, "duplicate identifier '", element->name->value, "'");
+      continue;
+    } else {
+      names.insert(element->name->value);
+    }
   }
 }
 

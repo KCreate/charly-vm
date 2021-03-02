@@ -814,7 +814,6 @@ public:
       this->set_location(elements.front(), elements.back());
     }
   }
-  UnpackTarget(const ref<Node>& node);
 
   bool object_unpack;
   std::vector<ref<UnpackTargetElement>> elements;
