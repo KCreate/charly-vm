@@ -33,31 +33,6 @@ namespace charly::core::compiler::ast {
 
 ref<Statement> DesugarPass::transform(const ref<Block>& node) {
 
-  // search for defer nodes
-  for (auto it = node->statements.begin(); it != node->statements.end(); it++) {
-    const ref<Statement>& statement = *it;
-
-    // wrap the remaining statements into
-    // the body node of the defer statement
-    if (ref<Defer> defer = cast<Defer>(statement)) {
-
-      // do not process nodes twice
-      if (defer->body)
-        continue;
-
-      ref<Block> block = make<Block>();
-
-      // put the remaining blocks of the parent block into the body
-      // property of the defer node
-      block->statements.insert(block->statements.end(), it + 1, node->statements.end());
-      defer->body = cast<Block>(apply(block));
-
-      // remove the copied statements from the parent block
-      node->statements.erase(it + 1, node->statements.end());
-      break;
-    }
-  }
-
   // unwrap block(block(...))
   if (node->statements.size() == 1) {
     if (ref<Block> block = cast<Block>(node->statements.front())) {

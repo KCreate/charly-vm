@@ -67,11 +67,6 @@ protected:
   HANDLE_NODE(Statement, Break, {})
   HANDLE_NODE(Statement, Continue, {})
 
-  HANDLE_NODE(Statement, Defer, {
-    APPLY_NODE(body);
-    APPLY_NODE(statement);
-  })
-
   HANDLE_NODE(Statement, Throw, {
     APPLY_NODE(expression);
   })
@@ -248,6 +243,11 @@ protected:
   HANDLE_NODE(Statement, Try, {
     APPLY_NODE(try_block);
     APPLY_NODE(catch_block);
+  })
+
+  HANDLE_NODE(Statement, TryFinally, {
+    APPLY_NODE(try_block);
+    APPLY_NODE(finally_block);
   })
 
   HANDLE_NODE(SwitchCase, SwitchCase, {

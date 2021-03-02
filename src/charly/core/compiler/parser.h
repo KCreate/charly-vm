@@ -136,7 +136,7 @@ private:
   ref<Return> parse_return();
   ref<Break> parse_break();
   ref<Continue> parse_continue();
-  ref<Defer> parse_defer();
+  ref<TryFinally> parse_defer();
   ref<Throw> parse_throw();
   ref<Export> parse_export();
 

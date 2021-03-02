@@ -26,7 +26,7 @@
 
 func list_mod(list, ...modifiers) {
   for mod in modifiers {
-    list = list.map(->(item) mod(item))
+    list = list.map(->(item) mod("{item}"))
   }
 
   return list

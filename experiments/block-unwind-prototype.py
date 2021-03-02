@@ -241,6 +241,7 @@ while True:
 
     # skip labels
     if type(opcode) is str:
+        print(f"| label '{opcode}'")
         incip(1)
         continue
 
@@ -376,6 +377,6 @@ while True:
     microtime_end = time.time() * 1000 * 1000
     delta = microtime_end - microtime_start
 
-    #  print(f"| {opcode_names[opcode]} {delta}μs")
+    print(f"| {opcode_names[opcode]} {delta}μs")
 
 print(f"VM exited with code {exit_code}")

@@ -161,6 +161,10 @@ public:
     m_messages.push_back(DiagnosticMessage{ DiagnosticError, m_filepath, stream.str(), loc });
     throw DiagnosticException();
   }
+  template <typename... Args>
+  [[noreturn]] void fatal(const ast::ref<ast::Node>& node, Args&&... params) {
+    fatal(node->location(), std::forward<Args>(params)...);
+  }
 
 private:
   DiagnosticConsole(DiagnosticConsole&) = delete;

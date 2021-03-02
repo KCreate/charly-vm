@@ -69,7 +69,6 @@ public:
     Return,
     Break,
     Continue,
-    Defer,
     Throw,
     Export,
     Import,
@@ -126,6 +125,7 @@ public:
     If,
     While,
     Try,
+    TryFinally,
     SwitchCase,
     Switch,
     For,
@@ -295,23 +295,6 @@ class Continue final : public Statement {
   AST_NODE(Continue)
 };
 
-// defer <statement>
-class Defer final : public Statement {
-  AST_NODE(Defer)
-public:
-  Defer(ref<Statement> statement) : statement(statement) {
-    this->set_location(statement);
-  }
-
-  ref<Block> body;
-  ref<Statement> statement;
-
-  CHILDREN() {
-    CHILD_NODE(body);
-    CHILD_NODE(statement);
-  }
-};
-
 // throw <expression>
 class Throw final : public Statement {
   AST_NODE(Throw)
@@ -342,9 +325,7 @@ public:
   }
 };
 
-// import <identifier>
-// import <identifier> as <identifier>
-// import <string> as <identifier>
+// import <source>
 class Import final : public Expression {
   AST_NODE(Import)
 public:
@@ -711,7 +692,7 @@ public:
 
 // property foo
 // static property bar = 42
-class ClassProperty final : public Expression {
+class ClassProperty final : public Node {
   AST_NODE(ClassProperty)
 public:
   ClassProperty(bool is_static, ref<Name> name, ref<Expression> value) :
@@ -1132,7 +1113,7 @@ public:
 // let a
 // let a = 2
 // const b = 3
-class Declaration final : public Expression {
+class Declaration final : public Statement {
   AST_NODE(Declaration)
 public:
   Declaration(ref<Name> name, ref<Expression> expression, bool constant = false) :
@@ -1160,7 +1141,7 @@ public:
 
 // let (a, ...b, c) = 1
 // const (a, ...b, c) = x
-class UnpackDeclaration final : public Expression {
+class UnpackDeclaration final : public Statement {
   AST_NODE(UnpackDeclaration)
 public:
   UnpackDeclaration(ref<UnpackTarget> target, ref<Expression> expression, bool constant = false) :
@@ -1185,7 +1166,7 @@ public:
 //   <then_block>
 // else
 //   <else_block>
-class If final : public Expression {
+class If final : public Statement {
   AST_NODE(If)
 public:
   If(ref<Expression> condition, ref<Block> then_block, ref<Block> else_block = nullptr) :
@@ -1210,7 +1191,7 @@ public:
 
 // while <condition>
 //   <then_block>
-class While final : public Expression {
+class While final : public Statement {
   AST_NODE(While)
 public:
   While(ref<Expression> condition, ref<Block> then_block) : condition(condition), then_block(then_block) {
@@ -1229,7 +1210,7 @@ public:
 
 // try <try_block>
 // [catch (<exception_name>) <catch_block>]
-class Try final : public Expression {
+class Try final : public Statement {
   AST_NODE(Try)
 public:
   Try(ref<Block> try_block, ref<Name> exception_name, ref<Block> catch_block) :
@@ -1255,7 +1236,25 @@ public:
   virtual void dump_info(std::ostream& out) const override;
 };
 
-class SwitchCase final : public Expression {
+// try <try_block> finally <finally_block>
+class TryFinally final : public Statement {
+  AST_NODE(TryFinally)
+public:
+  TryFinally(ref<Block> try_block, ref<Block> finally_block) : try_block(try_block), finally_block(finally_block) {
+    this->set_begin(finally_block);
+    this->set_end(try_block);
+  }
+
+  ref<Block> try_block;
+  ref<Block> finally_block;
+
+  CHILDREN() {
+    CHILD_NODE(try_block);
+    CHILD_NODE(finally_block);
+  }
+};
+
+class SwitchCase final : public Node {
   AST_NODE(SwitchCase)
 public:
   SwitchCase(ref<Expression> test, ref<Block> block) : test(test), block(block) {
@@ -1273,7 +1272,7 @@ public:
 };
 
 // switch (<test>) { case <test> <stmt> default <default_block> }
-class Switch final : public Expression {
+class Switch final : public Statement {
   AST_NODE(Switch)
 public:
   Switch(ref<Expression> test) : test(test), default_block(nullptr) {
@@ -1302,7 +1301,7 @@ public:
 };
 
 // for <target> in <source> <stmt>
-class For final : public Expression {
+class For final : public Statement {
   AST_NODE(For)
 public:
   For(ref<Statement> declaration, ref<Statement> stmt) : declaration(declaration), stmt(stmt) {

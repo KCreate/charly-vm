@@ -1,5 +1,15 @@
 # Todos
 
+- Do not use a blockstack for exceptions and deferred statements
+  - Defer statements can be implemented using exception handlers
+    and the finally block
+  - Exception handlers are implemented using an exception jump table
+    created at compile-time
+  - Exception handler sets handlers for break, continue and return statements
+
+- Return statements are rewritten to a jump to the function end
+  - Store return value in a local variable
+
 - AST to IR lowering process
   - Constant fold expressions
   - Spread expressions
@@ -82,7 +92,6 @@
     - Generate exception tables for each function at compile time
       - How is the type id obtained for the exception classes?
       - Can the catchtables be completely removed?
-      - Unwinding of block stack for defer and loop constructs
 
   - object handles that also work with immediate encoded values (Handle<Object>, Handle<VALUE>)
     - std::is_base_of can be used to enforce subclasses of Header only for Handle type

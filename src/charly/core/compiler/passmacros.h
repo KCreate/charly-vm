@@ -15,7 +15,6 @@
       AST_TYPESWITCH_CASE_NODE(Return, __VA_ARGS__)                \
       AST_TYPESWITCH_CASE_NODE(Break, __VA_ARGS__)                 \
       AST_TYPESWITCH_CASE_NODE(Continue, __VA_ARGS__)              \
-      AST_TYPESWITCH_CASE_NODE(Defer, __VA_ARGS__)                 \
       AST_TYPESWITCH_CASE_NODE(Throw, __VA_ARGS__)                 \
       AST_TYPESWITCH_CASE_NODE(Export, __VA_ARGS__)                \
       AST_TYPESWITCH_CASE_NODE(Import, __VA_ARGS__)                \
@@ -65,6 +64,7 @@
       AST_TYPESWITCH_CASE_NODE(If, __VA_ARGS__)                    \
       AST_TYPESWITCH_CASE_NODE(While, __VA_ARGS__)                 \
       AST_TYPESWITCH_CASE_NODE(Try, __VA_ARGS__)                   \
+      AST_TYPESWITCH_CASE_NODE(TryFinally, __VA_ARGS__)                   \
       AST_TYPESWITCH_CASE_NODE(SwitchCase, __VA_ARGS__)            \
       AST_TYPESWITCH_CASE_NODE(Switch, __VA_ARGS__)                \
       AST_TYPESWITCH_CASE_NODE(For, __VA_ARGS__)                   \

@@ -300,7 +300,7 @@ ref<Continue> Parser::parse_continue() {
   return node;
 }
 
-ref<Defer> Parser::parse_defer() {
+ref<TryFinally> Parser::parse_defer() {
   Location begin = m_token.location;
   eat(TokenType::Defer);
 
@@ -309,10 +309,13 @@ ref<Defer> Parser::parse_defer() {
   m_keyword_context._break = false;
   m_keyword_context._continue = false;
   m_keyword_context._yield = false;
-  ref<Statement> stmt = parse_block_or_statement();
+  ref<Block> defer_block = wrap_statement_in_block(parse_block_or_statement());
   m_keyword_context = kwcontext;
 
-  ref<Defer> node = make<Defer>(stmt);
+  ref<Block> remaining_statement = make<Block>();
+  parse_block_body(remaining_statement);
+
+  ref<TryFinally> node = make<TryFinally>(remaining_statement, defer_block);
   node->set_begin(begin);
   return node;
 }
@@ -398,38 +401,48 @@ ref<Statement> Parser::parse_try() {
   Location begin = m_token.location;
   eat(TokenType::Try);
 
-  ref<Block> try_block = wrap_statement_in_block(parse_block_or_statement());
+  ref<Statement> stmt = parse_block_or_statement();
 
-  eat(TokenType::Catch);
-  ref<Name> exception_name;
-  if (skip(TokenType::LeftParen)) {
-    exception_name = make<Name>(parse_identifier_token());
-    eat(TokenType::RightParen);
+  bool no_catch = false;
+  bool no_finally = false;
+
+  if (skip(TokenType::Catch)) {
+    ref<Name> exception_name;
+    if (skip(TokenType::LeftParen)) {
+      exception_name = make<Name>(parse_identifier_token());
+      eat(TokenType::RightParen);
+    } else {
+      exception_name = make<Name>("exception");
+      exception_name->set_location(begin);
+    }
+
+    ref<Block> try_block = wrap_statement_in_block(stmt);
+    ref<Block> catch_block = wrap_statement_in_block(parse_block_or_statement());
+    stmt = make<Try>(try_block, exception_name, catch_block);
   } else {
-    exception_name = make<Name>("exception");
-    exception_name->set_location(begin);
+    no_catch = true;
   }
-  ref<Block> catch_block = wrap_statement_in_block(parse_block_or_statement());
 
-  ref<Block> finally_block = nullptr;
   if (skip(TokenType::Finally)) {
     auto kwcontext = m_keyword_context;
     m_keyword_context._return = false;
     m_keyword_context._break = false;
     m_keyword_context._continue = false;
     m_keyword_context._yield = false;
-    finally_block = wrap_statement_in_block(parse_block_or_statement());
+    ref<Block> finally_block = wrap_statement_in_block(parse_block_or_statement());
     m_keyword_context = kwcontext;
-  }
 
-  ref<Try> try_node = make<Try>(try_block, exception_name, catch_block);
-  try_node->set_begin(begin);
-
-  if (finally_block) {
-    return make<Block>(make<Defer>(finally_block), try_node);
+    stmt = make<TryFinally>(wrap_statement_in_block(stmt), finally_block);
   } else {
-    return try_node;
+    no_finally = true;
   }
+
+  if (no_catch && no_finally) {
+    unexpected_token(TokenType::Catch);
+  }
+
+  stmt->set_begin(begin);
+  return stmt;
 }
 
 ref<Switch> Parser::parse_switch() {

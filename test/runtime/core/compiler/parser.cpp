@@ -280,9 +280,6 @@ TEST_CASE("parses control statements") {
   CHECK_AST_STMT("loop { break }", make<While>(make<Bool>(1), make<Block>(make<Break>())));
   CHECK_AST_STMT("loop { continue }", make<While>(make<Bool>(1), make<Block>(make<Continue>())));
 
-  CHECK_AST_STMT("defer foo", make<Defer>(make<Id>("foo")));
-  CHECK_AST_STMT("defer foo()", make<Defer>(make<CallOp>(make<Id>("foo"))));
-
   CHECK_AST_STMT("throw null", make<Throw>(make<Null>()));
   CHECK_AST_STMT("throw 25", make<Throw>(make<Int>(25)));
   CHECK_AST_STMT("throw 1 + 2", make<Throw>(make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(2))));
@@ -646,16 +643,13 @@ TEST_CASE("super expressions") {
 }
 
 TEST_CASE("try statements") {
-  CHECK_AST_STMT("try foo catch bar", make<Try>(make<Id>("foo"), "exception", make<Id>("bar")));
-  CHECK_AST_STMT("try foo catch(err) bar", make<Try>(make<Id>("foo"), "err", make<Id>("bar")));
-  CHECK_AST_STMT("try foo catch(err) bar finally baz",
-                 make<Block>(make<Defer>(make<Id>("baz")), make<Try>(make<Id>("foo"), "err", make<Id>("bar"))));
-  CHECK_AST_STMT("try {} catch(err) {} finally {}",
-                 make<Block>(make<Defer>(make<Block>()), make<Try>(make<Block>(), "err", make<Block>())));
-
+  CHECK_STMT("try foo catch bar");
+  CHECK_STMT("try foo catch(err) bar");
+  CHECK_STMT("try foo catch(err) bar finally baz");
+  CHECK_STMT("try foo finally baz");
   CHECK_STMT("loop { try { break continue } catch { break continue } }");
+
   CHECK_ERROR_STMT("try {}", "unexpected end of file, expected a 'catch' token");
-  CHECK_ERROR_STMT("try {} finally {}", "unexpected 'finally' token, expected a 'catch' token");
   CHECK_ERROR_STMT("loop { try {} catch {} finally { break } }", "break statement not allowed at this point");
   CHECK_ERROR_STMT("loop { try {} catch {} finally { return } }", "return statement not allowed at this point");
 }
