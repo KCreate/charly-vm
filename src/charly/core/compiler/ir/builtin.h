@@ -32,89 +32,62 @@
 
 namespace charly::core::compiler::ir {
 
+// fiberspawn: create a fiber and start running it
+//   - function
+//   - tuple containing arguments
+// fiberyield: yield from the current fiber
+// pauses the current fiber and resumes the callee fiber
+//   - argument
+// importmodule: import a builtin module or file from the file system
+//   - value
+//   - source path
+// iteratornext: get the next result tuple from the iterator
+//   - iterator
+// stringconcat: concatenate values together
+// castXYZ: cast value to a specific type
+//   - value
+
+// (name, number of required arguments)
+// -1 indicates that there is no min or max limit
+#define FOREACH_BUILTIN(V) \
+  V(fibercreate, 2)        \
+  V(fiberspawn, 2)         \
+  V(fiberyield, 1)         \
+  V(importmodule, 2)       \
+  V(iteratornext, 1)       \
+  V(stringconcat, -1)      \
+  V(caststring, 1)         \
+  V(castsymbol, 1)         \
+  V(castgenerator, 1)      \
+  V(castiterator, 1)
+
 // ids of builtin operations
 enum BuiltinId : uint16_t {
-
-  // create a fiber, but don't start it
-  // - function
-  // - tuple containing arguments
-  fibercreate,
-
-  // create a fiber and start running it
-  // - function
-  // - tuple containing arguments
-  fiberspawn,
-
-  // yield from the current fiber
-  // pauses the current fiber and resumes the callee fiber
-  // - argument
-  fiberyield,
-
-  // import a builtin module or file from the file system
-  // - value
-  // - source path
-  importmodule,
-
-  // get the next result tuple from the iterator
-  // - iterator
-  iteratornext,
-
-  // concatenate values together
-  stringconcat,
-
-  // cast value to a specific type
-  // - value
-  caststring,
-  castsymbol,
-  castgenerator,
-  castiterator
+#define ID(name, _) name,
+  FOREACH_BUILTIN(ID)
+#undef ID
 };
 
 // number of required arguments for the builtin operations
 // -1 indicates that there is no min or max limit
 static constexpr int8_t kBuiltinArgumentCount[] = {
-  2,   // fibercreate
-  2,   // fiberspawn
-  1,   // fiberyield
-  2,   // importmodule
-  1,   // iteratornext
-  -1,  // stringconcat
-  1,   // caststring
-  1,   // castsymbol
-  1,   // castgenerator
-  1    // castiterator
+#define COUNT(_, count) count,
+  FOREACH_BUILTIN(COUNT)
+#undef COUNT
 };
-
-// clang-format off
 
 // names of builtin operations
 static std::string kBuiltinNames[] = {
-  "fibercreate",
-  "fiberspawn",
-  "fiberyield",
-  "importmodule",
-  "iteratornext",
-  "stringconcat",
-  "caststring",
-  "castsymbol",
-  "castgenerator",
-  "castiterator"
+#define NAME(name, _) #name,
+  FOREACH_BUILTIN(NAME)
+#undef NAME
 };
 
 // mapping from name of builtin operation to its Id
 static std::unordered_map<std::string, BuiltinId> kBuiltinNameMapping = {
-  { "fibercreate",   BuiltinId::fibercreate },
-  { "fiberspawn",    BuiltinId::fiberspawn },
-  { "fiberyield",  BuiltinId::fiberyield },
-  { "importmodule",  BuiltinId::importmodule },
-  { "iteratornext",  BuiltinId::iteratornext },
-  { "stringconcat",  BuiltinId::stringconcat },
-  { "caststring",    BuiltinId::caststring },
-  { "castsymbol",    BuiltinId::castsymbol },
-  { "castgenerator", BuiltinId::castgenerator },
-  { "castiterator",  BuiltinId::castiterator }
+#define PAIR(name, _) { #name, name },
+  FOREACH_BUILTIN(PAIR)
+#undef PAIR
 };
-
-// clang-format on
 
 }  // namespace charly::core::compiler::ir
