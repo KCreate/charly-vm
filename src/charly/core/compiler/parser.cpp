@@ -753,6 +753,12 @@ ref<Expression> Parser::parse_unaryop() {
     TokenType operation = m_token.type;
     Location start_loc = m_token.location;
     advance();
+
+    // +exp is always just exp
+    if (operation == TokenType::Plus) {
+      return parse_unaryop();
+    }
+
     ref<UnaryOp> op = make<UnaryOp>(operation, parse_unaryop());
     op->set_begin(start_loc);
     return op;

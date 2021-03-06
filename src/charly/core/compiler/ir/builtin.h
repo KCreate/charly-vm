@@ -83,7 +83,7 @@ namespace charly::core::compiler::ir {
 
 
 // ids of builtin operations
-enum BuiltinId : uint16_t {
+enum class BuiltinId : uint16_t {
 #define ID(name, _) name,
   FOREACH_BUILTIN(ID)
 #undef ID
@@ -106,7 +106,7 @@ static std::string kBuiltinNames[] = {
 
 // mapping from name of builtin operation to its Id
 static std::unordered_map<std::string, BuiltinId> kBuiltinNameMapping = {
-#define PAIR(name, _) { #name, name },
+#define PAIR(name, _) { #name, BuiltinId::name },
   FOREACH_BUILTIN(PAIR)
 #undef PAIR
 };

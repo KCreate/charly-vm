@@ -50,7 +50,7 @@ DiagnosticConsole::DiagnosticConsole(const std::string& filepath, const utils::B
 
 bool DiagnosticConsole::has_errors() {
   for (DiagnosticMessage& message : m_messages) {
-    if (message.type == DiagnosticError) {
+    if (message.type == DiagnosticType::Error) {
       return true;
     }
   }

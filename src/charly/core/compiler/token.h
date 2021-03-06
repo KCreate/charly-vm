@@ -220,8 +220,7 @@ static const std::unordered_set<TokenType> kBinaryOperatorTokens = {
   TokenType::Mod,         TokenType::Pow,          TokenType::BitAND,        TokenType::BitOR,
   TokenType::BitXOR,      TokenType::BitLeftShift, TokenType::BitRightShift, TokenType::BitUnsignedRightShift,
   TokenType::Or,          TokenType::And,          TokenType::Equal,         TokenType::NotEqual,
-  TokenType::LessThan,    TokenType::GreaterThan,  TokenType::LessEqual,     TokenType::GreaterEqual,
-  TokenType::DoublePoint, TokenType::TriplePoint,
+  TokenType::LessThan,    TokenType::GreaterThan,  TokenType::LessEqual,     TokenType::GreaterEqual
 };
 
 // Note: The TriplePoint token or spread operator (...) is not included in this list is it is

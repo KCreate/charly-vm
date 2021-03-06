@@ -36,10 +36,12 @@
 
 #include "charly/core/compiler.h"
 #include "charly/core/compiler/ast.h"
+#include "charly/core/compiler/ir/builder.h"
 
 using namespace charly;
 using namespace charly::core::compiler;
 using namespace charly::core::compiler::ast;
+using namespace charly::core::compiler::ir;
 
 int run_repl() {
   bool print_location = false;
@@ -88,7 +90,9 @@ int run_repl() {
         continue;
     }
 
+    // dump compiler steps
     program->dump(std::cout, print_location);
+    unit->ir_builder.dump(std::cout);
   }
 
   return 0;
@@ -121,6 +125,8 @@ int run_file(int, char** argv) {
     return 1;
 
   program->dump(std::cout, true);
+  unit->ir_builder.dump(std::cout);
+
   return 0;
 }
 

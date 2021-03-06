@@ -28,6 +28,7 @@
 
 #include "charly/core/compiler/ast.h"
 #include "charly/core/compiler/diagnostic.h"
+#include "charly/core/compiler/ir/builder.h"
 #include "charly/utils/buffer.h"
 
 #pragma once
@@ -44,6 +45,7 @@ struct CompilationUnit {
   DiagnosticConsole console;
   std::string filepath;
   ast::ref<ast::Block> ast;
+  ir::Builder ir_builder;
 };
 
 class Compiler {

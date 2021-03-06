@@ -1,15 +1,33 @@
 # Todos
 
+- String table
+  - Generate a table for each function or for an entire module?
+
+- Immediate value encoding
+  - Pointer tagging
+  - NaN boxing
+
+- New instructions
+  - Global variable declarations
+    - Block stack
+      - Exception unwinding?
+
+- Headers
+  - Module header
+  - Function header
+    - Contains pointer to module header and function header if class function
+  - Class header
+    - Contains pointer to module header
+
+- IRBuilder
+  - Functions
+  - Exception tables
+  - Symbol table
+  - String table
+
 - AST to IR lowering process
-  - Constant fold expressions
-  - Spread expressions
-    - Tuple literals
-    - List literals
-    - Dict literals
-    - Call expression
-    - UnpackDeclaration
-    - UnpackAssignment
-  - Make sure each function returns null in case of no other returns
+  - Return statement jump to the final block of a function
+    - return value is stored in local variable 0
   - Rewrite default arguments and member initializers
   - Rewrite control statements to labels, gotos and conditional gotos
 
@@ -327,7 +345,6 @@
       - function
       - generator
       - iterator
-      - range
     - vm-internals
       - frame
       - block

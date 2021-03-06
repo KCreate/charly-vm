@@ -24,21 +24,19 @@
  * SOFTWARE.
  */
 
-const debug = false
-
-const name = "leonard"
-const birthyear = 2000
-const years_alive = 21
-
-const age = birthyear + years_alive
-
-if debug {
-  print("name: {name} age: {age}")
+func add(x, y) {
+  defer print("exiting add")
+  return x + y
 }
 
-while debug {
-  print("{debug}")
+func bar(x, y, cb) {
+  const tmp = x + y
+  return tmp + add(tmp, add(x, y)) * cb()
 }
 
-const tmp = debug ? "debug is active" : "debug is inactive"
-print("status: {tmp}")
+func baz(x, y) {
+  return bar(x, y, ->{ return 42 * 2 })
+}
+
+const result = baz(2, 3)
+print(result)

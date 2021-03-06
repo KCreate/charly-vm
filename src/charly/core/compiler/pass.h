@@ -31,6 +31,7 @@
 #include "charly/core/compiler/ast.h"
 #include "charly/core/compiler/diagnostic.h"
 #include "charly/core/compiler/passmacros.h"
+#include "charly/core/compiler.h"
 
 #pragma once
 

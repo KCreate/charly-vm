@@ -104,8 +104,6 @@ void Node::dump(std::ostream& out, bool print_location) const {
       first_line = false;
     }
   }
-
-  writer << '\n';
 }
 
 void Block::dump_info(std::ostream& out) const {
@@ -380,7 +378,7 @@ void Try::dump_info(std::ostream& out) const {
 void BuiltinOperation::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';
-  writer.fg(Color::Red, ir::kBuiltinNames[this->operation]);
+  writer.fg(Color::Red, ir::kBuiltinNames[(uint16_t)this->operation]);
 }
 
 }  // namespace charly::core::compiler

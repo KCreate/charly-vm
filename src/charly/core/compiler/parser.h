@@ -58,8 +58,6 @@ static const std::unordered_map<TokenType, uint32_t> kBinaryOpPrecedenceLevels =
   { TokenType::BitRightShift,         30 },
   { TokenType::BitUnsignedRightShift, 30 },
 
-  { TokenType::DoublePoint,           40 },
-  { TokenType::TriplePoint,           40 },
   { TokenType::BitOR,                 41 },
   { TokenType::BitXOR,                42 },
   { TokenType::BitAND,                43 },

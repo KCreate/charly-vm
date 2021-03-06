@@ -26,6 +26,8 @@
 
 #include "charly/core/compiler.h"
 #include "charly/core/compiler/parser.h"
+#include "charly/core/compiler/codegenerator.h"
+#include "charly/core/compiler/ir/builder.h"
 
 #include "charly/core/compiler/passes/class_constructor_check.h"
 #include "charly/core/compiler/passes/duplicates_check.h"
@@ -36,9 +38,9 @@
 #include "charly/core/compiler/passes/desugar_pass.h"
 #include "charly/core/compiler/passes/local_allocator_pass.h"
 
-using namespace charly::core::compiler::ast;
-
 namespace charly::core::compiler {
+
+using namespace charly::core::compiler::ast;
 
 std::shared_ptr<CompilationUnit> Compiler::compile(CompilationUnit::Type type,
                                                    const std::string& filepath,
@@ -85,6 +87,10 @@ std::shared_ptr<CompilationUnit> Compiler::compile(CompilationUnit::Type type,
 #undef APPLY_TRANSFORM_PASS
 
   unit->ast->needs_locals_table = false;
+
+  // compile to bytecodes
+  CodeGenerator codegenerator(unit);
+  codegenerator.compile();
 
   return unit;
 }

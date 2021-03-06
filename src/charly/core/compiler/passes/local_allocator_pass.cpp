@@ -68,8 +68,9 @@ bool LocalAllocatorPass::inspect_enter(const ref<Function>& node) {
   this->push_block(node->body);
 
   node->ir_info.valid = true;
-  node->ir_info.argc = m_function->ast_function->argc();
-  node->ir_info.minargc = m_function->ast_function->minimum_argc();
+  node->ir_info.argc = node->argc();
+  node->ir_info.minargc = node->minimum_argc();
+  node->ir_info.arrow_function = node->arrow_function;
 
   // register function node arguments as local variables
   for (const ref<FunctionArgument>& argument : node->arguments) {

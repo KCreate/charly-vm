@@ -40,7 +40,7 @@ using Color = charly::utils::Color;
 
 namespace charly::core::compiler {
 
-enum DiagnosticType : uint8_t { DiagnosticInfo, DiagnosticWarning, DiagnosticError };
+enum class DiagnosticType : uint8_t { Info, Warning, Error };
 
 struct DiagnosticMessage {
   DiagnosticType type;
@@ -50,15 +50,15 @@ struct DiagnosticMessage {
 
   utils::Color format_color() const {
     switch (type) {
-      case DiagnosticInfo: {
+      case DiagnosticType::Info: {
         return utils::Color::Blue;
         break;
       }
-      case DiagnosticWarning: {
+      case DiagnosticType::Warning: {
         return utils::Color::Yellow;
         break;
       }
-      case DiagnosticError: {
+      case DiagnosticType::Error: {
         return utils::Color::Red;
         break;
       }
@@ -80,15 +80,15 @@ struct DiagnosticMessage {
     writer << ' ';
 
     switch (message.type) {
-      case DiagnosticInfo: {
+      case DiagnosticType::Info: {
         writer.fg(message.format_color(), "info:");
         break;
       }
-      case DiagnosticWarning: {
+      case DiagnosticType::Warning: {
         writer.fg(message.format_color(), "warning:");
         break;
       }
-      case DiagnosticError: {
+      case DiagnosticType::Error: {
         writer.fg(message.format_color(), "error:");
         break;
       }
@@ -124,7 +124,7 @@ public:
   void info(const Location& loc, Args&&... params) {
     std::stringstream stream;
     ((stream << std::forward<Args>(params)), ...);
-    m_messages.push_back(DiagnosticMessage{ DiagnosticInfo, m_filepath, stream.str(), loc });
+    m_messages.push_back(DiagnosticMessage{ DiagnosticType::Info, m_filepath, stream.str(), loc });
   }
   template <typename... Args>
   void info(const ast::ref<ast::Node>& node, Args&&... params) {
@@ -135,7 +135,7 @@ public:
   void warning(const Location& loc, Args&&... params) {
     std::stringstream stream;
     ((stream << std::forward<Args>(params)), ...);
-    m_messages.push_back(DiagnosticMessage{ DiagnosticWarning, m_filepath, stream.str(), loc });
+    m_messages.push_back(DiagnosticMessage{ DiagnosticType::Warning, m_filepath, stream.str(), loc });
   }
   template <typename... Args>
   void warning(const ast::ref<ast::Node>& node, Args&&... params) {
@@ -146,7 +146,7 @@ public:
   void error(const Location& loc, Args&&... params) {
     std::stringstream stream;
     ((stream << std::forward<Args>(params)), ...);
-    m_messages.push_back(DiagnosticMessage{ DiagnosticError, m_filepath, stream.str(), loc });
+    m_messages.push_back(DiagnosticMessage{ DiagnosticType::Error, m_filepath, stream.str(), loc });
   }
   template <typename... Args>
   void error(const ast::ref<ast::Node>& node, Args&&... params) {
@@ -158,7 +158,7 @@ public:
   [[noreturn]] void fatal(const Location& loc, Args&&... params) {
     std::stringstream stream;
     ((stream << std::forward<Args>(params)), ...);
-    m_messages.push_back(DiagnosticMessage{ DiagnosticError, m_filepath, stream.str(), loc });
+    m_messages.push_back(DiagnosticMessage{ DiagnosticType::Error, m_filepath, stream.str(), loc });
     throw DiagnosticException();
   }
   template <typename... Args>

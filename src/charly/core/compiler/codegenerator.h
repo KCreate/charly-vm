@@ -24,14 +24,40 @@
  * SOFTWARE.
  */
 
-#include <cstdint>
+#include <queue>
 
-#include "symbol.h"
+#include "charly/core/compiler.h"
+#include "charly/core/compiler/ast.h"
+#include "charly/core/compiler/ir/builder.h"
+#include "charly/core/compiler/pass.h"
 
 #pragma once
 
-namespace charly {
+namespace charly::core::compiler {
 
-using VALUE = uintptr_t;
+class CodeGenerator : public ast::DiagnosticPass {
+public:
+  CodeGenerator(std::shared_ptr<CompilationUnit> unit) :
+    DiagnosticPass(unit->console), m_unit(unit), m_builder(unit->ir_builder) {}
 
-}
+  void compile();
+
+private:
+  struct QueuedFunction {
+    ir::Label head_label;
+    ast::ref<ast::Function> ast;
+  };
+
+  void compile_function(const QueuedFunction&);
+
+  virtual bool inspect_enter(const ast::ref<ast::Function>&) override;
+  virtual void inspect_leave(const ast::ref<ast::Int>&) override;
+  virtual void inspect_leave(const ast::ref<ast::BinaryOp>&) override;
+  virtual void inspect_leave(const ast::ref<ast::UnaryOp>&) override;
+
+  std::shared_ptr<CompilationUnit> m_unit;
+  ir::Builder& m_builder;
+  std::queue<QueuedFunction> m_function_queue;
+};
+
+}  // namespace charly::core::compiler
