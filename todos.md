@@ -90,6 +90,9 @@
   - $0, $1 syntax
   - In-bounds identifiers can be replaced by the actual arguments
 
+- Stream coloring on macOS
+  - termcolor::_internal::is_colorized returns false, manually executing the function body returns true???
+
 # Rewrite of the codebase
 
 - open questions

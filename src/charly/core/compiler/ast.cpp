@@ -71,17 +71,16 @@ void Node::dump(std::ostream& out, bool print_location) const {
 
   std::vector<std::stringstream> child_nodes;
   children([&](const ref<Node>& node) {
-    child_nodes.emplace_back(std::stringstream{});
-    std::stringstream& child_stream = child_nodes.back();
+    std::stringstream& child_stream = child_nodes.emplace_back();
     if (termcolor::_internal::is_colorized(out)) {
       termcolor::colorize(child_stream);
+      assert(termcolor::_internal::is_colorized(child_stream) && "stream not colorized");
     }
     node->dump(child_stream, print_location);
   });
 
   for (size_t i = 0; i < child_nodes.size(); i++) {
-    auto& child_stream = child_nodes.at(i);
-
+    std::stringstream& child_stream = child_nodes.at(i);
     std::string line;
     bool first_line = true;
     while (std::getline(child_stream, line)) {
