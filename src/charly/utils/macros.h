@@ -24,10 +24,19 @@
  * SOFTWARE.
  */
 
+#pragma once
 
-func foo {
-  const first_name = "leonard"
-  const last_name = "schütz"
+namespace charly::utils {
 
-  return first_name + last_name
-}
+// Source: https://stackoverflow.com/a/11763277/2611393
+#define CHARLY_FE_1(WHAT, X) WHAT(X)
+#define CHARLY_FE_2(WHAT, X, ...) WHAT(X) CHARLY_FE_1(WHAT, __VA_ARGS__)
+#define CHARLY_FE_3(WHAT, X, ...) WHAT(X) CHARLY_FE_2(WHAT, __VA_ARGS__)
+#define CHARLY_FE_4(WHAT, X, ...) WHAT(X) CHARLY_FE_3(WHAT, __VA_ARGS__)
+#define CHARLY_FE_5(WHAT, X, ...) WHAT(X) CHARLY_FE_4(WHAT, __VA_ARGS__)
+
+#define CHARLY_GET_MACRO(_1, _2, _3, _4, _5, NAME, ...) NAME
+#define CHARLY_VA_FOR_EACH(action, ...) \
+  CHARLY_GET_MACRO(__VA_ARGS__, CHARLY_FE_5, CHARLY_FE_4, CHARLY_FE_3, CHARLY_FE_2, CHARLY_FE_1)(action, __VA_ARGS__)
+
+}  // namespace charly::utils

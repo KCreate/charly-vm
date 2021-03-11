@@ -1,35 +1,55 @@
 # Todos
 
-- String table
-  - Generate a table for each function or for an entire module?
+- ValueLocation, keep symbol information around
+
+- Handle function string table in CodeGenerator, not Builder
+
+- Add checks for certain max amounts of local vars, arguments and stuff
+
+- Always wrap generated code in a module wrapper function
+  - If repl input, wrap last expression-statement in return or return null
+  - Variable declarations in the top block should always be global variables
+
+- generate_store should get an arg wether to keep stored values on the stack
+
+- Runtime representation of functions
+  - How does the `makefunc` instruction create a new function?
+  - Shared function info?
+  - Bytecode
+  - Keep possibility of future JIT compiler in mind
+
+- Think about inline caches
+  - IRBuilder will have to allocate inline caches per function
+    - Separate table for inline caches or directly encoded into bytecode?
+
+- Exception tables
+  - Store start, end and handler label
+  - How do we know how many values to pop off the stack?
+    - Can we determine the frame-relative stack size at a specific position?
+
+- IRBuilder
+  - Show symbols as strings in IR dump
+  - Show string preview on makestr instructions (max length of 32 chars...)
+  - Fancy IR dump
+
+- CodeGenerator
+  - Store return value in local offset 0
+  - Generate default argument and self initializers
+  - Does the VM put the function arguments into the stack frame or do
+    we need to pop them from the stack at the beginning of the function
+  - Generate exception tables
+
+- Global symbol table with thread local intermediate caches
+
+- Make the self value an argument of every function
+  - Arrow functions codegen the self via loadcontextself
+
+- Command line argument parser
+  - Flags to show AST or compiler output
 
 - Immediate value encoding
   - Pointer tagging
   - NaN boxing
-
-- New instructions
-  - Global variable declarations
-    - Block stack
-      - Exception unwinding?
-
-- Headers
-  - Module header
-  - Function header
-    - Contains pointer to module header and function header if class function
-  - Class header
-    - Contains pointer to module header
-
-- IRBuilder
-  - Functions
-  - Exception tables
-  - Symbol table
-  - String table
-
-- AST to IR lowering process
-  - Return statement jump to the final block of a function
-    - return value is stored in local variable 0
-  - Rewrite default arguments and member initializers
-  - Rewrite control statements to labels, gotos and conditional gotos
 
 - Intermediate representation for charly code
   - Human readable charly bytecode syntax

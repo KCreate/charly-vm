@@ -104,10 +104,6 @@ void LocalAllocatorPass::inspect_leave(const ref<Block>&) {
 }
 
 bool LocalAllocatorPass::inspect_enter(const ref<Declaration>&) {
-  if (!m_function) {
-    m_block->ast_block->needs_locals_table = true;
-  }
-
   return false;
 }
 
@@ -134,14 +130,6 @@ ref<Statement> LocalAllocatorPass::transform(const ref<Declaration>& node) {
   }
 
   return node;
-}
-
-bool LocalAllocatorPass::inspect_enter(const ref<UnpackDeclaration>&) {
-  if (!m_function) {
-    m_block->ast_block->needs_locals_table = true;
-  }
-
-  return true;
 }
 
 void LocalAllocatorPass::inspect_leave(const ref<UnpackDeclaration>& node) {

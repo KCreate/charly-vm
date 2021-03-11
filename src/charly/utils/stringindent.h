@@ -24,10 +24,26 @@
  * SOFTWARE.
  */
 
+#include <sstream>
+#include <string_view>
+#include <string>
 
-func foo {
-  const first_name = "leonard"
-  const last_name = "schütz"
+#pragma once
 
-  return first_name + last_name
+namespace charly::utils {
+
+// indent a stream by a certain amount of spaces by
+// copying all lines from the input stream to the output stream
+static void indent_stream(uint8_t nspaces, std::istream& input, std::ostream& output) {
+  std::string line;
+  while (std::getline(input, line)) {
+    uint8_t space_counter = nspaces;
+    while (space_counter--) {
+      output << ' ';
+    }
+
+    output << line << '\n';
+  }
 }
+
+}  // namespace charly::utils

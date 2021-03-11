@@ -58,7 +58,6 @@ private:
   virtual bool inspect_enter(const ref<Declaration>&) override;
   virtual ref<Statement> transform(const ref<Declaration>&) override;
 
-  virtual bool inspect_enter(const ref<UnpackDeclaration>&) override;
   virtual void inspect_leave(const ref<UnpackDeclaration>&) override;
 
   virtual void inspect_leave(const ref<Assignment>&) override;

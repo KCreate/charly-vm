@@ -28,7 +28,9 @@
 
 #include "charly/core/compiler.h"
 #include "charly/core/compiler/ast.h"
+#include "charly/core/compiler/ir/ir.h"
 #include "charly/core/compiler/ir/builder.h"
+#include "charly/core/compiler/ir/valuelocation.h"
 #include "charly/core/compiler/pass.h"
 
 #pragma once
@@ -37,27 +39,75 @@ namespace charly::core::compiler {
 
 class CodeGenerator : public ast::DiagnosticPass {
 public:
-  CodeGenerator(std::shared_ptr<CompilationUnit> unit) :
-    DiagnosticPass(unit->console), m_unit(unit), m_builder(unit->ir_builder) {}
-
-  void compile();
+  static std::shared_ptr<ir::IRModule> compile(std::shared_ptr<CompilationUnit> unit);
 
 private:
+  void compile();
+
+  std::shared_ptr<ir::IRModule> get_module() const {
+    return m_builder.get_module();
+  };
+
+  CodeGenerator(std::shared_ptr<CompilationUnit> unit) :
+    DiagnosticPass(unit->console), m_unit(unit) {}
+
   struct QueuedFunction {
-    ir::Label head_label;
+    ir::Label head;
     ast::ref<ast::Function> ast;
   };
 
+  // enqueue a function to be compiled
+  // returns the label the function will be placed at
+  ir::Label enqueue_function(const ast::ref<ast::Function>& ast);
+
+  // compile a single function and enqueue child functions
   void compile_function(const QueuedFunction&);
 
-  virtual bool inspect_enter(const ast::ref<ast::Function>&) override;
+  // generate load and stores to value locations
+  void generate_load(const ir::ValueLocation&);
+  void generate_store(const ir::ValueLocation&);
+
+  // label stacks
+  ir::Label active_return_label() const;
+  ir::Label active_break_label() const;
+  ir::Label active_continue_label() const;
+  void push_return_label(ir::Label label);
+  void push_break_label(ir::Label label);
+  void push_continue_label(ir::Label label);
+  void pop_return_label();
+  void pop_break_label();
+  void pop_continue_label();
+
+  // pass visitor event hooks
+  virtual bool inspect_enter(const ast::ref<ast::Block>&) override;
+  virtual void inspect_leave(const ast::ref<ast::Return>&) override;
+  virtual void inspect_leave(const ast::ref<ast::Break>&) override;
+  virtual void inspect_leave(const ast::ref<ast::Continue>&) override;
+  virtual void inspect_leave(const ast::ref<ast::Throw>&) override;
+
+  virtual void inspect_leave(const ast::ref<ast::Id>&) override;
   virtual void inspect_leave(const ast::ref<ast::Int>&) override;
+  virtual void inspect_leave(const ast::ref<ast::String>&) override;
+  virtual bool inspect_enter(const ast::ref<ast::Function>&) override;
+
+  virtual bool inspect_enter(const ast::ref<ast::Assignment>&) override;
   virtual void inspect_leave(const ast::ref<ast::BinaryOp>&) override;
   virtual void inspect_leave(const ast::ref<ast::UnaryOp>&) override;
 
+  virtual void inspect_leave(const ast::ref<ast::Declaration>&) override;
+
+  virtual bool inspect_enter(const ast::ref<ast::If>&) override;
+  virtual bool inspect_enter(const ast::ref<ast::While>&) override;
+
   std::shared_ptr<CompilationUnit> m_unit;
-  ir::Builder& m_builder;
+
+  ir::Builder m_builder;
+
   std::queue<QueuedFunction> m_function_queue;
+
+  std::stack<ir::Label> m_return_stack;
+  std::stack<ir::Label> m_break_stack;
+  std::stack<ir::Label> m_continue_stack;
 };
 
 }  // namespace charly::core::compiler

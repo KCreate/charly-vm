@@ -92,7 +92,7 @@ int run_repl() {
 
     // dump compiler steps
     program->dump(std::cout, print_location);
-    unit->ir_builder.dump(std::cout);
+    unit->ir_module->dump(std::cout);
   }
 
   return 0;
@@ -125,7 +125,7 @@ int run_file(int, char** argv) {
     return 1;
 
   program->dump(std::cout, true);
-  unit->ir_builder.dump(std::cout);
+  unit->ir_module->dump(std::cout);
 
   return 0;
 }

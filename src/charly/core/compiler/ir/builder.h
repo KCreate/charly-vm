@@ -35,80 +35,56 @@
 
 #include "charly/core/compiler/ast.h"
 #include "charly/core/compiler/ir/bytecode.h"
+#include "charly/core/compiler/ir/ir.h"
 #include "charly/value.h"
 
 #pragma once
 
 namespace charly::core::compiler::ir {
 
-using Label = uint32_t;
-
-struct Operand {
-  OperandType type;
-#define OPTYPE(name, optype)                                                           \
-  static Operand name(optype value) {                                                  \
-    return Operand{ .type = OperandType::name, .as = { .name = { .value = value } } }; \
-  }
-  FOREACH_OPERANDTYPE(OPTYPE)
-#undef OPTYPE
-
-  union {
-#define OPTYPE(name, type) \
-  struct {                 \
-    type value;            \
-  } name;
-    FOREACH_OPERANDTYPE(OPTYPE)
-#undef OPTYPE
-  } as;
-};
-
-struct Instruction {
-  Opcode opcode;
-  std::vector<Operand> operands;
-
-  template <typename... Args>
-  Instruction(Opcode opcode, Args&&... operands) : opcode(opcode), operands({ std::forward<Args>(operands)... }) {}
-};
-
-using IRStatement = std::variant<Instruction, Label>;
-
 class Builder {
 public:
-  Builder() : m_label_counter(0) {}
+  Builder() : m_label_counter(0), m_active_function(nullptr), m_module(std::make_shared<IRModule>()) {}
 
-  // labels
+  // register a symbol in the module symbol table
+  void register_symbol(SYMBOL symbol, const std::string& string);
+
+  // function management
+  IRFunction& active_function() const;
+  IRFunction& begin_function(Label head, ast::ref<ast::Function> ast);
+  void end_function();
+
+  // register a string in the current function's string table
+  Label register_string(const std::string& string);
+
+  // label management
   Label reserve_label();
   Label label();
   void place_label(Label label);
+  void place_label_at_label(Label label, Label target_label);
 
-  // register functions
-  void begin_function(Label head_label, const ast::ref<ast::Function>&);
-  void end_function(Label head_label);
-
-  // instructions
-  void emit(Opcode opcode);
-  void emit_nop();
-  void emit_load(VALUE value);
-  void emit_jmp(Label label);
-
-  void dump(std::ostream& out) const;
-
-  bool has_pending_labels() const {
-    return m_pending_labels.size();
+  // emit an IR statement into the current function
+  template <typename... Args>
+  void emit(Opcode opcode, Args&&... operands) {
+    IRFunction& func = active_function();
+    std::shared_ptr<IRInstruction> instruction =
+      std::make_shared<IRInstruction>(opcode, std::forward<Args>(operands)...);
+    func.statements.push_back(instruction);
   }
+  void emit_string_data(const std::string& string);
+  void emit_label_definition(Label label);
+#define MAP(name, ...) void emit_##name(__VA_ARGS__);
+  FOREACH_OPCODE(MAP)
+#undef MAP
 
-private:
-  struct FunctionData {
-    Label head_label;
-    Label body_label;
-    Label end_label;
-    ast::ref<ast::Function> function_ast;
+  std::shared_ptr<IRModule> get_module() const {
+    return m_module;
   };
 
+private:
   Label m_label_counter;
-  std::unordered_set<Label> m_pending_labels;
-  std::list<IRStatement> m_statements;
-  std::unordered_map<Label, FunctionData> m_functions;
+  IRFunction* m_active_function;
+  std::shared_ptr<IRModule> m_module;
 };
 
 }  // namespace charly::core::compiler::ir

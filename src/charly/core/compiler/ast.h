@@ -193,6 +193,11 @@ public:
 
   virtual void children(std::function<void(const ref<Node>&)>&&) const {}
 
+  friend std::ostream& operator<<(std::ostream& out, const Node& node) {
+    node.dump(out);
+    return out;
+  }
+
   // dump a textual representation of this node into the stream
   void dump(std::ostream& out, bool print_location = false) const;
 
@@ -271,8 +276,6 @@ public:
   }
 
   std::vector<ref<Statement>> statements;
-
-  bool needs_locals_table = false;
 
   CHILDREN() {
     CHILD_VECTOR(statements);
@@ -698,13 +701,20 @@ public:
   // regular functions
   template <typename... Args>
   Function(bool arrow_function, ref<Name> name, ref<Block> body, Args&&... params) :
-    arrow_function(arrow_function), name(name), body(body), arguments({ std::forward<Args>(params)... }) {
+    toplevel_function(false),
+    arrow_function(arrow_function),
+    name(name),
+    body(body),
+    arguments({ std::forward<Args>(params)... }) {
     this->set_location(name, body);
   }
   Function(bool arrow_function, ref<Name> name, ref<Block> body, std::vector<ref<FunctionArgument>>&& params) :
-    arrow_function(arrow_function), name(name), body(body), arguments(std::move(params)) {
+    toplevel_function(false), arrow_function(arrow_function), name(name), body(body), arguments(std::move(params)) {
     this->set_location(name, body);
   }
+
+  // wether the function contains REPL input
+  bool toplevel_function;
 
   bool arrow_function;
   ref<Name> name;

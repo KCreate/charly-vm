@@ -27,6 +27,7 @@
 #include "charly/core/compiler.h"
 #include "charly/core/compiler/parser.h"
 #include "charly/core/compiler/codegenerator.h"
+#include "charly/core/compiler/ir/ir.h"
 #include "charly/core/compiler/ir/builder.h"
 
 #include "charly/core/compiler/passes/class_constructor_check.h"
@@ -69,9 +70,11 @@ std::shared_ptr<CompilationUnit> Compiler::compile(CompilationUnit::Type type,
       return unit;                                                     \
   }
 
-  if (type == CompilationUnit::Type::Module) {
-    unit->ast = Compiler::wrap_module(unit->ast);
-  }
+  // wrap in module function
+  ref<Function> func = make<Function>(false, make<Name>("main"), unit->ast);
+  func->set_location(unit->ast);
+  func->toplevel_function = unit->type == CompilationUnit::Type::ReplInput;
+  unit->ast = make<Block>(func);
 
   APPLY_DIAGNOSTIC_PASS(GrammarValidationCheck);
 
@@ -86,19 +89,10 @@ std::shared_ptr<CompilationUnit> Compiler::compile(CompilationUnit::Type type,
 #undef APPLY_DIAGNOSTIC_PASS
 #undef APPLY_TRANSFORM_PASS
 
-  unit->ast->needs_locals_table = false;
-
   // compile to bytecodes
-  CodeGenerator codegenerator(unit);
-  codegenerator.compile();
+  unit->ir_module = CodeGenerator::compile(unit);
 
   return unit;
-}
-
-ast::ref<ast::Block> Compiler::wrap_module(const ref<Block>& block) {
-  ref<Function> func = make<Function>(false, make<Name>("main"), block);
-  func->set_location(block);
-  return make<Block>(func);
 }
 
 }  // namespace charly::core::compiler

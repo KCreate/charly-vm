@@ -76,6 +76,18 @@ namespace termcolor
     }
 
     inline
+    std::ostream& colorlike(std::ostream& stream, std::ostream& other)
+    {
+      if (termcolor::_internal::is_colorized(other)) {
+        colorize(stream);
+      } else {
+        nocolorize(stream);
+      }
+
+      return stream;
+    }
+
+    inline
     std::ostream& reset(std::ostream& stream)
     {
         if (_internal::is_colorized(stream))

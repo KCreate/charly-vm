@@ -39,13 +39,13 @@ struct CompilationUnit {
   enum class Type : uint8_t { Module, ReplInput };
 
   CompilationUnit(Type type, const std::string& filepath, utils::Buffer& source) :
-    type(type), console(filepath, source), filepath(filepath), ast(nullptr) {}
+    type(type), console(filepath, source), filepath(filepath), ast(nullptr), ir_module(nullptr) {}
 
   Type type;
   DiagnosticConsole console;
   std::string filepath;
   ast::ref<ast::Block> ast;
-  ir::Builder ir_builder;
+  std::shared_ptr<ir::IRModule> ir_module;
 };
 
 class Compiler {
@@ -55,11 +55,6 @@ public:
   static std::shared_ptr<CompilationUnit> compile(CompilationUnit::Type type,
                                                   const std::string& filepath,
                                                   utils::Buffer& source);
-
-private:
-
-  // wrap node in a module inclusion function for the runtime to call
-  static ast::ref<ast::Block> wrap_module(const ast::ref<ast::Block>& block);
 };
 
 }  // namespace charly::core::compiler

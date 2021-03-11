@@ -31,35 +31,190 @@ using namespace charly::core::compiler::ir;
 
 namespace charly::core::compiler {
 
-void CodeGenerator::compile() {
-  m_builder.label();
+std::shared_ptr<IRModule> CodeGenerator::compile(std::shared_ptr<CompilationUnit> unit) {
+  CodeGenerator generator(unit);
+  generator.compile();
+  return generator.get_module();
+}
 
-  apply(m_unit->ast);
+void CodeGenerator::compile() {
+
+  // register the module function
+  assert(m_unit->ast->statements.size() == 1);
+  assert(m_unit->ast->statements.front()->type() == Node::Type::Function);
+  enqueue_function(cast<ast::Function>(m_unit->ast->statements.front()));
 
   while (m_function_queue.size()) {
     compile_function(m_function_queue.front());
     m_function_queue.pop();
   }
-
-  assert(m_builder.has_pending_labels() == false);
 }
 
-void CodeGenerator::compile_function(const QueuedFunction& function) {
-  m_builder.begin_function(function.head_label, function.ast);
-  m_builder.emit_nop();
-  apply(function.ast->body);
-  m_builder.end_function(function.head_label);
-}
-
-bool CodeGenerator::inspect_enter(const ref<Function>& node) {
+Label CodeGenerator::enqueue_function(const ref<Function>& ast) {
   Label begin_label = m_builder.reserve_label();
-  m_function_queue.push({ .head_label = begin_label, .ast = node });
-  m_builder.emit_load(0xDEADBEEF);
+  m_function_queue.push({ .head = begin_label, .ast = ast });
+  return begin_label;
+}
+
+void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
+  m_builder.begin_function(queued_func.head, queued_func.ast);
+
+  // function body
+  Label return_label = m_builder.reserve_label();
+  push_return_label(return_label);
+  apply(queued_func.ast->body);
+  pop_return_label();
+
+  // function return block
+  m_builder.place_label(return_label);
+  m_builder.emit_ret();
+
+  m_builder.end_function();
+}
+
+void CodeGenerator::generate_load(const ValueLocation& location) {
+  switch (location.type) {
+    case ValueLocation::Type::LocalFrame: {
+      m_builder.emit_loadlocal(location.as.local_frame.offset);
+      break;
+    }
+    case ValueLocation::Type::FarFrame: {
+      m_builder.emit_loadfar(location.as.far_frame.depth, location.as.far_frame.offset);
+      break;
+    }
+    case ValueLocation::Type::Global: {
+      m_builder.emit_loadglobal(location.as.global.symbol);
+      break;
+    }
+    default: {
+      assert(false && "unexpected location type");
+    }
+  }
+}
+
+void CodeGenerator::generate_store(const ValueLocation& location) {
+  switch (location.type) {
+    case ValueLocation::Type::LocalFrame: {
+      m_builder.emit_setlocal(location.as.local_frame.offset);
+      break;
+    }
+    case ValueLocation::Type::FarFrame: {
+      m_builder.emit_setfar(location.as.far_frame.depth, location.as.far_frame.offset);
+      break;
+    }
+    case ValueLocation::Type::Global: {
+      m_builder.emit_setglobal(location.as.global.symbol);
+      break;
+    }
+    default: {
+      assert(false && "unexpected location type");
+    }
+  }
+}
+
+Label CodeGenerator::active_return_label() const {
+  assert(m_return_stack.size());
+  return m_return_stack.top();
+}
+
+Label CodeGenerator::active_break_label() const {
+  assert(m_break_stack.size());
+  return m_break_stack.top();
+}
+
+Label CodeGenerator::active_continue_label() const {
+  assert(m_continue_stack.size());
+  return m_continue_stack.top();
+}
+
+void CodeGenerator::push_return_label(Label label) {
+  m_return_stack.push(label);
+}
+
+void CodeGenerator::push_break_label(Label label) {
+  m_break_stack.push(label);
+}
+
+void CodeGenerator::push_continue_label(Label label) {
+  m_continue_stack.push(label);
+}
+
+void CodeGenerator::pop_return_label() {
+  assert(m_return_stack.size());
+  m_return_stack.pop();
+}
+
+void CodeGenerator::pop_break_label() {
+  assert(m_break_stack.size());
+  m_break_stack.pop();
+}
+
+void CodeGenerator::pop_continue_label() {
+  assert(m_continue_stack.size());
+  m_continue_stack.pop();
+}
+
+bool CodeGenerator::inspect_enter(const ref<Block>& node) {
+  for (const ref<Statement>& stmt : node->statements) {
+    apply(stmt);
+
+    // pop toplevel expressions off the stack
+    if (isa<Expression>(stmt)) {
+      m_builder.emit_pop();
+    }
+  }
+
   return false;
+}
+
+void CodeGenerator::inspect_leave(const ref<Return>&) {
+  m_builder.emit_jmp(active_return_label());
+}
+
+void CodeGenerator::inspect_leave(const ref<Break>&) {
+  m_builder.emit_jmp(active_break_label());
+}
+
+void CodeGenerator::inspect_leave(const ref<Continue>&) {
+  m_builder.emit_jmp(active_continue_label());
+}
+
+void CodeGenerator::inspect_leave(const ref<Throw>&) {
+  m_builder.emit_throwex();
+}
+
+void CodeGenerator::inspect_leave(const ref<Id>& node) {
+  generate_load(node->ir_location);
+}
+
+void CodeGenerator::inspect_leave(const ref<String>& node) {
+  m_builder.emit_makestr(m_builder.register_string(node->value));
 }
 
 void CodeGenerator::inspect_leave(const ref<Int>& node) {
   m_builder.emit_load(node->value);
+}
+
+bool CodeGenerator::inspect_enter(const ref<Function>& node) {
+  Label begin_label = enqueue_function(node);
+  m_builder.emit_makefunc(begin_label);
+  return false;
+}
+
+bool CodeGenerator::inspect_enter(const ref<Assignment>& node) {
+  apply(node->source);
+
+  switch (node->operation) {
+    case TokenType::Assignment: {
+      generate_store(node->name->ir_location);
+      break;
+    }
+    default: {
+      assert(false && "operator assignment codegen not implemented");
+    }
+  }
+
+  return false;
 }
 
 void CodeGenerator::inspect_leave(const ref<BinaryOp>& node) {
@@ -80,6 +235,74 @@ void CodeGenerator::inspect_leave(const ref<BinaryOp>& node) {
 void CodeGenerator::inspect_leave(const ref<UnaryOp>& node) {
   assert(kUnaryopOpcodeMapping.count(node->operation));
   m_builder.emit(kUnaryopOpcodeMapping.at(node->operation));
+}
+
+void CodeGenerator::inspect_leave(const ref<Declaration>& node) {
+  generate_store(node->ir_location);
+  m_builder.emit_pop();
+}
+
+bool CodeGenerator::inspect_enter(const ast::ref<ast::If>& node) {
+  apply(node->condition);
+
+  if (node->else_block) {
+
+    // if (x) {} else {}
+    Label else_label = m_builder.reserve_label();
+    Label end_label = m_builder.reserve_label();
+    m_builder.emit_jmpf(else_label);
+    apply(node->then_block);
+    m_builder.emit_jmp(end_label);
+    m_builder.place_label(else_label);
+    apply(node->else_block);
+    m_builder.place_label(end_label);
+  } else {
+
+    // if (x) {}
+    Label end_label = m_builder.reserve_label();
+    m_builder.emit_jmpf(end_label);
+    apply(node->then_block);
+    m_builder.place_label(end_label);
+  }
+
+  return false;
+}
+
+bool CodeGenerator::inspect_enter(const ast::ref<ast::While>& node) {
+
+  // infinite loops
+  bool infinite_loop = false;
+  if (node->condition->is_constant_value() && node->condition->truthyness()) {
+    infinite_loop = true;
+  }
+
+  Label body_label = m_builder.reserve_label();
+  Label continue_label = m_builder.reserve_label();
+  Label break_label = m_builder.reserve_label();
+
+  push_break_label(break_label);
+  push_continue_label(continue_label);
+
+  m_builder.emit_jmp(continue_label);
+  m_builder.place_label(body_label);
+
+  if (infinite_loop) {
+    m_builder.place_label(continue_label);
+    apply(node->then_block);
+    m_builder.emit_jmp(body_label);
+  } else {
+    apply(node->then_block);
+    m_builder.place_label(continue_label);
+    apply(node->condition);
+    m_builder.emit_jmpt(body_label);
+  }
+
+  m_builder.place_label(break_label);
+
+  pop_break_label();
+  pop_continue_label();
+
+  return false;
 }
 
 }  // namespace charly::core::compiler

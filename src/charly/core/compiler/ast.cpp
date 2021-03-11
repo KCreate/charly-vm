@@ -107,10 +107,6 @@ void Node::dump(std::ostream& out, bool print_location) const {
 
 void Block::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
-  if (this->needs_locals_table) {
-    writer << ' ';
-    writer.fg(Color::Red, "needs_locals_table");
-  }
 }
 
 void Id::dump_info(std::ostream& out) const {

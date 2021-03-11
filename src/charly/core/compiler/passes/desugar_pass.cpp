@@ -118,73 +118,77 @@ ref<Expression> DesugarPass::transform(const ref<FormatString>& node) {
 
 void DesugarPass::inspect_leave(const ref<Function>& node) {
 
-  // the rest of this function detects yield expressions
-  // inside functions and turns them into generator functions
-  if (node->arrow_function)
-    return;
+  // check if the last statement in the functions body is a return statement
+  // if not, insert a return null node
+  if (node->body->statements.size() == 0 || node->body->statements.back()->type() != Node::Type::Return) {
+    node->body->statements.push_back(make<Return>(make<Null>()));
+  }
 
-  // check if this function contains any yield statements
-  ref<Node> yield_node = Node::search(
-    node->body,
-    [&](const ref<Node>& node) {
-      return node->type() == Node::Type::Yield;
-    },
-    [&](const ref<Node>& node) {
-      switch (node->type()) {
-        case Node::Type::Function:
-        case Node::Type::Class:
-        case Node::Type::Spawn: {
-          return true;
+  // wrap regular functions with yield expressions inside a generator wrapper function
+  if (!node->arrow_function) {
+    // check if this function contains any yield statements
+    ref<Node> yield_node = Node::search(
+      node->body,
+      [&](const ref<Node>& node) {
+        return node->type() == Node::Type::Yield;
+      },
+      [&](const ref<Node>& node) {
+        switch (node->type()) {
+          case Node::Type::Function:
+          case Node::Type::Class:
+          case Node::Type::Spawn: {
+            return true;
+          }
+          default: {
+            return false;
+          }
         }
-        default: {
-          return false;
-        }
+      });
+
+    // transform this regular function into a generator function
+    // by wrapping its original body with a return spawn statement
+    // and making sure all the function arguments are passed on
+    //
+    // func foo(a = 1, b = 2, ...rest) {
+    //   yield 1
+    //   yield a
+    //   yield rest
+    // }
+    //
+    // transformed to:
+    //
+    // func foo(a = 1, b = 2, ...rest) {
+    //   return castgenerator(spawn ->(a, b, rest) {
+    //     yield 1
+    //     yield a
+    //     yield rest
+    //   }(a, b, rest))
+    // }
+    if (yield_node) {
+
+      // wrapper arrow func
+      ref<Function> func = make<Function>(true, make<Name>(""), node->body);
+
+      // insert arguments
+      for (const ref<FunctionArgument>& argument : node->arguments) {
+        func->arguments.push_back(make<FunctionArgument>(argument->name));
       }
-    });
 
-  // transform this regular function into a generator function
-  // by wrapping its original body with a return spawn statement
-  // and making sure all the function arguments are passed on
-  //
-  // func foo(a = 1, b = 2, ...rest) {
-  //   yield 1
-  //   yield a
-  //   yield rest
-  // }
-  //
-  // transformed to:
-  //
-  // func foo(a = 1, b = 2, ...rest) {
-  //   return castgenerator(spawn ->(a, b, rest) {
-  //     yield 1
-  //     yield a
-  //     yield rest
-  //   }(a, b, rest))
-  // }
-  if (yield_node) {
+      // build arrow func immediate call
+      ref<CallOp> func_call = make<CallOp>(func);
+      for (const ref<FunctionArgument>& argument : node->arguments) {
+        func_call->arguments.push_back(make<Id>(argument->name));
+      }
 
-    // wrapper arrow func
-    ref<Function> func = make<Function>(true, make<Name>(""), node->body);
+      // build wrapped spawn statement
+      ref<Spawn> spawn = make<Spawn>(func_call);
+      spawn->execute_immediately = false;
+      ref<BuiltinOperation> castgenerator = make<BuiltinOperation>(ir::BuiltinId::castgenerator, spawn);
+      ref<Return> return_node = make<Return>(castgenerator);
+      ref<Block> new_body = make<Block>(return_node);
 
-    // insert arguments
-    for (const ref<FunctionArgument>& argument : node->arguments) {
-      func->arguments.push_back(make<FunctionArgument>(argument->name));
+      node->body = cast<Block>(apply(new_body));
     }
-
-    // build arrow func immediate call
-    ref<CallOp> func_call = make<CallOp>(func);
-    for (const ref<FunctionArgument>& argument : node->arguments) {
-      func_call->arguments.push_back(make<Id>(argument->name));
-    }
-
-    // build wrapped spawn statement
-    ref<Spawn> spawn = make<Spawn>(func_call);
-    spawn->execute_immediately = false;
-    ref<BuiltinOperation> castgenerator = make<BuiltinOperation>(ir::BuiltinId::castgenerator, spawn);
-    ref<Return> return_node = make<Return>(castgenerator);
-    ref<Block> new_body = make<Block>(return_node);
-
-    node->body = cast<Block>(apply(new_body));
   }
 }
 
