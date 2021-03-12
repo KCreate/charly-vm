@@ -83,7 +83,7 @@ void CodeGenerator::generate_load(const ValueLocation& location) {
       break;
     }
     case ValueLocation::Type::Global: {
-      m_builder.emit_loadglobal(location.as.global.symbol);
+      m_builder.emit_loadglobal(location.name);
       break;
     }
     default: {
@@ -103,7 +103,7 @@ void CodeGenerator::generate_store(const ValueLocation& location) {
       break;
     }
     case ValueLocation::Type::Global: {
-      m_builder.emit_setglobal(location.as.global.symbol);
+      m_builder.emit_setglobal(location.name);
       break;
     }
     default: {
@@ -199,6 +199,14 @@ bool CodeGenerator::inspect_enter(const ref<Function>& node) {
   Label begin_label = enqueue_function(node);
   m_builder.emit_makefunc(begin_label);
   return false;
+}
+
+void CodeGenerator::inspect_leave(const ast::ref<ast::MemberOp>& node) {
+  m_builder.emit_loadattr(node->member->value);
+}
+
+void CodeGenerator::inspect_leave(const ast::ref<ast::IndexOp>&) {
+  m_builder.emit_loadattrvalue();
 }
 
 bool CodeGenerator::inspect_enter(const ref<Assignment>& node) {

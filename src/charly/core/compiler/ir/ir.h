@@ -42,32 +42,28 @@
 namespace charly::core::compiler::ir {
 
 struct IROperand {
-  OperandType type;
-#define OPTYPE(name, optype)                                                           \
-  static IROperand name(optype value) {                                                  \
-    return IROperand{ .type = OperandType::name, .as = { .name = { .value = value } } }; \
-  }
-  FOREACH_OPERANDTYPE(OPTYPE)
-#undef OPTYPE
-
-  union {
-#define OPTYPE(name, type) \
-  struct {                 \
-    type value;            \
-  } name;
-    FOREACH_OPERANDTYPE(OPTYPE)
-#undef OPTYPE
-  } as;
-
-  void dump(std::ostream& out) const;
+  virtual ~IROperand() = default;
+  virtual OperandType get_type() const = 0;
+  virtual void dump(std::ostream& out) const = 0;
 };
 
-struct IRStatement {
-  enum class Type : uint8_t {
-    Instruction,
-    LabelDefinition,
-    StringData
+#define OPTYPE(name, type)                                            \
+  struct IROperand##name : public IROperand {                         \
+    virtual OperandType get_type() const override {                   \
+      return OperandType::name;                                       \
+    }                                                                 \
+    IROperand##name(const type& value) : value(value) {}              \
+    static std::shared_ptr<IROperand##name> make(const type& value) { \
+      return std::make_shared<IROperand##name>(value);                \
+    }                                                                 \
+    type value;                                                       \
+    virtual void dump(std::ostream& out) const override;                       \
   };
+FOREACH_OPERANDTYPE(OPTYPE)
+#undef OPTYPE
+
+struct IRStatement {
+  enum class Type : uint8_t { Instruction, LabelDefinition, StringData };
 
   virtual ~IRStatement() = default;
 
@@ -80,7 +76,7 @@ struct IRInstruction : public IRStatement {
   IRInstruction(Opcode opcode, Args&&... operands) : opcode(opcode), operands({ std::forward<Args>(operands)... }) {}
 
   Opcode opcode;
-  std::vector<IROperand> operands;
+  std::vector<std::shared_ptr<IROperand>> operands;
 
   virtual Type get_type() const override {
     return IRStatement::Type::Instruction;
@@ -133,14 +129,7 @@ struct IRFunction {
 };
 
 struct IRModule {
-  struct SymbolTableEntry {
-    SymbolTableEntry(SYMBOL symbol, const std::string& string) : symbol(symbol), string(string) {}
-
-    SYMBOL symbol;
-    std::string string;
-  };
-
-  std::vector<SymbolTableEntry> symbol_table;
+  std::unordered_map<SYMBOL, std::string> symbol_table;
   std::vector<IRFunction> functions;
 
   void dump(std::ostream& out) const;

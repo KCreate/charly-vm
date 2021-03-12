@@ -25,6 +25,7 @@
  */
 
 #include <sstream>
+#include <iomanip>
 
 #include "charly/utils/colorwriter.h"
 #include "charly/utils/stringindent.h"
@@ -34,43 +35,37 @@ namespace charly::core::compiler::ir {
 
 using Color = utils::Color;
 
-void IROperand::dump(std::ostream& out) const {
+void IROperandCount8::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
+  out << std::hex;
+  writer.fg(Color::Yellow, (uint32_t)this->value);
+  out << std::dec;
+}
 
-  switch (this->type) {
-    case OperandType::Count8: {
-      out << std::hex;
-      writer.fg(Color::Yellow, (uint32_t)this->as.Count8.value);
-      out << std::dec;
-      break;
-    }
-    case OperandType::Count16: {
-      out << std::hex;
-      writer.fg(Color::Yellow, (uint32_t)this->as.Count16.value);
-      out << std::dec;
-      break;
-    }
-    case OperandType::Symbol: {
-      out << std::hex;
-      writer.fg(Color::Red, "0x", this->as.Symbol.value);
-      out << std::dec;
-      break;
-    }
-    case OperandType::Offset: {
-      writer.fg(Color::Yellow, ".L", this->as.Offset.value);
-      break;
-    }
-    case OperandType::Immediate: {
-      out << std::hex;
-      writer.fg(Color::Cyan, "0x", this->as.Immediate.value);
-      out << std::dec;
-      break;
-    }
-    default: {
-      assert(false && "unexpected operand type");
-      break;
-    }
-  }
+void IROperandCount16::dump(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  out << std::hex;
+  writer.fg(Color::Yellow, (uint32_t)this->value);
+  out << std::dec;
+}
+
+void IROperandSymbol::dump(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  out << std::hex;
+  writer.fg(Color::Red, "'", this->value, "'");
+  out << std::dec;
+}
+
+void IROperandOffset::dump(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  writer.fg(Color::Yellow, ".L", this->value);
+}
+
+void IROperandImmediate::dump(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  out << std::hex;
+  writer.fg(Color::Cyan, "0x", this->value);
+  out << std::dec;
 }
 
 void IRInstruction::dump(std::ostream& out) const {
@@ -80,12 +75,16 @@ void IRInstruction::dump(std::ostream& out) const {
   writer.fg(Color::White, kOpcodeNames[(uint16_t)this->opcode]);
 
   // emit instruction operands
-  for (const IROperand& operand : this->operands) {
-    out << " ";
-    operand.dump(out);
+  bool first_operand = true;
+  for (const auto& operand : this->operands) {
+    if (first_operand) {
+      out << " ";
+    } else {
+      out << ", ";
+    }
+    first_operand = false;
+    operand->dump(out);
   }
-
-  // print special info for some instructions
 
   out << '\n';
 }
@@ -98,13 +97,15 @@ void IRLabelDefinition::dump(std::ostream& out) const {
 void IRStringData::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer.fg(Color::Red, ".string '", this->data, "'");
-  writer.fg(Color::Grey, " length=", this->data.size(), '\n');
+  writer.fg(Color::Grey, " length = ", this->data.size(), '\n');
 }
 
 void IRFunction::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
-  writer.fg(Color::Yellow, ".L", this->head, "\n");
+  writer.fg(Color::Yellow, ".L", this->head, '\n');
   writer.fg(Color::Yellow, "function {", "\n");
+  writer.fg(Color::Grey, ".name = ");
+  writer.fg(Color::Red, "'", this->ast->name->value, "'\n");
   writer.fg(Color::Grey, ".locals = ");
   writer.fg(Color::Green, (uint32_t)this->ast->ir_info.local_variables, "\n");
   writer.fg(Color::Grey, ".argc = ");
@@ -115,8 +116,7 @@ void IRFunction::dump(std::ostream& out) const {
   writer.fg(Color::Green, this->ast->ir_info.arrow_function ? "true" : "false", "\n");
   writer.fg(Color::Grey, ".arrow = ");
   writer.fg(Color::Green, this->ast->ir_info.spread_argument ? "true" : "false", "\n");
-  out << "\n";
-  writer.fg(Color::Yellow, ".ENTRY", "\n");
+  writer.fg(Color::Yellow, ".body", "\n");
 
   IRStatement::Type last_type = IRStatement::Type::LabelDefinition;
   for (const auto& stmt : this->statements) {
@@ -124,12 +124,13 @@ void IRFunction::dump(std::ostream& out) const {
     // put a space between label definitions and the last statement
     if (stmt->get_type() == IRStatement::Type::LabelDefinition) {
       if (last_type != IRStatement::Type::LabelDefinition) {
-        out << "\n";
+        writer.fg(Color::Grey, "  |\n");
       }
+      writer.fg(Color::Grey, "  | ");
     } else {
 
       // indent instructions and stringdata
-      out << "  ";
+      writer.fg(Color::Grey, "  |   ");
     }
 
     stmt->dump(out);
@@ -145,8 +146,13 @@ void IRModule::dump(std::ostream& out) const {
   writer.fg(Color::Blue, "module {", '\n');
 
   writer.fg(Color::Grey, "; symbol table", '\n');
-  for (const SymbolTableEntry& entry : this->symbol_table) {
-    writer.fg(Color::Red, ".symbol 0x", entry.symbol, " ", entry.string, "'", '\n');
+  for (const auto& entry : this->symbol_table) {
+    writer.fg(Color::Grey, "[");
+    writer.fg(Color::Cyan, "0x", std::hex, std::setw(8), std::setfill('0'), entry.first, std::setw(0),
+              std::setfill(' '), std::dec);
+    out << " ";
+    writer.fg(Color::Red, "'", entry.second, "'");
+    writer.fg(Color::Grey, "]\n");
   }
   out << '\n';
 

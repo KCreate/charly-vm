@@ -47,7 +47,7 @@ public:
   Builder() : m_label_counter(0), m_active_function(nullptr), m_module(std::make_shared<IRModule>()) {}
 
   // register a symbol in the module symbol table
-  void register_symbol(SYMBOL symbol, const std::string& string);
+  void register_symbol(const std::string& string);
 
   // function management
   IRFunction& active_function() const;

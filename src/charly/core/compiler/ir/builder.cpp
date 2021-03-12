@@ -34,6 +34,10 @@ using namespace charly::core::compiler::ast;
 
 using Color = utils::Color;
 
+void Builder::register_symbol(const std::string& string) {
+  m_module->symbol_table[SYM(string)] = string;
+}
+
 IRFunction& Builder::active_function() const {
   assert(m_active_function && "no active function");
   return *m_active_function;
@@ -130,15 +134,15 @@ void Builder::emit_pop() {
 
 // control flow
 void Builder::emit_jmp(OpOffset label) {
-  emit(Opcode::jmp, IROperand::Offset(label));
+  emit(Opcode::jmp, IROperandOffset::make(label));
 }
 
 void Builder::emit_jmpf(OpOffset label) {
-  emit(Opcode::jmpf, IROperand::Offset(label));
+  emit(Opcode::jmpf, IROperandOffset::make(label));
 }
 
 void Builder::emit_jmpt(OpOffset label) {
-  emit(Opcode::jmpt, IROperand::Offset(label));
+  emit(Opcode::jmpt, IROperandOffset::make(label));
 }
 
 void Builder::emit_throwex() {
@@ -152,156 +156,57 @@ void Builder::emit_ret() {
 
 // load operations
 void Builder::emit_load(OpImmediate value) {
-  emit(Opcode::load, IROperand::Immediate(value));
+  emit(Opcode::load, IROperandImmediate::make(value));
 }
 
 void Builder::emit_loadglobal(OpSymbol symbol) {
-  emit(Opcode::loadglobal, IROperand::Symbol(symbol));
+  emit(Opcode::loadglobal, IROperandSymbol::make(symbol));
+  register_symbol(symbol);
 }
 
 void Builder::emit_loadlocal(OpCount8 offset) {
-  emit(Opcode::loadlocal, IROperand::Count8(offset));
+  emit(Opcode::loadlocal, IROperandCount8::make(offset));
 }
 
 void Builder::emit_loadfar(OpCount8 depth, OpCount8 offset) {
-  emit(Opcode::loadfar, IROperand::Count8(depth), IROperand::Count8(offset));
+  emit(Opcode::loadfar, IROperandCount8::make(depth), IROperandCount8::make(offset));
+}
+
+void Builder::emit_loadattr(OpSymbol symbol) {
+  emit(Opcode::loadlocal, IROperandSymbol::make(symbol));
+  register_symbol(symbol);
+}
+
+void Builder::emit_loadattrvalue() {
+  emit(Opcode::loadattrvalue);
 }
 
 // write operations
 void Builder::emit_setglobal(OpSymbol symbol) {
-  emit(Opcode::setglobal, IROperand::Symbol(symbol));
+  emit(Opcode::setglobal, IROperandSymbol::make(symbol));
+  register_symbol(symbol);
 }
 
 void Builder::emit_setlocal(OpCount8 offset) {
-  emit(Opcode::setlocal, IROperand::Count8(offset));
+  emit(Opcode::setlocal, IROperandCount8::make(offset));
 }
 
 void Builder::emit_setfar(OpCount8 depth, OpCount8 offset) {
-  emit(Opcode::setfar, IROperand::Count8(depth), IROperand::Count8(offset));
+  emit(Opcode::setfar, IROperandCount8::make(depth), IROperandCount8::make(offset));
 }
 
 // value destructuring operations
 
 // value allocation
 void Builder::emit_makefunc(OpOffset offset) {
-  emit(Opcode::makefunc, IROperand::Offset(offset));
+  emit(Opcode::makefunc, IROperandOffset::make(offset));
 }
 void Builder::emit_makestr(OpOffset offset) {
-  emit(Opcode::makestr, IROperand::Offset(offset));
+  emit(Opcode::makestr, IROperandOffset::make(offset));
 }
 
 // fiber management
 
 // cast operations
-
-
-
-
-
-
-
-
-
-// void Builder::dump(std::ostream& out) const {
-//   utils::ColorWriter writer(out);
-//
-//   for (const BasicBlock& block : m_blocks) {
-//     if (!first_block) {
-//       out << '\n';
-//     } else {
-//       first_block = false;
-//     }
-//
-//     // print all block labels
-//     for (Label label : block.labels) {
-//       writer.fg(Color::Yellow, ".L", label);
-//       out << '\n';
-//     }
-//
-//     // print block statements
-//     for (const IRStatement& statement : block.statements) {
-//       if (const Instruction* instruction = std::get_if<Instruction>(&statement)) {
-//
-//         // emit opcode name
-//         out << "  ";
-//         writer.fg(Color::White, kOpcodeNames[(uint16_t)instruction->opcode]);
-//
-//         // emit opcode operands
-//         for (const Operand& operand : instruction->operands) {
-//           out << " ";
-//           switch (operand.type) {
-//             case OperandType::Count8: {
-//               out << std::hex;
-//               writer.fg(Color::Yellow, (uint32_t)operand.as.Count8.value);
-//               out << std::dec;
-//               break;
-//             }
-//             case OperandType::Count16: {
-//               out << std::hex;
-//               writer.fg(Color::Yellow, (uint32_t)operand.as.Count16.value);
-//               out << std::dec;
-//               break;
-//             }
-//             case OperandType::Symbol: {
-//               out << std::hex;
-//               writer.fg(Color::Red, "0x");
-//               writer.fg(Color::Red, operand.as.Symbol.value);
-//               out << std::dec;
-//               break;
-//             }
-//             case OperandType::Offset: {
-//               writer.fg(Color::Yellow, ".L", operand.as.Offset.value);
-//               break;
-//             }
-//             case OperandType::Immediate: {
-//               out << std::hex;
-//               writer.fg(Color::Cyan, "0x");
-//               writer.fg(Color::Cyan, operand.as.Immediate.value);
-//               out << std::dec;
-//               break;
-//             }
-//             default: {
-//               assert(false && "unexpected operand type");
-//               break;
-//             }
-//           }
-//         }
-//
-//         out << std::endl;
-//       } else if (const FunctionData* function_data = std::get_if<FunctionData>(&statement)) {
-//         const FunctionData& fdata = *function_data;
-//         writer.fg(Color::Yellow, ".function {", '\n');
-//
-//         writer.fg(Color::Grey, "  name = ");
-//         writer.fg(Color::Red, "'", fdata.ast->name->value, "'", '\n');
-//
-//         writer.fg(Color::Grey, "  ir_info = ");
-//         writer.fg(Color::Magenta, fdata.ast->ir_info, '\n');
-//
-//         writer.fg(Color::Grey, "  head = ");
-//         writer.fg(Color::Yellow, ".L", fdata.head, '\n');
-//
-//         writer.fg(Color::Grey, "  end = ");
-//         writer.fg(Color::Yellow, ".L", fdata.end, '\n');
-//
-//         writer.fg(Color::Grey, "  string_table = ");
-//         writer.fg(Color::Yellow, ".L", fdata.string_table, '\n');
-//
-//         writer.fg(Color::Grey, "  body = ");
-//         writer.fg(Color::Yellow, ".L", fdata.body, '\n');
-//
-//         writer.fg(Color::Yellow, "}", '\n');
-//       } else if (const StringData* stmt = std::get_if<StringData>(&statement)) {
-//         const StringData& string_data = *stmt;
-//
-//         writer.fg(Color::Red, ".string '", string_data.data, "'");
-//         writer.fg(Color::Grey, " length=", string_data.data.size());
-//         writer.fg(Color::Grey, " hash=0x", std::hex, string_data.hash, std::dec, '\n');
-//       } else {
-//         assert(false && "unexpected type");
-//       }
-//     }
-//   }
-// }
 
 }  // namespace charly::core::compiler::ir

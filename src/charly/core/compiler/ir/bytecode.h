@@ -39,19 +39,19 @@ namespace charly::core::compiler::ir {
 
 using Label = uint32_t;
 
-#define FOREACH_OPERANDTYPE(V)                              \
-                                                            \
-  /* count operands */                                      \
-  V(Count8, uint8_t)                                        \
-  V(Count16, uint16_t)                                      \
-                                                            \
-  /* hashed symbol value */                                 \
-  V(Symbol, SYMBOL)                                         \
-                                                            \
-  /* relative offset to label */                            \
-  V(Offset, Label)                                          \
-                                                            \
-  /* immediate value */                                     \
+#define FOREACH_OPERANDTYPE(V)   \
+                                 \
+  /* count operands */           \
+  V(Count8, uint8_t)             \
+  V(Count16, uint16_t)           \
+                                 \
+  /* hashed symbol value */      \
+  V(Symbol, std::string)         \
+                                 \
+  /* relative offset to label */ \
+  V(Offset, Label)               \
+                                 \
+  /* immediate value */          \
   V(Immediate, VALUE)
 
 enum class OperandType : uint16_t {

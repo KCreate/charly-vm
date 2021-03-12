@@ -24,10 +24,6 @@
  * SOFTWARE.
  */
 
-
-func foo {
-  const first_name = "leonard"
-  const last_name = "schütz"
-
-  return first_name + last_name
+func add(x, y) {
+  return x + y
 }

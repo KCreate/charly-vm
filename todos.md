@@ -1,7 +1,5 @@
 # Todos
 
-- ValueLocation, keep symbol information around
-
 - Handle function string table in CodeGenerator, not Builder
 
 - Add checks for certain max amounts of local vars, arguments and stuff
@@ -28,7 +26,6 @@
     - Can we determine the frame-relative stack size at a specific position?
 
 - IRBuilder
-  - Show symbols as strings in IR dump
   - Show string preview on makestr instructions (max length of 32 chars...)
   - Fancy IR dump
 
