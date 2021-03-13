@@ -1,10 +1,10 @@
 # Todos
 
-- generate_store should get an arg wether to keep stored values on the stack
-
 - Immediate value encoding
   - Pointer tagging
   - NaN boxing
+
+- Store filename in compiled module somewhere
 
 - CodeGenerator
   - Store return value in local offset 0
@@ -92,6 +92,8 @@
 
 - Stream coloring on macOS
   - termcolor::_internal::is_colorized returns false, manually executing the function body returns true???
+
+- Stream coloring is buggy in optimized builds
 
 # Rewrite of the codebase
 

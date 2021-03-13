@@ -31,7 +31,10 @@ target_compile_options(charly PRIVATE
   -Wno-c++20-designator
   -Wno-gnu-zero-variadic-macro-arguments
   -ftemplate-backtrace-limit=8
+  -march=native
+  -flto
 )
+set_target_properties(charly PROPERTIES LINK_FLAGS -fuse-ld=lld)
 
 # install to global folder
 install(TARGETS charly RUNTIME DESTINATION bin)
@@ -62,4 +65,7 @@ target_compile_options(tests PRIVATE
   -Wno-gnu-zero-variadic-macro-arguments
   -Wno-c++20-designator
   -ftemplate-backtrace-limit=8
+  -march=native
+  -flto
 )
+set_target_properties(tests PROPERTIES LINK_FLAGS -fuse-ld=lld)

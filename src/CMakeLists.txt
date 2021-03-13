@@ -35,6 +35,8 @@ target_compile_options(libcharly PRIVATE
   -Wno-c++20-designator
   -Wno-gnu-zero-variadic-macro-arguments
   -ftemplate-backtrace-limit=8
-  # -ferror-limit=5
+  -march=native
+  -flto
 )
+set_target_properties(libcharly PROPERTIES LINK_FLAGS -fuse-ld=lld)
 set_target_properties(libcharly PROPERTIES PREFIX "")
