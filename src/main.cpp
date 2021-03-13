@@ -33,9 +33,11 @@
 #include <readline/readline.h>
 
 #include "charly/utils/buffer.h"
+#include "charly/utils/argumentparser.h"
 
 #include "charly/core/compiler.h"
 #include "charly/core/compiler/ast.h"
+#include "charly/core/compiler/diagnostic.h"
 #include "charly/core/compiler/ir/builder.h"
 
 using namespace charly;
@@ -43,8 +45,12 @@ using namespace charly::core::compiler;
 using namespace charly::core::compiler::ast;
 using namespace charly::core::compiler::ir;
 
-int run_repl() {
+extern char** environ;
+
+int run_repl(DiagnosticConsole&) {
   bool print_location = false;
+  bool dump_ast = utils::ArgumentParser::is_flag_set("dump_ast");
+  bool dump_asm = utils::ArgumentParser::is_flag_set("dump_asm");
 
   char* buf = nullptr;
   while ((buf = readline("> "))) {
@@ -56,9 +62,11 @@ int run_repl() {
 
     if (line[0] == '.') {
       if (line.compare(".help") == 0) {
-        std::cout << ".exit     Exit the REPL" << '\n';
-        std::cout << ".help     List of meta commands" << '\n';
-        std::cout << ".ast_loc  Display source locations in AST dump" << '\n';
+        std::cout << ".exit       Exit the REPL" << '\n';
+        std::cout << ".help       List of meta commands" << '\n';
+        std::cout << ".dump_ast   Toggle AST dump" << '\n';
+        std::cout << ".dump_asm   Toggle bytecode dump" << '\n';
+        std::cout << ".ast_loc    Toggle source location in AST dump" << '\n';
         continue;
       }
 
@@ -67,6 +75,16 @@ int run_repl() {
 
       if (line.compare(".ast_loc") == 0) {
         print_location = !print_location;
+        continue;
+      }
+
+      if (line.compare(".dump_ast") == 0) {
+        dump_ast = !dump_ast;
+        continue;
+      }
+
+      if (line.compare(".dump_asm") == 0) {
+        dump_asm = !dump_asm;
         continue;
       }
     }
@@ -91,20 +109,23 @@ int run_repl() {
     }
 
     // dump compiler steps
-    program->dump(std::cout, print_location);
-    unit->ir_module->dump(std::cout);
+    if (dump_ast) {
+      program->dump(std::cout, print_location);
+    }
+    if (dump_asm) {
+      unit->ir_module->dump(std::cout);
+    }
   }
 
   return 0;
 }
 
-int run_file(int, char** argv) {
-  std::string filename(argv[1]);
+void run_file(DiagnosticConsole& console, const std::string& filename) {
   std::ifstream file(filename);
 
   if (!file.is_open()) {
-    std::cout << "Could not open the input file!" << std::endl;
-    return 1;
+    console.gerror("Could not open the file: ", filename);
+    return;
   }
 
   utils::Buffer file_buffer;
@@ -121,18 +142,59 @@ int run_file(int, char** argv) {
 
   unit->console.dump_all(std::cerr);
 
-  if (unit->console.has_errors())
-    return 1;
+  if (!unit->console.has_errors()) {
+    if (utils::ArgumentParser::is_flag_set("dump_ast")) {
+      program->dump(std::cout, true);
+    }
 
-  program->dump(std::cout, true);
-  unit->ir_module->dump(std::cout);
+    if (utils::ArgumentParser::is_flag_set("dump_asm")) {
+      unit->ir_module->dump(std::cout);
+    }
+  }
+}
 
-  return 0;
+void cli(DiagnosticConsole& console) {
+
+  // check for existence of CHARLYVMDIR environment variable
+  if (!utils::ArgumentParser::is_env_set("CHARLYVMDIR")) {
+    console.gerror("missing 'CHARLYVMDIR' environment variable");
+    return;
+  }
+
+  // help, version, license
+  if (utils::ArgumentParser::is_flag_set("help")) {
+    utils::ArgumentParser::print_help(std::cout);
+    return;
+  }
+
+  if (utils::ArgumentParser::is_flag_set("version")) {
+    std::cout << utils::ArgumentParser::VERSION << std::endl;
+    return;
+  }
+
+  if (utils::ArgumentParser::is_flag_set("license")) {
+    std::cout << utils::ArgumentParser::LICENSE << std::endl;
+    return;
+  }
+
+  // check for filename to execute
+  if (utils::ArgumentParser::USER_FLAGS.size() > 0) {
+    const std::string& filename = utils::ArgumentParser::USER_FLAGS.front();
+    run_file(console, filename);
+  } else {
+    run_repl(console);
+  }
 }
 
 int main(int argc, char** argv) {
-  if (argc > 1) {
-    return run_file(argc, argv);
-  }
-  return run_repl();
+  utils::ArgumentParser::init_argv(argc, argv);
+  utils::ArgumentParser::init_env(environ);
+
+  utils::Buffer buf("");
+  DiagnosticConsole console("charly", buf);
+  cli(console);
+
+  console.dump_all(std::cerr);
+
+  return console.has_errors();
 }

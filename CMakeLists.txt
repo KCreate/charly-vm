@@ -30,6 +30,7 @@ target_compile_options(charly PRIVATE
   -Wno-vla-extension
   -Wno-c++20-designator
   -Wno-gnu-zero-variadic-macro-arguments
+  -ftemplate-backtrace-limit=8
 )
 
 # install to global folder
@@ -60,4 +61,5 @@ target_compile_options(tests PRIVATE
   -Wno-vla-extension
   -Wno-gnu-zero-variadic-macro-arguments
   -Wno-c++20-designator
+  -ftemplate-backtrace-limit=8
 )

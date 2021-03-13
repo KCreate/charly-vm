@@ -1,9 +1,19 @@
 # Todos
 
-- Command line argument parser
-  - Flags to show AST or compiler output
-
 - generate_store should get an arg wether to keep stored values on the stack
+
+- Immediate value encoding
+  - Pointer tagging
+  - NaN boxing
+
+- CodeGenerator
+  - Store return value in local offset 0
+  - Generate default argument and self initializers
+  - Does the VM put the function arguments into the stack frame or do
+    we need to pop them from the stack at the beginning of the function
+
+- Make the self value an argument of every function
+  - Arrow functions codegen the self via loadcontextself
 
 - Runtime representation of functions
   - How does the `makefunc` instruction create a new function?
@@ -11,39 +21,20 @@
   - Bytecode
   - Keep possibility of future JIT compiler in mind
 
-- Think about inline caches
-  - IRBuilder will have to allocate inline caches per function
-    - Separate table for inline caches or directly encoded into bytecode?
-
 - Exception tables
   - Store start, end and handler label
   - How do we know how many values to pop off the stack?
     - Can we determine the frame-relative stack size at a specific position?
 
-- IRBuilder
-  - Show string preview on makestr instructions (max length of 32 chars...)
-  - Fancy IR dump
+- source mapping
 
-- CodeGenerator
-  - Store return value in local offset 0
-  - Generate default argument and self initializers
-  - Does the VM put the function arguments into the stack frame or do
-    we need to pop them from the stack at the beginning of the function
-  - Generate exception tables
+- Build control-flow-graph and remove dead blocks
+
+- Think about inline caches
+  - IRBuilder will have to allocate inline caches per function
+    - Separate table for inline caches or directly encoded into bytecode?
 
 - Global symbol table with thread local intermediate caches
-
-- Make the self value an argument of every function
-  - Arrow functions codegen the self via loadcontextself
-
-- Immediate value encoding
-  - Pointer tagging
-  - NaN boxing
-
-- Intermediate representation for charly code
-  - Human readable charly bytecode syntax
-  - Assembler for charly byte
-  - Bytecode to file / line / column mapping
 
 - Concurrent Garbage Collector
   - Different properties of garbage collector types
@@ -201,20 +192,11 @@
     - each cfunction gets a flag which controls wether it should be executed
       in sync with the fiber or put onto the native worker queue
     - by default, a cfunction gets executed in sync with the fiber
-  - REPL support
-    - variables in the top level are adressed by name
-    - each variable gets registered using the `registerlocal` opcode
-    - nested blocks register a new local frame by `setuplocals` and deregister by `unwind`
-    - functions store the local block in which they were defined, in case they have to perform name lookups.
-    - data structure shouldn't be a simple map, variables should still be accessible by offset
-      - this is to allow future optimizations such as inline caching
   - max amount of arguments for a function
     - except in case of functions with argument spreads
     - throw exception on mismatched argument count
   - how are fibers created?
     - allocate a new fiber, call the function, enqueue in coordinator
-  - instructionblock bookkeeping
-    - constant pool of values allocated during compile-time (similar to python)
   - vm reentrance, how can the VM call charly logic?
     - if we can detect that certain instructions would require us to call back into
       charly code, we could just handle these instructions as charly code
@@ -223,50 +205,11 @@
   - remove computed goto, use switch with prediction nodes for branch efficiency
     - inspired by CPython main interpreter loop
     - remove compound opcodes, branch prediction should be sufficient
-  - local variable slot allocation with defer statements
-    - by currently existing rules, both a and b would end up in the same slot
-      ```
-      {
-        defer {
-          let a = 25
-        }
-
-        let b = {}
-      }
-      ```
-    - by marking all slots created inside the defer as leaked, they are not overwritten by other slots
-  - correct stack unwinding for try/catch and loop statements
-    - keep a stack of block states on which new instructions `break`, `continue` operate
-    - break and continue statements now correctly unwind exception stack
-      - compiler can still optimize as immediate branches if possible
-    - defer statements should execute immediately before their scope is exited
-    - finally statements should execute synchronously
-    - implement via some kind of state machine
-    - new instructions
-      - SETUPLOOP
-        - creates a new loop block, used by break and continue
-      - SETUPDEFER
-        - creates a new defer block, executes defered blocks at unwind
-      - SETUPCATCH
-        - creates a catch block, handles thrown exceptions
-      - DEFER
-        - schedule a block for execution at corresponding unwind
-      - UNWIND
-        - unwind the top block
-      - UNWINDCONTINUE
-        - continue unwinding the stack
-        - used inside defered blocks
-    - finally handlers for catch statements can be implemented using defer statements
   - stacked exceptions
     - exceptions thrown in the handler blocks of try catch statements should
       keep track of the old exception
     - some kind of exception stack per fiber, popped at the end of catch statements
     - pop exception off the exception stack at the end of the catch handler
-
-- usage of exceptions in codebase
-  - vm panic handling
-  - exception handling
-  - performance concerns?
 
 - New features
   - Tuples

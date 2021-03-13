@@ -16,6 +16,7 @@ file(GLOB charlycore_SRC
   "charly/core/compiler/passes/local_allocator_pass.cpp"
   "charly/core/compiler/passes/repl_prepare_pass.cpp"
   "charly/core/compiler/passes/reserved_identifiers_check.cpp"
+  "charly/utils/argumentparser.cpp"
 )
 
 
@@ -33,6 +34,7 @@ target_compile_options(libcharly PRIVATE
   -Wno-vla-extension
   -Wno-c++20-designator
   -Wno-gnu-zero-variadic-macro-arguments
+  -ftemplate-backtrace-limit=8
   # -ferror-limit=5
 )
 set_target_properties(libcharly PROPERTIES PREFIX "")

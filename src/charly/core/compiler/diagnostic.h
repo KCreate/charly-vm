@@ -130,6 +130,11 @@ public:
   void info(const ast::ref<ast::Node>& node, Args&&... params) {
     info(node->location(), std::forward<Args>(params)...);
   }
+  template <typename... Args>
+  void ginfo(Args&&... params) {
+    Location loc;
+    info(loc, std::forward<Args>(params)...);
+  }
 
   template <typename... Args>
   void warning(const Location& loc, Args&&... params) {
@@ -141,6 +146,11 @@ public:
   void warning(const ast::ref<ast::Node>& node, Args&&... params) {
     warning(node->location(), std::forward<Args>(params)...);
   }
+  template <typename... Args>
+  void gwarning(Args&&... params) {
+    Location loc;
+    warning(loc, std::forward<Args>(params)...);
+  }
 
   template <typename... Args>
   void error(const Location& loc, Args&&... params) {
@@ -151,6 +161,11 @@ public:
   template <typename... Args>
   void error(const ast::ref<ast::Node>& node, Args&&... params) {
     error(node->location(), std::forward<Args>(params)...);
+  }
+  template <typename... Args>
+  void gerror(Args&&... params) {
+    Location loc;
+    error(loc, std::forward<Args>(params)...);
   }
 
   // pushing a fatal message throws a DiagnosticException
@@ -164,6 +179,11 @@ public:
   template <typename... Args>
   [[noreturn]] void fatal(const ast::ref<ast::Node>& node, Args&&... params) {
     fatal(node->location(), std::forward<Args>(params)...);
+  }
+  template <typename... Args>
+  [[noreturn]] void gfatal(Args&&... params) {
+    Location loc;
+    fatal(loc, std::forward<Args>(params)...);
   }
 
 private:

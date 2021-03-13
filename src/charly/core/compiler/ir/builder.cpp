@@ -145,7 +145,7 @@ void Builder::emit_loadfar(OpCount8 depth, OpCount8 offset) {
 }
 
 void Builder::emit_loadattr(OpSymbol symbol) {
-  emit(Opcode::loadlocal, IROperandSymbol::make(symbol));
+  emit(Opcode::loadattr, IROperandSymbol::make(symbol));
   register_symbol(symbol);
 }
 
