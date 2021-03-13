@@ -56,6 +56,12 @@ Label CodeGenerator::enqueue_function(const ref<Function>& ast) {
   return begin_label;
 }
 
+Label CodeGenerator::register_string(const std::string& string) {
+  Label l = m_builder.reserve_label();
+  m_string_table.emplace_back(l, string);
+  return l;
+}
+
 void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
   m_builder.begin_function(queued_func.head, queued_func.ast);
 
@@ -69,7 +75,23 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
   m_builder.place_label(return_label);
   m_builder.emit_ret();
 
-  m_builder.end_function();
+  // emit string table
+  std::unordered_map<SYMBOL, Label> emitted_strings;
+  for (const auto& entry : m_string_table) {
+    const Label& label = std::get<0>(entry);
+    const std::string& string = std::get<1>(entry);
+    SYMBOL string_hash = SYM(string);
+
+    if (emitted_strings.count(string_hash)) {
+      m_builder.place_label_at_label(label, emitted_strings.at(string_hash));
+      continue;
+    }
+
+    m_builder.place_label(label);
+    m_builder.emit_string_data(string);
+    emitted_strings[string_hash] = label;
+  }
+  m_string_table.clear();
 }
 
 void CodeGenerator::generate_load(const ValueLocation& location) {
@@ -188,7 +210,7 @@ void CodeGenerator::inspect_leave(const ref<Id>& node) {
 }
 
 void CodeGenerator::inspect_leave(const ref<String>& node) {
-  m_builder.emit_makestr(m_builder.register_string(node->value));
+  m_builder.emit_makestr(register_string(node->value));
 }
 
 void CodeGenerator::inspect_leave(const ref<Int>& node) {

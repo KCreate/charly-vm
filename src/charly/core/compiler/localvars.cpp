@@ -60,8 +60,9 @@ void FunctionScope::leak_slot(uint32_t index) {
 }
 
 const LocalVariable* BlockScope::alloc_slot(const ref<Name>& symbol, const ref<Node>& declaration, bool constant) {
+
   // toplevel declarations
-  if (!parent_function) {
+  if (this->ast_block->force_global_alloc) {
     ValueLocation location = ValueLocation::Global(symbol->value);
     variables.insert_or_assign(symbol->value, LocalVariable{ .ast_declaration = declaration,
                                                              .value_location = location,

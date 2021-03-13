@@ -1,12 +1,7 @@
 # Todos
 
-- Handle function string table in CodeGenerator, not Builder
-
-- Add checks for certain max amounts of local vars, arguments and stuff
-
-- Always wrap generated code in a module wrapper function
-  - If repl input, wrap last expression-statement in return or return null
-  - Variable declarations in the top block should always be global variables
+- Command line argument parser
+  - Flags to show AST or compiler output
 
 - generate_store should get an arg wether to keep stored values on the stack
 
@@ -40,9 +35,6 @@
 
 - Make the self value an argument of every function
   - Arrow functions codegen the self via loadcontextself
-
-- Command line argument parser
-  - Flags to show AST or compiler output
 
 - Immediate value encoding
   - Pointer tagging

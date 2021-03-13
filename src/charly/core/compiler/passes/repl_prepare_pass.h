@@ -24,9 +24,18 @@
  * SOFTWARE.
  */
 
-func add(x, y) {
-  print("hello world")
-  return x + y
-}
+#include "charly/core/compiler/pass.h"
 
-print("hello {add(1, 2)}")
+#pragma once
+
+namespace charly::core::compiler::ast {
+
+class ReplPreparePass : public DiagnosticPass {
+public:
+  using DiagnosticPass::DiagnosticPass;
+
+private:
+  virtual void inspect_leave(const ref<Block>&) override;
+};
+
+}  // namespace charly::core::compiler::ast

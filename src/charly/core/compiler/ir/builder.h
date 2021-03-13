@@ -52,10 +52,6 @@ public:
   // function management
   IRFunction& active_function() const;
   IRFunction& begin_function(Label head, ast::ref<ast::Function> ast);
-  void end_function();
-
-  // register a string in the current function's string table
-  Label register_string(const std::string& string);
 
   // label management
   Label reserve_label();

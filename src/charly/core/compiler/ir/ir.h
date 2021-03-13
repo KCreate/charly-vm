@@ -115,14 +115,6 @@ struct IRFunction {
   Label head;
   ast::ref<ast::Function> ast;
 
-  struct StringTableEntry {
-    StringTableEntry(Label label, const std::string& string) : label(label), string(string) {}
-
-    Label label;
-    std::string string;
-  };
-
-  std::vector<StringTableEntry> string_table;
   std::vector<std::shared_ptr<IRStatement>> statements;
 
   void dump(std::ostream& out) const;

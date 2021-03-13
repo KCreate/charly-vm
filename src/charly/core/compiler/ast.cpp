@@ -107,6 +107,10 @@ void Node::dump(std::ostream& out, bool print_location) const {
 
 void Block::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
+  if (this->force_global_alloc) {
+    writer << ' ';
+    writer.fg(Color::Red, "force_global_alloc");
+  }
 }
 
 void Id::dump_info(std::ostream& out) const {

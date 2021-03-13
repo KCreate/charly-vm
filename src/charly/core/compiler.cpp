@@ -35,6 +35,7 @@
 #include "charly/core/compiler/passes/grammar_validation_check.h"
 #include "charly/core/compiler/passes/reserved_identifiers_check.h"
 
+#include "charly/core/compiler/passes/repl_prepare_pass.h"
 #include "charly/core/compiler/passes/constant_folding_pass.h"
 #include "charly/core/compiler/passes/desugar_pass.h"
 #include "charly/core/compiler/passes/local_allocator_pass.h"
@@ -68,6 +69,12 @@ std::shared_ptr<CompilationUnit> Compiler::compile(CompilationUnit::Type type,
     unit->ast = cast<Block>(PassName(unit->console).apply(unit->ast)); \
     if (unit->console.has_errors())                                    \
       return unit;                                                     \
+  }
+
+  // prepare repl input for compilation
+  if (type == CompilationUnit::Type::ReplInput) {
+    unit->ast->force_global_alloc = true;
+    APPLY_TRANSFORM_PASS(ReplPreparePass);
   }
 
   // wrap in module function

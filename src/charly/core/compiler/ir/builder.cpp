@@ -49,34 +49,6 @@ IRFunction& Builder::begin_function(Label head, ast::ref<ast::Function> ast) {
   return active_function();
 }
 
-void Builder::end_function() {
-
-  // emit string table
-  std::unordered_map<SYMBOL, Label> emitted_strings;
-  for (const IRFunction::StringTableEntry& entry : active_function().string_table) {
-    SYMBOL string_hash = SYM(entry.string);
-
-    if (emitted_strings.count(string_hash)) {
-      place_label_at_label(entry.label, emitted_strings.at(string_hash));
-      continue;
-    }
-
-    place_label(entry.label);
-    emit_string_data(entry.string);
-    emitted_strings[string_hash] = entry.label;
-  }
-
-  // reset active function
-  m_active_function = nullptr;
-}
-
-Label Builder::register_string(const std::string& string) {
-  IRFunction& func = active_function();
-  Label string_label = reserve_label();
-  func.string_table.emplace_back(string_label, string);
-  return string_label;
-}
-
 Label Builder::reserve_label() {
   return m_label_counter++;
 }

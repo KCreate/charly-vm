@@ -275,6 +275,12 @@ public:
     }
   }
 
+  // set to true for the top block of REPL input
+  // if set to true, all variable declarations in this block are compiled as
+  // global value declarations
+  // does not affect child blocks
+  bool force_global_alloc = false;
+
   std::vector<ref<Statement>> statements;
 
   CHILDREN() {

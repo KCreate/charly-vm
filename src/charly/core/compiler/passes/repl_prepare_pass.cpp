@@ -24,9 +24,25 @@
  * SOFTWARE.
  */
 
-func add(x, y) {
-  print("hello world")
-  return x + y
+#include "charly/core/compiler/passes/repl_prepare_pass.h"
+
+namespace charly::core::compiler::ast {
+
+void ReplPreparePass::inspect_leave(const ref<Block>& node) {
+
+  // if the last element in the block is an expression
+  // it is wrapped in a return statement so that the REPL
+  // can print it
+  if (node->statements.size() && isa<Expression>(node->statements.back())) {
+    ref<Expression> exp = cast<Expression>(node->statements.back());
+    node->statements.pop_back();
+
+    ref<Return> return_exp = make<Return>(exp);
+    return_exp->set_location(exp);
+
+    node->statements.push_back(return_exp);
+  }
+
 }
 
-print("hello {add(1, 2)}")
+}  // namespace charly::core::compiler::ast

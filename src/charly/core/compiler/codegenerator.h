@@ -60,6 +60,9 @@ private:
   // returns the label the function will be placed at
   ir::Label enqueue_function(const ast::ref<ast::Function>& ast);
 
+  // store a string in the current function's string table
+  ir::Label register_string(const std::string& string);
+
   // compile a single function and enqueue child functions
   void compile_function(const QueuedFunction&);
 
@@ -102,10 +105,11 @@ private:
   virtual bool inspect_enter(const ast::ref<ast::While>&) override;
 
   std::shared_ptr<CompilationUnit> m_unit;
-
   ir::Builder m_builder;
 
   std::queue<QueuedFunction> m_function_queue;
+
+  std::vector<std::tuple<ir::Label, const std::string&>> m_string_table;
 
   std::stack<ir::Label> m_return_stack;
   std::stack<ir::Label> m_break_stack;
