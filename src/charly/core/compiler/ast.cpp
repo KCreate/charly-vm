@@ -72,10 +72,7 @@ void Node::dump(std::ostream& out, bool print_location) const {
   std::vector<std::stringstream> child_nodes;
   children([&](const ref<Node>& node) {
     std::stringstream& child_stream = child_nodes.emplace_back();
-    if (termcolor::_internal::is_colorized(out)) {
-      termcolor::colorize(child_stream);
-      assert(termcolor::_internal::is_colorized(child_stream) && "stream not colorized");
-    }
+    termcolor::colorlike(child_stream, out);
     node->dump(child_stream, print_location);
   });
 

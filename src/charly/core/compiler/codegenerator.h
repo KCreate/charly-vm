@@ -90,7 +90,11 @@ private:
 
   virtual void inspect_leave(const ast::ref<ast::Id>&) override;
   virtual void inspect_leave(const ast::ref<ast::Int>&) override;
+  virtual void inspect_leave(const ast::ref<ast::Float>&) override;
+  virtual void inspect_leave(const ast::ref<ast::Bool>&) override;
+  virtual void inspect_leave(const ast::ref<ast::Char>&) override;
   virtual void inspect_leave(const ast::ref<ast::String>&) override;
+  virtual void inspect_leave(const ast::ref<ast::Null>&) override;
   virtual bool inspect_enter(const ast::ref<ast::Function>&) override;
 
   virtual void inspect_leave(const ast::ref<ast::MemberOp>&) override;

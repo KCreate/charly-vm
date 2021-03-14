@@ -26,6 +26,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <string>
 
 #pragma once
 

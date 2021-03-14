@@ -26,12 +26,59 @@
 
 #include <cstdint>
 
-#include "symbol.h"
+#include "taggedvalue.h"
 
 #pragma once
 
 namespace charly {
 
-using VALUE = uintptr_t;
+// wrapper class around the raw immediate encoded bytes
+struct VALUE {
+  taggedvalue::Value raw;
+  VALUE(taggedvalue::Value raw) : raw(raw) {}
+
+  static VALUE Pointer(void* value) {
+    return VALUE(taggedvalue::encode_pointer(value));
+  }
+
+  static VALUE Int(int64_t value) {
+    return VALUE(taggedvalue::encode_int(value));
+  }
+
+  static VALUE Float(double value) {
+    return VALUE(taggedvalue::encode_float(value));
+  }
+
+  static VALUE Bool(bool value) {
+    return VALUE(taggedvalue::encode_bool(value));
+  }
+
+  static VALUE Null() {
+    return VALUE(taggedvalue::encode_null());
+  }
+
+  static VALUE Char(uint32_t value) {
+    return VALUE(taggedvalue::encode_char(value));
+  }
+
+  static VALUE Symbol(SYMBOL value) {
+    return VALUE(taggedvalue::encode_symbol(value));
+  }
+
+  bool is_pointer() const { return taggedvalue::is_pointer(raw); }
+  bool is_int() const { return taggedvalue::is_int(raw); }
+  bool is_float() const { return taggedvalue::is_float(raw); }
+  bool is_char() const { return taggedvalue::is_char(raw); }
+  bool is_symbol() const { return taggedvalue::is_symbol(raw); }
+  bool is_bool() const { return taggedvalue::is_bool(raw); }
+  bool is_null() const { return taggedvalue::is_null(raw); }
+
+  void* to_pointer() const { return taggedvalue::decode_pointer(raw); }
+  int64_t to_int() const { return taggedvalue::decode_int(raw); }
+  float to_float() const { return taggedvalue::decode_float(raw); }
+  uint32_t to_char() const { return taggedvalue::decode_char(raw); }
+  uint32_t to_symbol() const { return taggedvalue::decode_symbol(raw); }
+  bool to_bool() const { return taggedvalue::decode_bool(raw); }
+};
 
 }

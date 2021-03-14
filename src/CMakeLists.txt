@@ -16,6 +16,7 @@ file(GLOB charlycore_SRC
   "charly/core/compiler/passes/local_allocator_pass.cpp"
   "charly/core/compiler/passes/repl_prepare_pass.cpp"
   "charly/core/compiler/passes/reserved_identifiers_check.cpp"
+  "charly/taggedvalue.cpp"
   "charly/utils/argumentparser.cpp"
 )
 

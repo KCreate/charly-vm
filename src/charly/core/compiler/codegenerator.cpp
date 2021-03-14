@@ -214,13 +214,29 @@ void CodeGenerator::inspect_leave(const ref<String>& node) {
 }
 
 void CodeGenerator::inspect_leave(const ref<Int>& node) {
-  m_builder.emit_load(node->value);
+  m_builder.emit_load(VALUE::Int(node->value));
+}
+
+void CodeGenerator::inspect_leave(const ref<Float>& node) {
+  m_builder.emit_load(VALUE::Float(node->value));
+}
+
+void CodeGenerator::inspect_leave(const ref<Bool>& node) {
+  m_builder.emit_load(VALUE::Bool(node->value));
+}
+
+void CodeGenerator::inspect_leave(const ref<Char>& node) {
+  m_builder.emit_load(VALUE::Char(node->value));
 }
 
 bool CodeGenerator::inspect_enter(const ref<Function>& node) {
   Label begin_label = enqueue_function(node);
   m_builder.emit_makefunc(begin_label);
   return false;
+}
+
+void CodeGenerator::inspect_leave(const ref<Null>&) {
+  m_builder.emit_load(VALUE::Null());
 }
 
 void CodeGenerator::inspect_leave(const ast::ref<ast::MemberOp>& node) {

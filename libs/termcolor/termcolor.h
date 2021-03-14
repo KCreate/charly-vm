@@ -37,10 +37,9 @@
 #   include <windows.h>
 #endif
 
-
 #include <iostream>
 #include <cstdio>
-
+#include <cassert>
 
 namespace termcolor
 {
@@ -78,10 +77,12 @@ namespace termcolor
     inline
     std::ostream& colorlike(std::ostream& stream, std::ostream& other)
     {
-      if (termcolor::_internal::is_colorized(other)) {
+      if (_internal::is_colorized(other)) {
         colorize(stream);
+        assert(_internal::is_colorized(stream) && "stream not colorized");
       } else {
         nocolorize(stream);
+        assert(!_internal::is_colorized(stream) && "stream colorized");
       }
 
       return stream;

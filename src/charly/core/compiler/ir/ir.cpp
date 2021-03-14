@@ -28,6 +28,7 @@
 #include <iomanip>
 
 #include "charly/utils/colorwriter.h"
+#include "charly/utils/buffer.h"
 #include "charly/utils/stringindent.h"
 #include "charly/core/compiler/ir/ir.h"
 
@@ -63,9 +64,65 @@ void IROperandOffset::dump(std::ostream& out) const {
 
 void IROperandImmediate::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
-  out << std::hex;
-  writer.fg(Color::Cyan, "0x", this->value);
-  out << std::dec;
+  // writer.fg(Color::Cyan, std::hex, this->value.raw, std::dec);
+  // return;
+
+  if (this->value.is_pointer()) {
+    writer.fg(Color::Cyan, this->value.to_pointer());
+    return;
+  }
+
+  if (this->value.is_int()) {
+    writer.fg(Color::Cyan, this->value.to_int());
+    return;
+  }
+
+  if (this->value.is_float()) {
+    writer.fg(Color::Red, this->value.to_float());
+    return;
+  }
+
+  if (this->value.is_char()) {
+    utils::Buffer buf(4);
+    buf.append_utf8(this->value.to_char());
+
+    writer.fg(Color::Red, "'", buf.buffer_string(), "'");
+
+    writer.fg(Color::Grey, " [");
+    for (size_t i = 0; i < buf.size(); i++) {
+      uint32_t character = *(buf.data() + i) & 0xFF;
+
+      if (i) {
+        out << " ";
+      }
+
+      writer.fg(Color::Red, "0x", std::hex, character, std::dec);
+    }
+    writer.fg(Color::Grey, "]");
+
+    return;
+  }
+
+  if (this->value.is_symbol()) {
+    writer.fg(Color::Red, std::hex, this->value.to_symbol(), std::dec);
+    return;
+  }
+
+  if (this->value.is_bool()) {
+    if (this->value.to_bool()) {
+      writer.fg(Color::Green, "true");
+    } else {
+      writer.fg(Color::Red, "false");
+    }
+    return;
+  }
+
+  if (this->value.is_null()) {
+    writer.fg(Color::Grey, "null");
+    return;
+  }
+
+  writer.fg(Color::Grey, "???");
 }
 
 void IRInstruction::dump(std::ostream& out) const {

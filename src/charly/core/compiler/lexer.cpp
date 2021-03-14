@@ -29,6 +29,7 @@
 #include <memory>
 
 #include "charly/utils/cast.h"
+#include "charly/value.h"
 
 #include "charly/core/compiler/lexer.h"
 
@@ -469,7 +470,13 @@ Token Lexer::read_token_all() {
     token.type = kKeywordsAndLiterals.at(token.source);
 
     if (token.type == TokenType::Float) {
-      token.floatval = std::numeric_limits<double>::quiet_NaN();
+      if (token.source.compare("INFINITY") == 0 || token.source.compare("Infinity") == 0) {
+        token.floatval = INFINITY;
+      } else if (token.source.compare("NAN") == 0 || token.source.compare("NaN") == 0) {
+        token.floatval = NAN;
+      } else {
+        assert(false && "unexpected string");
+      }
     }
   }
 

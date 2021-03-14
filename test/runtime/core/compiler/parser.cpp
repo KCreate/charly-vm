@@ -59,6 +59,9 @@ TEST_CASE("parses literals") {
   CHECK_AST_EXP("1234.12345678", make<Float>(1234.12345678));
   CHECK_AST_EXP("25.25", make<Float>(25.25));
   CHECK_AST_EXP("NaN", make<Float>(NAN));
+  CHECK_AST_EXP("NAN", make<Float>(NAN));
+  CHECK_AST_EXP("Infinity", make<Float>(INFINITY));
+  CHECK_AST_EXP("INFINITY", make<Float>(INFINITY));
   CHECK_AST_EXP("true", make<Bool>(true));
   CHECK_AST_EXP("false", make<Bool>(false));
   CHECK_AST_EXP("null", make<Null>());

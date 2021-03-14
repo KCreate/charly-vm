@@ -161,6 +161,9 @@ static std::string kTokenTypeStrings[] = {
 
 // identifiers with these names get remapped to keyword tokens
 static const std::unordered_map<std::string, TokenType> kKeywordsAndLiterals = { { "NaN", TokenType::Float },
+                                                                                 { "NAN", TokenType::Float },
+                                                                                 { "Infinity", TokenType::Float },
+                                                                                 { "INFINITY", TokenType::Float },
                                                                                  { "false", TokenType::False },
                                                                                  { "null", TokenType::Null },
                                                                                  { "self", TokenType::Self },
