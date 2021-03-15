@@ -8,8 +8,6 @@
     - Unpack
     - UnpackSpread
     - Operator assignments
-    - Member
-    - Index
   - Try statements
   - Switch statements
   - For statements

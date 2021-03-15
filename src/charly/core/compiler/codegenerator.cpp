@@ -336,6 +336,39 @@ bool CodeGenerator::inspect_enter(const ref<Assignment>& node) {
   return false;
 }
 
+bool CodeGenerator::inspect_enter(const ref<MemberAssignment>& node) {
+  switch (node->operation) {
+    case TokenType::Assignment: {
+      apply(node->target);
+      apply(node->source);
+      m_builder.emit_setattr(node->member->value);
+      break;
+    }
+    default: {
+      assert(false && "operator member assignment codegen not implemented");
+    }
+  }
+
+  return false;
+}
+
+bool CodeGenerator::inspect_enter(const ref<IndexAssignment>& node) {
+  switch (node->operation) {
+    case TokenType::Assignment: {
+      apply(node->target);
+      apply(node->index);
+      apply(node->source);
+      m_builder.emit_setattrvalue();
+      break;
+    }
+    default: {
+      assert(false && "operator member assignment codegen not implemented");
+    }
+  }
+
+  return false;
+}
+
 bool CodeGenerator::inspect_enter(const ref<Ternary>& node) {
   Label else_label = m_builder.reserve_label();
   Label end_label = m_builder.reserve_label();
