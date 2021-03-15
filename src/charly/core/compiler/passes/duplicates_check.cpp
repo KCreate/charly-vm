@@ -62,8 +62,8 @@ void DuplicatesCheck::inspect_leave(const ref<Dict>& node) {
 
   for (ref<DictEntry>& entry : node->elements) {
     switch (entry->key->type()) {
-      case Node::Type::Name: {
-        ref<Name> name = cast<Name>(entry->key);
+      case Node::Type::Symbol: {
+        ref<Symbol> name = cast<Symbol>(entry->key);
 
         if (dict_keys.count(name->value)) {
           m_console.error(entry->key, "duplicate key '", name->value, "'");
