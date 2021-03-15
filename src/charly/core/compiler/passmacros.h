@@ -32,6 +32,7 @@
       AST_TYPESWITCH_CASE_NODE(Char, __VA_ARGS__)                  \
       AST_TYPESWITCH_CASE_NODE(String, __VA_ARGS__)                \
       AST_TYPESWITCH_CASE_NODE(FormatString, __VA_ARGS__)          \
+      AST_TYPESWITCH_CASE_NODE(Symbol, __VA_ARGS__)                \
       AST_TYPESWITCH_CASE_NODE(Null, __VA_ARGS__)                  \
       AST_TYPESWITCH_CASE_NODE(Self, __VA_ARGS__)                  \
       AST_TYPESWITCH_CASE_NODE(Super, __VA_ARGS__)                 \

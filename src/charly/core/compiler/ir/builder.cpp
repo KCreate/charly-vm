@@ -110,6 +110,10 @@ void Builder::emit_stringconcat(OpCount8 count) {
   emit(Opcode::stringconcat, IROperandCount8::make(count));
 }
 
+void Builder::emit_declareglobal(OpSymbol symbol) {
+  emit(Opcode::declareglobal, IROperandSymbol::make(symbol));
+}
+
 void Builder::emit_type() {
   emit(Opcode::type);
 }
@@ -166,6 +170,10 @@ void Builder::emit_ret() {
 // load operations
 void Builder::emit_load(OpImmediate value) {
   emit(Opcode::load, IROperandImmediate::make(value));
+}
+
+void Builder::emit_loadsymbol(OpSymbol symbol) {
+  emit(Opcode::loadsymbol, IROperandSymbol::make(symbol));
 }
 
 void Builder::emit_loadcontextself() {
@@ -256,12 +264,12 @@ void Builder::emit_makestr(OpOffset offset) {
   emit(Opcode::makestr, IROperandOffset::make(offset));
 }
 
-void Builder::emit_makearr(OpCount16 count) {
-  emit(Opcode::makearr, IROperandCount16::make(count));
+void Builder::emit_makelist(OpCount16 count) {
+  emit(Opcode::makelist, IROperandCount16::make(count));
 }
 
-void Builder::emit_makearrspread(OpCount16 count) {
-  emit(Opcode::makearrspread, IROperandCount16::make(count));
+void Builder::emit_makelistspread(OpCount16 count) {
+  emit(Opcode::makelistspread, IROperandCount16::make(count));
 }
 
 void Builder::emit_makedict(OpCount16 count) {

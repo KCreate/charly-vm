@@ -24,20 +24,25 @@
  * SOFTWARE.
  */
 
-let message = null
+class A {
+  foo {
+    super
+    super()
+    super.foo
+    super.foo()
+  }
 
-class Point {
-  property x
-  property y
+  static foo {
+    super
+    super()
+    super.foo
+    super.foo()
+  }
 
-  constructor(@x, @y) {
-    return 42
+  constructor {
+    super
+    super()
+    super.foo
+    super.foo()
   }
 }
-
-func add(x, y) {
-  const tmp = message = "hello world"
-  return x + y
-}
-
-print("{message} {add(1, 2)}")

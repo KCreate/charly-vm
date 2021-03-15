@@ -88,6 +88,7 @@ public:
     Char,
     String,
     FormatString,
+    Symbol,
     Null,
     Self,
     Super,
@@ -588,6 +589,28 @@ public:
   }
 };
 
+// :'hello'
+class Symbol final : public ConstantAtom<std::string> {
+  AST_NODE(Symbol)
+public:
+  using ConstantAtom<std::string>::ConstantAtom;
+  Symbol(ref<Name> name) : ConstantAtom<std::string>::ConstantAtom(name->value) {
+    this->set_location(name);
+  }
+  Symbol(ref<Id> name) : ConstantAtom<std::string>::ConstantAtom(name->value) {
+    this->set_location(name);
+  }
+  Symbol(ref<String> name) : ConstantAtom<std::string>::ConstantAtom(name->value) {
+    this->set_location(name);
+  }
+
+  virtual void dump_info(std::ostream& out) const override;
+
+  virtual bool truthyness() const override {
+    return true; // symbols are always truthy
+  }
+};
+
 // (1, 2, 3)
 class Tuple final : public Expression {
   AST_NODE(Tuple)
@@ -598,6 +621,8 @@ public:
   std::vector<ref<Expression>> elements;
 
   virtual bool assignable() const override;
+
+  bool has_spread_elements() const;
 
   CHILDREN() {
     CHILD_VECTOR(elements);
@@ -612,6 +637,8 @@ public:
   List(Args&&... params) : elements({ std::forward<Args>(params)... }) {}
 
   std::vector<ref<Expression>> elements;
+
+  bool has_spread_elements() const;
 
   CHILDREN() {
     CHILD_VECTOR(elements);
@@ -653,6 +680,8 @@ public:
   std::vector<ref<DictEntry>> elements;
 
   virtual bool assignable() const override;
+
+  bool has_spread_elements() const;
 
   CHILDREN() {
     CHILD_VECTOR(elements);

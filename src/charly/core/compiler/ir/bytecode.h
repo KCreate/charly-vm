@@ -75,107 +75,109 @@ FOREACH_OPERANDTYPE(OPTYPE)
 // opcode listing
 //  - name
 //  - size of operands
-#define FOREACH_OPCODE(V)                     \
-  /* machine control */                       \
-  V(nop)                                      \
-  V(halt)                                     \
-                                              \
-  /* misc. instructions */                    \
-  V(import)                                   \
-  V(stringconcat, OpCount8)                   \
-  V(type)                                     \
-                                              \
-  /* stack management */                      \
-  V(pop)                                      \
-  V(dup)                                      \
-                                              \
-  /* control flow */                          \
-  V(jmp, OpOffset)                            \
-  V(jmpf, OpOffset)                           \
-  V(jmpt, OpOffset)                           \
-  V(throwex)                                  \
-                                              \
-  /* function control flow */                 \
-  V(call, OpCount8)                           \
-  V(callmember, OpSymbol, OpCount8)           \
-  V(callspread, OpCount8)                     \
-  V(callmemberspread, OpSymbol, OpCount8)     \
-  V(ret)                                      \
-                                              \
-  /* load operations */                       \
-  V(load, OpImmediate)                        \
-  V(loadcontextself)                          \
-  V(loadglobal, OpSymbol)                     \
-  V(loadlocal, OpCount8)                      \
-  V(loadfar, OpCount8, OpCount8)              \
-  V(loadattr, OpSymbol)                       \
-  V(loadattrvalue)                            \
-  V(loadsuper)                                \
-  V(loadsuperattr, OpSymbol)                  \
-                                              \
-  /* write operations */                      \
-  V(setglobal, OpSymbol)                      \
-  V(setlocal, OpCount8)                       \
-  V(setfar, OpCount8, OpCount8)               \
-  V(setattr, OpSymbol)                        \
-  V(setattrvalue)                             \
-                                              \
-  /* value destructuring operations */        \
-  V(unpacksequence, OpCount8)                 \
-  V(unpacksequencespread, OpCount8, OpCount8) \
-  V(unpackobject, OpCount8)                   \
-  V(unpackobjectspread, OpCount8)             \
-                                              \
-  /* value allocation */                      \
-  V(makefunc, OpOffset)                       \
-  V(makeclass, OpOffset)                      \
-  V(makestr, OpOffset)                        \
-  V(makearr, OpCount16)                       \
-  V(makearrspread, OpCount16)                 \
-  V(makedict, OpCount16)                      \
-  V(makedictspread, OpCount16)                \
-  V(maketuple, OpCount16)                     \
-  V(maketuplespread, OpCount16)               \
-                                              \
-  /* fiber management */                      \
-  V(fibercreate)                              \
-  V(fiberspawn)                               \
-  V(fiberyield)                               \
-  V(fiberawait)                               \
-                                              \
-  /* cast operations */                       \
-  V(caststring)                               \
-  V(castsymbol)                               \
-  V(castiterator)                             \
-                                              \
-  /* iterator operations */                   \
-  V(iteratornext)                             \
-                                              \
-  /* arithmetic operations */                 \
-  V(add)                                      \
-  V(sub)                                      \
-  V(mul)                                      \
-  V(div)                                      \
-  V(mod)                                      \
-  V(pow)                                      \
-  V(usub)                                     \
-                                              \
-  /* comparison operations */                 \
-  V(eq)                                       \
-  V(neq)                                      \
-  V(lt)                                       \
-  V(gt)                                       \
-  V(le)                                       \
-  V(ge)                                       \
-  V(unot)                                     \
-                                              \
-  /* bitwise operations */                    \
-  V(shl)                                      \
-  V(shr)                                      \
-  V(shru)                                     \
-  V(band)                                     \
-  V(bor)                                      \
-  V(bxor)                                     \
+#define FOREACH_OPCODE(V)                          \
+  /* machine control */                            \
+  V(nop)                                           \
+  V(halt)                                          \
+                                                   \
+  /* misc. instructions */                         \
+  V(import)                                        \
+  V(stringconcat, OpCount8)                        \
+  V(declareglobal, OpSymbol)                       \
+  V(type)                                          \
+                                                   \
+  /* stack management */                           \
+  V(pop)                                           \
+  V(dup)                                           \
+                                                   \
+  /* control flow */                               \
+  V(jmp, OpOffset)                                 \
+  V(jmpf, OpOffset)                                \
+  V(jmpt, OpOffset)                                \
+  V(throwex)                                       \
+                                                   \
+  /* function control flow */                      \
+  V(call, OpCount8)                                \
+  V(callmember, OpSymbol, OpCount8)                \
+  V(callspread, OpCount8)                          \
+  V(callmemberspread, OpSymbol, OpCount8)          \
+  V(ret)                                           \
+                                                   \
+  /* load operations */                            \
+  V(load, OpImmediate)                             \
+  V(loadsymbol, OpSymbol) /* pseudo instruction */ \
+  V(loadcontextself)                               \
+  V(loadglobal, OpSymbol)                          \
+  V(loadlocal, OpCount8)                           \
+  V(loadfar, OpCount8, OpCount8)                   \
+  V(loadattr, OpSymbol)                            \
+  V(loadattrvalue)                                 \
+  V(loadsuper)                                     \
+  V(loadsuperattr, OpSymbol)                       \
+                                                   \
+  /* write operations */                           \
+  V(setglobal, OpSymbol)                           \
+  V(setlocal, OpCount8)                            \
+  V(setfar, OpCount8, OpCount8)                    \
+  V(setattr, OpSymbol)                             \
+  V(setattrvalue)                                  \
+                                                   \
+  /* value destructuring operations */             \
+  V(unpacksequence, OpCount8)                      \
+  V(unpacksequencespread, OpCount8, OpCount8)      \
+  V(unpackobject, OpCount8)                        \
+  V(unpackobjectspread, OpCount8)                  \
+                                                   \
+  /* value allocation */                           \
+  V(makefunc, OpOffset)                            \
+  V(makeclass, OpOffset)                           \
+  V(makestr, OpOffset)                             \
+  V(makelist, OpCount16)                           \
+  V(makelistspread, OpCount16)                     \
+  V(makedict, OpCount16)                           \
+  V(makedictspread, OpCount16)                     \
+  V(maketuple, OpCount16)                          \
+  V(maketuplespread, OpCount16)                    \
+                                                   \
+  /* fiber management */                           \
+  V(fibercreate)                                   \
+  V(fiberspawn)                                    \
+  V(fiberyield)                                    \
+  V(fiberawait)                                    \
+                                                   \
+  /* cast operations */                            \
+  V(caststring)                                    \
+  V(castsymbol)                                    \
+  V(castiterator)                                  \
+                                                   \
+  /* iterator operations */                        \
+  V(iteratornext)                                  \
+                                                   \
+  /* arithmetic operations */                      \
+  V(add)                                           \
+  V(sub)                                           \
+  V(mul)                                           \
+  V(div)                                           \
+  V(mod)                                           \
+  V(pow)                                           \
+  V(usub)                                          \
+                                                   \
+  /* comparison operations */                      \
+  V(eq)                                            \
+  V(neq)                                           \
+  V(lt)                                            \
+  V(gt)                                            \
+  V(le)                                            \
+  V(ge)                                            \
+  V(unot)                                          \
+                                                   \
+  /* bitwise operations */                         \
+  V(shl)                                           \
+  V(shr)                                           \
+  V(shru)                                          \
+  V(band)                                          \
+  V(bor)                                           \
+  V(bxor)                                          \
   V(ubnot)
 
 enum class Opcode : uint16_t {

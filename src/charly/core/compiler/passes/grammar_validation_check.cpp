@@ -41,14 +41,16 @@ void GrammarValidationCheck::inspect_leave(const ref<Dict>& node) {
 
     // key-only elements
     if (value.get() == nullptr) {
-      if (isa<Name>(key)) {
+      if (ref<Name> name = cast<Name>(key)) {
+        value = make<Id>(name);
+        key = make<Symbol>(name);
         continue;
       }
 
       if (ref<MemberOp> member = cast<MemberOp>(key)) {
         value = key;
-        key = member->member;
-        key->set_location(key);
+        key = make<Symbol>(member->member);
+        key->set_location(member);
         continue;
       }
 
@@ -62,14 +64,19 @@ void GrammarValidationCheck::inspect_leave(const ref<Dict>& node) {
     }
 
     if (ref<String> string = cast<String>(key)) {
-      key = make<Name>(string->value);
-      key->set_location(string);
+      key = make<Symbol>(string);
       continue;
     }
 
-    // check key expression
-    if (isa<Name>(key) || isa<FormatString>(key))
+    if (ref<Name> name = cast<Name>(key)) {
+      key = make<Symbol>(name);
       continue;
+    }
+
+    if (isa<FormatString>(key)) {
+      key = make<BuiltinOperation>(ir::BuiltinId::castsymbol, key);
+      continue;
+    }
 
     m_console.error(key, "expected identifier or string literal");
   }

@@ -228,6 +228,11 @@ void CodeGenerator::inspect_leave(const ref<FormatString>& node) {
   m_builder.emit_stringconcat(node->elements.size());
 }
 
+void CodeGenerator::inspect_leave(const ref<Symbol>& node) {
+  m_builder.register_symbol(node->value);
+  m_builder.emit_loadsymbol(node->value);
+}
+
 void CodeGenerator::inspect_leave(const ref<Int>& node) {
   m_builder.emit_load(VALUE::Int(node->value));
 }
@@ -262,6 +267,49 @@ void CodeGenerator::inspect_leave(const ref<Self>&) {
   } else {
     m_builder.emit_loadlocal(0);
   }
+}
+
+bool CodeGenerator::inspect_enter(const ast::ref<ast::Tuple>& node) {
+  if (node->has_spread_elements()) {
+    assert(false && "not implemented yet");
+  } else {
+    for (const auto& exp : node->elements) {
+      apply(exp);
+    }
+
+    m_builder.emit_maketuple(node->elements.size());
+  }
+
+  return false;
+}
+
+bool CodeGenerator::inspect_enter(const ast::ref<ast::List>& node) {
+  if (node->has_spread_elements()) {
+    assert(false && "not implemented yet");
+  } else {
+    for (const auto& exp : node->elements) {
+      apply(exp);
+    }
+
+    m_builder.emit_makelist(node->elements.size());
+  }
+
+  return false;
+}
+
+bool CodeGenerator::inspect_enter(const ast::ref<ast::Dict>& node) {
+  if (node->has_spread_elements()) {
+    assert(false && "not implemented yet");
+  } else {
+    for (const ref<DictEntry>& exp : node->elements) {
+      apply(exp->key);
+      apply(exp->value);
+    }
+
+    m_builder.emit_makedict(node->elements.size());
+  }
+
+  return false;
 }
 
 void CodeGenerator::inspect_leave(const ast::ref<ast::MemberOp>& node) {
@@ -324,6 +372,12 @@ void CodeGenerator::inspect_leave(const ref<UnaryOp>& node) {
 }
 
 void CodeGenerator::inspect_leave(const ref<Declaration>& node) {
+
+  // global declarations
+  if (node->ir_location.type == ValueLocation::Type::Global) {
+    m_builder.emit_declareglobal(node->name->value);
+  }
+
   generate_store(node->ir_location);
   m_builder.emit_pop();
 }

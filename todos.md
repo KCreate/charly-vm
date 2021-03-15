@@ -1,27 +1,25 @@
 # Todos
 
 - CodeGenerator
-  - Codegen super
-  - Codegen classes
-  - Codegen arrays, dicts and tuples
-    - Spread handlers
-  - Codegen call expressions
-    - Spread calls
-  - Global declarations
-  - Unpack declarations
-  - Operator assignments
-  - Unpack assignments
-  - Member/index assignments
+  - Primitive data structures
+    - Generate specific variants with spread
+  - Calls
+    - Regular / Member
+    - Simple / Spread
+  - Declarations
+    - UnpackSpread
+  - Assignments
+    - Unpack
+    - UnpackSpread
+    - Operator assignments
+    - Member
+    - Index
   - Try statements
   - Switch statements
   - For statements
+  - Classes
+  - super expressions
   - Generate default argument and self initializers
-
-- Runtime representation of functions
-  - How does the `makefunc` instruction create a new function?
-  - Shared function info?
-  - Bytecode
-  - Keep possibility of future JIT compiler in mind
 
 - Exception tables
   - Store start, end and handler label
@@ -37,6 +35,12 @@
 - Think about inline caches
   - IRBuilder will have to allocate inline caches per function
     - Separate table for inline caches or directly encoded into bytecode?
+
+- Runtime representation of functions
+  - How does the `makefunc` instruction create a new function?
+  - Shared function info?
+  - Bytecode
+  - Keep possibility of future JIT compiler in mind
 
 - Global symbol table with thread local intermediate caches
 

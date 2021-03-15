@@ -156,6 +156,12 @@ void String::dump_info(std::ostream& out) const {
   writer.fg(Color::Yellow, '\"', this->value, '\"');
 }
 
+void Symbol::dump_info(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  writer << ' ';
+  writer.fg(Color::Yellow, ":", this->value);
+}
+
 bool Tuple::assignable() const {
   if (elements.size() == 0)
     return false;
@@ -183,6 +189,24 @@ bool Tuple::assignable() const {
   }
 
   return true;
+}
+
+bool Tuple::has_spread_elements() const {
+  for (const auto& exp : this->elements) {
+    if (isa<Spread>(exp))
+      return true;
+  }
+
+  return false;
+}
+
+bool List::has_spread_elements() const {
+  for (const auto& exp : this->elements) {
+    if (isa<Spread>(exp))
+      return true;
+  }
+
+  return false;
 }
 
 bool DictEntry::assignable() const {
@@ -216,6 +240,17 @@ bool Dict::assignable() const {
   }
 
   return true;
+}
+
+bool Dict::has_spread_elements() const {
+  for (const ref<DictEntry>& exp : this->elements) {
+    if (isa<Spread>(exp->key)) {
+      assert(exp->value.get() == nullptr);
+      return true;
+    }
+  }
+
+  return false;
 }
 
 void FunctionArgument::dump_info(std::ostream& out) const {
