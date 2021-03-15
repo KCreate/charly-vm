@@ -47,7 +47,7 @@ private:
   void pop_block();
 
   // declare a new variable in the current block
-  const LocalVariable* declare_variable(const ref<Name>&, const ref<Node>&, bool constant = false);
+  const LocalVariable* declare_variable(const ref<Name>&, const ref<Node>&, bool constant = false, bool force_local = false);
 
   virtual bool inspect_enter(const ref<Function>&) override;
   virtual void inspect_leave(const ref<Function>&) override;

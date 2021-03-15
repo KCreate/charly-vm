@@ -120,7 +120,8 @@ struct BlockScope {
   // register a new variable inside this block
   const LocalVariable* alloc_slot(const ast::ref<ast::Name>& symbol,
                                   const ast::ref<ast::Node>& declaration,
-                                  bool constant = false);
+                                  bool constant = false,
+                                  bool force_local = false);
 
   // check wether a given symbol was already declared inside this block
   bool symbol_declared(const std::string& symbol);

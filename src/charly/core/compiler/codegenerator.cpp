@@ -243,6 +243,16 @@ void CodeGenerator::inspect_leave(const ref<Null>&) {
   m_builder.emit_load(VALUE::Null());
 }
 
+void CodeGenerator::inspect_leave(const ref<Self>&) {
+
+  // arrow functions need to load their self value from the parent frame
+  if (m_function_queue.front().ast->ir_info.arrow_function) {
+    m_builder.emit_loadcontextself();
+  } else {
+    m_builder.emit_loadlocal(0);
+  }
+}
+
 void CodeGenerator::inspect_leave(const ast::ref<ast::MemberOp>& node) {
   m_builder.emit_loadattr(node->member->value);
 }

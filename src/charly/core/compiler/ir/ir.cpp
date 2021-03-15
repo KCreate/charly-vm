@@ -170,9 +170,9 @@ void IRFunction::dump(std::ostream& out) const {
   writer.fg(Color::Grey, ".minargc = ");
   writer.fg(Color::Green, (uint32_t)this->ast->ir_info.minargc, "\n");
   writer.fg(Color::Grey, ".spread = ");
-  writer.fg(Color::Green, this->ast->ir_info.arrow_function ? "true" : "false", "\n");
-  writer.fg(Color::Grey, ".arrow = ");
   writer.fg(Color::Green, this->ast->ir_info.spread_argument ? "true" : "false", "\n");
+  writer.fg(Color::Grey, ".arrow = ");
+  writer.fg(Color::Green, this->ast->ir_info.arrow_function ? "true" : "false", "\n");
   writer.fg(Color::Yellow, ".body", "\n");
 
   IRStatement::Type last_type = IRStatement::Type::LabelDefinition;

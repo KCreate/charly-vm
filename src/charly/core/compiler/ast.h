@@ -708,6 +708,7 @@ public:
   template <typename... Args>
   Function(bool arrow_function, ref<Name> name, ref<Block> body, Args&&... params) :
     toplevel_function(false),
+    class_constructor(false),
     arrow_function(arrow_function),
     name(name),
     body(body),
@@ -721,6 +722,9 @@ public:
 
   // wether the function contains REPL input
   bool toplevel_function;
+
+  // wether the function is a constructor
+  bool class_constructor;
 
   bool arrow_function;
   ref<Name> name;

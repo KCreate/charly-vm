@@ -96,6 +96,7 @@ private:
   virtual void inspect_leave(const ast::ref<ast::String>&) override;
   virtual void inspect_leave(const ast::ref<ast::FormatString>&) override;
   virtual void inspect_leave(const ast::ref<ast::Null>&) override;
+  virtual void inspect_leave(const ast::ref<ast::Self>&) override;
   virtual bool inspect_enter(const ast::ref<ast::Function>&) override;
 
   virtual void inspect_leave(const ast::ref<ast::MemberOp>&) override;

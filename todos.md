@@ -1,7 +1,5 @@
 # Todos
 
-- Store filename in compiled module somewhere
-
 - CodeGenerator
   - Codegen super
   - Codegen classes
@@ -17,9 +15,6 @@
   - Try statements
   - Switch statements
   - For statements
-  - Load self value via first function argument
-    - arrow functions ignore that argument and always use the `loadcontextself` instruction for self loads
-  - Allocate local slot for return value
   - Generate default argument and self initializers
 
 - Runtime representation of functions
@@ -34,6 +29,7 @@
     - Can we determine the frame-relative stack size at a specific position?
 
 - Source Mapping
+  - Store filename in compiled module somewhere
   - Set source line before each instruction that is emitted
 
 - Build control-flow-graph and remove dead blocks

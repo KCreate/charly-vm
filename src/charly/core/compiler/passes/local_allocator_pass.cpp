@@ -46,7 +46,8 @@ void LocalAllocatorPass::pop_block() {
 
 const LocalVariable* LocalAllocatorPass::declare_variable(const ref<Name>& name,
                                                           const ref<Node>& declaration,
-                                                          bool constant) {
+                                                          bool constant,
+                                                          bool force_local) {
   // check if this block already contains a declaration for this variable
   if (m_block->symbol_declared(name->value)) {
     const auto* variable = m_block->lookup_symbol(name->value);
@@ -55,7 +56,7 @@ const LocalVariable* LocalAllocatorPass::declare_variable(const ref<Name>& name,
     return nullptr;
   }
 
-  const auto* variable = m_block->alloc_slot(name, declaration, constant);
+  const auto* variable = m_block->alloc_slot(name, declaration, constant, force_local);
   if (variable) {
     name->ir_location = variable->value_location;
   }
@@ -71,6 +72,8 @@ bool LocalAllocatorPass::inspect_enter(const ref<Function>& node) {
   node->ir_info.argc = node->argc();
   node->ir_info.minargc = node->minimum_argc();
   node->ir_info.arrow_function = node->arrow_function;
+
+  declare_variable(make<Name>("self"), node, true, true);
 
   // register function node arguments as local variables
   for (const ref<FunctionArgument>& argument : node->arguments) {

@@ -24,9 +24,20 @@
  * SOFTWARE.
  */
 
+let message = null
+
+class Point {
+  property x
+  property y
+
+  constructor(@x, @y) {
+    return 42
+  }
+}
+
 func add(x, y) {
-  print("hello world")
+  const tmp = message = "hello world"
   return x + y
 }
 
-print("hello {add(1, 2)}")
+print("{message} {add(1, 2)}")
