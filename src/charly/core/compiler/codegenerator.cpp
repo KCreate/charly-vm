@@ -73,7 +73,15 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
 
   // function return block
   m_builder.place_label(return_label);
-  m_builder.emit_ret();
+  if (queued_func.ast->class_constructor) {
+
+    // class constructors must always return self
+    m_builder.emit_loadlocal(0);
+    m_builder.emit_setlocal(1);
+    m_builder.emit_ret();
+  } else {
+    m_builder.emit_ret();
+  }
 
   // emit string table
   std::unordered_map<SYMBOL, Label> emitted_strings;
@@ -190,6 +198,9 @@ bool CodeGenerator::inspect_enter(const ref<Block>& node) {
 }
 
 void CodeGenerator::inspect_leave(const ref<Return>&) {
+
+  // store return value at the return value slot
+  m_builder.emit_setlocal(1);
   m_builder.emit_jmp(active_return_label());
 }
 

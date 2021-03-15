@@ -73,7 +73,9 @@ bool LocalAllocatorPass::inspect_enter(const ref<Function>& node) {
   node->ir_info.minargc = node->minimum_argc();
   node->ir_info.arrow_function = node->arrow_function;
 
+  // declare local slots for self and return value
   declare_variable(make<Name>("self"), node, true, true);
+  declare_variable(make<Name>("ret"), node, false, true);
 
   // register function node arguments as local variables
   for (const ref<FunctionArgument>& argument : node->arguments) {

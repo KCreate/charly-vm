@@ -1329,6 +1329,7 @@ ref<Class> Parser::parse_class() {
             m_console.error(function, "duplicate declaration of class constructor");
           } else {
             node->constructor = function;
+            function->class_constructor = true;
           }
         } else {
           node->member_functions.push_back(function);

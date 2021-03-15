@@ -118,12 +118,6 @@ ref<Expression> DesugarPass::transform(const ref<FormatString>& node) {
 
 void DesugarPass::inspect_leave(const ref<Function>& node) {
 
-  // check if the last statement in the functions body is a return statement
-  // if not, insert a return null node
-  if (node->body->statements.size() == 0 || node->body->statements.back()->type() != Node::Type::Return) {
-    node->body->statements.push_back(make<Return>(make<Null>()));
-  }
-
   // wrap regular functions with yield expressions inside a generator wrapper function
   if (!node->arrow_function) {
     // check if this function contains any yield statements
@@ -205,6 +199,7 @@ void DesugarPass::inspect_leave(const ref<Class>& node) {
   if (!node->parent) {
     if (node->constructor.get() == nullptr) {
       ref<Function> constructor = make<Function>(false, make<Name>("constructor"), make<Block>());
+      constructor->class_constructor = true;
 
       // initialize member variables
       for (const ref<ClassProperty>& prop : node->member_properties) {
