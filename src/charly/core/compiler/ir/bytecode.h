@@ -89,6 +89,7 @@ FOREACH_OPERANDTYPE(OPTYPE)
   /* stack management */                           \
   V(pop)                                           \
   V(dup)                                           \
+  V(swap)                                          \
                                                    \
   /* control flow */                               \
   V(jmp, OpOffset)                                 \
@@ -98,9 +99,7 @@ FOREACH_OPERANDTYPE(OPTYPE)
                                                    \
   /* function control flow */                      \
   V(call, OpCount8)                                \
-  V(callmember, OpSymbol, OpCount8)                \
   V(callspread, OpCount8)                          \
-  V(callmemberspread, OpSymbol, OpCount8)          \
   V(ret)                                           \
                                                    \
   /* load operations */                            \

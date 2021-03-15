@@ -1117,6 +1117,8 @@ public:
   ref<Expression> target;
   std::vector<ref<Expression>> arguments;
 
+  bool has_spread_elements() const;
+
   CHILDREN() {
     CHILD_NODE(target);
     CHILD_VECTOR(arguments);
@@ -1158,6 +1160,8 @@ public:
   ref<Name> member;
   std::vector<ref<Expression>> arguments;
 
+  bool has_spread_elements() const;
+
   CHILDREN() {
     CHILD_NODE(target);
     CHILD_VECTOR(arguments);
@@ -1188,6 +1192,8 @@ public:
   ref<Expression> target;
   ref<Expression> index;
   std::vector<ref<Expression>> arguments;
+
+  bool has_spread_elements() const;
 
   CHILDREN() {
     CHILD_NODE(target);

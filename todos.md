@@ -1,13 +1,9 @@
 # Todos
 
 - CodeGenerator
-  - Primitive data structures
-    - Generate specific variants with spread
-  - Calls
-    - Regular / Member
-    - Simple / Spread
-  - Declarations
-    - UnpackSpread
+  - Primitive data structures with spread elements
+  - Spread calls
+  - UnpackSpread declarations
   - Assignments
     - Unpack
     - UnpackSpread

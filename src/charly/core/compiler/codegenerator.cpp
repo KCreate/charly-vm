@@ -371,6 +371,57 @@ void CodeGenerator::inspect_leave(const ref<UnaryOp>& node) {
   m_builder.emit(kUnaryopOpcodeMapping.at(node->operation));
 }
 
+bool CodeGenerator::inspect_enter(const ast::ref<ast::CallOp>& node) {
+  if (node->has_spread_elements()) {
+    assert(false && "not implemented");
+  } else {
+    m_builder.emit_load(VALUE::Null());
+    apply(node->target);
+    for (const auto& arg : node->arguments) {
+      apply(arg);
+    }
+
+    m_builder.emit_call(node->arguments.size());
+  }
+
+  return false;
+}
+
+bool CodeGenerator::inspect_enter(const ast::ref<ast::CallMemberOp>& node) {
+  if (node->has_spread_elements()) {
+    assert(false && "not implemented");
+  } else {
+    apply(node->target);
+    m_builder.emit_dup();
+    m_builder.emit_loadattr(node->member->value);
+    for (const auto& arg : node->arguments) {
+      apply(arg);
+    }
+
+    m_builder.emit_call(node->arguments.size());
+  }
+
+  return false;
+}
+
+bool CodeGenerator::inspect_enter(const ast::ref<ast::CallIndexOp>& node) {
+  if (node->has_spread_elements()) {
+    assert(false && "not implemented");
+  } else {
+    apply(node->target);
+    m_builder.emit_dup();
+    apply(node->index);
+    m_builder.emit_loadattrvalue();
+    for (const auto& arg : node->arguments) {
+      apply(arg);
+    }
+
+    m_builder.emit_call(node->arguments.size());
+  }
+
+  return false;
+}
+
 void CodeGenerator::inspect_leave(const ref<Declaration>& node) {
 
   // global declarations

@@ -127,6 +127,10 @@ void Builder::emit_dup() {
   emit(Opcode::dup);
 }
 
+void Builder::emit_swap() {
+  emit(Opcode::swap);
+}
+
 // control flow
 void Builder::emit_jmp(OpOffset label) {
   emit(Opcode::jmp, IROperandOffset::make(label));
@@ -149,18 +153,8 @@ void Builder::emit_call(OpCount8 count) {
   emit(Opcode::call, IROperandCount8::make(count));
 }
 
-void Builder::emit_callmember(OpSymbol symbol, OpCount8 count) {
-  emit(Opcode::callmember, IROperandSymbol::make(symbol), IROperandCount8::make(count));
-  register_symbol(symbol);
-}
-
 void Builder::emit_callspread(OpCount8 count) {
   emit(Opcode::callspread, IROperandCount8::make(count));
-}
-
-void Builder::emit_callmemberspread(OpSymbol symbol, OpCount8 count) {
-  emit(Opcode::callmemberspread, IROperandSymbol::make(symbol), IROperandCount8::make(count));
-  register_symbol(symbol);
 }
 
 void Builder::emit_ret() {

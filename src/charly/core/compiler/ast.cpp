@@ -368,6 +368,33 @@ void UnaryOp::dump_info(std::ostream& out) const {
   writer.fg(Color::Blue, kTokenTypeStrings[static_cast<int>(this->operation)]);
 }
 
+bool CallOp::has_spread_elements() const {
+  for (const auto& exp : this->arguments) {
+    if (isa<Spread>(exp))
+      return true;
+  }
+
+  return false;
+}
+
+bool CallMemberOp::has_spread_elements() const {
+  for (const auto& exp : this->arguments) {
+    if (isa<Spread>(exp))
+      return true;
+  }
+
+  return false;
+}
+
+bool CallIndexOp::has_spread_elements() const {
+  for (const auto& exp : this->arguments) {
+    if (isa<Spread>(exp))
+      return true;
+  }
+
+  return false;
+}
+
 void CallMemberOp::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';
