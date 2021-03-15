@@ -944,10 +944,53 @@ ref<Expression> Parser::parse_literal() {
     case TokenType::Super: {
       return parse_super_token();
     }
+    case TokenType::Builtin: {
+      return parse_builtin();
+    }
     default: {
       unexpected_token("expected an expression");
     }
   }
+}
+
+ref<Expression> Parser::parse_builtin() {
+  Location begin = m_token.location;
+  eat(TokenType::Builtin);
+  eat(TokenType::LeftParen);
+
+  ref<String> name_str = parse_string_token();
+  ref<Name> name = make<Name>(name_str->value);
+
+  // check if this is a valid builtin name
+  if (ir::kBuiltinNameMapping.count(name->value) == 0) {
+
+    // eat remaining closing paren
+    eat(TokenType::RightParen);
+
+    m_console.error(name_str, "unknown builtin operation '", name->value, "'");
+    return make<Null>();
+  }
+
+  ref<BuiltinOperation> builtin = make<BuiltinOperation>(name);
+  builtin->set_begin(begin);
+  while (skip(TokenType::Comma)) {
+    ref<Expression> exp = parse_expression();
+    builtin->arguments.push_back(exp);
+  }
+
+  // eat remaining closing paren
+  builtin->set_end(m_token.location);
+  eat(TokenType::RightParen);
+
+  // check for correct amount of arguments
+  int32_t got = builtin->arguments.size();
+  int32_t expected = ir::kBuiltinArgumentCount[(uint32_t)(builtin->operation)];
+  if (expected != -1 && got != expected) {
+    m_console.error(builtin, "incorrect amount of arguments. expected ", expected, ", got ", got);
+    return make<Null>();
+  }
+
+  return builtin;
 }
 
 ref<FormatString> Parser::parse_format_string() {

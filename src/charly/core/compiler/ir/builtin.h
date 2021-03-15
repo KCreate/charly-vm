@@ -78,7 +78,6 @@ namespace charly::core::compiler::ir {
    */                                                   \
   V(caststring, 1)                                      \
   V(castsymbol, 1)                                      \
-  V(castgenerator, 1)                                   \
   V(castiterator, 1)
 
 

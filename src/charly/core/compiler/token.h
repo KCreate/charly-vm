@@ -55,6 +55,7 @@ enum class TokenType {
   As,
   Await,
   Break,
+  Builtin,
   Case,
   Catch,
   Class,
@@ -147,7 +148,7 @@ enum class TokenType {
 // string representations of token types
 static std::string kTokenTypeStrings[] = {
   "EOF",      "integer",   "float",   "true",  "false",  "identifier", "character", "string",  "formatstring",
-  "null",     "self",      "super",   "as",    "await",  "break",      "case",      "catch",   "class",
+  "null",     "self",      "super",   "as",    "await",  "break",      "__builtin", "case",      "catch",   "class",
   "const",    "continue",  "default", "defer", "do",     "else",       "export",    "extends", "finally",
   "for",      "func",      "guard",   "if",    "import", "in",         "let",       "loop",    "match",
   "operator", "property",  "return",  "spawn", "static", "switch",     "throw",     "try",     "typeof",
@@ -173,6 +174,7 @@ static const std::unordered_map<std::string, TokenType> kKeywordsAndLiterals = {
                                                                                  { "as", TokenType::As },
                                                                                  { "await", TokenType::Await },
                                                                                  { "break", TokenType::Break },
+                                                                                 { "__builtin", TokenType::Builtin },
                                                                                  { "case", TokenType::Case },
                                                                                  { "catch", TokenType::Catch },
                                                                                  { "class", TokenType::Class },

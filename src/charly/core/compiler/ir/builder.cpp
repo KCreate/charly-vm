@@ -97,11 +97,30 @@ void Builder::emit_nop() {
   emit(Opcode::nop);
 }
 
+void Builder::emit_halt() {
+  emit(Opcode::halt);
+}
+
 // misc. instructions
+void Builder::emit_import() {
+  emit(Opcode::import);
+}
+
+void Builder::emit_stringconcat(OpCount8 count) {
+  emit(Opcode::stringconcat, IROperandCount8::make(count));
+}
+
+void Builder::emit_type() {
+  emit(Opcode::type);
+}
 
 // stack management
 void Builder::emit_pop() {
   emit(Opcode::pop);
+}
+
+void Builder::emit_dup() {
+  emit(Opcode::dup);
 }
 
 // control flow
@@ -122,6 +141,24 @@ void Builder::emit_throwex() {
 }
 
 // function control flow
+void Builder::emit_call(OpCount8 count) {
+  emit(Opcode::call, IROperandCount8::make(count));
+}
+
+void Builder::emit_callmember(OpSymbol symbol, OpCount8 count) {
+  emit(Opcode::callmember, IROperandSymbol::make(symbol), IROperandCount8::make(count));
+  register_symbol(symbol);
+}
+
+void Builder::emit_callspread(OpCount8 count) {
+  emit(Opcode::callspread, IROperandCount8::make(count));
+}
+
+void Builder::emit_callmemberspread(OpSymbol symbol, OpCount8 count) {
+  emit(Opcode::callmemberspread, IROperandSymbol::make(symbol), IROperandCount8::make(count));
+  register_symbol(symbol);
+}
+
 void Builder::emit_ret() {
   emit(Opcode::ret);
 }
@@ -129,6 +166,10 @@ void Builder::emit_ret() {
 // load operations
 void Builder::emit_load(OpImmediate value) {
   emit(Opcode::load, IROperandImmediate::make(value));
+}
+
+void Builder::emit_loadcontextself() {
+  emit(Opcode::loadcontextself);
 }
 
 void Builder::emit_loadglobal(OpSymbol symbol) {
@@ -153,6 +194,15 @@ void Builder::emit_loadattrvalue() {
   emit(Opcode::loadattrvalue);
 }
 
+void Builder::emit_loadsuper() {
+  emit(Opcode::loadsuper);
+}
+
+void Builder::emit_loadsuperattr(OpSymbol symbol) {
+  emit(Opcode::loadsuperattr, IROperandSymbol::make(symbol));
+  register_symbol(symbol);
+}
+
 // write operations
 void Builder::emit_setglobal(OpSymbol symbol) {
   emit(Opcode::setglobal, IROperandSymbol::make(symbol));
@@ -167,18 +217,181 @@ void Builder::emit_setfar(OpCount8 depth, OpCount8 offset) {
   emit(Opcode::setfar, IROperandCount8::make(depth), IROperandCount8::make(offset));
 }
 
+void Builder::emit_setattr(OpSymbol symbol) {
+  emit(Opcode::setattr, IROperandSymbol::make(symbol));
+  register_symbol(symbol);
+}
+
+void Builder::emit_setattrvalue() {
+  emit(Opcode::setattrvalue);
+}
+
 // value destructuring operations
+void Builder::emit_unpacksequence(OpCount8 count) {
+  emit(Opcode::unpacksequence, IROperandCount8::make(count));
+}
+
+void Builder::emit_unpacksequencespread(OpCount8 before, OpCount8 after) {
+  emit(Opcode::unpacksequencespread, IROperandCount8::make(before), IROperandCount8::make(after));
+}
+
+void Builder::emit_unpackobject(OpCount8 count) {
+  emit(Opcode::unpackobject, IROperandCount8::make(count));
+}
+
+void Builder::emit_unpackobjectspread(OpCount8 count) {
+  emit(Opcode::unpackobjectspread, IROperandCount8::make(count));
+}
 
 // value allocation
 void Builder::emit_makefunc(OpOffset offset) {
   emit(Opcode::makefunc, IROperandOffset::make(offset));
 }
+
+void Builder::emit_makeclass(OpOffset offset) {
+  emit(Opcode::makeclass, IROperandOffset::make(offset));
+}
+
 void Builder::emit_makestr(OpOffset offset) {
   emit(Opcode::makestr, IROperandOffset::make(offset));
 }
 
+void Builder::emit_makearr(OpCount16 count) {
+  emit(Opcode::makearr, IROperandCount16::make(count));
+}
+
+void Builder::emit_makearrspread(OpCount16 count) {
+  emit(Opcode::makearrspread, IROperandCount16::make(count));
+}
+
+void Builder::emit_makedict(OpCount16 count) {
+  emit(Opcode::makedict, IROperandCount16::make(count));
+}
+
+void Builder::emit_makedictspread(OpCount16 count) {
+  emit(Opcode::makedictspread, IROperandCount16::make(count));
+}
+
+void Builder::emit_maketuple(OpCount16 count) {
+  emit(Opcode::maketuple, IROperandCount16::make(count));
+}
+
+void Builder::emit_maketuplespread(OpCount16 count) {
+  emit(Opcode::maketuplespread, IROperandCount16::make(count));
+}
+
 // fiber management
+void Builder::emit_fibercreate() {
+  emit(Opcode::fibercreate);
+}
+
+void Builder::emit_fiberspawn() {
+  emit(Opcode::fiberspawn);
+}
+
+void Builder::emit_fiberyield() {
+  emit(Opcode::fiberyield);
+}
+
+void Builder::emit_fiberawait() {
+  emit(Opcode::fiberawait);
+}
 
 // cast operations
+void Builder::emit_caststring() {
+  emit(Opcode::caststring);
+}
+
+// iterator operations
+void Builder::emit_iteratornext() {
+  emit(Opcode::iteratornext);
+}
+
+// arithmetic operations
+void Builder::emit_add() {
+  emit(Opcode::add);
+}
+
+void Builder::emit_sub() {
+  emit(Opcode::sub);
+}
+
+void Builder::emit_mul() {
+  emit(Opcode::mul);
+}
+
+void Builder::emit_div() {
+  emit(Opcode::div);
+}
+
+void Builder::emit_mod() {
+  emit(Opcode::mod);
+}
+
+void Builder::emit_pow() {
+  emit(Opcode::pow);
+}
+
+void Builder::emit_usub() {
+  emit(Opcode::usub);
+}
+
+// arithmetic operations
+void Builder::emit_eq() {
+  emit(Opcode::eq);
+}
+
+void Builder::emit_neq() {
+  emit(Opcode::neq);
+}
+
+void Builder::emit_lt() {
+  emit(Opcode::lt);
+}
+
+void Builder::emit_gt() {
+  emit(Opcode::gt);
+}
+
+void Builder::emit_le() {
+  emit(Opcode::le);
+}
+
+void Builder::emit_ge() {
+  emit(Opcode::ge);
+}
+
+void Builder::emit_unot() {
+  emit(Opcode::unot);
+}
+
+// bitwise operations
+void Builder::emit_shl() {
+  emit(Opcode::shl);
+}
+
+void Builder::emit_shr() {
+  emit(Opcode::shr);
+}
+
+void Builder::emit_shru() {
+  emit(Opcode::shru);
+}
+
+void Builder::emit_band() {
+  emit(Opcode::band);
+}
+
+void Builder::emit_bor() {
+  emit(Opcode::bor);
+}
+
+void Builder::emit_bxor() {
+  emit(Opcode::bxor);
+}
+
+void Builder::emit_ubnot() {
+  emit(Opcode::ubnot);
+}
 
 }  // namespace charly::core::compiler::ir

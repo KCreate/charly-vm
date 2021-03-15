@@ -1,19 +1,27 @@
 # Todos
 
-- Immediate value encoding
-  - Pointer tagging
-  - NaN boxing
-
 - Store filename in compiled module somewhere
 
 - CodeGenerator
-  - Store return value in local offset 0
+  - Codegen ternary expressions
+  - Codegen super
+  - Codegen classes
+  - Codegen arrays, dicts and tuples
+    - Spread handlers
+  - Codegen call expressions
+    - Spread calls
+  - Global declarations
+  - Unpack declarations
+  - Operator assignments
+  - Unpack assignments
+  - Member/index assignments
+  - Try statements
+  - Switch statements
+  - For statements
+  - Load self value via first function argument
+    - arrow functions ignore that argument and always use the `loadcontextself` instruction for self loads
+  - Allocate local slot for return value
   - Generate default argument and self initializers
-  - Does the VM put the function arguments into the stack frame or do
-    we need to pop them from the stack at the beginning of the function
-
-- Make the self value an argument of every function
-  - Arrow functions codegen the self via loadcontextself
 
 - Runtime representation of functions
   - How does the `makefunc` instruction create a new function?
@@ -26,7 +34,8 @@
   - How do we know how many values to pop off the stack?
     - Can we determine the frame-relative stack size at a specific position?
 
-- source mapping
+- Source Mapping
+  - Set source line before each instruction that is emitted
 
 - Build control-flow-graph and remove dead blocks
 
@@ -89,6 +98,10 @@
 - Argument-Indexing identifiers
   - $0, $1 syntax
   - In-bounds identifiers can be replaced by the actual arguments
+
+- Computed property methods
+  - clases should be able to define property methods like `property length { ... }`
+  - inline caches could store the function reference and call it directly
 
 - Stream coloring on macOS
   - termcolor::_internal::is_colorized returns false, manually executing the function body returns true???

@@ -94,6 +94,7 @@ private:
   virtual void inspect_leave(const ast::ref<ast::Bool>&) override;
   virtual void inspect_leave(const ast::ref<ast::Char>&) override;
   virtual void inspect_leave(const ast::ref<ast::String>&) override;
+  virtual void inspect_leave(const ast::ref<ast::FormatString>&) override;
   virtual void inspect_leave(const ast::ref<ast::Null>&) override;
   virtual bool inspect_enter(const ast::ref<ast::Function>&) override;
 
@@ -107,6 +108,8 @@ private:
 
   virtual bool inspect_enter(const ast::ref<ast::If>&) override;
   virtual bool inspect_enter(const ast::ref<ast::While>&) override;
+
+  virtual bool inspect_enter(const ast::ref<ast::BuiltinOperation>&) override;
 
   std::shared_ptr<CompilationUnit> m_unit;
   ir::Builder m_builder;

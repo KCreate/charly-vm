@@ -1390,6 +1390,12 @@ public:
 class BuiltinOperation final : public Expression {
   AST_NODE(BuiltinOperation)
 public:
+  BuiltinOperation(ref<Name> name) {
+    assert(ir::kBuiltinNameMapping.count(name->value));
+    this->operation = ir::kBuiltinNameMapping.at(name->value);
+    this->set_location(name);
+  }
+
   template <typename... Args>
   BuiltinOperation(ir::BuiltinId operation, Args&&... params) :
     operation(operation), arguments({ std::forward<Args>(params)... }) {

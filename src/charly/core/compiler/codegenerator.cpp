@@ -213,6 +213,10 @@ void CodeGenerator::inspect_leave(const ref<String>& node) {
   m_builder.emit_makestr(register_string(node->value));
 }
 
+void CodeGenerator::inspect_leave(const ref<FormatString>& node) {
+  m_builder.emit_stringconcat(node->elements.size());
+}
+
 void CodeGenerator::inspect_leave(const ref<Int>& node) {
   m_builder.emit_load(VALUE::Int(node->value));
 }
@@ -347,6 +351,29 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::While>& node) {
 
   pop_break_label();
   pop_continue_label();
+
+  return false;
+}
+
+bool CodeGenerator::inspect_enter(const ast::ref<ast::BuiltinOperation>& node) {
+  BuiltinId operation = node->operation;
+
+  // emit arguments
+  for (const ref<Expression>& exp : node->arguments) {
+    apply(exp);
+  }
+
+  switch (operation) {
+    case BuiltinId::stringconcat: {
+      m_builder.emit_stringconcat(node->arguments.size());
+      break;
+    }
+    default: {
+      assert(kBuiltinOperationOpcodeMapping.count(operation));
+      m_builder.emit(kBuiltinOperationOpcodeMapping.at(operation));
+      break;
+    }
+  }
 
   return false;
 }

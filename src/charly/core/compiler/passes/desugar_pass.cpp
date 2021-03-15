@@ -158,7 +158,7 @@ void DesugarPass::inspect_leave(const ref<Function>& node) {
     // transformed to:
     //
     // func foo(a = 1, b = 2, ...rest) {
-    //   return castgenerator(spawn ->(a, b, rest) {
+    //   return castiterator(spawn ->(a, b, rest) {
     //     yield 1
     //     yield a
     //     yield rest
@@ -183,8 +183,8 @@ void DesugarPass::inspect_leave(const ref<Function>& node) {
       // build wrapped spawn statement
       ref<Spawn> spawn = make<Spawn>(func_call);
       spawn->execute_immediately = false;
-      ref<BuiltinOperation> castgenerator = make<BuiltinOperation>(ir::BuiltinId::castgenerator, spawn);
-      ref<Return> return_node = make<Return>(castgenerator);
+      ref<BuiltinOperation> castiterator = make<BuiltinOperation>(ir::BuiltinId::castiterator, spawn);
+      ref<Return> return_node = make<Return>(castiterator);
       ref<Block> new_body = make<Block>(return_node);
 
       node->body = cast<Block>(apply(new_body));

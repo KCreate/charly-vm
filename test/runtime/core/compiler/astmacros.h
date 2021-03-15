@@ -32,6 +32,7 @@ using Catch::Matchers::Equals;
 
 using namespace charly::core::compiler;
 using namespace charly::core::compiler::ast;
+using namespace charly::core::compiler::ir;
 
 #define EXP(S, T)                                              \
   ([&]() {                                                     \

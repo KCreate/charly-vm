@@ -29,6 +29,7 @@
 #include <catch2/catch_all.hpp>
 
 #include "charly/core/compiler/parser.h"
+#include "charly/core/compiler/ir/builtin.h"
 
 #include "astmacros.h"
 
@@ -666,4 +667,18 @@ TEST_CASE("wraps functions and classes into declarations") {
                  make<Declaration>("foo", make<Function>(false, make<Name>("foo"), make<Block>()), true));
   CHECK_AST_STMT("class foo {}", make<Declaration>("foo", make<Class>("foo", nullptr), true));
   CHECK_AST_STMT("->{}", make<Function>(true, make<Name>(""), make<Block>()));
+}
+
+TEST_CASE("__builtin expressions") {
+  CHECK_AST_STMT("__builtin(\"stringconcat\")", make<BuiltinOperation>(BuiltinId::stringconcat));
+  CHECK_AST_STMT("__builtin(\"stringconcat\", x, y, z)",
+                 make<BuiltinOperation>(BuiltinId::stringconcat, make<Id>("x"), make<Id>("y"), make<Id>("z")));
+  CHECK_AST_STMT("__builtin(\"caststring\", x)", make<BuiltinOperation>(BuiltinId::caststring, make<Id>("x")));
+
+  CHECK_ERROR_STMT("__builtin", "unexpected end of file, expected a '(' token");
+  CHECK_ERROR_STMT("__builtin(", "unexpected end of file, expected a ')' token");
+  CHECK_ERROR_STMT("__builtin()", "unexpected ')' token, expected a 'string' token");
+  CHECK_ERROR_STMT("__builtin(x)", "unexpected 'identifier' token, expected a 'string' token");
+  CHECK_ERROR_STMT("__builtin(25)", "unexpected numerical constant, expected a 'string' token");
+  CHECK_ERROR_STMT("__builtin(\"caststring\")", "incorrect amount of arguments. expected 1, got 0");
 }

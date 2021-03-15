@@ -104,7 +104,7 @@ FOREACH_OPERANDTYPE(OPTYPE)
                                               \
   /* load operations */                       \
   V(load, OpImmediate)                        \
-  V(loadself)                                 \
+  V(loadcontextself)                          \
   V(loadglobal, OpSymbol)                     \
   V(loadlocal, OpCount8)                      \
   V(loadfar, OpCount8, OpCount8)              \
@@ -131,8 +131,11 @@ FOREACH_OPERANDTYPE(OPTYPE)
   V(makeclass, OpOffset)                      \
   V(makestr, OpOffset)                        \
   V(makearr, OpCount16)                       \
+  V(makearrspread, OpCount16)                 \
   V(makedict, OpCount16)                      \
+  V(makedictspread, OpCount16)                \
   V(maketuple, OpCount16)                     \
+  V(maketuplespread, OpCount16)               \
                                               \
   /* fiber management */                      \
   V(fibercreate)                              \
@@ -144,6 +147,9 @@ FOREACH_OPERANDTYPE(OPTYPE)
   V(caststring)                               \
   V(castsymbol)                               \
   V(castiterator)                             \
+                                              \
+  /* iterator operations */                   \
+  V(iteratornext)                             \
                                               \
   /* arithmetic operations */                 \
   V(add)                                      \
@@ -233,6 +239,18 @@ static std::unordered_map<TokenType, Opcode> kUnaryopOpcodeMapping = {
   { TokenType::Minus, Opcode::usub, },
   { TokenType::UnaryNot, Opcode::unot, },
   { TokenType::BitNOT, Opcode::ubnot, },
+};
+
+static std::unordered_map<BuiltinId, Opcode> kBuiltinOperationOpcodeMapping = {
+  { BuiltinId::fibercreate,  Opcode::fibercreate,  },
+  { BuiltinId::fiberspawn,   Opcode::fiberspawn,   },
+  { BuiltinId::fiberyield,   Opcode::fiberyield,   },
+  { BuiltinId::importmodule, Opcode::import,       },
+  { BuiltinId::iteratornext, Opcode::iteratornext, },
+  { BuiltinId::stringconcat, Opcode::stringconcat, },
+  { BuiltinId::caststring,   Opcode::caststring,   },
+  { BuiltinId::castsymbol,   Opcode::castsymbol,   },
+  { BuiltinId::castiterator, Opcode::castiterator, },
 };
 // clang-format on
 

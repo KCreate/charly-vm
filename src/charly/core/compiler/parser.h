@@ -173,6 +173,7 @@ private:
   ref<MemberOp> parse_member(ref<Expression> target);
   ref<IndexOp> parse_index(ref<Expression> target);
   ref<Expression> parse_literal();
+  ref<Expression> parse_builtin();
 
   // compound literals
   ref<FormatString> parse_format_string();
