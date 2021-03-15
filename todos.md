@@ -3,7 +3,6 @@
 - Store filename in compiled module somewhere
 
 - CodeGenerator
-  - Codegen ternary expressions
   - Codegen super
   - Codegen classes
   - Codegen arrays, dicts and tuples

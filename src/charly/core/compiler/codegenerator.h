@@ -101,6 +101,7 @@ private:
   virtual void inspect_leave(const ast::ref<ast::MemberOp>&) override;
   virtual void inspect_leave(const ast::ref<ast::IndexOp>&) override;
   virtual bool inspect_enter(const ast::ref<ast::Assignment>&) override;
+  virtual bool inspect_enter(const ast::ref<ast::Ternary>&) override;
   virtual void inspect_leave(const ast::ref<ast::BinaryOp>&) override;
   virtual void inspect_leave(const ast::ref<ast::UnaryOp>&) override;
 

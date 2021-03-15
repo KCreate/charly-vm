@@ -267,6 +267,21 @@ bool CodeGenerator::inspect_enter(const ref<Assignment>& node) {
   return false;
 }
 
+bool CodeGenerator::inspect_enter(const ref<Ternary>& node) {
+  Label else_label = m_builder.reserve_label();
+  Label end_label = m_builder.reserve_label();
+
+  apply(node->condition);
+  m_builder.emit_jmpf(else_label);
+  apply(node->then_exp);
+  m_builder.emit_jmp(end_label);
+  m_builder.place_label(else_label);
+  apply(node->else_exp);
+  m_builder.place_label(end_label);
+
+  return false;
+}
+
 void CodeGenerator::inspect_leave(const ref<BinaryOp>& node) {
   switch (node->operation) {
     default: {
