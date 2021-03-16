@@ -24,10 +24,6 @@
  * SOFTWARE.
  */
 
-class A {
-  foo {
-    for const y in @height {
-      print("{x}, {y}")
-    }
-  }
-}
+let (a, b, c) = list
+
+(a, b, c) = list

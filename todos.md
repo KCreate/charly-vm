@@ -1,11 +1,7 @@
 # Todos
 
 - CodeGenerator
-  - Unpack declarations
-  - UnpackSpread declarations
   - Assignments
-    - Unpack
-    - UnpackSpread
     - Operator assignments
   - Try statements
   - Switch statements
@@ -13,6 +9,11 @@
   - Classes
   - super expressions
   - Generate default argument and self initializers
+
+- Fix syntax for object unpack assignments
+  - Parser treats it like a source block
+  - Introduce new syntax for a single block
+    - Automatically detect wether its a block or dict literal???
 
 - Exception tables
   - Store start, end and handler label

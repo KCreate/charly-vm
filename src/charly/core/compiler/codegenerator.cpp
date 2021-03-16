@@ -173,6 +173,54 @@ uint8_t CodeGenerator::generate_spread_tuples(const std::vector<ast::ref<ast::Ex
   return emitted_segments;
 }
 
+void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target) {
+  bool spread_passed = false;
+  uint8_t count_before = 0;
+  uint8_t count_after = 0;
+
+  // count elements before and after the spread
+  for (const ref<UnpackTargetElement>& element : target->elements) {
+    if (element->spread) {
+      assert(!spread_passed);
+      spread_passed = true;
+      continue;
+    }
+
+    if (target->object_unpack) {
+      m_builder.emit_loadsymbol(element->name->value);
+    }
+
+    if (spread_passed) {
+      count_after++;
+    } else {
+      count_before++;
+    }
+  }
+
+  // unpack the source expressions
+  if (target->object_unpack) {
+    if (spread_passed) {
+      m_builder.emit_unpackobjectspread(target->elements.size() - 1);
+    } else {
+      m_builder.emit_unpackobject(target->elements.size());
+    }
+  } else {
+    if (spread_passed) {
+      m_builder.emit_unpacksequencespread(count_before, count_after);
+    } else {
+      m_builder.emit_unpacksequence(count_before);
+    }
+  }
+
+  // store the unpacked values into their allocated locations
+  for (auto begin = target->elements.rbegin();
+      begin != target->elements.rend();
+      begin++) {
+    generate_store((*begin)->ir_location);
+    m_builder.emit_pop();
+  }
+}
+
 Label CodeGenerator::active_return_label() const {
   assert(m_return_stack.size());
   return m_return_stack.top();
@@ -379,6 +427,12 @@ bool CodeGenerator::inspect_enter(const ref<Assignment>& node) {
   return false;
 }
 
+bool CodeGenerator::inspect_enter(const ref<UnpackAssignment>& node) {
+  apply(node->source);
+  generate_unpack_assignment(node->target);
+  return false;
+}
+
 bool CodeGenerator::inspect_enter(const ref<MemberAssignment>& node) {
   switch (node->operation) {
     case TokenType::Assignment: {
@@ -504,15 +558,32 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::CallIndexOp>& node) {
   return false;
 }
 
-void CodeGenerator::inspect_leave(const ref<Declaration>& node) {
+bool CodeGenerator::inspect_enter(const ref<Declaration>& node) {
 
   // global declarations
   if (node->ir_location.type == ValueLocation::Type::Global) {
     m_builder.emit_declareglobal(node->name->value);
   }
 
+  apply(node->expression);
   generate_store(node->ir_location);
+  m_builder.register_symbol(node->name->value);
   m_builder.emit_pop();
+
+  return false;
+}
+
+bool CodeGenerator::inspect_enter(const ref<UnpackDeclaration>& node) {
+  for (const ref<UnpackTargetElement>& element : node->target->elements) {
+    // global declarations
+    if (element->ir_location.type == ValueLocation::Type::Global) {
+      m_builder.emit_declareglobal(element->name->value);
+    }
+  }
+
+  apply(node->expression);
+  generate_unpack_assignment(node->target);
+  return false;
 }
 
 bool CodeGenerator::inspect_enter(const ast::ref<ast::If>& node) {

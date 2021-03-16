@@ -74,6 +74,9 @@ private:
   // returns the total amount of tuples pushed
   uint8_t generate_spread_tuples(const std::vector<ast::ref<ast::Expression>>& vec);
 
+  // generate an assignment to an unpack target
+  void generate_unpack_assignment(const ast::ref<ast::UnpackTarget>& target);
+
   // label stacks
   ir::Label active_return_label() const;
   ir::Label active_break_label() const;
@@ -110,6 +113,7 @@ private:
   virtual void inspect_leave(const ast::ref<ast::MemberOp>&) override;
   virtual void inspect_leave(const ast::ref<ast::IndexOp>&) override;
   virtual bool inspect_enter(const ast::ref<ast::Assignment>&) override;
+  virtual bool inspect_enter(const ast::ref<ast::UnpackAssignment>&) override;
   virtual bool inspect_enter(const ast::ref<ast::MemberAssignment>&) override;
   virtual bool inspect_enter(const ast::ref<ast::IndexAssignment>&) override;
   virtual bool inspect_enter(const ast::ref<ast::Ternary>&) override;
@@ -119,7 +123,8 @@ private:
   virtual bool inspect_enter(const ast::ref<ast::CallMemberOp>&) override;
   virtual bool inspect_enter(const ast::ref<ast::CallIndexOp>&) override;
 
-  virtual void inspect_leave(const ast::ref<ast::Declaration>&) override;
+  virtual bool inspect_enter(const ast::ref<ast::Declaration>&) override;
+  virtual bool inspect_enter(const ast::ref<ast::UnpackDeclaration>&) override;
 
   virtual bool inspect_enter(const ast::ref<ast::If>&) override;
   virtual bool inspect_enter(const ast::ref<ast::While>&) override;
