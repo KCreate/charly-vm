@@ -70,6 +70,10 @@ private:
   void generate_load(const ir::ValueLocation&);
   void generate_store(const ir::ValueLocation&);
 
+  // generate spread tuples for a list of expressions
+  // returns the total amount of tuples pushed
+  uint8_t generate_spread_tuples(const std::vector<ast::ref<ast::Expression>>& vec);
+
   // label stacks
   ir::Label active_return_label() const;
   ir::Label active_break_label() const;

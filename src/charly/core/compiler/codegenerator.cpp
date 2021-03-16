@@ -142,6 +142,37 @@ void CodeGenerator::generate_store(const ValueLocation& location) {
   }
 }
 
+uint8_t CodeGenerator::generate_spread_tuples(const std::vector<ast::ref<ast::Expression>>& vec) {
+  uint8_t elements_in_last_segment = 0;
+  uint8_t emitted_segments = 0;
+
+  // adjacent expressions that are not wrapped inside the Spread node are
+  // grouped together into tuples
+  for (const ref<Expression>& exp : vec) {
+    if (ref<Spread> spread = cast<Spread>(exp)) {
+      if (elements_in_last_segment) {
+        m_builder.emit_maketuple(elements_in_last_segment);
+        emitted_segments++;
+        elements_in_last_segment = 0;
+      }
+
+      apply(spread->expression);
+      emitted_segments++;
+    } else {
+      apply(exp);
+      elements_in_last_segment++;
+    }
+  }
+
+  // wrap remaining elements
+  if (elements_in_last_segment) {
+    emitted_segments++;
+    m_builder.emit_maketuple(elements_in_last_segment);
+  }
+
+  return emitted_segments;
+}
+
 Label CodeGenerator::active_return_label() const {
   assert(m_return_stack.size());
   return m_return_stack.top();
@@ -271,30 +302,7 @@ void CodeGenerator::inspect_leave(const ref<Self>&) {
 
 bool CodeGenerator::inspect_enter(const ast::ref<ast::Tuple>& node) {
   if (node->has_spread_elements()) {
-    uint32_t elements_in_last_segment = 0;
-    uint32_t emitted_segments = 0;
-
-    for (const ref<Expression>& exp : node->elements) {
-      if (ref<Spread> spread = cast<Spread>(exp)) {
-        if (elements_in_last_segment) {
-          m_builder.emit_maketuple(elements_in_last_segment);
-          emitted_segments++;
-          elements_in_last_segment = 0;
-        }
-
-        apply(spread->expression);
-        emitted_segments++;
-      } else {
-        apply(exp);
-        elements_in_last_segment++;
-      }
-    }
-
-    if (elements_in_last_segment) {
-      emitted_segments++;
-      m_builder.emit_maketuple(elements_in_last_segment);
-    }
-
+    uint8_t emitted_segments = generate_spread_tuples(node->elements);
     m_builder.emit_maketuplespread(emitted_segments);
   } else {
     for (const auto& exp : node->elements) {
@@ -309,30 +317,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Tuple>& node) {
 
 bool CodeGenerator::inspect_enter(const ast::ref<ast::List>& node) {
   if (node->has_spread_elements()) {
-    uint32_t elements_in_last_segment = 0;
-    uint32_t emitted_segments = 0;
-
-    for (const ref<Expression>& exp : node->elements) {
-      if (ref<Spread> spread = cast<Spread>(exp)) {
-        if (elements_in_last_segment) {
-          m_builder.emit_maketuple(elements_in_last_segment);
-          emitted_segments++;
-          elements_in_last_segment = 0;
-        }
-
-        apply(spread->expression);
-        emitted_segments++;
-      } else {
-        apply(exp);
-        elements_in_last_segment++;
-      }
-    }
-
-    if (elements_in_last_segment) {
-      emitted_segments++;
-      m_builder.emit_maketuple(elements_in_last_segment);
-    }
-
+    uint8_t emitted_segments = generate_spread_tuples(node->elements);
     m_builder.emit_makelistspread(emitted_segments);
   } else {
     for (const auto& exp : node->elements) {
@@ -463,11 +448,13 @@ void CodeGenerator::inspect_leave(const ref<UnaryOp>& node) {
 }
 
 bool CodeGenerator::inspect_enter(const ast::ref<ast::CallOp>& node) {
+  m_builder.emit_load(VALUE::Null());
+  apply(node->target);
+
   if (node->has_spread_elements()) {
-    assert(false && "not implemented");
+    uint8_t emitted_segments = generate_spread_tuples(node->arguments);
+    m_builder.emit_callspread(emitted_segments);
   } else {
-    m_builder.emit_load(VALUE::Null());
-    apply(node->target);
     for (const auto& arg : node->arguments) {
       apply(arg);
     }
@@ -479,12 +466,14 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::CallOp>& node) {
 }
 
 bool CodeGenerator::inspect_enter(const ast::ref<ast::CallMemberOp>& node) {
+  apply(node->target);
+  m_builder.emit_dup();
+  m_builder.emit_loadattr(node->member->value);
+
   if (node->has_spread_elements()) {
-    assert(false && "not implemented");
+    uint8_t emitted_segments = generate_spread_tuples(node->arguments);
+    m_builder.emit_callspread(emitted_segments);
   } else {
-    apply(node->target);
-    m_builder.emit_dup();
-    m_builder.emit_loadattr(node->member->value);
     for (const auto& arg : node->arguments) {
       apply(arg);
     }
@@ -496,13 +485,15 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::CallMemberOp>& node) {
 }
 
 bool CodeGenerator::inspect_enter(const ast::ref<ast::CallIndexOp>& node) {
+  apply(node->target);
+  m_builder.emit_dup();
+  apply(node->index);
+  m_builder.emit_loadattrvalue();
+
   if (node->has_spread_elements()) {
-    assert(false && "not implemented");
+    uint8_t emitted_segments = generate_spread_tuples(node->arguments);
+    m_builder.emit_callspread(emitted_segments);
   } else {
-    apply(node->target);
-    m_builder.emit_dup();
-    apply(node->index);
-    m_builder.emit_loadattrvalue();
     for (const auto& arg : node->arguments) {
       apply(arg);
     }

@@ -1,8 +1,7 @@
 # Todos
 
 - CodeGenerator
-  - Primitive data structures with spread elements
-  - Spread calls
+  - Unpack declarations
   - UnpackSpread declarations
   - Assignments
     - Unpack
