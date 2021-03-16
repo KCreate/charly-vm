@@ -736,7 +736,6 @@ public:
   // regular functions
   template <typename... Args>
   Function(bool arrow_function, ref<Name> name, ref<Block> body, Args&&... params) :
-    toplevel_function(false),
     class_constructor(false),
     arrow_function(arrow_function),
     name(name),
@@ -745,12 +744,9 @@ public:
     this->set_location(name, body);
   }
   Function(bool arrow_function, ref<Name> name, ref<Block> body, std::vector<ref<FunctionArgument>>&& params) :
-    toplevel_function(false), arrow_function(arrow_function), name(name), body(body), arguments(std::move(params)) {
+    arrow_function(arrow_function), name(name), body(body), arguments(std::move(params)) {
     this->set_location(name, body);
   }
-
-  // wether the function contains REPL input
-  bool toplevel_function;
 
   // wether the function is a constructor
   bool class_constructor;

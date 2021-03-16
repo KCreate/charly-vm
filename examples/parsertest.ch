@@ -26,23 +26,8 @@
 
 class A {
   foo {
-    super
-    super()
-    super.foo
-    super.foo()
-  }
-
-  static foo {
-    super
-    super()
-    super.foo
-    super.foo()
-  }
-
-  constructor {
-    super
-    super()
-    super.foo
-    super.foo()
+    for const y in @height {
+      print("{x}, {y}")
+    }
   }
 }

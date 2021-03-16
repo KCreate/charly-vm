@@ -102,7 +102,7 @@ ref<Expression> DesugarPass::transform(const ref<FormatString>& node) {
 
   // wrap all non-string elements into a caststring node
   for (ref<Expression>& element : node->elements) {
-    if (!isa<String>(element)) {
+    if (!(isa<String>(element) || isa<BuiltinOperation>(element))) {
       element = make<BuiltinOperation>(ir::BuiltinId::caststring, element);
     }
   }

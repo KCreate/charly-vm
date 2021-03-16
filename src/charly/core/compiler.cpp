@@ -80,7 +80,6 @@ std::shared_ptr<CompilationUnit> Compiler::compile(CompilationUnit::Type type,
   // wrap in module function
   ref<Function> func = make<Function>(false, make<Name>("main"), unit->ast);
   func->set_location(unit->ast);
-  func->toplevel_function = unit->type == CompilationUnit::Type::ReplInput;
   unit->ast = make<Block>(func);
 
   APPLY_DIAGNOSTIC_PASS(GrammarValidationCheck);
