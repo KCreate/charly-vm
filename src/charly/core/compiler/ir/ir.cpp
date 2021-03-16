@@ -29,7 +29,6 @@
 
 #include "charly/utils/colorwriter.h"
 #include "charly/utils/buffer.h"
-#include "charly/utils/stringindent.h"
 #include "charly/core/compiler/ir/ir.h"
 
 namespace charly::core::compiler::ir {
@@ -159,23 +158,23 @@ void IRStringData::dump(std::ostream& out) const {
 
 void IRFunction::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
-  writer.fg(Color::Yellow, ".L", this->head, '\n');
-  writer.fg(Color::Yellow, "function {", "\n");
-  writer.fg(Color::Grey, ".name = ");
+  writer.fg(Color::Yellow, "  .L", this->head, '\n');
+  writer.fg(Color::Yellow, "  function {", "\n");
+  writer.fg(Color::Grey, "  .name = ");
   writer.fg(Color::Red, "'", this->ast->name->value, "'\n");
-  writer.fg(Color::Grey, ".locals = ");
+  writer.fg(Color::Grey, "  .locals = ");
   writer.fg(Color::Green, (uint32_t)this->ast->ir_info.local_variables, "\n");
-  writer.fg(Color::Grey, ".argc = ");
+  writer.fg(Color::Grey, "  .argc = ");
   writer.fg(Color::Green, (uint32_t)this->ast->ir_info.argc, "\n");
-  writer.fg(Color::Grey, ".minargc = ");
+  writer.fg(Color::Grey, "  .minargc = ");
   writer.fg(Color::Green, (uint32_t)this->ast->ir_info.minargc, "\n");
-  writer.fg(Color::Grey, ".spread = ");
+  writer.fg(Color::Grey, "  .spread = ");
   writer.fg(Color::Green, this->ast->ir_info.spread_argument ? "true" : "false", "\n");
-  writer.fg(Color::Grey, ".arrow = ");
+  writer.fg(Color::Grey, "  .arrow = ");
   writer.fg(Color::Green, this->ast->ir_info.arrow_function ? "true" : "false", "\n");
-  writer.fg(Color::Grey, ".constructor = ");
+  writer.fg(Color::Grey, "  .constructor = ");
   writer.fg(Color::Green, this->ast->class_constructor ? "true" : "false", "\n");
-  writer.fg(Color::Yellow, ".body", "\n");
+  writer.fg(Color::Yellow, "  .body", "\n");
 
   IRStatement::Type last_type = IRStatement::Type::LabelDefinition;
   for (const auto& stmt : this->statements) {
@@ -183,13 +182,13 @@ void IRFunction::dump(std::ostream& out) const {
     // put a space between label definitions and the last statement
     if (stmt->get_type() == IRStatement::Type::LabelDefinition) {
       if (last_type != IRStatement::Type::LabelDefinition) {
-        writer.fg(Color::Grey, "  |\n");
+        writer.fg(Color::Grey, "    |\n");
       }
-      writer.fg(Color::Grey, "  | ");
+      writer.fg(Color::Grey, "    | ");
     } else {
 
       // indent instructions and stringdata
-      writer.fg(Color::Grey, "  |   ");
+      writer.fg(Color::Grey, "    |   ");
     }
 
     stmt->dump(out);
@@ -197,7 +196,7 @@ void IRFunction::dump(std::ostream& out) const {
     last_type = stmt->get_type();
   }
 
-  writer.fg(Color::Yellow, "}\n");
+  writer.fg(Color::Yellow, "  }\n");
 }
 
 void IRModule::dump(std::ostream& out) const {
@@ -217,13 +216,7 @@ void IRModule::dump(std::ostream& out) const {
 
   writer.fg(Color::Grey, "; functions", '\n');
   for (const IRFunction& func : this->functions) {
-    std::stringstream stream;
-    termcolor::colorlike(stream, out);
-
-    func.dump(stream);
-
-    std::stringstream indent_stream;
-    utils::indent_stream(2, stream, out);
+    func.dump(out);
   }
 
   writer.fg(Color::Blue, "}", '\n');

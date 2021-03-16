@@ -99,8 +99,6 @@
 - Stream coloring on macOS
   - termcolor::_internal::is_colorized returns false, manually executing the function body returns true???
 
-- Stream coloring is buggy in optimized builds
-
 # Rewrite of the codebase
 
 - open questions

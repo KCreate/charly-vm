@@ -39,7 +39,7 @@ const std::string ArgumentParser::USAGE_MESSAGE = "Usage: charly [filename] [fla
   const std::string ArgumentParser::LICENSE =
     "MIT License \n"
     "\n"
-    "Copyright (c) 2017 - 2020 Leonard Schütz \n"
+    "Copyright (c) 2017 - 2021 Leonard Schütz \n"
     "\n"
     "Permission is hereby granted, free of charge, to any person obtaining a copy \n"
     "of this software and associated documentation files (the \"Software\"), to deal \n"

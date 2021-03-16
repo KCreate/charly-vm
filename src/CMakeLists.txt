@@ -20,7 +20,6 @@ file(GLOB charlycore_SRC
   "charly/utils/argumentparser.cpp"
 )
 
-
 add_library(libcharly ${charlycore_SRC})
 target_link_libraries(libcharly stdc++)
 target_link_libraries(libcharly m)
