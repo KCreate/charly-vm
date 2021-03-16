@@ -288,6 +288,55 @@ ref<Expression> ConstantFoldingPass::transform(const ref<BuiltinOperation>& node
           break;
         }
 
+        case Node::Type::Null: {
+          replacement = make<String>("null");
+          break;
+        }
+
+        default: {
+          break;
+        }
+      }
+
+      break;
+    }
+    case ir::BuiltinId::castsymbol: {
+      assert(node->arguments.size() == 1);
+      const ref<Expression>& expression = node->arguments.at(0);
+
+      switch (expression->type()) {
+        case Node::Type::String: {
+          replacement = make<Symbol>(cast<String>(expression));
+          break;
+        }
+
+        case Node::Type::Int: {
+          replacement = make<Symbol>(std::to_string(cast<Int>(expression)->value));
+          break;
+        }
+
+        case Node::Type::Float: {
+          replacement = make<Symbol>(std::to_string(cast<Float>(expression)->value));
+          break;
+        }
+
+        case Node::Type::Bool: {
+          replacement = make<Symbol>(cast<Bool>(expression)->value ? "true" : "false");
+          break;
+        }
+
+        case Node::Type::Char: {
+          utils::Buffer tmpbuf(4);
+          tmpbuf.append_utf8(cast<Char>(expression)->value);
+          replacement = make<Symbol>(tmpbuf.buffer_string());
+          break;
+        }
+
+        case Node::Type::Null: {
+          replacement = make<Symbol>("null");
+          break;
+        }
+
         default: {
           break;
         }

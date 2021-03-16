@@ -425,6 +425,10 @@ public:
 // null
 class Null final : public Expression {
   AST_NODE(Null)
+public:
+  virtual bool is_constant_value() const override {
+    return true;
+  }
 };
 
 // self
@@ -603,6 +607,7 @@ public:
   Symbol(ref<String> name) : ConstantAtom<std::string>::ConstantAtom(name->value) {
     this->set_location(name);
   }
+  Symbol(const std::string& value) : ConstantAtom<std::string>::ConstantAtom(value) {}
 
   virtual void dump_info(std::ostream& out) const override;
 

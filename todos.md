@@ -129,16 +129,6 @@
       - GeneratorExit
     - regular exceptions
 
-  - native async / await
-    - builtin promise type
-    - async calls a function asyncronously
-    - await waits for a promise to finish
-      - if promise got rejected, throw error at await
-
-  - different compiler modes
-    - repl      code starts executing directly, return yielded value
-    - module    code exports file code inside a module function
-
   - how are iterators implemented
     - wrappers around builtin collection types (list, dict, tuple)
     - when iterating over non indexable types (like dict) an iterator to the underlying data structure
@@ -188,10 +178,6 @@
         tinylock lock;
       };
       ```
-  - generational garbage collection?
-    - how are values moved?
-    - young, old, permanent generation
-    - when writing references to a value, mark the target page as dirty
 
 - solved questions
   - in what thread are native methods executed?
@@ -217,109 +203,46 @@
     - some kind of exception stack per fiber, popped at the end of catch statements
     - pop exception off the exception stack at the end of the catch handler
 
-- New features
-  - Tuples
-  - Value unpacking
-    ```
-    > const (a, b, c) = foo()
-
-    readlocal foo
-    call 0
-    unpack 3
-    setlocal c
-    setlocal b
-    setlocal a
-    ```
-  - Unpacking into functions, arrays
-    ```
-    > [1, 2, foo, ...foo, 3, 4]
-
-    loadi 1
-    loadi 2
-    readlocal foo
-    puttuple 3
-    readlocal foo
-    loadi 3
-    loadi 4
-    puttuple 2
-    putlistunpack 3
-
-    > (1, 2, foo, ...foo, 3, 4)
-
-    loadi 1
-    loadi 2
-    readlocal foo
-    puttuple 3
-    readlocal foo
-    loadi 3
-    loadi 4
-    puttuple 2
-    puttupleunpack 3
-
-    > bar(1, 2, foo, ...foo, 3, 4)
-
-    readlocal bar
-    loadi 1
-    loadi 2
-    readlocal foo
-    puttuple 3
-    readlocal foo
-    loadi 3
-    loadi 4
-    puttuple 2
-    puttupleunpack 3
-    callunpack
-
-    ```
-  - `for in` statements
-  - `defer` statement
-  - hidden classes to speed up member lookups
-  - inline caches using hidden classes
-  - foreign function interface for native dynamic libraries
-  - charly module interface
-  - block stack
-    - loops, try-catch push a block onto the block stack and
-  - per-frame data stack, no global stack
-  - string interpolation
-    - implement using lexer modes
-  - garbage collector should keep freelists of different sizes
-  - signal handling
-    - background thread which waits for signals to arrive, then schedules a signal handler
-      function via the coordinator, passing signal information to it
-    - charly code can register for specific signals and pass a callback handler
-  - list of builtin types
-    - debug / meta
-      - dead          placeholder for free gc cells
-    - literal
-      - int
-      - float
-      - boolean
-      - null
-    - container
-      - list
-      - dict
-      - tuple
-    - language
-      - string
-      - class
-      - object
-      - function
-      - generator
-      - iterator
-    - vm-internals
-      - frame
-      - block
-        - locals
-        - catchblock
-        - loopblock
-        - deferblock
-      - fiber
-      - file
-      - socket
-      - symbol
-      - objectmap
-      - codeobject
-    - c-interop
-      - clibrary
-      - cfunction
-      - cpointer
+- hidden classes to speed up member lookups
+- inline caches using hidden classes
+- foreign function interface for native dynamic libraries
+- signal handling
+  - background thread which waits for signals to arrive, then schedules a signal handler
+    function via the coordinator, passing signal information to it
+  - charly code can register for specific signals and pass a callback handler
+- list of builtin types
+  - debug / meta
+    - dead          placeholder for free gc cells
+  - literal
+    - int
+    - float
+    - boolean
+    - null
+  - container
+    - list
+    - dict
+    - tuple
+  - language
+    - string
+    - class
+    - object
+    - function
+    - generator
+    - iterator
+  - vm-internals
+    - frame
+    - block
+      - locals
+      - catchblock
+      - loopblock
+      - deferblock
+    - fiber
+    - file
+    - socket
+    - symbol
+    - objectmap
+    - codeobject
+  - c-interop
+    - clibrary
+    - cfunction
+    - cpointer
