@@ -271,7 +271,31 @@ void CodeGenerator::inspect_leave(const ref<Self>&) {
 
 bool CodeGenerator::inspect_enter(const ast::ref<ast::Tuple>& node) {
   if (node->has_spread_elements()) {
-    assert(false && "not implemented yet");
+    uint32_t elements_in_last_segment = 0;
+    uint32_t emitted_segments = 0;
+
+    for (const ref<Expression>& exp : node->elements) {
+      if (ref<Spread> spread = cast<Spread>(exp)) {
+        if (elements_in_last_segment) {
+          m_builder.emit_maketuple(elements_in_last_segment);
+          emitted_segments++;
+          elements_in_last_segment = 0;
+        }
+
+        apply(spread->expression);
+        emitted_segments++;
+      } else {
+        apply(exp);
+        elements_in_last_segment++;
+      }
+    }
+
+    if (elements_in_last_segment) {
+      emitted_segments++;
+      m_builder.emit_maketuple(elements_in_last_segment);
+    }
+
+    m_builder.emit_maketuplespread(emitted_segments);
   } else {
     for (const auto& exp : node->elements) {
       apply(exp);
@@ -285,7 +309,31 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Tuple>& node) {
 
 bool CodeGenerator::inspect_enter(const ast::ref<ast::List>& node) {
   if (node->has_spread_elements()) {
-    assert(false && "not implemented yet");
+    uint32_t elements_in_last_segment = 0;
+    uint32_t emitted_segments = 0;
+
+    for (const ref<Expression>& exp : node->elements) {
+      if (ref<Spread> spread = cast<Spread>(exp)) {
+        if (elements_in_last_segment) {
+          m_builder.emit_maketuple(elements_in_last_segment);
+          emitted_segments++;
+          elements_in_last_segment = 0;
+        }
+
+        apply(spread->expression);
+        emitted_segments++;
+      } else {
+        apply(exp);
+        elements_in_last_segment++;
+      }
+    }
+
+    if (elements_in_last_segment) {
+      emitted_segments++;
+      m_builder.emit_maketuple(elements_in_last_segment);
+    }
+
+    m_builder.emit_makelistspread(emitted_segments);
   } else {
     for (const auto& exp : node->elements) {
       apply(exp);
@@ -299,7 +347,17 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::List>& node) {
 
 bool CodeGenerator::inspect_enter(const ast::ref<ast::Dict>& node) {
   if (node->has_spread_elements()) {
-    assert(false && "not implemented yet");
+    for (const ref<DictEntry>& exp : node->elements) {
+      if (ref<Spread> spread = cast<Spread>(exp->key)) {
+        m_builder.emit_load(VALUE::Null());
+        apply(spread->expression);
+      } else {
+        apply(exp->key);
+        apply(exp->value);
+      }
+    }
+
+    m_builder.emit_makedictspread(node->elements.size());
   } else {
     for (const ref<DictEntry>& exp : node->elements) {
       apply(exp->key);
