@@ -250,8 +250,14 @@ void Builder::emit_makefunc(OpOffset offset) {
   emit(Opcode::makefunc, IROperandOffset::make(offset));
 }
 
-void Builder::emit_makeclass(OpOffset offset) {
-  emit(Opcode::makeclass, IROperandOffset::make(offset));
+void Builder::emit_makeclass(OpCount8 funccount, OpCount8 propcount, OpCount8 staticpropcount) {
+  emit(Opcode::makeclass, IROperandCount8::make(funccount), IROperandCount8::make(propcount),
+       IROperandCount8::make(staticpropcount));
+}
+
+void Builder::emit_makesubclass(OpCount8 funccount, OpCount8 propcount, OpCount8 staticpropcount) {
+  emit(Opcode::makeclass, IROperandCount8::make(funccount), IROperandCount8::make(propcount),
+       IROperandCount8::make(staticpropcount));
 }
 
 void Builder::emit_makestr(OpOffset offset) {

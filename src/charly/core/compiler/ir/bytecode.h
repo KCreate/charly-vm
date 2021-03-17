@@ -129,7 +129,8 @@ FOREACH_OPERANDTYPE(OPTYPE)
                                                    \
   /* value allocation */                           \
   V(makefunc, OpOffset)                            \
-  V(makeclass, OpOffset)                           \
+  V(makeclass, OpCount8, OpCount8, OpCount8)       \
+  V(makesubclass, OpCount8, OpCount8, OpCount8)    \
   V(makestr, OpOffset)                             \
   V(makelist, OpCount16)                           \
   V(makelistspread, OpCount16)                     \

@@ -109,6 +109,7 @@ private:
   virtual bool inspect_enter(const ast::ref<ast::List>&) override;
   virtual bool inspect_enter(const ast::ref<ast::Dict>&) override;
   virtual bool inspect_enter(const ast::ref<ast::Function>&) override;
+  virtual bool inspect_enter(const ast::ref<ast::Class>&) override;
 
   virtual void inspect_leave(const ast::ref<ast::MemberOp>&) override;
   virtual void inspect_leave(const ast::ref<ast::IndexOp>&) override;

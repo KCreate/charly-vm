@@ -308,7 +308,6 @@ void CodeGenerator::inspect_leave(const ref<FormatString>& node) {
 }
 
 void CodeGenerator::inspect_leave(const ref<Symbol>& node) {
-  m_builder.register_symbol(node->value);
   m_builder.emit_loadsymbol(node->value);
 }
 
@@ -330,7 +329,39 @@ void CodeGenerator::inspect_leave(const ref<Char>& node) {
 
 bool CodeGenerator::inspect_enter(const ref<Function>& node) {
   Label begin_label = enqueue_function(node);
+  m_builder.register_symbol(node->name->value);
   m_builder.emit_makefunc(begin_label);
+  return false;
+}
+
+bool CodeGenerator::inspect_enter(const ref<Class>& node) {
+  m_builder.emit_loadsymbol(node->name->value);
+  if (node->parent) {
+    apply(node->parent);
+  }
+  apply(node->constructor);
+
+  for (const auto& member_func : node->member_functions) {
+    apply(member_func);
+  }
+
+  for (const auto& member_prop : node->member_properties) {
+    m_builder.emit_loadsymbol(member_prop->name->value);
+  }
+
+  for (const auto& static_prop : node->static_properties) {
+    m_builder.emit_loadsymbol(static_prop->name->value);
+    apply(static_prop->value);
+  }
+
+  if (node->parent) {
+    m_builder.emit_makesubclass(node->member_functions.size(), node->member_properties.size(),
+                            node->static_properties.size());
+  } else {
+    m_builder.emit_makeclass(node->member_functions.size(), node->member_properties.size(),
+                            node->static_properties.size());
+  }
+
   return false;
 }
 
@@ -586,7 +617,6 @@ bool CodeGenerator::inspect_enter(const ref<Declaration>& node) {
 
   apply(node->expression);
   generate_store(node->ir_location);
-  m_builder.register_symbol(node->name->value);
   m_builder.emit_pop();
 
   return false;

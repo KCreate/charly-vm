@@ -24,17 +24,33 @@
  * SOFTWARE.
  */
 
-switch name {
-  case "leonard" {
-    print("welcome creator")
-  }
-  case "mimi" {
-    print("you're a cat!!")
-  }
-  case "water bottle" {
-    print("how?")
-  }
-  default {
-    print("hello stranger, your name is '{name}'")
-  }
+class A {
+  property name
 }
+
+class B extends A {
+  property age
+  constructor(name, @age) = super(name)
+}
+
+/* class A {                               */
+/*   property name                         */
+/*                                         */
+/*   dump {                                */
+/*     return "{@name}"                    */
+/*   }                                     */
+/*                                         */
+/*   static foo { print("hello world") }   */
+/* }                                       */
+/*                                         */
+/* class B extends A {                     */
+/*   property age                          */
+/*                                         */
+/*   constructor(name, @age) = super(name) */
+/*                                         */
+/*   dump {                                */
+/*     return "{@name} {@age}"             */
+/*   }                                     */
+/*                                         */
+/*   static bar { print("goodbye world") } */
+/* }                                       */
