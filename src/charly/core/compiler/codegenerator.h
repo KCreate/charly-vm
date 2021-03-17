@@ -128,6 +128,7 @@ private:
 
   virtual bool inspect_enter(const ast::ref<ast::If>&) override;
   virtual bool inspect_enter(const ast::ref<ast::While>&) override;
+  virtual bool inspect_enter(const ast::ref<ast::Switch>&) override;
 
   virtual bool inspect_enter(const ast::ref<ast::BuiltinOperation>&) override;
 

@@ -1,15 +1,14 @@
 # Todos
 
 - CodeGenerator
-  - Try statements
-  - Switch statements
   - For statements
+  - Classes
+  - super expressions
+  - Try statements
     - Exception tables
       - Store start, end and handler label
       - How do we know how many values to pop off the stack?
         - Can we determine the frame-relative stack size at a specific position?
-  - Classes
-  - super expressions
   - Generate default argument and self initializers
 
 - Fix syntax for object unpack assignments

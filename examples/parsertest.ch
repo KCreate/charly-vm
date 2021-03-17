@@ -24,6 +24,17 @@
  * SOFTWARE.
  */
 
-let (a, b, c) = list
-
-(a, b, c) = list
+switch name {
+  case "leonard" {
+    print("welcome creator")
+  }
+  case "mimi" {
+    print("you're a cat!!")
+  }
+  case "water bottle" {
+    print("how?")
+  }
+  default {
+    print("hello stranger, your name is '{name}'")
+  }
+}
