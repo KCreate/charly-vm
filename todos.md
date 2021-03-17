@@ -1,11 +1,13 @@
 # Todos
 
 - CodeGenerator
-  - Assignments
-    - Operator assignments
   - Try statements
   - Switch statements
   - For statements
+    - Exception tables
+      - Store start, end and handler label
+      - How do we know how many values to pop off the stack?
+        - Can we determine the frame-relative stack size at a specific position?
   - Classes
   - super expressions
   - Generate default argument and self initializers
@@ -15,20 +17,15 @@
   - Introduce new syntax for a single block
     - Automatically detect wether its a block or dict literal???
 
-- Exception tables
-  - Store start, end and handler label
-  - How do we know how many values to pop off the stack?
-    - Can we determine the frame-relative stack size at a specific position?
-
 - Source Mapping
   - Store filename in compiled module somewhere
   - Set source line before each instruction that is emitted
 
-- Build control-flow-graph and remove dead blocks
-
 - Think about inline caches
   - IRBuilder will have to allocate inline caches per function
     - Separate table for inline caches or directly encoded into bytecode?
+
+- Build control-flow-graph and remove dead blocks
 
 - Runtime representation of functions
   - How does the `makefunc` instruction create a new function?
@@ -91,6 +88,11 @@
 - Argument-Indexing identifiers
   - $0, $1 syntax
   - In-bounds identifiers can be replaced by the actual arguments
+
+- Unit tests
+  - Charly source file containing annotations for expected output in stdout
+  - Similar to Swift unit tests
+    - Example: https://github.com/apple/swift/blob/main/test/Concurrency/async_conformance.swift
 
 - Computed property methods
   - clases should be able to define property methods like `property length { ... }`

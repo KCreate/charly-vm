@@ -127,8 +127,8 @@ void Builder::emit_dup() {
   emit(Opcode::dup);
 }
 
-void Builder::emit_swap() {
-  emit(Opcode::swap);
+void Builder::emit_dup2() {
+  emit(Opcode::dup2);
 }
 
 // control flow

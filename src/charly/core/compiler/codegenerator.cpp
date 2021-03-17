@@ -412,15 +412,19 @@ void CodeGenerator::inspect_leave(const ast::ref<ast::IndexOp>&) {
 }
 
 bool CodeGenerator::inspect_enter(const ref<Assignment>& node) {
-  apply(node->source);
-
   switch (node->operation) {
     case TokenType::Assignment: {
+      apply(node->source);
       generate_store(node->name->ir_location);
       break;
     }
     default: {
-      assert(false && "operator assignment codegen not implemented");
+      generate_load(node->name->ir_location);
+      apply(node->source);
+      assert(kBinopOpcodeMapping.count(node->operation));
+      m_builder.emit(kBinopOpcodeMapping.at(node->operation));
+      generate_store(node->name->ir_location);
+      break;
     }
   }
 
@@ -442,7 +446,14 @@ bool CodeGenerator::inspect_enter(const ref<MemberAssignment>& node) {
       break;
     }
     default: {
-      assert(false && "operator member assignment codegen not implemented");
+      apply(node->target);
+      m_builder.emit_dup();
+      m_builder.emit_loadattr(node->member->value);
+      apply(node->source);
+      assert(kBinopOpcodeMapping.count(node->operation));
+      m_builder.emit(kBinopOpcodeMapping.at(node->operation));
+      m_builder.emit_setattr(node->member->value);
+      break;
     }
   }
 
@@ -459,7 +470,15 @@ bool CodeGenerator::inspect_enter(const ref<IndexAssignment>& node) {
       break;
     }
     default: {
-      assert(false && "operator member assignment codegen not implemented");
+      apply(node->target);
+      apply(node->index);
+      m_builder.emit_dup2();
+      m_builder.emit_loadattrvalue();
+      apply(node->source);
+      assert(kBinopOpcodeMapping.count(node->operation));
+      m_builder.emit(kBinopOpcodeMapping.at(node->operation));
+      m_builder.emit_setattrvalue();
+      break;
     }
   }
 

@@ -89,7 +89,7 @@ FOREACH_OPERANDTYPE(OPTYPE)
   /* stack management */                           \
   V(pop)                                           \
   V(dup)                                           \
-  V(swap)                                          \
+  V(dup2)                                          \
                                                    \
   /* control flow */                               \
   V(jmp, OpOffset)                                 \
