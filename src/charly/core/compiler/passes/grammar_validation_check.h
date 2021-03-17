@@ -38,6 +38,7 @@ private:
   virtual void inspect_leave(const ref<Spawn>& node) override;
   virtual void inspect_leave(const ref<Dict>& node) override;
   virtual void inspect_leave(const ref<Function>& node) override;
+  virtual void inspect_leave(const ref<Super>& node) override;
 };
 
 }  // namespace charly::core::compiler::ast

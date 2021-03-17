@@ -610,12 +610,19 @@ TEST_CASE("super expressions") {
   CHECK_ERROR_PROGRAM("->super", "super is not allowed at this point");
   CHECK_ERROR_PROGRAM("->super.foo()", "super is not allowed at this point");
 
-  ref<Class> class_node = make<Class>("Foo", make<Id>("Bar"));
-  class_node->member_functions.push_back(make<Function>(false, make<Name>("foo"), make<Block>(make<Super>())));
-  CHECK_AST_EXP("class Foo extends Bar { foo { super } }", class_node);
+  CHECK_PROGRAM("class A { foo { super() } }");
+  CHECK_PROGRAM("class A { foo { super.foo() } }");
+  CHECK_PROGRAM("class A { constructor { super() } }");
+  CHECK_PROGRAM("class A { constructor { super.foo() } }");
 
-  CHECK_EXP("class Foo extends Bar { static foo { super } }");
-  CHECK_EXP("class Foo extends Bar { constructor { super } }");
+  COMPILE_ERROR("class A { foo { super } }", "super cannot be used by itself, it must be a part of a call expression");
+  COMPILE_ERROR("class A { foo { super.foo } }",
+                "super cannot be used by itself, it must be a part of a call expression");
+  COMPILE_ERROR("class A { constructor { super } }",
+                "super cannot be used by itself, it must be a part of a call expression");
+  COMPILE_ERROR("class A { constructor { super.foo } }",
+                "super cannot be used by itself, it must be a part of a call expression");
+  COMPILE_ERROR("class A { static foo { super() } }", "super is not allowed at this point");
 }
 
 TEST_CASE("try statements") {

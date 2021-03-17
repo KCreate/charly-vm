@@ -42,15 +42,7 @@ void ClassConstructorCheck::inspect_leave(const ref<Class>& node) {
 
   // search for a call to the super constructor
   ref<Node> super_call = Node::search(node->constructor->body, [&](const ref<Node>& node) {
-
-    // check for super(...)
-    if (ref<CallOp> call = cast<CallOp>(node)) {
-      if (isa<Super>(call->target)) {
-        return true;
-      }
-    }
-
-    return false;
+    return isa<SuperCall>(node);
   }, [&](const ref<Node>& node) {
     Node::Type type = node->type();
     return type == Node::Type::Function || type == Node::Type::Class || type == Node::Type::Spawn;

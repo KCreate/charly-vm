@@ -372,11 +372,68 @@ void CodeGenerator::inspect_leave(const ref<Null>&) {
 void CodeGenerator::inspect_leave(const ref<Self>&) {
 
   // arrow functions need to load their self value from the parent frame
-  if (m_function_queue.front().ast->ir_info.arrow_function) {
+  if (active_function()->ir_info.arrow_function) {
     m_builder.emit_loadcontextself();
   } else {
     m_builder.emit_loadlocal(0);
   }
+}
+
+bool CodeGenerator::inspect_enter(const ast::ref<ast::SuperCall>& node) {
+  if (active_function()->class_constructor) {
+
+    // load the class of the self value onto the stack
+    m_builder.emit_loadlocal(0);
+    m_builder.emit_dup();
+    m_builder.emit_loadsuperconstructor();
+
+    // call the constructor parent constructor
+    if (node->has_spread_elements()) {
+      uint8_t emitted_segments = generate_spread_tuples(node->arguments);
+      m_builder.emit_callspread(emitted_segments);
+    } else {
+      for (const auto& exp : node->arguments) {
+        apply(exp);
+      }
+      m_builder.emit_call(node->arguments.size());
+    }
+  } else {
+    m_builder.emit_loadlocal(0);
+    m_builder.emit_dup();
+    m_builder.emit_loadsuperattr(active_function()->name->value);
+
+    // call the parent function
+    if (node->has_spread_elements()) {
+      uint8_t emitted_segments = generate_spread_tuples(node->arguments);
+      m_builder.emit_callspread(emitted_segments);
+    } else {
+      for (const auto& exp : node->arguments) {
+        apply(exp);
+      }
+      m_builder.emit_call(node->arguments.size());
+    }
+  }
+
+  return false;
+}
+
+bool CodeGenerator::inspect_enter(const ast::ref<ast::SuperAttrCall>& node) {
+  m_builder.emit_loadlocal(0);
+  m_builder.emit_dup();
+  m_builder.emit_loadsuperattr(node->member->value);
+
+  // call the parent function
+  if (node->has_spread_elements()) {
+    uint8_t emitted_segments = generate_spread_tuples(node->arguments);
+    m_builder.emit_callspread(emitted_segments);
+  } else {
+    for (const auto& exp : node->arguments) {
+      apply(exp);
+    }
+    m_builder.emit_call(node->arguments.size());
+  }
+
+  return false;
 }
 
 bool CodeGenerator::inspect_enter(const ast::ref<ast::Tuple>& node) {

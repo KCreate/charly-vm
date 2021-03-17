@@ -92,6 +92,8 @@ public:
     Null,
     Self,
     Super,
+    SuperCall,
+    SuperAttrCall,
     Tuple,
     List,
     DictEntry,
@@ -436,11 +438,6 @@ class Self final : public Expression {
   AST_NODE(Self)
 };
 
-// super
-class Super final : public Expression {
-  AST_NODE(Super)
-};
-
 template <typename T>
 class Atom : public Expression {
 public:
@@ -738,10 +735,10 @@ public:
 class Function final : public Expression {
   AST_NODE(Function)
 public:
-  // regular functions
   template <typename... Args>
   Function(bool arrow_function, ref<Name> name, ref<Block> body, Args&&... params) :
     class_constructor(false),
+    class_static_function(false),
     arrow_function(arrow_function),
     name(name),
     body(body),
@@ -749,12 +746,20 @@ public:
     this->set_location(name, body);
   }
   Function(bool arrow_function, ref<Name> name, ref<Block> body, std::vector<ref<FunctionArgument>>&& params) :
-    arrow_function(arrow_function), name(name), body(body), arguments(std::move(params)) {
+    class_constructor(false),
+    class_static_function(false),
+    arrow_function(arrow_function),
+    name(name),
+    body(body),
+    arguments(std::move(params)) {
     this->set_location(name, body);
   }
 
   // wether the function is a constructor
   bool class_constructor;
+
+  // wether this is a static function of a class
+  bool class_static_function;
 
   bool arrow_function;
   ref<Name> name;
@@ -839,6 +844,62 @@ public:
     CHILD_VECTOR(member_functions);
     CHILD_VECTOR(member_properties);
     CHILD_VECTOR(static_properties);
+  }
+
+  virtual void dump_info(std::ostream& out) const override;
+};
+
+// super
+class Super final : public Expression {
+  AST_NODE(Super)
+};
+
+// super()
+class SuperCall final : public Expression {
+  AST_NODE(SuperCall)
+public:
+  SuperCall(const std::vector<ref<Expression>>& params) : arguments(params) {
+    if (arguments.size())
+      this->set_location(arguments.front(), arguments.back());
+  }
+  template <typename... Args>
+  SuperCall(Args&&... params) : arguments({ std::forward<Args>(params)... }) {
+    if (arguments.size())
+      this->set_location(arguments.front(), arguments.back());
+  }
+
+  std::vector<ref<Expression>> arguments;
+
+  bool has_spread_elements() const;
+
+  CHILDREN() {
+    CHILD_VECTOR(arguments);
+  }
+};
+
+// super.foo()
+class SuperAttrCall final : public Expression {
+  AST_NODE(SuperAttrCall)
+public:
+  SuperAttrCall(ref<Name> member, const std::vector<ref<Expression>>& params) : member(member), arguments(params) {
+    this->set_begin(member);
+    if (arguments.size())
+      this->set_location(arguments.front(), arguments.back());
+  }
+  template <typename... Args>
+  SuperAttrCall(ref<Name> member, Args&&... params) : member(member), arguments({ std::forward<Args>(params)... }) {
+    this->set_begin(member);
+    if (arguments.size())
+      this->set_location(arguments.front(), arguments.back());
+  }
+
+  ref<Name> member;
+  std::vector<ref<Expression>> arguments;
+
+  bool has_spread_elements() const;
+
+  CHILDREN() {
+    CHILD_VECTOR(arguments);
   }
 
   virtual void dump_info(std::ostream& out) const override;

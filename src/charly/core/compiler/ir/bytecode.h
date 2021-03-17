@@ -111,7 +111,7 @@ FOREACH_OPERANDTYPE(OPTYPE)
   V(loadfar, OpCount8, OpCount8)                   \
   V(loadattr, OpSymbol)                            \
   V(loadattrvalue)                                 \
-  V(loadsuper)                                     \
+  V(loadsuperconstructor)                          \
   V(loadsuperattr, OpSymbol)                       \
                                                    \
   /* write operations */                           \

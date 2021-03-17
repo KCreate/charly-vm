@@ -196,8 +196,8 @@ void Builder::emit_loadattrvalue() {
   emit(Opcode::loadattrvalue);
 }
 
-void Builder::emit_loadsuper() {
-  emit(Opcode::loadsuper);
+void Builder::emit_loadsuperconstructor() {
+  emit(Opcode::loadsuperconstructor);
 }
 
 void Builder::emit_loadsuperattr(OpSymbol symbol) {

@@ -846,6 +846,35 @@ ref<Expression> Parser::parse_call_member_index() {
           }
         }
 
+        target->set_location(call);
+
+        // specialize super nodes
+        switch (target->type()) {
+          case Node::Type::CallOp: {
+            ref<CallOp> node = cast<CallOp>(target);
+
+            if (isa<Super>(node->target)) {
+              target = make<SuperCall>(node->arguments);
+              target->set_location(node);
+            }
+
+            break;
+          }
+          case Node::Type::CallMemberOp: {
+            ref<CallMemberOp> node = cast<CallMemberOp>(target);
+
+            if (isa<Super>(node->target)) {
+              target = make<SuperAttrCall>(node->member, node->arguments);
+              target->set_location(node);
+            }
+
+            break;
+          }
+          default: {
+            break;
+          }
+        }
+
         break;
       }
       case TokenType::LeftBracket: {
@@ -1140,12 +1169,20 @@ ref<Function> Parser::parse_function(FunctionFlags flags) {
   // only class functions may contain super statements
   // yield statements are allowed in all functions except class constructors
   if (flags.class_function) {
-    if (function_name->value.compare("constructor") == 0 && !flags.static_function) {
+
+    // constructors cannot yield
+    if (function_name->value.compare("constructor") == 0) {
       m_keyword_context._yield = false;
     } else {
       m_keyword_context._yield = true;
     }
-    m_keyword_context._super = true;
+
+    // static class functions cannot contain super references
+    if (flags.static_function) {
+      m_keyword_context._super = false;
+    } else {
+      m_keyword_context._super = true;
+    }
   } else {
     m_keyword_context._yield = true;
     m_keyword_context._super = false;
@@ -1322,6 +1359,7 @@ ref<Class> Parser::parse_class() {
       ref<Function> function = parse_function(flags);
 
       if (static_property) {
+        function->class_static_function = true;
         node->static_properties.push_back(make<ClassProperty>(true, function->name, function));
       } else {
         if (function->name->value.compare("constructor") == 0) {

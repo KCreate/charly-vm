@@ -36,6 +36,8 @@
       AST_TYPESWITCH_CASE_NODE(Null, __VA_ARGS__)                  \
       AST_TYPESWITCH_CASE_NODE(Self, __VA_ARGS__)                  \
       AST_TYPESWITCH_CASE_NODE(Super, __VA_ARGS__)                 \
+      AST_TYPESWITCH_CASE_NODE(SuperCall, __VA_ARGS__)             \
+      AST_TYPESWITCH_CASE_NODE(SuperAttrCall, __VA_ARGS__)         \
       AST_TYPESWITCH_CASE_NODE(Tuple, __VA_ARGS__)                 \
       AST_TYPESWITCH_CASE_NODE(List, __VA_ARGS__)                  \
       AST_TYPESWITCH_CASE_NODE(DictEntry, __VA_ARGS__)             \
@@ -50,7 +52,7 @@
       AST_TYPESWITCH_CASE_NODE(UnpackTargetElement, __VA_ARGS__)   \
       AST_TYPESWITCH_CASE_NODE(UnpackTarget, __VA_ARGS__)          \
       AST_TYPESWITCH_CASE_NODE(Assignment, __VA_ARGS__)            \
-      AST_TYPESWITCH_CASE_NODE(UnpackAssignment, __VA_ARGS__)            \
+      AST_TYPESWITCH_CASE_NODE(UnpackAssignment, __VA_ARGS__)      \
       AST_TYPESWITCH_CASE_NODE(MemberAssignment, __VA_ARGS__)      \
       AST_TYPESWITCH_CASE_NODE(IndexAssignment, __VA_ARGS__)       \
       AST_TYPESWITCH_CASE_NODE(Ternary, __VA_ARGS__)               \
@@ -65,7 +67,7 @@
       AST_TYPESWITCH_CASE_NODE(If, __VA_ARGS__)                    \
       AST_TYPESWITCH_CASE_NODE(While, __VA_ARGS__)                 \
       AST_TYPESWITCH_CASE_NODE(Try, __VA_ARGS__)                   \
-      AST_TYPESWITCH_CASE_NODE(TryFinally, __VA_ARGS__)                   \
+      AST_TYPESWITCH_CASE_NODE(TryFinally, __VA_ARGS__)            \
       AST_TYPESWITCH_CASE_NODE(SwitchCase, __VA_ARGS__)            \
       AST_TYPESWITCH_CASE_NODE(Switch, __VA_ARGS__)                \
       AST_TYPESWITCH_CASE_NODE(For, __VA_ARGS__)                   \

@@ -301,6 +301,30 @@ void Class::dump_info(std::ostream& out) const {
   writer.fg(Color::Green, this->name->value);
 }
 
+bool SuperCall::has_spread_elements() const {
+  for (const auto& exp : this->arguments) {
+    if (isa<Spread>(exp))
+      return true;
+  }
+
+  return false;
+}
+
+void SuperAttrCall::dump_info(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  writer << ' ';
+  writer.fg(Color::Green, this->member->value);
+}
+
+bool SuperAttrCall::has_spread_elements() const {
+  for (const auto& exp : this->arguments) {
+    if (isa<Spread>(exp))
+      return true;
+  }
+
+  return false;
+}
+
 void MemberOp::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';

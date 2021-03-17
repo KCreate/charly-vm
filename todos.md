@@ -3,16 +3,6 @@
 - Document the stack effects of all opcodes and write a little description
 
 - CodeGenerator
-  - super expressions
-    - super can only be a part of a call or callmember expressions
-    - can only generate calls to following types
-      - parent constructor
-      - parent class member function
-      - parent class static function
-    - `super()` calls the parent variant of the current function
-      - parent constructor inside constructors
-      - parent member func inside member funcs
-      - parent static func inside static funcs
   - Try statements
     - Exception tables
       - Store start, end and handler label

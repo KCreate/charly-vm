@@ -25,32 +25,7 @@
  */
 
 class A {
-  property name
+  foo {
+    super.foo(1)
+  }
 }
-
-class B extends A {
-  property age
-  constructor(name, @age) = super(name)
-}
-
-/* class A {                               */
-/*   property name                         */
-/*                                         */
-/*   dump {                                */
-/*     return "{@name}"                    */
-/*   }                                     */
-/*                                         */
-/*   static foo { print("hello world") }   */
-/* }                                       */
-/*                                         */
-/* class B extends A {                     */
-/*   property age                          */
-/*                                         */
-/*   constructor(name, @age) = super(name) */
-/*                                         */
-/*   dump {                                */
-/*     return "{@name} {@age}"             */
-/*   }                                     */
-/*                                         */
-/*   static bar { print("goodbye world") } */
-/* }                                       */

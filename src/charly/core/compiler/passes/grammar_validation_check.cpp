@@ -115,4 +115,8 @@ void GrammarValidationCheck::inspect_leave(const ref<Function>& node) {
   }
 }
 
+void GrammarValidationCheck::inspect_leave(const ref<Super>& node) {
+  m_console.error(node, "super cannot be used by itself, it must be a part of a call expression");
+}
+
 }  // namespace charly::core::compiler::ast

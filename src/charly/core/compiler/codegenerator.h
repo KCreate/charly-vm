@@ -56,6 +56,10 @@ private:
     ast::ref<ast::Function> ast;
   };
 
+  const ast::ref<ast::Function>& active_function() const {
+    return m_function_queue.front().ast;
+  }
+
   // enqueue a function to be compiled
   // returns the label the function will be placed at
   ir::Label enqueue_function(const ast::ref<ast::Function>& ast);
@@ -105,6 +109,8 @@ private:
   virtual void inspect_leave(const ast::ref<ast::Symbol>&) override;
   virtual void inspect_leave(const ast::ref<ast::Null>&) override;
   virtual void inspect_leave(const ast::ref<ast::Self>&) override;
+  virtual bool inspect_enter(const ast::ref<ast::SuperCall>&) override;
+  virtual bool inspect_enter(const ast::ref<ast::SuperAttrCall>&) override;
   virtual bool inspect_enter(const ast::ref<ast::Tuple>&) override;
   virtual bool inspect_enter(const ast::ref<ast::List>&) override;
   virtual bool inspect_enter(const ast::ref<ast::Dict>&) override;
