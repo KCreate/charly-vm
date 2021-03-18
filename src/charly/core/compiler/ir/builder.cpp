@@ -97,10 +97,6 @@ void Builder::emit_nop() {
   emit(Opcode::nop);
 }
 
-void Builder::emit_halt() {
-  emit(Opcode::halt);
-}
-
 // misc. instructions
 void Builder::emit_import() {
   emit(Opcode::import);
@@ -112,6 +108,10 @@ void Builder::emit_stringconcat(OpCount8 count) {
 
 void Builder::emit_declareglobal(OpSymbol symbol) {
   emit(Opcode::declareglobal, IROperandSymbol::make(symbol));
+}
+
+void Builder::emit_declareglobalconst(OpSymbol symbol) {
+  emit(Opcode::declareglobalconst, IROperandSymbol::make(symbol));
 }
 
 void Builder::emit_type() {
@@ -168,6 +168,7 @@ void Builder::emit_load(OpImmediate value) {
 
 void Builder::emit_loadsymbol(OpSymbol symbol) {
   emit(Opcode::loadsymbol, IROperandSymbol::make(symbol));
+  register_symbol(symbol);
 }
 
 void Builder::emit_loadcontextself() {

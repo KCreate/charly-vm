@@ -403,6 +403,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::SuperCall>& node) {
     // load the class of the self value onto the stack
     m_builder.emit_loadlocal(0);
     m_builder.emit_dup();
+    m_builder.emit_type();
     m_builder.emit_loadsuperconstructor();
 
     // call the constructor parent constructor
@@ -418,6 +419,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::SuperCall>& node) {
   } else {
     m_builder.emit_loadlocal(0);
     m_builder.emit_dup();
+    m_builder.emit_type();
     m_builder.emit_loadsuperattr(active_function()->name->value);
 
     // call the parent function
@@ -438,6 +440,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::SuperCall>& node) {
 bool CodeGenerator::inspect_enter(const ast::ref<ast::SuperAttrCall>& node) {
   m_builder.emit_loadlocal(0);
   m_builder.emit_dup();
+  m_builder.emit_type();
   m_builder.emit_loadsuperattr(node->member->value);
 
   // call the parent function
@@ -687,12 +690,20 @@ bool CodeGenerator::inspect_enter(const ref<Declaration>& node) {
 
   // global declarations
   if (node->ir_location.type == ValueLocation::Type::Global) {
-    m_builder.emit_declareglobal(node->name->value);
+    if (node->constant) {
+      m_builder.emit_declareglobalconst(node->name->value);
+    } else {
+      m_builder.emit_declareglobal(node->name->value);
+    }
   }
 
-  apply(node->expression);
-  generate_store(node->ir_location);
-  m_builder.emit_pop();
+  // all variables are initialized as null so the
+  // initialization can be skipped in that case
+  if (!isa<Null>(node->expression)) {
+    apply(node->expression);
+    generate_store(node->ir_location);
+    m_builder.emit_pop();
+  }
 
   return false;
 }
@@ -701,7 +712,11 @@ bool CodeGenerator::inspect_enter(const ref<UnpackDeclaration>& node) {
   for (const ref<UnpackTargetElement>& element : node->target->elements) {
     // global declarations
     if (element->ir_location.type == ValueLocation::Type::Global) {
-      m_builder.emit_declareglobal(element->name->value);
+      if (node->constant) {
+        m_builder.emit_declareglobalconst(element->name->value);
+      } else {
+        m_builder.emit_declareglobal(element->name->value);
+      }
     }
   }
 
