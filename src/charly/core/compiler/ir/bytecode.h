@@ -75,109 +75,594 @@ FOREACH_OPERANDTYPE(OPTYPE)
 // opcode listing
 //  - name
 //  - size of operands
-#define FOREACH_OPCODE(V)                          \
-  /* machine control */                            \
-  V(nop)                                           \
-  V(halt)                                          \
-                                                   \
-  /* misc. instructions */                         \
-  V(import)                                        \
-  V(stringconcat, OpCount8)                        \
-  V(declareglobal, OpSymbol)                       \
-  V(type)                                          \
-                                                   \
-  /* stack management */                           \
-  V(pop)                                           \
-  V(dup)                                           \
-  V(dup2)                                          \
-                                                   \
-  /* control flow */                               \
-  V(jmp, OpOffset)                                 \
-  V(jmpf, OpOffset)                                \
-  V(jmpt, OpOffset)                                \
-  V(throwex)                                       \
-                                                   \
-  /* function control flow */                      \
-  V(call, OpCount8)                                \
-  V(callspread, OpCount8)                          \
-  V(ret)                                           \
-                                                   \
-  /* load operations */                            \
-  V(load, OpImmediate)                             \
-  V(loadsymbol, OpSymbol) /* pseudo instruction */ \
-  V(loadcontextself)                               \
-  V(loadglobal, OpSymbol)                          \
-  V(loadlocal, OpCount8)                           \
-  V(loadfar, OpCount8, OpCount8)                   \
-  V(loadattr, OpSymbol)                            \
-  V(loadattrvalue)                                 \
-  V(loadsuperconstructor)                          \
-  V(loadsuperattr, OpSymbol)                       \
-                                                   \
-  /* write operations */                           \
-  V(setglobal, OpSymbol)                           \
-  V(setlocal, OpCount8)                            \
-  V(setfar, OpCount8, OpCount8)                    \
-  V(setattr, OpSymbol)                             \
-  V(setattrvalue)                                  \
-                                                   \
-  /* value destructuring operations */             \
-  V(unpacksequence, OpCount8)                      \
-  V(unpacksequencespread, OpCount8, OpCount8)      \
-  V(unpackobject, OpCount8)                        \
-  V(unpackobjectspread, OpCount8)                  \
-                                                   \
-  /* value allocation */                           \
-  V(makefunc, OpOffset)                            \
-  V(makeclass, OpCount8, OpCount8, OpCount8)       \
-  V(makesubclass, OpCount8, OpCount8, OpCount8)    \
-  V(makestr, OpOffset)                             \
-  V(makelist, OpCount16)                           \
-  V(makelistspread, OpCount16)                     \
-  V(makedict, OpCount16)                           \
-  V(makedictspread, OpCount16)                     \
-  V(maketuple, OpCount16)                          \
-  V(maketuplespread, OpCount16)                    \
-                                                   \
-  /* fiber management */                           \
-  V(fibercreate)                                   \
-  V(fiberspawn)                                    \
-  V(fiberyield)                                    \
-  V(fiberawait)                                    \
-                                                   \
-  /* cast operations */                            \
-  V(caststring)                                    \
-  V(castsymbol)                                    \
-  V(castiterator)                                  \
-                                                   \
-  /* iterator operations */                        \
-  V(iteratornext)                                  \
-                                                   \
-  /* arithmetic operations */                      \
-  V(add)                                           \
-  V(sub)                                           \
-  V(mul)                                           \
-  V(div)                                           \
-  V(mod)                                           \
-  V(pow)                                           \
-  V(usub)                                          \
-                                                   \
-  /* comparison operations */                      \
-  V(eq)                                            \
-  V(neq)                                           \
-  V(lt)                                            \
-  V(gt)                                            \
-  V(le)                                            \
-  V(ge)                                            \
-  V(unot)                                          \
-                                                   \
-  /* bitwise operations */                         \
-  V(shl)                                           \
-  V(shr)                                           \
-  V(shru)                                          \
-  V(band)                                          \
-  V(bor)                                           \
-  V(bxor)                                          \
+#define FOREACH_OPCODE(V)                                         \
+  /* nop - no operation                                           \
+   * */                                                           \
+  V(nop)                                                          \
+                                                                  \
+  /* import - import module or file                               \
+   *                                                              \
+   * stack arguments:                                             \
+   * - modulename (filepath)                                      \
+   * - sourcepath (dirpath of current file, working dir if repl)  \
+   *                                                              \
+   * stack results:                                               \
+   * - module (value returned by included file)                   \
+   * */                                                           \
+  V(import)                                                       \
+  /* stringconcat - concatenate multiple values into a string     \
+   *                                                              \
+   * opcode operands:                                             \
+   * - amount of values                                           \
+   *                                                              \
+   * stack arguments:                                             \
+   * - values...                                                  \
+   *                                                              \
+   * stack results:                                               \
+   * - result string                                              \
+   * */                                                           \
+  V(stringconcat, OpCount8)                                       \
+  /* declareglobal - declare a new global variable                \
+   *                                                              \
+   * opcode operands:                                             \
+   * - symbol                                                     \
+   * */                                                           \
+  V(declareglobal, OpSymbol)                                      \
+  /* declareglobalconst - declare a new constant global variable  \
+   *                                                              \
+   * opcode operands:                                             \
+   * - symbol                                                     \
+   * */                                                           \
+  V(declareglobalconst, OpSymbol)                                 \
+  /* type - load the class of a value                             \
+   *                                                              \
+   * stack arguments:                                             \
+   * - value                                                      \
+   *                                                              \
+   * stack results:                                               \
+   * - class of value                                             \
+   * */                                                           \
+  V(type)                                                         \
+                                                                  \
+  /* pop - pop a value from the stack                             \
+   *                                                              \
+   * stack arguments:                                             \
+   * - value                                                      \
+   * */                                                           \
+  V(pop)                                                          \
+  /* dup - duplicate top value on the stack                       \
+   *                                                              \
+   * stack arguments:                                             \
+   * - value                                                      \
+   *                                                              \
+   * stack results:                                               \
+   * - value                                                      \
+   * - copy of value                                              \
+   * */                                                           \
+  V(dup)                                                          \
+  /* dup2 - duplicate the top two values on the stack             \
+   *                                                              \
+   * stack arguments:                                             \
+   * - value1                                                     \
+   * - value2                                                     \
+   *                                                              \
+   * stack results:                                               \
+   * - value1                                                     \
+   * - value2                                                     \
+   * - value1 copy                                                \
+   * - value2 copy                                                \
+   * */                                                           \
+  V(dup2)                                                         \
+                                                                  \
+  /* jmp - jump to label                                          \
+   *                                                              \
+   * opcode operands:                                             \
+   * - branch target                                              \
+   * */                                                           \
+  V(jmp, OpOffset)                                                \
+  /* jmpf - jump to label if TOS is falsey                        \
+   *                                                              \
+   * opcode operands:                                             \
+   * - branch target                                              \
+   *                                                              \
+   * stack arguments:                                             \
+   * - test                                                       \
+   * */                                                           \
+  V(jmpf, OpOffset)                                               \
+  /* jmpt - jump to label if TOS is truthy                        \
+   *                                                              \
+   * opcode operands:                                             \
+   * - branch target                                              \
+   *                                                              \
+   * stack arguments:                                             \
+   * - test                                                       \
+   * */                                                           \
+  V(jmpt, OpOffset)                                               \
+  /* throwex - throw TOS as exception                             \
+   *                                                              \
+   * stack arguments:                                             \
+   * - value                                                      \
+   * */                                                           \
+  V(throwex)                                                      \
+                                                                  \
+  /* call - call a function                                       \
+   *                                                              \
+   * opcode operands:                                             \
+   * - amount of arguments                                        \
+   *                                                              \
+   * stack arguments:                                             \
+   * - self value argument                                        \
+   * - function                                                   \
+   * - arguments...                                               \
+   *                                                              \
+   * stack results:                                               \
+   * - return value                                               \
+   * */                                                           \
+  V(call, OpCount8)                                               \
+  /* callspread - call a function with spreaded arguments         \
+   *                                                              \
+   * opcode operands:                                             \
+   * - amount of segments                                         \
+   *                                                              \
+   * stack arguments:                                             \
+   * - self value argument                                        \
+   * - function                                                   \
+   * - segments...                                                \
+   *                                                              \
+   * stack results:                                               \
+   * - return value                                               \
+   * */                                                           \
+  V(callspread, OpCount8)                                         \
+  /* ret - return from current function                           \
+   * */                                                           \
+  V(ret)                                                          \
+                                                                  \
+  /* load - load immediate value onto the stack                   \
+   *                                                              \
+   * opcode operands:                                             \
+   * - immediate value                                            \
+   *                                                              \
+   * stack results:                                               \
+   * - immediate value                                            \
+   * */                                                           \
+  V(load, OpImmediate)                                            \
+  /* loadsymbol - load symbol onto the stack                      \
+   * gets emitted as a load instruction, exists for               \
+   * more readable disassemblies                                  \
+   *                                                              \
+   * opcode operands:                                             \
+   * - symbol                                                     \
+   *                                                              \
+   * stack results:                                               \
+   * - symbol                                                     \
+   * */                                                           \
+  V(loadsymbol, OpSymbol) /* pseudo instruction */                \
+  /* loadcontextself - load the self from the surrounding         \
+   *                   function's context                         \
+   *                                                              \
+   * stack results:                                               \
+   * - self value from surrounding function                       \
+   *                   */                                         \
+  V(loadcontextself)                                              \
+  /* loadglobal - load a global value                             \
+   *                                                              \
+   * opcode operands:                                             \
+   * - symbol                                                     \
+   *                                                              \
+   * stack results:                                               \
+   * - result value                                               \
+   * */                                                           \
+  V(loadglobal, OpSymbol)                                         \
+  /* loadlocal - load frame local variable                        \
+   *                                                              \
+   * opcode operands:                                             \
+   * - slot offset                                                \
+   *                                                              \
+   * stack results:                                               \
+   * - value                                                      \
+   * */                                                           \
+  V(loadlocal, OpCount8)                                          \
+  /* loadfar - load variable from surrounding function            \
+   *                                                              \
+   * opcode operands:                                             \
+   * - function depth                                             \
+   * - slot offset                                                \
+   *                                                              \
+   * stack results:                                               \
+   * - value                                                      \
+   * */                                                           \
+  V(loadfar, OpCount8, OpCount8)                                  \
+  /* loadattr - load property                                     \
+   *                                                              \
+   * opcode operands:                                             \
+   * - symbol                                                     \
+   *                                                              \
+   * stack arguments:                                             \
+   * - value                                                      \
+   *                                                              \
+   * stack results:                                               \
+   * - property                                                   \
+   * */                                                           \
+  V(loadattr, OpSymbol)                                           \
+  /* loadattrvalue - load indexed property                        \
+   *                                                              \
+   * stack arguments:                                             \
+   * - value                                                      \
+   * - index                                                      \
+   *                                                              \
+   * stack results:                                               \
+   * - property                                                   \
+   * */                                                           \
+  V(loadattrvalue)                                                \
+  /* loadsuperconstructor - load the super constructor of a given \
+   *                        value                                 \
+   *                                                              \
+   * stack arguments:                                             \
+   * - type                                                       \
+   *                                                              \
+   * stack results:                                               \
+   * - constructor function of the parent class                   \
+   *                        */                                    \
+  V(loadsuperconstructor)                                         \
+  /* loadsuperattr - load function from parent type               \
+   *                                                              \
+   * opcode operands:                                             \
+   * - symbol                                                     \
+   *                                                              \
+   * stack arguments:                                             \
+   * - type                                                       \
+   *                                                              \
+   * stack results:                                               \
+   * - function from parent type                                  \
+   * */                                                           \
+  V(loadsuperattr, OpSymbol)                                      \
+                                                                  \
+  /* setglobal - write to global variable                         \
+   *                                                              \
+   * opcode operands:                                             \
+   * - symbol                                                     \
+   *                                                              \
+   * stack arguments:                                             \
+   * - value                                                      \
+   *                                                              \
+   * stack results:                                               \
+   * - value                                                      \
+   * */                                                           \
+  V(setglobal, OpSymbol)                                          \
+  /* setlocal - write to frame local variable                     \
+   *                                                              \
+   * opcode operands:                                             \
+   * - slot offset                                                \
+   *                                                              \
+   * stack arguments:                                             \
+   * - value                                                      \
+   *                                                              \
+   * stack results:                                               \
+   * - value                                                      \
+   * */                                                           \
+  V(setlocal, OpCount8)                                           \
+  /* setfar - write to variable from surrounding function         \
+   *                                                              \
+   * opcode operands:                                             \
+   * - function depth                                             \
+   * - slot offset                                                \
+   *                                                              \
+   * stack arguments:                                             \
+   * - value                                                      \
+   *                                                              \
+   * stack results:                                               \
+   * - value                                                      \
+   * */                                                           \
+  V(setfar, OpCount8, OpCount8)                                   \
+  /* setattr - write to property                                  \
+   *                                                              \
+   * opcode operands:                                             \
+   * - symbol                                                     \
+   *                                                              \
+   * stack arguments:                                             \
+   * - target                                                     \
+   * - value                                                      \
+   *                                                              \
+   * stack results:                                               \
+   * - value                                                      \
+   * */                                                           \
+  V(setattr, OpSymbol)                                            \
+  /* setattrvalue - write to computed property                    \
+   *                                                              \
+   * stack arguments:                                             \
+   * - target                                                     \
+   * - index                                                      \
+   * - value                                                      \
+   *                                                              \
+   * stack results:                                               \
+   * - value                                                      \
+   * */                                                           \
+  V(setattrvalue)                                                 \
+                                                                  \
+  /* unpacksequence - unpack into sequence of values              \
+   *                                                              \
+   * opcode operands:                                             \
+   * - amount of values in sequence                               \
+   *                                                              \
+   * stack arguments:                                             \
+   * - source                                                     \
+   *                                                              \
+   * stack results:                                               \
+   * - values...                                                  \
+   * */                                                           \
+  V(unpacksequence, OpCount8)                                     \
+  /* unpacksequencespread - unpack into sequence of values with   \
+   *                        a spread somewhere in between         \
+   *                                                              \
+   * opcode operands:                                             \
+   * - amount of values before the spread                         \
+   * - amount of values after the spread                          \
+   *                                                              \
+   * stack arguments:                                             \
+   * - source                                                     \
+   *                                                              \
+   * stack results:                                               \
+   * - values...                                                  \
+   * */                                                           \
+  V(unpacksequencespread, OpCount8, OpCount8)                     \
+  /* unpackobject- unpack specific keys from value                \
+   *                                                              \
+   * opcode operands:                                             \
+   * - amount of keys                                             \
+   *                                                              \
+   * stack arguments:                                             \
+   * - source                                                     \
+   * - key-symbols...                                             \
+   *                                                              \
+   * stack results:                                               \
+   * - values...                                                  \
+   *                                                              \
+   * */                                                           \
+  V(unpackobject, OpCount8)                                       \
+  /* unpackobjectspread - unpack specific keys from value, put    \
+   *                      remaining keys into rest value          \
+   *                                                              \
+   * opcode operands:                                             \
+   * - amount of keys                                             \
+   *                                                              \
+   * stack arguments:                                             \
+   * - source                                                     \
+   * - key-symbols...                                             \
+   *                                                              \
+   * stack results:                                               \
+   * - values...                                                  \
+   * - rest value                                                 \
+   * */                                                           \
+  V(unpackobjectspread, OpCount8)                                 \
+                                                                  \
+  /* makefunc - allocate new function                             \
+   *                                                              \
+   * opcode operands:                                             \
+   * - body label                                                 \
+   *                                                              \
+   * stack results:                                               \
+   * - function                                                   \
+   * */                                                           \
+  V(makefunc, OpOffset)                                           \
+  /* makeclass - allocate new class                               \
+   *                                                              \
+   * opcode operands:                                             \
+   * - amount of member functions                                 \
+   * - amount of member properties                                \
+   * - amount of static properties                                \
+   *                                                              \
+   * stack arguments:                                             \
+   * - constructor function                                       \
+   * - member functions...                                        \
+   * - member property symbols...                                 \
+   * - static property key                                        \
+   *   static property value...                                   \
+   *                                                              \
+   * stack results:                                               \
+   * - class                                                      \
+   * */                                                           \
+  V(makeclass, OpCount8, OpCount8, OpCount8)                      \
+  /* makesubclass - allocate new subclass                         \
+   *                                                              \
+   * opcode operands:                                             \
+   * - amount of member functions                                 \
+   * - amount of member properties                                \
+   * - amount of static properties                                \
+   *                                                              \
+   * stack arguments:                                             \
+   * - parent class                                               \
+   * - constructor function                                       \
+   * - member functions...                                        \
+   * - member property symbols...                                 \
+   * - static property key                                        \
+   *   static property value...                                   \
+   *                                                              \
+   * stack results:                                               \
+   * - class                                                      \
+   * */                                                           \
+  V(makesubclass, OpCount8, OpCount8, OpCount8)                   \
+  /* makestr - allocate new string                                \
+   *                                                              \
+   * opcode operands:                                             \
+   * - string label                                               \
+   *                                                              \
+   * stack results:                                               \
+   * - string                                                     \
+   * */                                                           \
+  V(makestr, OpOffset)                                            \
+  /* makelist - allocate new list                                 \
+   *                                                              \
+   * opcode operands:                                             \
+   * - amount of values                                           \
+   *                                                              \
+   * stack arguments:                                             \
+   * - values...                                                  \
+   *                                                              \
+   * stack results:                                               \
+   * - list                                                       \
+   * */                                                           \
+  V(makelist, OpCount16)                                          \
+  /* makelistspread - allocate new list with spreaded arguments   \
+   *                                                              \
+   * opcode operands:                                             \
+   * - amount of segments                                         \
+   *                                                              \
+   * stack arguments:                                             \
+   * - segments...                                                \
+   *                                                              \
+   * stack results:                                               \
+   * - list                                                       \
+   * */                                                           \
+  V(makelistspread, OpCount16)                                    \
+  /* makedict - allocate new dict                                 \
+   *                                                              \
+   * opcode operands:                                             \
+   * - amount of key/value pairs                                  \
+   *                                                              \
+   * stack arguments:                                             \
+   * - key symbol                                                 \
+   *   value...                                                   \
+   *                                                              \
+   * stack results:                                               \
+   * - dict                                                       \
+   * */                                                           \
+  V(makedict, OpCount16)                                          \
+  /* makedictspread - allocate new dict with spreaded arguments   \
+   *                                                              \
+   * opcode operands:                                             \
+   * - amount of source values                                    \
+   *                                                              \
+   * stack arguments:                                             \
+   * - values...                                                  \
+   *                                                              \
+   * stack results:                                               \
+   * - dict                                                       \
+   * */                                                           \
+  V(makedictspread, OpCount16)                                    \
+  /* maketuple - allocate new tuple                               \
+   *                                                              \
+   * opcode operands:                                             \
+   * - amount of values                                           \
+   *                                                              \
+   * stack arguments:                                             \
+   * - values...                                                  \
+   *                                                              \
+   * stack results:                                               \
+   * - tuple                                                      \
+   * */                                                           \
+  V(maketuple, OpCount16)                                         \
+  /* maketuplespread - allocate new tuple with spreaded arguments \
+   *                                                              \
+   * opcode operands:                                             \
+   * - amount of segments                                         \
+   *                                                              \
+   * stack arguments:                                             \
+   * - segments...                                                \
+   *                                                              \
+   * stack results:                                               \
+   * - tuple                                                      \
+   * */                                                           \
+  V(maketuplespread, OpCount16)                                   \
+                                                                  \
+  /* fibercreate - create new fiber but don't spawn yet           \
+   *                                                              \
+   * stack arguments:                                             \
+   * - function                                                   \
+   * - tuple containing arguments                                 \
+   *                                                              \
+   * stack results:                                               \
+   * - fiber                                                      \
+   * */                                                           \
+  V(fibercreate)                                                  \
+  /* fiberspawn - create new fiber and start running it           \
+   *                                                              \
+   * stack arguments:                                             \
+   * - function                                                   \
+   * - tuple containing arguments                                 \
+   *                                                              \
+   * stack results:                                               \
+   * - fiber                                                      \
+   * */                                                           \
+  V(fiberspawn)                                                   \
+  /* fiberyield - yield from the current fiber                    \
+   *                                                              \
+   * stack arguments:                                             \
+   * - value                                                      \
+   *                                                              \
+   * stack results:                                               \
+   * - argument from next fiber invocation                        \
+   * */                                                           \
+  V(fiberyield)                                                   \
+  /* fiberawait - wait for a fiber to finish                      \
+   *                                                              \
+   * stack arguments:                                             \
+   * - fiber                                                      \
+   *                                                              \
+   * stack results:                                               \
+   * - fiber return value                                         \
+   * */                                                           \
+  V(fiberawait)                                                   \
+                                                                  \
+  /* castXYZ - cast source value to new type                      \
+   *                                                              \
+   * stack arguments:                                             \
+   * - value                                                      \
+   *                                                              \
+   * stack results:                                               \
+   * - casted value                                               \
+   * */                                                           \
+  V(caststring)                                                   \
+  V(castsymbol)                                                   \
+  V(castiterator)                                                 \
+                                                                  \
+  /* iteratornext - load the next result tuple from an iterator   \
+   *                                                              \
+   * stack arguments:                                             \
+   * - iterator                                                   \
+   *                                                              \
+   * stack results:                                               \
+   * - result tuple (value, done)                                 \
+   * */                                                           \
+  V(iteratornext)                                                 \
+                                                                  \
+  /* binary operators                                             \
+   *                                                              \
+   * stack arguments:                                             \
+   * - left                                                       \
+   * - right                                                      \
+   *                                                              \
+   * stack results:                                               \
+   * - result                                                     \
+   * */                                                           \
+  V(add)                                                          \
+  V(sub)                                                          \
+  V(mul)                                                          \
+  V(div)                                                          \
+  V(mod)                                                          \
+  V(pow)                                                          \
+  V(eq)                                                           \
+  V(neq)                                                          \
+  V(lt)                                                           \
+  V(gt)                                                           \
+  V(le)                                                           \
+  V(ge)                                                           \
+  V(shl)                                                          \
+  V(shr)  /* sign-retaining right shift */                        \
+  V(shru) /* zero-filling right shift */                          \
+  V(band)                                                         \
+  V(bor)                                                          \
+  V(bxor)                                                         \
+                                                                  \
+  /* unary operators                                              \
+   *                                                              \
+   * stack arguments:                                             \
+   * - value                                                      \
+   *                                                              \
+   * stack results:                                               \
+   * - result                                                     \
+   * */                                                           \
+  V(usub)                                                         \
+  V(unot)                                                         \
   V(ubnot)
 
 enum class Opcode : uint16_t {
