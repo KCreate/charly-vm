@@ -24,8 +24,4 @@
  * SOFTWARE.
  */
 
-class A {
-  foo {
-    super.foo(1)
-  }
-}
+x = ({a, ...middle, b} = x)

@@ -174,50 +174,68 @@ uint8_t CodeGenerator::generate_spread_tuples(const std::vector<ast::ref<ast::Ex
 }
 
 void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target) {
-  bool spread_passed = false;
-  uint8_t count_before = 0;
-  uint8_t count_after = 0;
 
-  // count elements before and after the spread
+  // collect the elements before and after a potential spread element
+  std::vector<ref<UnpackTargetElement>> before_elements;
+  std::vector<ref<UnpackTargetElement>> after_elements;
+  ref<UnpackTargetElement> spread_element = nullptr;
   for (const ref<UnpackTargetElement>& element : target->elements) {
     if (element->spread) {
-      assert(!spread_passed);
-      spread_passed = true;
+      assert(spread_element.get() == nullptr);
+      spread_element = element;
       continue;
     }
 
-    if (target->object_unpack) {
-      m_builder.emit_loadsymbol(element->name->value);
-    }
-
-    if (spread_passed) {
-      count_after++;
+    if (spread_element) {
+      after_elements.push_back(element);
     } else {
-      count_before++;
+      before_elements.push_back(element);
     }
   }
 
-  // unpack the source expressions
+  // keep a copy of the source value around
+  // it will remain on the stack after the assignment and serve
+  // as the yielded value of the unpack assignment
+  m_builder.emit_dup();
+
   if (target->object_unpack) {
-    if (spread_passed) {
-      m_builder.emit_unpackobjectspread(target->elements.size() - 1);
+
+    // emit the symbols to extract from the source value
+    for (auto begin = target->elements.rbegin(); begin != target->elements.rend(); begin++) {
+      const ref<UnpackTargetElement>& element = *begin;
+      if (!element->spread) {
+        m_builder.emit_loadsymbol(element->name->value);
+      }
+    }
+
+    if (spread_element) {
+      m_builder.emit_unpackobjectspread(before_elements.size() + after_elements.size());
     } else {
-      m_builder.emit_unpackobject(target->elements.size());
+      m_builder.emit_unpackobject(before_elements.size());
+    }
+
+    generate_store(spread_element->name->value);
+    m_builder.emit_pop();
+
+    for (auto begin = target->elements.rbegin(); begin != target->elements.rend(); begin++) {
+      const ref<UnpackTargetElement>& element = *begin;
+      if (!element->spread) {
+        generate_store(element->ir_location);
+        m_builder.emit_pop();
+      }
     }
   } else {
-    if (spread_passed) {
-      m_builder.emit_unpacksequencespread(count_before, count_after);
+    if (spread_element) {
+      m_builder.emit_unpacksequencespread(before_elements.size(), after_elements.size());
     } else {
-      m_builder.emit_unpacksequence(count_before);
+      m_builder.emit_unpacksequence(before_elements.size());
     }
-  }
 
-  // store the unpacked values into their allocated locations
-  for (auto begin = target->elements.rbegin();
-      begin != target->elements.rend();
-      begin++) {
-    generate_store((*begin)->ir_location);
-    m_builder.emit_pop();
+    for (auto begin = target->elements.rbegin(); begin != target->elements.rend(); begin++) {
+      const ref<UnpackTargetElement>& element = *begin;
+      generate_store(element->ir_location);
+      m_builder.emit_pop();
+    }
   }
 }
 
