@@ -98,6 +98,12 @@ private:
   virtual void inspect_leave(const ast::ref<ast::Break>&) override;
   virtual void inspect_leave(const ast::ref<ast::Continue>&) override;
   virtual void inspect_leave(const ast::ref<ast::Throw>&) override;
+  virtual void inspect_leave(const ast::ref<ast::Export>&) override;
+  virtual bool inspect_enter(const ast::ref<ast::Import>&) override;
+
+  virtual void inspect_leave(const ast::ref<ast::Yield>&) override;
+  virtual void inspect_leave(const ast::ref<ast::Await>&) override;
+  virtual void inspect_leave(const ast::ref<ast::Typeof>&) override;
 
   virtual void inspect_leave(const ast::ref<ast::Id>&) override;
   virtual void inspect_leave(const ast::ref<ast::Int>&) override;

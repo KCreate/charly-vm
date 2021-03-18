@@ -84,7 +84,7 @@ FOREACH_OPERANDTYPE(OPTYPE)
    *                                                              \
    * stack arguments:                                             \
    * - modulename (filepath)                                      \
-   * - sourcepath (dirpath of current file, working dir if repl)  \
+   * - sourcepath (path of current file)                          \
    *                                                              \
    * stack results:                                               \
    * - module (value returned by included file)                   \

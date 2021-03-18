@@ -313,6 +313,30 @@ void CodeGenerator::inspect_leave(const ref<Throw>&) {
   m_builder.emit_throwex();
 }
 
+void CodeGenerator::inspect_leave(const ast::ref<ast::Export>&) {
+  m_builder.emit_setlocal(1);
+  m_builder.emit_jmp(active_return_label());
+}
+
+bool CodeGenerator::inspect_enter(const ast::ref<ast::Import>& node) {
+  apply(node->source);
+  m_builder.emit_makestr(register_string(m_unit->filepath));
+  m_builder.emit_import();
+  return false;
+}
+
+void CodeGenerator::inspect_leave(const ast::ref<ast::Yield>&) {
+  m_builder.emit_fiberyield();
+}
+
+void CodeGenerator::inspect_leave(const ast::ref<ast::Await>&) {
+  m_builder.emit_fiberawait();
+}
+
+void CodeGenerator::inspect_leave(const ast::ref<ast::Typeof>&) {
+  m_builder.emit_type();
+}
+
 void CodeGenerator::inspect_leave(const ref<Id>& node) {
   generate_load(node->ir_location);
 }
