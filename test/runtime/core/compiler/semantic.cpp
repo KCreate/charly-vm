@@ -85,10 +85,24 @@ TEST_CASE("validates dict literals") {
 }
 
 TEST_CASE("validates spawn statements") {
-  COMPILE_ERROR("spawn foo", "expected a call expression");
-  COMPILE_ERROR("spawn foo.bar", "expected a call expression");
-  COMPILE_ERROR("spawn foo.bar[1]", "expected a call expression");
-  COMPILE_ERROR("spawn foo().bar", "expected a call expression");
+  COMPILE_OK("spawn foo");
+  COMPILE_OK("spawn 1");
+  COMPILE_OK("spawn foo.bar");
+  COMPILE_OK("spawn foo()");
+  COMPILE_OK("spawn foo.bar()");
+  COMPILE_OK("spawn foo[x]()");
+  COMPILE_OK("spawn { x() }");
+}
+
+TEST_CASE("validates super expressions") {
+  COMPILE_OK("class A { constructor { super } }");
+  COMPILE_OK("class A { constructor { super.foo } }");
+  COMPILE_OK("class A { constructor { super() } }");
+  COMPILE_OK("class A { constructor { super.foo() } }");
+  COMPILE_OK("class A { bar { super } }");
+  COMPILE_OK("class A { bar { super.foo } }");
+  COMPILE_OK("class A { bar { super() } }");
+  COMPILE_OK("class A { bar { super.foo() } }");
 }
 
 TEST_CASE("checks for reserved identifiers") {

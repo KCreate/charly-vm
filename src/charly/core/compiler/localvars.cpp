@@ -64,7 +64,7 @@ const LocalVariable* BlockScope::alloc_slot(const ref<Name>& symbol,
                                             bool constant,
                                             bool force_local) {
   // toplevel declarations
-  if (!force_local && this->ast_block->force_global_alloc) {
+  if (!force_local && this->ast_block->repl_toplevel_block) {
     ValueLocation location = ValueLocation::Global(symbol->value);
     variables.insert_or_assign(symbol->value, LocalVariable{ .ast_declaration = declaration,
                                                              .value_location = location,

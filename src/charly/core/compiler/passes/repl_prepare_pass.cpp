@@ -30,19 +30,19 @@ namespace charly::core::compiler::ast {
 
 void ReplPreparePass::inspect_leave(const ref<Block>& node) {
 
-  // if the last element in the block is an expression
-  // it is wrapped in a return statement so that the REPL
-  // can print it
-  if (node->statements.size() && isa<Expression>(node->statements.back())) {
-    ref<Expression> exp = cast<Expression>(node->statements.back());
-    node->statements.pop_back();
+  // the last expression of the toplevel REPL block is
+  // wrapped in a return statement
+  if (node->repl_toplevel_block) {
+    if (node->statements.size() && isa<Expression>(node->statements.back())) {
+      ref<Expression> exp = cast<Expression>(node->statements.back());
+      node->statements.pop_back();
 
-    ref<Return> return_exp = make<Return>(exp);
-    return_exp->set_location(exp);
+      ref<Return> return_exp = make<Return>(exp);
+      return_exp->set_location(exp);
 
-    node->statements.push_back(return_exp);
+      node->statements.push_back(return_exp);
+    }
   }
-
 }
 
 }  // namespace charly::core::compiler::ast

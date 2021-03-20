@@ -24,4 +24,10 @@
  * SOFTWARE.
  */
 
-x = ({a, ...middle, b} = x)
+class A {
+  foo {
+    const x = ->{
+      super()
+    }
+  }
+}

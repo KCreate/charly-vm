@@ -92,8 +92,6 @@ public:
     Null,
     Self,
     Super,
-    SuperCall,
-    SuperAttrCall,
     Tuple,
     List,
     DictEntry,
@@ -279,10 +277,7 @@ public:
   }
 
   // set to true for the top block of REPL input
-  // if set to true, all variable declarations in this block are compiled as
-  // global value declarations
-  // does not affect child blocks
-  bool force_global_alloc = false;
+  bool repl_toplevel_block = false;
 
   std::vector<ref<Statement>> statements;
 
@@ -386,7 +381,6 @@ public:
     this->set_location(statement);
   }
 
-  bool execute_immediately = true; // set by desugar pass
   ref<Statement> statement;
 
   CHILDREN() {
@@ -852,57 +846,6 @@ public:
 // super
 class Super final : public Expression {
   AST_NODE(Super)
-};
-
-// super()
-class SuperCall final : public Expression {
-  AST_NODE(SuperCall)
-public:
-  SuperCall(const std::vector<ref<Expression>>& params) : arguments(params) {
-    if (arguments.size())
-      this->set_location(arguments.front(), arguments.back());
-  }
-  template <typename... Args>
-  SuperCall(Args&&... params) : arguments({ std::forward<Args>(params)... }) {
-    if (arguments.size())
-      this->set_location(arguments.front(), arguments.back());
-  }
-
-  std::vector<ref<Expression>> arguments;
-
-  bool has_spread_elements() const;
-
-  CHILDREN() {
-    CHILD_VECTOR(arguments);
-  }
-};
-
-// super.foo()
-class SuperAttrCall final : public Expression {
-  AST_NODE(SuperAttrCall)
-public:
-  SuperAttrCall(ref<Name> member, const std::vector<ref<Expression>>& params) : member(member), arguments(params) {
-    this->set_begin(member);
-    if (arguments.size())
-      this->set_location(arguments.front(), arguments.back());
-  }
-  template <typename... Args>
-  SuperAttrCall(ref<Name> member, Args&&... params) : member(member), arguments({ std::forward<Args>(params)... }) {
-    this->set_begin(member);
-    if (arguments.size())
-      this->set_location(arguments.front(), arguments.back());
-  }
-
-  ref<Name> member;
-  std::vector<ref<Expression>> arguments;
-
-  bool has_spread_elements() const;
-
-  CHILDREN() {
-    CHILD_VECTOR(arguments);
-  }
-
-  virtual void dump_info(std::ostream& out) const override;
 };
 
 // <target>.<member>

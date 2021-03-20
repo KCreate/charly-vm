@@ -29,8 +29,14 @@
 namespace charly::core::compiler::ast {
 
 void GrammarValidationCheck::inspect_leave(const ref<Spawn>& node) {
-  if (!isa<Block>(node->statement) && !isa<CallOp>(node->statement)) {
-    m_console.error(node->statement, "expected a call expression");
+  if (!(isa<Block>(node->statement) || isa<CallOp>(node->statement) || isa<CallMemberOp>(node->statement) ||
+        isa<CallIndexOp>(node->statement))) {
+
+    if (ref<Expression> exp = cast<Expression>(node->statement)) {
+      node->statement = make<Block>(make<Return>(exp));
+    } else {
+      node->statement = make<Block>(node->statement);
+    }
   }
 }
 
@@ -113,10 +119,6 @@ void GrammarValidationCheck::inspect_leave(const ref<Function>& node) {
       m_console.error(argument, "argument '", argument->name->value , "' is missing a default value");
     }
   }
-}
-
-void GrammarValidationCheck::inspect_leave(const ref<Super>& node) {
-  m_console.error(node, "super cannot be used by itself, it must be a part of a call expression");
 }
 
 }  // namespace charly::core::compiler::ast

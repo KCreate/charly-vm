@@ -104,9 +104,9 @@ void Node::dump(std::ostream& out, bool print_location) const {
 
 void Block::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
-  if (this->force_global_alloc) {
+  if (this->repl_toplevel_block) {
     writer << ' ';
-    writer.fg(Color::Red, "force_global_alloc");
+    writer.fg(Color::Red, "REPL");
   }
 }
 
@@ -299,30 +299,6 @@ void Class::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';
   writer.fg(Color::Green, this->name->value);
-}
-
-bool SuperCall::has_spread_elements() const {
-  for (const auto& exp : this->arguments) {
-    if (isa<Spread>(exp))
-      return true;
-  }
-
-  return false;
-}
-
-void SuperAttrCall::dump_info(std::ostream& out) const {
-  utils::ColorWriter writer(out);
-  writer << ' ';
-  writer.fg(Color::Green, this->member->value);
-}
-
-bool SuperAttrCall::has_spread_elements() const {
-  for (const auto& exp : this->arguments) {
-    if (isa<Spread>(exp))
-      return true;
-  }
-
-  return false;
 }
 
 void MemberOp::dump_info(std::ostream& out) const {

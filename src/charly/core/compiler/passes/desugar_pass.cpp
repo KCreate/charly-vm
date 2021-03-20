@@ -57,45 +57,20 @@ void DesugarPass::inspect_leave(const ref<Import>& node) {
   node->source = source;
 }
 
-ref<Expression> DesugarPass::transform(const ref<Spawn>& node) {
-  ir::BuiltinId builtin_id = node->execute_immediately ? ir::BuiltinId::fiberspawn : ir::BuiltinId::fibercreate;
-  ref<BuiltinOperation> builtin = make<BuiltinOperation>(builtin_id);
+bool DesugarPass::inspect_enter(const ref<Spawn>& node) {
 
-  ref<Expression> function;
-  ref<Tuple> arguments = make<Tuple>();
+  // spawn { <body> } ->  spawn ->{ <body> }()
+  if (ref<Block> block = cast<Block>(node->statement)) {
+    ref<Function> func = make<Function>(true, make<Name>(""), block);
+    func->set_location(node);
 
-  switch (node->statement->type()) {
+    ref<CallOp> call = make<CallOp>(func);
+    call->set_location(node);
 
-    // spawn { <body> } -> spawn(->{ <body> }, ())
-    case Node::Type::Block: {
-      function = make<Function>(true, make<Name>(""), cast<Block>(node->statement));
-      function->set_location(node);
-      break;
-    }
-
-    // spawn foo.bar(1, 2)    -> spawn(foo.bar, (1, 2))
-    case Node::Type::CallOp: {
-      ref<CallOp> call = cast<CallOp>(node->statement);
-
-      function = call->target;
-
-      for (const ref<Expression>& arg : call->arguments) {
-        arguments->elements.push_back(arg);
-      }
-
-      break;
-    }
-
-    default: {
-      assert(false && "unexpected node type");
-      break;
-    }
+    node->statement = call;
   }
 
-  builtin->arguments.push_back(function);
-  builtin->arguments.push_back(arguments);
-
-  return builtin;
+  return true;
 }
 
 ref<Expression> DesugarPass::transform(const ref<FormatString>& node) {
@@ -120,6 +95,7 @@ void DesugarPass::inspect_leave(const ref<Function>& node) {
 
   // wrap regular functions with yield expressions inside a generator wrapper function
   if (!node->arrow_function) {
+
     // check if this function contains any yield statements
     ref<Node> yield_node = Node::search(
       node->body,
@@ -161,7 +137,7 @@ void DesugarPass::inspect_leave(const ref<Function>& node) {
     if (yield_node) {
 
       // wrapper arrow func
-      ref<Function> func = make<Function>(true, make<Name>(""), node->body);
+      ref<Function> func = make<Function>(true, make<Name>("generator_" + node->name->value), node->body);
 
       // insert arguments
       for (const ref<FunctionArgument>& argument : node->arguments) {
@@ -175,12 +151,7 @@ void DesugarPass::inspect_leave(const ref<Function>& node) {
       }
 
       // build wrapped spawn statement
-      ref<Spawn> spawn = make<Spawn>(func_call);
-      spawn->execute_immediately = false;
-      ref<BuiltinOperation> castiterator = make<BuiltinOperation>(ir::BuiltinId::castiterator, spawn);
-      ref<Return> return_node = make<Return>(castiterator);
-      ref<Block> new_body = make<Block>(return_node);
-
+      ref<Block> new_body = make<Block>(make<Return>(make<Spawn>(func_call)));
       node->body = cast<Block>(apply(new_body));
     }
   }

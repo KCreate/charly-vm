@@ -112,12 +112,6 @@ protected:
   HANDLE_NODE(Expression, Null, {})
   HANDLE_NODE(Expression, Self, {})
   HANDLE_NODE(Expression, Super, {})
-  HANDLE_NODE(Expression, SuperCall, {
-    APPLY_VECTOR(arguments)
-  })
-  HANDLE_NODE(Expression, SuperAttrCall, {
-    APPLY_VECTOR(arguments)
-  })
 
   HANDLE_NODE(Expression, Tuple, {
     APPLY_VECTOR(elements)

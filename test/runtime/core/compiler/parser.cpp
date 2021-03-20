@@ -609,20 +609,7 @@ TEST_CASE("class literals") {
 TEST_CASE("super expressions") {
   CHECK_ERROR_PROGRAM("->super", "super is not allowed at this point");
   CHECK_ERROR_PROGRAM("->super.foo()", "super is not allowed at this point");
-
-  CHECK_PROGRAM("class A { foo { super() } }");
-  CHECK_PROGRAM("class A { foo { super.foo() } }");
-  CHECK_PROGRAM("class A { constructor { super() } }");
-  CHECK_PROGRAM("class A { constructor { super.foo() } }");
-
-  COMPILE_ERROR("class A { foo { super } }", "super cannot be used by itself, it must be a part of a call expression");
-  COMPILE_ERROR("class A { foo { super.foo } }",
-                "super cannot be used by itself, it must be a part of a call expression");
-  COMPILE_ERROR("class A { constructor { super } }",
-                "super cannot be used by itself, it must be a part of a call expression");
-  COMPILE_ERROR("class A { constructor { super.foo } }",
-                "super cannot be used by itself, it must be a part of a call expression");
-  COMPILE_ERROR("class A { static foo { super() } }", "super is not allowed at this point");
+  CHECK_ERROR_PROGRAM("class A { static foo { super() } }", "super is not allowed at this point");
 }
 
 TEST_CASE("try statements") {
@@ -677,10 +664,9 @@ TEST_CASE("wraps functions and classes into declarations") {
 }
 
 TEST_CASE("__builtin expressions") {
-  CHECK_AST_STMT("__builtin(\"stringconcat\")", make<BuiltinOperation>(BuiltinId::stringconcat));
-  CHECK_AST_STMT("__builtin(\"stringconcat\", x, y, z)",
-                 make<BuiltinOperation>(BuiltinId::stringconcat, make<Id>("x"), make<Id>("y"), make<Id>("z")));
-  CHECK_AST_STMT("__builtin(\"caststring\", x)", make<BuiltinOperation>(BuiltinId::caststring, make<Id>("x")));
+  CHECK_STMT("__builtin(\"caststring\", x)");
+  CHECK_STMT("__builtin(\"castsymbol\", x)");
+  CHECK_STMT("__builtin(\"fiberspawn\", x, y, z)");
 
   CHECK_ERROR_STMT("__builtin", "unexpected end of file, expected a '(' token");
   CHECK_ERROR_STMT("__builtin(", "unexpected end of file, expected a ')' token");

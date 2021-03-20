@@ -1,6 +1,36 @@
 # Todos
 
-- Document the stack effects of all opcodes and write a little description
+- Concurrency
+  - Fibers
+    - Fibers provide the raw mechanics of scheduling multiple threads
+      in the Charly runtime
+    - Fibers can be paused and resumed
+    - Fibers are not generally meant to be interacted with directly by the user
+    - Primarily worked on by standard library
+  - Generators
+    - Calls and yields directly swap out two fibers with each other
+      - The continued fiber is not pushed onto the work queue
+        it is called directly
+    - Generators are built on top of the fiber abstraction
+    - Generators can be called
+      - This pauses the calling fiber
+      - Starts the generator fiber
+      - The started fiber remembers which fiber it got invoked from
+    - Generators can yield
+      - Suspends generator
+      - Resumes execution of the remembered fiber
+  - Spawn statements
+    - Spawn statements return a promise for the return value of the backing function
+    - Execution of the spawn statement begins immediately
+    - If the fiber returns, the promise gets resolved
+    - If the fiber throws, the promise gets rejected
+  - Passing arguments to spawned fibers?
+    - Use case, pass value inside loops
+  - Iterators
+    - Iterators are an abstraction to iterate over the primitive data types
+    - Iterators can also iterate over the elements of a generator
+    - Once the generator finishes, the iterator finishes
+  - Promises are an abstraction for a value that will be available in the future
 
 - CodeGenerator
   - Try statements
@@ -229,6 +259,7 @@
     - function
     - generator
     - iterator
+    - promises
   - vm-internals
     - frame
     - block

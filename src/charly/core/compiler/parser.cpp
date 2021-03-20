@@ -792,7 +792,6 @@ ref<Expression> Parser::parse_spawn() {
   m_keyword_context._break = false;
   m_keyword_context._continue = false;
   m_keyword_context._yield = true;
-  m_keyword_context._super = false;
   ref<Statement> stmt = parse_block_or_statement();
   m_keyword_context = kwcontext;
 
@@ -847,34 +846,6 @@ ref<Expression> Parser::parse_call_member_index() {
         }
 
         target->set_location(call);
-
-        // specialize super nodes
-        switch (target->type()) {
-          case Node::Type::CallOp: {
-            ref<CallOp> node = cast<CallOp>(target);
-
-            if (isa<Super>(node->target)) {
-              target = make<SuperCall>(node->arguments);
-              target->set_location(node);
-            }
-
-            break;
-          }
-          case Node::Type::CallMemberOp: {
-            ref<CallMemberOp> node = cast<CallMemberOp>(target);
-
-            if (isa<Super>(node->target)) {
-              target = make<SuperAttrCall>(node->member, node->arguments);
-              target->set_location(node);
-            }
-
-            break;
-          }
-          default: {
-            break;
-          }
-        }
-
         break;
       }
       case TokenType::LeftBracket: {
@@ -1146,8 +1117,10 @@ ref<Dict> Parser::parse_dict() {
 }
 
 ref<Function> Parser::parse_function(FunctionFlags flags) {
-  if (!flags.class_function && type(TokenType::RightArrow))
-    return parse_arrow_function();
+  if (!flags.class_function && type(TokenType::RightArrow)) {
+    ref<Function> func = parse_arrow_function();
+    return func;
+  }
 
   Location begin = m_token.location;
   skip(TokenType::Func);

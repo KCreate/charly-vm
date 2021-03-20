@@ -73,7 +73,7 @@ std::shared_ptr<CompilationUnit> Compiler::compile(CompilationUnit::Type type,
 
   // prepare repl input for compilation
   if (type == CompilationUnit::Type::ReplInput) {
-    unit->ast->force_global_alloc = true;
+    unit->ast->repl_toplevel_block = true;
     APPLY_TRANSFORM_PASS(ReplPreparePass);
   }
 

@@ -237,13 +237,6 @@ FOREACH_OPERANDTYPE(OPTYPE)
    * - symbol                                                     \
    * */                                                           \
   V(loadsymbol, OpSymbol) /* pseudo instruction */                \
-  /* loadcontextself - load the self from the surrounding         \
-   *                   function's context                         \
-   *                                                              \
-   * stack results:                                               \
-   * - self value from surrounding function                       \
-   *                   */                                         \
-  V(loadcontextself)                                              \
   /* loadglobal - load a global value                             \
    *                                                              \
    * opcode operands:                                             \
@@ -564,19 +557,10 @@ FOREACH_OPERANDTYPE(OPTYPE)
    * */                                                           \
   V(maketuplespread, OpCount16)                                   \
                                                                   \
-  /* fibercreate - create new fiber but don't spawn yet           \
-   *                                                              \
-   * stack arguments:                                             \
-   * - function                                                   \
-   * - tuple containing arguments                                 \
-   *                                                              \
-   * stack results:                                               \
-   * - fiber                                                      \
-   * */                                                           \
-  V(fibercreate)                                                  \
   /* fiberspawn - create new fiber and start running it           \
    *                                                              \
    * stack arguments:                                             \
+   * - context
    * - function                                                   \
    * - tuple containing arguments                                 \
    *                                                              \
@@ -593,6 +577,27 @@ FOREACH_OPERANDTYPE(OPTYPE)
    * - argument from next fiber invocation                        \
    * */                                                           \
   V(fiberyield)                                                   \
+  /* fibercall - call a fiber                                     \
+   *                                                              \
+   * stack arguments:                                             \
+   * - value                                                      \
+   *                                                              \
+   * stack results:                                               \
+   * - next yielded value or return value                         \
+   * */                                                           \
+  V(fibercall)                                                    \
+  /* fiberpause - pause current fiber                             \
+   *                                                              \
+   * stack results:                                               \
+   * - value passed to fiberresume                                \
+   * */                                                           \
+  V(fiberpause)                                                   \
+  /* fiberresume - pause current fiber                            \
+   *                                                              \
+   * stack arguments:                                             \
+   * - value (return value of corresponding fiberpause)           \
+   * */                                                           \
+  V(fiberresume)                                                  \
   /* fiberawait - wait for a fiber to finish                      \
    *                                                              \
    * stack arguments:                                             \
@@ -729,15 +734,9 @@ static std::unordered_map<TokenType, Opcode> kUnaryopOpcodeMapping = {
 };
 
 static std::unordered_map<BuiltinId, Opcode> kBuiltinOperationOpcodeMapping = {
-  { BuiltinId::fibercreate,  Opcode::fibercreate,  },
-  { BuiltinId::fiberspawn,   Opcode::fiberspawn,   },
-  { BuiltinId::fiberyield,   Opcode::fiberyield,   },
-  { BuiltinId::importmodule, Opcode::import,       },
-  { BuiltinId::iteratornext, Opcode::iteratornext, },
-  { BuiltinId::stringconcat, Opcode::stringconcat, },
-  { BuiltinId::caststring,   Opcode::caststring,   },
-  { BuiltinId::castsymbol,   Opcode::castsymbol,   },
-  { BuiltinId::castiterator, Opcode::castiterator, },
+#define ID(name, _) { BuiltinId::name, Opcode::name, },
+  FOREACH_BUILTIN(ID)
+#undef ID
 };
 // clang-format on
 

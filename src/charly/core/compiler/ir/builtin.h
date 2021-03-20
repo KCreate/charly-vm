@@ -32,54 +32,17 @@
 
 namespace charly::core::compiler::ir {
 
-#define FOREACH_BUILTIN(V)                              \
-  /* Create new fiber                                   \
-   *                                                    \
-   * - function                                         \
-   * - tuple containing arguments                       \
-   */                                                   \
-  V(fibercreate, 2)                                     \
-                                                        \
-  /* Create new fiber and immediately run               \
-   *                                                    \
-   * - function                                         \
-   * - tuple containing arguments                       \
-   */                                                   \
-  V(fiberspawn, 2)                                      \
-                                                        \
-  /* Yield from current fiber and schedule callee fiber \
-   *                                                    \
-   * - argument                                         \
-   */                                                   \
-  V(fiberyield, 1)                                      \
-                                                        \
-  /* Import a module or file                            \
-   *                                                    \
-   * - name                                             \
-   * - source_file                                      \
-   */                                                   \
-  V(importmodule, 2)                                    \
-                                                        \
-  /* Get the next result tuple from an iterator         \
-   *                                                    \
-   * - iterator                                         \
-   */                                                   \
-  V(iteratornext, 1)                                    \
-                                                        \
-  /* concatenate string values together                 \
-   *                                                    \
-   * - list of strings                                  \
-   */                                                   \
-  V(stringconcat, -1)                                   \
-                                                        \
-  /* cast value to a specific type                      \
-   *                                                    \
-   * - value                                            \
-   */                                                   \
-  V(caststring, 1)                                      \
-  V(castsymbol, 1)                                      \
+#define FOREACH_BUILTIN(V) \
+  V(fiberspawn, 3)         \
+  V(fiberresume, 1)        \
+  V(fiberpause, 0)         \
+  V(fiberyield, 1)         \
+  V(fibercall, 1)          \
+  V(import, 2)             \
+  V(iteratornext, 1)       \
+  V(caststring, 1)         \
+  V(castsymbol, 1)         \
   V(castiterator, 1)
-
 
 // ids of builtin operations
 enum class BuiltinId : uint16_t {

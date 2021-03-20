@@ -171,10 +171,6 @@ void Builder::emit_loadsymbol(OpSymbol symbol) {
   register_symbol(symbol);
 }
 
-void Builder::emit_loadcontextself() {
-  emit(Opcode::loadcontextself);
-}
-
 void Builder::emit_loadglobal(OpSymbol symbol) {
   emit(Opcode::loadglobal, IROperandSymbol::make(symbol));
   register_symbol(symbol);
@@ -257,7 +253,7 @@ void Builder::emit_makeclass(OpCount8 funccount, OpCount8 propcount, OpCount8 st
 }
 
 void Builder::emit_makesubclass(OpCount8 funccount, OpCount8 propcount, OpCount8 staticpropcount) {
-  emit(Opcode::makeclass, IROperandCount8::make(funccount), IROperandCount8::make(propcount),
+  emit(Opcode::makesubclass, IROperandCount8::make(funccount), IROperandCount8::make(propcount),
        IROperandCount8::make(staticpropcount));
 }
 
@@ -290,16 +286,24 @@ void Builder::emit_maketuplespread(OpCount16 count) {
 }
 
 // fiber management
-void Builder::emit_fibercreate() {
-  emit(Opcode::fibercreate);
-}
-
 void Builder::emit_fiberspawn() {
   emit(Opcode::fiberspawn);
 }
 
 void Builder::emit_fiberyield() {
   emit(Opcode::fiberyield);
+}
+
+void Builder::emit_fibercall() {
+  emit(Opcode::fibercall);
+}
+
+void Builder::emit_fiberpause() {
+  emit(Opcode::fiberpause);
+}
+
+void Builder::emit_fiberresume() {
+  emit(Opcode::fiberresume);
 }
 
 void Builder::emit_fiberawait() {
