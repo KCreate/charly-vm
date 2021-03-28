@@ -604,6 +604,7 @@ TEST_CASE("class literals") {
              "  static bar(a) {}\n"
              "}"));
   CHECK_STMT("class A { property a property b foo(@a, @b) }");
+  CHECK_STMT("class A { property a property b foo(@a, @b, ...@rest) }");
 }
 
 TEST_CASE("super expressions") {

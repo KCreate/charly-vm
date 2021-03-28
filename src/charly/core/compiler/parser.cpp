@@ -1227,27 +1227,22 @@ void Parser::parse_function_arguments(std::vector<ref<FunctionArgument>>& result
         // store the location of a potential accessor token
         // and set the correct flag
         Location accessor_token_location = m_token.location;
-        switch (m_token.type) {
-          case TokenType::TriplePoint: {
-            advance();
-            spread_initializer = true;
-            break;
-          }
-          case TokenType::AtSign: {
 
-            // the (@x, @y) syntax is only allowed inside
-            // class member functions
-            if (!(flags.class_function && !flags.static_function)) {
-              unexpected_token("self initializer arguments are only allowed inside class member functions");
-            }
+        if (m_token.type == TokenType::TriplePoint) {
+          advance();
+          spread_initializer = true;
+        }
 
-            advance();
-            self_initializer = true;
-            break;
+        if (m_token.type == TokenType::AtSign) {
+
+          // the (@x, @y) syntax is only allowed inside
+          // class member functions
+          if (!(flags.class_function && !flags.static_function)) {
+            unexpected_token("self initializer arguments are only allowed inside class member functions");
           }
-          default: {
-            break;
-          }
+
+          advance();
+          self_initializer = true;
         }
 
         ref<Name> name = make<Name>(parse_identifier_token());

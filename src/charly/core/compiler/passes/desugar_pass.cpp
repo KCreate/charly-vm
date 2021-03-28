@@ -93,6 +93,16 @@ ref<Expression> DesugarPass::transform(const ref<FormatString>& node) {
 
 void DesugarPass::inspect_leave(const ref<Function>& node) {
 
+  // emit self initializations of function arguments
+  for (auto it = node->arguments.rbegin(); it != node->arguments.rend(); it++) {
+    const ref<FunctionArgument>& arg = *it;
+    if (arg->self_initializer) {
+      ref<MemberAssignment> assignment = make<MemberAssignment>(make<Self>(), arg->name, make<Id>(arg->name));
+      assignment->set_location(arg);
+      node->body->statements.insert(node->body->statements.begin(), assignment);
+    }
+  }
+
   // wrap regular functions with yield expressions inside a generator wrapper function
   if (!node->arrow_function) {
 
