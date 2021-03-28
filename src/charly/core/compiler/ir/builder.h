@@ -3,7 +3,7 @@
  *
  * MIT License
  *
- * Copyright (c) 2017 - 2020 Leonard Schütz
+ * Copyright (c) 2017 - 2021 Leonard Schütz
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -67,11 +67,23 @@ public:
       std::make_shared<IRInstruction>(opcode, std::forward<Args>(operands)...);
     func.statements.push_back(instruction);
   }
+  template <typename T>
+  void emit_vector(Opcode opcode, const std::vector<T>& operands) {
+    IRFunction& func = active_function();
+    std::shared_ptr<IRInstruction> instruction = std::make_shared<IRInstruction>(opcode);
+
+    for (const auto& op : operands) {
+      instruction->operands.push_back(op);
+    }
+
+    func.statements.push_back(instruction);
+  }
   void emit_string_data(const std::string& string);
   void emit_label_definition(Label label);
 #define MAP(name, ...) void emit_##name(__VA_ARGS__);
   FOREACH_OPCODE(MAP)
 #undef MAP
+  void emit_argswitch(const std::vector<Label>& labels);
 
   std::shared_ptr<IRModule> get_module() const {
     return m_module;

@@ -97,6 +97,10 @@ void Builder::emit_nop() {
   emit(Opcode::nop);
 }
 
+void Builder::emit_panic() {
+  emit(Opcode::panic);
+}
+
 // misc. instructions
 void Builder::emit_import() {
   emit(Opcode::import);
@@ -142,6 +146,20 @@ void Builder::emit_jmpf(OpOffset label) {
 
 void Builder::emit_jmpt(OpOffset label) {
   emit(Opcode::jmpt, IROperandOffset::make(label));
+}
+
+void Builder::emit_argswitch() {
+  emit(Opcode::argswitch);
+}
+
+void Builder::emit_argswitch(const std::vector<Label>& labels) {
+  std::vector<std::shared_ptr<IROperandOffset>> operands;
+
+  for (Label label : labels) {
+    operands.emplace_back(std::make_shared<IROperandOffset>(label));
+  }
+
+  emit_vector(Opcode::argswitch, operands);
 }
 
 void Builder::emit_throwex() {

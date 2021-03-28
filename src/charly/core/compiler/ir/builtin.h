@@ -3,7 +3,7 @@
  *
  * MIT License
  *
- * Copyright (c) 2017 - 2020 Leonard Schütz
+ * Copyright (c) 2017 - 2021 Leonard Schütz
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -42,7 +42,8 @@ namespace charly::core::compiler::ir {
   V(iteratornext, 1)       \
   V(caststring, 1)         \
   V(castsymbol, 1)         \
-  V(castiterator, 1)
+  V(castiterator, 1)       \
+  V(panic, 0)
 
 // ids of builtin operations
 enum class BuiltinId : uint16_t {

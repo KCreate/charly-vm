@@ -24,10 +24,10 @@
  * SOFTWARE.
  */
 
-class A {
-  foo {
-    const x = ->{
-      super()
-    }
-  }
+func add(x = 1, y = 2) {
+  return x + y
+}
+
+func sub(x, y) {
+  return x - y
 }

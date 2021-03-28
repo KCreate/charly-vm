@@ -63,17 +63,54 @@ Label CodeGenerator::register_string(const std::string& string) {
 }
 
 void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
-  m_builder.begin_function(queued_func.head, queued_func.ast);
+  const ref<Function>& ast = queued_func.ast;
+  m_builder.begin_function(queued_func.head, ast);
+
+  // emit default argument initializers and jump table
+  uint8_t argc = ast->ir_info.argc;
+  uint8_t minargc = ast->ir_info.minargc;
+  Label body_label = m_builder.reserve_label();
+
+  if (argc == minargc) {
+    m_builder.emit_jmp(body_label);
+  } else {
+    std::vector<Label> initializers;
+
+    for (int i = 0; i < argc; i++) {
+      initializers.push_back(m_builder.reserve_label());
+    }
+    initializers.push_back(body_label);
+    m_builder.emit_argswitch(initializers);
+
+    for (int i = 0; i < minargc; i++) {
+      m_builder.place_label(initializers[i]);
+    }
+    m_builder.emit_panic();
+
+    for (int i = minargc; i < argc; i++) {
+      m_builder.place_label(initializers[i]);
+
+      // assign default value
+      const ref<FunctionArgument>& arg = ast->arguments[i];
+      if (!isa<Null>(arg->default_value)) {
+        apply(arg->default_value);
+        generate_store(arg->ir_location);
+        m_builder.emit_pop();
+      }
+    }
+  }
+
+  m_builder.place_label(body_label);
 
   // function body
   Label return_label = m_builder.reserve_label();
   push_return_label(return_label);
-  apply(queued_func.ast->body);
+  apply(ast->body);
   pop_return_label();
 
   // function return block
   m_builder.place_label(return_label);
-  if (queued_func.ast->class_constructor) {
+  if (ast->class_constructor) {
 
     // class constructors must always return self
     m_builder.emit_loadlocal(0);
