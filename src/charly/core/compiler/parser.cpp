@@ -793,6 +793,15 @@ ref<Expression> Parser::parse_spawn() {
   ref<Statement> stmt = parse_block_or_statement();
   m_keyword_context = kwcontext;
 
+  // wrap non-call statements in a block
+  if (!(isa<Block>(stmt) || isa<CallOp>(stmt) || isa<CallMemberOp>(stmt) || isa<CallIndexOp>(stmt))) {
+    if (ref<Expression> exp = cast<Expression>(stmt)) {
+      stmt = make<Block>(make<Return>(exp));
+    } else {
+      stmt = make<Block>(stmt);
+    }
+  }
+
   ref<Spawn> node = make<Spawn>(stmt);
   node->set_begin(begin);
   return node;
@@ -1212,7 +1221,7 @@ ref<Function> Parser::parse_arrow_function() {
     body = make<Return>(cast<Expression>(body));
   }
 
-  ref<Function> node = make<Function>(true, make<Name>(""), wrap_statement_in_block(body), argument_list);
+  ref<Function> node = make<Function>(true, make<Name>("anonymous"), wrap_statement_in_block(body), argument_list);
   node->set_begin(begin);
   return node;
 }

@@ -67,6 +67,10 @@ private:
   // store a string in the current function's string table
   ir::Label register_string(const std::string& string);
 
+  // add a new exception table entry
+  // overlapping segments are untangled by the codegenerator internally
+  void add_exception_table_entry(ir::Label begin, ir::Label end, ir::Label handler);
+
   // compile a single function and enqueue child functions
   void compile_function(const QueuedFunction&);
 
@@ -80,6 +84,12 @@ private:
 
   // generate an assignment to an unpack target
   void generate_unpack_assignment(const ast::ref<ast::UnpackTarget>& target);
+
+  // generate the string table for the current function
+  void generate_string_table();
+
+  // generate the exception table for the current function
+  void generate_exception_table();
 
   // label stacks
   ir::Label active_return_label() const;
@@ -142,6 +152,8 @@ private:
   virtual bool inspect_enter(const ast::ref<ast::If>&) override;
   virtual bool inspect_enter(const ast::ref<ast::While>&) override;
   virtual bool inspect_enter(const ast::ref<ast::Loop>&) override;
+  virtual bool inspect_enter(const ast::ref<ast::Try>&) override;
+  virtual bool inspect_enter(const ast::ref<ast::TryFinally>&) override;
   virtual bool inspect_enter(const ast::ref<ast::Switch>&) override;
 
   virtual bool inspect_enter(const ast::ref<ast::BuiltinOperation>&) override;
@@ -151,7 +163,12 @@ private:
 
   std::queue<QueuedFunction> m_function_queue;
 
+  // strings defined in the current function
+  // flushed at the end of the function and cleared for the next function
   std::vector<std::tuple<ir::Label, const std::string&>> m_string_table;
+
+  // exception table containing the region -> handler mapping
+  std::vector<std::tuple<ir::Label, ir::Label, ir::Label>> m_exception_table;
 
   std::stack<ir::Label> m_return_stack;
   std::stack<ir::Label> m_break_stack;

@@ -61,7 +61,7 @@ bool DesugarPass::inspect_enter(const ref<Spawn>& node) {
 
   // spawn { <body> } ->  spawn ->{ <body> }()
   if (ref<Block> block = cast<Block>(node->statement)) {
-    ref<Function> func = make<Function>(true, make<Name>(""), block);
+    ref<Function> func = make<Function>(true, make<Name>("anonymous"), block);
     func->set_location(node);
 
     ref<CallOp> call = make<CallOp>(func);

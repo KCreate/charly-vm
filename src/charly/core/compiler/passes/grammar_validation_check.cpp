@@ -28,18 +28,6 @@
 
 namespace charly::core::compiler::ast {
 
-void GrammarValidationCheck::inspect_leave(const ref<Spawn>& node) {
-  if (!(isa<Block>(node->statement) || isa<CallOp>(node->statement) || isa<CallMemberOp>(node->statement) ||
-        isa<CallIndexOp>(node->statement))) {
-
-    if (ref<Expression> exp = cast<Expression>(node->statement)) {
-      node->statement = make<Block>(make<Return>(exp));
-    } else {
-      node->statement = make<Block>(node->statement);
-    }
-  }
-}
-
 void GrammarValidationCheck::inspect_leave(const ref<Dict>& node) {
   for (ref<DictEntry>& entry : node->elements) {
     ref<Expression>& key = entry->key;

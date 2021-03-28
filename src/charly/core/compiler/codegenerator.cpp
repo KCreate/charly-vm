@@ -62,6 +62,10 @@ Label CodeGenerator::register_string(const std::string& string) {
   return l;
 }
 
+void CodeGenerator::add_exception_table_entry(ir::Label begin, ir::Label end, ir::Label handler) {
+  m_exception_table.emplace_back(begin, end, handler);
+}
+
 void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
   const ref<Function>& ast = queued_func.ast;
   m_builder.begin_function(queued_func.head, ast);
@@ -120,23 +124,11 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
     m_builder.emit_ret();
   }
 
-  // emit string table
-  std::unordered_map<SYMBOL, Label> emitted_strings;
-  for (const auto& entry : m_string_table) {
-    const Label& label = std::get<0>(entry);
-    const std::string& string = std::get<1>(entry);
-    SYMBOL string_hash = SYM(string);
-
-    if (emitted_strings.count(string_hash)) {
-      m_builder.place_label_at_label(label, emitted_strings.at(string_hash));
-      continue;
-    }
-
-    m_builder.place_label(label);
-    m_builder.emit_string_data(string);
-    emitted_strings[string_hash] = label;
-  }
+  generate_string_table();
   m_string_table.clear();
+
+  generate_exception_table();
+  m_exception_table.clear();
 }
 
 void CodeGenerator::generate_load(const ValueLocation& location) {
@@ -273,6 +265,32 @@ void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target) 
       generate_store(element->ir_location);
       m_builder.emit_pop();
     }
+  }
+}
+
+void CodeGenerator::generate_string_table() {
+  std::unordered_map<SYMBOL, Label> emitted_strings;
+  for (const auto& entry : m_string_table) {
+    const Label& label = std::get<0>(entry);
+    const std::string& string = std::get<1>(entry);
+    SYMBOL string_hash = SYM(string);
+
+    if (emitted_strings.count(string_hash)) {
+      m_builder.place_label_at_label(label, emitted_strings.at(string_hash));
+      continue;
+    }
+
+    m_builder.place_label(label);
+    m_builder.emit_string_data(string);
+    emitted_strings[string_hash] = label;
+  }
+}
+
+void CodeGenerator::generate_exception_table() {
+  IRFunction& function = m_builder.active_function();
+
+  for (const auto& entry : m_exception_table) {
+    function.exception_table.emplace_back(entry);
   }
 }
 
@@ -905,6 +923,94 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Loop>& node) {
   pop_continue_label();
 
   return false;
+}
+
+bool CodeGenerator::inspect_enter(const ast::ref<ast::Try>& node) {
+  Label try_begin = m_builder.reserve_label();
+  Label try_end = m_builder.reserve_label();
+  Label catch_begin = m_builder.reserve_label();
+  Label catch_end = m_builder.reserve_label();
+
+  add_exception_table_entry(try_begin, try_end, catch_begin);
+
+  // emit try block
+  m_builder.place_label(try_begin);
+  apply(node->try_block);
+  m_builder.emit_jmp(catch_end);
+  m_builder.place_label(try_end);
+
+  // emit catch block
+  m_builder.place_label(catch_begin);
+  generate_store(node->exception_name->ir_location);
+  m_builder.emit_pop();
+
+  apply(node->catch_block);
+  m_builder.place_label(catch_end);
+
+  return  false;
+}
+
+bool CodeGenerator::inspect_enter(const ast::ref<ast::TryFinally>& node) {
+
+  /*
+   * this method generates a lot of excess blocks in most cases
+   * subsequent dead-code elimination passes will remove these blocks
+   * */
+
+  Label try_begin = m_builder.reserve_label();
+  Label try_end = m_builder.reserve_label();
+  Label normal_handler = m_builder.reserve_label();
+  Label catch_handler = m_builder.reserve_label();
+
+  add_exception_table_entry(try_begin, try_end, catch_handler);
+
+  // intercept control statements
+  Label break_handler = m_builder.reserve_label();
+  Label continue_handler = m_builder.reserve_label();
+  Label return_handler = m_builder.reserve_label();
+  push_break_label(break_handler);
+  push_continue_label(continue_handler);
+  push_return_label(return_handler);
+
+  // emit try block
+  m_builder.place_label(try_begin);
+  apply(node->try_block);
+  m_builder.emit_jmp(normal_handler);
+  m_builder.place_label(try_end);
+
+  pop_break_label();
+  pop_continue_label();
+  pop_return_label();
+
+  // emit catch handler
+  m_builder.place_label(catch_handler);
+  generate_store(node->exception_value_location);
+  m_builder.emit_pop();
+  apply(node->finally_block);
+  generate_load(node->exception_value_location);
+  m_builder.emit_throwex();
+
+  // emit break, continue and return intercepts
+  if (m_break_stack.size()) {
+    m_builder.place_label(break_handler);
+    apply(node->finally_block);
+    m_builder.emit_jmp(active_break_label());
+  }
+  if (m_continue_stack.size()) {
+    m_builder.place_label(continue_handler);
+    apply(node->finally_block);
+    m_builder.emit_jmp(active_continue_label());
+  }
+  if (m_return_stack.size()) {
+    m_builder.place_label(return_handler);
+    apply(node->finally_block);
+    m_builder.emit_jmp(active_return_label());
+  }
+
+  m_builder.place_label(normal_handler);
+  apply(node->finally_block);
+
+  return  false;
 }
 
 bool CodeGenerator::inspect_enter(const ast::ref<ast::Switch>& node) {

@@ -66,6 +66,9 @@ private:
   virtual bool inspect_enter(const ref<Try>&) override;
   virtual ref<Statement> transform(const ref<Try>&) override;
 
+  virtual bool inspect_enter(const ref<TryFinally>&) override;
+  virtual ref<Statement> transform(const ref<TryFinally>&) override;
+
   virtual void inspect_leave(const ref<Id>&) override;
 };
 

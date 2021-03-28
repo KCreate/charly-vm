@@ -191,6 +191,23 @@ ref<Statement> LocalAllocatorPass::transform(const ref<Try>& node) {
   return node;
 }
 
+bool LocalAllocatorPass::inspect_enter(const ref<TryFinally>&) {
+  return false;
+}
+
+ref<Statement> LocalAllocatorPass::transform(const ref<TryFinally>& node) {
+  node->try_block = cast<Block>(apply(node->try_block));
+
+  this->push_block(node->finally_block);
+  if (const auto* variable = declare_variable(make<Name>("error"), node, true)) {
+    node->exception_value_location = variable->value_location;
+  }
+  node->finally_block = cast<Block>(apply(node->finally_block));
+  this->pop_block();
+
+  return node;
+}
+
 void LocalAllocatorPass::inspect_leave(const ref<Id>& node) {
   // lookup the symbol in the current block
   if (const auto* variable = m_block->lookup_symbol(node->value)) {

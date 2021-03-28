@@ -3,7 +3,7 @@
  *
  * MIT License
  *
- * Copyright (c) 2017 - 2020 Leonard Schütz
+ * Copyright (c) 2017 - 2021 Leonard Schütz
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -114,6 +114,8 @@ struct IRFunction {
 
   Label head;
   ast::ref<ast::Function> ast;
+
+  std::vector<std::tuple<Label, Label, Label>> exception_table;
 
   std::vector<std::shared_ptr<IRStatement>> statements;
 

@@ -160,24 +160,36 @@ void IRFunction::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer.fg(Color::Yellow, "  .L", this->head, '\n');
   writer.fg(Color::Yellow, "  function {", "\n");
-  writer.fg(Color::Grey, "  .name = ");
+  writer.fg(Color::Grey, "    name = ");
   writer.fg(Color::Red, "'", this->ast->name->value, "'\n");
-  writer.fg(Color::Grey, "  .locals = ");
+  writer.fg(Color::Grey, "    locals = ");
   writer.fg(Color::Green, (uint32_t)this->ast->ir_info.local_variables, "\n");
-  writer.fg(Color::Grey, "  .argc = ");
+  writer.fg(Color::Grey, "    argc = ");
   writer.fg(Color::Green, (uint32_t)this->ast->ir_info.argc, "\n");
-  writer.fg(Color::Grey, "  .minargc = ");
+  writer.fg(Color::Grey, "    minargc = ");
   writer.fg(Color::Green, (uint32_t)this->ast->ir_info.minargc, "\n");
-  writer.fg(Color::Grey, "  .spread = ");
+  writer.fg(Color::Grey, "    spread = ");
   writer.fg(Color::Green, this->ast->ir_info.spread_argument ? "true" : "false", "\n");
-  writer.fg(Color::Grey, "  .arrow = ");
+  writer.fg(Color::Grey, "    arrow = ");
   writer.fg(Color::Green, this->ast->ir_info.arrow_function ? "true" : "false", "\n");
-  writer.fg(Color::Grey, "  .constructor = ");
+  writer.fg(Color::Grey, "    constructor = ");
   writer.fg(Color::Green, this->ast->class_constructor ? "true" : "false", "\n");
-  writer.fg(Color::Grey, "  .static = ");
+  writer.fg(Color::Grey, "    static = ");
   writer.fg(Color::Green, this->ast->class_static_function ? "true" : "false", "\n");
-  writer.fg(Color::Yellow, "  .body", "\n");
+  out << "\n";
 
+  writer.fg(Color::Yellow, "  exception_table", "\n");
+  for (const auto& entry : this->exception_table) {
+    writer.fg(Color::Grey, "    (");
+    writer.fg(Color::Yellow, ".L", std::get<0>(entry), " ");
+    writer.fg(Color::Yellow, ".L", std::get<1>(entry), " ");
+    writer.fg(Color::Yellow, ".L", std::get<2>(entry));
+    writer.fg(Color::Grey, ")");
+    out << "\n";
+  }
+  out << "\n";
+
+  writer.fg(Color::Yellow, "  body", "\n");
   IRStatement::Type last_type = IRStatement::Type::LabelDefinition;
   for (const auto& stmt : this->statements) {
 

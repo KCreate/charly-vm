@@ -1375,6 +1375,8 @@ public:
   ref<Block> try_block;
   ref<Block> finally_block;
 
+  ir::ValueLocation exception_value_location;
+
   CHILDREN() {
     CHILD_NODE(try_block);
     CHILD_NODE(finally_block);
