@@ -1,44 +1,9 @@
 # Todos
 
-- Concurrency
-  - Fibers
-    - Fibers provide the raw mechanics of scheduling multiple threads
-      in the Charly runtime
-    - Fibers can be paused and resumed
-    - Fibers are not generally meant to be interacted with directly by the user
-    - Primarily worked on by standard library
-  - Generators
-    - Calls and yields directly swap out two fibers with each other
-      - The continued fiber is not pushed onto the work queue
-        it is called directly
-    - Generators are built on top of the fiber abstraction
-    - Generators can be called
-      - This pauses the calling fiber
-      - Starts the generator fiber
-      - The started fiber remembers which fiber it got invoked from
-    - Generators can yield
-      - Suspends generator
-      - Resumes execution of the remembered fiber
-  - Spawn statements
-    - Spawn statements return a promise for the return value of the backing function
-    - Execution of the spawn statement begins immediately
-    - If the fiber returns, the promise gets resolved
-    - If the fiber throws, the promise gets rejected
-  - Passing arguments to spawned fibers?
-    - Use case, pass value inside loops
-  - Iterators
-    - Iterators are an abstraction to iterate over the primitive data types
-    - Iterators can also iterate over the elements of a generator
-    - Once the generator finishes, the iterator finishes
-  - Promises are an abstraction for a value that will be available in the future
-
-- CodeGenerator
-  - Try statements
-    - Exception tables
-      - Store start, end and handler label
-      - How do we know how many values to pop off the stack?
-        - Can we determine the frame-relative stack size at a specific position?
-  - Generate default argument and self initializers
+- IR Optimization passes
+  - Dead code removal
+  - Jump rewrites (A->B->C can just be A->C)
+  - Peephole optimizations
 
 - Fix syntax for object unpack assignments
   - Parser treats it like a source block
@@ -52,8 +17,13 @@
 - Think about inline caches
   - IRBuilder will have to allocate inline caches per function
     - Separate table for inline caches or directly encoded into bytecode?
-
-- Build control-flow-graph and remove dead blocks
+  - Polymorphic inline caches
+    - Caches should be able to hold at least 2-3 entries
+    - Cache eviction?
+      - Age, LRU
+    - Avoid constant inline cache updates
+      - Should learn from use and only cache top 2-3 frequent entries
+      - Reset this heuristic after some time to adapt to new workloads
 
 - Runtime representation of functions
   - How does the `makefunc` instruction create a new function?
@@ -62,6 +32,19 @@
   - Keep possibility of future JIT compiler in mind
 
 - Global symbol table with thread local intermediate caches
+
+- Concurrency
+  - Core concept of concurrency in charly should be the Channel
+  - Channel
+    - Concurrent queue
+    - Buffered or unbuffered
+    - Main method of data sharing and fiber synchronisation
+  - Spawn statements return an unbuffered channel
+    - Yields from the created fiber are pushed into the channel
+  - Promises and other more finegrained abstractions can be built on top of Channels
+  - User has access to underlying fiber primitives but should be an implementation detail
+  - Await keyword is used to read from a channel
+  - Class specific await behaviour can be achieved by overriding some handler method
 
 - Concurrent Garbage Collector
   - Different properties of garbage collector types
@@ -108,6 +91,9 @@
 - Implement basic opcodes
 - Memory locking
 - REPL support
+
+- Exception tables
+  - Exception tables should be split into non overlapping segments
 
 - Function frames can be allocated on the heap or on the stack
   - Each function has a bool property on wether the frame locals

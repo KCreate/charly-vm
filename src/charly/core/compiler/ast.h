@@ -125,6 +125,7 @@ public:
     // Control structures
     If,
     While,
+    Loop,
     Try,
     TryFinally,
     SwitchCase,
@@ -1301,8 +1302,7 @@ public:
   }
 };
 
-// while <condition>
-//   <then_block>
+// while <condition> <then_block>
 class While final : public Statement {
   AST_NODE(While)
 public:
@@ -1316,6 +1316,21 @@ public:
 
   CHILDREN() {
     CHILD_NODE(condition);
+    CHILD_NODE(then_block);
+  }
+};
+
+// loop <then_block>
+class Loop final : public Statement {
+  AST_NODE(Loop)
+public:
+  Loop(ref<Block> then_block) : then_block(then_block) {
+    this->set_location(then_block);
+  }
+
+  ref<Block> then_block;
+
+  CHILDREN() {
     CHILD_NODE(then_block);
   }
 };

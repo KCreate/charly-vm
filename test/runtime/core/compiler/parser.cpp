@@ -255,8 +255,8 @@ TEST_CASE("parses control statements") {
   CHECK_AST_STMT("return 1", make<Return>(make<Int>(1)));
   CHECK_AST_STMT("return 1 + 2", make<Return>(make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(2))));
 
-  CHECK_AST_STMT("loop { break }", make<While>(make<Bool>(1), make<Block>(make<Break>())));
-  CHECK_AST_STMT("loop { continue }", make<While>(make<Bool>(1), make<Block>(make<Continue>())));
+  CHECK_AST_STMT("loop { break }", make<Loop>(make<Block>(make<Break>())));
+  CHECK_AST_STMT("loop { continue }", make<Loop>(make<Block>(make<Continue>())));
 
   CHECK_AST_STMT("throw null", make<Throw>(make<Null>()));
   CHECK_AST_STMT("throw 25", make<Throw>(make<Int>(25)));
@@ -443,8 +443,8 @@ TEST_CASE("while statements") {
 }
 
 TEST_CASE("loop statements") {
-  CHECK_AST_STMT("loop 1", make<While>(make<Bool>(true), make<Block>(make<Int>(1))));
-  CHECK_AST_STMT("loop {}", make<While>(make<Bool>(true), make<Block>()));
+  CHECK_AST_STMT("loop 1", make<Loop>(make<Block>(make<Int>(1))));
+  CHECK_AST_STMT("loop {}", make<Loop>(make<Block>()));
 
   CHECK_ERROR_STMT("loop", "unexpected end of file, expected an expression");
 }

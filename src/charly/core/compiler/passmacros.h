@@ -64,6 +64,7 @@
       AST_TYPESWITCH_CASE_NODE(UnpackDeclaration, __VA_ARGS__)     \
       AST_TYPESWITCH_CASE_NODE(If, __VA_ARGS__)                    \
       AST_TYPESWITCH_CASE_NODE(While, __VA_ARGS__)                 \
+      AST_TYPESWITCH_CASE_NODE(Loop, __VA_ARGS__)                 \
       AST_TYPESWITCH_CASE_NODE(Try, __VA_ARGS__)                   \
       AST_TYPESWITCH_CASE_NODE(TryFinally, __VA_ARGS__)            \
       AST_TYPESWITCH_CASE_NODE(SwitchCase, __VA_ARGS__)            \

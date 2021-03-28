@@ -242,6 +242,10 @@ protected:
     APPLY_NODE(then_block);
   })
 
+  HANDLE_NODE(Statement, Loop, {
+    APPLY_NODE(then_block);
+  })
+
   HANDLE_NODE(Statement, Try, {
     APPLY_NODE(try_block);
     APPLY_NODE(catch_block);

@@ -833,34 +833,35 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::If>& node) {
 }
 
 bool CodeGenerator::inspect_enter(const ast::ref<ast::While>& node) {
-
-  // infinite loops
-  bool infinite_loop = false;
-  if (node->condition->is_constant_value() && node->condition->truthyness()) {
-    infinite_loop = true;
-  }
-
-  Label body_label = m_builder.reserve_label();
   Label continue_label = m_builder.reserve_label();
   Label break_label = m_builder.reserve_label();
 
   push_break_label(break_label);
   push_continue_label(continue_label);
 
+  m_builder.place_label(continue_label);
+  apply(node->condition);
+  m_builder.emit_jmpf(break_label);
+  apply(node->then_block);
   m_builder.emit_jmp(continue_label);
-  m_builder.place_label(body_label);
+  m_builder.place_label(break_label);
 
-  if (infinite_loop) {
-    m_builder.place_label(continue_label);
-    apply(node->then_block);
-    m_builder.emit_jmp(body_label);
-  } else {
-    apply(node->then_block);
-    m_builder.place_label(continue_label);
-    apply(node->condition);
-    m_builder.emit_jmpt(body_label);
-  }
+  pop_break_label();
+  pop_continue_label();
 
+  return false;
+}
+
+bool CodeGenerator::inspect_enter(const ast::ref<ast::Loop>& node) {
+  Label continue_label = m_builder.reserve_label();
+  Label break_label = m_builder.reserve_label();
+
+  push_break_label(break_label);
+  push_continue_label(continue_label);
+
+  m_builder.place_label(continue_label);
+  apply(node->then_block);
+  m_builder.emit_jmp(continue_label);
   m_builder.place_label(break_label);
 
   pop_break_label();

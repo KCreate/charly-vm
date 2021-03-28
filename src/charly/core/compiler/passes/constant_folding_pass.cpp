@@ -244,9 +244,13 @@ ref<Statement> ConstantFoldingPass::transform(const ref<If>& node) {
 
 ref<Statement> ConstantFoldingPass::transform(const ref<While>& node) {
 
-  // remove dead code
-  if (node->condition->is_constant_value() && node->condition->truthyness() == false) {
-    return nullptr;
+  // detect infinite loops and remove dead code
+  if (node->condition->is_constant_value()) {
+    if (node->condition->truthyness()) {
+      return make<Loop>(node->then_block);
+    } else {
+      return nullptr;
+    }
   }
 
   return node;

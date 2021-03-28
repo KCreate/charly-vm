@@ -141,7 +141,7 @@ private:
   // control statements
   ref<If> parse_if();
   ref<While> parse_while();
-  ref<While> parse_loop();
+  ref<Loop> parse_loop();
   ref<Statement> parse_try();
   ref<Switch> parse_switch();
   ref<For> parse_for();

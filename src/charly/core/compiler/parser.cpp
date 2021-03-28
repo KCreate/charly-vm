@@ -380,11 +380,9 @@ ref<While> Parser::parse_while() {
   return node;
 }
 
-ref<While> Parser::parse_loop() {
+ref<Loop> Parser::parse_loop() {
   Location begin = m_token.location;
   eat(TokenType::Loop);
-  ref<Expression> condition = make<Bool>(true);
-  condition->set_location(begin);
 
   auto kwcontext = m_keyword_context;
   m_keyword_context._break = true;
@@ -392,7 +390,7 @@ ref<While> Parser::parse_loop() {
   ref<Block> then_block = wrap_statement_in_block(parse_block_or_statement());
   m_keyword_context = kwcontext;
 
-  ref<While> node = make<While>(condition, then_block);
+  ref<Loop> node = make<Loop>(then_block);
   node->set_begin(begin);
   return node;
 }
