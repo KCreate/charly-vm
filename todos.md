@@ -1,5 +1,9 @@
 # Todos
 
+- Stack usage analysis
+  - Exception tables need to adjust the stack
+  - Calculate amount of stack space needed for each function
+
 - IR Optimization passes
   - Dead code removal
   - Jump rewrites (A->B->C can just be A->C)
@@ -9,10 +13,6 @@
   - Parser treats it like a source block
   - Introduce new syntax for a single block
     - Automatically detect wether its a block or dict literal???
-
-- Source Mapping
-  - Store filename in compiled module somewhere
-  - Set source line before each instruction that is emitted
 
 - Think about inline caches
   - IRBuilder will have to allocate inline caches per function
@@ -31,7 +31,6 @@
   - Bytecode
   - Keep possibility of future JIT compiler in mind
 
-- Global symbol table with thread local intermediate caches
 
 - Concurrency
   - Core concept of concurrency in charly should be the Channel
@@ -45,6 +44,7 @@
   - User has access to underlying fiber primitives but should be an implementation detail
   - Await keyword is used to read from a channel
   - Class specific await behaviour can be achieved by overriding some handler method
+  - Global symbol table with thread local intermediate caches
 
 - Concurrent Garbage Collector
   - Different properties of garbage collector types

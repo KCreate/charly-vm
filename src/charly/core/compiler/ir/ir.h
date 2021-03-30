@@ -34,6 +34,7 @@
 #include <vector>
 
 #include "charly/core/compiler/ast.h"
+#include "charly/core/compiler/location.h"
 #include "charly/core/compiler/ir/bytecode.h"
 #include "charly/value.h"
 
@@ -64,6 +65,10 @@ FOREACH_OPERANDTYPE(OPTYPE)
 
 struct IRStatement {
   enum class Type : uint8_t { Instruction, LabelDefinition, StringData };
+
+  Location location;
+  void at(const Location& location);
+  void at(const ast::ref<ast::Node>& node);
 
   virtual ~IRStatement() = default;
 
@@ -123,6 +128,9 @@ struct IRFunction {
 };
 
 struct IRModule {
+  IRModule(const std::string& filename) : filename(filename) {}
+
+  std::string filename;
   std::unordered_map<SYMBOL, std::string> symbol_table;
   std::vector<IRFunction> functions;
 

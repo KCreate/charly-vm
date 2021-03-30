@@ -49,7 +49,7 @@ private:
   };
 
   CodeGenerator(std::shared_ptr<CompilationUnit> unit) :
-    DiagnosticPass(unit->console), m_unit(unit) {}
+    DiagnosticPass(unit->console), m_unit(unit), m_builder(unit->filepath) {}
 
   struct QueuedFunction {
     ir::Label head;
@@ -75,8 +75,8 @@ private:
   void compile_function(const QueuedFunction&);
 
   // generate load and stores to value locations
-  void generate_load(const ir::ValueLocation&);
-  void generate_store(const ir::ValueLocation&);
+  std::shared_ptr<ir::IRStatement> generate_load(const ir::ValueLocation&);
+  std::shared_ptr<ir::IRStatement> generate_store(const ir::ValueLocation&);
 
   // generate spread tuples for a list of expressions
   // returns the total amount of tuples pushed

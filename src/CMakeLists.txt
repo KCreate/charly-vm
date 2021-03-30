@@ -7,6 +7,7 @@ file(GLOB charlycore_SRC
   "charly/core/compiler/ir/ir.cpp"
   "charly/core/compiler/lexer.cpp"
   "charly/core/compiler/localvars.cpp"
+  "charly/core/compiler/location.cpp"
   "charly/core/compiler/parser.cpp"
   "charly/core/compiler/passes/class_constructor_check.cpp"
   "charly/core/compiler/passes/constant_folding_pass.cpp"

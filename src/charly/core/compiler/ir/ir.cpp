@@ -35,6 +35,14 @@ namespace charly::core::compiler::ir {
 
 using Color = utils::Color;
 
+void IRStatement::at(const Location& location) {
+  this->location = location;
+}
+
+void IRStatement::at(const ast::ref<ast::Node>& node) {
+  this->location = node->location();
+}
+
 void IROperandCount8::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
   out << std::hex;
@@ -142,6 +150,11 @@ void IRInstruction::dump(std::ostream& out) const {
     operand->dump(out);
   }
 
+  // instruction source location
+  if (this->location.valid) {
+    writer.fg(Color::Grey, " ; at ", this->location);
+  }
+
   out << '\n';
 }
 
@@ -215,7 +228,9 @@ void IRFunction::dump(std::ostream& out) const {
 
 void IRModule::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
-  writer.fg(Color::Blue, "module {", '\n');
+  writer.fg(Color::Blue, "module ");
+  writer.fg(Color::Yellow, "'", this->filename, "'");
+  writer.fg(Color::Blue, " {", '\n');
 
   writer.fg(Color::Grey, "; symbol table", '\n');
   for (const auto& entry : this->symbol_table) {

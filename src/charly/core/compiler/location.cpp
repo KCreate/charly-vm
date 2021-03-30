@@ -24,46 +24,18 @@
  * SOFTWARE.
  */
 
-#include <cstdint>
-#include <iostream>
-#include <memory>
-#include <string>
-
-#pragma once
+#include "charly/core/compiler/location.h"
 
 namespace charly::core::compiler {
 
-struct Location {
-  bool valid = false;     // wether this location contains actual data
-  bool compound = false;  // wether this location is a mixup of multiple other locations
-
-  // offset in source bytestream
-  size_t offset = 0;
-  size_t end_offset = 0;
-
-  // file coordinates
-  uint32_t row = 0;
-  uint32_t column = 0;
-  uint32_t end_row = 0;
-  uint32_t end_column = 0;
-
-  void set_begin(const Location& other) {
-    this->valid = other.valid;
-    this->compound = true;
-    this->offset = other.offset;
-    this->row = other.row;
-    this->column = other.column;
+std::ostream& operator<<(std::ostream& out, const Location& loc) {
+  if (loc.row == loc.end_row) {
+    out << loc.row + 1 << ":" << loc.column + 1 << ":" << (loc.end_column - loc.column);
+  } else {
+    out << loc.row + 1 << ":" << loc.column + 1 << "-" << loc.end_row + 1 << ":" << loc.end_column + 1;
   }
 
-  void set_end(const Location& other) {
-    this->valid = other.valid;
-    this->compound = true;
-    this->end_offset = other.end_offset;
-    this->end_row = other.end_row;
-    this->end_column = other.end_column;
-  }
-
-  friend std::ostream& operator<<(std::ostream& out, const Location& loc);
-};
+  return out;
+}
 
 }  // namespace charly::core::compiler

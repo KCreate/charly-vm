@@ -24,10 +24,14 @@
  * SOFTWARE.
  */
 
-func add(x = 1, y = 2) {
-  return x + y
+const banned = "some_evil_name"
+
+func validate(name) {
+  if name == banned {
+    return false
+  }
+
+  return true
 }
 
-func sub(x, y) {
-  return x - y
-}
+print(validate("leonard"))

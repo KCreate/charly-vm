@@ -84,12 +84,12 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
       initializers.push_back(m_builder.reserve_label());
     }
     initializers.push_back(body_label);
-    m_builder.emit_argswitch(initializers);
+    m_builder.emit_argswitch(initializers)->at(ast->body);
 
     for (int i = 0; i < minargc; i++) {
       m_builder.place_label(initializers[i]);
     }
-    m_builder.emit_panic();
+    m_builder.emit_panic()->at(ast->body);
 
     for (int i = minargc; i < argc; i++) {
       m_builder.place_label(initializers[i]);
@@ -98,7 +98,7 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
       const ref<FunctionArgument>& arg = ast->arguments[i];
       if (!isa<Null>(arg->default_value)) {
         apply(arg->default_value);
-        generate_store(arg->ir_location);
+        generate_store(arg->ir_location)->at(arg->default_value);
         m_builder.emit_pop();
       }
     }
@@ -131,19 +131,16 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
   m_exception_table.clear();
 }
 
-void CodeGenerator::generate_load(const ValueLocation& location) {
+std::shared_ptr<ir::IRStatement> CodeGenerator::generate_load(const ValueLocation& location) {
   switch (location.type) {
     case ValueLocation::Type::LocalFrame: {
-      m_builder.emit_loadlocal(location.as.local_frame.offset);
-      break;
+      return m_builder.emit_loadlocal(location.as.local_frame.offset);
     }
     case ValueLocation::Type::FarFrame: {
-      m_builder.emit_loadfar(location.as.far_frame.depth, location.as.far_frame.offset);
-      break;
+      return m_builder.emit_loadfar(location.as.far_frame.depth, location.as.far_frame.offset);
     }
     case ValueLocation::Type::Global: {
-      m_builder.emit_loadglobal(location.name);
-      break;
+      return m_builder.emit_loadglobal(location.name);
     }
     default: {
       assert(false && "unexpected location type");
@@ -151,19 +148,16 @@ void CodeGenerator::generate_load(const ValueLocation& location) {
   }
 }
 
-void CodeGenerator::generate_store(const ValueLocation& location) {
+std::shared_ptr<ir::IRStatement> CodeGenerator::generate_store(const ValueLocation& location) {
   switch (location.type) {
     case ValueLocation::Type::LocalFrame: {
-      m_builder.emit_setlocal(location.as.local_frame.offset);
-      break;
+      return m_builder.emit_setlocal(location.as.local_frame.offset);
     }
     case ValueLocation::Type::FarFrame: {
-      m_builder.emit_setfar(location.as.far_frame.depth, location.as.far_frame.offset);
-      break;
+      return m_builder.emit_setfar(location.as.far_frame.depth, location.as.far_frame.offset);
     }
     case ValueLocation::Type::Global: {
-      m_builder.emit_setglobal(location.name);
-      break;
+      return m_builder.emit_setglobal(location.name);
     }
     default: {
       assert(false && "unexpected location type");
@@ -180,7 +174,7 @@ uint8_t CodeGenerator::generate_spread_tuples(const std::vector<ast::ref<ast::Ex
   for (const ref<Expression>& exp : vec) {
     if (ref<Spread> spread = cast<Spread>(exp)) {
       if (elements_in_last_segment) {
-        m_builder.emit_maketuple(elements_in_last_segment);
+        m_builder.emit_maketuple(elements_in_last_segment)->at(exp);
         emitted_segments++;
         elements_in_last_segment = 0;
       }
@@ -196,7 +190,7 @@ uint8_t CodeGenerator::generate_spread_tuples(const std::vector<ast::ref<ast::Ex
   // wrap remaining elements
   if (elements_in_last_segment) {
     emitted_segments++;
-    m_builder.emit_maketuple(elements_in_last_segment);
+    m_builder.emit_maketuple(elements_in_last_segment)->at(vec.back());
   }
 
   return emitted_segments;
@@ -233,36 +227,36 @@ void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target) 
     for (auto begin = target->elements.rbegin(); begin != target->elements.rend(); begin++) {
       const ref<UnpackTargetElement>& element = *begin;
       if (!element->spread) {
-        m_builder.emit_loadsymbol(element->name->value);
+        m_builder.emit_loadsymbol(element->name->value)->at(element->name);
       }
     }
 
     if (spread_element) {
-      m_builder.emit_unpackobjectspread(before_elements.size() + after_elements.size());
+      m_builder.emit_unpackobjectspread(before_elements.size() + after_elements.size())->at(target);
     } else {
-      m_builder.emit_unpackobject(before_elements.size());
+      m_builder.emit_unpackobject(before_elements.size())->at(target);
     }
 
-    generate_store(spread_element->name->value);
+    generate_store(spread_element->name->value)->at(spread_element->name);
     m_builder.emit_pop();
 
     for (auto begin = target->elements.rbegin(); begin != target->elements.rend(); begin++) {
       const ref<UnpackTargetElement>& element = *begin;
       if (!element->spread) {
-        generate_store(element->ir_location);
+        generate_store(element->ir_location)->at(element);
         m_builder.emit_pop();
       }
     }
   } else {
     if (spread_element) {
-      m_builder.emit_unpacksequencespread(before_elements.size(), after_elements.size());
+      m_builder.emit_unpacksequencespread(before_elements.size(), after_elements.size())->at(target);
     } else {
-      m_builder.emit_unpacksequence(before_elements.size());
+      m_builder.emit_unpacksequence(before_elements.size())->at(target);
     }
 
     for (auto begin = target->elements.rbegin(); begin != target->elements.rend(); begin++) {
       const ref<UnpackTargetElement>& element = *begin;
-      generate_store(element->ir_location);
+      generate_store(element->ir_location)->at(element);
       m_builder.emit_pop();
     }
   }
@@ -365,8 +359,8 @@ void CodeGenerator::inspect_leave(const ref<Continue>&) {
   m_builder.emit_jmp(active_continue_label());
 }
 
-void CodeGenerator::inspect_leave(const ref<Throw>&) {
-  m_builder.emit_throwex();
+void CodeGenerator::inspect_leave(const ref<Throw>& node) {
+  m_builder.emit_throwex()->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ast::ref<ast::Export>&) {
@@ -376,13 +370,13 @@ void CodeGenerator::inspect_leave(const ast::ref<ast::Export>&) {
 
 bool CodeGenerator::inspect_enter(const ast::ref<ast::Import>& node) {
   apply(node->source);
-  m_builder.emit_makestr(register_string(m_unit->filepath));
-  m_builder.emit_import();
+  m_builder.emit_makestr(register_string(m_unit->filepath))->at(node);
+  m_builder.emit_import()->at(node);
   return false;
 }
 
-void CodeGenerator::inspect_leave(const ast::ref<ast::Yield>&) {
-  m_builder.emit_fiberyield();
+void CodeGenerator::inspect_leave(const ast::ref<ast::Yield>& node) {
+  m_builder.emit_fiberyield()->at(node);
 }
 
 bool CodeGenerator::inspect_enter(const ast::ref<ast::Spawn>& node) {
@@ -400,12 +394,12 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Spawn>& node) {
 
       if (call->has_spread_elements()) {
         uint8_t emitted_segments = generate_spread_tuples(call->arguments);
-        m_builder.emit_maketuplespread(emitted_segments);
+        m_builder.emit_maketuplespread(emitted_segments)->at(call);
       } else {
         for (const auto& arg : call->arguments) {
           apply(arg);
         }
-        m_builder.emit_maketuple(call->arguments.size());
+        m_builder.emit_maketuple(call->arguments.size())->at(call);
       }
 
       break;
@@ -421,17 +415,17 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Spawn>& node) {
       } else {
         apply(call->target);
         m_builder.emit_dup();
-        m_builder.emit_loadattr(call->member->value);
+        m_builder.emit_loadattr(call->member->value)->at(call->member);
       }
 
       if (call->has_spread_elements()) {
         uint8_t emitted_segments = generate_spread_tuples(call->arguments);
-        m_builder.emit_maketuplespread(emitted_segments);
+        m_builder.emit_maketuplespread(emitted_segments)->at(call->target);
       } else {
         for (const auto& arg : call->arguments) {
           apply(arg);
         }
-        m_builder.emit_maketuple(call->arguments.size());
+        m_builder.emit_maketuple(call->arguments.size())->at(call->target);
       }
 
       break;
@@ -448,17 +442,17 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Spawn>& node) {
         apply(call->target);
         m_builder.emit_dup();
         apply(call->index);
-        m_builder.emit_loadattrvalue();
+        m_builder.emit_loadattrvalue()->at(call->index);
       }
 
       if (call->has_spread_elements()) {
         uint8_t emitted_segments = generate_spread_tuples(call->arguments);
-        m_builder.emit_maketuplespread(emitted_segments);
+        m_builder.emit_maketuplespread(emitted_segments)->at(call->target);
       } else {
         for (const auto& arg : call->arguments) {
           apply(arg);
         }
-        m_builder.emit_maketuple(call->arguments.size());
+        m_builder.emit_maketuple(call->arguments.size())->at(call->target);
       }
 
       break;
@@ -469,60 +463,60 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Spawn>& node) {
     }
   }
 
-  m_builder.emit_fiberspawn();
+  m_builder.emit_fiberspawn()->at(node);
 
   return false;
 }
 
-void CodeGenerator::inspect_leave(const ast::ref<ast::Await>&) {
-  m_builder.emit_fiberawait();
+void CodeGenerator::inspect_leave(const ast::ref<ast::Await>& node) {
+  m_builder.emit_fiberawait()->at(node);
 }
 
-void CodeGenerator::inspect_leave(const ast::ref<ast::Typeof>&) {
-  m_builder.emit_type();
+void CodeGenerator::inspect_leave(const ast::ref<ast::Typeof>& node) {
+  m_builder.emit_type()->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ref<Id>& node) {
-  generate_load(node->ir_location);
+  generate_load(node->ir_location)->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ref<String>& node) {
-  m_builder.emit_makestr(register_string(node->value));
+  m_builder.emit_makestr(register_string(node->value))->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ref<FormatString>& node) {
-  m_builder.emit_stringconcat(node->elements.size());
+  m_builder.emit_stringconcat(node->elements.size())->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ref<Symbol>& node) {
-  m_builder.emit_loadsymbol(node->value);
+  m_builder.emit_loadsymbol(node->value)->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ref<Int>& node) {
-  m_builder.emit_load(VALUE::Int(node->value));
+  m_builder.emit_load(VALUE::Int(node->value))->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ref<Float>& node) {
-  m_builder.emit_load(VALUE::Float(node->value));
+  m_builder.emit_load(VALUE::Float(node->value))->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ref<Bool>& node) {
-  m_builder.emit_load(VALUE::Bool(node->value));
+  m_builder.emit_load(VALUE::Bool(node->value))->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ref<Char>& node) {
-  m_builder.emit_load(VALUE::Char(node->value));
+  m_builder.emit_load(VALUE::Char(node->value))->at(node);
 }
 
 bool CodeGenerator::inspect_enter(const ref<Function>& node) {
   Label begin_label = enqueue_function(node);
   m_builder.register_symbol(node->name->value);
-  m_builder.emit_makefunc(begin_label);
+  m_builder.emit_makefunc(begin_label)->at(node);
   return false;
 }
 
 bool CodeGenerator::inspect_enter(const ref<Class>& node) {
-  m_builder.emit_loadsymbol(node->name->value);
+  m_builder.emit_loadsymbol(node->name->value)->at(node->name);
   if (node->parent) {
     apply(node->parent);
   }
@@ -533,54 +527,54 @@ bool CodeGenerator::inspect_enter(const ref<Class>& node) {
   }
 
   for (const auto& member_prop : node->member_properties) {
-    m_builder.emit_loadsymbol(member_prop->name->value);
+    m_builder.emit_loadsymbol(member_prop->name->value)->at(member_prop->name);
   }
 
   for (const auto& static_prop : node->static_properties) {
-    m_builder.emit_loadsymbol(static_prop->name->value);
+    m_builder.emit_loadsymbol(static_prop->name->value)->at(static_prop->name);
     apply(static_prop->value);
   }
 
   if (node->parent) {
     m_builder.emit_makesubclass(node->member_functions.size(), node->member_properties.size(),
-                            node->static_properties.size());
+                            node->static_properties.size())->at(node);
   } else {
     m_builder.emit_makeclass(node->member_functions.size(), node->member_properties.size(),
-                            node->static_properties.size());
+                            node->static_properties.size())->at(node);
   }
 
   return false;
 }
 
-void CodeGenerator::inspect_leave(const ref<Null>&) {
-  m_builder.emit_load(VALUE::Null());
+void CodeGenerator::inspect_leave(const ref<Null>& node) {
+  m_builder.emit_load(VALUE::Null())->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ref<Self>&) {
   m_builder.emit_loadlocal(0);
 }
 
-void CodeGenerator::inspect_leave(const ast::ref<ast::Super>&) {
+void CodeGenerator::inspect_leave(const ast::ref<ast::Super>& node) {
   m_builder.emit_loadlocal(0);
   m_builder.emit_type();
 
   if (active_function()->class_constructor) {
-    m_builder.emit_loadsuperconstructor();
+    m_builder.emit_loadsuperconstructor()->at(node);
   } else {
-    m_builder.emit_loadsuperattr(active_function()->name->value);
+    m_builder.emit_loadsuperattr(active_function()->name->value)->at(node);
   }
 }
 
 bool CodeGenerator::inspect_enter(const ast::ref<ast::Tuple>& node) {
   if (node->has_spread_elements()) {
     uint8_t emitted_segments = generate_spread_tuples(node->elements);
-    m_builder.emit_maketuplespread(emitted_segments);
+    m_builder.emit_maketuplespread(emitted_segments)->at(node);
   } else {
     for (const auto& exp : node->elements) {
       apply(exp);
     }
 
-    m_builder.emit_maketuple(node->elements.size());
+    m_builder.emit_maketuple(node->elements.size())->at(node);
   }
 
   return false;
@@ -589,13 +583,13 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Tuple>& node) {
 bool CodeGenerator::inspect_enter(const ast::ref<ast::List>& node) {
   if (node->has_spread_elements()) {
     uint8_t emitted_segments = generate_spread_tuples(node->elements);
-    m_builder.emit_makelistspread(emitted_segments);
+    m_builder.emit_makelistspread(emitted_segments)->at(node);
   } else {
     for (const auto& exp : node->elements) {
       apply(exp);
     }
 
-    m_builder.emit_makelist(node->elements.size());
+    m_builder.emit_makelist(node->elements.size())->at(node);
   }
 
   return false;
@@ -605,7 +599,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Dict>& node) {
   if (node->has_spread_elements()) {
     for (const ref<DictEntry>& exp : node->elements) {
       if (ref<Spread> spread = cast<Spread>(exp->key)) {
-        m_builder.emit_load(VALUE::Null());
+        m_builder.emit_load(VALUE::Null())->at(exp->key);
         apply(spread->expression);
       } else {
         apply(exp->key);
@@ -613,14 +607,14 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Dict>& node) {
       }
     }
 
-    m_builder.emit_makedictspread(node->elements.size());
+    m_builder.emit_makedictspread(node->elements.size())->at(node);
   } else {
     for (const ref<DictEntry>& exp : node->elements) {
       apply(exp->key);
       apply(exp->value);
     }
 
-    m_builder.emit_makedict(node->elements.size());
+    m_builder.emit_makedict(node->elements.size())->at(node);
   }
 
   return false;
@@ -630,33 +624,32 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::MemberOp>& node) {
   if (isa<Super>(node->target)) {
     m_builder.emit_loadlocal(0);
     m_builder.emit_type();
-    m_builder.emit_loadsuperattr(node->member->value);
+    m_builder.emit_loadsuperattr(node->member->value)->at(node->member);
   } else {
     apply(node->target);
-    m_builder.emit_loadattr(node->member->value);
-    m_builder.emit_loadattr(node->member->value);
+    m_builder.emit_loadattr(node->member->value)->at(node->member);
   }
 
   return false;
 }
 
-void CodeGenerator::inspect_leave(const ast::ref<ast::IndexOp>&) {
-  m_builder.emit_loadattrvalue();
+void CodeGenerator::inspect_leave(const ast::ref<ast::IndexOp>& node) {
+  m_builder.emit_loadattrvalue()->at(node);
 }
 
 bool CodeGenerator::inspect_enter(const ref<Assignment>& node) {
   switch (node->operation) {
     case TokenType::Assignment: {
       apply(node->source);
-      generate_store(node->name->ir_location);
+      generate_store(node->name->ir_location)->at(node->name);
       break;
     }
     default: {
-      generate_load(node->name->ir_location);
+      generate_load(node->name->ir_location)->at(node->name);
       apply(node->source);
       assert(kBinopOpcodeMapping.count(node->operation));
-      m_builder.emit(kBinopOpcodeMapping.at(node->operation));
-      generate_store(node->name->ir_location);
+      m_builder.emit(kBinopOpcodeMapping.at(node->operation))->at(node);
+      generate_store(node->name->ir_location)->at(node->name);
       break;
     }
   }
@@ -675,17 +668,17 @@ bool CodeGenerator::inspect_enter(const ref<MemberAssignment>& node) {
     case TokenType::Assignment: {
       apply(node->target);
       apply(node->source);
-      m_builder.emit_setattr(node->member->value);
+      m_builder.emit_setattr(node->member->value)->at(node);
       break;
     }
     default: {
       apply(node->target);
       m_builder.emit_dup();
-      m_builder.emit_loadattr(node->member->value);
+      m_builder.emit_loadattr(node->member->value)->at(node->member);
       apply(node->source);
       assert(kBinopOpcodeMapping.count(node->operation));
-      m_builder.emit(kBinopOpcodeMapping.at(node->operation));
-      m_builder.emit_setattr(node->member->value);
+      m_builder.emit(kBinopOpcodeMapping.at(node->operation))->at(node);
+      m_builder.emit_setattr(node->member->value)->at(node->member);
       break;
     }
   }
@@ -699,18 +692,18 @@ bool CodeGenerator::inspect_enter(const ref<IndexAssignment>& node) {
       apply(node->target);
       apply(node->index);
       apply(node->source);
-      m_builder.emit_setattrvalue();
+      m_builder.emit_setattrvalue()->at(node);
       break;
     }
     default: {
       apply(node->target);
       apply(node->index);
       m_builder.emit_dup2();
-      m_builder.emit_loadattrvalue();
+      m_builder.emit_loadattrvalue()->at(node);
       apply(node->source);
       assert(kBinopOpcodeMapping.count(node->operation));
-      m_builder.emit(kBinopOpcodeMapping.at(node->operation));
-      m_builder.emit_setattrvalue();
+      m_builder.emit(kBinopOpcodeMapping.at(node->operation))->at(node);
+      m_builder.emit_setattrvalue()->at(node);
       break;
     }
   }
@@ -737,7 +730,7 @@ void CodeGenerator::inspect_leave(const ref<BinaryOp>& node) {
   switch (node->operation) {
     default: {
       assert(kBinopOpcodeMapping.count(node->operation));
-      m_builder.emit(kBinopOpcodeMapping.at(node->operation));
+      m_builder.emit(kBinopOpcodeMapping.at(node->operation))->at(node);
       break;
     }
     case TokenType::And:
@@ -750,7 +743,7 @@ void CodeGenerator::inspect_leave(const ref<BinaryOp>& node) {
 
 void CodeGenerator::inspect_leave(const ref<UnaryOp>& node) {
   assert(kUnaryopOpcodeMapping.count(node->operation));
-  m_builder.emit(kUnaryopOpcodeMapping.at(node->operation));
+  m_builder.emit(kUnaryopOpcodeMapping.at(node->operation))->at(node);
 }
 
 bool CodeGenerator::inspect_enter(const ast::ref<ast::CallOp>& node) {
@@ -760,9 +753,9 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::CallOp>& node) {
     m_builder.emit_type();
 
     if (active_function()->class_constructor) {
-      m_builder.emit_loadsuperconstructor();
+      m_builder.emit_loadsuperconstructor()->at(node);
     } else {
-      m_builder.emit_loadsuperattr(active_function()->name->value);
+      m_builder.emit_loadsuperattr(active_function()->name->value)->at(node);
     }
   } else {
     m_builder.emit_load(VALUE::Null());
@@ -771,13 +764,13 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::CallOp>& node) {
 
   if (node->has_spread_elements()) {
     uint8_t emitted_segments = generate_spread_tuples(node->arguments);
-    m_builder.emit_callspread(emitted_segments);
+    m_builder.emit_callspread(emitted_segments)->at(node);
   } else {
     for (const auto& arg : node->arguments) {
       apply(arg);
     }
 
-    m_builder.emit_call(node->arguments.size());
+    m_builder.emit_call(node->arguments.size())->at(node);
   }
 
   return false;
@@ -786,17 +779,17 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::CallOp>& node) {
 bool CodeGenerator::inspect_enter(const ast::ref<ast::CallMemberOp>& node) {
   apply(node->target);
   m_builder.emit_dup();
-  m_builder.emit_loadattr(node->member->value);
+  m_builder.emit_loadattr(node->member->value)->at(node->member);
 
   if (node->has_spread_elements()) {
     uint8_t emitted_segments = generate_spread_tuples(node->arguments);
-    m_builder.emit_callspread(emitted_segments);
+    m_builder.emit_callspread(emitted_segments)->at(node);
   } else {
     for (const auto& arg : node->arguments) {
       apply(arg);
     }
 
-    m_builder.emit_call(node->arguments.size());
+    m_builder.emit_call(node->arguments.size())->at(node);
   }
 
   return false;
@@ -806,17 +799,17 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::CallIndexOp>& node) {
   apply(node->target);
   m_builder.emit_dup();
   apply(node->index);
-  m_builder.emit_loadattrvalue();
+  m_builder.emit_loadattrvalue()->at(node->index);
 
   if (node->has_spread_elements()) {
     uint8_t emitted_segments = generate_spread_tuples(node->arguments);
-    m_builder.emit_callspread(emitted_segments);
+    m_builder.emit_callspread(emitted_segments)->at(node);
   } else {
     for (const auto& arg : node->arguments) {
       apply(arg);
     }
 
-    m_builder.emit_call(node->arguments.size());
+    m_builder.emit_call(node->arguments.size())->at(node);
   }
 
   return false;
@@ -827,9 +820,9 @@ bool CodeGenerator::inspect_enter(const ref<Declaration>& node) {
   // global declarations
   if (node->ir_location.type == ValueLocation::Type::Global) {
     if (node->constant) {
-      m_builder.emit_declareglobalconst(node->name->value);
+      m_builder.emit_declareglobalconst(node->name->value)->at(node->name);
     } else {
-      m_builder.emit_declareglobal(node->name->value);
+      m_builder.emit_declareglobal(node->name->value)->at(node->name);
     }
   }
 
@@ -837,7 +830,7 @@ bool CodeGenerator::inspect_enter(const ref<Declaration>& node) {
   // initialization can be skipped in that case
   if (!isa<Null>(node->expression)) {
     apply(node->expression);
-    generate_store(node->ir_location);
+    generate_store(node->ir_location)->at(node->name);
     m_builder.emit_pop();
   }
 
@@ -849,9 +842,9 @@ bool CodeGenerator::inspect_enter(const ref<UnpackDeclaration>& node) {
     // global declarations
     if (element->ir_location.type == ValueLocation::Type::Global) {
       if (node->constant) {
-        m_builder.emit_declareglobalconst(element->name->value);
+        m_builder.emit_declareglobalconst(element->name->value)->at(element);
       } else {
-        m_builder.emit_declareglobal(element->name->value);
+        m_builder.emit_declareglobal(element->name->value)->at(element);
       }
     }
   }
@@ -941,7 +934,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Try>& node) {
 
   // emit catch block
   m_builder.place_label(catch_begin);
-  generate_store(node->exception_name->ir_location);
+  generate_store(node->exception_name->ir_location)->at(node->exception_name);
   m_builder.emit_pop();
 
   apply(node->catch_block);
@@ -984,11 +977,11 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::TryFinally>& node) {
 
   // emit catch handler
   m_builder.place_label(catch_handler);
-  generate_store(node->exception_value_location);
+  generate_store(node->exception_value_location)->at(node->finally_block);
   m_builder.emit_pop();
   apply(node->finally_block);
-  generate_load(node->exception_value_location);
-  m_builder.emit_throwex();
+  generate_load(node->exception_value_location)->at(node->finally_block);
+  m_builder.emit_throwex()->at(node->finally_block);
 
   // emit break, continue and return intercepts
   if (m_break_stack.size()) {
@@ -1029,7 +1022,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Switch>& node) {
     Label next_label = m_builder.reserve_label();
 
     apply(case_node->test);
-    m_builder.emit_eq();
+    m_builder.emit_eq()->at(case_node->test);
     m_builder.emit_jmpf(next_label);
     apply(case_node->block);
     m_builder.emit_jmp(end_label);
@@ -1056,7 +1049,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::BuiltinOperation>& node) {
   }
 
   assert(kBuiltinOperationOpcodeMapping.count(operation));
-  m_builder.emit(kBuiltinOperationOpcodeMapping.at(operation));
+  m_builder.emit(kBuiltinOperationOpcodeMapping.at(operation))->at(node);
 
   return false;
 }

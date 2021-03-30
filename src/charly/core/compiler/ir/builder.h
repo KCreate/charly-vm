@@ -44,7 +44,7 @@ namespace charly::core::compiler::ir {
 
 class Builder {
 public:
-  Builder() : m_label_counter(0), m_active_function(nullptr), m_module(std::make_shared<IRModule>()) {}
+  Builder(const std::string& filename) : m_label_counter(0), m_active_function(nullptr), m_module(std::make_shared<IRModule>(filename)) {}
 
   // register a symbol in the module symbol table
   void register_symbol(const std::string& string);
@@ -55,20 +55,19 @@ public:
 
   // label management
   Label reserve_label();
-  Label label();
   void place_label(Label label);
   void place_label_at_label(Label label, Label target_label);
 
   // emit an IR statement into the current function
   template <typename... Args>
-  void emit(Opcode opcode, Args&&... operands) {
+  std::shared_ptr<IRStatement> emit(Opcode opcode, Args&&... operands) {
     IRFunction& func = active_function();
     std::shared_ptr<IRInstruction> instruction =
       std::make_shared<IRInstruction>(opcode, std::forward<Args>(operands)...);
-    func.statements.push_back(instruction);
+    return func.statements.emplace_back(instruction);
   }
   template <typename T>
-  void emit_vector(Opcode opcode, const std::vector<T>& operands) {
+  std::shared_ptr<IRStatement> emit_vector(Opcode opcode, const std::vector<T>& operands) {
     IRFunction& func = active_function();
     std::shared_ptr<IRInstruction> instruction = std::make_shared<IRInstruction>(opcode);
 
@@ -76,14 +75,14 @@ public:
       instruction->operands.push_back(op);
     }
 
-    func.statements.push_back(instruction);
+    return func.statements.emplace_back(instruction);
   }
-  void emit_string_data(const std::string& string);
-  void emit_label_definition(Label label);
-#define MAP(name, ...) void emit_##name(__VA_ARGS__);
+  std::shared_ptr<IRStatement> emit_string_data(const std::string& string);
+  std::shared_ptr<IRStatement> emit_label_definition(Label label);
+#define MAP(name, ...) std::shared_ptr<IRStatement> emit_##name(__VA_ARGS__);
   FOREACH_OPCODE(MAP)
 #undef MAP
-  void emit_argswitch(const std::vector<Label>& labels);
+  std::shared_ptr<IRStatement> emit_argswitch(const std::vector<Label>& labels);
 
   std::shared_ptr<IRModule> get_module() const {
     return m_module;
