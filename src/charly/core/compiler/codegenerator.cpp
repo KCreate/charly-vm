@@ -458,7 +458,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Spawn>& node) {
       break;
     }
     default: {
-      // assert(false && "not implemented");
+      assert(false && "not implemented");
       break;
     }
   }
@@ -726,19 +726,50 @@ bool CodeGenerator::inspect_enter(const ref<Ternary>& node) {
   return false;
 }
 
-void CodeGenerator::inspect_leave(const ref<BinaryOp>& node) {
+bool CodeGenerator::inspect_enter(const ref<BinaryOp>& node) {
   switch (node->operation) {
     default: {
+      apply(node->lhs);
+      apply(node->rhs);
       assert(kBinopOpcodeMapping.count(node->operation));
       m_builder.emit(kBinopOpcodeMapping.at(node->operation))->at(node);
       break;
     }
-    case TokenType::And:
+    case TokenType::And: {
+      Label true_label = m_builder.reserve_label();
+      Label false_label = m_builder.reserve_label();
+      Label end_label = m_builder.reserve_label();
+
+      apply(node->lhs);
+      m_builder.emit_jmpf(false_label);
+      apply(node->rhs);
+      m_builder.emit_jmpt(true_label);
+
+      m_builder.place_label(false_label);
+      m_builder.emit_load(VALUE::Bool(false));
+      m_builder.emit_jmp(end_label);
+
+      m_builder.place_label(true_label);
+      m_builder.emit_load(VALUE::Bool(true));
+
+      m_builder.place_label(end_label);
+      break;
+    }
     case TokenType::Or: {
-      assert(false && "not implemented");
+      Label end_label = m_builder.reserve_label();
+
+      apply(node->lhs);
+      m_builder.emit_dup();
+      m_builder.emit_jmpt(end_label);
+      m_builder.emit_pop();
+      apply(node->rhs);
+      m_builder.place_label(end_label);
+
       break;
     }
   }
+
+  return false;
 }
 
 void CodeGenerator::inspect_leave(const ref<UnaryOp>& node) {
@@ -855,26 +886,90 @@ bool CodeGenerator::inspect_enter(const ref<UnpackDeclaration>& node) {
 }
 
 bool CodeGenerator::inspect_enter(const ast::ref<ast::If>& node) {
-  apply(node->condition);
-
   if (node->else_block) {
 
     // if (x) {} else {}
-    Label else_label = m_builder.reserve_label();
-    Label end_label = m_builder.reserve_label();
-    m_builder.emit_jmpf(else_label);
-    apply(node->then_block);
-    m_builder.emit_jmp(end_label);
-    m_builder.place_label(else_label);
-    apply(node->else_block);
-    m_builder.place_label(end_label);
+    ref<BinaryOp> op = cast<BinaryOp>(node->condition);
+    if (op && op->operation == TokenType::And) {
+
+      // if (lhs && rhs) {} else {}
+      Label else_label = m_builder.reserve_label();
+      Label end_label = m_builder.reserve_label();
+
+      apply(op->lhs);
+      m_builder.emit_jmpf(else_label);
+      apply(op->rhs);
+      m_builder.emit_jmpf(else_label);
+      apply(node->then_block);
+      m_builder.emit_jmp(end_label);
+      m_builder.place_label(else_label);
+      apply(node->else_block);
+      m_builder.place_label(end_label);
+    } else if (op && op->operation == TokenType::Or) {
+
+      // if (lhs || rhs) {} else {}
+      Label then_label = m_builder.reserve_label();
+      Label else_label = m_builder.reserve_label();
+      Label end_label = m_builder.reserve_label();
+
+      apply(op->lhs);
+      m_builder.emit_jmpt(then_label);
+      apply(op->rhs);
+      m_builder.emit_jmpf(else_label);
+      m_builder.place_label(then_label);
+      apply(node->then_block);
+      m_builder.emit_jmp(end_label);
+      m_builder.place_label(else_label);
+      apply(node->else_block);
+      m_builder.place_label(end_label);
+    } else {
+
+      // if (x) {} else {}
+      Label else_label = m_builder.reserve_label();
+      Label end_label = m_builder.reserve_label();
+
+      m_builder.emit_jmpf(else_label);
+      apply(node->then_block);
+      m_builder.emit_jmp(end_label);
+      m_builder.place_label(else_label);
+      apply(node->else_block);
+      m_builder.place_label(end_label);
+    }
   } else {
 
     // if (x) {}
-    Label end_label = m_builder.reserve_label();
-    m_builder.emit_jmpf(end_label);
-    apply(node->then_block);
-    m_builder.place_label(end_label);
+    ref<BinaryOp> op = cast<BinaryOp>(node->condition);
+    if (op && op->operation == TokenType::And) {
+
+      // if (lhs && rhs) {}
+      Label end_label = m_builder.reserve_label();
+      apply(op->lhs);
+      m_builder.emit_jmpf(end_label);
+      apply(op->rhs);
+      m_builder.emit_jmpf(end_label);
+      apply(node->then_block);
+      m_builder.place_label(end_label);
+    } else if (op && op->operation == TokenType::Or) {
+
+      // if (lhs || rhs) {}
+      Label true_label = m_builder.reserve_label();
+      Label end_label = m_builder.reserve_label();
+      apply(op->lhs);
+      m_builder.emit_jmpt(true_label);
+      apply(op->rhs);
+      m_builder.emit_jmpf(end_label);
+      m_builder.place_label(true_label);
+      apply(node->then_block);
+      m_builder.place_label(end_label);
+    } else {
+
+      // if (x) {}
+      Label end_label = m_builder.reserve_label();
+      apply(node->condition);
+      m_builder.emit_jmpf(end_label);
+      apply(node->then_block);
+      m_builder.place_label(end_label);
+    }
   }
 
   return false;

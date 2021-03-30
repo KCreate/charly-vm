@@ -140,7 +140,7 @@ private:
   virtual bool inspect_enter(const ast::ref<ast::MemberAssignment>&) override;
   virtual bool inspect_enter(const ast::ref<ast::IndexAssignment>&) override;
   virtual bool inspect_enter(const ast::ref<ast::Ternary>&) override;
-  virtual void inspect_leave(const ast::ref<ast::BinaryOp>&) override;
+  virtual bool inspect_enter(const ast::ref<ast::BinaryOp>&) override;
   virtual void inspect_leave(const ast::ref<ast::UnaryOp>&) override;
   virtual bool inspect_enter(const ast::ref<ast::CallOp>&) override;
   virtual bool inspect_enter(const ast::ref<ast::CallMemberOp>&) override;

@@ -239,6 +239,19 @@ ref<Statement> ConstantFoldingPass::transform(const ref<If>& node) {
     }
   }
 
+  if (node->condition->type() == Node::Type::UnaryOp) {
+    ref<UnaryOp> op = cast<UnaryOp>(node->condition);
+
+    // if !x {A} else {B}   ->    if x {B} else {A}
+    if (op->operation == TokenType::UnaryNot) {
+      if (node->else_block) {
+        ref<Block> else_block = node->else_block;
+        node->else_block = node->then_block;
+        node->then_block = else_block;
+      }
+    }
+  }
+
   return node;
 }
 

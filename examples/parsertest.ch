@@ -24,14 +24,8 @@
  * SOFTWARE.
  */
 
-const banned = "some_evil_name"
-
-func validate(name) {
-  if name == banned {
-    return false
-  }
-
-  return true
+if x || y {
+  print("hello world")
+} else {
+  print("goodbye world")
 }
-
-print(validate("leonard"))
