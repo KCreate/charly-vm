@@ -24,8 +24,6 @@
  * SOFTWARE.
  */
 
-if x || y {
+while x || y {
   print("hello world")
-} else {
-  print("goodbye world")
 }

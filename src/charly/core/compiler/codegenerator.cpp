@@ -982,12 +982,43 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::While>& node) {
   push_break_label(break_label);
   push_continue_label(continue_label);
 
-  m_builder.place_label(continue_label);
-  apply(node->condition);
-  m_builder.emit_jmpf(break_label);
-  apply(node->then_block);
-  m_builder.emit_jmp(continue_label);
-  m_builder.place_label(break_label);
+  ref<BinaryOp> op = cast<BinaryOp>(node->condition);
+  if (op && op->operation == TokenType::And) {
+
+    // while (lhs && rhs) {}
+    Label body_label = m_builder.reserve_label();
+    m_builder.place_label(continue_label);
+    apply(op->lhs);
+    m_builder.emit_jmpf(break_label);
+    apply(op->rhs);
+    m_builder.emit_jmpf(break_label);
+    m_builder.place_label(body_label);
+    apply(node->then_block);
+    m_builder.emit_jmp(continue_label);
+    m_builder.place_label(break_label);
+  } else if (op && op->operation == TokenType::Or) {
+
+    // while (lhs || rhs) {}
+    Label body_label = m_builder.reserve_label();
+    m_builder.place_label(continue_label);
+    apply(op->lhs);
+    m_builder.emit_jmpt(body_label);
+    apply(op->rhs);
+    m_builder.emit_jmpf(break_label);
+    m_builder.place_label(body_label);
+    apply(node->then_block);
+    m_builder.emit_jmp(continue_label);
+    m_builder.place_label(break_label);
+  } else {
+
+    // while (x) {}
+    m_builder.place_label(continue_label);
+    apply(node->condition);
+    m_builder.emit_jmpf(break_label);
+    apply(node->then_block);
+    m_builder.emit_jmp(continue_label);
+    m_builder.place_label(break_label);
+  }
 
   pop_break_label();
   pop_continue_label();
