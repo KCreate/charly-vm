@@ -70,48 +70,50 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
   const ref<Function>& ast = queued_func.ast;
   m_builder.begin_function(queued_func.head, ast);
 
-  // class constructors must always return self
-  if (ast->class_constructor) {
-    m_builder.emit_loadlocal(0);
-    m_builder.emit_setlocal(1);
-    m_builder.emit_pop();
-  }
-
-  // emit default argument initializers and jump table
+  // emit default argument initializers
   uint8_t argc = ast->ir_info.argc;
   uint8_t minargc = ast->ir_info.minargc;
-  Label body_label = m_builder.reserve_label();
+  if (minargc < argc) {
 
-  if (argc == minargc) {
-    m_builder.emit_jmp(body_label);
-  } else {
-    std::vector<Label> initializers;
+    // for variadic functions, the runtime puts the amount of arguments
+    // the function was called with into the local variable slot 1
+    //
+    // this slot is also used for the return value, so code further down the line
+    // should not assume this value persists
+    m_builder.emit_loadlocal(1);
 
-    for (int i = 0; i < argc; i++) {
-      initializers.push_back(m_builder.reserve_label());
+    // emit initial jump table
+    Label labels[argc];
+    Label body_label = m_builder.reserve_label();
+    for (uint8_t i = minargc; i < argc; i++) {
+      Label l = labels[i] = m_builder.reserve_label();
+      m_builder.emit_testjmpstrict(VALUE::Int(i), l);
     }
-    initializers.push_back(body_label);
-    m_builder.emit_argswitch(initializers)->at(ast->body);
+    m_builder.emit_testjmpstrict(VALUE::Int(argc), body_label);
+    m_builder.emit_pop();
+    m_builder.emit_panic();
 
-    for (int i = 0; i < minargc; i++) {
-      m_builder.place_label(initializers[i]);
-    }
-    m_builder.emit_panic()->at(ast->body);
-
-    for (int i = minargc; i < argc; i++) {
-      m_builder.place_label(initializers[i]);
+    // emit stores for each argument with a default value
+    for (uint8_t i = minargc; i < argc; i++) {
+      m_builder.place_label(labels[i]);
 
       // assign default value
       const ref<FunctionArgument>& arg = ast->arguments[i];
       if (!isa<Null>(arg->default_value)) {
         apply(arg->default_value);
-        generate_store(arg->ir_location)->at(arg->default_value);
+        generate_store(arg->ir_location)->at(arg);
         m_builder.emit_pop();
       }
     }
+
+    m_builder.place_label(body_label);
   }
 
-  m_builder.place_label(body_label);
+  // class constructors must always return self
+  if (ast->class_constructor) {
+    m_builder.emit_loadself();
+    m_builder.emit_setreturn();
+  }
 
   // function body
   Label return_label = m_builder.reserve_label();
@@ -363,8 +365,7 @@ bool CodeGenerator::inspect_enter(const ref<Return>& node) {
 
     // store return value at the return value slot
     apply(node->expression);
-    m_builder.emit_setlocal(1);
-    m_builder.emit_pop();
+    m_builder.emit_setreturn();
     m_builder.emit_jmp(active_return_label());
   }
 
@@ -384,7 +385,7 @@ void CodeGenerator::inspect_leave(const ref<Throw>& node) {
 }
 
 void CodeGenerator::inspect_leave(const ast::ref<ast::Export>&) {
-  m_builder.emit_setlocal(1);
+  m_builder.emit_setreturn();
   m_builder.emit_jmp(active_return_label());
 }
 
@@ -405,7 +406,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Spawn>& node) {
       ref<CallOp> call = cast<CallOp>(node->statement);
 
       if (isa<Super>(call->target)) {
-        m_builder.emit_loadlocal(0);
+        m_builder.emit_loadself();
         apply(call->target);
       } else {
         m_builder.emit_load(VALUE::Null());
@@ -428,7 +429,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Spawn>& node) {
       ref<CallMemberOp> call = cast<CallMemberOp>(node->statement);
 
       if (isa<Super>(call->target)) {
-        m_builder.emit_loadlocal(0);
+        m_builder.emit_loadself();
         ref<MemberOp> member = make<MemberOp>(call->target, call->member);
         member->set_location(call);
         apply(member);
@@ -454,7 +455,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Spawn>& node) {
       ref<CallIndexOp> call = cast<CallIndexOp>(node->statement);
 
       if (isa<Super>(call->target)) {
-        m_builder.emit_loadlocal(0);
+        m_builder.emit_loadself();
         ref<IndexOp> member = make<IndexOp>(call->target, call->index);
         member->set_location(call);
         apply(member);
@@ -574,11 +575,11 @@ void CodeGenerator::inspect_leave(const ref<Null>& node) {
 }
 
 void CodeGenerator::inspect_leave(const ref<Self>&) {
-  m_builder.emit_loadlocal(0);
+  m_builder.emit_loadself();
 }
 
 void CodeGenerator::inspect_leave(const ast::ref<ast::Super>& node) {
-  m_builder.emit_loadlocal(0);
+  m_builder.emit_loadself();
   m_builder.emit_type();
 
   if (active_function()->class_constructor) {
@@ -645,7 +646,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Dict>& node) {
 
 bool CodeGenerator::inspect_enter(const ast::ref<ast::MemberOp>& node) {
   if (isa<Super>(node->target)) {
-    m_builder.emit_loadlocal(0);
+    m_builder.emit_loadself();
     m_builder.emit_type();
     m_builder.emit_loadsuperattr(node->member->value)->at(node->member);
   } else {
@@ -802,7 +803,7 @@ void CodeGenerator::inspect_leave(const ref<UnaryOp>& node) {
 
 bool CodeGenerator::inspect_enter(const ast::ref<ast::CallOp>& node) {
   if (isa<Super>(node->target)) {
-    m_builder.emit_loadlocal(0);
+    m_builder.emit_loadself();
     m_builder.emit_dup();
     m_builder.emit_type();
 

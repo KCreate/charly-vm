@@ -24,4 +24,10 @@
  * SOFTWARE.
  */
 
-class A extends B {}
+class Person {
+  property name
+
+  greet {
+    print("hello {@name}")
+  }
+}

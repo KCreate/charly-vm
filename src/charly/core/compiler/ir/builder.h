@@ -92,7 +92,6 @@ public:
 #define MAP(name, stackpop, stackpush, ...) std::shared_ptr<IRStatement> emit_##name(__VA_ARGS__);
   FOREACH_OPCODE(MAP)
 #undef MAP
-  std::shared_ptr<IRStatement> emit_argswitch(const std::vector<Label>& labels);
 
   std::shared_ptr<IRModule> get_module() const {
     return m_module;

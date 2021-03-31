@@ -1,7 +1,5 @@
 # Todos
 
-- refactor argswitch instruction
-
 - IR Optimization passes
   - Dead code removal
   - Jump rewrites (A->B->C can just be A->C)

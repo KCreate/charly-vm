@@ -142,18 +142,12 @@ std::shared_ptr<IRStatement> Builder::emit_jmpt(OpOffset label) {
   return emit(Opcode::jmpt, IROperandOffset::make(label));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_argswitch() {
-  return emit(Opcode::argswitch);
+std::shared_ptr<IRStatement> Builder::emit_testjmp(OpImmediate value, OpOffset label) {
+  return emit(Opcode::testjmp, IROperandImmediate::make(value), IROperandOffset::make(label));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_argswitch(const std::vector<Label>& labels) {
-  std::vector<std::shared_ptr<IROperandOffset>> operands;
-
-  for (Label label : labels) {
-    operands.emplace_back(std::make_shared<IROperandOffset>(label));
-  }
-
-  return emit_vector(Opcode::argswitch, operands);
+std::shared_ptr<IRStatement> Builder::emit_testjmpstrict(OpImmediate value, OpOffset label) {
+  return emit(Opcode::testjmpstrict, IROperandImmediate::make(value), IROperandOffset::make(label));
 }
 
 std::shared_ptr<IRStatement> Builder::emit_throwex() {
@@ -185,6 +179,10 @@ std::shared_ptr<IRStatement> Builder::emit_load(OpImmediate value) {
 std::shared_ptr<IRStatement> Builder::emit_loadsymbol(OpSymbol symbol) {
   register_symbol(symbol);
   return emit(Opcode::loadsymbol, IROperandSymbol::make(symbol));
+}
+
+std::shared_ptr<IRStatement> Builder::emit_loadself() {
+  return emit(Opcode::loadself);
 }
 
 std::shared_ptr<IRStatement> Builder::emit_loadglobal(OpSymbol symbol) {
@@ -226,6 +224,10 @@ std::shared_ptr<IRStatement> Builder::emit_setglobal(OpSymbol symbol) {
 
 std::shared_ptr<IRStatement> Builder::emit_setlocal(OpCount8 offset) {
   return emit(Opcode::setlocal, IROperandCount8::make(offset));
+}
+
+std::shared_ptr<IRStatement> Builder::emit_setreturn() {
+  return emit(Opcode::setreturn);
 }
 
 std::shared_ptr<IRStatement> Builder::emit_setfar(OpCount8 depth, OpCount8 offset) {
