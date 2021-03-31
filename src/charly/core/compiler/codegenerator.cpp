@@ -139,7 +139,7 @@ std::shared_ptr<ir::IRStatement> CodeGenerator::generate_load(const ValueLocatio
   switch (location.type) {
     case ValueLocation::Type::Invalid: {
       assert(false && "expected valid value location");
-      break;
+      return nullptr;
     }
     case ValueLocation::Type::LocalFrame: {
       return m_builder.emit_loadlocal(location.as.local_frame.offset);
@@ -157,7 +157,7 @@ std::shared_ptr<ir::IRStatement> CodeGenerator::generate_store(const ValueLocati
   switch (location.type) {
     case ValueLocation::Type::Invalid: {
       assert(false && "expected valid value location");
-      break;
+      return nullptr;
     }
     case ValueLocation::Type::LocalFrame: {
       return m_builder.emit_setlocal(location.as.local_frame.offset);

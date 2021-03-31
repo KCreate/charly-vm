@@ -167,7 +167,7 @@ void DesugarPass::inspect_leave(const ref<Function>& node) {
   }
 }
 
-// generate default constructor for base classes
+// generate default constructors for classes
 //
 // class A {
 //   property a = 1
@@ -176,9 +176,19 @@ void DesugarPass::inspect_leave(const ref<Function>& node) {
 //
 //   constructor(@a, @b, @c)
 // }
+//
+// class A extends B {
+//   constructor(...args) = super(...args)
+// }
 void DesugarPass::inspect_leave(const ref<Class>& node) {
-  if (!node->parent) {
-    if (node->constructor.get() == nullptr) {
+  if (node->constructor.get() == nullptr) {
+    if (node->parent) {
+      ref<CallOp> super_call = make<CallOp>(make<Super>(), make<Spread>(make<Id>("args")));
+      ref<Function> constructor = make<Function>(false, make<Name>("constructor"), make<Block>(super_call));
+      constructor->class_constructor = true;
+      constructor->arguments.push_back(make<FunctionArgument>(false, true, make<Name>("args")));
+      node->constructor = cast<Function>(apply(constructor));
+    } else {
       ref<Function> constructor = make<Function>(false, make<Name>("constructor"), make<Block>());
       constructor->class_constructor = true;
 

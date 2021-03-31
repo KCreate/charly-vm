@@ -1351,6 +1351,12 @@ ref<Class> Parser::parse_class() {
     }
   }
 
+  // subclasses that define new properties need
+  // a user-defined constructor
+  if (node->parent && node->member_properties.size() && !node->constructor) {
+    m_console.error(node->name, "class '", node->name->value, "' is missing a constructor");
+  }
+
   end(node);
   eat(TokenType::RightCurly);
 

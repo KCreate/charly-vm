@@ -29,14 +29,6 @@
 namespace charly::core::compiler::ast {
 
 void ClassConstructorCheck::inspect_leave(const ref<Class>& node) {
-
-  // subclasses that define new properties need
-  // a user-defined constructor
-  if (node->parent && node->member_properties.size() && !node->constructor) {
-    m_console.error(node->name, "class '", node->name->value, "' is missing a constructor");
-    return;
-  }
-
   if (!node->constructor || !node->parent)
     return;
 
