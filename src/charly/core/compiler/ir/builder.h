@@ -44,7 +44,12 @@ namespace charly::core::compiler::ir {
 
 class Builder {
 public:
-  Builder(const std::string& filename) : m_label_counter(0), m_active_function(nullptr), m_module(std::make_shared<IRModule>(filename)) {}
+  Builder(const std::string& filename) :
+    m_maximum_stack_height(0),
+    m_current_stack_height(0),
+    m_label_counter(0),
+    m_active_function(nullptr),
+    m_module(std::make_shared<IRModule>(filename)) {}
 
   // register a symbol in the module symbol table
   void register_symbol(const std::string& string);
@@ -64,6 +69,9 @@ public:
     IRFunction& func = active_function();
     std::shared_ptr<IRInstruction> instruction =
       std::make_shared<IRInstruction>(opcode, std::forward<Args>(operands)...);
+    // std::cout << " emitting " << kOpcodeNames[(int)opcode] << std::endl;
+    update_stack(-instruction->popped_values());
+    update_stack(instruction->pushed_values());
     return func.statements.emplace_back(instruction);
   }
   template <typename T>
@@ -75,11 +83,13 @@ public:
       instruction->operands.push_back(op);
     }
 
+    update_stack(-instruction->popped_values());
+    update_stack(instruction->pushed_values());
     return func.statements.emplace_back(instruction);
   }
   std::shared_ptr<IRStatement> emit_string_data(const std::string& string);
   std::shared_ptr<IRStatement> emit_label_definition(Label label);
-#define MAP(name, ...) std::shared_ptr<IRStatement> emit_##name(__VA_ARGS__);
+#define MAP(name, stackpop, stackpush, ...) std::shared_ptr<IRStatement> emit_##name(__VA_ARGS__);
   FOREACH_OPCODE(MAP)
 #undef MAP
   std::shared_ptr<IRStatement> emit_argswitch(const std::vector<Label>& labels);
@@ -88,7 +98,15 @@ public:
     return m_module;
   };
 
+  // keep track of maximum stack height
+  uint32_t maximum_stack_height() const;
+  void reset_stack_height();
+  void update_stack(int32_t amount);
+
 private:
+  uint32_t m_maximum_stack_height;
+  uint32_t m_current_stack_height;
+
   Label m_label_counter;
   IRFunction* m_active_function;
   std::shared_ptr<IRModule> m_module;

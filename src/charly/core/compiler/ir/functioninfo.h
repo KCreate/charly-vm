@@ -39,6 +39,7 @@ struct FunctionInfo {
   uint8_t minargc = 0;
   bool spread_argument = false;
   bool arrow_function = false;
+  uint32_t stacksize = 0;
 
   // write a formatted version to the stream:
   //

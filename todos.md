@@ -1,8 +1,6 @@
 # Todos
 
-- Stack usage analysis
-  - Exception tables need to adjust the stack
-  - Calculate amount of stack space needed for each function
+- refactor argswitch instruction
 
 - IR Optimization passes
   - Dead code removal
@@ -31,6 +29,9 @@
   - Bytecode
   - Keep possibility of future JIT compiler in mind
 
+- Should classes be static?
+  - Classes would, like functions, get their data directly embedded into the bytecode
+  - New instances of the class all share common data encoded in the bytecode
 
 - Concurrency
   - Core concept of concurrency in charly should be the Channel

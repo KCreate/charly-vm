@@ -70,6 +70,13 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
   const ref<Function>& ast = queued_func.ast;
   m_builder.begin_function(queued_func.head, ast);
 
+  // class constructors must always return self
+  if (ast->class_constructor) {
+    m_builder.emit_loadlocal(0);
+    m_builder.emit_setlocal(1);
+    m_builder.emit_pop();
+  }
+
   // emit default argument initializers and jump table
   uint8_t argc = ast->ir_info.argc;
   uint8_t minargc = ast->ir_info.minargc;
@@ -114,15 +121,12 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
 
   // function return block
   m_builder.place_label(return_label);
-  if (ast->class_constructor) {
+  m_builder.emit_ret();
 
-    // class constructors must always return self
-    m_builder.emit_loadlocal(0);
-    m_builder.emit_setlocal(1);
-    m_builder.emit_ret();
-  } else {
-    m_builder.emit_ret();
-  }
+  // stack size required for function
+  uint32_t maximum_stack_size = m_builder.maximum_stack_height();
+  m_builder.active_function().ast->ir_info.stacksize = maximum_stack_size;
+  m_builder.reset_stack_height();
 
   generate_string_table();
   m_string_table.clear();
@@ -133,6 +137,10 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
 
 std::shared_ptr<ir::IRStatement> CodeGenerator::generate_load(const ValueLocation& location) {
   switch (location.type) {
+    case ValueLocation::Type::Invalid: {
+      assert(false && "expected valid value location");
+      break;
+    }
     case ValueLocation::Type::LocalFrame: {
       return m_builder.emit_loadlocal(location.as.local_frame.offset);
     }
@@ -142,14 +150,15 @@ std::shared_ptr<ir::IRStatement> CodeGenerator::generate_load(const ValueLocatio
     case ValueLocation::Type::Global: {
       return m_builder.emit_loadglobal(location.name);
     }
-    default: {
-      assert(false && "unexpected location type");
-    }
   }
 }
 
 std::shared_ptr<ir::IRStatement> CodeGenerator::generate_store(const ValueLocation& location) {
   switch (location.type) {
+    case ValueLocation::Type::Invalid: {
+      assert(false && "expected valid value location");
+      break;
+    }
     case ValueLocation::Type::LocalFrame: {
       return m_builder.emit_setlocal(location.as.local_frame.offset);
     }
@@ -158,9 +167,6 @@ std::shared_ptr<ir::IRStatement> CodeGenerator::generate_store(const ValueLocati
     }
     case ValueLocation::Type::Global: {
       return m_builder.emit_setglobal(location.name);
-    }
-    default: {
-      assert(false && "unexpected location type");
     }
   }
 }
@@ -343,12 +349,26 @@ bool CodeGenerator::inspect_enter(const ref<Block>& node) {
   return false;
 }
 
-void CodeGenerator::inspect_leave(const ref<Return>&) {
+bool CodeGenerator::inspect_enter(const ref<Return>& node) {
+  if (active_function()->class_constructor) {
 
-  // store return value at the return value slot
-  m_builder.emit_setlocal(1);
-  m_builder.emit_pop();
-  m_builder.emit_jmp(active_return_label());
+    // class constructors always return the local self value
+    if (!isa<Null>(node->expression)) {
+      apply(node->expression);
+      m_builder.emit_pop();
+    }
+
+    m_builder.emit_jmp(active_return_label());
+  } else {
+
+    // store return value at the return value slot
+    apply(node->expression);
+    m_builder.emit_setlocal(1);
+    m_builder.emit_pop();
+    m_builder.emit_jmp(active_return_label());
+  }
+
+  return false;
 }
 
 void CodeGenerator::inspect_leave(const ref<Break>&) {
@@ -516,7 +536,6 @@ bool CodeGenerator::inspect_enter(const ref<Function>& node) {
 }
 
 bool CodeGenerator::inspect_enter(const ref<Class>& node) {
-  m_builder.emit_loadsymbol(node->name->value)->at(node->name);
   if (node->parent) {
     apply(node->parent);
   }
@@ -536,11 +555,15 @@ bool CodeGenerator::inspect_enter(const ref<Class>& node) {
   }
 
   if (node->parent) {
-    m_builder.emit_makesubclass(node->member_functions.size(), node->member_properties.size(),
-                            node->static_properties.size())->at(node);
+    m_builder
+      .emit_makesubclass(node->name->value, node->member_functions.size(), node->member_properties.size(),
+                         node->static_properties.size())
+      ->at(node);
   } else {
-    m_builder.emit_makeclass(node->member_functions.size(), node->member_properties.size(),
-                            node->static_properties.size())->at(node);
+    m_builder
+      .emit_makeclass(node->name->value, node->member_functions.size(), node->member_properties.size(),
+                      node->static_properties.size())
+      ->at(node);
   }
 
   return false;
@@ -882,6 +905,7 @@ bool CodeGenerator::inspect_enter(const ref<UnpackDeclaration>& node) {
 
   apply(node->expression);
   generate_unpack_assignment(node->target);
+  m_builder.emit_pop();
   return false;
 }
 
@@ -928,6 +952,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::If>& node) {
       Label else_label = m_builder.reserve_label();
       Label end_label = m_builder.reserve_label();
 
+      apply(node->condition);
       m_builder.emit_jmpf(else_label);
       apply(node->then_block);
       m_builder.emit_jmp(end_label);
@@ -1060,6 +1085,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Try>& node) {
 
   // emit catch block
   m_builder.place_label(catch_begin);
+  m_builder.emit_getexception();
   generate_store(node->exception_name->ir_location)->at(node->exception_name);
   m_builder.emit_pop();
 
@@ -1103,6 +1129,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::TryFinally>& node) {
 
   // emit catch handler
   m_builder.place_label(catch_handler);
+  m_builder.emit_getexception();
   generate_store(node->exception_value_location)->at(node->finally_block);
   m_builder.emit_pop();
   apply(node->finally_block);

@@ -95,6 +95,10 @@ struct ValueLocation {
   // <type>(depth=3, offset=5)
   friend std::ostream& operator<<(std::ostream& out, const ValueLocation& location) {
     switch (location.type) {
+      case ValueLocation::Type::Invalid: {
+        out << "invalid";
+        break;
+      }
       case ValueLocation::Type::LocalFrame: {
         out << "local(";
         out << "offset=" << static_cast<int>(location.as.local_frame.offset);
@@ -112,10 +116,6 @@ struct ValueLocation {
         out << "global(";
         out << "symbol=" << std::hex << location.as.global.symbol << std::dec;
         out << ")";
-        break;
-      }
-      default: {
-        assert(false && "unexpected type");
         break;
       }
     }

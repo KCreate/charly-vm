@@ -26,10 +26,12 @@
 
 #include <sstream>
 #include <iomanip>
+#include <memory>
 
-#include "charly/utils/colorwriter.h"
-#include "charly/utils/buffer.h"
 #include "charly/core/compiler/ir/ir.h"
+#include "charly/utils/argumentparser.h"
+#include "charly/utils/buffer.h"
+#include "charly/utils/colorwriter.h"
 
 namespace charly::core::compiler::ir {
 
@@ -132,6 +134,82 @@ void IROperandImmediate::dump(std::ostream& out) const {
   writer.fg(Color::Grey, "???");
 }
 
+uint32_t IRInstruction::popped_values() const {
+  uint32_t arg0 = 0;
+  uint32_t arg1 = 0;
+  uint32_t arg2 = 0;
+  uint32_t arg3 = 0;
+
+  if (this->operands.size() >= 1 && this->operands[0]->get_type() == OperandType::Count16) {
+    arg0 = std::dynamic_pointer_cast<IROperandCount16>(this->operands[0])->value;
+  }
+  if (this->operands.size() >= 1 && this->operands[0]->get_type() == OperandType::Count8) {
+    arg0 = std::dynamic_pointer_cast<IROperandCount8>(this->operands[0])->value;
+  }
+  if (this->operands.size() >= 2 && this->operands[1]->get_type() == OperandType::Count16) {
+    arg1 = std::dynamic_pointer_cast<IROperandCount16>(this->operands[1])->value;
+  }
+  if (this->operands.size() >= 2 && this->operands[1]->get_type() == OperandType::Count8) {
+    arg1 = std::dynamic_pointer_cast<IROperandCount8>(this->operands[1])->value;
+  }
+  if (this->operands.size() >= 3 && this->operands[2]->get_type() == OperandType::Count16) {
+    arg2 = std::dynamic_pointer_cast<IROperandCount16>(this->operands[2])->value;
+  }
+  if (this->operands.size() >= 3 && this->operands[2]->get_type() == OperandType::Count8) {
+    arg2 = std::dynamic_pointer_cast<IROperandCount8>(this->operands[2])->value;
+  }
+  if (this->operands.size() >= 4 && this->operands[3]->get_type() == OperandType::Count16) {
+    arg3 = std::dynamic_pointer_cast<IROperandCount16>(this->operands[3])->value;
+  }
+  if (this->operands.size() >= 4 && this->operands[3]->get_type() == OperandType::Count8) {
+    arg3 = std::dynamic_pointer_cast<IROperandCount8>(this->operands[3])->value;
+  }
+
+  switch (this->opcode) {
+#define PAIR(name, STACKPOP, STACKPUSH, ...) case Opcode::name: { return STACKPOP; }
+  FOREACH_OPCODE(PAIR)
+#undef PAIR
+  }
+}
+
+uint32_t IRInstruction::pushed_values() const {
+  uint32_t arg0 = 0;
+  uint32_t arg1 = 0;
+  uint32_t arg2 = 0;
+  uint32_t arg3 = 0;
+
+  if (this->operands.size() >= 1 && this->operands[0]->get_type() == OperandType::Count16) {
+    arg0 = std::dynamic_pointer_cast<IROperandCount16>(this->operands[0])->value;
+  }
+  if (this->operands.size() >= 1 && this->operands[0]->get_type() == OperandType::Count8) {
+    arg0 = std::dynamic_pointer_cast<IROperandCount8>(this->operands[0])->value;
+  }
+  if (this->operands.size() >= 2 && this->operands[1]->get_type() == OperandType::Count16) {
+    arg1 = std::dynamic_pointer_cast<IROperandCount16>(this->operands[1])->value;
+  }
+  if (this->operands.size() >= 2 && this->operands[1]->get_type() == OperandType::Count8) {
+    arg1 = std::dynamic_pointer_cast<IROperandCount8>(this->operands[1])->value;
+  }
+  if (this->operands.size() >= 3 && this->operands[2]->get_type() == OperandType::Count16) {
+    arg2 = std::dynamic_pointer_cast<IROperandCount16>(this->operands[2])->value;
+  }
+  if (this->operands.size() >= 3 && this->operands[2]->get_type() == OperandType::Count8) {
+    arg2 = std::dynamic_pointer_cast<IROperandCount8>(this->operands[2])->value;
+  }
+  if (this->operands.size() >= 4 && this->operands[3]->get_type() == OperandType::Count16) {
+    arg3 = std::dynamic_pointer_cast<IROperandCount16>(this->operands[3])->value;
+  }
+  if (this->operands.size() >= 4 && this->operands[3]->get_type() == OperandType::Count8) {
+    arg3 = std::dynamic_pointer_cast<IROperandCount8>(this->operands[3])->value;
+  }
+
+  switch (this->opcode) {
+#define PAIR(name, STACKPOP, STACKPUSH, ...) case Opcode::name: { return STACKPUSH; }
+  FOREACH_OPCODE(PAIR)
+#undef PAIR
+  }
+}
+
 void IRInstruction::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
 
@@ -154,19 +232,17 @@ void IRInstruction::dump(std::ostream& out) const {
   if (this->location.valid) {
     writer.fg(Color::Grey, " ; at ", this->location);
   }
-
-  out << '\n';
 }
 
 void IRLabelDefinition::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
-  writer.fg(Color::Yellow, ".L", this->label, '\n');
+  writer.fg(Color::Yellow, ".L", this->label);
 }
 
 void IRStringData::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer.fg(Color::Red, ".string '", this->data, "'");
-  writer.fg(Color::Grey, " length = ", this->data.size(), '\n');
+  writer.fg(Color::Grey, " length = ", this->data.size());
 }
 
 void IRFunction::dump(std::ostream& out) const {
@@ -175,6 +251,8 @@ void IRFunction::dump(std::ostream& out) const {
   writer.fg(Color::Yellow, "  function {", "\n");
   writer.fg(Color::Grey, "    name = ");
   writer.fg(Color::Red, "'", this->ast->name->value, "'\n");
+  writer.fg(Color::Grey, "    stacksize = ");
+  writer.fg(Color::Green, (uint32_t)this->ast->ir_info.stacksize, "\n");
   writer.fg(Color::Grey, "    locals = ");
   writer.fg(Color::Green, (uint32_t)this->ast->ir_info.local_variables, "\n");
   writer.fg(Color::Grey, "    argc = ");
@@ -203,6 +281,9 @@ void IRFunction::dump(std::ostream& out) const {
   out << "\n";
 
   writer.fg(Color::Yellow, "  body", "\n");
+
+  uint32_t current_stack_size = 0;
+
   IRStatement::Type last_type = IRStatement::Type::LabelDefinition;
   for (const auto& stmt : this->statements) {
 
@@ -218,7 +299,25 @@ void IRFunction::dump(std::ostream& out) const {
       writer.fg(Color::Grey, "    |   ");
     }
 
+    // emit stack information for instructions
+    if (utils::ArgumentParser::is_flag_set("dump_asm_stack")) {
+      if (stmt->get_type() == IRStatement::Type::Instruction) {
+        std::shared_ptr<IRInstruction> inst = std::dynamic_pointer_cast<IRInstruction>(stmt);
+        current_stack_size += inst->pushed_values() - inst->popped_values();
+
+        writer.fg(Color::Grey, "[");
+        for (uint32_t i = 0; i < current_stack_size; i++) {
+          writer.fg(Color::Yellow, "#");
+        }
+        for (uint32_t i = 0; i < this->ast->ir_info.stacksize - current_stack_size; i++) {
+          out << " ";
+        }
+        writer.fg(Color::Grey, "] ");
+      }
+    }
+
     stmt->dump(out);
+    out << '\n';
 
     last_type = stmt->get_type();
   }

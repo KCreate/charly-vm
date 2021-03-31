@@ -24,6 +24,4 @@
  * SOFTWARE.
  */
 
-while x || y {
-  print("hello world")
-}
+class A extends B {}

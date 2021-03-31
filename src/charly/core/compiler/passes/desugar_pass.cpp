@@ -187,7 +187,7 @@ void DesugarPass::inspect_leave(const ref<Class>& node) {
         constructor->arguments.push_back(make<FunctionArgument>(true, false, prop->name, prop->value));
       }
 
-      node->constructor = constructor;
+      node->constructor = cast<Function>(apply(constructor));
     }
   }
 }

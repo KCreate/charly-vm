@@ -87,6 +87,9 @@ struct IRInstruction : public IRStatement {
     return IRStatement::Type::Instruction;
   }
 
+  uint32_t popped_values() const;
+  uint32_t pushed_values() const;
+
   virtual void dump(std::ostream& out) const override;
 };
 

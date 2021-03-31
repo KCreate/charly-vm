@@ -104,7 +104,7 @@ private:
 
   // pass visitor event hooks
   virtual bool inspect_enter(const ast::ref<ast::Block>&) override;
-  virtual void inspect_leave(const ast::ref<ast::Return>&) override;
+  virtual bool inspect_enter(const ast::ref<ast::Return>&) override;
   virtual void inspect_leave(const ast::ref<ast::Break>&) override;
   virtual void inspect_leave(const ast::ref<ast::Continue>&) override;
   virtual void inspect_leave(const ast::ref<ast::Throw>&) override;

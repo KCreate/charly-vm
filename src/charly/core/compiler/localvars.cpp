@@ -145,6 +145,10 @@ const LocalVariable* BlockScope::lookup_symbol(const std::string& symbol) {
 
   if (function_depth > 0) {
     switch (variable.value_location.type) {
+      case ValueLocation::Type::Invalid:
+      case ValueLocation::Type::Global: {
+        break;
+      }
       case ValueLocation::Type::LocalFrame: {
         variable.value_location.type = ValueLocation::Type::FarFrame;
         variable.value_location.as.far_frame.depth = function_depth;
@@ -156,13 +160,6 @@ const LocalVariable* BlockScope::lookup_symbol(const std::string& symbol) {
       }
       case ValueLocation::Type::FarFrame: {
         variable.value_location.as.far_frame.depth += function_depth;
-        break;
-      }
-      case ValueLocation::Type::Global: {
-        return &variable;
-      }
-      default: {
-        assert(false && "unexpected type");
         break;
       }
     }

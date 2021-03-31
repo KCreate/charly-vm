@@ -64,14 +64,15 @@ const std::string ArgumentParser::ENVIRONMENT_STRING_DELIMITER = "=";
 const std::vector<ArgumentParser::FlagGroup> kDefinedFlagGroups = {
   { "Default",
     {
-      { "help",        'h',          "Prints the help page" },
-      { "version",     'v',          "Prints the version" },
-      { "license",     'l',          "Prints the license" },
+      { "help",           'h',          "Prints the help page" },
+      { "version",        'v',          "Prints the version" },
+      { "license",        'l',          "Prints the license" },
     } },
   { "Dump",
     {
-      { "dump_ast",    std::nullopt, "Dump the AST of the input file" },
-      { "dump_asm",    std::nullopt, "Dump the compiled bytecode of the input file" },
+      { "dump_ast",       std::nullopt, "Dump the AST of the input file" },
+      { "dump_asm",       std::nullopt, "Dump the compiled bytecode of the input file" },
+      { "dump_asm_stack", std::nullopt, "Dump the height of the stack at each opcode" },
     } }
 };
 

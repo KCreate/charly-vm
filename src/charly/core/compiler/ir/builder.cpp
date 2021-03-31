@@ -160,6 +160,10 @@ std::shared_ptr<IRStatement> Builder::emit_throwex() {
   return emit(Opcode::throwex);
 }
 
+std::shared_ptr<IRStatement> Builder::emit_getexception() {
+  return emit(Opcode::getexception);
+}
+
 // function control flow
 std::shared_ptr<IRStatement> Builder::emit_call(OpCount8 count) {
   return emit(Opcode::call, IROperandCount8::make(count));
@@ -259,14 +263,20 @@ std::shared_ptr<IRStatement> Builder::emit_makefunc(OpOffset offset) {
   return emit(Opcode::makefunc, IROperandOffset::make(offset));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_makeclass(OpCount8 funccount, OpCount8 propcount, OpCount8 staticpropcount) {
-  return emit(Opcode::makeclass, IROperandCount8::make(funccount), IROperandCount8::make(propcount),
-       IROperandCount8::make(staticpropcount));
+std::shared_ptr<IRStatement> Builder::emit_makeclass(OpSymbol name,
+                                                     OpCount8 funccount,
+                                                     OpCount8 propcount,
+                                                     OpCount8 staticpropcount) {
+  return emit(Opcode::makeclass, IROperandSymbol::make(name), IROperandCount8::make(funccount),
+              IROperandCount8::make(propcount), IROperandCount8::make(staticpropcount));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_makesubclass(OpCount8 funccount, OpCount8 propcount, OpCount8 staticpropcount) {
-  return emit(Opcode::makesubclass, IROperandCount8::make(funccount), IROperandCount8::make(propcount),
-       IROperandCount8::make(staticpropcount));
+std::shared_ptr<IRStatement> Builder::emit_makesubclass(OpSymbol name,
+                                                        OpCount8 funccount,
+                                                        OpCount8 propcount,
+                                                        OpCount8 staticpropcount) {
+  return emit(Opcode::makesubclass, IROperandSymbol::make(name), IROperandCount8::make(funccount),
+              IROperandCount8::make(propcount), IROperandCount8::make(staticpropcount));
 }
 
 std::shared_ptr<IRStatement> Builder::emit_makestr(OpOffset offset) {
@@ -417,6 +427,28 @@ std::shared_ptr<IRStatement> Builder::emit_bxor() {
 
 std::shared_ptr<IRStatement> Builder::emit_ubnot() {
   return emit(Opcode::ubnot);
+}
+
+uint32_t Builder::maximum_stack_height() const {
+  return m_maximum_stack_height;
+};
+
+void Builder::reset_stack_height() {
+  m_maximum_stack_height = 0;
+  assert(m_current_stack_height == 0);
+}
+
+void Builder::update_stack(int32_t amount) {
+  if (amount < 0) {
+    assert((uint32_t)-amount <= m_current_stack_height);
+  }
+
+  // std::cout << " stack " << (int)m_current_stack_height << " += " << amount << std::endl;
+  m_current_stack_height += amount;
+
+  if (m_current_stack_height > m_maximum_stack_height) {
+    m_maximum_stack_height = m_current_stack_height;
+  }
 }
 
 }  // namespace charly::core::compiler::ir
