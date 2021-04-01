@@ -125,7 +125,7 @@ struct IRFunction {
 
   std::vector<std::tuple<Label, Label, Label>> exception_table;
 
-  std::vector<ref<IRStatement>> statements;
+  std::list<ref<IRStatement>> statements;
 
   void dump(std::ostream& out) const;
 };

@@ -91,6 +91,9 @@ private:
   // generate the exception table for the current function
   void generate_exception_table();
 
+  // detects instructions that cannot get executed and removes them
+  void delete_dead_instructions();
+
   // label stacks
   ir::Label active_return_label() const;
   ir::Label active_break_label() const;

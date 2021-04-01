@@ -246,7 +246,12 @@ private:                                           \
 // {
 //   <statement>
 // }
-class Statement : public Node {};
+class Statement : public Node {
+public:
+  virtual bool terminates_block() const {
+    return false;
+  }
+};
 
 // 1 + x, false, foo(bar)
 class Expression : public Statement {};
@@ -290,16 +295,28 @@ public:
   CHILDREN() {
     CHILD_NODE(expression);
   }
+
+  virtual bool terminates_block() const override {
+    return true;
+  }
 };
 
 // break
 class Break final : public Statement {
   AST_NODE(Break)
+
+  virtual bool terminates_block() const override {
+    return true;
+  }
 };
 
 // continue
 class Continue final : public Statement {
   AST_NODE(Continue)
+
+  virtual bool terminates_block() const override {
+    return true;
+  }
 };
 
 // throw <expression>
@@ -315,6 +332,10 @@ public:
   CHILDREN() {
     CHILD_NODE(expression);
   }
+
+  virtual bool terminates_block() const override {
+    return true;
+  }
 };
 
 // export <expression>
@@ -329,6 +350,10 @@ public:
 
   CHILDREN() {
     CHILD_NODE(expression);
+  }
+
+  virtual bool terminates_block() const override {
+    return true;
   }
 };
 

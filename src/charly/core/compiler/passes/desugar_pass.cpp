@@ -40,6 +40,24 @@ ref<Statement> DesugarPass::transform(const ref<Block>& node) {
     }
   }
 
+  // remove dead code after return / throw statements
+  auto it = node->statements.begin();
+  bool block_terminated = false;
+  while (it != node->statements.end()) {
+    const ref<Statement>& stmt = *it;
+
+    if (block_terminated) {
+      it = node->statements.erase(it);
+      continue;
+    }
+
+    if (stmt->terminates_block()) {
+      block_terminated = true;
+    }
+
+    it++;
+  }
+
   return node;
 }
 

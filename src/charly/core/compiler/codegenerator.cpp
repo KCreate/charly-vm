@@ -130,11 +130,20 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
   m_builder.active_function().ast->ir_info.stacksize = maximum_stack_size;
   m_builder.reset_stack_height();
 
+  // emit string and exception tables
   generate_string_table();
-  m_string_table.clear();
-
   generate_exception_table();
+  m_string_table.clear();
   m_exception_table.clear();
+
+  // detect and remove dead instructions
+  //
+  //   jmp .L1
+  //   loadlocal 2    <- dead instruction
+  //
+  // .L1
+  //   loadlocal 1
+  delete_dead_instructions();
 }
 
 ref<ir::IRStatement> CodeGenerator::generate_load(const ValueLocation& location) {
@@ -293,6 +302,44 @@ void CodeGenerator::generate_exception_table() {
 
   for (const auto& entry : m_exception_table) {
     function.exception_table.emplace_back(entry);
+  }
+}
+
+void CodeGenerator::delete_dead_instructions() {
+  IRFunction& function = m_builder.active_function();
+
+  bool control_has_left_block = false;
+  auto it = function.statements.begin();
+  while (it != function.statements.end()) {
+    const ref<IRStatement>& stmt = *it;
+
+    switch (stmt->get_type()) {
+      case IRStatement::Type::Instruction: {
+        ref<IRInstruction> instruction = cast<IRInstruction>(stmt);
+
+        // delete instruction if any previous instruction has left the block
+        if (control_has_left_block) {
+          it = function.statements.erase(it);
+          continue;
+        }
+
+        // check for instructions that leave the block
+        if (kTerminatingOpcodes.count(instruction->opcode)) {
+          control_has_left_block = true;
+        }
+
+        break;
+      }
+      case IRStatement::Type::LabelDefinition: {
+        control_has_left_block = false;
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+
+    it++;
   }
 }
 

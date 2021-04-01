@@ -24,10 +24,11 @@
  * SOFTWARE.
  */
 
-class Person {
-  property name
+func foo(x, y) {
+  loop {
+    defer print("deferred")
 
-  greet {
-    print("hello {@name}")
+    /* return x */
+    print("hello world")
   }
 }

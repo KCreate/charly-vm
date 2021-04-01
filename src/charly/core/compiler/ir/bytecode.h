@@ -27,6 +27,7 @@
 #include <cstdint>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "charly/core/compiler/token.h"
@@ -727,6 +728,27 @@ enum class Opcode : uint16_t {
 #define ID(name, stackpop, stackpush, ...) name,
   FOREACH_OPCODE(ID)
 #undef ID
+};
+
+/*
+ * opcodes which terminate their basic block
+ * */
+static const std::unordered_set<Opcode> kTerminatingOpcodes = {
+  Opcode::panic,
+  Opcode::jmp,
+  Opcode::throwex,
+  Opcode::ret
+};
+
+/*
+ * opcodes that can perform branches (call-like excluded)
+ * */
+static const std::unordered_set<Opcode> kBranchingOpcodes = {
+  Opcode::jmp,
+  Opcode::jmpf,
+  Opcode::jmpt,
+  Opcode::testjmp,
+  Opcode::testjmpstrict
 };
 
 /*
