@@ -1,3 +1,6 @@
+
+
+
 /*
  * This file is part of the Charly Virtual Machine (https://github.com/KCreate/charly-vm)
  *
@@ -24,37 +27,24 @@
  * SOFTWARE.
  */
 
-#include <string>
-
-#include "charly/core/compiler/ast.h"
-#include "charly/core/compiler/diagnostic.h"
-#include "charly/core/compiler/ir/builder.h"
-#include "charly/utils/buffer.h"
+#include <cstdint>
+#include <memory>
 
 #pragma once
 
-namespace charly::core::compiler {
+namespace charly {
 
-struct CompilationUnit {
-  enum class Type : uint8_t { Module, ReplInput };
+template <typename T>
+using ref = std::shared_ptr<T>;
 
-  CompilationUnit(Type type, const std::string& filepath, utils::Buffer& source) :
-    type(type), console(filepath, source), filepath(filepath), ast(nullptr), ir_module(nullptr) {}
+template <typename T, typename... Args>
+inline ref<T> make(Args&&... params) {
+  return std::make_shared<T>(std::forward<Args>(params)...);
+}
 
-  Type type;
-  DiagnosticConsole console;
-  std::string filepath;
-  ref<ast::Block> ast;
-  ref<ir::IRModule> ir_module;
-};
+template <typename T, typename O>
+inline ref<T> cast(ref<O> node) {
+  return std::dynamic_pointer_cast<T>(node);
+}
 
-class Compiler {
-public:
-
-  // compile source code into a compilation unit
-  static ref<CompilationUnit> compile(CompilationUnit::Type type,
-                                                  const std::string& filepath,
-                                                  utils::Buffer& source);
-};
-
-}  // namespace charly::core::compiler
+}  // namespace charly

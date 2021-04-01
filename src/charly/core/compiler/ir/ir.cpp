@@ -41,7 +41,7 @@ void IRStatement::at(const Location& location) {
   this->location = location;
 }
 
-void IRStatement::at(const ast::ref<ast::Node>& node) {
+void IRStatement::at(const ref<ast::Node>& node) {
   this->location = node->location();
 }
 
@@ -141,28 +141,28 @@ uint32_t IRInstruction::popped_values() const {
   uint32_t arg3 = 0;
 
   if (this->operands.size() >= 1 && this->operands[0]->get_type() == OperandType::Count16) {
-    arg0 = std::dynamic_pointer_cast<IROperandCount16>(this->operands[0])->value;
+    arg0 = cast<IROperandCount16>(this->operands[0])->value;
   }
   if (this->operands.size() >= 1 && this->operands[0]->get_type() == OperandType::Count8) {
-    arg0 = std::dynamic_pointer_cast<IROperandCount8>(this->operands[0])->value;
+    arg0 = cast<IROperandCount8>(this->operands[0])->value;
   }
   if (this->operands.size() >= 2 && this->operands[1]->get_type() == OperandType::Count16) {
-    arg1 = std::dynamic_pointer_cast<IROperandCount16>(this->operands[1])->value;
+    arg1 = cast<IROperandCount16>(this->operands[1])->value;
   }
   if (this->operands.size() >= 2 && this->operands[1]->get_type() == OperandType::Count8) {
-    arg1 = std::dynamic_pointer_cast<IROperandCount8>(this->operands[1])->value;
+    arg1 = cast<IROperandCount8>(this->operands[1])->value;
   }
   if (this->operands.size() >= 3 && this->operands[2]->get_type() == OperandType::Count16) {
-    arg2 = std::dynamic_pointer_cast<IROperandCount16>(this->operands[2])->value;
+    arg2 = cast<IROperandCount16>(this->operands[2])->value;
   }
   if (this->operands.size() >= 3 && this->operands[2]->get_type() == OperandType::Count8) {
-    arg2 = std::dynamic_pointer_cast<IROperandCount8>(this->operands[2])->value;
+    arg2 = cast<IROperandCount8>(this->operands[2])->value;
   }
   if (this->operands.size() >= 4 && this->operands[3]->get_type() == OperandType::Count16) {
-    arg3 = std::dynamic_pointer_cast<IROperandCount16>(this->operands[3])->value;
+    arg3 = cast<IROperandCount16>(this->operands[3])->value;
   }
   if (this->operands.size() >= 4 && this->operands[3]->get_type() == OperandType::Count8) {
-    arg3 = std::dynamic_pointer_cast<IROperandCount8>(this->operands[3])->value;
+    arg3 = cast<IROperandCount8>(this->operands[3])->value;
   }
 
   switch (this->opcode) {
@@ -179,28 +179,28 @@ uint32_t IRInstruction::pushed_values() const {
   uint32_t arg3 = 0;
 
   if (this->operands.size() >= 1 && this->operands[0]->get_type() == OperandType::Count16) {
-    arg0 = std::dynamic_pointer_cast<IROperandCount16>(this->operands[0])->value;
+    arg0 = cast<IROperandCount16>(this->operands[0])->value;
   }
   if (this->operands.size() >= 1 && this->operands[0]->get_type() == OperandType::Count8) {
-    arg0 = std::dynamic_pointer_cast<IROperandCount8>(this->operands[0])->value;
+    arg0 = cast<IROperandCount8>(this->operands[0])->value;
   }
   if (this->operands.size() >= 2 && this->operands[1]->get_type() == OperandType::Count16) {
-    arg1 = std::dynamic_pointer_cast<IROperandCount16>(this->operands[1])->value;
+    arg1 = cast<IROperandCount16>(this->operands[1])->value;
   }
   if (this->operands.size() >= 2 && this->operands[1]->get_type() == OperandType::Count8) {
-    arg1 = std::dynamic_pointer_cast<IROperandCount8>(this->operands[1])->value;
+    arg1 = cast<IROperandCount8>(this->operands[1])->value;
   }
   if (this->operands.size() >= 3 && this->operands[2]->get_type() == OperandType::Count16) {
-    arg2 = std::dynamic_pointer_cast<IROperandCount16>(this->operands[2])->value;
+    arg2 = cast<IROperandCount16>(this->operands[2])->value;
   }
   if (this->operands.size() >= 3 && this->operands[2]->get_type() == OperandType::Count8) {
-    arg2 = std::dynamic_pointer_cast<IROperandCount8>(this->operands[2])->value;
+    arg2 = cast<IROperandCount8>(this->operands[2])->value;
   }
   if (this->operands.size() >= 4 && this->operands[3]->get_type() == OperandType::Count16) {
-    arg3 = std::dynamic_pointer_cast<IROperandCount16>(this->operands[3])->value;
+    arg3 = cast<IROperandCount16>(this->operands[3])->value;
   }
   if (this->operands.size() >= 4 && this->operands[3]->get_type() == OperandType::Count8) {
-    arg3 = std::dynamic_pointer_cast<IROperandCount8>(this->operands[3])->value;
+    arg3 = cast<IROperandCount8>(this->operands[3])->value;
   }
 
   switch (this->opcode) {
@@ -302,7 +302,7 @@ void IRFunction::dump(std::ostream& out) const {
     // emit stack information for instructions
     if (utils::ArgumentParser::is_flag_set("dump_asm_stack")) {
       if (stmt->get_type() == IRStatement::Type::Instruction) {
-        std::shared_ptr<IRInstruction> inst = std::dynamic_pointer_cast<IRInstruction>(stmt);
+        ref<IRInstruction> inst = cast<IRInstruction>(stmt);
         current_stack_size += inst->pushed_values() - inst->popped_values();
 
         writer.fg(Color::Grey, "[");

@@ -31,6 +31,7 @@
 #include <vector>
 #include <cassert>
 
+#include "charly/charly.h"
 #include "charly/core/compiler/location.h"
 #include "charly/core/compiler/token.h"
 #include "charly/core/compiler/ir/builtin.h"
@@ -40,19 +41,6 @@
 #pragma once
 
 namespace charly::core::compiler::ast {
-
-template <typename T>
-using ref = std::shared_ptr<T>;
-
-template <typename T, typename... Args>
-inline ref<T> make(Args... params) {
-  return std::make_shared<T>(std::forward<Args>(params)...);
-}
-
-template <typename T, typename O>
-inline ref<T> cast(ref<O> node) {
-  return std::dynamic_pointer_cast<T>(node);
-}
 
 class Pass;  // forward declaration
 

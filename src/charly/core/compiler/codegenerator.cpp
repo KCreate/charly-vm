@@ -31,7 +31,7 @@ using namespace charly::core::compiler::ir;
 
 namespace charly::core::compiler {
 
-std::shared_ptr<IRModule> CodeGenerator::compile(std::shared_ptr<CompilationUnit> unit) {
+ref<IRModule> CodeGenerator::compile(ref<CompilationUnit> unit) {
   CodeGenerator generator(unit);
   generator.compile();
   return generator.get_module();
@@ -137,7 +137,7 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
   m_exception_table.clear();
 }
 
-std::shared_ptr<ir::IRStatement> CodeGenerator::generate_load(const ValueLocation& location) {
+ref<ir::IRStatement> CodeGenerator::generate_load(const ValueLocation& location) {
   switch (location.type) {
     case ValueLocation::Type::Invalid: {
       assert(false && "expected valid value location");
@@ -155,7 +155,7 @@ std::shared_ptr<ir::IRStatement> CodeGenerator::generate_load(const ValueLocatio
   }
 }
 
-std::shared_ptr<ir::IRStatement> CodeGenerator::generate_store(const ValueLocation& location) {
+ref<ir::IRStatement> CodeGenerator::generate_store(const ValueLocation& location) {
   switch (location.type) {
     case ValueLocation::Type::Invalid: {
       assert(false && "expected valid value location");
@@ -173,7 +173,7 @@ std::shared_ptr<ir::IRStatement> CodeGenerator::generate_store(const ValueLocati
   }
 }
 
-uint8_t CodeGenerator::generate_spread_tuples(const std::vector<ast::ref<ast::Expression>>& vec) {
+uint8_t CodeGenerator::generate_spread_tuples(const std::vector<ref<ast::Expression>>& vec) {
   uint8_t elements_in_last_segment = 0;
   uint8_t emitted_segments = 0;
 
@@ -384,23 +384,23 @@ void CodeGenerator::inspect_leave(const ref<Throw>& node) {
   m_builder.emit_throwex()->at(node);
 }
 
-void CodeGenerator::inspect_leave(const ast::ref<ast::Export>&) {
+void CodeGenerator::inspect_leave(const ref<ast::Export>&) {
   m_builder.emit_setreturn();
   m_builder.emit_jmp(active_return_label());
 }
 
-bool CodeGenerator::inspect_enter(const ast::ref<ast::Import>& node) {
+bool CodeGenerator::inspect_enter(const ref<ast::Import>& node) {
   apply(node->source);
   m_builder.emit_makestr(register_string(m_unit->filepath))->at(node);
   m_builder.emit_import()->at(node);
   return false;
 }
 
-void CodeGenerator::inspect_leave(const ast::ref<ast::Yield>& node) {
+void CodeGenerator::inspect_leave(const ref<ast::Yield>& node) {
   m_builder.emit_fiberyield()->at(node);
 }
 
-bool CodeGenerator::inspect_enter(const ast::ref<ast::Spawn>& node) {
+bool CodeGenerator::inspect_enter(const ref<ast::Spawn>& node) {
   switch (node->statement->type()) {
     case Node::Type::CallOp: {
       ref<CallOp> call = cast<CallOp>(node->statement);
@@ -489,11 +489,11 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Spawn>& node) {
   return false;
 }
 
-void CodeGenerator::inspect_leave(const ast::ref<ast::Await>& node) {
+void CodeGenerator::inspect_leave(const ref<ast::Await>& node) {
   m_builder.emit_fiberawait()->at(node);
 }
 
-void CodeGenerator::inspect_leave(const ast::ref<ast::Typeof>& node) {
+void CodeGenerator::inspect_leave(const ref<ast::Typeof>& node) {
   m_builder.emit_type()->at(node);
 }
 
@@ -578,7 +578,7 @@ void CodeGenerator::inspect_leave(const ref<Self>&) {
   m_builder.emit_loadself();
 }
 
-void CodeGenerator::inspect_leave(const ast::ref<ast::Super>& node) {
+void CodeGenerator::inspect_leave(const ref<ast::Super>& node) {
   m_builder.emit_loadself();
   m_builder.emit_type();
 
@@ -589,7 +589,7 @@ void CodeGenerator::inspect_leave(const ast::ref<ast::Super>& node) {
   }
 }
 
-bool CodeGenerator::inspect_enter(const ast::ref<ast::Tuple>& node) {
+bool CodeGenerator::inspect_enter(const ref<ast::Tuple>& node) {
   if (node->has_spread_elements()) {
     uint8_t emitted_segments = generate_spread_tuples(node->elements);
     m_builder.emit_maketuplespread(emitted_segments)->at(node);
@@ -604,7 +604,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Tuple>& node) {
   return false;
 }
 
-bool CodeGenerator::inspect_enter(const ast::ref<ast::List>& node) {
+bool CodeGenerator::inspect_enter(const ref<ast::List>& node) {
   if (node->has_spread_elements()) {
     uint8_t emitted_segments = generate_spread_tuples(node->elements);
     m_builder.emit_makelistspread(emitted_segments)->at(node);
@@ -619,7 +619,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::List>& node) {
   return false;
 }
 
-bool CodeGenerator::inspect_enter(const ast::ref<ast::Dict>& node) {
+bool CodeGenerator::inspect_enter(const ref<ast::Dict>& node) {
   if (node->has_spread_elements()) {
     for (const ref<DictEntry>& exp : node->elements) {
       if (ref<Spread> spread = cast<Spread>(exp->key)) {
@@ -644,7 +644,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Dict>& node) {
   return false;
 }
 
-bool CodeGenerator::inspect_enter(const ast::ref<ast::MemberOp>& node) {
+bool CodeGenerator::inspect_enter(const ref<ast::MemberOp>& node) {
   if (isa<Super>(node->target)) {
     m_builder.emit_loadself();
     m_builder.emit_type();
@@ -657,7 +657,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::MemberOp>& node) {
   return false;
 }
 
-void CodeGenerator::inspect_leave(const ast::ref<ast::IndexOp>& node) {
+void CodeGenerator::inspect_leave(const ref<ast::IndexOp>& node) {
   m_builder.emit_loadattrvalue()->at(node);
 }
 
@@ -801,7 +801,7 @@ void CodeGenerator::inspect_leave(const ref<UnaryOp>& node) {
   m_builder.emit(kUnaryopOpcodeMapping.at(node->operation))->at(node);
 }
 
-bool CodeGenerator::inspect_enter(const ast::ref<ast::CallOp>& node) {
+bool CodeGenerator::inspect_enter(const ref<ast::CallOp>& node) {
   if (isa<Super>(node->target)) {
     m_builder.emit_loadself();
     m_builder.emit_dup();
@@ -831,7 +831,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::CallOp>& node) {
   return false;
 }
 
-bool CodeGenerator::inspect_enter(const ast::ref<ast::CallMemberOp>& node) {
+bool CodeGenerator::inspect_enter(const ref<ast::CallMemberOp>& node) {
   apply(node->target);
   m_builder.emit_dup();
   m_builder.emit_loadattr(node->member->value)->at(node->member);
@@ -850,7 +850,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::CallMemberOp>& node) {
   return false;
 }
 
-bool CodeGenerator::inspect_enter(const ast::ref<ast::CallIndexOp>& node) {
+bool CodeGenerator::inspect_enter(const ref<ast::CallIndexOp>& node) {
   apply(node->target);
   m_builder.emit_dup();
   apply(node->index);
@@ -910,7 +910,7 @@ bool CodeGenerator::inspect_enter(const ref<UnpackDeclaration>& node) {
   return false;
 }
 
-bool CodeGenerator::inspect_enter(const ast::ref<ast::If>& node) {
+bool CodeGenerator::inspect_enter(const ref<ast::If>& node) {
   if (node->else_block) {
 
     // if (x) {} else {}
@@ -1001,7 +1001,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::If>& node) {
   return false;
 }
 
-bool CodeGenerator::inspect_enter(const ast::ref<ast::While>& node) {
+bool CodeGenerator::inspect_enter(const ref<ast::While>& node) {
   Label continue_label = m_builder.reserve_label();
   Label break_label = m_builder.reserve_label();
 
@@ -1052,7 +1052,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::While>& node) {
   return false;
 }
 
-bool CodeGenerator::inspect_enter(const ast::ref<ast::Loop>& node) {
+bool CodeGenerator::inspect_enter(const ref<ast::Loop>& node) {
   Label continue_label = m_builder.reserve_label();
   Label break_label = m_builder.reserve_label();
 
@@ -1070,7 +1070,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Loop>& node) {
   return false;
 }
 
-bool CodeGenerator::inspect_enter(const ast::ref<ast::Try>& node) {
+bool CodeGenerator::inspect_enter(const ref<ast::Try>& node) {
   Label try_begin = m_builder.reserve_label();
   Label try_end = m_builder.reserve_label();
   Label catch_begin = m_builder.reserve_label();
@@ -1096,7 +1096,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Try>& node) {
   return  false;
 }
 
-bool CodeGenerator::inspect_enter(const ast::ref<ast::TryFinally>& node) {
+bool CodeGenerator::inspect_enter(const ref<ast::TryFinally>& node) {
 
   /*
    * this method generates a lot of excess blocks in most cases
@@ -1160,7 +1160,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::TryFinally>& node) {
   return  false;
 }
 
-bool CodeGenerator::inspect_enter(const ast::ref<ast::Switch>& node) {
+bool CodeGenerator::inspect_enter(const ref<ast::Switch>& node) {
   // TODO: generate some kind of lookup table?
   //
   // this is kind of a temporary hack that i plan on removing later once
@@ -1194,7 +1194,7 @@ bool CodeGenerator::inspect_enter(const ast::ref<ast::Switch>& node) {
   return false;
 }
 
-bool CodeGenerator::inspect_enter(const ast::ref<ast::BuiltinOperation>& node) {
+bool CodeGenerator::inspect_enter(const ref<ast::BuiltinOperation>& node) {
   BuiltinId operation = node->operation;
 
   // emit arguments

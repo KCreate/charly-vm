@@ -36,8 +36,8 @@ public:
   using DiagnosticPass::DiagnosticPass;
 
 private:
-  std::shared_ptr<FunctionScope> m_function;
-  std::shared_ptr<BlockScope> m_block;
+  ref<FunctionScope> m_function;
+  ref<BlockScope> m_block;
   // bool m_toplevel = false;
 
   void push_function(const ref<Function>&);

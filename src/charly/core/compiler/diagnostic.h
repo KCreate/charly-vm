@@ -127,7 +127,7 @@ public:
     m_messages.push_back(DiagnosticMessage{ DiagnosticType::Info, m_filepath, stream.str(), loc });
   }
   template <typename... Args>
-  void info(const ast::ref<ast::Node>& node, Args&&... params) {
+  void info(const ref<ast::Node>& node, Args&&... params) {
     info(node->location(), std::forward<Args>(params)...);
   }
   template <typename... Args>
@@ -143,7 +143,7 @@ public:
     m_messages.push_back(DiagnosticMessage{ DiagnosticType::Warning, m_filepath, stream.str(), loc });
   }
   template <typename... Args>
-  void warning(const ast::ref<ast::Node>& node, Args&&... params) {
+  void warning(const ref<ast::Node>& node, Args&&... params) {
     warning(node->location(), std::forward<Args>(params)...);
   }
   template <typename... Args>
@@ -159,7 +159,7 @@ public:
     m_messages.push_back(DiagnosticMessage{ DiagnosticType::Error, m_filepath, stream.str(), loc });
   }
   template <typename... Args>
-  void error(const ast::ref<ast::Node>& node, Args&&... params) {
+  void error(const ref<ast::Node>& node, Args&&... params) {
     error(node->location(), std::forward<Args>(params)...);
   }
   template <typename... Args>
@@ -177,7 +177,7 @@ public:
     throw DiagnosticException();
   }
   template <typename... Args>
-  [[noreturn]] void fatal(const ast::ref<ast::Node>& node, Args&&... params) {
+  [[noreturn]] void fatal(const ref<ast::Node>& node, Args&&... params) {
     fatal(node->location(), std::forward<Args>(params)...);
   }
   template <typename... Args>

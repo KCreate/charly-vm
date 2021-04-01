@@ -48,9 +48,9 @@ struct SlotInfo {
 // stored on the heap
 struct BlockScope;
 struct FunctionScope {
-  FunctionScope(ast::ref<ast::Function> ast_function,
-                std::shared_ptr<FunctionScope> parent_function,
-                std::shared_ptr<BlockScope> parent_block) :
+  FunctionScope(ref<ast::Function> ast_function,
+                ref<FunctionScope> parent_function,
+                ref<BlockScope> parent_block) :
     ast_function(ast_function), parent_function(parent_function), parent_block(parent_block) {}
 
   // get a free slot
@@ -63,16 +63,16 @@ struct FunctionScope {
   // other variables in the future
   void leak_slot(uint32_t index);
 
-  ast::ref<ast::Function> ast_function;
+  ref<ast::Function> ast_function;
   std::vector<SlotInfo> slots;
-  std::shared_ptr<FunctionScope> parent_function;
-  std::shared_ptr<BlockScope> parent_block;
+  ref<FunctionScope> parent_function;
+  ref<BlockScope> parent_block;
 };
 
 struct LocalVariable {
 
   // the node that declared this variable
-  ast::ref<ast::Node> ast_declaration;
+  ref<ast::Node> ast_declaration;
 
   // the runtime location where this value can be found
   ir::ValueLocation value_location;
@@ -91,9 +91,9 @@ struct LocalVariable {
 // and serves as a lookup cache for variable lookups into
 // parent blocks
 struct BlockScope {
-  BlockScope(ast::ref<ast::Block> block,
-             std::shared_ptr<FunctionScope> parent_function,
-             std::shared_ptr<BlockScope> parent_block) :
+  BlockScope(ref<ast::Block> block,
+             ref<FunctionScope> parent_function,
+             ref<BlockScope> parent_block) :
     ast_block(block), parent_function(parent_function), parent_block(parent_block) {}
 
   ~BlockScope() {
@@ -118,8 +118,8 @@ struct BlockScope {
   }
 
   // register a new variable inside this block
-  const LocalVariable* alloc_slot(const ast::ref<ast::Name>& symbol,
-                                  const ast::ref<ast::Node>& declaration,
+  const LocalVariable* alloc_slot(const ref<ast::Name>& symbol,
+                                  const ref<ast::Node>& declaration,
                                   bool constant = false,
                                   bool force_local = false);
 
@@ -129,10 +129,10 @@ struct BlockScope {
   // lookup the location of a symbol
   const LocalVariable* lookup_symbol(const std::string& symbol);
 
-  ast::ref<ast::Block> ast_block;
+  ref<ast::Block> ast_block;
   std::unordered_map<std::string, LocalVariable> variables;
-  std::shared_ptr<FunctionScope> parent_function;
-  std::shared_ptr<BlockScope> parent_block;
+  ref<FunctionScope> parent_function;
+  ref<BlockScope> parent_block;
 };
 
 }  // namespace charly::core::compiler

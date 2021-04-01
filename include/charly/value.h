@@ -26,6 +26,7 @@
 
 #include <cstdint>
 
+#include "charly.h"
 #include "taggedvalue.h"
 
 #pragma once

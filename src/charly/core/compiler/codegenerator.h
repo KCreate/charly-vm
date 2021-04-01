@@ -39,30 +39,30 @@ namespace charly::core::compiler {
 
 class CodeGenerator : public ast::DiagnosticPass {
 public:
-  static std::shared_ptr<ir::IRModule> compile(std::shared_ptr<CompilationUnit> unit);
+  static ref<ir::IRModule> compile(ref<CompilationUnit> unit);
 
 private:
   void compile();
 
-  std::shared_ptr<ir::IRModule> get_module() const {
+  ref<ir::IRModule> get_module() const {
     return m_builder.get_module();
   };
 
-  CodeGenerator(std::shared_ptr<CompilationUnit> unit) :
+  CodeGenerator(ref<CompilationUnit> unit) :
     DiagnosticPass(unit->console), m_unit(unit), m_builder(unit->filepath) {}
 
   struct QueuedFunction {
     ir::Label head;
-    ast::ref<ast::Function> ast;
+    ref<ast::Function> ast;
   };
 
-  const ast::ref<ast::Function>& active_function() const {
+  const ref<ast::Function>& active_function() const {
     return m_function_queue.front().ast;
   }
 
   // enqueue a function to be compiled
   // returns the label the function will be placed at
-  ir::Label enqueue_function(const ast::ref<ast::Function>& ast);
+  ir::Label enqueue_function(const ref<ast::Function>& ast);
 
   // store a string in the current function's string table
   ir::Label register_string(const std::string& string);
@@ -75,15 +75,15 @@ private:
   void compile_function(const QueuedFunction&);
 
   // generate load and stores to value locations
-  std::shared_ptr<ir::IRStatement> generate_load(const ir::ValueLocation&);
-  std::shared_ptr<ir::IRStatement> generate_store(const ir::ValueLocation&);
+  ref<ir::IRStatement> generate_load(const ir::ValueLocation&);
+  ref<ir::IRStatement> generate_store(const ir::ValueLocation&);
 
   // generate spread tuples for a list of expressions
   // returns the total amount of tuples pushed
-  uint8_t generate_spread_tuples(const std::vector<ast::ref<ast::Expression>>& vec);
+  uint8_t generate_spread_tuples(const std::vector<ref<ast::Expression>>& vec);
 
   // generate an assignment to an unpack target
-  void generate_unpack_assignment(const ast::ref<ast::UnpackTarget>& target);
+  void generate_unpack_assignment(const ref<ast::UnpackTarget>& target);
 
   // generate the string table for the current function
   void generate_string_table();
@@ -103,62 +103,62 @@ private:
   void pop_continue_label();
 
   // pass visitor event hooks
-  virtual bool inspect_enter(const ast::ref<ast::Block>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::Return>&) override;
-  virtual void inspect_leave(const ast::ref<ast::Break>&) override;
-  virtual void inspect_leave(const ast::ref<ast::Continue>&) override;
-  virtual void inspect_leave(const ast::ref<ast::Throw>&) override;
-  virtual void inspect_leave(const ast::ref<ast::Export>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::Import>&) override;
+  virtual bool inspect_enter(const ref<ast::Block>&) override;
+  virtual bool inspect_enter(const ref<ast::Return>&) override;
+  virtual void inspect_leave(const ref<ast::Break>&) override;
+  virtual void inspect_leave(const ref<ast::Continue>&) override;
+  virtual void inspect_leave(const ref<ast::Throw>&) override;
+  virtual void inspect_leave(const ref<ast::Export>&) override;
+  virtual bool inspect_enter(const ref<ast::Import>&) override;
 
-  virtual void inspect_leave(const ast::ref<ast::Yield>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::Spawn>&) override;
-  virtual void inspect_leave(const ast::ref<ast::Await>&) override;
-  virtual void inspect_leave(const ast::ref<ast::Typeof>&) override;
+  virtual void inspect_leave(const ref<ast::Yield>&) override;
+  virtual bool inspect_enter(const ref<ast::Spawn>&) override;
+  virtual void inspect_leave(const ref<ast::Await>&) override;
+  virtual void inspect_leave(const ref<ast::Typeof>&) override;
 
-  virtual void inspect_leave(const ast::ref<ast::Id>&) override;
-  virtual void inspect_leave(const ast::ref<ast::Int>&) override;
-  virtual void inspect_leave(const ast::ref<ast::Float>&) override;
-  virtual void inspect_leave(const ast::ref<ast::Bool>&) override;
-  virtual void inspect_leave(const ast::ref<ast::Char>&) override;
-  virtual void inspect_leave(const ast::ref<ast::String>&) override;
-  virtual void inspect_leave(const ast::ref<ast::FormatString>&) override;
-  virtual void inspect_leave(const ast::ref<ast::Symbol>&) override;
-  virtual void inspect_leave(const ast::ref<ast::Null>&) override;
-  virtual void inspect_leave(const ast::ref<ast::Self>&) override;
-  virtual void inspect_leave(const ast::ref<ast::Super>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::Tuple>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::List>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::Dict>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::Function>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::Class>&) override;
+  virtual void inspect_leave(const ref<ast::Id>&) override;
+  virtual void inspect_leave(const ref<ast::Int>&) override;
+  virtual void inspect_leave(const ref<ast::Float>&) override;
+  virtual void inspect_leave(const ref<ast::Bool>&) override;
+  virtual void inspect_leave(const ref<ast::Char>&) override;
+  virtual void inspect_leave(const ref<ast::String>&) override;
+  virtual void inspect_leave(const ref<ast::FormatString>&) override;
+  virtual void inspect_leave(const ref<ast::Symbol>&) override;
+  virtual void inspect_leave(const ref<ast::Null>&) override;
+  virtual void inspect_leave(const ref<ast::Self>&) override;
+  virtual void inspect_leave(const ref<ast::Super>&) override;
+  virtual bool inspect_enter(const ref<ast::Tuple>&) override;
+  virtual bool inspect_enter(const ref<ast::List>&) override;
+  virtual bool inspect_enter(const ref<ast::Dict>&) override;
+  virtual bool inspect_enter(const ref<ast::Function>&) override;
+  virtual bool inspect_enter(const ref<ast::Class>&) override;
 
-  virtual bool inspect_enter(const ast::ref<ast::MemberOp>&) override;
-  virtual void inspect_leave(const ast::ref<ast::IndexOp>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::Assignment>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::UnpackAssignment>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::MemberAssignment>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::IndexAssignment>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::Ternary>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::BinaryOp>&) override;
-  virtual void inspect_leave(const ast::ref<ast::UnaryOp>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::CallOp>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::CallMemberOp>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::CallIndexOp>&) override;
+  virtual bool inspect_enter(const ref<ast::MemberOp>&) override;
+  virtual void inspect_leave(const ref<ast::IndexOp>&) override;
+  virtual bool inspect_enter(const ref<ast::Assignment>&) override;
+  virtual bool inspect_enter(const ref<ast::UnpackAssignment>&) override;
+  virtual bool inspect_enter(const ref<ast::MemberAssignment>&) override;
+  virtual bool inspect_enter(const ref<ast::IndexAssignment>&) override;
+  virtual bool inspect_enter(const ref<ast::Ternary>&) override;
+  virtual bool inspect_enter(const ref<ast::BinaryOp>&) override;
+  virtual void inspect_leave(const ref<ast::UnaryOp>&) override;
+  virtual bool inspect_enter(const ref<ast::CallOp>&) override;
+  virtual bool inspect_enter(const ref<ast::CallMemberOp>&) override;
+  virtual bool inspect_enter(const ref<ast::CallIndexOp>&) override;
 
-  virtual bool inspect_enter(const ast::ref<ast::Declaration>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::UnpackDeclaration>&) override;
+  virtual bool inspect_enter(const ref<ast::Declaration>&) override;
+  virtual bool inspect_enter(const ref<ast::UnpackDeclaration>&) override;
 
-  virtual bool inspect_enter(const ast::ref<ast::If>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::While>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::Loop>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::Try>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::TryFinally>&) override;
-  virtual bool inspect_enter(const ast::ref<ast::Switch>&) override;
+  virtual bool inspect_enter(const ref<ast::If>&) override;
+  virtual bool inspect_enter(const ref<ast::While>&) override;
+  virtual bool inspect_enter(const ref<ast::Loop>&) override;
+  virtual bool inspect_enter(const ref<ast::Try>&) override;
+  virtual bool inspect_enter(const ref<ast::TryFinally>&) override;
+  virtual bool inspect_enter(const ref<ast::Switch>&) override;
 
-  virtual bool inspect_enter(const ast::ref<ast::BuiltinOperation>&) override;
+  virtual bool inspect_enter(const ref<ast::BuiltinOperation>&) override;
 
-  std::shared_ptr<CompilationUnit> m_unit;
+  ref<CompilationUnit> m_unit;
   ir::Builder m_builder;
 
   std::queue<QueuedFunction> m_function_queue;

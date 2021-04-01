@@ -43,7 +43,7 @@ IRFunction& Builder::active_function() const {
   return *m_active_function;
 }
 
-IRFunction& Builder::begin_function(Label head, ast::ref<ast::Function> ast) {
+IRFunction& Builder::begin_function(Label head, ref<ast::Function> ast) {
   m_module->functions.emplace_back(head, ast);
   m_active_function = &m_module->functions.back();
   return active_function();
@@ -62,12 +62,12 @@ void Builder::place_label_at_label(Label label, Label target_label) {
   // search for the target label
   IRFunction& func = active_function();
   for (auto it = func.statements.begin(); it != func.statements.end(); it++) {
-    const std::shared_ptr<IRStatement>& ptr = *it;
+    const ref<IRStatement>& ptr = *it;
 
     if (ptr->get_type() == IRStatement::Type::LabelDefinition) {
       const IRLabelDefinition* label_def = dynamic_cast<IRLabelDefinition*>(ptr.get());
       if (label_def->label == target_label) {
-        func.statements.insert(it, std::make_shared<IRLabelDefinition>(label));
+        func.statements.insert(it, make<IRLabelDefinition>(label));
         return;
       }
     }
@@ -76,196 +76,196 @@ void Builder::place_label_at_label(Label label, Label target_label) {
   assert(false && "unknown label");
 }
 
-std::shared_ptr<IRStatement> Builder::emit_string_data(const std::string& string) {
+ref<IRStatement> Builder::emit_string_data(const std::string& string) {
   IRFunction& func = active_function();
-  return func.statements.emplace_back(std::make_shared<IRStringData>(string));
+  return func.statements.emplace_back(make<IRStringData>(string));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_label_definition(Label label) {
+ref<IRStatement> Builder::emit_label_definition(Label label) {
   IRFunction& func = active_function();
-  return func.statements.emplace_back(std::make_shared<IRLabelDefinition>(label));
+  return func.statements.emplace_back(make<IRLabelDefinition>(label));
 }
 
 // machine control
-std::shared_ptr<IRStatement> Builder::emit_nop() {
+ref<IRStatement> Builder::emit_nop() {
   return emit(Opcode::nop);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_panic() {
+ref<IRStatement> Builder::emit_panic() {
   return emit(Opcode::panic);
 }
 
 // misc. instructions
-std::shared_ptr<IRStatement> Builder::emit_import() {
+ref<IRStatement> Builder::emit_import() {
   return emit(Opcode::import);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_stringconcat(OpCount8 count) {
+ref<IRStatement> Builder::emit_stringconcat(OpCount8 count) {
   return emit(Opcode::stringconcat, IROperandCount8::make(count));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_declareglobal(OpSymbol symbol) {
+ref<IRStatement> Builder::emit_declareglobal(OpSymbol symbol) {
   return emit(Opcode::declareglobal, IROperandSymbol::make(symbol));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_declareglobalconst(OpSymbol symbol) {
+ref<IRStatement> Builder::emit_declareglobalconst(OpSymbol symbol) {
   return emit(Opcode::declareglobalconst, IROperandSymbol::make(symbol));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_type() {
+ref<IRStatement> Builder::emit_type() {
   return emit(Opcode::type);
 }
 
 // stack management
-std::shared_ptr<IRStatement> Builder::emit_pop() {
+ref<IRStatement> Builder::emit_pop() {
   return emit(Opcode::pop);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_dup() {
+ref<IRStatement> Builder::emit_dup() {
   return emit(Opcode::dup);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_dup2() {
+ref<IRStatement> Builder::emit_dup2() {
   return emit(Opcode::dup2);
 }
 
 // control flow
-std::shared_ptr<IRStatement> Builder::emit_jmp(OpOffset label) {
+ref<IRStatement> Builder::emit_jmp(OpOffset label) {
   return emit(Opcode::jmp, IROperandOffset::make(label));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_jmpf(OpOffset label) {
+ref<IRStatement> Builder::emit_jmpf(OpOffset label) {
   return emit(Opcode::jmpf, IROperandOffset::make(label));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_jmpt(OpOffset label) {
+ref<IRStatement> Builder::emit_jmpt(OpOffset label) {
   return emit(Opcode::jmpt, IROperandOffset::make(label));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_testjmp(OpImmediate value, OpOffset label) {
+ref<IRStatement> Builder::emit_testjmp(OpImmediate value, OpOffset label) {
   return emit(Opcode::testjmp, IROperandImmediate::make(value), IROperandOffset::make(label));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_testjmpstrict(OpImmediate value, OpOffset label) {
+ref<IRStatement> Builder::emit_testjmpstrict(OpImmediate value, OpOffset label) {
   return emit(Opcode::testjmpstrict, IROperandImmediate::make(value), IROperandOffset::make(label));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_throwex() {
+ref<IRStatement> Builder::emit_throwex() {
   return emit(Opcode::throwex);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_getexception() {
+ref<IRStatement> Builder::emit_getexception() {
   return emit(Opcode::getexception);
 }
 
 // function control flow
-std::shared_ptr<IRStatement> Builder::emit_call(OpCount8 count) {
+ref<IRStatement> Builder::emit_call(OpCount8 count) {
   return emit(Opcode::call, IROperandCount8::make(count));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_callspread(OpCount8 count) {
+ref<IRStatement> Builder::emit_callspread(OpCount8 count) {
   return emit(Opcode::callspread, IROperandCount8::make(count));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_ret() {
+ref<IRStatement> Builder::emit_ret() {
   return emit(Opcode::ret);
 }
 
 // load operations
-std::shared_ptr<IRStatement> Builder::emit_load(OpImmediate value) {
+ref<IRStatement> Builder::emit_load(OpImmediate value) {
   return emit(Opcode::load, IROperandImmediate::make(value));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_loadsymbol(OpSymbol symbol) {
+ref<IRStatement> Builder::emit_loadsymbol(OpSymbol symbol) {
   register_symbol(symbol);
   return emit(Opcode::loadsymbol, IROperandSymbol::make(symbol));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_loadself() {
+ref<IRStatement> Builder::emit_loadself() {
   return emit(Opcode::loadself);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_loadglobal(OpSymbol symbol) {
+ref<IRStatement> Builder::emit_loadglobal(OpSymbol symbol) {
   register_symbol(symbol);
   return emit(Opcode::loadglobal, IROperandSymbol::make(symbol));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_loadlocal(OpCount8 offset) {
+ref<IRStatement> Builder::emit_loadlocal(OpCount8 offset) {
   return emit(Opcode::loadlocal, IROperandCount8::make(offset));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_loadfar(OpCount8 depth, OpCount8 offset) {
+ref<IRStatement> Builder::emit_loadfar(OpCount8 depth, OpCount8 offset) {
   return emit(Opcode::loadfar, IROperandCount8::make(depth), IROperandCount8::make(offset));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_loadattr(OpSymbol symbol) {
+ref<IRStatement> Builder::emit_loadattr(OpSymbol symbol) {
   register_symbol(symbol);
   return emit(Opcode::loadattr, IROperandSymbol::make(symbol));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_loadattrvalue() {
+ref<IRStatement> Builder::emit_loadattrvalue() {
   return emit(Opcode::loadattrvalue);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_loadsuperconstructor() {
+ref<IRStatement> Builder::emit_loadsuperconstructor() {
   return emit(Opcode::loadsuperconstructor);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_loadsuperattr(OpSymbol symbol) {
+ref<IRStatement> Builder::emit_loadsuperattr(OpSymbol symbol) {
   register_symbol(symbol);
   return emit(Opcode::loadsuperattr, IROperandSymbol::make(symbol));
 }
 
 // write operations
-std::shared_ptr<IRStatement> Builder::emit_setglobal(OpSymbol symbol) {
+ref<IRStatement> Builder::emit_setglobal(OpSymbol symbol) {
   register_symbol(symbol);
   return emit(Opcode::setglobal, IROperandSymbol::make(symbol));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_setlocal(OpCount8 offset) {
+ref<IRStatement> Builder::emit_setlocal(OpCount8 offset) {
   return emit(Opcode::setlocal, IROperandCount8::make(offset));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_setreturn() {
+ref<IRStatement> Builder::emit_setreturn() {
   return emit(Opcode::setreturn);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_setfar(OpCount8 depth, OpCount8 offset) {
+ref<IRStatement> Builder::emit_setfar(OpCount8 depth, OpCount8 offset) {
   return emit(Opcode::setfar, IROperandCount8::make(depth), IROperandCount8::make(offset));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_setattr(OpSymbol symbol) {
+ref<IRStatement> Builder::emit_setattr(OpSymbol symbol) {
   register_symbol(symbol);
   return emit(Opcode::setattr, IROperandSymbol::make(symbol));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_setattrvalue() {
+ref<IRStatement> Builder::emit_setattrvalue() {
   return emit(Opcode::setattrvalue);
 }
 
 // value destructuring operations
-std::shared_ptr<IRStatement> Builder::emit_unpacksequence(OpCount8 count) {
+ref<IRStatement> Builder::emit_unpacksequence(OpCount8 count) {
   return emit(Opcode::unpacksequence, IROperandCount8::make(count));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_unpacksequencespread(OpCount8 before, OpCount8 after) {
+ref<IRStatement> Builder::emit_unpacksequencespread(OpCount8 before, OpCount8 after) {
   return emit(Opcode::unpacksequencespread, IROperandCount8::make(before), IROperandCount8::make(after));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_unpackobject(OpCount8 count) {
+ref<IRStatement> Builder::emit_unpackobject(OpCount8 count) {
   return emit(Opcode::unpackobject, IROperandCount8::make(count));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_unpackobjectspread(OpCount8 count) {
+ref<IRStatement> Builder::emit_unpackobjectspread(OpCount8 count) {
   return emit(Opcode::unpackobjectspread, IROperandCount8::make(count));
 }
 
 // value allocation
-std::shared_ptr<IRStatement> Builder::emit_makefunc(OpOffset offset) {
+ref<IRStatement> Builder::emit_makefunc(OpOffset offset) {
   return emit(Opcode::makefunc, IROperandOffset::make(offset));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_makeclass(OpSymbol name,
+ref<IRStatement> Builder::emit_makeclass(OpSymbol name,
                                                      OpCount8 funccount,
                                                      OpCount8 propcount,
                                                      OpCount8 staticpropcount) {
@@ -273,7 +273,7 @@ std::shared_ptr<IRStatement> Builder::emit_makeclass(OpSymbol name,
               IROperandCount8::make(propcount), IROperandCount8::make(staticpropcount));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_makesubclass(OpSymbol name,
+ref<IRStatement> Builder::emit_makesubclass(OpSymbol name,
                                                         OpCount8 funccount,
                                                         OpCount8 propcount,
                                                         OpCount8 staticpropcount) {
@@ -281,153 +281,153 @@ std::shared_ptr<IRStatement> Builder::emit_makesubclass(OpSymbol name,
               IROperandCount8::make(propcount), IROperandCount8::make(staticpropcount));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_makestr(OpOffset offset) {
+ref<IRStatement> Builder::emit_makestr(OpOffset offset) {
   return emit(Opcode::makestr, IROperandOffset::make(offset));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_makelist(OpCount16 count) {
+ref<IRStatement> Builder::emit_makelist(OpCount16 count) {
   return emit(Opcode::makelist, IROperandCount16::make(count));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_makelistspread(OpCount16 count) {
+ref<IRStatement> Builder::emit_makelistspread(OpCount16 count) {
   return emit(Opcode::makelistspread, IROperandCount16::make(count));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_makedict(OpCount16 count) {
+ref<IRStatement> Builder::emit_makedict(OpCount16 count) {
   return emit(Opcode::makedict, IROperandCount16::make(count));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_makedictspread(OpCount16 count) {
+ref<IRStatement> Builder::emit_makedictspread(OpCount16 count) {
   return emit(Opcode::makedictspread, IROperandCount16::make(count));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_maketuple(OpCount16 count) {
+ref<IRStatement> Builder::emit_maketuple(OpCount16 count) {
   return emit(Opcode::maketuple, IROperandCount16::make(count));
 }
 
-std::shared_ptr<IRStatement> Builder::emit_maketuplespread(OpCount16 count) {
+ref<IRStatement> Builder::emit_maketuplespread(OpCount16 count) {
   return emit(Opcode::maketuplespread, IROperandCount16::make(count));
 }
 
 // fiber management
-std::shared_ptr<IRStatement> Builder::emit_fiberspawn() {
+ref<IRStatement> Builder::emit_fiberspawn() {
   return emit(Opcode::fiberspawn);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_fiberyield() {
+ref<IRStatement> Builder::emit_fiberyield() {
   return emit(Opcode::fiberyield);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_fibercall() {
+ref<IRStatement> Builder::emit_fibercall() {
   return emit(Opcode::fibercall);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_fiberpause() {
+ref<IRStatement> Builder::emit_fiberpause() {
   return emit(Opcode::fiberpause);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_fiberresume() {
+ref<IRStatement> Builder::emit_fiberresume() {
   return emit(Opcode::fiberresume);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_fiberawait() {
+ref<IRStatement> Builder::emit_fiberawait() {
   return emit(Opcode::fiberawait);
 }
 
 // cast operations
-std::shared_ptr<IRStatement> Builder::emit_caststring() {
+ref<IRStatement> Builder::emit_caststring() {
   return emit(Opcode::caststring);
 }
 
 // iterator operations
-std::shared_ptr<IRStatement> Builder::emit_iteratornext() {
+ref<IRStatement> Builder::emit_iteratornext() {
   return emit(Opcode::iteratornext);
 }
 
 // arithmetic operations
-std::shared_ptr<IRStatement> Builder::emit_add() {
+ref<IRStatement> Builder::emit_add() {
   return emit(Opcode::add);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_sub() {
+ref<IRStatement> Builder::emit_sub() {
   return emit(Opcode::sub);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_mul() {
+ref<IRStatement> Builder::emit_mul() {
   return emit(Opcode::mul);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_div() {
+ref<IRStatement> Builder::emit_div() {
   return emit(Opcode::div);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_mod() {
+ref<IRStatement> Builder::emit_mod() {
   return emit(Opcode::mod);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_pow() {
+ref<IRStatement> Builder::emit_pow() {
   return emit(Opcode::pow);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_usub() {
+ref<IRStatement> Builder::emit_usub() {
   return emit(Opcode::usub);
 }
 
 // arithmetic operations
-std::shared_ptr<IRStatement> Builder::emit_eq() {
+ref<IRStatement> Builder::emit_eq() {
   return emit(Opcode::eq);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_neq() {
+ref<IRStatement> Builder::emit_neq() {
   return emit(Opcode::neq);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_lt() {
+ref<IRStatement> Builder::emit_lt() {
   return emit(Opcode::lt);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_gt() {
+ref<IRStatement> Builder::emit_gt() {
   return emit(Opcode::gt);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_le() {
+ref<IRStatement> Builder::emit_le() {
   return emit(Opcode::le);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_ge() {
+ref<IRStatement> Builder::emit_ge() {
   return emit(Opcode::ge);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_unot() {
+ref<IRStatement> Builder::emit_unot() {
   return emit(Opcode::unot);
 }
 
 // bitwise operations
-std::shared_ptr<IRStatement> Builder::emit_shl() {
+ref<IRStatement> Builder::emit_shl() {
   return emit(Opcode::shl);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_shr() {
+ref<IRStatement> Builder::emit_shr() {
   return emit(Opcode::shr);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_shru() {
+ref<IRStatement> Builder::emit_shru() {
   return emit(Opcode::shru);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_band() {
+ref<IRStatement> Builder::emit_band() {
   return emit(Opcode::band);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_bor() {
+ref<IRStatement> Builder::emit_bor() {
   return emit(Opcode::bor);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_bxor() {
+ref<IRStatement> Builder::emit_bxor() {
   return emit(Opcode::bxor);
 }
 
-std::shared_ptr<IRStatement> Builder::emit_ubnot() {
+ref<IRStatement> Builder::emit_ubnot() {
   return emit(Opcode::ubnot);
 }
 

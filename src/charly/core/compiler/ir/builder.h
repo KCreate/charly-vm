@@ -49,14 +49,14 @@ public:
     m_current_stack_height(0),
     m_label_counter(0),
     m_active_function(nullptr),
-    m_module(std::make_shared<IRModule>(filename)) {}
+    m_module(make<IRModule>(filename)) {}
 
   // register a symbol in the module symbol table
   void register_symbol(const std::string& string);
 
   // function management
   IRFunction& active_function() const;
-  IRFunction& begin_function(Label head, ast::ref<ast::Function> ast);
+  IRFunction& begin_function(Label head, ref<ast::Function> ast);
 
   // label management
   Label reserve_label();
@@ -65,19 +65,18 @@ public:
 
   // emit an IR statement into the current function
   template <typename... Args>
-  std::shared_ptr<IRStatement> emit(Opcode opcode, Args&&... operands) {
+  ref<IRStatement> emit(Opcode opcode, Args&&... operands) {
     IRFunction& func = active_function();
-    std::shared_ptr<IRInstruction> instruction =
-      std::make_shared<IRInstruction>(opcode, std::forward<Args>(operands)...);
+    ref<IRInstruction> instruction = make<IRInstruction>(opcode, std::forward<Args>(operands)...);
     // std::cout << " emitting " << kOpcodeNames[(int)opcode] << std::endl;
     update_stack(-instruction->popped_values());
     update_stack(instruction->pushed_values());
     return func.statements.emplace_back(instruction);
   }
   template <typename T>
-  std::shared_ptr<IRStatement> emit_vector(Opcode opcode, const std::vector<T>& operands) {
+  ref<IRStatement> emit_vector(Opcode opcode, const std::vector<T>& operands) {
     IRFunction& func = active_function();
-    std::shared_ptr<IRInstruction> instruction = std::make_shared<IRInstruction>(opcode);
+    ref<IRInstruction> instruction = make<IRInstruction>(opcode);
 
     for (const auto& op : operands) {
       instruction->operands.push_back(op);
@@ -87,13 +86,13 @@ public:
     update_stack(instruction->pushed_values());
     return func.statements.emplace_back(instruction);
   }
-  std::shared_ptr<IRStatement> emit_string_data(const std::string& string);
-  std::shared_ptr<IRStatement> emit_label_definition(Label label);
-#define MAP(name, stackpop, stackpush, ...) std::shared_ptr<IRStatement> emit_##name(__VA_ARGS__);
+  ref<IRStatement> emit_string_data(const std::string& string);
+  ref<IRStatement> emit_label_definition(Label label);
+#define MAP(name, stackpop, stackpush, ...) ref<IRStatement> emit_##name(__VA_ARGS__);
   FOREACH_OPCODE(MAP)
 #undef MAP
 
-  std::shared_ptr<IRModule> get_module() const {
+  ref<IRModule> get_module() const {
     return m_module;
   };
 
@@ -108,7 +107,7 @@ private:
 
   Label m_label_counter;
   IRFunction* m_active_function;
-  std::shared_ptr<IRModule> m_module;
+  ref<IRModule> m_module;
 };
 
 }  // namespace charly::core::compiler::ir

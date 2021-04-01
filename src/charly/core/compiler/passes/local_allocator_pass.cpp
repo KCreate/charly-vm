@@ -29,11 +29,11 @@
 namespace charly::core::compiler::ast {
 
 void LocalAllocatorPass::push_function(const ref<Function>& node) {
-  m_function = std::make_shared<FunctionScope>(node, m_function, m_block);
+  m_function = make<FunctionScope>(node, m_function, m_block);
 }
 
 void LocalAllocatorPass::push_block(const ref<Block>& node) {
-  m_block = std::make_shared<BlockScope>(node, m_function, m_block);
+  m_block = make<BlockScope>(node, m_function, m_block);
 }
 
 void LocalAllocatorPass::pop_function() {

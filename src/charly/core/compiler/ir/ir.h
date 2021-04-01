@@ -54,8 +54,8 @@ struct IROperand {
       return OperandType::name;                                       \
     }                                                                 \
     IROperand##name(const type& value) : value(value) {}              \
-    static std::shared_ptr<IROperand##name> make(const type& value) { \
-      return std::make_shared<IROperand##name>(value);                \
+    static ref<IROperand##name> make(const type& value) { \
+      return charly::make<IROperand##name>(value);                \
     }                                                                 \
     type value;                                                       \
     virtual void dump(std::ostream& out) const override;                       \
@@ -68,7 +68,7 @@ struct IRStatement {
 
   Location location;
   void at(const Location& location);
-  void at(const ast::ref<ast::Node>& node);
+  void at(const ref<ast::Node>& node);
 
   virtual ~IRStatement() = default;
 
@@ -81,7 +81,7 @@ struct IRInstruction : public IRStatement {
   IRInstruction(Opcode opcode, Args&&... operands) : opcode(opcode), operands({ std::forward<Args>(operands)... }) {}
 
   Opcode opcode;
-  std::vector<std::shared_ptr<IROperand>> operands;
+  std::vector<ref<IROperand>> operands;
 
   virtual Type get_type() const override {
     return IRStatement::Type::Instruction;
@@ -118,14 +118,14 @@ struct IRStringData : public IRStatement {
 };
 
 struct IRFunction {
-  IRFunction(Label head, ast::ref<ast::Function> ast) : head(head), ast(ast) {}
+  IRFunction(Label head, ref<ast::Function> ast) : head(head), ast(ast) {}
 
   Label head;
-  ast::ref<ast::Function> ast;
+  ref<ast::Function> ast;
 
   std::vector<std::tuple<Label, Label, Label>> exception_table;
 
-  std::vector<std::shared_ptr<IRStatement>> statements;
+  std::vector<ref<IRStatement>> statements;
 
   void dump(std::ostream& out) const;
 };

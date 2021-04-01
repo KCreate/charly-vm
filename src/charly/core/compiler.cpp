@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+#include "charly/charly.h"
+
 #include "charly/core/compiler.h"
 #include "charly/core/compiler/parser.h"
 #include "charly/core/compiler/codegenerator.h"
@@ -44,10 +46,10 @@ namespace charly::core::compiler {
 
 using namespace charly::core::compiler::ast;
 
-std::shared_ptr<CompilationUnit> Compiler::compile(CompilationUnit::Type type,
+ref<CompilationUnit> Compiler::compile(CompilationUnit::Type type,
                                                    const std::string& filepath,
                                                    utils::Buffer& source) {
-  std::shared_ptr<CompilationUnit> unit = std::make_shared<CompilationUnit>(type, filepath, source);
+  ref<CompilationUnit> unit = make<CompilationUnit>(type, filepath, source);
 
   // parse source file
   unit->ast = Parser::parse_program(source, unit->console);
