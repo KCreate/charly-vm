@@ -1,8 +1,8 @@
 # Todos
 
-- Reassign labels to next block when removing basic blocks
-
-- Assign exception tables per basic block
+- String table?
+  - VM should somehow copy strings out of the module
+  - How do makestr instructions find the string?
 
 - IR Optimization passes
   - Remove unused strings
@@ -39,6 +39,8 @@
   - New instances of the class all share common data encoded in the bytecode
 
 - Concurrency
+  - Boost fcontext for cheap context switches
+  - Signal handling?
   - Core concept of concurrency in charly should be the Channel
   - Channel
     - Concurrent queue

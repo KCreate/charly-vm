@@ -283,6 +283,12 @@ FOREACH_OPERANDTYPE(OPTYPE)
    * - self                                                                                  \
    * */                                                                                      \
   V(loadself, 0, 1) /* pseudo instruction */                                                 \
+  /* loadargc - load the amount of arguments passed to the function                          \
+   *                                                                                         \
+   * stack results:                                                                          \
+   * - argc                                                                                  \
+   * */                                                                                      \
+  V(loadargc, 0, 1) /* pseudo instruction */                                                 \
   /* loadglobal - load a global value                                                        \
    *                                                                                         \
    * opcode operands:                                                                        \

@@ -67,16 +67,10 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
   uint8_t minargc = ast->ir_info.minargc;
   if (minargc < argc) {
 
-    // for variadic functions, the runtime puts the amount of arguments
-    // the function was called with into the local variable slot 1
-    //
-    // this slot is also used for the return value, so code further down the line
-    // should not assume this value persists
-    m_builder.emit_loadlocal(1);
-
     // emit initial jump table
     Label labels[argc];
     Label body_label = m_builder.reserve_label();
+    m_builder.emit_loadargc();
     for (uint8_t i = minargc; i < argc; i++) {
       Label l = labels[i] = m_builder.reserve_label();
       m_builder.emit_testjmpstrict(VALUE::Int(i), l);
@@ -1036,12 +1030,12 @@ bool CodeGenerator::inspect_enter(const ref<ast::Try>& node) {
   Label catch_begin = m_builder.reserve_label();
   Label catch_end = m_builder.reserve_label();
 
-  m_builder.add_exception_table_entry(try_begin, try_end, catch_begin);
-
   // emit try block
+  m_builder.push_exception_handler(catch_begin);
   m_builder.place_label(try_begin);
   apply(node->try_block);
   m_builder.emit_jmp(catch_end);
+  m_builder.pop_exception_handler();
   m_builder.place_label(try_end);
 
   // emit catch block
@@ -1062,13 +1056,10 @@ bool CodeGenerator::inspect_enter(const ref<ast::TryFinally>& node) {
    * this method generates a lot of excess blocks in most cases
    * subsequent dead-code elimination passes will remove these blocks
    * */
-
   Label try_begin = m_builder.reserve_label();
   Label try_end = m_builder.reserve_label();
   Label normal_handler = m_builder.reserve_label();
   Label catch_handler = m_builder.reserve_label();
-
-  m_builder.add_exception_table_entry(try_begin, try_end, catch_handler);
 
   // intercept control statements
   Label break_handler = m_builder.reserve_label();
@@ -1079,9 +1070,11 @@ bool CodeGenerator::inspect_enter(const ref<ast::TryFinally>& node) {
   push_return_label(return_handler);
 
   // emit try block
+  m_builder.push_exception_handler(catch_handler);
   m_builder.place_label(try_begin);
   apply(node->try_block);
   m_builder.emit_jmp(normal_handler);
+  m_builder.pop_exception_handler();
   m_builder.place_label(try_end);
 
   pop_break_label();

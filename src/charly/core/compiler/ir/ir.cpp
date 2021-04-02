@@ -283,6 +283,11 @@ void IRBasicBlock::dump(std::ostream& out) const {
   }
   writer.fg(Color::Green, "]");
 
+  // exception handler
+  if (this->exception_handler) {
+    writer.fg(Color::Red, " exceptions -> .L", this->exception_handler.value());
+  }
+
   out << '\n';
 
   // instructions

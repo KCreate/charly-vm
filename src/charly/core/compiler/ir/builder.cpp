@@ -56,8 +56,12 @@ uint16_t Builder::register_string(const std::string& string) {
   return index;
 }
 
-void Builder::add_exception_table_entry(Label begin, Label end, Label handler) {
-  m_active_function->exception_table.emplace_back(begin, end, handler);
+void Builder::push_exception_handler(Label handler) {
+  m_exception_handlers.push(handler);
+}
+
+void Builder::pop_exception_handler() {
+  m_exception_handlers.pop();
 }
 
 ref<IRFunction> Builder::active_function() const {
@@ -115,6 +119,10 @@ void Builder::finish_function() {
     // them to be removed in the later stages
     rewrite_chained_branches();
 
+    // remove blocks with no incoming branches from the graph
+    // repeat this process for as long as blocks are being removed
+    remove_dead_blocks();
+
     // remove useless jumps
     //
     //    jmp .L1
@@ -122,11 +130,15 @@ void Builder::finish_function() {
     //
     // the above jump opcode can be completely removed
     remove_useless_jumps();
-
-    // remove blocks with no incoming branches from the graph
-    // repeat this process for as long as blocks are being removed
-    remove_dead_blocks();
   }
+
+  // emit the exceptions tables for the basic blocks of this function
+  //
+  // each exception table entry maps a certain region of code
+  // to a hanler address, if an exception were to occur within that region
+  new_basic_block();
+  emit_nop();
+  emit_exception_tables();
 
   // reset builder for next function
   reset_stack_height();
@@ -162,6 +174,11 @@ void Builder::trim_dead_instructions() {
 void Builder::build_cfg() {
   for (ref<IRBasicBlock> block : m_active_function->basic_blocks) {
     assert(block->instructions.size());
+
+    if (block->exception_handler) {
+      ref<IRBasicBlock> handler_block = m_labelled_blocks.at(block->exception_handler.value());
+      IRBasicBlock::link(block, handler_block);
+    }
 
     ref<IRInstruction> op = block->instructions.back();
     switch (op->opcode) {
@@ -244,6 +261,12 @@ void Builder::rewrite_chained_branches() {
             IRBasicBlock::link(block, new_target_block);
             original_operand->value = second_target_label;
             updated_jmp = true;
+          } else if (target_instruction->opcode == Opcode::ret) {
+
+            // replace original jump with a ret
+            instruction->opcode = Opcode::ret;
+            instruction->operands.clear();
+            IRBasicBlock::unlink(block, target_block);
           }
         }
       }
@@ -259,9 +282,7 @@ void Builder::remove_useless_jumps() {
     switch (op->opcode) {
       case Opcode::jmp: {
         Label target_label = cast<IROperandOffset>(op->operands[0])->value;
-        ref<IRBasicBlock> target_block = m_labelled_blocks.at(target_label);
-
-        if (target_block.get() == block->next_block.get()) {
+        if (block->next_block->labels.count(target_label)) {
           block->instructions.pop_back();
         }
 
@@ -298,6 +319,10 @@ void Builder::remove_dead_blocks() {
       for (const ref<IRBasicBlock>& outgoing : block->outgoing_blocks) {
         reachable_blocks.push_back(outgoing);
       }
+
+      // if (block->exception_handler) {
+      //   reachable_blocks.push_back(m_labelled_blocks.at(block->exception_handler.value()));
+      // }
     }
   }
 
@@ -327,6 +352,24 @@ void Builder::remove_dead_blocks() {
   }
 }
 
+void Builder::emit_exception_tables() {
+  for (const ref<IRBasicBlock>& block : m_active_function->basic_blocks) {
+    if (block->exception_handler) {
+      assert(block->labels.size());
+      assert(block->next_block);
+
+      if (block->next_block->labels.size() == 0) {
+        block->next_block->labels.insert(reserve_label());
+      }
+
+      Label begin = *block->labels.begin();
+      Label end = *block->next_block->labels.begin();
+      Label handler = block->exception_handler.value();
+      m_active_function->exception_table.emplace_back(begin, end, handler);
+    }
+  }
+}
+
 ref<IRBasicBlock> Builder::new_basic_block() {
   assert(m_active_function);
 
@@ -353,6 +396,11 @@ void Builder::place_label(Label label) {
   if (m_active_block->instructions.size() == 0) {
     m_active_block->labels.insert(label);
     m_labelled_blocks.insert({label, m_active_block});
+
+    if (!m_active_block->exception_handler && m_exception_handlers.size()) {
+      m_active_block->exception_handler = m_exception_handlers.top();
+    }
+
     return;
   }
 
@@ -360,6 +408,10 @@ void Builder::place_label(Label label) {
   ref<IRBasicBlock> new_block = new_basic_block();
   new_block->labels.insert(label);
   m_labelled_blocks.insert({label, new_block});
+
+  if (m_exception_handlers.size()) {
+    new_block->exception_handler = m_exception_handlers.top();
+  }
 }
 
 // machine control
@@ -459,6 +511,10 @@ ref<IRInstruction> Builder::emit_loadsymbol(OpSymbol symbol) {
 
 ref<IRInstruction> Builder::emit_loadself() {
   return emit(Opcode::loadself);
+}
+
+ref<IRInstruction> Builder::emit_loadargc() {
+  return emit(Opcode::loadargc);
 }
 
 ref<IRInstruction> Builder::emit_loadglobal(OpSymbol symbol) {

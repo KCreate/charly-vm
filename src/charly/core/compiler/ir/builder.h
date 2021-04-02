@@ -48,6 +48,7 @@ public:
     m_maximum_stack_height(0),
     m_current_stack_height(0),
     m_label_counter(0),
+    m_block_id_counter(0),
     m_active_function(nullptr),
     m_module(make<IRModule>(filename)) {}
 
@@ -57,9 +58,6 @@ public:
   // register a string in the current functions string table
   uint16_t register_string(const std::string& string);
 
-  // add exception table entry in current function
-  void add_exception_table_entry(Label begin, Label end, Label handler);
-
   // basic block management
   ref<IRBasicBlock> new_basic_block();
   ref<IRBasicBlock> active_block() const;
@@ -67,12 +65,17 @@ public:
   void begin_function(Label head, ref<ast::Function> ast);
   void finish_function();
 
+  // exception table building
+  void push_exception_handler(Label handler);
+  void pop_exception_handler();
+
   // cfg
   void build_cfg();
   void trim_dead_instructions();
   void rewrite_chained_branches();
   void remove_useless_jumps();
   void remove_dead_blocks();
+  void emit_exception_tables();
 
   // label management
   Label reserve_label();
@@ -118,6 +121,9 @@ private:
 
   // maps Labels to basic blocks for the current function
   std::unordered_map<Label, ref<IRBasicBlock>> m_labelled_blocks;
+
+  // stack of exception handlers
+  std::stack<Label> m_exception_handlers;
 
   ref<IRFunction>   m_active_function;
   ref<IRBasicBlock> m_active_block;

@@ -87,8 +87,11 @@ struct IRBasicBlock {
   // set during dead-code analysis phases
   bool reachable = false;
 
+  // optional exception handler for this block
+  std::optional<Label> exception_handler = std::nullopt;
+
   // labels that refer to this block
-  std::unordered_set<Label> labels;
+  std::set<Label> labels;
   std::list<ref<IRInstruction>> instructions;
 
   // control-flow-graph data

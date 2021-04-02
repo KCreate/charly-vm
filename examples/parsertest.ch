@@ -24,26 +24,19 @@
  * SOFTWARE.
  */
 
-loop {
-  if x {
-    print(true)
-  } else {
+func foo {
+  try {
+    print(1)
     try {
-      print(false)
+      print(2)
+      try {
+        print(3)
+      } catch(e) {
+      }
+      print(4)
     } catch(e) {
-      print(e)
     }
-
-    print("test test")
-    continue
-  }
-}
-
-
-loop {
-  loop {
-    loop {
-      print("hello world")
-    }
+    print(5)
+  } catch(e) {
   }
 }
