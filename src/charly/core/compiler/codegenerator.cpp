@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+// #include "charly/core/compiler/ir/cfg.h"
+
 #include "charly/core/compiler/codegenerator.h"
 
 using namespace charly::core::compiler::ast;
@@ -54,16 +56,6 @@ Label CodeGenerator::enqueue_function(const ref<Function>& ast) {
   Label begin_label = m_builder.reserve_label();
   m_function_queue.push({ .head = begin_label, .ast = ast });
   return begin_label;
-}
-
-Label CodeGenerator::register_string(const std::string& string) {
-  Label l = m_builder.reserve_label();
-  m_string_table.emplace_back(l, string);
-  return l;
-}
-
-void CodeGenerator::add_exception_table_entry(ir::Label begin, ir::Label end, ir::Label handler) {
-  m_exception_table.emplace_back(begin, end, handler);
 }
 
 void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
@@ -126,27 +118,12 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
   m_builder.emit_ret();
 
   // stack size required for function
-  uint32_t maximum_stack_size = m_builder.maximum_stack_height();
-  m_builder.active_function().ast->ir_info.stacksize = maximum_stack_size;
-  m_builder.reset_stack_height();
+  m_builder.active_function()->ast->ir_info.stacksize = m_builder.maximum_stack_height();
 
-  // emit string and exception tables
-  generate_string_table();
-  generate_exception_table();
-  m_string_table.clear();
-  m_exception_table.clear();
-
-  // detect and remove dead instructions
-  //
-  //   jmp .L1
-  //   loadlocal 2    <- dead instruction
-  //
-  // .L1
-  //   loadlocal 1
-  delete_dead_instructions();
+  m_builder.finish_function();
 }
 
-ref<ir::IRStatement> CodeGenerator::generate_load(const ValueLocation& location) {
+ref<ir::IRInstruction> CodeGenerator::generate_load(const ValueLocation& location) {
   switch (location.type) {
     case ValueLocation::Type::Invalid: {
       assert(false && "expected valid value location");
@@ -164,7 +141,7 @@ ref<ir::IRStatement> CodeGenerator::generate_load(const ValueLocation& location)
   }
 }
 
-ref<ir::IRStatement> CodeGenerator::generate_store(const ValueLocation& location) {
+ref<ir::IRInstruction> CodeGenerator::generate_store(const ValueLocation& location) {
   switch (location.type) {
     case ValueLocation::Type::Invalid: {
       assert(false && "expected valid value location");
@@ -279,70 +256,6 @@ void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target) 
   }
 }
 
-void CodeGenerator::generate_string_table() {
-  std::unordered_map<SYMBOL, Label> emitted_strings;
-  for (const auto& entry : m_string_table) {
-    const Label& label = std::get<0>(entry);
-    const std::string& string = std::get<1>(entry);
-    SYMBOL string_hash = SYM(string);
-
-    if (emitted_strings.count(string_hash)) {
-      m_builder.place_label_at_label(label, emitted_strings.at(string_hash));
-      continue;
-    }
-
-    m_builder.place_label(label);
-    m_builder.emit_string_data(string);
-    emitted_strings[string_hash] = label;
-  }
-}
-
-void CodeGenerator::generate_exception_table() {
-  IRFunction& function = m_builder.active_function();
-
-  for (const auto& entry : m_exception_table) {
-    function.exception_table.emplace_back(entry);
-  }
-}
-
-void CodeGenerator::delete_dead_instructions() {
-  IRFunction& function = m_builder.active_function();
-
-  bool control_has_left_block = false;
-  auto it = function.statements.begin();
-  while (it != function.statements.end()) {
-    const ref<IRStatement>& stmt = *it;
-
-    switch (stmt->get_type()) {
-      case IRStatement::Type::Instruction: {
-        ref<IRInstruction> instruction = cast<IRInstruction>(stmt);
-
-        // delete instruction if any previous instruction has left the block
-        if (control_has_left_block) {
-          it = function.statements.erase(it);
-          continue;
-        }
-
-        // check for instructions that leave the block
-        if (kTerminatingOpcodes.count(instruction->opcode)) {
-          control_has_left_block = true;
-        }
-
-        break;
-      }
-      case IRStatement::Type::LabelDefinition: {
-        control_has_left_block = false;
-        break;
-      }
-      default: {
-        break;
-      }
-    }
-
-    it++;
-  }
-}
-
 Label CodeGenerator::active_return_label() const {
   assert(m_return_stack.size());
   return m_return_stack.top();
@@ -438,7 +351,7 @@ void CodeGenerator::inspect_leave(const ref<ast::Export>&) {
 
 bool CodeGenerator::inspect_enter(const ref<ast::Import>& node) {
   apply(node->source);
-  m_builder.emit_makestr(register_string(m_unit->filepath))->at(node);
+  m_builder.emit_makestr(m_builder.register_string(m_unit->filepath))->at(node);
   m_builder.emit_import()->at(node);
   return false;
 }
@@ -549,7 +462,7 @@ void CodeGenerator::inspect_leave(const ref<Id>& node) {
 }
 
 void CodeGenerator::inspect_leave(const ref<String>& node) {
-  m_builder.emit_makestr(register_string(node->value))->at(node);
+  m_builder.emit_makestr(m_builder.register_string(node->value))->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ref<FormatString>& node) {
@@ -1123,7 +1036,7 @@ bool CodeGenerator::inspect_enter(const ref<ast::Try>& node) {
   Label catch_begin = m_builder.reserve_label();
   Label catch_end = m_builder.reserve_label();
 
-  add_exception_table_entry(try_begin, try_end, catch_begin);
+  m_builder.add_exception_table_entry(try_begin, try_end, catch_begin);
 
   // emit try block
   m_builder.place_label(try_begin);
@@ -1155,7 +1068,7 @@ bool CodeGenerator::inspect_enter(const ref<ast::TryFinally>& node) {
   Label normal_handler = m_builder.reserve_label();
   Label catch_handler = m_builder.reserve_label();
 
-  add_exception_table_entry(try_begin, try_end, catch_handler);
+  m_builder.add_exception_table_entry(try_begin, try_end, catch_handler);
 
   // intercept control statements
   Label break_handler = m_builder.reserve_label();

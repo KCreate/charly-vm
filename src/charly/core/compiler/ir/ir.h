@@ -48,73 +48,60 @@ struct IROperand {
   virtual void dump(std::ostream& out) const = 0;
 };
 
-#define OPTYPE(name, type)                                            \
-  struct IROperand##name : public IROperand {                         \
-    virtual OperandType get_type() const override {                   \
-      return OperandType::name;                                       \
-    }                                                                 \
-    IROperand##name(const type& value) : value(value) {}              \
+#define OPTYPE(name, type)                                \
+  struct IROperand##name : public IROperand {             \
+    virtual OperandType get_type() const override {       \
+      return OperandType::name;                           \
+    }                                                     \
+    IROperand##name(const type& value) : value(value) {}  \
     static ref<IROperand##name> make(const type& value) { \
-      return charly::make<IROperand##name>(value);                \
-    }                                                                 \
-    type value;                                                       \
-    virtual void dump(std::ostream& out) const override;                       \
+      return charly::make<IROperand##name>(value);        \
+    }                                                     \
+    type value;                                           \
+    virtual void dump(std::ostream& out) const override;  \
   };
 FOREACH_OPERANDTYPE(OPTYPE)
 #undef OPTYPE
 
-struct IRStatement {
-  enum class Type : uint8_t { Instruction, LabelDefinition, StringData };
-
-  Location location;
-  void at(const Location& location);
-  void at(const ref<ast::Node>& node);
-
-  virtual ~IRStatement() = default;
-
-  virtual Type get_type() const = 0;
-  virtual void dump(std::ostream& out) const = 0;
-};
-
-struct IRInstruction : public IRStatement {
+struct IRInstruction {
   template <typename... Args>
   IRInstruction(Opcode opcode, Args&&... operands) : opcode(opcode), operands({ std::forward<Args>(operands)... }) {}
 
   Opcode opcode;
   std::vector<ref<IROperand>> operands;
 
-  virtual Type get_type() const override {
-    return IRStatement::Type::Instruction;
-  }
+  Location location;
+  void at(const Location& location);
+  void at(const ref<ast::Node>& node);
 
   uint32_t popped_values() const;
   uint32_t pushed_values() const;
 
-  virtual void dump(std::ostream& out) const override;
+  void dump(std::ostream& out) const;
 };
 
-struct IRLabelDefinition : public IRStatement {
-  IRLabelDefinition(Label label) : label(label) {}
+struct IRBasicBlock {
+  IRBasicBlock(uint32_t id) : id(id) {}
+  uint32_t id;
 
-  Label label;
+  // set during dead-code analysis phases
+  bool reachable = false;
 
-  virtual Type get_type() const override {
-    return IRStatement::Type::LabelDefinition;
-  }
+  // labels that refer to this block
+  std::unordered_set<Label> labels;
+  std::list<ref<IRInstruction>> instructions;
 
-  virtual void dump(std::ostream& out) const override;
-};
+  // control-flow-graph data
+  ref<IRBasicBlock> next_block;
+  ref<IRBasicBlock> previous_block;
+  std::unordered_set<ref<IRBasicBlock>> outgoing_blocks;
+  std::unordered_set<ref<IRBasicBlock>> incoming_blocks;
 
-struct IRStringData : public IRStatement {
-  IRStringData(const std::string& data) : data(data) {}
+  static void link(ref<IRBasicBlock> source, ref<IRBasicBlock> target);
+  static void unlink(ref<IRBasicBlock> block);
+  static void unlink(ref<IRBasicBlock> source, ref<IRBasicBlock> target);
 
-  std::string data;
-
-  virtual Type get_type() const override {
-    return IRStatement::Type::StringData;
-  }
-
-  virtual void dump(std::ostream& out) const override;
+  void dump(std::ostream& out) const;
 };
 
 struct IRFunction {
@@ -123,9 +110,9 @@ struct IRFunction {
   Label head;
   ref<ast::Function> ast;
 
+  std::vector<std::tuple<SYMBOL, std::string>> string_table;
   std::vector<std::tuple<Label, Label, Label>> exception_table;
-
-  std::list<ref<IRStatement>> statements;
+  std::list<ref<IRBasicBlock>> basic_blocks;
 
   void dump(std::ostream& out) const;
 };
@@ -135,7 +122,7 @@ struct IRModule {
 
   std::string filename;
   std::unordered_map<SYMBOL, std::string> symbol_table;
-  std::vector<IRFunction> functions;
+  std::vector<ref<IRFunction>> functions;
 
   void dump(std::ostream& out) const;
 };

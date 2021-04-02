@@ -24,11 +24,26 @@
  * SOFTWARE.
  */
 
-func foo(x, y) {
-  loop {
-    defer print("deferred")
+loop {
+  if x {
+    print(true)
+  } else {
+    try {
+      print(false)
+    } catch(e) {
+      print(e)
+    }
 
-    /* return x */
-    print("hello world")
+    print("test test")
+    continue
+  }
+}
+
+
+loop {
+  loop {
+    loop {
+      print("hello world")
+    }
   }
 }

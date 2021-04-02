@@ -68,6 +68,10 @@ const std::vector<ArgumentParser::FlagGroup> kDefinedFlagGroups = {
       { "version",        'v',          "Prints the version" },
       { "license",        'l',          "Prints the license" },
     } },
+  { "Compiler",
+    {
+      { "opt_disable",       std::nullopt, "Disable bytecode optimizations" },
+    } },
   { "Dump",
     {
       { "dump_ast",       std::nullopt, "Dump the AST of the input file" },

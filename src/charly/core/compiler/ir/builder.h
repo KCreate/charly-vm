@@ -54,41 +54,49 @@ public:
   // register a symbol in the module symbol table
   void register_symbol(const std::string& string);
 
-  // function management
-  IRFunction& active_function() const;
-  IRFunction& begin_function(Label head, ref<ast::Function> ast);
+  // register a string in the current functions string table
+  uint16_t register_string(const std::string& string);
+
+  // add exception table entry in current function
+  void add_exception_table_entry(Label begin, Label end, Label handler);
+
+  // basic block management
+  ref<IRBasicBlock> new_basic_block();
+  ref<IRBasicBlock> active_block() const;
+  ref<IRFunction> active_function() const;
+  void begin_function(Label head, ref<ast::Function> ast);
+  void finish_function();
+
+  // cfg
+  void build_cfg();
+  void trim_dead_instructions();
+  void rewrite_chained_branches();
+  void remove_useless_jumps();
+  void remove_dead_blocks();
 
   // label management
   Label reserve_label();
   void place_label(Label label);
-  void place_label_at_label(Label label, Label target_label);
 
   // emit an IR statement into the current function
   template <typename... Args>
-  ref<IRStatement> emit(Opcode opcode, Args&&... operands) {
-    IRFunction& func = active_function();
+  ref<IRInstruction> emit(Opcode opcode, Args&&... operands) {
+    ref<IRBasicBlock> block = active_block();
     ref<IRInstruction> instruction = make<IRInstruction>(opcode, std::forward<Args>(operands)...);
-    // std::cout << " emitting " << kOpcodeNames[(int)opcode] << std::endl;
+
     update_stack(-instruction->popped_values());
     update_stack(instruction->pushed_values());
-    return func.statements.emplace_back(instruction);
-  }
-  template <typename T>
-  ref<IRStatement> emit_vector(Opcode opcode, const std::vector<T>& operands) {
-    IRFunction& func = active_function();
-    ref<IRInstruction> instruction = make<IRInstruction>(opcode);
 
-    for (const auto& op : operands) {
-      instruction->operands.push_back(op);
+    block->instructions.push_back(instruction);
+
+    if (kBranchingOpcodes.count(opcode)) {
+      new_basic_block();
     }
 
-    update_stack(-instruction->popped_values());
-    update_stack(instruction->pushed_values());
-    return func.statements.emplace_back(instruction);
+    return instruction;
   }
-  ref<IRStatement> emit_string_data(const std::string& string);
-  ref<IRStatement> emit_label_definition(Label label);
-#define MAP(name, stackpop, stackpush, ...) ref<IRStatement> emit_##name(__VA_ARGS__);
+
+#define MAP(name, stackpop, stackpush, ...) ref<IRInstruction> emit_##name(__VA_ARGS__);
   FOREACH_OPCODE(MAP)
 #undef MAP
 
@@ -106,8 +114,14 @@ private:
   uint32_t m_current_stack_height;
 
   Label m_label_counter;
-  IRFunction* m_active_function;
-  ref<IRModule> m_module;
+  uint32_t m_block_id_counter;
+
+  // maps Labels to basic blocks for the current function
+  std::unordered_map<Label, ref<IRBasicBlock>> m_labelled_blocks;
+
+  ref<IRFunction>   m_active_function;
+  ref<IRBasicBlock> m_active_block;
+  ref<IRModule>     m_module;
 };
 
 }  // namespace charly::core::compiler::ir

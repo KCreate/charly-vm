@@ -1,9 +1,11 @@
 # Todos
 
+- Reassign labels to next block when removing basic blocks
+
+- Assign exception tables per basic block
+
 - IR Optimization passes
-  - Remove dead blocks
   - Remove unused strings
-  - Jump rewrites (A->B->C can just be A->C)
   - Peephole optimizations
 
 - Leaked variables need to be allocated on heap frames, not stack frames

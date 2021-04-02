@@ -531,12 +531,12 @@ FOREACH_OPERANDTYPE(OPTYPE)
   /* makestr - allocate new string                                                           \
    *                                                                                         \
    * opcode operands:                                                                        \
-   * - string label                                                                          \
+   * - string table index                                                                    \
    *                                                                                         \
    * stack results:                                                                          \
    * - string                                                                                \
    * */                                                                                      \
-  V(makestr, 0, 1, OpOffset)                                                                 \
+  V(makestr, 0, 1, OpCount16)                                                                \
   /* makelist - allocate new list                                                            \
    *                                                                                         \
    * opcode operands:                                                                        \

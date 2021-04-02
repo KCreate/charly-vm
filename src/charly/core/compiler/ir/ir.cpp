@@ -37,14 +37,6 @@ namespace charly::core::compiler::ir {
 
 using Color = utils::Color;
 
-void IRStatement::at(const Location& location) {
-  this->location = location;
-}
-
-void IRStatement::at(const ref<ast::Node>& node) {
-  this->location = node->location();
-}
-
 void IROperandCount8::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
   out << std::hex;
@@ -132,6 +124,14 @@ void IROperandImmediate::dump(std::ostream& out) const {
   }
 
   writer.fg(Color::Grey, "???");
+}
+
+void IRInstruction::at(const Location& location) {
+  this->location = location;
+}
+
+void IRInstruction::at(const ref<ast::Node>& node) {
+  this->location = node->location();
 }
 
 uint32_t IRInstruction::popped_values() const {
@@ -234,44 +234,91 @@ void IRInstruction::dump(std::ostream& out) const {
   }
 }
 
-void IRLabelDefinition::dump(std::ostream& out) const {
-  utils::ColorWriter writer(out);
-  writer.fg(Color::Yellow, ".L", this->label);
+void IRBasicBlock::link(ref<IRBasicBlock> source, ref<IRBasicBlock> target) {
+  source->outgoing_blocks.insert(target);
+  target->incoming_blocks.insert(source);
 }
 
-void IRStringData::dump(std::ostream& out) const {
+void IRBasicBlock::unlink(ref<IRBasicBlock> block) {
+  for (const ref<IRBasicBlock>& incoming : block->incoming_blocks) {
+    incoming->outgoing_blocks.erase(block);
+  }
+
+  for (const ref<IRBasicBlock>& outgoing : block->outgoing_blocks) {
+    outgoing->incoming_blocks.erase(block);
+  }
+}
+
+void IRBasicBlock::unlink(ref<IRBasicBlock> source, ref<IRBasicBlock> target) {
+  source->outgoing_blocks.erase(target);
+  target->incoming_blocks.erase(source);
+}
+
+void IRBasicBlock::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
-  writer.fg(Color::Red, ".string '", this->data, "'");
-  writer.fg(Color::Grey, " length = ", this->data.size());
+  writer.fg(Color::Grey, "  |\n");
+  writer.fg(Color::Grey, "  | #", this->id);
+
+  // block labels
+  if (this->labels.size()) {
+    for (Label label : this->labels) {
+      writer.fg(Color::Yellow, " .L", label);
+    }
+  }
+
+  out << " ";
+
+  // incoming / outgoing blocks
+  writer.fg(Color::Blue, "[");
+  for (ref<IRBasicBlock> block : this->incoming_blocks) {
+    writer.fg(Color::Blue, "#", block->id);
+    out << " ";
+  }
+  writer.fg(Color::Blue, "]");
+  out << " ";
+  writer.fg(Color::Green, "[");
+  for (ref<IRBasicBlock> block : this->outgoing_blocks) {
+    writer.fg(Color::Green, "#", block->id);
+    out << " ";
+  }
+  writer.fg(Color::Green, "]");
+
+  out << '\n';
+
+  // instructions
+  for (const auto& instruction : this->instructions) {
+    writer.fg(Color::Grey, "  |   ");
+    instruction->dump(out);
+    out << '\n';
+  }
 }
 
 void IRFunction::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
-  writer.fg(Color::Yellow, "  .L", this->head, '\n');
-  writer.fg(Color::Yellow, "  function {", "\n");
-  writer.fg(Color::Grey, "    name = ");
+  writer.fg(Color::Yellow, "function .L", this->head, "\n");
+  writer.fg(Color::Grey, "  name = ");
   writer.fg(Color::Red, "'", this->ast->name->value, "'\n");
-  writer.fg(Color::Grey, "    stacksize = ");
+  writer.fg(Color::Grey, "  stacksize = ");
   writer.fg(Color::Green, (uint32_t)this->ast->ir_info.stacksize, "\n");
-  writer.fg(Color::Grey, "    locals = ");
+  writer.fg(Color::Grey, "  locals = ");
   writer.fg(Color::Green, (uint32_t)this->ast->ir_info.local_variables, "\n");
-  writer.fg(Color::Grey, "    argc = ");
+  writer.fg(Color::Grey, "  argc = ");
   writer.fg(Color::Green, (uint32_t)this->ast->ir_info.argc, "\n");
-  writer.fg(Color::Grey, "    minargc = ");
+  writer.fg(Color::Grey, "  minargc = ");
   writer.fg(Color::Green, (uint32_t)this->ast->ir_info.minargc, "\n");
-  writer.fg(Color::Grey, "    spread = ");
+  writer.fg(Color::Grey, "  spread = ");
   writer.fg(Color::Green, this->ast->ir_info.spread_argument ? "true" : "false", "\n");
-  writer.fg(Color::Grey, "    arrow = ");
+  writer.fg(Color::Grey, "  arrow = ");
   writer.fg(Color::Green, this->ast->ir_info.arrow_function ? "true" : "false", "\n");
-  writer.fg(Color::Grey, "    constructor = ");
+  writer.fg(Color::Grey, "  constructor = ");
   writer.fg(Color::Green, this->ast->class_constructor ? "true" : "false", "\n");
-  writer.fg(Color::Grey, "    static = ");
+  writer.fg(Color::Grey, "  static = ");
   writer.fg(Color::Green, this->ast->class_static_function ? "true" : "false", "\n");
   out << "\n";
 
-  writer.fg(Color::Yellow, "  exception_table", "\n");
+  writer.fg(Color::Yellow, "  exception table:", "\n");
   for (const auto& entry : this->exception_table) {
-    writer.fg(Color::Grey, "    (");
+    writer.fg(Color::Grey, "  - (");
     writer.fg(Color::Yellow, ".L", std::get<0>(entry), " ");
     writer.fg(Color::Yellow, ".L", std::get<1>(entry), " ");
     writer.fg(Color::Yellow, ".L", std::get<2>(entry));
@@ -280,56 +327,32 @@ void IRFunction::dump(std::ostream& out) const {
   }
   out << "\n";
 
-  writer.fg(Color::Yellow, "  body", "\n");
+  writer.fg(Color::Yellow, "  string table:", "\n");
+  int index = 0;
+  for (const auto& entry : this->string_table) {
+    writer.fg(Color::Grey, "  - #", std::setw(2), std::left, index, std::setw(0));
+    writer.fg(Color::Red, "\"", std::get<1>(entry), "\"");
+    writer.fg(Color::Grey, " length = ", std::get<1>(entry).size());
+    out << "\n";
 
-  uint32_t current_stack_size = 0;
+    index++;
+  }
+  out << "\n";
 
-  IRStatement::Type last_type = IRStatement::Type::LabelDefinition;
-  for (const auto& stmt : this->statements) {
+  writer.fg(Color::Yellow, "  body:", "\n");
 
-    // put a space between label definitions and the last statement
-    if (stmt->get_type() == IRStatement::Type::LabelDefinition) {
-      if (last_type != IRStatement::Type::LabelDefinition) {
-        writer.fg(Color::Grey, "    |\n");
-      }
-      writer.fg(Color::Grey, "    | ");
-    } else {
-
-      // indent instructions and stringdata
-      writer.fg(Color::Grey, "    |   ");
-    }
-
-    // emit stack information for instructions
-    if (utils::ArgumentParser::is_flag_set("dump_asm_stack")) {
-      if (stmt->get_type() == IRStatement::Type::Instruction) {
-        ref<IRInstruction> inst = cast<IRInstruction>(stmt);
-        current_stack_size += inst->pushed_values() - inst->popped_values();
-
-        writer.fg(Color::Grey, "[");
-        for (uint32_t i = 0; i < current_stack_size; i++) {
-          writer.fg(Color::Yellow, "#");
-        }
-        for (uint32_t i = 0; i < this->ast->ir_info.stacksize - current_stack_size; i++) {
-          out << " ";
-        }
-        writer.fg(Color::Grey, "] ");
-      }
-    }
-
-    stmt->dump(out);
-    out << '\n';
-
-    last_type = stmt->get_type();
+  for (const ref<IRBasicBlock>& block : this->basic_blocks) {
+    block->dump(out);
   }
 
-  writer.fg(Color::Yellow, "  }\n");
+  out << "\n";
 }
 
 void IRModule::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer.fg(Color::Blue, "module ");
   writer.fg(Color::Yellow, "'", this->filename, "'");
-  writer.fg(Color::Blue, " {", '\n');
+  writer.fg(Color::Blue, '\n');
 
   writer.fg(Color::Grey, "; symbol table", '\n');
   for (const auto& entry : this->symbol_table) {
@@ -343,11 +366,11 @@ void IRModule::dump(std::ostream& out) const {
   out << '\n';
 
   writer.fg(Color::Grey, "; functions", '\n');
-  for (const IRFunction& func : this->functions) {
-    func.dump(out);
+  for (const ref<IRFunction>& func : this->functions) {
+    func->dump(out);
   }
 
-  writer.fg(Color::Blue, "}", '\n');
+  writer.fg(Color::Blue, '\n');
 }
 
 }  // namespace charly::core::compiler::ir

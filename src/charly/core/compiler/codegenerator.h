@@ -64,19 +64,12 @@ private:
   // returns the label the function will be placed at
   ir::Label enqueue_function(const ref<ast::Function>& ast);
 
-  // store a string in the current function's string table
-  ir::Label register_string(const std::string& string);
-
-  // add a new exception table entry
-  // overlapping segments are untangled by the codegenerator internally
-  void add_exception_table_entry(ir::Label begin, ir::Label end, ir::Label handler);
-
   // compile a single function and enqueue child functions
   void compile_function(const QueuedFunction&);
 
   // generate load and stores to value locations
-  ref<ir::IRStatement> generate_load(const ir::ValueLocation&);
-  ref<ir::IRStatement> generate_store(const ir::ValueLocation&);
+  ref<ir::IRInstruction> generate_load(const ir::ValueLocation&);
+  ref<ir::IRInstruction> generate_store(const ir::ValueLocation&);
 
   // generate spread tuples for a list of expressions
   // returns the total amount of tuples pushed
@@ -85,14 +78,11 @@ private:
   // generate an assignment to an unpack target
   void generate_unpack_assignment(const ref<ast::UnpackTarget>& target);
 
-  // generate the string table for the current function
-  void generate_string_table();
-
-  // generate the exception table for the current function
-  void generate_exception_table();
-
   // detects instructions that cannot get executed and removes them
   void delete_dead_instructions();
+
+  // detects and removes dead blocks by building a control flow graph
+  void delete_dead_blocks();
 
   // label stacks
   ir::Label active_return_label() const;

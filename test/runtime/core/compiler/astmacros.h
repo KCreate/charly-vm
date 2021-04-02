@@ -24,6 +24,7 @@
  * SOFTWARE.
  */
 
+#include "charly/charly.h"
 #include "charly/core/compiler.h"
 
 #pragma once
@@ -33,6 +34,7 @@ using Catch::Matchers::Equals;
 using namespace charly::core::compiler;
 using namespace charly::core::compiler::ast;
 using namespace charly::core::compiler::ir;
+using namespace charly;
 
 #define EXP(S, T)                                              \
   ([&]() {                                                     \
