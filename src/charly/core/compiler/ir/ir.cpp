@@ -323,6 +323,8 @@ void IRFunction::dump(std::ostream& out) const {
   writer.fg(Color::Green, this->ast->ir_info.spread_argument ? "true" : "false", "\n");
   writer.fg(Color::Grey, "  arrow = ");
   writer.fg(Color::Green, this->ast->ir_info.arrow_function ? "true" : "false", "\n");
+  writer.fg(Color::Grey, "  leaked = ");
+  writer.fg(Color::Green, this->ast->ir_info.leaked ? "true" : "false", "\n");
   writer.fg(Color::Grey, "  constructor = ");
   writer.fg(Color::Green, this->ast->class_constructor ? "true" : "false", "\n");
   writer.fg(Color::Grey, "  static = ");

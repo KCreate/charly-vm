@@ -85,6 +85,9 @@ FOREACH_OPERANDTYPE(OPTYPE)
   /* panic - abort machine                                                                   \
    * */                                                                                      \
   V(panic, 0, 0)                                                                             \
+  /* allocheapframe - allocates the frames local variables on the heap                       \
+   * */                                                                                      \
+  V(allocheapframe, 0, 0)                                                                    \
                                                                                              \
   /* import - import module or file                                                          \
    *                                                                                         \
@@ -307,6 +310,15 @@ FOREACH_OPERANDTYPE(OPTYPE)
    * - value                                                                                 \
    * */                                                                                      \
   V(loadlocal, 0, 1, OpCount8)                                                               \
+  /* loadheap - load frame local variable from heap frame                                    \
+   *                                                                                         \
+   * opcode operands:                                                                        \
+   * - slot offset                                                                           \
+   *                                                                                         \
+   * stack results:                                                                          \
+   * - value                                                                                 \
+   * */                                                                                      \
+  V(loadheap, 0, 1, OpCount8)                                                                \
   /* loadfar - load variable from surrounding function                                       \
    *                                                                                         \
    * opcode operands:                                                                        \
@@ -386,6 +398,18 @@ FOREACH_OPERANDTYPE(OPTYPE)
    * - value                                                                                 \
    * */                                                                                      \
   V(setlocal, 1, 1, OpCount8)                                                                \
+  /* setheap - write to frame local variable from heap frame                                 \
+   *                                                                                         \
+   * opcode operands:                                                                        \
+   * - slot offset                                                                           \
+   *                                                                                         \
+   * stack arguments:                                                                        \
+   * - value                                                                                 \
+   *                                                                                         \
+   * stack results:                                                                          \
+   * - value                                                                                 \
+   * */                                                                                      \
+  V(setheap, 1, 1, OpCount8)                                                                 \
   /* setreturn - set the function return value                                               \
    *                                                                                         \
    * stack arguments:                                                                        \

@@ -95,6 +95,14 @@ bool LocalAllocatorPass::inspect_enter(const ref<Function>& node) {
 void LocalAllocatorPass::inspect_leave(const ref<Function>& node) {
   node->ir_info.local_variables = m_function->slots.size();
 
+  // check for leaked variables
+  for (const SlotInfo& slot : m_function->slots) {
+    if (slot.leaked) {
+      node->ir_info.leaked = true;
+      break;
+    }
+  }
+
   this->pop_block();
   this->pop_function();
 }

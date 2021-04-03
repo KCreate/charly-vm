@@ -1,14 +1,5 @@
 # Todos
 
-- Leaked variables need to be allocated on heap frames, not stack frames
-  - Special instructions to access heap variables?
-  - Needs changes to local variable allocator
-
-- Fix syntax for object unpack assignments
-  - Parser treats it like a source block
-  - Introduce new syntax for a single block
-    - Automatically detect wether its a block or dict literal???
-
 - Think about inline caches
   - Different types of inline caches
     - PropertyOffsetCache   maps class id to property offset

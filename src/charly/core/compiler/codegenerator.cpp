@@ -62,6 +62,10 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
   const ref<Function>& ast = queued_func.ast;
   m_builder.begin_function(queued_func.head, ast);
 
+  if (ast->ir_info.leaked) {
+    m_builder.emit_allocheapframe();
+  }
+
   // emit default argument initializers
   uint8_t argc = ast->ir_info.argc;
   uint8_t minargc = ast->ir_info.minargc;
@@ -124,7 +128,11 @@ ref<ir::IRInstruction> CodeGenerator::generate_load(const ValueLocation& locatio
       return nullptr;
     }
     case ValueLocation::Type::LocalFrame: {
-      return m_builder.emit_loadlocal(location.as.local_frame.offset);
+      if (m_builder.active_function()->ast->ir_info.leaked) {
+        return m_builder.emit_loadheap(location.as.local_frame.offset);
+      } else {
+        return m_builder.emit_loadlocal(location.as.local_frame.offset);
+      }
     }
     case ValueLocation::Type::FarFrame: {
       return m_builder.emit_loadfar(location.as.far_frame.depth, location.as.far_frame.offset);
@@ -136,21 +144,25 @@ ref<ir::IRInstruction> CodeGenerator::generate_load(const ValueLocation& locatio
 }
 
 ref<ir::IRInstruction> CodeGenerator::generate_store(const ValueLocation& location) {
-  switch (location.type) {
-    case ValueLocation::Type::Invalid: {
-      assert(false && "expected valid value location");
-      return nullptr;
+    switch (location.type) {
+      case ValueLocation::Type::Invalid: {
+        assert(false && "expected valid value location");
+        return nullptr;
+      }
+      case ValueLocation::Type::LocalFrame: {
+        if (m_builder.active_function()->ast->ir_info.leaked) {
+          return m_builder.emit_setheap(location.as.local_frame.offset);
+        } else {
+          return m_builder.emit_setlocal(location.as.local_frame.offset);
+        }
+      }
+      case ValueLocation::Type::FarFrame: {
+        return m_builder.emit_setfar(location.as.far_frame.depth, location.as.far_frame.offset);
+      }
+      case ValueLocation::Type::Global: {
+        return m_builder.emit_setglobal(location.name);
+      }
     }
-    case ValueLocation::Type::LocalFrame: {
-      return m_builder.emit_setlocal(location.as.local_frame.offset);
-    }
-    case ValueLocation::Type::FarFrame: {
-      return m_builder.emit_setfar(location.as.far_frame.depth, location.as.far_frame.offset);
-    }
-    case ValueLocation::Type::Global: {
-      return m_builder.emit_setglobal(location.name);
-    }
-  }
 }
 
 uint8_t CodeGenerator::generate_spread_tuples(const std::vector<ref<ast::Expression>>& vec) {

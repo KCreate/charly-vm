@@ -316,7 +316,7 @@ void Builder::remove_useless_jumps() {
       switch (op->opcode) {
         case Opcode::jmp: {
           Label target_label = cast<IROperandOffset>(op->operands[0])->value;
-          if (block->next_block->labels.count(target_label)) {
+          if (block->next_block && block->next_block->labels.count(target_label)) {
             block->instructions.pop_back();
           }
 
@@ -509,6 +509,10 @@ ref<IRInstruction> Builder::emit_panic() {
   return emit(Opcode::panic);
 }
 
+ref<IRInstruction> Builder::emit_allocheapframe() {
+  return emit(Opcode::allocheapframe);
+}
+
 // misc. instructions
 ref<IRInstruction> Builder::emit_import() {
   return emit(Opcode::import);
@@ -612,6 +616,10 @@ ref<IRInstruction> Builder::emit_loadlocal(OpCount8 offset) {
   return emit(Opcode::loadlocal, IROperandCount8::make(offset));
 }
 
+ref<IRInstruction> Builder::emit_loadheap(OpCount8 offset) {
+  return emit(Opcode::loadheap, IROperandCount8::make(offset));
+}
+
 ref<IRInstruction> Builder::emit_loadfar(OpCount8 depth, OpCount8 offset) {
   return emit(Opcode::loadfar, IROperandCount8::make(depth), IROperandCount8::make(offset));
 }
@@ -642,6 +650,10 @@ ref<IRInstruction> Builder::emit_setglobal(OpSymbol symbol) {
 
 ref<IRInstruction> Builder::emit_setlocal(OpCount8 offset) {
   return emit(Opcode::setlocal, IROperandCount8::make(offset));
+}
+
+ref<IRInstruction> Builder::emit_setheap(OpCount8 offset) {
+  return emit(Opcode::setheap, IROperandCount8::make(offset));
 }
 
 ref<IRInstruction> Builder::emit_setreturn() {
