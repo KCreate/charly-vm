@@ -77,6 +77,7 @@ public:
   void remove_useless_jumps();
   void remove_dead_blocks();
   void emit_exception_tables();
+  void remove_unused_strings();
 
   // label management
   Label reserve_label();
@@ -90,6 +91,10 @@ public:
 
     update_stack(-instruction->popped_values());
     update_stack(instruction->pushed_values());
+
+    if (block->instructions.size() == 0) {
+      place_label(reserve_label());
+    }
 
     block->instructions.push_back(instruction);
 

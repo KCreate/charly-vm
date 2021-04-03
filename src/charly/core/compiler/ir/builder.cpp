@@ -133,6 +133,9 @@ void Builder::finish_function() {
     //
     // the above jump opcode can be completely removed
     remove_useless_jumps();
+
+    // remove unused strings from the functions string table
+    remove_unused_strings();
   }
 
   // emit the exceptions tables for the basic blocks of this function
@@ -389,12 +392,7 @@ void Builder::emit_exception_tables() {
     if (block->exception_handler) {
       assert(block->labels.size());
       assert(block->next_block);
-
-      if (block->next_block->labels.size() == 0) {
-        Label l = reserve_label();
-        block->next_block->labels.insert(l);
-        m_labelled_blocks.insert({l, block->next_block});
-      }
+      assert(block->next_block->labels.size());
 
       Label begin = *block->labels.begin();
       Label end = *block->next_block->labels.begin();
@@ -411,6 +409,53 @@ void Builder::emit_exception_tables() {
         }
       } else {
         m_active_function->exception_table.emplace_back(IRExceptionTableEntry(begin, end, handler));
+      }
+    }
+  }
+}
+
+void Builder::remove_unused_strings() {
+
+  // find used strings
+  OpCount16 string_indices[m_active_function->string_table.size()];
+  std::memset(string_indices, 0, sizeof(string_indices));
+  for (const auto& block : m_active_function->basic_blocks) {
+    for (const auto& instruction : block->instructions) {
+
+      // mark string as used
+      if (instruction->opcode == Opcode::makestr) {
+        uint16_t index = cast<IROperandCount16>(instruction->operands[0])->value;
+        assert(index < m_active_function->string_table.size());
+        string_indices[index] = 1;
+      }
+    }
+  }
+
+  // reallocate indices for strings
+  OpCount16 curr_index = 0;
+  OpCount16 alloc_index = 0;
+  auto it = m_active_function->string_table.begin();
+  while (it != m_active_function->string_table.end()) {
+    if (string_indices[curr_index]) {
+      string_indices[curr_index] = alloc_index++;
+    } else {
+      it = m_active_function->string_table.erase(it);
+      curr_index++;
+      continue;
+    }
+
+    curr_index++;
+    it++;
+  }
+
+  // rewrite makestr instructions to point to newly allocated entries
+  for (const auto& block : m_active_function->basic_blocks) {
+    for (const auto& instruction : block->instructions) {
+
+      // mark string as used
+      if (instruction->opcode == Opcode::makestr) {
+        ref<IROperandCount16> op = cast<IROperandCount16>(instruction->operands[0]);
+        op->value = string_indices[op->value];
       }
     }
   }

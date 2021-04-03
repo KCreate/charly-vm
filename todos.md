@@ -1,12 +1,5 @@
 # Todos
 
-- String table?
-  - VM should somehow copy strings out of the module
-  - How do makestr instructions find the string?
-
-- IR Optimization passes
-  - Remove unused strings
-
 - Leaked variables need to be allocated on heap frames, not stack frames
   - Special instructions to access heap variables?
   - Needs changes to local variable allocator
