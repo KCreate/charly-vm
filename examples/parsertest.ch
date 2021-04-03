@@ -24,19 +24,16 @@
  * SOFTWARE.
  */
 
-func foo {
-  try {
+func foo(x) {
+  defer print("defer 1")
+
+  if x {
+    defer print("defer 2")
     print(1)
-    try {
-      print(2)
-      try {
-        print(3)
-      } catch(e) {
-      }
-      print(4)
-    } catch(e) {
-    }
-    print(5)
-  } catch(e) {
+  } else {
+    defer print("defer 3")
+    print(2)
   }
+
+  throw 42
 }

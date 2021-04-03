@@ -107,14 +107,29 @@ struct IRBasicBlock {
   void dump(std::ostream& out) const;
 };
 
+struct IRStringTableEntry {
+  SYMBOL hash;
+  std::string value;
+
+  IRStringTableEntry(const std::string& string) : hash(SYM(string)), value(string) {}
+};
+
+struct IRExceptionTableEntry {
+  Label begin;
+  Label end;
+  Label handler;
+
+  IRExceptionTableEntry(Label begin, Label end, Label handler) : begin(begin), end(end), handler(handler) {}
+};
+
 struct IRFunction {
   IRFunction(Label head, ref<ast::Function> ast) : head(head), ast(ast) {}
 
   Label head;
   ref<ast::Function> ast;
 
-  std::vector<std::tuple<SYMBOL, std::string>> string_table;
-  std::vector<std::tuple<Label, Label, Label>> exception_table;
+  std::vector<IRStringTableEntry> string_table;
+  std::vector<IRExceptionTableEntry> exception_table;
   std::list<ref<IRBasicBlock>> basic_blocks;
 
   void dump(std::ostream& out) const;

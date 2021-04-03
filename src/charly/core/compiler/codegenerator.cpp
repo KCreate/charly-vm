@@ -1091,20 +1091,26 @@ bool CodeGenerator::inspect_enter(const ref<ast::TryFinally>& node) {
   m_builder.emit_throwex()->at(node->finally_block);
 
   // emit break, continue and return intercepts
+  m_builder.place_label(break_handler);
   if (m_break_stack.size()) {
-    m_builder.place_label(break_handler);
     apply(node->finally_block);
     m_builder.emit_jmp(active_break_label());
+  } else {
+    m_builder.emit_panic();
   }
+  m_builder.place_label(continue_handler);
   if (m_continue_stack.size()) {
-    m_builder.place_label(continue_handler);
     apply(node->finally_block);
     m_builder.emit_jmp(active_continue_label());
+  } else {
+    m_builder.emit_panic();
   }
+  m_builder.place_label(return_handler);
   if (m_return_stack.size()) {
-    m_builder.place_label(return_handler);
     apply(node->finally_block);
     m_builder.emit_jmp(active_return_label());
+  } else {
+    m_builder.emit_panic();
   }
 
   m_builder.place_label(normal_handler);

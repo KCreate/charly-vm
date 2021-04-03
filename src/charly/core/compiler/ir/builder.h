@@ -72,6 +72,7 @@ public:
   // cfg
   void build_cfg();
   void trim_dead_instructions();
+  void remove_empty_blocks();
   void rewrite_chained_branches();
   void remove_useless_jumps();
   void remove_dead_blocks();

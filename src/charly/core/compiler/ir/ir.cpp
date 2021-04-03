@@ -247,6 +247,14 @@ void IRBasicBlock::unlink(ref<IRBasicBlock> block) {
   for (const ref<IRBasicBlock>& outgoing : block->outgoing_blocks) {
     outgoing->incoming_blocks.erase(block);
   }
+
+  if (block->previous_block) {
+    block->previous_block->next_block = block->next_block;
+  }
+
+  if (block->next_block) {
+    block->next_block->previous_block = block->previous_block;
+  }
 }
 
 void IRBasicBlock::unlink(ref<IRBasicBlock> source, ref<IRBasicBlock> target) {
@@ -324,9 +332,11 @@ void IRFunction::dump(std::ostream& out) const {
   writer.fg(Color::Yellow, "  exception table:", "\n");
   for (const auto& entry : this->exception_table) {
     writer.fg(Color::Grey, "  - (");
-    writer.fg(Color::Yellow, ".L", std::get<0>(entry), " ");
-    writer.fg(Color::Yellow, ".L", std::get<1>(entry), " ");
-    writer.fg(Color::Yellow, ".L", std::get<2>(entry));
+    writer.fg(Color::Yellow, ".L", entry.begin);
+    out << " ";
+    writer.fg(Color::Yellow, ".L", entry.end);
+    out << " ";
+    writer.fg(Color::Yellow, ".L", entry.handler);
     writer.fg(Color::Grey, ")");
     out << "\n";
   }
@@ -334,10 +344,11 @@ void IRFunction::dump(std::ostream& out) const {
 
   writer.fg(Color::Yellow, "  string table:", "\n");
   int index = 0;
-  for (const auto& entry : this->string_table) {
+  for (const IRStringTableEntry& entry : this->string_table) {
     writer.fg(Color::Grey, "  - #", std::setw(2), std::left, index, std::setw(0));
-    writer.fg(Color::Red, "\"", std::get<1>(entry), "\"");
-    writer.fg(Color::Grey, " length = ", std::get<1>(entry).size());
+    writer.fg(Color::Red, "\"", entry.value, "\"");
+    writer.fg(Color::Grey, " length=", entry.value.size());
+    writer.fg(Color::Grey, ", hash=", std::hex, entry.hash, std::dec);
     out << "\n";
 
     index++;

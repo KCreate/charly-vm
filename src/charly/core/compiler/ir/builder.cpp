@@ -44,24 +44,26 @@ uint16_t Builder::register_string(const std::string& string) {
 
   // duplicates check
   uint16_t index = 0;
-  for (const auto& entry : func->string_table) {
-    if (std::get<1>(entry).compare(string) == 0) {
+  for (const IRStringTableEntry& entry : func->string_table) {
+    if (entry.value.compare(string) == 0) {
       return index;
     }
 
     index++;
   }
 
-  func->string_table.emplace_back(SYM(string), string);
+  func->string_table.emplace_back(IRStringTableEntry(string));
   return index;
 }
 
 void Builder::push_exception_handler(Label handler) {
   m_exception_handlers.push(handler);
+  ref<IRBasicBlock> block = new_basic_block();
 }
 
 void Builder::pop_exception_handler() {
   m_exception_handlers.pop();
+  ref<IRBasicBlock> block = new_basic_block();
 }
 
 ref<IRFunction> Builder::active_function() const {
@@ -85,6 +87,7 @@ void Builder::finish_function() {
   // build the control flow graph, storing the incoming and outgoing
   // branches for each basic block
   trim_dead_instructions();
+  remove_empty_blocks();
   build_cfg();
 
   if (!utils::ArgumentParser::is_flag_set("opt_disable")) {
@@ -148,6 +151,31 @@ void Builder::finish_function() {
   m_active_block = nullptr;
 }
 
+void Builder::remove_empty_blocks() {
+  auto it = m_active_function->basic_blocks.begin();
+  while (it != m_active_function->basic_blocks.end()) {
+    ref<IRBasicBlock> block = *it;
+
+    // remove empty blocks
+    if (block->instructions.size() == 0) {
+
+      // propagate labels to next block
+      if (block->next_block && block->labels.size()) {
+        for (Label label : block->labels) {
+          m_labelled_blocks.insert_or_assign(label, block->next_block);
+        }
+        block->next_block->labels.insert(block->labels.begin(), block->labels.end());
+      }
+
+      IRBasicBlock::unlink(block);
+      it = m_active_function->basic_blocks.erase(it);
+      continue;
+    }
+
+    it++;
+  }
+}
+
 void Builder::trim_dead_instructions() {
   for (const ref<IRBasicBlock>& block : m_active_function->basic_blocks) {
 
@@ -173,11 +201,11 @@ void Builder::trim_dead_instructions() {
 
 void Builder::build_cfg() {
   for (ref<IRBasicBlock> block : m_active_function->basic_blocks) {
-    assert(block->instructions.size());
 
-    if (block->exception_handler) {
-      ref<IRBasicBlock> handler_block = m_labelled_blocks.at(block->exception_handler.value());
-      IRBasicBlock::link(block, handler_block);
+    // empty blocks fallthrough to the next block
+    if (block->instructions.size() == 0) {
+      IRBasicBlock::link(block, block->next_block);
+      continue;
     }
 
     ref<IRInstruction> op = block->instructions.back();
@@ -226,7 +254,11 @@ void Builder::rewrite_chained_branches() {
   do {
     updated_jmp = false;
     for (const ref<IRBasicBlock>& block : m_active_function->basic_blocks) {
-      assert(block->instructions.size());
+
+      // skip empty blocks
+      if (block->instructions.size() == 0) {
+        continue;
+      }
 
       // jmp instructions that branch to a basic block that contains
       // only a single jmp instruction, can be replaced with the
@@ -241,7 +273,7 @@ void Builder::rewrite_chained_branches() {
           continue;
         }
 
-        // check if the target block contains a single jmp instruction
+        // check if the target block contains a single instruction
         if (target_block->instructions.size() == 1) {
           const ref<IRInstruction>& target_instruction = target_block->instructions.back();
 
@@ -276,20 +308,20 @@ void Builder::rewrite_chained_branches() {
 
 void Builder::remove_useless_jumps() {
   for (const ref<IRBasicBlock>& block : m_active_function->basic_blocks) {
-    assert(block->instructions.size());
+    if (block->instructions.size()) {
+      ref<IRInstruction> op = block->instructions.back();
+      switch (op->opcode) {
+        case Opcode::jmp: {
+          Label target_label = cast<IROperandOffset>(op->operands[0])->value;
+          if (block->next_block->labels.count(target_label)) {
+            block->instructions.pop_back();
+          }
 
-    ref<IRInstruction> op = block->instructions.back();
-    switch (op->opcode) {
-      case Opcode::jmp: {
-        Label target_label = cast<IROperandOffset>(op->operands[0])->value;
-        if (block->next_block->labels.count(target_label)) {
-          block->instructions.pop_back();
+          continue;
         }
-
-        continue;
-      }
-      default: {
-        break;
+        default: {
+          break;
+        }
       }
     }
   }
@@ -302,9 +334,9 @@ void Builder::remove_dead_blocks() {
   reachable_blocks.push_back(m_active_function->basic_blocks.front());
 
   // mark function exception table handlers as reachable
-  for (const auto& entry : m_active_function->exception_table) {
-    if (m_labelled_blocks.count(std::get<2>(entry))) {
-      reachable_blocks.push_back(m_labelled_blocks.at(std::get<2>(entry)));
+  for (const IRExceptionTableEntry& entry : m_active_function->exception_table) {
+    if (m_labelled_blocks.count(entry.handler)) {
+      reachable_blocks.push_back(m_labelled_blocks.at(entry.handler));
     }
   }
 
@@ -320,9 +352,9 @@ void Builder::remove_dead_blocks() {
         reachable_blocks.push_back(outgoing);
       }
 
-      // if (block->exception_handler) {
-      //   reachable_blocks.push_back(m_labelled_blocks.at(block->exception_handler.value()));
-      // }
+      if (block->exception_handler) {
+        reachable_blocks.push_back(m_labelled_blocks.at(block->exception_handler.value()));
+      }
     }
   }
 
@@ -359,13 +391,27 @@ void Builder::emit_exception_tables() {
       assert(block->next_block);
 
       if (block->next_block->labels.size() == 0) {
-        block->next_block->labels.insert(reserve_label());
+        Label l = reserve_label();
+        block->next_block->labels.insert(l);
+        m_labelled_blocks.insert({l, block->next_block});
       }
 
       Label begin = *block->labels.begin();
       Label end = *block->next_block->labels.begin();
       Label handler = block->exception_handler.value();
-      m_active_function->exception_table.emplace_back(begin, end, handler);
+
+      // extend previous table if possible
+      if (m_active_function->exception_table.size()) {
+        IRExceptionTableEntry& previous = m_active_function->exception_table.back();
+
+        if (previous.end == begin && previous.handler == handler) {
+          previous.end = end;
+        } else {
+          m_active_function->exception_table.emplace_back(IRExceptionTableEntry(begin, end, handler));
+        }
+      } else {
+        m_active_function->exception_table.emplace_back(IRExceptionTableEntry(begin, end, handler));
+      }
     }
   }
 }
@@ -375,6 +421,10 @@ ref<IRBasicBlock> Builder::new_basic_block() {
 
   ref<IRBasicBlock> block = make<IRBasicBlock>(m_block_id_counter++);
   block->previous_block = m_active_block;
+
+  if (m_exception_handlers.size()) {
+    block->exception_handler = m_exception_handlers.top();
+  }
 
   if (m_active_block) {
     m_active_block->next_block = block;
@@ -396,11 +446,6 @@ void Builder::place_label(Label label) {
   if (m_active_block->instructions.size() == 0) {
     m_active_block->labels.insert(label);
     m_labelled_blocks.insert({label, m_active_block});
-
-    if (!m_active_block->exception_handler && m_exception_handlers.size()) {
-      m_active_block->exception_handler = m_exception_handlers.top();
-    }
-
     return;
   }
 
@@ -408,10 +453,6 @@ void Builder::place_label(Label label) {
   ref<IRBasicBlock> new_block = new_basic_block();
   new_block->labels.insert(label);
   m_labelled_blocks.insert({label, new_block});
-
-  if (m_exception_handlers.size()) {
-    new_block->exception_handler = m_exception_handlers.top();
-  }
 }
 
 // machine control

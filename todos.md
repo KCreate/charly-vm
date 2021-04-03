@@ -6,7 +6,6 @@
 
 - IR Optimization passes
   - Remove unused strings
-  - Peephole optimizations
 
 - Leaked variables need to be allocated on heap frames, not stack frames
   - Special instructions to access heap variables?
@@ -18,6 +17,12 @@
     - Automatically detect wether its a block or dict literal???
 
 - Think about inline caches
+  - Different types of inline caches
+    - PropertyOffsetCache   maps class id to property offset
+    - GlobalVariableCache   stores global variable offset
+    - MethodCache           maps class id to functions
+    - BinaryOpCache         cache types of binary operands
+    - UnaryOpCache          cache types of unary operand
   - IRBuilder will have to allocate inline caches per function
     - Separate table for inline caches or directly encoded into bytecode?
   - Polymorphic inline caches
