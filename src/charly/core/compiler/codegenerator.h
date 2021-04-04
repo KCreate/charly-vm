@@ -127,7 +127,7 @@ private:
   virtual bool inspect_enter(const ref<ast::Class>&) override;
 
   virtual bool inspect_enter(const ref<ast::MemberOp>&) override;
-  virtual void inspect_leave(const ref<ast::IndexOp>&) override;
+  virtual bool inspect_enter(const ref<ast::IndexOp>&) override;
   virtual bool inspect_enter(const ref<ast::Assignment>&) override;
   virtual bool inspect_enter(const ref<ast::UnpackAssignment>&) override;
   virtual bool inspect_enter(const ref<ast::MemberAssignment>&) override;

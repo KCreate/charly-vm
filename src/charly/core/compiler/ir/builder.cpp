@@ -84,36 +84,33 @@ void Builder::begin_function(Label head, ref<ast::Function> ast) {
 
 void Builder::finish_function() {
 
+  if (!utils::ArgumentParser::is_flag_set("opt_disable")) {
+
+    // trim dead instructions in basic blocks that occur after terminating opcodes
+    trim_dead_instructions();
+
+    // remove basic blocks with no instructions
+    remove_empty_blocks();
+  }
+
   // build the control flow graph, storing the incoming and outgoing
   // branches for each basic block
-  trim_dead_instructions();
-  remove_empty_blocks();
   build_cfg();
 
   if (!utils::ArgumentParser::is_flag_set("opt_disable")) {
     // remove branch chains
     //
     //    jmp .L1
-    //
     //  .L1
-    //    jmp .L2
-    //
-    //  .L2
     //    jmp .L3
-    //
     //  .L3
     //    <body>
     //
     // the above can be rewritten into:
     //
     //    jmp .L3
-    //
     //  .L1
     //    jmp .L3
-    //
-    //  .L2
-    //    jmp .L3
-    //
     //  .L3
     //    <body>
     //
@@ -145,6 +142,9 @@ void Builder::finish_function() {
   new_basic_block();
   emit_nop();
   emit_exception_tables();
+
+  // allocate the inline cache slots
+  allocate_inline_caches();
 
   // reset builder for next function
   reset_stack_height();
@@ -461,6 +461,18 @@ void Builder::remove_unused_strings() {
   }
 }
 
+void Builder::allocate_inline_caches() {
+  for (const auto& block : m_active_function->basic_blocks) {
+    for (const auto& instruction : block->instructions) {
+      ICType type = kOpcodeInlineCaches[static_cast<uint8_t>(instruction->opcode)];
+      if (type != ICNone) {
+        instruction->inline_cache_index = m_active_function->inline_cache_table.size();
+        m_active_function->inline_cache_table.emplace_back(IRInlineCacheTableEntry(type));
+      }
+    }
+  }
+}
+
 ref<IRBasicBlock> Builder::new_basic_block() {
   assert(m_active_function);
 
@@ -473,6 +485,11 @@ ref<IRBasicBlock> Builder::new_basic_block() {
 
   if (m_active_block) {
     m_active_block->next_block = block;
+
+    // each block must have at least one label
+    if (m_active_block->labels.size() == 0) {
+      m_active_block->labels.insert(reserve_label());
+    }
   }
 
   m_active_function->basic_blocks.push_back(block);
@@ -616,10 +633,6 @@ ref<IRInstruction> Builder::emit_loadlocal(OpCount8 offset) {
   return emit(Opcode::loadlocal, IROperandCount8::make(offset));
 }
 
-ref<IRInstruction> Builder::emit_loadheap(OpCount8 offset) {
-  return emit(Opcode::loadheap, IROperandCount8::make(offset));
-}
-
 ref<IRInstruction> Builder::emit_loadfar(OpCount8 depth, OpCount8 offset) {
   return emit(Opcode::loadfar, IROperandCount8::make(depth), IROperandCount8::make(offset));
 }
@@ -629,8 +642,8 @@ ref<IRInstruction> Builder::emit_loadattr(OpSymbol symbol) {
   return emit(Opcode::loadattr, IROperandSymbol::make(symbol));
 }
 
-ref<IRInstruction> Builder::emit_loadattrvalue() {
-  return emit(Opcode::loadattrvalue);
+ref<IRInstruction> Builder::emit_loadattrsym() {
+  return emit(Opcode::loadattrsym);
 }
 
 ref<IRInstruction> Builder::emit_loadsuperconstructor() {
@@ -652,10 +665,6 @@ ref<IRInstruction> Builder::emit_setlocal(OpCount8 offset) {
   return emit(Opcode::setlocal, IROperandCount8::make(offset));
 }
 
-ref<IRInstruction> Builder::emit_setheap(OpCount8 offset) {
-  return emit(Opcode::setheap, IROperandCount8::make(offset));
-}
-
 ref<IRInstruction> Builder::emit_setreturn() {
   return emit(Opcode::setreturn);
 }
@@ -669,8 +678,8 @@ ref<IRInstruction> Builder::emit_setattr(OpSymbol symbol) {
   return emit(Opcode::setattr, IROperandSymbol::make(symbol));
 }
 
-ref<IRInstruction> Builder::emit_setattrvalue() {
-  return emit(Opcode::setattrvalue);
+ref<IRInstruction> Builder::emit_setattrsym() {
+  return emit(Opcode::setattrsym);
 }
 
 // value destructuring operations
@@ -767,6 +776,14 @@ ref<IRInstruction> Builder::emit_fiberawait() {
 // cast operations
 ref<IRInstruction> Builder::emit_caststring() {
   return emit(Opcode::caststring);
+}
+
+ref<IRInstruction> Builder::emit_castsymbol() {
+  return emit(Opcode::castsymbol);
+}
+
+ref<IRInstruction> Builder::emit_castiterator() {
+  return emit(Opcode::castiterator);
 }
 
 // iterator operations

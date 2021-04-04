@@ -129,7 +129,7 @@ ref<ir::IRInstruction> CodeGenerator::generate_load(const ValueLocation& locatio
     }
     case ValueLocation::Type::LocalFrame: {
       if (m_builder.active_function()->ast->ir_info.leaked) {
-        return m_builder.emit_loadheap(location.as.local_frame.offset);
+        return m_builder.emit_loadfar(0, location.as.local_frame.offset);
       } else {
         return m_builder.emit_loadlocal(location.as.local_frame.offset);
       }
@@ -151,7 +151,7 @@ ref<ir::IRInstruction> CodeGenerator::generate_store(const ValueLocation& locati
       }
       case ValueLocation::Type::LocalFrame: {
         if (m_builder.active_function()->ast->ir_info.leaked) {
-          return m_builder.emit_setheap(location.as.local_frame.offset);
+          return m_builder.emit_setfar(0, location.as.local_frame.offset);
         } else {
           return m_builder.emit_setlocal(location.as.local_frame.offset);
         }
@@ -429,7 +429,8 @@ bool CodeGenerator::inspect_enter(const ref<ast::Spawn>& node) {
         apply(call->target);
         m_builder.emit_dup();
         apply(call->index);
-        m_builder.emit_loadattrvalue()->at(call->index);
+        m_builder.emit_castsymbol()->at(call->index);
+        m_builder.emit_loadattrsym()->at(call->index);
       }
 
       if (call->has_spread_elements()) {
@@ -623,8 +624,13 @@ bool CodeGenerator::inspect_enter(const ref<ast::MemberOp>& node) {
   return false;
 }
 
-void CodeGenerator::inspect_leave(const ref<ast::IndexOp>& node) {
-  m_builder.emit_loadattrvalue()->at(node);
+bool CodeGenerator::inspect_enter(const ref<ast::IndexOp>& node) {
+  apply(node->target);
+  apply(node->index);
+  m_builder.emit_castsymbol()->at(node->index);
+  m_builder.emit_loadattrsym()->at(node->index);
+
+  return false;
 }
 
 bool CodeGenerator::inspect_enter(const ref<Assignment>& node) {
@@ -681,19 +687,21 @@ bool CodeGenerator::inspect_enter(const ref<IndexAssignment>& node) {
     case TokenType::Assignment: {
       apply(node->target);
       apply(node->index);
+      m_builder.emit_castsymbol()->at(node);
       apply(node->source);
-      m_builder.emit_setattrvalue()->at(node);
+      m_builder.emit_setattrsym()->at(node);
       break;
     }
     default: {
       apply(node->target);
       apply(node->index);
+      m_builder.emit_castsymbol();
       m_builder.emit_dup2();
-      m_builder.emit_loadattrvalue()->at(node);
+      m_builder.emit_loadattrsym()->at(node->index);
       apply(node->source);
       assert(kBinopOpcodeMapping.count(node->operation));
       m_builder.emit(kBinopOpcodeMapping.at(node->operation))->at(node);
-      m_builder.emit_setattrvalue()->at(node);
+      m_builder.emit_setattrsym()->at(node);
       break;
     }
   }
@@ -820,7 +828,8 @@ bool CodeGenerator::inspect_enter(const ref<ast::CallIndexOp>& node) {
   apply(node->target);
   m_builder.emit_dup();
   apply(node->index);
-  m_builder.emit_loadattrvalue()->at(node->index);
+  m_builder.emit_castsymbol()->at(node->index);
+  m_builder.emit_loadattrsym()->at(node->index);
 
   if (node->has_spread_elements()) {
     uint8_t emitted_segments = generate_spread_tuples(node->arguments);

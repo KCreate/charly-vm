@@ -70,6 +70,8 @@ struct IRInstruction {
   Opcode opcode;
   std::vector<ref<IROperand>> operands;
 
+  std::optional<uint16_t> inline_cache_index;
+
   Location location;
   void at(const Location& location);
   void at(const ref<ast::Node>& node);
@@ -122,6 +124,12 @@ struct IRExceptionTableEntry {
   IRExceptionTableEntry(Label begin, Label end, Label handler) : begin(begin), end(end), handler(handler) {}
 };
 
+struct IRInlineCacheTableEntry {
+  ICType type;
+
+  IRInlineCacheTableEntry(ICType type) : type(type) {}
+};
+
 struct IRFunction {
   IRFunction(Label head, ref<ast::Function> ast) : head(head), ast(ast) {}
 
@@ -130,6 +138,7 @@ struct IRFunction {
 
   std::vector<IRStringTableEntry> string_table;
   std::vector<IRExceptionTableEntry> exception_table;
+  std::vector<IRInlineCacheTableEntry> inline_cache_table;
   std::list<ref<IRBasicBlock>> basic_blocks;
 
   void dump(std::ostream& out) const;

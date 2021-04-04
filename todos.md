@@ -1,32 +1,5 @@
 # Todos
 
-- Think about inline caches
-  - Different types of inline caches
-    - PropertyOffsetCache   maps class id to property offset
-    - GlobalVariableCache   stores global variable offset
-    - MethodCache           maps class id to functions
-    - BinaryOpCache         cache types of binary operands
-    - UnaryOpCache          cache types of unary operand
-  - IRBuilder will have to allocate inline caches per function
-    - Separate table for inline caches or directly encoded into bytecode?
-  - Polymorphic inline caches
-    - Caches should be able to hold at least 2-3 entries
-    - Cache eviction?
-      - Age, LRU
-    - Avoid constant inline cache updates
-      - Should learn from use and only cache top 2-3 frequent entries
-      - Reset this heuristic after some time to adapt to new workloads
-
-- Runtime representation of functions
-  - How does the `makefunc` instruction create a new function?
-  - Shared function info?
-  - Bytecode
-  - Keep possibility of future JIT compiler in mind
-
-- Should classes be static?
-  - Classes would, like functions, get their data directly embedded into the bytecode
-  - New instances of the class all share common data encoded in the bytecode
-
 - Concurrency
   - Boost fcontext for cheap context switches
   - Signal handling?
@@ -89,8 +62,13 @@
 - Memory locking
 - REPL support
 
-- Exception tables
-  - Exception tables should be split into non overlapping segments
+- Polymorphic inline caches
+  - Caches should be able to hold at least 2-3 entries
+  - Cache eviction?
+    - Age, LRU
+  - Avoid constant inline cache updates
+    - Should learn from use and only cache top 2-3 frequent entries
+    - Reset this heuristic after some time to adapt to new workloads
 
 - Function frames can be allocated on the heap or on the stack
   - Each function has a bool property on wether the frame locals

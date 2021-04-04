@@ -166,7 +166,7 @@ uint32_t IRInstruction::popped_values() const {
   }
 
   switch (this->opcode) {
-#define PAIR(name, STACKPOP, STACKPUSH, ...) case Opcode::name: { return STACKPOP; }
+#define PAIR(name, ictype, STACKPOP, STACKPUSH, ...) case Opcode::name: { return STACKPOP; }
   FOREACH_OPCODE(PAIR)
 #undef PAIR
   }
@@ -204,7 +204,7 @@ uint32_t IRInstruction::pushed_values() const {
   }
 
   switch (this->opcode) {
-#define PAIR(name, STACKPOP, STACKPUSH, ...) case Opcode::name: { return STACKPUSH; }
+#define PAIR(name, ictype, STACKPOP, STACKPUSH, ...) case Opcode::name: { return STACKPUSH; }
   FOREACH_OPCODE(PAIR)
 #undef PAIR
   }
@@ -226,6 +226,11 @@ void IRInstruction::dump(std::ostream& out) const {
     }
     first_operand = false;
     operand->dump(out);
+  }
+
+  // inline cache index
+  if (this->inline_cache_index) {
+    writer.fg(Color::Magenta, " [", this->inline_cache_index.value() , "]");
   }
 
   // instruction source location
@@ -344,16 +349,27 @@ void IRFunction::dump(std::ostream& out) const {
   }
   out << "\n";
 
-  writer.fg(Color::Yellow, "  string table:", "\n");
-  int index = 0;
+  writer.fg(Color::Red, "  string table:", "\n");
+  int string_index = 0;
   for (const IRStringTableEntry& entry : this->string_table) {
-    writer.fg(Color::Grey, "  - #", std::setw(2), std::left, index, std::setw(0));
+    writer.fg(Color::Grey, "  - #", std::setw(2), std::left, string_index, std::setw(1));
     writer.fg(Color::Red, "\"", entry.value, "\"");
     writer.fg(Color::Grey, " length=", entry.value.size());
     writer.fg(Color::Grey, ", hash=", std::hex, entry.hash, std::dec);
     out << "\n";
 
-    index++;
+    string_index++;
+  }
+  out << "\n";
+
+  writer.fg(Color::Magenta, "  inline caches:", "\n");
+  int ic_index = 0;
+  for (const IRInlineCacheTableEntry& entry : this->inline_cache_table) {
+    writer.fg(Color::Grey, "  - #", std::setw(2), std::left, ic_index, std::setw(1));
+    writer.fg(Color::Magenta, " ", kInlineCacheTypeNames[entry.type]);
+    out << "\n";
+
+    ic_index++;
   }
   out << "\n";
 

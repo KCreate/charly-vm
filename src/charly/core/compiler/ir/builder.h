@@ -78,6 +78,7 @@ public:
   void remove_dead_blocks();
   void emit_exception_tables();
   void remove_unused_strings();
+  void allocate_inline_caches();
 
   // label management
   Label reserve_label();
@@ -105,7 +106,7 @@ public:
     return instruction;
   }
 
-#define MAP(name, stackpop, stackpush, ...) ref<IRInstruction> emit_##name(__VA_ARGS__);
+#define MAP(name, ictype, stackpop, stackpush, ...) ref<IRInstruction> emit_##name(__VA_ARGS__);
   FOREACH_OPCODE(MAP)
 #undef MAP
 
