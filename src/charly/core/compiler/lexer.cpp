@@ -943,52 +943,52 @@ void Lexer::consume_string(Token& token, bool allow_format) {
       switch (peek_char()) {
         case 'a': {
           read_char();
-          string_buf.append_utf8('\a');
+          string_buf.write_utf8('\a');
           break;
         }
         case 'b': {
           read_char();
-          string_buf.append_utf8('\b');
+          string_buf.write_utf8('\b');
           break;
         }
         case 'n': {
           read_char();
-          string_buf.append_utf8('\n');
+          string_buf.write_utf8('\n');
           break;
         }
         case 'r': {
           read_char();
-          string_buf.append_utf8('\r');
+          string_buf.write_utf8('\r');
           break;
         }
         case 't': {
           read_char();
-          string_buf.append_utf8('\t');
+          string_buf.write_utf8('\t');
           break;
         }
         case 'v': {
           read_char();
-          string_buf.append_utf8('\v');
+          string_buf.write_utf8('\v');
           break;
         }
         case 'f': {
           read_char();
-          string_buf.append_utf8('\f');
+          string_buf.write_utf8('\f');
           break;
         }
         case '"': {
           read_char();
-          string_buf.append_utf8('\"');
+          string_buf.write_utf8('\"');
           break;
         }
         case '{': {
           read_char();
-          string_buf.append_utf8('{');
+          string_buf.write_utf8('{');
           break;
         }
         case '\\': {
           read_char();
-          string_buf.append_utf8('\\');
+          string_buf.write_utf8('\\');
           break;
         }
         default: {
@@ -999,7 +999,7 @@ void Lexer::consume_string(Token& token, bool allow_format) {
       continue;
     }
 
-    string_buf.append_utf8(read_char());
+    string_buf.write_utf8(read_char());
   }
 
   token.source = string_buf.buffer_string();

@@ -34,13 +34,13 @@ namespace charly::core::compiler::ir {
 // keep track of local variable info of functions
 struct FunctionInfo {
   bool valid = false;
+  uint8_t stacksize = 0;
   uint8_t local_variables = 0;
   uint8_t argc = 0;
   uint8_t minargc = 0;
   bool spread_argument = false;
   bool arrow_function = false;
   bool leaked = false;
-  uint32_t stacksize = 0;
 
   // write a formatted version to the stream:
   //
@@ -51,7 +51,7 @@ struct FunctionInfo {
     out << "argc=" << static_cast<int32_t>(info.argc) << ", ";
     out << "minargc=" << static_cast<int32_t>(info.minargc) << ", ";
     out << "spread=" << (info.spread_argument ? "true" : "false") << ", ";
-    out << "arrow=" << (info.arrow_function ? "true" : "false");
+    out << "arrow=" << (info.arrow_function ? "true" : "false") << ", ";
     out << "leaked=" << (info.leaked ? "true" : "false");
     out << ")";
 

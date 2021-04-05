@@ -52,11 +52,8 @@ public:
     m_active_function(nullptr),
     m_module(make<IRModule>(filename)) {}
 
-  // register a symbol in the module symbol table
-  void register_symbol(const std::string& string);
-
-  // register a string in the current functions string table
-  uint16_t register_string(const std::string& string);
+  // register a string in the modules string table
+  Label register_string(const std::string& string);
 
   // basic block management
   ref<IRBasicBlock> new_basic_block();
@@ -77,7 +74,6 @@ public:
   void remove_useless_jumps();
   void remove_dead_blocks();
   void emit_exception_tables();
-  void remove_unused_strings();
   void allocate_inline_caches();
 
   // label management
@@ -113,6 +109,10 @@ public:
   ref<IRModule> get_module() const {
     return m_module;
   };
+
+  Label next_label_id() const {
+    return m_label_counter;
+  }
 
   // keep track of maximum stack height
   uint32_t maximum_stack_height() const;

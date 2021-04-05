@@ -24,8 +24,6 @@
  * SOFTWARE.
  */
 
-// #include "charly/core/compiler/ir/cfg.h"
-
 #include "charly/core/compiler/codegenerator.h"
 
 using namespace charly::core::compiler::ast;
@@ -33,13 +31,7 @@ using namespace charly::core::compiler::ir;
 
 namespace charly::core::compiler {
 
-ref<IRModule> CodeGenerator::compile(ref<CompilationUnit> unit) {
-  CodeGenerator generator(unit);
-  generator.compile();
-  return generator.get_module();
-}
-
-void CodeGenerator::compile() {
+ref<IRModule> CodeGenerator::compile() {
 
   // register the module function
   assert(m_unit->ast->statements.size() == 1);
@@ -50,6 +42,11 @@ void CodeGenerator::compile() {
     compile_function(m_function_queue.front());
     m_function_queue.pop();
   }
+
+  ref<IRModule> module = m_builder.get_module();
+  module->filename_label = m_builder.register_string(m_unit->filepath);
+  module->next_label = m_builder.next_label_id();
+  return module;
 }
 
 Label CodeGenerator::enqueue_function(const ref<Function>& ast) {
@@ -117,6 +114,8 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
 
   // stack size required for function
   m_builder.active_function()->ast->ir_info.stacksize = m_builder.maximum_stack_height();
+  assert((m_builder.maximum_stack_height() <= (uint32_t)0x00ff) &&
+         "function exceeded maximum stack height of 256 values");
 
   m_builder.finish_function();
 }
@@ -498,7 +497,7 @@ void CodeGenerator::inspect_leave(const ref<Char>& node) {
 
 bool CodeGenerator::inspect_enter(const ref<Function>& node) {
   Label begin_label = enqueue_function(node);
-  m_builder.register_symbol(node->name->value);
+  m_builder.register_string(node->name->value);
   m_builder.emit_makefunc(begin_label)->at(node);
   return false;
 }

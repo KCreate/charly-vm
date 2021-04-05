@@ -49,8 +49,6 @@ extern char** environ;
 
 int run_repl(DiagnosticConsole&) {
   bool print_location = false;
-  bool dump_ast = utils::ArgumentParser::is_flag_set("dump_ast");
-  bool dump_asm = utils::ArgumentParser::is_flag_set("dump_asm");
 
   char* buf = nullptr;
   while ((buf = readline("> "))) {
@@ -64,34 +62,16 @@ int run_repl(DiagnosticConsole&) {
       if (line.compare(".help") == 0) {
         std::cout << ".exit       Exit the REPL" << '\n';
         std::cout << ".help       List of meta commands" << '\n';
-        std::cout << ".dump_ast   Toggle AST dump" << '\n';
-        std::cout << ".dump_asm   Toggle bytecode dump" << '\n';
-        std::cout << ".ast_loc    Toggle source location in AST dump" << '\n';
         continue;
       }
 
       if (line.compare(".exit") == 0)
         break;
-
-      if (line.compare(".ast_loc") == 0) {
-        print_location = !print_location;
-        continue;
-      }
-
-      if (line.compare(".dump_ast") == 0) {
-        dump_ast = !dump_ast;
-        continue;
-      }
-
-      if (line.compare(".dump_asm") == 0) {
-        dump_asm = !dump_asm;
-        continue;
-      }
     }
 
     utils::Buffer source_buffer(line);
     auto unit = Compiler::compile(CompilationUnit::Type::ReplInput, "stdin", source_buffer);
-    auto program = unit->ast;
+    auto ast = unit->ast;
 
     unit->console.dump_all(std::cerr);
 
@@ -100,20 +80,23 @@ int run_repl(DiagnosticConsole&) {
       continue;
     }
 
-    assert(program.get());
+    assert(ast.get());
 
-    // check if program has nodes
-    if (ref<Block> body = cast<Block>(program)) {
+    // check if ast has nodes
+    if (ref<Block> body = cast<Block>(ast)) {
       if (body->statements.size() == 0)
         continue;
     }
 
     // dump compiler steps
-    if (dump_ast) {
-      program->dump(std::cout, print_location);
+    if (utils::ArgumentParser::is_flag_set("dump_ast")) {
+      ast->dump(std::cout, print_location);
     }
-    if (dump_asm) {
+    if (utils::ArgumentParser::is_flag_set("dump_ir")) {
       unit->ir_module->dump(std::cout);
+    }
+    if (utils::ArgumentParser::is_flag_set("dump_asm")) {
+      unit->bytecode_buffer->dump(std::cout);
     }
   }
 
@@ -132,23 +115,27 @@ void run_file(DiagnosticConsole& console, const std::string& filename) {
   std::string line;
 
   for (std::string line; std::getline(file, line);) {
-    file_buffer.append_string(line);
-    file_buffer.append_utf8('\n');
+    file_buffer.write_string(line);
+    file_buffer.write_utf8('\n');
   }
   file.close();
 
   auto unit = Compiler::compile(CompilationUnit::Type::Module, filename, file_buffer);
-  auto program = unit->ast;
+  auto ast = unit->ast;
 
   unit->console.dump_all(std::cerr);
 
   if (!unit->console.has_errors()) {
     if (utils::ArgumentParser::is_flag_set("dump_ast")) {
-      program->dump(std::cout, true);
+      ast->dump(std::cout, true);
+    }
+
+    if (utils::ArgumentParser::is_flag_set("dump_ir")) {
+      unit->ir_module->dump(std::cout);
     }
 
     if (utils::ArgumentParser::is_flag_set("dump_asm")) {
-      unit->ir_module->dump(std::cout);
+      unit->bytecode_buffer->dump(std::cout);
     }
   }
 }

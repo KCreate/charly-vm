@@ -35,25 +35,19 @@ using namespace charly::core::compiler::ast;
 
 using Color = utils::Color;
 
-void Builder::register_symbol(const std::string& string) {
-  m_module->symbol_table[SYM(string)] = string;
-}
-
-uint16_t Builder::register_string(const std::string& string) {
-  ref<IRFunction> func = active_function();
+Label Builder::register_string(const std::string& string) {
+  ref<IRModule> module = m_module;
 
   // duplicates check
-  uint16_t index = 0;
-  for (const IRStringTableEntry& entry : func->string_table) {
+  for (const IRStringTableEntry& entry : module->string_table) {
     if (entry.value.compare(string) == 0) {
-      return index;
+      return entry.label;
     }
-
-    index++;
   }
 
-  func->string_table.emplace_back(IRStringTableEntry(string));
-  return index;
+  Label l = reserve_label();
+  module->string_table.emplace_back(IRStringTableEntry(l, string));
+  return l;
 }
 
 void Builder::push_exception_handler(Label handler) {
@@ -130,9 +124,6 @@ void Builder::finish_function() {
     //
     // the above jump opcode can be completely removed
     remove_useless_jumps();
-
-    // remove unused strings from the functions string table
-    remove_unused_strings();
   }
 
   // emit the exceptions tables for the basic blocks of this function
@@ -414,53 +405,6 @@ void Builder::emit_exception_tables() {
   }
 }
 
-void Builder::remove_unused_strings() {
-
-  // find used strings
-  OpCount16 string_indices[m_active_function->string_table.size()];
-  std::memset(string_indices, 0, sizeof(string_indices));
-  for (const auto& block : m_active_function->basic_blocks) {
-    for (const auto& instruction : block->instructions) {
-
-      // mark string as used
-      if (instruction->opcode == Opcode::makestr) {
-        uint16_t index = cast<IROperandCount16>(instruction->operands[0])->value;
-        assert(index < m_active_function->string_table.size());
-        string_indices[index] = 1;
-      }
-    }
-  }
-
-  // reallocate indices for strings
-  OpCount16 curr_index = 0;
-  OpCount16 alloc_index = 0;
-  auto it = m_active_function->string_table.begin();
-  while (it != m_active_function->string_table.end()) {
-    if (string_indices[curr_index]) {
-      string_indices[curr_index] = alloc_index++;
-    } else {
-      it = m_active_function->string_table.erase(it);
-      curr_index++;
-      continue;
-    }
-
-    curr_index++;
-    it++;
-  }
-
-  // rewrite makestr instructions to point to newly allocated entries
-  for (const auto& block : m_active_function->basic_blocks) {
-    for (const auto& instruction : block->instructions) {
-
-      // mark string as used
-      if (instruction->opcode == Opcode::makestr) {
-        ref<IROperandCount16> op = cast<IROperandCount16>(instruction->operands[0]);
-        op->value = string_indices[op->value];
-      }
-    }
-  }
-}
-
 void Builder::allocate_inline_caches() {
   for (const auto& block : m_active_function->basic_blocks) {
     for (const auto& instruction : block->instructions) {
@@ -612,7 +556,7 @@ ref<IRInstruction> Builder::emit_load(OpImmediate value) {
 }
 
 ref<IRInstruction> Builder::emit_loadsymbol(OpSymbol symbol) {
-  register_symbol(symbol);
+  register_string(symbol);
   return emit(Opcode::loadsymbol, IROperandSymbol::make(symbol));
 }
 
@@ -625,7 +569,7 @@ ref<IRInstruction> Builder::emit_loadargc() {
 }
 
 ref<IRInstruction> Builder::emit_loadglobal(OpSymbol symbol) {
-  register_symbol(symbol);
+  register_string(symbol);
   return emit(Opcode::loadglobal, IROperandSymbol::make(symbol));
 }
 
@@ -638,7 +582,7 @@ ref<IRInstruction> Builder::emit_loadfar(OpCount8 depth, OpCount8 offset) {
 }
 
 ref<IRInstruction> Builder::emit_loadattr(OpSymbol symbol) {
-  register_symbol(symbol);
+  register_string(symbol);
   return emit(Opcode::loadattr, IROperandSymbol::make(symbol));
 }
 
@@ -651,13 +595,13 @@ ref<IRInstruction> Builder::emit_loadsuperconstructor() {
 }
 
 ref<IRInstruction> Builder::emit_loadsuperattr(OpSymbol symbol) {
-  register_symbol(symbol);
+  register_string(symbol);
   return emit(Opcode::loadsuperattr, IROperandSymbol::make(symbol));
 }
 
 // write operations
 ref<IRInstruction> Builder::emit_setglobal(OpSymbol symbol) {
-  register_symbol(symbol);
+  register_string(symbol);
   return emit(Opcode::setglobal, IROperandSymbol::make(symbol));
 }
 
@@ -674,7 +618,7 @@ ref<IRInstruction> Builder::emit_setfar(OpCount8 depth, OpCount8 offset) {
 }
 
 ref<IRInstruction> Builder::emit_setattr(OpSymbol symbol) {
-  register_symbol(symbol);
+  register_string(symbol);
   return emit(Opcode::setattr, IROperandSymbol::make(symbol));
 }
 
@@ -720,8 +664,8 @@ ref<IRInstruction> Builder::emit_makesubclass(OpSymbol name,
               IROperandCount8::make(propcount), IROperandCount8::make(staticpropcount));
 }
 
-ref<IRInstruction> Builder::emit_makestr(OpCount16 index) {
-  return emit(Opcode::makestr, IROperandCount16::make(index));
+ref<IRInstruction> Builder::emit_makestr(OpOffset offset) {
+  return emit(Opcode::makestr, IROperandOffset::make(offset));
 }
 
 ref<IRInstruction> Builder::emit_makelist(OpCount16 count) {

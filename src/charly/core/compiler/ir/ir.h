@@ -67,6 +67,8 @@ struct IRInstruction {
   template <typename... Args>
   IRInstruction(Opcode opcode, Args&&... operands) : opcode(opcode), operands({ std::forward<Args>(operands)... }) {}
 
+  std::optional<Label> assembled_offset; // set by Assembler
+
   Opcode opcode;
   std::vector<ref<IROperand>> operands;
 
@@ -109,13 +111,6 @@ struct IRBasicBlock {
   void dump(std::ostream& out) const;
 };
 
-struct IRStringTableEntry {
-  SYMBOL hash;
-  std::string value;
-
-  IRStringTableEntry(const std::string& string) : hash(SYM(string)), value(string) {}
-};
-
 struct IRExceptionTableEntry {
   Label begin;
   Label end;
@@ -136,7 +131,6 @@ struct IRFunction {
   Label head;
   ref<ast::Function> ast;
 
-  std::vector<IRStringTableEntry> string_table;
   std::vector<IRExceptionTableEntry> exception_table;
   std::vector<IRInlineCacheTableEntry> inline_cache_table;
   std::list<ref<IRBasicBlock>> basic_blocks;
@@ -144,11 +138,22 @@ struct IRFunction {
   void dump(std::ostream& out) const;
 };
 
+struct IRStringTableEntry {
+  Label label;
+  SYMBOL hash;
+  std::string value;
+
+  IRStringTableEntry(Label label, const std::string& string) : label(label), hash(SYM(string)), value(string) {}
+};
+
 struct IRModule {
   IRModule(const std::string& filename) : filename(filename) {}
 
+  Label next_label;
+  Label filename_label;
+
   std::string filename;
-  std::unordered_map<SYMBOL, std::string> symbol_table;
+  std::vector<IRStringTableEntry> string_table;
   std::vector<ref<IRFunction>> functions;
 
   void dump(std::ostream& out) const;

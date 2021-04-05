@@ -24,20 +24,4 @@
  * SOFTWARE.
  */
 
-print(1)
-
-try {
-  try {
-    foo()
-  } catch(e) {
-    print(e)
-  }
-} catch(e) {
-  try {
-    foo()
-  } catch(e) {
-    print(e)
-  }
-}
-
-print(2)
+print('a', 'b', 'c', 'd')

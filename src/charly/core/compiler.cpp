@@ -26,11 +26,14 @@
 
 #include "charly/charly.h"
 
+#include "charly/utils/argumentparser.h"
+
 #include "charly/core/compiler.h"
 #include "charly/core/compiler/parser.h"
 #include "charly/core/compiler/codegenerator.h"
 #include "charly/core/compiler/ir/ir.h"
 #include "charly/core/compiler/ir/builder.h"
+#include "charly/core/compiler/ir/assembler.h"
 
 #include "charly/core/compiler/passes/class_constructor_check.h"
 #include "charly/core/compiler/passes/duplicates_check.h"
@@ -98,7 +101,12 @@ ref<CompilationUnit> Compiler::compile(CompilationUnit::Type type,
 #undef APPLY_TRANSFORM_PASS
 
   // compile to bytecodes
-  unit->ir_module = CodeGenerator::compile(unit);
+  CodeGenerator codegenerator(unit);
+  unit->ir_module = codegenerator.compile();
+
+  // assemble bytecodes
+  ir::Assembler assembler(unit->ir_module);
+  unit->bytecode_buffer = assembler.assemble();
 
   return unit;
 }

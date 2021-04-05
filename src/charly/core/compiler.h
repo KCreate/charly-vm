@@ -39,13 +39,19 @@ struct CompilationUnit {
   enum class Type : uint8_t { Module, ReplInput };
 
   CompilationUnit(Type type, const std::string& filepath, utils::Buffer& source) :
-    type(type), console(filepath, source), filepath(filepath), ast(nullptr), ir_module(nullptr) {}
+    type(type),
+    console(filepath, source),
+    filepath(filepath),
+    ast(nullptr),
+    ir_module(nullptr),
+    bytecode_buffer(nullptr) {}
 
   Type type;
   DiagnosticConsole console;
   std::string filepath;
   ref<ast::Block> ast;
   ref<ir::IRModule> ir_module;
+  ref<utils::MemoryBlock> bytecode_buffer;
 };
 
 class Compiler {

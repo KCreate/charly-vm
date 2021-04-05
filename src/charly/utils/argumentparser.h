@@ -37,7 +37,7 @@ namespace charly::utils {
 class ArgumentParser {
 public:
   struct FlagDescriptor {
-    std::string                name;                      // name of the flag (e.g "dump_asm")
+    std::string                name;                      // name of the flag
     std::optional<char>        shortselector;             // e.g -h, -v, -l
     std::string                description;               // description of what the flag does
     std::optional<std::string> argument = std::nullopt;   // wether this flag requires an argument

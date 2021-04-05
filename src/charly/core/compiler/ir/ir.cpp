@@ -85,7 +85,7 @@ void IROperandImmediate::dump(std::ostream& out) const {
 
   if (this->value.is_char()) {
     utils::Buffer buf(4);
-    buf.append_utf8(this->value.to_char());
+    buf.write_utf8(this->value.to_char());
 
     writer.fg(Color::Red, "'", buf.buffer_string(), "'");
 
@@ -349,19 +349,6 @@ void IRFunction::dump(std::ostream& out) const {
   }
   out << "\n";
 
-  writer.fg(Color::Red, "  string table:", "\n");
-  int string_index = 0;
-  for (const IRStringTableEntry& entry : this->string_table) {
-    writer.fg(Color::Grey, "  - #", std::setw(2), std::left, string_index, std::setw(1));
-    writer.fg(Color::Red, "\"", entry.value, "\"");
-    writer.fg(Color::Grey, " length=", entry.value.size());
-    writer.fg(Color::Grey, ", hash=", std::hex, entry.hash, std::dec);
-    out << "\n";
-
-    string_index++;
-  }
-  out << "\n";
-
   writer.fg(Color::Magenta, "  inline caches:", "\n");
   int ic_index = 0;
   for (const IRInlineCacheTableEntry& entry : this->inline_cache_table) {
@@ -384,27 +371,25 @@ void IRFunction::dump(std::ostream& out) const {
 
 void IRModule::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
-  writer.fg(Color::Blue, "module ");
-  writer.fg(Color::Yellow, "'", this->filename, "'");
-  writer.fg(Color::Blue, '\n');
-
-  writer.fg(Color::Grey, "; symbol table", '\n');
-  for (const auto& entry : this->symbol_table) {
-    writer.fg(Color::Grey, "[");
-    writer.fg(Color::Cyan, "0x", std::hex, std::setw(8), std::setfill('0'), entry.first, std::setw(0),
-              std::setfill(' '), std::dec);
-    out << " ";
-    writer.fg(Color::Red, "'", entry.second, "'");
-    writer.fg(Color::Grey, "]\n");
-  }
+  writer.fg(Color::Grey, "; module dump for file ");
+  writer.fg(Color::Yellow, "'", this->filename, "'", "\n");
   out << '\n';
 
   writer.fg(Color::Grey, "; functions", '\n');
   for (const ref<IRFunction>& func : this->functions) {
     func->dump(out);
   }
+  out << '\n';
 
-  writer.fg(Color::Blue, '\n');
+  writer.fg(Color::Red, "; string table", "\n");
+  for (const IRStringTableEntry& entry : this->string_table) {
+    writer.fg(Color::Yellow, "  .L", entry.label);
+    writer.fg(Color::Red, " \"", entry.value, "\"");
+    writer.fg(Color::Grey, " length=", entry.value.size());
+    writer.fg(Color::Grey, ", hash=", std::hex, entry.hash, std::dec);
+    out << "\n";
+  }
+  out << "\n";
 }
 
 }  // namespace charly::core::compiler::ir

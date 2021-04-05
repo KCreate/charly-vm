@@ -3,6 +3,7 @@ file(GLOB charlycore_SRC
   "charly/core/compiler/ast.cpp"
   "charly/core/compiler/codegenerator.cpp"
   "charly/core/compiler/diagnostic.cpp"
+  "charly/core/compiler/ir/assembler.cpp"
   "charly/core/compiler/ir/builder.cpp"
   "charly/core/compiler/ir/ir.cpp"
   "charly/core/compiler/lexer.cpp"
@@ -19,6 +20,8 @@ file(GLOB charlycore_SRC
   "charly/core/compiler/passes/reserved_identifiers_check.cpp"
   "charly/taggedvalue.cpp"
   "charly/utils/argumentparser.cpp"
+  "charly/utils/buffer.cpp"
+  "charly/utils/memoryblock.cpp"
 )
 
 add_library(libcharly ${charlycore_SRC})

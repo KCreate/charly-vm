@@ -300,7 +300,7 @@ ref<Expression> ConstantFoldingPass::transform(const ref<BuiltinOperation>& node
 
         case Node::Type::Char: {
           utils::Buffer tmpbuf(4);
-          tmpbuf.append_utf8(cast<Char>(expression)->value);
+          tmpbuf.write_utf8(cast<Char>(expression)->value);
           replacement = make<String>(tmpbuf.buffer_string());
           break;
         }
@@ -344,7 +344,7 @@ ref<Expression> ConstantFoldingPass::transform(const ref<BuiltinOperation>& node
 
         case Node::Type::Char: {
           utils::Buffer tmpbuf(4);
-          tmpbuf.append_utf8(cast<Char>(expression)->value);
+          tmpbuf.write_utf8(cast<Char>(expression)->value);
           replacement = make<Symbol>(tmpbuf.buffer_string());
           break;
         }

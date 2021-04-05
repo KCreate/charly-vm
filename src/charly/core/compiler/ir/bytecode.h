@@ -353,16 +353,16 @@ static std::string kInlineCacheTypeNames[] = {
    * - property                                                                                         \
    * */                                                                                                 \
   V(loadattr, ICPropertyOffset, 1, 1, OpSymbol)                                                         \
-  /* loadattrsym - load property via symbol                                                              \
+  /* loadattrsym - load property via symbol                                                             \
    *                                                                                                    \
    * stack arguments:                                                                                   \
    * - value                                                                                            \
-   * - symbol                                                                                            \
+   * - symbol                                                                                           \
    *                                                                                                    \
    * stack results:                                                                                     \
    * - property                                                                                         \
    * */                                                                                                 \
-  V(loadattrsym, ICPropertyOffset, 2, 1)                                                              \
+  V(loadattrsym, ICPropertyOffset, 2, 1)                                                                \
   /* loadsuperconstructor - load the super constructor of a given                                       \
    *                        value                                                                       \
    *                                                                                                    \
@@ -446,13 +446,13 @@ static std::string kInlineCacheTypeNames[] = {
    *                                                                                                    \
    * stack arguments:                                                                                   \
    * - target                                                                                           \
-   * - symbol                                                                                            \
+   * - symbol                                                                                           \
    * - value                                                                                            \
    *                                                                                                    \
    * stack results:                                                                                     \
    * - value                                                                                            \
    * */                                                                                                 \
-  V(setattrsym, ICPropertyOffset, 3, 1)                                                               \
+  V(setattrsym, ICPropertyOffset, 3, 1)                                                                 \
                                                                                                         \
   /* unpacksequence - unpack into sequence of values                                                    \
    *                                                                                                    \
@@ -561,12 +561,12 @@ static std::string kInlineCacheTypeNames[] = {
   /* makestr - allocate new string                                                                      \
    *                                                                                                    \
    * opcode operands:                                                                                   \
-   * - string table index                                                                               \
+   * - string label                                                                                     \
    *                                                                                                    \
    * stack results:                                                                                     \
    * - string                                                                                           \
    * */                                                                                                 \
-  V(makestr, ICSimpleValue, 0, 1, OpCount16)                                                            \
+  V(makestr, ICSimpleValue, 0, 1, OpOffset)                                                             \
   /* makelist - allocate new list                                                                       \
    *                                                                                                    \
    * opcode operands:                                                                                   \

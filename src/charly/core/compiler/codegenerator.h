@@ -39,18 +39,11 @@ namespace charly::core::compiler {
 
 class CodeGenerator : public ast::DiagnosticPass {
 public:
-  static ref<ir::IRModule> compile(ref<CompilationUnit> unit);
+  CodeGenerator(ref<CompilationUnit> unit) : DiagnosticPass(unit->console), m_unit(unit), m_builder(unit->filepath) {}
+
+  ref<ir::IRModule> compile();
 
 private:
-  void compile();
-
-  ref<ir::IRModule> get_module() const {
-    return m_builder.get_module();
-  };
-
-  CodeGenerator(ref<CompilationUnit> unit) :
-    DiagnosticPass(unit->console), m_unit(unit), m_builder(unit->filepath) {}
-
   struct QueuedFunction {
     ir::Label head;
     ref<ast::Function> ast;
