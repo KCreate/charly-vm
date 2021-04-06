@@ -48,6 +48,11 @@ void MemoryBlock::write_block(const void* data, size_t length) {
   m_cursor += length;
 }
 
+void MemoryBlock::write_buffer(const MemoryBlock& other) {
+  this->write_to(m_cursor, other.data(), other.size());
+  m_cursor += other.size();
+}
+
 void MemoryBlock::write_string(const std::string& str) {
   this->write_to(m_cursor, str.c_str(), str.size());
   m_cursor += str.size();

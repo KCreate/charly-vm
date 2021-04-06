@@ -37,7 +37,7 @@ TEST_CASE("Buffer") {
 
   REQUIRE(buf.data() != nullptr);
   REQUIRE(buf.capacity() == 128);
-  REQUIRE(buf.writeoffset() == 0);
+  REQUIRE(buf.size() == 0);
   REQUIRE(buf.readoffset() == 0);
   REQUIRE_THAT(buf.window_string(), Equals(""));
 
@@ -52,7 +52,7 @@ TEST_CASE("Buffer") {
   }
 
   SECTION("Append data to buffer") {
-    buf.append_string("hello world\n");
+    buf.write_string("hello world\n");
 
     CHECK(buf.read_utf8() == 0x68);
     CHECK(buf.read_utf8() == 0x65);
@@ -70,20 +70,20 @@ TEST_CASE("Buffer") {
     CHECK(buf.read_utf8() == 0x0a);
 
     const char* data = "teststring";
-    buf.append_block(data, 10);
-    buf.append_string(data);
-    buf.append_string("hallo welt");
-    buf.append_buffer(buf);
+    buf.write_block(data, 10);
+    buf.write_string(data);
+    buf.write_string("hallo welt");
+    buf.write_buffer(buf);
 
     CHECK(buf.capacity() == 128);
-    CHECK(buf.writeoffset() == 84);
+    CHECK(buf.size() == 84);
     CHECK(buf.readoffset() == 12);
   }
 
   SECTION("reads / peeks utf8 codepoints") {
-    buf.append_utf8(L'ä');
-    buf.append_utf8(L'Ʒ');
-    buf.append_utf8(L'π');
+    buf.write_utf8(L'ä');
+    buf.write_utf8(L'Ʒ');
+    buf.write_utf8(L'π');
 
     CHECK(buf.peek_utf8() == 0xE4);
     CHECK(buf.peek_utf8() == 0xE4);
@@ -93,12 +93,12 @@ TEST_CASE("Buffer") {
     CHECK(buf.read_utf8() == 0x01B7);
     CHECK(buf.read_utf8() == 0x03C0);
 
-    CHECK(buf.writeoffset() == 6);
+    CHECK(buf.size() == 6);
     CHECK(buf.readoffset() == 6);
   }
 
   SECTION("reads ascii chars") {
-    buf.append_string("abc123");
+    buf.write_string("abc123");
 
     CHECK(buf.read_utf8() == 0x61);
     CHECK(buf.read_utf8() == 0x62);
@@ -110,17 +110,13 @@ TEST_CASE("Buffer") {
     CHECK(buf.read_utf8() == 0x32);
     CHECK(buf.read_utf8() == 0x33);
 
-    CHECK(buf.writeoffset() == 6);
+    CHECK(buf.size() == 6);
     CHECK(buf.readoffset() == 6);
-  }
-
-  SECTION("throw exception on buffer resize failure") {
-    CHECK_THROWS(buf.append_block(nullptr, 0xFFFFFFFFFF));
   }
 
   SECTION("copies window contents into string") {
     CHECK_THAT(buf.window_string(), Equals(""));
-    buf.append_string("hello world!!");
+    buf.write_string("hello world!!");
 
     for (int i = 0; i < 13; i++) {
       buf.read_utf8();
@@ -131,7 +127,7 @@ TEST_CASE("Buffer") {
   }
 
   SECTION("resets window") {
-    buf.append_string("test");
+    buf.write_string("test");
 
     for (int i = 0; i < 4; i++) {
       buf.read_utf8();
@@ -151,7 +147,7 @@ TEST_CASE("Buffer") {
   }
 
   SECTION("creates a string view of the whole buffer and window sections") {
-    buf.append_string("hello world my name is leonard!");
+    buf.write_string("hello world my name is leonard!");
 
     for (int i = 0; i < 12; i++) {
       buf.read_utf8();

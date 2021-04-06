@@ -109,6 +109,10 @@ static std::string kInlineCacheTypeNames[] = {
   /* allocheapframe - allocates the frames local variables on the heap                                  \
    * */                                                                                                 \
   V(allocheapframe, ICNone, 0, 0)                                                                       \
+  /* stackcheck - check if there is enough space left on the fibers stack to                            \
+   *              execute this function. throws a stackoverflow exception if not                        \
+   * */                                                                                                 \
+  V(stackcheck, ICNone, 0, 0)                                                                           \
                                                                                                         \
   /* import - import module or file                                                                     \
    *                                                                                                    \
@@ -566,7 +570,7 @@ static std::string kInlineCacheTypeNames[] = {
    * stack results:                                                                                     \
    * - string                                                                                           \
    * */                                                                                                 \
-  V(makestr, ICSimpleValue, 0, 1, OpOffset)                                                             \
+  V(makestr, ICNone, 0, 1, OpOffset)                                                                    \
   /* makelist - allocate new list                                                                       \
    *                                                                                                    \
    * opcode operands:                                                                                   \

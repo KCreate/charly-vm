@@ -163,7 +163,7 @@ ref<MemoryBlock> Assembler::assemble() {
 
 void Assembler::align_to_pointer() {
   while (m_buffer->size() % 8) {
-    m_buffer->write_u8(0xff);
+    m_buffer->write_u8(0);
   }
 }
 

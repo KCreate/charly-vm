@@ -59,6 +59,9 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
   const ref<Function>& ast = queued_func.ast;
   m_builder.begin_function(queued_func.head, ast);
 
+  // check for potential stack overflow
+  m_builder.emit_stackcheck();
+
   if (ast->ir_info.leaked) {
     m_builder.emit_allocheapframe();
   }
@@ -1145,29 +1148,49 @@ bool CodeGenerator::inspect_enter(const ref<ast::Switch>& node) {
   // this is kind of a temporary hack that i plan on removing later once
   // time and interest arises. for now switch statements are just generated as
   // sequential if statements...
+  Label end_label = m_builder.reserve_label();
+  Label default_label = m_builder.reserve_label();
+  push_break_label(end_label);
 
   apply(node->test);
-  m_builder.emit_dup();
 
-  Label end_label = m_builder.reserve_label();
-  push_break_label(end_label);
+  // emit conditions
+  Label case_labels[node->cases.size()];
+  uint32_t index = 0;
   for (const ref<SwitchCase>& case_node : node->cases) {
-    Label next_label = m_builder.reserve_label();
+    Label block_label = case_labels[index] = m_builder.reserve_label();
 
+    m_builder.emit_dup();
     apply(case_node->test);
     m_builder.emit_eq()->at(case_node->test);
-    m_builder.emit_jmpf(next_label);
+    m_builder.emit_jmpt(block_label)->at(case_node->test);
+
+    index++;
+  }
+  m_builder.emit_pop();
+  m_builder.emit_jmp(default_label);
+
+  // condition blocks
+  index = 0;
+  for (const ref<SwitchCase>& case_node : node->cases) {
+    Label block_label = case_labels[index];
+    m_builder.place_label(block_label);
+
+    m_builder.update_stack(1); // pop remaining condition value off stack
+    m_builder.emit_pop();
     apply(case_node->block);
     m_builder.emit_jmp(end_label);
-    m_builder.place_label(next_label);
+
+    index++;
   }
 
+  // default block
+  m_builder.place_label(default_label);
   if (node->default_block) {
     apply(node->default_block);
   }
 
   m_builder.place_label(end_label);
-  m_builder.emit_pop();
   pop_break_label();
 
   return false;

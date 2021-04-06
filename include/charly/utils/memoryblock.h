@@ -91,6 +91,9 @@ public:
   // write data into the buffer
   void write_block(const void* data, size_t length);
 
+  // write other buffer into the buffer
+  void write_buffer(const MemoryBlock& other);
+
   // write string into the buffer
   void write_string(const std::string& str);
 

@@ -381,7 +381,7 @@ void IRModule::dump(std::ostream& out) const {
   }
   out << '\n';
 
-  writer.fg(Color::Red, "; string table", "\n");
+  writer.fg(Color::Grey, "; string table", "\n");
   for (const IRStringTableEntry& entry : this->string_table) {
     writer.fg(Color::Yellow, "  .L", entry.label);
     writer.fg(Color::Red, " \"", entry.value, "\"");
