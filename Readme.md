@@ -10,6 +10,10 @@ This launches a REPL which (at the moment) doesn't do very much.
 
 # Installation
 
+Install the dependencies first:
+
+`sudo apt-get install libboost-all-dev`
+
 Installation via this method may require you to enter your root password
 in order for make to copy the charly executable to the relevant system directory.
 

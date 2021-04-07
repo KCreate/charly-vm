@@ -18,16 +18,24 @@ file(GLOB charlycore_SRC
   "charly/core/compiler/passes/local_allocator_pass.cpp"
   "charly/core/compiler/passes/repl_prepare_pass.cpp"
   "charly/core/compiler/passes/reserved_identifiers_check.cpp"
+  "charly/core/runtime/scheduler.cpp"
   "charly/taggedvalue.cpp"
   "charly/utils/argumentparser.cpp"
   "charly/utils/buffer.cpp"
   "charly/utils/memoryblock.cpp"
 )
 
+find_package(Boost REQUIRED COMPONENTS context)
+
 add_library(libcharly ${charlycore_SRC})
+if (Boost_FOUND)
+  target_include_directories(libcharly PRIVATE ${Boost_INCLUDE_DIRS})
+  target_link_libraries(libcharly Boost::context)
+endif(Boost_FOUND)
 target_link_libraries(libcharly stdc++)
 target_link_libraries(libcharly m)
 target_link_libraries(libcharly readline)
+target_link_libraries(libcharly pthread)
 target_include_directories(libcharly PRIVATE "./")
 target_compile_features(libcharly PRIVATE cxx_std_17)
 target_compile_options(libcharly PRIVATE
@@ -38,6 +46,7 @@ target_compile_options(libcharly PRIVATE
   -Wno-vla-extension
   -Wno-c++20-designator
   -Wno-gnu-zero-variadic-macro-arguments
+  -Wno-register
   -ftemplate-backtrace-limit=8
   -march=native
   -flto

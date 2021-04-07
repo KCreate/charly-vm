@@ -28,9 +28,12 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <thread>
 
 #include <readline/history.h>
 #include <readline/readline.h>
+
+#include "charly/charly.h"
 
 #include "charly/utils/buffer.h"
 #include "charly/utils/argumentparser.h"
@@ -40,10 +43,15 @@
 #include "charly/core/compiler/diagnostic.h"
 #include "charly/core/compiler/ir/builder.h"
 
+#include "charly/core/runtime/scheduler.h"
+
 using namespace charly;
+using namespace charly::core::runtime;
 using namespace charly::core::compiler;
 using namespace charly::core::compiler::ast;
 using namespace charly::core::compiler::ir;
+
+using namespace std::chrono_literals;
 
 extern char** environ;
 
@@ -71,32 +79,20 @@ int run_repl(DiagnosticConsole&) {
 
     utils::Buffer source_buffer(line);
     auto unit = Compiler::compile(CompilationUnit::Type::ReplInput, "stdin", source_buffer);
-    auto ast = unit->ast;
 
     unit->console.dump_all(std::cerr);
+    if (!unit->console.has_errors()) {
+      if (utils::ArgumentParser::is_flag_set("dump_ast")) {
+        unit->ast->dump(std::cout, print_location);
+      }
 
-    if (unit->console.has_errors()) {
-      std::cerr << std::endl;
-      continue;
-    }
+      if (utils::ArgumentParser::is_flag_set("dump_ir")) {
+        unit->ir_module->dump(std::cout);
+      }
 
-    assert(ast.get());
-
-    // check if ast has nodes
-    if (ref<Block> body = cast<Block>(ast)) {
-      if (body->statements.size() == 0)
-        continue;
-    }
-
-    // dump compiler steps
-    if (utils::ArgumentParser::is_flag_set("dump_ast")) {
-      ast->dump(std::cout, print_location);
-    }
-    if (utils::ArgumentParser::is_flag_set("dump_ir")) {
-      unit->ir_module->dump(std::cout);
-    }
-    if (utils::ArgumentParser::is_flag_set("dump_asm")) {
-      unit->bytecode_buffer->dump(std::cout);
+      if (utils::ArgumentParser::is_flag_set("dump_asm")) {
+        unit->bytecode_buffer->dump(std::cout);
+      }
     }
   }
 
@@ -121,13 +117,11 @@ void run_file(DiagnosticConsole& console, const std::string& filename) {
   file.close();
 
   auto unit = Compiler::compile(CompilationUnit::Type::Module, filename, file_buffer);
-  auto ast = unit->ast;
 
   unit->console.dump_all(std::cerr);
-
   if (!unit->console.has_errors()) {
     if (utils::ArgumentParser::is_flag_set("dump_ast")) {
-      ast->dump(std::cout, true);
+      unit->ast->dump(std::cout, true);
     }
 
     if (utils::ArgumentParser::is_flag_set("dump_ir")) {
@@ -138,6 +132,19 @@ void run_file(DiagnosticConsole& console, const std::string& filename) {
       unit->bytecode_buffer->dump(std::cout);
     }
   }
+
+  auto handler = [](void*) -> void {
+    for (int i = 0; i < 5000; i++) {
+      safeprint("task % -> % running on fiber %", g_fiber->m_current_task->id, i, g_fiber->id);
+      Scheduler::yield();
+    }
+  };
+
+  for (int i = 0; i < 4; i++) {
+    Scheduler::create_task(handler);
+  }
+
+  Scheduler::run();
 }
 
 void cli(DiagnosticConsole& console) {
@@ -176,6 +183,7 @@ void cli(DiagnosticConsole& console) {
 int main(int argc, char** argv) {
   utils::ArgumentParser::init_argv(argc, argv);
   utils::ArgumentParser::init_env(environ);
+  Scheduler::init();
 
   utils::Buffer buf("");
   DiagnosticConsole console("charly", buf);

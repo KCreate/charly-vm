@@ -27,13 +27,18 @@
  * SOFTWARE.
  */
 
+#include <iostream>
 #include <cstdint>
 #include <memory>
+#include <mutex>
 
 #pragma once
 
 namespace charly {
 
+/*
+ * shorthand method for often used shared_ptr stuff
+ * */
 template <typename T>
 using ref = std::shared_ptr<T>;
 
@@ -45,6 +50,36 @@ inline ref<T> make(Args&&... params) {
 template <typename T, typename O>
 inline ref<T> cast(ref<O> node) {
   return std::dynamic_pointer_cast<T>(node);
+}
+
+/*
+ * thread-safe printing meant for debugging
+ * */
+inline void safeprint_impl(const char* format) {
+  std::cout << format;
+}
+
+template <typename T, typename... Targs>
+inline void safeprint_impl(const char* format, T value, Targs... Fargs) {
+  while (*format != '\0') {
+    if (*format == '%') {
+      std::cout << value;
+      safeprint_impl(format + 1, Fargs...);
+      return;
+    }
+    std::cout << *format;
+
+    format++;
+  }
+}
+
+template <typename... Targs>
+inline void safeprint(const char* format, Targs... Fargs) {
+  static std::recursive_mutex mutex;
+  std::lock_guard<std::recursive_mutex> locker(mutex);
+  safeprint_impl(format, Fargs...);
+  std::cout << "\n";
+  std::cout << std::flush;
 }
 
 }  // namespace charly
