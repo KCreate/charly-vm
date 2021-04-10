@@ -1,6 +1,3 @@
-
-
-
 /*
  * This file is part of the Charly Virtual Machine (https://github.com/KCreate/charly-vm)
  *
@@ -27,61 +24,39 @@
  * SOFTWARE.
  */
 
-#include <iostream>
-#include <cstdint>
-#include <memory>
-#include <mutex>
+#include <atomic>
 
 #pragma once
 
 namespace charly {
 
-/*
- * shorthand method for often used shared_ptr stuff
- * */
-template <typename T>
-using ref = std::shared_ptr<T>;
+template <class T>
+struct atomic : public std::atomic<T> {
+  using std::atomic<T>::atomic;
 
-template <typename T, typename... Args>
-inline ref<T> make(Args&&... params) {
-  return std::make_shared<T>(std::forward<Args>(params)...);
-}
-
-template <typename T, typename O>
-inline ref<T> cast(ref<O> node) {
-  return std::dynamic_pointer_cast<T>(node);
-}
-
-/*
- * thread-safe printing meant for debugging
- * */
-inline void safeprint_impl(const char* format) {
-  std::cout << format;
-}
-
-template <typename T, typename... Targs>
-inline void safeprint_impl(const char* format, T value, Targs... Fargs) {
-  while (*format != '\0') {
-    if (*format == '%') {
-      std::cout << value;
-      safeprint_impl(format + 1, Fargs...);
-      return;
-    }
-    std::cout << *format;
-
-    format++;
+  // change default load memory ordering to acquire
+  T load(std::memory_order order = std::memory_order_acquire) const noexcept {
+    return std::atomic<T>::load(order);
   }
-}
-
-inline static std::recursive_mutex safeprint_mutex;
-template <typename... Targs>
-inline void safeprint(const char* format, Targs... Fargs) {
-  {
-    std::lock_guard<std::recursive_mutex> locker(safeprint_mutex);
-    safeprint_impl(format, Fargs...);
-    std::cout << "\n";
-    std::cout << std::flush;
+  T load(std::memory_order order = std::memory_order_acquire) const volatile noexcept {
+    return std::atomic<T>::load(order);
   }
-}
 
-}  // namespace charly
+  // change default store memory ordering to release
+  void store(T desired, std::memory_order order = std::memory_order_release) noexcept {
+    return std::atomic<T>::store(desired, order);
+  }
+  void store(T desired, std::memory_order order = std::memory_order_release) volatile noexcept {
+    return std::atomic<T>::store(desired, order);
+  }
+
+  // sane CAS
+  bool cas(T expected, T desired) {
+    return std::atomic<T>::compare_exchange_strong(expected, desired, std::memory_order_release);
+  }
+  bool cas_weak(T expected, T desired) {
+    return std::atomic<T>::compare_exchange_weak(expected, desired, std::memory_order_release);
+  }
+};
+
+}

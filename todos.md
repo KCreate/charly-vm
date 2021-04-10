@@ -1,11 +1,5 @@
 # Todos
 
-- Include fcontext_t into project
-
-- REPL gets implemented as a charly program that calls the eval function
-  - eval function can't access the surrounding scope, treats code as if executed
-    in a new global module
-
 - Concurrency
   - Boost fcontext for cheap context switches
   - Signal handling?

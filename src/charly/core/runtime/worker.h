@@ -26,67 +26,55 @@
 
 #include <condition_variable>
 #include <thread>
-#include <vector>
-
-#include <boost/context/detail/fcontext.hpp>
 
 #include "charly/charly.h"
 #include "charly/atomic.h"
-
-#include "charly/core/runtime/worker.h"
 
 #pragma once
 
 namespace charly::core::runtime {
 
-// the amount of concurrent threads the underlying machine can run
-// this is more or less the amount of logical cpu cores available
-static const uint64_t kHardwareConcurrency = std::thread::hardware_concurrency();
-
-class Scheduler {
+class Worker;
+inline thread_local Worker* g_worker = nullptr;
+class Worker {
 public:
-  Scheduler() : m_state(State::Created) {}
+  Worker() : m_thread(&Worker::main, this), m_state(State::Created) {
+    static uint64_t id_counter = 1;
+    this->id = id_counter++;
+  }
 
-  // initialize the global scheduler object
-  static void initialize();
+  uint64_t id;
 
-  // pointer to the global scheduler object
-  inline static Scheduler* instance = nullptr;
+  // worker main method
+  void main();
 
-  // start the scheduler
+  // start the worker thread
   void start();
 
-  // scheduler checkpoint
-  void checkpoint();
-
-  // pause all worker threads at a checkpoint
-  void pause();
-
-  // resume worker threads
-  void resume();
-
-private:
-
-  // initialize the fiber worker threads
-  void init_workers();
-
-private:
+  // represents the state the worker is currently in
   enum class State : uint8_t {
-    Created,
-    Running,  // scheduler is running normally
-    Paused    // scheduler is paused
+    Created,      // worker has been created, but hasn't started yet
+    Running,      // worker is running
+    Native,       // worker is running native code
+    Paused,       // worker is paused
+    Exited        // worker has exited
   };
 
-  // fiber workers
-  std::vector<Worker*> m_fiber_workers;
-  std::mutex m_fiber_workers_m;
+  // change the state of this worker
+  // calls into to scheduler to request state change
+  void change_state(Worker::State state);
 
-  // scheduler state
+  void wait_for_state_change(Worker::State old_state);
+
+  Worker::State state() const {
+    return m_state.load();
+  }
+
+private:
+  std::thread m_thread;
   charly::atomic<State> m_state;
-
-  // cv and accompanying mutex to track changes to scheduler state
-  std::mutex m_state_m;
-  std::condition_variable m_state_cv;
+  std::mutex m_mutex;
+  std::condition_variable m_cv;
 };
 
 }  // namespace charly::core::runtime

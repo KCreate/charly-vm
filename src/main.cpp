@@ -133,18 +133,14 @@ void run_file(DiagnosticConsole& console, const std::string& filename) {
     }
   }
 
-  auto handler = [](void*) -> void {
-    for (int i = 0; i < 5000; i++) {
-      safeprint("task % -> % running on fiber %", g_fiber->m_current_task->id, i, g_fiber->id);
-      Scheduler::yield();
-    }
-  };
+  Scheduler::instance->start();
 
-  for (int i = 0; i < 4; i++) {
-    Scheduler::create_task(handler);
+  for (;;) {
+    std::this_thread::sleep_for(2s);
+    Scheduler::instance->pause();
+    std::this_thread::sleep_for(2s);
+    Scheduler::instance->resume();
   }
-
-  Scheduler::run();
 }
 
 void cli(DiagnosticConsole& console) {
@@ -183,7 +179,8 @@ void cli(DiagnosticConsole& console) {
 int main(int argc, char** argv) {
   utils::ArgumentParser::init_argv(argc, argv);
   utils::ArgumentParser::init_env(environ);
-  Scheduler::init();
+
+  Scheduler::initialize();
 
   utils::Buffer buf("");
   DiagnosticConsole console("charly", buf);
