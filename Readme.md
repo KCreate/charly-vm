@@ -1,29 +1,32 @@
-![Unit Test](https://github.com/KCreate/charly-vm/workflows/Unit%20Test/badge.svg?branch=rewrite)
-
 ![Charly Programming Language](docs/charly-vm.png)
+![Unit Test](https://github.com/KCreate/charly-vm/workflows/Unit%20Test/badge.svg?branch=rewrite)
 
 # Play
 
-This launches a REPL which (at the moment) doesn't do very much.
+<strike>This launches a REPL which (at the moment) doesn't do very much.</strike>
 
-`./debug.sh`
+This launches a REPL which (at the moment) does some cool stuff, but still not a lot.
+
+`./debug.sh [--help] [--dump_ast] [--dump_ir] [--dump_asm] [--opt_disable]`
+
+# Dependencies
+
+- `sudo apt-get install libboost-all-dev`
 
 # Installation
 
-Install the dependencies first:
+Follow the steps below to install the `charly` executable on your system.
 
-`sudo apt-get install libboost-all-dev`
+1. `git clone https://github.com/KCreate/charly-vm charly-vm`
+2. `cd charly-vm`
+3. `git checkout rewrite`
+4. `git submodule init`
+5. `git submodule update`
+6. `./install.sh`
 
-Installation via this method may require you to enter your root password
-in order for make to copy the charly executable to the relevant system directory.
-
-`./install.sh`
+> The last step might request sudo permissions in order to access the relevant system directories.
 
 # Running the unit tests
-
-- Install the Catch2 submodule if you want to run the unit tests
-  - `git submodule init`
-  - `git submodule update`
 
 ```
 $ ./tests.sh

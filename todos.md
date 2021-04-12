@@ -1,5 +1,27 @@
 # Todos
 
+- Concurrent Garbage Collector
+  - Phases
+    - Idle       | Application is running normally, GC is not running
+    - Marking    | Heap tracing, write barriers append to queue drained at next pause
+    - Relocation | Heap objects get relocated, write barriers access forward pointer
+    - UpdateRef  | Heap references to old objects get updated, write barriers update references
+  - Pauses
+    - Idle -> Marking         | Mark roots and start background marking
+    - Marking -> Relocation   | Drain SATB buffers and initialize evacuation phase
+    - Relocation -> UpdateRef | Initialize update ref phase
+    - UpdateRef -> Idle       | Finalize garbage collection, prepare for idle phase
+  - If GC pressure is high, the GC can decide to immediately
+    start a new collection phase instead of going to idle first
+  - How are new heap regions allocated?
+  - How does the runtime initiate a garbage collection cycle?
+  - What if the application outruns the garbage collector and allocates all available memory?
+  - What happens if the GC heap size limit is reached?
+  - How are regions evacuated
+    - During the marking phase, each region tracks how many of its child objects are garbage
+    - This information is then used to determine which heap regions are evacuated and to which target
+      regions and addresses
+
 - Concurrency
   - Boost fcontext for cheap context switches
   - Signal handling?
