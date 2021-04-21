@@ -44,6 +44,7 @@
 #include "charly/core/compiler/ir/builder.h"
 
 #include "charly/core/runtime/scheduler.h"
+#include "charly/core/runtime/gc.h"
 
 using namespace charly;
 using namespace charly::core::runtime;
@@ -54,6 +55,10 @@ using namespace charly::core::compiler::ir;
 using namespace std::chrono_literals;
 
 extern char** environ;
+
+namespace charly {
+  std::mutex safeprint_mutex;
+}
 
 int run_repl(DiagnosticConsole&) {
   bool print_location = false;
@@ -133,14 +138,11 @@ void run_file(DiagnosticConsole& console, const std::string& filename) {
     }
   }
 
+  safeprint("starting scheduler");
   Scheduler::instance->start();
 
-  for (;;) {
-    std::this_thread::sleep_for(2s);
-    Scheduler::instance->pause();
-    std::this_thread::sleep_for(2s);
-    Scheduler::instance->resume();
-  }
+  Scheduler::instance->join();
+  safeprint("scheduler joined");
 }
 
 void cli(DiagnosticConsole& console) {
@@ -180,6 +182,10 @@ int main(int argc, char** argv) {
   utils::ArgumentParser::init_argv(argc, argv);
   utils::ArgumentParser::init_env(environ);
 
+  safeprint("sizeof(HeapCell) = %", sizeof(HeapCell));
+  safeprint("sizeof(HeapRegion) = %", sizeof(HeapRegion));
+
+  GarbageCollector::initialize();
   Scheduler::initialize();
 
   utils::Buffer buf("");

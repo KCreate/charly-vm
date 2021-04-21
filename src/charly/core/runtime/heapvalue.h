@@ -24,31 +24,33 @@
  * SOFTWARE.
  */
 
-#include <atomic>
-#include <cassert>
+#include <cstdlib>
+
+#include "charly/charly.h"
+#include "charly/atomic.h"
 
 #pragma once
 
-namespace charly {
+namespace charly::core::runtime {
 
-template <class T>
-struct atomic : public std::atomic<T> {
-  using std::atomic<T>::atomic;
-
-  // sane CAS
-  bool cas(T expected, T desired) {
-    return std::atomic<T>::compare_exchange_strong(expected, desired, std::memory_order_seq_cst);
-  }
-  bool cas_weak(T expected, T desired) {
-    return std::atomic<T>::compare_exchange_weak(expected, desired, std::memory_order_seq_cst);
-  }
-
-  // CAS that should not fail
-  void assert_cas(T expected, T desired) {
-    bool result = cas(expected, desired);
-    assert(result);
-    (void)result;
-  }
+enum Type : uint8_t {
+  kTypeDead = 0,
+  kTypeTest
 };
 
-}
+struct HeapHeader {
+  void init(Type type);
+
+  charly::atomic<Type> m_type;
+};
+
+struct HeapTestType : public HeapHeader {
+  void init(uint64_t payload = 0) {
+    HeapHeader::init(kTypeTest);
+    m_payload.store(payload);
+  }
+
+  charly::atomic<uint64_t> m_payload;
+};
+
+}  // namespace charly::core::runtime

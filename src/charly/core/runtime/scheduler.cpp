@@ -29,6 +29,7 @@
 
 #include "charly/utils/argumentparser.h"
 #include "charly/core/runtime/scheduler.h"
+#include "charly/core/runtime/gc.h"
 
 namespace charly::core::runtime {
 
@@ -39,12 +40,25 @@ void Scheduler::initialize() {
 }
 
 void Scheduler::start() {
-  this->m_state.store(Scheduler::State::Running);
+  safeprint("starting GC worker");
+  GarbageCollector::instance->start_background_worker();
 
-  // notify worker threads
+  // worker threads pause themselves once they start until the scheduler
+  // finishes setup and resumes them
+  safeprint("starting fiber workers");
   for (Worker* worker : m_fiber_workers) {
-    worker->start();
+    worker->wake();
   }
+}
+
+void Scheduler::join() {
+  for (Worker* worker : m_fiber_workers) {
+    worker->join();
+  }
+  safeprint("scheduler workers joined");
+
+  GarbageCollector::instance->stop_background_worker();
+  safeprint("GC worker joined");
 }
 
 void Scheduler::init_workers() {
@@ -55,61 +69,33 @@ void Scheduler::init_workers() {
 
 void Scheduler::checkpoint() {
   Worker* worker = g_worker;
-  Worker::State old_state = worker->state();
+
   while (m_state.load() == Scheduler::State::Paused) {
     safeprint("parking worker %", worker->id);
-
-    // mark this worker as paused and notify the controller thread
-    worker->change_state(Worker::State::Paused);
-
-    // wait for the pause to be over
-    {
-      std::unique_lock<std::mutex> locker(m_state_m);
-      m_state_cv.wait(locker, [&] {
-        return m_state.load() == Scheduler::State::Running;
-      });
-    }
-
-    // mark as running again
-    worker->change_state(old_state);
+    assert(worker->state() == Worker::State::Running);
+    worker->pause();
     safeprint("unparking worker %", worker->id);
   }
 }
 
-void Scheduler::pause() {
-
-  // pause cannot be called from within a fiber worker
+bool Scheduler::pause() {
   assert(g_worker == nullptr);
 
   // attempt to pause the scheduler
-  if (!m_state.cas(Scheduler::State::Running, Scheduler::State::Paused)) {
-    assert(false && "race inside Scheduler::resume");
-    return;
-  }
+  safeprint("scheduler request pause");
+  m_state.assert_cas(Scheduler::State::Running, Scheduler::State::Paused);
 
-  // wait for all workers to pause
+  // wait for all workers to pause or enter native mode
   auto begin_time = std::chrono::steady_clock::now();
   for (Worker* worker : m_fiber_workers) {
-
-    // skip threads that are already paused
-    if (worker->state() == Worker::State::Paused) {
-      continue;
-    }
-
-    // wait for the worker to enter either into the paused or native state
-    for (;;) {
-      Worker::State state = worker->state();
-
-      if (state == Worker::State::Native || state == Worker::State::Paused) {
-        break;
-      }
-
-      worker->wait_for_state_change(state);
-    }
+    worker->wait_for_safepoint();
   }
   auto end_time = std::chrono::steady_clock::now();
   safeprint("finished waiting in % microseconds",
             std::chrono::duration_cast<std::chrono::microseconds>(end_time - begin_time).count());
+
+  safeprint("scheduler begin pause");
+  return true;
 }
 
 void Scheduler::resume() {
@@ -118,13 +104,20 @@ void Scheduler::resume() {
   assert(g_worker == nullptr);
 
   // change scheduler state
-  if (!m_state.cas(Scheduler::State::Paused, Scheduler::State::Running)) {
-    assert(false && "race inside Scheduler::resume");
-    return;
-  }
+  safeprint("scheduler exit pause");
+  m_state.assert_cas(Scheduler::State::Paused, Scheduler::State::Running);
+  for (Worker* worker : m_fiber_workers) {
 
-  // notify all worker threads to continue
-  m_state_cv.notify_all();
+    // do not resume thread with no active region unless the
+    // GC is currently able to allocate more cells
+    // if (worker->active_region() == nullptr && !GarbageCollector::instance->can_allocate()) {
+    //   continue;
+    // }
+
+    if (worker->state() == Worker::State::Paused) {
+      worker->wake();
+    }
+  }
 }
 
 }  // namespace charly::core::runtime

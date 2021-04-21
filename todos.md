@@ -1,5 +1,7 @@
 # Todos
 
+- Remove stackcheck instruction
+
 - Concurrent Garbage Collector
   - Phases
     - Idle       | Application is running normally, GC is not running
@@ -11,12 +13,6 @@
     - Marking -> Relocation   | Drain SATB buffers and initialize evacuation phase
     - Relocation -> UpdateRef | Initialize update ref phase
     - UpdateRef -> Idle       | Finalize garbage collection, prepare for idle phase
-  - If GC pressure is high, the GC can decide to immediately
-    start a new collection phase instead of going to idle first
-  - How are new heap regions allocated?
-  - How does the runtime initiate a garbage collection cycle?
-  - What if the application outruns the garbage collector and allocates all available memory?
-  - What happens if the GC heap size limit is reached?
   - How are regions evacuated
     - During the marking phase, each region tracks how many of its child objects are garbage
     - This information is then used to determine which heap regions are evacuated and to which target
@@ -37,16 +33,6 @@
   - Await keyword is used to read from a channel
   - Class specific await behaviour can be achieved by overriding some handler method
   - Global symbol table with thread local intermediate caches
-
-- Concurrent Garbage Collector
-  - Different properties of garbage collector types
-    - Pause times
-    - Application performance overhead
-    - Heap fragmentation (Cache performance)
-    - Compaction? Can the heap shrink over time
-  - Shenandoah collector from OpenJDK
-    - Mark word containing forward pointer
-    - Read / Write barriers for object accesses
 
 - Value model
   - Each heap cell should be divided into 8 byte cells

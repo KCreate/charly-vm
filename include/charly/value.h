@@ -34,12 +34,17 @@
 namespace charly {
 
 // wrapper class around the raw immediate encoded bytes
+class HeapValue;
 struct VALUE {
   taggedvalue::Value raw;
   VALUE(taggedvalue::Value raw) : raw(raw) {}
 
   static VALUE Pointer(void* value) {
     return VALUE(taggedvalue::encode_pointer(value));
+  }
+
+  static VALUE Pointer(HeapValue& value) {
+    return VALUE(taggedvalue::encode_pointer(&value));
   }
 
   static VALUE Int(int64_t value) {

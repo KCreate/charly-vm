@@ -24,70 +24,65 @@
  * SOFTWARE.
  */
 
-#include <condition_variable>
 #include <thread>
-#include <vector>
-
-#include <boost/context/detail/fcontext.hpp>
+#include <mutex>
 
 #include "charly/charly.h"
 #include "charly/atomic.h"
-
-#include "charly/core/runtime/worker.h"
 
 #pragma once
 
 namespace charly::core::runtime {
 
-// the amount of concurrent threads the underlying machine can run
-// this is more or less the amount of logical cpu cores available
-static const uint64_t kHardwareConcurrency = std::thread::hardware_concurrency();
-// static const uint64_t kHardwareConcurrency = 4;
+// forward declarations
+class GarbageCollector;
 
-class Scheduler {
+class GCConcurrentWorker {
 public:
+  GCConcurrentWorker(GarbageCollector* gc) : m_gc(gc) {}
 
-  // initialize the global scheduler object
-  static void initialize();
+  ~GCConcurrentWorker() {
+    if (m_thread.joinable()) {
+      m_thread.join();
+    }
+  }
 
-  // pointer to the global scheduler object
-  inline static Scheduler* instance = nullptr;
-
-  // start the scheduler
-  void start();
-
-  // wait for the scheduler to exit
-  void join();
-
-  // scheduler checkpoint
-  void checkpoint();
-
-  // pause all worker threads at a checkpoint
-  //
-  // returns true if this was the first thread to request a pause
-  //
-  // if the calling thread lost the race, the scheduler will block the
-  // call until the pause is finished and return false
-  bool pause();
-
-  // resume worker threads
-  void resume();
-
-private:
-
-  // initialize the fiber worker threads
-  void init_workers();
-
-private:
-  enum class State : uint8_t {
-    Running, // scheduler is running normally
-    Paused   // scheduler is paused
+  enum class Phase : uint8_t {
+    Idle,
+    Mark,
+    Evacuate,
+    UpdateRef
   };
-  charly::atomic<State> m_state = State::Running;
 
-  // fiber workers
-  std::vector<Worker*> m_fiber_workers;
-  std::mutex m_fiber_workers_m;
+  // start / stop the background GC worker thread
+  void start_thread();
+  void stop_thread();
+
+  // runtime calls this function once it reaches some pre-defined
+  // GC utilization limit
+  void request_gc();
+
+private:
+
+  // concurrent worker main method
+  void main();
+
+  // waits for the runtime to request a GC cycle
+  //
+  // returns true if the worker actually had to wait
+  // returns false if the next GC cycle should run back-to-back
+  bool wait_for_gc_request();
+
+private:
+  std::thread m_thread;
+
+  bool m_wants_exit = false;
+
+  GarbageCollector* m_gc;
+  charly::atomic<Phase> m_phase = Phase::Idle;
+
+  std::mutex m_mutex;
+  std::condition_variable m_cv;
 };
 
 }  // namespace charly::core::runtime

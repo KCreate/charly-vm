@@ -31,6 +31,7 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <chrono>
 
 #pragma once
 
@@ -73,15 +74,23 @@ inline void safeprint_impl(const char* format, T value, Targs... Fargs) {
   }
 }
 
-inline static std::recursive_mutex safeprint_mutex;
+extern std::mutex safeprint_mutex;
+
+#ifdef NDEBUG
+template <typename... Targs>
+inline void safeprint(const char*, Targs...) {}
+#else
 template <typename... Targs>
 inline void safeprint(const char* format, Targs... Fargs) {
   {
-    std::lock_guard<std::recursive_mutex> locker(safeprint_mutex);
+    std::unique_lock<std::mutex> locker(safeprint_mutex);
+    auto now = std::chrono::steady_clock::now();
+    auto ticks = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+    std::cout << ticks << ": ";
     safeprint_impl(format, Fargs...);
-    std::cout << "\n";
-    std::cout << std::flush;
+    std::cout << std::endl;
   }
 }
+#endif
 
 }  // namespace charly

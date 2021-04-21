@@ -29,6 +29,7 @@
 
 #include "charly/utils/argumentparser.h"
 #include "charly/core/runtime/scheduler.h"
+#include "charly/core/runtime/gc.h"
 
 namespace charly::core::runtime {
 
@@ -39,45 +40,102 @@ void Worker::main() {
   // initialize thread local g_worker variable
   // and wait for the scheduler to give us the start signal
   g_worker = this;
-  assert(g_worker->state() == Worker::State::Created);
-  wait_for_state_change(Worker::State::Created);
+
+  // allocate initial region
+  g_worker->set_gc_region(GarbageCollector::instance->allocate_heap_region());
+
+  // wait for the go signal from the runtime
+  pause();
   assert(g_worker->state() == Worker::State::Running);
 
   for (uint64_t i = 0;; i++) {
     Scheduler::instance->checkpoint();
+
+    // allocate a cell in the garbage collector
+    HeapCell* cell = GarbageCollector::instance->allocate();
+    if (cell == nullptr) {
+      safeprint("allocation failed inside worker %", g_worker->id);
+      break;
+    }
+
+    g_worker->enter_native();
+    // std::this_thread::sleep_for(10ms);
+    std::this_thread::yield();
+    g_worker->leave_native();
   }
 
-  g_worker->change_state(Worker::State::Exited);
+  g_worker->exit();
 }
 
-void Worker::start() {
-  std::unique_lock<std::mutex> locker(m_mutex);
-  if (!m_state.cas(Worker::State::Created, Worker::State::Running)) {
-    assert(false && "race in Worker::start");
+void Worker::join() {
+  if (m_thread.joinable()) {
+    m_thread.join();
   }
-  m_cv.notify_one();
 }
 
-void Worker::change_state(Worker::State state) {
+void Worker::pause() {
+  m_state.assert_cas(Worker::State::Running, Worker::State::Paused);
+  m_cv.notify_all();
 
-  // state changes to paused or untracked do not require a call
-  // to the scheduler checkpoint
-  if (state == Worker::State::Running || state == Worker::State::Exited) {
-    Scheduler::instance->checkpoint();
+  while (m_state.load() == Worker::State::Paused) {
+    wait_for_state_change(Worker::State::Paused);
   }
+}
 
-  // update state and notify any threads waiting for a state change
-  // safeprint("worker % changes state to %", this->id, (int)state);
-  m_state.store(state);
+void Worker::enter_native() {
+  safeprint("worker % -> native mode", this->id);
+  m_state.assert_cas(Worker::State::Running, Worker::State::Native);
   m_cv.notify_all();
 }
 
+void Worker::leave_native() {
+  safeprint("worker % -> running mode", this->id);
+  m_state.assert_cas(Worker::State::Native, Worker::State::Running);
+  m_cv.notify_all();
+  Scheduler::instance->checkpoint();
+}
+
+void Worker::exit() {
+  safeprint("worker % -> exit mode", this->id);
+  m_state.assert_cas(Worker::State::Running, Worker::State::Exited);
+  m_cv.notify_all();
+}
+
+void Worker::wait_for_safepoint() {
+  while (m_state.load() == Worker::State::Running) {
+    wait_for_state_change(Worker::State::Running);
+  }
+}
+
+void Worker::wake() {
+  m_state.assert_cas(Worker::State::Paused, Worker::State::Running);
+  m_cv.notify_all();
+}
+
+void Worker::set_gc_region(HeapRegion* region) {
+  m_active_region.assert_cas(nullptr, region);
+}
+
+void Worker::clear_gc_region() {
+  m_active_region.assert_cas(m_active_region.load(), nullptr);
+}
+
 void Worker::wait_for_state_change(Worker::State old_state) {
-  while (m_state.load() == old_state) {
-    std::unique_lock<std::mutex> locker(m_mutex);
-    m_cv.wait(locker, [&] {
-      return m_state.load() != old_state;
-    });
+  while (m_state.load(std::memory_order_acquire) == old_state) {
+
+    // spin and wait for the state to change
+    for (uint32_t spin = 0; spin < 10000; spin++) {
+      if (m_state.load(std::memory_order_acquire) != old_state) {
+        break;
+      }
+    }
+
+    {
+      std::unique_lock<std::mutex> locker(m_mutex);
+      m_cv.wait(locker, [&] {
+        return m_state.load(std::memory_order_acquire) != old_state;
+      });
+    }
   }
 }
 

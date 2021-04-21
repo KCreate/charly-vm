@@ -30,15 +30,25 @@
 #include "charly/charly.h"
 #include "charly/atomic.h"
 
+#include "charly/core/runtime/gc.h"
+
 #pragma once
 
 namespace charly::core::runtime {
 
+static std::string kWorkerStateNames[] = {
+  "Running",
+  "Native",
+  "Paused",
+  "Exited"
+};
+
 class Worker;
 inline thread_local Worker* g_worker = nullptr;
 class Worker {
+  friend class GarbageCollector;
 public:
-  Worker() : m_thread(&Worker::main, this), m_state(State::Created) {
+  Worker() : m_thread(&Worker::main, this) {
     static uint64_t id_counter = 1;
     this->id = id_counter++;
   }
@@ -51,28 +61,68 @@ public:
   // start the worker thread
   void start();
 
+  // wait for the worker thread to join
+  void join();
+
   // represents the state the worker is currently in
   enum class State : uint8_t {
-    Created,      // worker has been created, but hasn't started yet
-    Running,      // worker is running
+    Running,      // worker is running charly code
     Native,       // worker is running native code
     Paused,       // worker is paused
     Exited        // worker has exited
   };
 
-  // change the state of this worker
-  // calls into to scheduler to request state change
-  void change_state(Worker::State state);
+  // go from running into paused mode
+  // worker resumes once Worker::wake gets called
+  //
+  // if the worker paused because it ran out of memory,
+  // the scheduler will only wake the worker if the GC has
+  // free regions available
+  void pause();
 
+  // go from running into native mode
+  //
+  // native mode is meant for long operations that do not
+  // interact with the charly heap. this allows the scheduler
+  // to keep this worker running while it pauses all other
+  // worker threads
+  void enter_native();
+
+  // go from native into running mode
+  //
+  // pauses if the scheduler is currently in a paused state
+  void leave_native();
+
+  // exit worker
+  void exit();
+
+  // wait for this worker to arrive at a safepoint
+  void wait_for_safepoint();
+
+  // wake up the worker
+  void wake();
+
+  // assign the worker a heap region
+  void set_gc_region(HeapRegion* region);
+
+  // remove the assigned heap region
+  void clear_gc_region();
+
+  // wait for the state to be different than some old state
   void wait_for_state_change(Worker::State old_state);
 
   Worker::State state() const {
-    return m_state.load();
+    return m_state.load(std::memory_order_acquire);
+  }
+
+  HeapRegion* active_region() {
+    return m_active_region.load(std::memory_order_relaxed);
   }
 
 private:
+  charly::atomic<HeapRegion*> m_active_region = nullptr;
   std::thread m_thread;
-  charly::atomic<State> m_state;
+  charly::atomic<State> m_state = State::Running;
   std::mutex m_mutex;
   std::condition_variable m_cv;
 };
