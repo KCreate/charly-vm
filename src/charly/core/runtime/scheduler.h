@@ -45,6 +45,7 @@ static const uint64_t kHardwareConcurrency = std::thread::hardware_concurrency()
 // static const uint64_t kHardwareConcurrency = 4;
 
 class Scheduler {
+  friend class GCConcurrentWorker;
 public:
 
   // initialize the global scheduler object

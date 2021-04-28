@@ -30,6 +30,7 @@
 #include "charly/utils/argumentparser.h"
 #include "charly/core/runtime/scheduler.h"
 #include "charly/core/runtime/gc.h"
+#include "charly/core/runtime/heapvalue.h"
 
 namespace charly::core::runtime {
 
@@ -48,14 +49,22 @@ void Worker::main() {
   pause();
   assert(g_worker->state() == Worker::State::Running);
 
-  for (uint64_t i = 0;; i++) {
+  for (uint64_t i = 0; true; i++) {
     Scheduler::instance->checkpoint();
 
-    // allocate a cell in the garbage collector
-    HeapCell* cell = GarbageCollector::instance->allocate();
-    if (cell == nullptr) {
-      safeprint("allocation failed inside worker %", g_worker->id);
-      break;
+    if (i % 3 == 0) {
+      HeapTestType* value_ptr = GarbageCollector::instance->alloc<HeapTestType>(i, m_head_cell);
+      if (value_ptr == nullptr) {
+        safeprint("allocation failed in worker %", this->id);
+        break;
+      }
+      m_head_cell.store(VALUE::Pointer(value_ptr));
+    } else {
+      HeapTestType* value_ptr = GarbageCollector::instance->alloc<HeapTestType>(i, kNull);
+      if (value_ptr == nullptr) {
+        safeprint("allocation failed in worker %", this->id);
+        break;
+      }
     }
 
     g_worker->enter_native();
@@ -83,13 +92,13 @@ void Worker::pause() {
 }
 
 void Worker::enter_native() {
-  safeprint("worker % -> native mode", this->id);
+  // safeprint("worker % -> native mode", this->id);
   m_state.assert_cas(Worker::State::Running, Worker::State::Native);
   m_cv.notify_all();
 }
 
 void Worker::leave_native() {
-  safeprint("worker % -> running mode", this->id);
+  // safeprint("worker % -> running mode", this->id);
   m_state.assert_cas(Worker::State::Native, Worker::State::Running);
   m_cv.notify_all();
   Scheduler::instance->checkpoint();

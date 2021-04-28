@@ -41,17 +41,15 @@ void GarbageCollector::initialize() {
   }
 }
 
-HeapCell* GarbageCollector::allocate() {
+void* GarbageCollector::alloc_size(size_t size) {
   HeapRegion* region = g_worker->active_region();
-  assert(region);
 
-  // allocate new heap cell if the currently active one is full
-  if (region->next_cell == kHeapRegionCellCount) {
+  // no region or not enough space left in current region for object of *size*
+  if (region == nullptr || !region->fits(size)) {
     g_worker->clear_gc_region();
 
-    // TODO: only do this check in the GC idle cycle
     if (should_begin_collection()) {
-      safeprint("requesting gc cycle");
+      // safeprint("requesting gc cycle");
       m_concurrent_worker.request_gc();
     }
 
@@ -61,23 +59,24 @@ HeapCell* GarbageCollector::allocate() {
     }
 
     g_worker->set_gc_region(region);
-    safeprint("worker % allocated region %", g_worker->id, region->id);
+    safeprint("worker % allocated region %", g_worker->id, region->id());
   }
 
   // serve the allocation from our currently active region
-  HeapCell* cell = region->buffer + region->next_cell;
-  region->next_cell++;
+  void* head = region->allocate(size);
 
   safeprint(
-    "serving allocation (%/%) from region (%/%) in worker %",
-    region->next_cell,
-    kHeapRegionCellCount,
-    region->id,
+    "allocated % (% bytes) (% bytes left) from region % (%/%) in worker %",
+    head,
+    size,
+    kHeapRegionSize - region->used(),
+    region,
+    region->id(),
     m_allocated_regions.load(std::memory_order_relaxed),
     g_worker->id
   );
 
-  return cell;
+  return head;
 }
 
 void GarbageCollector::grow_heap() {
@@ -87,14 +86,17 @@ void GarbageCollector::grow_heap() {
   }
 }
 
+GCPhase GarbageCollector::phase() const {
+  return m_concurrent_worker.phase();
+}
+
 bool GarbageCollector::can_allocate() {
   return m_free_regions.load(std::memory_order_relaxed);
 }
 
 void GarbageCollector::free_region(HeapRegion* region) {
   std::unique_lock<std::mutex> locker(m_mutex);
-  region->allocated_worker.store(nullptr);
-  region->next_cell = 0;
+  region->reset();
   m_freelist.push_back(region);
   m_free_regions++;
 }

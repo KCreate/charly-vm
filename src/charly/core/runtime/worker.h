@@ -47,6 +47,7 @@ class Worker;
 inline thread_local Worker* g_worker = nullptr;
 class Worker {
   friend class GarbageCollector;
+  friend class GCConcurrentWorker;
 public:
   Worker() : m_thread(&Worker::main, this) {
     static uint64_t id_counter = 1;
@@ -121,6 +122,7 @@ public:
 
 private:
   charly::atomic<HeapRegion*> m_active_region = nullptr;
+  charly::atomic<VALUE> m_head_cell = kNull;
   std::thread m_thread;
   charly::atomic<State> m_state = State::Running;
   std::mutex m_mutex;

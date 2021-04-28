@@ -28,6 +28,7 @@
 
 #include "charly/charly.h"
 #include "charly/atomic.h"
+#include "charly/value.h"
 
 #pragma once
 
@@ -38,19 +39,61 @@ enum Type : uint8_t {
   kTypeTest
 };
 
-struct HeapHeader {
+using MarkColor = uint8_t;
+static const MarkColor kMarkColorWhite = 0x01;  // value not reachable
+static const MarkColor kMarkColorGrey = 0x02;   // value currently being traversed
+static const MarkColor kMarkColorBlack = 0x04;  // value reachable
+
+class HeapHeader {
+  friend class GCConcurrentWorker;
+public:
   void init(Type type);
+  void init_dead();
 
-  charly::atomic<Type> m_type;
-};
+  // resolve a potential forward pointer
+  // might concurrently evacuate cell to other heap region
+  HeapHeader* resolve();
 
-struct HeapTestType : public HeapHeader {
-  void init(uint64_t payload = 0) {
-    HeapHeader::init(kTypeTest);
-    m_payload.store(payload);
+  Type type() const {
+    return m_type.load();
   }
 
+  MarkColor color() const {
+    return m_mark.load();
+  }
+
+  void set_color(MarkColor color) {
+    m_mark.store(color);
+  }
+
+private:
+  HeapHeader() = delete;
+  ~HeapHeader() = delete;
+
+  charly::atomic<HeapHeader*> m_forward_ptr;
+  charly::atomic<Type> m_type;
+  charly::atomic<MarkColor> m_mark;
+  charly::atomic<uint16_t> m_unused1;
+  charly::atomic<uint16_t> m_unused2;
+  charly::atomic<uint16_t> m_unused3;
+
+  // TODO: add small lock type
+};
+
+class HeapTestType : public HeapHeader {
+public:
+  void init(uint64_t payload, VALUE other);
+
+  VALUE other() const {
+    return m_other.load();
+  }
+
+private:
+  HeapTestType() = delete;
+  ~HeapTestType() = delete;
+
   charly::atomic<uint64_t> m_payload;
+  charly::atomic<VALUE> m_other;
 };
 
 }  // namespace charly::core::runtime

@@ -49,59 +49,43 @@ void GCConcurrentWorker::request_gc() {
   }
 }
 
+GCPhase GCConcurrentWorker::phase() const {
+  return m_phase.load();
+}
+
 void GCConcurrentWorker::main() {
   for (;;) {
+    if (m_wants_exit)
+      break;
+
     wait_for_gc_request();
 
-    if (m_wants_exit)
-      break;
-
-    // mark phase
     Scheduler::instance->pause();
-    m_phase.assert_cas(Phase::Idle, Phase::Mark);
-    safeprint("GC mark phase");
-    std::this_thread::sleep_for(1s);
-    safeprint("GC mark phase end");
-    Scheduler::instance->resume();
-    std::this_thread::sleep_for(2s);
-
     if (m_wants_exit)
       break;
+    init_mark();
+    Scheduler::instance->resume();
+    phase_mark();
 
-    // evacuate phase
     Scheduler::instance->pause();
-    m_phase.assert_cas(Phase::Mark, Phase::Evacuate);
-    safeprint("GC evacuate phase");
-    std::this_thread::sleep_for(1s);
-    safeprint("GC evacuate phase end");
-    Scheduler::instance->resume();
-    std::this_thread::sleep_for(2s);
-
     if (m_wants_exit)
       break;
+    init_evacuate();
+    Scheduler::instance->resume();
+    phase_evacuate();
 
-    // updateref phase
     Scheduler::instance->pause();
-    m_phase.assert_cas(Phase::Evacuate, Phase::UpdateRef);
-    safeprint("GC updateref phase");
-    std::this_thread::sleep_for(1s);
-    safeprint("GC updateref phase end");
-    Scheduler::instance->resume();
-    std::this_thread::sleep_for(2s);
-
     if (m_wants_exit)
       break;
+    init_updateref();
+    Scheduler::instance->resume();
+    phase_updateref();
 
-    // idle phase
     Scheduler::instance->pause();
-    m_phase.assert_cas(Phase::UpdateRef, Phase::Idle);
-    safeprint("GC idle phase");
-    std::this_thread::sleep_for(1s);
-    safeprint("GC idle phase end");
-    Scheduler::instance->resume();
-
     if (m_wants_exit)
       break;
+    init_idle();
+    Scheduler::instance->resume();
   }
 }
 
@@ -121,6 +105,81 @@ bool GCConcurrentWorker::wait_for_gc_request() {
 
   safeprint("GC worker finished waiting");
   return waited;
+}
+
+void GCConcurrentWorker::init_mark() {
+  m_phase.assert_cas(Phase::Idle, Phase::Mark);
+  safeprint("GC init mark phase");
+
+  // append VM root set to greylist
+  for (Worker* worker : Scheduler::instance->m_fiber_workers) {
+    mark(worker->m_head_cell.load());
+  }
+}
+
+void GCConcurrentWorker::phase_mark() {
+  safeprint("GC mark phase");
+
+  // traverse live object graph
+  while (m_greylist.size()) {
+    HeapHeader* cell = m_greylist.front();
+    m_greylist.pop_front();
+
+    cell->set_color(kMarkColorBlack);
+
+    switch (cell->type()) {
+      case kTypeTest: {
+        HeapTestType* value = static_cast<HeapTestType*>(cell);
+        mark(value->other());
+        break;
+      }
+      default: {
+        assert(false && "unexpected cell type");
+        break;
+      }
+    }
+  }
+
+  safeprint("GC end mark phase");
+}
+
+void GCConcurrentWorker::init_evacuate() {
+  m_phase.assert_cas(Phase::Mark, Phase::Evacuate);
+  safeprint("GC init evacuate phase");
+  std::this_thread::sleep_for(1s);
+}
+
+void GCConcurrentWorker::phase_evacuate() {
+  safeprint("GC evacuate phase");
+  std::this_thread::sleep_for(1s);
+  safeprint("GC end evacuate phase");
+}
+
+void GCConcurrentWorker::init_updateref() {
+  m_phase.assert_cas(Phase::Evacuate, Phase::UpdateRef);
+  safeprint("GC init updateref phase");
+  std::this_thread::sleep_for(1s);
+}
+
+void GCConcurrentWorker::phase_updateref() {
+  safeprint("GC updateref phase");
+  std::this_thread::sleep_for(1s);
+  safeprint("GC end updateref phase");
+}
+
+void GCConcurrentWorker::init_idle() {
+  m_phase.assert_cas(Phase::UpdateRef, Phase::Idle);
+  safeprint("GC init idle phase");
+  std::this_thread::sleep_for(1s);
+}
+
+void GCConcurrentWorker::mark(VALUE value) {
+  if (value.is_pointer()) {
+    HeapHeader* cell_ptr = value.to_pointer<HeapHeader>();
+    assert(cell_ptr);
+    cell_ptr->set_color(kMarkColorGrey);
+    m_greylist.push_back(cell_ptr);
+  }
 }
 
 }  // namespace charly::core::runtime

@@ -45,17 +45,17 @@ class Worker;
 class GarbageCollector;
 
 // amount of cells per heap region
-static const size_t kHeapRegionCellCount = 2048;
+static const size_t kHeapRegionSize = 1024 * 16; // 16 kilobyte regions
 
 // initial amount of heap regions allocated when starting the machine
-static const size_t kHeapInitialRegionCount = 64;
+static const size_t kHeapInitialRegionCount = 8;
 
 // the maximum amount of heap regions allowed to be allocated. any allocation
 // performed after that issue was reached will fail
 static const size_t kHeapRegionLimit = 1024;
 
 // heap fill percentage at which to begin concurrent collection
-static const float kHeapGCTrigger = 0.4;
+static const float kHeapGCTrigger = 0.5;
 
 // heap fill percentage at which to grow the heap
 static const float kHeapGCGrowTrigger = 0.9;
@@ -64,25 +64,52 @@ static const float kHeapGCGrowTrigger = 0.9;
 // before it fails
 static const size_t kHeapAllocationAttempts = 10;
 
-struct HeapCell {
-  HeapCell() {}
-  ~HeapCell() {}
+// heap object pointers are required to be aligned by 8 byte boundaries
+// this ensures that the lower three bits of every heap pointer are set to 0
+constexpr size_t kHeapObjectAlignment = static_cast<size_t>(1 << 3);
 
-  union {
-    HeapTestType test;
-  } as;
-};
-
-struct HeapRegion {
+class HeapRegion {
+public:
   HeapRegion() {
     static uint32_t id_counter = 1;
-    id = id_counter++;
+    m_id = id_counter++;
+    m_next = 0;
   }
 
-  uint32_t id;
-  charly::atomic<Worker*> allocated_worker = nullptr;
-  size_t next_cell = 0;
-  HeapCell buffer[kHeapRegionCellCount];
+  void* allocate(size_t size) {
+    assert(m_next + size <= kHeapRegionSize);
+    uint8_t* head = m_buffer + m_next;
+    m_next += size;
+
+    // align next offset with object alignment boundary
+    size_t off = m_next % kHeapObjectAlignment;
+    if (off) {
+      m_next += (kHeapObjectAlignment - off);
+    }
+
+    return head;
+  }
+
+  bool fits(size_t size) {
+    return m_next + size <= kHeapRegionSize;
+  }
+
+  void reset() {
+    m_next = 0;
+  }
+
+  uint32_t id() const {
+    return m_id;
+  }
+
+  size_t used() const {
+    return m_next;
+  }
+
+private:
+  uint32_t m_id;
+  size_t m_next;
+  uint8_t m_buffer[kHeapRegionSize];
 };
 
 class GarbageCollector {
@@ -103,13 +130,27 @@ public:
 
   inline static GarbageCollector* instance = nullptr;
 
-  HeapCell* allocate();
+  template <typename O, typename... Args>
+  O* alloc(Args&&... params) {
+    O* object = static_cast<O*>(GarbageCollector::instance->alloc_size(sizeof(O)));
+    if (object) {
+      object->init(std::forward<Args>(params)...);
+    }
+    return object;
+  }
+
+  // allocate space for *size* bytes
+  // returns nullptr if the allocation failed
+  void* alloc_size(size_t size);
 
   // checks wether the garbage collector might be able to allocate a value right now
   bool can_allocate();
 
   // grow the heap to contain a certain amount of regions
   void grow_heap();
+
+  // check the current phase of the GC worker
+  GCConcurrentWorker::Phase phase() const;
 
 private:
   // append a region to the freelist

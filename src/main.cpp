@@ -182,8 +182,10 @@ int main(int argc, char** argv) {
   utils::ArgumentParser::init_argv(argc, argv);
   utils::ArgumentParser::init_env(environ);
 
-  safeprint("sizeof(HeapCell) = %", sizeof(HeapCell));
   safeprint("sizeof(HeapRegion) = %", sizeof(HeapRegion));
+  safeprint("alignmentof(HeapRegion) = %", std::alignment_of<HeapRegion>::value);
+
+  // std::this_thread::sleep_for(2s);
 
   GarbageCollector::initialize();
   Scheduler::initialize();

@@ -69,7 +69,7 @@ void IROperandImmediate::dump(std::ostream& out) const {
   // return;
 
   if (this->value.is_pointer()) {
-    writer.fg(Color::Cyan, this->value.to_pointer());
+    writer.fg(Color::Cyan, this->value.to_pointer<void>());
     return;
   }
 

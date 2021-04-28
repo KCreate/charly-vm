@@ -1,22 +1,72 @@
 # Todos
 
-- Remove stackcheck instruction
-
 - Concurrent Garbage Collector
   - Phases
-    - Idle       | Application is running normally, GC is not running
-    - Marking    | Heap tracing, write barriers append to queue drained at next pause
-    - Relocation | Heap objects get relocated, write barriers access forward pointer
-    - UpdateRef  | Heap references to old objects get updated, write barriers update references
-  - Pauses
+    - Idle                    | Application is running normally, GC is not running
     - Idle -> Marking         | Mark roots and start background marking
-    - Marking -> Relocation   | Drain SATB buffers and initialize evacuation phase
-    - Relocation -> UpdateRef | Initialize update ref phase
+    - Marking                 | Heap tracing, write barriers append to queue drained at next pause
+    - Marking -> Evacuation   | Drain SATB buffers and initialize evacuation phase
+    - Evacuation              | Heap objects get relocated, write barriers access forward pointer
+    - Evacuation -> UpdateRef | Initialize update ref phase
+    - UpdateRef               | Heap references to old objects get updated, write barriers update references
     - UpdateRef -> Idle       | Finalize garbage collection, prepare for idle phase
-  - How are regions evacuated
-    - During the marking phase, each region tracks how many of its child objects are garbage
-    - This information is then used to determine which heap regions are evacuated and to which target
-      regions and addresses
+  - Concurrent Marking
+    - Init phase
+      - Workers mark root set
+      - New allocations marked grey
+      - Mark all VM reachable objects
+      - Arm SATB buffers
+    - Concurrent phase
+      - Traverse application and mark reachable objects
+      - Collect statistics and information about heap regions
+    - Application threads
+      - Process deletes
+      - Write barriers
+      - Read barriers
+  - Evacuation
+    - Init phase
+      - Disable and mark values from SATB buffers
+      - Finish marking
+      - Build From-To evacuation mappings
+      - Evacuate worker root set
+    - Concurrent phase
+      - Traverse From Regions and evacuate cells to To-regions
+    - Application threads
+      - Evacuate in barriers
+    - How do evacuated cells know where they end up?
+      - Build mapping of From-spaces to To-spaces
+        - During the Init-Evacuate pause, allocate each alive cell in From-regions a slot
+          in the corresponding To-regions
+        - Evacuation can atomically check if the final copy has already been created / initialized
+      - Each from-space knows in what to-space it will end up
+        - Need some easy way of knowing which offset each cell ultimately ends up at
+    - How are the copies that are created during a contended evacuation recycled?
+      - Mechanism to un-allocate a cell, works only if no other cell was allocated since
+        - Since another copy will be allocated in another region, we can just unwind the last
+          allocation and reuse it for the next one
+  - UpdateRef
+    - Init phase
+      - Update root set
+    - Concurrent phase
+      - Update references to objects in from-spaces
+    - Application threads
+      - Update references
+
+- Small locks
+  - Implement from experiment code in old charly repo
+    - See: https://github.com/KCreate/charly-vm/blob/main/experiments/small-locks.cpp
+  - Types of locks
+    - FairLock
+      - Access to lock is given in strict FIFO order.
+    - BargingLock
+      - Threads can acquire the lock multiple times in rapid succession, even if another thread
+        requested the lock in the meantime
+    - SharedLock
+      - See: https://eli.thegreenplace.net/2019/implementing-reader-writer-locks/
+
+- Fibers with fcontext_t
+  - There is some warning in the fcontext_t docs that tells you, you can't use thread local variables
+  - function static variables?
 
 - Concurrency
   - Boost fcontext for cheap context switches
@@ -98,17 +148,15 @@
 - Stream coloring on macOS
   - termcolor::_internal::is_colorized returns false, manually executing the function body returns true???
 
+- Different sized regions?
+  - Regions with small cells, regions with large cells
+  - Maybe have the ability to decide at allocation time wether a region should be split
+    into small-object cells or large-object cells.
+  - Each worker would contain two active regions at any point. One for small objects one for big ones
+
 # Rewrite of the codebase
 
 - open questions
-  - JIT compilation of charly opcodes
-    - Implement fiber scheduler with makecontext, setcontext methods
-
-  - JVM exception tables
-    - Generate exception tables for each function at compile time
-      - How is the type id obtained for the exception classes?
-      - Can the catchtables be completely removed?
-
   - object handles that also work with immediate encoded values (Handle<Object>, Handle<VALUE>)
     - std::is_base_of can be used to enforce subclasses of Header only for Handle type
     - thread safe object handles

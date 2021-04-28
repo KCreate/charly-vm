@@ -35,8 +35,8 @@ namespace charly::core::runtime {
 
 void Scheduler::initialize() {
   static Scheduler scheduler;
-  scheduler.init_workers();
   Scheduler::instance = &scheduler;
+  scheduler.init_workers();
 }
 
 void Scheduler::start() {

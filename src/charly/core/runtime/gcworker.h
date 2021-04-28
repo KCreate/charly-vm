@@ -26,9 +26,13 @@
 
 #include <thread>
 #include <mutex>
+#include <condition_variable>
+#include <list>
 
 #include "charly/charly.h"
 #include "charly/atomic.h"
+
+#include "charly/core/runtime/heapvalue.h"
 
 #pragma once
 
@@ -38,6 +42,7 @@ namespace charly::core::runtime {
 class GarbageCollector;
 
 class GCConcurrentWorker {
+  friend class GarbageCollector;
 public:
   GCConcurrentWorker(GarbageCollector* gc) : m_gc(gc) {}
 
@@ -62,6 +67,9 @@ public:
   // GC utilization limit
   void request_gc();
 
+  // get current worker state
+  Phase phase() const;
+
 private:
 
   // concurrent worker main method
@@ -73,6 +81,20 @@ private:
   // returns false if the next GC cycle should run back-to-back
   bool wait_for_gc_request();
 
+  // GC STW pauses
+  void init_mark();
+  void init_evacuate();
+  void init_updateref();
+  void init_idle();
+
+  // GC phases that run concurrently with the application threads
+  void phase_mark();
+  void phase_evacuate();
+  void phase_updateref();
+
+  // append a value to the greylist
+  void mark(VALUE value);
+
 private:
   std::thread m_thread;
 
@@ -81,8 +103,12 @@ private:
   GarbageCollector* m_gc;
   charly::atomic<Phase> m_phase = Phase::Idle;
 
+  std::list<HeapHeader*> m_greylist;
+
   std::mutex m_mutex;
   std::condition_variable m_cv;
 };
+
+using GCPhase = GCConcurrentWorker::Phase;
 
 }  // namespace charly::core::runtime

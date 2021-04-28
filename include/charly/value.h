@@ -37,7 +37,7 @@ namespace charly {
 class HeapValue;
 struct VALUE {
   taggedvalue::Value raw;
-  VALUE(taggedvalue::Value raw) : raw(raw) {}
+  constexpr VALUE(taggedvalue::Value raw) : raw(raw) {}
 
   static VALUE Pointer(void* value) {
     return VALUE(taggedvalue::encode_pointer(value));
@@ -79,12 +79,26 @@ struct VALUE {
   bool is_bool() const { return taggedvalue::is_bool(raw); }
   bool is_null() const { return taggedvalue::is_null(raw); }
 
-  void* to_pointer() const { return taggedvalue::decode_pointer(raw); }
+  template <typename T>
+  T* to_pointer() const { return static_cast<T*>(taggedvalue::decode_pointer(raw)); }
   int64_t to_int() const { return taggedvalue::decode_int(raw); }
   float to_float() const { return taggedvalue::decode_float(raw); }
   uint32_t to_char() const { return taggedvalue::decode_char(raw); }
   uint32_t to_symbol() const { return taggedvalue::decode_symbol(raw); }
   bool to_bool() const { return taggedvalue::decode_bool(raw); }
+
+  friend std::ostream& operator<<(std::ostream& out, const VALUE& value) {
+    out << value.raw;
+    return out;
+  }
 };
+static_assert(sizeof(VALUE) == sizeof(uintptr_t));
+
+static const VALUE kNull        = VALUE(taggedvalue::kNull);
+static const VALUE kNaN         = VALUE(taggedvalue::kNaN);
+static const VALUE kInfinity    = VALUE(taggedvalue::kInfinity);
+static const VALUE kNegInfinity = VALUE(taggedvalue::kNegInfinity);
+static const VALUE kTrue        = VALUE(taggedvalue::kTrue);
+static const VALUE kFalse       = VALUE(taggedvalue::kFalse);
 
 }
