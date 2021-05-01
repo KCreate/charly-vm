@@ -1,5 +1,11 @@
 # Todos
 
+- Fiber scheduler with fcontext_t
+  - How to protect the stack from overflow?
+    - Protect memory page immediately after the stack to trap on accesses
+  - Local task queues
+    - Work stealing from other workers
+
 - Concurrent Garbage Collector
   - Phases
     - Idle                    | Application is running normally, GC is not running
@@ -63,10 +69,6 @@
         requested the lock in the meantime
     - SharedLock
       - See: https://eli.thegreenplace.net/2019/implementing-reader-writer-locks/
-
-- Fibers with fcontext_t
-  - There is some warning in the fcontext_t docs that tells you, you can't use thread local variables
-  - function static variables?
 
 - Concurrency
   - Boost fcontext for cheap context switches
