@@ -235,12 +235,11 @@ void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target) 
 
     if (spread_element) {
       m_builder.emit_unpackobjectspread(before_elements.size() + after_elements.size())->at(target);
+      generate_store(spread_element->name->value)->at(spread_element->name);
+      m_builder.emit_pop();
     } else {
       m_builder.emit_unpackobject(before_elements.size())->at(target);
     }
-
-    generate_store(spread_element->name->value)->at(spread_element->name);
-    m_builder.emit_pop();
 
     for (auto begin = target->elements.rbegin(); begin != target->elements.rend(); begin++) {
       const ref<UnpackTargetElement>& element = *begin;
