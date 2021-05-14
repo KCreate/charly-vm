@@ -24,62 +24,53 @@
  * SOFTWARE.
  */
 
-#include "charly/core/runtime/gc.h"
-#include "charly/core/runtime/heapvalue.h"
 #include "charly/core/runtime/worker.h"
+#include "charly/core/runtime/fiber.h"
 
 namespace charly::core::runtime {
 
-void HeapHeader::init(Type type) {
-  m_forward_ptr.assert_cas(nullptr, this);
-  m_type.assert_cas(kTypeDead, type);
+using namespace boost::context::detail;
+
+FiberStack::FiberStack() {
+  m_bottom = (void*)std::malloc(kFiberStackSize);
+  m_top = (void*)((uintptr_t)m_bottom + (uintptr_t)kFiberStackSize);
+  m_size = kFiberStackSize;
+
+  safeprint("allocating stack at %", m_bottom);
 }
 
-void HeapHeader::init_dead() {
-  m_forward_ptr.store(nullptr);
-  m_type.store(kTypeDead);
-  m_mark.store(kMarkColorBlack);
-}
-
-void HeapHeader::destroy() {
-  // nothing
-}
-
-HeapHeader* HeapHeader::resolve() {
-  if (GarbageCollector::instance->phase() == GCPhase::Evacuate) {
-    // TODO: evacuate value
+FiberStack::~FiberStack() {
+  safeprint("deallocating stack at %", m_bottom);
+  if (m_bottom) {
+    std::free(m_bottom);
   }
-
-  return m_forward_ptr;
+  m_bottom = nullptr;
+  m_top = nullptr;
+  m_size = 0;
 }
 
-Type HeapHeader::type() const {
-  return m_type.load();
+void* FiberStack::top() const {
+  return m_top;
 }
 
-MarkColor HeapHeader::color() const {
-  return m_mark.load();
+void* FiberStack::bottom() const {
+  return m_bottom;
 }
 
-void HeapHeader::set_color(MarkColor color) {
-  m_mark.store(color);
+size_t FiberStack::size() const {
+  return m_size;
 }
 
-void HeapFiber::init(Fiber::FiberTaskFn fn) {
-  safeprint("initializing heapfiber %", this);
-  HeapHeader::init(kTypeFiber);
-  m_fiber = new Fiber(fn);
+void Fiber::fiber_handler_function(transfer_t transfer) {
+  g_worker->m_context = transfer.fctx;
+  g_worker->current_fiber()->m_task_function();
+  g_worker->fiber_exit();
 }
 
-void HeapFiber::destroy() {
-  if (m_fiber) {
-    delete m_fiber;
-    m_fiber = nullptr;
-  }
-}
-
-Fiber::Status HeapFiber::status() const {
-  return m_fiber->m_status.load();
+void* Fiber::jump_context(void* argument) {
+  transfer_t transfer = jump_fcontext(m_context, argument);
+  m_context = transfer.fctx;
+  return transfer.data;
 }
 
 }  // namespace charly::core::runtime

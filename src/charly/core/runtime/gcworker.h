@@ -63,8 +63,7 @@ public:
   void start_thread();
   void stop_thread();
 
-  // runtime calls this function once it reaches some pre-defined
-  // GC utilization limit
+  // starts a gc cycle if the GC worker is currently paused
   void request_gc();
 
   // get current worker state
@@ -76,10 +75,7 @@ private:
   void main();
 
   // waits for the runtime to request a GC cycle
-  //
-  // returns true if the worker actually had to wait
-  // returns false if the next GC cycle should run back-to-back
-  bool wait_for_gc_request();
+  void wait_for_gc_request();
 
   // GC STW pauses
   void init_mark();

@@ -30,56 +30,59 @@
 #include "charly/charly.h"
 #include "charly/atomic.h"
 
+#include "charly/utils/shared_queue.h"
+
 #include "charly/core/runtime/gc.h"
+#include "charly/core/runtime/fiber.h"
 
 #pragma once
 
 namespace charly::core::runtime {
 
-static std::string kWorkerStateNames[] = {
-  "Running",
-  "Native",
-  "Paused",
-  "Exited"
-};
+// the maximum amount of fibers to be queued in each workers local queue
+static const uint64_t kLocalReadyQueueMaxSize = 256;
 
-class Worker;
-inline thread_local Worker* g_worker = nullptr;
 class Worker {
   friend class GarbageCollector;
   friend class GCConcurrentWorker;
+  friend class Fiber;
+  friend class Scheduler;
 public:
+
+  // represents the state the worker is currently in
+  enum class State : uint8_t {
+    Running,        // worker is running charly code
+    Native,         // worker is running native code
+    Paused,         // worker is paused
+    Idle,           // worker is waiting for work
+    Exited          // worker has exited
+  };
+
   Worker() : m_thread(&Worker::main, this) {
     static uint64_t id_counter = 1;
-    this->id = id_counter++;
+    m_id = id_counter++;
   }
-
-  uint64_t id;
 
   // worker main method
   void main();
 
-  // start the worker thread
-  void start();
-
   // wait for the worker thread to join
   void join();
 
-  // represents the state the worker is currently in
-  enum class State : uint8_t {
-    Running,      // worker is running charly code
-    Native,       // worker is running native code
-    Paused,       // worker is paused
-    Exited        // worker has exited
-  };
+  // register thread as idle in the scheduler
+  void idle();
 
-  // go from running into paused mode
-  // worker resumes once Worker::wake gets called
-  //
-  // if the worker paused because it ran out of memory,
-  // the scheduler will only wake the worker if the GC has
-  // free regions available
-  void pause();
+  // resume an idling thread
+  void resume_from_idle();
+
+  // exit worker
+  void exit();
+
+  // assign the worker a heap region
+  void set_gc_region(HeapRegion* region);
+
+  // remove the assigned heap region
+  void clear_gc_region();
 
   // go from running into native mode
   //
@@ -94,39 +97,96 @@ public:
   // pauses if the scheduler is currently in a paused state
   void leave_native();
 
-  // exit worker
-  void exit();
-
-  // wait for this worker to arrive at a safepoint
-  void wait_for_safepoint();
-
-  // wake up the worker
-  void wake();
-
-  // assign the worker a heap region
-  void set_gc_region(HeapRegion* region);
-
-  // remove the assigned heap region
-  void clear_gc_region();
-
-  // wait for the state to be different than some old state
-  void wait_for_state_change(Worker::State old_state);
+  /*
+   * Query worker status
+   * */
+public:
+  uint64_t id() const {
+    return m_id;
+  }
 
   Worker::State state() const {
-    return m_state.load(std::memory_order_acquire);
+    return m_state.load();
   }
 
   HeapRegion* active_region() {
-    return m_active_region.load(std::memory_order_relaxed);
+    return m_active_region.load();
   }
 
+  Fiber* current_fiber() {
+    return m_current_fiber.load()->m_fiber;
+  }
+
+  /*
+   * GC Pause mechanism
+   * */
+public:
+
+  // GC checkpoint
+  // called by the worker itself
+  void checkpoint();
+
+  // wait for this worker to arrive at a checkpoint
+  // called by the GC worker
+  void wait_for_checkpoint();
+
+  // resume a paused worker
+  void resume();
+
+  // pause the currently running worker
+  // the worker will only get resumed if the GC has memory available
+  void pause();
+
+  /*
+   * Fiber management methods
+   * */
+public:
+
+  // pause the current fiber
+  void fiber_pause();
+
+  // reschedule the current fiber
+  void fiber_reschedule();
+
+  // exit from the currently executing fiber and jump back into the main scheduling thread
+  void fiber_exit();
+
 private:
-  charly::atomic<HeapRegion*> m_active_region = nullptr;
-  charly::atomic<VALUE> m_head_cell = kNull;
+
+  // get the next ready fiber
+  HeapFiber* get_local_ready_queue();
+
+  // jump into the worker scheduler fiber
+  void* jump_context(void* argument = nullptr);
+
+private:
+  uint64_t m_id;
   std::thread m_thread;
   charly::atomic<State> m_state = State::Running;
+  charly::atomic<HeapRegion*> m_active_region = nullptr;
+  charly::atomic<HeapFiber*> m_current_fiber = nullptr;
+
+  // set by GC if it wants the worker to pause
+  charly::atomic<bool> m_pause_request = false;
+
+  // set by the scheduler if it wants the worker to wake from its idle pause
+  charly::atomic<bool> m_resume_from_idle = false;
+
+  // counts the amount of context switches between fibers the worker has performed
+  uint8_t m_context_switch_counter = 0;
+
+  // context of the workers main scheduling fiber
+  boost::context::detail::fcontext_t m_context;
+
+  // worker local queue of ready fibers to execute
+  std::mutex m_ready_queue_m;
+  std::list<HeapFiber*> m_ready_queue;
+
+  // state change events
   std::mutex m_mutex;
-  std::condition_variable m_cv;
+  std::condition_variable m_safe_cv;    // fired when state changes to pause, native or exit
+  std::condition_variable m_running_cv; // fired when state changes to running
+  std::condition_variable m_idle_cv;    // fired when the worker gets woken from the idle state
 };
 
 }  // namespace charly::core::runtime

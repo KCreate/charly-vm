@@ -41,17 +41,13 @@ void GarbageCollector::initialize() {
   }
 }
 
-void* GarbageCollector::alloc_size(size_t size) {
+void* GarbageCollector::worker_alloc_size(size_t size) {
   HeapRegion* region = g_worker->active_region();
 
   // no region or not enough space left in current region for object of *size*
   if (region == nullptr || !region->fits(size)) {
     g_worker->clear_gc_region();
-
-    if (should_begin_collection()) {
-      // safeprint("requesting gc cycle");
-      m_concurrent_worker.request_gc();
-    }
+    Scheduler::instance->checkpoint();
 
     region = allocate_heap_region();
     if (region == nullptr) {
@@ -59,7 +55,7 @@ void* GarbageCollector::alloc_size(size_t size) {
     }
 
     g_worker->set_gc_region(region);
-    safeprint("worker % allocated region %", g_worker->id, region->id());
+    safeprint("worker % allocated region %", g_worker->id(), region->id());
   }
 
   // serve the allocation from our currently active region
@@ -73,7 +69,38 @@ void* GarbageCollector::alloc_size(size_t size) {
     region,
     region->id(),
     m_allocated_regions.load(std::memory_order_relaxed),
-    g_worker->id
+    g_worker->id()
+  );
+
+  return head;
+}
+
+void* GarbageCollector::global_alloc_size(size_t size) {
+  HeapRegion* region = m_global_region;
+
+  // no region or not enough space left in global region for object of *size*
+  if (region == nullptr || !region->fits(size)) {
+    m_global_region = nullptr;
+
+    region = allocate_heap_region();
+    if (region == nullptr) {
+      return nullptr;
+    }
+
+    m_global_region = region;
+  }
+
+  // serve the allocation from our currently active region
+  void* head = region->allocate(size);
+
+  safeprint(
+    "allocated % (% bytes) (% bytes left) from region % (%/%) in global ctx",
+    head,
+    size,
+    kHeapRegionSize - region->used(),
+    region,
+    region->id(),
+    m_allocated_regions.load(std::memory_order_relaxed)
   );
 
   return head;
@@ -104,23 +131,26 @@ void GarbageCollector::free_region(HeapRegion* region) {
 HeapRegion* GarbageCollector::allocate_heap_region() {
   std::unique_lock<std::mutex> locker(m_mutex);
 
+  bool gc_worker_is_idle = m_concurrent_worker.phase() == GCConcurrentWorker::Phase::Idle;
+  if (should_begin_collection() && gc_worker_is_idle) {
+    m_concurrent_worker.request_gc();
+  }
+
   if (should_grow()) {
     safeprint("GC growing heap");
-    locker.unlock();
     grow_heap();
-    locker.lock();
   }
 
   // if there are no free regions, wait for the GC to complete a cycle
   if (m_freelist.size() == 0) {
     for (size_t tries = kHeapAllocationAttempts; tries > 0; tries--) {
       locker.unlock();
-      safeprint("worker % waiting for GC cycle (%)", g_worker->id, tries);
+      safeprint("worker % waiting for GC cycle (%)", g_worker->id(), tries);
       g_worker->pause();
       locker.lock();
 
       if (m_freelist.size()) {
-        safeprint("worker % finished waiting for GC cycle", g_worker->id);
+        safeprint("worker % finished waiting for GC cycle", g_worker->id());
         break;
       }
     }
@@ -145,7 +175,7 @@ void GarbageCollector::add_heap_region() {
   }
 
   HeapRegion* region = new HeapRegion();
-  m_regions.push_back(region);
+  m_regions.insert(region);
   m_allocated_regions++;
 
   locker.unlock();

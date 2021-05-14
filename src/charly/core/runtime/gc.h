@@ -27,6 +27,7 @@
 #include <cstdlib>
 #include <array>
 #include <list>
+#include <set>
 #include <vector>
 #include <mutex>
 
@@ -48,7 +49,7 @@ class GarbageCollector;
 static const size_t kHeapRegionSize = 1024 * 16; // 16 kilobyte regions
 
 // initial amount of heap regions allocated when starting the machine
-static const size_t kHeapInitialRegionCount = 8;
+static const size_t kHeapInitialRegionCount = 64;
 
 // the maximum amount of heap regions allowed to be allocated. any allocation
 // performed after that issue was reached will fail
@@ -112,6 +113,8 @@ private:
   uint8_t m_buffer[kHeapRegionSize];
 };
 
+extern thread_local Worker* g_worker;
+
 class GarbageCollector {
   friend class Worker;
   friend class GCConcurrentWorker;
@@ -132,7 +135,15 @@ public:
 
   template <typename O, typename... Args>
   O* alloc(Args&&... params) {
-    O* object = static_cast<O*>(GarbageCollector::instance->alloc_size(sizeof(O)));
+    O* object;
+    if (g_worker) {
+      object = static_cast<O*>(GarbageCollector::instance->worker_alloc_size(sizeof(O)));
+    } else {
+      object = static_cast<O*>(GarbageCollector::instance->global_alloc_size(sizeof(O)));
+    }
+
+    assert(object);
+
     if (object) {
       object->init(std::forward<Args>(params)...);
     }
@@ -141,7 +152,8 @@ public:
 
   // allocate space for *size* bytes
   // returns nullptr if the allocation failed
-  void* alloc_size(size_t size);
+  void* worker_alloc_size(size_t size);
+  void* global_alloc_size(size_t size);
 
   // checks wether the garbage collector might be able to allocate a value right now
   bool can_allocate();
@@ -183,7 +195,9 @@ private:
   std::condition_variable m_cv;
 
   std::list<HeapRegion*> m_freelist;
-  std::list<HeapRegion*> m_regions;
+  std::set<HeapRegion*> m_regions;
+
+  HeapRegion* m_global_region = nullptr;
 
   charly::atomic<size_t> m_free_regions = 0;
   charly::atomic<size_t> m_allocated_regions = 0;

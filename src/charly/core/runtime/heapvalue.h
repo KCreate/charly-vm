@@ -30,13 +30,15 @@
 #include "charly/atomic.h"
 #include "charly/value.h"
 
+#include "charly/core/runtime/fiber.h"
+
 #pragma once
 
 namespace charly::core::runtime {
 
 enum Type : uint8_t {
   kTypeDead = 0,
-  kTypeTest
+  kTypeFiber
 };
 
 using MarkColor = uint8_t;
@@ -49,22 +51,15 @@ class HeapHeader {
 public:
   void init(Type type);
   void init_dead();
+  void destroy();
 
   // resolve a potential forward pointer
   // might concurrently evacuate cell to other heap region
   HeapHeader* resolve();
 
-  Type type() const {
-    return m_type.load();
-  }
-
-  MarkColor color() const {
-    return m_mark.load();
-  }
-
-  void set_color(MarkColor color) {
-    m_mark.store(color);
-  }
+  Type type() const;
+  MarkColor color() const;
+  void set_color(MarkColor color);
 
 private:
   HeapHeader() = delete;
@@ -80,20 +75,18 @@ private:
   // TODO: add small lock type
 };
 
-class HeapTestType : public HeapHeader {
+class HeapFiber : public HeapHeader {
+  friend class Fiber;
 public:
-  void init(uint64_t payload, VALUE other);
+  HeapFiber() = delete;
+  ~HeapFiber() = delete;
 
-  VALUE other() const {
-    return m_other.load();
-  }
+  void init(Fiber::FiberTaskFn fn);
+  void destroy();
 
-private:
-  HeapTestType() = delete;
-  ~HeapTestType() = delete;
+  Fiber::Status status() const;
 
-  charly::atomic<uint64_t> m_payload;
-  charly::atomic<VALUE> m_other;
+  Fiber* m_fiber;
 };
 
 }  // namespace charly::core::runtime

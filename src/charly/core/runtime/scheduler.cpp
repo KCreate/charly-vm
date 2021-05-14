@@ -24,100 +24,252 @@
  * SOFTWARE.
  */
 
-#include <cassert>
-#include <chrono>
-
-#include "charly/utils/argumentparser.h"
 #include "charly/core/runtime/scheduler.h"
-#include "charly/core/runtime/gc.h"
 
 namespace charly::core::runtime {
 
 void Scheduler::initialize() {
   static Scheduler scheduler;
   Scheduler::instance = &scheduler;
-  scheduler.init_workers();
+
+  GarbageCollector::initialize();
+
+  // initialize application workers
+  for (size_t i = 0; i < kHardwareConcurrency; i++) {
+    scheduler.m_application_threads.push_back(new Worker());
+  }
 }
 
 void Scheduler::start() {
-  safeprint("starting GC worker");
   GarbageCollector::instance->start_background_worker();
 
-  // worker threads pause themselves once they start until the scheduler
-  // finishes setup and resumes them
-  safeprint("starting fiber workers");
-  for (Worker* worker : m_fiber_workers) {
-    worker->wake();
+  for (Worker* worker : m_application_threads) {
+    worker->wait_for_checkpoint();
+    worker->resume();
   }
 }
 
 void Scheduler::join() {
-  for (Worker* worker : m_fiber_workers) {
+  m_wants_join.assert_cas(false, true);
+
+  resume_all_idle_workers();
+
+  for (Worker* worker : m_application_threads) {
     worker->join();
   }
-  safeprint("scheduler workers joined");
 
   GarbageCollector::instance->stop_background_worker();
-  safeprint("GC worker joined");
 }
 
-void Scheduler::init_workers() {
-  for (uint32_t i = 0; i < kHardwareConcurrency; i++) {
-    m_fiber_workers.emplace_back(new Worker());
+void Scheduler::request_shutdown() {
+  if (m_wants_exit.cas(false, true)) {
+    resume_all_idle_workers();
   }
 }
 
 void Scheduler::checkpoint() {
-  Worker* worker = g_worker;
+  assert(g_worker);
+  g_worker->checkpoint();
 
-  while (m_state.load() == Scheduler::State::Paused) {
-    safeprint("parking worker %", worker->id);
-    assert(worker->state() == Worker::State::Running);
-    worker->pause();
-    safeprint("unparking worker %", worker->id);
+  // reschedule fiber if it has exceeded its timeslice
+  uint64_t scheduled_at = g_worker->current_fiber()->m_scheduled_at;
+  uint64_t now = Scheduler::current_timestamp();
+  if (now - scheduled_at >= kSchedulerFiberTimeslice) {
+    safeprint("fiber % exceeded its timeslice", g_worker->current_fiber()->m_id);
+    g_worker->fiber_reschedule();
   }
 }
 
-bool Scheduler::pause() {
+void Scheduler::stop_the_world() {
   assert(g_worker == nullptr);
-
-  // attempt to pause the scheduler
-  safeprint("scheduler request pause");
-  m_state.assert_cas(Scheduler::State::Running, Scheduler::State::Paused);
 
   // wait for all workers to pause or enter native mode
   auto begin_time = std::chrono::steady_clock::now();
-  for (Worker* worker : m_fiber_workers) {
-    worker->wait_for_safepoint();
+  for (Worker* worker : m_application_threads) {
+    worker->m_pause_request.assert_cas(false, true);
+    worker->wait_for_checkpoint();
   }
   auto end_time = std::chrono::steady_clock::now();
   safeprint("finished waiting in % microseconds",
             std::chrono::duration_cast<std::chrono::microseconds>(end_time - begin_time).count());
 
   safeprint("scheduler begin pause");
-  return true;
 }
 
-void Scheduler::resume() {
-
-  // resume cannot be called from within a fiber worker
+void Scheduler::start_the_world() {
   assert(g_worker == nullptr);
 
-  // change scheduler state
-  safeprint("scheduler exit pause");
-  m_state.assert_cas(Scheduler::State::Paused, Scheduler::State::Running);
-  for (Worker* worker : m_fiber_workers) {
-
-    // do not resume thread with no active region unless the
-    // GC is currently able to allocate more cells
-    // if (worker->active_region() == nullptr && !GarbageCollector::instance->can_allocate()) {
-    //   continue;
-    // }
-
+  // resume paused workers
+  for (Worker* worker : m_application_threads) {
     if (worker->state() == Worker::State::Paused) {
-      worker->wake();
+      worker->m_pause_request.assert_cas(true, false);
+      worker->resume();
     }
   }
+}
+
+void Scheduler::schedule_fiber(HeapFiber* fiber) {
+  assert(fiber->status() == Fiber::Status::Ready);
+
+  // schedule in local queue
+  if (g_worker) {
+    std::unique_lock<std::mutex> locker(g_worker->m_ready_queue_m);
+    if (g_worker->m_ready_queue.size() < kLocalReadyQueueMaxSize) {
+      g_worker->m_ready_queue.push_back(fiber);
+      safeprint("fiber % scheduled in local queue of worker %", fiber->m_fiber->m_id, g_worker->id());
+
+      if (g_worker->m_ready_queue.size() > 1 && m_idle_threads_counter.load()) {
+        resume_idle_worker();
+      }
+
+      return;
+    }
+  }
+
+  // schedule in global queue
+  {
+    std::lock_guard<std::mutex> locker(m_global_ready_queue_m);
+    m_global_ready_queue.push_back(fiber);
+    safeprint("fiber % scheduled in global queue", fiber->m_fiber->m_id);
+    resume_idle_worker();
+  }
+}
+
+HeapFiber* Scheduler::get_ready_fiber() {
+  assert(g_worker);
+
+  for (;;) {
+
+    // no next fiber if scheduler wants to exit
+    if (m_wants_exit.load()) {
+      return nullptr;
+    }
+
+    // prefer the global queue over the local queue from time to time
+    if (g_worker->m_context_switch_counter % kGlobalReadyQueuePriorityChance) {
+      std::unique_lock<std::mutex> locker(m_global_ready_queue_m);
+      if (m_global_ready_queue.size()) {
+        HeapFiber* fiber = m_global_ready_queue.front();
+        m_global_ready_queue.pop_front();
+        safeprint("worker %: got task from global queue by chance [%]", g_worker->id(), m_global_ready_queue.size());
+        return fiber;
+      }
+    }
+
+    // check the current workers local queue
+    {
+      // safeprint("worker %: checking local queue", g_worker->id());
+      std::unique_lock<std::mutex> locker(g_worker->m_ready_queue_m);
+      if (g_worker->m_ready_queue.size()) {
+        HeapFiber* fiber = g_worker->m_ready_queue.front();
+        g_worker->m_ready_queue.pop_front();
+        // safeprint("worker %: got task from local queue [%]", g_worker->id(), g_worker->m_ready_queue.size());
+        return fiber;
+      }
+    }
+
+    // check global ready queue
+    {
+      // safeprint("worker %: checking global queue", g_worker->id());
+      std::unique_lock<std::mutex> locker(m_global_ready_queue_m);
+      if (m_global_ready_queue.size()) {
+        HeapFiber* fiber = m_global_ready_queue.front();
+        m_global_ready_queue.pop_front();
+        safeprint("worker %: got task from global queue [%]", g_worker->id(), m_global_ready_queue.size());
+        return fiber;
+      }
+    }
+
+    // attempt to steal from some random other worker
+    uint32_t base_offset = g_worker->m_context_switch_counter;
+    for (uint32_t i = 0; i < m_application_threads.size(); i++) {
+      uint32_t wrapped_index = (base_offset + i) % m_application_threads.size();
+      Worker* worker = m_application_threads[wrapped_index];
+
+      // skip current worker
+      if (worker == g_worker) {
+        continue;
+      }
+
+      // safeprint("worker %: checking local queue of worker %", g_worker->id(), worker->id());
+
+      // attempt to steal half of the workers tasks
+      {
+        std::lock_guard<std::mutex> schedule_locker(m_global_ready_queue_m);
+        std::lock_guard<std::mutex> worker_locker(g_worker->m_ready_queue_m);
+        if (worker->m_ready_queue.size() > 1) {
+
+          // calculate amount of tasks to steal
+          size_t amount_to_steal = worker->m_ready_queue.size() / 2;
+          size_t counter = 0;
+          HeapFiber* entry = nullptr;
+          while (counter++ < amount_to_steal) {
+            HeapFiber* task = worker->m_ready_queue.back();
+            worker->m_ready_queue.pop_back();
+
+            if (entry == nullptr) {
+              entry = task;
+            } else {
+              g_worker->m_ready_queue.push_back(task);
+            }
+          }
+
+          assert(entry);
+
+          safeprint("worker %: stole % ready fibers from worker % [%]", g_worker->id(), amount_to_steal, worker->id(),
+                    worker->m_ready_queue.size());
+          return entry;
+        }
+      }
+    }
+
+    // enter idle mode and wait for more tasks to be ready
+    //
+    // TODO: refactor this to be more efficient, this sucks right now...
+    g_worker->idle();
+    g_worker->m_context_switch_counter++;
+  }
+}
+
+bool Scheduler::has_available_tasks() {
+  std::unique_lock<std::mutex> locker(m_global_ready_queue_m);
+  return m_global_ready_queue.size();
+}
+
+void Scheduler::register_idle(Worker* worker) {
+  std::unique_lock<std::mutex> locker(m_idle_threads_m);
+  m_idle_threads.push_back(worker);
+  m_idle_threads_counter++;
+
+  if (m_idle_threads.size() == m_application_threads.size() && m_wants_join.load()) {
+    locker.unlock();
+    request_shutdown();
+  }
+}
+
+void Scheduler::resume_idle_worker() {
+  std::unique_lock<std::mutex> locker(m_idle_threads_m);
+  if (m_idle_threads.size()) {
+    Worker* worker = m_idle_threads.front();
+    m_idle_threads.pop_front();
+    m_idle_threads_counter--;
+    worker->resume_from_idle();
+  }
+}
+
+void Scheduler::resume_all_idle_workers() {
+  std::unique_lock<std::mutex> locker(m_idle_threads_m);
+  while (m_idle_threads.size()) {
+    Worker* worker = m_idle_threads.front();
+    m_idle_threads.pop_front();
+    m_idle_threads_counter--;
+    worker->resume_from_idle();
+  }
+}
+
+uint64_t Scheduler::current_timestamp() {
+  auto ticks = std::chrono::system_clock::now().time_since_epoch();
+  return std::chrono::duration_cast<std::chrono::milliseconds>(ticks).count();
 }
 
 }  // namespace charly::core::runtime

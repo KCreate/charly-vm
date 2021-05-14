@@ -29,48 +29,48 @@
 
 #include "charly/utils/argumentparser.h"
 #include "charly/core/runtime/scheduler.h"
-#include "charly/core/runtime/gc.h"
-#include "charly/core/runtime/heapvalue.h"
 
 namespace charly::core::runtime {
 
+using namespace boost::context::detail;
 using namespace std::chrono_literals;
 
 void Worker::main() {
 
-  // initialize thread local g_worker variable
-  // and wait for the scheduler to give us the start signal
+  // initialize worker and wait for the start signal from the runtime
   g_worker = this;
-
-  // allocate initial region
   g_worker->set_gc_region(GarbageCollector::instance->allocate_heap_region());
-
-  // wait for the go signal from the runtime
   pause();
   assert(g_worker->state() == Worker::State::Running);
 
-  for (uint64_t i = 0; true; i++) {
-    Scheduler::instance->checkpoint();
+  safeprint("worker %: started", m_id);
 
-    if (i % 3 == 0) {
-      HeapTestType* value_ptr = GarbageCollector::instance->alloc<HeapTestType>(i, m_head_cell);
-      if (value_ptr == nullptr) {
-        safeprint("allocation failed in worker %", this->id);
-        break;
-      }
-      m_head_cell.store(VALUE::Pointer(value_ptr));
-    } else {
-      HeapTestType* value_ptr = GarbageCollector::instance->alloc<HeapTestType>(i, kNull);
-      if (value_ptr == nullptr) {
-        safeprint("allocation failed in worker %", this->id);
-        break;
-      }
+  for (;;) {
+    HeapFiber* fiber = Scheduler::instance->get_ready_fiber();
+    if (fiber == nullptr) {
+      safeprint("worker %: no ready fiber", m_id);
+      break;
     }
 
-    g_worker->enter_native();
-    // std::this_thread::sleep_for(10ms);
-    std::this_thread::yield();
-    g_worker->leave_native();
+    assert(fiber->m_fiber->m_status == Fiber::Status::Ready);
+    assert(fiber->m_fiber->m_stack.bottom());
+    assert(fiber->m_fiber->m_stack.size());
+
+    m_context_switch_counter++;
+
+    m_current_fiber.assert_cas(nullptr, fiber);
+    // safeprint("worker %: scheduling fiber %", m_id, fiber->m_fiber->m_id);
+    fiber->m_fiber->m_status.assert_cas(Fiber::Status::Ready, Fiber::Status::Running);
+    fiber->m_fiber->m_scheduled_at = Scheduler::current_timestamp();
+    fiber->m_fiber->jump_context(nullptr);
+    fiber->m_fiber->m_scheduled_at = 0;
+    // safeprint("worker %: fiber % yielded", m_id, fiber->m_fiber->m_id);
+    m_current_fiber.assert_cas(fiber, nullptr);
+
+    if (fiber->m_fiber->m_status == Fiber::Status::Running) {
+      fiber->m_fiber->m_status.assert_cas(Fiber::Status::Running, Fiber::Status::Ready);
+      Scheduler::instance->schedule_fiber(fiber);
+    }
   }
 
   g_worker->exit();
@@ -82,43 +82,30 @@ void Worker::join() {
   }
 }
 
-void Worker::pause() {
-  m_state.assert_cas(Worker::State::Running, Worker::State::Paused);
-  m_cv.notify_all();
+void Worker::idle() {
+  safeprint("worker % -> idle mode", m_id);
+  m_state.assert_cas(Worker::State::Running, Worker::State::Idle);
+  m_resume_from_idle.store(false);
 
-  while (m_state.load() == Worker::State::Paused) {
-    wait_for_state_change(Worker::State::Paused);
-  }
+  Scheduler::instance->register_idle(this);
+
+  std::unique_lock<std::mutex> locker(m_mutex);
+  m_idle_cv.wait(locker, [&] {
+    return m_resume_from_idle.load() == true;
+  });
+
+  m_state.assert_cas(Worker::State::Idle, Worker::State::Running);
+  safeprint("worker % -> running mode", m_id);
 }
 
-void Worker::enter_native() {
-  // safeprint("worker % -> native mode", this->id);
-  m_state.assert_cas(Worker::State::Running, Worker::State::Native);
-  m_cv.notify_all();
-}
-
-void Worker::leave_native() {
-  // safeprint("worker % -> running mode", this->id);
-  m_state.assert_cas(Worker::State::Native, Worker::State::Running);
-  m_cv.notify_all();
-  Scheduler::instance->checkpoint();
+void Worker::resume_from_idle() {
+  m_resume_from_idle.assert_cas(false, true);
+  m_idle_cv.notify_all();
 }
 
 void Worker::exit() {
-  safeprint("worker % -> exit mode", this->id);
   m_state.assert_cas(Worker::State::Running, Worker::State::Exited);
-  m_cv.notify_all();
-}
-
-void Worker::wait_for_safepoint() {
-  while (m_state.load() == Worker::State::Running) {
-    wait_for_state_change(Worker::State::Running);
-  }
-}
-
-void Worker::wake() {
-  m_state.assert_cas(Worker::State::Paused, Worker::State::Running);
-  m_cv.notify_all();
+  m_safe_cv.notify_one();
 }
 
 void Worker::set_gc_region(HeapRegion* region) {
@@ -129,23 +116,89 @@ void Worker::clear_gc_region() {
   m_active_region.assert_cas(m_active_region.load(), nullptr);
 }
 
-void Worker::wait_for_state_change(Worker::State old_state) {
-  while (m_state.load(std::memory_order_acquire) == old_state) {
+void Worker::checkpoint() {
+  while (m_pause_request.load()) {
+    assert(m_state.load() == State::Running);
+    safeprint("parking worker %", m_id);
+    pause();
+    safeprint("unparking worker %", m_id);
+  }
+}
+
+void Worker::wait_for_checkpoint() {
+  while (m_state.load() == Worker::State::Running) {
 
     // spin and wait for the state to change
     for (uint32_t spin = 0; spin < 10000; spin++) {
-      if (m_state.load(std::memory_order_acquire) != old_state) {
-        break;
+      if (m_state.load() != Worker::State::Running) {
+        return;
       }
     }
 
+    // wait for the worker to leave running mode
     {
       std::unique_lock<std::mutex> locker(m_mutex);
-      m_cv.wait(locker, [&] {
-        return m_state.load(std::memory_order_acquire) != old_state;
+      m_safe_cv.wait(locker, [&] {
+        return m_state.load() != Worker::State::Running;
       });
     }
   }
+}
+
+void Worker::resume() {
+  m_state.assert_cas(Worker::State::Paused, Worker::State::Running);
+  m_running_cv.notify_all();
+}
+
+void Worker::pause() {
+  m_state.assert_cas(Worker::State::Running, Worker::State::Paused);
+  m_safe_cv.notify_one();
+
+  while (m_state.load() == Worker::State::Paused) {
+    std::unique_lock<std::mutex> locker(m_mutex);
+    m_running_cv.wait(locker, [&] {
+      return m_state.load() == Worker::State::Running;
+    });
+  }
+}
+
+void Worker::enter_native() {
+  // safeprint("worker % -> native mode", m_id);
+  m_state.assert_cas(Worker::State::Running, Worker::State::Native);
+  m_safe_cv.notify_one();
+}
+
+void Worker::leave_native() {
+  // safeprint("worker % -> running mode", m_id);
+  m_state.assert_cas(Worker::State::Native, Worker::State::Running);
+  Scheduler::instance->checkpoint();
+}
+
+void Worker::fiber_pause() {
+  Fiber* fiber = m_current_fiber.load()->m_fiber;
+  assert(fiber->m_status.load() == Fiber::Status::Running);
+  fiber->m_status.assert_cas(Fiber::Status::Running, Fiber::Status::Paused);
+  jump_context(nullptr);
+}
+
+void Worker::fiber_reschedule() {
+  Fiber* fiber = m_current_fiber.load()->m_fiber;
+  assert(fiber->m_status.load() == Fiber::Status::Running);
+  jump_context(nullptr);
+  assert(fiber->m_status.load() == Fiber::Status::Running);
+}
+
+void Worker::fiber_exit() {
+  Fiber* fiber = m_current_fiber.load()->m_fiber;
+  fiber->m_status.assert_cas(Fiber::Status::Running, Fiber::Status::Exited);
+  jump_context(nullptr);
+  __builtin_unreachable();
+}
+
+void* Worker::jump_context(void* argument) {
+  transfer_t transfer = jump_fcontext(m_context, argument);
+  m_context = transfer.fctx;
+  return transfer.data;
 }
 
 }  // namespace charly::core::runtime

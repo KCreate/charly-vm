@@ -1,10 +1,12 @@
 # Todos
 
+- Refactor scheduler and worker logic
+- Refactor memory allocation system
+- Fiber scheduler load balancing???
+
 - Fiber scheduler with fcontext_t
   - How to protect the stack from overflow?
     - Protect memory page immediately after the stack to trap on accesses
-  - Local task queues
-    - Work stealing from other workers
 
 - Concurrent Garbage Collector
   - Phases

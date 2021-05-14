@@ -37,16 +37,14 @@ void GCConcurrentWorker::start_thread() {
 
 void GCConcurrentWorker::stop_thread() {
   m_wants_exit = true;
-  request_gc(); // wake the GC worker thread if it isn't running already
+  m_cv.notify_all();
   if (m_thread.joinable()) {
     m_thread.join();
   }
 }
 
 void GCConcurrentWorker::request_gc() {
-  if (m_phase == Phase::Idle) {
-    m_cv.notify_one();
-  }
+  m_cv.notify_one();
 }
 
 GCPhase GCConcurrentWorker::phase() const {
@@ -55,66 +53,53 @@ GCPhase GCConcurrentWorker::phase() const {
 
 void GCConcurrentWorker::main() {
   for (;;) {
-    if (m_wants_exit)
-      break;
-
     wait_for_gc_request();
 
-    Scheduler::instance->pause();
+    Scheduler::instance->stop_the_world();
     if (m_wants_exit)
       break;
     init_mark();
-    Scheduler::instance->resume();
+    Scheduler::instance->start_the_world();
     phase_mark();
 
-    Scheduler::instance->pause();
+    Scheduler::instance->stop_the_world();
     if (m_wants_exit)
       break;
     init_evacuate();
-    Scheduler::instance->resume();
+    Scheduler::instance->start_the_world();
     phase_evacuate();
 
-    Scheduler::instance->pause();
+    Scheduler::instance->stop_the_world();
     if (m_wants_exit)
       break;
     init_updateref();
-    Scheduler::instance->resume();
+    Scheduler::instance->start_the_world();
     phase_updateref();
 
-    Scheduler::instance->pause();
+    Scheduler::instance->stop_the_world();
     if (m_wants_exit)
       break;
     init_idle();
-    Scheduler::instance->resume();
+    Scheduler::instance->start_the_world();
   }
 }
 
-bool GCConcurrentWorker::wait_for_gc_request() {
+void GCConcurrentWorker::wait_for_gc_request() {
   safeprint("GC worker waiting for GC request");
+  safeprint("GC utilization = %", m_gc->utilization());
 
-  bool waited = false;
-
-  while (!m_gc->should_begin_collection()) {
-    waited = true;
-    safeprint("GC worker wait iteration");
-    std::unique_lock<std::mutex> locker(m_mutex);
-    m_cv.wait(locker, [&]() {
-      return m_gc->should_begin_collection();
-    });
-  }
+  safeprint("GC worker wait iteration");
+  std::unique_lock<std::mutex> locker(m_mutex);
+  m_cv.wait(locker, [&]() {
+    return m_gc->should_begin_collection() || m_wants_exit;
+  });
 
   safeprint("GC worker finished waiting");
-  return waited;
 }
 
 void GCConcurrentWorker::init_mark() {
   m_phase.assert_cas(Phase::Idle, Phase::Mark);
   safeprint("GC init mark phase");
-
-  // append VM root set to greylist
-  for (Worker* worker : Scheduler::instance->m_fiber_workers) {
-    mark(worker->m_head_cell.load());
-  }
 }
 
 void GCConcurrentWorker::phase_mark() {
@@ -125,12 +110,9 @@ void GCConcurrentWorker::phase_mark() {
     HeapHeader* cell = m_greylist.front();
     m_greylist.pop_front();
 
-    cell->set_color(kMarkColorBlack);
-
     switch (cell->type()) {
-      case kTypeTest: {
-        HeapTestType* value = static_cast<HeapTestType*>(cell);
-        mark(value->other());
+      case kTypeFiber: {
+        // HeapFiber* value = static_cast<HeapFiber*>(cell);
         break;
       }
       default: {
@@ -138,6 +120,8 @@ void GCConcurrentWorker::phase_mark() {
         break;
       }
     }
+
+    cell->set_color(kMarkColorBlack);
   }
 
   safeprint("GC end mark phase");
