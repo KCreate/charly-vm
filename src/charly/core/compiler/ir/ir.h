@@ -32,6 +32,7 @@
 #include <unordered_map>
 #include <variant>
 #include <vector>
+#include <optional>
 
 #include "charly/core/compiler/ast.h"
 #include "charly/core/compiler/location.h"
