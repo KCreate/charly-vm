@@ -156,6 +156,7 @@ struct Worker {
   // contains an assert that aborts the program if the state change fails
   void assert_change_state(State oldstate, State newstate) {
     bool changed = change_state(oldstate, newstate);
+    (void)changed;
     assert(changed);
   }
 

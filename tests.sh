@@ -1,13 +1,13 @@
 #!/bin/sh
 
-mkdir -p build
-cd build
+mkdir -p buildrelease
+cd buildrelease
 
 # initial cmake run
 test -f Makefile
 if [ $? -gt 0 ]
 then
-  cmake .. -DCMAKE_BUILD_TYPE=Debug
+  cmake .. -DCMAKE_BUILD_TYPE=Release
 fi
 
 make tests
@@ -16,5 +16,5 @@ then
   cd ..
 
   # --batch exits lldb on success and prompts for further input on failure
-  build/tests $@
+  buildrelease/tests $@
 fi
