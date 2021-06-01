@@ -31,6 +31,7 @@
 #include "charly/core/compiler/diagnostic.h"
 #include "charly/core/compiler/token.h"
 #include "charly/utils/buffer.h"
+#include "charly/macros.h"
 
 #pragma once
 
@@ -56,8 +57,7 @@ public:
   Token last_token();
 
 private:
-  Lexer(Lexer&) = delete;
-  Lexer(Lexer&&) = delete;
+  CHARLY_NON_COPYABLE(Lexer);
 
   void increment_row();
   void increment_column(size_t delta);

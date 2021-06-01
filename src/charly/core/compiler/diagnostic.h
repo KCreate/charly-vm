@@ -33,6 +33,7 @@
 #include "charly/core/compiler/location.h"
 #include "charly/utils/buffer.h"
 #include "charly/utils/colorwriter.h"
+#include "charly/macros.h"
 
 #pragma once
 
@@ -187,8 +188,7 @@ public:
   }
 
 private:
-  DiagnosticConsole(DiagnosticConsole&) = delete;
-  DiagnosticConsole(DiagnosticConsole&&) = delete;
+  CHARLY_NON_COPYABLE(DiagnosticConsole)
 
   // writes the section of the source code to which location
   // refers to to the out stream

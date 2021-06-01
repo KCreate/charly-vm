@@ -69,9 +69,6 @@ public:
     m_cursor = 0;
   }
 
-  MemoryBlock& operator=(MemoryBlock& other) = delete;
-  MemoryBlock& operator=(MemoryBlock&& other) = delete;
-
   // move the write offset to some new offset
   void seek(size_t offset);
 

@@ -1,6 +1,3 @@
-
-
-
 /*
  * This file is part of the Charly Virtual Machine (https://github.com/KCreate/charly-vm)
  *
@@ -27,32 +24,22 @@
  * SOFTWARE.
  */
 
+#include <cassert>
 #include <iostream>
 #include <iomanip>
-#include <cstdint>
-#include <memory>
 #include <mutex>
+#include <condition_variable>
 #include <chrono>
+#include <vector>
+#include <queue>
+#include <thread>
+#include <list>
+#include <set>
 
-#pragma once
+#include <boost/context/detail/fcontext.hpp>
 
-namespace charly {
-
-/*
- * shorthand method for often used shared_ptr stuff
- * */
-template <typename T>
-using ref = std::shared_ptr<T>;
-
-template <typename T, typename... Args>
-inline ref<T> make(Args&&... params) {
-  return std::make_shared<T>(std::forward<Args>(params)...);
-}
-
-template <typename T, typename O>
-inline ref<T> cast(ref<O> node) {
-  return std::dynamic_pointer_cast<T>(node);
-}
+using namespace boost::context::detail;
+using namespace std::chrono_literals;
 
 /*
  * thread-safe printing meant for debugging
@@ -75,41 +62,71 @@ inline void safeprint_impl(const char* format, T value, Targs... Fargs) {
   }
 }
 
-extern std::mutex safeprint_mutex;
+std::mutex safeprint_mutex;
+auto program_start_time = std::chrono::steady_clock::now();
 
 #ifdef NDEBUG
-
 template <typename... Targs>
 inline void safeprint(const char*, Targs...) {}
-
 #else
-
-inline static auto program_startup_timestamp = std::chrono::steady_clock::now();
 template <typename... Targs>
 inline void safeprint(const char* format, Targs... Fargs) {
   {
     std::unique_lock<std::mutex> locker(safeprint_mutex);
-
-    // get elapsed duration since program start
-    auto now = std::chrono::steady_clock::now();
-    auto dur = now - program_startup_timestamp;
-    uint32_t ticks = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
-    double elapsed_seconds = (float)ticks / 1000;
-
-    // format as seconds with trailing milliseconds
-    std::cout << "[";
-    std::cout << std::fixed;
-    std::cout << std::setprecision(3);
-    std::cout << std::setw(12);
-    std::cout << elapsed_seconds;
-    std::cout << std::setw(1);
-    std::cout << "]: ";
-
+    auto time_elapsed = std::chrono::steady_clock::now() - program_start_time;
+    auto ticks = std::chrono::duration_cast<std::chrono::milliseconds>(time_elapsed).count();
+    std::cout << std::setw(12) << std::setfill('_') << ticks << std::setfill(' ') << std::setw(1) << ": ";
     safeprint_impl(format, Fargs...);
     std::cout << std::endl;
   }
 }
-
 #endif
 
-}  // namespace charly
+
+// actual implementation of scheduler
+class SchedulerImpl {
+
+};
+
+// runtime scheduler API into scheduler
+class Scheduler {
+public:
+
+  struct Transfer {
+    void* data;
+  };
+
+  // initialize the scheduler
+  static void initialize();
+
+  // start all the scheduler workers
+  static void start();
+
+  static void shutdown();
+
+  static void yield();
+
+private:
+  inline static const SchedulerImpl* m_instance;
+};
+
+
+void task_fn(Fiber* fiber) {
+
+  for (int i = 0; i < 100; i++) {
+    safeprint("fiber %: counter = %", fiber->id(), i);
+    Scheduler::yield();
+  }
+
+}
+
+
+int main() {
+
+  for (int i = 0; i < 100; i++) {
+    safeprint("counter = %", i);
+    std::this_thread::sleep_for(10ms);
+  }
+
+  return 0;
+}

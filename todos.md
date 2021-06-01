@@ -1,8 +1,33 @@
 # Todos
 
-- Refactor scheduler and worker logic
-- Refactor memory allocation system
-- Fiber scheduler load balancing???
+- Idle processor when waiting for GC cycle to complete
+
+- GC stop the world mechanism
+
+- Native sections mechanism
+
+- System monitor
+  - Detect workers that exceeded their timeslice during native mode
+
+- Implement processor abstraction
+  - Processor data structure
+    - Fiber ready runqueue
+    - Memory allocator intermediate caches
+  - Worker threads
+    - Worker threads acquire a processor at the beginning of their lifecycle
+    - Processors are released back to the idle list once they run out of work
+    - Worker threads that are inside native mode, that exceed some timeout (20ms?) will be
+      marked as preempted by the system monitor thread.
+      - The runtime will release the processor from the worker thread and will return it to the idle
+        list of processors
+      - The system monitor now detects that there are idle processors, but no idle worker threads,
+        so the runtime will start a new worker thread that acquired the processor
+      - Once the prempted worker thread returns from the native section it will check if it was
+        preempted
+        - If the worker was pre-empted, we try to reacquire the old processor
+        - If reacquiring the old processor fails, try to acquire another idle processor
+        - If there are no idle processors, idle the current worker thread and reschedule the running
+          fiber into the global runqueue
 
 - Fiber scheduler with fcontext_t
   - How to protect the stack from overflow?
@@ -93,20 +118,17 @@
     - Allows for more detailed inline caches as builtin properties can be
       cached in the same way that object properties may be cached
   - Classes cannot be modified at runtime. They can only be subclassed
-  - Object creates from classes cannot have new keys assigned to them
+  - Objects creates from classes cannot have new keys assigned to them
     - They are static shapes that can only store the properties declared in their class
     - For a dynamic collection of values use the dict primitive datatype
       - Small dictionaries could be laid out inline and take advantage of inline caches
 
-- Task scheduling
-  - Cannot have a single global task queue, too much overhead
-  - Every worker thread needs to get their own task queue
-    - Implement work stealing between the threads
-
 - Memory allocator
+
 - Codegenerator
   - Creates instructionblock
   - Allocates constants
+
 - Fiber threads
   - Write custom scheduler using setjmp/longjmp
   - Allocate custom stack (4kb) per fiber
@@ -120,8 +142,11 @@
     - I don't know if we could recover a fiber with an overflowed stack
   - Ideally the stack overflow would be detected before it actually happens so we can
     gracefully throw a Charly or grow the stack to accomodate more data
+
 - Implement basic opcodes
+
 - Memory locking
+
 - REPL support
 
 - Polymorphic inline caches

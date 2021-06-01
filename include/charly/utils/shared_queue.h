@@ -37,12 +37,10 @@ namespace charly::utils {
 
 // forward declarations
 class GarbageCollector;
-class GCConcurrentWorker;
 
 template <typename T>
 class SharedQueue {
   friend class GarbageCollector;
-  friend class GCConcurrentWorker;
 public:
   SharedQueue() {
     QueueEntry* dummy = new QueueEntry();

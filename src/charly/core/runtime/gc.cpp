@@ -34,159 +34,137 @@ namespace charly::core::runtime {
 void GarbageCollector::initialize() {
   static GarbageCollector collector;
   GarbageCollector::instance = &collector;
+}
 
-  // allocate initial set of heap regions
-  for (size_t i = 0; i < kHeapInitialRegionCount; i++) {
-    collector.add_heap_region();
+void GarbageCollector::shutdown() {
+  {
+    std::unique_lock<std::mutex> locker(m_mutex);
+    m_wants_exit.store(true);
+  }
+  m_cv.notify_all();
+
+  if (m_thread.joinable()) {
+    m_thread.join();
   }
 }
 
-void* GarbageCollector::worker_alloc_size(size_t size) {
-  HeapRegion* region = g_worker->active_region();
-
-  // no region or not enough space left in current region for object of *size*
-  if (region == nullptr || !region->fits(size)) {
-    g_worker->clear_gc_region();
-    Scheduler::instance->checkpoint();
-
-    region = allocate_heap_region();
-    if (region == nullptr) {
-      return nullptr;
+void GarbageCollector::request_gc() {
+  if (m_wants_collection == false) {
+    std::unique_lock<std::mutex> locker(m_mutex);
+    if (m_wants_collection.cas(false, true)) {
+      m_cv.notify_all();
     }
-
-    g_worker->set_gc_region(region);
-    safeprint("worker % allocated region %", g_worker->id(), region->id());
-  }
-
-  // serve the allocation from our currently active region
-  void* head = region->allocate(size);
-
-  safeprint(
-    "allocated % (% bytes) (% bytes left) from region % (%/%) in worker %",
-    head,
-    size,
-    kHeapRegionSize - region->used(),
-    region,
-    region->id(),
-    m_allocated_regions.load(std::memory_order_relaxed),
-    g_worker->id()
-  );
-
-  return head;
-}
-
-void* GarbageCollector::global_alloc_size(size_t size) {
-  HeapRegion* region = m_global_region;
-
-  // no region or not enough space left in global region for object of *size*
-  if (region == nullptr || !region->fits(size)) {
-    m_global_region = nullptr;
-
-    region = allocate_heap_region();
-    if (region == nullptr) {
-      return nullptr;
-    }
-
-    m_global_region = region;
-  }
-
-  // serve the allocation from our currently active region
-  void* head = region->allocate(size);
-
-  safeprint(
-    "allocated % (% bytes) (% bytes left) from region % (%/%) in global ctx",
-    head,
-    size,
-    kHeapRegionSize - region->used(),
-    region,
-    region->id(),
-    m_allocated_regions.load(std::memory_order_relaxed)
-  );
-
-  return head;
-}
-
-void GarbageCollector::grow_heap() {
-  size_t regions_to_add = m_allocated_regions.load(std::memory_order_acquire);
-  for (size_t i = 0; i < regions_to_add; i++) {
-    add_heap_region();
   }
 }
 
-GCPhase GarbageCollector::phase() const {
-  return m_concurrent_worker.phase();
+void GarbageCollector::main() {
+  for (;;) {
+    wait_for_gc_request();
+
+    if (m_wants_exit)
+      break;
+
+    Scheduler::instance->stop_the_world();
+    init_mark();
+    Scheduler::instance->start_the_world();
+
+    if (m_wants_exit)
+      break;
+    phase_mark();
+    if (m_wants_exit)
+      break;
+
+    Scheduler::instance->stop_the_world();
+    init_evacuate();
+    Scheduler::instance->start_the_world();
+
+    if (m_wants_exit)
+      break;
+    phase_evacuate();
+    if (m_wants_exit)
+      break;
+
+    Scheduler::instance->stop_the_world();
+    init_updateref();
+    Scheduler::instance->start_the_world();
+
+    if (m_wants_exit)
+      break;
+    phase_updateref();
+    if (m_wants_exit)
+      break;
+
+    Scheduler::instance->stop_the_world();
+    init_idle();
+    Scheduler::instance->start_the_world();
+
+    if (m_wants_exit)
+      break;
+  }
 }
 
-bool GarbageCollector::can_allocate() {
-  return m_free_regions.load(std::memory_order_relaxed);
-}
-
-void GarbageCollector::free_region(HeapRegion* region) {
+void GarbageCollector::wait_for_gc_request() {
+  safeprint("GC worker waiting for GC request");
   std::unique_lock<std::mutex> locker(m_mutex);
-  region->reset();
-  m_freelist.push_back(region);
-  m_free_regions++;
+  m_cv.wait(locker, [&]() {
+    return m_wants_collection || m_wants_exit;
+  });
+  safeprint("GC worker finished waiting");
 }
 
-HeapRegion* GarbageCollector::allocate_heap_region() {
-  std::unique_lock<std::mutex> locker(m_mutex);
+void GarbageCollector::init_mark() {
+  m_state.acas(State::Idle, State::Mark);
+  safeprint("GC init mark phase");
+}
 
-  bool gc_worker_is_idle = m_concurrent_worker.phase() == GCConcurrentWorker::Phase::Idle;
-  if (should_begin_collection() && gc_worker_is_idle) {
-    m_concurrent_worker.request_gc();
-  }
+void GarbageCollector::phase_mark() {
+  safeprint("GC mark phase");
+  std::this_thread::sleep_for(1s);
+  safeprint("GC end mark phase");
+}
 
-  if (should_grow()) {
-    safeprint("GC growing heap");
-    grow_heap();
-  }
+void GarbageCollector::init_evacuate() {
+  m_state.acas(State::Mark, State::Evacuate);
+  safeprint("GC init evacuate phase");
+  std::this_thread::sleep_for(1s);
+}
 
-  // if there are no free regions, wait for the GC to complete a cycle
-  if (m_freelist.size() == 0) {
-    for (size_t tries = kHeapAllocationAttempts; tries > 0; tries--) {
-      locker.unlock();
-      safeprint("worker % waiting for GC cycle (%)", g_worker->id(), tries);
-      g_worker->pause();
-      locker.lock();
+void GarbageCollector::phase_evacuate() {
+  safeprint("GC evacuate phase");
+  std::this_thread::sleep_for(1s);
+  safeprint("GC end evacuate phase");
+}
 
-      if (m_freelist.size()) {
-        safeprint("worker % finished waiting for GC cycle", g_worker->id());
-        break;
+void GarbageCollector::init_updateref() {
+  m_state.acas(State::Evacuate, State::UpdateRef);
+  safeprint("GC init updateref phase");
+  std::this_thread::sleep_for(1s);
+}
+
+void GarbageCollector::phase_updateref() {
+  safeprint("GC updateref phase");
+  std::this_thread::sleep_for(1s);
+  safeprint("GC end updateref phase");
+}
+
+void GarbageCollector::init_idle() {
+  m_state.acas(State::UpdateRef, State::Idle);
+  m_wants_collection.acas(true, false);
+  safeprint("GC init idle phase");
+  std::this_thread::sleep_for(1s);
+}
+
+void GarbageCollector::mark(VALUE value) {
+  if (value.is_pointer()) {
+    HeapHeader* header = MemoryAllocator::object_header(value.to_pointer<void>());
+
+    // color object grey and append to greylist
+    if (header->gcmark == MarkColor::White) {
+      if (header->gcmark.cas(MarkColor::White, MarkColor::Grey)) {
+        m_greylist.push_back(header);
       }
     }
-
-    if (m_freelist.size() == 0) {
-      return nullptr;
-    }
   }
-
-  HeapRegion* region = m_freelist.front();
-  m_freelist.pop_front();
-  m_free_regions--;
-  return region;
-}
-
-void GarbageCollector::add_heap_region() {
-  std::unique_lock<std::mutex> locker(m_mutex);
-
-  // heap limit reached
-  if (m_regions.size() >= kHeapRegionLimit) {
-    return;
-  }
-
-  HeapRegion* region = new HeapRegion();
-  m_regions.insert(region);
-  m_allocated_regions++;
-
-  locker.unlock();
-
-  free_region(region);
-}
-
-float GarbageCollector::utilization() {
-  size_t total_regions = m_allocated_regions.load(std::memory_order_acquire);
-  size_t full_regions = total_regions - m_free_regions.load(std::memory_order_acquire);
-  return (float)full_regions / (float)total_regions;
 }
 
 }  // namespace charly::core::runtime

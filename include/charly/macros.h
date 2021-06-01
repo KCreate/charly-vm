@@ -39,4 +39,36 @@ namespace charly::utils {
 #define CHARLY_VA_FOR_EACH(action, ...) \
   CHARLY_GET_MACRO(__VA_ARGS__, CHARLY_FE_5, CHARLY_FE_4, CHARLY_FE_3, CHARLY_FE_2, CHARLY_FE_1)(action, __VA_ARGS__)
 
+#define CHARLY_NON_CONSTRUCTABLE(C) \
+private:                            \
+  C() = delete;                     \
+                                    \
+private:                            \
+  ~C() = delete;
+
+#define CHARLY_NON_COPYABLE(C)     \
+private:                           \
+  C(const C&) = delete;            \
+                                   \
+private:                           \
+  C(C&) = delete;                  \
+                                   \
+private:                           \
+  C(const C&&) = delete;           \
+                                   \
+private:                           \
+  C(C&&) = delete;                 \
+                                   \
+private:                           \
+  C& operator=(C&) = delete;       \
+                                   \
+private:                           \
+  C& operator=(C&&) = delete;      \
+                                   \
+private:                           \
+  C& operator=(const C&) = delete; \
+                                   \
+private:                           \
+  C& operator=(const C&&) = delete;
+
 }  // namespace charly::utils

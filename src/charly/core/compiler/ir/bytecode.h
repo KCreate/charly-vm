@@ -31,7 +31,7 @@
 #include <vector>
 
 #include "charly/core/compiler/token.h"
-#include "charly/utils/macros.h"
+#include "charly/macros.h"
 #include "charly/value.h"
 
 #pragma once

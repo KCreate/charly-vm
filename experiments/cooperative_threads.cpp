@@ -123,7 +123,9 @@ struct FiberTask {
   }
 
   ~FiberTask() {
-    std::free(this->stack_bottom);
+    if (this->stack_bottom) {
+      std::free(this->stack_bottom);
+    }
     this->stack_bottom = nullptr;
     this->stack_top = nullptr;
   }
@@ -144,8 +146,6 @@ struct FiberTask {
   void* stack_top;
   void* stack_bottom;
   size_t stack_size;
-
-  FiberWorker* active_worker;
 };
 
 struct FiberWorker {
@@ -167,7 +167,9 @@ struct FiberWorker {
   FiberTask* m_current_task;
 };
 
-static const size_t kSchedulerWorkerCount = 2;
+inline thread_local FiberWorker* active_worker = nullptr;
+
+static const size_t kSchedulerWorkerCount = std::thread::hardware_concurrency();
 
 class Scheduler {
   friend class FiberWorker;
@@ -217,13 +219,12 @@ public:
 
   // append a task to the ready queue
   void schedule_task(FiberTask* task) {
-    {
-      std::unique_lock<std::mutex> locker(m_mutex);
-      assert(task->status == FiberTask::StatusWaiting);
-      task->status = FiberTask::StatusReady;
-      m_ready_queue.push_back(task);
-      m_cv.notify_all();
-    }
+    std::unique_lock<std::mutex> locker(m_mutex);
+    // safeprint("scheduled task %", task->id);
+    assert(task->status == FiberTask::StatusWaiting);
+    task->status = FiberTask::StatusReady;
+    m_ready_queue.push_back(task);
+    m_cv.notify_all();
   }
 
   // pop ready task or wait
@@ -269,16 +270,16 @@ void FiberWorker::main() {
       break;
     }
 
-    task->active_worker = this;
+    active_worker = this;
     m_current_task = task;
 
     assert(task->status == FiberTask::StatusReady);
     task->status = FiberTask::StatusRunning;
-    // safeprint("worker %: jumping to task %", m_id, task->id);
+    safeprint("worker %: jumping to task %", m_id, task->id);
     transfer_t transfer = jump_fcontext(task->context, (void*)this);
     task->context = transfer.fctx;
 
-    task->active_worker = nullptr;
+    active_worker = nullptr;
     m_current_task = nullptr;
 
     switch (task->status) {
@@ -307,16 +308,16 @@ void FiberWorker::main() {
 
 void FiberTask::reschedule() {
   this->status = StatusWaiting;
-  // safeprint("worker %: task % returning to scheduler", this->active_worker->m_id, this->id);
-  transfer_t transfer = jump_fcontext(this->active_worker->m_main_ctx, nullptr);
-  this->active_worker->m_main_ctx = transfer.fctx;
+  safeprint("worker %: task % returning to scheduler", active_worker->m_id, this->id);
+  transfer_t transfer = jump_fcontext(active_worker->m_main_ctx, nullptr);
+  active_worker->m_main_ctx = transfer.fctx;
 }
 
 void FiberTask::exit() {
   this->status = StatusExited;
   Scheduler::instance->delete_task(this);
-  safeprint("worker %: task % exiting", this->active_worker->m_id, this->id);
-  jump_fcontext(this->active_worker->m_main_ctx, nullptr);
+  safeprint("worker %: task % exiting", active_worker->m_id, this->id);
+  jump_fcontext(active_worker->m_main_ctx, nullptr);
   assert(false && "never reached");
 }
 
@@ -330,8 +331,8 @@ void FiberTask::ctx_handler(transfer_t transfer) {
 }
 
 void task_fn(FiberTask* task) {
-  for (int i = 0; i < 10; i++) {
-    safeprint("task % on worker %: i = %", task->id, task->active_worker->m_id, i);
+  for (int i = 0; i < 100; i++) {
+    safeprint("task % on worker %: i = %", task->id, active_worker->m_id, i);
     std::this_thread::sleep_for(100ms);
     task->reschedule();
   }
@@ -342,13 +343,13 @@ int main() {
   Scheduler::initialize();
 
   safeprint("creating tasks");
-  for (int i = 0; i < 50; i++) {
+  for (int i = 0; i < 10; i++) {
     FiberTask* task = Scheduler::instance->create_task(&task_fn);
 
     Scheduler::instance->schedule_task(task);
   }
 
-  std::this_thread::sleep_for(10s);
+  std::this_thread::sleep_for(30s);
   Scheduler::instance->shutdown();
 
   return 0;

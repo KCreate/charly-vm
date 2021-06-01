@@ -24,183 +24,88 @@
  * SOFTWARE.
  */
 
-#include <cstdlib>
-#include <array>
-#include <list>
-#include <set>
-#include <vector>
+#include <thread>
 #include <mutex>
+#include <condition_variable>
+#include <list>
 
 #include "charly/charly.h"
 #include "charly/atomic.h"
+#include "charly/value.h"
 
-#include "charly/core/runtime/heapvalue.h"
-#include "charly/core/runtime/gcworker.h"
+#include "charly/core/runtime/scheduler.h"
+#include "charly/core/runtime/allocator.h"
 
 #pragma once
 
 namespace charly::core::runtime {
 
-// forward declarations
-class Worker;
-class GarbageCollector;
-
-// amount of cells per heap region
-static const size_t kHeapRegionSize = 1024 * 16; // 16 kilobyte regions
-
-// initial amount of heap regions allocated when starting the machine
-static const size_t kHeapInitialRegionCount = 64;
-
-// the maximum amount of heap regions allowed to be allocated. any allocation
-// performed after that issue was reached will fail
-static const size_t kHeapRegionLimit = 1024;
-
-// heap fill percentage at which to begin concurrent collection
-static const float kHeapGCTrigger = 0.5;
-
-// heap fill percentage at which to grow the heap
-static const float kHeapGCGrowTrigger = 0.9;
-
-// the amount of times an allocation should wait for the next GC cycle
-// before it fails
-static const size_t kHeapAllocationAttempts = 10;
-
-// heap object pointers are required to be aligned by 8 byte boundaries
-// this ensures that the lower three bits of every heap pointer are set to 0
-constexpr size_t kHeapObjectAlignment = static_cast<size_t>(1 << 3);
-
-class HeapRegion {
-public:
-  HeapRegion() {
-    static uint32_t id_counter = 1;
-    m_id = id_counter++;
-    m_next = 0;
-  }
-
-  void* allocate(size_t size) {
-    assert(m_next + size <= kHeapRegionSize);
-    uint8_t* head = m_buffer + m_next;
-    m_next += size;
-
-    // align next offset with object alignment boundary
-    size_t off = m_next % kHeapObjectAlignment;
-    if (off) {
-      m_next += (kHeapObjectAlignment - off);
-    }
-
-    return head;
-  }
-
-  bool fits(size_t size) {
-    return m_next + size <= kHeapRegionSize;
-  }
-
-  void reset() {
-    m_next = 0;
-  }
-
-  uint32_t id() const {
-    return m_id;
-  }
-
-  size_t used() const {
-    return m_next;
-  }
-
-private:
-  uint32_t m_id;
-  size_t m_next;
-  uint8_t m_buffer[kHeapRegionSize];
-};
-
-extern thread_local Worker* g_worker;
-
 class GarbageCollector {
-  friend class Worker;
-  friend class GCConcurrentWorker;
+  friend class MemoryAllocator;
 public:
-  GarbageCollector() : m_concurrent_worker(this) {}
-
   static void initialize();
-
-  void start_background_worker() {
-    m_concurrent_worker.start_thread();
-  }
-
-  void stop_background_worker() {
-    m_concurrent_worker.stop_thread();
-  }
-
   inline static GarbageCollector* instance = nullptr;
 
-  template <typename O, typename... Args>
-  O* alloc(Args&&... params) {
-    O* object;
-    if (g_worker) {
-      object = static_cast<O*>(GarbageCollector::instance->worker_alloc_size(sizeof(O)));
-    } else {
-      object = static_cast<O*>(GarbageCollector::instance->global_alloc_size(sizeof(O)));
-    }
+  GarbageCollector() :
+    m_wants_collection(false),
+    m_wants_exit(false),
+    m_state(State::Idle),
+    m_thread(std::thread(&GarbageCollector::main, this)) {}
 
-    assert(object);
-
-    if (object) {
-      object->init(std::forward<Args>(params)...);
+  ~GarbageCollector() {
+    if (m_thread.joinable()) {
+      m_thread.join();
     }
-    return object;
   }
 
-  // allocate space for *size* bytes
-  // returns nullptr if the allocation failed
-  void* worker_alloc_size(size_t size);
-  void* global_alloc_size(size_t size);
+  enum class State : uint8_t {
+    Idle,       // GC is not running and is waiting to be activated
+    Mark,       // GC is traversing the heap, marking live values
+    Evacuate,   // GC is compacting the heap
+    UpdateRef   // GC is updating references to moved objects
+  };
+  State state() const {
+    return m_state;
+  }
 
-  // checks wether the garbage collector might be able to allocate a value right now
-  bool can_allocate();
+  // stop the garbage collector thread
+  // called by the scheduler when shutting down the runtime
+  void shutdown();
 
-  // grow the heap to contain a certain amount of regions
-  void grow_heap();
-
-  // check the current phase of the GC worker
-  GCConcurrentWorker::Phase phase() const;
+  // starts a gc cycle if the GC worker is currently paused
+  void request_gc();
 
 private:
-  // append a region to the freelist
-  void free_region(HeapRegion* region);
 
-  // reserve a heap region for a worker
-  // returns nullptr if the memory limit was reached
-  HeapRegion* allocate_heap_region();
+  // concurrent worker main method
+  void main();
 
-  // allocates a new heap region and appends it to the freelist
-  void add_heap_region();
+  // waits for the runtime to request a GC cycle
+  void wait_for_gc_request();
 
-  // percentage (0.0 - 1.0) of allocated regions that are currently in use
-  float utilization();
+  // GC STW pauses
+  void init_mark();
+  void init_evacuate();
+  void init_updateref();
+  void init_idle();
 
-  // checks wether a GC collection should be started
-  bool should_begin_collection() {
-    return utilization() > kHeapGCTrigger;
-  }
+  // GC phases that run concurrently with the application threads
+  void phase_mark();
+  void phase_evacuate();
+  void phase_updateref();
 
-  // wether the gc should alloate more regions
-  bool should_grow() {
-    return utilization() > kHeapGCGrowTrigger;
-  }
+  // append a value to the greylist
+  void mark(VALUE value);
 
 private:
-  GCConcurrentWorker m_concurrent_worker;
-
+  charly::atomic<bool> m_wants_collection;
+  charly::atomic<bool> m_wants_exit;
   std::mutex m_mutex;
   std::condition_variable m_cv;
 
-  std::list<HeapRegion*> m_freelist;
-  std::set<HeapRegion*> m_regions;
-
-  HeapRegion* m_global_region = nullptr;
-
-  charly::atomic<size_t> m_free_regions = 0;
-  charly::atomic<size_t> m_allocated_regions = 0;
+  charly::atomic<State> m_state;
+  std::thread m_thread;
+  std::list<HeapHeader*> m_greylist;
 };
 
 }  // namespace charly::core::runtime

@@ -44,7 +44,7 @@
 #include "charly/core/compiler/ir/builder.h"
 
 #include "charly/core/runtime/scheduler.h"
-#include "charly/core/runtime/gc.h"
+#include "charly/core/runtime/allocator.h"
 
 using namespace charly;
 using namespace charly::core::runtime;
@@ -104,18 +104,6 @@ int run_repl(DiagnosticConsole&) {
   return 0;
 }
 
-void fiber_task_fn() {
-  safeprint("inside fiber %", g_worker->current_fiber()->m_id);
-
-  for (int i = 0; i < 30; i++) {
-    std::this_thread::sleep_for(25ms);
-    safeprint("fiber % on worker % counter = %", g_worker->current_fiber()->m_id, g_worker->id(), i);
-    Scheduler::instance->checkpoint();
-  }
-
-  safeprint("leaving fiber %", g_worker->current_fiber()->m_id);
-}
-
 void run_file(DiagnosticConsole& console, const std::string& filename) {
   std::ifstream file(filename);
 
@@ -150,19 +138,12 @@ void run_file(DiagnosticConsole& console, const std::string& filename) {
     }
   }
 
-  safeprint("starting runtime");
-  Scheduler::instance->start();
-  safeprint("finished starting runtime");
-
-  std::this_thread::sleep_for(5s);
-
-  for (int i = 0; i < 100; i++) {
-    HeapFiber* fiber = GarbageCollector::instance->alloc<HeapFiber>(fiber_task_fn);
-    fiber->m_fiber->m_status.assert_cas(Fiber::Status::Paused, Fiber::Status::Ready);
+  for (int i = 0; i < 10; i++) {
+    Fiber* fiber = Fiber::allocate();
+    fiber->state.acas(Fiber::State::Created, Fiber::State::Ready);
     Scheduler::instance->schedule_fiber(fiber);
+    std::this_thread::sleep_for(3000ms);
   }
-
-  // std::this_thread::sleep_for(5s);
 
   safeprint("joining scheduler");
   Scheduler::instance->join();
@@ -206,8 +187,8 @@ int main(int argc, char** argv) {
   utils::ArgumentParser::init_argv(argc, argv);
   utils::ArgumentParser::init_env(environ);
 
-  safeprint("sizeof(HeapRegion) = %", sizeof(HeapRegion));
-  safeprint("alignmentof(HeapRegion) = %", std::alignment_of<HeapRegion>::value);
+  safeprint("sizeof(HeapHeader) = %", sizeof(HeapHeader));
+  safeprint("sizeof(Fiber) = %", sizeof(Fiber));
 
   // std::this_thread::sleep_for(2s);
   Scheduler::initialize();

@@ -44,7 +44,7 @@ struct atomic : public std::atomic<T> {
   }
 
   // CAS that should not fail
-  void assert_cas(T expected, T desired) {
+  void acas(T expected, T desired) {
     bool result = cas(expected, desired);
     assert(result);
     (void)result;
