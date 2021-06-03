@@ -1,10 +1,12 @@
 # Todos
 
 - Idle processor when waiting for GC cycle to complete
-
-- GC stop the world mechanism
+  - Processors that still have an acquired region can keep running
 
 - Native sections mechanism
+
+- Work stealing
+  - How do idle workers steal work from some overstressed worker?
 
 - System monitor
   - Detect workers that exceeded their timeslice during native mode

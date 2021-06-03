@@ -135,7 +135,8 @@ struct Worker {
   fcontext_t context;
   std::thread os_handle;
 
-  charly::atomic<bool> should_exit; // set by the scheduler if it wants this worker to exit
+  charly::atomic<bool> should_exit = false; // set by the scheduler if it wants this worker to exit
+  charly::atomic<bool> should_stop = false; // set by the scheduler during a stop-the-world pause
 
   charly::atomic<State> state = State::Created;
   charly::atomic<Fiber*> fiber = nullptr;
@@ -151,6 +152,9 @@ struct Worker {
   // attempt to change the worker state from an old to a new state
   // returns true if the state could be successfully changed, false otherwise
   bool change_state(State oldstate, State newstate);
+
+  // waits for the workers state to change away from some old state
+  State wait_for_state_change(State oldstate);
 
   // attempts to change the worker state from and old to a new state
   // contains an assert that aborts the program if the state change fails
@@ -233,6 +237,14 @@ public:
   Processor* processor();
   Fiber* fiber();
 
+  // schedule a ready fiber into the runtime
+  //
+  // the fiber already has to be in the ready state before calling this method
+  // if called from a worker thread, the fiber will be scheduled into the workers
+  // local run queue. if called from somewhere else, the fiber gets scheduled into the
+  // schedulers global run queue
+  void schedule_fiber(Fiber* fiber);
+
   // scheduler checkpoint
   //
   // provides a place for the scheduler to cooperatively preempt the
@@ -242,14 +254,6 @@ public:
   //
   // meant to be called from within application worker threads
   void checkpoint();
-
-  // schedule a ready fiber into the runtime
-  //
-  // the fiber already has to be in the ready state before calling this method
-  // if called from a worker thread, the fiber will be scheduled into the workers
-  // local run queue. if called from somewhere else, the fiber gets scheduled into the
-  // schedulers global run queue
-  void schedule_fiber(Fiber* fiber);
 
   // stop / start the world
   // when the world is stopped, the GC can safely traverse and scan the
@@ -295,7 +299,7 @@ private:
   void release_processor_from_worker(Worker* worker);
 
   // put the calling worker thread into idle mode
-  void idle_worker(Worker* worker);
+  void idle_worker();
 
   // wake up a worker from idle mode
   // returns false if another thread woke the worker before us

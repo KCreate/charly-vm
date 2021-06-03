@@ -49,9 +49,16 @@ void GarbageCollector::shutdown() {
 }
 
 void GarbageCollector::request_gc() {
+  safeprint("request_gc");
   if (m_wants_collection == false) {
     std::unique_lock<std::mutex> locker(m_mutex);
     if (m_wants_collection.cas(false, true)) {
+      if (Worker* worker = Scheduler::instance->worker()) {
+        safeprint("requesting gc from worker %", worker->id);
+      } else {
+        safeprint("requesting gc");
+      }
+
       m_cv.notify_all();
     }
   }
@@ -115,6 +122,8 @@ void GarbageCollector::wait_for_gc_request() {
 void GarbageCollector::init_mark() {
   m_state.acas(State::Idle, State::Mark);
   safeprint("GC init mark phase");
+  std::this_thread::sleep_for(1s);
+  safeprint("GC end init mark phase");
 }
 
 void GarbageCollector::phase_mark() {
@@ -127,6 +136,7 @@ void GarbageCollector::init_evacuate() {
   m_state.acas(State::Mark, State::Evacuate);
   safeprint("GC init evacuate phase");
   std::this_thread::sleep_for(1s);
+  safeprint("GC end init evacuate phase");
 }
 
 void GarbageCollector::phase_evacuate() {
@@ -139,6 +149,7 @@ void GarbageCollector::init_updateref() {
   m_state.acas(State::Evacuate, State::UpdateRef);
   safeprint("GC init updateref phase");
   std::this_thread::sleep_for(1s);
+  safeprint("GC end init updateref phase");
 }
 
 void GarbageCollector::phase_updateref() {
@@ -152,6 +163,7 @@ void GarbageCollector::init_idle() {
   m_wants_collection.acas(true, false);
   safeprint("GC init idle phase");
   std::this_thread::sleep_for(1s);
+  safeprint("GC end init idle phase");
 }
 
 void GarbageCollector::mark(VALUE value) {

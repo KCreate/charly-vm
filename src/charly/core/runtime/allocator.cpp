@@ -116,7 +116,11 @@ HeapRegion* MemoryAllocator::acquire_region() {
   {
     std::lock_guard<std::mutex> locker(m_freelist_mutex);
 
-    // TODO: signal GC worker if freelist gets too low
+    size_t min_expected_freelist_size = (size_t)((float)m_allocated_regions * kHeapGCTrigger);
+    safeprint("freelist = %, allocated = %", m_freelist.size(), m_allocated_regions.load());
+    if (m_freelist.size() <= min_expected_freelist_size) {
+      GarbageCollector::instance->request_gc();
+    }
 
     // check freelist
     if (m_freelist.size()) {
@@ -132,6 +136,8 @@ HeapRegion* MemoryAllocator::acquire_region() {
   if (region) {
     return region;
   }
+
+  GarbageCollector::instance->request_gc();
 
   // TODO: pause the current processor until the next GC cycle has completed
   //

@@ -45,6 +45,7 @@
 
 #include "charly/core/runtime/scheduler.h"
 #include "charly/core/runtime/allocator.h"
+#include "charly/core/runtime/gc.h"
 
 using namespace charly;
 using namespace charly::core::runtime;
@@ -138,12 +139,27 @@ void run_file(DiagnosticConsole& console, const std::string& filename) {
     }
   }
 
-  for (int i = 0; i < 10; i++) {
-    Fiber* fiber = Fiber::allocate();
-    fiber->state.acas(Fiber::State::Created, Fiber::State::Ready);
-    Scheduler::instance->schedule_fiber(fiber);
-    std::this_thread::sleep_for(3000ms);
-  }
+  // for (int i = 0; i < 10; i++) {
+  //   Fiber* fiber = Fiber::allocate();
+  //   fiber->state.acas(Fiber::State::Created, Fiber::State::Ready);
+  //   Scheduler::instance->schedule_fiber(fiber);
+  //   std::this_thread::sleep_for(100ms);
+  // }
+
+
+
+  Fiber* fiber = Fiber::allocate();
+  fiber->state.acas(Fiber::State::Created, Fiber::State::Ready);
+  Scheduler::instance->schedule_fiber(fiber);
+
+
+
+  // for (int i = 0; i < 10; i++) {
+  //   Scheduler::instance->stop_the_world();
+  //   std::this_thread::sleep_for(100ms);
+  //   Scheduler::instance->start_the_world();
+  //   std::this_thread::sleep_for(100ms);
+  // }
 
   safeprint("joining scheduler");
   Scheduler::instance->join();

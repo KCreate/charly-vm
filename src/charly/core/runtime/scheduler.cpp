@@ -41,7 +41,6 @@ Worker::Worker() : os_handle(std::thread(&Scheduler::worker_main_fn, Scheduler::
   static charly::atomic<uint64_t> worker_id_counter = 0;
   this->id = worker_id_counter++;
   this->random_source.store(this->id);
-  this->should_exit.store(false);
 }
 
 void Worker::join() {
@@ -64,6 +63,21 @@ bool Worker::change_state(State oldstate, State newstate) {
   this->state_cv.notify_all();
 
   return true;
+}
+
+Worker::State Worker::wait_for_state_change(State oldstate) {
+  Worker::State now_state = this->state;
+
+  // wait for state to change
+  if (now_state == oldstate) {
+    std::unique_lock<std::mutex> locker(this->mutex);
+    this->state_cv.wait(locker, [&] {
+      now_state = this->state;
+      return now_state != oldstate;
+    });
+  }
+
+  return now_state;
 }
 
 uint32_t Worker::rand() {
@@ -144,7 +158,7 @@ void Scheduler::worker_main_fn(Worker* worker) {
 
     // attempt to acquire idle processor
     if (!acquire_processor_for_worker(worker)) {
-      idle_worker(worker);
+      idle_worker();
       continue;
     }
 
@@ -155,8 +169,6 @@ void Scheduler::worker_main_fn(Worker* worker) {
     // execute tasks using on the acquired processor until there are no
     // more tasks left to execute
     for (;;) {
-      safeprint("worker % is looking for a ready fiber", worker->id);
-
       Fiber* fiber = get_ready_fiber();
 
       if (fiber == nullptr) {
@@ -203,7 +215,7 @@ void Scheduler::worker_main_fn(Worker* worker) {
     // release processor and idle
     release_processor_from_worker(worker);
     worker->assert_change_state(Worker::State::Scheduling, Worker::State::Acquiring);
-    idle_worker(worker);
+    idle_worker();
   }
 
   safeprint("exiting worker %", worker->id);
@@ -213,15 +225,25 @@ void Scheduler::worker_main_fn(Worker* worker) {
 void fiber_task_fn() {
   safeprint("inside fiber % task fn", Scheduler::instance->fiber()->id);
 
-  for (int i = 0; i < 1000; i++) {
-    Worker* worker = Scheduler::instance->worker();
-    Processor* proc = Scheduler::instance->processor();
-    Fiber* fiber = Scheduler::instance->fiber();
+  // for (int i = 0; i < 1e4; i++) {
+  //   Worker* worker = Scheduler::instance->worker();
+  //   Processor* proc = Scheduler::instance->processor();
+  //   Fiber* fiber = Scheduler::instance->fiber();
+  //   safeprint("fiber % on worker % on proc % counter = %", fiber->id, worker->id, proc->id, i);
+  //   Scheduler::instance->checkpoint();
+  // }
 
-    safeprint("fiber % on worker % on proc % counter = %", fiber->id, worker->id, proc->id, i);
-    std::this_thread::sleep_for(2ms);
-    Scheduler::instance->checkpoint();
-  }
+  Scheduler::instance->checkpoint();
+
+  std::this_thread::sleep_for(10ms);
+
+  // spawn new fibers
+  Fiber* fiber1 = Fiber::allocate();
+  Fiber* fiber2 = Fiber::allocate();
+  fiber1->state.acas(Fiber::State::Created, Fiber::State::Ready);
+  fiber2->state.acas(Fiber::State::Created, Fiber::State::Ready);
+  Scheduler::instance->schedule_fiber(fiber1);
+  Scheduler::instance->schedule_fiber(fiber2);
 
   safeprint("leaving fiber % task fn", Scheduler::instance->fiber()->id);
 }
@@ -284,22 +306,6 @@ Fiber* Scheduler::fiber() {
   return nullptr;
 }
 
-void Scheduler::checkpoint() {
-  Worker* worker = this->worker();
-  Fiber* fiber = worker->fiber;
-  assert(worker);
-  assert(fiber);
-  uint64_t timestamp_now = get_steady_timestamp();
-
-  // check if the executing fiber exceeded its timeslice
-  if (timestamp_now - fiber->last_scheduled_at >= kSchedulerFiberTimeslice) {
-    safeprint("fiber % exceeded its timeslice", fiber->id);
-    reschedule_fiber();
-  }
-
-  // TODO: check for GC pause request
-}
-
 void Scheduler::schedule_fiber(Fiber* fiber) {
   assert(fiber->state == Fiber::State::Ready);
 
@@ -326,14 +332,85 @@ void Scheduler::schedule_fiber(Fiber* fiber) {
   wake_idle_worker();
 }
 
+void Scheduler::checkpoint() {
+  Worker* worker = this->worker();
+
+  // stop the world check
+  if (worker->should_stop) {
+    worker->change_state(Worker::State::Running, Worker::State::WorldStopped);
+    {
+      std::unique_lock<std::mutex> locker(worker->mutex);
+      worker->wake_cv.wait(locker, [&] {
+        return worker->should_stop == false;
+      });
+    }
+    worker->change_state(Worker::State::WorldStopped, Worker::State::Running);
+  }
+
+  // check if we're inside a fiber or the scheduler
+  if (Fiber* fiber = worker->fiber) {
+
+    // check if the executing fiber exceeded its timeslice
+    uint64_t timestamp_now = get_steady_timestamp();
+    if (timestamp_now - fiber->last_scheduled_at >= kSchedulerFiberTimeslice) {
+      safeprint("fiber % exceeded its timeslice", fiber->id);
+      reschedule_fiber();
+    }
+  }
+}
+
 void Scheduler::stop_the_world() {
-  // TODO: implement
-  safeprint("implement scheduler stop the world");
+  safeprint("scheduler is stopping the world");
+
+  // wait for the worker threads to pause
+  std::unique_lock<std::mutex> workers_lock(m_workers_mutex);
+
+  // set all the should_stop flags
+  for (Worker* worker : m_workers) {
+    worker->should_stop.acas(false, true);
+  }
+
+  // wait for workers to enter into a heap-safe mode
+  for (Worker* worker : m_workers) {
+
+    // wait for the worker to enter into a heap safe mode
+    for (;;) {
+      Worker::State now_state = worker->state;
+      switch (now_state) {
+        case Worker::State::WorldStopped:
+        case Worker::State::Native:
+        case Worker::State::Idle: {
+          break;
+        }
+        default: {
+          safeprint("waiting for worker %", worker->id);
+          workers_lock.unlock();
+          now_state = worker->wait_for_state_change(now_state);
+          workers_lock.lock();
+          continue;
+        }
+      }
+      break;
+    }
+
+    safeprint("worker % stopped the world", worker->id);
+  }
+
+  safeprint("scheduler has stopped the world");
 }
 
 void Scheduler::start_the_world() {
-  // TODO: implement
-  safeprint("implement scheduler start the world");
+  safeprint("scheduler is starting the world");
+
+  std::unique_lock<std::mutex> workers_lock(m_workers_mutex);
+
+  for (Worker* worker : m_workers) {
+    worker->should_stop.acas(true, false);
+    wake_worker(worker);
+    safeprint("worker % started the world", worker->id);
+  }
+
+  safeprint("scheduler has started the world");
 }
 
 void Scheduler::enter_native_mode() {
@@ -409,7 +486,8 @@ void Scheduler::release_processor_from_worker(Worker* worker) {
   }
 }
 
-void Scheduler::idle_worker(Worker* worker) {
+void Scheduler::idle_worker() {
+  Worker* worker = this->worker();
   safeprint("idling worker %", worker->id);
 
   // append to idle workers list
@@ -426,12 +504,28 @@ void Scheduler::idle_worker(Worker* worker) {
   });
   assert(worker->state == Worker::State::Acquiring);
   safeprint("waking worker %", worker->id);
+
+  checkpoint();
 }
 
 void Scheduler::wake_worker(Worker* worker) {
   {
     std::lock_guard<std::mutex> locker(worker->mutex);
-    worker->state.acas(Worker::State::Idle, Worker::State::Acquiring);
+    Worker::State state = worker->state;
+    switch (state) {
+      case Worker::State::Idle: {
+        worker->state.acas(state, Worker::State::Acquiring);
+        break;
+      }
+      case Worker::State::WorldStopped: {
+        worker->state.acas(state, Worker::State::Running);
+        break;
+      }
+      default: {
+        assert(false && "unexpected worker state");
+        break;
+      }
+    }
   }
   worker->wake_cv.notify_one();
 }
