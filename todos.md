@@ -1,39 +1,29 @@
 # Todos
 
-- Idle processor when waiting for GC cycle to complete
-  - Processors that still have an acquired region can keep running
+- Limit time workers spend in idle mode
+  - Remove mechanism which wakes workers by chance when scheduling in local ready queue
+  - Instead, wake idle workers periodically (100ms intervals??)
+    - Workers then check global queue or attempt to steal work from some other processor
 
-- Native sections mechanism
-
-- Work stealing
-  - How do idle workers steal work from some overstressed worker?
-
-- System monitor
-  - Detect workers that exceeded their timeslice during native mode
-
-- Implement processor abstraction
-  - Processor data structure
-    - Fiber ready runqueue
-    - Memory allocator intermediate caches
-  - Worker threads
-    - Worker threads acquire a processor at the beginning of their lifecycle
-    - Processors are released back to the idle list once they run out of work
-    - Worker threads that are inside native mode, that exceed some timeout (20ms?) will be
-      marked as preempted by the system monitor thread.
-      - The runtime will release the processor from the worker thread and will return it to the idle
-        list of processors
-      - The system monitor now detects that there are idle processors, but no idle worker threads,
-        so the runtime will start a new worker thread that acquired the processor
-      - Once the prempted worker thread returns from the native section it will check if it was
-        preempted
-        - If the worker was pre-empted, we try to reacquire the old processor
-        - If reacquiring the old processor fails, try to acquire another idle processor
-        - If there are no idle processors, idle the current worker thread and reschedule the running
-          fiber into the global runqueue
+- Implement native mode mechanism
+  - Worker threads that are inside native mode, that exceed some timeout (20ms?) will be
+    marked as preempted by the system monitor thread.
+    - The runtime will release the processor from the worker thread and will return it to the idle
+      list of processors
+    - The system monitor now detects that there are idle processors, but no idle worker threads,
+      so the runtime will start a new worker thread that acquired the processor
+    - Once the prempted worker thread returns from the native section it will check if it was
+      preempted
+      - If the worker was pre-empted, we try to reacquire the old processor
+      - If reacquiring the old processor fails, try to acquire another idle processor
+      - If there are no idle processors, idle the current worker thread and reschedule the running
+        fiber into the global runqueue
 
 - Fiber scheduler with fcontext_t
   - How to protect the stack from overflow?
     - Protect memory page immediately after the stack to trap on accesses
+
+- Implement mechanism to wait for GC cycle to complete when heap could not be expanded
 
 - Concurrent Garbage Collector
   - Phases

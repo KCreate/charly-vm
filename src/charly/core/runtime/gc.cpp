@@ -49,7 +49,6 @@ void GarbageCollector::shutdown() {
 }
 
 void GarbageCollector::request_gc() {
-  safeprint("request_gc");
   if (m_wants_collection == false) {
     std::unique_lock<std::mutex> locker(m_mutex);
     if (m_wants_collection.cas(false, true)) {

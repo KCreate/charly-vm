@@ -34,17 +34,12 @@
 namespace charly {
 
 // wrapper class around the raw immediate encoded bytes
-class HeapValue;
 struct VALUE {
   taggedvalue::Value raw;
   constexpr VALUE(taggedvalue::Value raw) : raw(raw) {}
 
   static VALUE Pointer(void* value) {
     return VALUE(taggedvalue::encode_pointer(value));
-  }
-
-  static VALUE Pointer(HeapValue& value) {
-    return VALUE(taggedvalue::encode_pointer(&value));
   }
 
   static VALUE Int(int64_t value) {
@@ -100,5 +95,10 @@ static const VALUE kInfinity    = VALUE(taggedvalue::kInfinity);
 static const VALUE kNegInfinity = VALUE(taggedvalue::kNegInfinity);
 static const VALUE kTrue        = VALUE(taggedvalue::kTrue);
 static const VALUE kFalse       = VALUE(taggedvalue::kFalse);
+
+enum class HeapType : uint8_t {
+  Dead = 0,
+  Fiber
+};
 
 }

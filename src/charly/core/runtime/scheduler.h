@@ -33,6 +33,7 @@
 
 #include "charly/charly.h"
 #include "charly/atomic.h"
+#include "charly/value.h"
 
 #include "charly/utils/shared_queue.h"
 
@@ -56,13 +57,17 @@ using boost::context::detail::jump_fcontext;
 static const uint64_t kHardwareConcurrency = 1;
 
 // chance that a processor will acquire from the global queue instead of the local queue
-// if the global queue is empty during such a random check, the scheduler will instead
-// steal work from some other processor, in order to equalize fiber pressure across all
-// processors
-static const uint32_t kGlobalReadyQueuePriorityChance = 16;
+static const uint32_t kGlobalRunQueuePriorityChance = 32;
 
-// preempt a running fiber at a scheduler checkpoint
-// if its running time exceeds this amount of milliseconds
+// chance that a processor will attempt to steal from some other worker instead of acquiring
+// ready fibers from its local queue
+static const uint32_t kWorkerStealPriorityChance = 64;
+
+// chance that the runtime will attempt to wake more workers when a fiber
+// gets scheduled on a processors local run queue
+static const uint32_t kScheduleWakeWorkerChance = 32;
+
+// timeslice (in milliseconds) given to each fiber to run
 static const uint64_t kSchedulerFiberTimeslice = 10;
 
 // the maximum amount of fibers to be queued in each workers local queue
@@ -173,9 +178,12 @@ static const size_t kFiberStackSize = 1024 * 4; // x kilobytes
 // Fibers hold the state information of a single strand of execution inside a charly
 // program. each fiber has its own hardware stack and stores register data when paused
 struct Fiber {
-  static Fiber* allocate();
-  static void clean(Fiber* fiber);
-  static void deallocate(Fiber* fiber);
+  Fiber();
+  ~Fiber();
+
+  static HeapType heap_value_type() {
+    return HeapType::Fiber;
+  }
 
   enum class State : uint8_t {
     Created,    // fiber has been created, but never executed
@@ -199,6 +207,9 @@ struct Fiber {
   charly::atomic<Worker*> worker;
   charly::atomic<uint64_t> last_scheduled_at;
   fcontext_t context;
+
+  // deallocate stack
+  void clean();
 };
 
 // thread local pointer to the current worker thread
@@ -286,9 +297,6 @@ public:
   // meant to be called from within application worker threads
   void reschedule_fiber();
 
-  // set by the scheduler if all worker threads should immediately exit
-  void wants_to_exit();
-
 private:
 
   // attempt to acquire and bind an idle processor to a worker
@@ -300,10 +308,6 @@ private:
 
   // put the calling worker thread into idle mode
   void idle_worker();
-
-  // wake up a worker from idle mode
-  // returns false if another thread woke the worker before us
-  void wake_worker(Worker* worker);
 
   // returns the current unix timestamp in millisecond precision
   uint64_t get_steady_timestamp();
@@ -332,7 +336,6 @@ private:
 private:
   uint64_t m_start_timestamp = 0;
 
-  bool m_wants_exit = false;
   bool m_wants_join = false;
 
   std::mutex m_workers_mutex;

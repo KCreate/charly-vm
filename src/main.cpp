@@ -140,7 +140,7 @@ void run_file(DiagnosticConsole& console, const std::string& filename) {
   }
 
   // for (int i = 0; i < 10; i++) {
-  //   Fiber* fiber = Fiber::allocate();
+  //   Fiber* fiber = MemoryAllocator::allocate<Fiber>();
   //   fiber->state.acas(Fiber::State::Created, Fiber::State::Ready);
   //   Scheduler::instance->schedule_fiber(fiber);
   //   std::this_thread::sleep_for(100ms);
@@ -148,7 +148,7 @@ void run_file(DiagnosticConsole& console, const std::string& filename) {
 
 
 
-  Fiber* fiber = Fiber::allocate();
+  Fiber* fiber = MemoryAllocator::allocate<Fiber>();
   fiber->state.acas(Fiber::State::Created, Fiber::State::Ready);
   Scheduler::instance->schedule_fiber(fiber);
 

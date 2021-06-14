@@ -32,76 +32,65 @@ using namespace std::chrono_literals;
 
 namespace charly::core::runtime {
 
-void* MemoryAllocator::allocate(HeapType type, size_t size) {
+MemoryAllocator::MemoryAllocator() {
+  for (size_t i = 0; i < kHeapInitialRegionCount; i++) {
+    HeapRegion* region = allocate_new_region();
+    assert(region);
+    free_region(region);
+  }
+}
+
+MemoryAllocator::~MemoryAllocator() {
+  std::lock(m_freelist_mutex, m_regions_mutex);
+  m_freelist.clear();
+
+  for (HeapRegion* region : m_regions) {
+    delete region;
+  }
+
+  m_regions.clear();
+}
+
+void* MemoryAllocator::allocate_memory(size_t size) {
   assert(sizeof(HeapHeader) + size <= kHeapRegionSize && "object too big");
 
-  if (Scheduler::instance->worker()) {
-    return allocate_worker(type, size);
+  std::unique_lock<std::mutex> global_region_lock(m_global_region_mutex, std::defer_lock);
+  HeapRegion** region_ptr;
+  HeapRegion* region;
+
+  // acquire the region that serves this allocation
+  if (Processor* proc = Scheduler::instance->processor()) {
+    region_ptr = &proc->active_region;
+    region = *region_ptr;
   } else {
-    return allocate_global(type, size);
+    region_ptr = &m_global_region;
+    region = *region_ptr;
+    global_region_lock.lock();
   }
-}
 
-void* MemoryAllocator::allocate_worker(HeapType type, size_t size) {
-  Processor* proc = Scheduler::instance->processor();
-  HeapRegion* region = proc->active_region;
+  // release region if it cannot fulfill the allocation
+  if (region && !region->fits(size)) {
+    safeprint("releasing region %", region->id);
+    assert(region->state == HeapRegion::State::Used);
+    region->state.acas(HeapRegion::State::Used, HeapRegion::State::Released);
+    region = nullptr;
+    *region_ptr = nullptr;
+  }
 
-  if (region == nullptr || !region->fits(sizeof(HeapHeader) + size)) {
-    if (region) {
-      region->release();
-    }
+  // allocate new region if no current region
+  if (region == nullptr) {
+    region = acquire_region();
 
-    if (!(region = acquire_region())) {
+    // failed to allocate new region
+    if (!region) {
       return nullptr;
     }
-    region->acquire();
-    proc->active_region = region;
+
+    *region_ptr = region;
+    safeprint("acquired region %", region->id);
   }
 
-  // prepend heap header to user object
-  HeapHeader* header = (HeapHeader*)region->allocate(sizeof(HeapHeader));
-  void* user_obj = region->allocate(size);
-
-  // initialize header
-#ifndef NDEBUG
-  header->magic_number = kHeapHeaderMagicNumber;
-#endif
-  header->forward_ptr.store(user_obj);
-  header->type.store(type);
-  header->gcmark.store(MarkColor::Black); // newly allocated values are colored black
-
-  return user_obj;
-}
-
-void* MemoryAllocator::allocate_global(HeapType type, size_t size) {
-  std::unique_lock<std::mutex> locker(m_global_region_mutex);
-  HeapRegion* region = m_global_region;
-
-  if (region == nullptr || !region->fits(sizeof(HeapHeader) + size)) {
-    if (region) {
-      region->release();
-    }
-
-    if (!(region = acquire_region())) {
-      return nullptr;
-    }
-    region->acquire();
-    m_global_region = region;
-  }
-
-  // prepend heap header to user object
-  HeapHeader* header = (HeapHeader*)region->allocate(sizeof(HeapHeader));
-  void* user_obj = region->allocate(size);
-
-  // initialize header
-#ifndef NDEBUG
-  header->magic_number = kHeapHeaderMagicNumber;
-#endif
-  header->forward_ptr.store(user_obj);
-  header->type.store(type);
-  header->gcmark.store(MarkColor::Black); // newly allocated values are colored black
-
-  return user_obj;
+  return region->allocate(size);
 }
 
 HeapHeader* MemoryAllocator::object_header(void* object) {
@@ -113,37 +102,32 @@ HeapHeader* MemoryAllocator::object_header(void* object) {
 }
 
 HeapRegion* MemoryAllocator::acquire_region() {
-  {
-    std::lock_guard<std::mutex> locker(m_freelist_mutex);
+  float util = utilization();
 
-    size_t min_expected_freelist_size = (size_t)((float)m_allocated_regions * kHeapGCTrigger);
-    safeprint("freelist = %, allocated = %", m_freelist.size(), m_allocated_regions.load());
-    if (m_freelist.size() <= min_expected_freelist_size) {
-      GarbageCollector::instance->request_gc();
-    }
-
-    // check freelist
-    if (m_freelist.size()) {
-      HeapRegion* region = m_freelist.front();
-      m_freelist.pop_front();
-      m_free_regions--;
-      return region;
-    }
+  // start GC worker thread if threshold is reached
+  if (util > kHeapUtilizationCollectionTrigger) {
+    GarbageCollector::instance->request_gc();
   }
 
-  // attempt to allocate new region
-  HeapRegion* region = allocate_new_region();
-  if (region) {
+  // aggressively expand heap if threshold is reached
+  if (util > kHeapUtilizationGrowTrigger) {
+    expand_heap();
+  }
+
+  std::unique_lock<std::mutex> locker(m_freelist_mutex);
+  if (m_freelist.size()) {
+    HeapRegion* region = m_freelist.front();
+    m_freelist.pop_front();
+    m_free_regions--;
+
+    region->state.acas(HeapRegion::State::Available, HeapRegion::State::Used);
     return region;
   }
 
-  GarbageCollector::instance->request_gc();
-
-  // TODO: pause the current processor until the next GC cycle has completed
+  // FIXME: implement some mechanism to wait for the GC to complete a cycle,
+  // in the hope that there will be available free regions by then
   //
-  // for (uint32_t i = 0; i < kHeapAllocationAttempts; i++) {
-  //
-  // }
+  // if multiple GC iterations fail to provide any new regions, fail the allocation
 
   return nullptr;
 }
@@ -162,14 +146,45 @@ HeapRegion* MemoryAllocator::allocate_new_region() {
   return region;
 }
 
+bool MemoryAllocator::expand_heap() {
+  bool allocated_one = false;
+
+  size_t target_region_count = m_allocated_regions.load() * kHeapGrowFactor;
+  while (m_allocated_regions.load() < target_region_count) {
+    HeapRegion* region = allocate_new_region();
+    if (region == nullptr) {
+      break;
+    }
+
+    free_region(region);
+    allocated_one = true;
+  }
+
+  return allocated_one;
+}
+
 void MemoryAllocator::free_region(HeapRegion* region) {
-  assert(region->state == HeapRegion::State::Available);
+
+  // reset region
+  region->state.store(HeapRegion::State::Available);
+  region->next = 0;
+
+  // append to region freelist
   {
-    std::lock_guard<std::mutex> locker(m_freelist_mutex);
+    std::unique_lock<std::mutex> locker(m_freelist_mutex);
     m_freelist.push_back(region);
     m_free_regions++;
   }
+
   m_freelist_cv.notify_one();
+}
+
+float MemoryAllocator::utilization() {
+  float amount_of_regions = m_allocated_regions.load();
+  float amount_of_free_regions = m_free_regions.load();
+  float factor_free_regions = amount_of_free_regions / amount_of_regions;
+  float factor_used_regions = 1.0 - factor_free_regions;
+  return factor_used_regions;
 }
 
 }  // namespace charly::core::runtime

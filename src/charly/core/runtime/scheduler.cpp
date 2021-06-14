@@ -66,18 +66,15 @@ bool Worker::change_state(State oldstate, State newstate) {
 }
 
 Worker::State Worker::wait_for_state_change(State oldstate) {
-  Worker::State now_state = this->state;
+  std::unique_lock<std::mutex> locker(this->mutex);
 
-  // wait for state to change
-  if (now_state == oldstate) {
-    std::unique_lock<std::mutex> locker(this->mutex);
+  if (this->state == oldstate) {
     this->state_cv.wait(locker, [&] {
-      now_state = this->state;
-      return now_state != oldstate;
+      return this->state != oldstate;
     });
   }
 
-  return now_state;
+  return this->state;
 }
 
 uint32_t Worker::rand() {
@@ -93,36 +90,34 @@ uint32_t Worker::rand() {
   }
 }
 
-Fiber* Fiber::allocate() {
-  Fiber* fiber = (Fiber*)MemoryAllocator::instance->allocate(HeapType::Fiber, sizeof(Fiber));
+Fiber::Fiber() {
 
-  // allocate and initialize fiber stack
+  // allocate stack
   void* stack_lo = std::malloc(kFiberStackSize);
-  fiber->stack.lo = stack_lo;
-  fiber->stack.hi = (void*)((uintptr_t)stack_lo + kFiberStackSize);
-  fiber->stack.size = kFiberStackSize;
+  this->stack.lo = stack_lo;
+  this->stack.hi = (void*)((uintptr_t)stack_lo + kFiberStackSize);
+  this->stack.size = kFiberStackSize;
 
+  // init fiber state
   static charly::atomic<uint64_t> fiber_id_counter = 0;
-  fiber->id = fiber_id_counter++;
-  fiber->state.store(Fiber::State::Created);
-  fiber->worker.store(nullptr);
-  fiber->last_scheduled_at.store(0);
-  fiber->context = make_fcontext(fiber->stack.hi, kFiberStackSize, &Scheduler::fiber_main_fn);
-
-  return fiber;
+  this->id = fiber_id_counter++;
+  this->state.store(Fiber::State::Created);
+  this->worker.store(nullptr);
+  this->last_scheduled_at.store(0);
+  this->context = make_fcontext(this->stack.hi, kFiberStackSize, &Scheduler::fiber_main_fn);
 }
 
-void Fiber::clean(Fiber* fiber) {
-  if (fiber->stack.lo) {
-    std::free(fiber->stack.lo);
-    fiber->stack.lo = nullptr;
-    fiber->stack.hi = nullptr;
-    fiber->stack.size = 0;
+Fiber::~Fiber() {
+  this->clean();
+}
+
+void Fiber::clean() {
+  if (this->stack.lo) {
+    std::free(this->stack.lo);
+    this->stack.lo = nullptr;
+    this->stack.hi = nullptr;
+    this->stack.size = 0;
   }
-}
-
-void Fiber::deallocate(Fiber* fiber) {
-  Fiber::clean(fiber);
 }
 
 void Scheduler::init_scheduler() {
@@ -202,7 +197,7 @@ void Scheduler::worker_main_fn(Worker* worker) {
           break;
         }
         case Fiber::State::Exited: {
-          Fiber::clean(fiber);
+          fiber->clean();
           break;
         }
         default: {
@@ -225,21 +220,26 @@ void Scheduler::worker_main_fn(Worker* worker) {
 void fiber_task_fn() {
   safeprint("inside fiber % task fn", Scheduler::instance->fiber()->id);
 
-  // for (int i = 0; i < 1e4; i++) {
-  //   Worker* worker = Scheduler::instance->worker();
-  //   Processor* proc = Scheduler::instance->processor();
-  //   Fiber* fiber = Scheduler::instance->fiber();
-  //   safeprint("fiber % on worker % on proc % counter = %", fiber->id, worker->id, proc->id, i);
-  //   Scheduler::instance->checkpoint();
-  // }
+  for (int i = 0; i < 100; i++) {
+    Worker* worker = Scheduler::instance->worker();
+    Processor* proc = Scheduler::instance->processor();
+    Fiber* fiber = Scheduler::instance->fiber();
 
-  Scheduler::instance->checkpoint();
-
-  std::this_thread::sleep_for(10ms);
+    safeprint("fiber % on worker % on proc % counter = %", fiber->id, worker->id, proc->id, i);
+    Scheduler::instance->checkpoint();
+    std::this_thread::sleep_for(500us);
+  }
 
   // spawn new fibers
-  Fiber* fiber1 = Fiber::allocate();
-  Fiber* fiber2 = Fiber::allocate();
+  Fiber* fiber1 = MemoryAllocator::allocate<Fiber>();
+  Fiber* fiber2 = MemoryAllocator::allocate<Fiber>();
+
+  if (!(fiber1 && fiber2)) {
+    Worker* worker = Scheduler::instance->worker();
+    safeprint("failed allocation in worker %", worker->id);
+    assert(false);
+  }
+
   fiber1->state.acas(Fiber::State::Created, Fiber::State::Ready);
   fiber2->state.acas(Fiber::State::Created, Fiber::State::Ready);
   Scheduler::instance->schedule_fiber(fiber1);
@@ -316,7 +316,10 @@ void Scheduler::schedule_fiber(Fiber* fiber) {
       proc->run_queue.push_back(fiber);
       safeprint("scheduled fiber % on processor %", fiber->id, proc->id);
 
-      // TODO: how to detect overstressed workers and start other workers accordingly?
+      Worker* worker = this->worker();
+      if (worker->rand() % kScheduleWakeWorkerChance == 0) {
+        wake_idle_worker();
+      }
 
       return;
     }
@@ -383,7 +386,7 @@ void Scheduler::stop_the_world() {
           break;
         }
         default: {
-          safeprint("waiting for worker %", worker->id);
+          safeprint("waiting for worker % (currently in mode %)", worker->id, (int)now_state);
           workers_lock.unlock();
           now_state = worker->wait_for_state_change(now_state);
           workers_lock.lock();
@@ -406,7 +409,14 @@ void Scheduler::start_the_world() {
 
   for (Worker* worker : m_workers) {
     worker->should_stop.acas(true, false);
-    wake_worker(worker);
+    if (worker->state == Worker::State::WorldStopped) {
+      {
+        std::lock_guard<std::mutex> locker(worker->mutex);
+        worker->state.acas(Worker::State::WorldStopped, Worker::State::Running);
+      }
+
+      worker->wake_cv.notify_one();
+    }
     safeprint("worker % started the world", worker->id);
   }
 
@@ -432,7 +442,12 @@ void Scheduler::wake_idle_worker() {
     if (m_idle_workers.size()) {
       Worker* worker = m_idle_workers.top();
       m_idle_workers.pop();
-      wake_worker(worker);
+
+      {
+        std::lock_guard<std::mutex> locker(worker->mutex);
+        worker->state.acas(Worker::State::Idle, Worker::State::Acquiring);
+      }
+      worker->wake_cv.notify_one();
     } else {
       m_workers.push_back(new Worker());
     }
@@ -508,28 +523,6 @@ void Scheduler::idle_worker() {
   checkpoint();
 }
 
-void Scheduler::wake_worker(Worker* worker) {
-  {
-    std::lock_guard<std::mutex> locker(worker->mutex);
-    Worker::State state = worker->state;
-    switch (state) {
-      case Worker::State::Idle: {
-        worker->state.acas(state, Worker::State::Acquiring);
-        break;
-      }
-      case Worker::State::WorldStopped: {
-        worker->state.acas(state, Worker::State::Running);
-        break;
-      }
-      default: {
-        assert(false && "unexpected worker state");
-        break;
-      }
-    }
-  }
-  worker->wake_cv.notify_one();
-}
-
 uint64_t Scheduler::get_steady_timestamp() {
   auto now = std::chrono::steady_clock::now();
   return std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
@@ -542,17 +535,16 @@ Fiber* Scheduler::get_ready_fiber() {
   assert(worker);
   assert(proc);
 
-  // prefer global queue or steal from some other processor
-  if (worker->rand() % kGlobalReadyQueuePriorityChance == 0) {
-
-    // acquire from local queue if global queue is empty
+  // pull ready fiber from global run queue
+  if (worker->rand() % kGlobalRunQueuePriorityChance == 0) {
     if (Fiber* fiber = get_ready_fiber_from_global_queue()) {
       safeprint("worker % acquired fiber % from global queue by chance", worker->id, fiber->id);
       return fiber;
     }
+  }
 
-    // by stealing from another processors queue, we equalize their workloads
-    // over time this will equalize the workload among all active workers
+  // steal from other workers and equalize their run queues
+  if (worker->rand() % kWorkerStealPriorityChance == 0) {
     if (Fiber* fiber = steal_ready_fiber()) {
       return fiber;
     }

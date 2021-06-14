@@ -33,6 +33,7 @@
 
 #include "charly/charly.h"
 #include "charly/atomic.h"
+#include "charly/value.h"
 
 #include "charly/core/runtime/scheduler.h"
 
@@ -46,24 +47,24 @@ class MemoryAllocator;
 class GarbageCollector;
 
 // amount of cells per heap region
-static const size_t kHeapRegionSize = 1024 * 16; // 16 kilobyte regions
+// static const size_t kHeapRegionSize = 1024 * 128; // 128 kilobyte regions
+static const size_t kHeapRegionSize = 1024;
 
 // initial amount of heap regions allocated when starting the machine
-static const size_t kHeapInitialRegionCount = 64;
+static const size_t kHeapInitialRegionCount = 2;
 
 // the maximum amount of heap regions allowed to be allocated. any allocation
 // performed after that issue was reached will fail
-static const size_t kHeapRegionLimit = 1024;
+static const size_t kHeapRegionLimit = 4;
 
 // heap fill percentage at which to begin concurrent collection
-static const float kHeapGCTrigger = 0.5;
+static const float kHeapUtilizationCollectionTrigger = 0.5;
 
-// heap fill percentage at which to grow the heap
-static const float kHeapGCGrowTrigger = 0.9;
+// heap fill percentage at which to aggressively expand the heap
+static const float kHeapUtilizationGrowTrigger = 0.9;
 
-// the amount of times an allocation should wait for the next GC cycle
-// before it fails
-static const uint32_t kHeapAllocationAttempts = 10;
+// factor used to calculate the new amount of heap regions that should be allocated
+static const float kHeapGrowFactor = 2;
 
 // heap object pointers are required to be aligned by 8 byte boundaries
 // this ensures that the lower three bits of every heap pointer are set to 0
@@ -76,7 +77,7 @@ struct HeapRegion {
     static charly::atomic<uint64_t> region_id_counter = 0;
     this->id = region_id_counter++;
     this->next = 0;
-    this->state = State::Available;
+    this->state.store(State::Available);
   }
 
   void* allocate(size_t size) {
@@ -97,37 +98,16 @@ struct HeapRegion {
     return this->next + size <= kHeapRegionSize;
   }
 
-  void acquire() {
-    assert(this->state == State::Available);
-    this->state = State::Used;
-  }
-
-  void release() {
-    assert(this->state == State::Used);
-    this->state = State::Released;
-  }
-
-  void reset() {
-    assert(this->state == State::Released);
-    this->next = 0;
-    this->state = State::Available;
-  }
-
   enum class State : uint8_t {
-    Available,  // region contains no live data and can be acquired by workers
-    Used,       // region may contain live data and is currently in use by a worker
-    Released    // region may contain live data but is no longer used by a worker
+    Available,  // region contains no live data and can be acquired
+    Used,       // region may contain live data and is currently owned by a worker
+    Released    // region may contain live data and is not owned by a worker
   };
 
   uint64_t id;
   size_t next;
   uint8_t buffer[kHeapRegionSize];
-  State state;
-};
-
-enum class HeapType : uint8_t {
-  Dead = 0,
-  Fiber
+  charly::atomic<State> state;
 };
 
 enum class MarkColor : uint8_t {
@@ -156,15 +136,8 @@ class MemoryAllocator {
   friend struct Worker;
   friend class GarbageCollector;
 public:
-  MemoryAllocator() {
-
-    // allocate initial set of free regions
-    for (size_t i = 0; i < kHeapInitialRegionCount; i++) {
-      HeapRegion* region = allocate_new_region();
-      assert(region);
-      free_region(region);
-    }
-  }
+  MemoryAllocator();
+  ~MemoryAllocator();
 
   static void initialize() {
     static MemoryAllocator allocator;
@@ -172,19 +145,45 @@ public:
   }
   inline static MemoryAllocator* instance = nullptr;
 
-  // allocates a memory region of a given size
-  // automatically prepends a heapheader to the allocation, so the total size
-  // of the allocation is size + sizeof(HeapHeader)
-  void* allocate(HeapType type, size_t size);
+  // allocate object of type T
+  template <typename T, typename... Args>
+  static T* allocate(Args&&... params) {
+
+    // allocate memory for the object + header
+    size_t header_size = sizeof(HeapHeader);
+    size_t object_size = sizeof(T);
+    size_t total_size = header_size + object_size;
+    void* memory = MemoryAllocator::instance->allocate_memory(total_size);
+
+    if (memory == nullptr) {
+      return nullptr;
+    }
+
+    HeapHeader* header = (HeapHeader*)memory;
+    T* object = (T*)((uintptr_t)memory + sizeof(HeapHeader));
+
+    // initialize heap header
+#ifndef NDEBUG
+    header->magic_number = kHeapHeaderMagicNumber;
+#endif
+    header->forward_ptr.store((void*)object);
+    header->type.store(T::heap_value_type());
+    header->gcmark.store(MarkColor::Black); // newly allocated values are colored black
+
+    // call object constructor
+    new ((T*)object)T(std::forward<Args>(params)...);
+
+    return object;
+  }
 
   // returns a pointer to the header of a heap allocated object
   static HeapHeader* object_header(void* object);
 
 private:
 
-  // worker / global allocation methods
-  void* allocate_worker(HeapType type, size_t size);
-  void* allocate_global(HeapType type, size_t size);
+  // allocate *size* bytes if memory from either the current processors current region
+  // or the global region
+  void* allocate_memory(size_t size);
 
   // acquire a new region. either reuses an already allocated region that has been cleared
   // or allocates a new region on the system heap
@@ -193,8 +192,18 @@ private:
   // allocate a new region from the system heap
   HeapRegion* allocate_new_region();
 
+  // attempt to aggressively expand the heap by growing it by some set factor
+  //
+  // returns false if the total limit for allocated regions was hit and the heap could
+  // not be expanded
+  bool expand_heap();
+
   // append a region to the freelist
   void free_region(HeapRegion* region);
+
+  // heap utilization (amount of heap regions that contain live data)
+  // returns a float between 0.0 - 1.0
+  float utilization();
 
 private:
 
