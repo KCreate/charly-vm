@@ -47,15 +47,15 @@ class MemoryAllocator;
 class GarbageCollector;
 
 // amount of cells per heap region
-// static const size_t kHeapRegionSize = 1024 * 128; // 128 kilobyte regions
-static const size_t kHeapRegionSize = 1024;
+static const size_t kHeapRegionSize = 1024 * 128; // 128 kilobyte regions
+// static const size_t kHeapRegionSize = 1024;
 
 // initial amount of heap regions allocated when starting the machine
 static const size_t kHeapInitialRegionCount = 2;
 
 // the maximum amount of heap regions allowed to be allocated. any allocation
 // performed after that issue was reached will fail
-static const size_t kHeapRegionLimit = 4;
+static const size_t kHeapRegionLimit = 1024;
 
 // heap fill percentage at which to begin concurrent collection
 static const float kHeapUtilizationCollectionTrigger = 0.5;

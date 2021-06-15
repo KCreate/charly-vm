@@ -40,7 +40,16 @@ Processor::Processor() {
 Worker::Worker() : os_handle(std::thread(&Scheduler::worker_main_fn, Scheduler::instance, this)) {
   static charly::atomic<uint64_t> worker_id_counter = 0;
   this->id = worker_id_counter++;
-  this->random_source.store(this->id);
+  this->context_switch_counter = 0;
+  this->random_source = this->id;
+  this->idle_sleep_duration = 10;
+
+  this->should_exit.store(false);
+  this->should_stop.store(false);
+
+  this->state.store(State::Created);
+  this->fiber.store(nullptr);
+  this->processor.store(nullptr);
 }
 
 void Worker::join() {
@@ -78,16 +87,21 @@ Worker::State Worker::wait_for_state_change(State oldstate) {
 }
 
 uint32_t Worker::rand() {
-  // source: https://stackoverflow.com/a/3747462
-  for (;;) {
-    uint32_t seed = this->random_source;
-    uint32_t t = (214013 * seed + 2531011);
-    t = (t >> 16) & 0x7FFF;
+  uint32_t seed = this->random_source;
+  uint32_t t = (214013 * seed + 2531011);
+  return this->random_source = (t >> 16) & 0x7FFF;
+}
 
-    if (this->random_source.cas(seed, t)) {
-      return t;
-    }
+void Worker::increase_sleep_duration() {
+  uint32_t next_duration = this->idle_sleep_duration * 2;
+  if (next_duration > kWorkerMaximumIdleSleepDuration) {
+    next_duration = kWorkerMaximumIdleSleepDuration;
   }
+  this->idle_sleep_duration = next_duration;
+}
+
+void Worker::reset_sleep_duration() {
+  this->idle_sleep_duration = 10;
 }
 
 Fiber::Fiber() {
@@ -153,6 +167,7 @@ void Scheduler::worker_main_fn(Worker* worker) {
 
     // attempt to acquire idle processor
     if (!acquire_processor_for_worker(worker)) {
+      worker->increase_sleep_duration();
       idle_worker();
       continue;
     }
@@ -167,8 +182,11 @@ void Scheduler::worker_main_fn(Worker* worker) {
       Fiber* fiber = get_ready_fiber();
 
       if (fiber == nullptr) {
+        worker->increase_sleep_duration();
         break;
       }
+
+      worker->reset_sleep_duration();
 
       safeprint("worker % acquired fiber %", worker->id, fiber->id);
 
@@ -237,7 +255,7 @@ void fiber_task_fn() {
   if (!(fiber1 && fiber2)) {
     Worker* worker = Scheduler::instance->worker();
     safeprint("failed allocation in worker %", worker->id);
-    assert(false);
+    assert(false && "failed allocation");
   }
 
   fiber1->state.acas(Fiber::State::Created, Fiber::State::Ready);
@@ -315,12 +333,6 @@ void Scheduler::schedule_fiber(Fiber* fiber) {
     if (proc->run_queue.size() < kLocalReadyQueueMaxSize) {
       proc->run_queue.push_back(fiber);
       safeprint("scheduled fiber % on processor %", fiber->id, proc->id);
-
-      Worker* worker = this->worker();
-      if (worker->rand() % kScheduleWakeWorkerChance == 0) {
-        wake_idle_worker();
-      }
-
       return;
     }
   }
@@ -434,26 +446,6 @@ bool Scheduler::exit_native_mode() {
   return true;
 }
 
-void Scheduler::wake_idle_worker() {
-  std::unique_lock<std::mutex> processors_lock(m_processors_mutex);
-  if (m_idle_processors.size()) {
-
-    std::lock_guard<std::mutex> workers_lock(m_workers_mutex);
-    if (m_idle_workers.size()) {
-      Worker* worker = m_idle_workers.top();
-      m_idle_workers.pop();
-
-      {
-        std::lock_guard<std::mutex> locker(worker->mutex);
-        worker->state.acas(Worker::State::Idle, Worker::State::Acquiring);
-      }
-      worker->wake_cv.notify_one();
-    } else {
-      m_workers.push_back(new Worker());
-    }
-  }
-}
-
 void Scheduler::reschedule_fiber() {
   Fiber* fiber = this->fiber();
   fiber->state.acas(Fiber::State::Running, Fiber::State::Ready);
@@ -501,27 +493,117 @@ void Scheduler::release_processor_from_worker(Worker* worker) {
   }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void Scheduler::idle_worker() {
   Worker* worker = this->worker();
   safeprint("idling worker %", worker->id);
 
   // append to idle workers list
   {
-    std::lock_guard<std::mutex> idle_workers_lock(m_workers_mutex);
-    m_idle_workers.push(worker);
+    std::lock_guard<std::mutex> locker(m_workers_mutex);
+    m_idle_workers.insert(worker);
     worker->assert_change_state(Worker::State::Acquiring, Worker::State::Idle);
   }
-  m_idle_workers_cv.notify_all();
 
-  std::unique_lock<std::mutex> worker_lock(worker->mutex);
-  worker->wake_cv.wait(worker_lock, [&] {
-    return worker->state == Worker::State::Acquiring;
-  });
-  assert(worker->state == Worker::State::Acquiring);
-  safeprint("waking worker %", worker->id);
+  uint64_t ts_start = get_steady_timestamp();
 
-  checkpoint();
+  {
+    std::unique_lock<std::mutex> locker(worker->mutex);
+    auto idle_duration = 1ms * worker->idle_sleep_duration;
+    worker->wake_cv.wait_for(locker, idle_duration, [&] {
+      return worker->state == Worker::State::Acquiring;
+    });
+  }
+
+  uint64_t ts_end = get_steady_timestamp();
+  uint64_t ts_difference = ts_end - ts_start;
+
+  if (worker->change_state(Worker::State::Idle, Worker::State::Acquiring)) {
+
+    // woke because of condition_var wait timeout
+    safeprint("worker % idle mode timeout after %ms", worker->id, ts_difference);
+
+    // remove the worker from the idle list
+    {
+      std::lock_guard<std::mutex> locker(m_workers_mutex);
+      m_idle_workers.erase(worker);
+    }
+
+  } else {
+
+    // woke because some other worker called wake_idle_worker()
+    assert(worker->state == Worker::State::Acquiring);
+    safeprint("worker % got woken after %ms", worker->id, ts_difference);
+  }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void Scheduler::wake_idle_worker() {
+  std::unique_lock<std::mutex> processors_lock(m_processors_mutex);
+  if (m_idle_processors.size()) {
+
+    std::lock_guard<std::mutex> workers_lock(m_workers_mutex);
+    if (m_idle_workers.size()) {
+      auto begin_it = m_idle_workers.begin();
+      Worker* worker = *begin_it;
+      m_idle_workers.erase(begin_it);
+
+      {
+        std::lock_guard<std::mutex> locker(worker->mutex);
+        worker->state.acas(Worker::State::Idle, Worker::State::Acquiring);
+      }
+      worker->wake_cv.notify_one();
+    } else {
+      m_workers.push_back(new Worker());
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 uint64_t Scheduler::get_steady_timestamp() {
   auto now = std::chrono::steady_clock::now();

@@ -30,6 +30,7 @@
 #include <list>
 #include <vector>
 #include <stack>
+#include <unordered_set>
 
 #include "charly/charly.h"
 #include "charly/atomic.h"
@@ -53,8 +54,8 @@ using boost::context::detail::make_fcontext;
 using boost::context::detail::jump_fcontext;
 
 // the amount of concurrent threads the underlying machine can run
-// static const uint64_t kHardwareConcurrency = std::thread::hardware_concurrency();
-static const uint64_t kHardwareConcurrency = 1;
+static const uint64_t kHardwareConcurrency = std::thread::hardware_concurrency();
+// static const uint64_t kHardwareConcurrency = 2;
 
 // chance that a processor will acquire from the global queue instead of the local queue
 static const uint32_t kGlobalRunQueuePriorityChance = 32;
@@ -63,15 +64,15 @@ static const uint32_t kGlobalRunQueuePriorityChance = 32;
 // ready fibers from its local queue
 static const uint32_t kWorkerStealPriorityChance = 64;
 
-// chance that the runtime will attempt to wake more workers when a fiber
-// gets scheduled on a processors local run queue
-static const uint32_t kScheduleWakeWorkerChance = 32;
-
 // timeslice (in milliseconds) given to each fiber to run
 static const uint64_t kSchedulerFiberTimeslice = 10;
 
 // the maximum amount of fibers to be queued in each workers local queue
 static const uint64_t kLocalReadyQueueMaxSize = 256;
+
+// the maximum amount of milliseconds a worker should spend in its idle phase before checking
+// if there are any work available
+static const uint32_t kWorkerMaximumIdleSleepDuration = 1000;
 
 struct Processor;
 struct Worker;
@@ -131,21 +132,23 @@ struct Worker {
     Native,           // worker is inside a native section
     NativePreempted,  // worker got preempted during native section, does not own a processor anymore
     WorldStopped,     // worker stopped due to scheduler stop the world request
-    Exited            // worker has exited
+    Exited,           // worker has exited
+    __Count           // amount of worker states defined
   };
 
   uint64_t id;
-  uint64_t context_switch_counter = 1;
-  charly::atomic<uint32_t> random_source = 0;
+  uint64_t context_switch_counter;
+  uint32_t random_source;
+  uint32_t idle_sleep_duration;
   fcontext_t context;
   std::thread os_handle;
 
-  charly::atomic<bool> should_exit = false; // set by the scheduler if it wants this worker to exit
-  charly::atomic<bool> should_stop = false; // set by the scheduler during a stop-the-world pause
+  charly::atomic<bool> should_exit; // set by the scheduler if it wants this worker to exit
+  charly::atomic<bool> should_stop; // set by the scheduler during a stop-the-world pause
 
-  charly::atomic<State> state = State::Created;
-  charly::atomic<Fiber*> fiber = nullptr;
-  charly::atomic<Processor*> processor = nullptr;
+  charly::atomic<State> state;
+  charly::atomic<Fiber*> fiber;
+  charly::atomic<Processor*> processor;
 
   std::mutex mutex;
   std::condition_variable wake_cv;   // signalled by the scheduler to wake the worker from idle mode
@@ -171,6 +174,11 @@ struct Worker {
 
   // generate a random number
   uint32_t rand();
+
+  // increase the amount of time the worker should sleep in its next idle state
+  // will not increase beyond kWorkerMaximumIdleSleepDuration
+  void increase_sleep_duration();
+  void reset_sleep_duration();
 };
 
 static const size_t kFiberStackSize = 1024 * 4; // x kilobytes
@@ -289,9 +297,6 @@ public:
   // meant to be called from within application worker threads
   bool exit_native_mode();
 
-  // wake an idle worker
-  void wake_idle_worker();
-
   // reschedule the currently executing fiber
   //
   // meant to be called from within application worker threads
@@ -308,6 +313,9 @@ private:
 
   // put the calling worker thread into idle mode
   void idle_worker();
+
+  // wake an idle worker
+  void wake_idle_worker();
 
   // returns the current unix timestamp in millisecond precision
   uint64_t get_steady_timestamp();
@@ -339,9 +347,8 @@ private:
   bool m_wants_join = false;
 
   std::mutex m_workers_mutex;
-  std::condition_variable m_idle_workers_cv;
   std::vector<Worker*> m_workers;
-  std::stack<Worker*> m_idle_workers;
+  std::unordered_set<Worker*> m_idle_workers;
 
   std::mutex m_processors_mutex;
   std::vector<Processor*> m_processors;

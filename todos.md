@@ -1,9 +1,8 @@
 # Todos
 
-- Limit time workers spend in idle mode
-  - Remove mechanism which wakes workers by chance when scheduling in local ready queue
-  - Instead, wake idle workers periodically (100ms intervals??)
-    - Workers then check global queue or attempt to steal work from some other processor
+- Race condition inside allocator
+  - Free regions might already be gone by the time thread reaches the freelist check
+    after calling expand_heap
 
 - Implement native mode mechanism
   - Worker threads that are inside native mode, that exceed some timeout (20ms?) will be

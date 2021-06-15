@@ -114,6 +114,10 @@ HeapRegion* MemoryAllocator::acquire_region() {
     expand_heap();
   }
 
+  // FIXME: there could be a race condition where the newly allocated regions created
+  // by the call to expand_heap() are already taken off the freelist by the time
+  // this thread checks for them
+
   std::unique_lock<std::mutex> locker(m_freelist_mutex);
   if (m_freelist.size()) {
     HeapRegion* region = m_freelist.front();
@@ -134,12 +138,6 @@ HeapRegion* MemoryAllocator::acquire_region() {
 
 HeapRegion* MemoryAllocator::allocate_new_region() {
   std::lock_guard<std::mutex> locker(m_regions_mutex);
-
-  // check if the maximum allowed heap size was reached
-  if (m_regions.size() == kHeapRegionLimit) {
-    return nullptr;
-  }
-
   HeapRegion* region = new HeapRegion();
   m_regions.push_back(region);
   m_allocated_regions++;
@@ -147,15 +145,18 @@ HeapRegion* MemoryAllocator::allocate_new_region() {
 }
 
 bool MemoryAllocator::expand_heap() {
-  bool allocated_one = false;
 
+  // calculate new target region count
   size_t target_region_count = m_allocated_regions.load() * kHeapGrowFactor;
+  if (target_region_count > kHeapRegionLimit) {
+    target_region_count = kHeapRegionLimit;
+  }
+
+  // allocate new regions
+  bool allocated_one = false;
   while (m_allocated_regions.load() < target_region_count) {
     HeapRegion* region = allocate_new_region();
-    if (region == nullptr) {
-      break;
-    }
-
+    assert(region);
     free_region(region);
     allocated_one = true;
   }

@@ -146,13 +146,9 @@ void run_file(DiagnosticConsole& console, const std::string& filename) {
   //   std::this_thread::sleep_for(100ms);
   // }
 
-
-
   Fiber* fiber = MemoryAllocator::allocate<Fiber>();
   fiber->state.acas(Fiber::State::Created, Fiber::State::Ready);
   Scheduler::instance->schedule_fiber(fiber);
-
-
 
   // for (int i = 0; i < 10; i++) {
   //   Scheduler::instance->stop_the_world();
