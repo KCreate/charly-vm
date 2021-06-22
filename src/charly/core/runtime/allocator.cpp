@@ -147,14 +147,14 @@ HeapRegion* MemoryAllocator::allocate_new_region() {
 bool MemoryAllocator::expand_heap() {
 
   // calculate new target region count
-  size_t target_region_count = m_allocated_regions.load() * kHeapGrowFactor;
+  size_t target_region_count = m_allocated_regions * kHeapGrowFactor;
   if (target_region_count > kHeapRegionLimit) {
     target_region_count = kHeapRegionLimit;
   }
 
   // allocate new regions
   bool allocated_one = false;
-  while (m_allocated_regions.load() < target_region_count) {
+  while (m_allocated_regions < target_region_count) {
     HeapRegion* region = allocate_new_region();
     assert(region);
     free_region(region);
@@ -181,8 +181,8 @@ void MemoryAllocator::free_region(HeapRegion* region) {
 }
 
 float MemoryAllocator::utilization() {
-  float amount_of_regions = m_allocated_regions.load();
-  float amount_of_free_regions = m_free_regions.load();
+  float amount_of_regions = m_allocated_regions;
+  float amount_of_free_regions = m_free_regions;
   float factor_free_regions = amount_of_free_regions / amount_of_regions;
   float factor_used_regions = 1.0 - factor_free_regions;
   return factor_used_regions;

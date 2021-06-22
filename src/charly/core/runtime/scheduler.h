@@ -143,8 +143,7 @@ struct Worker {
   fcontext_t context;
   std::thread os_handle;
 
-  charly::atomic<bool> should_exit; // set by the scheduler if it wants this worker to exit
-  charly::atomic<bool> should_stop; // set by the scheduler during a stop-the-world pause
+  charly::atomic<bool> stw_request; // set by the scheduler during a stop-the-world pause
 
   charly::atomic<State> state;
   charly::atomic<Fiber*> fiber;
@@ -152,10 +151,18 @@ struct Worker {
 
   std::mutex mutex;
   std::condition_variable wake_cv;   // signalled by the scheduler to wake the worker from idle mode
+  std::condition_variable stw_cv;    // signalled by the scheduler to wake the worker from STW mode
   std::condition_variable state_cv;  // signalled by the worker when it changes its state
 
   // join the native os thread
   void join();
+
+  // wake the worker from idle mode
+  // does nothing if the worker is not in idle mode
+  void wake_idle();
+
+  // wake the worker from world stopped mode
+  void wake_stw();
 
   // attempt to change the worker state from an old to a new state
   // returns true if the state could be successfully changed, false otherwise
@@ -181,7 +188,7 @@ struct Worker {
   void reset_sleep_duration();
 };
 
-static const size_t kFiberStackSize = 1024 * 4; // x kilobytes
+static const size_t kFiberStackSize = 1024 * 4; // 4 kilobytes
 
 // Fibers hold the state information of a single strand of execution inside a charly
 // program. each fiber has its own hardware stack and stores register data when paused
@@ -237,10 +244,10 @@ public:
   inline static Scheduler* instance = nullptr;
 
   // main function executed by application worker threads
-  void worker_main_fn(Worker* worker);
+  void worker_main(Worker* worker);
 
   // main function executed by fibers
-  static void fiber_main_fn(transfer_t transfer);
+  static void fiber_main(transfer_t transfer);
 
   // suspends calling thread until the scheduler has exited
   //
@@ -249,7 +256,18 @@ public:
   // will just terminate then and there, without returning from this method
   //
   // meant to be called from the main program thread setting up the runtime
-  void join();
+  //
+  // returns the exit code returned by the program
+  int32_t join();
+
+  // initiate exit from the runtime
+  //
+  // the first worker thread to call this method has the ability to set the
+  // exit code. calls after the first one do not change the exit code
+  //
+  // runtime will immediately abort all executing worker threads, without
+  // giving them any notice or oppurtunity to finish what they are doing
+  void abort(int32_t exit_code);
 
   // returns current worker / processor / fiber or nullptr
   Worker* worker();
@@ -264,15 +282,19 @@ public:
   // schedulers global run queue
   void schedule_fiber(Fiber* fiber);
 
-  // scheduler checkpoint
-  //
-  // provides a place for the scheduler to cooperatively preempt the
-  // currently running fiber and switch it out for some other fiber.
-  //
-  // pauses if the GC has requested the scheduler to stop the world
+  // provides a place for the scheduler to switch to another fiber,
+  // to stop the world in case the GC is requesting a pause or to
+  // exit from the machine entirely
   //
   // meant to be called from within application worker threads
-  void checkpoint();
+  void worker_checkpoint();
+
+  // provides a place for the scheduler to switch to another fiber,
+  // to stop the world in case the GC is requesting a pause or to
+  // exit from the machine entirely
+  //
+  // meant to be called from workers in acquiring mode
+  void scheduler_checkpoint();
 
   // stop / start the world
   // when the world is stopped, the GC can safely traverse and scan the
@@ -302,7 +324,15 @@ public:
   // meant to be called from within application worker threads
   void reschedule_fiber();
 
+  // exit from the current fiber
+  //
+  // meant to be called from within application worker threads
+  void exit_fiber();
+
 private:
+
+  // stops the calling worker thread until the stop-the-world pause is over
+  void stw_checkpoint();
 
   // attempt to acquire and bind an idle processor to a worker
   // returns false if no idle processor was found
@@ -344,7 +374,10 @@ private:
 private:
   uint64_t m_start_timestamp = 0;
 
-  bool m_wants_join = false;
+  std::mutex m_exit_mutex;
+  std::condition_variable m_exit_cv;
+  charly::atomic<int> m_exit_code = 0;
+  charly::atomic<bool> m_wants_exit = false;
 
   std::mutex m_workers_mutex;
   std::vector<Worker*> m_workers;

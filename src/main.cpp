@@ -105,12 +105,12 @@ int run_repl(DiagnosticConsole&) {
   return 0;
 }
 
-void run_file(DiagnosticConsole& console, const std::string& filename) {
+int run_file(DiagnosticConsole& console, const std::string& filename) {
   std::ifstream file(filename);
 
   if (!file.is_open()) {
     console.gerror("Could not open the file: ", filename);
-    return;
+    return 1;
   }
 
   utils::Buffer file_buffer;
@@ -158,41 +158,46 @@ void run_file(DiagnosticConsole& console, const std::string& filename) {
   // }
 
   safeprint("joining scheduler");
-  Scheduler::instance->join();
+  int exit_code = Scheduler::instance->join();
   safeprint("finished joining scheduler");
+
+  return exit_code;
 }
 
-void cli(DiagnosticConsole& console) {
+int32_t cli(DiagnosticConsole& console) {
 
   // check for existence of CHARLYVMDIR environment variable
   if (!utils::ArgumentParser::is_env_set("CHARLYVMDIR")) {
     console.gerror("missing 'CHARLYVMDIR' environment variable");
-    return;
+    return 1;
   }
 
   // help, version, license
   if (utils::ArgumentParser::is_flag_set("help")) {
     utils::ArgumentParser::print_help(std::cout);
-    return;
+    return 0;
   }
 
   if (utils::ArgumentParser::is_flag_set("version")) {
     std::cout << utils::ArgumentParser::VERSION << std::endl;
-    return;
+    return 0;
   }
 
   if (utils::ArgumentParser::is_flag_set("license")) {
     std::cout << utils::ArgumentParser::LICENSE << std::endl;
-    return;
+    return 0;
   }
 
   // check for filename to execute
+  int32_t exit_code = 0;
   if (utils::ArgumentParser::USER_FLAGS.size() > 0) {
     const std::string& filename = utils::ArgumentParser::USER_FLAGS.front();
-    run_file(console, filename);
+    exit_code = run_file(console, filename);
   } else {
-    run_repl(console);
+    exit_code = run_repl(console);
   }
+
+  return exit_code;
 }
 
 int main(int argc, char** argv) {
@@ -207,9 +212,13 @@ int main(int argc, char** argv) {
 
   utils::Buffer buf("");
   DiagnosticConsole console("charly", buf);
-  cli(console);
+  int32_t exit_code = cli(console);
 
   console.dump_all(std::cerr);
 
-  return console.has_errors();
+  if (exit_code == 0 && console.has_errors()) {
+    exit_code = 1;
+  }
+
+  return exit_code;
 }

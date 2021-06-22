@@ -1,28 +1,10 @@
 # Todos
 
-- Race condition inside allocator
-  - Free regions might already be gone by the time thread reaches the freelist check
-    after calling expand_heap
-
-- Implement native mode mechanism
-  - Worker threads that are inside native mode, that exceed some timeout (20ms?) will be
-    marked as preempted by the system monitor thread.
-    - The runtime will release the processor from the worker thread and will return it to the idle
-      list of processors
-    - The system monitor now detects that there are idle processors, but no idle worker threads,
-      so the runtime will start a new worker thread that acquired the processor
-    - Once the prempted worker thread returns from the native section it will check if it was
-      preempted
-      - If the worker was pre-empted, we try to reacquire the old processor
-      - If reacquiring the old processor fails, try to acquire another idle processor
-      - If there are no idle processors, idle the current worker thread and reschedule the running
-        fiber into the global runqueue
-
-- Fiber scheduler with fcontext_t
-  - How to protect the stack from overflow?
-    - Protect memory page immediately after the stack to trap on accesses
-
-- Implement mechanism to wait for GC cycle to complete when heap could not be expanded
+- Implement some basic opcodes
+  - during this part of development I want to figure out how to implement the write / read barriers
+  - figure out how compiled programs are loaded into the machine
+  - figure out main bytecode execution loop
+    - interaction with scheduler
 
 - Concurrent Garbage Collector
   - Phases
@@ -76,6 +58,27 @@
     - Application threads
       - Update references
 
+- Race condition inside allocator
+  - Free regions might already be gone by the time thread reaches the freelist check
+    after calling expand_heap
+
+- Implement native mode mechanism
+  - Worker threads that are inside native mode, that exceed some timeout (20ms?) will be
+    marked as preempted by the system monitor thread.
+    - The runtime will release the processor from the worker thread and will return it to the idle
+      list of processors
+    - The system monitor now detects that there are idle processors, but no idle worker threads,
+      so the runtime will start a new worker thread that acquired the processor
+    - Once the prempted worker thread returns from the native section it will check if it was
+      preempted
+      - If the worker was pre-empted, we try to reacquire the old processor
+      - If reacquiring the old processor fails, try to acquire another idle processor
+      - If there are no idle processors, idle the current worker thread and reschedule the running
+        fiber into the global runqueue
+
+- Reimplement make_fcontext and jump_fcontext in hand-written assembly
+  - Try to understand what boost does in its own implementation
+
 - Small locks
   - Implement from experiment code in old charly repo
     - See: https://github.com/KCreate/charly-vm/blob/main/experiments/small-locks.cpp
@@ -114,31 +117,15 @@
     - For a dynamic collection of values use the dict primitive datatype
       - Small dictionaries could be laid out inline and take advantage of inline caches
 
-- Memory allocator
-
-- Codegenerator
-  - Creates instructionblock
-  - Allocates constants
-
-- Fiber threads
-  - Write custom scheduler using setjmp/longjmp
-  - Allocate custom stack (4kb) per fiber
-    - How to grow / shrink stack automatically?
-    - How does Go do this?
-  - Using setjmp/longjmp is orders of magnitude faster than ucontext or a regular thread context
-    switch because it does not involve any system calls.
-  - ucontext is useless in this case because it involves system calls
-  - Allocating a dummy page with mprotect(PROT_NONE) after the stack (before because it grows downwards)
-    allows us to detect stack-overflows
-    - I don't know if we could recover a fiber with an overflowed stack
-  - Ideally the stack overflow would be detected before it actually happens so we can
-    gracefully throw a Charly or grow the stack to accomodate more data
-
 - Implement basic opcodes
 
 - Memory locking
 
 - REPL support
+
+- Pointer Tagging support double float
+  - Use some bits of the mantissa for the pointer tag
+  - Reduces accuracy but should be okay
 
 - Polymorphic inline caches
   - Caches should be able to hold at least 2-3 entries
@@ -173,6 +160,13 @@
   - Maybe have the ability to decide at allocation time wether a region should be split
     into small-object cells or large-object cells.
   - Each worker would contain two active regions at any point. One for small objects one for big ones
+
+- Fiber scheduler with fcontext_t
+  - How to protect the stack from overflow?
+    - Protect memory page immediately after the stack to trap on accesses
+
+- Implement mechanism to wait for GC cycle to complete when heap could not be expanded
+  - Instead of failing the allocation, threads should attempt to wait for a GC cycle before they fail
 
 # Rewrite of the codebase
 
@@ -247,10 +241,6 @@
       ```
 
 - solved questions
-  - in what thread are native methods executed?
-    - each cfunction gets a flag which controls wether it should be executed
-      in sync with the fiber or put onto the native worker queue
-    - by default, a cfunction gets executed in sync with the fiber
   - max amount of arguments for a function
     - except in case of functions with argument spreads
     - throw exception on mismatched argument count

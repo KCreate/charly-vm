@@ -130,7 +130,7 @@ public:
 
   // returns the current amount of items in the queue
   size_t size() {
-    return m_element_count.load();
+    return m_element_count;
   }
 
 private:

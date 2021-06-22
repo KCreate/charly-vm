@@ -68,9 +68,11 @@ public:
     return m_state;
   }
 
-  // stop the garbage collector thread
-  // called by the scheduler when shutting down the runtime
+  // signal the garbage collector thread to stop
   void shutdown();
+
+  // wait for the garbage collector thread to stop
+  void join();
 
   // starts a gc cycle if the GC worker is currently paused
   void request_gc();

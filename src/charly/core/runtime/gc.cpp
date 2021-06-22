@@ -42,7 +42,9 @@ void GarbageCollector::shutdown() {
     m_wants_exit.store(true);
   }
   m_cv.notify_all();
+}
 
+void GarbageCollector::join() {
   if (m_thread.joinable()) {
     m_thread.join();
   }
@@ -71,6 +73,10 @@ void GarbageCollector::main() {
       break;
 
     Scheduler::instance->stop_the_world();
+    if (m_wants_exit) {
+      Scheduler::instance->start_the_world();
+      break;
+    }
     init_mark();
     Scheduler::instance->start_the_world();
 
@@ -81,6 +87,10 @@ void GarbageCollector::main() {
       break;
 
     Scheduler::instance->stop_the_world();
+    if (m_wants_exit) {
+      Scheduler::instance->start_the_world();
+      break;
+    }
     init_evacuate();
     Scheduler::instance->start_the_world();
 
@@ -91,6 +101,10 @@ void GarbageCollector::main() {
       break;
 
     Scheduler::instance->stop_the_world();
+    if (m_wants_exit) {
+      Scheduler::instance->start_the_world();
+      break;
+    }
     init_updateref();
     Scheduler::instance->start_the_world();
 
@@ -101,6 +115,10 @@ void GarbageCollector::main() {
       break;
 
     Scheduler::instance->stop_the_world();
+    if (m_wants_exit) {
+      Scheduler::instance->start_the_world();
+      break;
+    }
     init_idle();
     Scheduler::instance->start_the_world();
 
