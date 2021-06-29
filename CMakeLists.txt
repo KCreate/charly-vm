@@ -30,6 +30,7 @@ target_compile_options(charly PRIVATE
   -Wno-vla-extension
   -Wno-c++20-designator
   -Wno-gnu-zero-variadic-macro-arguments
+  -Wno-c99-extensions
   -ftemplate-backtrace-limit=8
   -march=native
   -flto
@@ -64,6 +65,7 @@ target_compile_options(tests PRIVATE
   -Werror
   -Wno-vla-extension
   -Wno-gnu-zero-variadic-macro-arguments
+  -Wno-c99-extensions
   -Wno-c++20-designator
   -ftemplate-backtrace-limit=8
   -march=native

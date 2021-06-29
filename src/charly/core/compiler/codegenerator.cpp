@@ -44,7 +44,6 @@ ref<IRModule> CodeGenerator::compile() {
   }
 
   ref<IRModule> module = m_builder.get_module();
-  module->filename_label = m_builder.register_string(m_unit->filepath);
   module->next_label = m_builder.next_label_id();
   return module;
 }
@@ -499,7 +498,6 @@ void CodeGenerator::inspect_leave(const ref<Char>& node) {
 
 bool CodeGenerator::inspect_enter(const ref<Function>& node) {
   Label begin_label = enqueue_function(node);
-  m_builder.register_string(node->name->value);
   m_builder.emit_makefunc(begin_label)->at(node);
   return false;
 }

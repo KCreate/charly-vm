@@ -51,6 +51,13 @@ void IROperandCount16::dump(std::ostream& out) const {
   out << std::dec;
 }
 
+void IROperandIndex16::dump(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  out << std::hex;
+  writer.fg(Color::Yellow, (uint32_t)this->value);
+  out << std::dec;
+}
+
 void IROperandSymbol::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
   out << std::hex;
@@ -360,6 +367,19 @@ void IRFunction::dump(std::ostream& out) const {
   }
   out << "\n";
 
+  writer.fg(Color::Blue, "  string table:", "\n");
+  int str_index = 0;
+  for (const IRStringTableEntry& entry : this->string_table) {
+    writer.fg(Color::Grey, "  - #", std::setw(2), std::left, str_index, std::setw(1));
+    writer.fg(Color::Red, " \"", entry.value, "\"");
+    writer.fg(Color::Grey, " length=", entry.value.size());
+    writer.fg(Color::Grey, ", hash=", std::hex, entry.hash, std::dec);
+    out << "\n";
+
+    str_index++;
+  }
+  out << "\n";
+
   writer.fg(Color::Yellow, "  body:", "\n");
 
   for (const ref<IRBasicBlock>& block : this->basic_blocks) {
@@ -371,25 +391,24 @@ void IRFunction::dump(std::ostream& out) const {
 
 void IRModule::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
-  writer.fg(Color::Grey, "; module dump for file ");
+  writer.fg(Color::Grey, "; IR for file ");
   writer.fg(Color::Yellow, "'", this->filename, "'", "\n");
   out << '\n';
+
+  writer.fg(Color::Grey, "; symbol table", "\n");
+  for (const std::string& entry : this->symbol_table) {
+    writer.fg(Color::Grey, "  - ");
+    writer.fg(Color::Red, " \"", entry, "\"");
+    writer.fg(Color::Grey, " hash=", std::hex, SYM(entry), std::dec);
+    out << "\n";
+  }
+  out << "\n";
 
   writer.fg(Color::Grey, "; functions", '\n');
   for (const ref<IRFunction>& func : this->functions) {
     func->dump(out);
   }
   out << '\n';
-
-  writer.fg(Color::Grey, "; string table", "\n");
-  for (const IRStringTableEntry& entry : this->string_table) {
-    writer.fg(Color::Yellow, "  .L", entry.label);
-    writer.fg(Color::Red, " \"", entry.value, "\"");
-    writer.fg(Color::Grey, " length=", entry.value.size());
-    writer.fg(Color::Grey, ", hash=", std::hex, entry.hash, std::dec);
-    out << "\n";
-  }
-  out << "\n";
 }
 
 }  // namespace charly::core::compiler::ir

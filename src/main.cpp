@@ -61,7 +61,7 @@ namespace charly {
   std::mutex safeprint_mutex;
 }
 
-int run_repl(DiagnosticConsole&) {
+void run_repl(DiagnosticConsole&) {
   bool print_location = false;
 
   char* buf = nullptr;
@@ -97,20 +97,23 @@ int run_repl(DiagnosticConsole&) {
       }
 
       if (utils::ArgumentParser::is_flag_set("dump_asm")) {
-        unit->bytecode_buffer->dump(std::cout);
+        unit->compiled_module->dump(std::cout);
       }
     }
+
+    // TODO: implement execution
   }
 
-  return 0;
+  Scheduler::instance->abort(0);
 }
 
-int run_file(DiagnosticConsole& console, const std::string& filename) {
+void run_file(DiagnosticConsole& console, const std::string& filename) {
   std::ifstream file(filename);
 
   if (!file.is_open()) {
     console.gerror("Could not open the file: ", filename);
-    return 1;
+    Scheduler::instance->abort(1);
+    return;
   }
 
   utils::Buffer file_buffer;
@@ -125,43 +128,30 @@ int run_file(DiagnosticConsole& console, const std::string& filename) {
   auto unit = Compiler::compile(CompilationUnit::Type::Module, filename, file_buffer);
 
   unit->console.dump_all(std::cerr);
-  if (!unit->console.has_errors()) {
-    if (utils::ArgumentParser::is_flag_set("dump_ast")) {
-      unit->ast->dump(std::cout, true);
-    }
-
-    if (utils::ArgumentParser::is_flag_set("dump_ir")) {
-      unit->ir_module->dump(std::cout);
-    }
-
-    if (utils::ArgumentParser::is_flag_set("dump_asm")) {
-      unit->bytecode_buffer->dump(std::cout);
-    }
+  if (unit->console.has_errors()) {
+    Scheduler::instance->abort(1);
+    return;
   }
 
-  // for (int i = 0; i < 10; i++) {
-  //   Fiber* fiber = MemoryAllocator::allocate<Fiber>();
-  //   fiber->state.acas(Fiber::State::Created, Fiber::State::Ready);
-  //   Scheduler::instance->schedule_fiber(fiber);
-  //   std::this_thread::sleep_for(100ms);
-  // }
+  if (utils::ArgumentParser::is_flag_set("dump_ast")) {
+    unit->ast->dump(std::cout, true);
+  }
 
-  Fiber* fiber = MemoryAllocator::allocate<Fiber>();
-  fiber->state.acas(Fiber::State::Created, Fiber::State::Ready);
-  Scheduler::instance->schedule_fiber(fiber);
+  if (utils::ArgumentParser::is_flag_set("dump_ir")) {
+    unit->ir_module->dump(std::cout);
+  }
 
-  // for (int i = 0; i < 10; i++) {
-  //   Scheduler::instance->stop_the_world();
-  //   std::this_thread::sleep_for(100ms);
-  //   Scheduler::instance->start_the_world();
-  //   std::this_thread::sleep_for(100ms);
-  // }
+  if (utils::ArgumentParser::is_flag_set("dump_asm")) {
+    unit->compiled_module->dump(std::cout);
+  }
 
-  safeprint("joining scheduler");
-  int exit_code = Scheduler::instance->join();
-  safeprint("finished joining scheduler");
+  if (utils::ArgumentParser::is_flag_set("skipexec")) {
+    Scheduler::instance->abort(0);
+    return;
+  }
 
-  return exit_code;
+  Scheduler::instance->register_module(unit->compiled_module);
+  Scheduler::instance->abort(0);
 }
 
 int32_t cli(DiagnosticConsole& console) {
@@ -188,15 +178,18 @@ int32_t cli(DiagnosticConsole& console) {
     return 0;
   }
 
+  Scheduler::initialize();
+
   // check for filename to execute
-  int32_t exit_code = 0;
   if (utils::ArgumentParser::USER_FLAGS.size() > 0) {
     const std::string& filename = utils::ArgumentParser::USER_FLAGS.front();
-    exit_code = run_file(console, filename);
+    run_file(console, filename);
   } else {
-    exit_code = run_repl(console);
+    run_repl(console);
   }
 
+  int exit_code = Scheduler::instance->join();
+  safeprint("runtime exited");
   return exit_code;
 }
 
@@ -204,17 +197,9 @@ int main(int argc, char** argv) {
   utils::ArgumentParser::init_argv(argc, argv);
   utils::ArgumentParser::init_env(environ);
 
-  safeprint("sizeof(HeapHeader) = %", sizeof(HeapHeader));
-  safeprint("sizeof(Fiber) = %", sizeof(Fiber));
-
-  // std::this_thread::sleep_for(2s);
-  Scheduler::initialize();
-
   utils::Buffer buf("");
   DiagnosticConsole console("charly", buf);
   int32_t exit_code = cli(console);
-
-  console.dump_all(std::cerr);
 
   if (exit_code == 0 && console.has_errors()) {
     exit_code = 1;

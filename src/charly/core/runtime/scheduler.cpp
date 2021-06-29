@@ -27,6 +27,7 @@
 #include "charly/core/runtime/scheduler.h"
 #include "charly/core/runtime/allocator.h"
 #include "charly/core/runtime/gc.h"
+#include "charly/core/runtime/compiled_module.h"
 
 namespace charly::core::runtime {
 
@@ -157,8 +158,7 @@ void Scheduler::init_scheduler() {
 
   // initialize processors and workers
   {
-    std::lock_guard<std::mutex> workers_lock(m_workers_mutex);
-    std::lock_guard<std::mutex> proc_lock(m_processors_mutex);
+    std::lock_guard<std::mutex> locker(m_init_mutex);
     for (size_t i = 0; i < kHardwareConcurrency; i++) {
       Processor* processor = new Processor();
       m_processors.push_back(processor);
@@ -168,12 +168,15 @@ void Scheduler::init_scheduler() {
       m_workers.push_back(worker);
     }
   }
-
-  safeprint("finished initializing the scheduler");
 }
 
 void Scheduler::worker_main(Worker* worker) {
-  safeprint("initializing worker %", worker->id);
+
+  // wait for the scheduler to finish initializing
+  {
+    std::lock_guard<std::mutex> locker(m_init_mutex);
+  }
+
   g_worker = worker;
 
   worker->assert_change_state(Worker::State::Created, Worker::State::Acquiring);
@@ -189,7 +192,6 @@ void Scheduler::worker_main(Worker* worker) {
     }
 
     assert(worker->processor);
-
     worker->assert_change_state(Worker::State::Acquiring, Worker::State::Scheduling);
 
     // execute tasks using on the acquired processor until there are no
@@ -254,7 +256,6 @@ void Scheduler::worker_main(Worker* worker) {
     idle_worker();
   }
 
-  safeprint("exiting worker %", worker->id);
   worker->assert_change_state(Worker::State::Acquiring, Worker::State::Exited);
 }
 
@@ -263,8 +264,6 @@ void Scheduler::fiber_main(transfer_t transfer) {
   Worker* worker = Scheduler::instance->worker();
   Processor* proc = Scheduler::instance->processor();
   worker->context = transfer.fctx;
-
-  safeprint("fiber % started on worker %", fiber->id, worker->id);
 
   for (int i = 0; i < 100; i++) {
     worker = Scheduler::instance->worker();
@@ -291,10 +290,7 @@ void Scheduler::fiber_main(transfer_t transfer) {
     Scheduler::instance->schedule_fiber(fiber);
   }
 
-  // exit fiber
-  safeprint("exiting fiber % on worker %", fiber->id, worker->id);
-  fiber->state.acas(Fiber::State::Running, Fiber::State::Exited);
-  Scheduler::instance->enter_scheduler();
+  Scheduler::instance->exit_fiber();
 }
 
 int32_t Scheduler::join() {
@@ -323,7 +319,6 @@ int32_t Scheduler::join() {
 
         safeprint("waiting for worker % to exit", worker->id);
         worker->join();
-        safeprint("worker % exited", worker->id);
 
         locker.lock();
       }
@@ -343,13 +338,12 @@ void Scheduler::abort(int32_t exit_code) {
       m_wants_exit.store(true);
     }
     m_exit_cv.notify_all();
-
-    Worker* worker = this->worker();
-    safeprint("worker % aborting runtime with exit code %", worker->id, exit_code);
   }
 
-  exit_fiber();
-  assert(false && "unreachable");
+  if (this->worker()) {
+    exit_fiber();
+    assert(false && "unreachable");
+  }
 }
 
 Worker* Scheduler::worker() {
@@ -378,7 +372,6 @@ void Scheduler::schedule_fiber(Fiber* fiber) {
     std::unique_lock<std::mutex> locker(proc->run_queue_mutex);
     if (proc->run_queue.size() < kLocalReadyQueueMaxSize) {
       proc->run_queue.push_back(fiber);
-      safeprint("scheduled fiber % on processor %", fiber->id, proc->id);
       return;
     }
   }
@@ -387,7 +380,6 @@ void Scheduler::schedule_fiber(Fiber* fiber) {
   {
     std::unique_lock<std::mutex> locker(m_run_queue_mutex);
     m_run_queue.push_back(fiber);
-    safeprint("scheduled fiber % in global run queue", fiber->id);
   }
 
   wake_idle_worker();
@@ -417,7 +409,6 @@ void Scheduler::worker_checkpoint() {
   // timeslice exceeded check
   uint64_t timestamp_now = get_steady_timestamp();
   if (timestamp_now - fiber->last_scheduled_at >= kSchedulerFiberTimeslice) {
-    safeprint("fiber % exceeded its timeslice", fiber->id);
     reschedule_fiber();
   }
 
@@ -468,23 +459,18 @@ void Scheduler::stop_the_world() {
       }
       break;
     }
-
-    safeprint("worker % stopped the world", worker->id);
   }
 
   safeprint("scheduler has stopped the world");
 }
 
 void Scheduler::start_the_world() {
-  safeprint("scheduler is starting the world");
-
   std::unique_lock<std::mutex> workers_lock(m_workers_mutex);
 
   for (Worker* worker : m_workers) {
     if (worker->state == Worker::State::WorldStopped) {
       worker->wake_stw();
     }
-    safeprint("worker % started the world", worker->id);
   }
 
   safeprint("scheduler has started the world");
@@ -513,6 +499,10 @@ void Scheduler::exit_fiber() {
   enter_scheduler();
 }
 
+void Scheduler::register_module(CompiledModule* module) {
+  safeprint("registering module at path %", module->filename);
+}
+
 bool Scheduler::acquire_processor_for_worker(Worker* worker) {
   assert(worker->processor == nullptr);
 
@@ -528,8 +518,6 @@ bool Scheduler::acquire_processor_for_worker(Worker* worker) {
   if (idle_proc == nullptr) {
     return false;
   }
-
-  safeprint("worker % acquired proc %", worker->id, idle_proc->id);
 
   idle_proc->state.acas(Processor::State::Idle, Processor::State::Owned);
   idle_proc->owner.acas(nullptr, worker);
@@ -549,14 +537,11 @@ void Scheduler::release_processor_from_worker(Worker* worker) {
   {
     std::lock_guard<std::mutex> locker(m_processors_mutex);
     m_idle_processors.push(proc);
-
-    safeprint("worker % released proc %", worker->id, proc->id);
   }
 }
 
 void Scheduler::idle_worker() {
   Worker* worker = this->worker();
-  safeprint("idling worker %", worker->id);
 
   // append to idle workers list
   {
@@ -564,8 +549,6 @@ void Scheduler::idle_worker() {
     m_idle_workers.insert(worker);
     worker->assert_change_state(Worker::State::Acquiring, Worker::State::Idle);
   }
-
-  uint64_t ts_start = get_steady_timestamp();
 
   {
     std::unique_lock<std::mutex> locker(worker->mutex);
@@ -575,26 +558,15 @@ void Scheduler::idle_worker() {
     });
   }
 
-  uint64_t ts_end = get_steady_timestamp();
-  uint64_t ts_difference = ts_end - ts_start;
-
-  if (worker->change_state(Worker::State::Idle, Worker::State::Acquiring)) {
-
-    // woke because of condition_var wait timeout
-    safeprint("worker % idle mode timeout after %ms", worker->id, ts_difference);
-
-    // remove the worker from the idle list
-    {
-      std::lock_guard<std::mutex> locker(m_workers_mutex);
-      m_idle_workers.erase(worker);
-    }
-
-  } else {
-
-    // woke because some other worker called wake_idle_worker()
-    assert(worker->state == Worker::State::Acquiring);
-    safeprint("worker % got woken after %ms", worker->id, ts_difference);
+  // got woken by other worker
+  if (worker->state == Worker::State::Acquiring) {
+    return;
   }
+
+  // got woken because of timer timeout
+  std::lock_guard<std::mutex> locker(m_workers_mutex);
+  m_idle_workers.erase(worker);
+  worker->change_state(Worker::State::Idle, Worker::State::Acquiring);
 }
 
 void Scheduler::wake_idle_worker() {
@@ -630,7 +602,6 @@ Fiber* Scheduler::get_ready_fiber() {
   // pull ready fiber from global run queue
   if (worker->rand() % kGlobalRunQueuePriorityChance == 0) {
     if (Fiber* fiber = get_ready_fiber_from_global_queue()) {
-      safeprint("worker % acquired fiber % from global queue by chance", worker->id, fiber->id);
       return fiber;
     }
   }
@@ -648,14 +619,12 @@ Fiber* Scheduler::get_ready_fiber() {
     if (proc->run_queue.size()) {
       Fiber* fiber = proc->run_queue.front();
       proc->run_queue.pop_front();
-      safeprint("worker % acquired fiber % from local queue", worker->id, fiber->id);
       return fiber;
     }
   }
 
   // check global queue
   if (Fiber* fiber = get_ready_fiber_from_global_queue()) {
-    safeprint("worker % acquired fiber % from global queue", worker->id, fiber->id);
     return fiber;
   }
 
@@ -721,8 +690,6 @@ Fiber* Scheduler::steal_ready_fiber() {
 
     proc->run_queue.push_back(stolen_fiber);
   }
-
-  safeprint("worker % stole % fibers from proc %", worker->id, amount_to_steal, ms_proc->id);
 
   return first_fiber;
 }

@@ -52,8 +52,11 @@ public:
     m_active_function(nullptr),
     m_module(make<IRModule>(filename)) {}
 
-  // register a string in the modules string table
-  Label register_string(const std::string& string);
+  // register string in currently active function
+  OpIndex16 register_string(const std::string& string);
+
+  // register a symbol in the module symbol table
+  void register_symbol(const std::string& string);
 
   // basic block management
   ref<IRBasicBlock> new_basic_block();

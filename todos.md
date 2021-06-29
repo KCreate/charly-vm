@@ -1,5 +1,22 @@
 # Todos
 
+- Remove 'dump_asm' flag (not useful since all relevant info is displayed already with 'dump_ir')
+
+- CLI flag for maximum worker count
+
+- Write some unit-tests
+  - Write some unit-tests for the generated module
+  - Symbol table
+  - String tables of functions
+  - Correct meta information
+
+- Remove stackcheck instruction
+  - Handle implicitly at begin of function calls
+
+- Rewrite pseudo-instructions to their real equivalent
+
+- Document the calling convention / frame locals layout somewhere
+
 - Implement some basic opcodes
   - during this part of development I want to figure out how to implement the write / read barriers
   - figure out how compiled programs are loaded into the machine
@@ -61,6 +78,11 @@
 - Race condition inside allocator
   - Free regions might already be gone by the time thread reaches the freelist check
     after calling expand_heap
+
+- Fiber stack growth mechanism via mmap?
+  - Reserve address space for 8 megabytes per fiber
+  - Map in actual memory pages as they are needed
+  - Unmap pages when they are no longer needed
 
 - Implement native mode mechanism
   - Worker threads that are inside native mode, that exceed some timeout (20ms?) will be

@@ -35,19 +35,34 @@ using namespace charly::core::compiler::ast;
 
 using Color = utils::Color;
 
-Label Builder::register_string(const std::string& string) {
+OpIndex16 Builder::register_string(const std::string& string) {
+  ref<IRFunction> function = m_active_function;
+
+  // duplicates check
+  OpIndex16 index = 0;
+  for (const IRStringTableEntry& entry : function->string_table) {
+    if (entry.value.compare(string) == 0) {
+      return index;
+    }
+
+    index++;
+  }
+
+  function->string_table.emplace_back(IRStringTableEntry(string));
+  return index;
+}
+
+void Builder::register_symbol(const std::string& string) {
   ref<IRModule> module = m_module;
 
   // duplicates check
-  for (const IRStringTableEntry& entry : module->string_table) {
-    if (entry.value.compare(string) == 0) {
-      return entry.label;
+  for (const std::string& entry : module->symbol_table) {
+    if (entry.compare(string) == 0) {
+      return;
     }
   }
 
-  Label l = reserve_label();
-  module->string_table.emplace_back(IRStringTableEntry(l, string));
-  return l;
+  module->symbol_table.emplace_back(string);
 }
 
 void Builder::push_exception_handler(Label handler) {
@@ -73,6 +88,7 @@ ref<IRBasicBlock> Builder::active_block() const {
 void Builder::begin_function(Label head, ref<ast::Function> ast) {
   m_active_function = make<IRFunction>(head, ast);
   m_module->functions.push_back(m_active_function);
+  register_symbol(ast->name->value);
   new_basic_block();
 }
 
@@ -488,10 +504,12 @@ ref<IRInstruction> Builder::emit_stringconcat(OpCount8 count) {
 }
 
 ref<IRInstruction> Builder::emit_declareglobal(OpSymbol symbol) {
+  register_symbol(symbol);
   return emit(Opcode::declareglobal, IROperandSymbol::make(symbol));
 }
 
 ref<IRInstruction> Builder::emit_declareglobalconst(OpSymbol symbol) {
+  register_symbol(symbol);
   return emit(Opcode::declareglobalconst, IROperandSymbol::make(symbol));
 }
 
@@ -560,7 +578,7 @@ ref<IRInstruction> Builder::emit_load(OpImmediate value) {
 }
 
 ref<IRInstruction> Builder::emit_loadsymbol(OpSymbol symbol) {
-  register_string(symbol);
+  register_symbol(symbol);
   return emit(Opcode::loadsymbol, IROperandSymbol::make(symbol));
 }
 
@@ -573,7 +591,7 @@ ref<IRInstruction> Builder::emit_loadargc() {
 }
 
 ref<IRInstruction> Builder::emit_loadglobal(OpSymbol symbol) {
-  register_string(symbol);
+  register_symbol(symbol);
   return emit(Opcode::loadglobal, IROperandSymbol::make(symbol));
 }
 
@@ -586,7 +604,7 @@ ref<IRInstruction> Builder::emit_loadfar(OpCount8 depth, OpCount8 offset) {
 }
 
 ref<IRInstruction> Builder::emit_loadattr(OpSymbol symbol) {
-  register_string(symbol);
+  register_symbol(symbol);
   return emit(Opcode::loadattr, IROperandSymbol::make(symbol));
 }
 
@@ -599,13 +617,13 @@ ref<IRInstruction> Builder::emit_loadsuperconstructor() {
 }
 
 ref<IRInstruction> Builder::emit_loadsuperattr(OpSymbol symbol) {
-  register_string(symbol);
+  register_symbol(symbol);
   return emit(Opcode::loadsuperattr, IROperandSymbol::make(symbol));
 }
 
 // write operations
 ref<IRInstruction> Builder::emit_setglobal(OpSymbol symbol) {
-  register_string(symbol);
+  register_symbol(symbol);
   return emit(Opcode::setglobal, IROperandSymbol::make(symbol));
 }
 
@@ -622,7 +640,7 @@ ref<IRInstruction> Builder::emit_setfar(OpCount8 depth, OpCount8 offset) {
 }
 
 ref<IRInstruction> Builder::emit_setattr(OpSymbol symbol) {
-  register_string(symbol);
+  register_symbol(symbol);
   return emit(Opcode::setattr, IROperandSymbol::make(symbol));
 }
 
@@ -656,6 +674,7 @@ ref<IRInstruction> Builder::emit_makeclass(OpSymbol name,
                                                      OpCount8 funccount,
                                                      OpCount8 propcount,
                                                      OpCount8 staticpropcount) {
+  register_symbol(name);
   return emit(Opcode::makeclass, IROperandSymbol::make(name), IROperandCount8::make(funccount),
               IROperandCount8::make(propcount), IROperandCount8::make(staticpropcount));
 }
@@ -664,12 +683,13 @@ ref<IRInstruction> Builder::emit_makesubclass(OpSymbol name,
                                                         OpCount8 funccount,
                                                         OpCount8 propcount,
                                                         OpCount8 staticpropcount) {
+  register_symbol(name);
   return emit(Opcode::makesubclass, IROperandSymbol::make(name), IROperandCount8::make(funccount),
               IROperandCount8::make(propcount), IROperandCount8::make(staticpropcount));
 }
 
-ref<IRInstruction> Builder::emit_makestr(OpOffset offset) {
-  return emit(Opcode::makestr, IROperandOffset::make(offset));
+ref<IRInstruction> Builder::emit_makestr(OpIndex16 index) {
+  return emit(Opcode::makestr, IROperandIndex16::make(index));
 }
 
 ref<IRInstruction> Builder::emit_makelist(OpCount16 count) {

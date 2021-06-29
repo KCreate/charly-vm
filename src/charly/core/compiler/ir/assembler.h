@@ -33,84 +33,18 @@
 
 #include "charly/utils/memoryblock.h"
 
+#include "charly/core/runtime/compiled_module.h"
+
 #pragma once
 
 namespace charly::core::compiler::ir {
-
-/*
-struct ModuleHeader {
-  void* function_table;   // pointer to beginning of function table
-  String* filename_label; // label to filename inside string table
-
-  // string table
-  uint16_t symtable_size;
-  struct StringTableEntry {
-    SYMBOL symbol;
-    uint32_t length;
-    char data[length];
-  } stringtable[stringtable_size];
-
-  // function table
-  uint16_t functable_size;
-  struct FunctionTableEntry {
-    Function* label;
-  } functable[functable_size];
-
-  // functions
-  struct Function {
-
-    // forward pointers
-    void* inline_cache_section;
-    void* sourcemap_section;
-    void* bytecodes_section;
-
-    // ir info
-    SYMBOL name;
-    uint8_t lvars;
-    uint8_t argc;
-    uint8_t minargc;
-    uint8_t stacksize;
-    bool spread;
-    bool arrow;
-    bool leaked;
-
-    // exception tables
-    uint8_t exctable_size;
-    struct {
-      Label begin;
-      Label end;
-      Label handler;
-    } exctable[exctable_size];
-
-    // inline caches
-    uint8_t inline_cache_size;
-    struct {
-      uint64_t padding[4];
-    } inline_caches[inline_cache_size];
-
-    // sourcemap
-    uint16_t sourcemap_entries;
-    struct {
-      Label instruction;
-      uint16_t row;
-      uint16_t column;
-      uint16_t end_row;
-      uint16_t end_column;
-    } sourcemap[sourcemap_entries];
-
-    // bytecodes
-    uint32_t bytecodes_size;
-    char bytecodes[bytecodes_size];
-  } functions[functable_size];
-};
-*/
 
 class Assembler {
 public:
   Assembler(const ref<IRModule>& module) :
     m_buffer(make<utils::MemoryBlock>()), m_module(module), m_label_counter(module->next_label) {}
 
-  ref<utils::MemoryBlock> assemble();
+  runtime::CompiledModule* assemble();
 
 private:
 
@@ -123,10 +57,15 @@ private:
   // reserve a new label
   Label reserve_label();
   void place_label(Label label);
-  void write_label_reference(Label label);
+  void write_relative_label_reference(Label label, Label other);  // int32_t relative offset to other label
+  void write_absolute_label_reference(Label label);               // uint32_t absolute offset from buffer start
 
   // resolve all unresolved label references in the bytecode buffer
   void patch_unresolved_labels();
+
+  // returns the offset a given label refers to
+  // asserts that the label was placed, programming error otherwise
+  uint32_t offset_of_label(Label label);
 
   ref<utils::MemoryBlock> m_buffer;
   ref<IRModule> m_module;
@@ -136,8 +75,14 @@ private:
   // maps Labels to their offset in the bytecode buffer
   std::unordered_map<Label, uint32_t> m_placed_labels;
 
+  struct UnresolvedLabel {
+    Label label;
+    bool relative;
+    std::optional<Label> relative_to;
+  };
+
   // maps unresolved offsets in the bytecode to their label
-  std::unordered_map<uint32_t, Label> m_unresolved_labels;
+  std::unordered_map<uint32_t, UnresolvedLabel> m_unresolved_labels;
 };
 
 }  // namespace charly::core::compiler::ir

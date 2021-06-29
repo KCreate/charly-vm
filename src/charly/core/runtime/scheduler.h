@@ -36,7 +36,9 @@
 #include "charly/atomic.h"
 #include "charly/value.h"
 
-#include "charly/utils/shared_queue.h"
+#include "charly/utils/memoryblock.h"
+
+#include "charly/core/runtime/compiled_module.h"
 
 #include <boost/context/detail/fcontext.hpp>
 
@@ -188,7 +190,7 @@ struct Worker {
   void reset_sleep_duration();
 };
 
-static const size_t kFiberStackSize = 1024 * 4; // 4 kilobytes
+static const size_t kFiberStackSize = 1024 * 8; // 8 kilobytes
 
 // Fibers hold the state information of a single strand of execution inside a charly
 // program. each fiber has its own hardware stack and stores register data when paused
@@ -329,6 +331,9 @@ public:
   // meant to be called from within application worker threads
   void exit_fiber();
 
+  // register a compiled module with the runtime
+  void register_module(CompiledModule* module);
+
 private:
 
   // stops the calling worker thread until the stop-the-world pause is over
@@ -378,6 +383,8 @@ private:
   std::condition_variable m_exit_cv;
   charly::atomic<int> m_exit_code = 0;
   charly::atomic<bool> m_wants_exit = false;
+
+  std::mutex m_init_mutex; // held by scheduler during initialization to prevent workers from starting early
 
   std::mutex m_workers_mutex;
   std::vector<Worker*> m_workers;

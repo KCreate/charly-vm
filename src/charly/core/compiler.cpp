@@ -106,7 +106,7 @@ ref<CompilationUnit> Compiler::compile(CompilationUnit::Type type,
 
   // assemble bytecodes
   ir::Assembler assembler(unit->ir_module);
-  unit->bytecode_buffer = assembler.assemble();
+  unit->compiled_module = assembler.assemble();
 
   return unit;
 }

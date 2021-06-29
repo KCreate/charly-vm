@@ -27,6 +27,7 @@
 #include <cstdint>
 #include <list>
 #include <set>
+#include <unordered_set>
 #include <stack>
 #include <string>
 #include <unordered_map>
@@ -68,7 +69,7 @@ struct IRInstruction {
   template <typename... Args>
   IRInstruction(Opcode opcode, Args&&... operands) : opcode(opcode), operands({ std::forward<Args>(operands)... }) {}
 
-  std::optional<Label> assembled_offset; // set by Assembler
+  std::optional<Label> assembled_at_label;
 
   Opcode opcode;
   std::vector<ref<IROperand>> operands;
@@ -126,12 +127,20 @@ struct IRInlineCacheTableEntry {
   IRInlineCacheTableEntry(ICType type) : type(type) {}
 };
 
+struct IRStringTableEntry {
+  SYMBOL hash;
+  std::string value;
+
+  IRStringTableEntry(const std::string& string) : hash(SYM(string)), value(string) {}
+};
+
 struct IRFunction {
   IRFunction(Label head, ref<ast::Function> ast) : head(head), ast(ast) {}
 
   Label head;
   ref<ast::Function> ast;
 
+  std::vector<IRStringTableEntry> string_table;
   std::vector<IRExceptionTableEntry> exception_table;
   std::vector<IRInlineCacheTableEntry> inline_cache_table;
   std::list<ref<IRBasicBlock>> basic_blocks;
@@ -139,22 +148,13 @@ struct IRFunction {
   void dump(std::ostream& out) const;
 };
 
-struct IRStringTableEntry {
-  Label label;
-  SYMBOL hash;
-  std::string value;
-
-  IRStringTableEntry(Label label, const std::string& string) : label(label), hash(SYM(string)), value(string) {}
-};
-
 struct IRModule {
   IRModule(const std::string& filename) : filename(filename) {}
 
   Label next_label;
-  Label filename_label;
 
   std::string filename;
-  std::vector<IRStringTableEntry> string_table;
+  std::vector<std::string> symbol_table;
   std::vector<ref<IRFunction>> functions;
 
   void dump(std::ostream& out) const;

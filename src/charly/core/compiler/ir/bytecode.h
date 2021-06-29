@@ -46,9 +46,10 @@ using ICIndexType = uint16_t;
 
 #define FOREACH_OPERANDTYPE(V)   \
                                  \
-  /* count operands */           \
+  /* count / index operands */   \
   V(Count8, uint8_t)             \
   V(Count16, uint16_t)           \
+  V(Index16, uint16_t)           \
                                  \
   /* hashed symbol value */      \
   V(Symbol, std::string)         \
@@ -565,12 +566,12 @@ static std::string kInlineCacheTypeNames[] = {
   /* makestr - allocate new string                                                                      \
    *                                                                                                    \
    * opcode operands:                                                                                   \
-   * - string label                                                                                     \
+   * - index into function string table                                                                 \
    *                                                                                                    \
    * stack results:                                                                                     \
    * - string                                                                                           \
    * */                                                                                                 \
-  V(makestr, ICNone, 0, 1, OpOffset)                                                                    \
+  V(makestr, ICNone, 0, 1, OpIndex16)                                                                   \
   /* makelist - allocate new list                                                                       \
    *                                                                                                    \
    * opcode operands:                                                                                   \

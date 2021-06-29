@@ -24,14 +24,18 @@
  * SOFTWARE.
  */
 
-class Person extends BasePerson {
-  property name
+#include "charly/utils/colorwriter.h"
+#include "charly/core/runtime/compiled_module.h"
 
-  constructor(@name) {
-    super()
-  }
+namespace charly::core::runtime {
 
-  greet() {
-    print("hello {@name}")
-  }
+using Color = utils::Color;
+
+void CompiledModule::dump(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  writer.fg(Color::Grey, "; compiled module for file ");
+  writer.fg(Color::Yellow, "'", this->filename, "'", "\n");
+  out << '\n';
 }
+
+}  // namespace charly::core::runtime

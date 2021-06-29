@@ -43,6 +43,18 @@ void MemoryBlock::seek(size_t offset) {
   m_cursor = offset;
 }
 
+void MemoryBlock::write_zeroes(size_t size) {
+  this->reserve_space(m_cursor + size);
+  std::memset(m_data + m_cursor, 0, size);
+
+  // update size if we moved past the buffer end
+  if (m_cursor + size > m_size) {
+    m_size = m_cursor + size;
+  }
+
+  m_cursor += size;
+}
+
 void MemoryBlock::write_block(const void* data, size_t length) {
   this->write_to(m_cursor, data, length);
   m_cursor += length;

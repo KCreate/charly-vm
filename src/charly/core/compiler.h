@@ -29,6 +29,7 @@
 #include "charly/core/compiler/ast.h"
 #include "charly/core/compiler/diagnostic.h"
 #include "charly/core/compiler/ir/builder.h"
+#include "charly/core/runtime/compiled_module.h"
 #include "charly/utils/buffer.h"
 
 #pragma once
@@ -44,14 +45,14 @@ struct CompilationUnit {
     filepath(filepath),
     ast(nullptr),
     ir_module(nullptr),
-    bytecode_buffer(nullptr) {}
+    compiled_module(nullptr) {}
 
   Type type;
   DiagnosticConsole console;
   std::string filepath;
   ref<ast::Block> ast;
   ref<ir::IRModule> ir_module;
-  ref<utils::MemoryBlock> bytecode_buffer;
+  runtime::CompiledModule* compiled_module;
 };
 
 class Compiler {

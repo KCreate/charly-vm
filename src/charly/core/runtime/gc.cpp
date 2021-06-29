@@ -54,12 +54,6 @@ void GarbageCollector::request_gc() {
   if (m_wants_collection == false) {
     std::unique_lock<std::mutex> locker(m_mutex);
     if (m_wants_collection.cas(false, true)) {
-      if (Worker* worker = Scheduler::instance->worker()) {
-        safeprint("requesting gc from worker %", worker->id);
-      } else {
-        safeprint("requesting gc");
-      }
-
       m_cv.notify_all();
     }
   }
@@ -128,12 +122,10 @@ void GarbageCollector::main() {
 }
 
 void GarbageCollector::wait_for_gc_request() {
-  safeprint("GC worker waiting for GC request");
   std::unique_lock<std::mutex> locker(m_mutex);
   m_cv.wait(locker, [&]() {
     return m_wants_collection || m_wants_exit;
   });
-  safeprint("GC worker finished waiting");
 }
 
 void GarbageCollector::init_mark() {

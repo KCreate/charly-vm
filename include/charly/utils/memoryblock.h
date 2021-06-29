@@ -78,12 +78,27 @@ public:
   void write(T&& value) {
     write_block(&value, sizeof(T));
   }
+  template <typename T>
+  T* write_struct() {
+    size_t size = sizeof(T);
+    char* start = data();
+    write_zeroes(size);
+    return (T*)start;
+  }
   void write_u8(uint8_t value) { write(value); }
   void write_u16(uint16_t value) { write(value); }
   void write_u32(uint32_t value) { write(value); }
   void write_u64(uint64_t value) { write(value); }
+  void write_i8(int8_t value) { write(value); }
+  void write_i16(int16_t value) { write(value); }
+  void write_i32(int32_t value) { write(value); }
+  void write_i64(int64_t value) { write(value); }
   void write_ptr(uintptr_t value) { write(value); }
+  void write_ptr(void* value) { write(value); }
   // clang-format on
+
+  // write size zeroes into the buffer
+  void write_zeroes(size_t size);
 
   // write data into the buffer
   void write_block(const void* data, size_t length);
@@ -101,7 +116,7 @@ public:
   std::string buffer_string() const;
 
   // data pointer
-  const char* data() const {
+  char* data() const {
     return m_data;
   }
 
