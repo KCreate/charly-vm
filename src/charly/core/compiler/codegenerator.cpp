@@ -58,13 +58,6 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
   const ref<Function>& ast = queued_func.ast;
   m_builder.begin_function(queued_func.head, ast);
 
-  // check for potential stack overflow
-  m_builder.emit_stackcheck();
-
-  if (ast->ir_info.leaked) {
-    m_builder.emit_allocheapframe();
-  }
-
   // emit default argument initializers
   uint8_t argc = ast->ir_info.argc;
   uint8_t minargc = ast->ir_info.minargc;

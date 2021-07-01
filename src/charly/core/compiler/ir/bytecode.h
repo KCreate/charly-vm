@@ -109,13 +109,6 @@ static std::string kInlineCacheTypeNames[] = {
   /* panic - abort machine                                                                              \
    * */                                                                                                 \
   V(panic, ICNone, 0, 0)                                                                                \
-  /* allocheapframe - allocates the frames local variables on the heap                                  \
-   * */                                                                                                 \
-  V(allocheapframe, ICNone, 0, 0)                                                                       \
-  /* stackcheck - check if there is enough space left on the fibers stack to                            \
-   *              execute this function. throws a stackoverflow exception if not                        \
-   * */                                                                                                 \
-  V(stackcheck, ICNone, 0, 0)                                                                           \
                                                                                                         \
   /* import - import module or file                                                                     \
    *                                                                                                    \

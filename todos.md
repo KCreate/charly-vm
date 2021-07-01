@@ -12,9 +12,6 @@
 
 - CLI flag for maximum worker count
 
-- Remove stackcheck instruction
-  - Handle implicitly at begin of function calls
-
 - Rewrite pseudo-instructions to their real equivalent
 
 - Document the calling convention / frame locals layout somewhere

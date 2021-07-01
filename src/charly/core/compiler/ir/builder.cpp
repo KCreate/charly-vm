@@ -487,14 +487,6 @@ ref<IRInstruction> Builder::emit_panic() {
   return emit(Opcode::panic);
 }
 
-ref<IRInstruction> Builder::emit_allocheapframe() {
-  return emit(Opcode::allocheapframe);
-}
-
-ref<IRInstruction> Builder::emit_stackcheck() {
-  return emit(Opcode::stackcheck);
-}
-
 // misc. instructions
 ref<IRInstruction> Builder::emit_import() {
   return emit(Opcode::import);
