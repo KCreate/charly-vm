@@ -76,11 +76,29 @@ void run_repl(DiagnosticConsole&) {
       if (line.compare(".help") == 0) {
         std::cout << ".exit       Exit the REPL" << '\n';
         std::cout << ".help       List of meta commands" << '\n';
+        std::cout << ".dump_ast   Toggle AST dump" << '\n';
+        std::cout << ".dump_ir    Toggle IR dump" << '\n';
+        std::cout << ".dump_asm   Toggle bytecode hex dump" << '\n';
         continue;
       }
 
       if (line.compare(".exit") == 0)
         break;
+
+      if (line.compare(".dump_ast") == 0) {
+        utils::ArgumentParser::toggle_flag("dump_ast");
+        continue;
+      }
+
+      if (line.compare(".dump_ir") == 0) {
+        utils::ArgumentParser::toggle_flag("dump_ir");
+        continue;
+      }
+
+      if (line.compare(".dump_asm") == 0) {
+        utils::ArgumentParser::toggle_flag("dump_asm");
+        continue;
+      }
     }
 
     utils::Buffer source_buffer(line);

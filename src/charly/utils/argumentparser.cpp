@@ -204,6 +204,20 @@ void ArgumentParser::set_flag(const std::string& name, std::optional<std::string
   }
 }
 
+void ArgumentParser::unset_flag(const std::string& name) {
+  ArgumentParser::CHARLY_FLAGS.erase(name);
+}
+
+bool ArgumentParser::toggle_flag(const std::string& name) {
+  if (ArgumentParser::is_flag_set(name)) {
+    ArgumentParser::unset_flag(name);
+    return false;
+  } else {
+    ArgumentParser::set_flag(name);
+    return true;
+  }
+}
+
 bool ArgumentParser::is_flag_set(const std::string& name) {
   return ArgumentParser::CHARLY_FLAGS.count(name);
 }

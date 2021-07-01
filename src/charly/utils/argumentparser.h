@@ -64,6 +64,13 @@ public:
   // set a flag
   static void set_flag(const std::string& name, std::optional<std::string> argument = std::nullopt);
 
+  // unset a flag
+  static void unset_flag(const std::string& name);
+
+  // toggle a flag
+  // returns state after toggling
+  static bool toggle_flag(const std::string& name);
+
   // check wether a specific flag is set, addressed by its full name
   static bool is_flag_set(const std::string& name);
 
