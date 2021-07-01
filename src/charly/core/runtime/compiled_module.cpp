@@ -26,16 +26,46 @@
 
 #include "charly/utils/colorwriter.h"
 #include "charly/core/runtime/compiled_module.h"
+#include "charly/core/compiler/ir/bytecode.h"
 
 namespace charly::core::runtime {
 
-using Color = utils::Color;
+using namespace utils;
+using namespace compiler::ir;
 
 void CompiledModule::dump(std::ostream& out) const {
-  utils::ColorWriter writer(out);
-  writer.fg(Color::Grey, "; compiled module for file ");
+  ColorWriter writer(out);
+  writer.fg(Color::Grey, "; assembled module for file ");
   writer.fg(Color::Yellow, "'", this->filename, "'", "\n");
   out << '\n';
+
+  // disassemble functions
+  for (const CompiledFunction* function : this->function_table) {
+    writer.fg(Color::Grey, "; function ");
+    writer.fg(Color::Yellow, "'", function->name, "'", "\n");
+
+    char* base = this->buffer->data();
+    char* function_bytecodes = base + function->bytecode_offset;
+    char* function_end = base + function->end_offset;
+
+    // decode individual bytecodes
+    char* next_opcode = function_bytecodes;
+    while (next_opcode < function_end) {
+      Opcode opcode = *(Opcode*)next_opcode;
+      assert(opcode < Opcode::__Count);
+      size_t opcode_length = kOpcodeLength[opcode];
+      const std::string& opcode_name = kOpcodeNames[opcode];
+
+      writer.fg(Color::Grey, ";  ", std::setw(16), std::left, opcode_name, std::setw(1));
+      out << termcolor::yellow;
+      MemoryBlock::hexdump(next_opcode, opcode_length, out, true);
+      out << termcolor::reset;
+
+      next_opcode = next_opcode + opcode_length;
+    }
+
+    out << '\n';
+  }
 }
 
 }  // namespace charly::core::runtime

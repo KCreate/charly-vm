@@ -499,7 +499,7 @@ void Scheduler::exit_fiber() {
   enter_scheduler();
 }
 
-void Scheduler::register_module(CompiledModule* module) {
+void Scheduler::register_module(ref<CompiledModule> module) {
   safeprint("registering module at path %", module->filename);
 }
 

@@ -50,7 +50,7 @@ struct IROperand {
   virtual void dump(std::ostream& out) const = 0;
 };
 
-#define OPTYPE(name, type)                                \
+#define OPTYPE(name, type, _)                                \
   struct IROperand##name : public IROperand {             \
     virtual OperandType get_type() const override {       \
       return OperandType::name;                           \

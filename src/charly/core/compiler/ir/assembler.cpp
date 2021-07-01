@@ -33,22 +33,27 @@ using namespace charly::core::compiler::ir;
 using namespace charly::core::runtime;
 using namespace charly::utils;
 
-CompiledModule* Assembler::assemble() {
+ref<CompiledModule> Assembler::compile_module(const ref<IRModule>& module) {
+  Assembler assembler(module);
+  assembler.assemble();
+  return assembler.m_runtime_module;
+}
 
-  // setup module
-  CompiledModule* compiled_module = new CompiledModule();
-  compiled_module->filename = m_module->filename;
-  compiled_module->symbol_table = m_module->symbol_table;
+void Assembler::assemble() {
+  m_runtime_module = make<CompiledModule>();
+  m_runtime_module->filename = m_ir_module->filename;
+  m_runtime_module->symbol_table = m_ir_module->symbol_table;
 
   // emit functions
-  assert(m_module->functions.size() <= (size_t)0xffff);
-  for (const ref<IRFunction>& function : m_module->functions) {
+  assert(m_ir_module->functions.size() <= (size_t)0xffff);
+  for (const ref<IRFunction>& function : m_ir_module->functions) {
 
     // init function entry
     CompiledFunction* compiled_func = new CompiledFunction();
-    compiled_func->owner_module = compiled_module;
-    compiled_module->function_table.push_back(compiled_func);
-    compiled_func->name = SYM(function->ast->name->value);
+    compiled_func->owner_module = m_runtime_module;
+    m_runtime_module->function_table.push_back(compiled_func);
+    compiled_func->name = function->ast->name->value;
+    compiled_func->name_symbol = SYM(function->ast->name->value);
     compiled_func->ir_info = function->ast->ir_info;
     assert(function->ast->ir_info.valid);
 
@@ -59,11 +64,12 @@ CompiledModule* Assembler::assemble() {
     }
 
     // generate the inline BytecodeFunctionHeader struct
+    Label end_label = reserve_label();
     Label inline_cache_section = reserve_label();
     Label bytecode_section = reserve_label();
     align_to_pointer();
     place_label(function->head);
-    m_buffer->write_ptr(compiled_func);
+    m_runtime_module->buffer->write_ptr(compiled_func);
     write_relative_label_reference(inline_cache_section, function->head);
     write_relative_label_reference(bytecode_section, function->head);
 
@@ -73,7 +79,7 @@ CompiledModule* Assembler::assemble() {
     assert(function->inline_cache_table.size() <= (size_t)0x0000ffff);
     for (const auto& entry : function->inline_cache_table) {
       (void)entry;
-      m_buffer->write_zeroes(sizeof(InlineCacheEntry));
+      m_runtime_module->buffer->write_zeroes(sizeof(InlineCacheEntry));
     }
 
     // emit bytecodes
@@ -88,7 +94,10 @@ CompiledModule* Assembler::assemble() {
         encode_instruction(instruction);
       }
     }
+    place_label(end_label);
 
+    compiled_func->head_offset = offset_of_label(function->head);
+    compiled_func->end_offset = offset_of_label(end_label);
     compiled_func->inline_cache_offset = offset_of_label(inline_cache_section);
     compiled_func->bytecode_offset = offset_of_label(bytecode_section);
 
@@ -121,13 +130,11 @@ CompiledModule* Assembler::assemble() {
 
   // fill placeholders with the actual offsets to the labels
   patch_unresolved_labels();
-
-  return compiled_module;
 }
 
 void Assembler::align_to_pointer() {
-  while (m_buffer->size() % 8) {
-    m_buffer->write_u8(0);
+  while (m_runtime_module->buffer->size() % 8) {
+    m_runtime_module->buffer->write_u8(0);
   }
 }
 
@@ -137,25 +144,25 @@ void Assembler::encode_instruction(const ref<IRInstruction>& instruction) {
 
   // opcode
   place_label(instruction_label);
-  m_buffer->write_u8(static_cast<uint8_t>(instruction->opcode));
+  m_runtime_module->buffer->write_u8(static_cast<uint8_t>(instruction->opcode));
 
   // operands
   for (const ref<IROperand>& op : instruction->operands) {
     switch (op->get_type()) {
       case OperandType::Count8: {
-        m_buffer->write_u8(cast<IROperandCount8>(op)->value);
+        m_runtime_module->buffer->write_u8(cast<IROperandCount8>(op)->value);
         break;
       }
       case OperandType::Count16: {
-        m_buffer->write_u16(cast<IROperandCount16>(op)->value);
+        m_runtime_module->buffer->write_u16(cast<IROperandCount16>(op)->value);
         break;
       }
       case OperandType::Index16: {
-        m_buffer->write_u16(cast<IROperandIndex16>(op)->value);
+        m_runtime_module->buffer->write_u16(cast<IROperandIndex16>(op)->value);
         break;
       }
       case OperandType::Symbol: {
-        m_buffer->write_u32(SYM(cast<IROperandSymbol>(op)->value));
+        m_runtime_module->buffer->write_u32(SYM(cast<IROperandSymbol>(op)->value));
         break;
       }
       case OperandType::Offset: {
@@ -163,7 +170,7 @@ void Assembler::encode_instruction(const ref<IRInstruction>& instruction) {
         break;
       }
       case OperandType::Immediate: {
-        m_buffer->write_ptr(cast<IROperandImmediate>(op)->value.raw);
+        m_runtime_module->buffer->write_ptr(cast<IROperandImmediate>(op)->value.raw);
         break;
       }
     }
@@ -171,7 +178,7 @@ void Assembler::encode_instruction(const ref<IRInstruction>& instruction) {
 
   // inline cache index
   if (instruction->inline_cache_index) {
-    m_buffer->write_u16(instruction->inline_cache_index.value());
+    m_runtime_module->buffer->write_u16(instruction->inline_cache_index.value());
   }
 }
 
@@ -181,40 +188,31 @@ Label Assembler::reserve_label() {
 
 void Assembler::place_label(Label label) {
   assert(m_placed_labels.count(label) == 0);
-  m_placed_labels.insert({label, m_buffer->size()});
+  m_placed_labels.insert({label, m_runtime_module->buffer->size()});
 }
 
 void Assembler::write_relative_label_reference(Label label, Label other) {
-  m_unresolved_labels.insert({m_buffer->cursor(), { label, true, other }});
-  m_buffer->write_u32(0x0);
-}
-
-void Assembler::write_absolute_label_reference(Label label) {
-  m_unresolved_labels.insert({m_buffer->cursor(), { label, false, std::nullopt }});
-  m_buffer->write_u32(0x0);
+  m_unresolved_labels.insert({m_runtime_module->buffer->cursor(), { label, other }});
+  m_runtime_module->buffer->write_u32(0x0);
 }
 
 void Assembler::patch_unresolved_labels() {
   for (const auto& entry : m_unresolved_labels) {
-    uint32_t patch_offset = entry.first;
     Label referenced_label = entry.second.label;
-    bool relative_reference = entry.second.relative;
+    Label base = entry.second.base;
 
-    // get target offset
-    assert(m_placed_labels.count(referenced_label));
-    uint32_t referenced_offset = m_placed_labels.at(referenced_label);
+    // calculate the relative offset
+    uint32_t referenced_offset = offset_of_label(referenced_label);
+    uint32_t base_offset = offset_of_label(base);
+    int32_t relative_offset = referenced_offset - base_offset;
 
-    if (relative_reference) {
-      int32_t relative_offset = referenced_offset - patch_offset;
-      m_buffer->seek(patch_offset);
-      m_buffer->write_i32(relative_offset);
-    } else {
-      m_buffer->seek(patch_offset);
-      m_buffer->write_u32(referenced_offset);
-    }
+    // write relative offset to patch offset
+    uint32_t patch_offset = entry.first;
+    m_runtime_module->buffer->seek(patch_offset);
+    m_runtime_module->buffer->write_i32(relative_offset);
   }
 
-  m_buffer->seek(-1);
+  m_runtime_module->buffer->seek(-1);
 }
 
 uint32_t Assembler::offset_of_label(Label label) {

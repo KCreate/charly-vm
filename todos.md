@@ -1,8 +1,8 @@
 # Todos
 
-- Remove 'dump_asm' flag (not useful since all relevant info is displayed already with 'dump_ir')
-
-- CLI flag for maximum worker count
+- Array access cannot cast all values to symbols
+  - Array index needs to have the index value
+  - Requires changes to the bytecode and compiler
 
 - Write some unit-tests
   - Write some unit-tests for the generated module
@@ -10,12 +10,16 @@
   - String tables of functions
   - Correct meta information
 
+- CLI flag for maximum worker count
+
 - Remove stackcheck instruction
   - Handle implicitly at begin of function calls
 
 - Rewrite pseudo-instructions to their real equivalent
 
 - Document the calling convention / frame locals layout somewhere
+
+- Review placement of scheduler checkpoints
 
 - Implement some basic opcodes
   - during this part of development I want to figure out how to implement the write / read barriers

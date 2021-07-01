@@ -78,13 +78,6 @@ public:
   void write(T&& value) {
     write_block(&value, sizeof(T));
   }
-  template <typename T>
-  T* write_struct() {
-    size_t size = sizeof(T);
-    char* start = data();
-    write_zeroes(size);
-    return (T*)start;
-  }
   void write_u8(uint8_t value) { write(value); }
   void write_u16(uint16_t value) { write(value); }
   void write_u32(uint32_t value) { write(value); }
@@ -135,8 +128,9 @@ public:
     return m_cursor;
   }
 
-  // dump a hexdump of the buffer
+  // format buffer as hexdump into out stream
   void dump(std::ostream& out) const;
+  static void hexdump(const char* buffer, size_t size, std::ostream& out, bool absolute = false);
 
 protected:
   static const size_t kInitialCapacity = 64;

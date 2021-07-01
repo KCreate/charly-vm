@@ -24,14 +24,7 @@
  * SOFTWARE.
  */
 
-class Person extends BasePerson {
-  property name
-
-  constructor(@name) {
-    super()
-  }
-
-  greet() {
-    print("hello {@name}")
-  }
+loop {
+  print("hello world")
+  if x break
 }

@@ -52,7 +52,7 @@ struct CompilationUnit {
   std::string filepath;
   ref<ast::Block> ast;
   ref<ir::IRModule> ir_module;
-  runtime::CompiledModule* compiled_module;
+  ref<runtime::CompiledModule> compiled_module;
 };
 
 class Compiler {

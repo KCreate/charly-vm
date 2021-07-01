@@ -105,8 +105,7 @@ ref<CompilationUnit> Compiler::compile(CompilationUnit::Type type,
   unit->ir_module = codegenerator.compile();
 
   // assemble bytecodes
-  ir::Assembler assembler(unit->ir_module);
-  unit->compiled_module = assembler.assemble();
+  unit->compiled_module = ir::Assembler::compile_module(unit->ir_module);
 
   return unit;
 }

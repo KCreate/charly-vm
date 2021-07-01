@@ -176,6 +176,7 @@ uint32_t IRInstruction::popped_values() const {
 #define PAIR(name, ictype, STACKPOP, STACKPUSH, ...) case Opcode::name: { return STACKPOP; }
   FOREACH_OPCODE(PAIR)
 #undef PAIR
+    case Opcode::__Count: { assert(false && "invalid opcode"); }
   }
 }
 
@@ -214,6 +215,7 @@ uint32_t IRInstruction::pushed_values() const {
 #define PAIR(name, ictype, STACKPOP, STACKPUSH, ...) case Opcode::name: { return STACKPUSH; }
   FOREACH_OPCODE(PAIR)
 #undef PAIR
+    case Opcode::__Count: { assert(false && "invalid opcode"); }
   }
 }
 
@@ -221,7 +223,7 @@ void IRInstruction::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
 
   // emit opcode mnemonic
-  writer.fg(Color::White, kOpcodeNames[(uint16_t)this->opcode]);
+  writer.fg(Color::White, kOpcodeNames[(uint8_t)this->opcode]);
 
   // emit instruction operands
   bool first_operand = true;

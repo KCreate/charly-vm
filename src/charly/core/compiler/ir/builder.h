@@ -53,7 +53,7 @@ public:
     m_module(make<IRModule>(filename)) {}
 
   // register string in currently active function
-  OpIndex16 register_string(const std::string& string);
+  uint16_t register_string(const std::string& string);
 
   // register a symbol in the module symbol table
   void register_symbol(const std::string& string);

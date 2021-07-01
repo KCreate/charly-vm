@@ -79,26 +79,33 @@ struct __attribute__((packed)) InlineCacheEntry {
 struct CompiledFunction;
 struct __attribute__((packed)) BytecodeFunctionHeader {
   CompiledFunction* shared_compiled_function;
+
+  // both these offsets are relative to the beginning of the function header
   uint32_t inline_cache_offset;
   uint32_t bytecode_offset;
 };
 
 struct CompiledModule;
 struct CompiledFunction {
-  CompiledModule* owner_module;
+  ref<CompiledModule> owner_module;
 
-  SYMBOL name;
+  std::string name;
+  SYMBOL name_symbol;
   compiler::ir::FunctionInfo ir_info;
 
   std::vector<ExceptionTableEntry> exception_table;
   std::vector<SourceMapEntry> sourcemap_table;
   std::vector<StringTableEntry> string_table;
 
+  uint32_t head_offset;
+  uint32_t end_offset;
   uint32_t inline_cache_offset;
   uint32_t bytecode_offset;
 };
 
 struct CompiledModule {
+  CompiledModule() : buffer(make<utils::MemoryBlock>()) {}
+
   std::string filename;
   std::vector<std::string> symbol_table;
   std::vector<CompiledFunction*> function_table;

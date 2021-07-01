@@ -332,7 +332,7 @@ public:
   void exit_fiber();
 
   // register a compiled module with the runtime
-  void register_module(CompiledModule* module);
+  void register_module(ref<CompiledModule> module);
 
 private:
 

@@ -41,12 +41,13 @@ namespace charly::core::compiler::ir {
 
 class Assembler {
 public:
-  Assembler(const ref<IRModule>& module) :
-    m_buffer(make<utils::MemoryBlock>()), m_module(module), m_label_counter(module->next_label) {}
-
-  runtime::CompiledModule* assemble();
+  static ref<runtime::CompiledModule> compile_module(const ref<IRModule>& module);
 
 private:
+  Assembler(const ref<IRModule>& module) : m_ir_module(module), m_label_counter(module->next_label) {}
+
+  // assemble set ir module
+  void assemble();
 
   // encode instruction into buffer
   void encode_instruction(const ref<IRInstruction>& instruction);
@@ -58,7 +59,6 @@ private:
   Label reserve_label();
   void place_label(Label label);
   void write_relative_label_reference(Label label, Label other);  // int32_t relative offset to other label
-  void write_absolute_label_reference(Label label);               // uint32_t absolute offset from buffer start
 
   // resolve all unresolved label references in the bytecode buffer
   void patch_unresolved_labels();
@@ -67,21 +67,15 @@ private:
   // asserts that the label was placed, programming error otherwise
   uint32_t offset_of_label(Label label);
 
-  ref<utils::MemoryBlock> m_buffer;
-  ref<IRModule> m_module;
-
-  Label m_label_counter;
-
-  // maps Labels to their offset in the bytecode buffer
-  std::unordered_map<Label, uint32_t> m_placed_labels;
-
   struct UnresolvedLabel {
     Label label;
-    bool relative;
-    std::optional<Label> relative_to;
+    Label base;
   };
 
-  // maps unresolved offsets in the bytecode to their label
+  ref<runtime::CompiledModule> m_runtime_module = nullptr;
+  ref<IRModule> m_ir_module = nullptr;
+  Label m_label_counter;
+  std::unordered_map<Label, uint32_t> m_placed_labels;
   std::unordered_map<uint32_t, UnresolvedLabel> m_unresolved_labels;
 };
 

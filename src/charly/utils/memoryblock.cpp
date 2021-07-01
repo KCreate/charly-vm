@@ -84,21 +84,31 @@ std::string MemoryBlock::buffer_string() const {
 }
 
 void MemoryBlock::dump(std::ostream& out) const {
+  MemoryBlock::hexdump(m_data, m_size, out);
+}
+
+void MemoryBlock::hexdump(const char* buffer, size_t size, std::ostream& out, bool absolute) {
   utils::ColorWriter writer(out);
 
   size_t offset = 0;
-  for (; offset < m_size; offset += 16) {
+  for (; offset < size; offset += 16) {
     out << "0x";
     out << std::hex;
     out << std::setw(8);
     out << std::setfill('0');
-    out << offset;
+    out << std::right;
+    if (absolute) {
+      out << (uint64_t)(uintptr_t)buffer + offset;
+    } else {
+      out << offset;
+    }
+    out << std::left;
     out << std::setfill(' ');
     out << std::setw(1);
     out << std::dec;
     out << ":";
 
-    for (size_t i = 0; i < 16 && (offset + i < m_size); i++) {
+    for (size_t i = 0; i < 16 && (offset + i < size); i++) {
       if (i % 4 == 0) {
         out << " ";
       }
@@ -106,7 +116,9 @@ void MemoryBlock::dump(std::ostream& out) const {
       out << std::hex;
       out << std::setw(2);
       out << std::setfill('0');
-      out << ((uint32_t)(m_data[offset + i]) & 0x000000ff);
+      out << std::right;
+      out << ((uint32_t)(buffer[offset + i]) & 0x000000ff);
+      out << std::left;
       out << std::setfill(' ');
       out << std::setw(1);
       out << std::dec;

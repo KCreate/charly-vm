@@ -35,11 +35,11 @@ using namespace charly::core::compiler::ast;
 
 using Color = utils::Color;
 
-OpIndex16 Builder::register_string(const std::string& string) {
+uint16_t Builder::register_string(const std::string& string) {
   ref<IRFunction> function = m_active_function;
 
   // duplicates check
-  OpIndex16 index = 0;
+  uint16_t index = 0;
   for (const IRStringTableEntry& entry : function->string_table) {
     if (entry.value.compare(string) == 0) {
       return index;
@@ -48,6 +48,7 @@ OpIndex16 Builder::register_string(const std::string& string) {
     index++;
   }
 
+  register_symbol(string);
   function->string_table.emplace_back(IRStringTableEntry(string));
   return index;
 }

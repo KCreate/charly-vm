@@ -34,6 +34,8 @@
 #include "charly/macros.h"
 #include "charly/value.h"
 
+#include "charly/core/compiler/ir/builtin.h"
+
 #pragma once
 
 namespace charly::core::compiler::ir {
@@ -47,32 +49,32 @@ using ICIndexType = uint16_t;
 #define FOREACH_OPERANDTYPE(V)   \
                                  \
   /* count / index operands */   \
-  V(Count8, uint8_t)             \
-  V(Count16, uint16_t)           \
-  V(Index16, uint16_t)           \
+  V(Count8, uint8_t, 1)          \
+  V(Count16, uint16_t, 2)        \
+  V(Index16, uint16_t, 2)        \
                                  \
   /* hashed symbol value */      \
-  V(Symbol, std::string)         \
+  V(Symbol, std::string, 4)      \
                                  \
   /* relative offset to label */ \
-  V(Offset, Label)               \
+  V(Offset, Label, 4)            \
                                  \
   /* immediate value */          \
-  V(Immediate, VALUE)
+  V(Immediate, VALUE, 8)
 
 enum class OperandType : uint16_t {
-#define ID(name, _) name,
+#define ID(name, _, __) name,
   FOREACH_OPERANDTYPE(ID)
 #undef ID
 };
 
 static const size_t Size = 0;
 
-#define OPTYPE(name, type) static const size_t Op##name##Size = sizeof(type);
+#define OPTYPE(name, _, size) static const size_t Op##name##Size = size;
 FOREACH_OPERANDTYPE(OPTYPE)
 #undef OPTYPE
 
-#define OPTYPE(name, type) using Op##name = type;
+#define OPTYPE(name, type, _) using Op##name = type;
 FOREACH_OPERANDTYPE(OPTYPE)
 #undef OPTYPE
 
@@ -759,10 +761,11 @@ static std::string kInlineCacheTypeNames[] = {
   V(unot, ICUnaryOp, 1, 1)                                                                              \
   V(ubnot, ICUnaryOp, 1, 1)
 
-enum class Opcode : uint16_t {
+enum Opcode : uint8_t {
 #define ID(name, ictype, stackpop, stackpush, ...) name,
   FOREACH_OPCODE(ID)
 #undef ID
+  __Count // amount of opcodes
 };
 
 /*
