@@ -1,5 +1,11 @@
 # Todos
 
+- Implement some basic opcodes
+  - during this part of development I want to figure out how to implement the write / read barriers
+  - figure out how compiled programs are loaded into the machine
+  - figure out main bytecode execution loop
+    - interaction with scheduler
+
 - Array access cannot cast all values to symbols
   - Array index needs to have the index value
   - Requires changes to the bytecode and compiler
@@ -10,19 +16,11 @@
   - String tables of functions
   - Correct meta information
 
-- CLI flag for maximum worker count
-
 - Rewrite pseudo-instructions to their real equivalent
 
 - Document the calling convention / frame locals layout somewhere
 
 - Review placement of scheduler checkpoints
-
-- Implement some basic opcodes
-  - during this part of development I want to figure out how to implement the write / read barriers
-  - figure out how compiled programs are loaded into the machine
-  - figure out main bytecode execution loop
-    - interaction with scheduler
 
 - Concurrent Garbage Collector
   - Phases
@@ -85,6 +83,9 @@
   - Map in actual memory pages as they are needed
   - Unmap pages when they are no longer needed
 
+- Fiber stack growth mechanism via segmented stacks
+  - Can lead to performance issues (stack splitting in hot sections)
+
 - Implement native mode mechanism
   - Worker threads that are inside native mode, that exceed some timeout (20ms?) will be
     marked as preempted by the system monitor thread.
@@ -140,11 +141,7 @@
     - For a dynamic collection of values use the dict primitive datatype
       - Small dictionaries could be laid out inline and take advantage of inline caches
 
-- Implement basic opcodes
-
 - Memory locking
-
-- REPL support
 
 - Pointer Tagging support double float
   - Use some bits of the mantissa for the pointer tag

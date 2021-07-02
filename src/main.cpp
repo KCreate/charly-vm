@@ -201,7 +201,11 @@ int32_t cli(DiagnosticConsole& console) {
   // check for filename to execute
   if (utils::ArgumentParser::USER_FLAGS.size() > 0) {
     const std::string& filename = utils::ArgumentParser::USER_FLAGS.front();
-    run_file(console, filename);
+    if (filename == "repl") {
+      run_repl(console);
+    } else {
+      run_file(console, filename);
+    }
   } else {
     run_repl(console);
   }
@@ -218,6 +222,7 @@ int main(int argc, char** argv) {
   utils::Buffer buf("");
   DiagnosticConsole console("charly", buf);
   int32_t exit_code = cli(console);
+  console.dump_all(std::cerr);
 
   if (exit_code == 0 && console.has_errors()) {
     exit_code = 1;

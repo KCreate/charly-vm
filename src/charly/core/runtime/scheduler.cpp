@@ -29,6 +29,9 @@
 #include "charly/core/runtime/gc.h"
 #include "charly/core/runtime/compiled_module.h"
 
+#include "charly/utils/argumentparser.h"
+#include "charly/utils/cast.h"
+
 namespace charly::core::runtime {
 
 using namespace std::chrono_literals;
@@ -159,7 +162,23 @@ void Scheduler::init_scheduler() {
   // initialize processors and workers
   {
     std::lock_guard<std::mutex> locker(m_init_mutex);
-    for (size_t i = 0; i < kHardwareConcurrency; i++) {
+
+    size_t amount_of_procs = kHardwareConcurrency;
+
+    if (utils::ArgumentParser::is_flag_set("maxprocs")) {
+      const auto& values = utils::ArgumentParser::get_arguments_for_flag("maxprocs");
+      assert(values.size() && "expected at least one value for maxprocs");
+      const std::string& value = values.front();
+      int64_t num = utils::string_to_int(value);
+
+      if (num > 0) {
+        amount_of_procs = num;
+      }
+    }
+
+    safeprint("initializing scheduler with % processors", amount_of_procs);
+
+    for (size_t i = 0; i < amount_of_procs; i++) {
       Processor* processor = new Processor();
       m_processors.push_back(processor);
       m_idle_processors.push(processor);
