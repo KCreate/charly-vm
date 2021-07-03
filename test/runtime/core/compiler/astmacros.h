@@ -142,18 +142,18 @@ using namespace charly;
       CHECK_THAT(console.messages().front().message, Equals(E)); \
   }
 
-#define COMPILE_OK(S)                                                                \
-  {                                                                                  \
-    charly::utils::Buffer buffer(S);                                                 \
-    auto unit = Compiler::compile(CompilationUnit::Type::ReplInput, "test", buffer); \
-    CHECK(!unit->console.has_errors());                                              \
+#define COMPILE_OK(S)                              \
+  {                                                \
+    charly::utils::Buffer buffer(S);               \
+    auto unit = Compiler::compile("test", buffer); \
+    CHECK(!unit->console.has_errors());            \
   }
 
-#define COMPILE_ERROR(S, E)                                                          \
-  {                                                                                  \
-    charly::utils::Buffer buffer(S);                                                 \
-    auto unit = Compiler::compile(CompilationUnit::Type::ReplInput, "test", buffer); \
-    CHECK(unit->console.has_errors());                                               \
-    if (unit->console.has_errors())                                                  \
-      CHECK_THAT(unit->console.messages().front().message, Equals(E));               \
+#define COMPILE_ERROR(S, E)                                            \
+  {                                                                    \
+    charly::utils::Buffer buffer(S);                                   \
+    auto unit = Compiler::compile("test", buffer);                     \
+    CHECK(unit->console.has_errors());                                 \
+    if (unit->console.has_errors())                                    \
+      CHECK_THAT(unit->console.messages().front().message, Equals(E)); \
   }

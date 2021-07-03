@@ -49,9 +49,7 @@ namespace charly::core::compiler {
 
 using namespace charly::core::compiler::ast;
 
-ref<CompilationUnit> Compiler::compile(CompilationUnit::Type type,
-                                                   const std::string& filepath,
-                                                   utils::Buffer& source) {
+ref<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffer& source, CompilationUnit::Type type) {
   ref<CompilationUnit> unit = make<CompilationUnit>(type, filepath, source);
 
   // parse source file

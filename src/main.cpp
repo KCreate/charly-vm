@@ -102,7 +102,7 @@ void run_repl(DiagnosticConsole&) {
     }
 
     utils::Buffer source_buffer(line);
-    auto unit = Compiler::compile(CompilationUnit::Type::ReplInput, "stdin", source_buffer);
+    auto unit = Compiler::compile("stdin", source_buffer);
 
     unit->console.dump_all(std::cerr);
     if (!unit->console.has_errors()) {
@@ -143,7 +143,7 @@ void run_file(DiagnosticConsole& console, const std::string& filename) {
   }
   file.close();
 
-  auto unit = Compiler::compile(CompilationUnit::Type::Module, filename, file_buffer);
+  auto unit = Compiler::compile(filename, file_buffer, CompilationUnit::Type::Module);
 
   unit->console.dump_all(std::cerr);
   if (unit->console.has_errors()) {

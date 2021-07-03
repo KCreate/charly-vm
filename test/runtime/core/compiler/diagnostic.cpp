@@ -37,7 +37,7 @@ using namespace charly::core::compiler;
 
 TEST_CASE("formats errors") {
   utils::Buffer buffer("foo,");
-  auto unit = Compiler::compile(CompilationUnit::Type::ReplInput, "test", buffer);
+  auto unit = Compiler::compile("test", buffer);
 
   REQUIRE(unit->console.messages().size() == 1);
 
@@ -68,7 +68,7 @@ TEST_CASE("formats messages without a location") {
 
 TEST_CASE("formats multiple lines") {
   utils::Buffer buffer("\n\n(25      25)\n\n");
-  auto unit = Compiler::compile(CompilationUnit::Type::ReplInput, "test", buffer);
+  auto unit = Compiler::compile("test", buffer);
 
   REQUIRE(unit->console.messages().size() == 1);
 

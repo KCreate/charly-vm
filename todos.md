@@ -10,17 +10,22 @@
   - Array index needs to have the index value
   - Requires changes to the bytecode and compiler
 
-- Write some unit-tests
-  - Write some unit-tests for the generated module
-  - Symbol table
-  - String tables of functions
-  - Correct meta information
-
 - Rewrite pseudo-instructions to their real equivalent
+  - Some pseudo instructions can be removed entirely (like getexception)
 
 - Document the calling convention / frame locals layout somewhere
 
-- Review placement of scheduler checkpoints
+- Fiber stack growth mechanism via mmap?
+  - Reserve address space for 8 megabytes per fiber
+  - Map in actual memory pages as they are needed
+  - Unmap pages when they are no longer needed
+
+- Fiber stack growth mechanism via segmented stacks
+  - Can lead to performance issues (stack splitting in hot sections)
+  - Requires custom assembly code to handle stack transitions
+
+- Reimplement make_fcontext and jump_fcontext in hand-written assembly
+  - Try to understand what boost does in its own implementation
 
 - Concurrent Garbage Collector
   - Phases
@@ -78,14 +83,6 @@
   - Free regions might already be gone by the time thread reaches the freelist check
     after calling expand_heap
 
-- Fiber stack growth mechanism via mmap?
-  - Reserve address space for 8 megabytes per fiber
-  - Map in actual memory pages as they are needed
-  - Unmap pages when they are no longer needed
-
-- Fiber stack growth mechanism via segmented stacks
-  - Can lead to performance issues (stack splitting in hot sections)
-
 - Implement native mode mechanism
   - Worker threads that are inside native mode, that exceed some timeout (20ms?) will be
     marked as preempted by the system monitor thread.
@@ -99,9 +96,6 @@
       - If reacquiring the old processor fails, try to acquire another idle processor
       - If there are no idle processors, idle the current worker thread and reschedule the running
         fiber into the global runqueue
-
-- Reimplement make_fcontext and jump_fcontext in hand-written assembly
-  - Try to understand what boost does in its own implementation
 
 - Small locks
   - Implement from experiment code in old charly repo
