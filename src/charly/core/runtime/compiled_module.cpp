@@ -44,9 +44,8 @@ void CompiledModule::dump(std::ostream& out) const {
     writer.fg(Color::Grey, "; function ");
     writer.fg(Color::Yellow, "'", function->name, "'", "\n");
 
-    char* base = this->buffer->data();
-    char* function_bytecodes = base + function->bytecode_offset;
-    char* function_end = base + function->end_offset;
+    char* function_bytecodes = (char*)function->bytecode_base_ptr;
+    char* function_end = (char*)function->end_ptr;
 
     // decode individual bytecodes
     char* next_opcode = function_bytecodes;

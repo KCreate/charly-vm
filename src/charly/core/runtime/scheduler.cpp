@@ -28,6 +28,9 @@
 #include "charly/core/runtime/allocator.h"
 #include "charly/core/runtime/gc.h"
 #include "charly/core/runtime/compiled_module.h"
+#include "charly/core/runtime/vm_frame.h"
+
+#include "charly/core/runtime/function.h"
 
 #include "charly/utils/argumentparser.h"
 #include "charly/utils/cast.h"
@@ -123,7 +126,7 @@ void Worker::reset_sleep_duration() {
   this->idle_sleep_duration = 10;
 }
 
-Fiber::Fiber() {
+Fiber::Fiber(Function* main_function) {
 
   // allocate stack
   void* stack_lo = std::malloc(kFiberStackSize);
@@ -137,7 +140,11 @@ Fiber::Fiber() {
   this->state.store(Fiber::State::Created);
   this->worker.store(nullptr);
   this->last_scheduled_at.store(0);
-  this->context = make_fcontext(this->stack.hi, kFiberStackSize, &Scheduler::fiber_main);
+  this->main_function = main_function;
+  this->exit_machine_on_exit = false;
+  this->context = make_fcontext(this->stack.hi, kFiberStackSize, [](transfer_t transfer) {
+    Scheduler::instance->fiber_main(transfer);
+  });
 }
 
 Fiber::~Fiber() {
@@ -175,8 +182,6 @@ void Scheduler::init_scheduler() {
         amount_of_procs = num;
       }
     }
-
-    safeprint("initializing scheduler with % processors", amount_of_procs);
 
     for (size_t i = 0; i < amount_of_procs; i++) {
       Processor* processor = new Processor();
@@ -230,8 +235,6 @@ void Scheduler::worker_main(Worker* worker) {
 
       worker->reset_sleep_duration();
 
-      safeprint("worker % acquired fiber %", worker->id, fiber->id);
-
       // change into running mode
       worker->change_state(Worker::State::Scheduling, Worker::State::Running);
       fiber->state.acas(Fiber::State::Ready, Fiber::State::Running);
@@ -247,8 +250,6 @@ void Scheduler::worker_main(Worker* worker) {
 
       // change into scheduling mode
       worker->change_state(Worker::State::Running, Worker::State::Scheduling);
-
-      safeprint("worker % left fiber %", worker->id, fiber->id);
 
       switch (fiber->state) {
         case Fiber::State::Paused: {
@@ -279,34 +280,17 @@ void Scheduler::worker_main(Worker* worker) {
 }
 
 void Scheduler::fiber_main(transfer_t transfer) {
-  Fiber* fiber = Scheduler::instance->fiber();
-  Worker* worker = Scheduler::instance->worker();
-  Processor* proc = Scheduler::instance->processor();
+  Worker* worker = this->worker();
   worker->context = transfer.fctx;
 
-  for (int i = 0; i < 100; i++) {
-    worker = Scheduler::instance->worker();
-    proc = Scheduler::instance->processor();
-    fiber = Scheduler::instance->fiber();
+  // call fiber function
+  VALUE result = vm_call_function(nullptr, kNull, this->fiber()->main_function, nullptr, 0);
+  safeprint("fiber % exited with value %", this->fiber()->id, result);
 
-    safeprint("fiber % on worker % on proc % counter = %", fiber->id, worker->id, proc->id, i);
-    Scheduler::instance->worker_checkpoint();
-    std::this_thread::sleep_for(500us);
-  }
-
-  for (int i = 0; i < 2; i++) {
-
-    // allocate new fiber
-    Fiber* fiber = MemoryAllocator::allocate<Fiber>();
-    if (!fiber) {
-      worker = Scheduler::instance->worker();
-      safeprint("failed allocation in worker %", worker->id);
-      Scheduler::instance->abort(1);
-    }
-
-    // schedule fiber
-    fiber->state.acas(Fiber::State::Created, Fiber::State::Ready);
-    Scheduler::instance->schedule_fiber(fiber);
+  // exit machine when main fiber exits
+  if (this->fiber()->exit_machine_on_exit) {
+    Scheduler::instance->abort(0);
+    UNREACHABLE();
   }
 
   Scheduler::instance->exit_fiber();
@@ -336,7 +320,6 @@ int32_t Scheduler::join() {
       if (worker->state != Worker::State::Exited) {
         locker.unlock();
 
-        safeprint("waiting for worker % to exit", worker->id);
         worker->join();
 
         locker.lock();
@@ -361,7 +344,7 @@ void Scheduler::abort(int32_t exit_code) {
 
   if (this->worker()) {
     exit_fiber();
-    assert(false && "unreachable");
+    UNREACHABLE();
   }
 }
 
@@ -442,7 +425,6 @@ void Scheduler::scheduler_checkpoint() {
 }
 
 void Scheduler::stop_the_world() {
-  safeprint("scheduler is stopping the world");
 
   // wait for the worker threads to pause
   std::unique_lock<std::mutex> workers_lock(m_workers_mutex);
@@ -467,9 +449,6 @@ void Scheduler::stop_the_world() {
           break;
         }
         default: {
-          Processor* proc = worker->processor;
-          safeprint("waiting for worker % on proc % (currently in mode %)", worker->id, proc ? proc->id : 0,
-                    (int)now_state);
           workers_lock.unlock();
           now_state = worker->wait_for_state_change(now_state);
           workers_lock.lock();
@@ -479,8 +458,6 @@ void Scheduler::stop_the_world() {
       break;
     }
   }
-
-  safeprint("scheduler has stopped the world");
 }
 
 void Scheduler::start_the_world() {
@@ -491,19 +468,6 @@ void Scheduler::start_the_world() {
       worker->wake_stw();
     }
   }
-
-  safeprint("scheduler has started the world");
-}
-
-void Scheduler::enter_native_mode() {
-  // TODO: implement
-  safeprint("implement scheduler enter native mode");
-}
-
-bool Scheduler::exit_native_mode() {
-  // TODO: implement
-  safeprint("implement scheduler exit native mode");
-  return true;
 }
 
 void Scheduler::reschedule_fiber() {
@@ -518,8 +482,17 @@ void Scheduler::exit_fiber() {
   enter_scheduler();
 }
 
-void Scheduler::register_module(ref<CompiledModule> module) {
-  safeprint("registering module at path %", module->filename);
+Function* Scheduler::register_module(ref<CompiledModule> module) {
+
+  // register in schedulers module table
+  {
+    std::lock_guard<std::mutex> locker(m_registered_modules_mutex);
+    m_registered_modules.push_back(module);
+  }
+
+  // create a Function struct from the modules main function
+  assert(module->function_table.size());
+  return MemoryAllocator::allocate<Function>(module->function_table.front());
 }
 
 bool Scheduler::acquire_processor_for_worker(Worker* worker) {

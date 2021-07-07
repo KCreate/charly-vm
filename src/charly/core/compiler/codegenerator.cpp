@@ -469,7 +469,7 @@ void CodeGenerator::inspect_leave(const ref<FormatString>& node) {
   m_builder.emit_stringconcat(node->elements.size())->at(node);
 }
 
-void CodeGenerator::inspect_leave(const ref<Symbol>& node) {
+void CodeGenerator::inspect_leave(const ref<ast::Symbol>& node) {
   m_builder.emit_loadsymbol(node->value)->at(node);
 }
 

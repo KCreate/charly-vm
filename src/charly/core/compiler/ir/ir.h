@@ -74,8 +74,6 @@ struct IRInstruction {
   Opcode opcode;
   std::vector<ref<IROperand>> operands;
 
-  std::optional<uint16_t> inline_cache_index;
-
   Location location;
   void at(const Location& location);
   void at(const ref<ast::Node>& node);

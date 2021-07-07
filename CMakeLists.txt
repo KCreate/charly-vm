@@ -32,6 +32,7 @@ target_compile_options(charly PRIVATE
   -Wno-gnu-zero-variadic-macro-arguments
   -Wno-c99-extensions
   -Wno-register
+  -Wno-extra-semi
   -ftemplate-backtrace-limit=8
   -march=native
   -flto
@@ -70,6 +71,7 @@ target_compile_options(tests PRIVATE
   -Wno-gnu-zero-variadic-macro-arguments
   -Wno-c99-extensions
   -Wno-register
+  -Wno-extra-semi
   -ftemplate-backtrace-limit=8
   -march=native
   -flto

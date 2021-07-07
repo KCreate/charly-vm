@@ -70,7 +70,6 @@ void* MemoryAllocator::allocate_memory(size_t size) {
 
   // release region if it cannot fulfill the allocation
   if (region && !region->fits(size)) {
-    safeprint("releasing region %", region->id);
     assert(region->state == HeapRegion::State::Used);
     region->state.acas(HeapRegion::State::Used, HeapRegion::State::Released);
     region = nullptr;
@@ -87,7 +86,6 @@ void* MemoryAllocator::allocate_memory(size_t size) {
     }
 
     *region_ptr = region;
-    safeprint("acquired region %", region->id);
   }
 
   return region->allocate(size);

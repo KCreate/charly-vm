@@ -1,28 +1,29 @@
 # Todos
 
-- Implement some basic opcodes
-  - during this part of development I want to figure out how to implement the write / read barriers
-  - figure out how compiled programs are loaded into the machine
-  - figure out main bytecode execution loop
-    - interaction with scheduler
+- Rewrite pseudo-instructions to their real equivalent
+  - Some pseudo instructions can be removed entirely (like getexception)
 
 - Array access cannot cast all values to symbols
   - Array index needs to have the index value
   - Requires changes to the bytecode and compiler
 
-- Rewrite pseudo-instructions to their real equivalent
-  - Some pseudo instructions can be removed entirely (like getexception)
-
 - Document the calling convention / frame locals layout somewhere
+
+- Leaked frames
+  - Allocate the locals of a leaked frame on the charly heap
+
+- Rename scheduler abort to exit
+  - Implement scheduler panic routine and error diagnosis opportunity
 
 - Fiber stack growth mechanism via mmap?
   - Reserve address space for 8 megabytes per fiber
+    - Might be too slow to perform for each newly created fiber
   - Map in actual memory pages as they are needed
   - Unmap pages when they are no longer needed
 
-- Fiber stack growth mechanism via segmented stacks
-  - Can lead to performance issues (stack splitting in hot sections)
-  - Requires custom assembly code to handle stack transitions
+- Object read / write barriers
+
+- When does the runtime have to use the forwarding pointer in the heap header?
 
 - Reimplement make_fcontext and jump_fcontext in hand-written assembly
   - Try to understand what boost does in its own implementation

@@ -105,9 +105,94 @@ public:
     return instruction;
   }
 
-#define MAP(name, ictype, stackpop, stackpush, ...) ref<IRInstruction> emit_##name(__VA_ARGS__);
-  FOREACH_OPCODE(MAP)
-#undef MAP
+  ref<IRInstruction> emit_nop();
+  ref<IRInstruction> emit_panic();
+  ref<IRInstruction> emit_import();
+  ref<IRInstruction> emit_stringconcat(IROpCount8 count);
+  ref<IRInstruction> emit_declareglobal(IROpSymbol symbol);
+  ref<IRInstruction> emit_declareglobalconst(IROpSymbol symbol);
+  ref<IRInstruction> emit_type();
+  ref<IRInstruction> emit_pop();
+  ref<IRInstruction> emit_dup();
+  ref<IRInstruction> emit_dup2();
+  ref<IRInstruction> emit_jmp(IROpOffset label);
+  ref<IRInstruction> emit_jmpf(IROpOffset label);
+  ref<IRInstruction> emit_jmpt(IROpOffset label);
+  ref<IRInstruction> emit_testjmp(IROpImmediate value, IROpOffset label);
+  ref<IRInstruction> emit_testjmpstrict(IROpImmediate value, IROpOffset label);
+  ref<IRInstruction> emit_throwex();
+  ref<IRInstruction> emit_getexception();
+  ref<IRInstruction> emit_call(IROpCount8 count);
+  ref<IRInstruction> emit_callspread(IROpCount8 count);
+  ref<IRInstruction> emit_ret();
+  ref<IRInstruction> emit_load(IROpImmediate value);
+  ref<IRInstruction> emit_loadsymbol(IROpSymbol symbol);
+  ref<IRInstruction> emit_loadself();
+  ref<IRInstruction> emit_loadargc();
+  ref<IRInstruction> emit_loadglobal(IROpSymbol symbol);
+  ref<IRInstruction> emit_loadlocal(IROpCount8 offset);
+  ref<IRInstruction> emit_loadfar(IROpCount8 depth, IROpCount8 offset);
+  ref<IRInstruction> emit_loadattr(IROpSymbol symbol);
+  ref<IRInstruction> emit_loadattrsym();
+  ref<IRInstruction> emit_loadsuperconstructor();
+  ref<IRInstruction> emit_loadsuperattr(IROpSymbol symbol);
+  ref<IRInstruction> emit_setglobal(IROpSymbol symbol);
+  ref<IRInstruction> emit_setlocal(IROpCount8 offset);
+  ref<IRInstruction> emit_setreturn();
+  ref<IRInstruction> emit_setfar(IROpCount8 depth, IROpCount8 offset);
+  ref<IRInstruction> emit_setattr(IROpSymbol symbol);
+  ref<IRInstruction> emit_setattrsym();
+  ref<IRInstruction> emit_unpacksequence(IROpCount8 count);
+  ref<IRInstruction> emit_unpacksequencespread(IROpCount8 before, IROpCount8 after);
+  ref<IRInstruction> emit_unpackobject(IROpCount8 count);
+  ref<IRInstruction> emit_unpackobjectspread(IROpCount8 count);
+  ref<IRInstruction> emit_makefunc(IROpOffset offset);
+  ref<IRInstruction> emit_makeclass(IROpSymbol name,
+                                    IROpCount8 funccount,
+                                    IROpCount8 propcount,
+                                    IROpCount8 staticpropcount);
+  ref<IRInstruction> emit_makesubclass(IROpSymbol name,
+                                       IROpCount8 funccount,
+                                       IROpCount8 propcount,
+                                       IROpCount8 staticpropcount);
+  ref<IRInstruction> emit_makestr(IROpIndex16 index);
+  ref<IRInstruction> emit_makelist(IROpCount16 count);
+  ref<IRInstruction> emit_makelistspread(IROpCount16 count);
+  ref<IRInstruction> emit_makedict(IROpCount16 count);
+  ref<IRInstruction> emit_makedictspread(IROpCount16 count);
+  ref<IRInstruction> emit_maketuple(IROpCount16 count);
+  ref<IRInstruction> emit_maketuplespread(IROpCount16 count);
+  ref<IRInstruction> emit_fiberspawn();
+  ref<IRInstruction> emit_fiberyield();
+  ref<IRInstruction> emit_fibercall();
+  ref<IRInstruction> emit_fiberpause();
+  ref<IRInstruction> emit_fiberresume();
+  ref<IRInstruction> emit_fiberawait();
+  ref<IRInstruction> emit_caststring();
+  ref<IRInstruction> emit_castsymbol();
+  ref<IRInstruction> emit_castiterator();
+  ref<IRInstruction> emit_iteratornext();
+  ref<IRInstruction> emit_add();
+  ref<IRInstruction> emit_sub();
+  ref<IRInstruction> emit_mul();
+  ref<IRInstruction> emit_div();
+  ref<IRInstruction> emit_mod();
+  ref<IRInstruction> emit_pow();
+  ref<IRInstruction> emit_usub();
+  ref<IRInstruction> emit_eq();
+  ref<IRInstruction> emit_neq();
+  ref<IRInstruction> emit_lt();
+  ref<IRInstruction> emit_gt();
+  ref<IRInstruction> emit_le();
+  ref<IRInstruction> emit_ge();
+  ref<IRInstruction> emit_unot();
+  ref<IRInstruction> emit_shl();
+  ref<IRInstruction> emit_shr();
+  ref<IRInstruction> emit_shru();
+  ref<IRInstruction> emit_band();
+  ref<IRInstruction> emit_bor();
+  ref<IRInstruction> emit_bxor();
+  ref<IRInstruction> emit_ubnot();
 
   ref<IRModule> get_module() const {
     return m_module;
@@ -138,6 +223,6 @@ private:
   ref<IRFunction>   m_active_function;
   ref<IRBasicBlock> m_active_block;
   ref<IRModule>     m_module;
-};
+  };
 
 }  // namespace charly::core::compiler::ir

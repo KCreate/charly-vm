@@ -79,6 +79,7 @@ static const uint32_t kWorkerMaximumIdleSleepDuration = 1000;
 struct Processor;
 struct Worker;
 struct Fiber;
+struct Function;
 struct HeapRegion;
 
 // a processor keeps track of the per-processor data the charly runtime manages.
@@ -195,7 +196,7 @@ static const size_t kFiberStackSize = 1024 * 8; // 8 kilobytes
 // Fibers hold the state information of a single strand of execution inside a charly
 // program. each fiber has its own hardware stack and stores register data when paused
 struct Fiber {
-  Fiber();
+  Fiber(Function* main_function);
   ~Fiber();
 
   static HeapType heap_value_type() {
@@ -223,6 +224,8 @@ struct Fiber {
   charly::atomic<State> state;
   charly::atomic<Worker*> worker;
   charly::atomic<uint64_t> last_scheduled_at;
+  bool exit_machine_on_exit; // set on the main fiber
+  Function* main_function;
   fcontext_t context;
 
   // deallocate stack
@@ -249,7 +252,7 @@ public:
   void worker_main(Worker* worker);
 
   // main function executed by fibers
-  static void fiber_main(transfer_t transfer);
+  void fiber_main(transfer_t transfer);
 
   // suspends calling thread until the scheduler has exited
   //
@@ -309,7 +312,7 @@ public:
   // transition the current worker and associated processor into native mode
   //
   // meant to be called from within application worker threads
-  void enter_native_mode();
+  // void enter_native_mode();
 
   // attempt to exit from native mode
   //
@@ -319,7 +322,7 @@ public:
   // calling worker should yield itself back to the scheduler if this call fails
   //
   // meant to be called from within application worker threads
-  bool exit_native_mode();
+  // bool exit_native_mode();
 
   // reschedule the currently executing fiber
   //
@@ -332,7 +335,7 @@ public:
   void exit_fiber();
 
   // register a compiled module with the runtime
-  void register_module(ref<CompiledModule> module);
+  Function* register_module(ref<CompiledModule> module);
 
 private:
 
@@ -396,6 +399,9 @@ private:
 
   std::mutex m_run_queue_mutex;
   std::list<Fiber*> m_run_queue;
+
+  std::mutex m_registered_modules_mutex;
+  std::vector<ref<CompiledModule>> m_registered_modules;
 };
 
 }  // namespace charly::core::runtime

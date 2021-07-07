@@ -24,10 +24,10 @@
  * SOFTWARE.
  */
 
+#include "charly/core/compiler/ir/builder.h"
+#include "charly/utils/argumentparser.h"
 #include "charly/utils/buffer.h"
 #include "charly/utils/colorwriter.h"
-#include "charly/utils/argumentparser.h"
-#include "charly/core/compiler/ir/builder.h"
 
 namespace charly::core::compiler::ir {
 
@@ -94,9 +94,7 @@ void Builder::begin_function(Label head, ref<ast::Function> ast) {
 }
 
 void Builder::finish_function() {
-
   if (!utils::ArgumentParser::is_flag_set("opt_disable")) {
-
     // trim dead instructions in basic blocks that occur after terminating opcodes
     trim_dead_instructions();
 
@@ -169,7 +167,6 @@ void Builder::remove_empty_blocks() {
 
     // remove empty blocks
     if (block->instructions.size() == 0) {
-
       // propagate labels to next block
       if (block->next_block && block->labels.size()) {
         for (Label label : block->labels) {
@@ -189,7 +186,6 @@ void Builder::remove_empty_blocks() {
 
 void Builder::trim_dead_instructions() {
   for (const ref<IRBasicBlock>& block : m_active_function->basic_blocks) {
-
     bool block_terminated = false;
     auto inst_it = block->instructions.begin();
     while (inst_it != block->instructions.end()) {
@@ -212,7 +208,6 @@ void Builder::trim_dead_instructions() {
 
 void Builder::build_cfg() {
   for (ref<IRBasicBlock> block : m_active_function->basic_blocks) {
-
     // empty blocks fallthrough to the next block
     if (block->instructions.size() == 0) {
       IRBasicBlock::link(block, block->next_block);
@@ -265,7 +260,6 @@ void Builder::rewrite_chained_branches() {
   do {
     updated_jmp = false;
     for (const ref<IRBasicBlock>& block : m_active_function->basic_blocks) {
-
       // skip empty blocks
       if (block->instructions.size() == 0) {
         continue;
@@ -289,7 +283,6 @@ void Builder::rewrite_chained_branches() {
           const ref<IRInstruction>& target_instruction = target_block->instructions.back();
 
           if (target_instruction->opcode == Opcode::jmp) {
-
             // determine target block of the second jmp and update the original jmp instruction
             Label second_target_label = cast<IROperandOffset>(target_instruction->operands[0])->value;
             ref<IRBasicBlock> new_target_block = m_labelled_blocks.at(second_target_label);
@@ -305,7 +298,6 @@ void Builder::rewrite_chained_branches() {
             original_operand->value = second_target_label;
             updated_jmp = true;
           } else if (target_instruction->opcode == Opcode::ret) {
-
             // replace original jump with a ret
             instruction->opcode = Opcode::ret;
             instruction->operands.clear();
@@ -339,7 +331,6 @@ void Builder::remove_useless_jumps() {
 }
 
 void Builder::remove_dead_blocks() {
-
   // mark all reachable blocks
   std::list<ref<IRBasicBlock>> reachable_blocks;
   reachable_blocks.push_back(m_active_function->basic_blocks.front());
@@ -376,7 +367,6 @@ void Builder::remove_dead_blocks() {
 
     // remove block
     if (!block->reachable) {
-
       // unlink block from list
       if (block->previous_block) {
         block->previous_block->next_block = block->next_block;
@@ -427,7 +417,8 @@ void Builder::allocate_inline_caches() {
     for (const auto& instruction : block->instructions) {
       ICType type = kOpcodeInlineCaches[static_cast<uint8_t>(instruction->opcode)];
       if (type != ICNone) {
-        instruction->inline_cache_index = m_active_function->inline_cache_table.size();
+        uint16_t index = m_active_function->inline_cache_table.size();
+        instruction->operands.push_back(make<IROperandICIndex>(index));
         m_active_function->inline_cache_table.emplace_back(IRInlineCacheTableEntry(type));
       }
     }
@@ -463,19 +454,18 @@ Label Builder::reserve_label() {
 }
 
 void Builder::place_label(Label label) {
-
   // if the current basic block is still empty
   // we can add the label to the current block
   if (m_active_block->instructions.size() == 0) {
     m_active_block->labels.insert(label);
-    m_labelled_blocks.insert({label, m_active_block});
+    m_labelled_blocks.insert({ label, m_active_block });
     return;
   }
 
   // create a new block
   ref<IRBasicBlock> new_block = new_basic_block();
   new_block->labels.insert(label);
-  m_labelled_blocks.insert({label, new_block});
+  m_labelled_blocks.insert({ label, new_block });
 }
 
 // machine control
@@ -492,16 +482,16 @@ ref<IRInstruction> Builder::emit_import() {
   return emit(Opcode::import);
 }
 
-ref<IRInstruction> Builder::emit_stringconcat(OpCount8 count) {
+ref<IRInstruction> Builder::emit_stringconcat(IROpCount8 count) {
   return emit(Opcode::stringconcat, IROperandCount8::make(count));
 }
 
-ref<IRInstruction> Builder::emit_declareglobal(OpSymbol symbol) {
+ref<IRInstruction> Builder::emit_declareglobal(IROpSymbol symbol) {
   register_symbol(symbol);
   return emit(Opcode::declareglobal, IROperandSymbol::make(symbol));
 }
 
-ref<IRInstruction> Builder::emit_declareglobalconst(OpSymbol symbol) {
+ref<IRInstruction> Builder::emit_declareglobalconst(IROpSymbol symbol) {
   register_symbol(symbol);
   return emit(Opcode::declareglobalconst, IROperandSymbol::make(symbol));
 }
@@ -524,23 +514,23 @@ ref<IRInstruction> Builder::emit_dup2() {
 }
 
 // control flow
-ref<IRInstruction> Builder::emit_jmp(OpOffset label) {
+ref<IRInstruction> Builder::emit_jmp(IROpOffset label) {
   return emit(Opcode::jmp, IROperandOffset::make(label));
 }
 
-ref<IRInstruction> Builder::emit_jmpf(OpOffset label) {
+ref<IRInstruction> Builder::emit_jmpf(IROpOffset label) {
   return emit(Opcode::jmpf, IROperandOffset::make(label));
 }
 
-ref<IRInstruction> Builder::emit_jmpt(OpOffset label) {
+ref<IRInstruction> Builder::emit_jmpt(IROpOffset label) {
   return emit(Opcode::jmpt, IROperandOffset::make(label));
 }
 
-ref<IRInstruction> Builder::emit_testjmp(OpImmediate value, OpOffset label) {
+ref<IRInstruction> Builder::emit_testjmp(IROpImmediate value, IROpOffset label) {
   return emit(Opcode::testjmp, IROperandImmediate::make(value), IROperandOffset::make(label));
 }
 
-ref<IRInstruction> Builder::emit_testjmpstrict(OpImmediate value, OpOffset label) {
+ref<IRInstruction> Builder::emit_testjmpstrict(IROpImmediate value, IROpOffset label) {
   return emit(Opcode::testjmpstrict, IROperandImmediate::make(value), IROperandOffset::make(label));
 }
 
@@ -553,11 +543,11 @@ ref<IRInstruction> Builder::emit_getexception() {
 }
 
 // function control flow
-ref<IRInstruction> Builder::emit_call(OpCount8 count) {
+ref<IRInstruction> Builder::emit_call(IROpCount8 count) {
   return emit(Opcode::call, IROperandCount8::make(count));
 }
 
-ref<IRInstruction> Builder::emit_callspread(OpCount8 count) {
+ref<IRInstruction> Builder::emit_callspread(IROpCount8 count) {
   return emit(Opcode::callspread, IROperandCount8::make(count));
 }
 
@@ -566,11 +556,11 @@ ref<IRInstruction> Builder::emit_ret() {
 }
 
 // load operations
-ref<IRInstruction> Builder::emit_load(OpImmediate value) {
+ref<IRInstruction> Builder::emit_load(IROpImmediate value) {
   return emit(Opcode::load, IROperandImmediate::make(value));
 }
 
-ref<IRInstruction> Builder::emit_loadsymbol(OpSymbol symbol) {
+ref<IRInstruction> Builder::emit_loadsymbol(IROpSymbol symbol) {
   register_symbol(symbol);
   return emit(Opcode::loadsymbol, IROperandSymbol::make(symbol));
 }
@@ -583,20 +573,20 @@ ref<IRInstruction> Builder::emit_loadargc() {
   return emit(Opcode::loadargc);
 }
 
-ref<IRInstruction> Builder::emit_loadglobal(OpSymbol symbol) {
+ref<IRInstruction> Builder::emit_loadglobal(IROpSymbol symbol) {
   register_symbol(symbol);
   return emit(Opcode::loadglobal, IROperandSymbol::make(symbol));
 }
 
-ref<IRInstruction> Builder::emit_loadlocal(OpCount8 offset) {
+ref<IRInstruction> Builder::emit_loadlocal(IROpCount8 offset) {
   return emit(Opcode::loadlocal, IROperandCount8::make(offset));
 }
 
-ref<IRInstruction> Builder::emit_loadfar(OpCount8 depth, OpCount8 offset) {
+ref<IRInstruction> Builder::emit_loadfar(IROpCount8 depth, IROpCount8 offset) {
   return emit(Opcode::loadfar, IROperandCount8::make(depth), IROperandCount8::make(offset));
 }
 
-ref<IRInstruction> Builder::emit_loadattr(OpSymbol symbol) {
+ref<IRInstruction> Builder::emit_loadattr(IROpSymbol symbol) {
   register_symbol(symbol);
   return emit(Opcode::loadattr, IROperandSymbol::make(symbol));
 }
@@ -609,18 +599,18 @@ ref<IRInstruction> Builder::emit_loadsuperconstructor() {
   return emit(Opcode::loadsuperconstructor);
 }
 
-ref<IRInstruction> Builder::emit_loadsuperattr(OpSymbol symbol) {
+ref<IRInstruction> Builder::emit_loadsuperattr(IROpSymbol symbol) {
   register_symbol(symbol);
   return emit(Opcode::loadsuperattr, IROperandSymbol::make(symbol));
 }
 
 // write operations
-ref<IRInstruction> Builder::emit_setglobal(OpSymbol symbol) {
+ref<IRInstruction> Builder::emit_setglobal(IROpSymbol symbol) {
   register_symbol(symbol);
   return emit(Opcode::setglobal, IROperandSymbol::make(symbol));
 }
 
-ref<IRInstruction> Builder::emit_setlocal(OpCount8 offset) {
+ref<IRInstruction> Builder::emit_setlocal(IROpCount8 offset) {
   return emit(Opcode::setlocal, IROperandCount8::make(offset));
 }
 
@@ -628,11 +618,11 @@ ref<IRInstruction> Builder::emit_setreturn() {
   return emit(Opcode::setreturn);
 }
 
-ref<IRInstruction> Builder::emit_setfar(OpCount8 depth, OpCount8 offset) {
+ref<IRInstruction> Builder::emit_setfar(IROpCount8 depth, IROpCount8 offset) {
   return emit(Opcode::setfar, IROperandCount8::make(depth), IROperandCount8::make(offset));
 }
 
-ref<IRInstruction> Builder::emit_setattr(OpSymbol symbol) {
+ref<IRInstruction> Builder::emit_setattr(IROpSymbol symbol) {
   register_symbol(symbol);
   return emit(Opcode::setattr, IROperandSymbol::make(symbol));
 }
@@ -642,70 +632,70 @@ ref<IRInstruction> Builder::emit_setattrsym() {
 }
 
 // value destructuring operations
-ref<IRInstruction> Builder::emit_unpacksequence(OpCount8 count) {
+ref<IRInstruction> Builder::emit_unpacksequence(IROpCount8 count) {
   return emit(Opcode::unpacksequence, IROperandCount8::make(count));
 }
 
-ref<IRInstruction> Builder::emit_unpacksequencespread(OpCount8 before, OpCount8 after) {
+ref<IRInstruction> Builder::emit_unpacksequencespread(IROpCount8 before, IROpCount8 after) {
   return emit(Opcode::unpacksequencespread, IROperandCount8::make(before), IROperandCount8::make(after));
 }
 
-ref<IRInstruction> Builder::emit_unpackobject(OpCount8 count) {
+ref<IRInstruction> Builder::emit_unpackobject(IROpCount8 count) {
   return emit(Opcode::unpackobject, IROperandCount8::make(count));
 }
 
-ref<IRInstruction> Builder::emit_unpackobjectspread(OpCount8 count) {
+ref<IRInstruction> Builder::emit_unpackobjectspread(IROpCount8 count) {
   return emit(Opcode::unpackobjectspread, IROperandCount8::make(count));
 }
 
 // value allocation
-ref<IRInstruction> Builder::emit_makefunc(OpOffset offset) {
+ref<IRInstruction> Builder::emit_makefunc(IROpOffset offset) {
   return emit(Opcode::makefunc, IROperandOffset::make(offset));
 }
 
-ref<IRInstruction> Builder::emit_makeclass(OpSymbol name,
-                                                     OpCount8 funccount,
-                                                     OpCount8 propcount,
-                                                     OpCount8 staticpropcount) {
+ref<IRInstruction> Builder::emit_makeclass(IROpSymbol name,
+                                           IROpCount8 funccount,
+                                           IROpCount8 propcount,
+                                           IROpCount8 staticpropcount) {
   register_symbol(name);
   return emit(Opcode::makeclass, IROperandSymbol::make(name), IROperandCount8::make(funccount),
               IROperandCount8::make(propcount), IROperandCount8::make(staticpropcount));
 }
 
-ref<IRInstruction> Builder::emit_makesubclass(OpSymbol name,
-                                                        OpCount8 funccount,
-                                                        OpCount8 propcount,
-                                                        OpCount8 staticpropcount) {
+ref<IRInstruction> Builder::emit_makesubclass(IROpSymbol name,
+                                              IROpCount8 funccount,
+                                              IROpCount8 propcount,
+                                              IROpCount8 staticpropcount) {
   register_symbol(name);
   return emit(Opcode::makesubclass, IROperandSymbol::make(name), IROperandCount8::make(funccount),
               IROperandCount8::make(propcount), IROperandCount8::make(staticpropcount));
 }
 
-ref<IRInstruction> Builder::emit_makestr(OpIndex16 index) {
+ref<IRInstruction> Builder::emit_makestr(IROpIndex16 index) {
   return emit(Opcode::makestr, IROperandIndex16::make(index));
 }
 
-ref<IRInstruction> Builder::emit_makelist(OpCount16 count) {
+ref<IRInstruction> Builder::emit_makelist(IROpCount16 count) {
   return emit(Opcode::makelist, IROperandCount16::make(count));
 }
 
-ref<IRInstruction> Builder::emit_makelistspread(OpCount16 count) {
+ref<IRInstruction> Builder::emit_makelistspread(IROpCount16 count) {
   return emit(Opcode::makelistspread, IROperandCount16::make(count));
 }
 
-ref<IRInstruction> Builder::emit_makedict(OpCount16 count) {
+ref<IRInstruction> Builder::emit_makedict(IROpCount16 count) {
   return emit(Opcode::makedict, IROperandCount16::make(count));
 }
 
-ref<IRInstruction> Builder::emit_makedictspread(OpCount16 count) {
+ref<IRInstruction> Builder::emit_makedictspread(IROpCount16 count) {
   return emit(Opcode::makedictspread, IROperandCount16::make(count));
 }
 
-ref<IRInstruction> Builder::emit_maketuple(OpCount16 count) {
+ref<IRInstruction> Builder::emit_maketuple(IROpCount16 count) {
   return emit(Opcode::maketuple, IROperandCount16::make(count));
 }
 
-ref<IRInstruction> Builder::emit_maketuplespread(OpCount16 count) {
+ref<IRInstruction> Builder::emit_maketuplespread(IROpCount16 count) {
   return emit(Opcode::maketuplespread, IROperandCount16::make(count));
 }
 

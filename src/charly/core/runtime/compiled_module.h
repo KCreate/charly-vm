@@ -32,6 +32,7 @@
 #include "charly/value.h"
 
 #include "charly/core/compiler/ir/functioninfo.h"
+#include "charly/core/compiler/ir/bytecode.h"
 
 #include "charly/utils/memoryblock.h"
 
@@ -40,18 +41,23 @@
 namespace charly::core::runtime {
 
 struct ExceptionTableEntry {
-  ExceptionTableEntry(uint32_t begin, uint32_t end, uint32_t handler) : begin(begin), end(end), handler(handler) {}
+  ExceptionTableEntry(uint32_t b, uint32_t _end, uint32_t _handler) :
+    begin_offset(b), end_offset(_end), handler_offset(_handler) {}
 
-  uint32_t begin;
-  uint32_t end;
-  uint32_t handler;
+  uint32_t begin_offset;
+  uint32_t end_offset;
+  uint32_t handler_offset;
+  uintptr_t begin_ptr;
+  uintptr_t end_ptr;
+  uintptr_t handler_ptr;
 };
 
 struct SourceMapEntry {
-  SourceMapEntry(uint32_t instruction_offset, uint16_t row, uint16_t column, uint16_t end_row, uint16_t end_column) :
-    instruction_offset(instruction_offset), row(row), column(column), end_row(end_row), end_column(end_column) {}
+  SourceMapEntry(uint32_t offset, uint16_t row, uint16_t column, uint16_t end_row, uint16_t end_column) :
+    instruction_offset(offset), row(row), column(column), end_row(end_row), end_column(end_column) {}
 
   uint32_t instruction_offset;
+  uintptr_t instruction_ptr;
   uint16_t row;
   uint16_t column;
   uint16_t end_row;
@@ -75,19 +81,14 @@ struct __attribute__((packed)) InlineCacheEntry {
   // TODO: implement real data structure
 };
 
-// emitted into bytecode stream
-struct CompiledFunction;
-struct __attribute__((packed)) BytecodeFunctionHeader {
-  CompiledFunction* shared_compiled_function;
-
-  // both these offsets are relative to the beginning of the function header
-  uint32_t inline_cache_offset;
-  uint32_t bytecode_offset;
+struct InlineCacheHeader {
+  InlineCacheHeader(compiler::ir::ICType type) : type(type) {}
+  compiler::ir::ICType type;
 };
 
 struct CompiledModule;
 struct CompiledFunction {
-  ref<CompiledModule> owner_module;
+  CompiledModule* owner_module;
 
   std::string name;
   SYMBOL name_symbol;
@@ -96,15 +97,26 @@ struct CompiledFunction {
   std::vector<ExceptionTableEntry> exception_table;
   std::vector<SourceMapEntry> sourcemap_table;
   std::vector<StringTableEntry> string_table;
+  std::vector<InlineCacheHeader> inline_cache_table;
 
-  uint32_t head_offset;
-  uint32_t end_offset;
-  uint32_t inline_cache_offset;
-  uint32_t bytecode_offset;
+  uintptr_t buffer_base_ptr;        // pointer to the base of the containing modules buffer
+  uintptr_t bytecode_base_ptr;      // pointer to the functions first opcode
+  uintptr_t ic_base_ptr;            // pointer to the functions first inline cache
+  uintptr_t end_ptr;                // function end pointer
+
+  uint32_t bytecode_offset;       // offset into module buffer where the functions opcodes are located
+  uint32_t inline_cache_offset;   // offset into module buffer where the functions ic tables are located
+  uint32_t end_offset;            // function end offset
 };
 
 struct CompiledModule {
   CompiledModule() : buffer(make<utils::MemoryBlock>()) {}
+  ~CompiledModule() {
+    for (CompiledFunction* func : function_table) {
+      if (func)
+        delete func;
+    }
+  }
 
   std::string filename;
   std::vector<std::string> symbol_table;

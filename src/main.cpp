@@ -46,12 +46,11 @@
 #include "charly/core/runtime/scheduler.h"
 #include "charly/core/runtime/allocator.h"
 #include "charly/core/runtime/gc.h"
+#include "charly/core/runtime/function.h"
 
 using namespace charly;
 using namespace charly::core::runtime;
 using namespace charly::core::compiler;
-using namespace charly::core::compiler::ast;
-using namespace charly::core::compiler::ir;
 
 using namespace std::chrono_literals;
 
@@ -119,7 +118,14 @@ void run_repl(DiagnosticConsole&) {
       }
     }
 
-    // TODO: implement execution
+    if (utils::ArgumentParser::is_flag_set("skipexec")) {
+      continue;
+    }
+
+    charly::core::runtime::Function* module_function = Scheduler::instance->register_module(unit->compiled_module);
+    Fiber* fiber = MemoryAllocator::allocate<Fiber>(module_function);
+    fiber->state.acas(Fiber::State::Created, Fiber::State::Ready);
+    Scheduler::instance->schedule_fiber(fiber);
   }
 
   Scheduler::instance->abort(0);
@@ -168,8 +174,11 @@ void run_file(DiagnosticConsole& console, const std::string& filename) {
     return;
   }
 
-  Scheduler::instance->register_module(unit->compiled_module);
-  Scheduler::instance->abort(0);
+  charly::core::runtime::Function* module_function = Scheduler::instance->register_module(unit->compiled_module);
+  Fiber* main_fiber = MemoryAllocator::allocate<Fiber>(module_function);
+  main_fiber->state.acas(Fiber::State::Created, Fiber::State::Ready);
+  main_fiber->exit_machine_on_exit = true;
+  Scheduler::instance->schedule_fiber(main_fiber);
 }
 
 int32_t cli(DiagnosticConsole& console) {

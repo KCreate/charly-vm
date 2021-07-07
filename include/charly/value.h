@@ -33,10 +33,16 @@
 
 namespace charly {
 
+enum class HeapType : uint8_t {
+  Dead = 0,
+  Fiber,
+  Function
+};
+
 // wrapper class around the raw immediate encoded bytes
 struct VALUE {
   taggedvalue::Value raw;
-  constexpr VALUE(taggedvalue::Value raw) : raw(raw) {}
+  constexpr VALUE(taggedvalue::Value raw = taggedvalue::kNull) : raw(raw) {}
 
   static VALUE Pointer(void* value) {
     return VALUE(taggedvalue::encode_pointer(value));
@@ -83,9 +89,19 @@ struct VALUE {
   bool to_bool() const { return taggedvalue::decode_bool(raw); }
 
   friend std::ostream& operator<<(std::ostream& out, const VALUE& value) {
-    out << value.raw;
+    value.dump(out);
     return out;
   }
+
+  void dump(std::ostream& out) const;
+
+  bool truthyness() const;
+
+  bool is_pointer_to(HeapType type) const;
+
+  bool compare(VALUE other) const;
+
+  bool compare_strict(VALUE other) const;
 };
 static_assert(sizeof(VALUE) == sizeof(uintptr_t));
 
@@ -95,10 +111,5 @@ static const VALUE kInfinity    = VALUE(taggedvalue::kInfinity);
 static const VALUE kNegInfinity = VALUE(taggedvalue::kNegInfinity);
 static const VALUE kTrue        = VALUE(taggedvalue::kTrue);
 static const VALUE kFalse       = VALUE(taggedvalue::kFalse);
-
-enum class HeapType : uint8_t {
-  Dead = 0,
-  Fiber
-};
 
 }

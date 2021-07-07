@@ -18,11 +18,14 @@ file(GLOB charlycore_SRC
   "charly/core/compiler/passes/local_allocator_pass.cpp"
   "charly/core/compiler/passes/repl_prepare_pass.cpp"
   "charly/core/compiler/passes/reserved_identifiers_check.cpp"
-  "charly/core/runtime/gc.cpp"
   "charly/core/runtime/allocator.cpp"
-  "charly/core/runtime/scheduler.cpp"
   "charly/core/runtime/compiled_module.cpp"
+  "charly/core/runtime/compiled_module.cpp"
+  "charly/core/runtime/gc.cpp"
+  "charly/core/runtime/scheduler.cpp"
+  "charly/core/runtime/vm_frame.cpp"
   "charly/taggedvalue.cpp"
+  "charly/value.cpp"
   "charly/utils/argumentparser.cpp"
   "charly/utils/buffer.cpp"
   "charly/utils/memoryblock.cpp"
@@ -51,6 +54,7 @@ target_compile_options(libcharly PRIVATE
   -Wno-gnu-zero-variadic-macro-arguments
   -Wno-c99-extensions
   -Wno-register
+  -Wno-extra-semi
   -ftemplate-backtrace-limit=8
   -march=native
   -flto

@@ -71,4 +71,8 @@ private:                           \
 private:                           \
   C& operator=(const C&&) = delete;
 
+#define UNREACHABLE()                          \
+  assert(false && "reached unreachable code"); \
+  __builtin_unreachable();
+
 }  // namespace charly::utils
