@@ -38,6 +38,54 @@
 
 namespace charly {
 
+// Source: https://stackoverflow.com/a/11763277/2611393
+#define CHARLY_FE_1(WHAT, X) WHAT(X)
+#define CHARLY_FE_2(WHAT, X, ...) WHAT(X) CHARLY_FE_1(WHAT, __VA_ARGS__)
+#define CHARLY_FE_3(WHAT, X, ...) WHAT(X) CHARLY_FE_2(WHAT, __VA_ARGS__)
+#define CHARLY_FE_4(WHAT, X, ...) WHAT(X) CHARLY_FE_3(WHAT, __VA_ARGS__)
+#define CHARLY_FE_5(WHAT, X, ...) WHAT(X) CHARLY_FE_4(WHAT, __VA_ARGS__)
+
+#define CHARLY_GET_MACRO(_1, _2, _3, _4, _5, NAME, ...) NAME
+#define CHARLY_VA_FOR_EACH(action, ...) \
+  CHARLY_GET_MACRO(__VA_ARGS__, CHARLY_FE_5, CHARLY_FE_4, CHARLY_FE_3, CHARLY_FE_2, CHARLY_FE_1)(action, __VA_ARGS__)
+
+#define CHARLY_NON_CONSTRUCTABLE(C) \
+private:                            \
+  C() = delete;                     \
+                                    \
+private:                            \
+  ~C() = delete;
+
+#define CHARLY_NON_COPYABLE(C)     \
+private:                           \
+  C(const C&) = delete;            \
+                                   \
+private:                           \
+  C(C&) = delete;                  \
+                                   \
+private:                           \
+  C(const C&&) = delete;           \
+                                   \
+private:                           \
+  C(C&&) = delete;                 \
+                                   \
+private:                           \
+  C& operator=(C&) = delete;       \
+                                   \
+private:                           \
+  C& operator=(C&&) = delete;      \
+                                   \
+private:                           \
+  C& operator=(const C&) = delete; \
+                                   \
+private:                           \
+  C& operator=(const C&&) = delete;
+
+#define UNREACHABLE()                          \
+  assert(false && "reached unreachable code"); \
+  std::abort();                                \
+  __builtin_unreachable();
+
 /*
  * shorthand method for often used shared_ptr stuff
  * */
@@ -75,7 +123,7 @@ inline void safeprint_impl(const char* format, T value, Targs... Fargs) {
   }
 }
 
-extern std::mutex safeprint_mutex;
+static inline std::mutex safeprint_mutex;
 
 #ifdef NDEBUG
 

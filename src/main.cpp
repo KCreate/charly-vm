@@ -56,10 +56,6 @@ using namespace std::chrono_literals;
 
 extern char** environ;
 
-namespace charly {
-  std::mutex safeprint_mutex;
-}
-
 void run_repl(DiagnosticConsole&) {
   bool print_location = false;
 
@@ -144,8 +140,8 @@ void run_file(DiagnosticConsole& console, const std::string& filename) {
   std::string line;
 
   for (std::string line; std::getline(file, line);) {
-    file_buffer.write_string(line);
-    file_buffer.write_utf8('\n');
+    file_buffer.emit_string(line);
+    file_buffer.emit_utf8_cp('\n');
   }
   file.close();
 

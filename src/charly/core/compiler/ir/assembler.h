@@ -31,7 +31,7 @@
 #include "charly/core/compiler/ir/builder.h"
 #include "charly/core/compiler/ir/ir.h"
 
-#include "charly/utils/memoryblock.h"
+#include "charly/utils/buffer.h"
 
 #include "charly/core/runtime/compiled_module.h"
 

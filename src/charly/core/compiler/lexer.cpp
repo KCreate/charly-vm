@@ -515,8 +515,8 @@ void Lexer::unexpected_character() {
       m_console.fatal(m_token.location, "unexpected end of file");
     }
     default: {
-      m_token.location.offset = m_source.readoffset() - utils::Buffer::utf8_encoded_length(m_last_character);
-      m_token.location.end_offset = m_source.readoffset();
+      m_token.location.offset = m_source.read_offset() - utils::Buffer::utf8_cp_length(m_last_character);
+      m_token.location.end_offset = m_source.read_offset();
       m_token.location.end_row = m_row;
       m_token.location.end_column = m_column;
 
@@ -533,8 +533,8 @@ void Lexer::unexpected_character(uint32_t expected) {
       m_console.fatal(m_token.location, "unexpected end of file, expected the character '", expected, "'");
     }
     default: {
-      m_token.location.offset = m_source.readoffset() - utils::Buffer::utf8_encoded_length(m_last_character);
-      m_token.location.end_offset = m_source.readoffset();
+      m_token.location.offset = m_source.read_offset() - utils::Buffer::utf8_cp_length(m_last_character);
+      m_token.location.end_offset = m_source.read_offset();
       m_token.location.end_row = m_row;
       m_token.location.end_column = m_column;
 
@@ -553,8 +553,8 @@ void Lexer::unexpected_character(TokenType expected) {
                       kTokenTypeStrings[static_cast<int>(expected)], "' token");
     }
     default: {
-      m_token.location.offset = m_source.readoffset() - utils::Buffer::utf8_encoded_length(m_last_character);
-      m_token.location.end_offset = m_source.readoffset();
+      m_token.location.offset = m_source.read_offset() - utils::Buffer::utf8_cp_length(m_last_character);
+      m_token.location.end_offset = m_source.read_offset();
       m_token.location.end_row = m_row;
       m_token.location.end_column = m_column;
 
@@ -572,8 +572,8 @@ void Lexer::unexpected_character(const std::string& message) {
       m_console.fatal(m_token.location, "unexpected end of file, ", message);
     }
     default: {
-      m_token.location.offset = m_source.readoffset() - utils::Buffer::utf8_encoded_length(m_last_character);
-      m_token.location.end_offset = m_source.readoffset();
+      m_token.location.offset = m_source.read_offset() - utils::Buffer::utf8_cp_length(m_last_character);
+      m_token.location.end_offset = m_source.read_offset();
       m_token.location.end_row = m_row;
       m_token.location.end_column = m_column;
 
@@ -595,18 +595,18 @@ void Lexer::increment_column(size_t delta) {
 }
 
 uint32_t Lexer::peek_char(uint32_t nth) const {
-  return m_source.peek_utf8(nth);
+  return m_source.peek_utf8_cp(nth);
 }
 
 uint32_t Lexer::read_char() {
-  uint32_t cp = m_source.read_utf8();
+  uint32_t cp = m_source.read_utf8_cp();
   m_last_character = cp;
-  m_token.location.end_offset = m_source.readoffset();
+  m_token.location.end_offset = m_source.read_offset();
 
   if (cp == '\n') {
     increment_row();
   } else {
-    increment_column(utils::Buffer::utf8_encoded_length(cp));
+    increment_column(utils::Buffer::utf8_cp_length(cp));
   }
 
   return cp;
@@ -702,10 +702,10 @@ void Lexer::consume_decimal(Token& token) {
 
   if (point_passed) {
     token.type = TokenType::Float;
-    token.floatval = utils::charptr_to_double(m_source.window(), m_source.window_size());
+    token.floatval = utils::string_view_to_double(m_source.window_view());
   } else {
     token.type = TokenType::Int;
-    token.intval = utils::charptr_to_int(m_source.window(), m_source.window_size(), 10);
+    token.intval = utils::string_view_to_int(m_source.window_view(), 10);
   }
 }
 
@@ -721,7 +721,9 @@ void Lexer::consume_hex(Token& token) {
     read_char();
   }
 
-  token.intval = utils::charptr_to_int(m_source.window() + 2, m_source.window_size() - 2, 16);
+  std::string_view view = m_source.window_view();
+  view.remove_prefix(2);
+  token.intval = utils::string_view_to_int(view, 16);
 }
 
 void Lexer::consume_octal(Token& token) {
@@ -736,7 +738,9 @@ void Lexer::consume_octal(Token& token) {
     read_char();
   }
 
-  token.intval = utils::charptr_to_int(m_source.window() + 2, m_source.window_size() - 2, 8);
+  std::string_view view = m_source.window_view();
+  view.remove_prefix(2);
+  token.intval = utils::string_view_to_int(view, 8);
 }
 
 void Lexer::consume_binary(Token& token) {
@@ -751,7 +755,9 @@ void Lexer::consume_binary(Token& token) {
     read_char();
   }
 
-  token.intval = utils::charptr_to_int(m_source.window() + 2, m_source.window_size() - 2, 2);
+  std::string_view view = m_source.window_view();
+  view.remove_prefix(2);
+  token.intval = utils::string_view_to_int(view, 2);
 }
 
 void Lexer::consume_identifier(Token& token) {
@@ -943,52 +949,52 @@ void Lexer::consume_string(Token& token, bool allow_format) {
       switch (peek_char()) {
         case 'a': {
           read_char();
-          string_buf.write_utf8('\a');
+          string_buf.emit_utf8_cp('\a');
           break;
         }
         case 'b': {
           read_char();
-          string_buf.write_utf8('\b');
+          string_buf.emit_utf8_cp('\b');
           break;
         }
         case 'n': {
           read_char();
-          string_buf.write_utf8('\n');
+          string_buf.emit_utf8_cp('\n');
           break;
         }
         case 'r': {
           read_char();
-          string_buf.write_utf8('\r');
+          string_buf.emit_utf8_cp('\r');
           break;
         }
         case 't': {
           read_char();
-          string_buf.write_utf8('\t');
+          string_buf.emit_utf8_cp('\t');
           break;
         }
         case 'v': {
           read_char();
-          string_buf.write_utf8('\v');
+          string_buf.emit_utf8_cp('\v');
           break;
         }
         case 'f': {
           read_char();
-          string_buf.write_utf8('\f');
+          string_buf.emit_utf8_cp('\f');
           break;
         }
         case '"': {
           read_char();
-          string_buf.write_utf8('\"');
+          string_buf.emit_utf8_cp('\"');
           break;
         }
         case '{': {
           read_char();
-          string_buf.write_utf8('{');
+          string_buf.emit_utf8_cp('{');
           break;
         }
         case '\\': {
           read_char();
-          string_buf.write_utf8('\\');
+          string_buf.emit_utf8_cp('\\');
           break;
         }
         default: {
@@ -999,7 +1005,7 @@ void Lexer::consume_string(Token& token, bool allow_format) {
       continue;
     }
 
-    string_buf.write_utf8(read_char());
+    string_buf.emit_utf8_cp(read_char());
   }
 
   token.source = string_buf.buffer_string();
@@ -1008,7 +1014,7 @@ void Lexer::consume_string(Token& token, bool allow_format) {
 }
 
 void Lexer::reset_token() {
-  size_t offset_start = m_source.readoffset();
+  size_t offset_start = m_source.read_offset();
   m_token.location.valid = true;
   m_token.location.offset = offset_start;
   m_token.location.end_offset = offset_start;

@@ -1,7 +1,7 @@
 #!/bin/sh
 
-mkdir -p buildrelease
-cd buildrelease
+mkdir -p buildtest
+cd buildtest
 
 # initial cmake run
 test -f Makefile
@@ -16,5 +16,5 @@ then
   cd ..
 
   # --batch exits lldb on success and prompts for further input on failure
-  buildrelease/tests $@
+  buildtest/tests $@
 fi

@@ -28,10 +28,12 @@
 #include <unordered_map>
 #include <vector>
 
+#include "charly/charly.h"
+
+#include "charly/utils/buffer.h"
+
 #include "charly/core/compiler/diagnostic.h"
 #include "charly/core/compiler/token.h"
-#include "charly/utils/buffer.h"
-#include "charly/macros.h"
 
 #pragma once
 

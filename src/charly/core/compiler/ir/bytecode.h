@@ -30,10 +30,10 @@
 #include <unordered_set>
 #include <vector>
 
-#include "charly/core/compiler/token.h"
-#include "charly/macros.h"
+#include "charly/charly.h"
 #include "charly/value.h"
 
+#include "charly/core/compiler/token.h"
 #include "charly/core/compiler/ir/builtin.h"
 
 #pragma once
@@ -67,7 +67,7 @@ using ICIndexType = uint16_t;
   V(Immediate, VALUE, VALUE)       \
                                    \
   /* inline cache index */         \
-  V(ICIndex, uint16_t, uint16_t)
+  V(ICIndex, ICIndexType, ICIndexType)
 
 enum class OperandType : uint16_t {
 #define ID(name, _, __) name,

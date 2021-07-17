@@ -578,12 +578,12 @@ ref<IRInstruction> Builder::emit_loadglobal(IROpSymbol symbol) {
   return emit(Opcode::loadglobal, IROperandSymbol::make(symbol));
 }
 
-ref<IRInstruction> Builder::emit_loadlocal(IROpCount8 offset) {
-  return emit(Opcode::loadlocal, IROperandCount8::make(offset));
+ref<IRInstruction> Builder::emit_loadlocal(IROpIndex8 index) {
+  return emit(Opcode::loadlocal, IROperandIndex8::make(index));
 }
 
-ref<IRInstruction> Builder::emit_loadfar(IROpCount8 depth, IROpCount8 offset) {
-  return emit(Opcode::loadfar, IROperandCount8::make(depth), IROperandCount8::make(offset));
+ref<IRInstruction> Builder::emit_loadfar(IROpCount8 depth, IROpIndex8 index) {
+  return emit(Opcode::loadfar, IROperandCount8::make(depth), IROperandIndex8::make(index));
 }
 
 ref<IRInstruction> Builder::emit_loadattr(IROpSymbol symbol) {
@@ -610,16 +610,16 @@ ref<IRInstruction> Builder::emit_setglobal(IROpSymbol symbol) {
   return emit(Opcode::setglobal, IROperandSymbol::make(symbol));
 }
 
-ref<IRInstruction> Builder::emit_setlocal(IROpCount8 offset) {
-  return emit(Opcode::setlocal, IROperandCount8::make(offset));
+ref<IRInstruction> Builder::emit_setlocal(IROpIndex8 index) {
+  return emit(Opcode::setlocal, IROperandIndex8::make(index));
 }
 
 ref<IRInstruction> Builder::emit_setreturn() {
   return emit(Opcode::setreturn);
 }
 
-ref<IRInstruction> Builder::emit_setfar(IROpCount8 depth, IROpCount8 offset) {
-  return emit(Opcode::setfar, IROperandCount8::make(depth), IROperandCount8::make(offset));
+ref<IRInstruction> Builder::emit_setfar(IROpCount8 depth, IROpIndex8 index) {
+  return emit(Opcode::setfar, IROperandCount8::make(depth), IROperandIndex8::make(index));
 }
 
 ref<IRInstruction> Builder::emit_setattr(IROpSymbol symbol) {

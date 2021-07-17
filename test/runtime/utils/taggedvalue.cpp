@@ -101,9 +101,9 @@ TEST_CASE("characters") {
   CHECK(encode_char(u'π')  == 0x000003c000000017);
 
   utils::Buffer buf(4);
-  buf.write_string("🔥");
+  buf.emit_string("🔥");
   CHECK(buf.size() == 4);
-  uint32_t character = buf.read_utf8();
+  uint32_t character = buf.read_utf8_cp();
   CHECK(encode_char(character) == 0x0001f52500000017);
 }
 

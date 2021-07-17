@@ -34,7 +34,7 @@
 #include "charly/core/compiler/ir/functioninfo.h"
 #include "charly/core/compiler/ir/bytecode.h"
 
-#include "charly/utils/memoryblock.h"
+#include "charly/utils/buffer.h"
 
 #pragma once
 
@@ -110,7 +110,7 @@ struct CompiledFunction {
 };
 
 struct CompiledModule {
-  CompiledModule() : buffer(make<utils::MemoryBlock>()) {}
+  CompiledModule() : buffer(make<utils::Buffer>()) {}
   ~CompiledModule() {
     for (CompiledFunction* func : function_table) {
       if (func)
@@ -126,7 +126,7 @@ struct CompiledModule {
   // for all the modules compiled functions
   //
   // the struct 'CompiledFunction' contains offsets into this buffer
-  ref<utils::MemoryBlock> buffer;
+  ref<utils::Buffer> buffer;
 
   void dump(std::ostream& out) const;
 };

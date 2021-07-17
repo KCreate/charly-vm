@@ -2,6 +2,7 @@ bin/
 libs/
 test/
 experiments/
+build_backup/
 .git/
 code.profdata
 default.profraw

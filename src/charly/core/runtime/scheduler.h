@@ -36,7 +36,7 @@
 #include "charly/atomic.h"
 #include "charly/value.h"
 
-#include "charly/utils/memoryblock.h"
+#include "charly/utils/buffer.h"
 
 #include "charly/core/runtime/compiled_module.h"
 

@@ -28,7 +28,6 @@ file(GLOB charlycore_SRC
   "charly/value.cpp"
   "charly/utils/argumentparser.cpp"
   "charly/utils/buffer.cpp"
-  "charly/utils/memoryblock.cpp"
 )
 
 find_package(Boost REQUIRED COMPONENTS context)

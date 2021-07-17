@@ -68,7 +68,7 @@ void Assembler::assemble() {
     Label bytecode_section = reserve_label();
     align_to_pointer();
     place_label(function->head);
-    m_runtime_module->buffer->write_ptr(compiled_func);
+    m_runtime_module->buffer->emit_ptr(compiled_func);
 
     // emit inline cache section
     align_to_pointer();
@@ -76,7 +76,7 @@ void Assembler::assemble() {
     assert(function->inline_cache_table.size() <= (size_t)0x0000ffff);
     for (const auto& entry : function->inline_cache_table) {
       (void)entry;
-      m_runtime_module->buffer->write_zeroes(sizeof(InlineCacheEntry));
+      m_runtime_module->buffer->emit_zeroes(sizeof(InlineCacheEntry));
       compiled_func->inline_cache_table.emplace_back(entry.type);
     }
 
@@ -152,7 +152,7 @@ void Assembler::assemble() {
 
 void Assembler::align_to_pointer() {
   while (m_runtime_module->buffer->size() % 8) {
-    m_runtime_module->buffer->write_u8(0);
+    m_runtime_module->buffer->emit_u8(0);
   }
 }
 
@@ -162,29 +162,29 @@ void Assembler::encode_instruction(const ref<IRInstruction>& instruction) {
 
   // opcode
   place_label(instruction_label);
-  m_runtime_module->buffer->write_u8(static_cast<uint8_t>(instruction->opcode));
+  m_runtime_module->buffer->emit_u8(static_cast<uint8_t>(instruction->opcode));
 
   // operands
   for (const ref<IROperand>& op : instruction->operands) {
     switch (op->get_type()) {
       case OperandType::Count8: {
-        m_runtime_module->buffer->write_u8(cast<IROperandCount8>(op)->value);
+        m_runtime_module->buffer->emit_u8(cast<IROperandCount8>(op)->value);
         break;
       }
       case OperandType::Count16: {
-        m_runtime_module->buffer->write_u16(cast<IROperandCount16>(op)->value);
+        m_runtime_module->buffer->emit_u16(cast<IROperandCount16>(op)->value);
         break;
       }
       case OperandType::Index8: {
-        m_runtime_module->buffer->write_u8(cast<IROperandIndex8>(op)->value);
+        m_runtime_module->buffer->emit_u8(cast<IROperandIndex8>(op)->value);
         break;
       }
       case OperandType::Index16: {
-        m_runtime_module->buffer->write_u16(cast<IROperandIndex16>(op)->value);
+        m_runtime_module->buffer->emit_u16(cast<IROperandIndex16>(op)->value);
         break;
       }
       case OperandType::Symbol: {
-        m_runtime_module->buffer->write_u32(SYM(cast<IROperandSymbol>(op)->value));
+        m_runtime_module->buffer->emit_u32(SYM(cast<IROperandSymbol>(op)->value));
         break;
       }
       case OperandType::Offset: {
@@ -192,11 +192,11 @@ void Assembler::encode_instruction(const ref<IRInstruction>& instruction) {
         break;
       }
       case OperandType::Immediate: {
-        m_runtime_module->buffer->write_ptr(cast<IROperandImmediate>(op)->value.raw);
+        m_runtime_module->buffer->emit_ptr(cast<IROperandImmediate>(op)->value.raw);
         break;
       }
       case OperandType::ICIndex: {
-        m_runtime_module->buffer->write_u16(cast<IROperandICIndex>(op)->value);
+        m_runtime_module->buffer->emit_u16(cast<IROperandICIndex>(op)->value);
         break;
       }
     }
@@ -213,8 +213,8 @@ void Assembler::place_label(Label label) {
 }
 
 void Assembler::write_relative_label_reference(Label label, Label other) {
-  m_unresolved_labels.insert({m_runtime_module->buffer->cursor(), { label, other }});
-  m_runtime_module->buffer->write_u32(0x0);
+  m_unresolved_labels.insert({m_runtime_module->buffer->size(), { label, other }});
+  m_runtime_module->buffer->emit_u32(0x0);
 }
 
 void Assembler::patch_unresolved_labels() {
@@ -230,7 +230,7 @@ void Assembler::patch_unresolved_labels() {
     // write relative offset to patch offset
     uint32_t patch_offset = entry.first;
     m_runtime_module->buffer->seek(patch_offset);
-    m_runtime_module->buffer->write_i32(relative_offset);
+    m_runtime_module->buffer->emit_i32(relative_offset);
   }
 
   m_runtime_module->buffer->seek(-1);

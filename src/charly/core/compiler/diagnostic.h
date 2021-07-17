@@ -29,11 +29,13 @@
 #include <sstream>
 #include <vector>
 
-#include "charly/core/compiler/ast.h"
-#include "charly/core/compiler/location.h"
+#include "charly/charly.h"
+
 #include "charly/utils/buffer.h"
 #include "charly/utils/colorwriter.h"
-#include "charly/macros.h"
+
+#include "charly/core/compiler/ast.h"
+#include "charly/core/compiler/location.h"
 
 #pragma once
 

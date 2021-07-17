@@ -26,7 +26,7 @@
 
 #include <alloca.h>
 
-#include "charly/macros.h"
+#include "charly/charly.h"
 
 #include "charly/core/runtime/vm_frame.h"
 

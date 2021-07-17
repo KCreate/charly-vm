@@ -57,7 +57,7 @@ void VALUE::dump(std::ostream& out) const {
 
   if (this->is_char()) {
     utils::Buffer buf(4);
-    buf.write_utf8(this->to_char());
+    buf.emit_utf8_cp(this->to_char());
 
     writer.fg(Color::Red, "'", buf.buffer_string(), "'");
 

@@ -4,6 +4,7 @@
 bin/
 build/
 buildrelease/
+build_backup/
 *.dSYM
 *.lib
 code.profdata
