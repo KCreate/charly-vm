@@ -68,22 +68,20 @@ void CompiledFunction::dump(std::ostream& out) const {
   writer.fg(Color::Yellow, this->ir_info, "\n");
 
   // decode individual bytecodes
-  // const uint8_t* next_opcode = function_bytecodes;
-  // while (next_opcode < function_end) {
-  //   const Opcode opcode = *(Opcode*)next_opcode;
-  //   assert(opcode < Opcode::__Count);
-  //   size_t opcode_length = kOpcodeLength[opcode];
-  //   const std::string& opcode_name = kOpcodeNames[opcode];
-  //
-  //   writer.fg(Color::Grey, ";  ", std::setw(16), std::left, opcode_name, std::setw(1));
-  //   out << termcolor::yellow;
-  //   Buffer::hexdump((const char*)next_opcode, opcode_length, out, true);
-  //   out << termcolor::reset;
-  //
-  //   next_opcode = next_opcode + opcode_length;
-  // }
+  const uint8_t* next_opcode = function_bytecodes;
+  while (next_opcode < function_end) {
+    const Opcode opcode = *(Opcode*)next_opcode;
+    assert(opcode < Opcode::__Count);
+    size_t opcode_length = kOpcodeLength[opcode];
+    const std::string& opcode_name = kOpcodeNames[opcode];
 
-  Buffer::hexdump((const char*)function_bytecodes, function_bytecodes_length, out, true);
+    writer.fg(Color::Grey, ";  ", std::setw(16), std::left, opcode_name, std::setw(1));
+    out << termcolor::yellow;
+    Buffer::hexdump((const char*)next_opcode, opcode_length, out, true);
+    out << termcolor::reset;
+
+    next_opcode = next_opcode + opcode_length;
+  }
 
   out << '\n';
 }

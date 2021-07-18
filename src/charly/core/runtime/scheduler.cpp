@@ -282,7 +282,7 @@ void Scheduler::fiber_main(transfer_t transfer) {
 
   // exit machine when main fiber exits
   if (this->fiber()->exit_machine_on_exit) {
-    safeprint_release("fiber % exited with value %", this->fiber()->id, result);
+    debugln("fiber % exited with value %", this->fiber()->id, result);
     Scheduler::instance->abort(0);
     UNREACHABLE();
   }

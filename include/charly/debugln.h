@@ -41,19 +41,19 @@ namespace charly {
 /*
  * thread-safe printing meant for debugging
  * */
-extern std::mutex safeprint_mutex;
+extern std::mutex debugln_mutex;
 extern std::chrono::steady_clock::time_point program_startup_timestamp;
 
-inline void safeprint_impl(const char* format) {
+inline void debugln_impl(const char* format) {
   std::cout << format;
 }
 
 template <typename T, typename... Targs>
-inline void safeprint_impl(const char* format, T value, Targs... Fargs) {
+inline void debugln_impl(const char* format, T value, Targs... Fargs) {
   while (*format != '\0') {
     if (*format == '%') {
       std::cout << value;
-      safeprint_impl(format + 1, Fargs...);
+      debugln_impl(format + 1, Fargs...);
       return;
     }
     std::cout << *format;
@@ -63,9 +63,9 @@ inline void safeprint_impl(const char* format, T value, Targs... Fargs) {
 }
 
 template <typename... Targs>
-inline void safeprint_concurrent(const char* format, Targs... Fargs) {
+inline void debugln_concurrent(const char* format, Targs... Fargs) {
   {
-    std::unique_lock<std::mutex> locker(safeprint_mutex);
+    std::unique_lock<std::mutex> locker(debugln_mutex);
 
     // get elapsed duration since program start
     auto now = std::chrono::steady_clock::now();
@@ -82,7 +82,7 @@ inline void safeprint_concurrent(const char* format, Targs... Fargs) {
     std::cout << std::setw(1);
     std::cout << "]: ";
 
-    safeprint_impl(format, Fargs...);
+    debugln_impl(format, Fargs...);
     std::cout << std::endl;
   }
 }
@@ -90,20 +90,20 @@ inline void safeprint_concurrent(const char* format, Targs... Fargs) {
 #ifdef NDEBUG
 
 template <typename... Targs>
-inline void safeprint(const char*, Targs...) {}
+inline void debugln(const char*, Targs...) {}
 
 #else
 
 template <typename... Targs>
-inline void safeprint(const char* format, Targs... args) {
-  safeprint_concurrent(format, std::forward<Targs>(args)...);
+inline void debugln(const char* format, Targs... args) {
+  debugln_concurrent(format, std::forward<Targs>(args)...);
 }
 
 #endif
 
 template <typename... Targs>
-inline void safeprint_release(const char* format, Targs... args) {
-  safeprint_concurrent(format, std::forward<Targs>(args)...);
+inline void debuglnf(const char* format, Targs... args) {
+  debugln_concurrent(format, std::forward<Targs>(args)...);
 }
 
 }  // namespace charly

@@ -26,19 +26,8 @@
   - Array index needs to have the index value
   - Requires changes to the bytecode and compiler
 
-- Document the calling convention / frame locals layout somewhere
-
-- Leaked frames
-  - Allocate the locals of a leaked frame on the charly heap
-
 - Rename scheduler abort to exit
   - Implement scheduler panic routine and error diagnosis opportunity
-
-- Fiber stack growth mechanism via mmap?
-  - Reserve address space for 8 megabytes per fiber
-    - Might be too slow to perform for each newly created fiber
-  - Map in actual memory pages as they are needed
-  - Unmap pages when they are no longer needed
 
 - Object read / write barriers
 
@@ -46,6 +35,12 @@
 
 - Reimplement make_fcontext and jump_fcontext in hand-written assembly
   - Try to understand what boost does in its own implementation
+
+- Implement REPL in charly
+  - Use the standard library to read, compile and execute input statements
+  - Implement some exec_charly function to execute charly code in a global context
+  - Would simplify result handling and GC liveness logic if all this functionality was implemented
+    directly in Charly
 
 - Concurrent Garbage Collector
   - Phases

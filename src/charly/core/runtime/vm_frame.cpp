@@ -37,7 +37,7 @@ using namespace charly::core::compiler::ir;
 using namespace charly::core::compiler::ir;
 
 void not_implemented(Opcode opcode) {
-  safeprint("opcode not implemented %", kOpcodeNames[opcode]);
+  debugln("opcode not implemented %", kOpcodeNames[opcode]);
   assert(false && "opcode not implemented");
 }
 
@@ -62,20 +62,13 @@ VALUE vm_call_function(StackFrame* parent, VALUE self, Function* function, VALUE
   Fiber::Stack* stack = frame.fiber->stack;
   uintptr_t frame_address = (uintptr_t)__builtin_frame_address(0);
   uintptr_t stack_bottom_address = (uintptr_t)stack->lo();
-  // safeprint("fiber % stack % remaining bytes", frame.fiber->id, (uint64_t)(frame_address - stack_bottom_address));
-  if (frame_address - stack_bottom_address <= kStackOverflowLimit) {
-    // TODO: throw not stack overflow exception
-    safeprint("fiber % stack overflow", frame.fiber->id);
+  size_t remaining_bytes_on_stack = frame_address - stack_bottom_address;
+  if (remaining_bytes_on_stack <= kStackOverflowLimit) {
+    // TODO: throw stack overflow exception
+    debugln("fiber % stack overflow", frame.fiber->id);
     vm_throw_parent(parent, VALUE::Char('S'));
     UNREACHABLE();
   }
-
-  // safeprint("fdata = %", (void*)fdata);
-  // safeprint("fdata->owner_module = %", (void*)fdata->owner_module);
-  // safeprint("fdata->owner_module->buffer = %", (void*)fdata->owner_module->buffer.get());
-  // safeprint("fdata->owner_module->buffer->data = %", (void*)fdata->owner_module->buffer->data());
-  // fdata->dump(std::cout);
-  // fdata->owner_module->buffer->dump(std::cout, true);
 
   // setup frame stack
   uint8_t stacksize = fdata->ir_info.stacksize;
@@ -110,14 +103,14 @@ VALUE vm_call_function(StackFrame* parent, VALUE self, Function* function, VALUE
   if (argc) {
     if (argc < fdata->ir_info.minargc) {
       // TODO: throw not enough arguments exception
-      safeprint("not enough arguments for function call");
+      debugln("not enough arguments for function call");
       vm_throw_parent(parent, VALUE::Char('a'));
       UNREACHABLE();
     }
 
     if (argc > fdata->ir_info.argc) {
       // TODO: throw too many arguments exception
-      safeprint("too many arguments for function call");
+      debugln("too many arguments for function call");
       vm_throw_parent(parent, VALUE::Char('A'));
       UNREACHABLE();
     }
@@ -148,7 +141,7 @@ VALUE vm_call_function(StackFrame* parent, VALUE self, Function* function, VALUE
     assert(opcode < Opcode::__Count);
     size_t opcode_length = kOpcodeLength[opcode];
 
-    // safeprint("%: % % (% bytes)", (void*)frame.ip, (void*)opcode, kOpcodeNames[opcode], opcode_length);
+    // debugln("%: % % (% bytes)", (void*)frame.ip, (void*)opcode, kOpcodeNames[opcode], opcode_length);
 
     switch (opcode) {
       case Opcode::nop: {
@@ -278,7 +271,7 @@ VALUE vm_call_function(StackFrame* parent, VALUE self, Function* function, VALUE
         }
 
         // TODO: not a function exception
-        safeprint("called value is not a function");
+        debugln("called value is not a function");
         vm_throw(&frame, VALUE::Char('x'));
         DISPATCH();
       }
@@ -509,7 +502,7 @@ void vm_throw_parent(StackFrame* parent, VALUE arg) {
   // no parent frame
   //
   // TODO: handle this in the runtime somehow via some global handler maybe?
-  safeprint("uncaught exception in fiber %", Scheduler::instance->fiber()->id);
+  debugln("uncaught exception in fiber %", Scheduler::instance->fiber()->id);
   Scheduler::instance->abort(1);
   UNREACHABLE();
 }

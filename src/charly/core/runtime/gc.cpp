@@ -130,49 +130,49 @@ void GarbageCollector::wait_for_gc_request() {
 
 void GarbageCollector::init_mark() {
   m_state.acas(State::Idle, State::Mark);
-  safeprint("GC init mark phase");
+  debugln("GC init mark phase");
   std::this_thread::sleep_for(1s);
-  safeprint("GC end init mark phase");
+  debugln("GC end init mark phase");
 }
 
 void GarbageCollector::phase_mark() {
-  safeprint("GC mark phase");
+  debugln("GC mark phase");
   std::this_thread::sleep_for(1s);
-  safeprint("GC end mark phase");
+  debugln("GC end mark phase");
 }
 
 void GarbageCollector::init_evacuate() {
   m_state.acas(State::Mark, State::Evacuate);
-  safeprint("GC init evacuate phase");
+  debugln("GC init evacuate phase");
   std::this_thread::sleep_for(1s);
-  safeprint("GC end init evacuate phase");
+  debugln("GC end init evacuate phase");
 }
 
 void GarbageCollector::phase_evacuate() {
-  safeprint("GC evacuate phase");
+  debugln("GC evacuate phase");
   std::this_thread::sleep_for(1s);
-  safeprint("GC end evacuate phase");
+  debugln("GC end evacuate phase");
 }
 
 void GarbageCollector::init_updateref() {
   m_state.acas(State::Evacuate, State::UpdateRef);
-  safeprint("GC init updateref phase");
+  debugln("GC init updateref phase");
   std::this_thread::sleep_for(1s);
-  safeprint("GC end init updateref phase");
+  debugln("GC end init updateref phase");
 }
 
 void GarbageCollector::phase_updateref() {
-  safeprint("GC updateref phase");
+  debugln("GC updateref phase");
   std::this_thread::sleep_for(1s);
-  safeprint("GC end updateref phase");
+  debugln("GC end updateref phase");
 }
 
 void GarbageCollector::init_idle() {
   m_state.acas(State::UpdateRef, State::Idle);
   m_wants_collection.acas(true, false);
-  safeprint("GC init idle phase");
+  debugln("GC init idle phase");
   std::this_thread::sleep_for(1s);
-  safeprint("GC end init idle phase");
+  debugln("GC end init idle phase");
 }
 
 void GarbageCollector::mark(VALUE value) {

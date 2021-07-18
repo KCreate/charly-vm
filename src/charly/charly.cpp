@@ -28,7 +28,7 @@
 
 namespace charly {
 
-std::mutex safeprint_mutex;
+std::mutex debugln_mutex;
 auto program_startup_timestamp = std::chrono::steady_clock::now();
 
 }

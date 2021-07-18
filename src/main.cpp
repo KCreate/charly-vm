@@ -216,7 +216,7 @@ int32_t cli(DiagnosticConsole& console) {
   }
 
   int exit_code = Scheduler::instance->join();
-  safeprint("runtime exited");
+  debugln("runtime exited");
   return exit_code;
 }
 
