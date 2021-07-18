@@ -148,6 +148,9 @@ void Assembler::assemble() {
       entry.instruction_ptr = base_address + entry.instruction_offset;
     }
   }
+
+  // enable memory protection
+  m_runtime_module->buffer->set_readonly(true);
 }
 
 void Assembler::align_to_pointer() {

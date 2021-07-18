@@ -283,3 +283,22 @@ TEST_CASE("Buffer") {
     CHECK_THAT(std::string(buf.buffer_view()), Equals("hello world this is a test sentence"));
   }
 }
+
+TEST_CASE("ProtectedBuffer") {
+  utils::ProtectedBuffer buf;
+
+  SECTION("writes to the buffer") {
+    buf.emit_string("hello world");
+    CHECK_THAT(buf.buffer_string(), Equals("hello world"));
+  }
+
+  SECTION("enables / disables memory protection") {
+    buf.emit_string("hello world");
+    CHECK_THAT(buf.buffer_string(), Equals("hello world"));
+
+    buf.set_readonly(true);
+    buf.set_readonly(false);
+
+    CHECK_THAT(buf.buffer_string(), Equals("hello world"));
+  }
+}

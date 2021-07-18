@@ -110,7 +110,7 @@ struct CompiledFunction {
 };
 
 struct CompiledModule {
-  CompiledModule() : buffer(make<utils::Buffer>()) {}
+  CompiledModule() : buffer(make<utils::ProtectedBuffer>()) {}
   ~CompiledModule() {
     for (CompiledFunction* func : function_table) {
       if (func)
@@ -126,7 +126,7 @@ struct CompiledModule {
   // for all the modules compiled functions
   //
   // the struct 'CompiledFunction' contains offsets into this buffer
-  ref<utils::Buffer> buffer;
+  ref<utils::ProtectedBuffer> buffer;
 
   void dump(std::ostream& out) const;
 };

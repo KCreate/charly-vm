@@ -28,6 +28,8 @@
 
 #include <utf8/utf8.h>
 
+#include <sys/mman.h>
+
 #include "charly/charly.h"
 #include "charly/symbol.h"
 #include "charly/utils/colorwriter.h"
@@ -247,14 +249,6 @@ void BufferBase::update_size() {
   }
 }
 
-char* Buffer::data() const {
-  return (char*)m_buffer;
-}
-
-size_t Buffer::capacity() const {
-  return m_capacity;
-}
-
 void Buffer::reserve_space(size_t size) {
   if (m_capacity >= size) {
     return;
@@ -281,6 +275,79 @@ void Buffer::reserve_space(size_t size) {
 
   m_buffer = new_buffer;
   m_capacity = new_capacity;
+}
+
+bool ProtectedBuffer::is_readonly() const {
+  return m_readonly;
+}
+
+void ProtectedBuffer::set_readonly(bool option) {
+  assert((uintptr_t)m_buffer % kPageSize == 0);
+  assert(m_capacity % kPageSize == 0);
+
+  // already in requested mode
+  if (m_readonly == option) {
+    return;
+  }
+
+  if (option) {
+    if (mprotect(m_buffer, m_capacity, PROT_READ) != 0) {
+      assert(false && "could not enable memory protection");
+      UNREACHABLE();
+    }
+  } else {
+    if (mprotect(m_buffer, m_capacity, PROT_READ | PROT_WRITE) != 0) {
+      assert(false && "could not disable memory protection");
+      UNREACHABLE();
+    }
+  }
+
+  m_readonly = option;
+}
+
+void ProtectedBuffer::reserve_space(size_t size) {
+  if (size < kPageSize) {
+    size = kPageSize;
+  }
+
+  if (m_capacity >= size) {
+    return;
+  }
+
+  size_t new_capacity = m_capacity ? m_capacity * 2 : kPageSize;
+  while (new_capacity < size) {
+    new_capacity *= 2;
+  }
+
+  if (new_capacity >= kMaximumSize) {
+    assert(false && "reached maximum buffer size");
+    UNREACHABLE();
+  }
+
+  assert(new_capacity % kPageSize == 0);
+
+  void* new_buffer = std::aligned_alloc(kPageSize, new_capacity);
+  if (new_buffer == nullptr) {
+    assert(false && "could not realloc buffer");
+    UNREACHABLE();
+  }
+
+  // initialize new memory
+  std::memset(new_buffer, 0, new_capacity);
+
+  // copy old buffer contents
+  std::memcpy(new_buffer, m_buffer, m_size);
+
+  // free old buffer
+  bool was_readonly = m_readonly;
+  if (m_buffer) {
+    set_readonly(false); // disable memory protections for the freed memory
+    std::free(m_buffer);
+  }
+
+  m_buffer = new_buffer;
+  m_capacity = new_capacity;
+  set_readonly(was_readonly);
 }
 
 }  // namespace charly::utils

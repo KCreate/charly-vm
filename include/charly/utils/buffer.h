@@ -32,6 +32,8 @@
 #include <string>
 #include <string_view>
 
+#include "charly/charly.h"
+
 #pragma once
 
 namespace charly::utils {
@@ -40,10 +42,16 @@ namespace charly::utils {
 // various different buffer adapters
 class BufferBase {
 public:
-  BufferBase() : m_size(0), m_writeoffset(0), m_readoffset(0), m_windowoffset(0) {}
+  BufferBase() : m_buffer(0), m_capacity(0), m_size(0), m_writeoffset(0), m_readoffset(0), m_windowoffset(0) {}
   BufferBase(BufferBase&& other) = delete;
-  BufferBase(BufferBase& other) = delete;
+
   virtual ~BufferBase() {
+    if (m_buffer) {
+      std::free(m_buffer);
+    }
+
+    m_buffer = nullptr;
+    m_capacity = 0;
     m_size = 0;
     m_writeoffset = 0;
     m_readoffset = 0;
@@ -139,8 +147,13 @@ public:
   // format some memory buffer as a hexdump into some output stream
   static void hexdump(const char* buffer, size_t size, std::ostream& out, bool absolute = false);
 
-  virtual char* data() const = 0;
-  virtual size_t capacity() const = 0;
+  char* data() const {
+    return (char*)m_buffer;
+  }
+
+  size_t capacity() const {
+    return m_capacity;
+  }
 
   size_t size() const {
     return m_size;
@@ -162,7 +175,10 @@ public:
     return m_windowoffset;
   }
 
-private:
+  // reserve enough space in the backing buffer for size bytes
+  virtual void reserve_space(size_t size) = 0;
+
+protected:
 
   // copy size bytes from the source address to some target offset in the backing buffer
   // grows the backing buffer to fit the write
@@ -171,10 +187,8 @@ private:
   // advances the size offset if the previous write exceeded it
   void update_size();
 
-  // reserve enough space in the backing buffer for size bytes
-  virtual void reserve_space(size_t size) = 0;
-
-private:
+  void* m_buffer;         // pointer to backing storage
+  size_t m_capacity;      // total capacity of the backing storage
   size_t m_size;          // total written bytes
   size_t m_writeoffset;   // offset of the write head
   size_t m_readoffset;    // offset of the read head
@@ -187,53 +201,55 @@ public:
   static const size_t kInitialCapacity = 32;
   static const size_t kMaximumSize = 0x00000000FFFFFFFF; // ~ 4.2 GB
 
-  Buffer(size_t initial_capacity = kInitialCapacity) : BufferBase(), m_buffer(nullptr), m_capacity(0) {
+  Buffer(size_t initial_capacity = kInitialCapacity) : BufferBase() {
     reserve_space(initial_capacity);
   }
 
-  Buffer(const std::string& string) : Buffer(string.size()) {
+  Buffer(const std::string& string) : BufferBase() {
     emit_string(string);
   }
 
-  Buffer(const Buffer& other) : Buffer(other.size()) {
+  Buffer(const BufferBase& other) : BufferBase() {
     emit_buffer(other);
   }
 
-  virtual ~Buffer() {
-    if (m_buffer) {
-      std::free(m_buffer);
-      m_buffer = nullptr;
-    }
-    m_capacity = 0;
-  }
+  using BufferBase::BufferBase;
 
-  virtual char* data() const override;
-  virtual size_t capacity() const override;
-
-private:
   virtual void reserve_space(size_t size) override;
-
-  void* m_buffer;
-  size_t m_capacity;
 };
 
 // buffer that can be protected
 // internal buffer will always have a minimum size of the system page size
 // and will only grow in multiples of that size
-//
-// class ProtectedBuffer: public Buffer {
-// public:
-//   using Buffer::Buffer;
-//   bool is_readonly() const;
-//   void set_readonly(bool option);
-//
-// private:
-//   virtual void reserve_space(size_t size) override;
-//
-// private:
-//   static const size_t kPageSize = 4096;
-//
-//   bool m_readonly;
-// };
+class ProtectedBuffer: public BufferBase {
+public:
+  static const size_t kInitialCapacity = 32;
+  static const size_t kMaximumSize = 0x00000000FFFFFFFF; // ~ 4.2 GB
+
+  ProtectedBuffer(size_t initial_capacity = kInitialCapacity) : BufferBase(), m_readonly(false) {
+    reserve_space(initial_capacity);
+  }
+
+  ProtectedBuffer(const std::string& string) : ProtectedBuffer(string.size()) {
+    emit_string(string);
+  }
+
+  ProtectedBuffer(const ProtectedBuffer& other) : ProtectedBuffer(other.size()) {
+    emit_buffer(other);
+  }
+
+  using BufferBase::BufferBase;
+
+  virtual ~ProtectedBuffer() {
+    set_readonly(false);
+  }
+
+  bool is_readonly() const;
+  void set_readonly(bool option);
+  virtual void reserve_space(size_t size) override;
+
+private:
+  bool m_readonly;
+};
 
 }  // namespace charly::utils
