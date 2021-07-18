@@ -107,6 +107,8 @@ struct CompiledFunction {
   uint32_t bytecode_offset;       // offset into module buffer where the functions opcodes are located
   uint32_t inline_cache_offset;   // offset into module buffer where the functions ic tables are located
   uint32_t end_offset;            // function end offset
+
+  void dump(std::ostream& out) const;
 };
 
 struct CompiledModule {

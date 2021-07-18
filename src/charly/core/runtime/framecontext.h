@@ -24,39 +24,22 @@
  * SOFTWARE.
  */
 
-#include <cstdint>
-#include <iostream>
+#include "charly/value.h"
 
 #pragma once
 
-namespace charly::core::compiler::ir {
+namespace charly::core::runtime {
 
-// keep track of local variable info of functions
-struct FunctionInfo {
-  bool valid = false;
-  uint8_t stacksize = 0;
-  uint8_t local_variables = 0;
-  uint8_t heap_variables = 0;
-  uint8_t argc = 0;
-  uint8_t minargc = 0;
-  bool spread_argument = false;
-  bool arrow_function = false;
+struct FrameContext {
+  FrameContext(FrameContext* parent) : parent(parent) {}
+  ~FrameContext() {}
 
-  // write a formatted version to the stream:
-  //
-  // (lvars=5, argc=3, minargc=2, spread=false)
-  friend std::ostream& operator<<(std::ostream& out, const FunctionInfo& info) {
-    out << "(";
-    out << "lvars=" << static_cast<int32_t>(info.local_variables) << ", ";
-    out << "hvars=" << static_cast<int32_t>(info.heap_variables) << ", ";
-    out << "argc=" << static_cast<int32_t>(info.argc) << ", ";
-    out << "minargc=" << static_cast<int32_t>(info.minargc) << ", ";
-    out << "spread=" << (info.spread_argument ? "true" : "false") << ", ";
-    out << "arrow=" << (info.arrow_function ? "true" : "false");
-    out << ")";
-
-    return out;
+  static HeapType heap_value_type() {
+    return HeapType::FrameContext;
   }
+
+  FrameContext* parent;
+  VALUE locals[256];
 };
 
-}  // namespace charly::core::compiler
+}  // namespace charly::core::runtime

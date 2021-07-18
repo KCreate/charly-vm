@@ -32,33 +32,37 @@
 
 namespace charly::core::compiler::ir {
 
+using VariableId = uint32_t;
+
 // tagged-union representing the locations of values inside the runtime
-//
-// LocalFrame: value is stored inside the current frame at a fixed offset
-// FarFrame: value is stored inside a parent frame at known depth and offset
-// Global: value is a global variable and must be looked up by symbol
 struct ValueLocation {
   enum class Type : uint8_t {
     Invalid,
-    LocalFrame,
-    FarFrame,
-    Global
+    Id,           // temporary variable id set by local analyzer pass
+    LocalFrame,   // value stored in current frames locals
+    FarFrame,     // value stored in the heap allocated locals of some frame
+    Global        // value stored in global context
   };
 
   Type type;
-  std::string name;
+  std::string name; // cannot be in union because of non-trivial destructor
 
   union {
 
+    // temporary variable id used by local analyzer pass
+    struct {
+      VariableId id;
+    } id;
+
     // variables declared in the local frame
     struct {
-      uint8_t offset;
+      uint8_t index;
     } local_frame;
 
     // variables declared in a parent function
     struct {
-      uint8_t offset;
       uint8_t depth;
+      uint8_t index;
     } far_frame;
 
     // global variables
@@ -68,54 +72,71 @@ struct ValueLocation {
   } as;
 
   ValueLocation() : type(Type::Invalid) {}
-  ValueLocation(const std::string& name, uint8_t offset) :
-    type(Type::LocalFrame), name(name), as({ .local_frame = { offset } }) {}
-  ValueLocation(const std::string& name, uint8_t offset, uint8_t depth) :
-    type(Type::FarFrame), name(name), as({ .far_frame = { offset, depth } }) {}
-  ValueLocation(const std::string& symbol) : type(Type::Global), name(symbol), as({ .global = { SYM(symbol) } }) {}
 
-  inline bool valid() const {
+  bool valid() const {
     return this->type != Type::Invalid;
   }
 
-  static ValueLocation LocalFrame(const std::string& name, uint8_t offset) {
-    return ValueLocation(name, offset);
+  static ValueLocation Id(VariableId id) {
+    ValueLocation loc;
+    loc.type = Type::Id;
+    loc.as.id.id = id;
+    return loc;
   }
 
-  static ValueLocation FarFrame(const std::string& name, uint8_t depth, uint8_t offset) {
-    return ValueLocation(name, offset, depth);
+  static ValueLocation LocalFrame(uint8_t index) {
+    ValueLocation loc;
+    loc.type = Type::LocalFrame;
+    loc.as.local_frame.index = index;
+    return loc;
   }
 
-  static ValueLocation Global(const std::string& symbol) {
-    return ValueLocation(symbol);
+  static ValueLocation FarFrame(uint8_t depth, uint8_t index) {
+    ValueLocation loc;
+    loc.type = Type::FarFrame;
+    loc.as.far_frame.depth = depth;
+    loc.as.far_frame.index = index;
+    return loc;
+  }
+
+  static ValueLocation Global(const std::string& name) {
+    ValueLocation loc;
+    loc.type = Type::Global;
+    loc.name = name;
+    loc.as.global.symbol = SYM(name);
+    return loc;
   }
 
   // write a formatted version to the stream:
   //
-  // <type>(depth=3, offset=5)
+  // <type>(depth=3, index=5)
   friend std::ostream& operator<<(std::ostream& out, const ValueLocation& location) {
     switch (location.type) {
       case ValueLocation::Type::Invalid: {
         out << "invalid";
         break;
       }
+      case ValueLocation::Type::Id: {
+        out << "id(";
+        out << "id=" << static_cast<int>(location.as.id.id);
+        out << ")";
+        break;
+      }
       case ValueLocation::Type::LocalFrame: {
         out << "local(";
-        out << "offset=" << static_cast<int>(location.as.local_frame.offset);
+        out << "index=" << static_cast<int>(location.as.local_frame.index);
         out << ")";
         break;
       }
       case ValueLocation::Type::FarFrame: {
         out << "far(";
         out << "depth=" << static_cast<int>(location.as.far_frame.depth) << ", ";
-        out << "offset=" << static_cast<int>(location.as.far_frame.offset);
+        out << "index=" << static_cast<int>(location.as.far_frame.index);
         out << ")";
         break;
       }
       case ValueLocation::Type::Global: {
-        out << "global(";
-        out << "symbol=" << std::hex << location.as.global.symbol << std::dec;
-        out << ")";
+        out << "global(" << location.name << ")";
         break;
       }
     }

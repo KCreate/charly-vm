@@ -32,15 +32,18 @@
 
 namespace charly::core::runtime {
 
+struct FrameContext;
+
 struct Function {
-  Function(CompiledFunction* shared_data) : shared_data(shared_data) {}
+  Function(FrameContext* context, const CompiledFunction* shared_data) : context(context), shared_data(shared_data) {}
   ~Function() {}
 
   static HeapType heap_value_type() {
     return HeapType::Function;
   }
 
-  CompiledFunction* shared_data;
+  FrameContext* context;
+  const CompiledFunction* shared_data;
 };
 
 }  // namespace charly::core::runtime

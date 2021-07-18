@@ -41,30 +41,51 @@ void CompiledModule::dump(std::ostream& out) const {
 
   // disassemble functions
   for (const CompiledFunction* function : this->function_table) {
-    writer.fg(Color::Grey, "; function ");
-    writer.fg(Color::Yellow, "'", function->name, "'", "\n");
-
-    char* function_bytecodes = (char*)function->bytecode_base_ptr;
-    char* function_end = (char*)function->end_ptr;
-
-    // decode individual bytecodes
-    char* next_opcode = function_bytecodes;
-    while (next_opcode < function_end) {
-      Opcode opcode = *(Opcode*)next_opcode;
-      assert(opcode < Opcode::__Count);
-      size_t opcode_length = kOpcodeLength[opcode];
-      const std::string& opcode_name = kOpcodeNames[opcode];
-
-      writer.fg(Color::Grey, ";  ", std::setw(16), std::left, opcode_name, std::setw(1));
-      out << termcolor::yellow;
-      MemoryBlock::hexdump(next_opcode, opcode_length, out, true);
-      out << termcolor::reset;
-
-      next_opcode = next_opcode + opcode_length;
-    }
-
-    out << '\n';
+    function->dump(out);
   }
+}
+
+void CompiledFunction::dump(std::ostream& out) const {
+  ColorWriter writer(out);
+
+  const uint8_t* function_bytecodes = (uint8_t*)this->bytecode_base_ptr;
+  const uint8_t* function_end = (uint8_t*)this->end_ptr;
+  size_t function_bytecodes_length = function_end - function_bytecodes;
+
+  writer.fg(Color::Grey, "; function ");
+  writer.fg(Color::Yellow, "'", this->name, "'", "\n");
+
+  writer.fg(Color::Grey, "; bytecodes ptr = ");
+  writer.fg(Color::Yellow, std::hex, (uintptr_t)function_bytecodes, std::dec, "\n");
+
+  writer.fg(Color::Grey, "; bytecodes length = ");
+  writer.fg(Color::Yellow, function_bytecodes_length, "\n");
+
+  writer.fg(Color::Grey, "; bytecode hash = ");
+  writer.fg(Color::Yellow, std::hex, crc32::crc32(function_bytecodes, function_bytecodes_length), std::dec, "\n");
+
+  writer.fg(Color::Grey, "; ir_info = ");
+  writer.fg(Color::Yellow, this->ir_info, "\n");
+
+  // decode individual bytecodes
+  // const uint8_t* next_opcode = function_bytecodes;
+  // while (next_opcode < function_end) {
+  //   const Opcode opcode = *(Opcode*)next_opcode;
+  //   assert(opcode < Opcode::__Count);
+  //   size_t opcode_length = kOpcodeLength[opcode];
+  //   const std::string& opcode_name = kOpcodeNames[opcode];
+  //
+  //   writer.fg(Color::Grey, ";  ", std::setw(16), std::left, opcode_name, std::setw(1));
+  //   out << termcolor::yellow;
+  //   Buffer::hexdump((const char*)next_opcode, opcode_length, out, true);
+  //   out << termcolor::reset;
+  //
+  //   next_opcode = next_opcode + opcode_length;
+  // }
+
+  Buffer::hexdump((const char*)function_bytecodes, function_bytecodes_length, out, true);
+
+  out << '\n';
 }
 
 }  // namespace charly::core::runtime

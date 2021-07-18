@@ -42,7 +42,9 @@
 
 namespace charly::core::compiler::ast {
 
-class Pass;  // forward declaration
+class Pass;
+class FunctionScope;
+class BlockScope;
 
 // base class of all ast nodes
 class Node : std::enable_shared_from_this<Node> {
@@ -269,6 +271,8 @@ public:
       this->set_end(this->statements.back()->location());
     }
   }
+
+  ref<BlockScope> variable_block_scope;
 
   // set to true for the top block of REPL input
   bool repl_toplevel_block = false;
@@ -768,6 +772,8 @@ public:
 
   // wether this is a static function of a class
   bool class_static_function;
+
+  ref<FunctionScope> variable_function_scope;
 
   bool arrow_function;
   ref<Name> name;

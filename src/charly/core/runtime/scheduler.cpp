@@ -279,10 +279,10 @@ void Scheduler::fiber_main(transfer_t transfer) {
 
   // call fiber function
   VALUE result = vm_call_function(nullptr, kNull, this->fiber()->main_function, nullptr, 0);
-  safeprint("fiber % exited with value %", this->fiber()->id, result);
 
   // exit machine when main fiber exits
   if (this->fiber()->exit_machine_on_exit) {
+    safeprint_release("fiber % exited with value %", this->fiber()->id, result);
     Scheduler::instance->abort(0);
     UNREACHABLE();
   }
@@ -486,7 +486,7 @@ Function* Scheduler::register_module(ref<CompiledModule> module) {
 
   // create a Function struct from the modules main function
   assert(module->function_table.size());
-  return MemoryAllocator::allocate<Function>(module->function_table.front());
+  return MemoryAllocator::allocate<Function>(nullptr, module->function_table.front());
 }
 
 bool Scheduler::acquire_processor_for_worker(Worker* worker) {

@@ -35,8 +35,9 @@ namespace charly {
 
 enum class HeapType : uint8_t {
   Dead = 0,
-  Fiber,
-  Function
+  Fiber,              // charly fiber runtime data structure
+  Function,           // function reference
+  FrameContext,       // heap slots for leaked functions
 };
 
 // wrapper class around the raw immediate encoded bytes

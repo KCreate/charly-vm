@@ -57,23 +57,23 @@ TEST_CASE("ir info") {
   CHECK(main->name == "main");
   CHECK(main->ir_info.valid);
   CHECK(main->ir_info.stacksize == 3);
-  CHECK(main->ir_info.local_variables == 4);
+  CHECK(main->ir_info.local_variables == 1);
+  CHECK(main->ir_info.heap_variables == 1);
   CHECK(main->ir_info.argc == 0);
   CHECK(main->ir_info.minargc == 0);
   CHECK(main->ir_info.spread_argument == false);
   CHECK(main->ir_info.arrow_function == false);
-  CHECK(main->ir_info.leaked == true);
 
   auto anon = module->function_table.at(1);
   CHECK(anon->name == "anonymous");
   CHECK(anon->ir_info.valid);
   CHECK(anon->ir_info.stacksize == 2);
-  CHECK(anon->ir_info.local_variables == 3);
+  CHECK(anon->ir_info.local_variables == 1);
+  CHECK(anon->ir_info.heap_variables == 0);
   CHECK(anon->ir_info.argc == 1);
   CHECK(anon->ir_info.minargc == 1);
   CHECK(anon->ir_info.spread_argument == false);
   CHECK(anon->ir_info.arrow_function == true);
-  CHECK(anon->ir_info.leaked == false);
 }
 
 TEST_CASE("exception tables") {

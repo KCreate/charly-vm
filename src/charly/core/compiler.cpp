@@ -36,14 +36,13 @@
 #include "charly/core/compiler/ir/assembler.h"
 
 #include "charly/core/compiler/passes/class_constructor_check.h"
-#include "charly/core/compiler/passes/duplicates_check.h"
-#include "charly/core/compiler/passes/grammar_validation_check.h"
-#include "charly/core/compiler/passes/reserved_identifiers_check.h"
-
-#include "charly/core/compiler/passes/repl_prepare_pass.h"
 #include "charly/core/compiler/passes/constant_folding_pass.h"
 #include "charly/core/compiler/passes/desugar_pass.h"
-#include "charly/core/compiler/passes/local_allocator_pass.h"
+#include "charly/core/compiler/passes/duplicates_check.h"
+#include "charly/core/compiler/passes/grammar_validation_check.h"
+#include "charly/core/compiler/passes/variable_analyzer_pass.h"
+#include "charly/core/compiler/passes/repl_prepare_pass.h"
+#include "charly/core/compiler/passes/reserved_identifiers_check.h"
 
 namespace charly::core::compiler {
 
@@ -86,14 +85,26 @@ ref<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffe
   unit->ast = make<Block>(func);
 
   APPLY_DIAGNOSTIC_PASS(GrammarValidationCheck);
-
   APPLY_DIAGNOSTIC_PASS(ReservedIdentifiersCheck);
   APPLY_DIAGNOSTIC_PASS(DuplicatesCheck);
   APPLY_DIAGNOSTIC_PASS(ClassConstructorCheck);
 
   APPLY_TRANSFORM_PASS(DesugarPass);
-  APPLY_TRANSFORM_PASS(LocalAllocatorPass);
-  APPLY_TRANSFORM_PASS(ConstantFoldingPass);
+
+  {
+    VariableAnalyzer analyzer;
+    unit->ast = cast<Block>(VariableAnalyzerPass(unit->console, analyzer).apply(unit->ast));
+    if (unit->console.has_errors())
+      return unit;
+
+    unit->ast = cast<Block>(VariableLocationPatchPass(unit->console, analyzer).apply(unit->ast));
+    if (unit->console.has_errors())
+      return unit;
+  }
+
+  if (!utils::ArgumentParser::is_flag_set("opt_disable")) {
+    APPLY_TRANSFORM_PASS(ConstantFoldingPass);
+  }
 
 #undef APPLY_DIAGNOSTIC_PASS
 #undef APPLY_TRANSFORM_PASS

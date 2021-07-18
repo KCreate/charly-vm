@@ -58,6 +58,22 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
   const ref<Function>& ast = queued_func.ast;
   m_builder.begin_function(queued_func.head, ast);
 
+  // copy leaked variables into heap slots
+  // initially the runtime copies all passed arguments into the local variable slots
+  // we need to copy the ones that are actually stored in the heap slots to that area
+  {
+    uint8_t i = 0;
+    for (const auto& argument : ast->arguments) {
+      const auto& location = argument->ir_location;
+      if (location.type == ValueLocation::Type::FarFrame) {
+        m_builder.emit_loadlocal(i);
+        m_builder.emit_setfar(0, location.as.far_frame.index);
+        m_builder.emit_pop();
+      }
+      i++;
+    }
+  }
+
   // emit default argument initializers
   uint8_t argc = ast->ir_info.argc;
   uint8_t minargc = ast->ir_info.minargc;
@@ -121,15 +137,15 @@ ref<ir::IRInstruction> CodeGenerator::generate_load(const ValueLocation& locatio
       assert(false && "expected valid value location");
       return nullptr;
     }
+    case ValueLocation::Type::Id: {
+      assert(false && "expected id value location to be replaced with real location");
+      return nullptr;
+    }
     case ValueLocation::Type::LocalFrame: {
-      if (m_builder.active_function()->ast->ir_info.leaked) {
-        return m_builder.emit_loadfar(0, location.as.local_frame.offset);
-      } else {
-        return m_builder.emit_loadlocal(location.as.local_frame.offset);
-      }
+      return m_builder.emit_loadlocal(location.as.local_frame.index);
     }
     case ValueLocation::Type::FarFrame: {
-      return m_builder.emit_loadfar(location.as.far_frame.depth, location.as.far_frame.offset);
+      return m_builder.emit_loadfar(location.as.far_frame.depth, location.as.far_frame.index);
     }
     case ValueLocation::Type::Global: {
       return m_builder.emit_loadglobal(location.name);
@@ -143,15 +159,15 @@ ref<ir::IRInstruction> CodeGenerator::generate_store(const ValueLocation& locati
         assert(false && "expected valid value location");
         return nullptr;
       }
+      case ValueLocation::Type::Id: {
+        assert(false && "expected id value location to be replaced with real location");
+        return nullptr;
+      }
       case ValueLocation::Type::LocalFrame: {
-        if (m_builder.active_function()->ast->ir_info.leaked) {
-          return m_builder.emit_setfar(0, location.as.local_frame.offset);
-        } else {
-          return m_builder.emit_setlocal(location.as.local_frame.offset);
-        }
+        return m_builder.emit_setlocal(location.as.local_frame.index);
       }
       case ValueLocation::Type::FarFrame: {
-        return m_builder.emit_setfar(location.as.far_frame.depth, location.as.far_frame.offset);
+        return m_builder.emit_setfar(location.as.far_frame.depth, location.as.far_frame.index);
       }
       case ValueLocation::Type::Global: {
         return m_builder.emit_setglobal(location.name);
@@ -227,7 +243,7 @@ void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target) 
 
     if (spread_element) {
       m_builder.emit_unpackobjectspread(before_elements.size() + after_elements.size())->at(target);
-      generate_store(spread_element->name->value)->at(spread_element->name);
+      generate_store(spread_element->name->ir_location)->at(spread_element->name);
       m_builder.emit_pop();
     } else {
       m_builder.emit_unpackobject(before_elements.size())->at(target);

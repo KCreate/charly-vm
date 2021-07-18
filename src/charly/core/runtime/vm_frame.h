@@ -33,6 +33,7 @@
 #include "charly/core/runtime/scheduler.h"
 #include "charly/core/runtime/allocator.h"
 #include "charly/core/runtime/function.h"
+#include "charly/core/runtime/framecontext.h"
 
 #include "charly/core/compiler/ir/bytecode.h"
 
@@ -45,17 +46,18 @@ namespace charly::core::runtime {
 static const size_t kStackOverflowLimit = 1024 * 32; // 32 kilobytes
 
 struct StackFrame {
+  StackFrame() {}
 
-struct StackFrame {
-  StackFrame* parent;         // parent stack frame
-  std::jmp_buf jump_buffer;   // jump buffer for exception handling
-  Fiber* fiber;               // fiber that contains this stack frame
-  VALUE self;                 // self value of the call
-  Function* function;         // called function
-  VALUE* stack = nullptr;     // pointer to stack space
-  VALUE* locals = nullptr;    // pointer to locals space
-  uintptr_t ip;               // pointer to next instruction
-  uint32_t sp;                // stack pointer
+  StackFrame* parent;        // parent stack frame
+  std::jmp_buf jump_buffer;  // jump buffer for exception handling
+  Fiber* fiber;              // fiber that contains this stack frame
+  VALUE self;                // self value of the call
+  Function* function;        // called function
+  VALUE* stack;              // pointer to stack space
+  VALUE* locals;             // pointer to locals space
+  FrameContext* context;     // pointer to the frame context or nullptr
+  uintptr_t ip;              // pointer to next instruction
+  uint32_t sp;               // stack pointer
 
   void stack_clear();
 
@@ -69,9 +71,9 @@ struct StackFrame {
 
   void stack_push(VALUE value);
 
-  CompiledFunction* fdata() const;
+  const CompiledFunction* fdata() const;
 
-  ExceptionTableEntry* find_active_exception_table_entry() const;
+  const ExceptionTableEntry* find_active_exception_table_entry() const;
 
   void unwind();
 };

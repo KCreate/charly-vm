@@ -278,8 +278,10 @@ void IRFunction::dump(std::ostream& out) const {
   writer.fg(Color::Red, "'", this->ast->name->value, "'\n");
   writer.fg(Color::Grey, "  stacksize = ");
   writer.fg(Color::Green, (uint32_t)this->ast->ir_info.stacksize, "\n");
-  writer.fg(Color::Grey, "  locals = ");
+  writer.fg(Color::Grey, "  local variables = ");
   writer.fg(Color::Green, (uint32_t)this->ast->ir_info.local_variables, "\n");
+  writer.fg(Color::Grey, "  heap variables = ");
+  writer.fg(Color::Green, (uint32_t)this->ast->ir_info.heap_variables, "\n");
   writer.fg(Color::Grey, "  argc = ");
   writer.fg(Color::Green, (uint32_t)this->ast->ir_info.argc, "\n");
   writer.fg(Color::Grey, "  minargc = ");
@@ -288,50 +290,54 @@ void IRFunction::dump(std::ostream& out) const {
   writer.fg(Color::Green, this->ast->ir_info.spread_argument ? "true" : "false", "\n");
   writer.fg(Color::Grey, "  arrow = ");
   writer.fg(Color::Green, this->ast->ir_info.arrow_function ? "true" : "false", "\n");
-  writer.fg(Color::Grey, "  leaked = ");
-  writer.fg(Color::Green, this->ast->ir_info.leaked ? "true" : "false", "\n");
   writer.fg(Color::Grey, "  constructor = ");
   writer.fg(Color::Green, this->ast->class_constructor ? "true" : "false", "\n");
   writer.fg(Color::Grey, "  static = ");
   writer.fg(Color::Green, this->ast->class_static_function ? "true" : "false", "\n");
   out << "\n";
 
-  writer.fg(Color::Yellow, "  exception table:", "\n");
-  for (const auto& entry : this->exception_table) {
-    writer.fg(Color::Grey, "  - (");
-    writer.fg(Color::Yellow, ".L", entry.begin);
-    out << " ";
-    writer.fg(Color::Yellow, ".L", entry.end);
-    out << " ";
-    writer.fg(Color::Yellow, ".L", entry.handler);
-    writer.fg(Color::Grey, ")");
+  if (this->exception_table.size()) {
+    writer.fg(Color::Yellow, "  exception table:", "\n");
+    for (const auto& entry : this->exception_table) {
+      writer.fg(Color::Grey, "  - (");
+      writer.fg(Color::Yellow, ".L", entry.begin);
+      out << " ";
+      writer.fg(Color::Yellow, ".L", entry.end);
+      out << " ";
+      writer.fg(Color::Yellow, ".L", entry.handler);
+      writer.fg(Color::Grey, ")");
+      out << "\n";
+    }
     out << "\n";
   }
-  out << "\n";
 
-  writer.fg(Color::Magenta, "  inline caches:", "\n");
-  int ic_index = 0;
-  for (const IRInlineCacheTableEntry& entry : this->inline_cache_table) {
-    writer.fg(Color::Grey, "  - #", std::setw(2), std::left, ic_index, std::setw(1));
-    writer.fg(Color::Magenta, " ", kInlineCacheTypeNames[entry.type]);
+  if (this->inline_cache_table.size()) {
+    writer.fg(Color::Magenta, "  inline caches:", "\n");
+    int ic_index = 0;
+    for (const IRInlineCacheTableEntry& entry : this->inline_cache_table) {
+      writer.fg(Color::Grey, "  - #", std::setw(2), std::left, ic_index, std::setw(1));
+      writer.fg(Color::Magenta, " ", kInlineCacheTypeNames[entry.type]);
+      out << "\n";
+
+      ic_index++;
+    }
     out << "\n";
-
-    ic_index++;
   }
-  out << "\n";
 
-  writer.fg(Color::Blue, "  string table:", "\n");
-  int str_index = 0;
-  for (const IRStringTableEntry& entry : this->string_table) {
-    writer.fg(Color::Grey, "  - #", std::setw(2), std::left, str_index, std::setw(1));
-    writer.fg(Color::Red, " \"", entry.value, "\"");
-    writer.fg(Color::Grey, " length=", entry.value.size());
-    writer.fg(Color::Grey, ", hash=", std::hex, entry.hash, std::dec);
+  if (this->string_table.size()) {
+    writer.fg(Color::Blue, "  string table:", "\n");
+    int str_index = 0;
+    for (const IRStringTableEntry& entry : this->string_table) {
+      writer.fg(Color::Grey, "  - #", std::setw(2), std::left, str_index, std::setw(1));
+      writer.fg(Color::Red, " \"", entry.value, "\"");
+      writer.fg(Color::Grey, " length=", entry.value.size());
+      writer.fg(Color::Grey, ", hash=", std::hex, entry.hash, std::dec);
+      out << "\n";
+
+      str_index++;
+    }
     out << "\n";
-
-    str_index++;
   }
-  out << "\n";
 
   writer.fg(Color::Yellow, "  body:", "\n");
 
