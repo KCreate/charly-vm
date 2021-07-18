@@ -458,9 +458,7 @@ void Scheduler::start_the_world() {
   std::unique_lock<std::mutex> workers_lock(m_workers_mutex);
 
   for (Worker* worker : m_workers) {
-    if (worker->state == Worker::State::WorldStopped) {
-      worker->wake_stw();
-    }
+    worker->wake_stw();
   }
 }
 
