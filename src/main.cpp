@@ -43,10 +43,13 @@
 #include "charly/core/compiler/diagnostic.h"
 #include "charly/core/compiler/ir/builder.h"
 
+#include "charly/core/runtime/vm_frame.h"
 #include "charly/core/runtime/scheduler.h"
 #include "charly/core/runtime/allocator.h"
 #include "charly/core/runtime/gc.h"
+
 #include "charly/core/runtime/function.h"
+#include "charly/core/runtime/framecontext.h"
 
 using namespace charly;
 using namespace charly::core::runtime;
@@ -198,6 +201,30 @@ int32_t cli(DiagnosticConsole& console) {
 
   if (utils::ArgumentParser::is_flag_set("license")) {
     std::cout << utils::ArgumentParser::LICENSE << std::endl;
+    return 0;
+  }
+
+  if (utils::ArgumentParser::is_flag_set("dump_sizeof")) {
+    debuglnf("sizeof(utils::Buffer) = %", sizeof(utils::Buffer));
+    debuglnf("sizeof(utils::ProtectedBuffer) = %", sizeof(utils::ProtectedBuffer));
+    debuglnf("sizeof(utils::GuardedBuffer) = %", sizeof(utils::GuardedBuffer));
+    debuglnf("");
+    debuglnf("sizeof(core::runtime::HeapRegion) = %", sizeof(core::runtime::HeapRegion));
+    debuglnf("sizeof(core::runtime::HeapHeader) = %", sizeof(core::runtime::HeapHeader));
+    debuglnf("sizeof(core::runtime::ExceptionTableEntry) = %", sizeof(core::runtime::ExceptionTableEntry));
+    debuglnf("sizeof(core::runtime::SourceMapEntry) = %", sizeof(core::runtime::SourceMapEntry));
+    debuglnf("sizeof(core::runtime::StringTableEntry) = %", sizeof(core::runtime::StringTableEntry));
+    debuglnf("sizeof(core::runtime::CompiledFunction) = %", sizeof(core::runtime::CompiledFunction));
+    debuglnf("sizeof(core::runtime::CompiledModule) = %", sizeof(core::runtime::CompiledModule));
+    debuglnf("sizeof(core::runtime::Scheduler) = %", sizeof(core::runtime::Scheduler));
+    debuglnf("sizeof(core::runtime::Processor) = %", sizeof(core::runtime::Processor));
+    debuglnf("sizeof(core::runtime::Worker) = %", sizeof(core::runtime::Worker));
+    debuglnf("sizeof(core::runtime::Fiber) = %", sizeof(core::runtime::Fiber));
+    debuglnf("sizeof(core::runtime::Function) = %", sizeof(core::runtime::Function));
+    debuglnf("sizeof(core::runtime::FrameContext) = %", sizeof(core::runtime::FrameContext));
+    debuglnf("sizeof(core::runtime::StackFrame) = %", sizeof(core::runtime::StackFrame));
+    debuglnf("");
+    debuglnf("sizeof(std::jmp_buf) = %", sizeof(std::jmp_buf));
     return 0;
   }
 
