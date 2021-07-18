@@ -40,10 +40,11 @@
 
 namespace charly::core::runtime {
 
-static const uint32_t kLocalSelfIndex = 0;
-static const uint32_t kLocalReturnIndex = 0;
+// trigger an out of memory exception once this amount of remaining bytes on the stack
+// has been crossed
+static const size_t kStackOverflowLimit = 1024 * 32; // 32 kilobytes
 
-static const size_t kStackOverflowLimit = 1024; // amount of free bytes which triggers an out of memory exception
+struct StackFrame {
 
 struct StackFrame {
   StackFrame* parent;         // parent stack frame

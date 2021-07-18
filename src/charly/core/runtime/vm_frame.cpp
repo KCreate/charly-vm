@@ -59,11 +59,12 @@ VALUE vm_call_function(StackFrame* parent, VALUE self, Function* function, VALUE
   frame.ip = fdata->bytecode_base_ptr;
 
   // stack limit check
-  Fiber::Stack& stack = frame.fiber->stack;
-  uintptr_t frame_address = (uintptr_t)&frame;
-  uintptr_t stack_bottom_address = (uintptr_t)stack.lo;
+  Fiber::Stack* stack = frame.fiber->stack;
+  uintptr_t frame_address = (uintptr_t)__builtin_frame_address(0);
+  uintptr_t stack_bottom_address = (uintptr_t)stack->lo();
   if (frame_address - stack_bottom_address <= kStackOverflowLimit) {
     // TODO: throw not stack overflow exception
+    safeprint("fiber % stack overflow", frame.fiber->id);
     vm_throw_parent(parent, VALUE::Char('S'));
     UNREACHABLE();
   }

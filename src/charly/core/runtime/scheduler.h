@@ -37,6 +37,7 @@
 #include "charly/value.h"
 
 #include "charly/utils/buffer.h"
+#include "charly/utils/guardedbuffer.h"
 
 #include "charly/core/runtime/compiled_module.h"
 
@@ -75,6 +76,9 @@ static const uint64_t kLocalReadyQueueMaxSize = 256;
 // the maximum amount of milliseconds a worker should spend in its idle phase before checking
 // if there are any work available
 static const uint32_t kWorkerMaximumIdleSleepDuration = 1000;
+
+// maximum stack size a fiber can reach
+static const size_t kFiberStackSize = 1024 * 1024 * 8;
 
 struct Processor;
 struct Worker;
@@ -191,8 +195,6 @@ struct Worker {
   void reset_sleep_duration();
 };
 
-static const size_t kFiberStackSize = 1024 * 8; // 8 kilobytes
-
 // Fibers hold the state information of a single strand of execution inside a charly
 // program. each fiber has its own hardware stack and stores register data when paused
 struct Fiber {
@@ -212,15 +214,26 @@ struct Fiber {
     Exited      // fiber has exited
   };
 
-  // fiber hardware stack
   struct Stack {
-    void* hi;
-    void* lo;
-    size_t size;
+    utils::GuardedBuffer buffer;
+
+    Stack() : buffer(kFiberStackSize) {}
+
+    void* lo() const {
+      return buffer.buffer();
+    }
+
+    void* hi() const {
+      return (void*)((uintptr_t)buffer.buffer() + buffer.capacity());
+    }
+
+    size_t size() const {
+      return buffer.capacity();
+    }
   };
 
   uint64_t id;
-  Stack stack;
+  charly::atomic<Stack*> stack;
   charly::atomic<State> state;
   charly::atomic<Worker*> worker;
   charly::atomic<uint64_t> last_scheduled_at;

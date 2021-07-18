@@ -128,12 +128,6 @@ void Worker::reset_sleep_duration() {
 
 Fiber::Fiber(Function* main_function) {
 
-  // allocate stack
-  void* stack_lo = std::malloc(kFiberStackSize);
-  this->stack.lo = stack_lo;
-  this->stack.hi = (void*)((uintptr_t)stack_lo + kFiberStackSize);
-  this->stack.size = kFiberStackSize;
-
   // init fiber state
   static charly::atomic<uint64_t> fiber_id_counter = 0;
   this->id = fiber_id_counter++;
@@ -142,7 +136,9 @@ Fiber::Fiber(Function* main_function) {
   this->last_scheduled_at.store(0);
   this->main_function = main_function;
   this->exit_machine_on_exit = false;
-  this->context = make_fcontext(this->stack.hi, kFiberStackSize, [](transfer_t transfer) {
+  Stack* stack = new Fiber::Stack();
+  this->stack.store(stack);
+  this->context = make_fcontext(stack->hi(), stack->size(), [](transfer_t transfer) {
     Scheduler::instance->fiber_main(transfer);
   });
 }
@@ -152,11 +148,9 @@ Fiber::~Fiber() {
 }
 
 void Fiber::clean() {
-  if (this->stack.lo) {
-    std::free(this->stack.lo);
-    this->stack.lo = nullptr;
-    this->stack.hi = nullptr;
-    this->stack.size = 0;
+  Stack* stack = this->stack.load();
+  if (this->stack.cas(stack, nullptr)) {
+    delete stack;
   }
 }
 

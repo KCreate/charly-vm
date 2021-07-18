@@ -24,15 +24,11 @@
  * SOFTWARE.
  */
 
-let counter = 0
+#include "charly/charly.h"
 
-func recurse {
-  counter += 1
-  recurse()
-}
+namespace charly {
 
-try {
-  recurse()
-} catch (e) {
-  return counter
+std::mutex safeprint_mutex;
+auto program_startup_timestamp = std::chrono::steady_clock::now();
+
 }

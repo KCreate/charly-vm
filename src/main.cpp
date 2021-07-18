@@ -65,7 +65,7 @@ void run_repl(DiagnosticConsole&) {
       add_history(buf);
     }
     std::string line(buf);
-    free(buf);
+    std::free(buf);
 
     if (line[0] == '.') {
       if (line.compare(".help") == 0) {

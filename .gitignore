@@ -1,11 +1,12 @@
-*.swp
+*.dSYM
+*.lib
 *.swo
+*.swp
 .DS_Store
 bin/
 build/
-buildrelease/
 build_backup/
-*.dSYM
-*.lib
+buildrelease/
+buildtest/
 code.profdata
 default.profraw

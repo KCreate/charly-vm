@@ -26,6 +26,7 @@ file(GLOB charlycore_SRC
   "charly/core/runtime/vm_frame.cpp"
   "charly/taggedvalue.cpp"
   "charly/value.cpp"
+  "charly/charly.cpp"
   "charly/utils/argumentparser.cpp"
   "charly/utils/buffer.cpp"
 )

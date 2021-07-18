@@ -33,6 +33,9 @@
 #include <memory>
 #include <mutex>
 #include <chrono>
+#include <unistd.h>
+
+#include "safeprint.h"
 
 #pragma once
 
@@ -102,62 +105,6 @@ inline ref<T> cast(ref<O> node) {
   return std::dynamic_pointer_cast<T>(node);
 }
 
-/*
- * thread-safe printing meant for debugging
- * */
-inline void safeprint_impl(const char* format) {
-  std::cout << format;
-}
-
-template <typename T, typename... Targs>
-inline void safeprint_impl(const char* format, T value, Targs... Fargs) {
-  while (*format != '\0') {
-    if (*format == '%') {
-      std::cout << value;
-      safeprint_impl(format + 1, Fargs...);
-      return;
-    }
-    std::cout << *format;
-
-    format++;
-  }
-}
-
-static inline std::mutex safeprint_mutex;
-
-#ifdef NDEBUG
-
-template <typename... Targs>
-inline void safeprint(const char*, Targs...) {}
-
-#else
-
-inline static auto program_startup_timestamp = std::chrono::steady_clock::now();
-template <typename... Targs>
-inline void safeprint(const char* format, Targs... Fargs) {
-  {
-    std::unique_lock<std::mutex> locker(safeprint_mutex);
-
-    // get elapsed duration since program start
-    auto now = std::chrono::steady_clock::now();
-    auto dur = now - program_startup_timestamp;
-    uint32_t ticks = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
-    double elapsed_seconds = (float)ticks / 1000;
-
-    // format as seconds with trailing milliseconds
-    std::cout << "[";
-    std::cout << std::fixed;
-    std::cout << std::setprecision(3);
-    std::cout << std::setw(12);
-    std::cout << elapsed_seconds;
-    std::cout << std::setw(1);
-    std::cout << "]: ";
-
-    safeprint_impl(format, Fargs...);
-    std::cout << std::endl;
-  }
-}
-
-#endif
+static const size_t kPageSize = sysconf(_SC_PAGE_SIZE);
 
 }  // namespace charly

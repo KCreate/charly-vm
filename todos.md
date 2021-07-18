@@ -1,5 +1,10 @@
 # Todos
 
+- Fiber Stacks
+  - Reuse old stacks
+  - Pre-allocate some stacks and grow reserve by doubling
+  - New fibers, allocate stack once the new fiber is started, not allocated
+
 - Rewrite pseudo-instructions to their real equivalent
   - Some pseudo instructions can be removed entirely (like getexception)
 
