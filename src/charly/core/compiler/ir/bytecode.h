@@ -262,7 +262,7 @@ static std::string kInlineCacheTypeNames[] = {
    * stack results:                                                                                                  \
    * - exception                                                                                                     \
    * */                                                                                                              \
-  V(getexception, ICNone, 0, 1) /* pseudo-instruction */                                                             \
+  V(getexception, ICNone, 0, 1)                                                                                      \
                                                                                                                      \
   /* call - call a function                                                                                          \
    *                                                                                                                 \
@@ -306,8 +306,6 @@ static std::string kInlineCacheTypeNames[] = {
    * */                                                                                                              \
   V(load, ICNone, 0, 1, Immediate value)                                                                             \
   /* loadsymbol - load symbol onto the stack                                                                         \
-   * gets emitted as a load instruction, exists for                                                                  \
-   * more readable disassemblies                                                                                     \
    *                                                                                                                 \
    * opcode operands:                                                                                                \
    * - symbol                                                                                                        \
@@ -315,19 +313,19 @@ static std::string kInlineCacheTypeNames[] = {
    * stack results:                                                                                                  \
    * - symbol                                                                                                        \
    * */                                                                                                              \
-  V(loadsymbol, ICNone, 0, 1, Symbol name) /* pseudo instruction */                                                  \
+  V(loadsymbol, ICNone, 0, 1, Symbol name)                                                                           \
   /* loadself - load the self value in this frame                                                                    \
    *                                                                                                                 \
    * stack results:                                                                                                  \
    * - self                                                                                                          \
    * */                                                                                                              \
-  V(loadself, ICNone, 0, 1) /* pseudo instruction */                                                                 \
+  V(loadself, ICNone, 0, 1)                                                                                          \
   /* loadargc - load the amount of arguments passed to the function                                                  \
    *                                                                                                                 \
    * stack results:                                                                                                  \
    * - argc                                                                                                          \
    * */                                                                                                              \
-  V(loadargc, ICNone, 0, 1) /* pseudo instruction */                                                                 \
+  V(loadargc, ICNone, 0, 1)                                                                                          \
   /* loadglobal - load a global value                                                                                \
    *                                                                                                                 \
    * opcode operands:                                                                                                \
@@ -430,7 +428,7 @@ static std::string kInlineCacheTypeNames[] = {
    * stack arguments:                                                                                                \
    * - value                                                                                                         \
    * */                                                                                                              \
-  V(setreturn, ICNone, 1, 0) /* pseudo-instruction */                                                                \
+  V(setreturn, ICNone, 1, 0)                                                                                         \
   /* setfar - write to variable from surrounding function                                                            \
    *                                                                                                                 \
    * opcode operands:                                                                                                \

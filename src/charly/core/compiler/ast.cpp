@@ -61,7 +61,23 @@ ref<Node> Node::search(const ref<Node>& node,
 void Node::dump(std::ostream& out, bool print_location) const {
   utils::ColorWriter writer(out);
 
-  writer.fg(Color::Blue, node_name());
+  Color name_color;
+  switch (type()) {
+    case Node::Type::Function: {
+      name_color = Color::Yellow;
+      break;
+    }
+    case Node::Type::Block: {
+      name_color = Color::Red;
+      break;
+    }
+    default: {
+      name_color = Color::Blue;
+      break;
+    }
+  }
+
+  writer.fg(name_color, node_name());
 
   dump_info(out);
   if (print_location) {

@@ -80,8 +80,10 @@ void run_repl(DiagnosticConsole&) {
         continue;
       }
 
-      if (line.compare(".exit") == 0)
-        break;
+      if (line.compare(".exit") == 0) {
+        Scheduler::instance->abort(0);
+        return;
+      }
 
       if (line.compare(".dump_ast") == 0) {
         utils::ArgumentParser::toggle_flag("dump_ast");
@@ -122,12 +124,22 @@ void run_repl(DiagnosticConsole&) {
     }
 
     charly::core::runtime::Function* module_function = Scheduler::instance->register_module(unit->compiled_module);
+    if (module_function == nullptr) {
+      debugln("could not allocate memory for module");
+      Scheduler::instance->abort(1);
+      return;
+    }
+
     Fiber* fiber = MemoryAllocator::allocate<Fiber>(module_function);
+    if (fiber == nullptr) {
+      debugln("could not allocate memory for fiber");
+      Scheduler::instance->abort(1);
+      return;
+    }
+
     fiber->state.acas(Fiber::State::Created, Fiber::State::Ready);
     Scheduler::instance->schedule_fiber(fiber);
   }
-
-  Scheduler::instance->abort(0);
 }
 
 void run_file(DiagnosticConsole& console, const std::string& filename) {
@@ -174,7 +186,9 @@ void run_file(DiagnosticConsole& console, const std::string& filename) {
   }
 
   charly::core::runtime::Function* module_function = Scheduler::instance->register_module(unit->compiled_module);
+  assert(module_function);
   Fiber* main_fiber = MemoryAllocator::allocate<Fiber>(module_function);
+  assert(main_fiber);
   main_fiber->state.acas(Fiber::State::Created, Fiber::State::Ready);
   main_fiber->exit_machine_on_exit = true;
   Scheduler::instance->schedule_fiber(main_fiber);

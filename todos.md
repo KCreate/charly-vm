@@ -5,9 +5,6 @@
   - Pre-allocate some stacks and grow reserve by doubling
   - New fibers, allocate stack once the new fiber is started, not allocated
 
-- Local Variable Refactor
-  - Did i miss something? It feels like i missed something
-
 - Optimize frame context size
   - only allocate as much memory as is actually required
   - currently each FrameContext contains enough space for 256 VALUES, which is usually way too much
@@ -15,9 +12,6 @@
 - Optimize StackFrame
   - std::jmp_buf takes up 200 bytes, the rest of the StackFrame is only about 72 bytes
   - Why does the actual stackframe take up over 1 kilobyte when the allocated stackframe is only about 300 bytes
-
-- Rewrite pseudo-instructions to their real equivalent
-  - Some pseudo instructions can be removed entirely (like getexception)
 
 - Array access cannot cast all values to symbols
   - Array index needs to have the index value

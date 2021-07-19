@@ -24,15 +24,29 @@
  * SOFTWARE.
  */
 
-let counter = 0
+let result = 0
 
-func recurse {
-  counter += 1
-  recurse()
+let r1
+
+func foo {
+  let r2
+
+  func bar {
+    let r3
+
+    func baz {
+      let r4 = result
+      r3 = r4 + 1
+    }
+
+    baz()
+    r2 = r3 + 1
+  }
+
+  bar()
+  r1 = r2 + 1
 }
 
-try {
-  recurse()
-} catch (e) {
-  return counter
-}
+foo()
+
+return r1

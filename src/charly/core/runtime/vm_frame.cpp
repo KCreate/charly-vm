@@ -79,6 +79,13 @@ VALUE vm_call_function(StackFrame* parent, VALUE self, Function* function, VALUE
   uint8_t heap_variables = fdata->ir_info.heap_variables;
   if (heap_variables) {
     FrameContext* context = MemoryAllocator::allocate<FrameContext>(function->context);
+    if (context == nullptr) {
+      // TODO: throw not enough heap memory exception
+      debugln("could not allocate frame context");
+      vm_throw_parent(parent, VALUE::Char('C'));
+      UNREACHABLE();
+    }
+
     for (uint8_t i = 0; i < heap_variables; i++) {
       context->locals[i] = kNull;
     }
@@ -369,6 +376,14 @@ VALUE vm_call_function(StackFrame* parent, VALUE self, Function* function, VALUE
         uintptr_t shared_data_ptr = frame.ip + offset;
         CompiledFunction* shared_data = *(CompiledFunction**)shared_data_ptr;
         Function* new_function = MemoryAllocator::allocate<Function>(frame.context, shared_data);
+
+        if (new_function == nullptr) {
+          // TODO: throw not enough heap memory exception
+          debugln("could not allocate memory for function");
+          vm_throw(&frame, VALUE::Char('F'));
+          UNREACHABLE();
+        }
+
         frame.stack_push(VALUE::Pointer(new_function));
         INC_IP();
       }
