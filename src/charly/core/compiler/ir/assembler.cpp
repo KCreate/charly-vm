@@ -64,7 +64,6 @@ void Assembler::assemble() {
     }
 
     Label end_label = reserve_label();
-    Label inline_cache_section = reserve_label();
     Label bytecode_section = reserve_label();
     align_to_pointer();
     place_label(function->head);
@@ -72,11 +71,7 @@ void Assembler::assemble() {
 
     // emit inline cache section
     align_to_pointer();
-    place_label(inline_cache_section);
-    assert(function->inline_cache_table.size() <= (size_t)0x0000ffff);
     for (const auto& entry : function->inline_cache_table) {
-      (void)entry;
-      m_runtime_module->buffer->emit_zeroes(sizeof(InlineCacheEntry));
       compiled_func->inline_cache_table.emplace_back(entry.type);
     }
 
@@ -94,7 +89,6 @@ void Assembler::assemble() {
     }
     place_label(end_label);
 
-    compiled_func->inline_cache_offset = offset_of_label(inline_cache_section);
     compiled_func->bytecode_offset = offset_of_label(bytecode_section);
     compiled_func->end_offset = offset_of_label(end_label);
 
@@ -133,7 +127,6 @@ void Assembler::assemble() {
   for (CompiledFunction* func : m_runtime_module->function_table) {
     func->buffer_base_ptr = base_address;
     func->bytecode_base_ptr = base_address + func->bytecode_offset;
-    func->ic_base_ptr = base_address + func->inline_cache_offset;
     func->end_ptr = base_address + func->end_offset;
 
     // populate exception table pointers

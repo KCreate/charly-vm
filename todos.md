@@ -5,9 +5,6 @@
   - Pre-allocate some stacks and grow reserve by doubling
   - New fibers, allocate stack once the new fiber is started, not allocated
 
-- Bytecode buffer readonly
-  - Move inline cache tables to separate section
-
 - Local Variable Refactor
   - Did i miss something? It feels like i missed something
 

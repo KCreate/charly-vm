@@ -71,19 +71,16 @@ struct StringTableEntry {
   std::string value;
 };
 
-// emitted into bytecode stream
-struct __attribute__((packed)) InlineCacheEntry {
-  uint64_t padd1;
-  uint64_t padd2;
-  uint64_t padd3;
-  uint64_t padd4;
-
-  // TODO: implement real data structure
-};
-
-struct InlineCacheHeader {
-  InlineCacheHeader(compiler::ir::ICType type) : type(type) {}
+// TODO: implement different inline cache types
+struct InlineCacheEntry {
+  InlineCacheEntry(compiler::ir::ICType type) : type(type) {}
   compiler::ir::ICType type;
+
+  union {
+    struct {
+      uint64_t padd[4];
+    } _padd;
+  } as;
 };
 
 struct CompiledModule;
@@ -97,15 +94,13 @@ struct CompiledFunction {
   std::vector<ExceptionTableEntry> exception_table;
   std::vector<SourceMapEntry> sourcemap_table;
   std::vector<StringTableEntry> string_table;
-  std::vector<InlineCacheHeader> inline_cache_table;
+  std::vector<InlineCacheEntry> inline_cache_table;
 
   uintptr_t buffer_base_ptr;        // pointer to the base of the containing modules buffer
   uintptr_t bytecode_base_ptr;      // pointer to the functions first opcode
-  uintptr_t ic_base_ptr;            // pointer to the functions first inline cache
   uintptr_t end_ptr;                // function end pointer
 
   uint32_t bytecode_offset;       // offset into module buffer where the functions opcodes are located
-  uint32_t inline_cache_offset;   // offset into module buffer where the functions ic tables are located
   uint32_t end_offset;            // function end offset
 
   void dump(std::ostream& out) const;
