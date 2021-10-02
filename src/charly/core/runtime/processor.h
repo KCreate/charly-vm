@@ -24,32 +24,51 @@
  * SOFTWARE.
  */
 
-#include <atomic>
-#include <cassert>
+#include <mutex>
+#include <list>
+
+#include "charly/value.h"
 
 #pragma once
 
-namespace charly {
+namespace charly::core::runtime {
 
-template <class T>
-struct atomic : public std::atomic<T> {
-  using std::atomic<T>::atomic;
-  using std::atomic<T>::operator=;
+class Runtime;
+class Worker;
+class Thread;
+class ThreadAllocationBuffer;
 
-  // sane CAS
-  bool cas(T expected, T desired) {
-    return std::atomic<T>::compare_exchange_strong(expected, desired, std::memory_order_seq_cst);
-  }
-  bool cas_weak(T expected, T desired) {
-    return std::atomic<T>::compare_exchange_weak(expected, desired, std::memory_order_seq_cst);
-  }
+// represents a virtual processor
+class Processor {
+public:
+  Processor(Runtime* runtime);
+  ~Processor();
 
-  // CAS that should not fail
-  void acas(T expected, T desired) {
-    bool result = cas(expected, desired);
-    assert(result);
-    (void)result;
-  }
+  // getter / setter
+  Runtime* runtime() const;
+  uint64_t id() const;
+  bool is_live() const;
+  void set_live(bool value);
+  Worker* worker() const;
+  void set_worker(Worker* worker);
+  ThreadAllocationBuffer* tab() const;
+
+  // attempt to schedule a thread on this processor
+  // returns false if the run queue is already at peak capacity
+  bool schedule_thread(Thread* thread);
+
+  // acquire the next ready thread to execute
+  Thread* get_ready_thread();
+
+private:
+  Runtime* m_runtime;
+  uint64_t m_id;
+  bool m_live;
+  atomic<Worker*> m_worker;
+  ThreadAllocationBuffer* m_tab;
+
+  std::mutex m_mutex;
+  std::list<Thread*> m_run_queue;
 };
 
-}
+}  // namespace charly::core::runtime

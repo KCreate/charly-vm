@@ -1,5 +1,6 @@
 file(GLOB charlycore_SRC
-  "charly/core/compiler.cpp"
+  "charly/charly.cpp"
+  "charly/core/compiler/compiler.cpp"
   "charly/core/compiler/ast.cpp"
   "charly/core/compiler/codegenerator.cpp"
   "charly/core/compiler/diagnostic.cpp"
@@ -14,20 +15,21 @@ file(GLOB charlycore_SRC
   "charly/core/compiler/passes/desugar_pass.cpp"
   "charly/core/compiler/passes/duplicates_check.cpp"
   "charly/core/compiler/passes/grammar_validation_check.cpp"
-  "charly/core/compiler/passes/variable_analyzer_pass.cpp"
   "charly/core/compiler/passes/repl_prepare_pass.cpp"
   "charly/core/compiler/passes/reserved_identifiers_check.cpp"
-  "charly/core/runtime/allocator.cpp"
-  "charly/core/runtime/compiled_module.cpp"
+  "charly/core/compiler/passes/variable_analyzer_pass.cpp"
   "charly/core/runtime/compiled_module.cpp"
   "charly/core/runtime/gc.cpp"
+  "charly/core/runtime/heap.cpp"
+  "charly/core/runtime/runtime.cpp"
   "charly/core/runtime/scheduler.cpp"
-  "charly/core/runtime/vm_frame.cpp"
-  "charly/taggedvalue.cpp"
-  "charly/value.cpp"
-  "charly/charly.cpp"
+  "charly/core/runtime/thread.cpp"
+  "charly/core/runtime/interpreter.cpp"
+  "charly/core/runtime/worker.cpp"
+  "charly/core/runtime/processor.cpp"
   "charly/utils/argumentparser.cpp"
   "charly/utils/buffer.cpp"
+  "charly/value.cpp"
 )
 
 find_package(Boost REQUIRED COMPONENTS context)
@@ -51,6 +53,7 @@ target_compile_options(libcharly PRIVATE
   -Wno-vla-extension
   -Wno-c++20-designator
   -Wno-gnu-zero-variadic-macro-arguments
+  -Wno-gnu-label-as-value
   -Wno-c99-extensions
   -Wno-register
   -Wno-extra-semi

@@ -49,30 +49,30 @@ void Assembler::assemble() {
   for (const ref<IRFunction>& function : m_ir_module->functions) {
 
     // init function entry
-    CompiledFunction* compiled_func = new CompiledFunction();
-    compiled_func->owner_module = m_runtime_module.get();
-    m_runtime_module->function_table.push_back(compiled_func);
-    compiled_func->name = function->ast->name->value;
-    compiled_func->name_symbol = SYM(function->ast->name->value);
-    compiled_func->ir_info = function->ast->ir_info;
+    SharedFunctionInfo* shared_info = new SharedFunctionInfo();
+    shared_info->owner_module = m_runtime_module.get();
+    m_runtime_module->function_table.push_back(shared_info);
+    shared_info->name = function->ast->name->value;
+    shared_info->name_symbol = SYM(function->ast->name->value);
+    shared_info->ir_info = function->ast->ir_info;
     assert(function->ast->ir_info.valid);
 
     // build string table
     assert(function->string_table.size() <= (size_t)0x0000ffff);
     for (const auto& entry : function->string_table) {
-      compiled_func->string_table.push_back(StringTableEntry(entry.value));
+      shared_info->string_table.push_back(StringTableEntry(entry.value));
     }
 
     Label end_label = reserve_label();
     Label bytecode_section = reserve_label();
     align_to_pointer();
     place_label(function->head);
-    m_runtime_module->buffer->emit_ptr(compiled_func);
+    m_runtime_module->buffer->emit_ptr(shared_info);
 
     // emit inline cache section
     align_to_pointer();
     for (const auto& entry : function->inline_cache_table) {
-      compiled_func->inline_cache_table.emplace_back(entry.type);
+      shared_info->inline_cache_table.emplace_back(entry.type);
     }
 
     // emit bytecodes
@@ -89,12 +89,12 @@ void Assembler::assemble() {
     }
     place_label(end_label);
 
-    compiled_func->bytecode_offset = offset_of_label(bytecode_section);
-    compiled_func->end_offset = offset_of_label(end_label);
+    shared_info->bytecode_offset = offset_of_label(bytecode_section);
+    shared_info->end_offset = offset_of_label(end_label);
 
     // build exception table
     for (const IRExceptionTableEntry& entry : function->exception_table) {
-      compiled_func->exception_table.emplace_back(
+      shared_info->exception_table.emplace_back(
         offset_of_label(entry.begin),
         offset_of_label(entry.end),
         offset_of_label(entry.handler)
@@ -107,7 +107,7 @@ void Assembler::assemble() {
         if (instruction->location.valid) {
           assert(instruction->assembled_at_label.has_value());
           uint32_t instruction_offset = offset_of_label(instruction->assembled_at_label.value());
-          compiled_func->sourcemap_table.emplace_back(
+          shared_info->sourcemap_table.emplace_back(
             instruction_offset,
             instruction->location.row,
             instruction->location.column,
@@ -124,7 +124,7 @@ void Assembler::assemble() {
 
   // write final pointers into function structs
   uintptr_t base_address = (uintptr_t)m_runtime_module->buffer->data();
-  for (CompiledFunction* func : m_runtime_module->function_table) {
+  for (SharedFunctionInfo* func : m_runtime_module->function_table) {
     func->buffer_base_ptr = base_address;
     func->bytecode_base_ptr = base_address + func->bytecode_offset;
     func->end_ptr = base_address + func->end_offset;
@@ -188,7 +188,7 @@ void Assembler::encode_instruction(const ref<IRInstruction>& instruction) {
         break;
       }
       case OperandType::Immediate: {
-        m_runtime_module->buffer->emit_ptr(cast<IROperandImmediate>(op)->value.raw);
+        m_runtime_module->buffer->emit_ptr(cast<IROperandImmediate>(op)->value.raw());
         break;
       }
       case OperandType::ICIndex: {

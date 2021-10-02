@@ -231,8 +231,7 @@ void Builder::build_cfg() {
         IRBasicBlock::link(block, block->next_block);
         continue;
       }
-      case Opcode::testjmp:
-      case Opcode::testjmpstrict: {
+      case Opcode::testjmp: {
         Label target_label = cast<IROperandOffset>(op->operands[1])->value;
         ref<IRBasicBlock> target_block = m_labelled_blocks.at(target_label);
         assert(block->next_block);
@@ -528,10 +527,6 @@ ref<IRInstruction> Builder::emit_jmpt(IROpOffset label) {
 
 ref<IRInstruction> Builder::emit_testjmp(IROpImmediate value, IROpOffset label) {
   return emit(Opcode::testjmp, IROperandImmediate::make(value), IROperandOffset::make(label));
-}
-
-ref<IRInstruction> Builder::emit_testjmpstrict(IROpImmediate value, IROpOffset label) {
-  return emit(Opcode::testjmpstrict, IROperandImmediate::make(value), IROperandOffset::make(label));
 }
 
 ref<IRInstruction> Builder::emit_throwex() {

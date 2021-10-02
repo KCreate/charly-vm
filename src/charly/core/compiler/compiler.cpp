@@ -28,7 +28,7 @@
 
 #include "charly/utils/argumentparser.h"
 
-#include "charly/core/compiler.h"
+#include "charly/core/compiler/compiler.h"
 #include "charly/core/compiler/parser.h"
 #include "charly/core/compiler/codegenerator.h"
 #include "charly/core/compiler/ir/ir.h"
@@ -117,6 +117,21 @@ ref<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffe
   unit->compiled_module = ir::Assembler::compile_module(unit->ir_module);
 
   return unit;
+}
+
+ref<CompilationUnit> Compiler::compile(const std::string& filepath,
+                                       std::istream& source,
+                                       CompilationUnit::Type type) {
+
+  utils::Buffer file_buffer;
+  std::string line;
+
+  for (std::string line; std::getline(source, line);) {
+    file_buffer.emit_string(line);
+    file_buffer.emit_utf8_cp('\n');
+  }
+
+  return compile(filepath, file_buffer, type);
 }
 
 }  // namespace charly::core::compiler

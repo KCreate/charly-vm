@@ -134,11 +134,11 @@ std::string_view BufferBase::window_view() const {
 }
 
 uint32_t BufferBase::buffer_hash() const {
-  return crc32::crc32((const uint8_t*)data(), m_size);
+  return SYM((const uint8_t*)data(), m_size);
 }
 
 uint32_t BufferBase::window_hash() const {
-  return crc32::crc32((const uint8_t*)(data() + m_windowoffset), window_size());
+  return SYM((const uint8_t*)(data() + m_windowoffset), window_size());
 }
 
 void BufferBase::emit_utf8_cp(uint32_t cp) {

@@ -40,12 +40,12 @@ void CompiledModule::dump(std::ostream& out) const {
   out << '\n';
 
   // disassemble functions
-  for (const CompiledFunction* function : this->function_table) {
+  for (const SharedFunctionInfo* function : this->function_table) {
     function->dump(out);
   }
 }
 
-void CompiledFunction::dump(std::ostream& out) const {
+void SharedFunctionInfo::dump(std::ostream& out) const {
   ColorWriter writer(out);
 
   const uint8_t* function_bytecodes = (uint8_t*)this->bytecode_base_ptr;
@@ -62,7 +62,7 @@ void CompiledFunction::dump(std::ostream& out) const {
   writer.fg(Color::Yellow, function_bytecodes_length, "\n");
 
   writer.fg(Color::Grey, "; bytecode hash = ");
-  writer.fg(Color::Yellow, std::hex, crc32::crc32(function_bytecodes, function_bytecodes_length), std::dec, "\n");
+  writer.fg(Color::Yellow, std::hex, SYM(function_bytecodes, function_bytecodes_length), std::dec, "\n");
 
   writer.fg(Color::Grey, "; ir_info = ");
   writer.fg(Color::Yellow, this->ir_info, "\n");

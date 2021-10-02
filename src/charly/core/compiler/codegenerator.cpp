@@ -26,10 +26,11 @@
 
 #include "charly/core/compiler/codegenerator.h"
 
+namespace charly::core::compiler {
+
 using namespace charly::core::compiler::ast;
 using namespace charly::core::compiler::ir;
-
-namespace charly::core::compiler {
+using namespace charly::core::runtime;
 
 ref<IRModule> CodeGenerator::compile() {
 
@@ -85,9 +86,9 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
     m_builder.emit_loadargc();
     for (uint8_t i = minargc; i < argc; i++) {
       Label l = labels[i] = m_builder.reserve_label();
-      m_builder.emit_testjmpstrict(VALUE::Int(i), l);
+      m_builder.emit_testjmp(RawInt::make(i), l);
     }
-    m_builder.emit_testjmpstrict(VALUE::Int(argc), body_label);
+    m_builder.emit_testjmp(RawInt::make(argc), body_label);
     m_builder.emit_pop();
     m_builder.emit_panic();
 
@@ -384,7 +385,7 @@ bool CodeGenerator::inspect_enter(const ref<ast::Spawn>& node) {
         m_builder.emit_loadself();
         apply(call->target);
       } else {
-        m_builder.emit_load(VALUE::Null());
+        m_builder.emit_load(kNull);
         apply(call->target);
       }
 
@@ -455,7 +456,7 @@ bool CodeGenerator::inspect_enter(const ref<ast::Spawn>& node) {
       break;
     }
     default: {
-      assert(false && "not implemented");
+      UNIMPLEMENTED();
       break;
     }
   }
@@ -490,19 +491,19 @@ void CodeGenerator::inspect_leave(const ref<ast::Symbol>& node) {
 }
 
 void CodeGenerator::inspect_leave(const ref<Int>& node) {
-  m_builder.emit_load(VALUE::Int(node->value))->at(node);
+  m_builder.emit_load(RawInt::make(node->value))->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ref<Float>& node) {
-  m_builder.emit_load(VALUE::Float(node->value))->at(node);
+  m_builder.emit_load(RawFloat::make(node->value))->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ref<Bool>& node) {
-  m_builder.emit_load(VALUE::Bool(node->value))->at(node);
+  m_builder.emit_load(RawBool::make(node->value))->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ref<Char>& node) {
-  m_builder.emit_load(VALUE::Char(node->value))->at(node);
+  m_builder.emit_load(RawSmallString::make_from_cp(node->value))->at(node);
 }
 
 bool CodeGenerator::inspect_enter(const ref<Function>& node) {
@@ -546,7 +547,7 @@ bool CodeGenerator::inspect_enter(const ref<Class>& node) {
 }
 
 void CodeGenerator::inspect_leave(const ref<Null>& node) {
-  m_builder.emit_load(VALUE::Null())->at(node);
+  m_builder.emit_load(kNull)->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ref<Self>&) {
@@ -598,7 +599,7 @@ bool CodeGenerator::inspect_enter(const ref<ast::Dict>& node) {
   if (node->has_spread_elements()) {
     for (const ref<DictEntry>& exp : node->elements) {
       if (ref<Spread> spread = cast<Spread>(exp->key)) {
-        m_builder.emit_load(VALUE::Null())->at(exp->key);
+        m_builder.emit_load(kNull)->at(exp->key);
         apply(spread->expression);
       } else {
         apply(exp->key);
@@ -752,11 +753,11 @@ bool CodeGenerator::inspect_enter(const ref<BinaryOp>& node) {
       m_builder.emit_jmpt(true_label);
 
       m_builder.place_label(false_label);
-      m_builder.emit_load(VALUE::Bool(false));
+      m_builder.emit_load(kFalse);
       m_builder.emit_jmp(end_label);
 
       m_builder.place_label(true_label);
-      m_builder.emit_load(VALUE::Bool(true));
+      m_builder.emit_load(kTrue);
 
       m_builder.place_label(end_label);
       break;
@@ -795,7 +796,7 @@ bool CodeGenerator::inspect_enter(const ref<ast::CallOp>& node) {
       m_builder.emit_loadsuperattr(active_function()->name->value)->at(node);
     }
   } else {
-    m_builder.emit_load(VALUE::Null());
+    m_builder.emit_load(kNull);
     apply(node->target);
   }
 

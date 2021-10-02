@@ -24,44 +24,35 @@
  * SOFTWARE.
  */
 
-#include <string>
+#include <catch2/catch_all.hpp>
 
-#include "charly/core/compiler/ast.h"
-#include "charly/core/compiler/diagnostic.h"
-#include "charly/core/compiler/ir/builder.h"
-#include "charly/core/runtime/compiled_module.h"
-#include "charly/utils/buffer.h"
+#include "charly/utils/wait_flag.h"
 
-#pragma once
+using namespace charly::utils;
 
-namespace charly::core::compiler {
+TEST_CASE("WaitFlag") {
+  std::mutex mutex;
+  WaitFlag flag(mutex);
 
-struct CompilationUnit {
-  enum class Type : uint8_t { Module, ReplInput };
+  std::thread other_thread([&] {
+    CHECK(flag.state() == false);
+    flag.signal();
+    CHECK(flag.state());
+  });
 
-  CompilationUnit(Type type, const std::string& filepath, utils::Buffer& source) :
-    type(type),
-    console(filepath, source),
-    filepath(filepath),
-    ast(nullptr),
-    ir_module(nullptr),
-    compiled_module(nullptr) {}
+  flag.wait();
 
-  Type type;
-  DiagnosticConsole console;
-  std::string filepath;
-  ref<ast::Block> ast;
-  ref<ir::IRModule> ir_module;
-  ref<runtime::CompiledModule> compiled_module;
-};
+  other_thread.join();
 
-class Compiler {
-public:
+  CHECK(flag.state());
 
-  // compile source code into a compilation unit
-  static ref<CompilationUnit> compile(const std::string& filepath,
-                                      utils::Buffer& source,
-                                      CompilationUnit::Type type = CompilationUnit::Type::ReplInput);
-};
+  flag.wait();
+  flag.wait();
+  flag.wait();
 
-}  // namespace charly::core::compiler
+  CHECK(flag.state());
+
+  flag.reset();
+
+  CHECK(flag.state() == false);
+}

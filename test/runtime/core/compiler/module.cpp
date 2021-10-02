@@ -30,7 +30,7 @@
 
 #include "charly/utils/buffer.h"
 
-#include "charly/core/compiler.h"
+#include "charly/core/compiler/compiler.h"
 #include "charly/core/runtime/compiled_module.h"
 
 using namespace charly;

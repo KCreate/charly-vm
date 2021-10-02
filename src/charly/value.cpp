@@ -24,65 +24,382 @@
  * SOFTWARE.
  */
 
+#include <iomanip>
+
 #include "charly/utils/colorwriter.h"
 #include "charly/utils/buffer.h"
 
 #include "charly/value.h"
 
-#include "charly/core/runtime/allocator.h"
+#include "charly/core/runtime/heap.h"
 
-namespace charly {
+namespace charly::core::runtime {
 
 using Color = utils::Color;
 
-using namespace charly::core::runtime;
+bool is_immediate_shape(ShapeId shape_id) {
+  uint32_t id = static_cast<uint32_t>(shape_id);
+  return id <= static_cast<uint32_t>(ShapeId::kLastImmediateShape);
+}
 
-void VALUE::dump(std::ostream& out) const {
+bool is_object_shape(ShapeId shape_id) {
+  uint32_t id = static_cast<uint32_t>(shape_id);
+  return id > static_cast<uint32_t>(ShapeId::kLastImmediateShape);
+}
+
+bool is_data_shape(ShapeId shape_id) {
+  uint32_t id = static_cast<uint32_t>(shape_id);
+  uint32_t first_data_shape = static_cast<uint32_t>(ShapeId::kFirstNonInstance);
+  uint32_t last_data_shape = static_cast<uint32_t>(ShapeId::kLastNonInstance);
+  return (id >= first_data_shape) && (id <= last_data_shape);
+}
+
+bool is_instance_shape(ShapeId shape_id) {
+  uint32_t id = static_cast<uint32_t>(shape_id);
+  uint32_t last_non_instance = static_cast<uint32_t>(ShapeId::kLastNonInstance);
+  return id > last_non_instance;
+}
+
+bool is_exception_shape(ShapeId shape_id) {
+  uint32_t id = static_cast<uint32_t>(shape_id);
+  uint32_t first_exception_shape = static_cast<uint32_t>(ShapeId::kFirstException);
+  uint32_t last_exception_shape = static_cast<uint32_t>(ShapeId::kLastException);
+  return (id >= first_exception_shape) && (id <= last_exception_shape);
+}
+
+bool is_builtin_shape(ShapeId shape_id) {
+  uint32_t id = static_cast<uint32_t>(shape_id);
+  uint32_t last_builtin_shape = static_cast<uint32_t>(ShapeId::kLastBuiltinShapeId);
+  return id <= last_builtin_shape;
+}
+
+bool is_user_shape(ShapeId shape_id) {
+  return !is_builtin_shape(shape_id);
+}
+
+size_t align_to_size(size_t size, size_t alignment) {
+  assert(alignment > 0 && "invalid alignment");
+
+  if (size % alignment == 0) {
+    return size;
+  }
+
+  size_t remaining_until_aligned = alignment - (size % alignment);
+  return size + remaining_until_aligned;
+}
+
+void ObjectHeader::initialize_header(uintptr_t address, ShapeId shape_id, uint16_t count) {
+  ObjectHeader* header = bitcast<ObjectHeader*>(address);
+  header->m_shape_id_and_survivor_count = static_cast<uint32_t>(shape_id); // survivor count initialized to 0
+  header->m_count = count;
+  header->m_lock = 0;
+  header->m_flags = Flag::kYoungGeneration;
+  header->m_hashcode = 0;
+  header->m_forward_offset = 0;
+}
+
+ShapeId ObjectHeader::shape_id() const {
+  uint32_t tmp = m_shape_id_and_survivor_count;
+  return static_cast<ShapeId>(tmp & kMaskShape);
+}
+
+uint8_t ObjectHeader::survivor_count() const {
+  uint32_t tmp = m_shape_id_and_survivor_count;
+  return (tmp & kMaskSurvivorCount) >> kShiftSurvivorCount;
+}
+
+uint16_t ObjectHeader::count() const {
+  return m_count;
+}
+
+ObjectHeader::Flag ObjectHeader::flags() const {
+  return m_flags;
+}
+
+SYMBOL ObjectHeader::hashcode() {
+  Flag current_flags = flags();
+
+  if (current_flags & Flag::kHasHashcode) {
+    return m_hashcode;
+  } else {
+    uintptr_t address = bitcast<uintptr_t>(this);
+    uint32_t offset_in_heap = address % kHeapTotalSize;
+
+    if (cas_hashcode(0, offset_in_heap)) {
+      bool result = cas_flags(current_flags, static_cast<Flag>(current_flags | Flag::kHasHashcode));
+      (void)result;
+      assert(result);
+      return m_hashcode;
+    } else {
+      return m_hashcode;
+    }
+  }
+}
+
+uint32_t ObjectHeader::forward_offset() const {
+  return m_forward_offset;
+}
+
+RawObject ObjectHeader::object() const {
+  uintptr_t object_address = bitcast<uintptr_t>(this) + sizeof(ObjectHeader);
+  return RawObject::make_from_ptr(object_address);
+}
+
+uint32_t ObjectHeader::object_size() const {
+  if (is_data_shape(shape_id())) {
+    return align_to_size(count(), kObjectAlignment);
+  } else {
+    return align_to_size(count() * kPointerSize, kObjectAlignment);
+  }
+}
+
+bool ObjectHeader::cas_shape_id(ShapeId old_shape_id, ShapeId new_shape_id) {
+  uint8_t old_survivor_count = survivor_count();
+  uint32_t old_value = encode_shape_and_survivor_count(old_shape_id, old_survivor_count);
+  uint32_t new_value = encode_shape_and_survivor_count(new_shape_id, old_survivor_count);
+  return m_shape_id_and_survivor_count.cas(old_value, new_value);
+}
+
+bool ObjectHeader::cas_survivor_count(uint8_t old_count, uint8_t new_count) {
+  ShapeId old_shape_id = shape_id();
+  uint32_t old_value = encode_shape_and_survivor_count(old_shape_id, old_count);
+  uint32_t new_value = encode_shape_and_survivor_count(old_shape_id, new_count);
+  return m_shape_id_and_survivor_count.cas(old_value, new_value);
+}
+
+bool ObjectHeader::cas_count(uint16_t old_count, uint16_t new_count) {
+  return m_count.cas(old_count, new_count);
+}
+
+bool ObjectHeader::cas_flags(Flag old_flags, Flag new_flags) {
+  return m_flags.cas(old_flags, new_flags);
+}
+
+bool ObjectHeader::cas_hashcode(SYMBOL old_hashcode, SYMBOL new_hashcode) {
+  return m_hashcode.cas(old_hashcode, new_hashcode);
+}
+
+bool ObjectHeader::cas_forward_offset(uint32_t old_offset, uint32_t new_offset) {
+  return m_forward_offset.cas(old_offset, new_offset);
+}
+
+uint32_t ObjectHeader::encode_shape_and_survivor_count(ShapeId shape_id, uint8_t survivor_count) {
+  return static_cast<uint32_t>(shape_id) | ((uint32_t)survivor_count << kShiftSurvivorCount);
+}
+
+uintptr_t RawValue::raw() const {
+  return m_raw;
+}
+
+bool RawValue::is_error_ok() const {
+  return (m_raw & kMaskLowByte) == kTagErrorOk;
+}
+
+bool RawValue::is_error_exception() const {
+  return (m_raw & kMaskLowByte) == kTagErrorException;
+}
+
+bool RawValue::is_error_not_found() const {
+  return (m_raw & kMaskLowByte) == kTagErrorNotFound;
+}
+
+bool RawValue::is_error_out_of_bounds() const {
+  return (m_raw & kMaskLowByte) == kTagErrorOutOfBounds;
+}
+
+ShapeId RawValue::shape_id() const {
+  if (isObject()) {
+    RawObject object = RawObject::cast(this);
+    ObjectHeader* header = object.header();
+    return header->shape_id();
+  } else {
+    return shape_id_not_object_int();
+  }
+}
+
+ShapeId RawValue::shape_id_not_object_int() const {
+  uint64_t table_index = m_raw & kMaskImmediate;
+  assert(table_index < 16);
+  return kShapeImmediateTagMapping[table_index];
+}
+
+bool RawValue::truthyness() const {
+  if (isInt()) {
+    return RawInt::cast(this) != kZero;
+  } else if (isObject()) {
+    return RawObject::cast(this).address() != 0;
+  } else {
+    switch (shape_id_not_object_int()) {
+      case ShapeId::kFloat: {
+        double v = RawFloat::cast(this).value();
+        if (v == 0.0) return false;
+        if (std::isnan(v)) return false;
+        return true;
+      }
+      case ShapeId::kBool: {
+        return RawBool::cast(this) == kTrue;
+      }
+      case ShapeId::kSymbol: {
+        return true;
+      }
+      case ShapeId::kNull: {
+        return false;
+      }
+      default: {
+        return true;
+      }
+    }
+  }
+}
+
+bool RawValue::isInt() const {
+  return (m_raw & kMaskInt) == kTagInt;
+}
+
+bool RawValue::isFloat() const {
+  return (m_raw & kMaskImmediate) == kTagFloat;
+}
+
+bool RawValue::isBool() const {
+  return (m_raw & kMaskImmediate) == kTagBool;
+}
+
+bool RawValue::isSymbol() const {
+  return (m_raw & kMaskImmediate) == kTagSymbol;
+}
+
+bool RawValue::isNull() const {
+  return (m_raw & kMaskImmediate) == kTagNull;
+}
+
+bool RawValue::isSmallString() const {
+  return (m_raw & kMaskImmediate) == kTagSmallString;
+}
+
+bool RawValue::isSmallBytes() const {
+  return (m_raw & kMaskImmediate) == kTagSmallBytes;
+}
+
+bool RawValue::isValue() const {
+  return true;
+}
+
+bool RawValue::isObject() const {
+  return (m_raw & kMaskPointer) == kTagObject;
+}
+
+bool RawValue::isInstance() const {
+  if (isObject()) {
+    return is_instance_shape(RawObject::cast(this).shape_id());
+  } else {
+    return false;
+  }
+}
+
+bool RawValue::isData() const {
+  if (isObject()) {
+    return is_data_shape(RawObject::cast(this).shape_id());
+  } else {
+    return false;
+  }
+}
+
+bool RawValue::isBytes() const {
+  if (isObject()) {
+    ShapeId shape_id = RawObject::cast(this).shape_id();
+    switch (shape_id) {
+      case ShapeId::kLargeBytes:
+      case ShapeId::kHugeBytes: {
+        return true;
+      }
+      default: {
+        return false;
+      }
+    }
+  } else {
+    return isSmallBytes();
+  }
+}
+
+bool RawValue::isString() const {
+  if (isObject()) {
+    ShapeId shape_id = RawObject::cast(this).shape_id();
+    switch (shape_id) {
+      case ShapeId::kLargeString:
+      case ShapeId::kHugeString: {
+        return true;
+      }
+      default: {
+        return false;
+      }
+    }
+  } else {
+    return isSmallString();
+  }
+}
+
+bool RawValue::isLargeBytes() const {
+  return shape_id() == ShapeId::kLargeBytes;
+}
+
+bool RawValue::isLargeString() const {
+  return shape_id() == ShapeId::kLargeString;
+}
+
+bool RawValue::isHugeBytes() const {
+  return shape_id() == ShapeId::kHugeBytes;
+}
+
+bool RawValue::isHugeString() const {
+  return shape_id() == ShapeId::kHugeString;
+}
+
+bool RawValue::isTuple() const {
+  return shape_id() == ShapeId::kTuple;
+}
+
+bool RawValue::isFiber() const {
+  return shape_id() == ShapeId::kFiber;
+}
+
+bool RawValue::isFunction() const {
+  return shape_id() == ShapeId::kFunction;
+}
+
+bool RawValue::isShape() const {
+  return shape_id() == ShapeId::kShape;
+}
+
+bool RawValue::isType() const {
+  return shape_id() == ShapeId::kType;
+}
+
+bool RawValue::isException() const {
+  return shape_id() == ShapeId::kException;
+}
+
+void RawValue::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
 
-  if (this->is_pointer()) {
-    writer.fg(Color::Cyan, this->to_pointer<void>());
+  if (isInt()) {
+    writer.fg(Color::Cyan, RawInt::cast(this).value());
     return;
   }
 
-  if (this->is_int()) {
-    writer.fg(Color::Cyan, this->to_int());
+  if (isObject()) {
+    writer.fg(Color::Cyan, bitcast<void*>(RawObject::cast(this).address()));
     return;
   }
 
-  if (this->is_float()) {
-    writer.fg(Color::Red, this->to_float());
+  if (isFloat()) {
+    out << std::defaultfloat;
+    out << std::setprecision(10);
+    writer.fg(Color::Red, RawFloat::cast(this).value());
     return;
   }
 
-  if (this->is_char()) {
-    utils::Buffer buf(4);
-    buf.emit_utf8_cp(this->to_char());
-
-    writer.fg(Color::Red, "'", buf.buffer_string(), "'");
-
-    writer.fg(Color::Grey, " [");
-    for (size_t i = 0; i < buf.size(); i++) {
-      uint32_t character = *(buf.data() + i) & 0xFF;
-
-      if (i) {
-        out << " ";
-      }
-
-      writer.fg(Color::Red, "0x", std::hex, character, std::dec);
-    }
-    writer.fg(Color::Grey, "]");
-
-    return;
-  }
-
-  if (this->is_symbol()) {
-    writer.fg(Color::Red, std::hex, this->to_symbol(), std::dec);
-    return;
-  }
-
-  if (this->is_bool()) {
-    if (this->to_bool()) {
+  if (isBool()) {
+    if (RawBool::cast(this).value()) {
       writer.fg(Color::Green, "true");
     } else {
       writer.fg(Color::Red, "false");
@@ -90,46 +407,435 @@ void VALUE::dump(std::ostream& out) const {
     return;
   }
 
-  if (this->is_null()) {
+  if (isSymbol()) {
+    writer.fg(Color::Red, std::hex, RawSymbol::cast(this).value(), std::dec);
+    return;
+  }
+
+  if (isNull()) {
     writer.fg(Color::Grey, "null");
+    return;
+  }
+
+  if (isSmallString()) {
+    RawSmallString value = RawSmallString::cast(this);
+    const char* data = RawSmallString::data(&value);
+    size_t length = value.length();
+    writer.fg(Color::Red, "\"", std::string_view(data, length), "\"");
+    return;
+  }
+
+  if (isSmallBytes()) {
+    RawSmallBytes value = RawSmallBytes::cast(this);
+    writer.fg(Color::Grey, "bytes[");
+    for (size_t i = 0; i < value.length(); i++) {
+      uint8_t byte = *(RawSmallBytes::data(&value) + i);
+
+      if (i) {
+        out << " ";
+      }
+
+      writer.fg(Color::Red, "0x", std::hex, byte, std::dec);
+    }
+    writer.fg(Color::Grey, "]");
     return;
   }
 
   writer.fg(Color::Grey, "???");
 }
 
-bool VALUE::truthyness() const {
-  if (this->raw == taggedvalue::kNaN) return false;
-  if (this->raw == taggedvalue::kNull) return false;
-  if (this->raw == taggedvalue::kFalse) return false;
-  if (this->is_int()) return this->to_int() != 0;
-  if (this->is_float()) return this->to_float() != 0.0f;
-  return true;
+std::ostream& operator<<(std::ostream& out, const RawValue& value) {
+  value.dump(out);
+  return out;
 }
 
-bool VALUE::is_pointer_to(HeapType type) const {
-  if (is_pointer()) {
-    void* ptr = to_pointer<void>();
-    HeapHeader* header = MemoryAllocator::object_header(ptr);
-    return header->type == type;
+int64_t RawInt::value() const {
+  int64_t tmp = static_cast<int64_t>(m_raw);
+  return tmp >> kShiftInt;
+}
+
+RawInt RawInt::make(int64_t value) {
+  assert(is_valid(value));
+  return make_truncate(value);
+}
+
+RawInt RawInt::make_truncate(int64_t value) {
+  return RawInt::cast((static_cast<uintptr_t>(value) << kShiftInt) | kTagInt);
+}
+
+bool RawInt::is_valid(int64_t value) {
+  return value >= kMinValue && value <= kMaxValue;
+}
+
+double RawFloat::value() const {
+  uintptr_t doublepart = m_raw & (~kMaskImmediate);
+  return bitcast<double>(doublepart);
+}
+
+bool RawFloat::close_to(double other, double precision) const {
+  return std::fabs(value() - other) <= precision;
+}
+
+RawFloat RawFloat::make(double value) {
+  uintptr_t value_bits = bitcast<uintptr_t>(value);
+  return RawFloat::cast((value_bits & ~kMaskImmediate) | kTagFloat);
+}
+
+bool RawBool::value() const {
+  return (m_raw >> kShiftBool) != 0;
+}
+
+RawBool RawBool::make(bool value) {
+  if (value) {
+    return RawBool::cast((uintptr_t{1} << kShiftBool) | kTagBool);
+  } else {
+    return RawBool::cast(kTagBool);
   }
-  return false;
 }
 
-bool VALUE::compare(VALUE other) const {
-  if (compare_strict(other)) {
-    return true;
+SYMBOL RawSymbol::value() const {
+  return m_raw >> kShiftSymbol;
+}
+
+RawSymbol RawSymbol::make(SYMBOL value) {
+  return RawSymbol::cast((uintptr_t{value} << kShiftSymbol) | kTagSymbol);
+}
+
+size_t RawSmallString::length() const {
+  return (m_raw & kMaskLength) >> kShiftLength;
+}
+
+const char* RawSmallString::data(const RawSmallString* value) {
+  uintptr_t address = bitcast<uintptr_t>(value) + 1;
+  return bitcast<const char*>(address);
+}
+
+SYMBOL RawSmallString::hashcode() const {
+  return SYM(RawSmallString::data(this), length());
+}
+
+RawSmallString RawSmallString::make_from_cp(uint32_t cp) {
+  utils::Buffer buf(4);
+  buf.emit_utf8_cp(cp);
+  assert(buf.size() <= 4);
+  return make_from_memory(buf.data(), utils::Buffer::utf8_cp_length(cp));
+}
+
+RawSmallString RawSmallString::make_from_cstr(const char* value) {
+  return make_from_memory(value, std::strlen(value));
+}
+
+RawSmallString RawSmallString::make_from_memory(const char* value, size_t length) {
+  assert(length <= kMaxLength);
+
+  uintptr_t immediate = 0;
+  char* base_ptr = bitcast<char*>(&immediate) + 1;
+  std::memcpy(bitcast<void*>(base_ptr), value, length);
+
+  immediate |= (length << kShiftLength) & kMaskLowByte;
+  immediate |= kTagSmallString;
+
+  return RawSmallString::cast(immediate);
+}
+
+RawSmallString RawSmallString::make_empty() {
+  return RawSmallString::cast(kTagSmallString);
+}
+
+size_t RawSmallBytes::length() const {
+  return (m_raw & kMaskLength) >> kShiftLength;
+}
+
+const uint8_t* RawSmallBytes::data(const RawSmallBytes* value) {
+  uintptr_t base = bitcast<uintptr_t>(value);
+  return bitcast<const uint8_t*>(base + 1);
+}
+
+SYMBOL RawSmallBytes::hashcode() const {
+  return SYM(RawSmallBytes::data(this), length());
+}
+
+RawSmallBytes RawSmallBytes::make_from_memory(const uint8_t* value, size_t length) {
+  assert(length <= kMaxLength);
+
+  uintptr_t immediate = 0;
+  char* base_ptr = bitcast<char*>(&immediate) + 1;
+  std::memcpy(bitcast<void*>(base_ptr), value, length);
+
+  immediate |= (length << kShiftLength) & kMaskLowByte;
+  immediate |= kTagSmallBytes;
+
+  return RawSmallBytes::cast(immediate);
+}
+
+RawSmallBytes RawSmallBytes::make_empty() {
+  return RawSmallBytes::cast(kTagSmallBytes);
+}
+
+ErrorId RawNull::error_code() const {
+  return static_cast<ErrorId>((raw() >> kShiftError) & kMaskImmediate);
+}
+
+RawNull RawNull::make() {
+  return RawNull::cast(kTagNull);
+}
+
+RawNull RawNull::make_error(ErrorId id) {
+  return RawNull::cast((static_cast<uint8_t>(id) << kShiftError) | kTagNull);
+}
+
+size_t RawString::length() const {
+  if (isSmallString()) {
+    return RawSmallString::cast(this).length();
+  } else {
+    if (isLargeString()) {
+      return RawLargeString::cast(this).length();
+    }
+
+    if (isHugeString()) {
+      return RawHugeString::cast(this).length();
+    }
   }
 
-  if (is_bool() || other.is_bool()) {
-    return truthyness() == other.truthyness();
+  UNREACHABLE();
+}
+
+const char* RawString::data(const RawString* value) {
+  if (value->isSmallString()) {
+    return RawSmallString::data(bitcast<const RawSmallString*>(value));
+  } else {
+    if (value->isLargeString()) {
+      return RawLargeString::cast(value).data();
+    }
+
+    if (value->isHugeString()) {
+      return RawHugeString::cast(value).data();
+    }
   }
 
-  return false;
+  UNREACHABLE();
 }
 
-bool VALUE::compare_strict(VALUE other) const {
-  return this->raw == other.raw;
+SYMBOL RawString::hashcode() const {
+  if (isSmallString()) {
+    return RawSmallString::cast(this).hashcode();
+  } else {
+    if (isLargeString()) {
+      return RawLargeString::cast(this).hashcode();
+    }
+
+    if (isHugeString()) {
+      return RawHugeString::cast(this).hashcode();
+    }
+  }
+
+  UNREACHABLE();
 }
 
-}  // namespace charly::taggedvalue
+int32_t RawString::compare(RawString base, const char* data, size_t length) {
+  std::string_view base_view(RawString::data(&base), base.length());
+  std::string_view other_view(data, length);
+  return base_view.compare(other_view);
+}
+
+size_t RawBytes::length() const {
+  if (isSmallBytes()) {
+    return RawSmallBytes::cast(this).length();
+  } else {
+    if (isLargeBytes()) {
+      return RawLargeBytes::cast(this).length();
+    }
+
+    if (isHugeBytes()) {
+      return RawHugeBytes::cast(this).length();
+    }
+  }
+
+  UNREACHABLE();
+}
+
+const uint8_t* RawBytes::data(const RawBytes* value) {
+  if (value->isSmallBytes()) {
+    return RawSmallBytes::data(bitcast<const RawSmallBytes*>(value));
+  } else {
+    if (value->isLargeBytes()) {
+      return RawLargeBytes::cast(value).data();
+    }
+
+    if (value->isHugeBytes()) {
+      return RawHugeBytes::cast(value).data();
+    }
+  }
+
+  UNREACHABLE();
+}
+
+SYMBOL RawBytes::hashcode() const {
+  if (isSmallBytes()) {
+    return RawSmallBytes::cast(this).hashcode();
+  } else {
+    if (isLargeBytes()) {
+      return RawLargeBytes::cast(this).hashcode();
+    }
+
+    if (isHugeBytes()) {
+      return RawHugeBytes::cast(this).hashcode();
+    }
+  }
+
+  UNREACHABLE();
+}
+
+bool RawBytes::compare(RawBytes base, const uint8_t* data, size_t length) {
+  if (base.length() != length) {
+    return false;
+  }
+
+  return std::memcmp(RawBytes::data(&base), data, length) == 0;
+}
+
+uintptr_t RawObject::address() const {
+  return m_raw & ~kMaskPointer;
+}
+
+uintptr_t RawObject::base_address() const {
+  return address() - sizeof(ObjectHeader);
+}
+
+size_t RawObject::size() const {
+  uint16_t count = header()->count();
+
+  if (is_data_shape(shape_id())) {
+    return align_to_size(count, kObjectAlignment);
+  } else {
+    return align_to_size(count * kPointerSize, kObjectAlignment);
+  }
+}
+
+ShapeId RawObject::shape_id() const {
+  return header()->shape_id();
+}
+
+ObjectHeader* RawObject::header() const {
+  return bitcast<ObjectHeader*>(base_address());
+}
+
+RawObject RawObject::make_from_ptr(uintptr_t address) {
+  assert((address % kObjectAlignment) == 0);
+  assert((address & kMaskPointer) == 0);
+  return RawObject::cast(address | kTagObject);
+}
+
+size_t RawData::length() const {
+  return header()->count();
+}
+
+const uint8_t* RawData::data() const {
+  return bitcast<const uint8_t*>(address());
+}
+
+SYMBOL RawData::hashcode() const {
+  return SYM(data(), length());
+}
+
+const char* RawLargeString::data() const {
+  return bitcast<const char*>(address());
+}
+
+uint32_t RawInstance::size() const {
+  return header()->count();
+}
+
+RawValue RawInstance::field_at(uint32_t index) const {
+  assert(index < size());
+  RawValue* base = bitcast<RawValue*>(address());
+  return *(base + index);
+}
+
+void RawInstance::set_field_at(uint32_t index, RawValue value) {
+  assert(index < size());
+  RawValue* base = bitcast<RawValue*>(address());
+  *(base + index) = value;
+}
+
+uintptr_t RawInstance::pointer_at(uint32_t index) const {
+  RawValue value = field_at(index);
+  assert(value.isObject());
+  return RawObject::cast(value).address();
+}
+
+void RawInstance::set_pointer_at(uint32_t index, uintptr_t pointer) {
+  set_field_at(index, RawObject::make_from_ptr(pointer));
+}
+
+int64_t RawInstance::int_at(uint32_t index) const {
+  RawValue value = field_at(index);
+  assert(value.isInt());
+  return RawInt::cast(value).value();
+}
+
+void RawInstance::set_int_at(uint32_t index, int64_t value) {
+  set_field_at(index, RawInt::make(value));
+}
+
+size_t RawHugeBytes::length() const {
+  int64_t value = int_at(kDataLengthOffset);
+  assert(value >= 0);
+  return value;
+}
+
+const uint8_t* RawHugeBytes::data() const {
+  return bitcast<const uint8_t*>(pointer_at(kDataPointerOffset));
+}
+
+SYMBOL RawHugeBytes::hashcode() const {
+  return SYM(data(), length());
+}
+
+size_t RawHugeString::length() const {
+  int64_t value = int_at(kDataLengthOffset);
+  assert(value >= 0);
+  return value;
+}
+
+const char* RawHugeString::data() const {
+  return bitcast<const char*>(pointer_at(kDataPointerOffset));
+}
+
+SYMBOL RawHugeString::hashcode() const {
+  return SYM(data(), length());
+}
+
+RawValue RawFunction::context() const {
+  return field_at(kFrameContextOffset);
+}
+
+void RawFunction::set_context(RawValue context) {
+  set_field_at(kFrameContextOffset, context);
+}
+
+SharedFunctionInfo* RawFunction::shared_info() const {
+  return bitcast<SharedFunctionInfo*>(pointer_at(kSharedInfoOffset));
+}
+
+void RawFunction::set_shared_info(SharedFunctionInfo* function) {
+  set_pointer_at(kSharedInfoOffset, function);
+}
+
+Thread* RawFiber::thread() const {
+  return bitcast<Thread*>(pointer_at(kThreadPointerOffset));
+}
+
+void RawFiber::set_thread(Thread* thread) {
+  set_pointer_at(kThreadPointerOffset, thread);
+}
+
+RawFunction RawFiber::function() const {
+  return RawFunction::cast(field_at(kFunctionOffset));
+}
+
+void RawFiber::set_function(RawFunction function) {
+  set_field_at(kFunctionOffset, function);
+}
+
+}  // namespace charly::core::runtime

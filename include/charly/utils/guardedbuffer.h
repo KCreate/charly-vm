@@ -27,6 +27,7 @@
  * SOFTWARE.
  */
 
+#include <cstring>
 #include <unistd.h>
 #include <linux/memfd.h>
 #include <sys/syscall.h>
@@ -128,12 +129,21 @@ public:
     return m_buffer;
   }
 
-  size_t capacity() const {
+  size_t size() const {
     return m_buffer_size;
   }
 
-  size_t size() const {
-    return m_buffer_size;
+  void clear() {
+    bool old_is_readonly = is_readonly();
+    if (old_is_readonly) {
+      set_readonly(false);
+    }
+
+    std::memset(buffer(), 0, size());
+
+    if (old_is_readonly) {
+      set_readonly(true);
+    }
   }
 
 private:

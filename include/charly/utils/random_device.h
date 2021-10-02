@@ -24,32 +24,28 @@
  * SOFTWARE.
  */
 
-#include <atomic>
-#include <cassert>
+#include <cstdint>
+#include <ctime>
 
 #pragma once
 
-namespace charly {
+namespace charly::utils {
 
-template <class T>
-struct atomic : public std::atomic<T> {
-  using std::atomic<T>::atomic;
-  using std::atomic<T>::operator=;
+class RandomDevice {
+public:
+  RandomDevice() : m_state(std::time(nullptr)) {}
 
-  // sane CAS
-  bool cas(T expected, T desired) {
-    return std::atomic<T>::compare_exchange_strong(expected, desired, std::memory_order_seq_cst);
-  }
-  bool cas_weak(T expected, T desired) {
-    return std::atomic<T>::compare_exchange_weak(expected, desired, std::memory_order_seq_cst);
+  uint64_t get() {
+    uint64_t x = m_state;
+    x ^= x << 13;
+    x ^= x >> 7;
+    x ^= x << 17;
+    m_state = x;
+    return x;
   }
 
-  // CAS that should not fail
-  void acas(T expected, T desired) {
-    bool result = cas(expected, desired);
-    assert(result);
-    (void)result;
-  }
+private:
+  uint64_t m_state;
 };
 
-}
+}  // namespace charly::utils

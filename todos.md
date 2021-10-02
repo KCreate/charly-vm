@@ -1,13 +1,57 @@
 # Todos
 
-- Fiber Stacks
-  - Reuse old stacks
-  - Pre-allocate some stacks and grow reserve by doubling
-  - New fibers, allocate stack once the new fiber is started, not allocated
+- HandleScope to keep track of stack values
 
-- Optimize frame context size
-  - only allocate as much memory as is actually required
-  - currently each FrameContext contains enough space for 256 VALUES, which is usually way too much
+- Interpreter value comparison method
+
+- Interpreter value string output
+  - How are heap types formatted to strings?
+  - How are custom objects formatted?
+
+- Refactor asserts into custom implementation using CHECK
+    ```
+    #ifdef NDEBUG
+    #define CHECK(expr, ...) \
+        do { \
+            if (UNLIKELY(!(expr))) { \
+                check_failed(__FILE__, __LINE__, __func__, "check '" #expr "' failed: ", __VA_ARGS__); \
+            } \
+        } while (0)
+    #else
+    #define CHECK(expr, ...) do { if (UNLIKELY(!(expr))) { __builtin_unreachable(); } } while (0)
+    #endif
+    ```
+  - Separate into CHECK and DCHECK macros
+    - CHECK macros are included in release builds
+    - DCHECK macros are removed in release builds
+    - both checks should be used to guide optimizations in release builds
+  - Can use branch prediction builtins (LIKELY, UNLIKELY) and builtin_unreachable to guide optimization
+  - Can be used to format some data into the checks error message
+  - More readable runtime errors
+  - Can also call into the runtime one last time to print some debug information
+  - Ditch the C stdlib assert library
+
+- Upcoming code changes
+  - Implement CLI interface inside Charly code
+    - Implement VM interface to compile some code (either as module or REPL input)
+    - REPL should be handled inside of Charly code
+  - Implement optimized execution tier using inline caches to produce more specialized opcodes
+
+- Rebuild memory allocation system
+  - Ability to keep track of objects in a heap arena
+  - GC forwarding tables for relocation phase
+
+- Load / Write Barriers
+  - When does the runtime have to check the forward pointers of a cell?
+  - How does this mechanism work?
+  - How is it implemented?
+
+- Implement basic mechanism of the GC
+
+- Implement lowest execution tier as a template-JIT instead of bytecode interpreter?
+  - Would allow me to get some easy experience with building and integrating the JIT into the system
+    instead of having to tack it on later
+  - Generation could be a simple templating system, outputting assembly templates for each bytecode
 
 - Optimize StackFrame
   - std::jmp_buf takes up 200 bytes, the rest of the StackFrame is only about 72 bytes
@@ -19,10 +63,6 @@
 
 - Rename scheduler abort to exit
   - Implement scheduler panic routine and error diagnosis opportunity
-
-- Object read / write barriers
-
-- When does the runtime have to use the forwarding pointer in the heap header?
 
 - Reimplement make_fcontext and jump_fcontext in hand-written assembly
   - Try to understand what boost does in its own implementation

@@ -84,7 +84,7 @@ struct InlineCacheEntry {
 };
 
 struct CompiledModule;
-struct CompiledFunction {
+struct SharedFunctionInfo {
   CompiledModule* owner_module;
 
   std::string name;
@@ -109,7 +109,7 @@ struct CompiledFunction {
 struct CompiledModule {
   CompiledModule() : buffer(make<utils::ProtectedBuffer>()) {}
   ~CompiledModule() {
-    for (CompiledFunction* func : function_table) {
+    for (SharedFunctionInfo* func : function_table) {
       if (func)
         delete func;
     }
@@ -117,12 +117,12 @@ struct CompiledModule {
 
   std::string filename;
   std::vector<std::string> symbol_table;
-  std::vector<CompiledFunction*> function_table;
+  std::vector<SharedFunctionInfo*> function_table;
 
   // collective buffer containing all the bytecodes and inline cache tables
   // for all the modules compiled functions
   //
-  // the struct 'CompiledFunction' contains offsets into this buffer
+  // the struct 'SharedFunctionInfo' contains offsets into this buffer
   ref<utils::ProtectedBuffer> buffer;
 
   void dump(std::ostream& out) const;

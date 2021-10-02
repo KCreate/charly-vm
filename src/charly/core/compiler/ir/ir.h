@@ -38,7 +38,6 @@
 #include "charly/core/compiler/ast.h"
 #include "charly/core/compiler/location.h"
 #include "charly/core/compiler/ir/bytecode.h"
-#include "charly/value.h"
 
 #pragma once
 

@@ -24,22 +24,44 @@
  * SOFTWARE.
  */
 
-#include "charly/value.h"
+#include <catch2/catch_all.hpp>
 
-#pragma once
+#include "charly/utils/random_device.h"
 
-namespace charly::core::runtime {
+using namespace charly::utils;
 
-struct FrameContext {
-  FrameContext(FrameContext* parent) : parent(parent) {}
-  ~FrameContext() {}
+TEST_CASE("RandomDevice") {
 
-  static HeapType heap_value_type() {
-    return HeapType::FrameContext;
-  }
+  RandomDevice device;
 
-  FrameContext* parent;
-  VALUE locals[256];
-};
+  uint64_t a;
+  uint64_t b;
 
-}  // namespace charly::core::runtime
+  a = device.get();
+  b = device.get();
+  CHECK(a != b);
+
+  a = device.get();
+  b = device.get();
+  CHECK(a != b);
+
+  a = device.get();
+  b = device.get();
+  CHECK(a != b);
+
+  a = device.get();
+  b = device.get();
+  CHECK(a != b);
+
+  a = device.get();
+  b = device.get();
+  CHECK(a != b);
+
+  a = device.get();
+  b = device.get();
+  CHECK(a != b);
+
+  a = device.get();
+  b = device.get();
+  CHECK(a != b);
+}

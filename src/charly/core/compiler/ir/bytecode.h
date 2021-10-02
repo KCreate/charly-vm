@@ -64,7 +64,7 @@ using ICIndexType = uint16_t;
   V(Offset, Label, int32_t)        \
                                    \
   /* immediate value */            \
-  V(Immediate, VALUE, VALUE)       \
+  V(Immediate, runtime::RawValue, runtime::RawValue)       \
                                    \
   /* inline cache index */         \
   V(ICIndex, ICIndexType, ICIndexType)
@@ -235,22 +235,6 @@ static std::string kInlineCacheTypeNames[] = {
    * - test                                                                                                          \
    * */                                                                                                              \
   V(testjmp, ICNone, 1, 1, Immediate value, Offset offset)                                                           \
-  /* testjmpstrict - compare TOS with an immediate value and jump if they are the same value                         \
-   *                 performs a strict comparison (true == 25 would not branch)                                      \
-   *                                                                                                                 \
-   *                 the test value gets pushed back onto the stack if the comparison failed                         \
-   *                                                                                                                 \
-   * opcode operands:                                                                                                \
-   * - immediate test                                                                                                \
-   * - branch target                                                                                                 \
-   *                                                                                                                 \
-   * stack arguments:                                                                                                \
-   * - test                                                                                                          \
-   *                                                                                                                 \
-   * stack results:                                                                                                  \
-   * - test                                                                                                          \
-   * */                                                                                                              \
-  V(testjmpstrict, ICNone, 1, 1, Immediate value, Offset offset)                                                     \
   /* throwex - throw TOS as exception                                                                                \
    *                                                                                                                 \
    * stack arguments:                                                                                                \
@@ -793,8 +777,7 @@ static const std::unordered_set<Opcode> kBranchingOpcodes = {
   Opcode::jmp,
   Opcode::jmpf,
   Opcode::jmpt,
-  Opcode::testjmp,
-  Opcode::testjmpstrict
+  Opcode::testjmp
 };
 
 /*
@@ -817,6 +800,10 @@ struct __attribute__((packed)) InstructionDecoder {
     FOREACH_OPCODE(STRUCT)
 #undef STRUCT
   };
+
+  uintptr_t ip() const {
+    return bitcast<uintptr_t>(this);
+  }
 };
 
 /*

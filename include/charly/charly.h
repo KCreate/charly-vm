@@ -35,6 +35,7 @@
 #include <chrono>
 #include <unistd.h>
 
+#include "atomic.h"
 #include "debugln.h"
 
 #pragma once
@@ -52,41 +53,33 @@ namespace charly {
 #define CHARLY_VA_FOR_EACH(action, ...) \
   CHARLY_GET_MACRO(__VA_ARGS__, CHARLY_FE_5, CHARLY_FE_4, CHARLY_FE_3, CHARLY_FE_2, CHARLY_FE_1)(action, __VA_ARGS__)
 
-#define CHARLY_NON_CONSTRUCTABLE(C) \
-private:                            \
-  C() = delete;                     \
-                                    \
-private:                            \
-  ~C() = delete;
+#define CHARLY_NON_HEAP_ALLOCATABLE(C) \
+  void* operator new(size_t size) = delete; \
+  void* operator new[](size_t size) = delete
 
 #define CHARLY_NON_COPYABLE(C)     \
-private:                           \
   C(const C&) = delete;            \
-                                   \
-private:                           \
   C(C&) = delete;                  \
-                                   \
-private:                           \
   C(const C&&) = delete;           \
-                                   \
-private:                           \
   C(C&&) = delete;                 \
-                                   \
-private:                           \
   C& operator=(C&) = delete;       \
-                                   \
-private:                           \
   C& operator=(C&&) = delete;      \
-                                   \
-private:                           \
   C& operator=(const C&) = delete; \
-                                   \
-private:                           \
   C& operator=(const C&&) = delete;
 
 #define UNREACHABLE()                          \
   assert(false && "reached unreachable code"); \
   std::abort();                                \
+  __builtin_unreachable();
+
+#define UNIMPLEMENTED()               \
+  assert(false && "not implemented"); \
+  std::abort();                       \
+  __builtin_unreachable();
+
+#define UNEXPECTED()                   \
+  assert(false && "unexpected state"); \
+  std::abort();                        \
   __builtin_unreachable();
 
 /*
@@ -106,5 +99,18 @@ inline ref<T> cast(ref<O> node) {
 }
 
 static const size_t kPageSize = sysconf(_SC_PAGE_SIZE);
+
+static const size_t kPointerSize = sizeof(uintptr_t);
+
+inline uint64_t get_steady_timestamp() {
+  auto now = std::chrono::steady_clock::now();
+  return std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+}
+
+// helper method to cast one type to another
+template <typename B, typename A>
+B bitcast(A&& value) {
+  return *reinterpret_cast<B*>(&value);
+}
 
 }  // namespace charly

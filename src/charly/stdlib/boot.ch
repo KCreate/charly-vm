@@ -24,32 +24,16 @@
  * SOFTWARE.
  */
 
-#include <atomic>
-#include <cassert>
+let counter = 0
+const increment = 1
 
-#pragma once
+func recurse {
+  counter += increment
+  recurse()
+}
 
-namespace charly {
-
-template <class T>
-struct atomic : public std::atomic<T> {
-  using std::atomic<T>::atomic;
-  using std::atomic<T>::operator=;
-
-  // sane CAS
-  bool cas(T expected, T desired) {
-    return std::atomic<T>::compare_exchange_strong(expected, desired, std::memory_order_seq_cst);
-  }
-  bool cas_weak(T expected, T desired) {
-    return std::atomic<T>::compare_exchange_weak(expected, desired, std::memory_order_seq_cst);
-  }
-
-  // CAS that should not fail
-  void acas(T expected, T desired) {
-    bool result = cas(expected, desired);
-    assert(result);
-    (void)result;
-  }
-};
-
+try {
+  recurse()
+} catch(e) {
+  return counter
 }

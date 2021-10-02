@@ -27,26 +27,20 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
-#include <list>
 
 #include "charly/charly.h"
-#include "charly/atomic.h"
-#include "charly/value.h"
-
-#include "charly/core/runtime/scheduler.h"
-#include "charly/core/runtime/allocator.h"
 
 #pragma once
 
 namespace charly::core::runtime {
 
-class GarbageCollector {
-  friend class MemoryAllocator;
-public:
-  static void initialize();
-  inline static GarbageCollector* instance = nullptr;
+class Runtime;
 
-  GarbageCollector() :
+class GarbageCollector {
+  friend class Heap;
+public:
+  GarbageCollector(Runtime* runtime) :
+    m_runtime(runtime),
     m_wants_collection(false),
     m_wants_exit(false),
     m_state(State::Idle),
@@ -64,6 +58,7 @@ public:
     Evacuate,   // GC is compacting the heap
     UpdateRef   // GC is updating references to moved objects
   };
+
   State state() const {
     return m_state;
   }
@@ -96,18 +91,16 @@ private:
   void phase_evacuate();
   void phase_updateref();
 
-  // append a value to the greylist
-  void mark(VALUE value);
-
 private:
-  charly::atomic<bool> m_wants_collection;
-  charly::atomic<bool> m_wants_exit;
+  Runtime* m_runtime;
+
+  atomic<bool> m_wants_collection;
+  atomic<bool> m_wants_exit;
   std::mutex m_mutex;
   std::condition_variable m_cv;
 
-  charly::atomic<State> m_state;
+  atomic<State> m_state;
   std::thread m_thread;
-  std::list<HeapHeader*> m_greylist;
 };
 
 }  // namespace charly::core::runtime

@@ -24,26 +24,48 @@
  * SOFTWARE.
  */
 
-#include "charly/value.h"
+#include <string>
 
+#include "charly/core/compiler/ast.h"
+#include "charly/core/compiler/diagnostic.h"
+#include "charly/core/compiler/ir/builder.h"
 #include "charly/core/runtime/compiled_module.h"
+#include "charly/utils/buffer.h"
 
 #pragma once
 
-namespace charly::core::runtime {
+namespace charly::core::compiler {
 
-struct FrameContext;
+struct CompilationUnit {
+  enum class Type : uint8_t { Module, ReplInput };
 
-struct Function {
-  Function(FrameContext* context, const CompiledFunction* shared_data) : context(context), shared_data(shared_data) {}
-  ~Function() {}
+  CompilationUnit(Type type, const std::string& filepath, utils::Buffer& source) :
+    type(type),
+    console(filepath, source),
+    filepath(filepath),
+    ast(nullptr),
+    ir_module(nullptr),
+    compiled_module(nullptr) {}
 
-  static HeapType heap_value_type() {
-    return HeapType::Function;
-  }
-
-  FrameContext* context;
-  const CompiledFunction* shared_data;
+  Type type;
+  DiagnosticConsole console;
+  std::string filepath;
+  ref<ast::Block> ast;
+  ref<ir::IRModule> ir_module;
+  ref<runtime::CompiledModule> compiled_module;
 };
 
-}  // namespace charly::core::runtime
+class Compiler {
+public:
+
+  // compile source code into a compilation unit
+  static ref<CompilationUnit> compile(const std::string& filepath,
+                                      utils::Buffer& source,
+                                      CompilationUnit::Type type = CompilationUnit::Type::ReplInput);
+
+  static ref<CompilationUnit> compile(const std::string& filepath,
+                                      std::istream& source,
+                                      CompilationUnit::Type type = CompilationUnit::Type::ReplInput);
+};
+
+}  // namespace charly::core::compiler

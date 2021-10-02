@@ -30,6 +30,7 @@ target_compile_options(charly PRIVATE
   -Wno-vla-extension
   -Wno-c++20-designator
   -Wno-gnu-zero-variadic-macro-arguments
+  -Wno-gnu-label-as-value
   -Wno-c99-extensions
   -Wno-register
   -Wno-extra-semi
@@ -47,13 +48,17 @@ add_subdirectory(libs/catch2)
 
 file(GLOB tests_SRC
   "test/runtime/core/compiler/diagnostic.cpp"
+  "test/runtime/core/compiler/module.cpp"
   "test/runtime/core/compiler/parser.cpp"
   "test/runtime/core/compiler/pass.cpp"
   "test/runtime/core/compiler/semantic.cpp"
-  "test/runtime/core/compiler/module.cpp"
+  "test/runtime/utils/bitfield.cpp"
   "test/runtime/utils/buffer.cpp"
   "test/runtime/utils/cast.cpp"
-  "test/runtime/utils/taggedvalue.cpp"
+  "test/runtime/utils/cast.cpp"
+  "test/runtime/utils/random_device.cpp"
+  "test/runtime/utils/wait_flag.cpp"
+  "test/runtime/value.cpp"
 )
 
 add_executable(tests ${tests_SRC})
@@ -69,6 +74,7 @@ target_compile_options(tests PRIVATE
   -Wno-vla-extension
   -Wno-c++20-designator
   -Wno-gnu-zero-variadic-macro-arguments
+  -Wno-gnu-label-as-value
   -Wno-c99-extensions
   -Wno-register
   -Wno-extra-semi

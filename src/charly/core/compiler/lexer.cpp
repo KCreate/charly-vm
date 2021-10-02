@@ -29,7 +29,6 @@
 #include <memory>
 
 #include "charly/utils/cast.h"
-#include "charly/value.h"
 
 #include "charly/core/compiler/lexer.h"
 

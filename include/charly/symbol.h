@@ -71,12 +71,20 @@ namespace crc32 {
 using SYMBOL = uint32_t;
 
 // constexpr 32-bit symbol
+inline constexpr SYMBOL SYM(const char* str, size_t length) {
+  return crc32::crc32((uint8_t*)str, length);
+}
+
+inline SYMBOL SYM(const uint8_t* str, size_t length) {
+  return SYM(reinterpret_cast<const char*>(str), length);
+}
+
 inline constexpr SYMBOL SYM(const char* str) {
-  return crc32::crc32((uint8_t*)str, crc32::strlen_c(str));
+  return SYM(str, crc32::strlen_c(str));
 }
 
 inline SYMBOL SYM(const std::string& str) {
-  return SYM(str.c_str());
+  return SYM(str.c_str(), str.size());
 }
 
 }

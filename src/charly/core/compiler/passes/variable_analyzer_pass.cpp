@@ -157,7 +157,6 @@ bool VariableAnalyzer::is_constant(VariableId id) const {
     return false;
   }
 
-  assert(false && "could not find variable");
   UNREACHABLE();
 }
 
@@ -249,7 +248,7 @@ void VariableAnalyzer::patch_value_location(ValueLocation& location) const {
     return;
   }
 
-  assert(false && "could not find variable");
+  UNREACHABLE();
 }
 
 VariableId VariableAnalyzerPass::declare_variable(const ref<Name>& name, const ref<Node>& declaration, bool constant) {

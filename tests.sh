@@ -10,7 +10,7 @@ then
   cmake .. -DCMAKE_BUILD_TYPE=Release
 fi
 
-make tests
+make tests -j12
 if [ $? -eq 0 ]
 then
   cd ..

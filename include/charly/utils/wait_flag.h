@@ -24,32 +24,60 @@
  * SOFTWARE.
  */
 
-#include <atomic>
-#include <cassert>
+#include <cstdint>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+
+#include "charly/atomic.h"
 
 #pragma once
 
-namespace charly {
+namespace charly::utils {
 
-template <class T>
-struct atomic : public std::atomic<T> {
-  using std::atomic<T>::atomic;
-  using std::atomic<T>::operator=;
+class WaitFlag {
+public:
+  WaitFlag(std::mutex& mutex) : m_mutex(mutex), m_state(false) {}
 
-  // sane CAS
-  bool cas(T expected, T desired) {
-    return std::atomic<T>::compare_exchange_strong(expected, desired, std::memory_order_seq_cst);
-  }
-  bool cas_weak(T expected, T desired) {
-    return std::atomic<T>::compare_exchange_weak(expected, desired, std::memory_order_seq_cst);
+  bool state() const {
+    return m_state;
   }
 
-  // CAS that should not fail
-  void acas(T expected, T desired) {
-    bool result = cas(expected, desired);
-    assert(result);
-    (void)result;
+  void wait() {
+    std::unique_lock<std::mutex> locker(m_mutex);
+    m_cv.wait(locker, [&]() -> bool {
+      return m_state;
+    });
   }
+
+  bool signal() {
+    bool first = false;
+    {
+      std::unique_lock<std::mutex> locker(m_mutex);
+      first = m_state.cas(false, true);
+    }
+
+    m_cv.notify_all();
+
+    return first;
+  }
+
+  bool reset() {
+    bool first = false;
+    {
+      std::unique_lock<std::mutex> locker(m_mutex);
+      first = m_state.cas(true, false);
+    }
+
+    m_cv.notify_all();
+
+    return first;
+  }
+
+private:
+  std::mutex& m_mutex;
+  std::condition_variable m_cv;
+  atomic<bool> m_state;
 };
 
-}
+}  // namespace charly::utils

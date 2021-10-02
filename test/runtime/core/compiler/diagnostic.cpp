@@ -28,7 +28,7 @@
 
 #include <catch2/catch_all.hpp>
 
-#include "charly/core/compiler.h"
+#include "charly/core/compiler/compiler.h"
 
 using Catch::Matchers::Equals;
 

@@ -36,7 +36,6 @@
 #include "charly/core/compiler/ast.h"
 #include "charly/core/compiler/ir/bytecode.h"
 #include "charly/core/compiler/ir/ir.h"
-#include "charly/value.h"
 
 #pragma once
 
@@ -119,7 +118,6 @@ public:
   ref<IRInstruction> emit_jmpf(IROpOffset label);
   ref<IRInstruction> emit_jmpt(IROpOffset label);
   ref<IRInstruction> emit_testjmp(IROpImmediate value, IROpOffset label);
-  ref<IRInstruction> emit_testjmpstrict(IROpImmediate value, IROpOffset label);
   ref<IRInstruction> emit_throwex();
   ref<IRInstruction> emit_getexception();
   ref<IRInstruction> emit_call(IROpCount8 count);

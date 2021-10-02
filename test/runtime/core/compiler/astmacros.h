@@ -25,7 +25,7 @@
  */
 
 #include "charly/charly.h"
-#include "charly/core/compiler.h"
+#include "charly/core/compiler/compiler.h"
 
 #pragma once
 
