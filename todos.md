@@ -1,13 +1,5 @@
 # Todos
 
-- HandleScope to keep track of stack values
-
-- Interpreter value comparison method
-
-- Interpreter value string output
-  - How are heap types formatted to strings?
-  - How are custom objects formatted?
-
 - Refactor asserts into custom implementation using CHECK
     ```
     #ifdef NDEBUG
@@ -31,6 +23,12 @@
   - Can also call into the runtime one last time to print some debug information
   - Ditch the C stdlib assert library
 
+- Interpreter value comparison method
+
+- Interpreter value string output
+  - How are heap types formatted to strings?
+  - How are custom objects formatted?
+
 - Upcoming code changes
   - Implement CLI interface inside Charly code
     - Implement VM interface to compile some code (either as module or REPL input)
@@ -52,10 +50,6 @@
   - Would allow me to get some easy experience with building and integrating the JIT into the system
     instead of having to tack it on later
   - Generation could be a simple templating system, outputting assembly templates for each bytecode
-
-- Optimize StackFrame
-  - std::jmp_buf takes up 200 bytes, the rest of the StackFrame is only about 72 bytes
-  - Why does the actual stackframe take up over 1 kilobyte when the allocated stackframe is only about 300 bytes
 
 - Array access cannot cast all values to symbols
   - Array index needs to have the index value
@@ -125,10 +119,6 @@
     - Application threads
       - Update references
 
-- Race condition inside allocator
-  - Free regions might already be gone by the time thread reaches the freelist check
-    after calling expand_heap
-
 - Implement native mode mechanism
   - Worker threads that are inside native mode, that exceed some timeout (20ms?) will be
     marked as preempted by the system monitor thread.
@@ -172,20 +162,11 @@
   - Global symbol table with thread local intermediate caches
 
 - Value model
-  - Each heap cell should be divided into 8 byte cells
-    - Allows for more detailed inline caches as builtin properties can be
-      cached in the same way that object properties may be cached
   - Classes cannot be modified at runtime. They can only be subclassed
   - Objects creates from classes cannot have new keys assigned to them
     - They are static shapes that can only store the properties declared in their class
-    - For a dynamic collection of values use the dict primitive datatype
-      - Small dictionaries could be laid out inline and take advantage of inline caches
-
-- Memory locking
-
-- Pointer Tagging support double float
-  - Use some bits of the mantissa for the pointer tag
-  - Reduces accuracy but should be okay
+  - For a dynamic collection of values use the dict primitive datatype
+    - Small dictionaries could be laid out inline and take advantage of inline caches
 
 - Polymorphic inline caches
   - Caches should be able to hold at least 2-3 entries
@@ -194,10 +175,6 @@
   - Avoid constant inline cache updates
     - Should learn from use and only cache top 2-3 frequent entries
     - Reset this heuristic after some time to adapt to new workloads
-
-- Function frames can be allocated on the heap or on the stack
-  - Each function has a bool property on wether the frame locals
-    should be allocated on the stack or heap
 
 - Argument-Indexing identifiers
   - $0, $1 syntax
@@ -214,16 +191,6 @@
 
 - Stream coloring on macOS
   - termcolor::_internal::is_colorized returns false, manually executing the function body returns true???
-
-- Different sized regions?
-  - Regions with small cells, regions with large cells
-  - Maybe have the ability to decide at allocation time wether a region should be split
-    into small-object cells or large-object cells.
-  - Each worker would contain two active regions at any point. One for small objects one for big ones
-
-- Fiber scheduler with fcontext_t
-  - How to protect the stack from overflow?
-    - Protect memory page immediately after the stack to trap on accesses
 
 - Implement mechanism to wait for GC cycle to complete when heap could not be expanded
   - Instead of failing the allocation, threads should attempt to wait for a GC cycle before they fail

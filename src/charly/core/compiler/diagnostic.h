@@ -190,7 +190,7 @@ public:
   }
 
 private:
-  CHARLY_NON_COPYABLE(DiagnosticConsole)
+  CHARLY_NON_COPYABLE(DiagnosticConsole);
 
   // writes the section of the source code to which location
   // refers to to the out stream

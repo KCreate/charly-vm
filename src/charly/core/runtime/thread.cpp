@@ -105,6 +105,10 @@ const Stack& Thread::stack() const {
   return m_stack;
 }
 
+ThreadLocalHandles* Thread::handles() {
+  return &m_handles;
+}
+
 Frame* Thread::frame() const {
   return m_frame;
 }
@@ -227,8 +231,9 @@ void Thread::entry_main_thread() {
   assert(module->function_table.size());
   runtime->register_module(module);
 
-  RawFunction function = RawFunction::cast(runtime->create_function(this, kNull, module->function_table.front()));
-  RawFiber fiber = RawFiber::cast(runtime->create_fiber(this, function));
+  HandleScope scope(this);
+  Function function(scope, runtime->create_function(this, kNull, module->function_table.front()));
+  Fiber fiber(scope, runtime->create_fiber(this, function));
 
   Thread* fiber_thread = runtime->scheduler()->get_free_thread();
   assert(fiber_thread->id() == 1);

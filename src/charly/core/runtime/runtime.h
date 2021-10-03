@@ -30,6 +30,8 @@
 #include <vector>
 #include <stack>
 
+#include "charly/handle.h"
+
 #include "charly/utils/wait_flag.h"
 
 #include "charly/core/runtime/compiled_module.h"

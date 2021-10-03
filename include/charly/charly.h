@@ -65,7 +65,7 @@ namespace charly {
   C& operator=(C&) = delete;       \
   C& operator=(C&&) = delete;      \
   C& operator=(const C&) = delete; \
-  C& operator=(const C&&) = delete;
+  C& operator=(const C&&) = delete
 
 #define UNREACHABLE()                          \
   assert(false && "reached unreachable code"); \

@@ -165,6 +165,7 @@ enum class ErrorId : uint8_t {
   kErrorException
 };
 
+// forward declare Raw types
 #define FORWARD_DECL(name) class Raw##name;
 TYPE_NAMES(FORWARD_DECL)
 #undef FORWARD_DECL
@@ -238,11 +239,14 @@ static const size_t kObjectHeaderMaxSurvivorCount = 15;
     assert(value.is##name() && "invalid object type, expected " #name); \
     return value.rawCast<Raw##name>();                                  \
   }                                                                     \
-  static Raw##name cast(const RawValue* value) {                              \
+  static Raw##name cast(const RawValue* value) {                        \
     return cast(*value);                                                \
   }                                                                     \
   static Raw##name cast(uintptr_t value) {                              \
     return cast(RawValue(value));                                       \
+  }                                                                     \
+  static bool value_is_type(RawValue value) {                           \
+    return value.is##name();                                            \
   }                                                                     \
   CHARLY_NON_HEAP_ALLOCATABLE(name)
 

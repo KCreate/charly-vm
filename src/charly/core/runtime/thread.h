@@ -29,6 +29,7 @@
 #include "charly/utils/guardedbuffer.h"
 
 #include "charly/value.h"
+#include "charly/handle.h"
 
 #pragma once
 
@@ -72,6 +73,28 @@ private:
   utils::GuardedBuffer m_buffer;
 };
 
+class ThreadLocalHandles {
+public:
+  ThreadLocalHandles() : m_head(nullptr) {}
+
+  Value* push(Value* handle) {
+    Value* old_head = m_head;
+    m_head = handle;
+    return old_head;
+  }
+
+  void pop(Value* next) {
+    m_head = next;
+  }
+
+  Value* head() const {
+    return m_head;
+  }
+
+private:
+  Value* m_head;
+};
+
 // threads keep track of the stack memory of fibers and their runtime state
 // threads are pre-allocated by the scheduler and kept in a freelist
 //
@@ -105,6 +128,7 @@ public:
   void extend_timeslice(uint64_t ms);
   bool has_exceeded_timeslice() const;
   const Stack& stack() const;
+  ThreadLocalHandles* handles();
   Frame* frame() const;
   bool has_pending_exception() const;
   RawValue pending_exception() const;
@@ -169,6 +193,7 @@ private:
   uint64_t m_last_scheduled_at;
   fcontext_t m_context;
 
+  ThreadLocalHandles m_handles;
   Frame* m_frame;
   RawValue m_pending_exception;
 };
