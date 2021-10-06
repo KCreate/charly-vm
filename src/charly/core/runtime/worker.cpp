@@ -207,8 +207,7 @@ bool Worker::change_state(State expected_state, State new_state) {
 
 void Worker::assert_change_state(State expected_state, State new_state) {
   bool result = change_state(expected_state, new_state);
-  (void)result;
-  assert(result);
+  CHECK(result);
 }
 
 Worker::State Worker::wait_for_state_change(State old_state) {
@@ -285,7 +284,7 @@ void Worker::scheduler_loop(Runtime* runtime) {
             goto execute_next_thread;
           }
           default: {
-            UNEXPECTED();
+            FAIL("unexpected worker state");
           }
         }
       } while (!thread->has_exceeded_timeslice());

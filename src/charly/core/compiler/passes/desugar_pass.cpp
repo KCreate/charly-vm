@@ -252,7 +252,7 @@ ref<Statement> DesugarPass::transform(const ref<For>& node) {
   } else if (auto declaration = cast<UnpackDeclaration>(node->declaration)) {
     source = declaration->expression;
   } else {
-    assert(false && "unexpected node type");
+    FAIL("unexpected node type");
   }
 
   // instantiate __iterator
@@ -284,7 +284,7 @@ ref<Statement> DesugarPass::transform(const ref<For>& node) {
   } else if (auto declaration = cast<UnpackDeclaration>(node->declaration)) {
     declaration->expression = make<Id>("__value");
   } else {
-    assert(false && "unexpected node type");
+    FAIL("unexpected node type");
   }
 
   body_block->statements.push_back(node->declaration);

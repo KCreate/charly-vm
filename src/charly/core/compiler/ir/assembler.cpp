@@ -45,7 +45,7 @@ void Assembler::assemble() {
   m_runtime_module->symbol_table = m_ir_module->symbol_table;
 
   // emit functions
-  assert(m_ir_module->functions.size() <= (size_t)0xffff);
+  CHECK(m_ir_module->functions.size() <= (size_t)0xffff);
   for (const ref<IRFunction>& function : m_ir_module->functions) {
 
     // init function entry
@@ -55,10 +55,10 @@ void Assembler::assemble() {
     shared_info->name = function->ast->name->value;
     shared_info->name_symbol = SYM(function->ast->name->value);
     shared_info->ir_info = function->ast->ir_info;
-    assert(function->ast->ir_info.valid);
+    DCHECK(function->ast->ir_info.valid);
 
     // build string table
-    assert(function->string_table.size() <= (size_t)0x0000ffff);
+    CHECK(function->string_table.size() <= (size_t)0x0000ffff);
     for (const auto& entry : function->string_table) {
       shared_info->string_table.push_back(StringTableEntry(entry.value));
     }
@@ -105,7 +105,7 @@ void Assembler::assemble() {
     for (const ref<IRBasicBlock>& block : function->basic_blocks) {
       for (const ref<IRInstruction>& instruction : block->instructions) {
         if (instruction->location.valid) {
-          assert(instruction->assembled_at_label.has_value());
+          DCHECK(instruction->assembled_at_label.has_value());
           uint32_t instruction_offset = offset_of_label(instruction->assembled_at_label.value());
           shared_info->sourcemap_table.emplace_back(
             instruction_offset,
@@ -204,7 +204,7 @@ Label Assembler::reserve_label() {
 }
 
 void Assembler::place_label(Label label) {
-  assert(m_placed_labels.count(label) == 0);
+  DCHECK(m_placed_labels.count(label) == 0);
   m_placed_labels.insert({label, m_runtime_module->buffer->size()});
 }
 
@@ -233,7 +233,7 @@ void Assembler::patch_unresolved_labels() {
 }
 
 uint32_t Assembler::offset_of_label(Label label) {
-  assert(m_placed_labels.count(label));
+  DCHECK(m_placed_labels.count(label));
   return m_placed_labels.at(label);
 }
 

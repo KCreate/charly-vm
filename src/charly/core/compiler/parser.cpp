@@ -1456,8 +1456,7 @@ ref<Statement> Parser::create_declaration(const ref<Expression>& target, const r
       return make<UnpackDeclaration>(create_unpack_target(target), value, constant);
     }
     default: {
-      assert(false && "unexpected node type");
-      return nullptr;
+      FAIL("unexpected node type");
     }
   }
 }
@@ -1528,8 +1527,7 @@ ref<UnpackTarget> Parser::create_unpack_target(const ref<Expression>& node) {
       return target;
     }
     default: {
-      assert(false && "unexpected type");
-      break;
+      FAIL("unexpected node type");
     }
   }
 

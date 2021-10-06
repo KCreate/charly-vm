@@ -59,7 +59,7 @@ ref<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffe
 
 #define APPLY_DIAGNOSTIC_PASS(PassName)       \
   {                                           \
-    assert(unit->ast.get());                  \
+    DCHECK(unit->ast.get());                  \
     PassName(unit->console).apply(unit->ast); \
     if (unit->console.has_errors())           \
       return unit;                            \
@@ -67,7 +67,7 @@ ref<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffe
 
 #define APPLY_TRANSFORM_PASS(PassName)                                 \
   {                                                                    \
-    assert(unit->ast.get());                                           \
+    DCHECK(unit->ast.get());                                           \
     unit->ast = cast<Block>(PassName(unit->console).apply(unit->ast)); \
     if (unit->console.has_errors())                                    \
       return unit;                                                     \

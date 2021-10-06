@@ -77,12 +77,12 @@ void Builder::pop_exception_handler() {
 }
 
 ref<IRFunction> Builder::active_function() const {
-  assert(m_active_function && "no active function");
+  DCHECK(m_active_function);
   return m_active_function;
 }
 
 ref<IRBasicBlock> Builder::active_block() const {
-  assert(m_active_block && "no active block");
+  DCHECK(m_active_block);
   return m_active_block;
 }
 
@@ -226,7 +226,7 @@ void Builder::build_cfg() {
       case Opcode::jmpt: {
         Label target_label = cast<IROperandOffset>(op->operands[0])->value;
         ref<IRBasicBlock> target_block = m_labelled_blocks.at(target_label);
-        assert(block->next_block);
+        DCHECK(block->next_block);
         IRBasicBlock::link(block, target_block);
         IRBasicBlock::link(block, block->next_block);
         continue;
@@ -234,7 +234,7 @@ void Builder::build_cfg() {
       case Opcode::testjmp: {
         Label target_label = cast<IROperandOffset>(op->operands[1])->value;
         ref<IRBasicBlock> target_block = m_labelled_blocks.at(target_label);
-        assert(block->next_block);
+        DCHECK(block->next_block);
         IRBasicBlock::link(block, target_block);
         IRBasicBlock::link(block, block->next_block);
         continue;
@@ -387,9 +387,9 @@ void Builder::remove_dead_blocks() {
 void Builder::emit_exception_tables() {
   for (const ref<IRBasicBlock>& block : m_active_function->basic_blocks) {
     if (block->exception_handler) {
-      assert(block->labels.size());
-      assert(block->next_block);
-      assert(block->next_block->labels.size());
+      DCHECK(block->labels.size());
+      DCHECK(block->next_block);
+      DCHECK(block->next_block->labels.size());
 
       Label begin = *block->labels.begin();
       Label end = *block->next_block->labels.begin();
@@ -425,7 +425,7 @@ void Builder::allocate_inline_caches() {
 }
 
 ref<IRBasicBlock> Builder::new_basic_block() {
-  assert(m_active_function);
+  DCHECK(m_active_function);
 
   ref<IRBasicBlock> block = make<IRBasicBlock>(m_block_id_counter++);
   block->previous_block = m_active_block;
@@ -830,12 +830,12 @@ uint32_t Builder::maximum_stack_height() const {
 
 void Builder::reset_stack_height() {
   m_maximum_stack_height = 0;
-  assert(m_current_stack_height == 0);
+  DCHECK(m_current_stack_height == 0);
 }
 
 void Builder::update_stack(int32_t amount) {
   if (amount < 0) {
-    assert((uint32_t)-amount <= m_current_stack_height);
+    DCHECK((uint32_t)(-amount) <= m_current_stack_height);
   }
 
   // std::cout << " stack " << (int)m_current_stack_height << " += " << amount << std::endl;

@@ -48,7 +48,7 @@ namespace fs = std::filesystem;
 
 static atomic<uint64_t> thread_id_counter = 0;
 
-thread_local static Thread* g_thread;
+thread_local static Thread* g_thread = nullptr;
 
 Thread::Thread(Runtime* runtime) {
   m_runtime = runtime;
@@ -118,7 +118,7 @@ bool Thread::has_pending_exception() const {
 }
 
 RawValue Thread::pending_exception() const {
-  assert(has_pending_exception());
+  DCHECK(has_pending_exception());
   return m_pending_exception;
 }
 
@@ -167,7 +167,7 @@ void Thread::clean() {
 
 void Thread::checkpoint() {
   Worker* worker = m_worker;
-  assert(worker);
+  DCHECK(worker);
 
   if (worker->has_stop_flag() || has_exceeded_timeslice()) {
     enter_scheduler(State::Ready);
@@ -185,21 +185,21 @@ void Thread::ready() {
 }
 
 void Thread::context_switch(Worker* worker) {
-  assert(m_state == State::Ready);
+  DCHECK(m_state == State::Ready);
   m_state = State::Running;
   m_last_scheduled_at = get_steady_timestamp();
   transfer_t transfer = jump_fcontext(m_context, worker);
   m_context = transfer.fctx;
-  assert(m_worker == nullptr);
+  DCHECK(m_worker == nullptr);
 }
 
 void Thread::throw_value(RawValue value) {
-  assert(m_pending_exception == kErrorOk);
+  DCHECK(m_pending_exception == kErrorOk);
   m_pending_exception = value;
 }
 
 void Thread::reset_pending_exception() {
-  assert(m_pending_exception != kErrorOk);
+  DCHECK(m_pending_exception != kErrorOk);
   m_pending_exception = kErrorOk;
 }
 
@@ -208,7 +208,7 @@ void Thread::entry_main_thread() {
 
   // load the boot file
   std::optional<std::string> charly_vm_dir = utils::ArgumentParser::get_environment_for_key("CHARLYVMDIR");
-  assert(charly_vm_dir.has_value());
+  CHECK(charly_vm_dir.has_value());
   fs::path charly_dir(charly_vm_dir.value());
   fs::path boot_path = charly_dir / "src/charly/stdlib/boot.ch";
   std::ifstream boot_file(boot_path);
@@ -228,7 +228,7 @@ void Thread::entry_main_thread() {
   }
 
   auto module = unit->compiled_module;
-  assert(module->function_table.size());
+  DCHECK(module->function_table.size());
   runtime->register_module(module);
 
   HandleScope scope(this);
@@ -236,7 +236,7 @@ void Thread::entry_main_thread() {
   Fiber fiber(scope, runtime->create_fiber(this, function));
 
   Thread* fiber_thread = runtime->scheduler()->get_free_thread();
-  assert(fiber_thread->id() == 1);
+  DCHECK(fiber_thread->id() == 1);
   fiber_thread->init_fiber_thread(fiber);
   fiber_thread->ready();
   runtime->scheduler()->schedule_thread(fiber_thread, worker()->processor());
@@ -271,12 +271,12 @@ void Thread::enter_scheduler(State state) {
 }
 
 void Thread::push_frame(Frame* frame) {
-  assert(frame->parent == m_frame);
+  DCHECK(frame->parent == m_frame);
   m_frame = frame;
 }
 
-void Thread::pop_frame([[maybe_unused]] Frame* frame) {
-  assert(m_frame == frame);
+void Thread::pop_frame(Frame* frame) {
+  DCHECK(m_frame == frame);
   m_frame = m_frame->parent;
 }
 

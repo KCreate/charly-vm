@@ -61,7 +61,7 @@ void VariableAnalyzer::pop_block() {
 }
 
 VariableId VariableAnalyzer::declare_anonymous_variable(bool constant) {
-  assert(m_function);
+  DCHECK(m_function);
 
   VariableId id = get_variable_id();
   VariableDeclaration declaration;
@@ -77,8 +77,8 @@ VariableId VariableAnalyzer::declare_anonymous_variable(bool constant) {
 }
 
 VariableId VariableAnalyzer::declare_variable(const std::string& name, bool constant) {
-  assert(m_function);
-  assert(m_block);
+  DCHECK(m_function);
+  DCHECK(m_block);
 
   VariableId id = get_variable_id();
   VariableDeclaration declaration;
@@ -96,8 +96,8 @@ VariableId VariableAnalyzer::declare_variable(const std::string& name, bool cons
 }
 
 VariableId VariableAnalyzer::declare_argument(const std::string& name) {
-  assert(m_function);
-  assert(m_block);
+  DCHECK(m_function);
+  DCHECK(m_block);
 
   VariableId id = get_variable_id();
   VariableDeclaration declaration;
@@ -157,11 +157,11 @@ bool VariableAnalyzer::is_constant(VariableId id) const {
     return false;
   }
 
-  UNREACHABLE();
+  FAIL("could not find variable with id %", id);
 }
 
 bool VariableAnalyzer::name_already_taken(const std::string& name) const {
-  assert(m_block);
+  DCHECK(m_block);
   return m_block->m_locals.count(name) > 0;
 }
 
@@ -192,7 +192,7 @@ uint8_t FunctionScope::get_heap_variable_count() const {
 }
 
 void VariableAnalyzer::patch_value_location(ValueLocation& location) const {
-  assert(location.type == ValueLocation::Type::Id);
+  DCHECK(location.type == ValueLocation::Type::Id);
 
   VariableId id = location.as.id.id;
 
@@ -248,7 +248,7 @@ void VariableAnalyzer::patch_value_location(ValueLocation& location) const {
     return;
   }
 
-  UNREACHABLE();
+  FAIL("could not find variable with id %", id);
 }
 
 VariableId VariableAnalyzerPass::declare_variable(const ref<Name>& name, const ref<Node>& declaration, bool constant) {
@@ -277,7 +277,7 @@ VariableId VariableAnalyzerPass::declare_variable(const ref<Name>& name, const r
 
 VariableId VariableAnalyzerPass::declare_argument(const ref<Name>& name, const ref<Node>& declaration) {
   VariableId variable = m_analyzer.declare_argument(name->value);
-  assert(variable);
+  DCHECK(variable, "could not declare variable %", name->value);
   name->ir_location = ValueLocation::Id(variable);
   m_variable_declarations.insert({variable, declaration});
 

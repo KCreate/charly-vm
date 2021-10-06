@@ -35,8 +35,8 @@ using namespace charly::core::runtime;
 ref<IRModule> CodeGenerator::compile() {
 
   // register the module function
-  assert(m_unit->ast->statements.size() == 1);
-  assert(m_unit->ast->statements.front()->type() == Node::Type::Function);
+  DCHECK(m_unit->ast->statements.size() == 1);
+  DCHECK(m_unit->ast->statements.front()->type() == Node::Type::Function);
   enqueue_function(cast<ast::Function>(m_unit->ast->statements.front()));
 
   while (m_function_queue.size()) {
@@ -126,8 +126,7 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
 
   // stack size required for function
   m_builder.active_function()->ast->ir_info.stacksize = m_builder.maximum_stack_height();
-  assert((m_builder.maximum_stack_height() <= (uint32_t)0x00ff) &&
-         "function exceeded maximum stack height of 256 values");
+  CHECK(m_builder.maximum_stack_height() < 0x0100 && "function exceeded maximum stack height of 256 values");
 
   m_builder.finish_function();
 }
@@ -135,11 +134,11 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
 ref<ir::IRInstruction> CodeGenerator::generate_load(const ValueLocation& location) {
   switch (location.type) {
     case ValueLocation::Type::Invalid: {
-      assert(false && "expected valid value location");
+      FAIL("expected valid value location");
       return nullptr;
     }
     case ValueLocation::Type::Id: {
-      assert(false && "expected id value location to be replaced with real location");
+      FAIL("expected id value location to be replaced with real location");
       return nullptr;
     }
     case ValueLocation::Type::LocalFrame: {
@@ -157,11 +156,11 @@ ref<ir::IRInstruction> CodeGenerator::generate_load(const ValueLocation& locatio
 ref<ir::IRInstruction> CodeGenerator::generate_store(const ValueLocation& location) {
     switch (location.type) {
       case ValueLocation::Type::Invalid: {
-        assert(false && "expected valid value location");
+        FAIL("expected valid value location");
         return nullptr;
       }
       case ValueLocation::Type::Id: {
-        assert(false && "expected id value location to be replaced with real location");
+        FAIL("expected id value location to be replaced with real location");
         return nullptr;
       }
       case ValueLocation::Type::LocalFrame: {
@@ -215,7 +214,7 @@ void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target) 
   ref<UnpackTargetElement> spread_element = nullptr;
   for (const ref<UnpackTargetElement>& element : target->elements) {
     if (element->spread) {
-      assert(spread_element.get() == nullptr);
+      DCHECK(spread_element.get() == nullptr, "expected only a single spread target");
       spread_element = element;
       continue;
     }
@@ -273,17 +272,17 @@ void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target) 
 }
 
 Label CodeGenerator::active_return_label() const {
-  assert(m_return_stack.size());
+  DCHECK(m_return_stack.size());
   return m_return_stack.top();
 }
 
 Label CodeGenerator::active_break_label() const {
-  assert(m_break_stack.size());
+  DCHECK(m_break_stack.size());
   return m_break_stack.top();
 }
 
 Label CodeGenerator::active_continue_label() const {
-  assert(m_continue_stack.size());
+  DCHECK(m_continue_stack.size());
   return m_continue_stack.top();
 }
 
@@ -300,17 +299,17 @@ void CodeGenerator::push_continue_label(Label label) {
 }
 
 void CodeGenerator::pop_return_label() {
-  assert(m_return_stack.size());
+  DCHECK(m_return_stack.size());
   m_return_stack.pop();
 }
 
 void CodeGenerator::pop_break_label() {
-  assert(m_break_stack.size());
+  DCHECK(m_break_stack.size());
   m_break_stack.pop();
 }
 
 void CodeGenerator::pop_continue_label() {
-  assert(m_continue_stack.size());
+  DCHECK(m_continue_stack.size());
   m_continue_stack.pop();
 }
 
@@ -652,7 +651,7 @@ bool CodeGenerator::inspect_enter(const ref<Assignment>& node) {
     default: {
       generate_load(node->name->ir_location)->at(node->name);
       apply(node->source);
-      assert(kBinopOpcodeMapping.count(node->operation));
+      DCHECK(kBinopOpcodeMapping.count(node->operation));
       m_builder.emit(kBinopOpcodeMapping.at(node->operation))->at(node);
       generate_store(node->name->ir_location)->at(node->name);
       break;
@@ -681,7 +680,7 @@ bool CodeGenerator::inspect_enter(const ref<MemberAssignment>& node) {
       m_builder.emit_dup();
       m_builder.emit_loadattr(node->member->value)->at(node->member);
       apply(node->source);
-      assert(kBinopOpcodeMapping.count(node->operation));
+      DCHECK(kBinopOpcodeMapping.count(node->operation));
       m_builder.emit(kBinopOpcodeMapping.at(node->operation))->at(node);
       m_builder.emit_setattr(node->member->value)->at(node->member);
       break;
@@ -708,7 +707,7 @@ bool CodeGenerator::inspect_enter(const ref<IndexAssignment>& node) {
       m_builder.emit_dup2();
       m_builder.emit_loadattrsym()->at(node->index);
       apply(node->source);
-      assert(kBinopOpcodeMapping.count(node->operation));
+      DCHECK(kBinopOpcodeMapping.count(node->operation));
       m_builder.emit(kBinopOpcodeMapping.at(node->operation))->at(node);
       m_builder.emit_setattrsym()->at(node);
       break;
@@ -738,7 +737,7 @@ bool CodeGenerator::inspect_enter(const ref<BinaryOp>& node) {
     default: {
       apply(node->lhs);
       apply(node->rhs);
-      assert(kBinopOpcodeMapping.count(node->operation));
+      DCHECK(kBinopOpcodeMapping.count(node->operation));
       m_builder.emit(kBinopOpcodeMapping.at(node->operation))->at(node);
       break;
     }
@@ -780,7 +779,7 @@ bool CodeGenerator::inspect_enter(const ref<BinaryOp>& node) {
 }
 
 void CodeGenerator::inspect_leave(const ref<UnaryOp>& node) {
-  assert(kUnaryopOpcodeMapping.count(node->operation));
+  DCHECK(kUnaryopOpcodeMapping.count(node->operation));
   m_builder.emit(kUnaryopOpcodeMapping.at(node->operation))->at(node);
 }
 
@@ -1211,7 +1210,7 @@ bool CodeGenerator::inspect_enter(const ref<ast::BuiltinOperation>& node) {
     apply(exp);
   }
 
-  assert(kBuiltinOperationOpcodeMapping.count(operation));
+  DCHECK(kBuiltinOperationOpcodeMapping.count(operation));
   m_builder.emit(kBuiltinOperationOpcodeMapping.at(operation))->at(node);
 
   return false;

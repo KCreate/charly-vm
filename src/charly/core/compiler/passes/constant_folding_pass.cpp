@@ -274,7 +274,7 @@ ref<Expression> ConstantFoldingPass::transform(const ref<BuiltinOperation>& node
 
   switch (node->operation) {
     case ir::BuiltinId::caststring: {
-      assert(node->arguments.size() == 1);
+      DCHECK(node->arguments.size() == 1);
       const ref<Expression>& expression = node->arguments.at(0);
 
       switch (expression->type()) {
@@ -318,7 +318,7 @@ ref<Expression> ConstantFoldingPass::transform(const ref<BuiltinOperation>& node
       break;
     }
     case ir::BuiltinId::castsymbol: {
-      assert(node->arguments.size() == 1);
+      DCHECK(node->arguments.size() == 1);
       const ref<Expression>& expression = node->arguments.at(0);
 
       switch (expression->type()) {

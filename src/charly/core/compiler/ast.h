@@ -29,7 +29,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <cassert>
 
 #include "charly/charly.h"
 #include "charly/core/compiler/location.h"
@@ -538,7 +537,7 @@ public:
     } else if (ref<Float> float_node = cast<Float>(node)) {
       this->value = float_node->value;
     } else {
-      assert(false && "unexpected type");
+      FAIL("unexpected node type");
     }
   }
 
@@ -1471,7 +1470,7 @@ class BuiltinOperation final : public Expression {
   AST_NODE(BuiltinOperation)
 public:
   BuiltinOperation(ref<Name> name) {
-    assert(ir::kBuiltinNameMapping.count(name->value));
+    CHECK(ir::kBuiltinNameMapping.count(name->value));
     this->operation = ir::kBuiltinNameMapping.at(name->value);
     this->set_location(name);
   }

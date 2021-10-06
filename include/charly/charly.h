@@ -36,7 +36,7 @@
 #include <unistd.h>
 
 #include "atomic.h"
-#include "debugln.h"
+#include "debug.h"
 
 #pragma once
 
@@ -66,21 +66,6 @@ namespace charly {
   C& operator=(C&&) = delete;      \
   C& operator=(const C&) = delete; \
   C& operator=(const C&&) = delete
-
-#define UNREACHABLE()                          \
-  assert(false && "reached unreachable code"); \
-  std::abort();                                \
-  __builtin_unreachable();
-
-#define UNIMPLEMENTED()               \
-  assert(false && "not implemented"); \
-  std::abort();                       \
-  __builtin_unreachable();
-
-#define UNEXPECTED()                   \
-  assert(false && "unexpected state"); \
-  std::abort();                        \
-  __builtin_unreachable();
 
 /*
  * shorthand method for often used shared_ptr stuff

@@ -1,27 +1,7 @@
 # Todos
 
 - Refactor asserts into custom implementation using CHECK
-    ```
-    #ifdef NDEBUG
-    #define CHECK(expr, ...) \
-        do { \
-            if (UNLIKELY(!(expr))) { \
-                check_failed(__FILE__, __LINE__, __func__, "check '" #expr "' failed: ", __VA_ARGS__); \
-            } \
-        } while (0)
-    #else
-    #define CHECK(expr, ...) do { if (UNLIKELY(!(expr))) { __builtin_unreachable(); } } while (0)
-    #endif
-    ```
-  - Separate into CHECK and DCHECK macros
-    - CHECK macros are included in release builds
-    - DCHECK macros are removed in release builds
-    - both checks should be used to guide optimizations in release builds
-  - Can use branch prediction builtins (LIKELY, UNLIKELY) and builtin_unreachable to guide optimization
-  - Can be used to format some data into the checks error message
-  - More readable runtime errors
   - Can also call into the runtime one last time to print some debug information
-  - Ditch the C stdlib assert library
 
 - Interpreter value comparison method
 
@@ -29,15 +9,13 @@
   - How are heap types formatted to strings?
   - How are custom objects formatted?
 
-- Upcoming code changes
-  - Implement CLI interface inside Charly code
-    - Implement VM interface to compile some code (either as module or REPL input)
-    - REPL should be handled inside of Charly code
-  - Implement optimized execution tier using inline caches to produce more specialized opcodes
-
-- Rebuild memory allocation system
-  - Ability to keep track of objects in a heap arena
-  - GC forwarding tables for relocation phase
+- Implement REPL in charly
+  - Use the standard library to read, compile and execute input statements
+  - Implement a clean interface to execute code in the runtime from a global context
+    - Execute and return immediately
+    - Execute and wait for return value
+  - Would simplify result handling and GC liveness logic if all this functionality was implemented
+    directly in Charly
 
 - Load / Write Barriers
   - When does the runtime have to check the forward pointers of a cell?
@@ -46,26 +24,20 @@
 
 - Implement basic mechanism of the GC
 
+- Array access cannot cast all values to symbols
+  - Array index needs to have the index value
+  - Requires changes to the bytecode and compiler
+
 - Implement lowest execution tier as a template-JIT instead of bytecode interpreter?
   - Would allow me to get some easy experience with building and integrating the JIT into the system
     instead of having to tack it on later
   - Generation could be a simple templating system, outputting assembly templates for each bytecode
-
-- Array access cannot cast all values to symbols
-  - Array index needs to have the index value
-  - Requires changes to the bytecode and compiler
 
 - Rename scheduler abort to exit
   - Implement scheduler panic routine and error diagnosis opportunity
 
 - Reimplement make_fcontext and jump_fcontext in hand-written assembly
   - Try to understand what boost does in its own implementation
-
-- Implement REPL in charly
-  - Use the standard library to read, compile and execute input statements
-  - Implement some exec_charly function to execute charly code in a global context
-  - Would simplify result handling and GC liveness logic if all this functionality was implemented
-    directly in Charly
 
 - Concurrent Garbage Collector
   - Phases
@@ -198,18 +170,6 @@
 # Rewrite of the codebase
 
 - open questions
-  - object handles that also work with immediate encoded values (Handle<Object>, Handle<VALUE>)
-    - std::is_base_of can be used to enforce subclasses of Header only for Handle type
-    - thread safe object handles
-      - different threads might have handles to the same value
-      - refcount (immortal if rc > 0) needs to be handled in an atomic way
-
-  - exception handling
-    - collecting the stack trace should not be done within charly
-      - it should be possible, but exceptions should also be able to be created fully inside
-        c++ code, without calling into charly code
-    - well known class serving as base class of exception class
-
   - uncaught exceptions
     - machine control exceptions
       - SystemExit
@@ -268,32 +228,23 @@
       ```
 
 - solved questions
-  - max amount of arguments for a function
-    - except in case of functions with argument spreads
-    - throw exception on mismatched argument count
-  - how are fibers created?
-    - allocate a new fiber, call the function, enqueue in coordinator
   - vm reentrance, how can the VM call charly logic?
     - if we can detect that certain instructions would require us to call back into
       charly code, we could just handle these instructions as charly code
       call a function that handles the opcode and just returns to the old position
       once done
-  - remove computed goto, use switch with prediction nodes for branch efficiency
-    - inspired by CPython main interpreter loop
-    - remove compound opcodes, branch prediction should be sufficient
-  - stacked exceptions
-    - exceptions thrown in the handler blocks of try catch statements should
-      keep track of the old exception
-    - some kind of exception stack per fiber, popped at the end of catch statements
-    - pop exception off the exception stack at the end of the catch handler
 
 - hidden classes to speed up member lookups
+
 - inline caches using hidden classes
+
 - foreign function interface for native dynamic libraries
+
 - signal handling
   - background thread which waits for signals to arrive, then schedules a signal handler
     function via the coordinator, passing signal information to it
   - charly code can register for specific signals and pass a callback handler
+
 - list of builtin types
   - debug / meta
     - dead          placeholder for free gc cells

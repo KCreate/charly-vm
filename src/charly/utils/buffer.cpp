@@ -44,7 +44,7 @@ void BufferBase::seek(size_t offset) {
     offset = m_writeoffset;
   }
 
-  assert(offset <= m_size);
+  CHECK(offset <= m_size);
   m_writeoffset = offset;
 
   if (m_readoffset > m_writeoffset) {
@@ -260,14 +260,12 @@ void Buffer::reserve_space(size_t size) {
   }
 
   if (new_capacity >= kMaximumSize) {
-    assert(false && "reached maximum buffer size");
-    UNREACHABLE();
+    FAIL("reached maximum buffer size");
   }
 
   void* new_buffer = std::realloc(m_buffer, new_capacity);
   if (new_buffer == nullptr) {
-    assert(false && "could not realloc buffer");
-    UNREACHABLE();
+    FAIL("could not realloc buffer");
   }
 
   // initialize new memory
@@ -282,24 +280,17 @@ bool ProtectedBuffer::is_readonly() const {
 }
 
 void ProtectedBuffer::set_readonly(bool option) {
-  assert((uintptr_t)m_buffer % kPageSize == 0);
-  assert(m_capacity % kPageSize == 0);
+  CHECK((uintptr_t)m_buffer % kPageSize == 0);
+  CHECK(m_capacity % kPageSize == 0);
 
   // already in requested mode
   if (m_readonly == option) {
     return;
   }
 
-  if (option) {
-    if (mprotect(m_buffer, m_capacity, PROT_READ) != 0) {
-      assert(false && "could not enable memory protection");
-      UNREACHABLE();
-    }
-  } else {
-    if (mprotect(m_buffer, m_capacity, PROT_READ | PROT_WRITE) != 0) {
-      assert(false && "could not disable memory protection");
-      UNREACHABLE();
-    }
+  auto flags = option ? PROT_READ : PROT_READ | PROT_WRITE;
+  if (mprotect(m_buffer, m_capacity, flags) != 0) {
+    FAIL("could not mprotect region");
   }
 
   m_readonly = option;
@@ -320,16 +311,13 @@ void ProtectedBuffer::reserve_space(size_t size) {
   }
 
   if (new_capacity >= kMaximumSize) {
-    assert(false && "reached maximum buffer size");
-    UNREACHABLE();
+    FAIL("reached maximum buffer size");
   }
 
-  assert(new_capacity % kPageSize == 0);
-
+  DCHECK(new_capacity % kPageSize == 0);
   void* new_buffer = std::aligned_alloc(kPageSize, new_capacity);
   if (new_buffer == nullptr) {
-    assert(false && "could not realloc buffer");
-    UNREACHABLE();
+    FAIL("could not realloc buffer");
   }
 
   // initialize new memory

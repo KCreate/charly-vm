@@ -75,7 +75,7 @@ using namespace charly;
     DiagnosticConsole console("test", buffer);                       \
     ref<Expression> exp = Parser::parse_expression(buffer, console); \
     CHECK(!console.has_errors());                                    \
-    if (!console.has_errors()) {                                      \
+    if (!console.has_errors()) {                                     \
       exp->dump(exp_dump);                                           \
       N->dump(ref_dump);                                             \
       CHECK_THAT(exp_dump.str(), Equals(ref_dump.str()));            \

@@ -24,7 +24,6 @@
  * SOFTWARE.
  */
 
-#include <cassert>
 #include <cstdint>
 #include <cstdlib>
 
@@ -44,14 +43,14 @@ public:
   }
 
   bool get_bit(int64_t index) const {
-    assert(validate_index(index));
+    DCHECK(validate_index(index), "invalid index %", index);
     uint8_t entry = m_table[entry_for_index(index)];
     uint8_t mask = mask_for_index(index);
     return entry & mask;
   }
 
   void set_bit(int64_t index) {
-    assert(validate_index(index));
+    DCHECK(validate_index(index), "invalid index %", index);
     atomic<uint8_t>& entry = m_table[entry_for_index(index)];
     uint8_t mask = mask_for_index(index);
     uint8_t value = entry;
@@ -67,7 +66,7 @@ public:
   }
 
   void unset_bit(int64_t index) {
-    assert(validate_index(index));
+    DCHECK(validate_index(index), "invalid index %", index);
     atomic<uint8_t>& entry = m_table[entry_for_index(index)];
     uint8_t mask = mask_for_index(index);
     uint8_t value = entry;
@@ -119,12 +118,12 @@ private:
   }
 
   int64_t entry_for_index(int64_t index) const {
-    assert(validate_index(index));
+    DCHECK(validate_index(index), "invalid index %", index);
     return index / 8;
   }
 
   uint8_t mask_for_index(int64_t index) const {
-    assert(validate_index(index));
+    DCHECK(validate_index(index), "invalid index %", index);
     return 0x01 << (index % 8);
   }
 

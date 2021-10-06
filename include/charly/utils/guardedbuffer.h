@@ -42,23 +42,22 @@ namespace charly::utils {
 
 class GuardedBuffer {
 public:
-  GuardedBuffer(size_t size, bool read_only = false) : m_fd(-1), m_mapping(nullptr), m_mapping_size(0), m_buffer(nullptr), m_buffer_size(0), m_readonly(read_only) {
-    assert(size > 0);
-    assert((size % kPageSize) == 0);
+  GuardedBuffer(size_t size, bool read_only = false) :
+    m_fd(-1), m_mapping(nullptr), m_mapping_size(0), m_buffer(nullptr), m_buffer_size(0), m_readonly(read_only) {
+    DCHECK(size > 0, "expected size to be non 0");
+    DCHECK((size % kPageSize) == 0, "expected size () to be multiple of system page size (%)", size, kPageSize);
 
     size_t buffer_size = size;
     size_t mapping_size = size + (kPageSize * 2);
 
     // create anonymous file
     if ((m_fd = memfd_create("GuardedBuffer", 0)) == -1) {
-      assert(false && "could not create memfd file");
-      UNREACHABLE();
+      FAIL("could not create memfd file");
     }
 
     // set file size
     if (ftruncate(m_fd, buffer_size) != 0) {
-      assert(false && "could not truncate anonymous file");
-      UNREACHABLE();
+      FAIL("could not truncate anonymous file");
     }
 
     // reserve enough address space for the entire buffer + guard pages
@@ -66,15 +65,13 @@ public:
     // to prevent overflows
     m_mapping = mmap(nullptr, mapping_size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (m_mapping == MAP_FAILED) {
-      assert(false && "could not mmap address space");
-      UNREACHABLE();
+      FAIL("could not mmap address space");
     }
 
     // map the anonymous file into the address space
     void* buffer_address = (void*)((uintptr_t)m_mapping + kPageSize);
     if (mmap(buffer_address, buffer_size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, m_fd, 0) == MAP_FAILED) {
-      assert(false && "could not map anonymous file");
-      UNREACHABLE();
+      FAIL("could not map anonymous file");
     }
 
     m_buffer = buffer_address;
@@ -112,13 +109,11 @@ public:
 
     if (option) {
       if (mprotect(m_buffer, m_buffer_size, PROT_READ) != 0) {
-        assert(false && "could not enable memory protection");
-        UNREACHABLE();
+        FAIL("could not enable memory protection");
       }
     } else {
       if (mprotect(m_buffer, m_buffer_size, PROT_READ | PROT_WRITE) != 0) {
-        assert(false && "could not disable memory protection");
-        UNREACHABLE();
+        FAIL("could not disable memory protection");
       }
     }
 

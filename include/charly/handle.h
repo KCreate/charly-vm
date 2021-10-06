@@ -69,7 +69,7 @@ public:
   Handle<T>& operator=(S other) {
     static_assert(std::is_base_of<S, T>::value || std::is_base_of<T, S>::value);
     *static_cast<T*>(this) = other.template rawCast<T>();
-    assert(is_valid_type());
+    DCHECK(is_valid_type(), "expected valid type");
     return *this;
   }
 

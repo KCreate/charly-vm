@@ -234,20 +234,20 @@ static const size_t kObjectAlignment = 8;
 static const size_t kObjectHeaderMaxCount = 65535;
 static const size_t kObjectHeaderMaxSurvivorCount = 15;
 
-#define COMMON_RAW_OBJECT(name)                                         \
-  static Raw##name cast(RawValue value) {                               \
-    assert(value.is##name() && "invalid object type, expected " #name); \
-    return value.rawCast<Raw##name>();                                  \
-  }                                                                     \
-  static Raw##name cast(const RawValue* value) {                        \
-    return cast(*value);                                                \
-  }                                                                     \
-  static Raw##name cast(uintptr_t value) {                              \
-    return cast(RawValue(value));                                       \
-  }                                                                     \
-  static bool value_is_type(RawValue value) {                           \
-    return value.is##name();                                            \
-  }                                                                     \
+#define COMMON_RAW_OBJECT(name)                                        \
+  static Raw##name cast(RawValue value) {                              \
+    DCHECK(value.is##name(), "invalid object type, expected %", #name); \
+    return value.rawCast<Raw##name>();                                 \
+  }                                                                    \
+  static Raw##name cast(const RawValue* value) {                       \
+    return cast(*value);                                               \
+  }                                                                    \
+  static Raw##name cast(uintptr_t value) {                             \
+    return cast(RawValue(value));                                      \
+  }                                                                    \
+  static bool value_is_type(RawValue value) {                          \
+    return value.is##name();                                           \
+  }                                                                    \
   CHARLY_NON_HEAP_ALLOCATABLE(name)
 
 // the RawValue class represents a single pointer-tagged value.

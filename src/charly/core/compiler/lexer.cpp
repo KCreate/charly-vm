@@ -474,7 +474,7 @@ Token Lexer::read_token_all() {
       } else if (token.source.compare("NAN") == 0 || token.source.compare("NaN") == 0) {
         token.floatval = NAN;
       } else {
-        assert(false && "unexpected string");
+        FAIL("unexpected value");
       }
     }
   }

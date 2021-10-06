@@ -44,8 +44,8 @@ Frame::~Frame() {
 }
 
 RawValue Frame::pop(uint8_t count) {
-  assert(count >= 1);
-  assert(this->sp >= count);
+  DCHECK(count >= 1);
+  DCHECK(this->sp >= count);
   RawValue top = kNull;
   while (count--) {
     top = this->stack[this->sp - 1];
@@ -55,17 +55,17 @@ RawValue Frame::pop(uint8_t count) {
 }
 
 RawValue Frame::peek(uint8_t depth) const {
-  assert(this->sp > depth);
+  DCHECK(this->sp > depth);
   return this->stack[this->sp - 1 - depth];
 }
 
 RawValue* Frame::top_n(uint8_t count) const {
-  assert(count <= shared_function_info->ir_info.stacksize);
+  DCHECK(count <= shared_function_info->ir_info.stacksize);
   return &this->stack[this->sp - count];
 }
 
 void Frame::push(RawValue value) {
-  assert(this->sp < shared_function_info->ir_info.stacksize);
+  DCHECK(this->sp < shared_function_info->ir_info.stacksize);
   this->stack[this->sp] = value;
   this->sp++;
 }
@@ -94,6 +94,13 @@ RawValue Interpreter::call_function(
   frame.sp = 0;
   frame.argc = argc;
 
+  // if (frame.parent) {
+  //   uintptr_t parent_base = bitcast<uintptr_t>(frame.parent);
+  //   uintptr_t current_base = bitcast<uintptr_t>(&frame);
+  //   size_t frame_size = parent_base - current_base;
+  //   debuglnf("frame size: %", frame_size);
+  // }
+
   SharedFunctionInfo* shared_info = function.shared_info();
   frame.shared_function_info = shared_info;
   frame.ip = shared_info->bytecode_base_ptr;
@@ -105,7 +112,7 @@ RawValue Interpreter::call_function(
   size_t remaining_bytes_on_stack = frame_address - stack_bottom_address;
   if (remaining_bytes_on_stack <= kStackOverflowLimit) {
     // TODO: throw stack overflow exception
-    debugln("thread % stack overflow", thread->id());
+    debuglnf("thread % stack overflow", thread->id());
     thread->throw_value(RawSmallString::make_from_cstr("stackOF"));
     return kErrorException;
   }
@@ -148,9 +155,9 @@ RawValue Interpreter::call_function(
   }
 
   // copy function arguments into local variables
-  assert(argc <= localcount);
+  DCHECK(argc <= localcount);
   for (uint8_t i = 0; i < argc; i++) {
-    assert(arguments);
+    DCHECK(arguments);
     frame.locals[i] = arguments[i];
   }
 
@@ -165,7 +172,7 @@ RawValue Interpreter::execute(Thread* thread) {
   // dispatch table to opcode handlers
   static void* OPCODE_DISPATCH_TABLE[] = {
 #define OP(name, ictype, stackpop, stackpush, ...) &&execute_handler_##name,
-  FOREACH_OPCODE(OP)
+    FOREACH_OPCODE(OP)
 #undef OP
   };
 
@@ -199,7 +206,7 @@ handle_return_or_exception:
     }
 
     case ContinueMode::Exception: {
-      assert(thread->has_pending_exception());
+      DCHECK(thread->has_pending_exception());
 
       // check if the current frame can handle this exception
       if (const ExceptionTableEntry* entry = frame->find_active_exception_table_entry(op->ip())) {
@@ -214,7 +221,7 @@ handle_return_or_exception:
     }
 
     default: {
-      UNREACHABLE();
+      FAIL("unexpected continue mode");
     }
   }
 }
@@ -230,7 +237,6 @@ OP(nop) {
 OP(panic) {
   debuglnf("panic in thread %", thread->id());
   thread->abort(1);
-  UNREACHABLE();
 }
 
 OP(import) {
@@ -389,7 +395,7 @@ OP(loadglobal) {
 
 OP(loadlocal) {
   Index8 index = op->loadlocal.index;
-  assert(index < frame->shared_function_info->ir_info.local_variables);
+  DCHECK(index < frame->shared_function_info->ir_info.local_variables);
   frame->push(frame->locals[index]);
   return ContinueMode::Next;
 }
@@ -400,7 +406,7 @@ OP(loadfar) {
 
   RawTuple context = RawTuple::cast(frame->context);
   while (depth) {
-    assert(context.size() >= 1);
+    DCHECK(context.size() >= 1);
     context = RawTuple::cast(context.field_at(0));
     depth--;
   }
@@ -433,7 +439,7 @@ OP(setglobal) {
 OP(setlocal) {
   RawValue top = frame->peek();
   Index8 index = op->setlocal.index;
-  assert(index < frame->shared_function_info->ir_info.local_variables);
+  DCHECK(index < frame->shared_function_info->ir_info.local_variables);
   frame->locals[index] = top;
   return ContinueMode::Next;
 }
@@ -449,7 +455,7 @@ OP(setfar) {
 
   RawTuple context = RawTuple::cast(frame->context);
   while (depth) {
-    assert(context.size() >= 1);
+    DCHECK(context.size() >= 1);
     context = RawTuple::cast(context.field_at(0));
     depth--;
   }

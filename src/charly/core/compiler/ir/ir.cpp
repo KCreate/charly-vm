@@ -129,10 +129,15 @@ uint32_t IRInstruction::popped_values() const {
   }
 
   switch (this->opcode) {
-#define PAIR(name, ictype, STACKPOP, STACKPUSH, ...) case Opcode::name: { return STACKPOP; }
-  FOREACH_OPCODE(PAIR)
+#define PAIR(name, ictype, STACKPOP, STACKPUSH, ...) \
+  case Opcode::name: {                               \
+    return STACKPOP;                                 \
+  }
+    FOREACH_OPCODE(PAIR)
 #undef PAIR
-    case Opcode::__Count: { assert(false && "invalid opcode"); return 0; }
+    case Opcode::__Count: {
+      FAIL("invalid opcode");
+    }
   }
 }
 
@@ -168,10 +173,15 @@ uint32_t IRInstruction::pushed_values() const {
   }
 
   switch (this->opcode) {
-#define PAIR(name, ictype, STACKPOP, STACKPUSH, ...) case Opcode::name: { return STACKPUSH; }
-  FOREACH_OPCODE(PAIR)
+#define PAIR(name, ictype, STACKPOP, STACKPUSH, ...) \
+  case Opcode::name: {                               \
+    return STACKPUSH;                                \
+  }
+    FOREACH_OPCODE(PAIR)
 #undef PAIR
-    case Opcode::__Count: { assert(false && "invalid opcode"); return 0; }
+    case Opcode::__Count: {
+      FAIL("invalid opcode");
+    }
   }
 }
 

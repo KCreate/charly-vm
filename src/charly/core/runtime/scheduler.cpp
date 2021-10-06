@@ -40,7 +40,7 @@ Scheduler::Scheduler(Runtime* runtime){
   uint32_t proc_count = Scheduler::hardware_concurrency();
   if (utils::ArgumentParser::is_flag_set("maxprocs")) {
     const auto& values = utils::ArgumentParser::get_arguments_for_flag("maxprocs");
-    assert(values.size() && "expected at least one value for maxprocs");
+    CHECK(values.size(), "expected at least one value for maxprocs");
     const std::string& value = values.front();
     int64_t num = utils::string_to_int(value);
 
@@ -106,7 +106,7 @@ void Scheduler::join() {
 
   for (Worker* worker : m_workers) {
     worker->join();
-    assert(worker->state() == Worker::State::Exited);
+    CHECK(worker->state() == Worker::State::Exited);
   }
 }
 
@@ -134,7 +134,7 @@ void Scheduler::recycle_thread(Thread* thread) {
 }
 
 void Scheduler::schedule_thread(Thread* thread, Processor* current_proc) {
-  assert(thread->state() == Thread::State::Ready);
+  DCHECK(thread->state() == Thread::State::Ready);
 
   // attempt to schedule in current processor
   if (current_proc) {
@@ -166,7 +166,7 @@ void Scheduler::start_the_world() {
 }
 
 bool Scheduler::acquire_processor_for_worker(Worker* worker) {
-  assert(worker->processor() == nullptr);
+  DCHECK(worker->processor() == nullptr);
 
   Processor* proc = nullptr;
   {
@@ -181,8 +181,8 @@ bool Scheduler::acquire_processor_for_worker(Worker* worker) {
     return false;
   }
 
-  assert(!proc->is_live());
-  assert(proc->worker() == nullptr);
+  DCHECK(!proc->is_live());
+  DCHECK(proc->worker() == nullptr);
 
   proc->set_live(true);
   proc->set_worker(worker);
@@ -193,7 +193,7 @@ bool Scheduler::acquire_processor_for_worker(Worker* worker) {
 
 void Scheduler::release_processor_from_worker(Worker* worker) {
   Processor* proc = worker->processor();
-  assert(proc);
+  DCHECK(proc);
 
   proc->set_live(false);
   proc->set_worker(nullptr);

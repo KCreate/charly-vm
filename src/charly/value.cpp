@@ -78,7 +78,7 @@ bool is_user_shape(ShapeId shape_id) {
 }
 
 size_t align_to_size(size_t size, size_t alignment) {
-  assert(alignment > 0 && "invalid alignment");
+  DCHECK(alignment > 0, "invalid alignment (%)", alignment);
 
   if (size % alignment == 0) {
     return size;
@@ -127,8 +127,7 @@ SYMBOL ObjectHeader::hashcode() {
 
     if (cas_hashcode(0, offset_in_heap)) {
       bool result = cas_flags(current_flags, static_cast<Flag>(current_flags | Flag::kHasHashcode));
-      (void)result;
-      assert(result);
+      DCHECK(result);
       return m_hashcode;
     } else {
       return m_hashcode;
@@ -219,7 +218,7 @@ ShapeId RawValue::shape_id() const {
 
 ShapeId RawValue::shape_id_not_object_int() const {
   uint64_t table_index = m_raw & kMaskImmediate;
-  assert(table_index < 16);
+  DCHECK(table_index < 16);
   return kShapeImmediateTagMapping[table_index];
 }
 
@@ -455,7 +454,7 @@ int64_t RawInt::value() const {
 }
 
 RawInt RawInt::make(int64_t value) {
-  assert(is_valid(value));
+  CHECK(is_valid(value));
   return make_truncate(value);
 }
 
@@ -517,7 +516,7 @@ SYMBOL RawSmallString::hashcode() const {
 RawSmallString RawSmallString::make_from_cp(uint32_t cp) {
   utils::Buffer buf(4);
   buf.emit_utf8_cp(cp);
-  assert(buf.size() <= 4);
+  DCHECK(buf.size() <= 4);
   return make_from_memory(buf.data(), utils::Buffer::utf8_cp_length(cp));
 }
 
@@ -526,7 +525,7 @@ RawSmallString RawSmallString::make_from_cstr(const char* value) {
 }
 
 RawSmallString RawSmallString::make_from_memory(const char* value, size_t length) {
-  assert(length <= kMaxLength);
+  CHECK(length <= kMaxLength);
 
   uintptr_t immediate = 0;
   char* base_ptr = bitcast<char*>(&immediate) + 1;
@@ -556,7 +555,7 @@ SYMBOL RawSmallBytes::hashcode() const {
 }
 
 RawSmallBytes RawSmallBytes::make_from_memory(const uint8_t* value, size_t length) {
-  assert(length <= kMaxLength);
+  CHECK(length <= kMaxLength);
 
   uintptr_t immediate = 0;
   char* base_ptr = bitcast<char*>(&immediate) + 1;
@@ -721,8 +720,7 @@ ObjectHeader* RawObject::header() const {
 }
 
 RawObject RawObject::make_from_ptr(uintptr_t address) {
-  assert((address % kObjectAlignment) == 0);
-  assert((address & kMaskPointer) == 0);
+  CHECK((address % kObjectAlignment) == 0, "invalid pointer alignment");
   return RawObject::cast(address | kTagObject);
 }
 
@@ -747,20 +745,20 @@ uint32_t RawInstance::size() const {
 }
 
 RawValue RawInstance::field_at(uint32_t index) const {
-  assert(index < size());
+  DCHECK(index < size());
   RawValue* base = bitcast<RawValue*>(address());
   return *(base + index);
 }
 
 void RawInstance::set_field_at(uint32_t index, RawValue value) {
-  assert(index < size());
+  DCHECK(index < size());
   RawValue* base = bitcast<RawValue*>(address());
   *(base + index) = value;
 }
 
 uintptr_t RawInstance::pointer_at(uint32_t index) const {
   RawValue value = field_at(index);
-  assert(value.isObject());
+  DCHECK(value.isObject());
   return RawObject::cast(value).address();
 }
 
@@ -770,7 +768,7 @@ void RawInstance::set_pointer_at(uint32_t index, uintptr_t pointer) {
 
 int64_t RawInstance::int_at(uint32_t index) const {
   RawValue value = field_at(index);
-  assert(value.isInt());
+  DCHECK(value.isInt());
   return RawInt::cast(value).value();
 }
 
@@ -780,7 +778,7 @@ void RawInstance::set_int_at(uint32_t index, int64_t value) {
 
 size_t RawHugeBytes::length() const {
   int64_t value = int_at(kDataLengthOffset);
-  assert(value >= 0);
+  DCHECK(value >= 0);
   return value;
 }
 
@@ -794,7 +792,7 @@ SYMBOL RawHugeBytes::hashcode() const {
 
 size_t RawHugeString::length() const {
   int64_t value = int_at(kDataLengthOffset);
-  assert(value >= 0);
+  DCHECK(value >= 0);
   return value;
 }
 

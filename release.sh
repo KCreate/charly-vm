@@ -10,7 +10,7 @@ then
   cmake .. -DCMAKE_BUILD_TYPE=Release
 fi
 
-cmake --build . --target charly -j12
+cmake --build . --target charly -j8
 if [ $? -eq 0 ]
 then
   cd ..

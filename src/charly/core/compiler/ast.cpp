@@ -261,7 +261,7 @@ bool Dict::assignable() const {
 bool Dict::has_spread_elements() const {
   for (const ref<DictEntry>& exp : this->elements) {
     if (isa<Spread>(exp->key)) {
-      assert(exp->value.get() == nullptr);
+      DCHECK(exp->value.get() == nullptr);
       return true;
     }
   }

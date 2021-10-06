@@ -72,7 +72,7 @@ ThreadAllocationBuffer* Processor::tab() const {
 }
 
 bool Processor::schedule_thread(Thread* thread) {
-  assert(thread->state() == Thread::State::Ready);
+  DCHECK(thread->state() == Thread::State::Ready);
 
   std::lock_guard<std::mutex> locker(m_mutex);
   if (m_run_queue.size() >= kLocalRunQueueMaxSize) {
@@ -88,8 +88,8 @@ Thread* Processor::get_ready_thread() {
   Scheduler* scheduler = this->runtime()->scheduler();
   Worker* worker = this->worker();
 
-  assert(scheduler);
-  assert(worker);
+  DCHECK(scheduler);
+  DCHECK(worker);
 
   // pull ready thread from global run queue at random intervals
   // this prevents long-running fibers from hogging a processor, thus

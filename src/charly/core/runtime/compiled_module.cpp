@@ -71,7 +71,7 @@ void SharedFunctionInfo::dump(std::ostream& out) const {
   const uint8_t* next_opcode = function_bytecodes;
   while (next_opcode < function_end) {
     const Opcode opcode = *(Opcode*)next_opcode;
-    assert(opcode < Opcode::__Count);
+    DCHECK(opcode < Opcode::__Count);
     size_t opcode_length = kOpcodeLength[opcode];
     const std::string& opcode_name = kOpcodeNames[opcode];
 

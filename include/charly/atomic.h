@@ -25,7 +25,8 @@
  */
 
 #include <atomic>
-#include <cassert>
+
+#include "charly/debug.h"
 
 #pragma once
 
@@ -47,8 +48,7 @@ struct atomic : public std::atomic<T> {
   // CAS that should not fail
   void acas(T expected, T desired) {
     bool result = cas(expected, desired);
-    assert(result);
-    (void)result;
+    CHECK(result);
   }
 };
 

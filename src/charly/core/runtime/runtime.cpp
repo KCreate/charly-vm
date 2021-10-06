@@ -88,7 +88,7 @@ void Runtime::register_module(const ref<CompiledModule>& module) {
 RawObject Runtime::create_instance(Thread* thread, ShapeId shape_id, size_t object_size) {
 
   // determine the allocation size
-  assert(object_size % kPointerSize == 0);
+  DCHECK(object_size % kPointerSize == 0);
   size_t num_fields = object_size / kPointerSize;
   size_t header_size = sizeof(ObjectHeader);
   size_t total_size = align_to_size(header_size + object_size, kObjectAlignment);
@@ -100,9 +100,9 @@ RawObject Runtime::create_instance(Thread* thread, ShapeId shape_id, size_t obje
   // attempt to allocate memory for the object
   uintptr_t memory = 0;
   if (!tab->allocate(total_size, &memory)) {
-    assert(false && "allocation failed!");
+    FAIL("allocation failed");
   }
-  assert(memory);
+  DCHECK(memory);
 
   // initialize header
   ObjectHeader::initialize_header(memory, shape_id, num_fields);
