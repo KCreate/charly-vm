@@ -48,7 +48,7 @@ using namespace charly;
     charly::utils::Buffer buffer(S);           \
     DiagnosticConsole console("test", buffer); \
     Parser::parse_expression(buffer, console); \
-    CHECK(!console.has_errors());              \
+    CATCH_CHECK(!console.has_errors());        \
   }
 
 #define CHECK_STMT(S)                          \
@@ -56,7 +56,7 @@ using namespace charly;
     charly::utils::Buffer buffer(S);           \
     DiagnosticConsole console("test", buffer); \
     Parser::parse_statement(buffer, console);  \
-    CHECK(!console.has_errors());              \
+    CATCH_CHECK(!console.has_errors());        \
   }
 
 #define CHECK_PROGRAM(S)                       \
@@ -64,7 +64,7 @@ using namespace charly;
     charly::utils::Buffer buffer(S);           \
     DiagnosticConsole console("test", buffer); \
     Parser::parse_program(buffer, console);    \
-    CHECK(!console.has_errors());              \
+    CATCH_CHECK(!console.has_errors());        \
   }
 
 #define CHECK_AST_EXP(S, N)                                          \
@@ -74,11 +74,11 @@ using namespace charly;
     charly::utils::Buffer buffer(S);                                 \
     DiagnosticConsole console("test", buffer);                       \
     ref<Expression> exp = Parser::parse_expression(buffer, console); \
-    CHECK(!console.has_errors());                                    \
+    CATCH_CHECK(!console.has_errors());                              \
     if (!console.has_errors()) {                                     \
       exp->dump(exp_dump);                                           \
       N->dump(ref_dump);                                             \
-      CHECK_THAT(exp_dump.str(), Equals(ref_dump.str()));            \
+      CATCH_CHECK_THAT(exp_dump.str(), Equals(ref_dump.str()));            \
     }                                                                \
   }
 
@@ -89,11 +89,11 @@ using namespace charly;
     charly::utils::Buffer buffer(S);                                \
     DiagnosticConsole console("test", buffer);                      \
     ref<Statement> stmt = Parser::parse_statement(buffer, console); \
-    CHECK(!console.has_errors());                                   \
+    CATCH_CHECK(!console.has_errors());                             \
     if (!console.has_errors()) {                                    \
       stmt->dump(stmt_dump);                                        \
       N->dump(ref_dump);                                            \
-      CHECK_THAT(stmt_dump.str(), Equals(ref_dump.str()));          \
+      CATCH_CHECK_THAT(stmt_dump.str(), Equals(ref_dump.str()));          \
     }                                                               \
   }
 
@@ -104,11 +104,11 @@ using namespace charly;
     charly::utils::Buffer buffer(S);                            \
     DiagnosticConsole console("test", buffer);                  \
     ref<Program> prog = Parser::parse_program(buffer, console); \
-    CHECK(!console.has_errors());                               \
+    CATCH_CHECK(!console.has_errors());                         \
     if (!console.has_errors()) {                                \
       prog->dump(prog_dump);                                    \
       N->dump(ref_dump);                                        \
-      CHECK_THAT(prog_dump.str(), Equals(ref_dump.str()));      \
+      CATCH_CHECK_THAT(prog_dump.str(), Equals(ref_dump.str()));      \
     }                                                           \
   }
 
@@ -117,9 +117,9 @@ using namespace charly;
     charly::utils::Buffer buffer(S);                             \
     DiagnosticConsole console("test", buffer);                   \
     Parser::parse_expression(buffer, console);                   \
-    CHECK(console.has_errors());                                 \
+    CATCH_CHECK(console.has_errors());                           \
     if (console.has_errors())                                    \
-      CHECK_THAT(console.messages().front().message, Equals(E)); \
+      CATCH_CHECK_THAT(console.messages().front().message, Equals(E)); \
   }
 
 #define CHECK_ERROR_STMT(S, E)                                   \
@@ -127,9 +127,9 @@ using namespace charly;
     charly::utils::Buffer buffer(S);                             \
     DiagnosticConsole console("test", buffer);                   \
     Parser::parse_statement(buffer, console);                    \
-    CHECK(console.has_errors());                                 \
+    CATCH_CHECK(console.has_errors());                           \
     if (console.has_errors())                                    \
-      CHECK_THAT(console.messages().front().message, Equals(E)); \
+      CATCH_CHECK_THAT(console.messages().front().message, Equals(E)); \
   }
 
 #define CHECK_ERROR_PROGRAM(S, E)                                \
@@ -137,23 +137,23 @@ using namespace charly;
     charly::utils::Buffer buffer(S);                             \
     DiagnosticConsole console("test", buffer);                   \
     Parser::parse_program(buffer, console);                      \
-    CHECK(console.has_errors());                                 \
+    CATCH_CHECK(console.has_errors());                           \
     if (console.has_errors())                                    \
-      CHECK_THAT(console.messages().front().message, Equals(E)); \
+      CATCH_CHECK_THAT(console.messages().front().message, Equals(E)); \
   }
 
 #define COMPILE_OK(S)                              \
   {                                                \
     charly::utils::Buffer buffer(S);               \
     auto unit = Compiler::compile("test", buffer); \
-    CHECK(!unit->console.has_errors());            \
+    CATCH_CHECK(!unit->console.has_errors());      \
   }
 
 #define COMPILE_ERROR(S, E)                                            \
   {                                                                    \
     charly::utils::Buffer buffer(S);                                   \
     auto unit = Compiler::compile("test", buffer);                     \
-    CHECK(unit->console.has_errors());                                 \
+    CATCH_CHECK(unit->console.has_errors());                           \
     if (unit->console.has_errors())                                    \
-      CHECK_THAT(unit->console.messages().front().message, Equals(E)); \
+      CATCH_CHECK_THAT(unit->console.messages().front().message, Equals(E)); \
   }

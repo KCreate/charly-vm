@@ -30,7 +30,7 @@
 
 using namespace charly::utils;
 
-TEST_CASE("RandomDevice") {
+CATCH_TEST_CASE("RandomDevice") {
 
   RandomDevice device;
 
@@ -39,29 +39,29 @@ TEST_CASE("RandomDevice") {
 
   a = device.get();
   b = device.get();
-  CHECK(a != b);
+  CATCH_CHECK(a != b);
 
   a = device.get();
   b = device.get();
-  CHECK(a != b);
+  CATCH_CHECK(a != b);
 
   a = device.get();
   b = device.get();
-  CHECK(a != b);
+  CATCH_CHECK(a != b);
 
   a = device.get();
   b = device.get();
-  CHECK(a != b);
+  CATCH_CHECK(a != b);
 
   a = device.get();
   b = device.get();
-  CHECK(a != b);
+  CATCH_CHECK(a != b);
 
   a = device.get();
   b = device.get();
-  CHECK(a != b);
+  CATCH_CHECK(a != b);
 
   a = device.get();
   b = device.get();
-  CHECK(a != b);
+  CATCH_CHECK(a != b);
 }

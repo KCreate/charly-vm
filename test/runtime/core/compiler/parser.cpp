@@ -33,7 +33,7 @@
 
 #include "astmacros.h"
 
-TEST_CASE("parses literals") {
+CATCH_TEST_CASE("parses literals") {
   CHECK_AST_EXP("0", make<Int>(0));
   CHECK_AST_EXP("0x10", make<Int>(0x10));
   CHECK_AST_EXP("0xFFFF", make<Int>(0xFFFF));
@@ -82,7 +82,7 @@ TEST_CASE("parses literals") {
   CHECK_ERROR_STMT("\"", "unexpected end of file, unclosed string");
 }
 
-TEST_CASE("incomplete number literals error") {
+CATCH_TEST_CASE("incomplete number literals error") {
   CHECK_ERROR_STMT("0x", "unexpected end of file, expected a hex digit");
   CHECK_ERROR_STMT("0b", "unexpected end of file, expected either a 1 or 0");
   CHECK_ERROR_STMT("0o", "unexpected end of file, expected an octal digit");
@@ -92,7 +92,7 @@ TEST_CASE("incomplete number literals error") {
   CHECK_ERROR_STMT("0oz", "unexpected 'z', expected an octal digit");
 }
 
-TEST_CASE("parses tuples") {
+CATCH_TEST_CASE("parses tuples") {
   CHECK_ERROR_EXP("(", "unexpected end of file, expected a ')' token");
   CHECK_ERROR_EXP("(,)", "unexpected ',' token, expected an expression");
   CHECK_ERROR_EXP("(1,2,)", "unexpected ')' token, expected an expression");
@@ -104,18 +104,18 @@ TEST_CASE("parses tuples") {
   CHECK_AST_EXP("(1, 2, 3, 4)", make<Tuple>(make<Int>(1), make<Int>(2), make<Int>(3), make<Int>(4)));
 
   ref<Tuple> tup1 = EXP("(1, 2, 3, (1, 2, 3, 4))", Tuple);
-  CHECK(cast<Int>(tup1->elements[0])->value == 1);
-  CHECK(cast<Int>(tup1->elements[1])->value == 2);
-  CHECK(cast<Int>(tup1->elements[2])->value == 3);
+  CATCH_CHECK(cast<Int>(tup1->elements[0])->value == 1);
+  CATCH_CHECK(cast<Int>(tup1->elements[1])->value == 2);
+  CATCH_CHECK(cast<Int>(tup1->elements[2])->value == 3);
 
-  CHECK(cast<Tuple>(tup1->elements[3])->elements.size() == 4);
-  CHECK(cast<Int>(cast<Tuple>(tup1->elements[3])->elements[0])->value == 1);
-  CHECK(cast<Int>(cast<Tuple>(tup1->elements[3])->elements[1])->value == 2);
-  CHECK(cast<Int>(cast<Tuple>(tup1->elements[3])->elements[2])->value == 3);
-  CHECK(cast<Int>(cast<Tuple>(tup1->elements[3])->elements[3])->value == 4);
+  CATCH_CHECK(cast<Tuple>(tup1->elements[3])->elements.size() == 4);
+  CATCH_CHECK(cast<Int>(cast<Tuple>(tup1->elements[3])->elements[0])->value == 1);
+  CATCH_CHECK(cast<Int>(cast<Tuple>(tup1->elements[3])->elements[1])->value == 2);
+  CATCH_CHECK(cast<Int>(cast<Tuple>(tup1->elements[3])->elements[2])->value == 3);
+  CATCH_CHECK(cast<Int>(cast<Tuple>(tup1->elements[3])->elements[3])->value == 4);
 }
 
-TEST_CASE("interpolated strings") {
+CATCH_TEST_CASE("interpolated strings") {
   CHECK_AST_EXP("\"{x}\"", make<FormatString>(make<Id>("x")));
   CHECK_AST_EXP("\"x:{x} after\"", make<FormatString>(make<String>("x:"), make<Id>("x"), make<String>(" after")));
   CHECK_AST_EXP("\"x:{x} y:{\"{y}\"}\"", make<FormatString>(make<String>("x:"), make<Id>("x"), make<String>(" y:"),
@@ -127,7 +127,7 @@ TEST_CASE("interpolated strings") {
   CHECK_ERROR_EXP("\"{", "unexpected end of file, unclosed string interpolation");
 }
 
-TEST_CASE("mismatched brackets") {
+CATCH_TEST_CASE("mismatched brackets") {
   CHECK_ERROR_EXP("(", "unexpected end of file, expected a ')' token");
   CHECK_ERROR_STMT("{", "unexpected end of file, expected a '}' token");
 
@@ -138,11 +138,11 @@ TEST_CASE("mismatched brackets") {
   CHECK_ERROR_STMT("{]", "unexpected ']', expected a '}' token");
 }
 
-TEST_CASE("unclosed multiline comments") {
+CATCH_TEST_CASE("unclosed multiline comments") {
   CHECK_ERROR_EXP("/*", "unexpected end of file, unclosed comment");
 }
 
-TEST_CASE("assignments") {
+CATCH_TEST_CASE("assignments") {
   CHECK_EXP("x = 1");
   CHECK_EXP("x = 1 + 2");
   CHECK_EXP("(x) = 1");
@@ -158,7 +158,7 @@ TEST_CASE("assignments") {
   CHECK_EXP("foo[0] += 1");
 }
 
-TEST_CASE("ternary if") {
+CATCH_TEST_CASE("ternary if") {
   CHECK_AST_EXP("true ? 1 : 0", make<Ternary>(make<Bool>(true), make<Int>(1), make<Int>(0)));
   CHECK_AST_EXP(
     "true ? foo ? bar : baz : 0",
@@ -169,7 +169,7 @@ TEST_CASE("ternary if") {
                               make<Ternary>(make<Id>("foo"), make<Id>("bar"), make<Id>("baz"))));
 }
 
-TEST_CASE("binary operators") {
+CATCH_TEST_CASE("binary operators") {
   CHECK_AST_EXP("1 + 1", make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(1)));
   CHECK_AST_EXP("1 - 1", make<BinaryOp>(TokenType::Minus, make<Int>(1), make<Int>(1)));
   CHECK_AST_EXP("1 * 1", make<BinaryOp>(TokenType::Mul, make<Int>(1), make<Int>(1)));
@@ -195,7 +195,7 @@ TEST_CASE("binary operators") {
   CHECK_AST_EXP("1 >>> 1", make<BinaryOp>(TokenType::BitUnsignedRightShift, make<Int>(1), make<Int>(1)));
 }
 
-TEST_CASE("binary operator relative precedence") {
+CATCH_TEST_CASE("binary operator relative precedence") {
   CHECK_AST_EXP("1 + 2 + 3", make<BinaryOp>(TokenType::Plus,
                                             make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(2)), make<Int>(3)));
 
@@ -228,7 +228,7 @@ TEST_CASE("binary operator relative precedence") {
                                               make<BinaryOp>(TokenType::Pow, make<Int>(2), make<Int>(3))));
 }
 
-TEST_CASE("unary operators") {
+CATCH_TEST_CASE("unary operators") {
   CHECK_AST_EXP("-0", make<UnaryOp>(TokenType::Minus, make<Int>(0)));
   CHECK_AST_EXP("-100", make<UnaryOp>(TokenType::Minus, make<Int>(100)));
   CHECK_AST_EXP("-0x500", make<UnaryOp>(TokenType::Minus, make<Int>(0x500)));
@@ -248,7 +248,7 @@ TEST_CASE("unary operators") {
   CHECK_ERROR_EXP("...x", "unexpected '...' token, expected an expression");
 }
 
-TEST_CASE("parses control statements") {
+CATCH_TEST_CASE("parses control statements") {
   CHECK_AST_STMT("return", make<Return>(make<Null>()));
   CHECK_AST_STMT("return 1", make<Return>(make<Int>(1)));
   CHECK_AST_STMT("return 1 + 2", make<Return>(make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(2))));
@@ -263,7 +263,7 @@ TEST_CASE("parses control statements") {
   CHECK_AST_STMT("export exp", make<Export>(make<Id>("exp")));
 }
 
-TEST_CASE("import expression") {
+CATCH_TEST_CASE("import expression") {
   CHECK_AST_EXP("import foo", make<Import>(make<Name>("foo")));
   CHECK_AST_EXP("import 25", make<Import>(make<Int>(25)));
   CHECK_AST_EXP("import \"foo\"", make<Import>(make<String>("foo")));
@@ -277,7 +277,7 @@ TEST_CASE("import expression") {
   CHECK_ERROR_STMT("import", "unexpected end of file, expected an expression");
 }
 
-TEST_CASE("yield, await, typeof expressions") {
+CATCH_TEST_CASE("yield, await, typeof expressions") {
   CHECK_PROGRAM("func foo { yield 1 }");
   CHECK_PROGRAM("func foo { ->{ yield 1 } }");
   CHECK_PROGRAM("spawn { yield 1 }");
@@ -304,7 +304,7 @@ TEST_CASE("yield, await, typeof expressions") {
                 make<BinaryOp>(TokenType::Equal, make<Typeof>(make<Id>("x")), make<String>("int")));
 }
 
-TEST_CASE("spawn expressions") {
+CATCH_TEST_CASE("spawn expressions") {
   CHECK_AST_EXP("spawn foo()", make<Spawn>(make<CallOp>(make<Id>("foo"))));
   CHECK_AST_EXP("spawn foo.bar()", make<Spawn>(make<CallMemberOp>(make<Id>("foo"), make<Name>("bar"))));
   CHECK_AST_EXP("spawn foo()()", make<Spawn>(make<CallOp>(make<CallOp>(make<Id>("foo")))));
@@ -315,7 +315,7 @@ TEST_CASE("spawn expressions") {
   CHECK_ERROR_STMT("loop { spawn { continue } }", "continue statement not allowed at this point");
 }
 
-TEST_CASE("call expressions") {
+CATCH_TEST_CASE("call expressions") {
   CHECK_AST_EXP("foo()", make<CallOp>(make<Id>("foo")));
   CHECK_AST_EXP("foo(1)", make<CallOp>(make<Id>("foo"), make<Int>(1)));
   CHECK_AST_EXP("foo(1) + foo(2)", make<BinaryOp>(TokenType::Plus, make<CallOp>(make<Id>("foo"), make<Int>(1)),
@@ -352,7 +352,7 @@ TEST_CASE("call expressions") {
   CHECK_ERROR_EXP("foo(", "unexpected end of file, expected a ')' token");
 }
 
-TEST_CASE("member expressions") {
+CATCH_TEST_CASE("member expressions") {
   CHECK_AST_EXP("foo.bar", make<MemberOp>(make<Id>("foo"), make<Name>("bar")));
   CHECK_AST_EXP("foo.bar + foo.baz", make<BinaryOp>(TokenType::Plus, make<MemberOp>(make<Id>("foo"), make<Name>("bar")),
                                                     make<MemberOp>(make<Id>("foo"), make<Name>("baz"))));
@@ -366,7 +366,7 @@ TEST_CASE("member expressions") {
   CHECK_AST_EXP("@foo", make<MemberOp>(make<Self>(), make<Name>("foo")));
 }
 
-TEST_CASE("index expressions") {
+CATCH_TEST_CASE("index expressions") {
   CHECK_AST_EXP("foo[1]", make<IndexOp>(make<Id>("foo"), make<Int>(1)));
   CHECK_AST_EXP("foo[1] + foo[2]", make<BinaryOp>(TokenType::Plus, make<IndexOp>(make<Id>("foo"), make<Int>(1)),
                                                   make<IndexOp>(make<Id>("foo"), make<Int>(2))));
@@ -383,7 +383,7 @@ TEST_CASE("index expressions") {
   CHECK_ERROR_EXP("foo[", "unexpected end of file, expected a ']' token");
 }
 
-TEST_CASE("list literals") {
+CATCH_TEST_CASE("list literals") {
   CHECK_AST_EXP("[]", make<List>());
   CHECK_AST_EXP("[[]]", make<List>(make<List>()));
   CHECK_AST_EXP("[[1]]", make<List>(make<List>(make<Int>(1))));
@@ -399,7 +399,7 @@ TEST_CASE("list literals") {
   CHECK_ERROR_EXP("[1, 2,]", "unexpected ']' token, expected an expression");
 }
 
-TEST_CASE("dict literals") {
+CATCH_TEST_CASE("dict literals") {
   CHECK_AST_EXP("{}", make<Dict>());
   CHECK_AST_EXP("{x}", make<Dict>(make<DictEntry>(make<Name>("x"))));
   CHECK_AST_EXP("{x, y}", make<Dict>(make<DictEntry>(make<Name>("x")), make<DictEntry>(make<Name>("y"))));
@@ -413,7 +413,7 @@ TEST_CASE("dict literals") {
   CHECK_AST_EXP("{\"{name}\": 1}", make<Dict>(make<DictEntry>(make<FormatString>(make<Id>("name")), make<Int>(1))));
 }
 
-TEST_CASE("if statements") {
+CATCH_TEST_CASE("if statements") {
   CHECK_STMT("if x 1");
   CHECK_STMT("if x {}");
   CHECK_STMT("if x 1 else 2");
@@ -431,7 +431,7 @@ TEST_CASE("if statements") {
   CHECK_ERROR_STMT("if else x", "unexpected 'else' token, expected an expression");
 }
 
-TEST_CASE("while statements") {
+CATCH_TEST_CASE("while statements") {
   CHECK_STMT("while x 1");
   CHECK_STMT("while (x) {}");
   CHECK_STMT("while (x) foo()");
@@ -440,14 +440,14 @@ TEST_CASE("while statements") {
   CHECK_ERROR_STMT("while x", "unexpected end of file, expected an expression");
 }
 
-TEST_CASE("loop statements") {
+CATCH_TEST_CASE("loop statements") {
   CHECK_AST_STMT("loop 1", make<Loop>(make<Block>(make<Int>(1))));
   CHECK_AST_STMT("loop {}", make<Loop>(make<Block>()));
 
   CHECK_ERROR_STMT("loop", "unexpected end of file, expected an expression");
 }
 
-TEST_CASE("declarations") {
+CATCH_TEST_CASE("declarations") {
   CHECK_STMT("let a");
   CHECK_STMT("let a = 1");
   CHECK_STMT("let a = 1 + 2");
@@ -481,7 +481,7 @@ TEST_CASE("declarations") {
   CHECK_ERROR_STMT("const {a}", "unexpected end of file, expected a '=' token");
 }
 
-TEST_CASE("functions") {
+CATCH_TEST_CASE("functions") {
   CHECK_EXP("func foo = null");
   CHECK_EXP("func foo = 2 + 2");
   CHECK_EXP("func foo {}");
@@ -541,7 +541,7 @@ TEST_CASE("functions") {
   CHECK_ERROR_EXP("->if true x", "unexpected 'if' token, expected an expression");
 }
 
-TEST_CASE("catches illegal control statements") {
+CATCH_TEST_CASE("catches illegal control statements") {
   CHECK_PROGRAM("return 1");
   CHECK_PROGRAM("defer { ->{ return 1 } }");
   CHECK_PROGRAM("func foo { return 42 }");
@@ -561,7 +561,7 @@ TEST_CASE("catches illegal control statements") {
   CHECK_ERROR_PROGRAM("{ export foo }", "export statement not allowed at this point");
 }
 
-TEST_CASE("spread operator") {
+CATCH_TEST_CASE("spread operator") {
   CHECK_EXP("(...x)");
   CHECK_EXP("(a, ...b, c)");
   CHECK_EXP("(...b, ...c)");
@@ -589,7 +589,7 @@ TEST_CASE("spread operator") {
   CHECK_STMT("let {a, ...copy, b} = original");
 }
 
-TEST_CASE("class literals") {
+CATCH_TEST_CASE("class literals") {
   CHECK_STMT("class A { foo() }");
   CHECK_STMT("class A extends B { foo() }");
   CHECK_STMT(("class Foo extends Bar {\n"
@@ -605,13 +605,13 @@ TEST_CASE("class literals") {
   CHECK_STMT("class A { property a property b foo(@a, @b, ...@rest) }");
 }
 
-TEST_CASE("super expressions") {
+CATCH_TEST_CASE("super expressions") {
   CHECK_ERROR_PROGRAM("->super", "super is not allowed at this point");
   CHECK_ERROR_PROGRAM("->super.foo()", "super is not allowed at this point");
   CHECK_ERROR_PROGRAM("class A { static foo { super() } }", "super is not allowed at this point");
 }
 
-TEST_CASE("try statements") {
+CATCH_TEST_CASE("try statements") {
   CHECK_STMT("try foo catch bar");
   CHECK_STMT("try foo catch(err) bar");
   CHECK_STMT("try foo catch(err) bar finally baz");
@@ -623,7 +623,7 @@ TEST_CASE("try statements") {
   CHECK_ERROR_STMT("loop { try {} catch {} finally { return } }", "return statement not allowed at this point");
 }
 
-TEST_CASE("switch statements") {
+CATCH_TEST_CASE("switch statements") {
   CHECK_PROGRAM("switch x {}");
   CHECK_PROGRAM("switch (x) {}");
   CHECK_PROGRAM("switch (x) { case 1 foo }");
@@ -636,7 +636,7 @@ TEST_CASE("switch statements") {
   CHECK_ERROR_PROGRAM("switch x { case 1 { continue } }", "continue statement not allowed at this point");
 }
 
-TEST_CASE("for statements") {
+CATCH_TEST_CASE("for statements") {
   CHECK_STMT("for foo in bar baz");
   CHECK_STMT("for foo in bar {}");
   CHECK_STMT("for let foo in bar {}");
@@ -655,14 +655,14 @@ TEST_CASE("for statements") {
   CHECK_STMT("for const { foo, bar } in bar {}");
 }
 
-TEST_CASE("wraps functions and classes into declarations") {
+CATCH_TEST_CASE("wraps functions and classes into declarations") {
   CHECK_AST_STMT("func foo {}",
                  make<Declaration>("foo", make<Function>(false, make<Name>("foo"), make<Block>()), true));
   CHECK_AST_STMT("class foo {}", make<Declaration>("foo", make<Class>("foo", nullptr), true));
   CHECK_AST_STMT("->{}", make<Function>(true, make<Name>(""), make<Block>()));
 }
 
-TEST_CASE("__builtin expressions") {
+CATCH_TEST_CASE("__builtin expressions") {
   CHECK_STMT("__builtin(\"caststring\", x)");
   CHECK_STMT("__builtin(\"castsymbol\", x)");
   CHECK_STMT("__builtin(\"fiberspawn\", x, y, z)");

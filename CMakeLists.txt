@@ -83,3 +83,4 @@ target_compile_options(tests PRIVATE
   -flto
 )
 set_target_properties(tests PROPERTIES LINK_FLAGS -fuse-ld=lld)
+target_compile_definitions(tests PUBLIC CATCH_CONFIG_PREFIX_ALL)

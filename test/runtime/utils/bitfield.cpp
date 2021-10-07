@@ -32,20 +32,20 @@ using Catch::Matchers::Equals;
 
 using namespace charly;
 
-TEST_CASE("BitField") {
+CATCH_TEST_CASE("BitField") {
 
-  SECTION("Creates a bitfield") {
+  CATCH_SECTION("Creates a bitfield") {
     utils::BitField<64> field1;
-    CHECK(field1.size() == 64);
+    CATCH_CHECK(field1.size() == 64);
 
     utils::BitField<8> field2;
-    CHECK(field2.size() == 8);
+    CATCH_CHECK(field2.size() == 8);
 
     utils::BitField<16> field3;
-    CHECK(field3.size() == 16);
+    CATCH_CHECK(field3.size() == 16);
   }
 
-  SECTION("Sets and unsets bits in the bitfield") {
+  CATCH_SECTION("Sets and unsets bits in the bitfield") {
     utils::BitField<64> field;
 
     field.set_bit(0);
@@ -58,15 +58,15 @@ TEST_CASE("BitField") {
     field.unset_bit(7);
     field.unset_bit(33);
 
-    CHECK(field.get_bit(0) == true);
-    CHECK(field.get_bit(1) == true);
-    CHECK(field.get_bit(7) == false);
-    CHECK(field.get_bit(32) == true);
-    CHECK(field.get_bit(33) == false);
-    CHECK(field.get_bit(63) == true);
+    CATCH_CHECK(field.get_bit(0) == true);
+    CATCH_CHECK(field.get_bit(1) == true);
+    CATCH_CHECK(field.get_bit(7) == false);
+    CATCH_CHECK(field.get_bit(32) == true);
+    CATCH_CHECK(field.get_bit(33) == false);
+    CATCH_CHECK(field.get_bit(63) == true);
   }
 
-  SECTION("searches for the next set bit") {
+  CATCH_SECTION("searches for the next set bit") {
     utils::BitField<64> field;
 
     field.set_bit(0);
@@ -81,18 +81,18 @@ TEST_CASE("BitField") {
 
     int32_t index = 0;
     index = field.find_next_set_bit(index);
-    CHECK(index == 0);
+    CATCH_CHECK(index == 0);
     index = field.find_next_set_bit(index + 1);
-    CHECK(index == 1);
+    CATCH_CHECK(index == 1);
     index = field.find_next_set_bit(index + 1);
-    CHECK(index == 32);
+    CATCH_CHECK(index == 32);
     index = field.find_next_set_bit(index + 1);
-    CHECK(index == 63);
+    CATCH_CHECK(index == 63);
     index = field.find_next_set_bit(index + 1);
-    CHECK(index == -1);
+    CATCH_CHECK(index == -1);
   }
 
-  SECTION("resets the bitfield") {
+  CATCH_SECTION("resets the bitfield") {
     utils::BitField<64> field;
 
     field.set_bit(0);
@@ -105,21 +105,21 @@ TEST_CASE("BitField") {
     field.unset_bit(7);
     field.unset_bit(33);
 
-    CHECK(field.get_bit(0) == true);
-    CHECK(field.get_bit(1) == true);
-    CHECK(field.get_bit(7) == false);
-    CHECK(field.get_bit(32) == true);
-    CHECK(field.get_bit(33) == false);
-    CHECK(field.get_bit(63) == true);
+    CATCH_CHECK(field.get_bit(0) == true);
+    CATCH_CHECK(field.get_bit(1) == true);
+    CATCH_CHECK(field.get_bit(7) == false);
+    CATCH_CHECK(field.get_bit(32) == true);
+    CATCH_CHECK(field.get_bit(33) == false);
+    CATCH_CHECK(field.get_bit(63) == true);
 
     field.reset();
 
-    CHECK(field.get_bit(0) == false);
-    CHECK(field.get_bit(1) == false);
-    CHECK(field.get_bit(7) == false);
-    CHECK(field.get_bit(32) == false);
-    CHECK(field.get_bit(33) == false);
-    CHECK(field.get_bit(63) == false);
+    CATCH_CHECK(field.get_bit(0) == false);
+    CATCH_CHECK(field.get_bit(1) == false);
+    CATCH_CHECK(field.get_bit(7) == false);
+    CATCH_CHECK(field.get_bit(32) == false);
+    CATCH_CHECK(field.get_bit(33) == false);
+    CATCH_CHECK(field.get_bit(63) == false);
   }
 
 }

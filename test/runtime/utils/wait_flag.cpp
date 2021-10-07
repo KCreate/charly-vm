@@ -30,29 +30,29 @@
 
 using namespace charly::utils;
 
-TEST_CASE("WaitFlag") {
+CATCH_TEST_CASE("WaitFlag") {
   std::mutex mutex;
   WaitFlag flag(mutex);
 
   std::thread other_thread([&] {
-    CHECK(flag.state() == false);
+    CATCH_CHECK(flag.state() == false);
     flag.signal();
-    CHECK(flag.state());
+    CATCH_CHECK(flag.state());
   });
 
   flag.wait();
 
   other_thread.join();
 
-  CHECK(flag.state());
+  CATCH_CHECK(flag.state());
 
   flag.wait();
   flag.wait();
   flag.wait();
 
-  CHECK(flag.state());
+  CATCH_CHECK(flag.state());
 
   flag.reset();
 
-  CHECK(flag.state() == false);
+  CATCH_CHECK(flag.state() == false);
 }

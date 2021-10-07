@@ -32,43 +32,43 @@ using Catch::Matchers::Equals;
 
 using namespace charly;
 
-TEST_CASE("Buffer") {
+CATCH_TEST_CASE("Buffer") {
   utils::Buffer buf(128);
 
-  REQUIRE(buf.data() != nullptr);
-  REQUIRE(buf.capacity() == 128);
-  REQUIRE(buf.size() == 0);
-  REQUIRE(buf.read_offset() == 0);
-  REQUIRE_THAT(buf.window_string(), Equals(""));
+  CATCH_REQUIRE(buf.data() != nullptr);
+  CATCH_REQUIRE(buf.capacity() == 128);
+  CATCH_REQUIRE(buf.size() == 0);
+  CATCH_REQUIRE(buf.read_offset() == 0);
+  CATCH_REQUIRE_THAT(buf.window_string(), Equals(""));
 
-  SECTION("Initialize buffer with string value") {
+  CATCH_SECTION("Initialize buffer with string value") {
     utils::Buffer buf("hello world!!");
 
     for (int i = 0; i < 13; i++) {
       buf.read_utf8_cp();
     }
 
-    CHECK_THAT(buf.window_string(), Equals("hello world!!"));
+    CATCH_CHECK_THAT(buf.window_string(), Equals("hello world!!"));
   }
 
-  SECTION("Append data to buffer") {
+  CATCH_SECTION("Append data to buffer") {
     buf.emit_string("hello world\n");
 
-    CHECK(buf.read_utf8_cp() == 0x68);
-    CHECK(buf.read_utf8_cp() == 0x65);
-    CHECK(buf.read_utf8_cp() == 0x6c);
-    CHECK(buf.read_utf8_cp() == 0x6c);
-    CHECK(buf.read_utf8_cp() == 0x6f);
+    CATCH_CHECK(buf.read_utf8_cp() == 0x68);
+    CATCH_CHECK(buf.read_utf8_cp() == 0x65);
+    CATCH_CHECK(buf.read_utf8_cp() == 0x6c);
+    CATCH_CHECK(buf.read_utf8_cp() == 0x6c);
+    CATCH_CHECK(buf.read_utf8_cp() == 0x6f);
 
-    CHECK(buf.read_utf8_cp() == 0x20);
+    CATCH_CHECK(buf.read_utf8_cp() == 0x20);
 
-    CHECK(buf.read_utf8_cp() == 0x77);
-    CHECK(buf.read_utf8_cp() == 0x6f);
-    CHECK(buf.read_utf8_cp() == 0x72);
-    CHECK(buf.read_utf8_cp() == 0x6c);
-    CHECK(buf.read_utf8_cp() == 0x64);
+    CATCH_CHECK(buf.read_utf8_cp() == 0x77);
+    CATCH_CHECK(buf.read_utf8_cp() == 0x6f);
+    CATCH_CHECK(buf.read_utf8_cp() == 0x72);
+    CATCH_CHECK(buf.read_utf8_cp() == 0x6c);
+    CATCH_CHECK(buf.read_utf8_cp() == 0x64);
 
-    CHECK(buf.read_utf8_cp() == 0x0a);
+    CATCH_CHECK(buf.read_utf8_cp() == 0x0a);
 
     const char* data = "teststring";
     buf.emit_block(data, std::strlen(data));
@@ -76,13 +76,13 @@ TEST_CASE("Buffer") {
     buf.emit_string("hallo welt");
     buf.emit_buffer(buf);
 
-    CHECK(buf.capacity() == 128);
-    CHECK(buf.size() == 84);
-    CHECK(buf.read_offset() == 12);
-    CHECK_THAT(buf.buffer_string(), Equals("hello world\nteststringteststringhallo welthello world\nteststringteststringhallo welt"));
+    CATCH_CHECK(buf.capacity() == 128);
+    CATCH_CHECK(buf.size() == 84);
+    CATCH_CHECK(buf.read_offset() == 12);
+    CATCH_CHECK_THAT(buf.buffer_string(), Equals("hello world\nteststringteststringhallo welthello world\nteststringteststringhallo welt"));
   }
 
-  SECTION("appends a string_view into the buffer") {
+  CATCH_SECTION("appends a string_view into the buffer") {
     buf.emit_string("hello");
     buf.emit_buffer(buf);
 
@@ -90,17 +90,17 @@ TEST_CASE("Buffer") {
     std::string_view view(data);
     buf.emit_string_view(view);
 
-    CHECK(buf.size() == 15);
-    CHECK_THAT(buf.buffer_string(), Equals("hellohellohello"));
+    CATCH_CHECK(buf.size() == 15);
+    CATCH_CHECK_THAT(buf.buffer_string(), Equals("hellohellohello"));
   }
 
-  SECTION("emit primitive data types into buffer") {
-    CHECK_THAT(buf.window_string(), Equals(""));
-    CHECK(buf.size() == 0);
-    CHECK(buf.window_size() == 0);
-    CHECK(buf.read_offset() == 0);
-    CHECK(buf.write_offset() == 0);
-    CHECK(buf.window_offset() == 0);
+  CATCH_SECTION("emit primitive data types into buffer") {
+    CATCH_CHECK_THAT(buf.window_string(), Equals(""));
+    CATCH_CHECK(buf.size() == 0);
+    CATCH_CHECK(buf.window_size() == 0);
+    CATCH_CHECK(buf.read_offset() == 0);
+    CATCH_CHECK(buf.write_offset() == 0);
+    CATCH_CHECK(buf.window_offset() == 0);
 
     buf.emit_u8(0x48);
     buf.emit_u8(0x45);
@@ -108,12 +108,12 @@ TEST_CASE("Buffer") {
     buf.emit_u8(0x4C);
     buf.emit_u8(0x4F);
 
-    CHECK_THAT(buf.window_string(), Equals(""));
-    CHECK(buf.size() == 5);
-    CHECK(buf.window_size() == 0);
-    CHECK(buf.read_offset() == 0);
-    CHECK(buf.write_offset() == 5);
-    CHECK(buf.window_offset() == 0);
+    CATCH_CHECK_THAT(buf.window_string(), Equals(""));
+    CATCH_CHECK(buf.size() == 5);
+    CATCH_CHECK(buf.window_size() == 0);
+    CATCH_CHECK(buf.read_offset() == 0);
+    CATCH_CHECK(buf.write_offset() == 5);
+    CATCH_CHECK(buf.window_offset() == 0);
 
     buf.emit_u8(0x20);
     buf.emit_u8(0x57);
@@ -122,70 +122,70 @@ TEST_CASE("Buffer") {
     buf.emit_u8(0x4C);
     buf.emit_u8(0x44);
 
-    CHECK(buf.read_utf8_cp() == 'H');
-    CHECK(buf.read_utf8_cp() == 'E');
-    CHECK(buf.read_utf8_cp() == 'L');
-    CHECK(buf.read_utf8_cp() == 'L');
-    CHECK(buf.read_utf8_cp() == 'O');
+    CATCH_CHECK(buf.read_utf8_cp() == 'H');
+    CATCH_CHECK(buf.read_utf8_cp() == 'E');
+    CATCH_CHECK(buf.read_utf8_cp() == 'L');
+    CATCH_CHECK(buf.read_utf8_cp() == 'L');
+    CATCH_CHECK(buf.read_utf8_cp() == 'O');
 
-    CHECK_THAT(buf.window_string(), Equals("HELLO"));
-    CHECK(buf.size() == 11);
-    CHECK(buf.window_size() == 5);
-    CHECK(buf.read_offset() == 5);
-    CHECK(buf.write_offset() == 11);
-    CHECK(buf.window_offset() == 0);
+    CATCH_CHECK_THAT(buf.window_string(), Equals("HELLO"));
+    CATCH_CHECK(buf.size() == 11);
+    CATCH_CHECK(buf.window_size() == 5);
+    CATCH_CHECK(buf.read_offset() == 5);
+    CATCH_CHECK(buf.write_offset() == 11);
+    CATCH_CHECK(buf.window_offset() == 0);
 
-    CHECK(buf.read_utf8_cp() == ' ');
-    CHECK(buf.read_utf8_cp() == 'W');
-    CHECK(buf.read_utf8_cp() == 'O');
-    CHECK(buf.read_utf8_cp() == 'R');
-    CHECK(buf.read_utf8_cp() == 'L');
-    CHECK(buf.read_utf8_cp() == 'D');
+    CATCH_CHECK(buf.read_utf8_cp() == ' ');
+    CATCH_CHECK(buf.read_utf8_cp() == 'W');
+    CATCH_CHECK(buf.read_utf8_cp() == 'O');
+    CATCH_CHECK(buf.read_utf8_cp() == 'R');
+    CATCH_CHECK(buf.read_utf8_cp() == 'L');
+    CATCH_CHECK(buf.read_utf8_cp() == 'D');
 
-    CHECK_THAT(buf.window_string(), Equals("HELLO WORLD"));
-    CHECK(buf.size() == 11);
-    CHECK(buf.window_size() == 11);
-    CHECK(buf.read_offset() == 11);
-    CHECK(buf.write_offset() == 11);
-    CHECK(buf.window_offset() == 0);
+    CATCH_CHECK_THAT(buf.window_string(), Equals("HELLO WORLD"));
+    CATCH_CHECK(buf.size() == 11);
+    CATCH_CHECK(buf.window_size() == 11);
+    CATCH_CHECK(buf.read_offset() == 11);
+    CATCH_CHECK(buf.write_offset() == 11);
+    CATCH_CHECK(buf.window_offset() == 0);
   }
 
-  SECTION("reads / peeks utf8 codepoints") {
+  CATCH_SECTION("reads / peeks utf8 codepoints") {
     buf.emit_utf8_cp(L'ä');
     buf.emit_utf8_cp(L'Ʒ');
     buf.emit_utf8_cp(L'π');
 
-    CHECK(buf.peek_utf8_cp() == 0xE4);
-    CHECK(buf.peek_utf8_cp() == 0xE4);
-    CHECK(buf.peek_utf8_cp() == 0xE4);
+    CATCH_CHECK(buf.peek_utf8_cp() == 0xE4);
+    CATCH_CHECK(buf.peek_utf8_cp() == 0xE4);
+    CATCH_CHECK(buf.peek_utf8_cp() == 0xE4);
 
-    CHECK(buf.read_utf8_cp() == 0xE4);
-    CHECK(buf.read_utf8_cp() == 0x01B7);
-    CHECK(buf.read_utf8_cp() == 0x03C0);
+    CATCH_CHECK(buf.read_utf8_cp() == 0xE4);
+    CATCH_CHECK(buf.read_utf8_cp() == 0x01B7);
+    CATCH_CHECK(buf.read_utf8_cp() == 0x03C0);
 
-    CHECK(buf.size() == 6);
-    CHECK(buf.read_offset() == 6);
+    CATCH_CHECK(buf.size() == 6);
+    CATCH_CHECK(buf.read_offset() == 6);
   }
 
-  SECTION("reads ascii chars") {
+  CATCH_SECTION("reads ascii chars") {
     buf.emit_string("abc123");
 
-    CHECK(buf.read_utf8_cp() == 0x61);
-    CHECK(buf.read_utf8_cp() == 0x62);
-    CHECK(buf.read_utf8_cp() == 0x63);
+    CATCH_CHECK(buf.read_utf8_cp() == 0x61);
+    CATCH_CHECK(buf.read_utf8_cp() == 0x62);
+    CATCH_CHECK(buf.read_utf8_cp() == 0x63);
 
-    CHECK(buf.read_offset() == 3);
+    CATCH_CHECK(buf.read_offset() == 3);
 
-    CHECK(buf.read_utf8_cp() == 0x31);
-    CHECK(buf.read_utf8_cp() == 0x32);
-    CHECK(buf.read_utf8_cp() == 0x33);
+    CATCH_CHECK(buf.read_utf8_cp() == 0x31);
+    CATCH_CHECK(buf.read_utf8_cp() == 0x32);
+    CATCH_CHECK(buf.read_utf8_cp() == 0x33);
 
-    CHECK(buf.size() == 6);
-    CHECK(buf.read_offset() == 6);
+    CATCH_CHECK(buf.size() == 6);
+    CATCH_CHECK(buf.read_offset() == 6);
   }
 
-  SECTION("copies window contents into string") {
-    CHECK_THAT(buf.window_string(), Equals(""));
+  CATCH_SECTION("copies window contents into string") {
+    CATCH_CHECK_THAT(buf.window_string(), Equals(""));
     buf.emit_string("hello world!!");
 
     for (int i = 0; i < 13; i++) {
@@ -193,18 +193,18 @@ TEST_CASE("Buffer") {
     }
 
     std::string window = buf.window_string();
-    CHECK_THAT(window, Equals("hello world!!"));
+    CATCH_CHECK_THAT(window, Equals("hello world!!"));
   }
 
-  SECTION("writes zeroes into the buffer") {
+  CATCH_SECTION("writes zeroes into the buffer") {
     buf.emit_zeroes(1024);
-    CHECK(buf.size() == 1024);
-    CHECK(buf.capacity() == 1024);
-    CHECK(buf.write_offset() == 1024);
-    CHECK(buf.size() == 1024);
+    CATCH_CHECK(buf.size() == 1024);
+    CATCH_CHECK(buf.capacity() == 1024);
+    CATCH_CHECK(buf.write_offset() == 1024);
+    CATCH_CHECK(buf.size() == 1024);
   }
 
-  SECTION("seeks to some offset") {
+  CATCH_SECTION("seeks to some offset") {
     buf.emit_string("aaa");
     buf.emit_string("bbb");
     buf.emit_string("ccc");
@@ -224,12 +224,12 @@ TEST_CASE("Buffer") {
 
     buf.seek(-1);
 
-    CHECK_THAT(buf.buffer_string(), Equals("000111222333"));
-    CHECK(buf.size() == 12);
-    CHECK(buf.write_offset() == 12);
+    CATCH_CHECK_THAT(buf.buffer_string(), Equals("000111222333"));
+    CATCH_CHECK(buf.size() == 12);
+    CATCH_CHECK(buf.write_offset() == 12);
   }
 
-  SECTION("resets window") {
+  CATCH_SECTION("resets window") {
     buf.emit_string("test");
 
     for (int i = 0; i < 4; i++) {
@@ -238,67 +238,67 @@ TEST_CASE("Buffer") {
 
     {
       std::string window = buf.window_string();
-      CHECK_THAT(buf.window_string(), Equals("test"));
+      CATCH_CHECK_THAT(buf.window_string(), Equals("test"));
     }
 
     buf.reset_window();
 
     {
       std::string window = buf.window_string();
-      CHECK_THAT(buf.window_string(), Equals(""));
+      CATCH_CHECK_THAT(buf.window_string(), Equals(""));
     }
   }
 
-  SECTION("resets window after seek") {
+  CATCH_SECTION("resets window after seek") {
     buf.emit_string("hello world");
 
     for (int i = 0; i < 11; i++) {
       buf.read_utf8_cp();
     }
 
-    CHECK_THAT(buf.window_string(), Equals("hello world"));
+    CATCH_CHECK_THAT(buf.window_string(), Equals("hello world"));
 
     buf.seek(0); // resets window
     buf.emit_string("foooo");
 
-    CHECK_THAT(buf.window_string(), Equals(""));
+    CATCH_CHECK_THAT(buf.window_string(), Equals(""));
 
     for (int i = 0; i < 5; i++) {
       buf.read_utf8_cp();
     }
 
-    CHECK_THAT(buf.window_string(), Equals("foooo"));
+    CATCH_CHECK_THAT(buf.window_string(), Equals("foooo"));
   }
 
-  SECTION("creates strings / stringviews of buffer content") {
+  CATCH_SECTION("creates strings / stringviews of buffer content") {
     buf.emit_string("hello world this is a test sentence");
 
     for (int i = 0; i < 12; i++) {
       buf.read_utf8_cp();
     }
 
-    CHECK_THAT(buf.window_string(), Equals("hello world "));
-    CHECK_THAT(buf.buffer_string(), Equals("hello world this is a test sentence"));
-    CHECK_THAT(std::string(buf.window_view()), Equals("hello world "));
-    CHECK_THAT(std::string(buf.buffer_view()), Equals("hello world this is a test sentence"));
+    CATCH_CHECK_THAT(buf.window_string(), Equals("hello world "));
+    CATCH_CHECK_THAT(buf.buffer_string(), Equals("hello world this is a test sentence"));
+    CATCH_CHECK_THAT(std::string(buf.window_view()), Equals("hello world "));
+    CATCH_CHECK_THAT(std::string(buf.buffer_view()), Equals("hello world this is a test sentence"));
   }
 }
 
-TEST_CASE("ProtectedBuffer") {
+CATCH_TEST_CASE("ProtectedBuffer") {
   utils::ProtectedBuffer buf;
 
-  SECTION("writes to the buffer") {
+  CATCH_SECTION("writes to the buffer") {
     buf.emit_string("hello world");
-    CHECK_THAT(buf.buffer_string(), Equals("hello world"));
+    CATCH_CHECK_THAT(buf.buffer_string(), Equals("hello world"));
   }
 
-  SECTION("enables / disables memory protection") {
+  CATCH_SECTION("enables / disables memory protection") {
     buf.emit_string("hello world");
-    CHECK_THAT(buf.buffer_string(), Equals("hello world"));
+    CATCH_CHECK_THAT(buf.buffer_string(), Equals("hello world"));
 
     buf.set_readonly(true);
     buf.set_readonly(false);
 
-    CHECK_THAT(buf.buffer_string(), Equals("hello world"));
+    CATCH_CHECK_THAT(buf.buffer_string(), Equals("hello world"));
   }
 }

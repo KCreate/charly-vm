@@ -28,7 +28,7 @@
 
 #include "astmacros.h"
 
-TEST_CASE("validates assignments") {
+CATCH_TEST_CASE("validates assignments") {
   COMPILE_ERROR("2 = 25", "left-hand side of assignment is not assignable");
   COMPILE_ERROR("false = 25", "left-hand side of assignment is not assignable");
   COMPILE_ERROR("self = 25", "left-hand side of assignment is not assignable");
@@ -70,7 +70,7 @@ TEST_CASE("validates assignments") {
   COMPILE_ERROR("for const {} in [] {}", "empty unpack target");
 }
 
-TEST_CASE("validates dict literals") {
+CATCH_TEST_CASE("validates dict literals") {
   COMPILE_ERROR("({25})", "expected identifier, member access or spread expression");
   COMPILE_ERROR("({false})", "expected identifier, member access or spread expression");
   COMPILE_ERROR("({,})", "unexpected ',' token, expected an expression");
@@ -84,7 +84,7 @@ TEST_CASE("validates dict literals") {
   COMPILE_ERROR("({...x: 1})", "expected identifier or string literal");
 }
 
-TEST_CASE("validates spawn statements") {
+CATCH_TEST_CASE("validates spawn statements") {
   COMPILE_OK("spawn foo");
   COMPILE_OK("spawn 1");
   COMPILE_OK("spawn foo.bar");
@@ -94,7 +94,7 @@ TEST_CASE("validates spawn statements") {
   COMPILE_OK("spawn { x() }");
 }
 
-TEST_CASE("validates super expressions") {
+CATCH_TEST_CASE("validates super expressions") {
   COMPILE_OK("class A { constructor { super } }");
   COMPILE_OK("class A { constructor { super.foo } }");
   COMPILE_OK("class A { constructor { super() } }");
@@ -105,7 +105,7 @@ TEST_CASE("validates super expressions") {
   COMPILE_OK("class A { bar { super.foo() } }");
 }
 
-TEST_CASE("checks for reserved identifiers") {
+CATCH_TEST_CASE("checks for reserved identifiers") {
   COMPILE_ERROR("const $ = 1", "'$' is a reserved variable name");
   COMPILE_ERROR("const $$ = 1", "'$$' is a reserved variable name");
   COMPILE_ERROR("const $0 = 1", "'$0' is a reserved variable name");
@@ -138,7 +138,7 @@ TEST_CASE("checks for reserved identifiers") {
   COMPILE_ERROR("class x { static property parent }", "'parent' cannot be the name of a static property");
 }
 
-TEST_CASE("checks for duplicate identifiers") {
+CATCH_TEST_CASE("checks for duplicate identifiers") {
   COMPILE_ERROR("let (a, a) = x", "duplicate identifier 'a'");
   COMPILE_ERROR("let (a, ...a) = x", "duplicate identifier 'a'");
   COMPILE_ERROR("let {a, a} = x", "duplicate identifier 'a'");
@@ -165,24 +165,24 @@ TEST_CASE("checks for duplicate identifiers") {
   COMPILE_OK("class A { constructor {} }");
 }
 
-TEST_CASE("checks for missing function default arguments") {
+CATCH_TEST_CASE("checks for missing function default arguments") {
   COMPILE_ERROR("func foo(a = 1, b) {}", "argument 'b' is missing a default value");
   COMPILE_ERROR("->(a = 1, b) {}", "argument 'b' is missing a default value");
 }
 
-TEST_CASE("spread arguments cannot have default arguments") {
+CATCH_TEST_CASE("spread arguments cannot have default arguments") {
   COMPILE_ERROR("func foo(...x = 1) {}", "spread argument cannot have a default value");
   COMPILE_ERROR("->(...x = 1) {}", "spread argument cannot have a default value");
 }
 
-TEST_CASE("checks for excess arguments in functions") {
+CATCH_TEST_CASE("checks for excess arguments in functions") {
   COMPILE_ERROR("func foo(...foo, ...rest) {}", "excess parameter(s)");
   COMPILE_ERROR("func foo(...foo, a, b, c) {}", "excess parameter(s)");
   COMPILE_ERROR("->(...foo, ...rest) {}", "excess parameter(s)");
   COMPILE_ERROR("->(...foo, a, b, c) {}", "excess parameter(s)");
 }
 
-TEST_CASE("checks for missing calls to parent constructor in subclasses") {
+CATCH_TEST_CASE("checks for missing calls to parent constructor in subclasses") {
   COMPILE_ERROR("class A extends B { constructor {} }",
                 "missing call to super inside constructor of class 'A'");
   COMPILE_ERROR("class A extends B { constructor { super.foo() } }",
@@ -190,12 +190,12 @@ TEST_CASE("checks for missing calls to parent constructor in subclasses") {
   COMPILE_OK("class A { constructor {} }");
 }
 
-TEST_CASE("checks for missing constructors in subclasses with properties") {
+CATCH_TEST_CASE("checks for missing constructors in subclasses with properties") {
   COMPILE_ERROR("class A extends B { property x }", "class 'A' is missing a constructor");
   COMPILE_OK("let B = null class A extends B {}");
 }
 
-TEST_CASE("checks for yield statements outside regular functions") {
+CATCH_TEST_CASE("checks for yield statements outside regular functions") {
   COMPILE_ERROR("yield 1", "yield expression not allowed at this point");
   COMPILE_ERROR("->{ yield 1 }", "yield expression not allowed at this point");
   COMPILE_ERROR("class A { constructor { yield 1 } }", "yield expression not allowed at this point");
@@ -206,7 +206,7 @@ TEST_CASE("checks for yield statements outside regular functions") {
   COMPILE_OK("spawn { yield 1 }");
 }
 
-TEST_CASE("only allows @a parameter syntax inside class member functions") {
+CATCH_TEST_CASE("only allows @a parameter syntax inside class member functions") {
   COMPILE_ERROR("func foo(@a) {}",
                 "unexpected '@' token, self initializer arguments are only allowed inside class member functions");
   COMPILE_ERROR("->(@a) {}",
