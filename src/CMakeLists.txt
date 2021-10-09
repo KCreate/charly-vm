@@ -31,6 +31,7 @@ file(GLOB charlycore_SRC
   "charly/utils/argumentparser.cpp"
   "charly/utils/buffer.cpp"
   "charly/value.cpp"
+  "libs/termcolor/termcolor.cpp"
 )
 
 find_package(Boost REQUIRED COMPONENTS context)

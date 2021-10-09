@@ -161,9 +161,6 @@
   - clases should be able to define property methods like `property length { ... }`
   - inline caches could store the function reference and call it directly
 
-- Stream coloring on macOS
-  - termcolor::_internal::is_colorized returns false, manually executing the function body returns true???
-
 - Implement mechanism to wait for GC cycle to complete when heap could not be expanded
   - Instead of failing the allocation, threads should attempt to wait for a GC cycle before they fail
 

@@ -49,7 +49,7 @@ namespace termcolor
     {
         // An index to be used to access a private storage of I/O streams. See
         // colorize / nocolorize I/O manipulators for details.
-        static int colorize_index = std::ios_base::xalloc();
+        static int colorize_index;
 
         inline FILE* get_standard_stream(const std::ostream& stream);
         inline bool is_colorized(std::ostream& stream);
