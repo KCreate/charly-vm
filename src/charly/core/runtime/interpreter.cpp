@@ -90,6 +90,7 @@ RawValue Interpreter::call_function(
   frame.locals = nullptr;
   frame.stack = nullptr;
   frame.return_value = kNull;
+  frame.oldip = 0;
   frame.ip = 0;
   frame.sp = 0;
   frame.argc = argc;
@@ -104,6 +105,7 @@ RawValue Interpreter::call_function(
   SharedFunctionInfo* shared_info = function.shared_info();
   frame.shared_function_info = shared_info;
   frame.ip = shared_info->bytecode_base_ptr;
+  frame.oldip = frame.ip;
 
   // stack overflow check
   const Stack& stack = thread->stack();
@@ -183,6 +185,7 @@ RawValue Interpreter::execute(Thread* thread) {
     op = bitcast<InstructionDecoder*>(frame->ip);
     Opcode opcode = op->opcode;
     size_t opcode_length = kOpcodeLength[opcode];
+    frame->oldip = frame->ip;
     frame->ip += opcode_length;
     return OPCODE_DISPATCH_TABLE[opcode];
   };

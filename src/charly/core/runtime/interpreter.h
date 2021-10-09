@@ -56,6 +56,7 @@ public:
   RawValue* locals;
   RawValue* stack;
   RawValue return_value;
+  uintptr_t oldip;
   uintptr_t ip;
   uint32_t sp;
   uint8_t argc;

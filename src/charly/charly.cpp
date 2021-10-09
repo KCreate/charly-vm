@@ -25,10 +25,42 @@
  */
 
 #include "charly/charly.h"
+#include "charly/core/runtime/runtime.h"
+#include "charly/core/runtime/interpreter.h"
 
 namespace charly {
 
 std::mutex debugln_mutex;
 auto program_startup_timestamp = std::chrono::steady_clock::now();
+
+void print_runtime_debug_state(std::ostream& stream) {
+  using namespace core::runtime;
+
+  if (Thread* thread = Thread::current()) {
+    debugln_impl_time(stream, "\n");
+    debugln_impl_time(stream, "Thread: %\n", thread->id());
+
+    if (Frame* frame = thread->frame()) {
+      debugln_impl_time(stream, "IP: %\n", (void*)frame->oldip);
+
+      Frame* old = frame;
+      debugln_impl_time(stream, "Frames:\n", frame);
+      while (frame) {
+        debugln_impl_time(stream, "  - %: %\n", frame, (void*)frame->oldip);
+        frame = frame->parent;
+      }
+      frame = old;
+
+      if (frame->sp > 0) {
+        debugln_impl_time(stream, "\n");
+        debugln_impl_time(stream, "Stack:\n");
+        for (int64_t i = frame->sp - 1; i >= 0; i--) {
+          debugln_impl_time(stream, "  - %\n", frame->stack[i]);
+        }
+      }
+    }
+
+  }
+}
 
 }

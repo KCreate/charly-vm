@@ -76,6 +76,7 @@ inline void debugln_impl_time(std::ostream& stream, const char* format, Targs...
 
   // format as seconds with trailing milliseconds
   stream << "[";
+  stream << std::right;
   stream << std::fixed;
   stream << std::setprecision(3);
   stream << std::setw(12);
@@ -117,15 +118,19 @@ inline void debuglnf(const char* format, Targs... args) {
 #define LIKELY(X) __builtin_expect(!!(X), 1)
 #define UNLIKELY(X) __builtin_expect(!!(X), 0)
 
+void print_runtime_debug_state(std::ostream& stream);
+
 template <typename... Args>
 [[noreturn]] void failed_check(
   const char* filename, int32_t line, const char* function, const char* expression, Args&&... args) {
   std::stringstream sstream;
-  debugln_impl_time(sstream, "Failed check!\n");
+  debugln_impl(sstream, "Failed check!\n");
   debugln_impl_time(sstream, "At %:% %:\n", filename, line, function);
   debugln_impl_time(sstream, "Check '%' failed: ", expression);
   debugln_impl(sstream, std::forward<Args>(args)...);
   sstream << "\n";
+
+  print_runtime_debug_state(sstream);
 
   std::string str = sstream.str();
   debugln_concurrent(str.c_str());

@@ -1,8 +1,5 @@
 # Todos
 
-- Refactor asserts into custom implementation using CHECK
-  - Can also call into the runtime one last time to print some debug information
-
 - Interpreter value comparison method
 
 - Interpreter value string output
