@@ -437,6 +437,7 @@ public:
   SYMBOL hashcode() const;
 
   static RawSmallString make_from_cp(uint32_t cp);
+  static RawSmallString make_from_str(const std::string& string);
   static RawSmallString make_from_cstr(const char* value);
   static RawSmallString make_from_memory(const char* value, size_t length);
   static RawSmallString make_empty();
@@ -554,19 +555,19 @@ class RawInstance : public RawObject {
 public:
   COMMON_RAW_OBJECT(Instance);
 
-  uint32_t size() const;
+  int64_t size() const;
 
-  RawValue field_at(uint32_t index) const;
-  void set_field_at(uint32_t index, RawValue value);
+  RawValue field_at(int64_t index) const;
+  void set_field_at(int64_t index, RawValue value);
 
-  uintptr_t pointer_at(uint32_t index) const;
-  void set_pointer_at(uint32_t index, uintptr_t pointer);
-  void set_pointer_at(uint32_t index, void* pointer) {
+  uintptr_t pointer_at(int64_t index) const;
+  void set_pointer_at(int64_t index, uintptr_t pointer);
+  void set_pointer_at(int64_t index, void* pointer) {
     set_pointer_at(index, bitcast<uintptr_t>(pointer));
   }
 
-  int64_t int_at(uint32_t index) const;
-  void set_int_at(uint32_t index, int64_t value);
+  int64_t int_at(int64_t index) const;
+  void set_int_at(int64_t index, int64_t value);
 
   static const size_t kFieldCount = 0;
   static const size_t kSize = kFieldCount * kPointerSize;

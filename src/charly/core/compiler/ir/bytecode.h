@@ -340,26 +340,26 @@ static std::string kInlineCacheTypeNames[] = {
   V(loadfar, ICNone, 0, 1, Count8 depth, Index8 index)                                                               \
   /* loadattr - load property                                                                                        \
    *                                                                                                                 \
-   * opcode operands:                                                                                                \
-   * - symbol                                                                                                        \
-   *                                                                                                                 \
    * stack arguments:                                                                                                \
    * - value                                                                                                         \
+   * - index
    *                                                                                                                 \
    * stack results:                                                                                                  \
    * - property                                                                                                      \
    * */                                                                                                              \
-  V(loadattr, ICPropertyOffset, 1, 1, Symbol name, ICIndex ic_index)                                                 \
+  V(loadattr, ICPropertyOffset, 2, 1, ICIndex ic_index)                                                 \
   /* loadattrsym - load property via symbol                                                                          \
+   *
+   * opcode operands:
+   * - symbol
    *                                                                                                                 \
    * stack arguments:                                                                                                \
    * - value                                                                                                         \
-   * - symbol                                                                                                        \
    *                                                                                                                 \
    * stack results:                                                                                                  \
    * - property                                                                                                      \
    * */                                                                                                              \
-  V(loadattrsym, ICPropertyOffset, 2, 1, ICIndex ic_index)                                                           \
+  V(loadattrsym, ICPropertyOffset, 1, 1, Symbol name, ICIndex ic_index)                                                           \
   /* loadsuperconstructor - load the super constructor of a given                                                    \
    *                        value                                                                                    \
    *                                                                                                                 \
@@ -428,28 +428,28 @@ static std::string kInlineCacheTypeNames[] = {
   V(setfar, ICNone, 1, 1, Count8 depth, Index8 index)                                                                \
   /* setattr - write to property                                                                                     \
    *                                                                                                                 \
-   * opcode operands:                                                                                                \
-   * - symbol                                                                                                        \
-   *                                                                                                                 \
    * stack arguments:                                                                                                \
    * - target                                                                                                        \
+   * - index
    * - value                                                                                                         \
    *                                                                                                                 \
    * stack results:                                                                                                  \
    * - value                                                                                                         \
    * */                                                                                                              \
-  V(setattr, ICPropertyOffset, 2, 1, Symbol name, ICIndex ic_index)                                                  \
+  V(setattr, ICPropertyOffset, 3, 1, ICIndex ic_index)                                                  \
   /* setattrsym - write to property via symbol                                                                       \
+   *
+   * opcode operands:
+   * - symbol
    *                                                                                                                 \
    * stack arguments:                                                                                                \
    * - target                                                                                                        \
-   * - symbol                                                                                                        \
    * - value                                                                                                         \
    *                                                                                                                 \
    * stack results:                                                                                                  \
    * - value                                                                                                         \
    * */                                                                                                              \
-  V(setattrsym, ICPropertyOffset, 3, 1, ICIndex ic_index)                                                            \
+  V(setattrsym, ICPropertyOffset, 2, 1, Symbol name, ICIndex ic_index)                                                            \
                                                                                                                      \
   /* unpacksequence - unpack into sequence of values                                                                 \
    *                                                                                                                 \

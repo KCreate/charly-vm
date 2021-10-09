@@ -420,7 +420,35 @@ OP(loadfar) {
 }
 
 OP(loadattr) {
-  UNIMPLEMENTED();
+  RawValue index = frame->pop();
+  RawValue value = frame->pop();
+
+  // tuple[int]
+  if (value.isTuple() && index.isInt()) {
+    RawTuple tuple = RawTuple::cast(value);
+    int64_t tuple_size = tuple.size();
+    int64_t index_int = RawInt::cast(index).value();
+
+    // wrap negative indices
+    if (index_int < 0) {
+      index_int += tuple_size;
+      if (index_int < 0) {
+        frame->push(kNull);
+        return ContinueMode::Next;
+      }
+    }
+
+    if (index_int >= tuple_size) {
+      frame->push(kNull);
+      return ContinueMode::Next;
+    }
+
+    frame->push(tuple.field_at(index_int));
+    return ContinueMode::Next;
+  }
+
+  frame->push(kNull);
+  return ContinueMode::Next;
 }
 
 OP(loadattrsym) {
@@ -469,7 +497,39 @@ OP(setfar) {
 }
 
 OP(setattr) {
-  UNIMPLEMENTED();
+  RawValue value = frame->pop();
+  RawValue index = frame->pop();
+  RawValue target = frame->pop();
+
+  // tuple[int] = value
+  if (target.isTuple() && index.isInt()) {
+    RawTuple tuple = RawTuple::cast(target);
+    int64_t tuple_size = tuple.size();
+    int64_t index_int = RawInt::cast(index).value();
+
+    // wrap negative indices
+    if (index_int < 0) {
+      index_int += tuple_size;
+      if (index_int < 0) {
+        frame->push(kNull);
+        return ContinueMode::Next;
+      }
+    }
+
+    if (index_int >= tuple_size) {
+      frame->push(kNull);
+      return ContinueMode::Next;
+    }
+
+    tuple.set_field_at(index_int, value);
+    frame->push(value);
+    return ContinueMode::Next;
+  }
+
+  debugln("invalid combo, return null");
+
+  frame->push(kNull);
+  return ContinueMode::Next;
 }
 
 OP(setattrsym) {

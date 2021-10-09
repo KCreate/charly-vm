@@ -21,10 +21,6 @@
 
 - Implement basic mechanism of the GC
 
-- Array access cannot cast all values to symbols
-  - Array index needs to have the index value
-  - Requires changes to the bytecode and compiler
-
 - Implement lowest execution tier as a template-JIT instead of bytecode interpreter?
   - Would allow me to get some easy experience with building and integrating the JIT into the system
     instead of having to tack it on later

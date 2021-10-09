@@ -520,6 +520,10 @@ RawSmallString RawSmallString::make_from_cp(uint32_t cp) {
   return make_from_memory(buf.data(), utils::Buffer::utf8_cp_length(cp));
 }
 
+RawSmallString RawSmallString::make_from_str(const std::string& string) {
+  return make_from_memory(string.c_str(), string.size());
+}
+
 RawSmallString RawSmallString::make_from_cstr(const char* value) {
   return make_from_memory(value, std::strlen(value));
 }
@@ -740,39 +744,39 @@ const char* RawLargeString::data() const {
   return bitcast<const char*>(address());
 }
 
-uint32_t RawInstance::size() const {
+int64_t RawInstance::size() const {
   return header()->count();
 }
 
-RawValue RawInstance::field_at(uint32_t index) const {
-  DCHECK(index < size());
+RawValue RawInstance::field_at(int64_t index) const {
+  DCHECK(index >= 0 && index < size());
   RawValue* base = bitcast<RawValue*>(address());
   return *(base + index);
 }
 
-void RawInstance::set_field_at(uint32_t index, RawValue value) {
-  DCHECK(index < size());
+void RawInstance::set_field_at(int64_t index, RawValue value) {
+  DCHECK(index >= 0 && index < size());
   RawValue* base = bitcast<RawValue*>(address());
   *(base + index) = value;
 }
 
-uintptr_t RawInstance::pointer_at(uint32_t index) const {
+uintptr_t RawInstance::pointer_at(int64_t index) const {
   RawValue value = field_at(index);
   DCHECK(value.isObject());
   return RawObject::cast(value).address();
 }
 
-void RawInstance::set_pointer_at(uint32_t index, uintptr_t pointer) {
+void RawInstance::set_pointer_at(int64_t index, uintptr_t pointer) {
   set_field_at(index, RawObject::make_from_ptr(pointer));
 }
 
-int64_t RawInstance::int_at(uint32_t index) const {
+int64_t RawInstance::int_at(int64_t index) const {
   RawValue value = field_at(index);
   DCHECK(value.isInt());
   return RawInt::cast(value).value();
 }
 
-void RawInstance::set_int_at(uint32_t index, int64_t value) {
+void RawInstance::set_int_at(int64_t index, int64_t value) {
   set_field_at(index, RawInt::make(value));
 }
 

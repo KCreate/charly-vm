@@ -227,6 +227,23 @@ void Thread::entry_main_thread() {
     return;
   }
 
+  if (utils::ArgumentParser::is_flag_set("dump_ast")) {
+    unit->ast->dump(std::cout, true);
+  }
+
+  if (utils::ArgumentParser::is_flag_set("dump_ir")) {
+    unit->ir_module->dump(std::cout);
+  }
+
+  if (utils::ArgumentParser::is_flag_set("dump_asm")) {
+    unit->compiled_module->dump(std::cout);
+  }
+
+  if (utils::ArgumentParser::is_flag_set("skipexec")) {
+    runtime->abort(0);
+    return;
+  }
+
   auto module = unit->compiled_module;
   DCHECK(module->function_table.size());
   runtime->register_module(module);

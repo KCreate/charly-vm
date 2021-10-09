@@ -581,13 +581,13 @@ ref<IRInstruction> Builder::emit_loadfar(IROpCount8 depth, IROpIndex8 index) {
   return emit(Opcode::loadfar, IROperandCount8::make(depth), IROperandIndex8::make(index));
 }
 
-ref<IRInstruction> Builder::emit_loadattr(IROpSymbol symbol) {
-  register_symbol(symbol);
-  return emit(Opcode::loadattr, IROperandSymbol::make(symbol));
+ref<IRInstruction> Builder::emit_loadattr() {
+  return emit(Opcode::loadattr);
 }
 
-ref<IRInstruction> Builder::emit_loadattrsym() {
-  return emit(Opcode::loadattrsym);
+ref<IRInstruction> Builder::emit_loadattrsym(IROpSymbol symbol) {
+  register_symbol(symbol);
+  return emit(Opcode::loadattrsym, IROperandSymbol::make(symbol));
 }
 
 ref<IRInstruction> Builder::emit_loadsuperconstructor() {
@@ -617,13 +617,13 @@ ref<IRInstruction> Builder::emit_setfar(IROpCount8 depth, IROpIndex8 index) {
   return emit(Opcode::setfar, IROperandCount8::make(depth), IROperandIndex8::make(index));
 }
 
-ref<IRInstruction> Builder::emit_setattr(IROpSymbol symbol) {
-  register_symbol(symbol);
-  return emit(Opcode::setattr, IROperandSymbol::make(symbol));
+ref<IRInstruction> Builder::emit_setattr() {
+  return emit(Opcode::setattr);
 }
 
-ref<IRInstruction> Builder::emit_setattrsym() {
-  return emit(Opcode::setattrsym);
+ref<IRInstruction> Builder::emit_setattrsym(IROpSymbol symbol) {
+  register_symbol(symbol);
+  return emit(Opcode::setattrsym, IROperandSymbol::make(symbol));
 }
 
 // value destructuring operations
