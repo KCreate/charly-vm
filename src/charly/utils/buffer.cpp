@@ -25,10 +25,9 @@
  */
 
 #include <iomanip>
-
-#include <utf8/utf8.h>
-
 #include <sys/mman.h>
+#include <cstdlib>
+#include <utf8/utf8.h>
 
 #include "charly/charly.h"
 #include "charly/symbol.h"
@@ -275,6 +274,10 @@ void Buffer::reserve_space(size_t size) {
   m_capacity = new_capacity;
 }
 
+void BufferBase::clear() {
+  std::memset(m_buffer, 0, m_capacity);
+}
+
 bool ProtectedBuffer::is_readonly() const {
   return m_readonly;
 }
@@ -315,7 +318,7 @@ void ProtectedBuffer::reserve_space(size_t size) {
   }
 
   DCHECK(new_capacity % kPageSize == 0);
-  void* new_buffer = std::aligned_alloc(kPageSize, new_capacity);
+  void* new_buffer = aligned_alloc(kPageSize, new_capacity);
   if (new_buffer == nullptr) {
     FAIL("could not realloc buffer");
   }
@@ -336,6 +339,69 @@ void ProtectedBuffer::reserve_space(size_t size) {
   m_buffer = new_buffer;
   m_capacity = new_capacity;
   set_readonly(was_readonly);
+}
+
+void ProtectedBuffer::clear() {
+  bool was_readonly = is_readonly();
+  set_readonly(false);
+  BufferBase::clear();
+  set_readonly(was_readonly);
+}
+
+void GuardedBuffer::reserve_space(size_t size) {
+  DCHECK(size >= kPageSize);
+  DCHECK((size % kPageSize) == 0, "size needs to be aligned to page size");
+
+  if (m_capacity >= size) {
+    return;
+  }
+
+  size_t new_capacity = m_capacity ? m_capacity * 2 : kPageSize;
+  while (new_capacity < size) {
+    new_capacity *= 2;
+  }
+
+  if (new_capacity >= kMaximumSize) {
+    FAIL("reached maximum buffer size");
+  }
+
+  size_t mapping_size = new_capacity + kPageSize * 2;
+
+  DCHECK(new_capacity % kPageSize == 0);
+  DCHECK(mapping_size % kPageSize == 0);
+
+  void* mapping = mmap(nullptr, mapping_size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  void* mapping_buffer_base = (void*)((uintptr_t)mapping + kPageSize);
+  if (mapping == nullptr) {
+    FAIL("could not map buffer");
+  }
+
+  // copy old buffer
+  if (m_buffer) {
+    DCHECK(m_mapping_base && m_mapping_size);
+    DCHECK(mprotect(mapping_buffer_base, new_capacity, PROT_READ | PROT_WRITE));
+    std::memcpy(mapping, m_buffer, m_size);
+    munmap(m_mapping_base, m_mapping_size);
+  }
+
+  m_mapping_base = mapping;
+  m_mapping_size = mapping_size;
+  m_buffer = (void*)((uintptr_t)mapping + kPageSize);
+  m_capacity = new_capacity;
+
+  // re-protect newly mapped region
+  set_readonly(is_readonly());
+}
+
+void GuardedBuffer::dealloc_mapping() {
+  if (m_mapping_base) {
+    munmap(m_mapping_base, m_mapping_size);
+    m_mapping_base = nullptr;
+    m_mapping_size = 0;
+  }
+
+  m_buffer = nullptr;
+  m_capacity = 0;
 }
 
 }  // namespace charly::utils

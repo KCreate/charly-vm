@@ -3,10 +3,13 @@
 *.swo
 *.swp
 .DS_Store
+.idea/
 bin/
 build/
 build_backup/
 buildrelease/
 buildtest/
+cmake-build-debug
+cmake-build-release
 code.profdata
 default.profraw

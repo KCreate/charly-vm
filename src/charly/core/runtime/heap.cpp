@@ -26,10 +26,7 @@
 
 #include <cerrno>
 #include <unistd.h>
-#include <linux/memfd.h>
-#include <sys/syscall.h>
 #include <sys/mman.h>
-#include <sys/types.h>
 
 #include "charly/core/runtime/heap.h"
 #include "charly/core/runtime/runtime.h"

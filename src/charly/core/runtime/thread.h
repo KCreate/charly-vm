@@ -26,7 +26,7 @@
 
 #include <boost/context/detail/fcontext.hpp>
 
-#include "charly/utils/guardedbuffer.h"
+#include "charly/utils/buffer.h"
 
 #include "charly/value.h"
 #include "charly/handle.h"
@@ -54,11 +54,11 @@ public:
   Stack() : m_buffer(kThreadStackSize) {}
 
   void* lo() const {
-    return m_buffer.buffer();
+    return m_buffer.data();
   }
 
   void* hi() const {
-    return (void*)((uintptr_t)m_buffer.buffer() + m_buffer.size());
+    return (void*)((uintptr_t)m_buffer.data() + m_buffer.size());
   }
 
   size_t size() const {

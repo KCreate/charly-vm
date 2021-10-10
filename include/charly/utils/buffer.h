@@ -177,6 +177,9 @@ public:
   // reserve enough space in the backing buffer for size bytes
   virtual void reserve_space(size_t size) = 0;
 
+  // clear buffer with 0
+  virtual void clear();
+
 protected:
 
   // copy size bytes from the source address to some target offset in the backing buffer
@@ -202,6 +205,7 @@ public:
 
   Buffer(size_t initial_capacity = kInitialCapacity) : BufferBase() {
     reserve_space(initial_capacity);
+    clear();
   }
 
   Buffer(const std::string& string) : BufferBase() {
@@ -227,6 +231,7 @@ public:
 
   ProtectedBuffer(size_t initial_capacity = kInitialCapacity) : BufferBase(), m_readonly(false) {
     reserve_space(initial_capacity);
+    clear();
   }
 
   ProtectedBuffer(const std::string& string) : ProtectedBuffer(string.size()) {
@@ -246,9 +251,38 @@ public:
   bool is_readonly() const;
   void set_readonly(bool option);
   virtual void reserve_space(size_t size) override;
+  virtual void clear() override;
 
 private:
   bool m_readonly;
+};
+
+class GuardedBuffer : public ProtectedBuffer {
+public:
+  GuardedBuffer(size_t size) : ProtectedBuffer(size), m_mapping_base(nullptr), m_mapping_size(0) {
+    reserve_space(size);
+    clear();
+  }
+
+  GuardedBuffer(const std::string& string) : ProtectedBuffer(string.size()) {
+    emit_string(string);
+  }
+
+  GuardedBuffer(const GuardedBuffer& other) : GuardedBuffer(other.size()) {
+    emit_buffer(other);
+  }
+
+  virtual ~GuardedBuffer() {
+    dealloc_mapping();
+  }
+
+  virtual void reserve_space(size_t size) override;
+
+private:
+  void dealloc_mapping();
+
+  void* m_mapping_base;
+  size_t m_mapping_size;
 };
 
 }  // namespace charly::utils
