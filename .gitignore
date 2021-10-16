@@ -11,5 +11,7 @@ buildrelease/
 buildtest/
 cmake-build-debug
 cmake-build-release
+cmake-build-minsizerel
+cmake-build-relwithdebinfo
 code.profdata
 default.profraw
