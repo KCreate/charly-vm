@@ -58,11 +58,11 @@ public:
   }
 
   void* hi() const {
-    return (void*)((uintptr_t)m_buffer.data() + m_buffer.size());
+    return (void*)((uintptr_t)m_buffer.data() + m_buffer.capacity());
   }
 
   size_t size() const {
-    return m_buffer.size();
+    return m_buffer.capacity();
   }
 
   void clear() {

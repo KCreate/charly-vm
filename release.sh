@@ -1,6 +1,6 @@
 #!/bin/sh
 
-mkdir buildrelease -p
+mkdir -p buildrelease
 cd buildrelease
 
 # initial cmake run

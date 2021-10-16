@@ -200,12 +200,10 @@ protected:
 // buffer backed by memory obtained via malloc
 class Buffer : public BufferBase {
 public:
-  static const size_t kInitialCapacity = 32;
-  static const size_t kMaximumSize = 0x00000000FFFFFFFF; // ~ 4.2 GB
+  Buffer() : BufferBase() {}
 
-  Buffer(size_t initial_capacity = kInitialCapacity) : BufferBase() {
+  Buffer(size_t initial_capacity) : Buffer() {
     reserve_space(initial_capacity);
-    clear();
   }
 
   Buffer(const std::string& string) : BufferBase() {
@@ -216,8 +214,6 @@ public:
     emit_buffer(other);
   }
 
-  using BufferBase::BufferBase;
-
   virtual void reserve_space(size_t size) override;
 };
 
@@ -226,12 +222,10 @@ public:
 // and will only grow in multiples of that size
 class ProtectedBuffer: public BufferBase {
 public:
-  static const size_t kInitialCapacity = 32;
-  static const size_t kMaximumSize = 0x00000000FFFFFFFF; // ~ 4.2 GB
+  ProtectedBuffer() : BufferBase(), m_readonly(false) {}
 
-  ProtectedBuffer(size_t initial_capacity = kInitialCapacity) : BufferBase(), m_readonly(false) {
+  ProtectedBuffer(size_t initial_capacity) : ProtectedBuffer() {
     reserve_space(initial_capacity);
-    clear();
   }
 
   ProtectedBuffer(const std::string& string) : ProtectedBuffer(string.size()) {
@@ -241,8 +235,6 @@ public:
   ProtectedBuffer(const ProtectedBuffer& other) : ProtectedBuffer(other.size()) {
     emit_buffer(other);
   }
-
-  using BufferBase::BufferBase;
 
   virtual ~ProtectedBuffer() {
     set_readonly(false);
@@ -259,9 +251,10 @@ private:
 
 class GuardedBuffer : public ProtectedBuffer {
 public:
-  GuardedBuffer(size_t size) : ProtectedBuffer(size), m_mapping_base(nullptr), m_mapping_size(0) {
+  GuardedBuffer() : ProtectedBuffer(), m_mapping_base(nullptr), m_mapping_size(0) {}
+
+  GuardedBuffer(size_t size) : GuardedBuffer() {
     reserve_space(size);
-    clear();
   }
 
   GuardedBuffer(const std::string& string) : ProtectedBuffer(string.size()) {

@@ -98,10 +98,10 @@ void IRInstruction::at(const ref<ast::Node>& node) {
 }
 
 uint32_t IRInstruction::popped_values() const {
-  uint32_t arg0 = 0;
-  uint32_t arg1 = 0;
-  uint32_t arg2 = 0;
-  uint32_t arg3 = 0;
+  [[maybe_unused]] uint32_t arg0 = 0;
+  [[maybe_unused]] uint32_t arg1 = 0;
+  [[maybe_unused]] uint32_t arg2 = 0;
+  [[maybe_unused]] uint32_t arg3 = 0;
 
   if (this->operands.size() >= 1 && this->operands[0]->get_type() == OperandType::Count16) {
     arg0 = cast<IROperandCount16>(this->operands[0])->value;
@@ -142,10 +142,10 @@ uint32_t IRInstruction::popped_values() const {
 }
 
 uint32_t IRInstruction::pushed_values() const {
-  uint32_t arg0 = 0;
-  uint32_t arg1 = 0;
-  uint32_t arg2 = 0;
-  uint32_t arg3 = 0;
+  [[maybe_unused]] uint32_t arg0 = 0;
+  [[maybe_unused]] uint32_t arg1 = 0;
+  [[maybe_unused]] uint32_t arg2 = 0;
+  [[maybe_unused]] uint32_t arg3 = 0;
 
   if (this->operands.size() >= 1 && this->operands[0]->get_type() == OperandType::Count16) {
     arg0 = cast<IROperandCount16>(this->operands[0])->value;

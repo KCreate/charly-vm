@@ -38,7 +38,6 @@ target_compile_options(charly PRIVATE
   -march=native
   -flto
 )
-set_target_properties(charly PROPERTIES LINK_FLAGS -fuse-ld=lld)
 
 # install to global folder
 install(TARGETS charly RUNTIME DESTINATION bin)
@@ -66,6 +65,7 @@ target_link_libraries(tests Catch2::Catch2WithMain)
 target_link_libraries(tests libcharly)
 target_include_directories(tests PRIVATE src)
 target_compile_features(tests PRIVATE cxx_std_17)
+target_compile_definitions(tests PUBLIC CATCH_CONFIG_PREFIX_ALL)
 target_compile_options(tests PRIVATE
   -Wall
   -Wextra
@@ -82,5 +82,8 @@ target_compile_options(tests PRIVATE
   -march=native
   -flto
 )
-set_target_properties(tests PROPERTIES LINK_FLAGS -fuse-ld=lld)
-target_compile_definitions(tests PUBLIC CATCH_CONFIG_PREFIX_ALL)
+
+if(NOT APPLE)
+  set_target_properties(charly PROPERTIES LINK_FLAGS -fuse-ld=lld)
+  set_target_properties(tests PROPERTIES LINK_FLAGS -fuse-ld=lld)
+endif()

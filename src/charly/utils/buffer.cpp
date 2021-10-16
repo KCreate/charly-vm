@@ -253,13 +253,9 @@ void Buffer::reserve_space(size_t size) {
     return;
   }
 
-  size_t new_capacity = m_capacity ? m_capacity * 2 : kInitialCapacity;
+  size_t new_capacity = m_capacity ? m_capacity * 2 : 32;
   while (new_capacity < size) {
     new_capacity *= 2;
-  }
-
-  if (new_capacity >= kMaximumSize) {
-    FAIL("reached maximum buffer size");
   }
 
   void* new_buffer = std::realloc(m_buffer, new_capacity);
@@ -286,11 +282,6 @@ void ProtectedBuffer::set_readonly(bool option) {
   CHECK((uintptr_t)m_buffer % kPageSize == 0);
   CHECK(m_capacity % kPageSize == 0);
 
-  // already in requested mode
-  if (m_readonly == option) {
-    return;
-  }
-
   auto flags = option ? PROT_READ : PROT_READ | PROT_WRITE;
   if (mprotect(m_buffer, m_capacity, flags) != 0) {
     FAIL("could not mprotect region");
@@ -311,10 +302,6 @@ void ProtectedBuffer::reserve_space(size_t size) {
   size_t new_capacity = m_capacity ? m_capacity * 2 : kPageSize;
   while (new_capacity < size) {
     new_capacity *= 2;
-  }
-
-  if (new_capacity >= kMaximumSize) {
-    FAIL("reached maximum buffer size");
   }
 
   DCHECK(new_capacity % kPageSize == 0);
@@ -361,10 +348,6 @@ void GuardedBuffer::reserve_space(size_t size) {
     new_capacity *= 2;
   }
 
-  if (new_capacity >= kMaximumSize) {
-    FAIL("reached maximum buffer size");
-  }
-
   size_t mapping_size = new_capacity + kPageSize * 2;
 
   DCHECK(new_capacity % kPageSize == 0);
@@ -376,21 +359,26 @@ void GuardedBuffer::reserve_space(size_t size) {
     FAIL("could not map buffer");
   }
 
-  // copy old buffer
+  // copy old buffer contents and unmap old buffer
   if (m_buffer) {
+
+    // mark new buffer as writeable
+    if (mprotect(mapping_buffer_base, new_capacity, PROT_READ | PROT_WRITE) != 0) {
+      FAIL("could not mprotect region");
+    }
+
+    std::memcpy(mapping_buffer_base, m_buffer, m_size);
     DCHECK(m_mapping_base && m_mapping_size);
-    DCHECK(mprotect(mapping_buffer_base, new_capacity, PROT_READ | PROT_WRITE));
-    std::memcpy(mapping, m_buffer, m_size);
     munmap(m_mapping_base, m_mapping_size);
   }
 
   m_mapping_base = mapping;
   m_mapping_size = mapping_size;
-  m_buffer = (void*)((uintptr_t)mapping + kPageSize);
+  m_buffer = mapping_buffer_base;
   m_capacity = new_capacity;
 
   // re-protect newly mapped region
-  set_readonly(is_readonly());
+  set_readonly(false);
 }
 
 void GuardedBuffer::dealloc_mapping() {

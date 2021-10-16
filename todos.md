@@ -1,5 +1,14 @@
 # Todos
 
+- Implement custom utf8 handling code
+  - Ditch utf8 library currently used
+
+- Implement os.h class which implements platform-specific interactions with the OS
+  - Wrappers for mmap, memfd_create etc
+  - Platform specific custom implementations of make_fcontext and jump_fcontext
+
+- Get charly working on macOS
+
 - Interpreter value comparison method
 
 - Interpreter value string output
@@ -14,25 +23,16 @@
   - Would simplify result handling and GC liveness logic if all this functionality was implemented
     directly in Charly
 
-- Load / Write Barriers
-  - When does the runtime have to check the forward pointers of a cell?
-  - How does this mechanism work?
-  - How is it implemented?
-
-- Implement basic mechanism of the GC
-
 - Implement lowest execution tier as a template-JIT instead of bytecode interpreter?
   - Would allow me to get some easy experience with building and integrating the JIT into the system
     instead of having to tack it on later
   - Generation could be a simple templating system, outputting assembly templates for each bytecode
 
-- Rename scheduler abort to exit
-  - Implement scheduler panic routine and error diagnosis opportunity
-
-- Reimplement make_fcontext and jump_fcontext in hand-written assembly
-  - Try to understand what boost does in its own implementation
-
 - Concurrent Garbage Collector
+  - Load / Write Barriers
+    - When does the runtime have to check the forward pointers of a cell?
+    - How does this mechanism work?
+    - How is it implemented?
   - Phases
     - Idle                    | Application is running normally, GC is not running
     - Idle -> Marking         | Mark roots and start background marking

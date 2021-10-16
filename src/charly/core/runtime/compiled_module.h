@@ -107,7 +107,7 @@ struct SharedFunctionInfo {
 };
 
 struct CompiledModule {
-  CompiledModule() : buffer(make<utils::ProtectedBuffer>()) {}
+  CompiledModule() : buffer(make<utils::ProtectedBuffer>(32)) {}
   ~CompiledModule() {
     for (SharedFunctionInfo* func : function_table) {
       if (func)

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-mkdir build -p
+mkdir -p build
 cd build
 
 # initial cmake run
