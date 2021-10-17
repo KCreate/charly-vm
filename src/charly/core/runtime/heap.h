@@ -49,7 +49,7 @@ static const size_t kHeapTotalSize = kGb * 2;
 static const size_t kHeapRegionSize = kKb * 512;
 static const size_t kHeapRegionCount = kHeapTotalSize / kHeapRegionSize;
 static const size_t kHeapRegionPageCount = kHeapRegionSize / kPageSize;
-static const size_t kHeapPossibleObjectAddresses = kHeapRegionSize / kObjectAlignment;
+static const size_t kHeapRegionPossibleObjectAddresses = kHeapRegionSize / kObjectAlignment;
 
 static const size_t kHeapInitialMappedRegionCount = 16;
 

@@ -39,6 +39,7 @@
 
 #include "charly/core/compiler/compiler.h"
 #include "charly/core/runtime/runtime.h"
+#include "charly/core/runtime/interpreter.h"
 
 using namespace charly;
 using namespace charly::core::runtime;
@@ -194,6 +195,41 @@ int32_t cli(DiagnosticConsole& console) {
 
   if (utils::ArgumentParser::is_flag_set("license")) {
     std::cout << utils::ArgumentParser::LICENSE << std::endl;
+    return 0;
+  }
+
+  if (utils::ArgumentParser::is_flag_set("dump_constants")) {
+    debuglnf("# %heap.h%", termcolor::yellow, termcolor::reset);
+    debuglnf("kHeapTotalSize                      = %", kHeapTotalSize);
+    debuglnf("kHeapRegionSize                     = %", kHeapRegionSize);
+    debuglnf("kHeapRegionCount                    = %", kHeapRegionCount);
+    debuglnf("kHeapRegionPageCount                = %", kHeapRegionPageCount);
+    debuglnf("kHeapRegionPossibleObjectAddresses  = %", kHeapRegionPossibleObjectAddresses);
+    debuglnf("kHeapInitialMappedRegionCount       = %", kHeapInitialMappedRegionCount);
+    debuglnf("");
+
+    debuglnf("# %interpreter.h%", termcolor::yellow, termcolor::reset);
+    debuglnf("kStackOverflowLimit = %", kStackOverflowLimit);
+    debuglnf("");
+
+    debuglnf("# %scheduler.h%", termcolor::yellow, termcolor::reset);
+    debuglnf("kGlobalRunQueuePriorityChance     = %", kGlobalRunQueuePriorityChance);
+    debuglnf("kWorkerMaximumIdleSleepDuration   = %", kWorkerMaximumIdleSleepDuration);
+    debuglnf("kLocalRunQueueMaxSize             = %", kLocalRunQueueMaxSize);
+    debuglnf("kThreadTimeslice                  = %", kThreadTimeslice);
+    debuglnf("");
+
+    debuglnf("# %thread.h%", termcolor::yellow, termcolor::reset);
+    debuglnf("kThreadStackSize = %", kThreadStackSize);
+    debuglnf("");
+
+    debuglnf("# %value.h%", termcolor::yellow, termcolor::reset);
+    debuglnf("RawInstance::kSize    = %", RawInstance::kSize);
+    debuglnf("RawHugeBytes::kSize   = %", RawHugeBytes::kSize);
+    debuglnf("RawHugeString::kSize  = %", RawHugeString::kSize);
+    debuglnf("RawFunction::kSize    = %", RawFunction::kSize);
+    debuglnf("RawFiber::kSize       = %", RawFiber::kSize);
+
     return 0;
   }
 
