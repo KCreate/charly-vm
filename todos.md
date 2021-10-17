@@ -4,8 +4,6 @@
   - Wrappers for mmap, memfd_create etc
   - Platform specific custom implementations of make_fcontext and jump_fcontext
 
-- Get charly working on macOS
-
 - Interpreter value comparison method
 
 - Interpreter value string output

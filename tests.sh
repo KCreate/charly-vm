@@ -1,20 +1,18 @@
 #!/bin/sh
 
-mkdir -p buildtest
-cd buildtest
+mkdir -p cmake-build-release
+cd cmake-build-release || exit
 
 # initial cmake run
-test -f Makefile
-if [ $? -gt 0 ]
+if ! test -f Makefile;
 then
   cmake .. -DCMAKE_BUILD_TYPE=Release
 fi
 
-make tests -j12
-if [ $? -eq 0 ]
+if cmake --build . --target tests -j8;
 then
   cd ..
 
   # --batch exits lldb on success and prompts for further input on failure
-  buildtest/tests $@
+  cmake-build-release/tests "$@"
 fi

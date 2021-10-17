@@ -30,43 +30,45 @@
 
 using namespace charly::utils;
 
-CATCH_TEST_CASE("string_to_int") {
-  // decimals
-  CATCH_CHECK(string_to_int("0") == 0);
-  CATCH_CHECK(string_to_int("1") == 1);
-  CATCH_CHECK(string_to_int("100") == 100);
-  CATCH_CHECK(string_to_int("-250") == -250);
+CATCH_TEST_CASE("Cast") {
+  CATCH_SECTION("string_to_int") {
+    // decimals
+    CATCH_CHECK(string_to_int("0") == 0);
+    CATCH_CHECK(string_to_int("1") == 1);
+    CATCH_CHECK(string_to_int("100") == 100);
+    CATCH_CHECK(string_to_int("-250") == -250);
 
-  // octal
-  CATCH_CHECK(string_to_int("10", 8) == 8);
-  CATCH_CHECK(string_to_int("20", 8) == 16);
-  CATCH_CHECK(string_to_int("40", 8) == 32);
-  CATCH_CHECK(string_to_int("-20", 8) == -16);
-  CATCH_CHECK(string_to_int("777", 8) == 511);
+    // octal
+    CATCH_CHECK(string_to_int("10", 8) == 8);
+    CATCH_CHECK(string_to_int("20", 8) == 16);
+    CATCH_CHECK(string_to_int("40", 8) == 32);
+    CATCH_CHECK(string_to_int("-20", 8) == -16);
+    CATCH_CHECK(string_to_int("777", 8) == 511);
 
-  // binary
-  CATCH_CHECK(string_to_int("0", 2) == 0);
-  CATCH_CHECK(string_to_int("1", 2) == 1);
-  CATCH_CHECK(string_to_int("10", 2) == 2);
-  CATCH_CHECK(string_to_int("100", 2) == 4);
-  CATCH_CHECK(string_to_int("1000", 2) == 8);
-  CATCH_CHECK(string_to_int("11111111", 2) == 255);
-  CATCH_CHECK(string_to_int("-10", 2) == -2);
+    // binary
+    CATCH_CHECK(string_to_int("0", 2) == 0);
+    CATCH_CHECK(string_to_int("1", 2) == 1);
+    CATCH_CHECK(string_to_int("10", 2) == 2);
+    CATCH_CHECK(string_to_int("100", 2) == 4);
+    CATCH_CHECK(string_to_int("1000", 2) == 8);
+    CATCH_CHECK(string_to_int("11111111", 2) == 255);
+    CATCH_CHECK(string_to_int("-10", 2) == -2);
 
-  // hex
-  CATCH_CHECK(string_to_int("0", 16) == 0);
-  CATCH_CHECK(string_to_int("10", 16) == 16);
-  CATCH_CHECK(string_to_int("20", 16) == 32);
-  CATCH_CHECK(string_to_int("ff", 16) == 255);
-  CATCH_CHECK(string_to_int("ffff", 16) == 65535);
-  CATCH_CHECK(string_to_int("-ff", 16) == -255);
-}
+    // hex
+    CATCH_CHECK(string_to_int("0", 16) == 0);
+    CATCH_CHECK(string_to_int("10", 16) == 16);
+    CATCH_CHECK(string_to_int("20", 16) == 32);
+    CATCH_CHECK(string_to_int("ff", 16) == 255);
+    CATCH_CHECK(string_to_int("ffff", 16) == 65535);
+    CATCH_CHECK(string_to_int("-ff", 16) == -255);
+  }
 
-CATCH_TEST_CASE("string_to_double") {
-  CATCH_CHECK(string_to_double("0.0") == 0.0);
-  CATCH_CHECK(string_to_double("1.0") == 1.0);
-  CATCH_CHECK(string_to_double("1.5") == 1.5);
-  CATCH_CHECK(string_to_double("25.25") == 25.25);
-  CATCH_CHECK(string_to_double("-25.25") == -25.25);
-  CATCH_CHECK(string_to_double("0.33333") == 0.33333);
+  CATCH_SECTION("string_to_double") {
+    CATCH_CHECK(string_to_double("0.0") == 0.0);
+    CATCH_CHECK(string_to_double("1.0") == 1.0);
+    CATCH_CHECK(string_to_double("1.5") == 1.5);
+    CATCH_CHECK(string_to_double("25.25") == 25.25);
+    CATCH_CHECK(string_to_double("-25.25") == -25.25);
+    CATCH_CHECK(string_to_double("0.33333") == 0.33333);
+  }
 }

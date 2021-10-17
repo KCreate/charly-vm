@@ -35,50 +35,52 @@ using Catch::Matchers::Equals;
 using namespace charly;
 using namespace charly::core::compiler;
 
-CATCH_TEST_CASE("formats errors") {
-  utils::Buffer buffer("foo,");
-  auto unit = Compiler::compile("test", buffer);
+CATCH_TEST_CASE("Diagnostic") {
+  CATCH_SECTION("formats errors") {
+    utils::Buffer buffer("foo,");
+    auto unit = Compiler::compile("test", buffer);
 
-  CATCH_REQUIRE(unit->console.messages().size() == 1);
+    CATCH_REQUIRE(unit->console.messages().size() == 1);
 
-  std::stringstream out;
-  unit->console.dump_all(out);
+    std::stringstream out;
+    unit->console.dump_all(out);
 
-  CATCH_CHECK_THAT(out.str(), Equals(("test:1:4: error: unexpected ',' token, expected an expression\n"
-                                "       1 | foo,\n")));
-}
+    CATCH_CHECK_THAT(out.str(), Equals(("test:1:4: error: unexpected ',' token, expected an expression\n"
+                                        "       1 | foo,\n")));
+  }
 
-CATCH_TEST_CASE("formats messages without a location") {
-  utils::Buffer buffer("");
-  DiagnosticConsole console("test", buffer);
+  CATCH_SECTION("formats messages without a location") {
+    utils::Buffer buffer("");
+    DiagnosticConsole console("test", buffer);
 
-  console.info(Location{.valid=false}, "foo");
-  console.warning(Location{.valid=false}, "bar");
-  console.error(Location{.valid=false}, "baz");
+    console.info(Location{.valid=false}, "foo");
+    console.warning(Location{.valid=false}, "bar");
+    console.error(Location{.valid=false}, "baz");
 
-  CATCH_REQUIRE(console.messages().size() == 3);
+    CATCH_REQUIRE(console.messages().size() == 3);
 
-  std::stringstream out;
-  console.dump_all(out);
+    std::stringstream out;
+    console.dump_all(out);
 
-  CATCH_CHECK_THAT(out.str(), Equals(("test: info: foo\n\n"
-                                "test: warning: bar\n\n"
-                                "test: error: baz\n")));
-}
+    CATCH_CHECK_THAT(out.str(), Equals(("test: info: foo\n\n"
+                                        "test: warning: bar\n\n"
+                                        "test: error: baz\n")));
+  }
 
-CATCH_TEST_CASE("formats multiple lines") {
-  utils::Buffer buffer("\n\n(25      25)\n\n");
-  auto unit = Compiler::compile("test", buffer);
+  CATCH_SECTION("formats multiple lines") {
+    utils::Buffer buffer("\n\n(25      25)\n\n");
+    auto unit = Compiler::compile("test", buffer);
 
-  CATCH_REQUIRE(unit->console.messages().size() == 1);
+    CATCH_REQUIRE(unit->console.messages().size() == 1);
 
-  std::stringstream out;
-  unit->console.dump_all(out);
+    std::stringstream out;
+    unit->console.dump_all(out);
 
-  CATCH_CHECK_THAT(out.str(), Equals(("test:3:10: error: unexpected numerical constant, expected a ')' token\n"
-                                "       1 | \n"
-                                "       2 | \n"
-                                "       3 | (25      25)\n"
-                                "       4 | \n"
-                                "       5 | \n")));
+    CATCH_CHECK_THAT(out.str(), Equals(("test:3:10: error: unexpected numerical constant, expected a ')' token\n"
+                                        "       1 | \n"
+                                        "       2 | \n"
+                                        "       3 | (25      25)\n"
+                                        "       4 | \n"
+                                        "       5 | \n")));
+  }
 }

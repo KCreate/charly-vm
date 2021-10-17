@@ -1,18 +1,16 @@
 #!/bin/sh
 
-mkdir -p buildrelease
-cd buildrelease
+mkdir -p cmake-build-release
+cd cmake-build-release || exit
 
 # initial cmake run
-test -f Makefile
-if [ $? -gt 0 ]
+if ! test -f Makefile;
 then
   cmake .. -DCMAKE_BUILD_TYPE=Release
 fi
 
-cmake --build . --target charly -j8
-if [ $? -eq 0 ]
+if cmake --build . --target charly -j8;
 then
   cd ..
-  buildrelease/charly $@
+  cmake-build-release/charly "$@"
 fi

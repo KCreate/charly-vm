@@ -1,19 +1,16 @@
 #!/bin/sh
 
-mkdir -p build
-cd build
+mkdir -p cmake-build-debug
+cd cmake-build-debug || exit
 
 # initial cmake run
-test -f Makefile
-if [ $? -gt 0 ]
+if ! test -f Makefile;
 then
   cmake .. -DCMAKE_BUILD_TYPE=Debug
 fi
 
-# make charly -j -Oline
-cmake --build . --target charly
-if [ $? -eq 0 ]
+if cmake --build . --target charly;
 then
   cd ..
-  build/charly $@
+  cmake-build-debug/charly "$@"
 fi
