@@ -31,10 +31,9 @@
 #include <unordered_set>
 #include <vector>
 #include <mutex>
+#include <bitset>
 
 #include "charly/value.h"
-
-#include "charly/utils/bitfield.h"
 
 #pragma once
 
@@ -88,7 +87,7 @@ struct HeapRegion {
   Type type;
   State state;
   size_t used;
-  utils::BitField<kHeapPossibleObjectAddresses> card_table;
+  std::bitset<kHeapRegionPossibleObjectAddresses> card_table;
   uint8_t buffer alignas(kObjectAlignment)[];
 };
 

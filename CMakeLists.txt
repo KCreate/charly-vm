@@ -51,7 +51,6 @@ file(GLOB tests_SRC
   "test/runtime/core/compiler/parser.cpp"
   "test/runtime/core/compiler/pass.cpp"
   "test/runtime/core/compiler/semantic.cpp"
-  "test/runtime/utils/bitfield.cpp"
   "test/runtime/utils/buffer.cpp"
   "test/runtime/utils/cast.cpp"
   "test/runtime/utils/cast.cpp"
