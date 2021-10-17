@@ -27,9 +27,9 @@
 #include <iomanip>
 #include <sys/mman.h>
 #include <cstdlib>
-#include <utf8/utf8.h>
 
 #include "charly/charly.h"
+#include "charly/utf8.h"
 #include "charly/symbol.h"
 #include "charly/utils/colorwriter.h"
 #include "charly/utils/buffer.h"
@@ -142,7 +142,6 @@ uint32_t BufferBase::window_hash() const {
 
 void BufferBase::emit_utf8_cp(uint32_t cp) {
   reserve_space(m_writeoffset + 4);
-
   char* buffer_initial = data() + m_writeoffset;
   char* buffer_ptr = buffer_initial;
   buffer_ptr = utf8::append(cp, buffer_ptr);
@@ -159,7 +158,7 @@ uint32_t BufferBase::peek_utf8_cp(uint32_t nth) const {
 
   // walk forward to requested character
   while (nth--) {
-    utf8::next(buffer_ptr, data() + m_writeoffset);
+    CHECK(utf8::next(buffer_ptr, data() + m_writeoffset));
 
     // overflow check
     if (buffer_ptr >= data() + m_writeoffset) {
@@ -167,7 +166,9 @@ uint32_t BufferBase::peek_utf8_cp(uint32_t nth) const {
     }
   }
 
-  return utf8::peek_next(buffer_ptr, data() + m_writeoffset);
+  uint32_t cp;
+  CHECK(utf8::peek_next(buffer_ptr, data() + m_writeoffset, cp));
+  return cp;
 }
 
 uint32_t BufferBase::read_utf8_cp() {
@@ -177,7 +178,8 @@ uint32_t BufferBase::read_utf8_cp() {
   // advance by one utf8 codepoint
   char* buffer_initial = data() + m_readoffset;
   char* buffer_ptr = buffer_initial;
-  uint32_t codepoint = utf8::next(buffer_ptr, data() + m_writeoffset);
+  uint32_t codepoint;
+  CHECK(utf8::next(buffer_ptr, data() + m_writeoffset, codepoint));
   m_readoffset += buffer_ptr - buffer_initial;
   return codepoint;
 }

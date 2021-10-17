@@ -1,8 +1,5 @@
 # Todos
 
-- Implement custom utf8 handling code
-  - Ditch utf8 library currently used
-
 - Implement os.h class which implements platform-specific interactions with the OS
   - Wrappers for mmap, memfd_create etc
   - Platform specific custom implementations of make_fcontext and jump_fcontext
