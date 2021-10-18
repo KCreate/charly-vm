@@ -24,16 +24,14 @@
  * SOFTWARE.
  */
 
-let counter = 0
-const increment = 1
+func vec2(x, y) = (x, y)
 
-func recurse {
-  counter += increment
-  recurse()
-}
+let a = vec2(2, 3)
+let b = vec2(4, -12)
 
-try {
-  recurse()
-} catch(e) {
-  return counter
-}
+func add_vec2(x, y) = (x[0] + y[0], x[1] + y[1])
+
+let c = add_vec2(a, b)
+let (x, y) = c
+
+return (x, y)

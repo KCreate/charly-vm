@@ -536,7 +536,32 @@ OP(setattrsym) {
 }
 
 OP(unpacksequence) {
-  UNIMPLEMENTED();
+  Count8 count = op->unpacksequence.count;
+
+  RawValue value = frame->pop();
+  switch (value.shape_id()) {
+    case ShapeId::kTuple: {
+      RawTuple tuple(RawTuple::cast(value));
+      size_t tuple_size = tuple.size();
+
+      if (tuple_size != count) {
+        debugln("expected tuple to be of size %, not %", (size_t)count, tuple_size);
+        thread->throw_value(RawSmallString::make_from_cstr("invsize"));
+        return ContinueMode::Exception;
+      }
+
+      for (size_t i = 0; i < tuple_size; i++) {
+        frame->push(tuple.field_at(i));
+      }
+
+      return ContinueMode::Next;
+    }
+    default: {
+      debugln("value is not a sequence");
+      thread->throw_value(RawSmallString::make_from_cstr("notaseq"));
+      return ContinueMode::Exception;
+    }
+  }
 }
 
 OP(unpacksequencespread) {
