@@ -752,7 +752,9 @@ OP(usub) {
 }
 
 OP(unot) {
-  UNIMPLEMENTED();
+  RawValue value = frame->pop();
+  frame->push(value.truthyness() ? kFalse : kTrue);
+  return ContinueMode::Next;
 }
 
 OP(ubnot) {
