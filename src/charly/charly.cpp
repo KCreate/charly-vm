@@ -42,11 +42,12 @@ void print_runtime_debug_state(std::ostream& stream) {
 
     if (Frame* frame = thread->frame()) {
       debugln_impl_time(stream, "IP: %\n", (void*)frame->oldip);
+      debugln_impl_time(stream, "Function: %\n", frame->function);
 
       Frame* old = frame;
       debugln_impl_time(stream, "Frames:\n", frame);
       while (frame) {
-        debugln_impl_time(stream, "  - %: %\n", frame, (void*)frame->oldip);
+        debugln_impl_time(stream, "  - %: %\n", frame->function, (void*)frame->oldip);
         frame = frame->parent;
       }
       frame = old;

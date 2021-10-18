@@ -63,7 +63,10 @@ target_compile_options(libcharly PRIVATE
   -march=native
   -flto
 )
-if(NOT APPLE)
+set_target_properties(libcharly PROPERTIES PREFIX "")
+
+if(APPLE)
+  set_target_properties(libcharly PROPERTIES LINK_FLAGS -fuse-ld=ld)
+else()
   set_target_properties(libcharly PROPERTIES LINK_FLAGS -fuse-ld=lld)
-  set_target_properties(libcharly PROPERTIES PREFIX "")
 endif()

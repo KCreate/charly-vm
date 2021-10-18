@@ -32,6 +32,7 @@
 #include "charly/value.h"
 
 #include "charly/core/runtime/heap.h"
+#include "charly/core/runtime/compiled_module.h"
 
 namespace charly::core::runtime {
 
@@ -386,8 +387,48 @@ void RawValue::dump(std::ostream& out) const {
   }
 
   if (isObject()) {
-    writer.fg(Color::Cyan, bitcast<void*>(RawObject::cast(this).address()));
-    return;
+    RawObject object(RawObject::cast(this));
+
+    switch (object.shape_id()) {
+      case ShapeId::kTuple: {
+        RawTuple tuple(RawTuple::cast(object));
+
+        writer.fg(Color::Grey, "(");
+
+        {
+          tuple.field_at(0).dump(out);
+          for (int64_t i = 1; i < tuple.size(); i++) {
+            writer.fg(Color::Grey, ", ");
+            tuple.field_at(i).dump(out);
+          }
+        }
+
+        writer.fg(Color::Grey, ")");
+
+        return;
+      }
+      case ShapeId::kFunction: {
+        RawFunction function(RawFunction::cast(object));
+
+        const SharedFunctionInfo& shared_info = *function.shared_info();
+        const compiler::ir::FunctionInfo& ir_info = shared_info.ir_info;
+        uint8_t minargc = ir_info.minargc;
+        bool arrow = ir_info.arrow_function;
+        const std::string& name = shared_info.name;
+
+        if (arrow) {
+          writer.fg(Color::Magenta, "->(", (uint32_t)minargc, ")");
+        } else {
+          writer.fg(Color::Yellow, "func ", name, "(", (uint32_t)minargc, ")");
+        }
+
+        return;
+      }
+      default: {
+        writer.fg(Color::Cyan, bitcast<void*>(RawObject::cast(this).address()));
+        return;
+      }
+    }
   }
 
   if (isFloat()) {

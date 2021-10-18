@@ -82,7 +82,10 @@ target_compile_options(tests PRIVATE
   -flto
 )
 
-if(NOT APPLE)
+if(APPLE)
+  set_target_properties(charly PROPERTIES LINK_FLAGS -fuse-ld=ld)
+  set_target_properties(tests PROPERTIES LINK_FLAGS -fuse-ld=ld)
+else()
   set_target_properties(charly PROPERTIES LINK_FLAGS -fuse-ld=lld)
   set_target_properties(tests PROPERTIES LINK_FLAGS -fuse-ld=lld)
 endif()

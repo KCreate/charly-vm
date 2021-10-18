@@ -44,7 +44,7 @@ static const size_t kStackOverflowLimit = 1024 * 32; // 32 kilobytes
 
 class Frame {
 public:
-  Frame(Thread* thread);
+  Frame(Thread* thread, RawFunction function);
   ~Frame();
 
   Thread* thread;

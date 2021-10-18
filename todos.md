@@ -1,9 +1,5 @@
 # Todos
 
-- Implement os.h class which implements platform-specific interactions with the OS
-  - Wrappers for mmap, memfd_create etc
-  - Platform specific custom implementations of make_fcontext and jump_fcontext
-
 - Interpreter value comparison method
 
 - Interpreter value string output
@@ -22,6 +18,9 @@
   - Would allow me to get some easy experience with building and integrating the JIT into the system
     instead of having to tack it on later
   - Generation could be a simple templating system, outputting assembly templates for each bytecode
+  
+- Implement os.h class which implements platform-specific interactions with the OS
+  - Platform specific custom implementations of make_fcontext and jump_fcontext
 
 - Concurrent Garbage Collector
   - Load / Write Barriers

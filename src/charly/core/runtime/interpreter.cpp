@@ -35,7 +35,7 @@ namespace charly::core::runtime {
 using namespace charly::core::compiler;
 using namespace charly::core::compiler::ir;
 
-Frame::Frame(Thread* thread) : thread(thread), parent(thread->frame()) {
+Frame::Frame(Thread* thread, RawFunction function) : thread(thread), parent(thread->frame()), function(function) {
   thread->push_frame(this);
 }
 
@@ -84,9 +84,8 @@ RawValue Interpreter::call_function(
   Thread* thread, RawValue self, RawFunction function, RawValue* arguments, uint8_t argc) {
   Runtime* runtime = thread->runtime();
 
-  Frame frame(thread);
+  Frame frame(thread, function);
   frame.self = self;
-  frame.function = function;
   frame.locals = nullptr;
   frame.stack = nullptr;
   frame.return_value = kNull;
