@@ -70,9 +70,9 @@ void Frame::push(RawValue value) {
   this->sp++;
 }
 
-const ExceptionTableEntry* Frame::find_active_exception_table_entry(uintptr_t ip) const {
+const ExceptionTableEntry* Frame::find_active_exception_table_entry(uintptr_t thread_ip) const {
   for (const ExceptionTableEntry& entry : shared_function_info->exception_table) {
-    if (ip >= entry.begin_ptr && ip < entry.end_ptr) {
+    if (thread_ip >= entry.begin_ptr && thread_ip < entry.end_ptr) {
       return &entry;
     }
   }
@@ -246,7 +246,20 @@ OP(import) {
 }
 
 OP(stringconcat) {
-  UNIMPLEMENTED();
+  Count8 count = op->stringconcat.count;
+
+  std::stringstream stream;
+
+  for (int64_t depth = count - 1; depth >= 0; depth--) {
+    frame->peek(depth).to_string(stream);
+  }
+
+  frame->pop(count);
+
+  std::string str(stream.str());
+  frame->push(thread->runtime()->create_heap_string(thread, str.data(), str.size(), SYM(str)));
+
+  return ContinueMode::Next;
 }
 
 OP(declareglobal) {
@@ -378,7 +391,8 @@ OP(load) {
 }
 
 OP(loadsymbol) {
-  UNIMPLEMENTED();
+  frame->push(RawSymbol::make(op->loadsymbol.name));
+  return ContinueMode::Next;
 }
 
 OP(loadself) {
@@ -593,7 +607,14 @@ OP(makesubclass) {
 }
 
 OP(makestr) {
-  UNIMPLEMENTED();
+  Index16 index = op->makestr.index;
+
+  const SharedFunctionInfo& shared_info = *frame->shared_function_info;
+  DCHECK(index < shared_info.string_table.size());
+  const StringTableEntry& entry = shared_info.string_table[index];
+  frame->push(thread->runtime()->create_heap_string(thread, entry.value.data(), entry.value.size(), entry.hash));
+
+  return ContinueMode::Next;
 }
 
 OP(makelist) {
@@ -655,7 +676,14 @@ OP(fiberawait) {
 }
 
 OP(caststring) {
-  UNIMPLEMENTED();
+  RawValue value = frame->pop();
+
+  std::stringstream stream;
+  value.to_string(stream);
+  std::string str = stream.str();
+  frame->push(thread->runtime()->create_string(thread, str.data(), str.size(), SYM(str)));
+
+  return ContinueMode::Next;
 }
 
 OP(castsymbol) {

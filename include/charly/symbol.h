@@ -84,7 +84,11 @@ inline constexpr SYMBOL SYM(const char* str) {
 }
 
 inline SYMBOL SYM(const std::string& str) {
-  return SYM(str.c_str(), str.size());
+  return SYM(str.data(), str.size());
+}
+
+inline SYMBOL SYM(const std::string_view& str) {
+  return SYM(str.data(), str.size());
 }
 
 }

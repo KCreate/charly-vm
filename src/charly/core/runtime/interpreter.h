@@ -66,7 +66,7 @@ public:
   RawValue* top_n(uint8_t count) const;
   void push(RawValue value);
 
-  const ExceptionTableEntry* find_active_exception_table_entry(uintptr_t ip) const;
+  const ExceptionTableEntry* find_active_exception_table_entry(uintptr_t thread_ip) const;
 };
 
 class Interpreter {

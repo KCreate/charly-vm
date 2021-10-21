@@ -24,14 +24,22 @@
  * SOFTWARE.
  */
 
-func vec2(x, y) = (x, y)
+func determine_max_stack_size {
+    let counter = 0
 
-let a = vec2(2, 3)
-let b = vec2(4, -12)
+    func recurse {
+        counter += 1
+        recurse()
+    }
 
-func add_vec2(x, y) = (x[0] + y[0], x[1] + y[1])
+    try {
+        recurse()
+    } catch(e) {
+        return (e, counter)
+    }
+}
 
-let c = add_vec2(a, b)
-let (x, y) = c
+const result = determine_max_stack_size()
+const (error, counter) = result
 
-return (x, y)
+return (determine_max_stack_size, result, error, counter)

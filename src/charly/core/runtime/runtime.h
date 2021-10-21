@@ -67,7 +67,11 @@ public:
   void register_module(const ref<CompiledModule>& module);
 
 public:
+  RawData create_data(Thread* thread, ShapeId shape_id, size_t size);
   RawObject create_instance(Thread* thread, ShapeId shape_id, size_t size);
+
+  RawValue create_string(Thread* thread, const char* data, size_t size, SYMBOL hash);
+  RawObject create_heap_string(Thread* thread, const char* data, size_t size, SYMBOL hash);
 
   RawObject create_tuple(Thread* thread, uint32_t count);
   RawObject create_function(Thread* thread, RawValue context, SharedFunctionInfo* shared_info);

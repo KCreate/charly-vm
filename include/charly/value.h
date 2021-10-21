@@ -359,6 +359,8 @@ public:
     return *reinterpret_cast<const T*>(self);
   }
 
+  void to_string(std::ostream& out) const;
+
   void dump(std::ostream& out) const;
 
   friend std::ostream& operator<<(std::ostream& out, const RawValue& value);
@@ -536,6 +538,8 @@ public:
   size_t length() const;
   const uint8_t* data() const;
   SYMBOL hashcode() const;
+
+  static const size_t kMaxLength = 1008; // 1024 bytes - 16 bytes for the header
 };
 
 // bytes stored on managed heap
@@ -570,6 +574,7 @@ public:
   int64_t int_at(int64_t index) const;
   void set_int_at(int64_t index, int64_t value);
 
+  static const size_t kMaximumFieldCount = 126;
   static const size_t kFieldCount = 0;
   static const size_t kSize = kFieldCount * kPointerSize;
 };

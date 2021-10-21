@@ -57,7 +57,7 @@ inline int64_t charptr_to_int(const char* data, size_t length, int base = 10) {
 }
 
 inline int64_t string_to_int(const std::string& str, int base = 10) {
-  return charptr_to_int(str.c_str(), str.size(), base);
+  return charptr_to_int(str.data(), str.size(), base);
 }
 
 inline int64_t string_view_to_int(const std::string_view& view, int base = 10) {
@@ -79,7 +79,7 @@ inline double charptr_to_double(const char* data, size_t length) {
 }
 
 inline double string_to_double(const std::string& str) {
-  return charptr_to_double(str.c_str(), str.size());
+  return charptr_to_double(str.data(), str.size());
 }
 
 inline double string_view_to_double(const std::string_view& view) {

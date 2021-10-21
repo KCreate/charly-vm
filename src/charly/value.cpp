@@ -378,6 +378,18 @@ bool RawValue::isException() const {
   return shape_id() == ShapeId::kException;
 }
 
+void RawValue::to_string(std::ostream& out) const {
+  if (isString()) {
+    RawString value = RawString::cast(this);
+    const char* data = RawString::data(&value);
+    size_t length = value.length();
+    out << std::string_view(data, length);
+    return;
+  }
+
+  dump(out);
+}
+
 void RawValue::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
 
@@ -386,10 +398,35 @@ void RawValue::dump(std::ostream& out) const {
     return;
   }
 
+  if (isString()) {
+    RawString value = RawString::cast(this);
+    const char* data = RawString::data(&value);
+    size_t length = value.length();
+    writer.fg(Color::Red, "\"", std::string_view(data, length), "\"");
+    return;
+  }
+
+  if (isBytes()) {
+    RawBytes value = RawBytes::cast(this);
+    writer.fg(Color::Grey, "[");
+    for (size_t i = 0; i < value.length(); i++) {
+      uint8_t byte = *(RawBytes::data(&value) + i);
+
+      if (i) {
+        out << " ";
+      }
+
+      writer.fg(Color::Red, std::hex, byte, std::dec);
+    }
+    writer.fg(Color::Grey, "]");
+    return;
+  }
+
   if (isObject()) {
     RawObject object(RawObject::cast(this));
 
-    switch (object.shape_id()) {
+    ShapeId shape_id = object.shape_id();
+    switch (shape_id) {
       case ShapeId::kTuple: {
         RawTuple tuple(RawTuple::cast(object));
 
@@ -425,7 +462,7 @@ void RawValue::dump(std::ostream& out) const {
         return;
       }
       default: {
-        writer.fg(Color::Cyan, bitcast<void*>(RawObject::cast(this).address()));
+        writer.fg(Color::Cyan, (uint32_t)shape_id, "%", bitcast<void*>(RawObject::cast(this).address()));
         return;
       }
     }
@@ -457,31 +494,7 @@ void RawValue::dump(std::ostream& out) const {
     return;
   }
 
-  if (isSmallString()) {
-    RawSmallString value = RawSmallString::cast(this);
-    const char* data = RawSmallString::data(&value);
-    size_t length = value.length();
-    writer.fg(Color::Red, "\"", std::string_view(data, length), "\"");
-    return;
-  }
-
-  if (isSmallBytes()) {
-    RawSmallBytes value = RawSmallBytes::cast(this);
-    writer.fg(Color::Grey, "bytes[");
-    for (size_t i = 0; i < value.length(); i++) {
-      uint8_t byte = *(RawSmallBytes::data(&value) + i);
-
-      if (i) {
-        out << " ";
-      }
-
-      writer.fg(Color::Red, "0x", std::hex, byte, std::dec);
-    }
-    writer.fg(Color::Grey, "]");
-    return;
-  }
-
-  writer.fg(Color::Grey, "???");
+  writer.fg(Color::Grey, "<?>");
 }
 
 std::ostream& operator<<(std::ostream& out, const RawValue& value) {

@@ -2,9 +2,7 @@
 
 - Interpreter value comparison method
 
-- Interpreter value string output
-  - How are heap types formatted to strings?
-  - How are custom objects formatted?
+- Implement RawHugeStrings and RawHugeBytes
 
 - Implement REPL in charly
   - Use the standard library to read, compile and execute input statements

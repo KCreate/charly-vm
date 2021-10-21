@@ -42,13 +42,13 @@ CATCH_TEST_CASE("Buffer") {
   CATCH_REQUIRE_THAT(buf.window_string(), Equals(""));
 
   CATCH_SECTION("Initialize buffer with string value") {
-    utils::Buffer buf("hello world!!");
+    utils::Buffer buf2("hello world!!");
 
     for (int i = 0; i < 13; i++) {
-      buf.read_utf8_cp();
+      buf2.read_utf8_cp();
     }
 
-    CATCH_CHECK_THAT(buf.window_string(), Equals("hello world!!"));
+    CATCH_CHECK_THAT(buf2.window_string(), Equals("hello world!!"));
   }
 
   CATCH_SECTION("Append data to buffer") {

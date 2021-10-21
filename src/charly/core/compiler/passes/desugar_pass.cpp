@@ -66,9 +66,7 @@ void DesugarPass::inspect_leave(const ref<Import>& node) {
 
   if (ref<Name> name = cast<Name>(source)) {
     source = make<String>(name->value);
-  }
-
-  if (!isa<String>(source)) {
+  } else {
     source = make<BuiltinOperation>(ir::BuiltinId::caststring, source);
   }
 
@@ -93,17 +91,10 @@ bool DesugarPass::inspect_enter(const ref<Spawn>& node) {
 
 ref<Expression> DesugarPass::transform(const ref<FormatString>& node) {
 
-  // wrap all non-string elements into a caststring node
-  for (ref<Expression>& element : node->elements) {
-    if (!(isa<String>(element) || isa<BuiltinOperation>(element))) {
-      element = make<BuiltinOperation>(ir::BuiltinId::caststring, element);
-    }
-  }
-
-  // if only a single value remains in the formatstring,
-  // remove the formatstring entirely
+  // format strings with only one element can be replaced with
+  // a single caststring operation
   if (node->elements.size() == 1) {
-    return node->elements.back();
+    return make<BuiltinOperation>(ir::BuiltinId::caststring, node->elements.back());
   }
 
   return node;

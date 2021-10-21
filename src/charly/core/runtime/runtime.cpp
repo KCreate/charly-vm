@@ -85,11 +85,35 @@ void Runtime::register_module(const ref<CompiledModule>& module) {
   m_compiled_modules.push_back(module);
 }
 
+RawData Runtime::create_data(Thread* thread, ShapeId shape_id, size_t size) {
+
+  // determine the total allocation size
+  DCHECK(size <= RawData::kMaxLength);
+  size_t header_size = sizeof(ObjectHeader);
+  size_t total_size = align_to_size(header_size + size, kObjectAlignment);
+
+  Worker* worker = thread->worker();
+  Processor* proc = worker->processor();
+  ThreadAllocationBuffer* tab = proc->tab();
+
+  // attempt to allocate memory for the object
+  uintptr_t memory = 0;
+  if (!tab->allocate(total_size, &memory)) {
+    FAIL("allocation failed");
+  }
+  DCHECK(memory);
+
+  // initialize header
+  ObjectHeader::initialize_header(memory, shape_id, size);
+  return RawData::cast(RawObject::make_from_ptr(memory + header_size));
+}
+
 RawObject Runtime::create_instance(Thread* thread, ShapeId shape_id, size_t object_size) {
 
   // determine the allocation size
   DCHECK(object_size % kPointerSize == 0);
   size_t num_fields = object_size / kPointerSize;
+  DCHECK(num_fields <= RawInstance::kMaximumFieldCount);
   size_t header_size = sizeof(ObjectHeader);
   size_t total_size = align_to_size(header_size + object_size, kObjectAlignment);
 
@@ -115,6 +139,24 @@ RawObject Runtime::create_instance(Thread* thread, ShapeId shape_id, size_t obje
   }
 
   return RawObject::make_from_ptr(object);
+}
+
+RawValue Runtime::create_string(Thread* thread, const char* data, size_t size, SYMBOL hash) {
+  if (size <= RawSmallString::kMaxLength) {
+    return RawSmallString::make_from_memory(data, size);
+  } else if (size <= RawLargeString::kMaxLength) {
+    return create_heap_string(thread, data, size, hash);
+  } else {
+    FAIL("string is too big and RawHugeString is not implemented yet");
+  }
+}
+
+RawObject Runtime::create_heap_string(Thread* thread, const char* data, size_t size, SYMBOL hash) {
+  DCHECK(size <= RawData::kMaxLength);
+  RawData data_object = RawData::cast(create_data(thread, ShapeId::kLargeString, size));
+  std::memcpy((char*)data_object.address(), data, size);
+  data_object.header()->cas_hashcode((SYMBOL)0, hash);
+  return RawObject::cast(data_object);
 }
 
 RawObject Runtime::create_tuple(Thread* thread, uint32_t count) {
