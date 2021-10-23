@@ -567,14 +567,14 @@ public:
 
   uintptr_t pointer_at(int64_t index) const;
   void set_pointer_at(int64_t index, uintptr_t pointer);
-  void set_pointer_at(int64_t index, void* pointer) {
-    set_pointer_at(index, bitcast<uintptr_t>(pointer));
+  void set_pointer_at(int64_t index, const void* pointer) {
+    set_pointer_at(index, bitcast<uintptr_t>(const_cast<void*>(pointer)));
   }
 
   int64_t int_at(int64_t index) const;
   void set_int_at(int64_t index, int64_t value);
 
-  static const size_t kMaximumFieldCount = 126;
+  static const size_t kMaximumFieldCount = 256;
   static const size_t kFieldCount = 0;
   static const size_t kSize = kFieldCount * kPointerSize;
 };
@@ -584,9 +584,13 @@ class RawHugeBytes : public RawInstance {
 public:
   COMMON_RAW_OBJECT(HugeBytes);
 
-  size_t length() const;
-  const uint8_t* data() const;
   SYMBOL hashcode() const;
+
+  const uint8_t* data() const;
+  void set_data(const uint8_t* data);
+
+  size_t length() const;
+  void set_length(size_t length);
 
   static const size_t kDataPointerOffset = 0;
   static const size_t kDataLengthOffset = 1;
@@ -599,9 +603,13 @@ class RawHugeString : public RawInstance {
 public:
   COMMON_RAW_OBJECT(HugeString);
 
-  size_t length() const;
-  const char* data() const;
   SYMBOL hashcode() const;
+
+  const char* data() const;
+  void set_data(const char* data);
+
+  size_t length() const;
+  void set_length(size_t length);
 
   static const size_t kDataPointerOffset = 0;
   static const size_t kDataLengthOffset = 1;

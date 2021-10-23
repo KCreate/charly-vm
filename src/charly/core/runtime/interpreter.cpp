@@ -148,16 +148,8 @@ RawValue Interpreter::call_function(
     return kErrorException;
   }
 
-  if (argc > shared_info->ir_info.argc) {
-    // TODO: throw too many arguments exception
-    debugln("too many arguments for function call");
-    thread->throw_value(RawSmallString::make_from_cstr("maxargc"));
-    return kErrorException;
-  }
-
   // copy function arguments into local variables
-  DCHECK(argc <= localcount);
-  for (uint8_t i = 0; i < argc; i++) {
+  for (uint8_t i = 0; i < argc && i < localcount; i++) {
     DCHECK(arguments);
     frame.locals[i] = arguments[i];
   }
@@ -165,6 +157,27 @@ RawValue Interpreter::call_function(
   thread->checkpoint();
 
   return Interpreter::execute(thread);
+}
+
+RawValue Interpreter::add_string_string(Thread* thread, RawString left, RawString right) {
+  size_t left_size = left.length();
+  size_t right_size = right.length();
+  size_t total_size = left_size + right_size;
+
+  utils::Buffer buf(total_size);
+  buf.emit_block(RawString::data(&left), left_size);
+  buf.emit_block(RawString::data(&right), right_size);
+
+  if (total_size <= RawSmallString::kMaxLength) {
+    return RawSmallString::make_from_memory(buf.data(), total_size);
+  } else if (total_size <= RawLargeString::kMaxLength) {
+    return thread->runtime()->create_string(thread, buf.data(), total_size, buf.buffer_hash());
+  } else {
+    SYMBOL buf_hash = buf.buffer_hash();
+    char* buffer = buf.release_buffer();
+    CHECK(buffer, "could not release buffer");
+    return thread->runtime()->acquire_string(thread, buffer, total_size, buf_hash);
+  }
 }
 
 RawValue Interpreter::execute(Thread* thread) {
@@ -248,16 +261,19 @@ OP(import) {
 OP(stringconcat) {
   Count8 count = op->stringconcat.count;
 
-  std::stringstream stream;
-
+  utils::Buffer buffer;
+  std::ostream stream(&buffer);
   for (int64_t depth = count - 1; depth >= 0; depth--) {
     frame->peek(depth).to_string(stream);
   }
 
-  frame->pop(count);
+  SYMBOL buf_hash = buffer.buffer_hash();
+  size_t buf_size = buffer.size();
+  char* buf_ptr = buffer.release_buffer();
+  CHECK(buf_ptr, "could not release buffer");
 
-  std::string str(stream.str());
-  frame->push(thread->runtime()->create_heap_string(thread, str.data(), str.size(), SYM(str)));
+  frame->pop(count);
+  frame->push(thread->runtime()->acquire_string(thread, buf_ptr, buf_size, buf_hash));
 
   return ContinueMode::Next;
 }
@@ -612,7 +628,7 @@ OP(makestr) {
   const SharedFunctionInfo& shared_info = *frame->shared_function_info;
   DCHECK(index < shared_info.string_table.size());
   const StringTableEntry& entry = shared_info.string_table[index];
-  frame->push(thread->runtime()->create_heap_string(thread, entry.value.data(), entry.value.size(), entry.hash));
+  frame->push(thread->runtime()->create_string(thread, entry.value.data(), entry.value.size(), entry.hash));
 
   return ContinueMode::Next;
 }
@@ -718,6 +734,12 @@ OP(add) {
     double lf = left.isInt() ? RawInt::cast(left).value() : RawFloat::cast(left).value();
     double rf = right.isInt() ? RawInt::cast(right).value() : RawFloat::cast(right).value();
     RawFloat result = RawFloat::make(lf + rf);
+    frame->push(result);
+    return ContinueMode::Next;
+  }
+
+  if (left.isString() && right.isString()) {
+    RawValue result = add_string_string(thread, RawString::cast(left), RawString::cast(right));
     frame->push(result);
     return ContinueMode::Next;
   }

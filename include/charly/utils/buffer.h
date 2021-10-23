@@ -30,6 +30,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <sstream>
 
 #include "charly/charly.h"
 
@@ -39,7 +40,7 @@ namespace charly::utils {
 
 // abstract interface each backing buffer has to conform to to be used by the
 // various different buffer adapters
-class BufferBase {
+class BufferBase : public std::stringbuf {
 public:
   BufferBase() : m_buffer(0), m_capacity(0), m_size(0), m_writeoffset(0), m_readoffset(0), m_windowoffset(0) {}
   BufferBase(BufferBase&& other) = delete;
@@ -180,6 +181,14 @@ public:
   // clear buffer with 0
   virtual void clear();
 
+  // std::stringbuf override
+  // write a block of data into the buffer
+  std::streamsize xsputn(const char* data, std::streamsize size) override;
+
+  // std::stringbuf override
+  // write a single character to the buffer
+  int32_t overflow(int32_t ch) override;
+
 protected:
 
   // copy size bytes from the source address to some target offset in the backing buffer
@@ -215,6 +224,10 @@ public:
   }
 
   virtual void reserve_space(size_t size) override;
+
+  // releases the backing buffer to the caller of the function
+  // buffer will be reset after this call
+  char* release_buffer();
 };
 
 // buffer that can be protected

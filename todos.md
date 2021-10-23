@@ -2,7 +2,8 @@
 
 - Interpreter value comparison method
 
-- Implement RawHugeStrings and RawHugeBytes
+- Remove usage of std::stringstream
+  - Replace with utils::Buffer
 
 - Implement REPL in charly
   - Use the standard library to read, compile and execute input statements
@@ -16,7 +17,7 @@
   - Would allow me to get some easy experience with building and integrating the JIT into the system
     instead of having to tack it on later
   - Generation could be a simple templating system, outputting assembly templates for each bytecode
-  
+
 - Implement os.h class which implements platform-specific interactions with the OS
   - Platform specific custom implementations of make_fcontext and jump_fcontext
 
@@ -136,6 +137,14 @@
 - Argument-Indexing identifiers
   - $0, $1 syntax
   - In-bounds identifiers can be replaced by the actual arguments
+  
+- Efficient string concatenation
+  - Thread can allocate a temporary RawLargeString as an intermediate buffer
+    - Copy and rollback if size exceeds RawLargeString max size
+    - Set size after concatenation has finished
+    - TAB can get a safety flag to disable allocations during this time
+  - Avoiding intermediate copies when calling to_string methods inside FormatStrings
+    - to_string could receive some kind of stream object, which appends data to some background buffer
 
 - Unit tests
   - Charly source file containing annotations for expected output in stdout
@@ -143,7 +152,7 @@
     - Example: https://github.com/apple/swift/blob/main/test/Concurrency/async_conformance.swift
 
 - Computed property methods
-  - clases should be able to define property methods like `property length { ... }`
+  - clases should be able to define property methods like `property x { get { return get_x() } set(v) { set_x(v) } }`
   - inline caches could store the function reference and call it directly
 
 - Implement mechanism to wait for GC cycle to complete when heap could not be expanded

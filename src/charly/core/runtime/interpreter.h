@@ -80,6 +80,8 @@ public:
   static RawValue call_function(
     Thread* thread, RawValue self, RawFunction function, RawValue* arguments, uint8_t argc);
 
+  static RawValue add_string_string(Thread* thread, RawString left, RawString right);
+
 private:
   static RawValue execute(Thread* thread);
 

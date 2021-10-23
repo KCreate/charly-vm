@@ -26,20 +26,47 @@
 
 func determine_max_stack_size {
     let counter = 0
-
-    func recurse {
-        counter += 1
-        recurse()
-    }
-
     try {
+        func recurse {
+            counter += 1
+            recurse()
+        }
         recurse()
     } catch(e) {
         return (e, counter)
     }
 }
 
-const result = determine_max_stack_size()
-const (error, counter) = result
+func times(n, cb) {
+    let i = 0
+    loop {
+        if i == n break
+        cb(i);
+        i += 1
+    }
+}
 
-return (determine_max_stack_size, result, error, counter)
+func repeat_string(string, n) {
+    let result = ""
+
+    times(n, ->{
+        result = "{result}{string}"
+    })
+
+    return result
+}
+
+return (
+    determine_max_stack_size(),
+    (0, repeat_string("x", 0)),
+    (1, repeat_string("x", 1)),
+    (5, repeat_string("x", 5)),
+    (6, repeat_string("x", 6)),
+    (7, repeat_string("x", 7)),
+    (8, repeat_string("x", 8)),
+    (9, repeat_string("x", 9)),
+    (10, repeat_string("x", 10)),
+    (100, repeat_string("x", 100)),
+    (1000, repeat_string("x", 1000)),
+    (3000, repeat_string("x", 3000))
+)

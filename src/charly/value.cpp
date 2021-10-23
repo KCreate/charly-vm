@@ -834,18 +834,38 @@ void RawInstance::set_int_at(int64_t index, int64_t value) {
   set_field_at(index, RawInt::make(value));
 }
 
-size_t RawHugeBytes::length() const {
-  int64_t value = int_at(kDataLengthOffset);
-  DCHECK(value >= 0);
-  return value;
+SYMBOL RawHugeBytes::hashcode() const {
+  return crc32_block(bitcast<const char*>(data()), length());
 }
 
 const uint8_t* RawHugeBytes::data() const {
   return bitcast<const uint8_t*>(pointer_at(kDataPointerOffset));
 }
 
-SYMBOL RawHugeBytes::hashcode() const {
-  return SYM(data(), length());
+void RawHugeBytes::set_data(const uint8_t* data) {
+  set_pointer_at(kDataPointerOffset, data);
+}
+
+size_t RawHugeBytes::length() const {
+  int64_t value = int_at(kDataLengthOffset);
+  DCHECK(value >= 0);
+  return value;
+}
+
+void RawHugeBytes::set_length(size_t length) {
+  set_int_at(kDataLengthOffset, length);
+}
+
+SYMBOL RawHugeString::hashcode() const {
+  return crc32_block(data(), length());
+}
+
+const char* RawHugeString::data() const {
+  return bitcast<const char*>(pointer_at(kDataPointerOffset));
+}
+
+void RawHugeString::set_data(const char* data) {
+  set_pointer_at(kDataPointerOffset, data);
 }
 
 size_t RawHugeString::length() const {
@@ -854,12 +874,10 @@ size_t RawHugeString::length() const {
   return value;
 }
 
-const char* RawHugeString::data() const {
-  return bitcast<const char*>(pointer_at(kDataPointerOffset));
-}
-
-SYMBOL RawHugeString::hashcode() const {
-  return SYM(data(), length());
+void RawHugeString::set_length(size_t length) {
+  int64_t length_int = bitcast<int64_t>(length);
+  DCHECK(length_int >= 0);
+  set_int_at(kDataLengthOffset, length_int);
 }
 
 RawValue RawFunction::context() const {

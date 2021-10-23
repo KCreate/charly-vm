@@ -64,14 +64,19 @@ public:
   // wait for the runtime to finish initializing
   void wait_for_initialization();
 
+  // register a CompiledModule object with the runtime
   void register_module(const ref<CompiledModule>& module);
 
 public:
   RawData create_data(Thread* thread, ShapeId shape_id, size_t size);
-  RawObject create_instance(Thread* thread, ShapeId shape_id, size_t size);
+  RawObject create_instance(Thread* thread, ShapeId shape_id, size_t field_count);
 
   RawValue create_string(Thread* thread, const char* data, size_t size, SYMBOL hash);
-  RawObject create_heap_string(Thread* thread, const char* data, size_t size, SYMBOL hash);
+  // create a new string by acquiring ownership over an existing allocation
+  RawValue acquire_string(Thread* thread, char* cstr, size_t size, SYMBOL hash);
+  RawLargeString create_large_string(Thread* thread, const char* data, size_t size, SYMBOL hash);
+  RawHugeString create_huge_string(Thread* thread, const char* data, size_t size, SYMBOL hash);
+  RawHugeString create_huge_string_acquire(Thread* thread, char* data, size_t size, SYMBOL hash);
 
   RawObject create_tuple(Thread* thread, uint32_t count);
   RawObject create_function(Thread* thread, RawValue context, SharedFunctionInfo* shared_info);

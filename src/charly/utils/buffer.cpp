@@ -249,6 +249,20 @@ void BufferBase::update_size() {
   }
 }
 
+void BufferBase::clear() {
+  std::memset(m_buffer, 0, m_capacity);
+}
+
+std::streamsize BufferBase::xsputn(const char* data, std::streamsize size) {
+  emit_block(data, size);
+  return size;
+}
+
+int32_t BufferBase::overflow(int32_t ch) {
+  emit_utf8_cp(ch);
+  return 0;
+}
+
 void Buffer::reserve_space(size_t size) {
   if (m_capacity >= size) {
     return;
@@ -271,8 +285,21 @@ void Buffer::reserve_space(size_t size) {
   m_capacity = new_capacity;
 }
 
-void BufferBase::clear() {
-  std::memset(m_buffer, 0, m_capacity);
+char* Buffer::release_buffer() {
+  if (m_buffer == nullptr) {
+    return nullptr;
+  }
+
+  char* buffer = static_cast<char*>(m_buffer);
+
+  m_buffer = nullptr;
+  m_capacity = 0;
+  m_size = 0;
+  m_writeoffset = 0;
+  m_readoffset = 0;
+  m_windowoffset = 0;
+
+  return buffer;
 }
 
 bool ProtectedBuffer::is_readonly() const {

@@ -108,12 +108,11 @@ RawData Runtime::create_data(Thread* thread, ShapeId shape_id, size_t size) {
   return RawData::cast(RawObject::make_from_ptr(memory + header_size));
 }
 
-RawObject Runtime::create_instance(Thread* thread, ShapeId shape_id, size_t object_size) {
+RawObject Runtime::create_instance(Thread* thread, ShapeId shape_id, size_t field_count) {
 
   // determine the allocation size
-  DCHECK(object_size % kPointerSize == 0);
-  size_t num_fields = object_size / kPointerSize;
-  DCHECK(num_fields <= RawInstance::kMaximumFieldCount);
+  DCHECK(field_count <= RawInstance::kMaximumFieldCount);
+  size_t object_size = field_count * kPointerSize;
   size_t header_size = sizeof(ObjectHeader);
   size_t total_size = align_to_size(header_size + object_size, kObjectAlignment);
 
@@ -129,12 +128,12 @@ RawObject Runtime::create_instance(Thread* thread, ShapeId shape_id, size_t obje
   DCHECK(memory);
 
   // initialize header
-  ObjectHeader::initialize_header(memory, shape_id, num_fields);
+  ObjectHeader::initialize_header(memory, shape_id, field_count);
 
   // initialize fields to null
   uintptr_t object = memory + header_size;
   RawValue* object_fields = bitcast<RawValue*>(object);
-  for (uint32_t i = 0; i < num_fields; i++) {
+  for (uint32_t i = 0; i < field_count; i++) {
     object_fields[i] = kNull;
   }
 
@@ -145,33 +144,60 @@ RawValue Runtime::create_string(Thread* thread, const char* data, size_t size, S
   if (size <= RawSmallString::kMaxLength) {
     return RawSmallString::make_from_memory(data, size);
   } else if (size <= RawLargeString::kMaxLength) {
-    return create_heap_string(thread, data, size, hash);
+    return create_large_string(thread, data, size, hash);
   } else {
-    FAIL("string is too big and RawHugeString is not implemented yet");
+    return create_huge_string(thread, data, size, hash);
   }
 }
 
-RawObject Runtime::create_heap_string(Thread* thread, const char* data, size_t size, SYMBOL hash) {
+RawValue Runtime::acquire_string(Thread* thread, char* data, size_t size, SYMBOL hash) {
+  if (size <= RawLargeString::kMaxLength) {
+    auto value = create_string(thread, data, size, hash);
+    std::free(data);
+    return value;
+  } else {
+    return create_huge_string_acquire(thread, data, size, hash);
+  }
+}
+
+RawLargeString Runtime::create_large_string(Thread* thread, const char* data, size_t size, SYMBOL hash) {
   DCHECK(size <= RawData::kMaxLength);
-  RawData data_object = RawData::cast(create_data(thread, ShapeId::kLargeString, size));
+  DCHECK(size > RawSmallString::kMaxLength);
+  RawLargeString data_object = RawLargeString::cast(create_data(thread, ShapeId::kLargeString, size));
   std::memcpy((char*)data_object.address(), data, size);
   data_object.header()->cas_hashcode((SYMBOL)0, hash);
-  return RawObject::cast(data_object);
+  return data_object;
+}
+
+RawHugeString Runtime::create_huge_string(Thread* thread, const char* data, size_t size, SYMBOL hash) {
+  DCHECK(size > RawLargeString::kMaxLength);
+  char* copy = static_cast<char*>(std::malloc(size));
+  std::memcpy(copy, data, size);
+  return create_huge_string_acquire(thread, copy, size, hash);
+}
+
+RawHugeString Runtime::create_huge_string_acquire(Thread* thread, char* data, size_t size, SYMBOL hash) {
+  DCHECK(size > RawLargeString::kMaxLength);
+  RawHugeString object = RawHugeString::cast(create_instance(thread, ShapeId::kHugeString, RawHugeString::kFieldCount));
+  object.set_data(data);
+  object.set_length(size);
+  object.header()->cas_hashcode((SYMBOL)0, hash);
+  return object;
 }
 
 RawObject Runtime::create_tuple(Thread* thread, uint32_t count) {
-  return create_instance(thread, ShapeId::kTuple, count * kPointerSize);
+  return create_instance(thread, ShapeId::kTuple, count);
 }
 
 RawObject Runtime::create_function(Thread* thread, RawValue context, SharedFunctionInfo* shared_info) {
-  RawFunction func = RawFunction::cast(create_instance(thread, ShapeId::kFunction, RawFunction::kSize));
+  RawFunction func = RawFunction::cast(create_instance(thread, ShapeId::kFunction, RawFunction::kFieldCount));
   func.set_context(context);
   func.set_shared_info(shared_info);
   return RawObject::cast(func);
 }
 
 RawObject Runtime::create_fiber(Thread* thread, RawFunction function) {
-  RawFiber fiber = RawFiber::cast(create_instance(thread, ShapeId::kFiber, RawFiber::kSize));
+  RawFiber fiber = RawFiber::cast(create_instance(thread, ShapeId::kFiber, RawFiber::kFieldCount));
   fiber.set_thread(nullptr);
   fiber.set_function(function);
   return RawObject::cast(fiber);
