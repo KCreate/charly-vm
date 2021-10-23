@@ -135,7 +135,7 @@ template <typename... Args>
   std::string str = sstream.str();
   debugln_concurrent(str.c_str());
 
-  std::exit(1);
+  std::abort();
 }
 
 #define CHECK(expr, ...)                                                        \

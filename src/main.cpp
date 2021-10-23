@@ -229,6 +229,17 @@ int32_t cli(DiagnosticConsole& console) {
     debuglnf("RawHugeString::kSize  = %", RawHugeString::kSize);
     debuglnf("RawFunction::kSize    = %", RawFunction::kSize);
     debuglnf("RawFiber::kSize       = %", RawFiber::kSize);
+    debuglnf("");
+
+    debuglnf("# %sizeof%", termcolor::yellow, termcolor::reset);
+    debuglnf("sizeof(Runtime)       = %", sizeof(Runtime));
+    debuglnf("sizeof(Scheduler)     = %", sizeof(Scheduler));
+    debuglnf("sizeof(Worker)        = %", sizeof(Worker));
+    debuglnf("sizeof(Processor)     = %", sizeof(Processor));
+    debuglnf("sizeof(Thread)        = %", sizeof(Thread));
+    debuglnf("sizeof(Heap)          = %", sizeof(Heap));
+    debuglnf("sizeof(HeapRegion)    = %", sizeof(HeapRegion));
+    debuglnf("sizeof(Frame)         = %", sizeof(Frame));
 
     return 0;
   }

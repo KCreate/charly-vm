@@ -5,6 +5,11 @@
 - Remove usage of std::stringstream
   - Replace with utils::Buffer
 
+- Optimize frame size
+  - Frames are about 800 bytes minimum even on release builds
+  - about 500 bytes come from the Interpreter::execute function
+  - about 150 bytes come from the Interpreter::call_function
+
 - Implement REPL in charly
   - Use the standard library to read, compile and execute input statements
   - Implement a clean interface to execute code in the runtime from a global context
