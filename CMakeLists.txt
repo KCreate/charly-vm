@@ -3,6 +3,8 @@ set(CMAKE_C_COMPILER_NAMES clang)
 set(CMAKE_CXX_COMPILER_NAMES clang++)
 project(charly-vm)
 
+file(MAKE_DIRECTORY cmake-build-debug cmake-build-minsizerel cmake-build-release cmake-build-relwithdebinfo)
+
 # osx check
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   message("-- Detected apple installation")

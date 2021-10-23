@@ -138,33 +138,22 @@ template <typename... Args>
   std::exit(1);
 }
 
+#define CHECK(expr, ...)                                                        \
+    do {                                                                          \
+      if (UNLIKELY(!(expr))) {                                                    \
+        charly::failed_check(__FILE__, __LINE__, __func__, #expr, ##__VA_ARGS__); \
+      }                                                                           \
+    } while (0)
+
 #ifdef NDEBUG
-
-  #define CHECK(expr, ...)                                                        \
-    do {                                                                          \
-      if (UNLIKELY(!(expr))) {                                                    \
-        charly::failed_check(__FILE__, __LINE__, __func__, #expr, ##__VA_ARGS__); \
-      }                                                                           \
-    } while (0)
-
-  #define DCHECK(...) CHECK(__VA_ARGS__)
-
-#else
-
-  #define CHECK(expr, ...)                                                        \
-    do {                                                                          \
-      if (UNLIKELY(!(expr))) {                                                    \
-        charly::failed_check(__FILE__, __LINE__, __func__, #expr, ##__VA_ARGS__); \
-      }                                                                           \
-    } while (0)
-
   #define DCHECK(expr, ...)      \
     do {                         \
       if (UNLIKELY(!(expr))) {   \
         __builtin_unreachable(); \
       }                          \
     } while (0)
-
+#else
+  #define DCHECK(...) CHECK(__VA_ARGS__)
 #endif
 
 #define UNREACHABLE() DCHECK(false, "reached unreachable code")

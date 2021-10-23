@@ -97,21 +97,6 @@ using namespace charly;
     }                                                               \
   }
 
-#define CHECK_AST_PROGRAM(S, N)                                 \
-  {                                                             \
-    std::stringstream prog_dump;                                \
-    std::stringstream ref_dump;                                 \
-    charly::utils::Buffer buffer(S);                            \
-    DiagnosticConsole console("test", buffer);                  \
-    ref<Program> prog = Parser::parse_program(buffer, console); \
-    CATCH_CHECK(!console.has_errors());                         \
-    if (!console.has_errors()) {                                \
-      prog->dump(prog_dump);                                    \
-      N->dump(ref_dump);                                        \
-      CATCH_CHECK_THAT(prog_dump.str(), Equals(ref_dump.str()));      \
-    }                                                           \
-  }
-
 #define CHECK_ERROR_EXP(S, E)                                    \
   {                                                              \
     charly::utils::Buffer buffer(S);                             \

@@ -260,7 +260,6 @@ void Thread::entry_main_thread() {
 }
 
 void Thread::entry_fiber_thread() {
-  // TODO: call into interpreter to execute fiber
   RawFiber fiber = RawFiber::cast(this->fiber());
   RawFunction function = fiber.function();
 
