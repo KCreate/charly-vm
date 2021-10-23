@@ -94,8 +94,8 @@ public:
   std::string_view window_view() const;
 
   // returns a hash value of the buffer or window
-  uint32_t buffer_hash() const;
-  uint32_t window_hash() const;
+  SYMBOL buffer_hash() const;
+  SYMBOL window_hash() const;
 
   // emit primitive types
   // clang-format off

@@ -681,7 +681,7 @@ OP(caststring) {
   std::stringstream stream;
   value.to_string(stream);
   std::string str = stream.str();
-  frame->push(thread->runtime()->create_string(thread, str.data(), str.size(), SYM(str)));
+  frame->push(thread->runtime()->create_string(thread, str.data(), str.size(), crc32_string(str)));
 
   return ContinueMode::Next;
 }

@@ -62,7 +62,7 @@ void SharedFunctionInfo::dump(std::ostream& out) const {
   writer.fg(Color::Yellow, function_bytecodes_length, "\n");
 
   writer.fg(Color::Grey, "; bytecode hash = ");
-  writer.fg(Color::Yellow, std::hex, SYM(function_bytecodes, function_bytecodes_length), std::dec, "\n");
+  writer.fg(Color::Yellow, std::hex, crc32_block(bitcast<const char*>(function_bytecodes), function_bytecodes_length), std::dec, "\n");
 
   writer.fg(Color::Grey, "; ir_info = ");
   writer.fg(Color::Yellow, this->ir_info, "\n");

@@ -26,7 +26,7 @@
 
 #include <cstdint>
 
-#include "charly/symbol.h"
+#include "charly/charly.h"
 
 #pragma once
 
@@ -103,7 +103,7 @@ struct ValueLocation {
     ValueLocation loc;
     loc.type = Type::Global;
     loc.name = name;
-    loc.as.global.symbol = SYM(name);
+    loc.as.global.symbol = crc32_string(name);
     return loc;
   }
 

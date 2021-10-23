@@ -53,7 +53,7 @@ void Assembler::assemble() {
     shared_info->owner_module = m_runtime_module.get();
     m_runtime_module->function_table.push_back(shared_info);
     shared_info->name = function->ast->name->value;
-    shared_info->name_symbol = SYM(function->ast->name->value);
+    shared_info->name_symbol = crc32_string(function->ast->name->value);
     shared_info->ir_info = function->ast->ir_info;
     DCHECK(function->ast->ir_info.valid);
 
@@ -180,7 +180,7 @@ void Assembler::encode_instruction(const ref<IRInstruction>& instruction) {
         break;
       }
       case OperandType::Symbol: {
-        m_runtime_module->buffer->emit_u32(SYM(cast<IROperandSymbol>(op)->value));
+        m_runtime_module->buffer->emit_u32(crc32_string(cast<IROperandSymbol>(op)->value));
         break;
       }
       case OperandType::Offset: {

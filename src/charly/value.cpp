@@ -564,7 +564,7 @@ const char* RawSmallString::data(const RawSmallString* value) {
 }
 
 SYMBOL RawSmallString::hashcode() const {
-  return SYM(RawSmallString::data(this), length());
+  return crc32_block(RawSmallString::data(this), length());
 }
 
 RawSmallString RawSmallString::make_from_cp(uint32_t cp) {
@@ -609,7 +609,7 @@ const uint8_t* RawSmallBytes::data(const RawSmallBytes* value) {
 }
 
 SYMBOL RawSmallBytes::hashcode() const {
-  return SYM(RawSmallBytes::data(this), length());
+  return crc32_block(bitcast<const char*>(RawSmallBytes::data(this)), length());
 }
 
 RawSmallBytes RawSmallBytes::make_from_memory(const uint8_t* value, size_t length) {
@@ -791,7 +791,7 @@ const uint8_t* RawData::data() const {
 }
 
 SYMBOL RawData::hashcode() const {
-  return SYM(data(), length());
+  return crc32_block(bitcast<const char*>(data()), length());
 }
 
 const char* RawLargeString::data() const {

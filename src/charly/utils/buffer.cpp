@@ -30,7 +30,6 @@
 
 #include "charly/charly.h"
 #include "charly/utf8.h"
-#include "charly/symbol.h"
 #include "charly/utils/colorwriter.h"
 #include "charly/utils/buffer.h"
 
@@ -132,12 +131,12 @@ std::string_view BufferBase::window_view() const {
   return std::string_view(data() + m_windowoffset, window_size);
 }
 
-uint32_t BufferBase::buffer_hash() const {
-  return SYM((const uint8_t*)data(), m_size);
+SYMBOL BufferBase::buffer_hash() const {
+  return crc32_block(data(), m_size);
 }
 
-uint32_t BufferBase::window_hash() const {
-  return SYM((const uint8_t*)(data() + m_windowoffset), window_size());
+SYMBOL BufferBase::window_hash() const {
+  return crc32_block(data() + m_windowoffset, window_size());
 }
 
 void BufferBase::emit_utf8_cp(uint32_t cp) {

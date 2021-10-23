@@ -51,44 +51,58 @@ namespace crc32 {
 #define G(x) H(x) H(x + 2)
 #define H(x) I(x) I(x + 1)
 #define I(x) f<x>::value,
-
   constexpr unsigned crc_table[] = { A(0) };
+#undef A
+#undef B
+#undef C
+#undef D
+#undef E
+#undef F
+#undef G
+#undef H
+#undef I
 
-  // Constexpr implementation and helpers
-  constexpr uint32_t crc32_impl(const uint8_t* p, size_t len, uint32_t crc) {
-    return len ? crc32_impl(p + 1, len - 1, (crc >> 8) ^ crc_table[(crc & 0xFF) ^ *p]) : crc;
+  namespace constexpr_impl {
+    constexpr uint32_t crc32_impl(const char* p, size_t len, uint32_t crc) {
+      return len ? crc32_impl(p + 1, len - 1, (crc >> 8) ^ crc_table[(crc & 0xFF) ^ *p]) : crc;
+    }
+
+    constexpr uint32_t crc32(const char* data, size_t length) {
+      return ~crc32_impl(data, length, ~0);
+    }
+
+    constexpr size_t strlen_c(const char* str) {
+      return *str ? 1 + strlen_c(str + 1) : 0;
+    }
+  } // namespace constexpr_impl
+
+  inline constexpr uint32_t hash_constexpr(const char* str) {
+    return constexpr_impl::crc32(str, constexpr_impl::strlen_c(str));
   }
 
-  constexpr uint32_t crc32(const uint8_t* data, size_t length) {
-    return ~crc32_impl(data, length, ~0);
+  inline uint32_t hash_block(const char* data, size_t size) {
+    uint32_t c = 0xFFFFFFFF;
+    auto u = reinterpret_cast<const uint8_t*>(data);
+    for (size_t i = 0; i < size; i++)
+    {
+      c = crc_table[(c ^ u[i]) & 0xFF] ^ (c >> 8);
+    }
+    return c ^ 0xFFFFFFFF;
   }
-
-  constexpr size_t strlen_c(const char* str) {
-    return *str ? 1 + strlen_c(str + 1) : 0;
-  }
-};
+} // namespace crc32
 
 using SYMBOL = uint32_t;
 
-// constexpr 32-bit symbol
-inline constexpr SYMBOL SYM(const char* str, size_t length) {
-  return crc32::crc32((uint8_t*)str, length);
-}
-
-inline SYMBOL SYM(const uint8_t* str, size_t length) {
-  return SYM(reinterpret_cast<const char*>(str), length);
-}
-
 inline constexpr SYMBOL SYM(const char* str) {
-  return SYM(str, crc32::strlen_c(str));
+  return crc32::hash_constexpr(str);
 }
 
-inline SYMBOL SYM(const std::string& str) {
-  return SYM(str.data(), str.size());
+inline SYMBOL crc32_block(const char* data, size_t size) {
+  return crc32::hash_block(data, size);
 }
 
-inline SYMBOL SYM(const std::string_view& str) {
-  return SYM(str.data(), str.size());
+inline SYMBOL crc32_string(const std::string& string) {
+  return crc32::hash_block(string.data(), string.size());
 }
 
-}
+} // namespace charly

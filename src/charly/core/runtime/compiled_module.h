@@ -65,7 +65,7 @@ struct SourceMapEntry {
 };
 
 struct StringTableEntry {
-  StringTableEntry(const std::string& value) : hash(SYM(value)), value(value) {}
+  StringTableEntry(const std::string& value) : hash(crc32_string(value)), value(value) {}
 
   SYMBOL hash;
   std::string value;

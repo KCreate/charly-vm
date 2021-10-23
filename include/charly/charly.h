@@ -37,6 +37,7 @@
 
 #include "atomic.h"
 #include "debug.h"
+#include "symbol.h"
 
 #pragma once
 
