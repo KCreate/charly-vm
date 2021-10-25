@@ -61,8 +61,14 @@ target_compile_options(libcharly PRIVATE
   -Wno-extra-semi
   -ftemplate-backtrace-limit=8
   -march=native
-  -flto
 )
+
+# enable link-time-optimization for release builds
+if(CMAKE_BUILD_TYPE MATCHES Release)
+  message("-- Enabling LTO for target 'libcharly'")
+  target_compile_options(libcharly PRIVATE -flto)
+endif()
+
 set_target_properties(libcharly PROPERTIES PREFIX "")
 
 if(APPLE)

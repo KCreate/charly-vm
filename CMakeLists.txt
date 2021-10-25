@@ -18,6 +18,9 @@ include_directories(include)
 # public headers
 include_directories(libs)
 
+# explicitly enable debug symbols in debug builds
+set(CMAKE_CXX_FLAGS_DEBUG  "-g")
+
 # main executable
 add_subdirectory(src)
 add_executable(charly src/main.cpp)
@@ -38,8 +41,13 @@ target_compile_options(charly PRIVATE
   -Wno-extra-semi
   -ftemplate-backtrace-limit=8
   -march=native
-  -flto
 )
+
+# enable link-time-optimization for release builds
+if(CMAKE_BUILD_TYPE MATCHES Release)
+  message("-- Enabling LTO for target 'charly'")
+  target_compile_options(charly PRIVATE -flto)
+endif()
 
 # install to global folder
 install(TARGETS charly RUNTIME DESTINATION bin)
@@ -81,8 +89,13 @@ target_compile_options(tests PRIVATE
   -Wno-extra-semi
   -ftemplate-backtrace-limit=8
   -march=native
-  -flto
 )
+
+# enable link-time-optimization for release builds
+if(CMAKE_BUILD_TYPE MATCHES Release)
+  message("-- Enabling LTO for target 'tests'")
+  target_compile_options(tests PRIVATE -flto)
+endif()
 
 if(APPLE)
   set_target_properties(charly PROPERTIES LINK_FLAGS -fuse-ld=ld)
