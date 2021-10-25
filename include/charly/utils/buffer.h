@@ -30,26 +30,47 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <sstream>
+#include <iostream>
 
-#include "charly/charly.h"
+#include "charly/symbol.h"
 
 #pragma once
 
 namespace charly::utils {
 
-// abstract interface each backing buffer has to conform to to be used by the
-// various different buffer adapters
-class BufferBase : public std::stringbuf {
+// base allocation unuaware buffer type
+// subclasses add the purpose-specific backing storage allocators
+// and protection mechanisms
+class BufferBase : private std::streambuf, public std::ostream, public std::istream {
 public:
-  BufferBase() : m_buffer(0), m_capacity(0), m_size(0), m_writeoffset(0), m_readoffset(0), m_windowoffset(0) {}
-  BufferBase(BufferBase&& other) = delete;
+  BufferBase() :
+    std::ostream(this),
+    std::istream(this),
+    m_buffer(nullptr),
+    m_capacity(0),
+    m_size(0),
+    m_writeoffset(0),
+    m_readoffset(0),
+    m_windowoffset(0) {}
 
-  virtual ~BufferBase() {
-    if (m_buffer) {
-      std::free(m_buffer);
-    }
+  BufferBase(BufferBase&& other) noexcept :
+    std::ostream(this),
+    std::istream(this),
+    m_buffer(other.m_buffer),
+    m_capacity(other.m_capacity),
+    m_size(other.m_size),
+    m_writeoffset(other.m_writeoffset),
+    m_readoffset(other.m_readoffset),
+    m_windowoffset(other.m_windowoffset) {
+    other.m_buffer = nullptr;
+    other.m_capacity = 0;
+    other.m_size = 0;
+    other.m_writeoffset = 0;
+    other.m_readoffset = 0;
+    other.m_windowoffset = 0;
+  }
 
+  ~BufferBase() override {
     m_buffer = nullptr;
     m_capacity = 0;
     m_size = 0;
@@ -84,18 +105,21 @@ public:
 
   // return a copy of the entire buffer
   std::string buffer_string() const;
+  std::string str() const { return buffer_string(); }
 
   // return a copy of the current read window
   std::string window_string() const;
 
   // return a view of the entire buffer
   std::string_view buffer_view() const;
+  std::string_view view() const { return buffer_view(); }
 
   // return a view of the current read window
   std::string_view window_view() const;
 
   // returns a hash value of the buffer or window
   SYMBOL buffer_hash() const;
+  SYMBOL hash() const { return buffer_hash(); }
   SYMBOL window_hash() const;
 
   // emit primitive types
@@ -211,16 +235,25 @@ class Buffer : public BufferBase {
 public:
   Buffer() : BufferBase() {}
 
-  Buffer(size_t initial_capacity) : Buffer() {
+  explicit Buffer(size_t initial_capacity) : Buffer() {
     reserve_space(initial_capacity);
   }
 
-  Buffer(const std::string& string) : BufferBase() {
+  explicit Buffer(const std::string& string) : BufferBase() {
     emit_string(string);
   }
 
-  Buffer(const BufferBase& other) : BufferBase() {
+  explicit Buffer(const BufferBase& other) : BufferBase() {
     emit_buffer(other);
+  }
+
+  Buffer(Buffer&& other) noexcept : BufferBase(std::move(other)) {}
+
+  virtual ~Buffer() {
+    if (m_buffer) {
+      std::free(m_buffer);
+      m_buffer = nullptr;
+    }
   }
 
   virtual void reserve_space(size_t size) override;

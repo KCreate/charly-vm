@@ -35,6 +35,8 @@
 #include <sstream>
 #include <unistd.h>
 
+#include "utils/buffer.h"
+
 #pragma once
 
 namespace charly {
@@ -123,16 +125,16 @@ void print_runtime_debug_state(std::ostream& stream);
 template <typename... Args>
 [[noreturn]] void failed_check(
   const char* filename, int32_t line, const char* function, const char* expression, Args&&... args) {
-  std::stringstream sstream;
-  debugln_impl(sstream, "Failed check!\n");
-  debugln_impl_time(sstream, "At %:% %:\n", filename, line, function);
-  debugln_impl_time(sstream, "Check '%' failed: ", expression);
-  debugln_impl(sstream, std::forward<Args>(args)...);
-  sstream << "\n";
+  utils::Buffer buf;
+  debugln_impl(buf, "Failed check!\n");
+  debugln_impl_time(buf, "At %:% %:\n", filename, line, function);
+  debugln_impl_time(buf, "Check '%' failed: ", expression);
+  debugln_impl(buf, std::forward<Args>(args)...);
+  buf << "\n";
 
-  print_runtime_debug_state(sstream);
+  print_runtime_debug_state(buf);
 
-  std::string str = sstream.str();
+  std::string str = buf.buffer_string();
   debugln_concurrent(str.c_str());
 
   std::abort();

@@ -125,7 +125,7 @@ public:
   // push message of specific type into the console
   template <typename... Args>
   void info(const Location& loc, Args&&... params) {
-    std::stringstream stream;
+    utils::Buffer stream;
     ((stream << std::forward<Args>(params)), ...);
     m_messages.push_back(DiagnosticMessage{ DiagnosticType::Info, m_filepath, stream.str(), loc });
   }
@@ -141,7 +141,7 @@ public:
 
   template <typename... Args>
   void warning(const Location& loc, Args&&... params) {
-    std::stringstream stream;
+    utils::Buffer stream;
     ((stream << std::forward<Args>(params)), ...);
     m_messages.push_back(DiagnosticMessage{ DiagnosticType::Warning, m_filepath, stream.str(), loc });
   }
@@ -157,7 +157,7 @@ public:
 
   template <typename... Args>
   void error(const Location& loc, Args&&... params) {
-    std::stringstream stream;
+    utils::Buffer stream;
     ((stream << std::forward<Args>(params)), ...);
     m_messages.push_back(DiagnosticMessage{ DiagnosticType::Error, m_filepath, stream.str(), loc });
   }
@@ -174,7 +174,7 @@ public:
   // pushing a fatal message throws a DiagnosticException
   template <typename... Args>
   [[noreturn]] void fatal(const Location& loc, Args&&... params) {
-    std::stringstream stream;
+    utils::Buffer stream;
     ((stream << std::forward<Args>(params)), ...);
     m_messages.push_back(DiagnosticMessage{ DiagnosticType::Error, m_filepath, stream.str(), loc });
     throw DiagnosticException();

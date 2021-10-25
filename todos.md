@@ -2,8 +2,8 @@
 
 - Interpreter value comparison method
 
-- Remove usage of std::stringstream
-  - Replace with utils::Buffer
+- Setup clang-tidy configuration and fix warnings and errors
+  - Also attempt to reduce the amount of disabled compiler flags in the CMakeLists files
 
 - Optimize frame size
   - Frames are about 800 bytes minimum even on release builds

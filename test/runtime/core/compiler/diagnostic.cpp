@@ -24,9 +24,9 @@
  * SOFTWARE.
  */
 
-#include <sstream>
-
 #include <catch2/catch_all.hpp>
+
+#include "charly/utils/buffer.h"
 
 #include "charly/core/compiler/compiler.h"
 
@@ -42,7 +42,7 @@ CATCH_TEST_CASE("Diagnostic") {
 
     CATCH_REQUIRE(unit->console.messages().size() == 1);
 
-    std::stringstream out;
+    utils::Buffer out;
     unit->console.dump_all(out);
 
     CATCH_CHECK_THAT(out.str(), Equals(("test:1:4: error: unexpected ',' token, expected an expression\n"
@@ -59,7 +59,7 @@ CATCH_TEST_CASE("Diagnostic") {
 
     CATCH_REQUIRE(console.messages().size() == 3);
 
-    std::stringstream out;
+    utils::Buffer out;
     console.dump_all(out);
 
     CATCH_CHECK_THAT(out.str(), Equals(("test: info: foo\n\n"
@@ -73,7 +73,7 @@ CATCH_TEST_CASE("Diagnostic") {
 
     CATCH_REQUIRE(unit->console.messages().size() == 1);
 
-    std::stringstream out;
+    utils::Buffer out;
     unit->console.dump_all(out);
 
     CATCH_CHECK_THAT(out.str(), Equals(("test:3:10: error: unexpected numerical constant, expected a ')' token\n"

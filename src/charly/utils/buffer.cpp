@@ -101,34 +101,34 @@ void BufferBase::emit_string_view(const std::string_view& view) {
 
 std::string BufferBase::buffer_string() const {
   if (m_size == 0)
-    return std::string();
+    return {};
 
-  return std::string(data(), m_size);
+  return {data(), m_size};
 }
 
 std::string BufferBase::window_string() const {
   size_t window_size = m_readoffset - m_windowoffset;
 
   if (window_size == 0)
-    return std::string();
+    return {};
 
-  return std::string(data() + m_windowoffset, window_size);
+  return {data() + m_windowoffset, window_size};
 }
 
 std::string_view BufferBase::buffer_view() const {
   if (m_size == 0)
-    return std::string_view();
+    return {};
 
-  return std::string_view(data(), m_size);
+  return {data(), m_size};
 }
 
 std::string_view BufferBase::window_view() const {
   size_t window_size = m_readoffset - m_windowoffset;
 
   if (window_size == 0)
-    return std::string_view();
+    return {};
 
-  return std::string_view(data() + m_windowoffset, window_size);
+  return {data() + m_windowoffset, window_size};
 }
 
 SYMBOL BufferBase::buffer_hash() const {

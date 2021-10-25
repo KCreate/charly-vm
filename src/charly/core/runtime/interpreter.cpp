@@ -262,9 +262,8 @@ OP(stringconcat) {
   Count8 count = op->stringconcat.count;
 
   utils::Buffer buffer;
-  std::ostream stream(&buffer);
   for (int64_t depth = count - 1; depth >= 0; depth--) {
-    frame->peek(depth).to_string(stream);
+    frame->peek(depth).to_string(buffer);
   }
 
   SYMBOL buf_hash = buffer.buffer_hash();
@@ -694,10 +693,9 @@ OP(fiberawait) {
 OP(caststring) {
   RawValue value = frame->pop();
 
-  std::stringstream stream;
-  value.to_string(stream);
-  std::string str = stream.str();
-  frame->push(thread->runtime()->create_string(thread, str.data(), str.size(), crc32_string(str)));
+  utils::Buffer buffer;
+  value.to_string(buffer);
+  frame->push(thread->runtime()->create_string(thread, buffer.data(), buffer.size(), buffer.hash()));
 
   return ContinueMode::Next;
 }

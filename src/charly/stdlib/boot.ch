@@ -56,17 +56,6 @@ func repeat_string(string, n) {
     return result
 }
 
-return (
-    determine_max_stack_size(),
-    (0, repeat_string("x", 0)),
-    (1, repeat_string("x", 1)),
-    (5, repeat_string("x", 5)),
-    (6, repeat_string("x", 6)),
-    (7, repeat_string("x", 7)),
-    (8, repeat_string("x", 8)),
-    (9, repeat_string("x", 9)),
-    (10, repeat_string("x", 10)),
-    (100, repeat_string("x", 100)),
-    (1000, repeat_string("x", 1000)),
-    (3000, repeat_string("x", 3000))
-)
+let (error, stacklimit) = determine_max_stack_size()
+
+return (error, stacklimit)

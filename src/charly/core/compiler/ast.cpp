@@ -85,15 +85,15 @@ void Node::dump(std::ostream& out, bool print_location) const {
   }
   writer << '\n';
 
-  std::vector<std::stringstream> child_nodes;
+  std::vector<utils::Buffer> child_nodes;
   children([&](const ref<Node>& node) {
-    std::stringstream& child_stream = child_nodes.emplace_back();
+    utils::Buffer& child_stream = child_nodes.emplace_back();
     termcolor::colorlike(child_stream, out);
     node->dump(child_stream, print_location);
   });
 
   for (size_t i = 0; i < child_nodes.size(); i++) {
-    std::stringstream& child_stream = child_nodes.at(i);
+    utils::Buffer& child_stream = child_nodes.at(i);
     std::string line;
     bool first_line = true;
     while (std::getline(child_stream, line)) {
