@@ -74,7 +74,7 @@ namespace crc32 {
     constexpr size_t strlen_c(const char* str) {
       return *str ? 1 + strlen_c(str + 1) : 0;
     }
-  } // namespace constexpr_impl
+  }  // namespace constexpr_impl
 
   inline constexpr uint32_t hash_constexpr(const char* str) {
     return constexpr_impl::crc32(str, constexpr_impl::strlen_c(str));
@@ -83,13 +83,12 @@ namespace crc32 {
   inline uint32_t hash_block(const char* data, size_t size) {
     uint32_t c = 0xFFFFFFFF;
     auto u = reinterpret_cast<const uint8_t*>(data);
-    for (size_t i = 0; i < size; i++)
-    {
+    for (size_t i = 0; i < size; i++) {
       c = crc_table[(c ^ u[i]) & 0xFF] ^ (c >> 8);
     }
     return c ^ 0xFFFFFFFF;
   }
-} // namespace crc32
+}  // namespace crc32
 
 using SYMBOL = uint32_t;
 
@@ -105,4 +104,4 @@ inline SYMBOL crc32_string(const std::string& string) {
   return crc32::hash_block(string.data(), string.size());
 }
 
-} // namespace charly
+}  // namespace charly

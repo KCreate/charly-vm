@@ -28,9 +28,9 @@
 #include <memory>
 
 #include "charly/core/compiler/ast.h"
+#include "charly/core/compiler/compiler.h"
 #include "charly/core/compiler/diagnostic.h"
 #include "charly/core/compiler/passmacros.h"
-#include "charly/core/compiler/compiler.h"
 
 #pragma once
 

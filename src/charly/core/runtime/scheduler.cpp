@@ -33,7 +33,7 @@
 
 namespace charly::core::runtime {
 
-Scheduler::Scheduler(Runtime* runtime){
+Scheduler::Scheduler(Runtime* runtime) {
   m_runtime = runtime;
 
   // determine the amount of virtual processors to spawn
@@ -142,7 +142,6 @@ void Scheduler::schedule_thread(Thread* thread, Processor* current_proc) {
       return;
     }
   }
-
 
   // schedule in global queue
   {

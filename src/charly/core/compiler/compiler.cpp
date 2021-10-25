@@ -28,21 +28,21 @@
 
 #include "charly/utils/argumentparser.h"
 
-#include "charly/core/compiler/compiler.h"
-#include "charly/core/compiler/parser.h"
 #include "charly/core/compiler/codegenerator.h"
-#include "charly/core/compiler/ir/ir.h"
-#include "charly/core/compiler/ir/builder.h"
+#include "charly/core/compiler/compiler.h"
 #include "charly/core/compiler/ir/assembler.h"
+#include "charly/core/compiler/ir/builder.h"
+#include "charly/core/compiler/ir/ir.h"
+#include "charly/core/compiler/parser.h"
 
 #include "charly/core/compiler/passes/class_constructor_check.h"
 #include "charly/core/compiler/passes/constant_folding_pass.h"
 #include "charly/core/compiler/passes/desugar_pass.h"
 #include "charly/core/compiler/passes/duplicates_check.h"
 #include "charly/core/compiler/passes/grammar_validation_check.h"
-#include "charly/core/compiler/passes/variable_analyzer_pass.h"
 #include "charly/core/compiler/passes/repl_prepare_pass.h"
 #include "charly/core/compiler/passes/reserved_identifiers_check.h"
+#include "charly/core/compiler/passes/variable_analyzer_pass.h"
 
 namespace charly::core::compiler {
 
@@ -119,10 +119,7 @@ ref<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffe
   return unit;
 }
 
-ref<CompilationUnit> Compiler::compile(const std::string& filepath,
-                                       std::istream& source,
-                                       CompilationUnit::Type type) {
-
+ref<CompilationUnit> Compiler::compile(const std::string& filepath, std::istream& source, CompilationUnit::Type type) {
   utils::Buffer file_buffer;
   std::string line;
 

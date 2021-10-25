@@ -33,8 +33,8 @@
 #include "charly/charly.h"
 #include "charly/value.h"
 
-#include "charly/core/compiler/token.h"
 #include "charly/core/compiler/ir/builtin.h"
+#include "charly/core/compiler/token.h"
 
 #pragma once
 
@@ -49,24 +49,24 @@ using ICIndexType = uint16_t;
 // - name of operand type
 // - type used to represent it inside the IR
 // - type thats actually encoded into the instruction stream
-#define FOREACH_OPERANDTYPE(V)     \
-                                   \
-  /* count / index operands */     \
-  V(Count8, uint8_t, uint8_t)      \
-  V(Count16, uint16_t, uint16_t)   \
-  V(Index8, uint8_t, uint8_t)      \
-  V(Index16, uint16_t, uint16_t)   \
-                                   \
-  /* hashed symbol value */        \
-  V(Symbol, std::string, uint32_t) \
-                                   \
-  /* relative offset to label */   \
-  V(Offset, Label, int32_t)        \
-                                   \
-  /* immediate value */            \
-  V(Immediate, runtime::RawValue, runtime::RawValue)       \
-                                   \
-  /* inline cache index */         \
+#define FOREACH_OPERANDTYPE(V)                       \
+                                                     \
+  /* count / index operands */                       \
+  V(Count8, uint8_t, uint8_t)                        \
+  V(Count16, uint16_t, uint16_t)                     \
+  V(Index8, uint8_t, uint8_t)                        \
+  V(Index16, uint16_t, uint16_t)                     \
+                                                     \
+  /* hashed symbol value */                          \
+  V(Symbol, std::string, uint32_t)                   \
+                                                     \
+  /* relative offset to label */                     \
+  V(Offset, Label, int32_t)                          \
+                                                     \
+  /* immediate value */                              \
+  V(Immediate, runtime::RawValue, runtime::RawValue) \
+                                                     \
+  /* inline cache index */                           \
   V(ICIndex, ICIndexType, ICIndexType)
 
 enum class OperandType : uint16_t {
@@ -95,17 +95,11 @@ enum ICType : uint8_t {
   ICPropertyOffset,
   ICGlobalOffset,
   ICBinaryOp,
-  ICUnaryOp
+  ICUnaryOp,
 };
 
-static std::string kInlineCacheTypeNames[] = {
-  "ICNone",
-  "ICSimpleValue",
-  "ICPropertyOffset",
-  "ICGlobalOffset",
-  "ICBinaryOp",
-  "ICUnaryOp"
-};
+static std::string kInlineCacheTypeNames[] = { "ICNone",         "ICSimpleValue", "ICPropertyOffset",
+                                               "ICGlobalOffset", "ICBinaryOp",    "ICUnaryOp" };
 
 // opcode listing
 //  - name
@@ -342,16 +336,16 @@ static std::string kInlineCacheTypeNames[] = {
    *                                                                                                                 \
    * stack arguments:                                                                                                \
    * - value                                                                                                         \
-   * - index
+   * - index                                                                                                         \
    *                                                                                                                 \
    * stack results:                                                                                                  \
    * - property                                                                                                      \
    * */                                                                                                              \
-  V(loadattr, ICPropertyOffset, 2, 1, ICIndex ic_index)                                                 \
+  V(loadattr, ICPropertyOffset, 2, 1, ICIndex ic_index)                                                              \
   /* loadattrsym - load property via symbol                                                                          \
-   *
-   * opcode operands:
-   * - symbol
+   *                                                                                                                 \
+   * opcode operands:                                                                                                \
+   * - symbol                                                                                                        \
    *                                                                                                                 \
    * stack arguments:                                                                                                \
    * - value                                                                                                         \
@@ -359,7 +353,7 @@ static std::string kInlineCacheTypeNames[] = {
    * stack results:                                                                                                  \
    * - property                                                                                                      \
    * */                                                                                                              \
-  V(loadattrsym, ICPropertyOffset, 1, 1, Symbol name, ICIndex ic_index)                                                           \
+  V(loadattrsym, ICPropertyOffset, 1, 1, Symbol name, ICIndex ic_index)                                              \
   /* loadsuperconstructor - load the super constructor of a given                                                    \
    *                        value                                                                                    \
    *                                                                                                                 \
@@ -430,17 +424,17 @@ static std::string kInlineCacheTypeNames[] = {
    *                                                                                                                 \
    * stack arguments:                                                                                                \
    * - target                                                                                                        \
-   * - index
+   * - index                                                                                                         \
    * - value                                                                                                         \
    *                                                                                                                 \
    * stack results:                                                                                                  \
    * - value                                                                                                         \
    * */                                                                                                              \
-  V(setattr, ICPropertyOffset, 3, 1, ICIndex ic_index)                                                  \
+  V(setattr, ICPropertyOffset, 3, 1, ICIndex ic_index)                                                               \
   /* setattrsym - write to property via symbol                                                                       \
-   *
-   * opcode operands:
-   * - symbol
+   *                                                                                                                 \
+   * opcode operands:                                                                                                \
+   * - symbol                                                                                                        \
    *                                                                                                                 \
    * stack arguments:                                                                                                \
    * - target                                                                                                        \
@@ -449,7 +443,7 @@ static std::string kInlineCacheTypeNames[] = {
    * stack results:                                                                                                  \
    * - value                                                                                                         \
    * */                                                                                                              \
-  V(setattrsym, ICPropertyOffset, 2, 1, Symbol name, ICIndex ic_index)                                                            \
+  V(setattrsym, ICPropertyOffset, 2, 1, Symbol name, ICIndex ic_index)                                               \
                                                                                                                      \
   /* unpacksequence - unpack into sequence of values                                                                 \
    *                                                                                                                 \
@@ -757,7 +751,7 @@ enum Opcode : uint8_t {
 #define ID(name, ictype, stackpop, stackpush, ...) name,
   FOREACH_OPCODE(ID)
 #undef ID
-  __Count // amount of opcodes
+    __Count  // amount of opcodes
 };
 
 /*
@@ -767,7 +761,7 @@ static const std::unordered_set<Opcode> kTerminatingOpcodes = {
   Opcode::panic,
   Opcode::jmp,
   Opcode::throwex,
-  Opcode::ret
+  Opcode::ret,
 };
 
 /*
@@ -777,7 +771,7 @@ static const std::unordered_set<Opcode> kBranchingOpcodes = {
   Opcode::jmp,
   Opcode::jmpf,
   Opcode::jmpt,
-  Opcode::testjmp
+  Opcode::testjmp,
 };
 
 /*

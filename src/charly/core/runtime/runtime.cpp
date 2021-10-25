@@ -86,7 +86,6 @@ void Runtime::register_module(const ref<CompiledModule>& module) {
 }
 
 RawData Runtime::create_data(Thread* thread, ShapeId shape_id, size_t size) {
-
   // determine the total allocation size
   DCHECK(size <= RawData::kMaxLength);
   size_t header_size = sizeof(ObjectHeader);
@@ -109,7 +108,6 @@ RawData Runtime::create_data(Thread* thread, ShapeId shape_id, size_t size) {
 }
 
 RawObject Runtime::create_instance(Thread* thread, ShapeId shape_id, size_t field_count) {
-
   // determine the allocation size
   DCHECK(field_count <= RawInstance::kMaximumFieldCount);
   size_t object_size = field_count * kPointerSize;

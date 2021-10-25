@@ -24,8 +24,8 @@
  * SOFTWARE.
  */
 
-#include <cstdint>
 #include <cmath>
+#include <cstdint>
 #include <limits>
 
 #include "charly.h"
@@ -97,8 +97,8 @@ enum class ShapeId : uint32_t {
   kSmallBytes = 15,
   kLastImmediateShape = kSmallBytes,
 
-  // non-instance heap types
-  // clang-format off
+// non-instance heap types
+// clang-format off
 #define SHAPE_ID(name) k##name,
 #define GET_FIRST(name) k##name + 0 *
 #define GET_LAST(name) 0 + k##name *
@@ -117,8 +117,8 @@ enum class ShapeId : uint32_t {
   // clang-format on
 
   kLastBuiltinShapeId = kLastException,
-  kMaxShapeId = (uint32_t{1} << 20) - 1,
-  kMaxShapeCount = uint32_t{1} << 20
+  kMaxShapeId = (uint32_t{ 1 } << 20) - 1,
+  kMaxShapeCount = uint32_t{ 1 } << 20
 };
 
 // maps the lowest 4 bits of an immediate value to a shape id
@@ -126,7 +126,7 @@ enum class ShapeId : uint32_t {
 // is not a pointer to a heap object
 static const ShapeId kShapeImmediateTagMapping[16] = {
   /* 0b0000 */ ShapeId::kInt,
-  /* 0b0001 */ ShapeId::kMaxShapeCount,   // heap objects
+  /* 0b0001 */ ShapeId::kMaxShapeCount,  // heap objects
   /* 0b0010 */ ShapeId::kInt,
   /* 0b0011 */ ShapeId::kFloat,
   /* 0b0100 */ ShapeId::kInt,
@@ -134,7 +134,7 @@ static const ShapeId kShapeImmediateTagMapping[16] = {
   /* 0b0110 */ ShapeId::kInt,
   /* 0b0111 */ ShapeId::kSymbol,
   /* 0b1000 */ ShapeId::kInt,
-  /* 0b1001 */ ShapeId::kMaxShapeCount,   // heap objects
+  /* 0b1001 */ ShapeId::kMaxShapeCount,  // heap objects
   /* 0b1010 */ ShapeId::kInt,
   /* 0b1011 */ ShapeId::kNull,
   /* 0b1100 */ ShapeId::kInt,
@@ -162,7 +162,7 @@ enum class ErrorId : uint8_t {
   kErrorOk,
   kErrorNotFound,
   kErrorOutOfBounds,
-  kErrorException
+  kErrorException,
 };
 
 // forward declare Raw types
@@ -326,25 +326,25 @@ public:
 #undef TYPECHECK
 
   // tag masks
-  static const uintptr_t kMaskInt       = 0b00000001;
-  static const uintptr_t kMaskPointer   = 0b00000111;
+  static const uintptr_t kMaskInt = 0b00000001;
+  static const uintptr_t kMaskPointer = 0b00000111;
   static const uintptr_t kMaskImmediate = 0b00001111;
-  static const uintptr_t kMaskLowByte   = 0b11111111;
-  static const uintptr_t kMaskLength    = 0b11110000;
+  static const uintptr_t kMaskLowByte = 0b11111111;
+  static const uintptr_t kMaskLength = 0b11110000;
 
   // tag bits
-  static const uintptr_t kTagInt              = 0b00000000;
-  static const uintptr_t kTagObject           = 0b00000001;
-  static const uintptr_t kTagFloat            = 0b00000011;
-  static const uintptr_t kTagBool             = 0b00000101;
-  static const uintptr_t kTagSymbol           = 0b00000111;
-  static const uintptr_t kTagNull             = 0b00001011;
-  static const uintptr_t kTagErrorOk          = 0b00011011;
-  static const uintptr_t kTagErrorException   = 0b00101011;
-  static const uintptr_t kTagErrorNotFound    = 0b00111011;
+  static const uintptr_t kTagInt = 0b00000000;
+  static const uintptr_t kTagObject = 0b00000001;
+  static const uintptr_t kTagFloat = 0b00000011;
+  static const uintptr_t kTagBool = 0b00000101;
+  static const uintptr_t kTagSymbol = 0b00000111;
+  static const uintptr_t kTagNull = 0b00001011;
+  static const uintptr_t kTagErrorOk = 0b00011011;
+  static const uintptr_t kTagErrorException = 0b00101011;
+  static const uintptr_t kTagErrorNotFound = 0b00111011;
   static const uintptr_t kTagErrorOutOfBounds = 0b01001011;
-  static const uintptr_t kTagSmallString      = 0b00001101;
-  static const uintptr_t kTagSmallBytes       = 0b00001111;
+  static const uintptr_t kTagSmallString = 0b00001101;
+  static const uintptr_t kTagSmallBytes = 0b00001111;
 
   // right shift amounts to decode values
   static const int kShiftInt = 1;
@@ -381,8 +381,8 @@ public:
 
   static bool is_valid(int64_t value);
 
-  inline static const int64_t kMinValue = -(int64_t{1} << 62);
-  inline static const int64_t kMaxValue = (int64_t{1} << 62) - 1;
+  inline static const int64_t kMinValue = -(int64_t{ 1 } << 62);
+  inline static const int64_t kMaxValue = (int64_t{ 1 } << 62) - 1;
 };
 static const RawInt kZero = RawInt::make(0);
 static const RawInt kOne = RawInt::make(1);
@@ -539,7 +539,7 @@ public:
   const uint8_t* data() const;
   SYMBOL hashcode() const;
 
-  static const size_t kMaxLength = 1008; // 1024 bytes - 16 bytes for the header
+  static const size_t kMaxLength = 1008;  // 1024 bytes - 16 bytes for the header
 };
 
 // bytes stored on managed heap
@@ -679,4 +679,4 @@ public:
   COMMON_RAW_OBJECT(Exception);
 };
 
-}
+}  // namespace charly::core::runtime

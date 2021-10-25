@@ -31,11 +31,11 @@
 #include <vector>
 
 #include "charly/charly.h"
+#include "charly/core/compiler/ir/builtin.h"
+#include "charly/core/compiler/ir/functioninfo.h"
+#include "charly/core/compiler/ir/valuelocation.h"
 #include "charly/core/compiler/location.h"
 #include "charly/core/compiler/token.h"
-#include "charly/core/compiler/ir/builtin.h"
-#include "charly/core/compiler/ir/valuelocation.h"
-#include "charly/core/compiler/ir/functioninfo.h"
 
 #pragma once
 
@@ -131,8 +131,8 @@ public:
   // a second skip function can be used to skip traversal
   // of certain node types
   static ref<Node> search(const ref<Node>& node,
-                                 std::function<bool(const ref<Node>&)> compare,
-                                 std::function<bool(const ref<Node>&)> skip);
+                          std::function<bool(const ref<Node>&)> compare,
+                          std::function<bool(const ref<Node>&)> skip);
 
   operator Location() const {
     return m_location;
@@ -467,7 +467,7 @@ public:
 };
 
 // foo, bar, $_baz42
-class Name;         // forward declaration
+class Name;  // forward declaration
 class Declaration;
 class Id final : public Atom<std::string> {
   AST_NODE(Id)
@@ -583,7 +583,7 @@ public:
   virtual void dump_info(std::ostream& out) const override;
 
   virtual bool truthyness() const override {
-    return true; // strings are always truthy
+    return true;  // strings are always truthy
   }
 };
 
@@ -620,7 +620,7 @@ public:
   virtual void dump_info(std::ostream& out) const override;
 
   virtual bool truthyness() const override {
-    return true; // symbols are always truthy
+    return true;  // symbols are always truthy
   }
 };
 
@@ -955,8 +955,7 @@ public:
 class Assignment final : public Expression {
   AST_NODE(Assignment)
 public:
-  Assignment(ref<Id> name, ref<Expression> source) :
-    operation(TokenType::Assignment), name(name), source(source) {
+  Assignment(ref<Id> name, ref<Expression> source) : operation(TokenType::Assignment), name(name), source(source) {
     this->set_begin(name);
     this->set_end(source);
   }
@@ -983,8 +982,7 @@ public:
 class UnpackAssignment final : public Expression {
   AST_NODE(UnpackAssignment)
 public:
-  UnpackAssignment(ref<UnpackTarget> target, ref<Expression> source) :
-    target(target), source(source) {
+  UnpackAssignment(ref<UnpackTarget> target, ref<Expression> source) : target(target), source(source) {
     this->set_begin(target);
     this->set_end(source);
   }

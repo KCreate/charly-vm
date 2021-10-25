@@ -256,7 +256,6 @@ void Worker::scheduler_loop(Runtime* runtime) {
       reset_sleep_duration();
 
       do {
-
         // context switch into the thread
         assert_change_state(State::Scheduling, State::Running);
         m_context_switch_counter++;
@@ -288,7 +287,7 @@ void Worker::scheduler_loop(Runtime* runtime) {
           }
         }
       } while (!thread->has_exceeded_timeslice());
-    execute_next_thread:
+execute_next_thread:
       continue;
     }
     assert_change_state(State::Scheduling, State::Acquiring);

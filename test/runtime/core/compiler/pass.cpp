@@ -25,7 +25,6 @@
  */
 
 #include <queue>
-#include <sstream>
 #include <vector>
 
 #include <catch2/catch_all.hpp>

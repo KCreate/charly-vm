@@ -38,17 +38,16 @@ using VariableId = uint32_t;
 struct ValueLocation {
   enum class Type : uint8_t {
     Invalid,
-    Id,           // temporary variable id set by local analyzer pass
-    LocalFrame,   // value stored in current frames locals
-    FarFrame,     // value stored in the heap allocated locals of some frame
-    Global        // value stored in global context
+    Id,          // temporary variable id set by local analyzer pass
+    LocalFrame,  // value stored in current frames locals
+    FarFrame,    // value stored in the heap allocated locals of some frame
+    Global       // value stored in global context
   };
 
   Type type;
-  std::string name; // cannot be in union because of non-trivial destructor
+  std::string name;  // cannot be in union because of non-trivial destructor
 
   union {
-
     // temporary variable id used by local analyzer pass
     struct {
       VariableId id;
@@ -145,4 +144,4 @@ struct ValueLocation {
   }
 };
 
-}  // namespace charly::core::compiler
+}  // namespace charly::core::compiler::ir

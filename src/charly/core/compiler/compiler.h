@@ -57,7 +57,6 @@ struct CompilationUnit {
 
 class Compiler {
 public:
-
   // compile source code into a compilation unit
   static ref<CompilationUnit> compile(const std::string& filepath,
                                       utils::Buffer& source,

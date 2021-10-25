@@ -26,9 +26,9 @@
 
 #include <alloca.h>
 
+#include "charly/core/compiler/compiler.h"
 #include "charly/core/runtime/interpreter.h"
 #include "charly/core/runtime/runtime.h"
-#include "charly/core/compiler/compiler.h"
 
 namespace charly::core::runtime {
 
@@ -226,10 +226,10 @@ handle_return_or_exception:
       // check if the current frame can handle this exception
       if (const ExceptionTableEntry* entry = frame->find_active_exception_table_entry(op->ip())) {
         frame->ip = entry->handler_ptr;
-        frame->sp = 0; // clear stack
+        frame->sp = 0;  // clear stack
         frame->push(thread->pending_exception());
         thread->reset_pending_exception();
-        goto *next_handler();
+        goto* next_handler();
       }
 
       return kErrorException;

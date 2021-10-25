@@ -28,8 +28,8 @@
 
 #include "charly/utils/buffer.h"
 
-#include "charly/value.h"
 #include "charly/handle.h"
+#include "charly/value.h"
 
 #pragma once
 
@@ -101,6 +101,7 @@ private:
 // the threads of fibers that have exited are reused by future fibers
 class Thread {
   friend class Interpreter;
+
 public:
   Thread(Runtime* runtime);
 
@@ -108,13 +109,13 @@ public:
   static void set_current(Thread* worker);
 
   enum class State {
-    Free,           // thread sits on a freelist somewhere and isn't tied to a fiber yet
-    Waiting,        // thread is paused
-    Ready,          // thread is ready to be executed and is currently placed in some run queue
-    Running,        // thread is currently running
-    Native,         // thread is currently executing a native section
-    Exited,         // thread has exited
-    Aborted         // thread has aborted, runtime should terminate all other threads too
+    Free,     // thread sits on a freelist somewhere and isn't tied to a fiber yet
+    Waiting,  // thread is paused
+    Ready,    // thread is ready to be executed and is currently placed in some run queue
+    Running,  // thread is currently running
+    Native,   // thread is currently executing a native section
+    Exited,   // thread has exited
+    Aborted   // thread has aborted, runtime should terminate all other threads too
   };
 
   // getters / setters

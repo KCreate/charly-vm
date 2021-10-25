@@ -26,10 +26,10 @@
 
 #include <queue>
 
-#include "charly/core/compiler/compiler.h"
 #include "charly/core/compiler/ast.h"
-#include "charly/core/compiler/ir/ir.h"
+#include "charly/core/compiler/compiler.h"
 #include "charly/core/compiler/ir/builder.h"
+#include "charly/core/compiler/ir/ir.h"
 #include "charly/core/compiler/ir/valuelocation.h"
 #include "charly/core/compiler/pass.h"
 

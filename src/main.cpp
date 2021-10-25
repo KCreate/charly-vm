@@ -34,12 +34,12 @@
 
 #include "charly/charly.h"
 
-#include "charly/utils/buffer.h"
 #include "charly/utils/argumentparser.h"
+#include "charly/utils/buffer.h"
 
 #include "charly/core/compiler/compiler.h"
-#include "charly/core/runtime/runtime.h"
 #include "charly/core/runtime/interpreter.h"
+#include "charly/core/runtime/runtime.h"
 
 using namespace charly;
 using namespace charly::core::runtime;
@@ -175,7 +175,6 @@ extern char** environ;
 // }
 
 int32_t cli(DiagnosticConsole& console) {
-
   // check for existence of CHARLYVMDIR environment variable
   if (!utils::ArgumentParser::is_env_set("CHARLYVMDIR")) {
     console.gerror("missing 'CHARLYVMDIR' environment variable");

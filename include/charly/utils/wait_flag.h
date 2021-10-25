@@ -24,10 +24,10 @@
  * SOFTWARE.
  */
 
-#include <cstdint>
-#include <thread>
-#include <mutex>
 #include <condition_variable>
+#include <cstdint>
+#include <mutex>
+#include <thread>
 
 #include "charly/atomic.h"
 

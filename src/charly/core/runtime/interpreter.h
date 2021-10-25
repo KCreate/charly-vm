@@ -40,7 +40,7 @@ class Thread;
 
 // trigger an out of memory exception once this amount of remaining bytes on the stack
 // has been crossed
-static const size_t kStackOverflowLimit = 1024 * 32; // 32 kilobytes
+static const size_t kStackOverflowLimit = 1024 * 32;  // 32 kilobytes
 
 class Frame {
 public:
@@ -72,13 +72,12 @@ public:
 class Interpreter {
 public:
   enum class ContinueMode {
-    Next,       // execute next opcode
-    Return,     // return from current frame
-    Exception   // an exception was thrown, handle in current frame or return
+    Next,      // execute next opcode
+    Return,    // return from current frame
+    Exception  // an exception was thrown, handle in current frame or return
   };
 
-  static RawValue call_function(
-    Thread* thread, RawValue self, RawFunction function, RawValue* arguments, uint8_t argc);
+  static RawValue call_function(Thread* thread, RawValue self, RawFunction function, RawValue* arguments, uint8_t argc);
 
   static RawValue add_string_string(Thread* thread, RawString left, RawString right);
 

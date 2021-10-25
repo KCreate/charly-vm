@@ -29,7 +29,6 @@
 namespace charly::core::compiler::ast {
 
 void ReplPreparePass::inspect_leave(const ref<Block>& node) {
-
   // the last expression of the toplevel REPL block is
   // wrapped in a return statement
   if (node->repl_toplevel_block) {

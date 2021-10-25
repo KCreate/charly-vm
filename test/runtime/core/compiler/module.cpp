@@ -24,8 +24,6 @@
  * SOFTWARE.
  */
 
-// #include <sstream>
-
 #include <catch2/catch_all.hpp>
 
 #include "charly/utils/buffer.h"

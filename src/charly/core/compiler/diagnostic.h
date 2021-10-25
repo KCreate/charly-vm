@@ -26,7 +26,6 @@
 
 #include <exception>
 #include <string>
-#include <sstream>
 #include <vector>
 
 #include "charly/charly.h"

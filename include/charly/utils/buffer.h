@@ -27,10 +27,10 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <iostream>
 
 #include "charly/symbol.h"
 
@@ -105,21 +105,27 @@ public:
 
   // return a copy of the entire buffer
   std::string buffer_string() const;
-  std::string str() const { return buffer_string(); }
+  std::string str() const {
+    return buffer_string();
+  }
 
   // return a copy of the current read window
   std::string window_string() const;
 
   // return a view of the entire buffer
   std::string_view buffer_view() const;
-  std::string_view view() const { return buffer_view(); }
+  std::string_view view() const {
+    return buffer_view();
+  }
 
   // return a view of the current read window
   std::string_view window_view() const;
 
   // returns a hash value of the buffer or window
   SYMBOL buffer_hash() const;
-  SYMBOL hash() const { return buffer_hash(); }
+  SYMBOL hash() const {
+    return buffer_hash();
+  }
   SYMBOL window_hash() const;
 
   // emit primitive types
@@ -214,7 +220,6 @@ public:
   int32_t overflow(int32_t ch) override;
 
 protected:
-
   // copy size bytes from the source address to some target offset in the backing buffer
   // grows the backing buffer to fit the write
   void write_to_offset(size_t target_offset, const void* source, size_t size);
@@ -266,7 +271,7 @@ public:
 // buffer that can be protected
 // internal buffer will always have a minimum size of the system page size
 // and will only grow in multiples of that size
-class ProtectedBuffer: public BufferBase {
+class ProtectedBuffer : public BufferBase {
 public:
   ProtectedBuffer() : BufferBase(), m_readonly(false) {}
 

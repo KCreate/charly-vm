@@ -26,18 +26,18 @@
 
 #include <cstdint>
 #include <list>
+#include <optional>
 #include <set>
-#include <unordered_set>
 #include <stack>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <variant>
 #include <vector>
-#include <optional>
 
 #include "charly/core/compiler/ast.h"
-#include "charly/core/compiler/location.h"
 #include "charly/core/compiler/ir/bytecode.h"
+#include "charly/core/compiler/location.h"
 
 #pragma once
 
@@ -49,7 +49,7 @@ struct IROperand {
   virtual void dump(std::ostream& out) const = 0;
 };
 
-#define OPTYPE(name, type, _)                                \
+#define OPTYPE(name, type, _)                             \
   struct IROperand##name : public IROperand {             \
     virtual OperandType get_type() const override {       \
       return OperandType::name;                           \

@@ -24,15 +24,15 @@
  * SOFTWARE.
  */
 
-#include <string>
-#include <vector>
 #include <cstdint>
 #include <iostream>
+#include <string>
+#include <vector>
 
 #include "charly/value.h"
 
-#include "charly/core/compiler/ir/functioninfo.h"
 #include "charly/core/compiler/ir/bytecode.h"
+#include "charly/core/compiler/ir/functioninfo.h"
 
 #include "charly/utils/buffer.h"
 
@@ -96,12 +96,12 @@ struct SharedFunctionInfo {
   std::vector<StringTableEntry> string_table;
   std::vector<InlineCacheEntry> inline_cache_table;
 
-  uintptr_t buffer_base_ptr;        // pointer to the base of the containing modules buffer
-  uintptr_t bytecode_base_ptr;      // pointer to the functions first opcode
-  uintptr_t end_ptr;                // function end pointer
+  uintptr_t buffer_base_ptr;    // pointer to the base of the containing modules buffer
+  uintptr_t bytecode_base_ptr;  // pointer to the functions first opcode
+  uintptr_t end_ptr;            // function end pointer
 
-  uint32_t bytecode_offset;       // offset into module buffer where the functions opcodes are located
-  uint32_t end_offset;            // function end offset
+  uint32_t bytecode_offset;  // offset into module buffer where the functions opcodes are located
+  uint32_t end_offset;       // function end offset
 
   void dump(std::ostream& out) const;
 };

@@ -53,9 +53,9 @@ CATCH_TEST_CASE("Diagnostic") {
     utils::Buffer buffer("");
     DiagnosticConsole console("test", buffer);
 
-    console.info(Location{.valid=false}, "foo");
-    console.warning(Location{.valid=false}, "bar");
-    console.error(Location{.valid=false}, "baz");
+    console.info(Location{ .valid = false }, "foo");
+    console.warning(Location{ .valid = false }, "bar");
+    console.error(Location{ .valid = false }, "baz");
 
     CATCH_REQUIRE(console.messages().size() == 3);
 

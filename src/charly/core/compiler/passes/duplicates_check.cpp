@@ -36,7 +36,6 @@ void DuplicatesCheck::inspect_leave(const ref<UnpackTarget>& node) {
   bool spread_passed = false;
 
   for (const ref<UnpackTargetElement>& element : node->elements) {
-
     // duplicate spread check
     if (element->spread) {
       if (spread_passed) {
@@ -103,7 +102,7 @@ void DuplicatesCheck::inspect_leave(const ref<Class>& node) {
       continue;
     }
 
-    class_member_properties.insert({prop->name->value, prop});
+    class_member_properties.insert({ prop->name->value, prop });
   }
 
   for (const ref<Function>& func : node->member_functions) {
@@ -121,7 +120,7 @@ void DuplicatesCheck::inspect_leave(const ref<Class>& node) {
       continue;
     }
 
-    class_member_functions.insert({name, func});
+    class_member_functions.insert({ name, func });
   }
 
   // check for duplicate static properties

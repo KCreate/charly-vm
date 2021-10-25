@@ -24,19 +24,18 @@
  * SOFTWARE.
  */
 
-#include <iomanip>
 #include <sys/mman.h>
 #include <cstdlib>
+#include <iomanip>
 
 #include "charly/charly.h"
 #include "charly/utf8.h"
-#include "charly/utils/colorwriter.h"
 #include "charly/utils/buffer.h"
+#include "charly/utils/colorwriter.h"
 
 namespace charly::utils {
 
 void BufferBase::seek(size_t offset) {
-
   // -1 seeks to end of buffer
   if (offset == (size_t)(-1)) {
     offset = m_writeoffset;
@@ -103,7 +102,7 @@ std::string BufferBase::buffer_string() const {
   if (m_size == 0)
     return {};
 
-  return {data(), m_size};
+  return { data(), m_size };
 }
 
 std::string BufferBase::window_string() const {
@@ -112,14 +111,14 @@ std::string BufferBase::window_string() const {
   if (window_size == 0)
     return {};
 
-  return {data() + m_windowoffset, window_size};
+  return { data() + m_windowoffset, window_size };
 }
 
 std::string_view BufferBase::buffer_view() const {
   if (m_size == 0)
     return {};
 
-  return {data(), m_size};
+  return { data(), m_size };
 }
 
 std::string_view BufferBase::window_view() const {
@@ -128,7 +127,7 @@ std::string_view BufferBase::window_view() const {
   if (window_size == 0)
     return {};
 
-  return {data() + m_windowoffset, window_size};
+  return { data() + m_windowoffset, window_size };
 }
 
 SYMBOL BufferBase::buffer_hash() const {
@@ -347,7 +346,7 @@ void ProtectedBuffer::reserve_space(size_t size) {
   // free old buffer
   bool was_readonly = m_readonly;
   if (m_buffer) {
-    set_readonly(false); // disable memory protections for the freed memory
+    set_readonly(false);  // disable memory protections for the freed memory
     std::free(m_buffer);
   }
 
@@ -389,7 +388,6 @@ void GuardedBuffer::reserve_space(size_t size) {
 
   // copy old buffer contents and unmap old buffer
   if (m_buffer) {
-
     // mark new buffer as writeable
     if (mprotect(mapping_buffer_base, new_capacity, PROT_READ | PROT_WRITE) != 0) {
       FAIL("could not mprotect region");

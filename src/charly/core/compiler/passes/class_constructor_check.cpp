@@ -33,24 +33,26 @@ void ClassConstructorCheck::inspect_leave(const ref<Class>& node) {
     return;
 
   // search for a call to the super constructor
-  ref<Node> super_call = Node::search(node->constructor->body, [&](const ref<Node>& node) {
-
-    // check for super(...)
-    if (ref<CallOp> call = cast<CallOp>(node)) {
-      if (isa<Super>(call->target)) {
-        return true;
+  ref<Node> super_call = Node::search(
+    node->constructor->body,
+    [&](const ref<Node>& node) {
+      // check for super(...)
+      if (ref<CallOp> call = cast<CallOp>(node)) {
+        if (isa<Super>(call->target)) {
+          return true;
+        }
       }
-    }
 
-    return false;
-  }, [&](const ref<Node>& node) {
-    Node::Type type = node->type();
-    return type == Node::Type::Function || type == Node::Type::Class || type == Node::Type::Spawn;
-  });
+      return false;
+    },
+    [&](const ref<Node>& node) {
+      Node::Type type = node->type();
+      return type == Node::Type::Function || type == Node::Type::Class || type == Node::Type::Spawn;
+    });
 
   if (!super_call) {
-    m_console.error(node->constructor->name, "missing call to super inside constructor of class '",
-                    node->name->value, "'");
+    m_console.error(node->constructor->name, "missing call to super inside constructor of class '", node->name->value,
+                    "'");
   }
 }
 

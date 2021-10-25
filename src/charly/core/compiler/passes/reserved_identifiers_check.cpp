@@ -33,25 +33,15 @@ namespace charly::core::compiler::ast {
 
 // list of reserved identifiers that are
 // used by the compiler itself
-static const std::unordered_set<std::string> kReservedIdentifiers = {
-  "$",
-  "$$"
-};
+static const std::unordered_set<std::string> kReservedIdentifiers = { "$", "$$" };
 
 // list of identifiers which cannot be used as member fields
 // (member properties and functions) of classes
-static std::unordered_set<std::string> kIllegalMemberFieldNames = {
-  "klass",
-  "object_id"
-};
+static std::unordered_set<std::string> kIllegalMemberFieldNames = { "klass", "object_id" };
 
 // list of identifiers which cannot be used as static fields
 // (static properties and functions) of classes
-static std::unordered_set<std::string> kIllegalStaticFieldNames = {
-  "constructor",
-  "name",
-  "parent"
-};
+static std::unordered_set<std::string> kIllegalStaticFieldNames = { "constructor", "name", "parent" };
 
 bool is_reserved_identifier(const std::string& str) {
   if (kReservedIdentifiers.count(str)) {

@@ -218,9 +218,9 @@ private:
   // stack of exception handlers
   std::stack<Label> m_exception_handlers;
 
-  ref<IRFunction>   m_active_function;
+  ref<IRFunction> m_active_function;
   ref<IRBasicBlock> m_active_block;
-  ref<IRModule>     m_module;
-  };
+  ref<IRModule> m_module;
+};
 
 }  // namespace charly::core::compiler::ir

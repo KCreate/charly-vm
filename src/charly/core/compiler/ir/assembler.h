@@ -24,9 +24,9 @@
  * SOFTWARE.
  */
 
-#include <vector>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "charly/core/compiler/ir/builder.h"
 #include "charly/core/compiler/ir/ir.h"

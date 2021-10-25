@@ -24,11 +24,10 @@
  * SOFTWARE.
  */
 
-#include <sstream>
 #include <vector>
 
-#include "charly/utils/buffer.h"
 #include "charly/core/compiler/ast.h"
+#include "charly/utils/buffer.h"
 #include "charly/utils/colorwriter.h"
 
 namespace charly::core::compiler::ast {
@@ -36,9 +35,8 @@ namespace charly::core::compiler::ast {
 using Color = utils::Color;
 
 ref<Node> Node::search(const ref<Node>& node,
-                        std::function<bool(const ref<Node>&)> compare,
-                        std::function<bool(const ref<Node>&)> skip) {
-
+                       std::function<bool(const ref<Node>&)> compare,
+                       std::function<bool(const ref<Node>&)> skip) {
   // check compare function
   if (compare(node)) {
     return node;
@@ -455,4 +453,4 @@ void BuiltinOperation::dump_info(std::ostream& out) const {
   writer.fg(Color::Red, ir::kBuiltinNames[(uint16_t)this->operation]);
 }
 
-}  // namespace charly::core::compiler
+}  // namespace charly::core::compiler::ast

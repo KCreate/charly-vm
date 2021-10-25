@@ -26,12 +26,12 @@
 
 #include <boost/context/detail/fcontext.hpp>
 
-#include <mutex>
 #include <condition_variable>
+#include <mutex>
 #include <thread>
 
-#include "charly/value.h"
 #include "charly/utils/random_device.h"
+#include "charly/value.h"
 
 #pragma once
 
@@ -60,15 +60,15 @@ public:
   enum class State {
 
     // worker does not own a processor
-    Created,          // initial state
-    Idle,             // worker is currently idling and can be woken
-    Acquiring,        // worker is trying to acquire a processor
-    Exited,           // worker has exited
+    Created,    // initial state
+    Idle,       // worker is currently idling and can be woken
+    Acquiring,  // worker is trying to acquire a processor
+    Exited,     // worker has exited
 
-    Scheduling,       // worker is currently in the scheduler
-    Running,          // worker is currently in a fiber thread
-    Native,           // worker is executing a native section in a fiber thread (code that cannot interact with heap)
-    WorldStopped      // worker stopped due to scheduler stop the world request
+    Scheduling,   // worker is currently in the scheduler
+    Running,      // worker is currently in a fiber thread
+    Native,       // worker is executing a native section in a fiber thread (code that cannot interact with heap)
+    WorldStopped  // worker stopped due to scheduler stop the world request
   };
 
   static bool is_heap_safe_mode(State state);

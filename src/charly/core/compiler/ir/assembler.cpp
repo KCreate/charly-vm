@@ -47,7 +47,6 @@ void Assembler::assemble() {
   // emit functions
   CHECK(m_ir_module->functions.size() <= (size_t)0xffff);
   for (const ref<IRFunction>& function : m_ir_module->functions) {
-
     // init function entry
     SharedFunctionInfo* shared_info = new SharedFunctionInfo();
     shared_info->owner_module = m_runtime_module.get();
@@ -94,11 +93,8 @@ void Assembler::assemble() {
 
     // build exception table
     for (const IRExceptionTableEntry& entry : function->exception_table) {
-      shared_info->exception_table.emplace_back(
-        offset_of_label(entry.begin),
-        offset_of_label(entry.end),
-        offset_of_label(entry.handler)
-      );
+      shared_info->exception_table.emplace_back(offset_of_label(entry.begin), offset_of_label(entry.end),
+                                                offset_of_label(entry.handler));
     }
 
     // build sourcemap table
@@ -107,13 +103,9 @@ void Assembler::assemble() {
         if (instruction->location.valid) {
           DCHECK(instruction->assembled_at_label.has_value());
           uint32_t instruction_offset = offset_of_label(instruction->assembled_at_label.value());
-          shared_info->sourcemap_table.emplace_back(
-            instruction_offset,
-            instruction->location.row,
-            instruction->location.column,
-            instruction->location.end_row,
-            instruction->location.end_column
-          );
+          shared_info->sourcemap_table.emplace_back(instruction_offset, instruction->location.row,
+                                                    instruction->location.column, instruction->location.end_row,
+                                                    instruction->location.end_column);
         }
       }
     }
@@ -205,11 +197,11 @@ Label Assembler::reserve_label() {
 
 void Assembler::place_label(Label label) {
   DCHECK(m_placed_labels.count(label) == 0);
-  m_placed_labels.insert({label, m_runtime_module->buffer->size()});
+  m_placed_labels.insert({ label, m_runtime_module->buffer->size() });
 }
 
 void Assembler::write_relative_label_reference(Label label, Label other) {
-  m_unresolved_labels.insert({m_runtime_module->buffer->size(), { label, other }});
+  m_unresolved_labels.insert({ m_runtime_module->buffer->size(), { label, other } });
   m_runtime_module->buffer->emit_u32(0x0);
 }
 

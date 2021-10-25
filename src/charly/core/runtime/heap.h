@@ -24,14 +24,14 @@
  * SOFTWARE.
  */
 
-#include <cstdlib>
 #include <array>
+#include <bitset>
+#include <cstdlib>
 #include <list>
+#include <mutex>
 #include <set>
 #include <unordered_set>
 #include <vector>
-#include <mutex>
-#include <bitset>
 
 #include "charly/value.h"
 
@@ -112,7 +112,6 @@ public:
   bool contains_address(uintptr_t address);
 
 private:
-
   // pops a free region from the freelist
   HeapRegion* pop_free_region();
 

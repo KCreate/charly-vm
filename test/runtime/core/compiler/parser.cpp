@@ -24,12 +24,10 @@
  * SOFTWARE.
  */
 
-#include <sstream>
-
 #include <catch2/catch_all.hpp>
 
-#include "charly/core/compiler/parser.h"
 #include "charly/core/compiler/ir/builtin.h"
+#include "charly/core/compiler/parser.h"
 
 #include "astmacros.h"
 
@@ -197,14 +195,16 @@ CATCH_TEST_CASE("Parser") {
   }
 
   CATCH_SECTION("binary operator relative precedence") {
-    CHECK_AST_EXP("1 + 2 + 3", make<BinaryOp>(TokenType::Plus,
-                                              make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(2)), make<Int>(3)));
+    CHECK_AST_EXP(
+      "1 + 2 + 3",
+      make<BinaryOp>(TokenType::Plus, make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(2)), make<Int>(3)));
 
     CHECK_AST_EXP("1 + 2 * 3", make<BinaryOp>(TokenType::Plus, make<Int>(1),
                                               make<BinaryOp>(TokenType::Mul, make<Int>(2), make<Int>(3))));
 
-    CHECK_AST_EXP("1 * 2 + 3", make<BinaryOp>(TokenType::Plus, make<BinaryOp>(TokenType::Mul, make<Int>(1), make<Int>(2)),
-                                              make<Int>(3)));
+    CHECK_AST_EXP(
+      "1 * 2 + 3",
+      make<BinaryOp>(TokenType::Plus, make<BinaryOp>(TokenType::Mul, make<Int>(1), make<Int>(2)), make<Int>(3)));
 
     CHECK_AST_EXP(
       "foo == 1 && 0",
@@ -216,14 +216,16 @@ CATCH_TEST_CASE("Parser") {
     CHECK_AST_EXP("1 || 2 && 3", make<BinaryOp>(TokenType::Or, make<Int>(1),
                                                 make<BinaryOp>(TokenType::And, make<Int>(2), make<Int>(3))));
 
-    CHECK_AST_EXP("1 * 2 / 3", make<BinaryOp>(TokenType::Div, make<BinaryOp>(TokenType::Mul, make<Int>(1), make<Int>(2)),
-                                              make<Int>(3)));
+    CHECK_AST_EXP(
+      "1 * 2 / 3",
+      make<BinaryOp>(TokenType::Div, make<BinaryOp>(TokenType::Mul, make<Int>(1), make<Int>(2)), make<Int>(3)));
 
     CHECK_AST_EXP("1 * 2 ** 3", make<BinaryOp>(TokenType::Mul, make<Int>(1),
                                                make<BinaryOp>(TokenType::Pow, make<Int>(2), make<Int>(3))));
 
-    CHECK_AST_EXP("1 ** 2 * 3", make<BinaryOp>(TokenType::Mul, make<BinaryOp>(TokenType::Pow, make<Int>(1), make<Int>(2)),
-                                               make<Int>(3)));
+    CHECK_AST_EXP(
+      "1 ** 2 * 3",
+      make<BinaryOp>(TokenType::Mul, make<BinaryOp>(TokenType::Pow, make<Int>(1), make<Int>(2)), make<Int>(3)));
 
     CHECK_AST_EXP("1 ** 2 ** 3", make<BinaryOp>(TokenType::Pow, make<Int>(1),
                                                 make<BinaryOp>(TokenType::Pow, make<Int>(2), make<Int>(3))));
@@ -329,39 +331,27 @@ CATCH_TEST_CASE("Parser") {
     CHECK_AST_STMT("foo(0)\n(1)", make<CallOp>(make<Id>("foo"), make<Int>(0)));
     CHECK_AST_STMT("foo(0)(1)\n(2)", make<CallOp>(make<CallOp>(make<Id>("foo"), make<Int>(0)), make<Int>(1)));
 
-    CHECK_AST_EXP(
-      "foo.bar(2, 3).test[1](1, 2).bar",
-      make<MemberOp>(
-        make<CallIndexOp>(
-          make<MemberOp>(
-            make<CallMemberOp>(
-              make<Id>("foo"),
-              make<Name>("bar"),
-              make<Int>(2),
-              make<Int>(3)
-                ),
-            make<Name>("test")
-              ),
-          make<Int>(1),
-          make<Int>(1),
-          make<Int>(2)
-            ),
-        make<Name>("bar")
-          )
-    );
+    CHECK_AST_EXP("foo.bar(2, 3).test[1](1, 2).bar",
+                  make<MemberOp>(make<CallIndexOp>(make<MemberOp>(make<CallMemberOp>(make<Id>("foo"), make<Name>("bar"),
+                                                                                     make<Int>(2), make<Int>(3)),
+                                                                  make<Name>("test")),
+                                                   make<Int>(1), make<Int>(1), make<Int>(2)),
+                                 make<Name>("bar")));
 
     CHECK_ERROR_EXP("foo(", "unexpected end of file, expected a ')' token");
   }
 
   CATCH_SECTION("member expressions") {
     CHECK_AST_EXP("foo.bar", make<MemberOp>(make<Id>("foo"), make<Name>("bar")));
-    CHECK_AST_EXP("foo.bar + foo.baz", make<BinaryOp>(TokenType::Plus, make<MemberOp>(make<Id>("foo"), make<Name>("bar")),
-                                                      make<MemberOp>(make<Id>("foo"), make<Name>("baz"))));
+    CHECK_AST_EXP("foo.bar + foo.baz",
+                  make<BinaryOp>(TokenType::Plus, make<MemberOp>(make<Id>("foo"), make<Name>("bar")),
+                                 make<MemberOp>(make<Id>("foo"), make<Name>("baz"))));
     CHECK_AST_EXP("foo.@\"hello world\"", make<MemberOp>(make<Id>("foo"), make<Name>("hello world")));
     CHECK_AST_EXP("1.foo", make<MemberOp>(make<Int>(1), make<Name>("foo")));
     CHECK_AST_EXP("2.2.@\"hello world\"", make<MemberOp>(make<Float>(2.2), make<Name>("hello world")));
     CHECK_AST_EXP("foo.bar.baz", make<MemberOp>(make<MemberOp>(make<Id>("foo"), make<Name>("bar")), make<Name>("baz")));
-    CHECK_AST_EXP("foo.bar\n.baz", make<MemberOp>(make<MemberOp>(make<Id>("foo"), make<Name>("bar")), make<Name>("baz")));
+    CHECK_AST_EXP("foo.bar\n.baz",
+                  make<MemberOp>(make<MemberOp>(make<Id>("foo"), make<Name>("bar")), make<Name>("baz")));
     CHECK_AST_EXP("foo\n.\nbar\n.\nbaz",
                   make<MemberOp>(make<MemberOp>(make<Id>("foo"), make<Name>("bar")), make<Name>("baz")));
     CHECK_AST_EXP("@foo", make<MemberOp>(make<Self>(), make<Name>("foo")));

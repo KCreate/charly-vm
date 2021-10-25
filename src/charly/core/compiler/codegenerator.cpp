@@ -33,7 +33,6 @@ using namespace charly::core::compiler::ir;
 using namespace charly::core::runtime;
 
 ref<IRModule> CodeGenerator::compile() {
-
   // register the module function
   DCHECK(m_unit->ast->statements.size() == 1);
   DCHECK(m_unit->ast->statements.front()->type() == Node::Type::Function);
@@ -79,7 +78,6 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
   uint8_t argc = ast->ir_info.argc;
   uint8_t minargc = ast->ir_info.minargc;
   if (minargc < argc) {
-
     // emit initial jump table
     Label labels[argc];
     Label body_label = m_builder.reserve_label();
@@ -154,25 +152,25 @@ ref<ir::IRInstruction> CodeGenerator::generate_load(const ValueLocation& locatio
 }
 
 ref<ir::IRInstruction> CodeGenerator::generate_store(const ValueLocation& location) {
-    switch (location.type) {
-      case ValueLocation::Type::Invalid: {
-        FAIL("expected valid value location");
-        return nullptr;
-      }
-      case ValueLocation::Type::Id: {
-        FAIL("expected id value location to be replaced with real location");
-        return nullptr;
-      }
-      case ValueLocation::Type::LocalFrame: {
-        return m_builder.emit_setlocal(location.as.local_frame.index);
-      }
-      case ValueLocation::Type::FarFrame: {
-        return m_builder.emit_setfar(location.as.far_frame.depth, location.as.far_frame.index);
-      }
-      case ValueLocation::Type::Global: {
-        return m_builder.emit_setglobal(location.name);
-      }
+  switch (location.type) {
+    case ValueLocation::Type::Invalid: {
+      FAIL("expected valid value location");
+      return nullptr;
     }
+    case ValueLocation::Type::Id: {
+      FAIL("expected id value location to be replaced with real location");
+      return nullptr;
+    }
+    case ValueLocation::Type::LocalFrame: {
+      return m_builder.emit_setlocal(location.as.local_frame.index);
+    }
+    case ValueLocation::Type::FarFrame: {
+      return m_builder.emit_setfar(location.as.far_frame.depth, location.as.far_frame.index);
+    }
+    case ValueLocation::Type::Global: {
+      return m_builder.emit_setglobal(location.name);
+    }
+  }
 }
 
 uint8_t CodeGenerator::generate_spread_tuples(const std::vector<ref<ast::Expression>>& vec) {
@@ -207,7 +205,6 @@ uint8_t CodeGenerator::generate_spread_tuples(const std::vector<ref<ast::Express
 }
 
 void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target) {
-
   // collect the elements before and after a potential spread element
   std::vector<ref<UnpackTargetElement>> before_elements;
   std::vector<ref<UnpackTargetElement>> after_elements;
@@ -232,7 +229,6 @@ void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target) 
   m_builder.emit_dup();
 
   if (target->object_unpack) {
-
     // emit the symbols to extract from the source value
     for (auto begin = target->elements.rbegin(); begin != target->elements.rend(); begin++) {
       const ref<UnpackTargetElement>& element = *begin;
@@ -328,7 +324,6 @@ bool CodeGenerator::inspect_enter(const ref<Block>& node) {
 
 bool CodeGenerator::inspect_enter(const ref<Return>& node) {
   if (active_function()->class_constructor) {
-
     // class constructors always return the local self value
     if (!isa<Null>(node->expression)) {
       apply(node->expression);
@@ -337,7 +332,6 @@ bool CodeGenerator::inspect_enter(const ref<Return>& node) {
 
     m_builder.emit_jmp(active_return_label());
   } else {
-
     // store return value at the return value slot
     apply(node->expression);
     m_builder.emit_setreturn();
@@ -714,7 +708,7 @@ bool CodeGenerator::inspect_enter(const ref<IndexAssignment>& node) {
       break;
     }
 
-    // target[index] op= source
+      // target[index] op= source
   }
 
   return false;
@@ -856,7 +850,6 @@ bool CodeGenerator::inspect_enter(const ref<ast::CallIndexOp>& node) {
 }
 
 bool CodeGenerator::inspect_enter(const ref<Declaration>& node) {
-
   // global declarations
   if (node->ir_location.type == ValueLocation::Type::Global) {
     if (node->constant) {
@@ -897,11 +890,9 @@ bool CodeGenerator::inspect_enter(const ref<UnpackDeclaration>& node) {
 
 bool CodeGenerator::inspect_enter(const ref<ast::If>& node) {
   if (node->else_block) {
-
     // if (x) {} else {}
     ref<BinaryOp> op = cast<BinaryOp>(node->condition);
     if (op && op->operation == TokenType::And) {
-
       // if (lhs && rhs) {} else {}
       Label else_label = m_builder.reserve_label();
       Label end_label = m_builder.reserve_label();
@@ -916,7 +907,6 @@ bool CodeGenerator::inspect_enter(const ref<ast::If>& node) {
       apply(node->else_block);
       m_builder.place_label(end_label);
     } else if (op && op->operation == TokenType::Or) {
-
       // if (lhs || rhs) {} else {}
       Label then_label = m_builder.reserve_label();
       Label else_label = m_builder.reserve_label();
@@ -933,7 +923,6 @@ bool CodeGenerator::inspect_enter(const ref<ast::If>& node) {
       apply(node->else_block);
       m_builder.place_label(end_label);
     } else {
-
       // if (x) {} else {}
       Label else_label = m_builder.reserve_label();
       Label end_label = m_builder.reserve_label();
@@ -947,11 +936,9 @@ bool CodeGenerator::inspect_enter(const ref<ast::If>& node) {
       m_builder.place_label(end_label);
     }
   } else {
-
     // if (x) {}
     ref<BinaryOp> op = cast<BinaryOp>(node->condition);
     if (op && op->operation == TokenType::And) {
-
       // if (lhs && rhs) {}
       Label end_label = m_builder.reserve_label();
       apply(op->lhs);
@@ -961,7 +948,6 @@ bool CodeGenerator::inspect_enter(const ref<ast::If>& node) {
       apply(node->then_block);
       m_builder.place_label(end_label);
     } else if (op && op->operation == TokenType::Or) {
-
       // if (lhs || rhs) {}
       Label true_label = m_builder.reserve_label();
       Label end_label = m_builder.reserve_label();
@@ -973,7 +959,6 @@ bool CodeGenerator::inspect_enter(const ref<ast::If>& node) {
       apply(node->then_block);
       m_builder.place_label(end_label);
     } else {
-
       // if (x) {}
       Label end_label = m_builder.reserve_label();
       apply(node->condition);
@@ -995,7 +980,6 @@ bool CodeGenerator::inspect_enter(const ref<ast::While>& node) {
 
   ref<BinaryOp> op = cast<BinaryOp>(node->condition);
   if (op && op->operation == TokenType::And) {
-
     // while (lhs && rhs) {}
     Label body_label = m_builder.reserve_label();
     m_builder.place_label(continue_label);
@@ -1008,7 +992,6 @@ bool CodeGenerator::inspect_enter(const ref<ast::While>& node) {
     m_builder.emit_jmp(continue_label);
     m_builder.place_label(break_label);
   } else if (op && op->operation == TokenType::Or) {
-
     // while (lhs || rhs) {}
     Label body_label = m_builder.reserve_label();
     m_builder.place_label(continue_label);
@@ -1021,7 +1004,6 @@ bool CodeGenerator::inspect_enter(const ref<ast::While>& node) {
     m_builder.emit_jmp(continue_label);
     m_builder.place_label(break_label);
   } else {
-
     // while (x) {}
     m_builder.place_label(continue_label);
     apply(node->condition);
@@ -1078,11 +1060,10 @@ bool CodeGenerator::inspect_enter(const ref<ast::Try>& node) {
   apply(node->catch_block);
   m_builder.place_label(catch_end);
 
-  return  false;
+  return false;
 }
 
 bool CodeGenerator::inspect_enter(const ref<ast::TryFinally>& node) {
-
   /*
    * this method generates a lot of excess blocks in most cases
    * subsequent dead-code elimination passes will remove these blocks
@@ -1147,7 +1128,7 @@ bool CodeGenerator::inspect_enter(const ref<ast::TryFinally>& node) {
   m_builder.place_label(normal_handler);
   apply(node->finally_block);
 
-  return  false;
+  return false;
 }
 
 bool CodeGenerator::inspect_enter(const ref<ast::Switch>& node) {
@@ -1184,7 +1165,7 @@ bool CodeGenerator::inspect_enter(const ref<ast::Switch>& node) {
     Label block_label = case_labels[index];
     m_builder.place_label(block_label);
 
-    m_builder.update_stack(1); // pop remaining condition value off stack
+    m_builder.update_stack(1);  // pop remaining condition value off stack
     m_builder.emit_pop();
     apply(case_node->block);
     m_builder.emit_jmp(end_label);

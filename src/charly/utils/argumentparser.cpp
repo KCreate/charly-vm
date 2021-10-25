@@ -24,8 +24,8 @@
  * SOFTWARE.
  */
 
-#include <iostream>
 #include <algorithm>
+#include <iostream>
 
 #include "charly/utils/argumentparser.h"
 
@@ -36,26 +36,26 @@ using FlagGroup = ArgumentParser::FlagGroup;
 
 const std::string ArgumentParser::USAGE_MESSAGE = "Usage: charly [filename] [flags] [--] [arguments]";
 
-  const std::string ArgumentParser::LICENSE =
-    "MIT License \n"
-    "\n"
-    "Copyright (c) 2017 - 2021 Leonard Schütz \n"
-    "\n"
-    "Permission is hereby granted, free of charge, to any person obtaining a copy \n"
-    "of this software and associated documentation files (the \"Software\"), to deal \n"
-    "in the Software without restriction, including without limitation the rights \n"
-    "to use, copy, modify, merge, publish, distribute, sublicense, and/or sell \n"
-    "copies of the Software, and to permit persons to whom the Software is \n"
-    "furnished to do so, subject to the following conditions: \n"
-    "The above copyright notice and this permission notice shall be included in all \n"
-    "copies or substantial portions of the Software. \n"
-    "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR \n"
-    "IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, \n"
-    "FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE \n"
-    "AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER \n"
-    "LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, \n"
-    "OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE \n"
-    "SOFTWARE.";
+const std::string ArgumentParser::LICENSE =
+  "MIT License \n"
+  "\n"
+  "Copyright (c) 2017 - 2021 Leonard Schütz \n"
+  "\n"
+  "Permission is hereby granted, free of charge, to any person obtaining a copy \n"
+  "of this software and associated documentation files (the \"Software\"), to deal \n"
+  "in the Software without restriction, including without limitation the rights \n"
+  "to use, copy, modify, merge, publish, distribute, sublicense, and/or sell \n"
+  "copies of the Software, and to permit persons to whom the Software is \n"
+  "furnished to do so, subject to the following conditions: \n"
+  "The above copyright notice and this permission notice shall be included in all \n"
+  "copies or substantial portions of the Software. \n"
+  "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR \n"
+  "IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, \n"
+  "FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE \n"
+  "AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER \n"
+  "LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, \n"
+  "OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE \n"
+  "SOFTWARE.";
 
 const std::string ArgumentParser::VERSION = "pre-alpha development release";
 
@@ -96,7 +96,6 @@ void ArgumentParser::init_argv(int argc, char** argv) {
     // disable the parsing of builtin arguments after '--' was found
     // in the argument stream
     if (parse_arguments) {
-
       // stop parsing charly CLI arguments
       if (arg == "--") {
         parse_arguments = false;
@@ -119,7 +118,6 @@ void ArgumentParser::init_argv(int argc, char** argv) {
       }
 
       if (found_flag) {
-
         // check if the flag requires an argument
         if (found_flag->argument.has_value()) {
           if (argi + 1 < argc) {
@@ -150,9 +148,9 @@ void ArgumentParser::init_env(char** environment) {
 void ArgumentParser::set_flag(const std::string& name, std::optional<std::string> argument) {
   if (ArgumentParser::CHARLY_FLAGS.count(name) == 0) {
     if (argument) {
-      ArgumentParser::CHARLY_FLAGS.insert({name, {argument.value()}});
+      ArgumentParser::CHARLY_FLAGS.insert({ name, { argument.value() } });
     } else {
-      ArgumentParser::CHARLY_FLAGS.insert({name, {}});
+      ArgumentParser::CHARLY_FLAGS.insert({ name, {} });
     }
   } else {
     if (argument) {

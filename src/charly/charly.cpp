@@ -25,8 +25,8 @@
  */
 
 #include "charly/charly.h"
-#include "charly/core/runtime/runtime.h"
 #include "charly/core/runtime/interpreter.h"
+#include "charly/core/runtime/runtime.h"
 
 namespace charly {
 
@@ -60,8 +60,7 @@ void print_runtime_debug_state(std::ostream& stream) {
         }
       }
     }
-
   }
 }
 
-}
+}  // namespace charly

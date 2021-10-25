@@ -24,8 +24,8 @@
  * SOFTWARE.
  */
 
-#include <list>
 #include <cmath>
+#include <list>
 
 #include "charly/core/compiler/passes/constant_folding_pass.h"
 #include "charly/utils/cast.h"
@@ -33,7 +33,6 @@
 namespace charly::core::compiler::ast {
 
 ref<Expression> ConstantFoldingPass::transform(const ref<Ternary>& node) {
-
   // remove dead code
   if (node->condition->is_constant_value()) {
     if (node->condition->truthyness()) {
@@ -126,7 +125,6 @@ ref<Expression> ConstantFoldingPass::transform(const ref<BinaryOp>& node) {
   // rewrite to float <-> float
   if ((isa<Int>(node->lhs) && isa<Float>(node->rhs)) || (isa<Float>(node->lhs) && isa<Int>(node->rhs))) {
     switch (node->operation) {
-
       // only perform type conversion for arithmetic operators
       case TokenType::Plus:
       case TokenType::Minus:
@@ -217,7 +215,6 @@ ref<Expression> ConstantFoldingPass::transform(const ref<UnaryOp>& node) {
 }
 
 ref<Expression> ConstantFoldingPass::transform(const ref<Id>& node) {
-
   // constant value propagation
   if (ref<Declaration> declaration = cast<Declaration>(node->declaration_node)) {
     if (declaration->constant && declaration->expression->is_constant_value()) {
@@ -229,7 +226,6 @@ ref<Expression> ConstantFoldingPass::transform(const ref<Id>& node) {
 }
 
 ref<Statement> ConstantFoldingPass::transform(const ref<If>& node) {
-
   // remove dead code
   if (node->condition->is_constant_value()) {
     if (node->condition->truthyness()) {
@@ -256,7 +252,6 @@ ref<Statement> ConstantFoldingPass::transform(const ref<If>& node) {
 }
 
 ref<Statement> ConstantFoldingPass::transform(const ref<While>& node) {
-
   // detect infinite loops and remove dead code
   if (node->condition->is_constant_value()) {
     if (node->condition->truthyness()) {

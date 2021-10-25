@@ -26,8 +26,8 @@
 
 #include <map>
 
-#include "charly/core/compiler/pass.h"
 #include "charly/core/compiler/ir/valuelocation.h"
+#include "charly/core/compiler/pass.h"
 
 #pragma once
 
@@ -47,6 +47,7 @@ class VariableAnalyzer;
 class FunctionScope {
   friend class BlockScope;
   friend class VariableAnalyzer;
+
 public:
   FunctionScope(ref<FunctionScope> parent_function, ref<BlockScope> parent_block, const ref<Function>& ast) :
     m_parent_function(parent_function), m_parent_block(parent_block), m_function_ast(ast) {}
@@ -64,6 +65,7 @@ private:
 class BlockScope {
   friend class FunctionScope;
   friend class VariableAnalyzer;
+
 public:
   BlockScope(ref<FunctionScope> parent_function, ref<BlockScope> parent_block, const ref<Block>& ast) :
     m_parent_function(parent_function), m_parent_block(parent_block), m_block_ast(ast) {}
@@ -79,6 +81,7 @@ static const ir::VariableId kInvalidVariableId = 0;
 
 class VariableAnalyzer {
   friend class VariableLocationPatchPass;
+
 public:
   VariableAnalyzer() {}
 

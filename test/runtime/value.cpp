@@ -62,7 +62,7 @@ CATCH_TEST_CASE("Immediate encoded values") {
     CATCH_CHECK(RawFloat::make(0.25).close_to(0.25));
     CATCH_CHECK(RawFloat::make(0.125).close_to(0.125));
     CATCH_CHECK(RawFloat::make(0.0625).close_to(0.0625));
-    CATCH_CHECK(RawFloat::make(25.1234).close_to(25.1234,   0.000000001));
+    CATCH_CHECK(RawFloat::make(25.1234).close_to(25.1234, 0.000000001));
     CATCH_CHECK(RawFloat::make(-25.1234).close_to(-25.1234, 0.000000001));
   }
 

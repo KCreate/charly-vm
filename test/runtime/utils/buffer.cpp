@@ -79,7 +79,8 @@ CATCH_TEST_CASE("Buffer") {
     CATCH_CHECK(buf.capacity() == 128);
     CATCH_CHECK(buf.size() == 84);
     CATCH_CHECK(buf.read_offset() == 12);
-    CATCH_CHECK_THAT(buf.buffer_string(), Equals("hello world\nteststringteststringhallo welthello world\nteststringteststringhallo welt"));
+    CATCH_CHECK_THAT(buf.buffer_string(),
+                     Equals("hello world\nteststringteststringhallo welthello world\nteststringteststringhallo welt"));
   }
 
   CATCH_SECTION("appends a string_view into the buffer") {
@@ -258,7 +259,7 @@ CATCH_TEST_CASE("Buffer") {
 
     CATCH_CHECK_THAT(buf.window_string(), Equals("hello world"));
 
-    buf.seek(0); // resets window
+    buf.seek(0);  // resets window
     buf.emit_string("foooo");
 
     CATCH_CHECK_THAT(buf.window_string(), Equals(""));

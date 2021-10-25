@@ -59,4 +59,4 @@ struct FunctionInfo {
   }
 };
 
-}  // namespace charly::core::compiler
+}  // namespace charly::core::compiler::ir

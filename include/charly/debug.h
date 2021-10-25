@@ -24,16 +24,15 @@
  * SOFTWARE.
  */
 
-#include <iostream>
-#include <iomanip>
+#include <unistd.h>
+#include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
-#include <cstddef>
+#include <iomanip>
+#include <iostream>
 #include <memory>
 #include <mutex>
-#include <chrono>
-#include <sstream>
-#include <unistd.h>
 
 #include "utils/buffer.h"
 
@@ -141,11 +140,11 @@ template <typename... Args>
 }
 
 #define CHECK(expr, ...)                                                        \
-    do {                                                                          \
-      if (UNLIKELY(!(expr))) {                                                    \
-        charly::failed_check(__FILE__, __LINE__, __func__, #expr, ##__VA_ARGS__); \
-      }                                                                           \
-    } while (0)
+  do {                                                                          \
+    if (UNLIKELY(!(expr))) {                                                    \
+      charly::failed_check(__FILE__, __LINE__, __func__, #expr, ##__VA_ARGS__); \
+    }                                                                           \
+  } while (0)
 
 #ifdef NDEBUG
   #define DCHECK(expr, ...)      \

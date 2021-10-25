@@ -970,7 +970,6 @@ ref<Expression> Parser::parse_builtin() {
 
   // check if this is a valid builtin name
   if (ir::kBuiltinNameMapping.count(name->value) == 0) {
-
     // eat remaining closing paren
     eat(TokenType::RightParen);
 
@@ -1149,7 +1148,6 @@ ref<Function> Parser::parse_function(FunctionFlags flags) {
   // only class functions may contain super statements
   // yield statements are allowed in all functions except class constructors
   if (flags.class_function) {
-
     // constructors cannot yield
     if (function_name->value.compare("constructor") == 0) {
       m_keyword_context._yield = false;
@@ -1174,7 +1172,6 @@ ref<Function> Parser::parse_function(FunctionFlags flags) {
   } else if (type(TokenType::LeftCurly)) {
     body = parse_block();
   } else {
-
     // allow foo(@x, @y) declarations inside classes
     if (flags.class_function && !flags.static_function) {
       ref<Null> null = make<Null>();
@@ -1230,8 +1227,8 @@ void Parser::parse_function_arguments(std::vector<ref<FunctionArgument>>& result
   if (skip(TokenType::LeftParen)) {
     if (!type(TokenType::RightParen)) {
       do {
-        bool self_initializer = false;      // func foo(@a)
-        bool spread_initializer = false;    // func foo(...a)
+        bool self_initializer = false;    // func foo(@a)
+        bool spread_initializer = false;  // func foo(...a)
 
         // store the location of a potential accessor token
         // and set the correct flag
@@ -1243,7 +1240,6 @@ void Parser::parse_function_arguments(std::vector<ref<FunctionArgument>>& result
         }
 
         if (m_token.type == TokenType::AtSign) {
-
           // the (@x, @y) syntax is only allowed inside
           // class member functions
           if (!(flags.class_function && !flags.static_function)) {

@@ -133,8 +133,7 @@ CATCH_TEST_CASE("Semantic") {
     COMPILE_ERROR("class x { property klass }", "'klass' cannot be the name of a property");
     COMPILE_ERROR("class x { property object_id }", "'object_id' cannot be the name of a property");
 
-    COMPILE_ERROR("class x { static property constructor }",
-                  "'constructor' cannot be the name of a static property");
+    COMPILE_ERROR("class x { static property constructor }", "'constructor' cannot be the name of a static property");
     COMPILE_ERROR("class x { static property name }", "'name' cannot be the name of a static property");
     COMPILE_ERROR("class x { static property parent }", "'parent' cannot be the name of a static property");
   }
@@ -184,8 +183,7 @@ CATCH_TEST_CASE("Semantic") {
   }
 
   CATCH_SECTION("checks for missing calls to parent constructor in subclasses") {
-    COMPILE_ERROR("class A extends B { constructor {} }",
-                  "missing call to super inside constructor of class 'A'");
+    COMPILE_ERROR("class A extends B { constructor {} }", "missing call to super inside constructor of class 'A'");
     COMPILE_ERROR("class A extends B { constructor { super.foo() } }",
                   "missing call to super inside constructor of class 'A'");
     COMPILE_OK("class A { constructor {} }");

@@ -80,7 +80,6 @@ void GrammarValidationCheck::inspect_leave(const ref<Function>& node) {
   bool default_argument_passed = false;
   bool spread_argument_passed = false;
   for (const ref<FunctionArgument>& argument : node->arguments) {
-
     // no parameters allowed after spread argument (...x)
     if (spread_argument_passed) {
       Location excess_arguments_location = argument->location();
@@ -104,7 +103,7 @@ void GrammarValidationCheck::inspect_leave(const ref<Function>& node) {
     if (argument->default_value) {
       default_argument_passed = true;
     } else if (default_argument_passed) {
-      m_console.error(argument, "argument '", argument->name->value , "' is missing a default value");
+      m_console.error(argument, "argument '", argument->name->value, "' is missing a default value");
     }
   }
 }

@@ -26,13 +26,13 @@
 
 #include <iomanip>
 
-#include "charly/utils/colorwriter.h"
 #include "charly/utils/buffer.h"
+#include "charly/utils/colorwriter.h"
 
 #include "charly/value.h"
 
-#include "charly/core/runtime/heap.h"
 #include "charly/core/runtime/compiled_module.h"
+#include "charly/core/runtime/heap.h"
 
 namespace charly::core::runtime {
 
@@ -91,7 +91,7 @@ size_t align_to_size(size_t size, size_t alignment) {
 
 void ObjectHeader::initialize_header(uintptr_t address, ShapeId shape_id, uint16_t count) {
   ObjectHeader* header = bitcast<ObjectHeader*>(address);
-  header->m_shape_id_and_survivor_count = static_cast<uint32_t>(shape_id); // survivor count initialized to 0
+  header->m_shape_id_and_survivor_count = static_cast<uint32_t>(shape_id);  // survivor count initialized to 0
   header->m_count = count;
   header->m_lock = 0;
   header->m_flags = Flag::kYoungGeneration;
@@ -232,8 +232,10 @@ bool RawValue::truthyness() const {
     switch (shape_id_not_object_int()) {
       case ShapeId::kFloat: {
         double v = RawFloat::cast(this).value();
-        if (v == 0.0) return false;
-        if (std::isnan(v)) return false;
+        if (v == 0.0)
+          return false;
+        if (std::isnan(v))
+          return false;
         return true;
       }
       case ShapeId::kBool: {
@@ -540,7 +542,7 @@ bool RawBool::value() const {
 
 RawBool RawBool::make(bool value) {
   if (value) {
-    return RawBool::cast((uintptr_t{1} << kShiftBool) | kTagBool);
+    return RawBool::cast((uintptr_t{ 1 } << kShiftBool) | kTagBool);
   } else {
     return RawBool::cast(kTagBool);
   }
@@ -551,7 +553,7 @@ SYMBOL RawSymbol::value() const {
 }
 
 RawSymbol RawSymbol::make(SYMBOL value) {
-  return RawSymbol::cast((uintptr_t{value} << kShiftSymbol) | kTagSymbol);
+  return RawSymbol::cast((uintptr_t{ value } << kShiftSymbol) | kTagSymbol);
 }
 
 size_t RawSmallString::length() const {

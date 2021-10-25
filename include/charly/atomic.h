@@ -52,4 +52,4 @@ struct atomic : public std::atomic<T> {
   }
 };
 
-}
+}  // namespace charly

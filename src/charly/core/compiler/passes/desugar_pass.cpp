@@ -32,7 +32,6 @@
 namespace charly::core::compiler::ast {
 
 ref<Statement> DesugarPass::transform(const ref<Block>& node) {
-
   // unwrap block(block(...))
   if (node->statements.size() == 1) {
     if (ref<Block> block = cast<Block>(node->statements.front())) {
@@ -74,7 +73,6 @@ void DesugarPass::inspect_leave(const ref<Import>& node) {
 }
 
 bool DesugarPass::inspect_enter(const ref<Spawn>& node) {
-
   // spawn { <body> } ->  spawn ->{ <body> }()
   if (ref<Block> block = cast<Block>(node->statement)) {
     ref<Function> func = make<Function>(true, make<Name>("anonymous"), block);
@@ -90,7 +88,6 @@ bool DesugarPass::inspect_enter(const ref<Spawn>& node) {
 }
 
 ref<Expression> DesugarPass::transform(const ref<FormatString>& node) {
-
   // format strings with only one element can be replaced with
   // a single caststring operation
   if (node->elements.size() == 1) {
@@ -101,7 +98,6 @@ ref<Expression> DesugarPass::transform(const ref<FormatString>& node) {
 }
 
 void DesugarPass::inspect_leave(const ref<Function>& node) {
-
   // emit self initializations of function arguments
   for (auto it = node->arguments.rbegin(); it != node->arguments.rend(); it++) {
     const ref<FunctionArgument>& arg = *it;
@@ -114,7 +110,6 @@ void DesugarPass::inspect_leave(const ref<Function>& node) {
 
   // wrap regular functions with yield expressions inside a generator wrapper function
   if (!node->arrow_function) {
-
     // check if this function contains any yield statements
     ref<Node> yield_node = Node::search(
       node->body,
@@ -154,7 +149,6 @@ void DesugarPass::inspect_leave(const ref<Function>& node) {
     //   }(a, b, rest))
     // }
     if (yield_node) {
-
       // wrapper arrow func
       ref<Function> func = make<Function>(true, make<Name>("generator_" + node->name->value), node->body);
 

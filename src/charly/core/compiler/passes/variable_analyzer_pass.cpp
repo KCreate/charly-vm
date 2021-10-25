@@ -71,7 +71,7 @@ VariableId VariableAnalyzer::declare_anonymous_variable(bool constant) {
   declaration.constant = constant;
   declaration.leaked = false;
   declaration.global = m_block->m_block_ast->repl_toplevel_block;
-  m_function->m_locals.insert({id, declaration});
+  m_function->m_locals.insert({ id, declaration });
 
   return id;
 }
@@ -88,9 +88,9 @@ VariableId VariableAnalyzer::declare_variable(const std::string& name, bool cons
   declaration.constant = constant;
   declaration.leaked = false;
   declaration.global = m_block->m_block_ast->repl_toplevel_block;
-  m_function->m_locals.insert({id, declaration});
+  m_function->m_locals.insert({ id, declaration });
 
-  m_block->m_locals.insert({name, id});
+  m_block->m_locals.insert({ name, id });
 
   return id;
 }
@@ -107,9 +107,9 @@ VariableId VariableAnalyzer::declare_argument(const std::string& name) {
   declaration.constant = false;
   declaration.leaked = false;
   declaration.global = m_block->m_block_ast->repl_toplevel_block;
-  m_function->m_locals.insert({id, declaration});
+  m_function->m_locals.insert({ id, declaration });
 
-  m_block->m_locals.insert({name, id});
+  m_block->m_locals.insert({ name, id });
 
   return id;
 }
@@ -137,7 +137,7 @@ VariableId VariableAnalyzer::lookup_variable(const std::string& name) {
   }
 
   VariableId id = get_variable_id();
-  m_global_variables.insert({id, name});
+  m_global_variables.insert({ id, name });
   return id;
 }
 
@@ -199,7 +199,6 @@ void VariableAnalyzer::patch_value_location(ValueLocation& location) const {
   ref<FunctionScope> search_function = m_function;
   uint8_t leaked_functions_counter = 0;
   while (search_function) {
-
     uint8_t local_index = 0;
     uint8_t heap_index = 0;
     for (const auto& entry : search_function->m_locals) {
@@ -252,7 +251,6 @@ void VariableAnalyzer::patch_value_location(ValueLocation& location) const {
 }
 
 VariableId VariableAnalyzerPass::declare_variable(const ref<Name>& name, const ref<Node>& declaration, bool constant) {
-
   // check if this block already contains a declaration for this variable
   if (m_analyzer.name_already_taken(name->value)) {
     VariableId id = m_analyzer.lookup_variable(name->value);
@@ -270,7 +268,7 @@ VariableId VariableAnalyzerPass::declare_variable(const ref<Name>& name, const r
   if (variable) {
     name->ir_location = ValueLocation::Id(variable);
   }
-  m_variable_declarations.insert({variable, declaration});
+  m_variable_declarations.insert({ variable, declaration });
 
   return variable;
 }
@@ -279,14 +277,14 @@ VariableId VariableAnalyzerPass::declare_argument(const ref<Name>& name, const r
   VariableId variable = m_analyzer.declare_argument(name->value);
   DCHECK(variable, "could not declare variable %", name->value);
   name->ir_location = ValueLocation::Id(variable);
-  m_variable_declarations.insert({variable, declaration});
+  m_variable_declarations.insert({ variable, declaration });
 
   return variable;
 }
 
 VariableId VariableAnalyzerPass::declare_anonymous_variable(const ref<Node>& declaration, bool constant) {
   VariableId variable = m_analyzer.declare_anonymous_variable(constant);
-  m_variable_declarations.insert({variable, declaration});
+  m_variable_declarations.insert({ variable, declaration });
   return variable;
 }
 
@@ -331,7 +329,6 @@ bool VariableAnalyzerPass::inspect_enter(const ref<Declaration>&) {
 }
 
 ref<Statement> VariableAnalyzerPass::transform(const ref<Declaration>& node) {
-
   // if this declaration declares a function or class, we declare the local
   // variable before processing the body
   //
@@ -378,7 +375,6 @@ void VariableAnalyzerPass::inspect_leave(const ref<Assignment>& node) {
 
 void VariableAnalyzerPass::inspect_leave(const ref<UnpackAssignment>& node) {
   for (const ref<UnpackTargetElement>& element : node->target->elements) {
-
     // lookup the symbol in the current block
     VariableId variable = m_analyzer.lookup_variable(element->name->value);
     if (variable) {

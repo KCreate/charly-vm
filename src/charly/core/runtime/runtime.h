@@ -24,11 +24,11 @@
  * SOFTWARE.
  */
 
-#include <mutex>
 #include <condition_variable>
 #include <list>
-#include <vector>
+#include <mutex>
 #include <stack>
+#include <vector>
 
 #include "charly/handle.h"
 

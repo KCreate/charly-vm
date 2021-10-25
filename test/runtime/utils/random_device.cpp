@@ -31,7 +31,6 @@
 using namespace charly::utils;
 
 CATCH_TEST_CASE("RandomDevice") {
-
   RandomDevice device;
 
   uint64_t a;

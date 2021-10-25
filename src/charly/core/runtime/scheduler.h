@@ -24,16 +24,16 @@
  * SOFTWARE.
  */
 
-#include <mutex>
 #include <condition_variable>
 #include <list>
-#include <vector>
-#include <stack>
+#include <mutex>
 #include <set>
+#include <stack>
+#include <vector>
 
+#include "charly/core/runtime/processor.h"
 #include "charly/core/runtime/thread.h"
 #include "charly/core/runtime/worker.h"
-#include "charly/core/runtime/processor.h"
 
 #pragma once
 

@@ -24,9 +24,9 @@
  * SOFTWARE.
  */
 
-#include <thread>
-#include <mutex>
 #include <condition_variable>
+#include <mutex>
+#include <thread>
 
 #include "charly/charly.h"
 
@@ -38,6 +38,7 @@ class Runtime;
 
 class GarbageCollector {
   friend class Heap;
+
 public:
   GarbageCollector(Runtime* runtime) :
     m_runtime(runtime),
@@ -53,10 +54,10 @@ public:
   }
 
   enum class State : uint8_t {
-    Idle,       // GC is not running and is waiting to be activated
-    Mark,       // GC is traversing the heap, marking live values
-    Evacuate,   // GC is compacting the heap
-    UpdateRef   // GC is updating references to moved objects
+    Idle,      // GC is not running and is waiting to be activated
+    Mark,      // GC is traversing the heap, marking live values
+    Evacuate,  // GC is compacting the heap
+    UpdateRef  // GC is updating references to moved objects
   };
 
   State state() const {
@@ -73,7 +74,6 @@ public:
   void request_gc();
 
 private:
-
   // concurrent worker main method
   void main();
 

@@ -31,13 +31,13 @@
 
 #include "charly/core/compiler/compiler.h"
 #include "charly/core/runtime/compiled_module.h"
+#include "charly/core/runtime/interpreter.h"
 #include "charly/core/runtime/runtime.h"
 #include "charly/core/runtime/thread.h"
 #include "charly/core/runtime/worker.h"
-#include "charly/core/runtime/interpreter.h"
 
-using boost::context::detail::make_fcontext;
 using boost::context::detail::jump_fcontext;
+using boost::context::detail::make_fcontext;
 
 namespace charly::core::runtime {
 

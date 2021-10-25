@@ -24,9 +24,9 @@
  * SOFTWARE.
  */
 
-#include <cerrno>
-#include <unistd.h>
 #include <sys/mman.h>
+#include <unistd.h>
+#include <cerrno>
 
 #include "charly/core/runtime/heap.h"
 #include "charly/core/runtime/runtime.h"

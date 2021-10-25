@@ -35,6 +35,7 @@ class ThreadLocalHandles;
 
 class HandleScope {
   CHARLY_NON_COPYABLE(HandleScope);
+
 public:
   HandleScope(Thread* thread) : m_thread(thread) {}
 
@@ -49,6 +50,7 @@ private:
 template <typename T>
 class Handle : public T {
   friend class ThreadLocalHandles;
+
 public:
   Handle(HandleScope& scope, RawValue value);
   ~Handle();
@@ -101,4 +103,4 @@ private:
 TYPE_NAMES(HANDLE_DEF)
 #undef HANDLE_DEF
 
-}
+}  // namespace charly::core::runtime
