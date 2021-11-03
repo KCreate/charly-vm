@@ -1,12 +1,15 @@
 #!/bin/sh
 
-for build_dir in cmake-build-*; do
-  mkdir -p "$build_dir"
-  cd "$build_dir" || exit
-  if test -f Makefile;
-  then
-    cmake --build . --target clean -- -j 6
-  fi
+rm -r cmake-build-debug
+rm -r cmake-build-release
 
-  cd ..
+mkdir -p cmake-build-debug
+mkdir -p cmake-build-release
+
+exit
+
+for build_dir in cmake-build-*; do
+  rm -r "$build_dir"
+  mkdir -p "$build_dir"
+  cmake -S . -DCMAKE_BUILD_TYPE=Debug -B "$build_dir"
 done

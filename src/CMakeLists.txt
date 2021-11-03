@@ -34,9 +34,22 @@ file(GLOB charlycore_SRC
   "libs/termcolor/termcolor.cpp"
 )
 
+# explicitly enable debug symbols in debug builds
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+
 find_package(Boost REQUIRED COMPONENTS context)
 
+# osx check
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  message("-- Detected apple installation")
+  add_compile_definitions(APPLE)
+  set(APPLE TRUE)
+  execute_process(COMMAND xcrun --show-sdk-path OUTPUT_VARIABLE OSXSDKPATH)
+  include_directories(BEFORE SYSTEM ${OSXSDKPATH})
+endif()
+
 add_library(libcharly ${charlycore_SRC})
+target_compile_features(libcharly PRIVATE cxx_std_17)
 if (Boost_FOUND)
   target_include_directories(libcharly PRIVATE ${Boost_INCLUDE_DIRS})
   target_link_libraries(libcharly Boost::context)
@@ -46,7 +59,6 @@ target_link_libraries(libcharly m)
 target_link_libraries(libcharly readline)
 target_link_libraries(libcharly pthread)
 target_include_directories(libcharly PRIVATE "./")
-target_compile_features(libcharly PRIVATE cxx_std_17)
 target_compile_options(libcharly PRIVATE
   -Wall
   -Wextra
@@ -60,7 +72,6 @@ target_compile_options(libcharly PRIVATE
   -Wno-register
   -Wno-extra-semi
   -ftemplate-backtrace-limit=8
-  -march=native
 )
 
 # enable link-time-optimization for release builds

@@ -1,18 +1,17 @@
 #!/bin/sh
 
 mkdir -p cmake-build-release
-cd cmake-build-release || exit
 
 # initial cmake run
-if ! test -f Makefile;
+if ! test -f cmake-build-release/Makefile;
 then
-  cmake .. -DCMAKE_BUILD_TYPE=Release
+  cmake -DCMAKE_BUILD_TYPE=Release -S . -B cmake-build-release
 fi
 
-if cmake --build . --target tests -j8;
+if cmake --build cmake-build-release -j12 --target tests charly;
 then
-  if ./tests;
+  if ./cmake-build-release/tests;
   then
-    sudo make install
+    sudo cmake --install cmake-build-release
   fi
 fi

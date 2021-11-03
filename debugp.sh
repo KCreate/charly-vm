@@ -1,16 +1,14 @@
 #!/bin/sh
 
 mkdir -p cmake-build-debug
-cd cmake-build-debug || exit
 
 # initial cmake run
-if ! test -f Makefile;
+if ! test -f cmake-build-debug/Makefile;
 then
-  cmake .. -DCMAKE_BUILD_TYPE=Debug
+  cmake -DCMAKE_BUILD_TYPE=Debug -S . -B cmake-build-debug
 fi
 
-if cmake --build . --target charly -j8;
+if cmake --build cmake-build-debug --target charly -j12;
 then
-  cd ..
   cmake-build-debug/charly "$@"
 fi

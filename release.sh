@@ -1,16 +1,14 @@
 #!/bin/sh
 
 mkdir -p cmake-build-release
-cd cmake-build-release || exit
 
 # initial cmake run
-if ! test -f Makefile;
+if ! test -f cmake-build-release/Makefile;
 then
-  cmake .. -DCMAKE_BUILD_TYPE=Release
+  cmake -DCMAKE_BUILD_TYPE=Release -S . -B cmake-build-release
 fi
 
-if cmake --build . --target charly -j8;
+if cmake --build cmake-build-release --target charly -j12;
 then
-  cd ..
   cmake-build-release/charly "$@"
 fi

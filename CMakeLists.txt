@@ -3,30 +3,31 @@ set(CMAKE_C_COMPILER_NAMES clang)
 set(CMAKE_CXX_COMPILER_NAMES clang++)
 project(charly-vm)
 
-file(MAKE_DIRECTORY cmake-build-debug cmake-build-minsizerel cmake-build-release cmake-build-relwithdebinfo)
+# create build directories
+file(MAKE_DIRECTORY cmake-build-debug cmake-build-release)
 
 # osx check
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   message("-- Detected apple installation")
   add_compile_definitions(APPLE)
   set(APPLE TRUE)
+  execute_process(COMMAND xcrun --show-sdk-path OUTPUT_VARIABLE OSXSDKPATH)
+  include_directories(BEFORE SYSTEM ${OSXSDKPATH})
 endif()
 
-# public headers
+# include directories
+include_directories(src)
 include_directories(include)
-
-# public headers
 include_directories(libs)
 
 # explicitly enable debug symbols in debug builds
-set(CMAKE_CXX_FLAGS_DEBUG  "-g")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
 
 # main executable
 add_subdirectory(src)
 add_executable(charly src/main.cpp)
-target_link_libraries(charly libcharly)
-target_include_directories(charly PRIVATE src)
 target_compile_features(charly PRIVATE cxx_std_17)
+target_link_libraries(charly libcharly)
 target_compile_options(charly PRIVATE
   -Wall
   -Wextra
@@ -40,7 +41,6 @@ target_compile_options(charly PRIVATE
   -Wno-register
   -Wno-extra-semi
   -ftemplate-backtrace-limit=8
-  -march=native
 )
 
 # enable link-time-optimization for release builds
@@ -70,10 +70,9 @@ file(GLOB tests_SRC
 )
 
 add_executable(tests ${tests_SRC})
+target_compile_features(tests PRIVATE cxx_std_17)
 target_link_libraries(tests Catch2::Catch2WithMain)
 target_link_libraries(tests libcharly)
-target_include_directories(tests PRIVATE src)
-target_compile_features(tests PRIVATE cxx_std_17)
 target_compile_definitions(tests PUBLIC CATCH_CONFIG_PREFIX_ALL)
 target_compile_options(tests PRIVATE
   -Wall
@@ -88,7 +87,6 @@ target_compile_options(tests PRIVATE
   -Wno-register
   -Wno-extra-semi
   -ftemplate-backtrace-limit=8
-  -march=native
 )
 
 # enable link-time-optimization for release builds
