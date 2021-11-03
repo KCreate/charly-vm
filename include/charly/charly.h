@@ -36,6 +36,8 @@
 #include "debug.h"
 #include "symbol.h"
 
+#include "utils/allocator.h"
+
 #pragma once
 
 namespace charly {
@@ -81,8 +83,6 @@ inline ref<T> cast(ref<O> node) {
   return std::dynamic_pointer_cast<T>(node);
 }
 
-static const size_t kPageSize = sysconf(_SC_PAGE_SIZE);
-
 static const size_t kPointerSize = sizeof(uintptr_t);
 
 inline uint64_t get_steady_timestamp() {
@@ -95,5 +95,8 @@ template <typename B, typename A>
 B bitcast(A&& value) {
   return *reinterpret_cast<B*>(&value);
 }
+
+static const int32_t kIntMin = -2147483647 - 1;
+static const int32_t kIntMax = 2147483647;
 
 }  // namespace charly

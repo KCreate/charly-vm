@@ -24,37 +24,38 @@
  * SOFTWARE.
  */
 
-//func times(n, cb) {
-//    let i = 0
-//    loop {
-//        if i == n break
-//        cb(i);
-//        i += 1
-//    }
-//}
+#include "charly/utils/allocator.h"
 
-//func repeat_string(string, n) {
-//    let result = ""
-//
-//    times(n, ->{
-//        result = "{result}{string}"
-//    })
-//
-//    return result
-//}
+#pragma once
 
-func determine_max_stack_size {
-    let counter = 0
-    try {
-        func recurse {
-            counter += 1
-            recurse()
-        }
-        recurse()
-    } catch(e) {
-        return (e, counter)
-    }
-}
+namespace charly::utils {
 
-let (error, stacklimit) = determine_max_stack_size()
-return (error, stacklimit)
+class GuardedBuffer {
+public:
+  GuardedBuffer(size_t size) : m_mapping(nullptr), m_size(size) {
+    DCHECK(size % kPageSize == 0);
+    DCHECK(size >= kPageSize);
+    m_mapping = Allocator::mmap(size + kPageSize * 2, kPageSize);
+    Allocator::protect_readwrite((void*)((uintptr_t)m_mapping + kPageSize), size);
+  }
+  ~GuardedBuffer() {
+    DCHECK(m_mapping != nullptr);
+    Allocator::munmap(m_mapping, m_size);
+    m_mapping = nullptr;
+    m_size = 0;
+  }
+
+  void* data() const {
+    return (void*)((uintptr_t)m_mapping + kPageSize);
+  }
+
+  size_t size() const {
+    return m_size - kPageSize * 2;
+  }
+
+private:
+  void* m_mapping;
+  size_t m_size;
+};
+
+}  // namespace charly::utils

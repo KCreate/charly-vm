@@ -69,17 +69,16 @@ private:
   uint32_t last_char() const;                  // return the last read char or \0
 
   // character identification
-  bool is_whitespace(uint32_t cp) const;    // \r \t ' '
-  bool is_decimal(uint32_t cp) const;       // 0-9
-  bool is_hex(uint32_t cp) const;           // 0-9a-fA-F
-  bool is_binary(uint32_t cp) const;        // 0-1
-  bool is_octal(uint32_t cp) const;         // 0-7
-  bool is_alpha_lower(uint32_t cp) const;   // a-z
-  bool is_alpha_upper(uint32_t cp) const;   // A-Z
-  bool is_alpha(uint32_t cp) const;         // a-zA-Z
-  bool is_alphanumeric(uint32_t cp) const;  // a-zA-Z0-9
-  bool is_id_begin(uint32_t cp) const;      // alpha $ _
-  bool is_id_part(uint32_t cp) const;       // alpha $ _ numeric
+  static bool is_whitespace(uint32_t cp);    // \r \t ' '
+  static bool is_decimal(uint32_t cp);       // 0-9
+  static bool is_hex(uint32_t cp);           // 0-9a-fA-F
+  static bool is_binary(uint32_t cp);        // 0-1
+  static bool is_octal(uint32_t cp);         // 0-7
+  static bool is_alpha_lower(uint32_t cp);   // a-z
+  static bool is_alpha_upper(uint32_t cp);   // A-Z
+  static bool is_alpha(uint32_t cp);         // a-zA-Z
+  static bool is_id_begin(uint32_t cp);      // alpha $ _
+  static bool is_id_part(uint32_t cp);       // alpha $ _ numeric
 
   // consume some token type
   void consume_whitespace(Token& token);

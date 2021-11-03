@@ -52,7 +52,7 @@ void Assembler::assemble() {
     shared_info->owner_module = m_runtime_module.get();
     m_runtime_module->function_table.push_back(shared_info);
     shared_info->name = function->ast->name->value;
-    shared_info->name_symbol = crc32_string(function->ast->name->value);
+    shared_info->name_symbol = crc32::hash_string(function->ast->name->value);
     shared_info->ir_info = function->ast->ir_info;
     DCHECK(function->ast->ir_info.valid);
 
@@ -66,7 +66,7 @@ void Assembler::assemble() {
     Label bytecode_section = reserve_label();
     align_to_pointer();
     place_label(function->head);
-    m_runtime_module->buffer->emit_ptr(shared_info);
+    m_runtime_module->buffer.write_ptr((uintptr_t)shared_info);
 
     // emit inline cache section
     align_to_pointer();
@@ -114,8 +114,11 @@ void Assembler::assemble() {
   // fill placeholders with the actual offsets to the labels
   patch_unresolved_labels();
 
+  // enable memory protection
+  m_runtime_module->buffer.protect();
+
   // write final pointers into function structs
-  uintptr_t base_address = (uintptr_t)m_runtime_module->buffer->data();
+  uintptr_t base_address = (uintptr_t)m_runtime_module->buffer.data();
   for (SharedFunctionInfo* func : m_runtime_module->function_table) {
     func->buffer_base_ptr = base_address;
     func->bytecode_base_ptr = base_address + func->bytecode_offset;
@@ -133,14 +136,11 @@ void Assembler::assemble() {
       entry.instruction_ptr = base_address + entry.instruction_offset;
     }
   }
-
-  // enable memory protection
-  m_runtime_module->buffer->set_readonly(true);
 }
 
 void Assembler::align_to_pointer() {
-  while (m_runtime_module->buffer->size() % 8) {
-    m_runtime_module->buffer->emit_u8(0);
+  while (m_runtime_module->buffer.size() % 8) {
+    m_runtime_module->buffer.write_u8(0);
   }
 }
 
@@ -150,29 +150,29 @@ void Assembler::encode_instruction(const ref<IRInstruction>& instruction) {
 
   // opcode
   place_label(instruction_label);
-  m_runtime_module->buffer->emit_u8(static_cast<uint8_t>(instruction->opcode));
+  m_runtime_module->buffer.write_u8(static_cast<uint8_t>(instruction->opcode));
 
   // operands
   for (const ref<IROperand>& op : instruction->operands) {
     switch (op->get_type()) {
       case OperandType::Count8: {
-        m_runtime_module->buffer->emit_u8(cast<IROperandCount8>(op)->value);
+        m_runtime_module->buffer.write_u8(cast<IROperandCount8>(op)->value);
         break;
       }
       case OperandType::Count16: {
-        m_runtime_module->buffer->emit_u16(cast<IROperandCount16>(op)->value);
+        m_runtime_module->buffer.write_u16(cast<IROperandCount16>(op)->value);
         break;
       }
       case OperandType::Index8: {
-        m_runtime_module->buffer->emit_u8(cast<IROperandIndex8>(op)->value);
+        m_runtime_module->buffer.write_u8(cast<IROperandIndex8>(op)->value);
         break;
       }
       case OperandType::Index16: {
-        m_runtime_module->buffer->emit_u16(cast<IROperandIndex16>(op)->value);
+        m_runtime_module->buffer.write_u16(cast<IROperandIndex16>(op)->value);
         break;
       }
       case OperandType::Symbol: {
-        m_runtime_module->buffer->emit_u32(crc32_string(cast<IROperandSymbol>(op)->value));
+        m_runtime_module->buffer.write_u32(crc32::hash_string(cast<IROperandSymbol>(op)->value));
         break;
       }
       case OperandType::Offset: {
@@ -180,11 +180,11 @@ void Assembler::encode_instruction(const ref<IRInstruction>& instruction) {
         break;
       }
       case OperandType::Immediate: {
-        m_runtime_module->buffer->emit_ptr(cast<IROperandImmediate>(op)->value.raw());
+        m_runtime_module->buffer.write_ptr(cast<IROperandImmediate>(op)->value.raw());
         break;
       }
       case OperandType::ICIndex: {
-        m_runtime_module->buffer->emit_u16(cast<IROperandICIndex>(op)->value);
+        m_runtime_module->buffer.write_u16(cast<IROperandICIndex>(op)->value);
         break;
       }
     }
@@ -197,31 +197,36 @@ Label Assembler::reserve_label() {
 
 void Assembler::place_label(Label label) {
   DCHECK(m_placed_labels.count(label) == 0);
-  m_placed_labels.insert({ label, m_runtime_module->buffer->size() });
+  m_placed_labels.insert({ label, m_runtime_module->buffer.tellp() });
 }
 
 void Assembler::write_relative_label_reference(Label label, Label other) {
-  m_unresolved_labels.insert({ m_runtime_module->buffer->size(), { label, other } });
-  m_runtime_module->buffer->emit_u32(0x0);
+  m_unresolved_labels.insert({ m_runtime_module->buffer.tellp(), { label, other } });
+  m_runtime_module->buffer.write_u32(0x0);
 }
 
 void Assembler::patch_unresolved_labels() {
+  utils::Buffer& buf = m_runtime_module->buffer;
+
+  auto p = buf.tellp();
+
   for (const auto& entry : m_unresolved_labels) {
     Label referenced_label = entry.second.label;
     Label base = entry.second.base;
 
     // calculate the relative offset
-    uint32_t referenced_offset = offset_of_label(referenced_label);
-    uint32_t base_offset = offset_of_label(base);
-    int32_t relative_offset = referenced_offset - base_offset;
+    int64_t referenced_offset = offset_of_label(referenced_label);
+    int64_t base_offset = offset_of_label(base);
+    int64_t relative_offset = referenced_offset - base_offset;
+    DCHECK(relative_offset >= kIntMin && relative_offset <= kIntMax);
 
     // write relative offset to patch offset
     uint32_t patch_offset = entry.first;
-    m_runtime_module->buffer->seek(patch_offset);
-    m_runtime_module->buffer->emit_i32(relative_offset);
+    buf.seekp(patch_offset);
+    buf.write_i32((int32_t)relative_offset);
   }
 
-  m_runtime_module->buffer->seek(-1);
+  buf.seekp(p);
 }
 
 uint32_t Assembler::offset_of_label(Label label) {

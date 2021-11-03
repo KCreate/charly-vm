@@ -128,7 +128,7 @@ struct IRStringTableEntry {
   SYMBOL hash;
   std::string value;
 
-  IRStringTableEntry(const std::string& string) : hash(crc32_string(string)), value(string) {}
+  IRStringTableEntry(const std::string& string) : hash(crc32::hash_string(string)), value(string) {}
 };
 
 struct IRFunction {

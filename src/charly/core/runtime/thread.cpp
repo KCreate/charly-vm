@@ -219,7 +219,15 @@ void Thread::entry_main_thread() {
     return;
   }
 
-  auto unit = Compiler::compile(boot_path, boot_file, CompilationUnit::Type::Module);
+  utils::Buffer boot_file_buffer;
+  std::string line;
+  while (std::getline(boot_file, line)) {
+    boot_file_buffer << line;
+    boot_file_buffer.write_utf8_cp('\n');
+  }
+
+  debuglnf("boot_file_buffer.size() = %", boot_file_buffer.size());
+  auto unit = Compiler::compile(boot_path, boot_file_buffer, CompilationUnit::Type::Module);
   if (unit->console.has_errors()) {
     unit->console.dump_all(std::cerr);
     debuglnf("Could not compile charly runtime boot file (%)", boot_path);

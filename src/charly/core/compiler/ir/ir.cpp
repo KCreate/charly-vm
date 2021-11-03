@@ -367,7 +367,7 @@ void IRModule::dump(std::ostream& out) const {
   for (const std::string& entry : this->symbol_table) {
     writer.fg(Color::Grey, "  - ");
     writer.fg(Color::Red, " \"", entry, "\"");
-    writer.fg(Color::Grey, " hash=", std::hex, crc32_string(entry), std::dec);
+    writer.fg(Color::Grey, " hash=", std::hex, crc32::hash_string(entry), std::dec);
     out << "\n";
   }
   out << "\n";

@@ -61,10 +61,6 @@ public:
   static ref<CompilationUnit> compile(const std::string& filepath,
                                       utils::Buffer& source,
                                       CompilationUnit::Type type = CompilationUnit::Type::ReplInput);
-
-  static ref<CompilationUnit> compile(const std::string& filepath,
-                                      std::istream& source,
-                                      CompilationUnit::Type type = CompilationUnit::Type::ReplInput);
 };
 
 }  // namespace charly::core::compiler

@@ -95,7 +95,7 @@ void Node::dump(std::ostream& out, bool print_location) const {
     std::string line;
     bool first_line = true;
     while (std::getline(child_stream, line)) {
-      if (line.size()) {
+      if (!line.empty()) {
         if (i != child_nodes.size() - 1) {
           if (first_line) {
             writer << "├─" << line << '\n';
@@ -161,7 +161,7 @@ void Bool::dump_info(std::ostream& out) const {
 void Char::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';
-  writer.fg(Color::Red, '\'', utils::Buffer::u8(this->value), '\'');
+  writer.fg(Color::Red, '\'', utf8::codepoint_to_string(this->value), '\'');
 }
 
 void String::dump_info(std::ostream& out) const {
@@ -177,7 +177,7 @@ void Symbol::dump_info(std::ostream& out) const {
 }
 
 bool Tuple::assignable() const {
-  if (elements.size() == 0)
+  if (elements.empty())
     return false;
 
   bool spread_passed = false;

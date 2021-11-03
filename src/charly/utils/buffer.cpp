@@ -29,172 +29,109 @@
 #include <iomanip>
 
 #include "charly/charly.h"
-#include "charly/utf8.h"
 #include "charly/utils/buffer.h"
-#include "charly/utils/colorwriter.h"
 
 namespace charly::utils {
 
-void BufferBase::seek(size_t offset) {
-  // -1 seeks to end of buffer
-  if (offset == (size_t)(-1)) {
-    offset = m_writeoffset;
-  }
-
-  CHECK(offset <= m_size);
-  m_writeoffset = offset;
-
-  if (m_readoffset > m_writeoffset) {
-    m_readoffset = m_writeoffset;
-  }
-
-  reset_window();
+void Buffer::write_buffer(const Buffer& other) {
+  write(other.data(), other.size());
 }
 
-void BufferBase::reset_window() {
-  m_windowoffset = m_readoffset;
+void Buffer::write_utf8_cp(uint32_t cp) {
+  char tmpbuf[4];
+  char* endptr = utf8::append(cp, tmpbuf);
+  DCHECK(endptr != nullptr);
+  size_t length = endptr - tmpbuf;
+  DCHECK(length <= 4);
+  this->write(tmpbuf, length);
 }
 
-void BufferBase::emit_block(const void* data, size_t length) {
-  write_to_offset(m_writeoffset, data, length);
-  m_writeoffset += length;
-}
+int64_t Buffer::read_utf8_cp() {
+  setg(eback(), gptr(), pptr());
 
-void BufferBase::emit_zeroes(size_t size) {
-  reserve_space(m_writeoffset + size);
-  std::memset(data() + m_writeoffset, 0, size);
-  m_writeoffset += size;
-  update_size();
-}
-
-void BufferBase::emit_buffer(const BufferBase& other) {
-  char* other_data = other.data();
-  size_t other_size = other.size();
-
-  // use a temporary buffer if we're copying ourselves
-  if (data() == other.data()) {
-    char* tmp_buf = (char*)alloca(other_size);
-    std::memcpy(tmp_buf, other_data, other_size);
-    write_to_offset(m_writeoffset, tmp_buf, other_size);
-  } else {
-    write_to_offset(m_writeoffset, other_data, other_size);
-  }
-  m_writeoffset += other_size;
-}
-
-void BufferBase::emit_string(const std::string& str) {
-  write_to_offset(m_writeoffset, str.c_str(), str.size());
-  m_writeoffset += str.size();
-}
-
-void BufferBase::emit_string(const char* str) {
-  size_t length = std::strlen(str);
-  write_to_offset(m_writeoffset, str, length);
-  m_writeoffset += length;
-}
-
-void BufferBase::emit_string_view(const std::string_view& view) {
-  write_to_offset(m_writeoffset, view.data(), view.size());
-  m_writeoffset += view.size();
-}
-
-std::string BufferBase::buffer_string() const {
-  if (m_size == 0)
-    return {};
-
-  return { data(), m_size };
-}
-
-std::string BufferBase::window_string() const {
-  size_t window_size = m_readoffset - m_windowoffset;
-
-  if (window_size == 0)
-    return {};
-
-  return { data() + m_windowoffset, window_size };
-}
-
-std::string_view BufferBase::buffer_view() const {
-  if (m_size == 0)
-    return {};
-
-  return { data(), m_size };
-}
-
-std::string_view BufferBase::window_view() const {
-  size_t window_size = m_readoffset - m_windowoffset;
-
-  if (window_size == 0)
-    return {};
-
-  return { data() + m_windowoffset, window_size };
-}
-
-SYMBOL BufferBase::buffer_hash() const {
-  return crc32_block(data(), m_size);
-}
-
-SYMBOL BufferBase::window_hash() const {
-  return crc32_block(data() + m_windowoffset, window_size());
-}
-
-void BufferBase::emit_utf8_cp(uint32_t cp) {
-  reserve_space(m_writeoffset + 4);
-  char* buffer_initial = data() + m_writeoffset;
-  char* buffer_ptr = buffer_initial;
-  buffer_ptr = utf8::append(cp, buffer_ptr);
-  m_writeoffset += buffer_ptr - buffer_initial;
-  update_size();
-}
-
-uint32_t BufferBase::peek_utf8_cp(uint32_t nth) const {
-  char* buffer_initial = data() + m_readoffset;
-  char* buffer_ptr = buffer_initial;
-
-  if (m_readoffset >= m_writeoffset)
-    return '\0';
-
-  // walk forward to requested character
-  while (nth--) {
-    CHECK(utf8::next(buffer_ptr, data() + m_writeoffset));
-
-    // overflow check
-    if (buffer_ptr >= data() + m_writeoffset) {
-      return '\0';
-    }
-  }
-
-  uint32_t cp;
-  CHECK(utf8::peek_next(buffer_ptr, data() + m_writeoffset, cp));
-  return cp;
-}
-
-uint32_t BufferBase::read_utf8_cp() {
-  if (m_readoffset >= m_writeoffset)
-    return L'\0';
-
-  // advance by one utf8 codepoint
-  char* buffer_initial = data() + m_readoffset;
-  char* buffer_ptr = buffer_initial;
+  char* read_original = gptr();
+  char* read_head = read_original;
   uint32_t codepoint;
-  CHECK(utf8::next(buffer_ptr, data() + m_writeoffset, codepoint));
-  m_readoffset += buffer_ptr - buffer_initial;
+  bool success = utf8::next(read_head, egptr(), codepoint);
+
+  // FIXME?: treats invalid codepoint as EOF
+  if (!success) {
+    return -1;
+  }
+
+  size_t sequence_length = read_head - read_original;
+  DCHECK(sequence_length <= 4);
+  gbump((int)sequence_length);
   return codepoint;
 }
 
-std::string BufferBase::utf8_encode_cp(uint32_t cp) {
-  Buffer buffer;
-  buffer.emit_utf8_cp(cp);
-  return buffer.buffer_string();
+int64_t Buffer::peek_utf8_cp(uint32_t nth) {
+  setg(eback(), gptr(), pptr());
+
+  char* read_original = gptr();
+  char* read_end = egptr();
+  char* read_head = read_original;
+
+  while (nth--) {
+    CHECK(utf8::next(read_head, read_end));
+  }
+
+  uint32_t codepoint;
+  bool success = utf8::peek_next(read_head, read_end, codepoint);
+
+  if (!success) {
+    return -1;
+  }
+
+  return codepoint;
 }
 
-void BufferBase::dump(std::ostream& out, bool absolute) const {
-  BufferBase::hexdump(data(), m_size, out, absolute);
+void Buffer::protect() {
+  if (!m_protected) {
+    reserve_space(m_capacity, true);
+    Allocator::protect_read(m_buffer, m_capacity);
+    m_protected = true;
+  }
 }
 
-void BufferBase::hexdump(const char* buffer, size_t size, std::ostream& out, bool absolute) {
-  utils::ColorWriter writer(out);
+void Buffer::unprotect() {
+  if (m_protected) {
+    DCHECK((uintptr_t)m_buffer % kPageSize == 0);
+    DCHECK(m_capacity % kPageSize == 0);
+    DCHECK(m_capacity >= kPageSize);
+    Allocator::protect_readwrite(m_buffer, m_capacity);
+    m_protected = false;
+  }
+}
 
+void Buffer::clear() {
+  unprotect();
+  setp(m_buffer, m_buffer + m_capacity);
+  setg(m_buffer, m_buffer, pptr());
+  std::iostream::clear();
+  std::memset(m_buffer, 0, m_capacity);
+}
+
+void Buffer::reset_window() {
+  m_window_start = gptr() - eback();
+}
+
+char* Buffer::release_buffer() {
+  char* buf = m_buffer;
+  DCHECK(buf != nullptr);
+
+  unprotect();
+  m_buffer = nullptr;
+  m_capacity = 0;
+
+  return m_buffer;
+}
+
+void Buffer::dump(std::ostream& out, bool absolute) const {
+  Buffer::hexdump(data(), size(), out, absolute);
+}
+
+void Buffer::hexdump(const char* buffer, size_t size, std::ostream& out, bool absolute) {
   for (size_t offset = 0; offset < size; offset += 16) {
     out << "0x";
     out << std::hex;
@@ -232,190 +169,244 @@ void BufferBase::hexdump(const char* buffer, size_t size, std::ostream& out, boo
   }
 }
 
-void BufferBase::write_to_offset(size_t target_offset, const void* source, size_t size) {
-  reserve_space(target_offset + size);
-  std::memmove(data() + target_offset, source, size);
-
-  // update size if we moved past the buffer end
-  if (target_offset + size > m_size) {
-    m_size = target_offset + size;
-  }
+char* Buffer::data() const {
+  return pbase();
 }
 
-void BufferBase::update_size() {
-  if (m_writeoffset > m_size) {
-    m_size = m_writeoffset;
-  }
+size_t Buffer::capacity() const {
+  return m_capacity;
 }
 
-void BufferBase::clear() {
-  std::memset(m_buffer, 0, m_capacity);
+size_t Buffer::size() const {
+  return pptr() - pbase();
 }
 
-std::streamsize BufferBase::xsputn(const char* data, std::streamsize size) {
-  emit_block(data, size);
-  return size;
+size_t Buffer::window_size() const {
+  char* g = gptr();
+  char* window_start = eback() + m_window_start;
+  DCHECK(window_start <= g);
+  return g - window_start;
 }
 
-int32_t BufferBase::overflow(int32_t ch) {
-  emit_utf8_cp(ch);
-  return 0;
+size_t Buffer::write_offset() const {
+  return pptr() - pbase();
 }
 
-void Buffer::reserve_space(size_t size) {
-  if (m_capacity >= size) {
-    return;
-  }
-
-  size_t new_capacity = m_capacity ? m_capacity * 2 : 32;
-  while (new_capacity < size) {
-    new_capacity *= 2;
-  }
-
-  void* new_buffer = std::realloc(m_buffer, new_capacity);
-  if (new_buffer == nullptr) {
-    FAIL("could not realloc buffer");
-  }
-
-  // initialize new memory
-  std::memset((char*)new_buffer + m_capacity, 0, new_capacity - m_capacity);
-
-  m_buffer = new_buffer;
-  m_capacity = new_capacity;
+size_t Buffer::read_offset() const {
+  return gptr() - pbase();
 }
 
-char* Buffer::release_buffer() {
-  if (m_buffer == nullptr) {
-    return nullptr;
-  }
-
-  char* buffer = static_cast<char*>(m_buffer);
-
-  m_buffer = nullptr;
-  m_capacity = 0;
-  m_size = 0;
-  m_writeoffset = 0;
-  m_readoffset = 0;
-  m_windowoffset = 0;
-
-  return buffer;
+size_t Buffer::window_offset() const {
+  return m_window_start;
 }
 
-bool ProtectedBuffer::is_readonly() const {
-  return m_readonly;
+bool Buffer::is_protected() const {
+  return m_protected;
 }
 
-void ProtectedBuffer::set_readonly(bool option) {
-  CHECK((uintptr_t)m_buffer % kPageSize == 0);
-  CHECK(m_capacity % kPageSize == 0);
-
-  auto flags = option ? PROT_READ : PROT_READ | PROT_WRITE;
-  if (mprotect(m_buffer, m_capacity, flags) != 0) {
-    FAIL("could not mprotect region");
-  }
-
-  m_readonly = option;
+bool Buffer::is_page_aligned() const {
+  return ((uintptr_t)m_buffer % kPageSize) == 0;
 }
 
-void ProtectedBuffer::reserve_space(size_t size) {
-  if (size < kPageSize) {
-    size = kPageSize;
-  }
-
-  if (m_capacity >= size) {
-    return;
-  }
-
-  size_t new_capacity = m_capacity ? m_capacity * 2 : kPageSize;
-  while (new_capacity < size) {
-    new_capacity *= 2;
-  }
-
-  DCHECK(new_capacity % kPageSize == 0);
-  void* new_buffer = aligned_alloc(kPageSize, new_capacity);
-  if (new_buffer == nullptr) {
-    FAIL("could not realloc buffer");
-  }
-
-  // initialize new memory
-  std::memset(new_buffer, 0, new_capacity);
-
-  // copy old buffer contents
-  std::memcpy(new_buffer, m_buffer, m_size);
-
-  // free old buffer
-  bool was_readonly = m_readonly;
-  if (m_buffer) {
-    set_readonly(false);  // disable memory protections for the freed memory
-    std::free(m_buffer);
-  }
-
-  m_buffer = new_buffer;
-  m_capacity = new_capacity;
-  set_readonly(was_readonly);
+SYMBOL Buffer::hash() const {
+  return crc32::hash_block(data(), size());
 }
 
-void ProtectedBuffer::clear() {
-  bool was_readonly = is_readonly();
-  set_readonly(false);
-  BufferBase::clear();
-  set_readonly(was_readonly);
+std::string Buffer::str() const {
+  return { data(), size() };
 }
 
-void GuardedBuffer::reserve_space(size_t size) {
-  DCHECK(size >= kPageSize);
-  DCHECK((size % kPageSize) == 0, "size needs to be aligned to page size");
+std::string Buffer::window_str() const {
+  return { data() + m_window_start, window_size() };
+}
 
-  if (m_capacity >= size) {
-    return;
+std::string_view Buffer::view() const {
+  return { data(), size() };
+}
+
+std::string_view Buffer::window_view() const {
+  return { data() + m_window_start, window_size() };
+}
+
+Buffer* Buffer::setbuf(std::streambuf::traits_type::char_type* data, std::streamsize size) {
+  clean();
+  m_buffer = data;
+  m_capacity = size;
+  return this;
+}
+
+std::streambuf::traits_type::int_type Buffer::underflow() {
+  if (gptr() < egptr()) {
+    return std::streambuf::traits_type::to_int_type(*gptr());
   }
 
-  size_t new_capacity = m_capacity ? m_capacity * 2 : kPageSize;
-  while (new_capacity < size) {
-    new_capacity *= 2;
+  if (egptr() < pptr()) {
+    setg(pbase(), pbase() + (gptr() - eback()), pptr());
+    return underflow();
   }
 
-  size_t mapping_size = new_capacity + kPageSize * 2;
+  return std::streambuf::traits_type::eof();
+}
 
-  DCHECK(new_capacity % kPageSize == 0);
-  DCHECK(mapping_size % kPageSize == 0);
+std::streambuf::traits_type::int_type Buffer::pbackfail(std::streambuf::traits_type::int_type c) {
+  if (std::streambuf::traits_type::eq_int_type(c, std::streambuf::traits_type::eof())) {
+    if (eback() < gptr()) {
+      gbump(-1);
+      return std::streambuf::traits_type::not_eof(c);
+    } else {
+      return c;
+    }
+  } else {
+    if (eback() >= gptr()) {
+      return std::streambuf::traits_type::eof();
+    }
+    gbump(-1);
 
-  void* mapping = mmap(nullptr, mapping_size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-  void* mapping_buffer_base = (void*)((uintptr_t)mapping + kPageSize);
-  if (mapping == nullptr) {
-    FAIL("could not map buffer");
-  }
-
-  // copy old buffer contents and unmap old buffer
-  if (m_buffer) {
-    // mark new buffer as writeable
-    if (mprotect(mapping_buffer_base, new_capacity, PROT_READ | PROT_WRITE) != 0) {
-      FAIL("could not mprotect region");
+    if (!std::streambuf::traits_type::eq_int_type(c, *gptr())) {
+      *gptr() = std::streambuf::traits_type::to_char_type(c);
     }
 
-    std::memcpy(mapping_buffer_base, m_buffer, m_size);
-    DCHECK(m_mapping_base && m_mapping_size);
-    munmap(m_mapping_base, m_mapping_size);
+    return c;
   }
-
-  m_mapping_base = mapping;
-  m_mapping_size = mapping_size;
-  m_buffer = mapping_buffer_base;
-  m_capacity = new_capacity;
-
-  // re-protect newly mapped region
-  set_readonly(false);
 }
 
-void GuardedBuffer::dealloc_mapping() {
-  if (m_mapping_base) {
-    munmap(m_mapping_base, m_mapping_size);
-    m_mapping_base = nullptr;
-    m_mapping_size = 0;
+std::streambuf::traits_type::int_type Buffer::overflow(std::streambuf::traits_type::int_type c) {
+  if (std::streambuf::traits_type::eq_int_type(c, std::streambuf::traits_type::eof())) {
+    return std::streambuf::traits_type::not_eof(c);
   }
 
-  m_buffer = nullptr;
-  m_capacity = 0;
+  // write position available
+  if (pptr() < epptr()) {
+    sputc(std::streambuf::traits_type::to_char_type(c));
+    return c;
+  }
+
+  // grow buffer
+  reserve_space(m_capacity * 2);
+  sputc(std::streambuf::traits_type::to_char_type(c));
+  return c;
+}
+
+std::streambuf::traits_type::pos_type Buffer::seekpos(std::streambuf::traits_type::pos_type pos,
+                                                      std::ios_base::openmode openmode) {
+  return seekoff(pos, std::ios_base::beg, openmode);
+}
+
+char* calculate_target_offset(
+  std::streambuf::traits_type::off_type off, std::ios_base::seekdir seekdir, char* base, char* cur, char* max) {
+  switch (seekdir) {
+    case std::ios_base::beg: {
+      return base + off;
+    }
+    case std::ios_base::end: {
+      return max + off;
+    }
+    case std::ios_base::cur: {
+      return cur + off;
+    }
+    default: {
+      FAIL("unexpected seekdir");
+    }
+  }
+}
+
+std::streambuf::traits_type::pos_type Buffer::seekoff(std::streambuf::traits_type::off_type off,
+                                                      std::ios_base::seekdir seekdir,
+                                                      std::ios_base::openmode openmode) {
+  if (openmode & std::ios_base::in) {
+    auto base = eback();
+    auto cur = gptr();
+    auto max = pptr();
+    auto req = calculate_target_offset(off, seekdir, base, cur, max);
+    if (req < base || req > max) {
+      return { std::streambuf::traits_type::off_type(-1) };
+    }
+    setg(base, req, max);
+    return std::streambuf::traits_type::pos_type{ req - base };
+  }
+
+  if (openmode & std::ios_base::out) {
+    auto base = pbase();
+    auto cur = pptr();
+    auto max = epptr();
+    auto req = calculate_target_offset(off, seekdir, base, cur, max);
+    if (req < base || req > max) {
+      return { std::streambuf::traits_type::off_type(-1) };
+    }
+    setp(base, max);
+
+    size_t ppos_remaining = req - base;
+    while (ppos_remaining >= kIntMax) {
+      pbump(kIntMax);
+      ppos_remaining -= kIntMax;
+    }
+    pbump((int)ppos_remaining);
+
+    return std::streambuf::traits_type::pos_type{ req - base };
+  }
+
+  FAIL("unexpected openmode");
+}
+
+void Buffer::reserve_space(size_t size, bool page_aligned) {
+  bool was_protected = is_protected();
+
+  unprotect();
+
+  auto p = tellp();
+  auto g = tellg();
+
+  DCHECK(m_buffer != nullptr);
+  DCHECK(m_capacity != 0);
+  DCHECK(p != -1);
+  DCHECK(g != -1);
+
+  // determine new capacity
+  size_t new_capacity = kDefaultCapacity;
+  while (new_capacity < size) {
+    new_capacity *= 2;
+  }
+
+  // determine if the new buffer needs to be aligned to the page size
+  bool page_align_new_buffer = page_aligned;
+  if (is_page_aligned() || was_protected) {
+    page_align_new_buffer = true;
+  }
+
+  // minimum one page buffer when aligning to page size
+  // we do not want mprotect to protect unrelated data later on
+  if (page_align_new_buffer && new_capacity < kPageSize) {
+    new_capacity = kPageSize;
+  }
+
+  size_t new_alignment = page_align_new_buffer ? kPageSize : 8;
+  char* new_buffer = (char*)Allocator::realloc(m_buffer, m_capacity, new_capacity, new_alignment);
+  CHECK(new_buffer != nullptr, "could not realloc buffer");
+
+  m_buffer = new_buffer;
+  m_capacity = new_capacity;
+
+  setp(m_buffer, m_buffer + m_capacity);
+  seekp(p);
+  setg(m_buffer, m_buffer, pptr());
+  seekg(g);
+
+  CHECK(good());
+
+  if (was_protected) {
+    protect();
+  }
+}
+
+void Buffer::clean() {
+  if (m_buffer) {
+    unprotect();
+    Allocator::free(m_buffer);
+    m_buffer = nullptr;
+  }
+
+  setp(nullptr, nullptr);
+  setg(nullptr, nullptr, nullptr);
 }
 
 }  // namespace charly::utils

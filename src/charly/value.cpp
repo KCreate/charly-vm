@@ -29,6 +29,7 @@
 #include "charly/utils/buffer.h"
 #include "charly/utils/colorwriter.h"
 
+#include "charly/utf8.h"
 #include "charly/value.h"
 
 #include "charly/core/runtime/compiled_module.h"
@@ -566,18 +567,18 @@ const char* RawSmallString::data(const RawSmallString* value) {
 }
 
 SYMBOL RawSmallString::hashcode() const {
-  return crc32_block(RawSmallString::data(this), length());
+  return crc32::hash_block(RawSmallString::data(this), length());
 }
 
 RawSmallString RawSmallString::make_from_cp(uint32_t cp) {
   utils::Buffer buf(4);
-  buf.emit_utf8_cp(cp);
+  buf.write_utf8_cp(cp);
   DCHECK(buf.size() <= 4);
-  return make_from_memory(buf.data(), utils::Buffer::utf8_cp_length(cp));
+  return make_from_memory(buf.data(), utf8::sequence_length(cp));
 }
 
 RawSmallString RawSmallString::make_from_str(const std::string& string) {
-  return make_from_memory(string.c_str(), string.size());
+  return make_from_memory(string.data(), string.size());
 }
 
 RawSmallString RawSmallString::make_from_cstr(const char* value) {
@@ -611,7 +612,7 @@ const uint8_t* RawSmallBytes::data(const RawSmallBytes* value) {
 }
 
 SYMBOL RawSmallBytes::hashcode() const {
-  return crc32_block(bitcast<const char*>(RawSmallBytes::data(this)), length());
+  return crc32::hash_block(bitcast<const char*>(RawSmallBytes::data(this)), length());
 }
 
 RawSmallBytes RawSmallBytes::make_from_memory(const uint8_t* value, size_t length) {
@@ -793,7 +794,7 @@ const uint8_t* RawData::data() const {
 }
 
 SYMBOL RawData::hashcode() const {
-  return crc32_block(bitcast<const char*>(data()), length());
+  return crc32::hash_block(bitcast<const char*>(data()), length());
 }
 
 const char* RawLargeString::data() const {
@@ -837,7 +838,7 @@ void RawInstance::set_int_at(int64_t index, int64_t value) {
 }
 
 SYMBOL RawHugeBytes::hashcode() const {
-  return crc32_block(bitcast<const char*>(data()), length());
+  return crc32::hash_block(bitcast<const char*>(data()), length());
 }
 
 const uint8_t* RawHugeBytes::data() const {
@@ -859,7 +860,7 @@ void RawHugeBytes::set_length(size_t length) {
 }
 
 SYMBOL RawHugeString::hashcode() const {
-  return crc32_block(data(), length());
+  return crc32::hash_block(data(), length());
 }
 
 const char* RawHugeString::data() const {

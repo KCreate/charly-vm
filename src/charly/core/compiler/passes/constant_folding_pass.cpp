@@ -25,7 +25,6 @@
  */
 
 #include <cmath>
-#include <list>
 
 #include "charly/core/compiler/passes/constant_folding_pass.h"
 #include "charly/utils/cast.h"
@@ -295,8 +294,8 @@ ref<Expression> ConstantFoldingPass::transform(const ref<BuiltinOperation>& node
 
         case Node::Type::Char: {
           utils::Buffer tmpbuf(4);
-          tmpbuf.emit_utf8_cp(cast<Char>(expression)->value);
-          replacement = make<String>(tmpbuf.buffer_string());
+          tmpbuf.write_utf8_cp(cast<Char>(expression)->value);
+          replacement = make<String>(tmpbuf.str());
           break;
         }
 
@@ -339,8 +338,8 @@ ref<Expression> ConstantFoldingPass::transform(const ref<BuiltinOperation>& node
 
         case Node::Type::Char: {
           utils::Buffer tmpbuf(4);
-          tmpbuf.emit_utf8_cp(cast<Char>(expression)->value);
-          replacement = make<Symbol>(tmpbuf.buffer_string());
+          tmpbuf.write_utf8_cp(cast<Char>(expression)->value);
+          replacement = make<Symbol>(tmpbuf.str());
           break;
         }
 

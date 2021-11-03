@@ -72,7 +72,7 @@ Heap::Heap(Runtime* runtime) {
   std::lock_guard<std::mutex> locker(m_mutex);
 
   // allocate address space for twice the size of the heap
-  // this allows us to trim (munmap) the unaligned portions of the
+  // this allows us to munmap the unaligned portions of the
   // allocation, leaving us with a perfectly aligned heap section
   void* map_base = mmap(nullptr, kHeapTotalSize * 2, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   uintptr_t heap_unaligned = bitcast<uintptr_t>(map_base);

@@ -26,7 +26,7 @@
 
 #include <boost/context/detail/fcontext.hpp>
 
-#include "charly/utils/buffer.h"
+#include "charly/utils/guarded_buffer.h"
 
 #include "charly/handle.h"
 #include "charly/value.h"
@@ -58,15 +58,15 @@ public:
   }
 
   void* hi() const {
-    return (void*)((uintptr_t)m_buffer.data() + m_buffer.capacity());
+    return (void*)((uintptr_t)m_buffer.data() + m_buffer.size());
   }
 
   size_t size() const {
-    return m_buffer.capacity();
+    return m_buffer.size();
   }
 
   void clear() {
-    m_buffer.clear();
+    std::memset(m_buffer.data(), 0, m_buffer.size());
   }
 
 private:

@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+#include <string>
+
 #pragma once
 
 namespace charly::utf8 {
@@ -33,7 +35,7 @@ namespace internal {
   const uint32_t TRAIL_SURROGATE_MAX = 0x0000dfff;
   const uint32_t CODE_POINT_MAX = 0x0010ffff;
 
-  uint32_t sequence_length(const char* buffer) {
+  inline uint32_t sequence_length(const char* buffer) {
     auto lead_byte = static_cast<uint8_t>(*buffer);
     if (lead_byte < 0x80) {
       return 1;
@@ -48,19 +50,19 @@ namespace internal {
     }
   }
 
-  bool is_surrogate(uint16_t cp) {
+  inline bool is_surrogate(uint16_t cp) {
     return (cp >= LEAD_SURROGATE_MIN && cp <= TRAIL_SURROGATE_MAX);
   }
 
-  bool is_trail(uint16_t cp) {
+  inline bool is_trail(uint16_t cp) {
     return ((cp & 0xff) >> 6) == 0x2;
   }
 
-  bool is_valid_code_point(uint32_t cp) {
+  inline bool is_valid_code_point(uint32_t cp) {
     return (cp <= CODE_POINT_MAX && !is_surrogate(cp));
   }
 
-  bool is_overlong_sequence(uint32_t cp, uint32_t length) {
+  inline bool is_overlong_sequence(uint32_t cp, uint32_t length) {
     if (cp < 0x80) {
       if (length != 1)
         return true;
@@ -75,7 +77,7 @@ namespace internal {
     return false;
   }
 
-  bool increase_safely(char*& buffer, const char* buffer_end) {
+  inline bool increase_safely(char*& buffer, const char* buffer_end) {
     if (++buffer == buffer_end) {
       return false;
     }
@@ -87,7 +89,7 @@ namespace internal {
     return true;
   }
 
-  bool decode_1(char*& buffer, const char* buffer_end, uint32_t& cp_out) {
+  inline bool decode_1(char*& buffer, const char* buffer_end, uint32_t& cp_out) {
     if (buffer == buffer_end) {
       return false;
     }
@@ -97,7 +99,7 @@ namespace internal {
     return true;
   }
 
-  bool decode_2(char*& buffer, const char* buffer_end, uint32_t& cp_out) {
+  inline bool decode_2(char*& buffer, const char* buffer_end, uint32_t& cp_out) {
     if (buffer == buffer_end) {
       return false;
     }
@@ -113,7 +115,7 @@ namespace internal {
     return true;
   }
 
-  bool decode_3(char*& buffer, const char* buffer_end, uint32_t& cp_out) {
+  inline bool decode_3(char*& buffer, const char* buffer_end, uint32_t& cp_out) {
     if (buffer == buffer_end) {
       return false;
     }
@@ -135,7 +137,7 @@ namespace internal {
     return true;
   }
 
-  bool decode_4(char*& buffer, const char* buffer_end, uint32_t& cp_out) {
+  inline bool decode_4(char*& buffer, const char* buffer_end, uint32_t& cp_out) {
     if (buffer == buffer_end) {
       return false;
     }
@@ -164,7 +166,21 @@ namespace internal {
   }
 }  // namespace internal
 
-[[nodiscard]] bool next(char*& buffer, const char* buffer_end, uint32_t& cp_out) {
+inline uint32_t sequence_length(uint32_t cp) {
+  if (cp < 0x80)
+    return 1;
+  if (cp < 0x800)
+    return 2;
+  if (cp < 0x10000)
+    return 3;
+  return 4;
+}
+
+[[nodiscard]] inline bool next(char*& buffer, const char* buffer_end, uint32_t& cp_out) {
+  if (buffer >= buffer_end) {
+    return false;
+  }
+
   char* original_buffer = buffer;
   uint32_t cp = 0;
   uint32_t length = internal::sequence_length(buffer);
@@ -193,16 +209,16 @@ namespace internal {
   return false;
 }
 
-[[nodiscard]] bool next(char*& buffer, const char* buffer_end) {
+[[nodiscard]] inline bool next(char*& buffer, const char* buffer_end) {
   uint32_t cp;
   return next(buffer, buffer_end, cp);
 }
 
-[[nodiscard]] bool peek_next(char* buffer, char* buffer_end, uint32_t& cp_out) {
+[[nodiscard]] inline bool peek_next(char* buffer, char* buffer_end, uint32_t& cp_out) {
   return next(buffer, buffer_end, cp_out);
 }
 
-[[nodiscard]] char* append(uint32_t cp, char* buffer) {
+[[nodiscard]] inline char* append(uint32_t cp, char* buffer) {
   if (!internal::is_valid_code_point(cp)) {
     return nullptr;
   }
@@ -224,6 +240,16 @@ namespace internal {
   }
 
   return buffer;
+}
+
+inline bool is_valid_codepoint(uint32_t cp) {
+  return internal::is_valid_code_point(cp);
+}
+
+inline std::string codepoint_to_string(uint32_t cp) {
+  char buf[4];
+  char* end = append(cp, buf);
+  return {buf, (size_t)(end - buf)};
 }
 
 }  // namespace charly::utf8

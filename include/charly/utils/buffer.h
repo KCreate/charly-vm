@@ -28,305 +28,165 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 
 #include "charly/symbol.h"
+#include "charly/utf8.h"
+#include "charly/utils/allocator.h"
 
 #pragma once
 
 namespace charly::utils {
 
-// base allocation unuaware buffer type
-// subclasses add the purpose-specific backing storage allocators
-// and protection mechanisms
-class BufferBase : private std::streambuf, public std::ostream, public std::istream {
-public:
-  BufferBase() :
-    std::ostream(this),
-    std::istream(this),
-    m_buffer(nullptr),
-    m_capacity(0),
-    m_size(0),
-    m_writeoffset(0),
-    m_readoffset(0),
-    m_windowoffset(0) {}
+class Buffer : public std::iostream, protected std::streambuf {
+  static const size_t kDefaultCapacity = 32;
 
-  BufferBase(BufferBase&& other) noexcept :
-    std::ostream(this),
-    std::istream(this),
-    m_buffer(other.m_buffer),
-    m_capacity(other.m_capacity),
-    m_size(other.m_size),
-    m_writeoffset(other.m_writeoffset),
-    m_readoffset(other.m_readoffset),
-    m_windowoffset(other.m_windowoffset) {
+public:
+  explicit Buffer(size_t initial_capacity = kDefaultCapacity) :
+    std::iostream(this), m_buffer(nullptr), m_capacity(0), m_window_start(0), m_protected(false) {
+    // determine initial buffer capacity
+    size_t rounded_capacity = kDefaultCapacity;
+    while (rounded_capacity < initial_capacity) {
+      rounded_capacity *= 2;
+    }
+
+    m_buffer = (char*)Allocator::alloc(rounded_capacity, 8);
+    m_capacity = rounded_capacity;
+
+    setp(m_buffer, m_buffer + m_capacity);
+    setg(m_buffer, m_buffer, pptr());
+  }
+
+  explicit Buffer(const std::string& string) : Buffer(string.size()) {
+    *this << string;
+  }
+
+  Buffer(const Buffer& other) : Buffer(other.size()) {
+    this->write(other.data(), std::streamsize(other.size()));
+  }
+
+  Buffer(Buffer&& other) noexcept : Buffer() {
+    m_buffer = other.m_buffer;
+    m_capacity = other.m_capacity;
+    bool is_protected = other.m_protected;
+
+    auto p = other.tellp();
+    auto g = other.tellg();
+
     other.m_buffer = nullptr;
     other.m_capacity = 0;
-    other.m_size = 0;
-    other.m_writeoffset = 0;
-    other.m_readoffset = 0;
-    other.m_windowoffset = 0;
+    other.setp(nullptr, nullptr);
+    other.setg(nullptr, nullptr, nullptr);
+    other.clear();
+
+    setp(m_buffer, m_buffer + m_capacity);
+    seekp(p);
+    setg(m_buffer, m_buffer, pptr());
+    seekg(g);
+
+    if (is_protected) {
+      protect();
+    }
   }
 
-  ~BufferBase() override {
-    m_buffer = nullptr;
-    m_capacity = 0;
-    m_size = 0;
-    m_writeoffset = 0;
-    m_readoffset = 0;
-    m_windowoffset = 0;
+  ~Buffer() override {
+    clean();
   }
 
-  // move write head to offset
-  void seek(size_t offset);
+  // write the contents of another buffer into this buffer
+  // the get area of the other buffer isn't modified
+  void write_buffer(const Buffer& other);
 
-  // reset the current read window
+  // write an utf8 codepoint to the buffer
+  void write_utf8_cp(uint32_t cp);
+
+  // write primitive types
+#define WRITE_PRIMITIVE(T, N)                     \
+  void write_##N(const T& value) {                \
+    this->write((char*)(void*)&value, sizeof(T)); \
+  }
+  WRITE_PRIMITIVE(uint8_t, u8)
+  WRITE_PRIMITIVE(uint16_t, u16)
+  WRITE_PRIMITIVE(uint32_t, u32)
+  WRITE_PRIMITIVE(uint64_t, u64)
+  WRITE_PRIMITIVE(int8_t, i8)
+  WRITE_PRIMITIVE(int16_t, i16)
+  WRITE_PRIMITIVE(int32_t, i32)
+  WRITE_PRIMITIVE(int64_t, i64)
+  WRITE_PRIMITIVE(uintptr_t, ptr)
+  WRITE_PRIMITIVE(void*, ptr)
+  WRITE_PRIMITIVE(float, float)
+  WRITE_PRIMITIVE(double, double)
+#undef WRITE_PRIMITIVE
+
+  // reads a single utf8 codepoint from the buffer
+  // returns -1 for EOF
+  int64_t read_utf8_cp();
+
+  // peek the next utf8 character from the buffer
+  // returns -1 for EOF
+  int64_t peek_utf8_cp(uint32_t nth = 0);
+
+  // protect / unprotect the backing buffer
+  void protect();
+  void unprotect();
+
+  // clear buffer content
+  void clear();
+
+  // reset buffer window to current read position
   void reset_window();
 
-  // emit a block into the buffer
-  void emit_block(const void* data, size_t size);
+  // acquire ownership of the backing buffer memory
+  // buffer appears cleared afterwards
+  char* release_buffer();
 
-  // emit size zeroes into the buffer
-  void emit_zeroes(size_t size);
-
-  // emit the contents of another buffer
-  void emit_buffer(const BufferBase& other);
-
-  // emit stdlib string into buffer
-  void emit_string(const std::string& string);
-
-  // emit null-terminated string into buffer
-  void emit_string(const char* string);
-
-  // emit string_view contents into buffer
-  void emit_string_view(const std::string_view& view);
-
-  // return a copy of the entire buffer
-  std::string buffer_string() const;
-  std::string str() const {
-    return buffer_string();
-  }
-
-  // return a copy of the current read window
-  std::string window_string() const;
-
-  // return a view of the entire buffer
-  std::string_view buffer_view() const;
-  std::string_view view() const {
-    return buffer_view();
-  }
-
-  // return a view of the current read window
-  std::string_view window_view() const;
-
-  // returns a hash value of the buffer or window
-  SYMBOL buffer_hash() const;
-  SYMBOL hash() const {
-    return buffer_hash();
-  }
-  SYMBOL window_hash() const;
-
-  // emit primitive types
-  // clang-format off
-  template <typename T>
-  void emit(T&& value) {
-    emit_block(&value, sizeof(T));
-  }
-  void emit_u8(uint8_t value) { emit(value); }
-  void emit_u16(uint16_t value) { emit(value); }
-  void emit_u32(uint32_t value) { emit(value); }
-  void emit_u64(uint64_t value) { emit(value); }
-  void emit_i8(int8_t value) { emit(value); }
-  void emit_i16(int16_t value) { emit(value); }
-  void emit_i32(int32_t value) { emit(value); }
-  void emit_i64(int64_t value) { emit(value); }
-  void emit_ptr(uintptr_t value) { emit(value); }
-  void emit_ptr(void* value) { emit(value); }
-  // clang-format on
-
-  // emit an utf8 encoded codepoint into the buffer
-  void emit_utf8_cp(uint32_t cp);
-
-  // peek the next utf8 encoded codepoint from the readoffset of the buffer
-  uint32_t peek_utf8_cp(uint32_t nth = 0) const;
-
-  // read the next utf8 encoded codepoint from the readoffset of the buffer
-  uint32_t read_utf8_cp();
-
-  // returns the amount of bytes neede to encode this
-  // utf8 codepoint into a character stream
-  static size_t utf8_cp_length(uint32_t cp) {
-    if (cp < 0x80)
-      return 1;
-    if (cp < 0x800)
-      return 2;
-    if (cp < 0x10000)
-      return 3;
-    return 4;
-  }
-
-  // encode some utf8 character into a string
-  static std::string utf8_encode_cp(uint32_t cp);
-  static constexpr auto u8 = utf8_encode_cp;
-
-  // format buffer as hexdump into out stream
+  // format buffer via hexdump into out stream
   void dump(std::ostream& out, bool absolute = false) const;
+
+  friend std::ostream& operator<<(std::ostream& out, const Buffer& buffer);
 
   // format some memory buffer as a hexdump into some output stream
   static void hexdump(const char* buffer, size_t size, std::ostream& out, bool absolute = false);
 
-  char* data() const {
-    return (char*)m_buffer;
-  }
-
-  size_t capacity() const {
-    return m_capacity;
-  }
-
-  size_t size() const {
-    return m_size;
-  }
-
-  size_t window_size() const {
-    return m_readoffset - m_windowoffset;
-  }
-
-  size_t write_offset() const {
-    return m_writeoffset;
-  }
-
-  size_t read_offset() const {
-    return m_readoffset;
-  }
-
-  size_t window_offset() const {
-    return m_windowoffset;
-  }
-
-  // reserve enough space in the backing buffer for size bytes
-  virtual void reserve_space(size_t size) = 0;
-
-  // clear buffer with 0
-  virtual void clear();
-
-  // std::stringbuf override
-  // write a block of data into the buffer
-  std::streamsize xsputn(const char* data, std::streamsize size) override;
-
-  // std::stringbuf override
-  // write a single character to the buffer
-  int32_t overflow(int32_t ch) override;
+  char* data() const;
+  size_t capacity() const;
+  size_t size() const;
+  size_t window_size() const;
+  size_t write_offset() const;
+  size_t read_offset() const;
+  size_t window_offset() const;
+  bool is_protected() const;
+  bool is_page_aligned() const;
+  SYMBOL hash() const;
+  std::string str() const;
+  std::string window_str() const;
+  std::string_view view() const;
+  std::string_view window_view() const;
 
 protected:
-  // copy size bytes from the source address to some target offset in the backing buffer
-  // grows the backing buffer to fit the write
-  void write_to_offset(size_t target_offset, const void* source, size_t size);
+  Buffer* setbuf(std::streambuf::traits_type::char_type* data, std::streamsize size) override;
+  std::streambuf::traits_type::int_type underflow() override;
+  std::streambuf::traits_type::int_type pbackfail(std::streambuf::traits_type::int_type c) override;
+  std::streambuf::traits_type::int_type overflow(std::streambuf::traits_type::int_type c) override;
+  std::streambuf::traits_type::pos_type seekpos(std::streambuf::traits_type::pos_type pos,
+                                                std::ios_base::openmode openmode) override;
+  std::streambuf::traits_type::pos_type seekoff(std::streambuf::traits_type::off_type off,
+                                                std::ios_base::seekdir seekdir,
+                                                std::ios_base::openmode openmode) override;
 
-  // advances the size offset if the previous write exceeded it
-  void update_size();
+protected:
+  // reserve at least *size* bytes of memory in the backing buffer
+  void reserve_space(size_t size, bool page_aligned = false);
 
-  void* m_buffer;         // pointer to backing storage
-  size_t m_capacity;      // total capacity of the backing storage
-  size_t m_size;          // total written bytes
-  size_t m_writeoffset;   // offset of the write head
-  size_t m_readoffset;    // offset of the read head
-  size_t m_windowoffset;  // offset of the window head
-};
+  // deallocate backing memory
+  void clean();
 
-// buffer backed by memory obtained via malloc
-class Buffer : public BufferBase {
-public:
-  Buffer() : BufferBase() {}
-
-  explicit Buffer(size_t initial_capacity) : Buffer() {
-    reserve_space(initial_capacity);
-  }
-
-  explicit Buffer(const std::string& string) : BufferBase() {
-    emit_string(string);
-  }
-
-  explicit Buffer(const BufferBase& other) : BufferBase() {
-    emit_buffer(other);
-  }
-
-  Buffer(Buffer&& other) noexcept : BufferBase(std::move(other)) {}
-
-  virtual ~Buffer() {
-    if (m_buffer) {
-      std::free(m_buffer);
-      m_buffer = nullptr;
-    }
-  }
-
-  virtual void reserve_space(size_t size) override;
-
-  // releases the backing buffer to the caller of the function
-  // buffer will be reset after this call
-  char* release_buffer();
-};
-
-// buffer that can be protected
-// internal buffer will always have a minimum size of the system page size
-// and will only grow in multiples of that size
-class ProtectedBuffer : public BufferBase {
-public:
-  ProtectedBuffer() : BufferBase(), m_readonly(false) {}
-
-  ProtectedBuffer(size_t initial_capacity) : ProtectedBuffer() {
-    reserve_space(initial_capacity);
-  }
-
-  ProtectedBuffer(const std::string& string) : ProtectedBuffer(string.size()) {
-    emit_string(string);
-  }
-
-  ProtectedBuffer(const ProtectedBuffer& other) : ProtectedBuffer(other.size()) {
-    emit_buffer(other);
-  }
-
-  virtual ~ProtectedBuffer() {
-    set_readonly(false);
-  }
-
-  bool is_readonly() const;
-  void set_readonly(bool option);
-  virtual void reserve_space(size_t size) override;
-  virtual void clear() override;
-
-private:
-  bool m_readonly;
-};
-
-class GuardedBuffer : public ProtectedBuffer {
-public:
-  GuardedBuffer() : ProtectedBuffer(), m_mapping_base(nullptr), m_mapping_size(0) {}
-
-  GuardedBuffer(size_t size) : GuardedBuffer() {
-    reserve_space(size);
-  }
-
-  GuardedBuffer(const std::string& string) : ProtectedBuffer(string.size()) {
-    emit_string(string);
-  }
-
-  GuardedBuffer(const GuardedBuffer& other) : GuardedBuffer(other.size()) {
-    emit_buffer(other);
-  }
-
-  virtual ~GuardedBuffer() {
-    dealloc_mapping();
-  }
-
-  virtual void reserve_space(size_t size) override;
-
-private:
-  void dealloc_mapping();
-
-  void* m_mapping_base;
-  size_t m_mapping_size;
+  char* m_buffer;
+  size_t m_capacity;
+  size_t m_window_start;
+  bool m_protected;
 };
 
 }  // namespace charly::utils

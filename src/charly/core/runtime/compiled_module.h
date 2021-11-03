@@ -65,7 +65,7 @@ struct SourceMapEntry {
 };
 
 struct StringTableEntry {
-  StringTableEntry(const std::string& value) : hash(crc32_string(value)), value(value) {}
+  StringTableEntry(const std::string& value) : hash(crc32::hash_string(value)), value(value) {}
 
   SYMBOL hash;
   std::string value;
@@ -107,11 +107,10 @@ struct SharedFunctionInfo {
 };
 
 struct CompiledModule {
-  CompiledModule() : buffer(make<utils::ProtectedBuffer>(32)) {}
+  CompiledModule() : buffer(32) {}
   ~CompiledModule() {
     for (SharedFunctionInfo* func : function_table) {
-      if (func)
-        delete func;
+      delete func;
     }
   }
 
@@ -123,7 +122,7 @@ struct CompiledModule {
   // for all the modules compiled functions
   //
   // the struct 'SharedFunctionInfo' contains offsets into this buffer
-  ref<utils::ProtectedBuffer> buffer;
+  utils::Buffer buffer;
 
   void dump(std::ostream& out) const;
 };

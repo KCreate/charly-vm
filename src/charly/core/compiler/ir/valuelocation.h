@@ -102,7 +102,7 @@ struct ValueLocation {
     ValueLocation loc;
     loc.type = Type::Global;
     loc.name = name;
-    loc.as.global.symbol = crc32_string(name);
+    loc.as.global.symbol = crc32::hash_string(name);
     return loc;
   }
 

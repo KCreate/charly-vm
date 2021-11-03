@@ -119,16 +119,4 @@ ref<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffe
   return unit;
 }
 
-ref<CompilationUnit> Compiler::compile(const std::string& filepath, std::istream& source, CompilationUnit::Type type) {
-  utils::Buffer file_buffer;
-  std::string line;
-
-  for (std::string line; std::getline(source, line);) {
-    file_buffer.emit_string(line);
-    file_buffer.emit_utf8_cp('\n');
-  }
-
-  return compile(filepath, file_buffer, type);
-}
-
 }  // namespace charly::core::compiler

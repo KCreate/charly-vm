@@ -38,6 +38,7 @@
 #include "charly/utils/buffer.h"
 
 #include "charly/core/compiler/compiler.h"
+#include "charly/core/compiler/ast.h"
 #include "charly/core/runtime/interpreter.h"
 #include "charly/core/runtime/runtime.h"
 
@@ -205,6 +206,7 @@ int32_t cli(DiagnosticConsole& console) {
     debuglnf("kHeapRegionPageCount                = %", kHeapRegionPageCount);
     debuglnf("kHeapRegionPossibleObjectAddresses  = %", kHeapRegionPossibleObjectAddresses);
     debuglnf("kHeapInitialMappedRegionCount       = %", kHeapInitialMappedRegionCount);
+    debuglnf("kPageSize                           = %", kPageSize);
     debuglnf("");
 
     debuglnf("# %interpreter.h%", termcolor::yellow, termcolor::reset);

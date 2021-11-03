@@ -165,15 +165,15 @@ RawValue Interpreter::add_string_string(Thread* thread, RawString left, RawStrin
   size_t total_size = left_size + right_size;
 
   utils::Buffer buf(total_size);
-  buf.emit_block(RawString::data(&left), left_size);
-  buf.emit_block(RawString::data(&right), right_size);
+  buf.write(RawString::data(&left), left_size);
+  buf.write(RawString::data(&right), right_size);
 
   if (total_size <= RawSmallString::kMaxLength) {
     return RawSmallString::make_from_memory(buf.data(), total_size);
   } else if (total_size <= RawLargeString::kMaxLength) {
-    return thread->runtime()->create_string(thread, buf.data(), total_size, buf.buffer_hash());
+    return thread->runtime()->create_string(thread, buf.data(), total_size, buf.hash());
   } else {
-    SYMBOL buf_hash = buf.buffer_hash();
+    SYMBOL buf_hash = buf.hash();
     char* buffer = buf.release_buffer();
     CHECK(buffer, "could not release buffer");
     return thread->runtime()->acquire_string(thread, buffer, total_size, buf_hash);
@@ -266,7 +266,7 @@ OP(stringconcat) {
     frame->peek(depth).to_string(buffer);
   }
 
-  SYMBOL buf_hash = buffer.buffer_hash();
+  SYMBOL buf_hash = buffer.hash();
   size_t buf_size = buffer.size();
   char* buf_ptr = buffer.release_buffer();
   CHECK(buf_ptr, "could not release buffer");

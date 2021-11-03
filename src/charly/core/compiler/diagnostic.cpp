@@ -39,7 +39,7 @@ DiagnosticConsole::DiagnosticConsole(const std::string& filepath, const utils::B
   int begin = 0;
   int end = 0;
 
-  std::string source = buffer.buffer_string();
+  std::string source = buffer.str();
   while ((end = source.find('\n', begin)) >= 0) {
     m_source.push_back(source.substr(begin, end - begin));
     begin = end + 1;

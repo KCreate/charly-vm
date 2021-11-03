@@ -133,7 +133,7 @@ template <typename... Args>
 
   print_runtime_debug_state(buf);
 
-  std::string str = buf.buffer_string();
+  std::string str = buf.str();
   debugln_concurrent(str.c_str());
 
   std::abort();
