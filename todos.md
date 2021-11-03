@@ -1,13 +1,5 @@
 # Todos
 
-- Refactor lexer to check for EOF, not null byte
-  - Make null byte an error character
-  - Read methods can have different outcomes
-    - A codepoint was successfully read
-    - Reached EOF
-    - A codeppint was read but its invalid
-    - There was not enough space left to read a full codepoint (same as EOF?)
-
 - Interpreter value comparison method
 
 - Setup clang-tidy configuration and fix warnings and errors

@@ -44,7 +44,7 @@ class Lexer {
 public:
   Lexer(utils::Buffer& source, DiagnosticConsole& console, uint32_t row = 0, uint32_t column = 0) :
     m_console(console), m_source(source), m_row(row), m_column(column) {
-    m_last_character = '\0';
+    m_last_character = -1;
     m_mode = Mode::TopLevel;
   }
 
@@ -55,30 +55,26 @@ public:
   // skips over whitespace, newlines and comments
   Token read_token();
 
-  // returns the last read token
-  Token last_token();
-
 private:
   CHARLY_NON_COPYABLE(Lexer);
 
   void increment_row();
   void increment_column(size_t delta);
 
-  uint32_t peek_char(uint32_t nth = 0) const;  // peek the next char
-  uint32_t read_char();                        // read the next char
-  uint32_t last_char() const;                  // return the last read char or \0
+  int64_t peek_char(uint32_t nth = 0);
+  int64_t read_char();
 
   // character identification
-  static bool is_whitespace(uint32_t cp);    // \r \t ' '
-  static bool is_decimal(uint32_t cp);       // 0-9
-  static bool is_hex(uint32_t cp);           // 0-9a-fA-F
-  static bool is_binary(uint32_t cp);        // 0-1
-  static bool is_octal(uint32_t cp);         // 0-7
-  static bool is_alpha_lower(uint32_t cp);   // a-z
-  static bool is_alpha_upper(uint32_t cp);   // A-Z
-  static bool is_alpha(uint32_t cp);         // a-zA-Z
-  static bool is_id_begin(uint32_t cp);      // alpha $ _
-  static bool is_id_part(uint32_t cp);       // alpha $ _ numeric
+  static bool is_whitespace(int64_t cp);    // \r \t ' '
+  static bool is_decimal(int64_t cp);       // 0-9
+  static bool is_hex(int64_t cp);           // 0-9a-fA-F
+  static bool is_binary(int64_t cp);        // 0-1
+  static bool is_octal(int64_t cp);         // 0-7
+  static bool is_alpha_lower(int64_t cp);   // a-z
+  static bool is_alpha_upper(int64_t cp);   // A-Z
+  static bool is_alpha(int64_t cp);         // a-zA-Z
+  static bool is_id_begin(int64_t cp);      // alpha $ _
+  static bool is_id_part(int64_t cp);       // alpha $ _ numeric
 
   // consume some token type
   void consume_whitespace(Token& token);
@@ -113,7 +109,7 @@ protected:
   uint32_t m_column;
 
   // the last character that was read from the source
-  uint32_t m_last_character;
+  int64_t m_last_character;
 
   // current parsing mode
   enum class Mode { TopLevel, String, InterpolatedExpression };

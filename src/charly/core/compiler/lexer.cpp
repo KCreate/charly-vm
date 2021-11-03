@@ -45,8 +45,7 @@ Token Lexer::read_token_all() {
     consume_string(token);
   } else
     switch (peek_char()) {
-      // null byte means end of file
-      case '\0': {
+      case -1: {
         read_char();
         token.type = TokenType::Eof;
 
@@ -500,19 +499,11 @@ Token Lexer::read_token() {
   return token;
 }
 
-Token Lexer::last_token() {
-  if (m_tokens.size()) {
-    return m_tokens.back();
-  }
-
-  return Token();
-}
-
 void Lexer::unexpected_character() {
   utils::Buffer formatbuf;
 
   switch (m_last_character) {
-    case u'\0': {
+    case -1: {
       m_console.fatal(m_token.location, "unexpected end of file");
     }
     default: {
@@ -530,7 +521,7 @@ void Lexer::unexpected_character(uint32_t expected) {
   utils::Buffer formatbuf;
 
   switch (m_last_character) {
-    case u'\0': {
+    case -1: {
       m_console.fatal(m_token.location, "unexpected end of file, expected the character '", expected, "'");
     }
     default: {
@@ -549,7 +540,7 @@ void Lexer::unexpected_character(TokenType expected) {
   utils::Buffer formatbuf;
 
   switch (m_last_character) {
-    case u'\0': {
+    case -1: {
       m_console.fatal(m_token.location, "unexpected end of file, expected a '",
                       kTokenTypeStrings[static_cast<int>(expected)], "' token");
     }
@@ -569,7 +560,7 @@ void Lexer::unexpected_character(const std::string& message) {
   utils::Buffer formatbuf;
 
   switch (m_last_character) {
-    case u'\0': {
+    case -1: {
       m_console.fatal(m_token.location, "unexpected end of file, ", message);
     }
     default: {
@@ -595,19 +586,19 @@ void Lexer::increment_column(size_t delta) {
   m_token.location.end_column++;
 }
 
-uint32_t Lexer::peek_char(uint32_t nth) const {
-  int64_t cp = m_source.peek_utf8_cp(nth);
-  if (cp == -1) {
-    cp = 0;
+int64_t Lexer::peek_char(uint32_t nth) {
+  int64_t ch = m_source.peek_utf8_cp(nth);
+  if (ch == 0) {
+    unexpected_character("unexpected null-byte in source file");
   }
-  return cp;
+  return ch;
 }
 
-uint32_t Lexer::read_char() {
+int64_t Lexer::read_char() {
   int64_t cp = m_source.read_utf8_cp();
 
-  if (cp == -1) {
-    cp = 0;
+  if (cp == 0) {
+    unexpected_character("unexpected null-byte in source file");
   }
 
   m_last_character = cp;
@@ -622,47 +613,43 @@ uint32_t Lexer::read_char() {
   return cp;
 }
 
-uint32_t Lexer::last_char() const {
-  return m_last_character;
-}
-
-bool Lexer::is_whitespace(uint32_t cp) {
+bool Lexer::is_whitespace(int64_t cp) {
   return (cp == ' ' || cp == '\r' || cp == '\t');
 }
 
-bool Lexer::is_decimal(uint32_t cp) {
+bool Lexer::is_decimal(int64_t cp) {
   return (cp >= '0' && cp <= '9');
 }
 
-bool Lexer::is_hex(uint32_t cp) {
+bool Lexer::is_hex(int64_t cp) {
   return is_decimal(cp) || (cp >= 'a' && cp <= 'f') || (cp >= 'A' && cp <= 'F');
 }
 
-bool Lexer::is_binary(uint32_t cp) {
+bool Lexer::is_binary(int64_t cp) {
   return (cp == '0' || cp == '1');
 }
 
-bool Lexer::is_octal(uint32_t cp) {
+bool Lexer::is_octal(int64_t cp) {
   return (cp >= '0' && cp <= '7');
 }
 
-bool Lexer::is_alpha_lower(uint32_t cp) {
+bool Lexer::is_alpha_lower(int64_t cp) {
   return (cp >= 'a' && cp <= 'z');
 }
 
-bool Lexer::is_alpha_upper(uint32_t cp) {
+bool Lexer::is_alpha_upper(int64_t cp) {
   return (cp >= 'A' && cp <= 'Z');
 }
 
-bool Lexer::is_alpha(uint32_t cp) {
+bool Lexer::is_alpha(int64_t cp) {
   return is_alpha_lower(cp) || is_alpha_upper(cp);
 }
 
-bool Lexer::is_id_begin(uint32_t cp) {
+bool Lexer::is_id_begin(int64_t cp) {
   return is_alpha(cp) || cp == '$' || cp == '_' || cp > 0x80;
 }
 
-bool Lexer::is_id_part(uint32_t cp) {
+bool Lexer::is_id_part(int64_t cp) {
   return is_id_begin(cp) || is_decimal(cp);
 }
 
@@ -680,7 +667,7 @@ void Lexer::consume_decimal(Token& token) {
   bool point_passed = false;
 
   for (;;) {
-    uint32_t cp = peek_char();
+    int64_t cp = peek_char();
 
     // floating point dot
     if (cp == '.') {
@@ -779,9 +766,9 @@ void Lexer::consume_comment(Token& token) {
   token.type = TokenType::Comment;
 
   for (;;) {
-    uint32_t cp = peek_char();
+    int64_t cp = peek_char();
 
-    if (cp == '\n' || cp == '\0') {
+    if (cp == '\n' || cp == -1) {
       break;
     }
 
@@ -794,10 +781,10 @@ void Lexer::consume_multiline_comment(Token& token) {
 
   uint32_t comment_depth = 1;
   while (comment_depth > 0) {
-    uint32_t cp = peek_char();
+    int64_t cp = peek_char();
 
     switch (cp) {
-      case '\0': {
+      case -1: {
         read_char();
         unexpected_character("unclosed comment");
       }
@@ -839,7 +826,7 @@ void Lexer::consume_multiline_comment(Token& token) {
 void Lexer::consume_char(Token& token) {
   token.type = TokenType::Character;
 
-  uint32_t cp = read_char();
+  int64_t cp = read_char();
 
   // escape sequences
   if (cp == '\\') {
@@ -912,7 +899,7 @@ void Lexer::consume_string(Token& token, bool allow_format) {
 
   // consume string component
   for (;;) {
-    uint32_t cp = peek_char();
+    int64_t cp = peek_char();
 
     // end of string
     if (cp == '"') {
@@ -928,7 +915,7 @@ void Lexer::consume_string(Token& token, bool allow_format) {
     }
 
     // end of file reached, unclosed string detected
-    if (cp == '\0') {
+    if (cp == -1) {
       read_char();
       unexpected_character("unclosed string");
     }

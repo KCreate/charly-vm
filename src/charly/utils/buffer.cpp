@@ -49,16 +49,14 @@ void Buffer::write_utf8_cp(uint32_t cp) {
 int64_t Buffer::read_utf8_cp() {
   setg(eback(), gptr(), pptr());
 
-  char* read_original = gptr();
-  char* read_head = read_original;
-  uint32_t codepoint;
-  bool success = utf8::next(read_head, egptr(), codepoint);
-
-  // FIXME?: treats invalid codepoint as EOF
-  if (!success) {
+  if (gptr() == egptr()) {
     return -1;
   }
 
+  char* read_original = gptr();
+  char* read_head = read_original;
+  uint32_t codepoint;
+  CHECK(utf8::next(read_head, egptr(), codepoint));
   size_t sequence_length = read_head - read_original;
   DCHECK(sequence_length <= 4);
   gbump((int)sequence_length);
@@ -68,6 +66,10 @@ int64_t Buffer::read_utf8_cp() {
 int64_t Buffer::peek_utf8_cp(uint32_t nth) {
   setg(eback(), gptr(), pptr());
 
+  if (gptr() == egptr()) {
+    return -1;
+  }
+
   char* read_original = gptr();
   char* read_end = egptr();
   char* read_head = read_original;
@@ -76,13 +78,12 @@ int64_t Buffer::peek_utf8_cp(uint32_t nth) {
     CHECK(utf8::next(read_head, read_end));
   }
 
-  uint32_t codepoint;
-  bool success = utf8::peek_next(read_head, read_end, codepoint);
-
-  if (!success) {
+  if (read_head == read_end) {
     return -1;
   }
 
+  uint32_t codepoint;
+  CHECK(utf8::peek_next(read_head, read_end, codepoint));
   return codepoint;
 }
 
