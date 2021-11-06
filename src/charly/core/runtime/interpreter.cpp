@@ -278,11 +278,31 @@ OP(stringconcat) {
 }
 
 OP(declareglobal) {
-  UNIMPLEMENTED();
+  SYMBOL name = op->declareglobal.name;
+  RawValue result = thread->runtime()->declare_global_variable(thread, name, false);
+
+  if (result.is_error_exception()) {
+    debuglnf("duplicate declaration of global variable %", RawSymbol::make(name));
+    thread->throw_value(RawSmallString::make_from_cstr("dupglob"));
+    return ContinueMode::Exception;
+  }
+  DCHECK(result.is_error_ok());
+
+  return ContinueMode::Next;
 }
 
 OP(declareglobalconst) {
-  UNIMPLEMENTED();
+  SYMBOL name = op->declareglobalconst.name;
+  RawValue result = thread->runtime()->declare_global_variable(thread, name, true);
+
+  if (result.is_error_exception()) {
+    debuglnf("duplicate declaration of global variable %", RawSymbol::make(name));
+    thread->throw_value(RawSmallString::make_from_cstr("dupglob"));
+    return ContinueMode::Exception;
+  }
+  DCHECK(result.is_error_ok());
+
+  return ContinueMode::Next;
 }
 
 OP(type) {
@@ -332,7 +352,7 @@ OP(jmpt) {
 }
 
 OP(testjmp) {
-  RawValue top = frame->peek();
+  RawValue top = frame->pop();
   RawValue check = op->testjmp.value;
 
   if (top.raw() == check.raw()) {
@@ -378,7 +398,7 @@ OP(call) {
     RawFunction function = RawFunction::cast(callee);
     RawValue return_value = Interpreter::call_function(thread, self, function, args, argc);
 
-    if (return_value == kErrorException) {
+    if (return_value.is_error_exception()) {
       return ContinueMode::Exception;
     }
 
@@ -421,7 +441,18 @@ OP(loadargc) {
 }
 
 OP(loadglobal) {
-  UNIMPLEMENTED();
+  SYMBOL name = op->loadglobal.name;
+  RawValue result = thread->runtime()->read_global_variable(thread, name);
+
+  if (result.is_error_not_found()) {
+    debugln("unknown global variable %", RawSymbol::make(name));
+    thread->throw_value(RawSmallString::make_from_cstr("unkglob"));
+    return ContinueMode::Exception;
+  }
+  DCHECK(!result.is_error());
+
+  frame->push(result);
+  return ContinueMode::Next;
 }
 
 OP(loadlocal) {
@@ -492,7 +523,24 @@ OP(loadsuperattr) {
 }
 
 OP(setglobal) {
-  UNIMPLEMENTED();
+  SYMBOL name = op->setglobal.name;
+
+  RawValue value = frame->pop();
+  RawValue result = thread->runtime()->set_global_variable(thread, name, value);
+
+  if (result.is_error_not_found()) {
+    debugln("unknown global variable %", RawSymbol::make(name));
+    thread->throw_value(RawSmallString::make_from_cstr("unkglob"));
+    return ContinueMode::Exception;
+  } else if (result.is_error_read_only()) {
+    debugln("read-only global variable %", RawSymbol::make(name));
+    thread->throw_value(RawSmallString::make_from_cstr("rdoglob"));
+    return ContinueMode::Exception;
+  }
+  DCHECK(result.is_error_ok());
+
+  frame->push(result);
+  return ContinueMode::Next;
 }
 
 OP(setlocal) {

@@ -24,27 +24,28 @@
  * SOFTWARE.
  */
 
-//func times(n, cb) {
-//    let i = 0
-//    loop {
-//        if i == n break
-//        cb(i);
-//        i += 1
-//    }
-//}
+func times(n, cb) {
+    let i = 0
+    loop {
+        if i == n break
+        cb(i);
+        i += 1
+    }
+}
 
-//func repeat_string(string, n) {
-//    let result = ""
-//
-//    times(n, ->{
-//        result = "{result}{string}"
-//    })
-//
-//    return result
-//}
+func repeat_string(string, n) {
+    let result = ""
+
+    times(n, ->{
+        result = "{result}{string}"
+    })
+
+    return result
+}
 
 func determine_max_stack_size {
     let counter = 0
+
     try {
         func recurse {
             counter += 1
@@ -52,9 +53,38 @@ func determine_max_stack_size {
         }
         recurse()
     } catch(e) {
-        return (e, counter)
+        return counter
+    }
+
+    return 100
+}
+
+func foreach_until(tuple, cb, sentinel = null) {
+    let i = 0
+    loop {
+        const value = tuple[i]
+        if value == sentinel {
+            break
+        }
+
+        cb(value, i, tuple)
+        i += 1
     }
 }
 
-let (error, stacklimit) = determine_max_stack_size()
-return (error, stacklimit)
+let filename = ARGV[0]
+
+switch (filename) {
+    case "repl" {
+        foreach_until(ARGV, ->(a, i) {
+            ARGV[i] = "#{i}: {a}"
+        })
+
+        return "repl: {ARGV}"
+    }
+
+    default {
+        const stack_size = determine_max_stack_size()
+        return ("stack height limit: {stack_size} frames", ARGV)
+    }
+}

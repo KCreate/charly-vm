@@ -125,7 +125,10 @@ char* Buffer::release_buffer() {
   m_buffer = nullptr;
   m_capacity = 0;
 
-  return m_buffer;
+  setp(nullptr, nullptr);
+  setg(nullptr, nullptr, nullptr);
+
+  return buf;
 }
 
 void Buffer::dump(std::ostream& out, bool absolute) const {

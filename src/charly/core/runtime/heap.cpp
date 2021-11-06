@@ -187,8 +187,6 @@ void Heap::release_eden_region(HeapRegion* region) {
 
 HeapRegion* Heap::pop_free_region() {
   if (m_free_regions.size() > 0) {
-    debugln("acquired region from heap freelist");
-
     HeapRegion* region = m_free_regions.front();
     m_free_regions.pop_front();
     return region;

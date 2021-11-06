@@ -192,6 +192,10 @@ uintptr_t RawValue::raw() const {
   return m_raw;
 }
 
+bool RawValue::is_error() const {
+  return isNull() && RawNull::cast(value()).error_code() != ErrorId::kErrorNone;
+}
+
 bool RawValue::is_error_ok() const {
   return (m_raw & kMaskLowByte) == kTagErrorOk;
 }
@@ -206,6 +210,10 @@ bool RawValue::is_error_not_found() const {
 
 bool RawValue::is_error_out_of_bounds() const {
   return (m_raw & kMaskLowByte) == kTagErrorOutOfBounds;
+}
+
+bool RawValue::is_error_read_only() const {
+  return (m_raw & kMaskLowByte) == kTagErrorReadOnly;
 }
 
 ShapeId RawValue::shape_id() const {
@@ -435,7 +443,7 @@ void RawValue::dump(std::ostream& out) const {
 
         writer.fg(Color::Grey, "(");
 
-        {
+        if (tuple.size() > 0) {
           tuple.field_at(0).dump(out);
           for (int64_t i = 1; i < tuple.size(); i++) {
             writer.fg(Color::Grey, ", ");

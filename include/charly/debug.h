@@ -122,7 +122,7 @@ inline void debuglnf(const char* format, Targs... args) {
 void print_runtime_debug_state(std::ostream& stream);
 
 template <typename... Args>
-[[noreturn]] void failed_check(
+[[noreturn]] void __attribute__((noinline)) failed_check(
   const char* filename, int32_t line, const char* function, const char* expression, Args&&... args) {
   utils::Buffer buf;
   debugln_impl(buf, "Failed check!\n");

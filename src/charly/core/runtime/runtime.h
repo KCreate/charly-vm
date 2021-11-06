@@ -27,6 +27,7 @@
 #include <condition_variable>
 #include <list>
 #include <mutex>
+#include <shared_mutex>
 #include <stack>
 #include <vector>
 
@@ -82,6 +83,21 @@ public:
   RawObject create_function(Thread* thread, RawValue context, SharedFunctionInfo* shared_info);
   RawObject create_fiber(Thread* thread, RawFunction function);
 
+  // declare a new global variable
+  // returns kErrorOk on success
+  // returns kErrorException if the variable already exists
+  RawValue declare_global_variable(Thread* thread, SYMBOL name, bool constant);
+
+  // read from global variable
+  // returns kErrorNotFound if no such global variable exists
+  RawValue read_global_variable(Thread* thread, SYMBOL name);
+
+  // write to global variable
+  // returns kErrorOk on success
+  // returns kErrorNotFound if no such global variable exists
+  // returns kErrorReadOnly if the variable is read-only
+  RawValue set_global_variable(Thread* thread, SYMBOL name, RawValue value);
+
 private:
   uint64_t m_start_timestamp;
 
@@ -97,6 +113,14 @@ private:
   GarbageCollector* m_gc;
 
   std::vector<ref<CompiledModule>> m_compiled_modules;
+  struct GlobalVariable {
+    RawValue value;
+    bool constant;
+    bool initialized;
+  };
+
+  std::shared_mutex m_globals_mutex;
+  std::unordered_map<SYMBOL, GlobalVariable> m_global_variables;
 };
 
 }  // namespace charly::core::runtime

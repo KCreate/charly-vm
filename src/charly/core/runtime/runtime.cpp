@@ -28,15 +28,15 @@
 
 namespace charly::core::runtime {
 
-Runtime::Runtime() : m_init_flag(m_mutex), m_exit_flag(m_mutex), m_heap(nullptr), m_scheduler(nullptr), m_gc(nullptr) {
-  m_start_timestamp = get_steady_timestamp();
-  m_exit_code = 0;
-  m_wants_exit = false;
-
-  m_heap = new Heap(this);
-  m_gc = new GarbageCollector(this);
-  m_scheduler = new Scheduler(this);
-
+Runtime::Runtime() :
+  m_start_timestamp(get_steady_timestamp()),
+  m_init_flag(m_mutex),
+  m_exit_flag(m_mutex),
+  m_exit_code(0),
+  m_wants_exit(false),
+  m_heap(new Heap(this)),
+  m_scheduler(new Scheduler(this)),
+  m_gc(new GarbageCollector(this)) {
   m_init_flag.signal();
 }
 
@@ -62,6 +62,8 @@ int32_t Runtime::join() {
   m_gc->shutdown();
   m_scheduler->join();
   m_gc->join();
+
+  debuglnf("runtime exited after % milliseconds", get_steady_timestamp() - m_start_timestamp);
 
   return m_exit_code;
 }
@@ -199,6 +201,47 @@ RawObject Runtime::create_fiber(Thread* thread, RawFunction function) {
   fiber.set_thread(nullptr);
   fiber.set_function(function);
   return RawObject::cast(fiber);
+}
+
+RawValue Runtime::declare_global_variable(Thread*, SYMBOL name, bool constant) {
+  std::unique_lock<std::shared_mutex> locker(m_globals_mutex);
+
+  if (m_global_variables.count(name) == 1) {
+    return kErrorException;
+  }
+
+  m_global_variables[name] = {kNull, constant, false};
+  return kErrorOk;
+}
+
+RawValue Runtime::read_global_variable(Thread*, SYMBOL name) {
+  std::shared_lock<std::shared_mutex> locker(m_globals_mutex);
+
+  if (m_global_variables.count(name) == 0) {
+    return kErrorNotFound;
+  }
+
+  GlobalVariable& var = m_global_variables.at(name);
+  return var.value;
+}
+
+RawValue Runtime::set_global_variable(Thread*, SYMBOL name, RawValue value) {
+  std::unique_lock<std::shared_mutex> locker(m_globals_mutex);
+
+  if (m_global_variables.count(name) == 0) {
+    return kErrorNotFound;
+  }
+
+  auto& var = m_global_variables.at(name);
+  if (var.constant) {
+    if (var.initialized) {
+      return kErrorReadOnly;
+    }
+  }
+
+  var.value = value;
+  var.initialized = true;
+  return kErrorOk;
 }
 
 }  // namespace charly::core::runtime

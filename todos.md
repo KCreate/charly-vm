@@ -1,5 +1,8 @@
 # Todos
 
+- Optimize global variables
+  - Implement the id system, ditch the global hashmap, it is just a temporary hack
+
 - Interpreter value comparison method
 
 - Setup clang-tidy configuration and fix warnings and errors

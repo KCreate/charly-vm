@@ -222,8 +222,6 @@ void Worker::scheduler_loop(Runtime* runtime) {
   runtime->wait_for_initialization();
   Scheduler* scheduler = runtime->scheduler();
 
-  debuglnf("worker % started up", id());
-
   assert_change_state(State::Created, State::Acquiring);
 
   while (!runtime->wants_exit()) {
@@ -231,15 +229,12 @@ void Worker::scheduler_loop(Runtime* runtime) {
 
     // attempt to acquire idle processor from scheduler
     if (!scheduler->acquire_processor_for_worker(this)) {
-      debuglnf("could not acquire processor in worker %", m_id);
       increase_sleep_duration();
       idle();
       continue;
     }
 
     Processor* proc = m_processor;
-
-    debuglnf("worker % acquired processor", id(), proc->id());
 
     assert_change_state(State::Acquiring, State::Scheduling);
     while (!runtime->wants_exit()) {
@@ -248,7 +243,6 @@ void Worker::scheduler_loop(Runtime* runtime) {
       // fetch next ready thread
       Thread* thread = proc->get_ready_thread();
       if (thread == nullptr) {
-        debuglnf("worker % could not find a thread", id());
         increase_sleep_duration();
         break;
       }
@@ -296,8 +290,6 @@ execute_next_thread:
     scheduler->release_processor_from_worker(this);
     idle();
   }
-
-  debuglnf("worker % exiting", id());
 
   assert_change_state(State::Acquiring, State::Exited);
 }

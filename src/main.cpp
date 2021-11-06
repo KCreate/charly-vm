@@ -241,6 +241,18 @@ int32_t cli(DiagnosticConsole& console) {
     debuglnf("sizeof(Heap)          = %", sizeof(Heap));
     debuglnf("sizeof(HeapRegion)    = %", sizeof(HeapRegion));
     debuglnf("sizeof(Frame)         = %", sizeof(Frame));
+    debuglnf("");
+
+    debuglnf("# %bytecode.h%", termcolor::yellow, termcolor::reset);
+    {
+      using namespace ir;
+
+      for (uint8_t opcode = Opcode::nop; opcode < Opcode::__Count; opcode++) {
+        const std::string& name = kOpcodeNames[opcode];
+        size_t length = kOpcodeLength[opcode];
+        debuglnf("sizeof(%) = %", name, length);
+      }
+    }
 
     return 0;
   }
@@ -260,7 +272,6 @@ int32_t cli(DiagnosticConsole& console) {
   // }
 
   int exit_code = runtime.join();
-  debugln("runtime exited");
   return exit_code;
 }
 

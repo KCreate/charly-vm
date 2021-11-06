@@ -163,6 +163,7 @@ enum class ErrorId : uint8_t {
   kErrorNotFound,
   kErrorOutOfBounds,
   kErrorException,
+  kErrorReadOnly,
 };
 
 // forward declare Raw types
@@ -312,11 +313,14 @@ public:
     return *this;
   }
 
+  RawValue value() const { return *this; }
   uintptr_t raw() const;
+  bool is_error() const;
   bool is_error_ok() const;
   bool is_error_exception() const;
   bool is_error_not_found() const;
   bool is_error_out_of_bounds() const;
+  bool is_error_read_only() const;
   ShapeId shape_id() const;
   ShapeId shape_id_not_object_int() const;
   bool truthyness() const;
@@ -339,10 +343,11 @@ public:
   static const uintptr_t kTagBool = 0b00000101;
   static const uintptr_t kTagSymbol = 0b00000111;
   static const uintptr_t kTagNull = 0b00001011;
-  static const uintptr_t kTagErrorOk = 0b00011011;
-  static const uintptr_t kTagErrorException = 0b00101011;
-  static const uintptr_t kTagErrorNotFound = 0b00111011;
-  static const uintptr_t kTagErrorOutOfBounds = 0b01001011;
+  static const uintptr_t kTagErrorOk = ((int)ErrorId::kErrorOk << 4) | kTagNull;
+  static const uintptr_t kTagErrorException = ((int)ErrorId::kErrorException << 4) | kTagNull;
+  static const uintptr_t kTagErrorNotFound = ((int)ErrorId::kErrorNotFound << 4) | kTagNull;
+  static const uintptr_t kTagErrorOutOfBounds = ((int)ErrorId::kErrorOutOfBounds << 4) | kTagNull;
+  static const uintptr_t kTagErrorReadOnly = ((int)ErrorId::kErrorReadOnly << 4) | kTagNull;
   static const uintptr_t kTagSmallString = 0b00001101;
   static const uintptr_t kTagSmallBytes = 0b00001111;
 
@@ -481,6 +486,7 @@ static const RawNull kErrorOk = RawNull::make_error(ErrorId::kErrorOk);
 static const RawNull kErrorException = RawNull::make_error(ErrorId::kErrorException);
 static const RawNull kErrorNotFound = RawNull::make_error(ErrorId::kErrorNotFound);
 static const RawNull kErrorOutOfBounds = RawNull::make_error(ErrorId::kErrorOutOfBounds);
+static const RawNull kErrorReadOnly = RawNull::make_error(ErrorId::kErrorReadOnly);
 
 // common super class for RawSmallString, LargeString and HugeString
 class RawString : public RawValue {

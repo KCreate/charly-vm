@@ -60,6 +60,8 @@ Scheduler::Scheduler(Runtime* runtime) {
       Worker* worker = new Worker(m_runtime);
       m_workers.push_back(worker);
     }
+
+    debugln("initialized % workers", proc_count);
   }
 
   // initialize the main thread

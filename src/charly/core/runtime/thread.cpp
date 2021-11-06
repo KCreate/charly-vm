@@ -260,6 +260,17 @@ void Thread::entry_main_thread() {
   Function function(scope, runtime->create_function(this, kNull, module->function_table.front()));
   Fiber fiber(scope, runtime->create_fiber(this, function));
 
+  // build the ARGV tuple
+  auto& argv = utils::ArgumentParser::USER_FLAGS;
+  Tuple argv_tuple(scope, runtime->create_tuple(this, argv.size()));
+  for (uint32_t i = 0; i < argv.size(); i++) {
+    const std::string& arg = argv[i];
+    String arg_string(scope, runtime->create_string(this, arg.data(), arg.size(), crc32::hash_string(arg)));
+    argv_tuple.set_field_at(i, arg_string);
+  }
+  CHECK(runtime->declare_global_variable(this, SYM("ARGV"), true).is_error_ok());
+  CHECK(runtime->set_global_variable(this, SYM("ARGV"), argv_tuple).is_error_ok());
+
   Thread* fiber_thread = runtime->scheduler()->get_free_thread();
   DCHECK(fiber_thread->id() == 1);
   fiber_thread->init_fiber_thread(fiber);
