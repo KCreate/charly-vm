@@ -25,6 +25,7 @@
  */
 
 #include <list>
+#include <unordered_map>
 #include <mutex>
 
 #include "charly/value.h"
@@ -60,6 +61,11 @@ public:
   // acquire the next ready thread to execute
   Thread* get_ready_thread();
 
+  // look up a symbol in the processor symbol table, or global if not found
+  // returns kNull if no such symbol exists
+  // copies the symbol into the local symbol table if it doesn't already exist
+  RawValue lookup_symbol(SYMBOL symbol);
+
 private:
   Runtime* m_runtime;
   uint64_t m_id;
@@ -69,6 +75,8 @@ private:
 
   std::mutex m_mutex;
   std::list<Thread*> m_run_queue;
+
+  std::unordered_map<SYMBOL, RawLargeString> m_symbol_table;
 };
 
 }  // namespace charly::core::runtime

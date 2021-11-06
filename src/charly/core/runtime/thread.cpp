@@ -253,8 +253,8 @@ void Thread::entry_main_thread() {
   }
 
   auto module = unit->compiled_module;
-  DCHECK(module->function_table.size());
-  runtime->register_module(module);
+  CHECK(!module->function_table.empty());
+  runtime->register_module(this, module);
 
   HandleScope scope(this);
   Function function(scope, runtime->create_function(this, kNull, module->function_table.front()));

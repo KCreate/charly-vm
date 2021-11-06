@@ -114,4 +114,12 @@ Thread* Processor::get_ready_thread() {
   return scheduler->get_ready_thread_from_global_run_queue();
 }
 
+RawValue Processor::lookup_symbol(SYMBOL symbol) {
+  if (m_symbol_table.count(symbol)) {
+    return m_symbol_table.at(symbol);
+  }
+
+  return m_runtime->lookup_symbol(symbol);
+}
+
 }  // namespace charly::core::runtime

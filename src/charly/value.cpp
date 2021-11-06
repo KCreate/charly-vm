@@ -34,6 +34,7 @@
 
 #include "charly/core/runtime/compiled_module.h"
 #include "charly/core/runtime/heap.h"
+#include "charly/core/runtime/runtime.h"
 
 namespace charly::core::runtime {
 
@@ -496,7 +497,19 @@ void RawValue::dump(std::ostream& out) const {
   }
 
   if (isSymbol()) {
-    writer.fg(Color::Red, std::hex, RawSymbol::cast(this).value(), std::dec);
+    RawSymbol symbol = RawSymbol::cast(this);
+
+    Thread* thread = Thread::current();
+    HandleScope scope(thread);
+    Value sym_value(scope, thread->runtime()->lookup_symbol(symbol.value()));
+
+    if (sym_value.isString()) {
+      RawString string_sym = RawString::cast(sym_value);
+      writer.fg(Color::Red, ":", std::string_view(RawString::data(&string_sym), string_sym.length()));
+    } else {
+      writer.fg(Color::Red, std::hex, symbol.value(), std::dec);
+    }
+
     return;
   }
 

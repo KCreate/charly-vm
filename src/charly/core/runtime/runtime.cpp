@@ -82,9 +82,14 @@ void Runtime::wait_for_initialization() {
   m_init_flag.wait();
 }
 
-void Runtime::register_module(const ref<CompiledModule>& module) {
+void Runtime::register_module(Thread* thread, const ref<CompiledModule>& module) {
   std::lock_guard<std::mutex> locker(m_mutex);
   m_compiled_modules.push_back(module);
+
+  // register symbols in the module symbol table
+  for (const std::string& symbol : module->symbol_table) {
+    declare_symbol(thread, symbol.data(), symbol.size());
+  }
 }
 
 RawData Runtime::create_data(Thread* thread, ShapeId shape_id, size_t size) {
@@ -242,6 +247,33 @@ RawValue Runtime::set_global_variable(Thread*, SYMBOL name, RawValue value) {
   var.value = value;
   var.initialized = true;
   return kErrorOk;
+}
+
+RawValue Runtime::declare_symbol(Thread* thread, const char* data, size_t size) {
+  std::lock_guard<std::mutex> locker(m_symbols_mutex);
+
+  SYMBOL symbol = crc32::hash_block(data, size);
+
+  if (m_symbol_table.count(symbol) > 0) {
+    return m_symbol_table.at(symbol);
+  }
+
+  HandleScope scope(thread);
+  String sym_string(scope, create_string(thread, data, size, symbol));
+
+  m_symbol_table[symbol] = sym_string;
+
+  return sym_string;
+}
+
+RawValue Runtime::lookup_symbol(SYMBOL symbol) {
+  std::lock_guard<std::mutex> locker(m_symbols_mutex);
+
+  if (m_symbol_table.count(symbol)) {
+    return m_symbol_table.at(symbol);
+  }
+
+  return kNull;
 }
 
 }  // namespace charly::core::runtime

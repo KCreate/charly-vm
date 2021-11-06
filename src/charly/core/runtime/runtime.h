@@ -66,7 +66,7 @@ public:
   void wait_for_initialization();
 
   // register a CompiledModule object with the runtime
-  void register_module(const ref<CompiledModule>& module);
+  void register_module(Thread* thread, const ref<CompiledModule>& module);
 
 public:
   RawData create_data(Thread* thread, ShapeId shape_id, size_t size);
@@ -98,6 +98,13 @@ public:
   // returns kErrorReadOnly if the variable is read-only
   RawValue set_global_variable(Thread* thread, SYMBOL name, RawValue value);
 
+  // register a symbol in the global symbol table
+  RawValue declare_symbol(Thread* thread, const char* data, size_t size);
+
+  // look up a symbol in the global symbol table
+  // returns kNull if no such symbol exists
+  RawValue lookup_symbol(SYMBOL symbol);
+
 private:
   uint64_t m_start_timestamp;
 
@@ -113,6 +120,10 @@ private:
   GarbageCollector* m_gc;
 
   std::vector<ref<CompiledModule>> m_compiled_modules;
+
+  std::mutex m_symbols_mutex;
+  std::unordered_map<SYMBOL, RawString> m_symbol_table;
+
   struct GlobalVariable {
     RawValue value;
     bool constant;

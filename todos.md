@@ -1,7 +1,20 @@
 # Todos
 
+- Implement REPL in charly code
+  - Functionality needed
+    - Compiling source code into a module
+      - Charly code needs to have access to all compiler output
+    - Reading input from command line (readline bindings)
+    - Starting another fiber
+    - Waiting for a fiber to complete
+
 - Optimize global variables
   - Implement the id system, ditch the global hashmap, it is just a temporary hack
+
+- Fixed size instruction encoding
+  - 4 byte by default
+  - extension blocks can be used to encode more parameters
+  - 1 byte for opcode, 3 byte for parameters
 
 - Interpreter value comparison method
 
@@ -12,14 +25,6 @@
   - Frames are about 800 bytes minimum even on release builds
   - about 500 bytes come from the Interpreter::execute function
   - about 150 bytes come from the Interpreter::call_function
-
-- Implement REPL in charly
-  - Use the standard library to read, compile and execute input statements
-  - Implement a clean interface to execute code in the runtime from a global context
-    - Execute and return immediately
-    - Execute and wait for return value
-  - Would simplify result handling and GC liveness logic if all this functionality was implemented
-    directly in Charly
 
 - Implement lowest execution tier as a template-JIT instead of bytecode interpreter?
   - Would allow me to get some easy experience with building and integrating the JIT into the system
