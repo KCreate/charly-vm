@@ -243,18 +243,15 @@ int32_t cli(DiagnosticConsole& console) {
     debuglnf("sizeof(Frame)         = %", sizeof(Frame));
     debuglnf("");
 
-    debuglnf("# %bytecode.h%", termcolor::yellow, termcolor::reset);
     {
       using namespace ir;
-
+      debuglnf("# %opcodes (%)%", termcolor::yellow, (int)Opcode::__Count, termcolor::reset);
       for (uint8_t opcode = Opcode::nop; opcode < Opcode::__Count; opcode++) {
         const std::string& name = kOpcodeNames[opcode];
         size_t length = kOpcodeLength[opcode];
-        debuglnf("sizeof(%) = %", name, length);
+        debuglnf("%: %", name, length);
       }
     }
-
-    return 0;
   }
 
   Runtime runtime;

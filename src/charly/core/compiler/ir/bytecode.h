@@ -213,7 +213,7 @@ static std::string kInlineCacheTypeNames[] = { "ICNone",         "ICSimpleValue"
    * - test                                                                                                          \
    * */                                                                                                              \
   V(jmpt, ICNone, 1, 0, Offset offset)                                                                               \
-  /* testjmp - compare TOS with an immediate value and jump if they compare equal                                    \
+  /* testintjmp - compare TOS with an immediate value and jump if they compare equal                                 \
    *           performs a non-strict comparison (true == 25 would branch)                                            \
    *                                                                                                                 \
    *           the test value gets pushed back onto the stack if the comparison failed                               \
@@ -228,7 +228,7 @@ static std::string kInlineCacheTypeNames[] = { "ICNone",         "ICSimpleValue"
    * stack results:                                                                                                  \
    * - test                                                                                                          \
    * */                                                                                                              \
-  V(testjmp, ICNone, 1, 1, Immediate value, Offset offset)                                                           \
+  V(testintjmp, ICNone, 1, 1, Count8 value, Offset offset)                                                           \
   /* throwex - throw TOS as exception                                                                                \
    *                                                                                                                 \
    * stack arguments:                                                                                                \
@@ -771,7 +771,7 @@ static const std::unordered_set<Opcode> kBranchingOpcodes = {
   Opcode::jmp,
   Opcode::jmpf,
   Opcode::jmpt,
-  Opcode::testjmp,
+  Opcode::testintjmp,
 };
 
 /*

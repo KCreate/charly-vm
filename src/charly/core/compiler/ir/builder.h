@@ -117,7 +117,7 @@ public:
   ref<IRInstruction> emit_jmp(IROpOffset label);
   ref<IRInstruction> emit_jmpf(IROpOffset label);
   ref<IRInstruction> emit_jmpt(IROpOffset label);
-  ref<IRInstruction> emit_testjmp(IROpImmediate value, IROpOffset label);
+  ref<IRInstruction> emit_testintjmp(IROpCount8 value, IROpOffset label);
   ref<IRInstruction> emit_throwex();
   ref<IRInstruction> emit_getexception();
   ref<IRInstruction> emit_call(IROpCount8 count);

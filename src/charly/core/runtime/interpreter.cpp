@@ -351,16 +351,17 @@ OP(jmpt) {
   return ContinueMode::Next;
 }
 
-OP(testjmp) {
+OP(testintjmp) {
   RawValue top = frame->pop();
-  RawValue check = op->testjmp.value;
+  Count8 check = op->testintjmp.value;
 
-  if (top.raw() == check.raw()) {
-    frame->ip = op->ip() + op->testjmp.offset;
-    return ContinueMode::Next;
+  DCHECK(top.isInt());
+  if (RawInt::cast(top).value() == check) {
+    frame->ip = op->ip() + op->testintjmp.offset;
+  } else {
+    frame->push(top);
   }
 
-  frame->push(top);
   return ContinueMode::Next;
 }
 

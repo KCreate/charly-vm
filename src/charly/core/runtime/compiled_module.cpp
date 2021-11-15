@@ -37,6 +37,9 @@ void CompiledModule::dump(std::ostream& out) const {
   ColorWriter writer(out);
   writer.fg(Color::Grey, "; assembled module for file ");
   writer.fg(Color::Yellow, "'", this->filename, "'", "\n");
+  writer.fg(Color::Grey, "; bytecode buffer size = ");
+  writer.fg(Color::Yellow, this->buffer.size(), "\n");
+
   out << '\n';
 
   // disassemble functions
