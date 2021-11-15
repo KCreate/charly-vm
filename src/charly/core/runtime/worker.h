@@ -71,6 +71,17 @@ public:
     WorldStopped  // worker stopped due to scheduler stop the world request
   };
 
+  static constexpr const char* kStateNames[] = {
+    "Created",
+    "Idle",
+    "Acquiring",
+    "Exited",
+    "Scheduling",
+    "Running",
+    "Native",
+    "WorldStopped"
+  };
+
   static bool is_heap_safe_mode(State state);
 
   // getter / setter

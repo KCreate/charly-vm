@@ -129,10 +129,33 @@ Thread* Scheduler::get_free_thread() {
   return thread;
 }
 
+Stack* Scheduler::get_free_stack() {
+  Stack* stack = nullptr;
+
+  {
+    std::lock_guard<std::mutex> locker(m_stacks_mutex);
+    if (m_free_stacks.size()) {
+      stack = m_free_stacks.top();
+      m_free_stacks.pop();
+    } else {
+      stack = new Stack();
+      m_stacks.insert(stack);
+    }
+  }
+
+  return stack;
+}
+
 void Scheduler::recycle_thread(Thread* thread) {
   thread->clean();
   std::lock_guard<std::mutex> locker(m_threads_mutex);
   m_free_threads.push(thread);
+}
+
+void Scheduler::recycle_stack(Stack* stack) {
+  stack->clear();
+  std::lock_guard<std::mutex> locker(m_stacks_mutex);
+  m_free_stacks.push(stack);
 }
 
 void Scheduler::schedule_thread(Thread* thread, Processor* current_proc) {

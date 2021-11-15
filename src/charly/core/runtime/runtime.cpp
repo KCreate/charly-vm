@@ -203,7 +203,9 @@ RawObject Runtime::create_function(Thread* thread, RawValue context, SharedFunct
 
 RawObject Runtime::create_fiber(Thread* thread, RawFunction function) {
   RawFiber fiber = RawFiber::cast(create_instance(thread, ShapeId::kFiber, RawFiber::kFieldCount));
-  fiber.set_thread(nullptr);
+  Thread* fiber_thread = scheduler()->get_free_thread();
+  fiber_thread->init_fiber_thread(fiber);
+  fiber.set_thread(fiber_thread);
   fiber.set_function(function);
   return RawObject::cast(fiber);
 }

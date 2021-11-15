@@ -107,9 +107,9 @@ RawValue Interpreter::call_function(
   frame.oldip = frame.ip;
 
   // stack overflow check
-  const Stack& stack = thread->stack();
+  const Stack* stack = thread->stack();
   uintptr_t frame_address = (uintptr_t)__builtin_frame_address(0);
-  uintptr_t stack_bottom_address = (uintptr_t)stack.lo();
+  uintptr_t stack_bottom_address = (uintptr_t)stack->lo();
   size_t remaining_bytes_on_stack = frame_address - stack_bottom_address;
   if (remaining_bytes_on_stack <= kStackOverflowLimit) {
     // TODO: throw stack overflow exception

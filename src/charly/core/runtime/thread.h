@@ -108,6 +108,9 @@ public:
   static Thread* current();
   static void set_current(Thread* worker);
 
+  static constexpr uint64_t kMainThreadId = 0;
+  static constexpr uint64_t kMainFiberThreadId = 1;
+
   enum class State {
     Free,     // thread sits on a freelist somewhere and isn't tied to a fiber yet
     Waiting,  // thread is paused
@@ -128,7 +131,7 @@ public:
   uint64_t last_scheduled_at() const;
   void extend_timeslice(uint64_t ms);
   bool has_exceeded_timeslice() const;
-  const Stack& stack() const;
+  const Stack* stack() const;
   ThreadLocalHandles* handles();
   Frame* frame() const;
   bool has_pending_exception() const;
@@ -181,11 +184,13 @@ private:
   // yield control back to the scheduler and update thread state
   void enter_scheduler(State state);
 
+  // acquire a stack from the scheduler
+  void acquire_stack();
+
 private:
   uint64_t m_id;
-  bool m_is_main_thread;
   atomic<State> m_state;
-  Stack m_stack;
+  Stack* m_stack;
   Runtime* m_runtime;
 
   int32_t m_exit_code;

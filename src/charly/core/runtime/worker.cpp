@@ -126,9 +126,14 @@ void Worker::set_processor(Processor* processor) {
 }
 
 void Worker::join() {
-  if (m_os_thread_handle.joinable()) {
-    m_os_thread_handle.join();
+  State now_state = state();
+  if (now_state != State::Exited) {
+    while (now_state != State::Exited) {
+      now_state = wait_for_state_change(now_state);
+    }
   }
+
+  m_os_thread_handle.join();
 }
 
 bool Worker::wake() {
@@ -249,40 +254,36 @@ void Worker::scheduler_loop(Runtime* runtime) {
 
       reset_sleep_duration();
 
-      do {
-        // context switch into the thread
-        assert_change_state(State::Scheduling, State::Running);
-        m_context_switch_counter++;
-        m_thread = thread;
-        thread->context_switch(this);
-        m_thread = nullptr;
-        assert_change_state(State::Running, State::Scheduling);
+      // context switch into the thread
+      assert_change_state(State::Scheduling, State::Running);
+      m_context_switch_counter++;
+      m_thread = thread;
+      thread->context_switch(this);
+      m_thread = nullptr;
+      assert_change_state(State::Running, State::Scheduling);
 
-        switch (thread->state()) {
-          case Thread::State::Waiting: {
-            goto execute_next_thread;
-          }
-          case Thread::State::Ready: {
-            scheduler->schedule_thread(thread, proc);
-            goto execute_next_thread;
-          }
-          case Thread::State::Exited: {
-            scheduler->recycle_thread(thread);
-            goto execute_next_thread;
-          }
-          case Thread::State::Aborted: {
-            int32_t exit_code = thread->exit_code();
-            scheduler->recycle_thread(thread);
-            runtime->abort(exit_code);
-            goto execute_next_thread;
-          }
-          default: {
-            FAIL("unexpected worker state");
-          }
+      switch (thread->state()) {
+        case Thread::State::Waiting: {
+          continue;
         }
-      } while (!thread->has_exceeded_timeslice());
-execute_next_thread:
-      continue;
+        case Thread::State::Ready: {
+          scheduler->schedule_thread(thread, proc);
+          continue;
+        }
+        case Thread::State::Exited: {
+          scheduler->recycle_thread(thread);
+          continue;
+        }
+        case Thread::State::Aborted: {
+          int32_t exit_code = thread->exit_code();
+          scheduler->recycle_thread(thread);
+          runtime->abort(exit_code);
+          continue;
+        }
+        default: {
+          FAIL("unexpected worker state");
+        }
+      }
     }
     assert_change_state(State::Scheduling, State::Acquiring);
 

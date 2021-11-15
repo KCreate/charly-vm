@@ -71,8 +71,14 @@ public:
   // acquire a free thread from the freelist or allocate new one
   Thread* get_free_thread();
 
+  // acquire a free stack from the freelist or allocate new one
+  Stack* get_free_stack();
+
   // give a thread instance back to the scheduler for recycling
   void recycle_thread(Thread* thread);
+
+  // give a stack back to the scheduler for recycling
+  void recycle_stack(Stack* stack);
 
   // schedule a thread for execution
   //
@@ -110,6 +116,10 @@ private:
   std::mutex m_threads_mutex;
   std::set<Thread*> m_threads;
   std::stack<Thread*> m_free_threads;
+
+  std::mutex m_stacks_mutex;
+  std::set<Stack*> m_stacks;
+  std::stack<Stack*> m_free_stacks;
 
   std::mutex m_idle_procs_mutex;
   std::stack<Processor*> m_idle_processors;
