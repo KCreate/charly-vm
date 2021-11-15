@@ -66,6 +66,10 @@ public:
   // copies the symbol into the local symbol table if it doesn't already exist
   RawValue lookup_symbol(SYMBOL symbol);
 
+  // Attempt to steal some threads from this processor
+  // and put them into target_procs run queue
+  bool steal_ready_threads(Processor* target_proc);
+
 private:
   Runtime* m_runtime;
   uint64_t m_id;

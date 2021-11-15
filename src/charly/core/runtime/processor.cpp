@@ -111,7 +111,21 @@ Thread* Processor::get_ready_thread() {
   }
 
   // check global queue
-  return scheduler->get_ready_thread_from_global_run_queue();
+  {
+    Thread* thread = scheduler->get_ready_thread_from_global_run_queue();
+    if (thread != nullptr) {
+      return thread;
+    }
+  }
+
+  // attempt to steal from another processor
+  {
+    if (scheduler->steal_ready_threads(this)) {
+      return get_ready_thread();
+    }
+  }
+
+  return nullptr;
 }
 
 RawValue Processor::lookup_symbol(SYMBOL symbol) {
@@ -120,6 +134,19 @@ RawValue Processor::lookup_symbol(SYMBOL symbol) {
   }
 
   return m_runtime->lookup_symbol(symbol);
+}
+
+bool Processor::steal_ready_threads(Processor* target_proc) {
+  std::scoped_lock locker(m_mutex, target_proc->m_mutex);
+
+  while (!m_run_queue.empty() && target_proc->m_run_queue.size() < m_run_queue.size()) {
+    Thread* thread = m_run_queue.front();
+    m_run_queue.pop_front();
+    target_proc->m_run_queue.push_back(thread);
+    return true;
+  }
+
+  return false;
 }
 
 }  // namespace charly::core::runtime

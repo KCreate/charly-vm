@@ -215,6 +215,18 @@ Thread* Scheduler::get_ready_thread_from_global_run_queue() {
   return nullptr;
 }
 
+bool Scheduler::steal_ready_threads(Processor* target_proc) {
+  for (Processor* proc : m_processors) {
+    if (proc != target_proc) {
+      if (proc->steal_ready_threads(target_proc)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 void Scheduler::wake_idle_worker() {
   for (Worker* worker : m_workers) {
     if (worker->state() == Worker::State::Idle) {

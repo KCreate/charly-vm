@@ -35,8 +35,8 @@ Runtime::Runtime() :
   m_exit_code(0),
   m_wants_exit(false),
   m_heap(new Heap(this)),
-  m_scheduler(new Scheduler(this)),
-  m_gc(new GarbageCollector(this)) {
+  m_gc(new GarbageCollector(this)),
+  m_scheduler(new Scheduler(this)) {
   m_init_flag.signal();
 }
 

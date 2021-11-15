@@ -116,8 +116,8 @@ private:
   atomic<bool> m_wants_exit;
 
   Heap* m_heap;
-  Scheduler* m_scheduler;
   GarbageCollector* m_gc;
+  Scheduler* m_scheduler;
 
   std::vector<ref<CompiledModule>> m_compiled_modules;
 

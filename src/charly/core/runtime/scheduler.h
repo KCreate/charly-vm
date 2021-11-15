@@ -94,6 +94,9 @@ public:
   // acquire a ready thread from the global run queue
   Thread* get_ready_thread_from_global_run_queue();
 
+  // attempt to steal a free thread from another processor
+  bool steal_ready_threads(Processor* target_proc);
+
 private:
   void wake_idle_worker();
 
