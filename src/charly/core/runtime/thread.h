@@ -152,6 +152,10 @@ public:
   // this gives the scheduler an opportunity to schedule another thread
   void checkpoint();
 
+  // yield control back to the scheduler
+  // keeps current fiber in ready state
+  void yield_to_scheduler();
+
   // exit from this thread and instruct the scheduler to give the
   // exit signal to all other threads
   [[noreturn]] void abort(int32_t exit_code);
@@ -166,8 +170,14 @@ public:
   void context_switch(Worker* worker);
 
   // enter / exit a native section
-  // void enter_native();
-  // void exit_native();
+  void enter_native();
+  void exit_native();
+  template <typename F>
+  void native_section(F&& callback) {
+    enter_native();
+    callback();
+    exit_native();
+  }
 
   // exception handling
   void throw_value(RawValue value);

@@ -474,7 +474,7 @@ void RawValue::dump(std::ostream& out) const {
         return;
       }
       default: {
-        writer.fg(Color::Cyan, (uint32_t)shape_id, "%", bitcast<void*>(RawObject::cast(this).address()));
+        writer.fg(Color::Red, "<", (uint32_t)shape_id, ":", bitcast<void*>(RawObject::cast(this).address()), ">");
         return;
       }
     }
@@ -501,7 +501,7 @@ void RawValue::dump(std::ostream& out) const {
 
     Thread* thread = Thread::current();
     HandleScope scope(thread);
-    Value sym_value(scope, thread->runtime()->lookup_symbol(symbol.value()));
+    Value sym_value(scope, thread->worker()->processor()->lookup_symbol(symbol.value()));
 
     if (sym_value.isString()) {
       RawString string_sym = RawString::cast(sym_value);
@@ -711,6 +711,14 @@ SYMBOL RawString::hashcode() const {
   }
 
   UNREACHABLE();
+}
+
+std::string RawString::str() const {
+  return {data(this), length()};
+}
+
+std::string_view RawString::view() const {
+  return {data(this), length()};
 }
 
 int32_t RawString::compare(RawString base, const char* data, size_t length) {

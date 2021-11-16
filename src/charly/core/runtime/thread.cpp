@@ -313,7 +313,12 @@ void Thread::entry_fiber_thread() {
 
   if (id() == kMainFiberThreadId) {
     debuglnf("main fiber exited with value %", result);
-    abort(0);
+
+    if (result.isInt()) {
+      abort(RawInt::cast(result).value());
+    } else {
+      abort(0);
+    }
   }
 }
 

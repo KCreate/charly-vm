@@ -140,12 +140,15 @@ public:
 
   // acquire ownership of the backing buffer memory
   // buffer appears cleared afterwards
-  char* release_buffer();
+  [[nodiscard]] char* release_buffer();
 
   // format buffer via hexdump into out stream
   void dump(std::ostream& out, bool absolute = false) const;
 
-  friend std::ostream& operator<<(std::ostream& out, const Buffer& buffer);
+  friend std::ostream& operator<<(std::ostream& out, const Buffer& buffer) {
+    out.write(buffer.data(), buffer.size());
+    return out;
+  }
 
   // format some memory buffer as a hexdump into some output stream
   static void hexdump(const char* buffer, size_t size, std::ostream& out, bool absolute = false);

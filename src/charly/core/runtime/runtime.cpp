@@ -251,13 +251,13 @@ RawValue Runtime::set_global_variable(Thread*, SYMBOL name, RawValue value) {
   return kErrorOk;
 }
 
-RawValue Runtime::declare_symbol(Thread* thread, const char* data, size_t size) {
+RawSymbol Runtime::declare_symbol(Thread* thread, const char* data, size_t size) {
   std::lock_guard<std::mutex> locker(m_symbols_mutex);
 
   SYMBOL symbol = crc32::hash_block(data, size);
 
   if (m_symbol_table.count(symbol) > 0) {
-    return m_symbol_table.at(symbol);
+    return RawSymbol::make(symbol);
   }
 
   HandleScope scope(thread);
@@ -265,7 +265,7 @@ RawValue Runtime::declare_symbol(Thread* thread, const char* data, size_t size) 
 
   m_symbol_table[symbol] = sym_string;
 
-  return sym_string;
+  return RawSymbol::make(symbol);
 }
 
 RawValue Runtime::lookup_symbol(SYMBOL symbol) {

@@ -80,7 +80,7 @@ private:
   std::mutex m_mutex;
   std::list<Thread*> m_run_queue;
 
-  std::unordered_map<SYMBOL, RawLargeString> m_symbol_table;
+  std::unordered_map<SYMBOL, RawString> m_symbol_table;
 };
 
 }  // namespace charly::core::runtime

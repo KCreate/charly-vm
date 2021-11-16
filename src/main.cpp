@@ -37,8 +37,8 @@
 #include "charly/utils/argumentparser.h"
 #include "charly/utils/buffer.h"
 
-#include "charly/core/compiler/compiler.h"
 #include "charly/core/compiler/ast.h"
+#include "charly/core/compiler/compiler.h"
 #include "charly/core/runtime/interpreter.h"
 #include "charly/core/runtime/runtime.h"
 
@@ -49,131 +49,6 @@ using namespace charly::core::compiler;
 using namespace std::chrono_literals;
 
 extern char** environ;
-
-// void run_repl(DiagnosticConsole&) {
-//   bool print_location = false;
-//
-//   char* buf = nullptr;
-//   while ((buf = readline("> "))) {
-//     if (strlen(buf) > 0) {
-//       add_history(buf);
-//     }
-//     std::string line(buf);
-//     std::free(buf);
-//
-//     if (line[0] == '.') {
-//       if (line.compare(".help") == 0) {
-//         std::cout << ".exit       Exit the REPL" << '\n';
-//         std::cout << ".help       List of meta commands" << '\n';
-//         std::cout << ".dump_ast   Toggle AST dump" << '\n';
-//         std::cout << ".dump_ir    Toggle IR dump" << '\n';
-//         std::cout << ".dump_asm   Toggle bytecode hex dump" << '\n';
-//         continue;
-//       }
-//
-//       if (line.compare(".exit") == 0) {
-//         Scheduler::instance->abort(0);
-//         return;
-//       }
-//
-//       if (line.compare(".dump_ast") == 0) {
-//         utils::ArgumentParser::toggle_flag("dump_ast");
-//         continue;
-//       }
-//
-//       if (line.compare(".dump_ir") == 0) {
-//         utils::ArgumentParser::toggle_flag("dump_ir");
-//         continue;
-//       }
-//
-//       if (line.compare(".dump_asm") == 0) {
-//         utils::ArgumentParser::toggle_flag("dump_asm");
-//         continue;
-//       }
-//     }
-//
-//     utils::Buffer source_buffer(line);
-//     auto unit = Compiler::compile("stdin", source_buffer);
-//
-//     unit->console.dump_all(std::cerr);
-//     if (!unit->console.has_errors()) {
-//       if (utils::ArgumentParser::is_flag_set("dump_ast")) {
-//         unit->ast->dump(std::cout, print_location);
-//       }
-//
-//       if (utils::ArgumentParser::is_flag_set("dump_ir")) {
-//         unit->ir_module->dump(std::cout);
-//       }
-//
-//       if (utils::ArgumentParser::is_flag_set("dump_asm")) {
-//         unit->compiled_module->dump(std::cout);
-//       }
-//     }
-//
-//     if (utils::ArgumentParser::is_flag_set("skipexec")) {
-//       continue;
-//     }
-//
-//     auto module = unit->compiled_module;
-//     Scheduler::instance->register_module(module);
-//
-//     assert(module->function_table.size());
-//     HeapFunction* function = Heap::allocate<HeapFunction>(nullptr, module->function_table.front());
-//     assert(function);
-//
-//     HeapFiber* fiber = Heap::allocate<HeapFiber>(function, false);
-//     assert(fiber);
-//
-//     Scheduler::instance->schedule_thread(fiber);
-//   }
-// }
-
-// void run_file(DiagnosticConsole& console, const std::string& filename) {
-//   std::ifstream file(filename);
-//
-//   if (!file.is_open()) {
-//     console.gerror("Could not open the file: ", filename);
-//     Scheduler::instance->abort(1);
-//     return;
-//   }
-//
-//   auto unit = Compiler::compile(filename, file, CompilationUnit::Type::Module);
-//
-//   unit->console.dump_all(std::cerr);
-//   if (unit->console.has_errors()) {
-//     Scheduler::instance->abort(1);
-//     return;
-//   }
-//
-//   if (utils::ArgumentParser::is_flag_set("dump_ast")) {
-//     unit->ast->dump(std::cout, true);
-//   }
-//
-//   if (utils::ArgumentParser::is_flag_set("dump_ir")) {
-//     unit->ir_module->dump(std::cout);
-//   }
-//
-//   if (utils::ArgumentParser::is_flag_set("dump_asm")) {
-//     unit->compiled_module->dump(std::cout);
-//   }
-//
-//   if (utils::ArgumentParser::is_flag_set("skipexec")) {
-//     Scheduler::instance->abort(0);
-//     return;
-//   }
-//
-//   auto module = unit->compiled_module;
-//   Scheduler::instance->register_module(module);
-//
-//   assert(module->function_table.size());
-//   HeapFunction* function = Heap::allocate<HeapFunction>(nullptr, module->function_table.front());
-//   assert(function);
-//
-//   HeapFiber* fiber = Heap::allocate<HeapFiber>(function, true);
-//   assert(fiber);
-//
-//   Scheduler::instance->schedule_thread(fiber);
-// }
 
 int32_t cli(DiagnosticConsole& console) {
   // check for existence of CHARLYVMDIR environment variable
@@ -249,27 +124,24 @@ int32_t cli(DiagnosticConsole& console) {
       for (uint8_t opcode = Opcode::nop; opcode < Opcode::__Count; opcode++) {
         const std::string& name = kOpcodeNames[opcode];
         size_t length = kOpcodeLength[opcode];
-        debuglnf("%: %", name, length);
+
+        utils::Buffer buf;
+        termcolor::colorize(buf);
+        buf << std::setw(20) << name << std::setw(1) << ": ";
+        buf << termcolor::yellow << std::setw(2) << length << std::setw(1) << termcolor::reset << " bytes";
+
+        if (length > 8) {
+          buf << termcolor::red << " (huge instruction)" << termcolor::reset;
+        } else if (length > 4) {
+          buf << termcolor::yellow << " (big instruction)" << termcolor::reset;
+        }
+
+        debuglnf("%", buf);
       }
     }
   }
 
-  Runtime runtime;
-
-  // check for filename to execute
-  // if (utils::ArgumentParser::USER_FLAGS.size() > 0) {
-  //   const std::string& filename = utils::ArgumentParser::USER_FLAGS.front();
-  //   if (filename == "repl") {
-  //     run_repl(console);
-  //   } else {
-  //     run_file(console, filename);
-  //   }
-  // } else {
-  //   run_repl(console);
-  // }
-
-  int exit_code = runtime.join();
-  return exit_code;
+  return Runtime::run();
 }
 
 int main(int argc, char** argv) {

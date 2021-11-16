@@ -133,7 +133,13 @@ RawValue Processor::lookup_symbol(SYMBOL symbol) {
     return m_symbol_table.at(symbol);
   }
 
-  return m_runtime->lookup_symbol(symbol);
+  RawValue result = m_runtime->lookup_symbol(symbol);
+
+  if (result.isString()) {
+    m_symbol_table[symbol] = RawString::cast(result);
+  }
+
+  return result;
 }
 
 bool Processor::steal_ready_threads(Processor* target_proc) {

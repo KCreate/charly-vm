@@ -313,7 +313,9 @@ public:
     return *this;
   }
 
-  RawValue value() const { return *this; }
+  RawValue value() const {
+    return *this;
+  }
   uintptr_t raw() const;
   bool is_error() const;
   bool is_error_ok() const;
@@ -496,6 +498,9 @@ public:
   size_t length() const;
   static const char* data(const RawString* value);
   SYMBOL hashcode() const;
+
+  std::string str() const;
+  std::string_view view() const;
 
   static int32_t compare(RawString base, const char* data, size_t length);
   static int32_t compare(RawString base, const char* data) {

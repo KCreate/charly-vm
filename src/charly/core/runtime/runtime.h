@@ -46,6 +46,11 @@ namespace charly::core::runtime {
 
 class Runtime {
 public:
+  static int32_t run() {
+    Runtime runtime;
+    return runtime.join();
+  }
+
   Runtime();
 
   Heap* heap();
@@ -99,7 +104,10 @@ public:
   RawValue set_global_variable(Thread* thread, SYMBOL name, RawValue value);
 
   // register a symbol in the global symbol table
-  RawValue declare_symbol(Thread* thread, const char* data, size_t size);
+  RawSymbol declare_symbol(Thread* thread, const char* data, size_t size);
+  RawSymbol declare_symbol(Thread* thread, const std::string& string) {
+    return declare_symbol(thread, string.data(), string.size());
+  }
 
   // look up a symbol in the global symbol table
   // returns kNull if no such symbol exists

@@ -118,6 +118,10 @@ public:
   void stop_the_world();
   void start_the_world();
 
+  // enter / exit native mode
+  void enter_native();
+  void exit_native();
+
   // attempt to change the worker state
   bool change_state(State expected_state, State new_state);
 

@@ -199,6 +199,14 @@ void Worker::start_the_world() {
   m_stw_cv.notify_one();
 }
 
+void Worker::enter_native() {
+  assert_change_state(State::Running, State::Native);
+}
+
+void Worker::exit_native() {
+  assert_change_state(State::Native, State::Running);
+}
+
 bool Worker::change_state(State expected_state, State new_state) {
   bool changed;
   {
