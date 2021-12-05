@@ -87,6 +87,28 @@ int64_t Buffer::peek_utf8_cp(uint32_t nth) {
   return codepoint;
 }
 
+int32_t Buffer::peek_char(uint32_t nth) {
+    setg(eback(), gptr(), pptr());
+
+    if (gptr() == egptr()) {
+        return -1;
+    }
+
+    char* read_original = gptr();
+    char* read_end = egptr();
+    char* read_head = read_original;
+
+    while (nth-- && read_head < read_end) {
+        read_head++;
+    }
+
+    if (read_head == read_end) {
+        return -1;
+    }
+
+    return *read_head;
+}
+
 void Buffer::protect() {
   if (!m_protected) {
     reserve_space(m_capacity, true);
@@ -340,9 +362,9 @@ std::streambuf::traits_type::pos_type Buffer::seekoff(std::streambuf::traits_typ
     setp(base, max);
 
     size_t ppos_remaining = req - base;
-    while (ppos_remaining >= kIntMax) {
-      pbump(kIntMax);
-      ppos_remaining -= kIntMax;
+    while (ppos_remaining >= kInt32Max) {
+      pbump(kInt32Max);
+      ppos_remaining -= kInt32Max;
     }
     pbump((int)ppos_remaining);
 

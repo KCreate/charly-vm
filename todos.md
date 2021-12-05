@@ -11,12 +11,26 @@
 - Optimize global variables
   - Implement the id system, ditch the global hashmap, it is just a temporary hack
 
-- Fixed size instruction encoding
-  - 4 byte by default
-  - extension blocks can be used to encode more parameters
-  - 1 byte for opcode, 3 byte for parameters
+- Thread wait mechanism
+  - Mechanism for one thread to wait for another thread to finish
+  - Threads keep a list of other waiting threads
+  - Waiting for a thread has to be atomic for both threads
+  - Implement using Thread pause / resume mechanism?
 
-- Interpreter value comparison method
+- Move most VM logic into the schedulers threads
+  - Brainstorm how these threads control each other
+  - Execute garbage collector inside a scheduler thread
+  - System monitor thread?
+    - Detect threads in native mode that exceeded their timeslice
+    - Trigger GC when memory gets low
+
+- Use newlines to terminate certain syntax constructs in the Parser
+  - Newline terminates `return <expr>`-like statements
+
+- Implement REPL in charly code
+  - Functionality needed
+    - Starting another fiber
+    - Waiting for a fiber to complete
 
 - Setup clang-tidy configuration and fix warnings and errors
   - Also attempt to reduce the amount of disabled compiler flags in the CMakeLists files
@@ -91,12 +105,12 @@
       - Update references
 
 - Implement native mode mechanism
-  - Worker threads that are inside native mode, that exceed some timeout (20ms?) will be
+  - Worker threads inside native mode that exceed their alloted timeslice will be
     marked as preempted by the system monitor thread.
     - The runtime will release the processor from the worker thread and will return it to the idle
       list of processors
     - The system monitor now detects that there are idle processors, but no idle worker threads,
-      so the runtime will start a new worker thread that acquired the processor
+      so the runtime will start a new worker thread that acquires the processor
     - Once the prempted worker thread returns from the native section it will check if it was
       preempted
       - If the worker was pre-empted, we try to reacquire the old processor

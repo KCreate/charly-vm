@@ -27,185 +27,63 @@
 #include <iomanip>
 #include <memory>
 
+#include "charly/value.h"
 #include "charly/core/compiler/ir/ir.h"
-#include "charly/utils/argumentparser.h"
-#include "charly/utils/buffer.h"
 #include "charly/utils/colorwriter.h"
 
 namespace charly::core::compiler::ir {
 
+using RawValue = runtime::RawValue;
+
 using Color = utils::Color;
 
-void IROperandCount8::dump(std::ostream& out) const {
-  utils::ColorWriter writer(out);
-  out << std::hex;
-  writer.fg(Color::Yellow, (uint32_t)this->value);
-  out << std::dec;
-}
-
-void IROperandCount16::dump(std::ostream& out) const {
-  utils::ColorWriter writer(out);
-  out << std::hex;
-  writer.fg(Color::Yellow, (uint32_t)this->value);
-  out << std::dec;
-}
-
-void IROperandIndex8::dump(std::ostream& out) const {
-  utils::ColorWriter writer(out);
-  out << std::hex;
-  writer.fg(Color::Yellow, (uint32_t)this->value);
-  out << std::dec;
-}
-
-void IROperandIndex16::dump(std::ostream& out) const {
-  utils::ColorWriter writer(out);
-  out << std::hex;
-  writer.fg(Color::Yellow, (uint32_t)this->value);
-  out << std::dec;
-}
-
-void IROperandSymbol::dump(std::ostream& out) const {
-  utils::ColorWriter writer(out);
-  out << std::hex;
-  writer.fg(Color::Red, "'", this->value, "'");
-  out << std::dec;
-}
-
-void IROperandOffset::dump(std::ostream& out) const {
-  utils::ColorWriter writer(out);
-  writer.fg(Color::Yellow, ".L", this->value);
-}
-
-void IROperandImmediate::dump(std::ostream& out) const {
-  utils::ColorWriter writer(out);
-  this->value.dump(out);
-}
-
-void IROperandICIndex::dump(std::ostream& out) const {
-  utils::ColorWriter writer(out);
-  out << std::hex;
-  writer.fg(Color::Magenta, "[", (uint32_t)this->value, "]");
-  out << std::dec;
-}
-
-void IRInstruction::at(const Location& location) {
-  this->location = location;
+void IRInstruction::at(const Location& loc) {
+  this->location = loc;
 }
 
 void IRInstruction::at(const ref<ast::Node>& node) {
   this->location = node->location();
 }
 
-uint32_t IRInstruction::popped_values() const {
-  [[maybe_unused]] uint32_t arg0 = 0;
-  [[maybe_unused]] uint32_t arg1 = 0;
-  [[maybe_unused]] uint32_t arg2 = 0;
-  [[maybe_unused]] uint32_t arg3 = 0;
-
-  if (this->operands.size() >= 1 && this->operands[0]->get_type() == OperandType::Count16) {
-    arg0 = cast<IROperandCount16>(this->operands[0])->value;
-  }
-  if (this->operands.size() >= 1 && this->operands[0]->get_type() == OperandType::Count8) {
-    arg0 = cast<IROperandCount8>(this->operands[0])->value;
-  }
-  if (this->operands.size() >= 2 && this->operands[1]->get_type() == OperandType::Count16) {
-    arg1 = cast<IROperandCount16>(this->operands[1])->value;
-  }
-  if (this->operands.size() >= 2 && this->operands[1]->get_type() == OperandType::Count8) {
-    arg1 = cast<IROperandCount8>(this->operands[1])->value;
-  }
-  if (this->operands.size() >= 3 && this->operands[2]->get_type() == OperandType::Count16) {
-    arg2 = cast<IROperandCount16>(this->operands[2])->value;
-  }
-  if (this->operands.size() >= 3 && this->operands[2]->get_type() == OperandType::Count8) {
-    arg2 = cast<IROperandCount8>(this->operands[2])->value;
-  }
-  if (this->operands.size() >= 4 && this->operands[3]->get_type() == OperandType::Count16) {
-    arg3 = cast<IROperandCount16>(this->operands[3])->value;
-  }
-  if (this->operands.size() >= 4 && this->operands[3]->get_type() == OperandType::Count8) {
-    arg3 = cast<IROperandCount8>(this->operands[3])->value;
-  }
-
-  switch (this->opcode) {
-#define PAIR(name, ictype, STACKPOP, STACKPUSH, ...) \
-  case Opcode::name: {                               \
-    return STACKPOP;                                 \
-  }
-    FOREACH_OPCODE(PAIR)
-#undef PAIR
-    case Opcode::__Count: {
-      FAIL("invalid opcode");
-    }
-  }
-}
-
-uint32_t IRInstruction::pushed_values() const {
-  [[maybe_unused]] uint32_t arg0 = 0;
-  [[maybe_unused]] uint32_t arg1 = 0;
-  [[maybe_unused]] uint32_t arg2 = 0;
-  [[maybe_unused]] uint32_t arg3 = 0;
-
-  if (this->operands.size() >= 1 && this->operands[0]->get_type() == OperandType::Count16) {
-    arg0 = cast<IROperandCount16>(this->operands[0])->value;
-  }
-  if (this->operands.size() >= 1 && this->operands[0]->get_type() == OperandType::Count8) {
-    arg0 = cast<IROperandCount8>(this->operands[0])->value;
-  }
-  if (this->operands.size() >= 2 && this->operands[1]->get_type() == OperandType::Count16) {
-    arg1 = cast<IROperandCount16>(this->operands[1])->value;
-  }
-  if (this->operands.size() >= 2 && this->operands[1]->get_type() == OperandType::Count8) {
-    arg1 = cast<IROperandCount8>(this->operands[1])->value;
-  }
-  if (this->operands.size() >= 3 && this->operands[2]->get_type() == OperandType::Count16) {
-    arg2 = cast<IROperandCount16>(this->operands[2])->value;
-  }
-  if (this->operands.size() >= 3 && this->operands[2]->get_type() == OperandType::Count8) {
-    arg2 = cast<IROperandCount8>(this->operands[2])->value;
-  }
-  if (this->operands.size() >= 4 && this->operands[3]->get_type() == OperandType::Count16) {
-    arg3 = cast<IROperandCount16>(this->operands[3])->value;
-  }
-  if (this->operands.size() >= 4 && this->operands[3]->get_type() == OperandType::Count8) {
-    arg3 = cast<IROperandCount8>(this->operands[3])->value;
-  }
-
-  switch (this->opcode) {
-#define PAIR(name, ictype, STACKPOP, STACKPUSH, ...) \
-  case Opcode::name: {                               \
-    return STACKPUSH;                                \
-  }
-    FOREACH_OPCODE(PAIR)
-#undef PAIR
-    case Opcode::__Count: {
-      FAIL("invalid opcode");
-    }
-  }
-}
-
 void IRInstruction::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
 
   // emit opcode mnemonic
-  writer.fg(Color::White, kOpcodeNames[(uint8_t)this->opcode]);
+  writer.fg(Color::White, kOpcodeNames[opcode], " ");
 
-  // emit instruction operands
-  bool first_operand = true;
-  for (const auto& operand : this->operands) {
-    if (first_operand) {
-      out << " ";
-    } else {
-      out << ", ";
-    }
-    first_operand = false;
-    operand->dump(out);
-  }
+  dump_arguments(out);
 
   // instruction source location
   if (this->location.valid) {
     writer.fg(Color::Grey, " ; at ", this->location);
   }
+}
+
+ref<IRInstruction> IRInstruction::make(Opcode opcode, uint32_t arg1, uint32_t arg2, uint32_t arg3) {
+#define DEF_IXXX(N) ::charly::make<IRInstruction_##N>();
+#define DEF_IAXX(N) ::charly::make<IRInstruction_##N>(arg1);
+#define DEF_IABX(N) ::charly::make<IRInstruction_##N>(arg1, arg2);
+#define DEF_IABC(N) ::charly::make<IRInstruction_##N>(arg1, arg2, arg3);
+#define DEF_IABB(N) ::charly::make<IRInstruction_##N>(arg1, arg2);
+#define DEF_IAAX(N) ::charly::make<IRInstruction_##N>(arg1);
+#define DEF_IAAA(N) ::charly::make<IRInstruction_##N>(arg1);
+
+  switch (opcode) {
+#define DEF(N, T, ...) case Opcode::N: { return DEF_##T(N); }
+    FOREACH_OPCODE(DEF)
+#undef DEF
+    default: {
+      FAIL("unexpected opcode");
+    }
+  }
+
+#undef DEF_IXXX
+#undef DEF_IAXX
+#undef DEF_IABX
+#undef DEF_IABC
+#undef DEF_IABB
+#undef DEF_IAAX
+#undef DEF_IAAA
 }
 
 void IRBasicBlock::link(ref<IRBasicBlock> source, ref<IRBasicBlock> target) {
@@ -305,7 +183,7 @@ void IRFunction::dump(std::ostream& out) const {
   writer.fg(Color::Green, this->ast->class_static_function ? "true" : "false", "\n");
   out << "\n";
 
-  if (this->exception_table.size()) {
+  if (!exception_table.empty()) {
     writer.fg(Color::Yellow, "  exception table:", "\n");
     for (const auto& entry : this->exception_table) {
       writer.fg(Color::Grey, "  - (");
@@ -320,20 +198,7 @@ void IRFunction::dump(std::ostream& out) const {
     out << "\n";
   }
 
-  if (this->inline_cache_table.size()) {
-    writer.fg(Color::Magenta, "  inline caches:", "\n");
-    int ic_index = 0;
-    for (const IRInlineCacheTableEntry& entry : this->inline_cache_table) {
-      writer.fg(Color::Grey, "  - #", std::setw(2), std::left, ic_index, std::setw(1));
-      writer.fg(Color::Magenta, " ", kInlineCacheTypeNames[entry.type]);
-      out << "\n";
-
-      ic_index++;
-    }
-    out << "\n";
-  }
-
-  if (this->string_table.size()) {
+  if (!string_table.empty()) {
     writer.fg(Color::Blue, "  string table:", "\n");
     int str_index = 0;
     for (const IRStringTableEntry& entry : this->string_table) {
@@ -345,6 +210,17 @@ void IRFunction::dump(std::ostream& out) const {
 
       str_index++;
     }
+    out << "\n";
+  }
+
+  if (!constant_table.empty()) {
+    writer.fg(Color::Blue, "  constant table:", "\n");
+    for (RawValue value : this->constant_table) {
+      writer.fg(Color::Grey, "  - ");
+      out << value;
+      out << "\n";
+    }
+
     out << "\n";
   }
 
@@ -362,15 +238,6 @@ void IRModule::dump(std::ostream& out) const {
   writer.fg(Color::Grey, "; IR for file ");
   writer.fg(Color::Yellow, "'", this->filename, "'", "\n");
   out << '\n';
-
-  writer.fg(Color::Grey, "; symbol table", "\n");
-  for (const std::string& entry : this->symbol_table) {
-    writer.fg(Color::Grey, "  - ");
-    writer.fg(Color::Red, " \"", entry, "\"");
-    writer.fg(Color::Grey, " hash=", std::hex, crc32::hash_string(entry), std::dec);
-    out << "\n";
-  }
-  out << "\n";
 
   writer.fg(Color::Grey, "; functions", '\n');
   for (const ref<IRFunction>& func : this->functions) {

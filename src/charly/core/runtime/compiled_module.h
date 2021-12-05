@@ -71,18 +71,6 @@ struct StringTableEntry {
   std::string value;
 };
 
-// TODO: implement different inline cache types
-struct InlineCacheEntry {
-  InlineCacheEntry(compiler::ir::ICType type) : type(type) {}
-  compiler::ir::ICType type;
-
-  union {
-    struct {
-      uint64_t padd[4];
-    } _padd;
-  } as;
-};
-
 struct CompiledModule;
 struct SharedFunctionInfo {
   CompiledModule* owner_module;
@@ -94,7 +82,7 @@ struct SharedFunctionInfo {
   std::vector<ExceptionTableEntry> exception_table;
   std::vector<SourceMapEntry> sourcemap_table;
   std::vector<StringTableEntry> string_table;
-  std::vector<InlineCacheEntry> inline_cache_table;
+  std::vector<RawValue> constant_table;
 
   uintptr_t buffer_base_ptr;    // pointer to the base of the containing modules buffer
   uintptr_t bytecode_base_ptr;  // pointer to the functions first opcode
@@ -115,12 +103,9 @@ struct CompiledModule {
   }
 
   std::string filename;
-  std::vector<std::string> symbol_table;
   std::vector<SharedFunctionInfo*> function_table;
 
-  // collective buffer containing all the bytecodes and inline cache tables
-  // for all the modules compiled functions
-  //
+  // buffer containing the bytecodes
   // the struct 'SharedFunctionInfo' contains offsets into this buffer
   utils::Buffer buffer;
 

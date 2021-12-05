@@ -45,13 +45,8 @@ CATCH_TEST_CASE("Compiled Module") {
     CATCH_CHECK(module);
 
     CATCH_CHECK(module->filename == "test");
-    CATCH_CHECK(module->symbol_table.size() == 3);
-    CATCH_CHECK(module->symbol_table.at(0) == "main");
-    CATCH_CHECK(module->symbol_table.at(1) == "foo");
-    CATCH_CHECK(module->symbol_table.at(2) == "anonymous");
 
     CATCH_CHECK(module->function_table.size() == 2);
-
     auto main = module->function_table.at(0);
     CATCH_CHECK(main->name == "main");
     CATCH_CHECK(main->ir_info.valid);
@@ -62,6 +57,9 @@ CATCH_TEST_CASE("Compiled Module") {
     CATCH_CHECK(main->ir_info.minargc == 0);
     CATCH_CHECK(main->ir_info.spread_argument == false);
     CATCH_CHECK(main->ir_info.arrow_function == false);
+    CATCH_CHECK(main->string_table.size() == 2);
+    CATCH_CHECK(main->string_table.at(0).value == "main");
+    CATCH_CHECK(main->string_table.at(1).value == "foo");
 
     auto anon = module->function_table.at(1);
     CATCH_CHECK(anon->name == "anonymous");
@@ -73,6 +71,8 @@ CATCH_TEST_CASE("Compiled Module") {
     CATCH_CHECK(anon->ir_info.minargc == 1);
     CATCH_CHECK(anon->ir_info.spread_argument == false);
     CATCH_CHECK(anon->ir_info.arrow_function == true);
+    CATCH_CHECK(anon->string_table.size() == 1);
+    CATCH_CHECK(anon->string_table.at(0).value == "anonymous");
   }
 
   CATCH_SECTION("exception tables") {

@@ -128,6 +128,10 @@ public:
   // returns -1 for EOF
   int64_t peek_utf8_cp(uint32_t nth = 0);
 
+  // peek the next character in the buffer
+  // returns -1 for EOF
+  int32_t peek_char(uint32_t nth = 0);
+
   // protect / unprotect the backing buffer
   void protect();
   void unprotect();

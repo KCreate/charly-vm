@@ -24,25 +24,6 @@
  * SOFTWARE.
  */
 
-func times(n, cb) {
-    let i = 0
-    loop {
-        if i == n break
-        cb(i);
-        i += 1
-    }
-}
-
-func repeat_string(string, n) {
-    let result = ""
-
-    times(n, ->{
-        result = "{result}{string}"
-    })
-
-    return result
-}
-
 func determine_max_stack_size {
     let counter = 0
 
@@ -59,32 +40,96 @@ func determine_max_stack_size {
     return 100
 }
 
-func foreach_until(tuple, cb, sentinel = null) {
-    let i = 0
-    loop {
-        const value = tuple[i]
-        if value == sentinel {
-            break
+const builtin_writevalue = @"charly.builtin.writevalue"
+const builtin_readline = @"charly.builtin.readline"
+const builtin_readfile = @"charly.builtin.readfile"
+const builtin_compile = @"charly.builtin.compile"
+const builtin_exit = @"charly.builtin.exit"
+
+func write(string) = builtin_writevalue(string)
+
+func echo(string) {
+    write(string);
+    write("\n");
+}
+
+func readline(prompt = "> ") {
+    write(prompt);
+    return builtin_readline()
+}
+
+func exit(status = 0) = builtin_exit(status)
+
+func compile(source, name = "repl") = builtin_compile(source, name)
+
+func readfile(name) = builtin_readfile(name)
+
+let @"charly.boot" = func boot {
+    @"charly.boot" = null
+
+    func execute_program(filename) {
+        const file = readfile(filename)
+        if file == null {
+            throw "could not open file {filename}"
         }
 
-        cb(value, i, tuple)
-        i += 1
+        const module = compile(file, filename)
+        if module == null {
+            throw "could not compile {filename}"
+        }
+
+        return module()
+    }
+
+    const filename = ARGV[0]
+
+    if filename != null {
+        return execute_program(filename)
+    }
+
+    let repl_source_counter = 0
+    func compile(source, name) {
+        repl_source_counter += 1
+        return builtin_compile(source, name)
+    }
+
+    let input = ARGV[0]
+
+    if input == null {
+        input = readline()
+    }
+
+    loop {
+        switch input {
+            case "" {
+                break
+            }
+
+            case ".exit" {
+                return
+            }
+
+            case ".help" {
+                echo(".exit        Exit from the REPL")
+                echo(".help        Show this help message")
+                break
+            }
+
+            default {
+                const module = compile(input, "repl")
+                try {
+                    const result = module()
+                    write("< ")
+                    echo(result)
+                } catch(e) {
+                    echo("Caught exception:")
+                    echo(e)
+                }
+            }
+        }
+
+        input = readline()
     }
 }
 
-let filename = ARGV[0]
-
-switch (filename) {
-    case "repl" {
-        foreach_until(ARGV, ->(a, i) {
-            ARGV[i] = "#{i}: {a}"
-        })
-
-        return "repl: {ARGV}"
-    }
-
-    default {
-        const stack_size = determine_max_stack_size()
-        return ("stack height limit: {stack_size} frames", ARGV)
-    }
-}
+return @"charly.boot"()

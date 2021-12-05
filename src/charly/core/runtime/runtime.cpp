@@ -86,9 +86,11 @@ void Runtime::register_module(Thread* thread, const ref<CompiledModule>& module)
   std::lock_guard<std::mutex> locker(m_mutex);
   m_compiled_modules.push_back(module);
 
-  // register symbols in the module symbol table
-  for (const std::string& symbol : module->symbol_table) {
-    declare_symbol(thread, symbol.data(), symbol.size());
+  // register symbols in the functions string tables
+  for (const SharedFunctionInfo* func : module->function_table) {
+    for (const StringTableEntry& entry : func->string_table) {
+      declare_symbol(thread, entry.value);
+    }
   }
 }
 

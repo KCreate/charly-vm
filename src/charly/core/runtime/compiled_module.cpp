@@ -75,11 +75,11 @@ void SharedFunctionInfo::dump(std::ostream& out) const {
   const uint8_t* next_opcode = function_bytecodes;
   while (next_opcode < function_end) {
     const Opcode opcode = *(Opcode*)next_opcode;
-    DCHECK(opcode < Opcode::__Count);
-    size_t opcode_length = kOpcodeLength[opcode];
+    DCHECK(opcode < Opcode::OpcodeCount);
+    size_t opcode_length = kInstructionLength;
     const std::string& opcode_name = kOpcodeNames[opcode];
 
-    writer.fg(Color::Grey, ";  ", std::setw(16), std::left, opcode_name, std::setw(1));
+    writer.fg(Color::Grey, ";  ", std::setw(20), std::left, opcode_name, std::setw(1));
     out << termcolor::yellow;
     Buffer::hexdump((const char*)next_opcode, opcode_length, out, true);
     out << termcolor::reset;

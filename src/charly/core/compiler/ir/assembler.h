@@ -44,13 +44,13 @@ public:
   static ref<runtime::CompiledModule> compile_module(const ref<IRModule>& module);
 
 private:
-  Assembler(const ref<IRModule>& module) : m_ir_module(module), m_label_counter(module->next_label) {}
+  explicit Assembler(const ref<IRModule>& module) : m_ir_module(module), m_label_counter(module->next_label) {}
 
   // assemble set ir module
   void assemble();
 
-  // encode instruction into buffer
-  void encode_instruction(const ref<IRInstruction>& instruction);
+  // encode op into buffer
+  void encode_instruction(const ref<IRInstruction>& op);
 
   // emit some padding bytes to align the next write to a pointer boundary
   void align_to_pointer();
@@ -58,7 +58,6 @@ private:
   // reserve a new label
   Label reserve_label();
   void place_label(Label label);
-  void write_relative_label_reference(Label label, Label other);  // int32_t relative offset to other label
 
   // resolve all unresolved label references in the bytecode buffer
   void patch_unresolved_labels();

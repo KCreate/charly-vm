@@ -67,6 +67,8 @@ public:
   void push(RawValue value);
 
   const ExceptionTableEntry* find_active_exception_table_entry(uintptr_t thread_ip) const;
+
+  const StringTableEntry& get_string_table_entry(uint16_t index) const;
 };
 
 class Interpreter {
@@ -85,7 +87,7 @@ private:
   static RawValue execute(Thread* thread);
 
 #define OP(name, ictype, stackpop, stackpush, ...) \
-  static ContinueMode opcode_##name(Thread* thread, Frame* frame, const compiler::ir::InstructionDecoder* op);
+  static ContinueMode opcode_##name(Thread* thread, Frame* frame, compiler::ir::Instruction_##name* op);
   FOREACH_OPCODE(OP)
 #undef OP
 };

@@ -4,10 +4,12 @@
 *.swp
 .DS_Store
 .idea/
+.vscode/
 bin/
+build/
 cmake-build-debug
-cmake-build-release
 cmake-build-minsizerel
+cmake-build-release
 cmake-build-relwithdebinfo
 code.profdata
 default.profraw

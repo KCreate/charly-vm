@@ -80,6 +80,12 @@ const ExceptionTableEntry* Frame::find_active_exception_table_entry(uintptr_t th
   return nullptr;
 }
 
+const StringTableEntry& Frame::get_string_table_entry(uint16_t index) const {
+  const auto& info = *shared_function_info;
+  CHECK(index < info.string_table.size());
+  return info.string_table[index];
+}
+
 RawValue Interpreter::call_function(
   Thread* thread, RawValue self, RawFunction function, RawValue* arguments, uint8_t argc) {
   Runtime* runtime = thread->runtime();
@@ -185,31 +191,30 @@ RawValue Interpreter::execute(Thread* thread) {
 
   // dispatch table to opcode handlers
   static void* OPCODE_DISPATCH_TABLE[] = {
-#define OP(name, ictype, stackpop, stackpush, ...) &&execute_handler_##name,
+#define OP(N, ...) &&execute_handler_##N,
     FOREACH_OPCODE(OP)
 #undef OP
   };
 
   ContinueMode continue_mode;
-  InstructionDecoder* op = nullptr;
+  Instruction* op;
 
-  auto next_handler = [&]() __attribute__((always_inline)) {
-    op = bitcast<InstructionDecoder*>(frame->ip);
-    Opcode opcode = op->opcode;
-    size_t opcode_length = kOpcodeLength[opcode];
+  auto next_handler = [&]() __attribute__((always_inline)) -> void* {
+    op = bitcast<Instruction*>(frame->ip);
+    Opcode opcode = op->opcode();
     frame->oldip = frame->ip;
-    frame->ip += opcode_length;
+    frame->ip += kInstructionLength;
     return OPCODE_DISPATCH_TABLE[opcode];
   };
 
   goto* next_handler();
 
-#define OP(name, ictype, stackpop, stackpush, ...)                 \
-  execute_handler_##name : {                                       \
-    continue_mode = Interpreter::opcode_##name(thread, frame, op); \
-    if (continue_mode == ContinueMode::Next)                       \
-      goto* next_handler();                                        \
-    goto handle_return_or_exception;                               \
+#define OP(N, ...)                                                   \
+  execute_handler_##N : {                                            \
+    continue_mode = Interpreter::opcode_##N(thread, frame, op->N()); \
+    if (continue_mode == ContinueMode::Next)                         \
+      goto* next_handler();                                          \
+    goto handle_return_or_exception;                                 \
   }
   FOREACH_OPCODE(OP)
 #undef OP
@@ -243,14 +248,14 @@ handle_return_or_exception:
 
 #define OP(name)                                                                       \
   Interpreter::ContinueMode __attribute__((always_inline)) Interpreter::opcode_##name( \
-    [[maybe_unused]] Thread* thread, [[maybe_unused]] Frame* frame, [[maybe_unused]] const InstructionDecoder* op)
+    [[maybe_unused]] Thread* thread, [[maybe_unused]] Frame* frame, [[maybe_unused]] Instruction_##name* op)
 
 OP(nop) {
   return ContinueMode::Next;
 }
 
 OP(panic) {
-  debuglnf("panic in thread %", thread->id());
+  debuglnf("panic in thread % at ip %", thread->id(), (void*)frame->oldip);
   thread->abort(1);
 }
 
@@ -259,7 +264,7 @@ OP(import) {
 }
 
 OP(stringconcat) {
-  Count8 count = op->stringconcat.count;
+  uint8_t count = op->arg();
 
   utils::Buffer buffer;
   for (int64_t depth = count - 1; depth >= 0; depth--) {
@@ -278,7 +283,8 @@ OP(stringconcat) {
 }
 
 OP(declareglobal) {
-  SYMBOL name = op->declareglobal.name;
+  uint8_t string_index = op->arg();
+  SYMBOL name = frame->get_string_table_entry(string_index).hash;
   RawValue result = thread->runtime()->declare_global_variable(thread, name, false);
 
   if (result.is_error_exception()) {
@@ -292,7 +298,8 @@ OP(declareglobal) {
 }
 
 OP(declareglobalconst) {
-  SYMBOL name = op->declareglobalconst.name;
+  uint8_t string_index = op->arg();
+  SYMBOL name = frame->get_string_table_entry(string_index).hash;
   RawValue result = thread->runtime()->declare_global_variable(thread, name, true);
 
   if (result.is_error_exception()) {
@@ -328,7 +335,7 @@ OP(dup2) {
 }
 
 OP(jmp) {
-  int32_t offset = op->jmp.offset;
+  int16_t offset = op->arg();
   frame->ip = op->ip() + offset;
   return ContinueMode::Next;
 }
@@ -336,7 +343,7 @@ OP(jmp) {
 OP(jmpf) {
   RawValue condition = frame->pop();
   if (!condition.truthyness()) {
-    int32_t offset = op->jmpf.offset;
+    int16_t offset = op->arg();
     frame->ip = op->ip() + offset;
   }
   return ContinueMode::Next;
@@ -345,7 +352,7 @@ OP(jmpf) {
 OP(jmpt) {
   RawValue condition = frame->pop();
   if (condition.truthyness()) {
-    int32_t offset = op->jmpf.offset;
+    int16_t offset = op->arg();
     frame->ip = op->ip() + offset;
   }
   return ContinueMode::Next;
@@ -353,11 +360,12 @@ OP(jmpt) {
 
 OP(testintjmp) {
   RawValue top = frame->pop();
-  Count8 check = op->testintjmp.value;
+  uint8_t check = op->arg1();
 
   DCHECK(top.isInt());
   if (RawInt::cast(top).value() == check) {
-    frame->ip = op->ip() + op->testintjmp.offset;
+    int16_t offset = op->arg2();
+    frame->ip = op->ip() + offset;
   } else {
     frame->push(top);
   }
@@ -390,7 +398,7 @@ OP(call) {
   // +-----------+
   // | Self      |
   // +-----------+
-  Count8 argc = op->call.count;
+  uint8_t argc = op->arg();
   RawValue* args = frame->top_n(argc);
   RawValue callee = frame->peek(argc);
   RawValue self = frame->peek(argc + 1);
@@ -422,12 +430,15 @@ OP(ret) {
 }
 
 OP(load) {
-  frame->push(op->load.value);
+  uint16_t index = op->arg();
+  RawValue value = frame->shared_function_info->constant_table[index];
+  frame->push(value);
   return ContinueMode::Next;
 }
 
-OP(loadsymbol) {
-  frame->push(RawSymbol::make(op->loadsymbol.name));
+OP(loadsmi) {
+  auto value = (uintptr_t)bitcast<int16_t>(op->arg());
+  frame->push(RawValue(value));
   return ContinueMode::Next;
 }
 
@@ -442,7 +453,8 @@ OP(loadargc) {
 }
 
 OP(loadglobal) {
-  SYMBOL name = op->loadglobal.name;
+  uint8_t string_index = op->arg();
+  SYMBOL name = frame->get_string_table_entry(string_index).hash;
   RawValue result = thread->runtime()->read_global_variable(thread, name);
 
   if (result.is_error_not_found()) {
@@ -457,15 +469,15 @@ OP(loadglobal) {
 }
 
 OP(loadlocal) {
-  Index8 index = op->loadlocal.index;
+  uint8_t index = op->arg();
   DCHECK(index < frame->shared_function_info->ir_info.local_variables);
   frame->push(frame->locals[index]);
   return ContinueMode::Next;
 }
 
 OP(loadfar) {
-  Count8 depth = op->loadfar.depth;
-  Index8 index = op->loadfar.index;
+  uint8_t depth = op->arg1();
+  uint8_t index = op->arg2();
 
   RawTuple context = RawTuple::cast(frame->context);
   while (depth) {
@@ -524,8 +536,8 @@ OP(loadsuperattr) {
 }
 
 OP(setglobal) {
-  SYMBOL name = op->setglobal.name;
-
+  uint8_t string_index = op->arg();
+  SYMBOL name = frame->get_string_table_entry(string_index).hash;
   RawValue value = frame->pop();
   RawValue result = thread->runtime()->set_global_variable(thread, name, value);
 
@@ -546,7 +558,7 @@ OP(setglobal) {
 
 OP(setlocal) {
   RawValue top = frame->peek();
-  Index8 index = op->setlocal.index;
+  uint8_t index = op->arg();
   DCHECK(index < frame->shared_function_info->ir_info.local_variables);
   frame->locals[index] = top;
   return ContinueMode::Next;
@@ -558,8 +570,8 @@ OP(setreturn) {
 }
 
 OP(setfar) {
-  Count8 depth = op->setfar.depth;
-  Index8 index = op->setfar.index;
+  uint8_t depth = op->arg1();
+  uint8_t index = op->arg2();
 
   RawTuple context = RawTuple::cast(frame->context);
   while (depth) {
@@ -614,7 +626,7 @@ OP(setattrsym) {
 }
 
 OP(unpacksequence) {
-  Count8 count = op->unpacksequence.count;
+  uint8_t count = op->arg();
 
   RawValue value = frame->pop();
   switch (value.shape_id()) {
@@ -655,7 +667,7 @@ OP(unpackobjectspread) {
 }
 
 OP(makefunc) {
-  int32_t offset = op->makefunc.offset;
+  int16_t offset = op->arg();
   SharedFunctionInfo* shared_data = *bitcast<SharedFunctionInfo**>(op->ip() + offset);
   RawFunction func = RawFunction::cast(thread->runtime()->create_function(thread, frame->context, shared_data));
   frame->push(func);
@@ -671,7 +683,7 @@ OP(makesubclass) {
 }
 
 OP(makestr) {
-  Index16 index = op->makestr.index;
+  uint16_t index = op->makestr()->arg();
 
   const SharedFunctionInfo& shared_info = *frame->shared_function_info;
   DCHECK(index < shared_info.string_table.size());
@@ -699,7 +711,7 @@ OP(makedictspread) {
 
 OP(maketuple) {
   Runtime* runtime = thread->runtime();
-  Count16 count = op->maketuple.count;
+  uint8_t count = op->arg();
   RawTuple tuple = RawTuple::cast(runtime->create_tuple(thread, count));
 
   while (count--) {
@@ -778,8 +790,8 @@ OP(add) {
   }
 
   if ((left.isInt() || left.isFloat()) && (right.isInt() || right.isFloat())) {
-    double lf = left.isInt() ? RawInt::cast(left).value() : RawFloat::cast(left).value();
-    double rf = right.isInt() ? RawInt::cast(right).value() : RawFloat::cast(right).value();
+    double lf = left.isInt() ? (double)RawInt::cast(left).value() : RawFloat::cast(left).value();
+    double rf = right.isInt() ? (double)RawInt::cast(right).value() : RawFloat::cast(right).value();
     RawFloat result = RawFloat::make(lf + rf);
     frame->push(result);
     return ContinueMode::Next;

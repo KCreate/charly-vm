@@ -7,21 +7,21 @@
 
 This launches a REPL which (at the moment) does some cool stuff, but still not a lot.
 
-`./debug.sh [--help] [--dump_ast] [--dump_ir] [--dump_asm] [--opt_disable]`
+`./debug.sh [path/to/file.ch]`
 
 # Milestones
 
 - [x] Lexer
 - [x] Parser
 - [x] Compiler
-- [ ] Scheduler
+- [x] Scheduler
+- [x] REPL
+- [ ] Inline caching
 - [ ] Object System
 - [ ] Concurrent Garbage Collector
 - [ ] Bytecode VM
 - [ ] Object Maps
 - [ ] Concurrency primitives (Channels, select, Promises, await)
-- [ ] Inline caching
-- [ ] REPL
 - [ ] Core Utilities (Standard Library)
 - [ ] Network Library (Standard Library)
 - [ ] Graphics Library (Standard Library)

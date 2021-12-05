@@ -192,8 +192,6 @@ HeapRegion* Heap::pop_free_region() {
     return region;
   }
 
-  debugln("heap region freelist is empty!");
-
   m_runtime->gc()->request_gc();
 
   return nullptr;

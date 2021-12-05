@@ -43,7 +43,7 @@ namespace charly::core::compiler::ir {
 
 class Builder {
 public:
-  Builder(const std::string& filename) :
+  explicit Builder(const std::string& filename) :
     m_maximum_stack_height(0),
     m_current_stack_height(0),
     m_label_counter(0),
@@ -55,13 +55,16 @@ public:
   uint16_t register_string(const std::string& string);
 
   // register a symbol in the module symbol table
-  void register_symbol(const std::string& string);
+  SYMBOL register_symbol(const std::string& string);
+
+  // register constant RawValue in current functions constant pool
+  uint16_t register_constant(runtime::RawValue value);
 
   // basic block management
   ref<IRBasicBlock> new_basic_block();
   ref<IRBasicBlock> active_block() const;
   ref<IRFunction> active_function() const;
-  void begin_function(Label head, ref<ast::Function> ast);
+  void begin_function(Label head, const ref<ast::Function>& ast);
   void finish_function();
 
   // exception table building
@@ -76,121 +79,40 @@ public:
   void remove_useless_jumps();
   void remove_dead_blocks();
   void emit_exception_tables();
-  void allocate_inline_caches();
 
   // label management
   Label reserve_label();
   void place_label(Label label);
 
-  // emit an IR statement into the current function
-  template <typename... Args>
-  ref<IRInstruction> emit(Opcode opcode, Args&&... operands) {
-    ref<IRBasicBlock> block = active_block();
-    ref<IRInstruction> instruction = make<IRInstruction>(opcode, std::forward<Args>(operands)...);
+  ref<IRInstruction> emit(const ref<IRInstruction>& instruction) {
+    return emit_instruction_impl(instruction);
+  };
 
-    update_stack(-instruction->popped_values());
-    update_stack(instruction->pushed_values());
+#define DEF_IXXX(O) ref<IRInstruction> emit_##O() { return emit_instruction_impl(make<IRInstruction_##O>()); }
+#define DEF_IAXX(O) ref<IRInstruction> emit_##O(uint8_t arg) { return emit_instruction_impl(make<IRInstruction_##O>(arg)); }
+#define DEF_IABX(O) ref<IRInstruction> emit_##O(uint8_t arg1, uint8_t arg2) { return emit_instruction_impl(make<IRInstruction_##O>(arg1, arg2)); }
+#define DEF_IABC(O) ref<IRInstruction> emit_##O(uint8_t arg1, uint8_t arg2, uint8_t arg3) { return emit_instruction_impl(make<IRInstruction_##O>(arg1, arg2, arg3)); }
+#define DEF_IABB(O) ref<IRInstruction> emit_##O(uint8_t arg1, uint16_t arg2) { return emit_instruction_impl(make<IRInstruction_##O>(arg1, arg2)); }
+#define DEF_IAAX(O) ref<IRInstruction> emit_##O(uint16_t arg) { return emit_instruction_impl(make<IRInstruction_##O>(arg)); }
+#define DEF_IAAA(O) ref<IRInstruction> emit_##O(uint32_t arg) { return emit_instruction_impl(make<IRInstruction_##O>(arg)); }
+#define DEF_EMITS(N, T, ...) DEF_##T(N);
+  FOREACH_OPCODE(DEF_EMITS)
+#undef DEF_OPCODES
+#undef DEF_IXXX
+#undef DEF_IAXX
+#undef DEF_IABX
+#undef DEF_IABC
+#undef DEF_IABB
+#undef DEF_IAAX
+#undef DEF_IAAA
 
-    if (block->instructions.size() == 0) {
-      place_label(reserve_label());
-    }
+  // helper method to emit a symbol constant load
+  ref<IRInstruction> emit_loadsymbol(const std::string& string) {
+    return emit_load(register_constant(runtime::RawSymbol::make(register_symbol(string))));
+  };
 
-    block->instructions.push_back(instruction);
-
-    if (kBranchingOpcodes.count(opcode)) {
-      new_basic_block();
-    }
-
-    return instruction;
-  }
-
-  ref<IRInstruction> emit_nop();
-  ref<IRInstruction> emit_panic();
-  ref<IRInstruction> emit_import();
-  ref<IRInstruction> emit_stringconcat(IROpCount8 count);
-  ref<IRInstruction> emit_declareglobal(IROpSymbol symbol);
-  ref<IRInstruction> emit_declareglobalconst(IROpSymbol symbol);
-  ref<IRInstruction> emit_type();
-  ref<IRInstruction> emit_pop();
-  ref<IRInstruction> emit_dup();
-  ref<IRInstruction> emit_dup2();
-  ref<IRInstruction> emit_jmp(IROpOffset label);
-  ref<IRInstruction> emit_jmpf(IROpOffset label);
-  ref<IRInstruction> emit_jmpt(IROpOffset label);
-  ref<IRInstruction> emit_testintjmp(IROpCount8 value, IROpOffset label);
-  ref<IRInstruction> emit_throwex();
-  ref<IRInstruction> emit_getexception();
-  ref<IRInstruction> emit_call(IROpCount8 count);
-  ref<IRInstruction> emit_callspread(IROpCount8 count);
-  ref<IRInstruction> emit_ret();
-  ref<IRInstruction> emit_load(IROpImmediate value);
-  ref<IRInstruction> emit_loadsymbol(IROpSymbol symbol);
-  ref<IRInstruction> emit_loadself();
-  ref<IRInstruction> emit_loadargc();
-  ref<IRInstruction> emit_loadglobal(IROpSymbol symbol);
-  ref<IRInstruction> emit_loadlocal(IROpCount8 offset);
-  ref<IRInstruction> emit_loadfar(IROpCount8 depth, IROpCount8 offset);
-  ref<IRInstruction> emit_loadattr();
-  ref<IRInstruction> emit_loadattrsym(IROpSymbol symbol);
-  ref<IRInstruction> emit_loadsuperconstructor();
-  ref<IRInstruction> emit_loadsuperattr(IROpSymbol symbol);
-  ref<IRInstruction> emit_setglobal(IROpSymbol symbol);
-  ref<IRInstruction> emit_setlocal(IROpCount8 offset);
-  ref<IRInstruction> emit_setreturn();
-  ref<IRInstruction> emit_setfar(IROpCount8 depth, IROpCount8 offset);
-  ref<IRInstruction> emit_setattr();
-  ref<IRInstruction> emit_setattrsym(IROpSymbol symbol);
-  ref<IRInstruction> emit_unpacksequence(IROpCount8 count);
-  ref<IRInstruction> emit_unpacksequencespread(IROpCount8 before, IROpCount8 after);
-  ref<IRInstruction> emit_unpackobject(IROpCount8 count);
-  ref<IRInstruction> emit_unpackobjectspread(IROpCount8 count);
-  ref<IRInstruction> emit_makefunc(IROpOffset offset);
-  ref<IRInstruction> emit_makeclass(IROpSymbol name,
-                                    IROpCount8 funccount,
-                                    IROpCount8 propcount,
-                                    IROpCount8 staticpropcount);
-  ref<IRInstruction> emit_makesubclass(IROpSymbol name,
-                                       IROpCount8 funccount,
-                                       IROpCount8 propcount,
-                                       IROpCount8 staticpropcount);
-  ref<IRInstruction> emit_makestr(IROpIndex16 index);
-  ref<IRInstruction> emit_makelist(IROpCount16 count);
-  ref<IRInstruction> emit_makelistspread(IROpCount16 count);
-  ref<IRInstruction> emit_makedict(IROpCount16 count);
-  ref<IRInstruction> emit_makedictspread(IROpCount16 count);
-  ref<IRInstruction> emit_maketuple(IROpCount16 count);
-  ref<IRInstruction> emit_maketuplespread(IROpCount16 count);
-  ref<IRInstruction> emit_fiberspawn();
-  ref<IRInstruction> emit_fiberyield();
-  ref<IRInstruction> emit_fibercall();
-  ref<IRInstruction> emit_fiberpause();
-  ref<IRInstruction> emit_fiberresume();
-  ref<IRInstruction> emit_fiberawait();
-  ref<IRInstruction> emit_caststring();
-  ref<IRInstruction> emit_castsymbol();
-  ref<IRInstruction> emit_castiterator();
-  ref<IRInstruction> emit_iteratornext();
-  ref<IRInstruction> emit_add();
-  ref<IRInstruction> emit_sub();
-  ref<IRInstruction> emit_mul();
-  ref<IRInstruction> emit_div();
-  ref<IRInstruction> emit_mod();
-  ref<IRInstruction> emit_pow();
-  ref<IRInstruction> emit_usub();
-  ref<IRInstruction> emit_eq();
-  ref<IRInstruction> emit_neq();
-  ref<IRInstruction> emit_lt();
-  ref<IRInstruction> emit_gt();
-  ref<IRInstruction> emit_le();
-  ref<IRInstruction> emit_ge();
-  ref<IRInstruction> emit_unot();
-  ref<IRInstruction> emit_shl();
-  ref<IRInstruction> emit_shr();
-  ref<IRInstruction> emit_shru();
-  ref<IRInstruction> emit_band();
-  ref<IRInstruction> emit_bor();
-  ref<IRInstruction> emit_bxor();
-  ref<IRInstruction> emit_ubnot();
+  // helper method to emit loads of immediate values
+  ref<IRInstruction> emit_load_value(runtime::RawValue value);
 
   ref<IRModule> get_module() const {
     return m_module;
@@ -204,6 +126,9 @@ public:
   uint32_t maximum_stack_height() const;
   void reset_stack_height();
   void update_stack(int32_t amount);
+
+private:
+  ref<IRInstruction> emit_instruction_impl(const ref<IRInstruction>& instruction);
 
 private:
   uint32_t m_maximum_stack_height;

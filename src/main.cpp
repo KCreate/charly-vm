@@ -120,24 +120,7 @@ int32_t cli(DiagnosticConsole& console) {
 
     {
       using namespace ir;
-      debuglnf("# %opcodes (%)%", termcolor::yellow, (int)Opcode::__Count, termcolor::reset);
-      for (uint8_t opcode = Opcode::nop; opcode < Opcode::__Count; opcode++) {
-        const std::string& name = kOpcodeNames[opcode];
-        size_t length = kOpcodeLength[opcode];
-
-        utils::Buffer buf;
-        termcolor::colorize(buf);
-        buf << std::setw(20) << name << std::setw(1) << ": ";
-        buf << termcolor::yellow << std::setw(2) << length << std::setw(1) << termcolor::reset << " bytes";
-
-        if (length > 8) {
-          buf << termcolor::red << " (huge instruction)" << termcolor::reset;
-        } else if (length > 4) {
-          buf << termcolor::yellow << " (big instruction)" << termcolor::reset;
-        }
-
-        debuglnf("%", buf);
-      }
+      debuglnf("testintjmp(32, 64) = %", encode_iabb(Opcode::testintjmp, 32, 64));
     }
   }
 

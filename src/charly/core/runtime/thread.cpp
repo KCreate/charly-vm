@@ -237,6 +237,13 @@ void Thread::entry_main_thread() {
   CHECK(charly_vm_dir.has_value());
   fs::path charly_dir(charly_vm_dir.value());
   fs::path boot_path = charly_dir / "src/charly/stdlib/boot.ch";
+  if (utils::ArgumentParser::is_flag_set("boot_path")) {
+    const auto& values = utils::ArgumentParser::get_arguments_for_flag("boot_path");
+    CHECK(values.size() == 1, "expected one argument for flag 'boot_path'");
+    const std::string& value = values.front();
+    boot_path = fs::current_path() / value;
+  }
+
   std::ifstream boot_file(boot_path);
 
   if (!boot_file.is_open()) {
@@ -252,8 +259,7 @@ void Thread::entry_main_thread() {
     boot_file_buffer.write_utf8_cp('\n');
   }
 
-  debuglnf("boot_file_buffer.size() = %", boot_file_buffer.size());
-  auto unit = Compiler::compile(boot_path, boot_file_buffer, CompilationUnit::Type::Module);
+  auto unit = Compiler::compile(boot_path, boot_file_buffer, CompilationUnit::Type::ReplInput);
   if (unit->console.has_errors()) {
     unit->console.dump_all(std::cerr);
     debuglnf("Could not compile charly runtime boot file (%)", boot_path);

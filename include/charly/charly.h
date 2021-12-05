@@ -96,7 +96,13 @@ B bitcast(A&& value) {
   return *reinterpret_cast<B*>(&value);
 }
 
-static const int32_t kIntMin = -2147483647 - 1;
-static const int32_t kIntMax = 2147483647;
+static const int32_t kInt32Min = -2147483647 - 1;
+static const int32_t kInt32Max = 2147483647;
+static const int32_t kInt24Min = -8388607 - 1;
+static const int32_t kInt24Max = 8388607;
+static const int16_t kInt16Min = -32767 - 1;
+static const int16_t kInt16Max = 32767;
+static const int16_t kInt8Min = -127 - 1;
+static const int16_t kInt8Max = 127;
 
 }  // namespace charly

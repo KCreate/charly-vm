@@ -25,6 +25,7 @@
  */
 
 #include "charly/core/compiler/codegenerator.h"
+#include "charly/value.h"
 
 namespace charly::core::compiler {
 
@@ -38,7 +39,7 @@ ref<IRModule> CodeGenerator::compile() {
   DCHECK(m_unit->ast->statements.front()->type() == Node::Type::Function);
   enqueue_function(cast<ast::Function>(m_unit->ast->statements.front()));
 
-  while (m_function_queue.size()) {
+  while (!m_function_queue.empty()) {
     compile_function(m_function_queue.front());
     m_function_queue.pop();
   }
@@ -133,11 +134,9 @@ ref<ir::IRInstruction> CodeGenerator::generate_load(const ValueLocation& locatio
   switch (location.type) {
     case ValueLocation::Type::Invalid: {
       FAIL("expected valid value location");
-      return nullptr;
     }
     case ValueLocation::Type::Id: {
       FAIL("expected id value location to be replaced with real location");
-      return nullptr;
     }
     case ValueLocation::Type::LocalFrame: {
       return m_builder.emit_loadlocal(location.as.local_frame.index);
@@ -146,7 +145,7 @@ ref<ir::IRInstruction> CodeGenerator::generate_load(const ValueLocation& locatio
       return m_builder.emit_loadfar(location.as.far_frame.depth, location.as.far_frame.index);
     }
     case ValueLocation::Type::Global: {
-      return m_builder.emit_loadglobal(location.name);
+      return m_builder.emit_loadglobal(m_builder.register_string(location.name));
     }
   }
 }
@@ -155,11 +154,9 @@ ref<ir::IRInstruction> CodeGenerator::generate_store(const ValueLocation& locati
   switch (location.type) {
     case ValueLocation::Type::Invalid: {
       FAIL("expected valid value location");
-      return nullptr;
     }
     case ValueLocation::Type::Id: {
       FAIL("expected id value location to be replaced with real location");
-      return nullptr;
     }
     case ValueLocation::Type::LocalFrame: {
       return m_builder.emit_setlocal(location.as.local_frame.index);
@@ -168,7 +165,7 @@ ref<ir::IRInstruction> CodeGenerator::generate_store(const ValueLocation& locati
       return m_builder.emit_setfar(location.as.far_frame.depth, location.as.far_frame.index);
     }
     case ValueLocation::Type::Global: {
-      return m_builder.emit_setglobal(location.name);
+      return m_builder.emit_setglobal(m_builder.register_string(location.name));
     }
   }
 }
@@ -268,17 +265,17 @@ void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target) 
 }
 
 Label CodeGenerator::active_return_label() const {
-  DCHECK(m_return_stack.size());
+  DCHECK(!m_return_stack.empty());
   return m_return_stack.top();
 }
 
 Label CodeGenerator::active_break_label() const {
-  DCHECK(m_break_stack.size());
+  DCHECK(!m_break_stack.empty());
   return m_break_stack.top();
 }
 
 Label CodeGenerator::active_continue_label() const {
-  DCHECK(m_continue_stack.size());
+  DCHECK(!m_continue_stack.empty());
   return m_continue_stack.top();
 }
 
@@ -295,17 +292,17 @@ void CodeGenerator::push_continue_label(Label label) {
 }
 
 void CodeGenerator::pop_return_label() {
-  DCHECK(m_return_stack.size());
+  DCHECK(!m_return_stack.empty());
   m_return_stack.pop();
 }
 
 void CodeGenerator::pop_break_label() {
-  DCHECK(m_break_stack.size());
+  DCHECK(!m_break_stack.empty());
   m_break_stack.pop();
 }
 
 void CodeGenerator::pop_continue_label() {
-  DCHECK(m_continue_stack.size());
+  DCHECK(!m_continue_stack.empty());
   m_continue_stack.pop();
 }
 
@@ -378,7 +375,7 @@ bool CodeGenerator::inspect_enter(const ref<ast::Spawn>& node) {
         m_builder.emit_loadself();
         apply(call->target);
       } else {
-        m_builder.emit_load(kNull);
+        m_builder.emit_load_value(kNull);
         apply(call->target);
       }
 
@@ -405,7 +402,7 @@ bool CodeGenerator::inspect_enter(const ref<ast::Spawn>& node) {
       } else {
         apply(call->target);
         m_builder.emit_dup();
-        m_builder.emit_loadattrsym(call->member->value)->at(call->member);
+        m_builder.emit_loadattrsym(m_builder.register_string(call->member->value))->at(call->member);
       }
 
       if (call->has_spread_elements()) {
@@ -449,7 +446,6 @@ bool CodeGenerator::inspect_enter(const ref<ast::Spawn>& node) {
     }
     default: {
       UNIMPLEMENTED();
-      break;
     }
   }
 
@@ -471,11 +467,12 @@ void CodeGenerator::inspect_leave(const ref<Id>& node) {
 }
 
 void CodeGenerator::inspect_leave(const ref<String>& node) {
+  uint16_t index = m_builder.register_string(node->value);
+
   if (node->value.size() <= RawSmallString::kMaxLength) {
-    m_builder.register_string(node->value);
-    m_builder.emit_load(RawSmallString::make_from_str(node->value))->at(node);
+    m_builder.emit_load_value(RawSmallString::make_from_str(node->value))->at(node);
   } else {
-    m_builder.emit_makestr(m_builder.register_string(node->value))->at(node);
+    m_builder.emit_makestr(index)->at(node);
   }
 }
 
@@ -488,19 +485,19 @@ void CodeGenerator::inspect_leave(const ref<ast::Symbol>& node) {
 }
 
 void CodeGenerator::inspect_leave(const ref<Int>& node) {
-  m_builder.emit_load(RawInt::make(node->value))->at(node);
+  m_builder.emit_load_value(RawInt::make(node->value))->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ref<Float>& node) {
-  m_builder.emit_load(RawFloat::make(node->value))->at(node);
+  m_builder.emit_load_value(RawFloat::make(node->value))->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ref<Bool>& node) {
-  m_builder.emit_load(RawBool::make(node->value))->at(node);
+  m_builder.emit_load_value(RawBool::make(node->value))->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ref<Char>& node) {
-  m_builder.emit_load(RawSmallString::make_from_cp(node->value))->at(node);
+  m_builder.emit_load_value(RawSmallString::make_from_cp(node->value))->at(node);
 }
 
 bool CodeGenerator::inspect_enter(const ref<Function>& node) {
@@ -510,6 +507,8 @@ bool CodeGenerator::inspect_enter(const ref<Function>& node) {
 }
 
 bool CodeGenerator::inspect_enter(const ref<Class>& node) {
+  m_builder.emit_loadsymbol(node->name->value);
+
   if (node->parent) {
     apply(node->parent);
   }
@@ -530,13 +529,11 @@ bool CodeGenerator::inspect_enter(const ref<Class>& node) {
 
   if (node->parent) {
     m_builder
-      .emit_makesubclass(node->name->value, node->member_functions.size(), node->member_properties.size(),
-                         node->static_properties.size())
+      .emit_makesubclass(node->member_functions.size(), node->member_properties.size(), node->static_properties.size())
       ->at(node);
   } else {
     m_builder
-      .emit_makeclass(node->name->value, node->member_functions.size(), node->member_properties.size(),
-                      node->static_properties.size())
+      .emit_makeclass(node->member_functions.size(), node->member_properties.size(), node->static_properties.size())
       ->at(node);
   }
 
@@ -544,7 +541,7 @@ bool CodeGenerator::inspect_enter(const ref<Class>& node) {
 }
 
 void CodeGenerator::inspect_leave(const ref<Null>& node) {
-  m_builder.emit_load(kNull)->at(node);
+  m_builder.emit_load_value(kNull)->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ref<Self>&) {
@@ -558,7 +555,7 @@ void CodeGenerator::inspect_leave(const ref<ast::Super>& node) {
   if (active_function()->class_constructor) {
     m_builder.emit_loadsuperconstructor()->at(node);
   } else {
-    m_builder.emit_loadsuperattr(active_function()->name->value)->at(node);
+    m_builder.emit_loadsuperattr(m_builder.register_string(active_function()->name->value))->at(node);
   }
 }
 
@@ -596,7 +593,7 @@ bool CodeGenerator::inspect_enter(const ref<ast::Dict>& node) {
   if (node->has_spread_elements()) {
     for (const ref<DictEntry>& exp : node->elements) {
       if (ref<Spread> spread = cast<Spread>(exp->key)) {
-        m_builder.emit_load(kNull)->at(exp->key);
+        m_builder.emit_load_value(kNull)->at(exp->key);
         apply(spread->expression);
       } else {
         apply(exp->key);
@@ -621,10 +618,10 @@ bool CodeGenerator::inspect_enter(const ref<ast::MemberOp>& node) {
   if (isa<Super>(node->target)) {
     m_builder.emit_loadself();
     m_builder.emit_type();
-    m_builder.emit_loadsuperattr(node->member->value)->at(node->member);
+    m_builder.emit_loadsuperattr(m_builder.register_string(node->member->value))->at(node->member);
   } else {
     apply(node->target);
-    m_builder.emit_loadattrsym(node->member->value)->at(node->member);
+    m_builder.emit_loadattrsym(m_builder.register_string(node->member->value))->at(node->member);
   }
 
   return false;
@@ -649,7 +646,7 @@ bool CodeGenerator::inspect_enter(const ref<Assignment>& node) {
       generate_load(node->name->ir_location)->at(node->name);
       apply(node->source);
       DCHECK(kBinopOpcodeMapping.count(node->operation));
-      m_builder.emit(kBinopOpcodeMapping.at(node->operation))->at(node);
+      m_builder.emit(IRInstruction::make(kBinopOpcodeMapping[node->operation]))->at(node);
       generate_store(node->name->ir_location)->at(node->name);
       break;
     }
@@ -669,17 +666,17 @@ bool CodeGenerator::inspect_enter(const ref<MemberAssignment>& node) {
     case TokenType::Assignment: {
       apply(node->target);
       apply(node->source);
-      m_builder.emit_setattrsym(node->member->value)->at(node);
+      m_builder.emit_setattrsym(m_builder.register_string(node->member->value))->at(node);
       break;
     }
     default: {
       apply(node->target);
       m_builder.emit_dup();
-      m_builder.emit_loadattrsym(node->member->value)->at(node->member);
+      m_builder.emit_loadattrsym(m_builder.register_string(node->member->value))->at(node->member);
       apply(node->source);
       DCHECK(kBinopOpcodeMapping.count(node->operation));
-      m_builder.emit(kBinopOpcodeMapping.at(node->operation))->at(node);
-      m_builder.emit_setattrsym(node->member->value)->at(node->member);
+      m_builder.emit(IRInstruction::make(kBinopOpcodeMapping.at(node->operation)))->at(node);
+      m_builder.emit_setattrsym(m_builder.register_string(node->member->value))->at(node->member);
       break;
     }
   }
@@ -703,7 +700,7 @@ bool CodeGenerator::inspect_enter(const ref<IndexAssignment>& node) {
       m_builder.emit_loadattr()->at(node->index);
       apply(node->source);
       DCHECK(kBinopOpcodeMapping.count(node->operation));
-      m_builder.emit(kBinopOpcodeMapping.at(node->operation))->at(node);
+      m_builder.emit(IRInstruction::make(kBinopOpcodeMapping.at(node->operation)))->at(node);
       m_builder.emit_setattr()->at(node);
       break;
     }
@@ -735,7 +732,7 @@ bool CodeGenerator::inspect_enter(const ref<BinaryOp>& node) {
       apply(node->lhs);
       apply(node->rhs);
       DCHECK(kBinopOpcodeMapping.count(node->operation));
-      m_builder.emit(kBinopOpcodeMapping.at(node->operation))->at(node);
+      m_builder.emit(IRInstruction::make(kBinopOpcodeMapping.at(node->operation)))->at(node);
       break;
     }
     case TokenType::And: {
@@ -749,11 +746,11 @@ bool CodeGenerator::inspect_enter(const ref<BinaryOp>& node) {
       m_builder.emit_jmpt(true_label);
 
       m_builder.place_label(false_label);
-      m_builder.emit_load(kFalse);
+      m_builder.emit_load_value(kFalse);
       m_builder.emit_jmp(end_label);
 
       m_builder.place_label(true_label);
-      m_builder.emit_load(kTrue);
+      m_builder.emit_load_value(kTrue);
 
       m_builder.place_label(end_label);
       break;
@@ -777,7 +774,7 @@ bool CodeGenerator::inspect_enter(const ref<BinaryOp>& node) {
 
 void CodeGenerator::inspect_leave(const ref<UnaryOp>& node) {
   DCHECK(kUnaryopOpcodeMapping.count(node->operation));
-  m_builder.emit(kUnaryopOpcodeMapping.at(node->operation))->at(node);
+  m_builder.emit(IRInstruction::make(kUnaryopOpcodeMapping.at(node->operation)))->at(node);
 }
 
 bool CodeGenerator::inspect_enter(const ref<ast::CallOp>& node) {
@@ -789,10 +786,10 @@ bool CodeGenerator::inspect_enter(const ref<ast::CallOp>& node) {
     if (active_function()->class_constructor) {
       m_builder.emit_loadsuperconstructor()->at(node);
     } else {
-      m_builder.emit_loadsuperattr(active_function()->name->value)->at(node);
+      m_builder.emit_loadsuperattr(m_builder.register_string(active_function()->name->value))->at(node);
     }
   } else {
-    m_builder.emit_load(kNull);
+    m_builder.emit_load_value(kNull);
     apply(node->target);
   }
 
@@ -813,7 +810,7 @@ bool CodeGenerator::inspect_enter(const ref<ast::CallOp>& node) {
 bool CodeGenerator::inspect_enter(const ref<ast::CallMemberOp>& node) {
   apply(node->target);
   m_builder.emit_dup();
-  m_builder.emit_loadattrsym(node->member->value)->at(node->member);
+  m_builder.emit_loadattrsym(m_builder.register_string(node->member->value))->at(node->member);
 
   if (node->has_spread_elements()) {
     uint8_t emitted_segments = generate_spread_tuples(node->arguments);
@@ -853,9 +850,9 @@ bool CodeGenerator::inspect_enter(const ref<Declaration>& node) {
   // global declarations
   if (node->ir_location.type == ValueLocation::Type::Global) {
     if (node->constant) {
-      m_builder.emit_declareglobalconst(node->name->value)->at(node->name);
+      m_builder.emit_declareglobalconst(m_builder.register_string(node->name->value))->at(node->name);
     } else {
-      m_builder.emit_declareglobal(node->name->value)->at(node->name);
+      m_builder.emit_declareglobal(m_builder.register_string(node->name->value))->at(node->name);
     }
   }
 
@@ -875,9 +872,9 @@ bool CodeGenerator::inspect_enter(const ref<UnpackDeclaration>& node) {
     // global declarations
     if (element->ir_location.type == ValueLocation::Type::Global) {
       if (node->constant) {
-        m_builder.emit_declareglobalconst(element->name->value)->at(element);
+        m_builder.emit_declareglobalconst(m_builder.register_string(element->name->value))->at(element);
       } else {
-        m_builder.emit_declareglobal(element->name->value)->at(element);
+        m_builder.emit_declareglobal(m_builder.register_string(element->name->value))->at(element);
       }
     }
   }
@@ -1104,21 +1101,21 @@ bool CodeGenerator::inspect_enter(const ref<ast::TryFinally>& node) {
 
   // emit break, continue and return intercepts
   m_builder.place_label(break_handler);
-  if (m_break_stack.size()) {
+  if (!m_break_stack.empty()) {
     apply(node->finally_block);
     m_builder.emit_jmp(active_break_label());
   } else {
     m_builder.emit_panic();
   }
   m_builder.place_label(continue_handler);
-  if (m_continue_stack.size()) {
+  if (!m_continue_stack.empty()) {
     apply(node->finally_block);
     m_builder.emit_jmp(active_continue_label());
   } else {
     m_builder.emit_panic();
   }
   m_builder.place_label(return_handler);
-  if (m_return_stack.size()) {
+  if (!m_return_stack.empty()) {
     apply(node->finally_block);
     m_builder.emit_jmp(active_return_label());
   } else {
@@ -1194,7 +1191,7 @@ bool CodeGenerator::inspect_enter(const ref<ast::BuiltinOperation>& node) {
   }
 
   DCHECK(kBuiltinOperationOpcodeMapping.count(operation));
-  m_builder.emit(kBuiltinOperationOpcodeMapping.at(operation))->at(node);
+  m_builder.emit(IRInstruction::make(kBuiltinOperationOpcodeMapping[operation]))->at(node);
 
   return false;
 }

@@ -78,6 +78,10 @@ public:
   RawObject create_instance(Thread* thread, ShapeId shape_id, size_t field_count);
 
   RawValue create_string(Thread* thread, const char* data, size_t size, SYMBOL hash);
+  RawValue create_string(Thread* thread, const std::string& string) {
+    return create_string(thread, string.data(), string.size(), crc32::hash_string(string));
+  }
+
   // create a new string by acquiring ownership over an existing allocation
   RawValue acquire_string(Thread* thread, char* cstr, size_t size, SYMBOL hash);
   RawLargeString create_large_string(Thread* thread, const char* data, size_t size, SYMBOL hash);

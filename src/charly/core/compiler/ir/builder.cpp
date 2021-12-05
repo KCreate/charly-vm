@@ -32,6 +32,7 @@
 namespace charly::core::compiler::ir {
 
 using namespace charly::core::compiler::ast;
+using namespace charly::core::runtime;
 
 using Color = utils::Color;
 
@@ -41,29 +42,36 @@ uint16_t Builder::register_string(const std::string& string) {
   // duplicates check
   uint16_t index = 0;
   for (const IRStringTableEntry& entry : function->string_table) {
-    if (entry.value.compare(string) == 0) {
+    if (entry.value == string) {
       return index;
     }
 
     index++;
   }
 
-  register_symbol(string);
   function->string_table.emplace_back(IRStringTableEntry(string));
   return index;
 }
 
-void Builder::register_symbol(const std::string& string) {
-  ref<IRModule> module = m_module;
+SYMBOL Builder::register_symbol(const std::string& string) {
+  uint16_t index = register_string(string);
+  return m_active_function->string_table.at(index).hash;
+}
 
-  // duplicates check
-  for (const std::string& entry : module->symbol_table) {
-    if (entry.compare(string) == 0) {
-      return;
+uint16_t Builder::register_constant(RawValue value) {
+  ref<IRFunction> function = m_active_function;
+
+  auto& table = function->constant_table;
+
+  // check if the value is already in the table
+  for (size_t i = 0; i < table.size(); i++) {
+    if (table[i].raw() == value.raw()) {
+      return i;
     }
   }
 
-  module->symbol_table.emplace_back(string);
+  table.push_back(value);
+  return table.size() - 1;
 }
 
 void Builder::push_exception_handler(Label handler) {
@@ -86,7 +94,7 @@ ref<IRBasicBlock> Builder::active_block() const {
   return m_active_block;
 }
 
-void Builder::begin_function(Label head, ref<ast::Function> ast) {
+void Builder::begin_function(Label head, const ref<ast::Function>& ast) {
   m_active_function = make<IRFunction>(head, ast);
   m_module->functions.push_back(m_active_function);
   register_symbol(ast->name->value);
@@ -149,9 +157,6 @@ void Builder::finish_function() {
   emit_nop();
   emit_exception_tables();
 
-  // allocate the inline cache slots
-  allocate_inline_caches();
-
   // reset builder for next function
   reset_stack_height();
   m_block_id_counter = 0;
@@ -166,9 +171,9 @@ void Builder::remove_empty_blocks() {
     ref<IRBasicBlock> block = *it;
 
     // remove empty blocks
-    if (block->instructions.size() == 0) {
+    if (block->instructions.empty()) {
       // propagate labels to next block
-      if (block->next_block && block->labels.size()) {
+      if (block->next_block && !block->labels.empty()) {
         for (Label label : block->labels) {
           m_labelled_blocks.insert_or_assign(label, block->next_block);
         }
@@ -207,9 +212,9 @@ void Builder::trim_dead_instructions() {
 }
 
 void Builder::build_cfg() {
-  for (ref<IRBasicBlock> block : m_active_function->basic_blocks) {
+  for (const ref<IRBasicBlock>& block : m_active_function->basic_blocks) {
     // empty blocks fallthrough to the next block
-    if (block->instructions.size() == 0) {
+    if (block->instructions.empty()) {
       IRBasicBlock::link(block, block->next_block);
       continue;
     }
@@ -217,14 +222,14 @@ void Builder::build_cfg() {
     ref<IRInstruction> op = block->instructions.back();
     switch (op->opcode) {
       case Opcode::jmp: {
-        Label target_label = cast<IROperandOffset>(op->operands[0])->value;
+        Label target_label = op->as_jmp()->arg;
         ref<IRBasicBlock> target_block = m_labelled_blocks.at(target_label);
         IRBasicBlock::link(block, target_block);
         continue;
       }
       case Opcode::jmpf:
       case Opcode::jmpt: {
-        Label target_label = cast<IROperandOffset>(op->operands[0])->value;
+        Label target_label = op->as_iaax()->arg;
         ref<IRBasicBlock> target_block = m_labelled_blocks.at(target_label);
         DCHECK(block->next_block);
         IRBasicBlock::link(block, target_block);
@@ -232,7 +237,7 @@ void Builder::build_cfg() {
         continue;
       }
       case Opcode::testintjmp: {
-        Label target_label = cast<IROperandOffset>(op->operands[1])->value;
+        Label target_label = op->as_testintjmp()->arg2;
         ref<IRBasicBlock> target_block = m_labelled_blocks.at(target_label);
         DCHECK(block->next_block);
         IRBasicBlock::link(block, target_block);
@@ -254,22 +259,21 @@ void Builder::build_cfg() {
 }
 
 void Builder::rewrite_chained_branches() {
-  bool updated_jmp = false;
+  bool updated_jmp;
 
   do {
     updated_jmp = false;
     for (const ref<IRBasicBlock>& block : m_active_function->basic_blocks) {
       // skip empty blocks
-      if (block->instructions.size() == 0) {
+      if (block->instructions.empty()) {
         continue;
       }
 
       // jmp instructions that branch to a basic block that contains
-      // only a single jmp instruction, can be replaced with the
-      // second jmp instruction
-      const ref<IRInstruction>& instruction = block->instructions.back();
-      if (instruction->opcode == Opcode::jmp) {
-        ref<IROperandOffset> original_operand = cast<IROperandOffset>(instruction->operands[0]);
+      // only a single jmp op, can be replaced with the
+      // second jmp op
+      ref<IRInstruction>& op = block->instructions.back();
+      if (op->opcode == Opcode::jmp) {
         ref<IRBasicBlock> target_block = *block->outgoing_blocks.begin();
 
         // catch infinite loops
@@ -277,13 +281,13 @@ void Builder::rewrite_chained_branches() {
           continue;
         }
 
-        // check if the target block contains a single instruction
+        // check if the target block contains a single op
         if (target_block->instructions.size() == 1) {
-          const ref<IRInstruction>& target_instruction = target_block->instructions.back();
+          const ref<IRInstruction>& target_op = target_block->instructions.back();
 
-          if (target_instruction->opcode == Opcode::jmp) {
-            // determine target block of the second jmp and update the original jmp instruction
-            Label second_target_label = cast<IROperandOffset>(target_instruction->operands[0])->value;
+          if (target_op->opcode == Opcode::jmp) {
+            // determine target block of the second jmp and update the original jmp op
+            Label second_target_label = target_op->as_jmp()->arg;
             ref<IRBasicBlock> new_target_block = m_labelled_blocks.at(second_target_label);
 
             // catch infinite loops
@@ -294,12 +298,11 @@ void Builder::rewrite_chained_branches() {
             // unlink original branch
             IRBasicBlock::unlink(block, target_block);
             IRBasicBlock::link(block, new_target_block);
-            original_operand->value = second_target_label;
+            op->as_jmp()->arg = second_target_label;
             updated_jmp = true;
-          } else if (target_instruction->opcode == Opcode::ret) {
-            // replace original jump with a ret
-            instruction->opcode = Opcode::ret;
-            instruction->operands.clear();
+          } else if (target_op->opcode == Opcode::ret) {
+            // replace source jmp opcode with a ret
+            op = make<IRInstruction_ret>();
             IRBasicBlock::unlink(block, target_block);
           }
         }
@@ -310,11 +313,11 @@ void Builder::rewrite_chained_branches() {
 
 void Builder::remove_useless_jumps() {
   for (const ref<IRBasicBlock>& block : m_active_function->basic_blocks) {
-    if (block->instructions.size()) {
+    if (!block->instructions.empty()) {
       ref<IRInstruction> op = block->instructions.back();
       switch (op->opcode) {
         case Opcode::jmp: {
-          Label target_label = cast<IROperandOffset>(op->operands[0])->value;
+          Label target_label = op->as_jmp()->arg;
           if (block->next_block && block->next_block->labels.count(target_label)) {
             block->instructions.pop_back();
           }
@@ -342,7 +345,7 @@ void Builder::remove_dead_blocks() {
   }
 
   // mark reachable blocks
-  while (reachable_blocks.size()) {
+  while (!reachable_blocks.empty()) {
     ref<IRBasicBlock> block = reachable_blocks.front();
     reachable_blocks.pop_front();
 
@@ -387,16 +390,16 @@ void Builder::remove_dead_blocks() {
 void Builder::emit_exception_tables() {
   for (const ref<IRBasicBlock>& block : m_active_function->basic_blocks) {
     if (block->exception_handler) {
-      DCHECK(block->labels.size());
+      DCHECK(!block->labels.empty());
       DCHECK(block->next_block);
-      DCHECK(block->next_block->labels.size());
+      DCHECK(!block->next_block->labels.empty());
 
       Label begin = *block->labels.begin();
       Label end = *block->next_block->labels.begin();
       Label handler = block->exception_handler.value();
 
       // extend previous table if possible
-      if (m_active_function->exception_table.size()) {
+      if (!m_active_function->exception_table.empty()) {
         IRExceptionTableEntry& previous = m_active_function->exception_table.back();
 
         if (previous.end == begin && previous.handler == handler) {
@@ -411,26 +414,13 @@ void Builder::emit_exception_tables() {
   }
 }
 
-void Builder::allocate_inline_caches() {
-  for (const auto& block : m_active_function->basic_blocks) {
-    for (const auto& instruction : block->instructions) {
-      ICType type = kOpcodeInlineCaches[static_cast<uint8_t>(instruction->opcode)];
-      if (type != ICNone) {
-        uint16_t index = m_active_function->inline_cache_table.size();
-        instruction->operands.push_back(make<IROperandICIndex>(index));
-        m_active_function->inline_cache_table.emplace_back(IRInlineCacheTableEntry(type));
-      }
-    }
-  }
-}
-
 ref<IRBasicBlock> Builder::new_basic_block() {
   DCHECK(m_active_function);
 
   ref<IRBasicBlock> block = make<IRBasicBlock>(m_block_id_counter++);
   block->previous_block = m_active_block;
 
-  if (m_exception_handlers.size()) {
+  if (!m_exception_handlers.empty()) {
     block->exception_handler = m_exception_handlers.top();
   }
 
@@ -438,7 +428,7 @@ ref<IRBasicBlock> Builder::new_basic_block() {
     m_active_block->next_block = block;
 
     // each block must have at least one label
-    if (m_active_block->labels.size() == 0) {
+    if (m_active_block->labels.empty()) {
       m_active_block->labels.insert(reserve_label());
     }
   }
@@ -455,7 +445,7 @@ Label Builder::reserve_label() {
 void Builder::place_label(Label label) {
   // if the current basic block is still empty
   // we can add the label to the current block
-  if (m_active_block->instructions.size() == 0) {
+  if (m_active_block->instructions.empty()) {
     m_active_block->labels.insert(label);
     m_labelled_blocks.insert({ label, m_active_block });
     return;
@@ -467,366 +457,23 @@ void Builder::place_label(Label label) {
   m_labelled_blocks.insert({ label, new_block });
 }
 
-// machine control
-ref<IRInstruction> Builder::emit_nop() {
-  return emit(Opcode::nop);
-}
-
-ref<IRInstruction> Builder::emit_panic() {
-  return emit(Opcode::panic);
-}
-
-// misc. instructions
-ref<IRInstruction> Builder::emit_import() {
-  return emit(Opcode::import);
-}
-
-ref<IRInstruction> Builder::emit_stringconcat(IROpCount8 count) {
-  return emit(Opcode::stringconcat, IROperandCount8::make(count));
-}
-
-ref<IRInstruction> Builder::emit_declareglobal(IROpSymbol symbol) {
-  register_symbol(symbol);
-  return emit(Opcode::declareglobal, IROperandSymbol::make(symbol));
-}
-
-ref<IRInstruction> Builder::emit_declareglobalconst(IROpSymbol symbol) {
-  register_symbol(symbol);
-  return emit(Opcode::declareglobalconst, IROperandSymbol::make(symbol));
-}
-
-ref<IRInstruction> Builder::emit_type() {
-  return emit(Opcode::type);
-}
-
-// stack management
-ref<IRInstruction> Builder::emit_pop() {
-  return emit(Opcode::pop);
-}
-
-ref<IRInstruction> Builder::emit_dup() {
-  return emit(Opcode::dup);
-}
-
-ref<IRInstruction> Builder::emit_dup2() {
-  return emit(Opcode::dup2);
-}
-
-// control flow
-ref<IRInstruction> Builder::emit_jmp(IROpOffset label) {
-  return emit(Opcode::jmp, IROperandOffset::make(label));
-}
-
-ref<IRInstruction> Builder::emit_jmpf(IROpOffset label) {
-  return emit(Opcode::jmpf, IROperandOffset::make(label));
-}
-
-ref<IRInstruction> Builder::emit_jmpt(IROpOffset label) {
-  return emit(Opcode::jmpt, IROperandOffset::make(label));
-}
-
-ref<IRInstruction> Builder::emit_testintjmp(IROpCount8 value, IROpOffset label) {
-  return emit(Opcode::testintjmp, IROperandCount8::make(value), IROperandOffset::make(label));
-}
-
-ref<IRInstruction> Builder::emit_throwex() {
-  return emit(Opcode::throwex);
-}
-
-ref<IRInstruction> Builder::emit_getexception() {
-  return emit(Opcode::getexception);
-}
-
-// function control flow
-ref<IRInstruction> Builder::emit_call(IROpCount8 count) {
-  return emit(Opcode::call, IROperandCount8::make(count));
-}
-
-ref<IRInstruction> Builder::emit_callspread(IROpCount8 count) {
-  return emit(Opcode::callspread, IROperandCount8::make(count));
-}
-
-ref<IRInstruction> Builder::emit_ret() {
-  return emit(Opcode::ret);
-}
-
-// load operations
-ref<IRInstruction> Builder::emit_load(IROpImmediate value) {
-  return emit(Opcode::load, IROperandImmediate::make(value));
-}
-
-ref<IRInstruction> Builder::emit_loadsymbol(IROpSymbol symbol) {
-  register_symbol(symbol);
-  return emit(Opcode::loadsymbol, IROperandSymbol::make(symbol));
-}
-
-ref<IRInstruction> Builder::emit_loadself() {
-  return emit(Opcode::loadself);
-}
-
-ref<IRInstruction> Builder::emit_loadargc() {
-  return emit(Opcode::loadargc);
-}
-
-ref<IRInstruction> Builder::emit_loadglobal(IROpSymbol symbol) {
-  register_symbol(symbol);
-  return emit(Opcode::loadglobal, IROperandSymbol::make(symbol));
-}
-
-ref<IRInstruction> Builder::emit_loadlocal(IROpIndex8 index) {
-  return emit(Opcode::loadlocal, IROperandIndex8::make(index));
-}
-
-ref<IRInstruction> Builder::emit_loadfar(IROpCount8 depth, IROpIndex8 index) {
-  return emit(Opcode::loadfar, IROperandCount8::make(depth), IROperandIndex8::make(index));
-}
-
-ref<IRInstruction> Builder::emit_loadattr() {
-  return emit(Opcode::loadattr);
-}
-
-ref<IRInstruction> Builder::emit_loadattrsym(IROpSymbol symbol) {
-  register_symbol(symbol);
-  return emit(Opcode::loadattrsym, IROperandSymbol::make(symbol));
-}
-
-ref<IRInstruction> Builder::emit_loadsuperconstructor() {
-  return emit(Opcode::loadsuperconstructor);
-}
-
-ref<IRInstruction> Builder::emit_loadsuperattr(IROpSymbol symbol) {
-  register_symbol(symbol);
-  return emit(Opcode::loadsuperattr, IROperandSymbol::make(symbol));
-}
-
-// write operations
-ref<IRInstruction> Builder::emit_setglobal(IROpSymbol symbol) {
-  register_symbol(symbol);
-  return emit(Opcode::setglobal, IROperandSymbol::make(symbol));
-}
-
-ref<IRInstruction> Builder::emit_setlocal(IROpIndex8 index) {
-  return emit(Opcode::setlocal, IROperandIndex8::make(index));
-}
-
-ref<IRInstruction> Builder::emit_setreturn() {
-  return emit(Opcode::setreturn);
-}
-
-ref<IRInstruction> Builder::emit_setfar(IROpCount8 depth, IROpIndex8 index) {
-  return emit(Opcode::setfar, IROperandCount8::make(depth), IROperandIndex8::make(index));
-}
-
-ref<IRInstruction> Builder::emit_setattr() {
-  return emit(Opcode::setattr);
-}
-
-ref<IRInstruction> Builder::emit_setattrsym(IROpSymbol symbol) {
-  register_symbol(symbol);
-  return emit(Opcode::setattrsym, IROperandSymbol::make(symbol));
-}
-
-// value destructuring operations
-ref<IRInstruction> Builder::emit_unpacksequence(IROpCount8 count) {
-  return emit(Opcode::unpacksequence, IROperandCount8::make(count));
-}
-
-ref<IRInstruction> Builder::emit_unpacksequencespread(IROpCount8 before, IROpCount8 after) {
-  return emit(Opcode::unpacksequencespread, IROperandCount8::make(before), IROperandCount8::make(after));
-}
-
-ref<IRInstruction> Builder::emit_unpackobject(IROpCount8 count) {
-  return emit(Opcode::unpackobject, IROperandCount8::make(count));
-}
-
-ref<IRInstruction> Builder::emit_unpackobjectspread(IROpCount8 count) {
-  return emit(Opcode::unpackobjectspread, IROperandCount8::make(count));
-}
-
-// value allocation
-ref<IRInstruction> Builder::emit_makefunc(IROpOffset offset) {
-  return emit(Opcode::makefunc, IROperandOffset::make(offset));
-}
-
-ref<IRInstruction> Builder::emit_makeclass(IROpSymbol name,
-                                           IROpCount8 funccount,
-                                           IROpCount8 propcount,
-                                           IROpCount8 staticpropcount) {
-  register_symbol(name);
-  return emit(Opcode::makeclass, IROperandSymbol::make(name), IROperandCount8::make(funccount),
-              IROperandCount8::make(propcount), IROperandCount8::make(staticpropcount));
-}
-
-ref<IRInstruction> Builder::emit_makesubclass(IROpSymbol name,
-                                              IROpCount8 funccount,
-                                              IROpCount8 propcount,
-                                              IROpCount8 staticpropcount) {
-  register_symbol(name);
-  return emit(Opcode::makesubclass, IROperandSymbol::make(name), IROperandCount8::make(funccount),
-              IROperandCount8::make(propcount), IROperandCount8::make(staticpropcount));
-}
-
-ref<IRInstruction> Builder::emit_makestr(IROpIndex16 index) {
-  return emit(Opcode::makestr, IROperandIndex16::make(index));
-}
-
-ref<IRInstruction> Builder::emit_makelist(IROpCount16 count) {
-  return emit(Opcode::makelist, IROperandCount16::make(count));
-}
-
-ref<IRInstruction> Builder::emit_makelistspread(IROpCount16 count) {
-  return emit(Opcode::makelistspread, IROperandCount16::make(count));
-}
-
-ref<IRInstruction> Builder::emit_makedict(IROpCount16 count) {
-  return emit(Opcode::makedict, IROperandCount16::make(count));
-}
-
-ref<IRInstruction> Builder::emit_makedictspread(IROpCount16 count) {
-  return emit(Opcode::makedictspread, IROperandCount16::make(count));
-}
-
-ref<IRInstruction> Builder::emit_maketuple(IROpCount16 count) {
-  return emit(Opcode::maketuple, IROperandCount16::make(count));
-}
-
-ref<IRInstruction> Builder::emit_maketuplespread(IROpCount16 count) {
-  return emit(Opcode::maketuplespread, IROperandCount16::make(count));
-}
-
-// fiber management
-ref<IRInstruction> Builder::emit_fiberspawn() {
-  return emit(Opcode::fiberspawn);
-}
-
-ref<IRInstruction> Builder::emit_fiberyield() {
-  return emit(Opcode::fiberyield);
-}
-
-ref<IRInstruction> Builder::emit_fibercall() {
-  return emit(Opcode::fibercall);
-}
-
-ref<IRInstruction> Builder::emit_fiberpause() {
-  return emit(Opcode::fiberpause);
-}
-
-ref<IRInstruction> Builder::emit_fiberresume() {
-  return emit(Opcode::fiberresume);
-}
-
-ref<IRInstruction> Builder::emit_fiberawait() {
-  return emit(Opcode::fiberawait);
-}
-
-// cast operations
-ref<IRInstruction> Builder::emit_caststring() {
-  return emit(Opcode::caststring);
-}
-
-ref<IRInstruction> Builder::emit_castsymbol() {
-  return emit(Opcode::castsymbol);
-}
-
-ref<IRInstruction> Builder::emit_castiterator() {
-  return emit(Opcode::castiterator);
-}
-
-// iterator operations
-ref<IRInstruction> Builder::emit_iteratornext() {
-  return emit(Opcode::iteratornext);
-}
-
-// arithmetic operations
-ref<IRInstruction> Builder::emit_add() {
-  return emit(Opcode::add);
-}
-
-ref<IRInstruction> Builder::emit_sub() {
-  return emit(Opcode::sub);
-}
-
-ref<IRInstruction> Builder::emit_mul() {
-  return emit(Opcode::mul);
-}
-
-ref<IRInstruction> Builder::emit_div() {
-  return emit(Opcode::div);
-}
-
-ref<IRInstruction> Builder::emit_mod() {
-  return emit(Opcode::mod);
-}
-
-ref<IRInstruction> Builder::emit_pow() {
-  return emit(Opcode::pow);
-}
-
-ref<IRInstruction> Builder::emit_usub() {
-  return emit(Opcode::usub);
-}
-
-// arithmetic operations
-ref<IRInstruction> Builder::emit_eq() {
-  return emit(Opcode::eq);
-}
-
-ref<IRInstruction> Builder::emit_neq() {
-  return emit(Opcode::neq);
-}
-
-ref<IRInstruction> Builder::emit_lt() {
-  return emit(Opcode::lt);
-}
-
-ref<IRInstruction> Builder::emit_gt() {
-  return emit(Opcode::gt);
-}
-
-ref<IRInstruction> Builder::emit_le() {
-  return emit(Opcode::le);
-}
-
-ref<IRInstruction> Builder::emit_ge() {
-  return emit(Opcode::ge);
-}
-
-ref<IRInstruction> Builder::emit_unot() {
-  return emit(Opcode::unot);
-}
-
-// bitwise operations
-ref<IRInstruction> Builder::emit_shl() {
-  return emit(Opcode::shl);
-}
-
-ref<IRInstruction> Builder::emit_shr() {
-  return emit(Opcode::shr);
-}
-
-ref<IRInstruction> Builder::emit_shru() {
-  return emit(Opcode::shru);
-}
-
-ref<IRInstruction> Builder::emit_band() {
-  return emit(Opcode::band);
-}
-
-ref<IRInstruction> Builder::emit_bor() {
-  return emit(Opcode::bor);
-}
-
-ref<IRInstruction> Builder::emit_bxor() {
-  return emit(Opcode::bxor);
-}
-
-ref<IRInstruction> Builder::emit_ubnot() {
-  return emit(Opcode::ubnot);
+ref<IRInstruction> Builder::emit_load_value(RawValue value) {
+  if ((value.raw() & 0xffffffffffff0000) == 0) {
+    return emit_loadsmi(value.raw());
+  } else {
+
+    // negative numbers can still be encoded inline
+    if (value.isInt() && (value.raw() & 0xffffffffffff0000) == 0xffffffffffff0000) {
+      return emit_loadsmi(value.raw() & 0x000000000000ffff);
+    }
+
+    return emit_load(register_constant(value));
+  }
 }
 
 uint32_t Builder::maximum_stack_height() const {
   return m_maximum_stack_height;
-};
+}
 
 void Builder::reset_stack_height() {
   m_maximum_stack_height = 0;
@@ -838,12 +485,30 @@ void Builder::update_stack(int32_t amount) {
     DCHECK((uint32_t)(-amount) <= m_current_stack_height);
   }
 
-  // std::cout << " stack " << (int)m_current_stack_height << " += " << amount << std::endl;
   m_current_stack_height += amount;
 
   if (m_current_stack_height > m_maximum_stack_height) {
     m_maximum_stack_height = m_current_stack_height;
   }
+}
+
+ref<IRInstruction> Builder::emit_instruction_impl(const ref<IRInstruction>& instruction) {
+  ref<IRBasicBlock> block = active_block();
+
+  update_stack(-(int32_t)instruction->popped_values());
+  update_stack((int32_t)instruction->pushed_values());
+
+  if (block->instructions.empty()) {
+    place_label(reserve_label());
+  }
+
+  block->instructions.push_back(instruction);
+
+  if (kBranchingOpcodes.count(instruction->opcode)) {
+    new_basic_block();
+  }
+
+  return instruction;
 }
 
 }  // namespace charly::core::compiler::ir

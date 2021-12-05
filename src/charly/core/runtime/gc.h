@@ -77,9 +77,6 @@ private:
   // concurrent worker main method
   void main();
 
-  // waits for the runtime to request a GC cycle
-  void wait_for_gc_request();
-
   // GC STW pauses
   void init_mark();
   void init_evacuate();
@@ -87,6 +84,7 @@ private:
   void init_idle();
 
   // GC phases that run concurrently with the application threads
+  void phase_idle();
   void phase_mark();
   void phase_evacuate();
   void phase_updateref();
