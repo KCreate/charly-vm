@@ -64,6 +64,7 @@ func compile(source, name = "repl") = builtin_compile(source, name)
 
 func readfile(name) = builtin_readfile(name)
 
+let $$ = null
 let @"charly.boot" = func boot {
     @"charly.boot" = null
 
@@ -116,12 +117,13 @@ let @"charly.boot" = func boot {
             }
 
             default {
-                const module = compile(input, "repl")
                 try {
-                    const result = module()
-                    write("< ")
+                    const program = compile(input, "repl")
+                    const result = program()
+                    $$ = result
                     echo(result)
                 } catch(e) {
+                    $$ = e
                     echo("Caught exception:")
                     echo(e)
                 }

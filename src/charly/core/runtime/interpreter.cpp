@@ -414,6 +414,18 @@ OP(call) {
     frame->pop(argc + 2);
     frame->push(return_value);
     return ContinueMode::Next;
+  } else if (callee.isBuiltinFunction()) {
+    RawBuiltinFunction function = RawBuiltinFunction::cast(callee);
+    BuiltinFunctionType function_ptr = function.function();
+    RawValue return_value = function_ptr(thread, args, argc);
+
+    if (return_value.is_error_exception()) {
+      return ContinueMode::Exception;
+    }
+
+    frame->pop(argc + 2);
+    frame->push(return_value);
+    return ContinueMode::Next;
   }
 
   debugln("called value is not a function");

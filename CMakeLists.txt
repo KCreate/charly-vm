@@ -13,6 +13,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   set(APPLE TRUE)
   execute_process(COMMAND xcrun --show-sdk-path OUTPUT_VARIABLE OSXSDKPATH)
   include_directories(BEFORE SYSTEM ${OSXSDKPATH})
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/usr/include")
 endif()
 
 # include directories
@@ -41,6 +42,7 @@ target_compile_options(charly PRIVATE
   -Wno-register
   -Wno-extra-semi
   -ftemplate-backtrace-limit=8
+  -mllvm -align-all-functions=3
 )
 
 # enable link-time-optimization for release builds
@@ -87,6 +89,7 @@ target_compile_options(tests PRIVATE
   -Wno-register
   -Wno-extra-semi
   -ftemplate-backtrace-limit=8
+  -mllvm -align-all-functions=3
 )
 
 # enable link-time-optimization for release builds

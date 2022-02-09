@@ -203,6 +203,15 @@ RawObject Runtime::create_function(Thread* thread, RawValue context, SharedFunct
   return RawObject::cast(func);
 }
 
+RawObject Runtime::create_builtin_function(Thread* thread, BuiltinFunctionType function, RawSymbol name, uint8_t argc) {
+  RawValue inst = create_instance(thread, ShapeId::kBuiltinFunction, RawBuiltinFunction::kFieldCount);
+  RawBuiltinFunction func = RawBuiltinFunction::cast(inst);
+  func.set_function(function);
+  func.set_name(name);
+  func.set_argc(argc);
+  return RawObject::cast(func);
+}
+
 RawObject Runtime::create_fiber(Thread* thread, RawFunction function) {
   RawFiber fiber = RawFiber::cast(create_instance(thread, ShapeId::kFiber, RawFiber::kFieldCount));
   Thread* fiber_thread = scheduler()->get_free_thread();

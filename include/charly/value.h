@@ -69,6 +69,7 @@ namespace charly::core::runtime {
   V(Tuple)                     \
   V(Fiber)                     \
   V(Function)                  \
+  V(BuiltinFunction)           \
   V(Shape)                     \
   V(Type)
 
@@ -313,9 +314,6 @@ public:
     return *this;
   }
 
-  RawValue value() const {
-    return *this;
-  }
   uintptr_t raw() const;
   bool is_error() const;
   bool is_error_ok() const;
@@ -663,6 +661,29 @@ public:
   static const size_t kFrameContextOffset = 0;
   static const size_t kSharedInfoOffset = 1;
   static const size_t kFieldCount = RawInstance::kFieldCount + 2;
+  static const size_t kSize = kFieldCount * kPointerSize;
+};
+
+// builtin function implemented in c++
+class Thread;
+typedef RawValue (*BuiltinFunctionType)(Thread*, const RawValue*, uint8_t);
+class RawBuiltinFunction : public RawInstance {
+public:
+  COMMON_RAW_OBJECT(BuiltinFunction);
+
+  BuiltinFunctionType function() const;
+  void set_function(BuiltinFunctionType function);
+
+  RawSymbol name() const;
+  void set_name(RawSymbol symbol);
+
+  uint8_t argc() const;
+  void set_argc(uint8_t argc);
+
+  static const size_t kFunctionPtrOffset = 0;
+  static const size_t kNameOffset = 1;
+  static const size_t kArgcOffset = 2;
+  static const size_t kFieldCount = RawInstance::kFieldCount + 3;
   static const size_t kSize = kFieldCount * kPointerSize;
 };
 

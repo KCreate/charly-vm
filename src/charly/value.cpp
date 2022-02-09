@@ -194,7 +194,7 @@ uintptr_t RawValue::raw() const {
 }
 
 bool RawValue::is_error() const {
-  return isNull() && RawNull::cast(value()).error_code() != ErrorId::kErrorNone;
+  return isNull() && RawNull::cast(*this).error_code() != ErrorId::kErrorNone;
 }
 
 bool RawValue::is_error_ok() const {
@@ -378,6 +378,10 @@ bool RawValue::isFunction() const {
   return shape_id() == ShapeId::kFunction;
 }
 
+bool RawValue::isBuiltinFunction() const {
+  return shape_id() == ShapeId::kBuiltinFunction;
+}
+
 bool RawValue::isShape() const {
   return shape_id() == ShapeId::kShape;
 }
@@ -471,6 +475,13 @@ void RawValue::dump(std::ostream& out) const {
           writer.fg(Color::Yellow, "func ", name, "(", (uint32_t)minargc, ")");
         }
 
+        return;
+      }
+      case ShapeId::kBuiltinFunction: {
+        RawBuiltinFunction builtin_function(RawBuiltinFunction::cast(object));
+        RawSymbol name = builtin_function.name();
+        uint8_t argc = builtin_function.argc();
+        writer.fg(Color::Yellow, "builtin ", name, "(", (uint32_t)argc, ")");
         return;
       }
       default: {
@@ -926,6 +937,30 @@ SharedFunctionInfo* RawFunction::shared_info() const {
 
 void RawFunction::set_shared_info(SharedFunctionInfo* function) {
   set_pointer_at(kSharedInfoOffset, function);
+}
+
+BuiltinFunctionType RawBuiltinFunction::function() const {
+  return (BuiltinFunctionType)(intptr_t)int_at(kFunctionPtrOffset);
+}
+
+void RawBuiltinFunction::set_function(BuiltinFunctionType function) {
+  set_int_at(kFunctionPtrOffset, (intptr_t)function);
+}
+
+RawSymbol RawBuiltinFunction::name() const {
+  return RawSymbol::cast(field_at(kNameOffset));
+}
+
+void RawBuiltinFunction::set_name(RawSymbol symbol) {
+  return set_field_at(kNameOffset, symbol);
+}
+
+uint8_t RawBuiltinFunction::argc() const {
+  return int_at(kArgcOffset);
+}
+
+void RawBuiltinFunction::set_argc(uint8_t argc) {
+  return set_int_at(kArgcOffset, argc);
 }
 
 Thread* RawFiber::thread() const {

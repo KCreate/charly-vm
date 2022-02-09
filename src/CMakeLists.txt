@@ -27,6 +27,7 @@ file(GLOB charlycore_SRC
   "charly/core/runtime/scheduler.cpp"
   "charly/core/runtime/thread.cpp"
   "charly/core/runtime/worker.cpp"
+  "charly/core/runtime/builtins/core.cpp"
   "charly/handle.cpp"
   "charly/utils/argumentparser.cpp"
   "charly/utils/buffer.cpp"
@@ -73,6 +74,7 @@ target_compile_options(libcharly PRIVATE
   -Wno-register
   -Wno-extra-semi
   -ftemplate-backtrace-limit=8
+  -mllvm -align-all-functions=3
 )
 
 # enable link-time-optimization for release builds

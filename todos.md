@@ -1,12 +1,32 @@
 # Todos
 
-- Implement REPL in charly code
-  - Functionality needed
-    - Compiling source code into a module
-      - Charly code needs to have access to all compiler output
-    - Reading input from command line (readline bindings)
-    - Starting another fiber
-    - Waiting for a fiber to complete
+- Quickening
+  - General opcodes must determine the types of input operands
+  - Replace original opcode with more detailed variant
+  - Thread updates opcodes atomically
+  - How are the cache sites synced?
+  - Quickened opcodes require some memory to store their cached data
+    - Can the compiler determine the total amount of cache sites needed per function?
+    - Can the runtime easily determine which address maps to which cache site?
+      - Store opcode address in cache slot and perform a linear scan on the first opcode swap
+
+- Fixed size 4 byte instruction encoding
+  - Quickening
+    - Cache types
+      - Simple Value          - stores a single RawValue
+      - Property index        - store a shape id and a property index
+      - Poly Property index   - store up to 4 shape ids and property indices
+    - Transition between opcodes could lead to insonsistent views of caches
+      - Quickened opcode contains index into cache table of function
+      - Make index 0 invalid
+        - A thread that wishes to update an opcode does an atomic cas, setting the initial cache index to 0
+        - Other threads fall back to slow path if they encounter a 0 cache index
+        - Only the thread that successfully changed the opcode gets to allocate a cache slot
+        - Opcodes in these transition stages may not be changed by other threads
+    
+- Update symbol tables when new strings are being created
+
+- RawInstance::field_at index should be uint8_t as maximum field count is 256
 
 - Optimize global variables
   - Implement the id system, ditch the global hashmap, it is just a temporary hack

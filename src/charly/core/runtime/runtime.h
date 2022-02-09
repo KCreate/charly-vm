@@ -90,6 +90,7 @@ public:
 
   RawObject create_tuple(Thread* thread, uint32_t count);
   RawObject create_function(Thread* thread, RawValue context, SharedFunctionInfo* shared_info);
+  RawObject create_builtin_function(Thread* thread, BuiltinFunctionType function, RawSymbol name, uint8_t argc);
   RawObject create_fiber(Thread* thread, RawFunction function);
 
   // declare a new global variable

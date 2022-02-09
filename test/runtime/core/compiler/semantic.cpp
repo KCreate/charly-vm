@@ -107,19 +107,10 @@ CATCH_TEST_CASE("Semantic") {
   }
 
   CATCH_SECTION("checks for reserved identifiers") {
-    COMPILE_ERROR("const $ = 1", "'$' is a reserved variable name");
-    COMPILE_ERROR("const $$ = 1", "'$$' is a reserved variable name");
     COMPILE_ERROR("const $0 = 1", "'$0' is a reserved variable name");
     COMPILE_ERROR("let $1 = 1", "'$1' is a reserved variable name");
     COMPILE_ERROR("let $5 = 1", "'$5' is a reserved variable name");
     COMPILE_ERROR("let $500 = 1", "'$500' is a reserved variable name");
-
-    COMPILE_ERROR("let ($) = 1", "'$' is a reserved variable name");
-    COMPILE_ERROR("let (a, $$) = 1", "'$$' is a reserved variable name");
-    COMPILE_ERROR("let (...$$) = 1", "'$$' is a reserved variable name");
-    COMPILE_ERROR("let { $ } = 1", "'$' is a reserved variable name");
-    COMPILE_ERROR("let { a, $$ } = 1", "'$$' is a reserved variable name");
-    COMPILE_ERROR("let { ...$$ } = 1", "'$$' is a reserved variable name");
 
     COMPILE_ERROR("func foo($10) {}", "'$10' is a reserved variable name");
     COMPILE_ERROR("func foo($10 = 1) {}", "'$10' is a reserved variable name");
