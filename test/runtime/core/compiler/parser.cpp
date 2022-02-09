@@ -255,6 +255,7 @@ CATCH_TEST_CASE("Parser") {
     CHECK_AST_STMT("return", make<Return>(make<Null>()));
     CHECK_AST_STMT("return 1", make<Return>(make<Int>(1)));
     CHECK_AST_STMT("return 1 + 2", make<Return>(make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(2))));
+    CHECK_AST_STMT("return\n 1 + 2", make<Return>(make<Null>()));
 
     CHECK_AST_STMT("loop { break }", make<Loop>(make<Block>(make<Break>())));
     CHECK_AST_STMT("loop { continue }", make<Loop>(make<Block>(make<Continue>())));

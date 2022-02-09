@@ -261,8 +261,10 @@ ref<Return> Parser::parse_return() {
   Location begin = m_token.location;
   eat(TokenType::Return);
 
+  bool newline_passed_since_base = begin.end_row != m_token.location.row;
+
   ref<Expression> return_value;
-  if (m_token.could_start_expression()) {
+  if (!newline_passed_since_base && m_token.could_start_expression()) {
     return_value = parse_expression();
   } else {
     return_value = make<Null>();
