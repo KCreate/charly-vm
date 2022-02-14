@@ -28,6 +28,7 @@ file(GLOB charlycore_SRC
   "charly/core/runtime/thread.cpp"
   "charly/core/runtime/worker.cpp"
   "charly/core/runtime/builtins/core.cpp"
+  "charly/core/runtime/builtins/readline.cpp"
   "charly/handle.cpp"
   "charly/utils/argumentparser.cpp"
   "charly/utils/buffer.cpp"

@@ -40,11 +40,14 @@ func determine_max_stack_size {
     return 100
 }
 
-const builtin_writevalue = @"charly.builtin.writevalue"
-const builtin_readline = @"charly.builtin.readline"
-const builtin_readfile = @"charly.builtin.readfile"
-const builtin_compile = @"charly.builtin.compile"
-const builtin_exit = @"charly.builtin.exit"
+const builtin_writevalue = @"charly.builtin.core.writevalue"
+const builtin_readfile = @"charly.builtin.core.readfile"
+const builtin_compile = @"charly.builtin.core.compile"
+const builtin_exit = @"charly.builtin.core.exit"
+
+const builtin_readline_prompt = @"charly.builtin.readline.prompt"
+const builtin_readline_add_history = @"charly.builtin.readline.add_history"
+const builtin_readline_clear_history = @"charly.builtin.readline.clear_history"
 
 func write(string) = builtin_writevalue(string)
 
@@ -53,10 +56,19 @@ func echo(string) {
     write("\n");
 }
 
-func readline(prompt = "> ") {
-    write(prompt);
-    return builtin_readline()
+func prompt(message = "> ", append_to_history = true) {
+    const result = builtin_readline_prompt("{message}")
+
+    if append_to_history {
+        builtin_readline_add_history(result)
+    }
+
+    return result
 }
+
+func add_history(message) = builtin_readline_add_history(message)
+
+func clear_history = builtin_readline_clear_history()
 
 func exit(status = 0) = builtin_exit(status)
 
@@ -97,7 +109,7 @@ let @"charly.boot" = func boot {
     let input = ARGV[0]
 
     if input == null {
-        input = readline()
+        input = prompt()
     }
 
     loop {
@@ -110,27 +122,31 @@ let @"charly.boot" = func boot {
                 return
             }
 
+            case ".clear" {
+                clear_history()
+                break
+            }
+
             case ".help" {
                 echo(".exit        Exit from the REPL")
+                echo(".clear       Clear REPL history")
                 echo(".help        Show this help message")
                 break
             }
 
             default {
                 try {
-                    const program = compile(input, "repl")
-                    const result = program()
-                    $$ = result
-                    echo(result)
+                    $$ = compile(input, "repl")()
                 } catch(e) {
                     $$ = e
                     echo("Caught exception:")
-                    echo(e)
                 }
+
+                echo($$)
             }
         }
 
-        input = readline()
+        input = prompt()
     }
 }
 

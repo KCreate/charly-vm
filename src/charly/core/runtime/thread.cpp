@@ -36,6 +36,7 @@
 #include "charly/core/runtime/worker.h"
 
 #include "charly/core/runtime/builtins/core.h"
+#include "charly/core/runtime/builtins/readline.h"
 
 using boost::context::detail::jump_fcontext;
 using boost::context::detail::make_fcontext;
@@ -304,40 +305,12 @@ void Thread::entry_main_thread() {
   CHECK(runtime->declare_global_variable(this, SYM("ARGV"), true).is_error_ok());
   CHECK(runtime->set_global_variable(this, SYM("ARGV"), argv_tuple).is_error_ok());
 
-  // register builtin vm functions
-  {
-    auto builtin_name = runtime->declare_symbol(this, "readline");
-    BuiltinFunction builtin_func(scope, runtime->create_builtin_function(this, builtin::readline, builtin_name, 0));
-    CHECK(runtime->declare_global_variable(this, SYM("charly.builtin.readline"), true).is_error_ok());
-    CHECK(runtime->set_global_variable(this, SYM("charly.builtin.readline"), builtin_func).is_error_ok());
-  }
-  {
-    auto builtin_name = runtime->declare_symbol(this, "writevalue");
-    BuiltinFunction builtin_func(scope, runtime->create_builtin_function(this, builtin::writevalue, builtin_name, 1));
-    CHECK(runtime->declare_global_variable(this, SYM("charly.builtin.writevalue"), true).is_error_ok());
-    CHECK(runtime->set_global_variable(this, SYM("charly.builtin.writevalue"), builtin_func).is_error_ok());
-  }
-  {
-    auto builtin_name = runtime->declare_symbol(this, "compile");
-    BuiltinFunction builtin_func(scope, runtime->create_builtin_function(this, builtin::compile, builtin_name, 1));
-    CHECK(runtime->declare_global_variable(this, SYM("charly.builtin.compile"), true).is_error_ok());
-    CHECK(runtime->set_global_variable(this, SYM("charly.builtin.compile"), builtin_func).is_error_ok());
-  }
-  {
-    auto builtin_name = runtime->declare_symbol(this, "exit");
-    BuiltinFunction builtin_func(scope, runtime->create_builtin_function(this, builtin::exit, builtin_name, 1));
-    CHECK(runtime->declare_global_variable(this, SYM("charly.builtin.exit"), true).is_error_ok());
-    CHECK(runtime->set_global_variable(this, SYM("charly.builtin.exit"), builtin_func).is_error_ok());
-  }
-  {
-    auto builtin_name = runtime->declare_symbol(this, "readfile");
-    BuiltinFunction builtin_func(scope, runtime->create_builtin_function(this, builtin::readfile, builtin_name, 1));
-    CHECK(runtime->declare_global_variable(this, SYM("charly.builtin.readfile"), true).is_error_ok());
-    CHECK(runtime->set_global_variable(this, SYM("charly.builtin.readfile"), builtin_func).is_error_ok());
-  }
-
+  // register mainfiber global variable
   CHECK(runtime->declare_global_variable(this, SYM("charly.mainfiber"), true).is_error_ok());
   CHECK(runtime->set_global_variable(this, SYM("charly.mainfiber"), fiber).is_error_ok());
+
+  builtin::core::initialize(this);
+  builtin::readline::initialize(this);
 
   fiber.thread()->ready();
   scheduler->schedule_thread(fiber.thread(), worker()->processor());

@@ -26,8 +26,6 @@
 
 #include <fstream>
 #include <iostream>
-#include <string>
-#include <thread>
 
 #include <readline/history.h>
 #include <readline/readline.h>
@@ -37,7 +35,6 @@
 #include "charly/utils/argumentparser.h"
 #include "charly/utils/buffer.h"
 
-#include "charly/core/compiler/ast.h"
 #include "charly/core/compiler/compiler.h"
 #include "charly/core/runtime/interpreter.h"
 #include "charly/core/runtime/runtime.h"
@@ -128,6 +125,14 @@ int32_t cli(DiagnosticConsole& console) {
 }
 
 int main(int argc, char** argv) {
+
+  // readline.h setup
+  rl_initialize();
+  using_history();
+
+  // disable filename autocompletion with TAB
+  rl_bind_key('\t', rl_insert);
+
   utils::ArgumentParser::init_argv(argc, argv);
   utils::ArgumentParser::init_env(environ);
 

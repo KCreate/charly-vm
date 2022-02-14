@@ -24,26 +24,7 @@
  * SOFTWARE.
  */
 
-const write = @"charly.builtin.writevalue"
-func echo(string) = write("{string}\n")
-
 echo((0, 1, 2, 3, 4))
 echo((0, -1, -2, -3, -4))
 echo((true, false, null, NaN, INFINITY))
 echo(("", "a", "b", "c", "z", "hi", "ä", "!"))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

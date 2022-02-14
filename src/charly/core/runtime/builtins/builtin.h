@@ -24,20 +24,20 @@
  * SOFTWARE.
  */
 
-#include "charly/core/runtime/builtins/builtin.h"
 #include "charly/value.h"
 
 #pragma once
 
-namespace charly::core::runtime::builtin::core {
+namespace charly::core::runtime::builtin {
 
-void initialize(Thread* thread);
+#define REGISTER_BUILTIN_FUNCTION(L, N, A)                                                                     \
+  {                                                                                                            \
+    auto builtin_name = runtime->declare_symbol(thread, #L "." #N);                                            \
+    BuiltinFunction builtin_func(scope, runtime->create_builtin_function(thread, N, builtin_name, A));         \
+    CHECK(runtime->declare_global_variable(thread, SYM("charly.builtin." #L "." #N), true).is_error_ok());     \
+    CHECK(runtime->set_global_variable(thread, SYM("charly.builtin." #L "." #N), builtin_func).is_error_ok()); \
+  }
 
-#define DEF_BUILTIN_CORE(V) \
-  V(core, writevalue, 1)    \
-  V(core, readfile, 1)      \
-  V(core, compile, 2)       \
-  V(core, exit, 1)
-DEF_BUILTIN_CORE(DEFINE_BUILTIN_METHOD_DECLARATIONS)
+#define DEFINE_BUILTIN_METHOD_DECLARATIONS(L, N, A) RawValue N(Thread* thread, const RawValue* args, uint8_t argc);
 
-}  // namespace charly::core::runtime::builtin::core
+}  // namespace charly::core::runtime::builtin

@@ -44,9 +44,6 @@
     - Detect threads in native mode that exceeded their timeslice
     - Trigger GC when memory gets low
 
-- Use newlines to terminate certain syntax constructs in the Parser
-  - Newline terminates `return <expr>`-like statements
-
 - Implement REPL in charly code
   - Functionality needed
     - Starting another fiber

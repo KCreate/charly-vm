@@ -27,26 +27,20 @@
 #include <filesystem>
 #include <fstream>
 
-#include "charly/core/compiler/compiler.h"
 #include "charly/core/runtime/builtins/core.h"
 #include "charly/core/runtime/runtime.h"
+#include "charly/core/compiler/compiler.h"
 
-namespace charly::core::runtime::builtin {
+namespace charly::core::runtime::builtin::core {
 
 namespace fs = std::filesystem;
 using namespace charly::core::compiler;
 using namespace std::chrono_literals;
 
-RawValue readline(Thread* thread, const RawValue*, uint8_t argc) {
-  CHECK(argc == 0);
+void initialize(Thread* thread) {
   Runtime* runtime = thread->runtime();
-
-  std::string line;
-  thread->native_section([&] {
-    CHECK(std::getline(std::cin, line));
-  });
-
-  return runtime->create_string(thread, line.data(), line.size(), crc32::hash_string(line));
+  HandleScope scope(thread);
+  DEF_BUILTIN_CORE(REGISTER_BUILTIN_FUNCTION)
 }
 
 RawValue writevalue(Thread*, const RawValue* args, uint8_t argc) {
@@ -120,4 +114,4 @@ RawValue exit(Thread* thread, const RawValue* args, uint8_t argc) {
 }
 
 
-}  // namespace charly::core::runtime
+}  // namespace charly::core::runtime::core

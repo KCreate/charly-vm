@@ -29,15 +29,14 @@
 
 #pragma once
 
-namespace charly::core::runtime::builtin::core {
+namespace charly::core::runtime::builtin::readline {
 
 void initialize(Thread* thread);
 
-#define DEF_BUILTIN_CORE(V) \
-  V(core, writevalue, 1)    \
-  V(core, readfile, 1)      \
-  V(core, compile, 2)       \
-  V(core, exit, 1)
-DEF_BUILTIN_CORE(DEFINE_BUILTIN_METHOD_DECLARATIONS)
+#define DEF_BUILTIN_READLINE(V) \
+  V(readline, prompt, 1)        \
+  V(readline, add_history, 1)   \
+  V(readline, clear_history, 0)
+DEF_BUILTIN_READLINE(DEFINE_BUILTIN_METHOD_DECLARATIONS)
 
-}  // namespace charly::core::runtime::builtin::core
+}  // namespace charly::core::runtime::builtin::readline
