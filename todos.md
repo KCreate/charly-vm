@@ -4,6 +4,9 @@
   - Remove Generators from the language
   - yield is now implemented for the block callback syntax
 
+- Refactor codebase
+  - Fix low hanging fruits (all the editor warnings...)
+
 - Rethink iterator system
   - Iterators shouldn't be a separate data structure but should be implemented in charly code
   - Iterators are created by calling the `iterator(old = null)` method
@@ -18,8 +21,6 @@
     - `await`
   - Some language constructs should be overloadable
     - Index access, Index assignment
-
-- Make sure certain reserved identifiers can be used as function names
 
 - Alternate way of declaring constructor functions
   - Constructor has to be called via `<ClassName>.<ConstructorName>`
@@ -38,18 +39,16 @@
     }
     ```
 
-- Keep debug statement in source code, disable via constexpr bool declared in charly.h
-  - So I don't have to keep adding the same types of debug outputs over and over again
-  - Zero-cost if disabled as the compiler just removes it (dead-code)
-
 - Charly runtime executes as long as there are active (or potentially active) threads
   - Potentially active threads are threads that are waiting for some resource to finish
     - E.g timers or network requests
 
 - Small locks
   - Grow concurrent hash table of thread queues
-  - ObjectLock address invalidation of object?
   - Implement spinning
+
+- Ability to await multiple fibers and handle the first that returns
+  - Similar to what the `select` statement in Go does
 
 - Concurrency
   - Signal handling?
@@ -63,8 +62,6 @@
     - `<-` channel operator?
       - Can be used to read from a channel `const value = <- channel`
       - Can be used to insert into a channel `channel <- value`
-
-- Implicit return in functions
         
 - Number to int / float convenience functions
 
@@ -72,12 +69,16 @@
 
 - Shorthand callback syntax
   - Syntax
-    - `list.reduce(0) { |p, v, i| p + v }`
-    - `func reduce(p) { each { |v, i| p = yield p, v, i  } return p }`
+    - `5.times -> {}`
+    - `list.map -> $ * 2`
+    - `list.each -> (e, i) { do_stuff(e, i) }`
+    - `10.upto(100) -> (i) {}`
+    - `func each(&) { yield 1; yield 2; yield 3 }`
+    - `func each(&block) { block(1); block(2); block(3) }`
   - Functions can call the passed block via the yield statement
     - Implement ability to yield multiple, comma-separated values
-  - Fibers yield via the `Fiber.yield()` function
-  - Calling a function that accepts a block without a block, returns a coroutine of that function
+  - Calling a function that accepts a block without a block, returns an iterator for that function
+  - Update yield unit tests
 
 - Quickening
   - General opcodes must determine the types of input operands

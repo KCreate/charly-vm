@@ -1,10 +1,9 @@
-func currentfiber = @"charly.builtin.core.currentfiber"()
-
-const t = spawn {
-    echo("t: {currentfiber()}")
-    return 2000
+func add(a, b) {
+    a + b
 }
 
-echo("main: {currentfiber()}")
+const result = add(2, 3)
 
-return await t
+echo(result)
+
+result

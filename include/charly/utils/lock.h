@@ -29,6 +29,7 @@
 #include <list>
 #include <thread>  // std::hardware_concurrency
 #include <vector>
+#include <condition_variable>
 
 #include "charly/atomic.h"
 

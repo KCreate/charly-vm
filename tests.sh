@@ -1,14 +1,14 @@
 #!/bin/sh
 
-mkdir -p cmake-build-release
+mkdir -p cmake-build-debug
 
 # initial cmake run
-if ! test -f cmake-build-release/Makefile;
+if ! test -f cmake-build-debug/Makefile;
 then
-  cmake -DCMAKE_BUILD_TYPE=Release -S . -B cmake-build-release
+  cmake -DCMAKE_BUILD_TYPE=Debug -S . -B cmake-build-debug
 fi
 
-if cmake --build cmake-build-release --target tests -j12;
+if cmake --build cmake-build-debug --target tests -j12;
 then
-  cmake-build-release/tests
+  cmake-build-debug/tests
 fi
