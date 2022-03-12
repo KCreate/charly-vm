@@ -33,6 +33,7 @@ file(GLOB charlycore_SRC
   "charly/utils/argumentparser.cpp"
   "charly/utils/buffer.cpp"
   "charly/utils/allocator.cpp"
+  "charly/utils/lock.cpp"
   "charly/value.cpp"
   "libs/termcolor/termcolor.cpp"
 )

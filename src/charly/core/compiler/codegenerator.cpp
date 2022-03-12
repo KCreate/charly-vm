@@ -363,7 +363,7 @@ bool CodeGenerator::inspect_enter(const ref<ast::Import>& node) {
 }
 
 void CodeGenerator::inspect_leave(const ref<ast::Yield>& node) {
-  m_builder.emit_fiberyield()->at(node);
+  m_console.fatal(node, "yield not yet implemented");
 }
 
 bool CodeGenerator::inspect_enter(const ref<ast::Spawn>& node) {
@@ -449,13 +449,13 @@ bool CodeGenerator::inspect_enter(const ref<ast::Spawn>& node) {
     }
   }
 
-  m_builder.emit_fiberspawn()->at(node);
+  m_builder.emit_makefiber()->at(node);
 
   return false;
 }
 
 void CodeGenerator::inspect_leave(const ref<ast::Await>& node) {
-  m_builder.emit_fiberawait()->at(node);
+  m_builder.emit_fiberjoin()->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ref<ast::Typeof>& node) {

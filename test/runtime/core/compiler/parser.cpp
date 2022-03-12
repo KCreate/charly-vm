@@ -657,7 +657,8 @@ CATCH_TEST_CASE("Parser") {
   CATCH_SECTION("__builtin expressions") {
     CHECK_STMT("__builtin(\"caststring\", x)");
     CHECK_STMT("__builtin(\"castsymbol\", x)");
-    CHECK_STMT("__builtin(\"fiberspawn\", x, y, z)");
+    CHECK_STMT("__builtin(\"makefiber\", x, y, z)");
+    CHECK_STMT("__builtin(\"fiberjoin\", x)");
 
     CHECK_ERROR_STMT("__builtin", "unexpected end of file, expected a '(' token");
     CHECK_ERROR_STMT("__builtin(", "unexpected end of file, expected a ')' token");

@@ -50,6 +50,10 @@ struct atomic : public std::atomic<T> {
     bool result = cas(expected, desired);
     CHECK(result);
   }
+
+  uintptr_t address() const {
+    return reinterpret_cast<uintptr_t>(this);
+  }
 };
 
 }  // namespace charly

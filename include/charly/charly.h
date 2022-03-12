@@ -35,7 +35,7 @@
 #include "atomic.h"
 #include "debug.h"
 #include "symbol.h"
-
+#include "utils/lock.h"
 #include "utils/allocator.h"
 
 #pragma once

@@ -41,19 +41,22 @@ func determine_max_stack_size {
 }
 
 const builtin_writevalue = @"charly.builtin.core.writevalue"
+const builtin_writevaluesync = @"charly.builtin.core.writevaluesync"
 const builtin_readfile = @"charly.builtin.core.readfile"
 const builtin_compile = @"charly.builtin.core.compile"
+const builtin_disassemble = @"charly.builtin.core.disassemble"
+const builtin_makelist = @"charly.builtin.core.makelist"
 const builtin_exit = @"charly.builtin.core.exit"
 
 const builtin_readline_prompt = @"charly.builtin.readline.prompt"
 const builtin_readline_add_history = @"charly.builtin.readline.add_history"
 const builtin_readline_clear_history = @"charly.builtin.readline.clear_history"
 
-func write(string) = builtin_writevalue(string)
+func write(string) = builtin_writevalue("{string}\n")
+func writesync(string) = builtin_writevaluesync(string)
 
 func echo(string) {
-    write(string);
-    write("\n");
+    writesync(string);
 }
 
 func prompt(message = "> ", append_to_history = true) {
@@ -75,6 +78,15 @@ func exit(status = 0) = builtin_exit(status)
 func compile(source, name = "repl") = builtin_compile(source, name)
 
 func readfile(name) = builtin_readfile(name)
+
+func dis(function) {
+    echo("disassembly of {function}")
+    builtin_disassemble(function)
+}
+
+func list(size = 0, initial = null) {
+    return builtin_makelist(size, initial)
+}
 
 let $$ = null
 let @"charly.boot" = func boot {

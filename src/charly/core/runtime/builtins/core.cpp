@@ -43,9 +43,22 @@ void initialize(Thread* thread) {
   DEF_BUILTIN_CORE(REGISTER_BUILTIN_FUNCTION)
 }
 
+RawValue currentfiber(Thread* thread, const RawValue*, uint8_t argc) {
+  CHECK(argc == 0);
+  return thread->fiber();
+}
+
 RawValue writevalue(Thread*, const RawValue* args, uint8_t argc) {
   CHECK(argc == 1);
   args[0].to_string(std::cout);
+  return kNull;
+}
+
+RawValue writevaluesync(Thread*, const RawValue* args, uint8_t argc) {
+  CHECK(argc == 1);
+  utils::Buffer buf;
+  args[0].to_string(buf);
+  debuglnf("%", buf);
   return kNull;
 }
 
@@ -107,11 +120,45 @@ RawValue compile(Thread* thread, const RawValue* args, uint8_t argc) {
   return runtime->create_function(thread, kNull, module->function_table.front());
 }
 
+RawValue disassemble(Thread* thread, const RawValue* args, uint8_t argc) {
+  CHECK(argc == 1);
+  DCHECK(args[0].isFunction());
+
+  HandleScope scope(thread);
+  Function func(scope, RawFunction::cast(args[0]));
+  SharedFunctionInfo* info = func.shared_info();
+  info->dump(std::cout);
+
+  return kNull;
+}
+
+RawValue makelist(Thread* thread, const RawValue* args, uint8_t argc) {
+  CHECK(argc == 2);
+  DCHECK(args[0].isInt() || args[0].isFloat());
+
+  int64_t size;
+  if (args[0].isFloat()) {
+    size = static_cast<int64_t>(RawFloat::cast(args[0]).value());
+  } else {
+    size = static_cast<int64_t>(RawInt::cast(args[0]).value());
+  }
+  CHECK(size >= 0, "expected size to be positive number");
+
+  Runtime* runtime = thread->runtime();
+  HandleScope scope(thread);
+  Tuple tuple(scope, runtime->create_tuple(thread, size));
+  RawValue initial = args[1];
+  for (int64_t i = 0; i < size; i++) {
+    tuple.set_field_at(i, initial);
+  }
+
+  return tuple;
+}
+
 RawValue exit(Thread* thread, const RawValue* args, uint8_t argc) {
   CHECK(argc == 1);
   DCHECK(args[0].isInt());
   thread->abort((int32_t)RawInt::cast(args[0]).value());
 }
-
 
 }  // namespace charly::core::runtime::core

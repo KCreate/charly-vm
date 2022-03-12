@@ -739,28 +739,35 @@ OP(maketuplespread) {
   UNIMPLEMENTED();
 }
 
-OP(fiberspawn) {
-  UNIMPLEMENTED();
+OP(makefiber) {
+  Runtime* runtime = thread->runtime();
+  RawValue arg_argstuple = frame->pop();
+  RawValue arg_function = frame->pop();
+  RawValue arg_context = frame->pop();
+
+  if (!arg_function.isFunction()) {
+    debugln("argument is not a function");
+    thread->throw_value(RawSmallString::make_from_cstr("notfunc"));
+    return ContinueMode::Exception;
+  }
+
+  frame->push(runtime->create_fiber(thread, RawFunction::cast(arg_function), arg_context, arg_argstuple));
+
+  return ContinueMode::Next;
 }
 
-OP(fiberyield) {
-  UNIMPLEMENTED();
-}
+OP(fiberjoin) {
+  RawValue value = frame->pop();
+  if (!value.isFiber()) {
+    debugln("argument is not a fiber");
+    thread->throw_value(RawSmallString::make_from_cstr("notfibr"));
+    return ContinueMode::Exception;
+  }
 
-OP(fibercall) {
-  UNIMPLEMENTED();
-}
+  Runtime* runtime = thread->runtime();
+  frame->push(runtime->join_fiber(thread, RawFiber::cast(value)));
 
-OP(fiberpause) {
-  UNIMPLEMENTED();
-}
-
-OP(fiberresume) {
-  UNIMPLEMENTED();
-}
-
-OP(fiberawait) {
-  UNIMPLEMENTED();
+  return ContinueMode::Next;
 }
 
 OP(caststring) {

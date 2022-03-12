@@ -33,11 +33,8 @@
 namespace charly::core::compiler::ir {
 
 #define FOREACH_BUILTIN(V) \
-  V(fiberspawn, 3)         \
-  V(fiberresume, 1)        \
-  V(fiberpause, 0)         \
-  V(fiberyield, 1)         \
-  V(fibercall, 1)          \
+  V(makefiber, 3)          \
+  V(fiberjoin, 1)          \
   V(import, 2)             \
   V(iteratornext, 1)       \
   V(caststring, 1)         \

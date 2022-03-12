@@ -30,7 +30,7 @@
 
 namespace charly {
 
-std::mutex debugln_mutex;
+std::recursive_mutex debugln_mutex;
 auto program_startup_timestamp = std::chrono::steady_clock::now();
 
 void print_runtime_debug_state(std::ostream& stream) {
@@ -59,7 +59,11 @@ void print_runtime_debug_state(std::ostream& stream) {
           debugln_impl_time(stream, "  - %\n", frame->stack[i]);
         }
       }
+    } else {
+      debugln_impl_time(stream, "No active frame!\n");
     }
+  } else {
+    debugln_impl_time(stream, "No active thread!\n");
   }
 }
 

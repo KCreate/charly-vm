@@ -797,11 +797,7 @@ ref<Expression> Parser::parse_spawn() {
 
   // wrap non-call statements in a block
   if (!(isa<Block>(stmt) || isa<CallOp>(stmt) || isa<CallMemberOp>(stmt) || isa<CallIndexOp>(stmt))) {
-    if (ref<Expression> exp = cast<Expression>(stmt)) {
-      stmt = make<Block>(make<Return>(exp));
-    } else {
-      stmt = make<Block>(stmt);
-    }
+    m_console.fatal(stmt, "expected block or call operation");
   }
 
   ref<Spawn> node = make<Spawn>(stmt);
@@ -1031,11 +1027,11 @@ ref<FormatString> Parser::parse_format_string() {
     // a regular string token signals the end of the format string
     bool final_element = type(TokenType::String);
 
-    ref<String> element = parse_string_token();
-    format_string->set_end(element);
+    ref<String> string_element = parse_string_token();
+    format_string->set_end(string_element);
 
-    if (element->value.size() > 0)
-      format_string->elements.push_back(element);
+    if (string_element->value.size() > 0)
+      format_string->elements.push_back(string_element);
 
     if (final_element)
       return format_string;
@@ -1474,8 +1470,8 @@ ref<UnpackTarget> Parser::create_unpack_target(const ref<Expression>& node) {
         if (ref<Id> id = cast<Id>(member)) {
           target->elements.push_back(make<UnpackTargetElement>(make<Name>(id), false));
         } else if (ref<Spread> spread = cast<Spread>(member)) {
-          if (ref<Id> id = cast<Id>(spread->expression)) {
-            auto element = make<UnpackTargetElement>(make<Name>(id), true);
+          if (ref<Id> name = cast<Id>(spread->expression)) {
+            auto element = make<UnpackTargetElement>(make<Name>(name), true);
             element->set_begin(spread);
             target->elements.push_back(element);
           } else {

@@ -86,9 +86,9 @@ CATCH_TEST_CASE("Semantic") {
   }
 
   CATCH_SECTION("validates spawn statements") {
-    COMPILE_OK("spawn foo");
-    COMPILE_OK("spawn 1");
-    COMPILE_OK("spawn foo.bar");
+    COMPILE_ERROR("spawn foo", "expected block or call operation");
+    COMPILE_ERROR("spawn 1", "expected block or call operation");
+    COMPILE_ERROR("spawn foo.bar", "expected block or call operation");
     COMPILE_OK("spawn foo()");
     COMPILE_OK("spawn foo.bar()");
     COMPILE_OK("spawn foo[x]()");

@@ -212,13 +212,42 @@ RawObject Runtime::create_builtin_function(Thread* thread, BuiltinFunctionType f
   return RawObject::cast(func);
 }
 
-RawObject Runtime::create_fiber(Thread* thread, RawFunction function) {
+RawObject Runtime::create_fiber(Thread* thread, RawFunction function, RawValue context, RawValue arguments) {
   RawFiber fiber = RawFiber::cast(create_instance(thread, ShapeId::kFiber, RawFiber::kFieldCount));
   Thread* fiber_thread = scheduler()->get_free_thread();
   fiber_thread->init_fiber_thread(fiber);
   fiber.set_thread(fiber_thread);
   fiber.set_function(function);
+  fiber.set_context(context);
+  fiber.set_arguments(arguments);
+  fiber.set_result(kNull);
+
+  // schedule the fiber for execution
+  fiber_thread->ready();
+  scheduler()->schedule_thread(fiber_thread, thread->worker()->processor());
+
   return RawObject::cast(fiber);
+}
+
+RawValue Runtime::join_fiber(Thread* thread, RawFiber _fiber) {
+  HandleScope scope(thread);
+  Fiber fiber(scope, _fiber);
+
+  {
+    std::lock_guard lock(fiber);
+
+    // fiber has already terminated
+    if (fiber.has_finished()) {
+      return fiber.result();
+    }
+
+    // register to be woken up again when this fiber finishes
+    fiber.thread()->m_waiting_threads.push_back(thread);
+    thread->m_state.acas(Thread::State::Running, Thread::State::Waiting);
+  }
+
+  thread->enter_scheduler();
+  return fiber.result();
 }
 
 RawValue Runtime::declare_global_variable(Thread*, SYMBOL name, bool constant) {

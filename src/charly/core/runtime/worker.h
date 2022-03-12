@@ -55,7 +55,7 @@ using fcontext_t = boost::context::detail::fcontext_t;
 // it has to sync with the GC and pause itself if the GC is currently running.
 class Worker {
 public:
-  Worker(Runtime* runtime);
+  explicit Worker(Runtime* runtime);
 
   enum class State {
 

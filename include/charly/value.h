@@ -174,6 +174,8 @@ TYPE_NAMES(FORWARD_DECL)
 
 // every heap allocated object gets prefixed with a object header
 class ObjectHeader {
+  friend class RawObject;
+
 public:
   CHARLY_NON_HEAP_ALLOCATABLE(ObjectHeader);
 
@@ -225,7 +227,7 @@ private:
 
   atomic<uint32_t> m_shape_id_and_survivor_count;  // shape id and survivor count
   atomic<uint16_t> m_count;                        // count field
-  atomic<uint8_t> m_lock;                          // per-object small lock
+  utils::TinyLock m_lock;                          // per-object small lock
   atomic<Flag> m_flags;                            // flags
   atomic<SYMBOL> m_hashcode;                       // cached hashcode of object / string
   atomic<uint32_t> m_forward_offset;               // contains offset of forwarded copy during concurrent GC
@@ -530,11 +532,16 @@ public:
   COMMON_RAW_OBJECT(Object);
 
   uintptr_t address() const;
+  void* address_voidptr() const;
   uintptr_t base_address() const;
   size_t size() const;
   ShapeId shape_id() const;
 
   ObjectHeader* header() const;
+
+  void lock() const;
+  void unlock() const;
+  bool is_locked() const;
 
   static RawObject make_from_ptr(uintptr_t address);
 };
@@ -699,9 +706,23 @@ public:
   RawFunction function() const;
   void set_function(RawFunction function);
 
+  RawValue context() const;
+  void set_context(RawValue context);
+
+  RawValue arguments() const;
+  void set_arguments(RawValue arguments);
+
+  RawValue result() const;
+  void set_result(RawValue result);
+
+  bool has_finished() const;
+
   static const size_t kThreadPointerOffset = 0;
   static const size_t kFunctionOffset = 1;
-  static const size_t kFieldCount = RawInstance::kFieldCount + 2;
+  static const size_t kContextOffset = 2;
+  static const size_t kArgumentsOffset = 3;
+  static const size_t kResultOffset = 4;
+  static const size_t kFieldCount = RawInstance::kFieldCount + 5;
   static const size_t kSize = kFieldCount * kPointerSize;
 };
 

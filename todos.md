@@ -1,5 +1,84 @@
 # Todos
 
+- Generators
+  - Remove Generators from the language
+  - yield is now implemented for the block callback syntax
+
+- Rethink iterator system
+  - Iterators shouldn't be a separate data structure but should be implemented in charly code
+  - Iterators are created by calling the `iterator(old = null)` method
+    - When passed `null` as argument, a new iterator is created
+    - When passed an iterator as argument, the iterator gets incremented to the next position
+    - When the `iterator` method returns null, the iterator has finished
+  - Iterator values are fetched by calling `iterator_value(iter)`
+
+- Operator overloading
+  - Every operator should be overloadable
+  - Certain keywords should also be overloadable
+    - `await`
+  - Some language constructs should be overloadable
+    - Index access, Index assignment
+
+- Make sure certain reserved identifiers can be used as function names
+
+- Alternate way of declaring constructor functions
+  - Constructor has to be called via `<ClassName>.<ConstructorName>`
+    - Internally a static function marked as a class constructor
+    - Class constructors get special code generation
+      - Create new object instance of correct size and return that
+      - User code cannot return custom value from constructor
+      - If class has a parent class, super must be called
+  - Replace `func` keyword with `construct` for constructor functions
+  - If neither `func` or `construct` are given, assume func
+    ```
+    class Container {
+        construct new(size = 32, initial = null)
+        construct copy(other)
+        construct empty()
+    }
+    ```
+
+- Keep debug statement in source code, disable via constexpr bool declared in charly.h
+  - So I don't have to keep adding the same types of debug outputs over and over again
+  - Zero-cost if disabled as the compiler just removes it (dead-code)
+
+- Charly runtime executes as long as there are active (or potentially active) threads
+  - Potentially active threads are threads that are waiting for some resource to finish
+    - E.g timers or network requests
+
+- Small locks
+  - Grow concurrent hash table of thread queues
+  - ObjectLock address invalidation of object?
+  - Implement spinning
+
+- Concurrency
+  - Signal handling?
+  - Channel
+    - Buffered or unbuffered
+      - Channels can be created with a size
+      - Unbuffered channels have size 0 and function as a rendevouz point for two fibers
+      - Buffered channels have size 1+
+        - Reads block when the channel is empty
+        - Writes block when the channel is full
+    - `<-` channel operator?
+      - Can be used to read from a channel `const value = <- channel`
+      - Can be used to insert into a channel `channel <- value`
+
+- Implicit return in functions
+        
+- Number to int / float convenience functions
+
+- Post-Statement if, while
+
+- Shorthand callback syntax
+  - Syntax
+    - `list.reduce(0) { |p, v, i| p + v }`
+    - `func reduce(p) { each { |v, i| p = yield p, v, i  } return p }`
+  - Functions can call the passed block via the yield statement
+    - Implement ability to yield multiple, comma-separated values
+  - Fibers yield via the `Fiber.yield()` function
+  - Calling a function that accepts a block without a block, returns a coroutine of that function
+
 - Quickening
   - General opcodes must determine the types of input operands
   - Replace original opcode with more detailed variant
@@ -23,19 +102,16 @@
         - Other threads fall back to slow path if they encounter a 0 cache index
         - Only the thread that successfully changed the opcode gets to allocate a cache slot
         - Opcodes in these transition stages may not be changed by other threads
-    
-- Update symbol tables when new strings are being created
+
+- Refactor symbol table
+  - There is a global symbol table that is the ultimate source of truth
+  - Newly created strings are added to the global symbol table
+  - Each processor has a local cache of symbols that it updates whenever a new symbol is requested
 
 - RawInstance::field_at index should be uint8_t as maximum field count is 256
 
 - Optimize global variables
   - Implement the id system, ditch the global hashmap, it is just a temporary hack
-
-- Thread wait mechanism
-  - Mechanism for one thread to wait for another thread to finish
-  - Threads keep a list of other waiting threads
-  - Waiting for a thread has to be atomic for both threads
-  - Implement using Thread pause / resume mechanism?
 
 - Move most VM logic into the schedulers threads
   - Brainstorm how these threads control each other
@@ -135,37 +211,9 @@
       - If there are no idle processors, idle the current worker thread and reschedule the running
         fiber into the global runqueue
 
-- Small locks
-  - Implement from experiment code in old charly repo
-    - See: https://github.com/KCreate/charly-vm/blob/main/experiments/small-locks.cpp
-  - Types of locks
-    - FairLock
-      - Access to lock is given in strict FIFO order.
-    - BargingLock
-      - Threads can acquire the lock multiple times in rapid succession, even if another thread
-        requested the lock in the meantime
-    - SharedLock
-      - See: https://eli.thegreenplace.net/2019/implementing-reader-writer-locks/
-
-- Concurrency
-  - Boost fcontext for cheap context switches
-  - Signal handling?
-  - Core concept of concurrency in charly should be the Channel
-  - Channel
-    - Concurrent queue
-    - Buffered or unbuffered
-    - Main method of data sharing and fiber synchronisation
-  - Spawn statements return an unbuffered channel
-    - Yields from the created fiber are pushed into the channel
-  - Promises and other more finegrained abstractions can be built on top of Channels
-  - User has access to underlying fiber primitives but should be an implementation detail
-  - Await keyword is used to read from a channel
-  - Class specific await behaviour can be achieved by overriding some handler method
-  - Global symbol table with thread local intermediate caches
-
 - Value model
   - Classes cannot be modified at runtime. They can only be subclassed
-  - Objects creates from classes cannot have new keys assigned to them
+  - Objects created from classes cannot have new keys assigned to them
     - They are static shapes that can only store the properties declared in their class
   - For a dynamic collection of values use the dict primitive datatype
     - Small dictionaries could be laid out inline and take advantage of inline caches
@@ -179,7 +227,11 @@
     - Reset this heuristic after some time to adapt to new workloads
 
 - Argument-Indexing identifiers
-  - $0, $1 syntax
+  - '$' refers to first argument
+  - '$$' refers to second argument
+  - '$$$' refers to third argument, and so on...
+  - '$<n>' refers to the nth argument
+    - '$1', '$2', '$10' and so on...
   - In-bounds identifiers can be replaced by the actual arguments
   
 - Efficient string concatenation

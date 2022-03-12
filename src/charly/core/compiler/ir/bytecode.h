@@ -574,48 +574,41 @@ static const size_t kInstructionLength = 4;
    * - tuple                                                                           \
    * */                                                                                \
   V(maketuplespread, IAAX, arg, 1)                                                     \
-  /* fiberspawn - create new fiber and start running it                                \
+  /* makefiber - allocate new fiber                                                    \
    *                                                                                   \
    * stack arguments:                                                                  \
    * - context                                                                         \
    * - function                                                                        \
-   * - tuple containing arguments                                                      \
+   * - arguments tuple                                                                 \
    *                                                                                   \
    * stack results:                                                                    \
    * - fiber                                                                           \
    * */                                                                                \
-  V(fiberspawn, IXXX, 3, 1)                                                            \
-  /* fiberyield - yield from the current fiber                                         \
+  V(makefiber, IXXX, 3, 1)                                                             \
+  /* makegenerator - allocate new generator                                            \
    *                                                                                   \
    * stack arguments:                                                                  \
-   * - value                                                                           \
+   * - context                                                                         \
+   * - function                                                                        \
+   * - arguments tuple                                                                 \
    *                                                                                   \
    * stack results:                                                                    \
-   * - argument from next fiber invocation                                             \
+   * - generator                                                                       \
    * */                                                                                \
-  V(fiberyield, IXXX, 1, 1)                                                            \
-  /* fibercall - call a fiber                                                          \
+  /* V(makegenerator, IXXX, 3, 1) */                                                   \
+  /* generatoryield - yield from current generator                                     \
+   *                                                                                   \
+   * opcode operands:                                                                  \
+   * - amount of arguments                                                             \
    *                                                                                   \
    * stack arguments:                                                                  \
-   * - value                                                                           \
+   * - arguments...                                                                    \
    *                                                                                   \
    * stack results:                                                                    \
-   * - next yielded value or return value                                              \
+   * - argument from next fiber call                                                   \
    * */                                                                                \
-  V(fibercall, IXXX, 1, 1)                                                             \
-  /* fiberpause - pause current fiber                                                  \
-   *                                                                                   \
-   * stack results:                                                                    \
-   * - value passed to fiberresume                                                     \
-   * */                                                                                \
-  V(fiberpause, IXXX, 0, 1)                                                            \
-  /* fiberresume - pause current fiber                                                 \
-   *                                                                                   \
-   * stack arguments:                                                                  \
-   * - value (return value of corresponding fiberpause)                                \
-   * */                                                                                \
-  V(fiberresume, IXXX, 1, 0)                                                           \
-  /* fiberawait - wait for a fiber to finish                                           \
+  /* V(generatoryield, IAAX, arg, 1) */                                                \
+  /* fiberjoin - wait for a fiber to finish                                            \
    *                                                                                   \
    * stack arguments:                                                                  \
    * - fiber                                                                           \
@@ -623,7 +616,7 @@ static const size_t kInstructionLength = 4;
    * stack results:                                                                    \
    * - fiber return value                                                              \
    * */                                                                                \
-  V(fiberawait, IXXX, 1, 1)                                                            \
+  V(fiberjoin, IXXX, 1, 1)                                                             \
   /* castXYZ - cast source value to new type                                           \
    *                                                                                   \
    * stack arguments:                                                                  \

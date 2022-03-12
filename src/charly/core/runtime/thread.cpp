@@ -63,7 +63,8 @@ Thread::Thread(Runtime* runtime) :
   m_last_scheduled_at(0),
   m_context(nullptr),
   m_frame(nullptr),
-  m_pending_exception(kErrorOk) {}
+  m_pending_exception(kErrorOk),
+  m_waiting_threads() {}
 
 Thread* Thread::current() {
   return g_thread;
@@ -132,20 +133,19 @@ RawValue Thread::pending_exception() const {
 }
 
 void Thread::init_main_thread() {
-  m_state = State::Waiting;
+  m_state.acas(State::Free, State::Waiting);
   m_fiber = kNull;
   DCHECK(m_stack == nullptr);
 }
 
 void Thread::init_fiber_thread(RawFiber fiber) {
   fiber.set_thread(this);
-  m_state = State::Waiting;
+  m_state.acas(State::Free, State::Waiting);
   m_fiber = fiber;
   DCHECK(m_stack == nullptr);
 }
 
 void Thread::clean() {
-
   // prevent any other thread from getting the main thread id
   if (id() == kMainThreadId) {
     m_id = thread_id_counter++;
@@ -170,17 +170,20 @@ void Thread::checkpoint() {
   DCHECK(worker);
 
   if (worker->has_stop_flag() || has_exceeded_timeslice()) {
-    enter_scheduler(State::Ready);
+    m_state.acas(State::Running, State::Ready);
+    enter_scheduler();
   }
 }
 
 void Thread::yield_to_scheduler() {
-  enter_scheduler(State::Ready);
+  m_state.acas(State::Running, State::Ready);
+  enter_scheduler();
 }
 
 void Thread::abort(int32_t exit_code) {
+  m_state.acas(State::Running, State::Aborted);
   m_exit_code = exit_code;
-  enter_scheduler(State::Aborted);
+  enter_scheduler();
   UNREACHABLE();
 }
 
@@ -190,7 +193,7 @@ void Thread::ready() {
 
 void Thread::context_switch(Worker* worker) {
   DCHECK(m_state == State::Ready);
-  m_state = State::Running;
+  m_state.acas(State::Ready, State::Running);
   m_last_scheduled_at = get_steady_timestamp();
 
   if (m_stack == nullptr) {
@@ -206,14 +209,14 @@ void Thread::context_switch(Worker* worker) {
 void Thread::enter_native() {
   DCHECK(m_state == State::Running);
   DCHECK(m_worker != nullptr);
-  m_state = State::Native;
+  m_state.acas(State::Running, State::Native);
   m_worker->enter_native();
 }
 
 void Thread::exit_native() {
   DCHECK(m_state == State::Native);
   DCHECK(m_worker != nullptr);
-  m_state = State::Running;
+  m_state.acas(State::Native, State::Running);
   m_worker->exit_native();
   checkpoint();
 }
@@ -232,7 +235,6 @@ void Thread::entry_main_thread() {
   CHECK(id() == kMainThreadId);
 
   Runtime* runtime = m_runtime;
-  Scheduler* scheduler = runtime->scheduler();
 
   // load the boot file
   std::optional<std::string> charly_vm_dir = utils::ArgumentParser::get_environment_for_key("CHARLYVMDIR");
@@ -292,9 +294,8 @@ void Thread::entry_main_thread() {
 
   HandleScope scope(this);
   Function function(scope, runtime->create_function(this, kNull, module->function_table.front()));
-  Fiber fiber(scope, runtime->create_fiber(this, function));
 
-  // build the ARGV tuple
+  // build ARGV tuple
   auto& argv = utils::ArgumentParser::USER_FLAGS;
   Tuple argv_tuple(scope, runtime->create_tuple(this, argv.size()));
   for (uint32_t i = 0; i < argv.size(); i++) {
@@ -305,22 +306,41 @@ void Thread::entry_main_thread() {
   CHECK(runtime->declare_global_variable(this, SYM("ARGV"), true).is_error_ok());
   CHECK(runtime->set_global_variable(this, SYM("ARGV"), argv_tuple).is_error_ok());
 
-  // register mainfiber global variable
-  CHECK(runtime->declare_global_variable(this, SYM("charly.mainfiber"), true).is_error_ok());
-  CHECK(runtime->set_global_variable(this, SYM("charly.mainfiber"), fiber).is_error_ok());
-
+  // initialize builtin functions
   builtin::core::initialize(this);
   builtin::readline::initialize(this);
 
-  fiber.thread()->ready();
-  scheduler->schedule_thread(fiber.thread(), worker()->processor());
+  Fiber mainfiber(scope, runtime->create_fiber(this, function, kNull, kNull));
+  CHECK(runtime->declare_global_variable(this, SYM("charly.mainfiber"), true).is_error_ok());
+  CHECK(runtime->set_global_variable(this, SYM("charly.mainfiber"), mainfiber).is_error_ok());
 }
 
 void Thread::entry_fiber_thread() {
-  RawFiber fiber = RawFiber::cast(this->fiber());
-  RawFunction function = fiber.function();
+  HandleScope scope(this);
+  Fiber fiber(scope, m_fiber);
 
-  RawValue result = Interpreter::call_function(this, kNull, function, nullptr, 0);
+  RawValue fiber_arguments = fiber.arguments();
+  RawValue* argp = nullptr;
+  int64_t argc = 0;
+  if (fiber_arguments.isTuple()) {
+    RawTuple tuple = RawTuple::cast(fiber_arguments);
+    if (tuple.size()) {
+      argp = bitcast<RawValue*>(tuple.address());
+      CHECK(argc < 256);
+      argc = tuple.size();
+    }
+  }
+
+  RawValue result = Interpreter::call_function(this, fiber.context(), fiber.function(), argp, argc);
+
+  // wake threads waiting for this thread to finish
+  {
+    std::lock_guard lock(fiber);
+    fiber.thread()->wake_waiting_threads();
+    fiber.set_result(result);
+    fiber.set_thread(nullptr);
+  }
+
   if (result == kErrorException) {
     debuglnf("unhandled exception in thread % (%)", id(), pending_exception());
     abort(1);
@@ -335,11 +355,12 @@ void Thread::entry_fiber_thread() {
       abort(0);
     }
   }
+
+  debuglnf("fiber % exiting with result %", *fiber, result);
 }
 
-void Thread::enter_scheduler(State state) {
+void Thread::enter_scheduler() {
   Thread::set_current(nullptr);
-  m_state = state;
   fcontext_t& context = m_worker->context();
   m_worker = nullptr;
   transfer_t transfer = jump_fcontext(context, nullptr);
@@ -353,27 +374,22 @@ void Thread::acquire_stack() {
   m_stack = m_runtime->scheduler()->get_free_stack();
   DCHECK(m_stack, "could not allocate thread stack");
 
-  if (id() == kMainThreadId) {
-    m_context = make_fcontext(m_stack->hi(), m_stack->size(), [](transfer_t transfer) {
-      Worker* worker = static_cast<Worker*>(transfer.data);
-      worker->set_context(transfer.fctx);
-      Thread* thread = worker->thread();
-      Thread::set_current(thread);
-      thread->m_worker = worker;
+  m_context = make_fcontext(m_stack->hi(), m_stack->size(), [](transfer_t transfer) {
+    Worker* worker = static_cast<Worker*>(transfer.data);
+    worker->set_context(transfer.fctx);
+    Thread* thread = worker->thread();
+    Thread::set_current(thread);
+    thread->m_worker = worker;
+
+    if (thread->id() == kMainThreadId) {
       thread->entry_main_thread();
-      thread->enter_scheduler(State::Exited);
-    });
-  } else {
-    m_context = make_fcontext(m_stack->hi(), m_stack->size(), [](transfer_t transfer) {
-      Worker* worker = static_cast<Worker*>(transfer.data);
-      worker->set_context(transfer.fctx);
-      Thread* thread = worker->thread();
-      Thread::set_current(thread);
-      thread->m_worker = worker;
+    } else {
       thread->entry_fiber_thread();
-      thread->enter_scheduler(State::Exited);
-    });
-  }
+    }
+
+    thread->m_state.acas(State::Running, State::Exited);
+    thread->enter_scheduler();
+  });
 }
 
 void Thread::push_frame(Frame* frame) {
@@ -384,6 +400,24 @@ void Thread::push_frame(Frame* frame) {
 void Thread::pop_frame(Frame* frame) {
   DCHECK(m_frame == frame);
   m_frame = m_frame->parent;
+}
+
+void Thread::wake_waiting_threads() {
+  auto scheduler = runtime()->scheduler();
+  auto processor = worker()->processor();
+
+  DCHECK(fiber().isFiber());
+  DCHECK(RawFiber::cast(fiber()).is_locked());
+
+  if (!m_waiting_threads.empty()) {
+    for (Thread* thread : m_waiting_threads) {
+      DCHECK(thread->state() == State::Waiting);
+      thread->ready();
+      scheduler->schedule_thread(thread, processor);
+    }
+
+    m_waiting_threads.clear();
+  }
 }
 
 }  // namespace charly::core::runtime

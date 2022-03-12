@@ -42,7 +42,7 @@ namespace charly {
 /*
  * thread-safe printing meant for debugging
  * */
-extern std::mutex debugln_mutex;
+extern std::recursive_mutex debugln_mutex;
 extern std::chrono::steady_clock::time_point program_startup_timestamp;
 
 inline void debugln_impl(std::ostream&) {
@@ -91,7 +91,7 @@ inline void debugln_impl_time(std::ostream& stream, const char* format, Targs...
 template <typename... Targs>
 inline void debugln_concurrent(const char* format, Targs... Fargs) {
   {
-    std::unique_lock<std::mutex> locker(debugln_mutex);
+    std::unique_lock<std::recursive_mutex> locker(debugln_mutex);
     debugln_impl_time(std::cout, format, Fargs...);
     std::cout << std::endl;
   }
@@ -133,10 +133,16 @@ template <typename... Args>
 
   print_runtime_debug_state(buf);
 
-  std::string str = buf.str();
-  debugln_concurrent(str.c_str());
+  // grab the debugln lock already to make sure we abort the runtime
+  // before any other thread can print something
+  {
+    std::unique_lock<std::recursive_mutex> locker(debugln_mutex);
+    std::string str = buf.str();
+    debugln_concurrent(str.c_str());
 
-  std::abort();
+    __builtin_trap();
+//    std::abort();
+  }
 }
 
 #define CHECK(expr, ...)                                                        \

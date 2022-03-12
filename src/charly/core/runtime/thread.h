@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+#include <vector>
+
 #include <boost/context/detail/fcontext.hpp>
 
 #include "charly/utils/guarded_buffer.h"
@@ -100,10 +102,11 @@ private:
 //
 // the threads of fibers that have exited are reused by future fibers
 class Thread {
+  friend class Runtime;
   friend class Interpreter;
 
 public:
-  Thread(Runtime* runtime);
+  explicit Thread(Runtime* runtime);
 
   static Thread* current();
   static void set_current(Thread* worker);
@@ -187,12 +190,15 @@ public:
   void push_frame(Frame* frame);
   void pop_frame(Frame* frame);
 
+  // wake all threads waiting for this thread to exit
+  void wake_waiting_threads();
+
 private:
   void entry_main_thread();
   void entry_fiber_thread();
 
   // yield control back to the scheduler and update thread state
-  void enter_scheduler(State state);
+  void enter_scheduler();
 
   // acquire a stack from the scheduler
   void acquire_stack();
@@ -212,6 +218,7 @@ private:
   ThreadLocalHandles m_handles;
   Frame* m_frame;
   RawValue m_pending_exception;
+  std::vector<Thread*> m_waiting_threads;
 };
 
 }  // namespace charly::core::runtime

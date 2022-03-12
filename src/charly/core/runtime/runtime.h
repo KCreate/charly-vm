@@ -91,7 +91,9 @@ public:
   RawObject create_tuple(Thread* thread, uint32_t count);
   RawObject create_function(Thread* thread, RawValue context, SharedFunctionInfo* shared_info);
   RawObject create_builtin_function(Thread* thread, BuiltinFunctionType function, RawSymbol name, uint8_t argc);
-  RawObject create_fiber(Thread* thread, RawFunction function);
+  RawObject create_fiber(Thread* thread, RawFunction function, RawValue context, RawValue arguments);
+
+  RawValue join_fiber(Thread* thread, RawFiber fiber);
 
   // declare a new global variable
   // returns kErrorOk on success

@@ -484,8 +484,12 @@ void RawValue::dump(std::ostream& out) const {
         writer.fg(Color::Yellow, "builtin ", name, "(", (uint32_t)argc, ")");
         return;
       }
+      case ShapeId::kFiber: {
+        writer.fg(Color::Red, "<Fiber:", object.address_voidptr(), ">");
+        return;
+      }
       default: {
-        writer.fg(Color::Red, "<", (uint32_t)shape_id, ":", bitcast<void*>(RawObject::cast(this).address()), ">");
+        writer.fg(Color::Red, "<", (uint32_t)shape_id, ":", object.address_voidptr(), ">");
         return;
       }
     }
@@ -798,6 +802,10 @@ uintptr_t RawObject::address() const {
   return m_raw & ~kMaskPointer;
 }
 
+void* RawObject::address_voidptr() const {
+  return bitcast<void*>(address());
+}
+
 uintptr_t RawObject::base_address() const {
   return address() - sizeof(ObjectHeader);
 }
@@ -818,6 +826,18 @@ ShapeId RawObject::shape_id() const {
 
 ObjectHeader* RawObject::header() const {
   return bitcast<ObjectHeader*>(base_address());
+}
+
+void RawObject::lock() const {
+  header()->m_lock.lock();
+}
+
+void RawObject::unlock() const {
+  header()->m_lock.unlock();
+}
+
+bool RawObject::is_locked() const {
+  return header()->m_lock.is_locked();
 }
 
 RawObject RawObject::make_from_ptr(uintptr_t address) {
@@ -977,6 +997,34 @@ RawFunction RawFiber::function() const {
 
 void RawFiber::set_function(RawFunction function) {
   set_field_at(kFunctionOffset, function);
+}
+
+RawValue RawFiber::context() const {
+  return RawValue::cast(field_at(kContextOffset));
+}
+
+void RawFiber::set_context(RawValue context) {
+  set_field_at(kContextOffset, context);
+}
+
+RawValue RawFiber::arguments() const {
+  return RawValue::cast(field_at(kArgumentsOffset));
+}
+
+void RawFiber::set_arguments(RawValue arguments) {
+  set_field_at(kArgumentsOffset, arguments);
+}
+
+RawValue RawFiber::result() const {
+  return RawValue::cast(field_at(kResultOffset));
+}
+
+void RawFiber::set_result(RawValue result) {
+  set_field_at(kResultOffset, result);
+}
+
+bool RawFiber::has_finished() const {
+  return thread() == nullptr;
 }
 
 }  // namespace charly::core::runtime
