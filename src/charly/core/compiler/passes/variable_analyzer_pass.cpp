@@ -333,8 +333,12 @@ ref<Statement> VariableAnalyzerPass::transform(const ref<Declaration>& node) {
   // variable before processing the body
   //
   // this allows functions to access their own identifier and thus be recursive
-  bool is_regular_function =
-    isa<Function>(node->expression) ? !cast<Function>(node->expression)->arrow_function : false;
+  bool is_regular_function = false;
+  if (auto function = cast<Function>(node->expression)) {
+    if (!function->arrow_function) {
+      is_regular_function = true;
+    }
+  }
   bool is_klass = isa<Class>(node->expression);
 
   if (!(is_regular_function || is_klass)) {

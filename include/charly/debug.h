@@ -32,9 +32,8 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <sstream>
 #include <mutex>
-
-#include "utils/buffer.h"
 
 #pragma once
 
@@ -124,7 +123,7 @@ void print_runtime_debug_state(std::ostream& stream);
 template <typename... Args>
 [[noreturn]] void __attribute__((noinline)) failed_check(
   const char* filename, int32_t line, const char* function, const char* expression, Args&&... args) {
-  utils::Buffer buf;
+  std::stringstream buf;
   debugln_impl(buf, "Failed check!\n");
   debugln_impl_time(buf, "At %:% %:\n", filename, line, function);
   debugln_impl_time(buf, "Check '%' failed: ", expression);

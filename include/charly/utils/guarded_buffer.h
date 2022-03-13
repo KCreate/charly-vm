@@ -32,10 +32,10 @@ namespace charly::utils {
 
 class GuardedBuffer {
 public:
-  GuardedBuffer(size_t size) : m_mapping(nullptr), m_size(size) {
-    DCHECK(size % kPageSize == 0);
-    DCHECK(size >= kPageSize);
-    m_mapping = Allocator::mmap(size + kPageSize * 2, kPageSize);
+  explicit GuardedBuffer(size_t size) : m_mapping(nullptr), m_size(size) {
+    DCHECK(size >= kPageSize, "expected size to be at least the page size");
+    DCHECK(size % kPageSize == 0, "expected size to be a multiple of the page size");
+    m_mapping = Allocator::mmap_page_aligned(size + kPageSize * 2);
     Allocator::protect_readwrite((void*)((uintptr_t)m_mapping + kPageSize), size);
   }
   ~GuardedBuffer() {

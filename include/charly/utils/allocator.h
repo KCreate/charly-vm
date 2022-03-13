@@ -24,6 +24,7 @@
  * SOFTWARE.
  */
 
+#include <sys/mman.h>
 #include <unistd.h>
 #include <cstdint>
 #include <cstdlib>
@@ -44,13 +45,21 @@ namespace utils {
    * */
   class Allocator {
   public:
-
     // allocate aligned heap memory
     static void* alloc(size_t size, size_t alignment = 8);
 
     // allocates memory via mmap
     // mapped memory region is initially protected with PROT_NONE
-    static void* mmap(size_t size, size_t alignment = kPageSize);
+    static void* mmap_page_aligned(size_t size,
+                                   int32_t protection = PROT_NONE,
+                                   int32_t flags = MAP_PRIVATE | MAP_ANONYMOUS);
+    static void* mmap_self_aligned(size_t size,
+                                   int32_t protection = PROT_NONE,
+                                   int32_t flags = MAP_PRIVATE | MAP_ANONYMOUS);
+    static void* mmap_address(void* address,
+                              size_t size,
+                              int32_t protection = PROT_NONE,
+                              int32_t flags = MAP_PRIVATE | MAP_ANONYMOUS);
 
     // reallocate pointer to fit a bigger size or change alignment
     // acts like alloc if pointer is null
@@ -70,5 +79,5 @@ namespace utils {
     static void protect_exec(void* pointer, size_t size);
   };
 
-}  // namespace charly::utils
-}
+}  // namespace utils
+}  // namespace charly

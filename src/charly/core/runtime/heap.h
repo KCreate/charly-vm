@@ -56,6 +56,8 @@ static const size_t kHeapInitialMappedRegionCount = 16;
 class Heap;
 
 struct HeapRegion {
+  HeapRegion() = delete;
+
   enum class Type : uint8_t {
     Unused,    // region isn't used and doesn't have a type yet
     Eden,      // new objects are allocated in eden regions
@@ -98,7 +100,7 @@ class ThreadAllocationBuffer;
 
 class Heap {
 public:
-  Heap(Runtime* runtime);
+  explicit Heap(Runtime* runtime);
   ~Heap();
 
   // allocates a free region from the heaps freelist and marks it
@@ -107,9 +109,6 @@ public:
 
   // release a live eden region
   void release_eden_region(HeapRegion* region);
-
-  // checks wether address points into the heap
-  bool contains_address(uintptr_t address);
 
 private:
   // pops a free region from the freelist
@@ -138,7 +137,7 @@ private:
 
 class ThreadAllocationBuffer {
 public:
-  ThreadAllocationBuffer(Heap* heap);
+  explicit ThreadAllocationBuffer(Heap* heap);
   ~ThreadAllocationBuffer();
 
   bool allocate(size_t size, uintptr_t* address_out);

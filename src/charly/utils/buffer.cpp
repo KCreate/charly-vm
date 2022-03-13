@@ -88,25 +88,25 @@ int64_t Buffer::peek_utf8_cp(uint32_t nth) {
 }
 
 int32_t Buffer::peek_char(uint32_t nth) {
-    setg(eback(), gptr(), pptr());
+  setg(eback(), gptr(), pptr());
 
-    if (gptr() == egptr()) {
-        return -1;
-    }
+  if (gptr() == egptr()) {
+    return -1;
+  }
 
-    char* read_original = gptr();
-    char* read_end = egptr();
-    char* read_head = read_original;
+  char* read_original = gptr();
+  char* read_end = egptr();
+  char* read_head = read_original;
 
-    while (nth-- && read_head < read_end) {
-        read_head++;
-    }
+  while (nth-- && read_head < read_end) {
+    read_head++;
+  }
 
-    if (read_head == read_end) {
-        return -1;
-    }
+  if (read_head == read_end) {
+    return -1;
+  }
 
-    return *read_head;
+  return *read_head;
 }
 
 void Buffer::protect() {

@@ -39,8 +39,8 @@ namespace charly::core::compiler::ast {
 class Pass {
 public:
   template <typename N>
-  ref<N> apply(const ref<N>& node) {
-    AST_TYPESWITCH(node, { return cast<N>(apply(node)); });
+  ref<N> apply(const ref<N>& source) {
+    AST_TYPESWITCH(source, { return cast<N>(apply(node)); })
     return nullptr;
   }
 
@@ -279,7 +279,7 @@ protected:
 
 class DiagnosticPass : public Pass {
 public:
-  DiagnosticPass(DiagnosticConsole& console) : m_console(console) {}
+  explicit DiagnosticPass(DiagnosticConsole& console) : m_console(console) {}
 
 protected:
   DiagnosticConsole& m_console;

@@ -49,7 +49,7 @@ void GrammarValidationCheck::inspect_leave(const ref<Dict>& node) {
       }
 
       // { ...other }
-      if (ref<Spread> spread = cast<Spread>(key)) {
+      if (cast<Spread>(key)) {
         continue;
       }
 

@@ -25,6 +25,7 @@
  */
 
 #include <map>
+#include <utility>
 
 #include "charly/core/compiler/ir/valuelocation.h"
 #include "charly/core/compiler/pass.h"
@@ -83,7 +84,7 @@ class VariableAnalyzer {
   friend class VariableLocationPatchPass;
 
 public:
-  VariableAnalyzer() {}
+  VariableAnalyzer() = default;
 
   ir::VariableId get_variable_id();
 
@@ -99,8 +100,6 @@ public:
   ir::VariableId declare_argument(const std::string& name);
 
   ir::VariableId lookup_variable(const std::string& name);
-
-  void access_variable(ir::VariableId id);
 
   bool is_constant(ir::VariableId id) const;
 
@@ -131,27 +130,27 @@ private:
   ir::VariableId declare_variable(const ref<Name>& name, const ref<Node>& declaration, bool constant);
   ir::VariableId declare_argument(const ref<Name>& name, const ref<Node>& declaration);
 
-  virtual bool inspect_enter(const ref<Function>&) override;
-  virtual void inspect_leave(const ref<Function>&) override;
+  bool inspect_enter(const ref<Function>&) override;
+  void inspect_leave(const ref<Function>&) override;
 
-  virtual bool inspect_enter(const ref<Block>&) override;
-  virtual void inspect_leave(const ref<Block>&) override;
+  bool inspect_enter(const ref<Block>&) override;
+  void inspect_leave(const ref<Block>&) override;
 
-  virtual bool inspect_enter(const ref<Declaration>&) override;
-  virtual ref<Statement> transform(const ref<Declaration>&) override;
+  bool inspect_enter(const ref<Declaration>&) override;
+  ref<Statement> transform(const ref<Declaration>&) override;
 
-  virtual void inspect_leave(const ref<UnpackDeclaration>&) override;
+  void inspect_leave(const ref<UnpackDeclaration>&) override;
 
-  virtual void inspect_leave(const ref<Assignment>&) override;
-  virtual void inspect_leave(const ref<UnpackAssignment>&) override;
+  void inspect_leave(const ref<Assignment>&) override;
+  void inspect_leave(const ref<UnpackAssignment>&) override;
 
-  virtual bool inspect_enter(const ref<Try>&) override;
-  virtual ref<Statement> transform(const ref<Try>&) override;
+  bool inspect_enter(const ref<Try>&) override;
+  ref<Statement> transform(const ref<Try>&) override;
 
-  virtual bool inspect_enter(const ref<TryFinally>&) override;
-  virtual ref<Statement> transform(const ref<TryFinally>&) override;
+  bool inspect_enter(const ref<TryFinally>&) override;
+  ref<Statement> transform(const ref<TryFinally>&) override;
 
-  virtual void inspect_leave(const ref<Id>&) override;
+  void inspect_leave(const ref<Id>&) override;
 };
 
 class VariableLocationPatchPass : public DiagnosticPass {
@@ -162,26 +161,26 @@ public:
 private:
   VariableAnalyzer& m_analyzer;
 
-  virtual bool inspect_enter(const ref<Function>&) override;
-  virtual void inspect_leave(const ref<Function>&) override;
+  bool inspect_enter(const ref<Function>&) override;
+  void inspect_leave(const ref<Function>&) override;
 
-  virtual bool inspect_enter(const ref<Block>&) override;
-  virtual void inspect_leave(const ref<Block>&) override;
+  bool inspect_enter(const ref<Block>&) override;
+  void inspect_leave(const ref<Block>&) override;
 
-  virtual bool inspect_enter(const ref<Declaration>&) override;
-  virtual ref<Statement> transform(const ref<Declaration>&) override;
+  bool inspect_enter(const ref<Declaration>&) override;
+  ref<Statement> transform(const ref<Declaration>&) override;
 
-  virtual void inspect_leave(const ref<UnpackDeclaration>&) override;
+  void inspect_leave(const ref<UnpackDeclaration>&) override;
 
-  virtual void inspect_leave(const ref<UnpackAssignment>&) override;
+  void inspect_leave(const ref<UnpackAssignment>&) override;
 
-  virtual bool inspect_enter(const ref<Try>&) override;
-  virtual ref<Statement> transform(const ref<Try>&) override;
+  bool inspect_enter(const ref<Try>&) override;
+  ref<Statement> transform(const ref<Try>&) override;
 
-  virtual bool inspect_enter(const ref<TryFinally>&) override;
-  virtual ref<Statement> transform(const ref<TryFinally>&) override;
+  bool inspect_enter(const ref<TryFinally>&) override;
+  ref<Statement> transform(const ref<TryFinally>&) override;
 
-  virtual void inspect_leave(const ref<Id>&) override;
+  void inspect_leave(const ref<Id>&) override;
 };
 
 }  // namespace charly::core::compiler::ast

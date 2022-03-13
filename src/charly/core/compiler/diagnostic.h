@@ -54,56 +54,53 @@ struct DiagnosticMessage {
     switch (type) {
       case DiagnosticType::Info: {
         return utils::Color::Blue;
-        break;
       }
       case DiagnosticType::Warning: {
         return utils::Color::Yellow;
-        break;
       }
       case DiagnosticType::Error: {
         return utils::Color::Red;
-        break;
       }
     }
   }
 
   // write a formatted version of this error to the stream:
   //
-  // <filepath>:<row>:<col>: <message>
-  friend std::ostream& operator<<(std::ostream& out, const DiagnosticMessage& message) {
+  // <filepath>:<row>:<col>: <msg>
+  friend std::ostream& operator<<(std::ostream& out, const DiagnosticMessage& msg) {
     utils::ColorWriter writer(out);
 
-    writer << message.filepath << ':';
+    writer << msg.filepath << ':';
 
-    if (message.location.valid) {
-      writer << message.location << ':';
+    if (msg.location.valid) {
+      writer << msg.location << ':';
     }
 
     writer << ' ';
 
-    switch (message.type) {
+    switch (msg.type) {
       case DiagnosticType::Info: {
-        writer.fg(message.format_color(), "info:");
+        writer.fg(msg.format_color(), "info:");
         break;
       }
       case DiagnosticType::Warning: {
-        writer.fg(message.format_color(), "warning:");
+        writer.fg(msg.format_color(), "warning:");
         break;
       }
       case DiagnosticType::Error: {
-        writer.fg(message.format_color(), "error:");
+        writer.fg(msg.format_color(), "error:");
         break;
       }
     }
 
-    writer << ' ' << message.message;
+    writer << ' ' << msg.message;
 
     return out;
   }
 };
 
 class DiagnosticException : std::exception {
-  const char* what() const throw() {
+  const char* what() const noexcept override {
     return "Fatal Diagnostic Exception";
   }
 };
@@ -127,6 +124,7 @@ public:
     utils::Buffer stream;
     ((stream << std::forward<Args>(params)), ...);
     m_messages.push_back(DiagnosticMessage{ DiagnosticType::Info, m_filepath, stream.str(), loc });
+    check_max_messages();
   }
   template <typename... Args>
   void info(const ref<ast::Node>& node, Args&&... params) {
@@ -143,6 +141,7 @@ public:
     utils::Buffer stream;
     ((stream << std::forward<Args>(params)), ...);
     m_messages.push_back(DiagnosticMessage{ DiagnosticType::Warning, m_filepath, stream.str(), loc });
+    check_max_messages();
   }
   template <typename... Args>
   void warning(const ref<ast::Node>& node, Args&&... params) {
@@ -159,6 +158,7 @@ public:
     utils::Buffer stream;
     ((stream << std::forward<Args>(params)), ...);
     m_messages.push_back(DiagnosticMessage{ DiagnosticType::Error, m_filepath, stream.str(), loc });
+    check_max_messages();
   }
   template <typename... Args>
   void error(const ref<ast::Node>& node, Args&&... params) {
@@ -194,6 +194,13 @@ private:
   // writes the section of the source code to which location
   // refers to to the out stream
   void write_annotated_source(std::ostream& out, const DiagnosticMessage& message) const;
+
+  static const size_t kMaximumMessageCount = 256;
+  void check_max_messages() {
+    if (m_messages.size() > kMaximumMessageCount) {
+      gfatal("reached maximum message count");
+    }
+  }
 
   std::string m_filepath;
   std::vector<std::string> m_source;

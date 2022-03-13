@@ -34,7 +34,7 @@ namespace charly::core::runtime::builtin::core {
 void initialize(Thread* thread);
 
 #define DEF_BUILTIN_CORE(V)  \
-  V(core, currentfiber, 0)     \
+  V(core, currentfiber, 0)   \
   V(core, writevalue, 1)     \
   V(core, writevaluesync, 1) \
   V(core, readfile, 1)       \

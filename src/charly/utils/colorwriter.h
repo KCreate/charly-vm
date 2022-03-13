@@ -36,7 +36,7 @@ enum class Color : uint8_t { Grey, Red, Green, Yellow, Blue, Magenta, Cyan, Whit
 
 class ColorWriter {
 public:
-  ColorWriter(std::ostream& stream = std::cout) : m_stream(stream) {}
+  explicit ColorWriter(std::ostream& stream = std::cout) : m_stream(stream) {}
 
   template <typename... Args>
   void write(Args&&... params) {

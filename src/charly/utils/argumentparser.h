@@ -78,10 +78,10 @@ public:
   static bool is_env_set(const std::string& name);
 
   // return all arguments for a specific flag
-  static const std::vector<std::string> get_arguments_for_flag(const std::string& name);
+  static std::vector<std::string> get_arguments_for_flag(const std::string& name);
 
   // returns the user argument at index
-  static const std::optional<std::string> get_argument(uint32_t index);
+  static std::optional<std::string> get_argument(uint32_t index);
 
   // check wether a flag has a specific argument set
   //
@@ -90,7 +90,7 @@ public:
   static bool flag_has_argument(const std::string& name, const std::string& argument, bool match_substring = false);
 
   // return the value of some environment variable
-  static const std::optional<std::string> get_environment_for_key(const std::string& key);
+  static std::optional<std::string> get_environment_for_key(const std::string& key);
 
   // print the help page
   static void print_help(std::ostream& out);

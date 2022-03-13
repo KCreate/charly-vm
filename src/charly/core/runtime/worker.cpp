@@ -33,19 +33,17 @@ using namespace std::chrono_literals;
 
 static atomic<uint64_t> worker_id_counter = 0;
 
-Worker::Worker(Runtime* runtime) : m_os_thread_handle(&Worker::scheduler_loop, this, runtime) {
-  m_id = worker_id_counter++;
-  m_state = State::Created;
-  m_context_switch_counter = 0;
-  m_idle_sleep_duration = 10;
-
-  m_thread = nullptr;
-  m_processor = nullptr;
-  m_runtime = runtime;
-
-  m_stop_flag = false;
-  m_idle_flag = false;
-}
+Worker::Worker(Runtime* runtime) :
+  m_id(worker_id_counter++),
+  m_state(State::Created),
+  m_context_switch_counter(0),
+  m_idle_sleep_duration(10),
+  m_os_thread_handle(&Worker::scheduler_loop, this, runtime),
+  m_thread(nullptr),
+  m_processor(nullptr),
+  m_runtime(nullptr),
+  m_stop_flag(false),
+  m_idle_flag(false) {}
 
 bool Worker::is_heap_safe_mode(State state) {
   switch (state) {
@@ -137,7 +135,7 @@ void Worker::join() {
 }
 
 bool Worker::wake() {
-  bool first_to_wake = false;
+  bool first_to_wake;
   {
     std::unique_lock<std::mutex> locker(m_mutex);
     first_to_wake = clear_idle_flag();

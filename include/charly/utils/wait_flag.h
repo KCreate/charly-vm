@@ -37,7 +37,7 @@ namespace charly::utils {
 
 class WaitFlag {
 public:
-  WaitFlag(std::mutex& mutex) : m_mutex(mutex), m_state(false) {}
+  explicit WaitFlag(std::mutex& mutex) : m_mutex(mutex), m_state(false) {}
 
   bool state() const {
     return m_state;
@@ -51,7 +51,7 @@ public:
   }
 
   bool signal() {
-    bool first = false;
+    bool first;
     {
       std::unique_lock<std::mutex> locker(m_mutex);
       first = m_state.cas(false, true);
@@ -63,7 +63,7 @@ public:
   }
 
   bool reset() {
-    bool first = false;
+    bool first;
     {
       std::unique_lock<std::mutex> locker(m_mutex);
       first = m_state.cas(true, false);

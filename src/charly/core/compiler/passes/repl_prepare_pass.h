@@ -35,7 +35,7 @@ public:
   using DiagnosticPass::DiagnosticPass;
 
 private:
-  virtual void inspect_leave(const ref<Block>&) override;
+  void inspect_leave(const ref<Block>&) override;
 };
 
 }  // namespace charly::core::compiler::ast

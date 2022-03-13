@@ -870,7 +870,7 @@ ref<Expression> Parser::parse_call_member_index() {
   }
 }
 
-ref<CallOp> Parser::parse_call(ref<Expression> target) {
+ref<CallOp> Parser::parse_call(const ref<Expression>& target) {
   eat(TokenType::LeftParen);
   ref<CallOp> callop = make<CallOp>(target);
   parse_call_arguments(callop->arguments);
@@ -879,12 +879,12 @@ ref<CallOp> Parser::parse_call(ref<Expression> target) {
   return callop;
 }
 
-ref<MemberOp> Parser::parse_member(ref<Expression> target) {
+ref<MemberOp> Parser::parse_member(const ref<Expression>& target) {
   eat(TokenType::Point);
   return make<MemberOp>(target, make<Name>(parse_identifier_token()));
 }
 
-ref<IndexOp> Parser::parse_index(ref<Expression> target) {
+ref<IndexOp> Parser::parse_index(const ref<Expression>& target) {
   eat(TokenType::LeftBracket);
   ref<IndexOp> indexop = make<IndexOp>(target, parse_expression());
   end(indexop);
@@ -1035,7 +1035,7 @@ ref<FormatString> Parser::parse_format_string() {
 
     if (final_element)
       return format_string;
-  };
+  }
 }
 
 ref<Expression> Parser::parse_tuple(bool paren_conversion) {
@@ -1443,7 +1443,6 @@ ref<Statement> Parser::create_declaration(const ref<Expression>& target, const r
   switch (target->type()) {
     case Node::Type::Id: {
       return make<Declaration>(make<Name>(cast<Id>(target)), value, constant);
-      break;
     }
     case Node::Type::Tuple:
     case Node::Type::Dict: {
@@ -1536,16 +1535,6 @@ ref<Block> Parser::wrap_statement_in_block(const ref<Statement>& node) {
   }
 
   return make<Block>(node);
-}
-
-void Parser::unexpected_token() {
-  std::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
-
-  if (m_token.type == TokenType::Eof) {
-    m_console.fatal(m_token.location, "unexpected end of file");
-  } else {
-    m_console.fatal(m_token.location, "unexpected token '", real_type, "'");
-  }
 }
 
 void Parser::unexpected_token(const std::string& message) {

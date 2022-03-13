@@ -49,10 +49,10 @@ Token Lexer::read_token_all() {
         read_char();
         token.type = TokenType::Eof;
 
-        if (m_interpolation_bracket_stack.size())
+        if (!m_interpolation_bracket_stack.empty())
           unexpected_character("unclosed string interpolation");
 
-        if (m_bracket_stack.size())
+        if (!m_bracket_stack.empty())
           unexpected_character(m_bracket_stack.back());
 
         break;
@@ -313,7 +313,7 @@ Token Lexer::read_token_all() {
         read_char();
         token.type = TokenType::RightParen;
 
-        if (m_bracket_stack.size() == 0) {
+        if (m_bracket_stack.empty()) {
           unexpected_character();
         }
 
@@ -335,7 +335,7 @@ Token Lexer::read_token_all() {
         read_char();
         token.type = TokenType::RightCurly;
 
-        if (m_bracket_stack.size() == 0) {
+        if (m_bracket_stack.empty()) {
           unexpected_character();
         }
 
@@ -344,7 +344,7 @@ Token Lexer::read_token_all() {
         }
 
         // switch lexer mode
-        if (m_interpolation_bracket_stack.size() && m_interpolation_bracket_stack.back() == m_bracket_stack.size()) {
+        if (!m_interpolation_bracket_stack.empty() && m_interpolation_bracket_stack.back() == m_bracket_stack.size()) {
           m_interpolation_bracket_stack.pop_back();
           m_mode = Mode::String;
         }
@@ -363,7 +363,7 @@ Token Lexer::read_token_all() {
         read_char();
         token.type = TokenType::RightBracket;
 
-        if (m_bracket_stack.size() == 0) {
+        if (m_bracket_stack.empty()) {
           unexpected_character();
         }
 

@@ -294,9 +294,9 @@ struct IRBasicBlock {
   std::unordered_set<ref<IRBasicBlock>> outgoing_blocks;
   std::unordered_set<ref<IRBasicBlock>> incoming_blocks;
 
-  static void link(ref<IRBasicBlock> source, ref<IRBasicBlock> target);
-  static void unlink(ref<IRBasicBlock> block);
-  static void unlink(ref<IRBasicBlock> source, ref<IRBasicBlock> target);
+  static void link(const ref<IRBasicBlock>& source, const ref<IRBasicBlock>& target);
+  static void unlink(const ref<IRBasicBlock>& block);
+  static void unlink(const ref<IRBasicBlock>& source, const ref<IRBasicBlock>& target);
 
   void dump(std::ostream& out) const;
 };
@@ -332,7 +332,7 @@ struct IRFunction {
 };
 
 struct IRModule {
-  explicit IRModule(const std::string& filename) : filename(filename) {}
+  explicit IRModule(const std::string& filename) : next_label(0), filename(filename) {}
 
   Label next_label;
 

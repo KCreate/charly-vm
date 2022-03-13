@@ -31,13 +31,12 @@ namespace charly::core::runtime {
 
 static atomic<uint64_t> processor_id_counter = 0;
 
-Processor::Processor(Runtime* runtime) {
-  m_runtime = runtime;
-  m_id = processor_id_counter++;
-  m_live = false;
-  m_worker = nullptr;
-  m_tab = new ThreadAllocationBuffer(runtime->heap());
-}
+Processor::Processor(Runtime* runtime) :
+  m_runtime(runtime),
+  m_id(processor_id_counter++),
+  m_live(false),
+  m_worker(nullptr),
+  m_tab(new ThreadAllocationBuffer(runtime->heap())) {}
 
 Processor::~Processor() {
   delete m_tab;
@@ -103,7 +102,7 @@ Thread* Processor::get_ready_thread() {
   // check current processors local run queue
   {
     std::lock_guard<std::mutex> locker(m_mutex);
-    if (m_run_queue.size()) {
+    if (!m_run_queue.empty()) {
       Thread* thread = m_run_queue.front();
       m_run_queue.pop_front();
       return thread;
@@ -121,6 +120,7 @@ Thread* Processor::get_ready_thread() {
   // attempt to steal from another processor
   {
     if (scheduler->steal_ready_threads(this)) {
+      // FIXME: could this recursion cause an infinite loop in some weird scenarios?
       return get_ready_thread();
     }
   }

@@ -88,13 +88,34 @@ public:
     return emit_instruction_impl(instruction);
   };
 
-#define DEF_IXXX(O) ref<IRInstruction> emit_##O() { return emit_instruction_impl(make<IRInstruction_##O>()); }
-#define DEF_IAXX(O) ref<IRInstruction> emit_##O(uint8_t arg) { return emit_instruction_impl(make<IRInstruction_##O>(arg)); }
-#define DEF_IABX(O) ref<IRInstruction> emit_##O(uint8_t arg1, uint8_t arg2) { return emit_instruction_impl(make<IRInstruction_##O>(arg1, arg2)); }
-#define DEF_IABC(O) ref<IRInstruction> emit_##O(uint8_t arg1, uint8_t arg2, uint8_t arg3) { return emit_instruction_impl(make<IRInstruction_##O>(arg1, arg2, arg3)); }
-#define DEF_IABB(O) ref<IRInstruction> emit_##O(uint8_t arg1, uint16_t arg2) { return emit_instruction_impl(make<IRInstruction_##O>(arg1, arg2)); }
-#define DEF_IAAX(O) ref<IRInstruction> emit_##O(uint16_t arg) { return emit_instruction_impl(make<IRInstruction_##O>(arg)); }
-#define DEF_IAAA(O) ref<IRInstruction> emit_##O(uint32_t arg) { return emit_instruction_impl(make<IRInstruction_##O>(arg)); }
+#define DEF_IXXX(O)                                          \
+  ref<IRInstruction> emit_##O() {                            \
+    return emit_instruction_impl(make<IRInstruction_##O>()); \
+  }
+#define DEF_IAXX(O)                                             \
+  ref<IRInstruction> emit_##O(uint8_t arg) {                    \
+    return emit_instruction_impl(make<IRInstruction_##O>(arg)); \
+  }
+#define DEF_IABX(O)                                                    \
+  ref<IRInstruction> emit_##O(uint8_t arg1, uint8_t arg2) {            \
+    return emit_instruction_impl(make<IRInstruction_##O>(arg1, arg2)); \
+  }
+#define DEF_IABC(O)                                                          \
+  ref<IRInstruction> emit_##O(uint8_t arg1, uint8_t arg2, uint8_t arg3) {    \
+    return emit_instruction_impl(make<IRInstruction_##O>(arg1, arg2, arg3)); \
+  }
+#define DEF_IABB(O)                                                    \
+  ref<IRInstruction> emit_##O(uint8_t arg1, uint16_t arg2) {           \
+    return emit_instruction_impl(make<IRInstruction_##O>(arg1, arg2)); \
+  }
+#define DEF_IAAX(O)                                             \
+  ref<IRInstruction> emit_##O(uint16_t arg) {                   \
+    return emit_instruction_impl(make<IRInstruction_##O>(arg)); \
+  }
+#define DEF_IAAA(O)                                             \
+  ref<IRInstruction> emit_##O(uint32_t arg) {                   \
+    return emit_instruction_impl(make<IRInstruction_##O>(arg)); \
+  }
 #define DEF_EMITS(N, T, ...) DEF_##T(N);
   FOREACH_OPCODE(DEF_EMITS)
 #undef DEF_OPCODES

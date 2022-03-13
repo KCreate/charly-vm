@@ -114,18 +114,12 @@ int32_t cli(DiagnosticConsole& console) {
     debuglnf("sizeof(HeapRegion)    = %", sizeof(HeapRegion));
     debuglnf("sizeof(Frame)         = %", sizeof(Frame));
     debuglnf("");
-
-    {
-      using namespace ir;
-      debuglnf("testintjmp(32, 64) = %", encode_iabb(Opcode::testintjmp, 32, 64));
-    }
   }
 
   return Runtime::run();
 }
 
 int main(int argc, char** argv) {
-
   // readline.h setup
   rl_initialize();
   using_history();

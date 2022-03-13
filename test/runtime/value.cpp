@@ -257,7 +257,7 @@ CATCH_TEST_CASE("Immediate encoded values") {
     CATCH_CHECK(RawNull::make().shape_id_not_object_int() == ShapeId::kNull);
     CATCH_CHECK(RawSmallString::make_from_cstr("test123").shape_id_not_object_int() == ShapeId::kSmallString);
     const char* foo = "test123";
-    const uint8_t* ptr = bitcast<const uint8_t*>(foo);
+    const auto* ptr = bitcast<const uint8_t*>(foo);
     CATCH_CHECK(RawSmallBytes::make_from_memory(ptr, 7).shape_id_not_object_int() == ShapeId::kSmallBytes);
   }
 }

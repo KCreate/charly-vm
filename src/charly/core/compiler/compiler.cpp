@@ -31,8 +31,6 @@
 #include "charly/core/compiler/codegenerator.h"
 #include "charly/core/compiler/compiler.h"
 #include "charly/core/compiler/ir/assembler.h"
-#include "charly/core/compiler/ir/builder.h"
-#include "charly/core/compiler/ir/ir.h"
 #include "charly/core/compiler/parser.h"
 
 #include "charly/core/compiler/passes/class_constructor_check.h"
@@ -76,7 +74,7 @@ ref<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffe
   // prepare repl input for compilation
   if (type == CompilationUnit::Type::ReplInput) {
     unit->ast->repl_toplevel_block = true;
-    APPLY_TRANSFORM_PASS(ReplPreparePass);
+    APPLY_TRANSFORM_PASS(ReplPreparePass)
   }
 
   // wrap in module function
@@ -84,12 +82,12 @@ ref<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffe
   func->set_location(unit->ast);
   unit->ast = make<Block>(func);
 
-  APPLY_DIAGNOSTIC_PASS(GrammarValidationCheck);
-  APPLY_DIAGNOSTIC_PASS(ReservedIdentifiersCheck);
-  APPLY_DIAGNOSTIC_PASS(DuplicatesCheck);
-  APPLY_DIAGNOSTIC_PASS(ClassConstructorCheck);
+  APPLY_DIAGNOSTIC_PASS(GrammarValidationCheck)
+  APPLY_DIAGNOSTIC_PASS(ReservedIdentifiersCheck)
+  APPLY_DIAGNOSTIC_PASS(DuplicatesCheck)
+  APPLY_DIAGNOSTIC_PASS(ClassConstructorCheck)
 
-  APPLY_TRANSFORM_PASS(DesugarPass);
+  APPLY_TRANSFORM_PASS(DesugarPass)
 
   {
     VariableAnalyzer analyzer;
@@ -103,7 +101,7 @@ ref<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffe
   }
 
   if (!utils::ArgumentParser::is_flag_set("opt_disable")) {
-    APPLY_TRANSFORM_PASS(ConstantFoldingPass);
+    APPLY_TRANSFORM_PASS(ConstantFoldingPass)
   }
 
 #undef APPLY_DIAGNOSTIC_PASS

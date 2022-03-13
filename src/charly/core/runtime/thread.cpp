@@ -347,7 +347,7 @@ void Thread::entry_fiber_thread() {
   }
 
   if (id() == kMainFiberThreadId) {
-    debuglnf("main fiber exited with value %", result);
+    debugln("main fiber exited with value %", result);
 
     if (result.isInt()) {
       abort(RawInt::cast(result).value());
@@ -356,7 +356,7 @@ void Thread::entry_fiber_thread() {
     }
   }
 
-  debuglnf("fiber % exiting with result %", *fiber, result);
+  debugln("fiber % exiting with result %", *fiber, result);
 }
 
 void Thread::enter_scheduler() {
@@ -375,7 +375,7 @@ void Thread::acquire_stack() {
   DCHECK(m_stack, "could not allocate thread stack");
 
   m_context = make_fcontext(m_stack->hi(), m_stack->size(), [](transfer_t transfer) {
-    Worker* worker = static_cast<Worker*>(transfer.data);
+    auto* worker = static_cast<Worker*>(transfer.data);
     worker->set_context(transfer.fctx);
     Thread* thread = worker->thread();
     Thread::set_current(thread);

@@ -36,10 +36,9 @@ namespace charly::core::compiler {
 static const uint32_t kDiagnosticContextRows = 3;
 
 DiagnosticConsole::DiagnosticConsole(const std::string& filepath, const utils::Buffer& buffer) : m_filepath(filepath) {
-  int begin = 0;
-  int end = 0;
-
   std::string source = buffer.str();
+  int begin = 0;
+  int end;
   while ((end = source.find('\n', begin)) >= 0) {
     m_source.push_back(source.substr(begin, end - begin));
     begin = end + 1;
@@ -49,13 +48,9 @@ DiagnosticConsole::DiagnosticConsole(const std::string& filepath, const utils::B
 }
 
 bool DiagnosticConsole::has_errors() {
-  for (DiagnosticMessage& message : m_messages) {
-    if (message.type == DiagnosticType::Error) {
-      return true;
-    }
-  }
-
-  return false;
+  return std::any_of(m_messages.begin(), m_messages.end(), [](auto& message) {
+    return message.type == DiagnosticType::Error;
+  });
 }
 
 void DiagnosticConsole::dump_all(std::ostream& out) const {

@@ -56,13 +56,12 @@ class Runtime;
 
 class Scheduler {
 public:
-  Scheduler(Runtime* runtime);
+  explicit Scheduler(Runtime* runtime);
   ~Scheduler();
 
   // returns the amount of physical cpu cores
   static uint32_t hardware_concurrency();
 
-  Thread* main_thread() const;
   Runtime* runtime() const;
 
   // wait for all worker threads to join

@@ -53,11 +53,11 @@ Scheduler::Scheduler(Runtime* runtime) {
   {
     std::lock_guard<std::mutex> locker(m_idle_procs_mutex);
     for (uint32_t i = 0; i < proc_count; i++) {
-      Processor* processor = new Processor(m_runtime);
+      auto* processor = new Processor(m_runtime);
       m_processors.push_back(processor);
       m_idle_processors.push(processor);
 
-      Worker* worker = new Worker(m_runtime);
+      auto* worker = new Worker(m_runtime);
       m_workers.push_back(worker);
     }
 
@@ -113,11 +113,11 @@ void Scheduler::join() {
 }
 
 Thread* Scheduler::get_free_thread() {
-  Thread* thread = nullptr;
+  Thread* thread;
 
   {
     std::lock_guard<std::mutex> locker(m_threads_mutex);
-    if (m_free_threads.size()) {
+    if (!m_free_threads.empty()) {
       thread = m_free_threads.top();
       m_free_threads.pop();
     } else {
@@ -130,11 +130,11 @@ Thread* Scheduler::get_free_thread() {
 }
 
 Stack* Scheduler::get_free_stack() {
-  Stack* stack = nullptr;
+  Stack* stack;
 
   {
     std::lock_guard<std::mutex> locker(m_stacks_mutex);
-    if (m_free_stacks.size()) {
+    if (!m_free_stacks.empty()) {
       stack = m_free_stacks.top();
       m_free_stacks.pop();
     } else {
@@ -195,7 +195,7 @@ bool Scheduler::acquire_processor_for_worker(Worker* worker) {
   Processor* proc = nullptr;
   {
     std::lock_guard<std::mutex> locker(m_idle_procs_mutex);
-    if (m_idle_processors.size()) {
+    if (!m_idle_processors.empty()) {
       proc = m_idle_processors.top();
       m_idle_processors.pop();
     }
@@ -229,7 +229,7 @@ void Scheduler::release_processor_from_worker(Worker* worker) {
 
 Thread* Scheduler::get_ready_thread_from_global_run_queue() {
   std::lock_guard<std::mutex> locker(m_run_queue_mutex);
-  if (m_run_queue.size()) {
+  if (!m_run_queue.empty()) {
     Thread* thread = m_run_queue.front();
     m_run_queue.pop_front();
     return thread;

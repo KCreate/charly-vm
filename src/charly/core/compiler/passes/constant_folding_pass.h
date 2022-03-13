@@ -35,13 +35,13 @@ public:
   using DiagnosticPass::DiagnosticPass;
 
 private:
-  virtual ref<Expression> transform(const ref<Ternary>&) override;
-  virtual ref<Expression> transform(const ref<BinaryOp>&) override;
-  virtual ref<Expression> transform(const ref<UnaryOp>&) override;
-  virtual ref<Expression> transform(const ref<Id>&) override;
-  virtual ref<Statement> transform(const ref<If>&) override;
-  virtual ref<Statement> transform(const ref<While>&) override;
-  virtual ref<Expression> transform(const ref<BuiltinOperation>&) override;
+  ref<Expression> transform(const ref<Ternary>&) override;
+  ref<Expression> transform(const ref<BinaryOp>&) override;
+  ref<Expression> transform(const ref<UnaryOp>&) override;
+  ref<Expression> transform(const ref<Id>&) override;
+  ref<Statement> transform(const ref<If>&) override;
+  ref<Statement> transform(const ref<While>&) override;
+  ref<Expression> transform(const ref<BuiltinOperation>&) override;
 };
 
 }  // namespace charly::core::compiler::ast

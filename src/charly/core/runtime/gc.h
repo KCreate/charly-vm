@@ -40,7 +40,7 @@ class GarbageCollector {
   friend class Heap;
 
 public:
-  GarbageCollector(Runtime* runtime) :
+  explicit GarbageCollector(Runtime* runtime) :
     m_runtime(runtime),
     m_wants_collection(false),
     m_wants_exit(false),

@@ -25,8 +25,8 @@
  */
 
 #include <list>
-#include <unordered_map>
 #include <mutex>
+#include <unordered_map>
 
 #include "charly/value.h"
 
@@ -42,7 +42,7 @@ class ThreadAllocationBuffer;
 // represents a virtual processor
 class Processor {
 public:
-  Processor(Runtime* runtime);
+  explicit Processor(Runtime* runtime);
   ~Processor();
 
   // getter / setter

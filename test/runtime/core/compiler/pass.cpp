@@ -39,7 +39,7 @@ using namespace charly;
 struct VisitedNodesStatisticsPass : public Pass {
   int types[256] = { 0 };
 
-  virtual void enter(const ref<Node>& node) override {
+  void enter(const ref<Node>& node) override {
     types[static_cast<int>(node->type())] += 1;
   }
 };
@@ -48,11 +48,11 @@ struct NumberSummerPass : public Pass {
   int64_t intsum = 0;
   double floatsum = 0.0;
 
-  virtual void inspect_leave(const ref<Int>& node) override {
+  void inspect_leave(const ref<Int>& node) override {
     intsum += node->value;
   }
 
-  virtual void inspect_leave(const ref<Float>& node) override {
+  void inspect_leave(const ref<Float>& node) override {
     floatsum += node->value;
   }
 };
@@ -77,7 +77,7 @@ CATCH_TEST_CASE("Pass") {
     ref<Expression> node1 = EXP("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)", Expression);
 
     struct IntsAboveFiveWithZeroReplacerPass : public Pass {
-      virtual ref<Expression> transform(const ref<Int>& node) override {
+      ref<Expression> transform(const ref<Int>& node) override {
         if (node->value > 5) {
           node->value = 0;
         }
@@ -100,7 +100,7 @@ CATCH_TEST_CASE("Pass") {
     ref<Expression> node1 = EXP("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)", Expression);
 
     struct IntsThatAreFiveOrAboveWithPiReplacerPass : public Pass {
-      virtual ref<Expression> transform(const ref<Int>& node) override {
+      ref<Expression> transform(const ref<Int>& node) override {
         if (node->value >= 5) {
           return make<Float>(3.1415);
         }
@@ -123,7 +123,7 @@ CATCH_TEST_CASE("Pass") {
     ref<Block> block = cast<Block>(Parser::parse_program("1 2 3 4"));
 
     struct IntsAbove2RemoverPass : public Pass {
-      virtual ref<Expression> transform(const ref<Int>& node) override {
+      ref<Expression> transform(const ref<Int>& node) override {
         if (node->value > 2) {
           return nullptr;
         }
@@ -148,11 +148,11 @@ CATCH_TEST_CASE("Pass") {
     struct OrderVerifyPass : public Pass {
       std::vector<Node::Type> typestack;
 
-      virtual void enter(const ref<Node>& node) override {
+      void enter(const ref<Node>& node) override {
         typestack.push_back(node->type());
       }
 
-      virtual void leave(const ref<Node>& node) override {
+      void leave(const ref<Node>& node) override {
         CATCH_CHECK(typestack.back() == node->type());
         typestack.pop_back();
       }
@@ -176,16 +176,16 @@ CATCH_TEST_CASE("Pass") {
         }
       }
 
-      bool finished() {
-        return queued_tuples.size() == 0;
+      bool finished() const {
+        return queued_tuples.empty();
       }
 
-      virtual bool inspect_enter(const ref<Tuple>& block) override {
+      bool inspect_enter(const ref<Tuple>& block) override {
         queued_tuples.push(block);
         return false;
       }
 
-      virtual void inspect_leave(const ref<Int>& node) override {
+      void inspect_leave(const ref<Int>& node) override {
         visited_ints.push_back(node);
       }
     };

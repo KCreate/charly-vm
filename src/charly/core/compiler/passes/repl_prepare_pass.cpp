@@ -32,7 +32,7 @@ void ReplPreparePass::inspect_leave(const ref<Block>& node) {
   // the last expression of the toplevel REPL block is
   // wrapped in a return statement
   if (node->repl_toplevel_block) {
-    if (node->statements.size() && isa<Expression>(node->statements.back())) {
+    if (!node->statements.empty() && isa<Expression>(node->statements.back())) {
       ref<Expression> exp = cast<Expression>(node->statements.back());
       node->statements.pop_back();
 

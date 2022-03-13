@@ -77,7 +77,7 @@ using namespace charly;
     CATCH_CHECK(!console.has_errors());                              \
     if (!console.has_errors()) {                                     \
       exp->dump(exp_dump);                                           \
-      N->dump(ref_dump);                                             \
+      (N)->dump(ref_dump);                                           \
       CATCH_CHECK_THAT(exp_dump.str(), Equals(ref_dump.str()));      \
     }                                                                \
   }
@@ -92,7 +92,7 @@ using namespace charly;
     CATCH_CHECK(!console.has_errors());                             \
     if (!console.has_errors()) {                                    \
       stmt->dump(stmt_dump);                                        \
-      N->dump(ref_dump);                                            \
+      (N)->dump(ref_dump);                                          \
       CATCH_CHECK_THAT(stmt_dump.str(), Equals(ref_dump.str()));    \
     }                                                               \
   }

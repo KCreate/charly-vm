@@ -37,7 +37,7 @@ class HandleScope {
   CHARLY_NON_COPYABLE(HandleScope);
 
 public:
-  HandleScope(Thread* thread) : m_thread(thread) {}
+  explicit HandleScope(Thread* thread) : m_thread(thread) {}
 
   Thread* thread() const {
     return m_thread;
@@ -77,7 +77,7 @@ public:
 
   // Handle<T> can be casted to Handle<S> if S is a subclass of T
   template <typename S>
-  operator const Handle<S>&() const {
+  explicit operator const Handle<S>&() const {
     static_assert(std::is_base_of<S, T>::value, "Only up-casts are permitted");
     return *reinterpret_cast<const Handle<S>*>(this);
   }

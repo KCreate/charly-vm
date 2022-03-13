@@ -65,16 +65,16 @@ private:
   int64_t read_char();
 
   // character identification
-  static bool is_whitespace(int64_t cp);    // \r \t ' '
-  static bool is_decimal(int64_t cp);       // 0-9
-  static bool is_hex(int64_t cp);           // 0-9a-fA-F
-  static bool is_binary(int64_t cp);        // 0-1
-  static bool is_octal(int64_t cp);         // 0-7
-  static bool is_alpha_lower(int64_t cp);   // a-z
-  static bool is_alpha_upper(int64_t cp);   // A-Z
-  static bool is_alpha(int64_t cp);         // a-zA-Z
-  static bool is_id_begin(int64_t cp);      // alpha $ _
-  static bool is_id_part(int64_t cp);       // alpha $ _ numeric
+  static bool is_whitespace(int64_t cp);   // \r \t ' '
+  static bool is_decimal(int64_t cp);      // 0-9
+  static bool is_hex(int64_t cp);          // 0-9a-fA-F
+  static bool is_binary(int64_t cp);       // 0-1
+  static bool is_octal(int64_t cp);        // 0-7
+  static bool is_alpha_lower(int64_t cp);  // a-z
+  static bool is_alpha_upper(int64_t cp);  // A-Z
+  static bool is_alpha(int64_t cp);        // a-zA-Z
+  static bool is_id_begin(int64_t cp);     // alpha $ _
+  static bool is_id_part(int64_t cp);      // alpha $ _ numeric
 
   // consume some token type
   void consume_whitespace(Token& token);

@@ -24,10 +24,8 @@
  * SOFTWARE.
  */
 
-#include <sys/mman.h>
-
-#include "charly/debug.h"
 #include "charly/utils/allocator.h"
+#include "charly/debug.h"
 
 namespace charly::utils {
 
@@ -40,40 +38,52 @@ void* Allocator::alloc(size_t size, size_t alignment) {
   return memory;
 }
 
-void* Allocator::mmap(size_t size, size_t alignment) {
+void* Allocator::mmap_page_aligned(size_t size, int32_t protection, int32_t flags) {
   DCHECK(size >= kPageSize, "expected size to be at least the page size");
   DCHECK(size % kPageSize == 0, "expected size to be a multiple of the page size");
-  DCHECK(alignment == kPageSize || alignment == size, "unexpected alignment");
-  DCHECK(alignment % kPageSize == 0, "expected alignment to be a positive multiple of the page size");
+  void* memory = ::mmap(nullptr, size, protection, flags, -1, 0);
+  CHECK(memory != nullptr, "could not mmap memory");
+  return memory;
+}
 
-  if (alignment == kPageSize) {
-    void* memory = ::mmap(nullptr, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    CHECK(memory != nullptr, "could not mmap memory");
-    return memory;
-  } else if (alignment == size) {
-    auto memory = (uintptr_t)mmap(size * 2, kPageSize);
-    size_t excess_upper = memory % alignment;
-    size_t excess_lower = alignment - excess_upper;
-    uintptr_t lower_excess_base = memory;
-    uintptr_t upper_excess_base = memory + (alignment * 2) - excess_upper;
-    uintptr_t aligned_base = memory + excess_lower;
+void* Allocator::mmap_self_aligned(size_t size, int32_t protection, int32_t flags) {
+  DCHECK(size >= kPageSize, "expected size to be at least the page size");
+  DCHECK(size % kPageSize == 0, "expected size to be a multiple of the page size");
 
-    DCHECK(excess_lower % kPageSize == 0);
-    DCHECK(excess_upper % kPageSize == 0);
+  size_t alignment = size;
+  auto memory = (uintptr_t)mmap_page_aligned(size * 2, protection, flags);
+  size_t excess_upper = memory % alignment;
+  size_t excess_lower = alignment - excess_upper;
+  uintptr_t lower_excess_base = memory;
+  uintptr_t upper_excess_base = memory + (alignment * 2) - excess_upper;
+  uintptr_t aligned_base = memory + excess_lower;
 
-    // allocation is optimally aligned already
-    if (excess_lower == alignment) {
-      munmap((void*)memory, alignment);
-      return (void*)(memory + alignment);
-    }
+  DCHECK(excess_lower % kPageSize == 0);
+  DCHECK(excess_upper % kPageSize == 0);
 
-    // unmap excess pages
-    munmap((void*)lower_excess_base, excess_lower);
-    munmap((void*)upper_excess_base, excess_upper);
-    return (void*)aligned_base;
+  // allocation is optimally aligned already
+  if (excess_lower == alignment) {
+    munmap((void*)memory, alignment);
+    return (void*)(memory + alignment);
   }
 
-  UNREACHABLE();
+  // unmap excess pages
+  munmap((void*)lower_excess_base, excess_lower);
+  munmap((void*)upper_excess_base, excess_upper);
+  return (void*)aligned_base;
+}
+
+void* Allocator::mmap_address(void* address, size_t size, int32_t protection, int32_t flags) {
+  DCHECK(size >= kPageSize, "expected size to be at least the page size");
+  DCHECK(size % kPageSize == 0, "expected size to be a multiple of the page size");
+
+  void* memory = ::mmap(address, size, protection, flags, -1, 0);
+
+  if (memory == MAP_FAILED) {
+    FAIL("could not map address %: %", address, std::strerror(errno));
+  }
+
+  return memory;
 }
 
 void* Allocator::realloc(void* old_pointer, size_t old_size, size_t new_size, size_t new_alignment) {

@@ -4,9 +4,6 @@
   - Remove Generators from the language
   - yield is now implemented for the block callback syntax
 
-- Refactor codebase
-  - Fix low hanging fruits (all the editor warnings...)
-
 - Rethink iterator system
   - Iterators shouldn't be a separate data structure but should be implemented in charly code
   - Iterators are created by calling the `iterator(old = null)` method

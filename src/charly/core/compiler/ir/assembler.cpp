@@ -62,7 +62,7 @@ void Assembler::assemble() {
 
     // build constant table
     CHECK(function->constant_table.size() <= (size_t)0x0000ffff);
-    for (RawValue value : function->constant_table) {
+    for (const auto& value : function->constant_table) {
       shared_info->constant_table.push_back(value);
     }
 
@@ -118,7 +118,7 @@ void Assembler::assemble() {
   m_runtime_module->buffer.protect();
 
   // write final pointers into function structs
-  uintptr_t base_address = (uintptr_t)m_runtime_module->buffer.data();
+  auto base_address = (uintptr_t)m_runtime_module->buffer.data();
   for (SharedFunctionInfo* func : m_runtime_module->function_table) {
     func->buffer_base_ptr = base_address;
     func->bytecode_base_ptr = base_address + func->bytecode_offset;
@@ -201,7 +201,6 @@ void Assembler::patch_unresolved_labels() {
     buf.seekg(patch_offset);
     auto read_byte = buf.peek_char();
     CHECK(read_byte != EOF);
-
 
     auto opcode = (Opcode)read_byte;
     switch (opcode) {

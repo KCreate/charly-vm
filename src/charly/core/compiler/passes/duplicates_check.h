@@ -35,10 +35,10 @@ public:
   using DiagnosticPass::DiagnosticPass;
 
 private:
-  virtual void inspect_leave(const ref<UnpackTarget>& node) override;
-  virtual void inspect_leave(const ref<Dict>& node) override;
-  virtual void inspect_leave(const ref<Function>& node) override;
-  virtual void inspect_leave(const ref<Class>& node) override;
+  void inspect_leave(const ref<UnpackTarget>& node) override;
+  void inspect_leave(const ref<Dict>& node) override;
+  void inspect_leave(const ref<Function>& node) override;
+  void inspect_leave(const ref<Class>& node) override;
 };
 
 }  // namespace charly::core::compiler::ast

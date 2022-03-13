@@ -41,38 +41,38 @@ namespace charly::core::runtime {
 using Color = utils::Color;
 
 bool is_immediate_shape(ShapeId shape_id) {
-  uint32_t id = static_cast<uint32_t>(shape_id);
+  auto id = static_cast<uint32_t>(shape_id);
   return id <= static_cast<uint32_t>(ShapeId::kLastImmediateShape);
 }
 
 bool is_object_shape(ShapeId shape_id) {
-  uint32_t id = static_cast<uint32_t>(shape_id);
+  auto id = static_cast<uint32_t>(shape_id);
   return id > static_cast<uint32_t>(ShapeId::kLastImmediateShape);
 }
 
 bool is_data_shape(ShapeId shape_id) {
-  uint32_t id = static_cast<uint32_t>(shape_id);
-  uint32_t first_data_shape = static_cast<uint32_t>(ShapeId::kFirstNonInstance);
-  uint32_t last_data_shape = static_cast<uint32_t>(ShapeId::kLastNonInstance);
+  auto id = static_cast<uint32_t>(shape_id);
+  auto first_data_shape = static_cast<uint32_t>(ShapeId::kFirstNonInstance);
+  auto last_data_shape = static_cast<uint32_t>(ShapeId::kLastNonInstance);
   return (id >= first_data_shape) && (id <= last_data_shape);
 }
 
 bool is_instance_shape(ShapeId shape_id) {
-  uint32_t id = static_cast<uint32_t>(shape_id);
-  uint32_t last_non_instance = static_cast<uint32_t>(ShapeId::kLastNonInstance);
+  auto id = static_cast<uint32_t>(shape_id);
+  auto last_non_instance = static_cast<uint32_t>(ShapeId::kLastNonInstance);
   return id > last_non_instance;
 }
 
 bool is_exception_shape(ShapeId shape_id) {
-  uint32_t id = static_cast<uint32_t>(shape_id);
-  uint32_t first_exception_shape = static_cast<uint32_t>(ShapeId::kFirstException);
-  uint32_t last_exception_shape = static_cast<uint32_t>(ShapeId::kLastException);
+  auto id = static_cast<uint32_t>(shape_id);
+  auto first_exception_shape = static_cast<uint32_t>(ShapeId::kFirstException);
+  auto last_exception_shape = static_cast<uint32_t>(ShapeId::kLastException);
   return (id >= first_exception_shape) && (id <= last_exception_shape);
 }
 
 bool is_builtin_shape(ShapeId shape_id) {
-  uint32_t id = static_cast<uint32_t>(shape_id);
-  uint32_t last_builtin_shape = static_cast<uint32_t>(ShapeId::kLastBuiltinShapeId);
+  auto id = static_cast<uint32_t>(shape_id);
+  auto last_builtin_shape = static_cast<uint32_t>(ShapeId::kLastBuiltinShapeId);
   return id <= last_builtin_shape;
 }
 
@@ -92,7 +92,7 @@ size_t align_to_size(size_t size, size_t alignment) {
 }
 
 void ObjectHeader::initialize_header(uintptr_t address, ShapeId shape_id, uint16_t count) {
-  ObjectHeader* header = bitcast<ObjectHeader*>(address);
+  auto* header = bitcast<ObjectHeader*>(address);
   header->m_shape_id_and_survivor_count = static_cast<uint32_t>(shape_id);  // survivor count initialized to 0
   header->m_count = count;
   header->m_lock = 0;
@@ -125,7 +125,7 @@ SYMBOL ObjectHeader::hashcode() {
   if (current_flags & Flag::kHasHashcode) {
     return m_hashcode;
   } else {
-    uintptr_t address = bitcast<uintptr_t>(this);
+    auto address = bitcast<uintptr_t>(this);
     uint32_t offset_in_heap = address % kHeapTotalSize;
 
     if (cas_hashcode(0, offset_in_heap)) {
@@ -542,7 +542,7 @@ std::ostream& operator<<(std::ostream& out, const RawValue& value) {
 }
 
 int64_t RawInt::value() const {
-  int64_t tmp = static_cast<int64_t>(m_raw);
+  auto tmp = static_cast<int64_t>(m_raw);
   return tmp >> kShiftInt;
 }
 
@@ -569,7 +569,7 @@ bool RawFloat::close_to(double other, double precision) const {
 }
 
 RawFloat RawFloat::make(double value) {
-  uintptr_t value_bits = bitcast<uintptr_t>(value);
+  auto value_bits = bitcast<uintptr_t>(value);
   return RawFloat::cast((value_bits & ~kMaskImmediate) | kTagFloat);
 }
 
@@ -643,7 +643,7 @@ size_t RawSmallBytes::length() const {
 }
 
 const uint8_t* RawSmallBytes::data(const RawSmallBytes* value) {
-  uintptr_t base = bitcast<uintptr_t>(value);
+  auto base = bitcast<uintptr_t>(value);
   return bitcast<const uint8_t*>(base + 1);
 }
 
@@ -729,11 +729,11 @@ SYMBOL RawString::hashcode() const {
 }
 
 std::string RawString::str() const {
-  return {data(this), length()};
+  return { data(this), length() };
 }
 
 std::string_view RawString::view() const {
-  return {data(this), length()};
+  return { data(this), length() };
 }
 
 int32_t RawString::compare(RawString base, const char* data, size_t length) {
@@ -867,13 +867,13 @@ int64_t RawInstance::size() const {
 
 RawValue RawInstance::field_at(int64_t index) const {
   DCHECK(index >= 0 && index < size());
-  RawValue* base = bitcast<RawValue*>(address());
+  auto* base = bitcast<RawValue*>(address());
   return *(base + index);
 }
 
 void RawInstance::set_field_at(int64_t index, RawValue value) {
   DCHECK(index >= 0 && index < size());
-  RawValue* base = bitcast<RawValue*>(address());
+  auto* base = bitcast<RawValue*>(address());
   *(base + index) = value;
 }
 
@@ -938,7 +938,7 @@ size_t RawHugeString::length() const {
 }
 
 void RawHugeString::set_length(size_t length) {
-  int64_t length_int = bitcast<int64_t>(length);
+  auto length_int = bitcast<int64_t>(length);
   DCHECK(length_int >= 0);
   set_int_at(kDataLengthOffset, length_int);
 }

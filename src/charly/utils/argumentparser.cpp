@@ -31,9 +31,6 @@
 
 namespace charly::utils {
 
-using FlagDescriptor = ArgumentParser::FlagDescriptor;
-using FlagGroup = ArgumentParser::FlagGroup;
-
 const std::string ArgumentParser::USAGE_MESSAGE = "Usage: charly [filename] [flags] [--] [arguments]";
 
 const std::string ArgumentParser::LICENSE =
@@ -132,7 +129,7 @@ void ArgumentParser::init_argv(int argc, char** argv) {
       }
     }
 
-    USER_FLAGS.push_back(std::string(arg));
+    USER_FLAGS.emplace_back(arg);
   }
 }
 
@@ -182,11 +179,11 @@ bool ArgumentParser::is_env_set(const std::string& name) {
   return ArgumentParser::ENVIRONMENT.count(name);
 }
 
-const std::vector<std::string> ArgumentParser::get_arguments_for_flag(const std::string& name) {
+std::vector<std::string> ArgumentParser::get_arguments_for_flag(const std::string& name) {
   return ArgumentParser::CHARLY_FLAGS.at(name);
 }
 
-const std::optional<std::string> ArgumentParser::get_argument(uint32_t index) {
+std::optional<std::string> ArgumentParser::get_argument(uint32_t index) {
   if (index < ArgumentParser::USER_FLAGS.size()) {
     return ArgumentParser::USER_FLAGS.at(index);
   }
@@ -214,7 +211,7 @@ bool ArgumentParser::flag_has_argument(const std::string& name, const std::strin
   return false;
 }
 
-const std::optional<std::string> ArgumentParser::get_environment_for_key(const std::string& key) {
+std::optional<std::string> ArgumentParser::get_environment_for_key(const std::string& key) {
   if (ArgumentParser::ENVIRONMENT.count(key) > 0) {
     return ArgumentParser::ENVIRONMENT.at(key);
   }

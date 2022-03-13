@@ -27,7 +27,6 @@
 #include <iomanip>
 #include <memory>
 
-#include "charly/value.h"
 #include "charly/core/compiler/ir/ir.h"
 #include "charly/utils/colorwriter.h"
 
@@ -69,7 +68,10 @@ ref<IRInstruction> IRInstruction::make(Opcode opcode, uint32_t arg1, uint32_t ar
 #define DEF_IAAA(N) ::charly::make<IRInstruction_##N>(arg1);
 
   switch (opcode) {
-#define DEF(N, T, ...) case Opcode::N: { return DEF_##T(N); }
+#define DEF(N, T, ...) \
+  case Opcode::N: {    \
+    return DEF_##T(N); \
+  }
     FOREACH_OPCODE(DEF)
 #undef DEF
     default: {
@@ -86,12 +88,12 @@ ref<IRInstruction> IRInstruction::make(Opcode opcode, uint32_t arg1, uint32_t ar
 #undef DEF_IAAA
 }
 
-void IRBasicBlock::link(ref<IRBasicBlock> source, ref<IRBasicBlock> target) {
+void IRBasicBlock::link(const ref<IRBasicBlock>& source, const ref<IRBasicBlock>& target) {
   source->outgoing_blocks.insert(target);
   target->incoming_blocks.insert(source);
 }
 
-void IRBasicBlock::unlink(ref<IRBasicBlock> block) {
+void IRBasicBlock::unlink(const ref<IRBasicBlock>& block) {
   for (const ref<IRBasicBlock>& incoming : block->incoming_blocks) {
     incoming->outgoing_blocks.erase(block);
   }
@@ -109,7 +111,7 @@ void IRBasicBlock::unlink(ref<IRBasicBlock> block) {
   }
 }
 
-void IRBasicBlock::unlink(ref<IRBasicBlock> source, ref<IRBasicBlock> target) {
+void IRBasicBlock::unlink(const ref<IRBasicBlock>& source, const ref<IRBasicBlock>& target) {
   source->outgoing_blocks.erase(target);
   target->incoming_blocks.erase(source);
 }
@@ -120,7 +122,7 @@ void IRBasicBlock::dump(std::ostream& out) const {
   writer.fg(Color::Grey, "  | #", this->id);
 
   // block labels
-  if (this->labels.size()) {
+  if (!this->labels.empty()) {
     for (Label label : this->labels) {
       writer.fg(Color::Yellow, " .L", label);
     }
@@ -130,14 +132,14 @@ void IRBasicBlock::dump(std::ostream& out) const {
 
   // incoming / outgoing blocks
   writer.fg(Color::Blue, "[");
-  for (ref<IRBasicBlock> block : this->incoming_blocks) {
+  for (const ref<IRBasicBlock>& block : this->incoming_blocks) {
     writer.fg(Color::Blue, "#", block->id);
     out << " ";
   }
   writer.fg(Color::Blue, "]");
   out << " ";
   writer.fg(Color::Green, "[");
-  for (ref<IRBasicBlock> block : this->outgoing_blocks) {
+  for (const ref<IRBasicBlock>& block : this->outgoing_blocks) {
     writer.fg(Color::Green, "#", block->id);
     out << " ";
   }
@@ -215,7 +217,7 @@ void IRFunction::dump(std::ostream& out) const {
 
   if (!constant_table.empty()) {
     writer.fg(Color::Blue, "  constant table:", "\n");
-    for (RawValue value : this->constant_table) {
+    for (const RawValue& value : this->constant_table) {
       writer.fg(Color::Grey, "  - ");
       out << value;
       out << "\n";

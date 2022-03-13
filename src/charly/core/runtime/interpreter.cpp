@@ -35,7 +35,17 @@ namespace charly::core::runtime {
 using namespace charly::core::compiler;
 using namespace charly::core::compiler::ir;
 
-Frame::Frame(Thread* thread, RawFunction function) : thread(thread), parent(thread->frame()), function(function) {
+Frame::Frame(Thread* thread, RawFunction function) :
+  thread(thread),
+  parent(thread->frame()),
+  function(function),
+  shared_function_info(nullptr),
+  locals(nullptr),
+  stack(nullptr),
+  oldip(0),
+  ip(0),
+  sp(0),
+  argc(0) {
   thread->push_frame(this);
 }
 
@@ -114,8 +124,8 @@ RawValue Interpreter::call_function(
 
   // stack overflow check
   const Stack* stack = thread->stack();
-  uintptr_t frame_address = (uintptr_t)__builtin_frame_address(0);
-  uintptr_t stack_bottom_address = (uintptr_t)stack->lo();
+  auto frame_address = (uintptr_t)__builtin_frame_address(0);
+  auto stack_bottom_address = (uintptr_t)stack->lo();
   size_t remaining_bytes_on_stack = frame_address - stack_bottom_address;
   if (remaining_bytes_on_stack <= kStackOverflowLimit) {
     // TODO: throw stack overflow exception
@@ -128,7 +138,7 @@ RawValue Interpreter::call_function(
   uint8_t localcount = shared_info->ir_info.local_variables;
   uint8_t stacksize = shared_info->ir_info.stacksize;
   uint16_t local_stack_buffer_slot_count = localcount + stacksize;
-  RawValue* local_stack_buffer = static_cast<RawValue*>(alloca(sizeof(RawValue) * local_stack_buffer_slot_count));
+  auto* local_stack_buffer = static_cast<RawValue*>(alloca(sizeof(RawValue) * local_stack_buffer_slot_count));
   RawValue* local_ptr = local_stack_buffer;
   RawValue* stack_ptr = local_stack_buffer + localcount;
   frame.locals = local_ptr;
@@ -199,7 +209,7 @@ RawValue Interpreter::execute(Thread* thread) {
   ContinueMode continue_mode;
   Instruction* op;
 
-  auto next_handler = [&]() __attribute__((always_inline)) -> void* {
+  auto next_handler = [&]() __attribute__((always_inline))->void* {
     op = bitcast<Instruction*>(frame->ip);
     Opcode opcode = op->opcode();
     frame->oldip = frame->ip;

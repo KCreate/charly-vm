@@ -42,7 +42,7 @@ namespace charly::core::runtime {
 
 struct ExceptionTableEntry {
   ExceptionTableEntry(uint32_t b, uint32_t _end, uint32_t _handler) :
-    begin_offset(b), end_offset(_end), handler_offset(_handler) {}
+    begin_offset(b), end_offset(_end), handler_offset(_handler), begin_ptr(0), end_ptr(0), handler_ptr(0) {}
 
   uint32_t begin_offset;
   uint32_t end_offset;
@@ -54,7 +54,12 @@ struct ExceptionTableEntry {
 
 struct SourceMapEntry {
   SourceMapEntry(uint32_t offset, uint16_t row, uint16_t column, uint16_t end_row, uint16_t end_column) :
-    instruction_offset(offset), row(row), column(column), end_row(end_row), end_column(end_column) {}
+    instruction_offset(offset),
+    instruction_ptr(0),
+    row(row),
+    column(column),
+    end_row(end_row),
+    end_column(end_column) {}
 
   uint32_t instruction_offset;
   uintptr_t instruction_ptr;
@@ -65,7 +70,7 @@ struct SourceMapEntry {
 };
 
 struct StringTableEntry {
-  StringTableEntry(const std::string& value) : hash(crc32::hash_string(value)), value(value) {}
+  explicit StringTableEntry(const std::string& value) : hash(crc32::hash_string(value)), value(value) {}
 
   SYMBOL hash;
   std::string value;

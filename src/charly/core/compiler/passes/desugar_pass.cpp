@@ -244,15 +244,15 @@ ref<Statement> DesugarPass::transform(const ref<For>& node) {
   ref<Expression> source;
   if (auto declaration = cast<Declaration>(node->declaration)) {
     source = declaration->expression;
-  } else if (auto declaration = cast<UnpackDeclaration>(node->declaration)) {
-    source = declaration->expression;
+  } else if (auto unpack_declaration = cast<UnpackDeclaration>(node->declaration)) {
+    source = unpack_declaration->expression;
   } else {
     FAIL("unexpected node type");
   }
 
   // instantiate __iterator
-  ref<BuiltinOperation> __iterator_source = make<BuiltinOperation>(ir::BuiltinId::castiterator, source);
-  ref<Declaration> __iterator = make<Declaration>("__iterator", __iterator_source, true);
+  ref<BuiltinOperation> iterator_source = make<BuiltinOperation>(ir::BuiltinId::castiterator, source);
+  ref<Declaration> iterator = make<Declaration>("__iterator", iterator_source, true);
 
   // loop block
   ref<Block> loop_block = make<Block>();
@@ -274,10 +274,10 @@ ref<Statement> DesugarPass::transform(const ref<For>& node) {
   loop_block->statements.push_back(body_block);
 
   // re-use the original declaration node but replace the source
-  if (auto declaration = cast<Declaration>(node->declaration)) {
-    declaration->expression = make<Id>("__value");
-  } else if (auto declaration = cast<UnpackDeclaration>(node->declaration)) {
-    declaration->expression = make<Id>("__value");
+  if (auto dec = cast<Declaration>(node->declaration)) {
+    dec->expression = make<Id>("__value");
+  } else if (auto unpack_dec = cast<UnpackDeclaration>(node->declaration)) {
+    unpack_dec->expression = make<Id>("__value");
   } else {
     FAIL("unexpected node type");
   }
@@ -285,7 +285,7 @@ ref<Statement> DesugarPass::transform(const ref<For>& node) {
   body_block->statements.push_back(node->declaration);
   body_block->statements.push_back(node->stmt);
 
-  block->statements.push_back(__iterator);
+  block->statements.push_back(iterator);
   block->statements.push_back(loop);
 
   return block;

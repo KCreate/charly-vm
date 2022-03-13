@@ -79,12 +79,12 @@ static const std::unordered_set<TokenType> kRightAssociativeOperators = {
 // clang-format on
 
 struct KeywordContext {
-  bool _return;
-  bool _break;
-  bool _continue;
-  bool _export;
-  bool _yield;
-  bool _super;
+  bool _return = false;
+  bool _break = false;
+  bool _continue = false;
+  bool _export = false;
+  bool _yield = false;
+  bool _super = false;
 };
 
 class Parser : public Lexer {
@@ -169,9 +169,9 @@ private:
 
   // expressions
   ref<Expression> parse_call_member_index();
-  ref<CallOp> parse_call(ref<Expression> target);
-  ref<MemberOp> parse_member(ref<Expression> target);
-  ref<IndexOp> parse_index(ref<Expression> target);
+  ref<CallOp> parse_call(const ref<Expression>& target);
+  ref<MemberOp> parse_member(const ref<Expression>& target);
+  ref<IndexOp> parse_index(const ref<Expression>& target);
   ref<Expression> parse_literal();
   ref<Expression> parse_builtin();
 
@@ -184,9 +184,6 @@ private:
   struct FunctionFlags {
     bool class_function;
     bool static_function;
-
-    FunctionFlags(bool class_function = false, bool static_function = false) :
-      class_function(class_function), static_function(static_function) {}
   };
   ref<Function> parse_function(FunctionFlags flags = FunctionFlags());
   ref<Function> parse_arrow_function();
@@ -212,9 +209,8 @@ private:
 
   // wrap the input statement in a block or return as-is
   // if already a block
-  ref<Block> wrap_statement_in_block(const ref<Statement>& node);
+  static ref<Block> wrap_statement_in_block(const ref<Statement>& node);
 
-  [[noreturn]] void unexpected_token();
   [[noreturn]] void unexpected_token(const std::string& message);
   [[noreturn]] void unexpected_token(TokenType expected);
 
@@ -243,7 +239,12 @@ private:
   // if token type matches, advance token
   // returns true if the token was advanced
   bool skip(TokenType t) {
-    return type(t) ? (advance(), true) : false;
+    if (type(t)) {
+      advance();
+      return true;
+    }
+
+    return false;
   }
 
   // set the begin location of a node to the current token

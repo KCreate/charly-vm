@@ -63,7 +63,7 @@ int32_t Runtime::join() {
   m_scheduler->join();
   m_gc->join();
 
-  debuglnf("runtime exited after % milliseconds", get_steady_timestamp() - m_start_timestamp);
+  debugln("runtime exited after % milliseconds", get_steady_timestamp() - m_start_timestamp);
 
   return m_exit_code;
 }
@@ -139,7 +139,7 @@ RawObject Runtime::create_instance(Thread* thread, ShapeId shape_id, size_t fiel
 
   // initialize fields to null
   uintptr_t object = memory + header_size;
-  RawValue* object_fields = bitcast<RawValue*>(object);
+  auto* object_fields = bitcast<RawValue*>(object);
   for (uint32_t i = 0; i < field_count; i++) {
     object_fields[i] = kNull;
   }
@@ -257,7 +257,7 @@ RawValue Runtime::declare_global_variable(Thread*, SYMBOL name, bool constant) {
     return kErrorException;
   }
 
-  m_global_variables[name] = {kNull, constant, false};
+  m_global_variables[name] = { kNull, constant, false };
   return kErrorOk;
 }
 
