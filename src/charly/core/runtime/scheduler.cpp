@@ -86,11 +86,6 @@ Scheduler::~Scheduler() {
     delete thread;
   }
   m_threads.clear();
-
-  if (m_main_thread) {
-    delete m_main_thread;
-    m_main_thread = nullptr;
-  }
 }
 
 uint32_t Scheduler::hardware_concurrency() {

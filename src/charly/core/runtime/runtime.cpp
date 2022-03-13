@@ -34,22 +34,22 @@ Runtime::Runtime() :
   m_exit_flag(m_mutex),
   m_exit_code(0),
   m_wants_exit(false),
-  m_heap(new Heap(this)),
-  m_gc(new GarbageCollector(this)),
-  m_scheduler(new Scheduler(this)) {
+  m_heap(std::make_unique<Heap>(this)),
+  m_gc(std::make_unique<GarbageCollector>(this)),
+  m_scheduler(std::make_unique<Scheduler>(this)) {
   m_init_flag.signal();
 }
 
 Heap* Runtime::heap() {
-  return m_heap;
+  return m_heap.get();
 }
 
 Scheduler* Runtime::scheduler() {
-  return m_scheduler;
+  return m_scheduler.get();
 }
 
 GarbageCollector* Runtime::gc() {
-  return m_gc;
+  return m_gc.get();
 }
 
 bool Runtime::wants_exit() const {

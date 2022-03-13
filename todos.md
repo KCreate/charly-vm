@@ -77,18 +77,17 @@
   - Calling a function that accepts a block without a block, returns an iterator for that function
   - Update yield unit tests
 
-- Quickening
-  - General opcodes must determine the types of input operands
-  - Replace original opcode with more detailed variant
-  - Thread updates opcodes atomically
-  - How are the cache sites synced?
-  - Quickened opcodes require some memory to store their cached data
-    - Can the compiler determine the total amount of cache sites needed per function?
-    - Can the runtime easily determine which address maps to which cache site?
-      - Store opcode address in cache slot and perform a linear scan on the first opcode swap
-
 - Fixed size 4 byte instruction encoding
   - Quickening
+    - General opcodes must determine the types of input operands
+    - Replace original opcode with more detailed variant
+    - Thread updates opcodes atomically
+    - How are the cache sites synced?
+    - Quickened opcodes require some memory to store their cached data
+      - Can the compiler determine the total amount of cache sites needed per function?
+      - Can the runtime easily determine which address maps to which cache site?
+        - Store opcode address in cache slot and perform a linear scan on the first opcode swap
+  - Inline caches
     - Cache types
       - Simple Value          - stores a single RawValue
       - Property index        - store a shape id and a property index
@@ -117,11 +116,6 @@
   - System monitor thread?
     - Detect threads in native mode that exceeded their timeslice
     - Trigger GC when memory gets low
-
-- Implement REPL in charly code
-  - Functionality needed
-    - Starting another fiber
-    - Waiting for a fiber to complete
 
 - Setup clang-tidy configuration and fix warnings and errors
   - Also attempt to reduce the amount of disabled compiler flags in the CMakeLists files

@@ -36,11 +36,7 @@ Processor::Processor(Runtime* runtime) :
   m_id(processor_id_counter++),
   m_live(false),
   m_worker(nullptr),
-  m_tab(new ThreadAllocationBuffer(runtime->heap())) {}
-
-Processor::~Processor() {
-  delete m_tab;
-}
+  m_tab(std::make_unique<ThreadAllocationBuffer>(runtime->heap())) {}
 
 Runtime* Processor::runtime() const {
   return m_runtime;
@@ -67,7 +63,7 @@ void Processor::set_worker(Worker* worker) {
 }
 
 ThreadAllocationBuffer* Processor::tab() const {
-  return m_tab;
+  return m_tab.get();
 }
 
 bool Processor::schedule_thread(Thread* thread) {

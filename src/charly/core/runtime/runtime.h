@@ -130,9 +130,9 @@ private:
   int32_t m_exit_code;
   atomic<bool> m_wants_exit;
 
-  Heap* m_heap;
-  GarbageCollector* m_gc;
-  Scheduler* m_scheduler;
+  std::unique_ptr<Heap> m_heap;
+  std::unique_ptr<GarbageCollector> m_gc;
+  std::unique_ptr<Scheduler> m_scheduler;
 
   std::vector<ref<CompiledModule>> m_compiled_modules;
 

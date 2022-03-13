@@ -29,6 +29,7 @@
 #include <unordered_map>
 
 #include "charly/value.h"
+#include "charly/core/runtime/heap.h"
 
 #pragma once
 
@@ -43,7 +44,6 @@ class ThreadAllocationBuffer;
 class Processor {
 public:
   explicit Processor(Runtime* runtime);
-  ~Processor();
 
   // getter / setter
   Runtime* runtime() const;
@@ -75,7 +75,7 @@ private:
   uint64_t m_id;
   bool m_live;
   atomic<Worker*> m_worker;
-  ThreadAllocationBuffer* m_tab;
+  std::unique_ptr<ThreadAllocationBuffer> m_tab;
 
   std::mutex m_mutex;
   std::list<Thread*> m_run_queue;

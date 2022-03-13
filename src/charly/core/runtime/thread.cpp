@@ -355,8 +355,6 @@ void Thread::entry_fiber_thread() {
       abort(0);
     }
   }
-
-  debugln("fiber % exiting with result %", *fiber, result);
 }
 
 void Thread::enter_scheduler() {

@@ -139,8 +139,6 @@ void Heap::release_eden_region(HeapRegion* region) {
   m_released_eden_regions.insert(region);
 
   region->state = HeapRegion::State::Released;
-
-  debugln("released live eden region % (% bytes unused)", region->id(), region->remaining_space());
 }
 
 HeapRegion* Heap::pop_free_region() {

@@ -148,7 +148,9 @@ let @"charly.boot" = func boot {
 
             default {
                 try {
-                    $$ = compile(input, "repl")()
+                    const module = compile(input, "repl")
+                    const fiber = spawn module()
+                    $$ = await fiber
                 } catch(e) {
                     $$ = e
                     echo("Caught exception:")
