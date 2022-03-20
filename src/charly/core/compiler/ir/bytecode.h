@@ -471,25 +471,6 @@ static const size_t kInstructionLength = 4;
    *                                                                                   \
    * stack arguments:                                                                  \
    * - class name symbol                                                               \
-   * - constructor function                                                            \
-   * - member functions...                                                             \
-   * - member property symbols...                                                      \
-   * - static property key                                                             \
-   *   static property value...                                                        \
-   *                                                                                   \
-   * stack results:                                                                    \
-   * - class                                                                           \
-   * */                                                                                \
-  V(makeclass, IABC, 2 + arg1 + arg2 + (arg3 * 2), 1)                                  \
-  /* makesubclass - allocate new subclass                                              \
-   *                                                                                   \
-   * opcode operands:                                                                  \
-   * - amount of member functions                                                      \
-   * - amount of member properties                                                     \
-   * - amount of static properties                                                     \
-   *                                                                                   \
-   * stack arguments:                                                                  \
-   * - class name symbol                                                               \
    * - parent class                                                                    \
    * - constructor function                                                            \
    * - member functions...                                                             \
@@ -500,7 +481,7 @@ static const size_t kInstructionLength = 4;
    * stack results:                                                                    \
    * - class                                                                           \
    * */                                                                                \
-  V(makesubclass, IABC, 3 + arg1 + arg2 + (arg3 * 2), 1)                               \
+  V(makeclass, IABC, 3 + arg1 + arg2 + (arg3 * 2), 1)                                  \
   /* makelist - allocate new list                                                      \
    *                                                                                   \
    * opcode operands:                                                                  \
@@ -577,7 +558,7 @@ static const size_t kInstructionLength = 4;
   /* makefiber - allocate new fiber                                                    \
    *                                                                                   \
    * stack arguments:                                                                  \
-   * - context                                                                         \
+   * - self                                                                            \
    * - function                                                                        \
    * - arguments tuple                                                                 \
    *                                                                                   \
@@ -585,29 +566,6 @@ static const size_t kInstructionLength = 4;
    * - fiber                                                                           \
    * */                                                                                \
   V(makefiber, IXXX, 3, 1)                                                             \
-  /* makegenerator - allocate new generator                                            \
-   *                                                                                   \
-   * stack arguments:                                                                  \
-   * - context                                                                         \
-   * - function                                                                        \
-   * - arguments tuple                                                                 \
-   *                                                                                   \
-   * stack results:                                                                    \
-   * - generator                                                                       \
-   * */                                                                                \
-  /* V(makegenerator, IXXX, 3, 1) */                                                   \
-  /* generatoryield - yield from current generator                                     \
-   *                                                                                   \
-   * opcode operands:                                                                  \
-   * - amount of arguments                                                             \
-   *                                                                                   \
-   * stack arguments:                                                                  \
-   * - arguments...                                                                    \
-   *                                                                                   \
-   * stack results:                                                                    \
-   * - argument from next fiber call                                                   \
-   * */                                                                                \
-  /* V(generatoryield, IAAX, arg, 1) */                                                \
   /* fiberjoin - wait for a fiber to finish                                            \
    *                                                                                   \
    * stack arguments:                                                                  \

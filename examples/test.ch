@@ -1,13 +1,45 @@
-func add(a, b) {
-    a + b
+class Foo {
+    property foo
+
+    func constructor(x) {
+        echo("inside Foo constructor with x: {x}")
+    }
+
+    func get1 {
+        return 1
+    }
 }
 
-const t = spawn {
-    const result = add(2, 3)
-    echo(result)
-    result
+class Bar extends Foo {
+    property bar
+
+    func constructor(x) {
+        echo("inside Bar constructor with x: {x}")
+    }
+
+    func get2 {
+        return 2
+    }
 }
 
-const result = await t
+const f = Foo(25)
+const b = Bar(100)
 
-echo(result)
+writeline(f)
+writeline(b)
+
+writeline(typeof f)
+writeline(typeof b)
+
+writeline(typeof 25)
+writeline(typeof 25.5)
+writeline(typeof true)
+writeline(typeof null)
+writeline(typeof "hello")
+writeline(typeof "hello world my name is leonard")
+writeline(typeof (1, 2, 3))
+writeline(typeof writeline)
+writeline(typeof Foo)
+writeline(typeof Int)
+writeline(typeof builtin_writeline)
+writeline(typeof @"charly.mainfiber")

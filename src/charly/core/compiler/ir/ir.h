@@ -27,7 +27,6 @@
 #include <cstdint>
 #include <list>
 #include <optional>
-#include <set>
 #include <stack>
 #include <string>
 #include <unordered_map>
@@ -285,7 +284,7 @@ struct IRBasicBlock {
   std::optional<Label> exception_handler = std::nullopt;
 
   // labels that refer to this block
-  std::set<Label> labels;
+  std::unordered_set<Label> labels;
   std::list<ref<IRInstruction>> instructions;
 
   // control-flow-graph data

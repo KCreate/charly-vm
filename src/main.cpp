@@ -100,6 +100,8 @@ int32_t cli(DiagnosticConsole& console) {
     debuglnf("RawInstance::kSize    = %", RawInstance::kSize);
     debuglnf("RawHugeBytes::kSize   = %", RawHugeBytes::kSize);
     debuglnf("RawHugeString::kSize  = %", RawHugeString::kSize);
+    debuglnf("RawClass::kSize       = %", RawClass::kSize);
+    debuglnf("RawShape::kSize       = %", RawShape::kSize);
     debuglnf("RawFunction::kSize    = %", RawFunction::kSize);
     debuglnf("RawFiber::kSize       = %", RawFiber::kSize);
     debuglnf("");

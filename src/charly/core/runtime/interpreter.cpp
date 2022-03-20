@@ -25,6 +25,7 @@
  */
 
 #include <alloca.h>
+#include <unordered_set>
 
 #include "charly/core/compiler/compiler.h"
 #include "charly/core/runtime/interpreter.h"
@@ -323,7 +324,12 @@ OP(declareglobalconst) {
 }
 
 OP(type) {
-  UNIMPLEMENTED();
+  RawValue value = frame->pop();
+
+  Runtime* runtime = thread->runtime();
+  frame->push(runtime->lookup_class(value));
+
+  return ContinueMode::Next;
 }
 
 OP(pop) {
@@ -436,6 +442,19 @@ OP(call) {
     frame->pop(argc + 2);
     frame->push(return_value);
     return ContinueMode::Next;
+  } else if (callee.isClass()) {
+    RawClass klass = RawClass::cast(callee);
+    auto instance = thread->runtime()->create_user_instance(thread, klass);
+    RawFunction constructor = RawFunction::cast(klass.constructor());
+    RawValue return_value = Interpreter::call_function(thread, instance, constructor, args, argc);
+
+    if (return_value.is_error_exception()) {
+      return ContinueMode::Exception;
+    }
+
+    frame->pop(argc + 2);
+    frame->push(return_value);
+    return ContinueMode::Next;
   }
 
   debugln("called value is not a function");
@@ -503,7 +522,6 @@ OP(loadfar) {
 
   RawTuple context = RawTuple::cast(frame->context);
   while (depth) {
-    DCHECK(context.size() >= 1);
     context = RawTuple::cast(context.field_at(0));
     depth--;
   }
@@ -520,7 +538,7 @@ OP(loadattr) {
   // tuple[int]
   if (value.isTuple() && index.isInt()) {
     RawTuple tuple = RawTuple::cast(value);
-    int64_t tuple_size = tuple.size();
+    int64_t tuple_size = tuple.field_count();
     int64_t index_int = RawInt::cast(index).value();
 
     // wrap negative indices
@@ -546,11 +564,25 @@ OP(loadattr) {
 }
 
 OP(loadattrsym) {
+  // 1. Fetch shape id
+  // 2. Shape id belongs to non-instance type
+  // 3. Shape id belongs to an instance type
+  //    1. fetch the shape and look up the requested key
+  //    2. key was found
+  //      1. return value at offset
+  //    3. key was not found, check function table of object class
+  //      1. check function table
+  //      2. return function if found, error otherwise
+
   UNIMPLEMENTED();
 }
 
 OP(loadsuperconstructor) {
-  UNIMPLEMENTED();
+  auto klass = RawClass::cast(frame->pop());
+  auto parent_klass = RawClass::cast(klass.parent());
+  auto parent_constructor = parent_klass.constructor();
+  frame->push(parent_constructor);
+  return ContinueMode::Next;
 }
 
 OP(loadsuperattr) {
@@ -597,7 +629,6 @@ OP(setfar) {
 
   RawTuple context = RawTuple::cast(frame->context);
   while (depth) {
-    DCHECK(context.size() >= 1);
     context = RawTuple::cast(context.field_at(0));
     depth--;
   }
@@ -615,7 +646,7 @@ OP(setattr) {
   // tuple[int] = value
   if (target.isTuple() && index.isInt()) {
     RawTuple tuple = RawTuple::cast(target);
-    int64_t tuple_size = tuple.size();
+    uint32_t tuple_size = tuple.field_count();
     int64_t index_int = RawInt::cast(index).value();
 
     // wrap negative indices
@@ -654,7 +685,7 @@ OP(unpacksequence) {
   switch (value.shape_id()) {
     case ShapeId::kTuple: {
       RawTuple tuple(RawTuple::cast(value));
-      size_t tuple_size = tuple.size();
+      uint32_t tuple_size = tuple.field_count();
 
       if (tuple_size != count) {
         debugln("expected tuple to be of size %, not %", (size_t)count, tuple_size);
@@ -697,11 +728,54 @@ OP(makefunc) {
 }
 
 OP(makeclass) {
-  UNIMPLEMENTED();
-}
+  uint8_t member_func_count = op->arg1();
+  uint8_t member_prop_count = op->arg2();
+  uint8_t static_prop_count = op->arg3();
 
-OP(makesubclass) {
-  UNIMPLEMENTED();
+  // collect static property keys
+  RawSymbol static_prop_names[static_prop_count];
+  RawValue static_prop_values[static_prop_count];
+  for (int16_t i = 0; i < static_prop_count; i++) {
+    static_prop_values[i] = frame->pop();
+    static_prop_names[i] = RawSymbol::cast(frame->pop());
+  }
+
+  // collect member property symbols
+  RawSymbol member_properties[member_prop_count];
+  for (int16_t i = member_prop_count - 1; i >= 0; i--) {
+    member_properties[i] = RawSymbol::cast(frame->pop());
+  }
+
+  // collect member functions
+  RawFunction member_functions[member_func_count];
+  for (int16_t i = 0; i < member_func_count; i++) {
+    member_functions[i] = RawFunction::cast(frame->pop());
+  }
+
+  RawFunction constructor = RawFunction::cast(frame->pop());
+  RawValue parent = frame->pop();
+  RawSymbol name = RawSymbol::cast(frame->pop());
+
+  // make sure that the parent value is either kErrorNoBaseClass or an actual class instance
+  if (!(parent.isClass() || parent.is_error_no_base_class())) {
+    debugln("extended value is not a class");
+    thread->throw_value(RawSmallString::make_from_cstr("noclass"));
+    return ContinueMode::Exception;
+  }
+
+  // attempt to create the new class
+  RawValue result = thread->runtime()->create_class(thread, name, parent, constructor, member_func_count,
+                                                    member_functions, member_prop_count, member_properties,
+                                                    static_prop_count, static_prop_names, static_prop_values);
+
+  if (result.is_error_out_of_bounds()) {
+    debugln("newly created class has too many properties, limit is %", RawInstance::kMaximumFieldCount);
+    thread->throw_value(RawSmallString::make_from_cstr("ctoobig"));
+    return ContinueMode::Exception;
+  }
+
+  frame->push(RawClass::cast(result));
+  return ContinueMode::Next;
 }
 
 OP(makestr) {
@@ -733,7 +807,7 @@ OP(makedictspread) {
 
 OP(maketuple) {
   Runtime* runtime = thread->runtime();
-  uint8_t count = op->arg();
+  int16_t count = op->arg();
   RawTuple tuple = RawTuple::cast(runtime->create_tuple(thread, count));
 
   while (count--) {

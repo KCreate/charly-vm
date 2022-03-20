@@ -64,14 +64,15 @@ namespace charly::core::runtime {
 
 // types which store their data via the shape system
 #define INSTANCE_TYPE_NAMES(V) \
+  V(UserInstance)              \
   V(HugeBytes)                 \
   V(HugeString)                \
   V(Tuple)                     \
-  V(Fiber)                     \
+  V(Class)                     \
+  V(Shape)                     \
   V(Function)                  \
   V(BuiltinFunction)           \
-  V(Shape)                     \
-  V(Type)
+  V(Fiber)
 
 // exception types
 #define EXCEPTION_TYPE_NAMES(V) V(Exception)
@@ -109,6 +110,7 @@ enum class ShapeId : uint32_t {
 
   INSTANCE_TYPE_NAMES(SHAPE_ID)
   EXCEPTION_TYPE_NAMES(SHAPE_ID)
+  kFirstBuiltinShapeId = INSTANCE_TYPE_NAMES(GET_FIRST) 1,
 
   kFirstException = EXCEPTION_TYPE_NAMES(GET_FIRST) 0,
   kLastException = EXCEPTION_TYPE_NAMES(GET_LAST) 1,
@@ -165,6 +167,7 @@ enum class ErrorId : uint8_t {
   kErrorOutOfBounds,
   kErrorException,
   kErrorReadOnly,
+  kErrorNoBaseClass = kErrorNotFound
 };
 
 // forward declare Raw types
@@ -253,6 +256,10 @@ static const size_t kObjectHeaderMaxSurvivorCount = 15;
   static bool value_is_type(RawValue value) {                                    \
     return value.is##name();                                                     \
   }                                                                              \
+  Raw##name& operator=(RawValue other) {                                         \
+    m_raw = other.rawCast<Raw##name>().raw();                                    \
+    return *this;                                                                \
+  }                                                                              \
   CHARLY_NON_HEAP_ALLOCATABLE(name)
 
 // the RawValue class represents a single pointer-tagged value.
@@ -311,11 +318,6 @@ public:
     return m_raw != other.raw();
   }
 
-  RawValue& operator=(const RawValue& other) {
-    m_raw = other.raw();
-    return *this;
-  }
-
   uintptr_t raw() const;
   bool is_error() const;
   bool is_error_ok() const;
@@ -323,6 +325,7 @@ public:
   bool is_error_not_found() const;
   bool is_error_out_of_bounds() const;
   bool is_error_read_only() const;
+  bool is_error_no_base_class() const;
   ShapeId shape_id() const;
   ShapeId shape_id_not_object_int() const;
   bool truthyness() const;
@@ -350,6 +353,7 @@ public:
   static const uintptr_t kTagErrorNotFound = ((int)ErrorId::kErrorNotFound << 4) | kTagNull;
   static const uintptr_t kTagErrorOutOfBounds = ((int)ErrorId::kErrorOutOfBounds << 4) | kTagNull;
   static const uintptr_t kTagErrorReadOnly = ((int)ErrorId::kErrorReadOnly << 4) | kTagNull;
+  static const uintptr_t kTagErrorNoBaseClass = ((int)ErrorId::kErrorNoBaseClass << 4) | kTagNull;
   static const uintptr_t kTagSmallString = 0b00001101;
   static const uintptr_t kTagSmallBytes = 0b00001111;
 
@@ -434,7 +438,14 @@ public:
 
   SYMBOL value() const;
 
+  operator SYMBOL() const {
+    return value();
+  }
+
   static RawSymbol make(SYMBOL symbol);
+  static RawSymbol make(const char* string) {
+    return make(SYM(string));
+  }
 };
 
 // immediate string
@@ -489,6 +500,7 @@ static const RawNull kErrorException = RawNull::make_error(ErrorId::kErrorExcept
 static const RawNull kErrorNotFound = RawNull::make_error(ErrorId::kErrorNotFound);
 static const RawNull kErrorOutOfBounds = RawNull::make_error(ErrorId::kErrorOutOfBounds);
 static const RawNull kErrorReadOnly = RawNull::make_error(ErrorId::kErrorReadOnly);
+static const RawNull kErrorNoBaseClass = RawNull::make_error(ErrorId::kErrorNoBaseClass);
 
 // common super class for RawSmallString, LargeString and HugeString
 class RawString : public RawValue {
@@ -534,7 +546,6 @@ public:
   uintptr_t address() const;
   void* address_voidptr() const;
   uintptr_t base_address() const;
-  size_t size() const;
   ShapeId shape_id() const;
 
   ObjectHeader* header() const;
@@ -576,7 +587,7 @@ class RawInstance : public RawObject {
 public:
   COMMON_RAW_OBJECT(Instance);
 
-  int64_t size() const;
+  uint32_t field_count() const;
 
   RawValue field_at(int64_t index) const;
   void set_field_at(int64_t index, RawValue value);
@@ -592,6 +603,20 @@ public:
 
   static const size_t kMaximumFieldCount = 256;
   static const size_t kFieldCount = 0;
+  static const size_t kSize = kFieldCount * kPointerSize;
+};
+
+// instances created by user code
+class RawUserInstance : public RawInstance {
+public:
+  COMMON_RAW_OBJECT(UserInstance);
+
+  RawClass klass() const;
+  void set_klass(RawClass klass);
+
+  static const size_t kKlassOffset = 0;
+
+  static const size_t kFieldCount = 1;
   static const size_t kSize = kFieldCount * kPointerSize;
 };
 
@@ -611,7 +636,7 @@ public:
   static const size_t kDataPointerOffset = 0;
   static const size_t kDataLengthOffset = 1;
   static const size_t kFieldCount = RawInstance::kFieldCount + 2;
-  static const size_t kSize = kFieldCount * kPointerSize;
+  static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
 };
 
 // string stored on c++ heap
@@ -630,7 +655,7 @@ public:
   static const size_t kDataPointerOffset = 0;
   static const size_t kDataLengthOffset = 1;
   static const size_t kFieldCount = RawInstance::kFieldCount + 2;
-  static const size_t kSize = kFieldCount * kPointerSize;
+  static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
 };
 
 // tuple
@@ -639,10 +664,34 @@ public:
   COMMON_RAW_OBJECT(Tuple);
 };
 
-// type
-class RawType : public RawInstance {
+// class
+class RawClass : public RawInstance {
 public:
-  COMMON_RAW_OBJECT(Type);
+  COMMON_RAW_OBJECT(Class);
+
+  RawSymbol name() const;
+  void set_name(RawSymbol name);
+
+  RawValue parent() const;
+  void set_parent(RawValue parent);
+
+  RawShape shape_instance() const;
+  void set_shape_instance(RawShape shape);
+
+  RawTuple function_table() const;
+  void set_function_table(RawTuple function_table);
+
+  RawValue constructor() const;
+  void set_constructor(RawValue constructor);
+
+  static const size_t kNameOffset = 0;
+  static const size_t kParentOffset = 1;
+  static const size_t kShapeOffset = 2;
+  static const size_t kFunctionTableOffset = 3;
+  static const size_t kConstructorOffset = 4;
+
+  static const size_t kFieldCount = RawInstance::kFieldCount + 5;
+  static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
 };
 
 // instance shape
@@ -651,6 +700,22 @@ public:
 class RawShape : public RawInstance {
 public:
   COMMON_RAW_OBJECT(Shape);
+
+  ShapeId own_shape_id() const;
+  void set_own_shape_id(ShapeId id);
+
+  RawValue parent() const;
+  void set_parent(RawValue parent);
+
+  RawTuple key_table() const;
+  void set_key_table(RawTuple key_table);
+
+  static const size_t kOwnShapeIdOffset = 0;
+  static const size_t kParentShapeOffset = 1;
+  static const size_t kKeyTableOffset = 2;
+
+  static const size_t kFieldCount = RawInstance::kFieldCount + 3;
+  static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
 };
 
 // function with bound context and bytecode
@@ -668,7 +733,7 @@ public:
   static const size_t kFrameContextOffset = 0;
   static const size_t kSharedInfoOffset = 1;
   static const size_t kFieldCount = RawInstance::kFieldCount + 2;
-  static const size_t kSize = kFieldCount * kPointerSize;
+  static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
 };
 
 // builtin function implemented in c++
@@ -691,7 +756,7 @@ public:
   static const size_t kNameOffset = 1;
   static const size_t kArgcOffset = 2;
   static const size_t kFieldCount = RawInstance::kFieldCount + 3;
-  static const size_t kSize = kFieldCount * kPointerSize;
+  static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
 };
 
 // runtime fiber
@@ -706,8 +771,8 @@ public:
   RawFunction function() const;
   void set_function(RawFunction function);
 
-  RawValue context() const;
-  void set_context(RawValue context);
+  RawValue self() const;
+  void set_self(RawValue self);
 
   RawValue arguments() const;
   void set_arguments(RawValue arguments);
@@ -723,7 +788,7 @@ public:
   static const size_t kArgumentsOffset = 3;
   static const size_t kResultOffset = 4;
   static const size_t kFieldCount = RawInstance::kFieldCount + 5;
-  static const size_t kSize = kFieldCount * kPointerSize;
+  static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
 };
 
 // base class of all exceptions

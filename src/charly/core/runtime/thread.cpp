@@ -35,9 +35,6 @@
 #include "charly/core/runtime/thread.h"
 #include "charly/core/runtime/worker.h"
 
-#include "charly/core/runtime/builtins/core.h"
-#include "charly/core/runtime/builtins/readline.h"
-
 using boost::context::detail::jump_fcontext;
 using boost::context::detail::make_fcontext;
 
@@ -292,27 +289,13 @@ void Thread::entry_main_thread() {
   CHECK(!module->function_table.empty());
   runtime->register_module(this, module);
 
-  HandleScope scope(this);
-  Function function(scope, runtime->create_function(this, kNull, module->function_table.front()));
-
-  // build ARGV tuple
-  auto& argv = utils::ArgumentParser::USER_FLAGS;
-  Tuple argv_tuple(scope, runtime->create_tuple(this, argv.size()));
-  for (uint32_t i = 0; i < argv.size(); i++) {
-    const std::string& arg = argv[i];
-    String arg_string(scope, runtime->create_string(this, arg.data(), arg.size(), crc32::hash_string(arg)));
-    argv_tuple.set_field_at(i, arg_string);
-  }
-  CHECK(runtime->declare_global_variable(this, SYM("ARGV"), true).is_error_ok());
-  CHECK(runtime->set_global_variable(this, SYM("ARGV"), argv_tuple).is_error_ok());
-
-  // initialize builtin functions
-  builtin::core::initialize(this);
-  builtin::readline::initialize(this);
-
-  Fiber mainfiber(scope, runtime->create_fiber(this, function, kNull, kNull));
-  CHECK(runtime->declare_global_variable(this, SYM("charly.mainfiber"), true).is_error_ok());
-  CHECK(runtime->set_global_variable(this, SYM("charly.mainfiber"), mainfiber).is_error_ok());
+  // initialize runtime
+  runtime->initialize_symbol_table(this);
+  runtime->initialize_builtin_types(this);
+  runtime->initialize_argv_tuple(this);
+  runtime->initialize_builtin_functions(this);
+  runtime->initialize_main_fiber(this, module->function_table.front());
+  runtime->initialize_global_variables(this);
 }
 
 void Thread::entry_fiber_thread() {
@@ -321,17 +304,17 @@ void Thread::entry_fiber_thread() {
 
   RawValue fiber_arguments = fiber.arguments();
   RawValue* argp = nullptr;
-  int64_t argc = 0;
+  size_t argc = 0;
   if (fiber_arguments.isTuple()) {
     RawTuple tuple = RawTuple::cast(fiber_arguments);
-    if (tuple.size()) {
+    if (tuple.field_count()) {
       argp = bitcast<RawValue*>(tuple.address());
       CHECK(argc < 256);
-      argc = tuple.size();
+      argc = tuple.field_count();
     }
   }
 
-  RawValue result = Interpreter::call_function(this, fiber.context(), fiber.function(), argp, argc);
+  RawValue result = Interpreter::call_function(this, fiber.self(), fiber.function(), argp, argc);
 
   // wake threads waiting for this thread to finish
   {
@@ -416,6 +399,10 @@ void Thread::wake_waiting_threads() {
 
     m_waiting_threads.clear();
   }
+}
+
+RawValue Thread::lookup_symbol(SYMBOL symbol) const {
+  return worker()->processor()->lookup_symbol(symbol);
 }
 
 }  // namespace charly::core::runtime

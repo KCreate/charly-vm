@@ -194,7 +194,7 @@ uintptr_t RawValue::raw() const {
 }
 
 bool RawValue::is_error() const {
-  return isNull() && RawNull::cast(*this).error_code() != ErrorId::kErrorNone;
+  return isNull() && RawNull::cast(this).error_code() != ErrorId::kErrorNone;
 }
 
 bool RawValue::is_error_ok() const {
@@ -215,6 +215,10 @@ bool RawValue::is_error_out_of_bounds() const {
 
 bool RawValue::is_error_read_only() const {
   return (m_raw & kMaskLowByte) == kTagErrorReadOnly;
+}
+
+bool RawValue::is_error_no_base_class() const {
+  return (m_raw & kMaskLowByte) == kTagErrorNoBaseClass;
 }
 
 ShapeId RawValue::shape_id() const {
@@ -308,6 +312,10 @@ bool RawValue::isInstance() const {
   }
 }
 
+bool RawValue::isUserInstance() const {
+  return shape_id() > ShapeId::kLastBuiltinShapeId;
+}
+
 bool RawValue::isData() const {
   if (isObject()) {
     return is_data_shape(RawObject::cast(this).shape_id());
@@ -386,8 +394,8 @@ bool RawValue::isShape() const {
   return shape_id() == ShapeId::kShape;
 }
 
-bool RawValue::isType() const {
-  return shape_id() == ShapeId::kType;
+bool RawValue::isClass() const {
+  return shape_id() == ShapeId::kClass;
 }
 
 bool RawValue::isException() const {
@@ -441,64 +449,90 @@ void RawValue::dump(std::ostream& out) const {
   if (isObject()) {
     RawObject object(RawObject::cast(this));
 
-    ShapeId shape_id = object.shape_id();
-    switch (shape_id) {
-      case ShapeId::kTuple: {
-        RawTuple tuple(RawTuple::cast(object));
+    if (isUserInstance()) {
+      RawUserInstance instance = RawUserInstance::cast(this);
+      Thread* thread = Thread::current();
+      RawClass klass = thread->runtime()->lookup_class(instance);
+      RawString name = RawString::cast(thread->lookup_symbol(klass.name()));
+      writer.fg(Color::Green, "<", name.view(), ":", object.address_voidptr(), ">");
+      return;
+    } else {
+      ShapeId shape_id = object.shape_id();
+      switch (shape_id) {
+        case ShapeId::kTuple: {
+          RawTuple tuple(RawTuple::cast(object));
 
-        writer.fg(Color::Grey, "(");
+          writer.fg(Color::Grey, "(");
 
-        if (tuple.size() > 0) {
-          tuple.field_at(0).dump(out);
-          for (int64_t i = 1; i < tuple.size(); i++) {
-            writer.fg(Color::Grey, ", ");
-            tuple.field_at(i).dump(out);
+          if (tuple.field_count()) {
+            tuple.field_at(0).dump(out);
+            for (uint32_t i = 1; i < tuple.field_count(); i++) {
+              writer.fg(Color::Grey, ", ");
+              tuple.field_at(i).dump(out);
+            }
           }
+
+          writer.fg(Color::Grey, ")");
+
+          return;
         }
+        case ShapeId::kFunction: {
+          RawFunction function(RawFunction::cast(object));
 
-        writer.fg(Color::Grey, ")");
+          const SharedFunctionInfo& shared_info = *function.shared_info();
+          const compiler::ir::FunctionInfo& ir_info = shared_info.ir_info;
+          uint8_t minargc = ir_info.minargc;
+          bool arrow = ir_info.arrow_function;
+          const std::string& name = shared_info.name;
 
-        return;
-      }
-      case ShapeId::kFunction: {
-        RawFunction function(RawFunction::cast(object));
+          if (arrow) {
+            writer.fg(Color::Magenta, "->(", (uint32_t)minargc, ")");
+          } else {
+            writer.fg(Color::Yellow, "func ", name, "(", (uint32_t)minargc, ")");
+          }
 
-        const SharedFunctionInfo& shared_info = *function.shared_info();
-        const compiler::ir::FunctionInfo& ir_info = shared_info.ir_info;
-        uint8_t minargc = ir_info.minargc;
-        bool arrow = ir_info.arrow_function;
-        const std::string& name = shared_info.name;
-
-        if (arrow) {
-          writer.fg(Color::Magenta, "->(", (uint32_t)minargc, ")");
-        } else {
-          writer.fg(Color::Yellow, "func ", name, "(", (uint32_t)minargc, ")");
+          return;
         }
-
-        return;
-      }
-      case ShapeId::kBuiltinFunction: {
-        RawBuiltinFunction builtin_function(RawBuiltinFunction::cast(object));
-        RawSymbol name = builtin_function.name();
-        uint8_t argc = builtin_function.argc();
-        writer.fg(Color::Yellow, "builtin ", name, "(", (uint32_t)argc, ")");
-        return;
-      }
-      case ShapeId::kFiber: {
-        writer.fg(Color::Red, "<Fiber:", object.address_voidptr(), ">");
-        return;
-      }
-      default: {
-        writer.fg(Color::Red, "<", (uint32_t)shape_id, ":", object.address_voidptr(), ">");
-        return;
+        case ShapeId::kBuiltinFunction: {
+          RawBuiltinFunction builtin_function(RawBuiltinFunction::cast(object));
+          RawSymbol name = builtin_function.name();
+          uint8_t argc = builtin_function.argc();
+          writer.fg(Color::Yellow, "builtin ", name, "(", (uint32_t)argc, ")");
+          return;
+        }
+        case ShapeId::kFiber: {
+          writer.fg(Color::Red, "<Fiber:", object.address_voidptr(), ">");
+          return;
+        }
+        case ShapeId::kShape: {
+          RawShape shape = RawShape::cast(object);
+          writer.fg(Color::Cyan, "<Shape:", shape.key_table(), ">");
+          return;
+        }
+        case ShapeId::kClass: {
+          RawClass klass = RawClass::cast(object);
+          RawValue parent = klass.parent();
+          if (parent.isClass()) {
+            RawClass parent_class = RawClass::cast(parent);
+            writer.fg(Color::Cyan, "<Class:", klass.name(), ":", klass.shape_instance(), ":", parent_class.name(), ":", klass.function_table(), ">");
+          } else {
+            writer.fg(Color::Cyan, "<Class:", klass.name(), ":", klass.shape_instance(), ":", klass.function_table(), ">");
+          }
+          return;
+        }
+        default: {
+          UNREACHABLE();
+        }
       }
     }
   }
 
   if (isFloat()) {
+    auto old_flags = out.flags();
     out << std::defaultfloat;
     out << std::setprecision(10);
     writer.fg(Color::Red, RawFloat::cast(this).value());
+    out.flags(old_flags);
     return;
   }
 
@@ -516,7 +550,7 @@ void RawValue::dump(std::ostream& out) const {
 
     Thread* thread = Thread::current();
     HandleScope scope(thread);
-    Value sym_value(scope, thread->worker()->processor()->lookup_symbol(symbol.value()));
+    Value sym_value(scope, thread->lookup_symbol(symbol.value()));
 
     if (sym_value.isString()) {
       RawString string_sym = RawString::cast(sym_value);
@@ -533,7 +567,7 @@ void RawValue::dump(std::ostream& out) const {
     return;
   }
 
-  writer.fg(Color::Grey, "<?>");
+  UNREACHABLE();
 }
 
 std::ostream& operator<<(std::ostream& out, const RawValue& value) {
@@ -810,16 +844,6 @@ uintptr_t RawObject::base_address() const {
   return address() - sizeof(ObjectHeader);
 }
 
-size_t RawObject::size() const {
-  uint16_t count = header()->count();
-
-  if (is_data_shape(shape_id())) {
-    return align_to_size(count, kObjectAlignment);
-  } else {
-    return align_to_size(count * kPointerSize, kObjectAlignment);
-  }
-}
-
 ShapeId RawObject::shape_id() const {
   return header()->shape_id();
 }
@@ -861,18 +885,26 @@ const char* RawLargeString::data() const {
   return bitcast<const char*>(address());
 }
 
-int64_t RawInstance::size() const {
+uint32_t RawInstance::field_count() const {
   return header()->count();
 }
 
+RawClass RawUserInstance::klass() const {
+  return RawClass::cast(field_at(kKlassOffset));
+}
+
+void RawUserInstance::set_klass(RawClass klass) {
+  set_field_at(kKlassOffset, klass);
+}
+
 RawValue RawInstance::field_at(int64_t index) const {
-  DCHECK(index >= 0 && index < size());
+  DCHECK(index >= 0 && index < field_count());
   auto* base = bitcast<RawValue*>(address());
   return *(base + index);
 }
 
 void RawInstance::set_field_at(int64_t index, RawValue value) {
-  DCHECK(index >= 0 && index < size());
+  DCHECK(index >= 0 && index < field_count());
   auto* base = bitcast<RawValue*>(address());
   *(base + index) = value;
 }
@@ -943,6 +975,70 @@ void RawHugeString::set_length(size_t length) {
   set_int_at(kDataLengthOffset, length_int);
 }
 
+RawSymbol RawClass::name() const {
+  return RawSymbol::cast(field_at(kNameOffset));
+}
+
+void RawClass::set_name(RawSymbol name) {
+  set_field_at(kNameOffset, name);
+}
+
+RawValue RawClass::parent() const {
+  return field_at(kParentOffset);
+}
+
+void RawClass::set_parent(RawValue parent) {
+  set_field_at(kParentOffset, parent);
+}
+
+RawShape RawClass::shape_instance() const {
+  return RawShape::cast(field_at(kShapeOffset));
+}
+
+void RawClass::set_shape_instance(RawShape shape) {
+  set_field_at(kShapeOffset, shape);
+}
+
+RawTuple RawClass::function_table() const {
+  return RawTuple::cast(field_at(kFunctionTableOffset));
+}
+
+void RawClass::set_function_table(RawTuple function_table) {
+  set_field_at(kFunctionTableOffset, function_table);
+}
+
+RawValue RawClass::constructor() const {
+  return field_at(kConstructorOffset);
+}
+
+void RawClass::set_constructor(RawValue constructor) {
+  set_field_at(kConstructorOffset, constructor);
+}
+
+ShapeId RawShape::own_shape_id() const {
+  return static_cast<ShapeId>(int_at(kOwnShapeIdOffset));
+}
+
+void RawShape::set_own_shape_id(ShapeId id) {
+  set_int_at(kOwnShapeIdOffset, static_cast<int64_t>(id));
+}
+
+RawValue RawShape::parent() const {
+  return RawValue::cast(field_at(kParentShapeOffset));
+}
+
+void RawShape::set_parent(RawValue parent) {
+  set_field_at(kParentShapeOffset, parent);
+}
+
+RawTuple RawShape::key_table() const {
+  return RawTuple::cast(field_at(kKeyTableOffset));
+}
+
+void RawShape::set_key_table(RawTuple key_table) {
+  set_field_at(kKeyTableOffset, key_table);
+}
+
 RawValue RawFunction::context() const {
   return field_at(kFrameContextOffset);
 }
@@ -999,11 +1095,11 @@ void RawFiber::set_function(RawFunction function) {
   set_field_at(kFunctionOffset, function);
 }
 
-RawValue RawFiber::context() const {
+RawValue RawFiber::self() const {
   return RawValue::cast(field_at(kContextOffset));
 }
 
-void RawFiber::set_context(RawValue context) {
+void RawFiber::set_self(RawValue context) {
   set_field_at(kContextOffset, context);
 }
 

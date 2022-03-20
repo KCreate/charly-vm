@@ -27,7 +27,7 @@
 #include <condition_variable>
 #include <list>
 #include <mutex>
-#include <set>
+#include <unordered_set>
 #include <stack>
 #include <vector>
 
@@ -113,11 +113,11 @@ private:
   std::vector<Processor*> m_processors;
 
   std::mutex m_threads_mutex;
-  std::set<Thread*> m_threads;
+  std::unordered_set<Thread*> m_threads;
   std::stack<Thread*> m_free_threads;
 
   std::mutex m_stacks_mutex;
-  std::set<Stack*> m_stacks;
+  std::unordered_set<Stack*> m_stacks;
   std::stack<Stack*> m_free_stacks;
 
   std::mutex m_idle_procs_mutex;

@@ -25,6 +25,9 @@
  */
 
 #include "charly/core/runtime/runtime.h"
+#include "charly/core/runtime/builtins/core.h"
+#include "charly/core/runtime/builtins/readline.h"
+#include "charly/utils/argumentparser.h"
 
 namespace charly::core::runtime {
 
@@ -94,6 +97,128 @@ void Runtime::register_module(Thread* thread, const ref<CompiledModule>& module)
   }
 }
 
+void Runtime::initialize_symbol_table(Thread* thread) {
+  // builtin types
+#define DECL_SYM(N) declare_symbol(thread, #N);
+  TYPE_NAMES(DECL_SYM)
+#undef DECL_SYM
+
+  // known global variables
+  declare_symbol(thread, "");
+  declare_symbol(thread, "charly.baseclass");
+  declare_symbol(thread, "charly.mainfiber");
+  declare_symbol(thread, "klass");
+  declare_symbol(thread, "length");
+  declare_symbol(thread, "ARGV");
+}
+
+void Runtime::initialize_argv_tuple(Thread* thread) {
+  auto& argv = utils::ArgumentParser::USER_FLAGS;
+  RawTuple argv_tuple = RawTuple::cast(create_tuple(thread, argv.size()));
+  for (uint32_t i = 0; i < argv.size(); i++) {
+    const std::string& arg = argv[i];
+    RawString arg_string = RawString::cast(create_string(thread, arg.data(), arg.size(), crc32::hash_string(arg)));
+    argv_tuple.set_field_at(i, arg_string);
+  }
+  CHECK(declare_global_variable(thread, SYM("ARGV"), true).is_error_ok());
+  CHECK(set_global_variable(thread, SYM("ARGV"), argv_tuple).is_error_ok());
+}
+
+void Runtime::initialize_builtin_functions(Thread* thread) {
+  builtin::core::initialize(thread);
+  builtin::readline::initialize(thread);
+}
+
+void Runtime::initialize_builtin_types(Thread* thread) {
+  // immediate type shapes placeholders
+  RawShape shape_placeholder = create_shape(thread, kNull, create_tuple(thread, 0));
+  for (uint32_t i = 0; i <= static_cast<uint32_t>(ShapeId::kLastNonInstance); i++) {
+    register_shape(thread, shape_placeholder);
+  }
+
+  // builtin instances shapes placeholders
+  uint32_t first_builtin_shape = static_cast<uint32_t>(ShapeId::kFirstBuiltinShapeId);
+  uint32_t last_builtin_shape = static_cast<uint32_t>(ShapeId::kLastBuiltinShapeId);
+  uint32_t builtin_shape_count = last_builtin_shape + 1 - first_builtin_shape;
+  for (uint32_t i = 0; i < builtin_shape_count; i++) {
+    register_shape(thread, shape_placeholder);
+  }
+
+  // initialize base class
+  RawShape shape_object = create_shape(thread, kNull, create_tuple(thread));
+  RawClass base_class = RawClass::cast(create_instance(thread, ShapeId::kClass, RawClass::kFieldCount));
+  base_class.set_name(RawSymbol::make("charly.baseclass"));
+  base_class.set_parent(kNull);
+  base_class.set_shape_instance(shape_object);
+  base_class.set_function_table(RawTuple::cast(create_tuple(thread, 0)));
+  base_class.set_constructor(kNull);
+  CHECK(declare_global_variable(thread, SYM("charly.baseclass"), true).is_error_ok());
+  CHECK(set_global_variable(thread, SYM("charly.baseclass"), base_class).is_error_ok());
+}
+
+void Runtime::initialize_main_fiber(Thread* thread, SharedFunctionInfo* info) {
+  RawFunction function = RawFunction::cast(create_function(thread, kNull, info));
+  RawFiber mainfiber = RawFiber::cast(create_fiber(thread, function, kNull, kNull));
+  CHECK(declare_global_variable(thread, SYM("charly.mainfiber"), true).is_error_ok());
+  CHECK(set_global_variable(thread, SYM("charly.mainfiber"), mainfiber).is_error_ok());
+}
+
+void Runtime::initialize_global_variables(Thread* thread) {
+#define REG_SHAPE_ID(N, T)                                              \
+  auto id_##N = RawInt::make(static_cast<uint32_t>(ShapeId::T));        \
+  auto name_##N = declare_symbol(thread, "charly.shapeid." #N);         \
+  CHECK(declare_global_variable(thread, name_##N, true).is_error_ok()); \
+  CHECK(set_global_variable(thread, name_##N, id_##N).is_error_ok());
+
+  REG_SHAPE_ID(int, kInt)
+  REG_SHAPE_ID(float, kFloat)
+  REG_SHAPE_ID(bool, kBool)
+  REG_SHAPE_ID(symbol, kSymbol)
+  REG_SHAPE_ID(null, kNull)
+  REG_SHAPE_ID(small_string, kSmallString)
+  REG_SHAPE_ID(small_bytes, kSmallBytes)
+
+  REG_SHAPE_ID(large_bytes, kLargeBytes)
+  REG_SHAPE_ID(large_string, kLargeString)
+
+  REG_SHAPE_ID(user_instance, kUserInstance)
+  REG_SHAPE_ID(huge_bytes, kHugeBytes)
+  REG_SHAPE_ID(huge_string, kHugeString)
+  REG_SHAPE_ID(tuple, kTuple)
+  REG_SHAPE_ID(class, kClass)
+  REG_SHAPE_ID(shape, kShape)
+  REG_SHAPE_ID(function, kFunction)
+  REG_SHAPE_ID(builtin_function, kBuiltinFunction)
+  REG_SHAPE_ID(fiber, kFiber)
+
+  REG_SHAPE_ID(exception, kException)
+
+#undef REG_SHAPE_ID
+}
+
+ShapeId Runtime::register_shape(Thread*, RawShape shape) {
+  std::unique_lock lock(m_shapes_mutex);
+  CHECK(m_shapes.size() < static_cast<size_t>(ShapeId::kMaxShapeCount), "exceeded max shapes count");
+
+  uint32_t shape_count = m_shapes.size();
+  ShapeId next_shape_id = static_cast<ShapeId>(shape_count);
+  m_shapes.push_back(shape);
+  shape.set_own_shape_id(next_shape_id);
+
+  return next_shape_id;
+}
+
+RawShape Runtime::lookup_shape_id(Thread*, ShapeId id) {
+  std::shared_lock lock(m_shapes_mutex);
+
+  // TODO: cache shapes in processor
+
+  auto index = static_cast<size_t>(id);
+  CHECK(index < m_shapes.size());
+
+  return m_shapes.at(index);
+}
+
 RawData Runtime::create_data(Thread* thread, ShapeId shape_id, size_t size) {
   // determine the total allocation size
   DCHECK(size <= RawData::kMaxLength);
@@ -116,7 +241,7 @@ RawData Runtime::create_data(Thread* thread, ShapeId shape_id, size_t size) {
   return RawData::cast(RawObject::make_from_ptr(memory + header_size));
 }
 
-RawObject Runtime::create_instance(Thread* thread, ShapeId shape_id, size_t field_count) {
+RawInstance Runtime::create_instance(Thread* thread, ShapeId shape_id, size_t field_count) {
   // determine the allocation size
   DCHECK(field_count <= RawInstance::kMaximumFieldCount);
   size_t object_size = field_count * kPointerSize;
@@ -144,7 +269,16 @@ RawObject Runtime::create_instance(Thread* thread, ShapeId shape_id, size_t fiel
     object_fields[i] = kNull;
   }
 
-  return RawObject::make_from_ptr(object);
+  return RawInstance::cast(RawObject::make_from_ptr(object));
+}
+
+RawUserInstance Runtime::create_user_instance(Thread* thread, RawClass klass) {
+  RawShape shape = klass.shape_instance();
+  ShapeId shape_id = shape.own_shape_id();
+  uint32_t field_count = shape.key_table().field_count();
+  auto instance = RawUserInstance::cast(create_instance(thread, shape_id, field_count));
+  instance.set_klass(klass);
+  return instance;
 }
 
 RawValue Runtime::create_string(Thread* thread, const char* data, size_t size, SYMBOL hash) {
@@ -192,33 +326,114 @@ RawHugeString Runtime::create_huge_string_acquire(Thread* thread, char* data, si
   return object;
 }
 
-RawObject Runtime::create_tuple(Thread* thread, uint32_t count) {
-  return create_instance(thread, ShapeId::kTuple, count);
+RawValue Runtime::create_class(Thread* thread,
+                               SYMBOL name,
+                               RawValue parent,
+                               RawFunction constructor,
+                               uint8_t member_func_count,
+                               RawFunction* member_funcs,
+                               uint8_t member_prop_count,
+                               RawSymbol* member_props,
+                               uint8_t static_prop_count,
+                               RawSymbol* static_prop_names,
+                               RawValue* static_prop_values) {
+  // determine parent class
+  RawClass parent_class;
+  if (parent.is_error_no_base_class()) {
+    parent_class = get_builtin_class(ShapeId::kUserInstance);
+  } else {
+    parent_class = RawClass::cast(parent);
+  }
+
+  // determine the actual amount of member properties in this class
+  uint32_t parent_field_count = parent_class.shape_instance().key_table().field_count();
+  uint32_t class_field_count = parent_field_count + member_prop_count;
+  if (class_field_count > RawInstance::kMaximumFieldCount) {
+    return kErrorOutOfBounds;
+  }
+
+  // build key table
+  RawTuple parent_key_table = parent_class.shape_instance().key_table();
+  RawTuple key_table = RawTuple::cast(create_tuple(thread, class_field_count));
+  for (uint32_t i = 0; i < parent_field_count; i++) {
+    key_table.set_field_at(i, parent_key_table.field_at(i));
+  }
+  for (uint32_t i = 0; i < member_prop_count; i++) {
+    key_table.set_field_at(parent_field_count + i, member_props[i]);
+  }
+
+  // build Shape object
+  RawShape shape = create_shape(thread, parent_class.shape_instance(), key_table);
+  register_shape(thread, shape);
+
+  // build function table
+  RawTuple function_table = RawTuple::cast(create_tuple(thread, member_func_count));
+  for (int16_t i = 0; i < member_func_count; i++) {
+    function_table.set_field_at(i, member_funcs[i]);
+  }
+
+  // build Class object
+  RawClass klass = RawClass::cast(create_instance(thread, ShapeId::kClass, RawClass::kFieldCount));
+  klass.set_name(RawSymbol::make(name));
+  klass.set_parent(parent_class);
+  klass.set_shape_instance(shape);
+  klass.set_function_table(function_table);
+  klass.set_constructor(constructor);
+
+  // TODO: use these values
+  (void)static_prop_count;
+  (void)static_prop_names;
+  (void)static_prop_values;
+
+  return klass;
 }
 
-RawObject Runtime::create_function(Thread* thread, RawValue context, SharedFunctionInfo* shared_info) {
+RawShape Runtime::create_shape(Thread* thread, RawValue parent, RawTuple key_table) {
+  RawShape shape = RawShape::cast(create_instance(thread, ShapeId::kShape, RawShape::kFieldCount));
+  shape.set_parent(parent);
+  shape.set_key_table(key_table);
+  return shape;
+}
+
+RawTuple Runtime::create_tuple(Thread* thread, uint32_t count) {
+  RawTuple tuple = RawTuple::cast(create_instance(thread, ShapeId::kTuple, count));
+  return tuple;
+}
+
+RawTuple Runtime::create_tuple(Thread* thread, std::initializer_list<RawValue> values) {
+  auto tuple = create_tuple(thread, values.size());
+  for (size_t i = 0; i < values.size(); i++) {
+    tuple.set_field_at(i, std::data(values)[i]);
+  }
+  return tuple;
+}
+
+RawFunction Runtime::create_function(Thread* thread, RawValue context, SharedFunctionInfo* shared_info) {
   RawFunction func = RawFunction::cast(create_instance(thread, ShapeId::kFunction, RawFunction::kFieldCount));
   func.set_context(context);
   func.set_shared_info(shared_info);
-  return RawObject::cast(func);
+  return func;
 }
 
-RawObject Runtime::create_builtin_function(Thread* thread, BuiltinFunctionType function, RawSymbol name, uint8_t argc) {
+RawBuiltinFunction Runtime::create_builtin_function(Thread* thread,
+                                                    BuiltinFunctionType function,
+                                                    SYMBOL name,
+                                                    uint8_t argc) {
   RawValue inst = create_instance(thread, ShapeId::kBuiltinFunction, RawBuiltinFunction::kFieldCount);
   RawBuiltinFunction func = RawBuiltinFunction::cast(inst);
   func.set_function(function);
-  func.set_name(name);
+  func.set_name(RawSymbol::make(name));
   func.set_argc(argc);
-  return RawObject::cast(func);
+  return func;
 }
 
-RawObject Runtime::create_fiber(Thread* thread, RawFunction function, RawValue context, RawValue arguments) {
+RawFiber Runtime::create_fiber(Thread* thread, RawFunction function, RawValue self, RawValue arguments) {
   RawFiber fiber = RawFiber::cast(create_instance(thread, ShapeId::kFiber, RawFiber::kFieldCount));
   Thread* fiber_thread = scheduler()->get_free_thread();
   fiber_thread->init_fiber_thread(fiber);
   fiber.set_thread(fiber_thread);
   fiber.set_function(function);
-  fiber.set_context(context);
+  fiber.set_self(self);
   fiber.set_arguments(arguments);
   fiber.set_result(kNull);
 
@@ -226,7 +441,7 @@ RawObject Runtime::create_fiber(Thread* thread, RawFunction function, RawValue c
   fiber_thread->ready();
   scheduler()->schedule_thread(fiber_thread, thread->worker()->processor());
 
-  return RawObject::cast(fiber);
+  return fiber;
 }
 
 RawValue Runtime::join_fiber(Thread* thread, RawFiber _fiber) {
@@ -291,21 +506,33 @@ RawValue Runtime::set_global_variable(Thread*, SYMBOL name, RawValue value) {
   return kErrorOk;
 }
 
-RawSymbol Runtime::declare_symbol(Thread* thread, const char* data, size_t size) {
+SYMBOL Runtime::declare_symbol(Thread* thread, const char* data, size_t size) {
   std::lock_guard<std::mutex> locker(m_symbols_mutex);
 
   SYMBOL symbol = crc32::hash_block(data, size);
 
   if (m_symbol_table.count(symbol) > 0) {
-    return RawSymbol::make(symbol);
+    return symbol;
   }
 
   HandleScope scope(thread);
   String sym_string(scope, create_string(thread, data, size, symbol));
-
   m_symbol_table[symbol] = sym_string;
+  return symbol;
+}
 
-  return RawSymbol::make(symbol);
+RawClass Runtime::lookup_class(RawValue value) {
+  if (value.isUserInstance()) {
+    return RawUserInstance::cast(value).klass();
+  } else {
+    return lookup_builtin_class(value.shape_id());
+  }
+}
+
+RawClass Runtime::lookup_builtin_class(ShapeId id) {
+  auto offset = static_cast<uint32_t>(id);
+  DCHECK(id <= ShapeId::kLastBuiltinShapeId);
+  return RawClass::cast(m_builtin_classes.at(offset));
 }
 
 RawValue Runtime::lookup_symbol(SYMBOL symbol) {
@@ -316,6 +543,21 @@ RawValue Runtime::lookup_symbol(SYMBOL symbol) {
   }
 
   return kNull;
+}
+
+void Runtime::set_builtin_class(ShapeId shape_id, RawClass klass) {
+  std::unique_lock lock(m_shapes_mutex);
+  auto offset = static_cast<uint32_t>(shape_id);
+  DCHECK(shape_id <= ShapeId::kLastBuiltinShapeId);
+  m_builtin_classes.at(offset) = klass;
+  m_shapes.at(offset) = klass.shape_instance();
+  klass.set_constructor(kNull);
+}
+
+RawClass Runtime::get_builtin_class(ShapeId shape_id) {
+  std::shared_lock lock(m_shapes_mutex);
+  auto offset = static_cast<uint32_t>(shape_id);
+  return RawClass::cast(m_builtin_classes.at(offset));
 }
 
 }  // namespace charly::core::runtime

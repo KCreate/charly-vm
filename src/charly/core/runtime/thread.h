@@ -193,6 +193,9 @@ public:
   // wake all threads waiting for this thread to exit
   void wake_waiting_threads();
 
+  // look up symbol via active processor cache
+  RawValue lookup_symbol(SYMBOL symbol) const;
+
 private:
   void entry_main_thread();
   void entry_fiber_thread();

@@ -511,6 +511,8 @@ bool CodeGenerator::inspect_enter(const ref<Class>& node) {
 
   if (node->parent) {
     apply(node->parent);
+  } else {
+    m_builder.emit_load_value(kErrorNoBaseClass);
   }
   apply(node->constructor);
 
@@ -527,15 +529,9 @@ bool CodeGenerator::inspect_enter(const ref<Class>& node) {
     apply(static_prop->value);
   }
 
-  if (node->parent) {
-    m_builder
-      .emit_makesubclass(node->member_functions.size(), node->member_properties.size(), node->static_properties.size())
-      ->at(node);
-  } else {
-    m_builder
-      .emit_makeclass(node->member_functions.size(), node->member_properties.size(), node->static_properties.size())
-      ->at(node);
-  }
+  m_builder
+    .emit_makeclass(node->member_functions.size(), node->member_properties.size(), node->static_properties.size())
+    ->at(node);
 
   return false;
 }

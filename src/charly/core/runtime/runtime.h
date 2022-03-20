@@ -30,6 +30,7 @@
 #include <shared_mutex>
 #include <stack>
 #include <vector>
+#include <array>
 
 #include "charly/handle.h"
 
@@ -73,9 +74,21 @@ public:
   // register a CompiledModule object with the runtime
   void register_module(Thread* thread, const ref<CompiledModule>& module);
 
+  // misc. initialization methods
+  void initialize_symbol_table(Thread* thread);
+  void initialize_argv_tuple(Thread* thread);
+  void initialize_builtin_functions(Thread* thread);
+  void initialize_builtin_types(Thread* thread);
+  void initialize_main_fiber(Thread* thread, SharedFunctionInfo* info);
+  void initialize_global_variables(Thread* thread);
+
+  ShapeId register_shape(Thread* thread, RawShape shape);
+  RawShape lookup_shape_id(Thread* thread, ShapeId id);
+
 public:
   RawData create_data(Thread* thread, ShapeId shape_id, size_t size);
-  RawObject create_instance(Thread* thread, ShapeId shape_id, size_t field_count);
+  RawInstance create_instance(Thread* thread, ShapeId shape_id, size_t field_count);
+  RawUserInstance create_user_instance(Thread* thread, RawClass klass);
 
   RawValue create_string(Thread* thread, const char* data, size_t size, SYMBOL hash);
   RawValue create_string(Thread* thread, const std::string& string) {
@@ -88,10 +101,26 @@ public:
   RawHugeString create_huge_string(Thread* thread, const char* data, size_t size, SYMBOL hash);
   RawHugeString create_huge_string_acquire(Thread* thread, char* data, size_t size, SYMBOL hash);
 
-  RawObject create_tuple(Thread* thread, uint32_t count);
-  RawObject create_function(Thread* thread, RawValue context, SharedFunctionInfo* shared_info);
-  RawObject create_builtin_function(Thread* thread, BuiltinFunctionType function, RawSymbol name, uint8_t argc);
-  RawObject create_fiber(Thread* thread, RawFunction function, RawValue context, RawValue arguments);
+  RawTuple create_tuple(Thread* thread, uint32_t count = 0);
+  RawTuple create_tuple(Thread* thread, std::initializer_list<RawValue> values);
+
+  RawValue create_class(Thread* thread,
+                        SYMBOL name,
+                        RawValue parent,
+                        RawFunction constructor,
+                        uint8_t member_func_count,
+                        RawFunction* member_funcs,
+                        uint8_t member_prop_count,
+                        RawSymbol* member_props,
+                        uint8_t static_prop_count,
+                        RawSymbol* static_prop_names,
+                        RawValue* static_prop_values);
+
+  RawShape create_shape(Thread* thread, RawValue parent, RawTuple key_table);
+
+  RawFunction create_function(Thread* thread, RawValue context, SharedFunctionInfo* shared_info);
+  RawBuiltinFunction create_builtin_function(Thread* thread, BuiltinFunctionType function, SYMBOL name, uint8_t argc);
+  RawFiber create_fiber(Thread* thread, RawFunction function, RawValue self, RawValue arguments);
 
   RawValue join_fiber(Thread* thread, RawFiber fiber);
 
@@ -111,14 +140,25 @@ public:
   RawValue set_global_variable(Thread* thread, SYMBOL name, RawValue value);
 
   // register a symbol in the global symbol table
-  RawSymbol declare_symbol(Thread* thread, const char* data, size_t size);
-  RawSymbol declare_symbol(Thread* thread, const std::string& string) {
+  SYMBOL declare_symbol(Thread* thread, const char* data, size_t size);
+  SYMBOL declare_symbol(Thread* thread, const std::string& string) {
     return declare_symbol(thread, string.data(), string.size());
   }
+
+  // returns the RawClass for any type
+  RawClass lookup_class(RawValue value);
+
+  // returns the RawClass for builtin shape ids
+  RawClass lookup_builtin_class(ShapeId id);
 
   // look up a symbol in the global symbol table
   // returns kNull if no such symbol exists
   RawValue lookup_symbol(SYMBOL symbol);
+
+  // sets the class that gets used as the parent class if no 'extends'
+  // statement was present during class declaration
+  void set_builtin_class(ShapeId shape_id, RawClass klass);
+  RawClass get_builtin_class(ShapeId shape_id);
 
 private:
   uint64_t m_start_timestamp;
@@ -139,12 +179,16 @@ private:
   std::mutex m_symbols_mutex;
   std::unordered_map<SYMBOL, RawString> m_symbol_table;
 
+  std::shared_mutex m_shapes_mutex;
+  std::vector<RawShape> m_shapes;
+  static constexpr size_t kBuiltinClassCount = static_cast<size_t>(ShapeId::kLastBuiltinShapeId) + 1;
+  std::array<RawValue, kBuiltinClassCount> m_builtin_classes;
+
   struct GlobalVariable {
     RawValue value;
     bool constant;
     bool initialized;
   };
-
   std::shared_mutex m_globals_mutex;
   std::unordered_map<SYMBOL, GlobalVariable> m_global_variables;
 };

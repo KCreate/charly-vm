@@ -1,5 +1,52 @@
 # Todos
 
+- Use kIsDebugBuild to disable some things in release builds
+
+- Property lookups
+  - Lookup properties via object shapes
+  - Lookup functions via object classes
+
+- Implement object model
+  - Shape data structure
+    - How to find same shape as previous class instantiation?
+      - Store shape reference in inline cache?
+    - Is the parent field needed?
+      - Ancestor table per shape to allow checking for subshapes
+  - Class static property access
+    - Create new class that describes static layout of class
+    - Create new shape that contains layout of static class members
+  - Huge objects
+    - Very big lists might not fit into a single heap region
+    - Space for the object must be allocated on the global heap
+    - Actual instance only stores a pointer and a size
+  - Cache shapes in processors
+
+- Classes should have the ability to be marked as final
+  - No subclasses can be created
+
+- Runtime and custom exceptions
+  - Register base exception class with runtime
+  - Remove kFirstException, kLastException, is_exception_shape
+
+- Private properties of objects
+  - Requires two different versions of loadattrsym, setattrsym
+    - One for regular loads, stores
+    - Another for self attribute loads and stores ('@foo', '@foo = 25')
+
+- Rename type opcode to loadclass
+
+- instanceof operator
+  - Used to check if a value is or extends a class
+
+- assert statement
+  - Similar to java builtin assert statement
+
+- Function argument type specifiers
+  - Automatically generates type checks
+  - Useful for future function optimization purposes
+
+- Functions should copy referenced constants into themselves when they are created
+
 - Generators
   - Remove Generators from the language
   - yield is now implemented for the block callback syntax
@@ -26,6 +73,8 @@
       - Create new object instance of correct size and return that
       - User code cannot return custom value from constructor
       - If class has a parent class, super must be called
+        - How can different parent class constructors be called?
+        - `super.new()` ??
   - Replace `func` keyword with `construct` for constructor functions
   - If neither `func` or `construct` are given, assume func
     ```
