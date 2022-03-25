@@ -96,14 +96,14 @@ CATCH_TEST_CASE("Semantic") {
   }
 
   CATCH_SECTION("validates super expressions") {
-    COMPILE_OK("class A { constructor { super } }")
-    COMPILE_OK("class A { constructor { super.foo } }")
-    COMPILE_OK("class A { constructor { super() } }")
-    COMPILE_OK("class A { constructor { super.foo() } }")
-    COMPILE_OK("class A { bar { super } }")
-    COMPILE_OK("class A { bar { super.foo } }")
-    COMPILE_OK("class A { bar { super() } }")
-    COMPILE_OK("class A { bar { super.foo() } }")
+    COMPILE_OK("class A { func constructor { super } }")
+    COMPILE_OK("class A { func constructor { super.foo } }")
+    COMPILE_OK("class A { func constructor { super() } }")
+    COMPILE_OK("class A { func constructor { super.foo() } }")
+    COMPILE_OK("class A { func bar { super } }")
+    COMPILE_OK("class A { func bar { super.foo } }")
+    COMPILE_OK("class A { func bar { super() } }")
+    COMPILE_OK("class A { func bar { super.foo() } }")
   }
 
   CATCH_SECTION("checks for reserved identifiers") {
@@ -117,13 +117,13 @@ CATCH_TEST_CASE("Semantic") {
     COMPILE_ERROR("func foo(...$10) {}", "'$10' is a reserved variable name")
 
     COMPILE_ERROR("class x { property $10 }", "'$10' cannot be the name of a property")
-    COMPILE_ERROR("class x { $10 {} }", "'$10' cannot be the name of a member function")
+    COMPILE_ERROR("class x { func $10 {} }", "'$10' cannot be the name of a member function")
     COMPILE_ERROR("class x { static property $10 }", "'$10' cannot be the name of a static property")
-    COMPILE_ERROR("class x { static $10 {} }", "'$10' cannot be the name of a static property")
+    COMPILE_ERROR("class x { static func $10 {} }", "'$10' cannot be the name of a static function")
 
     COMPILE_ERROR("class x { property klass }", "'klass' cannot be the name of a property")
-    COMPILE_ERROR("class x { property object_id }", "'object_id' cannot be the name of a property")
 
+    COMPILE_ERROR("class x { static property klass }", "'klass' cannot be the name of a static property")
     COMPILE_ERROR("class x { static property constructor }", "'constructor' cannot be the name of a static property")
     COMPILE_ERROR("class x { static property name }", "'name' cannot be the name of a static property")
     COMPILE_ERROR("class x { static property parent }", "'parent' cannot be the name of a static property")
@@ -142,18 +142,18 @@ CATCH_TEST_CASE("Semantic") {
     COMPILE_ERROR("func foo(a, ...a) {}", "duplicate argument 'a'")
 
     COMPILE_ERROR("class A { property foo property foo }", "duplicate declaration of 'foo'")
-    COMPILE_ERROR("class A { property foo foo {} }", "redeclaration of property 'foo' as function")
-    COMPILE_ERROR("class A { foo {} property foo }", "redeclaration of property 'foo' as function")
-    COMPILE_ERROR("class A { constructor {} constructor {} }", "duplicate declaration of class constructor")
-    COMPILE_ERROR("class A { foo {} foo {} }", "duplicate declaration of member function 'foo'")
+    COMPILE_ERROR("class A { property foo func foo {} }", "redeclaration of property 'foo' as function")
+    COMPILE_ERROR("class A { func foo {} property foo }", "redeclaration of property 'foo' as function")
+    COMPILE_ERROR("class A { func constructor {} func constructor {} }", "duplicate declaration of class constructor")
+    COMPILE_ERROR("class A { func foo {} func foo {} }", "duplicate declaration of member function 'foo'")
     COMPILE_ERROR("class A { static property foo static property foo }",
                   "duplicate declaration of static property 'foo'")
-    COMPILE_ERROR("class A { static property foo static foo {} }", "duplicate declaration of static property 'foo'")
-    COMPILE_ERROR("class A { static foo {} static property foo }", "duplicate declaration of static property 'foo'")
+    COMPILE_ERROR("class A { static property foo static func foo {} }", "redeclaration of static property 'foo' as static function")
+    COMPILE_ERROR("class A { static func foo {} static property foo }", "redeclaration of static property 'foo' as static function")
 
     COMPILE_OK("class A { property foo static property foo }")
-    COMPILE_OK("class A { foo {} static foo {} }")
-    COMPILE_OK("class A { constructor {} }")
+    COMPILE_OK("class A { func foo {} static func foo {} }")
+    COMPILE_OK("class A { func constructor {} }")
   }
 
   CATCH_SECTION("checks for missing function default arguments") {
@@ -174,10 +174,10 @@ CATCH_TEST_CASE("Semantic") {
   }
 
   CATCH_SECTION("checks for missing calls to parent constructor in subclasses") {
-    COMPILE_ERROR("class A extends B { constructor {} }", "missing call to super inside constructor of class 'A'")
-    COMPILE_ERROR("class A extends B { constructor { super.foo() } }",
+    COMPILE_ERROR("class A extends B { func constructor {} }", "missing call to super inside constructor of class 'A'")
+    COMPILE_ERROR("class A extends B { func constructor { super.foo() } }",
                   "missing call to super inside constructor of class 'A'")
-    COMPILE_OK("class A { constructor {} }")
+    COMPILE_OK("class A { func constructor {} }")
   }
 
   CATCH_SECTION("checks for missing constructors in subclasses with properties") {
@@ -202,8 +202,8 @@ CATCH_TEST_CASE("Semantic") {
                   "unexpected '@' token, self initializer arguments are only allowed inside class member functions")
     COMPILE_ERROR("->(@a) {}",
                   "unexpected '@' token, self initializer arguments are only allowed inside class member functions")
-    COMPILE_ERROR("class A { static foo(@a) }",
+    COMPILE_ERROR("class A { static func foo(@a) }",
                   "unexpected '@' token, self initializer arguments are only allowed inside class member functions")
-    COMPILE_OK("class A { foo(@a) }")
+    COMPILE_OK("class A { func foo(@a) }")
   }
 }

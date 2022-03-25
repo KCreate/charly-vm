@@ -507,31 +507,49 @@ bool CodeGenerator::inspect_enter(const ref<Function>& node) {
 }
 
 bool CodeGenerator::inspect_enter(const ref<Class>& node) {
+  m_builder.emit_load_value(RawInt::make(node->is_final ? RawClass::kFlagFinal : 0));
   m_builder.emit_loadsymbol(node->name->value);
 
   if (node->parent) {
     apply(node->parent);
   } else {
+    // runtime loads base class
     m_builder.emit_load_value(kErrorNoBaseClass);
   }
+
   apply(node->constructor);
 
+  // member functions
   for (const auto& member_func : node->member_functions) {
     apply(member_func);
   }
+  m_builder.emit_maketuple(node->member_functions.size());
 
+  // member properties
   for (const auto& member_prop : node->member_properties) {
     m_builder.emit_loadsymbol(member_prop->name->value)->at(member_prop->name);
   }
+  m_builder.emit_maketuple(node->member_properties.size());
 
+  // static functions
+  for (const auto& static_func : node->static_functions) {
+    apply(static_func);
+  }
+  m_builder.emit_maketuple(node->static_functions.size());
+
+  // static property keys
   for (const auto& static_prop : node->static_properties) {
     m_builder.emit_loadsymbol(static_prop->name->value)->at(static_prop->name);
+  }
+  m_builder.emit_maketuple(node->static_properties.size());
+
+  // static property values
+  for (const auto& static_prop : node->static_properties) {
     apply(static_prop->value);
   }
+  m_builder.emit_maketuple(node->static_properties.size());
 
-  m_builder
-    .emit_makeclass(node->member_functions.size(), node->member_properties.size(), node->static_properties.size())
-    ->at(node);
+  m_builder.emit_makeclass()->at(node);
 
   return false;
 }

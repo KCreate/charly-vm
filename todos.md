@@ -1,49 +1,53 @@
 # Todos
 
-- Use kIsDebugBuild to disable some things in release builds
+- Functions should be able to be marked as final
+  - Subclasses cannot override these functions
 
-- Property lookups
-  - Lookup properties via object shapes
-  - Lookup functions via object classes
+- Bug: cannot implicitly return a class
+  - Does the implicit returner run after the const decl pass?
 
-- Implement object model
-  - Shape data structure
-    - How to find same shape as previous class instantiation?
-      - Store shape reference in inline cache?
-    - Is the parent field needed?
-      - Ancestor table per shape to allow checking for subshapes
-  - Class static property access
-    - Create new class that describes static layout of class
-    - Create new shape that contains layout of static class members
-  - Huge objects
-    - Very big lists might not fit into a single heap region
-    - Space for the object must be allocated on the global heap
-    - Actual instance only stores a pointer and a size
-  - Cache shapes in processors
+- Bug: loadsuperconstructor loads wrong constructor
+  - Always assumes base type
+  - Should dynamically load via containing function
 
-- Classes should have the ability to be marked as final
-  - No subclasses can be created
+- Implement RawValueFormatter class that captures thread pointer
+  - Avoid potentially expensive thread_local lookup
+  
+- Rewrite identifiers of class properties to local lookups inside class functions
+  - We know for each function the list of properties that are reachable via the context object
 
-- Runtime and custom exceptions
-  - Register base exception class with runtime
-  - Remove kFirstException, kLastException, is_exception_shape
+- Compile 'klass' property accesses into type operations
+  
+- Shape ancestor table for more efficient subclass checks
 
 - Private properties of objects
   - Requires two different versions of loadattrsym, setattrsym
     - One for regular loads, stores
-    - Another for self attribute loads and stores ('@foo', '@foo = 25')
+    - Another for context attribute loads and stores ('@foo', '@foo = 25', 'context.foo', 'context.foo = 25')
 
-- Rename type opcode to loadclass
+- Huge objects
+  - Very big lists might not fit into a single heap region
+  - Space for the object must be allocated on the global heap
+  - Actual instance only stores a pointer and a size
+
+- Detect variables declared via 'let' that are never written to
+  - Detect via VariableAnalyzerPass
+  - Can be automatically changed to const variable
+  - Allows further optimizations to be made later on
+
+- Cache shapes in processors
+
+- Getter and setter functions
+  - Can be a flag on functions
+  
+- Make declaring and writing to a new global variable an atomic operation
+  - Currently another thread could assign to the global variable before the declaring thread could write to it
 
 - instanceof operator
   - Used to check if a value is or extends a class
 
 - assert statement
   - Similar to java builtin assert statement
-
-- Function argument type specifiers
-  - Automatically generates type checks
-  - Useful for future function optimization purposes
 
 - Functions should copy referenced constants into themselves when they are created
 

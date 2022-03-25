@@ -129,9 +129,8 @@ RawValue Interpreter::call_function(
   auto stack_bottom_address = (uintptr_t)stack->lo();
   size_t remaining_bytes_on_stack = frame_address - stack_bottom_address;
   if (remaining_bytes_on_stack <= kStackOverflowLimit) {
-    // TODO: throw stack overflow exception
     debuglnf("thread % stack overflow", thread->id());
-    thread->throw_value(RawSmallString::make_from_cstr("stackOF"));
+    thread->throw_value(runtime->create_exception_with_message(thread, "thread % stack overflow", thread->id()));
     return kErrorException;
   }
 
@@ -159,9 +158,9 @@ RawValue Interpreter::call_function(
   }
 
   if (argc < shared_info->ir_info.minargc) {
-    // TODO: throw not enough arguments exception
-    debugln("not enough arguments for function call");
-    thread->throw_value(RawSmallString::make_from_cstr("minargc"));
+    thread->throw_value(
+      runtime->create_exception_with_message(thread, "not enough arguments for function call, expected % but got %",
+                                             (uint32_t)shared_info->ir_info.minargc, (uint32_t)argc));
     return kErrorException;
   }
 
@@ -299,8 +298,9 @@ OP(declareglobal) {
   RawValue result = thread->runtime()->declare_global_variable(thread, name, false);
 
   if (result.is_error_exception()) {
-    debuglnf("duplicate declaration of global variable %", RawSymbol::make(name));
-    thread->throw_value(RawSmallString::make_from_cstr("dupglob"));
+    Runtime* runtime = thread->runtime();
+    thread->throw_value(runtime->create_exception_with_message(thread, "duplicate declaration of global variable %",
+                                                               RawSymbol::make(name)));
     return ContinueMode::Exception;
   }
   DCHECK(result.is_error_ok());
@@ -314,8 +314,9 @@ OP(declareglobalconst) {
   RawValue result = thread->runtime()->declare_global_variable(thread, name, true);
 
   if (result.is_error_exception()) {
-    debuglnf("duplicate declaration of global variable %", RawSymbol::make(name));
-    thread->throw_value(RawSmallString::make_from_cstr("dupglob"));
+    Runtime* runtime = thread->runtime();
+    thread->throw_value(runtime->create_exception_with_message(thread, "duplicate declaration of global variable %",
+                                                               RawSymbol::make(name)));
     return ContinueMode::Exception;
   }
   DCHECK(result.is_error_ok());
@@ -327,7 +328,7 @@ OP(type) {
   RawValue value = frame->pop();
 
   Runtime* runtime = thread->runtime();
-  frame->push(runtime->lookup_class(value));
+  frame->push(runtime->lookup_class(thread, value));
 
   return ContinueMode::Next;
 }
@@ -414,6 +415,7 @@ OP(call) {
   // +-----------+
   // | Self      |
   // +-----------+
+  Runtime* runtime = thread->runtime();
   uint8_t argc = op->arg();
   RawValue* args = frame->top_n(argc);
   RawValue callee = frame->peek(argc);
@@ -444,7 +446,13 @@ OP(call) {
     return ContinueMode::Next;
   } else if (callee.isClass()) {
     RawClass klass = RawClass::cast(callee);
-    auto instance = thread->runtime()->create_user_instance(thread, klass);
+
+    if (klass.flags() & RawClass::kFlagNonConstructable) {
+      thread->throw_value(runtime->create_exception_with_message(thread, "cannot instantiate class '%'", klass.name()));
+      return ContinueMode::Exception;
+    }
+
+    auto instance = thread->runtime()->create_instance(thread, klass);
     RawFunction constructor = RawFunction::cast(klass.constructor());
     RawValue return_value = Interpreter::call_function(thread, instance, constructor, args, argc);
 
@@ -457,8 +465,7 @@ OP(call) {
     return ContinueMode::Next;
   }
 
-  debugln("called value is not a function");
-  thread->throw_value(RawSmallString::make_from_cstr("notfunc"));
+  thread->throw_value(runtime->create_exception_with_message(thread, "called value is not a function"));
   return ContinueMode::Exception;
 }
 
@@ -478,7 +485,7 @@ OP(load) {
 }
 
 OP(loadsmi) {
-  auto value = (uintptr_t)bitcast<int16_t>(op->arg());
+  auto value = bitcast<uintptr_t>(static_cast<size_t>(op->arg()));
   frame->push(RawValue(value));
   return ContinueMode::Next;
 }
@@ -499,8 +506,9 @@ OP(loadglobal) {
   RawValue result = thread->runtime()->read_global_variable(thread, name);
 
   if (result.is_error_not_found()) {
-    debugln("unknown global variable %", RawSymbol::make(name));
-    thread->throw_value(RawSmallString::make_from_cstr("unkglob"));
+    Runtime* runtime = thread->runtime();
+    thread->throw_value(
+      runtime->create_exception_with_message(thread, "unknown global variable %", RawSymbol::make(name)));
     return ContinueMode::Exception;
   }
   DCHECK(!result.is_error());
@@ -538,7 +546,7 @@ OP(loadattr) {
   // tuple[int]
   if (value.isTuple() && index.isInt()) {
     RawTuple tuple = RawTuple::cast(value);
-    int64_t tuple_size = tuple.field_count();
+    int64_t tuple_size = tuple.size();
     int64_t index_int = RawInt::cast(index).value();
 
     // wrap negative indices
@@ -564,17 +572,45 @@ OP(loadattr) {
 }
 
 OP(loadattrsym) {
-  // 1. Fetch shape id
-  // 2. Shape id belongs to non-instance type
-  // 3. Shape id belongs to an instance type
-  //    1. fetch the shape and look up the requested key
-  //    2. key was found
-  //      1. return value at offset
-  //    3. key was not found, check function table of object class
-  //      1. check function table
-  //      2. return function if found, error otherwise
+  Runtime* runtime = thread->runtime();
 
-  UNIMPLEMENTED();
+  RawValue value = frame->pop();
+  uint16_t symbol_offset = op->arg();
+  SYMBOL attr = frame->get_string_table_entry(symbol_offset).hash;
+
+  // builtin attributes
+  switch (attr) {
+    case SYM("klass"): {
+      frame->push(runtime->lookup_class(thread, value));
+      return ContinueMode::Next;
+    }
+  }
+
+  if (value.isInstance()) {
+    auto instance = RawInstance::cast(value);
+
+    // lookup attribute in shape key table
+    // TODO: cache result via inline cache
+    auto shape = runtime->lookup_shape(thread, instance.shape_id());
+    int64_t offset = shape.offset_of(attr);
+    if (offset != -1) {
+      frame->push(instance.field_at(offset));
+      return ContinueMode::Next;
+    }
+
+    // lookup attribute in class hierarchy
+    // TODO: cache via inline cache
+    auto klass = runtime->lookup_class(thread, instance);
+    RawValue lookup = klass.lookup_function(attr);
+    if (lookup.isFunction()) {
+      frame->push(lookup);
+      return ContinueMode::Next;
+    }
+  }
+
+  thread->throw_value(
+    runtime->create_exception_with_message(thread, "could not read property '%'", RawSymbol::make(attr)));
+  return ContinueMode::Exception;
 }
 
 OP(loadsuperconstructor) {
@@ -594,14 +630,15 @@ OP(setglobal) {
   SYMBOL name = frame->get_string_table_entry(string_index).hash;
   RawValue value = frame->pop();
   RawValue result = thread->runtime()->set_global_variable(thread, name, value);
+  Runtime* runtime = thread->runtime();
 
   if (result.is_error_not_found()) {
-    debugln("unknown global variable %", RawSymbol::make(name));
-    thread->throw_value(RawSmallString::make_from_cstr("unkglob"));
+    thread->throw_value(
+      runtime->create_exception_with_message(thread, "unknown global variable %", RawSymbol::make(name)));
     return ContinueMode::Exception;
   } else if (result.is_error_read_only()) {
-    debugln("read-only global variable %", RawSymbol::make(name));
-    thread->throw_value(RawSmallString::make_from_cstr("rdoglob"));
+    thread->throw_value(
+      runtime->create_exception_with_message(thread, "write to const global variable %", RawSymbol::make(name)));
     return ContinueMode::Exception;
   }
   DCHECK(result.is_error_ok());
@@ -646,7 +683,7 @@ OP(setattr) {
   // tuple[int] = value
   if (target.isTuple() && index.isInt()) {
     RawTuple tuple = RawTuple::cast(target);
-    uint32_t tuple_size = tuple.field_count();
+    uint32_t tuple_size = tuple.size();
     int64_t index_int = RawInt::cast(index).value();
 
     // wrap negative indices
@@ -675,21 +712,44 @@ OP(setattr) {
 }
 
 OP(setattrsym) {
-  UNIMPLEMENTED();
+  Runtime* runtime = thread->runtime();
+
+  RawValue value = frame->pop();
+  RawValue target = frame->pop();
+  uint16_t symbol_offset = op->arg();
+  SYMBOL attr = frame->get_string_table_entry(symbol_offset).hash;
+
+  // lookup attribute in shape key table
+  // TODO: cache result via inline cache
+  if (target.isInstance()) {
+    auto instance = RawInstance::cast(target);
+    auto shape = runtime->lookup_shape(thread, instance.shape_id());
+    int64_t offset = shape.offset_of(attr);
+    if (offset != -1) {
+      instance.set_field_at(offset, value);
+      frame->push(target);
+      return ContinueMode::Next;
+    }
+  }
+
+  thread->throw_value(
+    runtime->create_exception_with_message(thread, "value does not have a property called '%'", RawSymbol::make(attr)));
+  return ContinueMode::Exception;
 }
 
 OP(unpacksequence) {
   uint8_t count = op->arg();
+  Runtime* runtime = thread->runtime();
 
   RawValue value = frame->pop();
   switch (value.shape_id()) {
     case ShapeId::kTuple: {
       RawTuple tuple(RawTuple::cast(value));
-      uint32_t tuple_size = tuple.field_count();
+      uint32_t tuple_size = tuple.size();
 
       if (tuple_size != count) {
-        debugln("expected tuple to be of size %, not %", (size_t)count, tuple_size);
-        thread->throw_value(RawSmallString::make_from_cstr("invsize"));
+        thread->throw_value(runtime->create_exception_with_message(thread, "expected tuple to be of size %, not %",
+                                                                   (size_t)count, tuple_size));
         return ContinueMode::Exception;
       }
 
@@ -700,8 +760,7 @@ OP(unpacksequence) {
       return ContinueMode::Next;
     }
     default: {
-      debugln("value is not a sequence");
-      thread->throw_value(RawSmallString::make_from_cstr("notaseq"));
+      thread->throw_value(runtime->create_exception_with_message(thread, "value is not a sequence"));
       return ContinueMode::Exception;
     }
   }
@@ -728,58 +787,72 @@ OP(makefunc) {
 }
 
 OP(makeclass) {
-  uint8_t member_func_count = op->arg1();
-  uint8_t member_prop_count = op->arg2();
-  uint8_t static_prop_count = op->arg3();
+  Runtime* runtime = thread->runtime();
 
-  // collect static property keys
-  RawSymbol static_prop_names[static_prop_count];
-  RawValue static_prop_values[static_prop_count];
-  for (int16_t i = 0; i < static_prop_count; i++) {
-    static_prop_values[i] = frame->pop();
-    static_prop_names[i] = RawSymbol::cast(frame->pop());
-  }
-
-  // collect member property symbols
-  RawSymbol member_properties[member_prop_count];
-  for (int16_t i = member_prop_count - 1; i >= 0; i--) {
-    member_properties[i] = RawSymbol::cast(frame->pop());
-  }
-
-  // collect member functions
-  RawFunction member_functions[member_func_count];
-  for (int16_t i = 0; i < member_func_count; i++) {
-    member_functions[i] = RawFunction::cast(frame->pop());
-  }
-
+  RawTuple static_prop_values = RawTuple::cast(frame->pop());
+  RawTuple static_prop_keys = RawTuple::cast(frame->pop());
+  RawTuple static_functions = RawTuple::cast(frame->pop());
+  RawTuple member_props = RawTuple::cast(frame->pop());
+  RawTuple member_functions = RawTuple::cast(frame->pop());
   RawFunction constructor = RawFunction::cast(frame->pop());
-  RawValue parent = frame->pop();
+  RawValue parent_value = frame->pop();
   RawSymbol name = RawSymbol::cast(frame->pop());
+  RawInt flags = RawInt::cast(frame->pop());
 
   // make sure that the parent value is either kErrorNoBaseClass or an actual class instance
-  if (!(parent.isClass() || parent.is_error_no_base_class())) {
-    debugln("extended value is not a class");
-    thread->throw_value(RawSmallString::make_from_cstr("noclass"));
+  if (!(parent_value.isClass() || parent_value.is_error_no_base_class())) {
+    thread->throw_value(runtime->create_exception_with_message(thread, "extended value is not a class"));
+    return ContinueMode::Exception;
+  }
+
+  if (parent_value.is_error_no_base_class()) {
+    parent_value = runtime->get_builtin_class(thread, ShapeId::kInstance);
+  }
+
+  auto parent = RawClass::cast(parent_value);
+
+  // ensure parent class isn't marked final
+  if (parent.flags() & RawClass::kFlagFinal) {
+    thread->throw_value(
+      runtime->create_exception_with_message(thread, "cannot subclass class '%', it is marked final", parent.name()));
+    return ContinueMode::Exception;
+  }
+
+  // ensure new class doesn't shadow any of the parent properties
+  auto parent_keys_tuple = parent.shape_instance().keys();
+  for (uint8_t i = 0; i < member_props.size(); i++) {
+    auto key = member_props.field_at(i);
+    for (uint32_t pi = 0; pi < parent_keys_tuple.size(); pi++) {
+      auto parent_key = RawSymbol::cast(parent_keys_tuple.field_at(pi));
+      if (parent_key == key) {
+        thread->throw_value(runtime->create_exception_with_message(
+          thread, "cannot redeclare property '%', parent class '%' already contains it", key, parent.name()));
+        return ContinueMode::Exception;
+      }
+    }
+  }
+
+  // ensure new class doesn't exceed the class member property limit
+  size_t new_member_count = parent_keys_tuple.size() + member_props.size();
+  if (new_member_count > RawInstance::kMaximumFieldCount) {
+    // for some reason, RawInstance::kMaximumFieldCount needs to be casted to its own
+    // type, before it can be used in here. this is some weird template thing...
+    thread->throw_value(runtime->create_exception_with_message(
+      thread, "newly created class has too many properties, limit is %", (size_t)RawInstance::kMaximumFieldCount));
     return ContinueMode::Exception;
   }
 
   // attempt to create the new class
-  RawValue result = thread->runtime()->create_class(thread, name, parent, constructor, member_func_count,
-                                                    member_functions, member_prop_count, member_properties,
-                                                    static_prop_count, static_prop_names, static_prop_values);
-
-  if (result.is_error_out_of_bounds()) {
-    debugln("newly created class has too many properties, limit is %", RawInstance::kMaximumFieldCount);
-    thread->throw_value(RawSmallString::make_from_cstr("ctoobig"));
-    return ContinueMode::Exception;
-  }
+  RawClass result =
+    thread->runtime()->create_class(thread, name, parent, constructor, member_props, member_functions, static_prop_keys,
+                                    static_prop_values, static_functions, flags.value());
 
   frame->push(RawClass::cast(result));
   return ContinueMode::Next;
 }
 
 OP(makestr) {
-  uint16_t index = op->makestr()->arg();
+  uint16_t index = op->arg();
 
   const SharedFunctionInfo& shared_info = *frame->shared_function_info;
   DCHECK(index < shared_info.string_table.size());
@@ -830,8 +903,7 @@ OP(makefiber) {
   RawValue arg_context = frame->pop();
 
   if (!arg_function.isFunction()) {
-    debugln("argument is not a function");
-    thread->throw_value(RawSmallString::make_from_cstr("notfunc"));
+    thread->throw_value(runtime->create_exception_with_message(thread, "argument is not a function"));
     return ContinueMode::Exception;
   }
 
@@ -843,8 +915,8 @@ OP(makefiber) {
 OP(fiberjoin) {
   RawValue value = frame->pop();
   if (!value.isFiber()) {
-    debugln("argument is not a fiber");
-    thread->throw_value(RawSmallString::make_from_cstr("notfibr"));
+    Runtime* runtime = thread->runtime();
+    thread->throw_value(runtime->create_exception_with_message(thread, "argument is not a fiber"));
     return ContinueMode::Exception;
   }
 

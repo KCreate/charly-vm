@@ -58,7 +58,10 @@ void IRInstruction::dump(std::ostream& out) const {
   }
 }
 
-ref<IRInstruction> IRInstruction::make(Opcode opcode, uint32_t arg1, uint32_t arg2, uint32_t arg3) {
+ref<IRInstruction> IRInstruction::make(Opcode opcode,
+                                       [[maybe_unused]] uint32_t arg1,
+                                       [[maybe_unused]] uint32_t arg2,
+                                       [[maybe_unused]] uint32_t arg3) {
 #define DEF_IXXX(N) ::charly::make<IRInstruction_##N>();
 #define DEF_IAXX(N) ::charly::make<IRInstruction_##N>(arg1);
 #define DEF_IABX(N) ::charly::make<IRInstruction_##N>(arg1, arg2);

@@ -582,25 +582,27 @@ CATCH_TEST_CASE("Parser") {
   }
 
   CATCH_SECTION("class literals") {
-    CHECK_STMT("class A { foo() }")
-    CHECK_STMT("class A extends B { foo() }")
+    CHECK_STMT("class A { func foo() }")
+    CHECK_STMT("class A extends B { func foo() }")
     CHECK_STMT(("class Foo extends Bar {\n"
-                "  constructor(a) {}\n"
+                "  func constructor(a) {}\n"
                 "  property foo = 100\n"
                 "  static property foo = 200\n"
                 "  func foo(a) {}\n"
-                "  bar(a) {}\n"
+                "  func bar(a) {}\n"
                 "  static func foo(a) {}\n"
-                "  static bar(a) {}\n"
+                "  static func bar(a) {}\n"
                 "}"))
-    CHECK_STMT("class A { property a property b foo(@a, @b) }")
-    CHECK_STMT("class A { property a property b foo(@a, @b, ...@rest) }")
+    CHECK_STMT("class A { property a property b func foo(@a, @b) }")
+    CHECK_STMT("class A { property a property b func foo(@a, @b, ...@rest) }")
+    CHECK_STMT("final class A { }")
+    CHECK_STMT("final class A extends B { }")
   }
 
   CATCH_SECTION("super expressions") {
     CHECK_ERROR_PROGRAM("->super", "super is not allowed at this point")
     CHECK_ERROR_PROGRAM("->super.foo()", "super is not allowed at this point")
-    CHECK_ERROR_PROGRAM("class A { static foo { super() } }", "super is not allowed at this point")
+    CHECK_ERROR_PROGRAM("class A { static func foo { super() } }", "super is not allowed at this point")
   }
 
   CATCH_SECTION("try statements") {

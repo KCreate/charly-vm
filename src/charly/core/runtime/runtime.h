@@ -24,13 +24,13 @@
  * SOFTWARE.
  */
 
+#include <array>
 #include <condition_variable>
 #include <list>
 #include <mutex>
 #include <shared_mutex>
 #include <stack>
 #include <vector>
-#include <array>
 
 #include "charly/handle.h"
 
@@ -47,10 +47,7 @@ namespace charly::core::runtime {
 
 class Runtime {
 public:
-  static int32_t run() {
-    Runtime runtime;
-    return runtime.join();
-  }
+  static int32_t run();
 
   Runtime();
 
@@ -82,17 +79,24 @@ public:
   void initialize_main_fiber(Thread* thread, SharedFunctionInfo* info);
   void initialize_global_variables(Thread* thread);
 
-  ShapeId register_shape(Thread* thread, RawShape shape);
-  RawShape lookup_shape_id(Thread* thread, ShapeId id);
-
-public:
   RawData create_data(Thread* thread, ShapeId shape_id, size_t size);
-  RawInstance create_instance(Thread* thread, ShapeId shape_id, size_t field_count);
-  RawUserInstance create_user_instance(Thread* thread, RawClass klass);
+  RawInstance create_instance(Thread* thread, ShapeId shape_id, size_t field_count, RawValue klass = kNull);
+  RawInstance create_instance(Thread* thread, RawShape shape, RawValue klass = kNull);
+  RawInstance create_instance(Thread* thread, RawClass klass);
 
   RawValue create_string(Thread* thread, const char* data, size_t size, SYMBOL hash);
   RawValue create_string(Thread* thread, const std::string& string) {
     return create_string(thread, string.data(), string.size(), crc32::hash_string(string));
+  }
+  RawValue create_string(Thread* thread, const utils::Buffer& buf) {
+    return create_string(thread, buf.data(), buf.size(), buf.hash());
+  }
+
+  template <typename... T>
+  RawValue create_string_from_template(Thread* thread, const char* str, const T&... args) {
+    utils::Buffer buf;
+    buf.write_formatted(str, args...);
+    return create_string(thread, buf);
   }
 
   // create a new string by acquiring ownership over an existing allocation
@@ -103,24 +107,30 @@ public:
 
   RawTuple create_tuple(Thread* thread, uint32_t count = 0);
   RawTuple create_tuple(Thread* thread, std::initializer_list<RawValue> values);
+  RawTuple concat_tuple(Thread* thread, RawTuple left, RawTuple right);
 
-  RawValue create_class(Thread* thread,
+  RawClass create_class(Thread* thread,
                         SYMBOL name,
-                        RawValue parent,
+                        RawClass parent,
                         RawFunction constructor,
-                        uint8_t member_func_count,
-                        RawFunction* member_funcs,
-                        uint8_t member_prop_count,
-                        RawSymbol* member_props,
-                        uint8_t static_prop_count,
-                        RawSymbol* static_prop_names,
-                        RawValue* static_prop_values);
+                        RawTuple member_props,
+                        RawTuple member_funcs,
+                        RawTuple static_prop_keys,
+                        RawTuple static_prop_values,
+                        RawTuple static_funcs,
+                        uint32_t flags = 0);
 
   RawShape create_shape(Thread* thread, RawValue parent, RawTuple key_table);
+  RawShape create_shape(Thread* thread, RawValue parent, std::initializer_list<std::string> keys);
 
   RawFunction create_function(Thread* thread, RawValue context, SharedFunctionInfo* shared_info);
   RawBuiltinFunction create_builtin_function(Thread* thread, BuiltinFunctionType function, SYMBOL name, uint8_t argc);
   RawFiber create_fiber(Thread* thread, RawFunction function, RawValue self, RawValue arguments);
+  RawValue create_exception(Thread* thread, RawValue message);
+  template <typename... T>
+  RawValue create_exception_with_message(Thread* thread, const char* str, const T&... args) {
+    return create_exception(thread, create_string_from_template(thread, str, args...));
+  }
 
   RawValue join_fiber(Thread* thread, RawFiber fiber);
 
@@ -145,20 +155,22 @@ public:
     return declare_symbol(thread, string.data(), string.size());
   }
 
-  // returns the RawClass for any type
-  RawClass lookup_class(RawValue value);
-
-  // returns the RawClass for builtin shape ids
-  RawClass lookup_builtin_class(ShapeId id);
-
   // look up a symbol in the global symbol table
   // returns kNull if no such symbol exists
   RawValue lookup_symbol(SYMBOL symbol);
 
+  // shape management
+  ShapeId register_shape(RawShape shape);
+  void register_shape(ShapeId id, RawShape shape);
+  RawShape lookup_shape(Thread* thread, ShapeId id);
+
+  // returns the RawClass for any type
+  RawClass lookup_class(Thread* thread, RawValue value);
+
   // sets the class that gets used as the parent class if no 'extends'
   // statement was present during class declaration
-  void set_builtin_class(ShapeId shape_id, RawClass klass);
-  RawClass get_builtin_class(ShapeId shape_id);
+  void set_builtin_class(Thread* thread, ShapeId shape_id, RawClass klass);
+  RawClass get_builtin_class(Thread* thread, ShapeId shape_id);
 
 private:
   uint64_t m_start_timestamp;
@@ -180,7 +192,7 @@ private:
   std::unordered_map<SYMBOL, RawString> m_symbol_table;
 
   std::shared_mutex m_shapes_mutex;
-  std::vector<RawShape> m_shapes;
+  std::vector<RawValue> m_shapes;
   static constexpr size_t kBuiltinClassCount = static_cast<size_t>(ShapeId::kLastBuiltinShapeId) + 1;
   std::array<RawValue, kBuiltinClassCount> m_builtin_classes;
 

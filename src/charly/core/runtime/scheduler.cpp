@@ -33,8 +33,7 @@
 
 namespace charly::core::runtime {
 
-Scheduler::Scheduler(Runtime* runtime) {
-  m_runtime = runtime;
+Scheduler::Scheduler(Runtime* runtime) : m_runtime(runtime) {
 
   // determine the amount of virtual processors to spawn
   uint32_t proc_count = Scheduler::hardware_concurrency();
@@ -65,10 +64,10 @@ Scheduler::Scheduler(Runtime* runtime) {
   }
 
   // initialize the main thread
-  m_main_thread = get_free_thread();
-  m_main_thread->init_main_thread();
-  m_main_thread->ready();
-  schedule_thread(m_main_thread);
+  auto main_thread = get_free_thread();
+  main_thread->init_main_thread();
+  main_thread->ready();
+  schedule_thread(main_thread);
 }
 
 Scheduler::~Scheduler() {

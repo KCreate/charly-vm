@@ -107,7 +107,6 @@ private:
 
 private:
   Runtime* m_runtime;
-  Thread* m_main_thread;
 
   std::vector<Worker*> m_workers;
   std::vector<Processor*> m_processors;

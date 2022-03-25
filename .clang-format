@@ -12,6 +12,7 @@ AlignOperands:                                  true
 AlignTrailingComments:                          true
 AllowAllArgumentsOnNextLine:                    false
 AllowShortBlocksOnASingleLine:                  Empty
+AllowShortEnumsOnASingleLine:                   false
 AllowShortCaseLabelsOnASingleLine:              true
 AllowShortFunctionsOnASingleLine:               Empty
 AllowShortIfStatementsOnASingleLine:            Never

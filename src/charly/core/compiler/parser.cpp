@@ -928,6 +928,7 @@ ref<Expression> Parser::parse_literal() {
     case TokenType::Func: {
       return parse_function();
     }
+    case TokenType::Final:
     case TokenType::Class: {
       return parse_class();
     }
@@ -1127,7 +1128,7 @@ ref<Function> Parser::parse_function(FunctionFlags flags) {
   }
 
   Location begin = m_token.location;
-  skip(TokenType::Func);
+  eat(TokenType::Func);
 
   // function name
   ref<Name> function_name = make<Name>(parse_identifier_token());
@@ -1273,6 +1274,8 @@ void Parser::parse_function_arguments(std::vector<ref<FunctionArgument>>& result
 
 ref<Class> Parser::parse_class() {
   Location begin = m_token.location;
+
+  bool is_final = skip(TokenType::Final);
   eat(TokenType::Class);
 
   // class name
@@ -1284,6 +1287,7 @@ ref<Class> Parser::parse_class() {
   }
 
   ref<Class> node = make<Class>(class_name, parent);
+  node->is_final = is_final;
   node->set_begin(begin);
 
   // parse class body
@@ -1329,11 +1333,12 @@ ref<Class> Parser::parse_class() {
 
       if (static_property) {
         function->class_static_function = true;
-        node->static_properties.push_back(make<ClassProperty>(true, function->name, function));
+        node->static_functions.push_back(function);
       } else {
         if (function->name->value.compare("constructor") == 0) {
           if (node->constructor) {
             m_console.error(function, "duplicate declaration of class constructor");
+            m_console.info(node->constructor, "previously declared here");
           } else {
             node->constructor = function;
             function->class_constructor = true;

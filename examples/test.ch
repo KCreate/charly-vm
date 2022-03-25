@@ -1,45 +1,54 @@
-class Foo {
-    property foo
+/*
+ * This file is part of the Charly Virtual Machine (https://github.com/KCreate/charly-vm)
+ *
+ * MIT License
+ *
+ * Copyright (c) 2017 - 2021 Leonard Schütz
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
-    func constructor(x) {
-        echo("inside Foo constructor with x: {x}")
-    }
-
-    func get1 {
-        return 1
-    }
+final class Foo {
+    property x
 }
 
 class Bar extends Foo {
-    property bar
+    property y
 
-    func constructor(x) {
-        echo("inside Bar constructor with x: {x}")
-    }
-
-    func get2 {
-        return 2
-    }
+    func constructor(x, @y) = super(x)
 }
 
-const f = Foo(25)
-const b = Bar(100)
+const bar = Bar()
+const value = bar.get()
+print(value)
 
-writeline(f)
-writeline(b)
+//print(Instance())
 
-writeline(typeof f)
-writeline(typeof b)
 
-writeline(typeof 25)
-writeline(typeof 25.5)
-writeline(typeof true)
-writeline(typeof null)
-writeline(typeof "hello")
-writeline(typeof "hello world my name is leonard")
-writeline(typeof (1, 2, 3))
-writeline(typeof writeline)
-writeline(typeof Foo)
-writeline(typeof Int)
-writeline(typeof builtin_writeline)
-writeline(typeof @"charly.mainfiber")
+
+
+
+
+
+
+
+
+
+
+

@@ -180,17 +180,6 @@ CATCH_TEST_CASE("Immediate encoded values") {
     CATCH_CHECK(is_instance_shape(ShapeId::kFunction) == true);
     CATCH_CHECK(is_instance_shape(ShapeId::kException) == true);
 
-    CATCH_CHECK(is_exception_shape(ShapeId::kInt) == false);
-    CATCH_CHECK(is_exception_shape(ShapeId::kFloat) == false);
-    CATCH_CHECK(is_exception_shape(ShapeId::kBool) == false);
-    CATCH_CHECK(is_exception_shape(ShapeId::kSymbol) == false);
-    CATCH_CHECK(is_exception_shape(ShapeId::kNull) == false);
-    CATCH_CHECK(is_exception_shape(ShapeId::kSmallString) == false);
-    CATCH_CHECK(is_exception_shape(ShapeId::kSmallBytes) == false);
-    CATCH_CHECK(is_exception_shape(ShapeId::kLargeBytes) == false);
-    CATCH_CHECK(is_exception_shape(ShapeId::kFunction) == false);
-    CATCH_CHECK(is_exception_shape(ShapeId::kException) == true);
-
     CATCH_CHECK(is_builtin_shape(ShapeId::kInt) == true);
     CATCH_CHECK(is_builtin_shape(ShapeId::kFloat) == true);
     CATCH_CHECK(is_builtin_shape(ShapeId::kBool) == true);

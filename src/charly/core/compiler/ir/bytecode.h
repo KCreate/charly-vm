@@ -464,24 +464,21 @@ static const size_t kInstructionLength = 4;
   V(makefunc, IAAX, 0, 1)                                                              \
   /* makeclass - allocate new class                                                    \
    *                                                                                   \
-   * opcode operands:                                                                  \
-   * - amount of member functions                                                      \
-   * - amount of member properties                                                     \
-   * - amount of static properties                                                     \
-   *                                                                                   \
    * stack arguments:                                                                  \
+   * - flags
    * - class name symbol                                                               \
    * - parent class                                                                    \
    * - constructor function                                                            \
-   * - member functions...                                                             \
-   * - member property symbols...                                                      \
-   * - static property key                                                             \
-   *   static property value...                                                        \
+   * - member function tuple                                                           \
+   * - member property tuple                                                           \
+   * - static function tuple                                                           \
+   * - static property keys tuple                                                      \
+   * - static property values tuple                                                    \
    *                                                                                   \
    * stack results:                                                                    \
    * - class                                                                           \
    * */                                                                                \
-  V(makeclass, IABC, 3 + arg1 + arg2 + (arg3 * 2), 1)                                  \
+  V(makeclass, IXXX, 9, 1)                                                             \
   /* makelist - allocate new list                                                      \
    *                                                                                   \
    * opcode operands:                                                                  \
@@ -558,7 +555,7 @@ static const size_t kInstructionLength = 4;
   /* makefiber - allocate new fiber                                                    \
    *                                                                                   \
    * stack arguments:                                                                  \
-   * - self                                                                            \
+   * - context                                                                            \
    * - function                                                                        \
    * - arguments tuple                                                                 \
    *                                                                                   \

@@ -148,6 +148,7 @@ protected:
     APPLY_VECTOR(member_functions)
     APPLY_VECTOR(member_properties)
     APPLY_VECTOR(static_properties)
+    APPLY_VECTOR(static_functions)
   })
 
   HANDLE_NODE(Expression, MemberOp, {

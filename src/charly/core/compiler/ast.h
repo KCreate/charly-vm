@@ -51,7 +51,8 @@ class Node : std::enable_shared_from_this<Node> {
   friend class Pass;
 
 public:
-  enum class Type : uint8_t {
+  enum class Type : uint8_t
+  {
     Unknown = 0,
 
     // Statements
@@ -827,15 +828,17 @@ public:
 class Class final : public Expression {
   AST_NODE(Class)
 public:
-  Class(ref<Name> name, ref<Expression> parent) : name(name), parent(parent), constructor(nullptr) {}
+  Class(ref<Name> name, ref<Expression> parent) : is_final(false), name(name), parent(parent), constructor(nullptr) {}
   Class(const std::string& name, ref<Expression> parent) :
-    name(make<Name>(name)), parent(parent), constructor(nullptr) {}
+    is_final(false), name(make<Name>(name)), parent(parent), constructor(nullptr) {}
 
+  bool is_final;
   ref<Name> name;
   ref<Expression> parent;
   ref<Function> constructor;
   std::vector<ref<Function>> member_functions;
   std::vector<ref<ClassProperty>> member_properties;
+  std::vector<ref<Function>> static_functions;
   std::vector<ref<ClassProperty>> static_properties;
 
   CHILDREN() {
@@ -843,6 +846,7 @@ public:
     CHILD_NODE(constructor)
     CHILD_VECTOR(member_functions)
     CHILD_VECTOR(member_properties)
+    CHILD_VECTOR(static_functions)
     CHILD_VECTOR(static_properties)
   }
 

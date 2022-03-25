@@ -52,40 +52,39 @@ namespace charly::core::runtime {
 #define SUPER_TYPE_NAMES(V) \
   V(Value)                  \
   V(Object)                 \
-  V(Instance)               \
   V(Data)                   \
   V(Bytes)                  \
   V(String)
 
 // types which store raw bytes on the heap
 #define DATA_TYPE_NAMES(V) \
+  V(LargeString)           \
   V(LargeBytes)            \
-  V(LargeString)
+  V(Tuple)
 
 // types which store their data via the shape system
 #define INSTANCE_TYPE_NAMES(V) \
-  V(UserInstance)              \
+  V(Instance)                  \
   V(HugeBytes)                 \
   V(HugeString)                \
-  V(Tuple)                     \
   V(Class)                     \
   V(Shape)                     \
   V(Function)                  \
   V(BuiltinFunction)           \
   V(Fiber)
 
-// exception types
-#define EXCEPTION_TYPE_NAMES(V) V(Exception)
+// types which store their data via the user class system
+#define USER_INSTANCE_TYPE_NAMES(V) V(Exception)
 
 #define TYPE_NAMES(V)     \
   IMMEDIATE_TYPE_NAMES(V) \
   SUPER_TYPE_NAMES(V)     \
   DATA_TYPE_NAMES(V)      \
   INSTANCE_TYPE_NAMES(V)  \
-  EXCEPTION_TYPE_NAMES(V)
+  USER_INSTANCE_TYPE_NAMES(V)
 
-enum class ShapeId : uint32_t {
-
+enum class ShapeId : uint32_t
+{
   // immediate types
   //
   // the shape id of any immediate type can be determined by checking the
@@ -105,21 +104,19 @@ enum class ShapeId : uint32_t {
 #define GET_FIRST(name) k##name + 0 *
 #define GET_LAST(name) 0 + k##name *
   DATA_TYPE_NAMES(SHAPE_ID)
-  kFirstNonInstance = DATA_TYPE_NAMES(GET_FIRST) 1,
-  kLastNonInstance = DATA_TYPE_NAMES(GET_LAST) 1,
-
+  kFirstDataObject = DATA_TYPE_NAMES(GET_FIRST) 1,
+  kLastDataObject = DATA_TYPE_NAMES(GET_LAST) 1,
   INSTANCE_TYPE_NAMES(SHAPE_ID)
-  EXCEPTION_TYPE_NAMES(SHAPE_ID)
+  USER_INSTANCE_TYPE_NAMES(SHAPE_ID)
   kFirstBuiltinShapeId = INSTANCE_TYPE_NAMES(GET_FIRST) 1,
-
-  kFirstException = EXCEPTION_TYPE_NAMES(GET_FIRST) 0,
-  kLastException = EXCEPTION_TYPE_NAMES(GET_LAST) 1,
+  kFirstKnownUserShapeId = USER_INSTANCE_TYPE_NAMES(GET_FIRST) 1,
+  kLastKnownUserShapeId = USER_INSTANCE_TYPE_NAMES(GET_LAST) 1,
+  kLastBuiltinShapeId = USER_INSTANCE_TYPE_NAMES(GET_LAST) 1,
 #undef GET_LAST
 #undef GET_FIRST
 #undef SHAPE_ID
   // clang-format on
 
-  kLastBuiltinShapeId = kLastException,
   kMaxShapeId = (uint32_t{ 1 } << 20) - 1,
   kMaxShapeCount = uint32_t{ 1 } << 20
 };
@@ -151,7 +148,6 @@ bool is_immediate_shape(ShapeId shape_id);
 bool is_object_shape(ShapeId shape_id);
 bool is_data_shape(ShapeId shape_id);
 bool is_instance_shape(ShapeId shape_id);
-bool is_exception_shape(ShapeId shape_id);
 bool is_builtin_shape(ShapeId shape_id);
 bool is_user_shape(ShapeId shape_id);
 
@@ -160,7 +156,9 @@ size_t align_to_size(size_t size, size_t alignment);
 
 // internal error values used only internally in the runtime
 // this value is encoded in the null value
-enum class ErrorId : uint8_t {
+// limit of 16 error codes
+enum class ErrorId : uint8_t
+{
   kErrorNone = 0,
   kErrorOk,
   kErrorNotFound,
@@ -182,7 +180,8 @@ class ObjectHeader {
 public:
   CHARLY_NON_HEAP_ALLOCATABLE(ObjectHeader);
 
-  enum Flag : uint8_t {
+  enum Flag : uint8_t
+  {
     kReachable = 1,        // object is reachable by GC
     kHasHashcode = 2,      // object has a cached hashcode
     kYoungGeneration = 4,  // object is in a young generation
@@ -241,25 +240,33 @@ static const size_t kObjectAlignment = 8;
 static const size_t kObjectHeaderMaxCount = 65535;
 static const size_t kObjectHeaderMaxSurvivorCount = 15;
 
-#define COMMON_RAW_OBJECT(name)                                                  \
-  static Raw##name cast(RawValue value) {                                        \
-    DCHECK(value.is##name(), "invalid object type, expected %", #name);          \
-    return value.rawCast<Raw##name>();                                           \
-  }                                                                              \
-  static Raw##name cast(const RawValue* value) {                                 \
-    return cast(*value);                                                         \
-  }                                                                              \
-  static Raw##name cast(uintptr_t value) {                                       \
-    return cast(RawValue(value));                                                \
-  }                                                                              \
-  /* Raw##name(const RawValue* value) : Raw##name(Raw##name::cast(*value)) {} */ \
-  static bool value_is_type(RawValue value) {                                    \
-    return value.is##name();                                                     \
-  }                                                                              \
-  Raw##name& operator=(RawValue other) {                                         \
-    m_raw = other.rawCast<Raw##name>().raw();                                    \
-    return *this;                                                                \
-  }                                                                              \
+#define COMMON_RAW_OBJECT(name)                                         \
+  static Raw##name cast(RawValue value) {                               \
+    DCHECK(value.is##name(), "invalid object type, expected %", #name); \
+    return value.rawCast<Raw##name>();                                  \
+  }                                                                     \
+  static Raw##name cast(const RawValue* value) {                        \
+    return cast(*value);                                                \
+  }                                                                     \
+  static Raw##name cast(uintptr_t value) {                              \
+    return cast(RawValue(value));                                       \
+  }                                                                     \
+  static Raw##name unsafe_cast(RawValue value) {                        \
+    return value.rawCast<Raw##name>();                                  \
+  }                                                                     \
+  static Raw##name unsafe_cast(const RawValue* value) {                 \
+    return unsafe_cast(*value);                                         \
+  }                                                                     \
+  static Raw##name unsafe_cast(uintptr_t value) {                       \
+    return unsafe_cast(RawValue(value));                                \
+  }                                                                     \
+  static bool value_is_type(RawValue value) {                           \
+    return value.is##name();                                            \
+  }                                                                     \
+  Raw##name& operator=(RawValue other) {                                \
+    m_raw = other.rawCast<Raw##name>().raw();                           \
+    return *this;                                                       \
+  }                                                                     \
   CHARLY_NON_HEAP_ALLOCATABLE(name)
 
 // the RawValue class represents a single pointer-tagged value.
@@ -566,13 +573,9 @@ public:
   const uint8_t* data() const;
   SYMBOL hashcode() const;
 
-  static const size_t kMaxLength = 1008;  // 1024 bytes - 16 bytes for the header
-};
-
-// bytes stored on managed heap
-class RawLargeBytes : public RawData {
-public:
-  COMMON_RAW_OBJECT(LargeBytes);
+  // FIXME: remove magic number
+  // 1024 bytes - 16 bytes for the header
+  static const size_t kMaxLength = 1008;
 };
 
 // string stored on managed heap
@@ -582,12 +585,34 @@ public:
   const char* data() const;
 };
 
+// bytes stored on managed heap
+class RawLargeBytes : public RawData {
+public:
+  COMMON_RAW_OBJECT(LargeBytes);
+};
+
+// tuple
+class RawTuple : public RawData {
+public:
+  COMMON_RAW_OBJECT(Tuple);
+
+  uint32_t size();
+  RawValue field_at(uint32_t index);
+  void set_field_at(uint32_t index, RawValue value);
+};
+
 // base type for all types that use the shape system
 class RawInstance : public RawObject {
 public:
   COMMON_RAW_OBJECT(Instance);
 
   uint32_t field_count() const;
+
+  // check wether this instance is or inherits from a given shape
+  bool is_instance_of(ShapeId id);
+
+  RawValue klass_field() const;
+  void set_klass_field(RawValue klass);
 
   RawValue field_at(int64_t index) const;
   void set_field_at(int64_t index, RawValue value);
@@ -601,22 +626,13 @@ public:
   int64_t int_at(int64_t index) const;
   void set_int_at(int64_t index, int64_t value);
 
+  enum
+  {
+    kKlassOffset = 0,
+    kFieldCount
+  };
+
   static const size_t kMaximumFieldCount = 256;
-  static const size_t kFieldCount = 0;
-  static const size_t kSize = kFieldCount * kPointerSize;
-};
-
-// instances created by user code
-class RawUserInstance : public RawInstance {
-public:
-  COMMON_RAW_OBJECT(UserInstance);
-
-  RawClass klass() const;
-  void set_klass(RawClass klass);
-
-  static const size_t kKlassOffset = 0;
-
-  static const size_t kFieldCount = 1;
   static const size_t kSize = kFieldCount * kPointerSize;
 };
 
@@ -633,9 +649,12 @@ public:
   size_t length() const;
   void set_length(size_t length);
 
-  static const size_t kDataPointerOffset = 0;
-  static const size_t kDataLengthOffset = 1;
-  static const size_t kFieldCount = RawInstance::kFieldCount + 2;
+  enum
+  {
+    kDataPointerOffset = RawInstance::kFieldCount,
+    kDataLengthOffset,
+    kFieldCount
+  };
   static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
 };
 
@@ -652,22 +671,27 @@ public:
   size_t length() const;
   void set_length(size_t length);
 
-  static const size_t kDataPointerOffset = 0;
-  static const size_t kDataLengthOffset = 1;
-  static const size_t kFieldCount = RawInstance::kFieldCount + 2;
+  enum
+  {
+    kDataPointerOffset = RawInstance::kFieldCount,
+    kDataLengthOffset,
+    kFieldCount
+  };
   static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
-};
-
-// tuple
-class RawTuple : public RawInstance {
-public:
-  COMMON_RAW_OBJECT(Tuple);
 };
 
 // class
 class RawClass : public RawInstance {
 public:
   COMMON_RAW_OBJECT(Class);
+
+  enum {
+    kFlagFinal = 1,
+    kFlagNonConstructable = 2
+  };
+
+  uint32_t flags() const;
+  void set_flags(uint32_t flags);
 
   RawSymbol name() const;
   void set_name(RawSymbol name);
@@ -684,13 +708,18 @@ public:
   RawValue constructor() const;
   void set_constructor(RawValue constructor);
 
-  static const size_t kNameOffset = 0;
-  static const size_t kParentOffset = 1;
-  static const size_t kShapeOffset = 2;
-  static const size_t kFunctionTableOffset = 3;
-  static const size_t kConstructorOffset = 4;
+  RawValue lookup_function(SYMBOL name) const;
 
-  static const size_t kFieldCount = RawInstance::kFieldCount + 5;
+  enum
+  {
+    kFlagsOffset = RawInstance::kFieldCount,
+    kNameOffset,
+    kParentOffset,
+    kShapeOffset,
+    kFunctionTableOffset,
+    kConstructorOffset,
+    kFieldCount
+  };
   static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
 };
 
@@ -707,14 +736,24 @@ public:
   RawValue parent() const;
   void set_parent(RawValue parent);
 
-  RawTuple key_table() const;
-  void set_key_table(RawTuple key_table);
+  RawTuple keys() const;
+  void set_keys(RawTuple keys);
 
-  static const size_t kOwnShapeIdOffset = 0;
-  static const size_t kParentShapeOffset = 1;
-  static const size_t kKeyTableOffset = 2;
+  RawTuple additions_table() const;
+  void set_additions_table(RawTuple additions_table);
 
-  static const size_t kFieldCount = RawInstance::kFieldCount + 3;
+  // returns the found offset of a symbol
+  // returns -1 if the symbol could not be found
+  int64_t offset_of(SYMBOL symbol) const;
+
+  enum
+  {
+    kOwnShapeIdOffset = RawInstance::kFieldCount,
+    kParentShapeOffset,
+    kKeysOffset,
+    kAdditionsTableOffset,
+    kFieldCount
+  };
   static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
 };
 
@@ -730,9 +769,12 @@ public:
   SharedFunctionInfo* shared_info() const;
   void set_shared_info(SharedFunctionInfo* function);
 
-  static const size_t kFrameContextOffset = 0;
-  static const size_t kSharedInfoOffset = 1;
-  static const size_t kFieldCount = RawInstance::kFieldCount + 2;
+  enum
+  {
+    kFrameContextOffset = RawInstance::kFieldCount,
+    kSharedInfoOffset,
+    kFieldCount
+  };
   static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
 };
 
@@ -752,10 +794,13 @@ public:
   uint8_t argc() const;
   void set_argc(uint8_t argc);
 
-  static const size_t kFunctionPtrOffset = 0;
-  static const size_t kNameOffset = 1;
-  static const size_t kArgcOffset = 2;
-  static const size_t kFieldCount = RawInstance::kFieldCount + 3;
+  enum
+  {
+    kFunctionPtrOffset = RawInstance::kFieldCount,
+    kNameOffset,
+    kArgcOffset,
+    kFieldCount
+  };
   static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
 };
 
@@ -771,8 +816,8 @@ public:
   RawFunction function() const;
   void set_function(RawFunction function);
 
-  RawValue self() const;
-  void set_self(RawValue self);
+  RawValue context() const;
+  void set_context(RawValue context);
 
   RawValue arguments() const;
   void set_arguments(RawValue arguments);
@@ -782,19 +827,36 @@ public:
 
   bool has_finished() const;
 
-  static const size_t kThreadPointerOffset = 0;
-  static const size_t kFunctionOffset = 1;
-  static const size_t kContextOffset = 2;
-  static const size_t kArgumentsOffset = 3;
-  static const size_t kResultOffset = 4;
-  static const size_t kFieldCount = RawInstance::kFieldCount + 5;
+  enum
+  {
+    kThreadPointerOffset = RawInstance::kFieldCount,
+    kFunctionOffset,
+    kSelfOffset,
+    kArgumentsOffset,
+    kResultOffset,
+    kFieldCount
+  };
   static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
 };
 
-// base class of all exceptions
+// user exception instance
 class RawException : public RawInstance {
 public:
   COMMON_RAW_OBJECT(Exception);
+
+  RawValue message() const;
+  void set_message(RawValue value);
+
+  RawTuple stack_trace() const;
+  void set_stack_trace(RawTuple stack_trace);
+
+  enum
+  {
+    kMessageOffset = RawInstance::kFieldCount,
+    kStackTraceOffset,
+    kFieldCount
+  };
+  static const size_t kSize = kFieldCount * kPointerSize;
 };
 
 }  // namespace charly::core::runtime

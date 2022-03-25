@@ -93,6 +93,7 @@ void DuplicatesCheck::inspect_leave(const ref<Class>& node) {
   std::unordered_map<std::string, ref<ClassProperty>> class_member_properties;
   std::unordered_map<std::string, ref<Function>> class_member_functions;
   std::unordered_map<std::string, ref<ClassProperty>> class_static_properties;
+  std::unordered_map<std::string, ref<Function>> class_static_functions;
 
   // check for duplicate properties
   for (const ref<ClassProperty>& prop : node->member_properties) {
@@ -105,6 +106,7 @@ void DuplicatesCheck::inspect_leave(const ref<Class>& node) {
     class_member_properties.insert({ prop->name->value, prop });
   }
 
+  // check for duplicate function declarations or functions with the same name as a property
   for (const ref<Function>& func : node->member_functions) {
     const std::string& name = func->name->value;
 
@@ -132,6 +134,25 @@ void DuplicatesCheck::inspect_leave(const ref<Class>& node) {
     }
 
     class_static_properties[prop->name->value] = prop;
+  }
+
+  // check for duplicate static functions or properties
+  for (const ref<Function>& func : node->static_functions) {
+    const std::string& name = func->name->value;
+
+    if (class_static_properties.count(name)) {
+      m_console.error(func->name, "redeclaration of static property '", func->name->value, "' as static function");
+      m_console.info(class_static_properties.at(name)->name, "declared as static property here");
+      continue;
+    }
+
+    if (class_static_functions.count(name)) {
+      m_console.error(func->name, "duplicate declaration of static function '", func->name->value, "'");
+      m_console.info(class_static_functions.at(name)->name, "first declared here");
+      continue;
+    }
+
+    class_static_functions.insert({ name, func });
   }
 }
 

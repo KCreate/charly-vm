@@ -58,7 +58,10 @@ struct IRInstruction : std::enable_shared_from_this<IRInstruction> {
   Opcode opcode;
   Location location;
 
-  static ref<IRInstruction> make(Opcode opcode, uint32_t arg1 = 0, uint32_t arg2 = 0, uint32_t arg3 = 0);
+  static ref<IRInstruction> make(Opcode opcode,
+                                 [[maybe_unused]] uint32_t arg1 = 0,
+                                 [[maybe_unused]] uint32_t arg2 = 0,
+                                 [[maybe_unused]] uint32_t arg3 = 0);
 
   explicit IRInstruction(Opcode opcode) : opcode(opcode) {}
   virtual ~IRInstruction() = default;

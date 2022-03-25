@@ -172,6 +172,11 @@ public:
   std::string_view view() const;
   std::string_view window_view() const;
 
+  template <typename... T>
+  void write_formatted(const char* template_message, const T&... args) {
+    debugln_impl(*this, template_message, args...);
+  }
+
 protected:
   Buffer* setbuf(std::streambuf::traits_type::char_type* data, std::streamsize size) override;
   std::streambuf::traits_type::int_type underflow() override;

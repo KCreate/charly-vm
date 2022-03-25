@@ -94,4 +94,10 @@ static const int16_t kInt16Max = 32767;
 static const int16_t kInt8Min = -127 - 1;
 static const int16_t kInt8Max = 127;
 
+#ifdef NDEBUG
+static constexpr bool kIsDebugBuild = false;
+#else
+static constexpr bool kIsDebugBuild = true;
+#endif
+
 }  // namespace charly

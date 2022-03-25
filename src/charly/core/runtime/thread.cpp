@@ -307,14 +307,14 @@ void Thread::entry_fiber_thread() {
   size_t argc = 0;
   if (fiber_arguments.isTuple()) {
     RawTuple tuple = RawTuple::cast(fiber_arguments);
-    if (tuple.field_count()) {
+    if (tuple.size()) {
       argp = bitcast<RawValue*>(tuple.address());
       CHECK(argc < 256);
-      argc = tuple.field_count();
+      argc = tuple.size();
     }
   }
 
-  RawValue result = Interpreter::call_function(this, fiber.self(), fiber.function(), argp, argc);
+  RawValue result = Interpreter::call_function(this, fiber.context(), fiber.function(), argp, argc);
 
   // wake threads waiting for this thread to finish
   {

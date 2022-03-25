@@ -43,20 +43,6 @@ void initialize(Thread* thread) {
   DEF_BUILTIN_CORE(REGISTER_BUILTIN_FUNCTION)
 }
 
-RawValue setbuiltinclass(Thread* thread, const RawValue* args, uint8_t argc) {
-  CHECK(argc == 2);
-  CHECK(args[0].isInt());
-  CHECK(args[1].isClass());
-  ShapeId shape_id = static_cast<ShapeId>(RawInt::cast(args[0]).value());
-  RawClass klass = RawClass::cast(args[1]);
-
-  CHECK(shape_id <= ShapeId::kLastBuiltinShapeId);
-  Runtime* runtime = thread->runtime();
-  runtime->set_builtin_class(shape_id, klass);
-
-  return kNull;
-}
-
 RawValue currentfiber(Thread* thread, const RawValue*, uint8_t argc) {
   CHECK(argc == 0);
   return thread->fiber();

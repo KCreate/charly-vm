@@ -33,11 +33,11 @@ namespace charly::core::compiler::ast {
 
 // list of identifiers which cannot be used as member fields
 // (member properties and functions) of classes
-static std::unordered_set<std::string> kIllegalMemberFieldNames = { "klass", "object_id" };
+static std::unordered_set<std::string> kIllegalMemberNames = { "klass" };
 
 // list of identifiers which cannot be used as static fields
 // (static properties and functions) of classes
-static std::unordered_set<std::string> kIllegalStaticFieldNames = { "constructor", "name", "parent" };
+static std::unordered_set<std::string> kIllegalStaticNames = { "klass", "constructor", "name", "parent" };
 
 bool is_reserved_identifier(const std::string& str) {
   // argument index shorthand identifiers ($0, $1, etc)
@@ -73,23 +73,32 @@ void ReservedIdentifiersCheck::inspect_leave(const ref<Function>& node) {
 }
 
 void ReservedIdentifiersCheck::inspect_leave(const ref<Class>& node) {
+  // check for reserved member property names
   for (const ref<ClassProperty>& prop : node->member_properties) {
-    if (is_reserved_identifier(prop->name->value) || kIllegalMemberFieldNames.count(prop->name->value)) {
+    if (is_reserved_identifier(prop->name->value) || kIllegalMemberNames.count(prop->name->value)) {
       m_console.error(prop->name, "'", prop->name->value, "' cannot be the name of a property");
       continue;
     }
   }
 
+  // check for reserved member function names
   for (const ref<Function>& func : node->member_functions) {
-    if (is_reserved_identifier(func->name->value) || kIllegalMemberFieldNames.count(func->name->value)) {
+    if (is_reserved_identifier(func->name->value) || kIllegalMemberNames.count(func->name->value)) {
       m_console.error(func->name, "'", func->name->value, "' cannot be the name of a member function");
     }
   }
 
-  // check for duplicate static properties
+  // check for reserved static property names
   for (const ref<ClassProperty>& prop : node->static_properties) {
-    if (is_reserved_identifier(prop->name->value) || kIllegalStaticFieldNames.count(prop->name->value)) {
+    if (is_reserved_identifier(prop->name->value) || kIllegalStaticNames.count(prop->name->value)) {
       m_console.error(prop->name, "'", prop->name->value, "' cannot be the name of a static property");
+    }
+  }
+
+  // check for reserved static function names
+  for (const ref<Function>& func : node->static_functions) {
+    if (is_reserved_identifier(func->name->value) || kIllegalStaticNames.count(func->name->value)) {
+      m_console.error(func->name, "'", func->name->value, "' cannot be the name of a static function");
     }
   }
 }
