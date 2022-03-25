@@ -198,7 +198,7 @@ ref<Statement> Parser::parse_statement() {
         variable_name = klass->name;
       }
 
-      ref<Declaration> declaration = make<Declaration>(variable_name, cast<Expression>(stmt), true);
+      ref<Declaration> declaration = make<Declaration>(variable_name, cast<Expression>(stmt), true, true);
       declaration->set_location(stmt);
       stmt = declaration;
 

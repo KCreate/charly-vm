@@ -1,11 +1,5 @@
 # Todos
 
-- Functions should be able to be marked as final
-  - Subclasses cannot override these functions
-
-- Bug: cannot implicitly return a class
-  - Does the implicit returner run after the const decl pass?
-
 - Bug: loadsuperconstructor loads wrong constructor
   - Always assumes base type
   - Should dynamically load via containing function
@@ -24,6 +18,9 @@
   - Requires two different versions of loadattrsym, setattrsym
     - One for regular loads, stores
     - Another for context attribute loads and stores ('@foo', '@foo = 25', 'context.foo', 'context.foo = 25')
+
+- Functions should be able to be marked as final
+  - Subclasses cannot override these functions
 
 - Huge objects
   - Very big lists might not fit into a single heap region

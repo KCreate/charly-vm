@@ -106,6 +106,16 @@ void DesugarPass::inspect_leave(const ref<Function>& node) {
       return_exp->set_location(exp);
       statement = return_exp;
     }
+
+    // allow returning implicit function or class declarations
+    if (ref<Declaration> decl = cast<Declaration>(statement)) {
+      if (decl->implicit) {
+        auto id = decl->name;
+        auto return_exp = make<Return>(make<Id>(id));
+        return_exp->set_location(decl);
+        node->body->statements.push_back(return_exp);
+      }
+    }
   }
 
   // emit self initializations of function arguments

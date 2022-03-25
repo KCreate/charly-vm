@@ -24,23 +24,20 @@
  * SOFTWARE.
  */
 
-final class Foo {
-    property x
+func foo {
+    class Foo {
+
+    }
 }
 
-class Bar extends Foo {
-    property y
-
-    func constructor(x, @y) = super(x)
+func bar {
+    func bar {
+        25
+    }
 }
 
-const bar = Bar()
-const value = bar.get()
-print(value)
-
-//print(Instance())
-
-
+print(foo())
+print(bar())
 
 
 

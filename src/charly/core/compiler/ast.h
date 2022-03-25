@@ -1245,17 +1245,21 @@ public:
 class Declaration final : public Statement {
   AST_NODE(Declaration)
 public:
-  Declaration(const ref<Name>& name, const ref<Expression>& expression, bool constant = false) :
-    constant(constant), name(name), expression(expression) {
+  Declaration(const ref<Name>& name, const ref<Expression>& expression, bool constant = false, bool implicit = false) :
+    constant(constant), implicit(implicit), name(name), expression(expression) {
     this->set_begin(name);
     this->set_end(expression);
   }
-  Declaration(const std::string& name, const ref<Expression>& expression, bool constant = false) :
-    constant(constant), name(make<Name>(name)), expression(expression) {
+  Declaration(const std::string& name,
+              const ref<Expression>& expression,
+              bool constant = false,
+              bool implicit = false) :
+    constant(constant), implicit(implicit), name(make<Name>(name)), expression(expression) {
     this->set_location(expression);
   }
 
   bool constant;
+  bool implicit;  // func and class literal declaration are marked as implicit
   ref<Name> name;
   ref<Expression> expression;
 
