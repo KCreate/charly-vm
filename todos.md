@@ -1,17 +1,15 @@
 # Todos
 
+- Rethink type checks
+  - Cannot use object shape field to determine type
+  - User classes can end up with the same shapes as builtin classes
+  - Need to use class lookup to determine proper runtime type
+ 
+- Load length of string, bytes and tuple types
+
 - Bug: loadsuperconstructor loads wrong constructor
   - Should dynamically load via containing function
     - Functions need to have a host_class field
-
-- Load length of string, bytes and tuple types
-
-- Implement RawValueFormatter class that captures thread pointer
-  - Avoid potentially expensive thread_local lookup
-
-- Compile 'klass' property accesses into type operations
-  
-- Shape ancestor table for more efficient subclass checks
 
 - Shape attribute flags
   - Internal fields
@@ -21,6 +19,14 @@
     - Requires two different versions of loadattrsym, setattrsym
       - One for regular loads, stores
       - Another for context attribute loads and stores ('@foo', '@foo = 25', 'context.foo', 'context.foo = 25')
+
+- Shape ancestor table for more efficient subclass checks
+
+- Make declaring and writing to a new global variable an atomic operation
+  - Currently another thread could assign to the global variable before the declaring thread could write to it
+
+- assert statement
+  - Similar to java builtin assert statement
 
 - Functions should be able to be marked as final
   - Subclasses cannot override these functions
@@ -39,15 +45,9 @@
 
 - Getter and setter functions
   - Can be a flag on functions
-  
-- Make declaring and writing to a new global variable an atomic operation
-  - Currently another thread could assign to the global variable before the declaring thread could write to it
 
 - instanceof operator
   - Used to check if a value is or extends a class
-
-- assert statement
-  - Similar to java builtin assert statement
 
 - Functions should copy referenced constants into themselves when they are created
 

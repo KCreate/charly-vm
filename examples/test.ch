@@ -24,42 +24,29 @@
  * SOFTWARE.
  */
 
-//class Person {
-//    property name
-//
-//    func foo(cb) {
-//        cb(->{
-//            print(name)
-//        })
-//    }
+
+//class Foo {
+//    property saved_self
+//    property context
+//    property shared_info
 //}
 //
-//const p = Person("leonard")
-//p.foo(->(cb) {
-//    cb()
-//})
+//print(Foo)
+//print(Foo())
 
-class Foo {
-    property x
-
-    func get1 {
-        do_stuff(->{
-            const t = spawn add(1, 2)
-            const result = await t
-            throw Exception("self: {self} result: {result}")
-//            throw "self: {self} result: {result}"
-        })
-    }
-
-    func add(x, y) = x + y
-
-    func do_stuff(cb) = cb()
+class Person {
+    property name
 }
 
-const foo = Foo()
-const result = foo.get1()
+const p = Person("leonard")
+print(p.klass)
+print(typeof p)
 
-print(result)
+
+
+
+
+
 
 
 

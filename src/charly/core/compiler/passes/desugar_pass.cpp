@@ -87,6 +87,16 @@ bool DesugarPass::inspect_enter(const ref<Spawn>& node) {
   return true;
 }
 
+ref<Expression> DesugarPass::transform(const ref<MemberOp>& node) {
+  if (node->member->value == "klass") {
+    auto op = make<Typeof>(node->target);
+    op->set_location(node);
+    return op;
+  }
+
+  return node;
+}
+
 ref<Expression> DesugarPass::transform(const ref<FormatString>& node) {
   // format strings with only one element can be replaced with
   // a single caststring operation

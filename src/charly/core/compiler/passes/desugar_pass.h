@@ -38,6 +38,7 @@ private:
   ref<Statement> transform(const ref<Block>&) override;
   void inspect_leave(const ref<Import>&) override;
   bool inspect_enter(const ref<Spawn>&) override;
+  ref<Expression> transform(const ref<MemberOp>&) override;
   ref<Expression> transform(const ref<FormatString>&) override;
   void inspect_leave(const ref<Function>&) override;
   void inspect_leave(const ref<Class>&) override;

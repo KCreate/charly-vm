@@ -174,7 +174,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
     thread, builtin_shape_instance, { "flags", "name", "parent", "shape_instance", "function_table", "constructor" });
   auto builtin_shape_shape =
     create_shape(thread, builtin_shape_instance, { "own_shape_id", "parent", "keys", "additions_table" });
-  auto builtin_shape_function = create_shape(thread, builtin_shape_instance, { "context", "shared_info" });
+  auto builtin_shape_function = create_shape(thread, builtin_shape_instance, { "saved_self", "context", "shared_info" });
   auto builtin_shape_builtin_function = create_shape(thread, builtin_shape_instance, { "function", "name", "argc" });
   auto builtin_shape_fiber =
     create_shape(thread, builtin_shape_instance, { "thread", "function", "context", "arguments", "result" });
