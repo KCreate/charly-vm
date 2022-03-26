@@ -144,6 +144,14 @@ ref<ir::IRInstruction> CodeGenerator::generate_load(const ValueLocation& locatio
     case ValueLocation::Type::FarFrame: {
       return m_builder.emit_loadfar(location.as.far_frame.depth, location.as.far_frame.index);
     }
+    case ValueLocation::Type::Self: {
+      m_builder.emit_loadself();
+      return m_builder.emit_loadattrsym(m_builder.register_string(location.name));
+    }
+    case ValueLocation::Type::FarSelf: {
+      m_builder.emit_loadfarself(location.as.far_self.depth);
+      return m_builder.emit_loadattrsym(m_builder.register_string(location.name));
+    }
     case ValueLocation::Type::Global: {
       return m_builder.emit_loadglobal(m_builder.register_string(location.name));
     }
@@ -163,6 +171,14 @@ ref<ir::IRInstruction> CodeGenerator::generate_store(const ValueLocation& locati
     }
     case ValueLocation::Type::FarFrame: {
       return m_builder.emit_setfar(location.as.far_frame.depth, location.as.far_frame.index);
+    }
+    case ValueLocation::Type::Self: {
+      m_builder.emit_loadself();
+      return m_builder.emit_setattrsym(m_builder.register_string(location.name));
+    }
+    case ValueLocation::Type::FarSelf: {
+      m_builder.emit_loadfarself(location.as.far_self.depth);
+      return m_builder.emit_setattrsym(m_builder.register_string(location.name));
     }
     case ValueLocation::Type::Global: {
       return m_builder.emit_setglobal(m_builder.register_string(location.name));
@@ -560,6 +576,10 @@ void CodeGenerator::inspect_leave(const ref<Null>& node) {
 
 void CodeGenerator::inspect_leave(const ref<Self>&) {
   m_builder.emit_loadself();
+}
+
+void CodeGenerator::inspect_leave(const ref<FarSelf>& node) {
+  m_builder.emit_loadfarself(node->depth);
 }
 
 void CodeGenerator::inspect_leave(const ref<ast::Super>& node) {

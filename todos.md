@@ -1,29 +1,32 @@
 # Todos
 
 - Bug: loadsuperconstructor loads wrong constructor
-  - Always assumes base type
   - Should dynamically load via containing function
+    - Functions need to have a host_class field
+
+- Load length of string, bytes and tuple types
 
 - Implement RawValueFormatter class that captures thread pointer
   - Avoid potentially expensive thread_local lookup
-  
-- Rewrite identifiers of class properties to local lookups inside class functions
-  - We know for each function the list of properties that are reachable via the context object
 
 - Compile 'klass' property accesses into type operations
   
 - Shape ancestor table for more efficient subclass checks
 
-- Private properties of objects
-  - Requires two different versions of loadattrsym, setattrsym
-    - One for regular loads, stores
-    - Another for context attribute loads and stores ('@foo', '@foo = 25', 'context.foo', 'context.foo = 25')
+- Shape attribute flags
+  - Internal fields
+    - Some instances store pointers or integers in their fields
+    - These fields should not be accessable via charly code
+  - Private properties of objects
+    - Requires two different versions of loadattrsym, setattrsym
+      - One for regular loads, stores
+      - Another for context attribute loads and stores ('@foo', '@foo = 25', 'context.foo', 'context.foo = 25')
 
 - Functions should be able to be marked as final
   - Subclasses cannot override these functions
 
 - Huge objects
-  - Very big lists might not fit into a single heap region
+  - Some very big tuples do not fit into a single heap object
   - Space for the object must be allocated on the global heap
   - Actual instance only stores a pointer and a size
 
@@ -252,13 +255,6 @@
       - If reacquiring the old processor fails, try to acquire another idle processor
       - If there are no idle processors, idle the current worker thread and reschedule the running
         fiber into the global runqueue
-
-- Value model
-  - Classes cannot be modified at runtime. They can only be subclassed
-  - Objects created from classes cannot have new keys assigned to them
-    - They are static shapes that can only store the properties declared in their class
-  - For a dynamic collection of values use the dict primitive datatype
-    - Small dictionaries could be laid out inline and take advantage of inline caches
 
 - Polymorphic inline caches
   - Caches should be able to hold at least 2-3 entries

@@ -41,13 +41,13 @@ struct VariableDeclaration {
   bool constant;
   bool leaked;
   bool global;
+  bool class_property;
 };
 
 class BlockScope;
 class VariableAnalyzer;
 class FunctionScope {
   friend class BlockScope;
-  friend class VariableAnalyzer;
 
 public:
   FunctionScope(ref<FunctionScope> parent_function, ref<BlockScope> parent_block, const ref<Function>& ast) :
@@ -55,9 +55,23 @@ public:
 
   uint8_t get_local_variable_count() const;
   uint8_t get_heap_variable_count() const;
+  bool has_frame_context() const;
+
+  bool contains_variable(ir::VariableId id);
+  VariableDeclaration& lookup_variable(ir::VariableId id);
+
+  const ref<FunctionScope> parent_function() const;
+  const ref<BlockScope> parent_block() const;
+  const ref<Function> function_ast() const;
+
+  std::map<ir::VariableId, VariableDeclaration>& globals();
+  std::map<ir::VariableId, VariableDeclaration>& locals();
+  std::map<ir::VariableId, VariableDeclaration>& class_properties();
 
 private:
+  std::map<ir::VariableId, VariableDeclaration> m_globals;
   std::map<ir::VariableId, VariableDeclaration> m_locals;
+  std::map<ir::VariableId, VariableDeclaration> m_class_properties;
   ref<FunctionScope> m_parent_function;
   ref<BlockScope> m_parent_block;
   ref<Function> m_function_ast;
@@ -65,11 +79,15 @@ private:
 
 class BlockScope {
   friend class FunctionScope;
-  friend class VariableAnalyzer;
 
 public:
   BlockScope(ref<FunctionScope> parent_function, ref<BlockScope> parent_block, const ref<Block>& ast) :
     m_parent_function(parent_function), m_parent_block(parent_block), m_block_ast(ast) {}
+
+  std::unordered_map<std::string, ir::VariableId>& locals();
+  const ref<FunctionScope> parent_function() const;
+  const ref<BlockScope> parent_block() const;
+  const ref<Block> block_ast() const;
 
 private:
   std::unordered_map<std::string, ir::VariableId> m_locals;
@@ -81,12 +99,13 @@ private:
 static const ir::VariableId kInvalidVariableId = 0;
 
 class VariableAnalyzer {
-  friend class VariableLocationPatchPass;
-
 public:
   VariableAnalyzer() = default;
 
   ir::VariableId get_variable_id();
+
+  const ref<FunctionScope> current_function_scope() const;
+  const ref<BlockScope> current_block_scope() const;
 
   void push_function(const ref<Function>& node);
   void push_block(const ref<Block>& node);
@@ -96,6 +115,7 @@ public:
   void pop_block();
 
   ir::VariableId declare_anonymous_variable(bool constant);
+  ir::VariableId declare_class_property(const std::string& name);
   ir::VariableId declare_variable(const std::string& name, bool constant);
   ir::VariableId declare_argument(const std::string& name);
 
@@ -127,6 +147,7 @@ private:
 
   // declare a new variable in the current block
   ir::VariableId declare_anonymous_variable(const ref<Node>& declaration, bool constant);
+  ir::VariableId declare_class_property(const ref<Name>& name, const ref<Node>& declaration);
   ir::VariableId declare_variable(const ref<Name>& name, const ref<Node>& declaration, bool constant);
   ir::VariableId declare_argument(const ref<Name>& name, const ref<Node>& declaration);
 
@@ -166,6 +187,8 @@ private:
 
   bool inspect_enter(const ref<Block>&) override;
   void inspect_leave(const ref<Block>&) override;
+
+  ref<Expression> transform(const ref<CallOp>&) override;
 
   bool inspect_enter(const ref<Declaration>&) override;
   ref<Statement> transform(const ref<Declaration>&) override;

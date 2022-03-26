@@ -24,28 +24,42 @@
  * SOFTWARE.
  */
 
-func foo {
-    class Foo {
+//class Person {
+//    property name
+//
+//    func foo(cb) {
+//        cb(->{
+//            print(name)
+//        })
+//    }
+//}
+//
+//const p = Person("leonard")
+//p.foo(->(cb) {
+//    cb()
+//})
 
+class Foo {
+    property x
+
+    func get1 {
+        do_stuff(->{
+            const t = spawn add(1, 2)
+            const result = await t
+            print("self: {self} result: {result}")
+            self
+        })
     }
+
+    func add(x, y) = x + y
+
+    func do_stuff(cb) = cb()
 }
 
-func bar {
-    func bar {
-        25
-    }
-}
+const foo = Foo()
+const result = foo.get1()
 
-print(foo())
-print(bar())
-
-
-
-
-
-
-
-
+print(result)
 
 
 

@@ -35,6 +35,7 @@
       AST_TYPESWITCH_CASE_NODE(Symbol, __VA_ARGS__)              \
       AST_TYPESWITCH_CASE_NODE(Null, __VA_ARGS__)                \
       AST_TYPESWITCH_CASE_NODE(Self, __VA_ARGS__)                \
+      AST_TYPESWITCH_CASE_NODE(FarSelf, __VA_ARGS__)                \
       AST_TYPESWITCH_CASE_NODE(Super, __VA_ARGS__)               \
       AST_TYPESWITCH_CASE_NODE(Tuple, __VA_ARGS__)               \
       AST_TYPESWITCH_CASE_NODE(List, __VA_ARGS__)                \

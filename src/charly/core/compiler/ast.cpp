@@ -124,6 +124,12 @@ void Block::dump_info(std::ostream& out) const {
   }
 }
 
+void FarSelf::dump_info(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  writer << ' ';
+  writer.fg(Color::Yellow, (uint32_t)this->depth);
+}
+
 void Id::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';

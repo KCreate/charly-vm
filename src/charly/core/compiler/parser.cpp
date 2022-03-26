@@ -1330,6 +1330,7 @@ ref<Class> Parser::parse_class() {
       flags.class_function = true;
       flags.static_function = static_property;
       ref<Function> function = parse_function(flags);
+      function->host_class = node;
 
       if (static_property) {
         function->class_static_function = true;

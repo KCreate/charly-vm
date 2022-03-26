@@ -123,7 +123,7 @@ public:
   RawShape create_shape(Thread* thread, RawValue parent, RawTuple key_table);
   RawShape create_shape(Thread* thread, RawValue parent, std::initializer_list<std::string> keys);
 
-  RawFunction create_function(Thread* thread, RawValue context, SharedFunctionInfo* shared_info);
+  RawFunction create_function(Thread* thread, RawValue context, SharedFunctionInfo* shared_info, RawValue saved_self = kNull);
   RawBuiltinFunction create_builtin_function(Thread* thread, BuiltinFunctionType function, SYMBOL name, uint8_t argc);
   RawFiber create_fiber(Thread* thread, RawFunction function, RawValue self, RawValue arguments);
   RawValue create_exception(Thread* thread, RawValue message);

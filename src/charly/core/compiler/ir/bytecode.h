@@ -244,6 +244,15 @@ static const size_t kInstructionLength = 4;
    * - self                                                                            \
    * */                                                                                \
   V(loadself, IXXX, 0, 1)                                                              \
+  /* loadfarself - load the self value in this frame                                   \
+   *                                                                                   \
+   * opcode operands:                                                                  \
+   * - function depth                                                                  \
+   *                                                                                   \
+   * stack results:                                                                    \
+   * - self                                                                            \
+   * */                                                                                \
+  V(loadfarself, IAXX, 0, 1)                                                           \
   /* loadargc - load the amount of arguments passed to the function                    \
    *                                                                                   \
    * stack results:                                                                    \
@@ -465,7 +474,7 @@ static const size_t kInstructionLength = 4;
   /* makeclass - allocate new class                                                    \
    *                                                                                   \
    * stack arguments:                                                                  \
-   * - flags
+   * - flags                                                                           \
    * - class name symbol                                                               \
    * - parent class                                                                    \
    * - constructor function                                                            \
@@ -555,7 +564,7 @@ static const size_t kInstructionLength = 4;
   /* makefiber - allocate new fiber                                                    \
    *                                                                                   \
    * stack arguments:                                                                  \
-   * - context                                                                            \
+   * - context                                                                         \
    * - function                                                                        \
    * - arguments tuple                                                                 \
    *                                                                                   \
@@ -631,11 +640,12 @@ static const size_t kInstructionLength = 4;
   V(unot, IXXX, 1, 1)                                                                  \
   V(ubnot, IXXX, 1, 1)
 
-enum Opcode : uint8_t {
+enum Opcode : uint8_t
+{
 #define ID(name, ...) name,
   FOREACH_OPCODE(ID)
 #undef ID
-    OpcodeCount  // amount of opcodes
+  OpcodeCount  // amount of opcodes
 };
 
 #define DEF_FORWARD(T, _) struct Instruction##T;

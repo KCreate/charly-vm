@@ -82,6 +82,7 @@ public:
     Symbol,
     Null,
     Self,
+    FarSelf,
     Super,
     Tuple,
     List,
@@ -446,7 +447,19 @@ public:
 
 // self
 class Self final : public Expression {
-  AST_NODE(Self)
+AST_NODE(Self)
+public:
+  explicit Self() {}
+};
+
+// self of some parent function
+class FarSelf final : public Expression {
+  AST_NODE(FarSelf)
+public:
+  explicit FarSelf(uint8_t depth = 0) : depth(depth) {}
+  uint8_t depth;
+
+  void dump_info(std::ostream& out) const override;
 };
 
 template <typename T>
@@ -743,6 +756,7 @@ public:
 
 // func foo(a, b = 1, ...rest) {}
 // ->(a, b) a + b
+class Class;
 class Function final : public Expression {
   AST_NODE(Function)
 public:
@@ -750,6 +764,7 @@ public:
   Function(bool arrow_function, const ref<Name>& name, const ref<Block>& body, Args&&... params) :
     class_constructor(false),
     class_static_function(false),
+    variable_function_scope(nullptr),
     arrow_function(arrow_function),
     name(name),
     body(body),
@@ -764,6 +779,7 @@ public:
   bool class_static_function;
 
   ref<FunctionScope> variable_function_scope;
+  weak_ref<Class> host_class;
 
   bool arrow_function;
   ref<Name> name;

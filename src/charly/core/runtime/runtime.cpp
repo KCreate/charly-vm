@@ -476,8 +476,8 @@ RawClass Runtime::create_class(Thread* thread,
   // a special intermediate class needs to be created that contains those static properties
   // the class instance returned is an instance of that intermediate class
   DCHECK(static_prop_keys.size() == static_prop_values.size());
+  auto builtin_class_instance = get_builtin_class(thread, ShapeId::kClass);
   if (static_prop_keys.size() || static_funcs.size()) {
-    auto builtin_class_instance = get_builtin_class(thread, ShapeId::kClass);
     auto builtin_class_shape = builtin_class_instance.shape_instance();
     auto static_shape = create_shape(thread, builtin_class_shape, static_prop_keys);
     auto static_class = RawClass::cast(create_instance(thread, builtin_class_instance));
@@ -505,7 +505,7 @@ RawClass Runtime::create_class(Thread* thread,
 
     return actual_class;
   } else {
-    auto klass = RawClass::cast(create_instance(thread, ShapeId::kClass, RawClass::kFieldCount));
+    auto klass = RawClass::cast(create_instance(thread, builtin_class_instance));
     klass.set_flags(flags);
     klass.set_name(RawSymbol::make(name));
     klass.set_parent(parent);
@@ -610,9 +610,10 @@ RawTuple Runtime::concat_tuple(Thread* thread, RawTuple left, RawTuple right) {
   return new_tuple;
 }
 
-RawFunction Runtime::create_function(Thread* thread, RawValue context, SharedFunctionInfo* shared_info) {
+RawFunction Runtime::create_function(Thread* thread, RawValue context, SharedFunctionInfo* shared_info, RawValue saved_self) {
   RawFunction func = RawFunction::cast(create_instance(thread, ShapeId::kFunction, RawFunction::kFieldCount));
   func.set_context(context);
+  func.set_saved_self(saved_self);
   func.set_shared_info(shared_info);
   return func;
 }
@@ -776,9 +777,11 @@ RawClass Runtime::lookup_class(Thread* thread, RawValue value) {
   if (value.isInstance()) {
     auto instance = RawInstance::cast(value);
     auto klass_field = instance.klass_field();
-    if (!klass_field.isNull()) {
-      return RawClass::cast(klass_field);
+    if (klass_field.isNull()) {
+      instance.set_klass_field(get_builtin_class(thread, value.shape_id()));
     }
+
+    return RawClass::cast(instance.klass_field());
   }
 
   return get_builtin_class(thread, value.shape_id());

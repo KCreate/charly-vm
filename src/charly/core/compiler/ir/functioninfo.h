@@ -39,6 +39,7 @@ struct FunctionInfo {
   uint8_t heap_variables = 0;
   uint8_t argc = 0;
   uint8_t minargc = 0;
+  bool has_frame_context = false;
   bool spread_argument = false;
   bool arrow_function = false;
 
@@ -48,6 +49,7 @@ struct FunctionInfo {
   friend std::ostream& operator<<(std::ostream& out, const FunctionInfo& info) {
     out << "(";
     out << "lvars=" << static_cast<int32_t>(info.local_variables) << ", ";
+    out << "has_context=" << (info.has_frame_context ? "true" : "false") << ", ";
     out << "hvars=" << static_cast<int32_t>(info.heap_variables) << ", ";
     out << "argc=" << static_cast<int32_t>(info.argc) << ", ";
     out << "minargc=" << static_cast<int32_t>(info.minargc) << ", ";

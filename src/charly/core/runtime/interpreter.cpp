@@ -148,10 +148,12 @@ RawValue Interpreter::call_function(
   }
 
   // setup frame context
+  uint8_t has_frame_context = shared_info->ir_info.has_frame_context;
   uint8_t heap_variables = shared_info->ir_info.heap_variables;
-  if (heap_variables) {
-    RawTuple context = RawTuple::cast(runtime->create_tuple(thread, heap_variables + 1));
-    context.set_field_at(0, function.context());
+  if (has_frame_context) {
+    RawTuple context = RawTuple::cast(runtime->create_tuple(thread, RawFunction::kContextHeapVariablesOffset + heap_variables));
+    context.set_field_at(RawFunction::kContextParentOffset, function.context());
+    context.set_field_at(RawFunction::kContextSelfOffset, self);
     frame.context = context;
   } else {
     frame.context = function.context();
@@ -168,6 +170,11 @@ RawValue Interpreter::call_function(
   for (uint8_t i = 0; i < argc && i < localcount; i++) {
     DCHECK(arguments);
     frame.locals[i] = arguments[i];
+  }
+
+  // copy self from context if this is an arrow function
+  if (shared_info->ir_info.arrow_function) {
+    frame.self = function.saved_self();
   }
 
   thread->checkpoint();
@@ -495,6 +502,19 @@ OP(loadself) {
   return ContinueMode::Next;
 }
 
+OP(loadfarself) {
+  uint8_t depth = op->arg();
+
+  RawTuple context = RawTuple::cast(frame->context);
+  while (depth) {
+    context = RawTuple::cast(context.field_at(RawFunction::kContextParentOffset));
+    depth--;
+  }
+
+  frame->push(context.field_at(RawFunction::kContextSelfOffset));
+  return ContinueMode::Next;
+}
+
 OP(loadargc) {
   frame->push(RawInt::make(frame->argc));
   return ContinueMode::Next;
@@ -530,12 +550,11 @@ OP(loadfar) {
 
   RawTuple context = RawTuple::cast(frame->context);
   while (depth) {
-    context = RawTuple::cast(context.field_at(0));
+    context = RawTuple::cast(context.field_at(RawFunction::kContextParentOffset));
     depth--;
   }
 
-  // add one to index to skip over parent pointer
-  frame->push(context.field_at(index + 1));
+  frame->push(context.field_at(RawFunction::kContextHeapVariablesOffset + index));
   return ContinueMode::Next;
 }
 
@@ -666,12 +685,11 @@ OP(setfar) {
 
   RawTuple context = RawTuple::cast(frame->context);
   while (depth) {
-    context = RawTuple::cast(context.field_at(0));
+    context = RawTuple::cast(context.field_at(RawFunction::kContextParentOffset));
     depth--;
   }
 
-  // add one to index to skip over parent pointer
-  context.set_field_at(index + 1, frame->peek());
+  context.set_field_at(RawFunction::kContextHeapVariablesOffset + index, frame->peek());
   return ContinueMode::Next;
 }
 
@@ -781,7 +799,7 @@ OP(unpackobjectspread) {
 OP(makefunc) {
   int16_t offset = op->arg();
   SharedFunctionInfo* shared_data = *bitcast<SharedFunctionInfo**>(op->ip() + offset);
-  RawFunction func = RawFunction::cast(thread->runtime()->create_function(thread, frame->context, shared_data));
+  RawFunction func = RawFunction::cast(thread->runtime()->create_function(thread, frame->context, shared_data, frame->self));
   frame->push(func);
   return ContinueMode::Next;
 }

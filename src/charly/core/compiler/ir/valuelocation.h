@@ -40,7 +40,9 @@ struct ValueLocation {
     Invalid,
     Id,          // temporary variable id set by local analyzer pass
     LocalFrame,  // value stored in current frames locals
-    FarFrame,    // value stored in the heap allocated locals of some frame
+    FarFrame,    // value stored in the heap allocated locals of some parent frame
+    Self,        // value is a property of the self value in the current function
+    FarSelf,     // value is a property of the self value in some parent frame
     Global       // value stored in global context
   };
 
@@ -63,6 +65,17 @@ struct ValueLocation {
       uint8_t depth;
       uint8_t index;
     } far_frame;
+
+    // variables declared in current frames self value
+    struct {
+      SYMBOL symbol;
+    } self;
+
+    // variables declared in a parent frames self value
+    struct {
+      uint8_t depth;
+      SYMBOL symbol;
+    } far_self;
 
     // global variables
     struct {
@@ -95,6 +108,23 @@ struct ValueLocation {
     loc.type = Type::FarFrame;
     loc.as.far_frame.depth = depth;
     loc.as.far_frame.index = index;
+    return loc;
+  }
+
+  static ValueLocation Self(const std::string& name) {
+    ValueLocation loc;
+    loc.type = Type::Self;
+    loc.name = name;
+    loc.as.far_self.symbol = crc32::hash_string(name);
+    return loc;
+    }
+
+  static ValueLocation FarSelf(uint8_t depth, const std::string& name) {
+    ValueLocation loc;
+    loc.type = Type::FarSelf;
+    loc.name = name;
+    loc.as.far_self.depth = depth;
+    loc.as.far_self.symbol = crc32::hash_string(name);
     return loc;
   }
 
@@ -131,6 +161,19 @@ struct ValueLocation {
         out << "far(";
         out << "depth=" << static_cast<int>(location.as.far_frame.depth) << ", ";
         out << "index=" << static_cast<int>(location.as.far_frame.index);
+        out << ")";
+        break;
+      }
+      case ValueLocation::Type::Self: {
+        out << "self(";
+        out << "symbol=" << location.name;
+        out << ")";
+        break;
+      }
+      case ValueLocation::Type::FarSelf: {
+        out << "far_self(";
+        out << "depth=" << static_cast<int>(location.as.far_frame.depth) << ", ";
+        out << "symbol=" << location.name;
         out << ")";
         break;
       }

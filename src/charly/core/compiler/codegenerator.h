@@ -107,6 +107,7 @@ private:
   void inspect_leave(const ref<ast::Symbol>&) override;
   void inspect_leave(const ref<ast::Null>&) override;
   void inspect_leave(const ref<ast::Self>&) override;
+  void inspect_leave(const ref<ast::FarSelf>&) override;
   void inspect_leave(const ref<ast::Super>&) override;
   bool inspect_enter(const ref<ast::Tuple>&) override;
   bool inspect_enter(const ref<ast::List>&) override;

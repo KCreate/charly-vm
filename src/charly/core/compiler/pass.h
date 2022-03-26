@@ -110,6 +110,7 @@ protected:
   HANDLE_NODE(Expression, Symbol, {})
   HANDLE_NODE(Expression, Null, {})
   HANDLE_NODE(Expression, Self, {})
+  HANDLE_NODE(Expression, FarSelf, {})
   HANDLE_NODE(Expression, Super, {})
 
   HANDLE_NODE(Expression, Tuple, {

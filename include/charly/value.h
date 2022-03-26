@@ -766,12 +766,22 @@ public:
   RawValue context() const;
   void set_context(RawValue context);
 
+  RawValue saved_self() const;
+  void set_saved_self(RawValue context);
+
   SharedFunctionInfo* shared_info() const;
   void set_shared_info(SharedFunctionInfo* function);
+
+  enum {
+    kContextParentOffset = 0,
+    kContextSelfOffset,
+    kContextHeapVariablesOffset
+  };
 
   enum
   {
     kFrameContextOffset = RawInstance::kFieldCount,
+    kSavedSelfOffset,
     kSharedInfoOffset,
     kFieldCount
   };

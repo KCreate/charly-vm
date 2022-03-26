@@ -34,6 +34,14 @@ VariableId VariableAnalyzer::get_variable_id() {
   return m_id_counter++;
 }
 
+const ref<FunctionScope> VariableAnalyzer::current_function_scope() const {
+  return m_function;
+}
+
+const ref<BlockScope> VariableAnalyzer::current_block_scope() const {
+  return m_block;
+}
+
 void VariableAnalyzer::push_function(const ref<Function>& node) {
   ref<FunctionScope> new_scope = make<FunctionScope>(m_function, m_block, node);
   node->variable_function_scope = new_scope;
@@ -53,11 +61,11 @@ void VariableAnalyzer::enter_block_scope(const ref<BlockScope>& scope) {
 }
 
 void VariableAnalyzer::pop_function() {
-  m_function = m_function->m_parent_function;
+  m_function = m_function->parent_function();
 }
 
 void VariableAnalyzer::pop_block() {
-  m_block = m_block->m_parent_block;
+  m_block = m_block->parent_block();
 }
 
 VariableId VariableAnalyzer::declare_anonymous_variable(bool constant) {
@@ -70,8 +78,27 @@ VariableId VariableAnalyzer::declare_anonymous_variable(bool constant) {
   declaration.argument = false;
   declaration.constant = constant;
   declaration.leaked = false;
-  declaration.global = m_block->m_block_ast->repl_toplevel_block;
-  m_function->m_locals.insert({ id, declaration });
+  declaration.global = m_block->block_ast()->repl_toplevel_block;
+  declaration.class_property = false;
+  m_function->locals().insert({ id, declaration });
+
+  return id;
+}
+
+VariableId VariableAnalyzer::declare_class_property(const std::string& name) {
+  DCHECK(m_function);
+
+  VariableId id = get_variable_id();
+  VariableDeclaration declaration;
+  declaration.id = id;
+  declaration.name = name;
+  declaration.argument = false;
+  declaration.constant = false;
+  declaration.leaked = false;
+  declaration.global = false;
+  declaration.class_property = true;
+  m_function->class_properties().insert({ id, declaration });
+  m_block->locals().insert({ name, id });
 
   return id;
 }
@@ -80,6 +107,8 @@ VariableId VariableAnalyzer::declare_variable(const std::string& name, bool cons
   DCHECK(m_function);
   DCHECK(m_block);
 
+  bool global_variable = m_block->block_ast()->repl_toplevel_block;
+
   VariableId id = get_variable_id();
   VariableDeclaration declaration;
   declaration.id = id;
@@ -87,10 +116,15 @@ VariableId VariableAnalyzer::declare_variable(const std::string& name, bool cons
   declaration.argument = false;
   declaration.constant = constant;
   declaration.leaked = false;
-  declaration.global = m_block->m_block_ast->repl_toplevel_block;
-  m_function->m_locals.insert({ id, declaration });
+  declaration.global = global_variable;
+  declaration.class_property = false;
 
-  m_block->m_locals.insert({ name, id });
+  if (global_variable) {
+    m_function->globals().insert({ id, declaration });
+  } else {
+    m_function->locals().insert({ id, declaration });
+  }
+  m_block->locals().insert({ name, id });
 
   return id;
 }
@@ -106,10 +140,11 @@ VariableId VariableAnalyzer::declare_argument(const std::string& name) {
   declaration.argument = true;
   declaration.constant = false;
   declaration.leaked = false;
-  declaration.global = m_block->m_block_ast->repl_toplevel_block;
-  m_function->m_locals.insert({ id, declaration });
+  declaration.global = m_block->block_ast()->repl_toplevel_block;
+  declaration.class_property = false;
 
-  m_block->m_locals.insert({ name, id });
+  m_function->locals().insert({ id, declaration });
+  m_block->locals().insert({ name, id });
 
   return id;
 }
@@ -118,12 +153,12 @@ VariableId VariableAnalyzer::lookup_variable(const std::string& name) {
   ref<BlockScope> search_block = m_block;
 
   while (search_block) {
-    ref<FunctionScope> search_function = search_block->m_parent_function;
+    ref<FunctionScope> search_function = search_block->parent_function();
 
     // locally declared variable
-    if (search_block->m_locals.count(name)) {
-      VariableId id = search_block->m_locals.at(name);
-      VariableDeclaration& declaration = search_function->m_locals.at(id);
+    if (search_block->locals().count(name)) {
+      VariableId id = search_block->locals().at(name);
+      VariableDeclaration& declaration = search_function->lookup_variable(id);
 
       // variables accessed from child functions are marked as leaked
       if (search_function != m_function && !declaration.global) {
@@ -133,7 +168,7 @@ VariableId VariableAnalyzer::lookup_variable(const std::string& name) {
       return id;
     }
 
-    search_block = search_block->m_parent_block;
+    search_block = search_block->parent_block();
   }
 
   VariableId id = get_variable_id();
@@ -145,12 +180,12 @@ bool VariableAnalyzer::is_constant(VariableId id) const {
   ref<FunctionScope> search_function = m_function;
 
   while (search_function) {
-    if (search_function->m_locals.count(id)) {
-      VariableDeclaration& declaration = search_function->m_locals.at(id);
+    if (search_function->contains_variable(id)) {
+      VariableDeclaration& declaration = search_function->lookup_variable(id);
       return declaration.constant;
     }
 
-    search_function = search_function->m_parent_function;
+    search_function = search_function->parent_function();
   }
 
   if (m_global_variables.count(id)) {
@@ -162,7 +197,7 @@ bool VariableAnalyzer::is_constant(VariableId id) const {
 
 bool VariableAnalyzer::name_already_taken(const std::string& name) const {
   DCHECK(m_block);
-  return m_block->m_locals.count(name) > 0;
+  return m_block->locals().count(name) > 0;
 }
 
 uint8_t FunctionScope::get_local_variable_count() const {
@@ -183,7 +218,7 @@ uint8_t FunctionScope::get_heap_variable_count() const {
 
   for (const auto& entry : m_locals) {
     const VariableDeclaration& declaration = entry.second;
-    if (declaration.leaked) {
+    if (declaration.leaked && !declaration.class_property) {
       count++;
     }
   }
@@ -191,55 +226,145 @@ uint8_t FunctionScope::get_heap_variable_count() const {
   return count;
 }
 
+bool FunctionScope::has_frame_context() const {
+  if (get_heap_variable_count()) {
+    return true;
+  }
+
+  for (const auto& entry : m_class_properties) {
+    if (entry.second.leaked) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool FunctionScope::contains_variable(ir::VariableId id) {
+  return m_globals.count(id) || m_locals.count(id) || m_class_properties.count(id);
+}
+
+VariableDeclaration& FunctionScope::lookup_variable(ir::VariableId id) {
+  if (m_globals.count(id)) {
+    return m_globals.at(id);
+  }
+  if (m_locals.count(id)) {
+    return m_locals.at(id);
+  }
+  if (m_class_properties.count(id)) {
+    return m_class_properties.at(id);
+  }
+  FAIL("Expected variable id to be declared in at least one place");
+}
+
+const ref<FunctionScope> FunctionScope::parent_function() const {
+  return m_parent_function;
+}
+
+const ref<BlockScope> FunctionScope::parent_block() const {
+  return m_parent_block;
+}
+
+const ref<Function> FunctionScope::function_ast() const {
+  return m_function_ast;
+}
+
+std::map<ir::VariableId, VariableDeclaration>& FunctionScope::globals() {
+  return m_globals;
+}
+
+std::map<ir::VariableId, VariableDeclaration>& FunctionScope::locals() {
+  return m_locals;
+}
+
+std::map<ir::VariableId, VariableDeclaration>& FunctionScope::class_properties() {
+  return m_class_properties;
+}
+
+std::unordered_map<std::string, ir::VariableId>& BlockScope::locals() {
+  return m_locals;
+}
+
+const ref<FunctionScope> BlockScope::parent_function() const {
+  return m_parent_function;
+}
+
+const ref<BlockScope> BlockScope::parent_block() const {
+  return m_parent_block;
+}
+
+const ref<Block> BlockScope::block_ast() const {
+  return m_block_ast;
+}
+
 void VariableAnalyzer::patch_value_location(ValueLocation& location) const {
-  DCHECK(location.type == ValueLocation::Type::Id);
+
+  // variable has already been visited
+  if (location.type != ValueLocation::Type::Id) {
+    return;
+  }
 
   VariableId id = location.as.id.id;
 
   ref<FunctionScope> search_function = m_function;
   uint8_t leaked_functions_counter = 0;
+  bool passed_non_arrow_function = false;
   while (search_function) {
+    if (search_function->globals().count(id)) {
+      auto& decl = search_function->globals().at(id);
+      CHECK(decl.global);
+      location = ValueLocation::Global(decl.name);
+      return;
+    }
+
+    if (search_function->class_properties().count(id)) {
+      auto& decl = search_function->class_properties().at(id);
+      CHECK(decl.class_property);
+
+      if (search_function == m_function || !passed_non_arrow_function) {
+        location = ValueLocation::Self(decl.name);
+      } else {
+        location = ValueLocation::FarSelf(leaked_functions_counter, decl.name);
+      }
+
+      return;
+    }
+
     uint8_t local_index = 0;
     uint8_t heap_index = 0;
-    for (const auto& entry : search_function->m_locals) {
+    for (const auto& entry : search_function->locals()) {
       VariableId entry_id = entry.first;
       const VariableDeclaration& declaration = entry.second;
 
       if (id == entry_id) {
-        if (declaration.global) {
-          location = ValueLocation::Global(declaration.name);
-        } else if (declaration.leaked) {
+        if (declaration.leaked) {
           location = ValueLocation::FarFrame(leaked_functions_counter, heap_index);
         } else {
           location = ValueLocation::LocalFrame(local_index);
         }
-
         return;
       }
 
-      if (!declaration.global) {
-        if (!declaration.leaked) {
-          local_index++;
-          continue;
-        }
-
-        if (declaration.leaked) {
-          heap_index++;
-
-          if (declaration.argument) {
-            local_index++;
-          }
-
-          continue;
-        }
+      if (declaration.leaked) {
+        heap_index++;
       }
+
+      if (declaration.argument || !declaration.leaked) {
+        local_index++;
+      }
+
+      continue;
     }
 
-    if (search_function->get_heap_variable_count()) {
+    if (search_function->has_frame_context()) {
       leaked_functions_counter++;
     }
 
-    search_function = search_function->m_parent_function;
+    if (!search_function->function_ast()->arrow_function) {
+      passed_non_arrow_function = true;
+    }
+
+    search_function = search_function->parent_function();
   }
 
   if (m_global_variables.count(id)) {
@@ -288,6 +413,12 @@ VariableId VariableAnalyzerPass::declare_anonymous_variable(const ref<Node>& dec
   return variable;
 }
 
+VariableId VariableAnalyzerPass::declare_class_property(const ref<Name>& name, const ref<Node>& declaration) {
+  VariableId variable = m_analyzer.declare_class_property(name->value);
+  m_variable_declarations.insert({ variable, declaration });
+  return variable;
+}
+
 bool VariableAnalyzerPass::inspect_enter(const ref<Function>& node) {
   m_analyzer.push_function(node);
   m_analyzer.push_block(node->body);
@@ -296,6 +427,18 @@ bool VariableAnalyzerPass::inspect_enter(const ref<Function>& node) {
   node->ir_info.argc = node->argc();
   node->ir_info.minargc = node->minimum_argc();
   node->ir_info.arrow_function = node->arrow_function;
+
+  if (ref<Class> host_class = node->host_class.lock()) {
+    for (const auto& prop : host_class->member_properties) {
+      CHECK(declare_class_property(prop->name, prop));
+    }
+
+    for (const auto& func : host_class->member_functions) {
+      CHECK(declare_class_property(func->name, func));
+    }
+  }
+
+  m_analyzer.push_block(node->body);
 
   for (const ref<FunctionArgument>& argument : node->arguments) {
     if (argument->spread_initializer) {
@@ -311,6 +454,7 @@ bool VariableAnalyzerPass::inspect_enter(const ref<Function>& node) {
 }
 
 void VariableAnalyzerPass::inspect_leave(const ref<Function>&) {
+  m_analyzer.pop_block();
   m_analyzer.pop_block();
   m_analyzer.pop_function();
 }
@@ -333,6 +477,10 @@ ref<Statement> VariableAnalyzerPass::transform(const ref<Declaration>& node) {
   // variable before processing the body
   //
   // this allows functions to access their own identifier and thus be recursive
+  //
+  // the same behaviour would not be desirable for regular declarations as that
+  // would not allow new declarations to reference previously declared variables
+  // with the same name
   bool is_regular_function = false;
   if (auto function = cast<Function>(node->expression)) {
     if (!function->arrow_function) {
@@ -448,8 +596,9 @@ bool VariableLocationPatchPass::inspect_enter(const ref<Function>& node) {
     m_analyzer.patch_value_location(argument->ir_location);
   }
 
-  node->ir_info.local_variables = m_analyzer.m_function->get_local_variable_count();
-  node->ir_info.heap_variables = m_analyzer.m_function->get_heap_variable_count();
+  node->ir_info.local_variables = m_analyzer.current_function_scope()->get_local_variable_count();
+  node->ir_info.heap_variables = m_analyzer.current_function_scope()->get_heap_variable_count();
+  node->ir_info.has_frame_context = m_analyzer.current_function_scope()->has_frame_context();
 
   return true;
 }
@@ -466,6 +615,31 @@ bool VariableLocationPatchPass::inspect_enter(const ref<Block>& node) {
 
 void VariableLocationPatchPass::inspect_leave(const ref<Block>&) {
   m_analyzer.pop_block();
+}
+
+ref<Expression> VariableLocationPatchPass::transform(const ref<CallOp>& node) {
+  if (auto id = cast<Id>(node->target)) {
+    auto& loc = id->ir_location;
+    switch (loc.type) {
+      case ValueLocation::Type::Self: {
+        auto op = make<CallMemberOp>(make<Self>(), make<Name>(loc.name), node->arguments);
+        op->set_location(node);
+        return op;
+      }
+
+      case ValueLocation::Type::FarSelf: {
+        auto op = make<CallMemberOp>(make<FarSelf>(loc.as.far_self.depth), make<Name>(loc.name), node->arguments);
+        op->set_location(node);
+        return op;
+      }
+
+      default: {
+        // do nothing
+      }
+    }
+  }
+
+  return node;
 }
 
 bool VariableLocationPatchPass::inspect_enter(const ref<Declaration>&) {

@@ -1117,12 +1117,20 @@ int64_t RawShape::offset_of(SYMBOL symbol) const {
   return -1;
 }
 
-  RawValue RawFunction::context() const {
+RawValue RawFunction::context() const {
   return field_at(kFrameContextOffset);
 }
 
 void RawFunction::set_context(RawValue context) {
   set_field_at(kFrameContextOffset, context);
+}
+
+RawValue RawFunction::saved_self() const {
+  return field_at(kSavedSelfOffset);
+}
+
+void RawFunction::set_saved_self(RawValue value) {
+  set_field_at(kSavedSelfOffset, value);
 }
 
 SharedFunctionInfo* RawFunction::shared_info() const {
