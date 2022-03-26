@@ -94,6 +94,12 @@ RawValue readfile(Thread* thread, const RawValue* args, uint8_t argc) {
   return thread->runtime()->acquire_string(thread, ptr, size, hash);
 }
 
+RawValue getstacktrace(Thread* thread, const RawValue* args, uint8_t argc) {
+  CHECK(argc == 1);
+  uint32_t trim = RawInt::cast(args[0]).value();
+  return thread->runtime()->create_stack_trace(thread, trim);
+}
+
 RawValue compile(Thread* thread, const RawValue* args, uint8_t argc) {
   Runtime* runtime = thread->runtime();
 

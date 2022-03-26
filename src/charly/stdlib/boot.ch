@@ -44,6 +44,7 @@ const builtin_writevalue = @"charly.builtin.core.writevalue"
 const builtin_writeline = @"charly.builtin.core.writeline"
 const builtin_writevaluesync = @"charly.builtin.core.writevaluesync"
 const builtin_readfile = @"charly.builtin.core.readfile"
+const builtin_getstacktrace = @"charly.builtin.core.getstacktrace"
 const builtin_compile = @"charly.builtin.core.compile"
 const builtin_disassemble = @"charly.builtin.core.disassemble"
 const builtin_makelist = @"charly.builtin.core.makelist"
@@ -81,6 +82,8 @@ func compile(source, name = "repl") = builtin_compile(source, name)
 
 func readfile(name) = builtin_readfile(name)
 
+func getstacktrace(trim) = builtin_getstacktrace(trim)
+
 func dis(function) {
     echo("disassembly of {function}")
     builtin_disassemble(function)
@@ -96,7 +99,7 @@ Instance.constructor = func constructor {
 
 Exception.constructor = func constructor(message) {
     @message = message
-    @stack_trace = ()
+    @stack_trace = getstacktrace(2)
 }
 
 let $$ = null

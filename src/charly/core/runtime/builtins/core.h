@@ -39,6 +39,7 @@ void initialize(Thread* thread);
   V(core, writeline, 1)      \
   V(core, writevaluesync, 1) \
   V(core, readfile, 1)       \
+  V(core, getstacktrace, 1)  \
   V(core, compile, 2)        \
   V(core, disassemble, 1)    \
   V(core, makelist, 2)       \

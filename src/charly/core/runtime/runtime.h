@@ -132,6 +132,11 @@ public:
     return create_exception(thread, create_string_from_template(thread, str, args...));
   }
 
+  // creates a tuple containing a stack trace of the current thread
+  // trim variable controls how many frames should be dropped
+  // starting from the bottom
+  RawTuple create_stack_trace(Thread* thread, uint32_t trim = 0);
+
   RawValue join_fiber(Thread* thread, RawFiber fiber);
 
   // declare a new global variable

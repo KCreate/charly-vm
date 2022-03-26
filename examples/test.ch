@@ -46,8 +46,8 @@ class Foo {
         do_stuff(->{
             const t = spawn add(1, 2)
             const result = await t
-            print("self: {self} result: {result}")
-            self
+            throw Exception("self: {self} result: {result}")
+//            throw "self: {self} result: {result}"
         })
     }
 

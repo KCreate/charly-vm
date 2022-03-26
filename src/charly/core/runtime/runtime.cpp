@@ -651,19 +651,26 @@ RawValue Runtime::create_exception(Thread* thread, RawValue message) {
   // allocate exception instance
   auto instance = RawException::cast(create_instance(thread, get_builtin_class(thread, ShapeId::kException)));
   instance.set_message(message);
+  instance.set_stack_trace(create_stack_trace(thread));
 
-  // build stack trace
+  return instance;
+}
+
+RawTuple Runtime::create_stack_trace(Thread* thread, uint32_t trim) {
   std::vector<RawTuple> frames;
+  uint64_t depth = 0;
   for (Frame* frame = thread->frame(); frame != nullptr; frame = frame->parent) {
-    frames.push_back(create_tuple(thread, { frame->function }));
+    if (depth >= trim) {
+      frames.push_back(create_tuple(thread, { frame->function }));
+    }
+    depth++;
   }
+
   RawTuple stack_trace = create_tuple(thread, frames.size());
   for (uint32_t i = 0; i < frames.size(); i++) {
     stack_trace.set_field_at(i, frames.at(i));
   }
-  instance.set_stack_trace(stack_trace);
-
-  return instance;
+  return stack_trace;
 }
 
 RawValue Runtime::join_fiber(Thread* thread, RawFiber _fiber) {
