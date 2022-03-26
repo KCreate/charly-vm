@@ -79,32 +79,44 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
   uint8_t argc = ast->ir_info.argc;
   uint8_t minargc = ast->ir_info.minargc;
   if (minargc < argc) {
-    // emit initial jump table
-    Label labels[argc];
-    Label body_label = m_builder.reserve_label();
-    m_builder.emit_loadargc();
-    for (uint8_t i = minargc; i < argc; i++) {
-      Label l = labels[i] = m_builder.reserve_label();
-      m_builder.emit_testintjmp(i, l);
-    }
-    m_builder.emit_testintjmp(argc, body_label);
-    m_builder.emit_pop();
-    m_builder.emit_panic();
 
-    // emit stores for each argument with a default value
+    // skip building the jump table if all default arguments are initialized to null
+    bool has_non_null_default_arguments = false;
     for (uint8_t i = minargc; i < argc; i++) {
-      m_builder.place_label(labels[i]);
-
-      // assign default value
       const ref<FunctionArgument>& arg = ast->arguments[i];
       if (!isa<Null>(arg->default_value)) {
-        apply(arg->default_value);
-        generate_store(arg->ir_location)->at(arg);
-        m_builder.emit_pop();
+        has_non_null_default_arguments = true;
       }
     }
 
-    m_builder.place_label(body_label);
+    if (has_non_null_default_arguments) {
+      // emit initial jump table
+      Label labels[argc];
+      Label body_label = m_builder.reserve_label();
+      m_builder.emit_loadargc();
+      for (uint8_t i = minargc; i < argc; i++) {
+        Label l = labels[i] = m_builder.reserve_label();
+        m_builder.emit_testintjmp(i, l);
+      }
+      m_builder.emit_testintjmp(argc, body_label);
+      m_builder.emit_pop();
+      m_builder.emit_panic();
+
+      // emit stores for each argument with a default value
+      for (uint8_t i = minargc; i < argc; i++) {
+        m_builder.place_label(labels[i]);
+
+        // assign default value
+        const ref<FunctionArgument>& arg = ast->arguments[i];
+        if (!isa<Null>(arg->default_value)) {
+          apply(arg->default_value);
+          generate_store(arg->ir_location)->at(arg);
+          m_builder.emit_pop();
+        }
+      }
+
+      m_builder.place_label(body_label);
+    }
   }
 
   // class constructors must always return self
