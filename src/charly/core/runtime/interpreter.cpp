@@ -399,6 +399,12 @@ OP(testintjmp) {
 
 OP(throwex) {
   RawValue value = frame->pop();
+
+  // wrap thrown strings in an Exception instance
+  if (value.isString()) {
+    value = thread->runtime()->create_exception(thread, value);
+  }
+
   thread->throw_value(value);
   return ContinueMode::Exception;
 }
