@@ -128,14 +128,23 @@ public:
     BuiltinOperation
   };
 
-  // search for a node by comparing the ast depth-first
-  // with a compare function
+  // finds the first node to match a compare function
+  // using depth-first traversal of the ast
   //
   // a second skip function can be used to skip traversal
   // of certain node types
   static ref<Node> search(const ref<Node>& node,
                           std::function<bool(const ref<Node>&)> compare,
                           std::function<bool(const ref<Node>&)> skip);
+
+  // finds all nodes that match a compare function
+  // using depth-first traversal of the ast
+  //
+  // a second skip function can be used to skip traversal
+  // of certain node types
+  static std::vector<ref<Node>> search_all(const ref<Node>& node,
+                                           std::function<bool(const ref<Node>&)> compare,
+                                           std::function<bool(const ref<Node>&)> skip);
 
   explicit operator Location() const {
     return m_location;
@@ -208,6 +217,12 @@ public:
   virtual bool truthyness() const {
     return false;
   }
+
+private:
+  static void search_all_impl(const ref<Node>& node,
+                                         std::function<bool(const ref<Node>&)> compare,
+                                         std::function<bool(const ref<Node>&)> skip,
+                                         std::vector<ref<Node>>& result);
 
 protected:
   Location m_location = { .valid = false };
@@ -447,7 +462,7 @@ public:
 
 // self
 class Self final : public Expression {
-AST_NODE(Self)
+  AST_NODE(Self)
 public:
   explicit Self() {}
 };

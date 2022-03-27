@@ -309,28 +309,21 @@ static const size_t kInstructionLength = 4;
    * - property                                                                        \
    * */                                                                                \
   V(loadattrsym, IAAX, 1, 1)                                                           \
-  /* loadsuperconstructor - load the super constructor of a given                      \
-   *                        value                                                      \
-   *                                                                                   \
-   * stack arguments:                                                                  \
-   * - type                                                                            \
+  /* loadsuperconstructor - load the super constructor                                 \
    *                                                                                   \
    * stack results:                                                                    \
    * - constructor function of the parent class                                        \
    *                        */                                                         \
-  V(loadsuperconstructor, IXXX, 1, 1)                                                  \
+  V(loadsuperconstructor, IXXX, 0, 1)                                                  \
   /* loadsuperattr - load function from parent type                                    \
    *                                                                                   \
    * opcode operands:                                                                  \
    * - string table offset                                                             \
    *                                                                                   \
-   * stack arguments:                                                                  \
-   * - type                                                                            \
-   *                                                                                   \
    * stack results:                                                                    \
    * - function from parent type                                                       \
    * */                                                                                \
-  V(loadsuperattr, IAAX, 1, 1)                                                         \
+  V(loadsuperattr, IAAX, 0, 1)                                                         \
   /* setglobal - write to global variable                                              \
    *                                                                                   \
    * opcode operands:                                                                  \

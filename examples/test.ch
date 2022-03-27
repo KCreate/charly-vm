@@ -24,26 +24,68 @@
  * SOFTWARE.
  */
 
+/*
+    TODO:
+    - super lookup
+    - super attribute lookups
+*/
 
-//class Foo {
-//    property saved_self
-//    property context
-//    property shared_info
+//class A {
+//    func constructor {
+//        print("A constructor")
+//    }
+//
+//    func get {
+//        return ("A",)
+//    }
 //}
 //
-//print(Foo)
-//print(Foo())
+//class B extends A {
+//    func constructor {
+//        super()
+//        super()
+//        print("B constructor")
+//    }
+//
+//    func get {
+//        return (super(), "B")
+//    }
+//}
+//
+//class C extends B {
+//    func constructor {
+//        super()
+//        print("C constructor")
+//    }
+//
+//    func get {
+//        return (super(), "C")
+//    }
+//}
+//
+//const c = C()
+//print(c.get())
 
-class Person {
-    property name
+
+class A {
+    func constructor {
+        print("A constructor")
+    }
 }
 
-const p = Person("leonard")
-print(p.klass)
-print(typeof p)
+class B extends A {
+    func constructor {
+        super.constructor()
+        super()
+    }
+}
 
+const i = Instance()
 
+const b = B()
 
+print(i)
+print(b)
 
 
 

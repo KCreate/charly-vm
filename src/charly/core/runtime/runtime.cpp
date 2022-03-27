@@ -116,15 +116,6 @@ void Runtime::initialize_symbol_table(Thread* thread) {
   declare_symbol(thread, "");
   declare_symbol(thread, "charly.baseclass");
   declare_symbol(thread, "charly.mainfiber");
-  declare_symbol(thread, "klass");
-  declare_symbol(thread, "length");
-  declare_symbol(thread, "ARGV");
-  declare_symbol(thread, "data");
-  declare_symbol(thread, "name");
-  declare_symbol(thread, "parent");
-  declare_symbol(thread, "shape");
-  declare_symbol(thread, "function_table");
-  declare_symbol(thread, "constructor");
 }
 
 void Runtime::initialize_argv_tuple(Thread* thread) {
@@ -177,7 +168,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   auto builtin_shape_shape =
     create_shape(thread, builtin_shape_builtin_instance, { "own_shape_id", "parent", "keys", "additions" });
   auto builtin_shape_function =
-    create_shape(thread, builtin_shape_builtin_instance, { "saved_self", "context", "shared_info" });
+    create_shape(thread, builtin_shape_builtin_instance, { "context", "saved_self", "host_class", "shared_info" });
   auto builtin_shape_builtin_function =
     create_shape(thread, builtin_shape_builtin_instance, { "function", "name", "argc" });
   auto builtin_shape_fiber =

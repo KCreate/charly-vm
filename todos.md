@@ -1,19 +1,24 @@
 # Todos
- 
-- Load length of string, bytes and tuple types
 
-- Bug: loadsuperconstructor loads wrong constructor
-  - Should dynamically load via containing function
-    - Functions need to have a host_class field
+- Disallow value return in function constructors
+
+- Disallow direct access to super
+  - Should only be allowed in call expressions or callmember expressions
 
 - Shape attribute flags
   - Internal fields
     - Some instances store pointers or integers in their fields
     - These fields should not be accessable via charly code
   - Private properties of objects
-    - Requires two different versions of loadattrsym, setattrsym
-      - One for regular loads, stores
-      - Another for context attribute loads and stores ('@foo', '@foo = 25', 'context.foo', 'context.foo = 25')
+    - Different load instructions for self and non-self access
+      - loadattrsym, setattrsym
+      - loadselfattrsym, setselfattrsym
+      - @foo
+      - @foo = 25
+      - self.foo
+      - self.foo = 25
+
+- Load length of string, bytes and tuple types
 
 - Shape ancestor table for more efficient subclass checks
 

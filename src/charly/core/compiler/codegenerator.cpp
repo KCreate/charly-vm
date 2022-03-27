@@ -595,9 +595,6 @@ void CodeGenerator::inspect_leave(const ref<FarSelf>& node) {
 }
 
 void CodeGenerator::inspect_leave(const ref<ast::Super>& node) {
-  m_builder.emit_loadself();
-  m_builder.emit_type();
-
   if (active_function()->class_constructor) {
     m_builder.emit_loadsuperconstructor()->at(node);
   } else {
@@ -662,8 +659,6 @@ bool CodeGenerator::inspect_enter(const ref<ast::Dict>& node) {
 
 bool CodeGenerator::inspect_enter(const ref<ast::MemberOp>& node) {
   if (isa<Super>(node->target)) {
-    m_builder.emit_loadself();
-    m_builder.emit_type();
     m_builder.emit_loadsuperattr(m_builder.register_string(node->member->value))->at(node->member);
   } else {
     apply(node->target);
@@ -826,9 +821,6 @@ void CodeGenerator::inspect_leave(const ref<UnaryOp>& node) {
 bool CodeGenerator::inspect_enter(const ref<ast::CallOp>& node) {
   if (isa<Super>(node->target)) {
     m_builder.emit_loadself();
-    m_builder.emit_dup();
-    m_builder.emit_type();
-
     if (active_function()->class_constructor) {
       m_builder.emit_loadsuperconstructor()->at(node);
     } else {
@@ -854,9 +846,14 @@ bool CodeGenerator::inspect_enter(const ref<ast::CallOp>& node) {
 }
 
 bool CodeGenerator::inspect_enter(const ref<ast::CallMemberOp>& node) {
-  apply(node->target);
-  m_builder.emit_dup();
-  m_builder.emit_loadattrsym(m_builder.register_string(node->member->value))->at(node->member);
+  if (isa<Super>(node->target)) {
+    m_builder.emit_loadself();
+    m_builder.emit_loadsuperattr(m_builder.register_string(node->member->value))->at(node->member);
+  } else {
+    apply(node->target);
+    m_builder.emit_dup();
+    m_builder.emit_loadattrsym(m_builder.register_string(node->member->value))->at(node->member);
+  }
 
   if (node->has_spread_elements()) {
     uint8_t emitted_segments = generate_spread_tuples(node->arguments);

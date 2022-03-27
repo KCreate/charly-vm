@@ -37,12 +37,10 @@ using Color = utils::Color;
 ref<Node> Node::search(const ref<Node>& node,
                        std::function<bool(const ref<Node>&)> compare,
                        std::function<bool(const ref<Node>&)> skip) {
-  // check compare function
   if (compare(node)) {
     return node;
   }
 
-  // skip certain node's children
   ref<Node> result = nullptr;
   if (!skip(node)) {
     node->children([&](const ref<Node>& child) {
@@ -54,6 +52,29 @@ ref<Node> Node::search(const ref<Node>& node,
   }
 
   return result;
+}
+
+std::vector<ref<Node>> Node::search_all(const ref<Node>& node,
+                                               std::function<bool(const ref<Node>&)> compare,
+                                               std::function<bool(const ref<Node>&)> skip) {
+  std::vector<ref<Node>> _result;
+  search_all_impl(node, compare, skip, _result);
+  return _result;
+}
+
+void Node::search_all_impl(const ref<Node>& node,
+                                       std::function<bool(const ref<Node>&)> compare,
+                                       std::function<bool(const ref<Node>&)> skip,
+                                       std::vector<ref<Node>>& result) {
+  if (compare(node)) {
+    result.push_back(node);
+  }
+
+  if (!skip(node)) {
+    node->children([&](const ref<Node>& child) {
+      Node::search_all_impl(child, compare, skip, result);
+    });
+  }
 }
 
 void Node::dump(std::ostream& out, bool print_location) const {

@@ -151,7 +151,8 @@ RawValue Interpreter::call_function(
   uint8_t has_frame_context = shared_info->ir_info.has_frame_context;
   uint8_t heap_variables = shared_info->ir_info.heap_variables;
   if (has_frame_context) {
-    RawTuple context = RawTuple::cast(runtime->create_tuple(thread, RawFunction::kContextHeapVariablesOffset + heap_variables));
+    RawTuple context =
+      RawTuple::cast(runtime->create_tuple(thread, RawFunction::kContextHeapVariablesOffset + heap_variables));
     context.set_field_at(RawFunction::kContextParentOffset, function.context());
     context.set_field_at(RawFunction::kContextSelfOffset, self);
     frame.context = context;
@@ -611,6 +612,7 @@ OP(loadattrsym) {
     }
   }
 
+  auto klass = runtime->lookup_class(thread, value);
   if (value.isInstance()) {
     auto instance = RawInstance::cast(value);
 
@@ -625,7 +627,6 @@ OP(loadattrsym) {
 
     // lookup attribute in class hierarchy
     // TODO: cache via inline cache
-    auto klass = runtime->lookup_class(thread, instance);
     RawValue lookup = klass.lookup_function(attr);
     if (lookup.isFunction()) {
       frame->push(lookup);
@@ -633,21 +634,36 @@ OP(loadattrsym) {
     }
   }
 
-  thread->throw_value(
-    runtime->create_exception_with_message(thread, "could not read property '%'", RawSymbol::make(attr)));
+  thread->throw_value(runtime->create_exception_with_message(thread, "value of type '%' has no property called '%'",
+                                                             klass.name(), RawSymbol::make(attr)));
   return ContinueMode::Exception;
 }
 
 OP(loadsuperconstructor) {
-  auto klass = RawClass::cast(frame->pop());
-  auto parent_klass = RawClass::cast(klass.parent());
+  auto host_class = RawClass::cast(frame->function.host_class());
+  auto parent_klass = RawClass::cast(host_class.parent());
   auto parent_constructor = parent_klass.constructor();
   frame->push(parent_constructor);
   return ContinueMode::Next;
 }
 
 OP(loadsuperattr) {
-  UNIMPLEMENTED();
+  uint8_t string_index = op->arg();
+  SYMBOL name = frame->get_string_table_entry(string_index).hash;
+
+  auto klass = RawClass::cast(frame->function.host_class());
+  auto parent = RawClass::cast(klass.parent());
+  auto func = parent.lookup_function(name);
+
+  if (func.is_error_not_found()) {
+    auto runtime = thread->runtime();
+    thread->throw_value(runtime->create_exception_with_message(
+      thread, "super class '%' has no member function called '%'", parent.name(), RawSymbol::make(name)));
+    return ContinueMode::Exception;
+  }
+
+  frame->push(func);
+  return ContinueMode::Next;
 }
 
 OP(setglobal) {
@@ -756,8 +772,9 @@ OP(setattrsym) {
     }
   }
 
-  thread->throw_value(
-    runtime->create_exception_with_message(thread, "value does not have a property called '%'", RawSymbol::make(attr)));
+  auto klass = runtime->lookup_class(thread, target);
+  thread->throw_value(runtime->create_exception_with_message(
+    thread, "value of type '%' does not have a property called '%'", klass.name(), RawSymbol::make(attr)));
   return ContinueMode::Exception;
 }
 
@@ -805,7 +822,8 @@ OP(unpackobjectspread) {
 OP(makefunc) {
   int16_t offset = op->arg();
   SharedFunctionInfo* shared_data = *bitcast<SharedFunctionInfo**>(op->ip() + offset);
-  RawFunction func = RawFunction::cast(thread->runtime()->create_function(thread, frame->context, shared_data, frame->self));
+  RawFunction func =
+    RawFunction::cast(thread->runtime()->create_function(thread, frame->context, shared_data, frame->self));
   frame->push(func);
   return ContinueMode::Next;
 }
@@ -870,6 +888,17 @@ OP(makeclass) {
   RawClass result =
     thread->runtime()->create_class(thread, name, parent, constructor, member_props, member_functions, static_prop_keys,
                                     static_prop_values, static_functions, flags.value());
+
+  // fill in host class fields
+  constructor.set_host_class(result);
+  for (uint32_t i = 0; i < member_functions.size(); i++) {
+    auto func = RawFunction::cast(member_functions.field_at(i));
+    func.set_host_class(result);
+  }
+  for (uint32_t i = 0; i < static_functions.size(); i++) {
+    auto func = RawFunction::cast(static_functions.field_at(i));
+    func.set_host_class(result.klass_field());
+  }
 
   frame->push(RawClass::cast(result));
   return ContinueMode::Next;

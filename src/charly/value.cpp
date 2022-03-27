@@ -1133,6 +1133,14 @@ void RawFunction::set_saved_self(RawValue value) {
   set_field_at(kSavedSelfOffset, value);
 }
 
+RawValue RawFunction::host_class() const {
+  return field_at(kHostClassOffset);
+}
+
+void RawFunction::set_host_class(RawValue host_class) {
+  set_field_at(kHostClassOffset, host_class);
+}
+
 SharedFunctionInfo* RawFunction::shared_info() const {
   return bitcast<SharedFunctionInfo*>(pointer_at(kSharedInfoOffset));
 }

@@ -769,6 +769,9 @@ public:
   RawValue saved_self() const;
   void set_saved_self(RawValue context);
 
+  RawValue host_class() const;
+  void set_host_class(RawValue host_class);
+
   SharedFunctionInfo* shared_info() const;
   void set_shared_info(SharedFunctionInfo* function);
 
@@ -782,6 +785,7 @@ public:
   {
     kFrameContextOffset = RawInstance::kFieldCount,
     kSavedSelfOffset,
+    kHostClassOffset,
     kSharedInfoOffset,
     kFieldCount
   };

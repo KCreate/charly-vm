@@ -101,6 +101,7 @@ Exception.constructor = func constructor(message) {
     @message = message
     // TODO: trim correct numer of stack frames when called from subclass constructors
     @stack_trace = getstacktrace(2)
+    self
 }
 
 let $$ = null
