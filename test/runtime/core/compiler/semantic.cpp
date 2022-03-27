@@ -96,12 +96,11 @@ CATCH_TEST_CASE("Semantic") {
   }
 
   CATCH_SECTION("validates super expressions") {
-    COMPILE_OK("class A { func constructor { super } }")
-    COMPILE_OK("class A { func constructor { super.foo } }")
-    COMPILE_OK("class A extends B { func constructor { super() } }")
+    COMPILE_ERROR("class A { func constructor { super() } }", "call to super not allowed in constructor of non-inheriting class 'A'")
     COMPILE_OK("class A { func constructor { super.foo() } }")
-    COMPILE_OK("class A { func bar { super } }")
-    COMPILE_OK("class A { func bar { super.foo } }")
+    COMPILE_OK("class A extends B { func constructor { super() } }")
+    COMPILE_ERROR("class A extends B { func constructor { super.foo() } }", "missing super constructor call in constructor of class 'A'")
+    COMPILE_OK("class A { func constructor { super.foo() } }")
     COMPILE_OK("class A { func bar { super() } }")
     COMPILE_OK("class A { func bar { super.foo() } }")
   }

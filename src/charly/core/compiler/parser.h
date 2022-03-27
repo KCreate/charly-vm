@@ -199,7 +199,8 @@ private:
   ref<String> parse_string_token();
   ref<Null> parse_null_token();
   ref<Self> parse_self_token();
-  ref<Super> parse_super_token();
+
+  ref<Expression> parse_super();
 
   ref<Statement> create_declaration(const ref<Expression>& target, const ref<Expression>& value, bool constant);
 

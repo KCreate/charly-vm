@@ -33,7 +33,6 @@
 #include "charly/core/compiler/ir/assembler.h"
 #include "charly/core/compiler/parser.h"
 
-#include "charly/core/compiler/passes/class_constructor_check.h"
 #include "charly/core/compiler/passes/constant_folding_pass.h"
 #include "charly/core/compiler/passes/desugar_pass.h"
 #include "charly/core/compiler/passes/duplicates_check.h"
@@ -85,7 +84,6 @@ ref<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffe
   APPLY_DIAGNOSTIC_PASS(GrammarValidationCheck)
   APPLY_DIAGNOSTIC_PASS(ReservedIdentifiersCheck)
   APPLY_DIAGNOSTIC_PASS(DuplicatesCheck)
-  APPLY_DIAGNOSTIC_PASS(ClassConstructorCheck)
 
   APPLY_TRANSFORM_PASS(DesugarPass)
 

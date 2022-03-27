@@ -34,9 +34,13 @@ class GrammarValidationCheck : public DiagnosticPass {
 public:
   using DiagnosticPass::DiagnosticPass;
 
+  void constructor_super_check(const ref<Class>& node);
+  void constructor_return_check(const ref<Class>& node);
+
 private:
   virtual void inspect_leave(const ref<Dict>& node) override;
   virtual void inspect_leave(const ref<Function>& node) override;
+  void inspect_leave(const ref<Class>& node) override;
 };
 
 }  // namespace charly::core::compiler::ast

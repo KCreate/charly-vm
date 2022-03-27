@@ -1,8 +1,5 @@
 # Todos
 
-- Disallow direct access to super
-  - Should only be allowed in call expressions or callmember expressions
-
 - Shape attribute flags
   - Internal fields
     - Some instances store pointers or integers in their fields

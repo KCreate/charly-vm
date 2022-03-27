@@ -948,7 +948,7 @@ ref<Expression> Parser::parse_literal() {
       return parse_self_token();
     }
     case TokenType::Super: {
-      return parse_super_token();
+      return parse_super();
     }
     case TokenType::Builtin: {
       return parse_builtin();
@@ -1432,15 +1432,32 @@ ref<Self> Parser::parse_self_token() {
   return node;
 }
 
-ref<Super> Parser::parse_super_token() {
+ref<Expression> Parser::parse_super() {
   match(TokenType::Super);
   ref<Super> node = make<Super>();
   at(node);
-  advance();
 
   if (!m_keyword_context._super)
     m_console.error(node, "super is not allowed at this point");
 
+  advance();
+
+  // parse either a call or callmember expression
+  if (type(TokenType::LeftParen)) {
+    return parse_call(node);
+  } else if (type(TokenType::Point)) {
+    advance();
+    auto id = parse_identifier_token();
+    auto memberop = make<MemberOp>(node, id->value);
+    memberop->set_begin(node);
+    memberop->set_end(id);
+
+    if (type(TokenType::LeftParen)) {
+      return parse_call(memberop);
+    }
+  }
+
+  m_console.error(node, "super must be used as part of a call operation");
   return node;
 }
 

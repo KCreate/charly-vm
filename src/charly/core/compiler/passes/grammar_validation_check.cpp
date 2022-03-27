@@ -108,4 +108,76 @@ void GrammarValidationCheck::inspect_leave(const ref<Function>& node) {
   }
 }
 
+void GrammarValidationCheck::inspect_leave(const ref<Class>& node) {
+  constructor_super_check(node);
+  constructor_return_check(node);
+}
+
+void GrammarValidationCheck::constructor_super_check(const ref<Class>& node) {
+  if (!node->constructor)
+    return;
+
+  // search for a call to the super constructor
+  auto super_calls = Node::search_all(
+    node->constructor->body,
+    [&](const ref<Node>& node) {
+      // check for super(...)
+      if (ref<CallOp> call = cast<CallOp>(node)) {
+        return isa<Super>(call->target);
+      }
+
+      return false;
+    },
+    [&](const ref<Node>& node) {
+      Node::Type type = node->type();
+      return type == Node::Type::Function || type == Node::Type::Class || type == Node::Type::Spawn;
+    });
+
+  bool missing_super_call = node->parent && super_calls.empty();
+  bool illegal_super_call = !node->parent && !super_calls.empty();
+  bool excess_super_calls = node->parent && super_calls.size() > 1;
+
+  // classes that do not inherit from another class are not allowed to call the super constructor
+  if (illegal_super_call) {
+    m_console.error(node->constructor, "call to super not allowed in constructor of non-inheriting class '",
+                    node->name->value, "'");
+  } else {
+    if (missing_super_call) {
+      // classes that inherit from another class must call be super constructor
+      m_console.error(node->constructor, "missing super constructor call in constructor of class '", node->name->value,
+                      "'");
+    } else if (excess_super_calls) {
+      // there may only be one call to the super constructor
+      m_console.error(node->constructor->name, "constructor of class '", node->name->value,
+                      "' may only contain a single call to the super constructor");
+
+      auto& first = super_calls.front();
+      m_console.info(first, "first super call");
+    }
+  }
+}
+
+void GrammarValidationCheck::constructor_return_check(const ref<Class>& node) {
+  if (!node->constructor)
+    return;
+
+  // search for return statements
+  auto return_ops = Node::search_all(
+    node->constructor->body,
+    [&](const ref<Node>& node) {
+      return isa<Return>(node);
+    },
+    [&](const ref<Node>& node) {
+      Node::Type type = node->type();
+      return type == Node::Type::Function || type == Node::Type::Class || type == Node::Type::Spawn;
+    });
+
+  for (const auto& op : return_ops) {
+    auto ret = cast<Return>(op);
+    if (ret->value) {
+      m_console.error(ret->value, "constructors must not return a value");
+    }
+  }
+}
+
 }  // namespace charly::core::compiler::ast

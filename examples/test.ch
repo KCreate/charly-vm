@@ -43,7 +43,6 @@
 //class B extends A {
 //    func constructor {
 //        super()
-//        super()
 //        print("B constructor")
 //    }
 //
@@ -68,14 +67,9 @@
 
 class A {
     func constructor {
-        print("A constructor")
+        super()
     }
 }
-
-const a = A()
-print(a)
-
-
 
 
 

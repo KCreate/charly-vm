@@ -597,6 +597,13 @@ CATCH_TEST_CASE("Parser") {
     CHECK_STMT("class A { property a property b func foo(@a, @b, ...@rest) }")
     CHECK_STMT("final class A { }")
     CHECK_STMT("final class A extends B { }")
+
+    CHECK_ERROR_STMT("class A { func constructor { super } }", "super must be used as part of a call operation")
+    CHECK_ERROR_STMT("class A { func constructor { super = 1 } }", "super must be used as part of a call operation")
+    CHECK_ERROR_STMT("class A { func constructor { super.foo } }", "super must be used as part of a call operation")
+    CHECK_ERROR_STMT("class A { func constructor { super[1] = 1 } }", "super must be used as part of a call operation")
+    CHECK_ERROR_STMT("class A { func constructor { super.foo = 25 } }", "super must be used as part of a call operation")
+    CHECK_ERROR_STMT("class A { func constructor { super + 25 } }", "super must be used as part of a call operation")
   }
 
   CATCH_SECTION("super expressions") {
