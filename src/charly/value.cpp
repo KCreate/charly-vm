@@ -1097,12 +1097,12 @@ void RawShape::set_keys(RawTuple keys) {
   set_field_at(kKeysOffset, keys);
 }
 
-RawTuple RawShape::additions_table() const {
-  return RawTuple::cast(field_at(kAdditionsTableOffset));
+RawTuple RawShape::additions() const {
+  return RawTuple::cast(field_at(kAdditionsOffset));
 }
 
-void RawShape::set_additions_table(RawTuple additions_table) {
-  set_field_at(kAdditionsTableOffset, additions_table);
+void RawShape::set_additions(RawTuple additions) {
+  set_field_at(kAdditionsOffset, additions);
 }
 
 int64_t RawShape::offset_of(SYMBOL symbol) const {

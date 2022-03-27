@@ -739,8 +739,8 @@ public:
   RawTuple keys() const;
   void set_keys(RawTuple keys);
 
-  RawTuple additions_table() const;
-  void set_additions_table(RawTuple additions_table);
+  RawTuple additions() const;
+  void set_additions(RawTuple additions);
 
   // returns the found offset of a symbol
   // returns -1 if the symbol could not be found
@@ -751,7 +751,7 @@ public:
     kOwnShapeIdOffset = RawInstance::kFieldCount,
     kParentShapeOffset,
     kKeysOffset,
-    kAdditionsTableOffset,
+    kAdditionsOffset,
     kFieldCount
   };
   static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;

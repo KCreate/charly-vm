@@ -168,17 +168,21 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   auto builtin_shape_bytes = builtin_shape_immediate;
   auto builtin_shape_tuple = builtin_shape_immediate;
   auto builtin_shape_instance = create_shape(thread, builtin_shape_immediate, { "klass" });
-  auto builtin_shape_huge_bytes = create_shape(thread, builtin_shape_instance, { "data", "length" });
-  auto builtin_shape_huge_string = create_shape(thread, builtin_shape_instance, { "data", "length" });
-  auto builtin_shape_class = create_shape(
-    thread, builtin_shape_instance, { "flags", "name", "parent", "shape_instance", "function_table", "constructor" });
+  auto builtin_shape_builtin_instance = create_shape(thread, builtin_shape_immediate, { "__charly_klass" });
+  auto builtin_shape_huge_bytes = create_shape(thread, builtin_shape_builtin_instance, { "data", "length" });
+  auto builtin_shape_huge_string = create_shape(thread, builtin_shape_builtin_instance, { "data", "length" });
+  auto builtin_shape_class =
+    create_shape(thread, builtin_shape_builtin_instance,
+                 { "flags", "name", "parent", "shape_instance", "function_table", "constructor" });
   auto builtin_shape_shape =
-    create_shape(thread, builtin_shape_instance, { "own_shape_id", "parent", "keys", "additions_table" });
-  auto builtin_shape_function = create_shape(thread, builtin_shape_instance, { "saved_self", "context", "shared_info" });
-  auto builtin_shape_builtin_function = create_shape(thread, builtin_shape_instance, { "function", "name", "argc" });
+    create_shape(thread, builtin_shape_builtin_instance, { "own_shape_id", "parent", "keys", "additions" });
+  auto builtin_shape_function =
+    create_shape(thread, builtin_shape_builtin_instance, { "saved_self", "context", "shared_info" });
+  auto builtin_shape_builtin_function =
+    create_shape(thread, builtin_shape_builtin_instance, { "function", "name", "argc" });
   auto builtin_shape_fiber =
-    create_shape(thread, builtin_shape_instance, { "thread", "function", "context", "arguments", "result" });
-  auto builtin_shape_exception = create_shape(thread, builtin_shape_instance, { "message", "stack_trace" });
+    create_shape(thread, builtin_shape_builtin_instance, { "thread", "function", "context", "arguments", "result" });
+  auto builtin_shape_exception = create_shape(thread, builtin_shape_builtin_instance, { "message", "stack_trace" });
 
 #define DEFINE_BUILTIN_CLASS(S, N, P, SP)                                                 \
   auto class_##S##_shape = create_shape(thread, builtin_shape_class, SP);                 \
@@ -522,7 +526,7 @@ RawShape Runtime::create_shape(Thread* thread, RawValue parent, RawTuple key_tab
     auto shape = RawShape::cast(create_instance(thread, ShapeId::kShape, RawShape::kFieldCount));
     shape.set_parent(kNull);
     shape.set_keys(create_tuple(thread, 0));
-    shape.set_additions_table(create_tuple(thread, 0));
+    shape.set_additions(create_tuple(thread, 0));
     register_shape(shape);
     return create_shape(thread, shape, key_table);
   }
@@ -537,7 +541,7 @@ RawShape Runtime::create_shape(Thread* thread, RawValue parent, RawTuple key_tab
       std::lock_guard lock(target_shape);
 
       // find the shape to transition to when adding the new key
-      RawTuple additions = target_shape.additions_table();
+      RawTuple additions = target_shape.additions();
       bool found_next = false;
       for (uint32_t ai = 0; ai < additions.size(); ai++) {
         auto entry = RawTuple::cast(additions.field_at(ai));
@@ -554,11 +558,11 @@ RawShape Runtime::create_shape(Thread* thread, RawValue parent, RawTuple key_tab
         next_shape = RawShape::cast(create_instance(thread, ShapeId::kShape, RawShape::kFieldCount));
         next_shape.set_parent(target_shape);
         next_shape.set_keys(concat_tuple(thread, target_shape.keys(), create_tuple(thread, { key })));
-        next_shape.set_additions_table(create_tuple(thread, 0));
+        next_shape.set_additions(create_tuple(thread, 0));
         register_shape(next_shape);
 
         // add new shape to additions table of previous base
-        target_shape.set_additions_table(
+        target_shape.set_additions(
           concat_tuple(thread, additions, create_tuple(thread, { create_tuple(thread, { key, next_shape }) })));
       }
     }
@@ -610,7 +614,10 @@ RawTuple Runtime::concat_tuple(Thread* thread, RawTuple left, RawTuple right) {
   return new_tuple;
 }
 
-RawFunction Runtime::create_function(Thread* thread, RawValue context, SharedFunctionInfo* shared_info, RawValue saved_self) {
+RawFunction Runtime::create_function(Thread* thread,
+                                     RawValue context,
+                                     SharedFunctionInfo* shared_info,
+                                     RawValue saved_self) {
   RawFunction func = RawFunction::cast(create_instance(thread, ShapeId::kFunction, RawFunction::kFieldCount));
   func.set_context(context);
   func.set_saved_self(saved_self);

@@ -1,9 +1,4 @@
 # Todos
-
-- Rethink type checks
-  - Cannot use object shape field to determine type
-  - User classes can end up with the same shapes as builtin classes
-  - Need to use class lookup to determine proper runtime type
  
 - Load length of string, bytes and tuple types
 
