@@ -108,8 +108,9 @@ ref<Expression> DesugarPass::transform(const ref<FormatString>& node) {
 }
 
 void DesugarPass::inspect_leave(const ref<Function>& node) {
-  // if the last statement in the function body is an expression, return it (implicit return)
-  if (!node->body->statements.empty()) {
+
+  // if the last statement in the function body is an expression, return it
+  if (!node->body->statements.empty() && !node->class_constructor) {
     ref<Statement>& statement = node->body->statements.back();
     if (ref<Expression> exp = cast<Expression>(statement)) {
       auto return_exp = make<Return>(exp);

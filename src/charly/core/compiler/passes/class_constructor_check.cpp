@@ -29,6 +29,11 @@
 namespace charly::core::compiler::ast {
 
 void ClassConstructorCheck::inspect_leave(const ref<Class>& node) {
+  constructor_super_check(node);
+  constructor_return_check(node);
+}
+
+void ClassConstructorCheck::constructor_super_check(const ref<Class>& node) {
   if (!node->constructor)
     return;
 
@@ -64,7 +69,30 @@ void ClassConstructorCheck::inspect_leave(const ref<Class>& node) {
     } else if (excess_super_calls) {
       // there may only be one call to the super constructor
       m_console.error(node->constructor->name, "constructor of class '", node->name->value,
-                        "' may only contain a single call to the super constructor");
+                      "' may only contain a single call to the super constructor");
+    }
+  }
+}
+
+void ClassConstructorCheck::constructor_return_check(const ref<Class>& node) {
+  if (!node->constructor)
+    return;
+
+  // search for return statements
+  auto return_ops = Node::search_all(
+    node->constructor->body,
+    [&](const ref<Node>& node) {
+      return isa<Return>(node);
+    },
+    [&](const ref<Node>& node) {
+      Node::Type type = node->type();
+      return type == Node::Type::Function || type == Node::Type::Class || type == Node::Type::Spawn;
+    });
+
+  for (const auto& op : return_ops) {
+    auto ret = cast<Return>(op);
+    if (ret->value) {
+      m_console.error(ret->value, "constructors must not return a value");
     }
   }
 }

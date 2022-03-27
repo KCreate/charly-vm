@@ -187,6 +187,10 @@ CATCH_TEST_CASE("Semantic") {
     COMPILE_ERROR("class A { func constructor { super() } }", "call to super not allowed in constructor of non-inheriting class 'A'")
   }
 
+  CATCH_SECTION("checks for illegal return statements in constructors") {
+    COMPILE_ERROR("class A { func constructor { return 25 } }", "constructors must not return a value")
+  }
+
   CATCH_SECTION("checks for missing constructors in subclasses with properties") {
     COMPILE_ERROR("class A extends B { property x }", "class 'A' is missing a constructor")
     COMPILE_OK("let B = null class A extends B {}")

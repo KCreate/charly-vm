@@ -1,7 +1,5 @@
 # Todos
 
-- Disallow value return in function constructors
-
 - Disallow direct access to super
   - Should only be allowed in call expressions or callmember expressions
 

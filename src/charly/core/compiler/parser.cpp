@@ -263,16 +263,16 @@ ref<Return> Parser::parse_return() {
 
   bool newline_passed_since_base = begin.end_row != m_token.location.row;
 
-  ref<Expression> return_value;
+  ref<Return> node;
   if (!newline_passed_since_base && m_token.could_start_expression()) {
-    return_value = parse_expression();
+    auto exp = parse_expression();
+    node = make<Return>(exp);
+    node->set_begin(begin);
+    node->set_end(exp);
   } else {
-    return_value = make<Null>();
-    return_value->set_location(begin);
+    node = make<Return>();
+    node->set_location(begin);
   }
-
-  ref<Return> node = make<Return>(return_value);
-  node->set_begin(begin);
 
   if (!m_keyword_context._return)
     m_console.error(node, "return statement not allowed at this point");
@@ -1123,8 +1123,7 @@ ref<Dict> Parser::parse_dict() {
 
 ref<Function> Parser::parse_function(FunctionFlags flags) {
   if (!flags.class_function && type(TokenType::RightArrow)) {
-    ref<Function> func = parse_arrow_function();
-    return func;
+    return parse_arrow_function();
   }
 
   Location begin = m_token.location;

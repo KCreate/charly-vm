@@ -66,26 +66,14 @@
 //const c = C()
 //print(c.get())
 
-
 class A {
     func constructor {
         print("A constructor")
     }
 }
 
-class B extends A {
-    func constructor {
-        super.constructor()
-        super()
-    }
-}
-
-const i = Instance()
-
-const b = B()
-
-print(i)
-print(b)
+const a = A()
+print(a)
 
 
 

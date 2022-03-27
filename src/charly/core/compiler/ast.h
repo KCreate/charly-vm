@@ -220,9 +220,9 @@ public:
 
 private:
   static void search_all_impl(const ref<Node>& node,
-                                         std::function<bool(const ref<Node>&)> compare,
-                                         std::function<bool(const ref<Node>&)> skip,
-                                         std::vector<ref<Node>>& result);
+                              std::function<bool(const ref<Node>&)> compare,
+                              std::function<bool(const ref<Node>&)> skip,
+                              std::vector<ref<Node>>& result);
 
 protected:
   Location m_location = { .valid = false };
@@ -305,14 +305,15 @@ public:
 class Return final : public Statement {
   AST_NODE(Return)
 public:
-  explicit Return(const ref<Expression>& expression) : expression(expression) {
-    set_location(expression);
+  explicit Return() : value(nullptr) {}
+  explicit Return(const ref<Expression>& value) : value(value) {
+    set_location(value);
   }
 
-  ref<Expression> expression;
+  ref<Expression> value;
 
   CHILDREN() {
-    CHILD_NODE(expression)
+    CHILD_NODE(value)
   }
 
   bool terminates_block() const override {

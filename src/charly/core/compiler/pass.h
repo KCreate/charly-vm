@@ -61,7 +61,7 @@ protected:
   })
 
   HANDLE_NODE(Statement, Return, {
-    APPLY_NODE(expression);
+    APPLY_NODE(value);
   })
 
   HANDLE_NODE(Statement, Break, {})

@@ -349,16 +349,17 @@ bool CodeGenerator::inspect_enter(const ref<Block>& node) {
 
 bool CodeGenerator::inspect_enter(const ref<Return>& node) {
   if (active_function()->class_constructor) {
-    // class constructors always return the local self value
-    if (!isa<Null>(node->expression)) {
-      apply(node->expression);
-      m_builder.emit_pop();
-    }
-
+    // class constructors must always return self
+    m_builder.emit_loadself();
+    m_builder.emit_setreturn();
     m_builder.emit_jmp(active_return_label());
   } else {
     // store return value at the return value slot
-    apply(node->expression);
+    if (isa<Expression>(node->value)) {
+      apply(node->value);
+    } else {
+      m_builder.emit_load_value(kNull);
+    }
     m_builder.emit_setreturn();
     m_builder.emit_jmp(active_return_label());
   }
