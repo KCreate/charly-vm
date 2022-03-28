@@ -1054,7 +1054,6 @@ void RawClass::set_constructor(RawValue constructor) {
 }
 
 RawValue RawClass::lookup_function(SYMBOL name) const {
-
   // search function table
   auto functions = function_table();
   for (uint32_t i = 0; i < functions.size(); i++) {
@@ -1074,11 +1073,11 @@ RawValue RawClass::lookup_function(SYMBOL name) const {
 }
 
 ShapeId RawShape::own_shape_id() const {
-  return static_cast<ShapeId>(int_at(kOwnShapeIdOffset));
+  return static_cast<ShapeId>(RawInt::cast(field_at(kOwnShapeIdOffset)).value());
 }
 
 void RawShape::set_own_shape_id(ShapeId id) {
-  set_int_at(kOwnShapeIdOffset, static_cast<int64_t>(id));
+  set_field_at(kOwnShapeIdOffset, RawInt::make(static_cast<uint32_t>(id)));
 }
 
 RawValue RawShape::parent() const {
@@ -1108,13 +1107,54 @@ void RawShape::set_additions(RawTuple additions) {
 int64_t RawShape::offset_of(SYMBOL symbol) const {
   RawTuple keys = this->keys();
   for (uint32_t i = 0; i < keys.size(); i++) {
-    auto key = RawSymbol::cast(keys.field_at(i));
-    if (key.value() == symbol) {
+    auto encoded = RawInt::cast(keys.field_at(i));
+    SYMBOL key_symbol;
+    uint8_t key_flags;
+    RawShape::decode_shape_key(encoded, key_symbol, key_flags);
+
+    if (key_flags & RawShape::kKeyFlagInternal) {
+      continue;
+    }
+
+    if (key_symbol == symbol) {
       return i;
     }
   }
 
   return -1;
+}
+
+RawInt RawShape::encode_shape_key(SYMBOL symbol, uint8_t flags) {
+  size_t encoded = ((size_t)symbol << 8) | (size_t)flags;
+  return RawInt::make(encoded);
+}
+
+void RawShape::decode_shape_key(RawInt encoded, SYMBOL& symbol_out, uint8_t& flags_out) {
+  size_t encoded_value = encoded.value();
+  symbol_out = encoded_value >> 8;
+  flags_out = encoded_value & 0xff;
+}
+
+void RawShape::set_key_flag(uint32_t offset, uint8_t flags) {
+  auto encoded = RawInt::cast(keys().field_at(offset));
+  SYMBOL symbol;
+  uint8_t old_flags;
+  decode_shape_key(encoded, symbol, old_flags);
+  keys().set_field_at(offset, encode_shape_key(symbol, old_flags | flags));
+  if (parent().isShape()) {
+    auto parent_shape = RawShape::cast(parent());
+    if (offset < parent_shape.keys().size()) {
+      parent_shape.set_key_flag(offset, flags);
+    }
+  }
+}
+
+RawSymbol RawFunction::name() const {
+  return RawSymbol::cast(field_at(kNameOffset));
+}
+
+void RawFunction::set_name(RawSymbol name) {
+  set_field_at(kNameOffset, name);
 }
 
 RawValue RawFunction::context() const {

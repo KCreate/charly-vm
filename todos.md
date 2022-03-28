@@ -1,17 +1,19 @@
 # Todos
 
-- Shape attribute flags
-  - Internal fields
-    - Some instances store pointers or integers in their fields
-    - These fields should not be accessable via charly code
-  - Private properties of objects
-    - Different load instructions for self and non-self access
-      - loadattrsym, setattrsym
-      - loadselfattrsym, setselfattrsym
-      - @foo
-      - @foo = 25
-      - self.foo
-      - self.foo = 25
+- Readonly properties of instances
+  - Store flag in keys table
+
+- Private properties
+  - Store flag in keys table
+  - Different load instructions for self and non-self access
+    - loadattrsym, setattrsym
+    - loadselfattrsym, setselfattrsym
+    - @foo
+    - @foo = 25
+    - self.foo
+    - self.foo = 25
+
+- RawInstance::field_at index should be uint8_t as maximum field count is 256
 
 - Load length of string, bytes and tuple types
 
@@ -152,8 +154,6 @@
   - There is a global symbol table that is the ultimate source of truth
   - Newly created strings are added to the global symbol table
   - Each processor has a local cache of symbols that it updates whenever a new symbol is requested
-
-- RawInstance::field_at index should be uint8_t as maximum field count is 256
 
 - Optimize global variables
   - Implement the id system, ditch the global hashmap, it is just a temporary hack

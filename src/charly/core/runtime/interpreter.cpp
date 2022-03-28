@@ -774,7 +774,7 @@ OP(setattrsym) {
 
   auto klass = runtime->lookup_class(thread, target);
   thread->throw_value(runtime->create_exception_with_message(
-    thread, "value of type '%' does not have a property called '%'", klass.name(), RawSymbol::make(attr)));
+    thread, "value of type '%' has no property called '%'", klass.name(), RawSymbol::make(attr)));
   return ContinueMode::Exception;
 }
 
@@ -863,10 +863,12 @@ OP(makeclass) {
   // ensure new class doesn't shadow any of the parent properties
   auto parent_keys_tuple = parent.shape_instance().keys();
   for (uint8_t i = 0; i < member_props.size(); i++) {
-    auto key = member_props.field_at(i);
+    auto key = RawSymbol::cast(member_props.field_at(i));
     for (uint32_t pi = 0; pi < parent_keys_tuple.size(); pi++) {
-      auto parent_key = RawSymbol::cast(parent_keys_tuple.field_at(pi));
-      if (parent_key == key) {
+      SYMBOL parent_key_symbol;
+      uint8_t parent_key_flags;
+      RawShape::decode_shape_key(RawInt::cast(parent_keys_tuple.field_at(pi)), parent_key_symbol, parent_key_flags);
+      if (parent_key_symbol == key.value()) {
         thread->throw_value(runtime->create_exception_with_message(
           thread, "cannot redeclare property '%', parent class '%' already contains it", key, parent.name()));
         return ContinueMode::Exception;

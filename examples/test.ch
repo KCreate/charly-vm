@@ -24,53 +24,10 @@
  * SOFTWARE.
  */
 
-/*
-    TODO:
-    - super lookup
-    - super attribute lookups
-*/
 
-//class A {
-//    func constructor {
-//        print("A constructor")
-//    }
-//
-//    func get {
-//        return ("A",)
-//    }
-//}
-//
-//class B extends A {
-//    func constructor {
-//        super()
-//        print("B constructor")
-//    }
-//
-//    func get {
-//        return (super(), "B")
-//    }
-//}
-//
-//class C extends B {
-//    func constructor {
-//        super()
-//        print("C constructor")
-//    }
-//
-//    func get {
-//        return (super(), "C")
-//    }
-//}
-//
-//const c = C()
-//print(c.get())
-
-class A {
-    func constructor {
-        super()
-    }
-}
-
+print(print.klass)
+print(print.host_class)
+print(print.name)
 
 
 

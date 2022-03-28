@@ -685,7 +685,9 @@ class RawClass : public RawInstance {
 public:
   COMMON_RAW_OBJECT(Class);
 
-  enum {
+  enum
+  {
+    kFlagNone = 0,
     kFlagFinal = 1,
     kFlagNonConstructable = 2
   };
@@ -739,6 +741,21 @@ public:
   RawTuple keys() const;
   void set_keys(RawTuple keys);
 
+  enum
+  {
+    kKeyFlagNone = 0,
+    kKeyFlagInternal
+  };
+  static RawInt encode_shape_key(SYMBOL symbol, uint8_t flags = kKeyFlagNone);
+  static void decode_shape_key(RawInt encoded, SYMBOL& symbol_out, uint8_t& flags_out);
+  void set_key_flag(uint32_t offset, uint8_t flags);
+
+  enum : uint8_t
+  {
+    kAdditionsSymbolOffset = 0,
+    kAdditionsNextOffset
+  };
+
   RawTuple additions() const;
   void set_additions(RawTuple additions);
 
@@ -763,6 +780,9 @@ class RawFunction : public RawInstance {
 public:
   COMMON_RAW_OBJECT(Function);
 
+  RawSymbol name() const;
+  void set_name(RawSymbol name);
+
   RawValue context() const;
   void set_context(RawValue context);
 
@@ -775,7 +795,8 @@ public:
   SharedFunctionInfo* shared_info() const;
   void set_shared_info(SharedFunctionInfo* function);
 
-  enum {
+  enum
+  {
     kContextParentOffset = 0,
     kContextSelfOffset,
     kContextHeapVariablesOffset
@@ -783,7 +804,8 @@ public:
 
   enum
   {
-    kFrameContextOffset = RawInstance::kFieldCount,
+    kNameOffset = RawInstance::kFieldCount,
+    kFrameContextOffset,
     kSavedSelfOffset,
     kHostClassOffset,
     kSharedInfoOffset,
