@@ -3,6 +3,16 @@
 - Readonly properties of instances
   - Store flag in keys table
 
+- Fix invalid codegen of class property attribute write
+  - Currently the target and source are in the wrong order
+  - There needs to be a separate pass rewriting self value locations to their ast equivalents
+
+- Replace RawTTT::cast(t.field_at(offset)) pattern with t.field_at<RawTTT>(offset)
+
+- Nice, clean way to declare functions of builtin classes
+  - In the old charly version I was able to declare builtin classes directly inside charly code
+  - The same should be at least somewhat possible here too
+
 - Private properties
   - Store flag in keys table
   - Different load instructions for self and non-self access

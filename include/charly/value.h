@@ -597,8 +597,19 @@ public:
   COMMON_RAW_OBJECT(Tuple);
 
   uint32_t size();
-  RawValue field_at(uint32_t index);
-  void set_field_at(uint32_t index, RawValue value);
+  template <typename R = RawValue>
+  R field_at(uint32_t index) {
+    DCHECK(index < size());
+    RawValue* data = bitcast<RawValue*>(address());
+    return R::cast(data[index]);
+  }
+
+  template <typename T = RawValue>
+  void set_field_at(uint32_t index, T value) {
+    DCHECK(index < size());
+    RawValue* data = bitcast<RawValue*>(address());
+    data[index] = RawValue::cast(value);
+  }
 };
 
 // base type for all types that use the shape system
@@ -692,8 +703,8 @@ public:
     kFlagNonConstructable = 2
   };
 
-  uint32_t flags() const;
-  void set_flags(uint32_t flags);
+  uint8_t flags() const;
+  void set_flags(uint8_t flags);
 
   RawSymbol name() const;
   void set_name(RawSymbol name);
@@ -744,15 +755,15 @@ public:
   enum
   {
     kKeyFlagNone = 0,
-    kKeyFlagInternal
+    kKeyFlagInternal = 1,  // keys that cannot get accessed via charly code
+    kKeyFlagReadOnly = 2,  // keys that cannot be assigned to
   };
   static RawInt encode_shape_key(SYMBOL symbol, uint8_t flags = kKeyFlagNone);
   static void decode_shape_key(RawInt encoded, SYMBOL& symbol_out, uint8_t& flags_out);
-  void set_key_flag(uint32_t offset, uint8_t flags);
 
   enum : uint8_t
   {
-    kAdditionsSymbolOffset = 0,
+    kAdditionsKeyOffset = 0,
     kAdditionsNextOffset
   };
 
@@ -761,7 +772,21 @@ public:
 
   // returns the found offset of a symbol
   // returns -1 if the symbol could not be found
-  int64_t offset_of(SYMBOL symbol) const;
+  struct LookupResult {
+    bool found;
+    uint32_t offset;
+    SYMBOL key;
+    uint8_t flags;
+
+    bool is_internal() const {
+      return flags & kKeyFlagInternal;
+    }
+
+    bool is_read_only() const {
+      return flags & kKeyFlagReadOnly;
+    }
+  };
+  LookupResult lookup_symbol(SYMBOL symbol) const;
 
   enum
   {

@@ -159,42 +159,56 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   auto builtin_shape_bytes = builtin_shape_immediate;
   auto builtin_shape_tuple = builtin_shape_immediate;
 
-  auto builtin_shape_instance = create_shape(thread, builtin_shape_immediate, { "klass" });
-  builtin_shape_instance.set_key_flag(RawInstance::kKlassOffset, RawShape::kKeyFlagInternal);
+  auto builtin_shape_instance =
+    create_shape(thread, builtin_shape_immediate, { { "klass", RawShape::kKeyFlagInternal } });
 
-  auto builtin_shape_builtin_instance = create_shape(thread, builtin_shape_immediate, { "__charly_klass" });
-  builtin_shape_builtin_instance.set_key_flag(RawInstance::kKlassOffset, RawShape::kKeyFlagInternal);
+  auto builtin_shape_builtin_instance =
+    create_shape(thread, builtin_shape_immediate, { { "__charly_klass", RawShape::kKeyFlagInternal } });
 
-  auto builtin_shape_huge_bytes = create_shape(thread, builtin_shape_builtin_instance, { "data", "length" });
-
-  auto builtin_shape_huge_string = create_shape(thread, builtin_shape_builtin_instance, { "data", "length" });
-
-  auto builtin_shape_class =
+  auto builtin_shape_huge_bytes =
     create_shape(thread, builtin_shape_builtin_instance,
-                 { "flags", "name", "parent", "shape", "functions", "constructor" });
-  //  builtin_shape_class.set_key_flag(RawClass::kShapeOffset, RawShape::kKeyFlagInternal);
-  //  builtin_shape_class.set_key_flag(RawClass::kFunctionTableOffset, RawShape::kKeyFlagInternal);
-  //  builtin_shape_class.set_key_flag(RawClass::kConstructorOffset, RawShape::kKeyFlagInternal);
+                 { { "data", RawShape::kKeyFlagInternal }, { "length", RawShape::kKeyFlagInternal } });
 
-  auto builtin_shape_shape =
-    create_shape(thread, builtin_shape_builtin_instance, { "id", "parent", "keys", "additions" });
+  auto builtin_shape_huge_string =
+    create_shape(thread, builtin_shape_builtin_instance,
+                 { { "data", RawShape::kKeyFlagInternal }, { "length", RawShape::kKeyFlagInternal } });
 
-  auto builtin_shape_function =
-    create_shape(thread, builtin_shape_builtin_instance, { "name", "context", "saved_self", "host_class", "shared_info" });
-  builtin_shape_function.set_key_flag(RawFunction::kContextHeapVariablesOffset, RawShape::kKeyFlagInternal);
-  builtin_shape_function.set_key_flag(RawFunction::kSavedSelfOffset, RawShape::kKeyFlagInternal);
-  builtin_shape_function.set_key_flag(RawFunction::kSharedInfoOffset, RawShape::kKeyFlagInternal);
+  auto builtin_shape_class = create_shape(thread, builtin_shape_builtin_instance,
+                                          { { "flags", RawShape::kKeyFlagInternal },
+                                            { "name", RawShape::kKeyFlagReadOnly },
+                                            { "parent", RawShape::kKeyFlagReadOnly },
+                                            { "shape", RawShape::kKeyFlagInternal },
+                                            { "function_table", RawShape::kKeyFlagInternal },
+                                            { "constructor", RawShape::kKeyFlagNone } });
 
-  auto builtin_shape_builtin_function =
-    create_shape(thread, builtin_shape_builtin_instance, { "function", "name", "argc" });
-  builtin_shape_builtin_function.set_key_flag(RawBuiltinFunction::kFunctionPtrOffset, RawShape::kKeyFlagInternal);
-  builtin_shape_builtin_function.set_key_flag(RawBuiltinFunction::kArgcOffset, RawShape::kKeyFlagInternal);
+  auto builtin_shape_shape = create_shape(thread, builtin_shape_builtin_instance,
+                                          { { "id", RawShape::kKeyFlagReadOnly },
+                                            { "parent", RawShape::kKeyFlagReadOnly },
+                                            { "keys", RawShape::kKeyFlagInternal },
+                                            { "additions", RawShape::kKeyFlagInternal } });
 
-  auto builtin_shape_fiber =
-    create_shape(thread, builtin_shape_builtin_instance, { "thread", "function", "context", "arguments", "result" });
+  auto builtin_shape_function = create_shape(thread, builtin_shape_builtin_instance,
+                                             { { "name", RawShape::kKeyFlagReadOnly },
+                                               { "context", RawShape::kKeyFlagInternal },
+                                               { "saved_self", RawShape::kKeyFlagInternal },
+                                               { "host_class", RawShape::kKeyFlagReadOnly },
+                                               { "shared_info", RawShape::kKeyFlagInternal } });
 
-  builtin_shape_fiber.set_key_flag(RawFiber::kThreadPointerOffset, RawShape::kKeyFlagInternal);
-  auto builtin_shape_exception = create_shape(thread, builtin_shape_builtin_instance, { "message", "stack_trace" });
+  auto builtin_shape_builtin_function = create_shape(thread, builtin_shape_builtin_instance,
+                                                     { { "function", RawShape::kKeyFlagInternal },
+                                                       { "name", RawShape::kKeyFlagReadOnly },
+                                                       { "argc", RawShape::kKeyFlagReadOnly } });
+
+  auto builtin_shape_fiber = create_shape(thread, builtin_shape_builtin_instance,
+                                          { { "thread", RawShape::kKeyFlagInternal },
+                                            { "function", RawShape::kKeyFlagReadOnly },
+                                            { "context", RawShape::kKeyFlagInternal },
+                                            { "arguments", RawShape::kKeyFlagInternal },
+                                            { "result", RawShape::kKeyFlagInternal } });
+
+  auto builtin_shape_exception =
+    create_shape(thread, builtin_shape_builtin_instance,
+                 { { "message", RawShape::kKeyFlagNone }, { "stack_trace", RawShape::kKeyFlagPrivate } });
 
 #define DEFINE_BUILTIN_CLASS(S, N, P, SP)                                                 \
   auto class_##S##_shape = create_shape(thread, builtin_shape_class, SP);                 \
@@ -549,7 +563,7 @@ RawShape Runtime::create_shape(Thread* thread, RawValue parent, RawTuple key_tab
   auto parent_shape = RawShape::cast(parent);
   auto target_shape = parent_shape;
   for (uint32_t i = 0; i < key_table.size(); i++) {
-    auto key = RawSymbol::cast(key_table.field_at(i));
+    auto encoded = RawInt::cast(key_table.field_at(i));
     RawShape next_shape;
     {
       std::lock_guard lock(target_shape);
@@ -558,10 +572,10 @@ RawShape Runtime::create_shape(Thread* thread, RawValue parent, RawTuple key_tab
       RawTuple additions = target_shape.additions();
       bool found_next = false;
       for (uint32_t ai = 0; ai < additions.size(); ai++) {
-        auto entry = RawTuple::cast(additions.field_at(ai));
-        auto symbol = RawSymbol::cast(entry.field_at(RawShape::kAdditionsSymbolOffset));
-        if (symbol == key) {
-          next_shape = RawShape::cast(entry.field_at(RawShape::kAdditionsNextOffset));
+        auto entry = additions.field_at<RawTuple>(ai);
+        auto entry_encoded_key = entry.field_at<RawInt>(RawShape::kAdditionsKeyOffset);
+        if (encoded == entry_encoded_key) {
+          next_shape = entry.field_at<RawShape>(RawShape::kAdditionsNextOffset);
           found_next = true;
           break;
         }
@@ -571,14 +585,13 @@ RawShape Runtime::create_shape(Thread* thread, RawValue parent, RawTuple key_tab
       if (!found_next) {
         next_shape = RawShape::cast(create_instance(thread, ShapeId::kShape, RawShape::kFieldCount));
         next_shape.set_parent(target_shape);
-        auto encoded = RawShape::encode_shape_key(key.value(), RawShape::kKeyFlagNone);
         next_shape.set_keys(concat_tuple(thread, target_shape.keys(), create_tuple(thread, { encoded })));
         next_shape.set_additions(create_tuple(thread, 0));
         register_shape(next_shape);
 
         // add new shape to additions table of previous base
-        target_shape.set_additions(
-          concat_tuple(thread, additions, create_tuple(thread, { create_tuple(thread, { key, next_shape }) })));
+        target_shape.set_additions(concat_tuple(
+          thread, additions, create_tuple(thread, { create_tuple(thread, { encoded, next_shape }) })));
       }
     }
 
@@ -588,10 +601,15 @@ RawShape Runtime::create_shape(Thread* thread, RawValue parent, RawTuple key_tab
   return target_shape;
 }
 
-RawShape Runtime::create_shape(Thread* thread, RawValue parent, std::initializer_list<std::string> keys) {
+RawShape Runtime::create_shape(Thread* thread,
+                               RawValue parent,
+                               std::initializer_list<std::tuple<std::string, uint8_t>> keys) {
   auto key_tuple = create_tuple(thread, keys.size());
   for (size_t i = 0; i < keys.size(); i++) {
-    key_tuple.set_field_at(i, RawSymbol::make(declare_symbol(thread, std::data(keys)[i])));
+    auto& entry = std::data(keys)[i];
+    auto& name = std::get<0>(entry);
+    auto flags = std::get<1>(entry);
+    key_tuple.set_field_at(i, RawShape::encode_shape_key(declare_symbol(thread, name), flags));
   }
   return create_shape(thread, parent, key_tuple);
 }

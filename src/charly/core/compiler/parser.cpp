@@ -1172,9 +1172,7 @@ ref<Function> Parser::parse_function(FunctionFlags flags) {
   } else {
     // allow foo(@x, @y) declarations inside classes
     if (flags.class_function && !flags.static_function) {
-      ref<Null> null = make<Null>();
-      null->set_location(function_name);
-      body = make<Return>(null);
+      body = make<Return>();
     } else {
       unexpected_token(TokenType::LeftCurly);
     }

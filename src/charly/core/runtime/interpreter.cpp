@@ -619,9 +619,9 @@ OP(loadattrsym) {
     // lookup attribute in shape key table
     // TODO: cache result via inline cache
     auto shape = runtime->lookup_shape(thread, instance.shape_id());
-    int64_t offset = shape.offset_of(attr);
-    if (offset != -1) {
-      frame->push(instance.field_at(offset));
+    auto result = shape.lookup_symbol(attr);
+    if (result.found) {
+      frame->push(instance.field_at(result.offset));
       return ContinueMode::Next;
     }
 
@@ -761,20 +761,26 @@ OP(setattrsym) {
 
   // lookup attribute in shape key table
   // TODO: cache result via inline cache
+  auto klass = runtime->lookup_class(thread, target);
   if (target.isInstance()) {
     auto instance = RawInstance::cast(target);
     auto shape = runtime->lookup_shape(thread, instance.shape_id());
-    int64_t offset = shape.offset_of(attr);
-    if (offset != -1) {
-      instance.set_field_at(offset, value);
+    auto result = shape.lookup_symbol(attr);
+    if (result.found) {
+      if (result.is_read_only()) {
+        thread->throw_value(runtime->create_exception_with_message(thread, "property '%' of type '%' is read-only",
+                                                                   RawSymbol::make(attr), klass.name()));
+        return ContinueMode::Exception;
+      }
+
+      instance.set_field_at(result.offset, value);
       frame->push(target);
       return ContinueMode::Next;
     }
   }
 
-  auto klass = runtime->lookup_class(thread, target);
-  thread->throw_value(runtime->create_exception_with_message(
-    thread, "value of type '%' has no property called '%'", klass.name(), RawSymbol::make(attr)));
+  thread->throw_value(runtime->create_exception_with_message(thread, "value of type '%' has no property called '%'",
+                                                             klass.name(), RawSymbol::make(attr)));
   return ContinueMode::Exception;
 }
 
@@ -863,14 +869,17 @@ OP(makeclass) {
   // ensure new class doesn't shadow any of the parent properties
   auto parent_keys_tuple = parent.shape_instance().keys();
   for (uint8_t i = 0; i < member_props.size(); i++) {
-    auto key = RawSymbol::cast(member_props.field_at(i));
+    auto encoded = RawInt::cast(member_props.field_at(i));
+    SYMBOL prop_name;
+    uint8_t prop_flags;
+    RawShape::decode_shape_key(encoded, prop_name, prop_flags);
     for (uint32_t pi = 0; pi < parent_keys_tuple.size(); pi++) {
       SYMBOL parent_key_symbol;
       uint8_t parent_key_flags;
       RawShape::decode_shape_key(RawInt::cast(parent_keys_tuple.field_at(pi)), parent_key_symbol, parent_key_flags);
-      if (parent_key_symbol == key.value()) {
+      if (parent_key_symbol == prop_name) {
         thread->throw_value(runtime->create_exception_with_message(
-          thread, "cannot redeclare property '%', parent class '%' already contains it", key, parent.name()));
+          thread, "cannot redeclare property '%', parent class '%' already contains it", prop_name, parent.name()));
         return ContinueMode::Exception;
       }
     }

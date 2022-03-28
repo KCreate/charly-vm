@@ -877,18 +877,6 @@ uint32_t RawTuple::size() {
   return header()->count();
 }
 
-RawValue RawTuple::field_at(uint32_t index) {
-  DCHECK(index < size());
-  RawValue* data = bitcast<RawValue*>(address());
-  return data[index];
-}
-
-void RawTuple::set_field_at(uint32_t index, RawValue value) {
-  DCHECK(index < size());
-  RawValue* data = bitcast<RawValue*>(address());
-  data[index] = value;
-}
-
 uint32_t RawInstance::field_count() const {
   return header()->count();
 }
@@ -1005,11 +993,11 @@ void RawHugeString::set_length(size_t length) {
   set_int_at(kDataLengthOffset, length_int);
 }
 
-uint32_t RawClass::flags() const {
+uint8_t RawClass::flags() const {
   return int_at(kFlagsOffset);
 }
 
-void RawClass::set_flags(uint32_t flags) {
+void RawClass::set_flags(uint8_t flags) {
   set_int_at(kFlagsOffset, flags);
 }
 
@@ -1104,24 +1092,26 @@ void RawShape::set_additions(RawTuple additions) {
   set_field_at(kAdditionsOffset, additions);
 }
 
-int64_t RawShape::offset_of(SYMBOL symbol) const {
+RawShape::LookupResult RawShape::lookup_symbol(SYMBOL symbol) const {
   RawTuple keys = this->keys();
+
   for (uint32_t i = 0; i < keys.size(); i++) {
     auto encoded = RawInt::cast(keys.field_at(i));
     SYMBOL key_symbol;
     uint8_t key_flags;
     RawShape::decode_shape_key(encoded, key_symbol, key_flags);
 
+    // skip internal fields
     if (key_flags & RawShape::kKeyFlagInternal) {
       continue;
     }
 
     if (key_symbol == symbol) {
-      return i;
+      return LookupResult{ .found = true, .offset = i, .key = key_symbol, .flags = key_flags };
     }
   }
 
-  return -1;
+  return LookupResult{ .found = false };
 }
 
 RawInt RawShape::encode_shape_key(SYMBOL symbol, uint8_t flags) {
@@ -1132,21 +1122,7 @@ RawInt RawShape::encode_shape_key(SYMBOL symbol, uint8_t flags) {
 void RawShape::decode_shape_key(RawInt encoded, SYMBOL& symbol_out, uint8_t& flags_out) {
   size_t encoded_value = encoded.value();
   symbol_out = encoded_value >> 8;
-  flags_out = encoded_value & 0xff;
-}
-
-void RawShape::set_key_flag(uint32_t offset, uint8_t flags) {
-  auto encoded = RawInt::cast(keys().field_at(offset));
-  SYMBOL symbol;
-  uint8_t old_flags;
-  decode_shape_key(encoded, symbol, old_flags);
-  keys().set_field_at(offset, encode_shape_key(symbol, old_flags | flags));
-  if (parent().isShape()) {
-    auto parent_shape = RawShape::cast(parent());
-    if (offset < parent_shape.keys().size()) {
-      parent_shape.set_key_flag(offset, flags);
-    }
-  }
+  flags_out = (encoded_value & 0xff);
 }
 
 RawSymbol RawFunction::name() const {
