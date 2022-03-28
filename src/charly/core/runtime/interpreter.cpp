@@ -621,6 +621,13 @@ OP(loadattrsym) {
     auto shape = runtime->lookup_shape(thread, instance.shape_id());
     auto result = shape.lookup_symbol(attr);
     if (result.found) {
+      // TODO: allow accessing private member of same class
+      if (result.is_private() && (value != frame->self)) {
+        thread->throw_value(runtime->create_exception_with_message(
+          thread, "cannot read private property '%' of class '%'", RawSymbol::make(attr), klass.name()));
+        return ContinueMode::Exception;
+      }
+
       frame->push(instance.field_at(result.offset));
       return ContinueMode::Next;
     }
@@ -629,6 +636,14 @@ OP(loadattrsym) {
     // TODO: cache via inline cache
     RawValue lookup = klass.lookup_function(attr);
     if (lookup.isFunction()) {
+      auto function = RawFunction::cast(lookup);
+      // TODO: allow accessing private member of same class
+      if (function.shared_info()->ir_info.private_function && (value != frame->self)) {
+        thread->throw_value(runtime->create_exception_with_message(
+          thread, "cannot call private function '%' of class '%'", RawSymbol::make(attr), klass.name()));
+        return ContinueMode::Exception;
+      }
+
       frame->push(lookup);
       return ContinueMode::Next;
     }
@@ -770,6 +785,12 @@ OP(setattrsym) {
       if (result.is_read_only()) {
         thread->throw_value(runtime->create_exception_with_message(thread, "property '%' of type '%' is read-only",
                                                                    RawSymbol::make(attr), klass.name()));
+        return ContinueMode::Exception;
+      }
+
+      if (result.is_private() && (instance != frame->self)) {
+        thread->throw_value(runtime->create_exception_with_message(
+          thread, "cannot assign to private property '%' of class '%'", RawSymbol::make(attr), klass.name()));
         return ContinueMode::Exception;
       }
 

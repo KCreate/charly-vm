@@ -780,6 +780,7 @@ public:
   Function(bool arrow_function, const ref<Name>& name, const ref<Block>& body, Args&&... params) :
     class_constructor(false),
     class_static_function(false),
+    class_private_function(false),
     variable_function_scope(nullptr),
     arrow_function(arrow_function),
     name(name),
@@ -793,6 +794,9 @@ public:
 
   // wether this is a static function of a class
   bool class_static_function;
+
+  // wether this is a private function of a class
+  bool class_private_function;
 
   ref<FunctionScope> variable_function_scope;
   weak_ref<Class> host_class;
@@ -836,16 +840,17 @@ public:
 class ClassProperty final : public Node {
   AST_NODE(ClassProperty)
 public:
-  ClassProperty(bool is_static, const ref<Name>& name, const ref<Expression>& value) :
-    is_static(is_static), name(name), value(value) {
+  ClassProperty(bool is_static, bool is_private, const ref<Name>& name, const ref<Expression>& value) :
+    is_static(is_static), is_private(is_private), name(name), value(value) {
     this->set_location(name, value);
   }
-  ClassProperty(bool is_static, const std::string& name, const ref<Expression>& value) :
-    is_static(is_static), name(make<Name>(name)), value(value) {
+  ClassProperty(bool is_static, bool is_private, const std::string& name, const ref<Expression>& value) :
+    is_static(is_static), is_private(is_private), name(make<Name>(name)), value(value) {
     this->set_location(value);
   }
 
   bool is_static;
+  bool is_private;
   ref<Name> name;
   ref<Expression> value;
 

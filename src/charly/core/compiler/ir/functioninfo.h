@@ -42,6 +42,7 @@ struct FunctionInfo {
   bool has_frame_context = false;
   bool spread_argument = false;
   bool arrow_function = false;
+  bool private_function = false;
 
   // write a formatted version to the stream:
   //
@@ -54,7 +55,8 @@ struct FunctionInfo {
     out << "argc=" << static_cast<int32_t>(info.argc) << ", ";
     out << "minargc=" << static_cast<int32_t>(info.minargc) << ", ";
     out << "spread=" << (info.spread_argument ? "true" : "false") << ", ";
-    out << "arrow=" << (info.arrow_function ? "true" : "false");
+    out << "arrow=" << (info.arrow_function ? "true" : "false") << ", ";
+    out << "private=" << (info.private_function ? "true" : "false");
     out << ")";
 
     return out;

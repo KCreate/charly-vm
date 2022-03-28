@@ -555,7 +555,11 @@ bool CodeGenerator::inspect_enter(const ref<Class>& node) {
 
   // member properties
   for (const auto& member_prop : node->member_properties) {
-    m_builder.emit_loadsymbol(member_prop->name->value)->at(member_prop->name);
+    bool is_private = member_prop->is_private;
+    m_builder
+      .emit_load_value(RawShape::encode_shape_key(m_builder.register_symbol(member_prop->name->value),
+                                                  is_private ? RawShape::kKeyFlagPrivate : RawShape::kKeyFlagNone))
+      ->at(member_prop->name);
   }
   m_builder.emit_maketuple(node->member_properties.size());
 
@@ -567,7 +571,11 @@ bool CodeGenerator::inspect_enter(const ref<Class>& node) {
 
   // static property keys
   for (const auto& static_prop : node->static_properties) {
-    m_builder.emit_loadsymbol(static_prop->name->value)->at(static_prop->name);
+    bool is_private = static_prop->is_private;
+    m_builder
+      .emit_load_value(RawShape::encode_shape_key(m_builder.register_symbol(static_prop->name->value),
+                                                  is_private ? RawShape::kKeyFlagPrivate : RawShape::kKeyFlagNone))
+      ->at(static_prop->name);
   }
   m_builder.emit_maketuple(node->static_properties.size());
 

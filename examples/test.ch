@@ -24,10 +24,24 @@
  * SOFTWARE.
  */
 
+class A {
+    private property foo
+}
 
-print(print.klass)
-print(print.host_class)
-print(print.name)
+class B extends A {
+    private property bar
+
+    private func constructor
+
+    func get {
+
+    }
+}
+
+
+
+
+
 
 
 

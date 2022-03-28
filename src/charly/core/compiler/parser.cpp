@@ -1294,10 +1294,14 @@ ref<Class> Parser::parse_class() {
   std::unordered_set<std::string> class_member_fields;
 
   while (!type(TokenType::RightCurly)) {
-    bool static_property = false;
+    bool is_static = false;
+    bool is_private = false;
+
+    if (skip(TokenType::Private))
+      is_private = true;
 
     if (skip(TokenType::Static))
-      static_property = true;
+      is_static = true;
 
     if (type(TokenType::Property)) {
       Location property_token_location = m_token.location;
@@ -1313,27 +1317,30 @@ ref<Class> Parser::parse_class() {
         value->set_location(name);
       }
 
-      if (static_property) {
-        auto prop = make<ClassProperty>(true, name, value);
-        prop->set_begin(property_token_location);
+      auto prop = make<ClassProperty>(is_static, is_private, name, value);
+      prop->set_begin(property_token_location);
+      if (is_static) {
         node->static_properties.push_back(prop);
       } else {
-        auto prop = make<ClassProperty>(false, name, value);
-        prop->set_begin(property_token_location);
         node->member_properties.push_back(prop);
       }
     } else {
       FunctionFlags flags;
       flags.class_function = true;
-      flags.static_function = static_property;
+      flags.static_function = is_static;
       ref<Function> function = parse_function(flags);
+      function->class_private_function = is_private;
       function->host_class = node;
 
-      if (static_property) {
+      if (is_static) {
         function->class_static_function = true;
         node->static_functions.push_back(function);
       } else {
         if (function->name->value.compare("constructor") == 0) {
+          if (is_private) {
+            m_console.error(function, "class constructors cannot be private");
+          }
+
           if (node->constructor) {
             m_console.error(function, "duplicate declaration of class constructor");
             m_console.info(node->constructor, "previously declared here");

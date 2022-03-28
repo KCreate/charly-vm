@@ -604,6 +604,8 @@ CATCH_TEST_CASE("Parser") {
     CHECK_ERROR_STMT("class A { func constructor { super[1] = 1 } }", "super must be used as part of a call operation")
     CHECK_ERROR_STMT("class A { func constructor { super.foo = 25 } }", "super must be used as part of a call operation")
     CHECK_ERROR_STMT("class A { func constructor { super + 25 } }", "super must be used as part of a call operation")
+
+    CHECK_ERROR_STMT("class A { private func constructor { } }", "class constructors cannot be private")
   }
 
   CATCH_SECTION("super expressions") {

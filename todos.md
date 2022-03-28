@@ -1,7 +1,6 @@
 # Todos
 
-- Readonly properties of instances
-  - Store flag in keys table
+- Allow accessing private members of same class in class methods
 
 - Fix invalid codegen of class property attribute write
   - Currently the target and source are in the wrong order
@@ -12,16 +11,6 @@
 - Nice, clean way to declare functions of builtin classes
   - In the old charly version I was able to declare builtin classes directly inside charly code
   - The same should be at least somewhat possible here too
-
-- Private properties
-  - Store flag in keys table
-  - Different load instructions for self and non-self access
-    - loadattrsym, setattrsym
-    - loadselfattrsym, setselfattrsym
-    - @foo
-    - @foo = 25
-    - self.foo
-    - self.foo = 25
 
 - RawInstance::field_at index should be uint8_t as maximum field count is 256
 

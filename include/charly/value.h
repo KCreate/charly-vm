@@ -757,6 +757,7 @@ public:
     kKeyFlagNone = 0,
     kKeyFlagInternal = 1,  // keys that cannot get accessed via charly code
     kKeyFlagReadOnly = 2,  // keys that cannot be assigned to
+    kKeyFlagPrivate = 4    // keys that can only be accessed from within class functions
   };
   static RawInt encode_shape_key(SYMBOL symbol, uint8_t flags = kKeyFlagNone);
   static void decode_shape_key(RawInt encoded, SYMBOL& symbol_out, uint8_t& flags_out);
@@ -784,6 +785,10 @@ public:
 
     bool is_read_only() const {
       return flags & kKeyFlagReadOnly;
+    }
+
+    bool is_private() const {
+      return flags & kKeyFlagPrivate;
     }
   };
   LookupResult lookup_symbol(SYMBOL symbol) const;
