@@ -58,8 +58,18 @@ void ReservedIdentifiersCheck::inspect_leave(const ref<Declaration>& node) {
 
 void ReservedIdentifiersCheck::inspect_leave(const ref<UnpackDeclaration>& node) {
   for (const ref<UnpackTargetElement>& element : node->target->elements) {
-    if (is_reserved_identifier(element->name->value)) {
-      m_console.error(element->name, "'", element->name->value, "' is a reserved variable name");
+    if (node->target->object_unpack) {
+      CHECK(isa<Name>(element->target));
+      auto name = cast<Name>(element->target);
+      if (is_reserved_identifier(name->value)) {
+        m_console.error(name, "'", name->value, "' is a reserved variable name");
+      }
+    } else {
+      CHECK(isa<Id>(element->target));
+      auto id = cast<Id>(element->target);
+      if (is_reserved_identifier(id->value)) {
+        m_console.error(id, "'", id->value, "' is a reserved variable name");
+      }
     }
   }
 }

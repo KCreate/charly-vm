@@ -652,18 +652,6 @@ ref<Expression> Parser::parse_assignment() {
     ref<Expression> source = parse_expression();
 
     switch (target->type()) {
-      case Node::Type::Id: {
-        ref<Id> id = cast<Id>(target);
-        return make<Assignment>(assignment_operator, id, source);
-      }
-      case Node::Type::MemberOp: {
-        ref<MemberOp> member = cast<MemberOp>(target);
-        return make<MemberAssignment>(assignment_operator, member, source);
-      }
-      case Node::Type::IndexOp: {
-        ref<IndexOp> index = cast<IndexOp>(target);
-        return make<IndexAssignment>(assignment_operator, index, source);
-      }
       case Node::Type::Tuple:
       case Node::Type::Dict: {
         ref<UnpackTarget> unpack_target = create_unpack_target(target);
@@ -674,11 +662,14 @@ ref<Expression> Parser::parse_assignment() {
           break;
         }
 
-        return make<UnpackAssignment>(unpack_target, source);
+        return make<Assignment>(TokenType::Assignment, unpack_target, source);
       }
       default: {
-        m_console.error(target, "left-hand side of assignment is not assignable");
-        break;
+        if (is_assignable(target)) {
+          return make<Assignment>(assignment_operator, target, source);
+        } else {
+          m_console.error(target, "left-hand side of assignment cannot be assigned to");
+        }
       }
     }
   }
@@ -796,7 +787,7 @@ ref<Expression> Parser::parse_spawn() {
   m_keyword_context = kwcontext;
 
   // wrap non-call statements in a block
-  if (!(isa<Block>(stmt) || isa<CallOp>(stmt) || isa<CallMemberOp>(stmt) || isa<CallIndexOp>(stmt))) {
+  if (!isa<Block>(stmt) && !isa<CallOp>(stmt)) {
     m_console.fatal(stmt, "expected block or call operation");
   }
 
@@ -832,25 +823,6 @@ ref<Expression> Parser::parse_call_member_index() {
         if (newline_passed_since_base)
           return target;
         target = parse_call(target);
-
-        ref<CallOp> call = cast<CallOp>(target);
-        switch (call->target->type()) {
-          case Node::Type::MemberOp: {
-            ref<MemberOp> member = cast<MemberOp>(call->target);
-            target = make<CallMemberOp>(member, call->arguments);
-            break;
-          }
-          case Node::Type::IndexOp: {
-            ref<IndexOp> index = cast<IndexOp>(call->target);
-            target = make<CallIndexOp>(index, call->arguments);
-            break;
-          }
-          default: {
-            break;
-          }
-        }
-
-        target->set_location(call);
         break;
       }
       case TokenType::LeftBracket: {
@@ -1180,7 +1152,7 @@ ref<Function> Parser::parse_function(FunctionFlags flags) {
   m_keyword_context = kwcontext;
 
   if (isa<Expression>(body)) {
-    body = make<Return>(cast<Expression>(body));
+    body = make<Block>(cast<Expression>(body));
   }
 
   ref<Function> node = make<Function>(false, function_name, wrap_statement_in_block(body), argument_list);
@@ -1473,7 +1445,7 @@ ref<Statement> Parser::create_declaration(const ref<Expression>& target, const r
     }
     case Node::Type::Tuple:
     case Node::Type::Dict: {
-      return make<UnpackDeclaration>(create_unpack_target(target), value, constant);
+      return make<UnpackDeclaration>(create_unpack_target(target, true), value, constant);
     }
     default: {
       FAIL("unexpected node type");
@@ -1481,11 +1453,14 @@ ref<Statement> Parser::create_declaration(const ref<Expression>& target, const r
   }
 }
 
-ref<UnpackTarget> Parser::create_unpack_target(const ref<Expression>& node) {
+ref<UnpackTarget> Parser::create_unpack_target(const ref<Expression>& node, bool declaration) {
+  // TODO: if in declaration, only allow identifiers
+  //       if not in declaration, allow arbitrary assignment targets
+
   switch (node->type()) {
     case Node::Type::Tuple: {
       ref<Tuple> tuple = cast<Tuple>(node);
-      ref<UnpackTarget> target = make<UnpackTarget>(false);
+      ref<UnpackTarget> target = make<UnpackTarget>(false, declaration);
 
       if (tuple->elements.size() == 0) {
         m_console.error(tuple, "empty unpack target");
@@ -1493,19 +1468,25 @@ ref<UnpackTarget> Parser::create_unpack_target(const ref<Expression>& node) {
       }
 
       for (const ref<Expression>& member : tuple->elements) {
-        if (ref<Id> id = cast<Id>(member)) {
-          target->elements.push_back(make<UnpackTargetElement>(make<Name>(id), false));
-        } else if (ref<Spread> spread = cast<Spread>(member)) {
-          if (ref<Id> name = cast<Id>(spread->expression)) {
-            auto element = make<UnpackTargetElement>(make<Name>(name), true);
-            element->set_begin(spread);
-            target->elements.push_back(element);
+        auto expression = member;
+        bool is_spread = false;
+        if (auto spread = cast<Spread>(member)) {
+          expression = spread->expression;
+          is_spread = true;
+        }
+
+        if (declaration) {
+          if (isa<Id>(expression)) {
+            target->elements.push_back(make<UnpackTargetElement>(expression, is_spread));
           } else {
-            m_console.error(spread->expression, "expected an identifier");
+            m_console.error(expression, "expected an identifier or spread");
           }
         } else {
-          m_console.error(member, "expected an identifier or spread");
-          break;
+          if (is_valid_unpack_target_element(expression)) {
+            target->elements.push_back(make<UnpackTargetElement>(expression, is_spread));
+          } else {
+            m_console.error(expression, "expected a valid unpack target expression");
+          }
         }
       }
 
@@ -1514,7 +1495,7 @@ ref<UnpackTarget> Parser::create_unpack_target(const ref<Expression>& node) {
     }
     case Node::Type::Dict: {
       ref<Dict> dict = cast<Dict>(node);
-      ref<UnpackTarget> target = make<UnpackTarget>(true);
+      ref<UnpackTarget> target = make<UnpackTarget>(true, declaration);
 
       if (dict->elements.size() == 0) {
         m_console.error(dict, "empty unpack target");
@@ -1553,7 +1534,26 @@ ref<UnpackTarget> Parser::create_unpack_target(const ref<Expression>& node) {
 
   // a dummy UnpackTarget node can be returned here since
   // we don't care about the AST if any errors have been generated
-  return make<UnpackTarget>(false);
+  return make<UnpackTarget>(false, declaration);
+}
+
+bool Parser::is_assignable(const ref<Expression>& expression) {
+  switch (expression->type()) {
+    case Node::Type::Id:
+    case Node::Type::MemberOp:
+    case Node::Type::IndexOp:
+    case Node::Type::UnpackTarget:
+      return true;
+    default: return false;
+  }
+}
+
+bool Parser::is_valid_unpack_target_element(const ref<Expression>& expression) {
+  switch (expression->type()) {
+    case Node::Type::Id:
+    case Node::Type::MemberOp: return true;
+    default: return false;
+  }
 }
 
 ref<Block> Parser::wrap_statement_in_block(const ref<Statement>& node) {

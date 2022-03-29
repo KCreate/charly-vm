@@ -12,6 +12,7 @@ file(GLOB charlycore_SRC
   "charly/core/compiler/parser.cpp"
   "charly/core/compiler/passes/constant_folding_pass.cpp"
   "charly/core/compiler/passes/desugar_pass.cpp"
+  "charly/core/compiler/passes/node_specialization_pass.cpp"
   "charly/core/compiler/passes/duplicates_check.cpp"
   "charly/core/compiler/passes/grammar_validation_check.cpp"
   "charly/core/compiler/passes/repl_prepare_pass.cpp"

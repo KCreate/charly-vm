@@ -24,24 +24,18 @@
  * SOFTWARE.
  */
 
-func foo(x += 1, y *= 2) {
-    return (x, y)
-}
+#include "charly/core/compiler/pass.h"
 
-let a += 25
+#pragma once
 
-print(a)
-print(foo())
-print(foo(10))
-print(foo(20, 30))
+namespace charly::core::compiler::ast {
 
+class NodeSpecializationPass : public DiagnosticPass {
+public:
+  using DiagnosticPass::DiagnosticPass;
 
+private:
+  ref<Expression> transform(const ref<Id>&) override;
+};
 
-
-
-
-
-
-
-
-
+}  // namespace charly::core::compiler::ast

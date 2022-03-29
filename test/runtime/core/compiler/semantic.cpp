@@ -30,15 +30,15 @@
 
 CATCH_TEST_CASE("Semantic") {
   CATCH_SECTION("validates assignments") {
-    COMPILE_ERROR("2 = 25", "left-hand side of assignment is not assignable")
-    COMPILE_ERROR("false = 25", "left-hand side of assignment is not assignable")
-    COMPILE_ERROR("self = 25", "left-hand side of assignment is not assignable")
+    COMPILE_ERROR("2 = 25", "left-hand side of assignment cannot be assigned to")
+    COMPILE_ERROR("false = 25", "left-hand side of assignment cannot be assigned to")
+    COMPILE_ERROR("self = 25", "left-hand side of assignment cannot be assigned to")
     COMPILE_ERROR("(a, b) += 25",
                   "this type of expression cannot be used as the left-hand side of an operator assignment")
     COMPILE_ERROR("({a, b} += 25)",
                   "this type of expression cannot be used as the left-hand side of an operator assignment")
     COMPILE_ERROR("() = 25", "empty unpack target")
-    COMPILE_ERROR("(1) = 25", "left-hand side of assignment is not assignable")
+    COMPILE_ERROR("(1) = 25", "left-hand side of assignment cannot be assigned to")
     COMPILE_ERROR("(...a, ...b) = 25", "excess spread")
     COMPILE_ERROR("({} = 25)", "empty unpack target")
     COMPILE_ERROR("({a: 1} = 25)", "dict used as unpack target must not contain any values")
@@ -48,7 +48,7 @@ CATCH_TEST_CASE("Semantic") {
     COMPILE_ERROR("let (1) = 1", "expected an identifier or spread")
     COMPILE_ERROR("let (a.a) = 1", "expected an identifier or spread")
     COMPILE_ERROR("let (2 + 2) = 1", "expected an identifier or spread")
-    COMPILE_ERROR("let (...2) = 1", "expected an identifier")
+    COMPILE_ERROR("let (...2) = 1", "expected an identifier or spread")
     COMPILE_ERROR("let (...a, ...d) = 1", "excess spread")
     COMPILE_ERROR("let ([1, 2]) = 1", "expected an identifier or spread")
     COMPILE_ERROR("let (\"a\") = 1", "expected an identifier or spread")
@@ -128,10 +128,10 @@ CATCH_TEST_CASE("Semantic") {
   }
 
   CATCH_SECTION("checks for duplicate identifiers") {
-    COMPILE_ERROR("let (a, a) = x", "duplicate identifier 'a'")
-    COMPILE_ERROR("let (a, ...a) = x", "duplicate identifier 'a'")
-    COMPILE_ERROR("let {a, a} = x", "duplicate identifier 'a'")
-    COMPILE_ERROR("let {a, ...a} = x", "duplicate identifier 'a'")
+    COMPILE_ERROR("let (a, a) = x", "duplicate declaration of 'a'")
+    COMPILE_ERROR("let (a, ...a) = x", "duplicate declaration of 'a'")
+    COMPILE_ERROR("let {a, a} = x", "duplicate declaration of 'a'")
+    COMPILE_ERROR("let {a, ...a} = x", "duplicate declaration of 'a'")
 
     COMPILE_ERROR("({a: 1, a: 2})", "duplicate key 'a'")
 

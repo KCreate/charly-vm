@@ -99,16 +99,11 @@ public:
     UnpackTargetElement,
     UnpackTarget,
     Assignment,
-    UnpackAssignment,
-    MemberAssignment,
-    IndexAssignment,
     Ternary,
     BinaryOp,
     UnaryOp,
     Spread,
     CallOp,
-    CallMemberOp,
-    CallIndexOp,
 
     // Declaration
     Declaration,
@@ -946,30 +941,33 @@ public:
 class UnpackTargetElement final : public Node {
   AST_NODE(UnpackTargetElement)
 public:
-  explicit UnpackTargetElement(const ref<Name>& name, bool spread = false) : spread(spread), name(name) {
-    this->set_location(name);
+  explicit UnpackTargetElement(const ref<Expression>& target, bool spread = false) : spread(spread), target(target) {
+    this->set_location(target);
   }
 
   bool spread;
-  ref<Name> name;
+  ref<Expression> target;
 
-  ir::ValueLocation ir_location;
+  CHILDREN() {
+    CHILD_NODE(target)
+  }
 
   void dump_info(std::ostream& out) const override;
 };
 
-class UnpackTarget final : public Node {
+class UnpackTarget final : public Expression {
   AST_NODE(UnpackTarget)
 public:
   template <typename... Args>
-  explicit UnpackTarget(bool object_unpack, Args&&... params) :
-    object_unpack(object_unpack), elements({ std::forward<Args>(params)... }) {
+  explicit UnpackTarget(bool object_unpack, bool declaration_target, Args&&... params) :
+    object_unpack(object_unpack), declaration_target(declaration_target), elements({ std::forward<Args>(params)... }) {
     if (!elements.empty()) {
       this->set_location(elements.front(), elements.back());
     }
   }
 
   bool object_unpack;
+  bool declaration_target;
   std::vector<ref<UnpackTargetElement>> elements;
 
   CHILDREN() {
@@ -983,117 +981,23 @@ public:
 class Assignment final : public Expression {
   AST_NODE(Assignment)
 public:
-  Assignment(const ref<Id>& name, const ref<Expression>& source) :
-    operation(TokenType::Assignment), name(name), source(source) {
-    this->set_begin(name);
+  Assignment(const ref<Expression>& target, const ref<Expression>& source) :
+    operation(TokenType::Assignment), target(target), source(source) {
+    this->set_begin(target);
     this->set_end(source);
   }
-  Assignment(TokenType operation, const ref<Id>& name, const ref<Expression>& source) :
-    operation(operation), name(name), source(source) {
-    this->set_begin(name);
-    this->set_end(source);
-  }
-
-  TokenType operation;
-  ref<Id> name;
-  ref<Expression> source;
-
-  CHILDREN() {
-    CHILD_NODE(name)
-    CHILD_NODE(source)
-  }
-
-  void dump_info(std::ostream& out) const override;
-};
-
-// (<unpack_target>) = <source>
-// {<unpack_target>} = <source>
-class UnpackAssignment final : public Expression {
-  AST_NODE(UnpackAssignment)
-public:
-  UnpackAssignment(const ref<UnpackTarget>& target, const ref<Expression>& source) : target(target), source(source) {
+  Assignment(TokenType operation, const ref<Expression>& target, const ref<Expression>& source) :
+    operation(operation), target(target), source(source) {
     this->set_begin(target);
     this->set_end(source);
   }
 
-  ref<UnpackTarget> target;
-  ref<Expression> source;
-
-  CHILDREN() {
-    CHILD_NODE(target)
-    CHILD_NODE(source)
-  }
-};
-
-// <target>.<member> <operation>= <source>
-class MemberAssignment final : public Expression {
-  AST_NODE(MemberAssignment)
-public:
-  MemberAssignment(const ref<MemberOp>& member, const ref<Expression>& source) :
-    operation(TokenType::Assignment), target(member->target), member(member->member), source(source) {
-    this->set_location(member, source);
-  }
-  MemberAssignment(const ref<Expression>& target, const ref<Name>& member, const ref<Expression>& source) :
-    operation(TokenType::Assignment), target(target), member(member), source(source) {
-    this->set_location(target, source);
-  }
-  MemberAssignment(TokenType operation, const ref<MemberOp>& member, const ref<Expression>& source) :
-    operation(operation), target(member->target), member(member->member), source(source) {
-    this->set_location(member, source);
-  }
-  MemberAssignment(TokenType operation,
-                   const ref<Expression>& target,
-                   const ref<Name>& member,
-                   const ref<Expression>& source) :
-    operation(operation), target(target), member(member), source(source) {
-    this->set_location(target, source);
-  }
-
   TokenType operation;
   ref<Expression> target;
-  ref<Name> member;
   ref<Expression> source;
 
   CHILDREN() {
     CHILD_NODE(target)
-    CHILD_NODE(source)
-  }
-
-  void dump_info(std::ostream& out) const override;
-};
-
-// <target>[<index>] <operation>= <source>
-class IndexAssignment final : public Expression {
-  AST_NODE(IndexAssignment)
-public:
-  IndexAssignment(const ref<IndexOp>& index, const ref<Expression>& source) :
-    operation(TokenType::Assignment), target(index->target), index(index->index), source(source) {
-    this->set_location(index, source);
-  }
-  IndexAssignment(const ref<Expression>& target, const ref<Expression>& index, const ref<Expression>& source) :
-    operation(TokenType::Assignment), target(target), index(index), source(source) {
-    this->set_location(target, source);
-  }
-  IndexAssignment(TokenType operation, const ref<IndexOp>& index, const ref<Expression>& source) :
-    operation(operation), target(index->target), index(index->index), source(source) {
-    this->set_location(index, source);
-  }
-  IndexAssignment(TokenType operation,
-                  const ref<Expression>& target,
-                  const ref<Expression>& index,
-                  const ref<Expression>& source) :
-    operation(operation), target(target), index(index), source(source) {
-    this->set_location(target, source);
-  }
-
-  TokenType operation;
-  ref<Expression> target;
-  ref<Expression> index;
-  ref<Expression> source;
-
-  CHILDREN() {
-    CHILD_NODE(target)
-    CHILD_NODE(index)
     CHILD_NODE(source)
   }
 
@@ -1180,83 +1084,6 @@ public:
 
   CHILDREN() {
     CHILD_NODE(target)
-    CHILD_VECTOR(arguments)
-  }
-};
-
-// <target>.<member>(<arguments>)
-class CallMemberOp final : public Expression {
-  AST_NODE(CallMemberOp)
-public:
-  template <typename... Args>
-  explicit CallMemberOp(const ref<MemberOp>& member, Args&&... params) :
-    target(member->target), member(member->member), arguments({ std::forward<Args>(params)... }) {
-    this->set_location(member);
-    if (!arguments.empty() && arguments.back().get())
-      this->set_end(arguments.back()->location());
-  }
-  template <typename... Args>
-  CallMemberOp(const ref<Expression>& target, const ref<Name>& member, Args&&... params) :
-    target(target), member(member), arguments({ std::forward<Args>(params)... }) {
-    this->set_location(target, member);
-    if (!arguments.empty() && arguments.back().get())
-      this->set_end(arguments.back()->location());
-  }
-  CallMemberOp(const ref<MemberOp>& member, const std::vector<ref<Expression>>& params) :
-    target(member->target), member(member->member), arguments(params) {
-    this->set_location(member);
-    if (!arguments.empty() && arguments.back().get())
-      this->set_end(arguments.back()->location());
-  }
-  CallMemberOp(const ref<Expression>& target, const ref<Name>& member, const std::vector<ref<Expression>>& params) :
-    target(target), member(member), arguments(params) {
-    this->set_location(target, member);
-    if (!arguments.empty() && arguments.back().get())
-      this->set_end(arguments.back()->location());
-  }
-
-  ref<Expression> target;
-  ref<Name> member;
-  std::vector<ref<Expression>> arguments;
-
-  bool has_spread_elements() const;
-
-  CHILDREN() {
-    CHILD_NODE(target)
-    CHILD_VECTOR(arguments)
-  }
-
-  void dump_info(std::ostream& out) const override;
-};
-
-// <target>[<member>](<arguments>)
-class CallIndexOp final : public Expression {
-  AST_NODE(CallIndexOp)
-public:
-  template <typename... Args>
-  explicit CallIndexOp(const ref<IndexOp>& index, Args&&... params) :
-    target(index->target), index(index->index), arguments({ std::forward<Args>(params)... }) {
-    this->set_location(index);
-    if (!arguments.empty() && arguments.back().get())
-      this->set_end(arguments.back()->location());
-  }
-  template <typename... Args>
-  CallIndexOp(const ref<Expression>& target, const ref<Expression>& index, Args&&... params) :
-    target(target), index(index), arguments({ std::forward<Args>(params)... }) {
-    this->set_location(target, index);
-    if (!arguments.empty() && arguments.back().get())
-      this->set_end(arguments.back()->location());
-  }
-
-  ref<Expression> target;
-  ref<Expression> index;
-  std::vector<ref<Expression>> arguments;
-
-  bool has_spread_elements() const;
-
-  CHILDREN() {
-    CHILD_NODE(target)
-    CHILD_NODE(index)
     CHILD_VECTOR(arguments)
   }
 };

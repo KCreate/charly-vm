@@ -310,7 +310,8 @@ CATCH_TEST_CASE("Parser") {
 
   CATCH_SECTION("spawn expressions") {
     CHECK_AST_EXP("spawn foo()", make<Spawn>(make<CallOp>(make<Id>("foo"))))
-    CHECK_AST_EXP("spawn foo.bar()", make<Spawn>(make<CallMemberOp>(make<Id>("foo"), make<Name>("bar"))))
+    CHECK_AST_EXP("spawn foo.bar()", make<Spawn>(make<CallOp>(make<MemberOp>(make<Id>("foo"), make<Name>("bar")))))
+    CHECK_AST_EXP("spawn foo.bar(1)", make<Spawn>(make<CallOp>(make<MemberOp>(make<Id>("foo"), make<Name>("bar")), make<Int>(1))))
     CHECK_AST_EXP("spawn foo()()", make<Spawn>(make<CallOp>(make<CallOp>(make<Id>("foo")))))
     CHECK_AST_EXP("spawn { yield foo }", make<Spawn>(make<Block>(make<Yield>(make<Id>("foo")))))
     CHECK_AST_EXP("spawn { return foo }", make<Spawn>(make<Block>(make<Return>(make<Id>("foo")))))
@@ -333,11 +334,28 @@ CATCH_TEST_CASE("Parser") {
     CHECK_AST_STMT("foo(0)(1)\n(2)", make<CallOp>(make<CallOp>(make<Id>("foo"), make<Int>(0)), make<Int>(1)))
 
     CHECK_AST_EXP("foo.bar(2, 3).test[1](1, 2).bar",
-                  make<MemberOp>(make<CallIndexOp>(make<MemberOp>(make<CallMemberOp>(make<Id>("foo"), make<Name>("bar"),
-                                                                                     make<Int>(2), make<Int>(3)),
-                                                                  make<Name>("test")),
-                                                   make<Int>(1), make<Int>(1), make<Int>(2)),
-                                 make<Name>("bar")))
+      make<MemberOp>(
+        make<CallOp>(
+          make<IndexOp>(
+            make<MemberOp>(
+              make<CallOp>(
+                make<MemberOp>(
+                  make<Id>("foo"),
+                  make<Name>("bar")
+                ),
+                make<Int>(2),
+                make<Int>(3)
+              ),
+              make<Name>("test")
+            ),
+            make<Int>(1)
+          ),
+          make<Int>(1),
+          make<Int>(2)
+        ),
+        make<Name>("bar")
+      )
+    )
 
     CHECK_ERROR_EXP("foo(", "unexpected end of file, expected a ')' token")
   }

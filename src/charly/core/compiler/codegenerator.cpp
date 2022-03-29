@@ -98,6 +98,9 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
         m_builder.emit_testintjmp(i, l);
       }
       m_builder.emit_testintjmp(argc, body_label);
+
+      // the runtime disallows calls with too many arguments, so
+      // any misbehaviour can be caught with a panic here
       m_builder.emit_pop();
       m_builder.emit_panic();
 
@@ -235,7 +238,7 @@ void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target) 
   ref<UnpackTargetElement> spread_element = nullptr;
   for (const ref<UnpackTargetElement>& element : target->elements) {
     if (element->spread) {
-      DCHECK(spread_element.get() == nullptr, "expected only a single spread target");
+      CHECK(spread_element.get() == nullptr, "expected only a single spread target");
       spread_element = element;
       continue;
     }
@@ -256,14 +259,19 @@ void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target) 
     // emit the symbols to extract from the source value
     for (auto begin = target->elements.rbegin(); begin != target->elements.rend(); begin++) {
       const ref<UnpackTargetElement>& element = *begin;
-      if (!element->spread) {
-        m_builder.emit_loadsymbol(element->name->value)->at(element->name);
-      }
+      if (element->spread)
+        continue;
+
+      CHECK(isa<Id>(element->target));
+      auto id = cast<Id>(element->target);
+      m_builder.emit_loadsymbol(id->value)->at(id);
     }
 
     if (spread_element) {
+      CHECK(isa<Id>(spread_element->target));
+      auto id = cast<Id>(spread_element->target);
       m_builder.emit_unpackobjectspread(before_elements.size() + after_elements.size())->at(target);
-      generate_store(spread_element->name->ir_location)->at(spread_element->name);
+      generate_store(id->ir_location)->at(id);
       m_builder.emit_pop();
     } else {
       m_builder.emit_unpackobject(before_elements.size())->at(target);
@@ -271,10 +279,13 @@ void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target) 
 
     for (auto begin = target->elements.rbegin(); begin != target->elements.rend(); begin++) {
       const ref<UnpackTargetElement>& element = *begin;
-      if (!element->spread) {
-        generate_store(element->ir_location)->at(element);
-        m_builder.emit_pop();
-      }
+      if (element->spread)
+        continue;
+
+      CHECK(isa<Id>(element->target));
+      auto id = cast<Id>(element->target);
+      generate_store(id->ir_location)->at(element);
+      m_builder.emit_pop();
     }
   } else {
     if (spread_element) {
@@ -283,9 +294,27 @@ void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target) 
       m_builder.emit_unpacksequence(before_elements.size())->at(target);
     }
 
-    for (auto begin = target->elements.rbegin(); begin != target->elements.rend(); begin++) {
+    for (auto begin = target->elements.begin(); begin != target->elements.end(); begin++) {
       const ref<UnpackTargetElement>& element = *begin;
-      generate_store(element->ir_location)->at(element);
+
+      switch (element->target->type()) {
+        case Node::Type::Id: {
+          auto id = cast<Id>(element->target);
+          generate_store(id->ir_location)->at(element);
+          break;
+        }
+        case Node::Type::MemberOp: {
+          auto member_op = cast<MemberOp>(element->target);
+          apply(member_op->target);
+          m_builder.emit_swap();
+          m_builder.emit_setattrsym(m_builder.register_string(member_op->member->value));
+          break;
+        }
+        default: {
+          FAIL("unexpected node type");
+        }
+      }
+
       m_builder.emit_pop();
     }
   }
@@ -395,86 +424,50 @@ void CodeGenerator::inspect_leave(const ref<Yield>& node) {
 }
 
 bool CodeGenerator::inspect_enter(const ref<Spawn>& node) {
-  switch (node->statement->type()) {
-    case Node::Type::CallOp: {
-      ref<CallOp> call = cast<CallOp>(node->statement);
+  CHECK(isa<CallOp>(node->statement));
+  auto call = cast<CallOp>(node->statement);
 
-      if (isa<Super>(call->target)) {
+  switch (call->target->type()) {
+    case Node::Type::MemberOp: {
+      ref<MemberOp> member_op = cast<MemberOp>(call->target);
+      if (isa<Super>(member_op->target)) {
         m_builder.emit_loadself();
-        apply(call->target);
+        apply(member_op);
       } else {
-        m_builder.emit_load_value(kNull);
-        apply(call->target);
+        apply(member_op->target);
+        m_builder.emit_dup();
+        m_builder.emit_loadattrsym(m_builder.register_string(member_op->member->value))->at(member_op->member);
       }
-
-      if (call->has_spread_elements()) {
-        uint8_t emitted_segments = generate_spread_tuples(call->arguments);
-        m_builder.emit_maketuplespread(emitted_segments)->at(call);
-      } else {
-        for (const auto& arg : call->arguments) {
-          apply(arg);
-        }
-        m_builder.emit_maketuple(call->arguments.size())->at(call);
-      }
-
       break;
     }
-    case Node::Type::CallMemberOp: {
-      ref<CallMemberOp> call = cast<CallMemberOp>(node->statement);
-
-      if (isa<Super>(call->target)) {
-        m_builder.emit_loadself();
-        ref<MemberOp> member = make<MemberOp>(call->target, call->member);
-        member->set_location(call);
-        apply(member);
-      } else {
-        apply(call->target);
-        m_builder.emit_dup();
-        m_builder.emit_loadattrsym(m_builder.register_string(call->member->value))->at(call->member);
-      }
-
-      if (call->has_spread_elements()) {
-        uint8_t emitted_segments = generate_spread_tuples(call->arguments);
-        m_builder.emit_maketuplespread(emitted_segments)->at(call->target);
-      } else {
-        for (const auto& arg : call->arguments) {
-          apply(arg);
-        }
-        m_builder.emit_maketuple(call->arguments.size())->at(call->target);
-      }
-
+    case Node::Type::IndexOp: {
+      ref<IndexOp> index_op = cast<IndexOp>(call->target);
+      apply(index_op->target);
+      m_builder.emit_dup();
+      apply(index_op->index);
+      m_builder.emit_loadattr()->at(index_op->index);
       break;
     }
-    case Node::Type::CallIndexOp: {
-      ref<CallIndexOp> call = cast<CallIndexOp>(node->statement);
-
-      if (isa<Super>(call->target)) {
-        m_builder.emit_loadself();
-        ref<IndexOp> member = make<IndexOp>(call->target, call->index);
-        member->set_location(call);
-        apply(member);
-      } else {
-        apply(call->target);
-        m_builder.emit_dup();
-        apply(call->index);
-        m_builder.emit_loadattr()->at(call->index);
-      }
-
-      if (call->has_spread_elements()) {
-        uint8_t emitted_segments = generate_spread_tuples(call->arguments);
-        m_builder.emit_maketuplespread(emitted_segments)->at(call->target);
-      } else {
-        for (const auto& arg : call->arguments) {
-          apply(arg);
-        }
-        m_builder.emit_maketuple(call->arguments.size())->at(call->target);
-      }
-
+    case Node::Type::Super: {
+      m_builder.emit_loadself();
+      apply(call->target);
       break;
     }
     default: {
-      UNIMPLEMENTED();
+      m_builder.emit_load_value(kNull);
+      apply(call->target);
+      break;
     }
+  }
+
+  if (call->has_spread_elements()) {
+    uint8_t emitted_segments = generate_spread_tuples(call->arguments);
+    m_builder.emit_maketuplespread(emitted_segments)->at(call->target);
+  } else {
+    for (const auto& arg : call->arguments) {
+      apply(arg);
+    }
+    m_builder.emit_maketuple(call->arguments.size())->at(call->target);
   }
 
   m_builder.emit_makefiber()->at(node);
@@ -685,76 +678,82 @@ bool CodeGenerator::inspect_enter(const ref<IndexOp>& node) {
 }
 
 bool CodeGenerator::inspect_enter(const ref<Assignment>& node) {
-  switch (node->operation) {
-    case TokenType::Assignment: {
+  switch (node->target->type()) {
+    case Node::Type::Id: {
+      auto id = cast<Id>(node->target);
+      CHECK(id->ir_location.type != ValueLocation::Type::Self && id->ir_location.type != ValueLocation::Type::FarSelf);
+      switch (node->operation) {
+        case TokenType::Assignment: {
+          apply(node->source);
+          generate_store(id->ir_location)->at(id);
+          break;
+        }
+        default: {
+          generate_load(id->ir_location)->at(id);
+          apply(node->source);
+          DCHECK(kBinopOpcodeMapping.count(node->operation));
+          m_builder.emit(IRInstruction::make(kBinopOpcodeMapping[node->operation]))->at(node);
+          generate_store(id->ir_location)->at(id);
+          break;
+        }
+      }
+      break;
+    }
+    case Node::Type::MemberOp: {
+      auto member = cast<MemberOp>(node->target);
+      switch (node->operation) {
+        case TokenType::Assignment: {
+          apply(member->target);
+          apply(node->source);
+          m_builder.emit_setattrsym(m_builder.register_string(member->member->value))->at(node);
+          break;
+        }
+        default: {
+          apply(member->target);
+          m_builder.emit_dup();
+          m_builder.emit_loadattrsym(m_builder.register_string(member->member->value))->at(node);
+          apply(node->source);
+          DCHECK(kBinopOpcodeMapping.count(node->operation));
+          m_builder.emit(IRInstruction::make(kBinopOpcodeMapping.at(node->operation)))->at(node);
+          m_builder.emit_setattrsym(m_builder.register_string(member->member->value))->at(node);
+          break;
+        }
+      }
+      break;
+    }
+    case Node::Type::IndexOp: {
+      auto index = cast<IndexOp>(node->target);
+      switch (node->operation) {
+        case TokenType::Assignment: {
+          apply(index->target);
+          apply(index->index);
+          apply(node->source);
+          m_builder.emit_setattr()->at(node);
+          break;
+        }
+        default: {
+          apply(index->target);
+          apply(index->index);
+          m_builder.emit_dup2();
+          m_builder.emit_loadattr()->at(index);
+          apply(node->source);
+          DCHECK(kBinopOpcodeMapping.count(node->operation));
+          m_builder.emit(IRInstruction::make(kBinopOpcodeMapping.at(node->operation)))->at(node);
+          m_builder.emit_setattr()->at(node);
+          break;
+        }
+      }
+      break;
+    }
+    case Node::Type::UnpackTarget: {
+      auto unpack_target = cast<UnpackTarget>(node->target);
       apply(node->source);
-      generate_store(node->name->ir_location)->at(node->name);
+      generate_unpack_assignment(unpack_target);
       break;
     }
     default: {
-      generate_load(node->name->ir_location)->at(node->name);
-      apply(node->source);
-      DCHECK(kBinopOpcodeMapping.count(node->operation));
-      m_builder.emit(IRInstruction::make(kBinopOpcodeMapping[node->operation]))->at(node);
-      generate_store(node->name->ir_location)->at(node->name);
-      break;
+      FAIL("unexpected assignment target %", node->target);
     }
-  }
-
-  return false;
-}
-
-bool CodeGenerator::inspect_enter(const ref<UnpackAssignment>& node) {
-  apply(node->source);
-  generate_unpack_assignment(node->target);
-  return false;
-}
-
-bool CodeGenerator::inspect_enter(const ref<MemberAssignment>& node) {
-  switch (node->operation) {
-    case TokenType::Assignment: {
-      apply(node->target);
-      apply(node->source);
-      m_builder.emit_setattrsym(m_builder.register_string(node->member->value))->at(node);
-      break;
-    }
-    default: {
-      apply(node->target);
-      m_builder.emit_dup();
-      m_builder.emit_loadattrsym(m_builder.register_string(node->member->value))->at(node->member);
-      apply(node->source);
-      DCHECK(kBinopOpcodeMapping.count(node->operation));
-      m_builder.emit(IRInstruction::make(kBinopOpcodeMapping.at(node->operation)))->at(node);
-      m_builder.emit_setattrsym(m_builder.register_string(node->member->value))->at(node->member);
-      break;
-    }
-  }
-
-  return false;
-}
-
-bool CodeGenerator::inspect_enter(const ref<IndexAssignment>& node) {
-  switch (node->operation) {
-    case TokenType::Assignment: {
-      apply(node->target);
-      apply(node->index);
-      apply(node->source);
-      m_builder.emit_setattr()->at(node);
-      break;
-    }
-    default: {
-      apply(node->target);
-      apply(node->index);
-      m_builder.emit_dup2();
-      m_builder.emit_loadattr()->at(node->index);
-      apply(node->source);
-      DCHECK(kBinopOpcodeMapping.count(node->operation));
-      m_builder.emit(IRInstruction::make(kBinopOpcodeMapping.at(node->operation)))->at(node);
-      m_builder.emit_setattr()->at(node);
-      break;
-    }
-
-      // target[index] op= source
   }
 
   return false;
@@ -827,61 +826,43 @@ void CodeGenerator::inspect_leave(const ref<UnaryOp>& node) {
 }
 
 bool CodeGenerator::inspect_enter(const ref<CallOp>& node) {
-  if (isa<Super>(node->target)) {
-    m_builder.emit_loadself();
-    if (active_function()->class_constructor) {
-      m_builder.emit_loadsuperconstructor()->at(node);
-    } else {
-      m_builder.emit_loadsuperattr(m_builder.register_string(active_function()->name->value))->at(node);
+  switch (node->target->type()) {
+    case Node::Type::Super: {
+      m_builder.emit_loadself();
+      if (active_function()->class_constructor) {
+        m_builder.emit_loadsuperconstructor()->at(node);
+      } else {
+        m_builder.emit_loadsuperattr(m_builder.register_string(active_function()->name->value))->at(node);
+      }
+      break;
     }
-  } else {
-    m_builder.emit_load_value(kNull);
-    apply(node->target);
-  }
-
-  if (node->has_spread_elements()) {
-    uint8_t emitted_segments = generate_spread_tuples(node->arguments);
-    m_builder.emit_callspread(emitted_segments)->at(node);
-  } else {
-    for (const auto& arg : node->arguments) {
-      apply(arg);
+    case Node::Type::MemberOp: {
+      auto member = cast<MemberOp>(node->target);
+      if (isa<Super>(member->target)) {
+        m_builder.emit_loadself();
+        apply(member);
+//        m_builder.emit_loadsuperattr(m_builder.register_string(member->member->value))->at(member->member);
+      } else {
+        apply(member->target);
+        m_builder.emit_dup();
+        m_builder.emit_loadattrsym(m_builder.register_string(member->member->value))->at(member->member);
+      }
+      break;
     }
-
-    m_builder.emit_call(node->arguments.size())->at(node);
-  }
-
-  return false;
-}
-
-bool CodeGenerator::inspect_enter(const ref<CallMemberOp>& node) {
-  if (isa<Super>(node->target)) {
-    m_builder.emit_loadself();
-    m_builder.emit_loadsuperattr(m_builder.register_string(node->member->value))->at(node->member);
-  } else {
-    apply(node->target);
-    m_builder.emit_dup();
-    m_builder.emit_loadattrsym(m_builder.register_string(node->member->value))->at(node->member);
-  }
-
-  if (node->has_spread_elements()) {
-    uint8_t emitted_segments = generate_spread_tuples(node->arguments);
-    m_builder.emit_callspread(emitted_segments)->at(node);
-  } else {
-    for (const auto& arg : node->arguments) {
-      apply(arg);
+    case Node::Type::IndexOp: {
+      auto index = cast<IndexOp>(node->target);
+      apply(index->target);
+      m_builder.emit_dup();
+      apply(index->index);
+      m_builder.emit_loadattr()->at(index->index);
+      break;
     }
-
-    m_builder.emit_call(node->arguments.size())->at(node);
+    default: {
+      m_builder.emit_load_value(kNull);
+      apply(node->target);
+      break;
+    }
   }
-
-  return false;
-}
-
-bool CodeGenerator::inspect_enter(const ref<CallIndexOp>& node) {
-  apply(node->target);
-  m_builder.emit_dup();
-  apply(node->index);
-  m_builder.emit_loadattr()->at(node->index);
 
   if (node->has_spread_elements()) {
     uint8_t emitted_segments = generate_spread_tuples(node->arguments);
@@ -920,12 +901,15 @@ bool CodeGenerator::inspect_enter(const ref<Declaration>& node) {
 
 bool CodeGenerator::inspect_enter(const ref<UnpackDeclaration>& node) {
   for (const ref<UnpackTargetElement>& element : node->target->elements) {
+    CHECK(isa<Id>(element->target));
+    auto id = cast<Id>(element->target);
+
     // global declarations
-    if (element->ir_location.type == ValueLocation::Type::Global) {
+    if (id->ir_location.type == ValueLocation::Type::Global) {
       if (node->constant) {
-        m_builder.emit_declareglobalconst(m_builder.register_string(element->name->value))->at(element);
+        m_builder.emit_declareglobalconst(m_builder.register_string(id->value))->at(element);
       } else {
-        m_builder.emit_declareglobal(m_builder.register_string(element->name->value))->at(element);
+        m_builder.emit_declareglobal(m_builder.register_string(id->value))->at(element);
       }
     }
   }

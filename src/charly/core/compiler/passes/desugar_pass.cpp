@@ -133,7 +133,7 @@ void DesugarPass::inspect_leave(const ref<Function>& node) {
   for (auto it = node->arguments.rbegin(); it != node->arguments.rend(); it++) {
     const ref<FunctionArgument>& arg = *it;
     if (arg->self_initializer) {
-      ref<MemberAssignment> assignment = make<MemberAssignment>(make<Self>(), arg->name, make<Id>(arg->name));
+      auto assignment = make<Assignment>(make<MemberOp>(make<Self>(), arg->name), make<Id>(arg->name));
       assignment->set_location(arg);
       node->body->statements.insert(node->body->statements.begin(), assignment);
     }
@@ -280,7 +280,7 @@ ref<Statement> DesugarPass::transform(const ref<For>& node) {
   ref<While> loop = make<While>(make<Bool>(true), loop_block);
 
   // build iterator result unpack declaration
-  ref<UnpackTarget> unpack_target = make<UnpackTarget>(false, make<UnpackTargetElement>(make<Name>("__value")),
+  ref<UnpackTarget> unpack_target = make<UnpackTarget>(false, true, make<UnpackTargetElement>(make<Name>("__value")),
                                                        make<UnpackTargetElement>(make<Name>("__done")));
   ref<BuiltinOperation> unpack_source = make<BuiltinOperation>(ir::BuiltinId::iteratornext, make<Id>("__iterator"));
   ref<UnpackDeclaration> unpack_declaration = make<UnpackDeclaration>(unpack_target, unpack_source, true);

@@ -206,7 +206,13 @@ private:
 
   // create an unpack target node from a source expression
   // and generate errors on invalid input
-  ref<UnpackTarget> create_unpack_target(const ref<Expression>& node);
+  ref<UnpackTarget> create_unpack_target(const ref<Expression>& node, bool declaration = false);
+
+  // checks wether a given expression can be assigned to
+  bool is_assignable(const ref<Expression>& expression);
+
+  // checks wether a given expression can be part of an unpack target
+  bool is_valid_unpack_target_element(const ref<Expression>& expression);
 
   // wrap the input statement in a block or return as-is
   // if already a block

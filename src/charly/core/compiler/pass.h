@@ -161,30 +161,16 @@ protected:
     APPLY_NODE(index);
   })
 
-  HANDLE_NODE(UnpackTargetElement, UnpackTargetElement, {})
+  HANDLE_NODE(UnpackTargetElement, UnpackTargetElement, {
+    APPLY_NODE(target);
+  })
 
   HANDLE_NODE(UnpackTarget, UnpackTarget, {
     APPLY_VECTOR(elements)
   })
 
   HANDLE_NODE(Expression, Assignment, {
-    APPLY_NODE(name);
-    APPLY_NODE(source);
-  })
-
-  HANDLE_NODE(Expression, UnpackAssignment, {
     APPLY_NODE(target);
-    APPLY_NODE(source);
-  })
-
-  HANDLE_NODE(Expression, MemberAssignment, {
-    APPLY_NODE(target);
-    APPLY_NODE(source);
-  })
-
-  HANDLE_NODE(Expression, IndexAssignment, {
-    APPLY_NODE(target);
-    APPLY_NODE(index);
     APPLY_NODE(source);
   })
 
@@ -209,17 +195,6 @@ protected:
 
   HANDLE_NODE(Expression, CallOp, {
     APPLY_NODE(target);
-    APPLY_VECTOR(arguments)
-  })
-
-  HANDLE_NODE(Expression, CallMemberOp, {
-    APPLY_NODE(target);
-    APPLY_VECTOR(arguments)
-  })
-
-  HANDLE_NODE(Expression, CallIndexOp, {
-    APPLY_NODE(target);
-    APPLY_NODE(index);
     APPLY_VECTOR(arguments)
   })
 

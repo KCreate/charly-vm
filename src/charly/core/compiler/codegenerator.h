@@ -118,15 +118,10 @@ private:
   bool inspect_enter(const ref<ast::MemberOp>&) override;
   bool inspect_enter(const ref<ast::IndexOp>&) override;
   bool inspect_enter(const ref<ast::Assignment>&) override;
-  bool inspect_enter(const ref<ast::UnpackAssignment>&) override;
-  bool inspect_enter(const ref<ast::MemberAssignment>&) override;
-  bool inspect_enter(const ref<ast::IndexAssignment>&) override;
   bool inspect_enter(const ref<ast::Ternary>&) override;
   bool inspect_enter(const ref<ast::BinaryOp>&) override;
   void inspect_leave(const ref<ast::UnaryOp>&) override;
   bool inspect_enter(const ref<ast::CallOp>&) override;
-  bool inspect_enter(const ref<ast::CallMemberOp>&) override;
-  bool inspect_enter(const ref<ast::CallIndexOp>&) override;
 
   bool inspect_enter(const ref<ast::Declaration>&) override;
   bool inspect_enter(const ref<ast::UnpackDeclaration>&) override;

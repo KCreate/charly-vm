@@ -167,6 +167,13 @@ RawValue Interpreter::call_function(
     return kErrorException;
   }
 
+  if (argc > shared_info->ir_info.argc) {
+    thread->throw_value(runtime->create_exception_with_message(
+      thread, "too many arguments for function call, expected at most % but got %", (uint32_t)shared_info->ir_info.argc,
+      (uint32_t)argc));
+    return kErrorException;
+  }
+
   // copy function arguments into local variables
   for (uint8_t i = 0; i < argc && i < localcount; i++) {
     DCHECK(arguments);
@@ -273,7 +280,7 @@ OP(nop) {
 }
 
 OP(panic) {
-  debuglnf("panic in thread % at ip %", thread->id(), (void*)frame->oldip);
+  debuglnf("panic in thread % in % at %", thread->id(), frame->function, (void*)frame->ip);
   thread->abort(1);
 }
 
@@ -338,6 +345,14 @@ OP(type) {
   Runtime* runtime = thread->runtime();
   frame->push(runtime->lookup_class(thread, value));
 
+  return ContinueMode::Next;
+}
+
+OP(swap) {
+  RawValue v1 = frame->pop();
+  RawValue v2 = frame->pop();
+  frame->push(v1);
+  frame->push(v2);
   return ContinueMode::Next;
 }
 
@@ -821,7 +836,9 @@ OP(unpacksequence) {
         return ContinueMode::Exception;
       }
 
-      for (size_t i = 0; i < tuple_size; i++) {
+      // push values in reverse so that values can be assigned to their
+      // target fields in source order
+      for (int64_t i = tuple_size - 1; i >= 0; i--) {
         frame->push(tuple.field_at(i));
       }
 

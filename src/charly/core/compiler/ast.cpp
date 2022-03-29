@@ -357,12 +357,7 @@ void UnpackTargetElement::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';
   if (this->spread) {
-    writer.fg(Color::Green, "...");
-  }
-  writer.fg(Color::Green, this->name->value);
-  if (this->ir_location.valid()) {
-    writer << ' ';
-    writer.fg(Color::Magenta, this->ir_location);
+    writer.fg(Color::Red, "spread");
   }
 }
 
@@ -377,24 +372,6 @@ void UnpackTarget::dump_info(std::ostream& out) const {
 }
 
 void Assignment::dump_info(std::ostream& out) const {
-  utils::ColorWriter writer(out);
-  if (this->operation != TokenType::Assignment) {
-    writer << ' ';
-    writer.fg(Color::Yellow, kTokenTypeStrings[static_cast<int>(this->operation)]);
-  }
-}
-
-void MemberAssignment::dump_info(std::ostream& out) const {
-  utils::ColorWriter writer(out);
-  writer << ' ';
-  writer.fg(Color::Green, this->member->value);
-  if (this->operation != TokenType::Assignment) {
-    writer << ' ';
-    writer.fg(Color::Yellow, kTokenTypeStrings[static_cast<int>(this->operation)]);
-  }
-}
-
-void IndexAssignment::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   if (this->operation != TokenType::Assignment) {
     writer << ' ';
@@ -421,30 +398,6 @@ bool CallOp::has_spread_elements() const {
   }
 
   return false;
-}
-
-bool CallMemberOp::has_spread_elements() const {
-  for (const auto& exp : this->arguments) {
-    if (isa<Spread>(exp))
-      return true;
-  }
-
-  return false;
-}
-
-bool CallIndexOp::has_spread_elements() const {
-  for (const auto& exp : this->arguments) {
-    if (isa<Spread>(exp))
-      return true;
-  }
-
-  return false;
-}
-
-void CallMemberOp::dump_info(std::ostream& out) const {
-  utils::ColorWriter writer(out);
-  writer << ' ';
-  writer.fg(Color::Green, this->member->value);
 }
 
 void Declaration::dump_info(std::ostream& out) const {

@@ -40,18 +40,9 @@ void DuplicatesCheck::inspect_leave(const ref<UnpackTarget>& node) {
     if (element->spread) {
       if (spread_passed) {
         m_console.error(element, "excess spread");
-        break;
       }
 
       spread_passed = true;
-    }
-
-    // duplicate identifier check
-    if (names.count(element->name->value)) {
-      m_console.error(element->name, "duplicate identifier '", element->name->value, "'");
-      continue;
-    } else {
-      names.insert(element->name->value);
     }
   }
 }

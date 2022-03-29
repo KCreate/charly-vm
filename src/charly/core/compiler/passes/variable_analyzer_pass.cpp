@@ -441,9 +441,13 @@ bool VariableAnalyzerPass::inspect_enter(const ref<Function>& node) {
 
   m_analyzer.push_block(node->body);
 
+  bool spread_passed = false;
   for (const ref<FunctionArgument>& argument : node->arguments) {
+    CHECK(!spread_passed);
+
     if (argument->spread_initializer) {
       node->ir_info.spread_argument = true;
+      spread_passed = true;
     }
 
     if (VariableId id = declare_argument(argument->name, argument)) {
@@ -507,36 +511,48 @@ ref<Statement> VariableAnalyzerPass::transform(const ref<Declaration>& node) {
 
 void VariableAnalyzerPass::inspect_leave(const ref<UnpackDeclaration>& node) {
   for (const ref<UnpackTargetElement>& element : node->target->elements) {
-    if (VariableId id = declare_variable(element->name, element, node->constant)) {
-      element->ir_location = ValueLocation::Id(id);
+    if (node->target->object_unpack) {
+      CHECK(isa<Name>(element->target));
+      auto element_name = cast<Name>(element->target);
+      if (VariableId id = declare_variable(element_name, element, node->constant)) {
+        element_name->ir_location = ValueLocation::Id(id);
+      }
+    } else {
+      CHECK(isa<Id>(element->target));
+      auto element_id = cast<Id>(element->target);
+      if (VariableId id = declare_variable(make<Name>(element_id), element, node->constant)) {
+        element_id->ir_location = ValueLocation::Id(id);
+      }
     }
   }
 }
 
 void VariableAnalyzerPass::inspect_leave(const ref<Assignment>& node) {
-  if (node->name->ir_location.valid()) {
-    VariableId variable = m_analyzer.lookup_variable(node->name->value);
-    if (variable) {
-      if (m_analyzer.is_constant(variable)) {
-        m_console.error(node->name, "assignment to constant variable '", node->name->value, "'");
+  if (auto id = cast<Id>(node->target)) {
+    if (id->ir_location.valid()) {
+      VariableId variable = m_analyzer.lookup_variable(id->value);
+      if (variable) {
+        if (m_analyzer.is_constant(variable)) {
+          m_console.error(id, "assignment to constant variable '", id->value, "'");
+        }
+      } else {
+        m_console.error(id, "unknown variable '", id->value, "'");
       }
-    } else {
-      m_console.error(node->name, "unknown variable '", node->name->value, "'");
     }
-  }
-}
+  } else if (auto unpack_target = cast<UnpackTarget>(node->target)) {
+    for (const ref<UnpackTargetElement>& element : unpack_target->elements) {
 
-void VariableAnalyzerPass::inspect_leave(const ref<UnpackAssignment>& node) {
-  for (const ref<UnpackTargetElement>& element : node->target->elements) {
-    // lookup the symbol in the current block
-    VariableId variable = m_analyzer.lookup_variable(element->name->value);
-    if (variable) {
-      if (m_analyzer.is_constant(variable)) {
-        m_console.error(element->name, "assignment to constant variable '", element->name->value, "'");
+      // lookup the symbol in the current block
+      if (auto element_id = cast<Id>(element->target)) {
+        VariableId variable = m_analyzer.lookup_variable(element_id->value);
+        if (variable) {
+          if (m_analyzer.is_constant(variable)) {
+            m_console.error(element_id, "assignment to constant variable '", element_id->value, "'");
+          }
+        } else {
+          m_console.error(element_id, "unknown variable '", element_id->value, "'");
+        }
       }
-      element->ir_location = ValueLocation::Id(variable);
-    } else {
-      m_console.error(element->name, "unknown variable '", element->name->value, "'");
     }
   }
 }
@@ -618,31 +634,6 @@ void VariableLocationPatchPass::inspect_leave(const ref<Block>&) {
   m_analyzer.pop_block();
 }
 
-ref<Expression> VariableLocationPatchPass::transform(const ref<CallOp>& node) {
-  if (auto id = cast<Id>(node->target)) {
-    auto& loc = id->ir_location;
-    switch (loc.type) {
-      case ValueLocation::Type::Self: {
-        auto op = make<CallMemberOp>(make<Self>(), make<Name>(loc.name), node->arguments);
-        op->set_location(node);
-        return op;
-      }
-
-      case ValueLocation::Type::FarSelf: {
-        auto op = make<CallMemberOp>(make<FarSelf>(loc.as.far_self.depth), make<Name>(loc.name), node->arguments);
-        op->set_location(node);
-        return op;
-      }
-
-      default: {
-        // do nothing
-      }
-    }
-  }
-
-  return node;
-}
-
 bool VariableLocationPatchPass::inspect_enter(const ref<Declaration>&) {
   return false;
 }
@@ -651,18 +642,6 @@ ref<Statement> VariableLocationPatchPass::transform(const ref<Declaration>& node
   apply(node->expression);
   m_analyzer.patch_value_location(node->ir_location);
   return node;
-}
-
-void VariableLocationPatchPass::inspect_leave(const ref<UnpackDeclaration>& node) {
-  for (const ref<UnpackTargetElement>& element : node->target->elements) {
-    m_analyzer.patch_value_location(element->ir_location);
-  }
-}
-
-void VariableLocationPatchPass::inspect_leave(const ref<UnpackAssignment>& node) {
-  for (const ref<UnpackTargetElement>& element : node->target->elements) {
-    m_analyzer.patch_value_location(element->ir_location);
-  }
 }
 
 bool VariableLocationPatchPass::inspect_enter(const ref<Try>&) {

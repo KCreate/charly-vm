@@ -24,24 +24,26 @@
  * SOFTWARE.
  */
 
-func foo(x += 1, y *= 2) {
-    return (x, y)
+#include <list>
+
+#include "charly/core/compiler/ir/ir.h"
+#include "charly/core/compiler/passes/node_specialization_pass.h"
+#include "charly/utils/cast.h"
+
+namespace charly::core::compiler::ast {
+
+using namespace charly::core::compiler::ir;
+
+ref<Expression> NodeSpecializationPass::transform(const ref<Id>& node) {
+  if (node->ir_location.type == ValueLocation::Type::Self) {
+    return make<MemberOp>(make<Self>(), make<Name>(node));
+  } else if (node->ir_location.type == ValueLocation::Type::FarSelf) {
+    return make<MemberOp>(make<FarSelf>(node->ir_location.as.far_self.depth), make<Name>(node));
+  }
+
+  CHECK(node->ir_location.type != ValueLocation::Type::Self && node->ir_location.type != ValueLocation::Type::FarSelf);
+
+  return node;
 }
 
-let a += 25
-
-print(a)
-print(foo())
-print(foo(10))
-print(foo(20, 30))
-
-
-
-
-
-
-
-
-
-
-
+}  // namespace charly::core::compiler::ast

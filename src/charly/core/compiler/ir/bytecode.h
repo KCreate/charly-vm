@@ -109,6 +109,18 @@ static const size_t kInstructionLength = 4;
    * - class of value                                                                  \
    * */                                                                                \
   V(type, IXXX, 1, 1)                                                                  \
+  /* swap - swap top two values on stack                                               \
+   *                                                                                   \
+   * stack arguments:                                                                  \
+   * - v1                                                                              \
+   * - v2                                                                              \
+   *                                                                                   \
+   * stack results:                                                                    \
+   * - v2                                                                              \
+   * - v1                                                                              \
+   *                                                                                   \
+   * */                                                                                \
+  V(swap, IXXX, 2, 2)                                                                  \
   /* pop - pop a value from the stack                                                  \
    *                                                                                   \
    * stack arguments:                                                                  \

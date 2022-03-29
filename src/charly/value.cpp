@@ -469,7 +469,12 @@ void RawValue::dump(std::ostream& out) const {
       if (arrow) {
         writer.fg(Color::Magenta, "->(", (uint32_t)minargc, ")");
       } else {
-        writer.fg(Color::Yellow, "func ", name, "(", (uint32_t)minargc, ")");
+        if (function.host_class().isClass()) {
+          auto klass = RawClass::cast(function.host_class());
+          writer.fg(Color::Yellow, "func ", klass.name(), "::", name, "(", (uint32_t)minargc, ")");
+        } else {
+          writer.fg(Color::Yellow, "func ", name, "(", (uint32_t)minargc, ")");
+        }
       }
 
       return;
