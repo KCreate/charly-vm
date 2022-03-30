@@ -1,11 +1,5 @@
 # Todos
 
-- Disallow operator assignment operators in certain contexts
-  - Default arguments
-  - Variable declarations
-  - Property declarations
-  - Should only be allowed when used inside a regular assignment expression
-
 - Allow accessing private members of same class in class methods
   - Perform a class lookup
 

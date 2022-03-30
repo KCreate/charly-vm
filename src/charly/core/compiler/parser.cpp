@@ -234,9 +234,6 @@ ref<Statement> Parser::parse_jump_statement() {
     case TokenType::Continue: {
       return parse_continue();
     }
-    case TokenType::Throw: {
-      return parse_throw();
-    }
     case TokenType::Export: {
       return parse_export();
     }
@@ -581,7 +578,13 @@ ref<Statement> Parser::parse_declaration() {
 
   // constant declarations require a value
   ref<Expression> value;
-  if (requires_assignment ? (eat(TokenType::Assignment), true) : skip(TokenType::Assignment)) {
+  if (requires_assignment) {
+    match(TokenType::Assignment);
+  }
+  if (type(TokenType::Assignment) && m_token.assignment_operator != TokenType::Assignment) {
+    m_console.error(m_token.location, "operator assignment is not allowed in this place");
+  }
+  if (skip(TokenType::Assignment)) {
     value = parse_expression();
   } else {
     value = make<Null>();
@@ -1137,8 +1140,11 @@ ref<Function> Parser::parse_function(FunctionFlags flags) {
   }
 
   m_keyword_context._export = false;
+  if (type(TokenType::Assignment) && m_token.assignment_operator != TokenType::Assignment) {
+    m_console.error(m_token.location, "operator assignment is not allowed in this place");
+  }
   if (skip(TokenType::Assignment)) {
-    body = parse_jump_statement();
+    body = parse_throw_statement();
   } else if (type(TokenType::LeftCurly)) {
     body = parse_block();
   } else {
@@ -1224,6 +1230,9 @@ void Parser::parse_function_arguments(std::vector<ref<FunctionArgument>>& result
         argument_location.set_begin(accessor_token_location);
 
         ref<Expression> default_value = nullptr;
+        if (type(TokenType::Assignment) && m_token.assignment_operator != TokenType::Assignment) {
+          m_console.error(m_token.location, "operator assignment is not allowed in this place");
+        }
         if (skip(TokenType::Assignment)) {
           default_value = parse_expression();
           argument_location.set_end(default_value->location());
@@ -1282,6 +1291,9 @@ ref<Class> Parser::parse_class() {
       ref<Name> name = make<Name>(parse_identifier_token());
 
       ref<Expression> value;
+      if (type(TokenType::Assignment) && m_token.assignment_operator != TokenType::Assignment) {
+        m_console.error(m_token.location, "operator assignment is not allowed in this place");
+      }
       if (skip(TokenType::Assignment)) {
         value = parse_expression();
       } else {

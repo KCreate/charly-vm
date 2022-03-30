@@ -489,6 +489,9 @@ CATCH_TEST_CASE("Parser") {
     CHECK_ERROR_STMT("const a", "unexpected end of file, expected a '=' token")
     CHECK_ERROR_STMT("const (a)", "unexpected end of file, expected a '=' token")
     CHECK_ERROR_STMT("const {a}", "unexpected end of file, expected a '=' token")
+
+    CHECK_ERROR_STMT("let a += 1", "operator assignment is not allowed in this place")
+    CHECK_ERROR_STMT("const a += 1", "operator assignment is not allowed in this place")
   }
 
   CATCH_SECTION("functions") {
@@ -549,6 +552,11 @@ CATCH_TEST_CASE("Parser") {
     CHECK_ERROR_EXP("->break", "break statement not allowed at this point")
     CHECK_ERROR_EXP("->continue", "continue statement not allowed at this point")
     CHECK_ERROR_EXP("->if true x", "unexpected 'if' token, expected an expression")
+
+    CHECK_ERROR_STMT("func foo(x += 1) {}", "operator assignment is not allowed in this place")
+    CHECK_ERROR_STMT("->(x += 1) {}", "operator assignment is not allowed in this place")
+
+    CHECK_ERROR_STMT("func foo += 1", "operator assignment is not allowed in this place")
   }
 
   CATCH_SECTION("catches illegal control statements") {
@@ -624,6 +632,9 @@ CATCH_TEST_CASE("Parser") {
     CHECK_ERROR_STMT("class A { func constructor { super + 25 } }", "super must be used as part of a call operation")
 
     CHECK_ERROR_STMT("class A { private func constructor { } }", "class constructors cannot be private")
+
+    CHECK_ERROR_STMT("class A { property foo += 1 }", "operator assignment is not allowed in this place")
+    CHECK_ERROR_STMT("class A { static property foo += 1 }", "operator assignment is not allowed in this place")
   }
 
   CATCH_SECTION("super expressions") {
