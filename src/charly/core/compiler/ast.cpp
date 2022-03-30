@@ -55,17 +55,17 @@ ref<Node> Node::search(const ref<Node>& node,
 }
 
 std::vector<ref<Node>> Node::search_all(const ref<Node>& node,
-                                               std::function<bool(const ref<Node>&)> compare,
-                                               std::function<bool(const ref<Node>&)> skip) {
+                                        std::function<bool(const ref<Node>&)> compare,
+                                        std::function<bool(const ref<Node>&)> skip) {
   std::vector<ref<Node>> _result;
   search_all_impl(node, compare, skip, _result);
   return _result;
 }
 
 void Node::search_all_impl(const ref<Node>& node,
-                                       std::function<bool(const ref<Node>&)> compare,
-                                       std::function<bool(const ref<Node>&)> skip,
-                                       std::vector<ref<Node>>& result) {
+                           std::function<bool(const ref<Node>&)> compare,
+                           std::function<bool(const ref<Node>&)> skip,
+                           std::vector<ref<Node>>& result) {
   if (compare(node)) {
     result.push_back(node);
   }

@@ -37,7 +37,7 @@ static std::unordered_set<std::string> kIllegalMemberNames = { "klass" };
 
 // list of identifiers which cannot be used as static fields
 // (static properties and functions) of classes
-static std::unordered_set<std::string> kIllegalStaticNames = { "klass", "name", "parent"  };
+static std::unordered_set<std::string> kIllegalStaticNames = { "klass", "name", "parent" };
 
 bool is_reserved_identifier(const std::string& str) {
   // argument index shorthand identifiers ($0, $1, etc)

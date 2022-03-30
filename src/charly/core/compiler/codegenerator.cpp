@@ -841,7 +841,7 @@ bool CodeGenerator::inspect_enter(const ref<CallOp>& node) {
       if (isa<Super>(member->target)) {
         m_builder.emit_loadself();
         apply(member);
-//        m_builder.emit_loadsuperattr(m_builder.register_string(member->member->value))->at(member->member);
+        //        m_builder.emit_loadsuperattr(m_builder.register_string(member->member->value))->at(member->member);
       } else {
         apply(member->target);
         m_builder.emit_dup();

@@ -24,12 +24,12 @@
  * SOFTWARE.
  */
 
+#include <condition_variable>
 #include <cstdint>
 #include <functional>  // std::hash
 #include <list>
 #include <thread>  // std::hardware_concurrency
 #include <vector>
-#include <condition_variable>
 
 #include "charly/atomic.h"
 
@@ -82,7 +82,11 @@ private:
   std::vector<ThreadQueueTable*> m_old_tables;
 };
 
-enum LockState : uint8_t { kFreeLock = 0, kIsLocked = 1, kHasParked = 2 };
+enum LockState : uint8_t {
+  kFreeLock = 0,
+  kIsLocked = 1,
+  kHasParked = 2
+};
 
 // allows threads to barge in and steal the lock away from a parked thread
 class TinyLock {

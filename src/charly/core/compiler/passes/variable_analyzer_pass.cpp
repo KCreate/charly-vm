@@ -298,7 +298,6 @@ const ref<Block> BlockScope::block_ast() const {
 }
 
 void VariableAnalyzer::patch_value_location(ValueLocation& location) const {
-
   // variable has already been visited
   if (location.type != ValueLocation::Type::Id) {
     return;
@@ -541,7 +540,6 @@ void VariableAnalyzerPass::inspect_leave(const ref<Assignment>& node) {
     }
   } else if (auto unpack_target = cast<UnpackTarget>(node->target)) {
     for (const ref<UnpackTargetElement>& element : unpack_target->elements) {
-
       // lookup the symbol in the current block
       if (auto element_id = cast<Id>(element->target)) {
         VariableId variable = m_analyzer.lookup_variable(element_id->value);

@@ -249,7 +249,7 @@ inline bool is_valid_codepoint(uint32_t cp) {
 inline std::string codepoint_to_string(uint32_t cp) {
   char buf[4];
   char* end = append(cp, buf);
-  return {buf, (size_t)(end - buf)};
+  return { buf, (size_t)(end - buf) };
 }
 
 }  // namespace charly::utf8

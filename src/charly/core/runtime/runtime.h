@@ -122,9 +122,7 @@ public:
                         uint32_t flags = 0);
 
   RawShape create_shape(Thread* thread, RawValue parent, RawTuple key_table);
-  RawShape create_shape(Thread* thread,
-                        RawValue parent,
-                        std::initializer_list<std::tuple<std::string, uint8_t>> keys);
+  RawShape create_shape(Thread* thread, RawValue parent, std::initializer_list<std::tuple<std::string, uint8_t>> keys);
 
   RawFunction create_function(Thread* thread,
                               RawValue context,

@@ -51,8 +51,7 @@ class Node : std::enable_shared_from_this<Node> {
   friend class Pass;
 
 public:
-  enum class Type : uint8_t
-  {
+  enum class Type : uint8_t {
     Unknown = 0,
 
     // Statements

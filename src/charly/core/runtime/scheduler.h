@@ -27,8 +27,8 @@
 #include <condition_variable>
 #include <list>
 #include <mutex>
-#include <unordered_set>
 #include <stack>
+#include <unordered_set>
 #include <vector>
 
 #include "charly/core/runtime/processor.h"

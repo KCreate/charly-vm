@@ -34,7 +34,6 @@
 namespace charly::core::runtime {
 
 Scheduler::Scheduler(Runtime* runtime) : m_runtime(runtime) {
-
   // determine the amount of virtual processors to spawn
   uint32_t proc_count = Scheduler::hardware_concurrency();
   if (utils::ArgumentParser::is_flag_set("maxprocs")) {

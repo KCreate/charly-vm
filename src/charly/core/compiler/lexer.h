@@ -112,7 +112,11 @@ protected:
   int64_t m_last_character;
 
   // current parsing mode
-  enum class Mode { TopLevel, String, InterpolatedExpression };
+  enum class Mode {
+    TopLevel,
+    String,
+    InterpolatedExpression
+  };
   Mode m_mode;
 
   // keep track of interpolation brackets

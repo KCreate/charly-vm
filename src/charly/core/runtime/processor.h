@@ -28,8 +28,8 @@
 #include <mutex>
 #include <unordered_map>
 
-#include "charly/value.h"
 #include "charly/core/runtime/heap.h"
+#include "charly/value.h"
 
 #pragma once
 

@@ -37,7 +37,10 @@
 namespace charly::core::compiler {
 
 struct CompilationUnit {
-  enum class Type : uint8_t { Module, ReplInput };
+  enum class Type : uint8_t {
+    Module,
+    ReplInput
+  };
 
   CompilationUnit(Type type, const std::string& filepath, utils::Buffer& source) :
     type(type),

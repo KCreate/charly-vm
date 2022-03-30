@@ -40,7 +40,9 @@ namespace crc32 {
     struct f : f<((c & 1) ? 0xedb88320 : 0) ^ (c >> 1), k - 1> {};
     template <unsigned c>
     struct f<c, 0> {
-      enum { value = c };
+      enum {
+        value = c
+      };
     };
 
 #define A(x) B(x) B(x + 128)
@@ -89,7 +91,7 @@ namespace crc32 {
       }
       return c ^ 0xFFFFFFFF;
     }
-  }
+  }  // namespace internal
 
   inline uint32_t hash_block(const char* data, size_t size) {
     return internal::hash_block(data, size);

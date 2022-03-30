@@ -1002,7 +1002,7 @@ void RawClass::set_ancestor_table(RawTuple ancestor_table) {
   set_field_at(kAncestorTableOffset, ancestor_table);
 }
 
-  RawSymbol RawClass::name() const {
+RawSymbol RawClass::name() const {
   return RawSymbol::cast(field_at(kNameOffset));
 }
 

@@ -42,7 +42,11 @@ using Color = charly::utils::Color;
 
 namespace charly::core::compiler {
 
-enum class DiagnosticType : uint8_t { Info, Warning, Error };
+enum class DiagnosticType : uint8_t {
+  Info,
+  Warning,
+  Error
+};
 
 struct DiagnosticMessage {
   DiagnosticType type;

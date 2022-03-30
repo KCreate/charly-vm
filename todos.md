@@ -1,11 +1,9 @@
 # Todos
 
-- Automated codestyle cleanup
-
 - Check if certain runtime methods require the use of HandleScopes
-  - HandleScopes need to be used in paths of codes where the scheduler could interrupt the thread
-  - Scheduler can interrupt on memory allocations
-  - Scheduler can interrupt on charly function calls
+    - HandleScopes need to be used in paths of codes where the scheduler could interrupt the thread
+    - Scheduler can interrupt on memory allocations
+    - Scheduler can interrupt on charly function calls
 
 - Replace RawTTT::cast(t.field_at(offset)) pattern with t.field_at<RawTTT>(offset)
 

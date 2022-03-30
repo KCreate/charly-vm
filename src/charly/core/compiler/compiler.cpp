@@ -35,9 +35,9 @@
 
 #include "charly/core/compiler/passes/constant_folding_pass.h"
 #include "charly/core/compiler/passes/desugar_pass.h"
-#include "charly/core/compiler/passes/node_specialization_pass.h"
 #include "charly/core/compiler/passes/duplicates_check.h"
 #include "charly/core/compiler/passes/grammar_validation_check.h"
+#include "charly/core/compiler/passes/node_specialization_pass.h"
 #include "charly/core/compiler/passes/repl_prepare_pass.h"
 #include "charly/core/compiler/passes/reserved_identifiers_check.h"
 #include "charly/core/compiler/passes/variable_analyzer_pass.h"

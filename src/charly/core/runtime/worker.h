@@ -58,7 +58,6 @@ public:
   explicit Worker(Runtime* runtime);
 
   enum class State {
-
     // worker does not own a processor
     Created,    // initial state
     Idle,       // worker is currently idling and can be woken

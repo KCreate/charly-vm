@@ -117,7 +117,7 @@ struct ValueLocation {
     loc.name = name;
     loc.as.far_self.symbol = crc32::hash_string(name);
     return loc;
-    }
+  }
 
   static ValueLocation FarSelf(uint8_t depth, const std::string& name) {
     ValueLocation loc;
