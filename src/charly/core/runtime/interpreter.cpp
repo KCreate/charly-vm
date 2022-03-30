@@ -646,23 +646,23 @@ OP(loadattrsym) {
       frame->push(instance.field_at(result.offset));
       return ContinueMode::Next;
     }
-
-    // lookup attribute in class hierarchy
-    // TODO: cache via inline cache
-    RawValue lookup = klass.lookup_function(attr);
-    if (lookup.isFunction()) {
-      auto function = RawFunction::cast(lookup);
-      // TODO: allow accessing private member of same class
-      if (function.shared_info()->ir_info.private_function && (value != frame->self)) {
-        thread->throw_value(runtime->create_exception_with_message(
-          thread, "cannot call private function '%' of class '%'", RawSymbol::make(attr), klass.name()));
-        return ContinueMode::Exception;
-      }
-
-      frame->push(lookup);
-      return ContinueMode::Next;
-    }
   }
+
+  // lookup attribute in class hierarchy
+  // TODO: cache via inline cache
+  RawValue lookup = klass.lookup_function(attr);
+  if (lookup.isFunction()) {
+    auto function = RawFunction::cast(lookup);
+    // TODO: allow accessing private member of same class
+    if (function.shared_info()->ir_info.private_function && (value != frame->self)) {
+      thread->throw_value(runtime->create_exception_with_message(
+        thread, "cannot call private function '%' of class '%'", RawSymbol::make(attr), klass.name()));
+      return ContinueMode::Exception;
+    }
+
+    frame->push(lookup);
+    return ContinueMode::Next;
+    }
 
   thread->throw_value(runtime->create_exception_with_message(thread, "value of type '%' has no property called '%'",
                                                              klass.name(), RawSymbol::make(attr)));

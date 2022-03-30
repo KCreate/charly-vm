@@ -48,6 +48,50 @@ RawValue currentfiber(Thread* thread, const RawValue*, uint8_t argc) {
   return thread->fiber();
 }
 
+RawValue transplantbuiltinclass(Thread* thread, const RawValue* args, uint8_t argc) {
+  Runtime* runtime = thread->runtime();
+  CHECK(argc == 2);
+  auto klass = RawClass::cast(args[0]);
+  auto static_class = runtime->lookup_class(thread, klass);
+  auto donor_class = RawClass::cast(args[1]);
+  auto static_donor_class = runtime->lookup_class(thread, donor_class);
+
+  if (!is_builtin_shape(klass.shape_instance().own_shape_id())) {
+    thread->throw_value(
+      runtime->create_exception_with_message(thread, "expected base class to be a builtin class"));
+    return kErrorException;
+  }
+
+  if (klass.function_table().size()) {
+    thread->throw_value(
+      runtime->create_exception_with_message(thread, "expected base class function table to be empty"));
+    return kErrorException;
+  }
+  klass.set_constructor(donor_class.constructor());
+  klass.set_function_table(donor_class.function_table());
+  for (uint32_t i = 0; i < klass.function_table().size(); i++) {
+    klass.function_table().field_at<RawFunction>(i).set_host_class(klass);
+  }
+  donor_class.set_flags(RawClass::kFlagNonConstructable | RawClass::kFlagFinal);
+  donor_class.set_constructor(kNull);
+  donor_class.set_function_table(runtime->create_tuple(thread, 0));
+
+  if (static_class != runtime->get_builtin_class(thread, ShapeId::kClass)) {
+    if (static_class.function_table().size()) {
+      thread->throw_value(
+        runtime->create_exception_with_message(thread, "expected base static class function table to be empty"));
+      return kErrorException;
+    }
+    static_class.set_function_table(static_donor_class.function_table());
+    static_donor_class.set_function_table(runtime->create_tuple(thread, 0));
+    for (uint32_t i = 0; i < static_class.function_table().size(); i++) {
+      static_class.function_table().field_at<RawFunction>(i).set_host_class(static_class);
+    }
+  }
+
+  return thread->fiber();
+}
+
 RawValue writeline(Thread*, const RawValue* args, uint8_t argc) {
   CHECK(argc == 1);
   args[0].to_string(std::cout);

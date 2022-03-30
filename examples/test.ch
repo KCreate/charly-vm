@@ -24,39 +24,20 @@
  * SOFTWARE.
  */
 
-class A {
-    private property x
 
-    func get {
-        (@x, @y, @z)
-    }
-
-    func get_other(other) {
-        (other.x, other.y, other.z)
-    }
+const f = spawn {
+    return "hello world"
 }
 
-class B extends A {
-    private property y
+const r = await f
 
-    func constructor(x, @y) = super(x)
-}
+print(r)
 
-class C extends B {
-    private property z
+print(Exception("hello world"))
 
-    func constructor(x, y, @z) = super(x, y)
-}
+print(Tuple.make(10, Tuple.make(10, 0)))
 
-const c = C(1, 2, 3)
-const d = C(4, 5, 6)
-
-print(c.get_other(d))
-print(d.get_other(c))
-
-
-
-
+Tuple.make.disassemble()
 
 
 

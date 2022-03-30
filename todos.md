@@ -1,8 +1,10 @@
 # Todos
 
-- Nice, clean way to declare functions of builtin classes
-    - In the old charly version I was able to declare builtin classes directly inside charly code
-    - The same should be at least somewhat possible here too
+- Ability to call functions with more arguments than necessary
+    - Requires changes to argc jump table codegen
+    - Check for other assumptions about argc max limit
+
+- Exception when trying to await current fiber
 
 - RawInstance::field_at index should be uint8_t as maximum field count is 256
 

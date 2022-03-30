@@ -40,6 +40,8 @@ func determine_max_stack_size {
     return 100
 }
 
+const builtin_currentfiber = @"charly.builtin.core.currentfiber"
+const builtin_transplant_builtin_class = @"charly.builtin.core.transplantbuiltinclass"
 const builtin_writevalue = @"charly.builtin.core.writevalue"
 const builtin_writeline = @"charly.builtin.core.writeline"
 const builtin_writevaluesync = @"charly.builtin.core.writevaluesync"
@@ -58,10 +60,6 @@ func write(string) = builtin_writevalue("{string}\n")
 func print(string) = builtin_writeline(string)
 func writesync(string) = builtin_writevaluesync(string)
 
-func echo(string) {
-    writesync(string);
-}
-
 func prompt(message = "> ", append_to_history = true) {
     const result = builtin_readline_prompt("{message}")
 
@@ -73,36 +71,44 @@ func prompt(message = "> ", append_to_history = true) {
 }
 
 func add_history(message) = builtin_readline_add_history(message)
-
 func clear_history = builtin_readline_clear_history()
-
 func exit(status = 0) = builtin_exit(status)
-
 func compile(source, name = "repl") = builtin_compile(source, name)
-
 func readfile(name) = builtin_readfile(name)
 
-func getstacktrace(trim) = builtin_getstacktrace(trim)
+class builtin_Instance {
+    func constructor = self
+}
+builtin_transplant_builtin_class(Instance, builtin_Instance)
 
-func dis(function) {
-    echo("disassembly of {function}")
-    builtin_disassemble(function)
+class builtin_Tuple {
+    static func make(length = 0, initial = null) = builtin_makelist(length, initial)
+}
+builtin_transplant_builtin_class(Tuple, builtin_Tuple)
+
+class builtin_Function {
+    func disassemble {
+        print("disassembly of {self}")
+        builtin_disassemble(self)
+    }
+}
+builtin_transplant_builtin_class(Function, builtin_Function)
+
+class builtin_Exception {
+    func constructor(@message) {
+        // TODO: trim correct numer of stack frames when called from subclass constructors
+        @stack_trace = Exception.getstacktrace(2)
+    }
+
+    static func getstacktrace(trim = 0) = builtin_getstacktrace(trim)
+}
+builtin_transplant_builtin_class(Exception, builtin_Exception)
+
+class builtin_Fiber {
+    static func current = builtin_currentfiber()
 }
 
-func list(size = 0, initial = null) {
-    return builtin_makelist(size, initial)
-}
-
-Instance.constructor = func constructor {
-    self
-}
-
-Exception.constructor = func constructor(message) {
-    @message = message
-    // TODO: trim correct numer of stack frames when called from subclass constructors
-    @stack_trace = getstacktrace(2)
-    self
-}
+builtin_transplant_builtin_class(Fiber, builtin_Fiber)
 
 let $$ = null
 let @"charly.boot" = func boot {
@@ -156,9 +162,9 @@ let @"charly.boot" = func boot {
             }
 
             case ".help" {
-                echo(".exit        Exit from the REPL")
-                echo(".clear       Clear REPL history")
-                echo(".help        Show this help message")
+                print(".exit        Exit from the REPL")
+                print(".clear       Clear REPL history")
+                print(".help        Show this help message")
                 break
             }
 
@@ -169,10 +175,10 @@ let @"charly.boot" = func boot {
                     $$ = await fiber
                 } catch(e) {
                     $$ = e
-                    echo("Caught exception:")
+                    print("Caught exception:")
                 }
 
-                echo($$)
+                print($$)
             }
         }
 
