@@ -1,12 +1,5 @@
 # Todos
 
-- Check if certain runtime methods require the use of HandleScopes
-    - HandleScopes need to be used in paths of codes where the scheduler could interrupt the thread
-    - Scheduler can interrupt on memory allocations
-    - Scheduler can interrupt on charly function calls
-
-- Replace RawTTT::cast(t.field_at(offset)) pattern with t.field_at<RawTTT>(offset)
-
 - Nice, clean way to declare functions of builtin classes
     - In the old charly version I was able to declare builtin classes directly inside charly code
     - The same should be at least somewhat possible here too
@@ -55,6 +48,14 @@
 - Generators
     - Remove Generators from the language
     - yield is now implemented for the block callback syntax
+
+- Modules and abstract methods
+    - Modules can declare functions
+    - Modules cannot declare properties
+    - Module functions can be marked abstract
+    - Module functions are copied into the classes function table
+    - Classes can implement modules by `class A extends B implements C {}`
+        - Unimplemented abstract methods cause errors
 
 - Rethink iterator system
     - Iterators shouldn't be a separate data structure but should be implemented in charly code

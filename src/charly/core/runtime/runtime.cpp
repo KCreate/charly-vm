@@ -561,7 +561,7 @@ RawShape Runtime::create_shape(Thread* thread, RawValue parent, RawTuple key_tab
   auto parent_shape = RawShape::cast(parent);
   auto target_shape = parent_shape;
   for (uint32_t i = 0; i < key_table.size(); i++) {
-    auto encoded = RawInt::cast(key_table.field_at(i));
+    auto encoded = key_table.field_at<RawInt>(i);
     RawShape next_shape;
     {
       std::lock_guard lock(target_shape);

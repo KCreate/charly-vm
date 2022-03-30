@@ -529,7 +529,7 @@ OP(loadfarself) {
 
   RawTuple context = RawTuple::cast(frame->context);
   while (depth) {
-    context = RawTuple::cast(context.field_at(RawFunction::kContextParentOffset));
+    context = context.field_at<RawTuple>(RawFunction::kContextParentOffset);
     depth--;
   }
 
@@ -572,7 +572,7 @@ OP(loadfar) {
 
   RawTuple context = RawTuple::cast(frame->context);
   while (depth) {
-    context = RawTuple::cast(context.field_at(RawFunction::kContextParentOffset));
+    context = context.field_at<RawTuple>(RawFunction::kContextParentOffset);
     depth--;
   }
 
@@ -737,7 +737,7 @@ OP(setfar) {
 
   RawTuple context = RawTuple::cast(frame->context);
   while (depth) {
-    context = RawTuple::cast(context.field_at(RawFunction::kContextParentOffset));
+      context = context.field_at<RawTuple>(RawFunction::kContextParentOffset);
     depth--;
   }
 
@@ -907,14 +907,14 @@ OP(makeclass) {
   // ensure new class doesn't shadow any of the parent properties
   auto parent_keys_tuple = parent.shape_instance().keys();
   for (uint8_t i = 0; i < member_props.size(); i++) {
-    auto encoded = RawInt::cast(member_props.field_at(i));
+    auto encoded = member_props.field_at<RawInt>(i);
     SYMBOL prop_name;
     uint8_t prop_flags;
     RawShape::decode_shape_key(encoded, prop_name, prop_flags);
     for (uint32_t pi = 0; pi < parent_keys_tuple.size(); pi++) {
       SYMBOL parent_key_symbol;
       uint8_t parent_key_flags;
-      RawShape::decode_shape_key(RawInt::cast(parent_keys_tuple.field_at(pi)), parent_key_symbol, parent_key_flags);
+      RawShape::decode_shape_key(parent_keys_tuple.field_at<RawInt>(pi), parent_key_symbol, parent_key_flags);
       if (parent_key_symbol == prop_name) {
         thread->throw_value(runtime->create_exception_with_message(
           thread, "cannot redeclare property '%', parent class '%' already contains it", RawSymbol::make(prop_name),
@@ -942,11 +942,11 @@ OP(makeclass) {
   // fill in host class fields
   constructor.set_host_class(result);
   for (uint32_t i = 0; i < member_functions.size(); i++) {
-    auto func = RawFunction::cast(member_functions.field_at(i));
+    auto func = member_functions.field_at<RawFunction>(i);
     func.set_host_class(result);
   }
   for (uint32_t i = 0; i < static_functions.size(); i++) {
-    auto func = RawFunction::cast(static_functions.field_at(i));
+    auto func = static_functions.field_at<RawFunction>(i);
     func.set_host_class(result.klass_field());
   }
 

@@ -1003,7 +1003,7 @@ void RawClass::set_ancestor_table(RawTuple ancestor_table) {
 }
 
 RawSymbol RawClass::name() const {
-  return RawSymbol::cast(field_at(kNameOffset));
+  return field_at<RawSymbol>(kNameOffset);
 }
 
 void RawClass::set_name(RawSymbol name) {
@@ -1019,7 +1019,7 @@ void RawClass::set_parent(RawValue parent) {
 }
 
 RawShape RawClass::shape_instance() const {
-  return RawShape::cast(field_at(kShapeOffset));
+  return field_at<RawShape>(kShapeOffset);
 }
 
 void RawClass::set_shape_instance(RawShape shape) {
@@ -1027,7 +1027,7 @@ void RawClass::set_shape_instance(RawShape shape) {
 }
 
 RawTuple RawClass::function_table() const {
-  return RawTuple::cast(field_at(kFunctionTableOffset));
+  return field_at<RawTuple>(kFunctionTableOffset);
 }
 
 void RawClass::set_function_table(RawTuple function_table) {
@@ -1046,7 +1046,7 @@ RawValue RawClass::lookup_function(SYMBOL name) const {
   // search function table
   auto functions = function_table();
   for (uint32_t i = 0; i < functions.size(); i++) {
-    auto function = RawFunction::cast(functions.field_at(i));
+    auto function = functions.field_at<RawFunction>(i);
     if (function.shared_info()->name_symbol == name) {
       return function;
     }
@@ -1062,7 +1062,7 @@ RawValue RawClass::lookup_function(SYMBOL name) const {
 }
 
 ShapeId RawShape::own_shape_id() const {
-  return static_cast<ShapeId>(RawInt::cast(field_at(kOwnShapeIdOffset)).value());
+  return static_cast<ShapeId>(field_at<RawInt>(kOwnShapeIdOffset).value());
 }
 
 void RawShape::set_own_shape_id(ShapeId id) {
@@ -1070,7 +1070,7 @@ void RawShape::set_own_shape_id(ShapeId id) {
 }
 
 RawValue RawShape::parent() const {
-  return RawValue::cast(field_at(kParentShapeOffset));
+  return field_at(kParentShapeOffset);
 }
 
 void RawShape::set_parent(RawValue parent) {
@@ -1078,7 +1078,7 @@ void RawShape::set_parent(RawValue parent) {
 }
 
 RawTuple RawShape::keys() const {
-  return RawTuple::cast(field_at(kKeysOffset));
+  return field_at<RawTuple>(kKeysOffset);
 }
 
 void RawShape::set_keys(RawTuple keys) {
@@ -1086,7 +1086,7 @@ void RawShape::set_keys(RawTuple keys) {
 }
 
 RawTuple RawShape::additions() const {
-  return RawTuple::cast(field_at(kAdditionsOffset));
+  return field_at<RawTuple>(kAdditionsOffset);
 }
 
 void RawShape::set_additions(RawTuple additions) {
@@ -1097,7 +1097,7 @@ RawShape::LookupResult RawShape::lookup_symbol(SYMBOL symbol) const {
   RawTuple keys = this->keys();
 
   for (uint32_t i = 0; i < keys.size(); i++) {
-    auto encoded = RawInt::cast(keys.field_at(i));
+    auto encoded = keys.field_at<RawInt>(i);
     SYMBOL key_symbol;
     uint8_t key_flags;
     RawShape::decode_shape_key(encoded, key_symbol, key_flags);
@@ -1127,7 +1127,7 @@ void RawShape::decode_shape_key(RawInt encoded, SYMBOL& symbol_out, uint8_t& fla
 }
 
 RawSymbol RawFunction::name() const {
-  return RawSymbol::cast(field_at(kNameOffset));
+  return field_at<RawSymbol>(kNameOffset);
 }
 
 void RawFunction::set_name(RawSymbol name) {
@@ -1175,7 +1175,7 @@ void RawBuiltinFunction::set_function(BuiltinFunctionType function) {
 }
 
 RawSymbol RawBuiltinFunction::name() const {
-  return RawSymbol::cast(field_at(kNameOffset));
+  return field_at<RawSymbol>(kNameOffset);
 }
 
 void RawBuiltinFunction::set_name(RawSymbol symbol) {
@@ -1199,7 +1199,7 @@ void RawFiber::set_thread(Thread* thread) {
 }
 
 RawFunction RawFiber::function() const {
-  return RawFunction::cast(field_at(kFunctionOffset));
+  return field_at<RawFunction>(kFunctionOffset);
 }
 
 void RawFiber::set_function(RawFunction function) {
@@ -1207,7 +1207,7 @@ void RawFiber::set_function(RawFunction function) {
 }
 
 RawValue RawFiber::context() const {
-  return RawValue::cast(field_at(kSelfOffset));
+  return field_at(kSelfOffset);
 }
 
 void RawFiber::set_context(RawValue context) {
@@ -1215,7 +1215,7 @@ void RawFiber::set_context(RawValue context) {
 }
 
 RawValue RawFiber::arguments() const {
-  return RawValue::cast(field_at(kArgumentsOffset));
+  return field_at(kArgumentsOffset);
 }
 
 void RawFiber::set_arguments(RawValue arguments) {
@@ -1223,7 +1223,7 @@ void RawFiber::set_arguments(RawValue arguments) {
 }
 
 RawValue RawFiber::result() const {
-  return RawValue::cast(field_at(kResultOffset));
+  return field_at(kResultOffset);
 }
 
 void RawFiber::set_result(RawValue result) {
@@ -1243,7 +1243,7 @@ void RawException::set_message(RawValue value) {
 }
 
 RawTuple RawException::stack_trace() const {
-  return RawTuple::cast(field_at(kStackTraceOffset));
+  return field_at<RawTuple>(kStackTraceOffset);
 }
 
 void RawException::set_stack_trace(RawTuple stack_trace) {
