@@ -24,16 +24,37 @@
  * SOFTWARE.
  */
 
-func foo(x += 1, y *= 2) {
-    return (x, y)
+class A {
+    private property x
+
+    func get {
+        (@x, @y, @z)
+    }
+
+    func get_other(other) {
+        (other.x, other.y, other.z)
+    }
 }
 
-let a += 25
+class B extends A {
+    private property y
 
-print(a)
-print(foo())
-print(foo(10))
-print(foo(20, 30))
+    func constructor(x, @y) = super(x)
+}
+
+class C extends B {
+    private property z
+
+    func constructor(x, y, @z) = super(x, y)
+}
+
+const c = C(1, 2, 3)
+const d = C(4, 5, 6)
+
+print(c.get_other(d))
+print(d.get_other(c))
+
+
 
 
 

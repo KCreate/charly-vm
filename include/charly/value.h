@@ -596,9 +596,10 @@ class RawTuple : public RawData {
 public:
   COMMON_RAW_OBJECT(Tuple);
 
-  uint32_t size();
+  uint32_t size() const;
+
   template <typename R = RawValue>
-  R field_at(uint32_t index) {
+  R field_at(uint32_t index) const {
     DCHECK(index < size());
     RawValue* data = bitcast<RawValue*>(address());
     return R::cast(data[index]);
@@ -625,8 +626,19 @@ public:
   RawValue klass_field() const;
   void set_klass_field(RawValue klass);
 
-  RawValue field_at(int64_t index) const;
-  void set_field_at(int64_t index, RawValue value);
+  template <typename R = RawValue>
+  R field_at(uint32_t index) const {
+    DCHECK(index < field_count());
+    RawValue* data = bitcast<RawValue*>(address());
+    return R::cast(data[index]);
+  }
+
+  template <typename T = RawValue>
+  void set_field_at(uint32_t index, T value) {
+    DCHECK(index < field_count());
+    RawValue* data = bitcast<RawValue*>(address());
+    data[index] = RawValue::cast(value);
+  }
 
   uintptr_t pointer_at(int64_t index) const;
   void set_pointer_at(int64_t index, uintptr_t pointer);
@@ -706,6 +718,9 @@ public:
   uint8_t flags() const;
   void set_flags(uint8_t flags);
 
+  RawTuple ancestor_table() const;
+  void set_ancestor_table(RawTuple ancestor_table);
+
   RawSymbol name() const;
   void set_name(RawSymbol name);
 
@@ -726,6 +741,7 @@ public:
   enum
   {
     kFlagsOffset = RawInstance::kFieldCount,
+    kAncestorTableOffset,
     kNameOffset,
     kParentOffset,
     kShapeOffset,

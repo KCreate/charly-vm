@@ -175,6 +175,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
 
   auto builtin_shape_class = create_shape(thread, builtin_shape_builtin_instance,
                                           { { "flags", RawShape::kKeyFlagInternal },
+                                            { "ancestor_table", RawShape::kKeyFlagInternal },
                                             { "name", RawShape::kKeyFlagReadOnly },
                                             { "parent", RawShape::kKeyFlagReadOnly },
                                             { "shape", RawShape::kKeyFlagInternal },
@@ -210,41 +211,54 @@ void Runtime::initialize_builtin_types(Thread* thread) {
     create_shape(thread, builtin_shape_builtin_instance,
                  { { "message", RawShape::kKeyFlagNone }, { "stack_trace", RawShape::kKeyFlagPrivate } });
 
-#define DEFINE_BUILTIN_CLASS(S, N, P, SP)                                                 \
+  auto class_value_shape = create_shape(thread, builtin_shape_class, {});
+  RawClass class_value = RawClass::unsafe_cast(create_instance(thread, class_value_shape));
+  class_value.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);
+  class_value.set_ancestor_table(create_tuple(thread, 0));
+  class_value.set_parent(kNull);
+  class_value.set_shape_instance(builtin_shape_value);
+  class_value.set_function_table(create_tuple(thread, 0));
+  class_value.set_constructor(kNull);
+
+#define DEFINE_BUILTIN_CLASS(S, N, P, F, SP)                                              \
   auto class_##S##_shape = create_shape(thread, builtin_shape_class, SP);                 \
   RawClass class_##S = RawClass::unsafe_cast(create_instance(thread, class_##S##_shape)); \
+  class_##S.set_flags(F);                                                                 \
+  class_##S.set_ancestor_table(concat_tuple_value(thread, P.ancestor_table(), P));        \
   class_##S.set_name(RawSymbol::make(declare_symbol(thread, #N)));                        \
   class_##S.set_parent(P);                                                                \
   class_##S.set_shape_instance(builtin_shape_##S);                                        \
   class_##S.set_function_table(create_tuple(thread, 0));                                  \
   class_##S.set_constructor(kNull);
 
-  DEFINE_BUILTIN_CLASS(value, Value, kNull, {})
-  DEFINE_BUILTIN_CLASS(number, Number, class_value, {})
-  DEFINE_BUILTIN_CLASS(int, Int, class_number, {})
-  DEFINE_BUILTIN_CLASS(float, Float, class_number, {})
-  DEFINE_BUILTIN_CLASS(bool, Bool, class_value, {})
-  DEFINE_BUILTIN_CLASS(symbol, Symbol, class_value, {})
-  DEFINE_BUILTIN_CLASS(null, Null, class_value, {})
-  DEFINE_BUILTIN_CLASS(string, String, class_value, {})
-  DEFINE_BUILTIN_CLASS(bytes, Bytes, class_value, {})
-  DEFINE_BUILTIN_CLASS(tuple, Tuple, class_value, {})
-  DEFINE_BUILTIN_CLASS(instance, Instance, class_value, {})
-  DEFINE_BUILTIN_CLASS(class, Class, class_instance, {})
-  DEFINE_BUILTIN_CLASS(shape, Shape, class_instance, {})
-  DEFINE_BUILTIN_CLASS(function, Function, class_instance, {})
-  DEFINE_BUILTIN_CLASS(builtin_function, BuiltinFunction, class_instance, {})
-  DEFINE_BUILTIN_CLASS(fiber, Fiber, class_instance, {})
-  DEFINE_BUILTIN_CLASS(exception, Exception, class_instance, {})
+  DEFINE_BUILTIN_CLASS(number, Number, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
+  DEFINE_BUILTIN_CLASS(int, Int, class_number, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
+  DEFINE_BUILTIN_CLASS(float, Float, class_number, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
+  DEFINE_BUILTIN_CLASS(bool, Bool, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
+  DEFINE_BUILTIN_CLASS(symbol, Symbol, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
+  DEFINE_BUILTIN_CLASS(null, Null, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
+  DEFINE_BUILTIN_CLASS(string, String, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
+  DEFINE_BUILTIN_CLASS(bytes, Bytes, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
+  DEFINE_BUILTIN_CLASS(tuple, Tuple, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
+  DEFINE_BUILTIN_CLASS(instance, Instance, class_value, RawClass::kFlagNone, {})
+  DEFINE_BUILTIN_CLASS(class, Class, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
+  DEFINE_BUILTIN_CLASS(shape, Shape, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
+  DEFINE_BUILTIN_CLASS(function, Function, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
+  DEFINE_BUILTIN_CLASS(builtin_function, BuiltinFunction, class_instance,
+                       RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
+  DEFINE_BUILTIN_CLASS(fiber, Fiber, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
+  DEFINE_BUILTIN_CLASS(exception, Exception, class_instance, RawClass::kFlagNone, {})
 #undef DEFINE_BUILTIN_CLASS
 
   // define the static classes for the builtin classes
-#define DEFINE_STATIC_CLASS(S, N)                                                                          \
-  auto static_class_##S = RawClass::cast(create_instance(thread, ShapeId::kClass, RawClass::kFieldCount)); \
-  static_class_##S.set_name(RawSymbol::make(declare_symbol(thread, #N)));                                  \
-  static_class_##S.set_parent(class_class);                                                                \
-  static_class_##S.set_shape_instance(class_##S##_shape);                                                  \
-  static_class_##S.set_function_table(create_tuple(thread, 0));                                            \
+#define DEFINE_STATIC_CLASS(S, N)                                                                             \
+  auto static_class_##S = RawClass::cast(create_instance(thread, ShapeId::kClass, RawClass::kFieldCount));    \
+  static_class_##S.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);                         \
+  static_class_##S.set_ancestor_table(concat_tuple_value(thread, class_class.ancestor_table(), class_class)); \
+  static_class_##S.set_name(RawSymbol::make(declare_symbol(thread, #N)));                                     \
+  static_class_##S.set_parent(class_class);                                                                   \
+  static_class_##S.set_shape_instance(class_##S##_shape);                                                     \
+  static_class_##S.set_function_table(create_tuple(thread, 0));                                               \
   static_class_##S.set_constructor(kNull);
 
   DEFINE_STATIC_CLASS(value, Value)
@@ -285,27 +299,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   class_fiber.set_klass_field(static_class_fiber);
   class_exception.set_klass_field(static_class_exception);
 
-  // set builtin classes flags
-  class_value.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);
-  class_number.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);
-  class_int.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);
-  class_float.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);
-  class_bool.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);
-  class_symbol.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);
-  class_null.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);
-  class_string.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);
-  class_bytes.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);
-  class_tuple.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);
-  class_instance.set_flags(RawClass::kFlagNone);
-  class_class.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);
-  class_shape.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);
-  class_function.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);
-  class_builtin_function.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);
-  class_fiber.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);
-  class_exception.set_flags(RawClass::kFlagNone);
-
   // mark internal shape keys with internal flag
-
   set_builtin_class(thread, ShapeId::kInt, class_int);
   set_builtin_class(thread, ShapeId::kFloat, class_float);
   set_builtin_class(thread, ShapeId::kBool, class_bool);
@@ -514,6 +508,8 @@ RawClass Runtime::create_class(Thread* thread,
     auto static_shape = create_shape(thread, builtin_class_shape, static_prop_keys);
     auto static_class = RawClass::cast(create_instance(thread, builtin_class_instance));
     static_class.set_flags(flags);
+    static_class.set_ancestor_table(
+      concat_tuple_value(thread, builtin_class_instance.ancestor_table(), builtin_class_instance));
     static_class.set_name(RawSymbol::make(name));
     static_class.set_parent(builtin_class_instance);
     static_class.set_shape_instance(static_shape);
@@ -523,6 +519,7 @@ RawClass Runtime::create_class(Thread* thread,
     // build instance of newly created static shape
     auto actual_class = RawClass::cast(create_instance(thread, static_shape, static_class));
     actual_class.set_flags(flags);
+    actual_class.set_ancestor_table(concat_tuple_value(thread, parent.ancestor_table(), parent));
     actual_class.set_name(RawSymbol::make(name));
     actual_class.set_parent(parent);
     actual_class.set_shape_instance(object_shape);
@@ -539,6 +536,7 @@ RawClass Runtime::create_class(Thread* thread,
   } else {
     auto klass = RawClass::cast(create_instance(thread, builtin_class_instance));
     klass.set_flags(flags);
+    klass.set_ancestor_table(concat_tuple_value(thread, parent.ancestor_table(), parent));
     klass.set_name(RawSymbol::make(name));
     klass.set_parent(parent);
     klass.set_shape_instance(object_shape);
@@ -585,13 +583,13 @@ RawShape Runtime::create_shape(Thread* thread, RawValue parent, RawTuple key_tab
       if (!found_next) {
         next_shape = RawShape::cast(create_instance(thread, ShapeId::kShape, RawShape::kFieldCount));
         next_shape.set_parent(target_shape);
-        next_shape.set_keys(concat_tuple(thread, target_shape.keys(), create_tuple(thread, { encoded })));
+        next_shape.set_keys(concat_tuple_value(thread, target_shape.keys(), encoded));
         next_shape.set_additions(create_tuple(thread, 0));
         register_shape(next_shape);
 
         // add new shape to additions table of previous base
-        target_shape.set_additions(concat_tuple(
-          thread, additions, create_tuple(thread, { create_tuple(thread, { encoded, next_shape }) })));
+        target_shape.set_additions(
+          concat_tuple_value(thread, additions, { create_tuple(thread, { encoded, next_shape }) }));
       }
     }
 
@@ -643,6 +641,20 @@ RawTuple Runtime::concat_tuple(Thread* thread, RawTuple left, RawTuple right) {
   for (uint32_t i = 0; i < right_size; i++) {
     new_tuple.set_field_at(left_size + i, right.field_at(i));
   }
+
+  return new_tuple;
+}
+
+RawTuple Runtime::concat_tuple_value(Thread* thread, RawTuple left, RawValue value) {
+  uint32_t left_size = left.size();
+  uint64_t new_size = left_size + 1;
+  CHECK(new_size <= kInt32Max);
+
+  auto new_tuple = create_tuple(thread, new_size);
+  for (uint32_t i = 0; i < left_size; i++) {
+    new_tuple.set_field_at(i, left.field_at(i));
+  }
+  new_tuple.set_field_at(new_size - 1, value);
 
   return new_tuple;
 }
@@ -865,6 +877,39 @@ RawClass Runtime::get_builtin_class(Thread*, ShapeId shape_id) {
   auto offset = static_cast<uint32_t>(shape_id);
   DCHECK(offset < kBuiltinClassCount);
   return RawClass::cast(m_builtin_classes.at(offset));
+}
+
+uint32_t Runtime::check_private_access_permitted(Thread* thread, RawInstance value) {
+  // a given value can read the private members of another value if either:
+  // - they are the same value
+  // - the class of the reader and the accessed klass share a common ancestor
+
+  RawValue self = thread->frame()->self;
+  RawClass self_class = lookup_class(thread, self);
+  if (self == value) {
+    return self_class.shape_instance().keys().size();
+  }
+
+  RawClass other_class = lookup_class(thread, value);
+  if (self_class == other_class) {
+    return self_class.shape_instance().keys().size();
+  }
+
+  RawTuple self_ancestors = self_class.ancestor_table();
+  RawTuple other_ancestors = other_class.ancestor_table();
+
+  uint32_t min_ancestor = std::min(self_ancestors.size(), other_ancestors.size());
+  CHECK(min_ancestor >= 1, "expected at least one common class");
+  uint32_t highest_allowed_private_member = 0;
+  for (uint32_t i = 0; i < min_ancestor; i++) {
+    auto ancestor_self = self_ancestors.field_at<RawClass>(i);
+    auto ancestor_other = other_ancestors.field_at<RawClass>(i);
+    if (ancestor_self == ancestor_other) {
+      highest_allowed_private_member = ancestor_self.shape_instance().keys().size();
+    }
+  }
+
+  return highest_allowed_private_member;
 }
 
 }  // namespace charly::core::runtime

@@ -637,7 +637,7 @@ OP(loadattrsym) {
     auto result = shape.lookup_symbol(attr);
     if (result.found) {
       // TODO: allow accessing private member of same class
-      if (result.is_private() && (value != frame->self)) {
+      if (result.is_private() && runtime->check_private_access_permitted(thread, instance) <= result.offset) {
         thread->throw_value(runtime->create_exception_with_message(
           thread, "cannot read private property '%' of class '%'", RawSymbol::make(attr), klass.name()));
         return ContinueMode::Exception;
@@ -803,7 +803,7 @@ OP(setattrsym) {
         return ContinueMode::Exception;
       }
 
-      if (result.is_private() && (instance != frame->self)) {
+      if (result.is_private() && runtime->check_private_access_permitted(thread, instance) <= result.offset) {
         thread->throw_value(runtime->create_exception_with_message(
           thread, "cannot assign to private property '%' of class '%'", RawSymbol::make(attr), klass.name()));
         return ContinueMode::Exception;
@@ -917,7 +917,8 @@ OP(makeclass) {
       RawShape::decode_shape_key(RawInt::cast(parent_keys_tuple.field_at(pi)), parent_key_symbol, parent_key_flags);
       if (parent_key_symbol == prop_name) {
         thread->throw_value(runtime->create_exception_with_message(
-          thread, "cannot redeclare property '%', parent class '%' already contains it", prop_name, parent.name()));
+          thread, "cannot redeclare property '%', parent class '%' already contains it", RawSymbol::make(prop_name),
+          parent.name()));
         return ContinueMode::Exception;
       }
     }

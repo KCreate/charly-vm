@@ -878,7 +878,7 @@ const char* RawLargeString::data() const {
   return bitcast<const char*>(address());
 }
 
-uint32_t RawTuple::size() {
+uint32_t RawTuple::size() const {
   return header()->count();
 }
 
@@ -910,18 +910,6 @@ bool RawInstance::is_instance_of(ShapeId id) {
   }
 
   return false;
-}
-
-RawValue RawInstance::field_at(int64_t index) const {
-  DCHECK(index >= 0 && index < field_count());
-  auto* base = bitcast<RawValue*>(address());
-  return *(base + index);
-}
-
-void RawInstance::set_field_at(int64_t index, RawValue value) {
-  DCHECK(index >= 0 && index < field_count());
-  auto* base = bitcast<RawValue*>(address());
-  *(base + index) = value;
 }
 
 uintptr_t RawInstance::pointer_at(int64_t index) const {
@@ -1006,7 +994,15 @@ void RawClass::set_flags(uint8_t flags) {
   set_int_at(kFlagsOffset, flags);
 }
 
-RawSymbol RawClass::name() const {
+RawTuple RawClass::ancestor_table() const {
+  return field_at<RawTuple>(kAncestorTableOffset);
+}
+
+void RawClass::set_ancestor_table(RawTuple ancestor_table) {
+  set_field_at(kAncestorTableOffset, ancestor_table);
+}
+
+  RawSymbol RawClass::name() const {
   return RawSymbol::cast(field_at(kNameOffset));
 }
 

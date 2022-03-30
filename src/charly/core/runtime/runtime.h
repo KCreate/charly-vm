@@ -108,6 +108,7 @@ public:
   RawTuple create_tuple(Thread* thread, uint32_t count = 0);
   RawTuple create_tuple(Thread* thread, std::initializer_list<RawValue> values);
   RawTuple concat_tuple(Thread* thread, RawTuple left, RawTuple right);
+  RawTuple concat_tuple_value(Thread* thread, RawTuple left, RawValue value);
 
   RawClass create_class(Thread* thread,
                         SYMBOL name,
@@ -181,6 +182,10 @@ public:
   // statement was present during class declaration
   void set_builtin_class(Thread* thread, ShapeId shape_id, RawClass klass);
   RawClass get_builtin_class(Thread* thread, ShapeId shape_id);
+
+  // checks wether the current thread (and the top frame's associated self value)
+  // can access the private member of an instance and up to what offset
+  uint32_t check_private_access_permitted(Thread* thread, RawInstance value);
 
 private:
   uint64_t m_start_timestamp;
