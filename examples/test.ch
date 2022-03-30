@@ -24,26 +24,13 @@
  * SOFTWARE.
  */
 
-
-const f = spawn {
-    return "hello world"
+func foo(a = 0, ...args) {
+    (a, args)
 }
 
-const r = await f
-
-print(r)
-
-print(Exception("hello world"))
-
-print(Tuple.make(10, Tuple.make(10, 0)))
-
-Tuple.make.disassemble()
-
-
-
-
-
-
+print(foo())
+print(foo(1))
+print(foo(1, 2, 3, 4, 5, 6, 7, 8, 9))
 
 
 

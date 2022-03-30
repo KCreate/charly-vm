@@ -111,12 +111,12 @@ RawValue Interpreter::call_function(
   frame.sp = 0;
   frame.argc = argc;
 
-  // if (frame.parent) {
-  //   uintptr_t parent_base = bitcast<uintptr_t>(frame.parent);
-  //   uintptr_t current_base = bitcast<uintptr_t>(&frame);
-  //   size_t frame_size = parent_base - current_base;
-  //   debuglnf("frame size: %", frame_size);
-  // }
+//  if (frame.parent) {
+//    uintptr_t parent_base = bitcast<uintptr_t>(frame.parent);
+//    uintptr_t current_base = bitcast<uintptr_t>(&frame);
+//    size_t frame_size = parent_base - current_base;
+//    debuglnf("frame size: %", frame_size);
+//  }
 
   SharedFunctionInfo* shared_info = function.shared_info();
   frame.shared_function_info = shared_info;
@@ -151,8 +151,7 @@ RawValue Interpreter::call_function(
   uint8_t has_frame_context = shared_info->ir_info.has_frame_context;
   uint8_t heap_variables = shared_info->ir_info.heap_variables;
   if (has_frame_context) {
-    RawTuple context =
-      RawTuple::cast(runtime->create_tuple(thread, RawFunction::kContextHeapVariablesOffset + heap_variables));
+    auto context = runtime->create_tuple(thread, RawFunction::kContextHeapVariablesOffset + heap_variables);
     context.set_field_at(RawFunction::kContextParentOffset, function.context());
     context.set_field_at(RawFunction::kContextSelfOffset, self);
     frame.context = context;
@@ -167,17 +166,48 @@ RawValue Interpreter::call_function(
     return kErrorException;
   }
 
-  if (argc > shared_info->ir_info.argc) {
-    thread->throw_value(runtime->create_exception_with_message(
-      thread, "too many arguments for function call, expected at most % but got %", (uint32_t)shared_info->ir_info.argc,
-      (uint32_t)argc));
-    return kErrorException;
-  }
-
   // copy function arguments into local variables
-  for (uint8_t i = 0; i < argc && i < localcount; i++) {
-    DCHECK(arguments);
-    frame.locals[i] = arguments[i];
+  uint8_t func_argc = shared_info->ir_info.argc;
+  bool func_has_spread = shared_info->ir_info.spread_argument;
+  DCHECK(localcount >= func_argc);
+  if (func_has_spread) {
+    for (uint8_t i = 0; i < argc && i < func_argc; i++) {
+      DCHECK(arguments);
+      frame.locals[i] = arguments[i];
+    }
+
+    if (argc < func_argc) {
+
+      // copy arguments into local slots
+      for (uint8_t i = 0; i < argc; i++) {
+        DCHECK(arguments);
+        frame.locals[i] = arguments[i];
+      }
+
+      // initialize spread argument with empty tuple
+      frame.locals[func_argc] = runtime->create_tuple(thread, 0);
+    } else {
+
+      // copy arguments into local slots
+      for (uint8_t i = 0; i < func_argc; i++) {
+        DCHECK(arguments);
+        frame.locals[i] = arguments[i];
+      }
+
+      // initialize spread argument with remaining arguments
+      uint32_t remaining_arguments = argc - func_argc;
+      auto spread_args = runtime->create_tuple(thread, remaining_arguments);
+      for (uint8_t i = 0; i < remaining_arguments; i++) {
+        DCHECK(arguments);
+        spread_args.set_field_at(i, arguments[func_argc + i]);
+      }
+      frame.locals[func_argc] = spread_args;
+    }
+  } else {
+    for (uint8_t i = 0; i < argc && i < func_argc; i++) {
+      DCHECK(arguments);
+      frame.locals[i] = arguments[i];
+    }
   }
 
   // copy self from context if this is an arrow function
@@ -662,7 +692,7 @@ OP(loadattrsym) {
 
     frame->push(lookup);
     return ContinueMode::Next;
-    }
+  }
 
   thread->throw_value(runtime->create_exception_with_message(thread, "value of type '%' has no property called '%'",
                                                              klass.name(), RawSymbol::make(attr)));
@@ -737,7 +767,7 @@ OP(setfar) {
 
   RawTuple context = RawTuple::cast(frame->context);
   while (depth) {
-      context = context.field_at<RawTuple>(RawFunction::kContextParentOffset);
+    context = context.field_at<RawTuple>(RawFunction::kContextParentOffset);
     depth--;
   }
 

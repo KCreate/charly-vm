@@ -97,12 +97,8 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
         Label l = labels[i] = m_builder.reserve_label();
         m_builder.emit_testintjmp(i, l);
       }
-      m_builder.emit_testintjmp(argc, body_label);
-
-      // the runtime disallows calls with too many arguments, so
-      // any misbehaviour can be caught with a panic here
       m_builder.emit_pop();
-      m_builder.emit_panic();
+      m_builder.emit_jmp(body_label);
 
       // emit stores for each argument with a default value
       for (uint8_t i = minargc; i < argc; i++) {

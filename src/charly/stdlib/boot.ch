@@ -24,22 +24,6 @@
  * SOFTWARE.
  */
 
-func determine_max_stack_size {
-    let counter = 0
-
-    try {
-        func recurse {
-            counter += 1
-            recurse()
-        }
-        recurse()
-    } catch(e) {
-        return counter
-    }
-
-    return 100
-}
-
 const builtin_currentfiber = @"charly.builtin.core.currentfiber"
 const builtin_transplant_builtin_class = @"charly.builtin.core.transplantbuiltinclass"
 const builtin_writevalue = @"charly.builtin.core.writevalue"

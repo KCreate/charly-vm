@@ -1,9 +1,5 @@
 # Todos
 
-- Ability to call functions with more arguments than necessary
-    - Requires changes to argc jump table codegen
-    - Check for other assumptions about argc max limit
-
 - Exception when trying to await current fiber
 
 - RawInstance::field_at index should be uint8_t as maximum field count is 256
