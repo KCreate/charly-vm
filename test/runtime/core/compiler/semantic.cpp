@@ -34,9 +34,9 @@ CATCH_TEST_CASE("Semantic") {
     COMPILE_ERROR("false = 25", "left-hand side of assignment cannot be assigned to")
     COMPILE_ERROR("self = 25", "left-hand side of assignment cannot be assigned to")
     COMPILE_ERROR("(a, b) += 25",
-                  "this type of expression cannot be used as the left-hand side of an operator assignment")
+                  "cannot use operator assignment when assigning to an unpack target")
     COMPILE_ERROR("({a, b} += 25)",
-                  "this type of expression cannot be used as the left-hand side of an operator assignment")
+                  "cannot use operator assignment when assigning to an unpack target")
     COMPILE_ERROR("() = 25", "empty unpack target")
     COMPILE_ERROR("(1) = 25", "left-hand side of assignment cannot be assigned to")
     COMPILE_ERROR("(...a, ...b) = 25", "excess spread")
@@ -139,11 +139,11 @@ CATCH_TEST_CASE("Semantic") {
     COMPILE_ERROR("func foo(a, a = 1) {}", "duplicate argument 'a'")
     COMPILE_ERROR("func foo(a, ...a) {}", "duplicate argument 'a'")
 
-    COMPILE_ERROR("class A { property foo property foo }", "duplicate declaration of 'foo'")
-    COMPILE_ERROR("class A { property foo func foo {} }", "redeclaration of property 'foo' as function")
-    COMPILE_ERROR("class A { func foo {} property foo }", "redeclaration of property 'foo' as function")
+    COMPILE_ERROR("class A { property foo property foo }", "duplicate declaration of member property 'foo'")
+    COMPILE_ERROR("class A { property foo func foo {} }", "redeclaration of member property 'foo' as member function")
+    COMPILE_ERROR("class A { func foo {} property foo }", "redeclaration of member property 'foo' as member function")
     COMPILE_ERROR("class A { func constructor {} func constructor {} }", "duplicate declaration of class constructor")
-    COMPILE_ERROR("class A { func foo {} func foo {} }", "duplicate declaration of member function 'foo'")
+    COMPILE_ERROR("class A { func foo {} func foo {} }", "member function overload shadows previous overload")
     COMPILE_ERROR("class A { static property foo static property foo }",
                   "duplicate declaration of static property 'foo'")
     COMPILE_ERROR("class A { static property foo static func foo {} }", "redeclaration of static property 'foo' as static function")
@@ -169,6 +169,31 @@ CATCH_TEST_CASE("Semantic") {
     COMPILE_ERROR("func foo(...foo, a, b, c) {}", "excess parameter(s)")
     COMPILE_ERROR("->(...foo, ...rest) {}", "excess parameter(s)")
     COMPILE_ERROR("->(...foo, a, b, c) {}", "excess parameter(s)")
+  }
+
+  CATCH_SECTION("checks for duplicate overloads in class functions") {
+    COMPILE_OK("class A { func foo func foo(x) func foo(x, y) func foo(x, y, z, a = 1) }")
+    COMPILE_ERROR("class A { func foo func foo }", "member function overload shadows previous overload")
+    COMPILE_ERROR("class A { func foo(x) func foo(x) }", "member function overload shadows previous overload")
+    COMPILE_ERROR("class A { func foo func foo(x = 1) }", "member function overload shadows previous overload")
+    COMPILE_ERROR("class A { func foo func foo(x = 1, y = 2) }", "member function overload shadows previous overload")
+    COMPILE_ERROR("class A { func foo(x) func foo(x, y = 2) }", "member function overload shadows previous overload")
+    COMPILE_ERROR("class A { func foo(x) func foo(x, ...y) }", "member function overload shadows previous overload")
+    COMPILE_ERROR("class A { func foo(x) func foo(x, ...y) }", "member function overload shadows previous overload")
+    COMPILE_ERROR("class A { func foo(...x) func foo(x) }", "member function overload shadows previous overload")
+    COMPILE_ERROR("class A { func foo(...x) func foo(x, y) }", "member function overload shadows previous overload")
+    COMPILE_ERROR("class A { func foo(x, y, z) func foo(...x) }", "member function overload shadows previous overload")
+
+    COMPILE_OK("class A { static func foo {} static func foo(x) {} static func foo(x, y) {} static func foo(x, y, z, a = 1) {} }")
+    COMPILE_ERROR("class A { static func foo static func foo }", "static function overload shadows previous overload")
+    COMPILE_ERROR("class A { static func foo(x) static func foo(x) }", "static function overload shadows previous overload")
+    COMPILE_ERROR("class A { static func foo static func foo(x = 1) }", "static function overload shadows previous overload")
+    COMPILE_ERROR("class A { static func foo static func foo(x = 1, y = 2) }", "static function overload shadows previous overload")
+    COMPILE_ERROR("class A { static func foo(x) static func foo(x, y = 2) }", "static function overload shadows previous overload")
+    COMPILE_ERROR("class A { static func foo(x) static func foo(x, ...y) }", "static function overload shadows previous overload")
+    COMPILE_ERROR("class A { static func foo(...x) static func foo(x) }", "static function overload shadows previous overload")
+    COMPILE_ERROR("class A { static func foo(...x) static func foo(x, y) }", "static function overload shadows previous overload")
+    COMPILE_ERROR("class A { static func foo(x, y, z) static func foo(...x) }", "static function overload shadows previous overload")
   }
 
   CATCH_SECTION("checks for missing calls to parent constructor in subclasses") {

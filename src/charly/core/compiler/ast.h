@@ -826,6 +826,10 @@ public:
     return arguments.size();
   }
 
+  bool has_spread() const {
+    return !arguments.empty() && arguments.back()->spread_initializer;
+  }
+
   void dump_info(std::ostream& out) const override;
 };
 
@@ -872,6 +876,9 @@ public:
   std::vector<ref<Function>> static_functions;
   std::vector<ref<ClassProperty>> static_properties;
 
+  std::unordered_map<SYMBOL, std::vector<ref<Function>>> member_function_overloads;
+  std::unordered_map<SYMBOL, std::vector<ref<Function>>> static_function_overloads;
+
   CHILDREN() {
     CHILD_NODE(parent)
     CHILD_NODE(constructor)
@@ -879,6 +886,13 @@ public:
     CHILD_VECTOR(member_properties)
     CHILD_VECTOR(static_functions)
     CHILD_VECTOR(static_properties)
+
+    for (auto entry : member_function_overloads) {
+      CHILD_VECTOR(entry.second)
+    }
+    for (auto entry : static_function_overloads) {
+      CHILD_VECTOR(entry.second)
+    }
   }
 
   void dump_info(std::ostream& out) const override;
@@ -958,15 +972,14 @@ class UnpackTarget final : public Expression {
   AST_NODE(UnpackTarget)
 public:
   template <typename... Args>
-  explicit UnpackTarget(bool object_unpack, bool declaration_target, Args&&... params) :
-    object_unpack(object_unpack), declaration_target(declaration_target), elements({ std::forward<Args>(params)... }) {
+  explicit UnpackTarget(bool object_unpack, Args&&... params) :
+    object_unpack(object_unpack), elements({ std::forward<Args>(params)... }) {
     if (!elements.empty()) {
       this->set_location(elements.front(), elements.back());
     }
   }
 
   bool object_unpack;
-  bool declaration_target;
   std::vector<ref<UnpackTargetElement>> elements;
 
   CHILDREN() {

@@ -462,18 +462,21 @@ void RawValue::dump(std::ostream& out) const {
 
       const SharedFunctionInfo& shared_info = *function.shared_info();
       const compiler::ir::FunctionInfo& ir_info = shared_info.ir_info;
-      uint8_t minargc = ir_info.minargc;
       bool arrow = ir_info.arrow_function;
       const std::string& name = shared_info.name;
 
       if (arrow) {
-        writer.fg(Color::Magenta, "->(", (uint32_t)minargc, ")");
+        writer.fg(Color::Magenta, "->()");
       } else {
         if (function.host_class().isClass()) {
           auto klass = RawClass::cast(function.host_class());
-          writer.fg(Color::Yellow, "func ", klass.name(), "::", name, "(", (uint32_t)minargc, ")");
+          if (klass.flags() & RawClass::kFlagStatic) {
+            writer.fg(Color::Yellow, klass.name(), "::", name, "()");
+          } else {
+            writer.fg(Color::Yellow, klass.name(), ".", name, "()");
+          }
         } else {
-          writer.fg(Color::Yellow, "func ", name, "(", (uint32_t)minargc, ")");
+          writer.fg(Color::Yellow, name, "()");
         }
       }
 
@@ -502,7 +505,9 @@ void RawValue::dump(std::ostream& out) const {
 
     if (isClass()) {
       auto klass = RawClass::cast(this);
-      writer.fg(Color::Yellow, "<Class ", klass.name(), ">");
+      auto is_final = klass.flags() & RawClass::kFlagFinal;
+      auto is_static = klass.flags() & RawClass::kFlagStatic;
+      writer.fg(Color::Yellow, "<", is_final ? "final " : "", is_static ? "static " : "", "Class ", klass.name(), ">");
       return;
     }
 
@@ -1156,6 +1161,14 @@ RawValue RawFunction::host_class() const {
 
 void RawFunction::set_host_class(RawValue host_class) {
   set_field_at(kHostClassOffset, host_class);
+}
+
+RawValue RawFunction::overload_table() const {
+  return field_at(kOverloadTableOffset);
+}
+
+void RawFunction::set_overload_table(RawValue overload_table) {
+  set_field_at(kOverloadTableOffset, overload_table);
 }
 
 SharedFunctionInfo* RawFunction::shared_info() const {

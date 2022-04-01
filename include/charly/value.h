@@ -705,7 +705,8 @@ public:
   enum {
     kFlagNone = 0,
     kFlagFinal = 1,
-    kFlagNonConstructable = 2
+    kFlagNonConstructable = 2,
+    kFlagStatic = 4
   };
 
   uint8_t flags() const;
@@ -827,6 +828,9 @@ public:
   RawValue host_class() const;
   void set_host_class(RawValue host_class);
 
+  RawValue overload_table() const;
+  void set_overload_table(RawValue overload_table);
+
   SharedFunctionInfo* shared_info() const;
   void set_shared_info(SharedFunctionInfo* function);
 
@@ -841,6 +845,7 @@ public:
     kFrameContextOffset,
     kSavedSelfOffset,
     kHostClassOffset,
+    kOverloadTableOffset,
     kSharedInfoOffset,
     kFieldCount
   };

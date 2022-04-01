@@ -508,22 +508,22 @@ ref<Statement> VariableAnalyzerPass::transform(const ref<Declaration>& node) {
   return node;
 }
 
-void VariableAnalyzerPass::inspect_leave(const ref<UnpackDeclaration>& node) {
+bool VariableAnalyzerPass::inspect_enter(const ref<UnpackDeclaration>&) {
+  return false;
+}
+
+ref<Statement> VariableAnalyzerPass::transform(const ref<UnpackDeclaration>& node) {
   for (const ref<UnpackTargetElement>& element : node->target->elements) {
-    if (node->target->object_unpack) {
-      CHECK(isa<Name>(element->target));
-      auto element_name = cast<Name>(element->target);
-      if (VariableId id = declare_variable(element_name, element, node->constant)) {
-        element_name->ir_location = ValueLocation::Id(id);
-      }
-    } else {
-      CHECK(isa<Id>(element->target));
-      auto element_id = cast<Id>(element->target);
-      if (VariableId id = declare_variable(make<Name>(element_id), element, node->constant)) {
-        element_id->ir_location = ValueLocation::Id(id);
-      }
+    CHECK(isa<Id>(element->target));
+    auto id_node = cast<Id>(element->target);
+    if (VariableId id = declare_variable(make<Name>(id_node), element, node->constant)) {
+      id_node->ir_location = ValueLocation::Id(id);
     }
   }
+
+  apply(node->expression);
+
+  return node;
 }
 
 void VariableAnalyzerPass::inspect_leave(const ref<Assignment>& node) {
@@ -540,15 +540,20 @@ void VariableAnalyzerPass::inspect_leave(const ref<Assignment>& node) {
     }
   } else if (auto unpack_target = cast<UnpackTarget>(node->target)) {
     for (const ref<UnpackTargetElement>& element : unpack_target->elements) {
-      // lookup the symbol in the current block
-      if (auto element_id = cast<Id>(element->target)) {
-        VariableId variable = m_analyzer.lookup_variable(element_id->value);
-        if (variable) {
-          if (m_analyzer.is_constant(variable)) {
-            m_console.error(element_id, "assignment to constant variable '", element_id->value, "'");
+      switch (element->target->type()) {
+        case Node::Type::Id: {
+          auto target_id = cast<Id>(element->target);
+          VariableId variable = m_analyzer.lookup_variable(target_id->value);
+          if (variable) {
+            if (m_analyzer.is_constant(variable)) {
+              m_console.error(target_id, "assignment to constant variable '", target_id->value, "'");
+            }
+          } else {
+            m_console.error(target_id, "unknown variable '", target_id->value, "'");
           }
-        } else {
-          m_console.error(element_id, "unknown variable '", element_id->value, "'");
+        }
+        default: {
+          break;
         }
       }
     }
@@ -611,6 +616,7 @@ bool VariableLocationPatchPass::inspect_enter(const ref<Function>& node) {
     m_analyzer.patch_value_location(argument->ir_location);
   }
 
+  node->ir_info.name = crc32::hash_string(node->name->value);
   node->ir_info.local_variables = m_analyzer.current_function_scope()->get_local_variable_count();
   node->ir_info.heap_variables = m_analyzer.current_function_scope()->get_heap_variable_count();
   node->ir_info.has_frame_context = m_analyzer.current_function_scope()->has_frame_context();
@@ -639,6 +645,27 @@ bool VariableLocationPatchPass::inspect_enter(const ref<Declaration>&) {
 ref<Statement> VariableLocationPatchPass::transform(const ref<Declaration>& node) {
   apply(node->expression);
   m_analyzer.patch_value_location(node->ir_location);
+  return node;
+}
+
+bool VariableLocationPatchPass::inspect_enter(const ref<UnpackTarget>&) {
+  return false;
+}
+
+ref<UnpackTarget> VariableLocationPatchPass::transform(const ref<UnpackTarget>& node) {
+  for (auto& element : node->elements) {
+    switch (element->target->type()) {
+      case Node::Type::Id: {
+        auto id = cast<Id>(element->target);
+        m_analyzer.patch_value_location(id->ir_location);
+        break;
+      }
+      default: {
+        element->target = apply(element->target);
+      }
+    }
+  }
+
   return node;
 }
 

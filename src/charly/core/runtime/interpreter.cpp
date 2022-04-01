@@ -101,6 +101,16 @@ RawValue Interpreter::call_function(
   Thread* thread, RawValue self, RawFunction function, RawValue* arguments, uint8_t argc) {
   Runtime* runtime = thread->runtime();
 
+  // find the correct overload to call
+  if (function.overload_table().isTuple()) {
+    auto overload_table = RawTuple::cast(function.overload_table());
+    if (argc >= overload_table.size()) {
+      function = overload_table.field_at<RawFunction>(overload_table.size() - 1);
+    } else {
+      function = overload_table.field_at<RawFunction>(argc);
+    }
+  }
+
   Frame frame(thread, function);
   frame.self = self;
   frame.locals = nullptr;
@@ -111,12 +121,12 @@ RawValue Interpreter::call_function(
   frame.sp = 0;
   frame.argc = argc;
 
-//  if (frame.parent) {
-//    uintptr_t parent_base = bitcast<uintptr_t>(frame.parent);
-//    uintptr_t current_base = bitcast<uintptr_t>(&frame);
-//    size_t frame_size = parent_base - current_base;
-//    debuglnf("frame size: %", frame_size);
-//  }
+  //  if (frame.parent) {
+  //    uintptr_t parent_base = bitcast<uintptr_t>(frame.parent);
+  //    uintptr_t current_base = bitcast<uintptr_t>(&frame);
+  //    size_t frame_size = parent_base - current_base;
+  //    debuglnf("frame size: %", frame_size);
+  //  }
 
   SharedFunctionInfo* shared_info = function.shared_info();
   frame.shared_function_info = shared_info;
@@ -166,6 +176,13 @@ RawValue Interpreter::call_function(
     return kErrorException;
   }
 
+  if (argc > shared_info->ir_info.argc && !shared_info->ir_info.spread_argument) {
+    thread->throw_value(runtime->create_exception_with_message(
+      thread, "too many arguments for non-spread function '%', expected at most % but got %", function.name(),
+      (uint32_t)shared_info->ir_info.argc, (uint32_t)argc));
+    return kErrorException;
+  }
+
   // copy function arguments into local variables
   uint8_t func_argc = shared_info->ir_info.argc;
   bool func_has_spread = shared_info->ir_info.spread_argument;
@@ -177,7 +194,6 @@ RawValue Interpreter::call_function(
     }
 
     if (argc < func_argc) {
-
       // copy arguments into local slots
       for (uint8_t i = 0; i < argc; i++) {
         DCHECK(arguments);
@@ -187,7 +203,6 @@ RawValue Interpreter::call_function(
       // initialize spread argument with empty tuple
       frame.locals[func_argc] = runtime->create_tuple(thread, 0);
     } else {
-
       // copy arguments into local slots
       for (uint8_t i = 0; i < func_argc; i++) {
         DCHECK(arguments);
@@ -968,17 +983,6 @@ OP(makeclass) {
   RawClass result =
     thread->runtime()->create_class(thread, name, parent, constructor, member_props, member_functions, static_prop_keys,
                                     static_prop_values, static_functions, flags.value());
-
-  // fill in host class fields
-  constructor.set_host_class(result);
-  for (uint32_t i = 0; i < member_functions.size(); i++) {
-    auto func = member_functions.field_at<RawFunction>(i);
-    func.set_host_class(result);
-  }
-  for (uint32_t i = 0; i < static_functions.size(); i++) {
-    auto func = static_functions.field_at<RawFunction>(i);
-    func.set_host_class(result.klass_field());
-  }
 
   frame->push(RawClass::cast(result));
   return ContinueMode::Next;

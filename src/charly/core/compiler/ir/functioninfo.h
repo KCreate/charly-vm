@@ -27,12 +27,15 @@
 #include <cstdint>
 #include <iostream>
 
+#include "charly/symbol.h"
+
 #pragma once
 
 namespace charly::core::compiler::ir {
 
 // keep track of local variable info of functions
 struct FunctionInfo {
+  SYMBOL name = SYM("");
   bool valid = false;
   uint8_t stacksize = 0;
   uint8_t local_variables = 0;
@@ -49,6 +52,7 @@ struct FunctionInfo {
   // (lvars=5, argc=3, minargc=2, spread=false)
   friend std::ostream& operator<<(std::ostream& out, const FunctionInfo& info) {
     out << "(";
+    out << "name=" << bitcast<void*>(static_cast<uintptr_t>(info.name)) << ", ";
     out << "lvars=" << static_cast<int32_t>(info.local_variables) << ", ";
     out << "has_context=" << (info.has_frame_context ? "true" : "false") << ", ";
     out << "hvars=" << static_cast<int32_t>(info.heap_variables) << ", ";

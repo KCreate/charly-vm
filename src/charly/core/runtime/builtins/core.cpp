@@ -70,7 +70,17 @@ RawValue transplantbuiltinclass(Thread* thread, const RawValue* args, uint8_t ar
   klass.set_constructor(donor_class.constructor());
   klass.set_function_table(donor_class.function_table());
   for (uint32_t i = 0; i < klass.function_table().size(); i++) {
-    klass.function_table().field_at<RawFunction>(i).set_host_class(klass);
+    auto method = klass.function_table().field_at<RawFunction>(i);
+    auto overload_table = method.overload_table();
+    if (overload_table.isTuple()) {
+      auto overload_tuple = RawTuple::cast(overload_table);
+      for (uint32_t j = 0; j < overload_tuple.size(); j++) {
+        auto overloaded_method = overload_tuple.field_at<RawFunction>(j);
+        overloaded_method.set_host_class(klass);
+      }
+    } else {
+      method.set_host_class(klass);
+    }
   }
   donor_class.set_flags(RawClass::kFlagNonConstructable | RawClass::kFlagFinal);
   donor_class.set_constructor(kNull);
@@ -85,7 +95,17 @@ RawValue transplantbuiltinclass(Thread* thread, const RawValue* args, uint8_t ar
     static_class.set_function_table(static_donor_class.function_table());
     static_donor_class.set_function_table(runtime->create_tuple(thread, 0));
     for (uint32_t i = 0; i < static_class.function_table().size(); i++) {
-      static_class.function_table().field_at<RawFunction>(i).set_host_class(static_class);
+      auto method = static_class.function_table().field_at<RawFunction>(i);
+      auto overload_table = method.overload_table();
+      if (overload_table.isTuple()) {
+        auto overload_tuple = RawTuple::cast(overload_table);
+        for (uint32_t j = 0; j < overload_tuple.size(); j++) {
+          auto overloaded_method = overload_tuple.field_at<RawFunction>(j);
+          overloaded_method.set_host_class(static_class);
+        }
+      } else {
+        method.set_host_class(static_class);
+      }
     }
   }
 

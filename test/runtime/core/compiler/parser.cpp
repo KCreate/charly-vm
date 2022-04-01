@@ -142,19 +142,19 @@ CATCH_TEST_CASE("Parser") {
   }
 
   CATCH_SECTION("assignments") {
-    CHECK_EXP("x = 1")
-    CHECK_EXP("x = 1 + 2")
-    CHECK_EXP("(x) = 1")
-    CHECK_EXP("foo.bar = 1")
-    CHECK_EXP("foo[0] = 1")
-    CHECK_EXP("(a, b) = 1")
-    CHECK_EXP("(...b,) = 1")
-    CHECK_EXP("(a, ...b, c) = 1")
-    CHECK_EXP("{a, b} = 1")
-    CHECK_EXP("{a, ...b, c} = 1")
-    CHECK_EXP("x += 1")
-    CHECK_EXP("foo.bar += 1")
-    CHECK_EXP("foo[0] += 1")
+    CHECK_STMT("x = 1")
+    CHECK_STMT("x = 1 + 2")
+    CHECK_STMT("(x) = 1")
+    CHECK_STMT("foo.bar = 1")
+    CHECK_STMT("foo[0] = 1")
+    CHECK_STMT("(a, b) = 1")
+    CHECK_STMT("(...b,) = 1")
+    CHECK_STMT("(a, ...b, c) = 1")
+    CHECK_STMT("{a, b} = 1")
+    CHECK_STMT("{a, ...b, c} = 1")
+    CHECK_STMT("x += 1")
+    CHECK_STMT("foo.bar += 1")
+    CHECK_STMT("foo[0] += 1")
   }
 
   CATCH_SECTION("ternary if") {
@@ -576,7 +576,7 @@ CATCH_TEST_CASE("Parser") {
     CHECK_ERROR_PROGRAM("continue", "continue statement not allowed at this point")
     CHECK_ERROR_PROGRAM("if true { continue }", "continue statement not allowed at this point")
     CHECK_ERROR_PROGRAM("loop { ->{ continue } }", "continue statement not allowed at this point")
-    CHECK_ERROR_PROGRAM("{ export foo }", "export statement not allowed at this point")
+    CHECK_ERROR_PROGRAM("if true { export foo }", "export statement not allowed at this point")
   }
 
   CATCH_SECTION("spread operator") {

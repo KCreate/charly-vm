@@ -45,9 +45,7 @@ ref<Block> Parser::parse_program(utils::Buffer& source, DiagnosticConsole& conso
     parser.m_keyword_context._super = false;
 
     return parser.parse_program();
-  } catch (DiagnosticException&) {
-    return nullptr;
-  }
+  } catch (DiagnosticException&) { return nullptr; }
 }
 
 ref<Statement> Parser::parse_statement(utils::Buffer& source, DiagnosticConsole& console) {
@@ -62,9 +60,7 @@ ref<Statement> Parser::parse_statement(utils::Buffer& source, DiagnosticConsole&
     parser.m_keyword_context._super = true;
 
     return parser.parse_statement();
-  } catch (DiagnosticException&) {
-    return nullptr;
-  }
+  } catch (DiagnosticException&) { return nullptr; }
 }
 
 ref<Expression> Parser::parse_expression(utils::Buffer& source, DiagnosticConsole& console) {
@@ -79,9 +75,7 @@ ref<Expression> Parser::parse_expression(utils::Buffer& source, DiagnosticConsol
     parser.m_keyword_context._super = true;
 
     return parser.parse_expression();
-  } catch (DiagnosticException&) {
-    return nullptr;
-  }
+  } catch (DiagnosticException&) { return nullptr; }
 }
 
 ref<Block> Parser::parse_program() {
@@ -144,10 +138,6 @@ ref<Statement> Parser::parse_statement() {
   ref<Statement> stmt;
 
   switch (m_token.type) {
-    case TokenType::LeftCurly: {
-      stmt = parse_block();
-      break;
-    }
     case TokenType::If: {
       stmt = parse_if();
       break;
@@ -666,8 +656,7 @@ ref<Expression> Parser::parse_assignment() {
         ref<UnpackTarget> unpack_target = create_unpack_target(target);
 
         if (assignment_operator != TokenType::Assignment) {
-          m_console.error(target, "this type of expression cannot be used as the left-hand side of "
-                                  "an operator assignment");
+          m_console.error(target, "cannot use operator assignment when assigning to an unpack target");
           break;
         }
 
@@ -1146,16 +1135,17 @@ ref<Function> Parser::parse_function(FunctionFlags flags) {
   }
 
   m_keyword_context._export = false;
-  if (type(TokenType::Assignment) && m_token.assignment_operator != TokenType::Assignment) {
-    m_console.error(m_token.location, "operator assignment is not allowed in this place");
-  }
-  if (skip(TokenType::Assignment)) {
+  if (type(TokenType::Assignment)) {
+    if (m_token.assignment_operator != TokenType::Assignment) {
+      m_console.error(m_token.location, "operator assignment is not allowed in this place");
+    }
+    eat(TokenType::Assignment);
     body = parse_throw_statement();
   } else if (type(TokenType::LeftCurly)) {
     body = parse_block();
   } else {
     // allow foo(@x, @y) declarations inside classes
-    if (flags.class_function && !flags.static_function) {
+    if (flags.class_function) {
       body = make<Return>();
     } else {
       unexpected_token(TokenType::LeftCurly);
@@ -1472,13 +1462,10 @@ ref<Statement> Parser::create_declaration(const ref<Expression>& target, const r
 }
 
 ref<UnpackTarget> Parser::create_unpack_target(const ref<Expression>& node, bool declaration) {
-  // TODO: if in declaration, only allow identifiers
-  //       if not in declaration, allow arbitrary assignment targets
-
   switch (node->type()) {
     case Node::Type::Tuple: {
       ref<Tuple> tuple = cast<Tuple>(node);
-      ref<UnpackTarget> target = make<UnpackTarget>(false, declaration);
+      ref<UnpackTarget> target = make<UnpackTarget>(false);
 
       if (tuple->elements.size() == 0) {
         m_console.error(tuple, "empty unpack target");
@@ -1494,8 +1481,8 @@ ref<UnpackTarget> Parser::create_unpack_target(const ref<Expression>& node, bool
         }
 
         if (declaration) {
-          if (isa<Id>(expression)) {
-            target->elements.push_back(make<UnpackTargetElement>(expression, is_spread));
+          if (auto id = cast<Id>(expression)) {
+            target->elements.push_back(make<UnpackTargetElement>(id, is_spread));
           } else {
             m_console.error(expression, "expected an identifier or spread");
           }
@@ -1513,7 +1500,7 @@ ref<UnpackTarget> Parser::create_unpack_target(const ref<Expression>& node, bool
     }
     case Node::Type::Dict: {
       ref<Dict> dict = cast<Dict>(node);
-      ref<UnpackTarget> target = make<UnpackTarget>(true, declaration);
+      ref<UnpackTarget> target = make<UnpackTarget>(true);
 
       if (dict->elements.size() == 0) {
         m_console.error(dict, "empty unpack target");
@@ -1527,10 +1514,10 @@ ref<UnpackTarget> Parser::create_unpack_target(const ref<Expression>& node, bool
         }
 
         if (ref<Name> key_name = cast<Name>(entry->key)) {
-          target->elements.push_back(make<UnpackTargetElement>(key_name, false));
+          target->elements.push_back(make<UnpackTargetElement>(make<Id>(key_name), false));
         } else if (ref<Spread> spread = cast<Spread>(entry->key)) {
           if (ref<Id> id = cast<Id>(spread->expression)) {
-            auto element = make<UnpackTargetElement>(make<Name>(id), true);
+            auto element = make<UnpackTargetElement>(id, true);
             element->set_begin(spread);
             target->elements.push_back(element);
           } else {
@@ -1552,7 +1539,7 @@ ref<UnpackTarget> Parser::create_unpack_target(const ref<Expression>& node, bool
 
   // a dummy UnpackTarget node can be returned here since
   // we don't care about the AST if any errors have been generated
-  return make<UnpackTarget>(false, declaration);
+  return make<UnpackTarget>(false);
 }
 
 bool Parser::is_assignable(const ref<Expression>& expression) {

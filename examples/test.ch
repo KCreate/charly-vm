@@ -24,13 +24,21 @@
  * SOFTWARE.
  */
 
-func foo(a = 0, ...args) {
-    (a, args)
+class A {
+    func foo(x = 1, y = 2, z = 3, ...a)
+    func foo(x, y, z, a)
 }
 
-print(foo())
-print(foo(1))
-print(foo(1, 2, 3, 4, 5, 6, 7, 8, 9))
+
+
+
+
+
+
+
+
+
+
 
 
 

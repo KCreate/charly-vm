@@ -483,9 +483,9 @@ static const size_t kInstructionLength = 4;
    * - class name symbol                                                               \
    * - parent class                                                                    \
    * - constructor function                                                            \
-   * - member function tuple                                                           \
+   * - member function overload tuples                                                 \
    * - member property tuple                                                           \
-   * - static function tuple                                                           \
+   * - static function overload tuples                                                 \
    * - static property keys tuple                                                      \
    * - static property values tuple                                                    \
    *                                                                                   \
@@ -645,7 +645,8 @@ static const size_t kInstructionLength = 4;
   V(unot, IXXX, 1, 1)                                                                  \
   V(ubnot, IXXX, 1, 1)
 
-enum Opcode : uint8_t {
+enum Opcode : uint8_t
+{
 #define ID(name, ...) name,
   FOREACH_OPCODE(ID)
 #undef ID

@@ -193,6 +193,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
                                                { "context", RawShape::kKeyFlagInternal },
                                                { "saved_self", RawShape::kKeyFlagInternal },
                                                { "host_class", RawShape::kKeyFlagReadOnly },
+                                               { "overload_table", RawShape::kKeyFlagInternal },
                                                { "shared_info", RawShape::kKeyFlagInternal } });
 
   auto builtin_shape_builtin_function = create_shape(thread, builtin_shape_builtin_instance,
@@ -498,22 +499,59 @@ RawClass Runtime::create_class(Thread* thread,
                                uint32_t flags) {
   auto object_shape = create_shape(thread, parent.shape_instance(), member_props);
 
+  // initialize the overload tables of member and static functions
+  auto member_funcs_tuple = create_tuple(thread, member_funcs.size());
+  for (uint32_t i = 0; i < member_funcs.size(); i++) {
+    auto overload_tuple = member_funcs.field_at<RawTuple>(i);
+    DCHECK(overload_tuple.size() >= 1);
+
+    // point functions to the same overload tuple
+    for (uint32_t j = 0; j < overload_tuple.size(); j++) {
+      auto func = overload_tuple.field_at<RawFunction>(j);
+      func.set_overload_table(overload_tuple);
+    }
+
+    // put the lowest overload into the functions lookup table
+    // since every function part of the overload has a reference to the overload table
+    // it doesn't really matter which function we put in there
+    auto first_overload = overload_tuple.field_at<RawFunction>(0);
+    member_funcs_tuple.set_field_at(i, first_overload);
+  }
+  auto static_funcs_tuple = create_tuple(thread, static_funcs.size());
+  for (uint32_t i = 0; i < static_funcs.size(); i++) {
+    auto overload_tuple = static_funcs.field_at<RawTuple>(i);
+    DCHECK(overload_tuple.size() >= 1);
+
+    // point functions to the same overload tuple
+    for (uint32_t j = 0; j < overload_tuple.size(); j++) {
+      auto func = overload_tuple.field_at<RawFunction>(j);
+      func.set_overload_table(overload_tuple);
+    }
+
+    // put the lowest overload into the functions lookup table
+    // since every function part of the overload has a reference to the overload table
+    // it doesn't really matter which function we put in there
+    auto first_overload = overload_tuple.field_at<RawFunction>(0);
+    static_funcs_tuple.set_field_at(i, first_overload);
+  }
+
   // if there are any static properties or functions in this class
   // a special intermediate class needs to be created that contains those static properties
   // the class instance returned is an instance of that intermediate class
   DCHECK(static_prop_keys.size() == static_prop_values.size());
   auto builtin_class_instance = get_builtin_class(thread, ShapeId::kClass);
+  RawClass constructed_class;
   if (static_prop_keys.size() || static_funcs.size()) {
     auto builtin_class_shape = builtin_class_instance.shape_instance();
     auto static_shape = create_shape(thread, builtin_class_shape, static_prop_keys);
     auto static_class = RawClass::cast(create_instance(thread, builtin_class_instance));
-    static_class.set_flags(flags);
+    static_class.set_flags(flags | RawClass::kFlagStatic);
     static_class.set_ancestor_table(
       concat_tuple_value(thread, builtin_class_instance.ancestor_table(), builtin_class_instance));
     static_class.set_name(RawSymbol::make(name));
     static_class.set_parent(builtin_class_instance);
     static_class.set_shape_instance(static_shape);
-    static_class.set_function_table(static_funcs);
+    static_class.set_function_table(static_funcs_tuple);
     static_class.set_constructor(kNull);
 
     // build instance of newly created static shape
@@ -523,7 +561,7 @@ RawClass Runtime::create_class(Thread* thread,
     actual_class.set_name(RawSymbol::make(name));
     actual_class.set_parent(parent);
     actual_class.set_shape_instance(object_shape);
-    actual_class.set_function_table(member_funcs);
+    actual_class.set_function_table(member_funcs_tuple);
     actual_class.set_constructor(constructor);
 
     // initialize static properties
@@ -532,7 +570,13 @@ RawClass Runtime::create_class(Thread* thread,
       actual_class.set_field_at(RawClass::kFieldCount + i, value);
     }
 
-    return actual_class;
+    // patch host class field on static functions
+    for (uint32_t i = 0; i < static_funcs_tuple.size(); i++) {
+      auto func = static_funcs_tuple.field_at<RawFunction>(i);
+      func.set_host_class(static_class);
+    }
+
+    constructed_class = actual_class;
   } else {
     auto klass = RawClass::cast(create_instance(thread, builtin_class_instance));
     klass.set_flags(flags);
@@ -540,10 +584,19 @@ RawClass Runtime::create_class(Thread* thread,
     klass.set_name(RawSymbol::make(name));
     klass.set_parent(parent);
     klass.set_shape_instance(object_shape);
-    klass.set_function_table(member_funcs);
+    klass.set_function_table(member_funcs_tuple);
     klass.set_constructor(constructor);
-    return klass;
+    constructed_class = klass;
   }
+
+  // set host class fields on functions
+  constructor.set_host_class(constructed_class);
+  for (uint32_t i = 0; i < member_funcs_tuple.size(); i++) {
+    auto func = member_funcs_tuple.field_at<RawFunction>(i);
+    func.set_host_class(constructed_class);
+  }
+
+  return constructed_class;
 }
 
 RawShape Runtime::create_shape(Thread* thread, RawValue parent, RawTuple key_table) {
@@ -667,6 +720,8 @@ RawFunction Runtime::create_function(Thread* thread,
   func.set_name(RawSymbol::make(shared_info->name_symbol));
   func.set_context(context);
   func.set_saved_self(saved_self);
+  func.set_host_class(kNull);
+  func.set_overload_table(kNull);
   func.set_shared_info(shared_info);
   return func;
 }

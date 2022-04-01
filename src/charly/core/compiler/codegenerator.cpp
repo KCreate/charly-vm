@@ -56,15 +56,15 @@ Label CodeGenerator::enqueue_function(const ref<Function>& ast) {
 }
 
 void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
-  const ref<Function>& ast = queued_func.ast;
-  m_builder.begin_function(queued_func.head, ast);
+  const ref<Function>& function = queued_func.ast;
+  m_builder.begin_function(queued_func.head, function);
 
   // copy leaked variables into heap slots
   // initially the runtime copies all passed arguments into the local variable slots
   // we need to copy the ones that are actually stored in the heap slots to that area
   {
     uint8_t i = 0;
-    for (const auto& argument : ast->arguments) {
+    for (const auto& argument : function->arguments) {
       const auto& location = argument->ir_location;
       if (location.type == ValueLocation::Type::FarFrame) {
         m_builder.emit_loadlocal(i);
@@ -76,13 +76,13 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
   }
 
   // emit default argument initializers
-  uint8_t argc = ast->ir_info.argc;
-  uint8_t minargc = ast->ir_info.minargc;
+  uint8_t argc = function->ir_info.argc;
+  uint8_t minargc = function->ir_info.minargc;
   if (minargc < argc) {
     // skip building the jump table if all default arguments are initialized to null
     bool has_non_null_default_arguments = false;
     for (uint8_t i = minargc; i < argc; i++) {
-      const ref<FunctionArgument>& arg = ast->arguments[i];
+      const ref<FunctionArgument>& arg = function->arguments[i];
       if (!isa<Null>(arg->default_value)) {
         has_non_null_default_arguments = true;
       }
@@ -97,15 +97,26 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
         Label l = labels[i] = m_builder.reserve_label();
         m_builder.emit_testintjmp(i, l);
       }
-      m_builder.emit_pop();
-      m_builder.emit_jmp(body_label);
+
+      if (function->ir_info.spread_argument) {
+        m_builder.emit_pop();
+        m_builder.emit_jmp(body_label);
+      } else {
+        m_builder.emit_testintjmp(argc, body_label);
+        m_builder.emit_pop();
+
+        // non-spread functions cannot be called with more arguments than they declare
+        // the runtime makes sure that control never reaches this point, so this is just
+        // a sanity check
+        m_builder.emit_panic();
+      }
 
       // emit stores for each argument with a default value
       for (uint8_t i = minargc; i < argc; i++) {
         m_builder.place_label(labels[i]);
 
         // assign default value
-        const ref<FunctionArgument>& arg = ast->arguments[i];
+        const ref<FunctionArgument>& arg = function->arguments[i];
         if (!isa<Null>(arg->default_value)) {
           apply(arg->default_value);
           generate_store(arg->ir_location)->at(arg);
@@ -118,7 +129,7 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
   }
 
   // class constructors must always return self
-  if (ast->class_constructor) {
+  if (function->class_constructor) {
     m_builder.emit_loadself();
     m_builder.emit_setreturn();
   }
@@ -126,7 +137,7 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
   // function body
   Label return_label = m_builder.reserve_label();
   push_return_label(return_label);
-  apply(ast->body);
+  apply(function->body);
   pop_return_label();
 
   // function return block
@@ -536,11 +547,70 @@ bool CodeGenerator::inspect_enter(const ref<Class>& node) {
 
   apply(node->constructor);
 
-  // member functions
-  for (const auto& member_func : node->member_functions) {
-    apply(member_func);
-  }
-  m_builder.emit_maketuple(node->member_functions.size());
+  // construct the overload tuple
+  //
+  // for example, the following overloads
+  //   #1 func foo()
+  //   #2 func foo(a, b = 1, c = 2)
+  //   #3 func foo(a, b, c, d)
+  //   #4 func foo(a, b, c, d, e)
+  //   #5 func foo(a, b, c, d, e, f, g)
+  //
+  // would result in the following overload tuple:
+  // (#1, #2, #2, #3, #4, #5, #5)
+  //
+  // calls would be routed like this
+  //
+  // foo()                      -> #1
+  // foo(1)                     -> #2
+  // foo(1, 2)                  -> #2
+  // foo(1, 2, 3)               -> #3
+  // foo(1, 2, 3, 4)            -> #3
+  // foo(1, 2, 3, 4, 5)         -> #4
+  // foo(1, 2, 3, 4, 5, 6)      -> #5 (error not enough arguments, expected 7, got 6)
+  // foo(1, 2, 3, 4, 5, 6, 7)   -> #5
+  //
+  // if there is no overload that matches directly the next highest will be chosen
+  // the reason for this is that excess arguments shouldn't just be ignored silently, but
+  // should cause an exception, informing the user about the missing arguments
+  auto emit_overload_tuple = [&](auto& overload_table) {
+    for (auto entry : overload_table) {
+      auto& overloads = entry.second;
+      CHECK(overloads.size() >= 1);
+      auto lowest_overload = overloads.back();
+      auto highest_overload = overloads.back();
+      auto max_argc = highest_overload->argc();
+
+      // build the overload tuple
+      size_t overload_table_size = max_argc + 1;
+      std::vector<ref<Function>> overload_table_blueprint(overload_table_size, nullptr);
+      size_t last_unprocessed_index = 0;
+      for (auto func : overloads) {
+        for (size_t i = last_unprocessed_index; i <= func->argc(); i++) {
+          CHECK(i < overload_table_size);
+          overload_table_blueprint[i] = func;
+        }
+        last_unprocessed_index = func->argc() + 1;
+      }
+
+      // emit the overload tuple
+      ref<Function> previous_overload;
+      for (auto overload : overload_table_blueprint) {
+        if (overload != previous_overload) {
+          apply(overload);
+          previous_overload = overload;
+        } else {
+          m_builder.emit_dup();
+        }
+      }
+
+      m_builder.emit_maketuple(overload_table_size);
+    }
+    m_builder.emit_maketuple(overload_table.size());
+  };
+
+  // emit member function overload tuple
+  emit_overload_tuple(node->member_function_overloads);
 
   // member properties
   for (const auto& member_prop : node->member_properties) {
@@ -552,11 +622,8 @@ bool CodeGenerator::inspect_enter(const ref<Class>& node) {
   }
   m_builder.emit_maketuple(node->member_properties.size());
 
-  // static functions
-  for (const auto& static_func : node->static_functions) {
-    apply(static_func);
-  }
-  m_builder.emit_maketuple(node->static_functions.size());
+  // emit static function overload tuple
+  emit_overload_tuple(node->static_function_overloads);
 
   // static property keys
   for (const auto& static_prop : node->static_properties) {

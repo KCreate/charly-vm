@@ -461,11 +461,6 @@ ref<IRInstruction> Builder::emit_load_value(RawValue value) {
   if ((value.raw() & 0xffffffffffff0000) == 0) {
     return emit_loadsmi(value.raw());
   } else {
-    // negative numbers can still be encoded inline
-    if (value.isInt() && (value.raw() & 0xffffffffffff0000) == 0xffffffffffff0000) {
-      return emit_loadsmi(value.raw() & 0x000000000000ffff);
-    }
-
     return emit_load(register_constant(value));
   }
 }

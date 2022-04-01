@@ -160,7 +160,9 @@ private:
   bool inspect_enter(const ref<Declaration>&) override;
   ref<Statement> transform(const ref<Declaration>&) override;
 
-  void inspect_leave(const ref<UnpackDeclaration>&) override;
+  bool inspect_enter(const ref<UnpackDeclaration>&) override;
+  ref<Statement> transform(const ref<UnpackDeclaration>&) override;
+
   void inspect_leave(const ref<Assignment>&) override;
 
   bool inspect_enter(const ref<Try>&) override;
@@ -188,6 +190,9 @@ private:
 
   bool inspect_enter(const ref<Declaration>&) override;
   ref<Statement> transform(const ref<Declaration>&) override;
+
+  bool inspect_enter(const ref<UnpackTarget>&) override;
+  ref<UnpackTarget> transform(const ref<UnpackTarget>&) override;
 
   bool inspect_enter(const ref<Try>&) override;
   ref<Statement> transform(const ref<Try>&) override;
