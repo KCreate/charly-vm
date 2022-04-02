@@ -98,7 +98,7 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
         m_builder.emit_testintjmp(i, l);
       }
 
-      if (function->ir_info.spread_argument) {
+      if (function->ir_info.spread_argument || function->ir_info.arrow_function) {
         m_builder.emit_pop();
         m_builder.emit_jmp(body_label);
       } else {

@@ -40,9 +40,20 @@ const builtin_readline_prompt = @"charly.builtin.readline.prompt"
 const builtin_readline_add_history = @"charly.builtin.readline.add_history"
 const builtin_readline_clear_history = @"charly.builtin.readline.clear_history"
 
-func write(string) = builtin_writevalue("{string}\n")
-func print(string) = builtin_writeline(string)
-func writesync(string) = builtin_writevaluesync(string)
+func write(...args) {
+    args.each(->(e) builtin_writevalue("{e}\n"))
+    null
+}
+
+func print(...args) {
+    args.each(->(e) builtin_writeline(e))
+    null
+}
+
+func writesync(...args) {
+    args.each(->(e) builtin_writevaluesync(e))
+    null
+}
 
 func prompt(message = "> ", append_to_history = true) {
     const result = builtin_readline_prompt("{message}")
@@ -51,24 +62,47 @@ func prompt(message = "> ", append_to_history = true) {
         builtin_readline_add_history(result)
     }
 
-    return result
+    result
 }
 
 func add_history(message) = builtin_readline_add_history(message)
+
 func clear_history = builtin_readline_clear_history()
+
 func exit(status = 0) = builtin_exit(status)
+
 func compile(source, name = "repl") = builtin_compile(source, name)
+
 func readfile(name) = builtin_readfile(name)
 
 class builtin_Instance {
     func constructor = self
 }
-builtin_transplant_builtin_class(Instance, builtin_Instance)
 
 class builtin_Tuple {
+    func each(cb) {
+        const size = @length
+        let i = 0
+
+        loop {
+            cb(self[i], i)
+            i += 1
+            if i == size break
+        }
+
+        self
+    }
+
+    func map(cb) {
+        const rv = Tuple.make(@length)
+        each(->(e, i) {
+            rv[i] = cb(e, i)
+        })
+        rv
+    }
+
     static func make(length = 0, initial = null) = builtin_makelist(length, initial)
 }
-builtin_transplant_builtin_class(Tuple, builtin_Tuple)
 
 class builtin_Function {
     func disassemble {
@@ -76,7 +110,6 @@ class builtin_Function {
         builtin_disassemble(self)
     }
 }
-builtin_transplant_builtin_class(Function, builtin_Function)
 
 class builtin_Exception {
     func constructor(@message) {
@@ -86,17 +119,19 @@ class builtin_Exception {
 
     static func getstacktrace(trim = 0) = builtin_getstacktrace(trim)
 }
-builtin_transplant_builtin_class(Exception, builtin_Exception)
 
 class builtin_Fiber {
     static func current = builtin_currentfiber()
 }
 
-builtin_transplant_builtin_class(Fiber, builtin_Fiber)
+->{
+    let $$ = null
 
-let $$ = null
-let @"charly.boot" = func boot {
-    @"charly.boot" = null
+    builtin_transplant_builtin_class(Instance, builtin_Instance)
+    builtin_transplant_builtin_class(Tuple, builtin_Tuple)
+    builtin_transplant_builtin_class(Function, builtin_Function)
+    builtin_transplant_builtin_class(Exception, builtin_Exception)
+    builtin_transplant_builtin_class(Fiber, builtin_Fiber)
 
     func execute_program(filename) {
         const file = readfile(filename)
@@ -109,7 +144,7 @@ let @"charly.boot" = func boot {
             throw "could not compile {filename}"
         }
 
-        return module()
+        module()
     }
 
     const filename = ARGV[0]
@@ -168,6 +203,4 @@ let @"charly.boot" = func boot {
 
         input = prompt()
     }
-}
-
-return @"charly.boot"()
+}()

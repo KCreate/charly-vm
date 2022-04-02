@@ -202,7 +202,9 @@ RawValue Interpreter::call_function(
     return kErrorException;
   }
 
-  if (argc > shared_info->ir_info.argc && !shared_info->ir_info.spread_argument) {
+  // regular functions may not be called with more arguments than they declare
+  // the exception to this rule are arrow functions and functions that declare a spread argument
+  if (argc > shared_info->ir_info.argc && !shared_info->ir_info.spread_argument && !shared_info->ir_info.arrow_function) {
     thread->throw_value(runtime->create_exception_with_message(
       thread, "too many arguments for non-spread function '%', expected at most % but got %", function.name(),
       (uint32_t)shared_info->ir_info.argc, (uint32_t)argc));
@@ -689,6 +691,22 @@ OP(loadattrsym) {
     case SYM("klass"): {
       frame->push(runtime->lookup_class(thread, value));
       return ContinueMode::Next;
+    }
+    case SYM("length"): {
+      if (value.isTuple()) {
+        auto tuple = RawTuple::cast(value);
+        frame->push(RawInt::make(tuple.size()));
+        return ContinueMode::Next;
+      } else if (value.isString()) {
+        auto string = RawString::cast(value);
+        frame->push(RawInt::make(string.length()));
+        return ContinueMode::Next;
+      } else if (value.isBytes()) {
+        auto bytes = RawBytes::cast(value);
+        frame->push(RawInt::make(bytes.length()));
+        return ContinueMode::Next;
+      }
+      break;
     }
   }
 

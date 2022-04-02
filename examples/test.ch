@@ -24,25 +24,11 @@
  * SOFTWARE.
  */
 
-func foo(...args) {
-    print(args)
-    args
-}
+const data = (1, 2, 3, 4, 5)
 
-const data1 = (1, 2, 3, 4)
-const data2 = (5, 6, 7, 8)
+const result = data.map(->(e, i) e + i)
 
-const f = spawn foo(...data1, ...data2)
-const r = await f
-
-print(r)
-
-
-
-
-
-
-
+print(data, result)
 
 
 
