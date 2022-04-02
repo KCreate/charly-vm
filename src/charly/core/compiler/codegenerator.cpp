@@ -222,6 +222,7 @@ uint8_t CodeGenerator::generate_spread_tuples(const std::vector<ref<Expression>>
       }
 
       apply(spread->expression);
+      m_builder.emit_casttuple();
       emitted_segments++;
     } else {
       apply(exp);

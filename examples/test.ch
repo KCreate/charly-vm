@@ -24,10 +24,20 @@
  * SOFTWARE.
  */
 
-class A {
-    func foo(x = 1, y = 2, z = 3, ...a)
-    func foo(x, y, z, a)
+func foo(...args) {
+    print(args)
+    args
 }
+
+const data1 = (1, 2, 3, 4)
+const data2 = (5, 6, 7, 8)
+
+const f = spawn foo(...data1, ...data2)
+const r = await f
+
+print(r)
+
+
 
 
 

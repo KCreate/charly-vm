@@ -87,14 +87,23 @@ B bitcast(A&& value) {
   return *reinterpret_cast<B*>(&value);
 }
 
-static const int32_t kInt32Min = -2147483647 - 1;
-static const int32_t kInt32Max = 2147483647;
-static const int32_t kInt24Min = -8388607 - 1;
-static const int32_t kInt24Max = 8388607;
-static const int16_t kInt16Min = -32767 - 1;
-static const int16_t kInt16Max = 32767;
-static const int16_t kInt8Min = -127 - 1;
-static const int16_t kInt8Max = 127;
+static const int64_t kInt32Min = -2147483647 - 1;
+static const int64_t kInt32Max = 2147483647;
+static const int64_t kInt24Min = -8388607 - 1;
+static const int64_t kInt24Max = 8388607;
+static const int64_t kInt16Min = -32767 - 1;
+static const int64_t kInt16Max = 32767;
+static const int64_t kInt8Min = -127 - 1;
+static const int64_t kInt8Max = 127;
+
+static const uint64_t kUInt32Min = 0;
+static const uint64_t kUInt32Max = 0xffffffff;
+static const uint64_t kUInt24Min = 0;
+static const uint64_t kUInt24Max = 0x00ffffff;
+static const uint64_t kUInt16Min = 0;
+static const uint64_t kUInt16Max = 0x0000ffff;
+static const uint64_t kUInt8Min = 0;
+static const uint64_t kUInt8Max = 0x000000ff;
 
 #ifdef NDEBUG
 static constexpr bool kIsDebugBuild = false;

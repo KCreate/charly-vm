@@ -306,12 +306,9 @@ void Thread::entry_fiber_thread() {
   RawValue* argp = nullptr;
   size_t argc = 0;
   if (fiber_arguments.isTuple()) {
-    RawTuple tuple = RawTuple::cast(fiber_arguments);
-    if (tuple.size()) {
-      argp = bitcast<RawValue*>(tuple.address());
-      CHECK(argc < 256);
-      argc = tuple.size();
-    }
+    auto tuple = RawTuple::cast(fiber_arguments);
+    argp = bitcast<RawValue*>(tuple.address());
+    argc = tuple.size();
   }
 
   RawValue result = Interpreter::call_function(this, fiber.context(), fiber.function(), argp, argc);

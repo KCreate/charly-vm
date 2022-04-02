@@ -97,8 +97,34 @@ const StringTableEntry& Frame::get_string_table_entry(uint16_t index) const {
   return info.string_table[index];
 }
 
+RawValue Interpreter::call_value(Thread* thread, RawValue self, RawValue target, RawValue* arguments, uint32_t argc) {
+  Runtime* runtime = thread->runtime();
+
+  if (target.isFunction()) {
+    auto function = RawFunction::cast(target);
+    return Interpreter::call_function(thread, self, function, arguments, argc);
+  } else if (target.isBuiltinFunction()) {
+    auto function = RawBuiltinFunction::cast(target);
+    return function.function()(thread, arguments, argc);
+  } else if (target.isClass()) {
+    auto klass = RawClass::cast(target);
+
+    if (klass.flags() & RawClass::kFlagNonConstructable) {
+      thread->throw_value(runtime->create_exception_with_message(thread, "cannot instantiate class '%'", klass.name()));
+      return kErrorException;
+    }
+
+    auto instance = thread->runtime()->create_instance(thread, klass);
+    RawFunction constructor = RawFunction::cast(klass.constructor());
+    return Interpreter::call_function(thread, instance, constructor, arguments, argc);
+  }
+
+  thread->throw_value(runtime->create_exception_with_message(thread, "called value is not a function"));
+  return kErrorException;
+}
+
 RawValue Interpreter::call_function(
-  Thread* thread, RawValue self, RawFunction function, RawValue* arguments, uint8_t argc) {
+  Thread* thread, RawValue self, RawFunction function, RawValue* arguments, uint32_t argc) {
   Runtime* runtime = thread->runtime();
 
   // find the correct overload to call
@@ -489,62 +515,56 @@ OP(call) {
   // +-----------+
   // | Self      |
   // +-----------+
-  Runtime* runtime = thread->runtime();
-  uint8_t argc = op->arg();
+  uint32_t argc = op->arg();
   RawValue* args = frame->top_n(argc);
   RawValue callee = frame->peek(argc);
   RawValue self = frame->peek(argc + 1);
 
-  if (callee.isFunction()) {
-    RawFunction function = RawFunction::cast(callee);
-    RawValue return_value = Interpreter::call_function(thread, self, function, args, argc);
+  RawValue rval = Interpreter::call_value(thread, self, callee, args, argc);
 
-    if (return_value.is_error_exception()) {
-      return ContinueMode::Exception;
-    }
-
-    frame->pop(argc + 2);
-    frame->push(return_value);
-    return ContinueMode::Next;
-  } else if (callee.isBuiltinFunction()) {
-    RawBuiltinFunction function = RawBuiltinFunction::cast(callee);
-    BuiltinFunctionType function_ptr = function.function();
-    RawValue return_value = function_ptr(thread, args, argc);
-
-    if (return_value.is_error_exception()) {
-      return ContinueMode::Exception;
-    }
-
-    frame->pop(argc + 2);
-    frame->push(return_value);
-    return ContinueMode::Next;
-  } else if (callee.isClass()) {
-    RawClass klass = RawClass::cast(callee);
-
-    if (klass.flags() & RawClass::kFlagNonConstructable) {
-      thread->throw_value(runtime->create_exception_with_message(thread, "cannot instantiate class '%'", klass.name()));
-      return ContinueMode::Exception;
-    }
-
-    auto instance = thread->runtime()->create_instance(thread, klass);
-    RawFunction constructor = RawFunction::cast(klass.constructor());
-    RawValue return_value = Interpreter::call_function(thread, instance, constructor, args, argc);
-
-    if (return_value.is_error_exception()) {
-      return ContinueMode::Exception;
-    }
-
-    frame->pop(argc + 2);
-    frame->push(return_value);
-    return ContinueMode::Next;
+  if (rval.is_error_exception()) {
+    return ContinueMode::Exception;
   }
 
-  thread->throw_value(runtime->create_exception_with_message(thread, "called value is not a function"));
-  return ContinueMode::Exception;
+  frame->pop(argc + 2);
+  frame->push(rval);
+  return ContinueMode::Next;
 }
 
 OP(callspread) {
-  UNIMPLEMENTED();
+  uint32_t segment_count = op->arg();
+
+  // pop segments from stack
+  uint32_t total_arg_count = 0;
+  RawTuple* segments = static_cast<RawTuple*>(frame->top_n(segment_count));
+  for (uint32_t i = 0; i < segment_count; i++) {
+    auto segment = RawTuple::cast(segments[i]);
+    total_arg_count += segment.size();
+    CHECK(total_arg_count <= kUInt32Max);
+  }
+
+  // unpack segments and copy arguments into local array
+  RawValue arguments[total_arg_count];
+  uint32_t last_written_index = 0;
+  for (uint32_t i = 0; i < segment_count; i++) {
+    auto segment = segments[i];
+    for (uint32_t j = 0; j < segment.size(); j++) {
+      arguments[last_written_index++] = segment.field_at(j);
+    }
+  }
+
+  RawValue callee = frame->peek(segment_count);
+  RawValue self = frame->peek(segment_count + 1);
+
+  RawValue rval = Interpreter::call_value(thread, self, callee, arguments, total_arg_count);
+
+  if (rval.is_error_exception()) {
+    return ContinueMode::Exception;
+  }
+
+  frame->pop(segment_count + 2);
+  frame->push(rval);
+  return ContinueMode::Next;
 }
 
 OP(ret) {
@@ -870,34 +890,69 @@ OP(unpacksequence) {
   Runtime* runtime = thread->runtime();
 
   RawValue value = frame->pop();
-  switch (value.shape_id()) {
-    case ShapeId::kTuple: {
-      RawTuple tuple(RawTuple::cast(value));
-      uint32_t tuple_size = tuple.size();
 
-      if (tuple_size != count) {
-        thread->throw_value(runtime->create_exception_with_message(thread, "expected tuple to be of size %, not %",
-                                                                   (size_t)count, tuple_size));
-        return ContinueMode::Exception;
-      }
+  if (value.isTuple()) {
+    auto tuple = RawTuple::cast(value);
+    uint32_t tuple_size = tuple.size();
 
-      // push values in reverse so that values can be assigned to their
-      // target fields in source order
-      for (int64_t i = tuple_size - 1; i >= 0; i--) {
-        frame->push(tuple.field_at(i));
-      }
-
-      return ContinueMode::Next;
-    }
-    default: {
-      thread->throw_value(runtime->create_exception_with_message(thread, "value is not a sequence"));
+    if (tuple_size != count) {
+      thread->throw_value(runtime->create_exception_with_message(thread, "expected tuple to be of size %, not %",
+                                                                 (size_t)count, tuple_size));
       return ContinueMode::Exception;
     }
+
+    // push values in reverse so that values can be assigned to their
+    // target fields in source order
+    for (int64_t i = tuple_size - 1; i >= 0; i--) {
+      frame->push(tuple.field_at(i));
+    }
+
+    return ContinueMode::Next;
+  } else {
+    thread->throw_value(runtime->create_exception_with_message(thread, "value is not a sequence"));
+    return ContinueMode::Exception;
   }
 }
 
 OP(unpacksequencespread) {
-  UNIMPLEMENTED();
+  Runtime* runtime = thread->runtime();
+  uint8_t before_count = op->arg1();
+  uint8_t after_count = op->arg2();
+  uint16_t total_count = before_count + after_count;
+
+  RawValue value = frame->pop();
+
+  if (value.isTuple()) {
+    auto tuple = RawTuple::cast(value);
+    uint32_t tuple_size = tuple.size();
+    if (tuple_size < total_count) {
+      thread->throw_value(runtime->create_exception_with_message(thread, "touple does not contain enough values to unpack"));
+      return ContinueMode::Exception;
+    }
+
+    // push the values after the spread
+    for (uint8_t i = 0; i < after_count; i++) {
+      frame->push(tuple.field_at(tuple_size - i - 1));
+    }
+
+    // put spread arguments in a tuple
+    uint32_t spread_count = tuple_size - total_count;
+    auto spread_tuple = runtime->create_tuple(thread, spread_count);
+    for (uint32_t i = 0; i < spread_count; i++) {
+      spread_tuple.set_field_at(i, tuple.field_at(before_count + i));
+    }
+    frame->push(spread_tuple);
+
+    // push the values before the spread
+    for (uint8_t i = 0; i < before_count; i++) {
+      frame->push(tuple.field_at(before_count - i - 1));
+    }
+
+    return ContinueMode::Next;
+  } else {
+    thread->throw_value(runtime->create_exception_with_message(thread, "value is not a sequence"));
+    return ContinueMode::Exception;
+  }
 }
 
 OP(unpackobject) {
@@ -1030,7 +1085,31 @@ OP(maketuple) {
 }
 
 OP(maketuplespread) {
-  UNIMPLEMENTED();
+  Runtime* runtime = thread->runtime();
+  uint32_t segment_count = op->arg();
+
+  // pop segments from stack
+  uint32_t total_arg_count = 0;
+  RawTuple* segments = static_cast<RawTuple*>(frame->top_n(segment_count));
+  for (uint32_t i = 0; i < segment_count; i++) {
+    auto segment = RawTuple::cast(segments[i]);
+    total_arg_count += segment.size();
+    CHECK(total_arg_count <= kUInt32Max);
+  }
+
+  // unpack segments and copy arguments into new tuple
+  auto tuple = runtime->create_tuple(thread, total_arg_count);
+  uint32_t last_written_index = 0;
+  for (uint32_t i = 0; i < segment_count; i++) {
+    auto segment = segments[i];
+    for (uint32_t j = 0; j < segment.size(); j++) {
+      tuple.set_field_at(last_written_index++, segment.field_at(j));
+    }
+  }
+
+  frame->pop(segment_count);
+  frame->push(tuple);
+  return ContinueMode::Next;
 }
 
 OP(makefiber) {
@@ -1071,6 +1150,19 @@ OP(caststring) {
   frame->push(thread->runtime()->create_string(thread, buffer.data(), buffer.size(), buffer.hash()));
 
   return ContinueMode::Next;
+}
+
+OP(casttuple) {
+  RawValue value = frame->peek();
+
+  if (value.isTuple()) {
+    return ContinueMode::Next;
+  }
+
+  Runtime* runtime = thread->runtime();
+  auto name = runtime->lookup_class(thread, value).name();
+  thread->throw_value(runtime->create_exception_with_message(thread, "could not cast value of type '%' to a tuple", name));
+  return ContinueMode::Exception;
 }
 
 OP(castsymbol) {
