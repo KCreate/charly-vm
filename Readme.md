@@ -1,30 +1,13 @@
 ![Charly Programming Language](docs/charly-vm.png)
 ![Unit Test](https://github.com/KCreate/charly-vm/workflows/Unit%20Test/badge.svg?branch=rewrite)
 
-# Play
-
 <strike>This launches a REPL which (at the moment) doesn't do very much.</strike>
 
-This launches a REPL which (at the moment) does some cool stuff, but still not a lot.
+<strike>This launches a REPL which (at the moment) does some cool stuff, but still not a lot.</strike>
+
+This launches a REPL which supports some cool stuff, but still not a lot
 
 `./debug.sh [path/to/file.ch]`
-
-# Milestones
-
-- [x] Lexer
-- [x] Parser
-- [x] Compiler
-- [x] Scheduler
-- [x] REPL
-- [ ] Inline caching
-- [ ] Object System
-- [ ] Concurrent Garbage Collector
-- [ ] Bytecode VM
-- [ ] Object Maps
-- [ ] Concurrency primitives (Channels, select, Promises, await)
-- [ ] Core Utilities (Standard Library)
-- [ ] Network Library (Standard Library)
-- [ ] Graphics Library (Standard Library)
 
 # Dependencies
 
@@ -47,9 +30,10 @@ Follow the steps below to install the `charly` executable on your system.
 
 ```
 $ ./tests.sh
-[ 84%] Built target Catch2
-[ 91%] Built target libcharly
+[ 31%] Built target libcharly
+[ 87%] Built target Catch2
+[ 89%] Built target Catch2WithMain
 [100%] Built target tests
 ===============================================================================
-All tests passed (543 assertions in 31 test cases)
+All tests passed (1422 assertions in 10 test cases)
 ```
