@@ -241,4 +241,15 @@ CATCH_TEST_CASE("Semantic") {
                   "unexpected '@' token, self initializer arguments are only allowed inside class member functions")
     COMPILE_OK("class A { func foo(@a) }")
   }
+
+  CATCH_SECTION("detects duplicate declarations in import statements") {
+    COMPILE_ERROR("import foo as foo", "duplicate declaration of 'foo'");
+    COMPILE_ERROR("import { foo } from foo ", "duplicate declaration of 'foo'");
+    COMPILE_ERROR("import { foo } from bar as bar ", "duplicate declaration of 'bar'");
+    COMPILE_ERROR("import { foo } from \"bar\" as foo ", "duplicate declaration of 'foo'");
+    COMPILE_ERROR("import { foo as foo } from bar ", "duplicate declaration of 'foo'");
+    COMPILE_ERROR("import { foo as bar } from bar ", "duplicate declaration of 'bar'");
+    COMPILE_ERROR("import { foo as bar } from 25 as bar ", "duplicate declaration of 'bar'");
+    COMPILE_ERROR("import { foo as bar } from 25 as foo ", "duplicate declaration of 'foo'");
+  }
 }

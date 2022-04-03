@@ -24,17 +24,5 @@
  * SOFTWARE.
  */
 
-const data = (1, 2, 3, 4, 5)
-
-const result = data.map(->(e, i) e + i)
-
-print(data, result)
-
-
-
-
-
-
-
-
-
+import bar as baz + 1
+print(bar)

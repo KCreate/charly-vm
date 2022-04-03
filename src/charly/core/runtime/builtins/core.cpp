@@ -134,16 +134,16 @@ RawValue writevaluesync(Thread*, const RawValue* args, uint8_t argc) {
 }
 
 RawValue readfile(Thread* thread, const RawValue* args, uint8_t argc) {
+  Runtime* runtime = thread->runtime();
   CHECK(argc == 1);
   DCHECK(args[0].isString());
   std::string name = RawString::cast(args[0]).str();
 
-  fs::path cwd = fs::current_path();
-  fs::path target = cwd / name;
-  std::ifstream stream(target);
-
+  std::ifstream stream(name);
   if (!stream.is_open()) {
-    return kNull;
+    thread->throw_value(
+      runtime->create_exception_with_message(thread, "could not open file at path %", name));
+    return kErrorException;
   }
 
   utils::Buffer buffer;
@@ -155,7 +155,13 @@ RawValue readfile(Thread* thread, const RawValue* args, uint8_t argc) {
   size_t size = buffer.size();
   uint32_t hash = buffer.hash();
   char* ptr = buffer.release_buffer();
-  return thread->runtime()->acquire_string(thread, ptr, size, hash);
+  return runtime->acquire_string(thread, ptr, size, hash);
+}
+
+RawValue currentworkingdirectory(Thread* thread, const RawValue*, uint8_t argc) {
+  CHECK(argc == 0);
+  fs::path cwd = fs::current_path();
+  return thread->runtime()->create_string(thread, cwd);
 }
 
 RawValue getstacktrace(Thread* thread, const RawValue* args, uint8_t argc) {
@@ -180,8 +186,7 @@ RawValue compile(Thread* thread, const RawValue* args, uint8_t argc) {
   if (unit->console.has_errors()) {
     auto& messages = unit->console.messages();
     size_t size = messages.size();
-    HandleScope scope(thread);
-    Tuple error_tuple(scope, runtime->create_tuple(thread, size));
+    auto error_tuple = runtime->create_tuple(thread, size);
     for (size_t i = 0; i < size; i++) {
       error_tuple.set_field_at(i, runtime->create_string(thread, messages[i].message));
     }
@@ -196,12 +201,11 @@ RawValue compile(Thread* thread, const RawValue* args, uint8_t argc) {
   return runtime->create_function(thread, kNull, module->function_table.front());
 }
 
-RawValue disassemble(Thread* thread, const RawValue* args, uint8_t argc) {
+RawValue disassemble(Thread*, const RawValue* args, uint8_t argc) {
   CHECK(argc == 1);
   DCHECK(args[0].isFunction());
 
-  HandleScope scope(thread);
-  Function func(scope, RawFunction::cast(args[0]));
+  auto func = RawFunction::cast(args[0]);
   SharedFunctionInfo* info = func.shared_info();
   info->dump(std::cout);
 
@@ -221,8 +225,7 @@ RawValue makelist(Thread* thread, const RawValue* args, uint8_t argc) {
   CHECK(size >= 0, "expected size to be positive number");
 
   Runtime* runtime = thread->runtime();
-  HandleScope scope(thread);
-  Tuple tuple(scope, runtime->create_tuple(thread, size));
+  auto tuple = runtime->create_tuple(thread, size);
   RawValue initial = args[1];
   for (int64_t i = 0; i < size; i++) {
     tuple.set_field_at(i, initial);

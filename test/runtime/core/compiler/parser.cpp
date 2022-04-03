@@ -268,17 +268,48 @@ CATCH_TEST_CASE("Parser") {
   }
 
   CATCH_SECTION("import expression") {
-    CHECK_AST_EXP("import foo", make<Import>(make<Name>("foo")))
-    CHECK_AST_EXP("import 25", make<Import>(make<Int>(25)))
-    CHECK_AST_EXP("import \"foo\"", make<Import>(make<String>("foo")))
+    CHECK_AST_STMT("import foo", make<Declaration>(make<Name>("foo"), make<Import>(make<String>("foo")), true, false));
+    CHECK_AST_STMT("import (foo)", make<Import>(make<Id>("foo")));
+    CHECK_AST_STMT("import \"foo\"", make<Import>(make<String>("foo")));
+    CHECK_AST_STMT("import 25", make<Import>(make<Int>(25)));
+    CHECK_AST_STMT("import foo()", make<Import>(make<CallOp>(make<Id>("foo"))));
+    CHECK_AST_STMT("import foo as bar", make<StatementList>(
+      make<Declaration>(make<Name>("foo"), make<Import>(make<String>("foo")), true, false),
+      make<Declaration>(make<Name>("bar"), make<Id>("foo"), true, false)
+    ));
+    CHECK_AST_STMT("import \"foo\" as bar", make<Declaration>(make<Name>("bar"), make<Import>(make<String>("foo")), true, false));
+    CHECK_AST_STMT("import { foo } from bar", make<StatementList>(
+      make<Declaration>(make<Name>("bar"), make<Import>(make<String>("bar")), true, false),
+      make<UnpackDeclaration>(make<UnpackTarget>(true, make<UnpackTargetElement>(make<Id>("foo"), false)), make<Id>("bar"), true)
+    ));
+    CHECK_AST_STMT("import { foo } from \"bar\"", make<StatementList>(
+      make<UnpackDeclaration>(make<UnpackTarget>(true, make<UnpackTargetElement>(make<Id>("foo"), false)), make<Import>(make<String>("bar")), true)
+    ));
+    CHECK_AST_STMT("import { foo } from bar as barlib", make<StatementList>(
+      make<Declaration>(make<Name>("bar"), make<Import>(make<String>("bar")), true, false),
+      make<Declaration>(make<Name>("barlib"), make<Id>("bar"), true, false),
+      make<UnpackDeclaration>(make<UnpackTarget>(true, make<UnpackTargetElement>(make<Id>("foo"), false)), make<Id>("bar"), true)
+    ));
+    CHECK_AST_STMT("import { foo } from \"bar\" as barlib", make<StatementList>(
+      make<Declaration>(make<Name>("barlib"), make<Import>(make<String>("bar")), true, false),
+      make<UnpackDeclaration>(make<UnpackTarget>(true, make<UnpackTargetElement>(make<Id>("foo"), false)), make<Id>("barlib"), true)
+    ));
+    CHECK_AST_STMT("import { foo as f } from bar", make<StatementList>(
+      make<Declaration>(make<Name>("bar"), make<Import>(make<String>("bar")), true, false),
+      make<UnpackDeclaration>(make<UnpackTarget>(true, make<UnpackTargetElement>(make<Id>("foo"), false)), make<Id>("bar"), true),
+      make<Declaration>(make<Name>("f"), make<Id>("foo"), true, false)
+    ));
+    CHECK_AST_STMT("import { foo as f } from (bar)", make<StatementList>(
+      make<UnpackDeclaration>(make<UnpackTarget>(true, make<UnpackTargetElement>(make<Id>("foo"), false)), make<Import>(make<Id>("bar")), true),
+      make<Declaration>(make<Name>("f"), make<Id>("foo"), true, false)
+    ));
+    CHECK_AST_STMT("import { foo as f } from \"bar\"", make<StatementList>(
+      make<UnpackDeclaration>(make<UnpackTarget>(true, make<UnpackTargetElement>(make<Id>("foo"), false)), make<Import>(make<String>("bar")), true),
+      make<Declaration>(make<Name>("f"), make<Id>("foo"), true, false)
+    ));
 
-    CHECK_AST_STMT("import foo", make<Declaration>("foo", make<Import>(make<Name>("foo")), true))
-    CHECK_AST_STMT("import \"foo\"", make<Import>(make<String>("foo")))
-    CHECK_AST_STMT("import \"{path}\"", make<Import>(make<FormatString>(make<Id>("path"))))
-
-    CHECK_AST_STMT("const x = import foo", make<Declaration>("x", make<Import>(make<Name>("foo")), true))
-
-    CHECK_ERROR_STMT("import", "unexpected end of file, expected an expression")
+    CHECK_AST_STMT("const x = import foo", make<Declaration>(make<Name>("x"), make<Import>(make<Id>("foo")), true, false))
+    CHECK_AST_STMT("const x = import \"foo\"", make<Declaration>(make<Name>("x"), make<Import>(make<String>("foo")), true, false))
   }
 
   CATCH_SECTION("yield, await, typeof expressions") {
@@ -522,9 +553,9 @@ CATCH_TEST_CASE("Parser") {
     CHECK_EXP("->(a = 1, b = 2) {}")
     CHECK_EXP("->(a = 1, b = 2, ...c) {}")
 
-    CHECK_EXP("func foo = import 25")
     CHECK_EXP("func foo = throw 1")
-    CHECK_EXP("->import \"test\"")
+    CHECK_EXP("->import test")
+    CHECK_EXP("->import test()")
     CHECK_EXP("->import \"test\"")
     CHECK_EXP("->yield 1")
     CHECK_EXP("->return")

@@ -136,6 +136,8 @@ private:
   ref<Continue> parse_continue();
   ref<TryFinally> parse_defer();
   ref<Throw> parse_throw();
+  ref<Statement> parse_import();
+  ref<Expression> parse_import_expression();
   ref<Export> parse_export();
 
   // control statements
@@ -153,7 +155,6 @@ private:
   void parse_call_arguments(std::vector<ref<Expression>>& result);
   ref<Expression> parse_expression();
   ref<Yield> parse_yield();
-  ref<Import> parse_import();
   ref<Expression> parse_assignment();
   ref<Expression> parse_ternary();
   ref<Expression> parse_binaryop();

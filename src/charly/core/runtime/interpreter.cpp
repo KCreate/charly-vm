@@ -358,7 +358,14 @@ OP(panic) {
 }
 
 OP(import) {
-  UNIMPLEMENTED();
+  auto file_path = RawString::cast(frame->pop());
+  auto module_path = RawString::cast(frame->pop());
+
+  debugln("file_path: %", file_path);
+  debugln("module_path: %", module_path);
+
+  frame->push(kNull);
+  return ContinueMode::Next;
 }
 
 OP(stringconcat) {

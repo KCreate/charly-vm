@@ -111,7 +111,14 @@ void Parser::parse_block_body(const ref<Block>& block) {
       block->set_begin(stmt);
     }
 
-    block->statements.push_back(stmt);
+    if (auto stmt_list = cast<StatementList>(stmt)) {
+      for (auto entry : stmt_list->statements) {
+        block->statements.push_back(entry);
+      }
+    } else {
+      block->statements.push_back(stmt);
+    }
+
     block->set_end(stmt);
 
     parsed_statements++;
@@ -171,6 +178,12 @@ ref<Statement> Parser::parse_statement() {
       stmt = parse_declaration();
       break;
     }
+    case TokenType::Export: {
+      return parse_export();
+    }
+    case TokenType::Import: {
+      return parse_import();
+    }
     default: {
       stmt = parse_jump_statement();
       break;
@@ -200,17 +213,6 @@ ref<Statement> Parser::parse_statement() {
 
       break;
     }
-    case Node::Type::Import: {
-      ref<Import> import = cast<Import>(stmt);
-
-      if (ref<Name> name = cast<Name>(import->source)) {
-        ref<Declaration> declaration = make<Declaration>(name, import, true);
-        declaration->set_location(import);
-        stmt = declaration;
-      }
-
-      break;
-    }
     default: {
       break;
     }
@@ -229,9 +231,6 @@ ref<Statement> Parser::parse_jump_statement() {
     }
     case TokenType::Continue: {
       return parse_continue();
-    }
-    case TokenType::Export: {
-      return parse_export();
     }
     default: {
       return parse_throw_statement();
@@ -607,7 +606,7 @@ ref<Expression> Parser::parse_expression() {
       return parse_yield();
     }
     case TokenType::Import: {
-      return parse_import();
+      return parse_import_expression();
     }
     default: {
       return parse_assignment();
@@ -627,19 +626,147 @@ ref<Yield> Parser::parse_yield() {
   return node;
 }
 
-ref<Import> Parser::parse_import() {
+ref<Statement> Parser::parse_import() {
   Location begin = m_token.location;
   eat(TokenType::Import);
-  ref<Expression> source = parse_expression();
 
-  if (ref<Id> id = cast<Id>(source)) {
-    source = make<Name>(id);
+  if (skip(TokenType::LeftCurly)) {
+    // unpack import statement
+    // import { foo [as f] } from libfoo [as foolib]
+    std::vector<std::tuple<ref<Name>, ref<Name>>> unpack_elements;
+    do {
+      auto field = make<Name>(parse_identifier_token());
+      ref<Name> field_name;
+
+      if (skip(TokenType::As)) {
+        field_name = make<Name>(parse_identifier_token());
+      }
+
+      unpack_elements.emplace_back(field, field_name);
+    } while (skip(TokenType::Comma));
+
+    eat(TokenType::RightCurly);
+    eat(TokenType::From);
+
+    ref<Expression> source;
+    ref<Name> name;
+    if (skip(TokenType::LeftParen)) {
+      source = parse_expression();
+      eat(TokenType::RightParen);
+    } else {
+      source = parse_expression();
+      if (auto id = cast<Id>(source)) {
+        source = make<String>(id);
+        name = make<Name>(id);
+      }
+    }
+
+    ref<Name> renamed_name;
+    if (skip(TokenType::As)) {
+      renamed_name = make<Name>(parse_identifier_token());
+    }
+
+    // generate unpack assignments
+    CHECK(unpack_elements.size());
+    auto unpack_dict = make<Dict>();
+    for (const auto& entry : unpack_elements) {
+      ref<Name> field = std::get<0>(entry);
+      unpack_dict->elements.push_back(make<DictEntry>(field));
+    }
+
+    auto unpack_target = create_unpack_target(unpack_dict, true);
+
+    auto import = make<Import>(source);
+    import->set_begin(begin);
+
+    ref<StatementList> statements;
+    if (name && renamed_name) {
+      // import {...} from foo as bar
+      statements = make<StatementList>(
+        make<Declaration>(name, import, true, false),
+        make<Declaration>(renamed_name, make<Id>(name), true, false),
+        make<UnpackDeclaration>(unpack_target, make<Id>(name), true)
+      );
+    } else if (name) {
+      // import {...} from foo
+      statements = make<StatementList>(
+        make<Declaration>(name, import, true, false),
+        make<UnpackDeclaration>(unpack_target, make<Id>(name), true)
+      );
+    } else if (renamed_name) {
+      // import {...} from "foo" as bar
+      statements = make<StatementList>(
+        make<Declaration>(renamed_name, import, true, false),
+        make<UnpackDeclaration>(unpack_target, make<Id>(renamed_name), true)
+      );
+    } else {
+      // import {...} from "foo"
+      statements = make<StatementList>(
+        make<UnpackDeclaration>(unpack_target, import, true)
+      );
+    }
+
+    // emit renamed unpack arguments
+    for (auto& entry : unpack_elements) {
+      ref<Name> field = std::get<0>(entry);
+      ref<Name> field_name = std::get<1>(entry);
+
+      if (field_name) {
+        auto rename_decl = make<Declaration>(field_name, make<Id>(field), true, false);
+        statements->append_statement(rename_decl);
+      }
+    }
+
+    return statements;
+  } else {
+    // regular import statement
+    // import foo
+    // import "foo"
+    // import foo as bar
+    // import "foo" as bar
+    ref<Expression> source;
+    ref<Name> name;
+    if (skip(TokenType::LeftParen)) {
+      source = parse_expression();
+      eat(TokenType::RightParen);
+    } else {
+      source = parse_expression();
+      if (auto id = cast<Id>(source)) {
+        source = make<String>(id);
+        name = make<Name>(id);
+      }
+    }
+
+    ref<Name> renamed_name;
+    if (skip(TokenType::As)) {
+      renamed_name = make<Name>(parse_identifier_token());
+    }
+
+    auto import = make<Import>(source);
+    import->set_begin(begin);
+
+    if (name && renamed_name) {
+      return make<StatementList>(
+        make<Declaration>(name, import, true, false),
+        make<Declaration>(renamed_name, make<Id>(name), true, false)
+      );
+    } else if (name) {
+      return make<Declaration>(name, import, true, false);
+    } else if (renamed_name) {
+      return make<Declaration>(renamed_name, import, true, false);
+    } else {
+      return import;
+    }
   }
+}
 
-  ref<Import> node = make<Import>(source);
-  node->set_begin(begin);
-
-  return node;
+ref<Expression> Parser::parse_import_expression() {
+  Location begin = m_token.location;
+  eat(TokenType::Import);
+  auto source = parse_expression();
+  auto import = make<Import>(source);
+  import->set_begin(begin);
+  return import;
 }
 
 ref<Expression> Parser::parse_assignment() {

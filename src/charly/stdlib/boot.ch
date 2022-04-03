@@ -30,6 +30,7 @@ const builtin_writevalue = @"charly.builtin.core.writevalue"
 const builtin_writeline = @"charly.builtin.core.writeline"
 const builtin_writevaluesync = @"charly.builtin.core.writevaluesync"
 const builtin_readfile = @"charly.builtin.core.readfile"
+const builtin_currentworkingdirectory = @"charly.builtin.core.currentworkingdirectory"
 const builtin_getstacktrace = @"charly.builtin.core.getstacktrace"
 const builtin_compile = @"charly.builtin.core.compile"
 const builtin_disassemble = @"charly.builtin.core.disassemble"
@@ -74,6 +75,8 @@ func exit(status = 0) = builtin_exit(status)
 func compile(source, name = "repl") = builtin_compile(source, name)
 
 func readfile(name) = builtin_readfile(name)
+
+func currentworkingdirectory = builtin_currentworkingdirectory()
 
 class builtin_Instance {
     func constructor = self
@@ -134,14 +137,12 @@ class builtin_Fiber {
     builtin_transplant_builtin_class(Fiber, builtin_Fiber)
 
     func execute_program(filename) {
-        const file = readfile(filename)
-        if file == null {
-            throw "could not open file {filename}"
-        }
-
-        const module = compile(file, filename)
+        const cwd = currentworkingdirectory()
+        const path = "{cwd}/{filename}"
+        const file = readfile(path)
+        const module = compile(file, path)
         if module == null {
-            throw "could not compile {filename}"
+            throw "could not compile file at {path}"
         }
 
         module()

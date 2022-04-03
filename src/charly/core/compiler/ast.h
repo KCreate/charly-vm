@@ -55,6 +55,7 @@ public:
     Unknown = 0,
 
     // Statements
+    StatementList,
     Block,
     Return,
     Break,
@@ -266,6 +267,33 @@ public:
 
 // 1 + x, false, foo(bar)
 class Expression : public Statement {};
+
+class StatementList : public Statement {
+  AST_NODE(StatementList)
+public:
+  template <typename... Args>
+  explicit StatementList(Args&&... params) : statements({ std::forward<Args>(params)... }) {
+    if (!statements.empty()) {
+      this->set_begin(this->statements.front()->location());
+      this->set_end(this->statements.back()->location());
+    }
+  }
+  virtual ~StatementList() = default;
+
+  std::vector<ref<Statement>> statements;
+
+  void append_statement(const ref<Statement>& stmt) {
+    if (statements.empty()) {
+      set_begin(stmt);
+    }
+    statements.push_back(stmt);
+    set_end(stmt);
+  }
+
+  CHILDREN() {
+    CHILD_VECTOR(statements)
+  }
+};
 
 // {
 //   ...
@@ -602,6 +630,10 @@ class String final : public ConstantAtom<std::string> {
   AST_NODE(String)
 public:
   using ConstantAtom<std::string>::ConstantAtom;
+
+  explicit String(const ref<Id>& id) : ConstantAtom<std::string>(id->value) {
+    set_location(id);
+  }
 
   void dump_info(std::ostream& out) const override;
 

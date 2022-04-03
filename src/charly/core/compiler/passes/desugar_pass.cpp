@@ -63,9 +63,7 @@ ref<Statement> DesugarPass::transform(const ref<Block>& node) {
 void DesugarPass::inspect_leave(const ref<Import>& node) {
   ref<Expression> source = node->source;
 
-  if (ref<Name> name = cast<Name>(source)) {
-    source = make<String>(name->value);
-  } else {
+  if (!isa<String>(source)) {
     source = make<BuiltinOperation>(ir::BuiltinId::caststring, source);
   }
 

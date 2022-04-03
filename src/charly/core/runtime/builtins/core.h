@@ -33,17 +33,18 @@ namespace charly::core::runtime::builtin::core {
 
 void initialize(Thread* thread);
 
-#define DEF_BUILTIN_CORE(V)          \
-  V(core, currentfiber, 0)           \
-  V(core, transplantbuiltinclass, 2) \
-  V(core, writevalue, 1)             \
-  V(core, writeline, 1)              \
-  V(core, writevaluesync, 1)         \
-  V(core, readfile, 1)               \
-  V(core, getstacktrace, 1)          \
-  V(core, compile, 2)                \
-  V(core, disassemble, 1)            \
-  V(core, makelist, 2)               \
+#define DEF_BUILTIN_CORE(V)           \
+  V(core, currentfiber, 0)            \
+  V(core, transplantbuiltinclass, 2)  \
+  V(core, writevalue, 1)              \
+  V(core, writeline, 1)               \
+  V(core, writevaluesync, 1)          \
+  V(core, readfile, 1)                \
+  V(core, currentworkingdirectory, 0) \
+  V(core, getstacktrace, 1)           \
+  V(core, compile, 2)                 \
+  V(core, disassemble, 1)             \
+  V(core, makelist, 2)                \
   V(core, exit, 1)
 DEF_BUILTIN_CORE(DEFINE_BUILTIN_METHOD_DECLARATIONS)
 

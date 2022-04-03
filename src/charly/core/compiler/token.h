@@ -35,7 +35,8 @@
 
 namespace charly::core::compiler {
 
-enum class TokenType {
+enum class TokenType
+{
   Eof,
 
   // literals
@@ -70,6 +71,7 @@ enum class TokenType {
   Final,
   Finally,
   For,
+  From,
   Func,
   Guard,
   If,
@@ -148,17 +150,17 @@ enum class TokenType {
 
 // string representations of token types
 static std::string kTokenTypeStrings[] = {
-  "EOF",   "integer", "float",    "true",      "false",  "identifier", "character", "string", "formatstring",
-  "null",  "self",    "super",    "as",        "await",  "break",      "__builtin", "case",   "catch",
-  "class", "const",   "continue", "default",   "defer",  "do",         "else",      "export", "extends",
-  "final", "finally", "for",      "func",      "guard",  "if",         "import",    "in",     "let",
-  "loop",  "match",   "private",  "property",  "return", "spawn",      "static",    "switch", "throw",
-  "try",   "typeof",  "unless",   "until",     "while",  "yield",      "=",         "+",      "-",
-  "*",     "/",       "%",        "**",        "==",     "!=",         "<",         ">",      "<=",
-  ">=",    "&&",      "||",       "|",         "^",      "&",          "<<",        ">>",     ">>>",
-  "!",     "~",       "(",        ")",         "{",      "}",          "[",         "]",      ".",
-  "..",    "...",     ":",        ",",         ";",      "@",          "<-",        "->",     "=>",
-  "?",     "comment", "newline",  "whitespace"
+  "EOF",   "integer", "float",    "true",    "false",     "identifier", "character", "string", "formatstring",
+  "null",  "self",    "super",    "as",      "await",     "break",      "__builtin", "case",   "catch",
+  "class", "const",   "continue", "default", "defer",     "do",         "else",      "export", "extends",
+  "final", "finally", "for",      "from",    "func",      "guard",      "if",        "import", "in",
+  "let",   "loop",    "match",    "private", "property",  "return",     "spawn",     "static", "switch",
+  "throw", "try",     "typeof",   "unless",  "until",     "while",      "yield",     "=",      "+",
+  "-",     "*",       "/",        "%",       "**",        "==",         "!=",        "<",      ">",
+  "<=",    ">=",      "&&",       "||",      "|",         "^",          "&",         "<<",     ">>",
+  ">>>",   "!",       "~",        "(",       ")",         "{",          "}",         "[",      "]",
+  ".",     "..",      "...",      ":",       ",",         ";",          "@",         "<-",     "->",
+  "=>",    "?",       "comment",  "newline", "whitespace"
 };
 
 // identifiers with these names get remapped to keyword tokens
@@ -189,6 +191,7 @@ static const std::unordered_map<std::string, TokenType> kKeywordsAndLiterals = {
                                                                                  { "final", TokenType::Final },
                                                                                  { "finally", TokenType::Finally },
                                                                                  { "for", TokenType::For },
+                                                                                 { "from", TokenType::From },
                                                                                  { "func", TokenType::Func },
                                                                                  { "guard", TokenType::Guard },
                                                                                  { "if", TokenType::If },
