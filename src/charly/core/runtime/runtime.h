@@ -193,6 +193,10 @@ public:
   // or traversing the filesystem
   std::optional<fs::path> resolve_module(const fs::path& module_path, const fs::path& origin_path) const;
 
+  // checks if the runtime module cache contains a non-expired entry for the given path
+  RawValue lookup_path_in_module_cache(const fs::path& path);
+  void update_module_cache(const fs::path& path, fs::file_time_type mtime, RawValue module);
+
   const fs::path& source_code_directory() const;
   const fs::path& stdlib_directory() const;
 
@@ -231,6 +235,14 @@ private:
   fs::path m_source_code_directory;
   fs::path m_stdlib_directory;
   std::unordered_map<std::string, fs::path> m_builtin_libraries_paths;
+
+  struct CachedModule {
+    fs::path path;
+    fs::file_time_type mtime;
+    RawValue module;
+  };
+  std::shared_mutex m_cached_modules_mutex;
+  std::unordered_map<size_t, CachedModule> m_cached_modules;
 };
 
 }  // namespace charly::core::runtime

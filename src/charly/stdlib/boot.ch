@@ -45,7 +45,12 @@ func write(...args) {
 }
 
 func print(...args) {
-    args.each(->(e) builtin_writevalue(e))
+    args.each(->(e, i) {
+        builtin_writevalue(e)
+        if i != args.length {
+            builtin_writevalue(" ")
+        }
+    })
     builtin_writevalue("\n");
     null
 }
@@ -75,6 +80,19 @@ func currentworkingdirectory = builtin_currentworkingdirectory()
 
 class builtin_Instance {
     func constructor = self
+}
+
+class builtin_Int {
+    func times(cb) {
+        let i = 0
+        loop {
+            cb(i)
+            i += 1
+            if i == self break
+        }
+
+        self
+    }
 }
 
 class builtin_Tuple {
@@ -133,6 +151,7 @@ class builtin_Fiber {
     let $$ = null
 
     builtin_transplant_builtin_class(Instance, builtin_Instance)
+    builtin_transplant_builtin_class(Int, builtin_Int)
     builtin_transplant_builtin_class(Tuple, builtin_Tuple)
     builtin_transplant_builtin_class(Function, builtin_Function)
     builtin_transplant_builtin_class(Exception, builtin_Exception)

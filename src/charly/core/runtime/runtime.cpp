@@ -1044,6 +1044,22 @@ std::optional<fs::path> Runtime::resolve_module(const fs::path& module_path, con
   return std::nullopt;
 }
 
+RawValue Runtime::lookup_path_in_module_cache(const fs::path& path) {
+  std::shared_lock lock(m_cached_modules_mutex);
+  if (m_cached_modules.count(fs::hash_value(path))) {
+    const auto& entry = m_cached_modules.at(fs::hash_value(path));
+    if (fs::last_write_time(path) == entry.mtime) {
+      return entry.module;
+    }
+  }
+  return kErrorNotFound;
+}
+
+void Runtime::update_module_cache(const fs::path& path, fs::file_time_type mtime, RawValue module) {
+  std::unique_lock lock(m_cached_modules_mutex);
+  m_cached_modules[fs::hash_value(path)] = { .path = path, .mtime = mtime, .module = module };
+}
+
 const fs::path& Runtime::source_code_directory() const {
   return m_source_code_directory;
 }

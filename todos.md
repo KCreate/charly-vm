@@ -1,9 +1,7 @@
 # Todos
 
-- Implement module caching
-  - Invalidate by mtime
-
-- Is it premature to implement the ImportException?
+- Module caching atomicity
+  - Two fibers loading the same path at the same time should receive the same module
 
 - New issues
   - User modules

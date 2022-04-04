@@ -370,7 +370,7 @@ OP(import) {
 
   // TODO: perform filesystem lookup and compilation in native mode
 
-  // check if a builtin module is being included
+  // attempt to resolve the module path to a real file path
   std::optional<fs::path> resolve_result = runtime->resolve_module(module_path, file_path);
   if (!resolve_result.has_value()) {
     thread->throw_value(
@@ -379,12 +379,21 @@ OP(import) {
   }
   fs::path import_path = resolve_result.value();
 
+  // check if the runtime has this module in the cache
+  RawValue cache_result = runtime->lookup_path_in_module_cache(import_path);
+  if (!cache_result.is_error_not_found()) {
+    frame->push(cache_result);
+    return ContinueMode::Next;
+  }
+
   // load the source file
   std::ifstream import_source(import_path);
   if (!import_source.is_open()) {
     thread->throw_value(runtime->create_exception_with_message(thread, "could not open the file at %", import_path));
     return ContinueMode::Exception;
   }
+
+  fs::file_time_type import_mtime = fs::last_write_time(import_path);
   utils::Buffer buf;
   buf << import_source.rdbuf();
   import_source.close();
@@ -451,6 +460,8 @@ OP(import) {
   if (rval.is_error_exception()) {
     return ContinueMode::Exception;
   }
+
+  runtime->update_module_cache(import_path, import_mtime, rval);
 
   frame->push(rval);
   return ContinueMode::Next;

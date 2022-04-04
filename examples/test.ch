@@ -24,24 +24,12 @@
  * SOFTWARE.
  */
 
-import testlib
-print(testlib)
-print(testlib.foo)
-testlib.foo()
+import "./lib" as lib1
+import "./lib" as lib2
+import "./lib" as lib3
 
-import "lib.ch" as lib
-print(lib)
-print(lib.foo)
-print(lib.do_stuff)
-lib.do_stuff()
+if lib1 != lib2 || lib2 != lib3 {
+    throw "different modules"
+}
 
-print(CHARLY_STDLIB)
-
-
-
-
-
-
-
-
-
+print("success")
