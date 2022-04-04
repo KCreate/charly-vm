@@ -76,6 +76,9 @@ void DiagnosticConsole::write_annotated_source(std::ostream& out, const Diagnost
   utils::ColorWriter writer(out);
 
   const Location& location = message.location;
+  if (!message.location.valid) {
+    return;
+  }
 
   // the first row to be printed
   uint32_t first_printed_row = kDiagnosticContextRows > location.row ? 0 : location.row - kDiagnosticContextRows;
@@ -93,7 +96,11 @@ void DiagnosticConsole::write_annotated_source(std::ostream& out, const Diagnost
       continue;
     }
 
-    writer << "    ";
+    if (contains_annotation) {
+      writer << " -> ";
+    } else {
+      writer << "    ";
+    }
 
     Color highlight_color = message.format_color();
 
@@ -133,7 +140,6 @@ void DiagnosticConsole::write_annotated_source(std::ostream& out, const Diagnost
     } else {
       writer.fg(Color::Grey, line);
     }
-
     writer << '\n';
 
     row++;

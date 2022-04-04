@@ -192,12 +192,12 @@ public:
     fatal(loc, std::forward<Args>(params)...);
   }
 
-private:
-  CHARLY_NON_COPYABLE(DiagnosticConsole);
-
   // writes the section of the source code to which location
   // refers to to the out stream
   void write_annotated_source(std::ostream& out, const DiagnosticMessage& message) const;
+
+private:
+  CHARLY_NON_COPYABLE(DiagnosticConsole);
 
   static const size_t kMaximumMessageCount = 256;
   void check_max_messages() {

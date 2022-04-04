@@ -78,7 +78,7 @@ public:
   static bool is_env_set(const std::string& name);
 
   // return all arguments for a specific flag
-  static std::vector<std::string> get_arguments_for_flag(const std::string& name);
+  static const std::vector<std::string>& get_arguments_for_flag(const std::string& name);
 
   // returns the user argument at index
   static std::optional<std::string> get_argument(uint32_t index);

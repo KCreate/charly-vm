@@ -29,10 +29,8 @@ const builtin_transplant_builtin_class = @"charly.builtin.core.transplantbuiltin
 const builtin_writevalue = @"charly.builtin.core.writevalue"
 const builtin_writeline = @"charly.builtin.core.writeline"
 const builtin_writevaluesync = @"charly.builtin.core.writevaluesync"
-const builtin_readfile = @"charly.builtin.core.readfile"
 const builtin_currentworkingdirectory = @"charly.builtin.core.currentworkingdirectory"
 const builtin_getstacktrace = @"charly.builtin.core.getstacktrace"
-const builtin_compile = @"charly.builtin.core.compile"
 const builtin_disassemble = @"charly.builtin.core.disassemble"
 const builtin_makelist = @"charly.builtin.core.makelist"
 const builtin_exit = @"charly.builtin.core.exit"
@@ -47,7 +45,8 @@ func write(...args) {
 }
 
 func print(...args) {
-    args.each(->(e) builtin_writeline(e))
+    args.each(->(e) builtin_writevalue(e))
+    builtin_writevalue("\n");
     null
 }
 
@@ -71,10 +70,6 @@ func add_history(message) = builtin_readline_add_history(message)
 func clear_history = builtin_readline_clear_history()
 
 func exit(status = 0) = builtin_exit(status)
-
-func compile(source, name = "repl") = builtin_compile(source, name)
-
-func readfile(name) = builtin_readfile(name)
 
 func currentworkingdirectory = builtin_currentworkingdirectory()
 
@@ -123,6 +118,13 @@ class builtin_Exception {
     static func getstacktrace(trim = 0) = builtin_getstacktrace(trim)
 }
 
+class builtin_ImportException {
+    func constructor(@message, @errors) {
+        // TODO: trim correct numer of stack frames when called from subclass constructors
+        @stack_trace = Exception.getstacktrace(2)
+    }
+}
+
 class builtin_Fiber {
     static func current = builtin_currentfiber()
 }
@@ -134,18 +136,12 @@ class builtin_Fiber {
     builtin_transplant_builtin_class(Tuple, builtin_Tuple)
     builtin_transplant_builtin_class(Function, builtin_Function)
     builtin_transplant_builtin_class(Exception, builtin_Exception)
+    builtin_transplant_builtin_class(ImportException, builtin_ImportException)
     builtin_transplant_builtin_class(Fiber, builtin_Fiber)
 
     func execute_program(filename) {
         const cwd = currentworkingdirectory()
-        const path = "{cwd}/{filename}"
-        const file = readfile(path)
-        const module = compile(file, path)
-        if module == null {
-            throw "could not compile file at {path}"
-        }
-
-        module()
+        import "{cwd}/{filename}"
     }
 
     const filename = ARGV[0]

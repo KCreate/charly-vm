@@ -394,7 +394,14 @@ bool RawValue::isException() const {
   if (isInstance()) {
     return RawInstance::cast(this).is_instance_of(ShapeId::kException);
   }
-  return shape_id() == ShapeId::kException;
+  return false;
+}
+
+bool RawValue::isImportException() const {
+  if (isInstance()) {
+    return RawInstance::cast(this).is_instance_of(ShapeId::kImportException);
+  }
+  return false;
 }
 
 void RawValue::to_string(std::ostream& out) const {
@@ -1261,6 +1268,14 @@ RawTuple RawException::stack_trace() const {
 
 void RawException::set_stack_trace(RawTuple stack_trace) {
   set_field_at(kStackTraceOffset, stack_trace);
+}
+
+RawTuple RawImportException::errors() const {
+  return field_at<RawTuple>(kErrorsOffset);
+}
+
+void RawImportException::set_errors(RawTuple errors) {
+  set_field_at(kErrorsOffset, errors);
 }
 
 }  // namespace charly::core::runtime

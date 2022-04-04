@@ -24,5 +24,24 @@
  * SOFTWARE.
  */
 
-import bar as baz + 1
-print(bar)
+import testlib
+print(testlib)
+print(testlib.foo)
+testlib.foo()
+
+import "lib.ch" as lib
+print(lib)
+print(lib.foo)
+print(lib.do_stuff)
+lib.do_stuff()
+
+print(CHARLY_STDLIB)
+
+
+
+
+
+
+
+
+

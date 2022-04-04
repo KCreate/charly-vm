@@ -234,17 +234,7 @@ void Thread::entry_main_thread() {
   Runtime* runtime = m_runtime;
 
   // load the boot file
-  std::optional<std::string> charly_vm_dir = utils::ArgumentParser::get_environment_for_key("CHARLYVMDIR");
-  CHECK(charly_vm_dir.has_value());
-  fs::path charly_dir(charly_vm_dir.value());
-  fs::path boot_path = charly_dir / "src/charly/stdlib/boot.ch";
-  if (utils::ArgumentParser::is_flag_set("boot_path")) {
-    const auto& values = utils::ArgumentParser::get_arguments_for_flag("boot_path");
-    CHECK(values.size() == 1, "expected one argument for flag 'boot_path'");
-    const std::string& value = values.front();
-    boot_path = fs::current_path() / value;
-  }
-
+  fs::path boot_path = runtime->stdlib_directory() / "boot.ch";
   std::ifstream boot_file(boot_path);
 
   if (!boot_file.is_open()) {
@@ -268,15 +258,18 @@ void Thread::entry_main_thread() {
     return;
   }
 
-  if (utils::ArgumentParser::is_flag_set("dump_ast")) {
+  if (utils::ArgumentParser::is_flag_set("dump_ast") &&
+      utils::ArgumentParser::flag_has_argument("debug_filter", boot_path, true)) {
     unit->ast->dump(std::cout, true);
   }
 
-  if (utils::ArgumentParser::is_flag_set("dump_ir")) {
+  if (utils::ArgumentParser::is_flag_set("dump_ir") &&
+      utils::ArgumentParser::flag_has_argument("debug_filter", boot_path, true)) {
     unit->ir_module->dump(std::cout);
   }
 
-  if (utils::ArgumentParser::is_flag_set("dump_asm")) {
+  if (utils::ArgumentParser::is_flag_set("dump_asm") &&
+      utils::ArgumentParser::flag_has_argument("debug_filter", boot_path, true)) {
     unit->compiled_module->dump(std::cout);
   }
 
@@ -295,7 +288,6 @@ void Thread::entry_main_thread() {
   runtime->initialize_argv_tuple(this);
   runtime->initialize_builtin_functions(this);
   runtime->initialize_main_fiber(this, module->function_table.front());
-  runtime->initialize_global_variables(this);
 }
 
 void Thread::entry_fiber_thread() {
@@ -322,7 +314,25 @@ void Thread::entry_fiber_thread() {
   }
 
   if (result == kErrorException) {
-    debuglnf("unhandled exception in thread % (%)", id(), pending_exception());
+    RawValue thrown_value = pending_exception();
+
+    if (thrown_value.isImportException()) {
+      auto exception = RawImportException::cast(thrown_value);
+      auto errors = exception.errors();
+      debuglnf("unhandled import exception in thread %: %", id(), exception.message());
+      for (uint32_t i = 0; i < errors.size(); i++) {
+        auto error = errors.field_at<RawTuple>(i);
+        auto type = error.field_at<RawString>(0);
+        auto filepath = error.field_at<RawString>(1);
+        auto message = error.field_at<RawString>(2);
+        auto source = error.field_at<RawString>(3);
+        auto location = error.field_at<RawString>(4);
+        debuglnf("%: %:%: %\n%", type.view(), filepath.view(), location.view(), message.view(), source.view());
+      }
+    } else {
+      debuglnf("unhandled exception in thread % (%)", id(), pending_exception());
+    }
+
     abort(1);
   }
 

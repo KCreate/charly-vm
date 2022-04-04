@@ -24,12 +24,15 @@
  * SOFTWARE.
  */
 
+#include <fstream>
+
 #include <alloca.h>
 #include <unordered_set>
 
 #include "charly/core/compiler/compiler.h"
 #include "charly/core/runtime/interpreter.h"
 #include "charly/core/runtime/runtime.h"
+#include "charly/utils/argumentparser.h"
 
 namespace charly::core::runtime {
 
@@ -204,7 +207,8 @@ RawValue Interpreter::call_function(
 
   // regular functions may not be called with more arguments than they declare
   // the exception to this rule are arrow functions and functions that declare a spread argument
-  if (argc > shared_info->ir_info.argc && !shared_info->ir_info.spread_argument && !shared_info->ir_info.arrow_function) {
+  if (argc > shared_info->ir_info.argc && !shared_info->ir_info.spread_argument &&
+      !shared_info->ir_info.arrow_function) {
     thread->throw_value(runtime->create_exception_with_message(
       thread, "too many arguments for non-spread function '%', expected at most % but got %", function.name(),
       (uint32_t)shared_info->ir_info.argc, (uint32_t)argc));
@@ -358,13 +362,97 @@ OP(panic) {
 }
 
 OP(import) {
-  auto file_path = RawString::cast(frame->pop());
-  auto module_path = RawString::cast(frame->pop());
+  Runtime* runtime = thread->runtime();
+  auto file_path_string = RawString::cast(frame->pop()).str();
+  auto module_path_string = RawString::cast(frame->pop()).str();
+  auto file_path = fs::path(file_path_string);
+  auto module_path = fs::path(module_path_string);
 
-  debugln("file_path: %", file_path);
-  debugln("module_path: %", module_path);
+  // TODO: perform filesystem lookup and compilation in native mode
 
-  frame->push(kNull);
+  // check if a builtin module is being included
+  std::optional<fs::path> resolve_result = runtime->resolve_module(module_path, file_path);
+  if (!resolve_result.has_value()) {
+    thread->throw_value(
+      runtime->create_exception_with_message(thread, "could not resolve '%' to a valid path", module_path_string));
+    return ContinueMode::Exception;
+  }
+  fs::path import_path = resolve_result.value();
+
+  // load the source file
+  std::ifstream import_source(import_path);
+  if (!import_source.is_open()) {
+    thread->throw_value(runtime->create_exception_with_message(thread, "could not open the file at %", import_path));
+    return ContinueMode::Exception;
+  }
+  utils::Buffer buf;
+  buf << import_source.rdbuf();
+  import_source.close();
+
+  // compile source code into module
+  auto unit = Compiler::compile(import_path, buf, CompilationUnit::Type::Module);
+  if (unit->console.has_errors()) {
+    auto& messages = unit->console.messages();
+    size_t size = messages.size();
+    auto error_tuple = runtime->create_tuple(thread, size);
+    for (size_t i = 0; i < size; i++) {
+      auto& msg = messages[i];
+      std::string type;
+      switch (msg.type) {
+        case DiagnosticType::Info: type = "info"; break;
+        case DiagnosticType::Warning: type = "warning"; break;
+        case DiagnosticType::Error: type = "error"; break;
+      }
+      auto filepath = msg.filepath;
+      auto message = msg.message;
+
+      utils::Buffer location_buffer;
+      utils::Buffer annotated_source_buffer;
+      if (msg.location.valid) {
+        location_buffer << msg.location;
+        unit->console.write_annotated_source(annotated_source_buffer, msg);
+      }
+
+      auto message_tuple = runtime->create_tuple(thread, 5);
+      message_tuple.set_field_at(0, runtime->create_string(thread, type));                     // type
+      message_tuple.set_field_at(1, runtime->create_string(thread, filepath));                 // filepath
+      message_tuple.set_field_at(2, runtime->create_string(thread, message));                  // message
+      message_tuple.set_field_at(3, runtime->create_string(thread, annotated_source_buffer));  // source
+      message_tuple.set_field_at(4, runtime->create_string(thread, location_buffer));          // location
+      error_tuple.set_field_at(i, message_tuple);
+    }
+
+    thread->throw_value(runtime->create_import_exception(thread, module_path, error_tuple));
+    return ContinueMode::Exception;
+  }
+
+  if (utils::ArgumentParser::is_flag_set("dump_ast") &&
+      utils::ArgumentParser::flag_has_argument("debug_filter", module_path_string, true)) {
+    unit->ast->dump(std::cout, true);
+  }
+
+  if (utils::ArgumentParser::is_flag_set("dump_ir") &&
+      utils::ArgumentParser::flag_has_argument("debug_filter", module_path_string, true)) {
+    unit->ir_module->dump(std::cout);
+  }
+
+  if (utils::ArgumentParser::is_flag_set("dump_asm") &&
+      utils::ArgumentParser::flag_has_argument("debug_filter", module_path_string, true)) {
+    unit->compiled_module->dump(std::cout);
+  }
+
+  auto module = unit->compiled_module;
+  CHECK(!module->function_table.empty());
+  runtime->register_module(thread, module);
+  auto module_function = runtime->create_function(thread, kNull, module->function_table.front());
+
+  // invoke the module
+  auto rval = call_function(thread, kNull, module_function, nullptr, 0);
+  if (rval.is_error_exception()) {
+    return ContinueMode::Exception;
+  }
+
+  frame->push(rval);
   return ContinueMode::Next;
 }
 
@@ -951,7 +1039,8 @@ OP(unpacksequencespread) {
     auto tuple = RawTuple::cast(value);
     uint32_t tuple_size = tuple.size();
     if (tuple_size < total_count) {
-      thread->throw_value(runtime->create_exception_with_message(thread, "touple does not contain enough values to unpack"));
+      thread->throw_value(
+        runtime->create_exception_with_message(thread, "touple does not contain enough values to unpack"));
       return ContinueMode::Exception;
     }
 
@@ -1186,7 +1275,8 @@ OP(casttuple) {
 
   Runtime* runtime = thread->runtime();
   auto name = runtime->lookup_class(thread, value).name();
-  thread->throw_value(runtime->create_exception_with_message(thread, "could not cast value of type '%' to a tuple", name));
+  thread->throw_value(
+    runtime->create_exception_with_message(thread, "could not cast value of type '%' to a tuple", name));
   return ContinueMode::Exception;
 }
 

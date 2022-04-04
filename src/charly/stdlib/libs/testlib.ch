@@ -24,26 +24,8 @@
  * SOFTWARE.
  */
 
-#include "charly/core/runtime/builtins/builtin.h"
-#include "charly/value.h"
-
-#pragma once
-
-namespace charly::core::runtime::builtin::core {
-
-void initialize(Thread* thread);
-
-#define DEF_BUILTIN_CORE(V)           \
-  V(core, currentfiber, 0)            \
-  V(core, transplantbuiltinclass, 2)  \
-  V(core, writevalue, 1)              \
-  V(core, writeline, 1)               \
-  V(core, writevaluesync, 1)          \
-  V(core, currentworkingdirectory, 0) \
-  V(core, getstacktrace, 1)           \
-  V(core, disassemble, 1)             \
-  V(core, makelist, 2)                \
-  V(core, exit, 1)
-DEF_BUILTIN_CORE(DEFINE_BUILTIN_METHOD_DECLARATIONS)
-
-}  // namespace charly::core::runtime::builtin::core
+export class TestLib {
+    static func foo {
+        print("hello from charly builtin library TestLib")
+    }
+}

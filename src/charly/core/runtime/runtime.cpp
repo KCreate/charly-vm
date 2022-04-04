@@ -49,6 +49,7 @@ Runtime::Runtime() :
   m_heap = std::make_unique<Heap>(this);
   m_gc = std::make_unique<GarbageCollector>(this);
   m_scheduler = std::make_unique<Scheduler>(this);
+  initialize_stdlib_paths();
   m_init_flag.signal();
 }
 
@@ -115,7 +116,10 @@ void Runtime::initialize_symbol_table(Thread* thread) {
   // known global variables
   declare_symbol(thread, "");
   declare_symbol(thread, "charly.baseclass");
-  declare_symbol(thread, "charly.mainfiber");
+  declare_symbol(thread, "CHARLY_STDLIB");
+
+  CHECK(declare_global_variable(thread, SYM("CHARLY_STDLIB"), true).is_error_ok());
+  CHECK(set_global_variable(thread, SYM("CHARLY_STDLIB"), create_string(thread, m_stdlib_directory)).is_error_ok());
 }
 
 void Runtime::initialize_argv_tuple(Thread* thread) {
@@ -212,6 +216,9 @@ void Runtime::initialize_builtin_types(Thread* thread) {
     create_shape(thread, builtin_shape_builtin_instance,
                  { { "message", RawShape::kKeyFlagNone }, { "stack_trace", RawShape::kKeyFlagPrivate } });
 
+  auto builtin_shape_import_exception =
+    create_shape(thread, builtin_shape_exception, { { "errors", RawShape::kKeyFlagNone } });
+
   auto class_value_shape = create_shape(thread, builtin_shape_class, {});
   RawClass class_value = RawClass::unsafe_cast(create_instance(thread, class_value_shape));
   class_value.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);
@@ -249,6 +256,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
                        RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
   DEFINE_BUILTIN_CLASS(fiber, Fiber, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
   DEFINE_BUILTIN_CLASS(exception, Exception, class_instance, RawClass::kFlagNone, {})
+  DEFINE_BUILTIN_CLASS(import_exception, ImportException, class_exception, RawClass::kFlagNone, {})
 #undef DEFINE_BUILTIN_CLASS
 
   // define the static classes for the builtin classes
@@ -279,6 +287,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   DEFINE_STATIC_CLASS(builtin_function, BuiltinFunction)
   DEFINE_STATIC_CLASS(fiber, Fiber)
   DEFINE_STATIC_CLASS(exception, Exception)
+  DEFINE_STATIC_CLASS(import_exception, ImportException)
 #undef DEFINE_STATIC_CLASS
 
   // fix up the class pointers in the class hierarchy
@@ -299,6 +308,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   class_builtin_function.set_klass_field(static_class_builtin_function);
   class_fiber.set_klass_field(static_class_fiber);
   class_exception.set_klass_field(static_class_exception);
+  class_import_exception.set_klass_field(static_class_import_exception);
 
   // mark internal shape keys with internal flag
   set_builtin_class(thread, ShapeId::kInt, class_int);
@@ -320,6 +330,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   set_builtin_class(thread, ShapeId::kBuiltinFunction, class_builtin_function);
   set_builtin_class(thread, ShapeId::kFiber, class_fiber);
   set_builtin_class(thread, ShapeId::kException, class_exception);
+  set_builtin_class(thread, ShapeId::kImportException, class_import_exception);
 
   // fix shapes for string and bytes types
   register_shape(ShapeId::kSmallString, builtin_shape_immediate);
@@ -347,6 +358,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   CHECK(declare_global_variable(thread, SYM("BuiltinFunction"), true).is_error_ok());
   CHECK(declare_global_variable(thread, SYM("Fiber"), true).is_error_ok());
   CHECK(declare_global_variable(thread, SYM("Exception"), true).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("ImportException"), true).is_error_ok());
 
   CHECK(set_global_variable(thread, SYM("Value"), class_value).is_error_ok());
   CHECK(set_global_variable(thread, SYM("Number"), class_number).is_error_ok());
@@ -365,17 +377,20 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   CHECK(set_global_variable(thread, SYM("BuiltinFunction"), class_builtin_function).is_error_ok());
   CHECK(set_global_variable(thread, SYM("Fiber"), class_fiber).is_error_ok());
   CHECK(set_global_variable(thread, SYM("Exception"), class_exception).is_error_ok());
+  CHECK(set_global_variable(thread, SYM("ImportException"), class_import_exception).is_error_ok());
 }
 
 void Runtime::initialize_main_fiber(Thread* thread, SharedFunctionInfo* info) {
   RawFunction function = RawFunction::cast(create_function(thread, kNull, info));
-  RawFiber mainfiber = RawFiber::cast(create_fiber(thread, function, kNull, kNull));
-  CHECK(declare_global_variable(thread, SYM("charly.mainfiber"), true).is_error_ok());
-  CHECK(set_global_variable(thread, SYM("charly.mainfiber"), mainfiber).is_error_ok());
+  create_fiber(thread, function, kNull, kNull);
 }
 
-void Runtime::initialize_global_variables(Thread*) {
-  // TODO: implement
+void Runtime::initialize_stdlib_paths() {
+  auto CHARLYVMDIR = utils::ArgumentParser::get_environment_for_key("CHARLYVMDIR");
+  CHECK(CHARLYVMDIR.has_value());
+  m_source_code_directory = fs::path(CHARLYVMDIR.value());
+  m_stdlib_directory = m_source_code_directory / "src" / "charly" / "stdlib";
+  m_builtin_libraries_paths["testlib"] = m_stdlib_directory / "libs" / "testlib.ch";
 }
 
 RawData Runtime::create_data(Thread* thread, ShapeId shape_id, size_t size) {
@@ -764,6 +779,17 @@ RawValue Runtime::create_exception(Thread* thread, RawValue message) {
   return instance;
 }
 
+RawValue Runtime::create_import_exception(Thread* thread, const std::string& module_path, RawTuple errors) {
+  // allocate exception instance
+  auto instance =
+    RawImportException::cast(create_instance(thread, get_builtin_class(thread, ShapeId::kImportException)));
+  instance.set_message(create_string_from_template(thread, "Could not import '%'", module_path));
+  instance.set_stack_trace(create_stack_trace(thread));
+  instance.set_errors(errors);
+
+  return instance;
+}
+
 RawTuple Runtime::create_stack_trace(Thread* thread, uint32_t trim) {
   std::vector<RawTuple> frames;
   uint64_t depth = 0;
@@ -965,6 +991,65 @@ uint32_t Runtime::check_private_access_permitted(Thread* thread, RawInstance val
   }
 
   return highest_allowed_private_member;
+}
+
+std::optional<fs::path> Runtime::resolve_module(const fs::path& module_path, const fs::path& origin_path) const {
+  if (m_builtin_libraries_paths.count(module_path)) {
+    return m_builtin_libraries_paths.at(module_path);
+  } else if (module_path.is_absolute()) {
+    return module_path;
+  } else {
+    CHECK(origin_path.has_filename() && origin_path.has_parent_path() && origin_path.is_absolute(),
+          "malformed origin path");
+    auto origin_directory = origin_path.parent_path();
+    auto search_directory = origin_directory;
+
+    // search for the module by traversing the filesystem hierarchy
+    for (;;) {
+      if (module_path.has_extension()) {
+        fs::path search_path = search_directory / module_path;
+        if (fs::is_regular_file(search_path)) {
+          return search_path;
+        }
+      } else {
+        fs::path search_path_direct = search_directory / module_path;
+        fs::path search_path_with_extension = search_path_direct;
+        fs::path search_path_module = search_path_direct / "index.ch";
+        search_path_with_extension.replace_extension("ch");
+
+        if (fs::is_regular_file(search_path_direct)) {
+          return search_path_direct;
+        }
+
+        if (fs::is_regular_file(search_path_with_extension)) {
+          return search_path_with_extension;
+        }
+
+        if (fs::is_regular_file(search_path_module)) {
+          return search_path_module;
+        }
+      }
+
+      // exit if we just searched the root directory
+      if (search_directory == "/") {
+        break;
+      }
+
+      // next higher directory
+      auto next_search_directory = search_directory.parent_path();
+      search_directory = next_search_directory;
+    }
+  }
+
+  return std::nullopt;
+}
+
+const fs::path& Runtime::source_code_directory() const {
+  return m_source_code_directory;
+}
+
+const fs::path& Runtime::stdlib_directory() const {
+  return m_stdlib_directory;
 }
 
 }  // namespace charly::core::runtime

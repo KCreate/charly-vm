@@ -31,6 +31,7 @@
 #include <shared_mutex>
 #include <stack>
 #include <vector>
+#include <filesystem>
 
 #include "charly/handle.h"
 
@@ -44,6 +45,8 @@
 #pragma once
 
 namespace charly::core::runtime {
+
+namespace fs = std::filesystem;
 
 class Runtime {
 public:
@@ -77,7 +80,7 @@ public:
   void initialize_builtin_functions(Thread* thread);
   void initialize_builtin_types(Thread* thread);
   void initialize_main_fiber(Thread* thread, SharedFunctionInfo* info);
-  void initialize_global_variables(Thread* thread);
+  void initialize_stdlib_paths();
 
   RawData create_data(Thread* thread, ShapeId shape_id, size_t size);
   RawInstance create_instance(Thread* thread, ShapeId shape_id, size_t field_count, RawValue klass = kNull);
@@ -135,6 +138,7 @@ public:
   RawValue create_exception_with_message(Thread* thread, const char* str, const T&... args) {
     return create_exception(thread, create_string_from_template(thread, str, args...));
   }
+  RawValue create_import_exception(Thread* thread, const std::string& module_path, RawTuple errors);
 
   // creates a tuple containing a stack trace of the current thread
   // trim variable controls how many frames should be dropped
@@ -173,7 +177,7 @@ public:
   void register_shape(ShapeId id, RawShape shape);
   RawShape lookup_shape(Thread* thread, ShapeId id);
 
-  // returns the RawClass for any type
+  // returns the klass value of a value
   RawClass lookup_class(Thread* thread, RawValue value);
 
   // sets the class that gets used as the parent class if no 'extends'
@@ -184,6 +188,13 @@ public:
   // checks wether the current thread (and the top frame's associated self value)
   // can access the private member of an instance and up to what offset
   uint32_t check_private_access_permitted(Thread* thread, RawInstance value);
+
+  // lookup the name / path of a module by checking by builtin modules table
+  // or traversing the filesystem
+  std::optional<fs::path> resolve_module(const fs::path& module_path, const fs::path& origin_path) const;
+
+  const fs::path& source_code_directory() const;
+  const fs::path& stdlib_directory() const;
 
 private:
   uint64_t m_start_timestamp;
@@ -216,6 +227,10 @@ private:
   };
   std::shared_mutex m_globals_mutex;
   std::unordered_map<SYMBOL, GlobalVariable> m_global_variables;
+
+  fs::path m_source_code_directory;
+  fs::path m_stdlib_directory;
+  std::unordered_map<std::string, fs::path> m_builtin_libraries_paths;
 };
 
 }  // namespace charly::core::runtime

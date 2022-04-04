@@ -46,7 +46,7 @@ CATCH_TEST_CASE("Diagnostic") {
     unit->console.dump_all(out);
 
     CATCH_CHECK_THAT(out.str(), Equals(("test:1:4: error: unexpected ',' token, expected an expression\n"
-                                        "       1 | foo,\n")));
+                                        " ->    1 | foo,\n")));
   }
 
   CATCH_SECTION("formats messages without a location") {
@@ -79,7 +79,7 @@ CATCH_TEST_CASE("Diagnostic") {
     CATCH_CHECK_THAT(out.str(), Equals(("test:3:10: error: unexpected numerical constant, expected a ')' token\n"
                                         "       1 | \n"
                                         "       2 | \n"
-                                        "       3 | (25      25)\n"
+                                        " ->    3 | (25      25)\n"
                                         "       4 | \n"
                                         "       5 | \n")));
   }
