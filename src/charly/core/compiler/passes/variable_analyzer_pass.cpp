@@ -654,16 +654,7 @@ bool VariableLocationPatchPass::inspect_enter(const ref<UnpackTarget>&) {
 
 ref<UnpackTarget> VariableLocationPatchPass::transform(const ref<UnpackTarget>& node) {
   for (auto& element : node->elements) {
-    switch (element->target->type()) {
-      case Node::Type::Id: {
-        auto id = cast<Id>(element->target);
-        m_analyzer.patch_value_location(id->ir_location);
-        break;
-      }
-      default: {
-        element->target = apply(element->target);
-      }
-    }
+    element->target = apply(element->target);
   }
 
   return node;
@@ -699,8 +690,16 @@ ref<Statement> VariableLocationPatchPass::transform(const ref<TryFinally>& node)
   return node;
 }
 
-void VariableLocationPatchPass::inspect_leave(const ref<Id>& node) {
+ref<Expression> VariableLocationPatchPass::transform(const ref<Id>& node) {
   m_analyzer.patch_value_location(node->ir_location);
+
+  if (node->ir_location.type == ValueLocation::Type::Self) {
+    return make<MemberOp>(make<Self>(), make<Name>(node));
+  } else if (node->ir_location.type == ValueLocation::Type::FarSelf) {
+    return make<MemberOp>(make<FarSelf>(node->ir_location.as.far_self.depth), make<Name>(node));
+  }
+
+  return node;
 }
 
 }  // namespace charly::core::compiler::ast

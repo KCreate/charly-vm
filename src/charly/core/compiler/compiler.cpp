@@ -37,7 +37,6 @@
 #include "charly/core/compiler/passes/desugar_pass.h"
 #include "charly/core/compiler/passes/duplicates_check.h"
 #include "charly/core/compiler/passes/grammar_validation_check.h"
-#include "charly/core/compiler/passes/node_specialization_pass.h"
 #include "charly/core/compiler/passes/repl_prepare_pass.h"
 #include "charly/core/compiler/passes/reserved_identifiers_check.h"
 #include "charly/core/compiler/passes/variable_analyzer_pass.h"
@@ -98,8 +97,6 @@ ref<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffe
     if (unit->console.has_errors())
       return unit;
   }
-
-  APPLY_TRANSFORM_PASS(NodeSpecializationPass)
 
   if (!utils::ArgumentParser::is_flag_set("opt_disable")) {
     APPLY_TRANSFORM_PASS(ConstantFoldingPass)

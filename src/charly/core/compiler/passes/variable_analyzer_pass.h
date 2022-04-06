@@ -200,7 +200,7 @@ private:
   bool inspect_enter(const ref<TryFinally>&) override;
   ref<Statement> transform(const ref<TryFinally>&) override;
 
-  void inspect_leave(const ref<Id>&) override;
+  ref<Expression> transform(const ref<Id>&) override;
 };
 
 }  // namespace charly::core::compiler::ast
