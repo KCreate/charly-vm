@@ -108,54 +108,65 @@ void DuplicatesCheck::inspect_leave(const ref<Class>& node) {
     class_static_properties[prop->name->value] = prop;
   }
 
-  // check for duplicate member function overloads
-  for (const ref<Function>& func : node->member_functions) {
-    const auto& name = func->name->value;
-    auto minargc = func->minimum_argc();
-    auto argc = func->argc();
-    bool has_spread = func->has_spread();
+  auto check_overload_conflicts = [&](auto& functions, auto& target_properties, auto& target_functions) {
+    for (const ref<Function>& func : functions) {
+      const auto& name = func->name->value;
+      auto minargc = func->minimum_argc();
+      auto argc = func->argc();
+      bool has_spread = func->has_spread();
 
-    // check for shadowed properties
-    if (class_member_properties.count(name)) {
-      m_console.error(func->name, "redeclaration of member property '", name, "' as member function");
-      m_console.info(class_member_properties.at(name)->name, "first declared as member property here");
-      continue;
-    }
+      // check for shadowed properties
+      if (target_properties.count(name)) {
+        m_console.error(func->name, "redeclaration of property '", name, "' as function");
+        m_console.info(target_properties.at(name)->name, "first declared as property here");
+        continue;
+      }
 
-    // initialize member function overload group
-    auto& overload_group = class_member_functions[crc32::hash_string(name)];
+      // initialize function overload group
+      auto& overload_group = target_functions[crc32::hash_string(name)];
 
-    // make sure the function doesn't collide with a previous overload
-    bool duplicate_found = false;
-    for (auto overload : overload_group) {
-      uint8_t overload_argc = overload->argc();
-      uint8_t overload_minargc = overload->minimum_argc();
-      bool overload_has_spread = overload->has_spread();
+      // make sure the function doesn't collide with a previous overload
+      bool duplicate_found = false;
+      for (auto overload : overload_group) {
+        uint8_t overload_argc = overload->argc();
+        uint8_t overload_minargc = overload->minimum_argc();
+        bool overload_has_spread = overload->has_spread();
 
-      // 1. previous overload has spread argument that would capture new overload arguments
-      bool spread_hides_new_overload = overload_has_spread && overload_argc <= minargc;
+        // 1. overload has spread argument that would capture other overload arguments
+        // func foo(a, b, c...)
+        // func foo(a, b, c = 1, d = 2)
+        //
+        // unclear wether foo(1, 2) should call first or second overload -> conflict!
+        bool spread_conflict =
+          (overload_has_spread && overload_argc <= minargc) || (has_spread && argc <= overload_minargc);
 
-      // 2. new overload has spread that would hide old overload arguments
-      bool spread_hides_old_overload = has_spread && argc <= overload_minargc;
+        // 2. previous overload range overlaps with new range
+        // func foo(a, b, c = 1, d = 2)
+        // func foo(a, b, d, c = 1)
+        //
+        // unclear wether foo(1, 2, 3) should call first or second overload -> conflict!
+        bool overlap_conflict = (argc >= overload_minargc && minargc <= overload_argc) ||
+                                (overload_argc >= minargc && overload_minargc <= argc);
 
-      // 3. previous overload range overlaps with new range
-      bool overlap = !(argc < overload_minargc || overload_argc < minargc);
+        // check if the overloads overlap_hides_old_overload
+        if (spread_conflict || overlap_conflict) {
+          m_console.error(func->name, "function overload shadows previous overload");
+          m_console.info(overload->name, "first declared here");
+          duplicate_found = true;
+          break;
+        }
+      }
 
-      // check if the overloads overlap
-      if (spread_hides_new_overload || spread_hides_old_overload || overlap) {
-        m_console.error(func->name, "member function overload shadows previous overload");
-        m_console.info(overload->name, "first declared here");
-        duplicate_found = true;
+      if (!duplicate_found) {
+        overload_group.push_back(func);
+      } else {
         break;
       }
     }
+  };
 
-    if (!duplicate_found) {
-      overload_group.push_back(func);
-    } else {
-      break;
-    }
-  }
+  // check for duplicate member function overloads
+  check_overload_conflicts(node->member_functions, class_member_properties, class_member_functions);
 
   // sort individual overload sets by minargc
   for (auto overload_group : class_member_functions) {
@@ -167,53 +178,7 @@ void DuplicatesCheck::inspect_leave(const ref<Class>& node) {
   node->member_function_overloads = class_member_functions;
 
   // check for duplicate static functions or properties
-  for (const ref<Function>& func : node->static_functions) {
-    const auto& name = func->name->value;
-    auto minargc = func->minimum_argc();
-    auto argc = func->argc();
-    bool has_spread = func->has_spread();
-
-    // check for shadowed properties
-    if (class_static_properties.count(name)) {
-      m_console.error(func->name, "redeclaration of static property '", name, "' as static function");
-      m_console.info(class_static_properties.at(name)->name, "first declared as static property here");
-      continue;
-    }
-
-    // initialize member function overload group
-    auto& overload_group = class_static_functions[crc32::hash_string(name)];
-
-    // make sure the function doesn't collide with a previous overload
-    bool duplicate_found = false;
-    for (auto overload : overload_group) {
-      uint8_t overload_argc = overload->argc();
-      uint8_t overload_minargc = overload->minimum_argc();
-      bool overload_has_spread = overload->has_spread();
-
-      // 1. previous overload has spread argument that would capture new overload arguments
-      bool spread_hides_new_overload = overload_has_spread && overload_argc <= minargc;
-
-      // 2. new overload has spread that would hide old overload arguments
-      bool spread_hides_old_overload = has_spread && argc <= overload_minargc;
-
-      // 3. previous overload range overlaps with new range
-      bool overlap = !(argc < overload_minargc || overload_argc < minargc);
-
-      // check if the overloads overlap
-      if (spread_hides_new_overload || spread_hides_old_overload || overlap) {
-        m_console.error(func->name, "static function overload shadows previous overload");
-        m_console.info(overload->name, "first declared here");
-        duplicate_found = true;
-        break;
-      }
-    }
-
-    if (!duplicate_found) {
-      overload_group.push_back(func);
-    } else {
-      break;
-    }
-  }
+  check_overload_conflicts(node->static_functions, class_static_properties, class_static_functions);
 
   // sort individual overload sets by minargc
   for (auto overload_group : class_static_functions) {

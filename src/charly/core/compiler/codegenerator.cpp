@@ -544,14 +544,14 @@ bool CodeGenerator::inspect_enter(const ref<Class>& node) {
   //   #5 func foo(a, b, c, d, e, f, g)
   //
   // would result in the following overload tuple:
-  // (#1, #2, #2, #3, #4, #5, #5)
+  // (#1, #2, #2, #2, #3, #4, #5, #5)
   //
   // calls would be routed like this
   //
   // foo()                      -> #1
   // foo(1)                     -> #2
   // foo(1, 2)                  -> #2
-  // foo(1, 2, 3)               -> #3
+  // foo(1, 2, 3)               -> #2
   // foo(1, 2, 3, 4)            -> #3
   // foo(1, 2, 3, 4, 5)         -> #4
   // foo(1, 2, 3, 4, 5, 6)      -> #5 (error not enough arguments, expected 7, got 6)
