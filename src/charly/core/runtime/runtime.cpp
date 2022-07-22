@@ -184,7 +184,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
                                             { "parent", RawShape::kKeyFlagReadOnly },
                                             { "shape", RawShape::kKeyFlagInternal },
                                             { "function_table", RawShape::kKeyFlagInternal },
-                                            { "constructor", RawShape::kKeyFlagNone } });
+                                            { "constructor", RawShape::kKeyFlagInternal } });
 
   auto builtin_shape_shape = create_shape(thread, builtin_shape_builtin_instance,
                                           { { "id", RawShape::kKeyFlagReadOnly },
@@ -223,6 +223,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   RawClass class_value = RawClass::unsafe_cast(create_instance(thread, class_value_shape));
   class_value.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);
   class_value.set_ancestor_table(create_tuple(thread, 0));
+  class_value.set_name(RawSymbol::make(declare_symbol(thread, "Value")));
   class_value.set_parent(kNull);
   class_value.set_shape_instance(builtin_shape_value);
   class_value.set_function_table(create_tuple(thread, 0));
@@ -566,8 +567,6 @@ RawValue Runtime::create_class(Thread* thread,
   RawTuple parent_function_table = parent_class.function_table();
   RawTuple new_function_table;
 
-  // TODO: write detailed comment with graphics on how overload tables are merged
-
   // can simply reuse parent function table if no new functions are being added
   if (member_funcs.size() == 0) {
     new_function_table = parent_function_table;
@@ -743,8 +742,9 @@ RawValue Runtime::create_class(Thread* thread,
       auto overloads = RawTuple::cast(entry.overload_table());
       for (uint32_t j = 0; j < overloads.size(); j++) {
         auto func = overloads.field_at<RawFunction>(j);
-        DCHECK(func.host_class().isNull());
-        func.set_host_class(static_class);
+        if (func.host_class().isNull()) {
+          func.set_host_class(static_class);
+        }
       }
     }
 
