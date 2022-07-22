@@ -1065,6 +1065,8 @@ RawValue RawClass::lookup_function(SYMBOL name) const {
   }
 
   // search in parent class
+  // TODO: can this be removed? all classes should contain copies of their parents functions inside their own
+  //       function tables anyway
   auto p = parent();
   if (p.isClass()) {
     return RawClass::cast(p).lookup_function(name);
@@ -1184,6 +1186,13 @@ SharedFunctionInfo* RawFunction::shared_info() const {
 
 void RawFunction::set_shared_info(SharedFunctionInfo* function) {
   set_pointer_at(kSharedInfoOffset, function);
+}
+
+bool RawFunction::check_accepts_argc(uint32_t argc) {
+  auto& ir_info = shared_info()->ir_info;
+  bool direct_match = argc >= ir_info.minargc && argc <= ir_info.argc;
+  bool spread_match = argc > ir_info.argc && ir_info.spread_argument;
+  return direct_match || spread_match;
 }
 
 BuiltinFunctionType RawBuiltinFunction::function() const {

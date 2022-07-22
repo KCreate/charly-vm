@@ -113,9 +113,9 @@ public:
   RawTuple concat_tuple(Thread* thread, RawTuple left, RawTuple right);
   RawTuple concat_tuple_value(Thread* thread, RawTuple left, RawValue value);
 
-  RawClass create_class(Thread* thread,
+  RawValue create_class(Thread* thread,
                         SYMBOL name,
-                        RawClass parent,
+                        RawValue parent,
                         RawFunction constructor,
                         RawTuple member_props,
                         RawTuple member_funcs,

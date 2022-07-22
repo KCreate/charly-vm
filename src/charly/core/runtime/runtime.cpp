@@ -502,9 +502,9 @@ RawHugeString Runtime::create_huge_string_acquire(Thread* thread, char* data, si
   return object;
 }
 
-RawClass Runtime::create_class(Thread* thread,
+RawValue Runtime::create_class(Thread* thread,
                                SYMBOL name,
-                               RawClass parent,
+                               RawValue parent_value,
                                RawFunction constructor,
                                RawTuple member_props,
                                RawTuple member_funcs,
@@ -512,27 +512,179 @@ RawClass Runtime::create_class(Thread* thread,
                                RawTuple static_prop_values,
                                RawTuple static_funcs,
                                uint32_t flags) {
-  auto object_shape = create_shape(thread, parent.shape_instance(), member_props);
+  if (parent_value.is_error_no_base_class()) {
+    parent_value = get_builtin_class(thread, ShapeId::kInstance);
+  }
 
-  // initialize the overload tables of member and static functions
-  auto member_funcs_tuple = create_tuple(thread, member_funcs.size());
-  for (uint32_t i = 0; i < member_funcs.size(); i++) {
-    auto overload_tuple = member_funcs.field_at<RawTuple>(i);
-    DCHECK(overload_tuple.size() >= 1);
+  if (!parent_value.isClass()) {
+    thread->throw_value(create_exception_with_message(thread, "extended value is not a class"));
+    return kErrorException;
+  }
 
-    // point functions to the same overload tuple
-    for (uint32_t j = 0; j < overload_tuple.size(); j++) {
-      auto func = overload_tuple.field_at<RawFunction>(j);
-      func.set_overload_table(overload_tuple);
+  RawClass parent_class = RawClass::cast(parent_value);
+  RawShape parent_shape = parent_class.shape_instance();
+
+  if (parent_class.flags() & RawClass::kFlagFinal) {
+    thread->throw_value(
+      create_exception_with_message(thread, "cannot subclass class '%', it is marked final", parent_class.name()));
+    return kErrorException;
+  }
+
+  // check for duplicate member properties
+  auto parent_keys_tuple = parent_shape.keys();
+  for (uint8_t i = 0; i < member_props.size(); i++) {
+    auto encoded = member_props.field_at<RawInt>(i);
+    SYMBOL prop_name;
+    uint8_t prop_flags;
+    RawShape::decode_shape_key(encoded, prop_name, prop_flags);
+    for (uint32_t pi = 0; pi < parent_keys_tuple.size(); pi++) {
+      SYMBOL parent_key_symbol;
+      uint8_t parent_key_flags;
+      RawShape::decode_shape_key(parent_keys_tuple.field_at<RawInt>(pi), parent_key_symbol, parent_key_flags);
+      if (parent_key_symbol == prop_name) {
+        thread->throw_value(
+          create_exception_with_message(thread, "cannot redeclare property '%', parent class '%' already contains it",
+                                        RawSymbol::make(prop_name), parent_class.name()));
+        return kErrorException;
+      }
+    }
+  }
+
+  // ensure new class doesn't exceed the class member property limit
+  size_t new_member_count = parent_shape.field_count() + member_props.size();
+  if (new_member_count > RawInstance::kMaximumFieldCount) {
+    // for some reason, RawInstance::kMaximumFieldCount needs to be casted to its own
+    // type, before it can be used in here. this is some weird template thing...
+    thread->throw_value(
+      create_exception_with_message(thread, "newly created class '%' has % properties, but the limit is %",
+                                    RawSymbol::make(name), new_member_count, (size_t)RawInstance::kMaximumFieldCount));
+    return kErrorException;
+  }
+
+  auto object_shape = create_shape(thread, parent_shape, member_props);
+
+  RawTuple parent_function_table = parent_class.function_table();
+  RawTuple new_function_table;
+
+  // TODO: write detailed comment with graphics on how overload tables are merged
+
+  // can simply reuse parent function table if no new functions are being added
+  if (member_funcs.size() == 0) {
+    new_function_table = parent_function_table;
+  } else {
+    std::unordered_map<SYMBOL, uint32_t> parent_function_indices;
+    std::set<SYMBOL> new_function_names;
+    for (uint32_t j = 0; j < parent_function_table.size(); j++) {
+      auto parent_function = parent_function_table.field_at<RawFunction>(j);
+      parent_function_indices[parent_function.name()] = j;
     }
 
-    // put the lowest overload into the functions lookup table
-    // since every function part of the overload has a reference to the overload table
-    // it doesn't really matter which function we put in there
-    auto first_overload = overload_tuple.field_at<RawFunction>(0);
-    member_funcs_tuple.set_field_at(i, first_overload);
+    // calculate the amount of functions being added that are not already present in the parent class
+    size_t newly_added_functions = 0;
+    for (uint32_t i = 0; i < member_funcs.size(); i++) {
+      auto method_name = RawFunction::cast(member_funcs.field_at<RawTuple>(i).field_at(0)).name();
+      new_function_names.insert(method_name);
+
+      if (parent_function_indices.count(method_name) == 0) {
+        newly_added_functions++;
+      }
+    }
+
+    size_t new_function_table_size = parent_function_table.size() + newly_added_functions;
+    new_function_table = create_tuple(thread, new_function_table_size);
+
+    // functions which are not being overriden in the new class can be copied to the new table
+    size_t new_function_table_offset = 0;
+    for (uint32_t j = 0; j < parent_function_table.size(); j++) {
+      auto parent_function = parent_function_table.field_at<RawFunction>(j);
+      if (new_function_names.count(parent_function.name()) == 0) {
+        new_function_table.set_field_at(new_function_table_offset++, parent_function);
+      }
+    }
+
+    // insert new methods into function table
+    // the overload tables of functions that override functions from the parent class must be merged
+    // with the overload tables from their parents
+    for (uint32_t i = 0; i < member_funcs.size(); i++) {
+      auto new_overload_table = member_funcs.field_at<RawTuple>(i);
+      auto first_overload = new_overload_table.field_at<RawFunction>(0);
+      auto new_overload_name = first_overload.name();
+
+      // new function does not override any parent functions
+      if (parent_function_indices.count(new_overload_name) == 0) {
+        for (uint32_t j = 0; j < new_overload_table.size(); j++) {
+          new_overload_table.field_at<RawFunction>(j).set_overload_table(new_overload_table);
+        }
+        new_function_table.set_field_at(new_function_table_offset++, first_overload);
+        continue;
+      }
+
+      uint32_t parent_function_index = parent_function_indices[new_overload_name];
+      auto parent_function = parent_function_table.field_at<RawFunction>(parent_function_index);
+      auto parent_overload_table = RawTuple::cast(parent_function.overload_table());
+
+      auto max_parent_overload = parent_overload_table.last_field<RawFunction>();
+      auto max_new_overload = new_overload_table.last_field<RawFunction>();
+
+      uint32_t parent_max_argc = max_parent_overload.shared_info()->ir_info.argc;
+      uint32_t new_max_argc = max_new_overload.shared_info()->ir_info.argc;
+      uint32_t max_argc = std::max(parent_max_argc, new_max_argc);
+      uint32_t merged_size = max_argc + 2;
+      auto merged_table = create_tuple(thread, merged_size);
+
+      // merge the parents and the new functions overload tables
+      RawFunction highest_overload;
+      RawFunction lowest_new_overload = new_overload_table.first_field<RawFunction>();
+      for (uint32_t argc = 0; argc < merged_size; argc++) {
+        uint32_t parent_table_index = std::min(parent_overload_table.size() - 1, argc);
+        uint32_t new_table_index = std::min(new_overload_table.size() - 1, argc);
+
+        auto parent_method = parent_overload_table.field_at<RawFunction>(parent_table_index);
+        auto new_method = new_overload_table.field_at<RawFunction>(new_table_index);
+
+        if (new_method.check_accepts_argc(argc)) {
+          new_method.set_overload_table(merged_table);
+          merged_table.set_field_at(argc, new_method);
+          highest_overload = new_method;
+          continue;
+        }
+
+        if (parent_method.check_accepts_argc(argc)) {
+          auto method_copy =
+            create_function(thread, parent_method.context(), parent_method.shared_info(), parent_method.saved_self());
+
+          method_copy.set_overload_table(merged_table);
+          method_copy.set_host_class(parent_method.host_class());
+          merged_table.set_field_at(argc, method_copy);
+          highest_overload = method_copy;
+          continue;
+        }
+
+        merged_table.set_field_at(argc, kNull);
+      }
+
+      // patch holes in the merged table with their next highest applicable overload
+      // trailing holes are filled with the next lowest overload
+      RawValue next_highest_method = kNull;
+      for (int64_t k = merged_size - 1; k >= 0; k--) {
+        auto field = merged_table.field_at(k);
+        if (field.isNull()) {
+          if (next_highest_method.isNull()) {
+            merged_table.set_field_at(k, highest_overload);
+          } else {
+            merged_table.set_field_at(k, next_highest_method);
+          }
+        } else {
+          next_highest_method = field;
+        }
+      }
+
+      new_function_table.set_field_at(new_function_table_offset++, lowest_new_overload);
+    }
   }
-  auto static_funcs_tuple = create_tuple(thread, static_funcs.size());
+
+  // build overload tables for static functions
+  auto static_function_table = create_tuple(thread, static_funcs.size());
   for (uint32_t i = 0; i < static_funcs.size(); i++) {
     auto overload_tuple = static_funcs.field_at<RawTuple>(i);
     DCHECK(overload_tuple.size() >= 1);
@@ -547,7 +699,7 @@ RawClass Runtime::create_class(Thread* thread,
     // since every function part of the overload has a reference to the overload table
     // it doesn't really matter which function we put in there
     auto first_overload = overload_tuple.field_at<RawFunction>(0);
-    static_funcs_tuple.set_field_at(i, first_overload);
+    static_function_table.set_field_at(i, first_overload);
   }
 
   // if there are any static properties or functions in this class
@@ -566,17 +718,17 @@ RawClass Runtime::create_class(Thread* thread,
     static_class.set_name(RawSymbol::make(name));
     static_class.set_parent(builtin_class_instance);
     static_class.set_shape_instance(static_shape);
-    static_class.set_function_table(static_funcs_tuple);
+    static_class.set_function_table(static_function_table);
     static_class.set_constructor(kNull);
 
     // build instance of newly created static shape
     auto actual_class = RawClass::cast(create_instance(thread, static_shape, static_class));
     actual_class.set_flags(flags);
-    actual_class.set_ancestor_table(concat_tuple_value(thread, parent.ancestor_table(), parent));
+    actual_class.set_ancestor_table(concat_tuple_value(thread, parent_class.ancestor_table(), parent_class));
     actual_class.set_name(RawSymbol::make(name));
-    actual_class.set_parent(parent);
+    actual_class.set_parent(parent_class);
     actual_class.set_shape_instance(object_shape);
-    actual_class.set_function_table(member_funcs_tuple);
+    actual_class.set_function_table(new_function_table);
     actual_class.set_constructor(constructor);
 
     // initialize static properties
@@ -586,29 +738,40 @@ RawClass Runtime::create_class(Thread* thread,
     }
 
     // patch host class field on static functions
-    for (uint32_t i = 0; i < static_funcs_tuple.size(); i++) {
-      auto func = static_funcs_tuple.field_at<RawFunction>(i);
-      func.set_host_class(static_class);
+    for (uint32_t i = 0; i < static_function_table.size(); i++) {
+      auto entry = static_function_table.field_at<RawFunction>(i);
+      auto overloads = RawTuple::cast(entry.overload_table());
+      for (uint32_t j = 0; j < overloads.size(); j++) {
+        auto func = overloads.field_at<RawFunction>(j);
+        DCHECK(func.host_class().isNull());
+        func.set_host_class(static_class);
+      }
     }
 
     constructed_class = actual_class;
   } else {
     auto klass = RawClass::cast(create_instance(thread, builtin_class_instance));
     klass.set_flags(flags);
-    klass.set_ancestor_table(concat_tuple_value(thread, parent.ancestor_table(), parent));
+    klass.set_ancestor_table(concat_tuple_value(thread, parent_class.ancestor_table(), parent_class));
     klass.set_name(RawSymbol::make(name));
-    klass.set_parent(parent);
+    klass.set_parent(parent_class);
     klass.set_shape_instance(object_shape);
-    klass.set_function_table(member_funcs_tuple);
+    klass.set_function_table(new_function_table);
     klass.set_constructor(constructor);
     constructed_class = klass;
   }
 
   // set host class fields on functions
   constructor.set_host_class(constructed_class);
-  for (uint32_t i = 0; i < member_funcs_tuple.size(); i++) {
-    auto func = member_funcs_tuple.field_at<RawFunction>(i);
-    func.set_host_class(constructed_class);
+  for (uint32_t i = 0; i < new_function_table.size(); i++) {
+    auto entry = new_function_table.field_at<RawFunction>(i);
+    auto overloads = RawTuple::cast(entry.overload_table());
+    for (uint32_t j = 0; j < overloads.size(); j++) {
+      auto func = overloads.field_at<RawFunction>(j);
+      if (func.host_class().isNull()) {
+        func.set_host_class(constructed_class);
+      }
+    }
   }
 
   return constructed_class;

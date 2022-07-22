@@ -133,11 +133,8 @@ RawValue Interpreter::call_function(
   // find the correct overload to call
   if (function.overload_table().isTuple()) {
     auto overload_table = RawTuple::cast(function.overload_table());
-    if (argc >= overload_table.size()) {
-      function = overload_table.field_at<RawFunction>(overload_table.size() - 1);
-    } else {
-      function = overload_table.field_at<RawFunction>(argc);
-    }
+    DCHECK(overload_table.size() > 0);
+    function = overload_table.field_at<RawFunction>(std::min(argc, overload_table.size() - 1));
   }
 
   Frame frame(thread, function);
@@ -1098,71 +1095,24 @@ OP(makefunc) {
 }
 
 OP(makeclass) {
-  Runtime* runtime = thread->runtime();
-
-  RawTuple static_prop_values = RawTuple::cast(frame->pop());
-  RawTuple static_prop_keys = RawTuple::cast(frame->pop());
-  RawTuple static_functions = RawTuple::cast(frame->pop());
-  RawTuple member_props = RawTuple::cast(frame->pop());
-  RawTuple member_functions = RawTuple::cast(frame->pop());
-  RawFunction constructor = RawFunction::cast(frame->pop());
-  RawValue parent_value = frame->pop();
-  RawSymbol name = RawSymbol::cast(frame->pop());
-  RawInt flags = RawInt::cast(frame->pop());
-
-  // make sure that the parent value is either kErrorNoBaseClass or an actual class instance
-  if (!(parent_value.isClass() || parent_value.is_error_no_base_class())) {
-    thread->throw_value(runtime->create_exception_with_message(thread, "extended value is not a class"));
-    return ContinueMode::Exception;
-  }
-
-  if (parent_value.is_error_no_base_class()) {
-    parent_value = runtime->get_builtin_class(thread, ShapeId::kInstance);
-  }
-
-  auto parent = RawClass::cast(parent_value);
-
-  // ensure parent class isn't marked final
-  if (parent.flags() & RawClass::kFlagFinal) {
-    thread->throw_value(
-      runtime->create_exception_with_message(thread, "cannot subclass class '%', it is marked final", parent.name()));
-    return ContinueMode::Exception;
-  }
-
-  // ensure new class doesn't shadow any of the parent properties
-  auto parent_keys_tuple = parent.shape_instance().keys();
-  for (uint8_t i = 0; i < member_props.size(); i++) {
-    auto encoded = member_props.field_at<RawInt>(i);
-    SYMBOL prop_name;
-    uint8_t prop_flags;
-    RawShape::decode_shape_key(encoded, prop_name, prop_flags);
-    for (uint32_t pi = 0; pi < parent_keys_tuple.size(); pi++) {
-      SYMBOL parent_key_symbol;
-      uint8_t parent_key_flags;
-      RawShape::decode_shape_key(parent_keys_tuple.field_at<RawInt>(pi), parent_key_symbol, parent_key_flags);
-      if (parent_key_symbol == prop_name) {
-        thread->throw_value(runtime->create_exception_with_message(
-          thread, "cannot redeclare property '%', parent class '%' already contains it", RawSymbol::make(prop_name),
-          parent.name()));
-        return ContinueMode::Exception;
-      }
-    }
-  }
-
-  // ensure new class doesn't exceed the class member property limit
-  size_t new_member_count = parent_keys_tuple.size() + member_props.size();
-  if (new_member_count > RawInstance::kMaximumFieldCount) {
-    // for some reason, RawInstance::kMaximumFieldCount needs to be casted to its own
-    // type, before it can be used in here. this is some weird template thing...
-    thread->throw_value(runtime->create_exception_with_message(
-      thread, "newly created class has too many properties, limit is %", (size_t)RawInstance::kMaximumFieldCount));
-    return ContinueMode::Exception;
-  }
+  auto static_prop_values = RawTuple::cast(frame->pop());
+  auto static_prop_keys = RawTuple::cast(frame->pop());
+  auto static_functions = RawTuple::cast(frame->pop());
+  auto member_props = RawTuple::cast(frame->pop());
+  auto member_functions = RawTuple::cast(frame->pop());
+  auto constructor = RawFunction::cast(frame->pop());
+  auto parent_value = frame->pop();
+  auto name = RawSymbol::cast(frame->pop());
+  auto flags = RawInt::cast(frame->pop());
 
   // attempt to create the new class
-  RawClass result =
-    thread->runtime()->create_class(thread, name, parent, constructor, member_props, member_functions, static_prop_keys,
-                                    static_prop_values, static_functions, flags.value());
+  RawValue result =
+    thread->runtime()->create_class(thread, name, parent_value, constructor, member_props, member_functions,
+                                    static_prop_keys, static_prop_values, static_functions, flags.value());
+
+  if (result.is_error_exception()) {
+    return ContinueMode::Exception;
+  }
 
   frame->push(RawClass::cast(result));
   return ContinueMode::Next;

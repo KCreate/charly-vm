@@ -24,12 +24,58 @@
  * SOFTWARE.
  */
 
-import "./lib" as lib1
-import "./lib" as lib2
-import "./lib" as lib3
+class Foo {
+    func foo() {
+        return "Foo::foo()"
+    }
 
-if lib1 != lib2 || lib2 != lib3 {
-    throw "different modules"
+    func foo(x) {
+        return "Foo::foo(x)"
+    }
+
+    func foo(x, y) {
+        return "Foo::foo(x, y)"
+    }
 }
 
-print("success")
+class Bar extends Foo {
+    func foo() {
+        return ("Bar::foo()", super())
+    }
+
+    func foo(x) {
+        return ("Bar::foo(x)", super(x))
+    }
+
+    func foo(x, y) {
+        return ("Bar::foo(x, y)", super(x, y))
+    }
+}
+
+class Baz extends Bar {
+    func foo() {
+        return ("Baz::foo()", super())
+    }
+
+    func foo(x) {
+        return ("Baz::foo(x)", super(x))
+    }
+
+    func foo(x, y) {
+        return ("Baz::foo(x, y)", super(x, y))
+    }
+}
+
+const f = Baz()
+
+print(f.foo())
+print(f.foo(1))
+print(f.foo(1, 2))
+
+
+
+
+
+
+
+

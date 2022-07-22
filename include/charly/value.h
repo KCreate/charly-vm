@@ -605,6 +605,17 @@ public:
     return R::cast(data[index]);
   }
 
+  template <typename R = RawValue>
+  R first_field() const {
+    return field_at<R>(0);
+  }
+
+  template <typename R = RawValue>
+  R last_field() const {
+    DCHECK(size() > 0);
+    return field_at<R>(size() - 1);
+  }
+
   template <typename T = RawValue>
   void set_field_at(uint32_t index, T value) {
     DCHECK(index < size());
@@ -844,6 +855,9 @@ public:
 
   SharedFunctionInfo* shared_info() const;
   void set_shared_info(SharedFunctionInfo* function);
+
+  // check wether this specific function instance (ignoring overloads) would accept *argc* arguments
+  bool check_accepts_argc(uint32_t argc);
 
   enum
   {
