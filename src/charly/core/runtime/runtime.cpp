@@ -183,7 +183,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
                                             { "name", RawShape::kKeyFlagReadOnly },
                                             { "parent", RawShape::kKeyFlagReadOnly },
                                             { "shape", RawShape::kKeyFlagInternal },
-                                            { "function_table", RawShape::kKeyFlagInternal },
+                                            { "function_table", RawShape::kKeyFlagReadOnly },
                                             { "constructor", RawShape::kKeyFlagInternal } });
 
   auto builtin_shape_shape = create_shape(thread, builtin_shape_builtin_instance,
@@ -192,13 +192,14 @@ void Runtime::initialize_builtin_types(Thread* thread) {
                                             { "keys", RawShape::kKeyFlagInternal },
                                             { "additions", RawShape::kKeyFlagInternal } });
 
-  auto builtin_shape_function = create_shape(thread, builtin_shape_builtin_instance,
-                                             { { "name", RawShape::kKeyFlagReadOnly },
-                                               { "context", RawShape::kKeyFlagInternal },
-                                               { "saved_self", RawShape::kKeyFlagInternal },
-                                               { "host_class", RawShape::kKeyFlagReadOnly },
-                                               { "overload_table", RawShape::kKeyFlagInternal },
-                                               { "shared_info", RawShape::kKeyFlagInternal } });
+  auto builtin_shape_function =
+    create_shape(thread, builtin_shape_builtin_instance,
+                 { { "name", RawShape::kKeyFlagReadOnly },
+                   { "context", RawShape::kKeyFlagInternal },
+                   { "saved_self", RawShape::kKeyFlagInternal },
+                   { "host_class", RawShape::kKeyFlagReadOnly },
+                   { "overload_table", RawShape::kKeyFlagReadOnly | RawShape::kKeyFlagPrivate },
+                   { "shared_info", RawShape::kKeyFlagInternal } });
 
   auto builtin_shape_builtin_function = create_shape(thread, builtin_shape_builtin_instance,
                                                      { { "function", RawShape::kKeyFlagInternal },

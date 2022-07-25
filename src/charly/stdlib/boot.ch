@@ -78,81 +78,89 @@ func exit(status = 0) = builtin_exit(status)
 
 func currentworkingdirectory = builtin_currentworkingdirectory()
 
-class builtin_Instance {
-    func constructor = self
-}
-
-class builtin_Int {
-    func times(cb) {
-        let i = 0
-        loop {
-            cb(i)
-            i += 1
-            if i == self break
-        }
-
-        self
-    }
-}
-
-class builtin_Tuple {
-    func each(cb) {
-        const size = @length
-        let i = 0
-
-        loop {
-            cb(self[i], i)
-            i += 1
-            if i == size break
-        }
-
-        self
-    }
-
-    func map(cb) {
-        const rv = Tuple.make(@length)
-        each(->(e, i) {
-            rv[i] = cb(e, i)
-        })
-        rv
-    }
-
-    static func make(length = 0, initial = null) = builtin_makelist(length, initial)
-}
-
-class builtin_Function {
-    func disassemble {
-        print("disassembly of {self}")
-        builtin_disassemble(self)
-    }
-}
-
-class builtin_Exception {
-    func constructor(@message) {
-        // TODO: trim correct numer of stack frames when called from subclass constructors
-        @stack_trace = Exception.getstacktrace(2)
-    }
-
-    static func getstacktrace(trim = 0) = builtin_getstacktrace(trim)
-}
-
-class builtin_ImportException {
-    func constructor(@message, @errors) {
-        // TODO: trim correct numer of stack frames when called from subclass constructors
-        @stack_trace = Exception.getstacktrace(2)
-    }
-}
-
-class builtin_Fiber {
-    static func current = builtin_currentfiber()
-}
-
 ->{
     let $$ = null
 
+    class builtin_Value {}
+
+    class builtin_Instance {
+        func constructor = self
+    }
+
+    class builtin_Int {
+        func times(cb) {
+            let i = 0
+            loop {
+                cb(i)
+                i += 1
+                if i == self break
+            }
+
+            self
+        }
+    }
+
+    class builtin_Tuple {
+        func each(cb) {
+            const size = @length
+            let i = 0
+
+    static func make(length = 0, initial = null) = builtin_makelist(length, initial)
+            loop {
+                cb(self[i], i)
+                i += 1
+                if i == size break
+            }
+
+            self
+        }
+
+        func map(cb) {
+            const rv = Tuple.make(@length)
+            each(->(e, i) {
+                rv[i] = cb(e, i)
+            })
+            rv
+        }
+
+    }
+
+    class builtin_Function {
+        func disassemble() {
+            print("disassembly of {self}")
+            builtin_disassemble(self)
+        }
+    }
+
+    class builtin_Exception {
+        func constructor(@message) {
+            // TODO: trim correct numer of stack frames when called from subclass constructors
+            @stack_trace = Exception.getstacktrace(2)
+        }
+
+        static func getstacktrace(trim = 0) = builtin_getstacktrace(trim)
+    }
+
+    class builtin_ImportException {
+        func constructor(@message, @errors) {
+            // TODO: trim correct numer of stack frames when called from subclass constructors
+            @stack_trace = Exception.getstacktrace(2)
+        }
+    }
+
+    class builtin_Fiber {
+        static func current = builtin_currentfiber()
+    }
+
+    class builtin_Class {
+        func new(...args) = self(...args)
+    }
+
+    builtin_transplant_builtin_class(Value, builtin_Value)
     builtin_transplant_builtin_class(Instance, builtin_Instance)
-    builtin_transplant_builtin_class(Int, builtin_Int)
+    builtin_transplant_builtin_class(Class, builtin_Class)
     builtin_transplant_builtin_class(Tuple, builtin_Tuple)
+    builtin_transplant_builtin_class(Int, builtin_Int)
     builtin_transplant_builtin_class(Function, builtin_Function)
     builtin_transplant_builtin_class(Exception, builtin_Exception)
     builtin_transplant_builtin_class(ImportException, builtin_ImportException)

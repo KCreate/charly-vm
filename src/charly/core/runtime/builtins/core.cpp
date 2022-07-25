@@ -67,6 +67,12 @@ RawValue transplantbuiltinclass(Thread* thread, const RawValue* args, uint8_t ar
       runtime->create_exception_with_message(thread, "expected base class function table to be empty"));
     return kErrorException;
   }
+
+  if (donor_class.parent() != runtime->get_builtin_class(thread, ShapeId::kInstance)) {
+    thread->throw_value(
+      runtime->create_exception_with_message(thread, "expected donor class to not be a subclass"));
+    return kErrorException;
+  }
   klass.set_constructor(donor_class.constructor());
   klass.set_function_table(donor_class.function_table());
   for (uint32_t i = 0; i < klass.function_table().size(); i++) {
@@ -86,7 +92,8 @@ RawValue transplantbuiltinclass(Thread* thread, const RawValue* args, uint8_t ar
   donor_class.set_constructor(kNull);
   donor_class.set_function_table(runtime->create_tuple(thread, 0));
 
-  if (static_class != runtime->get_builtin_class(thread, ShapeId::kClass)) {
+  auto builtin_class_class = runtime->get_builtin_class(thread, ShapeId::kClass);
+  if (static_donor_class != builtin_class_class) {
     if (static_class.function_table().size()) {
       thread->throw_value(
         runtime->create_exception_with_message(thread, "expected base static class function table to be empty"));
@@ -109,7 +116,7 @@ RawValue transplantbuiltinclass(Thread* thread, const RawValue* args, uint8_t ar
     }
   }
 
-  return thread->fiber();
+  return kNull;
 }
 
 RawValue writeline(Thread*, const RawValue* args, uint8_t argc) {

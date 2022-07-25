@@ -25,57 +25,12 @@
  */
 
 class Foo {
-    func foo() {
-        return "Foo::foo()"
-    }
-
-    func foo(x) {
-        return "Foo::foo(x)"
-    }
-
-    func foo(x, y) {
-        return "Foo::foo(x, y)"
-    }
+    property args
+    func constructor(...@args)
 }
 
-class Bar extends Foo {
-    func foo() {
-        return ("Bar::foo()", super())
-    }
+const f = Foo.new(1, 2, 3)
+print(f.args)
 
-    func foo(x) {
-        return ("Bar::foo(x)", super(x))
-    }
-
-    func foo(x, y) {
-        return ("Bar::foo(x, y)", super(x, y))
-    }
-}
-
-class Baz extends Bar {
-    func foo() {
-        return ("Baz::foo()", super())
-    }
-
-    func foo(x) {
-        return ("Baz::foo(x)", super(x))
-    }
-
-    func foo(x, y) {
-        return ("Baz::foo(x, y)", super(x, y))
-    }
-}
-
-const f = Baz()
-
-print(f.foo())
-print(f.foo(1))
-print(f.foo(1, 2))
-
-
-
-
-
-
-
-
+print(Class.test_method())
+print(Fiber.current())
