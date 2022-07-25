@@ -34,6 +34,7 @@ const builtin_getstacktrace = @"charly.builtin.core.getstacktrace"
 const builtin_disassemble = @"charly.builtin.core.disassemble"
 const builtin_maketuple = @"charly.builtin.core.maketuple"
 const builtin_exit = @"charly.builtin.core.exit"
+const builtin_compile = @"charly.builtin.core.compile"
 
 const builtin_readline_prompt = @"charly.builtin.readline.prompt"
 const builtin_readline_add_history = @"charly.builtin.readline.add_history"
@@ -78,9 +79,10 @@ func exit(status = 0) = builtin_exit(status)
 
 func currentworkingdirectory = builtin_currentworkingdirectory()
 
-->{
-    let $$ = null
+func compile(source, name = "repl") = builtin_compile(source, name)
 
+let $$ = null
+->{
     class builtin_Value {}
 
     class builtin_Instance {
@@ -175,12 +177,6 @@ func currentworkingdirectory = builtin_currentworkingdirectory()
 
     if filename != null {
         return execute_program(filename)
-    }
-
-    let repl_source_counter = 0
-    func compile(source, name) {
-        repl_source_counter += 1
-        return builtin_compile(source, name)
     }
 
     let input = ARGV[0]

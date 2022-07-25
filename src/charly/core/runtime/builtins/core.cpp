@@ -191,4 +191,28 @@ RawValue exit(Thread* thread, const RawValue* args, uint8_t argc) {
   thread->abort((int32_t)RawInt::cast(args[0]).value());
 }
 
+RawValue compile(Thread* thread, const RawValue* args, uint8_t argc) {
+  Runtime* runtime = thread->runtime();
+
+  CHECK(argc == 2);
+  CHECK(args[0].isString());
+  CHECK(args[1].isString());
+  RawString source = RawString::cast(args[0]);
+  std::string name = RawString::cast(args[1]).str();
+
+  utils::Buffer buf;
+  source.to_string(buf);
+  auto unit = Compiler::compile(name, buf, CompilationUnit::Type::ReplInput);
+
+  if (unit->console.has_errors()) {
+    thread->throw_value(runtime->create_import_exception(thread, name, unit));
+    return kErrorException;
+  }
+
+  auto module = unit->compiled_module;
+  CHECK(!module->function_table.empty());
+  runtime->register_module(thread, module);
+  return runtime->create_function(thread, kNull, module->function_table.front());
+}
+
 }  // namespace charly::core::runtime::builtin::core
