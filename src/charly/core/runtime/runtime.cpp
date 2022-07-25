@@ -192,14 +192,13 @@ void Runtime::initialize_builtin_types(Thread* thread) {
                                             { "keys", RawShape::kKeyFlagReadOnly },
                                             { "additions", RawShape::kKeyFlagReadOnly } });
 
-  auto builtin_shape_function =
-    create_shape(thread, builtin_shape_builtin_instance,
-                 { { "name", RawShape::kKeyFlagReadOnly },
-                   { "context", RawShape::kKeyFlagReadOnly },
-                   { "saved_self", RawShape::kKeyFlagReadOnly },
-                   { "host_class", RawShape::kKeyFlagReadOnly },
-                   { "overload_table", RawShape::kKeyFlagReadOnly },
-                   { "shared_info", RawShape::kKeyFlagInternal } });
+  auto builtin_shape_function = create_shape(thread, builtin_shape_builtin_instance,
+                                             { { "name", RawShape::kKeyFlagReadOnly },
+                                               { "context", RawShape::kKeyFlagReadOnly },
+                                               { "saved_self", RawShape::kKeyFlagReadOnly },
+                                               { "host_class", RawShape::kKeyFlagReadOnly },
+                                               { "overload_table", RawShape::kKeyFlagReadOnly },
+                                               { "shared_info", RawShape::kKeyFlagInternal } });
 
   auto builtin_shape_builtin_function = create_shape(thread, builtin_shape_builtin_instance,
                                                      { { "function", RawShape::kKeyFlagReadOnly },
@@ -211,7 +210,8 @@ void Runtime::initialize_builtin_types(Thread* thread) {
                                             { "function", RawShape::kKeyFlagReadOnly },
                                             { "context", RawShape::kKeyFlagReadOnly },
                                             { "arguments", RawShape::kKeyFlagReadOnly },
-                                            { "result", RawShape::kKeyFlagReadOnly } });
+                                            { "result", RawShape::kKeyFlagReadOnly },
+                                            { "exception", RawShape::kKeyFlagReadOnly } });
 
   auto builtin_shape_exception =
     create_shape(thread, builtin_shape_builtin_instance,
@@ -261,7 +261,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   DEFINE_BUILTIN_CLASS(import_exception, ImportException, class_exception, RawClass::kFlagNone, {})
 #undef DEFINE_BUILTIN_CLASS
 
-  // define the static classes for the builtin classes
+// define the static classes for the builtin classes
 #define DEFINE_STATIC_CLASS(S, N)                                                                             \
   auto static_class_##S = RawClass::cast(create_instance(thread, ShapeId::kClass, RawClass::kFieldCount));    \
   static_class_##S.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);                         \
@@ -983,7 +983,6 @@ RawValue Runtime::create_exception(Thread* thread, RawValue message) {
 RawValue Runtime::create_import_exception(Thread* thread,
                                           const std::string& module_path,
                                           const ref<compiler::CompilationUnit>& unit) {
-
   const auto& messages = unit->console.messages();
   size_t size = messages.size();
   auto error_tuple = create_tuple(thread, size);
@@ -1050,7 +1049,6 @@ RawValue Runtime::join_fiber(Thread* thread, RawFiber _fiber) {
 
     // wait for the fiber to finish
     if (!fiber.has_finished()) {
-
       // register to be woken up again when this fiber finishes
       fiber.thread()->m_waiting_threads.push_back(thread);
       thread->m_state.acas(Thread::State::Running, Thread::State::Waiting);
