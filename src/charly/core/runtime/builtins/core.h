@@ -42,7 +42,7 @@ void initialize(Thread* thread);
   V(core, currentworkingdirectory, 0) \
   V(core, getstacktrace, 1)           \
   V(core, disassemble, 1)             \
-  V(core, makelist, 2)                \
+  V(core, maketuple, 2)               \
   V(core, exit, 1)
 DEF_BUILTIN_CORE(DEFINE_BUILTIN_METHOD_DECLARATIONS)
 

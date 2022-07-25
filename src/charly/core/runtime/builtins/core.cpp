@@ -163,7 +163,7 @@ RawValue disassemble(Thread*, const RawValue* args, uint8_t argc) {
   return kNull;
 }
 
-RawValue makelist(Thread* thread, const RawValue* args, uint8_t argc) {
+RawValue maketuple(Thread* thread, const RawValue* args, uint8_t argc) {
   CHECK(argc == 2);
   DCHECK(args[0].isInt() || args[0].isFloat());
 

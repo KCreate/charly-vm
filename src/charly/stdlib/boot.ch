@@ -32,7 +32,7 @@ const builtin_writevaluesync = @"charly.builtin.core.writevaluesync"
 const builtin_currentworkingdirectory = @"charly.builtin.core.currentworkingdirectory"
 const builtin_getstacktrace = @"charly.builtin.core.getstacktrace"
 const builtin_disassemble = @"charly.builtin.core.disassemble"
-const builtin_makelist = @"charly.builtin.core.makelist"
+const builtin_maketuple = @"charly.builtin.core.maketuple"
 const builtin_exit = @"charly.builtin.core.exit"
 
 const builtin_readline_prompt = @"charly.builtin.readline.prompt"
@@ -105,7 +105,6 @@ func currentworkingdirectory = builtin_currentworkingdirectory()
             const size = @length
             let i = 0
 
-    static func make(length = 0, initial = null) = builtin_makelist(length, initial)
             loop {
                 cb(self[i], i)
                 i += 1
@@ -123,6 +122,7 @@ func currentworkingdirectory = builtin_currentworkingdirectory()
             rv
         }
 
+        static func make(length = 0, initial = null) = builtin_maketuple(length, initial)
     }
 
     class builtin_Function {
