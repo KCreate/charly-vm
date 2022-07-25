@@ -382,7 +382,7 @@ VariableId VariableAnalyzerPass::declare_variable(const ref<Name>& name, const r
 
     if (m_variable_declarations.count(id)) {
       ref<Node> original_declaration = m_variable_declarations.at(id);
-      m_console.info(original_declaration, "originally declared here");
+      m_console.info(original_declaration, "previously declared here");
     }
 
     return kInvalidVariableId;

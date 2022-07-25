@@ -252,4 +252,14 @@ CATCH_TEST_CASE("Semantic") {
     COMPILE_ERROR("import { foo as bar } from 25 as bar ", "duplicate declaration of 'bar'");
     COMPILE_ERROR("import { foo as bar } from 25 as foo ", "duplicate declaration of 'foo'");
   }
+
+  CATCH_SECTION("detects duplicate declarations of the same variable") {
+    COMPILE_ERROR("let a = 100 let a = 200", "duplicate declaration of 'a'");
+    COMPILE_ERROR("const a = 1 const a = 2", "duplicate declaration of 'a'");
+    COMPILE_ERROR("const a = 1 let a = 2", "duplicate declaration of 'a'");
+    COMPILE_ERROR("let a = 1 const a = 2", "duplicate declaration of 'a'");
+    COMPILE_ERROR("let a = 1 func a() {}", "duplicate declaration of 'a'");
+    COMPILE_ERROR("const a = 1 class a {}", "duplicate declaration of 'a'");
+    COMPILE_ERROR("class a {} class a {}", "duplicate declaration of 'a'");
+  }
 }

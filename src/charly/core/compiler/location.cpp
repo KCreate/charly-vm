@@ -32,7 +32,7 @@ std::ostream& operator<<(std::ostream& out, const Location& loc) {
   if (loc.row == loc.end_row) {
     out << loc.row + 1 << ":" << loc.column + 1;
   } else {
-    out << loc.row + 1 << ":" << loc.column + 1 << "-" << loc.end_row + 1 << ":" << loc.end_column + 1;
+    out << loc.row + 1 << "-" << loc.end_row + 1;
   }
 
   return out;

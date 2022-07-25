@@ -339,7 +339,7 @@ void Thread::entry_fiber_thread() {
                           source.view());
         }
       } else {
-        debuglnf_notime("unhandled exception in main thread (%)", exception);
+        debuglnf("unhandled exception in main thread (%)", exception);
       }
 
       abort(1);

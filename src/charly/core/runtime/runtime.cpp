@@ -857,7 +857,7 @@ RawShape Runtime::create_shape(Thread* thread, RawValue parent, RawTuple key_tab
 
         // add new shape to additions table of previous base
         target_shape.set_additions(
-          concat_tuple_value(thread, additions, { create_tuple(thread, { encoded, next_shape }) }));
+          concat_tuple_value(thread, additions, create_tuple(thread, { encoded, next_shape })));
       }
     }
 
@@ -1017,7 +1017,7 @@ RawValue Runtime::create_import_exception(Thread* thread,
   // allocate exception instance
   auto instance =
     RawImportException::cast(create_instance(thread, get_builtin_class(thread, ShapeId::kImportException)));
-  instance.set_message(create_string_from_template(thread, "Could not import '%'", module_path));
+  instance.set_message(create_string_from_template(thread, "Encountered an error while importing '%'", module_path));
   instance.set_stack_trace(create_stack_trace(thread));
   instance.set_errors(error_tuple);
 

@@ -97,7 +97,13 @@ void DiagnosticConsole::write_annotated_source(std::ostream& out, const Diagnost
     }
 
     if (contains_annotation) {
-      writer << " -> ";
+
+      // different indicator for multi-row highlights
+      if (location.row != location.end_row) {
+        writer << " |> ";
+      } else {
+        writer << " -> ";
+      }
     } else {
       writer << "    ";
     }

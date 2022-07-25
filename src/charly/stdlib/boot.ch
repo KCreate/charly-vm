@@ -223,7 +223,8 @@ let $$ = null
                         break
                     }
 
-                    print("Caught exception:\n{$$}")
+                    print("Caught exception:")
+                    print($$)
                 }
             }
         }
