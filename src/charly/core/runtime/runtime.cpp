@@ -770,11 +770,14 @@ RawValue Runtime::create_class(Thread* thread,
     // patch host class field on static functions
     for (uint32_t i = 0; i < static_function_table.size(); i++) {
       auto entry = static_function_table.field_at<RawFunction>(i);
-      auto overloads = RawTuple::cast(entry.overload_table());
-      for (uint32_t j = 0; j < overloads.size(); j++) {
-        auto func = overloads.field_at<RawFunction>(j);
-        if (func.host_class().isNull()) {
-          func.set_host_class(static_class);
+      auto overloads_value = entry.overload_table();
+      if (overloads_value.isTuple()) {
+        auto overloads = RawTuple::cast(overloads_value);
+        for (uint32_t j = 0; j < overloads.size(); j++) {
+          auto func = overloads.field_at<RawFunction>(j);
+          if (func.host_class().isNull()) {
+            func.set_host_class(static_class);
+          }
         }
       }
     }
@@ -796,11 +799,14 @@ RawValue Runtime::create_class(Thread* thread,
   constructor.set_host_class(constructed_class);
   for (uint32_t i = 0; i < new_function_table.size(); i++) {
     auto entry = new_function_table.field_at<RawFunction>(i);
-    auto overloads = RawTuple::cast(entry.overload_table());
-    for (uint32_t j = 0; j < overloads.size(); j++) {
-      auto func = overloads.field_at<RawFunction>(j);
-      if (func.host_class().isNull()) {
-        func.set_host_class(constructed_class);
+    auto overloads_value = entry.overload_table();
+    if (overloads_value.isTuple()) {
+      auto overloads = RawTuple::cast(overloads_value);
+      for (uint32_t j = 0; j < overloads.size(); j++) {
+        auto func = overloads.field_at<RawFunction>(j);
+        if (func.host_class().isNull()) {
+          func.set_host_class(constructed_class);
+        }
       }
     }
   }

@@ -32,5 +32,4 @@ class Foo {
 const f = Foo.new(1, 2, 3)
 print(f.args)
 
-print(Class.test_method())
 print(Fiber.current())
