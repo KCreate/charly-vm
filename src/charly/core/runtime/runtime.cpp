@@ -179,43 +179,43 @@ void Runtime::initialize_builtin_types(Thread* thread) {
 
   auto builtin_shape_class = create_shape(thread, builtin_shape_builtin_instance,
                                           { { "flags", RawShape::kKeyFlagInternal },
-                                            { "ancestor_table", RawShape::kKeyFlagInternal },
+                                            { "ancestor_table", RawShape::kKeyFlagReadOnly },
                                             { "name", RawShape::kKeyFlagReadOnly },
                                             { "parent", RawShape::kKeyFlagReadOnly },
-                                            { "shape", RawShape::kKeyFlagInternal },
+                                            { "shape", RawShape::kKeyFlagReadOnly },
                                             { "function_table", RawShape::kKeyFlagReadOnly },
-                                            { "constructor", RawShape::kKeyFlagInternal } });
+                                            { "constructor", RawShape::kKeyFlagReadOnly } });
 
   auto builtin_shape_shape = create_shape(thread, builtin_shape_builtin_instance,
                                           { { "id", RawShape::kKeyFlagReadOnly },
                                             { "parent", RawShape::kKeyFlagReadOnly },
-                                            { "keys", RawShape::kKeyFlagInternal },
-                                            { "additions", RawShape::kKeyFlagInternal } });
+                                            { "keys", RawShape::kKeyFlagReadOnly },
+                                            { "additions", RawShape::kKeyFlagReadOnly } });
 
   auto builtin_shape_function =
     create_shape(thread, builtin_shape_builtin_instance,
                  { { "name", RawShape::kKeyFlagReadOnly },
-                   { "context", RawShape::kKeyFlagInternal },
-                   { "saved_self", RawShape::kKeyFlagInternal },
+                   { "context", RawShape::kKeyFlagReadOnly },
+                   { "saved_self", RawShape::kKeyFlagReadOnly },
                    { "host_class", RawShape::kKeyFlagReadOnly },
-                   { "overload_table", RawShape::kKeyFlagReadOnly | RawShape::kKeyFlagPrivate },
+                   { "overload_table", RawShape::kKeyFlagReadOnly },
                    { "shared_info", RawShape::kKeyFlagInternal } });
 
   auto builtin_shape_builtin_function = create_shape(thread, builtin_shape_builtin_instance,
-                                                     { { "function", RawShape::kKeyFlagInternal },
+                                                     { { "function", RawShape::kKeyFlagReadOnly },
                                                        { "name", RawShape::kKeyFlagReadOnly },
                                                        { "argc", RawShape::kKeyFlagReadOnly } });
 
   auto builtin_shape_fiber = create_shape(thread, builtin_shape_builtin_instance,
                                           { { "thread", RawShape::kKeyFlagInternal },
                                             { "function", RawShape::kKeyFlagReadOnly },
-                                            { "context", RawShape::kKeyFlagInternal },
-                                            { "arguments", RawShape::kKeyFlagInternal },
-                                            { "result", RawShape::kKeyFlagInternal } });
+                                            { "context", RawShape::kKeyFlagReadOnly },
+                                            { "arguments", RawShape::kKeyFlagReadOnly },
+                                            { "result", RawShape::kKeyFlagReadOnly } });
 
   auto builtin_shape_exception =
     create_shape(thread, builtin_shape_builtin_instance,
-                 { { "message", RawShape::kKeyFlagNone }, { "stack_trace", RawShape::kKeyFlagPrivate } });
+                 { { "message", RawShape::kKeyFlagNone }, { "stack_trace", RawShape::kKeyFlagNone } });
 
   auto builtin_shape_import_exception =
     create_shape(thread, builtin_shape_exception, { { "errors", RawShape::kKeyFlagNone } });
