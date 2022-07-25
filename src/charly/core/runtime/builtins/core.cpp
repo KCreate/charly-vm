@@ -57,8 +57,7 @@ RawValue transplantbuiltinclass(Thread* thread, const RawValue* args, uint8_t ar
   auto static_donor_class = runtime->lookup_class(thread, donor_class);
 
   if (!is_builtin_shape(klass.shape_instance().own_shape_id())) {
-    thread->throw_value(
-      runtime->create_exception_with_message(thread, "expected base class to be a builtin class"));
+    thread->throw_value(runtime->create_exception_with_message(thread, "expected base class to be a builtin class"));
     return kErrorException;
   }
 
@@ -69,8 +68,13 @@ RawValue transplantbuiltinclass(Thread* thread, const RawValue* args, uint8_t ar
   }
 
   if (donor_class.parent() != runtime->get_builtin_class(thread, ShapeId::kInstance)) {
+    thread->throw_value(runtime->create_exception_with_message(thread, "the donor class shall not be a subclass"));
+    return kErrorException;
+  }
+
+  if (donor_class.shape_instance() != runtime->lookup_shape(thread, ShapeId::kInstance)) {
     thread->throw_value(
-      runtime->create_exception_with_message(thread, "expected donor class to not be a subclass"));
+      runtime->create_exception_with_message(thread, "the donor class shall not declare any new properties"));
     return kErrorException;
   }
 
@@ -106,6 +110,13 @@ RawValue transplantbuiltinclass(Thread* thread, const RawValue* args, uint8_t ar
         runtime->create_exception_with_message(thread, "expected base static class function table to be empty"));
       return kErrorException;
     }
+
+    if (static_donor_class.shape_instance() != runtime->lookup_shape(thread, ShapeId::kClass)) {
+      thread->throw_value(
+        runtime->create_exception_with_message(thread, "the donor class shall not declare any new static properties"));
+      return kErrorException;
+    }
+
     static_class.set_function_table(static_donor_class.function_table());
     static_donor_class.set_function_table(runtime->create_tuple(thread, 0));
     for (uint32_t i = 0; i < static_class.function_table().size(); i++) {
