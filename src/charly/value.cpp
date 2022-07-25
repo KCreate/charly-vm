@@ -371,7 +371,7 @@ bool RawValue::isClass() const {
   if (isInstance()) {
     return RawInstance::cast(this).is_instance_of(ShapeId::kClass);
   }
-  return shape_id() == ShapeId::kClass;
+  return false;
 }
 
 bool RawValue::isShape() const {
