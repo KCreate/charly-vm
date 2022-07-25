@@ -573,13 +573,13 @@ RawValue Runtime::create_class(Thread* thread,
     new_function_table = parent_function_table;
   } else {
     std::unordered_map<SYMBOL, uint32_t> parent_function_indices;
-    std::set<SYMBOL> new_function_names;
     for (uint32_t j = 0; j < parent_function_table.size(); j++) {
       auto parent_function = parent_function_table.field_at<RawFunction>(j);
       parent_function_indices[parent_function.name()] = j;
     }
 
     // calculate the amount of functions being added that are not already present in the parent class
+    std::set<SYMBOL> new_function_names;
     size_t newly_added_functions = 0;
     for (uint32_t i = 0; i < member_funcs.size(); i++) {
       auto method_name = RawFunction::cast(member_funcs.field_at<RawTuple>(i).field_at(0)).name();
@@ -634,7 +634,7 @@ RawValue Runtime::create_class(Thread* thread,
 
       // merge the parents and the new functions overload tables
       RawFunction highest_overload;
-      RawFunction lowest_new_overload = new_overload_table.first_field<RawFunction>();
+      RawFunction first_new_overload = new_overload_table.first_field<RawFunction>();
       for (uint32_t argc = 0; argc < merged_size; argc++) {
         uint32_t parent_table_index = std::min(parent_overload_table.size() - 1, argc);
         uint32_t new_table_index = std::min(new_overload_table.size() - 1, argc);
@@ -679,7 +679,23 @@ RawValue Runtime::create_class(Thread* thread,
         }
       }
 
-      new_function_table.set_field_at(new_function_table_offset++, lowest_new_overload);
+      // remove overload tuple if only one function is present
+      // TODO: ideally the overload tuple shouldn't be constructed
+      //       in the first place if this is the case
+      auto merged_first_overload = merged_table.first_field<RawFunction>();
+      bool overload_tuple_is_homogenic = true;
+      for (uint32_t oi = 0; oi < merged_table.size(); oi++) {
+        if (merged_table.field_at(oi) != merged_first_overload) {
+          overload_tuple_is_homogenic = false;
+          break;
+        }
+      }
+      if (merged_table.size() == 1 || overload_tuple_is_homogenic) {
+        merged_first_overload.set_overload_table(kNull);
+        new_function_table.set_field_at(new_function_table_offset++, merged_first_overload);
+      } else {
+        new_function_table.set_field_at(new_function_table_offset++, first_new_overload);
+      }
     }
   }
 
@@ -688,6 +704,21 @@ RawValue Runtime::create_class(Thread* thread,
   for (uint32_t i = 0; i < static_funcs.size(); i++) {
     auto overload_tuple = static_funcs.field_at<RawTuple>(i);
     DCHECK(overload_tuple.size() >= 1);
+
+    // remove overload tuple if only one function is present
+    auto first_overload = overload_tuple.first_field<RawFunction>();
+    bool overload_tuple_is_homogenic = true;
+    for (uint32_t oi = 0; oi < overload_tuple.size(); oi++) {
+      if (overload_tuple.field_at(oi) != first_overload) {
+        overload_tuple_is_homogenic = false;
+        break;
+      }
+    }
+    if (overload_tuple.size() == 1 || overload_tuple_is_homogenic) {
+      first_overload.set_overload_table(kNull);
+      static_function_table.set_field_at(i, first_overload);
+      continue;
+    }
 
     // point functions to the same overload tuple
     for (uint32_t j = 0; j < overload_tuple.size(); j++) {
@@ -698,7 +729,6 @@ RawValue Runtime::create_class(Thread* thread,
     // put the lowest overload into the functions lookup table
     // since every function part of the overload has a reference to the overload table
     // it doesn't really matter which function we put in there
-    auto first_overload = overload_tuple.field_at<RawFunction>(0);
     static_function_table.set_field_at(i, first_overload);
   }
 
