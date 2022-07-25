@@ -1182,9 +1182,14 @@ OP(fiberjoin) {
   }
 
   Runtime* runtime = thread->runtime();
-  frame->push(runtime->join_fiber(thread, RawFiber::cast(value)));
+  RawValue result = runtime->join_fiber(thread, RawFiber::cast(value));
 
-  return ContinueMode::Next;
+  if (result.is_error_exception()) {
+    return ContinueMode::Exception;
+  } else {
+    frame->push(result);
+    return ContinueMode::Next;
+  }
 }
 
 OP(caststring) {

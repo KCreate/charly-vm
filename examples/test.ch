@@ -24,12 +24,20 @@
  * SOFTWARE.
  */
 
-class Foo {
-    property args
-    func constructor(...@args)
+const source = "foobarbaz"
+const module = compile(source)
+const fiber = spawn module()
+
+print(fiber)
+
+try {
+    await fiber
+} catch(e) {
+    print("Caught: {e}")
 }
 
-const f = Foo.new(1, 2, 3)
-print(f.args)
 
-print(Fiber.current())
+
+
+
+

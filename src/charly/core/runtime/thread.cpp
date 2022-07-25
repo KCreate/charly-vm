@@ -304,45 +304,49 @@ void Thread::entry_fiber_thread() {
   }
 
   RawValue result = Interpreter::call_function(this, fiber.context(), fiber.function(), argp, argc);
+  bool fiber_exited_with_exception = result.is_error_exception();
+  RawValue exception = has_pending_exception() ? pending_exception() : RawNull::make();
 
   // wake threads waiting for this thread to finish
   {
     std::lock_guard lock(fiber);
     fiber.thread()->wake_waiting_threads();
-    fiber.set_result(result);
     fiber.set_thread(nullptr);
-  }
-
-  if (result == kErrorException) {
-    RawValue thrown_value = pending_exception();
-
-    if (thrown_value.isImportException()) {
-      auto exception = RawImportException::cast(thrown_value);
-      auto errors = exception.errors();
-      debuglnf("unhandled import exception in thread %: %", id(), exception.message());
-      for (uint32_t i = 0; i < errors.size(); i++) {
-        auto error = errors.field_at<RawTuple>(i);
-        auto type = error.field_at<RawString>(0);
-        auto filepath = error.field_at<RawString>(1);
-        auto message = error.field_at<RawString>(2);
-        auto source = error.field_at<RawString>(3);
-        auto location = error.field_at<RawString>(4);
-        debuglnf("%: %:%: %\n%", type.view(), filepath.view(), location.view(), message.view(), source.view());
-      }
-    } else {
-      debuglnf("unhandled exception in thread % (%)", id(), pending_exception());
+    fiber.set_result(result);
+    if (fiber_exited_with_exception) {
+      fiber.set_exception(exception);
     }
-
-    abort(1);
   }
 
+  // non-main threads will silently ignore exceptions until another fiber awaits them
+  // once the main fiber exits, all other fibers will get shut down as well
   if (id() == kMainFiberThreadId) {
-    debugln("main fiber exited with value %", result);
+    if (fiber_exited_with_exception) {
+      if (exception.isImportException()) {
+        auto import_exception = RawImportException::cast(exception);
+        auto errors = import_exception.errors();
+        debuglnf("unhandled import exception in thread %: %", id(), import_exception.message());
+        for (uint32_t i = 0; i < errors.size(); i++) {
+          auto error = errors.field_at<RawTuple>(i);
+          auto type = error.field_at<RawString>(0);
+          auto filepath = error.field_at<RawString>(1);
+          auto message = error.field_at<RawString>(2);
+          auto source = error.field_at<RawString>(3);
+          auto location = error.field_at<RawString>(4);
+          debuglnf("%: %:%: %\n%", type.view(), filepath.view(), location.view(), message.view(), source.view());
+        }
+      } else {
+        debuglnf("unhandled exception in main thread (%)", exception);
+      }
 
-    if (result.isInt()) {
-      abort(RawInt::cast(result).value());
+      abort(1);
     } else {
-      abort(0);
+      debugln("main fiber exited gracefully with value %", result);
+      if (result.isInt()) {
+        abort(RawInt::cast(result).value());
+      } else {
+        abort(0);
+      }
     }
   }
 }

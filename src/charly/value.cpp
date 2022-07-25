@@ -1259,6 +1259,14 @@ void RawFiber::set_result(RawValue result) {
   set_field_at(kResultOffset, result);
 }
 
+RawValue RawFiber::exception() const {
+  return field_at(kExceptionOffset);
+}
+
+void RawFiber::set_exception(RawValue exception) {
+  set_field_at(kExceptionOffset, exception);
+}
+
 bool RawFiber::has_finished() const {
   return thread() == nullptr;
 }

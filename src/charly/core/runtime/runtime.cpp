@@ -962,6 +962,7 @@ RawFiber Runtime::create_fiber(Thread* thread, RawFunction function, RawValue se
   fiber.set_context(self);
   fiber.set_arguments(arguments);
   fiber.set_result(kNull);
+  fiber.set_exception(kNull);
 
   // schedule the fiber for execution
   fiber_thread->ready();
@@ -1045,20 +1046,27 @@ RawValue Runtime::join_fiber(Thread* thread, RawFiber _fiber) {
   Fiber fiber(scope, _fiber);
 
   {
-    std::lock_guard lock(fiber);
+    std::unique_lock lock(fiber);
 
-    // fiber has already terminated
-    if (fiber.has_finished()) {
-      return fiber.result();
+    // wait for the fiber to finish
+    if (!fiber.has_finished()) {
+
+      // register to be woken up again when this fiber finishes
+      fiber.thread()->m_waiting_threads.push_back(thread);
+      thread->m_state.acas(Thread::State::Running, Thread::State::Waiting);
+
+      lock.unlock();
+      thread->enter_scheduler();
+      lock.lock();
     }
-
-    // register to be woken up again when this fiber finishes
-    fiber.thread()->m_waiting_threads.push_back(thread);
-    thread->m_state.acas(Thread::State::Running, Thread::State::Waiting);
   }
 
-  thread->enter_scheduler();
-  return fiber.result();
+  RawValue result = fiber.result();
+  if (result.is_error_exception()) {
+    thread->throw_value(fiber.exception());
+  }
+
+  return result;
 }
 
 RawValue Runtime::declare_global_variable(Thread*, SYMBOL name, bool constant) {

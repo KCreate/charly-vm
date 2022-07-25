@@ -926,6 +926,9 @@ public:
   RawValue result() const;
   void set_result(RawValue result);
 
+  RawValue exception() const;
+  void set_exception(RawValue exception);
+
   bool has_finished() const;
 
   enum
@@ -935,6 +938,7 @@ public:
     kSelfOffset,
     kArgumentsOffset,
     kResultOffset,
+    kExceptionOffset,
     kFieldCount
   };
   static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
