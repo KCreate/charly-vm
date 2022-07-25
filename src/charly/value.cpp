@@ -478,9 +478,9 @@ void RawValue::dump(std::ostream& out) const {
         if (function.host_class().isClass()) {
           auto klass = RawClass::cast(function.host_class());
           if (klass.flags() & RawClass::kFlagStatic) {
-            writer.fg(Color::Yellow, klass.name(), "::", name, "()");
-          } else {
             writer.fg(Color::Yellow, "static ", klass.name(), "::", name, "()");
+          } else {
+            writer.fg(Color::Yellow, klass.name(), "::", name, "()");
           }
         } else {
           writer.fg(Color::Yellow, name, "()");
