@@ -506,7 +506,22 @@ void RawValue::dump(std::ostream& out) const {
 
     if (isShape()) {
       auto shape = RawShape::cast(this);
-      writer.fg(Color::Cyan, "<Shape #", static_cast<uint32_t>(shape.own_shape_id()), ":", shape.keys(), ">");
+      writer.fg(Color::Cyan, "<Shape #", static_cast<uint32_t>(shape.own_shape_id()), ":(");
+
+      RawTuple keys = shape.keys();
+      for (uint32_t i = 0; i < keys.size(); i++) {
+        auto encoded = keys.field_at<RawInt>(i);
+        SYMBOL prop_name;
+        uint8_t prop_flags;
+        RawShape::decode_shape_key(encoded, prop_name, prop_flags);
+        writer.fg(Color::Cyan, RawSymbol::make(prop_name));
+
+        if (i < keys.size() - 1) {
+          writer.fg(Color::Cyan, ", ");
+        }
+      }
+
+      writer.fg(Color::Cyan, ")>");
       return;
     }
 
