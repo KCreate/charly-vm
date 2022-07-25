@@ -931,8 +931,6 @@ OP(setattr) {
     return ContinueMode::Next;
   }
 
-  debugln("invalid combo, return null");
-
   frame->push(kNull);
   return ContinueMode::Next;
 }

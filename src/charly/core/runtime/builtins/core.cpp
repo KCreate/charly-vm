@@ -154,7 +154,7 @@ RawValue writevaluesync(Thread*, const RawValue* args, uint8_t argc) {
   CHECK(argc == 1);
   utils::Buffer buf;
   args[0].to_string(buf);
-  debuglnf("%", buf);
+  debuglnf_notime("%", buf);
   return kNull;
 }
 

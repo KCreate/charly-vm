@@ -238,7 +238,7 @@ void Thread::entry_main_thread() {
   std::ifstream boot_file(boot_path);
 
   if (!boot_file.is_open()) {
-    debuglnf("Could not open the charly runtime boot file (%)", boot_path);
+    debuglnf_notime("Could not open the charly runtime boot file (%)", boot_path);
     runtime->abort(1);
     return;
   }
@@ -253,7 +253,7 @@ void Thread::entry_main_thread() {
   auto unit = Compiler::compile(boot_path, boot_file_buffer, CompilationUnit::Type::ReplInput);
   if (unit->console.has_errors()) {
     unit->console.dump_all(std::cerr);
-    debuglnf("Could not compile charly runtime boot file (%)", boot_path);
+    debuglnf_notime("Could not compile charly runtime boot file (%)", boot_path);
     runtime->abort(1);
     return;
   }
@@ -325,18 +325,21 @@ void Thread::entry_fiber_thread() {
       if (exception.isImportException()) {
         auto import_exception = RawImportException::cast(exception);
         auto errors = import_exception.errors();
-        debuglnf("unhandled import exception in thread %: %", id(), import_exception.message());
+        auto message = RawString::cast(import_exception.message());
+        debuglnf_notime("%", message.view());
+        debuglnf_notime("");
         for (uint32_t i = 0; i < errors.size(); i++) {
           auto error = errors.field_at<RawTuple>(i);
           auto type = error.field_at<RawString>(0);
           auto filepath = error.field_at<RawString>(1);
-          auto message = error.field_at<RawString>(2);
+          auto error_message = error.field_at<RawString>(2);
           auto source = error.field_at<RawString>(3);
           auto location = error.field_at<RawString>(4);
-          debuglnf("%: %:%: %\n%", type.view(), filepath.view(), location.view(), message.view(), source.view());
+          debuglnf_notime("%: %:%: %\n%", type.view(), filepath.view(), location.view(), error_message.view(),
+                          source.view());
         }
       } else {
-        debuglnf("unhandled exception in main thread (%)", exception);
+        debuglnf_notime("unhandled exception in main thread (%)", exception);
       }
 
       abort(1);

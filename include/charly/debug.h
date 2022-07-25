@@ -101,6 +101,9 @@ inline void debugln_concurrent(const char* format, Targs... Fargs) {
 template <typename... Targs>
 inline void debugln(const char*, Targs...) {}
 
+template <typename... Targs>
+inline void debugln_notime(const char*, Targs...) {}
+
 #else
 
 template <typename... Targs>
@@ -108,11 +111,29 @@ inline void debugln(const char* format, Targs... args) {
   debugln_concurrent(format, std::forward<Targs>(args)...);
 }
 
+template <typename... Targs>
+inline void debugln_notime(const char* format, Targs... args) {
+  {
+    std::unique_lock<std::recursive_mutex> locker(debugln_mutex);
+    debugln_impl(std::cout, format, args...);
+    std::cout << std::endl;
+  }
+}
+
 #endif
 
 template <typename... Targs>
 inline void debuglnf(const char* format, Targs... args) {
   debugln_concurrent(format, std::forward<Targs>(args)...);
+}
+
+template <typename... Targs>
+inline void debuglnf_notime(const char* format, Targs... args) {
+  {
+    std::unique_lock<std::recursive_mutex> locker(debugln_mutex);
+    debugln_impl(std::cout, format, args...);
+    std::cout << std::endl;
+  }
 }
 
 #define LIKELY(X) __builtin_expect(!!(X), 1)

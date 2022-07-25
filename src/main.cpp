@@ -71,51 +71,51 @@ int32_t cli(DiagnosticConsole& console) {
   }
 
   if (utils::ArgumentParser::is_flag_set("dump_constants")) {
-    debuglnf("# %heap.h%", termcolor::yellow, termcolor::reset);
-    debuglnf("kHeapTotalSize                      = %", kHeapTotalSize);
-    debuglnf("kHeapRegionSize                     = %", kHeapRegionSize);
-    debuglnf("kHeapRegionCount                    = %", kHeapRegionCount);
-    debuglnf("kHeapRegionPageCount                = %", kHeapRegionPageCount);
-    debuglnf("kHeapRegionPossibleObjectAddresses  = %", kHeapRegionPossibleObjectAddresses);
-    debuglnf("kHeapInitialMappedRegionCount       = %", kHeapInitialMappedRegionCount);
-    debuglnf("kPageSize                           = %", kPageSize);
-    debuglnf("");
+    debuglnf_notime("# %heap.h%", termcolor::yellow, termcolor::reset);
+    debuglnf_notime("kHeapTotalSize                      = %", kHeapTotalSize);
+    debuglnf_notime("kHeapRegionSize                     = %", kHeapRegionSize);
+    debuglnf_notime("kHeapRegionCount                    = %", kHeapRegionCount);
+    debuglnf_notime("kHeapRegionPageCount                = %", kHeapRegionPageCount);
+    debuglnf_notime("kHeapRegionPossibleObjectAddresses  = %", kHeapRegionPossibleObjectAddresses);
+    debuglnf_notime("kHeapInitialMappedRegionCount       = %", kHeapInitialMappedRegionCount);
+    debuglnf_notime("kPageSize                           = %", kPageSize);
+    debuglnf_notime("");
 
-    debuglnf("# %interpreter.h%", termcolor::yellow, termcolor::reset);
-    debuglnf("kStackOverflowLimit = %", kStackOverflowLimit);
-    debuglnf("");
+    debuglnf_notime("# %interpreter.h%", termcolor::yellow, termcolor::reset);
+    debuglnf_notime("kStackOverflowLimit = %", kStackOverflowLimit);
+    debuglnf_notime("");
 
-    debuglnf("# %scheduler.h%", termcolor::yellow, termcolor::reset);
-    debuglnf("kGlobalRunQueuePriorityChance     = %", kGlobalRunQueuePriorityChance);
-    debuglnf("kWorkerMaximumIdleSleepDuration   = %", kWorkerMaximumIdleSleepDuration);
-    debuglnf("kLocalRunQueueMaxSize             = %", kLocalRunQueueMaxSize);
-    debuglnf("kThreadTimeslice                  = %", kThreadTimeslice);
-    debuglnf("");
+    debuglnf_notime("# %scheduler.h%", termcolor::yellow, termcolor::reset);
+    debuglnf_notime("kGlobalRunQueuePriorityChance     = %", kGlobalRunQueuePriorityChance);
+    debuglnf_notime("kWorkerMaximumIdleSleepDuration   = %", kWorkerMaximumIdleSleepDuration);
+    debuglnf_notime("kLocalRunQueueMaxSize             = %", kLocalRunQueueMaxSize);
+    debuglnf_notime("kThreadTimeslice                  = %", kThreadTimeslice);
+    debuglnf_notime("");
 
-    debuglnf("# %thread.h%", termcolor::yellow, termcolor::reset);
-    debuglnf("kThreadStackSize = %", kThreadStackSize);
-    debuglnf("");
+    debuglnf_notime("# %thread.h%", termcolor::yellow, termcolor::reset);
+    debuglnf_notime("kThreadStackSize = %", kThreadStackSize);
+    debuglnf_notime("");
 
-    debuglnf("# %value.h%", termcolor::yellow, termcolor::reset);
-    debuglnf("RawInstance::kSize    = %", RawInstance::kSize);
-    debuglnf("RawHugeBytes::kSize   = %", RawHugeBytes::kSize);
-    debuglnf("RawHugeString::kSize  = %", RawHugeString::kSize);
-    debuglnf("RawClass::kSize       = %", RawClass::kSize);
-    debuglnf("RawShape::kSize       = %", RawShape::kSize);
-    debuglnf("RawFunction::kSize    = %", RawFunction::kSize);
-    debuglnf("RawFiber::kSize       = %", RawFiber::kSize);
-    debuglnf("");
+    debuglnf_notime("# %value.h%", termcolor::yellow, termcolor::reset);
+    debuglnf_notime("RawInstance::kSize    = %", RawInstance::kSize);
+    debuglnf_notime("RawHugeBytes::kSize   = %", RawHugeBytes::kSize);
+    debuglnf_notime("RawHugeString::kSize  = %", RawHugeString::kSize);
+    debuglnf_notime("RawClass::kSize       = %", RawClass::kSize);
+    debuglnf_notime("RawShape::kSize       = %", RawShape::kSize);
+    debuglnf_notime("RawFunction::kSize    = %", RawFunction::kSize);
+    debuglnf_notime("RawFiber::kSize       = %", RawFiber::kSize);
+    debuglnf_notime("");
 
-    debuglnf("# %sizeof%", termcolor::yellow, termcolor::reset);
-    debuglnf("sizeof(Runtime)       = %", sizeof(Runtime));
-    debuglnf("sizeof(Scheduler)     = %", sizeof(Scheduler));
-    debuglnf("sizeof(Worker)        = %", sizeof(Worker));
-    debuglnf("sizeof(Processor)     = %", sizeof(Processor));
-    debuglnf("sizeof(Thread)        = %", sizeof(Thread));
-    debuglnf("sizeof(Heap)          = %", sizeof(Heap));
-    debuglnf("sizeof(HeapRegion)    = %", sizeof(HeapRegion));
-    debuglnf("sizeof(Frame)         = %", sizeof(Frame));
-    debuglnf("");
+    debuglnf_notime("# %sizeof%", termcolor::yellow, termcolor::reset);
+    debuglnf_notime("sizeof(Runtime)       = %", sizeof(Runtime));
+    debuglnf_notime("sizeof(Scheduler)     = %", sizeof(Scheduler));
+    debuglnf_notime("sizeof(Worker)        = %", sizeof(Worker));
+    debuglnf_notime("sizeof(Processor)     = %", sizeof(Processor));
+    debuglnf_notime("sizeof(Thread)        = %", sizeof(Thread));
+    debuglnf_notime("sizeof(Heap)          = %", sizeof(Heap));
+    debuglnf_notime("sizeof(HeapRegion)    = %", sizeof(HeapRegion));
+    debuglnf_notime("sizeof(Frame)         = %", sizeof(Frame));
+    debuglnf_notime("");
   }
 
   return Runtime::run();
