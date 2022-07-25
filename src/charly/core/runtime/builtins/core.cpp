@@ -73,7 +73,14 @@ RawValue transplantbuiltinclass(Thread* thread, const RawValue* args, uint8_t ar
       runtime->create_exception_with_message(thread, "expected donor class to not be a subclass"));
     return kErrorException;
   }
-  klass.set_constructor(donor_class.constructor());
+
+  auto donor_constructor = donor_class.constructor();
+  if (donor_constructor.isFunction()) {
+    auto constructor = RawFunction::cast(donor_constructor);
+    constructor.set_host_class(klass);
+  }
+  klass.set_constructor(donor_constructor);
+
   klass.set_function_table(donor_class.function_table());
   for (uint32_t i = 0; i < klass.function_table().size(); i++) {
     auto method = klass.function_table().field_at<RawFunction>(i);
