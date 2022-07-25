@@ -979,13 +979,46 @@ RawValue Runtime::create_exception(Thread* thread, RawValue message) {
   return instance;
 }
 
-RawValue Runtime::create_import_exception(Thread* thread, const std::string& module_path, RawTuple errors) {
+RawValue Runtime::create_import_exception(Thread* thread,
+                                          const std::string& module_path,
+                                          const ref<compiler::CompilationUnit>& unit) {
+
+  const auto& messages = unit->console.messages();
+  size_t size = messages.size();
+  auto error_tuple = create_tuple(thread, size);
+  for (size_t i = 0; i < size; i++) {
+    auto& msg = messages[i];
+    std::string type;
+    switch (msg.type) {
+      case compiler::DiagnosticType::Info: type = "info"; break;
+      case compiler::DiagnosticType::Warning: type = "warning"; break;
+      case compiler::DiagnosticType::Error: type = "error"; break;
+    }
+    auto filepath = msg.filepath;
+    auto message = msg.message;
+
+    utils::Buffer location_buffer;
+    utils::Buffer annotated_source_buffer;
+    if (msg.location.valid) {
+      location_buffer << msg.location;
+      unit->console.write_annotated_source(annotated_source_buffer, msg);
+    }
+
+    auto message_tuple = create_tuple(thread, 5);
+    message_tuple.set_field_at(0, create_string(thread, type));                     // type
+    message_tuple.set_field_at(1, create_string(thread, filepath));                 // filepath
+    message_tuple.set_field_at(2, create_string(thread, message));                  // message
+    message_tuple.set_field_at(3, create_string(thread, annotated_source_buffer));  // source
+    message_tuple.set_field_at(4, create_string(thread, location_buffer));          // location
+    error_tuple.set_field_at(i, message_tuple);
+  }
+
   // allocate exception instance
   auto instance =
     RawImportException::cast(create_instance(thread, get_builtin_class(thread, ShapeId::kImportException)));
   instance.set_message(create_string_from_template(thread, "Could not import '%'", module_path));
   instance.set_stack_trace(create_stack_trace(thread));
-  instance.set_errors(errors);
+  instance.set_errors(error_tuple);
 
   return instance;
 }

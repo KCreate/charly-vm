@@ -212,12 +212,19 @@ let $$ = null
                     const module = compile(input, "repl")
                     const fiber = spawn module()
                     $$ = await fiber
+                    print($$)
                 } catch(e) {
                     $$ = e
-                    print("Caught exception:")
-                }
 
-                print($$)
+                    if typeof $$ == ImportException {
+                        $$.errors.each(->(error) {
+                            print("{error[1]}:{error[4]}: {error[2]}\n{error[3]}")
+                        })
+                        break
+                    }
+
+                    print("Caught exception:\n{$$}")
+                }
             }
         }
 

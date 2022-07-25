@@ -26,17 +26,18 @@
 
 #include <array>
 #include <condition_variable>
+#include <filesystem>
 #include <list>
 #include <mutex>
 #include <shared_mutex>
 #include <stack>
 #include <vector>
-#include <filesystem>
 
 #include "charly/handle.h"
 
 #include "charly/utils/wait_flag.h"
 
+#include "charly/core/compiler/compiler.h"
 #include "charly/core/runtime/compiled_module.h"
 #include "charly/core/runtime/gc.h"
 #include "charly/core/runtime/heap.h"
@@ -138,7 +139,9 @@ public:
   RawValue create_exception_with_message(Thread* thread, const char* str, const T&... args) {
     return create_exception(thread, create_string_from_template(thread, str, args...));
   }
-  RawValue create_import_exception(Thread* thread, const std::string& module_path, RawTuple errors);
+  RawValue create_import_exception(Thread* thread,
+                                   const std::string& module_path,
+                                   const ref<compiler::CompilationUnit>& unit);
 
   // creates a tuple containing a stack trace of the current thread
   // trim variable controls how many frames should be dropped

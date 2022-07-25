@@ -398,37 +398,7 @@ OP(import) {
   // compile source code into module
   auto unit = Compiler::compile(import_path, buf, CompilationUnit::Type::Module);
   if (unit->console.has_errors()) {
-    auto& messages = unit->console.messages();
-    size_t size = messages.size();
-    auto error_tuple = runtime->create_tuple(thread, size);
-    for (size_t i = 0; i < size; i++) {
-      auto& msg = messages[i];
-      std::string type;
-      switch (msg.type) {
-        case DiagnosticType::Info: type = "info"; break;
-        case DiagnosticType::Warning: type = "warning"; break;
-        case DiagnosticType::Error: type = "error"; break;
-      }
-      auto filepath = msg.filepath;
-      auto message = msg.message;
-
-      utils::Buffer location_buffer;
-      utils::Buffer annotated_source_buffer;
-      if (msg.location.valid) {
-        location_buffer << msg.location;
-        unit->console.write_annotated_source(annotated_source_buffer, msg);
-      }
-
-      auto message_tuple = runtime->create_tuple(thread, 5);
-      message_tuple.set_field_at(0, runtime->create_string(thread, type));                     // type
-      message_tuple.set_field_at(1, runtime->create_string(thread, filepath));                 // filepath
-      message_tuple.set_field_at(2, runtime->create_string(thread, message));                  // message
-      message_tuple.set_field_at(3, runtime->create_string(thread, annotated_source_buffer));  // source
-      message_tuple.set_field_at(4, runtime->create_string(thread, location_buffer));          // location
-      error_tuple.set_field_at(i, message_tuple);
-    }
-
-    thread->throw_value(runtime->create_import_exception(thread, module_path, error_tuple));
+    thread->throw_value(runtime->create_import_exception(thread, module_path, unit));
     return ContinueMode::Exception;
   }
 
