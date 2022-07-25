@@ -1,3 +1,8 @@
+> Note: This is the rewrite branch of charly-vm.
+>       Lots of stuff isn't working yet.
+>       The [main branch](https://github.com/KCreate/charly-vm/tree/main) contains the previous
+>       fully functional version of charly-vm.
+
 ![Charly Programming Language](docs/charly-vm.png)
 ![Unit Test](https://github.com/KCreate/charly-vm/workflows/Unit%20Test/badge.svg?branch=rewrite)
 
