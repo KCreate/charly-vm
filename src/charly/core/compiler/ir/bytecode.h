@@ -849,7 +849,7 @@ static std::unordered_map<TokenType, Opcode> kBinopOpcodeMapping = {
   { TokenType::LessThan, Opcode::lt, },
   { TokenType::GreaterThan, Opcode::gt, },
   { TokenType::LessEqual, Opcode::le, },
-  { TokenType::GreaterEqual, Opcode::band, }
+  { TokenType::GreaterEqual, Opcode::ge }
 };
 
 static std::unordered_map<TokenType, Opcode> kUnaryopOpcodeMapping = {
