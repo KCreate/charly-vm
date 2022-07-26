@@ -259,17 +259,17 @@ void Thread::entry_main_thread() {
   }
 
   if (utils::ArgumentParser::is_flag_set("dump_ast") &&
-      utils::ArgumentParser::flag_has_argument("debug_filter", boot_path, true)) {
+      utils::ArgumentParser::flag_has_argument("debug_pattern", boot_path, true)) {
     unit->ast->dump(std::cout, true);
   }
 
   if (utils::ArgumentParser::is_flag_set("dump_ir") &&
-      utils::ArgumentParser::flag_has_argument("debug_filter", boot_path, true)) {
+      utils::ArgumentParser::flag_has_argument("debug_pattern", boot_path, true)) {
     unit->ir_module->dump(std::cout);
   }
 
   if (utils::ArgumentParser::is_flag_set("dump_asm") &&
-      utils::ArgumentParser::flag_has_argument("debug_filter", boot_path, true)) {
+      utils::ArgumentParser::flag_has_argument("debug_pattern", boot_path, true)) {
     unit->compiled_module->dump(std::cout);
   }
 
