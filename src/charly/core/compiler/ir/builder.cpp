@@ -458,7 +458,7 @@ void Builder::place_label(Label label) {
 }
 
 ref<IRInstruction> Builder::emit_load_value(RawValue value) {
-  if ((value.raw() & 0xffffffffffff0000) == 0) {
+  if ((value.raw() & 0xffffffffff000000) == 0) {
     return emit_loadsmi(value.raw());
   } else {
     return emit_load(register_constant(value));

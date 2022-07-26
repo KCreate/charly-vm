@@ -249,7 +249,7 @@ static const size_t kInstructionLength = 4;
    * stack results:                                                                    \
    * - immediate value                                                                 \
    * */                                                                                \
-  V(loadsmi, IAAX, 0, 1)                                                               \
+  V(loadsmi, IAAA, 0, 1)                                                               \
   /* loadself - load the self value in this frame                                      \
    *                                                                                   \
    * stack results:                                                                    \
@@ -789,6 +789,7 @@ inline Instruction encode_iaax(Opcode opcode, uint16_t arg) {
 }
 
 inline Instruction encode_iaaa(Opcode opcode, uint32_t arg) {
+  DCHECK((arg & 0xff000000) == 0);
   return Instruction{ uint32_t{ opcode } | ((uint32_t)arg << Instruction::kArgAAAShift) };
 }
 

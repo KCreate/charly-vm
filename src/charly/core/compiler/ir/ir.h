@@ -176,8 +176,10 @@ struct IRInstructionIAAX : public IRInstruction {
 };
 
 struct IRInstructionIAAA : public IRInstruction {
-  uint32_t arg : 24;
-  explicit IRInstructionIAAA(Opcode opcode, uint32_t arg) : IRInstruction(opcode), arg(arg) {}
+  uint32_t arg;
+  explicit IRInstructionIAAA(Opcode opcode, uint64_t _arg) : IRInstruction(opcode), arg(_arg) {
+    DCHECK((_arg & 0xffffffffff000000) == 0);
+  }
   Instruction encode() const override {
     return encode_iaaa(opcode, arg);
   }
