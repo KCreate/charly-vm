@@ -402,21 +402,6 @@ OP(import) {
     return ContinueMode::Exception;
   }
 
-  if (utils::ArgumentParser::is_flag_set("dump_ast") &&
-      utils::ArgumentParser::flag_has_argument("debug_pattern", module_path_string, true)) {
-    unit->ast->dump(std::cout, true);
-  }
-
-  if (utils::ArgumentParser::is_flag_set("dump_ir") &&
-      utils::ArgumentParser::flag_has_argument("debug_pattern", module_path_string, true)) {
-    unit->ir_module->dump(std::cout);
-  }
-
-  if (utils::ArgumentParser::is_flag_set("dump_asm") &&
-      utils::ArgumentParser::flag_has_argument("debug_pattern", module_path_string, true)) {
-    unit->compiled_module->dump(std::cout);
-  }
-
   auto module = unit->compiled_module;
   CHECK(!module->function_table.empty());
   runtime->register_module(thread, module);

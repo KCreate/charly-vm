@@ -54,6 +54,11 @@ ref<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffe
   if (unit->console.has_errors())
     return unit;
 
+  if (utils::ArgumentParser::is_flag_set("dump_ast_raw") &&
+      utils::ArgumentParser::flag_has_argument("debug_pattern", filepath, true)) {
+    unit->ast->dump(std::cout, true);
+  }
+
 #define APPLY_DIAGNOSTIC_PASS(PassName)       \
   {                                           \
     DCHECK(unit->ast.get());                  \
@@ -102,6 +107,11 @@ ref<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffe
     APPLY_TRANSFORM_PASS(ConstantFoldingPass)
   }
 
+  if (utils::ArgumentParser::is_flag_set("dump_ast") &&
+      utils::ArgumentParser::flag_has_argument("debug_pattern", filepath, true)) {
+    unit->ast->dump(std::cout, true);
+  }
+
 #undef APPLY_DIAGNOSTIC_PASS
 #undef APPLY_TRANSFORM_PASS
 
@@ -109,8 +119,18 @@ ref<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffe
   CodeGenerator codegenerator(unit);
   unit->ir_module = codegenerator.compile();
 
+  if (utils::ArgumentParser::is_flag_set("dump_ir") &&
+      utils::ArgumentParser::flag_has_argument("debug_pattern", filepath, true)) {
+    unit->ir_module->dump(std::cout);
+  }
+
   // assemble bytecodes
   unit->compiled_module = ir::Assembler::compile_module(unit->ir_module);
+
+  if (utils::ArgumentParser::is_flag_set("dump_asm") &&
+      utils::ArgumentParser::flag_has_argument("debug_pattern", filepath, true)) {
+    unit->compiled_module->dump(std::cout);
+  }
 
   return unit;
 }
