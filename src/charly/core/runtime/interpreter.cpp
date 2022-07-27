@@ -1175,6 +1175,12 @@ OP(fiberjoin) {
   }
 }
 
+OP(castbool) {
+  RawValue value = frame->pop();
+  frame->push(RawBool::make(value.truthyness()));
+  return ContinueMode::Next;
+}
+
 OP(caststring) {
   RawValue value = frame->pop();
 

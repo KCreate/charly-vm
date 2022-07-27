@@ -24,20 +24,14 @@
  * SOFTWARE.
  */
 
-const source = "foobarbaz"
-const module = compile(source)
-const fiber = spawn module()
 
-print(fiber)
-
-try {
-    await fiber
-} catch(e) {
-    print("Caught: {e}")
+func foo(x) {
+    if x && (x && x) {
+        return 100
+    } else {
+        return 200
+    }
 }
 
-
-
-
-
-
+print(foo(true))
+print(foo(false))

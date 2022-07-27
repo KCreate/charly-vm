@@ -726,6 +726,7 @@ CATCH_TEST_CASE("Parser") {
   }
 
   CATCH_SECTION("__builtin expressions") {
+    CHECK_STMT("__builtin(\"castbool\", x)")
     CHECK_STMT("__builtin(\"caststring\", x)")
     CHECK_STMT("__builtin(\"castsymbol\", x)")
     CHECK_STMT("__builtin(\"makefiber\", x, y, z)")

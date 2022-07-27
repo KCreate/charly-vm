@@ -24,53 +24,19 @@
  * SOFTWARE.
  */
 
-#include <cstdint>
-#include <string>
-#include <unordered_map>
+#include "charly/core/compiler/pass.h"
 
 #pragma once
 
-namespace charly::core::compiler::ir {
+namespace charly::core::compiler::ast {
 
-#define FOREACH_BUILTIN(V) \
-  V(makefiber, 3)          \
-  V(fiberjoin, 1)          \
-  V(import, 2)             \
-  V(iteratornext, 1)       \
-  V(castbool, 1)           \
-  V(caststring, 1)         \
-  V(castsymbol, 1)         \
-  V(castiterator, 1)       \
-  V(panic, 0)
+class CodeEliminationPass : public DiagnosticPass {
+public:
+  using DiagnosticPass::DiagnosticPass;
 
-// ids of builtin operations
-enum class BuiltinId : uint16_t
-{
-#define ID(name, _) name,
-  FOREACH_BUILTIN(ID)
-#undef ID
+private:
+  ref<Statement> transform(const ref<Block>&) override;
+  ref<Expression> transform(const ref<ExpressionWithSideEffects>&) override;
 };
 
-// number of required arguments for the builtin operations
-// -1 indicates that there is no min or max limit
-static constexpr int8_t kBuiltinArgumentCount[] = {
-#define COUNT(_, count) count,
-  FOREACH_BUILTIN(COUNT)
-#undef COUNT
-};
-
-// names of builtin operations
-static std::string kBuiltinNames[] = {
-#define NAME(name, _) #name,
-  FOREACH_BUILTIN(NAME)
-#undef NAME
-};
-
-// mapping from name of builtin operation to its Id
-static std::unordered_map<std::string, BuiltinId> kBuiltinNameMapping = {
-#define PAIR(name, _) { #name, BuiltinId::name },
-  FOREACH_BUILTIN(PAIR)
-#undef PAIR
-};
-
-}  // namespace charly::core::compiler::ir
+}  // namespace charly::core::compiler::ast

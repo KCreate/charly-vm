@@ -48,7 +48,8 @@ func write(...args) {
 func print(...args) {
     args.each(->(e, i) {
         builtin_writevalue(e)
-        if i != args.length {
+        // FIXME: do actual minus op once sub opcode is implemented
+        if i != args.length + (-1) {
             builtin_writevalue(" ")
         }
     })

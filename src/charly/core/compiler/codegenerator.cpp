@@ -369,6 +369,12 @@ bool CodeGenerator::inspect_enter(const ref<Block>& node) {
   return false;
 }
 
+bool CodeGenerator::inspect_enter(const ref<ExpressionWithSideEffects>& node) {
+  apply(node->block);
+  apply(node->expression);
+  return false;
+}
+
 bool CodeGenerator::inspect_enter(const ref<Return>& node) {
   if (active_function()->class_constructor) {
     // class constructors must always return self

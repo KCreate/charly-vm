@@ -89,6 +89,14 @@ struct ValueLocation {
     return this->type != Type::Invalid;
   }
 
+  bool has_side_effects() const {
+    if (!valid() || (type == Type::Self || type == Type::FarSelf || type == Type::Global)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   static ValueLocation Id(VariableId id) {
     ValueLocation loc;
     loc.type = Type::Id;

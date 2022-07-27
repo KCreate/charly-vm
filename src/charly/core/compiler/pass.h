@@ -60,7 +60,12 @@ protected:
     APPLY_VECTOR(statements);
   })
 
-  HANDLE_NODE(Statement, Return, {
+  HANDLE_NODE(Expression, ExpressionWithSideEffects, {
+    APPLY_NODE(block);
+    APPLY_NODE(expression);
+  })
+
+HANDLE_NODE(Statement, Return, {
     APPLY_NODE(value);
   })
 

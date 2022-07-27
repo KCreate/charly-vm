@@ -32,16 +32,27 @@
 namespace charly::core::compiler::ast {
 
 ref<Expression> ConstantFoldingPass::transform(const ref<Ternary>& node) {
-  // remove dead code
-  if (node->condition->is_constant_value()) {
-    if (node->condition->truthyness()) {
-      return node->then_exp;
-    } else {
-      return node->else_exp;
+  switch (node->condition->truthyness()) {
+    case Truthyness::True: {
+      if (node->condition->has_side_effects()) {
+        auto tmp = make<ExpressionWithSideEffects>(make<Block>(node->condition), node->then_exp);
+        tmp->set_location(node->then_exp);
+        return tmp;
+      } else {
+        return node->then_exp;
+      }
     }
+    case Truthyness::False: {
+      if (node->condition->has_side_effects()) {
+        auto tmp = make<ExpressionWithSideEffects>(make<Block>(node->condition), node->else_exp);
+        tmp->set_location(node->else_exp);
+        return tmp;
+      } else {
+        return node->else_exp;
+      }
+    }
+    default: return node;
   }
-
-  return node;
 }
 
 ref<Expression> ConstantFoldingPass::transform(const ref<BinaryOp>& node) {
@@ -142,6 +153,48 @@ ref<Expression> ConstantFoldingPass::transform(const ref<BinaryOp>& node) {
     }
   }
 
+  // <exp> && <exp>
+  if (node->operation == TokenType::And) {
+    auto lhs_truthy = node->lhs->truthyness();
+    auto rhs_truthy = node->lhs->truthyness();
+    auto lhs_sideeffects = node->lhs->has_side_effects();
+    auto rhs_sideeffects = node->rhs->has_side_effects();
+
+    if (lhs_truthy == Truthyness::True && !lhs_sideeffects) {
+      replacement = make<BuiltinOperation>(ir::BuiltinId::castbool, node->rhs);
+    } else if (lhs_truthy == Truthyness::False && !lhs_sideeffects) {
+      replacement = make<Bool>(false);
+    } else if (lhs_truthy == Truthyness::True && lhs_sideeffects) {
+      replacement = make<ExpressionWithSideEffects>(make<Block>(node->lhs), make<BuiltinOperation>(ir::BuiltinId::castbool, node->rhs));
+    } else if (lhs_truthy == Truthyness::False && lhs_sideeffects) {
+      replacement = make<ExpressionWithSideEffects>(make<Block>(node->lhs), make<Bool>(false));
+    } else if (rhs_truthy == Truthyness::True && !rhs_sideeffects) {
+      replacement = make<BuiltinOperation>(ir::BuiltinId::castbool, node->lhs);
+    } else if (rhs_truthy == Truthyness::False && !rhs_sideeffects) {
+      replacement = make<ExpressionWithSideEffects>(make<Block>(node->lhs), make<Bool>(false));
+    }
+  }
+
+  // <exp> || <exp>
+  if (node->operation == TokenType::Or) {
+    auto lhs_truthy = node->lhs->truthyness();
+    auto lhs_sideeffects = node->lhs->has_side_effects();
+
+    if (lhs_truthy == Truthyness::True) {
+      replacement = node->lhs;
+    } else if (lhs_truthy == Truthyness::False && !lhs_sideeffects) {
+      replacement = node->rhs;
+    } else if (lhs_truthy == Truthyness::False && lhs_sideeffects) {
+      replacement = make<ExpressionWithSideEffects>(make<Block>(node->lhs), node->rhs);
+    }
+  }
+
+  if (node != replacement) {
+    debugln("original: %", node->dump());
+    debugln("replacement: %", replacement->dump());
+  }
+
+
   replacement->set_location(node);
   return replacement;
 }
@@ -149,7 +202,6 @@ ref<Expression> ConstantFoldingPass::transform(const ref<BinaryOp>& node) {
 ref<Expression> ConstantFoldingPass::transform(const ref<UnaryOp>& node) {
   ref<Expression> replacement = node;
 
-  // int
   if (ref<Int> expression = cast<Int>(node->expression)) {
     switch (node->operation) {
       case TokenType::Plus: {
@@ -160,17 +212,12 @@ ref<Expression> ConstantFoldingPass::transform(const ref<UnaryOp>& node) {
         replacement = make<Int>(-expression->value);
         break;
       }
-      case TokenType::UnaryNot: {
-        replacement = make<Bool>(!expression->truthyness());
-        break;
-      }
       default: {
         break;
       }
     }
   }
 
-  // float
   if (ref<Float> expression = cast<Float>(node->expression)) {
     switch (node->operation) {
       case TokenType::Plus: {
@@ -181,8 +228,21 @@ ref<Expression> ConstantFoldingPass::transform(const ref<UnaryOp>& node) {
         replacement = make<Float>(-expression->value);
         break;
       }
-      case TokenType::UnaryNot: {
-        replacement = make<Bool>(!expression->truthyness());
+      default: {
+        break;
+      }
+    }
+  }
+
+  if (ref<Bool> expression = cast<Bool>(node->expression)) {
+    switch (node->operation) {
+      case TokenType::Plus: {
+        replacement = expression;
+        break;
+      }
+      case TokenType::Minus:{
+        DCHECK(expression->truthyness() != Truthyness::Unknown);
+        replacement = make<Bool>(!expression->value);
         break;
       }
       default: {
@@ -191,20 +251,15 @@ ref<Expression> ConstantFoldingPass::transform(const ref<UnaryOp>& node) {
     }
   }
 
-  // bool
-  if (ref<Bool> expression = cast<Bool>(node->expression)) {
-    switch (node->operation) {
-      case TokenType::Plus: {
-        replacement = expression;
-        break;
-      }
-      case TokenType::Minus:
-      case TokenType::UnaryNot: {
-        replacement = make<Bool>(!expression->truthyness());
-        break;
-      }
-      default: {
-        break;
+  if (node->operation == TokenType::UnaryNot) {
+    auto exp_truthy = node->expression->truthyness();
+    if (exp_truthy != Truthyness::Unknown) {
+      bool truthyness = exp_truthy == Truthyness::True;
+
+      if (node->expression->has_side_effects()) {
+        replacement = make<ExpressionWithSideEffects>(make<Block>(node->expression), make<Bool>(!truthyness));
+      } else {
+        replacement = make<Bool>(!truthyness);
       }
     }
   }
@@ -214,7 +269,6 @@ ref<Expression> ConstantFoldingPass::transform(const ref<UnaryOp>& node) {
 }
 
 ref<Expression> ConstantFoldingPass::transform(const ref<Id>& node) {
-  // constant value propagation
   if (ref<Declaration> declaration = cast<Declaration>(node->declaration_node)) {
     if (declaration->constant && declaration->expression->is_constant_value()) {
       return declaration->expression;
@@ -225,15 +279,6 @@ ref<Expression> ConstantFoldingPass::transform(const ref<Id>& node) {
 }
 
 ref<Statement> ConstantFoldingPass::transform(const ref<If>& node) {
-  // remove dead code
-  if (node->condition->is_constant_value()) {
-    if (node->condition->truthyness()) {
-      return node->then_block;
-    } else {
-      return node->else_block;
-    }
-  }
-
   if (node->condition->type() == Node::Type::UnaryOp) {
     ref<UnaryOp> op = cast<UnaryOp>(node->condition);
 
@@ -243,30 +288,56 @@ ref<Statement> ConstantFoldingPass::transform(const ref<If>& node) {
         ref<Block> else_block = node->else_block;
         node->else_block = node->then_block;
         node->then_block = else_block;
+        node->condition = op->expression;
       }
     }
   }
 
-  return node;
+  switch (node->condition->truthyness()) {
+    case Truthyness::True: {
+      if (node->then_block) {
+        return make<Block>(node->condition, node->then_block);
+      } else {
+        return node->condition;
+      }
+    }
+    case Truthyness::False: {
+      if (node->else_block) {
+        return make<Block>(node->condition, node->else_block);
+      } else {
+        return node->condition;
+      }
+    }
+    default: return node;
+  }
 }
 
 ref<Statement> ConstantFoldingPass::transform(const ref<While>& node) {
-  // detect infinite loops and remove dead code
-  if (node->condition->is_constant_value()) {
-    if (node->condition->truthyness()) {
-      return make<Loop>(node->then_block);
-    } else {
-      return nullptr;
-    }
+  switch (node->condition->truthyness()) {
+    case Truthyness::True: return make<Loop>(make<Block>(node->condition, node->then_block));
+    case Truthyness::False: return make<Block>(node->condition);
+    default: return node;
   }
-
-  return node;
 }
 
 ref<Expression> ConstantFoldingPass::transform(const ref<BuiltinOperation>& node) {
   ref<Expression> replacement = node;
 
   switch (node->operation) {
+    case ir::BuiltinId::castbool: {
+      DCHECK(node->arguments.size() == 1);
+      auto exp = node->arguments[0];
+      auto truthyness = exp->truthyness();
+      if (truthyness != Truthyness::Unknown) {
+        bool truthyness_bool = truthyness == Truthyness::True;
+        if (exp->has_side_effects()) {
+          replacement = make<ExpressionWithSideEffects>(make<Block>(exp), make<Bool>(truthyness_bool));
+        } else {
+          replacement = make<Bool>(truthyness_bool);
+        }
+      }
+      break;
+    }
     case ir::BuiltinId::caststring: {
       DCHECK(node->arguments.size() == 1);
       const ref<Expression>& expression = node->arguments.at(0);

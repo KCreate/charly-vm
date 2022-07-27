@@ -465,6 +465,10 @@ ref<IRInstruction> Builder::emit_load_value(RawValue value) {
   }
 }
 
+uint32_t Builder::current_stack_height() const {
+  return m_current_stack_height;
+}
+
 uint32_t Builder::maximum_stack_height() const {
   return m_maximum_stack_height;
 }

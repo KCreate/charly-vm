@@ -144,6 +144,7 @@ public:
   }
 
   // keep track of maximum stack height
+  uint32_t current_stack_height() const;
   uint32_t maximum_stack_height() const;
   void reset_stack_height();
   void update_stack(int32_t amount);

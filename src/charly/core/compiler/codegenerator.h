@@ -84,6 +84,7 @@ private:
   void pop_continue_label();
 
   // pass visitor event hooks
+  bool inspect_enter(const ref<ast::ExpressionWithSideEffects>&) override;
   bool inspect_enter(const ref<ast::Block>&) override;
   bool inspect_enter(const ref<ast::Return>&) override;
   void inspect_leave(const ref<ast::Break>&) override;

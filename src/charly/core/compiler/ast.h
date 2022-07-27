@@ -46,12 +46,20 @@ class Pass;
 class FunctionScope;
 class BlockScope;
 
+enum class Truthyness
+{
+  Unknown = 0,
+  True = 1,
+  False = 2,
+};
+
 // base class of all ast nodes
 class Node : std::enable_shared_from_this<Node> {
   friend class Pass;
 
 public:
-  enum class Type : uint8_t {
+  enum class Type : uint8_t
+  {
     Unknown = 0,
 
     // Statements
@@ -94,6 +102,7 @@ public:
     Class,
 
     // Expressions
+    ExpressionWithSideEffects,
     MemberOp,
     IndexOp,
     UnpackTargetElement,
@@ -207,10 +216,8 @@ public:
     return false;
   }
 
-  // return the truthyness of a value
-  // meant to be overriden by nodes representing primitive types
-  virtual bool truthyness() const {
-    return false;
+  virtual bool has_side_effects() const {
+    return true;
   }
 
 private:
@@ -266,7 +273,14 @@ public:
 };
 
 // 1 + x, false, foo(bar)
-class Expression : public Statement {};
+class Expression : public Statement {
+public:
+  // return the truthyness of a value
+  // meant to be overriden by nodes representing primitive types
+  virtual Truthyness truthyness() const {
+    return Truthyness::Unknown;
+  }
+};
 
 class StatementList : public Statement {
   AST_NODE(StatementList)
@@ -292,6 +306,15 @@ public:
 
   CHILDREN() {
     CHILD_VECTOR(statements)
+  }
+
+  virtual bool has_side_effects() const override {
+    for (auto& statement : statements) {
+      if (statement->has_side_effects()) {
+        return true;
+      }
+    }
+    return false;
   }
 };
 
@@ -321,6 +344,25 @@ public:
   }
 
   void dump_info(std::ostream& out) const override;
+
+  void push_front(const ref<Statement>& stmt) {
+    statements.insert(statements.begin(), stmt);
+    set_begin(stmt);
+  }
+
+  void push_back(const ref<Statement>& stmt) {
+    statements.push_back(stmt);
+    set_end(stmt);
+  }
+
+  virtual bool has_side_effects() const override {
+    for (auto& statement : statements) {
+      if (statement->has_side_effects()) {
+        return true;
+      }
+    }
+    return false;
+  }
 };
 
 // return <exp>
@@ -399,6 +441,28 @@ public:
   }
 };
 
+class ExpressionWithSideEffects final : public Expression {
+  AST_NODE(ExpressionWithSideEffects)
+public:
+  explicit ExpressionWithSideEffects(const ref<Block>& block, const ref<Expression>& expression) :
+    block(block), expression(expression) {
+    set_location(block, expression);
+  }
+
+  ref<Block> block;
+  ref<Expression> expression;
+
+  CHILDREN(){ CHILD_NODE(block) CHILD_NODE(expression) }
+
+  Truthyness truthyness() const override {
+    return expression->truthyness();
+  }
+
+  virtual bool has_side_effects() const override {
+    return block->has_side_effects() || expression->has_side_effects();
+  }
+};
+
 // import <source>
 class Import final : public Expression {
   AST_NODE(Import)
@@ -469,8 +533,14 @@ public:
 
   ref<Expression> expression;
 
-  CHILDREN() {
-    CHILD_NODE(expression)
+  CHILDREN(){ CHILD_NODE(expression) }
+
+  Truthyness truthyness() const override {
+    return Truthyness::True;
+  }
+
+  virtual bool has_side_effects() const override {
+    return false;
   }
 };
 
@@ -481,6 +551,14 @@ public:
   bool is_constant_value() const override {
     return true;
   }
+
+  Truthyness truthyness() const override {
+    return Truthyness::False;
+  }
+
+  virtual bool has_side_effects() const override {
+    return false;
+  }
 };
 
 // self
@@ -488,6 +566,10 @@ class Self final : public Expression {
   AST_NODE(Self)
 public:
   explicit Self() {}
+
+  virtual bool has_side_effects() const override {
+    return false;
+  }
 };
 
 // self of some parent function
@@ -498,6 +580,10 @@ public:
   uint8_t depth;
 
   void dump_info(std::ostream& out) const override;
+
+  virtual bool has_side_effects() const override {
+    return false;
+  }
 };
 
 template <typename T>
@@ -514,6 +600,10 @@ public:
 
   bool is_constant_value() const override {
     return true;
+  }
+
+  virtual bool has_side_effects() const override {
+    return false;
   }
 };
 
@@ -536,6 +626,10 @@ public:
   }
 
   void dump_info(std::ostream& out) const override;
+
+  bool has_side_effects() const override {
+    return ir_location.has_side_effects();
+  }
 };
 
 // used to represent names that do not refer to a variable
@@ -571,8 +665,8 @@ public:
 
   void dump_info(std::ostream& out) const override;
 
-  bool truthyness() const override {
-    return this->value;
+  Truthyness truthyness() const override {
+    return this->value ? Truthyness::True : Truthyness::False;
   }
 };
 
@@ -594,8 +688,8 @@ public:
 
   void dump_info(std::ostream& out) const override;
 
-  bool truthyness() const override {
-    return this->value == 0.0;
+  Truthyness truthyness() const override {
+    return this->value == 0.0 ? Truthyness::True : Truthyness::False;
   }
 };
 
@@ -607,8 +701,8 @@ public:
 
   void dump_info(std::ostream& out) const override;
 
-  bool truthyness() const override {
-    return this->value;
+  Truthyness truthyness() const override {
+    return this->value ? Truthyness::True : Truthyness::False;
   }
 };
 
@@ -620,8 +714,8 @@ public:
 
   void dump_info(std::ostream& out) const override;
 
-  bool truthyness() const override {
-    return this->value != 0;
+  Truthyness truthyness() const override {
+    return this->value != 0 ? Truthyness::True : Truthyness::False;
   }
 };
 
@@ -637,8 +731,8 @@ public:
 
   void dump_info(std::ostream& out) const override;
 
-  bool truthyness() const override {
-    return true;  // strings are always truthy
+  Truthyness truthyness() const override {
+    return Truthyness::True;  // strings are always truthy
   }
 };
 
@@ -651,8 +745,19 @@ public:
 
   std::vector<ref<Expression>> elements;
 
-  CHILDREN() {
-    CHILD_VECTOR(elements)
+  CHILDREN(){ CHILD_VECTOR(elements) }
+
+  Truthyness truthyness() const override {
+    return Truthyness::True;
+  }
+
+  virtual bool has_side_effects() const override {
+    for (auto& element : elements) {
+      if (element->has_side_effects()) {
+        return true;
+      }
+    }
+    return false;
   }
 };
 
@@ -674,8 +779,8 @@ public:
 
   void dump_info(std::ostream& out) const override;
 
-  bool truthyness() const override {
-    return true;  // symbols are always truthy
+  Truthyness truthyness() const override {
+    return Truthyness::True;  // symbols are always truthy
   }
 };
 
@@ -692,8 +797,19 @@ public:
 
   bool has_spread_elements() const;
 
-  CHILDREN() {
-    CHILD_VECTOR(elements)
+  CHILDREN(){ CHILD_VECTOR(elements) }
+
+  Truthyness truthyness() const override {
+    return Truthyness::True;
+  }
+
+  virtual bool has_side_effects() const override {
+    for (auto& element : elements) {
+      if (element->has_side_effects()) {
+        return true;
+      }
+    }
+    return false;
   }
 };
 
@@ -708,8 +824,19 @@ public:
 
   bool has_spread_elements() const;
 
-  CHILDREN() {
-    CHILD_VECTOR(elements)
+  CHILDREN(){ CHILD_VECTOR(elements) }
+
+  Truthyness truthyness() const override {
+    return Truthyness::True;
+  }
+
+  virtual bool has_side_effects() const override {
+    for (auto& element : elements) {
+      if (element->has_side_effects()) {
+        return true;
+      }
+    }
+    return false;
   }
 };
 
@@ -736,6 +863,10 @@ public:
     CHILD_NODE(key)
     CHILD_NODE(value)
   }
+
+  virtual bool has_side_effects() const override {
+    return key->has_side_effects() || value->has_side_effects();
+  }
 };
 
 // { a: 1, b: false, c: foo }
@@ -751,8 +882,19 @@ public:
 
   bool has_spread_elements() const;
 
-  CHILDREN() {
-    CHILD_VECTOR(elements)
+  CHILDREN(){ CHILD_VECTOR(elements) }
+
+  Truthyness truthyness() const override {
+    return Truthyness::True;
+  }
+
+  virtual bool has_side_effects() const override {
+    for (auto& element : elements) {
+      if (element->has_side_effects()) {
+        return true;
+      }
+    }
+    return false;
   }
 };
 
@@ -863,6 +1005,10 @@ public:
   }
 
   void dump_info(std::ostream& out) const override;
+
+  Truthyness truthyness() const override {
+    return Truthyness::True;
+  }
 };
 
 // property foo
@@ -928,6 +1074,10 @@ public:
   }
 
   void dump_info(std::ostream& out) const override;
+
+  Truthyness truthyness() const override {
+    return Truthyness::True;
+  }
 };
 
 // super
@@ -1019,6 +1169,15 @@ public:
   }
 
   void dump_info(std::ostream& out) const override;
+
+  bool has_side_effects() const override {
+    for (auto& element : elements) {
+      if (element->has_side_effects()) {
+        return true;
+      }
+    }
+    return false;
+  }
 };
 
 // <target> <operation>= <source>
@@ -1062,10 +1221,21 @@ public:
   ref<Expression> then_exp;
   ref<Expression> else_exp;
 
-  CHILDREN() {
-    CHILD_NODE(condition)
-    CHILD_NODE(then_exp)
-    CHILD_NODE(else_exp)
+  CHILDREN(){ CHILD_NODE(condition) CHILD_NODE(then_exp) CHILD_NODE(else_exp) }
+
+  Truthyness truthyness() const override {
+    auto condition_truthyness = condition->truthyness();
+    if (condition_truthyness == Truthyness::True) {
+      return then_exp->truthyness();
+    } else if (condition_truthyness == Truthyness::False) {
+      return else_exp->truthyness();
+    } else {
+      return Truthyness::Unknown;
+    }
+  }
+
+  bool has_side_effects() const override {
+    return condition->has_side_effects() || then_exp->has_side_effects() || else_exp->has_side_effects();
   }
 };
 
@@ -1089,6 +1259,30 @@ public:
   }
 
   void dump_info(std::ostream& out) const override;
+
+  Truthyness truthyness() const override {
+    auto lhst = lhs->truthyness();
+    auto rhst = lhs->truthyness();
+
+    if (operation == TokenType::And) {
+      if (lhst == Truthyness::False || rhst == Truthyness::False) {
+        return Truthyness::False;
+      } else if (lhst == Truthyness::True && rhst == Truthyness::True) {
+        return Truthyness::True;
+      }
+    } else if (operation == TokenType::Or) {
+      if (lhst == Truthyness::True || rhst == Truthyness::True) {
+        return Truthyness::True;
+      } else if (lhst == Truthyness::False && rhst == Truthyness::False) {
+        return Truthyness::False;
+      }
+    }
+    return Truthyness::Unknown;
+  }
+
+  bool has_side_effects() const override {
+    return lhs->has_side_effects() || rhs->has_side_effects();
+  }
 };
 
 // <operation> <expression>
@@ -1107,6 +1301,21 @@ public:
   }
 
   void dump_info(std::ostream& out) const override;
+
+  Truthyness truthyness() const override {
+    if (operation == TokenType::UnaryNot) {
+      switch (expression->truthyness()) {
+        case Truthyness::True: return Truthyness::False;
+        case Truthyness::False: return Truthyness::True;
+        case Truthyness::Unknown: return Truthyness::Unknown;
+      }
+    }
+    return Truthyness::Unknown;
+  }
+
+  bool has_side_effects() const override {
+    return expression->has_side_effects();
+  }
 };
 
 // <target>(<arguments>)
@@ -1228,6 +1437,10 @@ public:
     CHILD_NODE(then_block)
     CHILD_NODE(else_block)
   }
+
+  bool has_side_effects() const override {
+    return condition->has_side_effects() || then_block->has_side_effects() || else_block->has_side_effects();
+  }
 };
 
 // while <condition> <then_block>
@@ -1246,6 +1459,10 @@ public:
     CHILD_NODE(condition)
     CHILD_NODE(then_block)
   }
+
+  bool has_side_effects() const override {
+    return condition->has_side_effects() || then_block->has_side_effects();
+  }
 };
 
 // loop <then_block>
@@ -1260,6 +1477,10 @@ public:
 
   CHILDREN() {
     CHILD_NODE(then_block)
+  }
+
+  bool has_side_effects() const override {
+    return then_block->has_side_effects();
   }
 };
 
@@ -1289,6 +1510,10 @@ public:
   }
 
   void dump_info(std::ostream& out) const override;
+
+  bool has_side_effects() const override {
+    return try_block->has_side_effects() || catch_block->has_side_effects();
+  }
 };
 
 // try <try_block> finally <finally_block>
@@ -1310,6 +1535,10 @@ public:
     CHILD_NODE(try_block)
     CHILD_NODE(finally_block)
   }
+
+  bool has_side_effects() const override {
+    return try_block->has_side_effects() || finally_block->has_side_effects();
+  }
 };
 
 class SwitchCase final : public Node {
@@ -1326,6 +1555,10 @@ public:
   CHILDREN() {
     CHILD_NODE(test)
     CHILD_NODE(block)
+  }
+
+  bool has_side_effects() const override {
+    return test->has_side_effects() || block->has_side_effects();
   }
 };
 
@@ -1356,6 +1589,20 @@ public:
     CHILD_NODE(default_block)
     CHILD_VECTOR(cases)
   }
+
+  bool has_side_effects() const override {
+    if (test->has_side_effects() || default_block->has_side_effects()) {
+      return true;
+    }
+
+    for (auto& element : cases) {
+      if (element->has_side_effects()) {
+        return true;
+      }
+    }
+
+    return false;
+  }
 };
 
 // for <target> in <source> <stmt>
@@ -1373,6 +1620,10 @@ public:
   CHILDREN() {
     CHILD_NODE(declaration)
     CHILD_NODE(stmt)
+  }
+
+  bool has_side_effects() const override {
+    return declaration->has_side_effects() || stmt->has_side_effects();
   }
 };
 
@@ -1402,6 +1653,22 @@ public:
   }
 
   void dump_info(std::ostream& out) const override;
+
+  virtual Truthyness truthyness() const override {
+    switch (operation) {
+      case ir::BuiltinId::castbool: {
+        DCHECK(arguments.size() == 1);
+        return arguments[0]->truthyness();
+      }
+      case ir::BuiltinId::caststring:
+      case ir::BuiltinId::castsymbol: {
+        return Truthyness::True;
+      }
+      default: {
+        return Truthyness::Unknown;
+      }
+    }
+  }
 };
 
 #undef AST_NODE
