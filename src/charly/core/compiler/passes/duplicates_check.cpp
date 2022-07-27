@@ -82,9 +82,9 @@ void DuplicatesCheck::inspect_leave(const ref<Function>& node) {
 
 void DuplicatesCheck::inspect_leave(const ref<Class>& node) {
   std::unordered_map<std::string, ref<ClassProperty>> class_member_properties;
-  std::unordered_map<SYMBOL, std::vector<ref<Function>>> class_member_functions;
+  std::unordered_map<SYMBOL, std::list<ref<Function>>> class_member_functions;
   std::unordered_map<std::string, ref<ClassProperty>> class_static_properties;
-  std::unordered_map<SYMBOL, std::vector<ref<Function>>> class_static_functions;
+  std::unordered_map<SYMBOL, std::list<ref<Function>>> class_static_functions;
 
   // check for duplicate member properties
   for (const ref<ClassProperty>& prop : node->member_properties) {
@@ -171,7 +171,7 @@ void DuplicatesCheck::inspect_leave(const ref<Class>& node) {
   // sort individual overload sets by minargc
   for (auto overload_group : class_member_functions) {
     auto& vec = overload_group.second;
-    std::sort(vec.begin(), vec.end(), [](ref<Function> left, ref<Function> right) {
+    vec.sort([](const ref<Function>& left, const ref<Function>& right) {
       return left->minimum_argc() < right->minimum_argc();
     });
   }
@@ -183,7 +183,7 @@ void DuplicatesCheck::inspect_leave(const ref<Class>& node) {
   // sort individual overload sets by minargc
   for (auto overload_group : class_static_functions) {
     auto& vec = overload_group.second;
-    std::sort(vec.begin(), vec.end(), [](ref<Function> left, ref<Function> right) {
+    vec.sort([](const ref<Function>& left, const ref<Function>& right) {
       return left->minimum_argc() < right->minimum_argc();
     });
   }

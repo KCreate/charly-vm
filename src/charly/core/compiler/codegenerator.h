@@ -67,7 +67,7 @@ private:
 
   // generate spread tuples for a list of expressions
   // returns the total amount of tuples pushed
-  uint8_t generate_spread_tuples(const std::vector<ref<ast::Expression>>& vec);
+  uint8_t generate_spread_tuples(const std::list<ref<ast::Expression>>& vec);
 
   // generate an assignment to an unpack target
   void generate_unpack_assignment(const ref<ast::UnpackTarget>& target);

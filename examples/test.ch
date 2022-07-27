@@ -24,7 +24,6 @@
  * SOFTWARE.
  */
 
-
 func foo(x) {
     if x && (x && x) {
         return 100

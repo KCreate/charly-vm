@@ -81,11 +81,13 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
   if (minargc < argc) {
     // skip building the jump table if all default arguments are initialized to null
     bool has_non_null_default_arguments = false;
-    for (uint8_t i = minargc; i < argc; i++) {
-      const ref<FunctionArgument>& arg = function->arguments[i];
+    auto arg_it = function->arguments.begin();
+    for (uint8_t i = minargc; i < argc && arg_it != function->arguments.end(); i++) {
+      const ref<FunctionArgument>& arg = *arg_it;
       if (!isa<Null>(arg->default_value)) {
         has_non_null_default_arguments = true;
       }
+      arg_it++;
     }
 
     if (has_non_null_default_arguments) {
@@ -112,16 +114,18 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
       }
 
       // emit stores for each argument with a default value
-      for (uint8_t i = minargc; i < argc; i++) {
+      arg_it = function->arguments.begin();
+      for (uint8_t i = minargc; i < argc && arg_it != function->arguments.end(); i++) {
         m_builder.place_label(labels[i]);
 
         // assign default value
-        const ref<FunctionArgument>& arg = function->arguments[i];
-        if (!isa<Null>(arg->default_value)) {
+        const ref<FunctionArgument>& arg = *arg_it;
+        if (arg->default_value && !isa<Null>(arg->default_value)) {
           apply(arg->default_value);
           generate_store(arg->ir_location)->at(arg);
           m_builder.emit_pop();
         }
+        arg_it++;
       }
 
       m_builder.place_label(body_label);
@@ -193,7 +197,7 @@ ref<ir::IRInstruction> CodeGenerator::generate_store(const ValueLocation& locati
   }
 }
 
-uint8_t CodeGenerator::generate_spread_tuples(const std::vector<ref<Expression>>& vec) {
+uint8_t CodeGenerator::generate_spread_tuples(const std::list<ref<Expression>>& vec) {
   uint8_t elements_in_last_segment = 0;
   uint8_t emitted_segments = 0;
 
@@ -853,7 +857,7 @@ bool CodeGenerator::inspect_enter(const ref<BinaryOp>& node) {
       m_builder.emit_jmp(end_label);
 
       // FIXME: ugly hack, this can be removed once the new CFG based stack validation and max size checker
-    //          is implemented
+      //        is implemented
       m_builder.update_stack(-1);
 
       m_builder.place_label(true_label);

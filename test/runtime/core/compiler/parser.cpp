@@ -101,17 +101,8 @@ CATCH_TEST_CASE("Parser") {
     CHECK_AST_EXP("(1, 2)", make<Tuple>(make<Int>(1), make<Int>(2)))
     CHECK_AST_EXP("(1, 2, 3)", make<Tuple>(make<Int>(1), make<Int>(2), make<Int>(3)))
     CHECK_AST_EXP("(1, 2, 3, 4)", make<Tuple>(make<Int>(1), make<Int>(2), make<Int>(3), make<Int>(4)))
-
-    ref<Tuple> tup1 = EXP("(1, 2, 3, (1, 2, 3, 4))", Tuple);
-    CATCH_CHECK(cast<Int>(tup1->elements[0])->value == 1);
-    CATCH_CHECK(cast<Int>(tup1->elements[1])->value == 2);
-    CATCH_CHECK(cast<Int>(tup1->elements[2])->value == 3);
-
-    CATCH_CHECK(cast<Tuple>(tup1->elements[3])->elements.size() == 4);
-    CATCH_CHECK(cast<Int>(cast<Tuple>(tup1->elements[3])->elements[0])->value == 1);
-    CATCH_CHECK(cast<Int>(cast<Tuple>(tup1->elements[3])->elements[1])->value == 2);
-    CATCH_CHECK(cast<Int>(cast<Tuple>(tup1->elements[3])->elements[2])->value == 3);
-    CATCH_CHECK(cast<Int>(cast<Tuple>(tup1->elements[3])->elements[3])->value == 4);
+    CHECK_AST_EXP("(1, 2, 3, (1, 2, 3, 4))", make<Tuple>(make<Int>(1), make<Int>(2), make<Int>(3), make<Tuple>(
+                                                      make<Int>(1), make<Int>(2), make<Int>(3), make<Int>(4))))
   }
 
   CATCH_SECTION("interpolated strings") {
@@ -268,45 +259,45 @@ CATCH_TEST_CASE("Parser") {
   }
 
   CATCH_SECTION("import expression") {
-    CHECK_AST_STMT("import foo", make<Declaration>(make<Name>("foo"), make<Import>(make<String>("foo")), true, false));
-    CHECK_AST_STMT("import (foo)", make<Import>(make<Id>("foo")));
-    CHECK_AST_STMT("import \"foo\"", make<Import>(make<String>("foo")));
-    CHECK_AST_STMT("import 25", make<Import>(make<Int>(25)));
-    CHECK_AST_STMT("import foo()", make<Import>(make<CallOp>(make<Id>("foo"))));
+    CHECK_AST_STMT("import foo", make<Declaration>(make<Name>("foo"), make<Import>(make<String>("foo")), true, false))
+    CHECK_AST_STMT("import (foo)", make<Import>(make<Id>("foo")))
+    CHECK_AST_STMT("import \"foo\"", make<Import>(make<String>("foo")))
+    CHECK_AST_STMT("import 25", make<Import>(make<Int>(25)))
+    CHECK_AST_STMT("import foo()", make<Import>(make<CallOp>(make<Id>("foo"))))
     CHECK_AST_STMT("import foo as bar", make<StatementList>(
       make<Declaration>(make<Name>("foo"), make<Import>(make<String>("foo")), true, false),
       make<Declaration>(make<Name>("bar"), make<Id>("foo"), true, false)
-    ));
-    CHECK_AST_STMT("import \"foo\" as bar", make<Declaration>(make<Name>("bar"), make<Import>(make<String>("foo")), true, false));
+    ))
+    CHECK_AST_STMT("import \"foo\" as bar", make<Declaration>(make<Name>("bar"), make<Import>(make<String>("foo")), true, false))
     CHECK_AST_STMT("import { foo } from bar", make<StatementList>(
       make<Declaration>(make<Name>("bar"), make<Import>(make<String>("bar")), true, false),
       make<UnpackDeclaration>(make<UnpackTarget>(true, make<UnpackTargetElement>(make<Id>("foo"), false)), make<Id>("bar"), true)
-    ));
+    ))
     CHECK_AST_STMT("import { foo } from \"bar\"", make<StatementList>(
       make<UnpackDeclaration>(make<UnpackTarget>(true, make<UnpackTargetElement>(make<Id>("foo"), false)), make<Import>(make<String>("bar")), true)
-    ));
+    ))
     CHECK_AST_STMT("import { foo } from bar as barlib", make<StatementList>(
       make<Declaration>(make<Name>("bar"), make<Import>(make<String>("bar")), true, false),
       make<Declaration>(make<Name>("barlib"), make<Id>("bar"), true, false),
       make<UnpackDeclaration>(make<UnpackTarget>(true, make<UnpackTargetElement>(make<Id>("foo"), false)), make<Id>("bar"), true)
-    ));
+    ))
     CHECK_AST_STMT("import { foo } from \"bar\" as barlib", make<StatementList>(
       make<Declaration>(make<Name>("barlib"), make<Import>(make<String>("bar")), true, false),
       make<UnpackDeclaration>(make<UnpackTarget>(true, make<UnpackTargetElement>(make<Id>("foo"), false)), make<Id>("barlib"), true)
-    ));
+    ))
     CHECK_AST_STMT("import { foo as f } from bar", make<StatementList>(
       make<Declaration>(make<Name>("bar"), make<Import>(make<String>("bar")), true, false),
       make<UnpackDeclaration>(make<UnpackTarget>(true, make<UnpackTargetElement>(make<Id>("foo"), false)), make<Id>("bar"), true),
       make<Declaration>(make<Name>("f"), make<Id>("foo"), true, false)
-    ));
+    ))
     CHECK_AST_STMT("import { foo as f } from (bar)", make<StatementList>(
       make<UnpackDeclaration>(make<UnpackTarget>(true, make<UnpackTargetElement>(make<Id>("foo"), false)), make<Import>(make<Id>("bar")), true),
       make<Declaration>(make<Name>("f"), make<Id>("foo"), true, false)
-    ));
+    ))
     CHECK_AST_STMT("import { foo as f } from \"bar\"", make<StatementList>(
       make<UnpackDeclaration>(make<UnpackTarget>(true, make<UnpackTargetElement>(make<Id>("foo"), false)), make<Import>(make<String>("bar")), true),
       make<Declaration>(make<Name>("f"), make<Id>("foo"), true, false)
-    ));
+    ))
 
     CHECK_AST_STMT("const x = import foo", make<Declaration>(make<Name>("x"), make<Import>(make<Id>("foo")), true, false))
     CHECK_AST_STMT("const x = import \"foo\"", make<Declaration>(make<Name>("x"), make<Import>(make<String>("foo")), true, false))

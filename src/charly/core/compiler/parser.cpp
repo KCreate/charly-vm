@@ -591,7 +591,7 @@ ref<Statement> Parser::parse_declaration() {
   return node;
 }
 
-void Parser::parse_call_arguments(std::vector<ref<Expression>>& result) {
+void Parser::parse_call_arguments(std::list<ref<Expression>>& result) {
   if (!m_token.could_start_expression())
     return;
 
@@ -1230,7 +1230,7 @@ ref<Function> Parser::parse_function(FunctionFlags flags) {
   ref<Name> function_name = make<Name>(parse_identifier_token());
 
   // argument list
-  std::vector<ref<FunctionArgument>> argument_list;
+  std::list<ref<FunctionArgument>> argument_list;
   parse_function_arguments(argument_list, flags);
 
   ref<Statement> body;
@@ -1294,7 +1294,7 @@ ref<Function> Parser::parse_arrow_function() {
   eat(TokenType::RightArrow);
 
   // argument list
-  std::vector<ref<FunctionArgument>> argument_list;
+  std::list<ref<FunctionArgument>> argument_list;
   parse_function_arguments(argument_list);
 
   ref<Statement> body;
@@ -1320,7 +1320,7 @@ ref<Function> Parser::parse_arrow_function() {
   return node;
 }
 
-void Parser::parse_function_arguments(std::vector<ref<FunctionArgument>>& result, FunctionFlags flags) {
+void Parser::parse_function_arguments(std::list<ref<FunctionArgument>>& result, FunctionFlags flags) {
   if (skip(TokenType::LeftParen)) {
     if (!type(TokenType::RightParen)) {
       do {

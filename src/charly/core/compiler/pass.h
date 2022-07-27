@@ -57,7 +57,7 @@ protected:
 
   // clang-format off
   HANDLE_NODE(Statement, Block, {
-    APPLY_VECTOR(statements);
+    APPLY_LIST(statements);
   })
 
   HANDLE_NODE(Expression, ExpressionWithSideEffects, {
@@ -109,7 +109,7 @@ HANDLE_NODE(Statement, Return, {
   HANDLE_NODE(Expression, String, {})
 
   HANDLE_NODE(Expression, FormatString, {
-    APPLY_VECTOR(elements)
+    APPLY_LIST(elements)
   })
 
   HANDLE_NODE(Expression, Symbol, {})
@@ -119,11 +119,11 @@ HANDLE_NODE(Statement, Return, {
   HANDLE_NODE(Expression, Super, {})
 
   HANDLE_NODE(Expression, Tuple, {
-    APPLY_VECTOR(elements)
+    APPLY_LIST(elements)
   })
 
   HANDLE_NODE(Expression, List, {
-    APPLY_VECTOR(elements)
+    APPLY_LIST(elements)
   })
 
   HANDLE_NODE(DictEntry, DictEntry, {
@@ -132,7 +132,7 @@ HANDLE_NODE(Statement, Return, {
   })
 
   HANDLE_NODE(Expression, Dict, {
-    APPLY_VECTOR(elements);
+    APPLY_LIST(elements);
   })
 
   HANDLE_NODE(FunctionArgument, FunctionArgument, {
@@ -141,7 +141,7 @@ HANDLE_NODE(Statement, Return, {
 
   HANDLE_NODE(Expression, Function, {
     APPLY_NODE(body);
-    APPLY_VECTOR(arguments);
+    APPLY_LIST(arguments);
   })
 
   HANDLE_NODE(ClassProperty, ClassProperty, {
@@ -151,10 +151,10 @@ HANDLE_NODE(Statement, Return, {
   HANDLE_NODE(Expression, Class, {
     APPLY_NODE(parent);
     APPLY_NODE(constructor);
-    APPLY_VECTOR(member_functions)
-    APPLY_VECTOR(member_properties)
-    APPLY_VECTOR(static_properties)
-    APPLY_VECTOR(static_functions)
+    APPLY_LIST(member_functions)
+    APPLY_LIST(member_properties)
+    APPLY_LIST(static_properties)
+    APPLY_LIST(static_functions)
   })
 
   HANDLE_NODE(Expression, MemberOp, {
@@ -171,7 +171,7 @@ HANDLE_NODE(Statement, Return, {
   })
 
   HANDLE_NODE(UnpackTarget, UnpackTarget, {
-    APPLY_VECTOR(elements)
+    APPLY_LIST(elements)
   })
 
   HANDLE_NODE(Expression, Assignment, {
@@ -200,7 +200,7 @@ HANDLE_NODE(Statement, Return, {
 
   HANDLE_NODE(Expression, CallOp, {
     APPLY_NODE(target);
-    APPLY_VECTOR(arguments)
+    APPLY_LIST(arguments)
   })
 
   HANDLE_NODE(Statement, Declaration, {
@@ -245,7 +245,7 @@ HANDLE_NODE(Statement, Return, {
   HANDLE_NODE(Statement, Switch, {
     APPLY_NODE(test);
     APPLY_NODE(default_block);
-    APPLY_VECTOR(cases)
+    APPLY_LIST(cases)
   })
 
   HANDLE_NODE(Statement, For, {
@@ -254,7 +254,7 @@ HANDLE_NODE(Statement, Return, {
   })
 
   HANDLE_NODE(Expression, BuiltinOperation, {
-    APPLY_VECTOR(arguments);
+    APPLY_LIST(arguments);
   })
   // clang-format on
 };
@@ -271,4 +271,4 @@ protected:
 
 #undef HANDLE_NODE
 #undef APPLY_NODE
-#undef APPLY_VECTOR
+#undef APPLY_LIST

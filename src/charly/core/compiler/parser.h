@@ -152,7 +152,7 @@ private:
   ref<Statement> parse_declaration();
 
   // expressions
-  void parse_call_arguments(std::vector<ref<Expression>>& result);
+  void parse_call_arguments(std::list<ref<Expression>>& result);
   ref<Expression> parse_expression();
   ref<Yield> parse_yield();
   ref<Expression> parse_assignment();
@@ -188,7 +188,7 @@ private:
   };
   ref<Function> parse_function(FunctionFlags flags = FunctionFlags());
   ref<Function> parse_arrow_function();
-  void parse_function_arguments(std::vector<ref<FunctionArgument>>& result, FunctionFlags flags = FunctionFlags());
+  void parse_function_arguments(std::list<ref<FunctionArgument>>& result, FunctionFlags flags = FunctionFlags());
   ref<Class> parse_class();
 
   // literals

@@ -41,6 +41,7 @@ target_compile_options(charly PRIVATE
   -Wno-c99-extensions
   -Wno-register
   -Wno-extra-semi
+  -Wno-shadow
   -ftemplate-backtrace-limit=8
   -mllvm -align-all-functions=3
 )
@@ -88,6 +89,7 @@ target_compile_options(tests PRIVATE
   -Wno-c99-extensions
   -Wno-register
   -Wno-extra-semi
+  -Wno-shadow
   -ftemplate-backtrace-limit=8
   -mllvm -align-all-functions=3
 )

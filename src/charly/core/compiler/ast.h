@@ -30,6 +30,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <list>
 
 #include "charly/charly.h"
 #include "charly/utils/buffer.h"
@@ -258,7 +259,7 @@ private:                                           \
       callback(N);    \
   }
 
-#define CHILD_VECTOR(N)            \
+#define CHILD_LIST(N)            \
   {                                \
     for (const auto& node : (N)) { \
       callback(node);              \
@@ -300,7 +301,7 @@ public:
   }
   virtual ~StatementList() = default;
 
-  std::vector<ref<Statement>> statements;
+  std::list<ref<Statement>> statements;
 
   void append_statement(const ref<Statement>& stmt) {
     if (statements.empty()) {
@@ -311,7 +312,7 @@ public:
   }
 
   CHILDREN() {
-    CHILD_VECTOR(statements)
+    CHILD_LIST(statements)
   }
 
   virtual bool has_side_effects() const override {
@@ -343,10 +344,10 @@ public:
   // set to true for the top block of REPL input
   bool repl_toplevel_block = false;
 
-  std::vector<ref<Statement>> statements;
+  std::list<ref<Statement>> statements;
 
   CHILDREN() {
-    CHILD_VECTOR(statements)
+    CHILD_LIST(statements)
   }
 
   void dump_info(std::ostream& out) const override;
@@ -749,9 +750,9 @@ public:
   template <typename... Args>
   explicit FormatString(Args&&... params) : elements({ std::forward<Args>(params)... }) {}
 
-  std::vector<ref<Expression>> elements;
+  std::list<ref<Expression>> elements;
 
-  CHILDREN(){ CHILD_VECTOR(elements) }
+  CHILDREN(){ CHILD_LIST(elements) }
 
   Truthyness truthyness() const override {
     return Truthyness::True;
@@ -797,13 +798,13 @@ public:
   template <typename... Args>
   explicit Tuple(Args&&... params) : elements({ std::forward<Args>(params)... }) {}
 
-  std::vector<ref<Expression>> elements;
+  std::list<ref<Expression>> elements;
 
   bool assignable() const override;
 
   bool has_spread_elements() const;
 
-  CHILDREN(){ CHILD_VECTOR(elements) }
+  CHILDREN(){ CHILD_LIST(elements) }
 
   Truthyness truthyness() const override {
     return Truthyness::True;
@@ -826,11 +827,11 @@ public:
   template <typename... Args>
   explicit List(Args&&... params) : elements({ std::forward<Args>(params)... }) {}
 
-  std::vector<ref<Expression>> elements;
+  std::list<ref<Expression>> elements;
 
   bool has_spread_elements() const;
 
-  CHILDREN(){ CHILD_VECTOR(elements) }
+  CHILDREN(){ CHILD_LIST(elements) }
 
   Truthyness truthyness() const override {
     return Truthyness::True;
@@ -882,13 +883,13 @@ public:
   template <typename... Args>
   explicit Dict(Args&&... params) : elements({ std::forward<Args>(params)... }) {}
 
-  std::vector<ref<DictEntry>> elements;
+  std::list<ref<DictEntry>> elements;
 
   bool assignable() const override;
 
   bool has_spread_elements() const;
 
-  CHILDREN(){ CHILD_VECTOR(elements) }
+  CHILDREN(){ CHILD_LIST(elements) }
 
   Truthyness truthyness() const override {
     return Truthyness::True;
@@ -978,11 +979,11 @@ public:
   bool arrow_function;
   ref<Name> name;
   ref<Block> body;
-  std::vector<ref<FunctionArgument>> arguments;
+  std::list<ref<FunctionArgument>> arguments;
 
   ir::FunctionInfo ir_info;
 
-  CHILDREN(){ CHILD_VECTOR(arguments) CHILD_NODE(body) }
+  CHILDREN(){ CHILD_LIST(arguments) CHILD_NODE(body) }
 
   uint8_t argc() const {
     if (!arguments.empty() && arguments.back()->spread_initializer) {
@@ -993,10 +994,12 @@ public:
   }
 
   uint8_t minimum_argc() const {
-    for (size_t index = 0; index < arguments.size(); index++) {
-      if (arguments.at(index)->default_value) {
+    uint8_t index = 0;
+    for (auto& arg : arguments) {
+      if (arg->default_value) {
         return index;
       }
+      index++;
     }
 
     if (!arguments.empty() && arguments.back()->spread_initializer) {
@@ -1055,27 +1058,27 @@ public:
   ref<Name> name;
   ref<Expression> parent;
   ref<Function> constructor;
-  std::vector<ref<Function>> member_functions;
-  std::vector<ref<ClassProperty>> member_properties;
-  std::vector<ref<Function>> static_functions;
-  std::vector<ref<ClassProperty>> static_properties;
+  std::list<ref<Function>> member_functions;
+  std::list<ref<ClassProperty>> member_properties;
+  std::list<ref<Function>> static_functions;
+  std::list<ref<ClassProperty>> static_properties;
 
-  std::unordered_map<SYMBOL, std::vector<ref<Function>>> member_function_overloads;
-  std::unordered_map<SYMBOL, std::vector<ref<Function>>> static_function_overloads;
+  std::unordered_map<SYMBOL, std::list<ref<Function>>> member_function_overloads;
+  std::unordered_map<SYMBOL, std::list<ref<Function>>> static_function_overloads;
 
   CHILDREN() {
     CHILD_NODE(parent)
     CHILD_NODE(constructor)
-    CHILD_VECTOR(member_functions)
-    CHILD_VECTOR(member_properties)
-    CHILD_VECTOR(static_functions)
-    CHILD_VECTOR(static_properties)
+    CHILD_LIST(member_functions)
+    CHILD_LIST(member_properties)
+    CHILD_LIST(static_functions)
+    CHILD_LIST(static_properties)
 
     for (auto entry : member_function_overloads) {
-      CHILD_VECTOR(entry.second)
+      CHILD_LIST(entry.second)
     }
     for (auto entry : static_function_overloads) {
-      CHILD_VECTOR(entry.second)
+      CHILD_LIST(entry.second)
     }
   }
 
@@ -1168,10 +1171,10 @@ public:
   }
 
   bool object_unpack;
-  std::vector<ref<UnpackTargetElement>> elements;
+  std::list<ref<UnpackTargetElement>> elements;
 
   CHILDREN() {
-    CHILD_VECTOR(elements)
+    CHILD_LIST(elements)
   }
 
   void dump_info(std::ostream& out) const override;
@@ -1337,13 +1340,13 @@ public:
   }
 
   ref<Expression> target;
-  std::vector<ref<Expression>> arguments;
+  std::list<ref<Expression>> arguments;
 
   bool has_spread_elements() const;
 
   CHILDREN() {
     CHILD_NODE(target)
-    CHILD_VECTOR(arguments)
+    CHILD_LIST(arguments)
   }
 };
 
@@ -1588,12 +1591,12 @@ public:
 
   ref<Expression> test;
   ref<Block> default_block;
-  std::vector<ref<SwitchCase>> cases;
+  std::list<ref<SwitchCase>> cases;
 
   CHILDREN() {
     CHILD_NODE(test)
     CHILD_NODE(default_block)
-    CHILD_VECTOR(cases)
+    CHILD_LIST(cases)
   }
 
   bool has_side_effects() const override {
@@ -1652,10 +1655,10 @@ public:
   }
 
   ir::BuiltinId operation;
-  std::vector<ref<Expression>> arguments;
+  std::list<ref<Expression>> arguments;
 
   CHILDREN() {
-    CHILD_VECTOR(arguments)
+    CHILD_LIST(arguments)
   }
 
   void dump_info(std::ostream& out) const override;
@@ -1664,7 +1667,7 @@ public:
     switch (operation) {
       case ir::BuiltinId::castbool: {
         DCHECK(arguments.size() == 1);
-        return arguments[0]->truthyness();
+        return arguments.front()->truthyness();
       }
       case ir::BuiltinId::caststring:
       case ir::BuiltinId::castsymbol: {
@@ -1679,7 +1682,7 @@ public:
 
 #undef AST_NODE
 #undef CHILD_NODE
-#undef CHILD_VECTOR
+#undef CHILD_LIST
 #undef CHILDREN
 
 }  // namespace charly::core::compiler::ast

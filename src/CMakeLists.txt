@@ -75,6 +75,7 @@ target_compile_options(libcharly PRIVATE
   -Wno-c99-extensions
   -Wno-register
   -Wno-extra-semi
+  -Wno-shadow
   -ftemplate-backtrace-limit=8
   -mllvm -align-all-functions=3
 )

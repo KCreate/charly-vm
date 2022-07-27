@@ -86,7 +86,7 @@
     }                                                             \
   }
 
-#define APPLY_VECTOR(N)                                              \
+#define APPLY_LIST(N)                                              \
   {                                                                  \
     using NodeType = decltype(node->N)::value_type::element_type;    \
     for (ref<NodeType> & child_node : node->N) {                     \

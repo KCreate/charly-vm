@@ -326,7 +326,7 @@ ref<Expression> ConstantFoldingPass::transform(const ref<BuiltinOperation>& node
   switch (node->operation) {
     case ir::BuiltinId::castbool: {
       DCHECK(node->arguments.size() == 1);
-      auto exp = node->arguments[0];
+      auto exp = node->arguments.front();
       auto truthyness = exp->truthyness();
       if (truthyness != Truthyness::Unknown) {
         bool truthyness_bool = truthyness == Truthyness::True;
@@ -340,7 +340,7 @@ ref<Expression> ConstantFoldingPass::transform(const ref<BuiltinOperation>& node
     }
     case ir::BuiltinId::caststring: {
       DCHECK(node->arguments.size() == 1);
-      const ref<Expression>& expression = node->arguments.at(0);
+      const ref<Expression>& expression = node->arguments.front();
 
       switch (expression->type()) {
         case Node::Type::String: {
@@ -384,7 +384,7 @@ ref<Expression> ConstantFoldingPass::transform(const ref<BuiltinOperation>& node
     }
     case ir::BuiltinId::castsymbol: {
       DCHECK(node->arguments.size() == 1);
-      const ref<Expression>& expression = node->arguments.at(0);
+      const ref<Expression>& expression = node->arguments.front();
 
       switch (expression->type()) {
         case Node::Type::String: {
