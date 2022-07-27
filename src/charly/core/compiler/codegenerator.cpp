@@ -81,10 +81,10 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
   if (minargc < argc) {
     // skip building the jump table if all default arguments are initialized to null
     bool has_non_null_default_arguments = false;
-    auto arg_it = function->arguments.begin();
+    auto arg_it = std::next(function->arguments.begin(), minargc);
     for (uint8_t i = minargc; i < argc && arg_it != function->arguments.end(); i++) {
       const ref<FunctionArgument>& arg = *arg_it;
-      if (!isa<Null>(arg->default_value)) {
+      if (arg->default_value && !isa<Null>(arg->default_value)) {
         has_non_null_default_arguments = true;
       }
       arg_it++;
@@ -114,7 +114,7 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
       }
 
       // emit stores for each argument with a default value
-      arg_it = function->arguments.begin();
+      arg_it = std::next(function->arguments.begin(), minargc);
       for (uint8_t i = minargc; i < argc && arg_it != function->arguments.end(); i++) {
         m_builder.place_label(labels[i]);
 
@@ -292,9 +292,7 @@ void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target) 
       m_builder.emit_unpacksequence(before_elements.size())->at(target);
     }
 
-    for (auto begin = target->elements.begin(); begin != target->elements.end(); begin++) {
-      const ref<UnpackTargetElement>& element = *begin;
-
+    for (const auto& element : target->elements) {
       switch (element->target->type()) {
         case Node::Type::Id: {
           auto id = cast<Id>(element->target);

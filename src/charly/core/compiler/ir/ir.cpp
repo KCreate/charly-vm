@@ -236,7 +236,11 @@ void IRBasicBlock::dump(std::ostream& out) const {
 
 void IRFunction::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
-  writer.fg(Color::Yellow, "function .L", this->head, "\n");
+  writer.fg(Color::Yellow, "function .L", this->head, " ");
+  if (this->ast->location().valid) {
+    writer.fg(Color::Grey, " ; at ", this->ast->location());
+    out << "\n";
+  }
   writer.fg(Color::Grey, "  name = ");
   writer.fg(Color::Red, "'", this->ast->name->value, "'\n");
   writer.fg(Color::Grey, "  stacksize = ");

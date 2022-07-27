@@ -46,8 +46,8 @@ ref<Statement> DesugarPass::transform(const ref<Block>& node) {
     const ref<Statement>& stmt = *it;
 
     if (block_terminated) {
-      it = node->statements.erase(it);
-      continue;
+      node->statements.erase(it, node->statements.end());
+      break;
     }
 
     if (stmt->terminates_block()) {
