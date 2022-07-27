@@ -176,17 +176,12 @@ let $$ = null
 
     const filename = ARGV[0]
 
-    if filename != null {
+    if filename != null && filename != "-" {
         return execute_program(filename)
     }
 
-    let input = ARGV[0]
-
-    if input == null {
-        input = prompt()
-    }
-
     loop {
+        const input = prompt()
         switch input {
             case "" {
                 break
@@ -229,7 +224,5 @@ let $$ = null
                 }
             }
         }
-
-        input = prompt()
     }
 }()
