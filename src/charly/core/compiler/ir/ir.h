@@ -97,7 +97,7 @@ struct IRInstructionIXXX : public IRInstruction {
   Instruction encode() const override {
     return encode_ixxx(opcode);
   }
-  void dump_arguments(std::ostream&) const override {}
+  void dump_arguments(std::ostream&) const override;
 };
 
 struct IRInstructionIAXX : public IRInstruction {
@@ -106,10 +106,7 @@ struct IRInstructionIAXX : public IRInstruction {
   Instruction encode() const override {
     return encode_iaxx(opcode, arg);
   }
-  void dump_arguments(std::ostream& out) const override {
-    utils::ColorWriter writer(out);
-    writer.fg(utils::Color::Red, (uint32_t)arg);
-  }
+  void dump_arguments(std::ostream& out) const override;
 };
 
 struct IRInstructionIABX : public IRInstruction {
@@ -120,12 +117,7 @@ struct IRInstructionIABX : public IRInstruction {
   Instruction encode() const override {
     return encode_iabx(opcode, arg1, arg2);
   }
-  void dump_arguments(std::ostream& out) const override {
-    utils::ColorWriter writer(out);
-    writer.fg(utils::Color::Red, (uint32_t)arg1);
-    out << ", ";
-    writer.fg(utils::Color::Red, (uint32_t)arg2);
-  }
+  void dump_arguments(std::ostream& out) const override;
 };
 
 struct IRInstructionIABC : public IRInstruction {
@@ -137,14 +129,7 @@ struct IRInstructionIABC : public IRInstruction {
   Instruction encode() const override {
     return encode_iabc(opcode, arg1, arg2, arg3);
   }
-  void dump_arguments(std::ostream& out) const override {
-    utils::ColorWriter writer(out);
-    writer.fg(utils::Color::Red, (uint32_t)arg1);
-    out << ", ";
-    writer.fg(utils::Color::Red, (uint32_t)arg2);
-    out << ", ";
-    writer.fg(utils::Color::Red, (uint32_t)arg3);
-  }
+  void dump_arguments(std::ostream& out) const override;
 };
 
 struct IRInstructionIABB : public IRInstruction {
@@ -155,12 +140,7 @@ struct IRInstructionIABB : public IRInstruction {
   Instruction encode() const override {
     return encode_iabb(opcode, arg1, arg2);
   }
-  void dump_arguments(std::ostream& out) const override {
-    utils::ColorWriter writer(out);
-    writer.fg(utils::Color::Red, (uint32_t)arg1);
-    out << ", ";
-    writer.fg(utils::Color::Red, (uint32_t)arg2);
-  }
+  void dump_arguments(std::ostream& out) const override;
 };
 
 struct IRInstructionIAAX : public IRInstruction {
@@ -169,10 +149,7 @@ struct IRInstructionIAAX : public IRInstruction {
   Instruction encode() const override {
     return encode_iaax(opcode, arg);
   }
-  void dump_arguments(std::ostream& out) const override {
-    utils::ColorWriter writer(out);
-    writer.fg(utils::Color::Red, (uint32_t)arg);
-  }
+  void dump_arguments(std::ostream& out) const override;
 };
 
 struct IRInstructionIAAA : public IRInstruction {
@@ -183,10 +160,7 @@ struct IRInstructionIAAA : public IRInstruction {
   Instruction encode() const override {
     return encode_iaaa(opcode, arg);
   }
-  void dump_arguments(std::ostream& out) const override {
-    utils::ColorWriter writer(out);
-    writer.fg(utils::Color::Red, (uint32_t)arg);
-  }
+  void dump_arguments(std::ostream& out) const override;
 };
 
 #define DEF_IXXX(O, PO, PU)                                        \

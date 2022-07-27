@@ -48,7 +48,7 @@ void IRInstruction::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
 
   // emit opcode mnemonic
-  writer.fg(Color::White, kOpcodeNames[opcode], " ");
+  writer.fg(Color::White, kOpcodeNames[opcode]);
 
   dump_arguments(out);
 
@@ -89,6 +89,76 @@ ref<IRInstruction> IRInstruction::make(Opcode opcode,
 #undef DEF_IABB
 #undef DEF_IAAX
 #undef DEF_IAAA
+}
+
+void IRInstructionIXXX::dump_arguments(std::ostream&) const {}
+
+void IRInstructionIAXX::dump_arguments(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  out << " ";
+  writer.fg(utils::Color::Red, (uint32_t)arg);
+}
+
+void IRInstructionIABX::dump_arguments(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  out << " ";
+  writer.fg(utils::Color::Red, (uint32_t)arg1);
+  out << ", ";
+  writer.fg(utils::Color::Red, (uint32_t)arg2);
+}
+
+void IRInstructionIABC::dump_arguments(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  out << " ";
+  writer.fg(utils::Color::Red, (uint32_t)arg1);
+  out << ", ";
+  writer.fg(utils::Color::Red, (uint32_t)arg2);
+  out << ", ";
+  writer.fg(utils::Color::Red, (uint32_t)arg3);
+}
+
+void IRInstructionIABB::dump_arguments(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  out << " ";
+
+  if (opcode == Opcode::testintjmp) {
+    writer.fg(utils::Color::Red, (uint32_t)arg1);
+    out << ", ";
+    writer.fg(utils::Color::Yellow, ".L", (uint32_t)arg2);
+  } else {
+    writer.fg(utils::Color::Red, (uint32_t)arg1);
+    out << ", ";
+    writer.fg(utils::Color::Red, (uint32_t)arg2);
+  }
+}
+
+void IRInstructionIAAX::dump_arguments(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  out << " ";
+
+  switch (opcode) {
+    case Opcode::jmp:
+    case Opcode::jmpt:
+    case Opcode::jmpf: {
+      writer.fg(utils::Color::Yellow, ".L", (uint32_t)arg);
+      break;
+    }
+    default: {
+      writer.fg(utils::Color::Red, (uint32_t)arg);
+      break;
+    }
+  }
+}
+
+void IRInstructionIAAA::dump_arguments(std::ostream& out) const {
+  utils::ColorWriter writer(out);
+  out << " ";
+
+  if (opcode == Opcode::loadsmi) {
+    writer.fg(utils::Color::Red, runtime::RawValue(arg));
+  } else {
+    writer.fg(utils::Color::Red, (uint32_t)arg);
+  }
 }
 
 void IRBasicBlock::link(const ref<IRBasicBlock>& source, const ref<IRBasicBlock>& target) {
@@ -134,14 +204,14 @@ void IRBasicBlock::dump(std::ostream& out) const {
   out << " ";
 
   // incoming / outgoing blocks
-  writer.fg(Color::Blue, "[");
+  writer.fg(Color::Blue, "[ ");
   for (const ref<IRBasicBlock>& block : this->incoming_blocks) {
     writer.fg(Color::Blue, "#", block->id);
     out << " ";
   }
   writer.fg(Color::Blue, "]");
   out << " ";
-  writer.fg(Color::Green, "[");
+  writer.fg(Color::Green, "[ ");
   for (const ref<IRBasicBlock>& block : this->outgoing_blocks) {
     writer.fg(Color::Green, "#", block->id);
     out << " ";
@@ -150,7 +220,8 @@ void IRBasicBlock::dump(std::ostream& out) const {
 
   // exception handler
   if (this->exception_handler) {
-    writer.fg(Color::Red, " exceptions -> .L", this->exception_handler.value());
+    writer.fg(Color::Red, " exceptions -> ");
+    writer.fg(Color::Yellow, ".L", this->exception_handler.value());
   }
 
   out << '\n';
@@ -209,8 +280,10 @@ void IRFunction::dump(std::ostream& out) const {
     for (const IRStringTableEntry& entry : this->string_table) {
       writer.fg(Color::Grey, "  - #", std::setw(2), std::left, str_index, std::setw(1));
       writer.fg(Color::Red, " \"", entry.value, "\"");
-      writer.fg(Color::Grey, " length=", entry.value.size());
-      writer.fg(Color::Grey, ", hash=", std::hex, entry.hash, std::dec);
+      writer.fg(Color::Grey, " length = ");
+      writer.fg(Color::White, entry.value.size());
+      writer.fg(Color::Grey, ", hash = ");
+      writer.fg(Color::White, std::hex, entry.hash, std::dec);
       out << "\n";
 
       str_index++;

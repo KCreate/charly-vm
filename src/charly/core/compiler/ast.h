@@ -32,6 +32,7 @@
 #include <vector>
 
 #include "charly/charly.h"
+#include "charly/utils/buffer.h"
 #include "charly/core/compiler/ir/builtin.h"
 #include "charly/core/compiler/ir/functioninfo.h"
 #include "charly/core/compiler/ir/valuelocation.h"
@@ -207,6 +208,11 @@ public:
 
   // dump a textual representation of this node into the stream
   void dump(std::ostream& out, bool print_location = false) const;
+  std::string dump(bool print_location = false) const {
+    utils::Buffer buf;
+    dump(buf, print_location);
+    return buf.str();
+  }
 
   // child classes may override and write additional info into the node output
   virtual void dump_info(std::ostream&) const {}
