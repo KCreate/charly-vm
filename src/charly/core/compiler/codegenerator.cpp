@@ -846,6 +846,10 @@ bool CodeGenerator::inspect_enter(const ref<BinaryOp>& node) {
       m_builder.emit_load_value(kFalse);
       m_builder.emit_jmp(end_label);
 
+      // FIXME: ugly hack, this can be removed once the new CFG based stack validation and max size checker
+    //          is implemented
+      m_builder.update_stack(-1);
+
       m_builder.place_label(true_label);
       m_builder.emit_load_value(kTrue);
 
