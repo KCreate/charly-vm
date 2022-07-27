@@ -189,12 +189,6 @@ ref<Expression> ConstantFoldingPass::transform(const ref<BinaryOp>& node) {
     }
   }
 
-  if (node != replacement) {
-    debugln("original: %", node->dump());
-    debugln("replacement: %", replacement->dump());
-  }
-
-
   replacement->set_location(node);
   return replacement;
 }
