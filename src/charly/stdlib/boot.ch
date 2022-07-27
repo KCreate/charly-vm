@@ -49,7 +49,7 @@ func print(...args) {
     args.each(->(e, i) {
         builtin_writevalue(e)
         // FIXME: do actual minus op once sub opcode is implemented
-        if i != args.length + (-1) {
+        if i != args.length - 1 {
             builtin_writevalue(" ")
         }
     })
@@ -82,7 +82,7 @@ func currentworkingdirectory = builtin_currentworkingdirectory()
 
 func compile(source, name = "repl") = builtin_compile(source, name)
 
-let $$ = null
+let $$
 ->{
     class builtin_Value {}
 

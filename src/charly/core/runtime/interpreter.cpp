@@ -1252,7 +1252,31 @@ OP(add) {
 }
 
 OP(sub) {
-  UNIMPLEMENTED();
+  RawValue right = frame->pop();
+  RawValue left = frame->pop();
+
+  if (left.isInt() && right.isInt()) {
+    RawInt result = RawInt::make(RawInt::cast(left).value() - RawInt::cast(right).value());
+    frame->push(result);
+    return ContinueMode::Next;
+  }
+
+  if (left.isFloat() && right.isFloat()) {
+    RawFloat result = RawFloat::make(RawFloat::cast(left).value() - RawFloat::cast(right).value());
+    frame->push(result);
+    return ContinueMode::Next;
+  }
+
+  if ((left.isInt() || left.isFloat()) && (right.isInt() || right.isFloat())) {
+    double lf = left.isInt() ? (double)RawInt::cast(left).value() : RawFloat::cast(left).value();
+    double rf = right.isInt() ? (double)RawInt::cast(right).value() : RawFloat::cast(right).value();
+    RawFloat result = RawFloat::make(lf - rf);
+    frame->push(result);
+    return ContinueMode::Next;
+  }
+
+  frame->push(kNaN);
+  return ContinueMode::Next;
 }
 
 OP(mul) {
@@ -1326,7 +1350,17 @@ OP(bxor) {
 }
 
 OP(usub) {
-  UNIMPLEMENTED();
+  RawValue value = frame->pop();
+
+  if (value.isInt()) {
+    frame->push(RawInt::make(-RawInt::cast(value).value()));
+  } else if (value.isFloat()) {
+    frame->push(RawFloat::make(-RawFloat::cast(value).value()));
+  } else if (value.isBool()) {
+    frame->push(RawBool::make(!RawBool::cast(value).value()));
+  }
+
+  return ContinueMode::Next;
 }
 
 OP(unot) {
