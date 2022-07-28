@@ -76,12 +76,12 @@ uint16_t Builder::register_constant(RawValue value) {
 
 void Builder::push_exception_handler(Label handler) {
   m_exception_handlers.push(handler);
-  ref<IRBasicBlock> block = new_basic_block();
+  new_basic_block();
 }
 
 void Builder::pop_exception_handler() {
   m_exception_handlers.pop();
-  ref<IRBasicBlock> block = new_basic_block();
+  new_basic_block();
 }
 
 ref<IRFunction> Builder::active_function() const {
@@ -152,7 +152,7 @@ void Builder::finish_function() {
   // emit the exceptions tables for the basic blocks of this function
   //
   // each exception table entry maps a certain region of code
-  // to a hanler address, if an exception were to occur within that region
+  // to a handler address, if an exception were to occur within that region
   new_basic_block();
   emit_nop();
   emit_exception_tables();
@@ -236,8 +236,8 @@ void Builder::build_cfg() {
         IRBasicBlock::link(block, block->next_block);
         continue;
       }
-      case Opcode::testintjmp: {
-        Label target_label = op->as_testintjmp()->arg2;
+      case Opcode::argcjmp: {
+        Label target_label = op->as_argcjmp()->arg2;
         ref<IRBasicBlock> target_block = m_labelled_blocks.at(target_label);
         DCHECK(block->next_block);
         IRBasicBlock::link(block, target_block);

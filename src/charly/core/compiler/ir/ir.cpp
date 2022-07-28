@@ -121,7 +121,7 @@ void IRInstructionIABB::dump_arguments(std::ostream& out) const {
   utils::ColorWriter writer(out);
   out << " ";
 
-  if (opcode == Opcode::testintjmp) {
+  if (opcode == Opcode::argcjmp) {
     writer.fg(utils::Color::Red, (uint32_t)arg1);
     out << ", ";
     writer.fg(utils::Color::Yellow, ".L", (uint32_t)arg2);

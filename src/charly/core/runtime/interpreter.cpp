@@ -529,16 +529,13 @@ OP(jmpt) {
   return ContinueMode::Next;
 }
 
-OP(testintjmp) {
-  RawValue top = frame->pop();
+OP(argcjmp) {
+  uint8_t argc = frame->argc;
   uint8_t check = op->arg1();
 
-  DCHECK(top.isInt());
-  if (RawInt::cast(top).value() == check) {
+  if (argc == check) {
     int16_t offset = op->arg2();
     frame->ip = op->ip() + offset;
-  } else {
-    frame->push(top);
   }
 
   return ContinueMode::Next;
@@ -659,11 +656,6 @@ OP(loadfarself) {
   }
 
   frame->push(context.field_at(RawFunction::kContextSelfOffset));
-  return ContinueMode::Next;
-}
-
-OP(loadargc) {
-  frame->push(RawInt::make(frame->argc));
   return ContinueMode::Next;
 }
 

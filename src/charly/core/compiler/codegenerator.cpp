@@ -94,18 +94,15 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
       // emit initial jump table
       Label labels[argc];
       Label body_label = m_builder.reserve_label();
-      m_builder.emit_loadargc();
       for (uint8_t i = minargc; i < argc; i++) {
         Label l = labels[i] = m_builder.reserve_label();
-        m_builder.emit_testintjmp(i, l);
+        m_builder.emit_argcjmp(i, l);
       }
 
       if (function->ir_info.spread_argument || function->ir_info.arrow_function) {
-        m_builder.emit_pop();
         m_builder.emit_jmp(body_label);
       } else {
-        m_builder.emit_testintjmp(argc, body_label);
-        m_builder.emit_pop();
+        m_builder.emit_argcjmp(argc, body_label);
 
         // non-spread functions cannot be called with more arguments than they declare
         // the runtime makes sure that control never reaches this point, so this is just

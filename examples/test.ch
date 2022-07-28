@@ -24,7 +24,7 @@
  * SOFTWARE.
  */
 
-func foo(x) {
+func foo(x = true) {
     if x && (x && x) {
         return 100
     } else {
@@ -32,5 +32,8 @@ func foo(x) {
     }
 }
 
+print(foo())
 print(foo(true))
 print(foo(false))
+print(foo(25))
+print(foo("test"))

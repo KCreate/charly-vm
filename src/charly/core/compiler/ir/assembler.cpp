@@ -160,7 +160,7 @@ void Assembler::encode_instruction(const ref<IRInstruction>& op) {
       m_unresolved_labels.insert({ m_runtime_module->buffer.tellp(), { label, instruction_label } });
       break;
     }
-    case Opcode::testintjmp: {
+    case Opcode::argcjmp: {
       Label label = op->as_iabb()->arg2;
       m_unresolved_labels.insert({ m_runtime_module->buffer.tellp(), { label, instruction_label } });
       break;
@@ -212,7 +212,7 @@ void Assembler::patch_unresolved_labels() {
         buf.write_u32(encode_iaax(opcode, relative_offset));
         break;
       }
-      case Opcode::testintjmp: {
+      case Opcode::argcjmp: {
         auto read_arg = buf.peek_char(1);
         CHECK(read_arg != EOF);
         buf.seekp(patch_offset);
