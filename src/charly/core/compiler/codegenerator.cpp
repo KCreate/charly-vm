@@ -145,10 +145,6 @@ void CodeGenerator::compile_function(const QueuedFunction& queued_func) {
   m_builder.place_label(return_label);
   m_builder.emit_ret();
 
-  // stack size required for function
-  m_builder.active_function()->ast->ir_info.stacksize = m_builder.maximum_stack_height();
-  CHECK(m_builder.maximum_stack_height() < 0x0100 && "function exceeded maximum stack height of 256 values");
-
   m_builder.finish_function();
 }
 
@@ -851,10 +847,6 @@ bool CodeGenerator::inspect_enter(const ref<BinaryOp>& node) {
       m_builder.emit_load_value(kFalse);
       m_builder.emit_jmp(end_label);
 
-      // FIXME: ugly hack, this can be removed once the new CFG based stack validation and max size checker
-      //        is implemented
-      m_builder.update_stack(-1);
-
       m_builder.place_label(true_label);
       m_builder.emit_load_value(kTrue);
 
@@ -1237,7 +1229,8 @@ bool CodeGenerator::inspect_enter(const ref<Switch>& node) {
   Label case_labels[node->cases.size()];
   uint32_t index = 0;
   for (const ref<SwitchCase>& case_node : node->cases) {
-    Label block_label = case_labels[index] = m_builder.reserve_label();
+    Label block_label = m_builder.reserve_label();
+    case_labels[index] = block_label;
 
     m_builder.emit_dup();
     apply(case_node->test);
@@ -1255,7 +1248,6 @@ bool CodeGenerator::inspect_enter(const ref<Switch>& node) {
     Label block_label = case_labels[index];
     m_builder.place_label(block_label);
 
-    m_builder.update_stack(1);  // pop remaining condition value off stack
     m_builder.emit_pop();
     apply(case_node->block);
     m_builder.emit_jmp(end_label);

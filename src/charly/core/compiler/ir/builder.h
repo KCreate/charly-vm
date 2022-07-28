@@ -44,8 +44,6 @@ namespace charly::core::compiler::ir {
 class Builder {
 public:
   explicit Builder(const std::string& filename) :
-    m_maximum_stack_height(0),
-    m_current_stack_height(0),
     m_label_counter(0),
     m_block_id_counter(0),
     m_active_function(nullptr),
@@ -79,6 +77,7 @@ public:
   void remove_useless_jumps();
   void remove_dead_blocks();
   void emit_exception_tables();
+  void determine_max_stack_height();
 
   // label management
   Label reserve_label();
@@ -143,19 +142,10 @@ public:
     return m_label_counter;
   }
 
-  // keep track of maximum stack height
-  uint32_t current_stack_height() const;
-  uint32_t maximum_stack_height() const;
-  void reset_stack_height();
-  void update_stack(int32_t amount);
-
 private:
   ref<IRInstruction> emit_instruction_impl(const ref<IRInstruction>& instruction);
 
 private:
-  uint32_t m_maximum_stack_height;
-  uint32_t m_current_stack_height;
-
   Label m_label_counter;
   uint32_t m_block_id_counter;
 

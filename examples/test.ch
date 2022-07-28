@@ -24,16 +24,49 @@
  * SOFTWARE.
  */
 
-func foo(x = true) {
-    if x && (x && x) {
-        return 100
-    } else {
-        return 200
-    }
+let c = 0
+const limit = 200
+
+while c != limit {
+    c += 1
 }
 
-print(foo())
-print(foo(true))
-print(foo(false))
-print(foo(25))
-print(foo("test"))
+try {
+    try {
+        defer print("deferred action")
+        switch c {
+            case 100 {
+                throw "c got to 100"
+            }
+            case 200 {
+                throw "c got to 200"
+            }
+            default {
+                throw "c reached some other value"
+            }
+        }
+    } finally {
+        print("inside finally handler")
+    }
+} catch(e) {
+    print("caught error: {e}")
+}
+
+print("end of program")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

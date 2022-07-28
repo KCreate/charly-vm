@@ -554,8 +554,8 @@ OP(throwex) {
 }
 
 OP(getexception) {
-  // do nothing, exception value should already be on the stack
-  return ContinueMode::Next;
+  // not emitted by the compiler
+  UNREACHABLE();
 }
 
 OP(call) {

@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+#include <deque>
+
 #include "charly/core/compiler/ir/builder.h"
 #include "charly/utils/argumentparser.h"
 #include "charly/utils/buffer.h"
@@ -157,8 +159,10 @@ void Builder::finish_function() {
   emit_nop();
   emit_exception_tables();
 
+  // validate stack interactions and determine the maximum height of the stack
+  determine_max_stack_height();
+
   // reset builder for next function
-  reset_stack_height();
   m_block_id_counter = 0;
   m_labelled_blocks.clear();
   m_active_function = nullptr;
@@ -414,6 +418,74 @@ void Builder::emit_exception_tables() {
   }
 }
 
+void Builder::determine_max_stack_height() {
+  std::deque<ref<IRBasicBlock>> queue;
+  std::set<ref<IRBasicBlock>> visited_blocks;
+  std::unordered_map<ref<IRBasicBlock>, uint32_t> block_initial_heights;
+  uint32_t max_stack_height = 0;
+
+  auto func = active_function();
+  auto initial_block = func->basic_blocks.front();
+  queue.push_back(initial_block);
+  block_initial_heights[initial_block] = 0;
+
+  // push exception handler blocks as they are not reachable via regular control flow
+  for (const IRExceptionTableEntry& entry : func->exception_table) {
+    DCHECK(m_labelled_blocks.count(entry.handler) == 1);
+    auto block = m_labelled_blocks.at(entry.handler);
+    queue.push_back(block);
+    block_initial_heights[block] = 0;
+  }
+
+  while (queue.size()) {
+    auto block = queue.front();
+    queue.pop_front();
+
+    if (visited_blocks.count(block) == 1) {
+      continue;
+    }
+
+    visited_blocks.insert(block);
+
+    DCHECK(block_initial_heights.count(block) == 1);
+    uint32_t stack_height = block_initial_heights[block];
+
+    for (const auto& op : block->instructions) {
+      uint32_t popped_values = op->popped_values();
+      uint32_t pushed_values = op->pushed_values();
+
+      DCHECK(stack_height >= popped_values);
+      stack_height -= popped_values;
+      stack_height += pushed_values;
+
+      if (stack_height > max_stack_height) {
+        max_stack_height = stack_height;
+      }
+    }
+
+    if (block->outgoing_blocks.empty()) {
+      DCHECK(stack_height == 0, "function %: expected stack height of terminating block % to be 0, got % instead",
+             func->ast->name->value, block->id, stack_height);
+    }
+
+    // set the initial block height of following blocks
+    // also make sure that previous values match the currently calculated one
+    for (const auto& next_block : block->outgoing_blocks) {
+      if (block_initial_heights.count(next_block) == 1) {
+        uint32_t next_height = block_initial_heights[next_block];
+        DCHECK(stack_height == next_height, "function %: invalid stack heights for blocks % and % (got % and %)",
+               func->ast->name->value, block->id, next_block->id, stack_height, next_height);
+      } else {
+        queue.push_back(next_block);
+        block_initial_heights[next_block] = stack_height;
+      }
+    }
+  }
+
+  DCHECK(max_stack_height < 256, "function % exceeded maximum stack height of 256 values", func->ast->name->value);
+  active_function()->ast->ir_info.stacksize = max_stack_height;
+}
+
 ref<IRBasicBlock> Builder::new_basic_block() {
   DCHECK(m_active_function);
 
@@ -465,36 +537,8 @@ ref<IRInstruction> Builder::emit_load_value(RawValue value) {
   }
 }
 
-uint32_t Builder::current_stack_height() const {
-  return m_current_stack_height;
-}
-
-uint32_t Builder::maximum_stack_height() const {
-  return m_maximum_stack_height;
-}
-
-void Builder::reset_stack_height() {
-  m_maximum_stack_height = 0;
-  DCHECK(m_current_stack_height == 0);
-}
-
-void Builder::update_stack(int32_t amount) {
-  if (amount < 0) {
-    DCHECK((uint32_t)(-amount) <= m_current_stack_height);
-  }
-
-  m_current_stack_height += amount;
-
-  if (m_current_stack_height > m_maximum_stack_height) {
-    m_maximum_stack_height = m_current_stack_height;
-  }
-}
-
 ref<IRInstruction> Builder::emit_instruction_impl(const ref<IRInstruction>& instruction) {
   ref<IRBasicBlock> block = active_block();
-
-  update_stack(-(int32_t)instruction->popped_values());
-  update_stack((int32_t)instruction->pushed_values());
 
   if (block->instructions.empty()) {
     place_label(reserve_label());
