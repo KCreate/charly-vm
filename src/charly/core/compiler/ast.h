@@ -1512,6 +1512,7 @@ public:
   ref<Block> try_block;
   ref<Name> exception_name;
   ref<Block> catch_block;
+  ir::ValueLocation original_pending_exception;
 
   CHILDREN() {
     CHILD_NODE(try_block)

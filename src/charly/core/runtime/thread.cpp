@@ -60,7 +60,7 @@ Thread::Thread(Runtime* runtime) :
   m_last_scheduled_at(0),
   m_context(nullptr),
   m_frame(nullptr),
-  m_pending_exception(kErrorOk),
+  m_pending_exception(kNull),
   m_waiting_threads() {}
 
 Thread* Thread::current() {
@@ -120,12 +120,7 @@ Frame* Thread::frame() const {
   return m_frame;
 }
 
-bool Thread::has_pending_exception() const {
-  return m_pending_exception != kErrorOk;
-}
-
 RawValue Thread::pending_exception() const {
-  DCHECK(has_pending_exception());
   return m_pending_exception;
 }
 
@@ -158,7 +153,7 @@ void Thread::clean() {
   m_worker = nullptr;
   m_last_scheduled_at = 0;
   m_frame = nullptr;
-  m_pending_exception = kErrorOk;
+  m_pending_exception = kNull;
   m_context = nullptr;
 }
 
@@ -219,13 +214,26 @@ void Thread::exit_native() {
 }
 
 void Thread::throw_value(RawValue value) {
-  DCHECK(m_pending_exception == kErrorOk);
-  m_pending_exception = value;
+  if (value.isString()) {
+    value = runtime()->create_exception(this, value);
+  }
+
+  if (!value.isException()) {
+    throw_value(runtime()->create_string_from_template(this, "expected thrown value to be an exception or a string"));
+    return;
+  }
+
+  RawException::cast(value).set_cause(pending_exception());
+  set_pending_exception(value);
 }
 
-void Thread::reset_pending_exception() {
-  DCHECK(m_pending_exception != kErrorOk);
-  m_pending_exception = kErrorOk;
+void Thread::rethrow_value(RawValue value) {
+  DCHECK(value.isException());
+  set_pending_exception(value);
+}
+
+void Thread::set_pending_exception(RawValue value) {
+  m_pending_exception = value;
 }
 
 void Thread::entry_main_thread() {
@@ -290,7 +298,7 @@ void Thread::entry_fiber_thread() {
 
   RawValue result = Interpreter::call_function(this, fiber.context(), fiber.function(), argp, argc);
   bool fiber_exited_with_exception = result.is_error_exception();
-  RawValue exception = has_pending_exception() ? pending_exception() : RawNull::make();
+  RawValue exception = pending_exception();
 
   // wake threads waiting for this thread to finish
   {
@@ -324,7 +332,27 @@ void Thread::entry_fiber_thread() {
                           source.view());
         }
       } else {
-        debuglnf("unhandled exception in main thread (%)", exception);
+        std::stack<RawValue> exception_stack;
+        RawValue next_exception = exception;
+        while (!next_exception.isNull()) {
+          exception_stack.push(next_exception);
+          if (next_exception.isException()) {
+            next_exception = RawException::cast(next_exception).cause();
+          } else {
+            next_exception = kNull;
+          }
+        }
+
+        RawValue first_exception = exception_stack.top();
+        exception_stack.pop();
+        debuglnf_notime("unhandled exception in main thread:\n%", first_exception);
+
+        while (!exception_stack.empty()) {
+          RawValue top = exception_stack.top();
+          exception_stack.pop();
+          debuglnf_notime("\nduring handling of the above exception, another exception occured:\n");
+          debuglnf_notime("%", top);
+        }
       }
 
       abort(1);

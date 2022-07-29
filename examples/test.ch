@@ -24,49 +24,14 @@
  * SOFTWARE.
  */
 
-let c = 0
-const limit = 200
 
-while c != limit {
-    c += 1
-}
-
-try {
+loop {
     try {
-        defer print("deferred action")
-        switch c {
-            case 100 {
-                throw "c got to 100"
-            }
-            case 200 {
-                throw "c got to 200"
-            }
-            default {
-                throw "c reached some other value"
-            }
-        }
+        throw "hello world"
     } finally {
-        print("inside finally handler")
+        throw "other"
     }
-} catch(e) {
-    print("caught error: {e}")
 }
 
-print("end of program")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+console.log("hello world")
 

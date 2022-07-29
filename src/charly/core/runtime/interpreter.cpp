@@ -113,7 +113,7 @@ RawValue Interpreter::call_value(Thread* thread, RawValue self, RawValue target,
     auto klass = RawClass::cast(target);
 
     if (klass.flags() & RawClass::kFlagNonConstructable) {
-      thread->throw_value(runtime->create_exception_with_message(thread, "cannot instantiate class '%'", klass.name()));
+      thread->throw_value(runtime->create_string_from_template(thread, "cannot instantiate class '%'", klass.name()));
       return kErrorException;
     }
 
@@ -122,7 +122,7 @@ RawValue Interpreter::call_value(Thread* thread, RawValue self, RawValue target,
     return Interpreter::call_function(thread, instance, constructor, arguments, argc);
   }
 
-  thread->throw_value(runtime->create_exception_with_message(thread, "called value is not a function"));
+  thread->throw_value(runtime->create_string_from_template(thread, "called value is not a function"));
   return kErrorException;
 }
 
@@ -166,7 +166,7 @@ RawValue Interpreter::call_function(
   size_t remaining_bytes_on_stack = frame_address - stack_bottom_address;
   if (remaining_bytes_on_stack <= kStackOverflowLimit) {
     debuglnf("thread % stack overflow", thread->id());
-    thread->throw_value(runtime->create_exception_with_message(thread, "thread % stack overflow", thread->id()));
+    thread->throw_value(runtime->create_string_from_template(thread, "thread % stack overflow", thread->id()));
     return kErrorException;
   }
 
@@ -197,7 +197,7 @@ RawValue Interpreter::call_function(
 
   if (argc < shared_info->ir_info.minargc) {
     thread->throw_value(
-      runtime->create_exception_with_message(thread, "not enough arguments for function call, expected % but got %",
+      runtime->create_string_from_template(thread, "not enough arguments for function call, expected % but got %",
                                              (uint32_t)shared_info->ir_info.minargc, (uint32_t)argc));
     return kErrorException;
   }
@@ -206,7 +206,7 @@ RawValue Interpreter::call_function(
   // the exception to this rule are arrow functions and functions that declare a spread argument
   if (argc > shared_info->ir_info.argc && !shared_info->ir_info.spread_argument &&
       !shared_info->ir_info.arrow_function) {
-    thread->throw_value(runtime->create_exception_with_message(
+    thread->throw_value(runtime->create_string_from_template(
       thread, "too many arguments for non-spread function '%', expected at most % but got %", function.name(),
       (uint32_t)shared_info->ir_info.argc, (uint32_t)argc));
     return kErrorException;
@@ -325,14 +325,11 @@ handle_return_or_exception:
     }
 
     case ContinueMode::Exception: {
-      DCHECK(thread->has_pending_exception());
 
       // check if the current frame can handle this exception
       if (const ExceptionTableEntry* entry = frame->find_active_exception_table_entry(op->ip())) {
         frame->ip = entry->handler_ptr;
         frame->sp = 0;  // clear stack
-        frame->push(thread->pending_exception());
-        thread->reset_pending_exception();
         goto* next_handler();
       }
 
@@ -371,7 +368,7 @@ OP(import) {
   std::optional<fs::path> resolve_result = runtime->resolve_module(module_path, file_path);
   if (!resolve_result.has_value()) {
     thread->throw_value(
-      runtime->create_exception_with_message(thread, "could not resolve '%' to a valid path", module_path_string));
+      runtime->create_string_from_template(thread, "could not resolve '%' to a valid path", module_path_string));
     return ContinueMode::Exception;
   }
   fs::path import_path = resolve_result.value();
@@ -386,7 +383,7 @@ OP(import) {
   // load the source file
   std::ifstream import_source(import_path);
   if (!import_source.is_open()) {
-    thread->throw_value(runtime->create_exception_with_message(thread, "could not open the file at %", import_path));
+    thread->throw_value(runtime->create_string_from_template(thread, "could not open the file at %", import_path));
     return ContinueMode::Exception;
   }
 
@@ -445,7 +442,7 @@ OP(declareglobal) {
 
   if (result.is_error_exception()) {
     Runtime* runtime = thread->runtime();
-    thread->throw_value(runtime->create_exception_with_message(thread, "duplicate declaration of global variable %",
+    thread->throw_value(runtime->create_string_from_template(thread, "duplicate declaration of global variable %",
                                                                RawSymbol::make(name)));
     return ContinueMode::Exception;
   }
@@ -461,7 +458,7 @@ OP(declareglobalconst) {
 
   if (result.is_error_exception()) {
     Runtime* runtime = thread->runtime();
-    thread->throw_value(runtime->create_exception_with_message(thread, "duplicate declaration of global variable %",
+    thread->throw_value(runtime->create_string_from_template(thread, "duplicate declaration of global variable %",
                                                                RawSymbol::make(name)));
     return ContinueMode::Exception;
   }
@@ -543,19 +540,25 @@ OP(argcjmp) {
 
 OP(throwex) {
   RawValue value = frame->pop();
-
-  // wrap thrown strings in an Exception instance
-  if (value.isString()) {
-    value = thread->runtime()->create_exception(thread, value);
-  }
-
   thread->throw_value(value);
   return ContinueMode::Exception;
 }
 
-OP(getexception) {
-  // not emitted by the compiler
-  UNREACHABLE();
+OP(rethrowex) {
+  RawValue value = frame->pop();
+  thread->rethrow_value(value);
+  return ContinueMode::Exception;
+}
+
+OP(getpendingexception) {
+  frame->push(thread->pending_exception());
+  return ContinueMode::Next;
+}
+
+OP(setpendingexception) {
+  RawValue value = frame->pop();
+  thread->set_pending_exception(value);
+  return ContinueMode::Next;
 }
 
 OP(call) {
@@ -667,7 +670,7 @@ OP(loadglobal) {
   if (result.is_error_not_found()) {
     Runtime* runtime = thread->runtime();
     thread->throw_value(
-      runtime->create_exception_with_message(thread, "unknown global variable %", RawSymbol::make(name)));
+      runtime->create_string_from_template(thread, "unknown global variable %", RawSymbol::make(name)));
     return ContinueMode::Exception;
   }
   DCHECK(!result.is_error());
@@ -771,7 +774,7 @@ OP(loadattrsym) {
     if (result.found) {
       // TODO: allow accessing private member of same class
       if (result.is_private() && runtime->check_private_access_permitted(thread, instance) <= result.offset) {
-        thread->throw_value(runtime->create_exception_with_message(
+        thread->throw_value(runtime->create_string_from_template(
           thread, "cannot read private property '%' of class '%'", RawSymbol::make(attr), klass.name()));
         return ContinueMode::Exception;
       }
@@ -788,7 +791,7 @@ OP(loadattrsym) {
     auto function = RawFunction::cast(lookup);
     // TODO: allow accessing private member of same class
     if (function.shared_info()->ir_info.private_function && (value != frame->self)) {
-      thread->throw_value(runtime->create_exception_with_message(
+      thread->throw_value(runtime->create_string_from_template(
         thread, "cannot call private function '%' of class '%'", RawSymbol::make(attr), klass.name()));
       return ContinueMode::Exception;
     }
@@ -797,7 +800,7 @@ OP(loadattrsym) {
     return ContinueMode::Next;
   }
 
-  thread->throw_value(runtime->create_exception_with_message(thread, "value of type '%' has no property called '%'",
+  thread->throw_value(runtime->create_string_from_template(thread, "value of type '%' has no property called '%'",
                                                              klass.name(), RawSymbol::make(attr)));
   return ContinueMode::Exception;
 }
@@ -820,7 +823,7 @@ OP(loadsuperattr) {
 
   if (func.is_error_not_found()) {
     auto runtime = thread->runtime();
-    thread->throw_value(runtime->create_exception_with_message(
+    thread->throw_value(runtime->create_string_from_template(
       thread, "super class '%' has no member function called '%'", parent.name(), RawSymbol::make(name)));
     return ContinueMode::Exception;
   }
@@ -838,11 +841,11 @@ OP(setglobal) {
 
   if (result.is_error_not_found()) {
     thread->throw_value(
-      runtime->create_exception_with_message(thread, "unknown global variable %", RawSymbol::make(name)));
+      runtime->create_string_from_template(thread, "unknown global variable %", RawSymbol::make(name)));
     return ContinueMode::Exception;
   } else if (result.is_error_read_only()) {
     thread->throw_value(
-      runtime->create_exception_with_message(thread, "write to const global variable %", RawSymbol::make(name)));
+      runtime->create_string_from_template(thread, "write to const global variable %", RawSymbol::make(name)));
     return ContinueMode::Exception;
   }
   DCHECK(result.is_error_ok());
@@ -929,13 +932,13 @@ OP(setattrsym) {
     auto result = shape.lookup_symbol(attr);
     if (result.found) {
       if (result.is_read_only()) {
-        thread->throw_value(runtime->create_exception_with_message(thread, "property '%' of type '%' is read-only",
+        thread->throw_value(runtime->create_string_from_template(thread, "property '%' of type '%' is read-only",
                                                                    RawSymbol::make(attr), klass.name()));
         return ContinueMode::Exception;
       }
 
       if (result.is_private() && runtime->check_private_access_permitted(thread, instance) <= result.offset) {
-        thread->throw_value(runtime->create_exception_with_message(
+        thread->throw_value(runtime->create_string_from_template(
           thread, "cannot assign to private property '%' of class '%'", RawSymbol::make(attr), klass.name()));
         return ContinueMode::Exception;
       }
@@ -946,7 +949,7 @@ OP(setattrsym) {
     }
   }
 
-  thread->throw_value(runtime->create_exception_with_message(thread, "value of type '%' has no property called '%'",
+  thread->throw_value(runtime->create_string_from_template(thread, "value of type '%' has no property called '%'",
                                                              klass.name(), RawSymbol::make(attr)));
   return ContinueMode::Exception;
 }
@@ -962,7 +965,7 @@ OP(unpacksequence) {
     uint32_t tuple_size = tuple.size();
 
     if (tuple_size != count) {
-      thread->throw_value(runtime->create_exception_with_message(thread, "expected tuple to be of size %, not %",
+      thread->throw_value(runtime->create_string_from_template(thread, "expected tuple to be of size %, not %",
                                                                  (size_t)count, tuple_size));
       return ContinueMode::Exception;
     }
@@ -975,7 +978,7 @@ OP(unpacksequence) {
 
     return ContinueMode::Next;
   } else {
-    thread->throw_value(runtime->create_exception_with_message(thread, "value is not a sequence"));
+    thread->throw_value(runtime->create_string_from_template(thread, "value is not a sequence"));
     return ContinueMode::Exception;
   }
 }
@@ -993,7 +996,7 @@ OP(unpacksequencespread) {
     uint32_t tuple_size = tuple.size();
     if (tuple_size < total_count) {
       thread->throw_value(
-        runtime->create_exception_with_message(thread, "touple does not contain enough values to unpack"));
+        runtime->create_string_from_template(thread, "touple does not contain enough values to unpack"));
       return ContinueMode::Exception;
     }
 
@@ -1017,7 +1020,7 @@ OP(unpacksequencespread) {
 
     return ContinueMode::Next;
   } else {
-    thread->throw_value(runtime->create_exception_with_message(thread, "value is not a sequence"));
+    thread->throw_value(runtime->create_string_from_template(thread, "value is not a sequence"));
     return ContinueMode::Exception;
   }
 }
@@ -1139,7 +1142,7 @@ OP(makefiber) {
   RawValue arg_context = frame->pop();
 
   if (!arg_function.isFunction()) {
-    thread->throw_value(runtime->create_exception_with_message(thread, "argument is not a function"));
+    thread->throw_value(runtime->create_string_from_template(thread, "argument is not a function"));
     return ContinueMode::Exception;
   }
 
@@ -1152,7 +1155,7 @@ OP(fiberjoin) {
   RawValue value = frame->pop();
   if (!value.isFiber()) {
     Runtime* runtime = thread->runtime();
-    thread->throw_value(runtime->create_exception_with_message(thread, "argument is not a fiber"));
+    thread->throw_value(runtime->create_string_from_template(thread, "argument is not a fiber"));
     return ContinueMode::Exception;
   }
 
@@ -1193,7 +1196,7 @@ OP(casttuple) {
   Runtime* runtime = thread->runtime();
   auto name = runtime->lookup_class(thread, value).name();
   thread->throw_value(
-    runtime->create_exception_with_message(thread, "could not cast value of type '%' to a tuple", name));
+    runtime->create_string_from_template(thread, "could not cast value of type '%' to a tuple", name));
   return ContinueMode::Exception;
 }
 

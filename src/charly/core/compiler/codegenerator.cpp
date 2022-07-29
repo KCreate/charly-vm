@@ -1123,45 +1123,79 @@ bool CodeGenerator::inspect_enter(const ref<Try>& node) {
   Label try_begin = m_builder.reserve_label();
   Label try_end = m_builder.reserve_label();
   Label catch_begin = m_builder.reserve_label();
-  Label catch_end = m_builder.reserve_label();
+  Label next_statement = m_builder.reserve_label();
 
   // emit try block
   m_builder.push_exception_handler(catch_begin);
   m_builder.place_label(try_begin);
+  m_builder.emit_getpendingexception();
+  generate_store(node->original_pending_exception)->at(node);
+  m_builder.emit_pop();
   apply(node->try_block);
-  m_builder.emit_jmp(catch_end);
+  generate_load(node->original_pending_exception)->at(node);
+  m_builder.emit_setpendingexception();
+  m_builder.emit_jmp(next_statement);
   m_builder.pop_exception_handler();
   m_builder.place_label(try_end);
 
-  // emit catch block
-  m_builder.place_label(catch_begin);
-  m_builder.emit_getexception();
-  generate_store(node->exception_name->ir_location)->at(node->exception_name);
-  m_builder.emit_pop();
-
-  apply(node->catch_block);
-  m_builder.place_label(catch_end);
-
-  return false;
-}
-
-bool CodeGenerator::inspect_enter(const ref<TryFinally>& node) {
-  /*
-   * this method generates a lot of excess blocks in most cases
-   * subsequent dead-code elimination passes will remove these blocks
-   * */
-  Label try_begin = m_builder.reserve_label();
-  Label try_end = m_builder.reserve_label();
-  Label normal_handler = m_builder.reserve_label();
-  Label catch_handler = m_builder.reserve_label();
-
-  // intercept control statements
+  // intercept control statements in catch block
   Label break_handler = m_builder.reserve_label();
   Label continue_handler = m_builder.reserve_label();
   Label return_handler = m_builder.reserve_label();
   push_break_label(break_handler);
   push_continue_label(continue_handler);
   push_return_label(return_handler);
+
+  // emit catch block
+  m_builder.place_label(catch_begin);
+  m_builder.emit_getpendingexception();
+  generate_store(node->exception_name->ir_location)->at(node->exception_name);
+  m_builder.emit_pop();
+  apply(node->catch_block);
+  generate_load(node->original_pending_exception)->at(node);
+  m_builder.emit_setpendingexception();
+  m_builder.emit_jmp(next_statement);
+
+  pop_break_label();
+  pop_continue_label();
+  pop_return_label();
+
+  // emit break, continue and return intercepts
+  m_builder.place_label(break_handler);
+  if (!m_break_stack.empty()) {
+    generate_load(node->original_pending_exception)->at(node);
+    m_builder.emit_setpendingexception();
+    m_builder.emit_jmp(active_break_label());
+  } else {
+    m_builder.emit_panic();
+  }
+  m_builder.place_label(continue_handler);
+  if (!m_continue_stack.empty()) {
+    generate_load(node->original_pending_exception)->at(node);
+    m_builder.emit_setpendingexception();
+    m_builder.emit_jmp(active_continue_label());
+  } else {
+    m_builder.emit_panic();
+  }
+  m_builder.place_label(return_handler);
+  if (!m_return_stack.empty()) {
+    generate_load(node->original_pending_exception)->at(node);
+    m_builder.emit_setpendingexception();
+    m_builder.emit_jmp(active_return_label());
+  } else {
+    m_builder.emit_panic();
+  }
+
+  m_builder.place_label(next_statement);
+
+  return false;
+}
+
+bool CodeGenerator::inspect_enter(const ref<TryFinally>& node) {
+  Label try_begin = m_builder.reserve_label();
+  Label try_end = m_builder.reserve_label();
+  Label normal_handler = m_builder.reserve_label();
+  Label catch_handler = m_builder.reserve_label();
 
   // emit try block
   m_builder.push_exception_handler(catch_handler);
@@ -1171,41 +1205,14 @@ bool CodeGenerator::inspect_enter(const ref<TryFinally>& node) {
   m_builder.pop_exception_handler();
   m_builder.place_label(try_end);
 
-  pop_break_label();
-  pop_continue_label();
-  pop_return_label();
-
   // emit catch handler
   m_builder.place_label(catch_handler);
-  m_builder.emit_getexception();
+  m_builder.emit_getpendingexception();
   generate_store(node->exception_value_location)->at(node->finally_block);
   m_builder.emit_pop();
   apply(node->finally_block);
   generate_load(node->exception_value_location)->at(node->finally_block);
-  m_builder.emit_throwex()->at(node->finally_block);
-
-  // emit break, continue and return intercepts
-  m_builder.place_label(break_handler);
-  if (!m_break_stack.empty()) {
-    apply(node->finally_block);
-    m_builder.emit_jmp(active_break_label());
-  } else {
-    m_builder.emit_panic();
-  }
-  m_builder.place_label(continue_handler);
-  if (!m_continue_stack.empty()) {
-    apply(node->finally_block);
-    m_builder.emit_jmp(active_continue_label());
-  } else {
-    m_builder.emit_panic();
-  }
-  m_builder.place_label(return_handler);
-  if (!m_return_stack.empty()) {
-    apply(node->finally_block);
-    m_builder.emit_jmp(active_return_label());
-  } else {
-    m_builder.emit_panic();
-  }
+  m_builder.emit_rethrowex()->at(node->finally_block);
 
   m_builder.place_label(normal_handler);
   apply(node->finally_block);

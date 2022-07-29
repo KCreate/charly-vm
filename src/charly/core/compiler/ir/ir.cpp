@@ -137,6 +137,7 @@ void IRInstructionIAAX::dump_arguments(std::ostream& out) const {
   out << " ";
 
   switch (opcode) {
+    case Opcode::makefunc:
     case Opcode::jmp:
     case Opcode::jmpt:
     case Opcode::jmpf: {

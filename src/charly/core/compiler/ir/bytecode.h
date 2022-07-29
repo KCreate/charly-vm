@@ -187,12 +187,24 @@ static const size_t kInstructionLength = 4;
    * - value                                                                       \
    * */                                                                            \
   V(throwex, IXXX, 1, 0)                                                           \
-  /* getexception - push the last thrown exception onto the stack                  \
+  /* rethrowex - rethrow TOS as exception                                          \
+   *                                                                               \
+   * stack arguments:                                                              \
+   * - value                                                                       \
+   * */                                                                            \
+  V(rethrowex, IXXX, 1, 0)                                                         \
+  /* getpendingexception - push the last thrown exception onto the stack           \
    *                                                                               \
    * stack results:                                                                \
    * - exception                                                                   \
    * */                                                                            \
-  V(getexception, IXXX, 0, 1)                                                      \
+  V(getpendingexception, IXXX, 0, 1)                                               \
+  /* setpendingexception - set the pending exception value                         \
+   *                                                                               \
+   * stack arguments:                                                              \
+   * - value                                                                       \
+   * */                                                                            \
+  V(setpendingexception, IXXX, 1, 0)                                               \
   /* call - call a function                                                        \
    *                                                                               \
    * opcode operands:                                                              \
@@ -456,7 +468,7 @@ static const size_t kInstructionLength = 4;
   /* makefunc - allocate new function                                              \
    *                                                                               \
    * opcode operands:                                                              \
-   * - body label                                                                  \
+   * - relative offset                                                             \
    *                                                                               \
    * stack results:                                                                \
    * - function                                                                    \
@@ -787,6 +799,7 @@ static const std::unordered_set<Opcode> kTerminatingOpcodes = {
   Opcode::panic,
   Opcode::jmp,
   Opcode::throwex,
+  Opcode::rethrowex,
   Opcode::ret,
 };
 

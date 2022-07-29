@@ -955,10 +955,14 @@ public:
   RawTuple stack_trace() const;
   void set_stack_trace(RawTuple stack_trace);
 
+  RawValue cause() const;
+  void set_cause(RawValue stack_trace);
+
   enum
   {
     kMessageOffset = RawInstance::kFieldCount,
     kStackTraceOffset,
+    kCauseOffset,
     kFieldCount
   };
   static const size_t kSize = kFieldCount * kPointerSize;

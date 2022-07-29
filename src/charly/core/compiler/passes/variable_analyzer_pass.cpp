@@ -568,6 +568,7 @@ ref<Statement> VariableAnalyzerPass::transform(const ref<Try>& node) {
   node->try_block = cast<Block>(apply(node->try_block));
 
   m_analyzer.push_block(node->catch_block);
+  node->original_pending_exception = ValueLocation::Id(declare_anonymous_variable(node, true));
   if (VariableId id = declare_variable(node->exception_name, node->exception_name, false)) {
     node->exception_name->ir_location = ValueLocation::Id(id);
   }
@@ -585,9 +586,7 @@ ref<Statement> VariableAnalyzerPass::transform(const ref<TryFinally>& node) {
   node->try_block = cast<Block>(apply(node->try_block));
 
   m_analyzer.push_block(node->finally_block);
-  if (VariableId id = declare_anonymous_variable(node, true)) {
-    node->exception_value_location = ValueLocation::Id(id);
-  }
+  node->exception_value_location = ValueLocation::Id(declare_anonymous_variable(node, true));
   node->finally_block = cast<Block>(apply(node->finally_block));
   m_analyzer.pop_block();
 
@@ -668,6 +667,7 @@ ref<Statement> VariableLocationPatchPass::transform(const ref<Try>& node) {
   node->try_block = cast<Block>(apply(node->try_block));
 
   m_analyzer.enter_block_scope(node->catch_block->variable_block_scope);
+  m_analyzer.patch_value_location(node->original_pending_exception);
   m_analyzer.patch_value_location(node->exception_name->ir_location);
   node->catch_block = cast<Block>(apply(node->catch_block));
   m_analyzer.pop_block();

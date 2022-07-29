@@ -134,12 +134,8 @@ public:
                               RawValue saved_self = kNull);
   RawBuiltinFunction create_builtin_function(Thread* thread, BuiltinFunctionType function, SYMBOL name, uint8_t argc);
   RawFiber create_fiber(Thread* thread, RawFunction function, RawValue self, RawValue arguments);
-  RawValue create_exception(Thread* thread, RawValue message);
-  template <typename... T>
-  RawValue create_exception_with_message(Thread* thread, const char* str, const T&... args) {
-    return create_exception(thread, create_string_from_template(thread, str, args...));
-  }
-  RawValue create_import_exception(Thread* thread,
+  RawException create_exception(Thread* thread, RawValue message);
+  RawImportException create_import_exception(Thread* thread,
                                    const std::string& module_path,
                                    const ref<compiler::CompilationUnit>& unit);
 

@@ -91,10 +91,7 @@ Heap::Heap(Runtime* runtime) : m_runtime(runtime) {
 
 Heap::~Heap() {
   std::unique_lock<std::mutex> locker(m_mutex);
-
   Allocator::munmap(m_heap_base, kHeapTotalSize);
-  debugln("unmapped % heap regions", m_mapped_regions.size());
-
   m_heap_base = nullptr;
   m_unmapped_regions.clear();
   m_mapped_regions.clear();

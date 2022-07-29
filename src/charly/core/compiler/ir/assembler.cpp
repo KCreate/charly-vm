@@ -165,12 +165,6 @@ void Assembler::encode_instruction(const ref<IRInstruction>& op) {
       m_unresolved_labels.insert({ m_runtime_module->buffer.tellp(), { label, instruction_label } });
       break;
     }
-    case Opcode::getexception: {
-      // placeholder opcode during compilation, can be skipped entirely
-      // VM pushes the exception value by itself when jumping to an exception
-      // handler block
-      return;
-    }
     default: break;
   }
   buffer.write_u32(op->encode());

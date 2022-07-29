@@ -1302,6 +1302,14 @@ void RawException::set_stack_trace(RawTuple stack_trace) {
   set_field_at(kStackTraceOffset, stack_trace);
 }
 
+RawValue RawException::cause() const {
+  return field_at(kCauseOffset);
+}
+
+void RawException::set_cause(RawValue cause) {
+  set_field_at(kCauseOffset, cause);
+}
+
 RawTuple RawImportException::errors() const {
   return field_at<RawTuple>(kErrorsOffset);
 }

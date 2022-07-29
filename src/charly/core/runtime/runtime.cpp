@@ -76,8 +76,6 @@ int32_t Runtime::join() {
   m_scheduler->join();
   m_gc->join();
 
-  debugln("runtime exited after % milliseconds", get_steady_timestamp() - m_start_timestamp);
-
   return m_exit_code;
 }
 
@@ -213,12 +211,13 @@ void Runtime::initialize_builtin_types(Thread* thread) {
                                             { "result", RawShape::kKeyFlagReadOnly },
                                             { "exception", RawShape::kKeyFlagReadOnly } });
 
-  auto builtin_shape_exception =
-    create_shape(thread, builtin_shape_builtin_instance,
-                 { { "message", RawShape::kKeyFlagNone }, { "stack_trace", RawShape::kKeyFlagNone } });
+  auto builtin_shape_exception = create_shape(thread, builtin_shape_builtin_instance,
+                                              { { "message", RawShape::kKeyFlagNone },
+                                                { "stack_trace", RawShape::kKeyFlagNone },
+                                                { "cause", RawShape::kKeyFlagReadOnly } });
 
   auto builtin_shape_import_exception =
-    create_shape(thread, builtin_shape_exception, { { "errors", RawShape::kKeyFlagNone } });
+    create_shape(thread, builtin_shape_exception, { { "errors", RawShape::kKeyFlagReadOnly } });
 
   auto class_value_shape = create_shape(thread, builtin_shape_class, {});
   RawClass class_value = RawClass::unsafe_cast(create_instance(thread, class_value_shape));
@@ -519,7 +518,7 @@ RawValue Runtime::create_class(Thread* thread,
   }
 
   if (!parent_value.isClass()) {
-    thread->throw_value(create_exception_with_message(thread, "extended value is not a class"));
+    thread->throw_value(create_string_from_template(thread, "extended value is not a class"));
     return kErrorException;
   }
 
@@ -528,7 +527,7 @@ RawValue Runtime::create_class(Thread* thread,
 
   if (parent_class.flags() & RawClass::kFlagFinal) {
     thread->throw_value(
-      create_exception_with_message(thread, "cannot subclass class '%', it is marked final", parent_class.name()));
+      create_string_from_template(thread, "cannot subclass class '%', it is marked final", parent_class.name()));
     return kErrorException;
   }
 
@@ -545,7 +544,7 @@ RawValue Runtime::create_class(Thread* thread,
       RawShape::decode_shape_key(parent_keys_tuple.field_at<RawInt>(pi), parent_key_symbol, parent_key_flags);
       if (parent_key_symbol == prop_name) {
         thread->throw_value(
-          create_exception_with_message(thread, "cannot redeclare property '%', parent class '%' already contains it",
+          create_string_from_template(thread, "cannot redeclare property '%', parent class '%' already contains it",
                                         RawSymbol::make(prop_name), parent_class.name()));
         return kErrorException;
       }
@@ -558,7 +557,7 @@ RawValue Runtime::create_class(Thread* thread,
     // for some reason, RawInstance::kMaximumFieldCount needs to be casted to its own
     // type, before it can be used in here. this is some weird template thing...
     thread->throw_value(
-      create_exception_with_message(thread, "newly created class '%' has % properties, but the limit is %",
+      create_string_from_template(thread, "newly created class '%' has % properties, but the limit is %",
                                     RawSymbol::make(name), new_member_count, (size_t)RawInstance::kMaximumFieldCount));
     return kErrorException;
   }
@@ -971,16 +970,15 @@ RawFiber Runtime::create_fiber(Thread* thread, RawFunction function, RawValue se
   return fiber;
 }
 
-RawValue Runtime::create_exception(Thread* thread, RawValue message) {
-  // allocate exception instance
+RawException Runtime::create_exception(Thread* thread, RawValue message) {
   auto instance = RawException::cast(create_instance(thread, get_builtin_class(thread, ShapeId::kException)));
   instance.set_message(message);
   instance.set_stack_trace(create_stack_trace(thread));
-
+  instance.set_cause(kNull);
   return instance;
 }
 
-RawValue Runtime::create_import_exception(Thread* thread,
+RawImportException Runtime::create_import_exception(Thread* thread,
                                           const std::string& module_path,
                                           const ref<compiler::CompilationUnit>& unit) {
   const auto& messages = unit->console.messages();
@@ -1018,6 +1016,7 @@ RawValue Runtime::create_import_exception(Thread* thread,
     RawImportException::cast(create_instance(thread, get_builtin_class(thread, ShapeId::kImportException)));
   instance.set_message(create_string_from_template(thread, "Encountered an error while importing '%'", module_path));
   instance.set_stack_trace(create_stack_trace(thread));
+  instance.set_cause(kNull);
   instance.set_errors(error_tuple);
 
   return instance;

@@ -137,8 +137,8 @@ public:
   const Stack* stack() const;
   ThreadLocalHandles* handles();
   Frame* frame() const;
-  bool has_pending_exception() const;
   RawValue pending_exception() const;
+  void set_pending_exception(RawValue value);
 
   // initialize this thread as the main thread
   void init_main_thread();
@@ -184,7 +184,7 @@ public:
 
   // exception handling
   void throw_value(RawValue value);
-  void reset_pending_exception();
+  void rethrow_value(RawValue value);
 
   // frame handling
   void push_frame(Frame* frame);
