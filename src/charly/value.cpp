@@ -922,7 +922,7 @@ bool RawInstance::is_instance_of(ShapeId id) {
 
   // check inheritance chain
   // TODO: optimize this with an ancestor table
-  if (shape_id() > ShapeId::kLastBuiltinShapeId) {
+  if (shape_id() > ShapeId::kFirstBuiltinShapeId) {
     auto klass = RawClass::cast(klass_field());
     RawValue search = klass.shape_instance();
     while (search.isShape()) {
