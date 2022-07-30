@@ -34,6 +34,49 @@ namespace charly::core::compiler::ast {
 
 using Color = utils::Color;
 
+void dump_string_with_escape_sequences(std::ostream& out, const char* begin, size_t length) {
+  const char* begin_ptr = begin;
+  const char* end = begin + length;
+
+  uint32_t cp = 0;
+  while (utf8::next(begin_ptr, end, cp)) {
+    switch (cp) {
+      case u'\a': {
+        out << "\\a";
+        break;
+      }
+      case u'\b': {
+        out << "\\b";
+        break;
+      }
+      case u'\f': {
+        out << "\\f";
+        break;
+      }
+      case u'\n': {
+        out << "\\n";
+        break;
+      }
+      case u'\r': {
+        out << "\\r";
+        break;
+      }
+      case u'\t': {
+        out << "\\t";
+        break;
+      }
+      case u'\v': {
+        out << "\\v";
+        break;
+      }
+      default: {
+        utils::Buffer::write_utf8_cp_to_stream(out, cp);
+        break;
+      }
+    }
+  }
+}
+
 ref<Node> Node::search(const ref<Node>& node,
                        std::function<bool(const ref<Node>&)> compare,
                        std::function<bool(const ref<Node>&)> skip) {
@@ -195,7 +238,11 @@ void Bool::dump_info(std::ostream& out) const {
 void String::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';
-  writer.fg(Color::Yellow, '\"', this->value, '\"');
+  writer.set_fg_color(Color::Yellow);
+  writer << "\"";
+  dump_string_with_escape_sequences(out, this->value);
+  writer << "\"";
+  writer.reset_color();
 }
 
 void Symbol::dump_info(std::ostream& out) const {

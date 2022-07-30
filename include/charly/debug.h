@@ -142,7 +142,7 @@ inline void debuglnf_notime(const char* format, Targs... args) {
 void print_runtime_debug_state(std::ostream& stream);
 
 template <typename... Args>
-[[noreturn]] void __attribute__((noinline))
+[[noreturn]] inline void __attribute__((noinline))
 failed_check(const char* filename, int32_t line, const char* function, const char* expression, Args&&... args) {
   std::stringstream buf;
   debugln_impl(buf, "Failed check!\n");
@@ -184,7 +184,16 @@ failed_check(const char* filename, int32_t line, const char* function, const cha
 #endif
 
 #define UNREACHABLE() DCHECK(false, "reached unreachable code")
-#define UNIMPLEMENTED() CHECK(false, "not implemented")
+
+template <typename... Targs>
+[[noreturn]] inline void UNIMPLEMENTED(const char* format, Targs... args) {
+  CHECK(false, format, std::forward<Targs>(args)...);
+}
+
+[[noreturn]] inline void UNIMPLEMENTED() {
+  CHECK(false, "not implemented");
+}
+
 #define FAIL(...)              \
   do {                         \
     CHECK(false, __VA_ARGS__); \

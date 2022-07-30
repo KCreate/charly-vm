@@ -55,6 +55,11 @@ enum class Truthyness
   False = 2,
 };
 
+void dump_string_with_escape_sequences(std::ostream& out, const char* begin, size_t length);
+inline void dump_string_with_escape_sequences(std::ostream& out, const std::string& str) {
+  dump_string_with_escape_sequences(out, str.data(), str.size());
+}
+
 // base class of all ast nodes
 class Node : std::enable_shared_from_this<Node> {
   friend class Pass;

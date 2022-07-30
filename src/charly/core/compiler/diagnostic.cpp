@@ -134,11 +134,11 @@ void DiagnosticConsole::write_annotated_source(std::ostream& out, const Diagnost
       } else {
         // check if we are on the first or last line
         if (row == location.row) {
-          writer.write(line.substr(0, location.offset - offset));
+          writer << line.substr(0, location.offset - offset);
           writer.bg(highlight_color, line.substr(location.offset - offset));
         } else if (row == location.end_row) {
           writer.bg(highlight_color, line.substr(0, location.end_offset - offset));
-          writer.write(line.substr(location.end_offset - offset));
+          writer << line.substr(location.end_offset - offset);
         } else {
           writer.bg(highlight_color, line);
         }

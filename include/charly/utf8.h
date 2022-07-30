@@ -77,7 +77,7 @@ namespace internal {
     return false;
   }
 
-  inline bool increase_safely(char*& buffer, const char* buffer_end) {
+  inline bool increase_safely(const char*& buffer, const char* buffer_end) {
     if (++buffer == buffer_end) {
       return false;
     }
@@ -89,7 +89,7 @@ namespace internal {
     return true;
   }
 
-  inline bool decode_1(char*& buffer, const char* buffer_end, uint32_t& cp_out) {
+  inline bool decode_1(const char*& buffer, const char* buffer_end, uint32_t& cp_out) {
     if (buffer == buffer_end) {
       return false;
     }
@@ -99,7 +99,7 @@ namespace internal {
     return true;
   }
 
-  inline bool decode_2(char*& buffer, const char* buffer_end, uint32_t& cp_out) {
+  inline bool decode_2(const char*& buffer, const char* buffer_end, uint32_t& cp_out) {
     if (buffer == buffer_end) {
       return false;
     }
@@ -115,7 +115,7 @@ namespace internal {
     return true;
   }
 
-  inline bool decode_3(char*& buffer, const char* buffer_end, uint32_t& cp_out) {
+  inline bool decode_3(const char*& buffer, const char* buffer_end, uint32_t& cp_out) {
     if (buffer == buffer_end) {
       return false;
     }
@@ -137,7 +137,7 @@ namespace internal {
     return true;
   }
 
-  inline bool decode_4(char*& buffer, const char* buffer_end, uint32_t& cp_out) {
+  inline bool decode_4(const char*& buffer, const char* buffer_end, uint32_t& cp_out) {
     if (buffer == buffer_end) {
       return false;
     }
@@ -176,12 +176,12 @@ inline uint32_t sequence_length(uint32_t cp) {
   return 4;
 }
 
-[[nodiscard]] inline bool next(char*& buffer, const char* buffer_end, uint32_t& cp_out) {
+[[nodiscard]] inline bool next(const char*& buffer, const char* buffer_end, uint32_t& cp_out) {
   if (buffer >= buffer_end) {
     return false;
   }
 
-  char* original_buffer = buffer;
+  const char* original_buffer = buffer;
   uint32_t cp = 0;
   uint32_t length = internal::sequence_length(buffer);
 
@@ -209,12 +209,12 @@ inline uint32_t sequence_length(uint32_t cp) {
   return false;
 }
 
-[[nodiscard]] inline bool next(char*& buffer, const char* buffer_end) {
+[[nodiscard]] inline bool next(const char*& buffer, const char* buffer_end) {
   uint32_t cp;
   return next(buffer, buffer_end, cp);
 }
 
-[[nodiscard]] inline bool peek_next(char* buffer, char* buffer_end, uint32_t& cp_out) {
+[[nodiscard]] inline bool peek_next(const char* buffer, const char* buffer_end, uint32_t& cp_out) {
   return next(buffer, buffer_end, cp_out);
 }
 

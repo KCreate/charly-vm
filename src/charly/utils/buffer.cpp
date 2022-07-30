@@ -38,12 +38,16 @@ void Buffer::write_buffer(const Buffer& other) {
 }
 
 void Buffer::write_utf8_cp(uint32_t cp) {
+  Buffer::write_utf8_cp_to_stream(*this, cp);
+}
+
+void Buffer::write_utf8_cp_to_stream(std::ostream& out, uint32_t cp) {
   char tmpbuf[4];
   char* endptr = utf8::append(cp, tmpbuf);
   DCHECK(endptr != nullptr);
   size_t length = endptr - tmpbuf;
   DCHECK(length <= 4);
-  this->write(tmpbuf, length);
+  out.write(tmpbuf, length);
 }
 
 int64_t Buffer::read_utf8_cp() {
@@ -53,8 +57,8 @@ int64_t Buffer::read_utf8_cp() {
     return -1;
   }
 
-  char* read_original = gptr();
-  char* read_head = read_original;
+  const char* read_original = gptr();
+  const char* read_head = read_original;
   uint32_t codepoint;
   CHECK(utf8::next(read_head, egptr(), codepoint));
   size_t sequence_length = read_head - read_original;
@@ -70,9 +74,9 @@ int64_t Buffer::peek_utf8_cp(uint32_t nth) {
     return -1;
   }
 
-  char* read_original = gptr();
-  char* read_end = egptr();
-  char* read_head = read_original;
+  const char* read_original = gptr();
+  const char* read_end = egptr();
+  const char* read_head = read_original;
 
   while (nth--) {
     CHECK(utf8::next(read_head, read_end));

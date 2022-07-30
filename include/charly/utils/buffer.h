@@ -101,6 +101,9 @@ public:
   // write an utf8 codepoint to the buffer
   void write_utf8_cp(uint32_t cp);
 
+  // write an utf8 codepoint to a stream
+  static void write_utf8_cp_to_stream(std::ostream& out, uint32_t cp);
+
   // write primitive types
 #define WRITE_PRIMITIVE(T, N)                     \
   void write_##N(const T& value) {                \

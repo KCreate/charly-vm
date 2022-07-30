@@ -32,7 +32,8 @@
 
 namespace charly::utils {
 
-enum class Color : uint8_t {
+enum class Color : uint8_t
+{
   Grey,
   Red,
   Green,
@@ -47,9 +48,34 @@ class ColorWriter {
 public:
   explicit ColorWriter(std::ostream& stream = std::cout) : m_stream(stream) {}
 
-  template <typename... Args>
-  void write(Args&&... params) {
-    (m_stream << ... << params);
+  void set_fg_color(Color color) {
+    switch (color) {
+      case Color::Grey: m_stream << termcolor::dark; break;
+      case Color::Red: m_stream << termcolor::red; break;
+      case Color::Green: m_stream << termcolor::green; break;
+      case Color::Yellow: m_stream << termcolor::yellow; break;
+      case Color::Blue: m_stream << termcolor::blue; break;
+      case Color::Magenta: m_stream << termcolor::magenta; break;
+      case Color::Cyan: m_stream << termcolor::cyan; break;
+      case Color::White: m_stream << termcolor::white; break;
+    }
+  }
+
+  void set_bg_color(Color color) {
+    switch (color) {
+      case Color::Grey: m_stream << termcolor::on_grey; break;
+      case Color::Red: m_stream << termcolor::on_red; break;
+      case Color::Green: m_stream << termcolor::on_green; break;
+      case Color::Yellow: m_stream << termcolor::on_yellow << termcolor::grey; break;
+      case Color::Blue: m_stream << termcolor::on_blue; break;
+      case Color::Magenta: m_stream << termcolor::on_magenta; break;
+      case Color::Cyan: m_stream << termcolor::on_cyan; break;
+      case Color::White: m_stream << termcolor::on_white << termcolor::grey; break;
+    }
+  }
+
+  void reset_color() {
+    m_stream << termcolor::reset;
   }
 
   template <typename T>
@@ -60,34 +86,16 @@ public:
 
   template <typename... Args>
   void fg(Color color, Args&&... params) {
-    switch (color) {
-      case Color::Grey: write(termcolor::dark, std::forward<Args>(params)..., termcolor::reset); break;
-      case Color::Red: write(termcolor::red, std::forward<Args>(params)..., termcolor::reset); break;
-      case Color::Green: write(termcolor::green, std::forward<Args>(params)..., termcolor::reset); break;
-      case Color::Yellow: write(termcolor::yellow, std::forward<Args>(params)..., termcolor::reset); break;
-      case Color::Blue: write(termcolor::blue, std::forward<Args>(params)..., termcolor::reset); break;
-      case Color::Magenta: write(termcolor::magenta, std::forward<Args>(params)..., termcolor::reset); break;
-      case Color::Cyan: write(termcolor::cyan, std::forward<Args>(params)..., termcolor::reset); break;
-      case Color::White: write(termcolor::white, std::forward<Args>(params)..., termcolor::reset); break;
-    }
+    set_fg_color(color);
+    ((m_stream << std::forward<Args>(params)), ...);
+    reset_color();
   }
 
   template <typename... Args>
   void bg(Color color, Args&&... params) {
-    switch (color) {
-      case Color::Grey: write(termcolor::on_grey, std::forward<Args>(params)..., termcolor::reset); break;
-      case Color::Red: write(termcolor::on_red, std::forward<Args>(params)..., termcolor::reset); break;
-      case Color::Green: write(termcolor::on_green, std::forward<Args>(params)..., termcolor::reset); break;
-      case Color::Yellow:
-        write(termcolor::on_yellow, termcolor::grey, std::forward<Args>(params)..., termcolor::reset);
-        break;
-      case Color::Blue: write(termcolor::on_blue, std::forward<Args>(params)..., termcolor::reset); break;
-      case Color::Magenta: write(termcolor::on_magenta, std::forward<Args>(params)..., termcolor::reset); break;
-      case Color::Cyan: write(termcolor::on_cyan, std::forward<Args>(params)..., termcolor::reset); break;
-      case Color::White:
-        write(termcolor::on_white, termcolor::grey, std::forward<Args>(params)..., termcolor::reset);
-        break;
-    }
+    set_bg_color(color);
+    ((m_stream << std::forward<Args>(params)), ...);
+    reset_color();
   }
 
 private:
