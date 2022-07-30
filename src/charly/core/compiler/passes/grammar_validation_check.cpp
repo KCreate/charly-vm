@@ -135,7 +135,6 @@ void GrammarValidationCheck::constructor_super_check(const ref<Class>& node) {
 
   bool missing_super_call = node->parent && super_calls.empty();
   bool illegal_super_call = !node->parent && !super_calls.empty();
-  bool excess_super_calls = node->parent && super_calls.size() > 1;
 
   // classes that do not inherit from another class are not allowed to call the super constructor
   if (illegal_super_call) {
@@ -146,13 +145,6 @@ void GrammarValidationCheck::constructor_super_check(const ref<Class>& node) {
       // classes that inherit from another class must call be super constructor
       m_console.error(node->constructor, "missing super constructor call in constructor of class '", node->name->value,
                       "'");
-    } else if (excess_super_calls) {
-      // there may only be one call to the super constructor
-      m_console.error(node->constructor->name, "constructor of class '", node->name->value,
-                      "' may only contain a single call to the super constructor");
-
-      auto& first = super_calls.front();
-      m_console.info(first, "first super call");
     }
   }
 }
