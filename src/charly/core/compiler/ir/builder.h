@@ -73,6 +73,7 @@ public:
   void rewrite_chained_branches();
   void remove_useless_jumps();
   void remove_dead_blocks();
+  void merge_continuous_blocks();
   void emit_exception_tables();
   void determine_max_stack_height();
 
@@ -81,40 +82,72 @@ public:
   void place_label(Label label);
 
   ref<IRInstruction> emit(const ref<IRInstruction>& instruction) {
-    return emit_instruction_impl(instruction);
-  };
+    return emit_instruction_impl(active_block(), instruction);
+  }
 
-#define DEF_IXXX(O)                                          \
-  ref<IRInstruction> emit_##O() {                            \
-    return emit_instruction_impl(make<IRInstruction_##O>()); \
+  ref<IRInstruction> emit(const ref<IRBasicBlock>& block, const ref<IRInstruction>& instruction) {
+    return emit_instruction_impl(block, instruction);
   }
-#define DEF_IAXX(O)                                             \
-  ref<IRInstruction> emit_##O(uint8_t arg) {                    \
-    return emit_instruction_impl(make<IRInstruction_##O>(arg)); \
+
+#define DEF_IXXX(O)                                                          \
+  ref<IRInstruction> emit_##O(const ref<IRBasicBlock>& block) {              \
+    return emit_instruction_impl(block, make<IRInstruction_##O>());          \
+  }                                                                          \
+  ref<IRInstruction> emit_##O() {                                            \
+    return emit_instruction_impl(active_block(), make<IRInstruction_##O>()); \
   }
-#define DEF_IABX(O)                                                    \
-  ref<IRInstruction> emit_##O(uint8_t arg1, uint8_t arg2) {            \
-    return emit_instruction_impl(make<IRInstruction_##O>(arg1, arg2)); \
+
+#define DEF_IAXX(O)                                                             \
+  ref<IRInstruction> emit_##O(const ref<IRBasicBlock>& block, uint8_t arg) {    \
+    return emit_instruction_impl(block, make<IRInstruction_##O>(arg));          \
+  }                                                                             \
+  ref<IRInstruction> emit_##O(uint8_t arg) {                                    \
+    return emit_instruction_impl(active_block(), make<IRInstruction_##O>(arg)); \
   }
-#define DEF_IABC(O)                                                          \
-  ref<IRInstruction> emit_##O(uint8_t arg1, uint8_t arg2, uint8_t arg3) {    \
-    return emit_instruction_impl(make<IRInstruction_##O>(arg1, arg2, arg3)); \
+
+#define DEF_IABX(O)                                                                         \
+  ref<IRInstruction> emit_##O(const ref<IRBasicBlock>& block, uint8_t arg1, uint8_t arg2) { \
+    return emit_instruction_impl(block, make<IRInstruction_##O>(arg1, arg2));               \
+  }                                                                                         \
+  ref<IRInstruction> emit_##O(uint8_t arg1, uint8_t arg2) {                                 \
+    return emit_instruction_impl(active_block(), make<IRInstruction_##O>(arg1, arg2));      \
   }
-#define DEF_IABB(O)                                                    \
-  ref<IRInstruction> emit_##O(uint8_t arg1, uint16_t arg2) {           \
-    return emit_instruction_impl(make<IRInstruction_##O>(arg1, arg2)); \
+
+#define DEF_IABC(O)                                                                                       \
+  ref<IRInstruction> emit_##O(const ref<IRBasicBlock>& block, uint8_t arg1, uint8_t arg2, uint8_t arg3) { \
+    return emit_instruction_impl(block, make<IRInstruction_##O>(arg1, arg2, arg3));                       \
+  }                                                                                                       \
+  ref<IRInstruction> emit_##O(uint8_t arg1, uint8_t arg2, uint8_t arg3) {                                 \
+    return emit_instruction_impl(active_block(), make<IRInstruction_##O>(arg1, arg2, arg3));              \
   }
-#define DEF_IAAX(O)                                             \
-  ref<IRInstruction> emit_##O(uint16_t arg) {                   \
-    return emit_instruction_impl(make<IRInstruction_##O>(arg)); \
+
+#define DEF_IABB(O)                                                                          \
+  ref<IRInstruction> emit_##O(const ref<IRBasicBlock>& block, uint8_t arg1, uint16_t arg2) { \
+    return emit_instruction_impl(block, make<IRInstruction_##O>(arg1, arg2));                \
+  }                                                                                          \
+  ref<IRInstruction> emit_##O(uint8_t arg1, uint16_t arg2) {                                 \
+    return emit_instruction_impl(active_block(), make<IRInstruction_##O>(arg1, arg2));       \
   }
-#define DEF_IAAA(O)                                             \
-  ref<IRInstruction> emit_##O(uint32_t arg) {                   \
-    return emit_instruction_impl(make<IRInstruction_##O>(arg)); \
+
+#define DEF_IAAX(O)                                                             \
+  ref<IRInstruction> emit_##O(const ref<IRBasicBlock>& block, uint16_t arg) {   \
+    return emit_instruction_impl(block, make<IRInstruction_##O>(arg));          \
+  }                                                                             \
+  ref<IRInstruction> emit_##O(uint16_t arg) {                                   \
+    return emit_instruction_impl(active_block(), make<IRInstruction_##O>(arg)); \
   }
+
+#define DEF_IAAA(O)                                                             \
+  ref<IRInstruction> emit_##O(const ref<IRBasicBlock>& block, uint32_t arg) {   \
+    return emit_instruction_impl(block, make<IRInstruction_##O>(arg));          \
+  }                                                                             \
+  ref<IRInstruction> emit_##O(uint32_t arg) {                                   \
+    return emit_instruction_impl(active_block(), make<IRInstruction_##O>(arg)); \
+  }
+
 #define DEF_EMITS(N, T, ...) DEF_##T(N);
   FOREACH_OPCODE(DEF_EMITS)
-#undef DEF_OPCODES
+#undef DEF_EMITS
 #undef DEF_IXXX
 #undef DEF_IAXX
 #undef DEF_IABX
@@ -140,7 +173,10 @@ public:
   }
 
 private:
-  ref<IRInstruction> emit_instruction_impl(const ref<IRInstruction>& instruction);
+  ref<IRInstruction> emit_instruction_impl(const ref<IRInstruction>& instruction) {
+    return emit_instruction_impl(active_block(), instruction);
+  }
+  ref<IRInstruction> emit_instruction_impl(const ref<IRBasicBlock>& block, const ref<IRInstruction>& instruction);
 
 private:
   Label m_label_counter;

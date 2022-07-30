@@ -261,6 +261,7 @@ struct IRBasicBlock {
 
   // optional exception handler for this block
   std::optional<Label> exception_handler = std::nullopt;
+  std::unordered_set<ref<IRBasicBlock>> exception_handler_sources;
 
   // labels that refer to this block
   std::unordered_set<Label> labels;

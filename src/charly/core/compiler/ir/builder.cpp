@@ -149,6 +149,22 @@ void Builder::finish_function() {
     //
     // the above jump opcode can be completely removed
     remove_useless_jumps();
+
+    // merges continuous blocks into a single block
+    //
+    //    loadsmi 25
+    //    pop
+    //  .L2
+    //    loadsmi 25
+    //    pop
+    //
+    // becomes just (given that no other instructions reference L2)
+    //
+    //    loadsmi 25
+    //    pop
+    //    loadsmi 25
+    //    pop
+    merge_continuous_blocks();
   }
 
   // emit the exceptions tables for the basic blocks of this function
@@ -221,6 +237,12 @@ void Builder::build_cfg() {
     if (block->instructions.empty()) {
       IRBasicBlock::link(block, block->next_block);
       continue;
+    }
+
+    // populate exception handler source table
+    if (block->exception_handler.has_value()) {
+      auto handler_block = m_labelled_blocks.at(block->exception_handler.value());
+      handler_block->exception_handler_sources.insert(block);
     }
 
     ref<IRInstruction> op = block->instructions.back();
@@ -329,6 +351,24 @@ void Builder::remove_useless_jumps() {
 
           continue;
         }
+        case Opcode::jmpf: {
+          Label target_label = op->as_jmpf()->arg;
+          if (block->next_block && block->next_block->labels.count(target_label)) {
+            block->instructions.pop_back();
+            emit_pop(block);
+          }
+
+          continue;
+        }
+        case Opcode::jmpt: {
+          Label target_label = op->as_jmpt()->arg;
+          if (block->next_block && block->next_block->labels.count(target_label)) {
+            block->instructions.pop_back();
+            emit_pop(block);
+          }
+
+          continue;
+        }
         default: {
           break;
         }
@@ -361,7 +401,7 @@ void Builder::remove_dead_blocks() {
         reachable_blocks.push_back(outgoing);
       }
 
-      if (block->exception_handler) {
+      if (block->exception_handler.has_value()) {
         reachable_blocks.push_back(m_labelled_blocks.at(block->exception_handler.value()));
       }
     }
@@ -392,9 +432,50 @@ void Builder::remove_dead_blocks() {
   }
 }
 
+void Builder::merge_continuous_blocks() {
+  auto it = m_active_function->basic_blocks.begin();
+  while (it != m_active_function->basic_blocks.end()) {
+    auto block = *it;
+
+    // link continuous blocks
+    auto next_block = block->next_block;
+    if (next_block == nullptr) {
+      it++;
+      continue;
+    }
+
+    DCHECK(next_block == *std::next(it));
+    DCHECK(block == next_block->previous_block);
+
+    // blocks with exception handlers or blocks that handle exceptions cannot be merged
+    if (!block->exception_handler.has_value() && block->exception_handler_sources.empty()) {
+      if (!next_block->exception_handler.has_value() && next_block->exception_handler_sources.empty()) {
+        // blocks must be directly connected
+        if (block->outgoing_blocks.size() == 1 && next_block->incoming_blocks.size() == 1) {
+          if (*block->outgoing_blocks.begin() == next_block && block == *next_block->incoming_blocks.begin()) {
+            auto& next_ops = next_block->instructions;
+            block->instructions.insert(block->instructions.end(), next_ops.begin(), next_ops.end());
+
+            auto next_next_block = next_block->next_block;
+            IRBasicBlock::unlink(next_block);
+            if (next_next_block) {
+              IRBasicBlock::link(block, next_next_block);
+            }
+
+            m_active_function->basic_blocks.erase(std::next(it));
+            continue;
+          }
+        }
+      }
+    }
+
+    it++;
+  }
+}
+
 void Builder::emit_exception_tables() {
   for (const ref<IRBasicBlock>& block : m_active_function->basic_blocks) {
-    if (block->exception_handler) {
+    if (block->exception_handler.has_value()) {
       DCHECK(!block->labels.empty());
       DCHECK(block->next_block);
       DCHECK(!block->next_block->labels.empty());
@@ -421,7 +502,7 @@ void Builder::emit_exception_tables() {
 
 void Builder::determine_max_stack_height() {
   std::deque<ref<IRBasicBlock>> queue;
-  std::set<ref<IRBasicBlock>> visited_blocks;
+  std::unordered_set<ref<IRBasicBlock>> visited_blocks;
   std::unordered_map<ref<IRBasicBlock>, uint32_t> block_initial_heights;
   uint32_t max_stack_height = 0;
 
@@ -538,9 +619,8 @@ ref<IRInstruction> Builder::emit_load_value(RawValue value) {
   }
 }
 
-ref<IRInstruction> Builder::emit_instruction_impl(const ref<IRInstruction>& instruction) {
-  ref<IRBasicBlock> block = active_block();
-
+ref<IRInstruction> Builder::emit_instruction_impl(const ref<IRBasicBlock>& block,
+                                                  const ref<IRInstruction>& instruction) {
   if (block->instructions.empty()) {
     place_label(reserve_label());
   }

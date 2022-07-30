@@ -168,6 +168,8 @@ void IRBasicBlock::link(const ref<IRBasicBlock>& source, const ref<IRBasicBlock>
 }
 
 void IRBasicBlock::unlink(const ref<IRBasicBlock>& block) {
+  DCHECK(block->exception_handler_sources.empty());
+
   for (const ref<IRBasicBlock>& incoming : block->incoming_blocks) {
     incoming->outgoing_blocks.erase(block);
   }
@@ -219,10 +221,19 @@ void IRBasicBlock::dump(std::ostream& out) const {
   }
   writer.fg(Color::Green, "]");
 
-  // exception handler
-  if (this->exception_handler) {
+  if (this->exception_handler.has_value()) {
     writer.fg(Color::Red, " exceptions -> ");
     writer.fg(Color::Yellow, ".L", this->exception_handler.value());
+  }
+
+  if (!this->exception_handler_sources.empty()) {
+    out << " ";
+    writer.fg(Color::Red, "[ ");
+    for (const ref<IRBasicBlock>& block : this->exception_handler_sources) {
+      writer.fg(Color::Red, "#", block->id);
+      out << " ";
+    }
+    writer.fg(Color::Red, "]");
   }
 
   out << '\n';

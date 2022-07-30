@@ -578,7 +578,7 @@ RawValue Runtime::create_class(Thread* thread,
     }
 
     // calculate the amount of functions being added that are not already present in the parent class
-    std::set<SYMBOL> new_function_names;
+    std::unordered_set<SYMBOL> new_function_names;
     size_t newly_added_functions = 0;
     for (uint32_t i = 0; i < member_funcs.size(); i++) {
       auto method_name = RawFunction::cast(member_funcs.field_at<RawTuple>(i).field_at(0)).name();
