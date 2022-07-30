@@ -630,7 +630,7 @@ OP(ret) {
   return ContinueMode::Return;
 }
 
-OP(load) {
+OP(loadconst) {
   uint16_t index = op->arg();
   RawValue value = frame->shared_function_info->constant_table[index];
   frame->push(value);

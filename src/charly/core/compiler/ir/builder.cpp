@@ -534,7 +534,7 @@ ref<IRInstruction> Builder::emit_load_value(RawValue value) {
   if ((value.raw() & 0xffffffffff000000) == 0) {
     return emit_loadsmi(value.raw());
   } else {
-    return emit_load(register_constant(value));
+    return emit_loadconst(register_constant(value));
   }
 }
 

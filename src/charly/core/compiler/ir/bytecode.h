@@ -236,7 +236,7 @@ static const size_t kInstructionLength = 4;
   /* ret - return from current function                                            \
    * */                                                                            \
   V(ret, IXXX, 0, 0)                                                               \
-  /* load - load immediate value onto the stack                                    \
+  /* loadconst - load value from constant table onto the stack                     \
    *                                                                               \
    * opcode operands:                                                              \
    * - constant table offset                                                       \
@@ -244,7 +244,7 @@ static const size_t kInstructionLength = 4;
    * stack results:                                                                \
    * - immediate value                                                             \
    * */                                                                            \
-  V(load, IAAX, 0, 1)                                                              \
+  V(loadconst, IAAX, 0, 1)                                                         \
   /* loadsmi - load small immediate value onto stack                               \
    *                                                                               \
    * opcode operands:                                                              \
@@ -796,11 +796,7 @@ inline Instruction encode_iaaa(Opcode opcode, uint32_t arg) {
  * opcodes which terminate their basic block
  * */
 static const std::unordered_set<Opcode> kTerminatingOpcodes = {
-  Opcode::panic,
-  Opcode::jmp,
-  Opcode::throwex,
-  Opcode::rethrowex,
-  Opcode::ret,
+  Opcode::panic, Opcode::jmp, Opcode::throwex, Opcode::rethrowex, Opcode::ret,
 };
 
 /*
