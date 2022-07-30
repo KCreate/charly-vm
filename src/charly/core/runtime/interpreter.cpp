@@ -834,7 +834,7 @@ OP(loadsuperattr) {
 OP(setglobal) {
   uint8_t string_index = op->arg();
   SYMBOL name = frame->get_string_table_entry(string_index).hash;
-  RawValue value = frame->pop();
+  RawValue value = frame->peek();
   RawValue result = thread->runtime()->set_global_variable(thread, name, value);
   Runtime* runtime = thread->runtime();
 
@@ -849,7 +849,6 @@ OP(setglobal) {
   }
   DCHECK(result.is_error_ok());
 
-  frame->push(result);
   return ContinueMode::Next;
 }
 
