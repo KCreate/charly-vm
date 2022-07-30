@@ -203,10 +203,6 @@ CATCH_TEST_CASE("Semantic") {
     COMPILE_OK("class A { func constructor {} }")
   }
 
-  CATCH_SECTION("checks for excess calls to parent constructor in subclasses") {
-    COMPILE_ERROR("class A extends B { func constructor { super() super() } }", "constructor of class 'A' may only contain a single call to the super constructor")
-  }
-
   CATCH_SECTION("checks for illegal calls to parent constructor in non inheriting classes") {
     COMPILE_ERROR("class A { func constructor { super() } }", "call to super not allowed in constructor of non-inheriting class 'A'")
   }
