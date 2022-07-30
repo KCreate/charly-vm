@@ -80,7 +80,8 @@ public:
   };
 
   static RawValue call_value(Thread* thread, RawValue self, RawValue target, RawValue* arguments, uint32_t argc);
-  static RawValue call_function(Thread* thread, RawValue self, RawFunction function, RawValue* arguments, uint32_t argc);
+  static RawValue call_function(
+    Thread* thread, RawValue self, RawFunction function, RawValue* arguments, uint32_t argc);
 
   static RawValue add_string_string(Thread* thread, RawString left, RawString right);
 

@@ -44,8 +44,7 @@ namespace charly::core::compiler::ir {
   V(panic, 0)
 
 // ids of builtin operations
-enum class BuiltinId : uint16_t
-{
+enum class BuiltinId : uint16_t {
 #define ID(name, _) name,
   FOREACH_BUILTIN(ID)
 #undef ID

@@ -77,7 +77,6 @@ ref<Expression> DesugarPass::transform(const ref<FormatString>& node) {
 }
 
 bool DesugarPass::inspect_enter(const ref<Function>& node) {
-
   // implicitly return last expression or func/class declaration inside the function body
   DCHECK(isa<Block>(node->body));
   auto body = cast<Block>(node->body);
@@ -98,7 +97,6 @@ bool DesugarPass::inspect_enter(const ref<Function>& node) {
 }
 
 void DesugarPass::inspect_leave(const ref<Function>& node) {
-
   // emit self initializations of function arguments
   for (auto it = node->arguments.rbegin(); it != node->arguments.rend(); it++) {
     const ref<FunctionArgument>& arg = *it;

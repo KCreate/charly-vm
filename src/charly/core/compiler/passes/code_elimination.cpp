@@ -47,7 +47,6 @@ ref<Statement> CodeEliminationPass::transform(const ref<Block>& node) {
 
     // unwrap blocks
     if (auto block = cast<Block>(stmt)) {
-
       // cannot unwrap blocks that carry break-information
       // switch statements use this type of block to be able to jump to the end of the statement
       if (!block->allows_break) {

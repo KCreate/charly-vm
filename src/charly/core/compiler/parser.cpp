@@ -45,7 +45,9 @@ ref<Block> Parser::parse_program(utils::Buffer& source, DiagnosticConsole& conso
     parser.m_keyword_context._super = false;
 
     return parser.parse_program();
-  } catch (DiagnosticException&) { return nullptr; }
+  } catch (DiagnosticException&) {
+    return nullptr;
+  }
 }
 
 ref<Statement> Parser::parse_statement(utils::Buffer& source, DiagnosticConsole& console) {
@@ -60,7 +62,9 @@ ref<Statement> Parser::parse_statement(utils::Buffer& source, DiagnosticConsole&
     parser.m_keyword_context._super = true;
 
     return parser.parse_statement();
-  } catch (DiagnosticException&) { return nullptr; }
+  } catch (DiagnosticException&) {
+    return nullptr;
+  }
 }
 
 ref<Expression> Parser::parse_expression(utils::Buffer& source, DiagnosticConsole& console) {
@@ -75,7 +79,9 @@ ref<Expression> Parser::parse_expression(utils::Buffer& source, DiagnosticConsol
     parser.m_keyword_context._super = true;
 
     return parser.parse_expression();
-  } catch (DiagnosticException&) { return nullptr; }
+  } catch (DiagnosticException&) {
+    return nullptr;
+  }
 }
 
 ref<Block> Parser::parse_program() {

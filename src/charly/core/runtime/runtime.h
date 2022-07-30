@@ -136,8 +136,8 @@ public:
   RawFiber create_fiber(Thread* thread, RawFunction function, RawValue self, RawValue arguments);
   RawException create_exception(Thread* thread, RawValue message);
   RawImportException create_import_exception(Thread* thread,
-                                   const std::string& module_path,
-                                   const ref<compiler::CompilationUnit>& unit);
+                                             const std::string& module_path,
+                                             const ref<compiler::CompilationUnit>& unit);
 
   // creates a tuple containing a stack trace of the current thread
   // trim variable controls how many frames should be dropped

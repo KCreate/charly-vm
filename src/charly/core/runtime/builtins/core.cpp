@@ -62,8 +62,7 @@ RawValue transplantbuiltinclass(Thread* thread, const RawValue* args, uint8_t ar
   }
 
   if (klass.function_table().size()) {
-    thread->throw_value(
-      runtime->create_string_from_template(thread, "expected base class function table to be empty"));
+    thread->throw_value(runtime->create_string_from_template(thread, "expected base class function table to be empty"));
     return kErrorException;
   }
 

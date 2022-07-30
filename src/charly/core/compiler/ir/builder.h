@@ -44,10 +44,7 @@ namespace charly::core::compiler::ir {
 class Builder {
 public:
   explicit Builder(const std::string& filename) :
-    m_label_counter(0),
-    m_block_id_counter(0),
-    m_active_function(nullptr),
-    m_module(make<IRModule>(filename)) {}
+    m_label_counter(0), m_block_id_counter(0), m_active_function(nullptr), m_module(make<IRModule>(filename)) {}
 
   // register string in currently active function
   uint16_t register_string(const std::string& string);

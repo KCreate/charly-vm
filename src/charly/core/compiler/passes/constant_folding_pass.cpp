@@ -165,7 +165,8 @@ ref<Expression> ConstantFoldingPass::transform(const ref<BinaryOp>& node) {
     } else if (lhs_truthy == Truthyness::False && !lhs_sideeffects) {
       replacement = make<Bool>(false);
     } else if (lhs_truthy == Truthyness::True && lhs_sideeffects) {
-      replacement = make<ExpressionWithSideEffects>(make<Block>(node->lhs), make<BuiltinOperation>(ir::BuiltinId::castbool, node->rhs));
+      replacement = make<ExpressionWithSideEffects>(make<Block>(node->lhs),
+                                                    make<BuiltinOperation>(ir::BuiltinId::castbool, node->rhs));
     } else if (lhs_truthy == Truthyness::False && lhs_sideeffects) {
       replacement = make<ExpressionWithSideEffects>(make<Block>(node->lhs), make<Bool>(false));
     } else if (rhs_truthy == Truthyness::True && !rhs_sideeffects) {
@@ -249,7 +250,7 @@ ref<Expression> ConstantFoldingPass::transform(const ref<UnaryOp>& node) {
         replacement = expression;
         break;
       }
-      case TokenType::Minus:{
+      case TokenType::Minus: {
         DCHECK(expression->truthyness() != Truthyness::Unknown);
         replacement = make<Bool>(!expression->value);
         break;

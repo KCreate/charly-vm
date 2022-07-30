@@ -35,8 +35,7 @@
 
 namespace charly::core::compiler {
 
-enum class TokenType
-{
+enum class TokenType {
   Eof,
 
   // literals

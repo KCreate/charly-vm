@@ -83,8 +83,7 @@ namespace charly::core::runtime {
   INSTANCE_TYPE_NAMES(V)  \
   USER_INSTANCE_TYPE_NAMES(V)
 
-enum class ShapeId : uint32_t
-{
+enum class ShapeId : uint32_t {
   // immediate types
   //
   // the shape id of any immediate type can be determined by checking the
@@ -157,8 +156,7 @@ size_t align_to_size(size_t size, size_t alignment);
 // internal error values used only internally in the runtime
 // this value is encoded in the null value
 // limit of 16 error codes
-enum class ErrorId : uint8_t
-{
+enum class ErrorId : uint8_t {
   kErrorNone = 0,
   kErrorOk,
   kErrorNotFound,
@@ -169,13 +167,7 @@ enum class ErrorId : uint8_t
 };
 
 static std::string kErrorCodeNames[] = {
-  "None",
-  "Ok",
-  "NotFound",
-  "OutOfBounds",
-  "Exception",
-  "ReadOnly",
-  "NoBaseClass"
+  "None", "Ok", "NotFound", "OutOfBounds", "Exception", "ReadOnly", "NoBaseClass"
 };
 
 // forward declare Raw types
@@ -190,8 +182,7 @@ class ObjectHeader {
 public:
   CHARLY_NON_HEAP_ALLOCATABLE(ObjectHeader);
 
-  enum Flag : uint8_t
-  {
+  enum Flag : uint8_t {
     kReachable = 1,        // object is reachable by GC
     kHasHashcode = 2,      // object has a cached hashcode
     kYoungGeneration = 4,  // object is in a young generation
@@ -670,8 +661,7 @@ public:
   int64_t int_at(int64_t index) const;
   void set_int_at(int64_t index, int64_t value);
 
-  enum
-  {
+  enum {
     kKlassOffset = 0,
     kFieldCount
   };
@@ -693,8 +683,7 @@ public:
   size_t length() const;
   void set_length(size_t length);
 
-  enum
-  {
+  enum {
     kDataPointerOffset = RawInstance::kFieldCount,
     kDataLengthOffset,
     kFieldCount
@@ -715,8 +704,7 @@ public:
   size_t length() const;
   void set_length(size_t length);
 
-  enum
-  {
+  enum {
     kDataPointerOffset = RawInstance::kFieldCount,
     kDataLengthOffset,
     kFieldCount
@@ -729,8 +717,7 @@ class RawClass : public RawInstance {
 public:
   COMMON_RAW_OBJECT(Class);
 
-  enum
-  {
+  enum {
     kFlagNone = 0,
     kFlagFinal = 1,
     kFlagNonConstructable = 2,
@@ -760,8 +747,7 @@ public:
 
   RawValue lookup_function(SYMBOL name) const;
 
-  enum
-  {
+  enum {
     kFlagsOffset = RawInstance::kFieldCount,
     kAncestorTableOffset,
     kNameOffset,
@@ -790,8 +776,7 @@ public:
   RawTuple keys() const;
   void set_keys(RawTuple keys);
 
-  enum
-  {
+  enum {
     kKeyFlagNone = 0,
     kKeyFlagInternal = 1,  // keys that cannot get accessed via charly code
     kKeyFlagReadOnly = 2,  // keys that cannot be assigned to
@@ -800,8 +785,7 @@ public:
   static RawInt encode_shape_key(SYMBOL symbol, uint8_t flags = kKeyFlagNone);
   static void decode_shape_key(RawInt encoded, SYMBOL& symbol_out, uint8_t& flags_out);
 
-  enum : uint8_t
-  {
+  enum : uint8_t {
     kAdditionsKeyOffset = 0,
     kAdditionsNextOffset
   };
@@ -831,8 +815,7 @@ public:
   };
   LookupResult lookup_symbol(SYMBOL symbol) const;
 
-  enum
-  {
+  enum {
     kOwnShapeIdOffset = RawInstance::kFieldCount,
     kParentShapeOffset,
     kKeysOffset,
@@ -869,15 +852,13 @@ public:
   // check wether this specific function instance (ignoring overloads) would accept *argc* arguments
   bool check_accepts_argc(uint32_t argc);
 
-  enum
-  {
+  enum {
     kContextParentOffset = 0,
     kContextSelfOffset,
     kContextHeapVariablesOffset
   };
 
-  enum
-  {
+  enum {
     kNameOffset = RawInstance::kFieldCount,
     kFrameContextOffset,
     kSavedSelfOffset,
@@ -905,8 +886,7 @@ public:
   uint8_t argc() const;
   void set_argc(uint8_t argc);
 
-  enum
-  {
+  enum {
     kFunctionPtrOffset = RawInstance::kFieldCount,
     kNameOffset,
     kArgcOffset,
@@ -941,8 +921,7 @@ public:
 
   bool has_finished() const;
 
-  enum
-  {
+  enum {
     kThreadPointerOffset = RawInstance::kFieldCount,
     kFunctionOffset,
     kSelfOffset,
@@ -968,8 +947,7 @@ public:
   RawValue cause() const;
   void set_cause(RawValue stack_trace);
 
-  enum
-  {
+  enum {
     kMessageOffset = RawInstance::kFieldCount,
     kStackTraceOffset,
     kCauseOffset,
@@ -986,8 +964,7 @@ public:
   RawTuple errors() const;
   void set_errors(RawTuple errors);
 
-  enum
-  {
+  enum {
     kErrorsOffset = RawException::kFieldCount,
     kFieldCount
   };

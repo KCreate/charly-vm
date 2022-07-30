@@ -545,7 +545,7 @@ RawValue Runtime::create_class(Thread* thread,
       if (parent_key_symbol == prop_name) {
         thread->throw_value(
           create_string_from_template(thread, "cannot redeclare property '%', parent class '%' already contains it",
-                                        RawSymbol::make(prop_name), parent_class.name()));
+                                      RawSymbol::make(prop_name), parent_class.name()));
         return kErrorException;
       }
     }
@@ -558,7 +558,7 @@ RawValue Runtime::create_class(Thread* thread,
     // type, before it can be used in here. this is some weird template thing...
     thread->throw_value(
       create_string_from_template(thread, "newly created class '%' has % properties, but the limit is %",
-                                    RawSymbol::make(name), new_member_count, (size_t)RawInstance::kMaximumFieldCount));
+                                  RawSymbol::make(name), new_member_count, (size_t)RawInstance::kMaximumFieldCount));
     return kErrorException;
   }
 
@@ -979,8 +979,8 @@ RawException Runtime::create_exception(Thread* thread, RawValue message) {
 }
 
 RawImportException Runtime::create_import_exception(Thread* thread,
-                                          const std::string& module_path,
-                                          const ref<compiler::CompilationUnit>& unit) {
+                                                    const std::string& module_path,
+                                                    const ref<compiler::CompilationUnit>& unit) {
   const auto& messages = unit->console.messages();
   size_t size = messages.size();
   auto error_tuple = create_tuple(thread, size);

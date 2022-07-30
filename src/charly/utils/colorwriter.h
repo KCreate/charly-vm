@@ -32,8 +32,7 @@
 
 namespace charly::utils {
 
-enum class Color : uint8_t
-{
+enum class Color : uint8_t {
   Grey,
   Red,
   Green,
