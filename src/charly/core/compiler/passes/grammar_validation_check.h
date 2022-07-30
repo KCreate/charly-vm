@@ -38,8 +38,8 @@ public:
   void constructor_return_check(const ref<Class>& node);
 
 private:
-  virtual void inspect_leave(const ref<Dict>& node) override;
-  virtual void inspect_leave(const ref<Function>& node) override;
+  void inspect_leave(const ref<Dict>& node) override;
+  void inspect_leave(const ref<Function>& node) override;
   void inspect_leave(const ref<Class>& node) override;
 };
 

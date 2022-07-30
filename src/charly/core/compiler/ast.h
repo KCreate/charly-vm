@@ -26,19 +26,19 @@
 
 #include <functional>
 #include <iostream>
+#include <list>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
-#include <list>
 
 #include "charly/charly.h"
-#include "charly/utils/buffer.h"
 #include "charly/core/compiler/ir/builtin.h"
 #include "charly/core/compiler/ir/functioninfo.h"
 #include "charly/core/compiler/ir/valuelocation.h"
 #include "charly/core/compiler/location.h"
 #include "charly/core/compiler/token.h"
+#include "charly/utils/buffer.h"
 
 #pragma once
 
@@ -244,15 +244,15 @@ bool isa(const ref<Node>& node) {
   return dynamic_cast<T*>(node.get()) != nullptr;
 }
 
-#define AST_NODE(T)                                \
-public:                                            \
-  virtual Node::Type type() const override {       \
-    return Node::Type::T;                          \
-  }                                                \
-                                                   \
-private:                                           \
-  virtual const char* node_name() const override { \
-    return #T;                                     \
+#define AST_NODE(T)                        \
+public:                                    \
+  Node::Type type() const override {       \
+    return Node::Type::T;                  \
+  }                                        \
+                                           \
+private:                                   \
+  const char* node_name() const override { \
+    return #T;                             \
   }
 
 #define CHILD_NODE(N) \
@@ -261,15 +261,14 @@ private:                                           \
       callback(N);    \
   }
 
-#define CHILD_LIST(N)            \
+#define CHILD_LIST(N)              \
   {                                \
     for (const auto& node : (N)) { \
       callback(node);              \
     }                              \
   }
 
-#define CHILDREN() \
-  virtual void children([[maybe_unused]] std::function<void(const ref<Node>&)>&& callback) const override
+#define CHILDREN() void children([[maybe_unused]] std::function<void(const ref<Node>&)>&& callback) const override
 
 // {
 //   <statement>
@@ -310,7 +309,7 @@ public:
     CHILD_LIST(statements)
   }
 
-  virtual bool has_side_effects() const override {
+  bool has_side_effects() const override {
     for (auto& statement : statements) {
       if (statement->has_side_effects()) {
         return true;
@@ -357,7 +356,7 @@ public:
     set_end(stmt);
   }
 
-  virtual bool has_side_effects() const override {
+  bool has_side_effects() const override {
     for (auto& statement : statements) {
       if (statement->has_side_effects()) {
         return true;
@@ -460,7 +459,7 @@ public:
     return expression->truthyness();
   }
 
-  virtual bool has_side_effects() const override {
+  bool has_side_effects() const override {
     return block->has_side_effects() || expression->has_side_effects();
   }
 };
@@ -569,7 +568,7 @@ class Self final : public Expression {
 public:
   explicit Self() {}
 
-  virtual bool has_side_effects() const override {
+  bool has_side_effects() const override {
     return false;
   }
 };
@@ -583,7 +582,7 @@ public:
 
   void dump_info(std::ostream& out) const override;
 
-  virtual bool has_side_effects() const override {
+  bool has_side_effects() const override {
     return false;
   }
 };
@@ -604,7 +603,7 @@ public:
     return true;
   }
 
-  virtual bool has_side_effects() const override {
+  bool has_side_effects() const override {
     return false;
   }
 };
@@ -740,7 +739,7 @@ public:
     return Truthyness::True;
   }
 
-  virtual bool has_side_effects() const override {
+  bool has_side_effects() const override {
     for (auto& element : elements) {
       if (element->has_side_effects()) {
         return true;
@@ -792,7 +791,7 @@ public:
     return Truthyness::True;
   }
 
-  virtual bool has_side_effects() const override {
+  bool has_side_effects() const override {
     for (auto& element : elements) {
       if (element->has_side_effects()) {
         return true;
@@ -819,7 +818,7 @@ public:
     return Truthyness::True;
   }
 
-  virtual bool has_side_effects() const override {
+  bool has_side_effects() const override {
     for (auto& element : elements) {
       if (element->has_side_effects()) {
         return true;
@@ -853,7 +852,7 @@ public:
     CHILD_NODE(value)
   }
 
-  virtual bool has_side_effects() const override {
+  bool has_side_effects() const override {
     return key->has_side_effects() || value->has_side_effects();
   }
 };
@@ -877,7 +876,7 @@ public:
     return Truthyness::True;
   }
 
-  virtual bool has_side_effects() const override {
+  bool has_side_effects() const override {
     for (auto& element : elements) {
       if (element->has_side_effects()) {
         return true;
@@ -1646,7 +1645,7 @@ public:
 
   void dump_info(std::ostream& out) const override;
 
-  virtual Truthyness truthyness() const override {
+  Truthyness truthyness() const override {
     switch (operation) {
       case ir::BuiltinId::castbool: {
         DCHECK(arguments.size() == 1);
