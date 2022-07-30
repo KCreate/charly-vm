@@ -192,6 +192,10 @@ void Block::dump_info(std::ostream& out) const {
     writer << ' ';
     writer.fg(Color::Red, "REPL");
   }
+  if (this->allows_break) {
+    writer << ' ';
+    writer.fg(Color::Red, "breakable");
+  }
 }
 
 void FarSelf::dump_info(std::ostream& out) const {

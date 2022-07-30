@@ -24,14 +24,63 @@
  * SOFTWARE.
  */
 
+const num = 500
 
-loop {
-    try {
-        throw "hello world"
-    } finally {
-        throw "other"
+func some_func() = 500
+
+switch num {
+    case some_func() {
+        print("equal to some_func()")
+
+        if num == 500 {
+            break
+        }
+
+        print("hehe")
+    }
+    case 10 {
+        print("num is 10")
+    }
+    case 50 {
+        print("num is 50")
+    }
+    case 100 {
+        print("num is 100")
+    }
+    default {
+        print("num is something else")
     }
 }
 
-console.log("hello world")
+class Foo {
+    property arg
+
+    func set_arg(@arg) {
+        print("set arg to {arg}")
+        (self, Foo, @arg)
+    }
+}
+
+const f = Foo("foo")
+print(f.arg)
+print(f.set_arg("bar"))
+print(f.arg)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

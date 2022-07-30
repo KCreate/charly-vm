@@ -43,6 +43,7 @@ private:
   void inspect_leave(const ref<Function>&) override;
   void inspect_leave(const ref<Class>&) override;
   ref<Statement> transform(const ref<For>&) override;
+  ref<Statement> transform(const ref<Switch>&) override;
 };
 
 }  // namespace charly::core::compiler::ast

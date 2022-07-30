@@ -343,6 +343,9 @@ public:
   // set to true for the top block of REPL input
   bool repl_toplevel_block = false;
 
+  // set to true if break statements inside this block can jump to the end of the block
+  bool allows_break = false;
+
   std::list<ref<Statement>> statements;
 
   CHILDREN() {

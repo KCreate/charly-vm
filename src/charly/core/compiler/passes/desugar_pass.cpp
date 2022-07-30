@@ -309,4 +309,27 @@ ref<Statement> DesugarPass::transform(const ref<For>& node) {
   return block;
 }
 
+ref<Statement> DesugarPass::transform(const ref<Switch>& node) {
+  auto block = make<Block>();
+  block->allows_break = true;
+
+  auto decl = make<Declaration>("__charly_compiler_switch_test", node->test, true);
+  block->push_back(decl);
+
+  for (auto& case_node : node->cases) {
+    auto test_var = make<Id>("__charly_compiler_switch_test");
+    auto comparison = make<BinaryOp>(TokenType::Equal, test_var, case_node->test);
+    comparison->set_location(case_node->test);
+    auto if_stmt = make<If>(comparison, make<Block>(case_node->block, make<Break>()));
+    block->push_back(if_stmt);
+  }
+
+  if (auto default_block = cast<Block>(node->default_block)) {
+    block->push_back(default_block);
+    block->push_back(make<Break>());
+  }
+
+  return block;
+}
+
 }  // namespace charly::core::compiler::ast

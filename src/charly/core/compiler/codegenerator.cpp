@@ -352,6 +352,11 @@ void CodeGenerator::pop_continue_label() {
 }
 
 bool CodeGenerator::inspect_enter(const ref<Block>& node) {
+  Label break_label = m_builder.reserve_label();
+  if (node->allows_break) {
+    push_break_label(break_label);
+  }
+
   for (const ref<Statement>& stmt : node->statements) {
     apply(stmt);
 
@@ -359,6 +364,11 @@ bool CodeGenerator::inspect_enter(const ref<Block>& node) {
     if (isa<Expression>(stmt)) {
       m_builder.emit_pop();
     }
+  }
+
+  if (node->allows_break) {
+    pop_break_label();
+    m_builder.place_label(break_label);
   }
 
   return false;
@@ -1216,58 +1226,8 @@ bool CodeGenerator::inspect_enter(const ref<TryFinally>& node) {
   return false;
 }
 
-bool CodeGenerator::inspect_enter(const ref<Switch>& node) {
-  // TODO: generate some kind of lookup table?
-  //
-  // this is kind of a temporary hack that i plan on removing later once
-  // time and interest arises. for now switch statements are just generated as
-  // sequential if statements...
-  Label end_label = m_builder.reserve_label();
-  Label default_label = m_builder.reserve_label();
-  push_break_label(end_label);
-
-  apply(node->test);
-
-  // emit conditions
-  Label case_labels[node->cases.size()];
-  uint32_t index = 0;
-  for (const ref<SwitchCase>& case_node : node->cases) {
-    Label block_label = m_builder.reserve_label();
-    case_labels[index] = block_label;
-
-    m_builder.emit_dup();
-    apply(case_node->test);
-    m_builder.emit_eq()->at(case_node->test);
-    m_builder.emit_jmpt(block_label)->at(case_node->test);
-
-    index++;
-  }
-  m_builder.emit_pop();
-  m_builder.emit_jmp(default_label);
-
-  // condition blocks
-  index = 0;
-  for (const ref<SwitchCase>& case_node : node->cases) {
-    Label block_label = case_labels[index];
-    m_builder.place_label(block_label);
-
-    m_builder.emit_pop();
-    apply(case_node->block);
-    m_builder.emit_jmp(end_label);
-
-    index++;
-  }
-
-  // default block
-  m_builder.place_label(default_label);
-  if (node->default_block) {
-    apply(node->default_block);
-  }
-
-  m_builder.place_label(end_label);
-  pop_break_label();
-
-  return false;
+bool CodeGenerator::inspect_enter(const ref<Switch>&) {
+  FAIL("should not exist in codegen phase");
 }
 
 bool CodeGenerator::inspect_enter(const ref<BuiltinOperation>& node) {
