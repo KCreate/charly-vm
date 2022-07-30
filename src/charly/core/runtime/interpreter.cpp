@@ -198,7 +198,7 @@ RawValue Interpreter::call_function(
   if (argc < shared_info->ir_info.minargc) {
     thread->throw_value(
       runtime->create_string_from_template(thread, "not enough arguments for function call, expected % but got %",
-                                             (uint32_t)shared_info->ir_info.minargc, (uint32_t)argc));
+                                           (uint32_t)shared_info->ir_info.minargc, (uint32_t)argc));
     return kErrorException;
   }
 
@@ -325,7 +325,6 @@ handle_return_or_exception:
     }
 
     case ContinueMode::Exception: {
-
       // check if the current frame can handle this exception
       if (const ExceptionTableEntry* entry = frame->find_active_exception_table_entry(op->ip())) {
         frame->ip = entry->handler_ptr;
@@ -443,7 +442,7 @@ OP(declareglobal) {
   if (result.is_error_exception()) {
     Runtime* runtime = thread->runtime();
     thread->throw_value(runtime->create_string_from_template(thread, "duplicate declaration of global variable %",
-                                                               RawSymbol::make(name)));
+                                                             RawSymbol::make(name)));
     return ContinueMode::Exception;
   }
   DCHECK(result.is_error_ok());
@@ -459,7 +458,7 @@ OP(declareglobalconst) {
   if (result.is_error_exception()) {
     Runtime* runtime = thread->runtime();
     thread->throw_value(runtime->create_string_from_template(thread, "duplicate declaration of global variable %",
-                                                               RawSymbol::make(name)));
+                                                             RawSymbol::make(name)));
     return ContinueMode::Exception;
   }
   DCHECK(result.is_error_ok());
@@ -791,8 +790,8 @@ OP(loadattrsym) {
     auto function = RawFunction::cast(lookup);
     // TODO: allow accessing private member of same class
     if (function.shared_info()->ir_info.private_function && (value != frame->self)) {
-      thread->throw_value(runtime->create_string_from_template(
-        thread, "cannot call private function '%' of class '%'", RawSymbol::make(attr), klass.name()));
+      thread->throw_value(runtime->create_string_from_template(thread, "cannot call private function '%' of class '%'",
+                                                               RawSymbol::make(attr), klass.name()));
       return ContinueMode::Exception;
     }
 
@@ -801,7 +800,7 @@ OP(loadattrsym) {
   }
 
   thread->throw_value(runtime->create_string_from_template(thread, "value of type '%' has no property called '%'",
-                                                             klass.name(), RawSymbol::make(attr)));
+                                                           klass.name(), RawSymbol::make(attr)));
   return ContinueMode::Exception;
 }
 
@@ -933,7 +932,7 @@ OP(setattrsym) {
     if (result.found) {
       if (result.is_read_only()) {
         thread->throw_value(runtime->create_string_from_template(thread, "property '%' of type '%' is read-only",
-                                                                   RawSymbol::make(attr), klass.name()));
+                                                                 RawSymbol::make(attr), klass.name()));
         return ContinueMode::Exception;
       }
 
@@ -950,7 +949,7 @@ OP(setattrsym) {
   }
 
   thread->throw_value(runtime->create_string_from_template(thread, "value of type '%' has no property called '%'",
-                                                             klass.name(), RawSymbol::make(attr)));
+                                                           klass.name(), RawSymbol::make(attr)));
   return ContinueMode::Exception;
 }
 
@@ -966,7 +965,7 @@ OP(unpacksequence) {
 
     if (tuple_size != count) {
       thread->throw_value(runtime->create_string_from_template(thread, "expected tuple to be of size %, not %",
-                                                                 (size_t)count, tuple_size));
+                                                               (size_t)count, tuple_size));
       return ContinueMode::Exception;
     }
 

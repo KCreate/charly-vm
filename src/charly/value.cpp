@@ -583,7 +583,11 @@ void RawValue::dump(std::ostream& out) const {
   }
 
   if (isNull()) {
+    RawNull null_value = RawNull::cast(this);
     writer.fg(Color::Grey, "null");
+    if (null_value.is_error()) {
+      writer.fg(Color::Yellow, " (", kErrorCodeNames[(uint8_t)null_value.error_code()], ")");
+    }
     return;
   }
 

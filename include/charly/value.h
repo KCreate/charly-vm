@@ -165,7 +165,17 @@ enum class ErrorId : uint8_t
   kErrorOutOfBounds,
   kErrorException,
   kErrorReadOnly,
-  kErrorNoBaseClass = kErrorNotFound
+  kErrorNoBaseClass
+};
+
+static std::string kErrorCodeNames[] = {
+  "None",
+  "Ok",
+  "NotFound",
+  "OutOfBounds",
+  "Exception",
+  "ReadOnly",
+  "NoBaseClass"
 };
 
 // forward declare Raw types
