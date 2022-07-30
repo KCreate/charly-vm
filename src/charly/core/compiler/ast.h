@@ -1067,12 +1067,8 @@ public:
     CHILD_LIST(static_functions)
     CHILD_LIST(static_properties)
 
-    for (auto entry : member_function_overloads) {
-      CHILD_LIST(entry.second)
-    }
-    for (auto entry : static_function_overloads) {
-      CHILD_LIST(entry.second)
-    }
+    // *_function_overloads contains the same references as the *_functions lists
+    // no need to visit again
   }
 
   void dump_info(std::ostream& out) const override;

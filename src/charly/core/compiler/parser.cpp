@@ -682,28 +682,20 @@ ref<Statement> Parser::parse_import() {
     ref<StatementList> statements;
     if (name && renamed_name) {
       // import {...} from foo as bar
-      statements = make<StatementList>(
-        make<Declaration>(name, import, true, false),
-        make<Declaration>(renamed_name, make<Id>(name), true, false),
-        make<UnpackDeclaration>(unpack_target, make<Id>(name), true)
-      );
+      statements = make<StatementList>(make<Declaration>(name, import, true, false),
+                                       make<Declaration>(renamed_name, make<Id>(name), true, false),
+                                       make<UnpackDeclaration>(unpack_target, make<Id>(name), true));
     } else if (name) {
       // import {...} from foo
-      statements = make<StatementList>(
-        make<Declaration>(name, import, true, false),
-        make<UnpackDeclaration>(unpack_target, make<Id>(name), true)
-      );
+      statements = make<StatementList>(make<Declaration>(name, import, true, false),
+                                       make<UnpackDeclaration>(unpack_target, make<Id>(name), true));
     } else if (renamed_name) {
       // import {...} from "foo" as bar
-      statements = make<StatementList>(
-        make<Declaration>(renamed_name, import, true, false),
-        make<UnpackDeclaration>(unpack_target, make<Id>(renamed_name), true)
-      );
+      statements = make<StatementList>(make<Declaration>(renamed_name, import, true, false),
+                                       make<UnpackDeclaration>(unpack_target, make<Id>(renamed_name), true));
     } else {
       // import {...} from "foo"
-      statements = make<StatementList>(
-        make<UnpackDeclaration>(unpack_target, import, true)
-      );
+      statements = make<StatementList>(make<UnpackDeclaration>(unpack_target, import, true));
     }
 
     // emit renamed unpack arguments
@@ -746,10 +738,8 @@ ref<Statement> Parser::parse_import() {
     import->set_begin(begin);
 
     if (name && renamed_name) {
-      return make<StatementList>(
-        make<Declaration>(name, import, true, false),
-        make<Declaration>(renamed_name, make<Id>(name), true, false)
-      );
+      return make<StatementList>(make<Declaration>(name, import, true, false),
+                                 make<Declaration>(renamed_name, make<Id>(name), true, false));
     } else if (name) {
       return make<Declaration>(name, import, true, false);
     } else if (renamed_name) {
@@ -1236,6 +1226,7 @@ ref<Function> Parser::parse_function(FunctionFlags flags) {
   m_keyword_context._return = true;
   m_keyword_context._break = false;
   m_keyword_context._continue = false;
+  m_keyword_context._export = false;
 
   // only class functions may contain super statements
   // yield statements are allowed in all functions except class constructors
@@ -1258,28 +1249,23 @@ ref<Function> Parser::parse_function(FunctionFlags flags) {
     m_keyword_context._super = false;
   }
 
-  m_keyword_context._export = false;
   if (type(TokenType::Assignment)) {
     if (m_token.assignment_operator != TokenType::Assignment) {
       m_console.error(m_token.location, "operator assignment is not allowed in this place");
     }
     eat(TokenType::Assignment);
-    body = parse_throw_statement();
+    body = make<Block>(parse_jump_statement());
   } else if (type(TokenType::LeftCurly)) {
     body = parse_block();
   } else {
     // allow foo(@x, @y) declarations inside classes
     if (flags.class_function) {
-      body = make<Return>();
+      body = make<Block>();
     } else {
       unexpected_token(TokenType::LeftCurly);
     }
   }
   m_keyword_context = kwcontext;
-
-  if (isa<Expression>(body)) {
-    body = make<Block>(cast<Expression>(body));
-  }
 
   ref<Function> node = make<Function>(false, function_name, wrap_statement_in_block(body), argument_list);
   node->set_begin(begin);
@@ -1304,13 +1290,9 @@ ref<Function> Parser::parse_arrow_function() {
   if (type(TokenType::LeftCurly)) {
     body = parse_block();
   } else {
-    body = parse_jump_statement();
+    body = make<Block>(parse_jump_statement());
   }
   m_keyword_context = kwcontext;
-
-  if (isa<Expression>(body)) {
-    body = make<Return>(cast<Expression>(body));
-  }
 
   ref<Function> node = make<Function>(true, make<Name>("anonymous"), wrap_statement_in_block(body), argument_list);
   node->set_begin(begin);

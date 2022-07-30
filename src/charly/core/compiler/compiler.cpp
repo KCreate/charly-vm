@@ -33,9 +33,9 @@
 #include "charly/core/compiler/ir/assembler.h"
 #include "charly/core/compiler/parser.h"
 
+#include "charly/core/compiler/passes/code_elimination.h"
 #include "charly/core/compiler/passes/constant_folding_pass.h"
 #include "charly/core/compiler/passes/desugar_pass.h"
-#include "charly/core/compiler/passes/code_elimination.h"
 #include "charly/core/compiler/passes/duplicates_check.h"
 #include "charly/core/compiler/passes/grammar_validation_check.h"
 #include "charly/core/compiler/passes/repl_prepare_pass.h"
@@ -85,7 +85,7 @@ ref<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffe
   // wrap in module function
   ref<Function> func = make<Function>(false, make<Name>("main"), unit->ast);
   func->set_location(unit->ast);
-  unit->ast = make<Block>(func);
+  unit->ast = make<Block>(make<Return>(func));
 
   APPLY_DIAGNOSTIC_PASS(GrammarValidationCheck)
   APPLY_DIAGNOSTIC_PASS(ReservedIdentifiersCheck)

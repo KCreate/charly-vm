@@ -36,8 +36,12 @@ using namespace charly::core::runtime;
 ref<IRModule> CodeGenerator::compile() {
   // register the module function
   DCHECK(m_unit->ast->statements.size() == 1);
-  DCHECK(m_unit->ast->statements.front()->type() == Node::Type::Function);
-  enqueue_function(cast<Function>(m_unit->ast->statements.front()));
+  DCHECK(m_unit->ast->statements.front()->type() == Node::Type::Return);
+  auto top_return = cast<Return>(m_unit->ast->statements.front());
+  DCHECK(top_return->value->type() == Node::Type::Function);
+  auto main_function = cast<Function>(top_return->value);
+
+  enqueue_function(main_function);
 
   while (!m_function_queue.empty()) {
     compile_function(m_function_queue.front());

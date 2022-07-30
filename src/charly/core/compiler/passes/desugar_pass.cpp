@@ -31,35 +31,6 @@
 
 namespace charly::core::compiler::ast {
 
-ref<Statement> DesugarPass::transform(const ref<Block>& node) {
-  // unwrap block(block(...))
-  if (node->statements.size() == 1) {
-    if (ref<Block> block = cast<Block>(node->statements.front())) {
-      return block;
-    }
-  }
-
-  // remove dead code after return / throw statements
-  auto it = node->statements.begin();
-  bool block_terminated = false;
-  while (it != node->statements.end()) {
-    const ref<Statement>& stmt = *it;
-
-    if (block_terminated) {
-      node->statements.erase(it, node->statements.end());
-      break;
-    }
-
-    if (stmt->terminates_block()) {
-      block_terminated = true;
-    }
-
-    it++;
-  }
-
-  return node;
-}
-
 void DesugarPass::inspect_leave(const ref<Import>& node) {
   ref<Expression> source = node->source;
 
@@ -105,26 +76,28 @@ ref<Expression> DesugarPass::transform(const ref<FormatString>& node) {
   return node;
 }
 
-void DesugarPass::inspect_leave(const ref<Function>& node) {
-  // if the last statement in the function body is an expression, return it
-  if (!node->body->statements.empty() && !node->class_constructor) {
-    ref<Statement>& statement = node->body->statements.back();
-    if (ref<Expression> exp = cast<Expression>(statement)) {
-      auto return_exp = make<Return>(exp);
-      return_exp->set_location(exp);
-      statement = return_exp;
-    }
+bool DesugarPass::inspect_enter(const ref<Function>& node) {
 
-    // allow returning implicit function or class declarations
-    if (ref<Declaration> decl = cast<Declaration>(statement)) {
+  // implicitly return last expression or func/class declaration inside the function body
+  DCHECK(isa<Block>(node->body));
+  auto body = cast<Block>(node->body);
+
+  if (body->statements.size() >= 1 && !node->class_constructor) {
+    auto last_statement = body->statements.back();
+    if (auto exp = cast<Expression>(last_statement)) {
+      body->statements.back() = make<Return>(exp);
+    } else if (auto decl = cast<Declaration>(last_statement)) {
       if (decl->implicit) {
         auto id = decl->name;
-        auto return_exp = make<Return>(make<Id>(id));
-        return_exp->set_location(decl);
-        node->body->statements.push_back(return_exp);
+        body->statements.push_back(make<Return>(make<Id>(id)));
       }
     }
   }
+
+  return true;
+}
+
+void DesugarPass::inspect_leave(const ref<Function>& node) {
 
   // emit self initializations of function arguments
   for (auto it = node->arguments.rbegin(); it != node->arguments.rend(); it++) {
@@ -138,7 +111,8 @@ void DesugarPass::inspect_leave(const ref<Function>& node) {
   }
 
   // wrap regular functions with yield expressions inside a generator wrapper function
-  if (!node->arrow_function) {
+  // TODO: revisit this once figured out how yield should behave
+  if (!node->arrow_function && false) {
     // check if this function contains any yield statements
     ref<Node> yield_node = Node::search(
       node->body,
