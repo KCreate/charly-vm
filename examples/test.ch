@@ -55,20 +55,47 @@ switch num {
 class Foo {
     property arg
 
+    func constructor(@arg) {
+        print("begin constructor with {arg}")
+
+        if arg {
+            return
+        }
+
+        print("end constructor with {arg}")
+    }
+
     func set_arg(@arg) {
         print("set arg to {arg}")
         (self, Foo, @arg)
     }
 }
 
-const f = Foo("foo")
+const f = Foo(false)
 print(f.arg)
 print(f.set_arg("bar"))
 print(f.arg)
 
+const a = false
 
+class A {
+    func constructor() {
+        print("begin constructor")
 
+        if a {
+            if a {
+                print("a is true")
+            }
+            return
+        } else {
+            print("a is false")
+        }
 
+        print("end constructor")
+    }
+}
+
+const b = A()
 
 
 

@@ -189,6 +189,21 @@ ref<Expression> ConstantFoldingPass::transform(const ref<BinaryOp>& node) {
     }
   }
 
+  if (node->operation == TokenType::Equal || node->operation == TokenType::NotEqual) {
+    bool invert_result = node->operation == TokenType::NotEqual;
+
+    if (node->lhs->is_constant_value() && node->rhs->is_constant_value()) {
+      bool comparison = node->lhs->compares_equal(node->rhs);
+      if (invert_result) {
+        comparison = !comparison;
+      }
+
+      DCHECK(!node->lhs->has_side_effects());
+      DCHECK(!node->rhs->has_side_effects());
+      replacement = make<Bool>(comparison);
+    }
+  }
+
   replacement->set_location(node);
   return replacement;
 }

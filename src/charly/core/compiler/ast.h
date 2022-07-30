@@ -234,6 +234,10 @@ public:
     return Truthyness::Unknown;
   }
 
+  virtual bool compares_equal(const ref<Node>&) const {
+    FAIL("must be called on a subtype of ConstantAtom<T>");
+  }
+
 private:
   static void search_all_impl(const ref<Node>& node,
                               std::function<bool(const ref<Node>&)> compare,
@@ -548,25 +552,8 @@ public:
     return Truthyness::True;
   }
 
-  virtual bool has_side_effects() const override {
-    return false;
-  }
-};
-
-// null
-class Null final : public Expression {
-  AST_NODE(Null)
-public:
-  bool is_constant_value() const override {
-    return true;
-  }
-
-  Truthyness truthyness() const override {
-    return Truthyness::False;
-  }
-
-  virtual bool has_side_effects() const override {
-    return false;
+  bool has_side_effects() const override {
+    return expression->has_side_effects();
   }
 };
 
@@ -614,6 +601,8 @@ public:
   bool has_side_effects() const override {
     return false;
   }
+
+  bool compares_equal(const ref<Node>& other) const override = 0;
 };
 
 // foo, bar, $_baz42
@@ -666,6 +655,20 @@ inline Id::Id(const ref<Name>& name) : Atom<std::string>::Atom(name->value) {
   this->set_location(name);
 }
 
+// null
+// defined as a ConstantAtom<uint8_t> but argument value is not used...
+class Null final : public ConstantAtom<uint8_t> {
+  AST_NODE(Null)
+public:
+  Null() : ConstantAtom<uint8_t>::ConstantAtom(0) {}
+
+  Truthyness truthyness() const override {
+    return Truthyness::False;
+  }
+
+  bool compares_equal(const ref<Node>& other) const override;
+};
+
 // 1, 2, 42
 class Int final : public ConstantAtom<int64_t> {
   AST_NODE(Int)
@@ -675,8 +678,10 @@ public:
   void dump_info(std::ostream& out) const override;
 
   Truthyness truthyness() const override {
-    return this->value ? Truthyness::True : Truthyness::False;
+    return Truthyness::True;
   }
+
+  bool compares_equal(const ref<Node>& other) const override;
 };
 
 // 0.5, 25.25, 5000.1234
@@ -698,8 +703,10 @@ public:
   void dump_info(std::ostream& out) const override;
 
   Truthyness truthyness() const override {
-    return this->value == 0.0 ? Truthyness::True : Truthyness::False;
+    return Truthyness::True;
   }
+
+  bool compares_equal(const ref<Node>& other) const override;
 };
 
 // true, false
@@ -713,6 +720,8 @@ public:
   Truthyness truthyness() const override {
     return this->value ? Truthyness::True : Truthyness::False;
   }
+
+  bool compares_equal(const ref<Node>& other) const override;
 };
 
 // "hello world"
@@ -730,6 +739,8 @@ public:
   Truthyness truthyness() const override {
     return Truthyness::True;  // strings are always truthy
   }
+
+  bool compares_equal(const ref<Node>& other) const override;
 };
 
 // "name: {name} age: {age}"
@@ -778,6 +789,8 @@ public:
   Truthyness truthyness() const override {
     return Truthyness::True;  // symbols are always truthy
   }
+
+  bool compares_equal(const ref<Node>& other) const override;
 };
 
 // (1, 2, 3)
@@ -1007,6 +1020,10 @@ public:
   }
 
   void dump_info(std::ostream& out) const override;
+
+  bool has_side_effects() const override {
+    return false;
+  }
 
   Truthyness truthyness() const override {
     return Truthyness::True;

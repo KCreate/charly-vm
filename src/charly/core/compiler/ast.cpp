@@ -220,10 +220,24 @@ void Name::dump_info(std::ostream& out) const {
   writer.fg(Color::Green, this->value);
 }
 
+bool Null::compares_equal(const ref<Node>& other) const {
+  return isa<Null>(other);
+}
+
 void Int::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';
   writer.fg(Color::Red, this->value);
+}
+
+bool Int::compares_equal(const ref<Node>& other) const {
+  if (auto integer = cast<Int>(other)) {
+    return value == integer->value;
+  } else if (auto floatnum = cast<Float>(other)) {
+    return (double)value == floatnum->value;
+  }
+
+  return false;
 }
 
 void Float::dump_info(std::ostream& out) const {
@@ -232,12 +246,28 @@ void Float::dump_info(std::ostream& out) const {
   writer.fg(Color::Red, this->value);
 }
 
+bool Float::compares_equal(const ref<Node>& other) const {
+  if (auto integer = cast<Int>(other)) {
+    return value == (double)(integer->value);
+  } else if (auto floatnum = cast<Float>(other)) {
+    return value == floatnum->value;
+  }
+
+  return false;
+}
+
 void Bool::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';
   writer.fg(Color::Red, this->value ? "true" : "false");
 }
 
+bool Bool::compares_equal(const ref<Node>& other) const {
+  if (auto boolean = cast<Bool>(other)) {
+    return value == boolean->value;
+  }
+  return false;
+}
 
 void String::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
@@ -249,10 +279,24 @@ void String::dump_info(std::ostream& out) const {
   writer.reset_color();
 }
 
+bool String::compares_equal(const ref<Node>& other) const {
+  if (auto string = cast<String>(other)) {
+    return value == string->value;
+  }
+  return false;
+}
+
 void Symbol::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';
   writer.fg(Color::Yellow, ":", this->value);
+}
+
+bool Symbol::compares_equal(const ref<Node>& other) const {
+  if (auto symbol = cast<Symbol>(other)) {
+    return value == symbol->value;
+  }
+  return false;
 }
 
 bool Tuple::assignable() const {
