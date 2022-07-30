@@ -799,9 +799,14 @@ OP(loadattrsym) {
     return ContinueMode::Next;
   }
 
-  thread->throw_value(runtime->create_string_from_template(thread, "value of type '%' has no property called '%'",
-                                                           klass.name(), RawSymbol::make(attr)));
-  return ContinueMode::Exception;
+  if (value.isNull()) {
+    thread->throw_value(
+      runtime->create_string_from_template(thread, "null has no field called '%'", RawSymbol::make(attr)));
+    return ContinueMode::Exception;
+  } else {
+    frame->push(kNull);
+    return ContinueMode::Next;
+  }
 }
 
 OP(loadsuperconstructor) {
