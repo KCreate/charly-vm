@@ -1271,7 +1271,7 @@ public:
 
   Truthyness truthyness() const override {
     auto lhst = lhs->truthyness();
-    auto rhst = lhs->truthyness();
+    auto rhst = rhs->truthyness();
 
     if (operation == TokenType::And) {
       if (lhst == Truthyness::False || rhst == Truthyness::False) {
