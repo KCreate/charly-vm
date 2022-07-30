@@ -943,6 +943,7 @@ public:
   template <typename... Args>
   Function(bool arrow_function, const ref<Name>& name, const ref<Block>& body, Args&&... params) :
     class_constructor(false),
+    class_member_function(false),
     class_static_function(false),
     class_private_function(false),
     variable_function_scope(nullptr),
@@ -955,6 +956,9 @@ public:
 
   // wether the function is a constructor
   bool class_constructor;
+
+  // wether the function is a class member function
+  bool class_member_function;
 
   // wether this is a static function of a class
   bool class_static_function;

@@ -130,6 +130,7 @@ void DesugarPass::inspect_leave(const ref<Function>& node) {
   for (auto it = node->arguments.rbegin(); it != node->arguments.rend(); it++) {
     const ref<FunctionArgument>& arg = *it;
     if (arg->self_initializer) {
+      DCHECK(node->class_constructor || node->class_member_function);
       auto assignment = make<Assignment>(make<MemberOp>(make<Self>(), arg->name), make<Id>(arg->name));
       assignment->set_location(arg);
       node->body->statements.insert(node->body->statements.begin(), assignment);
@@ -207,6 +208,9 @@ void DesugarPass::inspect_leave(const ref<Function>& node) {
 //
 //   constructor(@a, @b, @c)
 // }
+//
+// note: the following constructor can only be automatically
+// generated if no new properties are being declared
 //
 // class A extends B {
 //   constructor(...args) = super(...args)

@@ -382,7 +382,7 @@ bool CodeGenerator::inspect_enter(const ref<ExpressionWithSideEffects>& node) {
 
 bool CodeGenerator::inspect_enter(const ref<Return>& node) {
   if (active_function()->class_constructor) {
-    // class constructors must always return self
+    DCHECK(node->value == nullptr);
     m_builder.emit_loadself();
     m_builder.emit_setreturn();
     m_builder.emit_jmp(active_return_label());

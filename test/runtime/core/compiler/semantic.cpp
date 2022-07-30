@@ -234,11 +234,11 @@ CATCH_TEST_CASE("Semantic") {
 
   CATCH_SECTION("only allows @a parameter syntax inside class member functions") {
     COMPILE_ERROR("func foo(@a) {}",
-                  "unexpected '@' token, self initializer arguments are only allowed inside class member functions")
+                  "unexpected '@' token, self initializer arguments are only allowed inside class constructors or member functions")
     COMPILE_ERROR("->(@a) {}",
-                  "unexpected '@' token, self initializer arguments are only allowed inside class member functions")
+                  "unexpected '@' token, self initializer arguments are only allowed inside class constructors or member functions")
     COMPILE_ERROR("class A { static func foo(@a) }",
-                  "unexpected '@' token, self initializer arguments are only allowed inside class member functions")
+                  "unexpected '@' token, self initializer arguments are only allowed inside class constructors or member functions")
     COMPILE_OK("class A { func foo(@a) }")
   }
 

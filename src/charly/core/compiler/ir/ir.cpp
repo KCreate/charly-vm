@@ -262,6 +262,8 @@ void IRFunction::dump(std::ostream& out) const {
   writer.fg(Color::Green, this->ast->class_constructor ? "true" : "false", "\n");
   writer.fg(Color::Grey, "  static = ");
   writer.fg(Color::Green, this->ast->class_static_function ? "true" : "false", "\n");
+  writer.fg(Color::Grey, "  member = ");
+  writer.fg(Color::Green, this->ast->class_member_function ? "true" : "false", "\n");
   out << "\n";
 
   if (!exception_table.empty()) {

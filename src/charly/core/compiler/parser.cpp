@@ -1335,9 +1335,10 @@ void Parser::parse_function_arguments(std::list<ref<FunctionArgument>>& result, 
 
         if (m_token.type == TokenType::AtSign) {
           // the (@x, @y) syntax is only allowed inside
-          // class member functions
+          // class constructors or member functions
           if (!(flags.class_function && !flags.static_function)) {
-            unexpected_token("self initializer arguments are only allowed inside class member functions");
+            unexpected_token(
+              "self initializer arguments are only allowed inside class constructors or member functions");
           }
 
           advance();
@@ -1453,6 +1454,7 @@ ref<Class> Parser::parse_class() {
             function->class_constructor = true;
           }
         } else {
+          function->class_member_function = true;
           node->member_functions.push_back(function);
         }
       }
