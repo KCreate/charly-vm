@@ -218,13 +218,16 @@ public:
   // child classes may override and write additional info into the node output
   virtual void dump_info(std::ostream&) const {}
 
-  // wether this node is a constant value
   virtual bool is_constant_value() const {
     return false;
   }
 
   virtual bool has_side_effects() const {
     return true;
+  }
+
+  virtual Truthyness truthyness() const {
+    return Truthyness::Unknown;
   }
 
 private:
@@ -280,14 +283,7 @@ public:
 };
 
 // 1 + x, false, foo(bar)
-class Expression : public Statement {
-public:
-  // return the truthyness of a value
-  // meant to be overriden by nodes representing primitive types
-  virtual Truthyness truthyness() const {
-    return Truthyness::Unknown;
-  }
-};
+class Expression : public Statement {};
 
 class StatementList : public Statement {
   AST_NODE(StatementList)

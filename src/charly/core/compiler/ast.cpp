@@ -99,6 +99,12 @@ void Node::dump(std::ostream& out, bool print_location) const {
   writer.fg(name_color, node_name());
 
   dump_info(out);
+  auto truthy = truthyness();
+  if (truthy == Truthyness::True) {
+    writer.fg(Color::Green, " Truthy");
+  } else if (truthy == Truthyness::False) {
+    writer.fg(Color::Red, " Falsey");
+  }
   if (print_location) {
     writer << " <" << location() << ">";
   }
@@ -323,11 +329,6 @@ void Function::dump_info(std::ostream& out) const {
   if (this->class_private_function) {
     writer << ' ';
     writer.fg(Color::Red, "private");
-  }
-
-  if (this->ir_info.valid) {
-    writer << ' ';
-    writer.fg(Color::Magenta, this->ir_info);
   }
 }
 
