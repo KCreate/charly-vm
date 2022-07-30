@@ -59,7 +59,7 @@ struct NumberSummerPass : public Pass {
 
 CATCH_TEST_CASE("Pass") {
   CATCH_SECTION("visits each node") {
-    ref<Expression> node1 = EXP("(1, (2.5, 3), 4.25, (5, (((6.75, 7))), 8.1555), 9)", Expression);
+    ref<Expression> node1 = EXP<Expression>("(1, (2.5, 3), 4.25, (5, (((6.75, 7))), 8.1555), 9)");
 
     VisitedNodesStatisticsPass visited_stat_pass;
     visited_stat_pass.apply(node1);
@@ -74,7 +74,7 @@ CATCH_TEST_CASE("Pass") {
   }
 
   CATCH_SECTION("can modify ast nodes") {
-    ref<Expression> node1 = EXP("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)", Expression);
+    ref<Expression> node1 = EXP<Expression>("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)");
 
     struct IntsAboveFiveWithZeroReplacerPass : public Pass {
       ref<Expression> transform(const ref<Int>& node) override {
@@ -97,7 +97,7 @@ CATCH_TEST_CASE("Pass") {
   }
 
   CATCH_SECTION("can replace nodes") {
-    ref<Expression> node1 = EXP("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)", Expression);
+    ref<Expression> node1 = EXP<Expression>("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)");
 
     struct IntsThatAreFiveOrAboveWithPiReplacerPass : public Pass {
       ref<Expression> transform(const ref<Int>& node) override {
@@ -136,14 +136,14 @@ CATCH_TEST_CASE("Pass") {
     IntsAbove2RemoverPass().apply(block);
     CATCH_CHECK(block->statements.size() == 2);
 
-    ref<Tuple> tuple = cast<Tuple>(EXP("(1, 2, 3, 4)", Tuple));
+    ref<Tuple> tuple = cast<Tuple>(EXP<Tuple>("(1, 2, 3, 4)"));
     CATCH_CHECK(tuple->elements.size() == 4);
     IntsAbove2RemoverPass().apply(tuple);
     CATCH_CHECK(tuple->elements.size() == 2);
   }
 
   CATCH_SECTION("calls enter and leave callbacks") {
-    ref<Expression> exp = EXP("((1, 2), (3, 4))", Expression);
+    ref<Expression> exp = EXP<Expression>("((1, 2), (3, 4))");
 
     struct OrderVerifyPass : public Pass {
       std::vector<Node::Type> typestack;
@@ -192,7 +192,7 @@ CATCH_TEST_CASE("Pass") {
 
     TupleSequencerPass sequencer;
 
-    sequencer.apply(EXP("((((((0,), 1), 2), 3), 4), 5)", Expression));
+    sequencer.apply(EXP<Expression>("((((((0,), 1), 2), 3), 4), 5)"));
 
     do {
       sequencer.keep_processing();
