@@ -1058,12 +1058,12 @@ RawValue Runtime::join_fiber(Thread* thread, RawFiber _fiber) {
     }
   }
 
-  RawValue result = fiber.result();
-  if (result.is_error_exception()) {
+  if (!fiber.exception().isNull()) {
     thread->throw_value(fiber.exception());
+    return kErrorException;
   }
 
-  return result;
+  return fiber.result();
 }
 
 RawValue Runtime::declare_global_variable(Thread*, SYMBOL name, bool constant) {

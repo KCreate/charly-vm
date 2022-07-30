@@ -310,11 +310,11 @@ void Thread::entry_fiber_thread() {
     std::lock_guard lock(fiber);
     fiber.thread()->wake_waiting_threads();
     fiber.set_thread(nullptr);
-    fiber.set_result(result);
     if (result.is_error_exception()) {
       fiber.set_result(kNull);
-      fiber.set_exception(pending_exception());
+      fiber.set_exception(RawException::cast(pending_exception()));
     } else {
+      DCHECK(!result.is_error());
       fiber.set_result(result);
       fiber.set_exception(kNull);
     }
