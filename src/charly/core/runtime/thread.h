@@ -114,6 +114,8 @@ public:
   static constexpr uint64_t kMainThreadId = 0;
   static constexpr uint64_t kMainFiberThreadId = 1;
 
+  static constexpr uint64_t kExceptionChainDepthLimit = 20;
+
   enum class State {
     Free,     // thread sits on a freelist somewhere and isn't tied to a fiber yet
     Waiting,  // thread is paused

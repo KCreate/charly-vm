@@ -223,8 +223,15 @@ void Thread::throw_value(RawValue value) {
     return;
   }
 
-  RawException::cast(value).set_cause(pending_exception());
-  set_pending_exception(value);
+  if (value == pending_exception()) {
+    return;
+  }
+
+  RawException exception = RawException::cast(value);
+  if (exception.cause() == kNull) {
+    exception.set_cause(pending_exception());
+  }
+  set_pending_exception(exception);
 }
 
 void Thread::rethrow_value(RawValue value) {
@@ -297,8 +304,6 @@ void Thread::entry_fiber_thread() {
   }
 
   RawValue result = Interpreter::call_function(this, fiber.context(), fiber.function(), argp, argc);
-  bool fiber_exited_with_exception = result.is_error_exception();
-  RawValue exception = pending_exception();
 
   // wake threads waiting for this thread to finish
   {
@@ -306,53 +311,74 @@ void Thread::entry_fiber_thread() {
     fiber.thread()->wake_waiting_threads();
     fiber.set_thread(nullptr);
     fiber.set_result(result);
-    if (fiber_exited_with_exception) {
-      fiber.set_exception(exception);
+    if (result.is_error_exception()) {
+      fiber.set_result(kNull);
+      fiber.set_exception(pending_exception());
+    } else {
+      fiber.set_result(result);
+      fiber.set_exception(kNull);
     }
   }
 
   // non-main threads will silently ignore exceptions until another fiber awaits them
   // once the main fiber exits, all other fibers will get shut down as well
   if (id() == kMainFiberThreadId) {
-    if (fiber_exited_with_exception) {
-      if (exception.isImportException()) {
-        auto import_exception = RawImportException::cast(exception);
-        auto errors = import_exception.errors();
-        auto message = RawString::cast(import_exception.message());
-        debuglnf_notime("%", message.view());
-        debuglnf_notime("");
-        for (uint32_t i = 0; i < errors.size(); i++) {
-          auto error = errors.field_at<RawTuple>(i);
-          auto type = error.field_at<RawString>(0);
-          auto filepath = error.field_at<RawString>(1);
-          auto error_message = error.field_at<RawString>(2);
-          auto source = error.field_at<RawString>(3);
-          auto location = error.field_at<RawString>(4);
-          debuglnf_notime("%: %:%: %\n%", type.view(), filepath.view(), location.view(), error_message.view(),
-                          source.view());
-        }
-      } else {
-        std::stack<RawValue> exception_stack;
-        RawValue next_exception = exception;
-        while (!next_exception.isNull()) {
-          exception_stack.push(next_exception);
-          if (next_exception.isException()) {
-            next_exception = RawException::cast(next_exception).cause();
-          } else {
-            next_exception = kNull;
+    if (result.is_error_exception()) {
+      auto dump_exception = [](RawException exception) {
+        if (exception.isImportException()) {
+          auto import_exception = RawImportException::cast(exception);
+          auto errors = import_exception.errors();
+          auto message = RawString::cast(import_exception.message());
+          debuglnf_notime("%", message.view());
+          debuglnf_notime("");
+          for (uint32_t i = 0; i < errors.size(); i++) {
+            auto error = errors.field_at<RawTuple>(i);
+            auto type = error.field_at<RawString>(0);
+            auto filepath = error.field_at<RawString>(1);
+            auto error_message = error.field_at<RawString>(2);
+            auto source = error.field_at<RawString>(3);
+            auto location = error.field_at<RawString>(4);
+            debuglnf_notime("%: %:%: %\n%", type.view(), filepath.view(), location.view(), error_message.view(),
+                            source.view());
           }
+        } else {
+          debuglnf_notime("%", exception);
+        }
+      };
+
+      std::stack<RawException> exception_stack;
+      RawException exception = RawException::cast(pending_exception());
+      RawException next_exception = exception;
+      bool chain_too_deep = false;
+      while (true) {
+        if (exception_stack.size() == kExceptionChainDepthLimit) {
+          chain_too_deep = true;
+          break;
         }
 
-        RawValue first_exception = exception_stack.top();
+        exception_stack.push(next_exception);
+        RawValue cause = RawException::cast(next_exception).cause();
+        if (!cause.isException()) {
+          break;
+        }
+
+        next_exception = RawException::cast(cause);
+      }
+
+      RawException first_exception = exception_stack.top();
+      exception_stack.pop();
+      debuglnf_notime("Unhandled exception in main thread:\n");
+      dump_exception(first_exception);
+
+      while (!exception_stack.empty()) {
+        RawException top = exception_stack.top();
         exception_stack.pop();
-        debuglnf_notime("unhandled exception in main thread:\n%", first_exception);
+        debuglnf_notime("\nDuring handling of the above exception, another exception occured:\n");
+        dump_exception(top);
+      }
 
-        while (!exception_stack.empty()) {
-          RawValue top = exception_stack.top();
-          exception_stack.pop();
-          debuglnf_notime("\nduring handling of the above exception, another exception occured:\n");
-          debuglnf_notime("%", top);
-        }
+      if (chain_too_deep) {
+        debuglnf_notime("\nMore exceptions were thrown that are not shown here");
       }
 
       abort(1);
