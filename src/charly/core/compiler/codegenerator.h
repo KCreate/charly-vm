@@ -102,7 +102,6 @@ private:
   void inspect_leave(const ref<ast::Int>&) override;
   void inspect_leave(const ref<ast::Float>&) override;
   void inspect_leave(const ref<ast::Bool>&) override;
-  void inspect_leave(const ref<ast::Char>&) override;
   void inspect_leave(const ref<ast::String>&) override;
   void inspect_leave(const ref<ast::FormatString>&) override;
   void inspect_leave(const ref<ast::Symbol>&) override;

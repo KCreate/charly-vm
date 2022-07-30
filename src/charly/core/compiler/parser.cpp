@@ -1010,9 +1010,6 @@ ref<Expression> Parser::parse_literal() {
     case TokenType::Identifier: {
       return parse_identifier_token();
     }
-    case TokenType::Character: {
-      return parse_char_token();
-    }
     case TokenType::String: {
       return parse_string_token();
     }
@@ -1504,14 +1501,6 @@ ref<Bool> Parser::parse_bool_token() {
 ref<Id> Parser::parse_identifier_token() {
   match(TokenType::Identifier);
   ref<Id> node = make<Id>(m_token.source);
-  at(node);
-  advance();
-  return node;
-}
-
-ref<Char> Parser::parse_char_token() {
-  match(TokenType::Character);
-  ref<Char> node = make<Char>(m_token.charval);
   at(node);
   advance();
   return node;

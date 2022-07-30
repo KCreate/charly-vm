@@ -45,7 +45,6 @@ enum class TokenType
   True,
   False,
   Identifier,
-  Character,
   String,
   FormatString,
   Null,
@@ -150,17 +149,18 @@ enum class TokenType
 
 // string representations of token types
 static std::string kTokenTypeStrings[] = {
-  "EOF",   "integer", "float",    "true",    "false",     "identifier", "character", "string", "formatstring",
-  "null",  "self",    "super",    "as",      "await",     "break",      "__builtin", "case",   "catch",
-  "class", "const",   "continue", "default", "defer",     "do",         "else",      "export", "extends",
-  "final", "finally", "for",      "from",    "func",      "guard",      "if",        "import", "in",
-  "let",   "loop",    "match",    "private", "property",  "return",     "spawn",     "static", "switch",
-  "throw", "try",     "typeof",   "unless",  "until",     "while",      "yield",     "=",      "+",
-  "-",     "*",       "/",        "%",       "**",        "==",         "!=",        "<",      ">",
-  "<=",    ">=",      "&&",       "||",      "|",         "^",          "&",         "<<",     ">>",
-  ">>>",   "!",       "~",        "(",       ")",         "{",          "}",         "[",      "]",
-  ".",     "..",      "...",      ":",       ",",         ";",          "@",         "<-",     "->",
-  "=>",    "?",       "comment",  "newline", "whitespace"
+  "EOF",    "integer", "float",  "true",     "false",   "identifier", "string",    "formatstring",
+  "null",   "self",    "super",  "as",       "await",   "break",      "__builtin", "case",
+  "catch",  "class",   "const",  "continue", "default", "defer",      "do",        "else",
+  "export", "extends", "final",  "finally",  "for",     "from",       "func",      "guard",
+  "if",     "import",  "in",     "let",      "loop",    "match",      "private",   "property",
+  "return", "spawn",   "static", "switch",   "throw",   "try",        "typeof",    "unless",
+  "until",  "while",   "yield",  "=",        "+",       "-",          "*",         "/",
+  "%",      "**",      "==",     "!=",       "<",       ">",          "<=",        ">=",
+  "&&",     "||",      "|",      "^",        "&",       "<<",         ">>",        ">>>",
+  "!",      "~",       "(",      ")",        "{",       "}",          "[",         "]",
+  ".",      "..",      "...",    ":",        ",",       ";",          "@",         "<-",
+  "->",     "=>",      "?",      "comment",  "newline", "whitespace"
 };
 
 // identifiers with these names get remapped to keyword tokens
@@ -215,12 +215,12 @@ static const std::unordered_map<std::string, TokenType> kKeywordsAndLiterals = {
                                                                                  { "yield", TokenType::Yield } };
 
 static const std::unordered_set<TokenType> kExpressionValidInitialTokens = {
-  TokenType::Int,         TokenType::Float,       TokenType::True,         TokenType::False,     TokenType::Identifier,
-  TokenType::Character,   TokenType::String,      TokenType::FormatString, TokenType::Null,      TokenType::Self,
-  TokenType::Super,       TokenType::Await,       TokenType::Class,        TokenType::Func,      TokenType::Import,
-  TokenType::Match,       TokenType::Spawn,       TokenType::Typeof,       TokenType::Yield,     TokenType::Plus,
-  TokenType::Minus,       TokenType::UnaryNot,    TokenType::BitNOT,       TokenType::LeftParen, TokenType::LeftCurly,
-  TokenType::LeftBracket, TokenType::TriplePoint, TokenType::AtSign,       TokenType::RightArrow
+  TokenType::Int,         TokenType::Float,        TokenType::True,      TokenType::False,     TokenType::Identifier,
+  TokenType::String,      TokenType::FormatString, TokenType::Null,      TokenType::Self,      TokenType::Super,
+  TokenType::Await,       TokenType::Class,        TokenType::Func,      TokenType::Import,    TokenType::Match,
+  TokenType::Spawn,       TokenType::Typeof,       TokenType::Yield,     TokenType::Plus,      TokenType::Minus,
+  TokenType::UnaryNot,    TokenType::BitNOT,       TokenType::LeftParen, TokenType::LeftCurly, TokenType::LeftBracket,
+  TokenType::TriplePoint, TokenType::AtSign,       TokenType::RightArrow
 };
 
 static const std::unordered_set<TokenType> kBinaryOperatorTokens = {
@@ -249,7 +249,6 @@ struct Token {
 
   union {
     TokenType assignment_operator;
-    uint32_t charval;
     int64_t intval;
     double floatval;
   };

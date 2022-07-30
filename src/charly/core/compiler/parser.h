@@ -196,7 +196,6 @@ private:
   ref<Float> parse_float_token();
   ref<Bool> parse_bool_token();
   ref<Id> parse_identifier_token();
-  ref<Char> parse_char_token();
   ref<String> parse_string_token();
   ref<Null> parse_null_token();
   ref<Self> parse_self_token();

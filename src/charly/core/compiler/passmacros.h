@@ -29,7 +29,6 @@
       AST_TYPESWITCH_CASE_NODE(Int, __VA_ARGS__)                       \
       AST_TYPESWITCH_CASE_NODE(Float, __VA_ARGS__)                     \
       AST_TYPESWITCH_CASE_NODE(Bool, __VA_ARGS__)                      \
-      AST_TYPESWITCH_CASE_NODE(Char, __VA_ARGS__)                      \
       AST_TYPESWITCH_CASE_NODE(String, __VA_ARGS__)                    \
       AST_TYPESWITCH_CASE_NODE(FormatString, __VA_ARGS__)              \
       AST_TYPESWITCH_CASE_NODE(Symbol, __VA_ARGS__)                    \

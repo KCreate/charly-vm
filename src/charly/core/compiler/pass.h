@@ -105,7 +105,6 @@ HANDLE_NODE(Statement, Return, {
   HANDLE_NODE(Expression, Int, {})
   HANDLE_NODE(Expression, Float, {})
   HANDLE_NODE(Expression, Bool, {})
-  HANDLE_NODE(Expression, Char, {})
   HANDLE_NODE(Expression, String, {})
 
   HANDLE_NODE(Expression, FormatString, {

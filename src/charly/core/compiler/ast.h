@@ -86,7 +86,6 @@ public:
     Int,
     Float,
     Bool,
-    Char,
     String,
     FormatString,
     Symbol,
@@ -706,19 +705,6 @@ public:
 
   Truthyness truthyness() const override {
     return this->value ? Truthyness::True : Truthyness::False;
-  }
-};
-
-// 'a', '\n', 'ä', 'π'
-class Char final : public ConstantAtom<uint32_t> {
-  AST_NODE(Char)
-public:
-  using ConstantAtom<uint32_t>::ConstantAtom;
-
-  void dump_info(std::ostream& out) const override;
-
-  Truthyness truthyness() const override {
-    return this->value != 0 ? Truthyness::True : Truthyness::False;
   }
 };
 

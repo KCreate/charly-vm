@@ -191,11 +191,6 @@ void Bool::dump_info(std::ostream& out) const {
   writer.fg(Color::Red, this->value ? "true" : "false");
 }
 
-void Char::dump_info(std::ostream& out) const {
-  utils::ColorWriter writer(out);
-  writer << ' ';
-  writer.fg(Color::Red, '\'', utf8::codepoint_to_string(this->value), '\'');
-}
 
 void String::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);

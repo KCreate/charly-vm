@@ -512,10 +512,6 @@ void CodeGenerator::inspect_leave(const ref<Bool>& node) {
   m_builder.emit_load_value(RawBool::make(node->value))->at(node);
 }
 
-void CodeGenerator::inspect_leave(const ref<Char>& node) {
-  m_builder.emit_load_value(RawSmallString::make_from_cp(node->value))->at(node);
-}
-
 bool CodeGenerator::inspect_enter(const ref<Function>& node) {
   Label begin_label = enqueue_function(node);
   m_builder.emit_makefunc(begin_label)->at(node);

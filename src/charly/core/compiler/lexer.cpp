@@ -824,7 +824,7 @@ void Lexer::consume_multiline_comment(Token& token) {
 }
 
 void Lexer::consume_char(Token& token) {
-  token.type = TokenType::Character;
+  token.type = TokenType::String;
 
   int64_t cp = read_char();
 
@@ -887,7 +887,9 @@ void Lexer::consume_char(Token& token) {
     unexpected_character('\'');
   }
 
-  token.charval = cp;
+  utils::Buffer buf;
+  buf.write_utf8_cp(cp);
+  token.source = buf.str();
 }
 
 void Lexer::consume_string(Token& token, bool allow_format) {
