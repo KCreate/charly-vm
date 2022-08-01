@@ -25,7 +25,7 @@
  */
 
 const future = Future.create(->{
-    throw "error"
+    return "hello world"
 })
 
 const fibers = (

@@ -60,8 +60,7 @@ Thread::Thread(Runtime* runtime) :
   m_last_scheduled_at(0),
   m_context(nullptr),
   m_frame(nullptr),
-  m_pending_exception(kNull),
-  m_waiting_threads() {}
+  m_pending_exception(kNull) {}
 
 Thread* Thread::current() {
   return g_thread;
@@ -301,19 +300,14 @@ void Thread::entry_fiber_thread() {
   }
 
   RawValue result = Interpreter::call_function(this, fiber.context(), fiber.function(), argp, argc);
-
-  // wake threads waiting for this thread to finish
   {
     std::lock_guard lock(fiber);
-    fiber.thread()->wake_waiting_threads();
     fiber.set_thread(nullptr);
     if (result.is_error_exception()) {
-      fiber.set_result(kNull);
-      fiber.set_exception(RawException::cast(pending_exception()));
+      runtime()->reject_future(this, fiber.result_future(), RawException::cast(pending_exception()));
     } else {
       DCHECK(!result.is_error());
-      fiber.set_result(result);
-      fiber.set_exception(kNull);
+      runtime()->resolve_future(this, fiber.result_future(), result);
     }
   }
 
@@ -431,24 +425,6 @@ void Thread::push_frame(Frame* frame) {
 void Thread::pop_frame(Frame* frame) {
   DCHECK(m_frame == frame);
   m_frame = m_frame->parent;
-}
-
-void Thread::wake_waiting_threads() {
-  auto scheduler = runtime()->scheduler();
-  auto processor = worker()->processor();
-
-  DCHECK(fiber().isFiber());
-  DCHECK(RawFiber::cast(fiber()).is_locked());
-
-  if (!m_waiting_threads.empty()) {
-    for (Thread* thread : m_waiting_threads) {
-      DCHECK(thread->state() == State::Waiting);
-      thread->ready();
-      scheduler->schedule_thread(thread, processor);
-    }
-
-    m_waiting_threads.clear();
-  }
 }
 
 RawValue Thread::lookup_symbol(SYMBOL symbol) const {

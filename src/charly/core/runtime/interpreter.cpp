@@ -1164,7 +1164,7 @@ OP(await) {
   RawValue result = kNull;
 
   if (value.isFiber()) {
-    result = runtime->join_fiber(thread, RawFiber::cast(value));
+    result = runtime->join_future(thread, RawFiber::cast(value).result_future());
   } else if (value.isFuture()) {
     result = runtime->join_future(thread, RawFuture::cast(value));
   } else {

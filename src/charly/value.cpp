@@ -1289,20 +1289,12 @@ void RawFiber::set_arguments(RawValue arguments) {
   set_field_at(kArgumentsOffset, arguments);
 }
 
-RawValue RawFiber::result() const {
-  return field_at(kResultOffset);
+RawFuture RawFiber::result_future() const {
+  return field_at<RawFuture>(kResultFutureOffset);
 }
 
-void RawFiber::set_result(RawValue result) {
-  set_field_at(kResultOffset, result);
-}
-
-RawValue RawFiber::exception() const {
-  return field_at(kExceptionOffset);
-}
-
-void RawFiber::set_exception(RawValue exception) {
-  set_field_at(kExceptionOffset, exception);
+void RawFiber::set_result_future(RawFuture result_future) {
+  set_field_at(kResultFutureOffset, result_future);
 }
 
 bool RawFiber::has_finished() const {

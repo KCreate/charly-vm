@@ -192,9 +192,6 @@ public:
   void push_frame(Frame* frame);
   void pop_frame(Frame* frame);
 
-  // wake all threads waiting for this thread to exit
-  void wake_waiting_threads();
-
   // look up symbol via active processor cache
   RawValue lookup_symbol(SYMBOL symbol) const;
 
@@ -223,7 +220,6 @@ private:
   ThreadLocalHandles m_handles;
   Frame* m_frame;
   RawValue m_pending_exception;
-  std::vector<Thread*> m_waiting_threads;
 };
 
 }  // namespace charly::core::runtime

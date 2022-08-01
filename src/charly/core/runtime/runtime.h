@@ -145,8 +145,6 @@ public:
   // starting from the bottom
   RawTuple create_stack_trace(Thread* thread, uint32_t trim = 0);
 
-  RawValue join_fiber(Thread* thread, RawFiber fiber);
-
   RawValue join_future(Thread* thread, RawFuture future);
   RawValue resolve_future(Thread* thread, RawFuture future, RawValue result);
   RawValue reject_future(Thread* thread, RawFuture future, RawException exception);

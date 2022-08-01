@@ -914,11 +914,8 @@ public:
   RawValue arguments() const;
   void set_arguments(RawValue arguments);
 
-  RawValue result() const;
-  void set_result(RawValue result);
-
-  RawValue exception() const;
-  void set_exception(RawValue exception);
+  RawFuture result_future() const;
+  void set_result_future(RawFuture result_future);
 
   bool has_finished() const;
 
@@ -927,8 +924,7 @@ public:
     kFunctionOffset,
     kSelfOffset,
     kArgumentsOffset,
-    kResultOffset,
-    kExceptionOffset,
+    kResultFutureOffset,
     kFieldCount
   };
   static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;

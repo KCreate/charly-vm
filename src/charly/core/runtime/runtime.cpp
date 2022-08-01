@@ -210,8 +210,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
                                             { "function", RawShape::kKeyFlagReadOnly },
                                             { "context", RawShape::kKeyFlagReadOnly },
                                             { "arguments", RawShape::kKeyFlagReadOnly },
-                                            { "result", RawShape::kKeyFlagReadOnly },
-                                            { "exception", RawShape::kKeyFlagReadOnly } });
+                                            { "result_future", RawShape::kKeyFlagReadOnly } });
 
   auto builtin_shape_future = create_shape(thread, builtin_shape_builtin_instance,
                                            { { "wait_queue", RawShape::kKeyFlagInternal },
@@ -973,8 +972,7 @@ RawFiber Runtime::create_fiber(Thread* thread, RawFunction function, RawValue se
   fiber.set_function(function);
   fiber.set_context(self);
   fiber.set_arguments(arguments);
-  fiber.set_result(kNull);
-  fiber.set_exception(kNull);
+  fiber.set_result_future(create_future(thread));
 
   // schedule the fiber for execution
   fiber_thread->ready();
@@ -1068,33 +1066,6 @@ RawTuple Runtime::create_stack_trace(Thread* thread, uint32_t trim) {
   return stack_trace;
 }
 
-RawValue Runtime::join_fiber(Thread* thread, RawFiber _fiber) {
-  HandleScope scope(thread);
-  Fiber fiber(scope, _fiber);
-
-  {
-    std::unique_lock lock(fiber);
-
-    // wait for the fiber to finish
-    if (!fiber.has_finished()) {
-      // register to be woken up again when this fiber finishes
-      fiber.thread()->m_waiting_threads.push_back(thread);
-      thread->m_state.acas(Thread::State::Running, Thread::State::Waiting);
-
-      lock.unlock();
-      thread->enter_scheduler();
-      lock.lock();
-    }
-  }
-
-  if (!fiber.exception().isNull()) {
-    thread->throw_value(fiber.exception());
-    return kErrorException;
-  }
-
-  return fiber.result();
-}
-
 RawValue Runtime::join_future(Thread* thread, RawFuture _future) {
   HandleScope scope(thread);
   Future future(scope, _future);
@@ -1173,6 +1144,7 @@ void Runtime::future_wake_waiting_threads(Thread* thread, RawFuture future) {
     scheduler->schedule_thread(waiting_thread, processor);
   }
   wait_queue->clear();
+  delete wait_queue;
   future.set_wait_queue(nullptr);
 }
 
