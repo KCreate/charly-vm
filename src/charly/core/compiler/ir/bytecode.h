@@ -754,8 +754,10 @@ struct Instruction_IAAA : public Instruction {
   }
 };
 
-#define DEF_OPSTRUCT(N, T, ...) \
-  struct Instruction_##N : public Instruction_##T {};
+#define DEF_OPSTRUCT(N, T, ...)                     \
+  struct Instruction_##N : public Instruction_##T { \
+    static constexpr const char* name = #N;         \
+  };
 FOREACH_OPCODE(DEF_OPSTRUCT)
 #undef DEF_OPSTRUCT
 

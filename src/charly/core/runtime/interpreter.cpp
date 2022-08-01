@@ -32,12 +32,16 @@
 #include "charly/core/compiler/compiler.h"
 #include "charly/core/runtime/interpreter.h"
 #include "charly/core/runtime/runtime.h"
-#include "charly/utils/argumentparser.h"
 
 namespace charly::core::runtime {
 
 using namespace charly::core::compiler;
 using namespace charly::core::compiler::ir;
+
+#define THROW_NOT_IMPLEMENTED()                                                                                   \
+  thread->throw_value(                                                                                            \
+    thread->runtime()->create_string_from_template(thread, "Opcode '%' has not been implemented yet", op->name)); \
+  return ContinueMode::Exception
 
 Frame::Frame(Thread* thread, RawFunction function) :
   thread(thread),
@@ -1029,11 +1033,11 @@ OP(unpacksequencespread) {
 }
 
 OP(unpackobject) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(unpackobjectspread) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(makefunc) {
@@ -1081,19 +1085,19 @@ OP(makestr) {
 }
 
 OP(makelist) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(makelistspread) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(makedict) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(makedictspread) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(maketuple) {
@@ -1204,15 +1208,15 @@ OP(casttuple) {
 }
 
 OP(castsymbol) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(castiterator) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(iteratornext) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(add) {
@@ -1278,19 +1282,19 @@ OP(sub) {
 }
 
 OP(mul) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(div) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(mod) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(pow) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(eq) {
@@ -1308,43 +1312,43 @@ OP(neq) {
 }
 
 OP(lt) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(gt) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(le) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(ge) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(shl) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(shr) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(shru) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(band) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(bor) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(bxor) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 OP(usub) {
@@ -1368,7 +1372,7 @@ OP(unot) {
 }
 
 OP(ubnot) {
-  UNIMPLEMENTED();
+  THROW_NOT_IMPLEMENTED();
 }
 
 #undef OP
