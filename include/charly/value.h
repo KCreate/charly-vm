@@ -938,8 +938,8 @@ class RawException : public RawInstance {
 public:
   COMMON_RAW_OBJECT(Exception);
 
-  RawValue message() const;
-  void set_message(RawValue value);
+  RawString message() const;
+  void set_message(RawString value);
 
   RawTuple stack_trace() const;
   void set_stack_trace(RawTuple stack_trace);

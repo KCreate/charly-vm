@@ -88,23 +88,23 @@ public:
   RawInstance create_instance(Thread* thread, RawShape shape, RawValue klass = kNull);
   RawInstance create_instance(Thread* thread, RawClass klass);
 
-  RawValue create_string(Thread* thread, const char* data, size_t size, SYMBOL hash);
-  RawValue create_string(Thread* thread, const std::string& string) {
+  RawString create_string(Thread* thread, const char* data, size_t size, SYMBOL hash);
+  RawString create_string(Thread* thread, const std::string& string) {
     return create_string(thread, string.data(), string.size(), crc32::hash_string(string));
   }
-  RawValue create_string(Thread* thread, const utils::Buffer& buf) {
+  RawString create_string(Thread* thread, const utils::Buffer& buf) {
     return create_string(thread, buf.data(), buf.size(), buf.hash());
   }
 
   template <typename... T>
-  RawValue create_string_from_template(Thread* thread, const char* str, const T&... args) {
+  RawString create_string_from_template(Thread* thread, const char* str, const T&... args) {
     utils::Buffer buf;
     buf.write_formatted(str, args...);
     return create_string(thread, buf);
   }
 
   // create a new string by acquiring ownership over an existing allocation
-  RawValue acquire_string(Thread* thread, char* cstr, size_t size, SYMBOL hash);
+  RawString acquire_string(Thread* thread, char* cstr, size_t size, SYMBOL hash);
   RawLargeString create_large_string(Thread* thread, const char* data, size_t size, SYMBOL hash);
   RawHugeString create_huge_string(Thread* thread, const char* data, size_t size, SYMBOL hash);
   RawHugeString create_huge_string_acquire(Thread* thread, char* data, size_t size, SYMBOL hash);
@@ -134,7 +134,7 @@ public:
                               RawValue saved_self = kNull);
   RawBuiltinFunction create_builtin_function(Thread* thread, BuiltinFunctionType function, SYMBOL name, uint8_t argc);
   RawFiber create_fiber(Thread* thread, RawFunction function, RawValue self, RawValue arguments);
-  RawException create_exception(Thread* thread, RawValue message);
+  RawValue create_exception(Thread* thread, RawValue value);
   RawImportException create_import_exception(Thread* thread,
                                              const std::string& module_path,
                                              const ref<compiler::CompilationUnit>& unit);

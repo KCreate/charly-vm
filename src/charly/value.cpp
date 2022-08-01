@@ -1290,11 +1290,11 @@ bool RawFiber::has_finished() const {
   return thread() == nullptr;
 }
 
-RawValue RawException::message() const {
-  return field_at(kMessageOffset);
+RawString RawException::message() const {
+  return field_at<RawString>(kMessageOffset);
 }
 
-void RawException::set_message(RawValue value) {
+void RawException::set_message(RawString value) {
   set_field_at(kMessageOffset, value);
 }
 

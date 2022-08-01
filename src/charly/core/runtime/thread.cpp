@@ -214,20 +214,17 @@ void Thread::exit_native() {
 }
 
 void Thread::throw_value(RawValue value) {
-  if (value.isString()) {
-    value = runtime()->create_exception(this, value);
-  }
-
-  if (!value.isException()) {
-    throw_value(runtime()->create_string_from_template(this, "expected thrown value to be an exception or a string"));
+  RawValue exception_result = runtime()->create_exception(this, value);
+  if (exception_result.is_error_exception()) {
     return;
   }
 
-  if (value == pending_exception()) {
+  RawException exception = RawException::cast(exception_result);
+
+  if (exception == pending_exception()) {
     return;
   }
 
-  RawException exception = RawException::cast(value);
   if (exception.cause() == kNull) {
     exception.set_cause(pending_exception());
   }

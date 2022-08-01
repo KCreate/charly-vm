@@ -458,23 +458,23 @@ RawInstance Runtime::create_instance(Thread* thread, RawClass klass) {
   return create_instance(thread, klass.shape_instance(), klass);
 }
 
-RawValue Runtime::create_string(Thread* thread, const char* data, size_t size, SYMBOL hash) {
+RawString Runtime::create_string(Thread* thread, const char* data, size_t size, SYMBOL hash) {
   if (size <= RawSmallString::kMaxLength) {
-    return RawSmallString::make_from_memory(data, size);
+    return RawString::cast(RawSmallString::make_from_memory(data, size));
   } else if (size <= RawLargeString::kMaxLength) {
-    return create_large_string(thread, data, size, hash);
+    return RawString::cast(create_large_string(thread, data, size, hash));
   } else {
-    return create_huge_string(thread, data, size, hash);
+    return RawString::cast(create_huge_string(thread, data, size, hash));
   }
 }
 
-RawValue Runtime::acquire_string(Thread* thread, char* data, size_t size, SYMBOL hash) {
+RawString Runtime::acquire_string(Thread* thread, char* data, size_t size, SYMBOL hash) {
   if (size <= RawLargeString::kMaxLength) {
     auto value = create_string(thread, data, size, hash);
     std::free(data);
     return value;
   } else {
-    return create_huge_string_acquire(thread, data, size, hash);
+    return RawString::cast(create_huge_string_acquire(thread, data, size, hash));
   }
 }
 
@@ -970,12 +970,20 @@ RawFiber Runtime::create_fiber(Thread* thread, RawFunction function, RawValue se
   return fiber;
 }
 
-RawException Runtime::create_exception(Thread* thread, RawValue message) {
-  auto instance = RawException::cast(create_instance(thread, get_builtin_class(thread, ShapeId::kException)));
-  instance.set_message(message);
-  instance.set_stack_trace(create_stack_trace(thread));
-  instance.set_cause(kNull);
-  return instance;
+RawValue Runtime::create_exception(Thread* thread, RawValue value) {
+  if (value.isString()) {
+    auto instance = RawException::cast(create_instance(thread, get_builtin_class(thread, ShapeId::kException)));
+    instance.set_message(RawString::cast(value));
+    instance.set_stack_trace(create_stack_trace(thread));
+    instance.set_cause(kNull);
+    return instance;
+  } else if (value.isException()) {
+    return value;
+  }
+
+  thread->throw_value(
+    this->create_string_from_template(thread, "expected thrown value to be an exception or a string"));
+  return kErrorException;
 }
 
 RawImportException Runtime::create_import_exception(Thread* thread,
