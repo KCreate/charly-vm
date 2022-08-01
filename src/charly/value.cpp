@@ -554,7 +554,7 @@ void RawValue::dump(std::ostream& out) const {
 
     if (isException()) {
       auto exception = RawException::cast(this);
-      auto klass = thread->runtime()->lookup_class(thread, exception);
+      auto klass = thread->runtime()->lookup_class(exception);
       RawValue message = exception.message();
       RawTuple stack_trace = exception.stack_trace();
       writer.fg(Color::Green, "<", klass.name(), " ", message, ", ", stack_trace, ">");
@@ -562,7 +562,7 @@ void RawValue::dump(std::ostream& out) const {
     }
 
     auto instance = RawInstance::cast(this);
-    RawClass klass = thread->runtime()->lookup_class(thread, instance);
+    RawClass klass = thread->runtime()->lookup_class(instance);
     writer.fg(Color::Green, "<", klass.name(), " ", instance.address_voidptr(), ">");
     return;
   }

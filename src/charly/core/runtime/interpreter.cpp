@@ -438,7 +438,7 @@ OP(type) {
   RawValue value = frame->pop();
 
   Runtime* runtime = thread->runtime();
-  frame->push(runtime->lookup_class(thread, value));
+  frame->push(runtime->lookup_class(value));
 
   return ContinueMode::Next;
 }
@@ -709,7 +709,7 @@ OP(loadattrsym) {
   // builtin attributes
   switch (attr) {
     case SYM("klass"): {
-      frame->push(runtime->lookup_class(thread, value));
+      frame->push(runtime->lookup_class(value));
       return ContinueMode::Next;
     }
     case SYM("length"): {
@@ -730,13 +730,13 @@ OP(loadattrsym) {
     }
   }
 
-  auto klass = runtime->lookup_class(thread, value);
+  auto klass = runtime->lookup_class(value);
   if (value.isInstance()) {
     auto instance = RawInstance::cast(value);
 
     // lookup attribute in shape key table
     // TODO: cache result via inline cache
-    auto shape = runtime->lookup_shape(thread, instance.shape_id());
+    auto shape = runtime->lookup_shape(instance.shape_id());
     auto result = shape.lookup_symbol(attr);
     if (result.found) {
       // TODO: allow accessing private member of same class
@@ -896,10 +896,10 @@ OP(setattrsym) {
 
   // lookup attribute in shape key table
   // TODO: cache result via inline cache
-  auto klass = runtime->lookup_class(thread, target);
+  auto klass = runtime->lookup_class(target);
   if (target.isInstance()) {
     auto instance = RawInstance::cast(target);
-    auto shape = runtime->lookup_shape(thread, instance.shape_id());
+    auto shape = runtime->lookup_shape(instance.shape_id());
     auto result = shape.lookup_symbol(attr);
     if (result.found) {
       if (result.is_read_only()) {
@@ -1132,7 +1132,7 @@ OP(await) {
   } else if (value.isFuture()) {
     result = runtime->join_future(thread, RawFuture::cast(value));
   } else {
-    auto name = runtime->lookup_class(thread, value).name();
+    auto name = runtime->lookup_class(value).name();
     thread->throw_value(runtime->create_string_from_template(thread, "value of type '%' cannot be awaited", name));
     return ContinueMode::Exception;
   }
@@ -1169,7 +1169,7 @@ OP(casttuple) {
   }
 
   Runtime* runtime = thread->runtime();
-  auto name = runtime->lookup_class(thread, value).name();
+  auto name = runtime->lookup_class(value).name();
   thread->throw_value(
     runtime->create_string_from_template(thread, "could not cast value of type '%' to a tuple", name));
   return ContinueMode::Exception;

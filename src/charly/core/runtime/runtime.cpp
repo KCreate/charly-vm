@@ -157,7 +157,12 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   }
 
   // initialize base shapes
-  auto builtin_shape_immediate = create_shape(thread, kNull, {});
+  auto builtin_shape_immediate = RawShape::cast(create_instance(thread, ShapeId::kShape, RawShape::kFieldCount));
+  builtin_shape_immediate.set_parent(kNull);
+  builtin_shape_immediate.set_keys(create_tuple(thread, 0));
+  builtin_shape_immediate.set_additions(create_tuple(thread, 0));
+  register_shape(builtin_shape_immediate);
+
   auto builtin_shape_value = builtin_shape_immediate;
   auto builtin_shape_number = builtin_shape_immediate;
   auto builtin_shape_int = builtin_shape_immediate;
@@ -275,7 +280,8 @@ void Runtime::initialize_builtin_types(Thread* thread) {
 
 // define the static classes for the builtin classes
 #define DEFINE_STATIC_CLASS(S, N)                                                                             \
-  auto static_class_##S = RawClass::cast(create_instance(thread, ShapeId::kClass, RawClass::kFieldCount));    \
+  auto static_class_##S =                                                                                     \
+    RawClass::cast(create_instance(thread, ShapeId::kClass, RawClass::kFieldCount, class_class));             \
   static_class_##S.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);                         \
   static_class_##S.set_ancestor_table(concat_tuple_value(thread, class_class.ancestor_table(), class_class)); \
   static_class_##S.set_name(RawSymbol::make(declare_symbol(thread, #N)));                                     \
@@ -327,27 +333,27 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   class_import_exception.set_klass_field(static_class_import_exception);
 
   // mark internal shape keys with internal flag
-  set_builtin_class(thread, ShapeId::kInt, class_int);
-  set_builtin_class(thread, ShapeId::kFloat, class_float);
-  set_builtin_class(thread, ShapeId::kBool, class_bool);
-  set_builtin_class(thread, ShapeId::kSymbol, class_symbol);
-  set_builtin_class(thread, ShapeId::kNull, class_null);
-  set_builtin_class(thread, ShapeId::kSmallString, class_string);
-  set_builtin_class(thread, ShapeId::kSmallBytes, class_bytes);
-  set_builtin_class(thread, ShapeId::kLargeString, class_string);
-  set_builtin_class(thread, ShapeId::kLargeBytes, class_bytes);
-  set_builtin_class(thread, ShapeId::kInstance, class_instance);
-  set_builtin_class(thread, ShapeId::kHugeBytes, class_bytes);
-  set_builtin_class(thread, ShapeId::kHugeString, class_string);
-  set_builtin_class(thread, ShapeId::kTuple, class_tuple);
-  set_builtin_class(thread, ShapeId::kClass, class_class);
-  set_builtin_class(thread, ShapeId::kShape, class_shape);
-  set_builtin_class(thread, ShapeId::kFunction, class_function);
-  set_builtin_class(thread, ShapeId::kBuiltinFunction, class_builtin_function);
-  set_builtin_class(thread, ShapeId::kFiber, class_fiber);
-  set_builtin_class(thread, ShapeId::kFuture, class_future);
-  set_builtin_class(thread, ShapeId::kException, class_exception);
-  set_builtin_class(thread, ShapeId::kImportException, class_import_exception);
+  set_builtin_class(ShapeId::kInt, class_int);
+  set_builtin_class(ShapeId::kFloat, class_float);
+  set_builtin_class(ShapeId::kBool, class_bool);
+  set_builtin_class(ShapeId::kSymbol, class_symbol);
+  set_builtin_class(ShapeId::kNull, class_null);
+  set_builtin_class(ShapeId::kSmallString, class_string);
+  set_builtin_class(ShapeId::kSmallBytes, class_bytes);
+  set_builtin_class(ShapeId::kLargeString, class_string);
+  set_builtin_class(ShapeId::kLargeBytes, class_bytes);
+  set_builtin_class(ShapeId::kInstance, class_instance);
+  set_builtin_class(ShapeId::kHugeBytes, class_bytes);
+  set_builtin_class(ShapeId::kHugeString, class_string);
+  set_builtin_class(ShapeId::kTuple, class_tuple);
+  set_builtin_class(ShapeId::kClass, class_class);
+  set_builtin_class(ShapeId::kShape, class_shape);
+  set_builtin_class(ShapeId::kFunction, class_function);
+  set_builtin_class(ShapeId::kBuiltinFunction, class_builtin_function);
+  set_builtin_class(ShapeId::kFiber, class_fiber);
+  set_builtin_class(ShapeId::kFuture, class_future);
+  set_builtin_class(ShapeId::kException, class_exception);
+  set_builtin_class(ShapeId::kImportException, class_import_exception);
 
   // fix shapes for string and bytes types
   register_shape(ShapeId::kSmallString, builtin_shape_immediate);
@@ -397,6 +403,17 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   CHECK(set_global_variable(thread, SYM("Future"), class_future).is_error_ok());
   CHECK(set_global_variable(thread, SYM("Exception"), class_exception).is_error_ok());
   CHECK(set_global_variable(thread, SYM("ImportException"), class_import_exception).is_error_ok());
+
+  // patch klass field of all shape instances created up until this point
+  // no lock is required here while interacting with m_shapes since no other threads are active yet
+  {
+    for (auto entry : m_shapes) {
+      if (entry.isShape()) {
+        auto shape = RawShape::cast(entry);
+        shape.set_klass_field(get_builtin_class(ShapeId::kShape));
+      }
+    }
+  }
 }
 
 void Runtime::initialize_main_fiber(Thread* thread, SharedFunctionInfo* info) {
@@ -514,7 +531,8 @@ RawHugeString Runtime::create_huge_string(Thread* thread, const char* data, size
 
 RawHugeString Runtime::create_huge_string_acquire(Thread* thread, char* data, size_t size, SYMBOL hash) {
   DCHECK(size > RawLargeString::kMaxLength);
-  RawHugeString object = RawHugeString::cast(create_instance(thread, ShapeId::kHugeString, RawHugeString::kFieldCount));
+  RawHugeString object = RawHugeString::cast(
+    create_instance(thread, ShapeId::kHugeString, RawHugeString::kFieldCount, get_builtin_class(ShapeId::kHugeString)));
   object.set_data(data);
   object.set_length(size);
   object.header()->cas_hashcode((SYMBOL)0, hash);
@@ -532,7 +550,7 @@ RawValue Runtime::create_class(Thread* thread,
                                RawTuple static_funcs,
                                uint32_t flags) {
   if (parent_value.is_error_no_base_class()) {
-    parent_value = get_builtin_class(thread, ShapeId::kInstance);
+    parent_value = get_builtin_class(ShapeId::kInstance);
   }
 
   if (!parent_value.isClass()) {
@@ -753,7 +771,7 @@ RawValue Runtime::create_class(Thread* thread,
   // a special intermediate class needs to be created that contains those static properties
   // the class instance returned is an instance of that intermediate class
   DCHECK(static_prop_keys.size() == static_prop_values.size());
-  auto builtin_class_instance = get_builtin_class(thread, ShapeId::kClass);
+  auto builtin_class_instance = get_builtin_class(ShapeId::kClass);
   RawClass constructed_class;
   if (static_prop_keys.size() || static_funcs.size()) {
     auto builtin_class_shape = builtin_class_instance.shape_instance();
@@ -832,16 +850,6 @@ RawValue Runtime::create_class(Thread* thread,
 }
 
 RawShape Runtime::create_shape(Thread* thread, RawValue parent, RawTuple key_table) {
-  // create empty base shape if parent is null
-  if (!parent.isShape()) {
-    auto shape = RawShape::cast(create_instance(thread, ShapeId::kShape, RawShape::kFieldCount));
-    shape.set_parent(kNull);
-    shape.set_keys(create_tuple(thread, 0));
-    shape.set_additions(create_tuple(thread, 0));
-    register_shape(shape);
-    return create_shape(thread, shape, key_table);
-  }
-
   // find preexisting shape with same layout or create new shape
   auto parent_shape = RawShape::cast(parent);
   auto target_shape = parent_shape;
@@ -867,6 +875,13 @@ RawShape Runtime::create_shape(Thread* thread, RawValue parent, RawTuple key_tab
       // create new shape for added key
       if (!found_next) {
         next_shape = RawShape::cast(create_instance(thread, ShapeId::kShape, RawShape::kFieldCount));
+
+        // Runtime::create_shape gets called during runtime initialization
+        // at that point no builtin classes are registered yet
+        // the klass field gets patched once runtime initialization has finished
+        if (builtin_class_is_registered(ShapeId::kShape)) {
+          next_shape.set_klass_field(get_builtin_class(ShapeId::kShape));
+        }
         next_shape.set_parent(target_shape);
         next_shape.set_keys(concat_tuple_value(thread, target_shape.keys(), encoded));
         next_shape.set_additions(create_tuple(thread, 0));
@@ -913,23 +928,6 @@ RawTuple Runtime::create_tuple(Thread* thread, std::initializer_list<RawValue> v
   return tuple;
 }
 
-RawTuple Runtime::concat_tuple(Thread* thread, RawTuple left, RawTuple right) {
-  uint32_t left_size = left.size();
-  uint32_t right_size = right.size();
-  uint64_t new_size = left_size + right_size;
-  CHECK(new_size <= kInt32Max);
-
-  auto new_tuple = create_tuple(thread, new_size);
-  for (uint32_t i = 0; i < left_size; i++) {
-    new_tuple.set_field_at(i, left.field_at(i));
-  }
-  for (uint32_t i = 0; i < right_size; i++) {
-    new_tuple.set_field_at(left_size + i, right.field_at(i));
-  }
-
-  return new_tuple;
-}
-
 RawTuple Runtime::concat_tuple_value(Thread* thread, RawTuple left, RawValue value) {
   uint32_t left_size = left.size();
   uint64_t new_size = left_size + 1;
@@ -948,7 +946,7 @@ RawFunction Runtime::create_function(Thread* thread,
                                      RawValue context,
                                      SharedFunctionInfo* shared_info,
                                      RawValue saved_self) {
-  RawFunction func = RawFunction::cast(create_instance(thread, ShapeId::kFunction, RawFunction::kFieldCount));
+  RawFunction func = RawFunction::cast(create_instance(thread, get_builtin_class(ShapeId::kFunction)));
   func.set_name(RawSymbol::make(shared_info->name_symbol));
   func.set_context(context);
   func.set_saved_self(saved_self);
@@ -962,7 +960,7 @@ RawBuiltinFunction Runtime::create_builtin_function(Thread* thread,
                                                     BuiltinFunctionType function,
                                                     SYMBOL name,
                                                     uint8_t argc) {
-  RawValue inst = create_instance(thread, ShapeId::kBuiltinFunction, RawBuiltinFunction::kFieldCount);
+  RawValue inst = create_instance(thread, get_builtin_class(ShapeId::kBuiltinFunction));
   RawBuiltinFunction func = RawBuiltinFunction::cast(inst);
   func.set_function(function);
   func.set_name(RawSymbol::make(name));
@@ -971,7 +969,7 @@ RawBuiltinFunction Runtime::create_builtin_function(Thread* thread,
 }
 
 RawFiber Runtime::create_fiber(Thread* thread, RawFunction function, RawValue self, RawValue arguments) {
-  RawFiber fiber = RawFiber::cast(create_instance(thread, ShapeId::kFiber, RawFiber::kFieldCount));
+  RawFiber fiber = RawFiber::cast(create_instance(thread, get_builtin_class(ShapeId::kFiber)));
   Thread* fiber_thread = scheduler()->get_free_thread();
   fiber_thread->init_fiber_thread(fiber);
   fiber.set_thread(fiber_thread);
@@ -988,7 +986,7 @@ RawFiber Runtime::create_fiber(Thread* thread, RawFunction function, RawValue se
 }
 
 RawFuture Runtime::create_future(Thread* thread) {
-  RawFuture future = RawFuture::cast(create_instance(thread, ShapeId::kFuture, RawFuture::kFieldCount));
+  RawFuture future = RawFuture::cast(create_instance(thread, get_builtin_class(ShapeId::kFuture)));
   future.set_wait_queue(new std::vector<Thread*>());
   future.set_result(kNull);
   future.set_exception(kNull);
@@ -997,7 +995,7 @@ RawFuture Runtime::create_future(Thread* thread) {
 
 RawValue Runtime::create_exception(Thread* thread, RawValue value) {
   if (value.isString()) {
-    auto instance = RawException::cast(create_instance(thread, get_builtin_class(thread, ShapeId::kException)));
+    auto instance = RawException::cast(create_instance(thread, get_builtin_class(ShapeId::kException)));
     instance.set_message(RawString::cast(value));
     instance.set_stack_trace(create_stack_trace(thread));
     instance.set_cause(kNull);
@@ -1045,8 +1043,7 @@ RawImportException Runtime::create_import_exception(Thread* thread,
   }
 
   // allocate exception instance
-  auto instance =
-    RawImportException::cast(create_instance(thread, get_builtin_class(thread, ShapeId::kImportException)));
+  auto instance = RawImportException::cast(create_instance(thread, get_builtin_class(ShapeId::kImportException)));
   instance.set_message(create_string_from_template(thread, "Encountered an error while importing '%'", module_path));
   instance.set_stack_trace(create_stack_trace(thread));
   instance.set_cause(kNull);
@@ -1231,27 +1228,22 @@ void Runtime::register_shape(ShapeId id, RawShape shape) {
   shape.set_own_shape_id(id);
 }
 
-RawShape Runtime::lookup_shape(Thread*, ShapeId id) {
-  // TODO: cache shapes in processor
+RawShape Runtime::lookup_shape(ShapeId id) {
   std::shared_lock<std::shared_mutex> lock(m_shapes_mutex);
   auto index = static_cast<size_t>(id);
   CHECK(index < m_shapes.size());
   return RawShape::cast(m_shapes.at(index));
 }
 
-RawClass Runtime::lookup_class(Thread* thread, RawValue value) {
-  // user instances carry their class reference with them
+RawClass Runtime::lookup_class(RawValue value) {
   if (value.isInstance()) {
     auto instance = RawInstance::cast(value);
     auto klass_field = instance.klass_field();
-    if (klass_field.isNull()) {
-      instance.set_klass_field(get_builtin_class(thread, value.shape_id()));
-    }
-
-    return RawClass::cast(instance.klass_field());
+    DCHECK(!klass_field.isNull());
+    return RawClass::cast(klass_field);
   }
 
-  return get_builtin_class(thread, value.shape_id());
+  return get_builtin_class(value.shape_id());
 }
 
 RawValue Runtime::lookup_symbol(SYMBOL symbol) {
@@ -1264,7 +1256,14 @@ RawValue Runtime::lookup_symbol(SYMBOL symbol) {
   return kNull;
 }
 
-void Runtime::set_builtin_class(Thread*, ShapeId shape_id, RawClass klass) {
+bool Runtime::builtin_class_is_registered(ShapeId shape_id) {
+  std::shared_lock<std::shared_mutex> lock(m_shapes_mutex);
+  auto offset = static_cast<uint32_t>(shape_id);
+  DCHECK(offset < kBuiltinClassCount);
+  return !m_builtin_classes.at(offset).isNull();
+}
+
+void Runtime::set_builtin_class(ShapeId shape_id, RawClass klass) {
   std::unique_lock<std::shared_mutex> lock(m_shapes_mutex);
   RawShape shape = klass.shape_instance();
 
@@ -1278,8 +1277,7 @@ void Runtime::set_builtin_class(Thread*, ShapeId shape_id, RawClass klass) {
   m_builtin_classes[offset] = klass;
 }
 
-RawClass Runtime::get_builtin_class(Thread*, ShapeId shape_id) {
-  // TODO: cache via processor
+RawClass Runtime::get_builtin_class(ShapeId shape_id) {
   std::shared_lock<std::shared_mutex> lock(m_shapes_mutex);
   auto offset = static_cast<uint32_t>(shape_id);
   DCHECK(offset < kBuiltinClassCount);
@@ -1292,12 +1290,12 @@ uint32_t Runtime::check_private_access_permitted(Thread* thread, RawInstance val
   // - the class of the reader and the accessed klass share a common ancestor
 
   RawValue self = thread->frame()->self;
-  RawClass self_class = lookup_class(thread, self);
+  RawClass self_class = lookup_class(self);
   if (self == value) {
     return self_class.shape_instance().keys().size();
   }
 
-  RawClass other_class = lookup_class(thread, value);
+  RawClass other_class = lookup_class(value);
   if (self_class == other_class) {
     return self_class.shape_instance().keys().size();
   }

@@ -108,7 +108,6 @@ public:
 
   RawTuple create_tuple(Thread* thread, uint32_t count = 0);
   RawTuple create_tuple(Thread* thread, std::initializer_list<RawValue> values);
-  RawTuple concat_tuple(Thread* thread, RawTuple left, RawTuple right);
   RawTuple concat_tuple_value(Thread* thread, RawTuple left, RawValue value);
 
   RawValue create_class(Thread* thread,
@@ -180,15 +179,16 @@ public:
   // shape management
   ShapeId register_shape(RawShape shape);
   void register_shape(ShapeId id, RawShape shape);
-  RawShape lookup_shape(Thread* thread, ShapeId id);
+  RawShape lookup_shape(ShapeId id);
 
   // returns the klass value of a value
-  RawClass lookup_class(Thread* thread, RawValue value);
+  RawClass lookup_class(RawValue value);
 
   // sets the class that gets used as the parent class if no 'extends'
   // statement was present during class declaration
-  void set_builtin_class(Thread* thread, ShapeId shape_id, RawClass klass);
-  RawClass get_builtin_class(Thread* thread, ShapeId shape_id);
+  bool builtin_class_is_registered(ShapeId shape_id);
+  void set_builtin_class(ShapeId shape_id, RawClass klass);
+  RawClass get_builtin_class(ShapeId shape_id);
 
   // checks wether the current thread (and the top frame's associated self value)
   // can access the private member of an instance and up to what offset

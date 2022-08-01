@@ -24,21 +24,9 @@
  * SOFTWARE.
  */
 
-let libs = Tuple.make_with(10, ->{
-    return spawn import "lib.ch"
-})
-
-libs = libs.map(->(fiber) {
-    try {
-        return (await fiber, null)
-    } catch(e) {
-        return (null, e)
-    }
-})
-
-libs.each(print)
-
-
+const f = Future.create()
+print(f)
+print(Fiber.current())
 
 
 
