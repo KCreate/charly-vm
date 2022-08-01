@@ -390,6 +390,10 @@ bool RawValue::isFiber() const {
   return shape_id() == ShapeId::kFiber;
 }
 
+bool RawValue::isFuture() const {
+  return shape_id() == ShapeId::kFuture;
+}
+
 bool RawValue::isException() const {
   if (isInstance()) {
     return RawInstance::cast(this).is_instance_of(ShapeId::kException);
@@ -501,6 +505,21 @@ void RawValue::dump(std::ostream& out) const {
     if (isFiber()) {
       auto fiber = RawFiber::cast(this);
       writer.fg(Color::Red, "<Fiber ", fiber.address_voidptr(), ">");
+      return;
+    }
+
+    if (isFuture()) {
+      auto future = RawFuture::cast(this);
+      writer.fg(Color::Red, "<Future ");
+      if (future.wait_queue() == nullptr) {
+        if (future.exception().isNull()) {
+          writer.fg(Color::Red, "resolved>");
+        } else {
+          writer.fg(Color::Red, "rejected>");
+        }
+      } else {
+        writer.fg(Color::Red, "pending>");
+      }
       return;
     }
 
@@ -1288,6 +1307,30 @@ void RawFiber::set_exception(RawValue exception) {
 
 bool RawFiber::has_finished() const {
   return thread() == nullptr;
+}
+
+std::vector<Thread*>* RawFuture::wait_queue() const {
+  return bitcast<std::vector<Thread*>*>(pointer_at(kWaitQueueOffset));
+}
+
+void RawFuture::set_wait_queue(std::vector<Thread*>* wait_queue) {
+  set_pointer_at(kWaitQueueOffset, wait_queue);
+}
+
+RawValue RawFuture::result() const {
+  return field_at(kResultOffset);
+}
+
+void RawFuture::set_result(RawValue result) {
+  set_field_at(kResultOffset, result);
+}
+
+RawValue RawFuture::exception() const {
+  return field_at(kExceptionOffset);
+}
+
+void RawFuture::set_exception(RawValue value) {
+  set_field_at(kExceptionOffset, value);
 }
 
 RawString RawException::message() const {

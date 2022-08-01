@@ -40,6 +40,10 @@ const builtin_readline_prompt = @"charly.builtin.readline.prompt"
 const builtin_readline_add_history = @"charly.builtin.readline.add_history"
 const builtin_readline_clear_history = @"charly.builtin.readline.clear_history"
 
+const builtin_future_create = @"charly.builtin.future.futurecreate"
+const builtin_future_resolve = @"charly.builtin.future.futureresolve"
+const builtin_future_reject = @"charly.builtin.future.futurereject"
+
 func write(...args) {
     args.each(->(e) builtin_writevalue("{e}\n"))
     null
@@ -155,6 +159,29 @@ let $$
         static func current = builtin_currentfiber()
     }
 
+    class builtin_Future {
+        static func create(cb = null) {
+            const future = builtin_future_create()
+
+            if typeof cb == Function {
+                spawn {
+                    try {
+                        const result = cb()
+                        future.resolve(result)
+                    } catch(e) {
+                        future.reject(e)
+                    }
+                }
+            }
+
+            return future
+        }
+
+        func resolve(value) = builtin_future_resolve(self, value)
+
+        func reject(value) = builtin_future_reject(self, value)
+    }
+
     class builtin_Class {
         func new(...args) = self(...args)
     }
@@ -168,6 +195,7 @@ let $$
     builtin_transplant_builtin_class(Exception, builtin_Exception)
     builtin_transplant_builtin_class(ImportException, builtin_ImportException)
     builtin_transplant_builtin_class(Fiber, builtin_Fiber)
+    builtin_transplant_builtin_class(Future, builtin_Future)
 
     func execute_program(filename) {
         const cwd = currentworkingdirectory()

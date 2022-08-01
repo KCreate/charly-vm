@@ -134,6 +134,7 @@ public:
                               RawValue saved_self = kNull);
   RawBuiltinFunction create_builtin_function(Thread* thread, BuiltinFunctionType function, SYMBOL name, uint8_t argc);
   RawFiber create_fiber(Thread* thread, RawFunction function, RawValue self, RawValue arguments);
+  RawFuture create_future(Thread* thread);
   RawValue create_exception(Thread* thread, RawValue value);
   RawImportException create_import_exception(Thread* thread,
                                              const std::string& module_path,
@@ -145,6 +146,11 @@ public:
   RawTuple create_stack_trace(Thread* thread, uint32_t trim = 0);
 
   RawValue join_fiber(Thread* thread, RawFiber fiber);
+
+  RawValue join_future(Thread* thread, RawFuture future);
+  RawValue resolve_future(Thread* thread, RawFuture future, RawValue result);
+  RawValue reject_future(Thread* thread, RawFuture future, RawException exception);
+  void future_wake_waiting_threads(Thread* thread, RawFuture future);
 
   // declare a new global variable
   // returns kErrorOk on success

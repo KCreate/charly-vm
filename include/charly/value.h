@@ -27,6 +27,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <vector>
 
 #include "charly.h"
 #include "symbol.h"
@@ -71,8 +72,8 @@ namespace charly::core::runtime {
   V(Shape)                     \
   V(Function)                  \
   V(BuiltinFunction)           \
-  V(Fiber)
-
+  V(Fiber)                     \
+  V(Future)
 // types which store their data via the user class system
 #define USER_INSTANCE_TYPE_NAMES(V) V(Exception) V(ImportException)
 
@@ -931,6 +932,32 @@ public:
     kFieldCount
   };
   static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
+};
+
+class RawFuture : public RawInstance {
+public:
+  COMMON_RAW_OBJECT(Future);
+
+  std::vector<Thread*>* wait_queue() const;
+  void set_wait_queue(std::vector<Thread*>* wait_queue);
+
+  RawValue result() const;
+  void set_result(RawValue result);
+
+  RawValue exception() const;
+  void set_exception(RawValue value);
+
+  bool has_finished() const {
+    return wait_queue() == nullptr;
+  }
+
+  enum {
+    kWaitQueueOffset = RawInstance::kFieldCount,
+    kResultOffset,
+    kExceptionOffset,
+    kFieldCount
+  };
+  static const size_t kSize = kFieldCount * kPointerSize;
 };
 
 // user exception instance

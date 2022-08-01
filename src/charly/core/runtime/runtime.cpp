@@ -26,6 +26,7 @@
 
 #include "charly/core/runtime/runtime.h"
 #include "charly/core/runtime/builtins/core.h"
+#include "charly/core/runtime/builtins/future.h"
 #include "charly/core/runtime/builtins/readline.h"
 #include "charly/core/runtime/interpreter.h"
 #include "charly/utils/argumentparser.h"
@@ -134,6 +135,7 @@ void Runtime::initialize_argv_tuple(Thread* thread) {
 
 void Runtime::initialize_builtin_functions(Thread* thread) {
   builtin::core::initialize(thread);
+  builtin::future::initialize(thread);
   builtin::readline::initialize(thread);
 }
 
@@ -211,6 +213,11 @@ void Runtime::initialize_builtin_types(Thread* thread) {
                                             { "result", RawShape::kKeyFlagReadOnly },
                                             { "exception", RawShape::kKeyFlagReadOnly } });
 
+  auto builtin_shape_future = create_shape(thread, builtin_shape_builtin_instance,
+                                           { { "wait_queue", RawShape::kKeyFlagInternal },
+                                             { "result", RawShape::kKeyFlagReadOnly },
+                                             { "exception", RawShape::kKeyFlagReadOnly } });
+
   auto builtin_shape_exception = create_shape(thread, builtin_shape_builtin_instance,
                                               { { "message", RawShape::kKeyFlagNone },
                                                 { "stack_trace", RawShape::kKeyFlagNone },
@@ -256,6 +263,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   DEFINE_BUILTIN_CLASS(builtin_function, BuiltinFunction, class_instance,
                        RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
   DEFINE_BUILTIN_CLASS(fiber, Fiber, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
+  DEFINE_BUILTIN_CLASS(future, Future, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
   DEFINE_BUILTIN_CLASS(exception, Exception, class_instance, RawClass::kFlagNone, {})
   DEFINE_BUILTIN_CLASS(import_exception, ImportException, class_exception, RawClass::kFlagNone, {})
 #undef DEFINE_BUILTIN_CLASS
@@ -287,6 +295,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   DEFINE_STATIC_CLASS(function, Function)
   DEFINE_STATIC_CLASS(builtin_function, BuiltinFunction)
   DEFINE_STATIC_CLASS(fiber, Fiber)
+  DEFINE_STATIC_CLASS(future, Future)
   DEFINE_STATIC_CLASS(exception, Exception)
   DEFINE_STATIC_CLASS(import_exception, ImportException)
 #undef DEFINE_STATIC_CLASS
@@ -308,6 +317,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   class_function.set_klass_field(static_class_function);
   class_builtin_function.set_klass_field(static_class_builtin_function);
   class_fiber.set_klass_field(static_class_fiber);
+  class_future.set_klass_field(static_class_future);
   class_exception.set_klass_field(static_class_exception);
   class_import_exception.set_klass_field(static_class_import_exception);
 
@@ -330,6 +340,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   set_builtin_class(thread, ShapeId::kFunction, class_function);
   set_builtin_class(thread, ShapeId::kBuiltinFunction, class_builtin_function);
   set_builtin_class(thread, ShapeId::kFiber, class_fiber);
+  set_builtin_class(thread, ShapeId::kFuture, class_future);
   set_builtin_class(thread, ShapeId::kException, class_exception);
   set_builtin_class(thread, ShapeId::kImportException, class_import_exception);
 
@@ -358,6 +369,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   CHECK(declare_global_variable(thread, SYM("Function"), true).is_error_ok());
   CHECK(declare_global_variable(thread, SYM("BuiltinFunction"), true).is_error_ok());
   CHECK(declare_global_variable(thread, SYM("Fiber"), true).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("Future"), true).is_error_ok());
   CHECK(declare_global_variable(thread, SYM("Exception"), true).is_error_ok());
   CHECK(declare_global_variable(thread, SYM("ImportException"), true).is_error_ok());
 
@@ -377,6 +389,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   CHECK(set_global_variable(thread, SYM("Function"), class_function).is_error_ok());
   CHECK(set_global_variable(thread, SYM("BuiltinFunction"), class_builtin_function).is_error_ok());
   CHECK(set_global_variable(thread, SYM("Fiber"), class_fiber).is_error_ok());
+  CHECK(set_global_variable(thread, SYM("Future"), class_future).is_error_ok());
   CHECK(set_global_variable(thread, SYM("Exception"), class_exception).is_error_ok());
   CHECK(set_global_variable(thread, SYM("ImportException"), class_import_exception).is_error_ok());
 }
@@ -970,6 +983,14 @@ RawFiber Runtime::create_fiber(Thread* thread, RawFunction function, RawValue se
   return fiber;
 }
 
+RawFuture Runtime::create_future(Thread* thread) {
+  RawFuture future = RawFuture::cast(create_instance(thread, ShapeId::kFuture, RawFuture::kFieldCount));
+  future.set_wait_queue(new std::vector<Thread*>());
+  future.set_result(kNull);
+  future.set_exception(kNull);
+  return future;
+}
+
 RawValue Runtime::create_exception(Thread* thread, RawValue value) {
   if (value.isString()) {
     auto instance = RawException::cast(create_instance(thread, get_builtin_class(thread, ShapeId::kException)));
@@ -1072,6 +1093,87 @@ RawValue Runtime::join_fiber(Thread* thread, RawFiber _fiber) {
   }
 
   return fiber.result();
+}
+
+RawValue Runtime::join_future(Thread* thread, RawFuture _future) {
+  HandleScope scope(thread);
+  Future future(scope, _future);
+
+  {
+    std::unique_lock lock(future);
+
+    // wait for the future to finish
+    if (!future.has_finished()) {
+      auto wait_queue = future.wait_queue();
+      wait_queue->push_back(thread);
+      thread->m_state.acas(Thread::State::Running, Thread::State::Waiting);
+
+      lock.unlock();
+      thread->enter_scheduler();
+      lock.lock();
+    }
+  }
+
+  if (!future.exception().isNull()) {
+    thread->throw_value(future.exception());
+    return kErrorException;
+  }
+  return future.result();
+}
+
+RawValue Runtime::resolve_future(Thread* thread, RawFuture future, RawValue result) {
+  auto runtime = thread->runtime();
+
+  {
+    std::lock_guard lock(future);
+    auto wait_queue = future.wait_queue();
+    if (wait_queue == nullptr) {
+      thread->throw_value(runtime->create_string_from_template(thread, "Future has already completed"));
+      return kErrorException;
+    }
+
+    future.set_result(result);
+    future.set_exception(kNull);
+    future_wake_waiting_threads(thread, future);
+  }
+
+  return future;
+}
+
+RawValue Runtime::reject_future(Thread* thread, RawFuture future, RawException exception) {
+  auto runtime = thread->runtime();
+
+  {
+    std::lock_guard lock(future);
+    auto wait_queue = future.wait_queue();
+    if (wait_queue == nullptr) {
+      thread->throw_value(runtime->create_string_from_template(thread, "Future has already completed"));
+      return kErrorException;
+    }
+
+    future.set_result(kNull);
+    future.set_exception(exception);
+    future_wake_waiting_threads(thread, future);
+  }
+
+  return future;
+}
+
+void Runtime::future_wake_waiting_threads(Thread* thread, RawFuture future) {
+  DCHECK(future.is_locked());
+  auto runtime = thread->runtime();
+  auto worker = thread->worker();
+  auto scheduler = runtime->scheduler();
+  auto processor = worker->processor();
+
+  auto wait_queue = future.wait_queue();
+  for (Thread* waiting_thread : *wait_queue) {
+    DCHECK(waiting_thread->state() == Thread::State::Waiting);
+    waiting_thread->ready();
+    scheduler->schedule_thread(waiting_thread, processor);
+  }
+  wait_queue->clear();
+  future.set_wait_queue(nullptr);
 }
 
 RawValue Runtime::declare_global_variable(Thread*, SYMBOL name, bool constant) {

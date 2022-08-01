@@ -24,28 +24,19 @@
  * SOFTWARE.
  */
 
-const future = Future.create(->{
-    throw "error"
-})
+#include "charly/core/runtime/builtins/builtin.h"
+#include "charly/value.h"
 
-const fibers = (
-    spawn await future,
-    spawn await future,
-    spawn await future,
-    spawn await future,
-    spawn await future
-)
+#pragma once
 
-fibers.each(->(fiber) {
-    print("result:", await fiber)
-})
+namespace charly::core::runtime::builtin::future {
 
+void initialize(Thread* thread);
 
+#define DEF_BUILTIN_FUTURE(V) \
+  V(future, futurecreate, 0)  \
+  V(future, futureresolve, 2) \
+  V(future, futurereject, 2)
+DEF_BUILTIN_FUTURE(DEFINE_BUILTIN_METHOD_DECLARATIONS)
 
-
-
-
-
-
-
-
+}  // namespace charly::core::runtime::builtin::future
