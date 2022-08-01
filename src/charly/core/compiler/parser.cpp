@@ -907,6 +907,10 @@ ref<Expression> Parser::parse_spawn() {
   ref<Statement> stmt = parse_block_or_statement();
   m_keyword_context = kwcontext;
 
+  if (!isa<Block>(stmt) && !isa<Expression>(stmt)) {
+    m_console.fatal(stmt, "expected block or expression");
+  }
+
   ref<Spawn> node = make<Spawn>(stmt);
   node->set_begin(begin);
   return node;

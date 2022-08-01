@@ -84,9 +84,14 @@ CATCH_TEST_CASE("Semantic") {
   }
 
   CATCH_SECTION("validates spawn statements") {
-    COMPILE_ERROR("spawn foo", "expected block or call operation");
-    COMPILE_ERROR("spawn 1", "expected block or call operation");
-    COMPILE_ERROR("spawn foo.bar", "expected block or call operation");
+    COMPILE_ERROR("spawn break", "break statement not allowed at this point");
+    COMPILE_ERROR("spawn continue", "continue statement not allowed at this point");
+    COMPILE_ERROR("spawn return", "expected block or expression");
+    COMPILE_ERROR("spawn throw 25", "expected block or expression");
+    COMPILE_OK("spawn foo");
+    COMPILE_OK("spawn 1");
+    COMPILE_OK("spawn foo.bar");
+    COMPILE_OK("spawn await foo");
     COMPILE_OK("spawn foo()");
     COMPILE_OK("spawn foo.bar()");
     COMPILE_OK("spawn foo[x]()");
