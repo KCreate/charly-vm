@@ -24,8 +24,6 @@
  * SOFTWARE.
  */
 
-#include <fstream>
-
 #include <alloca.h>
 #include <unordered_set>
 
@@ -376,46 +374,12 @@ OP(import) {
   }
   fs::path import_path = resolve_result.value();
 
-  // check if the runtime has this module in the cache
-  RawValue cache_result = runtime->lookup_path_in_module_cache(import_path);
-  if (!cache_result.is_error_not_found()) {
-    frame->push(cache_result);
-    return ContinueMode::Next;
-  }
-
-  // load the source file
-  std::ifstream import_source(import_path);
-  if (!import_source.is_open()) {
-    thread->throw_value(runtime->create_string_from_template(thread, "could not open the file at %", import_path));
+  RawValue import_result = runtime->import_module(thread, import_path);
+  if (import_result.is_error_exception()) {
     return ContinueMode::Exception;
   }
 
-  fs::file_time_type import_mtime = fs::last_write_time(import_path);
-  utils::Buffer buf;
-  buf << import_source.rdbuf();
-  import_source.close();
-
-  // compile source code into module
-  auto unit = Compiler::compile(import_path, buf, CompilationUnit::Type::Module);
-  if (unit->console.has_errors()) {
-    thread->throw_value(runtime->create_import_exception(thread, module_path, unit));
-    return ContinueMode::Exception;
-  }
-
-  auto module = unit->compiled_module;
-  CHECK(!module->function_table.empty());
-  runtime->register_module(thread, module);
-  auto module_function = runtime->create_function(thread, kNull, module->function_table.front());
-
-  // invoke the module
-  auto rval = call_function(thread, kNull, module_function, nullptr, 0);
-  if (rval.is_error_exception()) {
-    return ContinueMode::Exception;
-  }
-
-  runtime->update_module_cache(import_path, import_mtime, rval);
-
-  frame->push(rval);
+  frame->push(import_result);
   return ContinueMode::Next;
 }
 

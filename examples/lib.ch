@@ -24,6 +24,18 @@
  * SOFTWARE.
  */
 
+print("lib.ch started loading")
+
+let i = 0
+let limit = 10000000
+while i != limit {
+    i += 1
+}
+
+print("lib.ch finished loading")
+
+throw "some error"
+
 export class Lib {
     static property foo = 100
 

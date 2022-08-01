@@ -130,6 +130,13 @@ let $$
         }
 
         static func make(length = 0, initial = null) = builtin_maketuple(length, initial)
+
+        static func make_with(length, cb) {
+            const tuple = Tuple.make(length)
+            tuple.each(->(_, i) {
+                tuple[i] = cb(i)
+            })
+        }
     }
 
     class builtin_Function {

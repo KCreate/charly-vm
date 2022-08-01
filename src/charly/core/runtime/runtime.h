@@ -72,9 +72,6 @@ public:
   // wait for the runtime to finish initializing
   void wait_for_initialization();
 
-  // register a CompiledModule object with the runtime
-  void register_module(Thread* thread, const ref<CompiledModule>& module);
-
   // misc. initialization methods
   void initialize_symbol_table(Thread* thread);
   void initialize_argv_tuple(Thread* thread);
@@ -136,6 +133,11 @@ public:
   RawFiber create_fiber(Thread* thread, RawFunction function, RawValue self, RawValue arguments);
   RawFuture create_future(Thread* thread);
   RawValue create_exception(Thread* thread, RawValue value);
+  RawException create_exception(Thread* thread, RawString value) {
+    auto exception = create_exception(thread, RawValue::cast(value));
+    DCHECK(!exception.is_error_exception());
+    return RawException::cast(exception);
+  }
   RawImportException create_import_exception(Thread* thread,
                                              const std::string& module_path,
                                              const ref<compiler::CompilationUnit>& unit);
@@ -192,9 +194,17 @@ public:
   // can access the private member of an instance and up to what offset
   uint32_t check_private_access_permitted(Thread* thread, RawInstance value);
 
-  // lookup the name / path of a module by checking by builtin modules table
-  // or traversing the filesystem
+  // lookup the name / path of a module
   std::optional<fs::path> resolve_module(const fs::path& module_path, const fs::path& origin_path) const;
+
+  // import a module at a given path
+  // returns the cached result if the module has been imported before and is unchanged
+  // if multiple fibers import the same path, only the first will execute it
+  // the other modules will wait for the first fiber to finish
+  RawValue import_module(Thread* thread, const fs::path& path);
+
+  // register a CompiledModule object with the runtime
+  void register_module(Thread* thread, const ref<CompiledModule>& module);
 
   // checks if the runtime module cache contains a non-expired entry for the given path
   RawValue lookup_path_in_module_cache(const fs::path& path);
@@ -242,7 +252,7 @@ private:
   struct CachedModule {
     fs::path path;
     fs::file_time_type mtime;
-    RawValue module;
+    RawFuture module;
   };
   std::shared_mutex m_cached_modules_mutex;
   std::unordered_map<size_t, CachedModule> m_cached_modules;

@@ -24,14 +24,20 @@
  * SOFTWARE.
  */
 
-#include "charly/core/runtime/runtime.h"
+#include <fstream>
+
+#include "charly/core/compiler/compiler.h"
 #include "charly/core/runtime/builtins/core.h"
 #include "charly/core/runtime/builtins/future.h"
 #include "charly/core/runtime/builtins/readline.h"
 #include "charly/core/runtime/interpreter.h"
+#include "charly/core/runtime/runtime.h"
 #include "charly/utils/argumentparser.h"
 
 namespace charly::core::runtime {
+
+using namespace charly::core::compiler;
+using namespace charly::core::compiler::ir;
 
 int32_t Runtime::run() {
   Runtime runtime;
@@ -1364,20 +1370,63 @@ std::optional<fs::path> Runtime::resolve_module(const fs::path& module_path, con
   return std::nullopt;
 }
 
-RawValue Runtime::lookup_path_in_module_cache(const fs::path& path) {
-  std::shared_lock lock(m_cached_modules_mutex);
-  if (m_cached_modules.count(fs::hash_value(path))) {
-    const auto& entry = m_cached_modules.at(fs::hash_value(path));
+RawValue Runtime::import_module(Thread* thread, const fs::path& path) {
+  std::unique_lock lock(m_cached_modules_mutex);
+  fs::file_time_type mtime = fs::last_write_time(path);
+
+  // check if module cache has an entry for this module
+  auto path_hash = fs::hash_value(path);
+  if (m_cached_modules.count(path_hash)) {
+    const auto& entry = m_cached_modules.at(path_hash);
+
+    // file is unchanged since last import
     if (fs::last_write_time(path) == entry.mtime) {
-      return entry.module;
+      lock.unlock();
+      auto result = join_future(thread, entry.module);
+      return result;
     }
   }
-  return kErrorNotFound;
-}
 
-void Runtime::update_module_cache(const fs::path& path, fs::file_time_type mtime, RawValue module) {
-  std::unique_lock lock(m_cached_modules_mutex);
-  m_cached_modules[fs::hash_value(path)] = { .path = path, .mtime = mtime, .module = module };
+  HandleScope scope(thread);
+  Future future(scope, create_future(thread));
+  m_cached_modules[path_hash] = { .path = path, .mtime = mtime, .module = future };
+
+  lock.unlock();
+
+  std::ifstream import_source(path);
+  if (!import_source.is_open()) {
+    auto exception =
+      create_exception(thread, create_string_from_template(thread, "Could not open the file at '%'", path));
+    thread->throw_value(exception);
+    reject_future(thread, future, exception);
+    return kErrorException;
+  }
+
+  utils::Buffer buf;
+  buf << import_source.rdbuf();
+  import_source.close();
+
+  auto unit = Compiler::compile(path, buf, CompilationUnit::Type::Module);
+  if (unit->console.has_errors()) {
+    auto exception = create_import_exception(thread, path, unit);
+    thread->throw_value(exception);
+    reject_future(thread, future, exception);
+    return kErrorException;
+  }
+
+  auto module = unit->compiled_module;
+  CHECK(!module->function_table.empty());
+  register_module(thread, module);
+  auto module_function = create_function(thread, kNull, module->function_table.front());
+
+  auto rval = Interpreter::call_function(thread, kNull, module_function, nullptr, 0);
+  if (rval.is_error_exception()) {
+    reject_future(thread, future, RawException::cast(thread->pending_exception()));
+    return kErrorException;
+  }
+
+  resolve_future(thread, future, rval);
+  return rval;
 }
 
 const fs::path& Runtime::source_code_directory() const {

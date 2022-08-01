@@ -24,23 +24,19 @@
  * SOFTWARE.
  */
 
-const future = Future.create(->{
-    return "hello world"
+let libs = Tuple.make_with(10, ->{
+    return spawn import "lib.ch"
 })
 
-const fibers = (
-    spawn await future,
-    spawn await future,
-    spawn await future,
-    spawn await future,
-    spawn await future
-)
-
-fibers.each(->(fiber) {
-    print("result:", await fiber)
+libs = libs.map(->(fiber) {
+    try {
+        return (await fiber, null)
+    } catch(e) {
+        return (null, e)
+    }
 })
 
-
+libs.each(print)
 
 
 
