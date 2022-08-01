@@ -575,15 +575,15 @@ static const size_t kInstructionLength = 4;
    * - fiber                                                                       \
    * */                                                                            \
   V(makefiber, IXXX, 3, 1)                                                         \
-  /* fiberjoin - wait for a fiber to finish                                        \
+  /* await - await the result of an awaitable type (e.g. Fiber, Future)            \
    *                                                                               \
    * stack arguments:                                                              \
-   * - fiber                                                                       \
+   * - value                                                                       \
    *                                                                               \
    * stack results:                                                                \
-   * - fiber return value                                                          \
+   * - value result value                                                          \
    * */                                                                            \
-  V(fiberjoin, IXXX, 1, 1)                                                         \
+  V(await, IXXX, 1, 1)                                                             \
   /* castXYZ - cast source value to new type                                       \
    *                                                                               \
    * stack arguments:                                                              \

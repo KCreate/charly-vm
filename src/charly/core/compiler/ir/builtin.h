@@ -34,7 +34,7 @@ namespace charly::core::compiler::ir {
 
 #define FOREACH_BUILTIN(V) \
   V(makefiber, 3)          \
-  V(fiberjoin, 1)          \
+  V(await, 1)              \
   V(import, 2)             \
   V(iteratornext, 1)       \
   V(castbool, 1)           \

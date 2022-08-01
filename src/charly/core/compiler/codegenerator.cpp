@@ -485,7 +485,7 @@ bool CodeGenerator::inspect_enter(const ref<Spawn>& node) {
 }
 
 void CodeGenerator::inspect_leave(const ref<Await>& node) {
-  m_builder.emit_fiberjoin()->at(node);
+  m_builder.emit_await()->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ref<Typeof>& node) {

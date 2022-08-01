@@ -1158,16 +1158,18 @@ OP(makefiber) {
   return ContinueMode::Next;
 }
 
-OP(fiberjoin) {
+OP(await) {
+  Runtime* runtime = thread->runtime();
   RawValue value = frame->pop();
-  if (!value.isFiber()) {
-    Runtime* runtime = thread->runtime();
-    thread->throw_value(runtime->create_string_from_template(thread, "argument is not a fiber"));
+  RawValue result = kNull;
+
+  if (value.isFiber()) {
+    result = runtime->join_fiber(thread, RawFiber::cast(value));
+  } else {
+    auto name = runtime->lookup_class(thread, value).name();
+    thread->throw_value(runtime->create_string_from_template(thread, "value of type '%' cannot be awaited", name));
     return ContinueMode::Exception;
   }
-
-  Runtime* runtime = thread->runtime();
-  RawValue result = runtime->join_fiber(thread, RawFiber::cast(value));
 
   if (result.is_error_exception()) {
     return ContinueMode::Exception;
