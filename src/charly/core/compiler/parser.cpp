@@ -907,11 +907,6 @@ ref<Expression> Parser::parse_spawn() {
   ref<Statement> stmt = parse_block_or_statement();
   m_keyword_context = kwcontext;
 
-  // wrap non-call statements in a block
-  if (!isa<Block>(stmt) && !isa<CallOp>(stmt)) {
-    m_console.fatal(stmt, "expected block or call operation");
-  }
-
   ref<Spawn> node = make<Spawn>(stmt);
   node->set_begin(begin);
   return node;

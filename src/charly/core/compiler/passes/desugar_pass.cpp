@@ -43,14 +43,25 @@ void DesugarPass::inspect_leave(const ref<Import>& node) {
 
 bool DesugarPass::inspect_enter(const ref<Spawn>& node) {
   // spawn { <body> } ->  spawn ->{ <body> }()
-  if (ref<Block> block = cast<Block>(node->statement)) {
-    ref<Function> func = make<Function>(true, make<Name>("anonymous"), block);
+  if (auto block = cast<Block>(node->statement)) {
+    auto func = make<Function>(true, make<Name>("anonymous"), block);
     func->set_location(node);
 
-    ref<CallOp> call = make<CallOp>(func);
+    auto call = make<CallOp>(func);
     call->set_location(node);
 
     node->statement = call;
+  } else if (auto exp = cast<Expression>(node->statement)) {
+    if (!isa<CallOp>(exp)) {
+      auto func_block = make<Block>(make<Return>(exp));
+      auto func = make<Function>(true, make<Name>("anonymous"), func_block);
+      func->set_location(node);
+
+      ref<CallOp> call = make<CallOp>(func);
+      call->set_location(node);
+
+      node->statement = call;
+    }
   }
 
   return true;
