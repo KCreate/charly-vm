@@ -217,6 +217,7 @@ private:
 private:
   // object header encoding
   //
+  // name           bytes     bits      total
   // [ shape id ] : 3 bytes : 24 bits :  3 bytes
   // [ gc count ] : 1 byte  :  8 bits :  4 bytes
   // [ lock     ] : 1 byte  :  8 bits :  5 bytes

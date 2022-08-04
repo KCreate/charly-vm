@@ -130,6 +130,10 @@ CATCH_TEST_CASE("Semantic") {
     COMPILE_ERROR("class x { static property klass }", "'klass' cannot be the name of a static property");
     COMPILE_ERROR("class x { static property name }", "'name' cannot be the name of a static property");
     COMPILE_ERROR("class x { static property parent }", "'parent' cannot be the name of a static property");
+
+    COMPILE_ERROR("class x { property constructor }", "'constructor' cannot be the name of a property");
+    COMPILE_ERROR("class x { static property constructor }", "'constructor' cannot be the name of a static property");
+    COMPILE_ERROR("class x { static func constructor }", "'constructor' cannot be the name of a static function");
   }
 
   CATCH_SECTION("checks for duplicate identifiers") {

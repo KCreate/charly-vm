@@ -24,9 +24,21 @@
  * SOFTWARE.
  */
 
-const f = Future.create()
-print(f)
-print(Fiber.current())
+class A {
+    property constructor
+
+    static property constructor
+
+    static func constructor {
+
+    }
+}
+
+
+
+
+
+
 
 
 
