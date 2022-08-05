@@ -112,7 +112,6 @@ public:
   static void set_current(Thread* worker);
 
   static constexpr uint64_t kMainThreadId = 0;
-  static constexpr uint64_t kMainFiberThreadId = 1;
 
   static constexpr uint64_t kExceptionChainDepthLimit = 20;
 
@@ -134,7 +133,6 @@ public:
   Worker* worker() const;
   Runtime* runtime() const;
   uint64_t last_scheduled_at() const;
-  void extend_timeslice(uint64_t ms);
   bool has_exceeded_timeslice() const;
   const Stack* stack() const;
   ThreadLocalHandles* handles();
@@ -196,7 +194,7 @@ public:
   RawValue lookup_symbol(SYMBOL symbol) const;
 
 private:
-  void entry_main_thread();
+  int32_t entry_main_thread();
   void entry_fiber_thread();
 
   // yield control back to the scheduler and update thread state
@@ -204,6 +202,8 @@ private:
 
   // acquire a stack from the scheduler
   void acquire_stack();
+
+  void dump_exception_trace(RawException exception) const;
 
 private:
   uint64_t m_id;

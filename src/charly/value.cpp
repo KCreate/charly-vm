@@ -565,12 +565,43 @@ void RawValue::dump(std::ostream& out) const {
     }
 
     if (isException()) {
-      auto exception = RawException::cast(this);
-      auto klass = thread->runtime()->lookup_class(exception);
-      RawValue message = exception.message();
-      RawTuple stack_trace = exception.stack_trace();
-      writer.fg(Color::Green, "<", klass.name(), " ", message, ", ", stack_trace, ">");
-      return;
+      if (isImportException()) {
+        auto import_exception = RawImportException::cast(this);
+        auto errors = import_exception.errors();
+        auto message = RawString::cast(import_exception.message());
+
+        writer << message.view() << "\n";
+
+        for (uint32_t i = 0; i < errors.size(); i++) {
+          auto error = errors.field_at<RawTuple>(i);
+          auto type = error.field_at<RawString>(0).view();
+          auto filepath = error.field_at<RawString>(1).view();
+          auto error_message = error.field_at<RawString>(2).view();
+          auto source = error.field_at<RawString>(3).view();
+          auto location = error.field_at<RawString>(4).view();
+
+          if (type == "error") {
+            writer.fg(Color::Red, "error: ");
+          } else if (type == "warning") {
+            writer.fg(Color::Yellow, "warning: ");
+          } else if (type == "info") {
+            writer.fg(Color::Blue, "info: ");
+          } else {
+            FAIL("unknown error type");
+          }
+
+          writer << filepath << ":" << location << ": " << error_message << "\n";
+          writer << source;
+        }
+        return;
+      } else {
+        auto exception = RawException::cast(this);
+        auto klass = thread->runtime()->lookup_class(exception);
+        RawValue message = exception.message();
+        RawTuple stack_trace = exception.stack_trace();
+        writer.fg(Color::Green, "<", klass.name(), " ", message, ", ", stack_trace, ">");
+        return;
+      }
     }
 
     auto instance = RawInstance::cast(this);

@@ -45,7 +45,7 @@ int32_t Runtime::run() {
 }
 
 Runtime::Runtime() :
-  m_start_timestamp(get_steady_timestamp()),
+  m_start_timestamp(get_steady_timestamp_milli()),
   m_init_flag(m_mutex),
   m_exit_flag(m_mutex),
   m_exit_code(0),
@@ -414,11 +414,6 @@ void Runtime::initialize_builtin_types(Thread* thread) {
       }
     }
   }
-}
-
-void Runtime::initialize_main_fiber(Thread* thread, SharedFunctionInfo* info) {
-  RawFunction function = RawFunction::cast(create_function(thread, kNull, info));
-  create_fiber(thread, function, kNull, kNull);
 }
 
 void Runtime::initialize_stdlib_paths() {
@@ -1069,7 +1064,7 @@ RawTuple Runtime::create_stack_trace(Thread* thread, uint32_t trim) {
   return stack_trace;
 }
 
-RawValue Runtime::join_future(Thread* thread, RawFuture _future) {
+RawValue Runtime::await_future(Thread* thread, RawFuture _future) {
   HandleScope scope(thread);
   Future future(scope, _future);
 
@@ -1093,6 +1088,10 @@ RawValue Runtime::join_future(Thread* thread, RawFuture _future) {
     return kErrorException;
   }
   return future.result();
+}
+
+RawValue Runtime::await_fiber(Thread* thread, RawFiber fiber) {
+  return await_future(thread, fiber.result_future());
 }
 
 RawValue Runtime::resolve_future(Thread* thread, RawFuture future, RawValue result) {
@@ -1368,7 +1367,7 @@ std::optional<fs::path> Runtime::resolve_module(const fs::path& module_path, con
   return std::nullopt;
 }
 
-RawValue Runtime::import_module(Thread* thread, const fs::path& path) {
+RawValue Runtime::import_module(Thread* thread, const fs::path& path, bool treat_as_repl) {
   std::unique_lock lock(m_cached_modules_mutex);
   fs::file_time_type mtime = fs::last_write_time(path);
 
@@ -1380,7 +1379,7 @@ RawValue Runtime::import_module(Thread* thread, const fs::path& path) {
     // file is unchanged since last import
     if (fs::last_write_time(path) == entry.mtime) {
       lock.unlock();
-      auto result = join_future(thread, entry.module);
+      auto result = await_future(thread, entry.module);
       return result;
     }
   }
@@ -1404,20 +1403,30 @@ RawValue Runtime::import_module(Thread* thread, const fs::path& path) {
   buf << import_source.rdbuf();
   import_source.close();
 
-  auto unit = Compiler::compile(path, buf, CompilationUnit::Type::Module);
+  double start_time = (double)get_steady_timestamp_micro() / 1000;
+  auto compilation_type = treat_as_repl ? CompilationUnit::Type::ReplInput : CompilationUnit::Type::Module;
+  auto unit = Compiler::compile(path, buf, compilation_type);
   if (unit->console.has_errors()) {
     auto exception = create_import_exception(thread, path, unit);
     thread->throw_value(exception);
     reject_future(thread, future, exception);
     return kErrorException;
   }
+  double end_time = (double)get_steady_timestamp_micro() / 1000;
+  debugln("compiled module at % in %ms", path, end_time - start_time);
+
+  if (utils::ArgumentParser::is_flag_set("skipexec")) {
+    resolve_future(thread, future, kNull);
+    return kNull;
+  }
 
   auto module = unit->compiled_module;
   CHECK(!module->function_table.empty());
   register_module(thread, module);
   auto module_function = create_function(thread, kNull, module->function_table.front());
+  auto module_fiber = create_fiber(thread, module_function, kNull, kNull);
 
-  auto rval = Interpreter::call_function(thread, kNull, module_function, nullptr, 0);
+  auto rval = await_fiber(thread, module_fiber);
   if (rval.is_error_exception()) {
     reject_future(thread, future, RawException::cast(thread->pending_exception()));
     return kErrorException;

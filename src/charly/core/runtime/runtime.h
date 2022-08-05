@@ -77,7 +77,6 @@ public:
   void initialize_argv_tuple(Thread* thread);
   void initialize_builtin_functions(Thread* thread);
   void initialize_builtin_types(Thread* thread);
-  void initialize_main_fiber(Thread* thread, SharedFunctionInfo* info);
   void initialize_stdlib_paths();
 
   RawData create_data(Thread* thread, ShapeId shape_id, size_t size);
@@ -146,7 +145,8 @@ public:
   // starting from the bottom
   RawTuple create_stack_trace(Thread* thread, uint32_t trim = 0);
 
-  RawValue join_future(Thread* thread, RawFuture future);
+  RawValue await_future(Thread* thread, RawFuture future);
+  RawValue await_fiber(Thread* thread, RawFiber fiber);
   RawValue resolve_future(Thread* thread, RawFuture future, RawValue result);
   RawValue reject_future(Thread* thread, RawFuture future, RawException exception);
   void future_wake_waiting_threads(Thread* thread, RawFuture future);
@@ -201,7 +201,7 @@ public:
   // returns the cached result if the module has been imported before and is unchanged
   // if multiple fibers import the same path, only the first will execute it
   // the other modules will wait for the first fiber to finish
-  RawValue import_module(Thread* thread, const fs::path& path);
+  RawValue import_module(Thread* thread, const fs::path& path, bool treat_as_repl = false);
 
   // register a CompiledModule object with the runtime
   void register_module(Thread* thread, const ref<CompiledModule>& module);

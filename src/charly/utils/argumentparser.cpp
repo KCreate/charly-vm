@@ -32,6 +32,8 @@
 
 namespace charly::utils {
 
+namespace fs = std::filesystem;
+
 const std::string ArgumentParser::USAGE_MESSAGE = "Usage: charly [filename] [flags] [--] [arguments]";
 
 const std::string ArgumentParser::LICENSE =
@@ -83,6 +85,7 @@ const std::vector<ArgumentParser::FlagGroup> kDefinedFlagGroups = {
     } }
 };
 
+std::optional<fs::path> ArgumentParser::USER_FILENAME;
 std::unordered_map<std::string, std::vector<std::string>> ArgumentParser::CHARLY_FLAGS;
 std::vector<std::string> ArgumentParser::USER_FLAGS;
 std::unordered_map<std::string, std::string> ArgumentParser::ENVIRONMENT;
@@ -131,12 +134,19 @@ void ArgumentParser::init_argv(int argc, char** argv) {
       }
     }
 
-    USER_FLAGS.emplace_back(arg);
-  }
+    // interpret first user argument as a filename
+    if (USER_FLAGS.empty() && !USER_FILENAME.has_value() && arg != "-") {
+      fs::path filename(arg);
 
-  // if a filename was passed, push it into the debug_pattern argument list
-  if (!USER_FLAGS.empty()) {
-    set_flag("debug_pattern", USER_FLAGS[0]);
+      if (!filename.is_absolute()) {
+        filename = fs::current_path() / filename;
+      }
+
+      USER_FILENAME = filename;
+      set_flag("debug_pattern", USER_FILENAME.value());
+    }
+
+    USER_FLAGS.emplace_back(arg);
   }
 }
 

@@ -66,7 +66,7 @@ func writesync(...args) {
     null
 }
 
-func prompt(message = "> ", append_to_history = true) {
+func prompt(message = "", append_to_history = true) {
     const result = builtin_readline_prompt("{message}")
 
     if append_to_history {
@@ -76,9 +76,9 @@ func prompt(message = "> ", append_to_history = true) {
     result
 }
 
-func add_history(message) = builtin_readline_add_history(message)
+func readline_add_history(message) = builtin_readline_add_history(message)
 
-func clear_history = builtin_readline_clear_history()
+func readline_clear_history = builtin_readline_clear_history()
 
 func exit(status = 0) = builtin_exit(status)
 
@@ -86,7 +86,6 @@ func currentworkingdirectory = builtin_currentworkingdirectory()
 
 func compile(source, name = "repl") = builtin_compile(source, name)
 
-let $$
 ->{
     class builtin_Value {}
 
@@ -203,61 +202,4 @@ let $$
     builtin_transplant_builtin_class(ImportException, builtin_ImportException)
     builtin_transplant_builtin_class(Fiber, builtin_Fiber)
     builtin_transplant_builtin_class(Future, builtin_Future)
-
-    func execute_program(filename) {
-        const cwd = currentworkingdirectory()
-        import "{cwd}/{filename}"
-    }
-
-    const filename = ARGV[0]
-
-    if filename != null && filename != "-" {
-        return execute_program(filename)
-    }
-
-    loop {
-        const input = prompt()
-        switch input {
-            case "" {
-                break
-            }
-
-            case ".exit" {
-                return
-            }
-
-            case ".clear" {
-                clear_history()
-                break
-            }
-
-            case ".help" {
-                print(".exit        Exit from the REPL")
-                print(".clear       Clear REPL history")
-                print(".help        Show this help message")
-                break
-            }
-
-            default {
-                try {
-                    const module = compile(input, "repl")
-                    const fiber = spawn module()
-                    $$ = await fiber
-                    print($$)
-                } catch(e) {
-                    $$ = e
-
-                    if typeof $$ == ImportException {
-                        $$.errors.each(->(error) {
-                            print("{error[1]}:{error[4]}: {error[2]}\n{error[3]}")
-                        })
-                        break
-                    }
-
-                    print("Caught exception:")
-                    print($$)
-                }
-            }
-        }
-    }
 }()

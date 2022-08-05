@@ -1128,9 +1128,9 @@ OP(await) {
   RawValue result = kNull;
 
   if (value.isFiber()) {
-    result = runtime->join_future(thread, RawFiber::cast(value).result_future());
+    result = runtime->await_fiber(thread, RawFiber::cast(value));
   } else if (value.isFuture()) {
-    result = runtime->join_future(thread, RawFuture::cast(value));
+    result = runtime->await_future(thread, RawFuture::cast(value));
   } else {
     auto name = runtime->lookup_class(value).name();
     thread->throw_value(runtime->create_string_from_template(thread, "value of type '%' cannot be awaited", name));

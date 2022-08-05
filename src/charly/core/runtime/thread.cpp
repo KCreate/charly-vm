@@ -29,7 +29,6 @@
 
 #include "charly/utils/argumentparser.h"
 
-#include "charly/core/compiler/compiler.h"
 #include "charly/core/runtime/interpreter.h"
 #include "charly/core/runtime/runtime.h"
 #include "charly/core/runtime/thread.h"
@@ -98,13 +97,9 @@ uint64_t Thread::last_scheduled_at() const {
   return m_last_scheduled_at;
 }
 
-void Thread::extend_timeslice(uint64_t ms) {
-  m_last_scheduled_at += ms;
-}
-
 bool Thread::has_exceeded_timeslice() const {
-  uint64_t timestamp_now = get_steady_timestamp();
-  return timestamp_now - m_last_scheduled_at >= kThreadTimeslice;
+  uint64_t timestamp_now = get_steady_timestamp_milli();
+  return timestamp_now - last_scheduled_at() >= kThreadTimeslice;
 }
 
 const Stack* Thread::stack() const {
@@ -161,8 +156,7 @@ void Thread::checkpoint() {
   DCHECK(worker);
 
   if (worker->has_stop_flag() || has_exceeded_timeslice()) {
-    m_state.acas(State::Running, State::Ready);
-    enter_scheduler();
+    yield_to_scheduler();
   }
 }
 
@@ -185,7 +179,7 @@ void Thread::ready() {
 void Thread::context_switch(Worker* worker) {
   DCHECK(m_state == State::Ready);
   m_state.acas(State::Ready, State::Running);
-  m_last_scheduled_at = get_steady_timestamp();
+  m_last_scheduled_at = get_steady_timestamp_milli();
 
   if (m_stack == nullptr) {
     acquire_stack();
@@ -239,51 +233,39 @@ void Thread::set_pending_exception(RawValue value) {
   m_pending_exception = value;
 }
 
-void Thread::entry_main_thread() {
+int32_t Thread::entry_main_thread() {
   CHECK(id() == kMainThreadId);
 
   Runtime* runtime = m_runtime;
-
-  // load the boot file
-  fs::path boot_path = runtime->stdlib_directory() / "boot.ch";
-  std::ifstream boot_file(boot_path);
-
-  if (!boot_file.is_open()) {
-    debuglnf_notime("Could not open the charly runtime boot file (%)", boot_path);
-    runtime->abort(1);
-    return;
-  }
-
-  utils::Buffer boot_file_buffer;
-  std::string line;
-  while (std::getline(boot_file, line)) {
-    boot_file_buffer << line;
-    boot_file_buffer.write_utf8_cp('\n');
-  }
-
-  auto unit = Compiler::compile(boot_path, boot_file_buffer, CompilationUnit::Type::ReplInput);
-  if (unit->console.has_errors()) {
-    unit->console.dump_all(std::cerr);
-    debuglnf_notime("Could not compile charly runtime boot file (%)", boot_path);
-    runtime->abort(1);
-    return;
-  }
-
-  if (utils::ArgumentParser::is_flag_set("skipexec")) {
-    runtime->abort(0);
-    return;
-  }
-
-  auto module = unit->compiled_module;
-  CHECK(!module->function_table.empty());
-  runtime->register_module(this, module);
-
-  // initialize runtime
   runtime->initialize_symbol_table(this);
   runtime->initialize_builtin_types(this);
   runtime->initialize_argv_tuple(this);
   runtime->initialize_builtin_functions(this);
-  runtime->initialize_main_fiber(this, module->function_table.front());
+
+  fs::path boot_path = runtime->stdlib_directory() / "boot.ch";
+  RawValue result = runtime->import_module(this, boot_path, true);
+  if (result.is_error_exception()) {
+    dump_exception_trace(RawException::cast(pending_exception()));
+    return 1;
+  }
+
+  // execute user file or REPL depending on CLI arguments
+  fs::path filename;
+  bool load_as_repl = false;
+  if (utils::ArgumentParser::USER_FILENAME.has_value()) {
+    filename = utils::ArgumentParser::USER_FILENAME.value();
+  } else {
+    filename = runtime->stdlib_directory() / "repl.ch";
+    load_as_repl = true;
+  }
+
+  RawValue user_result = runtime->import_module(this, filename, load_as_repl);
+  if (user_result.is_error_exception()) {
+    dump_exception_trace(RawException::cast(pending_exception()));
+    return 1;
+  }
+
+  return 0;
 }
 
 void Thread::entry_fiber_thread() {
@@ -308,78 +290,6 @@ void Thread::entry_fiber_thread() {
     } else {
       DCHECK(!result.is_error());
       runtime()->resolve_future(this, fiber.result_future(), result);
-    }
-  }
-
-  // non-main threads will silently ignore exceptions until another fiber awaits them
-  // once the main fiber exits, all other fibers will get shut down as well
-  if (id() == kMainFiberThreadId) {
-    if (result.is_error_exception()) {
-      auto dump_exception = [](RawException exception) {
-        if (exception.isImportException()) {
-          auto import_exception = RawImportException::cast(exception);
-          auto errors = import_exception.errors();
-          auto message = RawString::cast(import_exception.message());
-          debuglnf_notime("%", message.view());
-          debuglnf_notime("");
-          for (uint32_t i = 0; i < errors.size(); i++) {
-            auto error = errors.field_at<RawTuple>(i);
-            auto type = error.field_at<RawString>(0);
-            auto filepath = error.field_at<RawString>(1);
-            auto error_message = error.field_at<RawString>(2);
-            auto source = error.field_at<RawString>(3);
-            auto location = error.field_at<RawString>(4);
-            debuglnf_notime("%: %:%: %\n%", type.view(), filepath.view(), location.view(), error_message.view(),
-                            source.view());
-          }
-        } else {
-          debuglnf_notime("%", exception);
-        }
-      };
-
-      std::stack<RawException> exception_stack;
-      RawException exception = RawException::cast(pending_exception());
-      RawException next_exception = exception;
-      bool chain_too_deep = false;
-      while (true) {
-        if (exception_stack.size() == kExceptionChainDepthLimit) {
-          chain_too_deep = true;
-          break;
-        }
-
-        exception_stack.push(next_exception);
-        RawValue cause = RawException::cast(next_exception).cause();
-        if (!cause.isException()) {
-          break;
-        }
-
-        next_exception = RawException::cast(cause);
-      }
-
-      RawException first_exception = exception_stack.top();
-      exception_stack.pop();
-      debuglnf_notime("Unhandled exception in main thread:\n");
-      dump_exception(first_exception);
-
-      while (!exception_stack.empty()) {
-        RawException top = exception_stack.top();
-        exception_stack.pop();
-        debuglnf_notime("\nDuring handling of the above exception, another exception occured:\n");
-        dump_exception(top);
-      }
-
-      if (chain_too_deep) {
-        debuglnf_notime("\nMore exceptions were thrown that are not shown here");
-      }
-
-      abort(1);
-    } else {
-      debugln("main fiber exited gracefully with value %", result);
-      if (result.isInt()) {
-        abort(RawInt::cast(result).value());
-      } else {
-        abort(0);
-      }
     }
   }
 }
@@ -407,14 +317,50 @@ void Thread::acquire_stack() {
     thread->m_worker = worker;
 
     if (thread->id() == kMainThreadId) {
-      thread->entry_main_thread();
+      thread->abort(thread->entry_main_thread());
+      UNREACHABLE();
     } else {
       thread->entry_fiber_thread();
+      thread->m_state.acas(State::Running, State::Exited);
+      thread->enter_scheduler();
+    }
+  });
+}
+
+void Thread::dump_exception_trace(RawException exception) const {
+  std::stack<RawException> exception_stack;
+  RawException next_exception = exception;
+  bool chain_too_deep = false;
+  while (true) {
+    if (exception_stack.size() == kExceptionChainDepthLimit) {
+      chain_too_deep = true;
+      break;
     }
 
-    thread->m_state.acas(State::Running, State::Exited);
-    thread->enter_scheduler();
-  });
+    exception_stack.push(next_exception);
+    RawValue cause = RawException::cast(next_exception).cause();
+    if (!cause.isException()) {
+      break;
+    }
+
+    next_exception = RawException::cast(cause);
+  }
+
+  RawException first_exception = exception_stack.top();
+  exception_stack.pop();
+  debuglnf_notime("Unhandled exception in main thread:\n");
+  debuglnf_notime("%", first_exception);
+
+  while (!exception_stack.empty()) {
+    RawException top = exception_stack.top();
+    exception_stack.pop();
+    debuglnf_notime("\nDuring handling of the above exception, another exception occured:\n");
+    debuglnf_notime("%", top);
+  }
+
+  if (chain_too_deep) {
+    debuglnf_notime("\nMore exceptions were thrown that are not shown here");
+  }
 }
 
 void Thread::push_frame(Frame* frame) {

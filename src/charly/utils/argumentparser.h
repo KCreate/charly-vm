@@ -29,6 +29,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <filesystem>
 
 #pragma once
 
@@ -53,6 +54,7 @@ public:
   static const std::string VERSION;
   static const std::string ENVIRONMENT_STRING_DELIMITER;
 
+  static std::optional<std::filesystem::path> USER_FILENAME;
   static std::unordered_map<std::string, std::vector<std::string>> CHARLY_FLAGS;
   static std::vector<std::string> USER_FLAGS;
   static std::unordered_map<std::string, std::string> ENVIRONMENT;
