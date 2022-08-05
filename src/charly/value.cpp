@@ -273,6 +273,14 @@ bool RawValue::truthyness() const {
   }
 }
 
+bool RawValue::is_old_object() const {
+  return (m_raw & kMaskImmediate) == kTagOldObject;
+}
+
+bool RawValue::is_eden_object() const {
+  return (m_raw & kMaskImmediate) == kTagEdenObject;
+}
+
 bool RawValue::isInt() const {
   return (m_raw & kMaskInt) == kTagInt;
 }
@@ -306,7 +314,7 @@ bool RawValue::isValue() const {
 }
 
 bool RawValue::isObject() const {
-  return ((m_raw & kMaskImmediate) == kTagOldObject) || ((m_raw & kMaskImmediate) == kTagEdenObject);
+  return is_old_object() || is_eden_object();
 }
 
 bool RawValue::isInstance() const {
@@ -511,12 +519,6 @@ void RawValue::dump(std::ostream& out) const {
       RawSymbol name = builtin_function.name();
       uint8_t argc = builtin_function.argc();
       writer.fg(Color::Yellow, "builtin ", name, "(", (uint32_t)argc, ")");
-      return;
-    }
-
-    if (isFiber()) {
-      auto fiber = RawFiber::cast(this);
-      writer.fg(Color::Red, "<Fiber ", fiber.address_voidptr(), ">");
       return;
     }
 
@@ -889,6 +891,10 @@ uintptr_t RawObject::address() const {
   return m_raw & ~kMaskImmediate;
 }
 
+uintptr_t RawObject::external_address() const {
+  return address() >> kExternalPointerShift;
+}
+
 void* RawObject::address_voidptr() const {
   return bitcast<void*>(address());
 }
@@ -901,11 +907,6 @@ ShapeId RawObject::shape_id() const {
   return header()->shape_id();
 }
 
-bool RawObject::is_eden_object() const {
-  auto tag = m_raw & kMaskImmediate;
-  DCHECK(tag == kTagEdenObject || tag == kTagOldObject);
-  return tag == kTagEdenObject;
-}
 
 ObjectHeader* RawObject::header() const {
   return bitcast<ObjectHeader*>(base_address());
@@ -926,6 +927,11 @@ bool RawObject::is_locked() const {
 RawObject RawObject::make_from_ptr(uintptr_t address, bool eden_pointer) {
   CHECK((address % kObjectAlignment) == 0, "invalid pointer alignment");
   return RawObject::cast(address | (eden_pointer ? kTagEdenObject : kTagOldObject));
+}
+
+RawObject RawObject::make_from_external_ptr(uintptr_t address) {
+  DCHECK((address & kExternalPointerValidationMask) == 0);
+  return RawObject::make_from_ptr(address << kExternalPointerShift);
 }
 
 size_t RawData::length() const {
@@ -979,15 +985,12 @@ bool RawInstance::is_instance_of(ShapeId id) {
 }
 
 uintptr_t RawInstance::pointer_at(int64_t index) const {
-  RawValue value = field_at(index);
-  DCHECK(value.isObject());
-  return RawObject::cast(value).address() >> kExternalPointerShift;
+  return RawObject::cast(field_at(index)).external_address();
 }
 
 void RawInstance::set_pointer_at(int64_t index, const void* pointer) {
   uintptr_t raw = bitcast<uintptr_t>(const_cast<void*>(pointer));
-  DCHECK((raw & kExternalPointerValidationMask) == 0);
-  set_field_at(index, RawObject::make_from_ptr(raw << kExternalPointerShift));
+  set_field_at(index, RawObject::make_from_external_ptr(raw));
 }
 
 int64_t RawInstance::int_at(int64_t index) const {

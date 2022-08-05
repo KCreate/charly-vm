@@ -35,9 +35,16 @@ using namespace charly::core::runtime;
 CATCH_TEST_CASE("Immediate encoded values") {
   CATCH_SECTION("pointers") {
     CATCH_CHECK(RawObject::make_from_ptr(0).address() == 0);
-    CATCH_CHECK(RawObject::make_from_ptr(0x8).address() == 8);
+    CATCH_CHECK(RawObject::make_from_ptr(0x10).address() == 0x10);
+    CATCH_CHECK(RawObject::make_from_ptr(0x60).address() == 0x60);
     CATCH_CHECK(RawObject::make_from_ptr(0x1000).address() == 0x1000);
-    CATCH_CHECK(RawObject::make_from_ptr(0xfffffffffffffff8).address() == 0xfffffffffffffff8);
+    CATCH_CHECK(RawObject::make_from_ptr(0xfffffffffffffff0).address() == 0xfffffffffffffff0);
+
+    CATCH_CHECK(RawObject::make_from_external_ptr(0).external_address() == 0);
+    CATCH_CHECK(RawObject::make_from_external_ptr(0x10).external_address() == 0x10);
+    CATCH_CHECK(RawObject::make_from_external_ptr(0x60).external_address() == 0x60);
+    CATCH_CHECK(RawObject::make_from_external_ptr(0x1000).external_address() == 0x1000);
+    CATCH_CHECK(RawObject::make_from_external_ptr(0x0ffffffffffffff0).external_address() == 0x0ffffffffffffff0);
   }
 
   CATCH_SECTION("integers") {

@@ -344,6 +344,8 @@ public:
   ShapeId shape_id() const;
   ShapeId shape_id_not_object_int() const;
   bool truthyness() const;
+  bool is_old_object() const;
+  bool is_eden_object() const;
 
 #define TYPECHECK(name) bool is##name() const;
   TYPE_NAMES(TYPECHECK)
@@ -559,10 +561,10 @@ public:
   COMMON_RAW_OBJECT(Object);
 
   uintptr_t address() const;
+  uintptr_t external_address() const;
   void* address_voidptr() const;
   uintptr_t base_address() const;
   ShapeId shape_id() const;
-  bool is_eden_object() const;
 
   ObjectHeader* header() const;
 
@@ -571,6 +573,11 @@ public:
   bool is_locked() const;
 
   static RawObject make_from_ptr(uintptr_t address, bool eden_pointer = false);
+  static RawObject make_from_external_ptr(uintptr_t address);
+
+  // external pointers must have their uppermost four bits be zero, else they cannot be encoded
+  static const size_t kExternalPointerValidationMask = 0xf000000000000000;
+  static const size_t kExternalPointerShift = 4;
 };
 
 // base class for all objects that store immediate data
@@ -669,10 +676,6 @@ public:
 
   static const size_t kMaximumFieldCount = 256;
   static const size_t kSize = kFieldCount * kPointerSize;
-
-  // external pointers must have their uppermost four bits be zero, else they cannot be encoded
-  static const size_t kExternalPointerValidationMask = 0xf000000000000000;
-  static const size_t kExternalPointerShift = 4;
 };
 
 // bytes stored on c++ heap
