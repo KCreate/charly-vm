@@ -24,7 +24,7 @@
  * SOFTWARE.
  */
 
-#include <map>
+#include <unordered_map>
 #include <utility>
 
 #include "charly/core/compiler/ir/valuelocation.h"
@@ -64,14 +64,14 @@ public:
   const ref<BlockScope> parent_block() const;
   const ref<Function> function_ast() const;
 
-  std::map<ir::VariableId, VariableDeclaration>& globals();
-  std::map<ir::VariableId, VariableDeclaration>& locals();
-  std::map<ir::VariableId, VariableDeclaration>& class_properties();
+  std::unordered_map<ir::VariableId, VariableDeclaration>& globals();
+  std::unordered_map<ir::VariableId, VariableDeclaration>& locals();
+  std::unordered_map<ir::VariableId, VariableDeclaration>& class_properties();
 
 private:
-  std::map<ir::VariableId, VariableDeclaration> m_globals;
-  std::map<ir::VariableId, VariableDeclaration> m_locals;
-  std::map<ir::VariableId, VariableDeclaration> m_class_properties;
+  std::unordered_map<ir::VariableId, VariableDeclaration> m_globals;
+  std::unordered_map<ir::VariableId, VariableDeclaration> m_locals;
+  std::unordered_map<ir::VariableId, VariableDeclaration> m_class_properties;
   ref<FunctionScope> m_parent_function;
   ref<BlockScope> m_parent_block;
   ref<Function> m_function_ast;

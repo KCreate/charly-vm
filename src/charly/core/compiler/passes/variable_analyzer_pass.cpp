@@ -269,15 +269,15 @@ const ref<Function> FunctionScope::function_ast() const {
   return m_function_ast;
 }
 
-std::map<ir::VariableId, VariableDeclaration>& FunctionScope::globals() {
+std::unordered_map<ir::VariableId, VariableDeclaration>& FunctionScope::globals() {
   return m_globals;
 }
 
-std::map<ir::VariableId, VariableDeclaration>& FunctionScope::locals() {
+std::unordered_map<ir::VariableId, VariableDeclaration>& FunctionScope::locals() {
   return m_locals;
 }
 
-std::map<ir::VariableId, VariableDeclaration>& FunctionScope::class_properties() {
+std::unordered_map<ir::VariableId, VariableDeclaration>& FunctionScope::class_properties() {
   return m_class_properties;
 }
 
