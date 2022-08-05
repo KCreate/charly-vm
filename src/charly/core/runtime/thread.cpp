@@ -152,10 +152,7 @@ void Thread::clean() {
 }
 
 void Thread::checkpoint() {
-  Worker* worker = m_worker;
-  DCHECK(worker);
-
-  if (worker->has_stop_flag() || has_exceeded_timeslice()) {
+  if (m_worker->has_stop_flag() || has_exceeded_timeslice()) {
     yield_to_scheduler();
   }
 }
@@ -375,6 +372,12 @@ void Thread::pop_frame(Frame* frame) {
 
 RawValue Thread::lookup_symbol(SYMBOL symbol) const {
   return worker()->processor()->lookup_symbol(symbol);
+}
+
+uintptr_t Thread::allocate(size_t size) {
+  checkpoint();
+  auto* tab = m_worker->processor()->tab();
+  return tab->allocate(this, size);
 }
 
 }  // namespace charly::core::runtime

@@ -141,16 +141,19 @@ Heap::~Heap() {
   m_old_regions.clear();
 }
 
-HeapRegion* Heap::allocate_eden_region() {
-  std::lock_guard<std::mutex> locker(m_mutex);
+HeapRegion* Heap::allocate_eden_region(Thread* thread) {
+  std::unique_lock locker(m_mutex);
 
   HeapRegion* region = pop_free_region();
+  if (region == nullptr && thread) {
+    locker.unlock();
+    m_runtime->gc()->perform_gc(thread);
+    locker.lock();
+    region = pop_free_region();
+  }
+
   if (region == nullptr) {
     region = map_new_region();
-
-    if (region == nullptr) {
-      return nullptr;
-    }
   }
 
   DCHECK(region != nullptr);
@@ -164,7 +167,7 @@ HeapRegion* Heap::allocate_eden_region() {
 }
 
 void Heap::release_eden_region(HeapRegion* region) {
-  std::lock_guard<std::mutex> locker(m_mutex);
+  std::lock_guard locker(m_mutex);
 
   DCHECK(region != nullptr);
   DCHECK(region->type == HeapRegion::Type::Eden);
@@ -184,8 +187,6 @@ HeapRegion* Heap::pop_free_region() {
     return region;
   }
 
-  m_runtime->gc()->request_gc();
-
   return nullptr;
 }
 
@@ -204,13 +205,13 @@ HeapRegion* Heap::map_new_region() {
     return region;
   }
 
-  return nullptr;
+  FAIL("out of memory!");
 }
 
 ThreadAllocationBuffer::ThreadAllocationBuffer(Heap* heap) {
   m_heap = heap;
   m_region = nullptr;
-  acquire_new_region();
+  acquire_new_region(nullptr);
 }
 
 ThreadAllocationBuffer::~ThreadAllocationBuffer() {
@@ -220,7 +221,7 @@ ThreadAllocationBuffer::~ThreadAllocationBuffer() {
   DCHECK(m_region == nullptr);
 }
 
-bool ThreadAllocationBuffer::allocate(size_t size, uintptr_t* address_out) {
+uintptr_t ThreadAllocationBuffer::allocate(Thread* thread, size_t size) {
   DCHECK(size % kObjectAlignment == 0, "allocation not aligned correctly");
   DCHECK(size <= kHeapObjectMaxSize, "allocation is too big");
 
@@ -231,35 +232,32 @@ bool ThreadAllocationBuffer::allocate(size_t size, uintptr_t* address_out) {
   }
 
   if (m_region == nullptr) {
-    acquire_new_region();
+    acquire_new_region(thread);
 
     // could not allocate a new region
     if (m_region == nullptr) {
-      return false;
+      FAIL("allocation failed");
     }
   }
 
   DCHECK(m_region != nullptr);
   DCHECK(m_region->fits(size));
 
-  uintptr_t addr = m_region->allocate(size);
-  *address_out = addr;
-  return true;
+  return m_region->allocate(size);
 }
 
 void ThreadAllocationBuffer::release_owned_region() {
+  DCHECK(m_region);
   m_heap->release_eden_region(m_region);
   m_region = nullptr;
 }
 
-void ThreadAllocationBuffer::acquire_new_region() {
+void ThreadAllocationBuffer::acquire_new_region(Thread* thread) {
   DCHECK(m_region == nullptr);
 
-  m_region = m_heap->allocate_eden_region();
-  if (m_region == nullptr) {
-    FAIL("out of memory!");
-  }
+  m_region = m_heap->allocate_eden_region(thread);
 
+  DCHECK(m_region);
   DCHECK(m_region->type == HeapRegion::Type::Eden);
   DCHECK(m_region->state == HeapRegion::State::Owned);
 }

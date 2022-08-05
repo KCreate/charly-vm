@@ -50,14 +50,17 @@ func write(...args) {
 }
 
 func print(...args) {
+    let line
+
     args.each(->(e, i) {
-        builtin_writevalue(e)
-        // FIXME: do actual minus op once sub opcode is implemented
-        if i != args.length - 1 {
-            builtin_writevalue(" ")
+        if i == 0 {
+            line = "{e}"
+        } else {
+            line = "{line} {e}"
         }
     })
-    builtin_writevalue("\n");
+
+    builtin_writevalue("{line}\n")
     null
 }
 
@@ -96,10 +99,9 @@ func compile(source, name = "repl") = builtin_compile(source, name)
     class builtin_Int {
         func times(cb) {
             let i = 0
-            loop {
+            while i != self {
                 cb(i)
                 i += 1
-                if i == self break
             }
 
             self
@@ -111,10 +113,9 @@ func compile(source, name = "repl") = builtin_compile(source, name)
             const size = @length
             let i = 0
 
-            loop {
+            while i != size {
                 cb(self[i], i)
                 i += 1
-                if i == size break
             }
 
             self

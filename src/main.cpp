@@ -75,7 +75,6 @@ int32_t cli(DiagnosticConsole& console) {
     debuglnf_notime("kHeapTotalSize                      = %", kHeapTotalSize);
     debuglnf_notime("kHeapRegionSize                     = %", kHeapRegionSize);
     debuglnf_notime("kHeapRegionCount                    = %", kHeapRegionCount);
-    debuglnf_notime("kHeapRegionPageCount                = %", kHeapRegionPageCount);
     debuglnf_notime("kHeapInitialMappedRegionCount       = %", kHeapInitialMappedRegionCount);
     debuglnf_notime("kHeapRegionSpanSize                 = %", kHeapRegionSpanSize);
     debuglnf_notime("kHeapRegionSpanCount                = %", kHeapRegionSpanCount);

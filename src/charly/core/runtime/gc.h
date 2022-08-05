@@ -35,69 +35,38 @@
 namespace charly::core::runtime {
 
 class Runtime;
+class Thread;
 
 class GarbageCollector {
   friend class Heap;
-
 public:
   explicit GarbageCollector(Runtime* runtime) :
     m_runtime(runtime),
     m_wants_collection(false),
     m_wants_exit(false),
-    m_state(State::Idle),
+    m_gc_cycle(0),
     m_thread(std::thread(&GarbageCollector::main, this)) {}
 
   ~GarbageCollector() {
-    if (m_thread.joinable()) {
-      m_thread.join();
-    }
+    DCHECK(!m_thread.joinable());
   }
 
-  enum class State : uint8_t {
-    Idle,      // GC is not running and is waiting to be activated
-    Mark,      // GC is traversing the heap, marking live values
-    Evacuate,  // GC is compacting the heap
-    UpdateRef  // GC is updating references to moved objects
-  };
-
-  State state() const {
-    return m_state;
-  }
-
-  // signal the garbage collector thread to stop
   void shutdown();
-
-  // wait for the garbage collector thread to stop
   void join();
-
-  // starts a gc cycle if the GC worker is currently paused
-  void request_gc();
+  void perform_gc(Thread* thread);
 
 private:
-  // concurrent worker main method
   void main();
 
-  // GC STW pauses
-  void init_mark();
-  void init_evacuate();
-  void init_updateref();
-  void init_idle();
-
-  // GC phases that run concurrently with the application threads
-  void phase_idle();
-  void phase_mark();
-  void phase_evacuate();
-  void phase_updateref();
-
-private:
   Runtime* m_runtime;
 
   atomic<bool> m_wants_collection;
   atomic<bool> m_wants_exit;
+  atomic<uint64_t> m_gc_cycle;
   std::mutex m_mutex;
   std::condition_variable m_cv;
+  std::condition_variable m_finished_cv;
 
-  atomic<State> m_state;
   std::thread m_thread;
 };
 

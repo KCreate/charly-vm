@@ -193,6 +193,9 @@ public:
   // look up symbol via active processor cache
   RawValue lookup_symbol(SYMBOL symbol) const;
 
+  // allocate memory on the managed charly heap
+  uintptr_t allocate(size_t size);
+
 private:
   int32_t entry_main_thread();
   void entry_fiber_thread();

@@ -44,15 +44,10 @@ class Runtime;
 static const size_t kHeapTotalSize = kGb * 2;
 static const size_t kHeapRegionSize = kKb * 512;
 static const size_t kHeapRegionCount = kHeapTotalSize / kHeapRegionSize;
-static const size_t kHeapRegionPageCount = kHeapRegionSize / kPageSize;
-
-static const size_t kHeapInitialMappedRegionCount = 16;
-
+static const size_t kHeapInitialMappedRegionCount = 0;
 static const size_t kHeapRegionSpanSize = kKb;
 static const size_t kHeapRegionSpanCount = kHeapRegionSize / kHeapRegionSpanSize;
-
 static const uintptr_t kHeapRegionPointerMask = 0xfffffffffff80000;
-
 static const uintptr_t kHeapRegionMagicNumber = 0xdeadbeefcafebabe;
 
 class Heap;
@@ -123,7 +118,7 @@ public:
 
   // allocates a free region from the heaps freelist and marks it
   // as a live eden region
-  HeapRegion* allocate_eden_region();
+  HeapRegion* allocate_eden_region(Thread* thread);
 
   // release a live eden region
   void release_eden_region(HeapRegion* region);
@@ -152,16 +147,17 @@ private:
   std::unordered_set<HeapRegion*> m_old_regions;            // old regions
 };
 
+class Thread;
 class ThreadAllocationBuffer {
 public:
   explicit ThreadAllocationBuffer(Heap* heap);
   ~ThreadAllocationBuffer();
 
-  bool allocate(size_t size, uintptr_t* address_out);
+  uintptr_t allocate(Thread* thread, size_t size);
 
 private:
   void release_owned_region();
-  void acquire_new_region();
+  void acquire_new_region(Thread* thread);
 
 private:
   Heap* m_heap;

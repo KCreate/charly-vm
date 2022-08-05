@@ -430,15 +430,7 @@ RawData Runtime::create_data(Thread* thread, ShapeId shape_id, size_t size) {
   size_t header_size = sizeof(ObjectHeader);
   size_t total_size = align_to_size(header_size + size, kObjectAlignment);
 
-  Worker* worker = thread->worker();
-  Processor* proc = worker->processor();
-  ThreadAllocationBuffer* tab = proc->tab();
-
-  // attempt to allocate memory for the object
-  uintptr_t memory = 0;
-  if (!tab->allocate(total_size, &memory)) {
-    FAIL("allocation failed");
-  }
+  uintptr_t memory = thread->allocate(total_size);
   DCHECK(memory);
 
   // initialize header
@@ -454,15 +446,7 @@ RawInstance Runtime::create_instance(Thread* thread, ShapeId shape_id, size_t fi
   size_t header_size = sizeof(ObjectHeader);
   size_t total_size = align_to_size(header_size + object_size, kObjectAlignment);
 
-  Worker* worker = thread->worker();
-  Processor* proc = worker->processor();
-  ThreadAllocationBuffer* tab = proc->tab();
-
-  // attempt to allocate memory for the object
-  uintptr_t memory = 0;
-  if (!tab->allocate(total_size, &memory)) {
-    FAIL("allocation failed");
-  }
+  uintptr_t memory = thread->allocate(total_size);
   DCHECK(memory);
 
   // initialize header

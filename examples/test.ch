@@ -24,16 +24,18 @@
  * SOFTWARE.
  */
 
-const f = Future.create()
-
-spawn {
-    f.resolve((25, 100, -8819, 25.25123, true, false, null, "hehe", "", f, Future, Future.create, self))
+func allocator(index) {
+    let data = (0,)
+    loop {
+        const next_num = data[0] + 1
+        data = (next_num,)
+    }
 }
 
-const result = await f
-
-print(result)
-
+const fiber_count = 1
+const fibers = Tuple.make_with(fiber_count, ->(i) spawn allocator(i))
+print(fibers)
+fibers.each(->(fiber) await fiber)
 
 
 
