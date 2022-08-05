@@ -26,7 +26,6 @@
 
 #include <sys/mman.h>
 #include <unistd.h>
-#include <cerrno>
 
 #include "charly/core/runtime/heap.h"
 #include "charly/core/runtime/runtime.h"
@@ -49,8 +48,14 @@ uintptr_t HeapRegion::allocate(size_t size) {
   DCHECK(fits(size));
 
   auto buffer_start = bitcast<uintptr_t>(&this->buffer);
-  uintptr_t buffer_next = buffer_start + this->used;
+  uintptr_t object_offset = this->used;
+  uintptr_t buffer_next = buffer_start + object_offset;
   this->used += size;
+
+  // update last known object address in span table
+  DCHECK(this->type == Type::Eden);
+  size_t span_index = get_span_index_for_offset(object_offset);
+  span_set_last_object_offset(span_index, object_offset);
 
   return buffer_next;
 }
@@ -67,7 +72,47 @@ void HeapRegion::reset() {
   this->type = HeapRegion::Type::Unused;
   this->state = HeapRegion::State::Unused;
   this->used = 0;
-  this->card_table.reset();
+  for (auto& entry : this->span_table) {
+    entry = kSpanTableInvalidOffset << kSpanTableOffsetShift;
+  }
+}
+
+size_t HeapRegion::get_span_index_for_offset(size_t object_offset) {
+  // need to add heap metadata size to offset calculation
+  size_t actual_offset_into_region = object_offset + sizeof(HeapRegion);
+  return actual_offset_into_region / kHeapRegionSpanSize;
+}
+
+size_t HeapRegion::span_get_last_object_offset(size_t span_index) const {
+  DCHECK(span_index < kHeapRegionSpanCount);
+  return this->span_table[span_index] >> kSpanTableOffsetShift;
+}
+
+bool HeapRegion::span_get_dirty_flag(size_t span_index) const {
+  DCHECK(span_index < kHeapRegionSpanCount);
+  return this->span_table[span_index] & kSpanTableDirtyFlagMask;
+}
+
+void HeapRegion::span_set_last_object_offset(size_t span_index, size_t object_offset) {
+  DCHECK(span_index < kHeapRegionSpanCount);
+  this->span_table[span_index] = object_offset << kSpanTableOffsetShift;
+}
+
+void HeapRegion::span_set_dirty_flag(size_t span_index, bool dirty) {
+  DCHECK(span_index < kHeapRegionSpanCount);
+  size_t old_entry = this->span_table[span_index];
+  size_t new_entry = (old_entry & ~kSpanTableDirtyFlagMask) | dirty;
+
+  // setting the dirty flag only happens in old regions
+  // since the object offset fields in the span table never change for these regions,
+  // no specific synchronisation is needed to set the dirty flag
+  if (dirty) {
+    this->span_table[span_index] = new_entry;
+  } else {
+    // setting the dirty flag to false happens only during a GC pause
+    // since no mutator threads are running at this point, the cas should always succeed
+    this->span_table[span_index].acas(old_entry, new_entry);
+  }
 }
 
 Heap::Heap(Runtime* runtime) : m_runtime(runtime) {
@@ -98,7 +143,6 @@ Heap::~Heap() {
   m_free_regions.clear();
   m_live_eden_regions.clear();
   m_released_eden_regions.clear();
-  m_survivor_regions.clear();
   m_old_regions.clear();
 }
 
@@ -158,10 +202,7 @@ HeapRegion* Heap::map_new_region() {
     Allocator::mmap_address(region, kHeapRegionSize, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED | MAP_FIXED);
 
     region->heap = this;
-    region->type = HeapRegion::Type::Unused;
-    region->state = HeapRegion::State::Unused;
-    region->used = 0;
-    region->card_table.reset();
+    region->reset();
 
     m_mapped_regions.insert(region);
 

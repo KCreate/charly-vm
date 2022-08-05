@@ -70,6 +70,7 @@ void* Allocator::mmap_self_aligned(size_t size, int32_t protection, int32_t flag
   // unmap excess pages
   munmap((void*)lower_excess_base, excess_lower);
   munmap((void*)upper_excess_base, excess_upper);
+  DCHECK(aligned_base % alignment == 0);
   return (void*)aligned_base;
 }
 

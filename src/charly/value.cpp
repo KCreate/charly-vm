@@ -86,7 +86,7 @@ size_t align_to_size(size_t size, size_t alignment) {
 
 void ObjectHeader::initialize_header(uintptr_t address, ShapeId shape_id, uint16_t count) {
   auto* header = bitcast<ObjectHeader*>(address);
-  header->m_shape_id_and_survivor_count = static_cast<uint32_t>(shape_id);  // survivor count initialized to 0
+  header->m_shape_id_and_survivor_count = encode_shape_and_survivor_count(shape_id, 0);
   header->m_count = count;
   header->m_lock = 0;
   header->m_flags = Flag::kYoungGeneration;

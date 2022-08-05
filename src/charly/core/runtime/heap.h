@@ -49,23 +49,26 @@ static const size_t kHeapTotalSize = kGb * 2;
 static const size_t kHeapRegionSize = kKb * 512;
 static const size_t kHeapRegionCount = kHeapTotalSize / kHeapRegionSize;
 static const size_t kHeapRegionPageCount = kHeapRegionSize / kPageSize;
-static const size_t kHeapRegionPossibleObjectAddresses = kHeapRegionSize / kObjectAlignment;
 
 static const size_t kHeapInitialMappedRegionCount = 16;
+
+static const size_t kHeapRegionSpanSize = kKb;
+static const size_t kHeapRegionSpanCount = kHeapRegionSize / kHeapRegionSpanSize;
 
 class Heap;
 
 struct HeapRegion {
   HeapRegion() = delete;
 
-  enum class Type : uint8_t {
-    Unused,    // region isn't used and doesn't have a type yet
-    Eden,      // new objects are allocated in eden regions
-    Survivor,  // holds objects that have a survived a minor GC cycle
-    Old        // holds objects that have survived many minor GC cycles
+  enum class Type : uint8_t
+  {
+    Unused,  // region isn't used and doesn't have a type yet
+    Eden,    // new objects are allocated in eden regions
+    Old      // holds objects that have survived many minor GC cycles
   };
 
-  enum class State : uint8_t {
+  enum class State : uint8_t
+  {
     Unused,    // region is on a freelist and can be acquired
     Owned,     // region is exclusively owned by a processor
     Released,  // region has been released from the processor
@@ -85,11 +88,29 @@ struct HeapRegion {
 
   void reset();
 
+  // calculate in which span an object offset is stored in
+  static size_t get_span_index_for_offset(size_t object_offset);
+
+  size_t span_get_last_object_offset(size_t span_index) const;
+  bool span_get_dirty_flag(size_t span_index) const;
+
+  void span_set_last_object_offset(size_t span_index, size_t object_offset);
+  void span_set_dirty_flag(size_t span_index, bool dirty);
+
   Heap* heap;
   Type type;
   State state;
   size_t used;
-  std::bitset<kHeapRegionPossibleObjectAddresses> card_table;
+
+  // stores last known object offset and dirty flag for each span
+  // encoded as (offset << 32) | dirty
+  //
+  // object offset is relative to the HeapRegion::buffer field
+  // spans are relative to the entire HeapRegion (metadata included)
+  static constexpr size_t kSpanTableInvalidOffset = 0xffffffff;
+  static constexpr size_t kSpanTableOffsetShift = 32;
+  static constexpr size_t kSpanTableDirtyFlagMask = 0x1;
+  std::array<atomic<size_t>, kHeapRegionSpanCount> span_table;
   uint8_t buffer alignas(kObjectAlignment)[];
 };
 
@@ -131,7 +152,6 @@ private:
   std::list<HeapRegion*> m_free_regions;                    // regions that are unused and can be acquired
   std::unordered_set<HeapRegion*> m_live_eden_regions;      // eden regions that are owned
   std::unordered_set<HeapRegion*> m_released_eden_regions;  // eden regions that are no longer owned
-  std::unordered_set<HeapRegion*> m_survivor_regions;       // survivor regions
   std::unordered_set<HeapRegion*> m_old_regions;            // old regions
 };
 
