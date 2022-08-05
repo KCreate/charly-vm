@@ -51,6 +51,10 @@ static const size_t kHeapInitialMappedRegionCount = 16;
 static const size_t kHeapRegionSpanSize = kKb;
 static const size_t kHeapRegionSpanCount = kHeapRegionSize / kHeapRegionSpanSize;
 
+static const uintptr_t kHeapRegionPointerMask = 0xfffffffffff80000;
+
+static const uintptr_t kHeapRegionMagicNumber = 0xdeadbeefcafebabe;
+
 class Heap;
 
 struct HeapRegion {
@@ -82,15 +86,14 @@ struct HeapRegion {
 
   void reset();
 
-  // calculate in which span an object offset is stored in
-  static size_t get_span_index_for_offset(size_t object_offset);
-
+  size_t span_get_index_for_pointer(uintptr_t pointer) const;
   size_t span_get_last_object_offset(size_t span_index) const;
   bool span_get_dirty_flag(size_t span_index) const;
 
   void span_set_last_object_offset(size_t span_index, size_t object_offset);
-  void span_set_dirty_flag(size_t span_index, bool dirty);
+  void span_set_dirty_flag(size_t span_index, bool dirty = true);
 
+  uintptr_t magic = kHeapRegionMagicNumber;
   Heap* heap;
   Type type;
   State state;
@@ -104,7 +107,7 @@ struct HeapRegion {
   static constexpr size_t kSpanTableInvalidOffset = 0xffffffff;
   static constexpr size_t kSpanTableOffsetShift = 32;
   static constexpr size_t kSpanTableDirtyFlagMask = 0x1;
-  std::array<atomic<size_t>, kHeapRegionSpanCount> span_table;
+  std::array<size_t, kHeapRegionSpanCount> span_table;
   uint8_t buffer alignas(kObjectAlignment)[];
 };
 

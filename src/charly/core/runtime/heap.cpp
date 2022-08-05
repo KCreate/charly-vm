@@ -54,7 +54,7 @@ uintptr_t HeapRegion::allocate(size_t size) {
 
   // update last known object address in span table
   DCHECK(this->type == Type::Eden);
-  size_t span_index = get_span_index_for_offset(object_offset);
+  size_t span_index = span_get_index_for_pointer(buffer_next);
   span_set_last_object_offset(span_index, object_offset);
 
   return buffer_next;
@@ -77,10 +77,14 @@ void HeapRegion::reset() {
   }
 }
 
-size_t HeapRegion::get_span_index_for_offset(size_t object_offset) {
-  // need to add heap metadata size to offset calculation
-  size_t actual_offset_into_region = object_offset + sizeof(HeapRegion);
-  return actual_offset_into_region / kHeapRegionSpanSize;
+size_t HeapRegion::span_get_index_for_pointer(uintptr_t pointer) const {
+  auto buffer_start = bitcast<uintptr_t>(&this->buffer);
+  DCHECK(pointer >= buffer_start);
+  DCHECK(pointer < (buffer_start + kHeapRegionSize));
+  size_t object_offset = static_cast<size_t>(pointer - buffer_start);
+  size_t index = object_offset / kHeapRegionSpanSize;
+  DCHECK(index < kHeapRegionSpanCount);
+  return index;
 }
 
 size_t HeapRegion::span_get_last_object_offset(size_t span_index) const {
@@ -95,24 +99,15 @@ bool HeapRegion::span_get_dirty_flag(size_t span_index) const {
 
 void HeapRegion::span_set_last_object_offset(size_t span_index, size_t object_offset) {
   DCHECK(span_index < kHeapRegionSpanCount);
+  DCHECK(span_get_dirty_flag(span_index) == false);
   this->span_table[span_index] = object_offset << kSpanTableOffsetShift;
 }
 
 void HeapRegion::span_set_dirty_flag(size_t span_index, bool dirty) {
   DCHECK(span_index < kHeapRegionSpanCount);
-  size_t old_entry = this->span_table[span_index];
-  size_t new_entry = (old_entry & ~kSpanTableDirtyFlagMask) | dirty;
-
-  // setting the dirty flag only happens in old regions
-  // since the object offset fields in the span table never change for these regions,
-  // no specific synchronisation is needed to set the dirty flag
-  if (dirty) {
-    this->span_table[span_index] = new_entry;
-  } else {
-    // setting the dirty flag to false happens only during a GC pause
-    // since no mutator threads are running at this point, the cas should always succeed
-    this->span_table[span_index].acas(old_entry, new_entry);
-  }
+  size_t* entry = &this->span_table[span_index];
+  bool* flag_pointer = static_cast<bool*>(static_cast<void*>(entry));
+  *flag_pointer = dirty;
 }
 
 Heap::Heap(Runtime* runtime) : m_runtime(runtime) {

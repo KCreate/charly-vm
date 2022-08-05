@@ -938,6 +938,9 @@ ShapeId RawObject::shape_id() const {
   return header()->shape_id();
 }
 
+size_t RawObject::count() const {
+  return header()->count();
+}
 
 ObjectHeader* RawObject::header() const {
   return bitcast<ObjectHeader*>(base_address());
@@ -955,6 +958,28 @@ bool RawObject::is_locked() const {
   return header()->m_lock.is_locked();
 }
 
+void RawObject::set_field_at(uint32_t index, RawValue value) {
+  DCHECK(isInstance() || isTuple());
+  DCHECK(index < count());
+  RawValue* data = bitcast<RawValue*>(address());
+  data[index] = value;
+
+  if (value.is_eden_object() && this->is_old_object()) {
+    gc_write_barrier();
+  }
+}
+
+void RawObject::gc_write_barrier() const {
+  uintptr_t object_base = base_address();
+  uintptr_t region_pointer = object_base & kHeapRegionPointerMask;
+  HeapRegion* region = bitcast<HeapRegion*>(region_pointer);
+  DCHECK(region->magic == kHeapRegionMagicNumber);
+  DCHECK(region->type == HeapRegion::Type::Old);
+  DCHECK(region->state == HeapRegion::State::Released);
+  size_t span_index = region->span_get_index_for_pointer(object_base);
+  region->span_set_dirty_flag(span_index);
+}
+
 RawObject RawObject::make_from_ptr(uintptr_t address, bool eden_pointer) {
   CHECK((address % kObjectAlignment) == 0, "invalid pointer alignment");
   return RawObject::cast(address | (eden_pointer ? kTagEdenObject : kTagOldObject));
@@ -966,7 +991,7 @@ RawObject RawObject::make_from_external_ptr(uintptr_t address) {
 }
 
 size_t RawData::length() const {
-  return header()->count();
+  return count();
 }
 
 const uint8_t* RawData::data() const {
@@ -987,11 +1012,11 @@ const char* RawLargeString::data() const {
 }
 
 uint32_t RawTuple::size() const {
-  return header()->count();
+  return count();
 }
 
 uint32_t RawInstance::field_count() const {
-  return header()->count();
+  return count();
 }
 
 bool RawInstance::is_instance_of(ShapeId id) {

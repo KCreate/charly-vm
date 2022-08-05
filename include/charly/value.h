@@ -565,12 +565,16 @@ public:
   void* address_voidptr() const;
   uintptr_t base_address() const;
   ShapeId shape_id() const;
+  size_t count() const;
 
   ObjectHeader* header() const;
 
   void lock() const;
   void unlock() const;
   bool is_locked() const;
+
+  void set_field_at(uint32_t index, RawValue value);
+  void gc_write_barrier() const;
 
   static RawObject make_from_ptr(uintptr_t address, bool eden_pointer = false);
   static RawObject make_from_external_ptr(uintptr_t address);
@@ -629,12 +633,6 @@ public:
     DCHECK(size() > 0);
     return field_at<R>(size() - 1);
   }
-
-  void set_field_at(uint32_t index, RawValue value) {
-    DCHECK(index < size());
-    RawValue* data = bitcast<RawValue*>(address());
-    data[index] = RawValue::cast(value);
-  }
 };
 
 // base type for all types that use the shape system
@@ -655,12 +653,6 @@ public:
     DCHECK(index < field_count());
     RawValue* data = bitcast<RawValue*>(address());
     return R::cast(data[index]);
-  }
-
-  void set_field_at(uint32_t index, RawValue value) {
-    DCHECK(index < field_count());
-    RawValue* data = bitcast<RawValue*>(address());
-    data[index] = RawValue::cast(value);
   }
 
   uintptr_t pointer_at(int64_t index) const;
