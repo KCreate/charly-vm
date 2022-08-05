@@ -582,9 +582,7 @@ public:
   const uint8_t* data() const;
   SYMBOL hashcode() const;
 
-  // FIXME: remove magic number
-  // 1024 bytes - 16 bytes for the header
-  static const size_t kMaxLength = 1008;
+  static const size_t kMaxLength = kKb * 32 - sizeof(ObjectHeader);
 };
 
 // string stored on managed heap

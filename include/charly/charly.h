@@ -105,6 +105,10 @@ static const uint64_t kUInt16Max = 0x0000ffff;
 static const uint64_t kUInt8Min = 0;
 static const uint64_t kUInt8Max = 0x000000ff;
 
+static const size_t kKb = 1024;
+static const size_t kMb = kKb * 1024;
+static const size_t kGb = kMb * 1024;
+
 #ifdef NDEBUG
 static constexpr bool kIsDebugBuild = false;
 #else

@@ -41,10 +41,6 @@ namespace charly::core::runtime {
 
 class Runtime;
 
-static const size_t kKb = 1024;
-static const size_t kMb = kKb * 1024;
-static const size_t kGb = kMb * 1024;
-
 static const size_t kHeapTotalSize = kGb * 2;
 static const size_t kHeapRegionSize = kKb * 512;
 static const size_t kHeapRegionCount = kHeapTotalSize / kHeapRegionSize;
