@@ -974,7 +974,12 @@ const uint8_t* RawData::data() const {
 }
 
 SYMBOL RawData::hashcode() const {
-  return crc32::hash_block(bitcast<const char*>(data()), length());
+  if (header()->has_cached_hashcode()) {
+    return header()->hashcode();
+  }
+  SYMBOL hash = crc32::hash_block(bitcast<const char*>(data()), length());
+  header()->cas_hashcode(0, hash);
+  return hash;
 }
 
 const char* RawLargeString::data() const {
@@ -1043,7 +1048,8 @@ void RawInstance::set_klass_field(RawValue klass) {
 }
 
 SYMBOL RawHugeBytes::hashcode() const {
-  return crc32::hash_block(bitcast<const char*>(data()), length());
+  DCHECK(header()->has_cached_hashcode());
+  return header()->hashcode();
 }
 
 const uint8_t* RawHugeBytes::data() const {
@@ -1065,7 +1071,8 @@ void RawHugeBytes::set_length(size_t length) {
 }
 
 SYMBOL RawHugeString::hashcode() const {
-  return crc32::hash_block(data(), length());
+  DCHECK(header()->has_cached_hashcode());
+  return header()->hashcode();
 }
 
 const char* RawHugeString::data() const {
