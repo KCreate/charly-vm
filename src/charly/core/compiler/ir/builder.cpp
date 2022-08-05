@@ -612,6 +612,7 @@ void Builder::place_label(Label label) {
 }
 
 ref<IRInstruction> Builder::emit_load_value(RawValue value) {
+  // check if immediate value fits into the 3 byte opcode argument
   if ((value.raw() & 0xffffffffff000000) == 0) {
     return emit_loadsmi(value.raw());
   } else {

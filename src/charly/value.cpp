@@ -89,7 +89,7 @@ void ObjectHeader::initialize_header(uintptr_t address, ShapeId shape_id, uint16
   header->m_shape_id_and_survivor_count = encode_shape_and_survivor_count(shape_id, 0);
   header->m_count = count;
   header->m_lock = 0;
-  header->m_flags = Flag::kYoungGeneration;
+  header->m_flags = Flag::kEdenGeneration;
   header->m_hashcode = 0;
   header->m_forward_offset = 0;
 }
@@ -135,9 +135,21 @@ uint32_t ObjectHeader::forward_offset() const {
   return m_forward_offset;
 }
 
+bool ObjectHeader::is_reachable() const {
+  return flags() & kReachable;
+}
+
+bool ObjectHeader::has_cached_hashcode() const {
+  return flags() & kHasHashcode;
+}
+
+bool ObjectHeader::is_eden_generation() const {
+  return flags() & kEdenGeneration;
+}
+
 RawObject ObjectHeader::object() const {
   uintptr_t object_address = bitcast<uintptr_t>(this) + sizeof(ObjectHeader);
-  return RawObject::make_from_ptr(object_address);
+  return RawObject::make_from_ptr(object_address, is_eden_generation());
 }
 
 uint32_t ObjectHeader::object_size() const {
@@ -294,7 +306,7 @@ bool RawValue::isValue() const {
 }
 
 bool RawValue::isObject() const {
-  return (m_raw & kMaskPointer) == kTagObject;
+  return ((m_raw & kMaskImmediate) == kTagOldObject) || ((m_raw & kMaskImmediate) == kTagEdenObject);
 }
 
 bool RawValue::isInstance() const {
@@ -546,9 +558,7 @@ void RawValue::dump(std::ostream& out) const {
 
     if (isClass()) {
       auto klass = RawClass::cast(this);
-      auto is_final = klass.flags() & RawClass::kFlagFinal;
-      auto is_static = klass.flags() & RawClass::kFlagStatic;
-      writer.fg(Color::Yellow, "<", is_final ? "final " : "", is_static ? "static " : "", "Class ", klass.name(), ">");
+      writer.fg(Color::Yellow, "<Class ", klass.name(), ">");
       return;
     }
 
@@ -746,7 +756,7 @@ RawSmallBytes RawSmallBytes::make_empty() {
 }
 
 ErrorId RawNull::error_code() const {
-  return static_cast<ErrorId>((raw() >> kShiftError) & kMaskImmediate);
+  return static_cast<ErrorId>(raw() >> kShiftError);
 }
 
 RawNull RawNull::make() {
@@ -876,7 +886,7 @@ bool RawBytes::compare(RawBytes base, const uint8_t* data, size_t length) {
 }
 
 uintptr_t RawObject::address() const {
-  return m_raw & ~kMaskPointer;
+  return m_raw & ~kMaskImmediate;
 }
 
 void* RawObject::address_voidptr() const {
@@ -889,6 +899,12 @@ uintptr_t RawObject::base_address() const {
 
 ShapeId RawObject::shape_id() const {
   return header()->shape_id();
+}
+
+bool RawObject::is_eden_object() const {
+  auto tag = m_raw & kMaskImmediate;
+  DCHECK(tag == kTagEdenObject || tag == kTagOldObject);
+  return tag == kTagEdenObject;
 }
 
 ObjectHeader* RawObject::header() const {
@@ -907,9 +923,9 @@ bool RawObject::is_locked() const {
   return header()->m_lock.is_locked();
 }
 
-RawObject RawObject::make_from_ptr(uintptr_t address) {
+RawObject RawObject::make_from_ptr(uintptr_t address, bool eden_pointer) {
   CHECK((address % kObjectAlignment) == 0, "invalid pointer alignment");
-  return RawObject::cast(address | kTagObject);
+  return RawObject::cast(address | (eden_pointer ? kTagEdenObject : kTagOldObject));
 }
 
 size_t RawData::length() const {

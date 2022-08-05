@@ -126,15 +126,15 @@ enum class ShapeId : uint32_t {
 // is not a pointer to a heap object
 static const ShapeId kShapeImmediateTagMapping[16] = {
   /* 0b0000 */ ShapeId::kInt,
-  /* 0b0001 */ ShapeId::kMaxShapeCount,  // heap objects
+  /* 0b0001 */ ShapeId::kMaxShapeCount,  // old heap objects
   /* 0b0010 */ ShapeId::kInt,
-  /* 0b0011 */ ShapeId::kFloat,
+  /* 0b0011 */ ShapeId::kMaxShapeCount,  // eden heap objects
   /* 0b0100 */ ShapeId::kInt,
-  /* 0b0101 */ ShapeId::kBool,
+  /* 0b0101 */ ShapeId::kFloat,
   /* 0b0110 */ ShapeId::kInt,
-  /* 0b0111 */ ShapeId::kSymbol,
+  /* 0b0111 */ ShapeId::kBool,
   /* 0b1000 */ ShapeId::kInt,
-  /* 0b1001 */ ShapeId::kMaxShapeCount,  // heap objects
+  /* 0b1001 */ ShapeId::kSymbol,
   /* 0b1010 */ ShapeId::kInt,
   /* 0b1011 */ ShapeId::kNull,
   /* 0b1100 */ ShapeId::kInt,
@@ -184,9 +184,9 @@ public:
   CHARLY_NON_HEAP_ALLOCATABLE(ObjectHeader);
 
   enum Flag : uint8_t {
-    kReachable = 1,        // object is reachable by GC
-    kHasHashcode = 2,      // object has a cached hashcode
-    kYoungGeneration = 4,  // object is in a young generation
+    kReachable = 1,       // object is reachable by GC
+    kHasHashcode = 2,     // object has a cached hashcode
+    kEdenGeneration = 4,  // object is in an eden region
   };
 
   static void initialize_header(uintptr_t address, ShapeId shape_id, uint16_t count);
@@ -198,6 +198,10 @@ public:
   Flag flags() const;
   SYMBOL hashcode();
   uint32_t forward_offset() const;
+
+  bool is_reachable() const;
+  bool has_cached_hashcode() const;
+  bool is_eden_generation() const;
 
   RawObject object() const;
 
@@ -239,7 +243,7 @@ private:
 };
 static_assert((sizeof(ObjectHeader) == 16), "invalid object header size");
 
-static const size_t kObjectAlignment = 8;
+static const size_t kObjectAlignment = 16;
 static const size_t kObjectHeaderMaxCount = 65535;
 static const size_t kObjectHeaderMaxSurvivorCount = 15;
 
@@ -276,10 +280,11 @@ static const size_t kObjectHeaderMaxSurvivorCount = 15;
 // the tagging scheme supports the following value types:
 //
 // ******** ******** ******** ******** ******** ******** ******** ******* 0  int
-// ******** ******** ******** ******** ******** ******** ******** ***** 001  heap object
-// DDDDDDDD DDDDDDDD DDDDDDDD DDDDDDDD DDDDDDDD DDDDDDDD DDDDDDDD DDDD 0011  float
-// ******** ******** ******** ******** ******** ******** *******B **** 0101  bool
-// SSSSSSSS SSSSSSSS SSSSSSSS SSSSSSSS ******** ******** ******** **** 0111  symbol
+// ******** ******** ******** ******** ******** ******** ******** **** 0001  old heap object
+// ******** ******** ******** ******** ******** ******** ******** **** 0011  eden heap object
+// DDDDDDDD DDDDDDDD DDDDDDDD DDDDDDDD DDDDDDDD DDDDDDDD DDDDDDDD DDDD 0101  float
+// ******** ******** ******** ******** ******** ******** *******B **** 0111  bool
+// SSSSSSSS SSSSSSSS SSSSSSSS SSSSSSSS ******** ******** ******** **** 1001  symbol
 // ******** ******** ******** ******** ******** ******** ******** EEEE 1011  null (or internal error / header)
 // SSSSSSSS SSSSSSSS SSSSSSSS SSSSSSSS SSSSSSSS SSSSSSSS SSSSSSSS LLLL 1101  small string
 // BBBBBBBB BBBBBBBB BBBBBBBB BBBBBBBB BBBBBBBB BBBBBBBB BBBBBBBB LLLL 1111  small bytes
@@ -345,27 +350,27 @@ public:
 #undef TYPECHECK
 
   // tag masks
-  static const uintptr_t kMaskInt = 0b00000001;
-  static const uintptr_t kMaskPointer = 0b00000111;
-  static const uintptr_t kMaskImmediate = 0b00001111;
-  static const uintptr_t kMaskLowByte = 0b11111111;
-  static const uintptr_t kMaskLength = 0b11110000;
+  static const uintptr_t kMaskInt = 0x1;
+  static const uintptr_t kMaskImmediate = 0x0f;
+  static const uintptr_t kMaskLowByte = 0xff;
+  static const uintptr_t kMaskLength = 0xf0;
 
   // tag bits
-  static const uintptr_t kTagInt = 0b00000000;
-  static const uintptr_t kTagObject = 0b00000001;
-  static const uintptr_t kTagFloat = 0b00000011;
-  static const uintptr_t kTagBool = 0b00000101;
-  static const uintptr_t kTagSymbol = 0b00000111;
-  static const uintptr_t kTagNull = 0b00001011;
+  static const uintptr_t kTagInt = 0;
+  static const uintptr_t kTagOldObject = 0b0001;
+  static const uintptr_t kTagEdenObject = 0b0011;
+  static const uintptr_t kTagFloat = 0b0101;
+  static const uintptr_t kTagBool = 0b0111;
+  static const uintptr_t kTagSymbol = 0b1001;
+  static const uintptr_t kTagNull = 0b1011;
   static const uintptr_t kTagErrorOk = ((int)ErrorId::kErrorOk << 4) | kTagNull;
   static const uintptr_t kTagErrorException = ((int)ErrorId::kErrorException << 4) | kTagNull;
   static const uintptr_t kTagErrorNotFound = ((int)ErrorId::kErrorNotFound << 4) | kTagNull;
   static const uintptr_t kTagErrorOutOfBounds = ((int)ErrorId::kErrorOutOfBounds << 4) | kTagNull;
   static const uintptr_t kTagErrorReadOnly = ((int)ErrorId::kErrorReadOnly << 4) | kTagNull;
   static const uintptr_t kTagErrorNoBaseClass = ((int)ErrorId::kErrorNoBaseClass << 4) | kTagNull;
-  static const uintptr_t kTagSmallString = 0b00001101;
-  static const uintptr_t kTagSmallBytes = 0b00001111;
+  static const uintptr_t kTagSmallString = 0b1101;
+  static const uintptr_t kTagSmallBytes = 0b1111;
 
   // right shift amounts to decode values
   static const int kShiftInt = 1;
@@ -557,6 +562,7 @@ public:
   void* address_voidptr() const;
   uintptr_t base_address() const;
   ShapeId shape_id() const;
+  bool is_eden_object() const;
 
   ObjectHeader* header() const;
 
@@ -564,7 +570,7 @@ public:
   void unlock() const;
   bool is_locked() const;
 
-  static RawObject make_from_ptr(uintptr_t address);
+  static RawObject make_from_ptr(uintptr_t address, bool eden_pointer = false);
 };
 
 // base class for all objects that store immediate data
@@ -619,8 +625,7 @@ public:
     return field_at<R>(size() - 1);
   }
 
-  template <typename T = RawValue>
-  void set_field_at(uint32_t index, T value) {
+  void set_field_at(uint32_t index, RawValue value) {
     DCHECK(index < size());
     RawValue* data = bitcast<RawValue*>(address());
     data[index] = RawValue::cast(value);
@@ -647,8 +652,7 @@ public:
     return R::cast(data[index]);
   }
 
-  template <typename T = RawValue>
-  void set_field_at(uint32_t index, T value) {
+  void set_field_at(uint32_t index, RawValue value) {
     DCHECK(index < field_count());
     RawValue* data = bitcast<RawValue*>(address());
     data[index] = RawValue::cast(value);

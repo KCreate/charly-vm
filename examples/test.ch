@@ -24,16 +24,15 @@
  * SOFTWARE.
  */
 
-class A {
-    property constructor
+const f = Future.create()
 
-    static property constructor
-
-    static func constructor {
-
-    }
+spawn {
+    f.resolve((25, 100, -8819, 25.25123, true, false, null, "hehe", "", f, Future, Future.create, self))
 }
 
+const result = await f
+
+print(result)
 
 
 

@@ -60,15 +60,13 @@ class Heap;
 struct HeapRegion {
   HeapRegion() = delete;
 
-  enum class Type : uint8_t
-  {
+  enum class Type : uint8_t {
     Unused,  // region isn't used and doesn't have a type yet
     Eden,    // new objects are allocated in eden regions
     Old      // holds objects that have survived many minor GC cycles
   };
 
-  enum class State : uint8_t
-  {
+  enum class State : uint8_t {
     Unused,    // region is on a freelist and can be acquired
     Owned,     // region is exclusively owned by a processor
     Released,  // region has been released from the processor

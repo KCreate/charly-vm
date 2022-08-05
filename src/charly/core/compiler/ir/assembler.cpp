@@ -44,7 +44,7 @@ void Assembler::assemble() {
   m_runtime_module->filename = m_ir_module->filename;
 
   // emit functions
-  CHECK(m_ir_module->functions.size() <= (size_t)0xffff);
+  CHECK(m_ir_module->functions.size() <= kUInt16Max);
   for (const ref<IRFunction>& function : m_ir_module->functions) {
     auto shared_info = new SharedFunctionInfo();
     shared_info->owner_module = m_runtime_module.get();
@@ -55,13 +55,13 @@ void Assembler::assemble() {
     DCHECK(function->ast->ir_info.valid);
 
     // build string table
-    CHECK(function->string_table.size() <= (size_t)0x0000ffff);
+    CHECK(function->string_table.size() <= kUInt16Max);
     for (const auto& entry : function->string_table) {
       shared_info->string_table.emplace_back(entry.value);
     }
 
     // build constant table
-    CHECK(function->constant_table.size() <= (size_t)0x0000ffff);
+    CHECK(function->constant_table.size() <= kUInt16Max);
     for (const auto& value : function->constant_table) {
       shared_info->constant_table.push_back(value);
     }

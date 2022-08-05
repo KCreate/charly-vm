@@ -448,7 +448,7 @@ RawData Runtime::create_data(Thread* thread, ShapeId shape_id, size_t size) {
 
   // initialize header
   ObjectHeader::initialize_header(memory, shape_id, size);
-  return RawData::cast(RawObject::make_from_ptr(memory + header_size));
+  return RawData::cast(RawObject::make_from_ptr(memory + header_size, true));
 }
 
 RawInstance Runtime::create_instance(Thread* thread, ShapeId shape_id, size_t field_count, RawValue klass) {
@@ -480,7 +480,7 @@ RawInstance Runtime::create_instance(Thread* thread, ShapeId shape_id, size_t fi
     object_fields[i] = kNull;
   }
 
-  auto instance = RawInstance::cast(RawObject::make_from_ptr(object));
+  auto instance = RawInstance::cast(RawObject::make_from_ptr(object, true));
   instance.set_klass_field(klass);
   return instance;
 }
