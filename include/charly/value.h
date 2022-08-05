@@ -659,10 +659,7 @@ public:
   }
 
   uintptr_t pointer_at(int64_t index) const;
-  void set_pointer_at(int64_t index, uintptr_t pointer);
-  void set_pointer_at(int64_t index, const void* pointer) {
-    set_pointer_at(index, bitcast<uintptr_t>(const_cast<void*>(pointer)));
-  }
+  void set_pointer_at(int64_t index, const void* pointer);
 
   int64_t int_at(int64_t index) const;
   void set_int_at(int64_t index, int64_t value);
@@ -674,6 +671,10 @@ public:
 
   static const size_t kMaximumFieldCount = 256;
   static const size_t kSize = kFieldCount * kPointerSize;
+
+  // external pointers must have their uppermost four bits be zero, else they cannot be encoded
+  static const size_t kExternalPointerValidationMask = 0xf000000000000000;
+  static const size_t kExternalPointerShift = 4;
 };
 
 // bytes stored on c++ heap

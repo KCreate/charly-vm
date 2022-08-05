@@ -981,11 +981,13 @@ bool RawInstance::is_instance_of(ShapeId id) {
 uintptr_t RawInstance::pointer_at(int64_t index) const {
   RawValue value = field_at(index);
   DCHECK(value.isObject());
-  return RawObject::cast(value).address();
+  return RawObject::cast(value).address() >> kExternalPointerShift;
 }
 
-void RawInstance::set_pointer_at(int64_t index, uintptr_t pointer) {
-  set_field_at(index, RawObject::make_from_ptr(pointer));
+void RawInstance::set_pointer_at(int64_t index, const void* pointer) {
+  uintptr_t raw = bitcast<uintptr_t>(const_cast<void*>(pointer));
+  DCHECK((raw & kExternalPointerValidationMask) == 0);
+  set_field_at(index, RawObject::make_from_ptr(raw << kExternalPointerShift));
 }
 
 int64_t RawInstance::int_at(int64_t index) const {
