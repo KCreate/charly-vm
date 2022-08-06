@@ -1054,16 +1054,6 @@ void RawInstance::set_pointer_at(int64_t index, const void* pointer) {
   set_field_at(index, RawObject::make_from_external_ptr(raw));
 }
 
-int64_t RawInstance::int_at(int64_t index) const {
-  RawValue value = field_at(index);
-  DCHECK(value.isInt());
-  return RawInt::cast(value).value();
-}
-
-void RawInstance::set_int_at(int64_t index, int64_t value) {
-  set_field_at(index, RawInt::make(value));
-}
-
 RawValue RawInstance::klass_field() const {
   return field_at(kKlassOffset);
 }
@@ -1086,13 +1076,11 @@ void RawHugeBytes::set_data(const uint8_t* data) {
 }
 
 size_t RawHugeBytes::length() const {
-  int64_t value = int_at(kDataLengthOffset);
-  DCHECK(value >= 0);
-  return value;
+  return field_at<RawInt>(kDataLengthOffset).value();
 }
 
 void RawHugeBytes::set_length(size_t length) {
-  set_int_at(kDataLengthOffset, length);
+  set_field_at(kDataLengthOffset, RawInt::make(length));
 }
 
 SYMBOL RawHugeString::hashcode() const {
@@ -1109,23 +1097,21 @@ void RawHugeString::set_data(const char* data) {
 }
 
 size_t RawHugeString::length() const {
-  int64_t value = int_at(kDataLengthOffset);
-  DCHECK(value >= 0);
-  return value;
+  return field_at<RawInt>(kDataLengthOffset).value();
 }
 
 void RawHugeString::set_length(size_t length) {
   auto length_int = bitcast<int64_t>(length);
   DCHECK(length_int >= 0);
-  set_int_at(kDataLengthOffset, length_int);
+  set_field_at(kDataLengthOffset, RawInt::make(length_int));
 }
 
 uint8_t RawClass::flags() const {
-  return int_at(kFlagsOffset);
+  return field_at<RawInt>(kFlagsOffset).value();
 }
 
 void RawClass::set_flags(uint8_t flags) {
-  set_int_at(kFlagsOffset, flags);
+  set_field_at(kFlagsOffset, RawInt::make(flags));
 }
 
 RawTuple RawClass::ancestor_table() const {
@@ -1318,11 +1304,11 @@ bool RawFunction::check_accepts_argc(uint32_t argc) {
 }
 
 BuiltinFunctionType RawBuiltinFunction::function() const {
-  return (BuiltinFunctionType)(intptr_t)int_at(kFunctionPtrOffset);
+  return (BuiltinFunctionType)pointer_at(kFunctionPtrOffset);
 }
 
 void RawBuiltinFunction::set_function(BuiltinFunctionType function) {
-  set_int_at(kFunctionPtrOffset, (intptr_t)function);
+  set_pointer_at(kFunctionPtrOffset, (const void*)(function));
 }
 
 RawSymbol RawBuiltinFunction::name() const {
@@ -1334,11 +1320,11 @@ void RawBuiltinFunction::set_name(RawSymbol symbol) {
 }
 
 uint8_t RawBuiltinFunction::argc() const {
-  return int_at(kArgcOffset);
+  return field_at<RawInt>(kArgcOffset).value();
 }
 
 void RawBuiltinFunction::set_argc(uint8_t argc) {
-  return set_int_at(kArgcOffset, argc);
+  return set_field_at(kArgcOffset, RawInt::make(argc));
 }
 
 Thread* RawFiber::thread() const {

@@ -294,8 +294,8 @@ static const size_t kObjectHeaderMaxSurvivorCount = 15;
 // is set to 0, it's always an immediate encoded int.
 //
 // values that have their LSB set to 1 can be either pointers to heap objects or another
-// immediately encoded value. testing the last 3 bits allows us to determine if the value
-// is a pointer or another immediate. encoded pointers must always be aligned to at least 8 bytes.
+// immediately encoded value. testing the last 4 bits allows us to determine if the value
+// is a pointer or another immediate. encoded pointers must always be aligned to at least 16 bytes.
 //
 // if the value isn't an int or a heap pointer then it must be one of the following immediate types:
 //
@@ -657,9 +657,6 @@ public:
 
   uintptr_t pointer_at(int64_t index) const;
   void set_pointer_at(int64_t index, const void* pointer);
-
-  int64_t int_at(int64_t index) const;
-  void set_int_at(int64_t index, int64_t value);
 
   enum {
     kKlassOffset = 0,
