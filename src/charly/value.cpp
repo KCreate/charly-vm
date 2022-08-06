@@ -440,7 +440,6 @@ void RawValue::to_string(std::ostream& out) const {
 
 void RawValue::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
-  Thread* thread = Thread::current();
 
   if (isInt()) {
     writer.fg(Color::Cyan, RawInt::cast(this).value());
@@ -596,7 +595,7 @@ void RawValue::dump(std::ostream& out) const {
         return;
       } else {
         auto exception = RawException::cast(this);
-        auto klass = thread->runtime()->lookup_class(exception);
+        auto klass = RawClass::cast(exception.klass_field());
         RawValue message = exception.message();
         RawTuple stack_trace = exception.stack_trace();
         writer.fg(Color::Green, "<", klass.name(), " ", message, ", ", stack_trace, ">");
@@ -605,7 +604,7 @@ void RawValue::dump(std::ostream& out) const {
     }
 
     auto instance = RawInstance::cast(this);
-    RawClass klass = thread->runtime()->lookup_class(instance);
+    auto klass = RawClass::cast(instance.klass_field());
     writer.fg(Color::Green, "<", klass.name(), " ", instance.address_voidptr(), ">");
     return;
   }
@@ -631,6 +630,7 @@ void RawValue::dump(std::ostream& out) const {
   if (isSymbol()) {
     RawSymbol symbol = RawSymbol::cast(this);
 
+    auto thread = Thread::current();
     HandleScope scope(thread);
     Value sym_value(scope, thread->lookup_symbol(symbol.value()));
 
