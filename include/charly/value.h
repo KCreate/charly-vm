@@ -410,14 +410,19 @@ public:
   COMMON_RAW_OBJECT(Int);
 
   int64_t value() const;
+  uintptr_t external_pointer_value() const;
 
   static RawInt make(int64_t value);
   static RawInt make_truncate(int64_t value);
+  static RawInt make_from_external_pointer(uintptr_t value);
 
   static bool is_valid(int64_t value);
 
   inline static const int64_t kMinValue = -(int64_t{ 1 } << 62);
   inline static const int64_t kMaxValue = (int64_t{ 1 } << 62) - 1;
+
+  // uppermost bit of an external pointer must be 0
+  static const size_t kExternalPointerValidationMask = 0x8000000000000000;
 };
 static const RawInt kZero = RawInt::make(0);
 static const RawInt kOne = RawInt::make(1);
@@ -568,7 +573,6 @@ public:
   COMMON_RAW_OBJECT(Object);
 
   uintptr_t address() const;
-  uintptr_t external_address() const;
   void* address_voidptr() const;
   uintptr_t base_address() const;
   ShapeId shape_id() const;
@@ -584,11 +588,6 @@ public:
   void gc_write_barrier() const;
 
   static RawObject make_from_ptr(uintptr_t address, bool eden_pointer = false);
-  static RawObject make_from_external_ptr(uintptr_t address);
-
-  // external pointers must have their uppermost four bits be zero, else they cannot be encoded
-  static const size_t kExternalPointerValidationMask = 0xf000000000000000;
-  static const size_t kExternalPointerShift = 4;
 };
 
 // base class for all objects that store immediate data

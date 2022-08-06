@@ -684,6 +684,10 @@ int64_t RawInt::value() const {
   return tmp >> kShiftInt;
 }
 
+uintptr_t RawInt::external_pointer_value() const {
+  return static_cast<uintptr_t>(value());
+}
+
 RawInt RawInt::make(int64_t value) {
   CHECK(is_valid(value));
   return make_truncate(value);
@@ -691,6 +695,11 @@ RawInt RawInt::make(int64_t value) {
 
 RawInt RawInt::make_truncate(int64_t value) {
   return RawInt::cast((static_cast<uintptr_t>(value) << kShiftInt) | kTagInt);
+}
+
+RawInt RawInt::make_from_external_pointer(uintptr_t address) {
+  DCHECK((address & kExternalPointerValidationMask) == 0);
+  return make(static_cast<int64_t>(address));
 }
 
 bool RawInt::is_valid(int64_t value) {
@@ -940,10 +949,6 @@ uintptr_t RawObject::address() const {
   return m_raw & ~kMaskImmediate;
 }
 
-uintptr_t RawObject::external_address() const {
-  return address() >> kExternalPointerShift;
-}
-
 void* RawObject::address_voidptr() const {
   return bitcast<void*>(address());
 }
@@ -1003,11 +1008,6 @@ RawObject RawObject::make_from_ptr(uintptr_t address, bool eden_pointer) {
   return RawObject::cast(address | (eden_pointer ? kTagEdenObject : kTagOldObject));
 }
 
-RawObject RawObject::make_from_external_ptr(uintptr_t address) {
-  DCHECK((address & kExternalPointerValidationMask) == 0);
-  return RawObject::make_from_ptr(address << kExternalPointerShift);
-}
-
 size_t RawData::length() const {
   return count();
 }
@@ -1064,12 +1064,12 @@ bool RawInstance::is_instance_of(ShapeId id) {
 }
 
 uintptr_t RawInstance::pointer_at(int64_t index) const {
-  return RawObject::cast(field_at(index)).external_address();
+  return field_at<RawInt>(index).external_pointer_value();
 }
 
 void RawInstance::set_pointer_at(int64_t index, const void* pointer) {
   uintptr_t raw = bitcast<uintptr_t>(const_cast<void*>(pointer));
-  set_field_at(index, RawObject::make_from_external_ptr(raw));
+  set_field_at(index, RawInt::make_from_external_pointer(raw));
 }
 
 RawValue RawInstance::klass_field() const {
