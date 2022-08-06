@@ -243,33 +243,12 @@ ShapeId RawValue::shape_id_not_object_int() const {
 }
 
 bool RawValue::truthyness() const {
-  if (isInt()) {
-    return RawInt::cast(this) != kZero;
-  } else if (isObject()) {
-    return RawObject::cast(this).address() != 0;
+  if (isBool()) {
+    return RawBool::cast(this).value();
+  } else if (isNull()) {
+    return false;
   } else {
-    switch (shape_id_not_object_int()) {
-      case ShapeId::kFloat: {
-        double v = RawFloat::cast(this).value();
-        if (v == 0.0)
-          return false;
-        if (std::isnan(v))
-          return false;
-        return true;
-      }
-      case ShapeId::kBool: {
-        return RawBool::cast(this) == kTrue;
-      }
-      case ShapeId::kSymbol: {
-        return true;
-      }
-      case ShapeId::kNull: {
-        return false;
-      }
-      default: {
-        return true;
-      }
-    }
+    return true;
   }
 }
 
