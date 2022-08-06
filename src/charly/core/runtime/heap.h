@@ -44,11 +44,15 @@ class Runtime;
 static const size_t kHeapTotalSize = kGb * 2;
 static const size_t kHeapRegionSize = kKb * 512;
 static const size_t kHeapRegionCount = kHeapTotalSize / kHeapRegionSize;
-static const size_t kHeapInitialMappedRegionCount = 0;
+static const size_t kHeapInitialMappedRegionCount = 16;
+
 static const size_t kHeapRegionSpanSize = kKb;
 static const size_t kHeapRegionSpanCount = kHeapRegionSize / kHeapRegionSpanSize;
+
 static const uintptr_t kHeapRegionPointerMask = 0xfffffffffff80000;
 static const uintptr_t kHeapRegionMagicNumber = 0xdeadbeefcafebabe;
+
+static const size_t kGarbageCollectionAttempts = 4;
 
 class Heap;
 
@@ -81,11 +85,17 @@ struct HeapRegion {
 
   void reset();
 
+  // returns a pointer to the beginning of the buffer segment (after all the metadata)
+  uintptr_t buffer_base() const;
+
+  // check wether a given pointer points into this region
+  bool pointer_points_into_region(uintptr_t pointer) const;
+
   size_t span_get_index_for_pointer(uintptr_t pointer) const;
-  size_t span_get_last_object_offset(size_t span_index) const;
+  uintptr_t span_get_last_object_pointer(size_t span_index) const;
   bool span_get_dirty_flag(size_t span_index) const;
 
-  void span_set_last_object_offset(size_t span_index, size_t object_offset);
+  void span_set_last_object_offset(size_t span_index, uintptr_t pointer);
   void span_set_dirty_flag(size_t span_index, bool dirty = true);
 
   uintptr_t magic = kHeapRegionMagicNumber;
@@ -99,19 +109,33 @@ struct HeapRegion {
   //
   // object offset is relative to the HeapRegion::buffer field
   // spans are relative to the entire HeapRegion (metadata included)
+  //
+  // VM write barriers set the dirty flag on a span if they write a
+  // reference to a young object to an object contained in an old region
+  //
+  // the object offsets for each span are populated during allocation
+  // and are used by the GC to determine the start offset of the last
+  // object in that span. because the beginning of a span might be in the
+  // middle of an object, we can't just start scanning there but must
+  // begin the scan at the offset of that previous object
   static constexpr size_t kSpanTableInvalidOffset = 0xffffffff;
   static constexpr size_t kSpanTableOffsetShift = 32;
   static constexpr size_t kSpanTableDirtyFlagMask = 0x1;
   std::array<size_t, kHeapRegionSpanCount> span_table;
   uint8_t buffer alignas(kObjectAlignment)[];
 };
+static_assert(sizeof(HeapRegion) % kObjectAlignment == 0);
+static_assert(offsetof(HeapRegion, buffer) % kObjectAlignment == 0);
+static_assert(offsetof(HeapRegion, buffer) == sizeof(HeapRegion));
 
 static const size_t kHeapRegionUsableSize = kHeapRegionSize - sizeof(HeapRegion);
-static const size_t kHeapObjectMaxSize = kHeapRegionUsableSize;
+static_assert(sizeof(ObjectHeader) + RawData::kMaxLength < kHeapRegionUsableSize);
 
 class ThreadAllocationBuffer;
+class GarbageCollector;
 
 class Heap {
+  friend class GarbageCollector;
 public:
   explicit Heap(Runtime* runtime);
   ~Heap();
@@ -122,6 +146,9 @@ public:
 
   // release a live eden region
   void release_eden_region(HeapRegion* region);
+
+  // check wether a given pointer points into the charly heap
+  bool is_heap_pointer(uintptr_t pointer) const;
 
 private:
   // pops a free region from the freelist
@@ -135,7 +162,7 @@ private:
   std::mutex m_mutex;
 
   // pointer to the base of the heap address space
-  void* m_heap_base = nullptr;
+  void* m_heap_base;
 
   // region mappings
   std::list<HeapRegion*> m_unmapped_regions;         // regions which aren't mapped into memory

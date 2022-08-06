@@ -78,8 +78,6 @@ struct StringTableEntry {
 
 struct CompiledModule;
 struct SharedFunctionInfo {
-  CompiledModule* owner_module;
-
   std::string name;
   SYMBOL name_symbol;
   compiler::ir::FunctionInfo ir_info;

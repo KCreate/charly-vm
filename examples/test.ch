@@ -25,17 +25,19 @@
  */
 
 func allocator(index) {
-    let data = (0,)
+    let data = (index,)
     loop {
         const next_num = data[0] + 1
         data = (next_num,)
     }
 }
 
-const fiber_count = 1
+const fiber_count = 10
 const fibers = Tuple.make_with(fiber_count, ->(i) spawn allocator(i))
 print(fibers)
-fibers.each(->(fiber) await fiber)
+
+const results = fibers.map(->(fiber) await fiber)
+print(results)
 
 
 

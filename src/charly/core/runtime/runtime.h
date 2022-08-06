@@ -50,6 +50,8 @@ namespace charly::core::runtime {
 namespace fs = std::filesystem;
 
 class Runtime {
+  friend class GarbageCollector;
+
 public:
   static int32_t run();
 
@@ -206,16 +208,10 @@ public:
   // register a CompiledModule object with the runtime
   void register_module(Thread* thread, const ref<CompiledModule>& module);
 
-  // checks if the runtime module cache contains a non-expired entry for the given path
-  RawValue lookup_path_in_module_cache(const fs::path& path);
-  void update_module_cache(const fs::path& path, fs::file_time_type mtime, RawValue module);
-
   const fs::path& source_code_directory() const;
   const fs::path& stdlib_directory() const;
 
 private:
-  uint64_t m_start_timestamp;
-
   std::mutex m_mutex;
   utils::WaitFlag m_init_flag;
   utils::WaitFlag m_exit_flag;

@@ -47,17 +47,23 @@ uint32_t HeapRegion::id() const {
 uintptr_t HeapRegion::allocate(size_t size) {
   DCHECK(fits(size));
 
-  auto buffer_start = bitcast<uintptr_t>(&this->buffer);
   uintptr_t object_offset = this->used;
-  uintptr_t buffer_next = buffer_start + object_offset;
+  uintptr_t object_pointer = buffer_base() + object_offset;
   this->used += size;
+  uintptr_t object_end = buffer_base() + this->used;
 
-  // update last known object address in span table
+  // update last known object addresses in span table
   DCHECK(this->type == Type::Eden);
-  size_t span_index = span_get_index_for_pointer(buffer_next);
-  span_set_last_object_offset(span_index, object_offset);
+  size_t span_index_start = span_get_index_for_pointer(object_pointer);
+  span_set_last_object_offset(span_index_start, object_offset);
 
-  return buffer_next;
+  // also mark intermediate spans if the object takes up multiple spans
+  size_t span_index_end = span_get_index_for_pointer(object_end);
+  for (size_t index = span_index_start + 1; index < span_index_end; index++) {
+    span_set_last_object_offset(index, object_offset);
+  }
+
+  return object_pointer;
 }
 
 bool HeapRegion::fits(size_t size) const {
@@ -77,19 +83,30 @@ void HeapRegion::reset() {
   }
 }
 
+uintptr_t HeapRegion::buffer_base() const {
+  return bitcast<uintptr_t>(&this->buffer);
+}
+
+bool HeapRegion::pointer_points_into_region(uintptr_t pointer) const {
+  auto region_end = bitcast<uintptr_t>(this) + kHeapRegionSize;
+  return pointer >= buffer_base() && pointer < region_end;
+}
+
 size_t HeapRegion::span_get_index_for_pointer(uintptr_t pointer) const {
-  auto buffer_start = bitcast<uintptr_t>(&this->buffer);
-  DCHECK(pointer >= buffer_start);
-  DCHECK(pointer < (buffer_start + kHeapRegionSize));
-  size_t object_offset = static_cast<size_t>(pointer - buffer_start);
+  DCHECK(pointer >= buffer_base());
+  DCHECK(pointer < (buffer_base() + kHeapRegionSize));
+  size_t object_offset = static_cast<size_t>(pointer - buffer_base());
   size_t index = object_offset / kHeapRegionSpanSize;
   DCHECK(index < kHeapRegionSpanCount);
   return index;
 }
 
-size_t HeapRegion::span_get_last_object_offset(size_t span_index) const {
+uintptr_t HeapRegion::span_get_last_object_pointer(size_t span_index) const {
   DCHECK(span_index < kHeapRegionSpanCount);
-  return this->span_table[span_index] >> kSpanTableOffsetShift;
+  auto offset = this->span_table[span_index] >> kSpanTableOffsetShift;
+  auto pointer = buffer_base() + offset;
+  DCHECK(pointer_points_into_region(pointer));
+  return pointer;
 }
 
 bool HeapRegion::span_get_dirty_flag(size_t span_index) const {
@@ -97,10 +114,12 @@ bool HeapRegion::span_get_dirty_flag(size_t span_index) const {
   return this->span_table[span_index] & kSpanTableDirtyFlagMask;
 }
 
-void HeapRegion::span_set_last_object_offset(size_t span_index, size_t object_offset) {
+void HeapRegion::span_set_last_object_offset(size_t span_index, uintptr_t pointer) {
   DCHECK(span_index < kHeapRegionSpanCount);
   DCHECK(span_get_dirty_flag(span_index) == false);
-  this->span_table[span_index] = object_offset << kSpanTableOffsetShift;
+  DCHECK(pointer_points_into_region(pointer));
+  auto offset = pointer - buffer_base();
+  this->span_table[span_index] = offset << kSpanTableOffsetShift;
 }
 
 void HeapRegion::span_set_dirty_flag(size_t span_index, bool dirty) {
@@ -114,7 +133,6 @@ Heap::Heap(Runtime* runtime) : m_runtime(runtime) {
   std::lock_guard<std::mutex> locker(m_mutex);
 
   m_heap_base = Allocator::mmap_self_aligned(kHeapTotalSize);
-  DCHECK((uintptr_t)m_heap_base % kHeapTotalSize == 0, "invalid heap alignment");
 
   // fill unmapped regions list
   auto base = bitcast<uintptr_t>(m_heap_base);
@@ -145,15 +163,22 @@ HeapRegion* Heap::allocate_eden_region(Thread* thread) {
   std::unique_lock locker(m_mutex);
 
   HeapRegion* region = pop_free_region();
-  if (region == nullptr && thread) {
-    locker.unlock();
-    m_runtime->gc()->perform_gc(thread);
-    locker.lock();
-    region = pop_free_region();
-  }
-
   if (region == nullptr) {
-    region = map_new_region();
+    for (size_t attempt = 0; attempt < kGarbageCollectionAttempts; attempt++) {
+      locker.unlock();
+      m_runtime->gc()->perform_gc(thread);
+      locker.lock();
+
+      region = pop_free_region();
+
+      if (region) {
+        break;
+      }
+    }
+
+    if (region == nullptr) {
+      FAIL("could not allocate free region");
+    }
   }
 
   DCHECK(region != nullptr);
@@ -178,6 +203,11 @@ void Heap::release_eden_region(HeapRegion* region) {
   m_released_eden_regions.insert(region);
 
   region->state = HeapRegion::State::Released;
+}
+
+bool Heap::is_heap_pointer(uintptr_t pointer) const {
+  auto heap_base = bitcast<const uintptr_t>(m_heap_base);
+  return pointer >= heap_base && pointer < (heap_base + kHeapTotalSize);
 }
 
 HeapRegion* Heap::pop_free_region() {
@@ -211,7 +241,6 @@ HeapRegion* Heap::map_new_region() {
 ThreadAllocationBuffer::ThreadAllocationBuffer(Heap* heap) {
   m_heap = heap;
   m_region = nullptr;
-  acquire_new_region(nullptr);
 }
 
 ThreadAllocationBuffer::~ThreadAllocationBuffer() {
@@ -223,7 +252,7 @@ ThreadAllocationBuffer::~ThreadAllocationBuffer() {
 
 uintptr_t ThreadAllocationBuffer::allocate(Thread* thread, size_t size) {
   DCHECK(size % kObjectAlignment == 0, "allocation not aligned correctly");
-  DCHECK(size <= kHeapObjectMaxSize, "allocation is too big");
+  DCHECK(size <= kHeapRegionUsableSize, "allocation is too big");
 
   // release current region if it cannot fulfill the requested allocation
   if (m_region != nullptr && !m_region->fits(size)) {

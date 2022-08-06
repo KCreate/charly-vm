@@ -251,7 +251,7 @@ private:
 static_assert((sizeof(ObjectHeader) == 16), "invalid object header size");
 
 static const size_t kObjectAlignment = 16;
-static const size_t kObjectHeaderMaxCount = 65535;
+static const size_t kObjectHeaderMaxCount = 0xffff;
 static const size_t kObjectHeaderMaxSurvivorCount = 15;
 
 #define COMMON_RAW_OBJECT(name)                                         \
@@ -599,7 +599,7 @@ public:
   const uint8_t* data() const;
   SYMBOL hashcode() const;
 
-  static const size_t kMaxLength = kKb * 32 - sizeof(ObjectHeader);
+  static const size_t kMaxLength = kObjectHeaderMaxCount;
 };
 
 // string stored on managed heap

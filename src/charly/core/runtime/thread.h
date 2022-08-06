@@ -41,6 +41,7 @@ class Worker;
 class Runtime;
 class Interpreter;
 class Frame;
+class GarbageCollector;
 
 // boost context bindings
 //
@@ -104,6 +105,7 @@ private:
 class Thread {
   friend class Runtime;
   friend class Interpreter;
+  friend class GarbageCollector;
 
 public:
   explicit Thread(Runtime* runtime);

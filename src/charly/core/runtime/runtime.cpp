@@ -45,7 +45,6 @@ int32_t Runtime::run() {
 }
 
 Runtime::Runtime() :
-  m_start_timestamp(get_steady_timestamp_milli()),
   m_init_flag(m_mutex),
   m_exit_flag(m_mutex),
   m_exit_code(0),

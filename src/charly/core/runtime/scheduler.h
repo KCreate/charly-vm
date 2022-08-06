@@ -53,8 +53,10 @@ static const uint64_t kLocalRunQueueMaxSize = 256;
 static const uint64_t kThreadTimeslice = 10;
 
 class Runtime;
+class GarbageCollector;
 
 class Scheduler {
+  friend class GarbageCollector;
 public:
   explicit Scheduler(Runtime* runtime);
   ~Scheduler();

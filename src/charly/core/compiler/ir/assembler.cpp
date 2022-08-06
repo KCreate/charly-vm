@@ -47,7 +47,6 @@ void Assembler::assemble() {
   CHECK(m_ir_module->functions.size() <= kUInt16Max);
   for (const ref<IRFunction>& function : m_ir_module->functions) {
     auto shared_info = new SharedFunctionInfo();
-    shared_info->owner_module = m_runtime_module.get();
     m_runtime_module->function_table.push_back(shared_info);
     shared_info->name = function->ast->name->value;
     shared_info->name_symbol = crc32::hash_string(function->ast->name->value);

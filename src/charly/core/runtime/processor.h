@@ -39,9 +39,11 @@ class Runtime;
 class Worker;
 class Thread;
 class ThreadAllocationBuffer;
+class GarbageCollector;
 
 // represents a virtual processor
 class Processor {
+  friend class GarbageCollector;
 public:
   explicit Processor(Runtime* runtime);
 

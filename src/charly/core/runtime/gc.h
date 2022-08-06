@@ -27,8 +27,10 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+#include <queue>
 
 #include "charly/charly.h"
+#include "charly/value.h"
 
 #pragma once
 
@@ -51,6 +53,12 @@ public:
     DCHECK(!m_thread.joinable());
   }
 
+  enum class CollectionMode {
+    None,
+    Minor,
+    Major
+  };
+
   void shutdown();
   void join();
   void perform_gc(Thread* thread);
@@ -58,14 +66,26 @@ public:
 private:
   void main();
 
+  void collect();
+
+  void determine_collection_mode();
+
+  void mark();
+  void mark_roots();
+
+  void mark_queue_value(RawValue value, bool force_mark = false);
+
+private:
   Runtime* m_runtime;
+
+  std::queue<RawObject> m_mark_queue;
 
   atomic<bool> m_wants_collection;
   atomic<bool> m_wants_exit;
   atomic<uint64_t> m_gc_cycle;
+  CollectionMode m_collection_mode;
   std::mutex m_mutex;
   std::condition_variable m_cv;
-  std::condition_variable m_finished_cv;
 
   std::thread m_thread;
 };
