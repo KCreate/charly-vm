@@ -113,21 +113,17 @@ ObjectHeader::Flag ObjectHeader::flags() const {
 }
 
 SYMBOL ObjectHeader::hashcode() {
-  Flag current_flags = flags();
-
-  if (current_flags & Flag::kHasHashcode) {
+  if (has_cached_hashcode()) {
     return m_hashcode;
   } else {
     auto address = bitcast<uintptr_t>(this);
     uint32_t offset_in_heap = address % kHeapTotalSize;
 
     if (cas_hashcode(0, offset_in_heap)) {
-      bool result = cas_flags(current_flags, static_cast<Flag>(current_flags | Flag::kHasHashcode));
-      DCHECK(result);
-      return m_hashcode;
-    } else {
-      return m_hashcode;
+      set_has_cached_hashcode();
     }
+
+    return m_hashcode;
   }
 }
 
@@ -146,6 +142,49 @@ bool ObjectHeader::has_cached_hashcode() const {
 bool ObjectHeader::is_eden_generation() const {
   return flags() & kEdenGeneration;
 }
+
+void ObjectHeader::set_is_reachable() {
+  Flag old_flags = flags();
+  while (!m_flags.cas(old_flags, static_cast<Flag>(old_flags | kReachable))) {
+    old_flags = flags();
+  }
+}
+
+void ObjectHeader::set_has_cached_hashcode() {
+  Flag old_flags = flags();
+  while (!m_flags.cas(old_flags, static_cast<Flag>(old_flags | kHasHashcode))) {
+    old_flags = flags();
+  }
+}
+
+void ObjectHeader::set_is_eden_generation() {
+  Flag old_flags = flags();
+  while (!m_flags.cas(old_flags, static_cast<Flag>(old_flags | kEdenGeneration))) {
+    old_flags = flags();
+  }
+}
+
+void ObjectHeader::clear_is_reachable() {
+  Flag old_flags = flags();
+  while (!m_flags.cas(old_flags, static_cast<Flag>(old_flags & ~kReachable))) {
+    old_flags = flags();
+  }
+}
+
+void ObjectHeader::clear_has_cached_hashcode() {
+  Flag old_flags = flags();
+  while (!m_flags.cas(old_flags, static_cast<Flag>(old_flags & ~kHasHashcode))) {
+    old_flags = flags();
+  }
+}
+
+void ObjectHeader::clear_is_eden_generation() {
+  Flag old_flags = flags();
+  while (!m_flags.cas(old_flags, static_cast<Flag>(old_flags & ~kEdenGeneration))) {
+    old_flags = flags();
+  }
+}
+
 
 RawObject ObjectHeader::object() const {
   uintptr_t object_address = bitcast<uintptr_t>(this) + sizeof(ObjectHeader);

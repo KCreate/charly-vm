@@ -215,6 +215,13 @@ public:
   bool cas_hashcode(SYMBOL old_hashcode, SYMBOL new_hashcode);
   bool cas_forward_offset(uint32_t old_offset, uint32_t new_offset);
 
+  void set_is_reachable();
+  void set_has_cached_hashcode();
+  void set_is_eden_generation();
+  void clear_is_reachable();
+  void clear_has_cached_hashcode();
+  void clear_is_eden_generation();
+
 private:
   static uint32_t encode_shape_and_survivor_count(ShapeId shape_id, uint8_t survivor_count);
 
