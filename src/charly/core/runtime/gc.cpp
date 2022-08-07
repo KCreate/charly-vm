@@ -114,10 +114,15 @@ void GarbageCollector::mark() {
     auto object = m_mark_queue.front();
     m_mark_queue.pop();
 
-    if (object.header()->is_reachable()) {
+    auto* header = object.header();
+    if (header->is_reachable()) {
       continue;
     }
-    object.header()->set_is_reachable();
+    header->set_is_reachable();
+
+    if (object.is_eden_object()) {
+      header->increment_survivor_count();
+    }
 
     if (object.isInstance()) {
       auto instance = RawInstance::cast(object);

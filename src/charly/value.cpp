@@ -205,11 +205,21 @@ uint32_t ObjectHeader::object_size() const {
   }
 }
 
-bool ObjectHeader::cas_survivor_count(uint8_t old_count, uint8_t new_count) {
-  ShapeId old_shape_id = shape_id();
-  uint32_t old_value = encode_shape_and_survivor_count(old_shape_id, old_count);
-  uint32_t new_value = encode_shape_and_survivor_count(old_shape_id, new_count);
-  return m_shape_id_and_survivor_count.cas(old_value, new_value);
+void ObjectHeader::increment_survivor_count() {
+  ShapeId old_shape_id;
+  uint8_t old_survivor_count;
+  uint32_t old_value, new_value;
+  do {
+    old_value = m_shape_id_and_survivor_count;
+    old_shape_id = static_cast<ShapeId>(old_value & kMaskShape);
+    old_survivor_count = (old_value & kMaskSurvivorCount) >> kShiftSurvivorCount;
+
+    if (old_survivor_count == kObjectHeaderMaxSurvivorCount) {
+      return;
+    }
+
+    new_value = encode_shape_and_survivor_count(old_shape_id, old_survivor_count + 1);
+  } while (m_shape_id_and_survivor_count.cas(old_value, new_value));
 }
 
 bool ObjectHeader::cas_count(uint16_t old_count, uint16_t new_count) {

@@ -209,9 +209,10 @@ public:
   // returns the size of the object (including padding, excluding the header)
   uint32_t object_size() const;
 
-  bool cas_survivor_count(uint8_t old_count, uint8_t new_count);
   bool cas_count(uint16_t old_count, uint16_t new_count);
   bool cas_hashcode(SYMBOL old_hashcode, SYMBOL new_hashcode);
+
+  void increment_survivor_count();
 
   bool has_forward_target() const;
   bool set_forward_target(uint32_t target_region, uint32_t target_offset);
@@ -254,7 +255,7 @@ static_assert((sizeof(ObjectHeader) == 16), "invalid object header size");
 
 static const size_t kObjectAlignment = 16;
 static const size_t kObjectHeaderMaxCount = 0xffff;
-static const size_t kObjectHeaderMaxSurvivorCount = 15;
+static const size_t kObjectHeaderMaxSurvivorCount = 0xff;
 
 #define COMMON_RAW_OBJECT(name)                                         \
   static Raw##name cast(RawValue value) {                               \
