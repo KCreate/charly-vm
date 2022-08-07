@@ -91,7 +91,7 @@ void ObjectHeader::initialize_header(uintptr_t address, ShapeId shape_id, uint16
   header->m_lock = 0;
   header->m_flags = Flag::kEdenGeneration;
   header->m_hashcode = 0;
-  header->m_forward_offset = 0;
+  header->m_forward_target = 0;
 }
 
 ShapeId ObjectHeader::shape_id() const {
@@ -127,8 +127,14 @@ SYMBOL ObjectHeader::hashcode() {
   }
 }
 
-uint32_t ObjectHeader::forward_offset() const {
-  return m_forward_offset;
+uint32_t ObjectHeader::forward_target_region() const {
+  DCHECK(has_forward_target());
+  return m_forward_target >> 17;
+}
+
+uint32_t ObjectHeader::forward_target_offset() const {
+  DCHECK(has_forward_target());
+  return m_forward_target & 0x7fff;
 }
 
 bool ObjectHeader::is_reachable() const {
@@ -199,13 +205,6 @@ uint32_t ObjectHeader::object_size() const {
   }
 }
 
-bool ObjectHeader::cas_shape_id(ShapeId old_shape_id, ShapeId new_shape_id) {
-  uint8_t old_survivor_count = survivor_count();
-  uint32_t old_value = encode_shape_and_survivor_count(old_shape_id, old_survivor_count);
-  uint32_t new_value = encode_shape_and_survivor_count(new_shape_id, old_survivor_count);
-  return m_shape_id_and_survivor_count.cas(old_value, new_value);
-}
-
 bool ObjectHeader::cas_survivor_count(uint8_t old_count, uint8_t new_count) {
   ShapeId old_shape_id = shape_id();
   uint32_t old_value = encode_shape_and_survivor_count(old_shape_id, old_count);
@@ -217,16 +216,22 @@ bool ObjectHeader::cas_count(uint16_t old_count, uint16_t new_count) {
   return m_count.cas(old_count, new_count);
 }
 
-bool ObjectHeader::cas_flags(Flag old_flags, Flag new_flags) {
-  return m_flags.cas(old_flags, new_flags);
-}
-
 bool ObjectHeader::cas_hashcode(SYMBOL old_hashcode, SYMBOL new_hashcode) {
   return m_hashcode.cas(old_hashcode, new_hashcode);
 }
 
-bool ObjectHeader::cas_forward_offset(uint32_t old_offset, uint32_t new_offset) {
-  return m_forward_offset.cas(old_offset, new_offset);
+bool ObjectHeader::has_forward_target() const {
+  return m_forward_target != 0;
+}
+
+bool ObjectHeader::set_forward_target(uint32_t target_region, uint32_t target_offset) {
+  DCHECK(target_region < kHeapRegionCount);
+  DCHECK(target_offset * 16 < kHeapRegionSize);
+  return (target_region << 17) | target_offset;
+}
+
+void ObjectHeader::clear_forward_target() {
+  m_forward_target = 0;
 }
 
 uint32_t ObjectHeader::encode_shape_and_survivor_count(ShapeId shape_id, uint8_t survivor_count) {

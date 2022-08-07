@@ -41,7 +41,7 @@ namespace charly::core::runtime {
 
 class Runtime;
 
-static const size_t kHeapTotalSize = kGb * 2;
+static const size_t kHeapTotalSize = kGb * 64;
 static const size_t kHeapRegionSize = kKb * 512;
 static const size_t kHeapRegionCount = kHeapTotalSize / kHeapRegionSize;
 static const size_t kHeapInitialMappedRegionCount = 16;
@@ -49,7 +49,7 @@ static const size_t kHeapInitialMappedRegionCount = 16;
 static const size_t kHeapRegionSpanSize = kKb;
 static const size_t kHeapRegionSpanCount = kHeapRegionSize / kHeapRegionSpanSize;
 
-static const uintptr_t kHeapRegionPointerMask = 0xfffffffffff80000;
+static const uintptr_t kHeapRegionPointerMask = ~(kHeapRegionSize - 1);
 static const uintptr_t kHeapRegionMagicNumber = 0xdeadbeefcafebabe;
 
 static const size_t kGarbageCollectionAttempts = 4;
@@ -95,7 +95,7 @@ struct HeapRegion {
   uintptr_t span_get_last_object_pointer(size_t span_index) const;
   bool span_get_dirty_flag(size_t span_index) const;
 
-  void span_set_last_object_offset(size_t span_index, uintptr_t pointer);
+  void span_set_last_object_pointer(size_t span_index, uintptr_t pointer);
   void span_set_dirty_flag(size_t span_index, bool dirty = true);
 
   uintptr_t magic = kHeapRegionMagicNumber;

@@ -197,7 +197,8 @@ public:
   uint16_t count() const;
   Flag flags() const;
   SYMBOL hashcode();
-  uint32_t forward_offset() const;
+  uint32_t forward_target_region() const;
+  uint32_t forward_target_offset() const;
 
   bool is_reachable() const;
   bool has_cached_hashcode() const;
@@ -208,12 +209,13 @@ public:
   // returns the size of the object (including padding, excluding the header)
   uint32_t object_size() const;
 
-  bool cas_shape_id(ShapeId old_shape_id, ShapeId new_shape_id);
   bool cas_survivor_count(uint8_t old_count, uint8_t new_count);
   bool cas_count(uint16_t old_count, uint16_t new_count);
-  bool cas_flags(Flag old_flags, Flag new_flags);
   bool cas_hashcode(SYMBOL old_hashcode, SYMBOL new_hashcode);
-  bool cas_forward_offset(uint32_t old_offset, uint32_t new_offset);
+
+  bool has_forward_target() const;
+  bool set_forward_target(uint32_t target_region, uint32_t target_offset);
+  void clear_forward_target();
 
   void set_is_reachable();
   void set_has_cached_hashcode();
@@ -246,7 +248,7 @@ private:
   utils::TinyLock m_lock;                          // per-object small lock
   atomic<Flag> m_flags;                            // flags
   atomic<SYMBOL> m_hashcode;                       // cached hashcode of object / string
-  atomic<uint32_t> m_forward_offset;               // contains offset of forwarded copy during concurrent GC
+  atomic<uint32_t> m_forward_target;               // stores forward region id and offset
 };
 static_assert((sizeof(ObjectHeader) == 16), "invalid object header size");
 

@@ -55,12 +55,12 @@ uintptr_t HeapRegion::allocate(size_t size) {
   // update last known object addresses in span table
   DCHECK(this->type == Type::Eden);
   size_t span_index_start = span_get_index_for_pointer(object_pointer);
-  span_set_last_object_offset(span_index_start, object_offset);
+  span_set_last_object_pointer(span_index_start, object_pointer);
 
   // also mark intermediate spans if the object takes up multiple spans
   size_t span_index_end = span_get_index_for_pointer(object_end);
   for (size_t index = span_index_start + 1; index < span_index_end; index++) {
-    span_set_last_object_offset(index, object_offset);
+    span_set_last_object_pointer(index, object_pointer);
   }
 
   return object_pointer;
@@ -114,7 +114,7 @@ bool HeapRegion::span_get_dirty_flag(size_t span_index) const {
   return this->span_table[span_index] & kSpanTableDirtyFlagMask;
 }
 
-void HeapRegion::span_set_last_object_offset(size_t span_index, uintptr_t pointer) {
+void HeapRegion::span_set_last_object_pointer(size_t span_index, uintptr_t pointer) {
   DCHECK(span_index < kHeapRegionSpanCount);
   DCHECK(span_get_dirty_flag(span_index) == false);
   DCHECK(pointer_points_into_region(pointer));
