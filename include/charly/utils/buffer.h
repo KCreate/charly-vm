@@ -51,7 +51,7 @@ public:
       rounded_capacity *= 2;
     }
 
-    m_buffer = (char*)Allocator::alloc(rounded_capacity, 8);
+    m_buffer = (char*)Allocator::aligned_alloc(rounded_capacity, 8);
     m_capacity = rounded_capacity;
 
     setp(m_buffer, m_buffer + m_capacity);

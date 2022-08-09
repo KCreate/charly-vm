@@ -45,8 +45,11 @@ namespace utils {
    * */
   class Allocator {
   public:
+    // allocate heap memory
+    static void* alloc(size_t size);
+
     // allocate aligned heap memory
-    static void* alloc(size_t size, size_t alignment = 8);
+    static void* aligned_alloc(size_t size, size_t alignment = 8);
 
     // allocates memory via mmap
     // mapped memory region is initially protected with PROT_NONE

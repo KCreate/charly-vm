@@ -29,11 +29,18 @@
 
 namespace charly::utils {
 
-void* Allocator::alloc(size_t size, size_t alignment) {
+void* Allocator::alloc(size_t size) {
+  DCHECK(size > 0);
+  void* memory = std::malloc(size);
+  DCHECK(memory != nullptr);
+  return memory;
+}
+
+void* Allocator::aligned_alloc(size_t size, size_t alignment) {
   DCHECK((alignment >= 8) && (alignment % 8 == 0));
   DCHECK(size > 0);
 
-  void* memory = aligned_alloc(alignment, size);
+  void* memory = std::aligned_alloc(alignment, size);
   DCHECK(memory != nullptr);
   return memory;
 }
@@ -91,7 +98,7 @@ void* Allocator::realloc(void* old_pointer, size_t old_size, size_t new_size, si
   // act like alloc if old pointer is null
   if (old_pointer == nullptr) {
     DCHECK(old_size == 0);
-    return alloc(new_size, new_alignment);
+    return Allocator::aligned_alloc(new_size, new_alignment);
   }
 
   // return old pointer if it fulfills the new requirements
@@ -101,9 +108,9 @@ void* Allocator::realloc(void* old_pointer, size_t old_size, size_t new_size, si
     }
   }
 
-  void* new_pointer = alloc(new_size, new_alignment);
+  void* new_pointer = Allocator::aligned_alloc(new_size, new_alignment);
   std::memcpy(new_pointer, old_pointer, std::min(old_size, new_size));
-  free(old_pointer);
+  Allocator::free(old_pointer);
   return new_pointer;
 }
 

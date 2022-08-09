@@ -484,7 +484,7 @@ RawString Runtime::create_string(Thread* thread, const char* data, size_t size, 
 RawString Runtime::acquire_string(Thread* thread, char* data, size_t size, SYMBOL hash) {
   if (size <= RawLargeString::kMaxLength) {
     auto value = create_string(thread, data, size, hash);
-    std::free(data);
+    utils::Allocator::free(data);
     return value;
   } else {
     return RawString::cast(create_huge_string_acquire(thread, data, size, hash));
@@ -502,7 +502,7 @@ RawLargeString Runtime::create_large_string(Thread* thread, const char* data, si
 
 RawHugeString Runtime::create_huge_string(Thread* thread, const char* data, size_t size, SYMBOL hash) {
   DCHECK(size > RawLargeString::kMaxLength);
-  char* copy = static_cast<char*>(std::malloc(size));
+  char* copy = static_cast<char*>(utils::Allocator::alloc(size));
   std::memcpy(copy, data, size);
   return create_huge_string_acquire(thread, copy, size, hash);
 }
