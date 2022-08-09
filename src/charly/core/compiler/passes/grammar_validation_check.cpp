@@ -167,7 +167,7 @@ void GrammarValidationCheck::constructor_return_check(const ref<Class>& node) {
   for (const auto& op : return_ops) {
     auto ret = cast<Return>(op);
     if (ret->value) {
-      m_console.error(ret->value, "constructors must not return a value");
+      m_console.error(ret->value, "cannot return value from class constructor");
     }
   }
 }

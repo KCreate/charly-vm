@@ -72,6 +72,10 @@ public:
     std::memset(m_buffer.data(), 0, m_buffer.size());
   }
 
+  bool pointer_points_into_stack(const void* pointer) const {
+    return pointer >= lo() && pointer < hi();
+  }
+
 private:
   utils::GuardedBuffer m_buffer;
 };

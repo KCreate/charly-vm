@@ -416,10 +416,7 @@ void Function::dump_info(std::ostream& out) const {
     writer.fg(Color::Green, this->name->value);
   }
 
-  if (this->class_private_function) {
-    writer << ' ';
-    writer.fg(Color::Red, "private");
-  }
+  writer.fg(Color::Red, ir_info);
 }
 
 void ClassProperty::dump_info(std::ostream& out) const {

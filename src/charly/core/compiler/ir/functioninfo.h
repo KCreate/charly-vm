@@ -46,21 +46,34 @@ struct FunctionInfo {
   bool spread_argument = false;
   bool arrow_function = false;
   bool private_function = false;
+  bool is_constructor = false;
 
   // write a formatted version to the stream:
   //
   // (lvars=5, argc=3, minargc=2, spread=false)
   friend std::ostream& operator<<(std::ostream& out, const FunctionInfo& info) {
-    out << "(";
-    out << "name=" << bitcast<void*>(static_cast<uintptr_t>(info.name)) << ", ";
-    out << "lvars=" << static_cast<int32_t>(info.local_variables) << ", ";
-    out << "has_context=" << (info.has_frame_context ? "true" : "false") << ", ";
-    out << "hvars=" << static_cast<int32_t>(info.heap_variables) << ", ";
-    out << "argc=" << static_cast<int32_t>(info.argc) << ", ";
-    out << "minargc=" << static_cast<int32_t>(info.minargc) << ", ";
-    out << "spread=" << (info.spread_argument ? "true" : "false") << ", ";
-    out << "arrow=" << (info.arrow_function ? "true" : "false") << ", ";
-    out << "private=" << (info.private_function ? "true" : "false");
+    out << "( ";
+    out << "name=" << bitcast<void*>(static_cast<uintptr_t>(info.name)) << " ";
+    out << "lvars=" << static_cast<int32_t>(info.local_variables) << " ";
+    out << "hvars=" << static_cast<int32_t>(info.heap_variables) << " ";
+    out << "argc=" << static_cast<int32_t>(info.argc) << " ";
+    out << "minargc=" << static_cast<int32_t>(info.minargc) << " ";
+
+    if (info.has_frame_context) {
+      out << "has_context ";
+    }
+    if (info.spread_argument) {
+      out << "spread ";
+    }
+    if (info.arrow_function) {
+      out << "arrow ";
+    }
+    if (info.private_function) {
+      out << "private ";
+    }
+    if (info.is_constructor) {
+      out << "constructor ";
+    }
     out << ")";
 
     return out;

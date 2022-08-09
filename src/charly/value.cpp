@@ -233,35 +233,26 @@ bool ObjectHeader::has_forward_target() const {
 
 RawObject ObjectHeader::forward_target() const {
   DCHECK(has_forward_target());
-  auto region_index = m_forward_target >> 17;
-  auto offset = (m_forward_target & 0x7fff) * kObjectAlignment;
+  size_t offset = m_forward_target * kObjectAlignment;
   auto heap_base = bitcast<uintptr_t>(heap_region()->heap->heap_base());
-  auto region_ptr = heap_base + region_index * kHeapRegionSize;
-  DCHECK(bitcast<HeapRegion*>(region_ptr)->magic == kHeapRegionMagicNumber);
-  auto* header = bitcast<ObjectHeader*>(region_ptr + offset);
+  auto pointer = heap_base + offset;
+  auto* header = bitcast<ObjectHeader*>(pointer);
+  auto* region = header->heap_region();
+  auto* heap = region->heap;
+  DCHECK(bitcast<HeapRegion*>(region)->magic == kHeapRegionMagicNumber);
+  DCHECK(heap->is_valid_pointer(pointer));
   return header->object();
 }
 
 void ObjectHeader::set_forward_target(RawObject object) {
-  auto* region = object.header()->heap_region();
-  auto* heap = region->heap->heap_base();
-
-  auto region_ptr = bitcast<uintptr_t>(region);
-  auto heap_ptr = bitcast<uintptr_t>(heap);
-
-  DCHECK(heap_ptr % kHeapSize == 0);
-  DCHECK(heap_ptr % kHeapRegionSize == 0);
-  DCHECK(heap_ptr >= heap_ptr);
-  DCHECK(heap_ptr < heap_ptr + kHeapSize);
-
-  auto pointer = object.base_address();
-  auto region_index = (region_ptr - heap_ptr) / kHeapRegionSize;
-  auto offset = (pointer - region_ptr);
-  DCHECK(offset % kObjectAlignment == 0);
-
-  auto multiple_of_aligned = offset / kObjectAlignment;
-  uint32_t encoded = (region_index << 17) | multiple_of_aligned;
-  m_forward_target.acas(0, encoded);
+  auto* region = heap_region();
+  auto* heap = region->heap;
+  DCHECK(heap->is_valid_pointer(object.base_address()));
+  auto* header = object.header();
+  size_t heap_offset = bitcast<uintptr_t>(header) - bitcast<uintptr_t>(heap->heap_base());
+  size_t multiple_of_alignment = heap_offset / kObjectAlignment;
+  DCHECK(multiple_of_alignment <= kUInt32Max);
+  m_forward_target.acas(0, multiple_of_alignment);
 }
 
 uint32_t ObjectHeader::encode_shape_and_survivor_count(ShapeId shape_id, uint8_t survivor_count) {
@@ -1071,6 +1062,10 @@ const char* RawLargeString::data() const {
   return bitcast<const char*>(address());
 }
 
+const RawValue* RawTuple::data() const {
+  return bitcast<const RawValue*>(address());
+}
+
 uint32_t RawTuple::size() const {
   return count();
 }
@@ -1423,10 +1418,6 @@ RawFuture RawFiber::result_future() const {
 
 void RawFiber::set_result_future(RawFuture result_future) {
   set_field_at(kResultFutureOffset, result_future);
-}
-
-bool RawFiber::has_finished() const {
-  return thread() == nullptr;
 }
 
 std::vector<Thread*>* RawFuture::wait_queue() const {

@@ -97,10 +97,20 @@ void GarbageCollector::main() {
 
     m_runtime->scheduler()->stop_the_world();
     debugln("GC running");
+    debugln("mapped regions = %", m_heap->m_mapped_regions.size());
+    debugln("free regions = %", m_heap->m_free_regions.size());
+    debugln("eden regions = %", m_heap->m_eden_regions.size());
+    debugln("intermediate regions = %", m_heap->m_intermediate_regions.size());
+    debugln("old regions = %", m_heap->m_old_regions.size());
     double start_time = (double)get_steady_timestamp_micro() / 1000;
     collect();
     double end_time = (double)get_steady_timestamp_micro() / 1000;
     debugln("GC finished in %ms", end_time - start_time);
+    debugln("mapped regions = %", m_heap->m_mapped_regions.size());
+    debugln("free regions = %", m_heap->m_free_regions.size());
+    debugln("eden regions = %", m_heap->m_eden_regions.size());
+    debugln("intermediate regions = %", m_heap->m_intermediate_regions.size());
+    debugln("old regions = %", m_heap->m_old_regions.size());
 
     m_collection_mode = CollectionMode::None;
     DCHECK(m_mark_queue.empty());
@@ -190,6 +200,14 @@ void GarbageCollector::collect() {
     }
   }
 
+  for (auto* region : m_target_intermediate_regions) {
+    region->each_object([&](ObjectHeader* header) {
+      update_object_references(header->object());
+    });
+  }
+
+  update_root_references();
+
   if (m_collection_mode == CollectionMode::Major) {
     for (auto* region : m_heap->m_old_regions) {
       if (m_target_old_regions.count(region) == 0) {
@@ -200,12 +218,6 @@ void GarbageCollector::collect() {
         });
       }
     }
-  }
-
-  for (auto* region : m_target_intermediate_regions) {
-    region->each_object([&](ObjectHeader* header) {
-      update_object_references(header->object());
-    });
   }
 
   for (auto* region : m_heap->m_intermediate_regions) {
@@ -225,8 +237,6 @@ void GarbageCollector::collect() {
       }
     });
   }
-
-  update_root_references();
 
   recycle_old_regions();
 
@@ -381,12 +391,12 @@ bool GarbageCollector::update_object_references(RawObject object) const {
   if (object.isInstance() || object.isTuple()) {
     uint32_t field_count = object.count();
     for (size_t index = 0; index < field_count; index++) {
-      RawValue& value = *bitcast<RawValue*>(object.address() + index * sizeof(RawValue));
+      RawValue& value = object.field_at(index);
       if (value.isObject()) {
         auto referenced_object = RawObject::cast(value);
         if (referenced_object.header()->has_forward_target()) {
-          auto forwarded_object = referenced_object.header()->forward_target();
-          auto forwarded_is_young = forwarded_object.header()->is_young_generation();
+          RawObject forwarded_object = referenced_object.header()->forward_target();
+          bool forwarded_is_young = forwarded_object.header()->is_young_generation();
           if (forwarded_is_young) {
             contains_young_references = true;
           }
@@ -405,7 +415,7 @@ void GarbageCollector::update_root_references() const {
       auto object = RawObject::cast(value);
       auto* header = object.header();
       if (header->has_forward_target()) {
-        auto target = header->forward_target();
+        RawObject target = header->forward_target();
         DCHECK(!target.header()->has_forward_target());
         DCHECK(header->shape_id() == target.header()->shape_id());
         callback(target);
@@ -418,6 +428,27 @@ void GarbageCollector::update_root_references() const {
       root = object;
     });
   });
+
+  // patch frame argument pointers
+  for (auto* thread : m_runtime->scheduler()->m_threads) {
+    auto* frame = thread->frame();
+    while (frame) {
+      if (frame->argument_tuple.isTuple()) {
+        DCHECK(frame->arguments);
+        DCHECK(m_heap->is_valid_pointer(bitcast<uintptr_t>(frame->arguments)));
+        auto argtup = RawTuple::cast(frame->argument_tuple);
+        DCHECK(!argtup.header()->has_forward_target());
+        DCHECK(argtup.size() >= frame->argc);
+        frame->arguments = argtup.data();
+      } else {
+        if (frame->arguments != nullptr) {
+          DCHECK(thread->stack()->pointer_points_into_stack(frame->arguments));
+        }
+      }
+
+      frame = frame->parent;
+    }
+  }
 }
 
 void GarbageCollector::deallocate_external_heap_resources(RawObject object) const {

@@ -133,7 +133,9 @@ static const size_t kHeapRegionFirstUsableSpanIndex = sizeof(HeapRegion) / kHeap
 
 // amount of bytes that can be used in a heap region
 static const size_t kHeapRegionUsableSize = kHeapRegionSize - sizeof(HeapRegion);
-static_assert(sizeof(ObjectHeader) + RawData::kMaxLength < kHeapRegionUsableSize);
+
+// usable size for object payloads (size excluding object header)
+static const size_t kHeapRegionUsableSizeForPayload = kHeapRegionUsableSize - sizeof(ObjectHeader);
 
 class ThreadAllocationBuffer;
 class GarbageCollector;

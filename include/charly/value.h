@@ -246,7 +246,7 @@ private:
   utils::TinyLock m_lock;                          // per-object small lock
   atomic<Flag> m_flags;                            // flags
   atomic<SYMBOL> m_hashcode;                       // cached hashcode of object / string
-  atomic<uint32_t> m_forward_target;               // stores forward region id and offset
+  atomic<uint32_t> m_forward_target;               // forwarded heap offset (multiple of 16 bytes)
 };
 static_assert((sizeof(ObjectHeader) == 16), "invalid object header size");
 
@@ -598,8 +598,6 @@ public:
   size_t length() const;
   const uint8_t* data() const;
   SYMBOL hashcode() const;
-
-  static const size_t kMaxLength = kObjectHeaderMaxCount;
 };
 
 // string stored on managed heap
@@ -620,13 +618,13 @@ class RawTuple : public RawData {
 public:
   COMMON_RAW_OBJECT(Tuple);
 
+  const RawValue* data() const;
   uint32_t size() const;
 
   template <typename R = RawValue>
   R field_at(uint32_t index) const {
     DCHECK(index < size());
-    RawValue* data = bitcast<RawValue*>(address());
-    return R::cast(data[index]);
+    return R::cast(data()[index]);
   }
 
   template <typename R = RawValue>
@@ -919,8 +917,6 @@ public:
 
   RawFuture result_future() const;
   void set_result_future(RawFuture result_future);
-
-  bool has_finished() const;
 
   enum {
     kThreadPointerOffset = RawInstance::kFieldCount,

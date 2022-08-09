@@ -427,6 +427,7 @@ bool VariableAnalyzerPass::inspect_enter(const ref<Function>& node) {
   node->ir_info.minargc = node->minimum_argc();
   node->ir_info.arrow_function = node->arrow_function;
   node->ir_info.private_function = node->class_private_function;
+  node->ir_info.is_constructor = node->class_constructor;
 
   if (ref<Class> host_class = node->host_class.lock()) {
     for (const auto& prop : host_class->member_properties) {

@@ -215,7 +215,7 @@ void Thread::throw_value(RawValue value) {
     return;
   }
 
-  if (exception.cause() == kNull) {
+  if (exception.cause().isNull()) {
     exception.set_cause(pending_exception());
   }
   set_pending_exception(exception);
@@ -268,17 +268,20 @@ int32_t Thread::entry_main_thread() {
 void Thread::entry_fiber_thread() {
   HandleScope scope(this);
   Fiber fiber(scope, m_fiber);
+  Value arguments(scope, fiber.arguments());
 
-  RawValue fiber_arguments = fiber.arguments();
-  RawValue* argp = nullptr;
+  const RawValue* arguments_pointer = nullptr;
   size_t argc = 0;
-  if (fiber_arguments.isTuple()) {
-    auto tuple = RawTuple::cast(fiber_arguments);
-    argp = bitcast<RawValue*>(tuple.address());
-    argc = tuple.size();
+  if (arguments.isTuple()) {
+    Tuple argtuple(scope, arguments);
+    arguments_pointer = argtuple.data();
+    argc = argtuple.size();
+  } else {
+    DCHECK(arguments.isNull());
   }
 
-  RawValue result = Interpreter::call_function(this, fiber.context(), fiber.function(), argp, argc);
+  RawValue result =
+    Interpreter::call_function(this, fiber.context(), fiber.function(), arguments_pointer, argc, false, arguments);
   {
     std::lock_guard lock(fiber);
     fiber.set_thread(nullptr);

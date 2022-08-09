@@ -51,9 +51,10 @@ public:
   Frame* parent;
   RawValue self;
   RawFunction function;
-  SharedFunctionInfo* shared_function_info;
+  RawValue argument_tuple;
+  const SharedFunctionInfo* shared_function_info;
   RawValue context;
-  RawValue* arguments;
+  const RawValue* arguments;
   RawValue* locals;
   RawValue* stack;
   RawValue return_value;
@@ -80,9 +81,22 @@ public:
     Exception  // an exception was thrown, handle in current frame or return
   };
 
-  static RawValue call_value(Thread* thread, RawValue self, RawValue target, RawValue* arguments, uint32_t argc);
-  static RawValue call_function(
-    Thread* thread, RawValue self, RawFunction function, RawValue* arguments, uint32_t argc);
+  static RawValue call_value(Thread* thread,
+                             RawValue self,
+                             RawValue target,
+                             const RawValue * arguments,
+                             uint32_t argc,
+                             RawValue argument_tuple = kNull);
+
+  // if arguments_is_tuple is set, the arguments pointer is interpreted as a pointer to a tuple
+  // if not set, arguments is assumed to be a pointer into the threads stack region
+  static RawValue call_function(Thread* thread,
+                                RawValue self,
+                                RawFunction function,
+                                const RawValue* arguments,
+                                uint32_t argc,
+                                bool constructor_call = false,
+                                RawValue argument_tuple = kNull);
 
   static RawValue add_string_string(Thread* thread, RawString left, RawString right);
 

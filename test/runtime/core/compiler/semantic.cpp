@@ -226,7 +226,7 @@ CATCH_TEST_CASE("Semantic") {
   }
 
   CATCH_SECTION("checks for illegal return statements in constructors") {
-    COMPILE_ERROR("class A { func constructor { return 25 } }", "constructors must not return a value");
+    COMPILE_ERROR("class A { func constructor { return 25 } }", "cannot return value from class constructor");
   }
 
   CATCH_SECTION("checks for missing constructors in subclasses with properties") {

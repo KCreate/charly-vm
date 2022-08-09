@@ -50,17 +50,15 @@ func write(...args) {
 }
 
 func print(...args) {
-    let line
-
     args.each(->(e, i) {
-        if i == 0 {
-            line = "{e}"
+        if i != args.length - 1 {
+            builtin_writevalue(e)
+            builtin_writevalue(" ")
         } else {
-            line = "{line} {e}"
+            builtin_writevalue(e)
         }
     })
-
-    builtin_writevalue("{line}\n")
+    builtin_writevalue("\n")
     null
 }
 
@@ -114,7 +112,7 @@ func compile(source, name = "repl") = builtin_compile(source, name)
             let i = 0
 
             while i != size {
-                cb(self[i], i)
+                cb(self[i], i, self)
                 i += 1
             }
 
@@ -124,10 +122,20 @@ func compile(source, name = "repl") = builtin_compile(source, name)
         func map(cb) {
             const rv = Tuple.make(@length)
             each(->(e, i) {
-                rv[i] = cb(e, i)
+                rv[i] = cb(e, i, self)
             })
             rv
         }
+
+        func reduce(cb, initial = null) {
+            let sum = initial
+            each(->(e, i, list) {
+                sum = cb(sum, e, i, self)
+            })
+            sum
+        }
+
+        func sum = reduce(->(p, e) p + e, 0)
 
         static func make(length = 0, initial = null) = builtin_maketuple(length, initial)
 

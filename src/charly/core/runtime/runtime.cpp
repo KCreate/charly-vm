@@ -409,7 +409,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
     for (auto entry : m_shapes) {
       if (entry.isShape()) {
         auto shape = RawShape::cast(entry);
-        if (shape.klass_field() == kNull) {
+        if (shape.klass_field().isNull()) {
           shape.set_klass_field(get_builtin_class(ShapeId::kShape));
           DCHECK(shape.klass_field().isClass());
         }
@@ -427,10 +427,12 @@ void Runtime::initialize_stdlib_paths() {
 }
 
 RawData Runtime::create_data(Thread* thread, ShapeId shape_id, size_t size) {
+  DCHECK(size <= kHeapRegionUsableSizeForPayload);
+
   // determine the total allocation size
-  DCHECK(size <= RawData::kMaxLength);
   size_t header_size = sizeof(ObjectHeader);
   size_t total_size = align_to_size(header_size + size, kObjectAlignment);
+  DCHECK(total_size <= kHeapRegionUsableSize);
 
   uintptr_t memory = thread->allocate(total_size);
   DCHECK(memory);
@@ -480,7 +482,7 @@ RawInstance Runtime::create_instance(Thread* thread, RawClass klass) {
 RawString Runtime::create_string(Thread* thread, const char* data, size_t size, SYMBOL hash) {
   if (size <= RawSmallString::kMaxLength) {
     return RawString::cast(RawSmallString::make_from_memory(data, size));
-  } else if (size <= RawLargeString::kMaxLength) {
+  } else if (size <= kHeapRegionUsableSizeForPayload) {
     return RawString::cast(create_large_string(thread, data, size, hash));
   } else {
     return RawString::cast(create_huge_string(thread, data, size, hash));
@@ -488,7 +490,7 @@ RawString Runtime::create_string(Thread* thread, const char* data, size_t size, 
 }
 
 RawString Runtime::acquire_string(Thread* thread, char* data, size_t size, SYMBOL hash) {
-  if (size <= RawLargeString::kMaxLength) {
+  if (size <= kHeapRegionUsableSizeForPayload) {
     auto value = create_string(thread, data, size, hash);
     utils::Allocator::free(data);
     return value;
@@ -498,7 +500,6 @@ RawString Runtime::acquire_string(Thread* thread, char* data, size_t size, SYMBO
 }
 
 RawLargeString Runtime::create_large_string(Thread* thread, const char* data, size_t size, SYMBOL hash) {
-  DCHECK(size <= RawData::kMaxLength);
   DCHECK(size > RawSmallString::kMaxLength);
   RawLargeString data_object = RawLargeString::cast(create_data(thread, ShapeId::kLargeString, size));
   std::memcpy((char*)data_object.address(), data, size);
@@ -507,14 +508,12 @@ RawLargeString Runtime::create_large_string(Thread* thread, const char* data, si
 }
 
 RawHugeString Runtime::create_huge_string(Thread* thread, const char* data, size_t size, SYMBOL hash) {
-  DCHECK(size > RawLargeString::kMaxLength);
   char* copy = static_cast<char*>(utils::Allocator::alloc(size));
   std::memcpy(copy, data, size);
   return create_huge_string_acquire(thread, copy, size, hash);
 }
 
 RawHugeString Runtime::create_huge_string_acquire(Thread* thread, char* data, size_t size, SYMBOL hash) {
-  DCHECK(size > RawLargeString::kMaxLength);
   RawHugeString object = RawHugeString::cast(
     create_instance(thread, ShapeId::kHugeString, RawHugeString::kFieldCount, get_builtin_class(ShapeId::kHugeString)));
   object.set_data(data);
@@ -899,7 +898,6 @@ RawShape Runtime::create_shape(Thread* thread,
 
 RawTuple Runtime::create_tuple(Thread* thread, uint32_t count) {
   size_t size = count * kPointerSize;
-  DCHECK(size <= RawData::kMaxLength);
   auto tuple = RawTuple::cast(create_data(thread, ShapeId::kTuple, size));
   CHECK(tuple.header()->cas_count(size, count));
   return tuple;
@@ -1455,8 +1453,14 @@ void Runtime::each_root(std::function<void(RawValue& value)> callback) {
 
     auto* frame = thread->frame();
     while (frame) {
+      callback(frame->self);
       callback(frame->function);
       callback(frame->context);
+      callback(frame->return_value);
+
+      // frame->arguments pointer is not explicitly traversed
+      // referenced objects are already traversed via either stack traversal or the frame->argument_tuple ref
+      callback(frame->argument_tuple);
 
       const auto& shared_info = frame->shared_function_info;
       const auto& ir_info = shared_info->ir_info;
@@ -1470,15 +1474,6 @@ void Runtime::each_root(std::function<void(RawValue& value)> callback) {
       for (uint8_t si = 0; si < stacksize && si < frame->sp; si++) {
         callback(frame->stack[si]);
       }
-
-      uint8_t argc = frame->argc;
-      if (frame->arguments) {
-        for (uint8_t ai = 0; ai < argc; ai++) {
-          callback(frame->arguments[ai]);
-        }
-      }
-
-      callback(frame->return_value);
 
       frame = frame->parent;
     }

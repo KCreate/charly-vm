@@ -45,6 +45,7 @@ Frame::Frame(Thread* thread, RawFunction function) :
   thread(thread),
   parent(thread->frame()),
   function(function),
+  argument_tuple(kNull),
   shared_function_info(nullptr),
   arguments(nullptr),
   locals(nullptr),
@@ -103,34 +104,40 @@ const StringTableEntry& Frame::get_string_table_entry(uint16_t index) const {
   return info.string_table[index];
 }
 
-RawValue Interpreter::call_value(Thread* thread, RawValue self, RawValue target, RawValue* arguments, uint32_t argc) {
+RawValue Interpreter::call_value(
+  Thread* thread, RawValue self, RawValue target, const RawValue* arguments, uint32_t argc, RawValue argument_tuple) {
   Runtime* runtime = thread->runtime();
 
   if (target.isFunction()) {
     auto function = RawFunction::cast(target);
-    return Interpreter::call_function(thread, self, function, arguments, argc);
+    return Interpreter::call_function(thread, self, function, arguments, argc, false, argument_tuple);
   } else if (target.isBuiltinFunction()) {
+    // TODO: Save argument references when calling builtin functions
     auto function = RawBuiltinFunction::cast(target);
     return function.function()(thread, arguments, argc);
   } else if (target.isClass()) {
     auto klass = RawClass::cast(target);
+    auto constructor = RawFunction::cast(klass.constructor());
 
     if (klass.flags() & RawClass::kFlagNonConstructable) {
       thread->throw_value(runtime->create_string_from_template(thread, "cannot instantiate class '%'", klass.name()));
       return kErrorException;
     }
 
-    auto instance = thread->runtime()->create_instance(thread, klass);
-    RawFunction constructor = RawFunction::cast(klass.constructor());
-    return Interpreter::call_function(thread, instance, constructor, arguments, argc);
+    return Interpreter::call_function(thread, klass, constructor, arguments, argc, true, argument_tuple);
   }
 
   thread->throw_value(runtime->create_string_from_template(thread, "called value is not a function"));
   return kErrorException;
 }
 
-RawValue Interpreter::call_function(
-  Thread* thread, RawValue self, RawFunction function, RawValue* arguments, uint32_t argc) {
+RawValue Interpreter::call_function(Thread* thread,
+                                    RawValue self,
+                                    RawFunction function,
+                                    const RawValue* arguments,
+                                    uint32_t argc,
+                                    bool constructor_call,
+                                    RawValue argument_tuple) {
   Runtime* runtime = thread->runtime();
 
   // find the correct overload to call
@@ -142,6 +149,7 @@ RawValue Interpreter::call_function(
 
   Frame frame(thread, function);
   frame.self = self;
+  frame.argument_tuple = argument_tuple;
   frame.arguments = arguments;
   frame.locals = nullptr;
   frame.stack = nullptr;
@@ -151,6 +159,10 @@ RawValue Interpreter::call_function(
   frame.sp = 0;
   frame.argc = argc;
 
+  if (frame.argument_tuple.isTuple()) {
+    DCHECK((void*)frame.arguments == (void*)RawTuple::cast(frame.argument_tuple).data());
+  }
+
   //  if (frame.parent) {
   //    uintptr_t parent_base = bitcast<uintptr_t>(frame.parent);
   //    uintptr_t current_base = bitcast<uintptr_t>(&frame);
@@ -158,7 +170,7 @@ RawValue Interpreter::call_function(
   //    debuglnf("frame size: %", frame_size);
   //  }
 
-  SharedFunctionInfo* shared_info = function.shared_info();
+  const SharedFunctionInfo* shared_info = function.shared_info();
   frame.shared_function_info = shared_info;
   frame.ip = shared_info->bytecode_base_ptr;
   frame.oldip = frame.ip;
@@ -172,6 +184,12 @@ RawValue Interpreter::call_function(
     debuglnf("thread % stack overflow", thread->id());
     thread->throw_value(runtime->create_string_from_template(thread, "thread % stack overflow", thread->id()));
     return kErrorException;
+  }
+
+  // allocate class instance and replace self value
+  if (constructor_call) {
+    DCHECK(shared_info->ir_info.is_constructor);
+    frame.self = thread->runtime()->create_instance(thread, RawClass::cast(frame.self));
   }
 
   // allocate stack space for local variables and the stack
@@ -220,41 +238,23 @@ RawValue Interpreter::call_function(
   uint8_t func_argc = shared_info->ir_info.argc;
   bool func_has_spread = shared_info->ir_info.spread_argument;
   DCHECK(localcount >= func_argc);
+  for (uint8_t i = 0; i < argc && i < func_argc; i++) {
+    DCHECK(frame.arguments);
+    frame.locals[i] = frame.arguments[i];
+  }
+
+  // initialize spread argument
   if (func_has_spread) {
-    for (uint8_t i = 0; i < argc && i < func_argc; i++) {
-      DCHECK(arguments);
-      frame.locals[i] = arguments[i];
-    }
-
-    if (argc < func_argc) {
-      // copy arguments into local slots
-      for (uint8_t i = 0; i < argc; i++) {
-        DCHECK(arguments);
-        frame.locals[i] = arguments[i];
-      }
-
-      // initialize spread argument with empty tuple
+    if (argc <= func_argc) {
       frame.locals[func_argc] = runtime->create_tuple(thread, 0);
     } else {
-      // copy arguments into local slots
-      for (uint8_t i = 0; i < func_argc; i++) {
-        DCHECK(arguments);
-        frame.locals[i] = arguments[i];
-      }
-
-      // initialize spread argument with remaining arguments
       uint32_t remaining_arguments = argc - func_argc;
       auto spread_args = runtime->create_tuple(thread, remaining_arguments);
+      DCHECK(frame.arguments);
       for (uint8_t i = 0; i < remaining_arguments; i++) {
-        DCHECK(arguments);
-        spread_args.set_field_at(i, arguments[func_argc + i]);
+        spread_args.set_field_at(i, frame.arguments[func_argc + i]);
       }
       frame.locals[func_argc] = spread_args;
-    }
-  } else {
-    for (uint8_t i = 0; i < argc && i < func_argc; i++) {
-      DCHECK(arguments);
-      frame.locals[i] = arguments[i];
     }
   }
 
@@ -279,7 +279,7 @@ RawValue Interpreter::add_string_string(Thread* thread, RawString left, RawStrin
 
   if (total_size <= RawSmallString::kMaxLength) {
     return RawSmallString::make_from_memory(buf.data(), total_size);
-  } else if (total_size <= RawLargeString::kMaxLength) {
+  } else if (total_size <= kHeapRegionUsableSizeForPayload) {
     return thread->runtime()->create_string(thread, buf.data(), total_size, buf.hash());
   } else {
     SYMBOL buf_hash = buf.hash();
@@ -564,6 +564,7 @@ OP(call) {
 
 OP(callspread) {
   uint32_t segment_count = op->arg();
+  DCHECK(segment_count > 0);
 
   // pop segments from stack
   uint32_t total_arg_count = 0;
@@ -574,20 +575,23 @@ OP(callspread) {
     CHECK(total_arg_count <= kUInt32Max);
   }
 
-  // unpack segments and copy arguments into local array
-  RawValue arguments[total_arg_count];
-  uint32_t last_written_index = 0;
-  for (uint32_t i = 0; i < segment_count; i++) {
-    auto segment = segments[i];
-    for (uint32_t j = 0; j < segment.size(); j++) {
-      arguments[last_written_index++] = segment.field_at(j);
+  RawTuple argument_tuple;
+  if (segment_count == 1) {
+    argument_tuple = segments[0];
+  } else {
+    argument_tuple = thread->runtime()->create_tuple(thread, total_arg_count);
+    uint32_t last_written_index = 0;
+    for (uint32_t i = 0; i < segment_count; i++) {
+      auto segment = segments[i];
+      for (uint32_t j = 0; j < segment.size(); j++) {
+        argument_tuple.set_field_at(last_written_index++, segment.field_at(j));
+      }
     }
   }
 
   RawValue callee = frame->peek(segment_count);
   RawValue self = frame->peek(segment_count + 1);
-
-  RawValue rval = Interpreter::call_value(thread, self, callee, arguments, total_arg_count);
+  RawValue rval = Interpreter::call_value(thread, self, callee, argument_tuple.data(), total_arg_count, argument_tuple);
 
   if (rval.is_error_exception()) {
     return ContinueMode::Exception;
@@ -1044,9 +1048,9 @@ OP(makeclass) {
 OP(makestr) {
   uint16_t index = op->arg();
 
-  const SharedFunctionInfo& shared_info = *frame->shared_function_info;
-  DCHECK(index < shared_info.string_table.size());
-  const StringTableEntry& entry = shared_info.string_table[index];
+  const auto* shared_info = frame->shared_function_info;
+  DCHECK(index < shared_info->string_table.size());
+  const StringTableEntry& entry = shared_info->string_table[index];
   frame->push(thread->runtime()->create_string(thread, entry.value.data(), entry.value.size(), entry.hash));
 
   return ContinueMode::Next;
