@@ -41,7 +41,6 @@
 namespace charly::core::compiler::ir {
 
 // TODO: reserve space in constant table for bytecodes whose quickened version has to store a value
-// TODO: update usages of FOREACH_OPCODE
 
 static const size_t kInstructionLength = 4;
 

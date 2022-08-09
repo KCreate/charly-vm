@@ -211,6 +211,9 @@ public:
   const fs::path& source_code_directory() const;
   const fs::path& stdlib_directory() const;
 
+  // invoke the callback with a reference to each runtime root
+  void each_root(std::function<void(RawValue& value)> callback);
+
 private:
   std::mutex m_mutex;
   utils::WaitFlag m_init_flag;

@@ -98,7 +98,6 @@ enum class ShapeId : uint32_t {
   kSmallBytes = 15,
   kLastImmediateShape = kSmallBytes,
 
-// non-instance heap types
 // clang-format off
 #define SHAPE_ID(name) k##name,
 #define GET_FIRST(name) k##name + 0 *
@@ -128,7 +127,7 @@ static const ShapeId kShapeImmediateTagMapping[16] = {
   /* 0b0000 */ ShapeId::kInt,
   /* 0b0001 */ ShapeId::kMaxShapeCount,  // old heap objects
   /* 0b0010 */ ShapeId::kInt,
-  /* 0b0011 */ ShapeId::kMaxShapeCount,  // eden heap objects
+  /* 0b0011 */ ShapeId::kMaxShapeCount,  // young heap objects
   /* 0b0100 */ ShapeId::kInt,
   /* 0b0101 */ ShapeId::kFloat,
   /* 0b0110 */ ShapeId::kInt,
@@ -177,6 +176,7 @@ TYPE_NAMES(FORWARD_DECL)
 #undef FORWARD_DECL
 
 // every heap allocated object gets prefixed with a object header
+struct HeapRegion;
 class ObjectHeader {
   friend class RawObject;
 
@@ -184,46 +184,43 @@ public:
   CHARLY_NON_HEAP_ALLOCATABLE(ObjectHeader);
 
   enum Flag : uint8_t {
-    kReachable = 1,       // object is reachable by GC
-    kHasHashcode = 2,     // object has a cached hashcode
-    kEdenGeneration = 4,  // object is in an eden region
+    kReachable = 1,        // object is reachable by GC
+    kHasHashcode = 2,      // object has a cached hashcode
+    kYoungGeneration = 4,  // object is in an eden or intermediate region
   };
 
   static void initialize_header(uintptr_t address, ShapeId shape_id, uint16_t count);
 
-  // getter
-  ShapeId shape_id() const;
-  uint8_t survivor_count() const;
-  uint16_t count() const;
-  Flag flags() const;
-  SYMBOL hashcode();
-  uint32_t forward_target_region() const;
-  uint32_t forward_target_offset() const;
-
-  bool is_reachable() const;
-  bool has_cached_hashcode() const;
-  bool is_eden_generation() const;
-
+  HeapRegion* heap_region() const;
   RawObject object() const;
+  uint32_t alloc_size() const;  // (header + object + padding)
 
-  // returns the size of the object (including padding, excluding the header)
-  uint32_t object_size() const;
+  ShapeId shape_id() const;
 
+  uint16_t count() const;
   bool cas_count(uint16_t old_count, uint16_t new_count);
+
+  SYMBOL hashcode();
   bool cas_hashcode(SYMBOL old_hashcode, SYMBOL new_hashcode);
 
+  uint8_t survivor_count() const;
   void increment_survivor_count();
+  void clear_survivor_count();
 
+  RawObject forward_target() const;
   bool has_forward_target() const;
-  bool set_forward_target(uint32_t target_region, uint32_t target_offset);
-  void clear_forward_target();
+  void set_forward_target(RawObject object);
 
+  Flag flags() const;
+  bool is_reachable() const;
+  bool has_cached_hashcode() const;
+  bool is_young_generation() const;
   void set_is_reachable();
   void set_has_cached_hashcode();
-  void set_is_eden_generation();
+  void set_is_young_generation();
   void clear_is_reachable();
   void clear_has_cached_hashcode();
-  void clear_is_eden_generation();
+  void clear_is_young_generation();
 
 private:
   static uint32_t encode_shape_and_survivor_count(ShapeId shape_id, uint8_t survivor_count);
@@ -257,33 +254,33 @@ static const size_t kObjectAlignment = 16;
 static const size_t kObjectHeaderMaxCount = 0xffff;
 static const size_t kObjectHeaderMaxSurvivorCount = 0xff;
 
-#define COMMON_RAW_OBJECT(name)                                         \
-  static Raw##name cast(RawValue value) {                               \
-    DCHECK(value.is##name(), "invalid object type, expected %", #name); \
-    return value.rawCast<Raw##name>();                                  \
-  }                                                                     \
-  static Raw##name cast(const RawValue* value) {                        \
-    return cast(*value);                                                \
-  }                                                                     \
-  static Raw##name cast(uintptr_t value) {                              \
-    return cast(RawValue(value));                                       \
-  }                                                                     \
-  static Raw##name unsafe_cast(RawValue value) {                        \
-    return value.rawCast<Raw##name>();                                  \
-  }                                                                     \
-  static Raw##name unsafe_cast(const RawValue* value) {                 \
-    return unsafe_cast(*value);                                         \
-  }                                                                     \
-  static Raw##name unsafe_cast(uintptr_t value) {                       \
-    return unsafe_cast(RawValue(value));                                \
-  }                                                                     \
-  static bool value_is_type(RawValue value) {                           \
-    return value.is##name();                                            \
-  }                                                                     \
-  Raw##name& operator=(RawValue other) {                                \
-    m_raw = other.rawCast<Raw##name>().raw();                           \
-    return *this;                                                       \
-  }                                                                     \
+#define COMMON_RAW_OBJECT(name)                                                       \
+  static Raw##name cast(RawValue value) {                                             \
+    DCHECK(value.is##name(), "invalid object type, got %, expected %", value, #name); \
+    return value.rawCast<Raw##name>();                                                \
+  }                                                                                   \
+  static Raw##name cast(const RawValue* value) {                                      \
+    return cast(*value);                                                              \
+  }                                                                                   \
+  static Raw##name cast(uintptr_t value) {                                            \
+    return cast(RawValue(value));                                                     \
+  }                                                                                   \
+  static Raw##name unsafe_cast(RawValue value) {                                      \
+    return value.rawCast<Raw##name>();                                                \
+  }                                                                                   \
+  static Raw##name unsafe_cast(const RawValue* value) {                               \
+    return unsafe_cast(*value);                                                       \
+  }                                                                                   \
+  static Raw##name unsafe_cast(uintptr_t value) {                                     \
+    return unsafe_cast(RawValue(value));                                              \
+  }                                                                                   \
+  static bool value_is_type(RawValue value) {                                         \
+    return value.is##name();                                                          \
+  }                                                                                   \
+  Raw##name& operator=(RawValue other) {                                              \
+    m_raw = other.rawCast<Raw##name>().raw();                                         \
+    return *this;                                                                     \
+  }                                                                                   \
   CHARLY_NON_HEAP_ALLOCATABLE(name)
 
 // the RawValue class represents a single pointer-tagged value.
@@ -291,7 +288,7 @@ static const size_t kObjectHeaderMaxSurvivorCount = 0xff;
 //
 // ******** ******** ******** ******** ******** ******** ******** ******* 0  int
 // ******** ******** ******** ******** ******** ******** ******** **** 0001  old heap object
-// ******** ******** ******** ******** ******** ******** ******** **** 0011  eden heap object
+// ******** ******** ******** ******** ******** ******** ******** **** 0011  young heap object
 // DDDDDDDD DDDDDDDD DDDDDDDD DDDDDDDD DDDDDDDD DDDDDDDD DDDDDDDD DDDD 0101  float
 // ******** ******** ******** ******** ******** ******** *******B **** 0111  bool
 // SSSSSSSS SSSSSSSS SSSSSSSS SSSSSSSS ******** ******** ******** **** 1001  symbol
@@ -354,8 +351,8 @@ public:
   ShapeId shape_id() const;
   ShapeId shape_id_not_object_int() const;
   bool truthyness() const;
-  bool is_old_object() const;
-  bool is_eden_object() const;
+  bool is_old_pointer() const;
+  bool is_young_pointer() const;
 
 #define TYPECHECK(name) bool is##name() const;
   TYPE_NAMES(TYPECHECK)
@@ -370,7 +367,7 @@ public:
   // tag bits
   static const uintptr_t kTagInt = 0;
   static const uintptr_t kTagOldObject = 0b0001;
-  static const uintptr_t kTagEdenObject = 0b0011;
+  static const uintptr_t kTagYoungObject = 0b0011;
   static const uintptr_t kTagFloat = 0b0101;
   static const uintptr_t kTagBool = 0b0111;
   static const uintptr_t kTagSymbol = 0b1001;
@@ -587,10 +584,10 @@ public:
   void unlock() const;
   bool is_locked() const;
 
+  RawValue& field_at(uint32_t index);
   void set_field_at(uint32_t index, RawValue value);
-  void gc_write_barrier() const;
 
-  static RawObject make_from_ptr(uintptr_t address, bool eden_pointer = false);
+  static RawObject make_from_ptr(uintptr_t address, bool is_young = true);
 };
 
 // base class for all objects that store immediate data
@@ -634,6 +631,7 @@ public:
 
   template <typename R = RawValue>
   R first_field() const {
+    DCHECK(size() > 0);
     return field_at<R>(0);
   }
 

@@ -409,7 +409,10 @@ void Runtime::initialize_builtin_types(Thread* thread) {
     for (auto entry : m_shapes) {
       if (entry.isShape()) {
         auto shape = RawShape::cast(entry);
-        shape.set_klass_field(get_builtin_class(ShapeId::kShape));
+        if (shape.klass_field() == kNull) {
+          shape.set_klass_field(get_builtin_class(ShapeId::kShape));
+          DCHECK(shape.klass_field().isClass());
+        }
       }
     }
   }
@@ -434,10 +437,13 @@ RawData Runtime::create_data(Thread* thread, ShapeId shape_id, size_t size) {
 
   // initialize header
   ObjectHeader::initialize_header(memory, shape_id, size);
-  return RawData::cast(RawObject::make_from_ptr(memory + header_size, true));
+  return RawData::cast(RawObject::make_from_ptr(memory + header_size));
 }
 
-RawInstance Runtime::create_instance(Thread* thread, ShapeId shape_id, size_t field_count, RawValue klass) {
+RawInstance Runtime::create_instance(Thread* thread, ShapeId shape_id, size_t field_count, RawValue _klass) {
+  HandleScope scope(thread);
+  Value klass(scope, _klass);
+
   // determine the allocation size
   DCHECK(field_count >= 1);
   DCHECK(field_count <= RawInstance::kMaximumFieldCount);
@@ -458,7 +464,7 @@ RawInstance Runtime::create_instance(Thread* thread, ShapeId shape_id, size_t fi
     object_fields[i] = kNull;
   }
 
-  auto instance = RawInstance::cast(RawObject::make_from_ptr(object, true));
+  auto instance = RawInstance::cast(RawObject::make_from_ptr(object));
   instance.set_klass_field(klass);
   return instance;
 }
@@ -852,14 +858,15 @@ RawShape Runtime::create_shape(Thread* thread, RawValue parent, RawTuple key_tab
 
       // create new shape for added key
       if (!found_next) {
-        next_shape = RawShape::cast(create_instance(thread, ShapeId::kShape, RawShape::kFieldCount));
+        RawValue klass = kNull;
 
         // Runtime::create_shape gets called during runtime initialization
         // at that point no builtin classes are registered yet
         // the klass field gets patched once runtime initialization has finished
         if (builtin_class_is_registered(ShapeId::kShape)) {
-          next_shape.set_klass_field(get_builtin_class(ShapeId::kShape));
+          klass = get_builtin_class(ShapeId::kShape);
         }
+        next_shape = RawShape::cast(create_instance(thread, ShapeId::kShape, RawShape::kFieldCount, klass));
         next_shape.set_parent(target_shape);
         next_shape.set_keys(concat_tuple_value(thread, target_shape.keys(), encoded));
         next_shape.set_additions(create_tuple(thread, 0));
@@ -1425,6 +1432,82 @@ const fs::path& Runtime::source_code_directory() const {
 
 const fs::path& Runtime::stdlib_directory() const {
   return m_stdlib_directory;
+}
+
+void Runtime::each_root(std::function<void(RawValue& value)> callback) {
+  // processor symbol tables
+  for (auto* proc : m_scheduler->m_processors) {
+    for (auto& entry : proc->m_symbol_table) {
+      callback(entry.second);
+    }
+  }
+
+  // thread handle scopes and stackframes
+  for (auto* thread : m_scheduler->m_threads) {
+    callback(thread->m_fiber);
+    callback(thread->m_pending_exception);
+
+    auto* handle = thread->handles()->head();
+    while (handle) {
+      callback(*handle);
+      handle = handle->next();
+    }
+
+    auto* frame = thread->frame();
+    while (frame) {
+      callback(frame->function);
+      callback(frame->context);
+
+      const auto& shared_info = frame->shared_function_info;
+      const auto& ir_info = shared_info->ir_info;
+
+      uint8_t locals = ir_info.local_variables;
+      for (uint8_t li = 0; li < locals; li++) {
+        callback(frame->locals[li]);
+      }
+
+      uint8_t stacksize = ir_info.stacksize;
+      for (uint8_t si = 0; si < stacksize && si < frame->sp; si++) {
+        callback(frame->stack[si]);
+      }
+
+      uint8_t argc = frame->argc;
+      if (frame->arguments) {
+        for (uint8_t ai = 0; ai < argc; ai++) {
+          callback(frame->arguments[ai]);
+        }
+      }
+
+      callback(frame->return_value);
+
+      frame = frame->parent;
+    }
+  }
+
+  // runtime symbol table
+  for (auto& entry : m_symbol_table) {
+    callback(entry.second);
+  }
+
+  // runtime shape table
+  for (auto& shape : m_shapes) {
+    callback(shape);
+  }
+
+  // runtime class table
+  for (auto& klass : m_builtin_classes) {
+    callback(klass);
+  }
+
+  // global variables
+  for (auto& entry : m_global_variables) {
+    callback(entry.second.value);
+  }
+
+  // cached modules table
+  for (auto& entry : m_cached_modules) {
+    callback(entry.second.module);
+  }
 }
 
 }  // namespace charly::core::runtime

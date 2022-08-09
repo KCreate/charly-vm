@@ -57,6 +57,7 @@ class GarbageCollector;
 
 class Scheduler {
   friend class GarbageCollector;
+  friend class Runtime;
 public:
   explicit Scheduler(Runtime* runtime);
   ~Scheduler();

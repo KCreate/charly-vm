@@ -89,14 +89,16 @@ void ObjectHeader::initialize_header(uintptr_t address, ShapeId shape_id, uint16
   header->m_shape_id_and_survivor_count = encode_shape_and_survivor_count(shape_id, 0);
   header->m_count = count;
   header->m_lock = 0;
-  header->m_flags = Flag::kEdenGeneration;
+  header->m_flags = Flag::kYoungGeneration;
   header->m_hashcode = 0;
   header->m_forward_target = 0;
 }
 
 ShapeId ObjectHeader::shape_id() const {
   uint32_t tmp = m_shape_id_and_survivor_count;
-  return static_cast<ShapeId>(tmp & kMaskShape);
+  ShapeId id = static_cast<ShapeId>(tmp & kMaskShape);
+  DCHECK(id > ShapeId::kLastImmediateShape);
+  return id;
 }
 
 uint8_t ObjectHeader::survivor_count() const {
@@ -117,7 +119,7 @@ SYMBOL ObjectHeader::hashcode() {
     return m_hashcode;
   } else {
     auto address = bitcast<uintptr_t>(this);
-    uint32_t offset_in_heap = address % kHeapTotalSize;
+    uint32_t offset_in_heap = address % kHeapSize;
 
     if (cas_hashcode(0, offset_in_heap)) {
       set_has_cached_hashcode();
@@ -125,16 +127,6 @@ SYMBOL ObjectHeader::hashcode() {
 
     return m_hashcode;
   }
-}
-
-uint32_t ObjectHeader::forward_target_region() const {
-  DCHECK(has_forward_target());
-  return m_forward_target >> 17;
-}
-
-uint32_t ObjectHeader::forward_target_offset() const {
-  DCHECK(has_forward_target());
-  return m_forward_target & 0x7fff;
 }
 
 bool ObjectHeader::is_reachable() const {
@@ -145,8 +137,8 @@ bool ObjectHeader::has_cached_hashcode() const {
   return flags() & kHasHashcode;
 }
 
-bool ObjectHeader::is_eden_generation() const {
-  return flags() & kEdenGeneration;
+bool ObjectHeader::is_young_generation() const {
+  return flags() & kYoungGeneration;
 }
 
 void ObjectHeader::set_is_reachable() {
@@ -163,9 +155,9 @@ void ObjectHeader::set_has_cached_hashcode() {
   }
 }
 
-void ObjectHeader::set_is_eden_generation() {
+void ObjectHeader::set_is_young_generation() {
   Flag old_flags = flags();
-  while (!m_flags.cas(old_flags, static_cast<Flag>(old_flags | kEdenGeneration))) {
+  while (!m_flags.cas(old_flags, static_cast<Flag>(old_flags | kYoungGeneration))) {
     old_flags = flags();
   }
 }
@@ -184,42 +176,47 @@ void ObjectHeader::clear_has_cached_hashcode() {
   }
 }
 
-void ObjectHeader::clear_is_eden_generation() {
+void ObjectHeader::clear_is_young_generation() {
   Flag old_flags = flags();
-  while (!m_flags.cas(old_flags, static_cast<Flag>(old_flags & ~kEdenGeneration))) {
+  while (!m_flags.cas(old_flags, static_cast<Flag>(old_flags & ~kYoungGeneration))) {
     old_flags = flags();
   }
 }
 
+HeapRegion* ObjectHeader::heap_region() const {
+  auto base = bitcast<uintptr_t>(this);
+  auto region = bitcast<HeapRegion*>(base & kHeapRegionPointerMask);
+  // DCHECK(region->magic == kHeapRegionMagicNumber);
+  return region;
+}
 
 RawObject ObjectHeader::object() const {
   uintptr_t object_address = bitcast<uintptr_t>(this) + sizeof(ObjectHeader);
-  return RawObject::make_from_ptr(object_address, is_eden_generation());
+  return RawObject::make_from_ptr(object_address, is_young_generation());
 }
 
-uint32_t ObjectHeader::object_size() const {
-  if (is_data_shape(shape_id())) {
-    return align_to_size(count(), kObjectAlignment);
+uint32_t ObjectHeader::alloc_size() const {
+  ShapeId id = shape_id();
+  if (id == ShapeId::kTuple || !is_data_shape(id)) {
+    return sizeof(ObjectHeader) + align_to_size(count() * kPointerSize, kObjectAlignment);
   } else {
-    return align_to_size(count() * kPointerSize, kObjectAlignment);
+    return sizeof(ObjectHeader) + align_to_size(count(), kObjectAlignment);
   }
 }
 
 void ObjectHeader::increment_survivor_count() {
-  ShapeId old_shape_id;
-  uint8_t old_survivor_count;
-  uint32_t old_value, new_value;
-  do {
-    old_value = m_shape_id_and_survivor_count;
-    old_shape_id = static_cast<ShapeId>(old_value & kMaskShape);
-    old_survivor_count = (old_value & kMaskSurvivorCount) >> kShiftSurvivorCount;
+  uint32_t old_value = m_shape_id_and_survivor_count;
+  ShapeId old_shape_id = shape_id();
+  uint8_t old_survivor_count = survivor_count();
+  uint32_t new_value = encode_shape_and_survivor_count(old_shape_id, old_survivor_count + 1);
+  m_shape_id_and_survivor_count.acas(old_value, new_value);
+}
 
-    if (old_survivor_count == kObjectHeaderMaxSurvivorCount) {
-      return;
-    }
-
-    new_value = encode_shape_and_survivor_count(old_shape_id, old_survivor_count + 1);
-  } while (m_shape_id_and_survivor_count.cas(old_value, new_value));
+void ObjectHeader::clear_survivor_count() {
+  uint32_t old_value = m_shape_id_and_survivor_count;
+  ShapeId old_shape_id = shape_id();
+  uint32_t new_value = encode_shape_and_survivor_count(old_shape_id, 0);
+  m_shape_id_and_survivor_count.acas(old_value, new_value);
 }
 
 bool ObjectHeader::cas_count(uint16_t old_count, uint16_t new_count) {
@@ -234,17 +231,42 @@ bool ObjectHeader::has_forward_target() const {
   return m_forward_target != 0;
 }
 
-bool ObjectHeader::set_forward_target(uint32_t target_region, uint32_t target_offset) {
-  DCHECK(target_region < kHeapRegionCount);
-  DCHECK(target_offset * 16 < kHeapRegionSize);
-  return (target_region << 17) | target_offset;
+RawObject ObjectHeader::forward_target() const {
+  DCHECK(has_forward_target());
+  auto region_index = m_forward_target >> 17;
+  auto offset = (m_forward_target & 0x7fff) * kObjectAlignment;
+  auto heap_base = bitcast<uintptr_t>(heap_region()->heap->heap_base());
+  auto region_ptr = heap_base + region_index * kHeapRegionSize;
+  DCHECK(bitcast<HeapRegion*>(region_ptr)->magic == kHeapRegionMagicNumber);
+  auto* header = bitcast<ObjectHeader*>(region_ptr + offset);
+  return header->object();
 }
 
-void ObjectHeader::clear_forward_target() {
-  m_forward_target = 0;
+void ObjectHeader::set_forward_target(RawObject object) {
+  auto* region = object.header()->heap_region();
+  auto* heap = region->heap->heap_base();
+
+  auto region_ptr = bitcast<uintptr_t>(region);
+  auto heap_ptr = bitcast<uintptr_t>(heap);
+
+  DCHECK(heap_ptr % kHeapSize == 0);
+  DCHECK(heap_ptr % kHeapRegionSize == 0);
+  DCHECK(heap_ptr >= heap_ptr);
+  DCHECK(heap_ptr < heap_ptr + kHeapSize);
+
+  auto pointer = object.base_address();
+  auto region_index = (region_ptr - heap_ptr) / kHeapRegionSize;
+  auto offset = (pointer - region_ptr);
+  DCHECK(offset % kObjectAlignment == 0);
+
+  auto multiple_of_aligned = offset / kObjectAlignment;
+  uint32_t encoded = (region_index << 17) | multiple_of_aligned;
+  m_forward_target.acas(0, encoded);
 }
 
 uint32_t ObjectHeader::encode_shape_and_survivor_count(ShapeId shape_id, uint8_t survivor_count) {
+  DCHECK(shape_id < ShapeId::kMaxShapeId);
+  DCHECK(survivor_count <= kGCObjectMaxSurvivorCount);
   return static_cast<uint32_t>(shape_id) | ((uint32_t)survivor_count << kShiftSurvivorCount);
 }
 
@@ -306,12 +328,12 @@ bool RawValue::truthyness() const {
   }
 }
 
-bool RawValue::is_old_object() const {
+bool RawValue::is_old_pointer() const {
   return (m_raw & kMaskImmediate) == kTagOldObject;
 }
 
-bool RawValue::is_eden_object() const {
-  return (m_raw & kMaskImmediate) == kTagEdenObject;
+bool RawValue::is_young_pointer() const {
+  return (m_raw & kMaskImmediate) == kTagYoungObject;
 }
 
 bool RawValue::isInt() const {
@@ -347,7 +369,7 @@ bool RawValue::isValue() const {
 }
 
 bool RawValue::isObject() const {
-  return is_old_object() || is_eden_object();
+  return is_old_pointer() || is_young_pointer();
 }
 
 bool RawValue::isInstance() const {
@@ -636,9 +658,16 @@ void RawValue::dump(std::ostream& out) const {
       }
     }
 
-    auto instance = RawInstance::cast(this);
-    auto klass = RawClass::cast(instance.klass_field());
-    writer.fg(Color::Green, "<", klass.name(), " ", instance.address_voidptr(), ">");
+    if (isInstance()) {
+      auto instance = RawInstance::cast(this);
+      auto klass = RawClass::cast(instance.klass_field());
+      writer.fg(Color::Green, "<", klass.name(), " ", instance.address_voidptr(), ">");
+      return;
+    }
+
+    auto object = RawObject::cast(this);
+    auto shape_id = object.header()->shape_id();
+    writer.fg(Color::Green, "<?? #", (uint32_t)shape_id, " ", object.address_voidptr(), ">");
     return;
   }
 
@@ -663,17 +692,18 @@ void RawValue::dump(std::ostream& out) const {
   if (isSymbol()) {
     RawSymbol symbol = RawSymbol::cast(this);
 
-    auto thread = Thread::current();
-    HandleScope scope(thread);
-    Value sym_value(scope, thread->lookup_symbol(symbol.value()));
+    if (auto* thread = Thread::current()) {
+      HandleScope scope(thread);
+      Value sym_value(scope, thread->lookup_symbol(symbol.value()));
 
-    if (sym_value.isString()) {
-      RawString string = RawString::cast(sym_value);
-      out << string.view();
-    } else {
-      out << std::hex << symbol.value() << std::dec;
+      if (sym_value.isString()) {
+        RawString string = RawString::cast(sym_value);
+        out << string.view();
+        return;
+      }
     }
 
+    out << std::hex << symbol.value() << std::dec;
     return;
   }
 
@@ -996,31 +1026,28 @@ bool RawObject::is_locked() const {
   return header()->m_lock.is_locked();
 }
 
-void RawObject::set_field_at(uint32_t index, RawValue value) {
+RawValue& RawObject::field_at(uint32_t index) {
   DCHECK(isInstance() || isTuple());
   DCHECK(index < count());
   RawValue* data = bitcast<RawValue*>(address());
-  data[index] = value;
+  return data[index];
+}
 
-  if (value.is_eden_object() && this->is_old_object()) {
-    gc_write_barrier();
+void RawObject::set_field_at(uint32_t index, RawValue value) {
+  field_at(index) = value;
+
+  if (value.is_young_pointer() && this->is_old_pointer()) {
+    HeapRegion* region = header()->heap_region();
+    DCHECK(region->type == HeapRegion::Type::Old);
+    size_t span_index = region->span_get_index_for_pointer(base_address());
+    region->span_set_dirty_flag(span_index);
   }
 }
 
-void RawObject::gc_write_barrier() const {
-  uintptr_t object_base = base_address();
-  uintptr_t region_pointer = object_base & kHeapRegionPointerMask;
-  HeapRegion* region = bitcast<HeapRegion*>(region_pointer);
-  DCHECK(region->magic == kHeapRegionMagicNumber);
-  DCHECK(region->type == HeapRegion::Type::Old);
-  DCHECK(region->state == HeapRegion::State::Released);
-  size_t span_index = region->span_get_index_for_pointer(object_base);
-  region->span_set_dirty_flag(span_index);
-}
-
-RawObject RawObject::make_from_ptr(uintptr_t address, bool eden_pointer) {
+RawObject RawObject::make_from_ptr(uintptr_t address, bool is_young) {
   CHECK((address % kObjectAlignment) == 0, "invalid pointer alignment");
-  return RawObject::cast(address | (eden_pointer ? kTagEdenObject : kTagOldObject));
+  auto object = RawObject::cast(address | (is_young ? kTagYoungObject : kTagOldObject));
+  return object;
 }
 
 size_t RawData::length() const {
@@ -1061,18 +1088,16 @@ bool RawInstance::is_instance_of(ShapeId id) {
 
   // check inheritance chain
   // TODO: optimize this with an ancestor table
-  if (shape_id() > ShapeId::kFirstBuiltinShapeId) {
-    auto klass = RawClass::cast(klass_field());
-    RawValue search = klass.shape_instance();
-    while (search.isShape()) {
-      auto shape = RawShape::cast(search);
+  auto klass = RawClass::cast(klass_field());
+  RawValue search = klass.shape_instance();
+  while (search.isShape()) {
+    auto shape = RawShape::cast(search);
 
-      if (shape.own_shape_id() == id) {
-        return true;
-      }
-
-      search = shape.parent();
+    if (shape.own_shape_id() == id) {
+      return true;
     }
+
+    search = shape.parent();
   }
 
   return false;

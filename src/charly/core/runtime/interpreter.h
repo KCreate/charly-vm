@@ -53,6 +53,7 @@ public:
   RawFunction function;
   SharedFunctionInfo* shared_function_info;
   RawValue context;
+  RawValue* arguments;
   RawValue* locals;
   RawValue* stack;
   RawValue return_value;

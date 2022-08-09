@@ -62,7 +62,11 @@ public:
   template <typename O>
   Handle(HandleScope*, const Handle<O>&) = delete;
 
-  T operator*() const {
+  T& operator*() {
+    return *static_cast<T*>(this);
+  }
+
+  const T& operator*() const {
     return *static_cast<const T*>(this);
   }
 

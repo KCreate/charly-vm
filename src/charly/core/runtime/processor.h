@@ -44,6 +44,7 @@ class GarbageCollector;
 // represents a virtual processor
 class Processor {
   friend class GarbageCollector;
+  friend class Runtime;
 public:
   explicit Processor(Runtime* runtime);
 

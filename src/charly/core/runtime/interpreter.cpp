@@ -46,6 +46,7 @@ Frame::Frame(Thread* thread, RawFunction function) :
   parent(thread->frame()),
   function(function),
   shared_function_info(nullptr),
+  arguments(nullptr),
   locals(nullptr),
   stack(nullptr),
   oldip(0),
@@ -141,6 +142,7 @@ RawValue Interpreter::call_function(
 
   Frame frame(thread, function);
   frame.self = self;
+  frame.arguments = arguments;
   frame.locals = nullptr;
   frame.stack = nullptr;
   frame.return_value = kNull;
@@ -190,11 +192,11 @@ RawValue Interpreter::call_function(
   uint8_t heap_variables = shared_info->ir_info.heap_variables;
   if (has_frame_context) {
     auto context = runtime->create_tuple(thread, RawFunction::kContextHeapVariablesOffset + heap_variables);
-    context.set_field_at(RawFunction::kContextParentOffset, function.context());
-    context.set_field_at(RawFunction::kContextSelfOffset, self);
+    context.set_field_at(RawFunction::kContextParentOffset, frame.function.context());
+    context.set_field_at(RawFunction::kContextSelfOffset, frame.self);
     frame.context = context;
   } else {
-    frame.context = function.context();
+    frame.context = frame.function.context();
   }
 
   if (argc < shared_info->ir_info.minargc) {
@@ -209,7 +211,7 @@ RawValue Interpreter::call_function(
   if (argc > shared_info->ir_info.argc && !shared_info->ir_info.spread_argument &&
       !shared_info->ir_info.arrow_function) {
     thread->throw_value(runtime->create_string_from_template(
-      thread, "too many arguments for non-spread function '%', expected at most % but got %", function.name(),
+      thread, "too many arguments for non-spread function '%', expected at most % but got %", frame.function.name(),
       (uint32_t)shared_info->ir_info.argc, (uint32_t)argc));
     return kErrorException;
   }
@@ -258,7 +260,7 @@ RawValue Interpreter::call_function(
 
   // copy self from context if this is an arrow function
   if (shared_info->ir_info.arrow_function) {
-    frame.self = function.saved_self();
+    frame.self = frame.function.saved_self();
   }
 
   thread->checkpoint();
@@ -358,10 +360,12 @@ OP(panic) {
 
 OP(import) {
   Runtime* runtime = thread->runtime();
-  auto file_path_string = RawString::cast(frame->pop()).str();
-  auto module_path_string = RawString::cast(frame->pop()).str();
-  auto file_path = fs::path(file_path_string);
-  auto module_path = fs::path(module_path_string);
+  HandleScope scope(thread);
+  String file_path_value(scope, frame->pop());
+  String module_path_value(scope, frame->pop());
+
+  auto file_path = fs::path(file_path_value.view());
+  auto module_path = fs::path(module_path_value.view());
 
   // TODO: perform filesystem lookup and compilation in native mode
 
@@ -369,7 +373,7 @@ OP(import) {
   std::optional<fs::path> resolve_result = runtime->resolve_module(module_path, file_path);
   if (!resolve_result.has_value()) {
     thread->throw_value(
-      runtime->create_string_from_template(thread, "could not resolve '%' to a valid path", module_path_string));
+      runtime->create_string_from_template(thread, "could not resolve '%' to a valid path", module_path));
     return ContinueMode::Exception;
   }
   fs::path import_path = resolve_result.value();

@@ -41,9 +41,9 @@ namespace charly::core::runtime {
 
 class Runtime;
 
-static const size_t kHeapTotalSize = kGb * 64;
+static const size_t kHeapSize = kGb * 64;
 static const size_t kHeapRegionSize = kKb * 512;
-static const size_t kHeapRegionCount = kHeapTotalSize / kHeapRegionSize;
+static const size_t kHeapRegionCount = kHeapSize / kHeapRegionSize;
 static const size_t kHeapInitialMappedRegionCount = 16;
 
 static const size_t kHeapRegionSpanSize = kKb;
@@ -54,21 +54,18 @@ static const uintptr_t kHeapRegionMagicNumber = 0xdeadbeefcafebabe;
 
 static const size_t kGarbageCollectionAttempts = 4;
 
+static const float kHeapExpectedFreeToMappedRatio = 0.30f;
+
 class Heap;
 
 struct HeapRegion {
   HeapRegion() = delete;
 
   enum class Type : uint8_t {
-    Unused,  // region isn't used and doesn't have a type yet
-    Eden,    // new objects are allocated in eden regions
-    Old      // holds objects that have survived many minor GC cycles
-  };
-
-  enum class State : uint8_t {
-    Unused,    // region is on a freelist and can be acquired
-    Owned,     // region is exclusively owned by a processor
-    Released,  // region has been released from the processor
+    Unused,        // region is not in use, currently in a freelist
+    Eden,          // mutator threads allocate new objects in eden regions
+    Intermediate,  // holds objects that survived one GC cycle
+    Old            // holds objects that survived two or more GC cycles
   };
 
   // returns the id of this region
@@ -91,17 +88,20 @@ struct HeapRegion {
   // check wether a given pointer points into this region
   bool pointer_points_into_region(uintptr_t pointer) const;
 
+  size_t span_check_index_in_use(size_t span_index) const;
   size_t span_get_index_for_pointer(uintptr_t pointer) const;
-  uintptr_t span_get_last_object_pointer(size_t span_index) const;
+  uintptr_t span_get_last_alloc_pointer(size_t span_index) const;
   bool span_get_dirty_flag(size_t span_index) const;
 
-  void span_set_last_object_pointer(size_t span_index, uintptr_t pointer);
+  void span_set_last_alloc_pointer(size_t span_index, uintptr_t pointer);
   void span_set_dirty_flag(size_t span_index, bool dirty = true);
 
-  uintptr_t magic = kHeapRegionMagicNumber;
+  void each_object(std::function<void(ObjectHeader*)> callback);
+  void each_object_in_span(size_t span_index, std::function<void(ObjectHeader*)> callback);
+
+  uintptr_t magic;
   Heap* heap;
   Type type;
-  State state;
   size_t used;
 
   // stores last known object offset and dirty flag for each span
@@ -128,6 +128,10 @@ static_assert(sizeof(HeapRegion) % kObjectAlignment == 0);
 static_assert(offsetof(HeapRegion, buffer) % kObjectAlignment == 0);
 static_assert(offsetof(HeapRegion, buffer) == sizeof(HeapRegion));
 
+// the first couple region spans are taken up by the heap region metadata
+static const size_t kHeapRegionFirstUsableSpanIndex = sizeof(HeapRegion) / kHeapRegionSpanSize;
+
+// amount of bytes that can be used in a heap region
 static const size_t kHeapRegionUsableSize = kHeapRegionSize - sizeof(HeapRegion);
 static_assert(sizeof(ObjectHeader) + RawData::kMaxLength < kHeapRegionUsableSize);
 
@@ -136,26 +140,28 @@ class GarbageCollector;
 
 class Heap {
   friend class GarbageCollector;
+
 public:
   explicit Heap(Runtime* runtime);
   ~Heap();
 
-  // allocates a free region from the heaps freelist and marks it
-  // as a live eden region
-  HeapRegion* allocate_eden_region(Thread* thread);
+  HeapRegion* acquire_region(Thread* thread, HeapRegion::Type type);
+  HeapRegion* acquire_region_internal(HeapRegion::Type type);
+  HeapRegion* pop_free_region();
+  HeapRegion* map_new_region();
 
-  // release a live eden region
-  void release_eden_region(HeapRegion* region);
+  void adjust_heap_size();
+  void unmap_free_region();
 
   // check wether a given pointer points into the charly heap
   bool is_heap_pointer(uintptr_t pointer) const;
 
-private:
-  // pops a free region from the freelist
-  HeapRegion* pop_free_region();
+  // check wether a given pointer points into a live region
+  bool is_valid_pointer(uintptr_t pointer) const;
 
-  // maps a new region into memory
-  HeapRegion* map_new_region();
+  const void* heap_base() const {
+    return m_heap_base;
+  }
 
 private:
   Runtime* m_runtime;
@@ -165,17 +171,18 @@ private:
   void* m_heap_base;
 
   // region mappings
-  std::list<HeapRegion*> m_unmapped_regions;         // regions which aren't mapped into memory
-  std::unordered_set<HeapRegion*> m_mapped_regions;  // regions which are mapped into memory
+  std::set<HeapRegion*> m_unmapped_regions;
+  std::set<HeapRegion*> m_mapped_regions;
+  std::set<HeapRegion*> m_free_regions;
 
-  std::list<HeapRegion*> m_free_regions;                    // regions that are unused and can be acquired
-  std::unordered_set<HeapRegion*> m_live_eden_regions;      // eden regions that are owned
-  std::unordered_set<HeapRegion*> m_released_eden_regions;  // eden regions that are no longer owned
-  std::unordered_set<HeapRegion*> m_old_regions;            // old regions
+  std::set<HeapRegion*> m_eden_regions;
+  std::set<HeapRegion*> m_intermediate_regions;
+  std::set<HeapRegion*> m_old_regions;
 };
 
 class Thread;
 class ThreadAllocationBuffer {
+  friend class GarbageCollector;
 public:
   explicit ThreadAllocationBuffer(Heap* heap);
   ~ThreadAllocationBuffer();
