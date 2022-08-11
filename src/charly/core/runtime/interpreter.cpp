@@ -665,6 +665,7 @@ OP(loadfar) {
   uint8_t depth = op->arg1();
   uint8_t index = op->arg2();
 
+  DCHECK(thread->runtime()->heap()->is_valid_pointer(RawObject::cast(frame->context).base_address()));
   RawTuple context = RawTuple::cast(frame->context);
   while (depth) {
     context = context.field_at<RawTuple>(RawFunction::kContextParentOffset);

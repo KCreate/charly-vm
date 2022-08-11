@@ -156,7 +156,8 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   }
 
   // initialize base shapes
-  auto builtin_shape_immediate = RawShape::cast(create_instance(thread, ShapeId::kShape, RawShape::kFieldCount));
+  RawShape builtin_shape_immediate =
+    RawShape::unsafe_cast(create_instance(thread, ShapeId::kShape, RawShape::kFieldCount));
   builtin_shape_immediate.set_parent(kNull);
   builtin_shape_immediate.set_keys(create_tuple(thread, 0));
   builtin_shape_immediate.set_additions(create_tuple(thread, 0));
@@ -173,70 +174,92 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   auto builtin_shape_bytes = builtin_shape_immediate;
   auto builtin_shape_tuple = builtin_shape_immediate;
 
-  auto builtin_shape_instance =
+  RawShape builtin_shape_instance =
     create_shape(thread, builtin_shape_immediate, { { "klass", RawShape::kKeyFlagInternal } });
 
-  auto builtin_shape_builtin_instance =
-    create_shape(thread, builtin_shape_immediate, { { "__charly_klass", RawShape::kKeyFlagInternal } });
+  RawShape builtin_shape_huge_bytes = create_shape(thread, builtin_shape_immediate,
+                                                   { { "__charly_huge_bytes_klass", RawShape::kKeyFlagInternal },
+                                                     { "data", RawShape::kKeyFlagInternal },
+                                                     { "length", RawShape::kKeyFlagInternal } });
 
-  auto builtin_shape_huge_bytes =
-    create_shape(thread, builtin_shape_builtin_instance,
+  RawShape builtin_shape_huge_string =
+    create_shape(thread, builtin_shape_immediate,
                  { { "data", RawShape::kKeyFlagInternal }, { "length", RawShape::kKeyFlagInternal } });
 
-  auto builtin_shape_huge_string =
-    create_shape(thread, builtin_shape_builtin_instance,
-                 { { "data", RawShape::kKeyFlagInternal }, { "length", RawShape::kKeyFlagInternal } });
+  RawShape builtin_shape_class = create_shape(thread, builtin_shape_immediate,
+                                              { { "__charly_class_klass", RawShape::kKeyFlagInternal },
+                                                { "flags", RawShape::kKeyFlagInternal },
+                                                { "ancestor_table", RawShape::kKeyFlagReadOnly },
+                                                { "name", RawShape::kKeyFlagReadOnly },
+                                                { "parent", RawShape::kKeyFlagReadOnly },
+                                                { "shape", RawShape::kKeyFlagReadOnly },
+                                                { "function_table", RawShape::kKeyFlagReadOnly },
+                                                { "constructor", RawShape::kKeyFlagReadOnly } });
 
-  auto builtin_shape_class = create_shape(thread, builtin_shape_builtin_instance,
-                                          { { "flags", RawShape::kKeyFlagInternal },
-                                            { "ancestor_table", RawShape::kKeyFlagReadOnly },
-                                            { "name", RawShape::kKeyFlagReadOnly },
-                                            { "parent", RawShape::kKeyFlagReadOnly },
-                                            { "shape", RawShape::kKeyFlagReadOnly },
-                                            { "function_table", RawShape::kKeyFlagReadOnly },
-                                            { "constructor", RawShape::kKeyFlagReadOnly } });
+  RawShape builtin_shape_shape = create_shape(thread, builtin_shape_immediate,
+                                              { { "__charly_shape_klass", RawShape::kKeyFlagInternal },
+                                                { "id", RawShape::kKeyFlagReadOnly },
+                                                { "parent", RawShape::kKeyFlagReadOnly },
+                                                { "keys", RawShape::kKeyFlagReadOnly },
+                                                { "additions", RawShape::kKeyFlagReadOnly } });
 
-  auto builtin_shape_shape = create_shape(thread, builtin_shape_builtin_instance,
-                                          { { "id", RawShape::kKeyFlagReadOnly },
-                                            { "parent", RawShape::kKeyFlagReadOnly },
-                                            { "keys", RawShape::kKeyFlagReadOnly },
-                                            { "additions", RawShape::kKeyFlagReadOnly } });
+  RawShape builtin_shape_function = create_shape(thread, builtin_shape_immediate,
+                                                 { { "__charly_function_klass", RawShape::kKeyFlagInternal },
+                                                   { "name", RawShape::kKeyFlagReadOnly },
+                                                   { "context", RawShape::kKeyFlagReadOnly },
+                                                   { "saved_self", RawShape::kKeyFlagReadOnly },
+                                                   { "host_class", RawShape::kKeyFlagReadOnly },
+                                                   { "overload_table", RawShape::kKeyFlagReadOnly },
+                                                   { "shared_info", RawShape::kKeyFlagInternal } });
 
-  auto builtin_shape_function = create_shape(thread, builtin_shape_builtin_instance,
-                                             { { "name", RawShape::kKeyFlagReadOnly },
-                                               { "context", RawShape::kKeyFlagReadOnly },
-                                               { "saved_self", RawShape::kKeyFlagReadOnly },
-                                               { "host_class", RawShape::kKeyFlagReadOnly },
-                                               { "overload_table", RawShape::kKeyFlagReadOnly },
-                                               { "shared_info", RawShape::kKeyFlagInternal } });
+  RawShape builtin_shape_builtin_function =
+    create_shape(thread, builtin_shape_immediate,
+                 { { "__charly_builtin_function_klass", RawShape::kKeyFlagInternal },
+                   { "function", RawShape::kKeyFlagReadOnly },
+                   { "name", RawShape::kKeyFlagReadOnly },
+                   { "argc", RawShape::kKeyFlagReadOnly } });
 
-  auto builtin_shape_builtin_function = create_shape(thread, builtin_shape_builtin_instance,
-                                                     { { "function", RawShape::kKeyFlagReadOnly },
-                                                       { "name", RawShape::kKeyFlagReadOnly },
-                                                       { "argc", RawShape::kKeyFlagReadOnly } });
+  RawShape builtin_shape_fiber = create_shape(thread, builtin_shape_immediate,
+                                              { { "__charly_fiber_klass", RawShape::kKeyFlagInternal },
+                                                { "thread", RawShape::kKeyFlagInternal },
+                                                { "function", RawShape::kKeyFlagReadOnly },
+                                                { "context", RawShape::kKeyFlagReadOnly },
+                                                { "arguments", RawShape::kKeyFlagReadOnly },
+                                                { "result_future", RawShape::kKeyFlagReadOnly } });
 
-  auto builtin_shape_fiber = create_shape(thread, builtin_shape_builtin_instance,
-                                          { { "thread", RawShape::kKeyFlagInternal },
-                                            { "function", RawShape::kKeyFlagReadOnly },
-                                            { "context", RawShape::kKeyFlagReadOnly },
-                                            { "arguments", RawShape::kKeyFlagReadOnly },
-                                            { "result_future", RawShape::kKeyFlagReadOnly } });
+  RawShape builtin_shape_future = create_shape(thread, builtin_shape_immediate,
+                                               { { "__charly_future_klass", RawShape::kKeyFlagInternal },
+                                                 { "wait_queue", RawShape::kKeyFlagInternal },
+                                                 { "result", RawShape::kKeyFlagReadOnly },
+                                                 { "exception", RawShape::kKeyFlagReadOnly } });
 
-  auto builtin_shape_future = create_shape(thread, builtin_shape_builtin_instance,
-                                           { { "wait_queue", RawShape::kKeyFlagInternal },
-                                             { "result", RawShape::kKeyFlagReadOnly },
-                                             { "exception", RawShape::kKeyFlagReadOnly } });
+  RawShape builtin_shape_exception = create_shape(thread, builtin_shape_instance,
+                                                  { { "message", RawShape::kKeyFlagNone },
+                                                    { "stack_trace", RawShape::kKeyFlagNone },
+                                                    { "cause", RawShape::kKeyFlagReadOnly } });
 
-  auto builtin_shape_exception = create_shape(thread, builtin_shape_builtin_instance,
-                                              { { "message", RawShape::kKeyFlagNone },
-                                                { "stack_trace", RawShape::kKeyFlagNone },
-                                                { "cause", RawShape::kKeyFlagReadOnly } });
-
-  auto builtin_shape_import_exception =
+  RawShape builtin_shape_import_exception =
     create_shape(thread, builtin_shape_exception, { { "errors", RawShape::kKeyFlagReadOnly } });
 
-  auto class_value_shape = create_shape(thread, builtin_shape_class, {});
-  RawClass class_value = RawClass::unsafe_cast(create_instance(thread, class_value_shape));
+  // patch shapes table and assign correct shape ids to shape instances
+  register_shape(ShapeId::kSmallString, builtin_shape_immediate);
+  register_shape(ShapeId::kLargeString, builtin_shape_immediate);
+  register_shape(ShapeId::kSmallBytes, builtin_shape_immediate);
+  register_shape(ShapeId::kLargeBytes, builtin_shape_immediate);
+  register_shape(ShapeId::kInstance, builtin_shape_instance);
+  register_shape(ShapeId::kHugeBytes, builtin_shape_huge_bytes);
+  register_shape(ShapeId::kHugeString, builtin_shape_huge_string);
+  register_shape(ShapeId::kClass, builtin_shape_class);
+  register_shape(ShapeId::kShape, builtin_shape_shape);
+  register_shape(ShapeId::kFunction, builtin_shape_function);
+  register_shape(ShapeId::kBuiltinFunction, builtin_shape_builtin_function);
+  register_shape(ShapeId::kFiber, builtin_shape_fiber);
+  register_shape(ShapeId::kFuture, builtin_shape_future);
+  register_shape(ShapeId::kException, builtin_shape_exception);
+  register_shape(ShapeId::kImportException, builtin_shape_import_exception);
+
+  RawShape class_value_shape = builtin_shape_class;
+  RawClass class_value = RawClass::unsafe_cast(create_instance(thread, builtin_shape_class));
   class_value.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);
   class_value.set_ancestor_table(create_tuple(thread, 0));
   class_value.set_name(RawSymbol::make(declare_symbol(thread, "Value")));
@@ -245,8 +268,8 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   class_value.set_function_table(create_tuple(thread, 0));
   class_value.set_constructor(kNull);
 
-#define DEFINE_BUILTIN_CLASS(S, N, P, F, SP)                                              \
-  auto class_##S##_shape = create_shape(thread, builtin_shape_class, SP);                 \
+#define DEFINE_BUILTIN_CLASS(S, N, P, F)                                                  \
+  auto class_##S##_shape = builtin_shape_class;                                           \
   RawClass class_##S = RawClass::unsafe_cast(create_instance(thread, class_##S##_shape)); \
   class_##S.set_flags(F);                                                                 \
   class_##S.set_ancestor_table(concat_tuple_value(thread, P.ancestor_table(), P));        \
@@ -256,25 +279,25 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   class_##S.set_function_table(create_tuple(thread, 0));                                  \
   class_##S.set_constructor(kNull);
 
-  DEFINE_BUILTIN_CLASS(number, Number, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
-  DEFINE_BUILTIN_CLASS(int, Int, class_number, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
-  DEFINE_BUILTIN_CLASS(float, Float, class_number, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
-  DEFINE_BUILTIN_CLASS(bool, Bool, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
-  DEFINE_BUILTIN_CLASS(symbol, Symbol, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
-  DEFINE_BUILTIN_CLASS(null, Null, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
-  DEFINE_BUILTIN_CLASS(string, String, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
-  DEFINE_BUILTIN_CLASS(bytes, Bytes, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
-  DEFINE_BUILTIN_CLASS(tuple, Tuple, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
-  DEFINE_BUILTIN_CLASS(instance, Instance, class_value, RawClass::kFlagNone, {})
-  DEFINE_BUILTIN_CLASS(class, Class, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
-  DEFINE_BUILTIN_CLASS(shape, Shape, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
-  DEFINE_BUILTIN_CLASS(function, Function, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
+  DEFINE_BUILTIN_CLASS(number, Number, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
+  DEFINE_BUILTIN_CLASS(int, Int, class_number, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
+  DEFINE_BUILTIN_CLASS(float, Float, class_number, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
+  DEFINE_BUILTIN_CLASS(bool, Bool, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
+  DEFINE_BUILTIN_CLASS(symbol, Symbol, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
+  DEFINE_BUILTIN_CLASS(null, Null, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
+  DEFINE_BUILTIN_CLASS(string, String, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
+  DEFINE_BUILTIN_CLASS(bytes, Bytes, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
+  DEFINE_BUILTIN_CLASS(tuple, Tuple, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
+  DEFINE_BUILTIN_CLASS(instance, Instance, class_value, RawClass::kFlagNone)
+  DEFINE_BUILTIN_CLASS(class, Class, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
+  DEFINE_BUILTIN_CLASS(shape, Shape, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
+  DEFINE_BUILTIN_CLASS(function, Function, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
   DEFINE_BUILTIN_CLASS(builtin_function, BuiltinFunction, class_instance,
-                       RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
-  DEFINE_BUILTIN_CLASS(fiber, Fiber, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
-  DEFINE_BUILTIN_CLASS(future, Future, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable, {})
-  DEFINE_BUILTIN_CLASS(exception, Exception, class_instance, RawClass::kFlagNone, {})
-  DEFINE_BUILTIN_CLASS(import_exception, ImportException, class_exception, RawClass::kFlagNone, {})
+                       RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
+  DEFINE_BUILTIN_CLASS(fiber, Fiber, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
+  DEFINE_BUILTIN_CLASS(future, Future, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
+  DEFINE_BUILTIN_CLASS(exception, Exception, class_instance, RawClass::kFlagNone)
+  DEFINE_BUILTIN_CLASS(import_exception, ImportException, class_exception, RawClass::kFlagNone)
 #undef DEFINE_BUILTIN_CLASS
 
 // define the static classes for the builtin classes
@@ -354,13 +377,34 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   set_builtin_class(ShapeId::kException, class_exception);
   set_builtin_class(ShapeId::kImportException, class_import_exception);
 
-  // fix shapes for string and bytes types
-  register_shape(ShapeId::kSmallString, builtin_shape_immediate);
-  register_shape(ShapeId::kLargeString, builtin_shape_immediate);
-  register_shape(ShapeId::kHugeString, builtin_shape_huge_string);
-  register_shape(ShapeId::kSmallBytes, builtin_shape_immediate);
-  register_shape(ShapeId::kLargeBytes, builtin_shape_immediate);
-  register_shape(ShapeId::kHugeBytes, builtin_shape_huge_bytes);
+  // patch klass field of all shape instances created up until this point
+  for (auto entry : m_shapes) {
+    if (!entry.isNull()) {
+      auto shape = RawShape::cast(entry);
+
+      if (shape.klass_field().isNull()) {
+        shape.set_klass_field(get_builtin_class(ShapeId::kShape));
+        DCHECK(shape.klass_field().isClass());
+      }
+    }
+  }
+
+  // validate shape ids
+  {
+    size_t begin_index = static_cast<size_t>(ShapeId::kFirstBuiltinShapeId);
+    size_t end_index = static_cast<size_t>(ShapeId::kFirstUserDefinedShapeId);
+
+    auto begin = m_shapes.begin();
+    auto it = std::next(begin, begin_index);
+    auto end_it = std::next(begin, end_index);
+
+    size_t index = begin_index;
+    for (; it != end_it; it++) {
+      auto shape = RawShape::cast(*it);
+      DCHECK(shape.own_shape_id() == static_cast<ShapeId>(index));
+      index++;
+    }
+  }
 
   // register builtin classes as global variables
   CHECK(declare_global_variable(thread, SYM("Value"), true).is_error_ok());
@@ -402,20 +446,6 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   CHECK(set_global_variable(thread, SYM("Future"), class_future).is_error_ok());
   CHECK(set_global_variable(thread, SYM("Exception"), class_exception).is_error_ok());
   CHECK(set_global_variable(thread, SYM("ImportException"), class_import_exception).is_error_ok());
-
-  // patch klass field of all shape instances created up until this point
-  // no lock is required here while interacting with m_shapes since no other threads are active yet
-  {
-    for (auto entry : m_shapes) {
-      if (entry.isShape()) {
-        auto shape = RawShape::cast(entry);
-        if (shape.klass_field().isNull()) {
-          shape.set_klass_field(get_builtin_class(ShapeId::kShape));
-          DCHECK(shape.klass_field().isClass());
-        }
-      }
-    }
-  }
 }
 
 void Runtime::initialize_stdlib_paths() {
@@ -1252,13 +1282,8 @@ bool Runtime::builtin_class_is_registered(ShapeId shape_id) {
 
 void Runtime::set_builtin_class(ShapeId shape_id, RawClass klass) {
   std::unique_lock<std::shared_mutex> lock(m_shapes_mutex);
-  RawShape shape = klass.shape_instance();
-
   auto offset = static_cast<uint32_t>(shape_id);
   DCHECK(shape_id <= ShapeId::kLastBuiltinShapeId);
-  m_shapes[offset] = shape;
-  shape.set_own_shape_id(shape_id);
-
   DCHECK(offset < kBuiltinClassCount);
   DCHECK(m_builtin_classes[offset].isNull());
   m_builtin_classes[offset] = klass;

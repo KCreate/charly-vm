@@ -24,8 +24,6 @@
  * SOFTWARE.
  */
 
-#include <csetjmp>
-
 #include "charly/charly.h"
 #include "charly/value.h"
 

@@ -73,52 +73,54 @@ namespace charly::core::runtime {
   V(Function)                  \
   V(BuiltinFunction)           \
   V(Fiber)                     \
-  V(Future)
-// types which store their data via the user class system
-#define USER_INSTANCE_TYPE_NAMES(V) V(Exception) V(ImportException)
+  V(Future)                    \
+  V(Exception)                 \
+  V(ImportException)
 
 #define TYPE_NAMES(V)     \
   IMMEDIATE_TYPE_NAMES(V) \
   SUPER_TYPE_NAMES(V)     \
   DATA_TYPE_NAMES(V)      \
-  INSTANCE_TYPE_NAMES(V)  \
-  USER_INSTANCE_TYPE_NAMES(V)
+  INSTANCE_TYPE_NAMES(V)
 
+// clang-format off
 enum class ShapeId : uint32_t {
   // immediate types
   //
   // the shape id of any immediate type can be determined by checking the
   // lowest 4 bits.
   kInt = 0,
-  kFloat = 3,
-  kBool = 5,
-  kSymbol = 7,
+  kFloat = 5,
+  kBool = 7,
+  kSymbol = 9,
   kNull = 11,
   kSmallString = 13,
   kSmallBytes = 15,
-  kLastImmediateShape = kSmallBytes,
 
-// clang-format off
+  // object types
 #define SHAPE_ID(name) k##name,
-#define GET_FIRST(name) k##name + 0 *
-#define GET_LAST(name) 0 + k##name *
   DATA_TYPE_NAMES(SHAPE_ID)
+  INSTANCE_TYPE_NAMES(SHAPE_ID)
+#undef SHAPE_ID
+
+  kFirstUserDefinedShapeId,
+  kMaxShapeId = (uint32_t{ 1 } << 20) - 1,
+  kMaxShapeCount = uint32_t{ 1 } << 20,
+  kLastImmediateShape = kSmallBytes,
+#define GET_FIRST(name) k##name + 0 *
+#define GET_LAST(name) 0 + k##name*
   kFirstDataObject = DATA_TYPE_NAMES(GET_FIRST) 1,
   kLastDataObject = DATA_TYPE_NAMES(GET_LAST) 1,
-  INSTANCE_TYPE_NAMES(SHAPE_ID)
-  USER_INSTANCE_TYPE_NAMES(SHAPE_ID)
   kFirstBuiltinShapeId = INSTANCE_TYPE_NAMES(GET_FIRST) 1,
-  kFirstKnownUserShapeId = USER_INSTANCE_TYPE_NAMES(GET_FIRST) 1,
-  kLastKnownUserShapeId = USER_INSTANCE_TYPE_NAMES(GET_LAST) 1,
-  kLastBuiltinShapeId = USER_INSTANCE_TYPE_NAMES(GET_LAST) 1,
+  kLastBuiltinShapeId = INSTANCE_TYPE_NAMES(GET_LAST) 1,
 #undef GET_LAST
 #undef GET_FIRST
-#undef SHAPE_ID
-  // clang-format on
-
-  kMaxShapeId = (uint32_t{ 1 } << 20) - 1,
-  kMaxShapeCount = uint32_t{ 1 } << 20
 };
+// clang-format off
+
+static_assert((size_t)ShapeId::kFirstBuiltinShapeId == 19, "invalid first user-defined shape id");
+static_assert((size_t)ShapeId::kLastBuiltinShapeId == 29, "invalid first user-defined shape id");
+static_assert((size_t)ShapeId::kFirstUserDefinedShapeId == 30, "invalid first user-defined shape id");
 
 // maps the lowest 4 bits of an immediate value to a shape id
 // this table is consulted after the runtime has determined that the value
