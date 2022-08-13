@@ -51,10 +51,12 @@ RawValue currentfiber(Thread* thread, const RawValue*, uint8_t argc) {
 RawValue transplantbuiltinclass(Thread* thread, const RawValue* args, uint8_t argc) {
   Runtime* runtime = thread->runtime();
   CHECK(argc == 2);
-  auto klass = RawClass::cast(args[0]);
-  auto static_class = runtime->lookup_class(klass);
-  auto donor_class = RawClass::cast(args[1]);
-  auto static_donor_class = runtime->lookup_class(donor_class);
+
+  HandleScope scope(thread);
+  Class klass(scope, args[0]);
+  Class static_class(scope, runtime->lookup_class(klass));
+  Class donor_class(scope, args[1]);
+  Class static_donor_class(scope, runtime->lookup_class(donor_class));
 
   if (!is_builtin_shape(klass.shape_instance().own_shape_id())) {
     thread->throw_value(runtime->create_string_from_template(thread, "expected base class to be a builtin class"));
@@ -163,10 +165,9 @@ RawValue currentworkingdirectory(Thread* thread, const RawValue*, uint8_t argc) 
   return thread->runtime()->create_string(thread, cwd);
 }
 
-RawValue getstacktrace(Thread* thread, const RawValue* args, uint8_t argc) {
-  CHECK(argc == 1);
-  uint32_t trim = RawInt::cast(args[0]).value();
-  return thread->runtime()->create_stack_trace(thread, trim);
+RawValue getstacktrace(Thread* thread, const RawValue*, uint8_t argc) {
+  CHECK(argc == 0);
+  return thread->runtime()->create_stack_trace(thread);
 }
 
 RawValue disassemble(Thread*, const RawValue* args, uint8_t argc) {

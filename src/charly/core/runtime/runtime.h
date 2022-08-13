@@ -108,7 +108,8 @@ public:
   RawHugeString create_huge_string_acquire(Thread* thread, char* data, size_t size, SYMBOL hash);
 
   RawTuple create_tuple(Thread* thread, uint32_t count = 0);
-  RawTuple create_tuple(Thread* thread, std::initializer_list<RawValue> values);
+  RawTuple create_tuple1(Thread* thread, RawValue value1);
+  RawTuple create_tuple2(Thread* thread, RawValue value1, RawValue value2);
   RawTuple concat_tuple_value(Thread* thread, RawTuple left, RawValue value);
 
   RawValue create_class(Thread* thread,
@@ -145,7 +146,7 @@ public:
   // creates a tuple containing a stack trace of the current thread
   // trim variable controls how many frames should be dropped
   // starting from the bottom
-  RawTuple create_stack_trace(Thread* thread, uint32_t trim = 0);
+  RawTuple create_stack_trace(Thread* thread);
 
   RawValue await_future(Thread* thread, RawFuture future);
   RawValue await_fiber(Thread* thread, RawFiber fiber);
@@ -208,7 +209,6 @@ public:
   // register a CompiledModule object with the runtime
   void register_module(Thread* thread, const ref<CompiledModule>& module);
 
-  const fs::path& source_code_directory() const;
   const fs::path& stdlib_directory() const;
 
   // invoke the callback with a reference to each runtime root
@@ -244,7 +244,6 @@ private:
   std::shared_mutex m_globals_mutex;
   std::unordered_map<SYMBOL, GlobalVariable> m_global_variables;
 
-  fs::path m_source_code_directory;
   fs::path m_stdlib_directory;
   std::unordered_map<std::string, fs::path> m_builtin_libraries_paths;
 

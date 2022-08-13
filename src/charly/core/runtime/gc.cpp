@@ -37,6 +37,7 @@ GarbageCollector::GarbageCollector(Runtime* runtime) :
   m_heap(runtime->heap()),
   m_collection_mode(CollectionMode::None),
   m_gc_cycle(1),
+  m_has_initialized(false),
   m_wants_collection(false),
   m_wants_exit(false),
   m_thread(std::thread(&GarbageCollector::main, this)) {}
@@ -62,6 +63,8 @@ void GarbageCollector::join() {
 void GarbageCollector::perform_gc(Thread* thread) {
   uint64_t old_gc_cycle = m_gc_cycle;
 
+  DCHECK(m_has_initialized);
+
   thread->native_section([&]() {
     // wake GC thread
     std::unique_lock<std::mutex> locker(m_mutex);
@@ -82,6 +85,7 @@ void GarbageCollector::perform_gc(Thread* thread) {
 
 void GarbageCollector::main() {
   m_runtime->wait_for_initialization();
+  m_has_initialized = true;
 
   while (!m_wants_exit) {
     {
@@ -96,21 +100,7 @@ void GarbageCollector::main() {
     }
 
     m_runtime->scheduler()->stop_the_world();
-    debugln("GC running");
-    debugln("mapped regions = %", m_heap->m_mapped_regions.size());
-    debugln("free regions = %", m_heap->m_free_regions.size());
-    debugln("eden regions = %", m_heap->m_eden_regions.size());
-    debugln("intermediate regions = %", m_heap->m_intermediate_regions.size());
-    debugln("old regions = %", m_heap->m_old_regions.size());
-    double start_time = (double)get_steady_timestamp_micro() / 1000;
     collect();
-    double end_time = (double)get_steady_timestamp_micro() / 1000;
-    debugln("GC finished in %ms", end_time - start_time);
-    debugln("mapped regions = %", m_heap->m_mapped_regions.size());
-    debugln("free regions = %", m_heap->m_free_regions.size());
-    debugln("eden regions = %", m_heap->m_eden_regions.size());
-    debugln("intermediate regions = %", m_heap->m_intermediate_regions.size());
-    debugln("old regions = %", m_heap->m_old_regions.size());
 
     m_collection_mode = CollectionMode::None;
     DCHECK(m_mark_queue.empty());
@@ -511,10 +501,33 @@ void GarbageCollector::validate_heap_and_roots() const {
     if (value.isObject()) {
       auto object = RawObject::cast(value);
       auto* header = object.header();
-      DCHECK(m_heap->is_valid_pointer(bitcast<uintptr_t>(header)), "invalid reference (%) points to region #%", header,
-             header->heap_region()->id());
-      DCHECK(!header->has_forward_target(), "expected reference to point to a non-forwarded object");
+      DCHECK(m_heap->is_valid_pointer(bitcast<uintptr_t>(header)));
       DCHECK(object.is_young_pointer() == header->is_young_generation(), "mismatched pointer tag");
+      DCHECK((size_t)header->shape_id() < m_runtime->m_shapes.size(), "got %", (void*)header->shape_id());
+      DCHECK(header->shape_id() > ShapeId::kLastImmediateShape, "got %", (uint32_t)header->shape_id());
+      DCHECK(header->survivor_count() <= 2, "got %", (uint32_t)header->survivor_count());
+      DCHECK(!header->has_forward_target());
+      DCHECK(!header->is_reachable());
+
+      if (object.isInstance()) {
+        auto instance = RawInstance::cast(object);
+        auto klass = RawClass::cast(instance.klass_field());
+        auto shape = klass.shape_instance();
+        auto own_id = shape.own_shape_id();
+        auto header_id = header->shape_id();
+        DCHECK(own_id == header_id, "for object %", object);
+      }
+
+      if (object.isInstance() || object.isTuple()) {
+        uint32_t field_count = object.count();
+        for (size_t index = 0; index < field_count; index++) {
+          RawValue field = object.field_at(index);
+          HeapRegion* region = header->heap_region();
+          if (field.is_young_pointer() && region->type == HeapRegion::Type::Old) {
+            DCHECK(region->span_get_dirty_flag(region->span_get_index_for_pointer(bitcast<uintptr_t>(header))));
+          }
+        }
+      }
     }
   };
 
@@ -523,27 +536,7 @@ void GarbageCollector::validate_heap_and_roots() const {
     if (region->type != HeapRegion::Type::Unused) {
       region->each_object([&](ObjectHeader* header) {
         auto object = header->object();
-        DCHECK(object.isObject());
-        DCHECK((size_t)header->shape_id() < m_runtime->m_shapes.size(), "got %", (void*)header->shape_id());
-        DCHECK(header->shape_id() > ShapeId::kLastImmediateShape, "got %", (uint32_t)header->shape_id());
-        DCHECK(header->survivor_count() <= 2, "got %", (uint32_t)header->survivor_count());
-        DCHECK(header->has_forward_target() == false);
-        DCHECK(header->is_reachable() == false);
-
-        if (object.isInstance()) {
-          DCHECK(RawInstance::cast(object).klass_field() != kNull);
-        }
-
-        if (object.isInstance() || object.isTuple()) {
-          uint32_t field_count = object.count();
-          for (size_t index = 0; index < field_count; index++) {
-            RawValue field = object.field_at(index);
-            validate_reference(field);
-            if (field.is_young_pointer() && region->type == HeapRegion::Type::Old) {
-              DCHECK(region->span_get_dirty_flag(region->span_get_index_for_pointer(bitcast<uintptr_t>(header))));
-            }
-          }
-        }
+        validate_reference(object);
       });
     }
   }

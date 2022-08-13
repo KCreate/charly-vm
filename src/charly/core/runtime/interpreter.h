@@ -47,6 +47,7 @@ public:
 
   Thread* thread;
   Frame* parent;
+  size_t depth; // number of parent frames
   RawValue self;
   RawFunction function;
   RawValue argument_tuple;

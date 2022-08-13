@@ -31,6 +31,9 @@
 namespace charly::core::runtime {
 
 template <typename T>
+Handle<T>::Handle(HandleScope& scope) : T(), m_thread(scope.thread()), m_next(m_thread->handles()->push(pointer())) {}
+
+template <typename T>
 Handle<T>::Handle(HandleScope& scope, RawValue value) :
   T(value.rawCast<T>()), m_thread(scope.thread()), m_next(m_thread->handles()->push(pointer())) {
   DCHECK(is_valid_type());
@@ -38,7 +41,7 @@ Handle<T>::Handle(HandleScope& scope, RawValue value) :
 
 template <typename T>
 Handle<T>::~Handle() {
-  DCHECK(m_thread->handles()->head() == pointer(), "unexpected head");
+  DCHECK(m_thread->handles()->head() == pointer());
   m_thread->handles()->pop(m_next);
 }
 

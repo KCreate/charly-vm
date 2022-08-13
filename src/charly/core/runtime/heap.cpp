@@ -79,7 +79,9 @@ void HeapRegion::reset() {
   this->used = 0;
   this->span_table.fill(kSpanTableInvalidOffset << kSpanTableOffsetShift);
   DCHECK(buffer_base() - (uintptr_t)(this) + kHeapRegionUsableSize == kHeapRegionSize);
-  std::memset((void*)buffer_base(), 0, kHeapRegionUsableSize);
+  if (kIsDebugBuild) {
+    std::memset((void*)buffer_base(), 0, kHeapRegionUsableSize);
+  }
 }
 
 uintptr_t HeapRegion::buffer_base() const {
@@ -222,7 +224,7 @@ HeapRegion* Heap::acquire_region(Thread* thread, HeapRegion::Type type) {
     }
 
     if (region == nullptr) {
-      FAIL("could not allocate free region");
+      region = map_new_region();
     }
   }
 

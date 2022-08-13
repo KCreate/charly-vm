@@ -52,6 +52,7 @@ class Handle : public T {
   friend class ThreadLocalHandles;
 
 public:
+  Handle(HandleScope& scope);
   Handle(HandleScope& scope, RawValue value);
   ~Handle();
 
@@ -62,21 +63,24 @@ public:
   template <typename O>
   Handle(HandleScope*, const Handle<O>&) = delete;
 
+  template <typename S>
+  Handle<T>& operator=(Handle<S>& other) {
+    return *this = *other;
+  }
+
+  // allow assigning RawValue values to the handle
+  Handle<T>& operator=(RawValue other) {
+    *static_cast<T*>(this) = other;
+    DCHECK(is_valid_type(), "expected valid type");
+    return *this;
+  }
+
   T& operator*() {
     return *static_cast<T*>(this);
   }
 
   const T& operator*() const {
     return *static_cast<const T*>(this);
-  }
-
-  // allow assigning RawValue values to the handle
-  template <typename S>
-  Handle<T>& operator=(S other) {
-    static_assert(std::is_base_of<S, T>::value || std::is_base_of<T, S>::value);
-    *static_cast<T*>(this) = other.template rawCast<T>();
-    DCHECK(is_valid_type(), "expected valid type");
-    return *this;
   }
 
   // Handle<T> can be casted to Handle<S> if S is a subclass of T

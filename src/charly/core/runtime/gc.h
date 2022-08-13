@@ -98,6 +98,7 @@ private:
   std::set<HeapRegion*> m_target_old_regions;
 
   atomic<uint64_t> m_gc_cycle;
+  atomic<bool> m_has_initialized;
   atomic<bool> m_wants_collection;
   atomic<bool> m_wants_exit;
 

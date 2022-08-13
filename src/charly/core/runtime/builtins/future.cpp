@@ -59,8 +59,9 @@ RawValue futurereject(Thread* thread, const RawValue* args, uint8_t argc) {
   CHECK(argc == 2);
   CHECK(args[0].isFuture());
 
-  RawFuture future = RawFuture::cast(args[0]);
-  RawValue exception = runtime->create_exception(thread, args[1]);
+  HandleScope scope(thread);
+  Future future(scope, args[0]);
+  Value exception(scope, runtime->create_exception(thread, args[1]));
 
   if (exception.is_error_exception()) {
     return kErrorException;

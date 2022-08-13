@@ -24,15 +24,15 @@
  * SOFTWARE.
  */
 
-const fiber_count = 60 * 1000
-const allocator_limit = 10
+const fiber_count = 60000
+const allocator_limit = 1000
 
 func allocator(index) {
-    let data = (0,)
-    allocator_limit.times(->{
-        const next_num = data[0] + 1
-        data = (next_num,)
+    let data
+    allocator_limit.times(->(i) {
+        data = (i,)
     })
+
     data[0]
 }
 
@@ -40,7 +40,7 @@ const list = Tuple.make_with(fiber_count, ->(i) {
     spawn allocator(i)
 })
 
-const result = list.reduce(->(p, f) p + await f, 0)
+const result = list.reduce(->(p, f, i) p + await f, 0)
 print(result)
 
 

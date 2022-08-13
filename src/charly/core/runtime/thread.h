@@ -69,7 +69,9 @@ public:
   }
 
   void clear() {
-    std::memset(m_buffer.data(), 0, m_buffer.size());
+    if (kIsDebugBuild) {
+      std::memset(m_buffer.data(), 0, m_buffer.size());
+    }
   }
 
   bool pointer_points_into_stack(const void* pointer) const {

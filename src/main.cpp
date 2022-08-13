@@ -119,7 +119,12 @@ int32_t cli(DiagnosticConsole& console) {
     debuglnf_notime("");
   }
 
-  return Runtime::run();
+  auto start_time = get_steady_timestamp_micro();
+  int32_t exit_code = Runtime::run();
+  auto end_time = get_steady_timestamp_micro();
+  debuglnf("program finished executing in %ms", (double)(end_time - start_time) / 1000);
+
+  return exit_code;
 }
 
 int main(int argc, char** argv) {

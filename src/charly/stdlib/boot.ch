@@ -157,16 +157,16 @@ func compile(source, name = "repl") = builtin_compile(source, name)
     class builtin_Exception {
         func constructor(@message) {
             // TODO: trim correct numer of stack frames when called from subclass constructors
-            @stack_trace = Exception.getstacktrace(2)
+            @stack_trace = Exception.getstacktrace()
         }
 
-        static func getstacktrace(trim = 0) = builtin_getstacktrace(trim)
+        static func getstacktrace = builtin_getstacktrace(trim)
     }
 
     class builtin_ImportException {
         func constructor(@message, @errors) {
             // TODO: trim correct numer of stack frames when called from subclass constructors
-            @stack_trace = Exception.getstacktrace(2)
+            @stack_trace = Exception.getstacktrace()
         }
     }
 

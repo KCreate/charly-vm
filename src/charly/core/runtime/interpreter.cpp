@@ -44,6 +44,7 @@ using namespace charly::core::compiler::ir;
 Frame::Frame(Thread* thread, RawFunction function) :
   thread(thread),
   parent(thread->frame()),
+  depth(parent ? parent->depth + 1 : 0),
   function(function),
   argument_tuple(kNull),
   shared_function_info(nullptr),
@@ -189,7 +190,7 @@ RawValue Interpreter::call_function(Thread* thread,
   // allocate class instance and replace self value
   if (constructor_call) {
     DCHECK(shared_info->ir_info.is_constructor);
-    frame.self = thread->runtime()->create_instance(thread, RawClass::cast(frame.self));
+    frame.self = runtime->create_instance(thread, RawClass::cast(frame.self));
   }
 
   // allocate stack space for local variables and the stack
@@ -389,6 +390,8 @@ OP(import) {
 
 OP(stringconcat) {
   uint8_t count = op->arg();
+
+  DCHECK(count > 0);
 
   utils::Buffer buffer;
   for (int64_t depth = count - 1; depth >= 0; depth--) {
@@ -608,13 +611,14 @@ OP(ret) {
 
 OP(loadconst) {
   uint16_t index = op->arg();
+  DCHECK(index < frame->shared_function_info->constant_table.size());
   RawValue value = frame->shared_function_info->constant_table[index];
   frame->push(value);
   return ContinueMode::Next;
 }
 
 OP(loadsmi) {
-  auto value = bitcast<uintptr_t>(static_cast<size_t>(op->arg()));
+  auto value = static_cast<uintptr_t>(op->arg());
   frame->push(RawValue(value));
   return ContinueMode::Next;
 }
@@ -972,7 +976,8 @@ OP(unpacksequencespread) {
   RawValue value = frame->pop();
 
   if (value.isTuple()) {
-    auto tuple = RawTuple::cast(value);
+    HandleScope scope(thread);
+    Tuple tuple(scope, value);
     uint32_t tuple_size = tuple.size();
     if (tuple_size < total_count) {
       thread->throw_value(
@@ -987,7 +992,7 @@ OP(unpacksequencespread) {
 
     // put spread arguments in a tuple
     uint32_t spread_count = tuple_size - total_count;
-    auto spread_tuple = runtime->create_tuple(thread, spread_count);
+    Tuple spread_tuple(scope, runtime->create_tuple(thread, spread_count));
     for (uint32_t i = 0; i < spread_count; i++) {
       spread_tuple.set_field_at(i, tuple.field_at(before_count + i));
     }
