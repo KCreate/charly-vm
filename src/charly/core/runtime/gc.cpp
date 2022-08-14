@@ -24,6 +24,7 @@
  * SOFTWARE.
  */
 
+#include "charly/utils/timedsection.h"
 #include "charly/core/runtime/gc.h"
 #include "charly/core/runtime/interpreter.h"
 #include "charly/core/runtime/runtime.h"
@@ -100,7 +101,10 @@ void GarbageCollector::main() {
     }
 
     m_runtime->scheduler()->stop_the_world();
-    collect();
+
+    utils::TimedSection::run("GC collection", [&] {
+      collect();
+    });
 
     m_collection_mode = CollectionMode::None;
     DCHECK(m_mark_queue.empty());

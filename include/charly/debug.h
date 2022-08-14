@@ -144,6 +144,9 @@ void print_runtime_debug_state(std::ostream& stream);
 template <typename... Args>
 [[noreturn]] inline void __attribute__((noinline))
 failed_check(const char* filename, int32_t line, const char* function, const char* expression, Args&&... args) {
+  // grab the debugln lock already to make sure we abort the runtime
+  // before any other thread can print something
+  std::unique_lock<std::recursive_mutex> locker(debugln_mutex);
   std::stringstream buf;
   debugln_impl(buf, "Failed check!\n");
   debugln_impl_time(buf, "At %:% %:\n", filename, line, function);
@@ -153,16 +156,9 @@ failed_check(const char* filename, int32_t line, const char* function, const cha
 
   print_runtime_debug_state(buf);
 
-  // grab the debugln lock already to make sure we abort the runtime
-  // before any other thread can print something
-  {
-    std::unique_lock<std::recursive_mutex> locker(debugln_mutex);
-    std::string str = buf.str();
-    debugln_concurrent(str.c_str());
-
-    __builtin_trap();
-    //    std::abort();
-  }
+  std::string str = buf.str();
+  debugln_concurrent(str.c_str());
+  __builtin_trap();
 }
 
 #define CHECK(expr, ...)                                                        \

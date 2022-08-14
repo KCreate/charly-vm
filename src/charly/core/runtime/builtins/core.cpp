@@ -209,6 +209,12 @@ RawValue exit(Thread* thread, const RawValue* args, uint8_t argc) {
   thread->abort((int32_t)RawInt::cast(args[0]).value());
 }
 
+RawValue performgc(Thread* thread, const RawValue*, uint8_t argc) {
+  CHECK(argc == 0);
+  thread->runtime()->gc()->perform_gc(thread);
+  return kNull;
+}
+
 RawValue compile(Thread* thread, const RawValue* args, uint8_t argc) {
   Runtime* runtime = thread->runtime();
 

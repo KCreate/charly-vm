@@ -24,28 +24,22 @@
  * SOFTWARE.
  */
 
-#include "charly/core/runtime/builtins/builtin.h"
-#include "charly/value.h"
+#include "charly/charly.h"
 
 #pragma once
 
-namespace charly::core::runtime::builtin::core {
+namespace charly::utils {
 
-void initialize(Thread* thread);
+class TimedSection {
+public:
+  template <typename F>
+  static void run(const std::string& title, F callback) {
+    auto start_time = get_steady_timestamp_micro();
+    debuglnf("Begin '%'", title);
+    callback();
+    auto end_time = get_steady_timestamp_micro();
+    debuglnf("'%' ran for %ms", title, (end_time - start_time) / 1000);
+  }
+};
 
-#define DEF_BUILTIN_CORE(V)           \
-  V(core, currentfiber, 0)            \
-  V(core, transplantbuiltinclass, 2)  \
-  V(core, writevalue, 1)              \
-  V(core, writeline, 1)               \
-  V(core, writevaluesync, 1)          \
-  V(core, currentworkingdirectory, 0) \
-  V(core, getstacktrace, 0)           \
-  V(core, disassemble, 1)             \
-  V(core, maketuple, 2)               \
-  V(core, exit, 1)                    \
-  V(core, performgc, 0)               \
-  V(core, compile, 2)
-DEF_BUILTIN_CORE(DEFINE_BUILTIN_METHOD_DECLARATIONS)
-
-}  // namespace charly::core::runtime::builtin::core
+}  // namespace charly::utils

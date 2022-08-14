@@ -27,7 +27,6 @@
 #include <filesystem>
 #include <fstream>
 
-#include "charly/core/compiler/compiler.h"
 #include "charly/core/runtime/builtins/future.h"
 #include "charly/core/runtime/runtime.h"
 
