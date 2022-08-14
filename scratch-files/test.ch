@@ -24,10 +24,15 @@
  * SOFTWARE.
  */
 
-export class Lib {
-    static property foo = 100
+const fiber_count = 16
 
-    static func do_stuff {
-        print("hello from lib.ch")
+func foo {
+    let data
+    loop {
+        data = (1, 2, 3, 4)
     }
 }
+
+Tuple.make_with(fiber_count, ->{
+    spawn foo()
+}).each(->(f) await f)
