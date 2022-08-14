@@ -197,10 +197,10 @@ RawObject ObjectHeader::object() const {
 
 uint32_t ObjectHeader::alloc_size() const {
   ShapeId id = shape_id();
-  if (id == ShapeId::kTuple || !is_data_shape(id)) {
-    return sizeof(ObjectHeader) + align_to_size(count() * kPointerSize, kObjectAlignment);
+  if (id == ShapeId::kTuple || is_instance_shape(id)) {
+    return align_to_size(sizeof(ObjectHeader) + count() * kPointerSize, kObjectAlignment);
   } else {
-    return sizeof(ObjectHeader) + align_to_size(count(), kObjectAlignment);
+    return align_to_size(sizeof(ObjectHeader) + count(), kObjectAlignment);
   }
 }
 
