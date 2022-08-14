@@ -31,6 +31,8 @@
 #include "charly/core/runtime/runtime.h"
 
 #include "charly/utils/allocator.h"
+#include "charly/utils/argumentparser.h"
+#include "charly/utils/cast.h"
 
 using namespace std::chrono_literals;
 
@@ -196,8 +198,21 @@ Heap::Heap(Runtime* runtime) : m_runtime(runtime) {
     m_unmapped_regions.insert(region);
   }
 
+  size_t initial_heap_regions = kHeapMinimumMappedRegionCount;
+  if (utils::ArgumentParser::is_flag_set("initial_heap_regions")) {
+    const auto& values = utils::ArgumentParser::get_arguments_for_flag("initial_heap_regions");
+    CHECK(values.size(), "expected at least one value for initial_heap_regions");
+    const std::string& value = values.front();
+    int64_t num = utils::string_to_int(value);
+
+    if (num > 0 && (size_t)num >= kHeapMinimumMappedRegionCount) {
+      initial_heap_regions = num;
+      debugln("setting initial region count to %", num);
+    }
+  }
+
   // map an initial amount of heap regions
-  for (size_t i = 0; i < kHeapInitialMappedRegionCount; i++) {
+  for (size_t i = 0; i < initial_heap_regions; i++) {
     m_free_regions.insert(map_new_region());
   }
 }
@@ -301,7 +316,7 @@ void Heap::adjust_heap_size() {
     DCHECK(mapped_region_count >= regions_to_remove);
     DCHECK(regions_to_remove < m_free_regions.size());
     size_t i = 0;
-    for (i = 0; i < regions_to_remove && m_mapped_regions.size() > kHeapInitialMappedRegionCount; i++) {
+    for (i = 0; i < regions_to_remove && m_mapped_regions.size() > kHeapMinimumMappedRegionCount; i++) {
       unmap_free_region();
     }
   }

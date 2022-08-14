@@ -71,6 +71,7 @@ const std::vector<ArgumentParser::FlagGroup> kDefinedFlagGroups = {
   { "General",
     {
       { "maxprocs", { "--maxprocs" }, "Maximum amount of running charly worker threads", "count" },
+      { "initial_heap_regions", { "--initial_heap_regions" }, "Initial amount of allocated heap regions", "count" },
       { "skipexec", { "--skipexec" }, "Don't execute input file or REPL input" },
     } },
   { "Debug",
