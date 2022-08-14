@@ -140,7 +140,7 @@ func compile(source, name = "repl") = builtin_compile(source, name)
 
         func sum = reduce(->(p, e) p + e, 0)
 
-        static func make(length = 0, initial = null) = builtin_maketuple(length, initial)
+        static func make(length, initial = null) = builtin_maketuple(length, initial)
 
         static func make_with(length, cb) {
             const tuple = Tuple.make(length)

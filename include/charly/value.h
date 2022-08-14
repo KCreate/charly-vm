@@ -195,7 +195,7 @@ public:
 
   HeapRegion* heap_region() const;
   RawObject object() const;
-  uint32_t alloc_size() const;  // (header + object + padding)
+  uint32_t alloc_size() const;  // header + object + padding
 
   ShapeId shape_id() const;
 
@@ -233,9 +233,9 @@ private:
   // name           bytes     bits      total
   // [ shape id ] : 3 bytes : 24 bits :  3 bytes
   // [ gc count ] : 1 byte  :  8 bits :  4 bytes
-  // [ lock     ] : 1 byte  :  8 bits :  5 bytes
-  // [ flags    ] : 1 byte  :  8 bits :  6 bytes
-  // [ count    ] : 2 bytes : 16 bits :  8 bytes
+  // [ count    ] : 2 bytes : 16 bits :  6 bytes
+  // [ lock     ] : 1 byte  :  8 bits :  7 bytes
+  // [ flags    ] : 1 byte  :  8 bits :  8 bytes
   // [ hashcode ] : 4 bytes : 32 bits : 12 bytes
   // [ forward  ] : 4 bytes : 32 bits : 16 bytes
 
@@ -249,12 +249,30 @@ private:
   atomic<Flag> m_flags;                            // flags
   atomic<SYMBOL> m_hashcode;                       // cached hashcode of object / string
   atomic<uint32_t> m_forward_target;               // forwarded heap offset (multiple of 16 bytes)
+
+#ifndef NDEBUG
+  atomic<size_t> m_magic1;
+  atomic<size_t> m_magic2;
+
+  static const size_t kMagicNumber1 = 0xcafebeefdeadbeef;
+  static const size_t kMagicNumber2 = 0x1234abcd5678a1a1;
+#endif
+
+public:
+  bool validate_magic_number() const {
+#ifdef NDEBUG
+    return true;
+#else
+    return m_magic1 == kMagicNumber1 && m_magic2 == kMagicNumber2;
+#endif
+  }
 };
-static_assert((sizeof(ObjectHeader) == 16), "invalid object header size");
 
 static const size_t kObjectAlignment = 16;
 static const size_t kObjectHeaderMaxCount = 0xffff;
 static const size_t kObjectHeaderMaxSurvivorCount = 0xff;
+
+static_assert((sizeof(ObjectHeader) % kObjectAlignment == 0), "invalid object header size");
 
 #define COMMON_RAW_OBJECT(name)                                                       \
   static Raw##name cast(RawValue value) {                                             \

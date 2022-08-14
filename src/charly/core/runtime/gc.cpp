@@ -120,9 +120,7 @@ void GarbageCollector::main() {
 
 void GarbageCollector::collect() {
   // validate heap
-  if (kIsDebugBuild) {
-    validate_heap_and_roots();
-  }
+  validate_heap_and_roots();
 
   determine_collection_mode();
   mark_runtime_roots();
@@ -242,9 +240,7 @@ void GarbageCollector::collect() {
   m_heap->adjust_heap_size();
 
   // validate heap
-  if (kIsDebugBuild) {
-    validate_heap_and_roots();
-  }
+  validate_heap_and_roots();
 }
 
 void GarbageCollector::determine_collection_mode() {
@@ -328,7 +324,8 @@ void GarbageCollector::compact_object(RawObject object) {
   DCHECK(target);
   memcpy(bitcast<void*>(target), bitcast<void*>(header), alloc_size);
 
-  auto target_header = bitcast<ObjectHeader*>(target);
+  auto* target_header = bitcast<ObjectHeader*>(target);
+  DCHECK(target_header->validate_magic_number());
   target_header->clear_is_reachable();
   if (target_region->type == Type::Old) {
     target_header->clear_is_young_generation();

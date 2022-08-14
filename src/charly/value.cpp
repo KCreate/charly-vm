@@ -92,6 +92,11 @@ void ObjectHeader::initialize_header(uintptr_t address, ShapeId shape_id, uint16
   header->m_flags = Flag::kYoungGeneration;
   header->m_hashcode = 0;
   header->m_forward_target = 0;
+
+#ifndef NDEBUG
+  header->m_magic1 = ObjectHeader::kMagicNumber1;
+  header->m_magic2 = ObjectHeader::kMagicNumber2;
+#endif
 }
 
 ShapeId ObjectHeader::shape_id() const {
@@ -196,6 +201,7 @@ RawObject ObjectHeader::object() const {
 }
 
 uint32_t ObjectHeader::alloc_size() const {
+  DCHECK(bitcast<uintptr_t>(this) % kObjectAlignment == 0);
   ShapeId id = shape_id();
   if (id == ShapeId::kTuple || is_instance_shape(id)) {
     return align_to_size(sizeof(ObjectHeader) + count() * kPointerSize, kObjectAlignment);
@@ -237,6 +243,7 @@ RawObject ObjectHeader::forward_target() const {
   auto heap_base = bitcast<uintptr_t>(heap_region()->heap->heap_base());
   auto pointer = heap_base + offset;
   auto* header = bitcast<ObjectHeader*>(pointer);
+  DCHECK(header->validate_magic_number());
   auto* region = header->heap_region();
   auto* heap = region->heap;
   DCHECK(bitcast<HeapRegion*>(region)->magic == kHeapRegionMagicNumber);
@@ -1002,7 +1009,9 @@ size_t RawObject::count() const {
 }
 
 ObjectHeader* RawObject::header() const {
-  return bitcast<ObjectHeader*>(base_address());
+  auto* header = bitcast<ObjectHeader*>(base_address());
+  DCHECK(header->validate_magic_number());
+  return header;
 }
 
 void RawObject::lock() const {

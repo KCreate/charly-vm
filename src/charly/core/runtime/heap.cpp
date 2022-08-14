@@ -52,6 +52,10 @@ uintptr_t HeapRegion::allocate(size_t size) {
   this->used += size;
   uintptr_t alloc_end = alloc_pointer + size;
 
+  DCHECK(alloc_pointer % kObjectAlignment == 0);
+  DCHECK(alloc_end % kObjectAlignment == 0);
+  DCHECK(alloc_end <= bitcast<uintptr_t>(this) + kHeapRegionSize);
+
   // update last known object addresses in span table
   // also mark intermediate spans if the object takes up multiple spans
   size_t span_index_start = span_get_index_for_pointer(alloc_pointer);
@@ -137,6 +141,7 @@ void HeapRegion::each_object(std::function<void(ObjectHeader*)> callback) {
   auto scan_end = buffer_base() + this->used;
   for (uintptr_t scan = buffer_base(); scan < scan_end; scan += alloc_size) {
     auto* header = bitcast<ObjectHeader*>(scan);
+    DCHECK(header->validate_magic_number());
     alloc_size = header->alloc_size();
     DCHECK(scan + alloc_size <= scan_end);
     callback(header);
@@ -165,6 +170,7 @@ void HeapRegion::each_object_in_span(size_t span_index, std::function<void(Objec
     uintptr_t last_alloc_ptr = span_get_last_alloc_pointer(span_index - 1);
     if (last_alloc_ptr != kSpanTableInvalidOffset) {
       auto* header = bitcast<ObjectHeader*>(last_alloc_ptr);
+      DCHECK(header->validate_magic_number());
       scan = last_alloc_ptr + header->alloc_size();
     }
   }
@@ -172,6 +178,7 @@ void HeapRegion::each_object_in_span(size_t span_index, std::function<void(Objec
   DCHECK(scan >= span_begin);
   while (scan < span_end && scan < buffer_end) {
     auto* header = bitcast<ObjectHeader*>(scan);
+    DCHECK(header->validate_magic_number());
     callback(header);
     scan += header->alloc_size();
   }
