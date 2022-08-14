@@ -619,24 +619,24 @@ void RawValue::dump(std::ostream& out) const {
 
         for (uint32_t i = 0; i < errors.size(); i++) {
           auto error = errors.field_at<RawTuple>(i);
-          auto type = error.field_at<RawString>(0).view();
-          auto filepath = error.field_at<RawString>(1).view();
-          auto error_message = error.field_at<RawString>(2).view();
-          auto source = error.field_at<RawString>(3).view();
-          auto location = error.field_at<RawString>(4).view();
+          auto type = error.field_at<RawString>(0);
+          auto filepath = error.field_at<RawString>(1);
+          auto error_message = error.field_at<RawString>(2);
+          auto source = error.field_at<RawString>(3);
+          auto location = error.field_at<RawString>(4);
 
-          if (type == "error") {
-            writer.fg(Color::Red, "error: ");
-          } else if (type == "warning") {
-            writer.fg(Color::Yellow, "warning: ");
-          } else if (type == "info") {
-            writer.fg(Color::Blue, "info: ");
+          if (type.view() == "error") {
+            writer.fg(Color::Red, type.view(), ": ");
+          } else if (type.view() == "warning") {
+            writer.fg(Color::Yellow, type.view(), ": ");
+          } else if (type.view() == "info") {
+            writer.fg(Color::Blue, type.view(), ": ");
           } else {
             FAIL("unknown error type");
           }
 
-          writer << filepath << ":" << location << ": " << error_message << "\n";
-          writer << source;
+          writer << filepath.view() << ":" << location.view() << ": " << error_message.view() << "\n";
+          writer << source.view();
         }
         return;
       } else {
@@ -915,7 +915,7 @@ std::string RawString::str() const {
   return { data(this), length() };
 }
 
-std::string_view RawString::view() const {
+std::string_view RawString::view() const & {
   return { data(this), length() };
 }
 

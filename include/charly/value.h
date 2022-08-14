@@ -543,7 +543,8 @@ public:
   SYMBOL hashcode() const;
 
   std::string str() const;
-  std::string_view view() const;
+  std::string_view view() const &;
+  std::string_view view() const && = delete;
 
   static int32_t compare(RawString base, const char* data, size_t length);
   static int32_t compare(RawString base, const char* data) {
