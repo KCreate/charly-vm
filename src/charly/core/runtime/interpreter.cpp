@@ -379,7 +379,7 @@ OP(import) {
   }
   fs::path import_path = resolve_result.value();
 
-  RawValue import_result = runtime->import_module(thread, import_path);
+  RawValue import_result = runtime->import_module_at_path(thread, import_path);
   if (import_result.is_error_exception()) {
     return ContinueMode::Exception;
   }

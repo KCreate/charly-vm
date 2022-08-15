@@ -1415,17 +1415,27 @@ std::optional<fs::path> Runtime::resolve_module(const fs::path& module_path, con
   return std::nullopt;
 }
 
-RawValue Runtime::import_module(Thread* thread, const fs::path& path, bool treat_as_repl) {
+RawValue Runtime::import_module_at_path(Thread* thread, const fs::path& path, bool treat_as_repl) {
   std::unique_lock lock(m_cached_modules_mutex);
+
+  auto path_hash = fs::hash_value(path);
+  std::ifstream import_source(path);
+  if (!import_source.is_open()) {
+    if (m_cached_modules.count(path_hash)) {
+      m_cached_modules.erase(path_hash);
+    }
+
+    auto exception =
+      create_exception(thread, create_string_from_template(thread, "Could not open the file at '%'", path.string()));
+    thread->throw_value(exception);
+    return kErrorException;
+  }
+
   fs::file_time_type mtime = fs::last_write_time(path);
 
-  // check if module cache has an entry for this module
-  auto path_hash = fs::hash_value(path);
   if (m_cached_modules.count(path_hash)) {
     const auto& entry = m_cached_modules.at(path_hash);
-
-    // file is unchanged since last import
-    if (fs::last_write_time(path) == entry.mtime) {
+    if (mtime == entry.mtime) {
       lock.unlock();
       return await_future(thread, entry.module);
     }
@@ -1436,15 +1446,6 @@ RawValue Runtime::import_module(Thread* thread, const fs::path& path, bool treat
   m_cached_modules[path_hash] = { .path = path, .mtime = mtime, .module = future };
 
   lock.unlock();
-
-  std::ifstream import_source(path);
-  if (!import_source.is_open()) {
-    auto exception =
-      create_exception(thread, create_string_from_template(thread, "Could not open the file at '%'", path));
-    thread->throw_value(exception);
-    reject_future(thread, future, exception);
-    return kErrorException;
-  }
 
   utils::Buffer buf;
   buf << import_source.rdbuf();

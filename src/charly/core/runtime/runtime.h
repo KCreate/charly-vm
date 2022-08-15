@@ -201,10 +201,13 @@ public:
   std::optional<fs::path> resolve_module(const fs::path& module_path, const fs::path& origin_path) const;
 
   // import a module at a given path
+  //
+  // throws an exception and returns kErrorException if the file was not found
+  //
   // returns the cached result if the module has been imported before and is unchanged
   // if multiple fibers import the same path, only the first will execute it
   // the other modules will wait for the first fiber to finish
-  RawValue import_module(Thread* thread, const fs::path& path, bool treat_as_repl = false);
+  RawValue import_module_at_path(Thread* thread, const fs::path& path, bool treat_as_repl = false);
 
   // register a CompiledModule object with the runtime
   void register_module(Thread* thread, const ref<CompiledModule>& module);

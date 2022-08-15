@@ -240,7 +240,7 @@ int32_t Thread::entry_main_thread() {
   runtime->initialize_builtin_functions(this);
 
   fs::path boot_path = runtime->stdlib_directory() / "boot.ch";
-  RawValue result = runtime->import_module(this, boot_path, true);
+  RawValue result = runtime->import_module_at_path(this, boot_path, true);
   if (result.is_error_exception()) {
     dump_exception_trace(RawException::cast(pending_exception()));
     return 1;
@@ -256,7 +256,7 @@ int32_t Thread::entry_main_thread() {
     load_as_repl = true;
   }
 
-  RawValue user_result = runtime->import_module(this, filename, load_as_repl);
+  RawValue user_result = runtime->import_module_at_path(this, filename, load_as_repl);
   if (user_result.is_error_exception()) {
     dump_exception_trace(RawException::cast(pending_exception()));
     return 1;
@@ -352,7 +352,7 @@ void Thread::dump_exception_trace(RawException exception) const {
 
   RawException first_exception = exception_stack.top();
   exception_stack.pop();
-  debuglnf_notime("Unhandled exception in main thread:\n");
+  debuglnf_notime("Unhandled exception in main thread:");
   debuglnf_notime("%", first_exception);
 
   while (!exception_stack.empty()) {
