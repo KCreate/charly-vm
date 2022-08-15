@@ -453,9 +453,9 @@ void GarbageCollector::deallocate_external_heap_resources(RawObject object) cons
     huge_string.set_data(nullptr);
   } else if (object.isFuture()) {
     auto future = RawFuture::cast(object);
-    // TODO: throw exceptions in threads that can no longer be awoken
-    if (future.wait_queue()) {
-      delete future.wait_queue();
+    if (auto* wait_queue = future.wait_queue()) {
+      DCHECK(wait_queue->empty());
+      delete wait_queue;
       future.set_wait_queue(nullptr);
     }
   }
