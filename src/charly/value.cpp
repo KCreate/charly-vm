@@ -1245,6 +1245,26 @@ RawValue RawClass::lookup_function(SYMBOL name) const {
   return kErrorNotFound;
 }
 
+bool RawClass::is_instance_of(RawClass other) const {
+
+  // same class
+  if (*this == other) {
+    return true;
+  }
+
+  // traverse class hierarchy
+  RawValue search = parent();
+  while (!search.isNull()) {
+    if (search.raw() == other.raw()) {
+      return true;
+    }
+
+    search = RawClass::cast(search).parent();
+  }
+
+  return false;
+}
+
 ShapeId RawShape::own_shape_id() const {
   return static_cast<ShapeId>(field_at<RawInt>(kOwnShapeIdOffset).value());
 }

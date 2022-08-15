@@ -180,6 +180,8 @@ CATCH_TEST_CASE("Parser") {
     CHECK_AST_EXP("1 << 1", make<BinaryOp>(TokenType::BitLeftShift, make<Int>(1), make<Int>(1)));
     CHECK_AST_EXP("1 >> 1", make<BinaryOp>(TokenType::BitRightShift, make<Int>(1), make<Int>(1)));
     CHECK_AST_EXP("1 >>> 1", make<BinaryOp>(TokenType::BitUnsignedRightShift, make<Int>(1), make<Int>(1)));
+
+    CHECK_AST_EXP("25 instanceof Number", make<BinaryOp>(TokenType::InstanceOf, make<Int>(25), make<Id>("Number")));
   }
 
   CATCH_SECTION("binary operator relative precedence") {
@@ -217,6 +219,15 @@ CATCH_TEST_CASE("Parser") {
 
     CHECK_AST_EXP("1 ** 2 ** 3", make<BinaryOp>(TokenType::Pow, make<Int>(1),
                                                 make<BinaryOp>(TokenType::Pow, make<Int>(2), make<Int>(3))));
+
+    CHECK_AST_EXP("25 + 25 instanceof Number",
+                  make<BinaryOp>(TokenType::InstanceOf, make<BinaryOp>(TokenType::Plus, make<Int>(25), make<Int>(25)),
+                                 make<Id>("Number")));
+
+    CHECK_AST_EXP(
+      "foo instanceof Number == true",
+      make<BinaryOp>(TokenType::Equal, make<BinaryOp>(TokenType::InstanceOf, make<Id>("foo"), make<Id>("Number")),
+                     make<Bool>(true)));
   }
 
   CATCH_SECTION("unary operators") {

@@ -41,13 +41,14 @@ namespace {
 }
 
 // clang-format off
-
 static const std::unordered_map<TokenType, uint32_t> kBinaryOpPrecedenceLevels = {
   { TokenType::Or,                    8 },
   { TokenType::And,                   9 },
 
   { TokenType::Equal,                 10 },
   { TokenType::NotEqual,              10 },
+
+  { TokenType::InstanceOf,            15},
 
   { TokenType::LessThan,              20 },
   { TokenType::GreaterThan,           20 },
@@ -71,12 +72,11 @@ static const std::unordered_map<TokenType, uint32_t> kBinaryOpPrecedenceLevels =
   { TokenType::Mod,                   60 },
   { TokenType::Pow,                   70 }
 };
+// clang-format on
 
 static const std::unordered_set<TokenType> kRightAssociativeOperators = {
   TokenType::Pow
 };
-
-// clang-format on
 
 struct KeywordContext {
   bool _return = false;

@@ -836,13 +836,6 @@ bool CodeGenerator::inspect_enter(const ref<Ternary>& node) {
 
 bool CodeGenerator::inspect_enter(const ref<BinaryOp>& node) {
   switch (node->operation) {
-    default: {
-      apply(node->lhs);
-      apply(node->rhs);
-      DCHECK(kBinopOpcodeMapping.count(node->operation));
-      m_builder.emit(IRInstruction::make(kBinopOpcodeMapping.at(node->operation)))->at(node);
-      break;
-    }
     case TokenType::And: {
       Label true_label = m_builder.reserve_label();
       Label false_label = m_builder.reserve_label();
@@ -873,6 +866,20 @@ bool CodeGenerator::inspect_enter(const ref<BinaryOp>& node) {
       apply(node->rhs);
       m_builder.place_label(end_label);
 
+      break;
+    }
+    case TokenType::InstanceOf: {
+      apply(node->lhs);
+      m_builder.emit_type();
+      apply(node->rhs);
+      m_builder.emit_instanceof();
+      break;
+    }
+    default: {
+      apply(node->lhs);
+      apply(node->rhs);
+      DCHECK(kBinopOpcodeMapping.count(node->operation));
+      m_builder.emit(IRInstruction::make(kBinopOpcodeMapping.at(node->operation)))->at(node);
       break;
     }
   }

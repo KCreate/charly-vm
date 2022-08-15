@@ -108,6 +108,16 @@ static const size_t kInstructionLength = 4;
    * - class of value                                                              \
    * */                                                                            \
   V(type, IXXX, 1, 1)                                                              \
+  /* instanceof - check if value is instance of class                              \
+   *                                                                               \
+   * stack arguments:                                                              \
+   * - value                                                                       \
+   * - klass                                                                       \
+   *                                                                               \
+   * stack results:                                                                \
+   * - true / false                                                                \
+   * */                                                                            \
+  V(instanceof, IXXX, 2, 1)                                                        \
   /* swap - swap top two values on stack                                           \
    *                                                                               \
    * stack arguments:                                                              \

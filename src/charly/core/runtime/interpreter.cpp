@@ -450,6 +450,24 @@ OP(type) {
   return ContinueMode::Next;
 }
 
+OP(instanceof) {
+  RawValue check_value = frame->pop();
+
+  if (!check_value.isClass()) {
+    Runtime* runtime = thread->runtime();
+    thread->throw_value(runtime->create_string_from_template(
+      thread, "expected right hand side of instanceof to be a class, got %", check_value));
+    return ContinueMode::Exception;
+  }
+
+  RawClass check_class = RawClass::cast(check_value);
+
+  // compiler inserts 'type' opcode for this value, so this will always be a class
+  RawClass value_class = RawClass::cast(frame->pop());
+  frame->push(RawBool::make(value_class.is_instance_of(check_class)));
+  return ContinueMode::Next;
+}
+
 OP(swap) {
   RawValue v1 = frame->pop();
   RawValue v2 = frame->pop();

@@ -770,6 +770,9 @@ public:
 
   RawValue lookup_function(SYMBOL name) const;
 
+  // checks if this class is the same as or inherits from another class
+  bool is_instance_of(RawClass other) const;
+
   enum {
     kFlagsOffset = RawInstance::kFieldCount,
     kAncestorTableOffset,
