@@ -142,15 +142,23 @@ void Node::dump(std::ostream& out, bool print_location) const {
   writer.fg(name_color, node_name());
 
   dump_info(out);
+
   auto truthy = truthyness();
   if (truthy == Truthyness::True) {
     writer.fg(Color::Green, " Truthy");
   } else if (truthy == Truthyness::False) {
     writer.fg(Color::Red, " Falsey");
   }
+
+  auto sideeffects = has_side_effects();
+  if (!sideeffects) {
+    writer.fg(Color::Green, " side-effect-free");
+  }
+
   if (print_location) {
     writer << " <" << location() << ">";
   }
+
   writer << '\n';
 
   std::vector<utils::Buffer> child_nodes;
@@ -416,6 +424,7 @@ void Function::dump_info(std::ostream& out) const {
     writer.fg(Color::Green, this->name->value);
   }
 
+  writer << ' ';
   writer.fg(Color::Red, ir_info);
 }
 
