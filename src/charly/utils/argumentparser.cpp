@@ -29,12 +29,11 @@
 #include <sstream>
 
 #include "charly/utils/argumentparser.h"
+#include "charly/utils/colorwriter.h"
 
 namespace charly::utils {
 
 namespace fs = std::filesystem;
-
-const std::string ArgumentParser::USAGE_MESSAGE = "Usage: charly [filename] [flags] [--] [arguments]";
 
 const std::string ArgumentParser::LICENSE =
   "MIT License \n"
@@ -239,16 +238,18 @@ std::optional<std::string> ArgumentParser::get_environment_for_key(const std::st
 }
 
 void ArgumentParser::print_help(std::ostream& out) {
-  out << USAGE_MESSAGE << "\n";
-  out << "\n";
+  utils::ColorWriter writer(out);
+
+  writer.fg(Color::Blue, "Usage: ");
+  out << "charly [filename] [charly flags] [--] [arguments]" << "\n\n";
 
   for (const FlagGroup& group : kDefinedFlagGroups) {
-    out << group.name << "\n";
+    writer.fg(Color::Blue, group.name, "\n");
 
     for (const FlagDescriptor& flag : group.flags) {
       out << "  ";
       for (const std::string& selector : flag.selectors) {
-        out << selector;
+        writer.fg(Color::Yellow, selector);
 
         if (selector != flag.selectors.back()) {
           out << ", ";
@@ -256,7 +257,7 @@ void ArgumentParser::print_help(std::ostream& out) {
       }
 
       if (flag.argument) {
-        out << " <" + flag.argument.value() + ">";
+        writer.fg(Color::Magenta, " <" + flag.argument.value() + ">");
       }
       out << "\n";
 

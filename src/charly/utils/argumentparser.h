@@ -49,7 +49,6 @@ public:
     std::vector<FlagDescriptor> flags;
   };
 
-  static const std::string USAGE_MESSAGE;
   static const std::string LICENSE;
   static const std::string VERSION;
   static const std::string ENVIRONMENT_STRING_DELIMITER;
