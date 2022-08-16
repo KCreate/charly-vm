@@ -55,7 +55,7 @@ ref<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffe
   if (unit->console.has_errors())
     return unit;
 
-  if (utils::ArgumentParser::is_flag_set("dump_ast_raw") &&
+  if (utils::ArgumentParser::is_flag_set("ast_raw") &&
       utils::ArgumentParser::flag_has_argument("debug_pattern", filepath, true)) {
     unit->ast->dump(std::cout, true);
   }
@@ -109,7 +109,7 @@ ref<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffe
     APPLY_TRANSFORM_PASS(CodeEliminationPass)
   }
 
-  if (utils::ArgumentParser::is_flag_set("dump_ast") &&
+  if (utils::ArgumentParser::is_flag_set("ast") &&
       utils::ArgumentParser::flag_has_argument("debug_pattern", filepath, true)) {
     unit->ast->dump(std::cout, true);
   }
@@ -121,7 +121,7 @@ ref<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffe
   CodeGenerator codegenerator(unit);
   unit->ir_module = codegenerator.compile();
 
-  if (utils::ArgumentParser::is_flag_set("dump_ir") &&
+  if (utils::ArgumentParser::is_flag_set("ir") &&
       utils::ArgumentParser::flag_has_argument("debug_pattern", filepath, true)) {
     unit->ir_module->dump(std::cout);
   }
@@ -129,7 +129,7 @@ ref<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffe
   // assemble bytecodes
   unit->compiled_module = ir::Assembler::compile_module(unit->ir_module);
 
-  if (utils::ArgumentParser::is_flag_set("dump_asm") &&
+  if (utils::ArgumentParser::is_flag_set("asm") &&
       utils::ArgumentParser::flag_has_argument("debug_pattern", filepath, true)) {
     unit->compiled_module->dump(std::cout);
   }

@@ -70,7 +70,7 @@ int32_t cli(DiagnosticConsole& console) {
     return 0;
   }
 
-  if (utils::ArgumentParser::is_flag_set("dump_constants")) {
+  if (utils::ArgumentParser::is_flag_set("constants")) {
     debuglnf_notime("# %heap.h%", termcolor::yellow, termcolor::reset);
     debuglnf_notime("kHeapSize                     = %", kHeapSize);
     debuglnf_notime("kHeapRegionSize               = %", kHeapRegionSize);
