@@ -104,7 +104,7 @@ ref<CompilationUnit> Compiler::compile(const std::string& filepath, utils::Buffe
       return unit;
   }
 
-  if (!utils::ArgumentParser::is_flag_set("opt_disable")) {
+  if (!utils::ArgumentParser::is_flag_set("no_ast_opt")) {
     APPLY_TRANSFORM_PASS(ConstantFoldingPass)
     APPLY_TRANSFORM_PASS(CodeEliminationPass)
   }

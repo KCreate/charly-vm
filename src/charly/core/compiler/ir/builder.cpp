@@ -104,7 +104,7 @@ void Builder::begin_function(Label head, const ref<ast::Function>& ast) {
 }
 
 void Builder::finish_function() {
-  if (!utils::ArgumentParser::is_flag_set("opt_disable")) {
+  if (!utils::ArgumentParser::is_flag_set("no_ir_opt")) {
     // trim dead instructions in basic blocks that occur after terminating opcodes
     trim_dead_instructions();
 
@@ -116,7 +116,7 @@ void Builder::finish_function() {
   // branches for each basic block
   build_cfg();
 
-  if (!utils::ArgumentParser::is_flag_set("opt_disable")) {
+  if (!utils::ArgumentParser::is_flag_set("no_ir_opt")) {
     // remove branch chains
     //
     //    jmp .L1
