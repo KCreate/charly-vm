@@ -36,6 +36,7 @@ public:
 
 private:
   ref<Statement> transform(const ref<Block>&) override;
+  ref<Statement> transform(const ref<If>&) override;
   ref<Expression> transform(const ref<ExpressionWithSideEffects>&) override;
 };
 

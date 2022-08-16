@@ -128,6 +128,27 @@ ref<Statement> CodeEliminationPass::transform(const ref<Block>& node) {
   return node;
 }
 
+ref<Statement> CodeEliminationPass::transform(const ref<If>& node) {
+  // if x { A } else { <no side effects> }     ->    if x { A }
+  if (node->else_block && !node->else_block->has_side_effects()) {
+    node->else_block = nullptr;
+  }
+
+  // if x { <no side effects> } else { B }   ->    if !x { B }
+  if (!node->then_block->has_side_effects() && node->else_block) {
+    node->condition = make<UnaryOp>(TokenType::UnaryNot, node->condition);
+    node->then_block = node->else_block;
+    node->else_block = nullptr;
+  }
+
+  // if x { <no side effects> }    ->    x
+  if (!node->then_block->has_side_effects()) {
+    return node->condition;
+  }
+
+  return node;
+}
+
 ref<Expression> CodeEliminationPass::transform(const ref<ExpressionWithSideEffects>& node) {
   if (!node->block->has_side_effects()) {
     return node->expression;
