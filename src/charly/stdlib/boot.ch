@@ -71,7 +71,7 @@ func writesync(...args) {
 func prompt(message = "", append_to_history = true) {
     const result = builtin_readline_prompt("{message}")
 
-    if append_to_history {
+    if append_to_history && result instanceof String {
         builtin_readline_add_history(result)
     }
 
