@@ -1472,10 +1472,6 @@ public:
     CHILD_NODE(condition)
     CHILD_NODE(then_block)
   }
-
-  bool has_side_effects() const override {
-    return condition->has_side_effects() || then_block->has_side_effects();
-  }
 };
 
 // loop <then_block>
@@ -1490,10 +1486,6 @@ public:
 
   CHILDREN() {
     CHILD_NODE(then_block)
-  }
-
-  bool has_side_effects() const override {
-    return then_block->has_side_effects();
   }
 };
 
