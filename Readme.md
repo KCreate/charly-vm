@@ -1,10 +1,13 @@
-> Note: This is the rewrite branch of charly-vm.
->       Lots of stuff isn't working yet.
->       The [main branch](https://github.com/KCreate/charly-vm/tree/main) contains the previous
->       fully functional version of charly-vm.
+<img src="docs/charly-vm.png" data-canonical-src="docs/charly-vm.png" width="30%" align="right" alt="Charly Programming Language Logo, Image credit: DALL-E"/>
 
-![Charly Programming Language](docs/charly-vm.png)
+# Charly Programming Language
+
 ![Unit Test](https://github.com/KCreate/charly-vm/workflows/Unit%20Test/badge.svg?branch=rewrite)
+
+> Note: This is the rewrite branch of charly-vm.
+> Lots of stuff isn't working yet.
+> The [main branch](https://github.com/KCreate/charly-vm/tree/main) contains the previous
+> fully functional version of charly-vm.
 
 <strike>This launches a REPL which (at the moment) doesn't do very much.</strike>
 
