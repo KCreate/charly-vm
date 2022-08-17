@@ -32,13 +32,18 @@ namespace charly::utils {
 
 class TimedSection {
 public:
+
+  // prints the amount of time elapsed inside the callback method to the console
+  // returns the amount of milliseconds elapsed
   template <typename F>
-  static void run(const std::string& title, F callback) {
-    auto start_time = get_steady_timestamp_micro();
+  static double run(const std::string& title, F callback) {
+    size_t start_time = get_steady_timestamp_micro();
     debuglnf("Begin '%'", title);
     callback();
-    auto end_time = get_steady_timestamp_micro();
-    debuglnf("'%' ran for %ms", title, (end_time - start_time) / 1000);
+    size_t end_time = get_steady_timestamp_micro();
+    double duration = (double)(end_time - start_time) / 1000;
+    debuglnf("'%' ran for %ms", title, duration);
+    return duration;
   }
 };
 

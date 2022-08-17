@@ -55,7 +55,7 @@ static const uintptr_t kHeapRegionMagicNumber = 0xdeadbeefcafebabe;
 static const size_t kGarbageCollectionAttempts = 4;
 
 static const float kHeapGrowthFactor = 1.5f;
-static const float kHeapShrinkFactor = 0.75f;
+static const float kHeapShrinkFactor = 0.5f;
 
 class Heap;
 

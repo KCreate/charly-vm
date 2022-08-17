@@ -89,6 +89,8 @@ void GarbageCollector::main() {
   m_runtime->wait_for_initialization();
   m_has_initialized = true;
 
+  double collection_time_sum = 0;
+  size_t collection_count = 0;
   while (!m_wants_exit) {
     {
       std::unique_lock<std::mutex> locker(m_mutex);
@@ -103,12 +105,15 @@ void GarbageCollector::main() {
 
     m_runtime->scheduler()->stop_the_world();
 
-    utils::TimedSection::run("GC collection", [&] {
+    collection_time_sum += utils::TimedSection::run("GC collection", [&] {
       determine_collection_mode();
-      validate_heap_and_roots();
+      if (!kIsDebugBuild)
+        validate_heap_and_roots();
       collect();
-      validate_heap_and_roots();
+      if (!kIsDebugBuild)
+        validate_heap_and_roots();
     });
+    collection_count++;
 
     DCHECK(m_mark_queue.empty());
     m_target_intermediate_regions.clear();
@@ -120,6 +125,8 @@ void GarbageCollector::main() {
 
     m_runtime->scheduler()->start_the_world();
   }
+
+  debuglnf("collection average time %ms", collection_time_sum / collection_count);
 }
 
 void GarbageCollector::collect() {
@@ -294,10 +301,15 @@ void GarbageCollector::mark_queue_value(RawValue value, bool force_mark) {
 }
 
 void GarbageCollector::compact_object(RawObject object) {
+  using Type = HeapRegion::Type;
   auto* header = object.header();
   auto* region = header->heap_region();
 
-  using Type = HeapRegion::Type;
+  // do not compact old objects during minor GC
+  if (m_collection_mode == CollectionMode::Minor && region->type == Type::Old) {
+    return;
+  }
+
   size_t alloc_size = header->alloc_size();
 
   // determine target region for compaction
@@ -307,15 +319,8 @@ void GarbageCollector::compact_object(RawObject object) {
       target_region = get_target_intermediate_region(alloc_size);
       break;
     }
-    case Type::Intermediate: {
-      target_region = get_target_old_region(alloc_size);
-      break;
-    }
+    case Type::Intermediate:
     case Type::Old: {
-      // do not compact old objects during minor GC
-      if (m_collection_mode == CollectionMode::Minor) {
-        return;
-      }
       target_region = get_target_old_region(alloc_size);
       break;
     }
@@ -334,7 +339,6 @@ void GarbageCollector::compact_object(RawObject object) {
     target_header->clear_is_young_generation();
     target_header->clear_survivor_count();
 
-    // set dirty flag on spans in non-target old regions
     if (m_collection_mode == CollectionMode::Minor) {
       auto target_span_index = target_region->span_get_index_for_pointer(target);
       target_region->span_set_dirty_flag(target_span_index);

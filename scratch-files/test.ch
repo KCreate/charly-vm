@@ -25,7 +25,7 @@
  */
 
 let data
-let count = 10000
+let count = 20000
 
 while count != 0 {
     count.times(->{
@@ -33,7 +33,6 @@ while count != 0 {
     })
 
     count -= 1
-    print(count)
 }
 
 
