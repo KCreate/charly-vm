@@ -285,7 +285,6 @@ void Heap::grow_heap() {
   size_t unmapped_regions_count = m_unmapped_regions.size();
   size_t regions_to_add = std::min((size_t)(free_regions_count * (kHeapGrowthFactor - 1)), unmapped_regions_count);
 
-  debuglnf("adding % regions, new total %", regions_to_add, free_regions_count + regions_to_add);
   for (size_t i = 0; i < regions_to_add; i++) {
     m_free_regions.insert(map_new_region());
   }
@@ -295,7 +294,6 @@ void Heap::shrink_heap() {
   size_t free_regions_count = m_free_regions.size();
   size_t regions_to_remove = free_regions_count * (1 - kHeapShrinkFactor);
 
-  debuglnf("removing % regions, new total %", regions_to_remove, free_regions_count - regions_to_remove);
   for (size_t i = 0; i < regions_to_remove; i++) {
     unmap_free_region();
   }

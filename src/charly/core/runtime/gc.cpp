@@ -319,7 +319,15 @@ void GarbageCollector::compact_object(RawObject object) {
       target_region = get_target_intermediate_region(alloc_size);
       break;
     }
-    case Type::Intermediate:
+    case Type::Intermediate: {
+      if (header->survivor_count() >= kGCObjectMaxSurvivorCount) {
+        target_region = get_target_old_region(alloc_size);
+      } else {
+        target_region = get_target_intermediate_region(alloc_size);
+      }
+
+      break;
+    }
     case Type::Old: {
       target_region = get_target_old_region(alloc_size);
       break;
@@ -510,10 +518,10 @@ void GarbageCollector::validate_heap_and_roots() const {
       auto object = RawObject::cast(value);
       auto* header = object.header();
       DCHECK(m_heap->is_valid_pointer(bitcast<uintptr_t>(header)));
-      DCHECK(object.is_young_pointer() == header->is_young_generation(), "mismatched pointer tag");
-      DCHECK((size_t)header->shape_id() < m_runtime->m_shapes.size(), "got %", (void*)header->shape_id());
-      DCHECK(header->shape_id() > ShapeId::kLastImmediateShape, "got %", (uint32_t)header->shape_id());
-      DCHECK(header->survivor_count() <= 2, "got %", (uint32_t)header->survivor_count());
+      DCHECK(object.is_young_pointer() == header->is_young_generation());
+      DCHECK((size_t)header->shape_id() < m_runtime->m_shapes.size());
+      DCHECK(header->shape_id() > ShapeId::kLastImmediateShape);
+      DCHECK(header->survivor_count() <= kGCObjectMaxSurvivorCount);
       DCHECK(!header->has_forward_target());
       DCHECK(!header->is_reachable());
 
@@ -523,7 +531,7 @@ void GarbageCollector::validate_heap_and_roots() const {
         auto shape = klass.shape_instance();
         auto own_id = shape.own_shape_id();
         auto header_id = header->shape_id();
-        DCHECK(own_id == header_id, "for object %", object);
+        DCHECK(own_id == header_id);
       }
 
       if (object.isInstance() || object.isTuple()) {

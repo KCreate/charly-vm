@@ -44,7 +44,7 @@ class Runtime;
 static const size_t kHeapSize = kGb * 64;
 static const size_t kHeapRegionSize = kKb * 512;
 static const size_t kHeapRegionCount = kHeapSize / kHeapRegionSize;
-static const size_t kHeapMinimumMappedRegionCount = 16;
+static const size_t kHeapMinimumMappedRegionCount = 32;
 
 static const size_t kHeapRegionSpanSize = kKb;
 static const size_t kHeapRegionSpanCount = kHeapRegionSize / kHeapRegionSpanSize;

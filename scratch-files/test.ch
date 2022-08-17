@@ -25,14 +25,17 @@
  */
 
 let data
-let count = 20000
+let count = 2000
 
-while count != 0 {
-    count.times(->{
+while (count != 0) {
+    let index = 0
+    while (index != count - 1) {
         data = (1, 2, 3, 4)
-    })
+        index += 1
+    }
 
     count -= 1
+    print(count)
 }
 
 

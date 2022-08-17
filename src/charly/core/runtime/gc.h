@@ -41,13 +41,13 @@ namespace charly::core::runtime {
 class Runtime;
 class Thread;
 
-static const size_t kGCObjectMaxSurvivorCount = 2;
+static const size_t kGCObjectMaxSurvivorCount = 15;
 
 // if the time elapsed since the last collection is below this threshold, grow the heap
 static const size_t kGCHeapGrowTimeThreshold = 1000 * 5;
 
 // if the time elapsed since the last collection is above this threshold, shrink the heap
-static const size_t kGCHeapShrinkTimeThreshold = 1000 * 15;
+static const size_t kGCHeapShrinkTimeThreshold = 1000 * 30;
 
 class GarbageCollector {
   friend class Heap;
