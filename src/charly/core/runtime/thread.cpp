@@ -270,10 +270,6 @@ void Thread::entry_fiber_thread() {
   Fiber fiber(scope, m_fiber);
   Value arguments(scope, fiber.arguments());
 
-  if (arguments.isObject()) {
-    DCHECK(m_runtime->heap()->is_valid_pointer(RawObject::cast(arguments).base_address()));
-  }
-
   const RawValue* arguments_pointer = nullptr;
   size_t argc = 0;
   if (arguments.isTuple()) {

@@ -94,14 +94,8 @@ uintptr_t HeapRegion::buffer_base() const {
   return bitcast<uintptr_t>(&this->buffer);
 }
 
-bool HeapRegion::pointer_points_into_region(uintptr_t pointer) const {
-  auto data = buffer_base();
-  auto data_end = data + this->used;
-  return pointer >= data && pointer < data_end;
-}
-
 size_t HeapRegion::span_get_index_for_pointer(uintptr_t pointer) const {
-  pointer_points_into_region(pointer);
+  DCHECK(heap->is_valid_pointer(pointer));
   size_t alloc_offset = static_cast<size_t>(pointer - bitcast<uintptr_t>(this));
   size_t span_index = alloc_offset / kHeapRegionSpanSize;
   DCHECK(span_index < kHeapRegionSpanCount);
@@ -113,7 +107,7 @@ uintptr_t HeapRegion::span_get_last_alloc_pointer(size_t span_index) const {
   auto offset = this->span_table[span_index] >> kSpanTableOffsetShift;
   DCHECK(offset != kSpanTableInvalidOffset);
   auto pointer = buffer_base() + offset;
-  DCHECK(pointer_points_into_region(pointer));
+  DCHECK(heap->is_valid_pointer(pointer));
   return pointer;
 }
 
@@ -124,7 +118,7 @@ bool HeapRegion::span_get_dirty_flag(size_t span_index) const {
 
 void HeapRegion::span_set_last_alloc_pointer(size_t span_index, uintptr_t pointer) {
   DCHECK(span_index < kHeapRegionSpanCount);
-  DCHECK(pointer_points_into_region(pointer));
+  DCHECK(heap->is_valid_pointer(pointer));
   auto offset = pointer - buffer_base();
   auto dirty = span_get_dirty_flag(span_index);
   this->span_table[span_index] = offset << kSpanTableOffsetShift;
@@ -286,39 +280,24 @@ HeapRegion* Heap::acquire_region_internal(HeapRegion::Type type) {
   return region;
 }
 
-void Heap::adjust_heap_size() {
-  float mapped_region_count = m_mapped_regions.size();
-  float free_region_count = m_free_regions.size();
-  DCHECK(free_region_count <= mapped_region_count);
-  float ratio_free_mapped = free_region_count / mapped_region_count;
-  DCHECK(ratio_free_mapped >= 0.0 || ratio_free_mapped <= 1.0);
+void Heap::grow_heap() {
+  size_t free_regions_count = m_free_regions.size();
+  size_t unmapped_regions_count = m_unmapped_regions.size();
+  size_t regions_to_add = std::min((size_t)(free_regions_count * (kHeapGrowthFactor - 1)), unmapped_regions_count);
 
-  // m = mapped regions
-  // f = free regions
-  // e = expected free/mapped ratio
-  // x = change to total region count to reach ratio
-  //
-  // x = ceil((f - em) / (e - 1))
-  float d1 = free_region_count - kHeapExpectedFreeToMappedRatio * mapped_region_count;
-  float d2 = kHeapExpectedFreeToMappedRatio - 1;
-  int64_t region_delta = std::ceil(d1 / d2);
-  if (region_delta > 0) {
-    size_t regions_to_add = region_delta;
-    if (regions_to_add > m_unmapped_regions.size()) {
-      regions_to_add = m_unmapped_regions.size();
-    }
+  debuglnf("adding % regions, new total %", regions_to_add, free_regions_count + regions_to_add);
+  for (size_t i = 0; i < regions_to_add; i++) {
+    m_free_regions.insert(map_new_region());
+  }
+}
 
-    for (size_t i = 0; i < regions_to_add; i++) {
-      m_free_regions.insert(map_new_region());
-    }
-  } else {
-    size_t regions_to_remove = -region_delta;
-    DCHECK(mapped_region_count >= regions_to_remove);
-    DCHECK(regions_to_remove < m_free_regions.size());
-    size_t i = 0;
-    for (i = 0; i < regions_to_remove && m_mapped_regions.size() > kHeapMinimumMappedRegionCount; i++) {
-      unmap_free_region();
-    }
+void Heap::shrink_heap() {
+  size_t free_regions_count = m_free_regions.size();
+  size_t regions_to_remove = free_regions_count * (1 - kHeapShrinkFactor);
+
+  debuglnf("removing % regions, new total %", regions_to_remove, free_regions_count - regions_to_remove);
+  for (size_t i = 0; i < regions_to_remove; i++) {
+    unmap_free_region();
   }
 }
 
@@ -335,25 +314,9 @@ void Heap::unmap_free_region() {
   m_unmapped_regions.insert(region);
 }
 
-bool Heap::is_heap_pointer(uintptr_t pointer) const {
+bool Heap::is_valid_pointer(uintptr_t pointer) const {
   auto heap_base = bitcast<const uintptr_t>(m_heap_base);
   return pointer >= heap_base && pointer < (heap_base + kHeapSize);
-}
-
-bool Heap::is_valid_pointer(uintptr_t pointer) const {
-  if (!is_heap_pointer(pointer)) {
-    return false;
-  }
-
-  for (auto* region : m_mapped_regions) {
-    if (region->type != HeapRegion::Type::Unused) {
-      if (region->pointer_points_into_region(pointer)) {
-        return true;
-      }
-    }
-  }
-
-  return false;
 }
 
 HeapRegion* Heap::pop_free_region() {

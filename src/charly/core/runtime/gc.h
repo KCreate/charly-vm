@@ -43,12 +43,17 @@ class Thread;
 
 static const size_t kGCObjectMaxSurvivorCount = 2;
 
+// if the time elapsed since the last collection is below this threshold, grow the heap
+static const size_t kGCHeapGrowTimeThreshold = 1000 * 5;
+
+// if the time elapsed since the last collection is above this threshold, shrink the heap
+static const size_t kGCHeapShrinkTimeThreshold = 1000 * 15;
+
 class GarbageCollector {
   friend class Heap;
 public:
 
   enum class CollectionMode {
-    None,
     Minor,
     Major
   };
@@ -96,6 +101,8 @@ private:
   std::queue<RawObject> m_mark_queue;
   std::set<HeapRegion*> m_target_intermediate_regions;
   std::set<HeapRegion*> m_target_old_regions;
+
+  size_t m_last_collection_time;
 
   atomic<uint64_t> m_gc_cycle;
   atomic<bool> m_has_initialized;

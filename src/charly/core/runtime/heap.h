@@ -54,7 +54,8 @@ static const uintptr_t kHeapRegionMagicNumber = 0xdeadbeefcafebabe;
 
 static const size_t kGarbageCollectionAttempts = 4;
 
-static const float kHeapExpectedFreeToMappedRatio = 0.30f;
+static const float kHeapGrowthFactor = 1.5f;
+static const float kHeapShrinkFactor = 0.75f;
 
 class Heap;
 
@@ -84,9 +85,6 @@ struct HeapRegion {
 
   // returns a pointer to the beginning of the buffer segment (after all the metadata)
   uintptr_t buffer_base() const;
-
-  // check wether a given pointer points into this region
-  bool pointer_points_into_region(uintptr_t pointer) const;
 
   size_t span_check_index_in_use(size_t span_index) const;
   size_t span_get_index_for_pointer(uintptr_t pointer) const;
@@ -152,13 +150,12 @@ public:
   HeapRegion* pop_free_region();
   HeapRegion* map_new_region();
 
-  void adjust_heap_size();
+  void grow_heap();
+  void shrink_heap();
+
   void unmap_free_region();
 
   // check wether a given pointer points into the charly heap
-  bool is_heap_pointer(uintptr_t pointer) const;
-
-  // check wether a given pointer points into a live region
   bool is_valid_pointer(uintptr_t pointer) const;
 
   const void* heap_base() const {

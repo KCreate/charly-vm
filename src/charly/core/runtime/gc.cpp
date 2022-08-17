@@ -36,7 +36,8 @@ namespace charly::core::runtime {
 GarbageCollector::GarbageCollector(Runtime* runtime) :
   m_runtime(runtime),
   m_heap(runtime->heap()),
-  m_collection_mode(CollectionMode::None),
+  m_collection_mode(CollectionMode::Minor),
+  m_last_collection_time(get_steady_timestamp_milli()),
   m_gc_cycle(1),
   m_has_initialized(false),
   m_wants_collection(false),
@@ -103,13 +104,16 @@ void GarbageCollector::main() {
     m_runtime->scheduler()->stop_the_world();
 
     utils::TimedSection::run("GC collection", [&] {
+      determine_collection_mode();
+      validate_heap_and_roots();
       collect();
+      validate_heap_and_roots();
     });
 
-    m_collection_mode = CollectionMode::None;
     DCHECK(m_mark_queue.empty());
     m_target_intermediate_regions.clear();
     m_target_old_regions.clear();
+    m_last_collection_time = get_steady_timestamp_milli();
     m_gc_cycle++;
     m_wants_collection = false;
     m_cv.notify_all();
@@ -119,10 +123,6 @@ void GarbageCollector::main() {
 }
 
 void GarbageCollector::collect() {
-  // validate heap
-  validate_heap_and_roots();
-
-  determine_collection_mode();
   mark_runtime_roots();
   if (m_collection_mode == CollectionMode::Minor) {
     mark_dirty_span_roots();
@@ -236,11 +236,14 @@ void GarbageCollector::collect() {
     proc->tab()->m_region = nullptr;
   }
 
-  // grow or shrink heap according to heuristics
-  m_heap->adjust_heap_size();
+  size_t current_time = get_steady_timestamp_milli();
+  size_t time_passed_since_last_collection = current_time - m_last_collection_time;
 
-  // validate heap
-  validate_heap_and_roots();
+  if (time_passed_since_last_collection > kGCHeapShrinkTimeThreshold) {
+    m_heap->shrink_heap();
+  } else if (time_passed_since_last_collection < kGCHeapGrowTimeThreshold) {
+    m_heap->grow_heap();
+  }
 }
 
 void GarbageCollector::determine_collection_mode() {

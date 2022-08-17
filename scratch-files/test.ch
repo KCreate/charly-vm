@@ -24,41 +24,17 @@
  * SOFTWARE.
  */
 
-class A {
-    property foo
+let data
+let count = 10000
+
+while count != 0 {
+    count.times(->{
+        data = (1, 2, 3, 4)
+    })
+
+    count -= 1
+    print(count)
 }
-
-class B extends A {
-    property bar
-    func constructor(foo, @bar) = super(foo)
-}
-
-class C extends B {
-    property baz
-    func constructor(foo, bar, @baz) = super(foo, bar)
-}
-
-const a = A(1)
-const b = B(2, 3)
-const c = C(4, 5, 6)
-
-print(a.foo)
-print(b.foo, b.bar)
-print(c.foo, c.bar, c.baz)
-
-print(a instanceof A)
-print(a instanceof B)
-print(a instanceof C)
-
-print(b instanceof A)
-print(b instanceof B)
-print(b instanceof C)
-
-print(c instanceof A)
-print(c instanceof B)
-print(c instanceof C)
-
-
 
 
 

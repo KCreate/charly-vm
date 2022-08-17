@@ -245,16 +245,13 @@ RawObject ObjectHeader::forward_target() const {
   auto* header = bitcast<ObjectHeader*>(pointer);
   DCHECK(header->validate_magic_number());
   auto* region = header->heap_region();
-  auto* heap = region->heap;
-  DCHECK(bitcast<HeapRegion*>(region)->magic == kHeapRegionMagicNumber);
-  DCHECK(heap->is_valid_pointer(pointer));
+  DCHECK(region->magic == kHeapRegionMagicNumber);
   return header->object();
 }
 
 void ObjectHeader::set_forward_target(RawObject object) {
   auto* region = heap_region();
   auto* heap = region->heap;
-  DCHECK(heap->is_valid_pointer(object.base_address()));
   auto* header = object.header();
   size_t heap_offset = bitcast<uintptr_t>(header) - bitcast<uintptr_t>(heap->heap_base());
   size_t multiple_of_alignment = heap_offset / kObjectAlignment;
