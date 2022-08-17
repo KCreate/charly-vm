@@ -194,8 +194,9 @@ RawValue maketuple(Thread* thread, const RawValue* args, uint8_t argc) {
   CHECK(size >= 0, "expected size to be positive number");
 
   Runtime* runtime = thread->runtime();
-  auto tuple = runtime->create_tuple(thread, size);
-  RawValue initial = args[1];
+  HandleScope scope(thread);
+  Value initial(scope, args[1]);
+  Tuple tuple(scope, runtime->create_tuple(thread, size));
   for (int64_t i = 0; i < size; i++) {
     tuple.set_field_at(i, initial);
   }
