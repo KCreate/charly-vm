@@ -24,34 +24,29 @@
  * SOFTWARE.
  */
 
-func foo {
-    let data
-    let count = 2000
-    while (count != 0) {
-        let index = 0
-        while (index != count - 1) {
-            data = (1, 2, 3, 4)
-            index += 1
-        }
+#include <thread>
 
-        count -= 1
-    }
-}
+#include "charly/atomic.h"
 
-const fiber_count = 128
-Tuple.make_with(fiber_count, ->spawn foo()).each(->(f) await f)
+#pragma once
 
+namespace charly::core::runtime {
 
+class Runtime;
+class WatchDog {
+public:
+  WatchDog(Runtime* runtime);
+  ~WatchDog();
 
+  void join();
 
+private:
+  void main();
 
+private:
+  Runtime* m_runtime;
+  std::thread m_thread;
+  atomic<size_t> m_clock;
+};
 
-
-
-
-
-
-
-
-
-
+}  // namespace charly::core::runtime

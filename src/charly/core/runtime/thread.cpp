@@ -56,7 +56,7 @@ Thread::Thread(Runtime* runtime) :
   m_exit_code(0),
   m_fiber(kNull),
   m_worker(nullptr),
-  m_last_scheduled_at(0),
+  m_last_scheduled_at(kNeverScheduledTimestamp),
   m_context(nullptr),
   m_frame(nullptr),
   m_pending_exception(kNull) {}
@@ -97,9 +97,8 @@ size_t Thread::last_scheduled_at() const {
   return m_last_scheduled_at;
 }
 
-bool Thread::has_exceeded_timeslice() const {
-  uint64_t timestamp_now = get_steady_timestamp();
-  return timestamp_now - last_scheduled_at() >= kThreadTimeslice;
+bool Thread::set_last_scheduled_at(size_t old_timestamp, size_t timestamp) {
+  return m_last_scheduled_at.cas(old_timestamp, timestamp);
 }
 
 const Stack* Thread::stack() const {
@@ -145,14 +144,14 @@ void Thread::clean() {
   m_exit_code = 0;
   m_fiber = kNull;
   m_worker = nullptr;
-  m_last_scheduled_at = 0;
+  m_last_scheduled_at = kNeverScheduledTimestamp;
   m_frame = nullptr;
   m_pending_exception = kNull;
   m_context = nullptr;
 }
 
 void Thread::checkpoint() {
-  if (m_worker->has_stop_flag() || has_exceeded_timeslice()) {
+  if (m_worker->has_stop_flag() || m_last_scheduled_at == kShouldYieldToSchedulerTimestamp) {
     yield_to_scheduler();
   }
 }
@@ -185,6 +184,7 @@ void Thread::context_switch(Worker* worker) {
 
   transfer_t transfer = jump_fcontext(m_context, worker);
   m_context = transfer.fctx;
+  m_last_scheduled_at = kNeverScheduledTimestamp;
   DCHECK(m_worker == nullptr);
 }
 

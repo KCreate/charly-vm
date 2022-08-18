@@ -85,7 +85,7 @@ void HeapRegion::reset() {
   this->used = 0;
   this->span_table.fill(kSpanTableInvalidOffset << kSpanTableOffsetShift);
   DCHECK(buffer_base() - (uintptr_t)(this) + kHeapRegionUsableSize == kHeapRegionSize);
-  if (kIsDebugBuild) {
+  if constexpr (kIsDebugBuild) {
     std::memset((void*)buffer_base(), 0, kHeapRegionUsableSize);
   }
 }

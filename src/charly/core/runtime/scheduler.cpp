@@ -65,6 +65,8 @@ Scheduler::Scheduler(Runtime* runtime) : m_runtime(runtime) {
   main_thread->init_main_thread();
   main_thread->ready();
   schedule_thread(main_thread);
+
+  m_watchdog = std::make_unique<WatchDog>(runtime);
 }
 
 Scheduler::~Scheduler() {
@@ -101,6 +103,8 @@ void Scheduler::join() {
     worker->join();
     CHECK(worker->state() == Worker::State::Exited);
   }
+
+  m_watchdog->join();
 }
 
 Thread* Scheduler::get_free_thread() {

@@ -107,10 +107,10 @@ void GarbageCollector::main() {
 
     collection_time_sum += utils::TimedSection::run("GC collection", [&] {
       determine_collection_mode();
-      if (kIsDebugBuild)
+      if constexpr (kIsDebugBuild)
         validate_heap_and_roots();
       collect();
-      if (kIsDebugBuild)
+      if constexpr (kIsDebugBuild)
         validate_heap_and_roots();
     });
     collection_count++;

@@ -34,6 +34,7 @@
 #include "charly/core/runtime/processor.h"
 #include "charly/core/runtime/thread.h"
 #include "charly/core/runtime/worker.h"
+#include "charly/core/runtime/watchdog.h"
 
 #pragma once
 
@@ -58,6 +59,7 @@ class GarbageCollector;
 class Scheduler {
   friend class GarbageCollector;
   friend class Runtime;
+  friend class WatchDog;
 public:
   explicit Scheduler(Runtime* runtime);
   ~Scheduler();
@@ -110,6 +112,8 @@ private:
 
 private:
   Runtime* m_runtime;
+
+  std::unique_ptr<WatchDog> m_watchdog;
 
   std::vector<Worker*> m_workers;
   std::vector<Processor*> m_processors;

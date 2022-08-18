@@ -69,7 +69,7 @@ public:
   }
 
   void clear() {
-    if (kIsDebugBuild) {
+    if constexpr (kIsDebugBuild) {
       std::memset(m_buffer.data(), 0, m_buffer.size());
     }
   }
@@ -133,6 +133,9 @@ public:
     Aborted   // thread has aborted, runtime should terminate all other threads too
   };
 
+  static constexpr size_t kNeverScheduledTimestamp = 0;
+  static constexpr size_t kShouldYieldToSchedulerTimestamp = 1;
+
   // getters / setters
   size_t id() const;
   State state() const;
@@ -140,8 +143,8 @@ public:
   RawValue fiber() const;
   Worker* worker() const;
   Runtime* runtime() const;
-  uint64_t last_scheduled_at() const;
-  bool has_exceeded_timeslice() const;
+  size_t last_scheduled_at() const;
+  bool set_last_scheduled_at(size_t old_timestamp, size_t timestamp);
   const Stack* stack() const;
   ThreadLocalHandles* handles();
   Frame* frame() const;
@@ -225,7 +228,7 @@ private:
   int32_t m_exit_code;
   RawValue m_fiber;
   Worker* m_worker;
-  size_t m_last_scheduled_at;
+  atomic<size_t> m_last_scheduled_at;
   fcontext_t m_context;
 
   ThreadLocalHandles m_handles;

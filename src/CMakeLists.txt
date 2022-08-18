@@ -25,6 +25,7 @@ file(GLOB charlycore_SRC
         "charly/core/runtime/processor.cpp"
         "charly/core/runtime/runtime.cpp"
         "charly/core/runtime/scheduler.cpp"
+        "charly/core/runtime/watchdog.cpp"
         "charly/core/runtime/thread.cpp"
         "charly/core/runtime/worker.cpp"
         "charly/core/runtime/builtins/core.cpp"
