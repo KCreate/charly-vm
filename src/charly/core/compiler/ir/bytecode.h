@@ -42,7 +42,7 @@ namespace charly::core::compiler::ir {
 
 // TODO: reserve space in constant table for bytecodes whose quickened version has to store a value
 
-static const size_t kInstructionLength = 4;
+constexpr size_t kInstructionLength = 4;
 
 // opcode types
 #define FOREACH_OPCODE_TYPE(V) \
@@ -670,20 +670,20 @@ FOREACH_OPCODE(DEF_FORWARD)
 #undef DEF_FORWARD
 
 struct Instruction {
-  static const uint32_t kOpcodeMask = 0x000000ff;
-  static const uint32_t kArg1Mask = 0x0000ff00;
-  static const uint32_t kArg2Mask = 0x00ff0000;
-  static const uint32_t kArg3Mask = 0xff000000;
-  static const uint32_t kArgBBMask = 0xffff0000;
-  static const uint32_t kArgAAMask = 0x00ffff00;
-  static const uint32_t kArgAAAMask = 0xffffff00;
-  static const uint32_t kOpcodeShift = 0;
-  static const uint32_t kArg1Shift = 8;
-  static const uint32_t kArg2Shift = 16;
-  static const uint32_t kArg3Shift = 24;
-  static const uint32_t kArgBBShift = 16;
-  static const uint32_t kArgAAShift = 8;
-  static const uint32_t kArgAAAShift = 8;
+  static constexpr uint32_t kOpcodeMask = 0x000000ff;
+  static constexpr uint32_t kArg1Mask = 0x0000ff00;
+  static constexpr uint32_t kArg2Mask = 0x00ff0000;
+  static constexpr uint32_t kArg3Mask = 0xff000000;
+  static constexpr uint32_t kArgBBMask = 0xffff0000;
+  static constexpr uint32_t kArgAAMask = 0x00ffff00;
+  static constexpr uint32_t kArgAAAMask = 0xffffff00;
+  static constexpr uint32_t kOpcodeShift = 0;
+  static constexpr uint32_t kArg1Shift = 8;
+  static constexpr uint32_t kArg2Shift = 16;
+  static constexpr uint32_t kArg3Shift = 24;
+  static constexpr uint32_t kArgBBShift = 16;
+  static constexpr uint32_t kArgAAShift = 8;
+  static constexpr uint32_t kArgAAAShift = 8;
 
   uint32_t raw;
 

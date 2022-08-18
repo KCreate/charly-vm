@@ -74,7 +74,7 @@ inline ref<T> cast(ref<O> node) {
   return std::dynamic_pointer_cast<T>(node);
 }
 
-static const size_t kPointerSize = sizeof(uintptr_t);
+constexpr size_t kPointerSize = sizeof(uintptr_t);
 
 inline uint64_t get_steady_timestamp() {
   auto now = std::chrono::steady_clock::now();
@@ -87,32 +87,32 @@ B bitcast(A&& value) {
   return *reinterpret_cast<B*>(&value);
 }
 
-static const int64_t kInt32Min = -2147483647 - 1;
-static const int64_t kInt32Max = 2147483647;
-static const int64_t kInt24Min = -8388607 - 1;
-static const int64_t kInt24Max = 8388607;
-static const int64_t kInt16Min = -32767 - 1;
-static const int64_t kInt16Max = 32767;
-static const int64_t kInt8Min = -127 - 1;
-static const int64_t kInt8Max = 127;
+constexpr int64_t kInt32Min = -2147483647 - 1;
+constexpr int64_t kInt32Max = 2147483647;
+constexpr int64_t kInt24Min = -8388607 - 1;
+constexpr int64_t kInt24Max = 8388607;
+constexpr int64_t kInt16Min = -32767 - 1;
+constexpr int64_t kInt16Max = 32767;
+constexpr int64_t kInt8Min = -127 - 1;
+constexpr int64_t kInt8Max = 127;
 
-static const uint64_t kUInt32Min = 0;
-static const uint64_t kUInt32Max = 0xffffffff;
-static const uint64_t kUInt24Min = 0;
-static const uint64_t kUInt24Max = 0x00ffffff;
-static const uint64_t kUInt16Min = 0;
-static const uint64_t kUInt16Max = 0x0000ffff;
-static const uint64_t kUInt8Min = 0;
-static const uint64_t kUInt8Max = 0x000000ff;
+constexpr uint64_t kUInt32Min = 0;
+constexpr uint64_t kUInt32Max = 0xffffffff;
+constexpr uint64_t kUInt24Min = 0;
+constexpr uint64_t kUInt24Max = 0x00ffffff;
+constexpr uint64_t kUInt16Min = 0;
+constexpr uint64_t kUInt16Max = 0x0000ffff;
+constexpr uint64_t kUInt8Min = 0;
+constexpr uint64_t kUInt8Max = 0x000000ff;
 
-static const size_t kKb = 1024;
-static const size_t kMb = kKb * 1024;
-static const size_t kGb = kMb * 1024;
+constexpr size_t kKb = 1024;
+constexpr size_t kMb = kKb * 1024;
+constexpr size_t kGb = kMb * 1024;
 
 #ifdef NDEBUG
-static constexpr bool kIsDebugBuild = false;
+constexpr bool kIsDebugBuild = false;
 #else
-static constexpr bool kIsDebugBuild = true;
+constexpr bool kIsDebugBuild = true;
 #endif
 
 }  // namespace charly

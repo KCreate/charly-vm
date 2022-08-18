@@ -68,7 +68,7 @@ public:
   static UnparkResult unpark_one(uintptr_t address);
 
 private:
-  static const size_t kInitialBucketCount = 1;
+  static constexpr size_t kInitialBucketCount = 1;
   using ThreadQueueTable = std::vector<atomic<ParkingLotThreadQueue*>>;
 
   bool park_impl(uintptr_t address, const std::function<bool()>& validation);

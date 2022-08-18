@@ -50,7 +50,7 @@ class GarbageCollector;
 using fcontext_t = boost::context::detail::fcontext_t;
 using transfer_t = boost::context::detail::transfer_t;
 
-static const size_t kThreadStackSize = 1024 * 1024 * 8;
+constexpr size_t kThreadStackSize = 1024 * 1024 * 8;
 
 class Stack {
 public:

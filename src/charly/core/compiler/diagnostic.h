@@ -199,7 +199,7 @@ public:
 private:
   CHARLY_NON_COPYABLE(DiagnosticConsole);
 
-  static const size_t kMaximumMessageCount = 256;
+  static constexpr size_t kMaximumMessageCount = 256;
   void check_max_messages() {
     if (m_messages.size() > kMaximumMessageCount) {
       gfatal("reached maximum message count");

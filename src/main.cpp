@@ -74,12 +74,14 @@ int32_t cli(DiagnosticConsole& console) {
     debuglnf_notime("# %heap.h%", termcolor::yellow, termcolor::reset);
     debuglnf_notime("kHeapSize                     = %", kHeapSize);
     debuglnf_notime("kHeapRegionSize               = %", kHeapRegionSize);
-    debuglnf_notime("kHeapRegionUsableSize         = %", kHeapRegionUsableSize);
     debuglnf_notime("kHeapRegionCount              = %", kHeapRegionCount);
     debuglnf_notime("kHeapMinimumMappedRegionCount = %", kHeapMinimumMappedRegionCount);
     debuglnf_notime("kHeapRegionSpanSize           = %", kHeapRegionSpanSize);
     debuglnf_notime("kHeapRegionSpanCount          = %", kHeapRegionSpanCount);
+    debuglnf_notime("kHeapRegionUsableSize         = %", kHeapRegionUsableSize);
     debuglnf_notime("kPageSize                     = %", kPageSize);
+    debuglnf_notime("kHeapGrowthFactor             = %", kHeapGrowthFactor);
+    debuglnf_notime("kHeapShrinkFactor             = %", kHeapShrinkFactor);
     debuglnf_notime("");
 
     debuglnf_notime("# %interpreter.h%", termcolor::yellow, termcolor::reset);
@@ -98,13 +100,17 @@ int32_t cli(DiagnosticConsole& console) {
     debuglnf_notime("");
 
     debuglnf_notime("# %value.h%", termcolor::yellow, termcolor::reset);
-    debuglnf_notime("RawInstance::kSize   = %", RawInstance::kSize);
-    debuglnf_notime("RawHugeBytes::kSize  = %", RawHugeBytes::kSize);
-    debuglnf_notime("RawHugeString::kSize = %", RawHugeString::kSize);
-    debuglnf_notime("RawClass::kSize      = %", RawClass::kSize);
-    debuglnf_notime("RawShape::kSize      = %", RawShape::kSize);
-    debuglnf_notime("RawFunction::kSize   = %", RawFunction::kSize);
-    debuglnf_notime("RawFiber::kSize      = %", RawFiber::kSize);
+    debuglnf_notime("RawInstance::kFieldCount        = %", RawInstance::kFieldCount);
+    debuglnf_notime("RawHugeBytes::kFieldCount       = %", RawHugeBytes::kFieldCount);
+    debuglnf_notime("RawHugeString::kFieldCount      = %", RawHugeString::kFieldCount);
+    debuglnf_notime("RawClass::kFieldCount           = %", RawClass::kFieldCount);
+    debuglnf_notime("RawShape::kFieldCount           = %", RawShape::kFieldCount);
+    debuglnf_notime("RawFunction::kFieldCount        = %", RawFunction::kFieldCount);
+    debuglnf_notime("RawBuiltinFunction::kFieldCount = %", RawBuiltinFunction::kFieldCount);
+    debuglnf_notime("RawFiber::kFieldCount           = %", RawFiber::kFieldCount);
+    debuglnf_notime("RawFuture::kFieldCount          = %", RawFuture::kFieldCount);
+    debuglnf_notime("RawException::kFieldCount       = %", RawException::kFieldCount);
+    debuglnf_notime("RawImportException::kFieldCount = %", RawImportException::kFieldCount);
     debuglnf_notime("");
 
     debuglnf_notime("# %sizeof%", termcolor::yellow, termcolor::reset);

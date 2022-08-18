@@ -33,7 +33,7 @@ using Color = charly::utils::Color;
 
 namespace charly::core::compiler {
 
-static const uint32_t kDiagnosticContextRows = 3;
+constexpr uint32_t kDiagnosticContextRows = 3;
 
 DiagnosticConsole::DiagnosticConsole(const std::string& filepath, const utils::Buffer& buffer) : m_filepath(filepath) {
   std::string source = buffer.str();

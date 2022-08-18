@@ -40,7 +40,7 @@
 namespace charly::utils {
 
 class Buffer : public std::iostream, protected std::streambuf {
-  static const size_t kDefaultCapacity = 32;
+  static constexpr size_t kDefaultCapacity = 32;
 
 public:
   explicit Buffer(size_t initial_capacity = kDefaultCapacity) :

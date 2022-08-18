@@ -40,17 +40,17 @@
 namespace charly::core::runtime {
 
 // chance that a processor will acquire from the global queue instead of the local queue
-static const uint32_t kGlobalRunQueuePriorityChance = 32;
+constexpr uint32_t kGlobalRunQueuePriorityChance = 32;
 
 // the maximum amount of milliseconds a worker should spend in its idle phase before checking
 // if there are any work available
-static const uint32_t kWorkerMaximumIdleSleepDuration = 1000;
+constexpr uint32_t kWorkerMaximumIdleSleepDuration = 1000;
 
 // the maximum amount of threads to be queued in each workers local run queue
-static const uint64_t kLocalRunQueueMaxSize = 256;
+constexpr uint64_t kLocalRunQueueMaxSize = 256;
 
 // milliseconds each thread can run before having to yield back control
-static const uint64_t kThreadTimeslice = 10;
+constexpr uint64_t kThreadTimeslice = 10;
 
 class Runtime;
 class GarbageCollector;

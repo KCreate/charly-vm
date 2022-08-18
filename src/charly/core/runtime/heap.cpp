@@ -227,7 +227,7 @@ HeapRegion* Heap::acquire_region(Thread* thread, HeapRegion::Type type) {
 
   HeapRegion* region = pop_free_region();
   if (region == nullptr) {
-    for (size_t attempt = 0; attempt < kGarbageCollectionAttempts; attempt++) {
+    for (size_t attempt = 0; attempt < kGCCollectionAttempts; attempt++) {
       locker.unlock();
       m_runtime->gc()->perform_gc(thread);
       locker.lock();

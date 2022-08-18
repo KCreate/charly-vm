@@ -96,7 +96,7 @@ private:
   ref<Block> m_block_ast;
 };
 
-static const ir::VariableId kInvalidVariableId = 0;
+constexpr ir::VariableId kInvalidVariableId = 0;
 
 class VariableAnalyzer {
 public:

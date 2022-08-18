@@ -125,7 +125,7 @@ static_assert((size_t)ShapeId::kFirstUserDefinedShapeId == 30, "invalid first us
 // maps the lowest 4 bits of an immediate value to a shape id
 // this table is consulted after the runtime has determined that the value
 // is not a pointer to a heap object
-static const ShapeId kShapeImmediateTagMapping[16] = {
+constexpr ShapeId kShapeImmediateTagMapping[16] = {
   /* 0b0000 */ ShapeId::kInt,
   /* 0b0001 */ ShapeId::kMaxShapeCount,  // old heap objects
   /* 0b0010 */ ShapeId::kInt,
@@ -239,9 +239,9 @@ private:
   // [ hashcode ] : 4 bytes : 32 bits : 12 bytes
   // [ forward  ] : 4 bytes : 32 bits : 16 bytes
 
-  static const uint32_t kMaskShape = 0x00FFFFFF;
-  static const uint32_t kMaskSurvivorCount = 0xFF000000;
-  static const uint32_t kShiftSurvivorCount = 24;
+  static constexpr uint32_t kMaskShape = 0x00FFFFFF;
+  static constexpr uint32_t kMaskSurvivorCount = 0xFF000000;
+  static constexpr uint32_t kShiftSurvivorCount = 24;
 
   atomic<uint32_t> m_shape_id_and_survivor_count;  // shape id and survivor count
   atomic<uint16_t> m_count;                        // count field
@@ -254,8 +254,8 @@ private:
   atomic<size_t> m_magic1;
   atomic<size_t> m_magic2;
 
-  static const size_t kMagicNumber1 = 0xcafebeefdeadbeef;
-  static const size_t kMagicNumber2 = 0x1234abcd5678a1a1;
+  static constexpr size_t kMagicNumber1 = 0xcafebeefdeadbeef;
+  static constexpr size_t kMagicNumber2 = 0x1234abcd5678a1a1;
 #endif
 
 public:
@@ -268,9 +268,9 @@ public:
   }
 };
 
-static const size_t kObjectAlignment = 16;
-static const size_t kObjectHeaderMaxCount = 0xffff;
-static const size_t kObjectHeaderMaxSurvivorCount = 0xff;
+constexpr size_t kObjectAlignment = 16;
+constexpr size_t kObjectHeaderMaxCount = 0xffff;
+constexpr size_t kObjectHeaderMaxSurvivorCount = 0xff;
 
 static_assert((sizeof(ObjectHeader) % kObjectAlignment == 0), "invalid object header size");
 
@@ -379,34 +379,34 @@ public:
 #undef TYPECHECK
 
   // tag masks
-  static const uintptr_t kMaskInt = 0x1;
-  static const uintptr_t kMaskImmediate = 0x0f;
-  static const uintptr_t kMaskLowByte = 0xff;
-  static const uintptr_t kMaskLength = 0xf0;
+  static constexpr uintptr_t kMaskInt = 0x1;
+  static constexpr uintptr_t kMaskImmediate = 0x0f;
+  static constexpr uintptr_t kMaskLowByte = 0xff;
+  static constexpr uintptr_t kMaskLength = 0xf0;
 
   // tag bits
-  static const uintptr_t kTagInt = 0;
-  static const uintptr_t kTagOldObject = 0b0001;
-  static const uintptr_t kTagYoungObject = 0b0011;
-  static const uintptr_t kTagFloat = 0b0101;
-  static const uintptr_t kTagBool = 0b0111;
-  static const uintptr_t kTagSymbol = 0b1001;
-  static const uintptr_t kTagNull = 0b1011;
-  static const uintptr_t kTagErrorOk = ((int)ErrorId::kErrorOk << 4) | kTagNull;
-  static const uintptr_t kTagErrorException = ((int)ErrorId::kErrorException << 4) | kTagNull;
-  static const uintptr_t kTagErrorNotFound = ((int)ErrorId::kErrorNotFound << 4) | kTagNull;
-  static const uintptr_t kTagErrorOutOfBounds = ((int)ErrorId::kErrorOutOfBounds << 4) | kTagNull;
-  static const uintptr_t kTagErrorReadOnly = ((int)ErrorId::kErrorReadOnly << 4) | kTagNull;
-  static const uintptr_t kTagErrorNoBaseClass = ((int)ErrorId::kErrorNoBaseClass << 4) | kTagNull;
-  static const uintptr_t kTagSmallString = 0b1101;
-  static const uintptr_t kTagSmallBytes = 0b1111;
+  static constexpr uintptr_t kTagInt = 0;
+  static constexpr uintptr_t kTagOldObject = 0b0001;
+  static constexpr uintptr_t kTagYoungObject = 0b0011;
+  static constexpr uintptr_t kTagFloat = 0b0101;
+  static constexpr uintptr_t kTagBool = 0b0111;
+  static constexpr uintptr_t kTagSymbol = 0b1001;
+  static constexpr uintptr_t kTagNull = 0b1011;
+  static constexpr uintptr_t kTagErrorOk = ((int)ErrorId::kErrorOk << 4) | kTagNull;
+  static constexpr uintptr_t kTagErrorException = ((int)ErrorId::kErrorException << 4) | kTagNull;
+  static constexpr uintptr_t kTagErrorNotFound = ((int)ErrorId::kErrorNotFound << 4) | kTagNull;
+  static constexpr uintptr_t kTagErrorOutOfBounds = ((int)ErrorId::kErrorOutOfBounds << 4) | kTagNull;
+  static constexpr uintptr_t kTagErrorReadOnly = ((int)ErrorId::kErrorReadOnly << 4) | kTagNull;
+  static constexpr uintptr_t kTagErrorNoBaseClass = ((int)ErrorId::kErrorNoBaseClass << 4) | kTagNull;
+  static constexpr uintptr_t kTagSmallString = 0b1101;
+  static constexpr uintptr_t kTagSmallBytes = 0b1111;
 
   // right shift amounts to decode values
-  static const int kShiftInt = 1;
-  static const int kShiftBool = 8;
-  static const int kShiftSymbol = 32;
-  static const int kShiftError = 4;
-  static const int kShiftLength = 4;
+  static constexpr int kShiftInt = 1;
+  static constexpr int kShiftBool = 8;
+  static constexpr int kShiftSymbol = 32;
+  static constexpr int kShiftError = 4;
+  static constexpr int kShiftLength = 4;
 
   template <typename T>
   T rawCast() const {
@@ -438,11 +438,11 @@ public:
 
   static bool is_valid(int64_t value);
 
-  inline static const int64_t kMinValue = -(int64_t{ 1 } << 62);
-  inline static const int64_t kMaxValue = (int64_t{ 1 } << 62) - 1;
+  static constexpr int64_t kMinValue = -(int64_t{ 1 } << 62);
+  static constexpr int64_t kMaxValue = (int64_t{ 1 } << 62) - 1;
 
   // uppermost bit of an external pointer must be 0
-  static const size_t kExternalPointerValidationMask = 0x8000000000000000;
+  static constexpr size_t kExternalPointerValidationMask = 0x8000000000000000;
 };
 static const RawInt kZero = RawInt::make(0);
 static const RawInt kOne = RawInt::make(1);
@@ -512,7 +512,7 @@ public:
   static RawSmallString make_from_memory(const char* value, size_t length);
   static RawSmallString make_empty();
 
-  static const size_t kMaxLength = 7;
+  static constexpr size_t kMaxLength = 7;
 };
 static const RawSmallString kEmptyString = RawSmallString::make_empty();
 
@@ -528,7 +528,7 @@ public:
   static RawSmallBytes make_from_memory(const uint8_t* value, size_t length);
   static RawSmallBytes make_empty();
 
-  static const size_t kMaxLength = 7;
+  static constexpr size_t kMaxLength = 7;
 };
 static const RawSmallBytes kEmptyBytes = RawSmallBytes::make_empty();
 
@@ -689,8 +689,7 @@ public:
     kFieldCount
   };
 
-  static const size_t kMaximumFieldCount = 256;
-  static const size_t kSize = kFieldCount * kPointerSize;
+  static constexpr size_t kMaximumFieldCount = 256;
 };
 
 // bytes stored on c++ heap
@@ -711,7 +710,6 @@ public:
     kDataLengthOffset,
     kFieldCount
   };
-  static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
 };
 
 // string stored on c++ heap
@@ -732,7 +730,6 @@ public:
     kDataLengthOffset,
     kFieldCount
   };
-  static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
 };
 
 // class
@@ -783,7 +780,6 @@ public:
     kConstructorOffset,
     kFieldCount
   };
-  static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
 };
 
 // instance shape
@@ -848,7 +844,6 @@ public:
     kAdditionsOffset,
     kFieldCount
   };
-  static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
 };
 
 // function with bound context and bytecode
@@ -893,7 +888,6 @@ public:
     kSharedInfoOffset,
     kFieldCount
   };
-  static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
 };
 
 // builtin function implemented in c++
@@ -918,7 +912,6 @@ public:
     kArgcOffset,
     kFieldCount
   };
-  static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
 };
 
 // runtime fiber
@@ -950,7 +943,6 @@ public:
     kResultFutureOffset,
     kFieldCount
   };
-  static const size_t kSize = RawInstance::kSize + kFieldCount * kPointerSize;
 };
 
 class RawFuture : public RawInstance {
@@ -976,7 +968,6 @@ public:
     kExceptionOffset,
     kFieldCount
   };
-  static const size_t kSize = kFieldCount * kPointerSize;
 };
 
 // user exception instance
@@ -999,7 +990,6 @@ public:
     kCauseOffset,
     kFieldCount
   };
-  static const size_t kSize = kFieldCount * kPointerSize;
 };
 
 // import exception instance
@@ -1014,7 +1004,6 @@ public:
     kErrorsOffset = RawException::kFieldCount,
     kFieldCount
   };
-  static const size_t kSize = kFieldCount * kPointerSize;
 };
 
 }  // namespace charly::core::runtime

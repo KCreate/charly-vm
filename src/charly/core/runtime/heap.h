@@ -41,21 +41,19 @@ namespace charly::core::runtime {
 
 class Runtime;
 
-static const size_t kHeapSize = kGb * 64;
-static const size_t kHeapRegionSize = kKb * 512;
-static const size_t kHeapRegionCount = kHeapSize / kHeapRegionSize;
-static const size_t kHeapMinimumMappedRegionCount = 32;
+constexpr size_t kHeapSize = kGb * 64;
+constexpr size_t kHeapRegionSize = kKb * 512;
+constexpr size_t kHeapRegionCount = kHeapSize / kHeapRegionSize;
+constexpr size_t kHeapMinimumMappedRegionCount = 32;
 
-static const size_t kHeapRegionSpanSize = kKb;
-static const size_t kHeapRegionSpanCount = kHeapRegionSize / kHeapRegionSpanSize;
+constexpr size_t kHeapRegionSpanSize = kKb;
+constexpr size_t kHeapRegionSpanCount = kHeapRegionSize / kHeapRegionSpanSize;
 
-static const uintptr_t kHeapRegionPointerMask = ~(kHeapRegionSize - 1);
-static const uintptr_t kHeapRegionMagicNumber = 0xdeadbeefcafebabe;
+constexpr uintptr_t kHeapRegionPointerMask = ~(kHeapRegionSize - 1);
+constexpr uintptr_t kHeapRegionMagicNumber = 0xdeadbeefcafebabe;
 
-static const size_t kGarbageCollectionAttempts = 4;
-
-static const float kHeapGrowthFactor = 1.5f;
-static const float kHeapShrinkFactor = 0.5f;
+constexpr float kHeapGrowthFactor = 1.5f;
+constexpr float kHeapShrinkFactor = 0.5f;
 
 class Heap;
 
@@ -127,13 +125,13 @@ static_assert(offsetof(HeapRegion, buffer) % kObjectAlignment == 0);
 static_assert(offsetof(HeapRegion, buffer) == sizeof(HeapRegion));
 
 // the first couple region spans are taken up by the heap region metadata
-static const size_t kHeapRegionFirstUsableSpanIndex = sizeof(HeapRegion) / kHeapRegionSpanSize;
+constexpr size_t kHeapRegionFirstUsableSpanIndex = sizeof(HeapRegion) / kHeapRegionSpanSize;
 
 // amount of bytes that can be used in a heap region
-static const size_t kHeapRegionUsableSize = kHeapRegionSize - sizeof(HeapRegion);
+constexpr size_t kHeapRegionUsableSize = kHeapRegionSize - sizeof(HeapRegion);
 
 // usable size for object payloads (size excluding object header)
-static const size_t kHeapRegionUsableSizeForPayload = kHeapRegionUsableSize - sizeof(ObjectHeader);
+constexpr size_t kHeapRegionUsableSizeForPayload = kHeapRegionUsableSize - sizeof(ObjectHeader);
 
 class ThreadAllocationBuffer;
 class GarbageCollector;

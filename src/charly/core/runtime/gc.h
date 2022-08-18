@@ -41,13 +41,17 @@ namespace charly::core::runtime {
 class Runtime;
 class Thread;
 
-static const size_t kGCObjectMaxSurvivorCount = 15;
+constexpr size_t kGCObjectMaxSurvivorCount = 15;
 
 // if the time elapsed since the last collection is below this threshold, grow the heap
-static const size_t kGCHeapGrowTimeThreshold = 1000 * 5;
+constexpr size_t kGCHeapGrowTimeThreshold = 1000 * 5;
 
 // if the time elapsed since the last collection is above this threshold, shrink the heap
-static const size_t kGCHeapShrinkTimeThreshold = 1000 * 30;
+constexpr size_t kGCHeapShrinkTimeThreshold = 1000 * 30;
+
+// if a thread fails to retrieve a free region, repeatedly invoke the garbage collector
+// if after this many attempts, there are still no free regions, crash with an out of memory error
+constexpr size_t kGCCollectionAttempts = 4;
 
 class GarbageCollector {
   friend class Heap;
