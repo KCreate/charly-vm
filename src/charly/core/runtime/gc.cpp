@@ -37,7 +37,7 @@ GarbageCollector::GarbageCollector(Runtime* runtime) :
   m_runtime(runtime),
   m_heap(runtime->heap()),
   m_collection_mode(CollectionMode::Minor),
-  m_last_collection_time(get_steady_timestamp_milli()),
+  m_last_collection_time(get_steady_timestamp()),
   m_gc_cycle(1),
   m_has_initialized(false),
   m_wants_collection(false),
@@ -107,10 +107,10 @@ void GarbageCollector::main() {
 
     collection_time_sum += utils::TimedSection::run("GC collection", [&] {
       determine_collection_mode();
-      if (!kIsDebugBuild)
+      if (kIsDebugBuild)
         validate_heap_and_roots();
       collect();
-      if (!kIsDebugBuild)
+      if (kIsDebugBuild)
         validate_heap_and_roots();
     });
     collection_count++;
@@ -118,7 +118,7 @@ void GarbageCollector::main() {
     DCHECK(m_mark_queue.empty());
     m_target_intermediate_regions.clear();
     m_target_old_regions.clear();
-    m_last_collection_time = get_steady_timestamp_milli();
+    m_last_collection_time = get_steady_timestamp();
     m_gc_cycle++;
     m_wants_collection = false;
     m_cv.notify_all();
@@ -243,7 +243,7 @@ void GarbageCollector::collect() {
     proc->tab()->m_region = nullptr;
   }
 
-  size_t current_time = get_steady_timestamp_milli();
+  size_t current_time = get_steady_timestamp();
   size_t time_passed_since_last_collection = current_time - m_last_collection_time;
 
   if (time_passed_since_last_collection > kGCHeapShrinkTimeThreshold) {

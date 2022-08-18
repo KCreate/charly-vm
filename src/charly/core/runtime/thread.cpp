@@ -98,7 +98,7 @@ uint64_t Thread::last_scheduled_at() const {
 }
 
 bool Thread::has_exceeded_timeslice() const {
-  uint64_t timestamp_now = get_steady_timestamp_milli();
+  uint64_t timestamp_now = get_steady_timestamp();
   return timestamp_now - last_scheduled_at() >= kThreadTimeslice;
 }
 
@@ -176,7 +176,7 @@ void Thread::ready() {
 void Thread::context_switch(Worker* worker) {
   DCHECK(m_state == State::Ready);
   m_state.acas(State::Ready, State::Running);
-  m_last_scheduled_at = get_steady_timestamp_milli();
+  m_last_scheduled_at = get_steady_timestamp();
 
   if (m_stack == nullptr) {
     acquire_stack();

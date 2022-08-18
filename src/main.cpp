@@ -119,10 +119,10 @@ int32_t cli(DiagnosticConsole& console) {
     debuglnf_notime("");
   }
 
-  auto start_time = get_steady_timestamp_micro();
+  auto start_time = get_steady_timestamp();
   int32_t exit_code = Runtime::run();
-  auto end_time = get_steady_timestamp_micro();
-  debuglnf("program finished executing in %ms", (double)(end_time - start_time) / 1000);
+  auto end_time = get_steady_timestamp();
+  debuglnf("program finished executing in %ms", end_time - start_time);
 
   return exit_code;
 }

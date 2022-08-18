@@ -76,14 +76,9 @@ inline ref<T> cast(ref<O> node) {
 
 static const size_t kPointerSize = sizeof(uintptr_t);
 
-inline uint64_t get_steady_timestamp_milli() {
+inline uint64_t get_steady_timestamp() {
   auto now = std::chrono::steady_clock::now();
   return std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-}
-
-inline uint64_t get_steady_timestamp_micro() {
-  auto now = std::chrono::steady_clock::now();
-  return std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()).count();
 }
 
 // helper method to cast one type to another
