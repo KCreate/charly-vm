@@ -135,6 +135,7 @@ public:
 
   static constexpr size_t kNeverScheduledTimestamp = 0;
   static constexpr size_t kShouldYieldToSchedulerTimestamp = 1;
+  static constexpr size_t kFirstValidScheduledAtTimestamp = 2;
 
   // getters / setters
   size_t id() const;

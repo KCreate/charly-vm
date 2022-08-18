@@ -32,6 +32,8 @@
 
 namespace charly::core::runtime {
 
+using namespace std::chrono_literals;
+
 WatchDog::WatchDog(Runtime* runtime) :
   m_runtime(runtime),
   m_thread(std::thread(&WatchDog::main, this)),
@@ -50,25 +52,21 @@ void WatchDog::join() {
 }
 
 void WatchDog::main() {
-  using namespace std::chrono_literals;
+  auto* scheduler = m_runtime->scheduler();
 
   while (!m_runtime->wants_exit()) {
     m_clock = get_steady_timestamp();
 
-    auto* scheduler = m_runtime->scheduler();
     for (Worker* worker : scheduler->m_workers) {
       if (worker->state() == Worker::State::Running) {
-        auto* thread = worker->thread();
-        DCHECK(thread);
-        size_t last_scheduled_at = thread->last_scheduled_at();
-        DCHECK(last_scheduled_at != Thread::kNeverScheduledTimestamp);
-
-        if (last_scheduled_at != Thread::kShouldYieldToSchedulerTimestamp) {
-          size_t execution_time = m_clock - last_scheduled_at;
-          bool has_exceeded_timeslice = execution_time >= kThreadTimeslice;
-
-          if (has_exceeded_timeslice) {
-            thread->set_last_scheduled_at(last_scheduled_at, Thread::kShouldYieldToSchedulerTimestamp);
+        if (auto* thread = worker->thread()) {
+          size_t last_scheduled_at = thread->last_scheduled_at();
+          if (last_scheduled_at >= Thread::kFirstValidScheduledAtTimestamp && last_scheduled_at < m_clock) {
+            size_t execution_time = m_clock - last_scheduled_at;
+            bool has_exceeded_timeslice = execution_time >= kThreadTimeslice;
+            if (has_exceeded_timeslice) {
+              thread->set_last_scheduled_at(last_scheduled_at, Thread::kShouldYieldToSchedulerTimestamp);
+            }
           }
         }
       }

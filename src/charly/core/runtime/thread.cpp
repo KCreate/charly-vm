@@ -176,6 +176,7 @@ void Thread::context_switch(Worker* worker) {
   DCHECK(m_state == State::Ready);
   m_state.acas(State::Ready, State::Running);
   m_last_scheduled_at = get_steady_timestamp();
+  DCHECK(m_last_scheduled_at >= kFirstValidScheduledAtTimestamp);
 
   if (m_stack == nullptr) {
     acquire_stack();
