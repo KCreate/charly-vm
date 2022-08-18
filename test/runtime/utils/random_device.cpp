@@ -33,8 +33,8 @@ using namespace charly::utils;
 CATCH_TEST_CASE("RandomDevice") {
   RandomDevice device;
 
-  uint64_t a;
-  uint64_t b;
+  size_t a;
+  size_t b;
 
   a = device.get();
   b = device.get();

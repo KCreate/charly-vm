@@ -50,7 +50,7 @@ public:
 
   // getter / setter
   Runtime* runtime() const;
-  uint64_t id() const;
+  size_t id() const;
   bool is_live() const;
   void set_live(bool value);
   Worker* worker() const;
@@ -75,7 +75,7 @@ public:
 
 private:
   Runtime* m_runtime;
-  uint64_t m_id;
+  size_t m_id;
   bool m_live;
   atomic<Worker*> m_worker;
   std::unique_ptr<ThreadAllocationBuffer> m_tab;

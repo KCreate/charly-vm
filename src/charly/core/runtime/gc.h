@@ -108,7 +108,7 @@ private:
 
   size_t m_last_collection_time;
 
-  atomic<uint64_t> m_gc_cycle;
+  atomic<size_t> m_gc_cycle;
   atomic<bool> m_has_initialized;
   atomic<bool> m_wants_collection;
   atomic<bool> m_wants_exit;

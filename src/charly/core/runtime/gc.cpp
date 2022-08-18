@@ -63,7 +63,7 @@ void GarbageCollector::join() {
 }
 
 void GarbageCollector::perform_gc(Thread* thread) {
-  uint64_t old_gc_cycle = m_gc_cycle;
+  size_t old_gc_cycle = m_gc_cycle;
 
   DCHECK(m_has_initialized);
 

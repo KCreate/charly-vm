@@ -308,7 +308,7 @@ ShapeId RawValue::shape_id() const {
 }
 
 ShapeId RawValue::shape_id_not_object_int() const {
-  uint64_t table_index = m_raw & kMaskImmediate;
+  size_t table_index = m_raw & kMaskImmediate;
   DCHECK(table_index < 16);
   return kShapeImmediateTagMapping[table_index];
 }

@@ -31,7 +31,7 @@ namespace charly::core::runtime {
 
 using namespace std::chrono_literals;
 
-static atomic<uint64_t> worker_id_counter = 0;
+static atomic<size_t> worker_id_counter = 0;
 
 Worker::Worker(Runtime* runtime) :
   m_id(worker_id_counter++),
@@ -59,7 +59,7 @@ bool Worker::is_heap_safe_mode(State state) {
   }
 }
 
-uint64_t Worker::id() const {
+size_t Worker::id() const {
   return m_id;
 }
 
@@ -67,11 +67,11 @@ Worker::State Worker::state() const {
   return m_state;
 }
 
-uint64_t Worker::context_switch_counter() const {
+size_t Worker::context_switch_counter() const {
   return m_context_switch_counter;
 }
 
-uint64_t Worker::rand() {
+size_t Worker::rand() {
   return m_random_device.get();
 }
 

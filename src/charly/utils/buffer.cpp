@@ -169,7 +169,7 @@ void Buffer::hexdump(const char* buffer, size_t size, std::ostream& out, bool ab
     out << std::setfill('0');
     out << std::right;
     if (absolute) {
-      out << (uint64_t)(uintptr_t)buffer + offset;
+      out << (size_t)(uintptr_t)buffer + offset;
     } else {
       out << offset;
     }

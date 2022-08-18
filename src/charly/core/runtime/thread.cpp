@@ -44,7 +44,7 @@ using namespace std::chrono_literals;
 
 namespace fs = std::filesystem;
 
-static atomic<uint64_t> thread_id_counter = 0;
+static atomic<size_t> thread_id_counter = 0;
 
 thread_local static Thread* g_thread = nullptr;
 
@@ -69,7 +69,7 @@ void Thread::set_current(Thread* thread) {
   g_thread = thread;
 }
 
-uint64_t Thread::id() const {
+size_t Thread::id() const {
   return m_id;
 }
 
@@ -93,7 +93,7 @@ Runtime* Thread::runtime() const {
   return m_runtime;
 }
 
-uint64_t Thread::last_scheduled_at() const {
+size_t Thread::last_scheduled_at() const {
   return m_last_scheduled_at;
 }
 

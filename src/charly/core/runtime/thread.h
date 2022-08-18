@@ -119,9 +119,9 @@ public:
   static Thread* current();
   static void set_current(Thread* worker);
 
-  static constexpr uint64_t kMainThreadId = 0;
+  static constexpr size_t kMainThreadId = 0;
 
-  static constexpr uint64_t kExceptionChainDepthLimit = 20;
+  static constexpr size_t kExceptionChainDepthLimit = 20;
 
   enum class State {
     Free,     // thread sits on a freelist somewhere and isn't tied to a fiber yet
@@ -134,7 +134,7 @@ public:
   };
 
   // getters / setters
-  uint64_t id() const;
+  size_t id() const;
   State state() const;
   int32_t exit_code() const;
   RawValue fiber() const;
@@ -217,7 +217,7 @@ private:
   void dump_exception_trace(RawException exception) const;
 
 private:
-  uint64_t m_id;
+  size_t m_id;
   atomic<State> m_state;
   Stack* m_stack;
   Runtime* m_runtime;
@@ -225,7 +225,7 @@ private:
   int32_t m_exit_code;
   RawValue m_fiber;
   Worker* m_worker;
-  uint64_t m_last_scheduled_at;
+  size_t m_last_scheduled_at;
   fcontext_t m_context;
 
   ThreadLocalHandles m_handles;

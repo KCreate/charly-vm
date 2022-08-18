@@ -76,10 +76,10 @@ public:
   static bool is_heap_safe_mode(State state);
 
   // getter / setter
-  uint64_t id() const;
+  size_t id() const;
   State state() const;
-  uint64_t context_switch_counter() const;
-  uint64_t rand();
+  size_t context_switch_counter() const;
+  size_t rand();
   fcontext_t& context();
   void set_context(fcontext_t& context);
 
@@ -134,9 +134,9 @@ private:
   void reset_sleep_duration();
 
 private:
-  uint64_t m_id;
+  size_t m_id;
   atomic<State> m_state;
-  uint64_t m_context_switch_counter;
+  size_t m_context_switch_counter;
   uint32_t m_idle_sleep_duration;
   utils::RandomDevice m_random_device;
   fcontext_t m_context;

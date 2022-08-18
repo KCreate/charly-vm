@@ -35,8 +35,8 @@ class RandomDevice {
 public:
   RandomDevice() : m_state(std::time(nullptr)) {}
 
-  uint64_t get() {
-    uint64_t x = m_state;
+  size_t get() {
+    size_t x = m_state;
     x ^= x << 13;
     x ^= x >> 7;
     x ^= x << 17;
@@ -45,7 +45,7 @@ public:
   }
 
 private:
-  uint64_t m_state;
+  size_t m_state;
 };
 
 }  // namespace charly::utils

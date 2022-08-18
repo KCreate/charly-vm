@@ -29,7 +29,7 @@
 
 namespace charly::core::runtime {
 
-static atomic<uint64_t> processor_id_counter = 0;
+static atomic<size_t> processor_id_counter = 0;
 
 Processor::Processor(Runtime* runtime) :
   m_runtime(runtime),
@@ -42,7 +42,7 @@ Runtime* Processor::runtime() const {
   return m_runtime;
 }
 
-uint64_t Processor::id() const {
+size_t Processor::id() const {
   return m_id;
 }
 
