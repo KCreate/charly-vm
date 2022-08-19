@@ -50,10 +50,11 @@ constexpr float kGCFreeToMappedRatioMajorTrigger = 0.25f;
 constexpr size_t kGCForceMajorGCEachNthCycle = 16;
 
 // if the time elapsed since the last collection is below this threshold, grow the heap
-constexpr size_t kGCHeapGrowTimeThreshold = 1000 * 5;
+constexpr size_t kGCHeapGrowTimeMajorThreshold = 1000 * 5;
+constexpr size_t kGCHeapGrowTimeMinorThreshold = 500;
 
 // if the time elapsed since the last collection is above this threshold, shrink the heap
-constexpr size_t kGCHeapShrinkTimeThreshold = 1000 * 30;
+constexpr size_t kGCHeapShrinkTimeMajorThreshold = 1000 * 30;
 
 // if a thread fails to retrieve a free region, repeatedly invoke the garbage collector
 // if after this many attempts, there are still no free regions, crash with an out of memory error

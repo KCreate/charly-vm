@@ -147,9 +147,7 @@ void GarbageCollector::collect() {
   deallocate_heap_ressources();
   recycle_collected_regions();
 
-  if (m_collection_mode == CollectionMode::Major) {
-    adjust_heap();
-  }
+  adjust_heap();
 }
 
 void GarbageCollector::mark_live_objects() {
@@ -509,10 +507,17 @@ void GarbageCollector::recycle_collected_regions() const {
 void GarbageCollector::adjust_heap() const {
   size_t current_time = get_steady_timestamp();
   size_t time_passed_since_last_collection = current_time - m_last_collection_time;
-  if (time_passed_since_last_collection > kGCHeapShrinkTimeThreshold) {
-    m_heap->shrink_heap();
-  } else if (time_passed_since_last_collection < kGCHeapGrowTimeThreshold) {
-    m_heap->grow_heap();
+
+  if (m_collection_mode == CollectionMode::Major) {
+    if (time_passed_since_last_collection > kGCHeapShrinkTimeMajorThreshold) {
+      m_heap->shrink_heap();
+    } else if (time_passed_since_last_collection < kGCHeapGrowTimeMajorThreshold) {
+      m_heap->grow_heap();
+    }
+  } else {
+    if (time_passed_since_last_collection < kGCHeapGrowTimeMinorThreshold) {
+      m_heap->grow_heap();
+    }
   }
 }
 
