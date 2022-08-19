@@ -206,7 +206,7 @@ public:
   RawValue lookup_symbol(SYMBOL symbol) const;
 
   // allocate memory on the managed charly heap
-  uintptr_t allocate(size_t size);
+  uintptr_t allocate(size_t size, bool contains_external_heap_pointers = false);
 
 private:
   int32_t entry_main_thread();

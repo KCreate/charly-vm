@@ -73,6 +73,15 @@ bool is_user_shape(ShapeId shape_id) {
   return !is_builtin_shape(shape_id);
 }
 
+bool is_shape_with_external_heap_pointers(ShapeId shape_id) {
+  switch (shape_id) {
+    case ShapeId::kHugeString:
+    case ShapeId::kHugeBytes:
+    case ShapeId::kFuture: return true;
+    default: return false;
+  }
+}
+
 size_t align_to_size(size_t size, size_t alignment) {
   DCHECK(alignment > 0, "invalid alignment (%)", alignment);
 
@@ -242,8 +251,7 @@ RawObject ObjectHeader::forward_target() const {
   size_t offset = m_forward_target * kObjectAlignment;
   auto heap_base = bitcast<uintptr_t>(heap_region()->heap->heap_base());
   auto pointer = heap_base + offset;
-  auto* header = bitcast<ObjectHeader*>(pointer);
-  DCHECK(header->validate_magic_number());
+  auto* header = ObjectHeader::header_at_address(pointer);
   auto* region = header->heap_region();
   DCHECK(region->magic == kHeapRegionMagicNumber);
   return header->object();
@@ -1005,10 +1013,12 @@ size_t RawObject::count() const {
   return header()->count();
 }
 
+bool RawObject::contains_external_heap_pointers() const {
+  return is_shape_with_external_heap_pointers(shape_id());
+}
+
 ObjectHeader* RawObject::header() const {
-  auto* header = bitcast<ObjectHeader*>(base_address());
-  DCHECK(header->validate_magic_number());
-  return header;
+  return ObjectHeader::header_at_address(base_address());
 }
 
 void RawObject::lock() const {

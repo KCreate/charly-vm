@@ -71,7 +71,7 @@ struct HeapRegion {
   uint32_t id() const;
 
   // allocate block of memory
-  uintptr_t allocate(size_t size);
+  uintptr_t allocate(size_t size, bool contains_external_heap_pointers = false);
 
   // check if this region has enough space left for size bytes
   bool fits(size_t size) const;
@@ -118,6 +118,13 @@ struct HeapRegion {
   static constexpr size_t kSpanTableOffsetShift = 32;
   static constexpr size_t kSpanTableDirtyFlagMask = 0x1;
   std::array<size_t, kHeapRegionSpanCount> span_table;
+
+  // contains pointers to all objects (starting at header) within this region
+  // that could contain a pointer to the regular heap (e.g. HugeString, HugeBytee, Future, etc)
+  // this table is populated during allocation of objects and used during GC to prevent
+  // having to traverse every single object on the heap in the search of dead objects
+  std::vector<uintptr_t> objects_with_external_heap_pointers;
+
   uint8_t buffer alignas(kObjectAlignment)[];
 };
 static_assert(sizeof(HeapRegion) % kObjectAlignment == 0);
@@ -184,7 +191,7 @@ public:
   explicit ThreadAllocationBuffer(Heap* heap);
   ~ThreadAllocationBuffer();
 
-  uintptr_t allocate(Thread* thread, size_t size);
+  uintptr_t allocate(Thread* thread, size_t size, bool contains_external_heap_pointers = false);
 
 private:
   void release_owned_region();

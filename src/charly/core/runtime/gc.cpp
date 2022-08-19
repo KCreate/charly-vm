@@ -203,31 +203,34 @@ void GarbageCollector::collect() {
   if (m_collection_mode == CollectionMode::Major) {
     for (auto* region : m_heap->m_old_regions) {
       if (m_target_old_regions.count(region) == 0) {
-        region->each_object([&](ObjectHeader* header) {
+        for (uintptr_t pointer : region->objects_with_external_heap_pointers) {
+          auto* header = ObjectHeader::header_at_address(pointer);
           if (!header->is_reachable()) {
             deallocate_external_heap_resources(header->object());
           }
-        });
+        }
       }
     }
   }
 
   for (auto* region : m_heap->m_intermediate_regions) {
     if (m_target_intermediate_regions.count(region) == 0) {
-      region->each_object([&](ObjectHeader* header) {
+      for (uintptr_t pointer : region->objects_with_external_heap_pointers) {
+        auto* header = ObjectHeader::header_at_address(pointer);
         if (!header->is_reachable()) {
           deallocate_external_heap_resources(header->object());
         }
-      });
+      }
     }
   }
 
   for (auto* region : m_heap->m_eden_regions) {
-    region->each_object([&](ObjectHeader* header) {
+    for (uintptr_t pointer : region->objects_with_external_heap_pointers) {
+      auto* header = ObjectHeader::header_at_address(pointer);
       if (!header->is_reachable()) {
         deallocate_external_heap_resources(header->object());
       }
-    });
+    }
   }
 
   recycle_old_regions();
@@ -329,12 +332,11 @@ void GarbageCollector::compact_object(RawObject object) {
   }
 
   // copy object into target region
-  auto target = target_region->allocate(alloc_size);
+  auto target = target_region->allocate(alloc_size, object.contains_external_heap_pointers());
   DCHECK(target);
   memcpy(bitcast<void*>(target), bitcast<void*>(header), alloc_size);
 
-  auto* target_header = bitcast<ObjectHeader*>(target);
-  DCHECK(target_header->validate_magic_number());
+  auto* target_header = ObjectHeader::header_at_address(target);
   target_header->clear_is_reachable();
   if (target_region->type == Type::Old) {
     target_header->clear_is_young_generation();

@@ -378,10 +378,10 @@ RawValue Thread::lookup_symbol(SYMBOL symbol) const {
   return worker()->processor()->lookup_symbol(symbol);
 }
 
-uintptr_t Thread::allocate(size_t size) {
+uintptr_t Thread::allocate(size_t size, bool contains_external_heap_pointers) {
   checkpoint();
   auto* tab = m_worker->processor()->tab();
-  return tab->allocate(this, size);
+  return tab->allocate(this, size, contains_external_heap_pointers);
 }
 
 }  // namespace charly::core::runtime

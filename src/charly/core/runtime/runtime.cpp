@@ -490,7 +490,7 @@ RawInstance Runtime::create_instance(Thread* thread, ShapeId shape_id, size_t fi
   size_t header_size = sizeof(ObjectHeader);
   size_t total_size = align_to_size(header_size + object_size, kObjectAlignment);
 
-  uintptr_t memory = thread->allocate(total_size);
+  uintptr_t memory = thread->allocate(total_size, is_shape_with_external_heap_pointers(shape_id));
   DCHECK(memory);
 
   // initialize header

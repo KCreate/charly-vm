@@ -46,7 +46,7 @@ uint32_t HeapRegion::id() const {
   return ptr / kHeapRegionSize;
 }
 
-uintptr_t HeapRegion::allocate(size_t size) {
+uintptr_t HeapRegion::allocate(size_t size, bool contains_external_heap_pointers) {
   DCHECK(fits(size));
 
   uintptr_t alloc_offset = this->used;
@@ -69,6 +69,10 @@ uintptr_t HeapRegion::allocate(size_t size) {
     span_set_last_alloc_pointer(index, alloc_pointer);
   }
 
+  if (contains_external_heap_pointers) {
+    this->objects_with_external_heap_pointers.push_back(alloc_pointer);
+  }
+
   return alloc_pointer;
 }
 
@@ -84,6 +88,7 @@ void HeapRegion::reset() {
   this->type = HeapRegion::Type::Unused;
   this->used = 0;
   this->span_table.fill(kSpanTableInvalidOffset << kSpanTableOffsetShift);
+  this->objects_with_external_heap_pointers.clear();
   DCHECK(buffer_base() - (uintptr_t)(this) + kHeapRegionUsableSize == kHeapRegionSize);
   if constexpr (kIsDebugBuild) {
     std::memset((void*)buffer_base(), 0, kHeapRegionUsableSize);
@@ -136,8 +141,7 @@ void HeapRegion::each_object(std::function<void(ObjectHeader*)> callback) {
   size_t alloc_size;
   auto scan_end = buffer_base() + this->used;
   for (uintptr_t scan = buffer_base(); scan < scan_end; scan += alloc_size) {
-    auto* header = bitcast<ObjectHeader*>(scan);
-    DCHECK(header->validate_magic_number());
+    auto* header = ObjectHeader::header_at_address(scan);
     alloc_size = header->alloc_size();
     DCHECK(scan + alloc_size <= scan_end);
     callback(header);
@@ -165,16 +169,14 @@ void HeapRegion::each_object_in_span(size_t span_index, std::function<void(Objec
   if (span_index > kHeapRegionFirstUsableSpanIndex) {
     uintptr_t last_alloc_ptr = span_get_last_alloc_pointer(span_index - 1);
     if (last_alloc_ptr != kSpanTableInvalidOffset) {
-      auto* header = bitcast<ObjectHeader*>(last_alloc_ptr);
-      DCHECK(header->validate_magic_number());
+      auto* header = ObjectHeader::header_at_address(last_alloc_ptr);
       scan = last_alloc_ptr + header->alloc_size();
     }
   }
 
   DCHECK(scan >= span_begin);
   while (scan < span_end && scan < buffer_end) {
-    auto* header = bitcast<ObjectHeader*>(scan);
-    DCHECK(header->validate_magic_number());
+    auto* header = ObjectHeader::header_at_address(scan);
     callback(header);
     scan += header->alloc_size();
   }
@@ -357,7 +359,7 @@ ThreadAllocationBuffer::~ThreadAllocationBuffer() {
   }
 }
 
-uintptr_t ThreadAllocationBuffer::allocate(Thread* thread, size_t size) {
+uintptr_t ThreadAllocationBuffer::allocate(Thread* thread, size_t size, bool contains_external_heap_pointers) {
   DCHECK(size % kObjectAlignment == 0, "allocation not aligned correctly");
   DCHECK(size <= kHeapRegionUsableSize, "allocation is too big");
 
@@ -379,7 +381,7 @@ uintptr_t ThreadAllocationBuffer::allocate(Thread* thread, size_t size) {
   DCHECK(m_region != nullptr);
   DCHECK(m_region->fits(size));
 
-  return m_region->allocate(size);
+  return m_region->allocate(size, contains_external_heap_pointers);
 }
 
 void ThreadAllocationBuffer::release_owned_region() {

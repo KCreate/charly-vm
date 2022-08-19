@@ -151,6 +151,7 @@ bool is_data_shape(ShapeId shape_id);
 bool is_instance_shape(ShapeId shape_id);
 bool is_builtin_shape(ShapeId shape_id);
 bool is_user_shape(ShapeId shape_id);
+bool is_shape_with_external_heap_pointers(ShapeId shape_id);
 
 // align a size to some alignment
 size_t align_to_size(size_t size, size_t alignment);
@@ -192,6 +193,12 @@ public:
   };
 
   static void initialize_header(uintptr_t address, ShapeId shape_id, uint16_t count);
+
+  static ObjectHeader* header_at_address(uintptr_t address) {
+    auto* header = bitcast<ObjectHeader*>(address);
+    DCHECK(header->validate_magic_number());
+    return header;
+  }
 
   HeapRegion* heap_region() const;
   RawObject object() const;
@@ -598,6 +605,8 @@ public:
   uintptr_t base_address() const;
   ShapeId shape_id() const;
   size_t count() const;
+
+  bool contains_external_heap_pointers() const;
 
   ObjectHeader* header() const;
 
