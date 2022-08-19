@@ -311,10 +311,13 @@ void IRFunction::dump(std::ostream& out) const {
 
   if (!constant_table.empty()) {
     writer.fg(Color::Blue, "  constant table:", "\n");
+    int constant_index = 0;
     for (const RawValue& value : this->constant_table) {
-      writer.fg(Color::Grey, "  - ");
+      writer.fg(Color::Grey, "  - #", std::setw(2), std::left, constant_index, std::setw(1), " ");
       out << value;
       out << "\n";
+
+      constant_index++;
     }
 
     out << "\n";
