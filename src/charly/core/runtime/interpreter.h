@@ -97,6 +97,8 @@ public:
                                 bool constructor_call = false,
                                 RawValue argument_tuple = kNull);
 
+  static bool eq(Thread* thread, RawValue left, RawValue right);
+
   static RawValue add_string_string(Thread* thread, RawString left, RawString right);
 
 private:

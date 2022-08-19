@@ -486,6 +486,30 @@ bool RawValue::isImportException() const {
   return false;
 }
 
+bool RawValue::isNumber() const {
+  return isInt() || isFloat();
+}
+
+int64_t RawValue::int_value() const {
+  if (isInt()) {
+    return RawInt::cast(*this).value();
+  } else if (isFloat()) {
+    return RawFloat::cast(*this).value();
+  }
+
+  UNREACHABLE();
+}
+
+double RawValue::double_value() const {
+  if (isInt()) {
+    return RawInt::cast(*this).value();
+  } else if (isFloat()) {
+    return RawFloat::cast(*this).value();
+  }
+
+  UNREACHABLE();
+}
+
 void RawValue::to_string(std::ostream& out) const {
   if (isString()) {
     RawString value = RawString::cast(this);

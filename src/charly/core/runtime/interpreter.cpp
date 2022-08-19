@@ -269,6 +269,41 @@ RawValue Interpreter::call_function(Thread* thread,
   return Interpreter::execute(thread);
 }
 
+bool Interpreter::eq(Thread*, RawValue left, RawValue right) {
+  if (left == right) {
+    return true;
+  }
+
+  if (left.isString() && right.isString()) {
+    auto left_str = RawString::cast(left);
+    auto right_str = RawString::cast(right);
+    return left_str.view() == right_str.view();
+  }
+
+  if (left.isBytes() && right.isBytes()) {
+    auto left_bytes = RawBytes::cast(left);
+    auto right_bytes = RawBytes::cast(right);
+
+    if (left_bytes.length() != right_bytes.length()) {
+      return false;
+    }
+
+    return std::memcmp(RawBytes::data(&left_bytes), RawBytes::data(&right_bytes), left_bytes.length()) == 0;
+  }
+
+  if (left.isInt() && right.isInt()) {
+    return RawInt::cast(left).value() == RawInt::cast(right).value();
+  }
+
+  if (left.isNumber() || right.isNumber()) {
+    double left_num = left.double_value();
+    double right_num = right.double_value();
+    return left_num == right_num;
+  }
+
+  return false;
+}
+
 RawValue Interpreter::add_string_string(Thread* thread, RawString left, RawString right) {
   size_t left_size = left.length();
   size_t right_size = right.length();
@@ -1299,14 +1334,14 @@ OP(pow) {
 OP(eq) {
   RawValue right = frame->pop();
   RawValue left = frame->pop();
-  frame->push(RawBool::make(left.raw() == right.raw()));
+  frame->push(RawBool::make(Interpreter::eq(thread, left, right)));
   return ContinueMode::Next;
 }
 
 OP(neq) {
   RawValue right = frame->pop();
   RawValue left = frame->pop();
-  frame->push(RawBool::make(left.raw() != right.raw()));
+  frame->push(RawBool::make(!Interpreter::eq(thread, left, right)));
   return ContinueMode::Next;
 }
 

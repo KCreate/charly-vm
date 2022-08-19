@@ -385,6 +385,10 @@ public:
   TYPE_NAMES(TYPECHECK)
 #undef TYPECHECK
 
+  bool isNumber() const;
+  int64_t int_value() const;
+  double double_value() const;
+
   // tag masks
   static constexpr uintptr_t kMaskInt = 0x1;
   static constexpr uintptr_t kMaskImmediate = 0x0f;
