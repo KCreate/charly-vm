@@ -37,11 +37,11 @@ public:
   // returns the amount of milliseconds elapsed
   template <typename F>
   static double run(const std::string& title, F callback) {
-    size_t start_time = get_steady_timestamp();
+    size_t start_time = get_steady_timestamp_micro();
     debuglnf("Begin '%'", title);
     callback();
-    size_t end_time = get_steady_timestamp();
-    double duration = end_time - start_time;
+    size_t end_time = get_steady_timestamp_micro();
+    double duration = (double)(end_time - start_time) / 1000;
     debuglnf("'%' ran for %ms", title, duration);
     return duration;
   }

@@ -103,27 +103,40 @@ void GarbageCollector::main() {
       continue;
     }
 
-    m_runtime->scheduler()->stop_the_world();
-
     collection_time_sum += utils::TimedSection::run("GC collection", [&] {
-      determine_collection_mode();
+      m_runtime->scheduler()->stop_the_world();
+
+      m_collection_mode = CollectionMode::Minor;
       if constexpr (kIsDebugBuild)
         validate_heap_and_roots();
       collect();
+
+      // trigger major GC if minor GC failed to free enough free regions
+      size_t free_count = m_heap->m_free_regions.size();
+      size_t mapped_count = m_heap->m_mapped_regions.size();
+      float free_to_mapped_ratio = (float)free_count / (float)mapped_count;
+      bool below_minimum_ratio = free_to_mapped_ratio < kGCFreeToMappedRatioMajorTrigger;
+      bool below_hw_concurrency = free_count < Scheduler::hardware_concurrency();
+      bool force_major_cycle = m_gc_cycle % kGCForceMajorGCEachNthCycle == 0;
+      if (below_minimum_ratio || below_hw_concurrency || force_major_cycle) {
+        m_collection_mode = CollectionMode::Major;
+        collect();
+      }
+
       if constexpr (kIsDebugBuild)
         validate_heap_and_roots();
+
+      m_last_collection_time = get_steady_timestamp();
+      m_gc_cycle++;
+      m_wants_collection = false;
+      m_cv.notify_all();
+      m_runtime->scheduler()->start_the_world();
+
+      DCHECK(m_mark_queue.empty());
+      m_target_intermediate_regions.clear();
+      m_target_old_regions.clear();
     });
     collection_count++;
-
-    DCHECK(m_mark_queue.empty());
-    m_target_intermediate_regions.clear();
-    m_target_old_regions.clear();
-    m_last_collection_time = get_steady_timestamp();
-    m_gc_cycle++;
-    m_wants_collection = false;
-    m_cv.notify_all();
-
-    m_runtime->scheduler()->start_the_world();
   }
 
   debuglnf("collection average time %ms", collection_time_sum / collection_count);
@@ -131,11 +144,22 @@ void GarbageCollector::main() {
 
 void GarbageCollector::collect() {
   mark_runtime_roots();
+
   if (m_collection_mode == CollectionMode::Minor) {
     mark_dirty_span_roots();
   }
 
-  // mark and evacuate reachable objects
+  mark_live_objects();
+  update_old_references();
+  deallocate_heap_ressources();
+  recycle_collected_regions();
+
+  if (m_collection_mode == CollectionMode::Major) {
+    adjust_heap();
+  }
+}
+
+void GarbageCollector::mark_live_objects() {
   while (!m_mark_queue.empty()) {
     RawObject object = m_mark_queue.front();
     m_mark_queue.pop();
@@ -160,102 +184,6 @@ void GarbageCollector::collect() {
 
     compact_object(object);
   }
-
-  if (m_collection_mode == CollectionMode::Minor) {
-    for (auto* region : m_heap->m_old_regions) {
-      if (m_target_old_regions.count(region) == 0) {
-        for (size_t si = kHeapRegionFirstUsableSpanIndex; si < kHeapRegionSpanCount; si++) {
-          if (region->span_get_dirty_flag(si)) {
-            bool contains_young_references = false;
-            region->each_object_in_span(si, [&](ObjectHeader* header) {
-              header->clear_is_reachable();
-              if (update_object_references(header->object())) {
-                contains_young_references = true;
-              }
-            });
-            region->span_set_dirty_flag(si, contains_young_references);
-          }
-        }
-      }
-    }
-  }
-
-  for (auto* region : m_target_old_regions) {
-    for (size_t si = kHeapRegionFirstUsableSpanIndex; si < kHeapRegionSpanCount; si++) {
-      bool contains_young_references = false;
-      region->each_object_in_span(si, [&](ObjectHeader* header) {
-        if (update_object_references(header->object())) {
-          contains_young_references = true;
-        }
-      });
-      region->span_set_dirty_flag(si, contains_young_references);
-    }
-  }
-
-  for (auto* region : m_target_intermediate_regions) {
-    region->each_object([&](ObjectHeader* header) {
-      update_object_references(header->object());
-    });
-  }
-
-  update_root_references();
-
-  if (m_collection_mode == CollectionMode::Major) {
-    for (auto* region : m_heap->m_old_regions) {
-      if (m_target_old_regions.count(region) == 0) {
-        for (uintptr_t pointer : region->objects_with_external_heap_pointers) {
-          auto* header = ObjectHeader::header_at_address(pointer);
-          if (!header->is_reachable()) {
-            deallocate_external_heap_resources(header->object());
-          }
-        }
-      }
-    }
-  }
-
-  for (auto* region : m_heap->m_intermediate_regions) {
-    if (m_target_intermediate_regions.count(region) == 0) {
-      for (uintptr_t pointer : region->objects_with_external_heap_pointers) {
-        auto* header = ObjectHeader::header_at_address(pointer);
-        if (!header->is_reachable()) {
-          deallocate_external_heap_resources(header->object());
-        }
-      }
-    }
-  }
-
-  for (auto* region : m_heap->m_eden_regions) {
-    for (uintptr_t pointer : region->objects_with_external_heap_pointers) {
-      auto* header = ObjectHeader::header_at_address(pointer);
-      if (!header->is_reachable()) {
-        deallocate_external_heap_resources(header->object());
-      }
-    }
-  }
-
-  recycle_old_regions();
-
-  for (auto* proc : m_runtime->scheduler()->m_processors) {
-    proc->tab()->m_region = nullptr;
-  }
-
-  size_t current_time = get_steady_timestamp();
-  size_t time_passed_since_last_collection = current_time - m_last_collection_time;
-
-  if (time_passed_since_last_collection > kGCHeapShrinkTimeThreshold) {
-    m_heap->shrink_heap();
-  } else if (time_passed_since_last_collection < kGCHeapGrowTimeThreshold) {
-    m_heap->grow_heap();
-  }
-}
-
-void GarbageCollector::determine_collection_mode() {
-  bool is_major = m_gc_cycle % 4 == 0;
-  if (is_major) {
-    m_collection_mode = CollectionMode::Major;
-  } else {
-    m_collection_mode = CollectionMode::Minor;
-  }
 }
 
 void GarbageCollector::mark_runtime_roots() {
@@ -265,14 +193,12 @@ void GarbageCollector::mark_runtime_roots() {
 }
 
 void GarbageCollector::mark_dirty_span_roots() {
-  if (m_collection_mode == CollectionMode::Minor) {
-    for (auto* region : m_heap->m_old_regions) {
-      for (size_t si = kHeapRegionFirstUsableSpanIndex; si < kHeapRegionSpanCount; si++) {
-        if (region->span_get_dirty_flag(si)) {
-          region->each_object_in_span(si, [&](ObjectHeader* header) {
-            mark_queue_value(header->object(), true);
-          });
-        }
+  for (auto* region : m_heap->m_old_regions) {
+    for (size_t si = kHeapRegionFirstUsableSpanIndex; si < kHeapRegionSpanCount; si++) {
+      if (region->span_get_dirty_flag(si)) {
+        region->each_object_in_span(si, [&](ObjectHeader* header) {
+          mark_queue_value(header->object(), true);
+        });
       }
     }
   }
@@ -386,6 +312,47 @@ HeapRegion* GarbageCollector::get_target_old_region(size_t alloc_size) {
   return region;
 }
 
+void GarbageCollector::update_old_references() const {
+  if (m_collection_mode == CollectionMode::Minor) {
+    for (auto* region : m_heap->m_old_regions) {
+      if (m_target_old_regions.count(region) == 0) {
+        for (size_t si = kHeapRegionFirstUsableSpanIndex; si < kHeapRegionSpanCount; si++) {
+          if (region->span_get_dirty_flag(si)) {
+            bool contains_young_references = false;
+            region->each_object_in_span(si, [&](ObjectHeader* header) {
+              header->clear_is_reachable();
+              if (update_object_references(header->object())) {
+                contains_young_references = true;
+              }
+            });
+            region->span_set_dirty_flag(si, contains_young_references);
+          }
+        }
+      }
+    }
+  }
+
+  for (auto* region : m_target_old_regions) {
+    for (size_t si = kHeapRegionFirstUsableSpanIndex; si < kHeapRegionSpanCount; si++) {
+      bool contains_young_references = false;
+      region->each_object_in_span(si, [&](ObjectHeader* header) {
+        if (update_object_references(header->object())) {
+          contains_young_references = true;
+        }
+      });
+      region->span_set_dirty_flag(si, contains_young_references);
+    }
+  }
+
+  for (auto* region : m_target_intermediate_regions) {
+    region->each_object([&](ObjectHeader* header) {
+      update_object_references(header->object());
+    });
+  }
+
+  update_root_references();
+}
+
 bool GarbageCollector::update_object_references(RawObject object) const {
   bool contains_young_references = false;
 
@@ -452,7 +419,42 @@ void GarbageCollector::update_root_references() const {
   }
 }
 
-void GarbageCollector::deallocate_external_heap_resources(RawObject object) const {
+void GarbageCollector::deallocate_heap_ressources() const {
+  if (m_collection_mode == CollectionMode::Major) {
+    for (auto* region : m_heap->m_old_regions) {
+      if (m_target_old_regions.count(region) == 0) {
+        for (uintptr_t pointer : region->objects_with_external_heap_pointers) {
+          auto* header = ObjectHeader::header_at_address(pointer);
+          if (!header->is_reachable()) {
+            deallocate_object_heap_ressources(header->object());
+          }
+        }
+      }
+    }
+  }
+
+  for (auto* region : m_heap->m_intermediate_regions) {
+    if (m_target_intermediate_regions.count(region) == 0) {
+      for (uintptr_t pointer : region->objects_with_external_heap_pointers) {
+        auto* header = ObjectHeader::header_at_address(pointer);
+        if (!header->is_reachable()) {
+          deallocate_object_heap_ressources(header->object());
+        }
+      }
+    }
+  }
+
+  for (auto* region : m_heap->m_eden_regions) {
+    for (uintptr_t pointer : region->objects_with_external_heap_pointers) {
+      auto* header = ObjectHeader::header_at_address(pointer);
+      if (!header->is_reachable()) {
+        deallocate_object_heap_ressources(header->object());
+      }
+    }
+  }
+}
+
+void GarbageCollector::deallocate_object_heap_ressources(RawObject object) const {
   if (object.isHugeBytes()) {
     auto huge_bytes = RawHugeBytes::cast(object);
     utils::Allocator::free(bitcast<void*>(const_cast<uint8_t*>(huge_bytes.data())));
@@ -471,7 +473,7 @@ void GarbageCollector::deallocate_external_heap_resources(RawObject object) cons
   }
 }
 
-void GarbageCollector::recycle_old_regions() const {
+void GarbageCollector::recycle_collected_regions() const {
   for (auto* region : m_heap->m_eden_regions) {
     region->reset();
     m_heap->m_free_regions.insert(region);
@@ -504,6 +506,20 @@ void GarbageCollector::recycle_old_regions() const {
       }
       old_it++;
     }
+  }
+
+  for (auto* proc : m_runtime->scheduler()->m_processors) {
+    proc->tab()->m_region = nullptr;
+  }
+}
+
+void GarbageCollector::adjust_heap() const {
+  size_t current_time = get_steady_timestamp();
+  size_t time_passed_since_last_collection = current_time - m_last_collection_time;
+  if (time_passed_since_last_collection > kGCHeapShrinkTimeThreshold) {
+    m_heap->shrink_heap();
+  } else if (time_passed_since_last_collection < kGCHeapGrowTimeThreshold) {
+    m_heap->grow_heap();
   }
 }
 

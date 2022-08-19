@@ -43,6 +43,12 @@ class Thread;
 
 constexpr size_t kGCObjectMaxSurvivorCount = 15;
 
+// if the minor GC cycle failed to free at least this ratio of free to mapped regions, trigger major GC
+constexpr float kGCFreeToMappedRatioMajorTrigger = 0.25f;
+
+// force a major GC cycle each nth cycle
+constexpr size_t kGCForceMajorGCEachNthCycle = 16;
+
 // if the time elapsed since the last collection is below this threshold, grow the heap
 constexpr size_t kGCHeapGrowTimeThreshold = 1000 * 5;
 
@@ -74,8 +80,7 @@ private:
 
   void collect();
 
-  void determine_collection_mode();
-
+  void mark_live_objects();
   void mark_runtime_roots();
   void mark_dirty_span_roots();
   void mark_queue_value(RawValue value, bool force_mark = false);
@@ -84,6 +89,8 @@ private:
   HeapRegion* get_target_intermediate_region(size_t alloc_size);
   HeapRegion* get_target_old_region(size_t alloc_size);
 
+  void update_old_references() const;
+
   // updates stale references to moved objects
   // returns true if any intermediate references remain
   bool update_object_references(RawObject object) const;
@@ -91,9 +98,13 @@ private:
   // updates references stored in runtime roots
   void update_root_references() const;
 
-  void deallocate_external_heap_resources(RawObject object) const;
+  void deallocate_heap_ressources() const;
 
-  void recycle_old_regions() const;
+  void deallocate_object_heap_ressources(RawObject object) const;
+
+  void recycle_collected_regions() const;
+
+  void adjust_heap() const;
 
   void validate_heap_and_roots() const;
 
