@@ -38,8 +38,11 @@ func foo {
     }
 }
 
-const fiber_count = 128
-Tuple.make_with(fiber_count, ->spawn foo()).each(->(f) await f)
+16.times(->{
+    const fiber_count = 8
+    Tuple.make_with(fiber_count, ->spawn foo()).each(->(f) await f)
+})
+
 
 
 

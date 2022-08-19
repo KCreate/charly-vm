@@ -1446,11 +1446,37 @@ void RawFiber::set_result_future(RawFuture result_future) {
   set_field_at(kResultFutureOffset, result_future);
 }
 
-std::vector<Thread*>* RawFuture::wait_queue() const {
-  return bitcast<std::vector<Thread*>*>(pointer_at(kWaitQueueOffset));
+RawFuture::WaitQueue* RawFuture::WaitQueue::alloc(size_t initial_capacity) {
+  DCHECK(initial_capacity <= kUInt32Max);
+  size_t alloc_size = sizeof(WaitQueue) + kPointerSize * initial_capacity;
+  auto* queue = static_cast<WaitQueue*>(utils::Allocator::alloc(alloc_size));
+  queue->capacity = initial_capacity;
+  queue->used = 0;
+  return queue;
 }
 
-void RawFuture::set_wait_queue(std::vector<Thread*>* wait_queue) {
+RawFuture::WaitQueue* RawFuture::WaitQueue::append_thread(RawFuture::WaitQueue* queue, Thread* thread) {
+  DCHECK(queue->used <= queue->capacity);
+  if (queue->used == queue->capacity) {
+    WaitQueue* new_queue = WaitQueue::alloc(queue->capacity * 2);
+    for (size_t i = 0; i < queue->used; i++) {
+      WaitQueue::append_thread(new_queue, queue->buffer[i]);
+    }
+    WaitQueue::append_thread(new_queue, thread);
+    utils::Allocator::free(queue);
+    return new_queue;
+  }
+
+  queue->buffer[queue->used] = thread;
+  queue->used++;
+  return queue;
+}
+
+RawFuture::WaitQueue* RawFuture::wait_queue() const {
+  return bitcast<WaitQueue*>(pointer_at(kWaitQueueOffset));
+}
+
+void RawFuture::set_wait_queue(RawFuture::WaitQueue* wait_queue) {
   set_pointer_at(kWaitQueueOffset, wait_queue);
 }
 

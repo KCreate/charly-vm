@@ -949,8 +949,25 @@ class RawFuture : public RawInstance {
 public:
   COMMON_RAW_OBJECT(Future);
 
-  std::vector<Thread*>* wait_queue() const;
-  void set_wait_queue(std::vector<Thread*>* wait_queue);
+  // instead of using a regular std::vector for the wait queue, a custom struct is used
+  // this is so that the GC can simply call Allocator::free on the queue pointer, instead of needing
+  // to call 'delete' on it. This makes the GC deallocation logic a lot simpler
+  struct WaitQueue {
+    size_t capacity;
+    size_t used;
+    Thread* buffer[];
+
+    // allocate a new wait queue instance with a given initial capacity
+    static WaitQueue* alloc(size_t initial_capacity = 4);
+
+    // insert a thread into the wait queue
+    // if the new size exceeds the current capacity, the queue gets reallocated and the new pointer is returned
+    // if the queue wasn't reallocated, the old pointer gets returned
+    static WaitQueue* append_thread(WaitQueue* queue, Thread* thread);
+  };
+
+  WaitQueue* wait_queue() const;
+  void set_wait_queue(WaitQueue* wait_queue);
 
   RawValue result() const;
   void set_result(RawValue result);

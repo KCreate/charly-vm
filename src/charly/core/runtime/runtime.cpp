@@ -1033,7 +1033,7 @@ RawFiber Runtime::create_fiber(Thread* thread, RawFunction _function, RawValue _
 
 RawFuture Runtime::create_future(Thread* thread) {
   auto future = RawFuture::cast(create_instance(thread, get_builtin_class(ShapeId::kFuture)));
-  future.set_wait_queue(new std::vector<Thread*>());
+  future.set_wait_queue(RawFuture::WaitQueue::alloc());
   future.set_result(kNull);
   future.set_exception(kNull);
   return future;
@@ -1131,8 +1131,8 @@ RawValue Runtime::await_future(Thread* thread, RawFuture _future) {
 
     // wait for the future to finish
     if (!future.has_finished()) {
-      auto wait_queue = future.wait_queue();
-      wait_queue->push_back(thread);
+      RawFuture::WaitQueue* wait_queue = future.wait_queue();
+      future.set_wait_queue(wait_queue->append_thread(wait_queue, thread));
       thread->m_state.acas(Thread::State::Running, Thread::State::Waiting);
 
       lock.unlock();
@@ -1157,8 +1157,7 @@ RawValue Runtime::resolve_future(Thread* thread, RawFuture future, RawValue resu
 
   {
     std::lock_guard lock(future);
-    auto wait_queue = future.wait_queue();
-    if (wait_queue == nullptr) {
+    if (future.wait_queue() == nullptr) {
       thread->throw_value(runtime->create_string_from_template(thread, "Future has already completed"));
       return kErrorException;
     }
@@ -1176,8 +1175,7 @@ RawValue Runtime::reject_future(Thread* thread, RawFuture future, RawException e
 
   {
     std::lock_guard lock(future);
-    auto wait_queue = future.wait_queue();
-    if (wait_queue == nullptr) {
+    if (future.wait_queue() == nullptr) {
       thread->throw_value(runtime->create_string_from_template(thread, "Future has already completed"));
       return kErrorException;
     }
@@ -1194,14 +1192,16 @@ void Runtime::future_wake_waiting_threads(Thread* thread, RawFuture future) {
   DCHECK(future.is_locked());
   auto processor = thread->worker()->processor();
 
-  auto wait_queue = future.wait_queue();
-  for (Thread* waiting_thread : *wait_queue) {
+  RawFuture::WaitQueue* wait_queue = future.wait_queue();
+
+  for (size_t i = 0; i < wait_queue->used; i++) {
+    Thread* waiting_thread = wait_queue->buffer[i];
     DCHECK(waiting_thread->state() == Thread::State::Waiting);
     waiting_thread->ready();
     m_scheduler->schedule_thread(waiting_thread, processor);
   }
-  wait_queue->clear();
-  delete wait_queue;
+
+  utils::Allocator::free(wait_queue);
   future.set_wait_queue(nullptr);
 }
 

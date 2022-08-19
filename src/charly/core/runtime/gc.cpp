@@ -468,9 +468,9 @@ void GarbageCollector::deallocate_external_heap_resources(RawObject object) cons
     huge_string.set_data(nullptr);
   } else if (object.isFuture()) {
     auto future = RawFuture::cast(object);
-    if (auto* wait_queue = future.wait_queue()) {
-      DCHECK(wait_queue->empty());
-      delete wait_queue;
+    if (RawFuture::WaitQueue* wait_queue = future.wait_queue()) {
+      DCHECK(wait_queue->used == 0);
+      utils::Allocator::free(wait_queue);
       future.set_wait_queue(nullptr);
     }
   }
