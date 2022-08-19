@@ -41,7 +41,6 @@ GarbageCollector::GarbageCollector(Runtime* runtime) :
   m_gc_cycle(1),
   m_has_initialized(false),
   m_wants_collection(false),
-  m_wants_exit(false),
   m_thread(std::thread(&GarbageCollector::main, this)) {}
 
 GarbageCollector::~GarbageCollector() {
@@ -49,17 +48,11 @@ GarbageCollector::~GarbageCollector() {
 }
 
 void GarbageCollector::shutdown() {
-  {
-    std::unique_lock<std::mutex> locker(m_mutex);
-    m_wants_exit = true;
-  }
   m_cv.notify_all();
 }
 
 void GarbageCollector::join() {
-  if (m_thread.joinable()) {
-    m_thread.join();
-  }
+  m_thread.join();
 }
 
 void GarbageCollector::perform_gc(Thread* thread) {
@@ -78,7 +71,7 @@ void GarbageCollector::perform_gc(Thread* thread) {
 
     // wait for GC thread to finish
     m_cv.wait(locker, [&]() {
-      return (m_gc_cycle != old_gc_cycle) || m_wants_exit;
+      return (m_gc_cycle != old_gc_cycle) || m_runtime->wants_exit();
     });
   });
 
@@ -91,11 +84,11 @@ void GarbageCollector::main() {
 
   double collection_time_sum = 0;
   size_t collection_count = 0;
-  while (!m_wants_exit) {
+  while (!m_runtime->wants_exit()) {
     {
       std::unique_lock<std::mutex> locker(m_mutex);
       m_cv.wait(locker, [&]() {
-        return m_wants_collection || m_wants_exit;
+        return m_wants_collection || m_runtime->wants_exit();
       });
     }
 

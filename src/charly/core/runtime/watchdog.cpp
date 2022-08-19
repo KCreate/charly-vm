@@ -46,9 +46,7 @@ WatchDog::~WatchDog() {
 }
 
 void WatchDog::join() {
-  if (m_thread.joinable()) {
-    m_thread.join();
-  }
+  m_thread.join();
 }
 
 void WatchDog::main() {
