@@ -50,6 +50,7 @@ void WatchDog::join() {
 }
 
 void WatchDog::main() {
+  m_runtime->wait_for_initialization();
   auto* scheduler = m_runtime->scheduler();
 
   while (!m_runtime->wants_exit()) {
