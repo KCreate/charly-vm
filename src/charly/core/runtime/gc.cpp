@@ -137,7 +137,7 @@ void GarbageCollector::collect() {
 
   // mark and evacuate reachable objects
   while (!m_mark_queue.empty()) {
-    auto object = m_mark_queue.front();
+    RawObject object = m_mark_queue.front();
     m_mark_queue.pop();
     auto* header = object.header();
 
@@ -151,17 +151,10 @@ void GarbageCollector::collect() {
       header->increment_survivor_count();
     }
 
-    if (object.isInstance()) {
-      auto instance = RawInstance::cast(object);
-      auto field_count = instance.field_count();
+    if (object.isInstance() || object.isTuple()) {
+      auto field_count = object.count();
       for (size_t index = 0; index < field_count; index++) {
-        mark_queue_value(instance.field_at(index));
-      }
-    } else if (object.isTuple()) {
-      auto tuple = RawTuple::cast(object);
-      auto size = tuple.size();
-      for (size_t index = 0; index < size; index++) {
-        mark_queue_value(tuple.field_at(index));
+        mark_queue_value(object.field_at(index));
       }
     }
 
