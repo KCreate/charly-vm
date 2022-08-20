@@ -163,7 +163,7 @@ func compile(source, name = "repl") = builtin_compile(source, name)
             @stack_trace = Exception.getstacktrace()
         }
 
-        static func getstacktrace = builtin_getstacktrace(trim)
+        static func getstacktrace = builtin_getstacktrace()
     }
 
     class builtin_ImportException {
@@ -195,9 +195,9 @@ func compile(source, name = "repl") = builtin_compile(source, name)
             return future
         }
 
-        func resolve(value) = builtin_future_resolve(self, value)
+        func resolve(value = null) = builtin_future_resolve(self, value)
 
-        func reject(value) = builtin_future_reject(self, value)
+        func reject(value = Exception("Future rejected")) = builtin_future_reject(self, value)
     }
 
     class builtin_Class {
