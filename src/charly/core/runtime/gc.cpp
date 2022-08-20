@@ -99,10 +99,7 @@ void GarbageCollector::main() {
     collection_time_sum += utils::TimedSection::run("GC collection", [&] {
       m_runtime->scheduler()->stop_the_world();
 
-      m_collection_mode = CollectionMode::Minor;
-      if constexpr (kIsDebugBuild)
-        validate_heap_and_roots();
-      collect();
+      collect(CollectionMode::Minor);
 
       // trigger major GC if minor GC failed to free enough free regions
       size_t free_count = m_heap->m_free_regions.size();
@@ -112,22 +109,13 @@ void GarbageCollector::main() {
       bool below_hw_concurrency = free_count < Scheduler::hardware_concurrency();
       bool force_major_cycle = m_gc_cycle % kGCForceMajorGCEachNthCycle == 0;
       if (below_minimum_ratio || below_hw_concurrency || force_major_cycle) {
-        m_collection_mode = CollectionMode::Major;
-        collect();
+        collect(CollectionMode::Major);
       }
 
-      if constexpr (kIsDebugBuild)
-        validate_heap_and_roots();
-
       m_last_collection_time = get_steady_timestamp();
-      m_gc_cycle++;
       m_wants_collection = false;
       m_cv.notify_all();
       m_runtime->scheduler()->start_the_world();
-
-      DCHECK(m_mark_queue.empty());
-      m_target_intermediate_regions.clear();
-      m_target_old_regions.clear();
     });
     collection_count++;
   }
@@ -135,19 +123,33 @@ void GarbageCollector::main() {
   debuglnf("collection average time %ms", collection_time_sum / collection_count);
 }
 
-void GarbageCollector::collect() {
+void GarbageCollector::collect(CollectionMode mode) {
+  m_collection_mode = mode;
+
+  if constexpr (kIsDebugBuild)
+    validate_heap_and_roots();
+
   mark_runtime_roots();
 
-  if (m_collection_mode == CollectionMode::Minor) {
+  if (mode == CollectionMode::Minor) {
     mark_dirty_span_roots();
   }
 
   mark_live_objects();
+  DCHECK(m_mark_queue.empty());
+
   update_old_references();
   deallocate_heap_ressources();
   recycle_collected_regions();
 
   adjust_heap();
+
+  m_target_intermediate_regions.clear();
+  m_target_old_regions.clear();
+  m_gc_cycle++;
+
+  if constexpr (kIsDebugBuild)
+    validate_heap_and_roots();
 }
 
 void GarbageCollector::mark_live_objects() {

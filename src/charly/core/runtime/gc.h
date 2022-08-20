@@ -79,7 +79,7 @@ public:
 private:
   void main();
 
-  void collect();
+  void collect(CollectionMode mode);
 
   void mark_live_objects();
   void mark_runtime_roots();
