@@ -24,26 +24,21 @@
  * SOFTWARE.
  */
 
-func foo {
-    let data
-    let count = 2000
-    while (count != 0) {
-        let index = 0
-        while (index != count - 1) {
-            data = (1, 2, 3, 4)
-            index += 1
-        }
-
-        count -= 1
-    }
+class Person {
+    property name
+    property age
 }
 
-16.times(->{
-    const fiber_count = 8
-    Tuple.make_with(fiber_count, ->spawn foo()).each(->(f) await f)
-})
+const l = Person("leonard", 22)
 
+print(l.name)
+print(l.age)
 
+print(l["name"])
+print(l["age"])
+
+print(null["name"])
+print(null["age"])
 
 
 

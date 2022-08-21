@@ -32,6 +32,8 @@
 #include "charly.h"
 #include "symbol.h"
 
+#include "charly/utils/buffer.h"
+
 #pragma once
 
 namespace charly::core::runtime {
@@ -426,8 +428,19 @@ public:
   }
 
   void to_string(std::ostream& out) const;
-
   void dump(std::ostream& out) const;
+
+  std::string to_string() const {
+    utils::Buffer buffer;
+    to_string(buffer);
+    return buffer.str();
+  }
+
+  std::string dump() const {
+    utils::Buffer buffer;
+    dump(buffer);
+    return buffer.str();
+  }
 
   friend std::ostream& operator<<(std::ostream& out, const RawValue& value);
 

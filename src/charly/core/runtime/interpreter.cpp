@@ -733,6 +733,7 @@ OP(loadfar) {
 }
 
 OP(loadattr) {
+  Runtime* runtime = thread->runtime();
   RawValue index = frame->pop();
   RawValue value = frame->pop();
 
@@ -760,8 +761,14 @@ OP(loadattr) {
     return ContinueMode::Next;
   }
 
-  frame->push(kNull);
-  return ContinueMode::Next;
+  if (value.isNull()) {
+    thread->throw_value(
+      runtime->create_string_from_template(thread, "null has no field called '%'", index.to_string()));
+    return ContinueMode::Exception;
+  } else {
+    frame->push(kNull);
+    return ContinueMode::Next;
+  }
 }
 
 OP(loadattrsym) {
