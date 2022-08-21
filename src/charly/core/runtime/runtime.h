@@ -90,19 +90,20 @@ public:
   RawString create_string(Thread* thread, const std::string& string) {
     return create_string(thread, string.data(), string.size(), crc32::hash_string(string));
   }
-  RawString create_string(Thread* thread, const utils::Buffer& buf) {
-    return create_string(thread, buf.data(), buf.size(), buf.hash());
+  RawString create_string(Thread* thread, const utils::Buffer& buffer) {
+    return create_string(thread, buffer.data(), buffer.size(), buffer.hash());
   }
 
   template <typename... T>
   RawString create_string_from_template(Thread* thread, const char* str, const T&... args) {
-    utils::Buffer buf;
-    buf.write_formatted(str, args...);
-    return create_string(thread, buf);
+    utils::Buffer buffer;
+    buffer.write_formatted(str, args...);
+    return acquire_buffer(thread, buffer);
   }
 
   // create a new string by acquiring ownership over an existing allocation
   RawString acquire_string(Thread* thread, char* cstr, size_t size, SYMBOL hash);
+  RawString acquire_buffer(Thread* thread, utils::Buffer& buffer);
   RawLargeString create_large_string(Thread* thread, const char* data, size_t size, SYMBOL hash);
   RawHugeString create_huge_string(Thread* thread, const char* data, size_t size, SYMBOL hash);
   RawHugeString create_huge_string_acquire(Thread* thread, char* data, size_t size, SYMBOL hash);

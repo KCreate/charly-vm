@@ -181,7 +181,6 @@ public:
   }
 
 protected:
-  Buffer* setbuf(std::streambuf::traits_type::char_type* data, std::streamsize size) override;
   std::streambuf::traits_type::int_type underflow() override;
   std::streambuf::traits_type::int_type pbackfail(std::streambuf::traits_type::int_type c) override;
   std::streambuf::traits_type::int_type overflow(std::streambuf::traits_type::int_type c) override;

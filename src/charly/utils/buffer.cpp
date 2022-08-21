@@ -258,13 +258,6 @@ std::string_view Buffer::window_view() const {
   return { data() + m_window_start, window_size() };
 }
 
-Buffer* Buffer::setbuf(std::streambuf::traits_type::char_type* data, std::streamsize size) {
-  clean();
-  m_buffer = data;
-  m_capacity = size;
-  return this;
-}
-
 std::streambuf::traits_type::int_type Buffer::underflow() {
   if (gptr() < egptr()) {
     return std::streambuf::traits_type::to_int_type(*gptr());
@@ -392,28 +385,23 @@ void Buffer::reserve_space(size_t size, bool page_aligned) {
   DCHECK(g != -1);
 
   // determine new capacity
-  size_t new_capacity = kDefaultCapacity;
-  while (new_capacity < size) {
-    new_capacity *= 2;
-  }
-
-  // determine if the new buffer needs to be aligned to the page size
-  bool page_align_new_buffer = page_aligned;
-  if (is_page_aligned() || was_protected) {
-    page_align_new_buffer = true;
-  }
-
-  // minimum one page buffer when aligning to page size
-  // we do not want mprotect to protect unrelated data later on
-  if (page_align_new_buffer && new_capacity < kPageSize) {
+  // if page alignment is required, ensure capacity is a multiple of the page size
+  size_t new_capacity;
+  size_t new_alignment = page_aligned ? kPageSize : 8;
+  if (page_aligned || was_protected) {
     new_capacity = kPageSize;
+    while (new_capacity < size) {
+      new_capacity += kPageSize;
+    }
+  } else {
+    new_capacity = kDefaultCapacity;
+    while (new_capacity < size) {
+      new_capacity *= 2;
+    }
   }
 
-  size_t new_alignment = page_align_new_buffer ? kPageSize : 8;
-  char* new_buffer = (char*)Allocator::realloc(m_buffer, m_capacity, new_capacity, new_alignment);
-  CHECK(new_buffer != nullptr, "could not realloc buffer");
-
-  m_buffer = new_buffer;
+  m_buffer = (char*)Allocator::realloc(m_buffer, m_capacity, new_capacity, new_alignment);
+  CHECK(m_buffer, "could not realloc buffer");
   m_capacity = new_capacity;
 
   setp(m_buffer, m_buffer + m_capacity);

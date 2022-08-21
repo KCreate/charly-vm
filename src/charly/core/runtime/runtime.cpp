@@ -527,12 +527,15 @@ RawString Runtime::create_string(Thread* thread, const char* data, size_t size, 
 }
 
 RawString Runtime::acquire_string(Thread* thread, char* data, size_t size, SYMBOL hash) {
-  if (size <= kHeapRegionUsableSizeForPayload) {
-    auto value = create_string(thread, data, size, hash);
-    utils::Allocator::free(data);
-    return value;
+  return RawString::cast(create_huge_string_acquire(thread, data, size, hash));
+}
+
+RawString Runtime::acquire_buffer(Thread* thread, utils::Buffer& buffer) {
+  size_t size = buffer.size();
+  if (size <= RawSmallString::kMaxLength) {
+    return RawString::cast(RawSmallString::make_from_memory(buffer.data(), size));
   } else {
-    return RawString::cast(create_huge_string_acquire(thread, data, size, hash));
+    return thread->runtime()->acquire_string(thread, buffer.release_buffer(), size, buffer.hash());
   }
 }
 

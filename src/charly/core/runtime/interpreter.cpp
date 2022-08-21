@@ -309,20 +309,11 @@ RawValue Interpreter::add_string_string(Thread* thread, RawString left, RawStrin
   size_t right_size = right.length();
   size_t total_size = left_size + right_size;
 
-  utils::Buffer buf(total_size);
-  buf.write(RawString::data(&left), left_size);
-  buf.write(RawString::data(&right), right_size);
+  utils::Buffer buffer(total_size);
+  buffer.write(RawString::data(&left), left_size);
+  buffer.write(RawString::data(&right), right_size);
 
-  if (total_size <= RawSmallString::kMaxLength) {
-    return RawSmallString::make_from_memory(buf.data(), total_size);
-  } else if (total_size <= kHeapRegionUsableSizeForPayload) {
-    return thread->runtime()->create_string(thread, buf.data(), total_size, buf.hash());
-  } else {
-    SYMBOL buf_hash = buf.hash();
-    char* buffer = buf.release_buffer();
-    CHECK(buffer, "could not release buffer");
-    return thread->runtime()->acquire_string(thread, buffer, total_size, buf_hash);
-  }
+  return thread->runtime()->acquire_buffer(thread, buffer);
 }
 
 RawValue Interpreter::execute(Thread* thread) {
@@ -433,13 +424,8 @@ OP(stringconcat) {
     frame->peek(depth).to_string(buffer);
   }
 
-  SYMBOL buf_hash = buffer.hash();
-  size_t buf_size = buffer.size();
-  char* buf_ptr = buffer.release_buffer();
-  CHECK(buf_ptr, "could not release buffer");
-
   frame->pop(count);
-  frame->push(thread->runtime()->acquire_string(thread, buf_ptr, buf_size, buf_hash));
+  frame->push(thread->runtime()->acquire_buffer(thread, buffer));
 
   return ContinueMode::Next;
 }
