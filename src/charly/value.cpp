@@ -1481,6 +1481,10 @@ void RawFiber::set_result_future(RawFuture result_future) const {
   set_field_at(kResultFutureOffset, result_future);
 }
 
+RawValue RawFiber::await(Thread* thread) const {
+  return result_future().await(thread);
+}
+
 RawFuture::WaitQueue* RawFuture::WaitQueue::alloc(size_t initial_capacity) {
   DCHECK(initial_capacity <= kUInt32Max);
   size_t alloc_size = sizeof(WaitQueue) + kPointerSize * initial_capacity;
@@ -1529,6 +1533,85 @@ RawValue RawFuture::exception() const {
 
 void RawFuture::set_exception(RawValue value) const {
   set_field_at(kExceptionOffset, value);
+}
+
+RawValue RawFuture::await(Thread* thread) const {
+  HandleScope scope(thread);
+  Future future(scope, *this);
+
+  {
+    std::unique_lock lock(future);
+
+    // wait for the future to finish
+    if (!future.has_finished()) {
+      RawFuture::WaitQueue* wait_queue = future.wait_queue();
+      future.set_wait_queue(wait_queue->append_thread(wait_queue, thread));
+      thread->acas_state(Thread::State::Running, Thread::State::Waiting);
+
+      lock.unlock();
+      thread->enter_scheduler();
+      lock.lock();
+    }
+  }
+
+  if (!future.exception().isNull()) {
+    thread->throw_value(future.exception());
+    return kErrorException;
+  }
+  return future.result();
+}
+
+RawValue RawFuture::resolve(Thread* thread, RawValue value) const {
+  auto runtime = thread->runtime();
+
+  {
+    std::lock_guard lock(*this);
+    if (wait_queue() == nullptr) {
+      thread->throw_value(runtime->create_string(thread, "Future has already completed"));
+      return kErrorException;
+    }
+
+    set_result(value);
+    set_exception(kNull);
+    wake_waiting_threads(thread);
+  }
+
+  return *this;
+}
+
+RawValue RawFuture::reject(Thread* thread, RawException exception) const {
+  auto runtime = thread->runtime();
+
+  {
+    std::lock_guard lock(*this);
+    if (wait_queue() == nullptr) {
+      thread->throw_value(runtime->create_string(thread, "Future has already completed"));
+      return kErrorException;
+    }
+
+    set_result(kNull);
+    set_exception(exception);
+    wake_waiting_threads(thread);
+  }
+
+  return *this;
+}
+
+void RawFuture::wake_waiting_threads(Thread* thread) const {
+  DCHECK(is_locked());
+  auto* scheduler = thread->runtime()->scheduler();
+  auto* processor = thread->worker()->processor();
+  auto* queue = wait_queue();
+
+  for (size_t i = 0; i < queue->used; i++) {
+    Thread* waiting_thread = queue->buffer[i];
+    DCHECK(waiting_thread->state() == Thread::State::Waiting);
+    waiting_thread->ready();
+    scheduler->schedule_thread(waiting_thread, processor);
+  }
+
+  utils::Allocator::free(queue);
+  set_wait_queue(nullptr);
 }
 
 RawString RawException::message() const {

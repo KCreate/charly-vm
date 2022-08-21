@@ -1125,89 +1125,6 @@ RawTuple Runtime::create_stack_trace(Thread* thread) {
   return *stack_trace;
 }
 
-RawValue Runtime::await_future(Thread* thread, RawFuture _future) {
-  HandleScope scope(thread);
-  Future future(scope, _future);
-
-  {
-    std::unique_lock lock(future);
-
-    // wait for the future to finish
-    if (!future.has_finished()) {
-      RawFuture::WaitQueue* wait_queue = future.wait_queue();
-      future.set_wait_queue(wait_queue->append_thread(wait_queue, thread));
-      thread->m_state.acas(Thread::State::Running, Thread::State::Waiting);
-
-      lock.unlock();
-      thread->enter_scheduler();
-      lock.lock();
-    }
-  }
-
-  if (!future.exception().isNull()) {
-    thread->throw_value(future.exception());
-    return kErrorException;
-  }
-  return future.result();
-}
-
-RawValue Runtime::await_fiber(Thread* thread, RawFiber fiber) {
-  return await_future(thread, fiber.result_future());
-}
-
-RawValue Runtime::resolve_future(Thread* thread, RawFuture future, RawValue result) {
-  auto runtime = thread->runtime();
-
-  {
-    std::lock_guard lock(future);
-    if (future.wait_queue() == nullptr) {
-      thread->throw_value(runtime->create_string_from_template(thread, "Future has already completed"));
-      return kErrorException;
-    }
-
-    future.set_result(result);
-    future.set_exception(kNull);
-    future_wake_waiting_threads(thread, future);
-  }
-
-  return future;
-}
-
-RawValue Runtime::reject_future(Thread* thread, RawFuture future, RawException exception) {
-  auto runtime = thread->runtime();
-
-  {
-    std::lock_guard lock(future);
-    if (future.wait_queue() == nullptr) {
-      thread->throw_value(runtime->create_string_from_template(thread, "Future has already completed"));
-      return kErrorException;
-    }
-
-    future.set_result(kNull);
-    future.set_exception(exception);
-    future_wake_waiting_threads(thread, future);
-  }
-
-  return future;
-}
-
-void Runtime::future_wake_waiting_threads(Thread* thread, RawFuture future) {
-  DCHECK(future.is_locked());
-  auto processor = thread->worker()->processor();
-
-  RawFuture::WaitQueue* wait_queue = future.wait_queue();
-
-  for (size_t i = 0; i < wait_queue->used; i++) {
-    Thread* waiting_thread = wait_queue->buffer[i];
-    DCHECK(waiting_thread->state() == Thread::State::Waiting);
-    waiting_thread->ready();
-    m_scheduler->schedule_thread(waiting_thread, processor);
-  }
-
-  utils::Allocator::free(wait_queue);
-  future.set_wait_queue(nullptr);
-}
-
 RawValue Runtime::declare_global_variable(Thread*, SYMBOL name, bool constant) {
   std::unique_lock<std::shared_mutex> locker(m_globals_mutex);
 
@@ -1440,7 +1357,7 @@ RawValue Runtime::import_module_at_path(Thread* thread, const fs::path& path, bo
     const auto& entry = m_cached_modules.at(path_hash);
     if (mtime == entry.mtime) {
       lock.unlock();
-      return await_future(thread, entry.module);
+      return entry.module.await(thread);
     }
   }
 
@@ -1459,12 +1376,12 @@ RawValue Runtime::import_module_at_path(Thread* thread, const fs::path& path, bo
   if (unit->console.has_errors()) {
     auto exception = create_import_exception(thread, path, unit);
     thread->throw_value(exception);
-    reject_future(thread, future, exception);
+    future.reject(thread, exception);
     return kErrorException;
   }
 
   if (utils::ArgumentParser::is_flag_set("skipexec")) {
-    resolve_future(thread, future, kNull);
+    future.resolve(thread, kNull);
     return kNull;
   }
 
@@ -1475,13 +1392,13 @@ RawValue Runtime::import_module_at_path(Thread* thread, const fs::path& path, bo
   Function module_function(scope, create_function(thread, kNull, module->function_table.front()));
   Fiber module_fiber(scope, create_fiber(thread, module_function, kNull, kNull));
 
-  Value rval(scope, await_fiber(thread, module_fiber));
+  Value rval(scope, module_fiber.await(thread));
   if (rval.is_error_exception()) {
-    reject_future(thread, future, RawException::cast(thread->pending_exception()));
+    future.reject(thread, RawException::cast(thread->pending_exception()));
     return kErrorException;
   }
 
-  resolve_future(thread, future, rval);
+  future.resolve(thread, rval);
   return rval;
 }
 

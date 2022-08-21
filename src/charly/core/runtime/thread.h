@@ -208,17 +208,19 @@ public:
   // allocate memory on the managed charly heap
   uintptr_t allocate(size_t size, bool contains_external_heap_pointers = false);
 
+  // yield control back to the scheduler and update thread state
+  void enter_scheduler();
+
+  void dump_exception_trace(RawException exception) const;
+
+  void acas_state(Thread::State old_state, Thread::State new_state);
+
 private:
   int32_t entry_main_thread();
   void entry_fiber_thread();
 
-  // yield control back to the scheduler and update thread state
-  void enter_scheduler();
-
   // acquire a stack from the scheduler
   void acquire_stack();
-
-  void dump_exception_trace(RawException exception) const;
 
 private:
   size_t m_id;

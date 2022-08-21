@@ -287,10 +287,10 @@ void Thread::entry_fiber_thread() {
     std::lock_guard lock(fiber);
     fiber.set_thread(nullptr);
     if (result.is_error_exception()) {
-      runtime()->reject_future(this, fiber.result_future(), RawException::cast(pending_exception()));
+      fiber.result_future().reject(this, RawException::cast(pending_exception()));
     } else {
       DCHECK(!result.is_error());
-      runtime()->resolve_future(this, fiber.result_future(), result);
+      fiber.result_future().resolve(this, result);
     }
   }
 }
@@ -362,6 +362,10 @@ void Thread::dump_exception_trace(RawException exception) const {
   if (chain_too_deep) {
     debuglnf_notime("\nMore exceptions were thrown that are not shown here");
   }
+}
+
+void Thread::acas_state(Thread::State old_state, Thread::State new_state) {
+  m_state.acas(old_state, new_state);
 }
 
 void Thread::push_frame(Frame* frame) {

@@ -149,12 +149,6 @@ public:
   // starting from the bottom
   RawTuple create_stack_trace(Thread* thread);
 
-  RawValue await_future(Thread* thread, RawFuture future);
-  RawValue await_fiber(Thread* thread, RawFiber fiber);
-  RawValue resolve_future(Thread* thread, RawFuture future, RawValue result);
-  RawValue reject_future(Thread* thread, RawFuture future, RawException exception);
-  void future_wake_waiting_threads(Thread* thread, RawFuture future);
-
   // declare a new global variable
   // returns kErrorOk on success
   // returns kErrorException if the variable already exists

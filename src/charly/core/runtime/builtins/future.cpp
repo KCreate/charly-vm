@@ -45,12 +45,11 @@ RawValue futurecreate(Thread* thread, const RawValue*, uint8_t argc) {
 }
 
 RawValue futureresolve(Thread* thread, const RawValue* args, uint8_t argc) {
-  Runtime* runtime = thread->runtime();
   CHECK(argc == 2);
   CHECK(args[0].isFuture());
   RawFuture future = RawFuture::cast(args[0]);
   RawValue result = args[1];
-  return runtime->resolve_future(thread, future, result);
+  return future.resolve(thread, result);
 }
 
 RawValue futurereject(Thread* thread, const RawValue* args, uint8_t argc) {
@@ -66,7 +65,7 @@ RawValue futurereject(Thread* thread, const RawValue* args, uint8_t argc) {
     return kErrorException;
   }
 
-  return runtime->reject_future(thread, future, RawException::cast(exception));
+  return future.reject(thread, RawException::cast(exception));
 }
 
 }  // namespace charly::core::runtime::builtin::future

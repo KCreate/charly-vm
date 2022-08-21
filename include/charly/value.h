@@ -957,6 +957,8 @@ public:
   RawFuture result_future() const;
   void set_result_future(RawFuture result_future) const;
 
+  RawValue await(Thread* thread) const;
+
   enum {
     kThreadPointerOffset = RawInstance::kFieldCount,
     kFunctionOffset,
@@ -1001,12 +1003,19 @@ public:
     return wait_queue() == nullptr;
   }
 
+  RawValue await(Thread* thread) const;
+  RawValue resolve(Thread* thread, RawValue value) const;
+  RawValue reject(Thread* thread, RawException exception) const;
+
   enum {
     kWaitQueueOffset = RawInstance::kFieldCount,
     kResultOffset,
     kExceptionOffset,
     kFieldCount
   };
+
+private:
+  void wake_waiting_threads(Thread* thread) const;
 };
 
 // user exception instance
