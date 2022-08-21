@@ -676,7 +676,7 @@ public:
   void dump_info(std::ostream& out) const override;
 
   Truthyness truthyness() const override {
-    return Truthyness::True;
+    return value == 0 ? Truthyness::False : Truthyness::True;
   }
 
   bool compares_equal(const ref<Node>& other) const override;
@@ -701,6 +701,9 @@ public:
   void dump_info(std::ostream& out) const override;
 
   Truthyness truthyness() const override {
+    if (value == 0.0 || std::isnan(value)) {
+      return Truthyness::False;
+    }
     return Truthyness::True;
   }
 
@@ -1243,8 +1246,18 @@ public:
     } else if (condition_truthyness == Truthyness::False) {
       return else_exp->truthyness();
     } else {
-      return Truthyness::Unknown;
+
+      // if the condition truthyness isn't known, but both cases have the
+      // same known truthyness, the whole expression will always evaluate to
+      // that shared truthyness
+      auto then_truth = then_exp->truthyness();
+      auto else_truth = else_exp->truthyness();
+      if (then_truth == else_truth) {
+        return then_truth;
+      }
     }
+
+    return Truthyness::Unknown;
   }
 
   bool has_side_effects() const override {
@@ -1320,7 +1333,7 @@ public:
       switch (expression->truthyness()) {
         case Truthyness::True: return Truthyness::False;
         case Truthyness::False: return Truthyness::True;
-        case Truthyness::Unknown: return Truthyness::Unknown;
+        default: break;
       }
     }
     return Truthyness::Unknown;

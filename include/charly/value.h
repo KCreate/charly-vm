@@ -476,6 +476,7 @@ public:
   static RawFloat make(double value);
 };
 static const RawFloat kNaN = RawFloat::make(NAN);
+static const RawFloat kFloatZero = RawFloat::make(0.0);
 static const RawFloat kInfinity = RawFloat::make(INFINITY);
 static const RawFloat kNegInfinity = RawFloat::make(-INFINITY);
 

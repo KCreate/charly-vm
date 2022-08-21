@@ -322,13 +322,21 @@ ShapeId RawValue::shape_id_not_object_int() const {
 }
 
 bool RawValue::truthyness() const {
-  if (isBool()) {
-    return RawBool::cast(this).value();
-  } else if (isNull()) {
+  if (*this == kNull) {
     return false;
-  } else {
+  } else if (*this == kTrue) {
     return true;
+  } else if (*this == kFalse) {
+    return false;
+  } else if (*this == kNaN) {
+    return false;
+  } else if (*this == kZero) {
+    return false;
+  } else if (*this == kFloatZero) {
+    return false;
   }
+
+  return true;
 }
 
 bool RawValue::is_old_pointer() const {
