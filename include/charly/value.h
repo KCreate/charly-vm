@@ -632,8 +632,28 @@ public:
   void unlock() const;
   bool is_locked() const;
 
-  RawValue& field_at(uint32_t index);
-  void set_field_at(uint32_t index, RawValue value);
+  template <typename R = RawValue>
+  R& field_at(uint32_t index) const {
+    DCHECK(isInstance() || isTuple());
+    DCHECK(index < count());
+    RawValue* data = bitcast<RawValue*>(address());
+    RawValue* value = &data[index];
+    R::value_is_type(*value);
+    return *bitcast<R*>(value);
+  }
+
+  template <typename R = RawValue>
+  R& first_field() const {
+    return field_at<R>(0);
+  }
+
+  template <typename R = RawValue>
+  R& last_field() const {
+    DCHECK(count() > 0);
+    return field_at<R>(count() - 1);
+  }
+
+  void set_field_at(uint32_t index, RawValue value) const;
 
   static RawObject make_from_ptr(uintptr_t address, bool is_young = true);
 };
@@ -668,24 +688,6 @@ public:
 
   const RawValue* data() const;
   uint32_t size() const;
-
-  template <typename R = RawValue>
-  R field_at(uint32_t index) const {
-    DCHECK(index < size());
-    return R::cast(data()[index]);
-  }
-
-  template <typename R = RawValue>
-  R first_field() const {
-    DCHECK(size() > 0);
-    return field_at<R>(0);
-  }
-
-  template <typename R = RawValue>
-  R last_field() const {
-    DCHECK(size() > 0);
-    return field_at<R>(size() - 1);
-  }
 };
 
 // base type for all types that use the shape system
@@ -696,20 +698,13 @@ public:
   uint32_t field_count() const;
 
   // check wether this instance is or inherits from a given shape
-  bool is_instance_of(ShapeId id);
+  bool is_instance_of(ShapeId id) const;
 
   RawValue klass_field() const;
-  void set_klass_field(RawValue klass);
-
-  template <typename R = RawValue>
-  R field_at(uint32_t index) const {
-    DCHECK(index < field_count());
-    RawValue* data = bitcast<RawValue*>(address());
-    return R::cast(data[index]);
-  }
+  void set_klass_field(RawValue klass) const;
 
   uintptr_t pointer_at(int64_t index) const;
-  void set_pointer_at(int64_t index, const void* pointer);
+  void set_pointer_at(int64_t index, const void* pointer) const;
 
   enum {
     kKlassOffset = 0,
@@ -727,10 +722,10 @@ public:
   SYMBOL hashcode() const;
 
   const uint8_t* data() const;
-  void set_data(const uint8_t* data);
+  void set_data(const uint8_t* data) const;
 
   size_t length() const;
-  void set_length(size_t length);
+  void set_length(size_t length) const;
 
   enum {
     kDataPointerOffset = RawInstance::kFieldCount,
@@ -747,10 +742,10 @@ public:
   SYMBOL hashcode() const;
 
   const char* data() const;
-  void set_data(const char* data);
+  void set_data(const char* data) const;
 
   size_t length() const;
-  void set_length(size_t length);
+  void set_length(size_t length) const;
 
   enum {
     kDataPointerOffset = RawInstance::kFieldCount,
@@ -772,25 +767,25 @@ public:
   };
 
   uint8_t flags() const;
-  void set_flags(uint8_t flags);
+  void set_flags(uint8_t flags) const;
 
   RawTuple ancestor_table() const;
-  void set_ancestor_table(RawTuple ancestor_table);
+  void set_ancestor_table(RawTuple ancestor_table) const;
 
   RawSymbol name() const;
-  void set_name(RawSymbol name);
+  void set_name(RawSymbol name) const;
 
   RawValue parent() const;
-  void set_parent(RawValue parent);
+  void set_parent(RawValue parent) const;
 
   RawShape shape_instance() const;
-  void set_shape_instance(RawShape shape);
+  void set_shape_instance(RawShape shape) const;
 
   RawTuple function_table() const;
-  void set_function_table(RawTuple function_table);
+  void set_function_table(RawTuple function_table) const;
 
   RawValue constructor() const;
-  void set_constructor(RawValue constructor);
+  void set_constructor(RawValue constructor) const;
 
   RawValue lookup_function(SYMBOL name) const;
 
@@ -817,13 +812,13 @@ public:
   COMMON_RAW_OBJECT(Shape);
 
   ShapeId own_shape_id() const;
-  void set_own_shape_id(ShapeId id);
+  void set_own_shape_id(ShapeId id) const;
 
   RawValue parent() const;
-  void set_parent(RawValue parent);
+  void set_parent(RawValue parent) const;
 
   RawTuple keys() const;
-  void set_keys(RawTuple keys);
+  void set_keys(RawTuple keys) const;
 
   enum {
     kKeyFlagNone = 0,
@@ -840,7 +835,7 @@ public:
   };
 
   RawTuple additions() const;
-  void set_additions(RawTuple additions);
+  void set_additions(RawTuple additions) const;
 
   // returns the found offset of a symbol
   // returns -1 if the symbol could not be found
@@ -880,25 +875,25 @@ public:
   COMMON_RAW_OBJECT(Function);
 
   RawSymbol name() const;
-  void set_name(RawSymbol name);
+  void set_name(RawSymbol name) const;
 
   RawValue context() const;
-  void set_context(RawValue context);
+  void set_context(RawValue context) const;
 
   RawValue saved_self() const;
-  void set_saved_self(RawValue context);
+  void set_saved_self(RawValue context) const;
 
   RawValue host_class() const;
-  void set_host_class(RawValue host_class);
+  void set_host_class(RawValue host_class) const;
 
   RawValue overload_table() const;
-  void set_overload_table(RawValue overload_table);
+  void set_overload_table(RawValue overload_table) const;
 
   SharedFunctionInfo* shared_info() const;
-  void set_shared_info(SharedFunctionInfo* function);
+  void set_shared_info(SharedFunctionInfo* function) const;
 
   // check wether this specific function instance (ignoring overloads) would accept *argc* arguments
-  bool check_accepts_argc(uint32_t argc);
+  bool check_accepts_argc(uint32_t argc) const;
 
   enum {
     kContextParentOffset = 0,
@@ -925,13 +920,13 @@ public:
   COMMON_RAW_OBJECT(BuiltinFunction);
 
   BuiltinFunctionType function() const;
-  void set_function(BuiltinFunctionType function);
+  void set_function(BuiltinFunctionType function) const;
 
   RawSymbol name() const;
-  void set_name(RawSymbol symbol);
+  void set_name(RawSymbol symbol) const;
 
   uint8_t argc() const;
-  void set_argc(uint8_t argc);
+  void set_argc(uint8_t argc) const;
 
   enum {
     kFunctionPtrOffset = RawInstance::kFieldCount,
@@ -948,19 +943,19 @@ public:
   COMMON_RAW_OBJECT(Fiber);
 
   Thread* thread() const;
-  void set_thread(Thread* thread);
+  void set_thread(Thread* thread) const;
 
   RawFunction function() const;
-  void set_function(RawFunction function);
+  void set_function(RawFunction function) const;
 
   RawValue context() const;
-  void set_context(RawValue context);
+  void set_context(RawValue context) const;
 
   RawValue arguments() const;
-  void set_arguments(RawValue arguments);
+  void set_arguments(RawValue arguments) const;
 
   RawFuture result_future() const;
-  void set_result_future(RawFuture result_future);
+  void set_result_future(RawFuture result_future) const;
 
   enum {
     kThreadPointerOffset = RawInstance::kFieldCount,
@@ -994,13 +989,13 @@ public:
   };
 
   WaitQueue* wait_queue() const;
-  void set_wait_queue(WaitQueue* wait_queue);
+  void set_wait_queue(WaitQueue* wait_queue) const;
 
   RawValue result() const;
-  void set_result(RawValue result);
+  void set_result(RawValue result) const;
 
   RawValue exception() const;
-  void set_exception(RawValue value);
+  void set_exception(RawValue value) const;
 
   bool has_finished() const {
     return wait_queue() == nullptr;
@@ -1020,13 +1015,13 @@ public:
   COMMON_RAW_OBJECT(Exception);
 
   RawString message() const;
-  void set_message(RawString value);
+  void set_message(RawString value) const;
 
   RawTuple stack_trace() const;
-  void set_stack_trace(RawTuple stack_trace);
+  void set_stack_trace(RawTuple stack_trace) const;
 
   RawValue cause() const;
-  void set_cause(RawValue stack_trace);
+  void set_cause(RawValue stack_trace) const;
 
   enum {
     kMessageOffset = RawInstance::kFieldCount,
@@ -1042,7 +1037,7 @@ public:
   COMMON_RAW_OBJECT(ImportException);
 
   RawTuple errors() const;
-  void set_errors(RawTuple errors);
+  void set_errors(RawTuple errors) const;
 
   enum {
     kErrorsOffset = RawException::kFieldCount,

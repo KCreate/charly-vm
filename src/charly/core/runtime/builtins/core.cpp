@@ -59,23 +59,23 @@ RawValue transplantbuiltinclass(Thread* thread, const RawValue* args, uint8_t ar
   Class static_donor_class(scope, runtime->lookup_class(donor_class));
 
   if (!is_builtin_shape(klass.shape_instance().own_shape_id())) {
-    thread->throw_value(runtime->create_string_from_template(thread, "expected base class to be a builtin class"));
+    thread->throw_value(runtime->create_string(thread, "expected base class to be a builtin class"));
     return kErrorException;
   }
 
   if (klass.function_table().size()) {
-    thread->throw_value(runtime->create_string_from_template(thread, "expected base class function table to be empty"));
+    thread->throw_value(runtime->create_string(thread, "expected base class function table to be empty"));
     return kErrorException;
   }
 
   if (donor_class.parent() != runtime->get_builtin_class(ShapeId::kInstance)) {
-    thread->throw_value(runtime->create_string_from_template(thread, "the donor class shall not be a subclass"));
+    thread->throw_value(runtime->create_string(thread, "the donor class shall not be a subclass"));
     return kErrorException;
   }
 
   if (donor_class.shape_instance() != runtime->lookup_shape(ShapeId::kInstance)) {
     thread->throw_value(
-      runtime->create_string_from_template(thread, "the donor class shall not declare any new properties"));
+      runtime->create_string(thread, "the donor class shall not declare any new properties"));
     return kErrorException;
   }
 
@@ -108,13 +108,13 @@ RawValue transplantbuiltinclass(Thread* thread, const RawValue* args, uint8_t ar
   if (static_donor_class != builtin_class_class) {
     if (static_class.function_table().size()) {
       thread->throw_value(
-        runtime->create_string_from_template(thread, "expected base static class function table to be empty"));
+        runtime->create_string(thread, "expected base static class function table to be empty"));
       return kErrorException;
     }
 
     if (static_donor_class.shape_instance() != runtime->lookup_shape(ShapeId::kClass)) {
       thread->throw_value(
-        runtime->create_string_from_template(thread, "the donor class shall not declare any new static properties"));
+        runtime->create_string(thread, "the donor class shall not declare any new static properties"));
       return kErrorException;
     }
 

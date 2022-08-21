@@ -586,7 +586,7 @@ RawValue Runtime::create_class(Thread* thread,
   }
 
   if (!parent_value.isClass()) {
-    thread->throw_value(create_string_from_template(thread, "extended value is not a class"));
+    thread->throw_value(create_string(thread, "extended value is not a class"));
     return kErrorException;
   }
 
@@ -1057,7 +1057,7 @@ RawValue Runtime::create_exception(Thread* thread, RawValue value) {
     return exception;
   } else {
     thread->throw_value(
-      this->create_string_from_template(thread, "expected thrown value to be an exception or a string"));
+      this->create_string(thread, "expected thrown value to be an exception or a string"));
     return kErrorException;
   }
 }

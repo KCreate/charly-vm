@@ -128,7 +128,7 @@ RawValue Interpreter::call_value(
     return Interpreter::call_function(thread, klass, constructor, arguments, argc, true, argument_tuple);
   }
 
-  thread->throw_value(runtime->create_string_from_template(thread, "called value is not a function"));
+  thread->throw_value(runtime->create_string(thread, "called value is not a function"));
   return kErrorException;
 }
 
@@ -1007,7 +1007,7 @@ OP(unpacksequence) {
 
     return ContinueMode::Next;
   } else {
-    thread->throw_value(runtime->create_string_from_template(thread, "value is not a sequence"));
+    thread->throw_value(runtime->create_string(thread, "value is not a sequence"));
     return ContinueMode::Exception;
   }
 }
@@ -1026,7 +1026,7 @@ OP(unpacksequencespread) {
     uint32_t tuple_size = tuple.size();
     if (tuple_size < total_count) {
       thread->throw_value(
-        runtime->create_string_from_template(thread, "touple does not contain enough values to unpack"));
+        runtime->create_string(thread, "touple does not contain enough values to unpack"));
       return ContinueMode::Exception;
     }
 
@@ -1050,7 +1050,7 @@ OP(unpacksequencespread) {
 
     return ContinueMode::Next;
   } else {
-    thread->throw_value(runtime->create_string_from_template(thread, "value is not a sequence"));
+    thread->throw_value(runtime->create_string(thread, "value is not a sequence"));
     return ContinueMode::Exception;
   }
 }
@@ -1172,7 +1172,7 @@ OP(makefiber) {
   RawValue arg_context = frame->pop();
 
   if (!arg_function.isFunction()) {
-    thread->throw_value(runtime->create_string_from_template(thread, "argument is not a function"));
+    thread->throw_value(runtime->create_string(thread, "argument is not a function"));
     return ContinueMode::Exception;
   }
 

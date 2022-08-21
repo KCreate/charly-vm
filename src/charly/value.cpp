@@ -1065,14 +1065,7 @@ bool RawObject::is_locked() const {
   return header()->m_lock.is_locked();
 }
 
-RawValue& RawObject::field_at(uint32_t index) {
-  DCHECK(isInstance() || isTuple());
-  DCHECK(index < count());
-  RawValue* data = bitcast<RawValue*>(address());
-  return data[index];
-}
-
-void RawObject::set_field_at(uint32_t index, RawValue value) {
+void RawObject::set_field_at(uint32_t index, RawValue value) const {
   field_at(index) = value;
 
   if (value.is_young_pointer() && this->is_old_pointer()) {
@@ -1122,7 +1115,7 @@ uint32_t RawInstance::field_count() const {
   return count();
 }
 
-bool RawInstance::is_instance_of(ShapeId id) {
+bool RawInstance::is_instance_of(ShapeId id) const {
   ShapeId own_id = shape_id();
 
   if (own_id == id) {
@@ -1150,7 +1143,7 @@ uintptr_t RawInstance::pointer_at(int64_t index) const {
   return field_at<RawInt>(index).external_pointer_value();
 }
 
-void RawInstance::set_pointer_at(int64_t index, const void* pointer) {
+void RawInstance::set_pointer_at(int64_t index, const void* pointer) const {
   uintptr_t raw = bitcast<uintptr_t>(const_cast<void*>(pointer));
   set_field_at(index, RawInt::make_from_external_pointer(raw));
 }
@@ -1159,7 +1152,7 @@ RawValue RawInstance::klass_field() const {
   return field_at(kKlassOffset);
 }
 
-void RawInstance::set_klass_field(RawValue klass) {
+void RawInstance::set_klass_field(RawValue klass) const {
   set_field_at(kKlassOffset, klass);
 }
 
@@ -1172,7 +1165,7 @@ const uint8_t* RawHugeBytes::data() const {
   return bitcast<const uint8_t*>(pointer_at(kDataPointerOffset));
 }
 
-void RawHugeBytes::set_data(const uint8_t* data) {
+void RawHugeBytes::set_data(const uint8_t* data) const {
   set_pointer_at(kDataPointerOffset, data);
 }
 
@@ -1180,7 +1173,7 @@ size_t RawHugeBytes::length() const {
   return field_at<RawInt>(kDataLengthOffset).value();
 }
 
-void RawHugeBytes::set_length(size_t length) {
+void RawHugeBytes::set_length(size_t length) const {
   set_field_at(kDataLengthOffset, RawInt::make(length));
 }
 
@@ -1193,7 +1186,7 @@ const char* RawHugeString::data() const {
   return bitcast<const char*>(pointer_at(kDataPointerOffset));
 }
 
-void RawHugeString::set_data(const char* data) {
+void RawHugeString::set_data(const char* data) const {
   set_pointer_at(kDataPointerOffset, data);
 }
 
@@ -1201,7 +1194,7 @@ size_t RawHugeString::length() const {
   return field_at<RawInt>(kDataLengthOffset).value();
 }
 
-void RawHugeString::set_length(size_t length) {
+void RawHugeString::set_length(size_t length) const {
   auto length_int = bitcast<int64_t>(length);
   DCHECK(length_int >= 0);
   set_field_at(kDataLengthOffset, RawInt::make(length_int));
@@ -1211,7 +1204,7 @@ uint8_t RawClass::flags() const {
   return field_at<RawInt>(kFlagsOffset).value();
 }
 
-void RawClass::set_flags(uint8_t flags) {
+void RawClass::set_flags(uint8_t flags) const {
   set_field_at(kFlagsOffset, RawInt::make(flags));
 }
 
@@ -1219,7 +1212,7 @@ RawTuple RawClass::ancestor_table() const {
   return field_at<RawTuple>(kAncestorTableOffset);
 }
 
-void RawClass::set_ancestor_table(RawTuple ancestor_table) {
+void RawClass::set_ancestor_table(RawTuple ancestor_table) const {
   set_field_at(kAncestorTableOffset, ancestor_table);
 }
 
@@ -1227,7 +1220,7 @@ RawSymbol RawClass::name() const {
   return field_at<RawSymbol>(kNameOffset);
 }
 
-void RawClass::set_name(RawSymbol name) {
+void RawClass::set_name(RawSymbol name) const {
   set_field_at(kNameOffset, name);
 }
 
@@ -1235,7 +1228,7 @@ RawValue RawClass::parent() const {
   return field_at(kParentOffset);
 }
 
-void RawClass::set_parent(RawValue parent) {
+void RawClass::set_parent(RawValue parent) const {
   set_field_at(kParentOffset, parent);
 }
 
@@ -1243,7 +1236,7 @@ RawShape RawClass::shape_instance() const {
   return field_at<RawShape>(kShapeOffset);
 }
 
-void RawClass::set_shape_instance(RawShape shape) {
+void RawClass::set_shape_instance(RawShape shape) const {
   set_field_at(kShapeOffset, shape);
 }
 
@@ -1251,7 +1244,7 @@ RawTuple RawClass::function_table() const {
   return field_at<RawTuple>(kFunctionTableOffset);
 }
 
-void RawClass::set_function_table(RawTuple function_table) {
+void RawClass::set_function_table(RawTuple function_table) const {
   set_field_at(kFunctionTableOffset, function_table);
 }
 
@@ -1259,7 +1252,7 @@ RawValue RawClass::constructor() const {
   return field_at(kConstructorOffset);
 }
 
-void RawClass::set_constructor(RawValue constructor) {
+void RawClass::set_constructor(RawValue constructor) const {
   set_field_at(kConstructorOffset, constructor);
 }
 
@@ -1308,7 +1301,7 @@ ShapeId RawShape::own_shape_id() const {
   return static_cast<ShapeId>(field_at<RawInt>(kOwnShapeIdOffset).value());
 }
 
-void RawShape::set_own_shape_id(ShapeId id) {
+void RawShape::set_own_shape_id(ShapeId id) const {
   set_field_at(kOwnShapeIdOffset, RawInt::make(static_cast<uint32_t>(id)));
 }
 
@@ -1316,7 +1309,7 @@ RawValue RawShape::parent() const {
   return field_at(kParentShapeOffset);
 }
 
-void RawShape::set_parent(RawValue parent) {
+void RawShape::set_parent(RawValue parent) const {
   set_field_at(kParentShapeOffset, parent);
 }
 
@@ -1324,7 +1317,7 @@ RawTuple RawShape::keys() const {
   return field_at<RawTuple>(kKeysOffset);
 }
 
-void RawShape::set_keys(RawTuple keys) {
+void RawShape::set_keys(RawTuple keys) const {
   set_field_at(kKeysOffset, keys);
 }
 
@@ -1332,7 +1325,7 @@ RawTuple RawShape::additions() const {
   return field_at<RawTuple>(kAdditionsOffset);
 }
 
-void RawShape::set_additions(RawTuple additions) {
+void RawShape::set_additions(RawTuple additions) const {
   set_field_at(kAdditionsOffset, additions);
 }
 
@@ -1373,7 +1366,7 @@ RawSymbol RawFunction::name() const {
   return field_at<RawSymbol>(kNameOffset);
 }
 
-void RawFunction::set_name(RawSymbol name) {
+void RawFunction::set_name(RawSymbol name) const {
   set_field_at(kNameOffset, name);
 }
 
@@ -1381,7 +1374,7 @@ RawValue RawFunction::context() const {
   return field_at(kFrameContextOffset);
 }
 
-void RawFunction::set_context(RawValue context) {
+void RawFunction::set_context(RawValue context) const {
   set_field_at(kFrameContextOffset, context);
 }
 
@@ -1389,7 +1382,7 @@ RawValue RawFunction::saved_self() const {
   return field_at(kSavedSelfOffset);
 }
 
-void RawFunction::set_saved_self(RawValue value) {
+void RawFunction::set_saved_self(RawValue value) const {
   set_field_at(kSavedSelfOffset, value);
 }
 
@@ -1397,7 +1390,7 @@ RawValue RawFunction::host_class() const {
   return field_at(kHostClassOffset);
 }
 
-void RawFunction::set_host_class(RawValue host_class) {
+void RawFunction::set_host_class(RawValue host_class) const {
   set_field_at(kHostClassOffset, host_class);
 }
 
@@ -1405,7 +1398,7 @@ RawValue RawFunction::overload_table() const {
   return field_at(kOverloadTableOffset);
 }
 
-void RawFunction::set_overload_table(RawValue overload_table) {
+void RawFunction::set_overload_table(RawValue overload_table) const {
   set_field_at(kOverloadTableOffset, overload_table);
 }
 
@@ -1413,11 +1406,11 @@ SharedFunctionInfo* RawFunction::shared_info() const {
   return bitcast<SharedFunctionInfo*>(pointer_at(kSharedInfoOffset));
 }
 
-void RawFunction::set_shared_info(SharedFunctionInfo* function) {
+void RawFunction::set_shared_info(SharedFunctionInfo* function) const {
   set_pointer_at(kSharedInfoOffset, function);
 }
 
-bool RawFunction::check_accepts_argc(uint32_t argc) {
+bool RawFunction::check_accepts_argc(uint32_t argc) const {
   auto& ir_info = shared_info()->ir_info;
   bool direct_match = argc >= ir_info.minargc && argc <= ir_info.argc;
   bool spread_match = argc > ir_info.argc && ir_info.spread_argument;
@@ -1428,7 +1421,7 @@ BuiltinFunctionType RawBuiltinFunction::function() const {
   return (BuiltinFunctionType)pointer_at(kFunctionPtrOffset);
 }
 
-void RawBuiltinFunction::set_function(BuiltinFunctionType function) {
+void RawBuiltinFunction::set_function(BuiltinFunctionType function) const {
   set_pointer_at(kFunctionPtrOffset, (const void*)(function));
 }
 
@@ -1436,7 +1429,7 @@ RawSymbol RawBuiltinFunction::name() const {
   return field_at<RawSymbol>(kNameOffset);
 }
 
-void RawBuiltinFunction::set_name(RawSymbol symbol) {
+void RawBuiltinFunction::set_name(RawSymbol symbol) const {
   return set_field_at(kNameOffset, symbol);
 }
 
@@ -1444,7 +1437,7 @@ uint8_t RawBuiltinFunction::argc() const {
   return field_at<RawInt>(kArgcOffset).value();
 }
 
-void RawBuiltinFunction::set_argc(uint8_t argc) {
+void RawBuiltinFunction::set_argc(uint8_t argc) const {
   return set_field_at(kArgcOffset, RawInt::make(argc));
 }
 
@@ -1452,7 +1445,7 @@ Thread* RawFiber::thread() const {
   return bitcast<Thread*>(pointer_at(kThreadPointerOffset));
 }
 
-void RawFiber::set_thread(Thread* thread) {
+void RawFiber::set_thread(Thread* thread) const {
   set_pointer_at(kThreadPointerOffset, thread);
 }
 
@@ -1460,7 +1453,7 @@ RawFunction RawFiber::function() const {
   return field_at<RawFunction>(kFunctionOffset);
 }
 
-void RawFiber::set_function(RawFunction function) {
+void RawFiber::set_function(RawFunction function) const {
   set_field_at(kFunctionOffset, function);
 }
 
@@ -1468,7 +1461,7 @@ RawValue RawFiber::context() const {
   return field_at(kSelfOffset);
 }
 
-void RawFiber::set_context(RawValue context) {
+void RawFiber::set_context(RawValue context) const {
   set_field_at(kSelfOffset, context);
 }
 
@@ -1476,7 +1469,7 @@ RawValue RawFiber::arguments() const {
   return field_at(kArgumentsOffset);
 }
 
-void RawFiber::set_arguments(RawValue arguments) {
+void RawFiber::set_arguments(RawValue arguments) const {
   set_field_at(kArgumentsOffset, arguments);
 }
 
@@ -1484,7 +1477,7 @@ RawFuture RawFiber::result_future() const {
   return field_at<RawFuture>(kResultFutureOffset);
 }
 
-void RawFiber::set_result_future(RawFuture result_future) {
+void RawFiber::set_result_future(RawFuture result_future) const {
   set_field_at(kResultFutureOffset, result_future);
 }
 
@@ -1518,7 +1511,7 @@ RawFuture::WaitQueue* RawFuture::wait_queue() const {
   return bitcast<WaitQueue*>(pointer_at(kWaitQueueOffset));
 }
 
-void RawFuture::set_wait_queue(RawFuture::WaitQueue* wait_queue) {
+void RawFuture::set_wait_queue(RawFuture::WaitQueue* wait_queue) const {
   set_pointer_at(kWaitQueueOffset, wait_queue);
 }
 
@@ -1526,7 +1519,7 @@ RawValue RawFuture::result() const {
   return field_at(kResultOffset);
 }
 
-void RawFuture::set_result(RawValue result) {
+void RawFuture::set_result(RawValue result) const {
   set_field_at(kResultOffset, result);
 }
 
@@ -1534,7 +1527,7 @@ RawValue RawFuture::exception() const {
   return field_at(kExceptionOffset);
 }
 
-void RawFuture::set_exception(RawValue value) {
+void RawFuture::set_exception(RawValue value) const {
   set_field_at(kExceptionOffset, value);
 }
 
@@ -1542,7 +1535,7 @@ RawString RawException::message() const {
   return field_at<RawString>(kMessageOffset);
 }
 
-void RawException::set_message(RawString value) {
+void RawException::set_message(RawString value) const {
   set_field_at(kMessageOffset, value);
 }
 
@@ -1550,7 +1543,7 @@ RawTuple RawException::stack_trace() const {
   return field_at<RawTuple>(kStackTraceOffset);
 }
 
-void RawException::set_stack_trace(RawTuple stack_trace) {
+void RawException::set_stack_trace(RawTuple stack_trace) const {
   set_field_at(kStackTraceOffset, stack_trace);
 }
 
@@ -1558,7 +1551,7 @@ RawValue RawException::cause() const {
   return field_at(kCauseOffset);
 }
 
-void RawException::set_cause(RawValue cause) {
+void RawException::set_cause(RawValue cause) const {
   set_field_at(kCauseOffset, cause);
 }
 
@@ -1566,7 +1559,7 @@ RawTuple RawImportException::errors() const {
   return field_at<RawTuple>(kErrorsOffset);
 }
 
-void RawImportException::set_errors(RawTuple errors) {
+void RawImportException::set_errors(RawTuple errors) const {
   set_field_at(kErrorsOffset, errors);
 }
 
