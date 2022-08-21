@@ -322,7 +322,7 @@ ShapeId RawValue::shape_id_not_object_int() const {
 }
 
 bool RawValue::truthyness() const {
-  if (*this == kNull) {
+  if (isNull()) {
     return false;
   } else if (*this == kTrue) {
     return true;

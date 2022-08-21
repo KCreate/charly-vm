@@ -211,7 +211,7 @@ CATCH_TEST_CASE("Immediate encoded values") {
   }
 
   CATCH_SECTION("value truthyness") {
-    CATCH_CHECK(RawInt::make(0).truthyness() == true);
+    CATCH_CHECK(RawInt::make(0).truthyness() == false);
     CATCH_CHECK(RawInt::make(1).truthyness() == true);
     CATCH_CHECK(RawInt::make(200).truthyness() == true);
     CATCH_CHECK(RawInt::make(-200).truthyness() == true);
@@ -219,7 +219,7 @@ CATCH_TEST_CASE("Immediate encoded values") {
     CATCH_CHECK(RawObject::make_from_ptr(0).truthyness() == true);
     CATCH_CHECK(RawObject::make_from_ptr(0x10000).truthyness() == true);
 
-    CATCH_CHECK(RawFloat::make(0.0).truthyness() == true);
+    CATCH_CHECK(RawFloat::make(0.0).truthyness() == false);
     CATCH_CHECK(RawFloat::make(0.1).truthyness() == true);
     CATCH_CHECK(RawFloat::make(0.5).truthyness() == true);
     CATCH_CHECK(RawFloat::make(1).truthyness() == true);
@@ -228,13 +228,14 @@ CATCH_TEST_CASE("Immediate encoded values") {
     CATCH_CHECK(RawFloat::make(-0.5).truthyness() == true);
     CATCH_CHECK(RawFloat::make(-1).truthyness() == true);
     CATCH_CHECK(RawFloat::make(-10).truthyness() == true);
-    CATCH_CHECK(RawFloat::make(NAN).truthyness() == true);
+    CATCH_CHECK(RawFloat::make(NAN).truthyness() == false);
     CATCH_CHECK(RawFloat::make(INFINITY).truthyness() == true);
     CATCH_CHECK(RawFloat::make(-INFINITY).truthyness() == true);
 
     CATCH_CHECK(RawBool::make(true).truthyness() == true);
     CATCH_CHECK(RawBool::make(false).truthyness() == false);
 
+    CATCH_CHECK(RawSmallString::make_empty().truthyness() == true);
     CATCH_CHECK(RawSymbol::make(SYM("hello")).truthyness() == true);
 
     CATCH_CHECK(RawNull::make().truthyness() == false);
