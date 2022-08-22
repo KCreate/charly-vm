@@ -265,7 +265,13 @@ bool Interpreter::eq(Thread*, RawValue left, RawValue right) {
   if (left.isString() && right.isString()) {
     auto left_str = RawString::cast(left);
     auto right_str = RawString::cast(right);
-    return left_str.view() == right_str.view();
+
+    // compare character by character, since there might be a hash collision
+    if (left_str.hashcode() == right_str.hashcode()) {
+      return left_str.view() == right_str.view();
+    }
+
+    return false;
   }
 
   if (left.isBytes() && right.isBytes()) {
@@ -276,11 +282,12 @@ bool Interpreter::eq(Thread*, RawValue left, RawValue right) {
       return false;
     }
 
-    return std::memcmp(RawBytes::data(&left_bytes), RawBytes::data(&right_bytes), left_bytes.length()) == 0;
-  }
+    // compare byte by byte, since there might be a hash collision
+    if (left_bytes.hashcode() == right_bytes.hashcode()) {
+      return std::memcmp(RawBytes::data(&left_bytes), RawBytes::data(&right_bytes), left_bytes.length()) == 0;
+    }
 
-  if (left.isInt() && right.isInt()) {
-    return RawInt::cast(left).value() == RawInt::cast(right).value();
+    return false;
   }
 
   if (left.isNumber() || right.isNumber()) {
