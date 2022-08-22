@@ -31,6 +31,7 @@
 #include <string>
 #include <string_view>
 
+#include "charly/debug.h"
 #include "charly/symbol.h"
 #include "charly/utf8.h"
 #include "charly/utils/allocator.h"
@@ -177,7 +178,7 @@ public:
 
   template <typename... T>
   void write_formatted(const char* template_message, const T&... args) {
-    debugln_impl(*this, template_message, args...);
+    debugln_impl(*this, template_message, std::forward<const T>(args)...);
   }
 
 protected:

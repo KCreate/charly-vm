@@ -42,8 +42,6 @@ void initialize(Thread* thread) {
 RawValue prompt(Thread* thread, const RawValue* args, uint8_t argc) {
   CHECK(argc == 1);
   DCHECK(args[0].isString());
-  Runtime* runtime = thread->runtime();
-
   std::string prompt = RawString::cast(args[0]).str();
 
   char* raw_line = nullptr;
@@ -58,7 +56,7 @@ RawValue prompt(Thread* thread, const RawValue* args, uint8_t argc) {
 
   size_t length = std::strlen(raw_line);
   SYMBOL hash = crc32::hash_block(raw_line, length);
-  return runtime->acquire_string(thread, raw_line, length, hash);
+  return RawString::acquire(thread, raw_line, length, hash);
 }
 
 RawValue add_history(Thread* thread, const RawValue* args, uint8_t argc) {

@@ -54,29 +54,24 @@ RawValue transplantbuiltinclass(Thread* thread, const RawValue* args, uint8_t ar
 
   HandleScope scope(thread);
   Class klass(scope, args[0]);
-  Class static_class(scope, runtime->lookup_class(klass));
+  Class static_class(scope, klass.klass(thread));
   Class donor_class(scope, args[1]);
-  Class static_donor_class(scope, runtime->lookup_class(donor_class));
+  Class static_donor_class(scope, donor_class.klass(thread));
 
   if (!is_builtin_shape(klass.shape_instance().own_shape_id())) {
-    thread->throw_value(runtime->create_string(thread, "expected base class to be a builtin class"));
-    return kErrorException;
+    return thread->throw_message("expected base class to be a builtin class");
   }
 
   if (klass.function_table().size()) {
-    thread->throw_value(runtime->create_string(thread, "expected base class function table to be empty"));
-    return kErrorException;
+    return thread->throw_message("expected base class function table to be empty");
   }
 
   if (donor_class.parent() != runtime->get_builtin_class(ShapeId::kInstance)) {
-    thread->throw_value(runtime->create_string(thread, "the donor class shall not be a subclass"));
-    return kErrorException;
+    return thread->throw_message("the donor class shall not be a subclass");
   }
 
   if (donor_class.shape_instance() != runtime->lookup_shape(ShapeId::kInstance)) {
-    thread->throw_value(
-      runtime->create_string(thread, "the donor class shall not declare any new properties"));
-    return kErrorException;
+    return thread->throw_message("the donor class shall not declare any new properties");
   }
 
   auto donor_constructor = donor_class.constructor();
@@ -102,24 +97,20 @@ RawValue transplantbuiltinclass(Thread* thread, const RawValue* args, uint8_t ar
   }
   donor_class.set_flags(RawClass::kFlagNonConstructable | RawClass::kFlagFinal);
   donor_class.set_constructor(kNull);
-  donor_class.set_function_table(runtime->create_tuple(thread, 0));
+  donor_class.set_function_table(RawTuple::create_empty(thread));
 
   auto builtin_class_class = runtime->get_builtin_class(ShapeId::kClass);
   if (static_donor_class != builtin_class_class) {
     if (static_class.function_table().size()) {
-      thread->throw_value(
-        runtime->create_string(thread, "expected base static class function table to be empty"));
-      return kErrorException;
+      return thread->throw_message("expected base static class function table to be empty");
     }
 
     if (static_donor_class.shape_instance() != runtime->lookup_shape(ShapeId::kClass)) {
-      thread->throw_value(
-        runtime->create_string(thread, "the donor class shall not declare any new static properties"));
-      return kErrorException;
+      return thread->throw_message("the donor class shall not declare any new static properties");
     }
 
     static_class.set_function_table(static_donor_class.function_table());
-    static_donor_class.set_function_table(runtime->create_tuple(thread, 0));
+    static_donor_class.set_function_table(RawTuple::create_empty(thread));
     for (uint32_t i = 0; i < static_class.function_table().size(); i++) {
       auto method = static_class.function_table().field_at<RawFunction>(i);
       auto overload_table = method.overload_table();
@@ -162,12 +153,12 @@ RawValue writevaluesync(Thread*, const RawValue* args, uint8_t argc) {
 RawValue currentworkingdirectory(Thread* thread, const RawValue*, uint8_t argc) {
   CHECK(argc == 0);
   fs::path cwd = fs::current_path();
-  return thread->runtime()->create_string(thread, cwd);
+  return RawString::create(thread, cwd);
 }
 
 RawValue getstacktrace(Thread* thread, const RawValue*, uint8_t argc) {
   CHECK(argc == 0);
-  return thread->runtime()->create_stack_trace(thread);
+  return thread->create_stack_trace();
 }
 
 RawValue disassemble(Thread*, const RawValue* args, uint8_t argc) {
@@ -193,10 +184,9 @@ RawValue maketuple(Thread* thread, const RawValue* args, uint8_t argc) {
   }
   CHECK(size >= 0, "expected size to be positive number");
 
-  Runtime* runtime = thread->runtime();
   HandleScope scope(thread);
   Value initial(scope, args[1]);
-  Tuple tuple(scope, runtime->create_tuple(thread, size));
+  Tuple tuple(scope, RawTuple::create(thread, size));
   for (int64_t i = 0; i < size; i++) {
     tuple.set_field_at(i, initial);
   }
@@ -230,14 +220,13 @@ RawValue compile(Thread* thread, const RawValue* args, uint8_t argc) {
   auto unit = Compiler::compile(name, buf, CompilationUnit::Type::ReplInput);
 
   if (unit->console.has_errors()) {
-    thread->throw_value(runtime->create_import_exception(thread, name, unit));
-    return kErrorException;
+    return thread->throw_exception(RawImportException::create(thread, name, unit));
   }
 
   auto module = unit->compiled_module;
   CHECK(!module->function_table.empty());
   runtime->register_module(thread, module);
-  return runtime->create_function(thread, kNull, module->function_table.front());
+  return RawFunction::create(thread, kNull, module->function_table.front());
 }
 
 }  // namespace charly::core::runtime::builtin::core

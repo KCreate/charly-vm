@@ -57,7 +57,6 @@ public:
   ~Handle();
 
   static_assert(std::is_base_of<RawValue, T>::value, "Expected T to be child of RawValue");
-  CHARLY_NON_HEAP_ALLOCATABLE();
 
   // disallow copies using another handle
   template <typename O>

@@ -39,9 +39,8 @@ void initialize(Thread* thread) {
 }
 
 RawValue futurecreate(Thread* thread, const RawValue*, uint8_t argc) {
-  Runtime* runtime = thread->runtime();
   CHECK(argc == 0);
-  return runtime->create_future(thread);
+  return RawFuture::create(thread);
 }
 
 RawValue futureresolve(Thread* thread, const RawValue* args, uint8_t argc) {
@@ -53,19 +52,14 @@ RawValue futureresolve(Thread* thread, const RawValue* args, uint8_t argc) {
 }
 
 RawValue futurereject(Thread* thread, const RawValue* args, uint8_t argc) {
-  Runtime* runtime = thread->runtime();
   CHECK(argc == 2);
   CHECK(args[0].isFuture());
+  CHECK(args[1].isString());
 
   HandleScope scope(thread);
   Future future(scope, args[0]);
-  Value exception(scope, runtime->create_exception(thread, args[1]));
-
-  if (exception.is_error_exception()) {
-    return kErrorException;
-  }
-
-  return future.reject(thread, RawException::cast(exception));
+  Exception exception(scope, RawException::create(thread, RawString::cast(args[1])));
+  return future.reject(thread, exception);
 }
 
 }  // namespace charly::core::runtime::builtin::future

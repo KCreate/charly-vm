@@ -81,74 +81,6 @@ public:
   void initialize_builtin_types(Thread* thread);
   void initialize_stdlib_paths();
 
-  RawData create_data(Thread* thread, ShapeId shape_id, size_t size);
-  RawInstance create_instance(Thread* thread, ShapeId shape_id, size_t field_count, RawValue klass = kNull);
-  RawInstance create_instance(Thread* thread, RawShape shape, RawValue klass = kNull);
-  RawInstance create_instance(Thread* thread, RawClass klass);
-
-  RawString create_string(Thread* thread, const char* data, size_t size, SYMBOL hash);
-  RawString create_string(Thread* thread, const std::string& string) {
-    return create_string(thread, string.data(), string.size(), crc32::hash_string(string));
-  }
-  RawString create_string(Thread* thread, const utils::Buffer& buffer) {
-    return create_string(thread, buffer.data(), buffer.size(), buffer.hash());
-  }
-
-  template <typename... T>
-  RawString create_string_from_template(Thread* thread, const char* str, const T&... args) {
-    utils::Buffer buffer;
-    buffer.write_formatted(str, args...);
-    return acquire_buffer(thread, buffer);
-  }
-
-  // create a new string by acquiring ownership over an existing allocation
-  RawString acquire_string(Thread* thread, char* cstr, size_t size, SYMBOL hash);
-  RawString acquire_buffer(Thread* thread, utils::Buffer& buffer);
-  RawLargeString create_large_string(Thread* thread, const char* data, size_t size, SYMBOL hash);
-  RawHugeString create_huge_string(Thread* thread, const char* data, size_t size, SYMBOL hash);
-  RawHugeString create_huge_string_acquire(Thread* thread, char* data, size_t size, SYMBOL hash);
-
-  RawTuple create_tuple(Thread* thread, uint32_t count = 0);
-  RawTuple create_tuple1(Thread* thread, RawValue value1);
-  RawTuple create_tuple2(Thread* thread, RawValue value1, RawValue value2);
-  RawTuple concat_tuple_value(Thread* thread, RawTuple left, RawValue value);
-
-  RawValue create_class(Thread* thread,
-                        SYMBOL name,
-                        RawValue parent,
-                        RawFunction constructor,
-                        RawTuple member_props,
-                        RawTuple member_funcs,
-                        RawTuple static_prop_keys,
-                        RawTuple static_prop_values,
-                        RawTuple static_funcs,
-                        uint32_t flags = 0);
-
-  RawShape create_shape(Thread* thread, RawValue parent, RawTuple key_table);
-  RawShape create_shape(Thread* thread, RawValue parent, std::initializer_list<std::tuple<std::string, uint8_t>> keys);
-
-  RawFunction create_function(Thread* thread,
-                              RawValue context,
-                              SharedFunctionInfo* shared_info,
-                              RawValue saved_self = kNull);
-  RawBuiltinFunction create_builtin_function(Thread* thread, BuiltinFunctionType function, SYMBOL name, uint8_t argc);
-  RawFiber create_fiber(Thread* thread, RawFunction function, RawValue self, RawValue arguments);
-  RawFuture create_future(Thread* thread);
-  RawValue create_exception(Thread* thread, RawValue value);
-  RawException create_exception(Thread* thread, RawString value) {
-    auto exception = create_exception(thread, RawValue::cast(value));
-    DCHECK(!exception.is_error_exception());
-    return RawException::cast(exception);
-  }
-  RawImportException create_import_exception(Thread* thread,
-                                             const std::string& module_path,
-                                             const ref<compiler::CompilationUnit>& unit);
-
-  // creates a tuple containing a stack trace of the current thread
-  // trim variable controls how many frames should be dropped
-  // starting from the bottom
-  RawTuple create_stack_trace(Thread* thread);
-
   // declare a new global variable
   // returns kErrorOk on success
   // returns kErrorException if the variable already exists
@@ -178,9 +110,6 @@ public:
   ShapeId register_shape(RawShape shape);
   void register_shape(ShapeId id, RawShape shape);
   RawShape lookup_shape(ShapeId id);
-
-  // returns the klass value of a value
-  RawClass lookup_class(RawValue value);
 
   // sets the class that gets used as the parent class if no 'extends'
   // statement was present during class declaration

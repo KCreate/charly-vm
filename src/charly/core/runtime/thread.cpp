@@ -204,27 +204,20 @@ void Thread::exit_native() {
   checkpoint();
 }
 
-void Thread::throw_value(RawValue value) {
-  RawValue exception_result = runtime()->create_exception(this, value);
-  if (exception_result.is_error_exception()) {
-    return;
-  }
-
-  RawException exception = RawException::cast(exception_result);
-
+RawValue Thread::throw_exception(RawException exception) {
   if (exception == pending_exception()) {
-    return;
+    return kErrorException;
   }
 
   if (exception.cause().isNull()) {
     exception.set_cause(pending_exception());
   }
   set_pending_exception(exception);
+  return kErrorException;
 }
 
-void Thread::rethrow_value(RawValue value) {
-  DCHECK(value.isException());
-  set_pending_exception(value);
+void Thread::rethrow_exception(RawException exception) {
+  set_pending_exception(exception);
 }
 
 void Thread::set_pending_exception(RawValue value) {
@@ -339,7 +332,7 @@ void Thread::dump_exception_trace(RawException exception) const {
     }
 
     exception_stack.push(next_exception);
-    RawValue cause = RawException::cast(next_exception).cause();
+    RawValue cause = next_exception.cause();
     if (!cause.isException()) {
       break;
     }
@@ -366,6 +359,24 @@ void Thread::dump_exception_trace(RawException exception) const {
 
 void Thread::acas_state(Thread::State old_state, Thread::State new_state) {
   m_state.acas(old_state, new_state);
+}
+
+RawTuple Thread::create_stack_trace() {
+  Frame* top_frame = frame();
+
+  if (top_frame == nullptr) {
+    return RawTuple::create_empty(this);
+  }
+
+  HandleScope scope(this);
+  Tuple stack_trace(scope, RawTuple::create(this, top_frame->depth + 1));
+  size_t index = 0;
+  for (Frame* frame = top_frame; frame != nullptr; frame = frame->parent) {
+    stack_trace.set_field_at(index, RawTuple::create(this, frame->function));
+    index++;
+  }
+
+  return *stack_trace;
 }
 
 void Thread::push_frame(Frame* frame) {

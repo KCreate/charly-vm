@@ -500,7 +500,7 @@ void CodeGenerator::inspect_leave(const ref<String>& node) {
   uint16_t index = m_builder.register_string(node->value);
 
   if (node->value.size() <= RawSmallString::kMaxLength) {
-    m_builder.emit_load_value(RawSmallString::make_from_str(node->value))->at(node);
+    m_builder.emit_load_value(RawSmallString::create_from_str(node->value))->at(node);
   } else {
     m_builder.emit_makestr(index)->at(node);
   }
@@ -515,15 +515,15 @@ void CodeGenerator::inspect_leave(const ref<Symbol>& node) {
 }
 
 void CodeGenerator::inspect_leave(const ref<Int>& node) {
-  m_builder.emit_load_value(RawInt::make(node->value))->at(node);
+  m_builder.emit_load_value(RawInt::create(node->value))->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ref<Float>& node) {
-  m_builder.emit_load_value(RawFloat::make(node->value))->at(node);
+  m_builder.emit_load_value(RawFloat::create(node->value))->at(node);
 }
 
 void CodeGenerator::inspect_leave(const ref<Bool>& node) {
-  m_builder.emit_load_value(RawBool::make(node->value))->at(node);
+  m_builder.emit_load_value(RawBool::create(node->value))->at(node);
 }
 
 bool CodeGenerator::inspect_enter(const ref<Function>& node) {
@@ -533,7 +533,7 @@ bool CodeGenerator::inspect_enter(const ref<Function>& node) {
 }
 
 bool CodeGenerator::inspect_enter(const ref<Class>& node) {
-  m_builder.emit_load_value(RawInt::make(node->is_final ? RawClass::kFlagFinal : 0));
+  m_builder.emit_load_value(RawInt::create(node->is_final ? RawClass::kFlagFinal : 0));
   m_builder.emit_loadsymbol(node->name->value);
 
   if (node->parent) {

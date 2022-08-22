@@ -195,8 +195,13 @@ public:
   }
 
   // exception handling
-  void throw_value(RawValue value);
-  void rethrow_value(RawValue value);
+  template <typename... Args>
+  RawValue throw_message(const char* format, const Args&... args) {
+    throw_exception(RawException::create(this, RawString::format(this, format, std::forward<const Args>(args)...)));
+    return kErrorException;
+  }
+  RawValue throw_exception(RawException exception);
+  void rethrow_exception(RawException exception);
 
   // frame handling
   void push_frame(Frame* frame);
@@ -214,6 +219,9 @@ public:
   void dump_exception_trace(RawException exception) const;
 
   void acas_state(Thread::State old_state, Thread::State new_state);
+
+  // creates a tuple containing a stack trace of the current thread
+  RawTuple create_stack_trace();
 
 private:
   int32_t entry_main_thread();

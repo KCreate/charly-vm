@@ -56,7 +56,7 @@ void print_runtime_debug_state(std::ostream& stream) {
         debugln_impl_time(stream, "\n");
         debugln_impl_time(stream, "Stack:\n");
         for (int64_t i = frame->sp - 1; i >= 0; i--) {
-          debugln_impl_time(stream, "  - %\n", (void*)frame->stack[i].raw());
+          debugln_impl_time(stream, "  - %\n", frame->stack[i]);
         }
       }
     } else {

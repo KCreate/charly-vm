@@ -158,7 +158,7 @@ public:
 
   // helper method to emit a symbol constant load
   ref<IRInstruction> emit_loadsymbol(const std::string& string) {
-    return emit_loadconst(register_constant(runtime::RawSymbol::make(register_symbol(string))));
+    return emit_loadconst(register_constant(runtime::RawSymbol::create(register_symbol(string))));
   };
 
   // helper method to emit loads of immediate values

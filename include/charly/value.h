@@ -36,7 +36,15 @@
 
 #pragma once
 
+namespace charly::core::compiler {
+struct CompilationUnit;
+}
+
 namespace charly::core::runtime {
+
+class Thread;
+struct HeapRegion;
+struct SharedFunctionInfo;
 
 // types which are encoded in a tagged pointer
 #define IMMEDIATE_TYPE_NAMES(V) \
@@ -118,7 +126,7 @@ enum class ShapeId : uint32_t {
 #undef GET_LAST
 #undef GET_FIRST
 };
-// clang-format off
+// clang-format on
 
 static_assert((size_t)ShapeId::kFirstBuiltinShapeId == 19, "invalid first user-defined shape id");
 static_assert((size_t)ShapeId::kLastBuiltinShapeId == 29, "invalid first user-defined shape id");
@@ -181,13 +189,10 @@ TYPE_NAMES(FORWARD_DECL)
 #undef FORWARD_DECL
 
 // every heap allocated object gets prefixed with a object header
-struct HeapRegion;
 class ObjectHeader {
   friend class RawObject;
 
 public:
-  CHARLY_NON_HEAP_ALLOCATABLE(ObjectHeader);
-
   enum Flag : uint8_t {
     kReachable = 1,        // object is reachable by GC
     kHasHashcode = 2,      // object has a cached hashcode
@@ -309,8 +314,7 @@ static_assert((sizeof(ObjectHeader) % kObjectAlignment == 0), "invalid object he
   Raw##name& operator=(RawValue other) {                                              \
     m_raw = other.rawCast<Raw##name>().raw();                                         \
     return *this;                                                                     \
-  }                                                                                   \
-  CHARLY_NON_HEAP_ALLOCATABLE(name)
+  }
 
 // the RawValue class represents a single pointer-tagged value.
 // the tagging scheme supports the following value types:
@@ -382,6 +386,9 @@ public:
   bool truthyness() const;
   bool is_old_pointer() const;
   bool is_young_pointer() const;
+
+  RawClass klass(Thread*) const;
+  RawSymbol klass_name(Thread*) const;
 
 #define TYPECHECK(name) bool is##name() const;
   TYPE_NAMES(TYPECHECK)
@@ -456,9 +463,9 @@ public:
   int64_t value() const;
   uintptr_t external_pointer_value() const;
 
-  static RawInt make(int64_t value);
-  static RawInt make_truncate(int64_t value);
-  static RawInt make_from_external_pointer(uintptr_t value);
+  static RawInt create(int64_t value);
+  static RawInt create_truncate(int64_t value);
+  static RawInt create_from_external_pointer(uintptr_t value);
 
   static bool is_valid(int64_t value);
 
@@ -468,11 +475,11 @@ public:
   // uppermost bit of an external pointer must be 0
   static constexpr size_t kExternalPointerValidationMask = 0x8000000000000000;
 };
-static const RawInt kZero = RawInt::make(0);
-static const RawInt kOne = RawInt::make(1);
-static const RawInt kTwo = RawInt::make(2);
-static const RawInt kThree = RawInt::make(3);
-static const RawInt kFour = RawInt::make(4);
+static const RawInt kZero = RawInt::create(0);
+static const RawInt kOne = RawInt::create(1);
+static const RawInt kTwo = RawInt::create(2);
+static const RawInt kThree = RawInt::create(3);
+static const RawInt kFour = RawInt::create(4);
 
 // immediate double
 class RawFloat : public RawValue {
@@ -486,12 +493,12 @@ public:
     return close_to(other.value(), precision);
   }
 
-  static RawFloat make(double value);
+  static RawFloat create(double value);
 };
-static const RawFloat kNaN = RawFloat::make(NAN);
-static const RawFloat kFloatZero = RawFloat::make(0.0);
-static const RawFloat kInfinity = RawFloat::make(INFINITY);
-static const RawFloat kNegInfinity = RawFloat::make(-INFINITY);
+static const RawFloat kNaN = RawFloat::create(NAN);
+static const RawFloat kFloatZero = RawFloat::create(0.0);
+static const RawFloat kInfinity = RawFloat::create(INFINITY);
+static const RawFloat kNegInfinity = RawFloat::create(-INFINITY);
 
 // immediate bool
 class RawBool : public RawValue {
@@ -500,10 +507,10 @@ public:
 
   bool value() const;
 
-  static RawBool make(bool value);
+  static RawBool create(bool value);
 };
-static const RawBool kTrue = RawBool::make(true);
-static const RawBool kFalse = RawBool::make(false);
+static const RawBool kTrue = RawBool::create(true);
+static const RawBool kFalse = RawBool::create(false);
 
 // immediate symbol
 class RawSymbol : public RawValue {
@@ -516,9 +523,9 @@ public:
     return value();
   }
 
-  static RawSymbol make(SYMBOL symbol);
-  static RawSymbol make(const char* string) {
-    return make(SYM(string));
+  static RawSymbol create(SYMBOL symbol);
+  static RawSymbol create(const char* string) {
+    return create(SYM(string));
   }
 };
 
@@ -531,15 +538,15 @@ public:
   static const char* data(const RawSmallString* value);
   SYMBOL hashcode() const;
 
-  static RawSmallString make_from_cp(uint32_t cp);
-  static RawSmallString make_from_str(const std::string& string);
-  static RawSmallString make_from_cstr(const char* value);
-  static RawSmallString make_from_memory(const char* value, size_t length);
-  static RawSmallString make_empty();
+  static RawSmallString create_from_cp(uint32_t cp);
+  static RawSmallString create_from_str(const std::string& string);
+  static RawSmallString create_from_cstr(const char* value);
+  static RawSmallString create_from_memory(const char* value, size_t length);
+  static RawSmallString create_empty();
 
   static constexpr size_t kMaxLength = 7;
 };
-static const RawSmallString kEmptyString = RawSmallString::make_empty();
+static const RawSmallString kEmptyString = RawSmallString::create_empty();
 
 // immediate bytes
 class RawSmallBytes : public RawValue {
@@ -550,12 +557,12 @@ public:
   static const uint8_t* data(const RawSmallBytes* value);
   SYMBOL hashcode() const;
 
-  static RawSmallBytes make_from_memory(const uint8_t* value, size_t length);
-  static RawSmallBytes make_empty();
+  static RawSmallBytes create_from_memory(const uint8_t* value, size_t length);
+  static RawSmallBytes create_empty();
 
   static constexpr size_t kMaxLength = 7;
 };
-static const RawSmallBytes kEmptyBytes = RawSmallBytes::make_empty();
+static const RawSmallBytes kEmptyBytes = RawSmallBytes::create_empty();
 
 // immediate null
 class RawNull : public RawValue {
@@ -564,30 +571,47 @@ public:
 
   ErrorId error_code() const;
 
-  static RawNull make();
-  static RawNull make_error(ErrorId id);
+  static RawNull create();
+  static RawNull create_error(ErrorId id);
 };
-static const RawNull kNull = RawNull::make();
-static const RawNull kErrorNone = RawNull::make_error(ErrorId::kErrorNone);
-static const RawNull kErrorOk = RawNull::make_error(ErrorId::kErrorOk);
-static const RawNull kErrorException = RawNull::make_error(ErrorId::kErrorException);
-static const RawNull kErrorNotFound = RawNull::make_error(ErrorId::kErrorNotFound);
-static const RawNull kErrorOutOfBounds = RawNull::make_error(ErrorId::kErrorOutOfBounds);
-static const RawNull kErrorReadOnly = RawNull::make_error(ErrorId::kErrorReadOnly);
-static const RawNull kErrorNoBaseClass = RawNull::make_error(ErrorId::kErrorNoBaseClass);
+static const RawNull kNull = RawNull::create();
+static const RawNull kErrorNone = RawNull::create_error(ErrorId::kErrorNone);
+static const RawNull kErrorOk = RawNull::create_error(ErrorId::kErrorOk);
+static const RawNull kErrorException = RawNull::create_error(ErrorId::kErrorException);
+static const RawNull kErrorNotFound = RawNull::create_error(ErrorId::kErrorNotFound);
+static const RawNull kErrorOutOfBounds = RawNull::create_error(ErrorId::kErrorOutOfBounds);
+static const RawNull kErrorReadOnly = RawNull::create_error(ErrorId::kErrorReadOnly);
+static const RawNull kErrorNoBaseClass = RawNull::create_error(ErrorId::kErrorNoBaseClass);
 
 // common super class for RawSmallString, LargeString and HugeString
 class RawString : public RawValue {
 public:
   COMMON_RAW_OBJECT(String);
 
+  static RawString create(Thread*, const char* data, size_t size, SYMBOL hash);
+  static RawString create(Thread*, const std::string& string);
+
+  static RawString format(Thread* thread, const char* str) {
+    return RawString::create(thread, str);
+  }
+  template <typename... T>
+  static RawString format(Thread* thread, const char* str, const T&... args) {
+    utils::Buffer buffer;
+    buffer.write_formatted(str, std::forward<const T>(args)...);
+    return RawString::acquire(thread, buffer);
+  }
+
+  // create a new string by acquiring ownership over an existing allocation
+  static RawString acquire(Thread*, char* cstr, size_t size, SYMBOL hash);
+  static RawString acquire(Thread*, utils::Buffer& buffer);
+
   size_t length() const;
   static const char* data(const RawString* value);
   SYMBOL hashcode() const;
 
   std::string str() const;
-  std::string_view view() const &;
-  std::string_view view() const && = delete;
+  std::string_view view() const&;
+  std::string_view view() const&& = delete;
 
   static int32_t compare(RawString base, const char* data, size_t length);
   static int32_t compare(RawString base, const char* data) {
@@ -655,13 +679,15 @@ public:
 
   void set_field_at(uint32_t index, RawValue value) const;
 
-  static RawObject make_from_ptr(uintptr_t address, bool is_young = true);
+  static RawObject create_from_ptr(uintptr_t address, bool is_young = true);
 };
 
 // base class for all objects that store immediate data
 class RawData : public RawObject {
 public:
   COMMON_RAW_OBJECT(Data);
+
+  static RawData create(Thread*, ShapeId shape_id, size_t size);
 
   size_t length() const;
   const uint8_t* data() const;
@@ -672,6 +698,9 @@ public:
 class RawLargeString : public RawData {
 public:
   COMMON_RAW_OBJECT(LargeString);
+
+  static RawLargeString create(Thread*, const char* data, size_t size, SYMBOL hash);
+
   const char* data() const;
 };
 
@@ -686,6 +715,12 @@ class RawTuple : public RawData {
 public:
   COMMON_RAW_OBJECT(Tuple);
 
+  static RawTuple create_empty(Thread*);
+  static RawTuple create(Thread*, uint32_t count);
+  static RawTuple create(Thread*, RawValue value);
+  static RawTuple create(Thread*, RawValue value1, RawValue value2);
+  static RawTuple concat_value(Thread*, RawTuple left, RawValue value);
+
   const RawValue* data() const;
   uint32_t size() const;
 };
@@ -694,6 +729,10 @@ public:
 class RawInstance : public RawObject {
 public:
   COMMON_RAW_OBJECT(Instance);
+
+  static RawInstance create(Thread*, ShapeId shape_id, size_t field_count, RawValue klass = kNull);
+  static RawInstance create(Thread*, RawShape shape, RawValue klass = kNull);
+  static RawInstance create(Thread*, RawClass klass);
 
   uint32_t field_count() const;
 
@@ -739,6 +778,9 @@ class RawHugeString : public RawInstance {
 public:
   COMMON_RAW_OBJECT(HugeString);
 
+  static RawHugeString create(Thread*, const char* data, size_t size, SYMBOL hash);
+  static RawHugeString acquire(Thread*, char* data, size_t size, SYMBOL hash);
+
   SYMBOL hashcode() const;
 
   const char* data() const;
@@ -758,6 +800,17 @@ public:
 class RawClass : public RawInstance {
 public:
   COMMON_RAW_OBJECT(Class);
+
+  static RawValue create(Thread* thread,
+                         SYMBOL name,
+                         RawValue parent,
+                         RawFunction constructor,
+                         RawTuple member_props,
+                         RawTuple member_funcs,
+                         RawTuple static_prop_keys,
+                         RawTuple static_prop_values,
+                         RawTuple static_funcs,
+                         uint32_t flags = 0);
 
   enum {
     kFlagNone = 0,
@@ -810,6 +863,9 @@ public:
 class RawShape : public RawInstance {
 public:
   COMMON_RAW_OBJECT(Shape);
+
+  static RawShape create(Thread*, RawValue parent, RawTuple key_table);
+  static RawShape create(Thread*, RawValue parent, std::initializer_list<std::tuple<std::string, uint8_t>> keys);
 
   ShapeId own_shape_id() const;
   void set_own_shape_id(ShapeId id) const;
@@ -869,10 +925,11 @@ public:
 };
 
 // function with bound context and bytecode
-struct SharedFunctionInfo;
 class RawFunction : public RawInstance {
 public:
   COMMON_RAW_OBJECT(Function);
+
+  static RawFunction create(Thread*, RawValue context, SharedFunctionInfo* shared_info, RawValue saved_self = kNull);
 
   RawSymbol name() const;
   void set_name(RawSymbol name) const;
@@ -913,11 +970,12 @@ public:
 };
 
 // builtin function implemented in c++
-class Thread;
 typedef RawValue (*BuiltinFunctionType)(Thread*, const RawValue*, uint8_t);
 class RawBuiltinFunction : public RawInstance {
 public:
   COMMON_RAW_OBJECT(BuiltinFunction);
+
+  static RawBuiltinFunction create(Thread*, BuiltinFunctionType function, SYMBOL name, uint8_t argc);
 
   BuiltinFunctionType function() const;
   void set_function(BuiltinFunctionType function) const;
@@ -937,10 +995,11 @@ public:
 };
 
 // runtime fiber
-class Thread;
 class RawFiber : public RawInstance {
 public:
   COMMON_RAW_OBJECT(Fiber);
+
+  static RawFiber create(Thread*, RawFunction function, RawValue self, RawValue arguments);
 
   Thread* thread() const;
   void set_thread(Thread* thread) const;
@@ -957,7 +1016,7 @@ public:
   RawFuture result_future() const;
   void set_result_future(RawFuture result_future) const;
 
-  RawValue await(Thread* thread) const;
+  RawValue await(Thread*) const;
 
   enum {
     kThreadPointerOffset = RawInstance::kFieldCount,
@@ -972,6 +1031,8 @@ public:
 class RawFuture : public RawInstance {
 public:
   COMMON_RAW_OBJECT(Future);
+
+  static RawFuture create(Thread*);
 
   // instead of using a regular std::vector for the wait queue, a custom struct is used
   // this is so that the GC can simply call Allocator::free on the queue pointer, instead of needing
@@ -1003,9 +1064,9 @@ public:
     return wait_queue() == nullptr;
   }
 
-  RawValue await(Thread* thread) const;
-  RawValue resolve(Thread* thread, RawValue value) const;
-  RawValue reject(Thread* thread, RawException exception) const;
+  RawValue await(Thread*) const;
+  RawValue resolve(Thread*, RawValue value) const;
+  RawValue reject(Thread*, RawException exception) const;
 
   enum {
     kWaitQueueOffset = RawInstance::kFieldCount,
@@ -1015,13 +1076,15 @@ public:
   };
 
 private:
-  void wake_waiting_threads(Thread* thread) const;
+  void wake_waiting_threads(Thread*) const;
 };
 
 // user exception instance
 class RawException : public RawInstance {
 public:
   COMMON_RAW_OBJECT(Exception);
+
+  static RawException create(Thread*, RawString message);
 
   RawString message() const;
   void set_message(RawString value) const;
@@ -1044,6 +1107,10 @@ public:
 class RawImportException : public RawException {
 public:
   COMMON_RAW_OBJECT(ImportException);
+
+  static RawImportException create(Thread*,
+                                   const std::string& module_path,
+                                   const ref<core::compiler::CompilationUnit>& unit);
 
   RawTuple errors() const;
   void set_errors(RawTuple errors) const;

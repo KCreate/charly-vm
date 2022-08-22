@@ -34,61 +34,61 @@ using namespace charly::core::runtime;
 
 CATCH_TEST_CASE("Immediate encoded values") {
   CATCH_SECTION("pointers") {
-    CATCH_CHECK(RawObject::make_from_ptr(0).address() == 0);
-    CATCH_CHECK(RawObject::make_from_ptr(0x10).address() == 0x10);
-    CATCH_CHECK(RawObject::make_from_ptr(0x60).address() == 0x60);
-    CATCH_CHECK(RawObject::make_from_ptr(0x1000).address() == 0x1000);
-    CATCH_CHECK(RawObject::make_from_ptr(0xfffffffffffffff0).address() == 0xfffffffffffffff0);
+    CATCH_CHECK(RawObject::create_from_ptr(0).address() == 0);
+    CATCH_CHECK(RawObject::create_from_ptr(0x10).address() == 0x10);
+    CATCH_CHECK(RawObject::create_from_ptr(0x60).address() == 0x60);
+    CATCH_CHECK(RawObject::create_from_ptr(0x1000).address() == 0x1000);
+    CATCH_CHECK(RawObject::create_from_ptr(0xfffffffffffffff0).address() == 0xfffffffffffffff0);
 
-    CATCH_CHECK(RawInt::make_from_external_pointer(0).external_pointer_value() == 0);
-    CATCH_CHECK(RawInt::make_from_external_pointer(0x10).external_pointer_value() == 0x10);
-    CATCH_CHECK(RawInt::make_from_external_pointer(0x60).external_pointer_value() == 0x60);
-    CATCH_CHECK(RawInt::make_from_external_pointer(0x1000).external_pointer_value() == 0x1000);
-    CATCH_CHECK(RawInt::make_from_external_pointer(0x0ffffffffffffff0).external_pointer_value() == 0x0ffffffffffffff0);
+    CATCH_CHECK(RawInt::create_from_external_pointer(0).external_pointer_value() == 0);
+    CATCH_CHECK(RawInt::create_from_external_pointer(0x10).external_pointer_value() == 0x10);
+    CATCH_CHECK(RawInt::create_from_external_pointer(0x60).external_pointer_value() == 0x60);
+    CATCH_CHECK(RawInt::create_from_external_pointer(0x1000).external_pointer_value() == 0x1000);
+    CATCH_CHECK(RawInt::create_from_external_pointer(0x0ffffffffffffff0).external_pointer_value() == 0x0ffffffffffffff0);
   }
 
   CATCH_SECTION("integers") {
-    CATCH_CHECK(RawInt::make(0).value() == 0);
-    CATCH_CHECK(RawInt::make(1).value() == 1);
-    CATCH_CHECK(RawInt::make(1000).value() == 1000);
-    CATCH_CHECK(RawInt::make(-1000).value() == -1000);
-    CATCH_CHECK(RawInt::make(0xaaffffffffff).value() == 0xaaffffffffff);
-    CATCH_CHECK(RawInt::make(RawInt::kMinValue).value() == RawInt::kMinValue);
-    CATCH_CHECK(RawInt::make(RawInt::kMaxValue).value() == RawInt::kMaxValue);
+    CATCH_CHECK(RawInt::create(0).value() == 0);
+    CATCH_CHECK(RawInt::create(1).value() == 1);
+    CATCH_CHECK(RawInt::create(1000).value() == 1000);
+    CATCH_CHECK(RawInt::create(-1000).value() == -1000);
+    CATCH_CHECK(RawInt::create(0xaaffffffffff).value() == 0xaaffffffffff);
+    CATCH_CHECK(RawInt::create(RawInt::kMinValue).value() == RawInt::kMinValue);
+    CATCH_CHECK(RawInt::create(RawInt::kMaxValue).value() == RawInt::kMaxValue);
   }
 
   CATCH_SECTION("floats") {
-    CATCH_CHECK(RawFloat::make(0.0).close_to(0.0));
-    CATCH_CHECK(RawFloat::make(1.0).close_to(1.0));
-    CATCH_CHECK(RawFloat::make(2.0).close_to(2.0));
-    CATCH_CHECK(RawFloat::make(3.0).close_to(3.0));
-    CATCH_CHECK(RawFloat::make(-1.0).close_to(-1.0));
-    CATCH_CHECK(RawFloat::make(-2.0).close_to(-2.0));
-    CATCH_CHECK(RawFloat::make(-3.0).close_to(-3.0));
-    CATCH_CHECK(RawFloat::make(0.5).close_to(0.5));
-    CATCH_CHECK(RawFloat::make(0.25).close_to(0.25));
-    CATCH_CHECK(RawFloat::make(0.125).close_to(0.125));
-    CATCH_CHECK(RawFloat::make(0.0625).close_to(0.0625));
-    CATCH_CHECK(RawFloat::make(25.1234).close_to(25.1234, 0.000000001));
-    CATCH_CHECK(RawFloat::make(-25.1234).close_to(-25.1234, 0.000000001));
+    CATCH_CHECK(RawFloat::create(0.0).close_to(0.0));
+    CATCH_CHECK(RawFloat::create(1.0).close_to(1.0));
+    CATCH_CHECK(RawFloat::create(2.0).close_to(2.0));
+    CATCH_CHECK(RawFloat::create(3.0).close_to(3.0));
+    CATCH_CHECK(RawFloat::create(-1.0).close_to(-1.0));
+    CATCH_CHECK(RawFloat::create(-2.0).close_to(-2.0));
+    CATCH_CHECK(RawFloat::create(-3.0).close_to(-3.0));
+    CATCH_CHECK(RawFloat::create(0.5).close_to(0.5));
+    CATCH_CHECK(RawFloat::create(0.25).close_to(0.25));
+    CATCH_CHECK(RawFloat::create(0.125).close_to(0.125));
+    CATCH_CHECK(RawFloat::create(0.0625).close_to(0.0625));
+    CATCH_CHECK(RawFloat::create(25.1234).close_to(25.1234, 0.000000001));
+    CATCH_CHECK(RawFloat::create(-25.1234).close_to(-25.1234, 0.000000001));
   }
 
   CATCH_SECTION("small strings") {
-    RawSmallString s1 = RawSmallString::make_from_cstr("");
-    RawSmallString s2 = RawSmallString::make_from_cstr("a");
-    RawSmallString s3 = RawSmallString::make_from_cstr("abcdefg");
-    RawSmallString s4 = RawSmallString::make_from_cstr("       ");
-    RawSmallString s5 = RawSmallString::make_from_cstr("\n\n\n\n\n\n\n");
+    RawSmallString s1 = RawSmallString::create_from_cstr("");
+    RawSmallString s2 = RawSmallString::create_from_cstr("a");
+    RawSmallString s3 = RawSmallString::create_from_cstr("abcdefg");
+    RawSmallString s4 = RawSmallString::create_from_cstr("       ");
+    RawSmallString s5 = RawSmallString::create_from_cstr("\n\n\n\n\n\n\n");
 
-    RawSmallString s6 = RawSmallString::make_from_cp(U'1');
-    RawSmallString s7 = RawSmallString::make_from_cp(U' ');
-    RawSmallString s8 = RawSmallString::make_from_cp(U'a');
-    RawSmallString s9 = RawSmallString::make_from_cp(U'@');
-    RawSmallString s10 = RawSmallString::make_from_cp(U'ä');
-    RawSmallString s11 = RawSmallString::make_from_cp(U'©');
-    RawSmallString s12 = RawSmallString::make_from_cp(U'ç');
-    RawSmallString s13 = RawSmallString::make_from_cp(U'€');
-    RawSmallString s14 = RawSmallString::make_from_cp(U'𐍈');
+    RawSmallString s6 = RawSmallString::create_from_cp(U'1');
+    RawSmallString s7 = RawSmallString::create_from_cp(U' ');
+    RawSmallString s8 = RawSmallString::create_from_cp(U'a');
+    RawSmallString s9 = RawSmallString::create_from_cp(U'@');
+    RawSmallString s10 = RawSmallString::create_from_cp(U'ä');
+    RawSmallString s11 = RawSmallString::create_from_cp(U'©');
+    RawSmallString s12 = RawSmallString::create_from_cp(U'ç');
+    RawSmallString s13 = RawSmallString::create_from_cp(U'€');
+    RawSmallString s14 = RawSmallString::create_from_cp(U'𐍈');
 
     CATCH_CHECK(RawString::compare(RawString::cast(s1), "") == 0);
     CATCH_CHECK(RawString::compare(RawString::cast(s2), "a") == 0);
@@ -123,23 +123,23 @@ CATCH_TEST_CASE("Immediate encoded values") {
   }
 
   CATCH_SECTION("symbols") {
-    CATCH_CHECK(RawSymbol::make(SYM("hello")).value() == SYM("hello"));
-    CATCH_CHECK(RawSymbol::make(SYM("")).value() == SYM(""));
-    CATCH_CHECK(RawSymbol::make(SYM("123")).value() == SYM("123"));
-    CATCH_CHECK(RawSymbol::make(SYM("a")).value() == SYM("a"));
+    CATCH_CHECK(RawSymbol::create(SYM("hello")).value() == SYM("hello"));
+    CATCH_CHECK(RawSymbol::create(SYM("")).value() == SYM(""));
+    CATCH_CHECK(RawSymbol::create(SYM("123")).value() == SYM("123"));
+    CATCH_CHECK(RawSymbol::create(SYM("a")).value() == SYM("a"));
   }
 
   CATCH_SECTION("bools") {
-    CATCH_CHECK(RawBool::make(true).value() == true);
-    CATCH_CHECK(RawBool::make(false).value() == false);
+    CATCH_CHECK(RawBool::create(true).value() == true);
+    CATCH_CHECK(RawBool::create(false).value() == false);
   }
 
   CATCH_SECTION("null") {
-    CATCH_CHECK(RawNull::make().error_code() == ErrorId::kErrorNone);
-    CATCH_CHECK(RawNull::make_error(ErrorId::kErrorOk).error_code() == ErrorId::kErrorOk);
-    CATCH_CHECK(RawNull::make_error(ErrorId::kErrorNotFound).error_code() == ErrorId::kErrorNotFound);
-    CATCH_CHECK(RawNull::make_error(ErrorId::kErrorOutOfBounds).error_code() == ErrorId::kErrorOutOfBounds);
-    CATCH_CHECK(RawNull::make_error(ErrorId::kErrorException).error_code() == ErrorId::kErrorException);
+    CATCH_CHECK(RawNull::create().error_code() == ErrorId::kErrorNone);
+    CATCH_CHECK(RawNull::create_error(ErrorId::kErrorOk).error_code() == ErrorId::kErrorOk);
+    CATCH_CHECK(RawNull::create_error(ErrorId::kErrorNotFound).error_code() == ErrorId::kErrorNotFound);
+    CATCH_CHECK(RawNull::create_error(ErrorId::kErrorOutOfBounds).error_code() == ErrorId::kErrorOutOfBounds);
+    CATCH_CHECK(RawNull::create_error(ErrorId::kErrorException).error_code() == ErrorId::kErrorException);
   }
 
   CATCH_SECTION("shape group checks") {
@@ -211,34 +211,34 @@ CATCH_TEST_CASE("Immediate encoded values") {
   }
 
   CATCH_SECTION("value truthyness") {
-    CATCH_CHECK(RawInt::make(0).truthyness() == false);
-    CATCH_CHECK(RawInt::make(1).truthyness() == true);
-    CATCH_CHECK(RawInt::make(200).truthyness() == true);
-    CATCH_CHECK(RawInt::make(-200).truthyness() == true);
+    CATCH_CHECK(RawInt::create(0).truthyness() == false);
+    CATCH_CHECK(RawInt::create(1).truthyness() == true);
+    CATCH_CHECK(RawInt::create(200).truthyness() == true);
+    CATCH_CHECK(RawInt::create(-200).truthyness() == true);
 
-    CATCH_CHECK(RawObject::make_from_ptr(0).truthyness() == true);
-    CATCH_CHECK(RawObject::make_from_ptr(0x10000).truthyness() == true);
+    CATCH_CHECK(RawObject::create_from_ptr(0).truthyness() == true);
+    CATCH_CHECK(RawObject::create_from_ptr(0x10000).truthyness() == true);
 
-    CATCH_CHECK(RawFloat::make(0.0).truthyness() == false);
-    CATCH_CHECK(RawFloat::make(0.1).truthyness() == true);
-    CATCH_CHECK(RawFloat::make(0.5).truthyness() == true);
-    CATCH_CHECK(RawFloat::make(1).truthyness() == true);
-    CATCH_CHECK(RawFloat::make(10).truthyness() == true);
-    CATCH_CHECK(RawFloat::make(-0.1).truthyness() == true);
-    CATCH_CHECK(RawFloat::make(-0.5).truthyness() == true);
-    CATCH_CHECK(RawFloat::make(-1).truthyness() == true);
-    CATCH_CHECK(RawFloat::make(-10).truthyness() == true);
-    CATCH_CHECK(RawFloat::make(NAN).truthyness() == false);
-    CATCH_CHECK(RawFloat::make(INFINITY).truthyness() == true);
-    CATCH_CHECK(RawFloat::make(-INFINITY).truthyness() == true);
+    CATCH_CHECK(RawFloat::create(0.0).truthyness() == false);
+    CATCH_CHECK(RawFloat::create(0.1).truthyness() == true);
+    CATCH_CHECK(RawFloat::create(0.5).truthyness() == true);
+    CATCH_CHECK(RawFloat::create(1).truthyness() == true);
+    CATCH_CHECK(RawFloat::create(10).truthyness() == true);
+    CATCH_CHECK(RawFloat::create(-0.1).truthyness() == true);
+    CATCH_CHECK(RawFloat::create(-0.5).truthyness() == true);
+    CATCH_CHECK(RawFloat::create(-1).truthyness() == true);
+    CATCH_CHECK(RawFloat::create(-10).truthyness() == true);
+    CATCH_CHECK(RawFloat::create(NAN).truthyness() == false);
+    CATCH_CHECK(RawFloat::create(INFINITY).truthyness() == true);
+    CATCH_CHECK(RawFloat::create(-INFINITY).truthyness() == true);
 
-    CATCH_CHECK(RawBool::make(true).truthyness() == true);
-    CATCH_CHECK(RawBool::make(false).truthyness() == false);
+    CATCH_CHECK(RawBool::create(true).truthyness() == true);
+    CATCH_CHECK(RawBool::create(false).truthyness() == false);
 
-    CATCH_CHECK(RawSmallString::make_empty().truthyness() == true);
-    CATCH_CHECK(RawSymbol::make(SYM("hello")).truthyness() == true);
+    CATCH_CHECK(RawSmallString::create_empty().truthyness() == true);
+    CATCH_CHECK(RawSymbol::create(SYM("hello")).truthyness() == true);
 
-    CATCH_CHECK(RawNull::make().truthyness() == false);
+    CATCH_CHECK(RawNull::create().truthyness() == false);
     CATCH_CHECK(kErrorNone.truthyness() == false);
     CATCH_CHECK(kErrorOk.truthyness() == false);
     CATCH_CHECK(kErrorException.truthyness() == false);
@@ -247,14 +247,14 @@ CATCH_TEST_CASE("Immediate encoded values") {
   }
 
   CATCH_SECTION("value shapes") {
-    CATCH_CHECK(RawInt::make(1).shape_id_not_object_int() == ShapeId::kInt);
-    CATCH_CHECK(RawFloat::make(3.1415).shape_id_not_object_int() == ShapeId::kFloat);
-    CATCH_CHECK(RawBool::make(false).shape_id_not_object_int() == ShapeId::kBool);
-    CATCH_CHECK(RawSymbol::make(SYM("hello")).shape_id_not_object_int() == ShapeId::kSymbol);
-    CATCH_CHECK(RawNull::make().shape_id_not_object_int() == ShapeId::kNull);
-    CATCH_CHECK(RawSmallString::make_from_cstr("test123").shape_id_not_object_int() == ShapeId::kSmallString);
+    CATCH_CHECK(RawInt::create(1).shape_id_not_object_int() == ShapeId::kInt);
+    CATCH_CHECK(RawFloat::create(3.1415).shape_id_not_object_int() == ShapeId::kFloat);
+    CATCH_CHECK(RawBool::create(false).shape_id_not_object_int() == ShapeId::kBool);
+    CATCH_CHECK(RawSymbol::create(SYM("hello")).shape_id_not_object_int() == ShapeId::kSymbol);
+    CATCH_CHECK(RawNull::create().shape_id_not_object_int() == ShapeId::kNull);
+    CATCH_CHECK(RawSmallString::create_from_cstr("test123").shape_id_not_object_int() == ShapeId::kSmallString);
     const char* foo = "test123";
     const auto* ptr = bitcast<const uint8_t*>(foo);
-    CATCH_CHECK(RawSmallBytes::make_from_memory(ptr, 7).shape_id_not_object_int() == ShapeId::kSmallBytes);
+    CATCH_CHECK(RawSmallBytes::create_from_memory(ptr, 7).shape_id_not_object_int() == ShapeId::kSmallBytes);
   }
 }

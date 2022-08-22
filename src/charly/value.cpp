@@ -32,6 +32,7 @@
 #include "charly/utf8.h"
 #include "charly/value.h"
 
+#include "charly/core/compiler/compiler.h"
 #include "charly/core/runtime/compiled_module.h"
 #include "charly/core/runtime/heap.h"
 #include "charly/core/runtime/runtime.h"
@@ -206,7 +207,7 @@ HeapRegion* ObjectHeader::heap_region() const {
 
 RawObject ObjectHeader::object() const {
   uintptr_t object_address = bitcast<uintptr_t>(this) + sizeof(ObjectHeader);
-  return RawObject::make_from_ptr(object_address, is_young_generation());
+  return RawObject::create_from_ptr(object_address, is_young_generation());
 }
 
 uint32_t ObjectHeader::alloc_size() const {
@@ -345,6 +346,25 @@ bool RawValue::is_old_pointer() const {
 
 bool RawValue::is_young_pointer() const {
   return (m_raw & kMaskImmediate) == kTagYoungObject;
+}
+
+RawClass RawValue::klass(Thread* thread) const {
+  if (isInstance()) {
+    auto instance = RawInstance::cast(*this);
+    auto klass_field = instance.klass_field();
+    DCHECK(!klass_field.isNull());
+    return RawClass::cast(klass_field);
+  }
+
+  return thread->runtime()->get_builtin_class(shape_id());
+}
+
+RawSymbol RawValue::klass_name(Thread* thread) const {
+  auto resolved_name = thread->runtime()->lookup_symbol(klass(thread).name());
+  if (resolved_name.isSymbol()) {
+    return RawSymbol::cast(resolved_name);
+  }
+  return RawSymbol::create("??");
 }
 
 bool RawValue::isInt() const {
@@ -581,7 +601,7 @@ void RawValue::dump(std::ostream& out) const {
       auto function = RawFunction::cast(this);
 
       const SharedFunctionInfo& shared_info = *function.shared_info();
-      const compiler::ir::FunctionInfo& ir_info = shared_info.ir_info;
+      const core::compiler::ir::FunctionInfo& ir_info = shared_info.ir_info;
       bool arrow = ir_info.arrow_function;
       const std::string& name = shared_info.name;
 
@@ -591,12 +611,12 @@ void RawValue::dump(std::ostream& out) const {
         if (function.host_class().isClass()) {
           auto klass = RawClass::cast(function.host_class());
           if (klass.flags() & RawClass::kFlagStatic) {
-            writer.fg(Color::Yellow, "static ", klass.name(), "::", name, "()");
+            writer.fg(Color::Yellow, "static func ", klass.name(), "::", name, "()");
           } else {
-            writer.fg(Color::Yellow, klass.name(), "::", name, "()");
+            writer.fg(Color::Yellow, "func ", klass.name(), "::", name, "()");
           }
         } else {
-          writer.fg(Color::Yellow, name, "()");
+          writer.fg(Color::Yellow, "func ", name, "()");
         }
       }
 
@@ -607,7 +627,7 @@ void RawValue::dump(std::ostream& out) const {
       auto builtin_function = RawBuiltinFunction::cast(this);
       RawSymbol name = builtin_function.name();
       uint8_t argc = builtin_function.argc();
-      writer.fg(Color::Yellow, "builtin ", name, "(", (uint32_t)argc, ")");
+      writer.fg(Color::Yellow, "builtin func ", name, "(", (uint32_t)argc, ")");
       return;
     }
 
@@ -636,7 +656,7 @@ void RawValue::dump(std::ostream& out) const {
         SYMBOL prop_name;
         uint8_t prop_flags;
         RawShape::decode_shape_key(encoded, prop_name, prop_flags);
-        writer.fg(Color::Cyan, RawSymbol::make(prop_name));
+        writer.fg(Color::Cyan, RawSymbol::create(prop_name));
 
         if (i < keys.size() - 1) {
           writer.fg(Color::Cyan, ", ");
@@ -768,18 +788,18 @@ uintptr_t RawInt::external_pointer_value() const {
   return static_cast<uintptr_t>(value());
 }
 
-RawInt RawInt::make(int64_t value) {
+RawInt RawInt::create(int64_t value) {
   CHECK(is_valid(value));
-  return make_truncate(value);
+  return create_truncate(value);
 }
 
-RawInt RawInt::make_truncate(int64_t value) {
+RawInt RawInt::create_truncate(int64_t value) {
   return RawInt::cast((static_cast<uintptr_t>(value) << kShiftInt) | kTagInt);
 }
 
-RawInt RawInt::make_from_external_pointer(uintptr_t address) {
-  DCHECK((address & kExternalPointerValidationMask) == 0);
-  return make(static_cast<int64_t>(address));
+RawInt RawInt::create_from_external_pointer(uintptr_t value) {
+  DCHECK((value & kExternalPointerValidationMask) == 0);
+  return create(static_cast<int64_t>(value));
 }
 
 bool RawInt::is_valid(int64_t value) {
@@ -795,7 +815,7 @@ bool RawFloat::close_to(double other, double precision) const {
   return std::fabs(value() - other) <= precision;
 }
 
-RawFloat RawFloat::make(double value) {
+RawFloat RawFloat::create(double value) {
   auto value_bits = bitcast<uintptr_t>(value);
   return RawFloat::cast((value_bits & ~kMaskImmediate) | kTagFloat);
 }
@@ -804,7 +824,7 @@ bool RawBool::value() const {
   return (m_raw >> kShiftBool) != 0;
 }
 
-RawBool RawBool::make(bool value) {
+RawBool RawBool::create(bool value) {
   if (value) {
     return RawBool::cast((uintptr_t{ 1 } << kShiftBool) | kTagBool);
   } else {
@@ -816,8 +836,8 @@ SYMBOL RawSymbol::value() const {
   return m_raw >> kShiftSymbol;
 }
 
-RawSymbol RawSymbol::make(SYMBOL value) {
-  return RawSymbol::cast((uintptr_t{ value } << kShiftSymbol) | kTagSymbol);
+RawSymbol RawSymbol::create(SYMBOL symbol) {
+  return RawSymbol::cast((uintptr_t{ symbol } << kShiftSymbol) | kTagSymbol);
 }
 
 size_t RawSmallString::length() const {
@@ -833,22 +853,22 @@ SYMBOL RawSmallString::hashcode() const {
   return crc32::hash_block(RawSmallString::data(this), length());
 }
 
-RawSmallString RawSmallString::make_from_cp(uint32_t cp) {
+RawSmallString RawSmallString::create_from_cp(uint32_t cp) {
   utils::Buffer buf(4);
   buf.write_utf8_cp(cp);
   DCHECK(buf.size() <= 4);
-  return make_from_memory(buf.data(), utf8::sequence_length(cp));
+  return create_from_memory(buf.data(), utf8::sequence_length(cp));
 }
 
-RawSmallString RawSmallString::make_from_str(const std::string& string) {
-  return make_from_memory(string.data(), string.size());
+RawSmallString RawSmallString::create_from_str(const std::string& string) {
+  return create_from_memory(string.data(), string.size());
 }
 
-RawSmallString RawSmallString::make_from_cstr(const char* value) {
-  return make_from_memory(value, std::strlen(value));
+RawSmallString RawSmallString::create_from_cstr(const char* value) {
+  return create_from_memory(value, std::strlen(value));
 }
 
-RawSmallString RawSmallString::make_from_memory(const char* value, size_t length) {
+RawSmallString RawSmallString::create_from_memory(const char* value, size_t length) {
   CHECK(length <= kMaxLength);
 
   uintptr_t immediate = 0;
@@ -861,7 +881,7 @@ RawSmallString RawSmallString::make_from_memory(const char* value, size_t length
   return RawSmallString::cast(immediate);
 }
 
-RawSmallString RawSmallString::make_empty() {
+RawSmallString RawSmallString::create_empty() {
   return RawSmallString::cast(kTagSmallString);
 }
 
@@ -878,7 +898,7 @@ SYMBOL RawSmallBytes::hashcode() const {
   return crc32::hash_block(bitcast<const char*>(RawSmallBytes::data(this)), length());
 }
 
-RawSmallBytes RawSmallBytes::make_from_memory(const uint8_t* value, size_t length) {
+RawSmallBytes RawSmallBytes::create_from_memory(const uint8_t* value, size_t length) {
   CHECK(length <= kMaxLength);
 
   uintptr_t immediate = 0;
@@ -891,7 +911,7 @@ RawSmallBytes RawSmallBytes::make_from_memory(const uint8_t* value, size_t lengt
   return RawSmallBytes::cast(immediate);
 }
 
-RawSmallBytes RawSmallBytes::make_empty() {
+RawSmallBytes RawSmallBytes::create_empty() {
   return RawSmallBytes::cast(kTagSmallBytes);
 }
 
@@ -899,12 +919,39 @@ ErrorId RawNull::error_code() const {
   return static_cast<ErrorId>(raw() >> kShiftError);
 }
 
-RawNull RawNull::make() {
+RawNull RawNull::create() {
   return RawNull::cast(kTagNull);
 }
 
-RawNull RawNull::make_error(ErrorId id) {
+RawNull RawNull::create_error(ErrorId id) {
   return RawNull::cast((static_cast<uint8_t>(id) << kShiftError) | kTagNull);
+}
+
+RawString RawString::create(Thread* thread, const char* data, size_t size, SYMBOL hash) {
+  if (size <= RawSmallString::kMaxLength) {
+    return RawString::cast(RawSmallString::create_from_memory(data, size));
+  } else if (size <= kHeapRegionUsableSizeForPayload) {
+    return RawString::cast(RawLargeString::create(thread, data, size, hash));
+  } else {
+    return RawString::cast(RawHugeString::create(thread, data, size, hash));
+  }
+}
+
+RawString RawString::create(Thread* thread, const std::string& string) {
+  return RawString::create(thread, string.data(), string.size(), crc32::hash_string(string));
+}
+
+RawString RawString::acquire(Thread* thread, char* cstr, size_t size, SYMBOL hash) {
+  return RawString::cast(RawHugeString::acquire(thread, cstr, size, hash));
+}
+
+RawString RawString::acquire(Thread* thread, utils::Buffer& buffer) {
+  size_t size = buffer.size();
+  if (size <= RawSmallString::kMaxLength) {
+    return RawString::cast(RawSmallString::create_from_memory(buffer.data(), size));
+  } else {
+    return RawString::cast(RawHugeString::acquire(thread, buffer.release_buffer(), size, buffer.hash()));
+  }
 }
 
 size_t RawString::length() const {
@@ -959,7 +1006,7 @@ std::string RawString::str() const {
   return { data(this), length() };
 }
 
-std::string_view RawString::view() const & {
+std::string_view RawString::view() const& {
   return { data(this), length() };
 }
 
@@ -1076,10 +1123,32 @@ void RawObject::set_field_at(uint32_t index, RawValue value) const {
   }
 }
 
-RawObject RawObject::make_from_ptr(uintptr_t address, bool is_young) {
+RawObject RawObject::create_from_ptr(uintptr_t address, bool is_young) {
   CHECK((address % kObjectAlignment) == 0, "invalid pointer alignment");
   auto object = RawObject::cast(address | (is_young ? kTagYoungObject : kTagOldObject));
   return object;
+}
+
+RawData RawData::create(Thread* thread, ShapeId shape_id, size_t size) {
+  DCHECK(size <= kHeapRegionUsableSizeForPayload);
+
+  // determine the total allocation size
+  size_t header_size = sizeof(ObjectHeader);
+  size_t total_size = align_to_size(header_size + size, kObjectAlignment);
+  DCHECK(total_size <= kHeapRegionUsableSize);
+
+  uintptr_t memory = thread->allocate(total_size);
+  DCHECK(memory);
+
+  // initialize header
+  ObjectHeader::initialize_header(memory, shape_id, size);
+  ObjectHeader* header = bitcast<ObjectHeader*>(memory);
+
+  if (shape_id == ShapeId::kTuple) {
+    CHECK(header->cas_count(size, size / kPointerSize));
+  }
+
+  return RawData::cast(RawObject::create_from_ptr(memory + header_size));
 }
 
 size_t RawData::length() const {
@@ -1099,8 +1168,58 @@ SYMBOL RawData::hashcode() const {
   return hash;
 }
 
+RawLargeString RawLargeString::create(Thread* thread, const char* data, size_t size, SYMBOL hash) {
+  auto string = RawLargeString::cast(RawData::create(thread, ShapeId::kLargeString, size));
+  std::memcpy((char*)string.address(), data, size);
+  string.header()->cas_hashcode((SYMBOL)0, hash);
+  return string;
+}
+
 const char* RawLargeString::data() const {
   return bitcast<const char*>(address());
+}
+
+RawTuple RawTuple::create_empty(Thread* thread) {
+  return RawTuple::create(thread, 0);
+}
+
+RawTuple RawTuple::create(Thread* thread, uint32_t count) {
+  return RawTuple::cast(RawData::create(thread, ShapeId::kTuple, count * kPointerSize));
+}
+
+RawTuple RawTuple::create(Thread* thread, RawValue value) {
+  HandleScope scope(thread);
+  Value v1(scope, value);
+  Tuple tuple(scope, RawTuple::create(thread, 1));
+  tuple.set_field_at(0, v1);
+  return *tuple;
+}
+
+RawTuple RawTuple::create(Thread* thread, RawValue value1, RawValue value2) {
+  HandleScope scope(thread);
+  Value v1(scope, value1);
+  Value v2(scope, value2);
+  Tuple tuple(scope, RawTuple::create(thread, 2));
+  tuple.set_field_at(0, v1);
+  tuple.set_field_at(1, v2);
+  return *tuple;
+}
+
+RawTuple RawTuple::concat_value(Thread* thread, RawTuple left, RawValue value) {
+  uint32_t left_size = left.size();
+  uint64_t new_size = left_size + 1;
+  CHECK(new_size <= kInt32Max);
+
+  HandleScope scope(thread);
+  Value new_value(scope, value);
+  Tuple old_tuple(scope, left);
+  Tuple new_tuple(scope, RawTuple::create(thread, new_size));
+  for (uint32_t i = 0; i < left_size; i++) {
+    new_tuple.set_field_at(i, left.field_at(i));
+  }
+  new_tuple.set_field_at(new_size - 1, new_value);
+
+  return *new_tuple;
 }
 
 const RawValue* RawTuple::data() const {
@@ -1109,6 +1228,43 @@ const RawValue* RawTuple::data() const {
 
 uint32_t RawTuple::size() const {
   return count();
+}
+
+RawInstance RawInstance::create(Thread* thread, ShapeId shape_id, size_t field_count, RawValue _klass) {
+  HandleScope scope(thread);
+  Value klass(scope, _klass);
+
+  // determine the allocation size
+  DCHECK(field_count >= 1);
+  DCHECK(field_count <= RawInstance::kMaximumFieldCount);
+  size_t object_size = field_count * kPointerSize;
+  size_t header_size = sizeof(ObjectHeader);
+  size_t total_size = align_to_size(header_size + object_size, kObjectAlignment);
+
+  uintptr_t memory = thread->allocate(total_size, is_shape_with_external_heap_pointers(shape_id));
+  DCHECK(memory);
+
+  // initialize header
+  ObjectHeader::initialize_header(memory, shape_id, field_count);
+
+  // initialize fields to null
+  uintptr_t object = memory + header_size;
+  auto* object_fields = bitcast<RawValue*>(object);
+  for (uint32_t i = 0; i < field_count; i++) {
+    object_fields[i] = kNull;
+  }
+
+  auto instance = RawInstance::cast(RawObject::create_from_ptr(object));
+  instance.set_klass_field(klass);
+  return instance;
+}
+
+RawInstance RawInstance::create(Thread* thread, RawShape shape, RawValue klass) {
+  return RawInstance::create(thread, shape.own_shape_id(), shape.keys().size(), klass);
+}
+
+RawInstance RawInstance::create(Thread* thread, RawClass klass) {
+  return RawInstance::create(thread, klass.shape_instance(), klass);
 }
 
 uint32_t RawInstance::field_count() const {
@@ -1145,7 +1301,7 @@ uintptr_t RawInstance::pointer_at(int64_t index) const {
 
 void RawInstance::set_pointer_at(int64_t index, const void* pointer) const {
   uintptr_t raw = bitcast<uintptr_t>(const_cast<void*>(pointer));
-  set_field_at(index, RawInt::make_from_external_pointer(raw));
+  set_field_at(index, RawInt::create_from_external_pointer(raw));
 }
 
 RawValue RawInstance::klass_field() const {
@@ -1174,7 +1330,24 @@ size_t RawHugeBytes::length() const {
 }
 
 void RawHugeBytes::set_length(size_t length) const {
-  set_field_at(kDataLengthOffset, RawInt::make(length));
+  set_field_at(kDataLengthOffset, RawInt::create(length));
+}
+
+RawHugeString RawHugeString::create(Thread* thread, const char* data, size_t size, SYMBOL hash) {
+  char* copy = static_cast<char*>(utils::Allocator::alloc(size));
+  std::memcpy(copy, data, size);
+  return RawHugeString::acquire(thread, copy, size, hash);
+}
+
+RawHugeString RawHugeString::acquire(Thread* thread, char* data, size_t size, SYMBOL hash) {
+  auto* runtime = thread->runtime();
+  auto huge_string_class = runtime->get_builtin_class(ShapeId::kHugeString);
+  auto object = RawHugeString::cast(
+    RawInstance::create(thread, ShapeId::kHugeString, RawHugeString::kFieldCount, huge_string_class));
+  object.set_data(data);
+  object.set_length(size);
+  object.header()->cas_hashcode((SYMBOL)0, hash);
+  return object;
 }
 
 SYMBOL RawHugeString::hashcode() const {
@@ -1197,7 +1370,321 @@ size_t RawHugeString::length() const {
 void RawHugeString::set_length(size_t length) const {
   auto length_int = bitcast<int64_t>(length);
   DCHECK(length_int >= 0);
-  set_field_at(kDataLengthOffset, RawInt::make(length_int));
+  set_field_at(kDataLengthOffset, RawInt::create(length_int));
+}
+
+RawValue RawClass::create(Thread* thread,
+                          SYMBOL name,
+                          RawValue _parent_value,
+                          RawFunction _constructor,
+                          RawTuple _member_props,
+                          RawTuple _member_funcs,
+                          RawTuple _static_prop_keys,
+                          RawTuple _static_prop_values,
+                          RawTuple _static_funcs,
+                          uint32_t flags) {
+  auto runtime = thread->runtime();
+
+  HandleScope scope(thread);
+  Value parent_value(scope, _parent_value);
+  Function constructor(scope, _constructor);
+  Tuple member_props(scope, _member_props);
+  Tuple member_funcs(scope, _member_funcs);
+  Tuple static_prop_keys(scope, _static_prop_keys);
+  Tuple static_prop_values(scope, _static_prop_values);
+  Tuple static_funcs(scope, _static_funcs);
+
+  if (parent_value.is_error_no_base_class()) {
+    parent_value = runtime->get_builtin_class(ShapeId::kInstance);
+  }
+
+  if (!parent_value.isClass()) {
+    return thread->throw_message("extended value is not a class");
+  }
+
+  Class parent_class(scope, parent_value);
+  Shape parent_shape(scope, parent_class.shape_instance());
+
+  if (parent_class.flags() & RawClass::kFlagFinal) {
+    return thread->throw_message("cannot subclass class '%', it is marked final", parent_class.name());
+  }
+
+  // check for duplicate member properties
+  Tuple parent_keys_tuple(scope, parent_shape.keys());
+  for (uint8_t i = 0; i < member_props.size(); i++) {
+    RawInt encoded = member_props.field_at<RawInt>(i);
+    SYMBOL prop_name;
+    uint8_t prop_flags;
+    RawShape::decode_shape_key(encoded, prop_name, prop_flags);
+    for (uint32_t pi = 0; pi < parent_keys_tuple.size(); pi++) {
+      SYMBOL parent_key_symbol;
+      uint8_t parent_key_flags;
+      RawShape::decode_shape_key(parent_keys_tuple.field_at<RawInt>(pi), parent_key_symbol, parent_key_flags);
+      if (parent_key_symbol == prop_name) {
+        return thread->throw_message("cannot redeclare property '%', parent class '%' already contains it",
+                                     RawSymbol::create(prop_name), parent_class.name());
+      }
+    }
+  }
+
+  // ensure new class doesn't exceed the class member property limit
+  size_t new_member_count = parent_shape.field_count() + member_props.size();
+  if (new_member_count > RawInstance::kMaximumFieldCount) {
+    // for some reason, RawInstance::kMaximumFieldCount needs to be casted to its own
+    // type, before it can be used in here. this is some weird template thing...
+    return thread->throw_message("newly created class '%' has % properties, but the limit is %",
+                                 RawSymbol::create(name), new_member_count, (size_t)RawInstance::kMaximumFieldCount);
+  }
+
+  Shape object_shape(scope, RawShape::create(thread, parent_shape, member_props));
+
+  Tuple parent_function_table(scope, parent_class.function_table());
+  Tuple new_function_table(scope);
+
+  // can simply reuse parent function table if no new functions are being added
+  if (member_funcs.size() == 0) {
+    new_function_table = parent_function_table;
+  } else {
+    std::unordered_map<SYMBOL, uint32_t> parent_function_indices;
+    for (uint32_t j = 0; j < parent_function_table.size(); j++) {
+      RawFunction parent_function = parent_function_table.field_at<RawFunction>(j);
+      parent_function_indices[parent_function.name()] = j;
+    }
+
+    // calculate the amount of functions being added that are not already present in the parent class
+    std::unordered_set<SYMBOL> new_function_names;
+    size_t newly_added_functions = 0;
+    for (uint32_t i = 0; i < member_funcs.size(); i++) {
+      RawSymbol method_name = member_funcs.field_at<RawTuple>(i).field_at<RawFunction>(0).name();
+      new_function_names.insert(method_name);
+
+      if (parent_function_indices.count(method_name) == 0) {
+        newly_added_functions++;
+      }
+    }
+
+    size_t new_function_table_size = parent_function_table.size() + newly_added_functions;
+    new_function_table = RawTuple::create(thread, new_function_table_size);
+
+    // functions which are not being overriden in the new class can be copied to the new table
+    size_t new_function_table_offset = 0;
+    for (uint32_t j = 0; j < parent_function_table.size(); j++) {
+      RawFunction parent_function = parent_function_table.field_at<RawFunction>(j);
+      if (new_function_names.count(parent_function.name()) == 0) {
+        new_function_table.set_field_at(new_function_table_offset++, parent_function);
+      }
+    }
+
+    // insert new methods into function table
+    // the overload tables of functions that override functions from the parent class must be merged
+    // with the overload tables from their parents
+    for (uint32_t i = 0; i < member_funcs.size(); i++) {
+      Tuple new_overload_table(scope, member_funcs.field_at(i));
+      Function first_overload(scope, new_overload_table.field_at(0));
+      RawSymbol new_overload_name = first_overload.name();
+
+      // new function does not override any parent functions
+      if (parent_function_indices.count(new_overload_name) == 0) {
+        for (uint32_t j = 0; j < new_overload_table.size(); j++) {
+          new_overload_table.field_at<RawFunction>(j).set_overload_table(new_overload_table);
+        }
+        new_function_table.set_field_at(new_function_table_offset++, first_overload);
+        continue;
+      }
+
+      uint32_t parent_function_index = parent_function_indices[new_overload_name];
+      Function parent_function(scope, parent_function_table.field_at(parent_function_index));
+      Tuple parent_overload_table(scope, parent_function.overload_table());
+      Function max_parent_overload(scope, parent_overload_table.last_field());
+      Function max_new_overload(scope, new_overload_table.last_field());
+
+      uint32_t parent_max_argc = max_parent_overload.shared_info()->ir_info.argc;
+      uint32_t new_max_argc = max_new_overload.shared_info()->ir_info.argc;
+      uint32_t max_argc = std::max(parent_max_argc, new_max_argc);
+      uint32_t merged_size = max_argc + 2;
+      Tuple merged_table(scope, RawTuple::create(thread, merged_size));
+
+      // merge the parents and the new functions overload tables
+      Function highest_overload(scope);
+      Function first_new_overload(scope, new_overload_table.first_field());
+      for (uint32_t argc = 0; argc < merged_size; argc++) {
+        uint32_t parent_table_index = std::min(parent_overload_table.size() - 1, argc);
+        uint32_t new_table_index = std::min(new_overload_table.size() - 1, argc);
+
+        Function parent_method(scope, parent_overload_table.field_at(parent_table_index));
+        Function new_method(scope, new_overload_table.field_at(new_table_index));
+
+        if (new_method.check_accepts_argc(argc)) {
+          new_method.set_overload_table(merged_table);
+          merged_table.set_field_at(argc, new_method);
+          highest_overload = new_method;
+          continue;
+        }
+
+        if (parent_method.check_accepts_argc(argc)) {
+          Function method_copy(scope, RawFunction::create(thread, parent_method.context(), parent_method.shared_info(),
+                                                          parent_method.saved_self()));
+
+          method_copy.set_overload_table(merged_table);
+          method_copy.set_host_class(parent_method.host_class());
+          merged_table.set_field_at(argc, method_copy);
+          highest_overload = method_copy;
+          continue;
+        }
+
+        merged_table.set_field_at(argc, kNull);
+      }
+
+      // patch holes in the merged table with their next highest applicable overload
+      // trailing holes are filled with the next lowest overload
+      Value next_highest_method(scope, kNull);
+      for (int64_t k = merged_size - 1; k >= 0; k--) {
+        RawValue field = merged_table.field_at(k);
+        if (field.isNull()) {
+          if (next_highest_method.isNull()) {
+            merged_table.set_field_at(k, highest_overload);
+          } else {
+            merged_table.set_field_at(k, next_highest_method);
+          }
+        } else {
+          next_highest_method = field;
+        }
+      }
+
+      // remove overload tuple if only one function is present
+      // TODO: ideally the overload tuple shouldn't be constructed
+      //       in the first place if this is the case
+
+      Function merged_first_overload(scope, merged_table.first_field());
+      bool overload_tuple_is_homogenic = true;
+      for (uint32_t oi = 0; oi < merged_table.size(); oi++) {
+        if (merged_table.field_at(oi) != merged_first_overload) {
+          overload_tuple_is_homogenic = false;
+          break;
+        }
+      }
+      if (merged_table.size() == 1 || overload_tuple_is_homogenic) {
+        merged_first_overload.set_overload_table(kNull);
+        new_function_table.set_field_at(new_function_table_offset++, merged_first_overload);
+      } else {
+        new_function_table.set_field_at(new_function_table_offset++, first_new_overload);
+      }
+    }
+  }
+
+  // build overload tables for static functions
+  Tuple static_function_table(scope, RawTuple::create(thread, static_funcs.size()));
+  for (uint32_t i = 0; i < static_funcs.size(); i++) {
+    auto overload_tuple = static_funcs.field_at<RawTuple>(i);
+    DCHECK(overload_tuple.size() >= 1);
+
+    // remove overload tuple if only one function is present
+    auto first_overload = overload_tuple.first_field<RawFunction>();
+    bool overload_tuple_is_homogenic = true;
+    for (uint32_t oi = 0; oi < overload_tuple.size(); oi++) {
+      if (overload_tuple.field_at(oi) != first_overload) {
+        overload_tuple_is_homogenic = false;
+        break;
+      }
+    }
+    if (overload_tuple.size() == 1 || overload_tuple_is_homogenic) {
+      first_overload.set_overload_table(kNull);
+      static_function_table.set_field_at(i, first_overload);
+      continue;
+    }
+
+    // point functions to the same overload tuple
+    for (uint32_t j = 0; j < overload_tuple.size(); j++) {
+      auto func = overload_tuple.field_at<RawFunction>(j);
+      func.set_overload_table(overload_tuple);
+    }
+
+    // put the lowest overload into the functions lookup table
+    // since every function part of the overload has a reference to the overload table
+    // it doesn't really matter which function we put in there
+    static_function_table.set_field_at(i, first_overload);
+  }
+
+  // if there are any static properties or functions in this class
+  // a special intermediate class needs to be created that contains those static properties
+  // the class instance returned is an instance of that intermediate class
+  DCHECK(static_prop_keys.size() == static_prop_values.size());
+
+  Class builtin_class_instance(scope, runtime->get_builtin_class(ShapeId::kClass));
+  Class constructed_class(scope);
+  if (static_prop_keys.size() || static_funcs.size()) {
+    Shape builtin_class_shape(scope, builtin_class_instance.shape_instance());
+    Shape static_shape(scope, RawShape::create(thread, builtin_class_shape, static_prop_keys));
+    Class static_class(scope, RawInstance::create(thread, builtin_class_instance));
+    static_class.set_flags(flags | RawClass::kFlagStatic);
+    static_class.set_ancestor_table(
+      RawTuple::concat_value(thread, builtin_class_instance.ancestor_table(), builtin_class_instance));
+    static_class.set_name(RawSymbol::create(name));
+    static_class.set_parent(builtin_class_instance);
+    static_class.set_shape_instance(static_shape);
+    static_class.set_function_table(static_function_table);
+    static_class.set_constructor(kNull);
+
+    // build instance of newly created static shape
+    Class actual_class(scope, RawInstance::create(thread, static_shape, static_class));
+    actual_class.set_flags(flags);
+    actual_class.set_ancestor_table(RawTuple::concat_value(thread, parent_class.ancestor_table(), parent_class));
+    actual_class.set_name(RawSymbol::create(name));
+    actual_class.set_parent(parent_class);
+    actual_class.set_shape_instance(object_shape);
+    actual_class.set_function_table(new_function_table);
+    actual_class.set_constructor(constructor);
+
+    // initialize static properties
+    for (uint32_t i = 0; i < static_prop_values.size(); i++) {
+      actual_class.set_field_at(RawClass::kFieldCount + i, static_prop_values.field_at(i));
+    }
+
+    // patch host class field on static functions
+    for (uint32_t i = 0; i < static_function_table.size(); i++) {
+      auto entry = static_function_table.field_at<RawFunction>(i);
+      auto overloads_value = entry.overload_table();
+      if (overloads_value.isTuple()) {
+        auto overloads = RawTuple::cast(overloads_value);
+        for (uint32_t j = 0; j < overloads.size(); j++) {
+          auto func = overloads.field_at<RawFunction>(j);
+          if (func.host_class().isNull()) {
+            func.set_host_class(static_class);
+          }
+        }
+      }
+    }
+
+    constructed_class = actual_class;
+  } else {
+    Class klass(scope, RawInstance::create(thread, builtin_class_instance));
+    klass.set_flags(flags);
+    klass.set_ancestor_table(RawTuple::concat_value(thread, parent_class.ancestor_table(), parent_class));
+    klass.set_name(RawSymbol::create(name));
+    klass.set_parent(parent_class);
+    klass.set_shape_instance(object_shape);
+    klass.set_function_table(new_function_table);
+    klass.set_constructor(constructor);
+    constructed_class = klass;
+  }
+
+  // set host class fields on functions
+  constructor.set_host_class(constructed_class);
+  for (uint32_t i = 0; i < new_function_table.size(); i++) {
+    auto entry = new_function_table.field_at<RawFunction>(i);
+    auto overloads_value = entry.overload_table();
+    if (overloads_value.isTuple()) {
+      auto overloads = RawTuple::cast(overloads_value);
+      for (uint32_t j = 0; j < overloads.size(); j++) {
+        auto func = overloads.field_at<RawFunction>(j);
+        if (func.host_class().isNull()) {
+          func.set_host_class(constructed_class);
+        }
+      }
+    }
+  }
+
+  return constructed_class;
 }
 
 uint8_t RawClass::flags() const {
@@ -1205,7 +1692,7 @@ uint8_t RawClass::flags() const {
 }
 
 void RawClass::set_flags(uint8_t flags) const {
-  set_field_at(kFlagsOffset, RawInt::make(flags));
+  set_field_at(kFlagsOffset, RawInt::create(flags));
 }
 
 RawTuple RawClass::ancestor_table() const {
@@ -1278,7 +1765,6 @@ RawValue RawClass::lookup_function(SYMBOL name) const {
 }
 
 bool RawClass::is_instance_of(RawClass other) const {
-
   // same class
   if (*this == other) {
     return true;
@@ -1297,12 +1783,82 @@ bool RawClass::is_instance_of(RawClass other) const {
   return false;
 }
 
+RawShape RawShape::create(Thread* thread, RawValue parent, RawTuple key_table) {
+  auto runtime = thread->runtime();
+  HandleScope scope(thread);
+  Shape parent_shape(scope, parent);
+  Shape target_shape(scope, parent_shape);
+
+  // find preexisting shape with same layout or create new shape
+  for (uint32_t i = 0; i < key_table.size(); i++) {
+    RawInt encoded = key_table.field_at<RawInt>(i);
+    Shape next_shape(scope);
+    {
+      std::lock_guard lock(target_shape);
+
+      // find the shape to transition to when adding the new key
+      Tuple additions(scope, target_shape.additions());
+      bool found_next = false;
+      for (uint32_t ai = 0; ai < additions.size(); ai++) {
+        Tuple entry(scope, additions.field_at(ai));
+        RawInt entry_encoded_key = entry.field_at<RawInt>(RawShape::kAdditionsKeyOffset);
+        if (encoded == entry_encoded_key) {
+          next_shape = entry.field_at<RawShape>(RawShape::kAdditionsNextOffset);
+          found_next = true;
+          break;
+        }
+      }
+
+      // create new shape for added key
+      if (!found_next) {
+        Value klass(scope, kNull);
+
+        // RawShape::create gets called during runtime initialization
+        // at that point no builtin classes are registered yet
+        // the klass field gets patched once runtime initialization has finished
+        if (runtime->builtin_class_is_registered(ShapeId::kShape)) {
+          klass = runtime->get_builtin_class(ShapeId::kShape);
+        }
+        next_shape = RawInstance::create(thread, ShapeId::kShape, RawShape::kFieldCount, klass);
+        next_shape.set_parent(target_shape);
+        next_shape.set_keys(RawTuple::concat_value(thread, target_shape.keys(), encoded));
+        next_shape.set_additions(RawTuple::create_empty(thread));
+        runtime->register_shape(next_shape);
+
+        // add new shape to additions table of previous base
+        target_shape.set_additions(
+          RawTuple::concat_value(thread, additions, RawTuple::create(thread, encoded, next_shape)));
+      }
+    }
+
+    target_shape = next_shape;
+  }
+
+  return *target_shape;
+}
+
+RawShape RawShape::create(Thread* thread,
+                          RawValue _parent,
+                          std::initializer_list<std::tuple<std::string, uint8_t>> keys) {
+  auto runtime = thread->runtime();
+  HandleScope scope(thread);
+  Value parent(scope, _parent);
+  Tuple key_tuple(scope, RawTuple::create(thread, keys.size()));
+  for (size_t i = 0; i < keys.size(); i++) {
+    auto& entry = std::data(keys)[i];
+    auto& name = std::get<0>(entry);
+    auto flags = std::get<1>(entry);
+    key_tuple.set_field_at(i, RawShape::encode_shape_key(runtime->declare_symbol(thread, name), flags));
+  }
+  return RawShape::create(thread, parent, key_tuple);
+}
+
 ShapeId RawShape::own_shape_id() const {
   return static_cast<ShapeId>(field_at<RawInt>(kOwnShapeIdOffset).value());
 }
 
 void RawShape::set_own_shape_id(ShapeId id) const {
-  set_field_at(kOwnShapeIdOffset, RawInt::make(static_cast<uint32_t>(id)));
+  set_field_at(kOwnShapeIdOffset, RawInt::create(static_cast<uint32_t>(id)));
 }
 
 RawValue RawShape::parent() const {
@@ -1353,13 +1909,31 @@ RawShape::LookupResult RawShape::lookup_symbol(SYMBOL symbol) const {
 
 RawInt RawShape::encode_shape_key(SYMBOL symbol, uint8_t flags) {
   size_t encoded = ((size_t)symbol << 8) | (size_t)flags;
-  return RawInt::make(encoded);
+  return RawInt::create(encoded);
 }
 
 void RawShape::decode_shape_key(RawInt encoded, SYMBOL& symbol_out, uint8_t& flags_out) {
   size_t encoded_value = encoded.value();
   symbol_out = encoded_value >> 8;
   flags_out = (encoded_value & 0xff);
+}
+
+RawFunction RawFunction::create(Thread* thread,
+                                RawValue _context,
+                                SharedFunctionInfo* shared_info,
+                                RawValue _saved_self) {
+  auto runtime = thread->runtime();
+  HandleScope scope(thread);
+  Value context(scope, _context);
+  Value saved_self(scope, _saved_self);
+  Function func(scope, RawInstance::create(thread, runtime->get_builtin_class(ShapeId::kFunction)));
+  func.set_name(RawSymbol::create(shared_info->name_symbol));
+  func.set_context(context);
+  func.set_saved_self(saved_self);
+  func.set_host_class(kNull);
+  func.set_overload_table(kNull);
+  func.set_shared_info(shared_info);
+  return *func;
 }
 
 RawSymbol RawFunction::name() const {
@@ -1417,6 +1991,16 @@ bool RawFunction::check_accepts_argc(uint32_t argc) const {
   return direct_match || spread_match;
 }
 
+RawBuiltinFunction RawBuiltinFunction::create(Thread* thread, BuiltinFunctionType function, SYMBOL name, uint8_t argc) {
+  auto runtime = thread->runtime();
+  auto func =
+    RawBuiltinFunction::cast(RawInstance::create(thread, runtime->get_builtin_class(ShapeId::kBuiltinFunction)));
+  func.set_function(function);
+  func.set_name(RawSymbol::create(name));
+  func.set_argc(argc);
+  return func;
+}
+
 BuiltinFunctionType RawBuiltinFunction::function() const {
   return (BuiltinFunctionType)pointer_at(kFunctionPtrOffset);
 }
@@ -1438,7 +2022,30 @@ uint8_t RawBuiltinFunction::argc() const {
 }
 
 void RawBuiltinFunction::set_argc(uint8_t argc) const {
-  return set_field_at(kArgcOffset, RawInt::make(argc));
+  return set_field_at(kArgcOffset, RawInt::create(argc));
+}
+
+RawFiber RawFiber::create(Thread* thread, RawFunction _function, RawValue _self, RawValue _arguments) {
+  auto runtime = thread->runtime();
+  auto scheduler = runtime->scheduler();
+  HandleScope scope(thread);
+  Function function(scope, _function);
+  Value self(scope, _self);
+  Value arguments(scope, _arguments);
+  Fiber fiber(scope, RawInstance::create(thread, runtime->get_builtin_class(ShapeId::kFiber)));
+  Thread* fiber_thread = scheduler->get_free_thread();
+  fiber_thread->init_fiber_thread(fiber);
+  fiber.set_thread(fiber_thread);
+  fiber.set_function(function);
+  fiber.set_context(self);
+  fiber.set_arguments(arguments);
+  fiber.set_result_future(RawFuture::create(thread));
+
+  // schedule the fiber for execution
+  fiber_thread->ready();
+  scheduler->schedule_thread(fiber_thread, thread->worker()->processor());
+
+  return *fiber;
 }
 
 Thread* RawFiber::thread() const {
@@ -1483,6 +2090,15 @@ void RawFiber::set_result_future(RawFuture result_future) const {
 
 RawValue RawFiber::await(Thread* thread) const {
   return result_future().await(thread);
+}
+
+RawFuture RawFuture::create(Thread* thread) {
+  auto runtime = thread->runtime();
+  auto future = RawFuture::cast(RawInstance::create(thread, runtime->get_builtin_class(ShapeId::kFuture)));
+  future.set_wait_queue(RawFuture::WaitQueue::alloc());
+  future.set_result(kNull);
+  future.set_exception(kNull);
+  return future;
 }
 
 RawFuture::WaitQueue* RawFuture::WaitQueue::alloc(size_t initial_capacity) {
@@ -1555,45 +2171,32 @@ RawValue RawFuture::await(Thread* thread) const {
   }
 
   if (!future.exception().isNull()) {
-    thread->throw_value(future.exception());
-    return kErrorException;
+    return thread->throw_exception(RawException::cast(future.exception()));
   }
   return future.result();
 }
 
 RawValue RawFuture::resolve(Thread* thread, RawValue value) const {
-  auto runtime = thread->runtime();
-
-  {
-    std::lock_guard lock(*this);
-    if (wait_queue() == nullptr) {
-      thread->throw_value(runtime->create_string(thread, "Future has already completed"));
-      return kErrorException;
-    }
-
-    set_result(value);
-    set_exception(kNull);
-    wake_waiting_threads(thread);
+  std::lock_guard lock(*this);
+  if (wait_queue() == nullptr) {
+    return thread->throw_message("Future has already completed");
   }
 
+  set_result(value);
+  set_exception(kNull);
+  wake_waiting_threads(thread);
   return *this;
 }
 
 RawValue RawFuture::reject(Thread* thread, RawException exception) const {
-  auto runtime = thread->runtime();
-
-  {
-    std::lock_guard lock(*this);
-    if (wait_queue() == nullptr) {
-      thread->throw_value(runtime->create_string(thread, "Future has already completed"));
-      return kErrorException;
-    }
-
-    set_result(kNull);
-    set_exception(exception);
-    wake_waiting_threads(thread);
+  std::lock_guard lock(*this);
+  if (wait_queue() == nullptr) {
+    return thread->throw_message("Future has already completed");
   }
 
+  set_result(kNull);
+  set_exception(exception);
+  wake_waiting_threads(thread);
   return *this;
 }
 
@@ -1612,6 +2215,17 @@ void RawFuture::wake_waiting_threads(Thread* thread) const {
 
   utils::Allocator::free(queue);
   set_wait_queue(nullptr);
+}
+
+RawException RawException::create(Thread* thread, RawString _message) {
+  auto runtime = thread->runtime();
+  HandleScope scope(thread);
+  String message(scope, _message);
+  Exception exception(scope, RawInstance::create(thread, runtime->get_builtin_class(ShapeId::kException)));
+  exception.set_message(message);
+  exception.set_stack_trace(thread->create_stack_trace());
+  exception.set_cause(kNull);
+  return *exception;
 }
 
 RawString RawException::message() const {
@@ -1636,6 +2250,52 @@ RawValue RawException::cause() const {
 
 void RawException::set_cause(RawValue cause) const {
   set_field_at(kCauseOffset, cause);
+}
+
+RawImportException RawImportException::create(Thread* thread,
+                                              const std::string& module_path,
+                                              const ref<core::compiler::CompilationUnit>& unit) {
+  auto runtime = thread->runtime();
+  const auto& messages = unit->console.messages();
+  size_t size = messages.size();
+
+  HandleScope scope(thread);
+  Tuple error_tuple(scope, RawTuple::create(thread, size));
+  for (size_t i = 0; i < size; i++) {
+    auto& msg = messages[i];
+    std::string type;
+    switch (msg.type) {
+      case core::compiler::DiagnosticType::Info: type = "info"; break;
+      case core::compiler::DiagnosticType::Warning: type = "warning"; break;
+      case core::compiler::DiagnosticType::Error: type = "error"; break;
+    }
+    auto filepath = msg.filepath;
+    auto message = msg.message;
+
+    utils::Buffer location_buffer;
+    utils::Buffer annotated_source_buffer;
+    if (msg.location.valid) {
+      location_buffer << msg.location;
+      unit->console.write_annotated_source(annotated_source_buffer, msg);
+    }
+
+    Tuple message_tuple(scope, RawTuple::create(thread, 5));
+    message_tuple.set_field_at(0, RawString::create(thread, type));                      // type
+    message_tuple.set_field_at(1, RawString::create(thread, filepath));                  // filepath
+    message_tuple.set_field_at(2, RawString::create(thread, message));                   // message
+    message_tuple.set_field_at(3, RawString::acquire(thread, annotated_source_buffer));  // source
+    message_tuple.set_field_at(4, RawString::acquire(thread, location_buffer));          // location
+    error_tuple.set_field_at(i, message_tuple);
+  }
+
+  // allocate exception instance
+  ImportException exception(scope, RawInstance::create(thread, runtime->get_builtin_class(ShapeId::kImportException)));
+  exception.set_message(RawString::format(thread, "Encountered an error while importing '%'", module_path));
+  exception.set_stack_trace(thread->create_stack_trace());
+  exception.set_cause(kNull);
+  exception.set_errors(error_tuple);
+
+  return *exception;
 }
 
 RawTuple RawImportException::errors() const {

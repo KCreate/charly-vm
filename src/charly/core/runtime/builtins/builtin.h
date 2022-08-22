@@ -30,12 +30,12 @@
 
 namespace charly::core::runtime::builtin {
 
-#define REGISTER_BUILTIN_FUNCTION(L, N, A)                                                             \
-  {                                                                                                    \
-    auto builtin_name = runtime->declare_symbol(thread, "charly.builtin." #L "." #N);                  \
-    BuiltinFunction builtin_func(scope, runtime->create_builtin_function(thread, N, builtin_name, A)); \
-    CHECK(runtime->declare_global_variable(thread, builtin_name, true).is_error_ok());                 \
-    CHECK(runtime->set_global_variable(thread, builtin_name, builtin_func).is_error_ok());             \
+#define REGISTER_BUILTIN_FUNCTION(L, N, A)                                                       \
+  {                                                                                              \
+    auto builtin_name = runtime->declare_symbol(thread, "charly.builtin." #L "." #N);            \
+    BuiltinFunction builtin_func(scope, RawBuiltinFunction::create(thread, N, builtin_name, A)); \
+    CHECK(runtime->declare_global_variable(thread, builtin_name, true).is_error_ok());           \
+    CHECK(runtime->set_global_variable(thread, builtin_name, builtin_func).is_error_ok());       \
   }
 
 #define DEFINE_BUILTIN_METHOD_DECLARATIONS(L, N, A) RawValue N(Thread* thread, const RawValue* args, uint8_t argc);

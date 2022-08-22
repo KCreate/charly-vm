@@ -53,11 +53,11 @@ inline void debugln_impl(std::ostream& stream, const char* format) {
 }
 
 template <typename T, typename... Targs>
-inline void debugln_impl(std::ostream& stream, const char* format, T value, Targs... Fargs) {
+inline void debugln_impl(std::ostream& stream, const char* format, const T& value, const Targs&... Fargs) {
   while (*format != '\0') {
     if (*format == '%') {
       stream << value;
-      debugln_impl(stream, format + 1, Fargs...);
+      debugln_impl(stream, format + 1, std::forward<const Targs>(Fargs)...);
       return;
     }
     stream << *format;
@@ -67,7 +67,7 @@ inline void debugln_impl(std::ostream& stream, const char* format, T value, Targ
 }
 
 template <typename... Targs>
-inline void debugln_impl_time(std::ostream& stream, const char* format, Targs... Fargs) {
+inline void debugln_impl_time(std::ostream& stream, const char* format, const Targs&... Fargs) {
   // get elapsed duration since program start
   auto now = std::chrono::steady_clock::now();
   auto dur = now - program_startup_timestamp;
@@ -84,14 +84,14 @@ inline void debugln_impl_time(std::ostream& stream, const char* format, Targs...
   stream << std::setw(1);
   stream << "]: ";
 
-  debugln_impl(stream, format, Fargs...);
+  debugln_impl(stream, format, std::forward<const Targs>(Fargs)...);
 }
 
 template <typename... Targs>
-inline void debugln_concurrent(const char* format, Targs... Fargs) {
+inline void debugln_concurrent(const char* format, const Targs&... Fargs) {
   {
     std::unique_lock<std::recursive_mutex> locker(debugln_mutex);
-    debugln_impl_time(std::cout, format, Fargs...);
+    debugln_impl_time(std::cout, format, std::forward<const Targs>(Fargs)...);
     std::cout << std::endl;
   }
 }
@@ -99,23 +99,23 @@ inline void debugln_concurrent(const char* format, Targs... Fargs) {
 #ifdef NDEBUG
 
 template <typename... Targs>
-inline void debugln(const char*, Targs...) {}
+inline void debugln(const char*, const Targs&...) {}
 
 template <typename... Targs>
-inline void debugln_notime(const char*, Targs...) {}
+inline void debugln_notime(const char*, const Targs&...) {}
 
 #else
 
 template <typename... Targs>
-inline void debugln(const char* format, Targs... args) {
-  debugln_concurrent(format, std::forward<Targs>(args)...);
+inline void debugln(const char* format, const Targs&... args) {
+  debugln_concurrent(format, std::forward<const Targs>(args)...);
 }
 
 template <typename... Targs>
-inline void debugln_notime(const char* format, Targs... args) {
+inline void debugln_notime(const char* format, const Targs&... args) {
   {
     std::unique_lock<std::recursive_mutex> locker(debugln_mutex);
-    debugln_impl(std::cout, format, args...);
+    debugln_impl(std::cout, format, std::forward<const Targs>(args)...);
     std::cout << std::endl;
   }
 }
@@ -123,15 +123,15 @@ inline void debugln_notime(const char* format, Targs... args) {
 #endif
 
 template <typename... Targs>
-inline void debuglnf(const char* format, Targs... args) {
-  debugln_concurrent(format, std::forward<Targs>(args)...);
+inline void debuglnf(const char* format, const Targs&... args) {
+  debugln_concurrent(format, std::forward<const Targs>(args)...);
 }
 
 template <typename... Targs>
-inline void debuglnf_notime(const char* format, Targs... args) {
+inline void debuglnf_notime(const char* format, const Targs&... args) {
   {
     std::unique_lock<std::recursive_mutex> locker(debugln_mutex);
-    debugln_impl(std::cout, format, args...);
+    debugln_impl(std::cout, format, std::forward<const Targs>(args)...);
     std::cout << std::endl;
   }
 }
@@ -143,7 +143,7 @@ void print_runtime_debug_state(std::ostream& stream);
 
 template <typename... Args>
 [[noreturn]] inline void __attribute__((noinline))
-failed_check(const char* filename, int32_t line, const char* function, const char* expression, Args&&... args) {
+failed_check(const char* filename, int32_t line, const char* function, const char* expression, const Args&... args) {
   // grab the debugln lock already to make sure we abort the runtime
   // before any other thread can print something
   std::unique_lock<std::recursive_mutex> locker(debugln_mutex);
@@ -151,7 +151,7 @@ failed_check(const char* filename, int32_t line, const char* function, const cha
   debugln_impl(buf, "Failed check!\n");
   debugln_impl_time(buf, "At %:% %:\n", filename, line, function);
   debugln_impl_time(buf, "Check '%' failed: ", expression);
-  debugln_impl(buf, std::forward<Args>(args)...);
+  debugln_impl(buf, std::forward<const Args>(args)...);
   buf << "\n";
 
   print_runtime_debug_state(buf);
@@ -182,8 +182,8 @@ failed_check(const char* filename, int32_t line, const char* function, const cha
 #define UNREACHABLE() DCHECK(false, "reached unreachable code")
 
 template <typename... Targs>
-[[noreturn]] inline void UNIMPLEMENTED(const char* format, Targs... args) {
-  CHECK(false, format, std::forward<Targs>(args)...);
+[[noreturn]] inline void UNIMPLEMENTED(const char* format, const Targs&... args) {
+  CHECK(false, format, std::forward<const Targs>(args)...);
 }
 
 [[noreturn]] inline void UNIMPLEMENTED() {

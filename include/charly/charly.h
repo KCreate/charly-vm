@@ -42,10 +42,6 @@
 
 namespace charly {
 
-#define CHARLY_NON_HEAP_ALLOCATABLE(C)      \
-  void* operator new(size_t size) = delete; \
-  void* operator new[](size_t size) = delete
-
 #define CHARLY_NON_COPYABLE(C)     \
   C(const C&) = delete;            \
   C(C&) = delete;                  \

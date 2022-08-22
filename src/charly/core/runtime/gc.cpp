@@ -24,10 +24,10 @@
  * SOFTWARE.
  */
 
-#include "charly/utils/timedsection.h"
 #include "charly/core/runtime/gc.h"
 #include "charly/core/runtime/interpreter.h"
 #include "charly/core/runtime/runtime.h"
+#include "charly/utils/timedsection.h"
 
 using namespace std::chrono_literals;
 
@@ -120,7 +120,9 @@ void GarbageCollector::main() {
     collection_count++;
   }
 
-  debuglnf("collection average time %ms", collection_time_sum / collection_count);
+  if (collection_count > 0) {
+    debuglnf("collection average time %ms", collection_time_sum / collection_count);
+  }
 }
 
 void GarbageCollector::collect(CollectionMode mode) {
