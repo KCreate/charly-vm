@@ -44,7 +44,8 @@ CATCH_TEST_CASE("Immediate encoded values") {
     CATCH_CHECK(RawInt::create_from_external_pointer(0x10).external_pointer_value() == 0x10);
     CATCH_CHECK(RawInt::create_from_external_pointer(0x60).external_pointer_value() == 0x60);
     CATCH_CHECK(RawInt::create_from_external_pointer(0x1000).external_pointer_value() == 0x1000);
-    CATCH_CHECK(RawInt::create_from_external_pointer(0x0ffffffffffffff0).external_pointer_value() == 0x0ffffffffffffff0);
+    CATCH_CHECK(RawInt::create_from_external_pointer(0x0ffffffffffffff0).external_pointer_value() ==
+                0x0ffffffffffffff0);
   }
 
   CATCH_SECTION("integers") {

@@ -47,7 +47,7 @@ public:
 
   Thread* thread;
   Frame* parent;
-  size_t depth; // number of parent frames
+  size_t depth;  // number of parent frames
   RawValue self;
   RawFunction function;
   RawValue argument_tuple;
@@ -83,7 +83,7 @@ public:
   static RawValue call_value(Thread* thread,
                              RawValue self,
                              RawValue target,
-                             const RawValue * arguments,
+                             const RawValue* arguments,
                              uint32_t argc,
                              RawValue argument_tuple = kNull);
 

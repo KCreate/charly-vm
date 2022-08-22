@@ -241,7 +241,8 @@ void ArgumentParser::print_help(std::ostream& out) {
   utils::ColorWriter writer(out);
 
   writer.fg(Color::Blue, "Usage: ");
-  out << "charly [filename] [charly flags] [--] [arguments]" << "\n\n";
+  out << "charly [filename] [charly flags] [--] [arguments]"
+      << "\n\n";
 
   for (const FlagGroup& group : kDefinedFlagGroups) {
     writer.fg(Color::Blue, group.name, "\n");

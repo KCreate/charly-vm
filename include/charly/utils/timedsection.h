@@ -32,7 +32,6 @@ namespace charly::utils {
 
 class TimedSection {
 public:
-
   // prints the amount of time elapsed inside the callback method to the console
   // returns the amount of milliseconds elapsed
   template <typename F>

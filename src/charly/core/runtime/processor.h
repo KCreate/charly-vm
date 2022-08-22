@@ -45,6 +45,7 @@ class GarbageCollector;
 class Processor {
   friend class GarbageCollector;
   friend class Runtime;
+
 public:
   explicit Processor(Runtime* runtime);
 

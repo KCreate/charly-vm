@@ -74,9 +74,7 @@ static const std::unordered_map<TokenType, uint32_t> kBinaryOpPrecedenceLevels =
 };
 // clang-format on
 
-static const std::unordered_set<TokenType> kRightAssociativeOperators = {
-  TokenType::Pow
-};
+static const std::unordered_set<TokenType> kRightAssociativeOperators = { TokenType::Pow };
 
 struct KeywordContext {
   bool _return = false;

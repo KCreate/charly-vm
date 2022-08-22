@@ -26,18 +26,16 @@
 
 #include <chrono>
 
-#include "charly/core/runtime/watchdog.h"
-#include "charly/core/runtime/runtime.h"
 #include "charly/charly.h"
+#include "charly/core/runtime/runtime.h"
+#include "charly/core/runtime/watchdog.h"
 
 namespace charly::core::runtime {
 
 using namespace std::chrono_literals;
 
 WatchDog::WatchDog(Runtime* runtime) :
-  m_runtime(runtime),
-  m_thread(std::thread(&WatchDog::main, this)),
-  m_clock(get_steady_timestamp()) {
+  m_runtime(runtime), m_thread(std::thread(&WatchDog::main, this)), m_clock(get_steady_timestamp()) {
   (void)m_runtime;
 }
 

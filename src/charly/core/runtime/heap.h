@@ -187,6 +187,7 @@ private:
 class Thread;
 class ThreadAllocationBuffer {
   friend class GarbageCollector;
+
 public:
   explicit ThreadAllocationBuffer(Heap* heap);
   ~ThreadAllocationBuffer();

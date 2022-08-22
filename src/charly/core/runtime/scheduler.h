@@ -33,8 +33,8 @@
 
 #include "charly/core/runtime/processor.h"
 #include "charly/core/runtime/thread.h"
-#include "charly/core/runtime/worker.h"
 #include "charly/core/runtime/watchdog.h"
+#include "charly/core/runtime/worker.h"
 
 #pragma once
 
@@ -60,6 +60,7 @@ class Scheduler {
   friend class GarbageCollector;
   friend class Runtime;
   friend class WatchDog;
+
 public:
   explicit Scheduler(Runtime* runtime);
   ~Scheduler();

@@ -1246,7 +1246,6 @@ public:
     } else if (condition_truthyness == Truthyness::False) {
       return else_exp->truthyness();
     } else {
-
       // if the condition truthyness isn't known, but both cases have the
       // same known truthyness, the whole expression will always evaluate to
       // that shared truthyness

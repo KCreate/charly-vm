@@ -26,13 +26,13 @@
 
 #include <condition_variable>
 #include <mutex>
-#include <thread>
 #include <queue>
 #include <set>
+#include <thread>
 
 #include "charly/charly.h"
-#include "charly/value.h"
 #include "charly/core/runtime/heap.h"
+#include "charly/value.h"
 
 #pragma once
 
@@ -62,8 +62,8 @@ constexpr size_t kGCCollectionAttempts = 4;
 
 class GarbageCollector {
   friend class Heap;
-public:
 
+public:
   enum class CollectionMode {
     Minor,
     Major
