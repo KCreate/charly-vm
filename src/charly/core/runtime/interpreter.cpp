@@ -257,7 +257,7 @@ RawValue Interpreter::call_function(Thread* thread,
   return Interpreter::execute(thread);
 }
 
-bool Interpreter::eq(Thread*, RawValue left, RawValue right) {
+bool Interpreter::eq(Thread* thread, RawValue left, RawValue right) {
   if (left == right) {
     return true;
   }
@@ -294,6 +294,24 @@ bool Interpreter::eq(Thread*, RawValue left, RawValue right) {
     double left_num = left.double_value();
     double right_num = right.double_value();
     return left_num == right_num;
+  }
+
+  if (left.isTuple() && right.isTuple()) {
+    auto left_tuple = RawTuple::cast(left);
+    auto right_tuple = RawTuple::cast(right);
+
+    if (left_tuple.size() != right_tuple.size()) {
+      return false;
+    }
+
+    size_t size = left_tuple.size();
+    for (size_t i = 0; i < size; i++) {
+      if (!Interpreter::eq(thread, left_tuple.field_at(i), right_tuple.field_at(i))) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   return false;
