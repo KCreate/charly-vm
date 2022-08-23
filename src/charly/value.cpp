@@ -1399,14 +1399,14 @@ RawValue RawClass::create(Thread* thread,
   }
 
   if (!parent_value.isClass()) {
-    return thread->throw_message("extended value is not a class");
+    return thread->throw_message("Extended value is not a class");
   }
 
   Class parent_class(scope, parent_value);
   Shape parent_shape(scope, parent_class.shape_instance());
 
   if (parent_class.flags() & RawClass::kFlagFinal) {
-    return thread->throw_message("cannot subclass class '%', it is marked final", parent_class.name());
+    return thread->throw_message("Cannot subclass class '%', it is marked final", parent_class.name());
   }
 
   // check for duplicate member properties
@@ -1421,7 +1421,7 @@ RawValue RawClass::create(Thread* thread,
       uint8_t parent_key_flags;
       RawShape::decode_shape_key(parent_keys_tuple.field_at<RawInt>(pi), parent_key_symbol, parent_key_flags);
       if (parent_key_symbol == prop_name) {
-        return thread->throw_message("cannot redeclare property '%', parent class '%' already contains it",
+        return thread->throw_message("Cannot redeclare property '%', parent class '%' already contains it",
                                      RawSymbol::create(prop_name), parent_class.name());
       }
     }
@@ -1432,7 +1432,7 @@ RawValue RawClass::create(Thread* thread,
   if (new_member_count > RawInstance::kMaximumFieldCount) {
     // for some reason, RawInstance::kMaximumFieldCount needs to be casted to its own
     // type, before it can be used in here. this is some weird template thing...
-    return thread->throw_message("newly created class '%' has % properties, but the limit is %",
+    return thread->throw_message("Newly created class '%' has % properties, but the limit is %",
                                  RawSymbol::create(name), new_member_count, (size_t)RawInstance::kMaximumFieldCount);
   }
 

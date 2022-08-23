@@ -117,14 +117,14 @@ RawValue Interpreter::call_value(
     auto klass = RawClass::cast(target);
 
     if (klass.flags() & RawClass::kFlagNonConstructable) {
-      return thread->throw_message("cannot instantiate class '%'", klass.name());
+      return thread->throw_message("Cannot instantiate class '%'", klass.name());
     }
 
     auto constructor = RawFunction::cast(klass.constructor());
     return Interpreter::call_function(thread, klass, constructor, arguments, argc, true, argument_tuple);
   }
 
-  return thread->throw_message("called value is not a function");
+  return thread->throw_message("Called value is not a function");
 }
 
 RawValue Interpreter::call_function(Thread* thread,
@@ -176,7 +176,7 @@ RawValue Interpreter::call_function(Thread* thread,
   size_t remaining_bytes_on_stack = frame_address - stack_bottom_address;
   if (remaining_bytes_on_stack <= kStackOverflowLimit) {
     debuglnf("thread % stack overflow", thread->id());
-    return thread->throw_message("thread % stack overflow", thread->id());
+    return thread->throw_message("Reached recursion depth limit", thread->id());
   }
 
   // allocate class instance and replace self value
@@ -211,7 +211,7 @@ RawValue Interpreter::call_function(Thread* thread,
   }
 
   if (argc < shared_info->ir_info.minargc) {
-    return thread->throw_message("not enough arguments for function call, expected % but got %",
+    return thread->throw_message("Not enough arguments for function call, expected % but got %",
                                  (uint32_t)shared_info->ir_info.minargc, (uint32_t)argc);
   }
 
@@ -219,7 +219,7 @@ RawValue Interpreter::call_function(Thread* thread,
   // the exception to this rule are arrow functions and functions that declare a spread argument
   if (argc > shared_info->ir_info.argc && !shared_info->ir_info.spread_argument &&
       !shared_info->ir_info.arrow_function) {
-    return thread->throw_message("too many arguments for non-spread function '%', expected at most % but got %",
+    return thread->throw_message("Too many arguments for non-spread function '%', expected at most % but got %",
                                  frame.function.name(), (uint32_t)shared_info->ir_info.argc, (uint32_t)argc);
   }
 
@@ -411,7 +411,7 @@ OP(import) {
   // attempt to resolve the module path to a real file path
   std::optional<fs::path> resolve_result = runtime->resolve_module(module_path, file_path);
   if (!resolve_result.has_value()) {
-    thread->throw_message("could not resolve '%' to a valid path", module_path);
+    thread->throw_message("Could not resolve '%' to a valid path", module_path);
     return ContinueMode::Exception;
   }
   fs::path import_path = resolve_result.value();
@@ -447,7 +447,7 @@ OP(declareglobal) {
   RawValue result = thread->runtime()->declare_global_variable(thread, name, false);
 
   if (result.is_error_exception()) {
-    thread->throw_message("duplicate declaration of global variable %", RawSymbol::create(name));
+    thread->throw_message("Duplicate declaration of global variable %", RawSymbol::create(name));
     return ContinueMode::Exception;
   }
   DCHECK(result.is_error_ok());
@@ -461,7 +461,7 @@ OP(declareglobalconst) {
   RawValue result = thread->runtime()->declare_global_variable(thread, name, true);
 
   if (result.is_error_exception()) {
-    thread->throw_message("duplicate declaration of global variable %", RawSymbol::create(name));
+    thread->throw_message("Duplicate declaration of global variable %", RawSymbol::create(name));
     return ContinueMode::Exception;
   }
   DCHECK(result.is_error_ok());
@@ -479,7 +479,8 @@ OP(instanceof) {
   RawValue check_value = frame->pop();
 
   if (!check_value.isClass()) {
-    thread->throw_message("expected right hand side of instanceof to be a class, got %", check_value);
+    thread->throw_message("Expected right hand side of instanceof to be a class, got type '%'",
+                          check_value.klass_name(thread));
     return ContinueMode::Exception;
   }
 
@@ -555,16 +556,13 @@ OP(argcjmp) {
 
 OP(throwex) {
   RawValue value = frame->pop();
-  RawValue exception;
 
   if (value.isString()) {
-    exception = RawException::create(thread, RawString::cast(value));
-  }
-
-  if (!exception.isException()) {
-    thread->throw_message("expected thrown value to be an exception or a string");
+    thread->throw_exception(RawException::create(thread, RawString::cast(value)));
+  } else if (value.isException()) {
+    thread->throw_exception(RawException::cast(value));
   } else {
-    thread->throw_exception(RawException::cast(exception));
+    thread->throw_message("Expected thrown value to be an exception or a string");
   }
 
   return ContinueMode::Exception;
@@ -698,7 +696,7 @@ OP(loadglobal) {
   RawValue result = thread->runtime()->read_global_variable(thread, name);
 
   if (result.is_error_not_found()) {
-    thread->throw_message("unknown global variable %", RawSymbol::create(name));
+    thread->throw_message("Unknown global variable %", RawSymbol::create(name));
     return ContinueMode::Exception;
   }
   DCHECK(!result.is_error());
@@ -857,7 +855,7 @@ OP(loadsuperattr) {
   auto func = parent.lookup_function(name);
 
   if (func.is_error_not_found()) {
-    thread->throw_message("super class '%' has no member function called '%'", parent.name(), RawSymbol::create(name));
+    thread->throw_message("Super class '%' has no member function called '%'", parent.name(), RawSymbol::create(name));
     return ContinueMode::Exception;
   }
 
@@ -872,10 +870,10 @@ OP(setglobal) {
   RawValue result = thread->runtime()->set_global_variable(thread, name, value);
 
   if (result.is_error_not_found()) {
-    thread->throw_message("unknown global variable %", RawSymbol::create(name));
+    thread->throw_message("Unknown global variable %", RawSymbol::create(name));
     return ContinueMode::Exception;
   } else if (result.is_error_read_only()) {
-    thread->throw_message("write to const global variable %", RawSymbol::create(name));
+    thread->throw_message("Cannot write to constant global variable %", RawSymbol::create(name));
     return ContinueMode::Exception;
   }
   DCHECK(result.is_error_ok());
@@ -990,7 +988,7 @@ OP(unpacksequence) {
     uint32_t tuple_size = tuple.size();
 
     if (tuple_size != count) {
-      thread->throw_message("expected tuple to be of size %, not %", (size_t)count, tuple_size);
+      thread->throw_message("Expected tuple to be of size %, not %", (size_t)count, tuple_size);
       return ContinueMode::Exception;
     }
 
@@ -1002,7 +1000,7 @@ OP(unpacksequence) {
 
     return ContinueMode::Next;
   } else {
-    thread->throw_message("value is not a sequence");
+    thread->throw_message("Value is not a sequence");
     return ContinueMode::Exception;
   }
 }
@@ -1019,7 +1017,7 @@ OP(unpacksequencespread) {
     Tuple tuple(scope, value);
     uint32_t tuple_size = tuple.size();
     if (tuple_size < total_count) {
-      thread->throw_message("touple does not contain enough values to unpack");
+      thread->throw_message("Tuple does not contain enough values to unpack");
       return ContinueMode::Exception;
     }
 
@@ -1043,7 +1041,7 @@ OP(unpacksequencespread) {
 
     return ContinueMode::Next;
   } else {
-    thread->throw_message("value is not a sequence");
+    thread->throw_message("Value is not a sequence");
     return ContinueMode::Exception;
   }
 }
@@ -1160,7 +1158,7 @@ OP(makefiber) {
   RawValue arg_context = frame->pop();
 
   if (!arg_function.isFunction()) {
-    thread->throw_message("argument is not a function");
+    thread->throw_message("Argument is not a function");
     return ContinueMode::Exception;
   }
 
@@ -1178,7 +1176,7 @@ OP(await) {
   } else if (value.isFuture()) {
     result = RawFuture::cast(value).await(thread);
   } else {
-    thread->throw_message("value of type '%' cannot be awaited", value.klass_name(thread));
+    thread->throw_message("Value of type '%' cannot be awaited", value.klass_name(thread));
     return ContinueMode::Exception;
   }
 
@@ -1213,7 +1211,7 @@ OP(casttuple) {
     return ContinueMode::Next;
   }
 
-  thread->throw_message("could not cast value of type '%' to a tuple", value.klass_name(thread));
+  thread->throw_message("Could not cast value of type '%' to a tuple", value.klass_name(thread));
   return ContinueMode::Exception;
 }
 
