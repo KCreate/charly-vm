@@ -408,7 +408,7 @@ OP(instanceof) {
   RawValue check_value = frame->pop();
 
   if (!check_value.isClass()) {
-    thread->throw_message("Expected right hand side of instanceof to be a class, got type '%'",
+    thread->throw_message("Expected right hand side of instanceof to be a class, got '%'",
                           check_value.klass_name(thread));
     return ContinueMode::Exception;
   }

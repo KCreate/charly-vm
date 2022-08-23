@@ -290,32 +290,32 @@ constexpr size_t kObjectHeaderMaxSurvivorCount = 0xff;
 
 static_assert((sizeof(ObjectHeader) % kObjectAlignment == 0), "invalid object header size");
 
-#define COMMON_RAW_OBJECT(name)                                                       \
-  static Raw##name cast(RawValue value) {                                             \
-    DCHECK(value.is##name(), "invalid object type, got %, expected %", value, #name); \
-    return value.rawCast<Raw##name>();                                                \
-  }                                                                                   \
-  static Raw##name cast(const RawValue* value) {                                      \
-    return cast(*value);                                                              \
-  }                                                                                   \
-  static Raw##name cast(uintptr_t value) {                                            \
-    return cast(RawValue(value));                                                     \
-  }                                                                                   \
-  static Raw##name unsafe_cast(RawValue value) {                                      \
-    return value.rawCast<Raw##name>();                                                \
-  }                                                                                   \
-  static Raw##name unsafe_cast(const RawValue* value) {                               \
-    return unsafe_cast(*value);                                                       \
-  }                                                                                   \
-  static Raw##name unsafe_cast(uintptr_t value) {                                     \
-    return unsafe_cast(RawValue(value));                                              \
-  }                                                                                   \
-  static bool value_is_type(RawValue value) {                                         \
-    return value.is##name();                                                          \
-  }                                                                                   \
-  Raw##name& operator=(RawValue other) {                                              \
-    m_raw = other.rawCast<Raw##name>().raw();                                         \
-    return *this;                                                                     \
+#define COMMON_RAW_OBJECT(name)                                                           \
+  static Raw##name cast(RawValue value) {                                                 \
+    DCHECK(value.is##name(), "invalid object type, got '%', expected '%'", value, #name); \
+    return value.rawCast<Raw##name>();                                                    \
+  }                                                                                       \
+  static Raw##name cast(const RawValue* value) {                                          \
+    return cast(*value);                                                                  \
+  }                                                                                       \
+  static Raw##name cast(uintptr_t value) {                                                \
+    return cast(RawValue(value));                                                         \
+  }                                                                                       \
+  static Raw##name unsafe_cast(RawValue value) {                                          \
+    return value.rawCast<Raw##name>();                                                    \
+  }                                                                                       \
+  static Raw##name unsafe_cast(const RawValue* value) {                                   \
+    return unsafe_cast(*value);                                                           \
+  }                                                                                       \
+  static Raw##name unsafe_cast(uintptr_t value) {                                         \
+    return unsafe_cast(RawValue(value));                                                  \
+  }                                                                                       \
+  static bool value_is_type(RawValue value) {                                             \
+    return value.is##name();                                                              \
+  }                                                                                       \
+  Raw##name& operator=(RawValue other) {                                                  \
+    m_raw = other.rawCast<Raw##name>().raw();                                             \
+    return *this;                                                                         \
   }
 
 // the RawValue class represents a single pointer-tagged value.

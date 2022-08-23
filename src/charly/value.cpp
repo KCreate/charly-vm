@@ -365,11 +365,7 @@ RawClass RawValue::klass(Thread* thread) const {
 }
 
 RawSymbol RawValue::klass_name(Thread* thread) const {
-  auto resolved_name = thread->runtime()->lookup_symbol(klass(thread).name());
-  if (resolved_name.isSymbol()) {
-    return RawSymbol::cast(resolved_name);
-  }
-  return RawSymbol::create("??");
+  return klass(thread).name();
 }
 
 RawValue RawValue::load_attr(Thread* thread, RawValue attribute) const {
@@ -379,7 +375,7 @@ RawValue RawValue::load_attr(Thread* thread, RawValue attribute) const {
     SYMBOL symbol = RawString::cast(attribute).hashcode();
     return load_attr_symbol(thread, symbol);
   } else {
-    return thread->throw_message("Expected index attribute to be a number or a string, got %",
+    return thread->throw_message("Expected index attribute to be a number or a string, got '%'",
                                  attribute.klass_name(thread));
   }
 }
@@ -465,7 +461,7 @@ RawValue RawValue::set_attr(Thread* thread, RawValue attribute, RawValue value) 
     SYMBOL symbol = RawString::cast(attribute).hashcode();
     return set_attr_symbol(thread, symbol, value);
   } else {
-    return thread->throw_message("Expected index attribute to be a number or a string, got %",
+    return thread->throw_message("Expected index attribute to be a number or a string, got '%'",
                                  attribute.klass_name(thread));
   }
 }
@@ -2137,8 +2133,6 @@ RawValue RawClass::lookup_function(SYMBOL name) const {
   }
 
   // search in parent class
-  // TODO: can this be removed? all classes should contain copies of their parents functions inside their own
-  //       function tables anyway
   auto p = parent();
   if (p.isClass()) {
     return RawClass::cast(p).lookup_function(name);
