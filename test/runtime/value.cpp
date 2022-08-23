@@ -121,6 +121,22 @@ CATCH_TEST_CASE("Immediate encoded values") {
     CATCH_CHECK(s12.byte_length() == 2);
     CATCH_CHECK(s13.byte_length() == 3);
     CATCH_CHECK(s14.byte_length() == 4);
+
+    CATCH_CHECK(s1.codepoint_length() == 0);
+    CATCH_CHECK(s2.codepoint_length() == 1);
+    CATCH_CHECK(s3.codepoint_length() == 7);
+    CATCH_CHECK(s4.codepoint_length() == 7);
+    CATCH_CHECK(s5.codepoint_length() == 7);
+
+    CATCH_CHECK(s6.codepoint_length() == 1);
+    CATCH_CHECK(s7.codepoint_length() == 1);
+    CATCH_CHECK(s8.codepoint_length() == 1);
+    CATCH_CHECK(s9.codepoint_length() == 1);
+    CATCH_CHECK(s10.codepoint_length() == 1);
+    CATCH_CHECK(s11.codepoint_length() == 1);
+    CATCH_CHECK(s12.codepoint_length() == 1);
+    CATCH_CHECK(s13.codepoint_length() == 1);
+    CATCH_CHECK(s14.codepoint_length() == 1);
   }
 
   CATCH_SECTION("symbols") {

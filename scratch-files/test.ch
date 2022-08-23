@@ -24,23 +24,11 @@
  * SOFTWARE.
  */
 
-class Person {
-    property name
-    property age
-}
-
-const l = Person("leonard", 22)
-
-print(l.name)
-print(l.age)
-
-print(l["name"])
-print(l["age"])
-
-print(null["name"])
-print(null["age"])
-
-
+print("".length)
+print("hi".length)
+print("ä".length)
+print("äää".length)
+print("hääällöööö".length)
 
 
 

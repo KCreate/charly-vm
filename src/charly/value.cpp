@@ -406,9 +406,8 @@ RawValue RawValue::load_attr_symbol(Thread* thread, SYMBOL symbol) const {
         auto tuple = RawTuple::cast(this);
         return RawInt::create(tuple.size());
       } else if (isString()) {
-        // TODO: return codepoint count, not byte length
         auto string = RawString::cast(this);
-        return RawInt::create(string.byte_length());
+        return RawInt::create(string.codepoint_length());
       } else if (isBytes()) {
         auto bytes = RawBytes::cast(this);
         return RawInt::create(bytes.length());
@@ -1220,6 +1219,10 @@ size_t RawSmallString::byte_length() const {
   return (m_raw & kMaskLength) >> kShiftLength;
 }
 
+size_t RawSmallString::codepoint_length() const {
+  return RawString::cast(this).codepoint_length();
+}
+
 const char* RawSmallString::data(const RawSmallString* value) {
   uintptr_t address = bitcast<uintptr_t>(value) + 1;
   return bitcast<const char*>(address);
@@ -1335,7 +1338,7 @@ size_t RawString::byte_length() const {
     return RawSmallString::cast(this).byte_length();
   } else {
     if (isLargeString()) {
-      return RawLargeString::cast(this).length();
+      return RawLargeString::cast(this).byte_length();
     }
 
     if (isHugeString()) {
@@ -1344,6 +1347,12 @@ size_t RawString::byte_length() const {
   }
 
   UNREACHABLE();
+}
+
+size_t RawString::codepoint_length() const {
+  const char* begin = RawString::data(this);
+  const char* end = begin + byte_length();
+  return utf8::codepoint_count(begin, end);
 }
 
 const char* RawString::data(const RawString* value) {
@@ -1553,6 +1562,14 @@ RawLargeString RawLargeString::create(Thread* thread, const char* data, size_t s
   return string;
 }
 
+size_t RawLargeString::byte_length() const {
+  return length();
+}
+
+size_t RawLargeString::codepoint_length() const {
+  return RawString::cast(this).codepoint_length();
+}
+
 const char* RawLargeString::data() const {
   return bitcast<const char*>(address());
 }
@@ -1750,6 +1767,10 @@ void RawHugeString::set_byte_length(size_t length) const {
   auto length_int = bitcast<int64_t>(length);
   DCHECK(length_int >= 0);
   set_field_at(kDataLengthOffset, RawInt::create(length_int));
+}
+
+size_t RawHugeString::codepoint_length() const {
+  return RawString::cast(this).codepoint_length();
 }
 
 RawValue RawClass::create(Thread* thread,

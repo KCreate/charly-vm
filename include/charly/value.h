@@ -564,6 +564,7 @@ public:
   COMMON_RAW_OBJECT(SmallString);
 
   size_t byte_length() const;
+  size_t codepoint_length() const;
   static const char* data(const RawSmallString* value);
   SYMBOL hashcode() const;
 
@@ -635,6 +636,7 @@ public:
   static RawString acquire(Thread*, utils::Buffer& buffer);
 
   size_t byte_length() const;
+  size_t codepoint_length() const;
   static const char* data(const RawString* value);
   SYMBOL hashcode() const;
 
@@ -730,6 +732,8 @@ public:
 
   static RawLargeString create(Thread*, const char* data, size_t size, SYMBOL hash);
 
+  size_t byte_length() const;
+  size_t codepoint_length() const;
   const char* data() const;
 };
 
@@ -817,6 +821,8 @@ public:
 
   size_t byte_length() const;
   void set_byte_length(size_t length) const;
+
+  size_t codepoint_length() const;
 
   enum {
     kDataPointerOffset = RawInstance::kFieldCount,

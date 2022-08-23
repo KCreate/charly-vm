@@ -25,6 +25,9 @@
  */
 
 #include <string>
+#include <string_view>
+
+#include "charly/debug.h"
 
 #pragma once
 
@@ -46,7 +49,7 @@ namespace internal {
     } else if ((lead_byte >> 3) == 0x1e) {
       return 4;
     } else {
-      return 0;
+      return 1;
     }
   }
 
@@ -250,6 +253,21 @@ inline std::string codepoint_to_string(uint32_t cp) {
   char buf[4];
   char* end = append(cp, buf);
   return { buf, (size_t)(end - buf) };
+}
+
+inline size_t codepoint_count(const char* begin, const char* end) {
+  DCHECK(begin <= end);
+
+  size_t counter = 0;
+  while (begin < end) {
+    size_t cp_length = internal::sequence_length(begin);
+    DCHECK(cp_length >= 1 && cp_length <= 4);
+    begin += cp_length;
+    counter++;
+    DCHECK(begin <= end);
+  }
+
+  return counter;
 }
 
 }  // namespace charly::utf8
