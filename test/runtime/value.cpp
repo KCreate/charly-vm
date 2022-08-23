@@ -106,21 +106,21 @@ CATCH_TEST_CASE("Immediate encoded values") {
     CATCH_CHECK(RawString::compare(RawString::cast(s13), "€") == 0);
     CATCH_CHECK(RawString::compare(RawString::cast(s14), "𐍈") == 0);
 
-    CATCH_CHECK(s1.length() == 0);
-    CATCH_CHECK(s2.length() == 1);
-    CATCH_CHECK(s3.length() == 7);
-    CATCH_CHECK(s4.length() == 7);
-    CATCH_CHECK(s5.length() == 7);
+    CATCH_CHECK(s1.byte_length() == 0);
+    CATCH_CHECK(s2.byte_length() == 1);
+    CATCH_CHECK(s3.byte_length() == 7);
+    CATCH_CHECK(s4.byte_length() == 7);
+    CATCH_CHECK(s5.byte_length() == 7);
 
-    CATCH_CHECK(s6.length() == 1);
-    CATCH_CHECK(s7.length() == 1);
-    CATCH_CHECK(s8.length() == 1);
-    CATCH_CHECK(s9.length() == 1);
-    CATCH_CHECK(s10.length() == 2);
-    CATCH_CHECK(s11.length() == 2);
-    CATCH_CHECK(s12.length() == 2);
-    CATCH_CHECK(s13.length() == 3);
-    CATCH_CHECK(s14.length() == 4);
+    CATCH_CHECK(s6.byte_length() == 1);
+    CATCH_CHECK(s7.byte_length() == 1);
+    CATCH_CHECK(s8.byte_length() == 1);
+    CATCH_CHECK(s9.byte_length() == 1);
+    CATCH_CHECK(s10.byte_length() == 2);
+    CATCH_CHECK(s11.byte_length() == 2);
+    CATCH_CHECK(s12.byte_length() == 2);
+    CATCH_CHECK(s13.byte_length() == 3);
+    CATCH_CHECK(s14.byte_length() == 4);
   }
 
   CATCH_SECTION("symbols") {

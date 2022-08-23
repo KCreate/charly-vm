@@ -318,8 +318,8 @@ bool Interpreter::eq(Thread* thread, RawValue left, RawValue right) {
 }
 
 RawValue Interpreter::add_string_string(Thread* thread, RawString left, RawString right) {
-  size_t left_size = left.length();
-  size_t right_size = right.length();
+  size_t left_size = left.byte_length();
+  size_t right_size = right.byte_length();
   size_t total_size = left_size + right_size;
 
   utils::Buffer buffer(total_size);

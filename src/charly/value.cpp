@@ -840,7 +840,7 @@ RawSymbol RawSymbol::create(SYMBOL symbol) {
   return RawSymbol::cast((uintptr_t{ symbol } << kShiftSymbol) | kTagSymbol);
 }
 
-size_t RawSmallString::length() const {
+size_t RawSmallString::byte_length() const {
   return (m_raw & kMaskLength) >> kShiftLength;
 }
 
@@ -850,7 +850,7 @@ const char* RawSmallString::data(const RawSmallString* value) {
 }
 
 SYMBOL RawSmallString::hashcode() const {
-  return crc32::hash_block(RawSmallString::data(this), length());
+  return crc32::hash_block(RawSmallString::data(this), byte_length());
 }
 
 RawSmallString RawSmallString::create_from_cp(uint32_t cp) {
@@ -954,16 +954,16 @@ RawString RawString::acquire(Thread* thread, utils::Buffer& buffer) {
   }
 }
 
-size_t RawString::length() const {
+size_t RawString::byte_length() const {
   if (isSmallString()) {
-    return RawSmallString::cast(this).length();
+    return RawSmallString::cast(this).byte_length();
   } else {
     if (isLargeString()) {
       return RawLargeString::cast(this).length();
     }
 
     if (isHugeString()) {
-      return RawHugeString::cast(this).length();
+      return RawHugeString::cast(this).byte_length();
     }
   }
 
@@ -1003,11 +1003,11 @@ SYMBOL RawString::hashcode() const {
 }
 
 std::string RawString::str() const {
-  return { data(this), length() };
+  return { data(this), byte_length() };
 }
 
 std::string_view RawString::view() const& {
-  return { data(this), length() };
+  return { data(this), byte_length() };
 }
 
 int32_t RawString::compare(RawString base, const char* data, size_t length) {
@@ -1345,7 +1345,7 @@ RawHugeString RawHugeString::acquire(Thread* thread, char* data, size_t size, SY
   auto object = RawHugeString::cast(
     RawInstance::create(thread, ShapeId::kHugeString, RawHugeString::kFieldCount, huge_string_class));
   object.set_data(data);
-  object.set_length(size);
+  object.set_byte_length(size);
   object.header()->cas_hashcode((SYMBOL)0, hash);
   return object;
 }
@@ -1363,11 +1363,11 @@ void RawHugeString::set_data(const char* data) const {
   set_pointer_at(kDataPointerOffset, data);
 }
 
-size_t RawHugeString::length() const {
+size_t RawHugeString::byte_length() const {
   return field_at<RawInt>(kDataLengthOffset).value();
 }
 
-void RawHugeString::set_length(size_t length) const {
+void RawHugeString::set_byte_length(size_t length) const {
   auto length_int = bitcast<int64_t>(length);
   DCHECK(length_int >= 0);
   set_field_at(kDataLengthOffset, RawInt::create(length_int));

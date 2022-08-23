@@ -534,7 +534,7 @@ class RawSmallString : public RawValue {
 public:
   COMMON_RAW_OBJECT(SmallString);
 
-  size_t length() const;
+  size_t byte_length() const;
   static const char* data(const RawSmallString* value);
   SYMBOL hashcode() const;
 
@@ -605,7 +605,7 @@ public:
   static RawString acquire(Thread*, char* cstr, size_t size, SYMBOL hash);
   static RawString acquire(Thread*, utils::Buffer& buffer);
 
-  size_t length() const;
+  size_t byte_length() const;
   static const char* data(const RawString* value);
   SYMBOL hashcode() const;
 
@@ -618,7 +618,7 @@ public:
     return compare(base, data, std::strlen(data));
   }
   static int32_t compare(RawString base, RawString other) {
-    return compare(base, RawString::data(&other), other.length());
+    return compare(base, RawString::data(&other), other.byte_length());
   }
 };
 
@@ -786,8 +786,8 @@ public:
   const char* data() const;
   void set_data(const char* data) const;
 
-  size_t length() const;
-  void set_length(size_t length) const;
+  size_t byte_length() const;
+  void set_byte_length(size_t length) const;
 
   enum {
     kDataPointerOffset = RawInstance::kFieldCount,
