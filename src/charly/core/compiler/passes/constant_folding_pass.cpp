@@ -77,7 +77,17 @@ ref<Expression> ConstantFoldingPass::transform(const ref<BinaryOp>& node) {
         break;
       }
       case TokenType::Div: {
-        replacement = make<Float>(lhs->value / rhs->value);
+        if (rhs->value == 0) {
+          if (lhs->value == 0) {
+            replacement = make<Float>(NAN);
+          } else if (lhs->value < 0) {
+            replacement = make<Float>(-INFINITY);
+          } else {
+            replacement = make<Float>(INFINITY);
+          }
+        } else {
+          replacement = make<Float>(lhs->value / rhs->value);
+        }
         break;
       }
       case TokenType::Mod: {

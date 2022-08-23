@@ -400,9 +400,28 @@ public:
   RawValue set_attr_number(Thread*, int64_t index, RawValue value) const;
   RawValue set_attr_symbol(Thread*, SYMBOL symbol, RawValue value) const;
 
+  RawValue cast_to_bool(Thread*);
+  RawValue cast_to_string(Thread*);
+  RawValue cast_to_tuple(Thread*);
+
+  // binary ops
+  RawValue op_add(Thread*, RawValue other);
+  RawValue op_sub(Thread*, RawValue other);
+  RawValue op_mul(Thread*, RawValue other);
+  RawValue op_div(Thread*, RawValue other);
+  RawValue op_eq(Thread*, RawValue other);
+  RawValue op_neq(Thread*, RawValue other);
+
+  // unary ops
+  RawValue op_usub(Thread*);
+  RawValue op_unot(Thread*);
+
 #define TYPECHECK(name) bool is##name() const;
   TYPE_NAMES(TYPECHECK)
 #undef TYPECHECK
+
+  bool isTrue() const;
+  bool isFalse() const;
 
   bool isNumber() const;
   int64_t int_value() const;

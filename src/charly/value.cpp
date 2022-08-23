@@ -515,6 +515,230 @@ RawValue RawValue::set_attr_symbol(Thread* thread, SYMBOL symbol, RawValue value
                                RawSymbol::create(symbol));
 }
 
+RawValue RawValue::cast_to_bool(Thread*) {
+  return RawBool::create(truthyness());
+}
+
+RawValue RawValue::cast_to_string(Thread* thread) {
+  if (isString()) {
+    return *this;
+  }
+
+  utils::Buffer buffer;
+  to_string(buffer);
+  return RawString::acquire(thread, buffer);
+}
+
+RawValue RawValue::cast_to_tuple(Thread* thread) {
+  if (isTuple()) {
+    return *this;
+  }
+
+  return thread->throw_message("Cannot cast '%' type object to a tuple", klass_name(thread));
+}
+
+RawValue RawValue::op_add(Thread* thread, RawValue other) {
+  if (isInt() && other.isInt()) {
+    return RawInt::create(RawInt::cast(*this).value() + RawInt::cast(other).value());
+  }
+
+  if (isNumber() && other.isNumber()) {
+    return RawFloat::create(double_value() + other.double_value());
+  }
+
+  if (isString() && other.isString()) {
+    auto left = RawString::cast(this);
+    auto right = RawString::cast(other);
+    size_t left_size = left.byte_length();
+    size_t right_size = right.byte_length();
+    size_t total_size = left_size + right_size;
+
+    utils::Buffer buffer(total_size);
+    buffer.write(RawString::data(&left), left_size);
+    buffer.write(RawString::data(&right), right_size);
+    return RawString::acquire(thread, buffer);
+  }
+
+  return kNaN;
+}
+
+RawValue RawValue::op_sub(Thread*, RawValue other) {
+  if (isInt() && other.isInt()) {
+    return RawInt::create(RawInt::cast(*this).value() - RawInt::cast(other).value());
+  }
+
+  if (isNumber() && other.isNumber()) {
+    return RawFloat::create(double_value() - other.double_value());
+  }
+
+  return kNaN;
+}
+
+RawValue RawValue::op_mul(Thread* thread, RawValue other) {
+  if (isInt() && other.isInt()) {
+    return RawInt::create(RawInt::cast(*this).value() * RawInt::cast(other).value());
+  }
+
+  if (isNumber() && other.isNumber()) {
+    return RawFloat::create(double_value() * other.double_value());
+  }
+
+  if (isString() && other.isNumber()) {
+    auto string = RawString::cast(this);
+    int64_t count = other.int_value();
+
+    if (count <= 0) {
+      return kEmptyString;
+    }
+
+    utils::Buffer buffer(string.byte_length() * count);
+    while (count--) {
+      string.to_string(buffer);
+    }
+
+    return RawString::acquire(thread, buffer);
+  }
+
+  if (isTuple() && other.isNumber()) {
+    int64_t count = other.int_value();
+
+    if (count <= 0) {
+      return RawTuple::create_empty(thread);
+    }
+
+    if (count == 1) {
+      return *this;
+    }
+
+    HandleScope scope(thread);
+    Tuple tuple(scope, *this);
+
+    size_t old_size = tuple.size();
+    size_t new_size = old_size * count;
+    Tuple new_tuple(scope, RawTuple::create(thread, new_size));
+
+    for (size_t i = 0; i < (size_t)count; i++) {
+      for (size_t j = 0; j < old_size; j++) {
+        size_t new_index = (old_size * i) + j;
+        new_tuple.set_field_at(new_index, tuple.field_at(j));
+      }
+    }
+
+    return *new_tuple;
+  }
+
+  return kNaN;
+}
+
+RawValue RawValue::op_div(Thread*, RawValue other) {
+  if (isInt() && other.isInt()) {
+    int64_t self_int = RawInt::cast(this).value();
+    int64_t other_int = RawInt::cast(other).value();
+
+    if (other_int == 0) {
+      if (self_int == 0) {
+        return kNaN;
+      } else if (self_int < 0) {
+        return kNegInfinity;
+      } else {
+        return kInfinity;
+      }
+    }
+
+    return RawInt::create(self_int / other_int);
+  }
+
+  if (isNumber() && other.isNumber()) {
+    return RawFloat::create(double_value() / other.double_value());
+  }
+
+  return kNaN;
+}
+
+RawValue RawValue::op_eq(Thread* thread, RawValue other) {
+  if (*this == other) {
+    return kTrue;
+  }
+
+  if (isString() && other.isString()) {
+    auto left = RawString::cast(this);
+    auto right = RawString::cast(other);
+
+    // compare character by character, since there might be a hash collision
+    if (left.hashcode() == right.hashcode()) {
+      return RawBool::create(left.view() == right.view());
+    }
+
+    return kFalse;
+  }
+
+  if (isBytes() && other.isBytes()) {
+    auto left_bytes = RawBytes::cast(this);
+    auto right_bytes = RawBytes::cast(other);
+
+    if (left_bytes.length() != right_bytes.length()) {
+      return kFalse;
+    }
+
+    // compare byte by byte, since there might be a hash collision
+    if (left_bytes.hashcode() == right_bytes.hashcode()) {
+      auto* left_ptr = RawBytes::data(&left_bytes);
+      auto* right_ptr = RawBytes::data(&right_bytes);
+      return RawBool::create(std::memcmp(left_ptr, right_ptr, left_bytes.length()) == 0);
+    }
+
+    return kFalse;
+  }
+
+  if (isNumber() || other.isNumber()) {
+    double left_num = double_value();
+    double right_num = other.double_value();
+    return RawBool::create(left_num == right_num);
+  }
+
+  if (isTuple() && other.isTuple()) {
+    auto left_tuple = RawTuple::cast(this);
+    auto right_tuple = RawTuple::cast(other);
+
+    if (left_tuple.size() != right_tuple.size()) {
+      return kFalse;
+    }
+
+    size_t size = left_tuple.size();
+    for (size_t i = 0; i < size; i++) {
+      auto left_value = left_tuple.field_at(i);
+      auto right_value = right_tuple.field_at(i);
+      if (left_value.op_eq(thread, right_value).isFalse()) {
+        return kFalse;
+      }
+    }
+
+    return kTrue;
+  }
+
+  return kFalse;
+}
+
+RawValue RawValue::op_neq(Thread* thread, RawValue other) {
+  return op_eq(thread, other).isTrue() ? kFalse : kTrue;
+}
+
+RawValue RawValue::op_usub(Thread*) {
+  if (isInt()) {
+    return RawInt::create(-RawInt::cast(this).value());
+  } else if (isFloat()) {
+    return RawFloat::create(-RawFloat::cast(this).value());
+  } else if (isBool()) {
+    return RawBool::create(!RawBool::cast(this).value());
+  }
+
+  return kNaN;
+}
+
+RawValue RawValue::op_unot(Thread*) {
+  return truthyness() ? kFalse : kTrue;
+}
+
 bool RawValue::isInt() const {
   return (m_raw & kMaskInt) == kTagInt;
 }
@@ -660,6 +884,14 @@ bool RawValue::isImportException() const {
     return RawInstance::cast(this).is_instance_of(ShapeId::kImportException);
   }
   return false;
+}
+
+bool RawValue::isTrue() const {
+  return *this == kTrue;
+}
+
+bool RawValue::isFalse() const {
+  return *this == kFalse;
 }
 
 bool RawValue::isNumber() const {
@@ -1313,6 +1545,7 @@ SYMBOL RawData::hashcode() const {
   }
   SYMBOL hash = crc32::hash_block(bitcast<const char*>(data()), length());
   header()->cas_hashcode(0, hash);
+  header()->set_has_cached_hashcode();
   return hash;
 }
 
@@ -1320,6 +1553,7 @@ RawLargeString RawLargeString::create(Thread* thread, const char* data, size_t s
   auto string = RawLargeString::cast(RawData::create(thread, ShapeId::kLargeString, size));
   std::memcpy((char*)string.address(), data, size);
   string.header()->cas_hashcode((SYMBOL)0, hash);
+  string.header()->set_has_cached_hashcode();
   return string;
 }
 
@@ -1490,12 +1724,13 @@ RawHugeString RawHugeString::create(Thread* thread, const char* data, size_t siz
 RawHugeString RawHugeString::acquire(Thread* thread, char* data, size_t size, SYMBOL hash) {
   auto* runtime = thread->runtime();
   auto huge_string_class = runtime->get_builtin_class(ShapeId::kHugeString);
-  auto object = RawHugeString::cast(
+  auto string = RawHugeString::cast(
     RawInstance::create(thread, ShapeId::kHugeString, RawHugeString::kFieldCount, huge_string_class));
-  object.set_data(data);
-  object.set_byte_length(size);
-  object.header()->cas_hashcode((SYMBOL)0, hash);
-  return object;
+  string.set_data(data);
+  string.set_byte_length(size);
+  string.header()->cas_hashcode((SYMBOL)0, hash);
+  string.header()->set_has_cached_hashcode();
+  return string;
 }
 
 SYMBOL RawHugeString::hashcode() const {

@@ -257,77 +257,6 @@ RawValue Interpreter::call_function(Thread* thread,
   return Interpreter::execute(thread);
 }
 
-bool Interpreter::eq(Thread* thread, RawValue left, RawValue right) {
-  if (left == right) {
-    return true;
-  }
-
-  if (left.isString() && right.isString()) {
-    auto left_str = RawString::cast(left);
-    auto right_str = RawString::cast(right);
-
-    // compare character by character, since there might be a hash collision
-    if (left_str.hashcode() == right_str.hashcode()) {
-      return left_str.view() == right_str.view();
-    }
-
-    return false;
-  }
-
-  if (left.isBytes() && right.isBytes()) {
-    auto left_bytes = RawBytes::cast(left);
-    auto right_bytes = RawBytes::cast(right);
-
-    if (left_bytes.length() != right_bytes.length()) {
-      return false;
-    }
-
-    // compare byte by byte, since there might be a hash collision
-    if (left_bytes.hashcode() == right_bytes.hashcode()) {
-      return std::memcmp(RawBytes::data(&left_bytes), RawBytes::data(&right_bytes), left_bytes.length()) == 0;
-    }
-
-    return false;
-  }
-
-  if (left.isNumber() || right.isNumber()) {
-    double left_num = left.double_value();
-    double right_num = right.double_value();
-    return left_num == right_num;
-  }
-
-  if (left.isTuple() && right.isTuple()) {
-    auto left_tuple = RawTuple::cast(left);
-    auto right_tuple = RawTuple::cast(right);
-
-    if (left_tuple.size() != right_tuple.size()) {
-      return false;
-    }
-
-    size_t size = left_tuple.size();
-    for (size_t i = 0; i < size; i++) {
-      if (!Interpreter::eq(thread, left_tuple.field_at(i), right_tuple.field_at(i))) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  return false;
-}
-
-RawValue Interpreter::add_string_string(Thread* thread, RawString left, RawString right) {
-  size_t left_size = left.byte_length();
-  size_t right_size = right.byte_length();
-  size_t total_size = left_size + right_size;
-
-  utils::Buffer buffer(total_size);
-  buffer.write(RawString::data(&left), left_size);
-  buffer.write(RawString::data(&right), right_size);
-  return RawString::acquire(thread, buffer);
-}
-
 RawValue Interpreter::execute(Thread* thread) {
   Frame* frame = thread->frame();
 
@@ -1063,29 +992,26 @@ OP(await) {
 
 OP(castbool) {
   RawValue value = frame->pop();
-  frame->push(RawBool::create(value.truthyness()));
+  frame->push(value.cast_to_bool(thread));
   return ContinueMode::Next;
 }
 
 OP(caststring) {
   RawValue value = frame->pop();
-
-  utils::Buffer buffer;
-  value.to_string(buffer);
-  frame->push(RawString::acquire(thread, buffer));
-
+  frame->push(value.cast_to_string(thread));
   return ContinueMode::Next;
 }
 
 OP(casttuple) {
-  RawValue value = frame->peek();
+  RawValue value = frame->pop();
 
-  if (value.isTuple()) {
-    return ContinueMode::Next;
+  RawValue result = value.cast_to_tuple(thread);
+  if (result.is_error_exception()) {
+    return ContinueMode::Exception;
   }
 
-  thread->throw_message("Could not cast value of type '%' to a tuple", value.klass_name(thread));
-  return ContinueMode::Exception;
+  frame->push(result);
+  return ContinueMode::Next;
 }
 
 OP(castsymbol) {
@@ -1103,71 +1029,29 @@ OP(iteratornext) {
 OP(add) {
   RawValue right = frame->pop();
   RawValue left = frame->pop();
-
-  if (left.isInt() && right.isInt()) {
-    RawInt result = RawInt::create(RawInt::cast(left).value() + RawInt::cast(right).value());
-    frame->push(result);
-    return ContinueMode::Next;
-  }
-
-  if (left.isFloat() && right.isFloat()) {
-    RawFloat result = RawFloat::create(RawFloat::cast(left).value() + RawFloat::cast(right).value());
-    frame->push(result);
-    return ContinueMode::Next;
-  }
-
-  if ((left.isInt() || left.isFloat()) && (right.isInt() || right.isFloat())) {
-    double lf = left.isInt() ? (double)RawInt::cast(left).value() : RawFloat::cast(left).value();
-    double rf = right.isInt() ? (double)RawInt::cast(right).value() : RawFloat::cast(right).value();
-    RawFloat result = RawFloat::create(lf + rf);
-    frame->push(result);
-    return ContinueMode::Next;
-  }
-
-  if (left.isString() && right.isString()) {
-    RawValue result = add_string_string(thread, RawString::cast(left), RawString::cast(right));
-    frame->push(result);
-    return ContinueMode::Next;
-  }
-
-  frame->push(kNaN);
+  frame->push(left.op_add(thread, right));
   return ContinueMode::Next;
 }
 
 OP(sub) {
   RawValue right = frame->pop();
   RawValue left = frame->pop();
-
-  if (left.isInt() && right.isInt()) {
-    RawInt result = RawInt::create(RawInt::cast(left).value() - RawInt::cast(right).value());
-    frame->push(result);
-    return ContinueMode::Next;
-  }
-
-  if (left.isFloat() && right.isFloat()) {
-    RawFloat result = RawFloat::create(RawFloat::cast(left).value() - RawFloat::cast(right).value());
-    frame->push(result);
-    return ContinueMode::Next;
-  }
-
-  if ((left.isInt() || left.isFloat()) && (right.isInt() || right.isFloat())) {
-    double lf = left.isInt() ? (double)RawInt::cast(left).value() : RawFloat::cast(left).value();
-    double rf = right.isInt() ? (double)RawInt::cast(right).value() : RawFloat::cast(right).value();
-    RawFloat result = RawFloat::create(lf - rf);
-    frame->push(result);
-    return ContinueMode::Next;
-  }
-
-  frame->push(kNaN);
+  frame->push(left.op_sub(thread, right));
   return ContinueMode::Next;
 }
 
 OP(mul) {
-  THROW_NOT_IMPLEMENTED();
+  RawValue right = frame->pop();
+  RawValue left = frame->pop();
+  frame->push(left.op_mul(thread, right));
+  return ContinueMode::Next;
 }
 
 OP(div) {
-  THROW_NOT_IMPLEMENTED();
+  RawValue right = frame->pop();
+  RawValue left = frame->pop();
+  frame->push(left.op_div(thread, right));
+  return ContinueMode::Next;
 }
 
 OP(mod) {
@@ -1181,14 +1065,14 @@ OP(pow) {
 OP(eq) {
   RawValue right = frame->pop();
   RawValue left = frame->pop();
-  frame->push(RawBool::create(Interpreter::eq(thread, left, right)));
+  frame->push(left.op_eq(thread, right));
   return ContinueMode::Next;
 }
 
 OP(neq) {
   RawValue right = frame->pop();
   RawValue left = frame->pop();
-  frame->push(RawBool::create(!Interpreter::eq(thread, left, right)));
+  frame->push(left.op_neq(thread, right));
   return ContinueMode::Next;
 }
 
@@ -1234,21 +1118,13 @@ OP(bxor) {
 
 OP(usub) {
   RawValue value = frame->pop();
-
-  if (value.isInt()) {
-    frame->push(RawInt::create(-RawInt::cast(value).value()));
-  } else if (value.isFloat()) {
-    frame->push(RawFloat::create(-RawFloat::cast(value).value()));
-  } else if (value.isBool()) {
-    frame->push(RawBool::create(!RawBool::cast(value).value()));
-  }
-
+  frame->push(value.op_usub(thread));
   return ContinueMode::Next;
 }
 
 OP(unot) {
   RawValue value = frame->pop();
-  frame->push(value.truthyness() ? kFalse : kTrue);
+  frame->push(value.op_unot(thread));
   return ContinueMode::Next;
 }
 
