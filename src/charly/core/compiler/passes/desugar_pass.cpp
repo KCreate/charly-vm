@@ -77,6 +77,16 @@ ref<Expression> DesugarPass::transform(const ref<MemberOp>& node) {
   return node;
 }
 
+ref<Expression> DesugarPass::transform(const ref<IndexOp>& node) {
+  if (auto string = cast<String>(node->index)) {
+    auto member_op = make<MemberOp>(node->target, string->value);
+    member_op->set_location(node);
+    return member_op;
+  }
+
+  return node;
+}
+
 ref<Expression> DesugarPass::transform(const ref<FormatString>& node) {
   // format strings with only one element can be replaced with
   // a single caststring operation
