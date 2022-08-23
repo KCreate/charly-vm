@@ -730,112 +730,27 @@ OP(loadattr) {
   RawValue index = frame->pop();
   RawValue value = frame->pop();
 
-  // tuple[int]
-  if (value.isTuple() && index.isInt()) {
-    RawTuple tuple = RawTuple::cast(value);
-    int64_t tuple_size = tuple.size();
-    int64_t index_int = RawInt::cast(index).value();
-
-    // wrap negative indices
-    if (index_int < 0) {
-      index_int += tuple_size;
-      if (index_int < 0) {
-        frame->push(kNull);
-        return ContinueMode::Next;
-      }
-    }
-
-    if (index_int >= tuple_size) {
-      frame->push(kNull);
-      return ContinueMode::Next;
-    }
-
-    frame->push(tuple.field_at(index_int));
-    return ContinueMode::Next;
-  }
-
-  if (value.isNull()) {
-    thread->throw_message("null has no field called '%'", index.to_string());
+  RawValue result = value.load_attr(thread, index);
+  if (result.is_error_exception()) {
     return ContinueMode::Exception;
-  } else {
-    frame->push(kNull);
-    return ContinueMode::Next;
   }
+
+  frame->push(result);
+  return ContinueMode::Next;
 }
 
 OP(loadattrsym) {
-  Runtime* runtime = thread->runtime();
-
   RawValue value = frame->pop();
   uint16_t symbol_offset = op->arg();
-  SYMBOL attr = frame->get_string_table_entry(symbol_offset).hash;
+  SYMBOL symbol = frame->get_string_table_entry(symbol_offset).hash;
 
-  // builtin attributes
-  switch (attr) {
-    case SYM("klass"): {
-      frame->push(value.klass(thread));
-      return ContinueMode::Next;
-    }
-    case SYM("length"): {
-      if (value.isTuple()) {
-        auto tuple = RawTuple::cast(value);
-        frame->push(RawInt::create(tuple.size()));
-        return ContinueMode::Next;
-      } else if (value.isString()) {
-        auto string = RawString::cast(value);
-        frame->push(RawInt::create(string.length()));
-        return ContinueMode::Next;
-      } else if (value.isBytes()) {
-        auto bytes = RawBytes::cast(value);
-        frame->push(RawInt::create(bytes.length()));
-        return ContinueMode::Next;
-      }
-      break;
-    }
-  }
-
-  auto klass = value.klass(thread);
-  if (value.isInstance()) {
-    auto instance = RawInstance::cast(value);
-
-    // lookup attribute in shape key table
-    // TODO: cache result via inline cache
-    auto shape = runtime->lookup_shape(instance.shape_id());
-    auto result = shape.lookup_symbol(attr);
-    if (result.found) {
-      // TODO: allow accessing private member of same class
-      if (result.is_private() && runtime->check_private_access_permitted(thread, instance) <= result.offset) {
-        thread->throw_message("cannot read private property '%' of class '%'", RawSymbol::create(attr), klass.name());
-        return ContinueMode::Exception;
-      }
-
-      frame->push(instance.field_at(result.offset));
-      return ContinueMode::Next;
-    }
-  }
-
-  // lookup attribute in class hierarchy
-  // TODO: cache via inline cache
-  RawValue lookup = klass.lookup_function(attr);
-  if (lookup.isFunction()) {
-    auto function = RawFunction::cast(lookup);
-    // TODO: allow accessing private member of same class
-    if (function.shared_info()->ir_info.private_function && (value != frame->self)) {
-      thread->throw_message("cannot call private function '%' of class '%'", RawSymbol::create(attr), klass.name());
-      return ContinueMode::Exception;
-    }
-
-    frame->push(lookup);
-    return ContinueMode::Next;
-  }
-
-  if (value.isNull()) {
-    thread->throw_message("null has no field called '%'", RawSymbol::create(attr));
+  RawValue result = value.load_attr_symbol(thread, symbol);
+  if (result.is_error_exception()) {
     return ContinueMode::Exception;
-  } else {
-    frame->push(kNull);
-    return ContinueMode::Next;
   }
+
+  frame->push(result);
+  return ContinueMode::Next;
 }
 
 OP(loadsuperconstructor) {
@@ -913,70 +828,28 @@ OP(setattr) {
   RawValue index = frame->pop();
   RawValue target = frame->pop();
 
-  // tuple[int] = value
-  if (target.isTuple() && index.isInt()) {
-    RawTuple tuple = RawTuple::cast(target);
-    uint32_t tuple_size = tuple.size();
-    int64_t index_int = RawInt::cast(index).value();
-
-    // wrap negative indices
-    if (index_int < 0) {
-      index_int += tuple_size;
-      if (index_int < 0) {
-        frame->push(kNull);
-        return ContinueMode::Next;
-      }
-    }
-
-    if (index_int >= tuple_size) {
-      frame->push(kNull);
-      return ContinueMode::Next;
-    }
-
-    tuple.set_field_at(index_int, value);
-    frame->push(value);
-    return ContinueMode::Next;
+  RawValue result = target.set_attr(thread, index, value);
+  if (result.is_error_exception()) {
+    return ContinueMode::Exception;
   }
 
-  frame->push(kNull);
+  frame->push(result);
   return ContinueMode::Next;
 }
 
 OP(setattrsym) {
-  Runtime* runtime = thread->runtime();
-
   RawValue value = frame->pop();
   RawValue target = frame->pop();
   uint16_t symbol_offset = op->arg();
-  SYMBOL attr = frame->get_string_table_entry(symbol_offset).hash;
+  SYMBOL symbol = frame->get_string_table_entry(symbol_offset).hash;
 
-  // lookup attribute in shape key table
-  // TODO: cache result via inline cache
-  auto klass = target.klass(thread);
-  if (target.isInstance()) {
-    auto instance = RawInstance::cast(target);
-    auto shape = runtime->lookup_shape(instance.shape_id());
-    auto result = shape.lookup_symbol(attr);
-    if (result.found) {
-      if (result.is_read_only()) {
-        thread->throw_message("property '%' of type '%' is read-only", RawSymbol::create(attr), klass.name());
-        return ContinueMode::Exception;
-      }
-
-      if (result.is_private() && runtime->check_private_access_permitted(thread, instance) <= result.offset) {
-        thread->throw_message("cannot assign to private property '%' of class '%'", RawSymbol::create(attr),
-                              klass.name());
-        return ContinueMode::Exception;
-      }
-
-      instance.set_field_at(result.offset, value);
-      frame->push(target);
-      return ContinueMode::Next;
-    }
+  RawValue result = target.set_attr_symbol(thread, symbol, value);
+  if (result.is_error_exception()) {
+    return ContinueMode::Exception;
   }
 
-  thread->throw_message("value of type '%' has no property called '%'", klass.name(), RawSymbol::create(attr));
-  return ContinueMode::Exception;
+  frame->push(result);
+  return ContinueMode::Next;
 }
 
 OP(unpacksequence) {

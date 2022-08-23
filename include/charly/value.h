@@ -166,6 +166,8 @@ bool is_shape_with_external_heap_pointers(ShapeId shape_id);
 // align a size to some alignment
 size_t align_to_size(size_t size, size_t alignment);
 
+int64_t wrap_negative_indices(int64_t index, size_t size);
+
 // internal error values used only internally in the runtime
 // this value is encoded in the null value
 // limit of 16 error codes
@@ -389,6 +391,14 @@ public:
 
   RawClass klass(Thread*) const;
   RawSymbol klass_name(Thread*) const;
+
+  RawValue load_attr(Thread*, RawValue attribute) const;
+  RawValue load_attr_number(Thread*, int64_t index) const;
+  RawValue load_attr_symbol(Thread*, SYMBOL symbol) const;
+
+  RawValue set_attr(Thread*, RawValue attribute, RawValue value) const;
+  RawValue set_attr_number(Thread*, int64_t index, RawValue value) const;
+  RawValue set_attr_symbol(Thread*, SYMBOL symbol, RawValue value) const;
 
 #define TYPECHECK(name) bool is##name() const;
   TYPE_NAMES(TYPECHECK)

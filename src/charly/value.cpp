@@ -35,6 +35,7 @@
 #include "charly/core/compiler/compiler.h"
 #include "charly/core/runtime/compiled_module.h"
 #include "charly/core/runtime/heap.h"
+#include "charly/core/runtime/interpreter.h"
 #include "charly/core/runtime/runtime.h"
 
 namespace charly::core::runtime {
@@ -92,6 +93,10 @@ size_t align_to_size(size_t size, size_t alignment) {
 
   size_t remaining_until_aligned = alignment - (size % alignment);
   return size + remaining_until_aligned;
+}
+
+int64_t wrap_negative_indices(int64_t index, size_t size) {
+  return index < 0 ? index + size : index;
 }
 
 void ObjectHeader::initialize_header(uintptr_t address, ShapeId shape_id, uint16_t count) {
@@ -350,7 +355,7 @@ bool RawValue::is_young_pointer() const {
 
 RawClass RawValue::klass(Thread* thread) const {
   if (isInstance()) {
-    auto instance = RawInstance::cast(*this);
+    auto instance = RawInstance::cast(this);
     auto klass_field = instance.klass_field();
     DCHECK(!klass_field.isNull());
     return RawClass::cast(klass_field);
@@ -365,6 +370,149 @@ RawSymbol RawValue::klass_name(Thread* thread) const {
     return RawSymbol::cast(resolved_name);
   }
   return RawSymbol::create("??");
+}
+
+RawValue RawValue::load_attr(Thread* thread, RawValue attribute) const {
+  if (attribute.isNumber()) {
+    return load_attr_number(thread, attribute.int_value());
+  } else if (attribute.isString()) {
+    SYMBOL symbol = RawString::cast(attribute).hashcode();
+    return load_attr_symbol(thread, symbol);
+  } else {
+    return thread->throw_message("Expected index attribute to be a number or a string, got %",
+                                 attribute.klass_name(thread));
+  }
+}
+
+RawValue RawValue::load_attr_number(Thread* thread, int64_t index) const {
+  // TODO: implement string and bytes index access
+  if (isTuple()) {
+    auto tuple = RawTuple::cast(this);
+    auto size = tuple.size();
+    auto real_index = wrap_negative_indices(index, size);
+
+    if (real_index < 0 || real_index >= size) {
+      return thread->throw_message("Tuple index out of range");
+    }
+
+    return tuple.field_at(real_index);
+  } else {
+    return thread->throw_message("Cannot perform index access on value of type '%'", klass_name(thread));
+  }
+}
+
+RawValue RawValue::load_attr_symbol(Thread* thread, SYMBOL symbol) const {
+  // builtin attributes
+  switch (symbol) {
+    case SYM("klass"): return klass(thread);
+    case SYM("length"): {
+      if (isTuple()) {
+        auto tuple = RawTuple::cast(this);
+        return RawInt::create(tuple.size());
+      } else if (isString()) {
+        // TODO: return codepoint count, not byte length
+        auto string = RawString::cast(this);
+        return RawInt::create(string.byte_length());
+      } else if (isBytes()) {
+        auto bytes = RawBytes::cast(this);
+        return RawInt::create(bytes.length());
+      }
+      break;
+    }
+  }
+
+  // shape property access
+  auto klass = this->klass(thread);
+  if (isInstance()) {
+    auto runtime = thread->runtime();
+    auto instance = RawInstance::cast(this);
+
+    // TODO: cache result via inline cache
+    auto shape = runtime->lookup_shape(instance.shape_id());
+    auto result = shape.lookup_symbol(symbol);
+    if (result.found) {
+      // TODO: allow accessing private member of same class
+      if (result.is_private() && runtime->check_private_access_permitted(thread, instance) <= result.offset) {
+        return thread->throw_message("Cannot read private property '%' of class '%'", RawSymbol::create(symbol),
+                                     klass.name());
+      }
+
+      return instance.field_at(result.offset);
+    }
+  }
+
+  // function lookup
+  // TODO: cache via inline cache
+  RawValue lookup = klass.lookup_function(symbol);
+  if (lookup.isFunction()) {
+    auto function = RawFunction::cast(lookup);
+    // TODO: allow accessing private member of same class
+    if (function.shared_info()->ir_info.private_function && (*this != thread->frame()->self)) {
+      return thread->throw_message("Cannot call private function '%' of class '%'", RawSymbol::create(symbol),
+                                   klass.name());
+    }
+
+    return lookup;
+  }
+
+  return thread->throw_message("'%' type object has no attribute '%'", klass.name(), RawSymbol::create(symbol));
+}
+
+RawValue RawValue::set_attr(Thread* thread, RawValue attribute, RawValue value) const {
+  if (attribute.isNumber()) {
+    return set_attr_number(thread, attribute.int_value(), value);
+  } else if (attribute.isString()) {
+    SYMBOL symbol = RawString::cast(attribute).hashcode();
+    return set_attr_symbol(thread, symbol, value);
+  } else {
+    return thread->throw_message("Expected index attribute to be a number or a string, got %",
+                                 attribute.klass_name(thread));
+  }
+}
+
+RawValue RawValue::set_attr_number(Thread* thread, int64_t index, RawValue value) const {
+  if (isTuple()) {
+    auto tuple = RawTuple::cast(this);
+    auto size = tuple.size();
+    auto real_index = wrap_negative_indices(index, size);
+
+    if (real_index < 0 || real_index >= size) {
+      return thread->throw_message("Tuple index out of range");
+    }
+
+    tuple.set_field_at(real_index, value);
+    return value;
+  } else {
+    return thread->throw_message("Cannot perform index write on value of type '%'", klass_name(thread));
+  }
+}
+
+RawValue RawValue::set_attr_symbol(Thread* thread, SYMBOL symbol, RawValue value) const {
+  // shape property write
+  // TODO: cache result via inline cache
+  auto klass = this->klass(thread);
+  if (isInstance()) {
+    auto runtime = thread->runtime();
+    auto instance = RawInstance::cast(this);
+    auto shape = runtime->lookup_shape(instance.shape_id());
+    auto result = shape.lookup_symbol(symbol);
+    if (result.found) {
+      if (result.is_read_only()) {
+        return thread->throw_message("Property '%' of type '%' is read-only", RawSymbol::create(symbol), klass.name());
+      }
+
+      if (result.is_private() && runtime->check_private_access_permitted(thread, instance) <= result.offset) {
+        return thread->throw_message("Cannot assign to private property '%' of class '%'", RawSymbol::create(symbol),
+                                     klass.name());
+      }
+
+      instance.set_field_at(result.offset, value);
+      return value;
+    }
+  }
+
+  return thread->throw_message("'%' type object has no writeable attribute '%'", klass.name(),
+                               RawSymbol::create(symbol));
 }
 
 bool RawValue::isInt() const {
@@ -520,9 +668,9 @@ bool RawValue::isNumber() const {
 
 int64_t RawValue::int_value() const {
   if (isInt()) {
-    return RawInt::cast(*this).value();
+    return RawInt::cast(this).value();
   } else if (isFloat()) {
-    return RawFloat::cast(*this).value();
+    return RawFloat::cast(this).value();
   }
 
   UNREACHABLE();
@@ -530,9 +678,9 @@ int64_t RawValue::int_value() const {
 
 double RawValue::double_value() const {
   if (isInt()) {
-    return RawInt::cast(*this).value();
+    return RawInt::cast(this).value();
   } else if (isFloat()) {
-    return RawFloat::cast(*this).value();
+    return RawFloat::cast(this).value();
   }
 
   UNREACHABLE();
