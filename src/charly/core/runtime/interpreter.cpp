@@ -826,7 +826,24 @@ OP(unpacksequencespread) {
 }
 
 OP(unpackobject) {
-  THROW_NOT_IMPLEMENTED();
+  uint8_t key_count = op->arg();
+  RawSymbol keys[key_count];
+
+  for (uint8_t i = 0; i < key_count; i++) {
+    keys[i] = frame->pop();
+  }
+
+  RawValue source_value = frame->pop();
+
+  for (uint8_t i = 0; i < key_count; i++) {
+    RawValue result = source_value.load_attr_symbol(thread, keys[i].value());
+    if (result.is_error_exception()) {
+      return ContinueMode::Exception;
+    }
+    frame->push(result);
+  }
+
+  return ContinueMode::Next;
 }
 
 OP(makefunc) {

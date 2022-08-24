@@ -450,7 +450,7 @@ RawValue RawValue::load_attr_symbol(Thread* thread, SYMBOL symbol) const {
     return lookup;
   }
 
-  return thread->throw_message("'%' type object has no attribute '%'", klass.name(), RawSymbol::create(symbol));
+  return thread->throw_message("Object of type '%' has no attribute '%'", klass.name(), RawSymbol::create(symbol));
 }
 
 RawValue RawValue::set_attr(Thread* thread, RawValue attribute, RawValue value) const {
@@ -506,7 +506,7 @@ RawValue RawValue::set_attr_symbol(Thread* thread, SYMBOL symbol, RawValue value
     }
   }
 
-  return thread->throw_message("'%' type object has no writeable attribute '%'", klass.name(),
+  return thread->throw_message("Object of type '%' has no writeable attribute '%'", klass.name(),
                                RawSymbol::create(symbol));
 }
 
@@ -529,7 +529,7 @@ RawValue RawValue::cast_to_tuple(Thread* thread) {
     return *this;
   }
 
-  return thread->throw_message("Cannot cast '%' type object to a tuple", klass_name(thread));
+  return thread->throw_message("Cannot cast object of type '%' to a tuple", klass_name(thread));
 }
 
 RawValue RawValue::op_add(Thread* thread, RawValue other) {
