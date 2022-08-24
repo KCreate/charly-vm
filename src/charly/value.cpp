@@ -381,7 +381,6 @@ RawValue RawValue::load_attr(Thread* thread, RawValue attribute) const {
 }
 
 RawValue RawValue::load_attr_number(Thread* thread, int64_t index) const {
-  // TODO: implement string and bytes index access
   if (isTuple()) {
     auto tuple = RawTuple::cast(this);
     auto size = tuple.size();
@@ -392,6 +391,40 @@ RawValue RawValue::load_attr_number(Thread* thread, int64_t index) const {
     }
 
     return tuple.field_at(real_index);
+  } else if (isString()) {
+
+    // TODO: optimize string index lookup
+    //
+    // current algorithm is O(N) since we need to traverse the entire string once to
+    // get the codepoint length and then another time to find the nth character
+    //
+    // if user code iterates over each character, this becomes O(N^2)
+    auto string = RawString::cast(this);
+    auto size = string.codepoint_length();
+    auto real_index = wrap_negative_indices(index, size);
+
+    if (real_index < 0 || (size_t)real_index >= size) {
+      return thread->throw_message("String index out of range");
+    }
+
+    const char* begin_ptr = RawString::data(&string);
+    const char* end_ptr = begin_ptr + string.byte_length();
+    CHECK(utf8::advance_to_nth_codepoint(begin_ptr, end_ptr, real_index));
+
+    uint32_t cp;
+    CHECK(utf8::peek_next(begin_ptr, end_ptr, cp));
+    CHECK(utf8::is_valid_codepoint(cp));
+    return RawSmallString::create_from_cp(cp);
+  } else if (isBytes()) {
+    auto bytes = RawBytes::cast(this);
+    auto size = bytes.length();
+    auto real_index = wrap_negative_indices(index, size);
+
+    if (real_index < 0 || (size_t)real_index >= size) {
+      return thread->throw_message("Bytes index out of range");
+    }
+
+    return RawInt::create(RawBytes::data(&bytes)[real_index]);
   } else {
     return thread->throw_message("Cannot perform index access on value of type '%'", klass_name(thread));
   }

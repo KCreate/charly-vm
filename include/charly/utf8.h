@@ -270,4 +270,23 @@ inline size_t codepoint_count(const char* begin, const char* end) {
   return counter;
 }
 
+inline bool advance_to_nth_codepoint(const char*& begin, const char* end, size_t index) {
+  DCHECK(begin <= end);
+
+  size_t counter = 0;
+  while (begin < end) {
+    if (counter == index) {
+      return true;
+    }
+
+    size_t cp_length = internal::sequence_length(begin);
+    DCHECK(cp_length >= 1 && cp_length <= 4);
+    begin += cp_length;
+    counter++;
+    DCHECK(begin <= end);
+  }
+
+  return false;
+}
+
 }  // namespace charly::utf8

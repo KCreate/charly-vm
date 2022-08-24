@@ -24,17 +24,12 @@
  * SOFTWARE.
  */
 
-class Person {
-    property name
-    property age
-    property foo
-    property bar
-}
+const string = prompt("enter string: ")
+const length = string.length
 
-const l = Person("leonard", 22, true, (1, 2, 3))
-const {bar, age, foo, name, klass} = l
-print(name, age, foo, bar, klass)
-
+length.times(->(i) {
+    print(string[i])
+})
 
 
 
