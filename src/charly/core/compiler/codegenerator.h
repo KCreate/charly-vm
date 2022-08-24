@@ -70,7 +70,9 @@ private:
   uint8_t generate_spread_tuples(const std::list<ref<ast::Expression>>& vec);
 
   // generate an assignment to an unpack target
-  void generate_unpack_assignment(const ref<ast::UnpackTarget>& target);
+  void generate_unpack_assignment(const ref<ast::UnpackTarget>& target,
+                                  bool is_declaration = false,
+                                  bool constant_declaration = false);
 
   // label stacks
   ir::Label active_return_label() const;

@@ -84,7 +84,7 @@ public:
   // declare a new global variable
   // returns kErrorOk on success
   // returns kErrorException if the variable already exists
-  RawValue declare_global_variable(Thread* thread, SYMBOL name, bool constant);
+  RawValue declare_global_variable(Thread* thread, SYMBOL name, bool constant, RawValue value);
 
   // read from global variable
   // returns kErrorNotFound if no such global variable exists
@@ -166,7 +166,6 @@ private:
   struct GlobalVariable {
     RawValue value;
     bool constant;
-    bool initialized;
   };
   std::shared_mutex m_globals_mutex;
   std::unordered_map<SYMBOL, GlobalVariable> m_global_variables;

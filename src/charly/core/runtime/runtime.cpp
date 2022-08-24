@@ -126,8 +126,7 @@ void Runtime::initialize_symbol_table(Thread* thread) {
   declare_symbol(thread, "length");
   declare_symbol(thread, "ARGV");
 
-  CHECK(declare_global_variable(thread, SYM("CHARLY_STDLIB"), true).is_error_ok());
-  CHECK(set_global_variable(thread, SYM("CHARLY_STDLIB"), RawString::create(thread, m_stdlib_directory)).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("CHARLY_STDLIB"), true, RawString::create(thread, m_stdlib_directory)).is_error_ok());
 }
 
 void Runtime::initialize_argv_tuple(Thread* thread) {
@@ -140,8 +139,7 @@ void Runtime::initialize_argv_tuple(Thread* thread) {
     auto arg_string = RawString::create(thread, arg.data(), arg.size(), crc32::hash_string(arg));
     argv_tuple.set_field_at(i, arg_string);
   }
-  CHECK(declare_global_variable(thread, SYM("ARGV"), true).is_error_ok());
-  CHECK(set_global_variable(thread, SYM("ARGV"), argv_tuple).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("ARGV"), true, argv_tuple).is_error_ok());
 }
 
 void Runtime::initialize_builtin_functions(Thread* thread) {
@@ -413,45 +411,25 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   }
 
   // register builtin classes as global variables
-  CHECK(declare_global_variable(thread, SYM("Value"), true).is_error_ok());
-  CHECK(declare_global_variable(thread, SYM("Number"), true).is_error_ok());
-  CHECK(declare_global_variable(thread, SYM("Int"), true).is_error_ok());
-  CHECK(declare_global_variable(thread, SYM("Float"), true).is_error_ok());
-  CHECK(declare_global_variable(thread, SYM("Bool"), true).is_error_ok());
-  CHECK(declare_global_variable(thread, SYM("Symbol"), true).is_error_ok());
-  CHECK(declare_global_variable(thread, SYM("Null"), true).is_error_ok());
-  CHECK(declare_global_variable(thread, SYM("String"), true).is_error_ok());
-  CHECK(declare_global_variable(thread, SYM("Bytes"), true).is_error_ok());
-  CHECK(declare_global_variable(thread, SYM("Tuple"), true).is_error_ok());
-  CHECK(declare_global_variable(thread, SYM("Instance"), true).is_error_ok());
-  CHECK(declare_global_variable(thread, SYM("Class"), true).is_error_ok());
-  CHECK(declare_global_variable(thread, SYM("Shape"), true).is_error_ok());
-  CHECK(declare_global_variable(thread, SYM("Function"), true).is_error_ok());
-  CHECK(declare_global_variable(thread, SYM("BuiltinFunction"), true).is_error_ok());
-  CHECK(declare_global_variable(thread, SYM("Fiber"), true).is_error_ok());
-  CHECK(declare_global_variable(thread, SYM("Future"), true).is_error_ok());
-  CHECK(declare_global_variable(thread, SYM("Exception"), true).is_error_ok());
-  CHECK(declare_global_variable(thread, SYM("ImportException"), true).is_error_ok());
-
-  CHECK(set_global_variable(thread, SYM("Value"), class_value).is_error_ok());
-  CHECK(set_global_variable(thread, SYM("Number"), class_number).is_error_ok());
-  CHECK(set_global_variable(thread, SYM("Int"), class_int).is_error_ok());
-  CHECK(set_global_variable(thread, SYM("Float"), class_float).is_error_ok());
-  CHECK(set_global_variable(thread, SYM("Bool"), class_bool).is_error_ok());
-  CHECK(set_global_variable(thread, SYM("Symbol"), class_symbol).is_error_ok());
-  CHECK(set_global_variable(thread, SYM("Null"), class_null).is_error_ok());
-  CHECK(set_global_variable(thread, SYM("String"), class_string).is_error_ok());
-  CHECK(set_global_variable(thread, SYM("Bytes"), class_bytes).is_error_ok());
-  CHECK(set_global_variable(thread, SYM("Tuple"), class_tuple).is_error_ok());
-  CHECK(set_global_variable(thread, SYM("Instance"), class_instance).is_error_ok());
-  CHECK(set_global_variable(thread, SYM("Class"), class_class).is_error_ok());
-  CHECK(set_global_variable(thread, SYM("Shape"), class_shape).is_error_ok());
-  CHECK(set_global_variable(thread, SYM("Function"), class_function).is_error_ok());
-  CHECK(set_global_variable(thread, SYM("BuiltinFunction"), class_builtin_function).is_error_ok());
-  CHECK(set_global_variable(thread, SYM("Fiber"), class_fiber).is_error_ok());
-  CHECK(set_global_variable(thread, SYM("Future"), class_future).is_error_ok());
-  CHECK(set_global_variable(thread, SYM("Exception"), class_exception).is_error_ok());
-  CHECK(set_global_variable(thread, SYM("ImportException"), class_import_exception).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("Value"), true, class_value).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("Number"), true, class_number).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("Int"), true, class_int).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("Float"), true, class_float).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("Bool"), true, class_bool).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("Symbol"), true, class_symbol).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("Null"), true, class_null).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("String"), true, class_string).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("Bytes"), true, class_bytes).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("Tuple"), true, class_tuple).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("Instance"), true, class_instance).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("Class"), true, class_class).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("Shape"), true, class_shape).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("Function"), true, class_function).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("BuiltinFunction"), true, class_builtin_function).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("Fiber"), true, class_fiber).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("Future"), true, class_future).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("Exception"), true, class_exception).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("ImportException"), true, class_import_exception).is_error_ok());
 }
 
 void Runtime::initialize_stdlib_paths() {
@@ -461,14 +439,14 @@ void Runtime::initialize_stdlib_paths() {
   m_builtin_libraries_paths["testlib"] = m_stdlib_directory / "libs" / "testlib.ch";
 }
 
-RawValue Runtime::declare_global_variable(Thread*, SYMBOL name, bool constant) {
+RawValue Runtime::declare_global_variable(Thread*, SYMBOL name, bool constant, RawValue value) {
   std::unique_lock<std::shared_mutex> locker(m_globals_mutex);
 
   if (m_global_variables.count(name) == 1) {
     return kErrorException;
   }
 
-  m_global_variables[name] = { kNull, constant, false };
+  m_global_variables[name] = { value, constant };
   return kErrorOk;
 }
 
@@ -492,13 +470,10 @@ RawValue Runtime::set_global_variable(Thread*, SYMBOL name, RawValue value) {
 
   auto& var = m_global_variables.at(name);
   if (var.constant) {
-    if (var.initialized) {
-      return kErrorReadOnly;
-    }
+    return kErrorReadOnly;
   }
 
   var.value = value;
-  var.initialized = true;
   return kErrorOk;
 }
 

@@ -371,23 +371,12 @@ OP(stringconcat) {
 }
 
 OP(declareglobal) {
-  uint8_t string_index = op->arg();
+  uint8_t is_constant = op->arg1();
+  uint16_t string_index = op->arg2();
   SYMBOL name = frame->get_string_table_entry(string_index).hash;
-  RawValue result = thread->runtime()->declare_global_variable(thread, name, false);
 
-  if (result.is_error_exception()) {
-    thread->throw_message("Duplicate declaration of global variable %", RawSymbol::create(name));
-    return ContinueMode::Exception;
-  }
-  DCHECK(result.is_error_ok());
-
-  return ContinueMode::Next;
-}
-
-OP(declareglobalconst) {
-  uint8_t string_index = op->arg();
-  SYMBOL name = frame->get_string_table_entry(string_index).hash;
-  RawValue result = thread->runtime()->declare_global_variable(thread, name, true);
+  RawValue value = frame->peek();
+  RawValue result = thread->runtime()->declare_global_variable(thread, name, is_constant, value);
 
   if (result.is_error_exception()) {
     thread->throw_message("Duplicate declaration of global variable %", RawSymbol::create(name));
@@ -620,7 +609,7 @@ OP(loadfarself) {
 }
 
 OP(loadglobal) {
-  uint8_t string_index = op->arg();
+  uint16_t string_index = op->arg();
   SYMBOL name = frame->get_string_table_entry(string_index).hash;
   RawValue result = thread->runtime()->read_global_variable(thread, name);
 
@@ -691,7 +680,7 @@ OP(loadsuperconstructor) {
 }
 
 OP(loadsuperattr) {
-  uint8_t string_index = op->arg();
+  uint16_t string_index = op->arg();
   SYMBOL name = frame->get_string_table_entry(string_index).hash;
 
   auto klass = RawClass::cast(frame->function.host_class());
@@ -708,7 +697,7 @@ OP(loadsuperattr) {
 }
 
 OP(setglobal) {
-  uint8_t string_index = op->arg();
+  uint16_t string_index = op->arg();
   SYMBOL name = frame->get_string_table_entry(string_index).hash;
   RawValue value = frame->peek();
   RawValue result = thread->runtime()->set_global_variable(thread, name, value);

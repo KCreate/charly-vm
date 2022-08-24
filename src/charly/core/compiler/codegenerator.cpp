@@ -226,7 +226,9 @@ uint8_t CodeGenerator::generate_spread_tuples(const std::list<ref<Expression>>& 
   return emitted_segments;
 }
 
-void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target) {
+void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target,
+                                               bool is_declaration,
+                                               bool constant_declaration) {
   // collect the elements before and after a potential spread element
   std::vector<ref<UnpackTargetElement>> before_elements;
   std::vector<ref<UnpackTargetElement>> after_elements;
@@ -266,7 +268,13 @@ void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target) 
       CHECK(isa<Id>(spread_element->target));
       auto id = cast<Id>(spread_element->target);
       m_builder.emit_unpackobjectspread(before_elements.size() + after_elements.size())->at(target);
-      generate_store(id->ir_location)->at(id);
+
+      if (is_declaration && id->ir_location.type == ValueLocation::Type::Global) {
+        m_builder.emit_declareglobal(constant_declaration, m_builder.register_string(id->value))->at(id);
+      } else {
+        generate_store(id->ir_location)->at(id);
+      }
+
       m_builder.emit_pop();
     } else {
       m_builder.emit_unpackobject(before_elements.size())->at(target);
@@ -279,7 +287,13 @@ void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target) 
 
       CHECK(isa<Id>(element->target));
       auto id = cast<Id>(element->target);
-      generate_store(id->ir_location)->at(element);
+
+      if (is_declaration && id->ir_location.type == ValueLocation::Type::Global) {
+        m_builder.emit_declareglobal(constant_declaration, m_builder.register_string(id->value))->at(element);
+      } else {
+        generate_store(id->ir_location)->at(element);
+      }
+
       m_builder.emit_pop();
     }
   } else {
@@ -293,7 +307,13 @@ void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target) 
       switch (element->target->type()) {
         case Node::Type::Id: {
           auto id = cast<Id>(element->target);
-          generate_store(id->ir_location)->at(element);
+
+          if (is_declaration && id->ir_location.type == ValueLocation::Type::Global) {
+            m_builder.emit_declareglobal(constant_declaration, m_builder.register_string(id->value))->at(element);
+          } else {
+            generate_store(id->ir_location)->at(element);
+          }
+
           break;
         }
         case Node::Type::MemberOp: {
@@ -946,43 +966,26 @@ bool CodeGenerator::inspect_enter(const ref<CallOp>& node) {
 }
 
 bool CodeGenerator::inspect_enter(const ref<Declaration>& node) {
-  // global declarations
   if (node->ir_location.type == ValueLocation::Type::Global) {
-    if (node->constant) {
-      m_builder.emit_declareglobalconst(m_builder.register_string(node->name->value))->at(node->name);
-    } else {
-      m_builder.emit_declareglobal(m_builder.register_string(node->name->value))->at(node->name);
-    }
-  }
-
-  // all variables are initialized as null so the
-  // initialization can be skipped in that case
-  if (!isa<Null>(node->expression)) {
     apply(node->expression);
-    generate_store(node->ir_location)->at(node->name);
+    m_builder.emit_declareglobal(node->constant, m_builder.register_string(node->name->value))->at(node->name);
     m_builder.emit_pop();
+  } else {
+
+    // local variables are initialized to null by the runtime already
+    if (!isa<Null>(node->expression)) {
+      apply(node->expression);
+      generate_store(node->ir_location)->at(node->name);
+      m_builder.emit_pop();
+    }
   }
 
   return false;
 }
 
 bool CodeGenerator::inspect_enter(const ref<UnpackDeclaration>& node) {
-  for (const ref<UnpackTargetElement>& element : node->target->elements) {
-    CHECK(isa<Id>(element->target));
-    auto id = cast<Id>(element->target);
-
-    // global declarations
-    if (id->ir_location.type == ValueLocation::Type::Global) {
-      if (node->constant) {
-        m_builder.emit_declareglobalconst(m_builder.register_string(id->value))->at(element);
-      } else {
-        m_builder.emit_declareglobal(m_builder.register_string(id->value))->at(element);
-      }
-    }
-  }
-
   apply(node->expression);
-  generate_unpack_assignment(node->target);
+  generate_unpack_assignment(node->target, true, node->constant);
   m_builder.emit_pop();
   return false;
 }

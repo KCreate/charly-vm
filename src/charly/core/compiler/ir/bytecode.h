@@ -89,16 +89,14 @@ constexpr size_t kInstructionLength = 4;
   V(stringconcat, IAXX, arg, 1)                                                    \
   /* declareglobal - declare a new global variable                                 \
    *                                                                               \
-   * opcode operands:                                                              \
-   * - string table offset                                                         \
-   * */                                                                            \
-  V(declareglobal, IAAX, 0, 0)                                                     \
-  /* declareglobalconst - declare a new constant global variable                   \
+   * stack arguments:                                                              \
+   * - value                                                                       \
    *                                                                               \
    * opcode operands:                                                              \
+   * - constant (bool)                                                             \
    * - string table offset                                                         \
    * */                                                                            \
-  V(declareglobalconst, IAAX, 0, 0)                                                \
+  V(declareglobal, IABB, 1, 1)                                                     \
   /* type - load the class of a value                                              \
    *                                                                               \
    * stack arguments:                                                              \
@@ -346,7 +344,7 @@ constexpr size_t kInstructionLength = 4;
   /* setglobal - write to global variable                                          \
    *                                                                               \
    * opcode operands:                                                              \
-   * - symbol                                                                      \
+   * - string table offset                                                         \
    *                                                                               \
    * stack arguments:                                                              \
    * - value                                                                       \
@@ -400,7 +398,7 @@ constexpr size_t kInstructionLength = 4;
   /* setattrsym - write to property via symbol                                     \
    *                                                                               \
    * opcode operands:                                                              \
-   * - symbol                                                                      \
+   * - string table offset                                                                      \
    *                                                                               \
    * stack arguments:                                                              \
    * - target                                                                      \
