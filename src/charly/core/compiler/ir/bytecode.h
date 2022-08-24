@@ -448,21 +448,6 @@ constexpr size_t kInstructionLength = 4;
    *                                                                               \
    * */                                                                            \
   V(unpackobject, IAXX, 1 + arg, arg)                                              \
-  /* unpackobjectspread - unpack specific keys from value, put                     \
-   *                      remaining keys into rest value                           \
-   *                                                                               \
-   * opcode operands:                                                              \
-   * - amount of keys                                                              \
-   *                                                                               \
-   * stack arguments:                                                              \
-   * - source                                                                      \
-   * - key-symbols...                                                              \
-   *                                                                               \
-   * stack results:                                                                \
-   * - values...                                                                   \
-   * - rest value                                                                  \
-   * */                                                                            \
-  V(unpackobjectspread, IAXX, 1 + arg, 1 + arg)                                    \
   /* makestr - allocate new string                                                 \
    *                                                                               \
    * opcode operands:                                                              \

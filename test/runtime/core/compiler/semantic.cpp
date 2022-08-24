@@ -40,7 +40,6 @@ CATCH_TEST_CASE("Semantic") {
     COMPILE_ERROR("(...a, ...b) = 25", "excess spread");
     COMPILE_ERROR("({} = 25)", "empty unpack target");
     COMPILE_ERROR("({a: 1} = 25)", "dict used as unpack target must not contain any values");
-    COMPILE_ERROR("({...a, ...b} = 25)", "excess spread");
 
     COMPILE_ERROR("let () = 1", "empty unpack target");
     COMPILE_ERROR("let (1) = 1", "expected an identifier or spread");
@@ -52,13 +51,11 @@ CATCH_TEST_CASE("Semantic") {
     COMPILE_ERROR("let (\"a\") = 1", "expected an identifier or spread");
 
     COMPILE_ERROR("let {} = 1", "empty unpack target");
-    COMPILE_ERROR("let {1} = 1", "expected an identifier or spread");
-    COMPILE_ERROR("let {a.a} = 1", "expected an identifier or spread");
-    COMPILE_ERROR("let {2 + 2} = 1", "expected an identifier or spread");
-    COMPILE_ERROR("let {...2} = 1", "expected an identifier");
-    COMPILE_ERROR("let {...a, ...d} = 1", "excess spread");
-    COMPILE_ERROR("let {[1, 2]} = 1", "expected an identifier or spread");
-    COMPILE_ERROR("let {\"a\"} = 1", "expected an identifier or spread");
+    COMPILE_ERROR("let {1} = 1", "expected an identifier");
+    COMPILE_ERROR("let {a.a} = 1", "expected an identifier");
+    COMPILE_ERROR("let {2 + 2} = 1", "expected an identifier");
+    COMPILE_ERROR("let {[1, 2]} = 1", "expected an identifier");
+    COMPILE_ERROR("let {\"a\"} = 1", "expected an identifier");
 
     COMPILE_ERROR("for () in [] {}", "empty unpack target");
     COMPILE_ERROR("for let () in [] {}", "empty unpack target");
@@ -140,7 +137,6 @@ CATCH_TEST_CASE("Semantic") {
     COMPILE_ERROR("let (a, a) = x", "duplicate declaration of 'a'");
     COMPILE_ERROR("let (a, ...a) = x", "duplicate declaration of 'a'");
     COMPILE_ERROR("let {a, a} = x", "duplicate declaration of 'a'");
-    COMPILE_ERROR("let {a, ...a} = x", "duplicate declaration of 'a'");
 
     COMPILE_ERROR("({a: 1, a: 2})", "duplicate key 'a'");
 

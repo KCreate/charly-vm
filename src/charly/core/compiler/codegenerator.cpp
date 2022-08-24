@@ -253,38 +253,22 @@ void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target,
   m_builder.emit_dup();
 
   if (target->object_unpack) {
+    DCHECK(spread_element == nullptr);
+
     // emit the symbols to extract from the source value
     for (auto begin = target->elements.rbegin(); begin != target->elements.rend(); begin++) {
       const ref<UnpackTargetElement>& element = *begin;
-      if (element->spread)
-        continue;
-
+      DCHECK(!element->spread);
       CHECK(isa<Id>(element->target));
       auto id = cast<Id>(element->target);
       m_builder.emit_loadsymbol(id->value)->at(id);
     }
 
-    if (spread_element) {
-      CHECK(isa<Id>(spread_element->target));
-      auto id = cast<Id>(spread_element->target);
-      m_builder.emit_unpackobjectspread(before_elements.size() + after_elements.size())->at(target);
-
-      if (is_declaration && id->ir_location.type == ValueLocation::Type::Global) {
-        m_builder.emit_declareglobal(constant_declaration, m_builder.register_string(id->value))->at(id);
-      } else {
-        generate_store(id->ir_location)->at(id);
-      }
-
-      m_builder.emit_pop();
-    } else {
-      m_builder.emit_unpackobject(before_elements.size())->at(target);
-    }
+    m_builder.emit_unpackobject(before_elements.size())->at(target);
 
     for (auto begin = target->elements.rbegin(); begin != target->elements.rend(); begin++) {
       const ref<UnpackTargetElement>& element = *begin;
-      if (element->spread)
-        continue;
-
+      DCHECK(!element->spread);
       CHECK(isa<Id>(element->target));
       auto id = cast<Id>(element->target);
 

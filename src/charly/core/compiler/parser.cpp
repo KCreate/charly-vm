@@ -1621,15 +1621,9 @@ ref<UnpackTarget> Parser::create_unpack_target(const ref<Expression>& node, bool
         if (ref<Name> key_name = cast<Name>(entry->key)) {
           target->elements.push_back(make<UnpackTargetElement>(make<Id>(key_name), false));
         } else if (ref<Spread> spread = cast<Spread>(entry->key)) {
-          if (ref<Id> id = cast<Id>(spread->expression)) {
-            auto element = make<UnpackTargetElement>(id, true);
-            element->set_begin(spread);
-            target->elements.push_back(element);
-          } else {
-            m_console.error(spread->expression, "expected an identifier");
-          }
+          m_console.error(spread->expression, "spread operation is not allowed inside object unpack");
         } else {
-          m_console.error(entry->key, "expected an identifier or spread");
+          m_console.error(entry->key, "expected an identifier");
           break;
         }
       }

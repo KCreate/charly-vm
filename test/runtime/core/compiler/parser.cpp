@@ -139,10 +139,11 @@ CATCH_TEST_CASE("Parser") {
     CHECK_STMT("(...b,) = 1");
     CHECK_STMT("(a, ...b, c) = 1");
     CHECK_STMT("{a, b} = 1");
-    CHECK_STMT("{a, ...b, c} = 1");
     CHECK_STMT("x += 1");
     CHECK_STMT("foo.bar += 1");
     CHECK_STMT("foo[0] += 1");
+
+    CHECK_ERROR_STMT("{a, ...b} = 1", "spread operation is not allowed inside object unpack");
   }
 
   CATCH_SECTION("ternary if") {
@@ -507,13 +508,11 @@ CATCH_TEST_CASE("Parser") {
 
     CHECK_STMT("let {a} = x");
     CHECK_STMT("let {a, b} = x");
-    CHECK_STMT("let {a, ...b} = x");
-    CHECK_STMT("let {a, ...b, c} = x");
+    CHECK_ERROR_STMT("let {...a} = x", "spread operation is not allowed inside object unpack");
 
     CHECK_STMT("const {a} = x");
     CHECK_STMT("const {a, b} = x");
-    CHECK_STMT("const {a, ...b} = x");
-    CHECK_STMT("const {a, ...b, c} = x");
+    CHECK_ERROR_STMT("const {...a} = x", "spread operation is not allowed inside object unpack");
 
     CHECK_ERROR_STMT("let (a)", "unexpected end of file, expected a '=' token");
     CHECK_ERROR_STMT("let {a}", "unexpected end of file, expected a '=' token");
@@ -631,8 +630,6 @@ CATCH_TEST_CASE("Parser") {
 
     CHECK_STMT("let (...copy) = original");
     CHECK_STMT("let (a, ...copy, b) = original");
-    CHECK_STMT("let {...copy} = original");
-    CHECK_STMT("let {a, ...copy, b} = original");
   }
 
   CATCH_SECTION("class literals") {

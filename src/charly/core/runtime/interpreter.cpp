@@ -829,10 +829,6 @@ OP(unpackobject) {
   THROW_NOT_IMPLEMENTED();
 }
 
-OP(unpackobjectspread) {
-  THROW_NOT_IMPLEMENTED();
-}
-
 OP(makefunc) {
   int16_t offset = op->arg();
   SharedFunctionInfo* shared_data = *bitcast<SharedFunctionInfo**>(op->ip() + offset);

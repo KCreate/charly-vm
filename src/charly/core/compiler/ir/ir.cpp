@@ -326,7 +326,7 @@ void IRFunction::dump(std::ostream& out) const {
       if (value.isSymbol()) {
         auto symbol = runtime::RawSymbol::cast(value);
         if (auto symbol_string = lookup_symbol(symbol.value())) {
-          writer.fg(Color::Red, ":'", symbol_string.value(), "'");
+          writer.fg(Color::Red, "symbol(", symbol_string.value(), ")");
           out << " (" << std::hex << symbol.value() << std::dec << ")";
         } else {
           out << value;
