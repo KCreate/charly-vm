@@ -31,6 +31,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <cmath>
 
 #include "charly/charly.h"
 #include "charly/core/compiler/ir/builtin.h"
