@@ -307,6 +307,8 @@ struct IRFunction {
 
   std::vector<runtime::RawValue> constant_table;
 
+  std::optional<std::string> lookup_symbol(SYMBOL symbol) const;
+
   void dump(std::ostream& out) const;
 };
 

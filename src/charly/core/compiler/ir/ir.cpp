@@ -32,8 +32,6 @@
 
 namespace charly::core::compiler::ir {
 
-using RawValue = runtime::RawValue;
-
 using Color = utils::Color;
 
 void IRInstruction::at(const Location& loc) {
@@ -246,6 +244,16 @@ void IRBasicBlock::dump(std::ostream& out) const {
   }
 }
 
+std::optional<std::string> IRFunction::lookup_symbol(SYMBOL symbol) const {
+  for (const IRStringTableEntry& entry : this->string_table) {
+    if (entry.hash == symbol) {
+      return entry.value;
+    }
+  }
+
+  return std::nullopt;
+}
+
 void IRFunction::dump(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer.fg(Color::Yellow, "function .L", this->head, " ");
@@ -312,9 +320,21 @@ void IRFunction::dump(std::ostream& out) const {
   if (!constant_table.empty()) {
     writer.fg(Color::Blue, "  constant table:", "\n");
     int constant_index = 0;
-    for (const RawValue& value : this->constant_table) {
+    for (const runtime::RawValue& value : this->constant_table) {
       writer.fg(Color::Grey, "  - #", std::setw(2), std::left, constant_index, std::setw(1), " ");
-      out << value;
+
+      if (value.isSymbol()) {
+        auto symbol = runtime::RawSymbol::cast(value);
+        if (auto symbol_string = lookup_symbol(symbol.value())) {
+          writer.fg(Color::Red, ":'", symbol_string.value(), "'");
+          out << " (" << symbol << ")";
+        } else {
+          out << value;
+        }
+      } else {
+        out << value;
+      }
+
       out << "\n";
 
       constant_index++;
