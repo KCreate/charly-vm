@@ -632,7 +632,7 @@ std::optional<fs::path> Runtime::resolve_module(const fs::path& module_path, con
     }
   }
 
-  return std::nullopt;
+  return {};
 }
 
 RawValue Runtime::import_module_at_path(Thread* thread, const fs::path& path, bool treat_as_repl) {

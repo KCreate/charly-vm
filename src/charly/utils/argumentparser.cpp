@@ -206,7 +206,7 @@ std::optional<std::string> ArgumentParser::get_argument(uint32_t index) {
     return ArgumentParser::USER_FLAGS.at(index);
   }
 
-  return std::nullopt;
+  return {};
 }
 
 bool ArgumentParser::flag_has_argument(const std::string& name, const std::string& argument, bool match_substring) {
@@ -234,7 +234,7 @@ std::optional<std::string> ArgumentParser::get_environment_for_key(const std::st
     return ArgumentParser::ENVIRONMENT.at(key);
   }
 
-  return std::nullopt;
+  return {};
 }
 
 void ArgumentParser::print_help(std::ostream& out) {

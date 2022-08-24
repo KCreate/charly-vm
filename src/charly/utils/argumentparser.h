@@ -38,10 +38,10 @@ namespace charly::utils {
 class ArgumentParser {
 public:
   struct FlagDescriptor {
-    std::string name;                                    // e.g help
-    std::vector<std::string> selectors;                  // e.g --help, -h
-    std::string description;                             // description of what the flag does
-    std::optional<std::string> argument = std::nullopt;  // wether this flag requires an argument
+    std::string name;                         // e.g help
+    std::vector<std::string> selectors;       // e.g --help, -h
+    std::string description;                  // description of what the flag does
+    std::optional<std::string> argument = {}; // wether this flag requires an argument
   };
 
   struct FlagGroup {
@@ -63,7 +63,7 @@ public:
   static void init_env(char** environment);
 
   // set a flag
-  static void set_flag(const std::string& name, std::optional<std::string> argument = std::nullopt);
+  static void set_flag(const std::string& name, std::optional<std::string> argument = {});
 
   // unset a flag
   static void unset_flag(const std::string& name);

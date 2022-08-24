@@ -260,7 +260,7 @@ struct IRBasicBlock {
   bool reachable = false;
 
   // optional exception handler for this block
-  std::optional<Label> exception_handler = std::nullopt;
+  std::optional<Label> exception_handler = {};
   std::unordered_set<ref<IRBasicBlock>> exception_handler_sources;
 
   // labels that refer to this block

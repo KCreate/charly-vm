@@ -251,7 +251,7 @@ std::optional<std::string> IRFunction::lookup_symbol(SYMBOL symbol) const {
     }
   }
 
-  return std::nullopt;
+  return {};
 }
 
 void IRFunction::dump(std::ostream& out) const {
