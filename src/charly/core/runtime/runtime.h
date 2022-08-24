@@ -146,8 +146,8 @@ private:
   utils::WaitFlag m_init_flag;
   utils::WaitFlag m_exit_flag;
 
-  int32_t m_exit_code;
-  atomic<bool> m_wants_exit;
+  int32_t m_exit_code = 0;
+  atomic<bool> m_wants_exit = false;
 
   std::unique_ptr<Heap> m_heap;
   std::unique_ptr<GarbageCollector> m_gc;

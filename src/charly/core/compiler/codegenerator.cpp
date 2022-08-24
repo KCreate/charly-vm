@@ -971,7 +971,6 @@ bool CodeGenerator::inspect_enter(const ref<Declaration>& node) {
     m_builder.emit_declareglobal(node->constant, m_builder.register_string(node->name->value))->at(node->name);
     m_builder.emit_pop();
   } else {
-
     // local variables are initialized to null by the runtime already
     if (!isa<Null>(node->expression)) {
       apply(node->expression);

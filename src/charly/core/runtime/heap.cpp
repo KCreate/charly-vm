@@ -348,10 +348,7 @@ HeapRegion* Heap::map_new_region() {
   FAIL("out of memory!");
 }
 
-ThreadAllocationBuffer::ThreadAllocationBuffer(Heap* heap) {
-  m_heap = heap;
-  m_region = nullptr;
-}
+ThreadAllocationBuffer::ThreadAllocationBuffer(Heap* heap) : m_heap(heap) {}
 
 ThreadAllocationBuffer::~ThreadAllocationBuffer() {
   if (m_region) {

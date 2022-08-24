@@ -84,8 +84,6 @@ private:
 
 class ThreadLocalHandles {
 public:
-  ThreadLocalHandles() : m_head(nullptr) {}
-
   Value* push(Value* handle) {
     Value* old_head = m_head;
     m_head = handle;
@@ -101,7 +99,7 @@ public:
   }
 
 private:
-  Value* m_head;
+  Value* m_head = nullptr;
 };
 
 // threads keep track of the stack memory of fibers and their runtime state
@@ -232,18 +230,18 @@ private:
 
 private:
   size_t m_id;
-  atomic<State> m_state;
-  Stack* m_stack;
+  atomic<State> m_state = State::Free;
+  Stack* m_stack = nullptr;
   Runtime* m_runtime;
 
-  int32_t m_exit_code;
+  int32_t m_exit_code = 0;
   RawValue m_fiber;
-  Worker* m_worker;
-  atomic<size_t> m_last_scheduled_at;
-  fcontext_t m_context;
+  Worker* m_worker = nullptr;
+  atomic<size_t> m_last_scheduled_at = kNeverScheduledTimestamp;
+  fcontext_t m_context = nullptr;
 
   ThreadLocalHandles m_handles;
-  Frame* m_frame;
+  Frame* m_frame = nullptr;
   RawValue m_pending_exception;
 };
 

@@ -43,10 +43,7 @@ namespace charly::core::compiler {
 class Lexer {
 public:
   Lexer(utils::Buffer& source, DiagnosticConsole& console, uint32_t row = 0, uint32_t column = 0) :
-    m_console(console), m_source(source), m_row(row), m_column(column) {
-    m_last_character = -1;
-    m_mode = Mode::TopLevel;
-  }
+    m_console(console), m_source(source), m_row(row), m_column(column) {}
 
   // reads the next token
   Token read_token_all();
@@ -109,7 +106,7 @@ protected:
   uint32_t m_column;
 
   // the last character that was read from the source
-  int64_t m_last_character;
+  int64_t m_last_character = -1;
 
   // current parsing mode
   enum class Mode {
@@ -117,7 +114,7 @@ protected:
     String,
     InterpolatedExpression
   };
-  Mode m_mode;
+  Mode m_mode = Mode::TopLevel;
 
   // keep track of interpolation brackets
   std::vector<size_t> m_interpolation_bracket_stack;

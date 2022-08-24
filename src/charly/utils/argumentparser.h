@@ -38,10 +38,10 @@ namespace charly::utils {
 class ArgumentParser {
 public:
   struct FlagDescriptor {
-    std::string name;                         // e.g help
-    std::vector<std::string> selectors;       // e.g --help, -h
-    std::string description;                  // description of what the flag does
-    std::optional<std::string> argument = {}; // wether this flag requires an argument
+    std::string name;                          // e.g help
+    std::vector<std::string> selectors;        // e.g --help, -h
+    std::string description;                   // description of what the flag does
+    std::optional<std::string> argument = {};  // wether this flag requires an argument
   };
 
   struct FlagGroup {

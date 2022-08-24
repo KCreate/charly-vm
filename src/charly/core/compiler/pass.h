@@ -65,7 +65,7 @@ protected:
     APPLY_NODE(expression);
   })
 
-HANDLE_NODE(Statement, Return, {
+  HANDLE_NODE(Statement, Return, {
     APPLY_NODE(value);
   })
 

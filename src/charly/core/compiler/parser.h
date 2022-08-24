@@ -85,6 +85,11 @@ struct KeywordContext {
   bool _super = false;
 };
 
+struct FunctionFlags {
+  bool class_function = false;
+  bool static_function = false;
+};
+
 class Parser : public Lexer {
 public:
   static ref<Block> parse_program(const std::string& source) {
@@ -180,10 +185,6 @@ private:
   ref<List> parse_list();
   ref<Dict> parse_dict();
 
-  struct FunctionFlags {
-    bool class_function;
-    bool static_function;
-  };
   ref<Function> parse_function(FunctionFlags flags = FunctionFlags());
   ref<Function> parse_arrow_function();
   void parse_function_arguments(std::list<ref<FunctionArgument>>& result, FunctionFlags flags = FunctionFlags());

@@ -173,8 +173,6 @@ ParkingLotThreadQueue* ParkingLot::get_queue_for_address(ThreadQueueTable* table
   return queue;
 }
 
-TinyLock::TinyLock() : m_state(kFreeLock) {}
-
 void TinyLock::lock() {
   for (;;) {
     uint8_t state = m_state;

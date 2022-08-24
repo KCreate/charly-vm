@@ -41,19 +41,7 @@ using namespace charly::core::compiler::ir;
   return ContinueMode::Exception
 
 Frame::Frame(Thread* thread, RawFunction function) :
-  thread(thread),
-  parent(thread->frame()),
-  depth(parent ? parent->depth + 1 : 0),
-  function(function),
-  argument_tuple(kNull),
-  shared_function_info(nullptr),
-  arguments(nullptr),
-  locals(nullptr),
-  stack(nullptr),
-  oldip(0),
-  ip(0),
-  sp(0),
-  argc(0) {
+  thread(thread), parent(thread->frame()), depth(parent ? parent->depth + 1 : 0), function(function) {
   thread->push_frame(this);
 }
 

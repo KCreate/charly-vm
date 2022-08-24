@@ -51,16 +51,16 @@ public:
   RawValue self;
   RawFunction function;
   RawValue argument_tuple;
-  const SharedFunctionInfo* shared_function_info;
+  const SharedFunctionInfo* shared_function_info = nullptr;
   RawValue context;
-  const RawValue* arguments;
-  RawValue* locals;
-  RawValue* stack;
+  const RawValue* arguments = nullptr;
+  RawValue* locals = nullptr;
+  RawValue* stack = nullptr;
   RawValue return_value;
-  uintptr_t oldip;
-  uintptr_t ip;
-  uint32_t sp;
-  uint8_t argc;
+  uintptr_t oldip = 0;
+  uintptr_t ip = 0;
+  uint32_t sp = 0;
+  uint8_t argc = 0;
 
   RawValue pop(uint8_t count = 1);
   RawValue peek(uint8_t depth = 0) const;

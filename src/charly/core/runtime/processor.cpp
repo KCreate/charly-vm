@@ -32,11 +32,7 @@ namespace charly::core::runtime {
 static atomic<size_t> processor_id_counter = 0;
 
 Processor::Processor(Runtime* runtime) :
-  m_runtime(runtime),
-  m_id(processor_id_counter++),
-  m_live(false),
-  m_worker(nullptr),
-  m_tab(std::make_unique<ThreadAllocationBuffer>(runtime->heap())) {}
+  m_runtime(runtime), m_id(processor_id_counter++), m_tab(std::make_unique<ThreadAllocationBuffer>(runtime->heap())) {}
 
 Runtime* Processor::runtime() const {
   return m_runtime;

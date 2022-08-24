@@ -37,7 +37,7 @@ namespace charly::utils {
 
 class WaitFlag {
 public:
-  explicit WaitFlag(std::mutex& mutex) : m_mutex(mutex), m_state(false) {}
+  explicit WaitFlag(std::mutex& mutex) : m_mutex(mutex) {}
 
   bool state() const {
     return m_state;
@@ -77,7 +77,7 @@ public:
 private:
   std::mutex& m_mutex;
   std::condition_variable m_cv;
-  atomic<bool> m_state;
+  atomic<bool> m_state = false;
 };
 
 }  // namespace charly::utils

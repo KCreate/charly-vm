@@ -44,8 +44,7 @@ class Buffer : public std::iostream, protected std::streambuf {
   static constexpr size_t kDefaultCapacity = 32;
 
 public:
-  explicit Buffer(size_t initial_capacity = kDefaultCapacity) :
-    std::iostream(this), m_buffer(nullptr), m_capacity(0), m_window_start(0), m_protected(false) {
+  explicit Buffer(size_t initial_capacity = kDefaultCapacity) : std::iostream(this) {
     // determine initial buffer capacity
     size_t rounded_capacity = kDefaultCapacity;
     while (rounded_capacity < initial_capacity) {
@@ -198,10 +197,10 @@ protected:
   // deallocate backing memory
   void clean();
 
-  char* m_buffer;
-  size_t m_capacity;
-  size_t m_window_start;
-  bool m_protected;
+  char* m_buffer = nullptr;
+  size_t m_capacity = 0;
+  size_t m_window_start = 0;
+  bool m_protected = false;
 };
 
 }  // namespace charly::utils

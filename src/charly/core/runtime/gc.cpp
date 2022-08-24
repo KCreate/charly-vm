@@ -36,11 +36,7 @@ namespace charly::core::runtime {
 GarbageCollector::GarbageCollector(Runtime* runtime) :
   m_runtime(runtime),
   m_heap(runtime->heap()),
-  m_collection_mode(CollectionMode::Minor),
   m_last_collection_time(get_steady_timestamp()),
-  m_gc_cycle(1),
-  m_has_initialized(false),
-  m_wants_collection(false),
   m_thread(std::thread(&GarbageCollector::main, this)) {}
 
 GarbageCollector::~GarbageCollector() {

@@ -491,10 +491,10 @@ void Builder::emit_exception_tables() {
         if (previous.end == begin && previous.handler == handler) {
           previous.end = end;
         } else {
-          m_active_function->exception_table.emplace_back(IRExceptionTableEntry(begin, end, handler));
+          m_active_function->exception_table.emplace_back(IRExceptionTableEntry{ begin, end, handler });
         }
       } else {
-        m_active_function->exception_table.emplace_back(IRExceptionTableEntry(begin, end, handler));
+        m_active_function->exception_table.emplace_back(IRExceptionTableEntry{ begin, end, handler });
       }
     }
   }

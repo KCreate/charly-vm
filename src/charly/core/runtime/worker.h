@@ -135,20 +135,20 @@ private:
 
 private:
   size_t m_id;
-  atomic<State> m_state;
-  size_t m_context_switch_counter;
-  uint32_t m_idle_sleep_duration;
+  atomic<State> m_state = State::Created;
+  size_t m_context_switch_counter = 0;
+  uint32_t m_idle_sleep_duration = 10;
   utils::RandomDevice m_random_device;
-  fcontext_t m_context;
+  fcontext_t m_context = nullptr;
   std::thread m_os_thread_handle;
 
-  atomic<Thread*> m_thread;
-  atomic<Processor*> m_processor;
-  Runtime* m_runtime;
+  atomic<Thread*> m_thread = nullptr;
+  atomic<Processor*> m_processor = nullptr;
+  Runtime* m_runtime = nullptr;
 
   std::mutex m_mutex;
-  atomic<bool> m_stop_flag;
-  atomic<bool> m_idle_flag;
+  atomic<bool> m_stop_flag = false;
+  atomic<bool> m_idle_flag = false;
   std::condition_variable m_idle_cv;   // signalled by the scheduler to wake the worker from Idle mode
   std::condition_variable m_stw_cv;    // signalled by the scheduler to wake the worker from WorldStopped mode
   std::condition_variable m_state_cv;  // signalled by the worker when it changes its state

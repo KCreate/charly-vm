@@ -42,26 +42,21 @@ namespace charly::core::runtime {
 
 struct ExceptionTableEntry {
   ExceptionTableEntry(uint32_t b, uint32_t _end, uint32_t _handler) :
-    begin_offset(b), end_offset(_end), handler_offset(_handler), begin_ptr(0), end_ptr(0), handler_ptr(0) {}
+    begin_offset(b), end_offset(_end), handler_offset(_handler) {}
 
   uint32_t begin_offset;
   uint32_t end_offset;
   uint32_t handler_offset;
-  uintptr_t begin_ptr;
-  uintptr_t end_ptr;
-  uintptr_t handler_ptr;
+  uintptr_t begin_ptr = 0;
+  uintptr_t end_ptr = 0;
+  uintptr_t handler_ptr = 0;
 };
 
 struct SourceMapEntry {
   SourceMapEntry(uint32_t offset, uint16_t row, uint16_t column, uint16_t end_row, uint16_t end_column) :
-    instruction_offset(offset),
-    instruction_ptr(0),
-    row(row),
-    column(column),
-    end_row(end_row),
-    end_column(end_column) {}
+    instruction_offset(offset), row(row), column(column), end_row(end_row), end_column(end_column) {}
 
-  uint32_t instruction_offset;
+  uint32_t instruction_offset = 0;
   uintptr_t instruction_ptr;
   uint16_t row;
   uint16_t column;

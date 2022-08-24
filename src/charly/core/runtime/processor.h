@@ -77,8 +77,8 @@ public:
 private:
   Runtime* m_runtime;
   size_t m_id;
-  bool m_live;
-  atomic<Worker*> m_worker;
+  bool m_live = false;
+  atomic<Worker*> m_worker = nullptr;
   std::unique_ptr<ThreadAllocationBuffer> m_tab;
 
   std::mutex m_mutex;

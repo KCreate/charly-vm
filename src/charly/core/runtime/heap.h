@@ -59,6 +59,7 @@ class Heap;
 
 struct HeapRegion {
   HeapRegion() = delete;
+  ~HeapRegion() = delete;
 
   enum class Type : uint8_t {
     Unused,        // region is not in use, currently in a freelist
@@ -200,7 +201,7 @@ private:
 
 private:
   Heap* m_heap;
-  HeapRegion* m_region;
+  HeapRegion* m_region = nullptr;
 };
 
 }  // namespace charly::core::runtime

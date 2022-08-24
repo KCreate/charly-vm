@@ -48,18 +48,7 @@ static atomic<size_t> thread_id_counter = 0;
 
 thread_local static Thread* g_thread = nullptr;
 
-Thread::Thread(Runtime* runtime) :
-  m_id(thread_id_counter++),
-  m_state(State::Free),
-  m_stack(nullptr),
-  m_runtime(runtime),
-  m_exit_code(0),
-  m_fiber(kNull),
-  m_worker(nullptr),
-  m_last_scheduled_at(kNeverScheduledTimestamp),
-  m_context(nullptr),
-  m_frame(nullptr),
-  m_pending_exception(kNull) {}
+Thread::Thread(Runtime* runtime) : m_id(thread_id_counter++), m_runtime(runtime) {}
 
 Thread* Thread::current() {
   return g_thread;

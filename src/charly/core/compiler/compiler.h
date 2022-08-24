@@ -43,12 +43,7 @@ struct CompilationUnit {
   };
 
   CompilationUnit(Type type, const std::string& filepath, utils::Buffer& source) :
-    type(type),
-    console(filepath, source),
-    filepath(filepath),
-    ast(nullptr),
-    ir_module(nullptr),
-    compiled_module(nullptr) {}
+    type(type), console(filepath, source), filepath(filepath) {}
 
   Type type;
   DiagnosticConsole console;

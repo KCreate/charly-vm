@@ -47,14 +47,9 @@ int32_t Runtime::run() {
 Runtime::Runtime() :
   m_init_flag(m_mutex),
   m_exit_flag(m_mutex),
-  m_exit_code(0),
-  m_wants_exit(false),
-  m_heap(nullptr),
-  m_gc(nullptr),
-  m_scheduler(nullptr) {
-  m_heap = std::make_unique<Heap>(this);
-  m_gc = std::make_unique<GarbageCollector>(this);
-  m_scheduler = std::make_unique<Scheduler>(this);
+  m_heap(std::make_unique<Heap>(this)),
+  m_gc(std::make_unique<GarbageCollector>(this)),
+  m_scheduler(std::make_unique<Scheduler>(this)) {
   initialize_stdlib_paths();
   m_init_flag.signal();
 }
@@ -126,7 +121,8 @@ void Runtime::initialize_symbol_table(Thread* thread) {
   declare_symbol(thread, "length");
   declare_symbol(thread, "ARGV");
 
-  CHECK(declare_global_variable(thread, SYM("CHARLY_STDLIB"), true, RawString::create(thread, m_stdlib_directory)).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("CHARLY_STDLIB"), true, RawString::create(thread, m_stdlib_directory))
+          .is_error_ok());
 }
 
 void Runtime::initialize_argv_tuple(Thread* thread) {

@@ -34,16 +34,7 @@ using namespace std::chrono_literals;
 static atomic<size_t> worker_id_counter = 0;
 
 Worker::Worker(Runtime* runtime) :
-  m_id(worker_id_counter++),
-  m_state(State::Created),
-  m_context_switch_counter(0),
-  m_idle_sleep_duration(10),
-  m_os_thread_handle(&Worker::scheduler_loop, this, runtime),
-  m_thread(nullptr),
-  m_processor(nullptr),
-  m_runtime(nullptr),
-  m_stop_flag(false),
-  m_idle_flag(false) {}
+  m_id(worker_id_counter++), m_os_thread_handle(&Worker::scheduler_loop, this, runtime), m_runtime(runtime) {}
 
 bool Worker::is_heap_safe_mode(State state) {
   switch (state) {

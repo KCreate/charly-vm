@@ -195,6 +195,9 @@ class ObjectHeader {
   friend class RawObject;
 
 public:
+  ObjectHeader() = delete;
+  ~ObjectHeader() = delete;
+
   enum Flag : uint8_t {
     kReachable = 1,        // object is reachable by GC
     kHasHashcode = 2,      // object has a cached hashcode
@@ -364,7 +367,7 @@ class RawValue {
 public:
   COMMON_RAW_OBJECT(Value);
 
-  RawValue() : m_raw(kTagNull) {}
+  RawValue() = default;
   explicit RawValue(uintptr_t raw) : m_raw(raw) {}
   RawValue(const RawValue& other) : m_raw(other.raw()) {}
 
@@ -481,7 +484,7 @@ public:
   friend std::ostream& operator<<(std::ostream& out, const RawValue& value);
 
 protected:
-  uintptr_t m_raw;
+  uintptr_t m_raw = kTagNull;
 };
 
 // immediate int

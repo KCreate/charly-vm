@@ -100,8 +100,6 @@ constexpr ir::VariableId kInvalidVariableId = 0;
 
 class VariableAnalyzer {
 public:
-  VariableAnalyzer() = default;
-
   ir::VariableId get_variable_id();
 
   const ref<FunctionScope> current_function_scope() const;

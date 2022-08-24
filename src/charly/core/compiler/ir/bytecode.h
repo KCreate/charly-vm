@@ -398,7 +398,7 @@ constexpr size_t kInstructionLength = 4;
   /* setattrsym - write to property via symbol                                     \
    *                                                                               \
    * opcode operands:                                                              \
-   * - string table offset                                                                      \
+   * - string table offset                                                         \
    *                                                                               \
    * stack arguments:                                                              \
    * - target                                                                      \

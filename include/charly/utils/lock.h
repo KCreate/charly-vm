@@ -38,7 +38,7 @@
 namespace charly::utils {
 
 struct ParkingLotThreadData {
-  bool should_park;
+  bool should_park = false;
   std::mutex parking_lock;
   std::condition_variable parking_condition;
   static ParkingLotThreadData* get_local_thread_data();
@@ -77,7 +77,7 @@ private:
   static ParkingLotThreadQueue* get_queue_for_address(ThreadQueueTable* table, uintptr_t address);
 
 private:
-  atomic<ThreadQueueTable*> m_table;
+  atomic<ThreadQueueTable*> m_table = nullptr;
   std::mutex m_old_tables_mutex;
   std::vector<ThreadQueueTable*> m_old_tables;
 };
@@ -91,8 +91,6 @@ enum LockState : uint8_t {
 // allows threads to barge in and steal the lock away from a parked thread
 class TinyLock {
 public:
-  TinyLock();
-
   void lock();
   void unlock();
 
@@ -106,7 +104,7 @@ public:
   }
 
 private:
-  atomic<uint8_t> m_state;
+  atomic<uint8_t> m_state = kFreeLock;
 };
 static_assert(sizeof(TinyLock) == 1);
 

@@ -284,8 +284,6 @@ struct IRExceptionTableEntry {
   Label begin;
   Label end;
   Label handler;
-
-  IRExceptionTableEntry(Label begin, Label end, Label handler) : begin(begin), end(end), handler(handler) {}
 };
 
 struct IRStringTableEntry {
@@ -313,9 +311,9 @@ struct IRFunction {
 };
 
 struct IRModule {
-  explicit IRModule(const std::string& filename) : next_label(0), filename(filename) {}
+  explicit IRModule(const std::string& filename) : filename(filename) {}
 
-  Label next_label;
+  Label next_label = 0;
 
   std::string filename;
   std::vector<ref<IRFunction>> functions;

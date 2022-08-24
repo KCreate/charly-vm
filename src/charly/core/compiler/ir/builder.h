@@ -43,8 +43,7 @@ namespace charly::core::compiler::ir {
 
 class Builder {
 public:
-  explicit Builder(const std::string& filename) :
-    m_label_counter(0), m_block_id_counter(0), m_active_function(nullptr), m_module(make<IRModule>(filename)) {}
+  explicit Builder(const std::string& filename) : m_module(make<IRModule>(filename)) {}
 
   // register string in currently active function
   uint16_t register_string(const std::string& string);
@@ -179,8 +178,8 @@ private:
   ref<IRInstruction> emit_instruction_impl(const ref<IRBasicBlock>& block, const ref<IRInstruction>& instruction);
 
 private:
-  Label m_label_counter;
-  uint32_t m_block_id_counter;
+  Label m_label_counter = 0;
+  uint32_t m_block_id_counter = 0;
 
   // maps Labels to basic blocks for the current function
   std::unordered_map<Label, ref<IRBasicBlock>> m_labelled_blocks;

@@ -113,17 +113,16 @@ private:
   Runtime* m_runtime;
   Heap* m_heap;
 
-  CollectionMode m_collection_mode;
+  CollectionMode m_collection_mode = CollectionMode::Minor;
   std::queue<RawObject> m_mark_queue;
   std::set<HeapRegion*> m_target_intermediate_regions;
   std::set<HeapRegion*> m_target_old_regions;
 
   size_t m_last_collection_time;
 
-  atomic<size_t> m_gc_cycle;
-  atomic<bool> m_has_initialized;
-  atomic<bool> m_wants_collection;
-  atomic<bool> m_wants_exit;
+  atomic<size_t> m_gc_cycle = 1;
+  atomic<bool> m_has_initialized = false;
+  atomic<bool> m_wants_collection = false;
 
   std::mutex m_mutex;
   std::condition_variable m_cv;
