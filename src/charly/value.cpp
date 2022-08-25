@@ -1044,8 +1044,13 @@ void RawValue::dump(std::ostream& out) const {
     if (isBuiltinFunction()) {
       auto builtin_function = RawBuiltinFunction::cast(this);
       RawSymbol name = builtin_function.name();
-      uint8_t argc = builtin_function.argc();
-      writer.fg(Color::Yellow, "builtin func ", name, "(", (uint32_t)argc, ")");
+      int64_t argc = builtin_function.argc();
+      if (argc == -1) {
+        writer.fg(Color::Yellow, "builtin func ", name, "(...)");
+      } else {
+        DCHECK(argc >= 0);
+        writer.fg(Color::Yellow, "builtin func ", name, "(", argc, ")");
+      }
       return;
     }
 
@@ -2454,7 +2459,7 @@ bool RawFunction::check_accepts_argc(uint32_t argc) const {
   return direct_match || spread_match;
 }
 
-RawBuiltinFunction RawBuiltinFunction::create(Thread* thread, BuiltinFunctionType function, SYMBOL name, uint8_t argc) {
+RawBuiltinFunction RawBuiltinFunction::create(Thread* thread, BuiltinFunctionType function, SYMBOL name, int64_t argc) {
   auto runtime = thread->runtime();
   auto func =
     RawBuiltinFunction::cast(RawInstance::create(thread, runtime->get_builtin_class(ShapeId::kBuiltinFunction)));
@@ -2480,11 +2485,11 @@ void RawBuiltinFunction::set_name(RawSymbol symbol) const {
   return set_field_at(kNameOffset, symbol);
 }
 
-uint8_t RawBuiltinFunction::argc() const {
+int64_t RawBuiltinFunction::argc() const {
   return field_at<RawInt>(kArgcOffset).value();
 }
 
-void RawBuiltinFunction::set_argc(uint8_t argc) const {
+void RawBuiltinFunction::set_argc(int64_t argc) const {
   return set_field_at(kArgcOffset, RawInt::create(argc));
 }
 

@@ -28,6 +28,7 @@
 #include <fstream>
 
 #include "charly/core/runtime/builtins/future.h"
+#include "charly/core/runtime/interpreter.h"
 #include "charly/core/runtime/runtime.h"
 
 namespace charly::core::runtime::builtin::future {
@@ -38,27 +39,24 @@ void initialize(Thread* thread) {
   DEF_BUILTIN_FUTURE(REGISTER_BUILTIN_FUNCTION)
 }
 
-RawValue futurecreate(Thread* thread, const RawValue*, uint8_t argc) {
-  CHECK(argc == 0);
+RawValue futurecreate(Thread* thread, BuiltinFrame*) {
   return RawFuture::create(thread);
 }
 
-RawValue futureresolve(Thread* thread, const RawValue* args, uint8_t argc) {
-  CHECK(argc == 2);
-  CHECK(args[0].isFuture());
-  RawFuture future = RawFuture::cast(args[0]);
-  RawValue result = args[1];
+RawValue futureresolve(Thread* thread, BuiltinFrame* frame) {
+  CHECK(frame->arguments[0].isFuture());
+  RawFuture future = RawFuture::cast(frame->arguments[0]);
+  RawValue result = frame->arguments[1];
   return future.resolve(thread, result);
 }
 
-RawValue futurereject(Thread* thread, const RawValue* args, uint8_t argc) {
-  CHECK(argc == 2);
-  CHECK(args[0].isFuture());
-  CHECK(args[1].isString());
+RawValue futurereject(Thread* thread, BuiltinFrame* frame) {
+  CHECK(frame->arguments[0].isFuture());
+  CHECK(frame->arguments[1].isString());
 
   HandleScope scope(thread);
-  Future future(scope, args[0]);
-  Exception exception(scope, RawException::create(thread, RawString::cast(args[1])));
+  Future future(scope, frame->arguments[0]);
+  Exception exception(scope, RawException::create(thread, RawString::cast(frame->arguments[1])));
   return future.reject(thread, exception);
 }
 

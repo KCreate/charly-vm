@@ -91,8 +91,8 @@ template <typename... Targs>
 inline void debugln_concurrent(const char* format, const Targs&... Fargs) {
   {
     std::unique_lock<std::recursive_mutex> locker(debugln_mutex);
-    debugln_impl_time(std::cout, format, std::forward<const Targs>(Fargs)...);
-    std::cout << std::endl;
+    debugln_impl_time(std::cerr, format, std::forward<const Targs>(Fargs)...);
+    std::cerr << std::endl;
   }
 }
 
@@ -115,8 +115,8 @@ template <typename... Targs>
 inline void debugln_notime(const char* format, const Targs&... args) {
   {
     std::unique_lock<std::recursive_mutex> locker(debugln_mutex);
-    debugln_impl(std::cout, format, std::forward<const Targs>(args)...);
-    std::cout << std::endl;
+    debugln_impl(std::cerr, format, std::forward<const Targs>(args)...);
+    std::cerr << std::endl;
   }
 }
 
@@ -131,8 +131,8 @@ template <typename... Targs>
 inline void debuglnf_notime(const char* format, const Targs&... args) {
   {
     std::unique_lock<std::recursive_mutex> locker(debugln_mutex);
-    debugln_impl(std::cout, format, std::forward<const Targs>(args)...);
-    std::cout << std::endl;
+    debugln_impl(std::cerr, format, std::forward<const Targs>(args)...);
+    std::cerr << std::endl;
   }
 }
 

@@ -34,43 +34,64 @@
 
 namespace charly::core::runtime {
 
-class Thread;
+struct Frame {
+  enum Type {
+    kInterpreterFrame = 0,
+    kBuiltinFrame
+  };
 
-// trigger an out of memory exception once this amount of remaining bytes on the stack
-// has been crossed
-static const size_t kStackOverflowLimit = 1024 * 32;  // 32 kilobytes
-
-class Frame {
-public:
-  Frame(Thread* thread, RawFunction function);
+  Frame(Thread* thread, Type type);
   ~Frame();
 
+  Type type;
   Thread* thread;
   Frame* parent;
-  size_t depth;  // number of parent frames
+  size_t depth;
   RawValue self;
-  RawFunction function;
   RawValue argument_tuple;
+  const RawValue* arguments = nullptr;
+  uint32_t argc = 0;
+
+  bool is_interpreter_frame() const {
+    return type == Type::kInterpreterFrame;
+  }
+
+  bool is_builtin_frame() const {
+    return type == Type::kBuiltinFrame;
+  }
+};
+
+struct InterpreterFrame : public Frame {
+  InterpreterFrame(Thread* thread) : Frame(thread, Frame::Type::kInterpreterFrame) {}
+
+  RawFunction function;
   const SharedFunctionInfo* shared_function_info = nullptr;
   RawValue context;
-  const RawValue* arguments = nullptr;
   RawValue* locals = nullptr;
   RawValue* stack = nullptr;
   RawValue return_value;
   uintptr_t oldip = 0;
   uintptr_t ip = 0;
   uint32_t sp = 0;
-  uint8_t argc = 0;
 
   RawValue pop(uint8_t count = 1);
   RawValue peek(uint8_t depth = 0) const;
   RawValue* top_n(uint8_t count) const;
   void push(RawValue value);
 
-  const ExceptionTableEntry* find_active_exception_table_entry(uintptr_t thread_ip) const;
-
+  const ExceptionTableEntry* find_active_exception_table_entry(uintptr_t ip) const;
   const StringTableEntry& get_string_table_entry(uint16_t index) const;
 };
+
+struct BuiltinFrame : public Frame {
+  BuiltinFrame(Thread* thread) : Frame(thread, Frame::Type::kBuiltinFrame) {}
+
+  RawBuiltinFunction function;
+};
+
+// trigger an out of memory exception once this amount of remaining bytes on the stack
+// has been crossed
+static const size_t kStackOverflowLimit = 1024 * 32;  // 32 kilobytes
 
 class Interpreter {
 public:
@@ -97,11 +118,20 @@ public:
                                 bool constructor_call = false,
                                 RawValue argument_tuple = kNull);
 
+  static RawValue call_builtin_function(Thread* thread,
+                                        RawValue self,
+                                        RawBuiltinFunction function,
+                                        const RawValue* arguments,
+                                        uint32_t argc,
+                                        RawValue argument_tuple = kNull);
+
 private:
   static RawValue execute(Thread* thread);
 
+  static RawValue stack_overflow_check(Thread* thread);
+
 #define OP(name, ictype, stackpop, stackpush, ...) \
-  static ContinueMode opcode_##name(Thread* thread, Frame* frame, compiler::ir::Instruction_##name* op);
+  static ContinueMode opcode_##name(Thread* thread, InterpreterFrame* frame, compiler::ir::Instruction_##name* op);
   FOREACH_OPCODE(OP)
 #undef OP
 };

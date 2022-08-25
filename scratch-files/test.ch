@@ -24,12 +24,14 @@
  * SOFTWARE.
  */
 
-const string = prompt("enter string: ")
-const length = string.length
+const f = spawn {
+    const string = "hello world" * 100
+    const length = string.length
 
-length.times(->(i) {
-    print(string[i])
-})
+    return Tuple.make_with(length, ->(i) string[i])
+}
+
+print(await f)
 
 
 

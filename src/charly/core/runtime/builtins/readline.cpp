@@ -24,12 +24,12 @@
  * SOFTWARE.
  */
 
-#include <readline/history.h>
 #include <readline/readline.h>
 #include <cstdio>
 
 #include "charly/core/runtime/builtins/readline.h"
 #include "charly/core/runtime/runtime.h"
+#include "charly/core/runtime/interpreter.h"
 
 namespace charly::core::runtime::builtin::readline {
 
@@ -39,10 +39,9 @@ void initialize(Thread* thread) {
   DEF_BUILTIN_READLINE(REGISTER_BUILTIN_FUNCTION)
 }
 
-RawValue prompt(Thread* thread, const RawValue* args, uint8_t argc) {
-  CHECK(argc == 1);
-  DCHECK(args[0].isString());
-  std::string prompt = RawString::cast(args[0]).str();
+RawValue prompt(Thread* thread, BuiltinFrame* frame) {
+  DCHECK(frame->arguments[0].isString());
+  std::string prompt = RawString::cast(frame->arguments[0]).str();
 
   char* raw_line = nullptr;
   thread->native_section([&] {
@@ -59,11 +58,10 @@ RawValue prompt(Thread* thread, const RawValue* args, uint8_t argc) {
   return RawString::acquire(thread, raw_line, length, hash);
 }
 
-RawValue add_history(Thread* thread, const RawValue* args, uint8_t argc) {
-  CHECK(argc == 1);
-  DCHECK(args[0].isString());
+RawValue add_history(Thread* thread, BuiltinFrame* frame) {
+  DCHECK(frame->arguments[0].isString());
 
-  std::string name = RawString::cast(args[0]).str();
+  std::string name = RawString::cast(frame->arguments[0]).str();
   thread->native_section([&] {
     ::add_history(name.c_str());
   });
@@ -71,9 +69,7 @@ RawValue add_history(Thread* thread, const RawValue* args, uint8_t argc) {
   return kNull;
 }
 
-RawValue clear_history(Thread* thread, const RawValue*, uint8_t argc) {
-  CHECK(argc == 0);
-
+RawValue clear_history(Thread* thread, BuiltinFrame*) {
   thread->native_section([&] {
     ::clear_history();
   });

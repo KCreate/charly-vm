@@ -49,7 +49,7 @@ target_compile_options(charly PRIVATE
 # enable link-time-optimization for release builds
 if (CMAKE_BUILD_TYPE MATCHES Release)
     message("-- Enabling LTO for target 'charly'")
-    target_compile_options(charly PRIVATE -flto)
+    target_compile_options(charly PRIVATE -flto -O3)
 endif ()
 
 # install to global folder
@@ -97,7 +97,7 @@ target_compile_options(tests PRIVATE
 # enable link-time-optimization for release builds
 if (CMAKE_BUILD_TYPE MATCHES Release)
     message("-- Enabling LTO for target 'tests'")
-    target_compile_options(tests PRIVATE -flto)
+    target_compile_options(tests PRIVATE -flto -O3)
 endif ()
 
 if (APPLE)

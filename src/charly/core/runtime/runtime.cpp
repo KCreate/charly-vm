@@ -720,25 +720,35 @@ void Runtime::each_root(std::function<void(RawValue& value)> callback) {
     auto* frame = thread->frame();
     while (frame) {
       callback(frame->self);
-      callback(frame->function);
-      callback(frame->context);
-      callback(frame->return_value);
-
       // frame->arguments pointer is not explicitly traversed
-      // referenced objects are already traversed via either stack traversal or the frame->argument_tuple ref
+      // referenced objects are already traversed via either stack traversal or frame->argument_tuple
       callback(frame->argument_tuple);
 
-      const auto& shared_info = frame->shared_function_info;
-      const auto& ir_info = shared_info->ir_info;
+      if (frame->is_interpreter_frame()) {
+        auto* interpreter_frame = static_cast<InterpreterFrame*>(frame);
+        callback(interpreter_frame->function);
+        callback(interpreter_frame->context);
+        callback(interpreter_frame->return_value);
 
-      uint8_t locals = ir_info.local_variables;
-      for (uint8_t li = 0; li < locals; li++) {
-        callback(frame->locals[li]);
-      }
+        const auto* shared_info = interpreter_frame->shared_function_info;
+        if (shared_info) {
+          const auto& ir_info = shared_info->ir_info;
 
-      uint8_t stacksize = ir_info.stacksize;
-      for (uint8_t si = 0; si < stacksize && si < frame->sp; si++) {
-        callback(frame->stack[si]);
+          uint8_t locals = ir_info.local_variables;
+          DCHECK(interpreter_frame->locals);
+          for (uint8_t li = 0; li < locals; li++) {
+            callback(interpreter_frame->locals[li]);
+          }
+
+          uint8_t stacksize = ir_info.stacksize;
+          DCHECK(interpreter_frame->stack);
+          for (uint8_t si = 0; si < stacksize && si < interpreter_frame->sp; si++) {
+            callback(interpreter_frame->stack[si]);
+          }
+        }
+      } else {
+        auto* builtin_frame = static_cast<BuiltinFrame*>(frame);
+        callback(builtin_frame->function);
       }
 
       frame = frame->parent;

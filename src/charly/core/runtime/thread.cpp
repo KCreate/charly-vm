@@ -364,7 +364,13 @@ RawTuple Thread::create_stack_trace() {
   Tuple stack_trace(scope, RawTuple::create(this, top_frame->depth + 1));
   size_t index = 0;
   for (Frame* frame = top_frame; frame != nullptr; frame = frame->parent) {
-    stack_trace.set_field_at(index, RawTuple::create(this, frame->function));
+    if (frame->is_builtin_frame()) {
+      auto* interpreter_frame = static_cast<InterpreterFrame*>(frame);
+      stack_trace.set_field_at(index, RawTuple::create(this, interpreter_frame->function));
+    } else {
+      auto* builtin_frame = static_cast<BuiltinFrame*>(frame);
+      stack_trace.set_field_at(index, RawTuple::create(this, builtin_frame->function));
+    }
     index++;
   }
 

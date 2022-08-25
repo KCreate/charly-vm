@@ -29,6 +29,7 @@
 
 #include "charly/core/compiler/compiler.h"
 #include "charly/core/runtime/builtins/core.h"
+#include "charly/core/runtime/interpreter.h"
 #include "charly/core/runtime/runtime.h"
 
 namespace charly::core::runtime::builtin::core {
@@ -43,19 +44,17 @@ void initialize(Thread* thread) {
   DEF_BUILTIN_CORE(REGISTER_BUILTIN_FUNCTION)
 }
 
-RawValue currentfiber(Thread* thread, const RawValue*, uint8_t argc) {
-  CHECK(argc == 0);
+RawValue currentfiber(Thread* thread, BuiltinFrame*) {
   return thread->fiber();
 }
 
-RawValue transplantbuiltinclass(Thread* thread, const RawValue* args, uint8_t argc) {
+RawValue transplantbuiltinclass(Thread* thread, BuiltinFrame* frame) {
   Runtime* runtime = thread->runtime();
-  CHECK(argc == 2);
 
   HandleScope scope(thread);
-  Class klass(scope, args[0]);
+  Class klass(scope, frame->arguments[0]);
   Class static_class(scope, klass.klass(thread));
-  Class donor_class(scope, args[1]);
+  Class donor_class(scope, frame->arguments[1]);
   Class static_donor_class(scope, donor_class.klass(thread));
 
   if (!is_builtin_shape(klass.shape_instance().own_shape_id())) {
@@ -129,63 +128,56 @@ RawValue transplantbuiltinclass(Thread* thread, const RawValue* args, uint8_t ar
   return kNull;
 }
 
-RawValue writeline(Thread*, const RawValue* args, uint8_t argc) {
-  CHECK(argc == 1);
-  args[0].to_string(std::cout);
+RawValue writeline(Thread*, BuiltinFrame* frame) {
+  frame->arguments[0].to_string(std::cout);
   std::cout << std::endl;
   return kNull;
 }
 
-RawValue writevalue(Thread*, const RawValue* args, uint8_t argc) {
-  CHECK(argc == 1);
-  args[0].to_string(std::cout);
+RawValue writevalue(Thread*, BuiltinFrame* frame) {
+  frame->arguments[0].to_string(std::cout);
   return kNull;
 }
 
-RawValue writevaluesync(Thread*, const RawValue* args, uint8_t argc) {
-  CHECK(argc == 1);
+RawValue writevaluesync(Thread*, BuiltinFrame* frame) {
   utils::Buffer buf;
-  args[0].to_string(buf);
+  frame->arguments[0].to_string(buf);
   debuglnf_notime("%", buf);
   return kNull;
 }
 
-RawValue currentworkingdirectory(Thread* thread, const RawValue*, uint8_t argc) {
-  CHECK(argc == 0);
+RawValue currentworkingdirectory(Thread* thread, BuiltinFrame*) {
   fs::path cwd = fs::current_path();
   return RawString::create(thread, cwd);
 }
 
-RawValue getstacktrace(Thread* thread, const RawValue*, uint8_t argc) {
-  CHECK(argc == 0);
+RawValue getstacktrace(Thread* thread, BuiltinFrame*) {
   return thread->create_stack_trace();
 }
 
-RawValue disassemble(Thread*, const RawValue* args, uint8_t argc) {
-  CHECK(argc == 1);
-  DCHECK(args[0].isFunction());
+RawValue disassemble(Thread*, BuiltinFrame* frame) {
+  DCHECK(frame->arguments[0].isFunction());
 
-  auto func = RawFunction::cast(args[0]);
+  auto func = RawFunction::cast(frame->arguments[0]);
   SharedFunctionInfo* info = func.shared_info();
   info->dump(std::cout);
 
   return kNull;
 }
 
-RawValue maketuple(Thread* thread, const RawValue* args, uint8_t argc) {
-  CHECK(argc == 2);
-  DCHECK(args[0].isInt() || args[0].isFloat());
+RawValue maketuple(Thread* thread, BuiltinFrame* frame) {
+  DCHECK(frame->arguments[0].isInt() || frame->arguments[0].isFloat());
 
   int64_t size;
-  if (args[0].isFloat()) {
-    size = static_cast<int64_t>(RawFloat::cast(args[0]).value());
+  if (frame->arguments[0].isFloat()) {
+    size = static_cast<int64_t>(RawFloat::cast(frame->arguments[0]).value());
   } else {
-    size = static_cast<int64_t>(RawInt::cast(args[0]).value());
+    size = static_cast<int64_t>(RawInt::cast(frame->arguments[0]).value());
   }
   CHECK(size >= 0, "expected size to be positive number");
 
   HandleScope scope(thread);
-  Value initial(scope, args[1]);
+  Value initial(scope, frame->arguments[1]);
   Tuple tuple(scope, RawTuple::create(thread, size));
   for (int64_t i = 0; i < size; i++) {
     tuple.set_field_at(i, initial);
@@ -194,26 +186,23 @@ RawValue maketuple(Thread* thread, const RawValue* args, uint8_t argc) {
   return tuple;
 }
 
-RawValue exit(Thread* thread, const RawValue* args, uint8_t argc) {
-  CHECK(argc == 1);
-  DCHECK(args[0].isInt());
-  thread->abort((int32_t)RawInt::cast(args[0]).value());
+RawValue exit(Thread* thread, BuiltinFrame* frame) {
+  DCHECK(frame->arguments[0].isInt());
+  thread->abort((int32_t)RawInt::cast(frame->arguments[0]).value());
 }
 
-RawValue performgc(Thread* thread, const RawValue*, uint8_t argc) {
-  CHECK(argc == 0);
+RawValue performgc(Thread* thread, BuiltinFrame*) {
   thread->runtime()->gc()->perform_gc(thread);
   return kNull;
 }
 
-RawValue compile(Thread* thread, const RawValue* args, uint8_t argc) {
+RawValue compile(Thread* thread, BuiltinFrame* frame) {
   Runtime* runtime = thread->runtime();
 
-  CHECK(argc == 2);
-  CHECK(args[0].isString());
-  CHECK(args[1].isString());
-  RawString source = RawString::cast(args[0]);
-  std::string name = RawString::cast(args[1]).str();
+  CHECK(frame->arguments[0].isString());
+  CHECK(frame->arguments[1].isString());
+  RawString source = RawString::cast(frame->arguments[0]);
+  std::string name = RawString::cast(frame->arguments[1]).str();
 
   utils::Buffer buf;
   source.to_string(buf);

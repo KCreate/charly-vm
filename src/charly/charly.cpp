@@ -41,22 +41,38 @@ void print_runtime_debug_state(std::ostream& stream) {
     debugln_impl_time(stream, "Thread: %\n", thread->id());
 
     if (Frame* frame = thread->frame()) {
-      debugln_impl_time(stream, "IP: %\n", (void*)frame->oldip);
-      debugln_impl_time(stream, "Function: %\n", frame->function);
+      if (frame->is_builtin_frame()) {
+        auto* builtin_frame = static_cast<BuiltinFrame*>(frame);
+        debugln_impl_time(stream, "Builtin Function: %\n", builtin_frame->function);
+      } else {
+        auto* interpreter_frame = static_cast<InterpreterFrame*>(frame);
+        debugln_impl_time(stream, "IP: %\n", (void*)interpreter_frame->oldip);
+        debugln_impl_time(stream, "Function: %\n", interpreter_frame->function);
+      }
 
       Frame* old = frame;
       debugln_impl_time(stream, "Frames:\n", frame);
       while (frame) {
-        debugln_impl_time(stream, "  - %: %\n", frame->function, (void*)frame->oldip);
+        if (frame->is_builtin_frame()) {
+          auto* builtin_frame = static_cast<BuiltinFrame*>(frame);
+          debugln_impl_time(stream, "  - %\n", builtin_frame->function);
+        } else {
+          auto* interpreter_frame = static_cast<InterpreterFrame*>(frame);
+          debugln_impl_time(stream, "  - %: %\n", interpreter_frame->function, (void*)interpreter_frame->oldip);
+        }
         frame = frame->parent;
       }
       frame = old;
 
-      if (frame->sp > 0) {
-        debugln_impl_time(stream, "\n");
-        debugln_impl_time(stream, "Stack:\n");
-        for (int64_t i = frame->sp - 1; i >= 0; i--) {
-          debugln_impl_time(stream, "  - %\n", frame->stack[i]);
+      if (frame->is_interpreter_frame()) {
+        auto* interpreter_frame = static_cast<InterpreterFrame*>(frame);
+        DCHECK(interpreter_frame->stack);
+        if (interpreter_frame->sp > 0) {
+          debugln_impl_time(stream, "\n");
+          debugln_impl_time(stream, "Stack:\n");
+          for (int64_t i = interpreter_frame->sp - 1; i >= 0; i--) {
+            debugln_impl_time(stream, "  - %\n", interpreter_frame->stack[i]);
+          }
         }
       }
     } else {

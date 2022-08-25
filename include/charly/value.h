@@ -1011,12 +1011,13 @@ public:
 };
 
 // builtin function implemented in c++
-typedef RawValue (*BuiltinFunctionType)(Thread*, const RawValue*, uint8_t);
+struct BuiltinFrame;
+typedef RawValue (*BuiltinFunctionType)(Thread*, BuiltinFrame*);
 class RawBuiltinFunction : public RawInstance {
 public:
   COMMON_RAW_OBJECT(BuiltinFunction);
 
-  static RawBuiltinFunction create(Thread*, BuiltinFunctionType function, SYMBOL name, uint8_t argc);
+  static RawBuiltinFunction create(Thread*, BuiltinFunctionType function, SYMBOL name, int64_t argc);
 
   BuiltinFunctionType function() const;
   void set_function(BuiltinFunctionType function) const;
@@ -1024,8 +1025,9 @@ public:
   RawSymbol name() const;
   void set_name(RawSymbol symbol) const;
 
-  uint8_t argc() const;
-  void set_argc(uint8_t argc) const;
+  // an argc of -1 means the function accepts an arbitrary amount of arguments
+  int64_t argc() const;
+  void set_argc(int64_t argc) const;
 
   enum {
     kFunctionPtrOffset = RawInstance::kFieldCount,

@@ -85,7 +85,7 @@ target_compile_options(libcharly PRIVATE
 # enable link-time-optimization for release builds
 if (CMAKE_BUILD_TYPE MATCHES Release)
     message("-- Enabling LTO for target 'libcharly'")
-    target_compile_options(libcharly PRIVATE -flto)
+    target_compile_options(libcharly PRIVATE -flto -O3)
 endif ()
 
 set_target_properties(libcharly PROPERTIES PREFIX "")

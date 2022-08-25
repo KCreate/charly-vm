@@ -40,8 +40,8 @@ using namespace charly::core::compiler::ir;
   thread->throw_message("Opcode '%' has not been implemented yet", op->name); \
   return ContinueMode::Exception
 
-Frame::Frame(Thread* thread, RawFunction function) :
-  thread(thread), parent(thread->frame()), depth(parent ? parent->depth + 1 : 0), function(function) {
+Frame::Frame(Thread* thread, Type type) :
+  type(type), thread(thread), parent(thread->frame()), depth(parent ? parent->depth + 1 : 0) {
   thread->push_frame(this);
 }
 
@@ -49,36 +49,40 @@ Frame::~Frame() {
   thread->pop_frame(this);
 }
 
-RawValue Frame::pop(uint8_t count) {
+RawValue InterpreterFrame::pop(uint8_t count) {
   DCHECK(count >= 1);
-  DCHECK(this->sp >= count);
+  DCHECK(sp >= count);
+  DCHECK(stack);
   RawValue top;
   while (count--) {
-    top = this->stack[this->sp - 1];
-    this->sp--;
+    top = stack[sp - 1];
+    sp--;
   }
   return top;
 }
 
-RawValue Frame::peek(uint8_t depth) const {
-  DCHECK(this->sp > depth);
-  return this->stack[this->sp - 1 - depth];
+RawValue InterpreterFrame::peek(uint8_t depth) const {
+  DCHECK(sp > depth);
+  DCHECK(stack);
+  return stack[sp - 1 - depth];
 }
 
-RawValue* Frame::top_n(uint8_t count) const {
+RawValue* InterpreterFrame::top_n(uint8_t count) const {
   DCHECK(count <= shared_function_info->ir_info.stacksize);
-  return &this->stack[this->sp - count];
+  DCHECK(stack);
+  return &stack[sp - count];
 }
 
-void Frame::push(RawValue value) {
-  DCHECK(this->sp < shared_function_info->ir_info.stacksize);
-  this->stack[this->sp] = value;
-  this->sp++;
+void InterpreterFrame::push(RawValue value) {
+  DCHECK(sp < shared_function_info->ir_info.stacksize);
+  DCHECK(stack);
+  stack[sp] = value;
+  sp++;
 }
 
-const ExceptionTableEntry* Frame::find_active_exception_table_entry(uintptr_t thread_ip) const {
+const ExceptionTableEntry* InterpreterFrame::find_active_exception_table_entry(uintptr_t ip) const {
   for (const ExceptionTableEntry& entry : shared_function_info->exception_table) {
-    if (thread_ip >= entry.begin_ptr && thread_ip < entry.end_ptr) {
+    if (ip >= entry.begin_ptr && ip < entry.end_ptr) {
       return &entry;
     }
   }
@@ -86,7 +90,7 @@ const ExceptionTableEntry* Frame::find_active_exception_table_entry(uintptr_t th
   return nullptr;
 }
 
-const StringTableEntry& Frame::get_string_table_entry(uint16_t index) const {
+const StringTableEntry& InterpreterFrame::get_string_table_entry(uint16_t index) const {
   const auto& info = *shared_function_info;
   CHECK(index < info.string_table.size());
   return info.string_table[index];
@@ -98,9 +102,8 @@ RawValue Interpreter::call_value(
     auto function = RawFunction::cast(target);
     return Interpreter::call_function(thread, self, function, arguments, argc, false, argument_tuple);
   } else if (target.isBuiltinFunction()) {
-    // TODO: Save argument references when calling builtin functions
     auto function = RawBuiltinFunction::cast(target);
-    return function.function()(thread, arguments, argc);
+    return Interpreter::call_builtin_function(thread, self, function, arguments, argc, argument_tuple);
   } else if (target.isClass()) {
     auto klass = RawClass::cast(target);
 
@@ -129,17 +132,17 @@ RawValue Interpreter::call_function(Thread* thread,
     function = overload_table.field_at<RawFunction>(std::min(argc, overload_table.size() - 1));
   }
 
-  Frame frame(thread, function);
+  const SharedFunctionInfo* shared_info = function.shared_info();
+
+  InterpreterFrame frame(thread);
+  frame.function = function;
   frame.self = self;
   frame.argument_tuple = argument_tuple;
   frame.arguments = arguments;
-  frame.locals = nullptr;
-  frame.stack = nullptr;
-  frame.return_value = kNull;
-  frame.oldip = 0;
-  frame.ip = 0;
-  frame.sp = 0;
   frame.argc = argc;
+  frame.shared_function_info = shared_info;
+  frame.ip = shared_info->bytecode_base_ptr;
+  frame.oldip = frame.ip;
 
   if (frame.argument_tuple.isTuple()) {
     DCHECK((void*)frame.arguments == (void*)RawTuple::cast(frame.argument_tuple).data());
@@ -152,19 +155,9 @@ RawValue Interpreter::call_function(Thread* thread,
   //    debuglnf("frame size: %", frame_size);
   //  }
 
-  const SharedFunctionInfo* shared_info = function.shared_info();
-  frame.shared_function_info = shared_info;
-  frame.ip = shared_info->bytecode_base_ptr;
-  frame.oldip = frame.ip;
-
   // stack overflow check
-  const Stack* stack = thread->stack();
-  auto frame_address = (uintptr_t)__builtin_frame_address(0);
-  auto stack_bottom_address = (uintptr_t)stack->lo();
-  size_t remaining_bytes_on_stack = frame_address - stack_bottom_address;
-  if (remaining_bytes_on_stack <= kStackOverflowLimit) {
-    debuglnf("thread % stack overflow", thread->id());
-    return thread->throw_message("Reached recursion depth limit", thread->id());
+  if (Interpreter::stack_overflow_check(thread).is_error_exception()) {
+    return kErrorException;
   }
 
   // allocate class instance and replace self value
@@ -200,7 +193,7 @@ RawValue Interpreter::call_function(Thread* thread,
 
   if (argc < shared_info->ir_info.minargc) {
     return thread->throw_message("Not enough arguments for function call, expected % but got %",
-                                 (uint32_t)shared_info->ir_info.minargc, (uint32_t)argc);
+                                 (uint32_t)shared_info->ir_info.minargc, argc);
   }
 
   // regular functions may not be called with more arguments than they declare
@@ -208,7 +201,7 @@ RawValue Interpreter::call_function(Thread* thread,
   if (argc > shared_info->ir_info.argc && !shared_info->ir_info.spread_argument &&
       !shared_info->ir_info.arrow_function) {
     return thread->throw_message("Too many arguments for non-spread function '%', expected at most % but got %",
-                                 frame.function.name(), (uint32_t)shared_info->ir_info.argc, (uint32_t)argc);
+                                 frame.function.name(), (uint32_t)shared_info->ir_info.argc, argc);
   }
 
   // copy function arguments into local variables
@@ -245,8 +238,42 @@ RawValue Interpreter::call_function(Thread* thread,
   return Interpreter::execute(thread);
 }
 
+RawValue Interpreter::call_builtin_function(Thread* thread,
+                                            RawValue self,
+                                            RawBuiltinFunction function,
+                                            const RawValue* arguments,
+                                            uint32_t argc,
+                                            RawValue argument_tuple) {
+  BuiltinFrame frame(thread);
+  frame.function = function;
+  frame.self = self;
+  frame.argument_tuple = argument_tuple;
+  frame.arguments = arguments;
+  frame.argc = argc;
+
+  if (frame.argument_tuple.isTuple()) {
+    DCHECK((void*)frame.arguments == (void*)RawTuple::cast(frame.argument_tuple).data());
+  }
+
+  // stack overflow check
+  if (Interpreter::stack_overflow_check(thread).is_error_exception()) {
+    return kErrorException;
+  }
+
+  // argc check
+  auto expected_argc = function.argc();
+  if (expected_argc != -1 && argc != expected_argc) {
+    return thread->throw_message("Incorrect argument count for builtin function '%', expected % but got %",
+                                 function.name(), expected_argc, argc);
+  }
+
+  thread->checkpoint();
+
+  return function.function()(thread, &frame);
+}
+
 RawValue Interpreter::execute(Thread* thread) {
-  Frame* frame = thread->frame();
+  InterpreterFrame* frame = static_cast<InterpreterFrame*>(thread->frame());
 
   // dispatch table to opcode handlers
   static void* OPCODE_DISPATCH_TABLE[] = {
@@ -301,9 +328,23 @@ handle_return_or_exception:
   }
 }
 
-#define OP(name)                                                                       \
-  Interpreter::ContinueMode __attribute__((always_inline)) Interpreter::opcode_##name( \
-    [[maybe_unused]] Thread* thread, [[maybe_unused]] Frame* frame, [[maybe_unused]] Instruction_##name* op)
+RawValue Interpreter::stack_overflow_check(Thread* thread) {
+  const Stack* stack = thread->stack();
+  auto frame_address = (uintptr_t)__builtin_frame_address(0);
+  auto stack_bottom_address = (uintptr_t)stack->lo();
+  size_t remaining_bytes_on_stack = frame_address - stack_bottom_address;
+  if (remaining_bytes_on_stack <= kStackOverflowLimit) {
+    debuglnf("thread % stack overflow", thread->id());
+    return thread->throw_message("Reached recursion depth limit", thread->id());
+  }
+
+  return kNull;
+}
+
+#define OP(name)                                                                                        \
+  Interpreter::ContinueMode __attribute__((always_inline))                                              \
+  Interpreter::opcode_##name([[maybe_unused]] Thread* thread, [[maybe_unused]] InterpreterFrame* frame, \
+                             [[maybe_unused]] Instruction_##name* op)
 
 OP(nop) {
   return ContinueMode::Next;

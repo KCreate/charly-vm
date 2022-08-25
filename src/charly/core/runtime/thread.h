@@ -40,7 +40,7 @@ namespace charly::core::runtime {
 class Worker;
 class Runtime;
 class Interpreter;
-class Frame;
+struct Frame;
 class GarbageCollector;
 
 // boost context bindings
