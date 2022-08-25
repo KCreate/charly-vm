@@ -659,23 +659,6 @@ RawValue RawValue::op_mul(Thread* thread, RawValue other) {
 }
 
 RawValue RawValue::op_div(Thread*, RawValue other) {
-  if (isInt() && other.isInt()) {
-    int64_t self_int = RawInt::cast(this).value();
-    int64_t other_int = RawInt::cast(other).value();
-
-    if (other_int == 0) {
-      if (self_int == 0) {
-        return kNaN;
-      } else if (self_int < 0) {
-        return kNegInfinity;
-      } else {
-        return kInfinity;
-      }
-    }
-
-    return RawInt::create(self_int / other_int);
-  }
-
   if (isNumber() && other.isNumber()) {
     return RawFloat::create(double_value() / other.double_value());
   }
