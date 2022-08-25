@@ -622,6 +622,7 @@ public:
   COMMON_RAW_OBJECT(String);
 
   static RawString create(Thread*, const char* data, size_t size, SYMBOL hash);
+  static RawString create(Thread*, const char* data, size_t size);
   static RawString create(Thread*, const std::string& string);
 
   static RawString format(Thread* thread, const char* str) {
@@ -636,6 +637,7 @@ public:
 
   // create a new string by acquiring ownership over an existing allocation
   static RawString acquire(Thread*, char* cstr, size_t size, SYMBOL hash);
+  static RawString acquire(Thread*, char* cstr, size_t size);
   static RawString acquire(Thread*, utils::Buffer& buffer);
 
   size_t byte_length() const;
@@ -734,6 +736,7 @@ public:
   COMMON_RAW_OBJECT(LargeString);
 
   static RawLargeString create(Thread*, const char* data, size_t size, SYMBOL hash);
+  static RawLargeString create(Thread*, const char* data, size_t size);
 
   size_t byte_length() const;
   size_t codepoint_length() const;
@@ -815,7 +818,9 @@ public:
   COMMON_RAW_OBJECT(HugeString);
 
   static RawHugeString create(Thread*, const char* data, size_t size, SYMBOL hash);
+  static RawHugeString create(Thread*, const char* data, size_t size);
   static RawHugeString acquire(Thread*, char* data, size_t size, SYMBOL hash);
+  static RawHugeString acquire(Thread*, char* data, size_t size);
 
   SYMBOL hashcode() const;
 

@@ -1332,8 +1332,18 @@ RawString RawString::create(Thread* thread, const char* data, size_t size, SYMBO
   }
 }
 
+RawString RawString::create(Thread* thread, const char* data, size_t size) {
+  if (size <= RawSmallString::kMaxLength) {
+    return RawString::cast(RawSmallString::create_from_memory(data, size));
+  } else if (size <= kHeapRegionUsableSizeForPayload) {
+    return RawString::cast(RawLargeString::create(thread, data, size));
+  } else {
+    return RawString::cast(RawHugeString::create(thread, data, size));
+  }
+}
+
 RawString RawString::create(Thread* thread, const std::string& string) {
-  return RawString::create(thread, string.data(), string.size(), crc32::hash_string(string));
+  return RawString::create(thread, string.data(), string.size());
 }
 
 RawString RawString::acquire(Thread* thread, char* cstr, size_t size, SYMBOL hash) {
@@ -1346,10 +1356,19 @@ RawString RawString::acquire(Thread* thread, char* cstr, size_t size, SYMBOL has
   }
 }
 
+RawString RawString::acquire(Thread* thread, char* cstr, size_t size) {
+  if (size <= RawSmallString::kMaxLength) {
+    auto result = RawString::cast(RawSmallString::create_from_memory(cstr, size));
+    utils::Allocator::free(cstr);
+    return result;
+  } else {
+    return RawString::cast(RawHugeString::acquire(thread, cstr, size));
+  }
+}
+
 RawString RawString::acquire(Thread* thread, utils::Buffer& buffer) {
   size_t size = buffer.size();
-  SYMBOL hash = buffer.hash();
-  return RawString::acquire(thread, buffer.release_buffer(), size, hash);
+  return RawString::acquire(thread, buffer.release_buffer(), size);
 }
 
 size_t RawString::byte_length() const {
@@ -1574,10 +1593,15 @@ SYMBOL RawData::hashcode() const {
 }
 
 RawLargeString RawLargeString::create(Thread* thread, const char* data, size_t size, SYMBOL hash) {
-  auto string = RawLargeString::cast(RawData::create(thread, ShapeId::kLargeString, size));
-  std::memcpy((char*)string.address(), data, size);
+  auto string = RawLargeString::create(thread, data, size);
   string.header()->cas_hashcode((SYMBOL)0, hash);
   string.header()->set_has_cached_hashcode();
+  return string;
+}
+
+RawLargeString RawLargeString::create(Thread* thread, const char* data, size_t size) {
+  auto string = RawLargeString::cast(RawData::create(thread, ShapeId::kLargeString, size));
+  std::memcpy((char*)string.address(), data, size);
   return string;
 }
 
@@ -1753,21 +1777,37 @@ RawHugeString RawHugeString::create(Thread* thread, const char* data, size_t siz
   return RawHugeString::acquire(thread, copy, size, hash);
 }
 
+RawHugeString RawHugeString::create(Thread* thread, const char* data, size_t size) {
+  char* copy = static_cast<char*>(utils::Allocator::alloc(size));
+  std::memcpy(copy, data, size);
+  return RawHugeString::acquire(thread, copy, size);
+}
+
 RawHugeString RawHugeString::acquire(Thread* thread, char* data, size_t size, SYMBOL hash) {
+  auto string = RawHugeString::acquire(thread, data, size);
+  string.header()->cas_hashcode((SYMBOL)0, hash);
+  string.header()->set_has_cached_hashcode();
+  return string;
+}
+
+RawHugeString RawHugeString::acquire(Thread* thread, char* data, size_t size) {
   auto* runtime = thread->runtime();
   auto huge_string_class = runtime->get_builtin_class(ShapeId::kHugeString);
   auto string = RawHugeString::cast(
     RawInstance::create(thread, ShapeId::kHugeString, RawHugeString::kFieldCount, huge_string_class));
   string.set_data(data);
   string.set_byte_length(size);
-  string.header()->cas_hashcode((SYMBOL)0, hash);
-  string.header()->set_has_cached_hashcode();
   return string;
 }
 
 SYMBOL RawHugeString::hashcode() const {
-  DCHECK(header()->has_cached_hashcode());
-  return header()->hashcode();
+  if (header()->has_cached_hashcode()) {
+    return header()->hashcode();
+  }
+  SYMBOL hash = crc32::hash_block(bitcast<const char*>(data()), byte_length());
+  header()->cas_hashcode(0, hash);
+  header()->set_has_cached_hashcode();
+  return hash;
 }
 
 const char* RawHugeString::data() const {
