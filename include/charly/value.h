@@ -740,7 +740,6 @@ public:
   static RawLargeString create(Thread*, const char* data, size_t size);
 
   size_t byte_length() const;
-  size_t codepoint_length() const;
   const char* data() const;
 };
 
@@ -830,8 +829,6 @@ public:
 
   size_t byte_length() const;
   void set_byte_length(size_t length) const;
-
-  size_t codepoint_length() const;
 
   enum {
     kDataPointerOffset = RawInstance::kFieldCount,

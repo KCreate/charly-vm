@@ -1630,10 +1630,6 @@ size_t RawLargeString::byte_length() const {
   return length();
 }
 
-size_t RawLargeString::codepoint_length() const {
-  return RawString::cast(this).codepoint_length();
-}
-
 const char* RawLargeString::data() const {
   return bitcast<const char*>(address());
 }
@@ -1840,10 +1836,6 @@ void RawHugeString::set_byte_length(size_t length) const {
   auto length_int = bitcast<int64_t>(length);
   DCHECK(length_int >= 0);
   set_field_at(kDataLengthOffset, RawInt::create(length_int));
-}
-
-size_t RawHugeString::codepoint_length() const {
-  return RawString::cast(this).codepoint_length();
 }
 
 RawValue RawClass::create(Thread* thread,
