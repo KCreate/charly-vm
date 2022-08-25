@@ -214,6 +214,7 @@ public:
 
   HeapRegion* heap_region() const;
   RawObject object() const;
+  uintptr_t payload_pointer() const;
   uint32_t alloc_size() const;  // header + object + padding
 
   ShapeId shape_id() const;

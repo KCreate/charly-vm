@@ -138,14 +138,38 @@ SYMBOL ObjectHeader::hashcode() {
   if (has_cached_hashcode()) {
     return m_hashcode;
   } else {
-    auto address = bitcast<uintptr_t>(this);
-    uint32_t offset_in_heap = address % kHeapSize;
+    ShapeId shape = shape_id();
 
-    if (cas_hashcode(0, offset_in_heap)) {
-      set_has_cached_hashcode();
+    switch (shape) {
+      case ShapeId::kLargeString:
+      case ShapeId::kLargeBytes: {
+        SYMBOL hash = crc32::hash_block(bitcast<const char*>(payload_pointer()), count());
+        cas_hashcode(0, hash);
+        set_has_cached_hashcode();
+        return hash;
+      }
+      case ShapeId::kHugeString: {
+        auto huge_string = RawHugeString::cast(object());
+        const char* data = huge_string.data();
+        size_t size = huge_string.byte_length();
+        SYMBOL hash = crc32::hash_block(data, size);
+        cas_hashcode(0, hash);
+        set_has_cached_hashcode();
+        return hash;
+      }
+      case ShapeId::kHugeBytes: {
+        auto huge_bytes = RawHugeBytes::cast(object());
+        const char* data = bitcast<const char*>(huge_bytes.data());
+        size_t size = huge_bytes.length();
+        SYMBOL hash = crc32::hash_block(data, size);
+        cas_hashcode(0, hash);
+        set_has_cached_hashcode();
+        return hash;
+      }
+      default: {
+        FAIL("Unexpected object type");
+      }
     }
-
-    return m_hashcode;
   }
 }
 
@@ -211,8 +235,11 @@ HeapRegion* ObjectHeader::heap_region() const {
 }
 
 RawObject ObjectHeader::object() const {
-  uintptr_t object_address = bitcast<uintptr_t>(this) + sizeof(ObjectHeader);
-  return RawObject::create_from_ptr(object_address, is_young_generation());
+  return RawObject::create_from_ptr(payload_pointer(), is_young_generation());
+}
+
+uintptr_t ObjectHeader::payload_pointer() const {
+  return bitcast<uintptr_t>(this) + sizeof(ObjectHeader);
 }
 
 uint32_t ObjectHeader::alloc_size() const {
@@ -1583,13 +1610,7 @@ const uint8_t* RawData::data() const {
 }
 
 SYMBOL RawData::hashcode() const {
-  if (header()->has_cached_hashcode()) {
-    return header()->hashcode();
-  }
-  SYMBOL hash = crc32::hash_block(bitcast<const char*>(data()), length());
-  header()->cas_hashcode(0, hash);
-  header()->set_has_cached_hashcode();
-  return hash;
+  return header()->hashcode();
 }
 
 RawLargeString RawLargeString::create(Thread* thread, const char* data, size_t size, SYMBOL hash) {
@@ -1751,7 +1772,6 @@ void RawInstance::set_klass_field(RawValue klass) const {
 }
 
 SYMBOL RawHugeBytes::hashcode() const {
-  DCHECK(header()->has_cached_hashcode());
   return header()->hashcode();
 }
 
@@ -1801,13 +1821,7 @@ RawHugeString RawHugeString::acquire(Thread* thread, char* data, size_t size) {
 }
 
 SYMBOL RawHugeString::hashcode() const {
-  if (header()->has_cached_hashcode()) {
-    return header()->hashcode();
-  }
-  SYMBOL hash = crc32::hash_block(bitcast<const char*>(data()), byte_length());
-  header()->cas_hashcode(0, hash);
-  header()->set_has_cached_hashcode();
-  return hash;
+  return header()->hashcode();
 }
 
 const char* RawHugeString::data() const {
