@@ -1337,16 +1337,19 @@ RawString RawString::create(Thread* thread, const std::string& string) {
 }
 
 RawString RawString::acquire(Thread* thread, char* cstr, size_t size, SYMBOL hash) {
-  return RawString::cast(RawHugeString::acquire(thread, cstr, size, hash));
+  if (size <= RawSmallString::kMaxLength) {
+    auto result = RawString::cast(RawSmallString::create_from_memory(cstr, size));
+    utils::Allocator::free(cstr);
+    return result;
+  } else {
+    return RawString::cast(RawHugeString::acquire(thread, cstr, size, hash));
+  }
 }
 
 RawString RawString::acquire(Thread* thread, utils::Buffer& buffer) {
   size_t size = buffer.size();
-  if (size <= RawSmallString::kMaxLength) {
-    return RawString::cast(RawSmallString::create_from_memory(buffer.data(), size));
-  } else {
-    return RawString::cast(RawHugeString::acquire(thread, buffer.release_buffer(), size, buffer.hash()));
-  }
+  SYMBOL hash = buffer.hash();
+  return RawString::acquire(thread, buffer.release_buffer(), size, hash);
 }
 
 size_t RawString::byte_length() const {
