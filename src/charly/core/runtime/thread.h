@@ -182,7 +182,9 @@ public:
   // meant to be called by the Scheduler
   void context_switch(Worker* worker);
 
-  // enter / exit a native section
+  // perform callback code in thread native mode
+  // if a thread is in native mode, it is not allowed to interact with the charly heap or runtime
+  // data structures in any way, which allows the GC to omit waiting for it
   void enter_native();
   void exit_native();
   template <typename F>

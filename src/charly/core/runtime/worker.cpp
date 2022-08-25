@@ -256,6 +256,7 @@ void Worker::scheduler_loop(Runtime* runtime) {
       m_context_switch_counter++;
       m_thread = thread;
       thread->context_switch(this);
+      checkpoint();
       m_thread = nullptr;
       assert_change_state(State::Running, State::Scheduling);
 

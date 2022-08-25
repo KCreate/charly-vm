@@ -278,12 +278,15 @@ void Thread::entry_fiber_thread() {
 }
 
 void Thread::enter_scheduler() {
+  Thread* old_thread = Thread::current();
   Thread::set_current(nullptr);
   fcontext_t& context = m_worker->context();
   m_worker = nullptr;
   transfer_t transfer = jump_fcontext(context, nullptr);
   m_worker = static_cast<Worker*>(transfer.data);
-  Thread::set_current(this);
+  DCHECK(this == old_thread);
+  DCHECK(m_worker->thread() == old_thread);
+  Thread::set_current(m_worker->thread());
   m_worker->set_context(transfer.fctx);
 }
 

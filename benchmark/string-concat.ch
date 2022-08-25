@@ -28,33 +28,16 @@ let string = "x"
 
 const count = 28
 
-let counter = 0
-while (counter != count) {
+count.times(->{
     string += string
-    counter += 1
-}
+})
+
+print("string concat done")
 
 const empty = ""
 const copy = "{string}{empty}"
 
-print("before")
-
-print(string == copy)
-print("done!")
-print(string == copy)
-print("done!")
-print(string == copy)
-print("done!")
-print(string == copy)
-print("done!")
-print(string == copy)
-print("done!")
-
-
-
-
-
-
-
-
-
+10.times(->{
+    print(string == copy)
+    print("comparison done")
+})
