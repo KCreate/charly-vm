@@ -128,21 +128,14 @@ RawValue transplantbuiltinclass(Thread* thread, BuiltinFrame* frame) {
   return kNull;
 }
 
-RawValue writeline(Thread*, BuiltinFrame* frame) {
-  frame->arguments[0].to_string(std::cout);
-  std::cout << std::endl;
-  return kNull;
-}
-
 RawValue writevalue(Thread*, BuiltinFrame* frame) {
-  frame->arguments[0].to_string(std::cout);
-  return kNull;
-}
+  for (size_t i = 0; i < frame->argc; i++) {
+    frame->arguments[i].to_string(std::cout);
+    if (i < frame->argc - 1) {
+      std::cout << " ";
+    }
+  }
 
-RawValue writevaluesync(Thread*, BuiltinFrame* frame) {
-  utils::Buffer buf;
-  frame->arguments[0].to_string(buf);
-  debuglnf_notime("%", buf);
   return kNull;
 }
 

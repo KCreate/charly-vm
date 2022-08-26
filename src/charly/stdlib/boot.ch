@@ -27,8 +27,6 @@
 const builtin_currentfiber = @"charly.builtin.core.currentfiber"
 const builtin_transplant_builtin_class = @"charly.builtin.core.transplantbuiltinclass"
 const builtin_writevalue = @"charly.builtin.core.writevalue"
-const builtin_writeline = @"charly.builtin.core.writeline"
-const builtin_writevaluesync = @"charly.builtin.core.writevaluesync"
 const builtin_currentworkingdirectory = @"charly.builtin.core.currentworkingdirectory"
 const builtin_getstacktrace = @"charly.builtin.core.getstacktrace"
 const builtin_disassemble = @"charly.builtin.core.disassemble"
@@ -45,28 +43,7 @@ const builtin_future_create = @"charly.builtin.future.futurecreate"
 const builtin_future_resolve = @"charly.builtin.future.futureresolve"
 const builtin_future_reject = @"charly.builtin.future.futurereject"
 
-func write(...args) {
-    args.each(->(e) builtin_writevalue("{e}\n"))
-    null
-}
-
-func print(...args) {
-    args.each(->(e, i) {
-        if i != args.length - 1 {
-            builtin_writevalue(e)
-            builtin_writevalue(" ")
-        } else {
-            builtin_writevalue(e)
-        }
-    })
-    builtin_writevalue("\n")
-    null
-}
-
-func writesync(...args) {
-    args.each(->(e) builtin_writevaluesync(e))
-    null
-}
+func print(...args) = builtin_writevalue(...args, "\n")
 
 func prompt(message = "", append_to_history = true) {
     const result = builtin_readline_prompt("{message}")
