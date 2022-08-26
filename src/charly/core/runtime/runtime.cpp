@@ -555,12 +555,12 @@ uint32_t Runtime::check_private_access_permitted(Thread* thread, RawInstance val
   RawValue self = thread->frame()->self;
   RawClass self_class = self.klass(thread);
   if (self == value) {
-    return self_class.shape_instance().keys().size();
+    return lookup_shape(self.shape_id()).keys().size();
   }
 
   RawClass other_class = value.klass(thread);
   if (self_class == other_class) {
-    return self_class.shape_instance().keys().size();
+    return lookup_shape(value.shape_id()).keys().size();
   }
 
   RawTuple self_ancestors = self_class.ancestor_table();
@@ -731,20 +731,18 @@ void Runtime::each_root(std::function<void(RawValue& value)> callback) {
         callback(interpreter_frame->return_value);
 
         const auto* shared_info = interpreter_frame->shared_function_info;
-        if (shared_info) {
-          const auto& ir_info = shared_info->ir_info;
+        DCHECK(shared_info);
 
-          uint8_t locals = ir_info.local_variables;
-          DCHECK(interpreter_frame->locals);
-          for (uint8_t li = 0; li < locals; li++) {
-            callback(interpreter_frame->locals[li]);
-          }
+        uint8_t locals = shared_info->ir_info.local_variables;
+        DCHECK(interpreter_frame->locals);
+        for (uint8_t li = 0; li < locals; li++) {
+          callback(interpreter_frame->locals[li]);
+        }
 
-          uint8_t stacksize = ir_info.stacksize;
-          DCHECK(interpreter_frame->stack);
-          for (uint8_t si = 0; si < stacksize && si < interpreter_frame->sp; si++) {
-            callback(interpreter_frame->stack[si]);
-          }
+        uint8_t stacksize = shared_info->ir_info.stacksize;
+        DCHECK(interpreter_frame->stack);
+        for (uint8_t si = 0; si < stacksize && si < interpreter_frame->sp; si++) {
+          callback(interpreter_frame->stack[si]);
         }
       } else {
         auto* builtin_frame = static_cast<BuiltinFrame*>(frame);

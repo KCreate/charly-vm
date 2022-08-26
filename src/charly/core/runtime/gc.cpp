@@ -537,10 +537,22 @@ void GarbageCollector::validate_heap_and_roots() const {
       if (object.isInstance()) {
         auto instance = RawInstance::cast(object);
         auto klass = RawClass::cast(instance.klass_field());
-        auto shape = klass.shape_instance();
-        auto own_id = shape.own_shape_id();
+        auto class_shape_id = klass.shape_instance().own_shape_id();
         auto header_id = header->shape_id();
-        DCHECK(own_id == header_id);
+
+        switch (header_id) {
+          // RawHugeString and RawHugeBytes instances point to the 'String', 'Bytes' class instances
+          // Those instances are general classes and not specific to any one string / byte subtype
+          // and will not contain the correct shape id that would be expected
+          case ShapeId::kHugeString:
+          case ShapeId::kHugeBytes: {
+            break;
+          }
+          default: {
+            DCHECK(class_shape_id == header_id);
+            break;
+          }
+        }
       }
 
       if (object.isInstance() || object.isTuple()) {
