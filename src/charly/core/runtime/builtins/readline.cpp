@@ -24,6 +24,7 @@
  * SOFTWARE.
  */
 
+#include <readline/history.h>
 #include <readline/readline.h>
 #include <cstdio>
 
