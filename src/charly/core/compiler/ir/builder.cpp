@@ -456,13 +456,14 @@ void Builder::merge_continuous_blocks() {
             auto& next_ops = next_block->instructions;
             block->instructions.insert(block->instructions.end(), next_ops.begin(), next_ops.end());
 
-            auto next_next_block = next_block->next_block;
-            IRBasicBlock::unlink(next_block);
-            if (next_next_block) {
-              IRBasicBlock::link(block, next_next_block);
+            IRBasicBlock::unlink(block, next_block);
+            auto& next_outgoing_blocks = next_block->outgoing_blocks;
+            for (auto& next_outgoing_block : next_outgoing_blocks) {
+              IRBasicBlock::unlink(next_block, next_outgoing_block);
+              IRBasicBlock::link(block, next_outgoing_block);
             }
 
-            m_active_function->basic_blocks.erase(std::next(it));
+            it = m_active_function->basic_blocks.erase(std::next(it));
             continue;
           }
         }
