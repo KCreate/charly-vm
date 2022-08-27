@@ -29,8 +29,8 @@
 #include <cstdio>
 
 #include "charly/core/runtime/builtins/readline.h"
-#include "charly/core/runtime/runtime.h"
 #include "charly/core/runtime/interpreter.h"
+#include "charly/core/runtime/runtime.h"
 
 namespace charly::core::runtime::builtin::readline {
 

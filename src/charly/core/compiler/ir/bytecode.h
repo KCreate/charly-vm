@@ -200,14 +200,14 @@ constexpr size_t kInstructionLength = 4;
    * - value                                                                       \
    * */                                                                            \
   V(rethrowex, IXXX, 1, 0)                                                         \
-  /* assertfailure - throws an assertion failure exception                \
+  /* assertfailure - throws an assertion failure exception                         \
    *                                                                               \
    * stack arguments:                                                              \
    * - left hand side value                                                        \
    * - right hand side value                                                       \
    * - name of the operation                                                       \
    * */                                                                            \
-  V(assertfailure, IXXX, 3, 0)                                                       \
+  V(assertfailure, IXXX, 3, 0)                                                     \
   /* getpendingexception - push the last thrown exception onto the stack           \
    *                                                                               \
    * stack results:                                                                \
