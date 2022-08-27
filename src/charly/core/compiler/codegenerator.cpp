@@ -956,13 +956,6 @@ bool CodeGenerator::inspect_enter(const ref<BinaryOp>& node) {
 
       break;
     }
-    case TokenType::InstanceOf: {
-      apply(node->lhs);
-      m_builder.emit_type();
-      apply(node->rhs);
-      m_builder.emit_instanceof();
-      break;
-    }
     default: {
       apply(node->lhs);
       apply(node->rhs);

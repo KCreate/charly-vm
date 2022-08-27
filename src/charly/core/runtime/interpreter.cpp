@@ -423,19 +423,19 @@ OP(type) {
 }
 
 OP(instanceof) {
-  RawValue check_value = frame->pop();
+  RawValue expected_class_value = frame->pop();
 
-  if (!check_value.isClass()) {
+  if (!expected_class_value.isClass()) {
     thread->throw_message("Expected right hand side of instanceof to be a class, got '%'",
-                          check_value.klass_name(thread));
+                          expected_class_value.klass_name(thread));
     return ContinueMode::Exception;
   }
 
-  RawClass check_class = RawClass::cast(check_value);
+  RawClass expected_class = RawClass::cast(expected_class_value);
 
   // compiler inserts 'type' opcode for this value, so this will always be a class
-  RawClass value_class = RawClass::cast(frame->pop());
-  frame->push(RawBool::create(value_class.is_instance_of(check_class)));
+  RawClass value_class = frame->pop().klass(thread);
+  frame->push(RawBool::create(value_class.is_instance_of(expected_class)));
   return ContinueMode::Next;
 }
 
