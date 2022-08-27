@@ -273,6 +273,7 @@ void Builder::build_cfg() {
       case Opcode::ret:
       case Opcode::throwex:
       case Opcode::rethrowex:
+      case Opcode::assertfailure:
       case Opcode::panic: {
         // opcode ends function
         continue;

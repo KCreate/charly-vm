@@ -24,14 +24,35 @@
  * SOFTWARE.
  */
 
-const f = spawn {
-    const string = "hello world" * 100
-    const length = string.length
-
-    return Tuple.make_with(length, ->(i) string[i])
+func handle(cb) {
+    try {
+        cb()
+    } catch(e) {
+        print(e)
+    }
 }
 
-print(await f)
+let a = 100
+let b = 200
+
+let c = 200
+let d = 200
+
+handle(->assert a == b)
+handle(->assert c != d)
+handle(->assert a instanceof String)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

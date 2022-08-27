@@ -92,6 +92,7 @@ private:
   void inspect_leave(const ref<ast::Break>&) override;
   void inspect_leave(const ref<ast::Continue>&) override;
   void inspect_leave(const ref<ast::Throw>&) override;
+  bool inspect_enter(const ref<ast::Assert>&) override;
   void inspect_leave(const ref<ast::Export>&) override;
   bool inspect_enter(const ref<ast::Import>&) override;
 

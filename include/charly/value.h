@@ -85,7 +85,8 @@ struct SharedFunctionInfo;
   V(Fiber)                     \
   V(Future)                    \
   V(Exception)                 \
-  V(ImportException)
+  V(ImportException)           \
+  V(AssertionException)
 
 #define TYPE_NAMES(V)     \
   IMMEDIATE_TYPE_NAMES(V) \
@@ -129,8 +130,8 @@ enum class ShapeId : uint32_t {
 // clang-format on
 
 static_assert((size_t)ShapeId::kFirstBuiltinShapeId == 19, "invalid first user-defined shape id");
-static_assert((size_t)ShapeId::kLastBuiltinShapeId == 29, "invalid first user-defined shape id");
-static_assert((size_t)ShapeId::kFirstUserDefinedShapeId == 30, "invalid first user-defined shape id");
+static_assert((size_t)ShapeId::kLastBuiltinShapeId == 30, "invalid first user-defined shape id");
+static_assert((size_t)ShapeId::kFirstUserDefinedShapeId == 31, "invalid first user-defined shape id");
 
 // maps the lowest 4 bits of an immediate value to a shape id
 // this table is consulted after the runtime has determined that the value
@@ -1160,6 +1161,33 @@ public:
 
   enum {
     kErrorsOffset = RawException::kFieldCount,
+    kFieldCount
+  };
+};
+
+// assertion exception instance
+class RawAssertionException : public RawException {
+public:
+  COMMON_RAW_OBJECT(AssertionException);
+
+  static RawAssertionException create(Thread*,
+                                      RawValue left_hand_side,
+                                      RawValue right_hand_side,
+                                      RawString operation_name);
+
+  RawValue left_hand_side() const;
+  void set_left_hand_side(RawValue left_hand_side) const;
+
+  RawValue right_hand_side() const;
+  void set_right_hand_side(RawValue right_hand_side) const;
+
+  RawString operation_name() const;
+  void set_operation_name(RawString operation_name) const;
+
+  enum {
+    kLeftHandSideOffset = RawException::kFieldCount,
+    kRightHandSideOffset,
+    kOperationNameOffset,
     kFieldCount
   };
 };

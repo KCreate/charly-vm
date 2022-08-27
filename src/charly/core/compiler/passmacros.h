@@ -16,6 +16,7 @@
       AST_TYPESWITCH_CASE_NODE(Break, __VA_ARGS__)                     \
       AST_TYPESWITCH_CASE_NODE(Continue, __VA_ARGS__)                  \
       AST_TYPESWITCH_CASE_NODE(Throw, __VA_ARGS__)                     \
+      AST_TYPESWITCH_CASE_NODE(Assert, __VA_ARGS__)                    \
       AST_TYPESWITCH_CASE_NODE(Export, __VA_ARGS__)                    \
       AST_TYPESWITCH_CASE_NODE(Import, __VA_ARGS__)                    \
                                                                        \

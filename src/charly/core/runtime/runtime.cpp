@@ -241,6 +241,11 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   auto builtin_shape_import_exception =
     RawShape::create(thread, builtin_shape_exception, { { "errors", RawShape::kKeyFlagReadOnly } });
 
+  auto builtin_shape_assertion_exception = RawShape::create(thread, builtin_shape_exception,
+                                                            { { "left_hand_side", RawShape::kKeyFlagReadOnly },
+                                                              { "right_hand_side", RawShape::kKeyFlagReadOnly },
+                                                              { "operation_name", RawShape::kKeyFlagReadOnly } });
+
   // patch shapes table and assign correct shape ids to shape instances
   register_shape(ShapeId::kSmallString, builtin_shape_immediate);
   register_shape(ShapeId::kLargeString, builtin_shape_immediate);
@@ -257,6 +262,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   register_shape(ShapeId::kFuture, builtin_shape_future);
   register_shape(ShapeId::kException, builtin_shape_exception);
   register_shape(ShapeId::kImportException, builtin_shape_import_exception);
+  register_shape(ShapeId::kAssertionException, builtin_shape_assertion_exception);
 
   RawShape class_value_shape = builtin_shape_class;
   RawClass class_value = RawClass::unsafe_cast(RawInstance::create(thread, builtin_shape_class));
@@ -297,7 +303,8 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   DEFINE_BUILTIN_CLASS(fiber, Fiber, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
   DEFINE_BUILTIN_CLASS(future, Future, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
   DEFINE_BUILTIN_CLASS(exception, Exception, class_instance, RawClass::kFlagNone)
-  DEFINE_BUILTIN_CLASS(import_exception, ImportException, class_exception, RawClass::kFlagNone)
+  DEFINE_BUILTIN_CLASS(import_exception, ImportException, class_exception, RawClass::kFlagFinal)
+  DEFINE_BUILTIN_CLASS(assertion_exception, AssertionException, class_exception, RawClass::kFlagFinal)
 #undef DEFINE_BUILTIN_CLASS
 
 // define the static classes for the builtin classes
@@ -331,6 +338,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   DEFINE_STATIC_CLASS(future, Future)
   DEFINE_STATIC_CLASS(exception, Exception)
   DEFINE_STATIC_CLASS(import_exception, ImportException)
+  DEFINE_STATIC_CLASS(assertion_exception, AssertionException)
 #undef DEFINE_STATIC_CLASS
 
   // fix up the class pointers in the class hierarchy
@@ -353,6 +361,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   class_future.set_klass_field(static_class_future);
   class_exception.set_klass_field(static_class_exception);
   class_import_exception.set_klass_field(static_class_import_exception);
+  class_assertion_exception.set_klass_field(static_class_assertion_exception);
 
   // mark internal shape keys with internal flag
   set_builtin_class(ShapeId::kInt, class_int);
@@ -376,6 +385,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   set_builtin_class(ShapeId::kFuture, class_future);
   set_builtin_class(ShapeId::kException, class_exception);
   set_builtin_class(ShapeId::kImportException, class_import_exception);
+  set_builtin_class(ShapeId::kAssertionException, class_assertion_exception);
 
   // patch klass field of all shape instances created up until this point
   for (auto entry : m_shapes) {
@@ -426,6 +436,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   CHECK(declare_global_variable(thread, SYM("Future"), true, class_future).is_error_ok());
   CHECK(declare_global_variable(thread, SYM("Exception"), true, class_exception).is_error_ok());
   CHECK(declare_global_variable(thread, SYM("ImportException"), true, class_import_exception).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("AssertionException"), true, class_assertion_exception).is_error_ok());
 }
 
 void Runtime::initialize_stdlib_paths() {

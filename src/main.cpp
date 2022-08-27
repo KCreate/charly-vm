@@ -100,17 +100,18 @@ int32_t cli(DiagnosticConsole& console) {
     debuglnf_notime("");
 
     debuglnf_notime("# %value.h%", termcolor::yellow, termcolor::reset);
-    debuglnf_notime("RawInstance::kFieldCount        = %", RawInstance::kFieldCount);
-    debuglnf_notime("RawHugeBytes::kFieldCount       = %", RawHugeBytes::kFieldCount);
-    debuglnf_notime("RawHugeString::kFieldCount      = %", RawHugeString::kFieldCount);
-    debuglnf_notime("RawClass::kFieldCount           = %", RawClass::kFieldCount);
-    debuglnf_notime("RawShape::kFieldCount           = %", RawShape::kFieldCount);
-    debuglnf_notime("RawFunction::kFieldCount        = %", RawFunction::kFieldCount);
-    debuglnf_notime("RawBuiltinFunction::kFieldCount = %", RawBuiltinFunction::kFieldCount);
-    debuglnf_notime("RawFiber::kFieldCount           = %", RawFiber::kFieldCount);
-    debuglnf_notime("RawFuture::kFieldCount          = %", RawFuture::kFieldCount);
-    debuglnf_notime("RawException::kFieldCount       = %", RawException::kFieldCount);
-    debuglnf_notime("RawImportException::kFieldCount = %", RawImportException::kFieldCount);
+    debuglnf_notime("RawInstance::kFieldCount           = %", RawInstance::kFieldCount);
+    debuglnf_notime("RawHugeBytes::kFieldCount          = %", RawHugeBytes::kFieldCount);
+    debuglnf_notime("RawHugeString::kFieldCount         = %", RawHugeString::kFieldCount);
+    debuglnf_notime("RawClass::kFieldCount              = %", RawClass::kFieldCount);
+    debuglnf_notime("RawShape::kFieldCount              = %", RawShape::kFieldCount);
+    debuglnf_notime("RawFunction::kFieldCount           = %", RawFunction::kFieldCount);
+    debuglnf_notime("RawBuiltinFunction::kFieldCount    = %", RawBuiltinFunction::kFieldCount);
+    debuglnf_notime("RawFiber::kFieldCount              = %", RawFiber::kFieldCount);
+    debuglnf_notime("RawFuture::kFieldCount             = %", RawFuture::kFieldCount);
+    debuglnf_notime("RawException::kFieldCount          = %", RawException::kFieldCount);
+    debuglnf_notime("RawImportException::kFieldCount    = %", RawImportException::kFieldCount);
+    debuglnf_notime("RawAssertionException::kFieldCount = %", RawAssertionException::kFieldCount);
     debuglnf_notime("");
 
     debuglnf_notime("# %sizeof%", termcolor::yellow, termcolor::reset);

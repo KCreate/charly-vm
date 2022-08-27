@@ -76,6 +76,10 @@ protected:
     APPLY_NODE(expression);
   })
 
+  HANDLE_NODE(Statement, Assert, {
+    APPLY_NODE(expression);
+  })
+
   HANDLE_NODE(Statement, Export, {
     APPLY_NODE(expression);
   })

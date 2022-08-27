@@ -150,6 +150,13 @@ func compile(source, name = "repl") = builtin_compile(source, name)
         }
     }
 
+    class builtin_AssertionException {
+        func constructor(@message, @left_hand_side, @right_hand_side = true, @operation_name = "==") {
+            // TODO: trim correct numer of stack frames when called from subclass constructors
+            @stack_trace = Exception.getstacktrace()
+        }
+    }
+
     class builtin_Fiber {
         static func current = builtin_currentfiber()
     }
@@ -189,6 +196,7 @@ func compile(source, name = "repl") = builtin_compile(source, name)
     builtin_transplant_builtin_class(Function, builtin_Function)
     builtin_transplant_builtin_class(Exception, builtin_Exception)
     builtin_transplant_builtin_class(ImportException, builtin_ImportException)
+    builtin_transplant_builtin_class(AssertionException, builtin_AssertionException)
     builtin_transplant_builtin_class(Fiber, builtin_Fiber)
     builtin_transplant_builtin_class(Future, builtin_Future)
 }()

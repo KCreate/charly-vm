@@ -420,6 +420,90 @@ void CodeGenerator::inspect_leave(const ref<Throw>& node) {
   m_builder.emit_throwex()->at(node);
 }
 
+bool CodeGenerator::inspect_enter(const ref<Assert>& node) {
+  auto& exp = node->expression;
+
+  Label end_label = m_builder.reserve_label();
+  Label binop_end_label = m_builder.reserve_label();
+  Label exp_end_label = m_builder.reserve_label();
+  Label binop_failure_label = m_builder.reserve_label();
+  Label exp_failure_label = m_builder.reserve_label();
+
+  if (auto binop = cast<BinaryOp>(exp)) {
+    if (binop->operation == TokenType::And) {
+      apply(binop->lhs);
+      m_builder.emit_dup();
+      m_builder.emit_jmpf(exp_failure_label);
+      m_builder.emit_pop();
+      apply(binop->rhs);
+      m_builder.emit_dup();
+      m_builder.emit_jmpf(exp_failure_label);
+      m_builder.emit_jmp(exp_end_label);
+    } else if (binop->operation == TokenType::Or) {
+      apply(binop->lhs);
+      m_builder.emit_dup();
+      m_builder.emit_jmpt(exp_end_label);
+      m_builder.emit_pop();
+      apply(binop->rhs);
+      m_builder.emit_dup();
+      m_builder.emit_jmpf(exp_failure_label);
+      m_builder.emit_jmp(exp_end_label);
+    } else {
+      if (kBinaryComparisonTokens.count(binop->operation)) {
+        apply(binop->lhs);
+        apply(binop->rhs);
+        m_builder.emit_dup2();
+        DCHECK(kBinopOpcodeMapping.count(binop->operation));
+        m_builder.emit(IRInstruction::make(kBinopOpcodeMapping.at(binop->operation)))->at(binop);
+        m_builder.emit_jmpt(binop_end_label);
+        m_builder.emit_makestr(m_builder.register_string(kTokenTypeStrings[(size_t)binop->operation]));
+        m_builder.emit_jmp(binop_failure_label);
+      } else {
+        apply(binop);
+        m_builder.emit_dup();
+        m_builder.emit_jmpt(exp_end_label);
+        m_builder.emit_jmp(exp_failure_label);
+      }
+    }
+  } else {
+    apply(exp);
+    m_builder.emit_dup();
+    m_builder.emit_jmpt(exp_end_label);
+    m_builder.emit_jmp(exp_failure_label);
+  }
+
+  // expected stack:
+  // - original lhs
+  // - original rhs
+  // - operation name string
+  m_builder.place_label(binop_failure_label);
+  m_builder.emit_assertfailure()->at(node);
+
+  // expected stack:
+  // - original value
+  m_builder.place_label(exp_failure_label);
+  m_builder.emit_load_value(kTrue);
+  m_builder.emit_load_value(RawSmallString::create_from_str("=="));
+  m_builder.emit_assertfailure()->at(node);
+
+  // expected stack:
+  // - original lhs
+  // - original rhs
+  m_builder.place_label(binop_end_label);
+  m_builder.emit_pop();
+  m_builder.emit_pop();
+  m_builder.emit_jmp(end_label);
+
+  // expected stack:
+  // - original value
+  m_builder.place_label(exp_end_label);
+  m_builder.emit_pop();
+
+  m_builder.place_label(end_label);
+
+  return false;
+}
+
 void CodeGenerator::inspect_leave(const ref<Export>&) {
   m_builder.emit_setreturn();
   m_builder.emit_jmp(active_return_label());
@@ -974,9 +1058,9 @@ bool CodeGenerator::inspect_enter(const ref<UnpackDeclaration>& node) {
 }
 
 bool CodeGenerator::inspect_enter(const ref<If>& node) {
+  ref<BinaryOp> op = cast<BinaryOp>(node->condition);
   if (node->else_block) {
     // if (x) {} else {}
-    ref<BinaryOp> op = cast<BinaryOp>(node->condition);
     if (op && op->operation == TokenType::And) {
       // if (lhs && rhs) {} else {}
       Label else_label = m_builder.reserve_label();
@@ -1022,7 +1106,6 @@ bool CodeGenerator::inspect_enter(const ref<If>& node) {
     }
   } else {
     // if (x) {}
-    ref<BinaryOp> op = cast<BinaryOp>(node->condition);
     if (op && op->operation == TokenType::And) {
       // if (lhs && rhs) {}
       Label end_label = m_builder.reserve_label();

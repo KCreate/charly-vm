@@ -238,16 +238,11 @@ ref<Statement> Parser::parse_jump_statement() {
     case TokenType::Continue: {
       return parse_continue();
     }
-    default: {
-      return parse_throw_statement();
-    }
-  }
-}
-
-ref<Statement> Parser::parse_throw_statement() {
-  switch (m_token.type) {
     case TokenType::Throw: {
       return parse_throw();
+    }
+    case TokenType::Assert: {
+      return parse_assert();
     }
     default: {
       return parse_expression();
@@ -325,6 +320,15 @@ ref<Throw> Parser::parse_throw() {
   eat(TokenType::Throw);
   ref<Expression> exp = parse_expression();
   ref<Throw> node = make<Throw>(exp);
+  node->set_begin(begin);
+  return node;
+}
+
+ref<Assert> Parser::parse_assert() {
+  Location begin = m_token.location;
+  eat(TokenType::Assert);
+  ref<Expression> exp = parse_expression();
+  ref<Assert> node = make<Assert>(exp);
   node->set_begin(begin);
   return node;
 }

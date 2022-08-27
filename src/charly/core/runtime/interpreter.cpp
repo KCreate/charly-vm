@@ -520,6 +520,15 @@ OP(rethrowex) {
   return ContinueMode::Exception;
 }
 
+OP(assertfailure) {
+  auto operation_name = RawString::cast(frame->pop());
+  auto right_hand_side = frame->pop();
+  auto left_hand_side = frame->pop();
+  auto exception = RawAssertionException::create(thread, left_hand_side, right_hand_side, operation_name);
+  thread->throw_exception(exception);
+  return ContinueMode::Exception;
+}
+
 OP(getpendingexception) {
   frame->push(thread->pending_exception());
   return ContinueMode::Next;

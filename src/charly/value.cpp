@@ -419,7 +419,6 @@ RawValue RawValue::load_attr_number(Thread* thread, int64_t index) const {
 
     return tuple.field_at(real_index);
   } else if (isString()) {
-
     // TODO: optimize string index lookup
     //
     // current algorithm is O(N) since we need to traverse the entire string once to
@@ -924,6 +923,13 @@ bool RawValue::isImportException() const {
   return false;
 }
 
+bool RawValue::isAssertionException() const {
+  if (isInstance()) {
+    return RawInstance::cast(this).is_instance_of(ShapeId::kAssertionException);
+  }
+  return false;
+}
+
 bool RawValue::isTrue() const {
   return *this == kTrue;
 }
@@ -1098,9 +1104,9 @@ void RawValue::dump(std::ostream& out) const {
 
     if (isException()) {
       if (isImportException()) {
-        auto import_exception = RawImportException::cast(this);
-        auto errors = import_exception.errors();
-        auto message = RawString::cast(import_exception.message());
+        auto exception = RawImportException::cast(this);
+        auto errors = exception.errors();
+        auto message = RawString::cast(exception.message());
 
         writer << message.view() << "\n";
 
@@ -1131,7 +1137,9 @@ void RawValue::dump(std::ostream& out) const {
         auto klass = RawClass::cast(exception.klass_field());
         RawValue message = exception.message();
         RawTuple stack_trace = exception.stack_trace();
-        writer.fg(Color::Green, "<", klass.name(), " ", message, ", ", stack_trace, ">");
+        writer.fg(Color::Green, "<", klass.name(), " ");
+        writer.fg(Color::Red, message);
+        writer.fg(Color::Green, ", ", stack_trace, ">");
         return;
       }
     }
@@ -1198,7 +1206,7 @@ void RawValue::dump(std::ostream& out) const {
 }
 
 std::ostream& operator<<(std::ostream& out, const RawValue& value) {
-  value.dump(out);
+  value.to_string(out);
   return out;
 }
 
@@ -2756,13 +2764,11 @@ RawImportException RawImportException::create(Thread* thread,
     error_tuple.set_field_at(i, message_tuple);
   }
 
-  // allocate exception instance
   ImportException exception(scope, RawInstance::create(thread, runtime->get_builtin_class(ShapeId::kImportException)));
   exception.set_message(RawString::format(thread, "Encountered an error while importing '%'", module_path));
   exception.set_stack_trace(thread->create_stack_trace());
   exception.set_cause(kNull);
   exception.set_errors(error_tuple);
-
   return *exception;
 }
 
@@ -2772,6 +2778,51 @@ RawTuple RawImportException::errors() const {
 
 void RawImportException::set_errors(RawTuple errors) const {
   set_field_at(kErrorsOffset, errors);
+}
+
+RawAssertionException RawAssertionException::create(Thread* thread,
+                                                    RawValue _left_hand_side,
+                                                    RawValue _right_hand_side,
+                                                    RawString _operation_name) {
+  auto runtime = thread->runtime();
+  HandleScope scope(thread);
+  Value left_hand_side(scope, _left_hand_side);
+  Value right_hand_side(scope, _right_hand_side);
+  String operation_name(scope, _operation_name);
+  AssertionException exception(scope,
+                               RawInstance::create(thread, runtime->get_builtin_class(ShapeId::kAssertionException)));
+  exception.set_message(
+    RawString::format(thread, "Failed assertion: '% % %'", left_hand_side, operation_name, right_hand_side));
+  exception.set_stack_trace(thread->create_stack_trace());
+  exception.set_cause(kNull);
+  exception.set_left_hand_side(left_hand_side);
+  exception.set_right_hand_side(right_hand_side);
+  exception.set_operation_name(operation_name);
+  return *exception;
+}
+
+RawValue RawAssertionException::left_hand_side() const {
+  return field_at(kLeftHandSideOffset);
+}
+
+void RawAssertionException::set_left_hand_side(RawValue left_hand_side) const {
+  set_field_at(kLeftHandSideOffset, left_hand_side);
+}
+
+RawValue RawAssertionException::right_hand_side() const {
+  return field_at(kRightHandSideOffset);
+}
+
+void RawAssertionException::set_right_hand_side(RawValue right_hand_side) const {
+  set_field_at(kRightHandSideOffset, right_hand_side);
+}
+
+RawString RawAssertionException::operation_name() const {
+  return field_at<RawString>(kOperationNameOffset);
+}
+
+void RawAssertionException::set_operation_name(RawString operation_name) const {
+  set_field_at(kOperationNameOffset, operation_name);
 }
 
 }  // namespace charly::core::runtime

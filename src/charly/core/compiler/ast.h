@@ -75,6 +75,7 @@ public:
     Break,
     Continue,
     Throw,
+    Assert,
     Export,
     Import,
 
@@ -431,6 +432,21 @@ public:
 
   bool terminates_block() const override {
     return true;
+  }
+};
+
+// assert <expression>
+class Assert final : public Statement {
+  AST_NODE(Assert)
+public:
+  explicit Assert(const ref<Expression>& expression) : expression(expression) {
+    set_location(expression);
+  }
+
+  ref<Expression> expression;
+
+  CHILDREN() {
+    CHILD_NODE(expression)
   }
 };
 

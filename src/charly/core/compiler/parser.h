@@ -139,6 +139,7 @@ private:
   ref<Continue> parse_continue();
   ref<TryFinally> parse_defer();
   ref<Throw> parse_throw();
+  ref<Assert> parse_assert();
   ref<Statement> parse_import();
   ref<Expression> parse_import_expression();
   ref<Export> parse_export();
