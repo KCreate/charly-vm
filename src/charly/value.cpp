@@ -1192,11 +1192,9 @@ void RawValue::dump(std::ostream& out) const {
     RawSymbol symbol = RawSymbol::cast(this);
 
     if (auto* thread = Thread::current()) {
-      HandleScope scope(thread);
-      Value sym_value(scope, thread->lookup_symbol(symbol.value()));
-
+      auto sym_value = thread->lookup_symbol(symbol.value());
       if (sym_value.isString()) {
-        RawString string = RawString::cast(sym_value);
+        auto string = RawString::cast(sym_value);
         out << string.view();
         return;
       }
