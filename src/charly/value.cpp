@@ -722,6 +722,12 @@ RawValue RawValue::op_eq(Thread* thread, RawValue other) {
     return kFalse;
   }
 
+  if (isString() && other.isSymbol()) {
+    return RawBool::create(RawString::cast(this).hashcode() == RawSymbol::cast(other).value());
+  } else if (isSymbol() && other.isString()) {
+    return RawBool::create(RawSymbol::cast(this).value() == RawString::cast(other).hashcode());
+  }
+
   if (isBytes() && other.isBytes()) {
     auto left_bytes = RawBytes::cast(this);
     auto right_bytes = RawBytes::cast(other);
