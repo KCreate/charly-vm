@@ -50,10 +50,48 @@ class FunctionScope;
 class BlockScope;
 
 enum class Truthyness {
-  Unknown = 0,
+  False = 0,
   True = 1,
-  False = 2,
+  Unknown = 3,
 };
+
+inline Truthyness truthyness_create(bool value) {
+  return value ? Truthyness::True : Truthyness::False;
+}
+
+inline Truthyness truthyness_or(Truthyness a, Truthyness b) {
+  if (a == Truthyness::True || b == Truthyness::True) {
+    return Truthyness::True;
+  }
+  if (a == Truthyness::False && b == Truthyness::False) {
+    return Truthyness::False;
+  }
+  return Truthyness::Unknown;
+}
+
+inline Truthyness truthyness_and(Truthyness a, Truthyness b) {
+  if (a == Truthyness::True && b == Truthyness::True) {
+    return Truthyness::True;
+  }
+  if (a == Truthyness::False || b == Truthyness::False) {
+    return Truthyness::False;
+  }
+  return Truthyness::Unknown;
+}
+
+inline Truthyness truthyness_equal(Truthyness a, Truthyness b) {
+  if (a == Truthyness::Unknown || b == Truthyness::Unknown) {
+    return Truthyness::Unknown;
+  }
+  return truthyness_create(a == b);
+}
+
+inline Truthyness truthyness_not_equal(Truthyness a, Truthyness b) {
+  if (a == Truthyness::Unknown || b == Truthyness::Unknown) {
+    return Truthyness::Unknown;
+  }
+  return truthyness_create(a != b);
+}
 
 void dump_string_with_escape_sequences(std::ostream& out, const char* begin, size_t length);
 inline void dump_string_with_escape_sequences(std::ostream& out, const std::string& str) {
@@ -61,7 +99,7 @@ inline void dump_string_with_escape_sequences(std::ostream& out, const std::stri
 }
 
 // base class of all ast nodes
-class Node : std::enable_shared_from_this<Node> {
+class Node : public std::enable_shared_from_this<Node> {
   friend class Pass;
 
 public:
@@ -234,9 +272,7 @@ public:
     return Truthyness::Unknown;
   }
 
-  virtual bool compares_equal(const ref<Node>&) const {
-    FAIL("must be called on a subtype of ConstantAtom<T>");
-  }
+  virtual Truthyness compares_equal(const ref<Node>&) const;
 
 private:
   static void search_all_impl(const ref<Node>& node,
@@ -616,8 +652,6 @@ public:
   bool has_side_effects() const override {
     return false;
   }
-
-  bool compares_equal(const ref<Node>& other) const override = 0;
 };
 
 // foo, bar, $_baz42
@@ -680,8 +714,6 @@ public:
   Truthyness truthyness() const override {
     return Truthyness::False;
   }
-
-  bool compares_equal(const ref<Node>& other) const override;
 };
 
 // 1, 2, 42
@@ -695,8 +727,6 @@ public:
   Truthyness truthyness() const override {
     return value == 0 ? Truthyness::False : Truthyness::True;
   }
-
-  bool compares_equal(const ref<Node>& other) const override;
 };
 
 // 0.5, 25.25, 5000.1234
@@ -723,8 +753,6 @@ public:
     }
     return Truthyness::True;
   }
-
-  bool compares_equal(const ref<Node>& other) const override;
 };
 
 // true, false
@@ -738,8 +766,6 @@ public:
   Truthyness truthyness() const override {
     return this->value ? Truthyness::True : Truthyness::False;
   }
-
-  bool compares_equal(const ref<Node>& other) const override;
 };
 
 // "hello world"
@@ -757,8 +783,6 @@ public:
   Truthyness truthyness() const override {
     return Truthyness::True;  // strings are always truthy
   }
-
-  bool compares_equal(const ref<Node>& other) const override;
 };
 
 // "name: {name} age: {age}"
@@ -807,8 +831,6 @@ public:
   Truthyness truthyness() const override {
     return Truthyness::True;  // symbols are always truthy
   }
-
-  bool compares_equal(const ref<Node>& other) const override;
 };
 
 // (1, 2, 3)
@@ -1306,20 +1328,30 @@ public:
     auto lhst = lhs->truthyness();
     auto rhst = rhs->truthyness();
 
-    if (operation == TokenType::And) {
-      if (lhst == Truthyness::False || rhst == Truthyness::False) {
-        return Truthyness::False;
-      } else if (lhst == Truthyness::True && rhst == Truthyness::True) {
-        return Truthyness::True;
+    switch (operation) {
+      case TokenType::And: {
+        return truthyness_and(lhst, rhst);
       }
-    } else if (operation == TokenType::Or) {
-      if (lhst == Truthyness::True || rhst == Truthyness::True) {
-        return Truthyness::True;
-      } else if (lhst == Truthyness::False && rhst == Truthyness::False) {
-        return Truthyness::False;
+      case TokenType::Or: {
+        return truthyness_or(lhst, rhst);
       }
+      case TokenType::Equal:
+      case TokenType::NotEqual: {
+        bool invert_result = operation == TokenType::NotEqual;
+        Truthyness comparison = lhs->compares_equal(rhs);
+        if (comparison != Truthyness::Unknown) {
+          bool result = comparison == Truthyness::True;
+          if (invert_result) {
+            result = !result;
+          }
+
+          return truthyness_create(result);
+        }
+
+        return Truthyness::Unknown;
+      }
+      default: return Truthyness::Unknown;
     }
-    return Truthyness::Unknown;
   }
 
   bool has_side_effects() const override {

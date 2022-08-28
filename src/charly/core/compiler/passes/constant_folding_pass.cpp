@@ -211,15 +211,22 @@ ref<Expression> ConstantFoldingPass::transform(const ref<BinaryOp>& node) {
   if (node->operation == TokenType::Equal || node->operation == TokenType::NotEqual) {
     bool invert_result = node->operation == TokenType::NotEqual;
 
-    if (node->lhs->is_constant_value() && node->rhs->is_constant_value()) {
-      bool comparison = node->lhs->compares_equal(node->rhs);
+    Truthyness comparison = node->lhs->compares_equal(node->rhs);
+    if (comparison != Truthyness::Unknown) {
+      bool result = comparison == Truthyness::True;
       if (invert_result) {
-        comparison = !comparison;
+        result = !result;
       }
 
-      DCHECK(!node->lhs->has_side_effects());
-      DCHECK(!node->rhs->has_side_effects());
-      replacement = make<Bool>(comparison);
+      if (node->lhs->has_side_effects() && node->rhs->has_side_effects()) {
+        replacement = make<ExpressionWithSideEffects>(make<Block>(node->lhs, node->rhs), make<Bool>(result));
+      } else if (node->lhs->has_side_effects()) {
+        replacement = make<ExpressionWithSideEffects>(make<Block>(node->lhs), make<Bool>(result));
+      } else if (node->rhs->has_side_effects()) {
+        replacement = make<ExpressionWithSideEffects>(make<Block>(node->rhs), make<Bool>(result));
+      } else {
+        replacement = make<Bool>(result);
+      }
     }
   }
 

@@ -692,9 +692,22 @@ RawValue RawValue::op_div(Thread*, RawValue other) {
   return kNaN;
 }
 
+// NOTE: Update this method together with Node::compares_equal
 RawValue RawValue::op_eq(Thread* thread, RawValue other) {
   if (*this == other) {
     return kTrue;
+  }
+
+  if (isBool() || other.isBool()) {
+    auto left_truthy = truthyness();
+    auto right_truthy = other.truthyness();
+    return left_truthy == right_truthy ? kTrue : kFalse;
+  }
+
+  if (isNumber() || other.isNumber()) {
+    double left_num = double_value();
+    double right_num = other.double_value();
+    return RawBool::create(left_num == right_num);
   }
 
   if (isString() && other.isString()) {
@@ -725,12 +738,6 @@ RawValue RawValue::op_eq(Thread* thread, RawValue other) {
     }
 
     return kFalse;
-  }
-
-  if (isNumber() || other.isNumber()) {
-    double left_num = double_value();
-    double right_num = other.double_value();
-    return RawBool::create(left_num == right_num);
   }
 
   if (isTuple() && other.isTuple()) {

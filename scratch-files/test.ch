@@ -24,24 +24,18 @@
  * SOFTWARE.
  */
 
-func handle(cb) {
-    try {
-        cb()
-    } catch(e) {
-        print(e)
-    }
-}
+let x = 5.5
 
-let a = 100
-let b = 200
+const true_values = (true, -1, -25, 100, -1.5, Infinity, -Infinity, "", "hello world", (1, 2, 3), ())
+const false_values = (null, false, 0, NaN, (x - 5.5))
 
-let c = 200
-let d = 200
+true_values.each(->(v) {
+    assert(v == true)
+})
 
-handle(->assert a == b)
-handle(->assert c != d)
-handle(->assert a instanceof String)
-
+false_values.each(->(v) {
+    assert(v == false)
+})
 
 
 

@@ -125,11 +125,11 @@ void Node::dump(std::ostream& out, bool print_location) const {
 
   Color name_color;
   switch (type()) {
-    case Node::Type::Function: {
+    case Type::Function: {
       name_color = Color::Yellow;
       break;
     }
-    case Node::Type::Block: {
+    case Type::Block: {
       name_color = Color::Red;
       break;
     }
@@ -194,6 +194,96 @@ void Node::dump(std::ostream& out, bool print_location) const {
   }
 }
 
+// NOTE: Update this method together with RawValue::op_equal
+Truthyness Node::compares_equal(const ref<Node>& other) const {
+  auto self_t = type();
+  auto other_t = other->type();
+
+  if (self_t == Type::Bool || other_t == Type::Bool) {
+    return truthyness_equal(truthyness(), other->truthyness());
+  }
+
+  if (self_t == Type::Null && other_t == Type::Null) {
+    return Truthyness::True;
+  }
+
+  // int <-> float comparisons
+  if (self_t == Type::Int) {
+    if (other_t == Type::Int) {
+      auto self_int = cast<const Int>(shared_from_this());
+      auto other_int = cast<Int>(other);
+      return truthyness_create(self_int->value == other_int->value);
+    } else if (other_t == Type::Float) {
+      auto self_int = cast<const Int>(shared_from_this());
+      auto other_float = cast<Float>(other);
+      return truthyness_create((double)self_int->value == other_float->value);
+    } else {
+      return Truthyness::Unknown;
+    }
+  } else if (self_t == Type::Float) {
+    if (other_t == Type::Int) {
+      auto self_float = cast<const Float>(shared_from_this());
+      auto other_int = cast<Int>(other);
+      return truthyness_create(self_float->value == (double)other_int->value);
+    } else if (other_t == Type::Float) {
+      auto self_float = cast<const Float>(shared_from_this());
+      auto other_float = cast<Float>(other);
+      return truthyness_create(self_float->value == other_float->value);
+    } else {
+      return Truthyness::Unknown;
+    }
+  }
+
+  // string <-> symbol comparisons
+  if (self_t == Type::String) {
+    if (other_t == Type::String) {
+      auto self_sym = cast<const String>(shared_from_this());
+      auto other_sym = cast<String>(other);
+      return truthyness_create(self_sym->value == other_sym->value);
+    } else if (other_t == Type::Symbol) {
+      auto self_sym = cast<const String>(shared_from_this());
+      auto other_sym = cast<Symbol>(other);
+      return truthyness_create(self_sym->value == other_sym->value);
+    } else {
+      return Truthyness::Unknown;
+    }
+  } else if (self_t == Type::Symbol) {
+    if (other_t == Type::String) {
+      auto self_sym = cast<const Symbol>(shared_from_this());
+      auto other_sym = cast<String>(other);
+      return truthyness_create(self_sym->value == other_sym->value);
+    } else if (other_t == Type::Symbol) {
+      auto self_sym = cast<const Symbol>(shared_from_this());
+      auto other_sym = cast<Symbol>(other);
+      return truthyness_create(self_sym->value == other_sym->value);
+    } else {
+      return Truthyness::Unknown;
+    }
+  }
+
+  // known false comparisons
+  switch (self_t) {
+    case Type::Symbol:
+    case Type::String: {
+      switch (other_t) {
+        case Type::Null:
+        case Type::Int:
+        case Type::Float: return Truthyness::False;
+        default: break;
+      }
+    }
+    case Type::Int:
+    case Type::Float: {
+      if (other_t == Type::Null)
+        return Truthyness::False;
+      break;
+    }
+    default: break;
+  }
+
+  return Truthyness::Unknown;
+}
+
 void Block::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   if (this->repl_toplevel_block) {
@@ -228,24 +318,10 @@ void Name::dump_info(std::ostream& out) const {
   writer.fg(Color::Green, this->value);
 }
 
-bool Null::compares_equal(const ref<Node>& other) const {
-  return isa<Null>(other);
-}
-
 void Int::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';
   writer.fg(Color::Red, this->value);
-}
-
-bool Int::compares_equal(const ref<Node>& other) const {
-  if (auto integer = cast<Int>(other)) {
-    return value == integer->value;
-  } else if (auto floatnum = cast<Float>(other)) {
-    return (double)value == floatnum->value;
-  }
-
-  return false;
 }
 
 void Float::dump_info(std::ostream& out) const {
@@ -254,27 +330,10 @@ void Float::dump_info(std::ostream& out) const {
   writer.fg(Color::Red, this->value);
 }
 
-bool Float::compares_equal(const ref<Node>& other) const {
-  if (auto integer = cast<Int>(other)) {
-    return value == (double)(integer->value);
-  } else if (auto floatnum = cast<Float>(other)) {
-    return value == floatnum->value;
-  }
-
-  return false;
-}
-
 void Bool::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';
   writer.fg(Color::Red, this->value ? "true" : "false");
-}
-
-bool Bool::compares_equal(const ref<Node>& other) const {
-  if (auto boolean = cast<Bool>(other)) {
-    return value == boolean->value;
-  }
-  return false;
 }
 
 void String::dump_info(std::ostream& out) const {
@@ -287,24 +346,10 @@ void String::dump_info(std::ostream& out) const {
   writer.reset_color();
 }
 
-bool String::compares_equal(const ref<Node>& other) const {
-  if (auto string = cast<String>(other)) {
-    return value == string->value;
-  }
-  return false;
-}
-
 void Symbol::dump_info(std::ostream& out) const {
   utils::ColorWriter writer(out);
   writer << ' ';
   writer.fg(Color::Yellow, ":", this->value);
-}
-
-bool Symbol::compares_equal(const ref<Node>& other) const {
-  if (auto symbol = cast<Symbol>(other)) {
-    return value == symbol->value;
-  }
-  return false;
 }
 
 bool Tuple::assignable() const {
