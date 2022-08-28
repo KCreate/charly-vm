@@ -264,8 +264,13 @@ CATCH_TEST_CASE("Parser") {
     CHECK_AST_STMT("throw 25", make<Throw>(make<Int>(25)));
     CHECK_AST_STMT("throw 1 + 2", make<Throw>(make<BinaryOp>(TokenType::Plus, make<Int>(1), make<Int>(2))));
 
-    CHECK_AST_STMT("assert condition", make<Assert>(make<Id>("condition")));
-    CHECK_AST_STMT("assert a == b", make<Assert>(make<BinaryOp>(TokenType::Equal, make<Id>("a"), make<Id>("b"))));
+    CHECK_AST_STMT("assert condition", make<Assert>(make<Id>("condition"), make<Null>()));
+    CHECK_AST_STMT("assert a == b",
+                   make<Assert>(make<BinaryOp>(TokenType::Equal, make<Id>("a"), make<Id>("b")), make<Null>()));
+    CHECK_AST_STMT("assert condition : \"hello world\"",
+                   make<Assert>(make<Id>("condition"), make<String>("hello world")));
+    CHECK_AST_STMT("assert condition : null", make<Assert>(make<Id>("condition"), make<Null>()));
+    CHECK_AST_STMT("assert condition : foobar", make<Assert>(make<Id>("condition"), make<Id>("foobar")));
 
     CHECK_AST_STMT("export exp", make<Export>(make<Id>("exp")));
   }

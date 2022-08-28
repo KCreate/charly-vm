@@ -24,22 +24,7 @@
  * SOFTWARE.
  */
 
-let x = 5.5
-
-const true_values = (true, -1, -25, 100, -1.5, Infinity, -Infinity, "", "hello world", (1, 2, 3), ())
-const false_values = (null, false, 0, NaN, (x - 5.5))
-
-true_values.each(->(v) {
-    assert(v == true)
-})
-
-false_values.each(->(v) {
-    assert(v == false)
-})
-
-
-
-
+assert 100 == 200 : prompt()
 
 
 

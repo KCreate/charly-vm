@@ -471,21 +471,6 @@ public:
   }
 };
 
-// assert <expression>
-class Assert final : public Statement {
-  AST_NODE(Assert)
-public:
-  explicit Assert(const ref<Expression>& expression) : expression(expression) {
-    set_location(expression);
-  }
-
-  ref<Expression> expression;
-
-  CHILDREN() {
-    CHILD_NODE(expression)
-  }
-};
-
 // export <expression>
 class Export final : public Statement {
   AST_NODE(Export)
@@ -1547,6 +1532,26 @@ public:
 
   CHILDREN() {
     CHILD_NODE(then_block)
+  }
+};
+
+// assert <expression>
+// assert <expression> : <message>
+class Assert final : public Statement {
+  AST_NODE(Assert)
+public:
+  explicit Assert(const ref<Expression>& expression, const ref<Expression>& message) :
+    expression(expression), message(message) {
+    set_begin(expression);
+    set_end(message);
+  }
+
+  ref<Expression> expression;
+  ref<Expression> message;
+
+  CHILDREN() {
+    CHILD_NODE(expression)
+    CHILD_NODE(message)
   }
 };
 

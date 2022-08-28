@@ -206,8 +206,9 @@ constexpr size_t kInstructionLength = 4;
    * - left hand side value                                                        \
    * - right hand side value                                                       \
    * - name of the operation                                                       \
+   * - detailed error message (or null)
    * */                                                                            \
-  V(assertfailure, IXXX, 3, 0)                                                     \
+  V(assertfailure, IXXX, 4, 0)                                                     \
   /* getpendingexception - push the last thrown exception onto the stack           \
    *                                                                               \
    * stack results:                                                                \

@@ -328,7 +328,15 @@ ref<Assert> Parser::parse_assert() {
   Location begin = m_token.location;
   eat(TokenType::Assert);
   ref<Expression> exp = parse_expression();
-  ref<Assert> node = make<Assert>(exp);
+  ref<Expression> message;
+
+  if (skip(TokenType::Colon)) {
+    message = parse_expression();
+  } else {
+    message = make<Null>();
+  }
+
+  ref<Assert> node = make<Assert>(exp, message);
   node->set_begin(begin);
   return node;
 }

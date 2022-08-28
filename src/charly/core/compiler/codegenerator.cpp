@@ -477,6 +477,7 @@ bool CodeGenerator::inspect_enter(const ref<Assert>& node) {
   // - original rhs
   // - operation name string
   m_builder.place_label(binop_failure_label);
+  apply(node->message);
   m_builder.emit_assertfailure()->at(node);
 
   // expected stack:
@@ -484,6 +485,7 @@ bool CodeGenerator::inspect_enter(const ref<Assert>& node) {
   m_builder.place_label(exp_failure_label);
   m_builder.emit_load_value(kTrue);
   m_builder.emit_load_value(RawSmallString::create_from_str("=="));
+  apply(node->message);
   m_builder.emit_assertfailure()->at(node);
 
   // expected stack:

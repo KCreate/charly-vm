@@ -1170,10 +1170,8 @@ class RawAssertionException : public RawException {
 public:
   COMMON_RAW_OBJECT(AssertionException);
 
-  static RawAssertionException create(Thread*,
-                                      RawValue left_hand_side,
-                                      RawValue right_hand_side,
-                                      RawString operation_name);
+  static RawAssertionException create(
+    Thread*, RawValue message, RawValue left_hand_side, RawValue right_hand_side, RawString operation_name);
 
   RawValue left_hand_side() const;
   void set_left_hand_side(RawValue left_hand_side) const;

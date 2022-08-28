@@ -704,7 +704,7 @@ RawValue RawValue::op_eq(Thread* thread, RawValue other) {
     return left_truthy == right_truthy ? kTrue : kFalse;
   }
 
-  if (isNumber() || other.isNumber()) {
+  if (isNumber() && other.isNumber()) {
     double left_num = double_value();
     double right_num = other.double_value();
     return RawBool::create(left_num == right_num);
@@ -2793,19 +2793,25 @@ void RawImportException::set_errors(RawTuple errors) const {
   set_field_at(kErrorsOffset, errors);
 }
 
-RawAssertionException RawAssertionException::create(Thread* thread,
-                                                    RawValue _left_hand_side,
-                                                    RawValue _right_hand_side,
-                                                    RawString _operation_name) {
+RawAssertionException RawAssertionException::create(
+  Thread* thread, RawValue _message, RawValue _left_hand_side, RawValue _right_hand_side, RawString _operation_name) {
   auto runtime = thread->runtime();
   HandleScope scope(thread);
+  Value message(scope, _message);
   Value left_hand_side(scope, _left_hand_side);
   Value right_hand_side(scope, _right_hand_side);
   String operation_name(scope, _operation_name);
   AssertionException exception(scope,
                                RawInstance::create(thread, runtime->get_builtin_class(ShapeId::kAssertionException)));
-  exception.set_message(
-    RawString::format(thread, "Failed assertion: '% % %'", left_hand_side, operation_name, right_hand_side));
+
+  if (message.isNull()) {
+    exception.set_message(
+      RawString::format(thread, "Failed assertion: % % %", left_hand_side, operation_name, right_hand_side));
+  } else {
+    exception.set_message(RawString::format(thread, "Failed assertion: % (% % %)", message, left_hand_side,
+                                            operation_name, right_hand_side));
+  }
+
   exception.set_stack_trace(thread->create_stack_trace());
   exception.set_cause(kNull);
   exception.set_left_hand_side(left_hand_side);
