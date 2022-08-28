@@ -353,6 +353,10 @@ ref<Statement> ConstantFoldingPass::transform(const ref<While>& node) {
   }
 }
 
+bool ConstantFoldingPass::inspect_enter(const ref<Assert>&) {
+  return false;
+}
+
 ref<Expression> ConstantFoldingPass::transform(const ref<BuiltinOperation>& node) {
   ref<Expression> replacement = node;
 

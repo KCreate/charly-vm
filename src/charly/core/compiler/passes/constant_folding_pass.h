@@ -41,6 +41,7 @@ private:
   ref<Expression> transform(const ref<Id>&) override;
   ref<Statement> transform(const ref<If>&) override;
   ref<Statement> transform(const ref<While>&) override;
+  bool inspect_enter(const ref<Assert>&) override;
   ref<Expression> transform(const ref<BuiltinOperation>&) override;
 };
 
