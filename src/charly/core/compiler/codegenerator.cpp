@@ -429,42 +429,16 @@ bool CodeGenerator::inspect_enter(const ref<Assert>& node) {
   Label binop_failure_label = m_builder.reserve_label();
   Label exp_failure_label = m_builder.reserve_label();
 
-  if (auto binop = cast<BinaryOp>(exp)) {
-    if (binop->operation == TokenType::And) {
-      apply(binop->lhs);
-      m_builder.emit_dup();
-      m_builder.emit_jmpf(exp_failure_label);
-      m_builder.emit_pop();
-      apply(binop->rhs);
-      m_builder.emit_dup();
-      m_builder.emit_jmpf(exp_failure_label);
-      m_builder.emit_jmp(exp_end_label);
-    } else if (binop->operation == TokenType::Or) {
-      apply(binop->lhs);
-      m_builder.emit_dup();
-      m_builder.emit_jmpt(exp_end_label);
-      m_builder.emit_pop();
-      apply(binop->rhs);
-      m_builder.emit_dup();
-      m_builder.emit_jmpf(exp_failure_label);
-      m_builder.emit_jmp(exp_end_label);
-    } else {
-      if (kBinaryComparisonTokens.count(binop->operation)) {
-        apply(binop->lhs);
-        apply(binop->rhs);
-        m_builder.emit_dup2();
-        DCHECK(kBinopOpcodeMapping.count(binop->operation));
-        m_builder.emit(IRInstruction::make(kBinopOpcodeMapping.at(binop->operation)))->at(binop);
-        m_builder.emit_jmpt(binop_end_label);
-        m_builder.emit_makestr(m_builder.register_string(kTokenTypeStrings[(size_t)binop->operation]));
-        m_builder.emit_jmp(binop_failure_label);
-      } else {
-        apply(binop);
-        m_builder.emit_dup();
-        m_builder.emit_jmpt(exp_end_label);
-        m_builder.emit_jmp(exp_failure_label);
-      }
-    }
+  auto binop = cast<BinaryOp>(exp);
+  if (binop && kBinaryComparisonTokens.count(binop->operation)) {
+    apply(binop->lhs);
+    apply(binop->rhs);
+    m_builder.emit_dup2();
+    DCHECK(kBinopOpcodeMapping.count(binop->operation));
+    m_builder.emit(IRInstruction::make(kBinopOpcodeMapping.at(binop->operation)))->at(binop);
+    m_builder.emit_jmpt(binop_end_label);
+    m_builder.emit_makestr(m_builder.register_string(kTokenTypeStrings[(size_t)binop->operation]));
+    m_builder.emit_jmp(binop_failure_label);
   } else {
     apply(exp);
     m_builder.emit_dup();
