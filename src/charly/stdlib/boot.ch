@@ -39,9 +39,9 @@ const builtin_readline_prompt = @"charly.builtin.readline.prompt"
 const builtin_readline_add_history = @"charly.builtin.readline.add_history"
 const builtin_readline_clear_history = @"charly.builtin.readline.clear_history"
 
-const builtin_future_create = @"charly.builtin.future.futurecreate"
-const builtin_future_resolve = @"charly.builtin.future.futureresolve"
-const builtin_future_reject = @"charly.builtin.future.futurereject"
+const builtin_future_create = @"charly.builtin.future.create"
+const builtin_future_resolve = @"charly.builtin.future.resolve"
+const builtin_future_reject = @"charly.builtin.future.reject"
 
 const builtin_list_create = @"charly.builtin.list.create"
 const builtin_list_insert = @"charly.builtin.list.insert"

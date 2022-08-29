@@ -39,18 +39,18 @@ void initialize(Thread* thread) {
   DEF_BUILTIN_FUTURE(REGISTER_BUILTIN_FUNCTION)
 }
 
-RawValue futurecreate(Thread* thread, BuiltinFrame*) {
+RawValue create(Thread* thread, BuiltinFrame*) {
   return RawFuture::create(thread);
 }
 
-RawValue futureresolve(Thread* thread, BuiltinFrame* frame) {
+RawValue resolve(Thread* thread, BuiltinFrame* frame) {
   CHECK(frame->arguments[0].isFuture());
   RawFuture future = RawFuture::cast(frame->arguments[0]);
   RawValue result = frame->arguments[1];
   return future.resolve(thread, result);
 }
 
-RawValue futurereject(Thread* thread, BuiltinFrame* frame) {
+RawValue reject(Thread* thread, BuiltinFrame* frame) {
   CHECK(frame->arguments[0].isFuture());
   CHECK(frame->arguments[1].isString());
 

@@ -34,9 +34,9 @@ namespace charly::core::runtime::builtin::future {
 void initialize(Thread* thread);
 
 #define DEF_BUILTIN_FUTURE(V) \
-  V(future, futurecreate, 0)  \
-  V(future, futureresolve, 2) \
-  V(future, futurereject, 2)
+  V(future, create, 0)        \
+  V(future, resolve, 2)       \
+  V(future, reject, 2)
 DEF_BUILTIN_FUTURE(DEFINE_BUILTIN_METHOD_DECLARATIONS)
 
 }  // namespace charly::core::runtime::builtin::future
