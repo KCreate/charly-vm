@@ -103,6 +103,7 @@ int32_t cli(DiagnosticConsole& console) {
     debuglnf_notime("RawInstance::kFieldCount           = %", RawInstance::kFieldCount);
     debuglnf_notime("RawHugeBytes::kFieldCount          = %", RawHugeBytes::kFieldCount);
     debuglnf_notime("RawHugeString::kFieldCount         = %", RawHugeString::kFieldCount);
+    debuglnf_notime("RawList::kFieldCount               = %", RawList::kFieldCount);
     debuglnf_notime("RawClass::kFieldCount              = %", RawClass::kFieldCount);
     debuglnf_notime("RawShape::kFieldCount              = %", RawShape::kFieldCount);
     debuglnf_notime("RawFunction::kFieldCount           = %", RawFunction::kFieldCount);

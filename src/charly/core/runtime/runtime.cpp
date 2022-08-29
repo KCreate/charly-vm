@@ -29,6 +29,7 @@
 #include "charly/core/compiler/compiler.h"
 #include "charly/core/runtime/builtins/core.h"
 #include "charly/core/runtime/builtins/future.h"
+#include "charly/core/runtime/builtins/list.h"
 #include "charly/core/runtime/builtins/readline.h"
 #include "charly/core/runtime/interpreter.h"
 #include "charly/core/runtime/runtime.h"
@@ -141,6 +142,7 @@ void Runtime::initialize_argv_tuple(Thread* thread) {
 void Runtime::initialize_builtin_functions(Thread* thread) {
   builtin::core::initialize(thread);
   builtin::future::initialize(thread);
+  builtin::list::initialize(thread);
   builtin::readline::initialize(thread);
 }
 
@@ -185,6 +187,12 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   auto builtin_shape_huge_string =
     RawShape::create(thread, builtin_shape_immediate,
                      { { "data", RawShape::kKeyFlagInternal }, { "length", RawShape::kKeyFlagInternal } });
+
+  auto builtin_shape_list = RawShape::create(thread, builtin_shape_immediate,
+                                             { { "__charly_class_klass", RawShape::kKeyFlagInternal },
+                                               { "data", RawShape::kKeyFlagInternal },
+                                               { "length", RawShape::kKeyFlagReadOnly },
+                                               { "capacity", RawShape::kKeyFlagReadOnly } });
 
   auto builtin_shape_class = RawShape::create(thread, builtin_shape_immediate,
                                               { { "__charly_class_klass", RawShape::kKeyFlagInternal },
@@ -254,6 +262,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   register_shape(ShapeId::kInstance, builtin_shape_instance);
   register_shape(ShapeId::kHugeBytes, builtin_shape_huge_bytes);
   register_shape(ShapeId::kHugeString, builtin_shape_huge_string);
+  register_shape(ShapeId::kList, builtin_shape_list);
   register_shape(ShapeId::kClass, builtin_shape_class);
   register_shape(ShapeId::kShape, builtin_shape_shape);
   register_shape(ShapeId::kFunction, builtin_shape_function);
@@ -294,6 +303,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   DEFINE_BUILTIN_CLASS(string, String, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
   DEFINE_BUILTIN_CLASS(bytes, Bytes, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
   DEFINE_BUILTIN_CLASS(tuple, Tuple, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
+  DEFINE_BUILTIN_CLASS(list, List, class_value, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
   DEFINE_BUILTIN_CLASS(instance, Instance, class_value, RawClass::kFlagNone)
   DEFINE_BUILTIN_CLASS(class, Class, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
   DEFINE_BUILTIN_CLASS(shape, Shape, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
@@ -329,6 +339,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   DEFINE_STATIC_CLASS(string, String)
   DEFINE_STATIC_CLASS(bytes, Bytes)
   DEFINE_STATIC_CLASS(tuple, Tuple)
+  DEFINE_STATIC_CLASS(list, List)
   DEFINE_STATIC_CLASS(instance, Instance)
   DEFINE_STATIC_CLASS(class, Class)
   DEFINE_STATIC_CLASS(shape, Shape)
@@ -352,6 +363,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   class_string.set_klass_field(static_class_string);
   class_bytes.set_klass_field(static_class_bytes);
   class_tuple.set_klass_field(static_class_tuple);
+  class_list.set_klass_field(static_class_list);
   class_instance.set_klass_field(static_class_instance);
   class_class.set_klass_field(static_class_class);
   class_shape.set_klass_field(static_class_shape);
@@ -377,6 +389,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   set_builtin_class(ShapeId::kHugeBytes, class_bytes);
   set_builtin_class(ShapeId::kHugeString, class_string);
   set_builtin_class(ShapeId::kTuple, class_tuple);
+  set_builtin_class(ShapeId::kList, class_list);
   set_builtin_class(ShapeId::kClass, class_class);
   set_builtin_class(ShapeId::kShape, class_shape);
   set_builtin_class(ShapeId::kFunction, class_function);
@@ -427,6 +440,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   CHECK(declare_global_variable(thread, SYM("String"), true, class_string).is_error_ok());
   CHECK(declare_global_variable(thread, SYM("Bytes"), true, class_bytes).is_error_ok());
   CHECK(declare_global_variable(thread, SYM("Tuple"), true, class_tuple).is_error_ok());
+  CHECK(declare_global_variable(thread, SYM("List"), true, class_list).is_error_ok());
   CHECK(declare_global_variable(thread, SYM("Instance"), true, class_instance).is_error_ok());
   CHECK(declare_global_variable(thread, SYM("Class"), true, class_class).is_error_ok());
   CHECK(declare_global_variable(thread, SYM("Shape"), true, class_shape).is_error_ok());

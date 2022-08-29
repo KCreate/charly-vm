@@ -940,11 +940,45 @@ OP(makestr) {
 }
 
 OP(makelist) {
-  THROW_NOT_IMPLEMENTED();
+  int16_t count = op->arg();
+  auto list = RawList::create(thread, count);
+
+  list.set_length(count);
+  for (int16_t i = count - 1; i >= 0; i--) {
+    list.write_at(thread, i, frame->pop());
+  }
+
+  frame->push(list);
+
+  return ContinueMode::Next;
 }
 
 OP(makelistspread) {
-  THROW_NOT_IMPLEMENTED();
+  uint32_t segment_count = op->arg();
+
+  // pop segments from stack
+  uint32_t total_arg_count = 0;
+  RawTuple* segments = static_cast<RawTuple*>(frame->top_n(segment_count));
+  for (uint32_t i = 0; i < segment_count; i++) {
+    auto segment = RawTuple::cast(segments[i]);
+    total_arg_count += segment.size();
+    CHECK(total_arg_count <= kUInt32Max);
+  }
+
+  // unpack segments and copy arguments into new tuple
+  auto list = RawList::create(thread, total_arg_count);
+  list.set_length(total_arg_count);
+  uint32_t last_written_index = 0;
+  for (uint32_t i = 0; i < segment_count; i++) {
+    auto segment = segments[i];
+    for (uint32_t j = 0; j < segment.size(); j++) {
+      list.write_at(thread, last_written_index++, segment.field_at(j));
+    }
+  }
+
+  frame->pop(segment_count);
+  frame->push(list);
+  return ContinueMode::Next;
 }
 
 OP(makedict) {

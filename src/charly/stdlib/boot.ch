@@ -43,6 +43,12 @@ const builtin_future_create = @"charly.builtin.future.futurecreate"
 const builtin_future_resolve = @"charly.builtin.future.futureresolve"
 const builtin_future_reject = @"charly.builtin.future.futurereject"
 
+const builtin_list_create = @"charly.builtin.list.create"
+const builtin_list_insert = @"charly.builtin.list.insert"
+const builtin_list_erase = @"charly.builtin.list.erase"
+const builtin_list_push = @"charly.builtin.list.push"
+const builtin_list_pop = @"charly.builtin.list.pop"
+
 func print(...args) = builtin_writevalue(...args, "\n")
 
 func prompt(message = "", append_to_history = true) {
@@ -127,6 +133,15 @@ func compile(source, name = "repl") = builtin_compile(source, name)
         }
     }
 
+    class builtin_List {
+        func insert(index, value) = builtin_list_insert(self, index, value)
+        func erase(start, count = 1) = builtin_list_erase(self, start, count)
+        func push(value) = builtin_list_push(self, value)
+        func pop() = builtin_list_pop(self)
+
+        static func create(length, initial = null) = builtin_list_create(length, initial)
+    }
+
     class builtin_Function {
         func disassemble() {
             print("disassembly of {self}")
@@ -192,6 +207,7 @@ func compile(source, name = "repl") = builtin_compile(source, name)
     builtin_transplant_builtin_class(Instance, builtin_Instance)
     builtin_transplant_builtin_class(Class, builtin_Class)
     builtin_transplant_builtin_class(Tuple, builtin_Tuple)
+    builtin_transplant_builtin_class(List, builtin_List)
     builtin_transplant_builtin_class(Int, builtin_Int)
     builtin_transplant_builtin_class(Function, builtin_Function)
     builtin_transplant_builtin_class(Exception, builtin_Exception)

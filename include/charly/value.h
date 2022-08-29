@@ -78,6 +78,7 @@ struct SharedFunctionInfo;
   V(Instance)                  \
   V(HugeBytes)                 \
   V(HugeString)                \
+  V(List)                      \
   V(Class)                     \
   V(Shape)                     \
   V(Function)                  \
@@ -130,8 +131,7 @@ enum class ShapeId : uint32_t {
 // clang-format on
 
 static_assert((size_t)ShapeId::kFirstBuiltinShapeId == 19, "invalid first user-defined shape id");
-static_assert((size_t)ShapeId::kLastBuiltinShapeId == 30, "invalid first user-defined shape id");
-static_assert((size_t)ShapeId::kFirstUserDefinedShapeId == 31, "invalid first user-defined shape id");
+static_assert((size_t)ShapeId::kLastBuiltinShapeId == 31, "invalid first user-defined shape id");
 
 // maps the lowest 4 bits of an immediate value to a shape id
 // this table is consulted after the runtime has determined that the value
@@ -717,6 +717,8 @@ public:
 
   void set_field_at(uint32_t index, RawValue value) const;
 
+  void gc_write_barrier(RawValue written_value) const;
+
   static RawObject create_from_ptr(uintptr_t address, bool is_young = true);
 };
 
@@ -836,6 +838,65 @@ public:
     kDataLengthOffset,
     kFieldCount
   };
+};
+
+class RawList : public RawInstance {
+public:
+  COMMON_RAW_OBJECT(List);
+
+  static constexpr uint32_t kInitialCapacity = 16;
+  static constexpr uint32_t kMaximumCapacity = kUInt32Max;
+
+  static RawList create(Thread*, uint32_t initial_capacity = kInitialCapacity);
+  static RawList create_with(Thread*, uint32_t length, RawValue value = kNull);
+
+  RawValue* data() const;
+  void set_data(RawValue* pointer) const;
+
+  uint32_t length() const;
+  void set_length(uint32_t length) const;
+
+  uint32_t capacity() const;
+  void set_capacity(uint32_t capacity) const;
+
+  // returns value at index
+  // throws exception if out of bounds
+  RawValue read_at(Thread*, int64_t index) const;
+
+  // writes value to index
+  // throws exception if out of bounds
+  // returns the written value on success
+  RawValue write_at(Thread*, int64_t index, RawValue value) const;
+
+  // inserts value at index
+  // throws exception if out of bounds
+  // returns the written value on success
+  RawValue insert_at(Thread*, int64_t index, RawValue value) const;
+
+  // erase *count* values starting at index *start*
+  // throws an exception if out of bounds or not enough items
+  // returns null on success
+  RawValue erase_at(Thread*, int64_t start, int64_t count) const;
+
+  // append a value to the list
+  // throws an exception if the list is too big
+  // returns the appended value on success
+  RawValue append_value(Thread*, RawValue value) const;
+
+  // pops the last value from the list
+  // throws an exception if the list is empty
+  // returns the popped value on success
+  RawValue pop_value(Thread*) const;
+
+  enum {
+    kDataOffset = RawInstance::kFieldCount,
+    kLengthOffset,
+    kCapacityOffset,
+    kFieldCount
+  };
+
+private:
+  void reserve_capacity(uint32_t size) const;
 };
 
 // class

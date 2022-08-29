@@ -168,8 +168,17 @@ void GarbageCollector::mark_live_objects() {
 
     if (object.isInstance() || object.isTuple()) {
       auto field_count = object.count();
-      for (size_t index = 0; index < field_count; index++) {
-        mark_queue_value(object.field_at(index));
+      for (size_t i = 0; i < field_count; i++) {
+        mark_queue_value(object.field_at(i));
+      }
+
+      if (object.isList()) {
+        auto list = RawList::cast(object);
+        RawValue* data = list.data();
+        size_t length = list.length();
+        for (size_t i = 0; i < length; i++) {
+          mark_queue_value(data[i]);
+        }
       }
     }
 
@@ -347,20 +356,33 @@ void GarbageCollector::update_old_references() const {
 bool GarbageCollector::update_object_references(RawObject object) const {
   bool contains_young_references = false;
 
+  auto follow_and_update_ref = [&](RawValue& value) {
+    if (value.isObject()) {
+      auto referenced_object = RawObject::cast(value);
+      if (referenced_object.header()->has_forward_target()) {
+        RawObject forwarded_object = referenced_object.header()->forward_target();
+        bool forwarded_is_young = forwarded_object.header()->is_young_generation();
+        if (forwarded_is_young) {
+          contains_young_references = true;
+        }
+        value = forwarded_object;
+      }
+    }
+  };
+
   if (object.isInstance() || object.isTuple()) {
     uint32_t field_count = object.count();
     for (size_t index = 0; index < field_count; index++) {
       RawValue& value = object.field_at(index);
-      if (value.isObject()) {
-        auto referenced_object = RawObject::cast(value);
-        if (referenced_object.header()->has_forward_target()) {
-          RawObject forwarded_object = referenced_object.header()->forward_target();
-          bool forwarded_is_young = forwarded_object.header()->is_young_generation();
-          if (forwarded_is_young) {
-            contains_young_references = true;
-          }
-          value = forwarded_object;
-        }
+      follow_and_update_ref(value);
+    }
+
+    if (object.isList()) {
+      auto list = RawList::cast(object);
+      RawValue* data = list.data();
+      size_t length = list.length();
+      for (size_t i = 0; i < length; i++) {
+        follow_and_update_ref(data[i]);
       }
     }
   }
@@ -461,6 +483,12 @@ void GarbageCollector::deallocate_object_heap_ressources(RawObject object) const
       utils::Allocator::free(wait_queue);
       future.set_wait_queue(nullptr);
     }
+  } else if (object.isList()) {
+    auto list = RawList::cast(object);
+    RawValue* data = list.data();
+    DCHECK(data);
+    utils::Allocator::free(data);
+    list.set_data(nullptr);
   }
 }
 
@@ -556,12 +584,25 @@ void GarbageCollector::validate_heap_and_roots() const {
       }
 
       if (object.isInstance() || object.isTuple()) {
+        HeapRegion* region = header->heap_region();
         uint32_t field_count = object.count();
         for (size_t index = 0; index < field_count; index++) {
           RawValue field = object.field_at(index);
-          HeapRegion* region = header->heap_region();
           if (field.is_young_pointer() && region->type == HeapRegion::Type::Old) {
             DCHECK(region->span_get_dirty_flag(region->span_get_index_for_pointer(bitcast<uintptr_t>(header))));
+          }
+        }
+
+        if (object.isList()) {
+          auto list = RawList::cast(object);
+          RawValue* data = list.data();
+          size_t length = list.length();
+
+          for (size_t i = 0; i < length; i++) {
+            RawValue field = data[i];
+            if (field.is_young_pointer() && region->type == HeapRegion::Type::Old) {
+              DCHECK(region->span_get_dirty_flag(region->span_get_index_for_pointer(bitcast<uintptr_t>(header))));
+            }
           }
         }
       }

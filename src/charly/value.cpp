@@ -418,6 +418,9 @@ RawValue RawValue::load_attr_number(Thread* thread, int64_t index) const {
     }
 
     return tuple.field_at(real_index);
+  } else if (isList()) {
+    auto list = RawList::cast(this);
+    return list.read_at(thread, index);
   } else if (isString()) {
     // TODO: optimize string index lookup
     //
@@ -536,6 +539,9 @@ RawValue RawValue::set_attr_number(Thread* thread, int64_t index, RawValue value
 
     tuple.set_field_at(real_index, value);
     return value;
+  } else if (isList()) {
+    auto list = RawList::cast(this);
+    return list.write_at(thread, index, value);
   } else {
     return thread->throw_message("Cannot perform index write on value of type '%'", klass_name(thread));
   }
@@ -653,34 +659,6 @@ RawValue RawValue::op_mul(Thread* thread, RawValue other) {
     return RawString::acquire(thread, buffer);
   }
 
-  if (isTuple() && other.isNumber()) {
-    int64_t count = other.int_value();
-
-    if (count <= 0) {
-      return RawTuple::create_empty(thread);
-    }
-
-    if (count == 1) {
-      return *this;
-    }
-
-    HandleScope scope(thread);
-    Tuple tuple(scope, *this);
-
-    size_t old_size = tuple.size();
-    size_t new_size = old_size * count;
-    Tuple new_tuple(scope, RawTuple::create(thread, new_size));
-
-    for (size_t i = 0; i < (size_t)count; i++) {
-      for (size_t j = 0; j < old_size; j++) {
-        size_t new_index = (old_size * i) + j;
-        new_tuple.set_field_at(new_index, tuple.field_at(j));
-      }
-    }
-
-    return *new_tuple;
-  }
-
   return kNaN;
 }
 
@@ -764,6 +742,10 @@ RawValue RawValue::op_eq(Thread* thread, RawValue other) {
     }
 
     return kTrue;
+  }
+
+  if (isList() && other.isList()) {
+    FAIL("list comparison not implemented yet");
   }
 
   return kFalse;
@@ -893,6 +875,10 @@ bool RawValue::isHugeString() const {
 
 bool RawValue::isTuple() const {
   return shape_id() == ShapeId::kTuple;
+}
+
+bool RawValue::isList() const {
+  return shape_id() == ShapeId::kList;
 }
 
 bool RawValue::isClass() const {
@@ -1030,6 +1016,32 @@ void RawValue::dump(std::ostream& out) const {
       }
 
       writer.fg(Color::Grey, ")");
+
+      return;
+    }
+
+    if (isList()) {
+      auto list = RawList::cast(this);
+
+      writer.fg(Color::Grey, "[");
+
+      if (list.is_locked()) {
+        writer.fg(Color::Grey, "...");
+      } else {
+        std::lock_guard locker(list); // need to grab lock since list might change while we're printing it
+        RawValue* data = list.data();
+        size_t length = list.length();
+
+        if (length) {
+          data[0].dump(out);
+          for (uint32_t i = 1; i < length; i++) {
+            writer.fg(Color::Grey, ", ");
+            data[i].dump(out);
+          }
+        }
+      }
+
+      writer.fg(Color::Grey, "]");
 
       return;
     }
@@ -1588,8 +1600,11 @@ bool RawObject::is_locked() const {
 
 void RawObject::set_field_at(uint32_t index, RawValue value) const {
   field_at(index) = value;
+  gc_write_barrier(value);
+}
 
-  if (value.is_young_pointer() && this->is_old_pointer()) {
+void RawObject::gc_write_barrier(RawValue written_value) const {
+  if (written_value.is_young_pointer() && this->is_old_pointer()) {
     HeapRegion* region = header()->heap_region();
     DCHECK(region->type == HeapRegion::Type::Old);
     size_t span_index = region->span_get_index_for_pointer(base_address());
@@ -1860,6 +1875,190 @@ void RawHugeString::set_byte_length(size_t length) const {
   auto length_int = bitcast<int64_t>(length);
   DCHECK(length_int >= 0);
   set_field_at(kDataLengthOffset, RawInt::create(length_int));
+}
+
+RawList RawList::create(Thread* thread, uint32_t initial_capacity) {
+  auto* runtime = thread->runtime();
+  auto list_class = runtime->get_builtin_class(ShapeId::kList);
+  auto list = RawList::cast(
+    RawInstance::create(thread, ShapeId::kList, RawList::kFieldCount, list_class));
+
+  size_t new_capacity = kInitialCapacity;
+  while (new_capacity < initial_capacity) {
+    new_capacity *= 2;
+  }
+
+  DCHECK(new_capacity <= kUInt32Max);
+
+  auto buffer = static_cast<RawValue*>(utils::Allocator::alloc(new_capacity * sizeof(RawValue)));
+  list.set_data(buffer);
+  list.set_length(0);
+  list.set_capacity(new_capacity);
+
+  return list;
+}
+
+RawList RawList::create_with(Thread* thread, uint32_t length, RawValue _value) {
+  HandleScope scope(thread);
+  Value value(scope, _value);
+
+  auto list = RawList::create(thread, length);
+  list.set_length(length);
+  for (uint32_t i = 0; i < length; i++) {
+    list.write_at(thread, i, value);
+  }
+  return list;
+}
+
+RawValue* RawList::data() const {
+  return bitcast<RawValue*>(pointer_at(kDataOffset));
+}
+
+void RawList::set_data(RawValue* pointer) const {
+  set_pointer_at(kDataOffset, pointer);
+}
+
+uint32_t RawList::length() const {
+  return field_at<RawInt>(kLengthOffset).value();
+}
+
+void RawList::set_length(uint32_t length) const {
+  set_field_at(kLengthOffset, RawInt::create(length));
+}
+
+uint32_t RawList::capacity() const {
+  return field_at<RawInt>(kCapacityOffset).value();
+}
+
+void RawList::set_capacity(uint32_t capacity) const {
+  set_field_at(kCapacityOffset, RawInt::create(capacity));
+}
+
+void RawList::reserve_capacity(uint32_t expected_size) const {
+  DCHECK(is_locked());
+
+  if (expected_size > capacity()) {
+    size_t new_capacity = capacity() * 2;
+    while (new_capacity < expected_size) {
+      new_capacity *= 2;
+    }
+
+    auto* new_buffer = static_cast<RawValue*>(utils::Allocator::alloc(new_capacity * sizeof(RawValue)));
+    DCHECK(new_buffer);
+
+    auto* buffer = data();
+    std::memcpy(new_buffer, buffer, this->length() * sizeof(RawValue));
+
+    utils::Allocator::free(buffer);
+
+    set_data(new_buffer);
+    set_capacity(new_capacity);
+  }
+}
+
+RawValue RawList::read_at(Thread* thread, int64_t index) const {
+  std::lock_guard locker(*this);
+
+  int64_t real_index = wrap_negative_indices(index, length());
+
+  if (real_index < 0 || (size_t)real_index >= length()) {
+    return thread->throw_message("List index out of range");
+  }
+
+  return data()[real_index];
+}
+
+RawValue RawList::write_at(Thread* thread, int64_t index, RawValue value) const {
+  std::lock_guard locker(*this);
+
+  size_t length = this->length();
+
+  int64_t real_index = wrap_negative_indices(index, length);
+
+  if (real_index < 0 || (size_t)real_index >= length) {
+    return thread->throw_message("List index out of range");
+  }
+
+  data()[real_index] = value;
+  gc_write_barrier(value);
+  return value;
+}
+
+RawValue RawList::insert_at(Thread* thread, int64_t index, RawValue value) const {
+  std::lock_guard locker(*this);
+
+  size_t length = this->length();
+
+  int64_t real_index = wrap_negative_indices(index, length);
+
+  if (real_index < 0 || (size_t)real_index > length) {
+    return thread->throw_message("List index out of range");
+  }
+
+  if (length == kMaximumCapacity) {
+    return thread->throw_message("List exceeded maximum size");
+  }
+
+  reserve_capacity(length + 1);
+  size_t values_after_insert = length - real_index;
+  std::memmove(data() + real_index + 1, data() + real_index, values_after_insert * sizeof(RawValue));
+  data()[real_index] = value;
+  set_length(length + 1);
+  gc_write_barrier(value);
+  return value;
+}
+
+RawValue RawList::erase_at(Thread* thread, int64_t start, int64_t count) const {
+  std::lock_guard locker(*this);
+
+  size_t length = this->length();
+  int64_t real_start = wrap_negative_indices(start, length);
+
+  if (real_start < 0 || (size_t)real_start >= length) {
+    return thread->throw_message("List index out of range");
+  }
+
+  if (count <= 0) {
+    return thread->throw_message("Expected count to be greater than 0");
+  }
+
+  if ((size_t)(real_start + count) > length) {
+    return thread->throw_message("Not enough values in list to erase");
+  }
+
+  // shift back values after the erased values
+  size_t values_after_erase = length - real_start - count;
+  std::memmove(data() + real_start, data() + real_start + count, values_after_erase * sizeof(RawValue));
+  set_length(length - count);
+  // TODO: shrink list if a lot of space got freed up?
+  return kNull;
+}
+
+RawValue RawList::append_value(Thread* thread, RawValue value) const {
+  std::lock_guard locker(*this);
+  size_t length = this->length();
+
+  if (length == kMaximumCapacity) {
+    return thread->throw_message("List exceeded maximum size");
+  }
+
+  reserve_capacity(length + 1);
+  data()[length] = value;
+  set_length(length + 1);
+  return value;
+}
+
+RawValue RawList::pop_value(Thread* thread) const {
+  std::lock_guard locker(*this);
+  size_t length = this->length();
+
+  if (length == 0) {
+    return thread->throw_message("List is empty");
+  }
+
+  RawValue result = data()[length - 1];
+  set_length(length - 1);
+  return result;
 }
 
 RawValue RawClass::create(Thread* thread,

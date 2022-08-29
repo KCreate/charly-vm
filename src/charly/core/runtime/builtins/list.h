@@ -24,39 +24,21 @@
  * SOFTWARE.
  */
 
-const list = []
+#include "charly/core/runtime/builtins/builtin.h"
+#include "charly/value.h"
 
-list.insert(0, 10)
-list.insert(0, 20)
-list.insert(0, 30)
-list.insert(0, 40)
-list.insert(0, 50)
+#pragma once
 
-print(list)
+namespace charly::core::runtime::builtin::list {
 
-list.erase(1, 3)
+void initialize(Thread* thread);
 
-print(list)
+#define DEF_BUILTIN_LIST(V) \
+  V(list, create, 2)        \
+  V(list, insert, 3)        \
+  V(list, erase, 3)         \
+  V(list, push, 2)          \
+  V(list, pop, 1)
+DEF_BUILTIN_LIST(DEFINE_BUILTIN_METHOD_DECLARATIONS)
 
-list[0] = true
-list[1] = false
-
-print(list)
-
-class Box {
-    property value
-}
-
-list.push(Box(1))
-list.push(Box(2))
-list.push(Box(3))
-list.push(Box(4))
-
-print(list)
-
-
-
-
-
-
-
+}  // namespace charly::core::runtime::builtin::list
