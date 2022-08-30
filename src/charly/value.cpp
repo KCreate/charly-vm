@@ -941,7 +941,19 @@ int64_t RawValue::int_value() const {
   if (isInt()) {
     return RawInt::cast(this).value();
   } else if (isFloat()) {
-    return RawFloat::cast(this).value();
+    double value = RawFloat::cast(this).value();
+
+    if (std::isnan(value)) {
+      return 0;
+    } else if (std::isinf(value)) {
+      if (value < 0) {
+        return RawInt::kMinValue;
+      } else {
+        return RawInt::kMaxValue;
+      }
+    }
+
+    return value;
   }
 
   UNREACHABLE();
