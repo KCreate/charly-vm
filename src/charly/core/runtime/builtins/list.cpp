@@ -28,8 +28,8 @@
 #include <fstream>
 
 #include "charly/core/runtime/builtins/list.h"
-#include "charly/core/runtime/runtime.h"
 #include "charly/core/runtime/interpreter.h"
+#include "charly/core/runtime/runtime.h"
 
 namespace charly::core::runtime::builtin::list {
 
@@ -42,20 +42,20 @@ void initialize(Thread* thread) {
 RawValue create(Thread* thread, BuiltinFrame* frame) {
   CHECK(frame->arguments[0].isNumber());
 
-  int64_t length = frame->arguments[0].int_value();
+  RawValue size_value = frame->arguments[0];
+  int64_t size = size_value.int_value();
+  RawValue initial_value = frame->arguments[1];
 
-  if (length < 0) {
-    return thread->throw_message("Expected length to be positive");
+  if (size < 0) {
+    return thread->throw_message("Expected length to be positive, got %", size_value);
   }
 
-  if (length > RawList::kMaximumCapacity) {
-    return thread->throw_message("List exceeds maximum length");
+  if (size > (int64_t)RawList::kMaximumCapacity) {
+    return thread->throw_message("Expected length to be smaller than the maximum list capacity of %, got %",
+                                 RawList::kMaximumCapacity, size_value);
   }
 
-  HandleScope scope(thread);
-  Value initial_value(scope, frame->arguments[1]);
-  List list(scope, RawList::create_with(thread, length, initial_value));
-  return list;
+  return RawList::create_with(thread, size, initial_value);
 }
 
 RawValue insert(Thread* thread, BuiltinFrame* frame) {
@@ -76,7 +76,6 @@ RawValue erase(Thread* thread, BuiltinFrame* frame) {
   auto list = RawList::cast(frame->arguments[0]);
   int64_t start = frame->arguments[1].int_value();
   int64_t count = frame->arguments[2].int_value();
-
   return list.erase_at(thread, start, count);
 }
 
@@ -92,4 +91,4 @@ RawValue pop(Thread* thread, BuiltinFrame* frame) {
   return list.pop_value(thread);
 }
 
-}  // namespace charly::core::runtime::builtin::future
+}  // namespace charly::core::runtime::builtin::list

@@ -941,11 +941,13 @@ OP(makestr) {
 
 OP(makelist) {
   int16_t count = op->arg();
+  DCHECK(count >= 0);
   auto list = RawList::create(thread, count);
 
   list.set_length(count);
+  auto* data = list.data();
   for (int16_t i = count - 1; i >= 0; i--) {
-    list.write_at(thread, i, frame->pop());
+    data[i] = frame->pop();
   }
 
   frame->push(list);
@@ -968,11 +970,12 @@ OP(makelistspread) {
   // unpack segments and copy arguments into new tuple
   auto list = RawList::create(thread, total_arg_count);
   list.set_length(total_arg_count);
+  auto* data = list.data();
   uint32_t last_written_index = 0;
   for (uint32_t i = 0; i < segment_count; i++) {
     auto segment = segments[i];
     for (uint32_t j = 0; j < segment.size(); j++) {
-      list.write_at(thread, last_written_index++, segment.field_at(j));
+      data[last_written_index++] = segment.field_at(j);
     }
   }
 

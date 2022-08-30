@@ -380,7 +380,9 @@ public:
     return m_raw != other.raw();
   }
 
-  uintptr_t raw() const;
+  uintptr_t raw() const {
+    return m_raw;
+  }
   bool is_error() const;
   bool is_error_ok() const;
   bool is_error_exception() const;
@@ -844,20 +846,20 @@ class RawList : public RawInstance {
 public:
   COMMON_RAW_OBJECT(List);
 
-  static constexpr uint32_t kInitialCapacity = 16;
-  static constexpr uint32_t kMaximumCapacity = kUInt32Max;
+  static constexpr size_t kInitialCapacity = 16;
+  static constexpr size_t kMaximumCapacity = (size_t)1 << 28; // ~270 million values (2GB)
 
-  static RawList create(Thread*, uint32_t initial_capacity = kInitialCapacity);
-  static RawList create_with(Thread*, uint32_t length, RawValue value = kNull);
+  static RawList create(Thread*, size_t initial_capacity = kInitialCapacity);
+  static RawList create_with(Thread*, size_t length, RawValue value = kNull);
 
   RawValue* data() const;
   void set_data(RawValue* pointer) const;
 
-  uint32_t length() const;
-  void set_length(uint32_t length) const;
+  size_t length() const;
+  void set_length(size_t length) const;
 
-  uint32_t capacity() const;
-  void set_capacity(uint32_t capacity) const;
+  size_t capacity() const;
+  void set_capacity(size_t capacity) const;
 
   // returns value at index
   // throws exception if out of bounds
@@ -896,7 +898,9 @@ public:
   };
 
 private:
-  void reserve_capacity(uint32_t size) const;
+  // reserve space to hold at least *size* values
+  // throws an exception if list exceeds maximum size
+  RawValue reserve_capacity(Thread*, size_t size) const;
 };
 
 // class
