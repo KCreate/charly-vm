@@ -186,6 +186,12 @@ RawValue Interpreter::call_function(Thread* thread,
     auto context = RawTuple::create(thread, RawFunction::kContextHeapVariablesOffset + heap_variables);
     context.set_field_at(RawFunction::kContextParentOffset, frame.function.context());
     context.set_field_at(RawFunction::kContextSelfOffset, frame.self);
+
+    // initialize heap variables to null
+    for (uint8_t i = 0; i < heap_variables; i++) {
+      context.set_field_at(RawFunction::kContextHeapVariablesOffset + i, kNull);
+    }
+
     frame.context = context;
   } else {
     frame.context = frame.function.context();
