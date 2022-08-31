@@ -97,7 +97,7 @@ const StringTableEntry& InterpreterFrame::get_string_table_entry(uint16_t index)
 }
 
 RawValue Interpreter::call_value(
-  Thread* thread, RawValue self, RawValue target, const RawValue* arguments, uint32_t argc, RawValue argument_tuple) {
+  Thread* thread, RawValue self, RawValue target, RawValue* arguments, uint32_t argc, RawValue argument_tuple) {
   if (target.isFunction()) {
     auto function = RawFunction::cast(target);
     return Interpreter::call_function(thread, self, function, arguments, argc, false, argument_tuple);
@@ -121,7 +121,7 @@ RawValue Interpreter::call_value(
 RawValue Interpreter::call_function(Thread* thread,
                                     RawValue self,
                                     RawFunction function,
-                                    const RawValue* arguments,
+                                    RawValue* arguments,
                                     uint32_t argc,
                                     bool constructor_call,
                                     RawValue argument_tuple) {
@@ -247,7 +247,7 @@ RawValue Interpreter::call_function(Thread* thread,
 RawValue Interpreter::call_builtin_function(Thread* thread,
                                             RawValue self,
                                             RawBuiltinFunction function,
-                                            const RawValue* arguments,
+                                            RawValue* arguments,
                                             uint32_t argc,
                                             RawValue argument_tuple) {
   BuiltinFrame frame(thread);

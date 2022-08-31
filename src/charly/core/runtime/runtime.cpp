@@ -745,9 +745,13 @@ void Runtime::each_root(std::function<void(RawValue& value)> callback) {
     auto* frame = thread->frame();
     while (frame) {
       callback(frame->self);
-      // frame->arguments pointer is not explicitly traversed
-      // referenced objects are already traversed via either stack traversal or frame->argument_tuple
       callback(frame->argument_tuple);
+
+      if (frame->arguments) {
+        for (uint32_t i = 0; i < frame->argc; i++) {
+          callback(frame->arguments[i]);
+        }
+      }
 
       if (frame->is_interpreter_frame()) {
         auto* interpreter_frame = static_cast<InterpreterFrame*>(frame);

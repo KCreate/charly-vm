@@ -765,7 +765,7 @@ public:
   static RawTuple create(Thread*, RawValue value1, RawValue value2);
   static RawTuple concat_value(Thread*, RawTuple left, RawValue value);
 
-  const RawValue* data() const;
+  RawValue* data() const;
   uint32_t size() const;
 };
 

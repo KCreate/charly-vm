@@ -1717,8 +1717,8 @@ RawTuple RawTuple::concat_value(Thread* thread, RawTuple left, RawValue value) {
   return *new_tuple;
 }
 
-const RawValue* RawTuple::data() const {
-  return bitcast<const RawValue*>(address());
+RawValue* RawTuple::data() const {
+  return bitcast<RawValue*>(address());
 }
 
 uint32_t RawTuple::size() const {

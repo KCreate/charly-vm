@@ -253,7 +253,7 @@ void Thread::entry_fiber_thread() {
   Fiber fiber(scope, m_fiber);
   Value arguments(scope, fiber.arguments());
 
-  const RawValue* arguments_pointer = nullptr;
+  RawValue* arguments_pointer = nullptr;
   size_t argc = 0;
   if (arguments.isTuple()) {
     Tuple argtuple(scope, arguments);

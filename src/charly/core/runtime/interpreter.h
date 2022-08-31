@@ -49,7 +49,7 @@ struct Frame {
   size_t depth;
   RawValue self;
   RawValue argument_tuple;
-  const RawValue* arguments = nullptr;
+  RawValue* arguments = nullptr;
   uint32_t argc = 0;
 
   bool is_interpreter_frame() const {
@@ -104,7 +104,7 @@ public:
   static RawValue call_value(Thread* thread,
                              RawValue self,
                              RawValue target,
-                             const RawValue* arguments,
+                             RawValue* arguments,
                              uint32_t argc,
                              RawValue argument_tuple = kNull);
 
@@ -113,7 +113,7 @@ public:
   static RawValue call_function(Thread* thread,
                                 RawValue self,
                                 RawFunction function,
-                                const RawValue* arguments,
+                                RawValue* arguments,
                                 uint32_t argc,
                                 bool constructor_call = false,
                                 RawValue argument_tuple = kNull);
@@ -121,7 +121,7 @@ public:
   static RawValue call_builtin_function(Thread* thread,
                                         RawValue self,
                                         RawBuiltinFunction function,
-                                        const RawValue* arguments,
+                                        RawValue* arguments,
                                         uint32_t argc,
                                         RawValue argument_tuple = kNull);
 
