@@ -24,5 +24,34 @@
  * SOFTWARE.
  */
 
-//print(Tuple.create(-1).length)
-print(Tuple.create(65012 + 1).length)
+func create_store {
+    let storage = null
+
+    func load {
+        performgc()
+        return storage
+    }
+
+    func write(value) {
+        performgc()
+        storage = value
+    }
+
+    return (load, write)
+}
+
+const (load, write) = create_store()
+
+print(load())
+
+write(100)
+print(load())
+
+write(200)
+print(load())
+
+
+
+
+
+

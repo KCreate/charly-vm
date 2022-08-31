@@ -181,6 +181,32 @@ RawValue createtuple(Thread* thread, BuiltinFrame* frame) {
   return tuple;
 }
 
+RawValue createtuplewith(Thread* thread, BuiltinFrame* frame) {
+  DCHECK(frame->arguments[0].isNumber());
+  DCHECK(frame->arguments[1].isFunction());
+
+  int64_t length = frame->arguments[0].int_value();
+  if (length < 0) {
+    return thread->throw_message("Expected length to be positive, got %", length);
+  }
+
+  if ((size_t)length > kHeapRegionMaximumObjectFieldCount) {
+    return thread->throw_message("Expected length to be smaller than the maximum tuple capacity of %, got %",
+                                 kHeapRegionMaximumObjectFieldCount, length);
+  }
+
+  HandleScope scope(thread);
+  Function callback(scope, frame->arguments[1]);
+  Tuple tuple(scope, RawTuple::create(thread, length));
+  for (int64_t i = 0; i < length; i++) {
+    auto index = RawInt::create(i);
+    RawValue value = Interpreter::call_function(thread, kNull, callback, &index, 1);
+    tuple.set_field_at(i, value);
+  }
+
+  return tuple;
+}
+
 RawValue exit(Thread* thread, BuiltinFrame* frame) {
   DCHECK(frame->arguments[0].isInt());
   thread->abort((int32_t)RawInt::cast(frame->arguments[0]).value());

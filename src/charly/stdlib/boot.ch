@@ -31,6 +31,7 @@ const builtin_currentworkingdirectory = @"charly.builtin.core.currentworkingdire
 const builtin_getstacktrace = @"charly.builtin.core.getstacktrace"
 const builtin_disassemble = @"charly.builtin.core.disassemble"
 const builtin_createtuple = @"charly.builtin.core.createtuple"
+const builtin_createtuplewith = @"charly.builtin.core.createtuplewith"
 const builtin_exit = @"charly.builtin.core.exit"
 const builtin_performgc = @"charly.builtin.core.performgc"
 const builtin_compile = @"charly.builtin.core.compile"
@@ -106,11 +107,9 @@ func compile(source, name = "repl") = builtin_compile(source, name)
         }
 
         func map(cb) {
-            const rv = Tuple.create(@length)
-            each(->(e, i) {
-                rv[i] = cb(e, i, self)
+            return Tuple.create_with(@length, ->(i) {
+                cb(self[i], i, self)
             })
-            rv
         }
 
         func reduce(cb, initial = null) {
@@ -124,13 +123,7 @@ func compile(source, name = "repl") = builtin_compile(source, name)
         func sum = reduce(->(p, e) p + e, 0)
 
         static func create(length, initial = null) = builtin_createtuple(length, initial)
-
-        static func create_with(length, cb) {
-            const tuple = Tuple.create(length)
-            tuple.each(->(_, i) {
-                tuple[i] = cb(i)
-            })
-        }
+        static func create_with(length, cb) = builtin_createtuplewith(length, cb)
     }
 
     class builtin_List {

@@ -524,18 +524,7 @@ RawValue RawValue::set_attr(Thread* thread, RawValue attribute, RawValue value) 
 }
 
 RawValue RawValue::set_attr_number(Thread* thread, int64_t index, RawValue value) const {
-  if (isTuple()) {
-    auto tuple = RawTuple::cast(this);
-    auto size = tuple.size();
-    auto real_index = wrap_negative_indices(index, size);
-
-    if (real_index < 0 || real_index >= size) {
-      return thread->throw_message("Tuple index (%) out of range", real_index);
-    }
-
-    tuple.set_field_at(real_index, value);
-    return value;
-  } else if (isList()) {
+  if (isList()) {
     auto list = RawList::cast(this);
     return list.write_at(thread, index, value);
   } else {
