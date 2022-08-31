@@ -140,6 +140,7 @@ constexpr size_t kHeapRegionUsableSize = kHeapRegionSize - sizeof(HeapRegion);
 
 // usable size for object payloads (size excluding object header)
 constexpr size_t kHeapRegionUsableSizeForPayload = kHeapRegionUsableSize - sizeof(ObjectHeader);
+constexpr size_t kHeapRegionMaximumObjectFieldCount = kHeapRegionUsableSizeForPayload / kPointerSize;
 
 class ThreadAllocationBuffer;
 class GarbageCollector;

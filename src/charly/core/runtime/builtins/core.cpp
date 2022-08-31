@@ -158,21 +158,23 @@ RawValue disassemble(Thread*, BuiltinFrame* frame) {
   return kNull;
 }
 
-RawValue maketuple(Thread* thread, BuiltinFrame* frame) {
-  DCHECK(frame->arguments[0].isInt() || frame->arguments[0].isFloat());
+RawValue createtuple(Thread* thread, BuiltinFrame* frame) {
+  DCHECK(frame->arguments[0].isNumber());
 
-  int64_t size;
-  if (frame->arguments[0].isFloat()) {
-    size = static_cast<int64_t>(RawFloat::cast(frame->arguments[0]).value());
-  } else {
-    size = static_cast<int64_t>(RawInt::cast(frame->arguments[0]).value());
+  int64_t length = frame->arguments[0].int_value();
+  if (length < 0) {
+    return thread->throw_message("Expected length to be positive, got %", length);
   }
-  CHECK(size >= 0, "expected size to be positive number");
+
+  if ((size_t)length > kHeapRegionMaximumObjectFieldCount) {
+    return thread->throw_message("Expected length to be smaller than the maximum tuple capacity of %, got %",
+                                 kHeapRegionMaximumObjectFieldCount, length);
+  }
 
   HandleScope scope(thread);
   Value initial(scope, frame->arguments[1]);
-  Tuple tuple(scope, RawTuple::create(thread, size));
-  for (int64_t i = 0; i < size; i++) {
+  Tuple tuple(scope, RawTuple::create(thread, length));
+  for (int64_t i = 0; i < length; i++) {
     tuple.set_field_at(i, initial);
   }
 

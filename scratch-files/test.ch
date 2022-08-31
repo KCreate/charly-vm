@@ -24,12 +24,5 @@
  * SOFTWARE.
  */
 
-print("256", List.create(1024 * 1024 * 256).length)
-print("128", List.create(1024 * 1024 * 128).length)
-print("64", List.create(1024 * 1024 * 64).length)
-print("32", List.create(1024 * 1024 * 32).length)
-print("16", List.create(1024 * 1024 * 16).length)
-print("8", List.create(1024 * 1024 * 8).length)
-print("4", List.create(1024 * 1024 * 4).length)
-print("2", List.create(1024 * 1024 * 2).length)
-print("1", List.create(1024 * 1024 * 1).length)
+//print(Tuple.create(-1).length)
+print(Tuple.create(65012 + 1).length)

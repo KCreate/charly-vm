@@ -30,7 +30,7 @@ const builtin_writevalue = @"charly.builtin.core.writevalue"
 const builtin_currentworkingdirectory = @"charly.builtin.core.currentworkingdirectory"
 const builtin_getstacktrace = @"charly.builtin.core.getstacktrace"
 const builtin_disassemble = @"charly.builtin.core.disassemble"
-const builtin_maketuple = @"charly.builtin.core.maketuple"
+const builtin_createtuple = @"charly.builtin.core.createtuple"
 const builtin_exit = @"charly.builtin.core.exit"
 const builtin_performgc = @"charly.builtin.core.performgc"
 const builtin_compile = @"charly.builtin.core.compile"
@@ -106,7 +106,7 @@ func compile(source, name = "repl") = builtin_compile(source, name)
         }
 
         func map(cb) {
-            const rv = Tuple.make(@length)
+            const rv = Tuple.create(@length)
             each(->(e, i) {
                 rv[i] = cb(e, i, self)
             })
@@ -123,10 +123,10 @@ func compile(source, name = "repl") = builtin_compile(source, name)
 
         func sum = reduce(->(p, e) p + e, 0)
 
-        static func make(length, initial = null) = builtin_maketuple(length, initial)
+        static func create(length, initial = null) = builtin_createtuple(length, initial)
 
-        static func make_with(length, cb) {
-            const tuple = Tuple.make(length)
+        static func create_with(length, cb) {
+            const tuple = Tuple.create(length)
             tuple.each(->(_, i) {
                 tuple[i] = cb(i)
             })

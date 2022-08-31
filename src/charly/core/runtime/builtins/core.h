@@ -40,7 +40,7 @@ void initialize(Thread* thread);
   V(core, currentworkingdirectory, 0) \
   V(core, getstacktrace, 0)           \
   V(core, disassemble, 1)             \
-  V(core, maketuple, 2)               \
+  V(core, createtuple, 2)             \
   V(core, exit, 1)                    \
   V(core, performgc, 0)               \
   V(core, compile, 2)
