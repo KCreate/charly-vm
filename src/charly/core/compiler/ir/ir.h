@@ -268,8 +268,6 @@ struct IRBasicBlock {
   std::list<ref<IRInstruction>> instructions;
 
   // control-flow-graph data
-  ref<IRBasicBlock> next_block;
-  ref<IRBasicBlock> previous_block;
   std::unordered_set<ref<IRBasicBlock>> outgoing_blocks;
   std::unordered_set<ref<IRBasicBlock>> incoming_blocks;
 

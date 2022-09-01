@@ -187,17 +187,22 @@ void Builder::finish_function() {
 
 void Builder::remove_empty_blocks() {
   auto it = m_active_function->basic_blocks.begin();
-  while (it != m_active_function->basic_blocks.end()) {
-    ref<IRBasicBlock> block = *it;
+  auto end_it = m_active_function->basic_blocks.end();
+  while (it != end_it && std::next(it) != end_it) {
+    auto& block = *it;
+    auto& next_block = *std::next(it);
 
-    // remove empty blocks
+    DCHECK(block);
+    DCHECK(next_block);
+
     if (block->instructions.empty()) {
+
       // propagate labels to next block
-      if (block->next_block && !block->labels.empty()) {
+      if (!block->labels.empty()) {
         for (Label label : block->labels) {
-          m_labelled_blocks.insert_or_assign(label, block->next_block);
+          m_labelled_blocks.insert_or_assign(label, next_block);
         }
-        block->next_block->labels.insert(block->labels.begin(), block->labels.end());
+        next_block->labels.insert(block->labels.begin(), block->labels.end());
       }
 
       IRBasicBlock::unlink(block);
@@ -211,78 +216,91 @@ void Builder::remove_empty_blocks() {
 
 void Builder::trim_dead_instructions() {
   for (const ref<IRBasicBlock>& block : m_active_function->basic_blocks) {
-    bool block_terminated = false;
-    auto inst_it = block->instructions.begin();
-    while (inst_it != block->instructions.end()) {
-      const ref<IRInstruction>& inst = *inst_it;
-
-      // remove instructions after terminating opcode
-      if (block_terminated) {
-        inst_it = block->instructions.erase(inst_it);
-        continue;
-      }
+    auto it = block->instructions.begin();
+    auto end_it = block->instructions.end();
+    while (it != end_it) {
+      const auto& inst = *it;
 
       if (kTerminatingOpcodes.count(inst->opcode)) {
-        block_terminated = true;
+        block->instructions.erase(std::next(it), end_it);
+        break;
       }
 
-      inst_it++;
+      it++;
     }
   }
 }
 
 void Builder::build_cfg() {
-  for (const ref<IRBasicBlock>& block : m_active_function->basic_blocks) {
-    // empty blocks fallthrough to the next block
-    if (block->instructions.empty()) {
-      IRBasicBlock::link(block, block->next_block);
+  auto it = m_active_function->basic_blocks.begin();
+  auto end_it = m_active_function->basic_blocks.end();
+
+  while (it != end_it) {
+    auto& block = *it;
+    auto next_block_it = std::next(it);
+
+    // empty blocks fall through to the next block
+    if (block->instructions.empty() && next_block_it != end_it) {
+      IRBasicBlock::link(block, *next_block_it);
+      it = next_block_it;
       continue;
     }
 
-    // populate exception handler source table
+    // link exception handlers
     if (block->exception_handler.has_value()) {
       auto handler_block = m_labelled_blocks.at(block->exception_handler.value());
       handler_block->exception_handler_sources.insert(block);
     }
 
-    ref<IRInstruction> op = block->instructions.back();
-    switch (op->opcode) {
+    const auto& last_op = block->instructions.back();
+    switch (last_op->opcode) {
       case Opcode::jmp: {
-        Label target_label = op->as_jmp()->arg;
-        ref<IRBasicBlock> target_block = m_labelled_blocks.at(target_label);
+        Label target_label = last_op->as_jmp()->arg;
+        const auto& target_block = m_labelled_blocks.at(target_label);
         IRBasicBlock::link(block, target_block);
-        continue;
+        break;
       }
-      case Opcode::jmpf:
-      case Opcode::jmpt: {
-        Label target_label = op->as_iaax()->arg;
-        ref<IRBasicBlock> target_block = m_labelled_blocks.at(target_label);
-        DCHECK(block->next_block);
+      case Opcode::jmpf: {
+        Label target_label = last_op->as_jmpf()->arg;
+        const auto& target_block = m_labelled_blocks.at(target_label);
         IRBasicBlock::link(block, target_block);
-        IRBasicBlock::link(block, block->next_block);
-        continue;
+        DCHECK(next_block_it != end_it);
+        IRBasicBlock::link(block, *next_block_it);
+        break;
+      }
+      case Opcode::jmpt: {
+        Label target_label = last_op->as_jmpt()->arg;
+        const auto& target_block = m_labelled_blocks.at(target_label);
+        IRBasicBlock::link(block, target_block);
+        DCHECK(next_block_it != end_it);
+        IRBasicBlock::link(block, *next_block_it);
+        break;
       }
       case Opcode::argcjmp: {
-        Label target_label = op->as_argcjmp()->arg2;
-        ref<IRBasicBlock> target_block = m_labelled_blocks.at(target_label);
-        DCHECK(block->next_block);
+        Label target_label = last_op->as_argcjmp()->arg2;
+        const auto& target_block = m_labelled_blocks.at(target_label);
         IRBasicBlock::link(block, target_block);
-        IRBasicBlock::link(block, block->next_block);
-        continue;
+        DCHECK(next_block_it != end_it);
+        IRBasicBlock::link(block, *next_block_it);
+        break;
       }
       case Opcode::ret:
       case Opcode::throwex:
       case Opcode::rethrowex:
       case Opcode::assertfailure:
       case Opcode::panic: {
-        // opcode ends function
-        continue;
+        // block does not directly link to another block
+        break;
       }
       default: {
-        IRBasicBlock::link(block, block->next_block);
+        if (next_block_it != end_it) {
+          IRBasicBlock::link(block, *next_block_it);
+        }
         break;
       }
     }
+
+    it = next_block_it;
   }
 }
 
@@ -340,41 +358,56 @@ void Builder::rewrite_chained_branches() {
 }
 
 void Builder::remove_useless_jumps() {
-  for (const ref<IRBasicBlock>& block : m_active_function->basic_blocks) {
+  auto it = m_active_function->basic_blocks.begin();
+  auto end_it = m_active_function->basic_blocks.end();
+
+  while (it != end_it && std::next(it) != end_it) {
+    auto& block = *it;
+    auto& next_block = *std::next(it);
+
+    DCHECK(block);
+    DCHECK(next_block);
+
     if (!block->instructions.empty()) {
-      ref<IRInstruction> op = block->instructions.back();
-      switch (op->opcode) {
+      auto& last_op = block->instructions.back();
+      switch (last_op->opcode) {
         case Opcode::jmp: {
-          Label target_label = op->as_jmp()->arg;
-          if (block->next_block && block->next_block->labels.count(target_label)) {
+          Label target_label = last_op->as_jmp()->arg;
+          if (next_block->labels.count(target_label)) {
             block->instructions.pop_back();
           }
-
-          continue;
+          break;
         }
         case Opcode::jmpf: {
-          Label target_label = op->as_jmpf()->arg;
-          if (block->next_block && block->next_block->labels.count(target_label)) {
+          Label target_label = last_op->as_jmpf()->arg;
+          if (next_block->labels.count(target_label)) {
             block->instructions.pop_back();
             emit_pop(block);
           }
-
-          continue;
+          break;
         }
         case Opcode::jmpt: {
-          Label target_label = op->as_jmpt()->arg;
-          if (block->next_block && block->next_block->labels.count(target_label)) {
+          Label target_label = last_op->as_jmpt()->arg;
+          if (next_block->labels.count(target_label)) {
             block->instructions.pop_back();
             emit_pop(block);
           }
-
-          continue;
+          break;
+        }
+        case Opcode::argcjmp: {
+          Label target_label = last_op->as_argcjmp()->arg2;
+          if (next_block->labels.count(target_label)) {
+            block->instructions.pop_back();
+          }
+          break;
         }
         default: {
           break;
         }
       }
     }
+
+    it++;
   }
 }
 
@@ -392,13 +425,13 @@ void Builder::remove_dead_blocks() {
 
   // mark reachable blocks
   while (!reachable_blocks.empty()) {
-    ref<IRBasicBlock> block = reachable_blocks.front();
+    auto block = reachable_blocks.front();
     reachable_blocks.pop_front();
 
     if (!block->reachable) {
       block->reachable = true;
 
-      for (const ref<IRBasicBlock>& outgoing : block->outgoing_blocks) {
+      for (const auto& outgoing : block->outgoing_blocks) {
         reachable_blocks.push_back(outgoing);
       }
 
@@ -410,22 +443,14 @@ void Builder::remove_dead_blocks() {
 
   // delete all non-reachable blocks
   auto it = m_active_function->basic_blocks.begin();
-  while (it != m_active_function->basic_blocks.end()) {
-    ref<IRBasicBlock> block = *it;
+  auto end_it = m_active_function->basic_blocks.end();
+  while (it != end_it) {
+    auto block = *it;
 
     // remove block
     if (!block->reachable) {
-      // unlink block from list
-      if (block->previous_block) {
-        block->previous_block->next_block = block->next_block;
-      }
-      if (block->next_block) {
-        block->next_block->previous_block = block->previous_block;
-      }
-      it = m_active_function->basic_blocks.erase(it);
-
-      // remove from incoming blocks list of outgoing branches
       IRBasicBlock::unlink(block);
+      it = m_active_function->basic_blocks.erase(it);
       continue;
     }
 
@@ -435,18 +460,14 @@ void Builder::remove_dead_blocks() {
 
 void Builder::merge_continuous_blocks() {
   auto it = m_active_function->basic_blocks.begin();
-  while (it != m_active_function->basic_blocks.end()) {
+  auto end_it = m_active_function->basic_blocks.end();
+  while (it != end_it && std::next(it) != end_it) {
     auto block = *it;
+    auto next_block_it = std::next(it);
+    auto next_block = *next_block_it;
 
-    // link continuous blocks
-    auto next_block = block->next_block;
-    if (next_block == nullptr) {
-      it++;
-      continue;
-    }
-
-    DCHECK(next_block == *std::next(it));
-    DCHECK(block == next_block->previous_block);
+    DCHECK(block);
+    DCHECK(next_block);
 
     // blocks with exception handlers or blocks that handle exceptions cannot be merged
     if (!block->exception_handler.has_value() && block->exception_handler_sources.empty()) {
@@ -454,17 +475,23 @@ void Builder::merge_continuous_blocks() {
         // blocks must be directly connected
         if (block->outgoing_blocks.size() == 1 && next_block->incoming_blocks.size() == 1) {
           if (*block->outgoing_blocks.begin() == next_block && block == *next_block->incoming_blocks.begin()) {
+            if (!block->instructions.empty()) {
+              auto& last_instruction = block->instructions.back();
+              DCHECK(kBranchingOpcodes.count(last_instruction->opcode) == false);
+            }
+
             auto& next_ops = next_block->instructions;
             block->instructions.insert(block->instructions.end(), next_ops.begin(), next_ops.end());
 
             IRBasicBlock::unlink(block, next_block);
-            auto& next_outgoing_blocks = next_block->outgoing_blocks;
+            auto next_outgoing_blocks = next_block->outgoing_blocks;
             for (auto& next_outgoing_block : next_outgoing_blocks) {
               IRBasicBlock::unlink(next_block, next_outgoing_block);
               IRBasicBlock::link(block, next_outgoing_block);
             }
 
-            it = m_active_function->basic_blocks.erase(std::next(it));
+            it = m_active_function->basic_blocks.erase(next_block_it);
+            it = std::prev(it);
             continue;
           }
         }
@@ -476,14 +503,23 @@ void Builder::merge_continuous_blocks() {
 }
 
 void Builder::emit_exception_tables() {
-  for (const ref<IRBasicBlock>& block : m_active_function->basic_blocks) {
-    if (block->exception_handler.has_value()) {
-      DCHECK(!block->labels.empty());
-      DCHECK(block->next_block);
-      DCHECK(!block->next_block->labels.empty());
+  auto it = m_active_function->basic_blocks.begin();
+  auto end_it = m_active_function->basic_blocks.end();
 
-      Label begin = *block->labels.begin();
-      Label end = *block->next_block->labels.begin();
+  while (it != end_it && std::next(it) != end_it) {
+    auto& block = *it;
+    auto& next_block = *std::next(it);
+
+    DCHECK(block);
+    DCHECK(next_block);
+
+    if (block->exception_handler.has_value()) {
+
+      DCHECK(!block->labels.empty());
+      DCHECK(!next_block->labels.empty());
+
+      Label begin = *(block->labels.begin());
+      Label end = *(next_block->labels.begin());
       Label handler = block->exception_handler.value();
 
       // extend previous table if possible
@@ -499,6 +535,9 @@ void Builder::emit_exception_tables() {
         m_active_function->exception_table.emplace_back(IRExceptionTableEntry{ begin, end, handler });
       }
     }
+
+
+    it++;
   }
 }
 
@@ -574,16 +613,13 @@ ref<IRBasicBlock> Builder::new_basic_block() {
   DCHECK(m_active_function);
 
   ref<IRBasicBlock> block = make<IRBasicBlock>(m_block_id_counter++);
-  block->previous_block = m_active_block;
 
   if (!m_exception_handlers.empty()) {
     block->exception_handler = m_exception_handlers.top();
   }
 
+  // each block must have at least one label
   if (m_active_block) {
-    m_active_block->next_block = block;
-
-    // each block must have at least one label
     if (m_active_block->labels.empty()) {
       m_active_block->labels.insert(reserve_label());
     }

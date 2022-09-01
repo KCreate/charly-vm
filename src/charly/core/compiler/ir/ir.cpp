@@ -175,14 +175,6 @@ void IRBasicBlock::unlink(const ref<IRBasicBlock>& block) {
   for (const ref<IRBasicBlock>& outgoing : block->outgoing_blocks) {
     outgoing->incoming_blocks.erase(block);
   }
-
-  if (block->previous_block) {
-    block->previous_block->next_block = block->next_block;
-  }
-
-  if (block->next_block) {
-    block->next_block->previous_block = block->previous_block;
-  }
 }
 
 void IRBasicBlock::unlink(const ref<IRBasicBlock>& source, const ref<IRBasicBlock>& target) {
