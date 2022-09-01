@@ -1149,14 +1149,26 @@ OP(pow) {
 OP(eq) {
   RawValue right = frame->pop();
   RawValue left = frame->pop();
-  frame->push(left.op_eq(thread, right));
+
+  RawValue result = left.op_eq(thread, right);
+  if (result.is_error_exception()) {
+    return ContinueMode::Exception;
+  }
+
+  frame->push(result);
   return ContinueMode::Next;
 }
 
 OP(neq) {
   RawValue right = frame->pop();
   RawValue left = frame->pop();
-  frame->push(left.op_neq(thread, right));
+
+  RawValue result = left.op_neq(thread, right);
+  if (result.is_error_exception()) {
+    return ContinueMode::Exception;
+  }
+
+  frame->push(result);
   return ContinueMode::Next;
 }
 

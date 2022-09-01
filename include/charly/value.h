@@ -416,8 +416,8 @@ public:
   RawValue op_sub(Thread*, RawValue other);
   RawValue op_mul(Thread*, RawValue other);
   RawValue op_div(Thread*, RawValue other);
-  RawValue op_eq(Thread*, RawValue other);
-  RawValue op_neq(Thread*, RawValue other);
+  RawValue op_eq(Thread*, RawValue other, uint32_t depth = 0);
+  RawValue op_neq(Thread*, RawValue other, uint32_t depth = 0);
 
   // unary ops
   RawValue op_usub(Thread*);
@@ -433,6 +433,8 @@ public:
   bool isNumber() const;
   int64_t int_value() const;
   double double_value() const;
+
+  static constexpr uint32_t kMaxComparisonRecursionDepth = 128;
 
   // tag masks
   static constexpr uintptr_t kMaskInt = 0x1;

@@ -656,7 +656,11 @@ RawValue RawValue::op_div(Thread*, RawValue other) {
 }
 
 // NOTE: Update this method together with Node::compares_equal
-RawValue RawValue::op_eq(Thread* thread, RawValue other) {
+RawValue RawValue::op_eq(Thread* thread, RawValue other, uint32_t depth) {
+  if (depth >= kMaxComparisonRecursionDepth) {
+    return thread->throw_message("Maximum recursion depth exceeded in comparison");
+  }
+
   if (*this == other) {
     return kTrue;
   }
@@ -664,7 +668,7 @@ RawValue RawValue::op_eq(Thread* thread, RawValue other) {
   if (isBool() || other.isBool()) {
     auto left_truthy = truthyness();
     auto right_truthy = other.truthyness();
-    return left_truthy == right_truthy ? kTrue : kFalse;
+    return RawBool::create(left_truthy == right_truthy);
   }
 
   if (isNumber() && other.isNumber()) {
@@ -721,8 +725,11 @@ RawValue RawValue::op_eq(Thread* thread, RawValue other) {
     for (size_t i = 0; i < length; i++) {
       auto left_value = left_tuple.field_at(i);
       auto right_value = right_tuple.field_at(i);
-      if (left_value.op_eq(thread, right_value).isFalse()) {
+      auto result = left_value.op_eq(thread, right_value, depth + 1);
+      if (result.isFalse()) {
         return kFalse;
+      } else if (result.is_error_exception()) {
+        return result;
       }
     }
 
@@ -736,8 +743,14 @@ RawValue RawValue::op_eq(Thread* thread, RawValue other) {
   return kFalse;
 }
 
-RawValue RawValue::op_neq(Thread* thread, RawValue other) {
-  return op_eq(thread, other).isTrue() ? kFalse : kTrue;
+RawValue RawValue::op_neq(Thread* thread, RawValue other, uint32_t depth) {
+  // TODO: implement opposite version of op_eq here, could take some shortcuts while comparing
+  RawValue result = op_eq(thread, other, depth);
+  if (result.isBool()) {
+    return RawBool::create(!RawBool::cast(result).value());
+  }
+
+  return result;
 }
 
 RawValue RawValue::op_usub(Thread*) {

@@ -24,34 +24,12 @@
  * SOFTWARE.
  */
 
-func create_store {
-    let storage = null
+const l1 = [25]
+const l2 = [true]
 
-    func load {
-        performgc()
-        return storage
-    }
+print(l1 == l2)
 
-    func write(value) {
-        performgc()
-        storage = value
-    }
+l1[0] = l2
+l2[0] = l1
 
-    return (load, write)
-}
-
-const (load, write) = create_store()
-
-print(load())
-
-write(100)
-print(load())
-
-write(200)
-print(load())
-
-
-
-
-
-
+print(l1 == l2)
