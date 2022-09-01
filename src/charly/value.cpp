@@ -737,7 +737,40 @@ RawValue RawValue::op_eq(Thread* thread, RawValue other, uint32_t depth) {
   }
 
   if (isList() && other.isList()) {
-    FAIL("list comparison not implemented yet");
+    auto left_list = RawList::cast(this);
+    auto right_list = RawList::cast(other);
+
+    if (left_list.length() != right_list.length()) {
+      return kFalse;
+    }
+
+    size_t length = left_list.length();
+    for (size_t i = 0; i < length; i++) {
+      bool lists_have_same_length = left_list.length() == right_list.length();
+      bool lists_have_original_length = left_list.length() == length;
+      if (!(lists_have_same_length && lists_have_original_length)) {
+        return thread->throw_message("List size changed during comparison");
+      }
+
+      auto left_value = left_list.read_at(thread, i);
+      if (left_value.is_error_exception()) {
+        return kErrorException;
+      }
+
+      auto right_value = right_list.read_at(thread, i);
+      if (right_value.is_error_exception()) {
+        return kErrorException;
+      }
+
+      auto result = left_value.op_eq(thread, right_value, depth + 1);
+      if (result.isFalse()) {
+        return kFalse;
+      } else if (result.is_error_exception()) {
+        return result;
+      }
+    }
+
+    return kTrue;
   }
 
   return kFalse;
