@@ -470,25 +470,29 @@ void GarbageCollector::deallocate_heap_ressources() const {
 void GarbageCollector::deallocate_object_heap_ressources(RawObject object) const {
   if (object.isHugeBytes()) {
     auto huge_bytes = RawHugeBytes::cast(object);
-    utils::Allocator::free(bitcast<void*>(const_cast<uint8_t*>(huge_bytes.data())));
+    auto* data = bitcast<void*>(const_cast<uint8_t*>(huge_bytes.data()));
+    DCHECK(data);
+    utils::Allocator::free(data);
     huge_bytes.set_data(nullptr);
   } else if (object.isHugeString()) {
     auto huge_string = RawHugeString::cast(object);
-    utils::Allocator::free(bitcast<void*>(const_cast<char*>(huge_string.data())));
+    auto* data = bitcast<void*>(const_cast<char*>(huge_string.data()));
+    DCHECK(data);
+    utils::Allocator::free(data);
     huge_string.set_data(nullptr);
   } else if (object.isFuture()) {
     auto future = RawFuture::cast(object);
-    if (RawFuture::WaitQueue* wait_queue = future.wait_queue()) {
+    if (auto* wait_queue = future.wait_queue()) {
       DCHECK(wait_queue->used == 0);
       utils::Allocator::free(wait_queue);
       future.set_wait_queue(nullptr);
     }
   } else if (object.isList()) {
     auto list = RawList::cast(object);
-    RawValue* data = list.data();
-    DCHECK(data);
-    utils::Allocator::free(data);
-    list.set_data(nullptr);
+    if (auto* data = list.data()) {
+      utils::Allocator::free(data);
+      list.set_data(nullptr);
+    }
   }
 }
 

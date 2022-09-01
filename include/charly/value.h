@@ -162,7 +162,20 @@ bool is_data_shape(ShapeId shape_id);
 bool is_instance_shape(ShapeId shape_id);
 bool is_builtin_shape(ShapeId shape_id);
 bool is_user_shape(ShapeId shape_id);
-bool is_shape_with_external_heap_pointers(ShapeId shape_id);
+
+inline bool is_shape_with_external_heap_pointers(ShapeId shape_id) {
+  switch (shape_id) {
+    case ShapeId::kHugeString:
+    case ShapeId::kHugeBytes:
+    case ShapeId::kFuture:
+    case ShapeId::kList: {
+      return true;
+    }
+    default: {
+      return false;
+    }
+  }
+}
 
 // align a size to some alignment
 size_t align_to_size(size_t size, size_t alignment);

@@ -75,15 +75,6 @@ bool is_user_shape(ShapeId shape_id) {
   return !is_builtin_shape(shape_id);
 }
 
-bool is_shape_with_external_heap_pointers(ShapeId shape_id) {
-  switch (shape_id) {
-    case ShapeId::kHugeString:
-    case ShapeId::kHugeBytes:
-    case ShapeId::kFuture: return true;
-    default: return false;
-  }
-}
-
 size_t align_to_size(size_t size, size_t alignment) {
   DCHECK(alignment > 0, "invalid alignment (%)", alignment);
 
@@ -1105,6 +1096,7 @@ void RawValue::dump(std::ostream& out) const {
         size_t length = list.length();
 
         if (length) {
+          DCHECK(data);
           data[0].dump(out);
           for (uint32_t i = 1; i < length; i++) {
             writer.fg(Color::Grey, ", ");
@@ -2080,6 +2072,11 @@ RawValue RawList::op_mul(Thread* thread, int64_t count) const {
 
   size_t old_length = list.length();
   size_t new_length = count * old_length;
+
+  if (new_length == 0) {
+    return RawList::create(thread, 0);
+  }
+
   if (new_length > kMaximumCapacity) {
     return thread->throw_message("List exceeded max size of %", kMaximumCapacity);
   }
@@ -2173,6 +2170,7 @@ RawValue RawList::insert_at(Thread* thread, int64_t index, RawValue value) const
   }
 
   auto* data = this->data();
+  DCHECK(data);
 
   size_t bytes_to_move = (length - real_index) * sizeof(RawValue);
   std::memmove(data + real_index + 1, data + real_index, bytes_to_move);
@@ -2198,6 +2196,7 @@ RawValue RawList::erase_at(Thread* thread, int64_t start, int64_t count) const {
   }
 
   auto* data = this->data();
+  DCHECK(data);
 
   // shift back values after the erased values
   size_t bytes_after_erase = (length - real_start - count) * sizeof(RawValue);
