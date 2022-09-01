@@ -662,6 +662,9 @@ public:
   static int32_t compare(RawString base, RawString other) {
     return compare(base, RawString::data(&other), other.byte_length());
   }
+
+  RawValue concat(Thread*, RawString other) const;
+  RawValue op_mul(Thread*, int64_t count) const;
 };
 
 // common super class for RawSmallBytes, LargeBytes and HugeBytes
@@ -769,6 +772,8 @@ public:
 
   RawValue* data() const;
   uint32_t length() const;
+
+  RawValue op_mul(Thread*, int64_t count) const;
 };
 
 // base type for all types that use the shape system
@@ -862,6 +867,8 @@ public:
 
   size_t capacity() const;
   void set_capacity(size_t capacity) const;
+
+  RawValue op_mul(Thread*, int64_t count) const;
 
   // returns value at index
   // throws exception if out of bounds

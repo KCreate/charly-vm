@@ -24,12 +24,16 @@
  * SOFTWARE.
  */
 
-const l1 = [25]
-const l2 = [true]
+const l = [1]
+const m = 268435456
+const t = m * l
+print(t.length)
 
-print(l1 == l2)
 
-l1[0] = l2
-l2[0] = l1
 
-print(l1 == l2)
+
+
+
+
+
+

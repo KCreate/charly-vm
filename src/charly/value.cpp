@@ -592,16 +592,7 @@ RawValue RawValue::op_add(Thread* thread, RawValue other) {
   }
 
   if (isString() && other.isString()) {
-    auto left = RawString::cast(this);
-    auto right = RawString::cast(other);
-    size_t left_size = left.byte_length();
-    size_t right_size = right.byte_length();
-    size_t total_size = left_size + right_size;
-
-    utils::Buffer buffer(total_size);
-    buffer.write(RawString::data(&left), left_size);
-    buffer.write(RawString::data(&right), right_size);
-    return RawString::acquire(thread, buffer);
+    return RawString::cast(this).concat(thread, RawString::cast(other));
   }
 
   return kNaN;
@@ -628,20 +619,49 @@ RawValue RawValue::op_mul(Thread* thread, RawValue other) {
     return RawFloat::create(double_value() * other.double_value());
   }
 
-  if (isString() && other.isNumber()) {
-    auto string = RawString::cast(this);
-    int64_t count = other.int_value();
+  if ((isString() && other.isNumber()) || (isNumber() && other.isString())) {
+    RawString string;
+    int64_t count;
 
-    if (count <= 0) {
-      return kEmptyString;
+    if (isString()) {
+      string = RawString::cast(this);
+      count = other.int_value();
+    } else {
+      string = RawString::cast(other);
+      count = int_value();
     }
 
-    utils::Buffer buffer(string.byte_length() * count);
-    while (count--) {
-      string.to_string(buffer);
+    return string.op_mul(thread, count);
+  }
+
+  if ((isTuple() && other.isNumber()) || (isNumber() && other.isTuple())) {
+    RawTuple tuple;
+    int64_t count;
+
+    if (isTuple()) {
+      tuple = RawTuple::cast(this);
+      count = other.int_value();
+    } else {
+      tuple = RawTuple::cast(other);
+      count = int_value();
     }
 
-    return RawString::acquire(thread, buffer);
+    return tuple.op_mul(thread, count);
+  }
+
+  if ((isList() && other.isNumber()) || (isNumber() && other.isList())) {
+    RawList list;
+    int64_t count;
+
+    if (isList()) {
+      list = RawList::cast(this);
+      count = other.int_value();
+    } else {
+      list = RawList::cast(other);
+      count = int_value();
+    }
+
+    return list.op_mul(thread, count);
   }
 
   return kNaN;
@@ -1549,6 +1569,30 @@ int32_t RawString::compare(RawString base, const char* data, size_t length) {
   return base_view.compare(other_view);
 }
 
+RawValue RawString::concat(Thread* thread, RawString other) const {
+  size_t self_size = byte_length();
+  size_t other_size = other.byte_length();
+  size_t total_size = self_size + other_size;
+
+  utils::Buffer buffer(total_size);
+  buffer.write(RawString::data(this), self_size);
+  buffer.write(RawString::data(&other), other_size);
+  return RawString::acquire(thread, buffer);
+}
+
+RawValue RawString::op_mul(Thread* thread, int64_t count) const {
+  if (count <= 0) {
+    return RawString::cast(kEmptyString);
+  }
+
+  utils::Buffer buffer(byte_length() * count);
+  while (count--) {
+    to_string(buffer);
+  }
+
+  return RawString::acquire(thread, buffer);
+}
+
 size_t RawBytes::length() const {
   if (isSmallBytes()) {
     return RawSmallBytes::cast(this).length();
@@ -1771,6 +1815,31 @@ uint32_t RawTuple::length() const {
   return count();
 }
 
+RawValue RawTuple::op_mul(Thread* thread, int64_t count) const {
+  HandleScope scope(thread);
+  Tuple tuple(scope, *this);
+
+  if (count < 0) {
+    count = 0;
+  }
+
+  size_t old_length = length();
+  size_t new_length = count * old_length;
+  if (new_length > kHeapRegionMaximumObjectFieldCount) {
+    return thread->throw_message("Tuple exceeded max size of %", kHeapRegionMaximumObjectFieldCount);
+  }
+
+  Tuple new_tuple(scope, RawTuple::create(thread, new_length));
+
+  for (size_t i = 0; i < (size_t)count; i++) {
+    for (size_t j = 0; i < old_length; i++) {
+      new_tuple.set_field_at((i * old_length) + j, tuple.field_at(j));
+    }
+  }
+
+  return new_tuple;
+}
+
 RawInstance RawInstance::create(Thread* thread, ShapeId shape_id, size_t field_count, RawValue _klass) {
   HandleScope scope(thread);
   Value klass(scope, _klass);
@@ -1929,8 +1998,7 @@ RawList RawList::create(Thread* thread, size_t initial_capacity) {
 
   auto* runtime = thread->runtime();
   auto list_class = runtime->get_builtin_class(ShapeId::kList);
-  auto list = RawList::cast(
-    RawInstance::create(thread, ShapeId::kList, RawList::kFieldCount, list_class));
+  auto list = RawList::cast(RawInstance::create(thread, ShapeId::kList, RawList::kFieldCount, list_class));
 
   list.set_data(nullptr);
   list.set_length(0);
@@ -1982,6 +2050,37 @@ size_t RawList::capacity() const {
 
 void RawList::set_capacity(size_t capacity) const {
   set_field_at(kCapacityOffset, RawInt::create(capacity));
+}
+
+RawValue RawList::op_mul(Thread* thread, int64_t count) const {
+  HandleScope scope(thread);
+  List list(scope, *this);
+
+  if (count < 0) {
+    count = 0;
+  }
+
+  size_t old_length = list.length();
+  size_t new_length = count * old_length;
+  if (new_length > kMaximumCapacity) {
+    return thread->throw_message("List exceeded max size of %", kMaximumCapacity);
+  }
+
+  List new_list(scope, RawList::create(thread, new_length));
+  new_list.set_length(new_length);
+  {
+    std::lock_guard locker(list);
+    if (list.length() != old_length) {
+      return thread->throw_message("List size changed during multiplication");
+    }
+    RawValue* source = list.data();
+    RawValue* destination = new_list.data();
+    for (size_t i = 0; i < (size_t)count; i++) {
+      std::memcpy(destination + (i * old_length), source, old_length * sizeof(RawValue));
+    }
+  }
+
+  return new_list;
 }
 
 RawValue RawList::reserve_capacity(Thread* thread, size_t expected_size) const {
