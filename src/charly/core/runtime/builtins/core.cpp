@@ -61,7 +61,7 @@ RawValue transplantbuiltinclass(Thread* thread, BuiltinFrame* frame) {
     return thread->throw_message("Expected base class to be a builtin class");
   }
 
-  if (klass.function_table().size()) {
+  if (klass.function_table().length()) {
     return thread->throw_message("Expected base class function table to be empty");
   }
 
@@ -81,12 +81,12 @@ RawValue transplantbuiltinclass(Thread* thread, BuiltinFrame* frame) {
   klass.set_constructor(donor_constructor);
 
   klass.set_function_table(donor_class.function_table());
-  for (uint32_t i = 0; i < klass.function_table().size(); i++) {
+  for (uint32_t i = 0; i < klass.function_table().length(); i++) {
     auto method = klass.function_table().field_at<RawFunction>(i);
     auto overload_table = method.overload_table();
     if (overload_table.isTuple()) {
       auto overload_tuple = RawTuple::cast(overload_table);
-      for (uint32_t j = 0; j < overload_tuple.size(); j++) {
+      for (uint32_t j = 0; j < overload_tuple.length(); j++) {
         auto overloaded_method = overload_tuple.field_at<RawFunction>(j);
         overloaded_method.set_host_class(klass);
       }
@@ -100,7 +100,7 @@ RawValue transplantbuiltinclass(Thread* thread, BuiltinFrame* frame) {
 
   auto builtin_class_class = runtime->get_builtin_class(ShapeId::kClass);
   if (static_donor_class != builtin_class_class) {
-    if (static_class.function_table().size()) {
+    if (static_class.function_table().length()) {
       return thread->throw_message("Expected base static class function table to be empty");
     }
 
@@ -110,12 +110,12 @@ RawValue transplantbuiltinclass(Thread* thread, BuiltinFrame* frame) {
 
     static_class.set_function_table(static_donor_class.function_table());
     static_donor_class.set_function_table(RawTuple::create_empty(thread));
-    for (uint32_t i = 0; i < static_class.function_table().size(); i++) {
+    for (uint32_t i = 0; i < static_class.function_table().length(); i++) {
       auto method = static_class.function_table().field_at<RawFunction>(i);
       auto overload_table = method.overload_table();
       if (overload_table.isTuple()) {
         auto overload_tuple = RawTuple::cast(overload_table);
-        for (uint32_t j = 0; j < overload_tuple.size(); j++) {
+        for (uint32_t j = 0; j < overload_tuple.length(); j++) {
           auto overloaded_method = overload_tuple.field_at<RawFunction>(j);
           overloaded_method.set_host_class(static_class);
         }

@@ -128,8 +128,8 @@ RawValue Interpreter::call_function(Thread* thread,
   // find the correct overload to call
   if (function.overload_table().isTuple()) {
     auto overload_table = RawTuple::cast(function.overload_table());
-    DCHECK(overload_table.size() > 0);
-    function = overload_table.field_at<RawFunction>(std::min(argc, overload_table.size() - 1));
+    DCHECK(overload_table.length() > 0);
+    function = overload_table.field_at<RawFunction>(std::min(argc, overload_table.length() - 1));
   }
 
   const SharedFunctionInfo* shared_info = function.shared_info();
@@ -586,7 +586,7 @@ OP(callspread) {
   RawTuple* segments = static_cast<RawTuple*>(frame->top_n(segment_count));
   for (uint32_t i = 0; i < segment_count; i++) {
     auto segment = RawTuple::cast(segments[i]);
-    total_arg_count += segment.size();
+    total_arg_count += segment.length();
     CHECK(total_arg_count <= kUInt32Max);
   }
 
@@ -598,7 +598,7 @@ OP(callspread) {
     uint32_t last_written_index = 0;
     for (uint32_t i = 0; i < segment_count; i++) {
       auto segment = segments[i];
-      for (uint32_t j = 0; j < segment.size(); j++) {
+      for (uint32_t j = 0; j < segment.length(); j++) {
         argument_tuple.set_field_at(last_written_index++, segment.field_at(j));
       }
     }
@@ -821,16 +821,16 @@ OP(unpacksequence) {
 
   if (value.isTuple()) {
     auto tuple = RawTuple::cast(value);
-    uint32_t tuple_size = tuple.size();
+    uint32_t tuple_length = tuple.length();
 
-    if (tuple_size != count) {
-      thread->throw_message("Expected tuple to be of size %, not %", (size_t)count, tuple_size);
+    if (tuple_length != count) {
+      thread->throw_message("Expected tuple to be of size %, not %", (size_t)count, tuple_length);
       return ContinueMode::Exception;
     }
 
     // push values in reverse so that values can be assigned to their
     // target fields in source order
-    for (int64_t i = tuple_size - 1; i >= 0; i--) {
+    for (int64_t i = tuple_length - 1; i >= 0; i--) {
       frame->push(tuple.field_at(i));
     }
 
@@ -851,19 +851,19 @@ OP(unpacksequencespread) {
   if (value.isTuple()) {
     HandleScope scope(thread);
     Tuple tuple(scope, value);
-    uint32_t tuple_size = tuple.size();
-    if (tuple_size < total_count) {
+    uint32_t tuple_length = tuple.length();
+    if (tuple_length < total_count) {
       thread->throw_message("Tuple does not contain enough values to unpack");
       return ContinueMode::Exception;
     }
 
     // push the values after the spread
     for (uint8_t i = 0; i < after_count; i++) {
-      frame->push(tuple.field_at(tuple_size - i - 1));
+      frame->push(tuple.field_at(tuple_length - i - 1));
     }
 
     // put spread arguments in a tuple
-    uint32_t spread_count = tuple_size - total_count;
+    uint32_t spread_count = tuple_length - total_count;
     Tuple spread_tuple(scope, RawTuple::create(thread, spread_count));
     for (uint32_t i = 0; i < spread_count; i++) {
       spread_tuple.set_field_at(i, tuple.field_at(before_count + i));
@@ -969,7 +969,7 @@ OP(makelistspread) {
   RawTuple* segments = static_cast<RawTuple*>(frame->top_n(segment_count));
   for (uint32_t i = 0; i < segment_count; i++) {
     auto segment = RawTuple::cast(segments[i]);
-    total_arg_count += segment.size();
+    total_arg_count += segment.length();
     CHECK(total_arg_count <= kUInt32Max);
   }
 
@@ -980,7 +980,7 @@ OP(makelistspread) {
   uint32_t last_written_index = 0;
   for (uint32_t i = 0; i < segment_count; i++) {
     auto segment = segments[i];
-    for (uint32_t j = 0; j < segment.size(); j++) {
+    for (uint32_t j = 0; j < segment.length(); j++) {
       data[last_written_index++] = segment.field_at(j);
     }
   }
@@ -1019,7 +1019,7 @@ OP(maketuplespread) {
   RawTuple* segments = static_cast<RawTuple*>(frame->top_n(segment_count));
   for (uint32_t i = 0; i < segment_count; i++) {
     auto segment = RawTuple::cast(segments[i]);
-    total_arg_count += segment.size();
+    total_arg_count += segment.length();
     CHECK(total_arg_count <= kUInt32Max);
   }
 
@@ -1028,7 +1028,7 @@ OP(maketuplespread) {
   uint32_t last_written_index = 0;
   for (uint32_t i = 0; i < segment_count; i++) {
     auto segment = segments[i];
-    for (uint32_t j = 0; j < segment.size(); j++) {
+    for (uint32_t j = 0; j < segment.length(); j++) {
       tuple.set_field_at(last_written_index++, segment.field_at(j));
     }
   }

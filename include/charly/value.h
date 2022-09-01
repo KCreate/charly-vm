@@ -766,7 +766,7 @@ public:
   static RawTuple concat_value(Thread*, RawTuple left, RawValue value);
 
   RawValue* data() const;
-  uint32_t size() const;
+  uint32_t length() const;
 };
 
 // base type for all types that use the shape system

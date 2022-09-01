@@ -580,25 +580,25 @@ uint32_t Runtime::check_private_access_permitted(Thread* thread, RawInstance val
   RawValue self = thread->frame()->self;
   RawClass self_class = self.klass(thread);
   if (self == value) {
-    return lookup_shape(self.shape_id()).keys().size();
+    return lookup_shape(self.shape_id()).keys().length();
   }
 
   RawClass other_class = value.klass(thread);
   if (self_class == other_class) {
-    return lookup_shape(value.shape_id()).keys().size();
+    return lookup_shape(value.shape_id()).keys().length();
   }
 
   RawTuple self_ancestors = self_class.ancestor_table();
   RawTuple other_ancestors = other_class.ancestor_table();
 
-  uint32_t min_ancestor = std::min(self_ancestors.size(), other_ancestors.size());
+  uint32_t min_ancestor = std::min(self_ancestors.length(), other_ancestors.length());
   CHECK(min_ancestor >= 1, "expected at least one common class");
   uint32_t highest_allowed_private_member = 0;
   for (uint32_t i = 0; i < min_ancestor; i++) {
     auto ancestor_self = self_ancestors.field_at<RawClass>(i);
     auto ancestor_other = other_ancestors.field_at<RawClass>(i);
     if (ancestor_self == ancestor_other) {
-      highest_allowed_private_member = ancestor_self.shape_instance().keys().size();
+      highest_allowed_private_member = ancestor_self.shape_instance().keys().length();
     }
   }
 

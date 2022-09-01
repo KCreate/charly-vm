@@ -419,7 +419,7 @@ void GarbageCollector::update_root_references() const {
         DCHECK(m_heap->is_valid_pointer(bitcast<uintptr_t>(frame->arguments)));
         auto argtup = RawTuple::cast(frame->argument_tuple);
         DCHECK(!argtup.header()->has_forward_target());
-        DCHECK(argtup.size() >= frame->argc);
+        DCHECK(argtup.length() >= frame->argc);
         frame->arguments = argtup.data();
       } else {
         if (frame->arguments != nullptr) {

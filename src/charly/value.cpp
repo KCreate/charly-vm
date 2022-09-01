@@ -406,10 +406,10 @@ RawValue RawValue::load_attr(Thread* thread, RawValue attribute) const {
 RawValue RawValue::load_attr_number(Thread* thread, int64_t index) const {
   if (isTuple()) {
     auto tuple = RawTuple::cast(this);
-    auto size = tuple.size();
-    auto real_index = wrap_negative_indices(index, size);
+    auto length = tuple.length();
+    auto real_index = wrap_negative_indices(index, length);
 
-    if (real_index < 0 || real_index >= size) {
+    if (real_index < 0 || real_index >= length) {
       return thread->throw_message("Tuple index (%) out of range", real_index);
     }
 
@@ -462,7 +462,7 @@ RawValue RawValue::load_attr_symbol(Thread* thread, SYMBOL symbol) const {
     case SYM("length"): {
       if (isTuple()) {
         auto tuple = RawTuple::cast(this);
-        return RawInt::create(tuple.size());
+        return RawInt::create(tuple.length());
       } else if (isString()) {
         auto string = RawString::cast(this);
         return RawInt::create(string.codepoint_length());
@@ -713,12 +713,12 @@ RawValue RawValue::op_eq(Thread* thread, RawValue other) {
     auto left_tuple = RawTuple::cast(this);
     auto right_tuple = RawTuple::cast(other);
 
-    if (left_tuple.size() != right_tuple.size()) {
+    if (left_tuple.length() != right_tuple.length()) {
       return kFalse;
     }
 
-    size_t size = left_tuple.size();
-    for (size_t i = 0; i < size; i++) {
+    size_t length = left_tuple.length();
+    for (size_t i = 0; i < length; i++) {
       auto left_value = left_tuple.field_at(i);
       auto right_value = right_tuple.field_at(i);
       if (left_value.op_eq(thread, right_value).isFalse()) {
@@ -1007,9 +1007,9 @@ void RawValue::dump(std::ostream& out) const {
 
       writer.fg(Color::Grey, "(");
 
-      if (tuple.size()) {
+      if (tuple.length()) {
         tuple.field_at(0).dump(out);
-        for (uint32_t i = 1; i < tuple.size(); i++) {
+        for (uint32_t i = 1; i < tuple.length(); i++) {
           writer.fg(Color::Grey, ", ");
           tuple.field_at(i).dump(out);
         }
@@ -1106,14 +1106,14 @@ void RawValue::dump(std::ostream& out) const {
       writer.fg(Color::Cyan, "<Shape #", static_cast<uint32_t>(shape.own_shape_id()), ":(");
 
       RawTuple keys = shape.keys();
-      for (uint32_t i = 0; i < keys.size(); i++) {
+      for (uint32_t i = 0; i < keys.length(); i++) {
         auto encoded = keys.field_at<RawInt>(i);
         SYMBOL prop_name;
         uint8_t prop_flags;
         RawShape::decode_shape_key(encoded, prop_name, prop_flags);
         writer.fg(Color::Cyan, RawSymbol::create(prop_name));
 
-        if (i < keys.size() - 1) {
+        if (i < keys.length() - 1) {
           writer.fg(Color::Cyan, ", ");
         }
       }
@@ -1136,7 +1136,7 @@ void RawValue::dump(std::ostream& out) const {
 
         writer << message.view() << "\n";
 
-        for (uint32_t i = 0; i < errors.size(); i++) {
+        for (uint32_t i = 0; i < errors.length(); i++) {
           auto error = errors.field_at<RawTuple>(i);
           auto type = error.field_at<RawString>(0);
           auto filepath = error.field_at<RawString>(1);
@@ -1701,18 +1701,18 @@ RawTuple RawTuple::create(Thread* thread, RawValue value1, RawValue value2) {
 }
 
 RawTuple RawTuple::concat_value(Thread* thread, RawTuple left, RawValue value) {
-  uint32_t left_size = left.size();
-  uint64_t new_size = left_size + 1;
-  CHECK(new_size <= kInt32Max);
+  uint32_t left_length = left.length();
+  uint64_t new_length = left_length + 1;
+  CHECK(new_length <= kInt32Max);
 
   HandleScope scope(thread);
   Value new_value(scope, value);
   Tuple old_tuple(scope, left);
-  Tuple new_tuple(scope, RawTuple::create(thread, new_size));
-  for (uint32_t i = 0; i < left_size; i++) {
+  Tuple new_tuple(scope, RawTuple::create(thread, new_length));
+  for (uint32_t i = 0; i < left_length; i++) {
     new_tuple.set_field_at(i, left.field_at(i));
   }
-  new_tuple.set_field_at(new_size - 1, new_value);
+  new_tuple.set_field_at(new_length - 1, new_value);
 
   return *new_tuple;
 }
@@ -1721,7 +1721,7 @@ RawValue* RawTuple::data() const {
   return bitcast<RawValue*>(address());
 }
 
-uint32_t RawTuple::size() const {
+uint32_t RawTuple::length() const {
   return count();
 }
 
@@ -1755,7 +1755,7 @@ RawInstance RawInstance::create(Thread* thread, ShapeId shape_id, size_t field_c
 }
 
 RawInstance RawInstance::create(Thread* thread, RawShape shape, RawValue klass) {
-  return RawInstance::create(thread, shape.own_shape_id(), shape.keys().size(), klass);
+  return RawInstance::create(thread, shape.own_shape_id(), shape.keys().length(), klass);
 }
 
 RawInstance RawInstance::create(Thread* thread, RawClass klass) {
@@ -2108,12 +2108,12 @@ RawValue RawClass::create(Thread* thread,
 
   // check for duplicate member properties
   Tuple parent_keys_tuple(scope, parent_shape.keys());
-  for (uint8_t i = 0; i < member_props.size(); i++) {
+  for (uint8_t i = 0; i < member_props.length(); i++) {
     RawInt encoded = member_props.field_at<RawInt>(i);
     SYMBOL prop_name;
     uint8_t prop_flags;
     RawShape::decode_shape_key(encoded, prop_name, prop_flags);
-    for (uint32_t pi = 0; pi < parent_keys_tuple.size(); pi++) {
+    for (uint32_t pi = 0; pi < parent_keys_tuple.length(); pi++) {
       SYMBOL parent_key_symbol;
       uint8_t parent_key_flags;
       RawShape::decode_shape_key(parent_keys_tuple.field_at<RawInt>(pi), parent_key_symbol, parent_key_flags);
@@ -2125,7 +2125,7 @@ RawValue RawClass::create(Thread* thread,
   }
 
   // ensure new class doesn't exceed the class member property limit
-  size_t new_member_count = parent_shape.field_count() + member_props.size();
+  size_t new_member_count = parent_shape.field_count() + member_props.length();
   if (new_member_count > RawInstance::kMaximumFieldCount) {
     // for some reason, RawInstance::kMaximumFieldCount needs to be casted to its own
     // type, before it can be used in here. this is some weird template thing...
@@ -2139,11 +2139,11 @@ RawValue RawClass::create(Thread* thread,
   Tuple new_function_table(scope);
 
   // can simply reuse parent function table if no new functions are being added
-  if (member_funcs.size() == 0) {
+  if (member_funcs.length() == 0) {
     new_function_table = parent_function_table;
   } else {
     std::unordered_map<SYMBOL, uint32_t> parent_function_indices;
-    for (uint32_t j = 0; j < parent_function_table.size(); j++) {
+    for (uint32_t j = 0; j < parent_function_table.length(); j++) {
       RawFunction parent_function = parent_function_table.field_at<RawFunction>(j);
       parent_function_indices[parent_function.name()] = j;
     }
@@ -2151,7 +2151,7 @@ RawValue RawClass::create(Thread* thread,
     // calculate the amount of functions being added that are not already present in the parent class
     std::unordered_set<SYMBOL> new_function_names;
     size_t newly_added_functions = 0;
-    for (uint32_t i = 0; i < member_funcs.size(); i++) {
+    for (uint32_t i = 0; i < member_funcs.length(); i++) {
       RawSymbol method_name = member_funcs.field_at<RawTuple>(i).field_at<RawFunction>(0).name();
       new_function_names.insert(method_name);
 
@@ -2160,12 +2160,12 @@ RawValue RawClass::create(Thread* thread,
       }
     }
 
-    size_t new_function_table_size = parent_function_table.size() + newly_added_functions;
-    new_function_table = RawTuple::create(thread, new_function_table_size);
+    size_t new_function_table_length = parent_function_table.length() + newly_added_functions;
+    new_function_table = RawTuple::create(thread, new_function_table_length);
 
     // functions which are not being overriden in the new class can be copied to the new table
     size_t new_function_table_offset = 0;
-    for (uint32_t j = 0; j < parent_function_table.size(); j++) {
+    for (uint32_t j = 0; j < parent_function_table.length(); j++) {
       RawFunction parent_function = parent_function_table.field_at<RawFunction>(j);
       if (new_function_names.count(parent_function.name()) == 0) {
         new_function_table.set_field_at(new_function_table_offset++, parent_function);
@@ -2175,14 +2175,14 @@ RawValue RawClass::create(Thread* thread,
     // insert new methods into function table
     // the overload tables of functions that override functions from the parent class must be merged
     // with the overload tables from their parents
-    for (uint32_t i = 0; i < member_funcs.size(); i++) {
+    for (uint32_t i = 0; i < member_funcs.length(); i++) {
       Tuple new_overload_table(scope, member_funcs.field_at(i));
       Function first_overload(scope, new_overload_table.field_at(0));
       RawSymbol new_overload_name = first_overload.name();
 
       // new function does not override any parent functions
       if (parent_function_indices.count(new_overload_name) == 0) {
-        for (uint32_t j = 0; j < new_overload_table.size(); j++) {
+        for (uint32_t j = 0; j < new_overload_table.length(); j++) {
           new_overload_table.field_at<RawFunction>(j).set_overload_table(new_overload_table);
         }
         new_function_table.set_field_at(new_function_table_offset++, first_overload);
@@ -2205,8 +2205,8 @@ RawValue RawClass::create(Thread* thread,
       Function highest_overload(scope);
       Function first_new_overload(scope, new_overload_table.first_field());
       for (uint32_t argc = 0; argc < merged_size; argc++) {
-        uint32_t parent_table_index = std::min(parent_overload_table.size() - 1, argc);
-        uint32_t new_table_index = std::min(new_overload_table.size() - 1, argc);
+        uint32_t parent_table_index = std::min(parent_overload_table.length() - 1, argc);
+        uint32_t new_table_index = std::min(new_overload_table.length() - 1, argc);
 
         Function parent_method(scope, parent_overload_table.field_at(parent_table_index));
         Function new_method(scope, new_overload_table.field_at(new_table_index));
@@ -2254,13 +2254,13 @@ RawValue RawClass::create(Thread* thread,
 
       Function merged_first_overload(scope, merged_table.first_field());
       bool overload_tuple_is_homogenic = true;
-      for (uint32_t oi = 0; oi < merged_table.size(); oi++) {
+      for (uint32_t oi = 0; oi < merged_table.length(); oi++) {
         if (merged_table.field_at(oi) != merged_first_overload) {
           overload_tuple_is_homogenic = false;
           break;
         }
       }
-      if (merged_table.size() == 1 || overload_tuple_is_homogenic) {
+      if (merged_table.length() == 1 || overload_tuple_is_homogenic) {
         merged_first_overload.set_overload_table(kNull);
         new_function_table.set_field_at(new_function_table_offset++, merged_first_overload);
       } else {
@@ -2270,28 +2270,28 @@ RawValue RawClass::create(Thread* thread,
   }
 
   // build overload tables for static functions
-  Tuple static_function_table(scope, RawTuple::create(thread, static_funcs.size()));
-  for (uint32_t i = 0; i < static_funcs.size(); i++) {
+  Tuple static_function_table(scope, RawTuple::create(thread, static_funcs.length()));
+  for (uint32_t i = 0; i < static_funcs.length(); i++) {
     auto overload_tuple = static_funcs.field_at<RawTuple>(i);
-    DCHECK(overload_tuple.size() >= 1);
+    DCHECK(overload_tuple.length() >= 1);
 
     // remove overload tuple if only one function is present
     auto first_overload = overload_tuple.first_field<RawFunction>();
     bool overload_tuple_is_homogenic = true;
-    for (uint32_t oi = 0; oi < overload_tuple.size(); oi++) {
+    for (uint32_t oi = 0; oi < overload_tuple.length(); oi++) {
       if (overload_tuple.field_at(oi) != first_overload) {
         overload_tuple_is_homogenic = false;
         break;
       }
     }
-    if (overload_tuple.size() == 1 || overload_tuple_is_homogenic) {
+    if (overload_tuple.length() == 1 || overload_tuple_is_homogenic) {
       first_overload.set_overload_table(kNull);
       static_function_table.set_field_at(i, first_overload);
       continue;
     }
 
     // point functions to the same overload tuple
-    for (uint32_t j = 0; j < overload_tuple.size(); j++) {
+    for (uint32_t j = 0; j < overload_tuple.length(); j++) {
       auto func = overload_tuple.field_at<RawFunction>(j);
       func.set_overload_table(overload_tuple);
     }
@@ -2305,11 +2305,11 @@ RawValue RawClass::create(Thread* thread,
   // if there are any static properties or functions in this class
   // a special intermediate class needs to be created that contains those static properties
   // the class instance returned is an instance of that intermediate class
-  DCHECK(static_prop_keys.size() == static_prop_values.size());
+  DCHECK(static_prop_keys.length() == static_prop_values.length());
 
   Class builtin_class_instance(scope, runtime->get_builtin_class(ShapeId::kClass));
   Class constructed_class(scope);
-  if (static_prop_keys.size() || static_funcs.size()) {
+  if (static_prop_keys.length() || static_funcs.length()) {
     Shape builtin_class_shape(scope, builtin_class_instance.shape_instance());
     Shape static_shape(scope, RawShape::create(thread, builtin_class_shape, static_prop_keys));
     Class static_class(scope, RawInstance::create(thread, builtin_class_instance));
@@ -2333,17 +2333,17 @@ RawValue RawClass::create(Thread* thread,
     actual_class.set_constructor(constructor);
 
     // initialize static properties
-    for (uint32_t i = 0; i < static_prop_values.size(); i++) {
+    for (uint32_t i = 0; i < static_prop_values.length(); i++) {
       actual_class.set_field_at(RawClass::kFieldCount + i, static_prop_values.field_at(i));
     }
 
     // patch host class field on static functions
-    for (uint32_t i = 0; i < static_function_table.size(); i++) {
+    for (uint32_t i = 0; i < static_function_table.length(); i++) {
       auto entry = static_function_table.field_at<RawFunction>(i);
       auto overloads_value = entry.overload_table();
       if (overloads_value.isTuple()) {
         auto overloads = RawTuple::cast(overloads_value);
-        for (uint32_t j = 0; j < overloads.size(); j++) {
+        for (uint32_t j = 0; j < overloads.length(); j++) {
           auto func = overloads.field_at<RawFunction>(j);
           if (func.host_class().isNull()) {
             func.set_host_class(static_class);
@@ -2367,12 +2367,12 @@ RawValue RawClass::create(Thread* thread,
 
   // set host class fields on functions
   constructor.set_host_class(constructed_class);
-  for (uint32_t i = 0; i < new_function_table.size(); i++) {
+  for (uint32_t i = 0; i < new_function_table.length(); i++) {
     auto entry = new_function_table.field_at<RawFunction>(i);
     auto overloads_value = entry.overload_table();
     if (overloads_value.isTuple()) {
       auto overloads = RawTuple::cast(overloads_value);
-      for (uint32_t j = 0; j < overloads.size(); j++) {
+      for (uint32_t j = 0; j < overloads.length(); j++) {
         auto func = overloads.field_at<RawFunction>(j);
         if (func.host_class().isNull()) {
           func.set_host_class(constructed_class);
@@ -2443,7 +2443,7 @@ void RawClass::set_constructor(RawValue constructor) const {
 RawValue RawClass::lookup_function(SYMBOL name) const {
   // search function table
   auto functions = function_table();
-  for (uint32_t i = 0; i < functions.size(); i++) {
+  for (uint32_t i = 0; i < functions.length(); i++) {
     auto function = functions.field_at<RawFunction>(i);
     if (function.shared_info()->name_symbol == name) {
       return function;
@@ -2485,7 +2485,7 @@ RawShape RawShape::create(Thread* thread, RawValue parent, RawTuple key_table) {
   Shape target_shape(scope, parent_shape);
 
   // find preexisting shape with same layout or create new shape
-  for (uint32_t i = 0; i < key_table.size(); i++) {
+  for (uint32_t i = 0; i < key_table.length(); i++) {
     RawInt encoded = key_table.field_at<RawInt>(i);
     Shape next_shape(scope);
     {
@@ -2494,7 +2494,7 @@ RawShape RawShape::create(Thread* thread, RawValue parent, RawTuple key_table) {
       // find the shape to transition to when adding the new key
       Tuple additions(scope, target_shape.additions());
       bool found_next = false;
-      for (uint32_t ai = 0; ai < additions.size(); ai++) {
+      for (uint32_t ai = 0; ai < additions.length(); ai++) {
         Tuple entry(scope, additions.field_at(ai));
         RawInt entry_encoded_key = entry.field_at<RawInt>(RawShape::kAdditionsKeyOffset);
         if (encoded == entry_encoded_key) {
@@ -2583,7 +2583,7 @@ void RawShape::set_additions(RawTuple additions) const {
 RawShape::LookupResult RawShape::lookup_symbol(SYMBOL symbol) const {
   RawTuple keys = this->keys();
 
-  for (uint32_t i = 0; i < keys.size(); i++) {
+  for (uint32_t i = 0; i < keys.length(); i++) {
     auto encoded = keys.field_at<RawInt>(i);
     SYMBOL key_symbol;
     uint8_t key_flags;

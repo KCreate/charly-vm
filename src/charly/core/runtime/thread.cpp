@@ -258,7 +258,7 @@ void Thread::entry_fiber_thread() {
   if (arguments.isTuple()) {
     Tuple argtuple(scope, arguments);
     arguments_pointer = argtuple.data();
-    argc = argtuple.size();
+    argc = argtuple.length();
   } else {
     DCHECK(arguments.isNull());
   }
