@@ -571,6 +571,11 @@ RawValue RawValue::cast_to_string(Thread* thread) {
 
   utils::Buffer buffer;
   to_string(buffer);
+
+  if (buffer.size() > RawString::kMaxByteLength) {
+    return thread->throw_message("String exceeds maximum allowed size");
+  }
+
   return RawString::acquire(thread, buffer);
 }
 
@@ -1574,6 +1579,10 @@ RawValue RawString::concat(Thread* thread, RawString other) const {
   size_t other_size = other.byte_length();
   size_t total_size = self_size + other_size;
 
+  if (total_size > RawString::kMaxByteLength) {
+    return thread->throw_message("String exceeds maximum allowed size");
+  }
+
   utils::Buffer buffer(total_size);
   buffer.write(RawString::data(this), self_size);
   buffer.write(RawString::data(&other), other_size);
@@ -1585,7 +1594,12 @@ RawValue RawString::op_mul(Thread* thread, int64_t count) const {
     return RawString::cast(kEmptyString);
   }
 
-  utils::Buffer buffer(byte_length() * count);
+  size_t new_length = byte_length() * count;
+  if (new_length > RawString::kMaxByteLength) {
+    return thread->throw_message("String exceeds maximum allowed size");
+  }
+
+  utils::Buffer buffer(new_length);
   while (count--) {
     to_string(buffer);
   }
@@ -1943,18 +1957,21 @@ void RawHugeBytes::set_length(size_t length) const {
 }
 
 RawHugeString RawHugeString::create(Thread* thread, const char* data, size_t size, SYMBOL hash) {
+  DCHECK(size <= RawString::kMaxByteLength);
   char* copy = static_cast<char*>(utils::Allocator::alloc(size));
   std::memcpy(copy, data, size);
   return RawHugeString::acquire(thread, copy, size, hash);
 }
 
 RawHugeString RawHugeString::create(Thread* thread, const char* data, size_t size) {
+  DCHECK(size <= RawString::kMaxByteLength);
   char* copy = static_cast<char*>(utils::Allocator::alloc(size));
   std::memcpy(copy, data, size);
   return RawHugeString::acquire(thread, copy, size);
 }
 
 RawHugeString RawHugeString::acquire(Thread* thread, char* data, size_t size, SYMBOL hash) {
+  DCHECK(size <= RawString::kMaxByteLength);
   auto string = RawHugeString::acquire(thread, data, size);
   string.header()->cas_hashcode((SYMBOL)0, hash);
   string.header()->set_has_cached_hashcode();
@@ -1962,6 +1979,7 @@ RawHugeString RawHugeString::acquire(Thread* thread, char* data, size_t size, SY
 }
 
 RawHugeString RawHugeString::acquire(Thread* thread, char* data, size_t size) {
+  DCHECK(size <= RawString::kMaxByteLength);
   auto* runtime = thread->runtime();
   auto huge_string_class = runtime->get_builtin_class(ShapeId::kHugeString);
   auto string = RawHugeString::cast(

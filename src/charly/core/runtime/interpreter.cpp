@@ -399,6 +399,11 @@ OP(stringconcat) {
     frame->peek(depth).to_string(buffer);
   }
 
+  if (buffer.size() > RawString::kMaxByteLength) {
+    thread->throw_message("String exceeds maximum allowed size");
+    return ContinueMode::Exception;
+  }
+
   frame->pop(count);
   frame->push(RawString::acquire(thread, buffer));
 
@@ -1082,7 +1087,13 @@ OP(castbool) {
 
 OP(caststring) {
   RawValue value = frame->pop();
-  frame->push(value.cast_to_string(thread));
+
+  RawValue result = value.cast_to_string(thread);
+  if (result.is_error_exception()) {
+    return ContinueMode::Exception;
+  }
+
+  frame->push(result);
   return ContinueMode::Next;
 }
 

@@ -627,6 +627,8 @@ class RawString : public RawValue {
 public:
   COMMON_RAW_OBJECT(String);
 
+  static constexpr size_t kMaxByteLength = kGb * 2;
+
   static RawString create(Thread*, const char* data, size_t size, SYMBOL hash);
   static RawString create(Thread*, const char* data, size_t size);
   static RawString create(Thread*, const std::string& string);

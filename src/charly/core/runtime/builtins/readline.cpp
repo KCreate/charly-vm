@@ -56,6 +56,11 @@ RawValue prompt(Thread* thread, BuiltinFrame* frame) {
 
   size_t length = std::strlen(raw_line);
   SYMBOL hash = crc32::hash_block(raw_line, length);
+
+  if (length > RawString::kMaxByteLength) {
+    return thread->throw_message("String exceeds maximum allowed size");
+  }
+
   return RawString::acquire(thread, raw_line, length, hash);
 }
 
