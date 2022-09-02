@@ -450,16 +450,24 @@ bool CodeGenerator::inspect_enter(const ref<Assert>& node) {
   // - original rhs
   // - operation name string
   m_builder.place_label(binop_failure_label);
-  apply(node->message);
-  m_builder.emit_assertfailure()->at(node);
+  if (node->message->type() != Node::Type::Null) {
+    apply(node->message);
+    m_builder.emit_caststring();
+  } else {
+    m_builder.emit_makestr(m_builder.register_string("Failed assertion"));
+  }
+  m_builder.emit_assertcomparisonfailure()->at(node);
 
   // expected stack:
   // - original value
   m_builder.place_label(exp_failure_label);
-  m_builder.emit_load_value(kTrue);
-  m_builder.emit_load_value(RawSmallString::create_from_str("=="));
-  apply(node->message);
-  m_builder.emit_assertfailure()->at(node);
+  if (node->message->type() != Node::Type::Null) {
+    apply(node->message);
+    m_builder.emit_caststring();
+  } else {
+    m_builder.emit_makestr(m_builder.register_string("Failed assertion"));
+  }
+  m_builder.emit_asserttruthynessfailure()->at(node);
 
   // expected stack:
   // - original lhs

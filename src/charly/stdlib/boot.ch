@@ -151,19 +151,9 @@ func compile(source, name = "repl") = builtin_compile(source, name)
         static func getstacktrace = builtin_getstacktrace()
     }
 
-    class builtin_ImportException {
-        func constructor(@message, @errors) {
-            // TODO: trim correct numer of stack frames when called from subclass constructors
-            @stack_trace = Exception.getstacktrace()
-        }
-    }
+    class builtin_ImportException {}
 
-    class builtin_AssertionException {
-        func constructor(@message, @left_hand_side, @right_hand_side = true, @operation_name = "==") {
-            // TODO: trim correct numer of stack frames when called from subclass constructors
-            @stack_trace = Exception.getstacktrace()
-        }
-    }
+    class builtin_AssertionException {}
 
     class builtin_Fiber {
         static func current = builtin_currentfiber()

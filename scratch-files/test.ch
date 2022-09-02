@@ -77,7 +77,6 @@ func test_unpacksequence_assignment {
     const (j, k, l, m) = [1, 2, 3, 4]
     assert (j, k, l, m) == (1, 2, 3, 4)
 }
-
 test_unpacksequence_assignment()
 
 func test_unpacksequencespread_assignment {
@@ -87,6 +86,19 @@ func test_unpacksequencespread_assignment {
     const (e, f, ...rest3) = [1, 2, 3, 4]
     assert (e, f, rest3) == (1, 2, (3, 4))
 }
-
 test_unpacksequencespread_assignment()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -200,15 +200,22 @@ constexpr size_t kInstructionLength = 4;
    * - value                                                                       \
    * */                                                                            \
   V(rethrowex, IXXX, 1, 0)                                                         \
-  /* assertfailure - throws an assertion failure exception                         \
+  /* assertcomparisonfailure - throw a comparison assertion failure exception      \
+   *                                                                               \
+   * stack arguments:                                                              \
+   * - value                                                                       \
+   * - detailed error message (or null)                                            \
+   * */                                                                            \
+  V(asserttruthynessfailure, IXXX, 2, 0)                                           \
+  /* assertcomparisonfailure - throw a comparison assertion failure exception      \
    *                                                                               \
    * stack arguments:                                                              \
    * - left hand side value                                                        \
    * - right hand side value                                                       \
    * - name of the operation                                                       \
-   * - detailed error message (or null)
+   * - detailed error message (or null)                                            \
    * */                                                                            \
-  V(assertfailure, IXXX, 4, 0)                                                     \
+  V(assertcomparisonfailure, IXXX, 4, 0)                                           \
   /* getpendingexception - push the last thrown exception onto the stack           \
    *                                                                               \
    * stack results:                                                                \
@@ -797,7 +804,13 @@ inline Instruction encode_iaaa(Opcode opcode, uint32_t arg) {
  * opcodes which terminate their basic block
  * */
 static const std::unordered_set<Opcode> kTerminatingOpcodes = {
-  Opcode::panic, Opcode::jmp, Opcode::throwex, Opcode::rethrowex, Opcode::assertfailure, Opcode::ret,
+  Opcode::panic,
+  Opcode::jmp,
+  Opcode::throwex,
+  Opcode::rethrowex,
+  Opcode::assertcomparisonfailure,
+  Opcode::asserttruthynessfailure,
+  Opcode::ret,
 };
 
 /*

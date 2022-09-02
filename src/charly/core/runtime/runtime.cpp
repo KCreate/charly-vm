@@ -244,15 +244,13 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   auto builtin_shape_exception = RawShape::create(thread, builtin_shape_instance,
                                                   { { "message", RawShape::kKeyFlagNone },
                                                     { "stack_trace", RawShape::kKeyFlagNone },
-                                                    { "cause", RawShape::kKeyFlagReadOnly } });
+                                                    { "cause", RawShape::kKeyFlagNone } });
 
   auto builtin_shape_import_exception =
     RawShape::create(thread, builtin_shape_exception, { { "errors", RawShape::kKeyFlagReadOnly } });
 
   auto builtin_shape_assertion_exception = RawShape::create(thread, builtin_shape_exception,
-                                                            { { "left_hand_side", RawShape::kKeyFlagReadOnly },
-                                                              { "right_hand_side", RawShape::kKeyFlagReadOnly },
-                                                              { "operation_name", RawShape::kKeyFlagReadOnly } });
+                                                            { { "components", RawShape::kKeyFlagReadOnly } });
 
   // patch shapes table and assign correct shape ids to shape instances
   register_shape(ShapeId::kSmallString, builtin_shape_immediate);
@@ -313,8 +311,10 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   DEFINE_BUILTIN_CLASS(fiber, Fiber, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
   DEFINE_BUILTIN_CLASS(future, Future, class_instance, RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
   DEFINE_BUILTIN_CLASS(exception, Exception, class_instance, RawClass::kFlagNone)
-  DEFINE_BUILTIN_CLASS(import_exception, ImportException, class_exception, RawClass::kFlagFinal)
-  DEFINE_BUILTIN_CLASS(assertion_exception, AssertionException, class_exception, RawClass::kFlagFinal)
+  DEFINE_BUILTIN_CLASS(import_exception, ImportException, class_exception,
+                       RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
+  DEFINE_BUILTIN_CLASS(assertion_exception, AssertionException, class_exception,
+                       RawClass::kFlagFinal | RawClass::kFlagNonConstructable)
 #undef DEFINE_BUILTIN_CLASS
 
 // define the static classes for the builtin classes

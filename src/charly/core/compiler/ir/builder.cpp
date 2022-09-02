@@ -287,7 +287,8 @@ void Builder::build_cfg() {
       case Opcode::ret:
       case Opcode::throwex:
       case Opcode::rethrowex:
-      case Opcode::assertfailure:
+      case Opcode::assertcomparisonfailure:
+      case Opcode::asserttruthynessfailure:
       case Opcode::panic: {
         // block does not directly link to another block
         break;

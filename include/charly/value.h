@@ -798,6 +798,7 @@ public:
   static RawTuple create(Thread*, uint32_t count);
   static RawTuple create(Thread*, RawValue value);
   static RawTuple create(Thread*, RawValue value1, RawValue value2);
+  static RawTuple create(Thread*, RawValue value1, RawValue value2, RawValue value3);
   static RawTuple concat_value(Thread*, RawTuple left, RawValue value);
   static RawValue create_spread(Thread*, const RawValue* segments, uint32_t segment_count);
 
@@ -1276,22 +1277,17 @@ class RawAssertionException : public RawException {
 public:
   COMMON_RAW_OBJECT(AssertionException);
 
-  static RawAssertionException create(
-    Thread*, RawValue message, RawValue left_hand_side, RawValue right_hand_side, RawString operation_name);
+  // Failed comparison assertions
+  static RawAssertionException create(Thread*, RawString message, RawValue left, RawString operation, RawValue right);
 
-  RawValue left_hand_side() const;
-  void set_left_hand_side(RawValue left_hand_side) const;
+  // Failed truthyness based assertions
+  static RawAssertionException create(Thread*, RawString message, RawValue value);
 
-  RawValue right_hand_side() const;
-  void set_right_hand_side(RawValue right_hand_side) const;
-
-  RawString operation_name() const;
-  void set_operation_name(RawString operation_name) const;
+  RawTuple components() const;
+  void set_components(RawTuple components) const;
 
   enum {
-    kLeftHandSideOffset = RawException::kFieldCount,
-    kRightHandSideOffset,
-    kOperationNameOffset,
+    kComponentsOffset = RawException::kFieldCount,
     kFieldCount
   };
 };

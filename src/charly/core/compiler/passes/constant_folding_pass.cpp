@@ -353,7 +353,10 @@ ref<Statement> ConstantFoldingPass::transform(const ref<While>& node) {
   }
 }
 
-bool ConstantFoldingPass::inspect_enter(const ref<Assert>&) {
+bool ConstantFoldingPass::inspect_enter(const ref<Assert>& node) {
+  if (node->message->type() != Node::Type::Null) {
+    node->message = apply(node->message);
+  }
   return false;
 }
 

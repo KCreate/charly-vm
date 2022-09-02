@@ -534,12 +534,20 @@ OP(rethrowex) {
   return ContinueMode::Exception;
 }
 
-OP(assertfailure) {
-  auto message = frame->pop();
+OP(assertcomparisonfailure) {
+  auto message = RawString::cast(frame->pop());
   auto operation_name = RawString::cast(frame->pop());
-  auto right_hand_side = frame->pop();
-  auto left_hand_side = frame->pop();
-  auto exception = RawAssertionException::create(thread, message, left_hand_side, right_hand_side, operation_name);
+  auto right = frame->pop();
+  auto left = frame->pop();
+  auto exception = RawAssertionException::create(thread, message, left, operation_name, right);
+  thread->throw_exception(exception);
+  return ContinueMode::Exception;
+}
+
+OP(asserttruthynessfailure) {
+  auto message = RawString::cast(frame->pop());
+  auto value = frame->pop();
+  auto exception = RawAssertionException::create(thread, message, value);
   thread->throw_exception(exception);
   return ContinueMode::Exception;
 }

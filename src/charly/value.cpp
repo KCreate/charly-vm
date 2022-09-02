@@ -1886,6 +1886,18 @@ RawTuple RawTuple::create(Thread* thread, RawValue value1, RawValue value2) {
   return *tuple;
 }
 
+RawTuple RawTuple::create(Thread* thread, RawValue value1, RawValue value2, RawValue value3) {
+  HandleScope scope(thread);
+  Value v1(scope, value1);
+  Value v2(scope, value2);
+  Value v3(scope, value3);
+  Tuple tuple(scope, RawTuple::create(thread, 3));
+  tuple.set_field_at(0, v1);
+  tuple.set_field_at(1, v2);
+  tuple.set_field_at(2, v3);
+  return *tuple;
+}
+
 RawTuple RawTuple::concat_value(Thread* thread, RawTuple left, RawValue value) {
   uint32_t left_length = left.length();
   uint64_t new_length = left_length + 1;
@@ -3314,54 +3326,50 @@ void RawImportException::set_errors(RawTuple errors) const {
 }
 
 RawAssertionException RawAssertionException::create(
-  Thread* thread, RawValue _message, RawValue _left_hand_side, RawValue _right_hand_side, RawString _operation_name) {
+  Thread* thread, RawString _message, RawValue _left, RawString _operation, RawValue _right) {
   auto runtime = thread->runtime();
   HandleScope scope(thread);
-  Value message(scope, _message);
-  Value left_hand_side(scope, _left_hand_side);
-  Value right_hand_side(scope, _right_hand_side);
-  String operation_name(scope, _operation_name);
-  AssertionException exception(scope,
-                               RawInstance::create(thread, runtime->get_builtin_class(ShapeId::kAssertionException)));
+  String message(scope, _message);
+  Value left(scope, _left);
+  String operation_name(scope, _operation);
+  Value right(scope, _right);
 
-  if (message.isNull()) {
-    exception.set_message(
-      RawString::format(thread, "Failed assertion: % % %", left_hand_side, operation_name, right_hand_side));
-  } else {
-    exception.set_message(RawString::format(thread, "Failed assertion: % (% % %)", message, left_hand_side,
-                                            operation_name, right_hand_side));
-  }
+  auto builtin_class = runtime->get_builtin_class(ShapeId::kAssertionException);
+  AssertionException exception(scope, RawInstance::create(thread, builtin_class));
 
+  exception.set_message(RawString::format(thread, "% (% % %)", message, left, operation_name, right));
   exception.set_stack_trace(thread->create_stack_trace());
   exception.set_cause(kNull);
-  exception.set_left_hand_side(left_hand_side);
-  exception.set_right_hand_side(right_hand_side);
-  exception.set_operation_name(operation_name);
+
+  Tuple components(scope, RawTuple::create(thread, left, operation_name, right));
+  exception.set_components(components);
   return *exception;
 }
 
-RawValue RawAssertionException::left_hand_side() const {
-  return field_at(kLeftHandSideOffset);
+RawAssertionException RawAssertionException::create(Thread* thread, RawString _message, RawValue _value) {
+  auto runtime = thread->runtime();
+  HandleScope scope(thread);
+  String message(scope, _message);
+  Value value(scope, _value);
+
+  auto builtin_class = runtime->get_builtin_class(ShapeId::kAssertionException);
+  AssertionException exception(scope, RawInstance::create(thread, builtin_class));
+
+  exception.set_message(RawString::format(thread, "%", message));
+  exception.set_stack_trace(thread->create_stack_trace());
+  exception.set_cause(kNull);
+
+  Tuple components(scope, RawTuple::create(thread, value));
+  exception.set_components(components);
+  return *exception;
 }
 
-void RawAssertionException::set_left_hand_side(RawValue left_hand_side) const {
-  set_field_at(kLeftHandSideOffset, left_hand_side);
+RawTuple RawAssertionException::components() const {
+  return field_at<RawTuple>(kComponentsOffset);
 }
 
-RawValue RawAssertionException::right_hand_side() const {
-  return field_at(kRightHandSideOffset);
-}
-
-void RawAssertionException::set_right_hand_side(RawValue right_hand_side) const {
-  set_field_at(kRightHandSideOffset, right_hand_side);
-}
-
-RawString RawAssertionException::operation_name() const {
-  return field_at<RawString>(kOperationNameOffset);
-}
-
-void RawAssertionException::set_operation_name(RawString operation_name) const {
-  set_field_at(kOperationNameOffset, operation_name);
+void RawAssertionException::set_components(RawTuple components) const {
+  set_field_at(kComponentsOffset, components);
 }
 
 }  // namespace charly::core::runtime
