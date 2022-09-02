@@ -146,6 +146,8 @@ RawValue Interpreter::call_function(Thread* thread,
 
   if (frame.argument_tuple.isTuple()) {
     DCHECK((void*)frame.arguments == (void*)RawTuple::cast(frame.argument_tuple).data());
+  } else {
+    DCHECK(frame.argument_tuple.isNull());
   }
 
   //  if (frame.parent) {
@@ -587,32 +589,18 @@ OP(callspread) {
   uint32_t segment_count = op->arg();
   DCHECK(segment_count > 0);
 
-  // pop segments from stack
-  uint32_t total_arg_count = 0;
-  RawTuple* segments = static_cast<RawTuple*>(frame->top_n(segment_count));
-  for (uint32_t i = 0; i < segment_count; i++) {
-    auto segment = RawTuple::cast(segments[i]);
-    total_arg_count += segment.length();
-    CHECK(total_arg_count <= kUInt32Max);
+  RawValue* segments = frame->top_n(segment_count);
+  RawValue result = RawTuple::create_spread(thread, segments, segment_count);
+  if (result.is_error_exception()) {
+    return ContinueMode::Exception;
   }
 
-  RawTuple argument_tuple;
-  if (segment_count == 1) {
-    argument_tuple = segments[0];
-  } else {
-    argument_tuple = RawTuple::create(thread, total_arg_count);
-    uint32_t last_written_index = 0;
-    for (uint32_t i = 0; i < segment_count; i++) {
-      auto segment = segments[i];
-      for (uint32_t j = 0; j < segment.length(); j++) {
-        argument_tuple.set_field_at(last_written_index++, segment.field_at(j));
-      }
-    }
-  }
-
+  auto argument_tuple = RawTuple::cast(result);
+  auto* arguments = argument_tuple.data();
+  uint32_t argc = argument_tuple.length();
   RawValue callee = frame->peek(segment_count);
   RawValue self = frame->peek(segment_count + 1);
-  RawValue rval = Interpreter::call_value(thread, self, callee, argument_tuple.data(), total_arg_count, argument_tuple);
+  RawValue rval = Interpreter::call_value(thread, self, callee, arguments, argc, argument_tuple);
 
   if (rval.is_error_exception()) {
     return ContinueMode::Exception;

@@ -62,25 +62,13 @@ func test_empty_list_spread {
 }
 test_empty_list_spread()
 
-func test_list_tuple_compare {
-    const a = (1, 2, 3, 4)
-    const b = [1, 2, 3, 4]
-    const c = ()
-    const d = []
-
-    assert a == b
-    assert c == d
+func test_function_argument_spread {
+    func foo(...args) = args
+    assert foo(...(1, 2, 3, 4)) == (1, 2, 3, 4)
+    assert foo(...[1, 2, 3, 4]) == (1, 2, 3, 4)
+    assert foo(..."hellö") == ("h", "e", "l", "l", "ö")
 }
-test_list_tuple_compare()
-
-//func test_list_to_function_argument_spread {
-//    func foo(...args) = args
-//    const l = [1, 2, 3, 4]
-//    const t = foo(...l)
-//
-//    assert t == (1, 2, 3, 4)
-//}
-//test_list_to_function_argument_spread()
+test_function_argument_spread()
 
 //func test_list_unpack_assignment {
 //    const l = [1, 2, 3, 4]
