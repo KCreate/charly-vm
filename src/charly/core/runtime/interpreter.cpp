@@ -853,30 +853,8 @@ OP(unpacksequence) {
     }
 
     return ContinueMode::Next;
-  } else if (value.isString()) {
-    auto string = RawString::cast(value);
-    uint32_t string_length = string.codepoint_length();
-
-    if (string_length != count) {
-      thread->throw_message("Expected string to be of length %, not %", (size_t)count, string_length);
-      return ContinueMode::Exception;
-    }
-
-    // push values in reverse so that values can be assigned to their
-    // target fields in source order
-    uint32_t codepoint_buffer[count];
-    string.each_codepoint([&](uint32_t cp, size_t index) {
-      DCHECK(index < count);
-      codepoint_buffer[index] = cp;
-    });
-
-    for (int32_t i = count - 1; i >= 0; i--) {
-      frame->push(RawSmallString::create_from_cp(codepoint_buffer[i]));
-    }
-
-    return ContinueMode::Next;
   } else {
-    thread->throw_message("Value is not a sequence");
+    thread->throw_message("Value of type '%' cannot be the source of an unpack assignment", value.klass_name(thread));
     return ContinueMode::Exception;
   }
 }
@@ -884,27 +862,29 @@ OP(unpacksequence) {
 OP(unpacksequencespread) {
   uint8_t before_count = op->arg1();
   uint8_t after_count = op->arg2();
-  uint16_t total_count = before_count + after_count;
+  uint16_t minimum_count = before_count + after_count;
 
-  RawValue value = frame->pop();
+  HandleScope scope(thread);
+  Value value(scope, frame->pop());
 
   if (value.isTuple()) {
-    HandleScope scope(thread);
     Tuple tuple(scope, value);
     uint32_t tuple_length = tuple.length();
-    if (tuple_length < total_count) {
+
+    if (tuple_length < minimum_count) {
       thread->throw_message("Tuple does not contain enough values to unpack");
       return ContinueMode::Exception;
     }
+
+    uint32_t spread_count = tuple_length - minimum_count;
+    Tuple spread_tuple(scope, RawTuple::create(thread, spread_count));
 
     // push the values after the spread
     for (uint8_t i = 0; i < after_count; i++) {
       frame->push(tuple.field_at(tuple_length - i - 1));
     }
 
-    // put spread arguments in a tuple
-    uint32_t spread_count = tuple_length - total_count;
-    Tuple spread_tuple(scope, RawTuple::create(thread, spread_count));
+    // put spread arguments into the spread tuple
     for (uint32_t i = 0; i < spread_count; i++) {
       spread_tuple.set_field_at(i, tuple.field_at(before_count + i));
     }
@@ -916,8 +896,49 @@ OP(unpacksequencespread) {
     }
 
     return ContinueMode::Next;
+  } else if (value.isList()) {
+    List list(scope, value);
+    size_t list_length = list.length();
+
+    if (list_length < minimum_count) {
+      thread->throw_message("List does not contain enough values to unpack");
+      return ContinueMode::Exception;
+    }
+
+    uint32_t spread_count = list_length - minimum_count;
+    Tuple spread_tuple(scope, RawTuple::create(thread, spread_count));
+
+    {
+      std::unique_lock locker(list);
+
+      if (list.length() != list_length) {
+        locker.unlock();
+        thread->throw_message("List length changed during unpack");
+        return ContinueMode::Exception;
+      }
+
+      RawValue* data = list.data();
+
+      // push the values after the spread
+      for (uint8_t i = 0; i < after_count; i++) {
+        frame->push(data[list_length - i - 1]);
+      }
+
+      // put spread arguments into the spread tuple
+      for (uint32_t i = 0; i < spread_count; i++) {
+        spread_tuple.set_field_at(i, data[before_count + i]);
+      }
+      frame->push(spread_tuple);
+
+      // push the values before the spread
+      for (uint8_t i = 0; i < before_count; i++) {
+        frame->push(data[before_count - i - 1]);
+      }
+    }
+
+    return ContinueMode::Next;
   } else {
-    thread->throw_message("Value is not a sequence");
+    thread->throw_message("Value of type '%' cannot be the source of an unpack assignment", value.klass_name(thread));
     return ContinueMode::Exception;
   }
 }

@@ -71,9 +71,6 @@ func test_function_argument_spread {
 test_function_argument_spread()
 
 func test_unpacksequence_assignment {
-    const (a, b, c, d, e) = "hellö"
-    assert (a, b, c, d, e) == ("h", "e", "l", "l", "ö")
-
     const (f, g, h, i) = (1, 2, 3, 4)
     assert (f, g, h, i) == (1, 2, 3, 4)
 
@@ -84,14 +81,11 @@ func test_unpacksequence_assignment {
 test_unpacksequence_assignment()
 
 func test_unpacksequencespread_assignment {
-    const (a, b, ...rest1) = "hellö"
-    assert (a, b, rest1) == ("h", "e", ("l", "l", "ö"))
+    const (c, d, ...rest2) = (1, 2, 3, 4)
+    assert (c, d, rest2) == (1, 2, (3, 4))
 
-    const (f, g, ...rest2) = (1, 2, 3, 4)
-    assert (f, g, rest2) == (1, 2, (3, 4))
-
-    const (j, k, ...rest3) = [1, 2, 3, 4]
-    assert (j, k, rest3) == (1, 2, (3, 4))
+    const (e, f, ...rest3) = [1, 2, 3, 4]
+    assert (e, f, rest3) == (1, 2, (3, 4))
 }
 
 test_unpacksequencespread_assignment()
