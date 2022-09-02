@@ -201,6 +201,11 @@ RawValue createtuplewith(Thread* thread, BuiltinFrame* frame) {
   for (int64_t i = 0; i < length; i++) {
     auto index = RawInt::create(i);
     RawValue value = Interpreter::call_function(thread, kNull, callback, &index, 1);
+
+    if (value.is_error_exception()) {
+      return kErrorException;
+    }
+
     tuple.set_field_at(i, value);
   }
 
