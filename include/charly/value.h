@@ -502,6 +502,18 @@ public:
 
   friend std::ostream& operator<<(std::ostream& out, const RawValue& value);
 
+  // Determines the sizes of the individual spread segments and computes the total size required for the new container
+  static RawValue build_spread_size_table(
+    Thread*, const RawValue* segments, uint32_t segment_count, size_t* segment_sizes, size_t* total_size);
+
+  // Copies the member values from the source segments into the destination buffer
+  static RawValue unpack_spread_segments_to_buffer(Thread*,
+                                                   const RawValue* segments,
+                                                   uint32_t segment_count,
+                                                   size_t* segment_sizes,
+                                                   RawValue* destination_buffer,
+                                                   size_t total_size);
+
 protected:
   uintptr_t m_raw = kTagNull;
 };
@@ -680,6 +692,9 @@ public:
 
   RawValue concat(Thread*, RawString other) const;
   RawValue op_mul(Thread*, int64_t count) const;
+
+  // calls the callback function for each codepoint in the string
+  void each_codepoint(std::function<void(uint32_t cp, size_t index)>) const;
 };
 
 // common super class for RawSmallBytes, LargeBytes and HugeBytes
@@ -784,6 +799,7 @@ public:
   static RawTuple create(Thread*, RawValue value);
   static RawTuple create(Thread*, RawValue value1, RawValue value2);
   static RawTuple concat_value(Thread*, RawTuple left, RawValue value);
+  static RawValue create_spread(Thread*, const RawValue* segments, uint32_t segment_count);
 
   RawValue* data() const;
   uint32_t length() const;
@@ -869,10 +885,11 @@ public:
   COMMON_RAW_OBJECT(List);
 
   static constexpr size_t kInitialCapacity = 16;
-  static constexpr size_t kMaximumCapacity = (size_t)1 << 28; // ~270 million values (2GB)
+  static constexpr size_t kMaximumCapacity = (size_t)1 << 28;  // ~270 million values (2GB)
 
   static RawList create(Thread*, size_t initial_capacity = kInitialCapacity);
   static RawList create_with(Thread*, size_t length, RawValue value = kNull);
+  static RawValue create_spread(Thread*, const RawValue* segments, uint32_t segment_count);
 
   RawValue* data() const;
   void set_data(RawValue* pointer) const;

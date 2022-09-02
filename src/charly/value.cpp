@@ -1297,6 +1297,78 @@ std::ostream& operator<<(std::ostream& out, const RawValue& value) {
   return out;
 }
 
+RawValue RawValue::build_spread_size_table(
+  Thread* thread, const RawValue* segments, uint32_t segment_count, size_t* segment_sizes, size_t* total_size) {
+  for (uint32_t i = 0; i < segment_count; i++) {
+    const RawValue& segment = segments[i];
+
+    if (segment.isTuple()) {
+      size_t size = RawTuple::cast(segment).length();
+      segment_sizes[i] = size;
+      *total_size += size;
+    } else if (segment.isList()) {
+      size_t size = RawList::cast(segment).length();
+      segment_sizes[i] = size;
+      *total_size += size;
+    } else if (segment.isString()) {
+      size_t size = RawString::cast(segment).codepoint_length();
+      segment_sizes[i] = size;
+      *total_size += size;
+    } else {
+      return thread->throw_message("Cannot spread unpack value of type '%'", segment.klass_name(thread));
+    }
+  }
+
+  return kNull;
+}
+
+RawValue RawValue::unpack_spread_segments_to_buffer(Thread* thread,
+                                                    const RawValue* segments,
+                                                    uint32_t segment_count,
+                                                    size_t* segment_sizes,
+                                                    RawValue* destination_buffer,
+                                                    size_t total_size) {
+  uint32_t next_write_index = 0;
+  for (uint32_t i = 0; i < segment_count; i++) {
+    const RawValue* segment = &segments[i];
+
+    if (segment->isTuple()) {
+      auto seg_tuple = RawTuple::cast(segment);
+      size_t seg_length = seg_tuple.length();
+      DCHECK(seg_length == segment_sizes[i]);
+      std::memcpy(destination_buffer + next_write_index, seg_tuple.data(), seg_length * sizeof(RawValue));
+      next_write_index += seg_length;
+    } else if (segment->isList()) {
+      auto seg_list = RawList::cast(segment);
+      std::lock_guard locker(seg_list);
+      size_t seg_length = seg_list.length();
+
+      if (seg_length != segment_sizes[i]) {
+        return thread->throw_message("List size changed during segment unpack");
+      }
+
+      std::memcpy(destination_buffer + next_write_index, seg_list.data(), seg_length * sizeof(RawValue));
+      next_write_index += seg_length;
+    } else if (segment->isString()) {
+      auto seg_string = RawString::cast(segment);
+      size_t seg_length = seg_string.codepoint_length();
+      DCHECK(seg_length == segment_sizes[i]);
+
+      seg_string.each_codepoint([&](uint32_t cp, size_t index) {
+        destination_buffer[next_write_index + index] = RawSmallString::create_from_cp(cp);
+      });
+
+      next_write_index += seg_length;
+    } else {
+      FAIL("Unexpected object type");
+    }
+  }
+
+  DCHECK(next_write_index == total_size);
+
+  return kNull;
+}
+
 int64_t RawInt::value() const {
   auto tmp = static_cast<int64_t>(m_raw);
   return tmp >> kShiftInt;
@@ -1599,6 +1671,23 @@ RawValue RawString::op_mul(Thread* thread, int64_t count) const {
   return RawString::acquire(thread, buffer);
 }
 
+void RawString::each_codepoint(std::function<void(uint32_t, size_t)> callback) const {
+  RawString string = *this;
+  const char* data = RawString::data(&string);
+  size_t byte_length = this->byte_length();
+
+  const char* it = data;
+  const char* end_it = it + byte_length;
+  size_t i = 0;
+  while (it < end_it) {
+    uint32_t cp;
+    bool result = utf8::next(it, end_it, cp);
+    CHECK(result, "invalid utf8");
+    callback(cp, i);
+    i++;
+  }
+}
+
 size_t RawBytes::length() const {
   if (isSmallBytes()) {
     return RawSmallBytes::cast(this).length();
@@ -1811,6 +1900,32 @@ RawTuple RawTuple::concat_value(Thread* thread, RawTuple left, RawValue value) {
   new_tuple.set_field_at(new_length - 1, new_value);
 
   return *new_tuple;
+}
+
+RawValue RawTuple::create_spread(Thread* thread, const RawValue* segments, uint32_t segment_count) {
+  size_t segment_sizes[segment_count];
+  size_t total_size = 0;
+
+  if (build_spread_size_table(thread, segments, segment_count, segment_sizes, &total_size).is_error_exception()) {
+    return kErrorException;
+  }
+
+  if (total_size > kHeapRegionMaximumObjectFieldCount) {
+    return thread->throw_message("Tuple exceeded max size of %", kHeapRegionMaximumObjectFieldCount);
+  }
+
+  auto tuple = RawTuple::create(thread, total_size);
+  if (total_size == 0) {
+    return tuple;
+  }
+
+  auto* destination = tuple.data();
+  if (unpack_spread_segments_to_buffer(thread, segments, segment_count, segment_sizes, destination, total_size)
+        .is_error_exception()) {
+    return kErrorException;
+  }
+
+  return tuple;
 }
 
 RawValue* RawTuple::data() const {
@@ -2033,6 +2148,34 @@ RawList RawList::create_with(Thread* thread, size_t length, RawValue _value) {
   auto* data = list.data();
   for (size_t i = 0; i < length; i++) {
     data[i] = value;
+  }
+
+  return list;
+}
+
+RawValue RawList::create_spread(Thread* thread, const RawValue* segments, uint32_t segment_count) {
+  size_t segment_sizes[segment_count];
+  size_t total_size = 0;
+
+  if (build_spread_size_table(thread, segments, segment_count, segment_sizes, &total_size).is_error_exception()) {
+    return kErrorException;
+  }
+
+  if (total_size > RawList::kMaximumCapacity) {
+    return thread->throw_message("List exceeded max size of %", RawList::kMaximumCapacity);
+  }
+
+  auto list = RawList::create(thread, total_size);
+  if (total_size == 0) {
+    return list;
+  }
+
+  list.set_length(total_size);
+
+  auto* destination = list.data();
+  if (unpack_spread_segments_to_buffer(thread, segments, segment_count, segment_sizes, destination, total_size)
+        .is_error_exception()) {
+    return kErrorException;
   }
 
   return list;

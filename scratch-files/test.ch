@@ -24,16 +24,75 @@
  * SOFTWARE.
  */
 
-const l = [1]
-const m = 268435456
-const t = m * l
-print(t.length)
+func test_tuple_spread {
+    const a = (1, 2, 3, 4)
+    const b = "abcäää"
+    const c = [5, 6, 7, 8]
+    const t = (true, ...a, false, ...b, null, ...c, 2000)
 
+    assert t == (true, 1, 2, 3, 4, false, "a", "b", "c", "ä", "ä", "ä", null, 5, 6, 7, 8, 2000)
+}
+test_tuple_spread()
 
+func test_empty_tuple_spread {
+    const a = ()
+    const b = ""
+    const c = []
+    const t = (...a, ...b, ...c)
+    assert t == ()
+}
+test_empty_tuple_spread()
 
+func test_list_spread {
+    const a = (1, 2, 3, 4)
+    const b = "abcäää"
+    const c = [5, 6, 7, 8]
+    const t = [true, ...a, false, ...b, null, ...c, 2000]
 
+    assert t == [true, 1, 2, 3, 4, false, "a", "b", "c", "ä", "ä", "ä", null, 5, 6, 7, 8, 2000]
+}
+test_list_spread()
 
+func test_empty_list_spread {
+    const a = ()
+    const b = ""
+    const c = []
+    const t = [...a, ...b, ...c]
+    assert t == []
+}
+test_empty_list_spread()
 
+func test_list_tuple_compare {
+    const a = (1, 2, 3, 4)
+    const b = [1, 2, 3, 4]
+    const c = ()
+    const d = []
 
+    assert a == b
+    assert c == d
+}
+test_list_tuple_compare()
 
+//func test_list_to_function_argument_spread {
+//    func foo(...args) = args
+//    const l = [1, 2, 3, 4]
+//    const t = foo(...l)
+//
+//    assert t == (1, 2, 3, 4)
+//}
+//test_list_to_function_argument_spread()
+
+//func test_list_unpack_assignment {
+//    const l = [1, 2, 3, 4]
+//    const (a, b, c, d) = l
+//    let e
+//    let f
+//    let g
+//    let h
+//    (e, f, g, h) = l
+//
+//    assert (a, b, c, d) == (1, 2, 3, 4)
+//    assert (e, f, g, h) == (1, 2, 3, 4)
+//}
+//test_list_unpack_assignment()
 

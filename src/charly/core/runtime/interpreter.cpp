@@ -202,12 +202,13 @@ RawValue Interpreter::call_function(Thread* thread,
                                  (uint32_t)shared_info->ir_info.minargc, argc);
   }
 
-  // regular functions may not be called with more arguments than they declare
-  // the exception to this rule are arrow functions and functions that declare a spread argument
-  if (argc > shared_info->ir_info.argc && !shared_info->ir_info.spread_argument &&
-      !shared_info->ir_info.arrow_function) {
-    return thread->throw_message("Too many arguments for non-spread function '%', expected at most % but got %",
-                                 frame.function.name(), (uint32_t)shared_info->ir_info.argc, argc);
+  // arrow functions and functions with a spread argument may receive an arbitrary amount of arguments
+  // functions which are neither cannot be called with more arguments than they were declared with
+  if (!(shared_info->ir_info.spread_argument || shared_info->ir_info.arrow_function)) {
+    if (argc > shared_info->ir_info.argc) {
+      return thread->throw_message("Too many arguments for function call, expected at most % but got %",
+                                   (uint32_t)shared_info->ir_info.argc, argc);
+    }
   }
 
   // copy function arguments into local variables
@@ -968,30 +969,16 @@ OP(makelist) {
 
 OP(makelistspread) {
   uint32_t segment_count = op->arg();
+  DCHECK(segment_count > 0);
 
-  // pop segments from stack
-  uint32_t total_arg_count = 0;
-  RawTuple* segments = static_cast<RawTuple*>(frame->top_n(segment_count));
-  for (uint32_t i = 0; i < segment_count; i++) {
-    auto segment = RawTuple::cast(segments[i]);
-    total_arg_count += segment.length();
-    CHECK(total_arg_count <= kUInt32Max);
-  }
-
-  // unpack segments and copy arguments into new tuple
-  auto list = RawList::create(thread, total_arg_count);
-  list.set_length(total_arg_count);
-  auto* data = list.data();
-  uint32_t last_written_index = 0;
-  for (uint32_t i = 0; i < segment_count; i++) {
-    auto segment = segments[i];
-    for (uint32_t j = 0; j < segment.length(); j++) {
-      data[last_written_index++] = segment.field_at(j);
-    }
+  RawValue* segments = frame->top_n(segment_count);
+  RawValue result = RawList::create_spread(thread, segments, segment_count);
+  if (result.is_error_exception()) {
+    return ContinueMode::Exception;
   }
 
   frame->pop(segment_count);
-  frame->push(list);
+  frame->push(result);
   return ContinueMode::Next;
 }
 
@@ -1018,28 +1005,16 @@ OP(maketuple) {
 
 OP(maketuplespread) {
   uint32_t segment_count = op->arg();
+  DCHECK(segment_count > 0);
 
-  // pop segments from stack
-  uint32_t total_arg_count = 0;
-  RawTuple* segments = static_cast<RawTuple*>(frame->top_n(segment_count));
-  for (uint32_t i = 0; i < segment_count; i++) {
-    auto segment = RawTuple::cast(segments[i]);
-    total_arg_count += segment.length();
-    CHECK(total_arg_count <= kUInt32Max);
-  }
-
-  // unpack segments and copy arguments into new tuple
-  auto tuple = RawTuple::create(thread, total_arg_count);
-  uint32_t last_written_index = 0;
-  for (uint32_t i = 0; i < segment_count; i++) {
-    auto segment = segments[i];
-    for (uint32_t j = 0; j < segment.length(); j++) {
-      tuple.set_field_at(last_written_index++, segment.field_at(j));
-    }
+  RawValue* segments = frame->top_n(segment_count);
+  RawValue result = RawTuple::create_spread(thread, segments, segment_count);
+  if (result.is_error_exception()) {
+    return ContinueMode::Exception;
   }
 
   frame->pop(segment_count);
-  frame->push(tuple);
+  frame->push(result);
   return ContinueMode::Next;
 }
 
@@ -1089,18 +1064,6 @@ OP(caststring) {
   RawValue value = frame->pop();
 
   RawValue result = value.cast_to_string(thread);
-  if (result.is_error_exception()) {
-    return ContinueMode::Exception;
-  }
-
-  frame->push(result);
-  return ContinueMode::Next;
-}
-
-OP(casttuple) {
-  RawValue value = frame->pop();
-
-  RawValue result = value.cast_to_tuple(thread);
   if (result.is_error_exception()) {
     return ContinueMode::Exception;
   }

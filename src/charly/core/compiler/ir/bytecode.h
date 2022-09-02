@@ -595,7 +595,6 @@ constexpr size_t kInstructionLength = 4;
    * */                                                                            \
   V(castbool, IXXX, 1, 1)                                                          \
   V(caststring, IXXX, 1, 1)                                                        \
-  V(casttuple, IXXX, 1, 1)                                                         \
   V(castsymbol, IXXX, 1, 1)                                                        \
   V(castiterator, IXXX, 1, 1)                                                      \
   /* iteratornext - load the next result tuple from an iterator                    \
