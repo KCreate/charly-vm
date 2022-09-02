@@ -765,7 +765,7 @@ RawValue RawValue::op_eq(Thread* thread, RawValue other, uint32_t depth) {
       bool lists_have_same_length = left_list.length() == right_list.length();
       bool lists_have_original_length = left_list.length() == length;
       if (!(lists_have_same_length && lists_have_original_length)) {
-        return thread->throw_message("List size changed during comparison");
+        return thread->throw_message("List length changed during comparison");
       }
 
       auto left_value = left_list.read_at(thread, i);
@@ -1344,7 +1344,7 @@ RawValue RawValue::unpack_spread_segments_to_buffer(Thread* thread,
       size_t seg_length = seg_list.length();
 
       if (seg_length != segment_sizes[i]) {
-        return thread->throw_message("List size changed during segment unpack");
+        return thread->throw_message("List length changed during segment unpack");
       }
 
       std::memcpy(destination_buffer + next_write_index, seg_list.data(), seg_length * sizeof(RawValue));
@@ -2229,7 +2229,7 @@ RawValue RawList::op_mul(Thread* thread, int64_t count) const {
   {
     std::lock_guard locker(list);
     if (list.length() != old_length) {
-      return thread->throw_message("List size changed during multiplication");
+      return thread->throw_message("List length changed during multiplication");
     }
     RawValue* source = list.data();
     RawValue* destination = new_list.data();

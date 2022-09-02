@@ -818,7 +818,7 @@ OP(unpacksequence) {
     uint32_t tuple_length = tuple.length();
 
     if (tuple_length != count) {
-      thread->throw_message("Expected tuple to be of size %, not %", (size_t)count, tuple_length);
+      thread->throw_message("Expected tuple to be of length %, not %", (size_t)count, tuple_length);
       return ContinueMode::Exception;
     }
 
@@ -826,6 +826,52 @@ OP(unpacksequence) {
     // target fields in source order
     for (int64_t i = tuple_length - 1; i >= 0; i--) {
       frame->push(tuple.field_at(i));
+    }
+
+    return ContinueMode::Next;
+  } else if (value.isList()) {
+    auto list = RawList::cast(value);
+    uint32_t list_length = list.length();
+
+    if (list_length != count) {
+      thread->throw_message("Expected list to be of length %, not %", (size_t)count, list_length);
+      return ContinueMode::Exception;
+    }
+
+    std::lock_guard locker(list);
+
+    if (list.length() != list_length) {
+      thread->throw_message("List length changed during unpack");
+      return ContinueMode::Exception;
+    }
+
+    // push values in reverse so that values can be assigned to their
+    // target fields in source order
+    RawValue* data = list.data();
+    for (int64_t i = list_length - 1; i >= 0; i--) {
+      frame->push(data[i]);
+    }
+
+    return ContinueMode::Next;
+  } else if (value.isString()) {
+    auto string = RawString::cast(value);
+    uint32_t string_length = string.codepoint_length();
+
+    if (string_length != count) {
+      thread->throw_message("Expected string to be of length %, not %", (size_t)count, string_length);
+      return ContinueMode::Exception;
+    }
+
+    // push values in reverse so that values can be assigned to their
+    // target fields in source order
+    uint32_t codepoint_buffer[count];
+    string.each_codepoint([&](uint32_t cp, size_t index) {
+      DCHECK(index < count);
+      codepoint_buffer[index] = cp;
+    });
+
+    for (int32_t i = count - 1; i >= 0; i--) {
+      frame->push(RawSmallString::create_from_cp(codepoint_buffer[i]));
     }
 
     return ContinueMode::Next;
