@@ -838,9 +838,10 @@ OP(unpacksequence) {
       return ContinueMode::Exception;
     }
 
-    std::lock_guard locker(list);
+    std::unique_lock locker(list);
 
     if (list.length() != list_length) {
+      locker.unlock();
       thread->throw_message("List length changed during unpack");
       return ContinueMode::Exception;
     }

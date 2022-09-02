@@ -461,7 +461,7 @@ void Runtime::initialize_stdlib_paths() {
 }
 
 RawValue Runtime::declare_global_variable(Thread*, SYMBOL name, bool constant, RawValue value) {
-  std::unique_lock<std::shared_mutex> locker(m_globals_mutex);
+  std::unique_lock locker(m_globals_mutex);
 
   if (m_global_variables.count(name) == 1) {
     return kErrorException;
@@ -472,7 +472,7 @@ RawValue Runtime::declare_global_variable(Thread*, SYMBOL name, bool constant, R
 }
 
 RawValue Runtime::read_global_variable(Thread*, SYMBOL name) {
-  std::shared_lock<std::shared_mutex> locker(m_globals_mutex);
+  std::shared_lock locker(m_globals_mutex);
 
   if (m_global_variables.count(name) == 0) {
     return kErrorNotFound;
@@ -483,7 +483,7 @@ RawValue Runtime::read_global_variable(Thread*, SYMBOL name) {
 }
 
 RawValue Runtime::set_global_variable(Thread*, SYMBOL name, RawValue value) {
-  std::unique_lock<std::shared_mutex> locker(m_globals_mutex);
+  std::unique_lock locker(m_globals_mutex);
 
   if (m_global_variables.count(name) == 0) {
     return kErrorNotFound;
@@ -512,7 +512,7 @@ SYMBOL Runtime::declare_symbol(Thread* thread, const char* data, size_t size) {
 }
 
 ShapeId Runtime::register_shape(RawShape shape) {
-  std::unique_lock<std::shared_mutex> lock(m_shapes_mutex);
+  std::unique_lock lock(m_shapes_mutex);
   // TODO: fail gracefully
   CHECK(m_shapes.size() < static_cast<size_t>(ShapeId::kMaxShapeCount), "exceeded max shapes count");
 
@@ -525,7 +525,7 @@ ShapeId Runtime::register_shape(RawShape shape) {
 }
 
 void Runtime::register_shape(ShapeId id, RawShape shape) {
-  std::unique_lock<std::shared_mutex> lock(m_shapes_mutex);
+  std::unique_lock lock(m_shapes_mutex);
   auto index = static_cast<size_t>(id);
   DCHECK(index < m_shapes.size());
   m_shapes[index] = shape;
@@ -533,7 +533,7 @@ void Runtime::register_shape(ShapeId id, RawShape shape) {
 }
 
 RawShape Runtime::lookup_shape(ShapeId id) {
-  std::shared_lock<std::shared_mutex> lock(m_shapes_mutex);
+  std::shared_lock lock(m_shapes_mutex);
   auto index = static_cast<size_t>(id);
   CHECK(index < m_shapes.size());
   return RawShape::cast(m_shapes.at(index));
@@ -550,14 +550,14 @@ RawValue Runtime::lookup_symbol(SYMBOL symbol) {
 }
 
 bool Runtime::builtin_class_is_registered(ShapeId shape_id) {
-  std::shared_lock<std::shared_mutex> lock(m_shapes_mutex);
+  std::shared_lock lock(m_shapes_mutex);
   auto offset = static_cast<uint32_t>(shape_id);
   DCHECK(offset < kBuiltinClassCount);
   return !m_builtin_classes.at(offset).isNull();
 }
 
 void Runtime::set_builtin_class(ShapeId shape_id, RawClass klass) {
-  std::unique_lock<std::shared_mutex> lock(m_shapes_mutex);
+  std::unique_lock lock(m_shapes_mutex);
   auto offset = static_cast<uint32_t>(shape_id);
   DCHECK(shape_id <= ShapeId::kLastBuiltinShapeId);
   DCHECK(offset < kBuiltinClassCount);
@@ -566,7 +566,7 @@ void Runtime::set_builtin_class(ShapeId shape_id, RawClass klass) {
 }
 
 RawClass Runtime::get_builtin_class(ShapeId shape_id) {
-  std::shared_lock<std::shared_mutex> lock(m_shapes_mutex);
+  std::shared_lock lock(m_shapes_mutex);
   auto offset = static_cast<uint32_t>(shape_id);
   DCHECK(offset < kBuiltinClassCount);
   return RawClass::cast(m_builtin_classes.at(offset));

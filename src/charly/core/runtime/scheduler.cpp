@@ -165,7 +165,7 @@ void Scheduler::schedule_thread(Thread* thread, Processor* current_proc) {
 
   // schedule in global queue
   {
-    std::unique_lock<std::mutex> locker(m_run_queue_mutex);
+    std::unique_lock locker(m_run_queue_mutex);
     m_run_queue.push_back(thread);
   }
 

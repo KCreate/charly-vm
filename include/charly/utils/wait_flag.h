@@ -44,7 +44,7 @@ public:
   }
 
   void wait() {
-    std::unique_lock<std::mutex> locker(m_mutex);
+    std::unique_lock locker(m_mutex);
     m_cv.wait(locker, [&]() -> bool {
       return m_state;
     });
@@ -53,7 +53,7 @@ public:
   bool signal() {
     bool first;
     {
-      std::unique_lock<std::mutex> locker(m_mutex);
+      std::unique_lock locker(m_mutex);
       first = m_state.cas(false, true);
     }
 
@@ -65,7 +65,7 @@ public:
   bool reset() {
     bool first;
     {
-      std::unique_lock<std::mutex> locker(m_mutex);
+      std::unique_lock locker(m_mutex);
       first = m_state.cas(true, false);
     }
 

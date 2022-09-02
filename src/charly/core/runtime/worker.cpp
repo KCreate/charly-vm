@@ -128,7 +128,7 @@ void Worker::join() {
 bool Worker::wake() {
   bool first_to_wake;
   {
-    std::unique_lock<std::mutex> locker(m_mutex);
+    std::unique_lock locker(m_mutex);
     first_to_wake = clear_idle_flag();
   }
   m_idle_cv.notify_one();
@@ -141,7 +141,7 @@ void Worker::idle() {
   assert_change_state(State::Acquiring, State::Idle);
 
   {
-    std::unique_lock<std::mutex> locker(m_mutex);
+    std::unique_lock locker(m_mutex);
     auto idle_duration = 1ms * m_idle_sleep_duration;
     m_idle_cv.wait_for(locker, idle_duration, [&] {
       return !has_idle_flag();
@@ -158,7 +158,7 @@ void Worker::checkpoint() {
     State old_state = state();
     assert_change_state(old_state, State::WorldStopped);
     {
-      std::unique_lock<std::mutex> locker(m_mutex);
+      std::unique_lock locker(m_mutex);
       m_stw_cv.wait(locker, [&] {
         return !has_stop_flag();
       });
@@ -169,7 +169,7 @@ void Worker::checkpoint() {
 
 void Worker::stop_the_world() {
   {
-    std::unique_lock<std::mutex> locker(m_mutex);
+    std::unique_lock locker(m_mutex);
     set_stop_flag();
   }
 
@@ -182,7 +182,7 @@ void Worker::stop_the_world() {
 
 void Worker::start_the_world() {
   {
-    std::unique_lock<std::mutex> locker(m_mutex);
+    std::unique_lock locker(m_mutex);
     clear_stop_flag();
   }
   m_stw_cv.notify_one();
@@ -199,7 +199,7 @@ void Worker::exit_native() {
 bool Worker::change_state(State expected_state, State new_state) {
   bool changed;
   {
-    std::unique_lock<std::mutex> locker(m_mutex);
+    std::unique_lock locker(m_mutex);
     changed = m_state.cas(expected_state, new_state);
   }
   m_state_cv.notify_all();
@@ -213,7 +213,7 @@ void Worker::assert_change_state(State expected_state, State new_state) {
 }
 
 Worker::State Worker::wait_for_state_change(State old_state) {
-  std::unique_lock<std::mutex> locker(m_mutex);
+  std::unique_lock locker(m_mutex);
   m_state_cv.wait(locker, [&] {
     return state() != old_state;
   });

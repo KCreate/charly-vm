@@ -58,7 +58,7 @@ void GarbageCollector::perform_gc(Thread* thread) {
 
   thread->native_section([&]() {
     // wake GC thread
-    std::unique_lock<std::mutex> locker(m_mutex);
+    std::unique_lock locker(m_mutex);
     if (!m_wants_collection) {
       if (m_wants_collection.cas(false, true)) {
         m_cv.notify_all();
@@ -82,7 +82,7 @@ void GarbageCollector::main() {
   size_t collection_count = 0;
   while (!m_runtime->wants_exit()) {
     {
-      std::unique_lock<std::mutex> locker(m_mutex);
+      std::unique_lock locker(m_mutex);
       m_cv.wait(locker, [&]() {
         return m_wants_collection || m_runtime->wants_exit();
       });

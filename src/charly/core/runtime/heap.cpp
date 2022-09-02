@@ -214,7 +214,7 @@ Heap::Heap(Runtime* runtime) : m_runtime(runtime) {
 }
 
 Heap::~Heap() {
-  std::unique_lock<std::mutex> locker(m_mutex);
+  std::unique_lock locker(m_mutex);
   Allocator::munmap(m_heap_base, kHeapSize);
   m_heap_base = nullptr;
   m_unmapped_regions.clear();

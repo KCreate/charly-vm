@@ -1340,10 +1340,11 @@ RawValue RawValue::unpack_spread_segments_to_buffer(Thread* thread,
       next_write_index += seg_length;
     } else if (segment->isList()) {
       auto seg_list = RawList::cast(segment);
-      std::lock_guard locker(seg_list);
+      std::unique_lock locker(seg_list);
       size_t seg_length = seg_list.length();
 
       if (seg_length != segment_sizes[i]) {
+        locker.unlock();
         return thread->throw_message("List length changed during segment unpack");
       }
 
@@ -2227,8 +2228,9 @@ RawValue RawList::op_mul(Thread* thread, int64_t count) const {
   List new_list(scope, RawList::create(thread, new_length));
   new_list.set_length(new_length);
   {
-    std::lock_guard locker(list);
+    std::unique_lock locker(list);
     if (list.length() != old_length) {
+      locker.unlock();
       return thread->throw_message("List length changed during multiplication");
     }
     RawValue* source = list.data();
@@ -2273,10 +2275,11 @@ RawValue RawList::reserve_capacity(Thread* thread, size_t expected_size) const {
 }
 
 RawValue RawList::read_at(Thread* thread, int64_t index) const {
-  std::lock_guard locker(*this);
+  std::unique_lock locker(*this);
 
   int64_t real_index = wrap_negative_indices(index, length());
   if (real_index < 0 || (size_t)real_index >= length()) {
+    locker.unlock();
     return thread->throw_message("List index (%) out of range", real_index);
   }
   DCHECK((size_t)real_index < capacity());
@@ -2285,11 +2288,12 @@ RawValue RawList::read_at(Thread* thread, int64_t index) const {
 }
 
 RawValue RawList::write_at(Thread* thread, int64_t index, RawValue value) const {
-  std::lock_guard locker(*this);
+  std::unique_lock locker(*this);
 
   size_t length = this->length();
   int64_t real_index = wrap_negative_indices(index, length);
   if (real_index < 0 || (size_t)real_index >= length) {
+    locker.unlock();
     return thread->throw_message("List index (%) out of range", real_index);
   }
   DCHECK((size_t)real_index < capacity());
@@ -2300,11 +2304,12 @@ RawValue RawList::write_at(Thread* thread, int64_t index, RawValue value) const 
 }
 
 RawValue RawList::insert_at(Thread* thread, int64_t index, RawValue value) const {
-  std::lock_guard locker(*this);
+  std::unique_lock locker(*this);
 
   size_t length = this->length();
   int64_t real_index = wrap_negative_indices(index, length);
   if (real_index < 0 || (size_t)real_index > length) {
+    locker.unlock();
     return thread->throw_message("List index (%) out of range", real_index);
   }
 
@@ -2324,17 +2329,20 @@ RawValue RawList::insert_at(Thread* thread, int64_t index, RawValue value) const
 }
 
 RawValue RawList::erase_at(Thread* thread, int64_t start, int64_t count) const {
-  std::lock_guard locker(*this);
+  std::unique_lock locker(*this);
 
   size_t length = this->length();
   int64_t real_start = wrap_negative_indices(start, length);
   if (real_start < 0 || (size_t)real_start >= length) {
+    locker.unlock();
     return thread->throw_message("List index (%) out of range", real_start);
   }
   if (count <= 0) {
+    locker.unlock();
     return thread->throw_message("Expected count to be greater than 0");
   }
   if ((size_t)(real_start + count) > length) {
+    locker.unlock();
     return thread->throw_message("Not enough values in list to erase");
   }
 
@@ -2363,10 +2371,11 @@ RawValue RawList::append_value(Thread* thread, RawValue value) const {
 }
 
 RawValue RawList::pop_value(Thread* thread) const {
-  std::lock_guard locker(*this);
+  std::unique_lock locker(*this);
   size_t length = this->length();
 
   if (length == 0) {
+    locker.unlock();
     return thread->throw_message("List is empty");
   }
 

@@ -108,7 +108,7 @@ bool ParkingLot::park_impl(uintptr_t address, const std::function<bool()>& valid
   queue->mutex.unlock();
 
   {
-    std::unique_lock<std::mutex> lock(me->parking_lock);
+    std::unique_lock lock(me->parking_lock);
     while (me->should_park) {
       me->parking_condition.wait(lock);
     }
