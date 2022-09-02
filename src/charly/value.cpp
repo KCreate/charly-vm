@@ -681,12 +681,6 @@ RawValue RawValue::op_eq(Thread* thread, RawValue other, uint32_t depth) {
     return kTrue;
   }
 
-  if (isBool() || other.isBool()) {
-    auto left_truthy = truthyness();
-    auto right_truthy = other.truthyness();
-    return RawBool::create(left_truthy == right_truthy);
-  }
-
   if (isNumber() && other.isNumber()) {
     double left_num = double_value();
     double right_num = other.double_value();
