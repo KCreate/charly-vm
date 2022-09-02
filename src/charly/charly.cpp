@@ -24,6 +24,8 @@
  * SOFTWARE.
  */
 
+#include <execinfo.h>
+
 #include "charly/charly.h"
 #include "charly/core/runtime/interpreter.h"
 #include "charly/core/runtime/runtime.h"
@@ -81,6 +83,15 @@ void print_runtime_debug_state(std::ostream& stream) {
   } else {
     debugln_impl_time(stream, "No active thread!\n");
   }
+
+  void* callstack[128];
+  int frames = backtrace(callstack, 128);
+  char** frame_symbols = backtrace_symbols(callstack, frames);
+  debugln_impl_time(stream, "Hardware Stack:\n");
+  for (int i = 0; i < frames; ++i) {
+    debugln_impl_time(stream, "  - % %\n", i, frame_symbols[i] + 58);
+  }
+  utils::Allocator::free(frame_symbols);
 }
 
 }  // namespace charly
