@@ -28,7 +28,7 @@ const builtin_currentfiber = @"charly.builtin.core.currentfiber"
 const builtin_transplant_builtin_class = @"charly.builtin.core.transplantbuiltinclass"
 const builtin_writevalue = @"charly.builtin.core.writevalue"
 const builtin_currentworkingdirectory = @"charly.builtin.core.currentworkingdirectory"
-const builtin_getstacktrace = @"charly.builtin.core.getstacktrace"
+const builtin_getbacktrace = @"charly.builtin.core.getbacktrace"
 const builtin_disassemble = @"charly.builtin.core.disassemble"
 const builtin_createtuple = @"charly.builtin.core.createtuple"
 const builtin_createtuplewith = @"charly.builtin.core.createtuplewith"
@@ -145,10 +145,10 @@ func compile(source, name = "repl") = builtin_compile(source, name)
     class builtin_Exception {
         func constructor(@message) {
             // TODO: trim correct numer of stack frames when called from subclass constructors
-            @stack_trace = Exception.getstacktrace()
+            @backtrace = Exception.getbacktrace()
         }
 
-        static func getstacktrace = builtin_getstacktrace()
+        static func getbacktrace = builtin_getbacktrace()
     }
 
     class builtin_ImportException {}

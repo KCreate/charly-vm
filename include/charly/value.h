@@ -1241,15 +1241,15 @@ public:
   RawString message() const;
   void set_message(RawString value) const;
 
-  RawTuple stack_trace() const;
-  void set_stack_trace(RawTuple stack_trace) const;
+  RawTuple backtrace() const;
+  void set_backtrace(RawTuple backtrace) const;
 
   RawValue cause() const;
-  void set_cause(RawValue stack_trace) const;
+  void set_cause(RawValue cause) const;
 
   enum {
     kMessageOffset = RawInstance::kFieldCount,
-    kStackTraceOffset,
+    kBacktraceOffset,
     kCauseOffset,
     kFieldCount
   };

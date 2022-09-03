@@ -144,8 +144,8 @@ RawValue currentworkingdirectory(Thread* thread, BuiltinFrame*) {
   return RawString::create(thread, cwd);
 }
 
-RawValue getstacktrace(Thread* thread, BuiltinFrame*) {
-  return thread->create_stack_trace();
+RawValue getbacktrace(Thread* thread, BuiltinFrame*) {
+  return thread->create_backtrace();
 }
 
 RawValue disassemble(Thread*, BuiltinFrame* frame) {

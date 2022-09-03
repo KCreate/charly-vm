@@ -243,7 +243,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
 
   auto builtin_shape_exception = RawShape::create(thread, builtin_shape_instance,
                                                   { { "message", RawShape::kKeyFlagNone },
-                                                    { "stack_trace", RawShape::kKeyFlagNone },
+                                                    { "backtrace", RawShape::kKeyFlagNone },
                                                     { "cause", RawShape::kKeyFlagNone } });
 
   auto builtin_shape_import_exception =

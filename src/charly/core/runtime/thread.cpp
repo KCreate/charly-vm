@@ -353,7 +353,7 @@ void Thread::acas_state(Thread::State old_state, Thread::State new_state) {
   m_state.acas(old_state, new_state);
 }
 
-RawTuple Thread::create_stack_trace() {
+RawTuple Thread::create_backtrace() {
   Frame* top_frame = frame();
 
   if (top_frame == nullptr) {
@@ -361,20 +361,20 @@ RawTuple Thread::create_stack_trace() {
   }
 
   HandleScope scope(this);
-  Tuple stack_trace(scope, RawTuple::create(this, top_frame->depth + 1));
+  Tuple backtrace(scope, RawTuple::create(this, top_frame->depth + 1));
   size_t index = 0;
   for (Frame* frame = top_frame; frame != nullptr; frame = frame->parent) {
     if (frame->is_builtin_frame()) {
       auto* interpreter_frame = static_cast<InterpreterFrame*>(frame);
-      stack_trace.set_field_at(index, RawTuple::create(this, interpreter_frame->function));
+      backtrace.set_field_at(index, RawTuple::create(this, interpreter_frame->function));
     } else {
       auto* builtin_frame = static_cast<BuiltinFrame*>(frame);
-      stack_trace.set_field_at(index, RawTuple::create(this, builtin_frame->function));
+      backtrace.set_field_at(index, RawTuple::create(this, builtin_frame->function));
     }
     index++;
   }
 
-  return *stack_trace;
+  return *backtrace;
 }
 
 void Thread::push_frame(Frame* frame) {

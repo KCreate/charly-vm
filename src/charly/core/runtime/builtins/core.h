@@ -38,7 +38,7 @@ void initialize(Thread* thread);
   V(core, transplantbuiltinclass, 2)  \
   V(core, writevalue, -1)             \
   V(core, currentworkingdirectory, 0) \
-  V(core, getstacktrace, 0)           \
+  V(core, getbacktrace, 0)           \
   V(core, disassemble, 1)             \
   V(core, createtuple, 2)             \
   V(core, createtuplewith, 2)         \

@@ -221,7 +221,7 @@ public:
   void acas_state(Thread::State old_state, Thread::State new_state);
 
   // creates a tuple containing a stack trace of the current thread
-  RawTuple create_stack_trace();
+  RawTuple create_backtrace();
 
 private:
   int32_t entry_main_thread();

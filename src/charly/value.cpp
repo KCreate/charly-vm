@@ -1268,10 +1268,10 @@ void RawValue::dump(std::ostream& out) const {
         auto exception = RawException::cast(this);
         auto klass = RawClass::cast(exception.klass_field());
         RawValue message = exception.message();
-        RawTuple stack_trace = exception.stack_trace();
+        RawTuple backtrace = exception.backtrace();
         writer.fg(Color::Green, "<", klass.name(), " ");
         writer.fg(Color::Red, message);
-        writer.fg(Color::Green, ", ", stack_trace, ">");
+        writer.fg(Color::Green, ", ", backtrace, ">");
         return;
       }
     }
@@ -3288,7 +3288,7 @@ RawException RawException::create(Thread* thread, RawString _message) {
   String message(scope, _message);
   Exception exception(scope, RawInstance::create(thread, runtime->get_builtin_class(ShapeId::kException)));
   exception.set_message(message);
-  exception.set_stack_trace(thread->create_stack_trace());
+  exception.set_backtrace(thread->create_backtrace());
   exception.set_cause(kNull);
   return *exception;
 }
@@ -3301,12 +3301,12 @@ void RawException::set_message(RawString value) const {
   set_field_at(kMessageOffset, value);
 }
 
-RawTuple RawException::stack_trace() const {
-  return field_at<RawTuple>(kStackTraceOffset);
+RawTuple RawException::backtrace() const {
+  return field_at<RawTuple>(kBacktraceOffset);
 }
 
-void RawException::set_stack_trace(RawTuple stack_trace) const {
-  set_field_at(kStackTraceOffset, stack_trace);
+void RawException::set_backtrace(RawTuple backtrace) const {
+  set_field_at(kBacktraceOffset, backtrace);
 }
 
 RawValue RawException::cause() const {
@@ -3355,7 +3355,7 @@ RawImportException RawImportException::create(Thread* thread,
 
   ImportException exception(scope, RawInstance::create(thread, runtime->get_builtin_class(ShapeId::kImportException)));
   exception.set_message(RawString::format(thread, "Encountered an error while importing '%'", module_path));
-  exception.set_stack_trace(thread->create_stack_trace());
+  exception.set_backtrace(thread->create_backtrace());
   exception.set_cause(kNull);
   exception.set_errors(error_tuple);
   return *exception;
@@ -3382,7 +3382,7 @@ RawAssertionException RawAssertionException::create(
   AssertionException exception(scope, RawInstance::create(thread, builtin_class));
 
   exception.set_message(RawString::format(thread, "% (% % %)", message, left, operation_name, right));
-  exception.set_stack_trace(thread->create_stack_trace());
+  exception.set_backtrace(thread->create_backtrace());
   exception.set_cause(kNull);
 
   Tuple components(scope, RawTuple::create(thread, left, operation_name, right));
@@ -3400,7 +3400,7 @@ RawAssertionException RawAssertionException::create(Thread* thread, RawString _m
   AssertionException exception(scope, RawInstance::create(thread, builtin_class));
 
   exception.set_message(RawString::format(thread, "%", message));
-  exception.set_stack_trace(thread->create_stack_trace());
+  exception.set_backtrace(thread->create_backtrace());
   exception.set_cause(kNull);
 
   Tuple components(scope, RawTuple::create(thread, value));
