@@ -800,7 +800,7 @@ RawValue RawValue::op_neq(Thread* thread, RawValue other, uint32_t depth) {
   return result;
 }
 
-RawValue RawValue::op_spaceship(Thread* thread, RawValue other) {
+RawValue RawValue::op_spaceship(Thread*, RawValue other) {
   if (isInt() && other.isInt()) {
     int64_t left = RawInt::cast(this).value();
     int64_t right = RawInt::cast(other).value();

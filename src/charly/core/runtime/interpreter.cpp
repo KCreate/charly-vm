@@ -1211,19 +1211,59 @@ OP(neq) {
 }
 
 OP(lt) {
-  THROW_NOT_IMPLEMENTED();
+  RawValue right = frame->pop();
+  RawValue left = frame->pop();
+
+  RawValue result = left.op_spaceship(thread, right);
+  if (result.is_error_exception()) {
+    return ContinueMode::Exception;
+  }
+
+  auto sign = RawInt::cast(result);
+  frame->push(RawBool::create(sign.value() == -1));
+  return ContinueMode::Next;
 }
 
 OP(gt) {
-  THROW_NOT_IMPLEMENTED();
+  RawValue right = frame->pop();
+  RawValue left = frame->pop();
+
+  RawValue result = left.op_spaceship(thread, right);
+  if (result.is_error_exception()) {
+    return ContinueMode::Exception;
+  }
+
+  auto sign = RawInt::cast(result);
+  frame->push(RawBool::create(sign.value() == 1));
+  return ContinueMode::Next;
 }
 
 OP(le) {
-  THROW_NOT_IMPLEMENTED();
+  RawValue right = frame->pop();
+  RawValue left = frame->pop();
+
+  RawValue result = left.op_spaceship(thread, right);
+  if (result.is_error_exception()) {
+    return ContinueMode::Exception;
+  }
+
+  auto sign = RawInt::cast(result);
+  frame->push(RawBool::create(sign.value() <= 0));
+  return ContinueMode::Next;
 }
 
 OP(ge) {
-  THROW_NOT_IMPLEMENTED();
+  RawValue right = frame->pop();
+  RawValue left = frame->pop();
+
+  RawValue result = left.op_spaceship(thread, right);
+  if (result.is_error_exception()) {
+    return ContinueMode::Exception;
+  }
+
+  auto sign = RawInt::cast(result);
+  frame->push(RawBool::create(sign.value() >= 0));
+  return ContinueMode::Next;
 }
 
 OP(spaceship) {
