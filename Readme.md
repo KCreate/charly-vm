@@ -30,7 +30,9 @@ Follow the steps below to install the `charly` executable on your system.
 3. `git checkout rewrite`
 4. `git submodule init`
 5. `git submodule update`
-6. `./install.sh`
+6. Set the `CHARLYVMDIR` environment variable to the project's root folder
+	- e.g. `export CHARLYVMDIR=/home/user/github/KCreate/charly-vm`
+7. `./install.sh`
 
 > The last step might request sudo permissions in order to access the relevant system directories.
 
