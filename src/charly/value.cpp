@@ -1960,7 +1960,7 @@ RawValue RawTuple::op_mul(Thread* thread, int64_t count) const {
   Tuple new_tuple(scope, RawTuple::create(thread, new_length));
 
   for (size_t i = 0; i < (size_t)count; i++) {
-    for (size_t j = 0; i < old_length; i++) {
+    for (size_t j = 0; j < old_length; j++) {
       new_tuple.set_field_at((i * old_length) + j, tuple.field_at(j));
     }
   }
