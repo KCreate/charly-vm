@@ -110,6 +110,7 @@ enum class TokenType {
   GreaterThan,
   LessEqual,
   GreaterEqual,
+  Spaceship,
   And,
   Or,
   BitOR,
@@ -150,18 +151,19 @@ enum class TokenType {
 
 // string representations of token types
 static std::string kTokenTypeStrings[] = {
-  "EOF",     "integer",  "float",   "true",  "false",      "identifier", "string",  "formatstring",
-  "null",    "self",     "super",   "as",    "assert",     "await",      "break",   "__builtin",
-  "case",    "catch",    "class",   "const", "continue",   "default",    "defer",   "do",
-  "else",    "export",   "extends", "final", "finally",    "for",        "from",    "func",
-  "guard",   "if",       "import",  "in",    "instanceof", "let",        "loop",    "match",
-  "private", "property", "return",  "spawn", "static",     "switch",     "throw",   "try",
-  "typeof",  "unless",   "until",   "while", "yield",      "=",          "+",       "-",
-  "*",       "/",        "%",       "**",    "==",         "!=",         "<",       ">",
-  "<=",      ">=",       "&&",      "||",    "|",          "^",          "&",       "<<",
-  ">>",      ">>>",      "!",       "~",     "(",          ")",          "{",       "}",
-  "[",       "]",        ".",       "..",    "...",        ":",          ",",       ";",
-  "@",       "<-",       "->",      "=>",    "?",          "comment",    "newline", "whitespace"
+  "EOF",       "integer",  "float",   "true",  "false",      "identifier", "string",  "formatstring",
+  "null",      "self",     "super",   "as",    "assert",     "await",      "break",   "__builtin",
+  "case",      "catch",    "class",   "const", "continue",   "default",    "defer",   "do",
+  "else",      "export",   "extends", "final", "finally",    "for",        "from",    "func",
+  "guard",     "if",       "import",  "in",    "instanceof", "let",        "loop",    "match",
+  "private",   "property", "return",  "spawn", "static",     "switch",     "throw",   "try",
+  "typeof",    "unless",   "until",   "while", "yield",      "=",          "+",       "-",
+  "*",         "/",        "%",       "**",    "==",         "!=",         "<",       ">",
+  "<=",        ">=",       "<=>",     "&&",    "||",         "|",          "^",       "&",
+  "<<",        ">>",       ">>>",     "!",     "~",          "(",          ")",       "{",
+  "}",         "[",        "]",       ".",     "..",         "...",        ":",       ",",
+  ";",         "@",        "<-",      "->",    "=>",         "?",          "comment", "newline",
+  "whitespace"
 };
 
 // identifiers with these names get remapped to keyword tokens
@@ -233,13 +235,13 @@ static const std::unordered_set<TokenType> kBinaryOperatorTokens = {
   TokenType::BitXOR,    TokenType::BitLeftShift, TokenType::BitRightShift, TokenType::BitUnsignedRightShift,
   TokenType::Or,        TokenType::And,          TokenType::Equal,         TokenType::NotEqual,
   TokenType::LessThan,  TokenType::GreaterThan,  TokenType::LessEqual,     TokenType::GreaterEqual,
-  TokenType::InstanceOf
+  TokenType::Spaceship, TokenType::InstanceOf
 };
 
 static const std::unordered_set<TokenType> kBinaryComparisonTokens = { TokenType::Equal,     TokenType::NotEqual,
                                                                        TokenType::LessThan,  TokenType::GreaterThan,
                                                                        TokenType::LessEqual, TokenType::GreaterEqual,
-                                                                       TokenType::InstanceOf };
+                                                                       TokenType::Spaceship, TokenType::InstanceOf };
 
 // Note: The TriplePoint token or spread operator (...) is not included in this list is it is
 // being parsed in a special manner by the parser.

@@ -431,6 +431,7 @@ public:
   RawValue op_div(Thread*, RawValue other);
   RawValue op_eq(Thread*, RawValue other, uint32_t depth = 0);
   RawValue op_neq(Thread*, RawValue other, uint32_t depth = 0);
+  RawValue op_spaceship(Thread*, RawValue other);
 
   // unary ops
   RawValue op_usub(Thread*);

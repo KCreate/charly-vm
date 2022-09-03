@@ -634,6 +634,7 @@ constexpr size_t kInstructionLength = 4;
   V(gt, IXXX, 2, 1)                                                                \
   V(le, IXXX, 2, 1)                                                                \
   V(ge, IXXX, 2, 1)                                                                \
+  V(spaceship, IXXX, 2, 1)                                                         \
   V(shl, IXXX, 2, 1)                                                               \
   V(shr, IXXX, 2, 1)  /* sign-retaining right shift */                             \
   V(shru, IXXX, 2, 1) /* zero-filling right shift */                               \
@@ -861,6 +862,7 @@ static std::unordered_map<TokenType, Opcode> kBinopOpcodeMapping = {
   { TokenType::GreaterThan, Opcode::gt, },
   { TokenType::LessEqual, Opcode::le, },
   { TokenType::GreaterEqual, Opcode::ge },
+  { TokenType::Spaceship, Opcode::spaceship },
   { TokenType::InstanceOf, Opcode::instanceof }
 };
 

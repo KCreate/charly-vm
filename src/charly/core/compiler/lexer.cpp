@@ -219,7 +219,14 @@ Token Lexer::read_token_all() {
         switch (peek_char()) {
           case '=': {
             read_char();
-            token.type = TokenType::LessEqual;
+
+            if (peek_char() == '>') {
+              read_char();
+              token.type = TokenType::Spaceship;
+            } else {
+              token.type = TokenType::LessEqual;
+            }
+
             break;
           }
           case '<': {

@@ -1226,6 +1226,19 @@ OP(ge) {
   THROW_NOT_IMPLEMENTED();
 }
 
+OP(spaceship) {
+  RawValue right = frame->pop();
+  RawValue left = frame->pop();
+
+  RawValue result = left.op_spaceship(thread, right);
+  if (result.is_error_exception()) {
+    return ContinueMode::Exception;
+  }
+
+  frame->push(result);
+  return ContinueMode::Next;
+}
+
 OP(shl) {
   THROW_NOT_IMPLEMENTED();
 }

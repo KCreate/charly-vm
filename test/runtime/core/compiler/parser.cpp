@@ -171,6 +171,7 @@ CATCH_TEST_CASE("Parser") {
     CHECK_AST_EXP("1 > 1", make<BinaryOp>(TokenType::GreaterThan, make<Int>(1), make<Int>(1)));
     CHECK_AST_EXP("1 <= 1", make<BinaryOp>(TokenType::LessEqual, make<Int>(1), make<Int>(1)));
     CHECK_AST_EXP("1 >= 1", make<BinaryOp>(TokenType::GreaterEqual, make<Int>(1), make<Int>(1)));
+    CHECK_AST_EXP("1 <=> 1", make<BinaryOp>(TokenType::Spaceship, make<Int>(1), make<Int>(1)));
 
     CHECK_AST_EXP("1 || 1", make<BinaryOp>(TokenType::Or, make<Int>(1), make<Int>(1)));
     CHECK_AST_EXP("1 && 1", make<BinaryOp>(TokenType::And, make<Int>(1), make<Int>(1)));

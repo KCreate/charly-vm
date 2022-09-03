@@ -54,6 +54,7 @@ static const std::unordered_map<TokenType, uint32_t> kBinaryOpPrecedenceLevels =
   { TokenType::GreaterThan,           20 },
   { TokenType::LessEqual,             20 },
   { TokenType::GreaterEqual,          20 },
+  { TokenType::Spaceship,             20 },
 
   { TokenType::BitLeftShift,          30 },
   { TokenType::BitRightShift,         30 },

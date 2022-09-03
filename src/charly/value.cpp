@@ -800,6 +800,51 @@ RawValue RawValue::op_neq(Thread* thread, RawValue other, uint32_t depth) {
   return result;
 }
 
+RawValue RawValue::op_spaceship(Thread* thread, RawValue other) {
+  if (isInt() && other.isInt()) {
+    int64_t left = RawInt::cast(this).value();
+    int64_t right = RawInt::cast(other).value();
+
+    if (left == right) {
+      return RawInt::create(0);
+    } else if (left < right) {
+      return RawInt::create(-1);
+    } else {
+      return RawInt::create(1);
+    }
+  }
+
+  if (isNumber() && other.isNumber()) {
+    double left = double_value();
+    double right = other.double_value();
+
+    if (left == right) {
+      return RawInt::create(0);
+    } else if (left < right) {
+      return RawInt::create(-1);
+    } else {
+      return RawInt::create(1);
+    }
+  }
+
+  if (isString() && other.isString()) {
+    size_t left_length = RawString::cast(this).codepoint_length();
+    size_t right_length = RawString::cast(other).codepoint_length();
+
+    if (left_length == right_length) {
+      return RawInt::create(0);
+    } else if (left_length < right_length) {
+      return RawInt::create(-1);
+    } else {
+      return RawInt::create(1);
+    }
+  }
+
+  // All other types compare equal with the spaceship operator
+  // TODO: implement spaceship operator for lists and tuples
+  return RawInt::create(0);
+}
+
 RawValue RawValue::op_usub(Thread*) {
   if (isInt()) {
     return RawInt::create(-RawInt::cast(this).value());
@@ -1963,10 +2008,11 @@ RawValue RawTuple::op_mul(Thread* thread, int64_t count) const {
 
   Tuple new_tuple(scope, RawTuple::create(thread, new_length));
 
+  RawValue* source = tuple.data();
+  RawValue* destination = new_tuple.data();
+
   for (size_t i = 0; i < (size_t)count; i++) {
-    for (size_t j = 0; j < old_length; j++) {
-      new_tuple.set_field_at((i * old_length) + j, tuple.field_at(j));
-    }
+    std::memcpy(destination + (i * old_length), source, old_length * sizeof(RawValue));
   }
 
   return new_tuple;
