@@ -24,8 +24,62 @@
  * SOFTWARE.
  */
 
-export class TestLib {
-    static func foo {
-        print("hello from charly builtin library TestLib")
+class TestSuite {
+    property name
+    property tests
+    property failed_tests = []
+}
+
+export class UnitTest {
+    static func run(...test_classes) {
+        const suites = test_classes.map(->(test_class) {
+            assert test_class instanceof Class : "Expected test suite to be a class instance"
+
+            const name = test_class.klass.name
+            const tests = test_class.klass.function_table.filter(->(method) {
+                "{method.name}".begins_with("test_")
+            })
+
+            return TestSuite(name, tests)
+        })
+
+        let some_tests_failed = false
+
+        suites.each(->(suite) {
+            suite.tests.each(->(test) {
+                try test() catch(e) {
+                    suite.failed_tests.push((test, e))
+                    some_tests_failed = true
+                }
+            })
+        })
+
+        // print passed tests
+        suites.each(->(suite) {
+            if suite.failed_tests.empty() {
+                print("{suite.name}: All {suite.tests.length} tests passed!")
+            }
+        })
+
+        // print failed tests
+        suites.each(->(suite) {
+            if !suite.failed_tests.empty() {
+                print("{suite.name}: {suite.failed_tests.length} tests failed!")
+
+                suite.failed_tests.each(->(failed_test) {
+                    const (test, error) = failed_test
+                    const {message} = error
+                    print("\t{test.name}:", message)
+                })
+
+                print()
+            }
+        })
+
+        if some_tests_failed {
+            exit(1)
+        } else {
+            exit(0)
+        }
     }
 }

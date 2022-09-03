@@ -50,7 +50,9 @@ const builtin_list_erase = @"charly.builtin.list.erase"
 const builtin_list_push = @"charly.builtin.list.push"
 const builtin_list_pop = @"charly.builtin.list.pop"
 
-func print(...args) = builtin_writevalue(...args, "\n")
+func write(...args) = builtin_writevalue(...args)
+
+func print(...args) = write(...args, "\n")
 
 func prompt(message = "", append_to_history = true) {
     const result = builtin_readline_prompt("{message}")
@@ -84,7 +86,7 @@ func compile(source, name = "repl") = builtin_compile(source, name)
     class builtin_Int {
         func times(cb) {
             let i = 0
-            while i != self {
+            while i < self {
                 cb(i)
                 i += 1
             }
@@ -93,12 +95,35 @@ func compile(source, name = "repl") = builtin_compile(source, name)
         }
     }
 
+    class builtin_String {
+        func begins_with(other) {
+            if other.length > @length {
+                return false
+            }
+
+            if other.length == @length {
+                return self == other
+            }
+
+            let i = 0
+            while i < other.length {
+                if self[i] != other[i] {
+                    return false
+                }
+
+                i += 1
+            }
+
+            true
+        }
+    }
+
     class builtin_Tuple {
         func each(cb) {
             const size = @length
             let i = 0
 
-            while i != size {
+            while i < size {
                 cb(self[i], i, self)
                 i += 1
             }
@@ -112,6 +137,18 @@ func compile(source, name = "repl") = builtin_compile(source, name)
             })
         }
 
+        func filter(cb) {
+            const new = []
+
+            @each(->(e, i, t) {
+                if cb(e, i, t) {
+                    new.push(e)
+                }
+            })
+
+            new
+        }
+
         func reduce(cb, initial = null) {
             let sum = initial
             each(->(e, i, list) {
@@ -122,6 +159,10 @@ func compile(source, name = "repl") = builtin_compile(source, name)
 
         func sum = reduce(->(p, e) p + e, 0)
 
+        func empty = @length == 0
+
+        func copy = (...self)
+
         static func create(length, initial = null) = builtin_createtuple(length, initial)
         static func create_with(length, cb) = builtin_createtuplewith(length, cb)
     }
@@ -131,6 +172,59 @@ func compile(source, name = "repl") = builtin_compile(source, name)
         func erase(start, count = 1) = builtin_list_erase(self, start, count)
         func push(value) = builtin_list_push(self, value)
         func pop() = builtin_list_pop(self)
+
+        func each(cb) {
+            const length = @length
+
+            let i = 0
+            while i < length {
+                if @length != length {
+                    throw "ConcurrencyError: List size changed"
+                }
+
+                let value
+                try value = self[i] catch {
+                    throw "ConcurrencyError: List size changed"
+                }
+
+                cb(value, i, self)
+
+                i += 1
+            }
+
+            self
+        }
+
+        func map(cb) {
+            const new_list = []
+            const length = @length
+
+            @each(->(...args) {
+                new_list.push(cb(...args))
+            })
+
+            if new_list.length != length {
+                throw "ConcurrencyError: List size changed"
+            }
+
+            new_list
+        }
+
+        func filter(cb) {
+            const new = []
+
+            @each(->(e, i, l) {
+                if cb(e, i, l) {
+                    new.push(e)
+                }
+            })
+
+            new
+        }
+
+        func empty = @length == 0
+
+        func copy = [...self]
 
         static func create(length, initial = null) = builtin_list_create(length, initial)
     }
@@ -163,7 +257,7 @@ func compile(source, name = "repl") = builtin_compile(source, name)
         static func create(cb = null) {
             const future = builtin_future_create()
 
-            if typeof cb == Function {
+            if cb instanceof Function {
                 spawn {
                     try {
                         const result = cb()
@@ -192,6 +286,7 @@ func compile(source, name = "repl") = builtin_compile(source, name)
     builtin_transplant_builtin_class(Tuple, builtin_Tuple)
     builtin_transplant_builtin_class(List, builtin_List)
     builtin_transplant_builtin_class(Int, builtin_Int)
+    builtin_transplant_builtin_class(String, builtin_String)
     builtin_transplant_builtin_class(Function, builtin_Function)
     builtin_transplant_builtin_class(Exception, builtin_Exception)
     builtin_transplant_builtin_class(ImportException, builtin_ImportException)

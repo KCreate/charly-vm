@@ -457,7 +457,7 @@ void Runtime::initialize_stdlib_paths() {
   auto CHARLYVMDIR = utils::ArgumentParser::get_environment_for_key("CHARLYVMDIR");
   CHECK(CHARLYVMDIR.has_value());
   m_stdlib_directory = fs::path(CHARLYVMDIR.value()) / "src" / "charly" / "stdlib";
-  m_builtin_libraries_paths["testlib"] = m_stdlib_directory / "libs" / "testlib.ch";
+  m_builtin_libraries_paths["unittest"] = m_stdlib_directory / "libs" / "unittest.ch";
 }
 
 RawValue Runtime::declare_global_variable(Thread*, SYMBOL name, bool constant, RawValue value) {

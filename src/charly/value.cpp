@@ -1115,7 +1115,7 @@ void RawValue::dump(std::ostream& out) const {
       if (tuple.length()) {
         tuple.field_at(0).dump(out);
         for (uint32_t i = 1; i < tuple.length(); i++) {
-          writer.fg(Color::Grey, ", ");
+          writer << ", ";
           tuple.field_at(i).dump(out);
         }
       }
@@ -1142,7 +1142,7 @@ void RawValue::dump(std::ostream& out) const {
           DCHECK(data);
           data[0].dump(out);
           for (uint32_t i = 1; i < length; i++) {
-            writer.fg(Color::Grey, ", ");
+            writer << ", ";
             data[i].dump(out);
           }
         }
@@ -1220,7 +1220,7 @@ void RawValue::dump(std::ostream& out) const {
         writer.fg(Color::Cyan, RawSymbol::create(prop_name));
 
         if (i < keys.length() - 1) {
-          writer.fg(Color::Cyan, ", ");
+          writer << ", ";
         }
       }
 
@@ -1271,7 +1271,9 @@ void RawValue::dump(std::ostream& out) const {
         RawTuple backtrace = exception.backtrace();
         writer.fg(Color::Green, "<", klass.name(), " ");
         writer.fg(Color::Red, message);
-        writer.fg(Color::Green, ", ", backtrace, ">");
+        writer << ", ";
+        writer << backtrace;
+        writer.fg(Color::Green, ">");
         return;
       }
     }
@@ -3399,7 +3401,7 @@ RawAssertionException RawAssertionException::create(Thread* thread, RawString _m
   auto builtin_class = runtime->get_builtin_class(ShapeId::kAssertionException);
   AssertionException exception(scope, RawInstance::create(thread, builtin_class));
 
-  exception.set_message(RawString::format(thread, "%", message));
+  exception.set_message(message);
   exception.set_backtrace(thread->create_backtrace());
   exception.set_cause(kNull);
 
