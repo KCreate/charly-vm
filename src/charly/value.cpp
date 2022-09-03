@@ -685,10 +685,16 @@ RawValue RawValue::op_eq(Thread* thread, RawValue other, uint32_t depth) {
     return kTrue;
   }
 
+  if (isInt() && other.isInt()) {
+    int64_t left_num = RawInt::cast(this).value();
+    int64_t right_num = RawInt::cast(other).value();
+    return RawBool::create(left_num == right_num);
+  }
+
   if (isNumber() && other.isNumber()) {
     double left_num = double_value();
     double right_num = other.double_value();
-    return RawBool::create(left_num == right_num);
+    return RawBool::create(double_fuzzy_equal(left_num, right_num));
   }
 
   if (isString() && other.isString()) {

@@ -26,6 +26,7 @@
 
 #include <unistd.h>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
@@ -115,5 +116,18 @@ constexpr bool kIsDebugBuild = false;
 #else
 constexpr bool kIsDebugBuild = true;
 #endif
+
+inline constexpr bool double_fuzzy_equal(double left, double right) {
+  if (!std::isfinite(left) || !std::isfinite(right)) {
+    if (std::isnan(left) && std::isnan(right)) {
+      return true;
+    }
+
+    return left == right;
+  }
+
+  constexpr double epsilon = 0.000001;
+  return std::fabs(left - right) <= epsilon;
+}
 
 }  // namespace charly
