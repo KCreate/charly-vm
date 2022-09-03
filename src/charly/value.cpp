@@ -388,6 +388,8 @@ RawValue RawValue::load_attr(Thread* thread, RawValue attribute) const {
   } else if (attribute.isString()) {
     SYMBOL symbol = RawString::cast(attribute).hashcode();
     return load_attr_symbol(thread, symbol);
+  } else if (attribute.isSymbol()) {
+    return load_attr_symbol(thread, RawSymbol::cast(attribute));
   } else {
     return thread->throw_message("Expected index attribute to be a number or a string, got '%'",
                                  attribute.klass_name(thread));
@@ -508,6 +510,8 @@ RawValue RawValue::set_attr(Thread* thread, RawValue attribute, RawValue value) 
   } else if (attribute.isString()) {
     SYMBOL symbol = RawString::cast(attribute).hashcode();
     return set_attr_symbol(thread, symbol, value);
+  } else if (attribute.isSymbol()) {
+    return set_attr_symbol(thread, RawSymbol::cast(attribute), value);
   } else {
     return thread->throw_message("Expected index attribute to be a number or a string, got '%'",
                                  attribute.klass_name(thread));
