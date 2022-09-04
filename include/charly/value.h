@@ -420,22 +420,25 @@ public:
   RawValue set_attr_number(Thread*, int64_t index, RawValue value) const;
   RawValue set_attr_symbol(Thread*, SYMBOL symbol, RawValue value) const;
 
-  RawValue cast_to_bool(Thread*);
-  RawValue cast_to_string(Thread*);
-  RawValue cast_to_tuple(Thread*);
+  RawValue cast_to_bool() const;
+  RawValue cast_to_string(Thread*) const;
 
   // binary ops
-  RawValue op_add(Thread*, RawValue other);
-  RawValue op_sub(Thread*, RawValue other);
-  RawValue op_mul(Thread*, RawValue other);
-  RawValue op_div(Thread*, RawValue other);
-  RawValue op_eq(Thread*, RawValue other, uint32_t depth = 0);
-  RawValue op_neq(Thread*, RawValue other, uint32_t depth = 0);
-  RawValue op_spaceship(Thread*, RawValue other);
+  RawValue op_add(Thread*, RawValue other) const;
+  RawValue op_sub(RawValue other) const;
+  RawValue op_mul(Thread*, RawValue other) const;
+  RawValue op_div(RawValue other) const;
+  RawValue op_eq(Thread*, RawValue other, uint32_t depth = 0) const;
+  RawValue op_neq(Thread*, RawValue other, uint32_t depth = 0) const;
+  RawValue op_lt(RawValue other) const;
+  RawValue op_gt(RawValue other) const;
+  RawValue op_le(RawValue other) const;
+  RawValue op_ge(RawValue other) const;
+  RawValue op_spaceship(RawValue other) const;
 
   // unary ops
-  RawValue op_usub(Thread*);
-  RawValue op_unot(Thread*);
+  RawValue op_usub() const;
+  RawValue op_unot() const;
 
 #define TYPECHECK(name) bool is##name() const;
   TYPE_NAMES(TYPECHECK)

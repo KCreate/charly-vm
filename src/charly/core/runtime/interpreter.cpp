@@ -1120,7 +1120,7 @@ OP(await) {
 
 OP(castbool) {
   RawValue value = frame->pop();
-  frame->push(value.cast_to_bool(thread));
+  frame->push(value.cast_to_bool());
   return ContinueMode::Next;
 }
 
@@ -1158,7 +1158,7 @@ OP(add) {
 OP(sub) {
   RawValue right = frame->pop();
   RawValue left = frame->pop();
-  frame->push(left.op_sub(thread, right));
+  frame->push(left.op_sub(right));
   return ContinueMode::Next;
 }
 
@@ -1172,7 +1172,7 @@ OP(mul) {
 OP(div) {
   RawValue right = frame->pop();
   RawValue left = frame->pop();
-  frame->push(left.op_div(thread, right));
+  frame->push(left.op_div(right));
   return ContinueMode::Next;
 }
 
@@ -1213,56 +1213,28 @@ OP(neq) {
 OP(lt) {
   RawValue right = frame->pop();
   RawValue left = frame->pop();
-
-  RawValue result = left.op_spaceship(thread, right);
-  if (result.is_error_exception()) {
-    return ContinueMode::Exception;
-  }
-
-  auto sign = RawInt::cast(result);
-  frame->push(RawBool::create(sign.value() == -1));
+  frame->push(left.op_lt(right));
   return ContinueMode::Next;
 }
 
 OP(gt) {
   RawValue right = frame->pop();
   RawValue left = frame->pop();
-
-  RawValue result = left.op_spaceship(thread, right);
-  if (result.is_error_exception()) {
-    return ContinueMode::Exception;
-  }
-
-  auto sign = RawInt::cast(result);
-  frame->push(RawBool::create(sign.value() == 1));
+  frame->push(left.op_gt(right));
   return ContinueMode::Next;
 }
 
 OP(le) {
   RawValue right = frame->pop();
   RawValue left = frame->pop();
-
-  RawValue result = left.op_spaceship(thread, right);
-  if (result.is_error_exception()) {
-    return ContinueMode::Exception;
-  }
-
-  auto sign = RawInt::cast(result);
-  frame->push(RawBool::create(sign.value() <= 0));
+  frame->push(left.op_le(right));
   return ContinueMode::Next;
 }
 
 OP(ge) {
   RawValue right = frame->pop();
   RawValue left = frame->pop();
-
-  RawValue result = left.op_spaceship(thread, right);
-  if (result.is_error_exception()) {
-    return ContinueMode::Exception;
-  }
-
-  auto sign = RawInt::cast(result);
-  frame->push(RawBool::create(sign.value() >= 0));
+  frame->push(left.op_ge(right));
   return ContinueMode::Next;
 }
 
@@ -1270,7 +1242,7 @@ OP(spaceship) {
   RawValue right = frame->pop();
   RawValue left = frame->pop();
 
-  RawValue result = left.op_spaceship(thread, right);
+  RawValue result = left.op_spaceship(right);
   if (result.is_error_exception()) {
     return ContinueMode::Exception;
   }
@@ -1305,13 +1277,13 @@ OP(bxor) {
 
 OP(usub) {
   RawValue value = frame->pop();
-  frame->push(value.op_usub(thread));
+  frame->push(value.op_usub());
   return ContinueMode::Next;
 }
 
 OP(unot) {
   RawValue value = frame->pop();
-  frame->push(value.op_unot(thread));
+  frame->push(value.op_unot());
   return ContinueMode::Next;
 }
 

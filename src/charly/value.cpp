@@ -555,11 +555,11 @@ RawValue RawValue::set_attr_symbol(Thread* thread, SYMBOL symbol, RawValue value
                                RawSymbol::create(symbol));
 }
 
-RawValue RawValue::cast_to_bool(Thread*) {
+RawValue RawValue::cast_to_bool() const {
   return RawBool::create(truthyness());
 }
 
-RawValue RawValue::cast_to_string(Thread* thread) {
+RawValue RawValue::cast_to_string(Thread* thread) const {
   if (isString()) {
     return *this;
   }
@@ -574,15 +574,7 @@ RawValue RawValue::cast_to_string(Thread* thread) {
   return RawString::acquire(thread, buffer);
 }
 
-RawValue RawValue::cast_to_tuple(Thread* thread) {
-  if (isTuple()) {
-    return *this;
-  }
-
-  return thread->throw_message("Cannot cast object of type '%' to a tuple", klass_name(thread));
-}
-
-RawValue RawValue::op_add(Thread* thread, RawValue other) {
+RawValue RawValue::op_add(Thread* thread, RawValue other) const {
   if (isInt() && other.isInt()) {
     return RawInt::create(RawInt::cast(*this).value() + RawInt::cast(other).value());
   }
@@ -598,7 +590,7 @@ RawValue RawValue::op_add(Thread* thread, RawValue other) {
   return kNaN;
 }
 
-RawValue RawValue::op_sub(Thread*, RawValue other) {
+RawValue RawValue::op_sub(RawValue other) const {
   if (isInt() && other.isInt()) {
     return RawInt::create(RawInt::cast(*this).value() - RawInt::cast(other).value());
   }
@@ -610,7 +602,7 @@ RawValue RawValue::op_sub(Thread*, RawValue other) {
   return kNaN;
 }
 
-RawValue RawValue::op_mul(Thread* thread, RawValue other) {
+RawValue RawValue::op_mul(Thread* thread, RawValue other) const {
   if (isInt() && other.isInt()) {
     return RawInt::create(RawInt::cast(*this).value() * RawInt::cast(other).value());
   }
@@ -667,7 +659,7 @@ RawValue RawValue::op_mul(Thread* thread, RawValue other) {
   return kNaN;
 }
 
-RawValue RawValue::op_div(Thread*, RawValue other) {
+RawValue RawValue::op_div(RawValue other) const {
   if (isNumber() && other.isNumber()) {
     return RawFloat::create(double_value() / other.double_value());
   }
@@ -676,7 +668,7 @@ RawValue RawValue::op_div(Thread*, RawValue other) {
 }
 
 // NOTE: Update this method together with Node::compares_equal
-RawValue RawValue::op_eq(Thread* thread, RawValue other, uint32_t depth) {
+RawValue RawValue::op_eq(Thread* thread, RawValue other, uint32_t depth) const {
   if (depth >= kMaxComparisonRecursionDepth) {
     return thread->throw_message("Maximum recursion depth exceeded in comparison");
   }
@@ -796,7 +788,7 @@ RawValue RawValue::op_eq(Thread* thread, RawValue other, uint32_t depth) {
   return kFalse;
 }
 
-RawValue RawValue::op_neq(Thread* thread, RawValue other, uint32_t depth) {
+RawValue RawValue::op_neq(Thread* thread, RawValue other, uint32_t depth) const {
   // TODO: implement opposite version of op_eq here, could take some shortcuts while comparing
   RawValue result = op_eq(thread, other, depth);
   if (result.isBool()) {
@@ -806,7 +798,95 @@ RawValue RawValue::op_neq(Thread* thread, RawValue other, uint32_t depth) {
   return result;
 }
 
-RawValue RawValue::op_spaceship(Thread*, RawValue other) {
+RawValue RawValue::op_lt(RawValue other) const {
+  if (isInt() && other.isInt()) {
+    int64_t left_num = RawInt::cast(this).value();
+    int64_t right_num = RawInt::cast(other).value();
+    return RawBool::create(left_num < right_num);
+  }
+
+  if (isNumber() && other.isNumber()) {
+    double left_num = double_value();
+    double right_num = other.double_value();
+    return RawBool::create(std::isless(left_num, right_num));
+  }
+
+  if (isString() && other.isString()) {
+    auto left = RawString::cast(this);
+    auto right = RawString::cast(other);
+    return RawBool::create(left.codepoint_length() < right.codepoint_length());
+  }
+
+  return kFalse;
+}
+
+RawValue RawValue::op_gt(RawValue other) const {
+  if (isInt() && other.isInt()) {
+    int64_t left_num = RawInt::cast(this).value();
+    int64_t right_num = RawInt::cast(other).value();
+    return RawBool::create(left_num > right_num);
+  }
+
+  if (isNumber() && other.isNumber()) {
+    double left_num = double_value();
+    double right_num = other.double_value();
+    return RawBool::create(std::isgreater(left_num, right_num));
+  }
+
+  if (isString() && other.isString()) {
+    auto left = RawString::cast(this);
+    auto right = RawString::cast(other);
+    return RawBool::create(left.codepoint_length() > right.codepoint_length());
+  }
+
+  return kFalse;
+}
+
+RawValue RawValue::op_le(RawValue other) const {
+  if (isInt() && other.isInt()) {
+    int64_t left_num = RawInt::cast(this).value();
+    int64_t right_num = RawInt::cast(other).value();
+    return RawBool::create(left_num <= right_num);
+  }
+
+  if (isNumber() && other.isNumber()) {
+    double left_num = double_value();
+    double right_num = other.double_value();
+    return RawBool::create(std::islessequal(left_num, right_num));
+  }
+
+  if (isString() && other.isString()) {
+    auto left = RawString::cast(this);
+    auto right = RawString::cast(other);
+    return RawBool::create(left.codepoint_length() <= right.codepoint_length());
+  }
+
+  return kFalse;
+}
+
+RawValue RawValue::op_ge(RawValue other) const {
+  if (isInt() && other.isInt()) {
+    int64_t left_num = RawInt::cast(this).value();
+    int64_t right_num = RawInt::cast(other).value();
+    return RawBool::create(left_num >= right_num);
+  }
+
+  if (isNumber() && other.isNumber()) {
+    double left_num = double_value();
+    double right_num = other.double_value();
+    return RawBool::create(std::isgreaterequal(left_num, right_num));
+  }
+
+  if (isString() && other.isString()) {
+    auto left = RawString::cast(this);
+    auto right = RawString::cast(other);
+    return RawBool::create(left.codepoint_length() >= right.codepoint_length());
+  }
+
+  return kFalse;
+}
+
+RawValue RawValue::op_spaceship(RawValue other) const {
   if (isInt() && other.isInt()) {
     int64_t left = RawInt::cast(this).value();
     int64_t right = RawInt::cast(other).value();
@@ -851,7 +931,7 @@ RawValue RawValue::op_spaceship(Thread*, RawValue other) {
   return RawInt::create(0);
 }
 
-RawValue RawValue::op_usub(Thread*) {
+RawValue RawValue::op_usub() const {
   if (isInt()) {
     return RawInt::create(-RawInt::cast(this).value());
   } else if (isFloat()) {
@@ -863,7 +943,7 @@ RawValue RawValue::op_usub(Thread*) {
   return kNaN;
 }
 
-RawValue RawValue::op_unot(Thread*) {
+RawValue RawValue::op_unot() const {
   return truthyness() ? kFalse : kTrue;
 }
 
