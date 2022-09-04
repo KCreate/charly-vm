@@ -552,9 +552,56 @@ public:
 
   double value() const;
 
-  bool close_to(double other, double precision = std::numeric_limits<double>::epsilon()) const;
-  bool close_to(RawFloat other, double precision = std::numeric_limits<double>::epsilon()) const {
-    return close_to(other.value(), precision);
+  bool isless(double other) const {
+    return std::isless(value(), other);
+  }
+
+  bool isless(RawFloat other) const {
+    return isless(other.value());
+  }
+
+  bool islessequal(double other) const {
+    return std::islessequal(value(), other);
+  }
+
+  bool islessequal(RawFloat other) const {
+    return islessequal(other.value());
+  }
+
+  bool isgreater(double other) const {
+    return std::isgreater(value(), other);
+  }
+
+  bool isgreater(RawFloat other) const {
+    return isgreater(other.value());
+  }
+
+  bool isgreaterequal(double other) const {
+    return std::isgreaterequal(value(), other);
+  }
+
+  bool isgreaterequal(RawFloat other) const {
+    return isgreaterequal(other.value());
+  }
+
+  bool isequal(double other) const {
+    return double_fuzzy_equal(value(), other);
+  }
+
+  bool isequal(RawFloat other) const {
+    return isequal(other.value());
+  }
+
+  bool isinf() const {
+    return std::isinf(value());
+  }
+
+  bool isnan() const {
+    return std::isnan(value());
+  }
+
+  bool isfinite() const {
+    return std::isfinite(value());
   }
 
   static RawFloat create(double value);

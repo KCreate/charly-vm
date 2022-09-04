@@ -824,12 +824,12 @@ RawValue RawValue::op_spaceship(Thread*, RawValue other) {
     double left = double_value();
     double right = other.double_value();
 
-    if (left == right) {
-      return RawInt::create(0);
-    } else if (left < right) {
+    if (std::isgreater(left, right)) {
+      return RawInt::create(1);
+    } else if (std::isless(left, right)) {
       return RawInt::create(-1);
     } else {
-      return RawInt::create(1);
+      return RawInt::create(0);
     }
   }
 
@@ -1041,19 +1041,23 @@ int64_t RawValue::int_value() const {
   if (isInt()) {
     return RawInt::cast(this).value();
   } else if (isFloat()) {
-    double value = RawFloat::cast(this).value();
+    auto value = RawFloat::cast(this);
 
-    if (std::isnan(value)) {
+    if (value.isfinite()) {
+      return value.value();
+    }
+
+    if (value.isnan()) {
       return 0;
-    } else if (std::isinf(value)) {
-      if (value < 0) {
-        return RawInt::kMinValue;
-      } else {
+    } else if (value.isinf()) {
+      if (value.isgreater(0)) {
         return RawInt::kMaxValue;
+      } else {
+        return RawInt::kMinValue;
       }
     }
 
-    return value;
+    UNREACHABLE();
   }
 
   UNREACHABLE();
@@ -1451,10 +1455,6 @@ bool RawInt::is_valid(int64_t value) {
 double RawFloat::value() const {
   uintptr_t doublepart = m_raw & (~kMaskImmediate);
   return bitcast<double>(doublepart);
-}
-
-bool RawFloat::close_to(double other, double precision) const {
-  return std::fabs(value() - other) <= precision;
 }
 
 RawFloat RawFloat::create(double value) {

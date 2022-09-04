@@ -59,19 +59,19 @@ CATCH_TEST_CASE("Immediate encoded values") {
   }
 
   CATCH_SECTION("floats") {
-    CATCH_CHECK(RawFloat::create(0.0).close_to(0.0));
-    CATCH_CHECK(RawFloat::create(1.0).close_to(1.0));
-    CATCH_CHECK(RawFloat::create(2.0).close_to(2.0));
-    CATCH_CHECK(RawFloat::create(3.0).close_to(3.0));
-    CATCH_CHECK(RawFloat::create(-1.0).close_to(-1.0));
-    CATCH_CHECK(RawFloat::create(-2.0).close_to(-2.0));
-    CATCH_CHECK(RawFloat::create(-3.0).close_to(-3.0));
-    CATCH_CHECK(RawFloat::create(0.5).close_to(0.5));
-    CATCH_CHECK(RawFloat::create(0.25).close_to(0.25));
-    CATCH_CHECK(RawFloat::create(0.125).close_to(0.125));
-    CATCH_CHECK(RawFloat::create(0.0625).close_to(0.0625));
-    CATCH_CHECK(RawFloat::create(25.1234).close_to(25.1234, 0.000000001));
-    CATCH_CHECK(RawFloat::create(-25.1234).close_to(-25.1234, 0.000000001));
+    CATCH_CHECK(RawFloat::create(0.0).isequal(0.0));
+    CATCH_CHECK(RawFloat::create(1.0).isequal(1.0));
+    CATCH_CHECK(RawFloat::create(2.0).isequal(2.0));
+    CATCH_CHECK(RawFloat::create(3.0).isequal(3.0));
+    CATCH_CHECK(RawFloat::create(-1.0).isequal(-1.0));
+    CATCH_CHECK(RawFloat::create(-2.0).isequal(-2.0));
+    CATCH_CHECK(RawFloat::create(-3.0).isequal(-3.0));
+    CATCH_CHECK(RawFloat::create(0.5).isequal(0.5));
+    CATCH_CHECK(RawFloat::create(0.25).isequal(0.25));
+    CATCH_CHECK(RawFloat::create(0.125).isequal(0.125));
+    CATCH_CHECK(RawFloat::create(0.0625).isequal(0.0625));
+    CATCH_CHECK(RawFloat::create(25.1234).isequal(25.1234));
+    CATCH_CHECK(RawFloat::create(-25.1234).isequal(-25.1234));
   }
 
   CATCH_SECTION("small strings") {
