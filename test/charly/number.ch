@@ -366,6 +366,26 @@ export class NumberTest {
     }
 
     static func test_binary_ops {}
+
+    static func test_int_stdlib_times {
+        let sum = 0
+        10.times(->(i) sum += i)
+        assert sum == 45
+
+        let list = []
+        10.times(->(i) list.push(i))
+        assert list.length == 10
+        assert list == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+        let ran = false
+        0.times(->ran = true)
+        assert ran == false
+
+        ran = false
+        let c = -10
+        c.times(->ran = true)
+        assert ran == false
+    }
 }
 
 

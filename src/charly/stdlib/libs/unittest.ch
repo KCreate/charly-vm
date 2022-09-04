@@ -82,4 +82,14 @@ export class UnitTest {
             exit(0)
         }
     }
+
+    // unit test helper methods
+    static func assert_throws(callback) {
+        try callback() catch(e) {
+            assert e instanceof Exception : "Expected thrown value to be an exception type value"
+            return e
+        }
+
+        assert false : "Expected an exception to be thrown"
+    }
 }

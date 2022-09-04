@@ -8,7 +8,4 @@ then
   cmake -DCMAKE_BUILD_TYPE=Release -S . -B cmake-build-release
 fi
 
-if cmake --build cmake-build-release --target tests -j12;
-then
-  cmake-build-release/tests
-fi
+cmake --build cmake-build-release --target charly

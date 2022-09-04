@@ -403,7 +403,7 @@ RawValue RawValue::load_attr_number(Thread* thread, int64_t index) const {
     auto real_index = wrap_negative_indices(index, length);
 
     if (real_index < 0 || real_index >= length) {
-      return thread->throw_message("Tuple index (%) out of range", real_index);
+      return thread->throw_message("Tuple index % is out of range", index);
     }
 
     return tuple.field_at(real_index);
@@ -422,7 +422,7 @@ RawValue RawValue::load_attr_number(Thread* thread, int64_t index) const {
     auto real_index = wrap_negative_indices(index, size);
 
     if (real_index < 0 || (size_t)real_index >= size) {
-      return thread->throw_message("String index (%) out of range", real_index);
+      return thread->throw_message("String index % is out of range", index);
     }
 
     const char* begin_ptr = RawString::data(&string);
@@ -439,7 +439,7 @@ RawValue RawValue::load_attr_number(Thread* thread, int64_t index) const {
     auto real_index = wrap_negative_indices(index, size);
 
     if (real_index < 0 || (size_t)real_index >= size) {
-      return thread->throw_message("Bytes index (%) out of range", real_index);
+      return thread->throw_message("Bytes index % is out of range", index);
     }
 
     return RawInt::create(RawBytes::data(&bytes)[real_index]);
@@ -1790,6 +1790,10 @@ RawValue RawString::op_mul(Thread* thread, int64_t count) const {
     return RawString::cast(kEmptyString);
   }
 
+  if (count == 1) {
+    return *this;
+  }
+
   size_t new_length = byte_length() * count;
   if (new_length > RawString::kMaxByteLength) {
     return thread->throw_message("String exceeds maximum allowed size");
@@ -2424,7 +2428,7 @@ RawValue RawList::read_at(Thread* thread, int64_t index) const {
   int64_t real_index = wrap_negative_indices(index, length());
   if (real_index < 0 || (size_t)real_index >= length()) {
     locker.unlock();
-    return thread->throw_message("List index (%) out of range", real_index);
+    return thread->throw_message("List index % is out of range", index);
   }
   DCHECK((size_t)real_index < capacity());
 
@@ -2438,7 +2442,7 @@ RawValue RawList::write_at(Thread* thread, int64_t index, RawValue value) const 
   int64_t real_index = wrap_negative_indices(index, length);
   if (real_index < 0 || (size_t)real_index >= length) {
     locker.unlock();
-    return thread->throw_message("List index (%) out of range", real_index);
+    return thread->throw_message("List index % is out of range", index);
   }
   DCHECK((size_t)real_index < capacity());
 
@@ -2454,7 +2458,7 @@ RawValue RawList::insert_at(Thread* thread, int64_t index, RawValue value) const
   int64_t real_index = wrap_negative_indices(index, length);
   if (real_index < 0 || (size_t)real_index > length) {
     locker.unlock();
-    return thread->throw_message("List index (%) out of range", real_index);
+    return thread->throw_message("List index % is out of range", index);
   }
 
   if (reserve_capacity(thread, length + 1).is_error_exception()) {
@@ -2479,7 +2483,7 @@ RawValue RawList::erase_at(Thread* thread, int64_t start, int64_t count) const {
   int64_t real_start = wrap_negative_indices(start, length);
   if (real_start < 0 || (size_t)real_start >= length) {
     locker.unlock();
-    return thread->throw_message("List index (%) out of range", real_start);
+    return thread->throw_message("List index % is out of range", start);
   }
   if (count <= 0) {
     locker.unlock();

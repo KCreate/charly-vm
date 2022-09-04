@@ -27,7 +27,8 @@
 import unittest
 
 unittest.run(
-    import "vm/number.ch"
+    import "number",
+    import "string"
 )
 
 
