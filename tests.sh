@@ -13,14 +13,10 @@ echo_red () {
 }
 
 mkdir -p cmake-build-debug
-mkdir -p cmake-build-release
 
 # setup build files
 if ! test -f cmake-build-debug/Makefile; then
   cmake -DCMAKE_BUILD_TYPE=Debug -S . -B cmake-build-debug
-fi
-if ! test -f cmake-build-release/Makefile; then
-  cmake -DCMAKE_BUILD_TYPE=Release -S . -B cmake-build-release
 fi
 
 # build tests and charly executable in debug and release mode
@@ -29,11 +25,7 @@ if ! cmake --build cmake-build-debug --target tests --target charly -j12; then
   exit 1
 fi
 if ! cmake --build cmake-build-debug --target charly -j12; then
-  echo_red "Charly debug build failed!"
-  exit 1
-fi
-if ! cmake --build cmake-build-release --target charly -j12; then
-  echo_red "Charly release build failed!"
+  echo_red "Charly build failed!"
   exit 1
 fi
 
@@ -44,39 +36,20 @@ if ! cmake-build-debug/tests; then
 fi
 
 # run charly unit tests in both multi- and single-threaded mode and with/without optimizations
-echo_green "Running charly debug unit tests"
+echo_green "Running charly unit tests"
 if ! cmake-build-debug/charly test/charly/test.ch; then
-  echo_red "Charly debug unit tests failed"
+  echo_red "Charly unit tests failed"
   exit 1
 fi
 
-echo_green "Running charly debug (no optimizations) unit tests"
+echo_green "Running charly (no optimizations) unit tests"
 if ! cmake-build-debug/charly test/charly/test.ch --no_ir_opt --no_ast_opt; then
-  echo_red "Charly debug (no optimizations) unit tests failed"
+  echo_red "Charly (no optimizations) unit tests failed"
   exit 1
 fi
 
-echo_green "Running charly debug (singlethreaded) unit tests"
+echo_green "Running charly (singlethreaded) unit tests"
 if ! cmake-build-debug/charly test/charly/test.ch --maxprocs 1; then
-  echo_red "Charly debug (singlethreaded) unit tests failed"
+  echo_red "Charly (singlethreaded) unit tests failed"
   exit 1
 fi
-
-echo_green "Running charly release unit tests"
-if ! cmake-build-release/charly test/charly/test.ch; then
-  echo_red "Charly release unit tests failed"
-  exit 1
-fi
-
-echo_green "Running charly release (no optimizations) unit tests"
-if ! cmake-build-release/charly test/charly/test.ch --no_ir_opt --no_ast_opt; then
-  echo_red "Charly release (no optimizations) unit tests failed"
-  exit 1
-fi
-
-echo_green "Running charly release (singlethreaded) unit tests"
-if ! cmake-build-release/charly test/charly/test.ch --maxprocs 1; then
-  echo_red "Charly release (singlethreaded) unit tests failed"
-  exit 1
-fi
-

@@ -27,7 +27,7 @@
 import unittest
 
 unittest.run(
-    import "vm/arithmetic.ch"
+    import "vm/number.ch"
 )
 
 
