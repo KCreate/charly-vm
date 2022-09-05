@@ -24,11 +24,30 @@
  * SOFTWARE.
  */
 
+class Test {
+    property name
+    property function
+    property passed = false
+    property exception = null
+    property duration = 0
+
+    func constructor(@function) {
+        @name = function.name
+    }
+}
+
 class TestSuite {
     property name
     property tests
-    property failed_tests = []
+    property passed = false
+    property duration = 0
+
+    func constructor(@name, methods) {
+        @tests = methods.map(->(m) Test(m))
+    }
 }
+
+const unit_test_suspicious_execution_time = 50
 
 export class UnitTest {
     static func run(...test_classes) {
@@ -43,40 +62,56 @@ export class UnitTest {
             return TestSuite(name, tests)
         })
 
-        let some_tests_failed = false
+        let some_suites_failed = false
+        suites.each(->(suite) {
+            let some_tests_failed = false
+            suite.tests.each(->(test) {
+                test.duration = stopwatch(->{
+                    try {
+                        test.function()
+                        test.passed = true
+                    } catch(e) {
+                        test.exception = e
+                        test.passed = false
+                        some_tests_failed = true
+                        some_suites_failed = true
+                    }
+                })
+            })
+            suite.passed = !some_tests_failed
+        })
 
         suites.each(->(suite) {
+            const passed_tests = []
+            const failed_tests = []
+
             suite.tests.each(->(test) {
-                try test() catch(e) {
-                    suite.failed_tests.push((test, e))
-                    some_tests_failed = true
+                suite.duration += test.duration
+                if test.passed {
+                    passed_tests.push(test)
+                } else {
+                    failed_tests.push(test)
                 }
+            })
+
+            if suite.passed {
+                print("{suite.name}: All tests passed! ({suite.duration}ms)")
+            } else {
+                print("{suite.name}: {failed_tests.length} tests failed! ({suite.duration}ms)")
+            }
+
+            passed_tests.each(->(test) {
+                if test.duration > unit_test_suspicious_execution_time {
+                    print("\t{test.name}: Passed, but took a long time to complete ({test.duration}ms)")
+                }
+            })
+
+            failed_tests.each(->(test) {
+                print("\t{test.name}:", test.exception.message)
             })
         })
 
-        // print passed tests
-        suites.each(->(suite) {
-            if suite.failed_tests.empty() {
-                print("{suite.name}: All {suite.tests.length} tests passed!")
-            }
-        })
-
-        // print failed tests
-        suites.each(->(suite) {
-            if !suite.failed_tests.empty() {
-                print("{suite.name}: {suite.failed_tests.length} tests failed!")
-
-                suite.failed_tests.each(->(failed_test) {
-                    const (test, error) = failed_test
-                    const {message} = error
-                    print("\t{test.name}:", message)
-                })
-
-                print()
-            }
-        })
-
-        if some_tests_failed {
+        if some_suites_failed {
             exit(1)
         } else {
             exit(0)
