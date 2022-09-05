@@ -172,7 +172,7 @@ RawValue Interpreter::call_function(Thread* thread,
   uint8_t localcount = shared_info->ir_info.local_variables;
   uint8_t stacksize = shared_info->ir_info.stacksize;
   uint16_t local_stack_buffer_slot_count = localcount + stacksize;
-  auto* local_stack_buffer = static_cast<RawValue*>(alloca(sizeof(RawValue) * local_stack_buffer_slot_count));
+  auto* local_stack_buffer = static_cast<RawValue*>(alloca(kPointerSize * local_stack_buffer_slot_count));
   RawValue* local_ptr = local_stack_buffer;
   RawValue* stack_ptr = local_stack_buffer + localcount;
   frame.locals = local_ptr;

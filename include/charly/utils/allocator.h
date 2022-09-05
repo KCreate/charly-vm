@@ -35,6 +35,12 @@
 namespace charly {
 
 inline static const size_t kPageSize = sysconf(_SC_PAGESIZE);
+constexpr size_t kPointerSize = sizeof(uintptr_t);
+inline static size_t kPointersPerPage = kPageSize / kPointerSize;
+
+constexpr size_t kKb = 1024;
+constexpr size_t kMb = kKb * 1024;
+constexpr size_t kGb = kMb * 1024;
 
 namespace utils {
 

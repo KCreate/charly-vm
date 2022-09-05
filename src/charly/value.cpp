@@ -1471,7 +1471,7 @@ RawValue RawValue::unpack_spread_segments_to_buffer(Thread* thread,
       auto seg_tuple = RawTuple::cast(segment);
       size_t seg_length = seg_tuple.length();
       DCHECK(seg_length == segment_sizes[i]);
-      std::memcpy(destination_buffer + next_write_index, seg_tuple.data(), seg_length * sizeof(RawValue));
+      std::memcpy(destination_buffer + next_write_index, seg_tuple.data(), seg_length * kPointerSize);
       next_write_index += seg_length;
     } else if (segment->isList()) {
       auto seg_list = RawList::cast(segment);
@@ -1483,7 +1483,7 @@ RawValue RawValue::unpack_spread_segments_to_buffer(Thread* thread,
         return thread->throw_message("List length changed during segment unpack");
       }
 
-      std::memcpy(destination_buffer + next_write_index, seg_list.data(), seg_length * sizeof(RawValue));
+      std::memcpy(destination_buffer + next_write_index, seg_list.data(), seg_length * kPointerSize);
       next_write_index += seg_length;
     } else if (segment->isString()) {
       auto seg_string = RawString::cast(segment);
@@ -2138,7 +2138,7 @@ RawValue RawTuple::op_mul(Thread* thread, int64_t count) const {
   RawValue* destination = new_tuple.data();
 
   for (size_t i = 0; i < (size_t)count; i++) {
-    std::memcpy(destination + (i * old_length), source, old_length * sizeof(RawValue));
+    std::memcpy(destination + (i * old_length), source, old_length * kPointerSize);
   }
 
   return new_tuple;
@@ -2418,7 +2418,7 @@ RawValue RawList::op_mul(Thread* thread, int64_t count) const {
     RawValue* source = list.data();
     RawValue* destination = new_list.data();
     for (size_t i = 0; i < (size_t)count; i++) {
-      std::memcpy(destination + (i * old_length), source, old_length * sizeof(RawValue));
+      std::memcpy(destination + (i * old_length), source, old_length * kPointerSize);
     }
   }
 
@@ -2440,12 +2440,12 @@ RawValue RawList::reserve_capacity(Thread* thread, size_t expected_size) const {
 
     DCHECK(new_capacity <= kMaximumCapacity);
 
-    auto* new_buffer = static_cast<RawValue*>(utils::Allocator::alloc(new_capacity * sizeof(RawValue)));
+    auto* new_buffer = static_cast<RawValue*>(utils::Allocator::alloc(new_capacity * kPointerSize));
     DCHECK(new_buffer);
 
     // copy old values and free old buffer
     if (auto* buffer = data()) {
-      std::memcpy(new_buffer, buffer, this->length() * sizeof(RawValue));
+      std::memcpy(new_buffer, buffer, this->length() * kPointerSize);
       utils::Allocator::free(buffer);
     }
 
@@ -2502,7 +2502,7 @@ RawValue RawList::insert_at(Thread* thread, int64_t index, RawValue value) const
   auto* data = this->data();
   DCHECK(data);
 
-  size_t bytes_to_move = (length - real_index) * sizeof(RawValue);
+  size_t bytes_to_move = (length - real_index) * kPointerSize;
   std::memmove(data + real_index + 1, data + real_index, bytes_to_move);
   set_length(length + 1);
   data[real_index] = value;
@@ -2536,7 +2536,7 @@ RawValue RawList::erase_at(Thread* thread, int64_t start, int64_t count) const {
   DCHECK(data);
 
   // shift back values after the erased values
-  size_t bytes_after_erase = (length - real_start - count) * sizeof(RawValue);
+  size_t bytes_after_erase = (length - real_start - count) * kPointerSize;
   std::memmove(data + real_start, data + real_start + count, bytes_after_erase);
   set_length(length - count);
   // TODO: shrink list if a lot of space got freed up?

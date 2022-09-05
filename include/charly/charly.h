@@ -71,8 +71,6 @@ inline ref<T> cast(ref<O> node) {
   return std::dynamic_pointer_cast<T>(node);
 }
 
-constexpr size_t kPointerSize = sizeof(uintptr_t);
-
 inline size_t get_steady_timestamp() {
   auto now = std::chrono::steady_clock::now();
   return std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
@@ -106,10 +104,6 @@ constexpr uint64_t kUInt16Min = 0;
 constexpr uint64_t kUInt16Max = 0x0000ffff;
 constexpr uint64_t kUInt8Min = 0;
 constexpr uint64_t kUInt8Max = 0x000000ff;
-
-constexpr size_t kKb = 1024;
-constexpr size_t kMb = kKb * 1024;
-constexpr size_t kGb = kMb * 1024;
 
 #ifdef NDEBUG
 constexpr bool kIsDebugBuild = false;
