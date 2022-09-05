@@ -133,18 +133,18 @@ void ArgumentParser::init_argv(int argc, char** argv) {
 
         continue;
       }
-    }
 
-    // interpret first user argument as a filename
-    if (USER_FLAGS.empty() && !USER_FILENAME.has_value() && arg != "-") {
-      fs::path filename(arg);
+      // interpret first user argument as a filename
+      if (!USER_FILENAME.has_value()) {
+        fs::path filename(arg);
 
-      if (!filename.is_absolute()) {
-        filename = fs::current_path() / filename;
+        if (!filename.is_absolute()) {
+          filename = fs::current_path() / filename;
+        }
+
+        USER_FILENAME = filename;
+        set_flag("debug_pattern", USER_FILENAME.value());
       }
-
-      USER_FILENAME = filename;
-      set_flag("debug_pattern", USER_FILENAME.value());
     }
 
     USER_FLAGS.emplace_back(arg);
