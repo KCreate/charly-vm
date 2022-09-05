@@ -38,12 +38,13 @@ void initialize(Thread* thread);
   V(core, transplantbuiltinclass, 2)  \
   V(core, writevalue, -1)             \
   V(core, currentworkingdirectory, 0) \
-  V(core, getbacktrace, 0)           \
+  V(core, getbacktrace, 0)            \
   V(core, disassemble, 1)             \
   V(core, createtuple, 2)             \
   V(core, createtuplewith, 2)         \
   V(core, exit, 1)                    \
   V(core, performgc, 0)               \
+  V(core, getsteadytimestampmicro, 0) \
   V(core, compile, 2)
 DEF_BUILTIN_CORE(DEFINE_BUILTIN_METHOD_DECLARATIONS)
 

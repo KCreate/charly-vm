@@ -222,6 +222,10 @@ RawValue performgc(Thread* thread, BuiltinFrame*) {
   return kNull;
 }
 
+RawValue getsteadytimestampmicro(Thread*, BuiltinFrame*) {
+  return RawInt::create(get_steady_timestamp_micro());
+}
+
 RawValue compile(Thread* thread, BuiltinFrame* frame) {
   Runtime* runtime = thread->runtime();
 
