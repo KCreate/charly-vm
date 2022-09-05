@@ -397,6 +397,21 @@ OP(stringconcat) {
 
   DCHECK(count > 0);
 
+  size_t known_minimum_string_size = 0;
+  for (int64_t depth = count - 1; depth >= 0; depth--) {
+    RawValue value = frame->peek(depth);
+
+    if (value.isString()) {
+      auto string = RawString::cast(value);
+      known_minimum_string_size += string.byte_length();
+    }
+  }
+
+  if (known_minimum_string_size > RawString::kMaxByteLength) {
+    thread->throw_message("String exceeds maximum allowed size");
+    return ContinueMode::Exception;
+  }
+
   utils::Buffer buffer;
   for (int64_t depth = count - 1; depth >= 0; depth--) {
     frame->peek(depth).to_string(buffer);
