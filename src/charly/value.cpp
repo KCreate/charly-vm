@@ -1794,14 +1794,48 @@ RawValue RawString::op_mul(Thread* thread, int64_t count) const {
     return *this;
   }
 
-  size_t new_length = byte_length() * count;
+  size_t byte_length = this->byte_length();
+  if (byte_length == 0) {
+    return *this;
+  }
+
+  if ((size_t)count > RawString::kMaxByteLength) {
+    return thread->throw_message("String exceeds maximum allowed size");
+  }
+
+  size_t new_length = byte_length * count;
   if (new_length > RawString::kMaxByteLength) {
     return thread->throw_message("String exceeds maximum allowed size");
   }
 
+  constexpr int64_t kCachedCopyThreshold = 1024;
+
   utils::Buffer buffer(new_length);
-  while (count--) {
-    to_string(buffer);
+  utils::Buffer value_buf;
+  to_string(value_buf);
+  if (count <= kCachedCopyThreshold) {
+    for (int64_t i = 0; i < count; i++) {
+      buffer.write_buffer(value_buf);
+    }
+  } else {
+    // if we're multiplying by a sufficiently big number (>kCachedCopyThreshold)
+    // we're splitting the multiplication into multiple steps
+    // copying a very large buffer a few times is faster than copying a small buffer many times
+    size_t tmp_count = std::floor(std::sqrt(count));
+    size_t remaining = count - (tmp_count * tmp_count);
+
+    utils::Buffer tmp_buffer(tmp_count * byte_length);
+    for (size_t i = 0; i < tmp_count; i++) {
+      tmp_buffer.write_buffer(value_buf);
+    }
+
+    for (size_t i = 0; i < tmp_count; i++) {
+      buffer.write_buffer(tmp_buffer);
+    }
+
+    for (size_t i = 0; i < remaining; i++) {
+      buffer.write_buffer(value_buf);
+    }
   }
 
   return RawString::acquire(thread, buffer);
@@ -2485,13 +2519,17 @@ RawValue RawList::erase_at(Thread* thread, int64_t start, int64_t count) const {
     locker.unlock();
     return thread->throw_message("List index % is out of range", start);
   }
-  if (count <= 0) {
+  if (count < 0) {
     locker.unlock();
     return thread->throw_message("Expected count to be greater than 0");
   }
   if ((size_t)(real_start + count) > length) {
     locker.unlock();
     return thread->throw_message("Not enough values in list to erase");
+  }
+
+  if (count == 0) {
+    return kNull;
   }
 
   auto* data = this->data();
