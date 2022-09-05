@@ -2505,7 +2505,7 @@ RawValue RawList::erase_at(Thread* thread, int64_t start, int64_t count) const {
   return kNull;
 }
 
-RawValue RawList::append_value(Thread* thread, RawValue value) const {
+RawValue RawList::push_value(Thread* thread, RawValue value) const {
   std::lock_guard locker(*this);
   size_t length = this->length();
 

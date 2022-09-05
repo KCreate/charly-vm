@@ -82,7 +82,7 @@ RawValue erase(Thread* thread, BuiltinFrame* frame) {
 RawValue push(Thread* thread, BuiltinFrame* frame) {
   CHECK(frame->arguments[0].isList());
   auto list = RawList::cast(frame->arguments[0]);
-  return list.append_value(thread, frame->arguments[1]);
+  return list.push_value(thread, frame->arguments[1]);
 }
 
 RawValue pop(Thread* thread, BuiltinFrame* frame) {

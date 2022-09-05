@@ -976,7 +976,7 @@ public:
   // append a value to the list
   // throws an exception if the list is too big
   // returns the appended value on success
-  RawValue append_value(Thread*, RawValue value) const;
+  RawValue push_value(Thread*, RawValue value) const;
 
   // pops the last value from the list
   // throws an exception if the list is empty
