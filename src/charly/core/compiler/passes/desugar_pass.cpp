@@ -129,67 +129,79 @@ void DesugarPass::inspect_leave(const ref<Function>& node) {
     }
   }
 
-  // wrap regular functions with yield expressions inside a generator wrapper function
-  // TODO: revisit this once figured out how yield should behave
-  if (!node->arrow_function && false) {
-    // check if this function contains any yield statements
-    ref<Node> yield_node = Node::search(
-      node->body,
-      [&](const ref<Node>& node) {
-        return node->type() == Node::Type::Yield;
-      },
-      [&](const ref<Node>& node) {
-        switch (node->type()) {
-          case Node::Type::Function:
-          case Node::Type::Class:
-          case Node::Type::Spawn: {
-            return true;
-          }
-          default: {
-            return false;
-          }
-        }
-      });
-
-    // transform this regular function into a generator function
-    // by wrapping its original body with a return spawn statement
-    // and making sure all the function arguments are passed on
-    //
-    // func foo(a = 1, b = 2, ...rest) {
-    //   yield 1
-    //   yield a
-    //   yield rest
-    // }
-    //
-    // transformed to:
-    //
-    // func foo(a = 1, b = 2, ...rest) {
-    //   return castiterator(spawn ->(a, b, rest) {
-    //     yield 1
-    //     yield a
-    //     yield rest
-    //   }(a, b, rest))
-    // }
-    if (yield_node) {
-      // wrapper arrow func
-      ref<Function> func = make<Function>(true, make<Name>("generator_" + node->name->value), node->body);
-
-      // insert arguments
-      for (const ref<FunctionArgument>& argument : node->arguments) {
-        func->arguments.push_back(make<FunctionArgument>(argument->name));
+  // emit class member property default value initializations
+  if (ref<Class> host_class = node->host_class.lock()) {
+    for (auto it = host_class->member_properties.rbegin(); it != host_class->member_properties.rend(); it++) {
+      const ref<ClassProperty>& property = *it;
+      if (property->value->type() != Node::Type::Null) {
+        auto assignment = make<Assignment>(make<MemberOp>(make<Self>(), property->name), property->value);
+        assignment->set_location(property);
+        node->body->statements.insert(node->body->statements.begin(), assignment);
       }
-
-      // build arrow func immediate call
-      ref<CallOp> func_call = make<CallOp>(func);
-      for (const ref<FunctionArgument>& argument : node->arguments) {
-        func_call->arguments.push_back(make<Id>(argument->name));
-      }
-
-      // build wrapped spawn statement
-      ref<Block> new_body = make<Block>(make<Return>(make<Spawn>(func_call)));
-      node->body = cast<Block>(apply(new_body));
     }
   }
+
+  // wrap regular functions with yield expressions inside a generator wrapper function
+  // TODO: revisit this once figured out how yield should behave
+//  if (!node->arrow_function && false) {
+//    // check if this function contains any yield statements
+//    ref<Node> yield_node = Node::search(
+//      node->body,
+//      [&](const ref<Node>& node) {
+//        return node->type() == Node::Type::Yield;
+//      },
+//      [&](const ref<Node>& node) {
+//        switch (node->type()) {
+//          case Node::Type::Function:
+//          case Node::Type::Class:
+//          case Node::Type::Spawn: {
+//            return true;
+//          }
+//          default: {
+//            return false;
+//          }
+//        }
+//      });
+//
+//    // transform this regular function into a generator function
+//    // by wrapping its original body with a return spawn statement
+//    // and making sure all the function arguments are passed on
+//    //
+//    // func foo(a = 1, b = 2, ...rest) {
+//    //   yield 1
+//    //   yield a
+//    //   yield rest
+//    // }
+//    //
+//    // transformed to:
+//    //
+//    // func foo(a = 1, b = 2, ...rest) {
+//    //   return castiterator(spawn ->(a, b, rest) {
+//    //     yield 1
+//    //     yield a
+//    //     yield rest
+//    //   }(a, b, rest))
+//    // }
+//    if (yield_node) {
+//      // wrapper arrow func
+//      ref<Function> func = make<Function>(true, make<Name>("generator_" + node->name->value), node->body);
+//
+//      // insert arguments
+//      for (const ref<FunctionArgument>& argument : node->arguments) {
+//        func->arguments.push_back(make<FunctionArgument>(argument->name));
+//      }
+//
+//      // build arrow func immediate call
+//      ref<CallOp> func_call = make<CallOp>(func);
+//      for (const ref<FunctionArgument>& argument : node->arguments) {
+//        func_call->arguments.push_back(make<Id>(argument->name));
+//      }
+//
+//      // build wrapped spawn statement
+//      ref<Block> new_body = make<Block>(make<Return>(make<Spawn>(func_call)));
+//      node->body = cast<Block>(apply(new_body));
+//    }
+//  }
 }
 
 // generate default constructors for classes
@@ -219,12 +231,6 @@ void DesugarPass::inspect_leave(const ref<Class>& node) {
     } else {
       ref<Function> constructor = make<Function>(false, make<Name>("constructor"), make<Block>());
       constructor->class_constructor = true;
-
-      // initialize member variables
-      for (const ref<ClassProperty>& prop : node->member_properties) {
-        constructor->arguments.push_back(make<FunctionArgument>(true, false, prop->name, prop->value));
-      }
-
       node->constructor = cast<Function>(apply(constructor));
     }
   }
