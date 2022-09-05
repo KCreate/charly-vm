@@ -150,7 +150,7 @@ enum class TokenType {
 };
 
 // string representations of token types
-static std::string kTokenTypeStrings[] = {
+inline static const std::string kTokenTypeStrings[] = {
   "EOF",       "integer",  "float",   "true",  "false",      "identifier", "string",  "formatstring",
   "null",      "self",     "super",   "as",    "assert",     "await",      "break",   "__builtin",
   "case",      "catch",    "class",   "const", "continue",   "default",    "defer",   "do",
@@ -167,7 +167,7 @@ static std::string kTokenTypeStrings[] = {
 };
 
 // identifiers with these names get remapped to keyword tokens
-static const std::unordered_map<std::string, TokenType> kKeywordsAndLiterals = { { "NaN", TokenType::Float },
+inline static const std::unordered_map<std::string, TokenType> kKeywordsAndLiterals = { { "NaN", TokenType::Float },
                                                                                  { "NAN", TokenType::Float },
                                                                                  { "Infinity", TokenType::Float },
                                                                                  { "INFINITY", TokenType::Float },
@@ -220,7 +220,7 @@ static const std::unordered_map<std::string, TokenType> kKeywordsAndLiterals = {
                                                                                  { "while", TokenType::While },
                                                                                  { "yield", TokenType::Yield } };
 
-static const std::unordered_set<TokenType> kExpressionValidInitialTokens = {
+inline static const std::unordered_set<TokenType> kExpressionValidInitialTokens = {
   TokenType::Int,         TokenType::Float,        TokenType::True,      TokenType::False,     TokenType::Identifier,
   TokenType::String,      TokenType::FormatString, TokenType::Null,      TokenType::Self,      TokenType::Super,
   TokenType::Await,       TokenType::Class,        TokenType::Func,      TokenType::Import,    TokenType::Match,
@@ -229,7 +229,7 @@ static const std::unordered_set<TokenType> kExpressionValidInitialTokens = {
   TokenType::TriplePoint, TokenType::AtSign,       TokenType::RightArrow
 };
 
-static const std::unordered_set<TokenType> kBinaryOperatorTokens = {
+inline static const std::unordered_set<TokenType> kBinaryOperatorTokens = {
   TokenType::Plus,      TokenType::Minus,        TokenType::Mul,           TokenType::Div,
   TokenType::Mod,       TokenType::Pow,          TokenType::BitAND,        TokenType::BitOR,
   TokenType::BitXOR,    TokenType::BitLeftShift, TokenType::BitRightShift, TokenType::BitUnsignedRightShift,
@@ -238,17 +238,17 @@ static const std::unordered_set<TokenType> kBinaryOperatorTokens = {
   TokenType::Spaceship, TokenType::InstanceOf
 };
 
-static const std::unordered_set<TokenType> kBinaryComparisonTokens = { TokenType::Equal,     TokenType::NotEqual,
+inline static const std::unordered_set<TokenType> kBinaryComparisonTokens = { TokenType::Equal,     TokenType::NotEqual,
                                                                        TokenType::LessThan,  TokenType::GreaterThan,
                                                                        TokenType::LessEqual, TokenType::GreaterEqual,
                                                                        TokenType::Spaceship, TokenType::InstanceOf };
 
 // Note: The TriplePoint token or spread operator (...) is not included in this list is it is
 // being parsed in a special manner by the parser.
-static const std::unordered_set<TokenType> kUnaryOperatorTokens = { TokenType::Plus, TokenType::Minus,
+inline static const std::unordered_set<TokenType> kUnaryOperatorTokens = { TokenType::Plus, TokenType::Minus,
                                                                     TokenType::UnaryNot, TokenType::BitNOT };
 
-static const std::unordered_set<TokenType> kAssignmentOperators = {
+inline static const std::unordered_set<TokenType> kAssignmentOperators = {
   TokenType::Plus,   TokenType::Minus,        TokenType::Mul,           TokenType::Div,
   TokenType::Mod,    TokenType::Pow,          TokenType::BitAND,        TokenType::BitOR,
   TokenType::BitXOR, TokenType::BitLeftShift, TokenType::BitRightShift, TokenType::BitUnsignedRightShift,

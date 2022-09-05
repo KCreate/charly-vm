@@ -34,7 +34,7 @@
 
 namespace charly {
 
-static const size_t kPageSize = sysconf(_SC_PAGESIZE);
+inline static const size_t kPageSize = sysconf(_SC_PAGESIZE);
 
 namespace utils {
 

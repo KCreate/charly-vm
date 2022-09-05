@@ -52,21 +52,21 @@ enum class BuiltinId : uint16_t {
 
 // number of required arguments for the builtin operations
 // -1 indicates that there is no min or max limit
-static constexpr int8_t kBuiltinArgumentCount[] = {
+constexpr int8_t kBuiltinArgumentCount[] = {
 #define COUNT(_, count) count,
   FOREACH_BUILTIN(COUNT)
 #undef COUNT
 };
 
 // names of builtin operations
-static std::string kBuiltinNames[] = {
+inline static std::string kBuiltinNames[] = {
 #define NAME(name, _) #name,
   FOREACH_BUILTIN(NAME)
 #undef NAME
 };
 
 // mapping from name of builtin operation to its Id
-static std::unordered_map<std::string, BuiltinId> kBuiltinNameMapping = {
+inline static std::unordered_map<std::string, BuiltinId> kBuiltinNameMapping = {
 #define PAIR(name, _) { #name, BuiltinId::name },
   FOREACH_BUILTIN(PAIR)
 #undef PAIR

@@ -804,7 +804,7 @@ inline Instruction encode_iaaa(Opcode opcode, uint32_t arg) {
 /*
  * opcodes which terminate their basic block
  * */
-static const std::unordered_set<Opcode> kTerminatingOpcodes = {
+inline static const std::unordered_set<Opcode> kTerminatingOpcodes = {
   Opcode::panic,
   Opcode::jmp,
   Opcode::throwex,
@@ -817,27 +817,27 @@ static const std::unordered_set<Opcode> kTerminatingOpcodes = {
 /*
  * opcodes that can perform branches (call-like excluded)
  * */
-static const std::unordered_set<Opcode> kBranchingOpcodes = {
+inline static const std::unordered_set<Opcode> kBranchingOpcodes = {
   Opcode::jmp,
   Opcode::jmpf,
   Opcode::jmpt,
   Opcode::argcjmp,
 };
 
-static std::string kOpcodeNames[] = {
+inline static std::string kOpcodeNames[] = {
 #define NAME(name, ...) #name,
   FOREACH_OPCODE(NAME)
 #undef NAME
 };
 
-static std::unordered_map<std::string, Opcode> kOpcodeNameMapping = {
+inline static std::unordered_map<std::string, Opcode> kOpcodeNameMapping = {
 #define PAIR(name, ...) { #name, Opcode::name },
   FOREACH_OPCODE(PAIR)
 #undef PAIR
 };
 
 // clang-format off
-static std::unordered_map<TokenType, Opcode> kBinopOpcodeMapping = {
+inline static std::unordered_map<TokenType, Opcode> kBinopOpcodeMapping = {
 
   // arithmetic
   { TokenType::Plus, Opcode::add, },
@@ -866,13 +866,13 @@ static std::unordered_map<TokenType, Opcode> kBinopOpcodeMapping = {
   { TokenType::InstanceOf, Opcode::instanceof }
 };
 
-static std::unordered_map<TokenType, Opcode> kUnaryopOpcodeMapping = {
+inline static std::unordered_map<TokenType, Opcode> kUnaryopOpcodeMapping = {
   { TokenType::Minus, Opcode::usub, },
   { TokenType::UnaryNot, Opcode::unot, },
   { TokenType::BitNOT, Opcode::ubnot, },
 };
 
-static std::unordered_map<BuiltinId, Opcode> kBuiltinOperationOpcodeMapping = {
+inline static std::unordered_map<BuiltinId, Opcode> kBuiltinOperationOpcodeMapping = {
 #define ID(name, ...) { BuiltinId::name, Opcode::name, },
   FOREACH_BUILTIN(ID)
 #undef ID

@@ -41,7 +41,7 @@ namespace {
 }
 
 // clang-format off
-static const std::unordered_map<TokenType, uint32_t> kBinaryOpPrecedenceLevels = {
+inline static const std::unordered_map<TokenType, uint32_t> kBinaryOpPrecedenceLevels = {
   { TokenType::Or,                    8 },
   { TokenType::And,                   9 },
 
@@ -75,7 +75,7 @@ static const std::unordered_map<TokenType, uint32_t> kBinaryOpPrecedenceLevels =
 };
 // clang-format on
 
-static const std::unordered_set<TokenType> kRightAssociativeOperators = { TokenType::Pow };
+inline static const std::unordered_set<TokenType> kRightAssociativeOperators = { TokenType::Pow };
 
 struct KeywordContext {
   bool _return = false;

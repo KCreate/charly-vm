@@ -1680,7 +1680,7 @@ ref<Block> Parser::wrap_statement_in_block(const ref<Statement>& node) {
 }
 
 void Parser::unexpected_token(const std::string& message) {
-  std::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
+  const std::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
 
   switch (m_token.type) {
     case TokenType::Eof: {
@@ -1703,8 +1703,8 @@ void Parser::unexpected_token(const std::string& message) {
 }
 
 void Parser::unexpected_token(TokenType expected) {
-  std::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
-  std::string& expected_type = kTokenTypeStrings[static_cast<uint8_t>(expected)];
+  const std::string& real_type = kTokenTypeStrings[static_cast<uint8_t>(m_token.type)];
+  const std::string& expected_type = kTokenTypeStrings[static_cast<uint8_t>(expected)];
 
   switch (m_token.type) {
     case TokenType::Eof: {

@@ -91,7 +91,7 @@ struct BuiltinFrame : public Frame {
 
 // trigger an out of memory exception once this amount of remaining bytes on the stack
 // has been crossed
-static const size_t kStackOverflowLimit = 1024 * 32;  // 32 kilobytes
+constexpr size_t kStackOverflowLimit = 1024 * 32;  // 32 kilobytes
 
 class Interpreter {
 public:
