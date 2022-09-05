@@ -344,7 +344,7 @@ RawValue Interpreter::stack_overflow_check(Thread* thread) {
   size_t remaining_bytes_on_stack = frame_address - stack_bottom_address;
   if (remaining_bytes_on_stack <= kStackOverflowLimit) {
     debuglnf("thread % stack overflow", thread->id());
-    return thread->throw_message("Reached recursion depth limit", thread->id());
+    return thread->throw_message("Maximum recursion depth exceeded", thread->id());
   }
 
   return kNull;

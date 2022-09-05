@@ -167,6 +167,17 @@ func stopwatch(callback) {
 
         func sum = reduce(->(p, e) p + e, 0)
 
+        func contains(value) {
+            let i = 0
+            while i < @length {
+                if self[i] == value {
+                    return true
+                }
+                i += 1
+            }
+            false
+        }
+
         func empty = @length == 0
 
         func copy = (...self)
@@ -187,12 +198,12 @@ func stopwatch(callback) {
             let i = 0
             while i < length {
                 if @length != length {
-                    throw "ConcurrencyError: List size changed"
+                    throw "List size changed during iteration"
                 }
 
                 let value
                 try value = self[i] catch {
-                    throw "ConcurrencyError: List size changed"
+                    throw "List size changed during iteration"
                 }
 
                 cb(value, i, self)
@@ -228,6 +239,66 @@ func stopwatch(callback) {
             })
 
             new
+        }
+
+        func contains(value) {
+            let i = 0
+            let length = @length
+
+            while i < length {
+                if @length != length {
+                    throw "List size changed during iteration"
+                }
+
+                let tmp
+                try tmp = self[i] catch {
+                    throw "List size changed during iteration"
+                }
+
+                if tmp == value {
+                    return true
+                }
+
+                i += 1
+            }
+
+            false
+        }
+
+        func sort(compare_function = null) {
+            let length = @length
+            let i = 0
+            let had_swaps = true
+
+            if length <= 1 {
+                return self
+            }
+
+            if compare_function == null {
+                compare_function = ->(left, right) left <=> right
+            }
+
+            while (had_swaps) {
+                i = 0
+                had_swaps = false
+
+                if @length != length {
+                    throw "List size changed during sort"
+                }
+
+                @each(->(value, index) {
+                    if index < length - 1 {
+                        const next_value = self[index + 1]
+                        if compare_function(value, next_value) == 1 {
+                            self[index] = next_value
+                            self[index + 1] = value
+                            had_swaps = true
+                        }
+                    }
+                })
+            }
+
+            self
         }
 
         func empty = @length == 0

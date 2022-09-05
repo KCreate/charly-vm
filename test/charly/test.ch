@@ -27,8 +27,9 @@
 import unittest
 
 unittest.run(
-    import "number",
-    import "string"
+    import "./number.ch",
+    import "./string.ch",
+    import "./list.ch"
 )
 
 

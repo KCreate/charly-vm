@@ -167,8 +167,7 @@ RawValue createtuple(Thread* thread, BuiltinFrame* frame) {
   }
 
   if ((size_t)length > kHeapRegionMaximumObjectFieldCount) {
-    return thread->throw_message("Expected length to be smaller than the maximum tuple capacity of %, got %",
-                                 kHeapRegionMaximumObjectFieldCount, length);
+    return thread->throw_message("Tuple exceeded max size");
   }
 
   HandleScope scope(thread);
@@ -189,8 +188,7 @@ RawValue createtuplewith(Thread* thread, BuiltinFrame* frame) {
   }
 
   if ((size_t)length > kHeapRegionMaximumObjectFieldCount) {
-    return thread->throw_message("Expected length to be smaller than the maximum tuple capacity of %, got %",
-                                 kHeapRegionMaximumObjectFieldCount, length);
+    return thread->throw_message("Tuple exceeded max size");
   }
 
   HandleScope scope(thread);

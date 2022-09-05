@@ -670,7 +670,7 @@ RawValue RawValue::op_div(RawValue other) const {
 // NOTE: Update this method together with Node::compares_equal
 RawValue RawValue::op_eq(Thread* thread, RawValue other, uint32_t depth) const {
   if (depth >= kMaxComparisonRecursionDepth) {
-    return thread->throw_message("Maximum recursion depth exceeded in comparison");
+    return thread->throw_message("Maximum recursion depth exceeded");
   }
 
   if (*this == other) {
@@ -2093,7 +2093,7 @@ RawValue RawTuple::create_spread(Thread* thread, const RawValue* segments, uint3
   }
 
   if (total_size > kHeapRegionMaximumObjectFieldCount) {
-    return thread->throw_message("Tuple exceeded max size of %", kHeapRegionMaximumObjectFieldCount);
+    return thread->throw_message("Tuple exceeded max size");
   }
 
   auto tuple = RawTuple::create(thread, total_size);
@@ -2129,7 +2129,7 @@ RawValue RawTuple::op_mul(Thread* thread, int64_t count) const {
   size_t old_length = length();
   size_t new_length = count * old_length;
   if (new_length > kHeapRegionMaximumObjectFieldCount) {
-    return thread->throw_message("Tuple exceeded max size of %", kHeapRegionMaximumObjectFieldCount);
+    return thread->throw_message("Tuple exceeded max size");
   }
 
   Tuple new_tuple(scope, RawTuple::create(thread, new_length));
@@ -2343,7 +2343,7 @@ RawValue RawList::create_spread(Thread* thread, const RawValue* segments, uint32
   }
 
   if (total_size > RawList::kMaximumCapacity) {
-    return thread->throw_message("List exceeded max size of %", RawList::kMaximumCapacity);
+    return thread->throw_message("List exceeded max size");
   }
 
   auto list = RawList::create(thread, total_size);
@@ -2402,7 +2402,7 @@ RawValue RawList::op_mul(Thread* thread, int64_t count) const {
   }
 
   if (new_length > kMaximumCapacity) {
-    return thread->throw_message("List exceeded max size of %", kMaximumCapacity);
+    return thread->throw_message("List exceeded max size");
   }
 
   List new_list(scope, RawList::create(thread, new_length));
@@ -2427,7 +2427,7 @@ RawValue RawList::reserve_capacity(Thread* thread, size_t expected_size) const {
   DCHECK(is_locked());
 
   if (expected_size > kMaximumCapacity) {
-    return thread->throw_message("List exceeded maximum size");
+    return thread->throw_message("List exceeded max size");
   }
 
   if (expected_size > capacity()) {

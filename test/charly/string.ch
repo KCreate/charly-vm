@@ -82,6 +82,14 @@ export class StringTest {
         assert c * 1 == "test"
         assert c * 2 == "testtest"
         assert c * 3 == "testtesttest"
+
+        const d = "0123456789abcdef" * (4096)
+        assert d.length == 65536
+        assert d[0] == "0"
+        assert d[3072] == "0"
+        assert d[3072 + 4] == "4"
+        assert d[3072 + 8] == "8"
+        assert d[3072 + 12] == "c"
     }
 
     static func test_string_comparison {
@@ -153,6 +161,19 @@ export class StringTest {
         assert l == ["t", "e", "s", "t", "ä", "ä", "ä"]
     }
 
+    static func test_string_max_size_exceeded_exception {
+        const string_of_max_length = "0123456789abcdef" * (1024 * 1024 * 128)
+
+        const exc1 = assert_throws(->string_of_max_length * 2)
+        assert exc1.message == "String exceeds maximum allowed size"
+
+        const exc2 = assert_throws(->string_of_max_length + string_of_max_length)
+        assert exc2.message == "String exceeds maximum allowed size"
+
+        const exc3 = assert_throws(->"{string_of_max_length}{string_of_max_length}")
+        assert exc3.message == "String exceeds maximum allowed size"
+    }
+
     static func test_string_stdlib_begins_with {
         const a = "hello world"
 
@@ -165,20 +186,6 @@ export class StringTest {
         assert a.begins_with("hello world test") == false
         assert a.begins_with("a") == false
         assert a.begins_with("world") == false
-    }
-
-    static func test_string_max_size_exceeded_exception {
-        const string_max_length = 1024 * 1024 * 1024 * 2
-        const string_of_max_length = "a" * string_max_length
-
-        const exc1 = assert_throws(->string_of_max_length * 2)
-        assert exc1.message == "String exceeds maximum allowed size"
-
-        const exc2 = assert_throws(->string_of_max_length + string_of_max_length)
-        assert exc2.message == "String exceeds maximum allowed size"
-
-        const exc3 = assert_throws(->"{string_of_max_length}{string_of_max_length}")
-        assert exc3.message == "String exceeds maximum allowed size"
     }
 }
 

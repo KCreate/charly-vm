@@ -51,8 +51,7 @@ RawValue create(Thread* thread, BuiltinFrame* frame) {
   }
 
   if (size > (int64_t)RawList::kMaximumCapacity) {
-    return thread->throw_message("Expected length to be smaller than the maximum list capacity of %, got %",
-                                 RawList::kMaximumCapacity, size_value);
+    return thread->throw_message("List exceeded max size");
   }
 
   return RawList::create_with(thread, size, initial_value);

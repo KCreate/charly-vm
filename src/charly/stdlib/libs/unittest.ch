@@ -95,16 +95,10 @@ export class UnitTest {
             })
 
             if suite.passed {
-                print("{suite.name}: All tests passed! ({suite.duration}ms)")
+                print("{suite.name}: All tests passed!", suite.duration, "ms")
             } else {
-                print("{suite.name}: {failed_tests.length} tests failed! ({suite.duration}ms)")
+                print("{suite.name}: {failed_tests.length} tests failed!", suite.duration, "ms")
             }
-
-            passed_tests.each(->(test) {
-                if test.duration > unit_test_suspicious_execution_time {
-                    print("\t{test.name}: Passed, but took a long time to complete ({test.duration}ms)")
-                }
-            })
 
             failed_tests.each(->(test) {
                 print("\t{test.name}:", test.exception.message)
