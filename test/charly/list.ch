@@ -27,7 +27,7 @@
 import { assert_throws } from unittest
 
 export class ListTest {
-    static func test_list_creation {
+    static func test_list {
         const a = []
         const b = [1]
         const c = [1, 2, 3, 4, 5]
@@ -41,7 +41,7 @@ export class ListTest {
         assert c == [1, 2, 3, 4, 5]
     }
 
-    static func test_list_static_create {
+    static func test_list_create {
         const a = List.create(0)
         assert a.length == 0
         assert a == []
@@ -63,6 +63,20 @@ export class ListTest {
 
         const exc1 = assert_throws(->List.create(-10))
         assert exc1.message == "Expected length to be positive, got -10"
+    }
+
+    static func test_list_create_with {
+        const a = List.create_with(10, ->(i) i)
+        assert a.length == 10
+        assert a == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+        let called = false
+        const b = List.create_with(0, ->called = true)
+        assert called == false
+        assert b == []
+
+        const exc = assert_throws(->List.create_with(-10, ->{}))
+        assert exc.message == "Expected length to be positive, got -10"
     }
 
     static func test_list_insert {

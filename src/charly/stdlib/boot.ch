@@ -154,7 +154,7 @@ func stopwatch(callback) {
                 }
             })
 
-            new
+            (...new)
         }
 
         func reduce(cb, initial = null) {
@@ -306,6 +306,15 @@ func stopwatch(callback) {
         func copy = [...self]
 
         static func create(length, initial = null) = builtin_list_create(length, initial)
+        static func create_with(length, callback) {
+            const l = List.create(length)
+
+            length.times(->(i) {
+                l[i] = callback(i)
+            })
+
+            l
+        }
     }
 
     class builtin_Function {
