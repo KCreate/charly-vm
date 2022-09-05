@@ -26,9 +26,6 @@
 
 import { assert_throws } from unittest
 
-const string_max_length = 1024 * 1024 * 1024 * 2
-const string_of_max_length = "a" * string_max_length
-
 export class StringTest {
     static func test_string_concat {
         const a = "hello "
@@ -171,6 +168,9 @@ export class StringTest {
     }
 
     static func test_string_max_size_exceeded_exception {
+        const string_max_length = 1024 * 1024 * 1024 * 2
+        const string_of_max_length = "a" * string_max_length
+
         const exc1 = assert_throws(->string_of_max_length * 2)
         assert exc1.message == "String exceeds maximum allowed size"
 

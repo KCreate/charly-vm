@@ -56,6 +56,7 @@ public:
   static int32_t run();
 
   Runtime();
+  ~Runtime();
 
   Heap* heap();
   Scheduler* scheduler();
@@ -75,6 +76,7 @@ public:
   void wait_for_initialization();
 
   // misc. initialization methods
+  void initialize_null_initialized_page();
   void initialize_symbol_table(Thread* thread);
   void initialize_argv_tuple(Thread* thread);
   void initialize_builtin_functions(Thread* thread);
@@ -141,6 +143,12 @@ public:
   // invoke the callback with a reference to each runtime root
   void each_root(std::function<void(RawValue& value)> callback);
 
+  void memset_value(RawValue* target, RawValue value, size_t count) const;
+
+private:
+  void memset_value_null(RawValue* target, size_t count) const;
+  void memset_value_cached(RawValue* target, RawValue value, size_t count) const;
+
 private:
   std::mutex m_mutex;
   utils::WaitFlag m_init_flag;
@@ -180,6 +188,8 @@ private:
   };
   std::shared_mutex m_cached_modules_mutex;
   std::unordered_map<size_t, CachedModule> m_cached_modules;
+
+  RawValue* m_null_initialized_memory_page = nullptr;
 };
 
 }  // namespace charly::core::runtime

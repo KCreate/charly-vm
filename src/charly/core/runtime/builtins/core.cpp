@@ -174,9 +174,7 @@ RawValue createtuple(Thread* thread, BuiltinFrame* frame) {
   HandleScope scope(thread);
   Value initial(scope, frame->arguments[1]);
   Tuple tuple(scope, RawTuple::create(thread, length));
-  for (int64_t i = 0; i < length; i++) {
-    tuple.set_field_at(i, initial);
-  }
+  thread->runtime()->memset_value(tuple.data(), initial, length);
 
   return tuple;
 }

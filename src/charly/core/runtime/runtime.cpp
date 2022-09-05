@@ -55,6 +55,11 @@ Runtime::Runtime() :
   m_init_flag.signal();
 }
 
+Runtime::~Runtime() {
+  utils::Allocator::munmap(m_null_initialized_memory_page, kPageSize);
+  m_null_initialized_memory_page = nullptr;
+}
+
 Heap* Runtime::heap() {
   return m_heap.get();
 }
@@ -105,6 +110,14 @@ void Runtime::register_module(Thread* thread, const ref<CompiledModule>& module)
       declare_symbol(thread, entry.value);
     }
   }
+}
+
+void Runtime::initialize_null_initialized_page() {
+  m_null_initialized_memory_page = (RawValue*)utils::Allocator::mmap_page_aligned(kPageSize, PROT_READ | PROT_WRITE);
+  for (size_t i = 0; i < kPointersPerPage; i++) {
+    m_null_initialized_memory_page[i] = kNull;
+  }
+  utils::Allocator::protect_read(m_null_initialized_memory_page, kPageSize);
 }
 
 void Runtime::initialize_symbol_table(Thread* thread) {
@@ -805,6 +818,47 @@ void Runtime::each_root(std::function<void(RawValue& value)> callback) {
   // cached modules table
   for (auto& entry : m_cached_modules) {
     callback(entry.second.module);
+  }
+}
+
+void Runtime::memset_value(RawValue* target, RawValue value, size_t count) const {
+  if (count < kPointersPerPage) {
+    for (size_t i = 0; i < count; i++) {
+      target[i] = value;
+    }
+  } else {
+    if (value == kNull) {
+      memset_value_null(target, count);
+    } else {
+      memset_value_cached(target, value, count);
+    }
+  }
+}
+
+void Runtime::memset_value_null(RawValue* target, size_t count) const {
+  size_t copied_values;
+  for (copied_values = 0; (copied_values + kPointersPerPage) <= count; copied_values += kPointersPerPage) {
+    std::memcpy(target + copied_values, m_null_initialized_memory_page, kPageSize);
+  }
+
+  for (; copied_values < count; copied_values++) {
+    target[copied_values] = kNull;
+  }
+}
+
+void Runtime::memset_value_cached(RawValue* target, RawValue value, size_t count) const {
+  RawValue cache[kPointersPerPage];
+  for (size_t i = 0; i < kPointersPerPage; i++) {
+    cache[i] = value;
+  }
+
+  size_t copied_values;
+  for (copied_values = 0; (copied_values + kPointersPerPage) <= count; copied_values += kPointersPerPage) {
+    std::memcpy(target + copied_values, cache, kPageSize);
+  }
+
+  for (; copied_values < count; copied_values++) {
+    target[copied_values] = value;
   }
 }
 

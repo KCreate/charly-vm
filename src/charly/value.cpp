@@ -2329,9 +2329,7 @@ RawList RawList::create_with(Thread* thread, size_t length, RawValue _value) {
   list.set_length(length);
 
   auto* data = list.data();
-  for (size_t i = 0; i < length; i++) {
-    data[i] = value;
-  }
+  thread->runtime()->memset_value(data, value, length);
 
   return list;
 }

@@ -217,6 +217,7 @@ int32_t Thread::entry_main_thread() {
   CHECK(id() == kMainThreadId);
 
   Runtime* runtime = m_runtime;
+  runtime->initialize_null_initialized_page();
   runtime->initialize_symbol_table(this);
   runtime->initialize_builtin_types(this);
   runtime->initialize_argv_tuple(this);
