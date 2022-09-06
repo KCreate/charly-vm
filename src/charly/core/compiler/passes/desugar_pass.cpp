@@ -130,13 +130,15 @@ void DesugarPass::inspect_leave(const ref<Function>& node) {
   }
 
   // emit class member property default value initializations
-  if (ref<Class> host_class = node->host_class.lock()) {
-    for (auto it = host_class->member_properties.rbegin(); it != host_class->member_properties.rend(); it++) {
-      const ref<ClassProperty>& property = *it;
-      if (property->value->type() != Node::Type::Null) {
-        auto assignment = make<Assignment>(make<MemberOp>(make<Self>(), property->name), property->value);
-        assignment->set_location(property);
-        node->body->statements.insert(node->body->statements.begin(), assignment);
+  if (node->class_constructor) {
+    if (ref<Class> host_class = node->host_class.lock()) {
+      for (auto it = host_class->member_properties.rbegin(); it != host_class->member_properties.rend(); it++) {
+        const ref<ClassProperty>& property = *it;
+        if (property->value->type() != Node::Type::Null) {
+          auto assignment = make<Assignment>(make<MemberOp>(make<Self>(), property->name), property->value);
+          assignment->set_location(property);
+          node->body->statements.insert(node->body->statements.begin(), assignment);
+        }
       }
     }
   }
@@ -231,6 +233,12 @@ void DesugarPass::inspect_leave(const ref<Class>& node) {
     } else {
       ref<Function> constructor = make<Function>(false, make<Name>("constructor"), make<Block>());
       constructor->class_constructor = true;
+
+      // member variable default initializers
+      for (const ref<ClassProperty>& prop : node->member_properties) {
+        constructor->arguments.push_back(make<FunctionArgument>(true, false, prop->name, prop->value));
+      }
+
       node->constructor = cast<Function>(apply(constructor));
     }
   }
