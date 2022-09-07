@@ -129,4 +129,10 @@ export class UnitTest {
 
         assert false : "Expected an exception to be thrown"
     }
+
+    static func assert_no_exception(callback) {
+        try callback() catch(e) {
+            assert false : "Expected no exception to be thrown"
+        }
+    }
 }

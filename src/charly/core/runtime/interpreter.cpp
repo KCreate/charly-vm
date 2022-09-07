@@ -115,7 +115,7 @@ RawValue Interpreter::call_value(
     return Interpreter::call_function(thread, klass, constructor, arguments, argc, true, argument_tuple);
   }
 
-  return thread->throw_message("Called value is not a function");
+  return thread->throw_message("Cannot call value of type '%'", target.klass_name(thread));
 }
 
 RawValue Interpreter::call_function(Thread* thread,
