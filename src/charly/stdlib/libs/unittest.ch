@@ -48,6 +48,7 @@ class TestSuite {
 }
 
 const unit_test_suspicious_execution_time = 50
+const print_passed_test_duration = ARGV.contains("--print_passed_test_duration")
 
 export class UnitTest {
     static func run(...test_classes) {
@@ -98,6 +99,13 @@ export class UnitTest {
                 print("{suite.name}: All tests passed!", suite.duration, "ms")
             } else {
                 print("{suite.name}: {failed_tests.length} tests failed!", suite.duration, "ms")
+            }
+
+            if print_passed_test_duration {
+                passed_tests.sort(->(l, r) r.duration - l.duration)
+                passed_tests.each(->(test) {
+                    print("\t{test.name}: Passed!", test.duration, "ms")
+                })
             }
 
             failed_tests.each(->(test) {

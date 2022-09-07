@@ -24,44 +24,6 @@
  * SOFTWARE.
  */
 
-func test_tuple_spread {
-    const a = (1, 2, 3, 4)
-    const b = "abcäää"
-    const c = [5, 6, 7, 8]
-    const t = (true, ...a, false, ...b, null, ...c, 2000)
-
-    assert t == (true, 1, 2, 3, 4, false, "a", "b", "c", "ä", "ä", "ä", null, 5, 6, 7, 8, 2000)
-}
-test_tuple_spread()
-
-func test_empty_tuple_spread {
-    const a = ()
-    const b = ""
-    const c = []
-    const t = (...a, ...b, ...c)
-    assert t == ()
-}
-test_empty_tuple_spread()
-
-func test_list_spread {
-    const a = (1, 2, 3, 4)
-    const b = "abcäää"
-    const c = [5, 6, 7, 8]
-    const t = [true, ...a, false, ...b, null, ...c, 2000]
-
-    assert t == [true, 1, 2, 3, 4, false, "a", "b", "c", "ä", "ä", "ä", null, 5, 6, 7, 8, 2000]
-}
-test_list_spread()
-
-func test_empty_list_spread {
-    const a = ()
-    const b = ""
-    const c = []
-    const t = [...a, ...b, ...c]
-    assert t == []
-}
-test_empty_list_spread()
-
 func test_function_argument_spread {
     func foo(...args) = args
     assert foo(...(1, 2, 3, 4)) == (1, 2, 3, 4)
@@ -69,24 +31,6 @@ func test_function_argument_spread {
     assert foo(..."hellö") == ("h", "e", "l", "l", "ö")
 }
 test_function_argument_spread()
-
-func test_unpacksequence_assignment {
-    const (f, g, h, i) = (1, 2, 3, 4)
-    assert (f, g, h, i) == (1, 2, 3, 4)
-
-    const (j, k, l, m) = [1, 2, 3, 4]
-    assert (j, k, l, m) == (1, 2, 3, 4)
-}
-test_unpacksequence_assignment()
-
-func test_unpacksequencespread_assignment {
-    const (c, d, ...rest2) = (1, 2, 3, 4)
-    assert (c, d, rest2) == (1, 2, (3, 4))
-
-    const (e, f, ...rest3) = [1, 2, 3, 4]
-    assert (e, f, rest3) == (1, 2, (3, 4))
-}
-test_unpacksequencespread_assignment()
 
 
 

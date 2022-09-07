@@ -136,6 +136,8 @@ RawValue writevalue(Thread*, BuiltinFrame* frame) {
     }
   }
 
+  std::cout << std::flush;
+
   return kNull;
 }
 

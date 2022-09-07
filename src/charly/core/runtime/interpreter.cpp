@@ -841,7 +841,7 @@ OP(unpacksequence) {
     uint32_t tuple_length = tuple.length();
 
     if (tuple_length != count) {
-      thread->throw_message("Expected tuple to be of length %, not %", (size_t)count, tuple_length);
+      thread->throw_message("Expected tuple to be of length %, got %", (size_t)count, tuple_length);
       return ContinueMode::Exception;
     }
 
@@ -857,7 +857,7 @@ OP(unpacksequence) {
     uint32_t list_length = list.length();
 
     if (list_length != count) {
-      thread->throw_message("Expected list to be of length %, not %", (size_t)count, list_length);
+      thread->throw_message("Expected list to be of length %, got %", (size_t)count, list_length);
       return ContinueMode::Exception;
     }
 

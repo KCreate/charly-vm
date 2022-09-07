@@ -522,6 +522,8 @@ RawValue RawValue::set_attr_number(Thread* thread, int64_t index, RawValue value
   if (isList()) {
     auto list = RawList::cast(this);
     return list.write_at(thread, index, value);
+  } else if (isTuple()) {
+    return thread->throw_message("Cannot write to tuple");
   } else {
     return thread->throw_message("Cannot perform index write on value of type '%'", klass_name(thread));
   }

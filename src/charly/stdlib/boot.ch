@@ -165,8 +165,6 @@ func stopwatch(callback) {
             sum
         }
 
-        func sum = reduce(->(p, e) p + e, 0)
-
         func contains(value) {
             let i = 0
             while i < @length {
@@ -180,9 +178,7 @@ func stopwatch(callback) {
 
         func empty = @length == 0
 
-        func copy = (...self)
-
-        static func create(length, initial = null) = builtin_createtuple(length, initial)
+        static func create(length, initial) = builtin_createtuple(length, initial)
         static func create_with(length, cb) = builtin_createtuplewith(length, cb)
     }
 
@@ -241,6 +237,14 @@ func stopwatch(callback) {
             new
         }
 
+        func reduce(cb, initial = null) {
+            let sum = initial
+            each(->(e, i, list) {
+                sum = cb(sum, e, i, self)
+            })
+            sum
+        }
+
         func contains(value) {
             let i = 0
             let length = @length
@@ -289,7 +293,7 @@ func stopwatch(callback) {
                 @each(->(value, index) {
                     if index < length - 1 {
                         const next_value = self[index + 1]
-                        if compare_function(value, next_value) == 1 {
+                        if compare_function(value, next_value) > 0 {
                             self[index] = next_value
                             self[index + 1] = value
                             had_swaps = true

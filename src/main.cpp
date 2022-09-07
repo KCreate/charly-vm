@@ -72,16 +72,19 @@ int32_t cli(DiagnosticConsole& console) {
 
   if (utils::ArgumentParser::is_flag_set("constants")) {
     debuglnf_notime("# %heap.h%", termcolor::yellow, termcolor::reset);
-    debuglnf_notime("kHeapSize                     = %", kHeapSize);
-    debuglnf_notime("kHeapRegionSize               = %", kHeapRegionSize);
-    debuglnf_notime("kHeapRegionCount              = %", kHeapRegionCount);
-    debuglnf_notime("kHeapMinimumMappedRegionCount = %", kHeapMinimumMappedRegionCount);
-    debuglnf_notime("kHeapRegionSpanSize           = %", kHeapRegionSpanSize);
-    debuglnf_notime("kHeapRegionSpanCount          = %", kHeapRegionSpanCount);
-    debuglnf_notime("kHeapRegionUsableSize         = %", kHeapRegionUsableSize);
-    debuglnf_notime("kPageSize                     = %", kPageSize);
-    debuglnf_notime("kHeapGrowthFactor             = %", kHeapGrowthFactor);
-    debuglnf_notime("kHeapShrinkFactor             = %", kHeapShrinkFactor);
+    debuglnf_notime("kHeapSize                          = %", kHeapSize);
+    debuglnf_notime("kHeapRegionSize                    = %", kHeapRegionSize);
+    debuglnf_notime("kHeapRegionCount                   = %", kHeapRegionCount);
+    debuglnf_notime("kHeapMinimumMappedRegionCount      = %", kHeapMinimumMappedRegionCount);
+    debuglnf_notime("kHeapRegionSpanSize                = %", kHeapRegionSpanSize);
+    debuglnf_notime("kHeapRegionSpanCount               = %", kHeapRegionSpanCount);
+    debuglnf_notime("kHeapRegionUsableSize              = %", kHeapRegionUsableSize);
+    debuglnf_notime("kHeapRegionFirstUsableSpanIndex    = %", kHeapRegionFirstUsableSpanIndex);
+    debuglnf_notime("kHeapRegionUsableSizeForPayload    = %", kHeapRegionUsableSizeForPayload);
+    debuglnf_notime("kHeapRegionMaximumObjectFieldCount = %", kHeapRegionMaximumObjectFieldCount);
+    debuglnf_notime("kPageSize                          = %", kPageSize);
+    debuglnf_notime("kHeapGrowthFactor                  = %", kHeapGrowthFactor);
+    debuglnf_notime("kHeapShrinkFactor                  = %", kHeapShrinkFactor);
     debuglnf_notime("");
 
     debuglnf_notime("# %interpreter.h%", termcolor::yellow, termcolor::reset);

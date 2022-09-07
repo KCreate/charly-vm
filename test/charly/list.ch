@@ -245,6 +245,29 @@ export class ListTest {
         assert arguments == [(1, 0, a), (2, 1, a), (3, 2, a), (4, 3, a)]
     }
 
+    static func test_list_reduce {
+        const a = [1, 2, 3, 4, 5, 6]
+        const product = a.reduce(->(p, n) p * n, 1)
+        assert product == 720
+
+        const args = []
+        a.reduce(->(...a) {
+            const (p, n, i, l) = a
+            args.push(a)
+            p * n
+        }, 1)
+
+        assert args.length == 6
+        assert args == [
+            (1, 1, 0, a),
+            (1, 2, 1, a),
+            (2, 3, 2, a),
+            (6, 4, 3, a),
+            (24, 5, 4, a),
+            (120, 6, 5, a)
+        ]
+    }
+
     static func test_list_contains {
         const a = ["a", "b", "c", "d", 100]
 
@@ -286,7 +309,6 @@ export class ListTest {
 
     static func test_list_empty {
         assert [].empty()
-
         assert [1].empty() == false
         assert [1, 2].empty() == false
         assert [1, 2, 3].empty() == false
@@ -331,9 +353,7 @@ export class ListTest {
 
     static func test_list_comparison {
         const a = [[[1, 2, 3], 4, true, 6], [[[1, [1, "test", [[1, 2, null], 2, 3]], 3]]]]
-        a.push(a)
-
-        const b = a.copy()
+        const b = [[[1, 2, 3], 4, true, 6], [[[1, [1, "test", [[1, 2, null], 2, 3]], 3]]]]
 
         assert a == a
         assert a == b
@@ -387,6 +407,48 @@ export class ListTest {
 
         const exc2 = assert_throws(->a[-5] = 1000)
         assert exc2.message == "List index -5 is out of range"
+    }
+
+    static func test_list_spread {
+        const a = (1, 2, 3, 4)
+        const b = "abcäää"
+        const c = [5, 6, 7, 8]
+        const t = [true, ...a, false, ...b, null, ...c, 2000]
+
+        assert t == [true, 1, 2, 3, 4, false, "a", "b", "c", "ä", "ä", "ä", null, 5, 6, 7, 8, 2000]
+    }
+
+    static func test_list_empty_spread {
+        const a = ()
+        const b = ""
+        const c = []
+        const t = [...a, ...b, ...c]
+        assert t == []
+    }
+
+    static func test_list_sequence_unpack {
+        const (a, b, c, d) = [1, 2, 3, 4]
+        assert a == 1
+        assert b == 2
+        assert c == 3
+        assert d == 4
+
+        const exc = assert_throws(->{
+            const (a, b) = [1, 2, 3, 4]
+        })
+        assert exc.message == "Expected list to be of length 2, got 4"
+    }
+
+    static func test_list_spread_sequence_unpack {
+        const (a, b, ...rest) = [1, 2, 3, 4]
+        assert a == 1
+        assert b == 2
+        assert rest == (3, 4)
+
+        const exc = assert_throws(->{
+            const (a, b, c, d, ...rest) = [1, 2]
+        })
+        assert exc.message == "List does not contain enough values to unpack"
     }
 
     static func test_list_max_size_exceeded_exception {
