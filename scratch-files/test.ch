@@ -24,22 +24,6 @@
  * SOFTWARE.
  */
 
-func test_function_argument_spread {
-    func foo(...args) = args
-    assert foo(...(1, 2, 3, 4)) == (1, 2, 3, 4)
-    assert foo(...[1, 2, 3, 4]) == (1, 2, 3, 4)
-    assert foo(..."hellö") == ("h", "e", "l", "l", "ö")
-}
-test_function_argument_spread()
-
-
-
-
-
-
-
-
-
 
 
 

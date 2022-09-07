@@ -339,6 +339,18 @@ export class FunctionTest {
 
         assert a.value == 100
     }
+
+    static func test_function_call_spread {
+        func foo(...args) = args
+
+        const a = (1, 2, 3)
+        const b = [1, 2, 3]
+        const c = "abc"
+
+        assert foo(...a) == (1, 2, 3)
+        assert foo(...b) == (1, 2, 3)
+        assert foo(...c) == ("a", "b", "c")
+    }
 }
 
 
