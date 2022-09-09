@@ -33,7 +33,8 @@ unittest.run(
     import "./tuple.ch",
     import "./function.ch",
     import "./exception.ch",
-    import "./truthyness.ch"
+    import "./truthyness.ch",
+    import "./control-structures.ch"
 )
 
 
