@@ -31,7 +31,8 @@ unittest.run(
     import "./string.ch",
     import "./list.ch",
     import "./tuple.ch",
-    import "./function.ch"
+    import "./function.ch",
+    import "./exception.ch"
 )
 
 

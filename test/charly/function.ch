@@ -351,6 +351,15 @@ export class FunctionTest {
         assert foo(...b) == (1, 2, 3)
         assert foo(...c) == ("a", "b", "c")
     }
+
+    static func test_function_recursion_depth_limit {
+        func foo {
+            foo()
+        }
+
+        const exc = assert_throws(->foo())
+        assert exc.message == "Maximum recursion depth exceeded"
+    }
 }
 
 

@@ -24,6 +24,19 @@
  * SOFTWARE.
  */
 
+let a = null
+
+loop {
+    try {
+        print("hello world")
+        break
+    } finally {
+        a = 100
+    }
+}
+
+assert a == 100
+print("a = {a}")
 
 
 
