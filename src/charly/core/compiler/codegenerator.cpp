@@ -1258,6 +1258,14 @@ bool CodeGenerator::inspect_enter(const ref<TryFinally>& node) {
   Label try_end = m_builder.reserve_label();
   Label normal_handler = m_builder.reserve_label();
   Label catch_handler = m_builder.reserve_label();
+  Label next_statement = m_builder.reserve_label();
+
+  Label break_handler = m_builder.reserve_label();
+  Label continue_handler = m_builder.reserve_label();
+  Label return_handler = m_builder.reserve_label();
+  push_break_label(break_handler);
+  push_continue_label(continue_handler);
+  push_return_label(return_handler);
 
   // emit try block
   m_builder.push_exception_handler(catch_handler);
@@ -1266,6 +1274,10 @@ bool CodeGenerator::inspect_enter(const ref<TryFinally>& node) {
   m_builder.emit_jmp(normal_handler);
   m_builder.pop_exception_handler();
   m_builder.place_label(try_end);
+
+  pop_break_label();
+  pop_continue_label();
+  pop_return_label();
 
   // emit catch handler
   m_builder.place_label(catch_handler);
@@ -1278,6 +1290,32 @@ bool CodeGenerator::inspect_enter(const ref<TryFinally>& node) {
 
   m_builder.place_label(normal_handler);
   apply(node->finally_block);
+  m_builder.emit_jmp(next_statement);
+
+  // emit break, continue and return intercepts
+  m_builder.place_label(break_handler);
+  if (!m_break_stack.empty()) {
+    apply(node->finally_block);
+    m_builder.emit_jmp(active_break_label());
+  } else {
+    m_builder.emit_panic();
+  }
+  m_builder.place_label(continue_handler);
+  if (!m_continue_stack.empty()) {
+    apply(node->finally_block);
+    m_builder.emit_jmp(active_continue_label());
+  } else {
+    m_builder.emit_panic();
+  }
+  m_builder.place_label(return_handler);
+  if (!m_return_stack.empty()) {
+    apply(node->finally_block);
+    m_builder.emit_jmp(active_return_label());
+  } else {
+    m_builder.emit_panic();
+  }
+
+  m_builder.place_label(next_statement);
 
   return false;
 }
