@@ -24,18 +24,31 @@
  * SOFTWARE.
  */
 
-import unittest
+export class TruthynessTest {
+    static func test_truthyness {
+        assert !!null == false
+        assert !!false == false
+        assert !!NaN == false
+        assert !!0 == false
+        assert !!0.0 == false
 
-unittest.run(
-    import "./number.ch",
-    import "./string.ch",
-    import "./list.ch",
-    import "./tuple.ch",
-    import "./function.ch",
-    import "./exception.ch",
-    import "./truthyness.ch"
-)
-
+        assert !!true == true
+        assert !!100 == true
+        assert !!192.168 == true
+        assert !!"" == true
+        assert !!"hi" == true
+        assert !!"hello world this is a test" == true
+        assert !!() == true
+        assert !!(100, 200) == true
+        assert !![100, 200] == true
+        assert !!(func foo {}) == true
+        assert !!(->{}) == true
+        assert !!(class Foo {}) == true
+        assert !!(class Foo {})() == true
+        assert !!(builtin_exit) == true
+        assert !!(Exception("test exception")) == true
+    }
+}
 
 
 
