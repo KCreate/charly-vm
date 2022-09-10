@@ -99,9 +99,9 @@ private:
   // updates references stored in runtime roots
   void update_root_references() const;
 
-  void deallocate_heap_ressources() const;
+  void deallocate_heap_ressources();
 
-  void deallocate_object_heap_ressources(RawObject object) const;
+  void queue_object_memory_for_deallocation(RawObject object);
 
   void recycle_collected_regions() const;
 
@@ -117,6 +117,8 @@ private:
   std::queue<RawObject> m_mark_queue;
   std::set<HeapRegion*> m_target_intermediate_regions;
   std::set<HeapRegion*> m_target_old_regions;
+
+  std::vector<void*> m_deallocation_queue;
 
   size_t m_last_collection_time;
 

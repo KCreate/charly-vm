@@ -113,6 +113,13 @@ void GarbageCollector::main() {
       m_cv.notify_all();
       m_runtime->scheduler()->start_the_world();
     });
+
+    // deallocate memory blocks in the deallocation queue concurrently with worker threads
+    for (void* data : m_deallocation_queue) {
+      utils::Allocator::free(data);
+    }
+    m_deallocation_queue.clear();
+
     collection_count++;
   }
 
@@ -432,14 +439,14 @@ void GarbageCollector::update_root_references() const {
   }
 }
 
-void GarbageCollector::deallocate_heap_ressources() const {
+void GarbageCollector::deallocate_heap_ressources() {
   if (m_collection_mode == CollectionMode::Major) {
     for (auto* region : m_heap->m_old_regions) {
       if (m_target_old_regions.count(region) == 0) {
         for (uintptr_t pointer : region->objects_with_external_heap_pointers) {
           auto* header = ObjectHeader::header_at_address(pointer);
           if (!header->is_reachable()) {
-            deallocate_object_heap_ressources(header->object());
+            queue_object_memory_for_deallocation(header->object());
           }
         }
       }
@@ -451,7 +458,7 @@ void GarbageCollector::deallocate_heap_ressources() const {
       for (uintptr_t pointer : region->objects_with_external_heap_pointers) {
         auto* header = ObjectHeader::header_at_address(pointer);
         if (!header->is_reachable()) {
-          deallocate_object_heap_ressources(header->object());
+          queue_object_memory_for_deallocation(header->object());
         }
       }
     }
@@ -461,36 +468,36 @@ void GarbageCollector::deallocate_heap_ressources() const {
     for (uintptr_t pointer : region->objects_with_external_heap_pointers) {
       auto* header = ObjectHeader::header_at_address(pointer);
       if (!header->is_reachable()) {
-        deallocate_object_heap_ressources(header->object());
+        queue_object_memory_for_deallocation(header->object());
       }
     }
   }
 }
 
-void GarbageCollector::deallocate_object_heap_ressources(RawObject object) const {
+void GarbageCollector::queue_object_memory_for_deallocation(RawObject object) {
   if (object.isHugeBytes()) {
     auto huge_bytes = RawHugeBytes::cast(object);
     auto* data = bitcast<void*>(const_cast<uint8_t*>(huge_bytes.data()));
     DCHECK(data);
-    utils::Allocator::free(data);
+    m_deallocation_queue.push_back(data);
     huge_bytes.set_data(nullptr);
   } else if (object.isHugeString()) {
     auto huge_string = RawHugeString::cast(object);
     auto* data = bitcast<void*>(const_cast<char*>(huge_string.data()));
     DCHECK(data);
-    utils::Allocator::free(data);
+    m_deallocation_queue.push_back(data);
     huge_string.set_data(nullptr);
   } else if (object.isFuture()) {
     auto future = RawFuture::cast(object);
     if (auto* wait_queue = future.wait_queue()) {
       DCHECK(wait_queue->used == 0);
-      utils::Allocator::free(wait_queue);
+      m_deallocation_queue.push_back(wait_queue);
       future.set_wait_queue(nullptr);
     }
   } else if (object.isList()) {
     auto list = RawList::cast(object);
     if (auto* data = list.data()) {
-      utils::Allocator::free(data);
+      m_deallocation_queue.push_back(data);
       list.set_data(nullptr);
     }
   }
