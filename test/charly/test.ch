@@ -26,7 +26,7 @@
 
 import unittest
 
-unittest.run(
+const status = unittest.run(
     import "./number.ch",
     import "./string.ch",
     import "./list.ch",
@@ -34,9 +34,11 @@ unittest.run(
     import "./function.ch",
     import "./exception.ch",
     import "./truthyness.ch",
-    import "./control-structures.ch"
+    import "./control-structures.ch",
+    import "./typeof-instanceof.ch"
 )
 
+exit(status)
 
 
 

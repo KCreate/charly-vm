@@ -109,15 +109,13 @@ export class UnitTest {
             }
 
             failed_tests.each(->(test) {
-                print("\t{test.name}:", test.exception.message)
+                print("\t{test.name}:")
+                print("\t\t{test.exception.message}")
+                print("")
             })
         })
 
-        if some_suites_failed {
-            exit(1)
-        } else {
-            exit(0)
-        }
+        return some_suites_failed ? 1 : 0
     }
 
     // unit test helper methods

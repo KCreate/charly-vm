@@ -109,6 +109,29 @@ export class FunctionTest {
         assert counter() == 3
     }
 
+    static func test_function_multiple_closures {
+        let a = 0
+        func foo {
+            func bar {
+                func baz {
+                    a += 1
+                }
+                baz()
+                baz()
+                baz()
+            }
+            bar()
+            bar()
+            bar()
+        }
+
+        foo()
+        foo()
+        foo()
+
+        assert a == 27
+    }
+
     static func test_function_callback {
         func invoke_callback(callback) {
             callback() + 1
