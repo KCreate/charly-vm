@@ -26,6 +26,8 @@
 
 import unittest
 
+unittest.set_repeat_time(1)
+
 const status = unittest.run(
     import "./number.ch",
     import "./string.ch",
@@ -35,7 +37,8 @@ const status = unittest.run(
     import "./exception.ch",
     import "./truthyness.ch",
     import "./control-structures.ch",
-    import "./typeof-instanceof.ch"
+    import "./typeof-instanceof.ch",
+    import "./class.ch"
 )
 
 exit(status)

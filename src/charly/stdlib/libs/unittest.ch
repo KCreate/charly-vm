@@ -50,7 +50,14 @@ class TestSuite {
 const unit_test_suspicious_execution_time = 50
 const print_passed_test_duration = ARGV.contains("--print_passed_test_duration")
 
-export class UnitTest {
+let suite_repeat_time = 1
+
+class UnitTest {
+    static func set_repeat_time(t) {
+        assert t instanceof Number
+        suite_repeat_time = t
+    }
+
     static func run(...test_classes) {
         const suites = test_classes.map(->(test_class) {
             assert test_class instanceof Class : "Expected test suite to be a class instance"
@@ -66,17 +73,19 @@ export class UnitTest {
         let some_suites_failed = false
         suites.each(->(suite) {
             let some_tests_failed = false
-            suite.tests.each(->(test) {
-                test.duration = stopwatch(->{
-                    try {
-                        test.function()
-                        test.passed = true
-                    } catch(e) {
-                        test.exception = e
-                        test.passed = false
-                        some_tests_failed = true
-                        some_suites_failed = true
-                    }
+            suite_repeat_time.times(->{
+                suite.tests.each(->(test) {
+                    test.duration = stopwatch(->{
+                        try {
+                            test.function()
+                            test.passed = true
+                        } catch(e) {
+                            test.exception = e
+                            test.passed = false
+                            some_tests_failed = true
+                            some_suites_failed = true
+                        }
+                    })
                 })
             })
             suite.passed = !some_tests_failed
@@ -134,3 +143,5 @@ export class UnitTest {
         }
     }
 }
+
+export UnitTest
