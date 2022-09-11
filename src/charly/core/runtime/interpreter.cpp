@@ -304,37 +304,25 @@ RawValue Interpreter::execute(Thread* thread) {
 
   goto* next_handler();
 
-#define OP(N, ...)                                                   \
-  execute_handler_##N : {                                            \
-    continue_mode = Interpreter::opcode_##N(thread, frame, op->N()); \
-    if (continue_mode == ContinueMode::Next)                         \
-      goto* next_handler();                                          \
-    goto handle_return_or_exception;                                 \
+#define OP(N, ...)                                                                                   \
+  execute_handler_##N : {                                                                            \
+    continue_mode = Interpreter::opcode_##N(thread, frame, op->N());                                 \
+    switch (continue_mode) {                                                                         \
+      case ContinueMode::Next: goto* next_handler();                                                 \
+      case ContinueMode::Return: return frame->return_value;                                         \
+      case ContinueMode::Exception: {                                                                \
+        if (const ExceptionTableEntry* entry = frame->find_active_exception_table_entry(op->ip())) { \
+          frame->ip = entry->handler_ptr;                                                            \
+          frame->sp = 0;                                                                             \
+          goto* next_handler();                                                                      \
+        }                                                                                            \
+        return kErrorException;                                                                      \
+      }                                                                                              \
+      default: UNREACHABLE();                                                                        \
+    }                                                                                                \
   }
   FOREACH_OPCODE(OP)
 #undef OP
-
-handle_return_or_exception:
-  switch (continue_mode) {
-    case ContinueMode::Return: {
-      return frame->return_value;
-    }
-
-    case ContinueMode::Exception: {
-      // check if the current frame can handle this exception
-      if (const ExceptionTableEntry* entry = frame->find_active_exception_table_entry(op->ip())) {
-        frame->ip = entry->handler_ptr;
-        frame->sp = 0;  // clear stack
-        goto* next_handler();
-      }
-
-      return kErrorException;
-    }
-
-    default: {
-      FAIL("unexpected continue mode");
-    }
-  }
 }
 
 RawValue Interpreter::stack_overflow_check(Thread* thread) {
