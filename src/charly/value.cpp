@@ -2666,9 +2666,27 @@ RawValue RawClass::create(Thread* thread,
     // functions which are not being overriden in the new class can be copied to the new table
     size_t new_function_table_offset = 0;
     for (uint32_t j = 0; j < parent_function_table.length(); j++) {
-      RawFunction parent_function = parent_function_table.field_at<RawFunction>(j);
-      if (new_function_names.count(parent_function.name()) == 0) {
-        new_function_table.set_field_at(new_function_table_offset++, parent_function);
+      RawFunction entry = parent_function_table.field_at<RawFunction>(j);
+      if (new_function_names.count(entry.name()) == 0) {
+        if (entry.overload_table().isTuple()) {
+          // create copy of the overload table and all functions included
+          Tuple overload_table(scope, entry.overload_table());
+          Tuple new_overload_table(scope, RawTuple::create(thread, overload_table.length()));
+
+          for (uint32_t i = 0; i < overload_table.length(); i++) {
+            Function parent(scope, overload_table.field_at<RawFunction>(i));
+            Function method_copy(scope, RawFunction::create(thread, parent.context(),
+                                                            parent.shared_info(), parent.saved_self()));
+            method_copy.set_overload_table(new_overload_table);
+            new_overload_table.set_field_at(i, method_copy);
+          }
+
+          new_function_table.set_field_at(new_function_table_offset++, new_overload_table.first_field());
+        } else {
+          Function method_copy(scope, RawFunction::create(thread, entry.context(),
+                                                          entry.shared_info(), entry.saved_self()));
+          new_function_table.set_field_at(new_function_table_offset++, method_copy);
+        }
       }
     }
 
@@ -2677,7 +2695,7 @@ RawValue RawClass::create(Thread* thread,
     // with the overload tables from their parents
     for (uint32_t i = 0; i < member_funcs.length(); i++) {
       Tuple new_overload_table(scope, member_funcs.field_at(i));
-      Function first_overload(scope, new_overload_table.field_at(0));
+      Function first_overload(scope, new_overload_table.first_field());
       RawSymbol new_overload_name = first_overload.name();
 
       // new function does not override any parent functions
@@ -2691,7 +2709,14 @@ RawValue RawClass::create(Thread* thread,
 
       uint32_t parent_function_index = parent_function_indices[new_overload_name];
       Function parent_function(scope, parent_function_table.field_at(parent_function_index));
-      Tuple parent_overload_table(scope, parent_function.overload_table());
+
+      Tuple parent_overload_table(scope);
+      if (parent_function.overload_table().isTuple()) {
+        parent_overload_table = parent_function.overload_table();
+      } else {
+        parent_overload_table = RawTuple::create(thread, parent_function);
+      }
+
       Function max_parent_overload(scope, parent_overload_table.last_field());
       Function max_new_overload(scope, new_overload_table.last_field());
 
@@ -2748,7 +2773,7 @@ RawValue RawClass::create(Thread* thread,
         }
       }
 
-      // remove overload tuple if only one function is present
+      // remove overload tuple if overload table is homogenic
       // TODO: ideally the overload tuple shouldn't be constructed
       //       in the first place if this is the case
 
@@ -2850,6 +2875,9 @@ RawValue RawClass::create(Thread* thread,
           }
         }
       }
+      if (entry.host_class().isNull()) {
+        entry.set_host_class(static_class);
+      }
     }
 
     constructed_class = actual_class;
@@ -2878,6 +2906,9 @@ RawValue RawClass::create(Thread* thread,
           func.set_host_class(constructed_class);
         }
       }
+    }
+    if (entry.host_class().isNull()) {
+      entry.set_host_class(constructed_class);
     }
   }
 
