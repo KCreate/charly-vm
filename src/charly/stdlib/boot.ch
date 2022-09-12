@@ -363,7 +363,13 @@ func stopwatch(callback) {
 
         func resolve(value = null) = builtin_future_resolve(self, value)
 
-        func reject(value = Exception("Future rejected")) = builtin_future_reject(self, value)
+        func reject(value) {
+            try {
+                throw value
+            } catch(e) {
+                builtin_future_reject(self, e)
+            }
+        }
     }
 
     class builtin_Class {

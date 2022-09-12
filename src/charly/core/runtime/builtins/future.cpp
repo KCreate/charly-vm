@@ -52,11 +52,11 @@ RawValue resolve(Thread* thread, BuiltinFrame* frame) {
 
 RawValue reject(Thread* thread, BuiltinFrame* frame) {
   CHECK(frame->arguments[0].isFuture());
-  CHECK(frame->arguments[1].isString());
+  CHECK(frame->arguments[1].isException());
 
   HandleScope scope(thread);
   Future future(scope, frame->arguments[0]);
-  Exception exception(scope, RawException::create(thread, RawString::cast(frame->arguments[1])));
+  Exception exception(scope, frame->arguments[1]);
   return future.reject(thread, exception);
 }
 
