@@ -247,15 +247,15 @@ export class ListTest {
 
     static func test_list_reduce {
         const a = [1, 2, 3, 4, 5, 6]
-        const product = a.reduce(->(p, n) p * n, 1)
+        const product = a.reduce(1, ->(p, n) p * n)
         assert product == 720
 
         const args = []
-        a.reduce(->(...a) {
+        a.reduce(1, ->(...a) {
             const (p, n, i, l) = a
             args.push(a)
             p * n
-        }, 1)
+        })
 
         assert args.length == 6
         assert args == [

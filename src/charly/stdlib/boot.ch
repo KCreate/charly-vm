@@ -157,8 +157,7 @@ func stopwatch(callback) {
             (...new)
         }
 
-        func reduce(cb, initial = null) {
-            let sum = initial
+        func reduce(sum, cb) {
             each(->(e, i, list) {
                 sum = cb(sum, e, i, self)
             })
@@ -237,8 +236,7 @@ func stopwatch(callback) {
             new
         }
 
-        func reduce(cb, initial = null) {
-            let sum = initial
+        func reduce(sum, cb) {
             each(->(e, i, list) {
                 sum = cb(sum, e, i, self)
             })

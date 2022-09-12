@@ -38,7 +38,8 @@ const status = unittest.run(
     import "./truthyness.ch",
     import "./control-structures.ch",
     import "./typeof-instanceof.ch",
-    import "./class.ch"
+    import "./class.ch",
+    import "./fiber.ch"
 )
 
 exit(status)
