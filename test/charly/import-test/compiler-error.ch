@@ -24,30 +24,5 @@
  * SOFTWARE.
  */
 
-import unittest
-
-unittest.set_repeat_time(1)
-
-const status = unittest.run(
-    import "./number.ch",
-    import "./string.ch",
-    import "./list.ch",
-    import "./tuple.ch",
-    import "./function.ch",
-    import "./exception.ch",
-    import "./truthyness.ch",
-    import "./control-structures.ch",
-    import "./typeof-instanceof.ch",
-    import "./class.ch",
-    import "./fiber.ch",
-    import "./future.ch",
-    import "./assertion.ch",
-    import "./import.ch"
-)
-
-exit(status)
-
-
-
-
-
+const a
+export a

@@ -679,7 +679,7 @@ RawValue Runtime::import_module_at_path(Thread* thread, const fs::path& path, bo
       m_cached_modules.erase(path_hash);
     }
 
-    return thread->throw_message("Could not open the file at '%'", path);
+    return thread->throw_message("Could not open the file '%' for reading", path.filename().string());
   }
 
   fs::file_time_type mtime = fs::last_write_time(path);

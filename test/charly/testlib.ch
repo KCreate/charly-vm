@@ -24,30 +24,12 @@
  * SOFTWARE.
  */
 
-import unittest
+export class TestLib {
+    static property foo = 100
+    static property bar = 200
+    static property baz = 300
 
-unittest.set_repeat_time(1)
-
-const status = unittest.run(
-    import "./number.ch",
-    import "./string.ch",
-    import "./list.ch",
-    import "./tuple.ch",
-    import "./function.ch",
-    import "./exception.ch",
-    import "./truthyness.ch",
-    import "./control-structures.ch",
-    import "./typeof-instanceof.ch",
-    import "./class.ch",
-    import "./fiber.ch",
-    import "./future.ch",
-    import "./assertion.ch",
-    import "./import.ch"
-)
-
-exit(status)
-
-
-
-
-
+    static func do_foo = "foo"
+    static func do_bar = "bar"
+    static func do_baz = "baz"
+}

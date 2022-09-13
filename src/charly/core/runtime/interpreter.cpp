@@ -365,7 +365,7 @@ OP(import) {
   // attempt to resolve the module path to a real file path
   std::optional<fs::path> resolve_result = runtime->resolve_module(module_path, file_path);
   if (!resolve_result.has_value()) {
-    thread->throw_message("Could not resolve '%' to a valid path", module_path);
+    thread->throw_message("Could not resolve '%' to a valid path", module_path_value);
     return ContinueMode::Exception;
   }
   fs::path import_path = resolve_result.value();

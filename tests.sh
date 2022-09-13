@@ -35,6 +35,8 @@ if ! cmake-build-debug/tests; then
   exit 1
 fi
 
+chmod -r test/charly/import-test/not-readable.ch
+
 # run charly unit tests in both multi- and single-threaded mode and with/without optimizations
 echo_green "Running charly unit tests"
 if ! cmake-build-debug/charly test/charly/test.ch; then
@@ -53,3 +55,5 @@ if ! cmake-build-debug/charly test/charly/test.ch --maxprocs 1; then
   echo_red "Charly (singlethreaded) unit tests failed"
   exit 1
 fi
+
+chmod +r test/charly/import-test/not-readable.ch
