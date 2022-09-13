@@ -81,13 +81,6 @@ export class ImportTest {
         assert exc.message == "Could not resolve 'import-test/does-not-exist.ch' to a valid path"
     }
 
-    static func test_import_file_not_readable {
-        const exc = assert_throws(->{
-            import "import-test/not-readable.ch"
-        })
-        assert exc.message == "Could not open the file 'not-readable.ch' for reading"
-    }
-
     static func test_import_exception_in_module {
         const exc = assert_throws(->{
             import "import-test/import-test-throws.ch"

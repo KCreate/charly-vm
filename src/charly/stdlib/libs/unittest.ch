@@ -71,11 +71,11 @@ class UnitTest {
         })
 
         let some_suites_failed = false
-        suites.each(->(suite) {
-            let some_tests_failed = false
-            suite_repeat_time.times(->{
+        suite_repeat_time.times(->(round) {
+            suites.each(->(suite) {
+                let some_tests_failed = false
                 suite.tests.each(->(test) {
-                    test.duration = stopwatch(->{
+                    test.duration += stopwatch(->{
                         try {
                             test.function()
                             test.passed = true
@@ -87,8 +87,8 @@ class UnitTest {
                         }
                     })
                 })
+                suite.passed = !some_tests_failed
             })
-            suite.passed = !some_tests_failed
         })
 
         suites.each(->(suite) {
@@ -97,23 +97,26 @@ class UnitTest {
 
             suite.tests.each(->(test) {
                 suite.duration += test.duration
+                test.duration /= suite_repeat_time
                 if test.passed {
                     passed_tests.push(test)
                 } else {
                     failed_tests.push(test)
                 }
             })
+            suite.duration /= suite_repeat_time
 
             if suite.passed {
-                print("{suite.name}: All tests passed!", suite.duration, "ms")
+                print("{suite.name}: All tests passed!", suite.duration * 1000, "us")
             } else {
-                print("{suite.name}: {failed_tests.length} tests failed!", suite.duration, "ms")
+                print("{suite.name}: {failed_tests.length} tests failed!", suite.duration * 1000, "us")
             }
+
 
             if print_passed_test_duration {
                 passed_tests.sort(->(l, r) r.duration - l.duration)
                 passed_tests.each(->(test) {
-                    print("\t{test.name}: Passed!", test.duration, "ms")
+                    print("\t{test.name}: Passed!", test.duration * 1000, "us")
                 })
             }
 
