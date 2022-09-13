@@ -40,7 +40,8 @@ const status = unittest.run(
     import "./typeof-instanceof.ch",
     import "./class.ch",
     import "./fiber.ch",
-    import "./future.ch"
+    import "./future.ch",
+    import "./assertion.ch"
 )
 
 exit(status)
