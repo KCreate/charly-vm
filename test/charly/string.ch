@@ -162,7 +162,7 @@ export class StringTest {
     }
 
     static func test_string_max_size_exceeded_exception {
-        const string_of_max_length = "0123456789abcdef" * (1024 * 1024 * 128)
+        const string_of_max_length = "0123456789abcdef" * (1024 * 1024 * (512 / 16))
 
         const exc1 = assert_throws(->string_of_max_length * 2)
         assert exc1.message == "String exceeds maximum allowed size"

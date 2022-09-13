@@ -452,7 +452,7 @@ export class ListTest {
     }
 
     static func test_list_max_size_exceeded_exception {
-        const list_max_capacity = 268435456
+        const list_max_capacity = 67108864
         const list_of_max_capacity = List.create(list_max_capacity)
 
         const exc1 = assert_throws(->list_of_max_capacity.push(1))

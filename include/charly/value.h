@@ -703,7 +703,7 @@ class RawString : public RawValue {
 public:
   COMMON_RAW_OBJECT(String);
 
-  static constexpr size_t kMaxByteLength = kGb * 2;
+  static constexpr size_t kMaxByteLength = kMb * 512;
 
   static RawString create(Thread*, const char* data, size_t size, SYMBOL hash);
   static RawString create(Thread*, const char* data, size_t size);
@@ -937,7 +937,7 @@ public:
   COMMON_RAW_OBJECT(List);
 
   static constexpr size_t kInitialCapacity = 16;
-  static constexpr size_t kMaximumCapacity = (size_t)1 << 28;  // ~270 million values (2GB)
+  static constexpr size_t kMaximumCapacity = (size_t)1 << 26;  // ~67 million values (512Mb)
 
   static RawList create(Thread*, size_t initial_capacity = kInitialCapacity);
   static RawList create_with(Thread*, size_t length, RawValue value = kNull);
