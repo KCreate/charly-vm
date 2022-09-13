@@ -278,7 +278,7 @@ RawValue Interpreter::call_builtin_function(Thread* thread,
 
   thread->checkpoint();
 
-  return function.function()(thread, &frame);
+  return frame.function.function()(thread, &frame);
 }
 
 RawValue Interpreter::execute(Thread* thread) {
