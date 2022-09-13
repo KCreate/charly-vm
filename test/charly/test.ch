@@ -42,7 +42,8 @@ const status = unittest.run(
     import "./fiber.ch",
     import "./future.ch",
     import "./assertion.ch",
-    import "./import.ch"
+    import "./import.ch",
+    import "./globals.ch"
 )
 
 exit(status)

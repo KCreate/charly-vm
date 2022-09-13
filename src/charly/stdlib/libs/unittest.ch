@@ -91,24 +91,23 @@ class UnitTest {
             })
         })
 
+        let total_duration = 0
         suites.each(->(suite) {
             const passed_tests = []
             const failed_tests = []
 
             suite.tests.each(->(test) {
-                suite.duration += test.duration
-                test.duration /= suite_repeat_time
                 if test.passed {
                     passed_tests.push(test)
+                    test.duration /= suite_repeat_time
+                    suite.duration += test.duration
                 } else {
                     failed_tests.push(test)
                 }
             })
-            suite.duration /= suite_repeat_time
+            total_duration += suite.duration
 
-            if suite.passed {
-                print("{suite.name}: All tests passed!", suite.duration * 1000, "us")
-            } else {
+            if !suite.passed {
                 print("{suite.name}: {failed_tests.length} tests failed!", suite.duration * 1000, "us")
             }
 
@@ -126,6 +125,10 @@ class UnitTest {
                 print("")
             })
         })
+
+        if !some_suites_failed {
+            print("All tests passed!", total_duration, "ms")
+        }
 
         return some_suites_failed ? 1 : 0
     }

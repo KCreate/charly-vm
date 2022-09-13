@@ -37,19 +37,19 @@ fi
 
 # run charly unit tests in both multi- and single-threaded mode and with/without optimizations
 echo_green "Running charly unit tests"
-if ! cmake-build-debug/charly test/charly/test.ch; then
+if ! cmake-build-debug/charly test/charly/test.ch foo bar baz; then
   echo_red "Charly unit tests failed"
   exit 1
 fi
 
 echo_green "Running charly (no optimizations) unit tests"
-if ! cmake-build-debug/charly test/charly/test.ch --no_ir_opt --no_ast_opt; then
+if ! cmake-build-debug/charly test/charly/test.ch --no_ir_opt --no_ast_opt foo bar baz; then
   echo_red "Charly (no optimizations) unit tests failed"
   exit 1
 fi
 
 echo_green "Running charly (singlethreaded) unit tests"
-if ! cmake-build-debug/charly test/charly/test.ch --maxprocs 1; then
+if ! cmake-build-debug/charly test/charly/test.ch --maxprocs 1 foo bar baz; then
   echo_red "Charly (singlethreaded) unit tests failed"
   exit 1
 fi
