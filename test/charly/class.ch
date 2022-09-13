@@ -674,6 +674,30 @@ export class ClassTest {
         assert assert_throws(->B.foo).message == "Object of type 'Class' has no attribute 'foo'"
         assert assert_throws(->B.bar()).message == "Object of type 'Class' has no attribute 'bar'"
     }
+
+    static func test_class_non_constructable_builtin_classes {
+        const exc1 = assert_throws(->{
+            String()
+        })
+        assert exc1.message == "Cannot instantiate class 'String'"
+
+        const exc2 = assert_throws(->{
+            AssertionException()
+        })
+        assert exc2.message == "Cannot instantiate class 'AssertionException'"
+    }
+
+    static func test_class_non_extendable_builtin_classes {
+        const exc1 = assert_throws(->{
+            class A extends String {}
+        })
+        assert exc1.message == "Cannot extend final class 'String'"
+
+        const exc2 = assert_throws(->{
+            class A extends AssertionException {}
+        })
+        assert exc2.message == "Cannot extend final class 'AssertionException'"
+    }
 }
 
 

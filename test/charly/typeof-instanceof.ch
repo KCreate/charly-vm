@@ -102,6 +102,15 @@ export class TypeofInstanceofTest {
         assert null instanceof Null
         assert Exception instanceof Value
     }
+
+    static func test_type_instanceof_not_a_class_exception {
+        const exc1 = assert_throws(->100 instanceof 100)
+        assert exc1.message == "Expected right hand side of instanceof to be a class, got 'Int'"
+
+        class A {}
+        const exc2 = assert_throws(->100 instanceof A())
+        assert exc2.message == "Expected right hand side of instanceof to be a class, got 'A'"
+    }
 }
 
 

@@ -2603,7 +2603,7 @@ RawValue RawClass::create(Thread* thread,
   Shape parent_shape(scope, parent_class.shape_instance());
 
   if (parent_class.flags() & RawClass::kFlagFinal) {
-    return thread->throw_message("Cannot subclass class '%', it is marked final", parent_class.name());
+    return thread->throw_message("Cannot extend final class '%'", parent_class.name());
   }
 
   // check for duplicate member properties

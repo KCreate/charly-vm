@@ -293,6 +293,26 @@ export class FunctionTest {
         assert b() == null
     }
 
+    static func test_function_arrow_farself_propagation {
+        class A {
+            property value
+
+            func foo {
+                let a = value
+                return ->{
+                    let b = a
+                    return ->{
+                        let c = b
+                        return c
+                    }
+                }
+            }
+        }
+
+        const a = A(100)
+        assert a.foo()()() == 100
+    }
+
     static func test_function_arrow_function_not_enough_argc {
         const foo = ->(x, y, z) x + y + z
 
