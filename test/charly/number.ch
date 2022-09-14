@@ -365,7 +365,9 @@ export class NumberTest {
         assert !0.0 == true
     }
 
-    static func test_binary_ops {}
+//    static func test_binary_ops {
+//
+//    }
 
     static func test_int_stdlib_times {
         let sum = 0

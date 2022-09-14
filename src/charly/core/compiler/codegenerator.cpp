@@ -623,7 +623,7 @@ bool CodeGenerator::inspect_enter(const ref<Function>& node) {
 
 bool CodeGenerator::inspect_enter(const ref<Class>& node) {
   m_builder.emit_load_value(RawInt::create(node->is_final ? RawClass::kFlagFinal : 0));
-  m_builder.emit_loadsymbol(node->name->value);
+  m_builder.emit_makestr(m_builder.register_string(node->name->value));
 
   if (node->parent) {
     apply(node->parent);

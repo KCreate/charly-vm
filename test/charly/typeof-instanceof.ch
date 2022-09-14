@@ -38,7 +38,9 @@ export class TypeofInstanceofTest {
         assert typeof "" == String
         assert typeof "test" == String
         assert typeof "hello world" == String
-        assert typeof print.name == Symbol
+        assert typeof print.name == String
+        assert typeof builtin_exit.name == String
+        assert typeof (class A {}).name == String
         assert typeof () == Tuple
         assert typeof (1,) == Tuple
         assert typeof (1, 2, 3) == Tuple

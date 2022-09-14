@@ -991,7 +991,7 @@ OP(makeclass) {
   auto member_functions = RawTuple::cast(frame->pop());
   auto constructor = RawFunction::cast(frame->pop());
   auto parent_value = frame->pop();
-  auto name = RawSymbol::cast(frame->pop());
+  auto name = RawString::cast(frame->pop());
   auto flags = RawInt::cast(frame->pop());
 
   // attempt to create the new class

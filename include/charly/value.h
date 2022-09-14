@@ -410,7 +410,7 @@ public:
   bool is_young_pointer() const;
 
   RawClass klass(Thread*) const;
-  RawSymbol klass_name(Thread*) const;
+  RawString klass_name(Thread*) const;
 
   RawValue load_attr(Thread*, RawValue attribute) const;
   RawValue load_attr_number(Thread*, int64_t index) const;
@@ -1002,7 +1002,7 @@ public:
   COMMON_RAW_OBJECT(Class);
 
   static RawValue create(Thread* thread,
-                         SYMBOL name,
+                         RawString name,
                          RawValue parent,
                          RawFunction constructor,
                          RawTuple member_props,
@@ -1025,8 +1025,8 @@ public:
   RawTuple ancestor_table() const;
   void set_ancestor_table(RawTuple ancestor_table) const;
 
-  RawSymbol name() const;
-  void set_name(RawSymbol name) const;
+  RawString name() const;
+  void set_name(RawString name) const;
 
   RawValue parent() const;
   void set_parent(RawValue parent) const;
@@ -1131,8 +1131,8 @@ public:
 
   static RawFunction create(Thread*, RawValue context, SharedFunctionInfo* shared_info, RawValue saved_self = kNull);
 
-  RawSymbol name() const;
-  void set_name(RawSymbol name) const;
+  RawString name() const;
+  void set_name(RawString name) const;
 
   RawValue context() const;
   void set_context(RawValue context) const;
@@ -1176,13 +1176,13 @@ class RawBuiltinFunction : public RawInstance {
 public:
   COMMON_RAW_OBJECT(BuiltinFunction);
 
-  static RawBuiltinFunction create(Thread*, BuiltinFunctionType function, SYMBOL name, int64_t argc);
+  static RawBuiltinFunction create(Thread*, BuiltinFunctionType function, RawString name, int64_t argc);
 
   BuiltinFunctionType function() const;
   void set_function(BuiltinFunctionType function) const;
 
-  RawSymbol name() const;
-  void set_name(RawSymbol symbol) const;
+  RawString name() const;
+  void set_name(RawString symbol) const;
 
   // an argc of -1 means the function accepts an arbitrary amount of arguments
   int64_t argc() const;

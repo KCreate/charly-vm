@@ -99,10 +99,8 @@ public:
   RawValue set_global_variable(Thread* thread, SYMBOL name, RawValue value);
 
   // register a symbol in the global symbol table
-  SYMBOL declare_symbol(Thread* thread, const char* data, size_t size);
-  SYMBOL declare_symbol(Thread* thread, const std::string& string) {
-    return declare_symbol(thread, string.data(), string.size());
-  }
+  RawString declare_symbol(Thread* thread, const std::string_view& view);
+  RawString declare_symbol(RawString value);
 
   // look up a symbol in the global symbol table
   // returns kNull if no such symbol exists

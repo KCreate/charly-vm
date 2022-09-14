@@ -262,8 +262,8 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   auto builtin_shape_import_exception =
     RawShape::create(thread, builtin_shape_exception, { { "errors", RawShape::kKeyFlagReadOnly } });
 
-  auto builtin_shape_assertion_exception = RawShape::create(thread, builtin_shape_exception,
-                                                            { { "components", RawShape::kKeyFlagReadOnly } });
+  auto builtin_shape_assertion_exception =
+    RawShape::create(thread, builtin_shape_exception, { { "components", RawShape::kKeyFlagReadOnly } });
 
   // patch shapes table and assign correct shape ids to shape instances
   register_shape(ShapeId::kSmallString, builtin_shape_immediate);
@@ -288,7 +288,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   RawClass class_value = RawClass::unsafe_cast(RawInstance::create(thread, builtin_shape_class));
   class_value.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);
   class_value.set_ancestor_table(RawTuple::create_empty(thread));
-  class_value.set_name(RawSymbol::create(declare_symbol(thread, "Value")));
+  class_value.set_name(RawString::create(thread, "Value"));
   class_value.set_parent(kNull);
   class_value.set_shape_instance(builtin_shape_value);
   class_value.set_function_table(RawTuple::create_empty(thread));
@@ -299,7 +299,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
   RawClass class_##S = RawClass::unsafe_cast(RawInstance::create(thread, class_##S##_shape)); \
   class_##S.set_flags(F);                                                                     \
   class_##S.set_ancestor_table(RawTuple::concat_value(thread, P.ancestor_table(), P));        \
-  class_##S.set_name(RawSymbol::create(declare_symbol(thread, #N)));                          \
+  class_##S.set_name(RawString::create(thread, #N));                                          \
   class_##S.set_parent(P);                                                                    \
   class_##S.set_shape_instance(builtin_shape_##S);                                            \
   class_##S.set_function_table(RawTuple::create_empty(thread));                               \
@@ -336,7 +336,7 @@ void Runtime::initialize_builtin_types(Thread* thread) {
     RawClass::cast(RawInstance::create(thread, ShapeId::kClass, RawClass::kFieldCount, class_class));             \
   static_class_##S.set_flags(RawClass::kFlagFinal | RawClass::kFlagNonConstructable);                             \
   static_class_##S.set_ancestor_table(RawTuple::concat_value(thread, class_class.ancestor_table(), class_class)); \
-  static_class_##S.set_name(RawSymbol::create(declare_symbol(thread, #N)));                                       \
+  static_class_##S.set_name(RawString::create(thread, #N));                                                       \
   static_class_##S.set_parent(class_class);                                                                       \
   static_class_##S.set_shape_instance(class_##S##_shape);                                                         \
   static_class_##S.set_function_table(RawTuple::create_empty(thread));                                            \
@@ -511,17 +511,31 @@ RawValue Runtime::set_global_variable(Thread*, SYMBOL name, RawValue value) {
   return kErrorOk;
 }
 
-SYMBOL Runtime::declare_symbol(Thread* thread, const char* data, size_t size) {
+RawString Runtime::declare_symbol(Thread* thread, const std::string_view& view) {
   std::lock_guard<std::mutex> locker(m_symbols_mutex);
 
-  SYMBOL symbol = crc32::hash_block(data, size);
+  SYMBOL symbol = crc32::hash_block(view);
 
   if (m_symbol_table.count(symbol) > 0) {
-    return symbol;
+    return m_symbol_table.at(symbol);
   }
 
-  m_symbol_table[symbol] = RawString::create(thread, data, size, symbol);
-  return symbol;
+  auto string = RawString::create(thread, view.data(), view.size(), symbol);
+  m_symbol_table[symbol] = string;
+  return string;
+}
+
+RawString Runtime::declare_symbol(RawString value) {
+  std::lock_guard<std::mutex> locker(m_symbols_mutex);
+
+  SYMBOL symbol = value.hashcode();
+
+  if (m_symbol_table.count(symbol) > 0) {
+    return value;
+  }
+
+  m_symbol_table[symbol] = value;
+  return value;
 }
 
 ShapeId Runtime::register_shape(RawShape shape) {

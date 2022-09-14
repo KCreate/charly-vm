@@ -100,6 +100,10 @@ namespace crc32 {
   inline uint32_t hash_string(const std::string& string) {
     return internal::hash_block(string.data(), string.size());
   }
+
+  inline uint32_t hash_block(const std::string_view& view) {
+    return internal::hash_block(view.data(), view.size());
+  }
 }  // namespace crc32
 
 using SYMBOL = uint32_t;

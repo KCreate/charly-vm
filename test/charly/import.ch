@@ -30,15 +30,15 @@ export class ImportTest {
     static func test_import {
         import testlib
         assert testlib instanceof Class
-        assert "{testlib.name}" == "TestLib"
+        assert testlib.name == "TestLib"
     }
 
     static func test_import_as {
-        import testlib as tlib
+        import testlib as alias
         assert testlib instanceof Class
-        assert "{testlib.name}" == "TestLib"
-        assert tlib instanceof Class
-        assert "{tlib.name}" == "TestLib"
+        assert testlib.name == "TestLib"
+        assert alias instanceof Class
+        assert alias.name == "TestLib"
     }
 
     static func test_import_extract_fields {
@@ -47,15 +47,15 @@ export class ImportTest {
         assert bar == 200
         assert baz == 300
         assert testlib instanceof Class
-        assert "{testlib.name}" == "TestLib"
+        assert testlib.name == "TestLib"
     }
 
     static func test_import_declare_as_name {
-        import { do_foo, do_bar, do_baz } from testlib as tlib
+        import { do_foo, do_bar, do_baz } from testlib as alias
         assert testlib instanceof Class
-        assert "{testlib.name}" == "TestLib"
-        assert tlib instanceof Class
-        assert "{tlib.name}" == "TestLib"
+        assert testlib.name == "TestLib"
+        assert alias instanceof Class
+        assert alias.name == "TestLib"
         assert do_foo() == "foo"
         assert do_bar() == "bar"
         assert do_baz() == "baz"
@@ -67,7 +67,7 @@ export class ImportTest {
         import testlib as tlib3
 
         assert testlib instanceof Class
-        assert "{testlib.name}" == "TestLib"
+        assert testlib.name == "TestLib"
 
         assert tlib1 == testlib
         assert tlib2 == testlib

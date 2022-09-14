@@ -378,7 +378,7 @@ RawClass RawValue::klass(Thread* thread) const {
   return thread->runtime()->get_builtin_class(shape_id());
 }
 
-RawSymbol RawValue::klass_name(Thread* thread) const {
+RawString RawValue::klass_name(Thread* thread) const {
   return klass(thread).name();
 }
 
@@ -1273,7 +1273,7 @@ void RawValue::dump(std::ostream& out) const {
 
     if (isBuiltinFunction()) {
       auto builtin_function = RawBuiltinFunction::cast(this);
-      RawSymbol name = builtin_function.name();
+      RawString name = builtin_function.name();
       int64_t argc = builtin_function.argc();
       if (argc == -1) {
         writer.fg(Color::Yellow, "builtin func ", name, "(...)");
@@ -2571,7 +2571,7 @@ RawValue RawList::pop_value(Thread* thread) const {
 }
 
 RawValue RawClass::create(Thread* thread,
-                          SYMBOL name,
+                          RawString name,
                           RawValue _parent_value,
                           RawFunction _constructor,
                           RawTuple _member_props,
@@ -2629,8 +2629,8 @@ RawValue RawClass::create(Thread* thread,
   if (new_member_count > RawInstance::kMaximumFieldCount) {
     // for some reason, RawInstance::kMaximumFieldCount needs to be casted to its own
     // type, before it can be used in here. this is some weird template thing...
-    return thread->throw_message("Newly created class '%' has % properties, but the limit is %",
-                                 RawSymbol::create(name), new_member_count, (size_t)RawInstance::kMaximumFieldCount);
+    return thread->throw_message("Newly created class '%' has % properties, but the limit is %", name, new_member_count,
+                                 (size_t)RawInstance::kMaximumFieldCount);
   }
 
   Shape object_shape(scope, RawShape::create(thread, parent_shape, member_props));
@@ -2645,17 +2645,17 @@ RawValue RawClass::create(Thread* thread,
     std::unordered_map<SYMBOL, uint32_t> parent_function_indices;
     for (uint32_t j = 0; j < parent_function_table.length(); j++) {
       RawFunction parent_function = parent_function_table.field_at<RawFunction>(j);
-      parent_function_indices[parent_function.name()] = j;
+      parent_function_indices[parent_function.name().hashcode()] = j;
     }
 
     // calculate the amount of functions being added that are not already present in the parent class
     std::unordered_set<SYMBOL> new_function_names;
     size_t newly_added_functions = 0;
     for (uint32_t i = 0; i < member_funcs.length(); i++) {
-      RawSymbol method_name = member_funcs.field_at<RawTuple>(i).field_at<RawFunction>(0).name();
-      new_function_names.insert(method_name);
+      RawString method_name = member_funcs.field_at<RawTuple>(i).field_at<RawFunction>(0).name();
+      new_function_names.insert(method_name.hashcode());
 
-      if (parent_function_indices.count(method_name) == 0) {
+      if (parent_function_indices.count(method_name.hashcode()) == 0) {
         newly_added_functions++;
       }
     }
@@ -2667,7 +2667,7 @@ RawValue RawClass::create(Thread* thread,
     size_t new_function_table_offset = 0;
     for (uint32_t j = 0; j < parent_function_table.length(); j++) {
       RawFunction entry = parent_function_table.field_at<RawFunction>(j);
-      if (new_function_names.count(entry.name()) == 0) {
+      if (new_function_names.count(entry.name().hashcode()) == 0) {
         if (entry.overload_table().isTuple()) {
           // create copy of the overload table and all functions included
           Tuple overload_table(scope, entry.overload_table());
@@ -2675,16 +2675,16 @@ RawValue RawClass::create(Thread* thread,
 
           for (uint32_t i = 0; i < overload_table.length(); i++) {
             Function parent(scope, overload_table.field_at<RawFunction>(i));
-            Function method_copy(scope, RawFunction::create(thread, parent.context(),
-                                                            parent.shared_info(), parent.saved_self()));
+            Function method_copy(
+              scope, RawFunction::create(thread, parent.context(), parent.shared_info(), parent.saved_self()));
             method_copy.set_overload_table(new_overload_table);
             new_overload_table.set_field_at(i, method_copy);
           }
 
           new_function_table.set_field_at(new_function_table_offset++, new_overload_table.first_field());
         } else {
-          Function method_copy(scope, RawFunction::create(thread, entry.context(),
-                                                          entry.shared_info(), entry.saved_self()));
+          Function method_copy(scope,
+                               RawFunction::create(thread, entry.context(), entry.shared_info(), entry.saved_self()));
           new_function_table.set_field_at(new_function_table_offset++, method_copy);
         }
       }
@@ -2696,10 +2696,10 @@ RawValue RawClass::create(Thread* thread,
     for (uint32_t i = 0; i < member_funcs.length(); i++) {
       Tuple new_overload_table(scope, member_funcs.field_at(i));
       Function first_overload(scope, new_overload_table.first_field());
-      RawSymbol new_overload_name = first_overload.name();
+      RawString new_overload_name = first_overload.name();
 
       // new function does not override any parent functions
-      if (parent_function_indices.count(new_overload_name) == 0) {
+      if (parent_function_indices.count(new_overload_name.hashcode()) == 0) {
         for (uint32_t j = 0; j < new_overload_table.length(); j++) {
           new_overload_table.field_at<RawFunction>(j).set_overload_table(new_overload_table);
         }
@@ -2707,7 +2707,7 @@ RawValue RawClass::create(Thread* thread,
         continue;
       }
 
-      uint32_t parent_function_index = parent_function_indices[new_overload_name];
+      uint32_t parent_function_index = parent_function_indices[new_overload_name.hashcode()];
       Function parent_function(scope, parent_function_table.field_at(parent_function_index));
 
       Tuple parent_overload_table(scope);
@@ -2841,7 +2841,7 @@ RawValue RawClass::create(Thread* thread,
     static_class.set_flags(flags | RawClass::kFlagStatic);
     static_class.set_ancestor_table(
       RawTuple::concat_value(thread, builtin_class_instance.ancestor_table(), builtin_class_instance));
-    static_class.set_name(RawSymbol::create(name));
+    static_class.set_name(name);
     static_class.set_parent(builtin_class_instance);
     static_class.set_shape_instance(static_shape);
     static_class.set_function_table(static_function_table);
@@ -2851,7 +2851,7 @@ RawValue RawClass::create(Thread* thread,
     Class actual_class(scope, RawInstance::create(thread, static_shape, static_class));
     actual_class.set_flags(flags);
     actual_class.set_ancestor_table(RawTuple::concat_value(thread, parent_class.ancestor_table(), parent_class));
-    actual_class.set_name(RawSymbol::create(name));
+    actual_class.set_name(name);
     actual_class.set_parent(parent_class);
     actual_class.set_shape_instance(object_shape);
     actual_class.set_function_table(new_function_table);
@@ -2885,7 +2885,7 @@ RawValue RawClass::create(Thread* thread,
     Class klass(scope, RawInstance::create(thread, builtin_class_instance));
     klass.set_flags(flags);
     klass.set_ancestor_table(RawTuple::concat_value(thread, parent_class.ancestor_table(), parent_class));
-    klass.set_name(RawSymbol::create(name));
+    klass.set_name(name);
     klass.set_parent(parent_class);
     klass.set_shape_instance(object_shape);
     klass.set_function_table(new_function_table);
@@ -2931,11 +2931,11 @@ void RawClass::set_ancestor_table(RawTuple ancestor_table) const {
   set_field_at(kAncestorTableOffset, ancestor_table);
 }
 
-RawSymbol RawClass::name() const {
-  return field_at<RawSymbol>(kNameOffset);
+RawString RawClass::name() const {
+  return field_at<RawString>(kNameOffset);
 }
 
-void RawClass::set_name(RawSymbol name) const {
+void RawClass::set_name(RawString name) const {
   set_field_at(kNameOffset, name);
 }
 
@@ -3074,7 +3074,10 @@ RawShape RawShape::create(Thread* thread,
     auto& entry = std::data(keys)[i];
     auto& name = std::get<0>(entry);
     auto flags = std::get<1>(entry);
-    key_tuple.set_field_at(i, RawShape::encode_shape_key(runtime->declare_symbol(thread, name), flags));
+
+    auto name_string = runtime->declare_symbol(thread, name);
+    auto name_symbol = RawSymbol::create(name_string.hashcode());
+    key_tuple.set_field_at(i, RawShape::encode_shape_key(name_symbol, flags));
   }
   return RawShape::create(thread, parent, key_tuple);
 }
@@ -3153,7 +3156,7 @@ RawFunction RawFunction::create(Thread* thread,
   Value context(scope, _context);
   Value saved_self(scope, _saved_self);
   Function func(scope, RawInstance::create(thread, runtime->get_builtin_class(ShapeId::kFunction)));
-  func.set_name(RawSymbol::create(shared_info->name_symbol));
+  func.set_name(RawString::create(thread, shared_info->name));
   func.set_context(context);
   func.set_saved_self(saved_self);
   func.set_host_class(kNull);
@@ -3162,11 +3165,11 @@ RawFunction RawFunction::create(Thread* thread,
   return *func;
 }
 
-RawSymbol RawFunction::name() const {
-  return field_at<RawSymbol>(kNameOffset);
+RawString RawFunction::name() const {
+  return field_at<RawString>(kNameOffset);
 }
 
-void RawFunction::set_name(RawSymbol name) const {
+void RawFunction::set_name(RawString name) const {
   set_field_at(kNameOffset, name);
 }
 
@@ -3217,12 +3220,12 @@ bool RawFunction::check_accepts_argc(uint32_t argc) const {
   return direct_match || spread_match;
 }
 
-RawBuiltinFunction RawBuiltinFunction::create(Thread* thread, BuiltinFunctionType function, SYMBOL name, int64_t argc) {
+RawBuiltinFunction RawBuiltinFunction::create(Thread* thread, BuiltinFunctionType function, RawString name, int64_t argc) {
   auto runtime = thread->runtime();
   auto func =
     RawBuiltinFunction::cast(RawInstance::create(thread, runtime->get_builtin_class(ShapeId::kBuiltinFunction)));
   func.set_function(function);
-  func.set_name(RawSymbol::create(name));
+  func.set_name(name);
   func.set_argc(argc);
   return func;
 }
@@ -3235,11 +3238,11 @@ void RawBuiltinFunction::set_function(BuiltinFunctionType function) const {
   set_pointer_at(kFunctionPtrOffset, (const void*)(function));
 }
 
-RawSymbol RawBuiltinFunction::name() const {
-  return field_at<RawSymbol>(kNameOffset);
+RawString RawBuiltinFunction::name() const {
+  return field_at<RawString>(kNameOffset);
 }
 
-void RawBuiltinFunction::set_name(RawSymbol symbol) const {
+void RawBuiltinFunction::set_name(RawString symbol) const {
   return set_field_at(kNameOffset, symbol);
 }
 

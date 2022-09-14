@@ -26,24 +26,6 @@
 
 import { assert_throws, assert_no_exception } from unittest
 
-/*
-Todos
-
-- basic class creation
-- constructors
-- super constructor calls
-- super method calls (implicit and explicit)
-- instanceof
-- member property initializers
-- property read write
-- function lookup
-- function self argument
-- function member property assignment argument
-- function host class property variable identifiers
-- static properties (initializers)
-- static functions
-*/
-
 export class ClassTest {
     static func test_class {
         class A {}
@@ -697,6 +679,75 @@ export class ClassTest {
             class A extends AssertionException {}
         })
         assert exc2.message == "Cannot extend final class 'AssertionException'"
+    }
+
+    static func test_class_object_unpack {
+        class A {
+            property foo
+            property bar
+            property baz
+        }
+
+        const a = A(1, 2, 3)
+
+        if true {
+            const { foo, bar, baz } = a
+            assert foo == 1
+            assert bar == 2
+            assert baz == 3
+        }
+
+        if true {
+            const { baz, bar, foo } = a
+            assert foo == 1
+            assert bar == 2
+            assert baz == 3
+        }
+
+        if true {
+            const { baz, foo, bar } = a
+            assert foo == 1
+            assert bar == 2
+            assert baz == 3
+        }
+
+        if true {
+            const { baz, foo, bar } = a
+            assert foo == 1
+            assert bar == 2
+            assert baz == 3
+        }
+
+        const exc1 = assert_throws(->{
+            const { nonexistentproperty } = a
+        })
+        assert exc1.message == "Object of type 'A' has no attribute 'nonexistentproperty'"
+
+        const exc2 = assert_throws(->{
+            const { fail1, fail2, fail3 } = a
+        })
+        assert exc2.message == "Object of type 'A' has no attribute 'fail1'"
+
+        const exc3 = assert_throws(->{
+            const { fail3, fail2, fail1 } = a
+        })
+        assert exc3.message == "Object of type 'A' has no attribute 'fail3'"
+
+        let foo
+        let bar
+        let fail
+        const exc4 = assert_throws(->{
+            { foo, bar, fail } = a
+        })
+        assert foo == null
+        assert bar == null
+        assert exc4.message == "Object of type 'A' has no attribute 'fail'"
+
+        if true {
+            const { length, klass } = [1, 2, 3, 4]
+            assert length == 4
+            assert klass == List
+        }
     }
 }
 

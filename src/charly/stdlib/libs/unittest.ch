@@ -64,7 +64,7 @@ class UnitTest {
 
             const name = test_class.klass.name
             const tests = test_class.klass.function_table.filter(->(method) {
-                "{method.name}".begins_with("test_")
+                method.name.begins_with("test_")
             })
 
             return TestSuite(name, tests)
