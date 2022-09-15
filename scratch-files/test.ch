@@ -24,7 +24,11 @@
  * SOFTWARE.
  */
 
-func foo = throw "error1"
+func foo {
+    Tuple.create_with(10, ->{
+        throw "some error"
+    })
+}
 func bar = foo()
 func baz = bar()
 

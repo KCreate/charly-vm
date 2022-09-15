@@ -1274,13 +1274,7 @@ void RawValue::dump(std::ostream& out) const {
     if (isBuiltinFunction()) {
       auto builtin_function = RawBuiltinFunction::cast(this);
       RawString name = builtin_function.name();
-      int64_t argc = builtin_function.argc();
-      if (argc == -1) {
-        writer.fg(Color::Yellow, "builtin func ", name, "(...)");
-      } else {
-        DCHECK(argc >= 0);
-        writer.fg(Color::Yellow, "builtin func ", name, "(", argc, ")");
-      }
+      writer.fg(Color::Magenta, "builtin func ", name, "()");
       return;
     }
 
@@ -1370,8 +1364,7 @@ void RawValue::dump(std::ostream& out) const {
           switch (entry.length()) {
             case 1: {
               auto function = entry.field_at<RawBuiltinFunction>(0);
-              writer << "\n    at ";
-              writer.fg(Color::Grey, function.name());
+              writer << "\n    at " << function;
               break;
             }
             case 4: {
@@ -1379,13 +1372,13 @@ void RawValue::dump(std::ostream& out) const {
               auto filename = entry.field_at<RawString>(1);
               auto row = entry.field_at<RawInt>(2).value();
               auto col = entry.field_at<RawInt>(3).value();
-              writer << "\n    at ";
+              writer << "\n    at " << function;
 
-              if (function.shared_info()->ir_info.arrow_function) {
-                writer.fg(Color::Blue, "->()");
-              } else {
-                writer.fg(Color::Yellow, function.name());
-              }
+//              if (function.shared_info()->ir_info.arrow_function) {
+//                writer.fg(Color::Red, function.name());
+//              } else {
+//                writer.fg(Color::Yellow, function.name());
+//              }
 
               writer.fg(Color::Grey, " ", filename, ":", row, ":", col);
               break;
