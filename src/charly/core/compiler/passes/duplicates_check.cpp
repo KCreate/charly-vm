@@ -167,26 +167,10 @@ void DuplicatesCheck::inspect_leave(const ref<Class>& node) {
 
   // check for duplicate member function overloads
   check_overload_conflicts(node->member_functions, class_member_properties, class_member_functions);
-
-  // sort individual overload sets by minargc
-  for (auto overload_group : class_member_functions) {
-    auto& vec = overload_group.second;
-    vec.sort([](const ref<Function>& left, const ref<Function>& right) {
-      return left->minimum_argc() < right->minimum_argc();
-    });
-  }
   node->member_function_overloads = class_member_functions;
 
   // check for duplicate static functions or properties
   check_overload_conflicts(node->static_functions, class_static_properties, class_static_functions);
-
-  // sort individual overload sets by minargc
-  for (auto overload_group : class_static_functions) {
-    auto& vec = overload_group.second;
-    vec.sort([](const ref<Function>& left, const ref<Function>& right) {
-      return left->minimum_argc() < right->minimum_argc();
-    });
-  }
   node->static_function_overloads = class_static_functions;
 }
 

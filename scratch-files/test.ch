@@ -24,19 +24,21 @@
  * SOFTWARE.
  */
 
-let a = null
-
-loop {
-    try {
-        print("hello world")
-        break
-    } finally {
-        a = 100
-    }
+class Foo {
+    func foo() = "got nothing"
+    func foo(a, b) = "got 2 {(a, b)}"
+    func foo(a) = "got 1 {a}"
 }
 
-assert a == 100
-print("a = {a}")
+const a = Foo()
+
+print(a.foo())
+print(a.foo(1))
+print(a.foo(1, 2))
+
+
+
+
 
 
 

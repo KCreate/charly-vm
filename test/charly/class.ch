@@ -456,10 +456,13 @@ export class ClassTest {
 
     static func test_class_function_overloading {
         class A {
-            func foo = "foo()"
-            func foo(x) = "foo({x})"
-            func foo(x, y) = "foo({x}, {y})"
             func foo(x, y, z, ...rest) = "foo({x}, {y}, {z}, ...{rest})"
+
+            func foo = "foo()"
+
+            func foo(x, y) = "foo({x}, {y})"
+
+            func foo(x) = "foo({x})"
         }
 
         const a = A()

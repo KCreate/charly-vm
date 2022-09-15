@@ -59,6 +59,8 @@ class UnitTest {
     }
 
     static func run(...test_classes) {
+        let total_test_count = 0
+
         const suites = test_classes.map(->(test_class) {
             assert test_class instanceof Class : "Expected test suite to be a class instance"
 
@@ -66,6 +68,8 @@ class UnitTest {
             const tests = test_class.klass.function_table.filter(->(method) {
                 method.name.begins_with("test_")
             })
+
+            total_test_count += tests.length
 
             return TestSuite(name, tests)
         })
@@ -111,7 +115,6 @@ class UnitTest {
                 print("{suite.name}: {failed_tests.length} tests failed!", suite.duration * 1000, "us")
             }
 
-
             if print_passed_test_duration {
                 passed_tests.sort(->(l, r) r.duration - l.duration)
                 passed_tests.each(->(test) {
@@ -127,7 +130,7 @@ class UnitTest {
         })
 
         if !some_suites_failed {
-            print("All tests passed!", total_duration, "ms")
+            print("All {total_test_count} tests passed!", total_duration, "ms")
         }
 
         return some_suites_failed ? 1 : 0

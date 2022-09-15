@@ -662,19 +662,32 @@ bool CodeGenerator::inspect_enter(const ref<Class>& node) {
   // should cause an exception, informing the user about the missing arguments
   auto emit_overload_tuple = [&](auto& overload_table) {
     for (auto entry : overload_table) {
-      auto& overloads = entry.second;
+      std::list<ref<Function>>& overloads = entry.second;
       CHECK(overloads.size() >= 1);
-      auto lowest_overload = overloads.back();
-      auto highest_overload = overloads.back();
-      auto max_argc = highest_overload->argc();
+
+      overloads.sort([](const ref<Function>& left, const ref<Function>& right) {
+        return left->minimum_argc() < right->minimum_argc();
+      });
+
+      ref<Function> lowest_overload = overloads.front();
+      ref<Function> highest_overload = overloads.back();
+      for (const auto& overload : overloads) {
+        if (overload->argc() < lowest_overload->argc()) {
+          lowest_overload = overload;
+        }
+        if (overload->argc() > highest_overload->argc()) {
+          highest_overload = overload;
+        }
+      }
+      int64_t max_argc = highest_overload->argc();
 
       // build the overload tuple
-      size_t overload_table_size = max_argc + 1;
-      std::vector<ref<Function>> overload_table_blueprint(overload_table_size, nullptr);
+      int64_t overload_table_size = max_argc + 1;
+      std::vector<ref<Function>> overload_table_blueprint(overload_table_size);
       size_t last_unprocessed_index = 0;
       for (auto func : overloads) {
-        for (size_t i = last_unprocessed_index; i <= func->argc(); i++) {
-          CHECK(i < overload_table_size);
+        for (int64_t i = last_unprocessed_index; i <= func->argc(); i++) {
+          CHECK(i < overload_table_size, "i = % size = %, argc = %", i, overload_table_size, max_argc);
           overload_table_blueprint[i] = func;
         }
         last_unprocessed_index = func->argc() + 1;
