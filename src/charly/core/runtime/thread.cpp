@@ -315,38 +315,19 @@ void Thread::acquire_stack() {
 }
 
 void Thread::dump_exception_trace(RawException exception) const {
-  std::stack<RawException> exception_stack;
-  RawException next_exception = exception;
-  bool chain_too_deep = false;
-  while (true) {
-    if (exception_stack.size() == kExceptionChainDepthLimit) {
-      chain_too_deep = true;
-      break;
-    }
-
-    exception_stack.push(next_exception);
-    RawValue cause = next_exception.cause();
-    if (!cause.isException()) {
-      break;
-    }
-
-    next_exception = RawException::cast(cause);
-  }
-
-  RawException first_exception = exception_stack.top();
-  exception_stack.pop();
   debuglnf_notime("Unhandled exception in main thread:");
-  debuglnf_notime("%", first_exception);
+  debuglnf_notime("%", exception);
 
-  while (!exception_stack.empty()) {
-    RawException top = exception_stack.top();
-    exception_stack.pop();
-    debuglnf_notime("\nDuring handling of the above exception, another exception occured:\n");
-    debuglnf_notime("%", top);
-  }
+  size_t depth = 0;
+  while (exception.cause().isException()) {
+    if (depth++ > kExceptionChainDepthLimit) {
+      debuglnf_notime("\nMore exceptions were thrown that are not shown here");
+      break;
+    }
 
-  if (chain_too_deep) {
-    debuglnf_notime("\nMore exceptions were thrown that are not shown here");
+    exception = exception.cause();
+    debuglnf_notime("\nThe above exception was thrown during handling of this exception:");
+    debuglnf_notime("%", exception);
   }
 }
 
