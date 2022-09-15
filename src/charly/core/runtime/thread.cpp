@@ -362,12 +362,28 @@ RawTuple Thread::create_backtrace() {
   }
 
   HandleScope scope(this);
-  Tuple backtrace(scope, RawTuple::create(this, top_frame->depth + 1));
+  Tuple backtrace(scope, RawTuple::create(this, std::min(top_frame->depth + 1, kBacktraceDepthLimit)));
   size_t index = 0;
-  for (Frame* frame = top_frame; frame != nullptr; frame = frame->parent) {
-    if (frame->is_builtin_frame()) {
+  for (Frame* frame = top_frame; frame != nullptr && index < kBacktraceDepthLimit; frame = frame->parent) {
+    if (frame->is_interpreter_frame()) {
       auto* interpreter_frame = static_cast<InterpreterFrame*>(frame);
-      backtrace.set_field_at(index, RawTuple::create(this, interpreter_frame->function));
+
+      uintptr_t oldip = interpreter_frame->oldip;
+      auto loc = runtime()->source_location_for_ip(oldip);
+      if (loc.has_value()) {
+        fs::path path = loc->path;
+
+        fs::path cwd = fs::current_path();
+        if (cwd.compare(path) < 0) {
+          path = fs::relative(path);
+        }
+
+        backtrace.set_field_at(index, RawTuple::create(this, interpreter_frame->function, RawString::create(this, path),
+                                                       RawInt::create(loc->row + 1), RawInt::create(loc->column + 1)));
+      } else {
+        backtrace.set_field_at(index, RawTuple::create(this, interpreter_frame->function, RawString::create(this, "??"),
+                                                       RawInt::create(0), RawInt::create(0)));
+      }
     } else {
       auto* builtin_frame = static_cast<BuiltinFrame*>(frame);
       backtrace.set_field_at(index, RawTuple::create(this, builtin_frame->function));

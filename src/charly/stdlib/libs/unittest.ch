@@ -124,7 +124,7 @@ class UnitTest {
 
             failed_tests.each(->(test) {
                 print("\t{test.name}:")
-                print("\t\t{test.exception.message}")
+                print("\t\t", test.exception)
                 print("")
             })
         })

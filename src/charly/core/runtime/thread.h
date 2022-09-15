@@ -121,6 +121,8 @@ public:
 
   static constexpr size_t kExceptionChainDepthLimit = 20;
 
+  static constexpr size_t kBacktraceDepthLimit = 32;
+
   enum class State {
     Free,     // thread sits on a freelist somewhere and isn't tied to a fiber yet
     Waiting,  // thread is paused

@@ -68,8 +68,7 @@ void print_runtime_debug_state(std::ostream& stream) {
 
       if (frame->is_interpreter_frame()) {
         auto* interpreter_frame = static_cast<InterpreterFrame*>(frame);
-        DCHECK(interpreter_frame->stack);
-        if (interpreter_frame->sp > 0) {
+        if (interpreter_frame->stack && interpreter_frame->sp > 0) {
           debugln_impl_time(stream, "\n");
           debugln_impl_time(stream, "Stack:\n");
           for (int64_t i = interpreter_frame->sp - 1; i >= 0; i--) {

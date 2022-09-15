@@ -143,6 +143,14 @@ public:
 
   void memset_value(RawValue* target, RawValue value, size_t count) const;
 
+  struct SourceLocation {
+    fs::path path;
+    uint16_t row;
+    uint16_t column;
+  };
+
+  std::optional<SourceLocation> source_location_for_ip(uintptr_t ip);
+
 private:
   void memset_value_null(RawValue* target, size_t count) const;
   void memset_value_cached(RawValue* target, RawValue value, size_t count) const;

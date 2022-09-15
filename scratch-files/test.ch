@@ -24,21 +24,28 @@
  * SOFTWARE.
  */
 
-class Foo {
-    func foo() = "got nothing"
-    func foo(a, b) = "got 2 {(a, b)}"
-    func foo(a) = "got 1 {a}"
+func foo = throw "error1"
+func bar = foo()
+func baz = bar()
+
+const f = spawn {
+    baz()
 }
 
-const a = Foo()
+func quz = await f
+func qaz = quz()
+func qiz = qaz()
 
-print(a.foo())
-print(a.foo(1))
-print(a.foo(1, 2))
+const g = spawn {
+    qiz()
+}
 
-
-
-
+try {
+    await g
+} catch(e) {
+    let c = 101
+    assert c == 100 : "error2"
+}
 
 
 

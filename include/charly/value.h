@@ -850,6 +850,7 @@ public:
   static RawTuple create(Thread*, RawValue value);
   static RawTuple create(Thread*, RawValue value1, RawValue value2);
   static RawTuple create(Thread*, RawValue value1, RawValue value2, RawValue value3);
+  static RawTuple create(Thread*, RawValue value1, RawValue value2, RawValue value3, RawValue value4);
   static RawTuple concat_value(Thread*, RawTuple left, RawValue value);
   static RawValue create_spread(Thread*, const RawValue* segments, uint32_t segment_count);
 

@@ -835,6 +835,26 @@ void Runtime::each_root(std::function<void(RawValue& value)> callback) {
   }
 }
 
+std::optional<Runtime::SourceLocation> Runtime::source_location_for_ip(uintptr_t ip) {
+  std::lock_guard locker(m_mutex);
+
+  for (const auto& module : m_compiled_modules) {
+    for (const auto& shared_info : module->function_table) {
+      for (const auto& entry : shared_info->sourcemap_table) {
+        if (entry.instruction_ptr == ip) {
+          return SourceLocation {
+            .path = module->filename,
+            .row = entry.row,
+            .column = entry.column,
+          };
+        }
+      }
+    }
+  }
+
+  return {};
+}
+
 void Runtime::memset_value(RawValue* target, RawValue value, size_t count) const {
   if (count < kPointersPerPage) {
     for (size_t i = 0; i < count; i++) {

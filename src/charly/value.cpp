@@ -1361,11 +1361,39 @@ void RawValue::dump(std::ostream& out) const {
         auto klass = RawClass::cast(exception.klass_field());
         RawValue message = exception.message();
         RawTuple backtrace = exception.backtrace();
-        writer.fg(Color::Green, "<", klass.name(), " ");
-        writer.fg(Color::Red, message);
-        writer << ", ";
-        writer << backtrace;
-        writer.fg(Color::Green, ">");
+        writer.fg(Color::Green, termcolor::bold, klass.name());
+        writer << ": ";
+        writer.fg(Color::White, message);
+
+        for (size_t i = 0; i < backtrace.length(); i++) {
+          auto entry = backtrace.field_at<RawTuple>(i);
+          switch (entry.length()) {
+            case 1: {
+              auto function = entry.field_at<RawBuiltinFunction>(0);
+              writer << "\n    at ";
+              writer.fg(Color::Grey, function.name());
+              break;
+            }
+            case 4: {
+              auto function = entry.field_at<RawFunction>(0);
+              auto filename = entry.field_at<RawString>(1);
+              auto row = entry.field_at<RawInt>(2);
+              auto col = entry.field_at<RawInt>(3);
+              writer << "\n    at ";
+
+              if (function.shared_info()->ir_info.arrow_function) {
+                writer.fg(Color::Grey, std::setw(16), std::left, "->()", std::setw(1));
+              } else {
+                writer.fg(Color::Yellow, std::setw(16), std::left, function.name(), std::setw(1));
+              }
+
+              writer << " " << filename << ":" << row << ":" << col;
+              break;
+            }
+            default: UNREACHABLE();
+          }
+        }
+
         return;
       }
     }
@@ -2066,6 +2094,20 @@ RawTuple RawTuple::create(Thread* thread, RawValue value1, RawValue value2, RawV
   tuple.set_field_at(0, v1);
   tuple.set_field_at(1, v2);
   tuple.set_field_at(2, v3);
+  return *tuple;
+}
+
+RawTuple RawTuple::create(Thread* thread, RawValue value1, RawValue value2, RawValue value3, RawValue value4) {
+  HandleScope scope(thread);
+  Value v1(scope, value1);
+  Value v2(scope, value2);
+  Value v3(scope, value3);
+  Value v4(scope, value4);
+  Tuple tuple(scope, RawTuple::create(thread, 4));
+  tuple.set_field_at(0, v1);
+  tuple.set_field_at(1, v2);
+  tuple.set_field_at(2, v3);
+  tuple.set_field_at(3, v4);
   return *tuple;
 }
 
@@ -3397,6 +3439,7 @@ RawValue RawFuture::await(Thread* thread) const {
       thread->enter_scheduler();
       lock.lock();
     }
+    DCHECK(future.has_finished());
   }
 
   if (!future.exception().isNull()) {
