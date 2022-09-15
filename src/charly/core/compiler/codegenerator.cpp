@@ -321,7 +321,7 @@ void CodeGenerator::generate_unpack_assignment(const ref<UnpackTarget>& target,
           auto member_op = cast<MemberOp>(element->target);
           apply(member_op->target);
           m_builder.emit_swap();
-          m_builder.emit_setattrsym(m_builder.register_string(member_op->member->value));
+          m_builder.emit_setattrsym(m_builder.register_string(member_op->member->value))->at(element);
           break;
         }
         default: {
@@ -470,7 +470,7 @@ bool CodeGenerator::inspect_enter(const ref<Assert>& node) {
   m_builder.place_label(binop_failure_label);
   if (node->message->type() != Node::Type::Null) {
     apply(node->message);
-    m_builder.emit_caststring();
+    m_builder.emit_caststring()->at(node->message);
   } else {
     m_builder.emit_makestr(m_builder.register_string("Failed assertion"));
   }
@@ -481,7 +481,7 @@ bool CodeGenerator::inspect_enter(const ref<Assert>& node) {
   m_builder.place_label(exp_failure_label);
   if (node->message->type() != Node::Type::Null) {
     apply(node->message);
-    m_builder.emit_caststring();
+    m_builder.emit_caststring()->at(node->message);
   } else {
     m_builder.emit_makestr(m_builder.register_string("Failed assertion"));
   }
@@ -512,7 +512,7 @@ void CodeGenerator::inspect_leave(const ref<Export>&) {
 
 bool CodeGenerator::inspect_enter(const ref<Import>& node) {
   apply(node->source);
-  m_builder.emit_makestr(m_builder.register_string(m_unit->filepath))->at(node);
+  m_builder.emit_makestr(m_builder.register_string(m_unit->filepath));
   m_builder.emit_import()->at(node);
   return false;
 }
@@ -591,7 +591,7 @@ void CodeGenerator::inspect_leave(const ref<String>& node) {
   if (node->value.size() <= RawSmallString::kMaxLength) {
     m_builder.emit_load_value(RawSmallString::create_from_str(node->value))->at(node);
   } else {
-    m_builder.emit_makestr(index)->at(node);
+    m_builder.emit_makestr(index);
   }
 }
 
@@ -704,9 +704,9 @@ bool CodeGenerator::inspect_enter(const ref<Class>& node) {
         }
       }
 
-      m_builder.emit_maketuple(overload_table_size);
+      m_builder.emit_maketuple(overload_table_size)->at(node);
     }
-    m_builder.emit_maketuple(overload_table.size());
+    m_builder.emit_maketuple(overload_table.size())->at(node);
   };
 
   // emit member function overload tuple
@@ -720,7 +720,7 @@ bool CodeGenerator::inspect_enter(const ref<Class>& node) {
                                                   is_private ? RawShape::kKeyFlagPrivate : RawShape::kKeyFlagNone))
       ->at(member_prop->name);
   }
-  m_builder.emit_maketuple(node->member_properties.size());
+  m_builder.emit_maketuple(node->member_properties.size())->at(node);
 
   // emit static function overload tuple
   emit_overload_tuple(node->static_function_overloads);
@@ -733,13 +733,13 @@ bool CodeGenerator::inspect_enter(const ref<Class>& node) {
                                                   is_private ? RawShape::kKeyFlagPrivate : RawShape::kKeyFlagNone))
       ->at(static_prop->name);
   }
-  m_builder.emit_maketuple(node->static_properties.size());
+  m_builder.emit_maketuple(node->static_properties.size())->at(node);
 
   // static property values
   for (const auto& static_prop : node->static_properties) {
     apply(static_prop->value);
   }
-  m_builder.emit_maketuple(node->static_properties.size());
+  m_builder.emit_maketuple(node->static_properties.size())->at(node);
 
   m_builder.emit_makeclass()->at(node);
 
@@ -1003,7 +1003,6 @@ bool CodeGenerator::inspect_enter(const ref<CallOp>& node) {
       if (isa<Super>(member->target)) {
         m_builder.emit_loadself();
         apply(member);
-        //        m_builder.emit_loadsuperattr(m_builder.register_string(member->member->value))->at(member->member);
       } else {
         apply(member->target);
         m_builder.emit_dup();

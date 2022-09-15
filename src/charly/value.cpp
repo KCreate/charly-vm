@@ -1377,17 +1377,17 @@ void RawValue::dump(std::ostream& out) const {
             case 4: {
               auto function = entry.field_at<RawFunction>(0);
               auto filename = entry.field_at<RawString>(1);
-              auto row = entry.field_at<RawInt>(2);
-              auto col = entry.field_at<RawInt>(3);
+              auto row = entry.field_at<RawInt>(2).value();
+              auto col = entry.field_at<RawInt>(3).value();
               writer << "\n    at ";
 
               if (function.shared_info()->ir_info.arrow_function) {
-                writer.fg(Color::Grey, std::setw(16), std::left, "->()", std::setw(1));
+                writer.fg(Color::Blue, "->()");
               } else {
-                writer.fg(Color::Yellow, std::setw(16), std::left, function.name(), std::setw(1));
+                writer.fg(Color::Yellow, function.name());
               }
 
-              writer << " " << filename << ":" << row << ":" << col;
+              writer.fg(Color::Grey, " ", filename, ":", row, ":", col);
               break;
             }
             default: UNREACHABLE();
