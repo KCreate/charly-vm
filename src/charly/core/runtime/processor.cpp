@@ -63,9 +63,8 @@ ThreadAllocationBuffer* Processor::tab() const {
 }
 
 bool Processor::schedule_thread(Thread* thread) {
-  DCHECK(thread->state() == Thread::State::Ready);
-
   std::lock_guard<std::mutex> locker(m_mutex);
+  DCHECK(thread->state() == Thread::State::Ready);
   if (m_run_queue.size() >= kLocalRunQueueMaxSize) {
     return false;
   }

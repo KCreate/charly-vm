@@ -249,6 +249,9 @@ void Worker::scheduler_loop(Runtime* runtime) {
         break;
       }
 
+      DCHECK(thread->worker() == nullptr);
+      DCHECK(thread->state() == Thread::State::Ready);
+
       reset_sleep_duration();
 
       // context switch into the thread
@@ -256,12 +259,20 @@ void Worker::scheduler_loop(Runtime* runtime) {
       m_context_switch_counter++;
       m_thread = thread;
       thread->context_switch(this);
-      checkpoint();
       m_thread = nullptr;
       assert_change_state(State::Running, State::Scheduling);
 
       switch (thread->state()) {
         case Thread::State::Waiting: {
+          if (thread->m_waiting_on_future.isFuture()) {
+            auto future = RawFuture::cast(thread->m_waiting_on_future);
+            DCHECK(future.has_finished() == false);
+            DCHECK(future.is_locked());
+            auto* wait_queue = future.wait_queue();
+            future.set_wait_queue(wait_queue->append_thread(wait_queue, thread));
+            future.unlock();
+          }
+
           continue;
         }
         case Thread::State::Ready: {

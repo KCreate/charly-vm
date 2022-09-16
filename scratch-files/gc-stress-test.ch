@@ -40,7 +40,7 @@ const list = Tuple.create_with(fiber_count, ->(i) {
     spawn allocator(i)
 })
 
-const result = list.reduce(->(p, f, i) p + await f, 0)
+const result = list.reduce(0, ->(p, f, i) p + await f)
 print(result)
 
 

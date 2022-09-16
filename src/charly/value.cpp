@@ -3420,19 +3420,12 @@ RawValue RawFuture::await(Thread* thread) const {
   Future future(scope, *this);
 
   {
-    std::unique_lock lock(future);
-
-    // wait for the future to finish
+    future.lock();
     if (!future.has_finished()) {
-      RawFuture::WaitQueue* wait_queue = future.wait_queue();
-      future.set_wait_queue(wait_queue->append_thread(wait_queue, thread));
-      thread->acas_state(Thread::State::Running, Thread::State::Waiting);
-
-      lock.unlock();
-      thread->enter_scheduler();
-      lock.lock();
+      thread->wait_on_future(future);
+    } else {
+      future.unlock();
     }
-    DCHECK(future.has_finished());
   }
 
   if (!future.exception().isNull()) {

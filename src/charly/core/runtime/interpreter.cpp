@@ -126,7 +126,7 @@ RawValue Interpreter::call_function(Thread* thread,
                                     bool constructor_call,
                                     RawValue argument_tuple) {
   // find the correct overload to call
-  if (function.overload_table().isTuple()) {
+  if (!function.overload_table().isNull()) {
     auto overload_table = RawTuple::cast(function.overload_table());
     DCHECK(overload_table.length() > 0);
     function = overload_table.field_at<RawFunction>(std::min(argc, overload_table.length() - 1));

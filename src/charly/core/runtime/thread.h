@@ -108,6 +108,7 @@ private:
 // the threads of fibers that have exited are reused by future fibers
 class Thread {
   friend class Runtime;
+  friend class Worker;
   friend class Interpreter;
   friend class GarbageCollector;
 
@@ -218,6 +219,9 @@ public:
   // yield control back to the scheduler and update thread state
   void enter_scheduler();
 
+  // pause current fiber and wait for the future to complete
+  void wait_on_future(RawFuture future);
+
   void dump_exception_trace(RawException exception) const;
 
   void acas_state(Thread::State old_state, Thread::State new_state);
@@ -240,6 +244,7 @@ private:
 
   int32_t m_exit_code = 0;
   RawValue m_fiber;
+  RawValue m_waiting_on_future;
   Worker* m_worker = nullptr;
   atomic<size_t> m_last_scheduled_at = kNeverScheduledTimestamp;
   fcontext_t m_context = nullptr;

@@ -107,14 +107,14 @@ RawValue Thread::pending_exception() const {
 }
 
 void Thread::init_main_thread() {
-  m_state.acas(State::Free, State::Waiting);
+  acas_state(State::Free, State::Waiting);
   m_fiber = kNull;
   DCHECK(m_stack == nullptr);
 }
 
 void Thread::init_fiber_thread(RawFiber fiber) {
   fiber.set_thread(this);
-  m_state.acas(State::Free, State::Waiting);
+  acas_state(State::Free, State::Waiting);
   m_fiber = fiber;
   DCHECK(m_stack == nullptr);
 }
@@ -146,24 +146,24 @@ void Thread::checkpoint() {
 }
 
 void Thread::yield_to_scheduler() {
-  m_state.acas(State::Running, State::Ready);
+  acas_state(State::Running, State::Ready);
   enter_scheduler();
 }
 
 void Thread::abort(int32_t exit_code) {
-  m_state.acas(State::Running, State::Aborted);
+  acas_state(State::Running, State::Aborted);
   m_exit_code = exit_code;
   enter_scheduler();
   UNREACHABLE();
 }
 
 void Thread::ready() {
-  m_state.acas(State::Waiting, State::Ready);
+  acas_state(State::Waiting, State::Ready);
 }
 
 void Thread::context_switch(Worker* worker) {
   DCHECK(m_state == State::Ready);
-  m_state.acas(State::Ready, State::Running);
+  acas_state(State::Ready, State::Running);
   m_last_scheduled_at = get_steady_timestamp();
   DCHECK(m_last_scheduled_at >= kFirstValidScheduledAtTimestamp);
 
@@ -181,14 +181,14 @@ void Thread::context_switch(Worker* worker) {
 void Thread::enter_native() {
   DCHECK(m_state == State::Running);
   DCHECK(m_worker != nullptr);
-  m_state.acas(State::Running, State::Native);
+  acas_state(State::Running, State::Native);
   m_worker->enter_native();
 }
 
 void Thread::exit_native() {
   DCHECK(m_state == State::Native);
   DCHECK(m_worker != nullptr);
-  m_state.acas(State::Native, State::Running);
+  acas_state(State::Native, State::Running);
   m_worker->exit_native();
   checkpoint();
 }
@@ -291,6 +291,14 @@ void Thread::enter_scheduler() {
   m_worker->set_context(transfer.fctx);
 }
 
+void Thread::wait_on_future(RawFuture future) {
+  DCHECK(m_waiting_on_future.isNull());
+  acas_state(Thread::State::Running, Thread::State::Waiting);
+  m_waiting_on_future = future;
+  enter_scheduler();
+  m_waiting_on_future = kNull;
+}
+
 void Thread::acquire_stack() {
   DCHECK(m_stack == nullptr);
   m_stack = m_runtime->scheduler()->get_free_stack();
@@ -308,7 +316,7 @@ void Thread::acquire_stack() {
       UNREACHABLE();
     } else {
       thread->entry_fiber_thread();
-      thread->m_state.acas(State::Running, State::Exited);
+      thread->acas_state(State::Running, State::Exited);
       thread->enter_scheduler();
     }
   });

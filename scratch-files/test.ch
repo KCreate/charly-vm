@@ -24,32 +24,33 @@
  * SOFTWARE.
  */
 
-func foo {
-    Tuple.create_with(10, ->{
-        throw "some error"
+const modifier = Future.create()
+
+const tasks = List.create_with(100000, ->(i) spawn {
+    let sum = 0
+    100.times(->{
+        sum += 1
     })
-}
-func bar = foo()
-func baz = bar()
 
-const f = spawn {
-    baz()
-}
+    return sum * await modifier
+})
 
-func quz = await f
-func qaz = quz()
-func qiz = qaz()
+modifier.resolve(5)
 
-const g = spawn {
-    qiz()
-}
+const results = tasks.map(->(task, i) {
+    await task
+})
 
-try {
-    await g
-} catch(e) {
-    let c = 101
-    assert c == 100 : "error2"
-}
+const sum = results.reduce(0, ->(p, n) p + n)
+print(sum)
+
+
+
+
+
+
+
+
 
 
 

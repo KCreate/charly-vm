@@ -51,7 +51,7 @@ constexpr size_t kWorkerMaximumIdleSleepDuration = 1000;
 constexpr size_t kLocalRunQueueMaxSize = 256;
 
 // milliseconds each thread can run before having to yield back control
-constexpr size_t kThreadTimeslice = 10;
+constexpr size_t kThreadTimeslice = 100;
 
 class Runtime;
 class GarbageCollector;

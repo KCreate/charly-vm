@@ -35,6 +35,8 @@ namespace charly::core::runtime {
 class Runtime;
 class WatchDog {
 public:
+  static constexpr size_t kWatchDogWakeupInterval = 10;
+
   WatchDog(Runtime* runtime);
   ~WatchDog();
 
