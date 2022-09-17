@@ -220,6 +220,10 @@ RawValue performgc(Thread* thread, BuiltinFrame*) {
   return kNull;
 }
 
+RawValue getsteadytimestamp(Thread*, BuiltinFrame*) {
+  return RawInt::create(get_steady_timestamp());
+}
+
 RawValue getsteadytimestampmicro(Thread*, BuiltinFrame*) {
   return RawInt::create(get_steady_timestamp_micro());
 }

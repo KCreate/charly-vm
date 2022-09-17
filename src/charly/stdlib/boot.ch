@@ -34,6 +34,7 @@ const builtin_createtuple = @"charly.builtin.core.createtuple"
 const builtin_createtuplewith = @"charly.builtin.core.createtuplewith"
 const builtin_exit = @"charly.builtin.core.exit"
 const builtin_performgc = @"charly.builtin.core.performgc"
+const builtin_getsteadytimestamp = @"charly.builtin.core.getsteadytimestamp"
 const builtin_getsteadytimestampmicro = @"charly.builtin.core.getsteadytimestampmicro"
 const builtin_compile = @"charly.builtin.core.compile"
 
@@ -77,10 +78,14 @@ func currentworkingdirectory = builtin_currentworkingdirectory()
 
 func compile(source, name = "repl") = builtin_compile(source, name)
 
+func timestamp = builtin_getsteadytimestamp()
+
+func timestamp_micro = builtin_getsteadytimestampmicro()
+
 func stopwatch(callback) {
-    const start = builtin_getsteadytimestampmicro()
+    const start = timestamp_micro()
     callback()
-    const end = builtin_getsteadytimestampmicro()
+    const end = timestamp_micro()
     return (end - start) / 1000
 }
 
