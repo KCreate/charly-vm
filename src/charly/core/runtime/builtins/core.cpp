@@ -215,11 +215,6 @@ RawValue exit(Thread* thread, BuiltinFrame* frame) {
   thread->abort((int32_t)RawInt::cast(frame->arguments[0]).value());
 }
 
-RawValue performgc(Thread* thread, BuiltinFrame*) {
-  thread->runtime()->gc()->perform_gc(thread);
-  return kNull;
-}
-
 RawValue getsteadytimestamp(Thread*, BuiltinFrame*) {
   return RawInt::create(get_steady_timestamp());
 }

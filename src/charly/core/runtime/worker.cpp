@@ -138,7 +138,7 @@ bool Worker::wake() {
 
 void Worker::idle() {
   set_idle_flag();
-  assert_change_state(State::Acquiring, State::Idle);
+  acas_state(State::Acquiring, State::Idle);
 
   {
     std::unique_lock locker(m_mutex);
@@ -150,20 +150,20 @@ void Worker::idle() {
     clear_idle_flag();
   }
 
-  assert_change_state(State::Idle, State::Acquiring);
+  acas_state(State::Idle, State::Acquiring);
 }
 
 void Worker::checkpoint() {
   if (has_stop_flag()) {
     State old_state = state();
-    assert_change_state(old_state, State::WorldStopped);
+    acas_state(old_state, State::WorldStopped);
     {
       std::unique_lock locker(m_mutex);
       m_stw_cv.wait(locker, [&] {
         return !has_stop_flag();
       });
     }
-    assert_change_state(State::WorldStopped, old_state);
+    acas_state(State::WorldStopped, old_state);
   }
 }
 
@@ -189,11 +189,11 @@ void Worker::start_the_world() {
 }
 
 void Worker::enter_native() {
-  assert_change_state(State::Running, State::Native);
+  acas_state(State::Running, State::Native);
 }
 
 void Worker::exit_native() {
-  assert_change_state(State::Native, State::Running);
+  acas_state(State::Native, State::Running);
 }
 
 bool Worker::change_state(State expected_state, State new_state) {
@@ -207,7 +207,7 @@ bool Worker::change_state(State expected_state, State new_state) {
   return changed;
 }
 
-void Worker::assert_change_state(State expected_state, State new_state) {
+void Worker::acas_state(State expected_state, State new_state) {
   bool result = change_state(expected_state, new_state);
   CHECK(result);
 }
@@ -224,7 +224,7 @@ void Worker::scheduler_loop(Runtime* runtime) {
   runtime->wait_for_initialization();
   Scheduler* scheduler = runtime->scheduler();
 
-  assert_change_state(State::Created, State::Acquiring);
+  acas_state(State::Created, State::Acquiring);
 
   while (!runtime->wants_exit()) {
     checkpoint();
@@ -238,7 +238,7 @@ void Worker::scheduler_loop(Runtime* runtime) {
 
     Processor* proc = m_processor;
 
-    assert_change_state(State::Acquiring, State::Scheduling);
+    acas_state(State::Acquiring, State::Scheduling);
     while (!runtime->wants_exit()) {
       checkpoint();
 
@@ -255,12 +255,13 @@ void Worker::scheduler_loop(Runtime* runtime) {
       reset_sleep_duration();
 
       // context switch into the thread
-      assert_change_state(State::Scheduling, State::Running);
+      acas_state(State::Scheduling, State::Running);
       m_context_switch_counter++;
       m_thread = thread;
+      (void)m_thread;
       thread->context_switch(this);
       m_thread = nullptr;
-      assert_change_state(State::Running, State::Scheduling);
+      acas_state(State::Running, State::Scheduling);
 
       switch (thread->state()) {
         case Thread::State::Waiting: {
@@ -294,14 +295,14 @@ void Worker::scheduler_loop(Runtime* runtime) {
         }
       }
     }
-    assert_change_state(State::Scheduling, State::Acquiring);
+    acas_state(State::Scheduling, State::Acquiring);
 
     // release processor back to scheduler and go into idle mode
     scheduler->release_processor_from_worker(this);
     idle();
   }
 
-  assert_change_state(State::Acquiring, State::Exited);
+  acas_state(State::Acquiring, State::Exited);
 }
 
 void Worker::increase_sleep_duration() {

@@ -43,7 +43,6 @@ void initialize(Thread* thread);
   V(core, createtuple, 2)             \
   V(core, createtuplewith, 2)         \
   V(core, exit, 1)                    \
-  V(core, performgc, 0)               \
   V(core, getsteadytimestamp, 0)      \
   V(core, getsteadytimestampmicro, 0) \
   V(core, compile, 2)

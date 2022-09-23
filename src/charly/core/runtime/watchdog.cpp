@@ -35,8 +35,7 @@ namespace charly::core::runtime {
 using namespace std::chrono_literals;
 
 WatchDog::WatchDog(Runtime* runtime) :
-  m_runtime(runtime), m_thread(std::thread(&WatchDog::main, this)), m_clock(get_steady_timestamp()) {
-  (void)m_runtime;
+  m_runtime(runtime), m_thread(std::thread(&WatchDog::main, this)) {
 }
 
 WatchDog::~WatchDog() {

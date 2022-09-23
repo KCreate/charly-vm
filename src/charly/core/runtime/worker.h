@@ -118,7 +118,7 @@ public:
 
 private:
   void scheduler_loop(Runtime* runtime);
-  void assert_change_state(State expected_state, State new_state);
+  void acas_state(State expected_state, State new_state);
 
   // enter idle mode
   void idle();

@@ -33,7 +33,6 @@ const builtin_disassemble = @"charly.builtin.core.disassemble"
 const builtin_createtuple = @"charly.builtin.core.createtuple"
 const builtin_createtuplewith = @"charly.builtin.core.createtuplewith"
 const builtin_exit = @"charly.builtin.core.exit"
-const builtin_performgc = @"charly.builtin.core.performgc"
 const builtin_getsteadytimestamp = @"charly.builtin.core.getsteadytimestamp"
 const builtin_getsteadytimestampmicro = @"charly.builtin.core.getsteadytimestampmicro"
 const builtin_compile = @"charly.builtin.core.compile"
@@ -71,8 +70,6 @@ func readline_add_history(message) = builtin_readline_add_history(message)
 func readline_clear_history = builtin_readline_clear_history()
 
 func exit(status = 0) = builtin_exit(status)
-
-func performgc() = builtin_performgc()
 
 func currentworkingdirectory = builtin_currentworkingdirectory()
 
