@@ -56,6 +56,9 @@ Scheduler::Scheduler(Runtime* runtime) : m_runtime(runtime) {
       m_idle_processors.push(processor);
 
       auto* worker = new Worker(m_runtime);
+      auto scheduler_thread = get_free_thread();
+      scheduler_thread->init_proc_scheduler_thread();
+      worker->set_scheduler_thread(scheduler_thread);
       m_workers.push_back(worker);
     }
   }
@@ -63,7 +66,7 @@ Scheduler::Scheduler(Runtime* runtime) : m_runtime(runtime) {
   // initialize the main thread
   auto main_thread = get_free_thread();
   main_thread->init_main_thread();
-  main_thread->ready();
+  main_thread->wake_from_wait();
   schedule_thread(main_thread);
 
   m_watchdog = std::make_unique<WatchDog>(runtime);

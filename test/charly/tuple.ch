@@ -261,7 +261,7 @@ export class TupleTest {
     }
 
     static func test_tuple_max_size_exceeded_exception {
-        const tuple_max_capacity = 65012
+        const tuple_max_capacity = 16244
         const tuple_of_max_capacity = Tuple.create(tuple_max_capacity, null)
 
         const exc1 = assert_throws(->Tuple.create(tuple_max_capacity + 1000, null))

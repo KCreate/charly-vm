@@ -41,8 +41,8 @@ namespace charly::core::runtime {
 
 class Runtime;
 
-constexpr size_t kHeapSize = kGb * 64;
-constexpr size_t kHeapRegionSize = kKb * 512;
+constexpr size_t kHeapSize = kGb * 4;
+constexpr size_t kHeapRegionSize = kKb * 128;
 constexpr size_t kHeapRegionCount = kHeapSize / kHeapRegionSize;
 constexpr size_t kHeapMinimumMappedRegionCount = 32;
 
@@ -152,7 +152,7 @@ public:
   explicit Heap(Runtime* runtime);
   ~Heap();
 
-  HeapRegion* acquire_region(Thread* thread, HeapRegion::Type type);
+  HeapRegion* acquire_region(HeapRegion::Type type);
   HeapRegion* acquire_region_internal(HeapRegion::Type type);
   HeapRegion* pop_free_region();
   HeapRegion* map_new_region();
@@ -198,7 +198,7 @@ public:
 
 private:
   void release_owned_region();
-  void acquire_new_region(Thread* thread);
+  void acquire_new_region();
 
 private:
   Heap* m_heap;

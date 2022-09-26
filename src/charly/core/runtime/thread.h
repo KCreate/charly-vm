@@ -50,7 +50,7 @@ class GarbageCollector;
 using fcontext_t = boost::context::detail::fcontext_t;
 using transfer_t = boost::context::detail::transfer_t;
 
-constexpr size_t kThreadStackSize = 1024 * 1024 * 8;
+constexpr size_t kThreadStackSize = 1024 * 512; // 512kb
 
 class Stack {
 public:
@@ -118,20 +118,25 @@ public:
   static Thread* current();
   static void set_current(Thread* worker);
 
-  static constexpr size_t kMainThreadId = 0;
-
   static constexpr size_t kExceptionChainDepthLimit = 20;
 
   static constexpr size_t kBacktraceDepthLimit = 32;
 
   enum class State {
-    Free,     // thread sits on a freelist somewhere and isn't tied to a fiber yet
-    Waiting,  // thread is paused
-    Ready,    // thread is ready to be executed and is currently placed in some run queue
-    Running,  // thread is currently running
-    Native,   // thread is currently executing a native section
-    Exited,   // thread has exited
-    Aborted   // thread has aborted, runtime should terminate all other threads too
+    Free,              // thread sits on a freelist somewhere and isn't tied to a fiber yet
+    Waiting,           // thread is paused
+    WaitingForFuture,  // thread is paused and inside a RawFuture wait_queue
+    Ready,             // thread is ready to be executed and is currently placed in some run queue
+    Running,           // thread is currently running
+    Native,            // thread is currently executing a native section
+    Exited,            // thread has exited
+    Aborted            // thread has aborted, runtime should terminate all other threads too
+  };
+
+  enum class Type {
+    Main,
+    ProcScheduler,
+    Fiber
   };
 
   static constexpr size_t kNeverScheduledTimestamp = 0;
@@ -140,24 +145,39 @@ public:
 
   // getters / setters
   size_t id() const;
+  Type type() const;
   State state() const;
   int32_t exit_code() const;
   RawValue fiber() const;
   Worker* worker() const;
+  void set_worker(Worker* worker);
   Runtime* runtime() const;
   size_t last_scheduled_at() const;
   bool set_last_scheduled_at(size_t old_timestamp, size_t timestamp);
+  void set_last_scheduled_at(size_t timestamp);
+  fcontext_t& context();
+  void set_context(fcontext_t& context);
   const Stack* stack() const;
   ThreadLocalHandles* handles();
   Frame* frame() const;
   RawValue pending_exception() const;
   void set_pending_exception(RawValue value);
 
+  // context switch one context to another
+  static void context_handler(transfer_t transfer);
+  static void context_switch_worker_to_scheduler(Worker*);
+  static void context_switch_scheduler_to_worker(Thread*);
+  static void context_switch_scheduler_to_thread(Thread*, Thread*);
+  static void context_switch_thread_to_scheduler(Thread*, State state);
+
   // initialize this thread as the main thread
   void init_main_thread();
 
   // initialize this thread with a fiber
   void init_fiber_thread(RawFiber fiber);
+
+  // initialize this thread as a proc scheduler thread
+  void init_proc_scheduler_thread();
 
   // unbind this thread from its fiber after it has exited
   // clears out the stack and prepares the thread for insertion
@@ -168,22 +188,15 @@ public:
   // this gives the scheduler an opportunity to schedule another thread
   void checkpoint();
 
-  // yield control back to the scheduler
-  // keeps current fiber in ready state
-  void yield_to_scheduler();
-
   // exit from this thread and instruct the scheduler to give the
   // exit signal to all other threads
   [[noreturn]] void abort(int32_t exit_code);
 
-  // change thread state from waiting to ready
-  // fails if competing with another thread
-  void ready();
+  // pause current fiber and wait for the future to complete
+  void wait_on_future(RawFuture future);
 
-  // resume execution of a thread by performing a context switch
-  // thread is expected to already be in the Ready state
-  // meant to be called by the Scheduler
-  void context_switch(Worker* worker);
+  void wake_from_wait();
+  void wake_from_future_wait();
 
   // perform callback code in thread native mode
   // if a thread is in native mode, it is not allowed to interact with the charly heap or runtime
@@ -216,12 +229,6 @@ public:
   // allocate memory on the managed charly heap
   uintptr_t allocate(size_t size, bool contains_external_heap_pointers = false);
 
-  // yield control back to the scheduler and update thread state
-  void enter_scheduler();
-
-  // pause current fiber and wait for the future to complete
-  void wait_on_future(RawFuture future);
-
   void dump_exception_trace(RawException exception) const;
 
   void acas_state(Thread::State old_state, Thread::State new_state);
@@ -230,14 +237,16 @@ public:
   RawTuple create_backtrace();
 
 private:
-  int32_t entry_main_thread();
+  void entry_main_thread();
   void entry_fiber_thread();
+  void entry_proc_scheduler_thread();
 
   // acquire a stack from the scheduler
   void acquire_stack();
 
 private:
   size_t m_id;
+  Type m_type;
   atomic<State> m_state = State::Free;
   Stack* m_stack = nullptr;
   Runtime* m_runtime;

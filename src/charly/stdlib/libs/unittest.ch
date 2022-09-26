@@ -113,18 +113,20 @@ class UnitTest {
 
             if !suite.passed {
                 print("{suite.name}: {failed_tests.length} tests failed!", suite.duration * 1000, "us")
+            } else if print_passed_test_duration {
+                print("{suite.name}:", suite.duration * 1000, "us")
             }
 
             if print_passed_test_duration {
                 passed_tests.sort(->(l, r) r.duration - l.duration)
                 passed_tests.each(->(test) {
-                    print("\t{test.name}: Passed!", test.duration * 1000, "us")
+                    print("    {test.name}:", test.duration * 1000, "us")
                 })
             }
 
             failed_tests.each(->(test) {
-                print("\t{test.name}:")
-                print("\t\t", test.exception)
+                print("    {test.name}:")
+                print("        ", test.exception)
                 print("")
             })
         })

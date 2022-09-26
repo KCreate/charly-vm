@@ -53,27 +53,22 @@ void GarbageCollector::join() {
   m_thread.join();
 }
 
-void GarbageCollector::perform_gc(Thread* thread) {
+void GarbageCollector::perform_gc() {
   size_t old_gc_cycle = m_gc_cycle;
-
   DCHECK(m_has_initialized);
 
-  thread->native_section([&]() {
-    // wake GC thread
-    std::unique_lock locker(m_mutex);
-    if (!m_wants_collection) {
-      if (m_wants_collection.cas(false, true)) {
-        m_cv.notify_all();
-      }
+  // wake GC thread
+  std::unique_lock locker(m_mutex);
+  if (!m_wants_collection) {
+    if (m_wants_collection.cas(false, true)) {
+      m_cv.notify_all();
     }
+  }
 
-    // wait for GC thread to finish
-    m_cv.wait(locker, [&]() {
-      return (m_gc_cycle != old_gc_cycle) || m_runtime->wants_exit();
-    });
+  // wait for GC thread to finish
+  m_cv.wait(locker, [&]() {
+    return (m_gc_cycle != old_gc_cycle) || m_runtime->wants_exit();
   });
-
-  thread->checkpoint();
 }
 
 void GarbageCollector::main() {

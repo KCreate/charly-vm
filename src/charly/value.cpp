@@ -3306,7 +3306,7 @@ RawFiber RawFiber::create(Thread* thread, RawFunction _function, RawValue _self,
   fiber.set_result_future(RawFuture::create(thread));
 
   // schedule the fiber for execution
-  fiber_thread->ready();
+  fiber_thread->wake_from_wait();
   scheduler->schedule_thread(fiber_thread, thread->worker()->processor());
 
   return *fiber;
@@ -3466,8 +3466,7 @@ void RawFuture::wake_waiting_threads(Thread* thread) const {
 
   for (size_t i = 0; i < queue->used; i++) {
     Thread* waiting_thread = queue->buffer[i];
-    DCHECK(waiting_thread->state() == Thread::State::Waiting);
-    waiting_thread->ready();
+    waiting_thread->wake_from_future_wait();
     scheduler->schedule_thread(waiting_thread, processor);
   }
 

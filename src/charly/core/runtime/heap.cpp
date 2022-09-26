@@ -224,14 +224,14 @@ Heap::~Heap() {
   m_old_regions.clear();
 }
 
-HeapRegion* Heap::acquire_region(Thread* thread, HeapRegion::Type type) {
+HeapRegion* Heap::acquire_region(HeapRegion::Type type) {
   std::unique_lock locker(m_mutex);
 
   HeapRegion* region = pop_free_region();
   if (region == nullptr) {
     for (size_t attempt = 0; attempt < kGCCollectionAttempts; attempt++) {
       locker.unlock();
-      m_runtime->gc()->perform_gc(thread);
+      m_runtime->gc()->perform_gc();
       locker.lock();
 
       region = pop_free_region();
@@ -367,7 +367,10 @@ uintptr_t ThreadAllocationBuffer::allocate(Thread* thread, size_t size, bool con
   }
 
   if (m_region == nullptr) {
-    acquire_new_region(thread);
+    thread->native_section([&] {
+      acquire_new_region();
+    });
+    thread->checkpoint();
 
     // could not allocate a new region
     if (m_region == nullptr) {
@@ -386,9 +389,9 @@ void ThreadAllocationBuffer::release_owned_region() {
   m_region = nullptr;
 }
 
-void ThreadAllocationBuffer::acquire_new_region(Thread* thread) {
+void ThreadAllocationBuffer::acquire_new_region() {
   DCHECK(m_region == nullptr);
-  m_region = m_heap->acquire_region(thread, HeapRegion::Type::Eden);
+  m_region = m_heap->acquire_region(HeapRegion::Type::Eden);
   DCHECK(m_region);
 }
 

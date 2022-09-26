@@ -62,6 +62,10 @@ size_t Worker::context_switch_counter() const {
   return m_context_switch_counter;
 }
 
+void Worker::increase_context_switch_counter() {
+  m_context_switch_counter++;
+}
+
 size_t Worker::rand() {
   return m_random_device.get();
 }
@@ -102,12 +106,24 @@ Thread* Worker::thread() const {
   return m_thread;
 }
 
+Thread* Worker::scheduler_thread() const {
+  return m_scheduler_thread;
+}
+
 Processor* Worker::processor() const {
   return m_processor;
 }
 
 Runtime* Worker::runtime() const {
   return m_runtime;
+}
+
+void Worker::set_thread(Thread* thread) {
+  m_thread = thread;
+}
+
+void Worker::set_scheduler_thread(Thread* thread) {
+  m_scheduler_thread = thread;
 }
 
 void Worker::set_processor(Processor* processor) {
@@ -142,9 +158,8 @@ void Worker::idle() {
 
   {
     std::unique_lock locker(m_mutex);
-    auto idle_duration = 1ms * m_idle_sleep_duration;
-    m_idle_cv.wait_for(locker, idle_duration, [&] {
-      return !has_idle_flag();
+    m_idle_cv.wait(locker, [&] {
+      return !has_idle_flag() || m_runtime->wants_exit();
     });
 
     clear_idle_flag();
@@ -229,92 +244,17 @@ void Worker::scheduler_loop(Runtime* runtime) {
   while (!runtime->wants_exit()) {
     checkpoint();
 
-    // attempt to acquire idle processor from scheduler
-    if (!scheduler->acquire_processor_for_worker(this)) {
-      increase_sleep_duration();
-      idle();
-      continue;
+    if (scheduler->acquire_processor_for_worker(this)) {
+      acas_state(State::Acquiring, State::Scheduling);
+      Thread::context_switch_worker_to_scheduler(this);
+      scheduler->release_processor_from_worker(this);
+      acas_state(State::Scheduling, State::Acquiring);
     }
 
-    Processor* proc = m_processor;
-
-    acas_state(State::Acquiring, State::Scheduling);
-    while (!runtime->wants_exit()) {
-      checkpoint();
-
-      // fetch next ready thread
-      Thread* thread = proc->get_ready_thread();
-      if (thread == nullptr) {
-        increase_sleep_duration();
-        break;
-      }
-
-      DCHECK(thread->worker() == nullptr);
-      DCHECK(thread->state() == Thread::State::Ready);
-
-      reset_sleep_duration();
-
-      // context switch into the thread
-      acas_state(State::Scheduling, State::Running);
-      m_context_switch_counter++;
-      m_thread = thread;
-      (void)m_thread;
-      thread->context_switch(this);
-      m_thread = nullptr;
-      acas_state(State::Running, State::Scheduling);
-
-      switch (thread->state()) {
-        case Thread::State::Waiting: {
-          if (thread->m_waiting_on_future.isFuture()) {
-            auto future = RawFuture::cast(thread->m_waiting_on_future);
-            DCHECK(future.has_finished() == false);
-            DCHECK(future.is_locked());
-            auto* wait_queue = future.wait_queue();
-            future.set_wait_queue(wait_queue->append_thread(wait_queue, thread));
-            future.unlock();
-          }
-
-          continue;
-        }
-        case Thread::State::Ready: {
-          scheduler->schedule_thread(thread, proc);
-          continue;
-        }
-        case Thread::State::Exited: {
-          scheduler->recycle_thread(thread);
-          continue;
-        }
-        case Thread::State::Aborted: {
-          int32_t exit_code = thread->exit_code();
-          scheduler->recycle_thread(thread);
-          runtime->abort(exit_code);
-          continue;
-        }
-        default: {
-          FAIL("unexpected worker state");
-        }
-      }
-    }
-    acas_state(State::Scheduling, State::Acquiring);
-
-    // release processor back to scheduler and go into idle mode
-    scheduler->release_processor_from_worker(this);
     idle();
   }
 
   acas_state(State::Acquiring, State::Exited);
-}
-
-void Worker::increase_sleep_duration() {
-  uint32_t next_duration = m_idle_sleep_duration * 2;
-  if (next_duration > kWorkerMaximumIdleSleepDuration) {
-    next_duration = kWorkerMaximumIdleSleepDuration;
-  }
-  m_idle_sleep_duration = next_duration;
-}
-
-void Worker::reset_sleep_duration() {
-  m_idle_sleep_duration = 10;
 }
 
 }  // namespace charly::core::runtime

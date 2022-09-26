@@ -76,6 +76,7 @@ public:
   size_t id() const;
   State state() const;
   size_t context_switch_counter() const;
+  void increase_context_switch_counter();
   size_t rand();
   fcontext_t& context();
   void set_context(fcontext_t& context);
@@ -90,10 +91,12 @@ public:
   bool clear_idle_flag();
 
   Thread* thread() const;
+  Thread* scheduler_thread() const;
   Processor* processor() const;
   Runtime* runtime() const;
 
-  // called by Scheduler::acquire_processor_for_worker
+  void set_thread(Thread* thread);
+  void set_scheduler_thread(Thread* thread);
   void set_processor(Processor* processor);
 
   // wait for the worker to exit
@@ -116,30 +119,27 @@ public:
   // wait for the worker to change its state
   State wait_for_state_change(State old_state);
 
-private:
-  void scheduler_loop(Runtime* runtime);
   void acas_state(State expected_state, State new_state);
-
-  // enter idle mode
-  void idle();
 
   // implements a scheduler checkpoint
   void checkpoint();
 
-  // increase the amount of time the worker should sleep in its next idle state
-  void increase_sleep_duration();
-  void reset_sleep_duration();
+private:
+  void scheduler_loop(Runtime* runtime);
+
+  // enter idle mode
+  void idle();
 
 private:
   size_t m_id;
   atomic<State> m_state = State::Created;
   size_t m_context_switch_counter = 0;
-  uint32_t m_idle_sleep_duration = 10;
   utils::RandomDevice m_random_device;
   fcontext_t m_context = nullptr;
   std::thread m_os_thread_handle;
 
   atomic<Thread*> m_thread = nullptr;
+  atomic<Thread*> m_scheduler_thread = nullptr;
   atomic<Processor*> m_processor = nullptr;
   Runtime* m_runtime = nullptr;
 

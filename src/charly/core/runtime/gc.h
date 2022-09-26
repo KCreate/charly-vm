@@ -74,7 +74,7 @@ public:
 
   void shutdown();
   void join();
-  void perform_gc(Thread* thread);
+  void perform_gc();
 
 private:
   void main();

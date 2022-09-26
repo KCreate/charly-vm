@@ -62,6 +62,10 @@ size_t Thread::id() const {
   return m_id;
 }
 
+Thread::Type Thread::type() const {
+  return m_type;
+}
+
 Thread::State Thread::state() const {
   return m_state;
 }
@@ -78,6 +82,10 @@ Worker* Thread::worker() const {
   return m_worker;
 }
 
+void Thread::set_worker(Worker* worker) {
+  m_worker = worker;
+}
+
 Runtime* Thread::runtime() const {
   return m_runtime;
 }
@@ -88,6 +96,18 @@ size_t Thread::last_scheduled_at() const {
 
 bool Thread::set_last_scheduled_at(size_t old_timestamp, size_t timestamp) {
   return m_last_scheduled_at.cas(old_timestamp, timestamp);
+}
+
+void Thread::set_last_scheduled_at(size_t timestamp) {
+  m_last_scheduled_at = timestamp;
+}
+
+fcontext_t& Thread::context() {
+  return m_context;
+}
+
+void Thread::set_context(fcontext_t& context) {
+  m_context = context;
 }
 
 const Stack* Thread::stack() const {
@@ -108,23 +128,22 @@ RawValue Thread::pending_exception() const {
 
 void Thread::init_main_thread() {
   acas_state(State::Free, State::Waiting);
-  m_fiber = kNull;
-  DCHECK(m_stack == nullptr);
+  m_type = Type::Main;
 }
 
 void Thread::init_fiber_thread(RawFiber fiber) {
-  fiber.set_thread(this);
   acas_state(State::Free, State::Waiting);
+  m_type = Type::Fiber;
   m_fiber = fiber;
-  DCHECK(m_stack == nullptr);
+  fiber.set_thread(this);
+}
+
+void Thread::init_proc_scheduler_thread() {
+  acas_state(State::Free, State::Waiting);
+  m_type = Type::ProcScheduler;
 }
 
 void Thread::clean() {
-  // prevent any other thread from getting the main thread id
-  if (id() == kMainThreadId) {
-    m_id = thread_id_counter++;
-  }
-
   m_state = State::Free;
   if (m_stack != nullptr) {
     m_runtime->scheduler()->recycle_stack(m_stack);
@@ -141,41 +160,22 @@ void Thread::clean() {
 
 void Thread::checkpoint() {
   if (m_worker->has_stop_flag() || m_last_scheduled_at == kShouldYieldToSchedulerTimestamp) {
-    yield_to_scheduler();
+    Thread::context_switch_thread_to_scheduler(this, State::Ready);
   }
-}
-
-void Thread::yield_to_scheduler() {
-  acas_state(State::Running, State::Ready);
-  enter_scheduler();
 }
 
 void Thread::abort(int32_t exit_code) {
-  acas_state(State::Running, State::Aborted);
   m_exit_code = exit_code;
-  enter_scheduler();
+  Thread::context_switch_thread_to_scheduler(this, State::Aborted);
   UNREACHABLE();
 }
 
-void Thread::ready() {
+void Thread::wake_from_wait() {
   acas_state(State::Waiting, State::Ready);
 }
 
-void Thread::context_switch(Worker* worker) {
-  DCHECK(m_state == State::Ready);
-  acas_state(State::Ready, State::Running);
-  m_last_scheduled_at = get_steady_timestamp();
-  DCHECK(m_last_scheduled_at >= kFirstValidScheduledAtTimestamp);
-
-  if (m_stack == nullptr) {
-    acquire_stack();
-  }
-  DCHECK(m_stack != nullptr);
-
-  transfer_t transfer = jump_fcontext(m_context, worker);
-  m_context = transfer.fctx;
-  m_last_scheduled_at = kNeverScheduledTimestamp;
-  DCHECK(m_worker == nullptr);
+void Thread::wake_from_future_wait() {
+  acas_state(State::WaitingForFuture, State::Ready);
 }
 
 void Thread::enter_native() {
@@ -213,9 +213,136 @@ void Thread::set_pending_exception(RawValue value) {
   m_pending_exception = value;
 }
 
-int32_t Thread::entry_main_thread() {
-  CHECK(id() == kMainThreadId);
+void Thread::context_handler(transfer_t transfer) {
+  Thread* thread = static_cast<Thread*>(transfer.data);
+  Worker* worker = thread->worker();
+  Thread::set_current(thread);
+  Thread* t_sched = worker->scheduler_thread();
 
+  DCHECK(worker->thread() == thread);
+
+  switch (thread->type()) {
+
+    // initial jump to a ProcScheduler thread happens on the native
+    // OS stack frame inside Worker::scheduler_loop
+    case Type::ProcScheduler: {
+      DCHECK(thread == t_sched);
+      worker->set_context(transfer.fctx);
+      thread->entry_proc_scheduler_thread();
+      UNREACHABLE();
+    }
+
+    // initial jump to Main and Fiber threads happens within ProcScheduler
+    // threads
+    case Type::Main: {
+      t_sched->set_context(transfer.fctx);
+      thread->entry_main_thread();
+      UNREACHABLE();
+    }
+    case Type::Fiber: {
+      t_sched->set_context(transfer.fctx);
+      thread->entry_fiber_thread();
+      UNREACHABLE();
+    }
+  }
+}
+
+void Thread::context_switch_worker_to_scheduler(Worker* worker) {
+  Thread* scheduler = worker->scheduler_thread();
+  scheduler->wake_from_wait();
+
+  DCHECK(worker->thread() == nullptr);
+  worker->set_thread(scheduler);
+
+  if (scheduler->stack() == nullptr) {
+    scheduler->acquire_stack();
+    DCHECK(scheduler->stack());
+  }
+  scheduler->acas_state(State::Ready, State::Running);
+  scheduler->set_worker(worker);
+  scheduler->set_last_scheduled_at(kNeverScheduledTimestamp, get_steady_timestamp());
+
+  transfer_t transfer = jump_fcontext(scheduler->context(), scheduler);
+  DCHECK(transfer.data == nullptr);
+  scheduler->set_context(transfer.fctx);
+  scheduler->set_last_scheduled_at(kNeverScheduledTimestamp);
+  scheduler->set_worker(nullptr);
+  worker->set_thread(nullptr);
+  DCHECK(scheduler->state() == State::Waiting);
+  DCHECK(worker->scheduler_thread() == scheduler);
+}
+
+void Thread::context_switch_scheduler_to_worker(Thread* scheduler) {
+  Worker* worker = scheduler->worker();
+  DCHECK(scheduler->type() == Type::ProcScheduler);
+  scheduler->acas_state(State::Running, State::Waiting);
+  Thread::set_current(nullptr);
+  transfer_t transfer = jump_fcontext(worker->context(), nullptr);
+  DCHECK(transfer.data == scheduler);
+  DCHECK(scheduler->worker() == worker);
+  DCHECK(worker->thread() == scheduler);
+  worker->set_context(transfer.fctx);
+  Thread::set_current(scheduler);
+}
+
+void Thread::context_switch_scheduler_to_thread(Thread* from_scheduler, Thread* to_thread) {
+  DCHECK(from_scheduler->type() == Type::ProcScheduler);
+  DCHECK(to_thread->type() != Type::ProcScheduler);
+
+  Worker* worker = from_scheduler->worker();
+  DCHECK(worker->scheduler_thread() == from_scheduler);
+  DCHECK(worker->thread() == from_scheduler);
+  worker->increase_context_switch_counter();
+  worker->set_thread(to_thread);
+
+  from_scheduler->acas_state(State::Running, State::Waiting);
+  from_scheduler->set_last_scheduled_at(kNeverScheduledTimestamp);
+  from_scheduler->set_worker(nullptr);
+
+  if (to_thread->stack() == nullptr) {
+    to_thread->acquire_stack();
+    DCHECK(to_thread->stack());
+  }
+
+  to_thread->acas_state(State::Ready, State::Running);
+  to_thread->set_last_scheduled_at(kNeverScheduledTimestamp, get_steady_timestamp());
+  to_thread->set_worker(worker);
+
+  transfer_t transfer = jump_fcontext(to_thread->context(), to_thread);
+  DCHECK(transfer.data == to_thread);
+  to_thread->set_context(transfer.fctx);
+  Thread::set_current(from_scheduler);
+
+  // reenter scheduler thread
+  DCHECK(worker->scheduler_thread() == from_scheduler);
+  DCHECK(from_scheduler->worker() == worker);
+  DCHECK(worker->thread() == from_scheduler);
+  from_scheduler->set_last_scheduled_at(kNeverScheduledTimestamp, get_steady_timestamp());
+}
+
+void Thread::context_switch_thread_to_scheduler(Thread* from_thread, Thread::State state) {
+  Worker* worker = from_thread->worker();
+  Thread* t_sched = worker->scheduler_thread();
+  DCHECK(t_sched->state() == State::Waiting);
+  DCHECK(t_sched->type() == Type::ProcScheduler);
+
+  from_thread->acas_state(State::Running, state);
+  from_thread->set_last_scheduled_at(kNeverScheduledTimestamp);
+  from_thread->set_worker(nullptr);
+
+  t_sched->acas_state(State::Waiting, State::Running);
+  t_sched->set_worker(worker);
+  worker->set_thread(t_sched);
+
+  transfer_t transfer = jump_fcontext(t_sched->context(), from_thread);
+  DCHECK(transfer.data == from_thread);
+  worker = from_thread->worker();
+  t_sched = worker->scheduler_thread();
+  t_sched->set_context(transfer.fctx);
+  Thread::set_current(from_thread);
+}
+
+void Thread::entry_main_thread() {
   Runtime* runtime = m_runtime;
   runtime->initialize_null_initialized_page();
   runtime->initialize_symbol_table(this);
@@ -227,7 +354,8 @@ int32_t Thread::entry_main_thread() {
   RawValue result = runtime->import_module_at_path(this, boot_path, true);
   if (result.is_error_exception()) {
     dump_exception_trace(RawException::cast(pending_exception()));
-    return 1;
+    abort(1);
+    UNREACHABLE();
   }
 
   // execute user file or REPL depending on CLI arguments
@@ -243,59 +371,111 @@ int32_t Thread::entry_main_thread() {
   RawValue user_result = runtime->import_module_at_path(this, filename, load_as_repl);
   if (user_result.is_error_exception()) {
     dump_exception_trace(RawException::cast(pending_exception()));
-    return 1;
+    abort(1);
+    UNREACHABLE();
   }
 
-  return 0;
+  abort(0);
+  UNREACHABLE();
 }
 
 void Thread::entry_fiber_thread() {
-  HandleScope scope(this);
-  Fiber fiber(scope, m_fiber);
-  Value arguments(scope, fiber.arguments());
+  {
+    HandleScope scope(this);
+    Fiber fiber(scope, m_fiber);
+    Value arguments(scope, fiber.arguments());
 
-  RawValue* arguments_pointer = nullptr;
-  size_t argc = 0;
-  if (arguments.isTuple()) {
-    Tuple argtuple(scope, arguments);
-    arguments_pointer = argtuple.data();
-    argc = argtuple.length();
-  } else {
-    DCHECK(arguments.isNull());
+    RawValue* arguments_pointer = nullptr;
+    size_t argc = 0;
+    if (arguments.isTuple()) {
+      Tuple argtuple(scope, arguments);
+      arguments_pointer = argtuple.data();
+      argc = argtuple.length();
+    } else {
+      DCHECK(arguments.isNull());
+    }
+
+    RawValue result =
+      Interpreter::call_function(this, fiber.context(), fiber.function(), arguments_pointer, argc, false, arguments);
+    {
+      std::lock_guard lock(fiber);
+      fiber.set_thread(nullptr);
+      if (result.is_error_exception()) {
+        fiber.result_future().reject(this, RawException::cast(pending_exception()));
+      } else {
+        DCHECK(!result.is_error());
+        fiber.result_future().resolve(this, result);
+      }
+    }
   }
 
-  RawValue result =
-    Interpreter::call_function(this, fiber.context(), fiber.function(), arguments_pointer, argc, false, arguments);
-  {
-    std::lock_guard lock(fiber);
-    fiber.set_thread(nullptr);
-    if (result.is_error_exception()) {
-      fiber.result_future().reject(this, RawException::cast(pending_exception()));
-    } else {
-      DCHECK(!result.is_error());
-      fiber.result_future().resolve(this, result);
+  Thread::context_switch_thread_to_scheduler(this, State::Exited);
+}
+
+void Thread::entry_proc_scheduler_thread() {
+  Runtime* runtime = this->runtime();
+  Scheduler* scheduler = runtime->scheduler();
+
+  for (;;) {
+    Worker* worker = m_worker;
+    Processor* proc = worker->processor();
+
+    if (runtime->wants_exit()) {
+      Thread::context_switch_scheduler_to_worker(this);
+      UNREACHABLE();
+    }
+
+    worker->checkpoint();
+
+    Thread* ready_thread = proc->get_ready_thread();
+    if (ready_thread == nullptr) {
+      Thread::context_switch_scheduler_to_worker(this);
+      continue;
+    }
+
+    DCHECK(ready_thread->worker() == nullptr);
+    DCHECK(ready_thread->state() == State::Ready);
+
+    worker->acas_state(Worker::State::Scheduling, Worker::State::Running);
+    Thread::context_switch_scheduler_to_thread(this, ready_thread);
+    worker->acas_state(Worker::State::Running, Worker::State::Scheduling);
+
+    switch (ready_thread->state()) {
+      case State::Waiting: {
+        continue;
+      }
+      case State::WaitingForFuture: {
+        auto future = RawFuture::cast(ready_thread->m_waiting_on_future);
+        DCHECK(future.has_finished() == false);
+        DCHECK(future.is_locked());
+        auto* wait_queue = future.wait_queue();
+        future.set_wait_queue(wait_queue->append_thread(wait_queue, ready_thread));
+        future.unlock();
+        continue;
+      }
+      case State::Ready: {
+        scheduler->schedule_thread(ready_thread, proc);
+        continue;
+      }
+      case State::Exited: {
+        scheduler->recycle_thread(ready_thread);
+        continue;
+      }
+      case State::Aborted: {
+        int32_t exit_code = ready_thread->exit_code();
+        scheduler->recycle_thread(ready_thread);
+        runtime->abort(exit_code);
+        continue;
+      }
+      default: FAIL("unexpected thread state");
     }
   }
 }
 
-void Thread::enter_scheduler() {
-  Thread* old_thread = Thread::current();
-  Thread::set_current(nullptr);
-  fcontext_t& context = m_worker->context();
-  m_worker = nullptr;
-  transfer_t transfer = jump_fcontext(context, nullptr);
-  m_worker = static_cast<Worker*>(transfer.data);
-  DCHECK(this == old_thread);
-  DCHECK(m_worker->thread() == old_thread);
-  Thread::set_current(m_worker->thread());
-  m_worker->set_context(transfer.fctx);
-}
-
 void Thread::wait_on_future(RawFuture future) {
   DCHECK(m_waiting_on_future.isNull());
-  acas_state(Thread::State::Running, Thread::State::Waiting);
   m_waiting_on_future = future;
-  enter_scheduler();
+  Thread::context_switch_thread_to_scheduler(this, State::WaitingForFuture);
   m_waiting_on_future = kNull;
 }
 
@@ -303,23 +483,7 @@ void Thread::acquire_stack() {
   DCHECK(m_stack == nullptr);
   m_stack = m_runtime->scheduler()->get_free_stack();
   DCHECK(m_stack, "could not allocate thread stack");
-
-  m_context = make_fcontext(m_stack->hi(), m_stack->size(), [](transfer_t transfer) {
-    auto* worker = static_cast<Worker*>(transfer.data);
-    worker->set_context(transfer.fctx);
-    Thread* thread = worker->thread();
-    Thread::set_current(thread);
-    thread->m_worker = worker;
-
-    if (thread->id() == kMainThreadId) {
-      thread->abort(thread->entry_main_thread());
-      UNREACHABLE();
-    } else {
-      thread->entry_fiber_thread();
-      thread->acas_state(State::Running, State::Exited);
-      thread->enter_scheduler();
-    }
-  });
+  m_context = make_fcontext(m_stack->hi(), m_stack->size(), &Thread::context_handler);
 }
 
 void Thread::dump_exception_trace(RawException exception) const {
