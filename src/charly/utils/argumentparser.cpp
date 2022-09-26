@@ -83,6 +83,7 @@ const std::vector<ArgumentParser::FlagGroup> kDefinedFlagGroups = {
       { "asm", { "--asm" }, "Dump a disassembled view of the bytecode" },
       { "constants", { "--constants" }, "Dump some global constants" },
       { "debug_pattern", { "--debug_pattern" }, "Include files matching the pattern in debug dumps", "pattern" },
+      { "validate_heap", { "--validate_heap" }, "Perform heap validation during GC (slow & expensive)" },
     } }
 };
 

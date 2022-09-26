@@ -24,10 +24,12 @@
  * SOFTWARE.
  */
 
+#include "charly/utils/timedsection.h"
+#include "charly/utils/argumentparser.h"
+
 #include "charly/core/runtime/gc.h"
 #include "charly/core/runtime/interpreter.h"
 #include "charly/core/runtime/runtime.h"
-#include "charly/utils/timedsection.h"
 
 using namespace std::chrono_literals;
 
@@ -131,8 +133,9 @@ void GarbageCollector::main() {
 void GarbageCollector::collect(CollectionMode mode) {
   m_collection_mode = mode;
 
-  if constexpr (kIsDebugBuild)
+  if (utils::ArgumentParser::is_flag_set("validate_heap")) {
     validate_heap_and_roots();
+  }
 
   mark_runtime_roots();
 
@@ -153,8 +156,9 @@ void GarbageCollector::collect(CollectionMode mode) {
   m_target_old_regions.clear();
   m_gc_cycle++;
 
-  if constexpr (kIsDebugBuild)
+  if (utils::ArgumentParser::is_flag_set("validate_heap")) {
     validate_heap_and_roots();
+  }
 }
 
 void GarbageCollector::mark_live_objects() {
