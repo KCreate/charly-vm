@@ -432,9 +432,15 @@ void Thread::entry_proc_scheduler_thread() {
 
     Thread* ready_thread = proc->get_ready_thread();
     if (ready_thread == nullptr) {
-      size_t now = get_steady_timestamp();
       size_t next_event = proc->timestamp_of_next_timer_event();
-      if (next_event && next_event > now) {
+
+      if (next_event) {
+        size_t now = get_steady_timestamp();
+
+        if (next_event <= now) {
+          continue;
+        }
+
         size_t duration = next_event - now;
         native_section([&] {
           std::this_thread::sleep_for(std::chrono::milliseconds(duration));
