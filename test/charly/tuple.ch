@@ -47,19 +47,19 @@ export class TupleTest {
         const a = Tuple.create(0, null)
         const b = Tuple.create(5, 100)
         const c = Tuple.create(1000, "hello")
+        const d = Tuple.create(-10, null)
 
         assert a.length == 0
         assert b.length == 5
         assert c.length == 1000
+        assert d.length == 0
 
         assert a == ()
         assert b == (100, 100, 100, 100, 100)
         assert c[0] == "hello"
         assert c[500] == "hello"
         assert c[999] == "hello"
-
-        const exc = assert_throws(->Tuple.create(-10, null))
-        assert exc.message == "Expected length to be positive, got -10"
+        assert d == ()
     }
 
     static func test_tuple_create_with {
@@ -71,8 +71,10 @@ export class TupleTest {
         Tuple.create_with(0, ->called = true)
         assert called == false
 
-        const exc = assert_throws(->Tuple.create_with(-10, ->called = true))
-        assert exc.message == "Expected length to be positive, got -10"
+        const b = Tuple.create_with(-10, ->called = true)
+        assert b instanceof Tuple
+        assert b.length == 0
+        assert b == ()
         assert called == false
     }
 

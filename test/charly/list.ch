@@ -61,8 +61,10 @@ export class ListTest {
         assert d[8191] == 12345678
         assert d[-1] == 12345678
 
-        const exc1 = assert_throws(->List.create(-10))
-        assert exc1.message == "Expected length to be positive, got -10"
+        const e = List.create(-10)
+        assert e instanceof List
+        assert e.length == 0
+        assert e == []
     }
 
     static func test_list_create_with {
@@ -75,8 +77,10 @@ export class ListTest {
         assert called == false
         assert b == []
 
-        const exc = assert_throws(->List.create_with(-10, ->{}))
-        assert exc.message == "Expected length to be positive, got -10"
+        const c = List.create_with(-10, ->25)
+        assert c instanceof List
+        assert c.length == 0
+        assert c == []
     }
 
     static func test_list_insert {

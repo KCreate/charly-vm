@@ -46,8 +46,8 @@ RawValue create(Thread* thread, BuiltinFrame* frame) {
   int64_t size = size_value.int_value();
   RawValue initial_value = frame->arguments[1];
 
-  if (size < 0) {
-    return thread->throw_message("Expected length to be positive, got %", size_value);
+  if (size <= 0) {
+    return RawList::create(thread, 0);
   }
 
   if (size > (int64_t)RawList::kMaximumCapacity) {

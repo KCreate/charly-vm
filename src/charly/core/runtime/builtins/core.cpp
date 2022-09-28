@@ -164,8 +164,8 @@ RawValue createtuple(Thread* thread, BuiltinFrame* frame) {
   DCHECK(frame->arguments[0].isNumber());
 
   int64_t length = frame->arguments[0].int_value();
-  if (length < 0) {
-    return thread->throw_message("Expected length to be positive, got %", length);
+  if (length <= 0) {
+    return RawTuple::create(thread, 0);
   }
 
   if ((size_t)length > kHeapRegionMaximumObjectFieldCount) {
@@ -185,8 +185,8 @@ RawValue createtuplewith(Thread* thread, BuiltinFrame* frame) {
   DCHECK(frame->arguments[1].isFunction());
 
   int64_t length = frame->arguments[0].int_value();
-  if (length < 0) {
-    return thread->throw_message("Expected length to be positive, got %", length);
+  if (length <= 0) {
+    return RawTuple::create(thread, 0);
   }
 
   if ((size_t)length > kHeapRegionMaximumObjectFieldCount) {
