@@ -24,35 +24,24 @@
  * SOFTWARE.
  */
 
-const modifier = Future.create()
+func sleep(delay) {
+    const c = Future.create()
+    builtin_timerfibercreate(delay, ->c.resolve(), null, null)
+    await c
+    null
+}
 
-const tasks = List.create_with(100000, ->(i) spawn {
-    let sum = 0
-    100.times(->{
-        sum += 1
-    })
-
-    return sum * await modifier
+const limit = 10
+const tasks = 4096.map(->(i) spawn {
+    let counter = 0
+    while counter < limit {
+        counter += 1
+        sleep(100)
+    }
 })
 
-modifier.resolve(5)
-
-const results = tasks.map(->(task, i) {
-    await task
-})
-
-const sum = results.reduce(0, ->(p, n) p + n)
-print(sum)
-
-
-
-
-
-
-
-
-
-
+tasks.each(->(t) await t)
+print("all tasks finished")
 
 
 

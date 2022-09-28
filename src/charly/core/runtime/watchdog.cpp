@@ -56,6 +56,12 @@ void WatchDog::main() {
     for (Worker* worker : scheduler->m_workers) {
       if (worker->state() == Worker::State::Running) {
         if (auto* thread = worker->thread()) {
+
+          // scheduler threads cannot be interrupted since there is no thread for them to yield to
+          if (thread->is_scheduler()) {
+            continue;
+          }
+
           size_t last_scheduled_at = thread->last_scheduled_at();
           if (last_scheduled_at >= Thread::kFirstValidScheduledAtTimestamp && last_scheduled_at < m_clock) {
             size_t execution_time = m_clock - last_scheduled_at;

@@ -135,7 +135,7 @@ public:
 
   enum class Type {
     Main,
-    ProcScheduler,
+    Scheduler,
     Fiber
   };
 
@@ -146,6 +146,9 @@ public:
   // getters / setters
   size_t id() const;
   Type type() const;
+  bool is_main() const { return type() == Type::Main; }
+  bool is_scheduler() const { return type() == Type::Scheduler; }
+  bool is_fiber() const { return type() == Type::Fiber; }
   State state() const;
   int32_t exit_code() const;
   RawValue fiber() const;

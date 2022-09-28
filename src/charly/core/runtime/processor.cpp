@@ -63,7 +63,7 @@ ThreadAllocationBuffer* Processor::tab() const {
 }
 
 bool Processor::schedule_thread(Thread* thread) {
-  std::lock_guard<std::mutex> locker(m_mutex);
+  std::lock_guard<std::mutex> locker(m_run_queue_mutex);
   DCHECK(thread->state() == Thread::State::Ready);
   if (m_run_queue.size() >= kLocalRunQueueMaxSize) {
     return false;
@@ -72,6 +72,23 @@ bool Processor::schedule_thread(Thread* thread) {
   m_run_queue.push_back(thread);
 
   return true;
+}
+
+void Processor::init_timer_fiber_create(size_t ts, RawFunction function, RawValue context, RawValue arguments) {
+  {
+    std::lock_guard locker(m_timer_events_mutex);
+
+    TimerEvent event = {
+      .type = TimerEvent::kEventFiberCreate,
+      .timestamp = ts,
+      .arg1 = function,
+      .arg2 = context,
+      .arg3 = arguments,
+    };
+
+    m_timer_events.push_back(std::move(event));
+    std::push_heap(m_timer_events.begin(), m_timer_events.end(), TimerEvent::Compare{});
+  }
 }
 
 Thread* Processor::get_ready_thread() {
@@ -92,7 +109,7 @@ Thread* Processor::get_ready_thread() {
 
   // check current processors local run queue
   {
-    std::lock_guard<std::mutex> locker(m_mutex);
+    std::lock_guard<std::mutex> locker(m_run_queue_mutex);
     if (!m_run_queue.empty()) {
       Thread* thread = m_run_queue.front();
       m_run_queue.pop_front();
@@ -134,7 +151,7 @@ RawValue Processor::lookup_symbol(SYMBOL symbol) {
 }
 
 bool Processor::steal_ready_threads(Processor* target_proc) {
-  std::scoped_lock locker(m_mutex, target_proc->m_mutex);
+  std::scoped_lock locker(m_run_queue_mutex, target_proc->m_run_queue_mutex);
 
   while (!m_run_queue.empty() && target_proc->m_run_queue.size() < m_run_queue.size()) {
     Thread* thread = m_run_queue.front();
@@ -144,6 +161,42 @@ bool Processor::steal_ready_threads(Processor* target_proc) {
   }
 
   return false;
+}
+
+void Processor::fire_timer_events(Thread* thread) {
+  size_t now = get_steady_timestamp();
+  std::lock_guard locker(m_timer_events_mutex);
+  while (!m_timer_events.empty()) {
+    TimerEvent& event = m_timer_events[0];
+    if (event.timestamp <= now) {
+      switch (event.type) {
+        case TimerEvent::kEventFiberCreate: {
+          HandleScope scope(thread);
+          Function function(scope, event.arg1);
+          Value context(scope, event.arg2);
+          Value arguments(scope, event.arg3);
+          RawFiber::create(thread, function, context, arguments);
+          break;
+        }
+        default: UNREACHABLE();
+      }
+
+      std::pop_heap(m_timer_events.begin(), m_timer_events.end(), TimerEvent::Compare{});
+      m_timer_events.pop_back();
+      continue;
+    }
+
+    break;
+  }
+}
+
+size_t Processor::timestamp_of_next_timer_event() {
+  std::lock_guard locker(m_timer_events_mutex);
+  if (m_timer_events.empty()) {
+    return 0;
+  }
+
+  return m_timer_events.front().timestamp;
 }
 
 }  // namespace charly::core::runtime

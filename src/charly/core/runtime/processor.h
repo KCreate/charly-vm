@@ -41,6 +41,28 @@ class Thread;
 class ThreadAllocationBuffer;
 class GarbageCollector;
 
+using TimerId = size_t;
+struct TimerEvent {
+  enum Type {
+    kEventFiberCreate,
+    kEventFutureResolve,
+    kEventFutureReject
+  };
+
+  Type type;
+  size_t timestamp;
+  RawValue arg1;
+  RawValue arg2;
+  RawValue arg3;
+  RawValue arg4;
+
+  struct Compare {
+    constexpr bool operator()(const TimerEvent& left, const TimerEvent& right) const {
+      return left.timestamp < right.timestamp;
+    }
+  };
+};
+
 // represents a virtual processor
 class Processor {
   friend class GarbageCollector;
@@ -62,6 +84,8 @@ public:
   // returns false if the run queue is already at peak capacity
   bool schedule_thread(Thread* thread);
 
+  // schedule a new timer at some timestamp in the future
+  void init_timer_fiber_create(size_t timestamp, RawFunction function, RawValue context, RawValue arguments);
   // acquire the next ready thread to execute
   Thread* get_ready_thread();
 
@@ -74,6 +98,9 @@ public:
   // and put them into target_procs run queue
   bool steal_ready_threads(Processor* target_proc);
 
+  void fire_timer_events(Thread* thread);
+  size_t timestamp_of_next_timer_event();
+
 private:
   Runtime* m_runtime;
   size_t m_id;
@@ -81,8 +108,11 @@ private:
   atomic<Worker*> m_worker = nullptr;
   std::unique_ptr<ThreadAllocationBuffer> m_tab;
 
-  std::mutex m_mutex;
+  std::mutex m_run_queue_mutex;
   std::list<Thread*> m_run_queue;
+
+  std::mutex m_timer_events_mutex;
+  std::vector<TimerEvent> m_timer_events;
 
   std::unordered_map<SYMBOL, RawString> m_symbol_table;
 };

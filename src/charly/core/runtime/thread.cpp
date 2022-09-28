@@ -140,7 +140,7 @@ void Thread::init_fiber_thread(RawFiber fiber) {
 
 void Thread::init_proc_scheduler_thread() {
   acas_state(State::Free, State::Waiting);
-  m_type = Type::ProcScheduler;
+  m_type = Type::Scheduler;
 }
 
 void Thread::clean() {
@@ -159,7 +159,9 @@ void Thread::clean() {
 }
 
 void Thread::checkpoint() {
-  if (m_worker->has_stop_flag() || m_last_scheduled_at == kShouldYieldToSchedulerTimestamp) {
+  worker()->checkpoint();
+
+  if (m_last_scheduled_at == kShouldYieldToSchedulerTimestamp) {
     Thread::context_switch_thread_to_scheduler(this, State::Ready);
   }
 }
@@ -225,7 +227,7 @@ void Thread::context_handler(transfer_t transfer) {
 
     // initial jump to a ProcScheduler thread happens on the native
     // OS stack frame inside Worker::scheduler_loop
-    case Type::ProcScheduler: {
+    case Type::Scheduler: {
       DCHECK(thread == t_sched);
       worker->set_context(transfer.fctx);
       thread->entry_proc_scheduler_thread();
@@ -274,7 +276,7 @@ void Thread::context_switch_worker_to_scheduler(Worker* worker) {
 
 void Thread::context_switch_scheduler_to_worker(Thread* scheduler) {
   Worker* worker = scheduler->worker();
-  DCHECK(scheduler->type() == Type::ProcScheduler);
+  DCHECK(scheduler->is_scheduler());
   scheduler->acas_state(State::Running, State::Waiting);
   Thread::set_current(nullptr);
   transfer_t transfer = jump_fcontext(worker->context(), nullptr);
@@ -286,8 +288,8 @@ void Thread::context_switch_scheduler_to_worker(Thread* scheduler) {
 }
 
 void Thread::context_switch_scheduler_to_thread(Thread* from_scheduler, Thread* to_thread) {
-  DCHECK(from_scheduler->type() == Type::ProcScheduler);
-  DCHECK(to_thread->type() != Type::ProcScheduler);
+  DCHECK(from_scheduler->is_scheduler());
+  DCHECK(to_thread->type() != Type::Scheduler);
 
   Worker* worker = from_scheduler->worker();
   DCHECK(worker->scheduler_thread() == from_scheduler);
@@ -324,8 +326,9 @@ void Thread::context_switch_thread_to_scheduler(Thread* from_thread, Thread::Sta
   Worker* worker = from_thread->worker();
   Thread* t_sched = worker->scheduler_thread();
   DCHECK(t_sched->state() == State::Waiting);
-  DCHECK(t_sched->type() == Type::ProcScheduler);
+  DCHECK(t_sched->is_scheduler());
 
+  DCHECK(from_thread->type() != Type::Scheduler);
   from_thread->acas_state(State::Running, state);
   from_thread->set_last_scheduled_at(kNeverScheduledTimestamp);
   from_thread->set_worker(nullptr);
@@ -425,20 +428,27 @@ void Thread::entry_proc_scheduler_thread() {
       UNREACHABLE();
     }
 
-    worker->checkpoint();
+    proc->fire_timer_events(this);
 
     Thread* ready_thread = proc->get_ready_thread();
     if (ready_thread == nullptr) {
+      size_t now = get_steady_timestamp();
+      size_t next_event = proc->timestamp_of_next_timer_event();
+      if (next_event && next_event > now) {
+        size_t duration = next_event - now;
+        native_section([&] {
+          std::this_thread::sleep_for(std::chrono::milliseconds(duration));
+        });
+        continue;
+      }
+
       Thread::context_switch_scheduler_to_worker(this);
       continue;
     }
 
     DCHECK(ready_thread->worker() == nullptr);
     DCHECK(ready_thread->state() == State::Ready);
-
-    worker->acas_state(Worker::State::Scheduling, Worker::State::Running);
     Thread::context_switch_scheduler_to_thread(this, ready_thread);
-    worker->acas_state(Worker::State::Running, Worker::State::Scheduling);
 
     switch (ready_thread->state()) {
       case State::Waiting: {

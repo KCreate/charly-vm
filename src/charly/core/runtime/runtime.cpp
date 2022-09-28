@@ -756,6 +756,13 @@ void Runtime::each_root(std::function<void(RawValue& value)> callback) {
     for (auto& entry : proc->m_symbol_table) {
       callback(entry.second);
     }
+
+    for (auto& entry : proc->m_timer_events) {
+      callback(entry.arg1);
+      callback(entry.arg2);
+      callback(entry.arg3);
+      callback(entry.arg4);
+    }
   }
 
   // thread handle scopes and stackframes

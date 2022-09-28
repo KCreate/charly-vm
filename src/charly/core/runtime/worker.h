@@ -59,11 +59,12 @@ public:
 
   enum class State {
     // worker does not own a processor
-    Created,    // initial state
-    Idle,       // worker is currently idling and can be woken
-    Acquiring,  // worker is trying to acquire a processor
-    Exited,     // worker has exited
+    Created,        // initial state
+    Idle,           // worker is currently idling and can be woken
+    AcquiringProc,  // worker is trying to acquire a processor
+    Exited,         // worker has exited
 
+    // worker owns a processor
     Scheduling,   // worker is currently in the scheduler
     Running,      // worker is currently in a fiber thread
     Native,       // worker is executing a native section in a fiber thread (code that cannot interact with heap)
@@ -121,7 +122,6 @@ public:
 
   void acas_state(State expected_state, State new_state);
 
-  // implements a scheduler checkpoint
   void checkpoint();
 
 private:

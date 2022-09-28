@@ -154,7 +154,7 @@ bool Worker::wake() {
 
 void Worker::idle() {
   set_idle_flag();
-  acas_state(State::Acquiring, State::Idle);
+  acas_state(State::AcquiringProc, State::Idle);
 
   {
     std::unique_lock locker(m_mutex);
@@ -165,7 +165,7 @@ void Worker::idle() {
     clear_idle_flag();
   }
 
-  acas_state(State::Idle, State::Acquiring);
+  acas_state(State::Idle, State::AcquiringProc);
 }
 
 void Worker::checkpoint() {
@@ -239,22 +239,20 @@ void Worker::scheduler_loop(Runtime* runtime) {
   runtime->wait_for_initialization();
   Scheduler* scheduler = runtime->scheduler();
 
-  acas_state(State::Created, State::Acquiring);
+  acas_state(State::Created, State::AcquiringProc);
 
   while (!runtime->wants_exit()) {
-    checkpoint();
-
     if (scheduler->acquire_processor_for_worker(this)) {
-      acas_state(State::Acquiring, State::Scheduling);
+      acas_state(State::AcquiringProc, State::Running);
       Thread::context_switch_worker_to_scheduler(this);
       scheduler->release_processor_from_worker(this);
-      acas_state(State::Scheduling, State::Acquiring);
+      acas_state(State::Running, State::AcquiringProc);
     }
 
     idle();
   }
 
-  acas_state(State::Acquiring, State::Exited);
+  acas_state(State::AcquiringProc, State::Exited);
 }
 
 }  // namespace charly::core::runtime
