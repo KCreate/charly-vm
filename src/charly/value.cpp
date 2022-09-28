@@ -3418,20 +3418,14 @@ void RawFuture::set_exception(RawValue value) const {
 RawValue RawFuture::await(Thread* thread) const {
   HandleScope scope(thread);
   Future future(scope, *this);
+  thread->await_future(future);
 
-  {
-    future.lock();
-    if (!future.has_finished()) {
-      thread->wait_on_future(future);
-    } else {
-      future.unlock();
-    }
+  auto exception = future.exception();
+  if (exception.isNull()) {
+    return future.result();
   }
 
-  if (!future.exception().isNull()) {
-    return thread->throw_exception(RawException::cast(future.exception()));
-  }
-  return future.result();
+  return thread->throw_exception(RawException::cast(exception));
 }
 
 RawValue RawFuture::resolve(Thread* thread, RawValue value) const {
@@ -3466,7 +3460,7 @@ void RawFuture::wake_waiting_threads(Thread* thread) const {
 
   for (size_t i = 0; i < queue->used; i++) {
     Thread* waiting_thread = queue->buffer[i];
-    waiting_thread->wake_from_future_wait();
+    waiting_thread->wake_from_wait();
     scheduler->schedule_thread(waiting_thread, processor);
   }
 

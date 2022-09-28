@@ -27,6 +27,7 @@
 #include <list>
 #include <mutex>
 #include <unordered_map>
+#include <variant>
 
 #include "charly/core/runtime/heap.h"
 #include "charly/value.h"
@@ -43,18 +44,18 @@ class GarbageCollector;
 
 using TimerId = size_t;
 struct TimerEvent {
-  enum Type {
-    kEventFiberCreate,
-    kEventFutureResolve,
-    kEventFutureReject
+  struct FiberCreate {
+    RawFunction function;
+    RawValue context;
+    RawValue arguments;
   };
 
-  Type type;
+  struct ThreadWake {
+    Thread* thread;
+  };
+
   size_t timestamp;
-  RawValue arg1;
-  RawValue arg2;
-  RawValue arg3;
-  RawValue arg4;
+  std::variant<FiberCreate, ThreadWake> action;
 
   struct Compare {
     constexpr bool operator()(const TimerEvent& left, const TimerEvent& right) const {
@@ -86,6 +87,10 @@ public:
 
   // schedule a new timer at some timestamp in the future
   void init_timer_fiber_create(size_t timestamp, RawFunction function, RawValue context, RawValue arguments);
+
+  // puts thread asleep and schedules it to be run at some point in the future
+  void suspend_thread_until(size_t timestamp, Thread* thread);
+
   // acquire the next ready thread to execute
   Thread* get_ready_thread();
 

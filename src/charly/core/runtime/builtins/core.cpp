@@ -247,6 +247,20 @@ RawValue timerfibercreate(Thread* thread, BuiltinFrame* frame) {
   return kNull;
 }
 
+RawValue timersleep(Thread* thread, BuiltinFrame* frame) {
+  CHECK(frame->arguments[0].isNumber());
+  int64_t delay = frame->arguments[0].int_value();
+
+  if (delay <= 0) {
+    return kNull;
+  }
+
+  size_t now = get_steady_timestamp();
+  size_t timestamp = now + delay;
+  thread->sleep_until(timestamp);
+  return kNull;
+}
+
 RawValue compile(Thread* thread, BuiltinFrame* frame) {
   Runtime* runtime = thread->runtime();
 

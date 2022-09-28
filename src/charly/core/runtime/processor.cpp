@@ -75,20 +75,24 @@ bool Processor::schedule_thread(Thread* thread) {
 }
 
 void Processor::init_timer_fiber_create(size_t ts, RawFunction function, RawValue context, RawValue arguments) {
-  {
-    std::lock_guard locker(m_timer_events_mutex);
+  std::lock_guard locker(m_timer_events_mutex);
+  TimerEvent event{ ts, TimerEvent::FiberCreate{ function, context, arguments } };
+  m_timer_events.push_back(std::move(event));
+  std::push_heap(m_timer_events.begin(), m_timer_events.end(), TimerEvent::Compare{});
+}
 
-    TimerEvent event = {
-      .type = TimerEvent::kEventFiberCreate,
-      .timestamp = ts,
-      .arg1 = function,
-      .arg2 = context,
-      .arg3 = arguments,
-    };
+void Processor::suspend_thread_until(size_t ts, Thread* thread) {
+  std::unique_lock locker(m_timer_events_mutex);
+  auto cb = Thread::SchedulerPostCtxSwitchCallback([ts, &locker](Thread* thread, Processor* proc) {
+    TimerEvent event;
+    event.timestamp = ts, event.action = TimerEvent::ThreadWake{ thread };
 
-    m_timer_events.push_back(std::move(event));
-    std::push_heap(m_timer_events.begin(), m_timer_events.end(), TimerEvent::Compare{});
-  }
+    auto& events = proc->m_timer_events;
+    events.push_back(std::move(event));
+    std::push_heap(events.begin(), events.end(), TimerEvent::Compare{});
+    locker.unlock();
+  });
+  Thread::context_switch_thread_to_scheduler(thread, Thread::State::Waiting, &cb);
 }
 
 Thread* Processor::get_ready_thread() {
@@ -167,18 +171,20 @@ void Processor::fire_timer_events(Thread* thread) {
   size_t now = get_steady_timestamp();
   std::lock_guard locker(m_timer_events_mutex);
   while (!m_timer_events.empty()) {
-    TimerEvent& event = m_timer_events[0];
+    TimerEvent& event = m_timer_events.front();
     if (event.timestamp <= now) {
-      switch (event.type) {
-        case TimerEvent::kEventFiberCreate: {
-          HandleScope scope(thread);
-          Function function(scope, event.arg1);
-          Value context(scope, event.arg2);
-          Value arguments(scope, event.arg3);
-          RawFiber::create(thread, function, context, arguments);
-          break;
-        }
-        default: UNREACHABLE();
+      if (auto* arg = std::get_if<TimerEvent::FiberCreate>(&event.action)) {
+        HandleScope scope(thread);
+        Function function(scope, arg->function);
+        Value context(scope, arg->context);
+        Value arguments(scope, arg->arguments);
+        RawFiber::create(thread, function, context, arguments);
+      } else if (auto* arg = std::get_if<TimerEvent::ThreadWake>(&event.action)) {
+        Thread* thread_to_wake = arg->thread;
+        thread_to_wake->wake_from_wait();
+        m_runtime->scheduler()->schedule_thread(thread_to_wake, this);
+      } else {
+        FAIL("Illegal timer event type");
       }
 
       std::pop_heap(m_timer_events.begin(), m_timer_events.end(), TimerEvent::Compare{});

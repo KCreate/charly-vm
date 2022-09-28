@@ -757,11 +757,12 @@ void Runtime::each_root(std::function<void(RawValue& value)> callback) {
       callback(entry.second);
     }
 
-    for (auto& entry : proc->m_timer_events) {
-      callback(entry.arg1);
-      callback(entry.arg2);
-      callback(entry.arg3);
-      callback(entry.arg4);
+    for (auto& event : proc->m_timer_events) {
+      if (auto* arg = std::get_if<TimerEvent::FiberCreate>(&event.action)) {
+        callback(arg->function);
+        callback(arg->context);
+        callback(arg->arguments);
+      }
     }
   }
 

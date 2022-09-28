@@ -78,6 +78,14 @@ RawValue Thread::fiber() const {
   return m_fiber;
 }
 
+Thread::SchedulerPostCtxSwitchCallback* Thread::wait_callback() const {
+  return m_wait_callback;
+}
+
+void Thread::set_wait_callback(SchedulerPostCtxSwitchCallback* wait_callback) {
+  m_wait_callback = wait_callback;
+}
+
 Worker* Thread::worker() const {
   return m_worker;
 }
@@ -176,8 +184,11 @@ void Thread::wake_from_wait() {
   acas_state(State::Waiting, State::Ready);
 }
 
-void Thread::wake_from_future_wait() {
-  acas_state(State::WaitingForFuture, State::Ready);
+void Thread::sleep_until(size_t timestamp) {
+  DCHECK(type() != Thread::Type::Scheduler);
+  DCHECK(state() == Thread::State::Running);
+  Processor* proc = worker()->processor();
+  proc->suspend_thread_until(timestamp, this);
 }
 
 void Thread::enter_native() {
@@ -322,16 +333,18 @@ void Thread::context_switch_scheduler_to_thread(Thread* from_scheduler, Thread* 
   from_scheduler->set_last_scheduled_at(kNeverScheduledTimestamp, get_steady_timestamp());
 }
 
-void Thread::context_switch_thread_to_scheduler(Thread* from_thread, Thread::State state) {
+void Thread::context_switch_thread_to_scheduler(Thread* from_thread, Thread::State state, SchedulerPostCtxSwitchCallback* callback) {
   Worker* worker = from_thread->worker();
   Thread* t_sched = worker->scheduler_thread();
   DCHECK(t_sched->state() == State::Waiting);
   DCHECK(t_sched->is_scheduler());
 
   DCHECK(from_thread->type() != Type::Scheduler);
+  DCHECK(from_thread->wait_callback() == nullptr);
   from_thread->acas_state(State::Running, state);
   from_thread->set_last_scheduled_at(kNeverScheduledTimestamp);
   from_thread->set_worker(nullptr);
+  from_thread->set_wait_callback(callback);
 
   t_sched->acas_state(State::Waiting, State::Running);
   t_sched->set_worker(worker);
@@ -432,18 +445,20 @@ void Thread::entry_proc_scheduler_thread() {
 
     Thread* ready_thread = proc->get_ready_thread();
     if (ready_thread == nullptr) {
-      size_t next_event = proc->timestamp_of_next_timer_event();
-
-      if (next_event) {
+      if (size_t next_event = proc->timestamp_of_next_timer_event()) {
         size_t now = get_steady_timestamp();
-
         if (next_event <= now) {
           continue;
         }
 
-        size_t duration = next_event - now;
         native_section([&] {
-          std::this_thread::sleep_for(std::chrono::milliseconds(duration));
+          using Clock = std::chrono::steady_clock;
+          using TimePoint = std::chrono::time_point<Clock, std::chrono::milliseconds>;
+          auto now_duration = std::chrono::milliseconds(now);
+          auto next_duration = std::chrono::milliseconds(next_event);
+          TimePoint sleep_until(next_duration);
+          DCHECK(now_duration < next_duration);
+          std::this_thread::sleep_until(sleep_until);
         });
         continue;
       }
@@ -458,15 +473,10 @@ void Thread::entry_proc_scheduler_thread() {
 
     switch (ready_thread->state()) {
       case State::Waiting: {
-        continue;
-      }
-      case State::WaitingForFuture: {
-        auto future = RawFuture::cast(ready_thread->m_waiting_on_future);
-        DCHECK(future.has_finished() == false);
-        DCHECK(future.is_locked());
-        auto* wait_queue = future.wait_queue();
-        future.set_wait_queue(wait_queue->append_thread(wait_queue, ready_thread));
-        future.unlock();
+        if (auto* cb = ready_thread->wait_callback()) {
+          (*cb)(ready_thread, proc);
+          ready_thread->set_wait_callback(nullptr);
+        }
         continue;
       }
       case State::Ready: {
@@ -488,11 +498,22 @@ void Thread::entry_proc_scheduler_thread() {
   }
 }
 
-void Thread::wait_on_future(RawFuture future) {
-  DCHECK(m_waiting_on_future.isNull());
-  m_waiting_on_future = future;
-  Thread::context_switch_thread_to_scheduler(this, State::WaitingForFuture);
-  m_waiting_on_future = kNull;
+void Thread::await_future(RawFuture future) {
+  future.lock();
+
+  if (future.has_finished()) {
+    future.unlock();
+    return;
+  }
+
+  auto cb = SchedulerPostCtxSwitchCallback([&](Thread* thread, Processor*) {
+    DCHECK(future.is_locked());
+    DCHECK(!future.has_finished());
+    auto* wq = future.wait_queue();
+    future.set_wait_queue(wq->append_thread(wq, thread));
+    future.unlock();
+  });
+  Thread::context_switch_thread_to_scheduler(this, State::Waiting, &cb);
 }
 
 void Thread::acquire_stack() {

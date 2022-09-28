@@ -25,24 +25,23 @@
  */
 
 func sleep(delay) {
-    const c = Future.create()
-    builtin_timerfibercreate(delay, ->c.resolve(), null, null)
-    await c
-    null
+    builtin_timersleep(delay)
 }
 
-const limit = 10
-const tasks = 4096.map(->(i) spawn {
+const limit = 1000
+const tasks = 512.map(->(i) spawn {
     let counter = 0
     while counter < limit {
         counter += 1
-        sleep(100)
+        sleep(1)
     }
 })
 
-tasks.each(->(t) await t)
-print("all tasks finished")
+const duration = stopwatch(->{
+    tasks.each(->(t) await t)
+})
 
+print("finished waiting", duration, "ms")
 
 
 

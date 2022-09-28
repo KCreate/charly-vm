@@ -46,6 +46,7 @@ void initialize(Thread* thread);
   V(core, getsteadytimestamp, 0)      \
   V(core, getsteadytimestampmicro, 0) \
   V(core, timerfibercreate, 4)        \
+  V(core, timersleep, 1)              \
   V(core, compile, 2)
 DEF_BUILTIN_CORE(DEFINE_BUILTIN_METHOD_DECLARATIONS)
 

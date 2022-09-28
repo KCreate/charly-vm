@@ -38,6 +38,7 @@
 namespace charly::core::runtime {
 
 class Worker;
+class Processor;
 class Runtime;
 class Interpreter;
 struct Frame;
@@ -113,6 +114,8 @@ class Thread {
   friend class GarbageCollector;
 
 public:
+  using SchedulerPostCtxSwitchCallback = std::function<void(Thread*, Processor*)>;
+
   explicit Thread(Runtime* runtime);
 
   static Thread* current();
@@ -125,7 +128,6 @@ public:
   enum class State {
     Free,              // thread sits on a freelist somewhere and isn't tied to a fiber yet
     Waiting,           // thread is paused
-    WaitingForFuture,  // thread is paused and inside a RawFuture wait_queue
     Ready,             // thread is ready to be executed and is currently placed in some run queue
     Running,           // thread is currently running
     Native,            // thread is currently executing a native section
@@ -152,6 +154,8 @@ public:
   State state() const;
   int32_t exit_code() const;
   RawValue fiber() const;
+  SchedulerPostCtxSwitchCallback* wait_callback() const;
+  void set_wait_callback(SchedulerPostCtxSwitchCallback* wait_callback);
   Worker* worker() const;
   void set_worker(Worker* worker);
   Runtime* runtime() const;
@@ -171,7 +175,7 @@ public:
   static void context_switch_worker_to_scheduler(Worker*);
   static void context_switch_scheduler_to_worker(Thread*);
   static void context_switch_scheduler_to_thread(Thread*, Thread*);
-  static void context_switch_thread_to_scheduler(Thread*, State state);
+  static void context_switch_thread_to_scheduler(Thread*, State state, SchedulerPostCtxSwitchCallback* callback = nullptr);
 
   // initialize this thread as the main thread
   void init_main_thread();
@@ -196,10 +200,12 @@ public:
   [[noreturn]] void abort(int32_t exit_code);
 
   // pause current fiber and wait for the future to complete
-  void wait_on_future(RawFuture future);
+  void await_future(RawFuture future);
 
   void wake_from_wait();
-  void wake_from_future_wait();
+
+  // suspend thread and resume execution in the future
+  void sleep_until(size_t timestamp);
 
   // perform callback code in thread native mode
   // if a thread is in native mode, it is not allowed to interact with the charly heap or runtime
@@ -256,7 +262,7 @@ private:
 
   int32_t m_exit_code = 0;
   RawValue m_fiber;
-  RawValue m_waiting_on_future;
+  SchedulerPostCtxSwitchCallback* m_wait_callback = nullptr;
   Worker* m_worker = nullptr;
   atomic<size_t> m_last_scheduled_at = kNeverScheduledTimestamp;
   fcontext_t m_context = nullptr;

@@ -36,6 +36,7 @@ const builtin_exit = @"charly.builtin.core.exit"
 const builtin_getsteadytimestamp = @"charly.builtin.core.getsteadytimestamp"
 const builtin_getsteadytimestampmicro = @"charly.builtin.core.getsteadytimestampmicro"
 const builtin_timerfibercreate = @"charly.builtin.core.timerfibercreate"
+const builtin_timersleep = @"charly.builtin.core.timersleep"
 const builtin_compile = @"charly.builtin.core.compile"
 
 const builtin_readline_prompt = @"charly.builtin.readline.prompt"
