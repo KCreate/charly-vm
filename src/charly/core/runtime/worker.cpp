@@ -158,7 +158,7 @@ void Worker::idle() {
 
   {
     std::unique_lock locker(m_mutex);
-    m_idle_cv.wait(locker, [&] {
+    m_idle_cv.wait_for(locker, 100ms, [&] {
       return !has_idle_flag() || m_runtime->wants_exit();
     });
 

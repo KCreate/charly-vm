@@ -123,8 +123,7 @@ Thread* Processor::get_ready_thread() {
 
   // check global queue
   {
-    Thread* thread = scheduler->get_ready_thread_from_global_run_queue();
-    if (thread != nullptr) {
+    if (Thread* thread = scheduler->get_ready_thread_from_global_run_queue()) {
       return thread;
     }
   }
@@ -157,14 +156,15 @@ RawValue Processor::lookup_symbol(SYMBOL symbol) {
 bool Processor::steal_ready_threads(Processor* target_proc) {
   std::scoped_lock locker(m_run_queue_mutex, target_proc->m_run_queue_mutex);
 
+  bool stole_some = false;
   while (!m_run_queue.empty() && target_proc->m_run_queue.size() < m_run_queue.size()) {
     Thread* thread = m_run_queue.front();
     m_run_queue.pop_front();
     target_proc->m_run_queue.push_back(thread);
-    return true;
+    stole_some = true;
   }
 
-  return false;
+  return stole_some;
 }
 
 void Processor::fire_timer_events(Thread* thread) {
