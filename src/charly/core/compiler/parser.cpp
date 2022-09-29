@@ -422,7 +422,7 @@ ref<Statement> Parser::parse_try() {
       exception_name = make<Name>(parse_identifier_token());
       eat(TokenType::RightParen);
     } else {
-      exception_name = make<Name>("exception");
+      exception_name = make<Name>("error");
       exception_name->set_location(begin);
     }
 

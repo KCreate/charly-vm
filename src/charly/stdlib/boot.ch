@@ -82,11 +82,14 @@ func timestamp = builtin_getsteadytimestamp()
 
 func timestamp_micro = builtin_getsteadytimestampmicro()
 
-func stopwatch(callback) {
-    const start = timestamp_micro()
-    callback()
-    const end = timestamp_micro()
-    return (end - start) / 1000
+func sleep(delay) {
+    assert delay instanceof Number
+    builtin_timersleep(delay)
+}
+
+class Stopwatch {
+    private property start = timestamp_micro()
+    func check = (timestamp_micro() - start) / 1000
 }
 
 class Timer {
@@ -94,26 +97,18 @@ class Timer {
     private property callback
     property result = Future.create()
 
-    func constructor(delay, @callback = ->{}) {
+    func constructor(delay, @callback = ->{}, ...args) {
         assert delay instanceof Number
+        assert callback instanceof Function
 
-        @id = builtin_timerfibercreate(delay, handle_callback, self, null)
-    }
-
-    private func handle_callback {
-        try result.resolve(callback()) catch (e) {
-            result.reject(e)
-        }
+        @id = builtin_timerfibercreate(delay, func handle(args) {
+            result.resolve_with(->callback(...args))
+        }, self, (args,))
     }
 
     func cancel {
         builtin_timercancel(id)
         result.reject("Timer cancelled")
-    }
-
-    static func sleep(delay) {
-        assert delay instanceof Number
-        builtin_timersleep(delay)
     }
 }
 
@@ -399,6 +394,11 @@ class Timer {
         }
 
         func resolve(value = null) = builtin_future_resolve(self, value)
+
+        func resolve_with(callback) {
+            try resolve(callback()) catch reject(error)
+            self
+        }
 
         func reject(value) {
             try {

@@ -68,7 +68,7 @@ export class GlobalsTest {
         assert print instanceof Function
         assert prompt instanceof Function
         assert exit instanceof Function
-        assert stopwatch instanceof Function
+        assert sleep instanceof Function
     }
 }
 

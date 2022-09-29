@@ -79,17 +79,18 @@ class UnitTest {
             suites.each(->(suite) {
                 let some_tests_failed = false
                 suite.tests.each(->(test) {
-                    test.duration += stopwatch(->{
-                        try {
-                            test.function()
-                            test.passed = true
-                        } catch(e) {
-                            test.exception = e
-                            test.passed = false
-                            some_tests_failed = true
-                            some_suites_failed = true
-                        }
-                    })
+                    const w = Stopwatch()
+                    defer test.duration += w.check()
+
+                    try {
+                        test.function()
+                        test.passed = true
+                    } catch(e) {
+                        test.exception = e
+                        test.passed = false
+                        some_tests_failed = true
+                        some_suites_failed = true
+                    }
                 })
                 suite.passed = !some_tests_failed
             })

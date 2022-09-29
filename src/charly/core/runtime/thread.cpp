@@ -524,7 +524,7 @@ void Thread::acquire_stack() {
 }
 
 void Thread::dump_exception_trace(RawException exception) const {
-  debuglnf_notime("Unhandled exception in main thread:");
+  debuglnf_notime("Unhandled exception in main fiber:");
   debuglnf_notime("%", exception);
 
   size_t depth = 0;

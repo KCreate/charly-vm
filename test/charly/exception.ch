@@ -65,6 +65,35 @@ export class ExceptionTest {
         assert exc.message == "hello world"
     }
 
+    static func test_exception_catch_default_name {
+        const exc = assert_throws(->{
+            let tmp
+            try {
+                throw "hello world"
+            } catch {
+                tmp = error
+            }
+
+            throw tmp
+        })
+
+        assert exc instanceof Exception
+        assert exc.message == "hello world"
+    }
+
+    static func test_exception_try_expression_syntax {
+        const exc = assert_throws(->{
+            func foo = throw "hello world"
+            let tmp
+            try tmp = foo()
+            catch tmp = "some other error"
+            throw tmp
+        })
+
+        assert exc instanceof Exception
+        assert exc.message == "some other error"
+    }
+
     static func test_exception_catch_bubble_up {
         func foo = throw "hello world"
         func bar = foo()
