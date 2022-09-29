@@ -537,7 +537,7 @@ void GarbageCollector::recycle_collected_regions() const {
     }
   }
 
-  for (auto* proc : m_runtime->scheduler()->m_processors) {
+  for (auto* proc : m_runtime->scheduler()->processors()) {
     proc->tab()->m_region = nullptr;
   }
 }

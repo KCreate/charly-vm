@@ -54,12 +54,13 @@ struct TimerEvent {
     Thread* thread;
   };
 
+  TimerId id;
   size_t timestamp;
   std::variant<FiberCreate, ThreadWake> action;
 
   struct Compare {
     constexpr bool operator()(const TimerEvent& left, const TimerEvent& right) const {
-      return left.timestamp < right.timestamp;
+      return left.timestamp > right.timestamp;
     }
   };
 };
@@ -86,10 +87,14 @@ public:
   bool schedule_thread(Thread* thread);
 
   // schedule a new timer at some timestamp in the future
-  void init_timer_fiber_create(size_t timestamp, RawFunction function, RawValue context, RawValue arguments);
+  TimerId init_timer_fiber_create(size_t timestamp, RawFunction function, RawValue context, RawValue arguments);
 
   // puts thread asleep and schedules it to be run at some point in the future
   void suspend_thread_until(size_t timestamp, Thread* thread);
+
+  // cancel a specific timer event
+  // returns false if the timer already fired or doesn't exist
+  bool cancel_timer(TimerId id);
 
   // acquire the next ready thread to execute
   Thread* get_ready_thread();
@@ -107,6 +112,9 @@ public:
   size_t timestamp_of_next_timer_event();
 
 private:
+  static TimerId get_next_timer_id();
+
+private:
   Runtime* m_runtime;
   size_t m_id;
   bool m_live = false;
@@ -117,6 +125,7 @@ private:
   std::list<Thread*> m_run_queue;
 
   std::mutex m_timer_events_mutex;
+  static atomic<TimerId> s_next_timer_id;
   std::vector<TimerEvent> m_timer_events;
 
   std::unordered_map<SYMBOL, RawString> m_symbol_table;

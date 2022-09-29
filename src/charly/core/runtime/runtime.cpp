@@ -26,14 +26,17 @@
 
 #include <fstream>
 
+#include "charly/utils/argumentparser.h"
+
 #include "charly/core/compiler/compiler.h"
+#include "charly/core/runtime/interpreter.h"
+#include "charly/core/runtime/runtime.h"
+
 #include "charly/core/runtime/builtins/core.h"
 #include "charly/core/runtime/builtins/future.h"
 #include "charly/core/runtime/builtins/list.h"
+#include "charly/core/runtime/builtins/timer.h"
 #include "charly/core/runtime/builtins/readline.h"
-#include "charly/core/runtime/interpreter.h"
-#include "charly/core/runtime/runtime.h"
-#include "charly/utils/argumentparser.h"
 
 namespace charly::core::runtime {
 
@@ -156,6 +159,7 @@ void Runtime::initialize_builtin_functions(Thread* thread) {
   builtin::core::initialize(thread);
   builtin::future::initialize(thread);
   builtin::list::initialize(thread);
+  builtin::timer::initialize(thread);
   builtin::readline::initialize(thread);
 }
 
@@ -752,7 +756,7 @@ const fs::path& Runtime::stdlib_directory() const {
 
 void Runtime::each_root(std::function<void(RawValue& value)> callback) {
   // processor symbol tables
-  for (auto* proc : m_scheduler->m_processors) {
+  for (auto* proc : m_scheduler->processors()) {
     for (auto& entry : proc->m_symbol_table) {
       callback(entry.second);
     }

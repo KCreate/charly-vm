@@ -70,6 +70,9 @@ public:
 
   Runtime* runtime() const;
 
+  std::vector<Processor*>& processors() { return m_processors; }
+  std::vector<Worker*>& workers() { return m_workers; }
+
   // wait for all worker threads to join
   void join();
 

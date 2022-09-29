@@ -74,18 +74,20 @@ bool Processor::schedule_thread(Thread* thread) {
   return true;
 }
 
-void Processor::init_timer_fiber_create(size_t ts, RawFunction function, RawValue context, RawValue arguments) {
+TimerId Processor::init_timer_fiber_create(size_t ts, RawFunction function, RawValue context, RawValue arguments) {
   std::lock_guard locker(m_timer_events_mutex);
-  TimerEvent event{ ts, TimerEvent::FiberCreate{ function, context, arguments } };
+  TimerId id = Processor::get_next_timer_id();
+  TimerEvent event{ id, ts, TimerEvent::FiberCreate{ function, context, arguments } };
   m_timer_events.push_back(std::move(event));
   std::push_heap(m_timer_events.begin(), m_timer_events.end(), TimerEvent::Compare{});
+  return id;
 }
 
 void Processor::suspend_thread_until(size_t ts, Thread* thread) {
   std::unique_lock locker(m_timer_events_mutex);
   auto cb = Thread::SchedulerPostCtxSwitchCallback([ts, &locker](Thread* thread, Processor* proc) {
-    TimerEvent event;
-    event.timestamp = ts, event.action = TimerEvent::ThreadWake{ thread };
+    TimerId id = Processor::get_next_timer_id();
+    TimerEvent event{ id, ts, TimerEvent::ThreadWake{ thread } };
 
     auto& events = proc->m_timer_events;
     events.push_back(std::move(event));
@@ -93,6 +95,46 @@ void Processor::suspend_thread_until(size_t ts, Thread* thread) {
     locker.unlock();
   });
   Thread::context_switch_thread_to_scheduler(thread, Thread::State::Waiting, &cb);
+}
+
+bool Processor::cancel_timer(TimerId id) {
+  // check current proc
+  {
+    std::lock_guard locker(m_timer_events_mutex);
+    auto it = m_timer_events.begin();
+    auto it_end = m_timer_events.end();
+    while (it != it_end) {
+      TimerEvent& event = *it;
+
+      if (event.id == id) {
+        m_timer_events.erase(it);
+        return true;
+      }
+
+      it++;
+    }
+  }
+
+  // check other procs
+  for (Processor* other_proc : m_runtime->scheduler()->processors()) {
+    if (other_proc != this) {
+      std::lock_guard locker(other_proc->m_timer_events_mutex);
+      auto it = other_proc->m_timer_events.begin();
+      auto it_end = other_proc->m_timer_events.end();
+      while (it != it_end) {
+        TimerEvent& event = *it;
+
+        if (event.id == id) {
+          other_proc->m_timer_events.erase(it);
+          return true;
+        }
+
+        it++;
+      }
+    }
+  }
+
+  return false;
 }
 
 Thread* Processor::get_ready_thread() {
@@ -203,6 +245,11 @@ size_t Processor::timestamp_of_next_timer_event() {
   }
 
   return m_timer_events.front().timestamp;
+}
+
+TimerId Processor::get_next_timer_id() {
+  static atomic<TimerId> counter = 0;
+  return counter++;
 }
 
 }  // namespace charly::core::runtime

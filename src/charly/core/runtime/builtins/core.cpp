@@ -223,44 +223,6 @@ RawValue getsteadytimestampmicro(Thread*, BuiltinFrame*) {
   return RawInt::create(get_steady_timestamp_micro());
 }
 
-RawValue timerfibercreate(Thread* thread, BuiltinFrame* frame) {
-  CHECK(frame->arguments[0].isNumber());
-  CHECK(frame->arguments[1].isFunction());
-
-  int64_t delay = frame->arguments[0].int_value();
-
-  HandleScope scope(thread);
-  Function function(scope, frame->arguments[1]);
-  Value context(scope, frame->arguments[2]);
-  Value arguments(scope, frame->arguments[3]);
-
-  if (delay <= 0) {
-    RawFiber::create(thread, function, context, arguments);
-    return kNull;
-  }
-
-  size_t now = get_steady_timestamp();
-  size_t timestamp = now + delay;
-
-  Processor* proc = thread->worker()->processor();
-  proc->init_timer_fiber_create(timestamp, function, context, arguments);
-  return kNull;
-}
-
-RawValue timersleep(Thread* thread, BuiltinFrame* frame) {
-  CHECK(frame->arguments[0].isNumber());
-  int64_t delay = frame->arguments[0].int_value();
-
-  if (delay <= 0) {
-    return kNull;
-  }
-
-  size_t now = get_steady_timestamp();
-  size_t timestamp = now + delay;
-  thread->sleep_until(timestamp);
-  return kNull;
-}
-
 RawValue compile(Thread* thread, BuiltinFrame* frame) {
   Runtime* runtime = thread->runtime();
 

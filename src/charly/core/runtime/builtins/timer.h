@@ -29,23 +29,14 @@
 
 #pragma once
 
-namespace charly::core::runtime::builtin::core {
+namespace charly::core::runtime::builtin::timer {
 
 void initialize(Thread* thread);
 
-#define DEF_BUILTIN_CORE(V)           \
-  V(core, currentfiber, 0)            \
-  V(core, transplantbuiltinclass, 2)  \
-  V(core, writevalue, -1)             \
-  V(core, currentworkingdirectory, 0) \
-  V(core, getbacktrace, 0)            \
-  V(core, disassemble, 1)             \
-  V(core, createtuple, 2)             \
-  V(core, createtuplewith, 2)         \
-  V(core, exit, 1)                    \
-  V(core, getsteadytimestamp, 0)      \
-  V(core, getsteadytimestampmicro, 0) \
-  V(core, compile, 2)
-DEF_BUILTIN_CORE(DEFINE_BUILTIN_METHOD_DECLARATIONS)
+#define DEF_BUILTIN_TIMER(V) \
+  V(timer, fibercreate, 4)    \
+  V(timer, sleep, 1)          \
+  V(timer, cancel, 1)
+DEF_BUILTIN_TIMER(DEFINE_BUILTIN_METHOD_DECLARATIONS)
 
-}  // namespace charly::core::runtime::builtin::core
+}  // namespace charly::core::runtime::builtin::timer

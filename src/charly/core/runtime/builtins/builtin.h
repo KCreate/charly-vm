@@ -25,6 +25,7 @@
  */
 
 #include "charly/value.h"
+#include "charly/core/runtime/interpreter.h"
 
 #pragma once
 

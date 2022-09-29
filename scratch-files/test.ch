@@ -24,24 +24,36 @@
  * SOFTWARE.
  */
 
-func sleep(delay) {
-    builtin_timersleep(delay)
+const b1 = Timer(1000)
+b1.cancel()
+try await b1.result catch (e) {
+    print(e)
 }
 
-const limit = 1000
-const tasks = 512.map(->(i) spawn {
-    let counter = 0
-    while counter < limit {
-        counter += 1
-        sleep(1)
-    }
-})
+const fut = Future.create()
+fut.reject("some error")
+try await fut catch (e) {
+    print(e)
+}
 
-const duration = stopwatch(->{
-    tasks.each(->(t) await t)
-})
-
-print("finished waiting", duration, "ms")
+//func sleep(delay) {
+//    builtin_timersleep(delay)
+//}
+//
+//const limit = 1000
+//const tasks = 512.map(->(i) spawn {
+//    let counter = 0
+//    while counter < limit {
+//        counter += 1
+//        sleep(1)
+//    }
+//})
+//
+//const duration = stopwatch(->{
+//    tasks.each(->(t) await t)
+//})
+//
+//print("finished waiting", duration, "ms")
 
 
 
