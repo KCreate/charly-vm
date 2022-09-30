@@ -89,6 +89,7 @@ int32_t cli(DiagnosticConsole& console) {
 
     debuglnf_notime("# %interpreter.h%", termcolor::yellow, termcolor::reset);
     debuglnf_notime("kStackOverflowLimit = %", kStackOverflowLimit);
+    debuglnf_notime("OpcodeCount = %", ir::Opcode::OpcodeCount);
     debuglnf_notime("");
 
     debuglnf_notime("# %scheduler.h%", termcolor::yellow, termcolor::reset);
