@@ -1,4 +1,5 @@
 #include <functional>
+#include <algorithm>
 
 #define AST_TYPESWITCH_CASE_NODE(NodeType, ...)         \
   case Node::Type::NodeType: {                          \
