@@ -3168,7 +3168,9 @@ RawShape::LookupResult RawShape::lookup_symbol(SYMBOL symbol) const {
     }
   }
 
-  return LookupResult{ .found = false };
+  SYMBOL key_symbol = 0;
+  uint8_t key_flags = '\0';
+  return LookupResult{ .found = false, .offset = 0, .key = key_symbol, .flags = key_flags };
 }
 
 RawInt RawShape::encode_shape_key(SYMBOL symbol, uint8_t flags) {
