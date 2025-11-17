@@ -16,11 +16,14 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/usr/include")
 endif ()
 
-# --- Detect Arch Linux ---
+# --- Detect Arch / Arch-based (EndeavourOS etc.) ---
 set(IS_ARCH FALSE)
 if(UNIX AND EXISTS "/etc/os-release")
-    file(READ "/etc/os-release" OS_RELEASE)
-    if(OS_RELEASE MATCHES "ID=arch" OR OS_RELEASE MATCHES "ID_LIKE=arch")
+    file(READ "/etc/os-release" OS_RELEASE_RAW)
+    string(TOLOWER "${OS_RELEASE_RAW}" OS_RELEASE)
+    if(OS_RELEASE MATCHES "id=arch"
+       OR OS_RELEASE MATCHES "id=\"arch\""
+       OR OS_RELEASE MATCHES "id_like=.*arch.*")
         set(IS_ARCH TRUE)
     endif()
 endif()
