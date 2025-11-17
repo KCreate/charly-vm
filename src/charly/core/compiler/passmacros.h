@@ -98,7 +98,7 @@
     }                                                                \
     auto begin = node->N.begin();                                    \
     auto end = node->N.end();                                        \
-    node->N.erase(std::remove(begin, end, nullptr), end);            \
+    node->N.erase(::std::remove(begin, end, nullptr), end);          \
   }
 
 #define HANDLE_NODE(ReplacementType, NodeType, Children)              \

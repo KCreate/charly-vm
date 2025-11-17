@@ -24,9 +24,12 @@
  * SOFTWARE.
  */
 
+#include <stdio.h>
+
+extern "C" {
 #include <readline/history.h>
 #include <readline/readline.h>
-#include <cstdio>
+}
 
 #include "charly/core/runtime/builtins/readline.h"
 #include "charly/core/runtime/interpreter.h"
