@@ -31,6 +31,7 @@
 #include "charly/core/runtime/builtins/core.h"
 #include "charly/core/runtime/interpreter.h"
 #include "charly/core/runtime/runtime.h"
+#include "charly/utils/argumentparser.h"
 
 namespace charly::core::runtime::builtin::core {
 
@@ -233,6 +234,17 @@ RawValue readfile(Thread* thread, BuiltinFrame* frame) {
   std::string contents = ss.str();
 
   return RawString::create(thread, contents);
+}
+
+RawValue getenv(Thread* thread, BuiltinFrame* frame) {
+    CHECK(frame->arguments[0].isString());
+    std::string env_varname = RawString::cast(frame->arguments[0]).str();
+    auto env_value = utils::ArgumentParser::get_environment_for_key(env_varname);
+    if (env_value.has_value()) {
+        return RawString::create(thread, env_value.value());
+    } else {
+        return kNull;
+    }
 }
 
 RawValue compile(Thread* thread, BuiltinFrame* frame) {
