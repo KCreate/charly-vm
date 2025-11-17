@@ -223,6 +223,18 @@ RawValue getsteadytimestampmicro(Thread*, BuiltinFrame*) {
   return RawInt::create(get_steady_timestamp_micro());
 }
 
+RawValue readfile(Thread* thread, BuiltinFrame* frame) {
+  CHECK(frame->arguments[0].isString());
+  std::string file_path = RawString::cast(frame->arguments[0]).str();
+
+  std::ifstream f(file_path);
+  std::ostringstream ss;
+  ss << f.rdbuf();
+  std::string contents = ss.str();
+
+  return RawString::create(thread, contents);
+}
+
 RawValue compile(Thread* thread, BuiltinFrame* frame) {
   Runtime* runtime = thread->runtime();
 
