@@ -151,6 +151,11 @@ Token Lexer::read_token_all() {
         token.type = TokenType::Mul;
         break;
       }
+      case '#': {
+        read_char();
+        consume_comment(token);
+        break;
+      }
       case '/': {
         read_char();
 
