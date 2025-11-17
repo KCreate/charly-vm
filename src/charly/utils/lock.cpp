@@ -24,6 +24,7 @@
  * SOFTWARE.
  */
 
+#include <algorithm>
 #include "charly/utils/lock.h"
 
 namespace charly::utils {
@@ -43,7 +44,7 @@ ParkingLotThreadData* ParkingLotThreadQueue::pop(uintptr_t address) {
   auto begin = this->queue.begin();
   auto end = this->queue.end();
   auto result = std::find_if(begin, end, [&](const auto& entry) {
-    return std::get<uintptr_t>(entry) == address;
+    return std::get<0>(entry) == address;
   });
 
   if (result != end) {
