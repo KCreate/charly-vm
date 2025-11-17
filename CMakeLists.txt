@@ -66,6 +66,7 @@ target_compile_options(charly PRIVATE
         -Werror
         -Wno-vla-extension
         -Wno-c++20-designator
+        -Wno-missing-field-initializers
         -Wno-gnu-zero-variadic-macro-arguments
         -Wno-gnu-label-as-value
         -Wno-c99-extensions
@@ -115,6 +116,7 @@ if (BUILD_TESTS)
           -Werror
           -Wno-vla-extension
           -Wno-c++20-designator
+          -Wno-missing-field-initializers
           -Wno-gnu-zero-variadic-macro-arguments
           -Wno-gnu-label-as-value
           -Wno-c99-extensions
