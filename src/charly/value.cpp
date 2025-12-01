@@ -672,7 +672,7 @@ RawValue RawValue::op_mod(RawValue other) const {
     return RawInt::create(RawInt::cast(*this).value() % RawInt::cast(other).value());
   }
 
-  if (isFloat() && other.isNumber()) {
+  if (isNumber() && other.isNumber()) {
     auto left = double_value();
     auto right = other.double_value();
     return RawFloat::create(std::fmod(left, right));
