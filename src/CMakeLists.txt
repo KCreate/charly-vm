@@ -31,6 +31,7 @@ file(GLOB charlycore_SRC
         "charly/core/runtime/builtins/core.cpp"
         "charly/core/runtime/builtins/future.cpp"
         "charly/core/runtime/builtins/list.cpp"
+        "charly/core/runtime/builtins/string.cpp"
         "charly/core/runtime/builtins/timer.cpp"
         "charly/core/runtime/builtins/readline.cpp"
         "charly/handle.cpp"
@@ -40,7 +41,7 @@ file(GLOB charlycore_SRC
         "charly/utils/lock.cpp"
         "charly/value.cpp"
         "libs/termcolor/termcolor.cpp"
-        )
+)
 
 # explicitly enable debug symbols in debug builds
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
@@ -57,7 +58,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 endif ()
 
 add_library(libcharly ${charlycore_SRC})
-target_compile_features(libcharly PRIVATE cxx_std_17)
+target_compile_features(libcharly PRIVATE cxx_std_20)
 if (Boost_FOUND)
     target_include_directories(libcharly PRIVATE ${Boost_INCLUDE_DIRS})
     target_link_libraries(libcharly Boost::context)
@@ -81,7 +82,7 @@ target_compile_options(libcharly PRIVATE
         -Wno-shadow
         -ftemplate-backtrace-limit=8
         -mllvm -align-all-functions=3
-        )
+)
 
 # enable link-time-optimization for release builds
 if (CMAKE_BUILD_TYPE MATCHES Release)

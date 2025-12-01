@@ -3,7 +3,7 @@
  *
  * MIT License
  *
- * Copyright (c) 2017 - 2022 Leonard Schütz
+ * Copyright (c) 2017 - 2026 Leonard Schütz
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -53,6 +53,10 @@ const builtin_list_insert = @"charly.builtin.list.insert"
 const builtin_list_erase = @"charly.builtin.list.erase"
 const builtin_list_push = @"charly.builtin.list.push"
 const builtin_list_pop = @"charly.builtin.list.pop"
+
+const builtin_string_index_of = @"charly.builtin.string.index_of"
+const builtin_string_split = @"charly.builtin.string.split"
+const builtin_string_substring = @"charly.builtin.string.substring"
 
 func write(...args) = builtin_writevalue(...args)
 
@@ -137,24 +141,27 @@ class Timer {
 
     class builtin_String {
         func begins_with(other) {
-            if other.length > @length {
-                return false
-            }
+            return @index_of(other) == 0
+        }
 
-            if other.length == @length {
-                return self == other
-            }
+        func index_of(search) {
+            assert search instanceof String
+            return builtin_string_index_of(self, search)
+        }
 
-            let i = 0
-            while i < other.length {
-                if self[i] != other[i] {
-                    return false
-                }
+        func chars() {
+            return [...self]
+        }
 
-                i += 1
-            }
+        func substring(start = 0, count = @length) {
+            assert start instanceof Number
+            assert count instanceof Number
+            return builtin_string_substring(self, start, count)
+        }
 
-            true
+        func split(terminator = " ") {
+            assert terminator instanceof String
+            return builtin_string_split(self, terminator)
         }
     }
 

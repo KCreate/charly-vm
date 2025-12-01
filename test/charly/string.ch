@@ -3,7 +3,7 @@
  *
  * MIT License
  *
- * Copyright (c) 2017 - 2022 Leonard Schütz
+ * Copyright (c) 2017 - 2026 Leonard Schütz
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -187,9 +187,54 @@ export class StringTest {
         assert a.begins_with("a") == false
         assert a.begins_with("world") == false
     }
+
+    static func test_string_stdlib_index_of {
+        const a = "hello world\nthis is a string\ngoodbye world"
+
+        assert a.index_of("x") == -1
+        assert a.index_of("foo bar") == -1
+        assert a.index_of("\t") == -1
+        assert a.index_of("ä") == -1
+
+        assert a.index_of("hello") == 0
+        assert a.index_of("world") == 6
+        assert a.index_of(" ") == 5
+        assert a.index_of("goodbye world") == 29
+    }
+
+    static func test_string_stdlib_split {
+        const a = "hello world\nthis is a string\ngoodbye world"
+
+        assert a.split() == [
+            "hello",
+            "world\nthis",
+            "is",
+            "a",
+            "string\ngoodbye",
+            "world"
+        ]
+
+        assert a.split("\n") == [
+            "hello world",
+            "this is a string",
+            "goodbye world"
+        ]
+
+        assert a.split("") == [...a]
+    }
+
+    static func test_string_stdlib_substring {
+        const a = "hello world this is a test"
+
+        assert a.substring() == "hello world this is a test"
+        assert a.substring(6) == "world this is a test"
+        assert a.substring(6, 5) == "world"
+        assert a.substring(-5, 10) == "hello"
+        assert a.substring(6, 1000) == "world this is a test"
+        assert a.substring(6, 0) == ""
+        assert a.substring(100, 0) == ""
+        assert a.substring(-100, 0) == ""
+        assert a.substring(100, 10) == ""
+        assert a.substring(-100, 10) == ""
+    }
 }
-
-
-
-
-
