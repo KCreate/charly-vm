@@ -667,6 +667,20 @@ RawValue RawValue::op_div(RawValue other) const {
   return kNaN;
 }
 
+RawValue RawValue::op_mod(RawValue other) const {
+  if (isInt() && other.isInt()) {
+    return RawInt::create(RawInt::cast(*this).value() % RawInt::cast(other).value());
+  }
+
+  if (isFloat() && other.isNumber()) {
+    auto left = double_value();
+    auto right = other.double_value();
+    return RawFloat::create(std::fmod(left, right));
+  }
+
+  return kNaN;
+}
+
 // NOTE: Update this method together with Node::compares_equal
 RawValue RawValue::op_eq(Thread* thread, RawValue other, uint32_t depth) const {
   if (depth >= kMaxComparisonRecursionDepth) {

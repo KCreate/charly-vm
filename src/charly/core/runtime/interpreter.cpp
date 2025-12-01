@@ -1177,7 +1177,10 @@ OP(div) {
 }
 
 OP(mod) {
-  THROW_NOT_IMPLEMENTED();
+  RawValue right = frame->pop();
+  RawValue left = frame->pop();
+  frame->push(left.op_mod(right));
+  return ContinueMode::Next;
 }
 
 OP(pow) {

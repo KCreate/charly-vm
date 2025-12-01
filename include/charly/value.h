@@ -426,6 +426,7 @@ public:
   RawValue op_sub(RawValue other) const;
   RawValue op_mul(Thread*, RawValue other) const;
   RawValue op_div(RawValue other) const;
+  RawValue op_mod(RawValue other) const;
   RawValue op_eq(Thread*, RawValue other, uint32_t depth = 0) const;
   RawValue op_neq(Thread*, RawValue other, uint32_t depth = 0) const;
   RawValue op_lt(RawValue other) const;
