@@ -3,7 +3,7 @@
  *
  * MIT License
  *
- * Copyright (c) 2017 - 2022 Leonard Schütz
+ * Copyright (c) 2017 - 2026 Leonard Schütz
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -310,8 +310,3 @@ export class ExceptionTest {
         assert exc.message == "Expected thrown value to be an exception or a string"
     }
 }
-
-
-
-
-

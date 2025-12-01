@@ -3,7 +3,7 @@
  *
  * MIT License
  *
- * Copyright (c) 2017 - 2022 Leonard Schütz
+ * Copyright (c) 2017 - 2026 Leonard Schütz
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -42,17 +42,3 @@ const list = Tuple.create_with(fiber_count, ->(i) {
 
 const result = list.reduce(0, ->(p, f, i) p + await f)
 print(result)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
