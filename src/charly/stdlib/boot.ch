@@ -41,6 +41,7 @@ const builtin_timercancel = @"charly.builtin.timer.cancel"
 const builtin_compile = @"charly.builtin.core.compile"
 const builtin_getenv = @"charly.builtin.core.getenv"
 const builtin_readfile = @"charly.builtin.core.readfile"
+const builtin_str_to_num = @"charly.builtin.core.strtonum"
 
 const builtin_readline_prompt = @"charly.builtin.readline.prompt"
 const builtin_readline_add_history = @"charly.builtin.readline.add_history"
@@ -174,6 +175,10 @@ class Timer {
         func split(terminator = " ") {
             assert terminator instanceof String
             return builtin_string_split(self, terminator)
+        }
+
+        func to_number() {
+            return builtin_str_to_num(self)
         }
     }
 

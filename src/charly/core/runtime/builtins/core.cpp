@@ -257,6 +257,26 @@ RawValue getenv(Thread* thread, BuiltinFrame* frame) {
     return kNull;
 }
 
+RawValue strtonum(Thread* thread, BuiltinFrame* frame) {
+  CHECK(frame->arguments[0].isString());
+  std::string text = RawString::cast(frame->arguments[0]).str();
+
+  // decide whether to parse as float
+  bool is_float = text.find('.') != std::string::npos;
+
+  try {
+    if (is_float) {
+      double v = std::stod(text);
+      return RawFloat::create(v);
+    } else {
+      long long v = std::stoll(text);
+      return RawInt::create(v);
+    }
+  } catch (...) {
+    return thread->throw_message("Invalid number literal: %", text);
+  }
+}
+
 RawValue compile(Thread* thread, BuiltinFrame* frame) {
   Runtime* runtime = thread->runtime();
 

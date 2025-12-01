@@ -45,6 +45,7 @@ void initialize(Thread* thread);
   V(core, getsteadytimestampmicro, 0) \
   V(core, readfile, 1)                \
   V(core, getenv, 1)                  \
+  V(core, strtonum, 1)                \
   V(core, compile, 2)
 DEF_BUILTIN_CORE(DEFINE_BUILTIN_METHOD_DECLARATIONS)
 
