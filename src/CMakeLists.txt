@@ -34,6 +34,7 @@ file(GLOB charlycore_SRC
         "charly/core/runtime/builtins/string.cpp"
         "charly/core/runtime/builtins/timer.cpp"
         "charly/core/runtime/builtins/readline.cpp"
+        "charly/core/runtime/builtins/math.cpp"
         "charly/handle.cpp"
         "charly/utils/argumentparser.cpp"
         "charly/utils/buffer.cpp"

@@ -36,6 +36,7 @@
 #include "charly/core/runtime/builtins/string.h"
 #include "charly/core/runtime/builtins/timer.h"
 #include "charly/core/runtime/builtins/readline.h"
+#include "charly/core/runtime/builtins/math.h"
 
 namespace charly::core::runtime {
 
@@ -161,6 +162,7 @@ void Runtime::initialize_builtin_functions(Thread* thread) {
   builtin::list::initialize(thread);
   builtin::timer::initialize(thread);
   builtin::readline::initialize(thread);
+  builtin::math::initialize(thread);
 }
 
 void Runtime::initialize_builtin_types(Thread* thread) {

@@ -61,6 +61,8 @@ const builtin_string_index_of = @"charly.builtin.string.index_of"
 const builtin_string_split = @"charly.builtin.string.split"
 const builtin_string_substring = @"charly.builtin.string.substring"
 
+const builtin_math_floor = @"charly.builtin.math.floor"
+
 func getenv(key) {
     assert key instanceof String
     return builtin_getenv(key)
@@ -134,6 +136,12 @@ class Timer {
 
     class builtin_Instance {
         func constructor = self
+    }
+
+    class builtin_Number {
+        func floor {
+            return builtin_math_floor(self)
+        }
     }
 
     class builtin_Int {
@@ -442,6 +450,7 @@ class Timer {
     builtin_transplant_builtin_class(Class, builtin_Class)
     builtin_transplant_builtin_class(Tuple, builtin_Tuple)
     builtin_transplant_builtin_class(List, builtin_List)
+    builtin_transplant_builtin_class(Number, builtin_Number)
     builtin_transplant_builtin_class(Int, builtin_Int)
     builtin_transplant_builtin_class(String, builtin_String)
     builtin_transplant_builtin_class(Function, builtin_Function)
