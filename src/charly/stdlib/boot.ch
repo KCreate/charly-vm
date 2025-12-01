@@ -39,6 +39,8 @@ const builtin_timerfibercreate = @"charly.builtin.timer.fibercreate"
 const builtin_timersleep = @"charly.builtin.timer.sleep"
 const builtin_timercancel = @"charly.builtin.timer.cancel"
 const builtin_compile = @"charly.builtin.core.compile"
+const builtin_getenv = @"charly.builtin.core.getenv"
+const builtin_readfile = @"charly.builtin.core.readfile"
 
 const builtin_readline_prompt = @"charly.builtin.readline.prompt"
 const builtin_readline_add_history = @"charly.builtin.readline.add_history"
@@ -57,6 +59,16 @@ const builtin_list_pop = @"charly.builtin.list.pop"
 const builtin_string_index_of = @"charly.builtin.string.index_of"
 const builtin_string_split = @"charly.builtin.string.split"
 const builtin_string_substring = @"charly.builtin.string.substring"
+
+func getenv(key) {
+    assert key instanceof String
+    return builtin_getenv(key)
+}
+
+func readfile(path) {
+    assert path instanceof String
+    return builtin_readfile(path)
+}
 
 func write(...args) = builtin_writevalue(...args)
 

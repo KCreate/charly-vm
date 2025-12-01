@@ -226,11 +226,22 @@ RawValue readfile(Thread* thread, BuiltinFrame* frame) {
   CHECK(frame->arguments[0].isString());
   std::string file_path = RawString::cast(frame->arguments[0]).str();
 
-  std::ifstream f(file_path);
+  std::ifstream f(file_path, std::ios::in | std::ios::binary);
+  if (!f.is_open()) {
+    if (!fs::exists(file_path)) {
+      return thread->throw_message("File not found: %", file_path);
+    }
+    return thread->throw_message("Could not open file: %", file_path);
+  }
+
   std::ostringstream ss;
   ss << f.rdbuf();
-  std::string contents = ss.str();
 
+  if (f.bad()) {
+    return thread->throw_message("Error while reading file: %", file_path);
+  }
+
+  std::string contents = ss.str();
   return RawString::create(thread, contents);
 }
 
@@ -238,11 +249,12 @@ RawValue getenv(Thread* thread, BuiltinFrame* frame) {
     CHECK(frame->arguments[0].isString());
     std::string env_varname = RawString::cast(frame->arguments[0]).str();
     auto env_value = utils::ArgumentParser::get_environment_for_key(env_varname);
+
     if (env_value.has_value()) {
-        return RawString::create(thread, env_value.value());
-    } else {
-        return kNull;
+      return RawString::create(thread, env_value.value());
     }
+
+    return kNull;
 }
 
 RawValue compile(Thread* thread, BuiltinFrame* frame) {
