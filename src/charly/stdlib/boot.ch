@@ -156,7 +156,15 @@ class Timer {
         }
 
         func map(cb) {
-            List.create_with(self, cb)
+            assert cb instanceof Function
+            const result = List.create(self)
+            result.map(cb)
+        }
+
+        func parallelMap(cb) {
+            assert cb instanceof Function
+            const result = List.create(self)
+            result.parallelMap(cb)
         }
 
         func upTo(other, callback) {
@@ -303,6 +311,14 @@ class Timer {
             }
 
             new_list
+        }
+
+        func parallelMap(cb) {
+            return self.map(->(...args) {
+                spawn cb(...args)
+            }).map(->(fiber) {
+                await fiber
+            })
         }
 
         func flatten {
