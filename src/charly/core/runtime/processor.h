@@ -24,6 +24,7 @@
 
 #include <list>
 #include <mutex>
+#include <shared_mutex>
 #include <unordered_map>
 #include <variant>
 
@@ -102,6 +103,10 @@ public:
   // copies the symbol into the local symbol table if it doesn't already exist
   RawValue lookup_symbol(SYMBOL symbol);
 
+  // look up a shape id in this processors shape cache
+  // if no entry exists, it will defer to the central runtime table
+  RawShape lookup_shape(ShapeId id);
+
   // Attempt to steal some threads from this processor
   // and put them into target_procs run queue
   bool steal_ready_threads(Processor* target_proc);
@@ -127,6 +132,9 @@ private:
   std::vector<TimerEvent> m_timer_events;
 
   std::unordered_map<SYMBOL, RawString> m_symbol_table;
+
+  std::shared_mutex m_shape_cache_mutex;
+  std::vector<std::optional<RawShape>> m_shape_cache;
 };
 
 }  // namespace charly::core::runtime

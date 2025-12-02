@@ -76,8 +76,6 @@ private:
 
 private:
   atomic<ThreadQueueTable*> m_table = nullptr;
-  std::mutex m_old_tables_mutex;
-  std::vector<ThreadQueueTable*> m_old_tables;
 };
 
 enum LockState : uint8_t {

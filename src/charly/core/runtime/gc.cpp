@@ -119,7 +119,7 @@ void GarbageCollector::main() {
   }
 
   if (collection_count > 0) {
-    debuglnf("collection average time %ms", collection_time_sum / collection_count);
+    debugln("collection average time %ms", collection_time_sum / collection_count);
   }
 }
 

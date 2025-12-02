@@ -573,7 +573,7 @@ RawShape Runtime::lookup_shape(ShapeId id) {
 }
 
 RawValue Runtime::lookup_symbol(SYMBOL symbol) {
-  std::lock_guard<std::mutex> locker(m_symbols_mutex);
+  std::lock_guard locker(m_symbols_mutex);
 
   if (m_symbol_table.count(symbol)) {
     return m_symbol_table.at(symbol);
@@ -582,15 +582,13 @@ RawValue Runtime::lookup_symbol(SYMBOL symbol) {
   return kNull;
 }
 
-bool Runtime::builtin_class_is_registered(ShapeId shape_id) {
-  std::shared_lock lock(m_shapes_mutex);
+bool Runtime::builtin_class_is_registered(ShapeId shape_id) const {
   auto offset = static_cast<uint32_t>(shape_id);
   DCHECK(offset < kBuiltinClassCount);
   return !m_builtin_classes.at(offset).isNull();
 }
 
 void Runtime::set_builtin_class(ShapeId shape_id, RawClass klass) {
-  std::unique_lock lock(m_shapes_mutex);
   auto offset = static_cast<uint32_t>(shape_id);
   DCHECK(shape_id <= ShapeId::kLastBuiltinShapeId);
   DCHECK(offset < kBuiltinClassCount);
@@ -598,8 +596,7 @@ void Runtime::set_builtin_class(ShapeId shape_id, RawClass klass) {
   m_builtin_classes[offset] = klass;
 }
 
-RawClass Runtime::get_builtin_class(ShapeId shape_id) {
-  std::shared_lock lock(m_shapes_mutex);
+RawClass Runtime::get_builtin_class(ShapeId shape_id) const {
   auto offset = static_cast<uint32_t>(shape_id);
   DCHECK(offset < kBuiltinClassCount);
   return RawClass::cast(m_builtin_classes.at(offset));
@@ -613,12 +610,12 @@ uint32_t Runtime::check_private_access_permitted(Thread* thread, RawInstance val
   RawValue self = thread->frame()->self;
   RawClass self_class = self.klass(thread);
   if (self == value) {
-    return lookup_shape(self.shape_id()).keys().length();
+    return thread->worker()->processor()->lookup_shape(self.shape_id()).keys().length();
   }
 
   RawClass other_class = value.klass(thread);
   if (self_class == other_class) {
-    return lookup_shape(value.shape_id()).keys().length();
+    return thread->worker()->processor()->lookup_shape(value.shape_id()).keys().length();
   }
 
   RawTuple self_ancestors = self_class.ancestor_table();
@@ -768,6 +765,14 @@ void Runtime::each_root(std::function<void(RawValue& value)> callback) {
         callback(arg->function);
         callback(arg->context);
         callback(arg->arguments);
+      }
+    }
+
+    for (auto& entry : proc->m_shape_cache) {
+      if (entry.has_value()) {
+        RawShape v = entry.value();
+        callback(v);
+        entry = RawShape::cast(v);
       }
     }
   }

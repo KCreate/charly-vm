@@ -472,7 +472,7 @@ RawValue RawValue::load_attr_symbol(Thread* thread, SYMBOL symbol) const {
     auto instance = RawInstance::cast(this);
 
     // TODO: cache result via inline cache
-    auto shape = runtime->lookup_shape(instance.shape_id());
+    auto shape = thread->worker()->processor()->lookup_shape(instance.shape_id());
     auto result = shape.lookup_symbol(symbol);
     if (result.found) {
       // TODO: allow accessing private member of same class
@@ -534,7 +534,7 @@ RawValue RawValue::set_attr_symbol(Thread* thread, SYMBOL symbol, RawValue value
   if (isInstance()) {
     auto runtime = thread->runtime();
     auto instance = RawInstance::cast(this);
-    auto shape = runtime->lookup_shape(instance.shape_id());
+    auto shape = thread->worker()->processor()->lookup_shape(instance.shape_id());
     auto result = shape.lookup_symbol(symbol);
     if (result.found) {
       if (result.is_read_only()) {

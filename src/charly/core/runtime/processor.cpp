@@ -193,6 +193,33 @@ RawValue Processor::lookup_symbol(SYMBOL symbol) {
   return result;
 }
 
+RawShape Processor::lookup_shape(ShapeId id) {
+  auto index = static_cast<size_t>(id);
+  {
+    std::shared_lock locker(m_shape_cache_mutex);
+
+    // check if cache entry exists
+    if (index < m_shape_cache.size()) {
+      const auto& cache_entry = m_shape_cache.at(index);
+      if (cache_entry.has_value()) {
+        return RawShape::cast(cache_entry.value());
+      }
+    }
+  }
+
+  // populate local cache entry from runtime table
+  RawShape value = m_runtime->lookup_shape(id);
+  std::unique_lock locker(m_shape_cache_mutex);
+
+  // grow the shape cache to the required size
+  while (m_shape_cache.size() <= index) {
+    m_shape_cache.push_back(std::nullopt);
+  }
+
+  m_shape_cache[index] = value;
+  return value;
+}
+
 bool Processor::steal_ready_threads(Processor* target_proc) {
   std::scoped_lock locker(m_run_queue_mutex, target_proc->m_run_queue_mutex);
 
