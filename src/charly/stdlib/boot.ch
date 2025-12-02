@@ -146,12 +146,19 @@ class Timer {
 
     class builtin_Int {
         func times(cb) {
+            assert cb instanceof Function
             let i = 0
             while i < self {
                 cb(i)
                 i += 1
             }
+            self
+        }
 
+        func parallelTimes(cb) {
+            assert cb instanceof Function
+            const tasks = List.create(self).map(->(e, i) spawn cb(i))
+            tasks.each(->(task) await task)
             self
         }
 
