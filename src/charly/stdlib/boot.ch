@@ -317,6 +317,30 @@ class Timer {
             new
         }
 
+        func any(cb) {
+            const length = @length
+
+            let i = 0
+            while i < length {
+                if @length != length {
+                    throw "List size changed during iteration"
+                }
+
+                let value
+                try value = self[i] catch {
+                    throw "List size changed during iteration"
+                }
+
+                if cb(value, i, self) {
+                    return true
+                }
+
+                i += 1
+            }
+
+            return false
+        }
+
         func reduce(sum, cb) {
             each(->(e, i, list) {
                 sum = cb(sum, e, i, self)
