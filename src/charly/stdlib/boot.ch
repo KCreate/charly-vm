@@ -305,6 +305,21 @@ class Timer {
             new_list
         }
 
+        func flatten {
+            const result = []
+
+            @each(->(e) {
+                if e instanceof List {
+                    const c = e.copy().flatten()
+                    c.each(->(ce) result.push(ce))
+                } else {
+                    result.push(e)
+                }
+            })
+
+            result
+        }
+
         func filter(cb) {
             const new = []
 
