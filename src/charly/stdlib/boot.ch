@@ -158,6 +158,23 @@ class Timer {
         func map(cb) {
             List.create_with(self, cb)
         }
+
+        func upTo(other, callback) {
+            assert other instanceof Number
+            if other < self {
+                return []
+            }
+
+            const result = []
+            let i = self
+            while i <= other {
+                const r = callback(i)
+                result.push(r)
+                i += 1
+            }
+
+            result
+        }
     }
 
     class builtin_String {
