@@ -385,6 +385,7 @@ class Timer {
         }
 
         func empty = @length == 0
+        func notEmpty = @length > 0
 
         func copy = [...self]
 
