@@ -41,6 +41,8 @@
 #include "charly/core/runtime/heap.h"
 #include "charly/core/runtime/scheduler.h"
 
+#include "parallel_hashmap/phmap.h"
+
 #pragma once
 
 namespace charly::core::runtime {
@@ -180,8 +182,17 @@ private:
     RawValue value;
     bool constant;
   };
-  std::shared_mutex m_globals_mutex;
-  std::unordered_map<SYMBOL, GlobalVariable> m_global_variables;
+
+  template <typename K, typename V, typename M = std::mutex>
+  using parallel_map = phmap::parallel_flat_hash_map<
+    K,
+    V,
+    phmap::priv::hash_default_hash<K>,
+    phmap::priv::hash_default_eq<K>,
+    std::allocator<std::pair<const K, V>>, 4, M
+  >;
+  using GlobalsHashMap = parallel_map<SYMBOL, GlobalVariable, std::mutex>;
+  GlobalsHashMap m_global_variables;
 
   fs::path m_stdlib_directory;
   std::unordered_map<std::string, fs::path> m_builtin_libraries_paths;

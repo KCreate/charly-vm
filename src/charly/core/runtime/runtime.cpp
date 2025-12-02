@@ -480,40 +480,44 @@ void Runtime::initialize_stdlib_paths() {
 }
 
 RawValue Runtime::declare_global_variable(Thread*, SYMBOL name, bool constant, RawValue value) {
-  std::unique_lock locker(m_globals_mutex);
-
-  if (m_global_variables.count(name) == 1) {
-    return kErrorException;
+  auto result = m_global_variables.try_emplace(name, value, constant);
+  if (result.second) {
+    return kErrorOk;
   }
 
-  m_global_variables[name] = { value, constant };
-  return kErrorOk;
+  return kErrorException;
 }
 
 RawValue Runtime::read_global_variable(Thread*, SYMBOL name) {
-  std::shared_lock locker(m_globals_mutex);
+  RawValue result = kNull;
+  bool exists = m_global_variables.if_contains(name, [&result](const GlobalsHashMap::value_type& var) {
+    result = var.second.value;
+  });
 
-  if (m_global_variables.count(name) == 0) {
-    return kErrorNotFound;
+  if (exists) {
+    return result;
   }
 
-  GlobalVariable& var = m_global_variables.at(name);
-  return var.value;
+  return kErrorNotFound;
 }
 
 RawValue Runtime::set_global_variable(Thread*, SYMBOL name, RawValue value) {
-  std::unique_lock locker(m_globals_mutex);
+  bool is_const = false;
+  bool exists = m_global_variables.modify_if(name, [&](GlobalsHashMap::value_type& var) {
+    is_const = var.second.constant;
+    if (!is_const) {
+      var.second.value = value;
+    }
+  });
 
-  if (m_global_variables.count(name) == 0) {
+  if (!exists) {
     return kErrorNotFound;
   }
 
-  auto& var = m_global_variables.at(name);
-  if (var.constant) {
+  if (is_const) {
     return kErrorReadOnly;
   }
 
-  var.value = value;
   return kErrorOk;
 }
 
