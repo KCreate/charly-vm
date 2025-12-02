@@ -586,13 +586,15 @@ RawValue Runtime::lookup_symbol(SYMBOL symbol) {
   return kNull;
 }
 
-bool Runtime::builtin_class_is_registered(ShapeId shape_id) const {
+bool Runtime::builtin_class_is_registered(ShapeId shape_id) {
+  std::shared_lock locker(m_builtin_classes_mutex);
   auto offset = static_cast<uint32_t>(shape_id);
   DCHECK(offset < kBuiltinClassCount);
   return !m_builtin_classes.at(offset).isNull();
 }
 
 void Runtime::set_builtin_class(ShapeId shape_id, RawClass klass) {
+  std::unique_lock locker(m_builtin_classes_mutex);
   auto offset = static_cast<uint32_t>(shape_id);
   DCHECK(shape_id <= ShapeId::kLastBuiltinShapeId);
   DCHECK(offset < kBuiltinClassCount);
@@ -600,7 +602,8 @@ void Runtime::set_builtin_class(ShapeId shape_id, RawClass klass) {
   m_builtin_classes[offset] = klass;
 }
 
-RawClass Runtime::get_builtin_class(ShapeId shape_id) const {
+RawClass Runtime::get_builtin_class(ShapeId shape_id) {
+  std::shared_lock locker(m_builtin_classes_mutex);
   auto offset = static_cast<uint32_t>(shape_id);
   DCHECK(offset < kBuiltinClassCount);
   return RawClass::cast(m_builtin_classes.at(offset));
@@ -774,9 +777,7 @@ void Runtime::each_root(std::function<void(RawValue& value)> callback) {
 
     for (auto& entry : proc->m_shape_cache) {
       if (entry.has_value()) {
-        RawShape v = entry.value();
-        callback(v);
-        entry = RawShape::cast(v);
+        callback(entry.value());
       }
     }
   }

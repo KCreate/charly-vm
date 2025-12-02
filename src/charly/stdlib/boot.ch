@@ -340,7 +340,7 @@ class Timer {
 
             @each(->(e) {
                 if e instanceof List {
-                    const c = e.copy().flatten()
+                    const c = e.flatten()
                     c.each(->(ce) result.push(ce))
                 } else {
                     result.push(e)

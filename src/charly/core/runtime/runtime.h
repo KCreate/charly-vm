@@ -113,9 +113,9 @@ public:
 
   // sets the class that gets used as the parent class if no 'extends'
   // statement was present during class declaration
-  bool builtin_class_is_registered(ShapeId shape_id) const;
+  bool builtin_class_is_registered(ShapeId shape_id);
   void set_builtin_class(ShapeId shape_id, RawClass klass);
-  RawClass get_builtin_class(ShapeId shape_id) const;
+  RawClass get_builtin_class(ShapeId shape_id);
 
   // checks wether the current thread (and the top frame's associated self value)
   // can access the private member of an instance and up to what offset
@@ -175,6 +175,7 @@ private:
   std::shared_mutex m_shapes_mutex;
   std::vector<RawValue> m_shapes;
 
+  std::shared_mutex m_builtin_classes_mutex;
   static constexpr size_t kBuiltinClassCount = static_cast<size_t>(ShapeId::kLastBuiltinShapeId) + 1;
   std::array<RawValue, kBuiltinClassCount> m_builtin_classes;
 
