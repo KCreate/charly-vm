@@ -176,18 +176,25 @@ class Timer {
 
         func upTo(other, callback) {
             assert other instanceof Number
-            if other < self {
-                return []
-            }
+            assert callback instanceof Function
 
-            const result = []
             let i = self
             while i <= other {
-                const r = callback(i)
-                result.push(r)
+                callback(i)
                 i += 1
             }
 
+            self
+        }
+
+        func collectUpTo(other, callback) {
+            assert other instanceof Number
+            assert callback instanceof Function
+
+            const result = []
+            @upTo(other, ->(...args) {
+                result.push(callback(...args))
+            })
             result
         }
     }
