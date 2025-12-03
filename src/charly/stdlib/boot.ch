@@ -488,6 +488,8 @@ class Timer {
 
             result
         }
+
+        func sum = @reduce(0, ->(p, c) p + c)
         func empty = @length == 0
         func notEmpty = @length > 0
 
