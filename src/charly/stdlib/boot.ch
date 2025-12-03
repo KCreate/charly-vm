@@ -490,6 +490,18 @@ class Timer {
         }
 
         func sum = @reduce(0, ->(p, c) p + c)
+
+        func join(separator = ", ") {
+            let result = ""
+            @each(->(n, i) {
+                if i == 0 {
+                    result = "{n}"
+                } else {
+                    result = "{result}{separator}{n}"
+                }
+            })
+            result
+        }
         func empty = @length == 0
         func notEmpty = @length > 0
 
