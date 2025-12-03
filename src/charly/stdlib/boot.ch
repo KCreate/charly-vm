@@ -142,6 +142,22 @@ class Timer {
         func floor {
             return builtin_math_floor(self)
         }
+
+        func max(other) {
+            assert other instanceof Number
+            if other > self {
+                return other
+            }
+            return self
+        }
+
+        func min(other) {
+            assert other instanceof Number
+            if other < self {
+                return other
+            }
+            return self
+        }
     }
 
     class builtin_Int {
