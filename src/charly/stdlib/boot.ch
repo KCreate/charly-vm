@@ -502,6 +502,45 @@ class Timer {
             })
             result
         }
+
+        func findMax {
+            if @empty() {
+                return null
+            }
+
+            let largestValue = null
+            let largestIndex = -1
+
+            @each(->(e, i) {
+                if i == 0 || e > largestValue {
+                    largestValue = e
+                    largestIndex = i
+                }
+            })
+
+            return self[largestIndex]
+        }
+
+        func findMaxBy(callback) {
+            assert callback instanceof Function
+            if @empty() {
+                return null
+            }
+
+            let largestValue = null
+            let largestIndex = -1
+
+            @each(->(e, i) {
+                const value = callback(e, i)
+                if i == 0 || value > largestValue {
+                    largestValue = value
+                    largestIndex = i
+                }
+            })
+
+            return self[largestIndex]
+        }
+
         func empty = @length == 0
         func notEmpty = @length > 0
 
