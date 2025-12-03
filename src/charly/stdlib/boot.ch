@@ -203,7 +203,7 @@ class Timer {
             self
         }
 
-        func collectUpTo(other, callback) {
+        func collectUpTo(other, callback = ->(n) n) {
             assert other instanceof Number
             assert callback instanceof Function
 
