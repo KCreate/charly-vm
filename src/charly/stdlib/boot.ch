@@ -473,6 +473,21 @@ class Timer {
             self
         }
 
+        func sublist(start, count = @length) {
+            assert start instanceof Number
+            assert count instanceof Number
+
+            const result = []
+
+            0.upTo(count - 1, ->(i) {
+                const index = start + i
+                if index >= 0 && index < @length {
+                    result.push(self[index])
+                }
+            })
+
+            result
+        }
         func empty = @length == 0
         func notEmpty = @length > 0
 
