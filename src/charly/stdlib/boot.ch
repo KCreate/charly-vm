@@ -343,6 +343,10 @@ class Timer {
             new_list
         }
 
+        func mapNotNull(cb) {
+            return @map(cb).filter(->(n) n != null)
+        }
+
         func parallelMap(cb) {
             return self.map(->(...args) {
                 spawn cb(...args)
