@@ -70,10 +70,8 @@ RawValue split(Thread* thread, BuiltinFrame* frame) {
   const auto delimiter_view = std::string_view(delimiter);
 
   for (const auto entry : std::views::split(self_view, delimiter_view)) {
-    if (entry.size() > 0) {
-      auto foo = std::string(entry.data(), entry.size());
-      result.push_value(thread, RawString::create(thread, foo));
-    }
+    auto foo = std::string(entry.data(), entry.size());
+    result.push_value(thread, RawString::create(thread, foo));
   }
 
   return *result;
