@@ -574,6 +574,23 @@ class Timer {
 
         func copy = [...self]
 
+        func first {
+            if @length > 0 {
+                return self[0]
+            }
+
+            return null
+        }
+
+        func last {
+            const length = @length
+            if length > 0 {
+                return self[length - 1]
+            }
+
+            return null
+        }
+
         static func create(length, initial = null) = builtin_list_create(length, initial)
         static func create_with(length, callback) {
             const l = List.create(length)
