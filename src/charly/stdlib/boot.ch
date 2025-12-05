@@ -551,6 +551,24 @@ class Timer {
             return self[largestIndex]
         }
 
+        func findBy(callback) {
+            assert callback instanceof Function
+            let i = 0
+            while i < @length {
+                const value = self[i]
+
+                if callback(value, i, self) {
+                    return i
+                }
+
+                i += 1
+            }
+
+            return null
+        }
+
+        func find(search) = @findBy(->(e) e == search)
+
         func empty = @length == 0
         func notEmpty = @length > 0
 
