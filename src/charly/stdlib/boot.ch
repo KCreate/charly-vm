@@ -240,7 +240,15 @@ class Timer {
             return builtin_string_split(self, terminator)
         }
 
-        func lines = @split("\n")
+        func lines {
+            const lines = @split("\n")
+
+            if lines.notEmpty() && lines.last() == "" {
+                lines.pop()
+            }
+
+            return lines
+        }
 
         func to_number() {
             return builtin_str_to_num(self)
