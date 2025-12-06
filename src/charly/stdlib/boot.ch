@@ -422,6 +422,16 @@ class Timer {
             !@any(->(...args) !cb(...args))
         }
 
+        func reverse {
+            const result = List.create(@length)
+
+            @each(->(e, i) {
+                result[@length - i - 1] = e
+            })
+
+            result
+        }
+
         func reduce(sum, cb) {
             each(->(e, i, list) {
                 sum = cb(sum, e, i, self)
