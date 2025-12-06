@@ -392,6 +392,10 @@ class Timer {
             new
         }
 
+        func filterEmpty {
+            @filter(->(e) e.length > 0)
+        }
+
         func any(cb) {
             assert cb instanceof Function
             const length = @length
