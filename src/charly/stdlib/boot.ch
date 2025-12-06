@@ -393,6 +393,7 @@ class Timer {
         }
 
         func any(cb) {
+            assert cb instanceof Function
             const length = @length
 
             let i = 0
@@ -414,6 +415,11 @@ class Timer {
             }
 
             return false
+        }
+
+        func all(cb) {
+            assert cb instanceof Function
+            !@any(->(...args) !cb(...args))
         }
 
         func reduce(sum, cb) {
