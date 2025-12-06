@@ -269,7 +269,7 @@ class Timer {
         }
 
         func map(cb) {
-            return Tuple.create_with(@length, ->(i) {
+            return List.create_with(@length, ->(i) {
                 cb(self[i], i, self)
             })
         }
