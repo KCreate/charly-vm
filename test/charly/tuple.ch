@@ -92,7 +92,7 @@ export class TupleTest {
         const b = a.map(->(v, i) v * v + i)
 
         assert b.length == 5
-        assert b == (1, 5, 11, 19, 29)
+        assert b == [1, 5, 11, 19, 29]
     }
 
     static func test_tuple_filter {
