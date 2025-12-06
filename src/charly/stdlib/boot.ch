@@ -507,6 +507,8 @@ class Timer {
 
         func sum = @reduce(0, ->(p, c) p + c)
 
+        func product = @reduce(1, ->(p, c) p * c)
+
         func join(separator = ", ") {
             let result = ""
             @each(->(n, i) {
