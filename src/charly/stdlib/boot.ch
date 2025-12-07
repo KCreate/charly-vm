@@ -214,6 +214,19 @@ class Timer {
             self
         }
 
+        func downTo(other, callback) {
+            assert other instanceof Number
+            assert callback instanceof Function
+
+            let i = self
+            while i >= other {
+                callback(i)
+                i -= 1
+            }
+
+            self
+        }
+
         func collectUpTo(other, callback = ->(n) n) {
             assert other instanceof Number
             assert callback instanceof Function
