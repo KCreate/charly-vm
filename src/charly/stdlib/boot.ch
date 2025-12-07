@@ -377,6 +377,8 @@ class Timer {
         func push(value) = builtin_list_push(self, value)
         func pop() = builtin_list_pop(self)
 
+        func indices = List.create_with(@length, ->(i) i)
+
         func clear {
             @erase(0, @length)
             self
