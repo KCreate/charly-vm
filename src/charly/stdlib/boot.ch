@@ -377,6 +377,11 @@ class Timer {
         func push(value) = builtin_list_push(self, value)
         func pop() = builtin_list_pop(self)
 
+        func clear {
+            @erase(0, @length)
+            self
+        }
+
         func each(cb) {
             const length = @length
 
