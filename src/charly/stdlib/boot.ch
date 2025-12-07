@@ -237,6 +237,17 @@ class Timer {
             })
             result
         }
+
+        func collectDownTo(other, callback = ->(n) n) {
+            assert other instanceof Number
+            assert callback instanceof Function
+
+            const result = []
+            @downTo(other, ->(...args) {
+                result.push(callback(...args))
+            })
+            result
+        }
     }
 
     class builtin_String {
