@@ -591,9 +591,9 @@ class Timer {
 
         func product = @reduce(1, ->(p, c) p * c)
 
-        func join(separator = ", ") {
+        func join(separator = ", ", accessor = ->(e) e) {
             let result = ""
-            @each(->(n, i) {
+            @map(accessor).each(->(n, i) {
                 if i == 0 {
                     result = "{n}"
                 } else {
