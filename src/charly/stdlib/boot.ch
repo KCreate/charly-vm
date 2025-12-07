@@ -285,6 +285,32 @@ class Timer {
             return lines
         }
 
+        func padRight(minimumLength, character = " ") {
+            assert character instanceof String
+            assert character.length == 1
+
+            if @length >= minimumLength {
+                return self
+            }
+
+            const remainingCharacters = minimumLength - @length
+            const padString = character * remainingCharacters
+            return self + padString
+        }
+
+        func padLeft(minimumLength, character = " ") {
+            assert character instanceof String
+            assert character.length == 1
+
+            if @length >= minimumLength {
+                return self
+            }
+
+            const remainingCharacters = minimumLength - @length
+            const padString = character * remainingCharacters
+            return padString + self
+        }
+
         func to_number() {
             return builtin_str_to_num(self)
         }
