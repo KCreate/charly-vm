@@ -133,6 +133,11 @@ class Timer {
 
 ->{
     class builtin_Value {
+        func apply(callback) {
+            assert callback instanceof Function
+            callback(self)
+        }
+
         func also(callback) {
             assert callback instanceof Function
             callback(self)
