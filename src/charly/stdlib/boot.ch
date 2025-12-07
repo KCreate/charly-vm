@@ -681,6 +681,10 @@ class Timer {
             return null
         }
 
+        func dropFirst(n) = @sublist(n, @length)
+
+        func dropLast(n) = @sublist(0, @length - n)
+
         static func create(length, initial = null) = builtin_list_create(length, initial)
         static func create_with(length, callback) {
             const l = List.create(length)
