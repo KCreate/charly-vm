@@ -56,4 +56,76 @@ RawValue floor(Thread*, BuiltinFrame* frame) {
   return kNaN;
 }
 
+RawValue sqrt(Thread*, BuiltinFrame* frame) {
+  CHECK(frame->arguments[0].isNumber());
+
+  RawValue value = frame->arguments[0];
+
+  if (value.isInt()) {
+    double val = (double)RawInt::cast(value).value();
+    return RawFloat::create(std::sqrt(val));
+  }
+
+  if (value.isFloat()) {
+    if (value == kNaN) {
+      return kNaN;
+    }
+
+    double val = RawFloat::cast(value).value();
+    return RawFloat::create(std::sqrt(val));
+  }
+
+  return kNaN;
+}
+
+RawValue cbrt(Thread*, BuiltinFrame* frame) {
+  CHECK(frame->arguments[0].isNumber());
+
+  RawValue value = frame->arguments[0];
+
+  if (value.isInt()) {
+    double val = (double)RawInt::cast(value).value();
+    return RawFloat::create(std::cbrt(val));
+  }
+
+  if (value.isFloat()) {
+    if (value == kNaN) {
+      return kNaN;
+    }
+
+    double val = RawFloat::cast(value).value();
+    return RawFloat::create(std::cbrt(val));
+  }
+
+  return kNaN;
+}
+
+RawValue abs(Thread*, BuiltinFrame* frame) {
+  CHECK(frame->arguments[0].isNumber());
+
+  RawValue value = frame->arguments[0];
+
+  if (value.isInt()) {
+    int64_t ival = RawInt::cast(value).value();
+    if (ival < 0) {
+      return RawInt::create(-ival);
+    }
+    return value;
+  }
+
+  if (value.isFloat()) {
+    if (value == kNaN) {
+      return kNaN;
+    }
+
+    double dval = RawFloat::cast(value).value();
+    if (dval < 0) {
+      return RawFloat::create(-dval);
+    }
+    return value;
+  }
+
+  return kNaN;
+}
+
 }  // namespace charly::core::runtime::builtin::math

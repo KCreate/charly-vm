@@ -32,7 +32,10 @@ namespace charly::core::runtime::builtin::math {
 void initialize(Thread* thread);
 
 #define DEF_BUILTIN_MATH(V) \
-  V(math, floor, 1)
+  V(math, floor, 1)         \
+  V(math, sqrt, 1)          \
+  V(math, cbrt, 1)          \
+  V(math, abs, 1)
 DEF_BUILTIN_MATH(DEFINE_BUILTIN_METHOD_DECLARATIONS)
 
 }  // namespace charly::core::runtime::builtin::math
