@@ -556,9 +556,7 @@ class Timer {
         }
 
         func sort(compare_function = null) {
-            let length = @length
-            let i = 0
-            let had_swaps = true
+            const length = @length
 
             if length <= 1 {
                 return self
@@ -568,24 +566,85 @@ class Timer {
                 compare_function = ->(left, right) left <=> right
             }
 
-            while (had_swaps) {
-                i = 0
-                had_swaps = false
+            // secondary buffer, same size
+            let buffer = self.sublist(0, length)
 
-                if @length != length {
-                    throw "List size changed during sort"
+            // we alternate between these on each pass
+            let src = self
+            let dst = buffer
+
+            let width = 1
+            while (width < length) {
+                let i = 0
+
+                while (i < length) {
+                    let left  = i
+                    let mid   = i + width
+                    let right = i + width * 2
+
+                    if mid > length {
+                        mid = length
+                    }
+                    if right > length {
+                        right = length
+                    }
+
+                    // if there's no right run, just copy the tail
+                    if mid >= right {
+                        let t = left
+                        while (t < right) {
+                            dst[t] = src[t]
+                            t += 1
+                        }
+                        i = right
+                        continue
+                    }
+
+                    let a = left
+                    let b = mid
+                    let k = left
+
+                    while (a < mid && b < right) {
+                        if compare_function(src[a], src[b]) <= 0 {
+                            dst[k] = src[a]
+                            a += 1
+                        } else {
+                            dst[k] = src[b]
+                            b += 1
+                        }
+                        k += 1
+                    }
+
+                    while (a < mid) {
+                        dst[k] = src[a]
+                        a += 1
+                        k += 1
+                    }
+
+                    while (b < right) {
+                        dst[k] = src[b]
+                        b += 1
+                        k += 1
+                    }
+
+                    i = right
                 }
 
-                @each(->(value, index) {
-                    if index < length - 1 {
-                        const next_value = self[index + 1]
-                        if compare_function(value, next_value) > 0 {
-                            self[index] = next_value
-                            self[index + 1] = value
-                            had_swaps = true
-                        }
-                    }
-                })
+                // next pass: swap roles
+                let tmp = src
+                src = dst
+                dst = tmp
+
+                width = width * 2
+            }
+
+            // if final result ended up in buffer, copy back once
+            if src != self {
+                let i = 0
+                while (i < length) {
+                    self[i] = src[i]
+                    i += 1
+                }
             }
 
             self
