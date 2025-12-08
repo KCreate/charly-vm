@@ -709,6 +709,13 @@ class Timer {
 
         func takeLast(n) = @sublist(@length - n, n)
 
+        func concat(other) {
+            assert other instanceof List
+            const result = self.copy()
+            other.each(->(e) result.push(e))
+            result
+        }
+
         static func create(length, initial = null) = builtin_list_create(length, initial)
         static func create_with(length, callback) {
             const l = List.create(length)
