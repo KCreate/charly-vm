@@ -398,7 +398,9 @@ class Timer {
         func indices = List.create_with(@length, ->(i) i)
 
         func clear {
-            @erase(0, @length)
+            if @length > 0 {
+                @erase(0, @length)
+            }
             self
         }
 
