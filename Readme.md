@@ -2,7 +2,7 @@
 
 # Charly Programming Language
 
-![Unit Test](https://github.com/KCreate/charly-vm/workflows/Unit%20Test/badge.svg?branch=rewrite)
+[![Unit Test](https://github.com/KCreate/charly-vm/actions/workflows/unittest.yml/badge.svg)](https://github.com/KCreate/charly-vm/actions/workflows/unittest.yml)
 
 > Note: This is the rewrite branch of charly-vm.
 > Lots of stuff isn't working yet.
