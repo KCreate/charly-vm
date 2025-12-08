@@ -726,6 +726,13 @@ class Timer {
 
             l
         }
+
+        static func build(callback) {
+            assert callback instanceof Function
+            const list = []
+            callback(list)
+            list
+        }
     }
 
     class builtin_Function {
