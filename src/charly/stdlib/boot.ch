@@ -112,6 +112,20 @@ func sleep(delay) {
 class Stopwatch {
     private property start = timestamp_micro()
     func check = (timestamp_micro() - start) / 1000
+
+    static func section(title, callback) {
+        assert title instanceof String
+        assert callback instanceof Function
+        const sw = Stopwatch()
+        defer {
+            write(title)
+            write(" ran for ")
+            write(sw.check())
+            write("ms")
+            print()
+        }
+        return callback()
+    }
 }
 
 class Timer {
