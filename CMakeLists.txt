@@ -44,7 +44,7 @@ else ()
     set(BUILD_TESTS OFF CACHE BOOL "Build tests" FORCE)
 endif ()
 
-add_compile_options(-Wno-nontrivial-memaccess -Wno-missing-field-initializers -Wno-missing-designated-field-initializers)
+add_compile_options(-Wno-nontrivial-memaccess -Wno-missing-field-initializers -Wno-missing-field-initializers)
 
 # include directories
 include_directories(src)
