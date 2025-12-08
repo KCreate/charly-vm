@@ -7,11 +7,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Install clang-10
-      run:  |
-            sudo apt update
-            sudo apt install clang-10
-            sudo apt install libboost-all-dev
+    - name: apt update
+      run: sudo apt update
+      shell: bash
+
+    - name: apt install clang
+      run: sudo apt install clang
+      shell: bash
+
+    - name: apt install libboost-all-dev
+      run: sudo apt install libboost-all-dev
       shell: bash
 
     - name: Checkout repository and submodules
