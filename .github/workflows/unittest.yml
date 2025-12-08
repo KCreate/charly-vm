@@ -12,7 +12,7 @@ jobs:
       shell: bash
 
     - name: apt install clang
-      run: sudo apt install clang
+      run: sudo apt install clang-17
       shell: bash
 
     - name: apt install libboost-all-dev
