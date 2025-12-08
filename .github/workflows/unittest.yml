@@ -11,12 +11,11 @@ jobs:
       run: sudo apt update
       shell: bash
 
-    - name: apt install clang
-      run: sudo apt install clang-17
-      shell: bash
-
-    - name: apt install libboost-all-dev
-      run: sudo apt install libboost-all-dev
+    - name: Install dependencies
+      run: |
+           sudo apt install clang-17
+           sudo apt install libboost-all-dev
+           sudo apt install libreadline-dev
       shell: bash
 
     - name: Checkout repository and submodules
