@@ -463,6 +463,14 @@ RawValue RawValue::load_attr_symbol(Thread* thread, SYMBOL symbol) const {
       }
       break;
     }
+    case SYM("hashcode"): {
+      if (isString()) {
+        auto string = RawString::cast(this);
+        uint32_t hashcode = string.hashcode();
+        return RawInt::create(hashcode);
+      }
+      break;
+    }
   }
 
   // shape property access

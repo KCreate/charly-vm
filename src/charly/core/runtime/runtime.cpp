@@ -137,6 +137,7 @@ void Runtime::initialize_symbol_table(Thread* thread) {
   declare_symbol(thread, "klass");
   declare_symbol(thread, "length");
   declare_symbol(thread, "ARGV");
+  declare_symbol(thread, "hashcode");
 
   CHECK(declare_global_variable(thread, SYM("CHARLY_STDLIB"), true, RawString::create(thread, m_stdlib_directory))
           .is_error_ok());
