@@ -741,6 +741,44 @@ class Timer {
             return self[largestIndex]
         }
 
+        func findMin {
+            if @empty() {
+                return null
+            }
+
+            let smallestValue = null
+            let smallestIndex = -1
+
+            @each(->(e, i) {
+                if i == 0 || e < smallestValue {
+                    smallestValue = e
+                    smallestIndex = i
+                }
+            })
+
+            return self[smallestIndex]
+        }
+
+        func findMinBy(callback) {
+            assert callback instanceof Function
+            if @empty() {
+                return null
+            }
+
+            let smallestValue = null
+            let smallestIndex = -1
+
+            @each(->(e, i) {
+                const value = callback(e, i)
+                if i == 0 || value < smallestValue {
+                    smallestValue = value
+                    smallestIndex = i
+                }
+            })
+
+            return self[smallestIndex]
+        }
+
         func findBy(callback) {
             assert callback instanceof Function
             let i = 0
