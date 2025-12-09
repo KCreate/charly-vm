@@ -834,6 +834,23 @@ class Timer {
             result
         }
 
+        func adjacentPairs {
+            const result = []
+
+            if self.length <= 1 {
+                throw "Not enough values in the list to form pairs"
+            }
+
+            let i = 0
+            let limit = self.length - 1
+            while i < limit {
+                result.push((self[i], self[i + 1]))
+                i += 1
+            }
+
+            result
+        }
+
         static func create(length, initial = null) = builtin_list_create(length, initial)
         static func create_with(length, callback) {
             const l = List.create(length)
