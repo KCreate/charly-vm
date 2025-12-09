@@ -187,6 +187,16 @@ class Timer {
             }
             return self
         }
+
+        func inBetween(a, b) {
+            if b < a {
+                const tmp = a
+                a = b
+                b = tmp
+            }
+
+            self >= a && self <= b
+        }
     }
 
     class builtin_Int {
