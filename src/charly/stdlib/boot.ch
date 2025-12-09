@@ -834,6 +834,20 @@ class Timer {
             result
         }
 
+        func bidirectionalPermutations = List.build(->(list) {
+            const unidirectional = self.unidirectionalPermutations()
+
+            let i = 0
+            let limit = unidirectional.length
+            while i < limit {
+                const permutation = unidirectional[i]
+                const (a, b) = permutation
+                list.push(permutation)
+                list.push((b, a))
+                i += 1
+            }
+        })
+
         func unidirectionalPermutations = List.build(->(list) {
             let i = 0
             let j = 1
