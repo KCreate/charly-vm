@@ -245,6 +245,17 @@ class Timer {
             self
         }
 
+        func countTo(other, callback) {
+            assert other instanceof Number
+            assert callback instanceof Function
+
+            if other < self {
+                return other.countTo(self, callback)
+            }
+
+            self.upTo(other, callback)
+        }
+
         func collectUpTo(other, callback = ->(n) n) {
             assert other instanceof Number
             assert callback instanceof Function
