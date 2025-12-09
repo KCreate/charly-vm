@@ -834,6 +834,26 @@ class Timer {
             result
         }
 
+        func unidirectionalPermutations = List.build(->(list) {
+            let i = 0
+            let j = 1
+
+            if self.length < 2 {
+                throw "Not enough values in the list to form permutations"
+            }
+
+            while i < self.length {
+                while j < self.length {
+                    const c1 = self[i]
+                    const c2 = self[j]
+                    list.push((c1, c2))
+                    j += 1
+                }
+                i += 1
+                j = i + 1
+            }
+        })
+
         func adjacentPairs {
             const result = []
 
