@@ -819,13 +819,13 @@ class Timer {
             return null
         }
 
-        func dropFirst(n) = @sublist(n, @length)
+        func dropFirst(n = 1) = @sublist(n, @length)
 
-        func dropLast(n) = @sublist(0, @length - n)
+        func dropLast(n = 1) = @sublist(0, @length - n)
 
-        func takeFirst(n) = @sublist(0, n)
+        func takeFirst(n = 1) = @sublist(0, n)
 
-        func takeLast(n) = @sublist(@length - n, n)
+        func takeLast(n = 1) = @sublist(@length - n, n)
 
         func concat(other) {
             assert other instanceof List
