@@ -415,6 +415,15 @@ class Timer {
         func erase(start, count = 1) = builtin_list_erase(self, start, count)
         func push(value) = builtin_list_push(self, value)
         func pop() = builtin_list_pop(self)
+        func pop_front() {
+            if self.length == 0 {
+                throw "List is empty"
+            }
+
+            const value = self.first()
+            self.erase(0)
+            value
+        }
 
         func indices = List.create_with(@length, ->(i) i)
 
