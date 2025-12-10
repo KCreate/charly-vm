@@ -595,16 +595,56 @@ RawValue RawValue::op_add(Thread* thread, RawValue other) const {
     return RawString::cast(this).concat(thread, RawString::cast(other));
   }
 
+  if (isTuple() && other.isTuple()) {
+      HandleScope scope(thread);
+      Tuple self_tuple(scope, *this);
+      Tuple other_tuple(scope, other);
+
+      if (self_tuple.length() != other_tuple.length()) {
+        return kNaN;
+      }
+
+      Tuple result(scope, RawTuple::create(thread, self_tuple.length()));
+
+      for (uint32_t i = 0; i < self_tuple.length(); i++) {
+        Value left(scope, self_tuple.field_at(i));
+        Value right(scope, other_tuple.field_at(i));
+        result.set_field_at(i, left.op_add(thread, right));
+      }
+
+      return result;
+  }
+
   return kNaN;
 }
 
-RawValue RawValue::op_sub(RawValue other) const {
+RawValue RawValue::op_sub(Thread* thread, RawValue other) const {
   if (isInt() && other.isInt()) {
     return RawInt::create(RawInt::cast(*this).value() - RawInt::cast(other).value());
   }
 
   if (isNumber() && other.isNumber()) {
     return RawFloat::create(double_value() - other.double_value());
+  }
+
+  if (isTuple() && other.isTuple()) {
+      HandleScope scope(thread);
+      Tuple self_tuple(scope, *this);
+      Tuple other_tuple(scope, other);
+
+      if (self_tuple.length() != other_tuple.length()) {
+        return kNaN;
+      }
+
+      Tuple result(scope, RawTuple::create(thread, self_tuple.length()));
+
+      for (uint32_t i = 0; i < self_tuple.length(); i++) {
+        Value left(scope, self_tuple.field_at(i));
+        Value right(scope, other_tuple.field_at(i));
+        result.set_field_at(i, left.op_sub(thread, right));
+      }
+
+      return result;
   }
 
   return kNaN;
@@ -649,6 +689,28 @@ RawValue RawValue::op_mul(Thread* thread, RawValue other) const {
     return tuple.op_mul(thread, count);
   }
 
+  if (isTuple() && other.isTuple()) {
+      HandleScope scope(thread);
+      Tuple self_tuple(scope, *this);
+      Tuple other_tuple(scope, other);
+
+      if (self_tuple.length() != other_tuple.length()) {
+        return kNaN;
+      }
+
+      Tuple result(scope, RawTuple::create(thread, self_tuple.length()));
+
+      for (uint32_t i = 0; i < self_tuple.length(); i++) {
+        Value left(scope, self_tuple.field_at(i));
+        Value right(scope, other_tuple.field_at(i));
+        result.set_field_at(i, left.op_mul(thread, right));
+      }
+
+      return result;
+  }
+
+  return kNaN;
+
   if ((isList() && other.isNumber()) || (isNumber() && other.isList())) {
     RawList list;
     int64_t count;
@@ -667,15 +729,35 @@ RawValue RawValue::op_mul(Thread* thread, RawValue other) const {
   return kNaN;
 }
 
-RawValue RawValue::op_div(RawValue other) const {
+RawValue RawValue::op_div(Thread* thread, RawValue other) const {
   if (isNumber() && other.isNumber()) {
     return RawFloat::create(double_value() / other.double_value());
+  }
+
+  if (isTuple() && other.isTuple()) {
+      HandleScope scope(thread);
+      Tuple self_tuple(scope, *this);
+      Tuple other_tuple(scope, other);
+
+      if (self_tuple.length() != other_tuple.length()) {
+        return kNaN;
+      }
+
+      Tuple result(scope, RawTuple::create(thread, self_tuple.length()));
+
+      for (uint32_t i = 0; i < self_tuple.length(); i++) {
+        Value left(scope, self_tuple.field_at(i));
+        Value right(scope, other_tuple.field_at(i));
+        result.set_field_at(i, left.op_div(thread, right));
+      }
+
+      return result;
   }
 
   return kNaN;
 }
 
-RawValue RawValue::op_mod(RawValue other) const {
+RawValue RawValue::op_mod(Thread* thread, RawValue other) const {
   if (isInt() && other.isInt()) {
     return RawInt::create(RawInt::cast(*this).value() % RawInt::cast(other).value());
   }
@@ -684,6 +766,26 @@ RawValue RawValue::op_mod(RawValue other) const {
     auto left = double_value();
     auto right = other.double_value();
     return RawFloat::create(std::fmod(left, right));
+  }
+
+  if (isTuple() && other.isTuple()) {
+      HandleScope scope(thread);
+      Tuple self_tuple(scope, *this);
+      Tuple other_tuple(scope, other);
+
+      if (self_tuple.length() != other_tuple.length()) {
+        return kNaN;
+      }
+
+      Tuple result(scope, RawTuple::create(thread, self_tuple.length()));
+
+      for (uint32_t i = 0; i < self_tuple.length(); i++) {
+        Value left(scope, self_tuple.field_at(i));
+        Value right(scope, other_tuple.field_at(i));
+        result.set_field_at(i, left.op_mod(thread, right));
+      }
+
+      return result;
   }
 
   return kNaN;

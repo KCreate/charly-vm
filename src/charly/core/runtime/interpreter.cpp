@@ -1158,7 +1158,7 @@ OP(add) {
 OP(sub) {
   RawValue right = frame->pop();
   RawValue left = frame->pop();
-  frame->push(left.op_sub(right));
+  frame->push(left.op_sub(thread, right));
   return ContinueMode::Next;
 }
 
@@ -1172,14 +1172,14 @@ OP(mul) {
 OP(div) {
   RawValue right = frame->pop();
   RawValue left = frame->pop();
-  frame->push(left.op_div(right));
+  frame->push(left.op_div(thread, right));
   return ContinueMode::Next;
 }
 
 OP(mod) {
   RawValue right = frame->pop();
   RawValue left = frame->pop();
-  frame->push(left.op_mod(right));
+  frame->push(left.op_mod(thread, right));
   return ContinueMode::Next;
 }
 
