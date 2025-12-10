@@ -885,6 +885,25 @@ class Timer {
             result
         }
 
+        func inGroupsOf(n) {
+            const groups = []
+
+            let subgroup = []
+            @each(->(e) {
+                subgroup.push(e)
+                if subgroup.length >= n {
+                    groups.push(subgroup)
+                    subgroup = []
+                }
+            })
+
+            if subgroup.length > 0 {
+                groups.push(subgroup)
+            }
+
+            groups
+        }
+
         static func create(length, initial = null) = builtin_list_create(length, initial)
         static func create_with(length, callback) {
             const l = List.create(length)
