@@ -576,6 +576,15 @@ class Timer {
             false
         }
 
+        func count(value) {
+            self.filter(->(v) v == value).length
+        }
+
+        func countIf(callback) {
+            assert callback instanceof Function
+            self.filter(->(v, i) callback(v, i)).length
+        }
+
         func sort(compare_function = null) {
             const length = @length
 
