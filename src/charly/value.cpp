@@ -709,8 +709,6 @@ RawValue RawValue::op_mul(Thread* thread, RawValue other) const {
       return result;
   }
 
-  return kNaN;
-
   if ((isList() && other.isNumber()) || (isNumber() && other.isList())) {
     RawList list;
     int64_t count;
