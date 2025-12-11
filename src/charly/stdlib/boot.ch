@@ -309,9 +309,17 @@ class Timer {
             return builtin_string_substring(self, start, count)
         }
 
-        func split(terminator = " ") {
-            assert terminator instanceof String
-            return builtin_string_split(self, terminator)
+        func dropFirst(n = 1) = @split("").dropFirst(n).join("")
+
+        func dropLast(n = 1) = @split("").dropLast(n).join("")
+
+        func takeFirst(n = 1) = @split("").takeFirst(n).join("")
+
+        func takeLast(n = 1) = @split("").takeLast(n).join("")
+
+        func split(separator = " ") {
+            assert separator instanceof String
+            return builtin_string_split(self, separator)
         }
 
         func lines {
